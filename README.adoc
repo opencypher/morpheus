@@ -1,0 +1,3 @@
+= Cypher on Spark experiment
+
+Talk to the openCypher team if you have questions.
