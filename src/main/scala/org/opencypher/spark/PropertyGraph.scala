@@ -2,9 +2,6 @@ package org.opencypher.spark
 
 import org.apache.spark.sql._
 
-import scala.reflect._
-
-
 trait PropertyGraph {
 
   /**
@@ -28,13 +25,7 @@ trait PropertyGraph {
   def relationships: Dataset[CypherRelationship]
 
   def cypher(query: String): CypherResult
-
-
 }
 
-trait CypherResult {
-  def toDF: DataFrame
-  def toDS[T : Encoder](f: Map[String, CypherValue] => T): Dataset[T]
-  def show(): Unit
-}
+
 

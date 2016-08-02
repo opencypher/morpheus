@@ -1,14 +1,15 @@
 package org.opencypher.spark
 
 import org.apache.spark.sql.Dataset
+import org.opencypher.spark.impl.StdPropertyGraph
 import org.scalatest.FunSuite
 
-class CypherOnSparkGraftingTest extends FunSuite {
+class CypherOnSparkGraftingFunctionalityTest extends FunSuite {
 
-  import PropertyGraphImpl.SupportedQueries
+  import StdPropertyGraph.SupportedQueries
   import TestPropertyGraphs.sc.implicits._
 
-  test("All node scan") {
+  test("all node scan") {
     val pg: PropertyGraph = TestPropertyGraphs.graph1
 
     val cypher: CypherResult = pg.cypher(SupportedQueries.allNodesScan)

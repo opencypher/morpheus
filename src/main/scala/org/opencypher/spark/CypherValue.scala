@@ -6,6 +6,13 @@ import org.apache.spark.sql.Encoder
 
 import scala.reflect.ClassTag
 
+object CypherValue {
+  trait implicits {
+    implicit def cypherValueEncoder[T <: CypherValue : ClassTag]: Encoder[T] = org.apache.spark.sql.Encoders.kryo[T]
+  }
+  object implicits extends implicits
+}
+
 sealed trait CypherValue
 
 final case class CypherMap(v: Map[String, CypherValue]) extends CypherValue
@@ -36,10 +43,3 @@ object CypherRelationship {
 final case class CypherString(v: String) extends CypherValue
 
 final case class CypherInteger(v: Long) extends CypherValue
-
-case class CypherRecord(values: Array[CypherValue], ids: Array[Long])
-
-trait CypherEncoders {
-  implicit def cypherValueEncoder[T <: CypherValue : ClassTag]: Encoder[T] = org.apache.spark.sql.Encoders.kryo[T]
-  implicit def cypherRecordEncoder: Encoder[CypherRecord] = org.apache.spark.sql.Encoders.kryo[CypherRecord]
-}
