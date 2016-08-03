@@ -1,7 +1,7 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Encoder
-import org.opencypher.spark.CypherValue
+import org.opencypher.spark.{EntityId, CypherValue}
 
 object StdRecord {
   object implicits extends implicits

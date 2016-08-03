@@ -5,6 +5,6 @@ import org.opencypher.spark.impl.StdRecord
 
 trait CypherResult {
   def toDF: DataFrame
-  def toDS[T : Encoder](f: StdRecord => T): Dataset[T]
+  def toDS[T : Encoder](f: CypherRecord => T): Dataset[T]
   def show(): Unit
 }

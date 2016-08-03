@@ -2,14 +2,18 @@ package org.opencypher.spark
 
 import java.lang
 
-import org.apache.spark.sql.Encoder
+import org.apache.spark.sql.{SparkSession, Encoders, Encoder}
 
 import scala.reflect.ClassTag
 
 object CypherValue {
   trait implicits {
-    implicit def cypherValueEncoder[T <: CypherValue : ClassTag]: Encoder[T] = org.apache.spark.sql.Encoders.kryo[T]
-    implicit def cypherEntityIdEncoder = org.apache.spark.sql.Encoders.kryo[EntityId]
+    implicit def cypherValueEncoder[T <: CypherValue : ClassTag]: Encoder[T] = Encoders.kryo[T]
+    // TODO: Add more
+    implicit def cypherTuple2Encoder[T1: Encoder, T2: Encoder]: Encoder[(T1, T2)] = Encoders.tuple(implicitly[Encoder[T1]], implicitly[Encoder[T2]])
+    implicit def cypherTuple3Encoder[T1: Encoder, T2: Encoder, T3: Encoder]: Encoder[(T1, T2, T3)] = Encoders.tuple(implicitly[Encoder[T1]], implicitly[Encoder[T2]], implicitly[Encoder[T3]])
+    implicit def cypherTuple4Encoder[T1: Encoder, T2: Encoder, T3: Encoder, T4: Encoder]: Encoder[(T1, T2, T3, T4)] = Encoders.tuple(implicitly[Encoder[T1]], implicitly[Encoder[T2]], implicitly[Encoder[T3]], implicitly[Encoder[T4]])
+    implicit def cypherEntityIdEncoder = Encoders.kryo[EntityId]
 
     implicit def cypherString(v: String): CypherString = CypherString(v)
     implicit def cypherInteger(v: Int): CypherInteger = CypherInteger(v)
@@ -99,6 +103,7 @@ final case class CypherNode(id: EntityId, labels: Seq[String], properties: Map[S
 
 final case class CypherRelationship(id: EntityId, start: EntityId, end: EntityId, typ: String, properties: Map[String, CypherValue] = Map.empty) extends CypherValue with HasEntityId with HasProperties {
   type Repr = ((Long, Long), CypherRelationship)
+
   def v = (start.v -> end.v) -> this
 
   def other(otherId: EntityId) =
@@ -112,7 +117,7 @@ final case class CypherRelationship(id: EntityId, start: EntityId, end: EntityId
     }
 }
 
-final case class CypherPath(v: Seq[CypherValue]) extends CypherValue {
+final case class CypherPath(v: Seq[CypherEntityValue]) extends CypherValue {
   // TODO: Validation
-  type Repr = Seq[CypherValue]
+  type Repr = Seq[CypherEntityValue]
 }

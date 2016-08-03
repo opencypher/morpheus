@@ -1,6 +1,6 @@
 package org.opencypher.spark
 
-import org.apache.spark.sql.Dataset
+import org.apache.spark.sql.{Encoders, Dataset}
 import org.opencypher.spark.impl.StdPropertyGraph
 import org.scalatest.FunSuite
 
@@ -8,6 +8,8 @@ class CypherOnSparkGraftingFunctionalityTest extends FunSuite {
 
   import StdPropertyGraph.SupportedQueries
   import TestPropertyGraphs.session.implicits._
+  import CypherValue.implicits._
+
 
   test("all node scan") {
     val pg: PropertyGraph = TestPropertyGraphs.graph1
@@ -47,5 +49,40 @@ class CypherOnSparkGraftingFunctionalityTest extends FunSuite {
     }
 
     result.show(false)
+  }
+
+  test("get all nodes and project two properties into multiple columns using toDS()") {
+    val pg: PropertyGraph = TestPropertyGraphs.graph3
+
+    val cypher: CypherResult = pg.cypher(SupportedQueries.allNodesScanProjectAgeName)
+    val result = cypher.toDS { record =>
+      (record("name"), record("age"))
+    }
+
+    result.show(false)
+  }
+
+  test("get all nodes and project two properties into multiple columns using toDF()") {
+    val pg: PropertyGraph = TestPropertyGraphs.graph3
+
+    val cypher: CypherResult = pg.cypher(SupportedQueries.allNodesScanProjectAgeName)
+    val result = cypher.toDF
+
+    result.show(false)
+  }
+
+  test("get all rels of type T") {
+    val pg: PropertyGraph = TestPropertyGraphs.graph1
+
+    val cypher: CypherResult = pg.cypher(SupportedQueries.getAllRelationshipsOfTypeT)
+
+    cypher.show()
+  }
+  test("get all rels of type T from nodes of label A") {
+    val pg: PropertyGraph = TestPropertyGraphs.graph1
+
+    val cypher: CypherResult = pg.cypher(SupportedQueries.getAllRelationshipsOfTypeTOfLabelA)
+
+    cypher.show()
   }
 }

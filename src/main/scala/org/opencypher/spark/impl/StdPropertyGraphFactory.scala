@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicLong
 import org.apache.spark.sql.SparkSession
 import org.opencypher.spark._
 
-class StdPropertyGraphFactory(session: SparkSession) extends PropertyGraphFactory {
+class StdPropertyGraphFactory(implicit private val session: SparkSession) extends PropertyGraphFactory {
 
   factory =>
 
@@ -34,7 +34,7 @@ class StdPropertyGraphFactory(session: SparkSession) extends PropertyGraphFactor
   }
 
   override def result: StdPropertyGraph =
-    new StdPropertyGraph(sc) {
+    new StdPropertyGraph {
       import CypherValue.implicits._
 
       val nodes = sc.createDataset(factory.nodes.result)
