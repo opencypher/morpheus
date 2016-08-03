@@ -12,7 +12,7 @@ object StdPropertyGraph {
     val allNodeIdsSortedDesc = "/* all node ids sorted desc */ MATCH (n) RETURN id(n) AS id ORDER BY id DESC"
   }
 }
-abstract class StdPropertyGraph(sc: SQLContext) extends PropertyGraph  {
+abstract class StdPropertyGraph(sc: SQLContext) extends PropertyGraph {
 
   import StdRecord.implicits._
   import StdPropertyGraph.SupportedQueries
@@ -20,17 +20,17 @@ abstract class StdPropertyGraph(sc: SQLContext) extends PropertyGraph  {
   override def cypher(query: String) = query match {
     case SupportedQueries.allNodesScan =>
       new StdFrame(nodes.map[StdRecord] { node: CypherNode =>
-        StdRecord(Array(node), Array(node.id))
+        StdRecord(Array(node), Array(node.id.v))
       }, Map("value" -> 0)).result
 
     case SupportedQueries.allNodeIds =>
       new StdFrame(nodes.map[StdRecord] { node: CypherNode =>
-        StdRecord(Array(CypherInteger(node.id)), Array.empty)
+        StdRecord(Array(CypherInteger(node.id.v)), Array.empty)
       }, ListMap("value" -> 0)).result
 
     case SupportedQueries.allNodeIdsSortedDesc =>
       new StdFrame(sc.createDataset(nodes.map[StdRecord] { node: CypherNode =>
-        StdRecord(Array(CypherInteger(node.id)), Array.empty)
+        StdRecord(Array(CypherInteger(node.id.v)), Array.empty)
       }.rdd.sortBy[Long]({ record =>
         record.values(0).asInstanceOf[CypherInteger].v
       }, false)), ListMap("value" -> 0)).result
