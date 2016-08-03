@@ -48,9 +48,7 @@ class StdCypherResult(df: Dataset[StdRecord], columns: Map[String, Int]) extends
   override def toDF: DataFrame = df.toDF()
 
   override def toDS[T : Encoder](f: StdRecord => T): Dataset[T] = {
-    df.map { r: StdRecord  =>
-      f(columns.mapValues(idx => r.values(idx)))
-    }
+    df.map(f)
   }
 
   override def show(): Unit = df.show()

@@ -112,7 +112,7 @@ final case class CypherRelationship(id: EntityId, start: EntityId, end: EntityId
     }
 }
 
-final case class CypherPath(v: Seq[CypherEntityValue]) extends CypherValue {
+final case class CypherPath(v: Seq[CypherValue]) extends CypherValue {
   // TODO: Validation
-  type Repr = Seq[CypherEntityValue]
+  type Repr = Seq[CypherValue]
 }
