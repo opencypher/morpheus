@@ -7,7 +7,7 @@ import org.scalatest.FunSuite
 class CypherOnSparkGraftingFunctionalityTest extends FunSuite {
 
   import StdPropertyGraph.SupportedQueries
-  import TestPropertyGraphs.sc.implicits._
+  import TestPropertyGraphs.session.implicits._
 
   test("all node scan") {
     val pg: PropertyGraph = TestPropertyGraphs.graph1

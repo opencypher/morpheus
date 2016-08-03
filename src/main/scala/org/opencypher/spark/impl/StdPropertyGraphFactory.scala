@@ -2,11 +2,10 @@ package org.opencypher.spark.impl
 
 import java.util.concurrent.atomic.AtomicLong
 
-import org.apache.spark.SparkContext
-import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.SparkSession
 import org.opencypher.spark._
 
-class StdPropertyGraphFactory(sc: SQLContext) extends PropertyGraphFactory {
+class StdPropertyGraphFactory(session: SparkSession) extends PropertyGraphFactory {
 
   factory =>
 
@@ -15,6 +14,8 @@ class StdPropertyGraphFactory(sc: SQLContext) extends PropertyGraphFactory {
 
   private val nodes = Seq.newBuilder[CypherNode]
   private val relationships = Seq.newBuilder[CypherRelationship]
+
+  private def sc = session.sqlContext
 
   override def addNode(properties: Map[String, CypherValue]): EntityId =
     nodeIds { id => nodes += CypherNode(id, Seq.empty, properties) }

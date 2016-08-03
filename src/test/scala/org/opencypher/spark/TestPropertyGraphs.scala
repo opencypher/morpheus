@@ -6,10 +6,9 @@ import org.opencypher.spark.impl.{StdPropertyGraphFactory, StdPropertyGraph}
 object TestPropertyGraphs {
 
   val session: SparkSession = SparkSession.builder().appName("test").master("local").getOrCreate()
-  val sc = session.sqlContext
 
   def graph1: PropertyGraph = {
-    val factory = new StdPropertyGraphFactory(sc)
+    val factory = new StdPropertyGraphFactory(session)
     val n0 = factory.addNode(Map("prop" -> CypherString("value")))
     val n1 = factory.addLabeledNode("Label")()
     val n2 = factory.addLabeledNode("Label1", "Label2")()
