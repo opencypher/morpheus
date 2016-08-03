@@ -16,6 +16,17 @@ object TestPropertyGraphs {
     factory.addRelationship(n0, n1, "KNOWS")
     factory.result
   }
+
+  def graph2: PropertyGraph = {
+    val factory = new StdPropertyGraphFactory(session)
+    factory.addNode(Map("prop" -> CypherString("value")))
+    factory.addNode(Map("prop" -> CypherBoolean(true)))
+    factory.addNode(Map("prop" -> CypherInteger(42)))
+    factory.addNode(Map("prop" -> CypherFloat(23.1)))
+    factory.addNode(Map("prop" -> CypherList.of(CypherString("Hallo"), CypherBoolean(true))))
+    factory.addNode(Map("prop" -> CypherList.of(CypherMap.of("a" -> CypherString("Hallo"), "b" -> CypherBoolean(true)))))
+    factory.result
+  }
 }
 
 

@@ -23,7 +23,6 @@ final case class CypherString(v: String) extends AnyVal with CypherValue {
   type Repr = String
 }
 
-
 final case class CypherBoolean(v: Boolean) extends AnyVal with CypherValue {
   type Repr = Boolean
 }
@@ -47,6 +46,7 @@ final case class CypherFloat(v: Double) extends AnyVal with CypherValue with ToN
 }
 
 object CypherList {
+  def of(elts: CypherValue*) = CypherList(elts)
   def empty = CypherList(Seq.empty)
 }
 
@@ -55,6 +55,7 @@ final case class CypherList(v: Seq[CypherValue]) extends AnyVal with CypherValue
 }
 
 object CypherMap {
+  def of(elts: (String, CypherValue)*) = CypherMap(Map(elts: _*))
   val empty = CypherMap(Map.empty)
 }
 
@@ -99,7 +100,14 @@ final case class CypherRelationship(id: EntityId, start: EntityId, end: EntityId
   def v = (start.v -> end.v) -> this
 
   def other(otherId: EntityId) =
-    if (start == otherId) end else start
+    if (start == otherId)
+      end
+    else {
+      if (end == otherId)
+        start
+      else
+        throw new IllegalArgumentException(s"Expected either start $start or end $end of relationship $id, but got: $otherId")
+    }
 }
 
 final case class CypherPath(v: Seq[CypherEntityValue]) extends CypherValue {

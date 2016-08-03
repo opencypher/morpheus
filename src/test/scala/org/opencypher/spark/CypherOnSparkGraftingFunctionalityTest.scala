@@ -18,6 +18,15 @@ class CypherOnSparkGraftingFunctionalityTest extends FunSuite {
     }.show()
   }
 
+  test("all node scan on node-only graph that uses all kinds of properties") {
+    val pg: PropertyGraph = TestPropertyGraphs.graph2
+
+    val cypher: CypherResult = pg.cypher(SupportedQueries.allNodesScan)
+    val result = cypher.toDS { map =>
+      map.toString()
+    }.show()
+  }
+
   test("get all node ids") {
     val pg: PropertyGraph = TestPropertyGraphs.graph1
 
