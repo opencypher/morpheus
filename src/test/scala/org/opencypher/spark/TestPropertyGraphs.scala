@@ -1,7 +1,7 @@
 package org.opencypher.spark
 
-import org.apache.spark.sql.{SparkSession, SQLContext, Dataset}
-import org.opencypher.spark.impl.{StdPropertyGraphFactory, StdPropertyGraph}
+import org.apache.spark.sql.SparkSession
+import org.opencypher.spark.impl.StdPropertyGraphFactory
 
 object TestPropertyGraphs {
 
@@ -18,13 +18,16 @@ object TestPropertyGraphs {
   }
 
   def graph2: PropertyGraph = {
+
+    import CypherValue.implicits._
+
     val factory = new StdPropertyGraphFactory(session)
-    factory.addNode(Map("prop" -> CypherString("value")))
-    factory.addNode(Map("prop" -> CypherBoolean(true)))
-    factory.addNode(Map("prop" -> CypherInteger(42)))
-    factory.addNode(Map("prop" -> CypherFloat(23.1)))
-    factory.addNode(Map("prop" -> CypherList.of(CypherString("Hallo"), CypherBoolean(true))))
-    factory.addNode(Map("prop" -> CypherList.of(CypherMap.of("a" -> CypherString("Hallo"), "b" -> CypherBoolean(true)))))
+    factory.addNode(Map("prop" -> "value"))
+    factory.addNode(Map("prop" -> true))
+    factory.addNode(Map("prop" -> 42))
+    factory.addNode(Map("prop" -> 23.1))
+    factory.addNode(Map("prop" -> Seq(CypherString("Hallo"), CypherBoolean(true))))
+    factory.addNode(Map("prop" -> Seq(Map[String, CypherValue]("a" -> "Hallo", "b" -> true))))
     factory.result
   }
 }

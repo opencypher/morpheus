@@ -10,7 +10,18 @@ object CypherValue {
   trait implicits {
     implicit def cypherValueEncoder[T <: CypherValue : ClassTag]: Encoder[T] = org.apache.spark.sql.Encoders.kryo[T]
     implicit def cypherEntityIdEncoder = org.apache.spark.sql.Encoders.kryo[EntityId]
+
+    implicit def cypherString(v: String): CypherString = CypherString(v)
+    implicit def cypherInteger(v: Int): CypherInteger = CypherInteger(v)
+    implicit def cypherInteger(v: Long): CypherInteger = CypherInteger(v)
+    implicit def cypherFloat(v: Float): CypherFloat = CypherFloat(v)
+    implicit def cypherFloat(v: Double): CypherFloat = CypherFloat(v)
+    implicit def cypherBoolean(v: Boolean): CypherBoolean = CypherBoolean(v)
+    implicit def cypherPair[T](v: (String, T))(implicit ev: T => CypherValue): (String, CypherValue) = v._1 -> v._2
+    implicit def cypherList[T](v: Seq[T])(implicit ev: T => CypherValue): CypherList = CypherList(v.map(ev))
+    implicit def cypherMap[T](v: Map[String, T])(implicit ev: T => CypherValue): CypherMap = CypherMap(v.mapValues(ev))
   }
+
   object implicits extends implicits
 }
 
@@ -71,19 +82,10 @@ sealed trait HasProperties extends Any {
   def properties: Map[String, CypherValue]
 }
 
-object EntityId {
-  val ordering = Ordering.by[EntityId, Long](_.v)
-}
-
-final case class EntityId(v: Long) extends AnyVal with HasEntityId {
+final case class EntityId(v: Long) extends AnyVal {
   self =>
 
   override def toString = s"#$v"
-  override def id: EntityId = self
-}
-
-object HasEntityId {
-  val ordering = Ordering.by[HasEntityId, EntityId](_.id)(EntityId.ordering)
 }
 
 sealed trait HasEntityId extends Any {
