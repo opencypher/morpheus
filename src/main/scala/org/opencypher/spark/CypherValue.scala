@@ -53,12 +53,12 @@ final case class CypherInteger(v: Long) extends AnyVal with CypherValue with ToN
 final case class CypherFloat(v: Double) extends AnyVal with CypherValue with ToNumber {
   type Repr = Double
 
-  override def toNumber: lang.Float = v.toFloat
+  override def toNumber: lang.Double = v.toDouble
 }
 
 object CypherList {
   def of(elts: CypherValue*) = CypherList(elts)
-  def empty = CypherList(Seq.empty)
+  val empty = CypherList(Seq.empty)
 }
 
 final case class CypherList(v: Seq[CypherValue]) extends AnyVal with CypherValue {

@@ -12,6 +12,3 @@ object StdRecord {
 }
 
 case class StdRecord(values: Array[CypherValue], longs: Array[Long])
-
-
-

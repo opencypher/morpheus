@@ -47,7 +47,7 @@ class StdFrame(df: Dataset[StdRecord], columns: Map[String, Int]) {
 class StdCypherResult(df: Dataset[StdRecord], columns: Map[String, Int]) extends CypherResult with Serializable {
   override def toDF: DataFrame = df.toDF()
 
-  override def toDS[T : Encoder](f: CypherRecord => T): Dataset[T] = {
+  override def toDS[T : Encoder](f: StdRecord => T): Dataset[T] = {
     df.map { r: StdRecord  =>
       f(columns.mapValues(idx => r.values(idx)))
     }
