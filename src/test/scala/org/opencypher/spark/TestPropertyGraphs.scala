@@ -49,6 +49,30 @@ object TestPropertyGraphs {
     factory.addLabeledNode("B")()
     factory.result
   }
+
+  def graph4: PropertyGraph = {
+
+    import CypherValue.implicits._
+
+    val factory = new StdPropertyGraphFactory
+    val n1 = factory.addLabeledNode("A")()
+    val n2 = factory.addLabeledNode("A")()
+    val n3 = factory.addLabeledNode("A")()
+    val n4 = factory.addLabeledNode("A")()
+    val n5 = factory.addLabeledNode("A")()
+    val n6 = factory.addLabeledNode("B")()
+    val n7 = factory.addLabeledNode("B")()
+    val n8 = factory.addLabeledNode("B")()
+    val n9 = factory.addLabeledNode("B")()
+
+    factory.addRelationship(n1, n2, "T")
+    factory.addRelationship(n2, n3, "T")
+    factory.addRelationship(n2, n6, "T")
+    factory.addRelationship(n4, n8, "T")
+    factory.addRelationship(n5, n8, "T")
+
+    factory.result
+  }
 }
 
 

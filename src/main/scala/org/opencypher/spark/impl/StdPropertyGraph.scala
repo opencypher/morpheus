@@ -2,7 +2,6 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
-import org.apache.spark.sql.types.StructType
 import org.opencypher.spark._
 
 import scala.collection.immutable.ListMap
@@ -20,6 +19,8 @@ object StdPropertyGraph {
     val optionalMatch = "MATCH (a:A) OPTIONAL MATCH (a)-[r]->(b) RETURN r"
     val unwind = "WITH [1, 2, 3] AS l UNWIND l AS x RETURN x"
     val matchAggregateAndUnwind = "MATCH (a:A) WITH collect(a.name) AS names UNWIND names AS name RETURN name"
+    val shortestPath = "MATCH (a {name: 'Ava'}), (b {name: 'Sasha'}) MATCH p=shortestPath((a)-->(b)) RETURN p" // not implemented
+    val boundVarLength = "MATCH (a:A)-[r*2]->(b:B) RETURN r"
   }
 }
 
@@ -114,6 +115,45 @@ abstract class StdPropertyGraph(implicit private val session: SparkSession) exte
 
       new StdFrame(result.map(v => StdRecord(Array(v), Array.empty)), ListMap("name" -> 0)).result
 
+    case SupportedQueries.shortestPath =>
+      val a = nodes.flatMap(_.properties.get("name").filter(_ == "Ava"))(CypherValue.implicits.cypherValueEncoder[CypherValue])
+      val b = nodes.flatMap(_.properties.get("name").filter(_ == "Sasha"))(CypherValue.implicits.cypherValueEncoder[CypherValue])
+
+      ???
+
+    case SupportedQueries.boundVarLength =>
+      val a = nodes.filter(_.labels.contains("A")).map(node => (node.id.v, node))(Encoders.tuple(implicitly[Encoder[Long]], CypherValue.implicits.cypherValueEncoder[CypherNode])).toDF("id_a", "val_a")
+      val b = nodes.filter(_.labels.contains("B")).map(node => (node.id.v, node))(Encoders.tuple(implicitly[Encoder[Long]], CypherValue.implicits.cypherValueEncoder[CypherNode])).toDF("id_b", "val_b")
+      val rels1 = relationships.map(rel => (rel.start.v, rel.end.v, rel.id.v, rel))(Encoders.tuple(implicitly[Encoder[Long]], implicitly[Encoder[Long]], implicitly[Encoder[Long]], CypherValue.implicits.cypherValueEncoder[CypherRelationship])).toDF(
+        "start_rel1", "end_rel1", "id_rel1", "val_rel1"
+      )
+      val rels2 = rels1.select(
+        new Column("start_rel1").as("start_rel2"),
+        new Column("end_rel1").as("end_rel2"),
+        new Column("id_rel1").as("id_rel2"),
+        new Column("val_rel1").as("val_rel2")
+      )
+
+      val step1out = rels1.join(a, functions.expr("id_a = start_rel1"))
+      val step1done = step1out.join(b, functions.expr("end_rel1 = id_b"))
+
+      val prepare1 = step1done.select(new Column("val_rel1").as("r"))
+      val result1 = prepare1
+        .as[CypherRelationship](CypherValue.implicits.cypherValueEncoder[CypherRelationship])
+        .map(r => CypherList(Seq(r)))(CypherValue.implicits.cypherValueEncoder[CypherList])
+
+      val step2out = step1out.join(rels2, functions.expr("end_rel1 = start_rel2"))
+      val step2done = step2out.join(b, functions.expr("end_rel2 = id_b"))
+
+      val prepare2 = step2done.select(new Column("val_rel1").as("r1"), new Column("val_rel2").as("r2"))
+      val encoder2 = ExpressionEncoder.tuple(Seq(CypherValue.implicits.cypherValueEncoder[CypherRelationship], CypherValue.implicits.cypherValueEncoder[CypherRelationship]).map(_.asInstanceOf[ExpressionEncoder[_]])).asInstanceOf[Encoder[Product]]
+      val result2 = prepare2
+        .as[Product](encoder2)
+        .map(p => CypherList(p.productIterator.map(_.asInstanceOf[CypherRelationship]).toList))(CypherValue.implicits.cypherValueEncoder[CypherList])
+
+      val result = result1.union(result2)
+
+      new StdFrame(result.map(r => StdRecord(Array(r), Array.empty)), ListMap("r" -> 0)).result
 
     // *** Functionality left to test
 
@@ -126,13 +166,12 @@ abstract class StdPropertyGraph(implicit private val session: SparkSession) exte
       // [X] Optional match (via df.join with type left_outer)
       // [X] UNWIND
       // [X] Bounded var length (via UNION and single steps)
-      // [ ] Path
-      // [ ] Unbounded var length
-      // [ ] Shortest path
+      // [X] Unbounded var length (we think we can do it in a loop but it will be probably be really expensive)
+      // [-] Shortest path -- not easily on datasets/dataframes directly but possible via graphx
 
       // [X] Aggregation (via rdd, possibly via spark if applicable given the available types)
       // [X] CALL .. YIELD ... (via df.map + procedure registry)
-      // [ ] Graph algorithms (map into procedures)
+      // [X] Graph algorithms (map into procedures)
 
       /* Updates
 

@@ -126,4 +126,12 @@ class GraftingCypherOnSparkFunctionalityTest extends FunSuite {
 
     result.show()
   }
+
+  test("bound variable length") {
+    val pg: PropertyGraph = TestPropertyGraphs.graph4
+
+    val result: CypherResult = pg.cypher(SupportedQueries.boundVarLength)
+
+    result.show()
+  }
 }
