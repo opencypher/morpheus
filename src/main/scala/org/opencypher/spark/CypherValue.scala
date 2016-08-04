@@ -2,6 +2,7 @@ package org.opencypher.spark
 
 import java.lang
 
+import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.sql.{SparkSession, Encoders, Encoder}
 
 import scala.reflect.ClassTag
@@ -32,6 +33,11 @@ object CypherValue {
 sealed trait CypherValue extends Any {
   type Repr
   def v: Repr
+}
+
+case object CypherNull extends CypherValue {
+  override type Repr = this.type
+  override def v = this
 }
 
 final case class CypherString(v: String) extends AnyVal with CypherValue {

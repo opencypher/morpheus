@@ -9,12 +9,12 @@ object TestPropertyGraphs {
 
   def graph1: PropertyGraph = {
     val factory = new StdPropertyGraphFactory
-    val n0 = factory.addNode(Map("prop" -> CypherString("value")))
-    val n1 = factory.addLabeledNode("B")()
-    val n2 = factory.addLabeledNode("A", "B")()
-    val n3 = factory.addLabeledNode("A")(Map("prop" -> CypherString("foo")))
-    factory.addRelationship(n0, n1, "KNOWS")
-    factory.addRelationship(n3, n1, "T")
+    val n1 = factory.addNode(Map("prop" -> CypherString("value")))
+    val n2 = factory.addLabeledNode("B")()
+    val n3 = factory.addLabeledNode("A", "B")()
+    val n4 = factory.addLabeledNode("A")(Map("prop" -> CypherString("foo")))
+    factory.addRelationship(n1, n2, "KNOWS")
+    factory.addRelationship(n4, n2, "T")
     factory.result
   }
 
@@ -38,10 +38,15 @@ object TestPropertyGraphs {
     import CypherValue.implicits._
 
     val factory = new StdPropertyGraphFactory
-    factory.addNode(Map("name" -> "Sasha", "age" -> 4))
-    factory.addNode(Map("name" -> "Ava", "age" -> 2))
-    factory.addNode(Map("name" -> "Mats", "age" -> 28))
-    factory.addNode(Map("name" -> "Stefan", "age" -> 37))
+    factory.addLabeledNode("B")(Map("name" -> "Sasha", "age" -> 4))
+    factory.addLabeledNode("B")(Map("name" -> "Sasha", "age" -> 16))
+    factory.addLabeledNode("B")(Map("name" -> "Ava", "age" -> 2))
+    factory.addLabeledNode("A")(Map("name" -> "Mats", "age" -> 28))
+    factory.addLabeledNode("A")(Map("name" -> "Stefan", "age" -> 37))
+    factory.addLabeledNode("A")(Map("name" -> "Stefan", "age" -> 58))
+    factory.addLabeledNode("B")(Map("name" -> "Stefan", "age" -> 4))
+    factory.addLabeledNode("A")()
+    factory.addLabeledNode("B")()
     factory.result
   }
 }

@@ -4,7 +4,7 @@ import org.apache.spark.sql.{Encoders, Dataset}
 import org.opencypher.spark.impl.StdPropertyGraph
 import org.scalatest.FunSuite
 
-class CypherOnSparkGraftingFunctionalityTest extends FunSuite {
+class GraftingCypherOnSparkFunctionalityTest extends FunSuite {
 
   import StdPropertyGraph.SupportedQueries
   import TestPropertyGraphs.session.implicits._
@@ -78,11 +78,52 @@ class CypherOnSparkGraftingFunctionalityTest extends FunSuite {
 
     cypher.show()
   }
+
   test("get all rels of type T from nodes of label A") {
     val pg: PropertyGraph = TestPropertyGraphs.graph1
 
     val cypher: CypherResult = pg.cypher(SupportedQueries.getAllRelationshipsOfTypeTOfLabelA)
 
     cypher.show()
+  }
+
+  test("simple union all") {
+    val pg: PropertyGraph = TestPropertyGraphs.graph3
+
+    val result: CypherResult = pg.cypher(SupportedQueries.simpleUnionAll)
+
+    result.show()
+  }
+
+  test("simple union distinct") {
+    val pg: PropertyGraph = TestPropertyGraphs.graph3
+
+    val result: CypherResult = pg.cypher(SupportedQueries.simpleUnionDistinct)
+
+    result.show()
+  }
+
+  test("optional match") {
+    val pg: PropertyGraph = TestPropertyGraphs.graph1
+
+    val result: CypherResult = pg.cypher(SupportedQueries.optionalMatch)
+
+    result.show()
+  }
+
+  test("unwind") {
+    val pg: PropertyGraph = TestPropertyGraphs.graph1
+
+    val result: CypherResult = pg.cypher(SupportedQueries.unwind)
+
+    result.show()
+  }
+
+  test("match aggregate unwind") {
+    val pg: PropertyGraph = TestPropertyGraphs.graph3
+
+    val result: CypherResult = pg.cypher(SupportedQueries.matchAggregateAndUnwind)
+
+    result.show()
   }
 }
