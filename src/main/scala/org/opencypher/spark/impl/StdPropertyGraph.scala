@@ -23,6 +23,7 @@ abstract class StdPropertyGraph(implicit private val session: SparkSession) exte
   import session.implicits._
 
   override def cypher(query: String) = query match {
+
     case SupportedQueries.allNodesScan =>
       new StdFrame(nodes.map[StdRecord] { node: CypherNode =>
         StdRecord(Array(node), Array(node.id.v))
@@ -60,6 +61,42 @@ abstract class StdPropertyGraph(implicit private val session: SparkSession) exte
       val result = joined.as[CypherRelationship](CypherValue.implicits.cypherValueEncoder[CypherRelationship])
 
       new StdFrame(result.map(r => StdRecord(Array(r), Array.empty)), ListMap("r" -> 0)).result
+
+      // *** Functionality left to test
+
+      // Union
+      // Optional match
+      // UNWIND
+      // Path
+      // [X] Bounded var length
+      // Unbounded var length
+      // Shortest path
+
+      // [X] Aggregation
+
+      // [X] CALL .. YIELD ...
+
+      // [X] Graph algorithms
+
+      /* Updates
+
+        ... 2 3 4 2 2 ... => MERGE (a:A {id: id ...}
+
+        ... | MERGE 2
+        ... | MERGE 3
+        ... | MERGE 4
+        ... | MERGE 2
+        ... | MERGE 2
+
+        ... | CREATE-MERGE 2
+        ... | MATCH-MERGE 3
+        ... | CREATE-MERGE 4
+        ... | CREATE-MERGE 2
+        ... | CREATE-MERGE 2
+
+     */
+
+      // CypherFrames and expression evaluation (including null issues)
 
     case _ =>
       ???
