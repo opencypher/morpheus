@@ -2,7 +2,6 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
-import org.apache.spark.sql.types.{IntegerType, DataType}
 import org.opencypher.spark._
 
 import scala.collection.immutable.ListMap
@@ -40,7 +39,7 @@ abstract class StdPropertyGraph(implicit private val session: SparkSession) exte
 
     case SupportedQueries.allNodesScanProjectAgeName =>
       new StdFrame(nodes.map[StdRecord] { node: CypherNode =>
-        StdRecord(Array(node.properties("name"), node.properties("age")), Array.empty)
+        StdRecord(Array(node.properties.get("name").orNull, node.properties.get("age").orNull), Array.empty)
       }, Map("name" -> 0, "age" ->1)).result
 
     case SupportedQueries.allNodeIds =>
@@ -199,6 +198,16 @@ abstract class StdPropertyGraph(implicit private val session: SparkSession) exte
   }
 }
 
+
+//sealed trait FieldExpression {
+//  def cypherType: CypherType
+//}
+//
+//case class Var(name: String, cypherType: CypherType) extends FieldExpression
+//
+//case class EntityId(expr: Var) {
+//  def cypherType = CTInteger
+//}
 //
 //
 //trait CypherFrame {
@@ -207,7 +216,7 @@ abstract class StdPropertyGraph(implicit private val session: SparkSession) exte
 //
 //trait CypherField {
 //  def name: String
-//  def cypherType: CypherType
+//  def expr: FieldExpression
 //}
 //
 //

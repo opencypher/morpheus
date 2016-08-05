@@ -3,6 +3,8 @@ package org.opencypher.spark
 import org.opencypher.spark.CypherTypes._
 import org.scalatest.{FunSuite, Matchers}
 
+import scala.language.postfixOps
+
 class CypherTypesTest extends FunSuite with Matchers {
 
   val materialTypes: Seq[MaterialCypherType] = Seq(
@@ -19,7 +21,7 @@ class CypherTypesTest extends FunSuite with Matchers {
   val allTypes: Seq[CypherType] =
     materialTypes ++ nullableTypes
 
-  test("type name test") {
+  test("type names") {
     Seq[(CypherType, (String, String))](
       CTAny -> ("ANY", "ANY?"),
       CTString -> ("STRING", "STRING?"),
@@ -46,7 +48,7 @@ class CypherTypesTest extends FunSuite with Matchers {
     CTNull.toString shouldBe "NULL"
   }
 
-  test("void and null conversion") {
+  test("conversion between VOID and NULL") {
     CTVoid.nullable shouldBe CTNull
     CTNull.material shouldBe CTVoid
   }
@@ -56,7 +58,7 @@ class CypherTypesTest extends FunSuite with Matchers {
     materialTypes.foreach(t => t subTypeOf t.nullable)
   }
 
-  test("can convert between material and nullable types") {
+  test("conversion between material and nullable types") {
     materialTypes.foreach(t => t.nullable.material == t)
     nullableTypes.foreach(t => t.material.nullable == t)
   }
@@ -70,7 +72,7 @@ class CypherTypesTest extends FunSuite with Matchers {
     }
   }
 
-  test("basic inheritance cases") {
+  test("basic type inheritance") {
     CTNumber superTypeOf CTInteger shouldBe True
     CTNumber superTypeOf CTFloat shouldBe True
     CTMap superTypeOf CTMap shouldBe True
@@ -106,7 +108,7 @@ class CypherTypesTest extends FunSuite with Matchers {
     CTAny superTypeOf CTBoolean.nullable shouldBe False
   }
 
-  test("same type as") {
+  test("type equality between different types") {
     allTypes.foreach { t1 =>
       allTypes.foreach { t2 =>
 
@@ -148,7 +150,7 @@ class CypherTypesTest extends FunSuite with Matchers {
     }
   }
 
-  test("positive antisymmetry") {
+  test("antisymmetry of subtyping") {
     allTypes.foreach { t1 =>
       allTypes.foreach { t2 =>
         if (t1 subTypeOf t2 isTrue) (t2 subTypeOf t1 isTrue) shouldBe (t2 sameTypeAs t1 isTrue)
@@ -157,7 +159,7 @@ class CypherTypesTest extends FunSuite with Matchers {
     }
   }
 
-  test("type equality") {
+  test("type equality between the same type") {
     allTypes.foreach(t => t == t)
     allTypes.foreach(t => t superTypeOf  t)
     allTypes.foreach(t => t subTypeOf t)
@@ -165,7 +167,7 @@ class CypherTypesTest extends FunSuite with Matchers {
     allTypes.foreach(t => (t meet t) == t)
   }
 
-  test("erasure") {
+  test("computing definite types (type erasure)") {
     CTWildcard.definiteSuperType sameTypeAs CTAny shouldBe True
     CTWildcard.nullable.definiteSuperType sameTypeAs CTAny.nullable shouldBe True
     CTList(CTWildcard).definiteSuperType sameTypeAs CTList(CTAny) shouldBe True
@@ -181,7 +183,7 @@ class CypherTypesTest extends FunSuite with Matchers {
     CTList(CTBoolean).nullable.definiteSubType sameTypeAs CTList(CTBoolean).nullable shouldBe True
   }
 
-  test("unknown") {
+  test("handling wildcard types") {
     (CTAny superTypeOf CTWildcard) shouldBe True
     (CTWildcard superTypeOf CTVoid) shouldBe True
     (CTWildcard superTypeOf CTAny) shouldBe Maybe

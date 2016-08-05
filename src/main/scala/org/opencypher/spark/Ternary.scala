@@ -1,5 +1,7 @@
 package org.opencypher.spark
 
+import scala.language.implicitConversions
+
 object Ternary {
 
   object implicits extends implicits
