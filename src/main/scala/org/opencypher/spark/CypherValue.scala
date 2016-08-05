@@ -2,8 +2,8 @@ package org.opencypher.spark
 
 import java.lang
 
-import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
-import org.apache.spark.sql.{SparkSession, Encoders, Encoder}
+import org.apache.spark.sql.{Encoder, Encoders}
+import org.opencypher.spark.CypherTypes._
 
 import scala.reflect.ClassTag
 
@@ -33,19 +33,27 @@ object CypherValue {
 sealed trait CypherValue extends Any {
   type Repr
   def v: Repr
+
+  def cypherType: CypherType
 }
 
 case object CypherNull extends CypherValue {
   override type Repr = this.type
   override def v = this
+
+  def cypherType = CTNull
 }
 
 final case class CypherString(v: String) extends AnyVal with CypherValue {
   type Repr = String
+
+  def cypherType = CTString
 }
 
 final case class CypherBoolean(v: Boolean) extends AnyVal with CypherValue {
   type Repr = Boolean
+
+  def cypherType = CTBoolean
 }
 
 sealed trait ToNumber extends Any {
@@ -58,12 +66,16 @@ final case class CypherInteger(v: Long) extends AnyVal with CypherValue with ToN
   type Repr = Long
 
   override def toNumber: lang.Long = v.toLong
+
+  def cypherType = CTInteger
 }
 
 final case class CypherFloat(v: Double) extends AnyVal with CypherValue with ToNumber {
   type Repr = Double
 
   override def toNumber: lang.Double = v.toDouble
+
+  def cypherType = CTFloat
 }
 
 object CypherList {
@@ -73,6 +85,8 @@ object CypherList {
 
 final case class CypherList(v: Seq[CypherValue]) extends AnyVal with CypherValue {
   type Repr = Seq[CypherValue]
+
+  def cypherType = CTList(CTAny)
 }
 
 object CypherMap {
@@ -84,6 +98,8 @@ final case class CypherMap(v: Map[String, CypherValue]) extends AnyVal with Cyph
   type Repr = Map[String, CypherValue]
 
   def properties = v
+
+  def cypherType = CTMap
 }
 
 sealed trait HasProperties extends Any {
@@ -105,6 +121,8 @@ sealed trait HasEntityId extends Any {
 final case class CypherNode(id: EntityId, labels: Seq[String], properties: Map[String, CypherValue] = Map.empty) extends CypherValue with HasEntityId with HasProperties {
   type Repr = (Long, CypherNode)
   def v = id.v -> this
+
+  def cypherType = CTNode
 }
 
 final case class CypherRelationship(id: EntityId, start: EntityId, end: EntityId, typ: String, properties: Map[String, CypherValue] = Map.empty) extends CypherValue with HasEntityId with HasProperties {
@@ -121,9 +139,13 @@ final case class CypherRelationship(id: EntityId, start: EntityId, end: EntityId
       else
         throw new IllegalArgumentException(s"Expected either start $start or end $end of relationship $id, but got: $otherId")
     }
+
+  def cypherType = CTRelationship
 }
 
 final case class CypherPath(v: Seq[CypherEntityValue]) extends CypherValue {
   // TODO: Validation
   type Repr = Seq[CypherEntityValue]
+
+  def cypherType = CTPath
 }
