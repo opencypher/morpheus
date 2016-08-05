@@ -5,50 +5,50 @@ import org.scalatest.{Matchers, FunSuite}
 class TernaryTest extends FunSuite with Matchers {
 
   test("ternary names") {
-    TTrue.toString shouldBe "definitely true"
-    TFalse.toString shouldBe "definitely false"
-    TMaybe.toString shouldBe "maybe"
+    True.toString shouldBe "definitely true"
+    False.toString shouldBe "definitely false"
+    Maybe.toString shouldBe "maybe"
   }
 
   test("is true") {
-    TTrue.isTrue shouldBe true
-    TFalse.isTrue shouldBe false
-    TMaybe.isTrue shouldBe false
+    True.isTrue shouldBe true
+    False.isTrue shouldBe false
+    Maybe.isTrue shouldBe false
   }
 
   test("maybe true") {
-    TTrue.maybeTrue shouldBe true
-    TFalse.isTrue shouldBe false
-    TMaybe.maybeTrue shouldBe true
+    True.maybeTrue shouldBe true
+    False.isTrue shouldBe false
+    Maybe.maybeTrue shouldBe true
   }
 
   test("is false") {
-    TTrue.isFalse shouldBe false
-    TFalse.isFalse shouldBe true
-    TMaybe.isFalse shouldBe false
+    True.isFalse shouldBe false
+    False.isFalse shouldBe true
+    Maybe.isFalse shouldBe false
   }
 
   test("maybe false") {
-    TTrue.maybeFalse shouldBe false
-    TFalse.maybeFalse shouldBe true
-    TMaybe.maybeFalse shouldBe true
+    True.maybeFalse shouldBe false
+    False.maybeFalse shouldBe true
+    Maybe.maybeFalse shouldBe true
   }
 
   test("is definite") {
-    TTrue.isDefinite shouldBe true
-    TFalse.isDefinite shouldBe true
-    TMaybe.isDefinite shouldBe false
+    True.isDefinite shouldBe true
+    False.isDefinite shouldBe true
+    Maybe.isDefinite shouldBe false
   }
 
   test("is unknown") {
-    TTrue.isUnknown shouldBe false
-    TFalse.isUnknown shouldBe false
-    TMaybe.isUnknown shouldBe true
+    True.isUnknown shouldBe false
+    False.isUnknown shouldBe false
+    Maybe.isUnknown shouldBe true
   }
 
   test("negation") {
-    TTrue.negated shouldBe TFalse
-    TFalse.negated shouldBe TTrue
-    TMaybe.negated shouldBe TMaybe
+    True.negated shouldBe False
+    False.negated shouldBe True
+    Maybe.negated shouldBe Maybe
   }
 }

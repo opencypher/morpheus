@@ -1,5 +1,17 @@
 package org.opencypher.spark
 
+object Ternary {
+
+  object implicits extends implicits
+
+  trait implicits {
+    implicit def booleanAsTernary(b: Boolean): Ternary = Ternary(b)
+  }
+
+  def apply(v: Boolean): Ternary = if (v) True else False
+  def apply(v: Option[Boolean]): Ternary = v.map(Ternary(_)).getOrElse(Maybe)
+}
+
 sealed trait Ternary {
   def isTrue: Boolean
   def isFalse: Boolean
@@ -17,31 +29,31 @@ sealed private[spark] trait DefiniteTernary extends Ternary {
   def isUnknown: Boolean  = false
 }
 
-case object TTrue extends DefiniteTernary {
+case object True extends DefiniteTernary {
   def isTrue = true
   def isFalse = false
 
   def maybeTrue = true
   def maybeFalse = false
 
-  def negated = TFalse
+  def negated = False
 
   override def toString = "definitely true"
 }
 
-case object TFalse extends DefiniteTernary {
+case object False extends DefiniteTernary {
   def isTrue = false
   def isFalse = true
 
   def maybeTrue = false
   def maybeFalse = true
 
-  def negated = TTrue
+  def negated = True
 
   override def toString = "definitely false"
 }
 
-case object TMaybe extends Ternary {
+case object Maybe extends Ternary {
   def isTrue = false
   def isFalse = false
   def isDefinite = false
@@ -50,7 +62,7 @@ case object TMaybe extends Ternary {
   def maybeTrue = true
   def maybeFalse = true
 
-  def negated = TMaybe
+  def negated = Maybe
 
   override def toString = "maybe"
 }

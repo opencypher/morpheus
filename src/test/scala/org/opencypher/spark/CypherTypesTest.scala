@@ -1,23 +1,26 @@
 package org.opencypher.spark
 
 import org.opencypher.spark.CypherTypes._
-import org.scalatest.{Matchers, FunSuite}
+import org.scalatest.{FunSuite, Matchers}
 
 class CypherTypesTest extends FunSuite with Matchers {
 
-  val materialTypes = Seq(
+  val materialTypes: Seq[MaterialCypherType] = Seq(
     CTAny, CTBoolean, CTNumber, CTInteger, CTFloat, CTString, CTMap,
     CTNode, CTRelationship, CTPath,
     CTList(CTAny),
+    CTWildcard,
     CTVoid
   )
 
-  val nullableTypes = materialTypes.map(_.orNull)
+  val nullableTypes: Seq[NullableCypherType] =
+    materialTypes.map(_.nullable)
 
-  val allTypes = materialTypes ++ nullableTypes
+  val allTypes: Seq[CypherType] =
+    materialTypes ++ nullableTypes
 
   test("type name test") {
-    Seq(
+    Seq[(CypherType, (String, String))](
       CTAny -> ("ANY", "ANY?"),
       CTString -> ("STRING", "STRING?"),
       CTBoolean -> ("BOOLEAN", "BOOLEAN?"),
@@ -29,13 +32,14 @@ class CypherTypesTest extends FunSuite with Matchers {
       CTRelationship -> ("RELATIONSHIP", "RELATIONSHIP?"),
       CTPath -> ("PATH", "PATH?"),
       CTList(CTInteger) -> ("LIST OF INTEGER", "LIST? OF INTEGER"),
-      CTList(CTInteger.orNull) -> ("LIST OF INTEGER?", "LIST? OF INTEGER?")
+      CTList(CTInteger.nullable) -> ("LIST OF INTEGER?", "LIST? OF INTEGER?"),
+      CTWildcard -> ("?", "??")
     ).foreach {
       case (t, (materialName, nullableName)) =>
 
-        t.isMaterialType shouldBe true
+        t.isMaterial shouldBe true
         t.toString shouldBe materialName
-        t.orNull.toString shouldBe nullableName
+        t.nullable.toString shouldBe nullableName
     }
 
     CTVoid.toString shouldBe "VOID"
@@ -43,18 +47,18 @@ class CypherTypesTest extends FunSuite with Matchers {
   }
 
   test("void and null conversion") {
-    CTVoid.orNull shouldBe CTNull
-    CTNull.withoutNull shouldBe CTVoid
+    CTVoid.nullable shouldBe CTNull
+    CTNull.material shouldBe CTVoid
   }
 
   test("all nullable types contain their material types") {
-    materialTypes.foreach(t => t.orNull superTypeOf t)
-    materialTypes.foreach(t => t subTypeOf t.orNull)
+    materialTypes.foreach(t => t.nullable superTypeOf t)
+    materialTypes.foreach(t => t subTypeOf t.nullable)
   }
 
   test("can convert between material and nullable types") {
-    materialTypes.foreach(t => t.orNull.withoutNull == t)
-    nullableTypes.foreach(t => t.withoutNull.orNull == t)
+    materialTypes.foreach(t => t.nullable.material == t)
+    nullableTypes.foreach(t => t.material.nullable == t)
   }
 
   test("subTypeOf as the inverse of superTypeOf") {
@@ -67,49 +71,78 @@ class CypherTypesTest extends FunSuite with Matchers {
   }
 
   test("basic inheritance cases") {
-    CTNumber superTypeOf CTInteger shouldBe true
-    CTNumber superTypeOf CTFloat shouldBe true
-    CTMap superTypeOf CTMap shouldBe true
-    CTMap superTypeOf CTNode shouldBe true
-    CTMap superTypeOf CTRelationship shouldBe true
+    CTNumber superTypeOf CTInteger shouldBe True
+    CTNumber superTypeOf CTFloat shouldBe True
+    CTMap superTypeOf CTMap shouldBe True
+    CTMap superTypeOf CTNode shouldBe True
+    CTMap superTypeOf CTRelationship shouldBe True
 
-    CTAny superTypeOf CTInteger shouldBe true
-    CTAny superTypeOf CTFloat shouldBe true
-    CTAny superTypeOf CTNumber shouldBe true
-    CTAny superTypeOf CTBoolean shouldBe true
-    CTAny superTypeOf CTMap shouldBe true
-    CTAny superTypeOf CTNode shouldBe true
-    CTAny superTypeOf CTRelationship shouldBe true
-    CTAny superTypeOf CTPath shouldBe true
-    CTAny superTypeOf CTList(CTAny) shouldBe true
-    CTAny superTypeOf CTVoid shouldBe true
+    CTAny superTypeOf CTInteger shouldBe True
+    CTAny superTypeOf CTFloat shouldBe True
+    CTAny superTypeOf CTNumber shouldBe True
+    CTAny superTypeOf CTBoolean shouldBe True
+    CTAny superTypeOf CTMap shouldBe True
+    CTAny superTypeOf CTNode shouldBe True
+    CTAny superTypeOf CTRelationship shouldBe True
+    CTAny superTypeOf CTPath shouldBe True
+    CTAny superTypeOf CTList(CTAny) shouldBe True
+    CTAny superTypeOf CTVoid shouldBe True
 
-    CTList(CTNumber) superTypeOf CTList(CTInteger) shouldBe true
+    CTList(CTNumber) superTypeOf CTList(CTInteger) shouldBe True
 
-    CTVoid subTypeOf CTInteger shouldBe true
-    CTVoid subTypeOf CTFloat shouldBe true
-    CTVoid subTypeOf CTNumber shouldBe true
-    CTVoid subTypeOf CTBoolean shouldBe true
-    CTVoid subTypeOf CTMap shouldBe true
-    CTVoid subTypeOf CTNode shouldBe true
-    CTVoid subTypeOf CTRelationship shouldBe true
-    CTVoid subTypeOf CTPath shouldBe true
-    CTVoid subTypeOf CTList(CTAny) shouldBe true
-    CTVoid subTypeOf CTVoid shouldBe true
-    CTVoid subTypeOf CTList(CTInteger) shouldBe true
+    CTVoid subTypeOf CTInteger shouldBe True
+    CTVoid subTypeOf CTFloat shouldBe True
+    CTVoid subTypeOf CTNumber shouldBe True
+    CTVoid subTypeOf CTBoolean shouldBe True
+    CTVoid subTypeOf CTMap shouldBe True
+    CTVoid subTypeOf CTNode shouldBe True
+    CTVoid subTypeOf CTRelationship shouldBe True
+    CTVoid subTypeOf CTPath shouldBe True
+    CTVoid subTypeOf CTList(CTAny) shouldBe True
+    CTVoid subTypeOf CTVoid shouldBe True
+    CTVoid subTypeOf CTList(CTInteger) shouldBe True
 
-    CTBoolean.orNull superTypeOf CTAny  shouldBe false
-    CTAny superTypeOf CTBoolean.orNull shouldBe false
+    CTBoolean.nullable superTypeOf CTAny  shouldBe False
+    CTAny superTypeOf CTBoolean.nullable shouldBe False
   }
 
-  test("reflexivity") {
+  test("same type as") {
     allTypes.foreach { t1 =>
       allTypes.foreach { t2 =>
-        if (t1 == t2) {
-          t1 subTypeOf t2 shouldBe true
-          t2 subTypeOf t1 shouldBe true
-          t1 superTypeOf t2 shouldBe true
-          t2 superTypeOf t1 shouldBe true
+
+        val result = t1 sameTypeAs t2
+        (result isDefinite) should be(
+          (t1.isDefinite && t2.isDefinite) ||
+            (t1.isNullable && t2.isMaterial) ||
+            (t1.isMaterial && t2.isNullable)
+        )
+
+        result match {
+          case True =>
+            t1 subTypeOf t2 shouldBe True
+            t2 subTypeOf t1 shouldBe True
+            t1 superTypeOf t2 shouldBe True
+            t2 superTypeOf t1 shouldBe True
+
+          case False =>
+            if (t1 subTypeOf t2 isTrue)
+              (t2 subTypeOf t1) shouldBe False
+
+            if (t2 subTypeOf t1 isTrue)
+              (t1 subTypeOf t2) shouldBe False
+
+            if (t1 superTypeOf t2 isTrue)
+              (t2 superTypeOf t1) shouldBe False
+
+            if (t2 superTypeOf t1 isTrue)
+              (t1 superTypeOf t2) shouldBe False
+
+          case Maybe =>
+            (
+              (t1.isWildcard || t2.isWildcard) ||
+              (t1.isNullable && t2.isMaterial) ||
+              (t1.isMaterial && t2.isNullable)
+            ) shouldBe true
         }
       }
     }
@@ -118,17 +151,57 @@ class CypherTypesTest extends FunSuite with Matchers {
   test("positive antisymmetry") {
     allTypes.foreach { t1 =>
       allTypes.foreach { t2 =>
-        if (t1 subTypeOf t2) (t2 subTypeOf t1) shouldBe t2 == t1
-        if (t1 superTypeOf t2) (t2 superTypeOf t1) shouldBe t2 == t1
+        if (t1 subTypeOf t2 isTrue) (t2 subTypeOf t1 isTrue) shouldBe (t2 sameTypeAs t1 isTrue)
+        if (t1 superTypeOf t2 isTrue) (t2 superTypeOf t1 isTrue) shouldBe (t2 sameTypeAs t1 isTrue)
       }
     }
   }
 
   test("type equality") {
     allTypes.foreach(t => t == t)
-    allTypes.foreach(t => t subTypeOf t)
+    allTypes.foreach(t => t superTypeOf  t)
     allTypes.foreach(t => t subTypeOf t)
     allTypes.foreach(t => (t join t) == t)
     allTypes.foreach(t => (t meet t) == t)
+  }
+
+  test("erasure") {
+    CTWildcard.definiteSuperType sameTypeAs CTAny shouldBe True
+    CTWildcard.nullable.definiteSuperType sameTypeAs CTAny.nullable shouldBe True
+    CTList(CTWildcard).definiteSuperType sameTypeAs CTList(CTAny) shouldBe True
+    CTList(CTWildcard.nullable).definiteSuperType sameTypeAs CTList(CTAny.nullable) shouldBe True
+    CTList(CTBoolean).definiteSuperType sameTypeAs CTList(CTBoolean) shouldBe True
+    CTList(CTBoolean).nullable.definiteSuperType sameTypeAs CTList(CTBoolean).nullable shouldBe True
+
+    CTWildcard.definiteSubType sameTypeAs CTVoid shouldBe True
+    CTWildcard.nullable.definiteSubType sameTypeAs CTNull shouldBe True
+    CTList(CTWildcard).definiteSubType sameTypeAs CTList(CTVoid) shouldBe True
+    CTList(CTWildcard.nullable).definiteSubType sameTypeAs CTList(CTNull) shouldBe True
+    CTList(CTBoolean).definiteSubType sameTypeAs CTList(CTBoolean) shouldBe True
+    CTList(CTBoolean).nullable.definiteSubType sameTypeAs CTList(CTBoolean).nullable shouldBe True
+  }
+
+  test("unknown") {
+    (CTAny superTypeOf CTWildcard) shouldBe True
+    (CTWildcard superTypeOf CTVoid) shouldBe True
+    (CTWildcard superTypeOf CTAny) shouldBe Maybe
+    (CTVoid superTypeOf CTWildcard) shouldBe Maybe
+
+    (CTAny subTypeOf CTWildcard) shouldBe Maybe
+    (CTWildcard subTypeOf CTVoid) shouldBe Maybe
+    (CTWildcard subTypeOf CTAny) shouldBe True
+    (CTVoid subTypeOf CTWildcard) shouldBe True
+
+    materialTypes.foreach { t => (t join CTWildcard).definiteSuperType shouldBe CTAny }
+    materialTypes.foreach { t => (t meet CTWildcard).definiteSubType shouldBe CTVoid }
+
+    materialTypes.foreach { t => (t join CTWildcard.nullable).definiteSuperType shouldBe CTAny.nullable }
+    materialTypes.foreach { t => (t meet CTWildcard.nullable).definiteSubType shouldBe CTVoid }
+
+    nullableTypes.foreach { t => (t join CTWildcard.nullable).definiteSuperType shouldBe CTAny.nullable }
+    nullableTypes.foreach { t => (t meet CTWildcard.nullable).definiteSubType shouldBe CTNull }
+
+    nullableTypes.foreach { t => (t join CTWildcard).definiteSuperType shouldBe CTAny.nullable }
+    nullableTypes.foreach { t => (t meet CTWildcard).definiteSubType shouldBe CTVoid }
   }
 }
