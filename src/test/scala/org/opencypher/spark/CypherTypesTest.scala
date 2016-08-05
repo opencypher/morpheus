@@ -11,6 +11,8 @@ class CypherTypesTest extends FunSuite with Matchers {
     CTAny, CTBoolean, CTNumber, CTInteger, CTFloat, CTString, CTMap,
     CTNode, CTRelationship, CTPath,
     CTList(CTAny),
+    CTList(CTList(CTBoolean)),
+    CTList(CTWildcard),
     CTWildcard,
     CTVoid
   )
@@ -121,23 +123,23 @@ class CypherTypesTest extends FunSuite with Matchers {
 
         result match {
           case True =>
-            t1 subTypeOf t2 shouldBe True
-            t2 subTypeOf t1 shouldBe True
-            t1 superTypeOf t2 shouldBe True
-            t2 superTypeOf t1 shouldBe True
+            (t1 subTypeOf t2).maybeTrue shouldBe true
+            (t2 subTypeOf t1).maybeTrue shouldBe true
+            (t1 superTypeOf t2).maybeTrue shouldBe true
+            (t2 superTypeOf t1).maybeTrue shouldBe true
 
           case False =>
             if (t1 subTypeOf t2 isTrue)
-              (t2 subTypeOf t1) shouldBe False
+              (t2 subTypeOf t1).maybeFalse shouldBe true
 
             if (t2 subTypeOf t1 isTrue)
-              (t1 subTypeOf t2) shouldBe False
+              (t1 subTypeOf t2).maybeFalse shouldBe true
 
             if (t1 superTypeOf t2 isTrue)
-              (t2 superTypeOf t1) shouldBe False
+              (t2 superTypeOf t1).maybeFalse shouldBe true
 
             if (t2 superTypeOf t1 isTrue)
-              (t1 superTypeOf t2) shouldBe False
+              (t1 superTypeOf t2).maybeFalse shouldBe true
 
           case Maybe =>
             (

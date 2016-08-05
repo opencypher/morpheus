@@ -3,6 +3,8 @@ package org.opencypher.spark
 import CypherTypes._
 import Ternary.implicits._
 
+import scala.language.postfixOps
+
 object CypherTypes {
 
   case object CTAny extends MaterialDefiniteCypherType with MaterialDefiniteCypherType.DefaultOrNull {
