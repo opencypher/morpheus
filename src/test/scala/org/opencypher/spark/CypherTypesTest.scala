@@ -33,7 +33,7 @@ class CypherTypesTest extends FunSuite with Matchers {
     ).foreach {
       case (t, (materialName, nullableName)) =>
 
-        t.isMaterial shouldBe true
+        t.isMaterialType shouldBe true
         t.toString shouldBe materialName
         t.orNull.toString shouldBe nullableName
     }

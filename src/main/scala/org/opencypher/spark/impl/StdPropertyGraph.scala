@@ -2,6 +2,7 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
+import org.apache.spark.sql.types.{IntegerType, DataType}
 import org.opencypher.spark._
 
 import scala.collection.immutable.ListMap
@@ -197,6 +198,46 @@ abstract class StdPropertyGraph(implicit private val session: SparkSession) exte
       ???
   }
 }
+
+//
+//
+//trait CypherFrame {
+//  def fields: Seq[CypherField]
+//}
+//
+//trait CypherField {
+//  def name: String
+//  def cypherType: CypherType
+//}
+//
+//
+//trait StdFrame extends CypherFrame {
+//  override def fields: Seq[StdField]
+//  val inner: DataFrame
+//}
+//
+//trait StdField extends CypherField {
+//  def subFields: Seq[SubField]
+//}
+//
+//case class SubField(name: String, subFieldType: SubFieldType)
+//
+//sealed trait SubFieldType {
+//  def dataType: DataType
+//}
+//
+//case object STInteger extends SubFieldType {
+//  def dataType = IntegerType
+//}
+//
+//trait StdRelField extends StdField {
+//
+//  def subFields = Seq("start", "end", "id", "val")
+//
+//  def startNodeId: String = s"start_$name"
+//}
+
+
 
 class StdFrame(ds: Dataset[StdRecord], columns: Map[String, Int])(implicit session: SparkSession) {
   def result: CypherResult = new StdCypherResult(ds, columns)
