@@ -170,19 +170,19 @@ class CypherTypesTest extends FunSuite with Matchers {
   }
 
   test("computing definite types (type erasure)") {
-    CTWildcard.definiteSuperType sameTypeAs CTAny shouldBe True
-    CTWildcard.nullable.definiteSuperType sameTypeAs CTAny.nullable shouldBe True
-    CTList(CTWildcard).definiteSuperType sameTypeAs CTList(CTAny) shouldBe True
-    CTList(CTWildcard.nullable).definiteSuperType sameTypeAs CTList(CTAny.nullable) shouldBe True
-    CTList(CTBoolean).definiteSuperType sameTypeAs CTList(CTBoolean) shouldBe True
-    CTList(CTBoolean).nullable.definiteSuperType sameTypeAs CTList(CTBoolean).nullable shouldBe True
+    CTWildcard.erasedSuperType sameTypeAs CTAny shouldBe True
+    CTWildcard.nullable.erasedSuperType sameTypeAs CTAny.nullable shouldBe True
+    CTList(CTWildcard).erasedSuperType sameTypeAs CTList(CTAny) shouldBe True
+    CTList(CTWildcard.nullable).erasedSuperType sameTypeAs CTList(CTAny.nullable) shouldBe True
+    CTList(CTBoolean).erasedSuperType sameTypeAs CTList(CTBoolean) shouldBe True
+    CTList(CTBoolean).nullable.erasedSuperType sameTypeAs CTList(CTBoolean).nullable shouldBe True
 
-    CTWildcard.definiteSubType sameTypeAs CTVoid shouldBe True
-    CTWildcard.nullable.definiteSubType sameTypeAs CTNull shouldBe True
-    CTList(CTWildcard).definiteSubType sameTypeAs CTList(CTVoid) shouldBe True
-    CTList(CTWildcard.nullable).definiteSubType sameTypeAs CTList(CTNull) shouldBe True
-    CTList(CTBoolean).definiteSubType sameTypeAs CTList(CTBoolean) shouldBe True
-    CTList(CTBoolean).nullable.definiteSubType sameTypeAs CTList(CTBoolean).nullable shouldBe True
+    CTWildcard.erasedSubType sameTypeAs CTVoid shouldBe True
+    CTWildcard.nullable.erasedSubType sameTypeAs CTNull shouldBe True
+    CTList(CTWildcard).erasedSubType sameTypeAs CTList(CTVoid) shouldBe True
+    CTList(CTWildcard.nullable).erasedSubType sameTypeAs CTList(CTNull) shouldBe True
+    CTList(CTBoolean).erasedSubType sameTypeAs CTList(CTBoolean) shouldBe True
+    CTList(CTBoolean).nullable.erasedSubType sameTypeAs CTList(CTBoolean).nullable shouldBe True
   }
 
   test("handling wildcard types") {
@@ -196,16 +196,35 @@ class CypherTypesTest extends FunSuite with Matchers {
     (CTWildcard subTypeOf CTAny) shouldBe True
     (CTVoid subTypeOf CTWildcard) shouldBe True
 
-    materialTypes.foreach { t => (t join CTWildcard).definiteSuperType shouldBe CTAny }
-    materialTypes.foreach { t => (t meet CTWildcard).definiteSubType shouldBe CTVoid }
+    materialTypes.foreach { t => (t join CTWildcard).erasedSuperType shouldBe CTAny }
+    materialTypes.foreach { t => (t meet CTWildcard).erasedSubType shouldBe CTVoid }
 
-    materialTypes.foreach { t => (t join CTWildcard.nullable).definiteSuperType shouldBe CTAny.nullable }
-    materialTypes.foreach { t => (t meet CTWildcard.nullable).definiteSubType shouldBe CTVoid }
+    materialTypes.foreach { t => (t join CTWildcard.nullable).erasedSuperType shouldBe CTAny.nullable }
+    materialTypes.foreach { t => (t meet CTWildcard.nullable).erasedSubType shouldBe CTVoid }
 
-    nullableTypes.foreach { t => (t join CTWildcard.nullable).definiteSuperType shouldBe CTAny.nullable }
-    nullableTypes.foreach { t => (t meet CTWildcard.nullable).definiteSubType shouldBe CTNull }
+    nullableTypes.foreach { t => (t join CTWildcard.nullable).erasedSuperType shouldBe CTAny.nullable }
+    nullableTypes.foreach { t => (t meet CTWildcard.nullable).erasedSubType shouldBe CTNull }
 
-    nullableTypes.foreach { t => (t join CTWildcard).definiteSuperType shouldBe CTAny.nullable }
-    nullableTypes.foreach { t => (t meet CTWildcard).definiteSubType shouldBe CTVoid }
+    nullableTypes.foreach { t => (t join CTWildcard).erasedSuperType shouldBe CTAny.nullable }
+    nullableTypes.foreach { t => (t meet CTWildcard).erasedSubType shouldBe CTVoid }
+  }
+
+  test("contains wildcard") {
+    CTNode.containsWildcard shouldBe false
+    CTWildcard.containsWildcard shouldBe true
+    CTWildcard.nullable.containsWildcard shouldBe true
+    CTList(CTAny).containsWildcard shouldBe false
+    CTList(CTList(CTWildcard)).containsWildcard shouldBe true
+    CTList(CTList(CTWildcard.nullable)).containsWildcard shouldBe true
+  }
+
+  test("contains nullable") {
+    CTNode.containsNullable shouldBe false
+    CTNode.nullable.containsNullable shouldBe true
+    CTWildcard.containsNullable shouldBe false
+    CTWildcard.nullable.containsNullable shouldBe true
+    CTList(CTAny).containsNullable shouldBe false
+    CTList(CTList(CTWildcard)).containsNullable shouldBe false
+    CTList(CTList(CTWildcard.nullable)).containsNullable shouldBe true
   }
 }

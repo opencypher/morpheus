@@ -73,11 +73,14 @@ object CypherTypes {
     def nullable =
       CTListOrNull(eltType)
 
-    override def definiteSuperType =
-      CTList(eltType.definiteSuperType)
+    override def containsNullable = eltType.containsNullable
+    override def containsWildcard = eltType.containsWildcard
 
-    override def definiteSubType =
-      CTList(eltType.definiteSubType)
+    override def erasedSuperType =
+      CTList(eltType.erasedSuperType)
+
+    override def erasedSubType =
+      CTList(eltType.erasedSubType)
 
     def superTypeOf(other: CypherType) = other match {
       case CTList(otherEltType) => eltType superTypeOf otherEltType
@@ -93,11 +96,13 @@ object CypherTypes {
     def material =
       CTList(eltType)
 
-    override def definiteSuperType =
-      CTListOrNull(eltType.definiteSuperType)
+    override def containsWildcard = eltType.containsWildcard
 
-    override def definiteSubType =
-      CTListOrNull(eltType.definiteSubType)
+    override def erasedSuperType =
+      CTListOrNull(eltType.erasedSuperType)
+
+    override def erasedSubType =
+      CTListOrNull(eltType.erasedSubType)
   }
 
   case object CTVoid extends MaterialDefiniteCypherType {
@@ -131,8 +136,8 @@ object CypherTypes {
     override def sameTypeAs(other: CypherType) =
       if (other.isMaterial) Maybe else False
 
-    def definiteSuperType = CTAny
-    def definiteSubType = CTVoid
+    def erasedSuperType = CTAny
+    def erasedSubType = CTVoid
 
     // super type of
     override def superTypeOf(other: CypherType): Ternary = other match {
@@ -148,8 +153,8 @@ object CypherTypes {
       def nullable = self
       def material = CTWildcard
 
-      override def definiteSuperType = CTAny.nullable
-      override def definiteSubType = CTNull
+      override def erasedSuperType = CTAny.nullable
+      override def erasedSubType = CTNull
 
       override def sameTypeAs(other: CypherType) =
         if (other.isNullable) Maybe else False
@@ -162,21 +167,47 @@ object CypherTypes {
 sealed trait CypherType {
   self =>
 
+  // We distinguish types in a 4x4 matrix
+  //
+  // (I) nullable (includes null) vs material
+  //
+
+  // true, if null is a value of this type
   def isNullable: Boolean
+
+  // false, if null is a value of this type
   def isMaterial: Boolean
 
+  // (II) definite (a single known type) vs a wildcard (standing for an arbitrary unknown type)
+  //
+
+  // true, if this type only (i.e. excluding type parameters) is not a wildcard
   def isDefinite: Boolean
+
+  // true, if this type only (i.e. excluding type parameters) is a wildcard
   def isWildcard: Boolean
 
   final override def toString: String = name
 
   def name: String
 
+  // identical type that additionally includes null
   def nullable: NullableCypherType
+
+  // identical type that additionally does not include null
   def material: MaterialCypherType
 
-  def definiteSuperType: CypherType with DefiniteCypherType
-  def definiteSubType: CypherType with DefiniteCypherType
+  // true, if this type or any of its type parameters include null
+  def containsNullable = isNullable
+
+  // true, if this type or any of its type parameters is a wildcard
+  def containsWildcard = isWildcard
+
+  // smallest super type of this type that does not contain a wildcard
+  def erasedSuperType: CypherType with DefiniteCypherType
+
+  // largest sub type of this type that does not contain a wildcard
+  def erasedSubType: CypherType with DefiniteCypherType
 
   // join == union type == smallest shared super type
   final def join(other: CypherType): CypherType =
@@ -212,8 +243,8 @@ sealed trait MaterialCypherType extends CypherType {
   final def isNullable = false
   final def isMaterial = true
 
-  override def definiteSuperType: MaterialCypherType with DefiniteCypherType
-  override def definiteSubType: MaterialCypherType with DefiniteCypherType
+  override def erasedSuperType: MaterialCypherType with DefiniteCypherType
+  override def erasedSubType: MaterialCypherType with DefiniteCypherType
 }
 
 sealed trait NullableCypherType extends CypherType {
@@ -222,8 +253,8 @@ sealed trait NullableCypherType extends CypherType {
   final def isNullable = true
   final def isMaterial = false
 
-  override def definiteSuperType: NullableCypherType with DefiniteCypherType
-  override def definiteSubType: NullableCypherType with DefiniteCypherType
+  override def erasedSuperType: NullableCypherType with DefiniteCypherType
+  override def erasedSubType: NullableCypherType with DefiniteCypherType
 
   def superTypeOf(other: CypherType) =
     material superTypeOf other.material
@@ -238,8 +269,8 @@ sealed trait DefiniteCypherType {
   override def nullable: NullableCypherType with DefiniteCypherType
   override def material: MaterialCypherType with DefiniteCypherType
 
-  override def definiteSuperType: CypherType with DefiniteCypherType
-  override def definiteSubType: CypherType with DefiniteCypherType
+  override def erasedSuperType: CypherType with DefiniteCypherType
+  override def erasedSubType: CypherType with DefiniteCypherType
 }
 
 sealed trait WildcardCypherType {
@@ -269,8 +300,8 @@ sealed private[spark] trait MaterialDefiniteCypherType extends MaterialCypherTyp
 
   override def material = self
 
-  override def definiteSuperType: MaterialCypherType with DefiniteCypherType = self
-  override def definiteSubType: MaterialCypherType with DefiniteCypherType= self
+  override def erasedSuperType: MaterialCypherType with DefiniteCypherType = self
+  override def erasedSubType: MaterialCypherType with DefiniteCypherType= self
 }
 
 sealed private[spark] trait NullableDefiniteCypherType extends NullableCypherType with DefiniteCypherType {
@@ -278,8 +309,8 @@ sealed private[spark] trait NullableDefiniteCypherType extends NullableCypherTyp
 
   override def nullable = self
 
-  def definiteSuperType: NullableCypherType with DefiniteCypherType = material.definiteSuperType.nullable
-  def definiteSubType: NullableCypherType with DefiniteCypherType = material.definiteSubType.nullable
+  def erasedSuperType: NullableCypherType with DefiniteCypherType = material.erasedSuperType.nullable
+  def erasedSubType: NullableCypherType with DefiniteCypherType = material.erasedSubType.nullable
 }
 
 sealed private[spark] trait MaterialDefiniteCypherLeafType extends MaterialDefiniteCypherType with MaterialDefiniteCypherType.DefaultOrNull {
