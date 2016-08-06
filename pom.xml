@@ -9,6 +9,7 @@
     <version>1.0-SNAPSHOT</version>
 
     <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>1.8</java.version>
         <scala.version>2.11.8</scala.version>
         <scala.binary.version>2.11</scala.binary.version>
@@ -43,6 +44,7 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <recompileMode>incremental</recompileMode>
                     <scalaVersion>${scala.version}</scalaVersion>
                     <scalaCompatVersion>${scala.binary.version}</scalaCompatVersion>
                 </configuration>
@@ -78,6 +80,12 @@
                 </executions>
             </plugin>
 
+            <!-- enable scalastyle (configured below in pluginManagement) -->
+            <plugin>
+                <groupId>org.scalastyle</groupId>
+                <artifactId>scalastyle-maven-plugin</artifactId>
+            </plugin>
+
             <!-- add version information to jar -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -93,41 +101,6 @@
                 </configuration>
             </plugin>
 
-            <!-- shade plugin -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>2.4.3</version>
-                <executions>
-                    <!-- run shade goal on package phase -->
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <shadedArtifactAttached>true</shadedArtifactAttached>
-                            <shadedClassifierName>shell</shadedClassifierName>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>org.opencypher.spark.Shell</mainClass>
-                                </transformer>
-                            </transformers>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
             <!-- provide ammonite repl via command line -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -140,7 +113,104 @@
             </plugin>
 
         </plugins>
+
+        <pluginManagement>
+
+            <plugins>
+                <plugin>
+                    <groupId>org.scalastyle</groupId>
+                    <artifactId>scalastyle-maven-plugin</artifactId>
+                    <version>0.8.0</version>
+                    <configuration>
+                        <verbose>false</verbose>
+                        <failOnViolation>true</failOnViolation>
+                        <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                        <failOnWarning>false</failOnWarning>
+                        <inputEncoding>UTF-8</inputEncoding>
+                        <sourceDirectory>${basedir}/src/main/scala</sourceDirectory>
+                        <testSourceDirectory>${basedir}/src/test/scala</testSourceDirectory>
+                        <configLocation>${project.basedir}/etc/scalastyle_config.xml</configLocation>
+                        <outputFile>${basedir}/target/scalastyle-output.xml</outputFile>
+                        <outputEncoding>UTF-8</outputEncoding>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <phase>test</phase>
+                            <goals>
+                                <goal>check</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+
+        </pluginManagement>
+
     </build>
+
+    <profiles>
+        <profile>
+            <id>skipShade</id>
+            <activation>
+                <property>
+                    <name>skipShade</name>
+                    <value>!true</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <!-- shade plugin -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-shade-plugin</artifactId>
+                        <version>2.4.3</version>
+                        <executions>
+                            <!-- run shade goal on package phase -->
+                            <execution>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>shade</goal>
+                                </goals>
+                                <configuration>
+                                    <shadedArtifactAttached>true</shadedArtifactAttached>
+                                    <shadedClassifierName>standalone-shell</shadedClassifierName>
+                                    <createDependencyReducedPom>true</createDependencyReducedPom>
+                                    <artifactSet>
+                                        <excludes>
+                                            <exclude>junit:junit</exclude>
+                                            <exclude>jmock:*</exclude>
+                                            <exclude>org.scalatest:*</exclude>
+                                            <exclude>org.scalacheck:*</exclude>
+                                            <exclude>org.apache.maven:lib:tests</exclude>
+                                            <exclude>commons-beanutils:*</exclude>
+                                            <exclude>aopalliance:*</exclude>
+                                            <exclude>javax.inject:*</exclude>
+                                        </excludes>
+                                    </artifactSet>
+                                    <transformers>
+                                        <transformer
+                                                implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                            <mainClass>org.opencypher.spark.Shell</mainClass>
+                                        </transformer>
+                                    </transformers>
+                                    <filters>
+                                        <filter>
+                                            <artifact>*:*</artifact>
+                                            <excludes>
+                                                <exclude>META-INF/*.SF</exclude>
+                                                <exclude>META-INF/*.DSA</exclude>
+                                                <exclude>META-INF/*.RSA</exclude>
+                                            </excludes>
+                                        </filter>
+                                    </filters>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
     <dependencies>
 
@@ -170,24 +240,29 @@
 
         <dependency>
             <groupId>org.apache.spark</groupId>
+            <artifactId>spark-catalyst_2.11</artifactId>
+            <version>2.0.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.spark</groupId>
             <artifactId>spark-graphx_2.11</artifactId>
             <version>2.0.0</version>
         </dependency>
 
         <dependency>
             <groupId>com.lihaoyi</groupId>
-            <artifactId>ammonite-shell_2.11</artifactId>
+            <artifactId>ammonite_2.11.8</artifactId>
+            <version>0.7.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.lihaoyi</groupId>
+            <artifactId>ammonite-ops_2.11</artifactId>
             <version>0.7.0</version>
         </dependency>
 
         <!-- Tests -->
-
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.12</version>
-            <scope>test</scope>
-        </dependency>
 
         <dependency>
             <groupId>org.scalatest</groupId>
@@ -202,12 +277,20 @@
             </exclusions>
         </dependency>
 
-        <dependency>
-            <groupId>org.scalacheck</groupId>
-            <artifactId>scalacheck_2.11</artifactId>
-            <version>1.13.0</version>
-            <scope>test</scope>
-        </dependency>
+        <!--<dependency>-->
+        <!--<groupId>junit</groupId>-->
+        <!--<artifactId>junit</artifactId>-->
+        <!--<version>4.12</version>-->
+        <!--<scope>test</scope>-->
+        <!--</dependency>-->
+
+        <!--<dependency>-->
+        <!--<groupId>org.scalacheck</groupId>-->
+        <!--<artifactId>scalacheck_2.11</artifactId>-->
+        <!--<version>1.13.0</version>-->
+        <!--<scope>test</scope>-->
+        <!--</dependency>-->
+
     </dependencies>
 
 </project>

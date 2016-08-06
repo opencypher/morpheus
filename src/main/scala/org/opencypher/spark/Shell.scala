@@ -12,7 +12,7 @@ object Shell {
     try {
       val welcomeBanner = {
         val ownVersion = getClass.getPackage.getImplementationVersion
-        val ownVersionString = if (ownVersion == null) "Version unknown" else s"Version $ownVersion"
+        val ownVersionString = if (ownVersion == null) "Version <unknown>" else s"Version $ownVersion"
         val ammoniteVersion = ammonite.Constants.version
         val scalaVersion = scala.util.Properties.versionNumberString
         val javaVersion = System.getProperty("java.version")
@@ -22,11 +22,14 @@ object Shell {
               = open      |                                     |
               =/~~\  /|~~\|/~\ /~/|/~\  /~\|/~\   (~|~~\/~~||/~\|_/
               =\__ \/ |__/|   |\/_|     \_/|   |  _)|__/\__||   | \
-              =   _/  |                             |
+              =   _/  |             TM              |
               =""".stripMargin('=') +
           s"""|
               |$ownVersionString
-              |(Spark $sparkVersion Scala $scalaVersion Java $javaVersion Ammonite $ammoniteVersion)
+              |(Apache Spark $sparkVersion, Scala $scalaVersion, Java $javaVersion, Ammonite $ammoniteVersion)
+              |
+              |Cypher is a registered trademark of Neo Technology, Inc.
+              |
            """.stripMargin
         )
       }
