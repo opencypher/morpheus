@@ -101,7 +101,7 @@
                 </configuration>
             </plugin>
 
-            <!-- provide ammonite repl via command line -->
+            <!-- setup ammonite repl runner -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
@@ -194,6 +194,49 @@
                                         </transformer>
                                     </transformers>
                                     <filters>
+
+                                        <filter>
+                                            <artifact>jline:jline</artifact>
+                                            <excludes>
+                                                <exclude>org/fusesource/hawtjni/runtime/Library.class</exclude>
+                                                <exclude>org/fusesource/hawtjni/runtime/PointerMath.class</exclude>
+                                                <exclude>org/fusesource/hawtjni/runtime/Callback.class</exclude>
+                                                <exclude>org/fusesource/hawtjni/runtime/JNIEnv.class</exclude>
+                                            </excludes>
+                                        </filter>
+
+                                        <filter>
+                                            <artifact>org.apache.spark:*</artifact>
+                                            <excludes>
+                                                <exclude>org/apache/spark/unused/UnusedStubClass.class</exclude>
+                                            </excludes>
+                                        </filter>
+
+                                        <filter>
+                                            <artifact>com.lihaoyi:ammonite-ops_2.11</artifact>
+                                            <excludes>
+                                                <exclude>ammonite/Constants.class</exclude>
+                                                <exclude>ammonite/Constants$.class</exclude>
+                                            </excludes>
+                                        </filter>
+
+                                        <filter>
+                                            <artifact>com.lihaoyi:ammonite-terminal_2.11</artifact>
+                                            <excludes>
+                                                <exclude>ammonite/Constants.class</exclude>
+                                                <exclude>ammonite/Constants$.class</exclude>
+                                            </excludes>
+                                        </filter>
+
+                                        <filter>
+                                            <artifact>org.apache.hadoop:hadoop-yarn-api</artifact>
+                                            <excludes>
+                                                <exclude>org/apache/hadoop/yarn/util/package-info.class</exclude>
+                                                <exclude>org/apache/hadoop/yarn/factories/package-info.class</exclude>
+                                                <exclude>org/apache/hadoop/yarn/factory/providers/package-info.class</exclude>
+                                            </excludes>
+                                        </filter>
+
                                         <filter>
                                             <artifact>*:*</artifact>
                                             <excludes>
