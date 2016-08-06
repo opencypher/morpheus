@@ -17,29 +17,26 @@ class StdPropertyGraphFactory(implicit private val session: SparkSession) extend
 
   private def sc = session.sqlContext
 
-  override def addNode(properties: Map[String, CypherValue]): EntityId =
-    nodeIds { id => nodes += CypherNode(id, Seq.empty, properties) }
+  override def addNode(labels: Set[String], properties: Map[String, CypherValue]): EntityId =
+    nodeIds { id => nodes += CypherNode(id, labels.toSeq, properties) }
 
-  override def addLabeledNode(labels: String*)(properties: Map[String, CypherValue]): EntityId =
-    nodeIds { id => nodes += CypherNode(id, labels, properties) }
+  override def addRelationship(startId: EntityId, relationshipType: String, endId: EntityId, properties: Map[String, CypherValue]): EntityId =
+    relationshipIds { id => relationships += CypherRelationship(id, startId, endId, relationshipType, properties) }
 
-  override def addRelationship(start: EntityId, end: EntityId, typ: String, properties: Map[String, CypherValue]): EntityId =
-    relationshipIds { id => relationships += CypherRelationship(id, start, end, typ, properties) }
-
-  override def reset(): Unit = {
-    nodes.clear()
-    relationships.clear()
-    nodeIds.set(0)
-    relationshipIds.set(0)
-  }
-
-  override def result: StdPropertyGraph =
+  override def graph: StdPropertyGraph =
     new StdPropertyGraph {
       import CypherValue.implicits._
 
       val nodes = sc.createDataset(factory.nodes.result)
       val relationships = sc.createDataset(factory.relationships.result)
     }
+
+  override def clear(): Unit = {
+    nodes.clear()
+    relationships.clear()
+    nodeIds.set(0)
+    relationshipIds.set(0)
+  }
 
   implicit class RichAtomicLong(pool: AtomicLong) {
     def apply(f: EntityId => Unit): EntityId = {
@@ -49,3 +46,4 @@ class StdPropertyGraphFactory(implicit private val session: SparkSession) extend
     }
   }
 }
+

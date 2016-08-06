@@ -15,6 +15,8 @@
 
     <build>
         <plugins>
+
+            <!-- setup scalac -->
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
@@ -43,7 +45,8 @@
                     <skipTests>true</skipTests>
                 </configuration>
             </plugin>
-            <!-- enable scalatest -->
+
+            <!-- enable scala test -->
             <plugin>
                 <groupId>org.scalatest</groupId>
                 <artifactId>scalatest-maven-plugin</artifactId>
@@ -62,6 +65,16 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!-- provide ammonite repl -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>org.opencypher.spark.Shell</mainClass>
+                </configuration>
+            </plugin>
+
         </plugins>
     </build>
 
@@ -88,6 +101,12 @@
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-graphx_2.11</artifactId>
             <version>2.0.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.lihaoyi</groupId>
+            <artifactId>ammonite-shell_2.11</artifactId>
+            <version>0.7.0</version>
         </dependency>
 
         <!-- Tests -->

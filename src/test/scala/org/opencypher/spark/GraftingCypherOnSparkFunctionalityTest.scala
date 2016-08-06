@@ -1,14 +1,14 @@
 package org.opencypher.spark
 
-import org.apache.spark.sql.{Encoders, Dataset}
+import org.apache.spark.sql.Dataset
 import org.opencypher.spark.impl.StdPropertyGraph
 import org.scalatest.FunSuite
 
 class GraftingCypherOnSparkFunctionalityTest extends FunSuite {
 
+  import CypherValue.implicits._
   import StdPropertyGraph.SupportedQueries
   import TestPropertyGraphs.session.implicits._
-  import CypherValue.implicits._
 
 
   test("all node scan") {

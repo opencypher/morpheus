@@ -5,17 +5,21 @@ import org.opencypher.spark.impl.StdPropertyGraphFactory
 
 object TestPropertyGraphs {
 
-  implicit val session: SparkSession = SparkSession.builder().appName("test").master("local").getOrCreate()
+  implicit val session: SparkSession = SparkSession.builder().master("local[4]").getOrCreate()
+
+  import EntityData._
+  import CypherValue.implicits._
+
 
   def graph1: PropertyGraph = {
     val factory = new StdPropertyGraphFactory
-    val n1 = factory.addNode(Map("prop" -> CypherString("value")))
-    val n2 = factory.addLabeledNode("B")()
-    val n3 = factory.addLabeledNode("A", "B")()
-    val n4 = factory.addLabeledNode("A")(Map("prop" -> CypherString("foo")))
-    factory.addRelationship(n1, n2, "KNOWS")
-    factory.addRelationship(n4, n2, "T")
-    factory.result
+    val n1 = factory.add(newNode.withProperties("prop" -> CypherString("value")))
+    val n2 = factory.add(newLabeledNode("B"))
+    val n3 = factory.add(newLabeledNode("A", "B"))
+    val n4 = factory.add(newLabeledNode("A").withProperties("prop" -> "foo"))
+    factory.add(newRelationship(n1 -> "KNOWS" -> n2))
+    factory.add(newRelationship(n4 -> "T" -> n2))
+    factory.graph
   }
 
   def graph2: PropertyGraph = {
@@ -23,55 +27,51 @@ object TestPropertyGraphs {
     import CypherValue.implicits._
 
     val factory = new StdPropertyGraphFactory
-    factory.addNode(Map("prop" -> "value"))
-    factory.addNode(Map("prop" -> true))
-    factory.addNode(Map("prop" -> 42))
-    factory.addNode(Map("prop" -> 23.1))
-    factory.addNode(Map("prop" -> Seq(CypherString("Hallo"), CypherBoolean(true))))
-    factory.addNode(Map("prop" -> Seq(Map[String, CypherValue]("a" -> "Hallo", "b" -> true))))
-    factory.result
+    factory.add(newNode.withProperties("prop" -> "value"))
+    factory.add(newNode.withProperties("prop" -> true))
+    factory.add(newNode.withProperties("prop" -> 42))
+    factory.add(newNode.withProperties("prop" -> 23.1))
+    factory.add(newNode.withProperties("prop" -> Seq(CypherString("Hallo"), CypherBoolean(true))))
+    factory.add(newNode.withProperties("prop" -> Seq(Map[String, CypherValue]("a" -> "Hallo", "b" -> true))))
+    factory.graph
   }
 
 
   def graph3: PropertyGraph = {
 
-    import CypherValue.implicits._
-
     val factory = new StdPropertyGraphFactory
-    factory.addLabeledNode("B")(Map("name" -> "Sasha", "age" -> 4))
-    factory.addLabeledNode("B")(Map("name" -> "Sasha", "age" -> 16))
-    factory.addLabeledNode("B")(Map("name" -> "Ava", "age" -> 2))
-    factory.addLabeledNode("A")(Map("name" -> "Mats", "age" -> 28))
-    factory.addLabeledNode("A")(Map("name" -> "Stefan", "age" -> 37))
-    factory.addLabeledNode("A")(Map("name" -> "Stefan", "age" -> 58))
-    factory.addLabeledNode("B")(Map("name" -> "Stefan", "age" -> 4))
-    factory.addLabeledNode("A")()
-    factory.addLabeledNode("B")()
-    factory.result
+    factory.add(newLabeledNode("B").withProperties("name" -> "Sasha", "age" -> 4))
+    factory.add(newLabeledNode("B").withProperties("name" -> "Sasha", "age" -> 16))
+    factory.add(newLabeledNode("B").withProperties("name" -> "Ava", "age" -> 2))
+    factory.add(newLabeledNode("A").withProperties("name" -> "Mats", "age" -> 28))
+    factory.add(newLabeledNode("A").withProperties("name" -> "Stefan", "age" -> 37))
+    factory.add(newLabeledNode("A").withProperties("name" -> "Stefan", "age" -> 58))
+    factory.add(newLabeledNode("B").withProperties("name" -> "Stefan", "age" -> 4))
+    factory.add(newLabeledNode("A"))
+    factory.add(newLabeledNode("B"))
+    factory.graph
   }
 
   def graph4: PropertyGraph = {
 
-    import CypherValue.implicits._
-
     val factory = new StdPropertyGraphFactory
-    val n1 = factory.addLabeledNode("A")()
-    val n2 = factory.addLabeledNode("A")()
-    val n3 = factory.addLabeledNode("A")()
-    val n4 = factory.addLabeledNode("A")()
-    val n5 = factory.addLabeledNode("A")()
-    val n6 = factory.addLabeledNode("B")()
-    val n7 = factory.addLabeledNode("B")()
-    val n8 = factory.addLabeledNode("B")()
-    val n9 = factory.addLabeledNode("B")()
+    val n1 = factory.add(newLabeledNode("A"))
+    val n2 = factory.add(newLabeledNode("A"))
+    val n3 = factory.add(newLabeledNode("A"))
+    val n4 = factory.add(newLabeledNode("A"))
+    val n5 = factory.add(newLabeledNode("A"))
+    val n6 = factory.add(newLabeledNode("B"))
+    val n7 = factory.add(newLabeledNode("A"))
+    val n8 = factory.add(newLabeledNode("A"))
+    val n9 = factory.add(newLabeledNode("A"))
 
-    factory.addRelationship(n1, n2, "T")
-    factory.addRelationship(n2, n3, "T")
-    factory.addRelationship(n2, n6, "T")
-    factory.addRelationship(n4, n8, "T")
-    factory.addRelationship(n5, n8, "T")
+    factory.add(newRelationship(n1 -> "T" -> n2))
+    factory.add(newRelationship(n2 -> "T" -> n3))
+    factory.add(newRelationship(n2 -> "T" -> n6))
+    factory.add(newRelationship(n4 -> "T" -> n8))
+    factory.add(newRelationship(n5 -> "T" -> n8))
 
-    factory.result
+    factory.graph
   }
 }
 

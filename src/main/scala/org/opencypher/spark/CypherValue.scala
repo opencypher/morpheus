@@ -5,6 +5,7 @@ import java.lang
 import org.apache.spark.sql.{Encoder, Encoders}
 import org.opencypher.spark.CypherTypes._
 
+import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
 object CypherValue {
@@ -148,4 +149,47 @@ final case class CypherPath(v: Seq[CypherEntityValue]) extends CypherValue {
   type Repr = Seq[CypherEntityValue]
 
   def cypherType = CTPath
+}
+
+// Perhaps use in cypher value?
+
+object EntityData {
+
+  def newNode =
+    NodeData.empty
+
+  def newLabeledNode(labels: String*) =
+    newNode.withLabels(labels: _*)
+
+  def newUntypedRelationship(ids: (EntityId, EntityId)): RelationshipData =
+    newUntypedRelationship(ids._1, ids._2)
+
+  def newUntypedRelationship(startId: EntityId, endId: EntityId): RelationshipData =
+    RelationshipData(startId, "", endId)
+
+  def newRelationship(ids: ((EntityId, String), EntityId)): RelationshipData =
+    newRelationship(ids._1._1, ids._1._2, ids._2)
+
+  def newRelationship(startId: EntityId, typ: String, endId: EntityId): RelationshipData =
+    RelationshipData(startId, typ, endId)
+}
+
+sealed trait EntityData
+
+object NodeData {
+  val empty = NodeData(labels = Seq.empty, properties = Map.empty)
+}
+
+final case class NodeData(labels: Seq[String], properties: Map[String, CypherValue]) extends EntityData {
+  def withLabels(newLabels: String*) = copy(labels = newLabels)
+  def withProperties(newProperties: (String, CypherValue)*) = copy(properties = newProperties.toMap)
+  def withProperties(newProperties: Map[String, CypherValue]) = copy(properties = newProperties)
+}
+
+final case class RelationshipData(startId: EntityId, relationshipType: String, endId: EntityId, properties: Map[String, CypherValue] = Map.empty) extends EntityData {
+  def withStartId(newStartId: EntityId) = copy(startId = newStartId)
+  def withRelationshipType(newType: String) = copy(relationshipType = newType)
+  def withEndId(newEndId: EntityId) = copy(endId = newEndId)
+  def withProperties(newProperties: (String, CypherValue)*) = copy(properties = newProperties.toMap)
+  def withProperties(newProperties: Map[String, CypherValue]) = copy(properties = newProperties)
 }
