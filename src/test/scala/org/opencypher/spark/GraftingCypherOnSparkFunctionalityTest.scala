@@ -8,11 +8,13 @@ class GraftingCypherOnSparkFunctionalityTest extends FunSuite {
 
   import CypherValue.implicits._
   import StdPropertyGraph.SupportedQueries
-  import TestPropertyGraphs.session.implicits._
 
+  import TestSession._
+  import session.implicits._
+  import TestPropertyGraphs._
 
   test("all node scan") {
-    val pg: PropertyGraph = TestPropertyGraphs.graph1
+    val pg = factory(createGraph1(_)).graph
 
     val cypher: CypherResult = pg.cypher(SupportedQueries.allNodesScan)
     val result = cypher.toDS { map =>
@@ -21,7 +23,7 @@ class GraftingCypherOnSparkFunctionalityTest extends FunSuite {
   }
 
   test("all node scan on node-only graph that uses all kinds of properties") {
-    val pg: PropertyGraph = TestPropertyGraphs.graph2
+    val pg = factory(createGraph2(_)).graph
 
     val cypher: CypherResult = pg.cypher(SupportedQueries.allNodesScan)
     val result = cypher.toDS { map =>
@@ -30,7 +32,7 @@ class GraftingCypherOnSparkFunctionalityTest extends FunSuite {
   }
 
   test("get all node ids") {
-    val pg: PropertyGraph = TestPropertyGraphs.graph1
+    val pg = factory(createGraph1(_)).graph
 
     val cypher: CypherResult = pg.cypher(SupportedQueries.allNodeIds)
     val result: Dataset[String] = cypher.toDS { map =>
@@ -41,7 +43,7 @@ class GraftingCypherOnSparkFunctionalityTest extends FunSuite {
   }
 
   test("get all node ids sorted desc") {
-    val pg: PropertyGraph = TestPropertyGraphs.graph1
+    val pg = factory(createGraph1(_)).graph
 
     val cypher: CypherResult = pg.cypher(SupportedQueries.allNodeIdsSortedDesc)
     val result: Dataset[String] = cypher.toDS { map =>
@@ -52,7 +54,7 @@ class GraftingCypherOnSparkFunctionalityTest extends FunSuite {
   }
 
   test("get all nodes and project two properties into multiple columns using toDS()") {
-    val pg: PropertyGraph = TestPropertyGraphs.graph3
+    val pg = factory(createGraph3(_)).graph
 
     val cypher: CypherResult = pg.cypher(SupportedQueries.allNodesScanProjectAgeName)
     val result = cypher.toDS { record =>
@@ -63,7 +65,7 @@ class GraftingCypherOnSparkFunctionalityTest extends FunSuite {
   }
 
   test("get all nodes and project two properties into multiple columns using toDF()") {
-    val pg: PropertyGraph = TestPropertyGraphs.graph3
+    val pg = factory(createGraph3(_)).graph
 
     val cypher: CypherResult = pg.cypher(SupportedQueries.allNodesScanProjectAgeName)
     val result = cypher.toDF
@@ -72,7 +74,7 @@ class GraftingCypherOnSparkFunctionalityTest extends FunSuite {
   }
 
   test("get all rels of type T") {
-    val pg: PropertyGraph = TestPropertyGraphs.graph1
+    val pg = factory(createGraph1(_)).graph
 
     val cypher: CypherResult = pg.cypher(SupportedQueries.getAllRelationshipsOfTypeT)
 
@@ -80,7 +82,7 @@ class GraftingCypherOnSparkFunctionalityTest extends FunSuite {
   }
 
   test("get all rels of type T from nodes of label A") {
-    val pg: PropertyGraph = TestPropertyGraphs.graph1
+    val pg = factory(createGraph1(_)).graph
 
     val cypher: CypherResult = pg.cypher(SupportedQueries.getAllRelationshipsOfTypeTOfLabelA)
 
@@ -88,7 +90,7 @@ class GraftingCypherOnSparkFunctionalityTest extends FunSuite {
   }
 
   test("simple union all") {
-    val pg: PropertyGraph = TestPropertyGraphs.graph3
+    val pg = factory(createGraph3(_)).graph
 
     val result: CypherResult = pg.cypher(SupportedQueries.simpleUnionAll)
 
@@ -96,7 +98,7 @@ class GraftingCypherOnSparkFunctionalityTest extends FunSuite {
   }
 
   test("simple union distinct") {
-    val pg: PropertyGraph = TestPropertyGraphs.graph3
+    val pg = factory(createGraph3(_)).graph
 
     val result: CypherResult = pg.cypher(SupportedQueries.simpleUnionDistinct)
 
@@ -104,7 +106,7 @@ class GraftingCypherOnSparkFunctionalityTest extends FunSuite {
   }
 
   test("optional match") {
-    val pg: PropertyGraph = TestPropertyGraphs.graph1
+    val pg = factory(createGraph1(_)).graph
 
     val result: CypherResult = pg.cypher(SupportedQueries.optionalMatch)
 
@@ -112,7 +114,7 @@ class GraftingCypherOnSparkFunctionalityTest extends FunSuite {
   }
 
   test("unwind") {
-    val pg: PropertyGraph = TestPropertyGraphs.graph1
+    val pg = factory(createGraph1(_)).graph
 
     val result: CypherResult = pg.cypher(SupportedQueries.unwind)
 
@@ -120,7 +122,7 @@ class GraftingCypherOnSparkFunctionalityTest extends FunSuite {
   }
 
   test("match aggregate unwind") {
-    val pg: PropertyGraph = TestPropertyGraphs.graph3
+    val pg = factory(createGraph3(_)).graph
 
     val result: CypherResult = pg.cypher(SupportedQueries.matchAggregateAndUnwind)
 
@@ -128,7 +130,7 @@ class GraftingCypherOnSparkFunctionalityTest extends FunSuite {
   }
 
   test("bound variable length") {
-    val pg: PropertyGraph = TestPropertyGraphs.graph4
+    val pg = factory(createGraph4(_)).graph
 
     val result: CypherResult = pg.cypher(SupportedQueries.boundVarLength)
 

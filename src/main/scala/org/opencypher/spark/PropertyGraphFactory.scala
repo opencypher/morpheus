@@ -12,6 +12,13 @@ object PropertyGraphFactory {
 
 trait PropertyGraphFactory {
 
+  self =>
+
+  final def apply(f: PropertyGraphFactory => Unit): PropertyGraphFactory = {
+    f(self)
+    self
+  }
+
   final def add(data: EntityData) = data match {
     case nodeData: NodeData => addNode(nodeData)
     case relationshipData: RelationshipData => addRelationship(relationshipData)
