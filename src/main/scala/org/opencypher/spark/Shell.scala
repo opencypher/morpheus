@@ -6,13 +6,11 @@ import org.apache.spark.sql.SparkSession
 
 object Shell {
 
-
   def main(args: Array[String]): Unit = {
     implicit val session = SparkSession.builder().master("local[4]").getOrCreate()
     try {
       val welcomeBanner = {
-        val ownVersion = getClass.getPackage.getImplementationVersion
-        val ownVersionString = if (ownVersion == null) "Version <unknown>" else s"Version $ownVersion"
+        val ownVersion = CypherOnSpark.version.getOrElse("<unknown>")
         val ammoniteVersion = ammonite.Constants.version
         val scalaVersion = scala.util.Properties.versionNumberString
         val javaVersion = System.getProperty("java.version")
@@ -25,7 +23,7 @@ object Shell {
               =   _/  |             TM              |
               =""".stripMargin('=') +
           s"""|
-              |$ownVersionString
+              |Version $ownVersion
               |(Apache Spark $sparkVersion, Scala $scalaVersion, Java $javaVersion, Ammonite $ammoniteVersion)
               |
               |Cypher is a registered trademark of Neo Technology, Inc.
