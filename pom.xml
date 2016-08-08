@@ -289,6 +289,7 @@
                                                 <exclude>META-INF/*.RSA</exclude>
                                             </excludes>
                                         </filter>
+
                                     </filters>
                                 </configuration>
                             </execution>

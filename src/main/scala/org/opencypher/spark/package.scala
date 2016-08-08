@@ -1,13 +1,9 @@
 package org.opencypher
 
-import org.apache.spark.sql.Dataset
-
 import scala.collection.immutable.ListMap
 
 package object spark {
-  val version = "0.1-alpha"
 
-  type CypherFrame = Dataset[CypherRecord]
   type CypherNumberValue = CypherValue with ToNumber
   type CypherMapValue = CypherValue with HasProperties
   type CypherEntityValue = CypherValue with HasEntityId with HasProperties

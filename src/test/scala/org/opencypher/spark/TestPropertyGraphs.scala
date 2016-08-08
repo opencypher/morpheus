@@ -1,7 +1,5 @@
 package org.opencypher.spark
 
-import org.opencypher.spark.impl.StdPropertyGraphFactory
-
 object TestPropertyGraphs {
 
   import CypherValue.implicits._

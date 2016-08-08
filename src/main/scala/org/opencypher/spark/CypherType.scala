@@ -164,7 +164,7 @@ object CypherTypes {
   }
 }
 
-sealed trait CypherType {
+sealed trait CypherType extends Serializable {
   self =>
 
   // We distinguish types in a 4x4 matrix

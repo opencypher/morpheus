@@ -2,6 +2,7 @@ package org.opencypher.spark
 
 import java.lang
 
+import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.sql.{Encoder, Encoders}
 import org.opencypher.spark.CypherTypes._
 
@@ -10,12 +11,12 @@ import scala.reflect.ClassTag
 
 object CypherValue {
   trait implicits {
-    implicit def cypherValueEncoder[T <: CypherValue : ClassTag]: Encoder[T] = Encoders.kryo[T]
+    implicit def cypherValueEncoder[T <: CypherValue : ClassTag]: ExpressionEncoder[T] = Encoders.kryo[T].asInstanceOf[ExpressionEncoder[T]]
     // TODO: Add more
-    implicit def cypherTuple2Encoder[T1: Encoder, T2: Encoder]: Encoder[(T1, T2)] = Encoders.tuple(implicitly[Encoder[T1]], implicitly[Encoder[T2]])
-    implicit def cypherTuple3Encoder[T1: Encoder, T2: Encoder, T3: Encoder]: Encoder[(T1, T2, T3)] = Encoders.tuple(implicitly[Encoder[T1]], implicitly[Encoder[T2]], implicitly[Encoder[T3]])
-    implicit def cypherTuple4Encoder[T1: Encoder, T2: Encoder, T3: Encoder, T4: Encoder]: Encoder[(T1, T2, T3, T4)] = Encoders.tuple(implicitly[Encoder[T1]], implicitly[Encoder[T2]], implicitly[Encoder[T3]], implicitly[Encoder[T4]])
-    implicit def cypherEntityIdEncoder = Encoders.kryo[EntityId]
+    implicit def cypherTuple2ExpressionEncoder[T1: ExpressionEncoder, T2: ExpressionEncoder]: ExpressionEncoder[(T1, T2)] = Encoders.tuple(implicitly[ExpressionEncoder[T1]], implicitly[ExpressionEncoder[T2]]).asInstanceOf[ExpressionEncoder[(T1, T2)]]
+    implicit def cypherTuple3ExpressionEncoder[T1: ExpressionEncoder, T2: ExpressionEncoder, T3: ExpressionEncoder]: ExpressionEncoder[(T1, T2, T3)] = Encoders.tuple(implicitly[ExpressionEncoder[T1]], implicitly[ExpressionEncoder[T2]], implicitly[ExpressionEncoder[T3]]).asInstanceOf[ExpressionEncoder[(T1, T2, T3)]]
+    implicit def cypherTuple4ExpressionEncoder[T1: ExpressionEncoder, T2: ExpressionEncoder, T3: ExpressionEncoder, T4: ExpressionEncoder]: ExpressionEncoder[(T1, T2, T3, T4)] = Encoders.tuple(implicitly[ExpressionEncoder[T1]], implicitly[ExpressionEncoder[T2]], implicitly[ExpressionEncoder[T3]], implicitly[ExpressionEncoder[T4]]).asInstanceOf[ExpressionEncoder[(T1, T2, T3, T4)]]
+    implicit def cypherEntityIdExpressionEncoder = Encoders.kryo[EntityId].asInstanceOf[ExpressionEncoder[EntityId]]
 
     implicit def cypherString(v: String): CypherString = CypherString(v)
     implicit def cypherInteger(v: Int): CypherInteger = CypherInteger(v)

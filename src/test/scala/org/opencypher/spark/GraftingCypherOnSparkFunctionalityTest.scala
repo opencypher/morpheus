@@ -16,10 +16,8 @@ class GraftingCypherOnSparkFunctionalityTest extends FunSuite {
   test("all node scan") {
     val pg = factory(createGraph1(_)).graph
 
-    val cypher: CypherResult = pg.cypher(SupportedQueries.allNodesScan)
-    val result = cypher.toDS { map =>
-      map.toString()
-    }.show()
+    val result  = pg.cypher(SupportedQueries.allNodesScan)
+    result.show()
   }
 
   test("all node scan on node-only graph that uses all kinds of properties") {
@@ -67,10 +65,9 @@ class GraftingCypherOnSparkFunctionalityTest extends FunSuite {
   test("get all nodes and project two properties into multiple columns using toDF()") {
     val pg = factory(createGraph3(_)).graph
 
-    val cypher: CypherResult = pg.cypher(SupportedQueries.allNodesScanProjectAgeName)
-    val result = cypher.toDF
+    val result = pg.cypher(SupportedQueries.allNodesScanProjectAgeName)
 
-    result.show(false)
+    result.show()
   }
 
   test("get all rels of type T") {
