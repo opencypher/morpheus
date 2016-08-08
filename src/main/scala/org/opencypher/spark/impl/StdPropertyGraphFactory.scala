@@ -23,13 +23,14 @@ class StdPropertyGraphFactory(implicit private val session: SparkSession) extend
   override def addRelationship(startId: EntityId, relationshipType: String, endId: EntityId, properties: Map[String, CypherValue]): EntityId =
     relationshipIds { id => relationships += CypherRelationship(id, startId, endId, relationshipType, properties) }
 
-  override def graph: StdPropertyGraph =
-    new StdPropertyGraph {
-      import CypherValue.implicits._
+  override def graph: StdPropertyGraph = {
+    import CypherValue.implicits._
 
-      val nodes = sc.createDataset(factory.nodes.result)
-      val relationships = sc.createDataset(factory.relationships.result)
-    }
+    val nodes = sc.createDataset(factory.nodes.result)
+    val relationships = sc.createDataset(factory.relationships.result)
+
+    new StdPropertyGraph(nodes, relationships)
+  }
 
   override def clear(): Unit = {
     nodes.clear()

@@ -1,40 +1,23 @@
 package org.opencypher.spark.impl
 
-import org.apache.spark.sql._
+import org.apache.spark.sql.SparkSession
 import org.opencypher.spark._
 
-abstract class StdCypherFrame(val fields: Seq[StdField], val slots: Map[Symbol, StdSlot]) extends CypherFrame {
-  override type Frame = StdCypherFrame
+abstract class StdCypherFrame[Out](val fields: Seq[StdField], val slots: Seq[StdSlot]) extends CypherFrame[Out] {
+
+  override type Frame = StdCypherFrame[Out]
+  override type FrameContext = StdFrameContext
   override type Field = StdField
   override type Slot = StdSlot
 
-  // Build actual result
-  override def result: CypherResult = new CypherResult {
+  def fieldSlots = fields.zip(slots)
 
-    override def toDF: DataFrame = {
-      val data = execute
-
-      val columns = fields.map { field =>
-        val slot = slots(field.name)
-        new Column(slot.name.name).as(field.name)
-      }
-      val result = data.select(columns: _*)
-      result.explain(true)
-      result
-    }
-
-    override def toDS[T: Encoder](f: (CypherRecord) => T): Dataset[T] = ???
-
-    override def show(): Unit = {
-      toDF.show(false)
-    }
-  }
-
-  protected def execute: DataFrame
-
-//  private def slot(field: Field): Slot = slots(field.name)
+  protected def productEncoder(implicit context: FrameContext) =
+    ProductEncoderFactory.createEncoder(slots)(context.session)
 }
 
+
+case class StdFrameContext(session: SparkSession) extends CypherFrameContext
 
 case class StdField(name: Symbol, cypherType: CypherType) extends CypherField with Serializable
 

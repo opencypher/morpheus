@@ -1,5 +1,6 @@
 package org.opencypher.spark
 
+import org.apache.spark.sql.{SparkSession, Dataset}
 import org.apache.spark.sql.types.{BinaryType, DataType}
 
 trait Expr
@@ -9,13 +10,14 @@ trait Expr
 // - plan operator for cypher on spark
 // - knows how to produce a concrete cypher result
 //
-trait CypherFrame {
+trait CypherFrame[Out] {
 
   // Implementations may specialize
   //
-  type Frame <: CypherFrame
+  type Frame <: CypherFrame[Out]
   type Field <: CypherField
   type Slot <: CypherSlot
+  type FrameContext <: CypherFrameContext
 
   // This is a two layer construct
 
@@ -28,15 +30,17 @@ trait CypherFrame {
   // On the bottom level and somewhat internally, the frame tracks slots that hold
   // the results of evaluating certain expressions
   //
-  def slots: Map[Symbol, Slot]
+  def slots: Seq[Slot]
 
   // Expressions are not only evaluated over slots but in a wider context
   //  def parameters: Map[Symbol, CypherValue]
 
-  // Build actual result
-  def result: CypherResult
-
+  def run(implicit context: FrameContext): Dataset[Out]
   //  def expand(other: Frame)(from: Field, to: Field): Frame // just sketching
+}
+
+trait CypherFrameContext {
+  def session: SparkSession
 }
 
 trait CypherField {
