@@ -1,6 +1,6 @@
 package org.opencypher.spark
 
-import org.opencypher.spark.CypherTypes._
+import CypherTypes._
 import org.scalatest.{FunSuite, Matchers}
 
 import scala.language.postfixOps

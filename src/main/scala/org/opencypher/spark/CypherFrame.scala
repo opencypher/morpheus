@@ -18,8 +18,11 @@ trait CypherFrame[Out] {
   type Field <: CypherField
   type Slot <: CypherSlot
   type RuntimeContext <: CypherRuntimeContext
+  type Signature <: CypherFrameSignature
 
   // This is a two layer construct
+
+  def signature: Signature
 
   //
   // On the top level, there is the signature of the covered cypher record fields
@@ -62,6 +65,8 @@ trait CypherSlot {
   // Corresponding data frame representation type
 
   def representation: Representation
+
+  def ordinal: Int
 }
 
 sealed trait Representation extends Serializable {

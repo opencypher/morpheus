@@ -2,9 +2,9 @@ package org.opencypher.spark
 
 import org.apache.spark.sql.Dataset
 import org.opencypher.spark.impl.StdPropertyGraph
-import org.scalatest.FunSuite
+import org.scalatest.{Matchers, FunSuite}
 
-class GraftingCypherOnSparkFunctionalityTest extends FunSuite {
+class GraftingCypherOnSparkFunctionalityTest extends FunSuite with Matchers {
 
   import CypherValue.implicits._
   import StdPropertyGraph.SupportedQueries
@@ -63,11 +63,26 @@ class GraftingCypherOnSparkFunctionalityTest extends FunSuite {
 //  }
 //
   test("get all nodes and project two properties into multiple columns using toDF()") {
-    val pg = factory(createGraph3(_)).graph
+    import EntityData._
+
+    factory.add(newNode.withProperties("name" -> "Mats"))
+    factory.add(newNode.withProperties("name" -> "Stefan", "age" -> 37))
+    factory.add(newNode.withProperties("age" -> 7))
+    factory.add(newNode)
+    val pg = factory.graph
 
     val result = pg.cypher(SupportedQueries.allNodesScanProjectAgeName)
 
     result.show()
+    val maps = result.maps
+
+
+    maps.collectAsScalaSet should equal(Set(
+      Map[String, CypherValue]("n-name" -> "Mats", "n-age" -> null),
+      Map[String, CypherValue]("n-name" -> "Stefan", "n-age" -> 37),
+      Map[String, CypherValue]("n-name" -> null, "n-age" -> 7),
+      Map[String, CypherValue]("n-name" -> null, "n-age" -> null)
+    ))
   }
 //
 //  test("get all rels of type T") {

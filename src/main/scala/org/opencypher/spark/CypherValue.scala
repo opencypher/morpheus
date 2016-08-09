@@ -4,14 +4,16 @@ import java.lang
 
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.sql.{Encoder, Encoders}
-import org.opencypher.spark.CypherTypes._
+import CypherTypes._
 
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
 object CypherValue {
   trait implicits {
+    implicit def cypherValueMapEncoder[T <: CypherValue : ClassTag]: ExpressionEncoder[Map[String, T]] = Encoders.kryo[Map[String, T]].asInstanceOf[ExpressionEncoder[Map[String, T]]]
     implicit def cypherValueEncoder[T <: CypherValue : ClassTag]: ExpressionEncoder[T] = Encoders.kryo[T].asInstanceOf[ExpressionEncoder[T]]
+
     // TODO: Add more
     implicit def cypherTuple2ExpressionEncoder[T1: ExpressionEncoder, T2: ExpressionEncoder]: ExpressionEncoder[(T1, T2)] = Encoders.tuple(implicitly[ExpressionEncoder[T1]], implicitly[ExpressionEncoder[T2]]).asInstanceOf[ExpressionEncoder[(T1, T2)]]
     implicit def cypherTuple3ExpressionEncoder[T1: ExpressionEncoder, T2: ExpressionEncoder, T3: ExpressionEncoder]: ExpressionEncoder[(T1, T2, T3)] = Encoders.tuple(implicitly[ExpressionEncoder[T1]], implicitly[ExpressionEncoder[T2]], implicitly[ExpressionEncoder[T3]]).asInstanceOf[ExpressionEncoder[(T1, T2, T3)]]

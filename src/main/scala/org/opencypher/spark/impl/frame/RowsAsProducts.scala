@@ -8,10 +8,7 @@ object RowsAsProducts {
   def apply(input: StdCypherFrame[Row]): StdCypherFrame[Product] =
     new RowsAsProducts(input)
 
-  class RowsAsProducts(input: StdCypherFrame[Row]) extends StdCypherFrame[Product](
-    _fields = input.fields,
-    _slots = input.slots
-  ) {
+  class RowsAsProducts(input: StdCypherFrame[Row]) extends StdCypherFrame[Product](input.signature) {
 
     override def run(implicit context: RuntimeContext): Dataset[Product] = {
       val in = input.run

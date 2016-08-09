@@ -9,10 +9,7 @@ object CypherValuesAsRows {
   def apply[T <: CypherValue](input: StdCypherFrame[T]): StdCypherFrame[Row] =
     new CypherValuesAsRows(input = input)
 
-  class CypherValuesAsRows[T <: CypherValue](input: StdCypherFrame[T]) extends StdCypherFrame[Row](
-    _fields = input.fields,
-    _slots = input.slots
-  ) {
+  class CypherValuesAsRows[T <: CypherValue](input: StdCypherFrame[T]) extends StdCypherFrame[Row](input.signature) {
 
     override def run(implicit context: RuntimeContext): Dataset[Row] = {
       val in = input.run

@@ -1,6 +1,7 @@
 package org.opencypher.spark.impl
 
-import org.opencypher.spark.{EntityId, CypherValue, PropertyGraph, PropertyGraphFactory}
+import org.opencypher.spark.api.PropertyGraph
+import org.opencypher.spark.{EntityId, CypherValue, PropertyGraphFactory}
 
 class CachingPropertyGraphFactory(inner: PropertyGraphFactory) extends PropertyGraphFactory {
   private var graphCache: Option[PropertyGraph] = None

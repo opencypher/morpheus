@@ -1,28 +1,23 @@
 package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.Dataset
+import org.opencypher.spark.CypherNode
 import org.opencypher.spark.impl._
 import org.opencypher.spark.impl.util.productize
-import org.opencypher.spark.{BinaryRepresentation, CypherNode}
 
 object PropertyAccessProducts {
 
-  def apply(input: StdCypherFrame[Product], node: Symbol, propertyKey: Symbol)
+  def apply(input: StdCypherFrame[Product], nodeField: StdField, propertyKey: Symbol)
            (outputField: StdField)
            (implicit context: PlanningContext): StdCypherFrame[Product] = {
-    val outputSlot = StdSlot(context.newSlotSymbol(outputField), outputField.cypherType, BinaryRepresentation)
-    new PropertyAccessProducts(input, node, propertyKey)(outputField, outputSlot)
+    val signature = input.signature.addField(outputField)
+    new PropertyAccessProducts(input, nodeField, propertyKey)(signature)
   }
 
-  private class PropertyAccessProducts(input: StdCypherFrame[Product], nodeSym: Symbol, propertyKey: Symbol)(outputField: StdField, outputSlot: StdSlot)
-    extends StdCypherFrame[Product](
-      _fields = input.fields :+ outputField,
-      _slots = input.slots :+ outputSlot
-    ) {
+  private class PropertyAccessProducts(input: StdCypherFrame[Product], nodeField: StdField, propertyKey: Symbol)(sig: StdFrameSignature)
+    extends StdCypherFrame[Product](sig) {
 
-    val (_, index) = input.fields.zipWithIndex.find {
-      case (f, _) => f.sym == nodeSym
-    }.get
+    val index = sig(nodeField).getOrElse(throw new IllegalArgumentException("Unknown nodeField")).ordinal
 
     override def run(implicit context: StdRuntimeContext): Dataset[Product] = {
       val in = input.run

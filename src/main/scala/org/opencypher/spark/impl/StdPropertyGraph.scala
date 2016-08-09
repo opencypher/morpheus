@@ -3,7 +3,9 @@ package org.opencypher.spark.impl
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.sql.types.StringType
-import org.opencypher.spark.CypherTypes.{CTString, CTAny, CTNode}
+import org.opencypher.spark._
+import org.opencypher.spark.api.{CypherResultContainer, CypherResult, PropertyGraph}
+import CypherTypes.{CTString, CTAny, CTNode}
 import org.opencypher.spark._
 import org.opencypher.spark.impl.frame._
 import org.opencypher.spark.impl.util.SlotSymbolGenerator
@@ -40,7 +42,11 @@ class StdPropertyGraph(nodes: Dataset[CypherNode], relationships: Dataset[Cypher
 
   private implicit def stringFromSymbol(s: Symbol): String = s.name
 
-  override def cypher(query: String): CypherResult[Row] = {
+  // 1) two methods
+  // 2) intermediary .products, .rows
+  // 3) implicits
+
+  override def cypher(query: String): CypherResultContainer = {
     val slotNames = new SlotSymbolGenerator
     implicit val planningContext = new PlanningContext(slotNames)
     implicit val runtimeContext = new StdRuntimeContext(session)
@@ -50,17 +56,19 @@ class StdPropertyGraph(nodes: Dataset[CypherNode], relationships: Dataset[Cypher
       case SupportedQueries.allNodesScan =>
         val nodeFrame = CypherNodes(nodes)('n)
         val rowFrame = CypherValuesAsRows(nodeFrame)
-        StdRowResult(rowFrame)
+        StdCypherResultContainer.fromRows(rowFrame)
 
       case SupportedQueries.allNodesScanProjectAgeName =>
         val nodeFrame = CypherNodes(nodes)('n)
         val rowFrame = CypherValuesAsRows(nodeFrame)
         val productFrame = RowsAsProducts(rowFrame)
-        val projectFrame1 = PropertyAccessProducts(productFrame, 'n, 'name)(StdField(Symbol("n.name"), CTAny.nullable))
-        val projectFrame2 = PropertyAccessProducts(projectFrame1, 'n, 'age)(StdField(Symbol("n.age"), CTAny.nullable))
-        val rows = ProductsAsRows(projectFrame2)
+        val projectFrame1 = PropertyAccessProducts(productFrame, nodeFrame.nodeField, 'name)(StdField(Symbol("n.name"), CTAny.nullable))
+        val projectFrame2 = PropertyAccessProducts(projectFrame1, nodeFrame.nodeField, 'age)(StdField(Symbol("n.age"), CTAny.nullable))
+        val sig = projectFrame2.signature
+        val selectFields = SelectProductFields(projectFrame2)(StdField(Symbol("n.name"), CTAny.nullable), StdField(Symbol("n.age"), CTAny.nullable))
+        val si2 = selectFields.signature
 
-        StdRowResult(rows)
+        StdCypherResultContainer.fromProducts(selectFields)
 //
 //        val field1 = StdField('name, CTAny)
 //        val field2 = StdField('age, CTAny)
