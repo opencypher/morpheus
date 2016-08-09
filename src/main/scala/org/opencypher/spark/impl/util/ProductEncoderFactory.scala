@@ -1,10 +1,11 @@
-package org.opencypher.spark.impl
+package org.opencypher.spark.impl.util
 
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.sql.types.StringType
 import org.opencypher.spark.CypherTypes.CTString
-import org.opencypher.spark.{EmbeddedRepresentation, CypherValue, BinaryRepresentation}
+import org.opencypher.spark.impl.StdSlot
+import org.opencypher.spark.{BinaryRepresentation, CypherValue, EmbeddedRepresentation}
 
 case object ProductEncoderFactory {
 

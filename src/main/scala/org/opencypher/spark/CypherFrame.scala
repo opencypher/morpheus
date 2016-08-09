@@ -17,7 +17,7 @@ trait CypherFrame[Out] {
   type Frame <: CypherFrame[Out]
   type Field <: CypherField
   type Slot <: CypherSlot
-  type FrameContext <: CypherFrameContext
+  type RuntimeContext <: CypherRuntimeContext
 
   // This is a two layer construct
 
@@ -35,18 +35,18 @@ trait CypherFrame[Out] {
   // Expressions are not only evaluated over slots but in a wider context
   //  def parameters: Map[Symbol, CypherValue]
 
-  def run(implicit context: FrameContext): Dataset[Out]
+  def run(implicit context: RuntimeContext): Dataset[Out]
   //  def expand(other: Frame)(from: Field, to: Field): Frame // just sketching
 }
 
-trait CypherFrameContext {
+trait CypherRuntimeContext {
   def session: SparkSession
 }
 
 trait CypherField {
   self: Serializable =>
 
-  def name: Symbol
+  def sym: Symbol
   def cypherType: CypherType
 }
 
@@ -54,7 +54,7 @@ trait CypherSlot {
   self: Serializable =>
 
   // Unique name of this slot; fixed at creation
-  def name: Symbol
+  def sym: Symbol
 
   // The actual expression whose evaluation result is stored in this slot
   // def expr: Set[CypherExpression]

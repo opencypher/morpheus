@@ -1,4 +1,4 @@
-package org.opencypher.spark.impl
+package org.opencypher.spark.impl.util
 
 case object productize {
   def apply[T](elts: Seq[T]): Product = elts.length match {
