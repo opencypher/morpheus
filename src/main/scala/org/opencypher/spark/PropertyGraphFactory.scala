@@ -20,19 +20,18 @@ trait PropertyGraphFactory {
     self
   }
 
-  final def add(data: EntityData) = data match {
-    case nodeData: NodeData => addNode(nodeData)
-    case relationshipData: RelationshipData => addRelationship(relationshipData)
-  }
+  final def add(data: NodeData): CypherNode = addNode(data)
 
-  final def addNode(data: NodeData): EntityId =
+  final def add(data: RelationshipData): CypherRelationship = addRelationship(data)
+
+  final def addNode(data: NodeData): CypherNode =
     addNode(data.labels.toSet, data.properties)
 
-  final def addRelationship(data: RelationshipData): EntityId =
+  final def addRelationship(data: RelationshipData): CypherRelationship =
     addRelationship(data.startId, data.relationshipType, data.endId, data.properties)
 
-  def addNode(labels: Set[String], properties: Map[String, CypherValue]): EntityId
-  def addRelationship(startId: EntityId, relationshipType: String, endId: EntityId, properties: Map[String, CypherValue]): EntityId
+  def addNode(labels: Set[String], properties: Map[String, CypherValue]): CypherNode
+  def addRelationship(startId: EntityId, relationshipType: String, endId: EntityId, properties: Map[String, CypherValue]): CypherRelationship
 
   def clear(): Unit
 

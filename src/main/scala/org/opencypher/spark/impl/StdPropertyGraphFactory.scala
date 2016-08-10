@@ -17,11 +17,19 @@ class StdPropertyGraphFactory(implicit private val session: SparkSession) extend
 
   private def sc = session.sqlContext
 
-  override def addNode(labels: Set[String], properties: Map[String, CypherValue]): EntityId =
-    nodeIds { id => nodes += CypherNode(id, labels.toSeq, properties) }
+  override def addNode(labels: Set[String], properties: Map[String, CypherValue]): CypherNode =
+    nodeIds { id =>
+      val node = CypherNode(id, labels.toSeq, properties)
+      nodes += node
+      node
+    }
 
-  override def addRelationship(startId: EntityId, relationshipType: String, endId: EntityId, properties: Map[String, CypherValue]): EntityId =
-    relationshipIds { id => relationships += CypherRelationship(id, startId, endId, relationshipType, properties) }
+  override def addRelationship(startId: EntityId, relationshipType: String, endId: EntityId, properties: Map[String, CypherValue]): CypherRelationship =
+    relationshipIds { id =>
+      val relationship = CypherRelationship(id, startId, endId, relationshipType, properties)
+      relationships += relationship
+      relationship
+    }
 
   override def graph: StdPropertyGraph = {
     import CypherValue.implicits._
@@ -40,10 +48,8 @@ class StdPropertyGraphFactory(implicit private val session: SparkSession) extend
   }
 
   implicit class RichAtomicLong(pool: AtomicLong) {
-    def apply(f: EntityId => Unit): EntityId = {
-      val id = EntityId(pool.incrementAndGet())
-      f(id)
-      id
+    def apply[T](f: EntityId => T): T = {
+      f(EntityId(pool.incrementAndGet()))
     }
   }
 }

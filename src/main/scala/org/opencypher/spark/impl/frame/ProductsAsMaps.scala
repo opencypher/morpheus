@@ -12,7 +12,7 @@ object ProductsAsMaps {
 
   class ProductsAsMaps(input: StdCypherFrame[Product]) extends StdCypherFrame[Map[String, CypherValue]](input.signature) {
 
-    val outputMapping = fields.flatMap { (field: StdField)=> signature(field).map(slot => field.columnSym -> slot.ordinal) }
+    val outputMapping = fields.flatMap { (field: StdField)=> signature(field).map(slot => field.sym -> slot.ordinal) }
 
     override def run(implicit context: RuntimeContext): Dataset[Map[String, CypherValue]] = {
       val in = input.run

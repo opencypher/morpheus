@@ -122,7 +122,7 @@ sealed trait HasEntityId extends Any {
   def id: EntityId
 }
 
-final case class CypherNode(id: EntityId, labels: Seq[String], properties: Map[String, CypherValue] = Map.empty) extends CypherValue with HasEntityId with HasProperties {
+final case class CypherNode(id: EntityId, labels: Seq[String], properties: Map[String, CypherValue]) extends CypherValue with HasEntityId with HasProperties {
   type Repr = (Long, CypherNode)
   def v = id.v -> this
 
@@ -164,17 +164,17 @@ object EntityData {
   def newLabeledNode(labels: String*) =
     newNode.withLabels(labels: _*)
 
-  def newUntypedRelationship(ids: (EntityId, EntityId)): RelationshipData =
-    newUntypedRelationship(ids._1, ids._2)
+  def newUntypedRelationship(nodes: (CypherNode, CypherNode)): RelationshipData =
+    newUntypedRelationship(nodes._1, nodes._2)
 
-  def newUntypedRelationship(startId: EntityId, endId: EntityId): RelationshipData =
-    RelationshipData(startId, "", endId)
+  def newUntypedRelationship(startNode: CypherNode, endNode: CypherNode): RelationshipData =
+    RelationshipData(startNode.id, "", endNode.id)
 
-  def newRelationship(ids: ((EntityId, String), EntityId)): RelationshipData =
-    newRelationship(ids._1._1, ids._1._2, ids._2)
+  def newRelationship(triple: ((CypherNode, String), CypherNode)): RelationshipData =
+    newRelationship(triple._1._1, triple._1._2, triple._2)
 
-  def newRelationship(startId: EntityId, typ: String, endId: EntityId): RelationshipData =
-    RelationshipData(startId, typ, endId)
+  def newRelationship(startNode: CypherNode, relType: String, endNode: CypherNode): RelationshipData =
+    RelationshipData(startNode.id, relType, endNode.id)
 }
 
 sealed trait EntityData

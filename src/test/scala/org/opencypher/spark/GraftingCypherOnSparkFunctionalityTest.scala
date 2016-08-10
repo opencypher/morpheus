@@ -1,23 +1,30 @@
 package org.opencypher.spark
 
-import org.apache.spark.sql.Dataset
 import org.opencypher.spark.impl.StdPropertyGraph
-import org.scalatest.{Matchers, FunSuite}
+import org.scalatest.{FunSuite, Matchers}
 
 class GraftingCypherOnSparkFunctionalityTest extends FunSuite with Matchers {
 
   import CypherValue.implicits._
+  import EntityData._
   import StdPropertyGraph.SupportedQueries
-
   import TestSession._
-  import session.implicits._
-  import TestPropertyGraphs._
+  import factory._
 
   test("all node scan") {
-    val pg = factory(createGraph1(_)).graph
+    val a = add(newNode)
+    val b = add(newLabeledNode("Foo", "Bar"))
+    val c = add(newLabeledNode("Foo"))
+    add(newRelationship(a -> "KNOWS" -> b))
+    add(newRelationship(a -> "KNOWS" -> a))
 
-    val result  = pg.cypher(SupportedQueries.allNodesScan)
-    result.show()
+    val result = factory.graph.cypher(SupportedQueries.allNodesScan)
+
+    result.maps.collectAsScalaSet should equal(Set(
+      Map[String, CypherNode]("n" -> a),
+      Map[String, CypherNode]("n" -> b),
+      Map[String, CypherNode]("n" -> c)
+    ))
   }
 
 //  test("all node scan on node-only graph that uses all kinds of properties") {
@@ -62,33 +69,26 @@ class GraftingCypherOnSparkFunctionalityTest extends FunSuite with Matchers {
 //    result.show(false)
 //  }
 //
-  test("get all nodes and project two properties into multiple columns using toDF()") {
-    import EntityData._
-
+  test("get all nodes and project two properties into multiple columns") {
     factory.add(newNode.withProperties("name" -> "Mats"))
     factory.add(newNode.withProperties("name" -> "Stefan", "age" -> 37))
     factory.add(newNode.withProperties("age" -> 7))
     factory.add(newNode)
-    val pg = factory.graph
 
-    val result = pg.cypher(SupportedQueries.allNodesScanProjectAgeName)
+    val result = factory.graph.cypher(SupportedQueries.allNodesScanProjectAgeName)
 
-    result.show()
-    val maps = result.maps
-
-
-    maps.collectAsScalaSet should equal(Set(
-      Map[String, CypherValue]("n-name" -> "Mats", "n-age" -> null),
-      Map[String, CypherValue]("n-name" -> "Stefan", "n-age" -> 37),
-      Map[String, CypherValue]("n-name" -> null, "n-age" -> 7),
-      Map[String, CypherValue]("n-name" -> null, "n-age" -> null)
+    result.maps.collectAsScalaSet should equal(Set(
+      Map[String, CypherValue]("n.name" -> "Mats", "n.age" -> null),
+      Map[String, CypherValue]("n.name" -> "Stefan", "n.age" -> 37),
+      Map[String, CypherValue]("n.name" -> null, "n.age" -> 7),
+      Map[String, CypherValue]("n.name" -> null, "n.age" -> null)
     ))
   }
 //
 //  test("get all rels of type T") {
 //    val pg = factory(createGraph1(_)).graph
 //
-//    val cypher: CypherResult = pg.cypher(SupportedQueries.getAllRelationshipsOfTypeT)
+//    val cypher = pg.cypher(SupportedQueries.getAllRelationshipsOfTypeT)
 //
 //    cypher.show()
 //  }

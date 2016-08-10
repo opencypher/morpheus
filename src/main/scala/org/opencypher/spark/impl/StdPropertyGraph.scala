@@ -1,23 +1,19 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
-import org.apache.spark.sql.types.StringType
+import org.opencypher.spark.CypherTypes.CTAny
 import org.opencypher.spark._
-import org.opencypher.spark.api.{CypherResultContainer, CypherResult, PropertyGraph}
-import CypherTypes.{CTString, CTAny, CTNode}
-import org.opencypher.spark._
+import org.opencypher.spark.api.{CypherResultContainer, PropertyGraph}
 import org.opencypher.spark.impl.frame._
 import org.opencypher.spark.impl.util.SlotSymbolGenerator
 
-import scala.collection.immutable.ListMap
 import scala.language.implicitConversions
 
 object StdPropertyGraph {
 
   object SupportedQueries {
     val allNodesScan = "MATCH (n) RETURN (n)"
-    val allNodesScanProjectAgeName = "MATCH (n) RETURN n.name AS name, n.age AS age"
+    val allNodesScanProjectAgeName = "MATCH (n) RETURN n.name, n.age"
     val allNodeIds = "MATCH (n) RETURN id(n)"
     val allNodeIdsSortedDesc = "MATCH (n) RETURN id(n) AS id ORDER BY id DESC"
     val getAllRelationshipsOfTypeT = "MATCH ()-[r:T]->() RETURN r"
@@ -38,7 +34,6 @@ class StdPropertyGraph(nodes: Dataset[CypherNode], relationships: Dataset[Cypher
                       (implicit private val session: SparkSession) extends PropertyGraph {
 
   import StdPropertyGraph.SupportedQueries
-  import session.implicits._
 
   private implicit def stringFromSymbol(s: Symbol): String = s.name
 

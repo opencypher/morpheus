@@ -1,15 +1,15 @@
 package org.opencypher.spark.impl
 
 import org.opencypher.spark.api.PropertyGraph
-import org.opencypher.spark.{EntityId, CypherValue, PropertyGraphFactory}
+import org.opencypher.spark._
 
 class CachingPropertyGraphFactory(inner: PropertyGraphFactory) extends PropertyGraphFactory {
   private var graphCache: Option[PropertyGraph] = None
 
-  def addNode(labels: Set[String], properties: Map[String, CypherValue]): EntityId =
+  def addNode(labels: Set[String], properties: Map[String, CypherValue]): CypherNode =
     flushAfter { inner.addNode(labels, properties) }
 
-  def addRelationship(startId: EntityId, relationshipType: String, endId: EntityId, properties: Map[String, CypherValue]): EntityId =
+  def addRelationship(startId: EntityId, relationshipType: String, endId: EntityId, properties: Map[String, CypherValue]): CypherRelationship =
     flushAfter { inner.addRelationship(startId, relationshipType, endId, properties) }
 
   override def graph: PropertyGraph = graphCache match {
