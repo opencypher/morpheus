@@ -1,15 +1,13 @@
 package org.opencypher.spark.impl.frame
 
-import org.opencypher.spark.CypherTypes.CTNode
-import org.opencypher.spark.{BinaryRepresentation, CypherValue}
+import org.opencypher.spark.api.types.CTNode
+import org.opencypher.spark.api.BinaryRepresentation
 
 class ValueAsProductTest extends StdFrameTestSuite {
 
-  import CypherValue.implicits._
   import factory._
-  import org.opencypher.spark.EntityData._
 
-  test("ValuesAsProducts converts DataSet[CypherNode") {
+  test("ValueAsProduct converts DataSet[CypherNode]") {
     val n1 = add(newNode.withLabels("A").withProperties("name" -> "Zippie"))
     val n2 = add(newNode.withLabels("B").withProperties("name" -> "Yggie"))
     val nodes = session.createDataset(List(n1, n2))

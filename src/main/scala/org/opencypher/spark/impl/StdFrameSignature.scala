@@ -1,7 +1,7 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.types.IntegerType
-import org.opencypher.spark.{BinaryRepresentation, CypherFrameSignature, EmbeddedRepresentation}
+import org.opencypher.spark.api.{BinaryRepresentation, CypherFrameSignature, EmbeddedRepresentation}
 
 object StdFrameSignature {
   val empty = new StdFrameSignature

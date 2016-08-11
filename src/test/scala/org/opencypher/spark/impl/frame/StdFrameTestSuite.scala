@@ -2,10 +2,11 @@ package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.Dataset
 import org.opencypher.spark._
+import org.opencypher.spark.api.{CypherFrameSignature, CypherType, Representation}
 import org.opencypher.spark.impl.{PlanningContext, StdCypherFrame, StdRuntimeContext}
 import org.opencypher.spark.impl.util.SlotSymbolGenerator
 
-class StdFrameTestSuite extends StdTestSuite with TestSessionSupport {
+class StdFrameTestSuite extends StdTestSuite with TestSession.Fixture {
 
   implicit val planningContext = new PlanningContext(new SlotSymbolGenerator)
   implicit val runtimeContext = new StdRuntimeContext(session)

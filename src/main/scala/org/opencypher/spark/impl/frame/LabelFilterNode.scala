@@ -1,7 +1,7 @@
 package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.Dataset
-import org.opencypher.spark.CypherNode
+import org.opencypher.spark.api.CypherNode
 import org.opencypher.spark.impl.frame.AllNodes.CypherNodes
 import org.opencypher.spark.impl.{StdCypherFrame, StdRuntimeContext}
 

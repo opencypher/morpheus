@@ -1,13 +1,14 @@
-package org.opencypher.spark
+package org.opencypher.spark.api
 
 import scala.language.implicitConversions
 
 object Ternary {
 
-  object implicits extends implicits
+  object Conversion extends Conversion
 
-  trait implicits {
+  trait Conversion {
     implicit def booleanAsTernary(b: Boolean): Ternary = Ternary(b)
+    implicit def optionalBooleanAsTernary(optB: Option[Boolean]): Ternary = Ternary(optB)
   }
 
   def apply(v: Boolean): Ternary = if (v) True else False

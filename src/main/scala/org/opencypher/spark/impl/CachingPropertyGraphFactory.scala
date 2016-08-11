@@ -1,6 +1,6 @@
 package org.opencypher.spark.impl
 
-import org.opencypher.spark.api.PropertyGraph
+import org.opencypher.spark.api._
 import org.opencypher.spark._
 
 class CachingPropertyGraphFactory(inner: PropertyGraphFactory) extends PropertyGraphFactory {

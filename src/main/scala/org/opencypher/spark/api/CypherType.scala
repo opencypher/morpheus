@@ -1,11 +1,12 @@
-package org.opencypher.spark
+package org.opencypher.spark.api
 
-import CypherTypes._
-import Ternary.implicits._
+import org.opencypher.spark.api.types._
 
 import scala.language.postfixOps
 
-object CypherTypes {
+import Ternary.Conversion._
+
+object types {
 
   case object CTAny extends MaterialDefiniteCypherType with MaterialDefiniteCypherType.DefaultOrNull {
     def name = "ANY"
@@ -21,12 +22,12 @@ object CypherTypes {
     def name = "NUMBER"
 
     final def superTypeOf(other: CypherType) = other match {
-      case CTNumber  => true
-      case CTInteger => true
-      case CTFloat   => true
+      case CTNumber   => True
+      case CTInteger  => True
+      case CTFloat    => True
       case CTWildcard => Maybe
-      case CTVoid    => true
-      case _         => false
+      case CTVoid     => True
+      case _          => False
     }
   }
 
@@ -46,12 +47,12 @@ object CypherTypes {
     def name = "MAP"
 
     def superTypeOf(other: CypherType) = other match {
-      case CTMap          => true
-      case CTNode         => true
-      case CTRelationship => true
+      case CTMap          => True
+      case CTNode         => True
+      case CTRelationship => True
       case CTWildcard     => Maybe
-      case CTVoid         => true
-      case _              => false
+      case CTVoid         => True
+      case _              => False
     }
   }
 
@@ -85,8 +86,8 @@ object CypherTypes {
     def superTypeOf(other: CypherType) = other match {
       case CTList(otherEltType) => eltType superTypeOf otherEltType
       case CTWildcard           => Maybe
-      case CTVoid               => true
-      case _                    => false
+      case CTVoid               => True
+      case _                    => False
     }
   }
 
@@ -113,10 +114,10 @@ object CypherTypes {
     def nullable = CTNull
 
     override def superTypeOf(other: CypherType) = other match {
-      case _ if self == other => true
+      case _ if self == other => True
       case CTWildcard         => Maybe
-      case CTVoid             => true
-      case _                  => false
+      case CTVoid             => True
+      case _                  => False
     }
   }
 
@@ -141,7 +142,7 @@ object CypherTypes {
 
     // super type of
     override def superTypeOf(other: CypherType): Ternary = other match {
-      case CTVoid => true
+      case CTVoid => True
       case _      => if (other.isMaterial) Maybe else False
     }
 
@@ -166,6 +167,7 @@ object CypherTypes {
 
 sealed trait CypherType extends Serializable {
   self =>
+
 
   // We distinguish types in a 4x4 matrix
   //
@@ -317,9 +319,9 @@ sealed private[spark] trait MaterialDefiniteCypherLeafType extends MaterialDefin
   self =>
 
   def superTypeOf(other: CypherType) = other match {
-    case _ if self == other => true
+    case _ if self == other => True
     case CTWildcard         => Maybe
-    case CTVoid             => true
-    case _                  => false
+    case CTVoid             => True
+    case _                  => False
   }
 }

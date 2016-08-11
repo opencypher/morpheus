@@ -1,8 +1,8 @@
 package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.{Column, Dataset, Row}
-import org.opencypher.spark.CypherValue
-import org.opencypher.spark.impl.{StdField, StdSlot, StdCypherFrame}
+import org.opencypher.spark.api.CypherValue
+import org.opencypher.spark.impl.{StdCypherFrame, StdField, StdSlot}
 
 object ProductAsMap {
 
@@ -16,7 +16,7 @@ object ProductAsMap {
 
     override def run(implicit context: RuntimeContext): Dataset[Map[String, CypherValue]] = {
       val in = input.run
-      val out = in.map(ProductAsMap(outputMapping))(CypherValue.implicits.cypherValueMapEncoder[CypherValue])
+      val out = in.map(ProductAsMap(outputMapping))(context.cypherValueMapEncoder)
       out
     }
   }

@@ -1,11 +1,10 @@
 package org.opencypher.spark
 
+import org.opencypher.spark.api.{CypherNode, CypherRecord}
 import org.opencypher.spark.impl.StdPropertyGraph
 
-class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessionSupport {
+class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSession.Fixture {
 
-  import CypherValue.implicits._
-  import EntityData._
   import StdPropertyGraph.SupportedQueries
   import factory._
 
@@ -18,10 +17,10 @@ class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessi
 
     val result = graph.cypher(SupportedQueries.allNodesScan)
 
-    result.maps.collectAsScalaSet should equal(Set(
-      Map[String, CypherNode]("n" -> a),
-      Map[String, CypherNode]("n" -> b),
-      Map[String, CypherNode]("n" -> c)
+    result.records.collectAsScalaSet should equal(Set(
+      CypherRecord("n" -> a),
+      CypherRecord("n" -> b),
+      CypherRecord("n" -> c)
     ))
   }
 
@@ -34,11 +33,11 @@ class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessi
     // MATCH (n) RETURN n.name, n.age
     val result = graph.cypher(SupportedQueries.allNodesScanProjectAgeName)
 
-    result.maps.collectAsScalaSet should equal(Set(
-      Map[String, CypherValue]("n.name" -> "Mats", "n.age" -> null),
-      Map[String, CypherValue]("n.name" -> "Stefan", "n.age" -> 37),
-      Map[String, CypherValue]("n.name" -> null, "n.age" -> 7),
-      Map[String, CypherValue]("n.name" -> null, "n.age" -> null)
+    result.records.collectAsScalaSet should equal(Set(
+      CypherRecord("n.name" -> "Mats", "n.age" -> null),
+      CypherRecord("n.name" -> "Stefan", "n.age" -> 37),
+      CypherRecord("n.name" -> null, "n.age" -> 7),
+      CypherRecord("n.name" -> null, "n.age" -> null)
     ))
   }
 
@@ -57,10 +56,10 @@ class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessi
     // MATCH (:A)-[r]->(:B) RETURN r
     val result = graph.cypher(SupportedQueries.getAllRelationshipsOfTypeTOfLabelA)
 
-    result.maps.collectAsScalaSet should equal(Set(
-      Map[String, CypherValue]("r" -> r1),
-      Map[String, CypherValue]("r" -> r2),
-      Map[String, CypherValue]("r" -> r3)
+    result.records.collectAsScalaSet should equal(Set(
+      CypherRecord("r" -> r1),
+      CypherRecord("r" -> r2),
+      CypherRecord("r" -> r3)
     ))
   }
 

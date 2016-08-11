@@ -1,9 +1,9 @@
 package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.Dataset
-import org.opencypher.spark.CypherTypes.CTNode
+import org.opencypher.spark.api.types.CTNode
+import org.opencypher.spark.api.{CypherNode, CypherValue}
 import org.opencypher.spark.impl._
-import org.opencypher.spark.{CypherNode, CypherValue}
 
 object AllNodes {
 
@@ -20,7 +20,7 @@ object AllNodes {
 
     override def run(implicit context: RuntimeContext): Dataset[CypherNode] = {
       // rename hard-coded column name 'value' to our slot name
-      alias(input, CypherValue.implicits.cypherValueEncoder[CypherNode])
+      alias(input)(context.cypherNodeEncoder)
     }
 
     def nodeField: StdField = sig.fields.head

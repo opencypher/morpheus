@@ -1,12 +1,10 @@
 package org.opencypher.spark.impl.frame
 
-import org.opencypher.spark.CypherTypes.CTRelationship
-import org.opencypher.spark.EntityData._
-import org.opencypher.spark.{BinaryRepresentation, CypherValue}
+import org.opencypher.spark.api.types._
+import org.opencypher.spark.api._
 
 class AllRelationshipsTest extends StdFrameTestSuite {
 
-  import CypherValue.implicits._
   import factory._
 
   test("AllRelationships produces all input relationships") {

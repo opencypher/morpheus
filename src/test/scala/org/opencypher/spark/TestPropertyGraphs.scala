@@ -1,9 +1,11 @@
 package org.opencypher.spark
 
+import org.opencypher.spark.api.{CypherBoolean, CypherString, CypherValue}
+
 object TestPropertyGraphs {
 
-  import CypherValue.implicits._
-  import EntityData._
+  import org.opencypher.spark.api.CypherValue.Conversion._
+  import org.opencypher.spark.api.EntityData.Creation._
 
   def createGraph1(factory: PropertyGraphFactory) = {
     val n1 = factory.add(newNode.withProperties("prop" -> CypherString("value")))

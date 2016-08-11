@@ -2,6 +2,7 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql.{Dataset, Encoder}
 import org.opencypher.spark._
+import org.opencypher.spark.api._
 
 abstract class StdCypherFrame[Out](sig: StdFrameSignature) extends CypherFrame[Out] {
 
@@ -19,7 +20,7 @@ abstract class StdCypherFrame[Out](sig: StdFrameSignature) extends CypherFrame[O
 
   // Spark renames columns when we convert between Dataset types.
   // To keep track of them we rename them explicitly after each step.
-  def alias[T](input: Dataset[T], encoder: Encoder[T]): Dataset[T] = {
+  def alias[T](input: Dataset[T])(implicit encoder: Encoder[T]): Dataset[T] = {
     input.toDF(signature.slotNames: _*).as(encoder)
   }
 }

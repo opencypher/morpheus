@@ -2,9 +2,9 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.types.IntegerType
-import org.opencypher.spark.CypherTypes.{CTAny, CTInteger, CTNode}
+import org.opencypher.spark.api.types.{CTAny, CTInteger, CTNode}
 import org.opencypher.spark._
-import org.opencypher.spark.api.{CypherResultContainer, PropertyGraph}
+import org.opencypher.spark.api.{CypherNode, CypherRelationship, CypherResultContainer, PropertyGraph}
 import org.opencypher.spark.impl.frame.ProjectNodeId.ProductNodeId
 import org.opencypher.spark.impl.frame._
 import org.opencypher.spark.impl.util.{ProductEncoderFactory, SlotSymbolGenerator, productize}

@@ -1,4 +1,4 @@
-package org.opencypher.spark
+package org.opencypher.spark.api
 
 import org.opencypher.spark.impl.PlanningContext
 

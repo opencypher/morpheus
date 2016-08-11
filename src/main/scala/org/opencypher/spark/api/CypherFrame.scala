@@ -1,7 +1,7 @@
-package org.opencypher.spark
+package org.opencypher.spark.api
 
-import org.apache.spark.sql.{SparkSession, Dataset}
 import org.apache.spark.sql.types.{BinaryType, DataType}
+import org.apache.spark.sql.{Dataset, SparkSession}
 
 trait Expr
 

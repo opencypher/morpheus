@@ -1,7 +1,7 @@
 package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.Dataset
-import org.opencypher.spark.CypherNode
+import org.opencypher.spark.api.CypherNode
 import org.opencypher.spark.impl._
 import org.opencypher.spark.impl.util.productize
 

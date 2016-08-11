@@ -1,4 +1,6 @@
-package org.opencypher.spark
+package org.opencypher.spark.api
+
+import org.opencypher.spark.StdTestSuite
 
 class TernaryTest extends StdTestSuite {
 
