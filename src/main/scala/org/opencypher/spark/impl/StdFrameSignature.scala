@@ -16,6 +16,8 @@ class StdFrameSignature(private val map: Map[StdField, StdSlot] = Map.empty)
   override def fields: Seq[StdField] = map.keys.toSeq
   override def slots: Seq[StdSlot] = map.values.toSeq.sortBy(_.ordinal)
 
+  def slotNames: Seq[String] = slots.map(_.sym.name)
+
   override def apply(field: StdField): Option[StdSlot] = map.get(field)
 
   override def addField(field: StdField)(implicit context: PlanningContext): StdFrameSignature = {

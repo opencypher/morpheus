@@ -5,7 +5,7 @@ import org.opencypher.spark.CypherValue
 import org.opencypher.spark.impl.util.productize
 import org.opencypher.spark.impl.{StdCypherFrame, StdRuntimeContext}
 
-object ValuesAsProducts {
+object ValueAsProduct {
 
   def apply[T <: CypherValue](input: StdCypherFrame[T]): ValuesAsProducts[T] = new ValuesAsProducts(input)
 
@@ -13,7 +13,8 @@ object ValuesAsProducts {
 
     override def run(implicit context: StdRuntimeContext): Dataset[Product] = {
       val in = input.run
-      val out = in.map(valueAsProduct)(context.productEncoder(slots))
+      val mapped = in.map(valueAsProduct)(context.productEncoder(slots))
+      val out = alias(mapped, context.productEncoder(slots))
       out
     }
   }

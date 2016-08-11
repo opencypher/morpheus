@@ -48,12 +48,12 @@ class StdPropertyGraph(nodes: Dataset[CypherNode], relationships: Dataset[Cypher
 
       case SupportedQueries.allNodesScan =>
         val nodeFrame = AllNodes(nodes)('n)
-        val rowFrame = ValuesAsRows(nodeFrame)
+        val rowFrame = ValueAsRow(nodeFrame)
         StdCypherResultContainer.fromRows(rowFrame)
 
       case SupportedQueries.allNodesScanProjectAgeName =>
         val nodeFrame = AllNodes(nodes)('n)
-        val rowFrame = ValuesAsRows(nodeFrame)
+        val rowFrame = ValueAsRow(nodeFrame)
         val productFrame = RowsAsProducts(rowFrame)
         val projectFrame1 = PropertyAccessProducts(productFrame, nodeFrame.nodeField, 'name)(StdField(Symbol("n.name"), CTAny.nullable))
         val projectFrame2 = PropertyAccessProducts(projectFrame1, nodeFrame.nodeField, 'age)(StdField(Symbol("n.age"), CTAny.nullable))
@@ -64,18 +64,18 @@ class StdPropertyGraph(nodes: Dataset[CypherNode], relationships: Dataset[Cypher
       case SupportedQueries.getAllRelationshipsOfTypeTOfLabelA =>
         val allNodesA = AllNodes(nodes)('a)
         val aWithLabels = LabelFilterNodes(allNodesA, Seq("A"))
-        val aAsProduct = ValuesAsProducts(aWithLabels)
+        val aAsProduct = ValueAsProduct(aWithLabels)
         val aWithId = ProjectNodeId(aAsProduct, allNodesA.nodeField)(StdField(Symbol("id(a)"), CTInteger))
         val aAsRows = ProductsAsRows(aWithId)
 
         val allNodesB = AllNodes(nodes)('b)
         val bWithLabels = LabelFilterNodes(allNodesB, Seq("B"))
-        val bAsProduct = ValuesAsProducts(bWithLabels)
+        val bAsProduct = ValueAsProduct(bWithLabels)
         val bWithId = ProjectNodeId(bAsProduct, allNodesB.nodeField)(StdField(Symbol("id(b)"), CTInteger))
         val bAsRows = ProductsAsRows(bWithId)
 
         val allRels = AllRelationships(relationships)('r)
-        val rAsProduct = ValuesAsProducts(allRels)
+        val rAsProduct = ValueAsProduct(allRels)
         val rWithStartId = ProjectRelationshipStartId(rAsProduct, allRels.relField)(StdField(Symbol("startId(r)"), CTInteger))
         val rWithStartAndEndId = ProjectRelationshipEndId(rWithStartId, allRels.relField)(StdField(Symbol("endId(r)"), CTInteger))
         val relsAsRows = ProductsAsRows(rWithStartAndEndId)

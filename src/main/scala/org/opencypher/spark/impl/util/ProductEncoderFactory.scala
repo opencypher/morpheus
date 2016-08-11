@@ -21,4 +21,6 @@ case object ProductEncoderFactory {
     ExpressionEncoder.tuple(encoders).asInstanceOf[ExpressionEncoder[Product]]
   }
 
+  val SPARK_GENERIC_COLUMN_NAME = "value"
+
 }

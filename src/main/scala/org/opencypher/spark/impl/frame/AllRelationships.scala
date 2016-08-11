@@ -1,9 +1,10 @@
 package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.Dataset
-import org.opencypher.spark.CypherRelationship
 import org.opencypher.spark.CypherTypes.CTRelationship
+import org.opencypher.spark.impl.util.ProductEncoderFactory.SPARK_GENERIC_COLUMN_NAME
 import org.opencypher.spark.impl.{PlanningContext, StdCypherFrame, StdField, StdFrameSignature}
+import org.opencypher.spark.{CypherRelationship, CypherValue}
 
 object AllRelationships {
 
@@ -19,7 +20,7 @@ object AllRelationships {
   class AllRelationships(input: Dataset[CypherRelationship], sig: StdFrameSignature) extends StdCypherFrame[CypherRelationship](sig) {
 
     override def run(implicit context: RuntimeContext): Dataset[CypherRelationship] = {
-      input
+      alias(input, CypherValue.implicits.cypherValueEncoder[CypherRelationship])
     }
 
     def relField: StdField = sig.fields.head

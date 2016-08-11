@@ -2,8 +2,8 @@ package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.Dataset
 import org.opencypher.spark.CypherRelationship
-import org.opencypher.spark.impl.util.productize
 import org.opencypher.spark.impl._
+import org.opencypher.spark.impl.util.productize
 
 object ProjectRelationshipEndId {
 
@@ -16,8 +16,8 @@ object ProjectRelationshipEndId {
 
     override def run(implicit context: StdRuntimeContext): Dataset[Product] = {
       val in = input.run
-      val out = in.map(RelationshipEndId(index))(context.productEncoder(slots))
-      out
+      val mapped = in.map(RelationshipEndId(index))(context.productEncoder(slots))
+      alias(mapped, context.productEncoder(slots))
     }
 
     override def projectedField = outputField
