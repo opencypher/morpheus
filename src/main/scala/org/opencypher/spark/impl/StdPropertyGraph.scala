@@ -88,8 +88,15 @@ class StdPropertyGraph(nodes: Dataset[CypherNode], relationships: Dataset[Cypher
 
         StdCypherResultContainer.fromProducts(selectField)
 
+      //      case SupportedQueries.simpleUnionAll =>
+      //        val a = nodes.filter(_.labels.contains("A")).map(node => node.properties.getOrElse("name", CypherNull))(CypherValue.implicits.cypherValueEncoder[CypherValue]).toDF("name")
+      //        val b = nodes.filter(_.labels.contains("B")).map(node => node.properties.getOrElse("name", CypherNull))(CypherValue.implicits.cypherValueEncoder[CypherValue]).toDF("name")
+      //        val result = a.union(b).as[CypherValue](CypherValue.implicits.cypherValueEncoder[CypherValue])
+      //
+      //        new StdFrame(result.map(v => StdRecord(Array(v), Array.empty)), ListMap("name" -> 0)).result
 
-//      case SupportedQueries.allNodeIds =>
+
+      //      case SupportedQueries.allNodeIds =>
 //        new StdFrame(nodes.map[StdRecord] { node: CypherNode =>
 //          StdRecord(Array(CypherInteger(node.id.v)), Array.empty)
 //        }, ListMap("value" -> 0)).result
@@ -119,13 +126,6 @@ class StdPropertyGraph(nodes: Dataset[CypherNode], relationships: Dataset[Cypher
 //        val result = rel.as[CypherRelationship](CypherValue.implicits.cypherValueEncoder[CypherRelationship])
 //
 //        new StdFrame(result.map(r => StdRecord(Array(r), Array.empty)), ListMap("r" -> 0)).result
-//
-//      case SupportedQueries.simpleUnionAll =>
-//        val a = nodes.filter(_.labels.contains("A")).map(node => node.properties.getOrElse("name", CypherNull))(CypherValue.implicits.cypherValueEncoder[CypherValue]).toDF("name")
-//        val b = nodes.filter(_.labels.contains("B")).map(node => node.properties.getOrElse("name", CypherNull))(CypherValue.implicits.cypherValueEncoder[CypherValue]).toDF("name")
-//        val result = a.union(b).as[CypherValue](CypherValue.implicits.cypherValueEncoder[CypherValue])
-//
-//        new StdFrame(result.map(v => StdRecord(Array(v), Array.empty)), ListMap("name" -> 0)).result
 //
 //      case SupportedQueries.simpleUnionDistinct =>
 //        val a = nodes.filter(_.labels.contains("A")).map(node => node.properties.getOrElse("name", CypherNull))(CypherValue.implicits.cypherValueEncoder[CypherValue]).toDF("name")

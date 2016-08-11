@@ -18,7 +18,7 @@ class GraftingCypherOnSparkFunctionalityTest extends FunSuite with Matchers {
     add(newRelationship(a -> "KNOWS" -> b))
     add(newRelationship(a -> "KNOWS" -> a))
 
-    val result = factory.graph.cypher(SupportedQueries.allNodesScan)
+    val result = graph.cypher(SupportedQueries.allNodesScan)
 
     result.maps.collectAsScalaSet should equal(Set(
       Map[String, CypherNode]("n" -> a),
@@ -27,7 +27,61 @@ class GraftingCypherOnSparkFunctionalityTest extends FunSuite with Matchers {
     ))
   }
 
-//  test("all node scan on node-only graph that uses all kinds of properties") {
+  test("get all nodes and project two properties into multiple columns") {
+    add(newNode.withProperties("name" -> "Mats"))
+    add(newNode.withProperties("name" -> "Stefan", "age" -> 37))
+    add(newNode.withProperties("age" -> 7))
+    add(newNode)
+
+    // MATCH (n) RETURN n.name, n.age
+    val result = graph.cypher(SupportedQueries.allNodesScanProjectAgeName)
+
+    result.maps.collectAsScalaSet should equal(Set(
+      Map[String, CypherValue]("n.name" -> "Mats", "n.age" -> null),
+      Map[String, CypherValue]("n.name" -> "Stefan", "n.age" -> 37),
+      Map[String, CypherValue]("n.name" -> null, "n.age" -> 7),
+      Map[String, CypherValue]("n.name" -> null, "n.age" -> null)
+    ))
+  }
+
+  test("get all rels of type T from nodes of label A") {
+    val a1 = add(newLabeledNode("A"))
+    val a2 = add(newLabeledNode("A"))
+    val b1 = add(newLabeledNode("B"))
+    val b2 = add(newLabeledNode("B"))
+    val b3 = add(newLabeledNode("B"))
+    add(newRelationship(a1 -> "A_TO_A" -> a1))
+    val r1 = add(newRelationship(a1 -> "A_TO_B" -> b1))
+    val r2 = add(newRelationship(a2 -> "A_TO_B" -> b1))
+    val r3 = add(newRelationship(a2 -> "X" -> b2))
+    add(newRelationship(b2 -> "B_TO_B" -> b3))
+
+    // MATCH (:A)-[r]->(:B) RETURN r
+    val result = graph.cypher(SupportedQueries.getAllRelationshipsOfTypeTOfLabelA)
+
+    result.maps.collectAsScalaSet should equal(Set(
+      Map[String, CypherValue]("r" -> r1),
+      Map[String, CypherValue]("r" -> r2),
+      Map[String, CypherValue]("r" -> r3)
+    ))
+  }
+
+//  test("simple union all") {
+//    val a = add(newLabeledNode("A"))
+//    val ab = add(newLabeledNode("A", "B"))
+//    val c = add(newLabeledNode("C"))
+//    add(newNode)
+//    add(newUntypedRelationship(a -> ab))
+//    add(newUntypedRelationship(ab -> c))
+//
+//    // MATCH (a:A) RETURN a.name AS name UNION ALL MATCH (b:B) RETURN b.name AS name
+//    val result = graph.cypher(SupportedQueries.simpleUnionAll)
+//
+//    result.show()
+//  }
+
+
+  //  test("all node scan on node-only graph that uses all kinds of properties") {
 //    val pg = factory(createGraph2(_)).graph
 //
 //    val cypher: CypherResult = pg.cypher(SupportedQueries.allNodesScan)
@@ -69,21 +123,6 @@ class GraftingCypherOnSparkFunctionalityTest extends FunSuite with Matchers {
 //    result.show(false)
 //  }
 //
-  test("get all nodes and project two properties into multiple columns") {
-    factory.add(newNode.withProperties("name" -> "Mats"))
-    factory.add(newNode.withProperties("name" -> "Stefan", "age" -> 37))
-    factory.add(newNode.withProperties("age" -> 7))
-    factory.add(newNode)
-
-    val result = factory.graph.cypher(SupportedQueries.allNodesScanProjectAgeName)
-
-    result.maps.collectAsScalaSet should equal(Set(
-      Map[String, CypherValue]("n.name" -> "Mats", "n.age" -> null),
-      Map[String, CypherValue]("n.name" -> "Stefan", "n.age" -> 37),
-      Map[String, CypherValue]("n.name" -> null, "n.age" -> 7),
-      Map[String, CypherValue]("n.name" -> null, "n.age" -> null)
-    ))
-  }
 //
 //  test("get all rels of type T") {
 //    val pg = factory(createGraph1(_)).graph
@@ -93,34 +132,6 @@ class GraftingCypherOnSparkFunctionalityTest extends FunSuite with Matchers {
 //    cypher.show()
 //  }
 //
-  test("get all rels of type T from nodes of label A") {
-    val a1 = add(newLabeledNode("A"))
-    val a2 = add(newLabeledNode("A"))
-    val b1 = add(newLabeledNode("B"))
-    val b2 = add(newLabeledNode("B"))
-    val b3 = add(newLabeledNode("B"))
-    add(newRelationship(a1 -> "A_TO_A" -> a1))
-    val r1 = add(newRelationship(a1 -> "A_TO_B" -> b1))
-    val r2 = add(newRelationship(a2 -> "A_TO_B" -> b1))
-    val r3 = add(newRelationship(a2 -> "X" -> b2))
-    add(newRelationship(b2 -> "B_TO_B" -> b3))
-
-    val result = factory.graph.cypher(SupportedQueries.getAllRelationshipsOfTypeTOfLabelA)
-
-    result.maps.collectAsScalaSet should equal(Set(
-      Map[String, CypherValue]("r" -> r1),
-      Map[String, CypherValue]("r" -> r2),
-      Map[String, CypherValue]("r" -> r3)
-    ))
-  }
-
-//  test("simple union all") {
-//    val pg = factory(createGraph3(_)).graph
-//
-//    val result = pg.cypher(SupportedQueries.simpleUnionAll)
-//
-//    result.show()
-//  }
 //
 //  test("simple union distinct") {
 //    val pg = factory(createGraph3(_)).graph
