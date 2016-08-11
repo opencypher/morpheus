@@ -1,8 +1,9 @@
-package org.opencypher.spark
+package org.opencypher.spark.shell
 
 import ammonite.util.Bind._
 import ammonite.util.Util
 import org.apache.spark.sql.SparkSession
+import org.opencypher.spark.{CypherOnSpark, PropertyGraphFactory}
 
 object Shell {
 
