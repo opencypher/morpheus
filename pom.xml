@@ -60,37 +60,7 @@
                     <scalaCompatVersion>${scala.binary.version}</scalaCompatVersion>
                 </configuration>
             </plugin>
-
-            <!-- disable surefire -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.19.1</version>
-                <configuration>
-                    <skipTests>true</skipTests>
-                </configuration>
-            </plugin>
-
-            <!-- enable scala test -->
-            <plugin>
-                <groupId>org.scalatest</groupId>
-                <artifactId>scalatest-maven-plugin</artifactId>
-                <version>1.0</version>
-                <configuration>
-                    <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
-                    <junitxml>.</junitxml>
-                    <filereports>WDF TestSuite.txt</filereports>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>test</id>
-                        <goals>
-                            <goal>test</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
+            
             <!-- enable scalastyle (configured below in pluginManagement) -->
             <plugin>
                 <groupId>org.scalastyle</groupId>
@@ -365,12 +335,12 @@
             </exclusions>
         </dependency>
 
-        <!--<dependency>-->
-        <!--<groupId>junit</groupId>-->
-        <!--<artifactId>junit</artifactId>-->
-        <!--<version>4.12</version>-->
-        <!--<scope>test</scope>-->
-        <!--</dependency>-->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
 
         <!--<dependency>-->
         <!--<groupId>org.scalacheck</groupId>-->

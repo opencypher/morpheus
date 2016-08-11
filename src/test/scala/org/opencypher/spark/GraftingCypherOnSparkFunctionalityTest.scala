@@ -2,7 +2,7 @@ package org.opencypher.spark
 
 import org.opencypher.spark.impl.StdPropertyGraph
 
-class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite {
+class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessionSupport {
 
   import CypherValue.implicits._
   import EntityData._
