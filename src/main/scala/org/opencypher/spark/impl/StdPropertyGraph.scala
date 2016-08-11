@@ -1,11 +1,13 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql._
-import org.opencypher.spark.CypherTypes.CTAny
+import org.apache.spark.sql.types.IntegerType
+import org.opencypher.spark.CypherTypes.{CTAny, CTInteger, CTNode}
 import org.opencypher.spark._
 import org.opencypher.spark.api.{CypherResultContainer, PropertyGraph}
+import org.opencypher.spark.impl.frame.ProjectNodeId.ProductNodeId
 import org.opencypher.spark.impl.frame._
-import org.opencypher.spark.impl.util.SlotSymbolGenerator
+import org.opencypher.spark.impl.util.{ProductEncoderFactory, SlotSymbolGenerator, productize}
 
 import scala.language.implicitConversions
 
@@ -37,10 +39,6 @@ class StdPropertyGraph(nodes: Dataset[CypherNode], relationships: Dataset[Cypher
 
   private implicit def stringFromSymbol(s: Symbol): String = s.name
 
-  // 1) two methods
-  // 2) intermediary .products, .rows
-  // 3) implicits
-
   override def cypher(query: String): CypherResultContainer = {
     val slotNames = new SlotSymbolGenerator
     implicit val planningContext = new PlanningContext(slotNames)
@@ -49,43 +47,47 @@ class StdPropertyGraph(nodes: Dataset[CypherNode], relationships: Dataset[Cypher
     query match {
 
       case SupportedQueries.allNodesScan =>
-        val nodeFrame = CypherNodes(nodes)('n)
-        val rowFrame = CypherValuesAsRows(nodeFrame)
+        val nodeFrame = AllNodes(nodes)('n)
+        val rowFrame = ValuesAsRows(nodeFrame)
         StdCypherResultContainer.fromRows(rowFrame)
 
       case SupportedQueries.allNodesScanProjectAgeName =>
-        val nodeFrame = CypherNodes(nodes)('n)
-        val rowFrame = CypherValuesAsRows(nodeFrame)
+        val nodeFrame = AllNodes(nodes)('n)
+        val rowFrame = ValuesAsRows(nodeFrame)
         val productFrame = RowsAsProducts(rowFrame)
         val projectFrame1 = PropertyAccessProducts(productFrame, nodeFrame.nodeField, 'name)(StdField(Symbol("n.name"), CTAny.nullable))
         val projectFrame2 = PropertyAccessProducts(projectFrame1, nodeFrame.nodeField, 'age)(StdField(Symbol("n.age"), CTAny.nullable))
-        val sig = projectFrame2.signature
-        val selectFields = SelectProductFields(projectFrame2)(StdField(Symbol("n.name"), CTAny.nullable), StdField(Symbol("n.age"), CTAny.nullable))
-        val si2 = selectFields.signature
+        val selectFields = SelectProductFields(projectFrame2)(projectFrame1.projectedField, projectFrame2.projectedField)
 
         StdCypherResultContainer.fromProducts(selectFields)
-//
-//        val field1 = StdField('name, CTAny)
-//        val field2 = StdField('age, CTAny)
-//        val slot1 = StdSlot(slotNames.newSlotName(field1.name), CTString, EmbeddedRepresentation(StringType))
-//        val slot2 = StdSlot(slotNames.newSlotName(field2.name), CTAny, BinaryRepresentation)
-//
-//        new StdCypherFrame(Seq(field1, field2), Map(field1.name -> slot1, field2.name -> slot2)) {
-//          override protected def execute: DataFrame = {
-//
-//            import CypherValue.{implicits => encoders}
-//
-//            val df0 = nodes.toDF("n")
-//            val encoder0 = ExpressionEncoder.tuple(Seq(encoders.cypherValueEncoder[CypherNode])).asInstanceOf[ExpressionEncoder[Product]]
-//            val ds0 = df0.as[Product](encoder0)
-//
-//            val encoder1 = productEncoder(slots.values.toSeq)
-//            val ds1 = ds0.map(WorkItem(fields))(encoder1)
-//            val df1 = ds1.toDF(slots.values.map(_.name.name).toSeq: _*)
-//
-//            df1
-//          }
-//        }.result
+
+      case SupportedQueries.getAllRelationshipsOfTypeTOfLabelA =>
+        val allNodesA = AllNodes(nodes)('a)
+        val aWithLabels = LabelFilterNodes(allNodesA, Seq("A"))
+        val aAsProduct = ValuesAsProducts(aWithLabels)
+        val aWithId = ProjectNodeId(aAsProduct, allNodesA.nodeField)(StdField(Symbol("id(a)"), CTInteger))
+        val aAsRows = ProductsAsRows(aWithId)
+
+        val allNodesB = AllNodes(nodes)('b)
+        val bWithLabels = LabelFilterNodes(allNodesB, Seq("B"))
+        val bAsProduct = ValuesAsProducts(bWithLabels)
+        val bWithId = ProjectNodeId(bAsProduct, allNodesB.nodeField)(StdField(Symbol("id(b)"), CTInteger))
+        val bAsRows = ProductsAsRows(bWithId)
+
+        val allRels = AllRelationships(relationships)('r)
+        val rAsProduct = ValuesAsProducts(allRels)
+        val rWithStartId = ProjectRelationshipStartId(rAsProduct, allRels.relField)(StdField(Symbol("startId(r)"), CTInteger))
+        val rWithStartAndEndId = ProjectRelationshipEndId(rWithStartId, allRels.relField)(StdField(Symbol("endId(r)"), CTInteger))
+        val relsAsRows = ProductsAsRows(rWithStartAndEndId)
+
+        val joinRelA = Join(relsAsRows, aAsRows, rWithStartId.projectedField, aWithId.projectedField)
+        val joinRelB = Join(joinRelA, bAsRows, rWithStartAndEndId.projectedField, bWithId.projectedField)
+
+        val asProduct = RowsAsProducts(joinRelB)
+        val selectField = SelectProductFields(asProduct)(allRels.relField)
+
+        StdCypherResultContainer.fromProducts(selectField)
+
 
 //      case SupportedQueries.allNodeIds =>
 //        new StdFrame(nodes.map[StdRecord] { node: CypherNode =>
@@ -102,18 +104,6 @@ class StdPropertyGraph(nodes: Dataset[CypherNode], relationships: Dataset[Cypher
 //      case SupportedQueries.getAllRelationshipsOfTypeT =>
 //        new StdFrame(relationships.filter(_.typ == "T").map(r => StdRecord(Array(r), Array.empty)), ListMap("r" -> 0)).result
 //
-//      case SupportedQueries.getAllRelationshipsOfTypeTOfLabelA =>
-//        val a = nodes.filter(_.labels.contains("A")).map(node => (node.id.v, node))(Encoders.tuple(implicitly[Encoder[Long]], CypherValue.implicits.cypherValueEncoder[CypherNode])).toDF("id_a", "val_a")
-//        val b = nodes.filter(_.labels.contains("B")).map(node => (node.id.v, node))(Encoders.tuple(implicitly[Encoder[Long]], CypherValue.implicits.cypherValueEncoder[CypherNode])).toDF("id_b", "val_b")
-//        val rels = relationships.map(rel => (rel.start.v, rel.end.v, rel.id.v, rel))(Encoders.tuple(implicitly[Encoder[Long]], implicitly[Encoder[Long]], implicitly[Encoder[Long]], CypherValue.implicits.cypherValueEncoder[CypherRelationship])).toDF("start_rel", "end_rel", "id_rel", "val_rel")
-//        val joined =
-//          rels
-//            .join(a, functions.expr("id_a = start_rel"))
-//            .join(b, functions.expr("id_b = end_rel"))
-//            .select(new Column("val_rel").as("value"))
-//        val result = joined.as[CypherRelationship](CypherValue.implicits.cypherValueEncoder[CypherRelationship])
-//
-//        new StdFrame(result.map(r => StdRecord(Array(r), Array.empty)), ListMap("r" -> 0)).result
 //
 //
 //      case SupportedQueries.optionalMatch =>

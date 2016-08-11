@@ -1,7 +1,7 @@
-package org.opencypher.spark.impl.frame
+package org.opencypher.spark.impl
 
-import org.opencypher.spark.impl.{PlanningContext, StdField, StdSlot}
-import org.opencypher.spark.{BinaryRepresentation, CypherFrameSignature}
+import org.apache.spark.sql.types.IntegerType
+import org.opencypher.spark.{BinaryRepresentation, CypherFrameSignature, EmbeddedRepresentation}
 
 object StdFrameSignature {
   val empty = new StdFrameSignature
@@ -23,6 +23,11 @@ class StdFrameSignature(private val map: Map[StdField, StdSlot] = Map.empty)
     new StdFrameSignature(map + entry)
   }
 
+  override def addIntegerField(field: StdField)(implicit context: PlanningContext): StdFrameSignature = {
+    val entry = field -> StdSlot(context.newSlotSymbol(field), field.cypherType, map.values.size, EmbeddedRepresentation(IntegerType))
+    new StdFrameSignature(map + entry)
+  }
+
   override def aliasFields(aliases: (Symbol, Symbol)*): StdFrameSignature = ???
 
   override def removeField(sym: Symbol): StdFrameSignature = ???
@@ -38,5 +43,20 @@ class StdFrameSignature(private val map: Map[StdField, StdSlot] = Map.empty)
     }
     val retainedOldSlotsSortedByNewOrdinal = newOrdinals.toSeq.sortBy(_._2).map(_._1)
     (new StdFrameSignature(newMap), retainedOldSlotsSortedByNewOrdinal)
+  }
+
+  def ++(other: StdFrameSignature): StdFrameSignature = {
+    // TODO: Remove var
+    var highestSlotOrdinal = map.values.map(_.ordinal).max
+    val otherWithUpdatedOrdinals = other.map.map {
+      case (f, s) =>
+        highestSlotOrdinal = highestSlotOrdinal + 1
+        f -> s.copy(ordinal = highestSlotOrdinal)
+    }
+    new StdFrameSignature(map ++ otherWithUpdatedOrdinals)
+  }
+
+  override def toString(): String = {
+    s"Signature($map)"
   }
 }

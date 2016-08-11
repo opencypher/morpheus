@@ -2,7 +2,7 @@ package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.Dataset
 import org.opencypher.spark.impl.util.productize
-import org.opencypher.spark.impl.{StdSlot, StdCypherFrame, StdField, StdRuntimeContext}
+import org.opencypher.spark.impl._
 
 object SelectProductFields {
   def apply(input: StdCypherFrame[Product])(fields: StdField*): SelectProductFields = {

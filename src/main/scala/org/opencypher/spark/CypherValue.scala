@@ -129,7 +129,7 @@ final case class CypherNode(id: EntityId, labels: Seq[String], properties: Map[S
   def cypherType = CTNode
 }
 
-final case class CypherRelationship(id: EntityId, start: EntityId, end: EntityId, typ: String, properties: Map[String, CypherValue] = Map.empty) extends CypherValue with HasEntityId with HasProperties {
+final case class CypherRelationship(id: EntityId, start: EntityId, end: EntityId, typ: String, properties: Map[String, CypherValue]) extends CypherValue with HasEntityId with HasProperties {
   type Repr = ((Long, Long), CypherRelationship)
 
   def v = (start.v -> end.v) -> this

@@ -1,7 +1,6 @@
 package org.opencypher.spark.impl
 
 import org.opencypher.spark._
-import org.opencypher.spark.impl.frame.StdFrameSignature
 
 abstract class StdCypherFrame[Out](sig: StdFrameSignature) extends CypherFrame[Out] {
 
@@ -20,7 +19,7 @@ abstract class StdCypherFrame[Out](sig: StdFrameSignature) extends CypherFrame[O
 
 case class StdField(sym: Symbol, cypherType: CypherType) extends CypherField {
   // TODO: Properly escape here
-  val columnSym: Symbol = Symbol(sym.name.replace('.', '-'))
+  val columnSym: Symbol = Symbol(sym.name.filterNot(_ == '.').filterNot( _ == '(').filterNot(_ == ')'))
 }
 
 case class StdSlot(sym: Symbol, cypherType: CypherType, ordinal: Int, representation: Representation) extends CypherSlot

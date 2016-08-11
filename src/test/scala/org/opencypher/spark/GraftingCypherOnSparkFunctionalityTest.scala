@@ -93,18 +93,31 @@ class GraftingCypherOnSparkFunctionalityTest extends FunSuite with Matchers {
 //    cypher.show()
 //  }
 //
-//  test("get all rels of type T from nodes of label A") {
-//    val pg = factory(createGraph1(_)).graph
-//
-//    val cypher: CypherResult = pg.cypher(SupportedQueries.getAllRelationshipsOfTypeTOfLabelA)
-//
-//    cypher.show()
-//  }
-//
+  test("get all rels of type T from nodes of label A") {
+    val a1 = add(newLabeledNode("A"))
+    val a2 = add(newLabeledNode("A"))
+    val b1 = add(newLabeledNode("B"))
+    val b2 = add(newLabeledNode("B"))
+    val b3 = add(newLabeledNode("B"))
+    add(newRelationship(a1 -> "A_TO_A" -> a1))
+    val r1 = add(newRelationship(a1 -> "A_TO_B" -> b1))
+    val r2 = add(newRelationship(a2 -> "A_TO_B" -> b1))
+    val r3 = add(newRelationship(a2 -> "X" -> b2))
+    add(newRelationship(b2 -> "B_TO_B" -> b3))
+
+    val result = factory.graph.cypher(SupportedQueries.getAllRelationshipsOfTypeTOfLabelA)
+
+    result.maps.collectAsScalaSet should equal(Set(
+      Map[String, CypherValue]("r" -> r1),
+      Map[String, CypherValue]("r" -> r2),
+      Map[String, CypherValue]("r" -> r3)
+    ))
+  }
+
 //  test("simple union all") {
 //    val pg = factory(createGraph3(_)).graph
 //
-//    val result: CypherResult = pg.cypher(SupportedQueries.simpleUnionAll)
+//    val result = pg.cypher(SupportedQueries.simpleUnionAll)
 //
 //    result.show()
 //  }

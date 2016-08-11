@@ -11,12 +11,8 @@ object ProductsAsRows {
 
     override def run(implicit context: RuntimeContext): Dataset[Row] = {
       val in = input.run
-      val columnSymbols = slots.map(_.sym)
-      val columns = columnSymbols.zipWithIndex.map {
-        case (name, idx) =>
-          new Column(s"_${idx + 1}").as(name)
-      }
-      val out = in.select(columns: _*)
+      val columnNames = slots.map(_.sym.name)
+      val out = in.toDF(columnNames: _*)
       out
     }
   }

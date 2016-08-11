@@ -4,7 +4,7 @@ import org.apache.spark.sql.{Dataset, Row}
 import org.opencypher.spark.CypherValue
 import org.opencypher.spark.impl.StdCypherFrame
 
-object CypherValuesAsRows {
+object ValuesAsRows {
 
   def apply[T <: CypherValue](input: StdCypherFrame[T]): StdCypherFrame[Row] =
     new CypherValuesAsRows(input = input)

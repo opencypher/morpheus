@@ -1,12 +1,11 @@
 package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.Dataset
-import org.opencypher.spark.{CypherTypes, BinaryRepresentation, CypherNode}
-import CypherTypes.CTNode
-import org.opencypher.spark.impl.{StdCypherFrame, StdField, PlanningContext, StdSlot}
-import org.opencypher.spark.{CypherTypes, BinaryRepresentation, CypherNode}
+import org.opencypher.spark.CypherNode
+import org.opencypher.spark.CypherTypes.CTNode
+import org.opencypher.spark.impl._
 
-object CypherNodes {
+object AllNodes {
   def apply(input: Dataset[CypherNode])(fieldSym: Symbol)(implicit context: PlanningContext): CypherNodes = {
     val field = StdField(fieldSym, CTNode)
     new CypherNodes(
