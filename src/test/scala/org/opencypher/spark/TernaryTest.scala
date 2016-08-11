@@ -1,8 +1,6 @@
 package org.opencypher.spark
 
-import org.scalatest.{Matchers, FunSuite}
-
-class TernaryTest extends FunSuite with Matchers {
+class TernaryTest extends StdTestSuite {
 
   test("Ternary.toString") {
     True.toString shouldBe "definitely true"

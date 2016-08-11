@@ -3,7 +3,7 @@ package org.opencypher.spark.impl
 import org.apache.spark.sql._
 import org.opencypher.spark.CypherValue
 import org.opencypher.spark.api.CypherResult
-import org.opencypher.spark.impl.frame.{ProductsAsMaps, ProductsAsRows, RowsAsProducts}
+import org.opencypher.spark.impl.frame.{ProductAsMap, ProductAsRow, RowAsProduct}
 
 class StdRowResult(val frame: StdCypherFrame[Row])(implicit val context: StdRuntimeContext) extends CypherResult[Row] {
 
@@ -27,7 +27,7 @@ class StdProductResult(val frame: StdCypherFrame[Product])(implicit val context:
   }
 
   override def toDF: DataFrame = {
-    val out = ProductsAsRows(frame).run
+    val out = ProductAsRow(frame).run
     out
   }
 
@@ -40,7 +40,7 @@ class StdProductResult(val frame: StdCypherFrame[Product])(implicit val context:
 class StdMapResult(productFrame: StdCypherFrame[Product])(implicit val context: StdRuntimeContext) extends CypherResult[Map[String, CypherValue]] {
 
   override lazy val frame: StdCypherFrame[Map[String, CypherValue]] = {
-    ProductsAsMaps(productFrame)
+    ProductAsMap(productFrame)
   }
 
   override def toDS: Dataset[Map[String, CypherValue]] = {
@@ -49,7 +49,7 @@ class StdMapResult(productFrame: StdCypherFrame[Product])(implicit val context: 
   }
 
   override def toDF: DataFrame = {
-    val out = ProductsAsRows(productFrame).run
+    val out = ProductAsRow(productFrame).run
     out
   }
 

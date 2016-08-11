@@ -3,16 +3,16 @@ package org.opencypher.spark.impl
 import org.apache.spark.sql.Row
 import org.opencypher.spark.CypherValue
 import org.opencypher.spark.api.{CypherResult, CypherResultContainer}
-import org.opencypher.spark.impl.frame.{ProductsAsRows, RowsAsProducts}
+import org.opencypher.spark.impl.frame.{ProductAsRow, RowAsProduct}
 
 object StdCypherResultContainer {
 
   def fromRows(rowFrame: StdCypherFrame[Row])(implicit planningContext: PlanningContext, runtimeContext: StdRuntimeContext): CypherResultContainer = {
-    new StdCypherResultContainer(rowFrame, RowsAsProducts(rowFrame))
+    new StdCypherResultContainer(rowFrame, RowAsProduct(rowFrame))
   }
 
   def fromProducts(productFrame: StdCypherFrame[Product])(implicit planningContext: PlanningContext, runtimeContext: StdRuntimeContext): CypherResultContainer = {
-    new StdCypherResultContainer(ProductsAsRows(productFrame), productFrame)
+    new StdCypherResultContainer(ProductAsRow(productFrame), productFrame)
   }
 }
 

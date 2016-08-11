@@ -17,7 +17,8 @@ object AllRelationships {
     )
   }
 
-  class AllRelationships(input: Dataset[CypherRelationship], sig: StdFrameSignature) extends StdCypherFrame[CypherRelationship](sig) {
+  class AllRelationships(input: Dataset[CypherRelationship], sig: StdFrameSignature)
+    extends StdCypherFrame[CypherRelationship](sig) {
 
     override def run(implicit context: RuntimeContext): Dataset[CypherRelationship] = {
       alias(input, CypherValue.implicits.cypherValueEncoder[CypherRelationship])

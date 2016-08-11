@@ -6,3 +6,8 @@ object TestSession {
   implicit lazy val session = SparkSession.builder().master("local[4]").getOrCreate()
   implicit lazy val factory = PropertyGraphFactory.create
 }
+
+trait TestSessionSupport {
+  val factory = TestSession.factory
+  val session = TestSession.session
+}

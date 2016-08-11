@@ -64,6 +64,8 @@ trait CypherSlot {
 
   // Corresponding data frame representation type
 
+  def cypherType: CypherType
+
   def representation: Representation
 
   def ordinal: Int

@@ -8,7 +8,7 @@ object StdFrameSignature {
 }
 
 class StdFrameSignature(private val map: Map[StdField, StdSlot] = Map.empty)
-  extends CypherFrameSignature with (StdField => Option[StdSlot]) {
+  extends CypherFrameSignature {
 
   override type Field = StdField
   override type Slot = StdSlot
@@ -18,7 +18,11 @@ class StdFrameSignature(private val map: Map[StdField, StdSlot] = Map.empty)
 
   def slotNames: Seq[String] = slots.map(_.sym.name)
 
-  override def apply(field: StdField): Option[StdSlot] = map.get(field)
+  override def slot(field: StdField): Option[StdSlot] =
+    map.get(field)
+
+  override def slotBySymbol(sym: Symbol): Option[StdSlot] =
+    map.collectFirst { case (field, slot) if field.sym == sym => slot }
 
   override def addField(field: StdField)(implicit context: PlanningContext): StdFrameSignature = {
     val entry = field -> StdSlot(context.newSlotSymbol(field), field.cypherType, map.values.size, BinaryRepresentation)
@@ -58,7 +62,7 @@ class StdFrameSignature(private val map: Map[StdField, StdSlot] = Map.empty)
     new StdFrameSignature(map ++ otherWithUpdatedOrdinals)
   }
 
-  override def toString(): String = {
+  override def toString: String = {
     s"Signature($map)"
   }
 }

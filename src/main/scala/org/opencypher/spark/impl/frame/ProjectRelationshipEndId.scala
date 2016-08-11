@@ -12,7 +12,7 @@ object ProjectRelationshipEndId {
 
   private final class ProjectRelationshipEndId(input: StdCypherFrame[Product], relField: StdField, outputField: StdField)(sig: StdFrameSignature) extends ProjectFrame(sig) {
 
-    val index = sig(relField).getOrElse(throw new IllegalArgumentException("Unknown relationship field")).ordinal
+    val index = sig.slot(relField).getOrElse(throw new IllegalArgumentException("Unknown relationship field")).ordinal
 
     override def run(implicit context: StdRuntimeContext): Dataset[Product] = {
       val in = input.run

@@ -5,7 +5,7 @@ import org.scalatest.{FunSuite, Matchers}
 
 import scala.language.postfixOps
 
-class CypherTypesTest extends FunSuite with Matchers {
+class CypherTypesTest extends StdTestSuite {
 
   val materialTypes: Seq[MaterialCypherType] = Seq(
     CTAny, CTBoolean, CTNumber, CTInteger, CTFloat, CTString, CTMap,

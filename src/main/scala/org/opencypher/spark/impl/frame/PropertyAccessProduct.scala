@@ -5,7 +5,7 @@ import org.opencypher.spark.CypherNode
 import org.opencypher.spark.impl._
 import org.opencypher.spark.impl.util.productize
 
-object PropertyAccessProducts {
+object PropertyAccessProduct {
 
   def apply(input: StdCypherFrame[Product], nodeField: StdField, propertyKey: Symbol)
            (outputField: StdField)
@@ -17,7 +17,7 @@ object PropertyAccessProducts {
   private final class PropertyAccessProducts(input: StdCypherFrame[Product], nodeField: StdField, propertyKey: Symbol, outputField: StdField)(sig: StdFrameSignature)
     extends ProjectFrame(sig) {
 
-    val index = sig(nodeField).getOrElse(throw new IllegalArgumentException("Unknown nodeField")).ordinal
+    val index = sig.slot(nodeField).getOrElse(throw new IllegalArgumentException("Unknown nodeField")).ordinal
 
     override def run(implicit context: StdRuntimeContext): Dataset[Product] = {
       val in = input.run

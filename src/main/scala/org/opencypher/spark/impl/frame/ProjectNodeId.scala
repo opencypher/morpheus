@@ -13,7 +13,7 @@ object ProjectNodeId {
 
   private final class ProjectNodeId(input: StdCypherFrame[Product], nodeField: StdField, outputField: StdField)(sig: StdFrameSignature) extends ProjectFrame(sig) {
 
-    val index = sig(nodeField).getOrElse(throw new IllegalArgumentException("Unknown nodeField")).ordinal
+    val index = sig.slot(nodeField).getOrElse(throw new IllegalArgumentException("Unknown nodeField")).ordinal
 
     override def run(implicit context: StdRuntimeContext): Dataset[Product] = {
       val in = input.run

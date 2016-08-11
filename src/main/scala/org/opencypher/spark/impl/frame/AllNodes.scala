@@ -6,6 +6,7 @@ import org.opencypher.spark.impl._
 import org.opencypher.spark.{CypherNode, CypherValue}
 
 object AllNodes {
+
   def apply(input: Dataset[CypherNode])(fieldSym: Symbol)(implicit context: PlanningContext): CypherNodes = {
     val field = StdField(fieldSym, CTNode)
     new CypherNodes(
@@ -14,7 +15,8 @@ object AllNodes {
     )
   }
 
-  class CypherNodes(input: Dataset[CypherNode], sig: StdFrameSignature) extends StdCypherFrame[CypherNode](sig) {
+  class CypherNodes(input: Dataset[CypherNode], sig: StdFrameSignature)
+    extends StdCypherFrame[CypherNode](sig) {
 
     override def run(implicit context: RuntimeContext): Dataset[CypherNode] = {
       // rename hard-coded column name 'value' to our slot name
