@@ -78,10 +78,10 @@ class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessi
     result.show()
 
     result.records.collectAsScalaSet should equal(Set(
-      Map[String, CypherValue]("name" -> "Mats"),
-      Map[String, CypherValue]("name" -> "Foo"),
-      Map[String, CypherValue]("name" -> "Foo"),
-      Map[String, CypherValue]("name" -> 123)
+      CypherRecord("name" -> "Mats"),
+      CypherRecord("name" -> "Foo"),
+      CypherRecord("name" -> "Foo"),
+      CypherRecord("name" -> 123)
     ))
   }
 

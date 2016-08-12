@@ -15,24 +15,25 @@ object CypherValue {
 
   trait Conversion extends LowPriorityConversion {
 
-    implicit def cypherString(v: String): CypherString = CypherString(v)
+    implicit def cypherString(v: String): CypherString = if (v == null) cypherNull else CypherString(v)
     implicit def cypherInteger(v: Int): CypherInteger = CypherInteger(v)
     implicit def cypherInteger(v: Long): CypherInteger = CypherInteger(v)
     implicit def cypherFloat(v: Float): CypherFloat = CypherFloat(v)
-    implicit def cypherFloat(v: Double): CypherFloat = CypherFloat(v)
+    implicit def cypherFloat(v: Double): CypherFloat =CypherFloat(v)
     implicit def cypherBoolean(v: Boolean): CypherBoolean = CypherBoolean(v)
-    implicit def cypherTernary(v: Ternary): CypherValue = if (v.isDefinite) CypherBoolean(v.isTrue) else CypherNull
+    implicit def cypherTernary(v: Ternary): CypherValue = if (v.isDefinite) CypherBoolean(v.isTrue) else cypherNull
 
     implicit def cypherOption[T](v: Option[T])(implicit ev: T => CypherValue): CypherValue =
-      v.map(ev).getOrElse(CypherNull)
+      if (v == null) cypherNull else v.map(ev).getOrElse(cypherNull)
 
     implicit def cypherList[T](v: Seq[T])(implicit ev: T => CypherValue): CypherList =
-      CypherList(v.map(ev))
+      if (v == null) cypherNull else CypherList(v.map(ev))
 
     implicit def cypherMap[T](v: Map[String, T])(implicit ev: T => CypherValue): CypherMap =
-      CypherMap(v.mapValues(ev))
+      if (v == null) cypherNull else CypherMap(v.mapValues(ev))
 
-    implicit def cypherPath(v: Seq[CypherEntityValue]): CypherPath = CypherPath(v: _*)
+    implicit def cypherPath(v: Seq[CypherEntityValue]): CypherPath =
+      if (v == null) cypherNull else CypherPath(v: _*)
   }
 
   trait LowPriorityConversion {
@@ -91,32 +92,26 @@ object CypherValue {
         implicitly[ExpressionEncoder[T5]]
       )
   }
+
 }
 
 sealed trait CypherValue extends Any {
   type Repr
   def v: Repr
 
-  def cypherType: CypherType
-}
-
-case object CypherNull extends CypherValue {
-  override type Repr = this.type
-  override def v = this
-
-  def cypherType = CTNull
+  protected[api] def cypherType: CypherType
 }
 
 final case class CypherString(v: String) extends AnyVal with CypherValue {
   type Repr = String
 
-  def cypherType = CTString
+  protected[api] def cypherType = CTString
 }
 
 final case class CypherBoolean(v: Boolean) extends AnyVal with CypherValue {
   type Repr = Boolean
 
-  def cypherType = CTBoolean
+  protected[api] def cypherType = CTBoolean
 }
 
 final case class CypherInteger(v: Long) extends AnyVal with CypherValue with IsNumber {
@@ -124,7 +119,7 @@ final case class CypherInteger(v: Long) extends AnyVal with CypherValue with IsN
 
   override def number: lang.Long = v.toLong
 
-  def cypherType = CTInteger
+  protected[api] def cypherType = CTInteger
 }
 
 final case class CypherFloat(v: Double) extends AnyVal with CypherValue with IsNumber {
@@ -132,7 +127,7 @@ final case class CypherFloat(v: Double) extends AnyVal with CypherValue with IsN
 
   override def number: lang.Double = v.toDouble
 
-  def cypherType = CTFloat
+  protected[api] def cypherType = CTFloat
 }
 
 object CypherList {
@@ -143,7 +138,7 @@ object CypherList {
 final case class CypherList(v: Seq[CypherValue]) extends AnyVal with CypherValue {
   type Repr = Seq[CypherValue]
 
-  def cypherType = CTList(CTAny)
+  protected[api] def cypherType = CTList(CTAny)
 }
 
 object CypherMap {
@@ -156,14 +151,14 @@ final case class CypherMap(v: Map[String, CypherValue]) extends AnyVal with Cyph
 
   def properties = v
 
-  def cypherType = CTMap
+  protected[api] def cypherType = CTMap
 }
 
 final case class CypherNode(id: EntityId, labels: Seq[String], properties: Map[String, CypherValue]) extends CypherValue with HasEntityId with HasProperties {
   type Repr = (Long, CypherNode)
   def v = id.v -> this
 
-  def cypherType = CTNode
+  protected[api] def cypherType = CTNode
 }
 
 final case class CypherRelationship(id: EntityId, startId: EntityId, endId: EntityId, relationshipType: String, properties: Map[String, CypherValue]) extends CypherValue with HasEntityId with HasProperties {
@@ -181,14 +176,14 @@ final case class CypherRelationship(id: EntityId, startId: EntityId, endId: Enti
         throw new IllegalArgumentException(s"Expected either start $startId or end $endId of relationship $id, but got: $otherId")
     }
 
-  def cypherType = CTRelationship
+  protected[api] def cypherType = CTRelationship
 }
 
 final case class CypherPath(v: CypherEntityValue*) extends CypherValue {
   // TODO: Validation
   type Repr = Seq[CypherEntityValue]
 
-  def cypherType = CTPath
+  protected[api] def cypherType = CTPath
 }
 
 sealed trait IsNumber extends Any {
