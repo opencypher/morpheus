@@ -6,10 +6,10 @@ import org.opencypher.spark.impl._
 
 object ProjectRelationshipStartId {
 
-  def apply(input: StdCypherFrame[Product], relField: StdField)(outputField: StdField)(implicit context: PlanningContext): ProjectFrame =
-    new ProjectRelationshipStartId(input, relField, outputField)(input.signature.addIntegerField(outputField))
+  def apply(input: StdCypherFrame[Product])(relField: StdField)(outputField: StdField)(implicit context: PlanningContext): ProjectFrame =
+    new ProjectRelationshipStartId(input)(relField, outputField)(input.signature.addIntegerField(outputField))
 
-  private final class ProjectRelationshipStartId(input: StdCypherFrame[Product], relField: StdField, outputField: StdField)(sig: StdFrameSignature) extends ProjectFrame(outputField, sig) {
+  private final class ProjectRelationshipStartId(input: StdCypherFrame[Product])(relField: StdField, outputField: StdField)(sig: StdFrameSignature) extends ProjectFrame(outputField, sig) {
 
     val index = sig.slot(relField).ordinal
 

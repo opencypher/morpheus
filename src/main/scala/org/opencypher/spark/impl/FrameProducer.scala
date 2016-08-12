@@ -14,16 +14,16 @@ class FrameProducer(implicit val planningContext: PlanningContext) {
   }
 
   implicit final class RichNodeFrame(input: StdCypherFrame[CypherNode]) {
-    def labelFilter(labels: String*) = LabelFilterNode(input, labels)
+    def labelFilter(labels: String*) = LabelFilterNode(input)(labels)
   }
 
   implicit final class RichProductFrame(input: StdCypherFrame[Product]) {
     def getNodeProperty(node: Symbol, propertyKey: Symbol)(outputName: Symbol) =
-      GetNodeProperty(input, node, propertyKey)(StdField(outputName, CTAny.nullable))
+      GetNodeProperty(input)(node, propertyKey)(StdField(outputName, CTAny.nullable))
 
     def aliasField(alias: (Symbol, Symbol)) = {
       val (oldName, newName) = alias
-      AliasField(input, oldName)(newName)
+      AliasField(input)(oldName)(newName)
     }
   }
 }

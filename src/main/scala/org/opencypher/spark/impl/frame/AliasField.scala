@@ -5,12 +5,13 @@ import org.opencypher.spark.impl.{StdCypherFrame, StdField, StdFrameSignature, S
 
 object AliasField {
 
-  def apply(input: StdCypherFrame[Product], fieldName: Symbol)(newName: Symbol): ProjectFrame = {
-    val (newField, newSignature) = input.signature.aliasField(fieldName, newName)
-    new AliasField(input, newField)(newSignature)
+  def apply(input: StdCypherFrame[Product])(oldName: Symbol)(newName: Symbol): ProjectFrame = {
+    val (newField, newSignature) = input.signature.aliasField(oldName, newName)
+    new AliasField(input)(newField)(newSignature)
   }
 
-  private final class AliasField(input: StdCypherFrame[Product], projectedField: StdField)(sig: StdFrameSignature) extends ProjectFrame(projectedField, sig) {
+  private final class AliasField(input: StdCypherFrame[Product])(projectedField: StdField)(sig: StdFrameSignature)
+    extends ProjectFrame(projectedField, sig) {
 
     override def execute(implicit context: StdRuntimeContext): Dataset[Product] = {
       input.run

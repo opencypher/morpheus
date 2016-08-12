@@ -5,9 +5,13 @@ import org.opencypher.spark.impl.{StdCypherFrame, StdField, StdRuntimeContext}
 
 object Join {
 
-  def apply(lhs: StdCypherFrame[Row], rhs: StdCypherFrame[Row], lhsKey: StdField, rhsKey: StdField): StdCypherFrame[Row] = new Join(lhs, rhs, lhsKey, rhsKey)
+  def apply(lhs: StdCypherFrame[Row], rhs: StdCypherFrame[Row])
+           (lhsKey: StdField, rhsKey: StdField): StdCypherFrame[Row] =
+    new Join(lhs, rhs)(lhsKey, rhsKey)
 
-  private final class Join(lhs: StdCypherFrame[Row], rhs: StdCypherFrame[Row], lhsKey: StdField, rhsKey: StdField) extends StdCypherFrame[Row](lhs.signature ++ rhs.signature) {
+  private final class Join(lhs: StdCypherFrame[Row], rhs: StdCypherFrame[Row])
+                          (lhsKey: StdField, rhsKey: StdField)
+    extends StdCypherFrame[Row](lhs.signature ++ rhs.signature) {
 
     override def execute(implicit context: StdRuntimeContext): Dataset[Row] = {
       val lhsIn = lhs.run

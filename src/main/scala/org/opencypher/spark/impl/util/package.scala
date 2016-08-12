@@ -4,7 +4,7 @@ package object util {
 
   implicit final class RichIndexedSeq[+T](val elts: IndexedSeq[T]) extends AnyVal {
 
-    def toProduct: Product = elts.length match {
+    def asProduct: Product = elts.length match {
       case 0 => throw new IllegalArgumentException("Can't turn empty sequence into a tuple")
       case 1 => Tuple1(elts(0))
       case 2 => Tuple2(elts(0), elts(1))
@@ -65,7 +65,7 @@ package object util {
 
     def get(index: Int): Any = product.productElement(index)
 
-    def toVector: Vector[Any] = product.productArity match {
+    def asVector: Vector[Any] = product.productArity match {
       case 0 =>
         Vector.empty
 

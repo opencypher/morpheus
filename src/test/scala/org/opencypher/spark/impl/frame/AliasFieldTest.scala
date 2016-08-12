@@ -16,7 +16,7 @@ class AliasFieldTest extends StdFrameTestSuite {
 
       result.signature shouldHaveFields('m -> CTNode)
       result.signature shouldHaveFieldSlots('m -> BinaryRepresentation)
-      result.toSet should equal(Set(Tuple1(a), Tuple1(b)))
+      result.toSet should equal(Set(a, b).map(Tuple1(_)))
     }
   }
 }

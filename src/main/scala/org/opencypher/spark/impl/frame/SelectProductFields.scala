@@ -9,7 +9,9 @@ object SelectProductFields {
     new SelectProductFields(input)(newSignature, slotMapping)
   }
 
-  private final class SelectProductFields(input: StdCypherFrame[Product])(sig: StdFrameSignature, slots: Seq[StdSlot]) extends StdCypherFrame[Product](sig) {
+  private final class SelectProductFields(input: StdCypherFrame[Product])(sig: StdFrameSignature, slots: Seq[StdSlot])
+    extends StdCypherFrame[Product](sig) {
+
     override def execute(implicit context: StdRuntimeContext): Dataset[Product] = {
       val out = input.run.map(SelectFieldsOfSingleProduct(slots))(context.productEncoder(sig.slots))
       out
@@ -25,7 +27,7 @@ object SelectProductFields {
       builder.sizeHint(slots.size)
       slots.foreach { slot => builder += product.get(slot.ordinal) }
       val newValue = builder.result()
-      newValue.toProduct
+      newValue.asProduct
     }
   }
 }

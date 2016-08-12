@@ -10,7 +10,7 @@ class ProductConversionTest extends StdTestSuite {
       (1 to size).foreach { i => builder += i }
       val vector = builder.result()
 
-      vector.toProduct.toVector should equal(vector)
+      vector.asProduct.asVector should equal(vector)
     }
   }
 
@@ -19,7 +19,7 @@ class ProductConversionTest extends StdTestSuite {
 
       val builder = Vector.newBuilder[Int]
       (1 to size).foreach { i => builder += i * i }
-      val product = builder.result().toProduct
+      val product = builder.result().asProduct
 
       (0 until size).foreach { i =>
         product.getAs[Int](i) should equal((i+1) * (i+1))
@@ -32,7 +32,7 @@ class ProductConversionTest extends StdTestSuite {
 
       val builder = Vector.newBuilder[Int]
       (1 to size).foreach { i => builder += i * i }
-      val product = builder.result().toProduct
+      val product = builder.result().asProduct
 
       val result = product :+ (size * 10)
 

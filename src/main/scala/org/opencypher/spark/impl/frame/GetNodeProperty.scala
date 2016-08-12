@@ -6,15 +6,16 @@ import org.opencypher.spark.impl._
 
 object GetNodeProperty {
 
-  def apply(input: StdCypherFrame[Product], node: Symbol, propertyKey: Symbol)
-           (outputField: StdField)
+  def apply(input: StdCypherFrame[Product])(node: Symbol, propertyKey: Symbol)(outputField: StdField)
            (implicit context: PlanningContext): ProjectFrame = {
     val nodeField = input.signature.field(node)
     val signature = input.signature.addField(outputField)
-    new PropertyAccessProducts(input, nodeField, propertyKey, outputField)(signature)
+    new PropertyAccessProducts(input)(nodeField, propertyKey, outputField)(signature)
   }
 
-  private final class PropertyAccessProducts(input: StdCypherFrame[Product], nodeField: StdField, propertyKey: Symbol, outputField: StdField)(sig: StdFrameSignature)
+  private final class PropertyAccessProducts(input: StdCypherFrame[Product])
+                                            (nodeField: StdField, propertyKey: Symbol, outputField: StdField)
+                                            (sig: StdFrameSignature)
     extends ProjectFrame(outputField, sig) {
 
     val index = sig.slot(nodeField).ordinal

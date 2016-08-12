@@ -1,12 +1,9 @@
 package org.opencypher.spark.impl.frame
 
-import org.opencypher.spark.api.types.CTNode
-import org.opencypher.spark._
 import org.opencypher.spark.api.BinaryRepresentation
+import org.opencypher.spark.api.types.CTNode
 
 class AllNodesTest extends StdFrameTestSuite {
-
-  import factory._
 
   test("AllNodes produces all input nodes") {
     val n1 = add(newNode.withLabels("A").withProperties("name" -> "Zippie"))

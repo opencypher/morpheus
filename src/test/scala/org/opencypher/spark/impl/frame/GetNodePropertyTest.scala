@@ -5,13 +5,10 @@ import org.opencypher.spark.api.{BinaryRepresentation, CypherString}
 
 class GetNodePropertyTest extends StdFrameTestSuite {
 
-  import factory._
-
   test("GetNodeProperty gets a property from a node") {
     val n1 = add(newNode.withProperties("prop1" -> "foo"))
     val n2 = add(newNode.withProperties("prop2" -> "bar"))
     val n3 = add(newNode.withProperties())
-
 
     new GraphTest {
       import frames._

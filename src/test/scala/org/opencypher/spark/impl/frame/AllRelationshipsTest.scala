@@ -1,11 +1,9 @@
 package org.opencypher.spark.impl.frame
 
-import org.opencypher.spark.api.types._
 import org.opencypher.spark.api._
+import org.opencypher.spark.api.types._
 
 class AllRelationshipsTest extends StdFrameTestSuite {
-
-  import factory._
 
   test("AllRelationships produces all input relationships") {
     val n1 = add(newNode.withLabels("A").withProperties("name" -> "Zippie"))

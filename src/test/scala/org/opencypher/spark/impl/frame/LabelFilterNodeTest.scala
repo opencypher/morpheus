@@ -2,11 +2,8 @@ package org.opencypher.spark.impl.frame
 
 import org.opencypher.spark.api.BinaryRepresentation
 import org.opencypher.spark.api.types.CTNode
-import org.scalatest.FunSuite
 
 class LabelFilterNodeTest extends StdFrameTestSuite {
-
-  import factory._
 
   test("LabelFilter filters out nodes without correct label") {
     val a = add(newLabeledNode("A"))
