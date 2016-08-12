@@ -6,18 +6,18 @@ import org.opencypher.spark.impl.{ProductFrame, StdCypherFrame, StdRuntimeContex
 
 object ValueAsProduct {
 
-  def apply[T <: CypherValue](input: StdCypherFrame[T]): ProductFrame = new ValuesAsProducts(input)
+  def apply[T <: CypherValue](input: StdCypherFrame[T]): ProductFrame = new ValueAsProduct(input)
 
-  private final class ValuesAsProducts[T <: CypherValue](input: StdCypherFrame[T]) extends ProductFrame(input.signature) {
+  private final class ValueAsProduct[T <: CypherValue](input: StdCypherFrame[T]) extends ProductFrame(input.signature) {
 
     override def execute(implicit context: StdRuntimeContext): Dataset[Product] = {
       val in = input.run
-      val out = in.map(valueAsProduct)(context.productEncoder(slots))
+      val out = in.map(convert)(context.productEncoder(slots))
       out
     }
   }
 
-  private case object valueAsProduct extends (CypherValue => Product) {
+  private case object convert extends (CypherValue => Product) {
     override def apply(v: CypherValue): Product = Tuple1(v)
   }
 }

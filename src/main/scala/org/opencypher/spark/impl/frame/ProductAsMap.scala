@@ -7,21 +7,21 @@ import org.opencypher.spark.impl.{StdCypherFrame, StdField, StdSlot}
 object ProductAsMap {
 
   def apply(input: StdCypherFrame[Product]): StdCypherFrame[Map[String, CypherValue]] = {
-    new ProductsAsMaps(input)
+    new ProductAsMap(input)
   }
 
-  class ProductsAsMaps(input: StdCypherFrame[Product]) extends StdCypherFrame[Map[String, CypherValue]](input.signature) {
+  private final class ProductAsMap(input: StdCypherFrame[Product]) extends StdCypherFrame[Map[String, CypherValue]](input.signature) {
 
     val outputMapping = fields.map { field => field.sym -> signature.slot(field).ordinal }
 
     override def execute(implicit context: RuntimeContext): Dataset[Map[String, CypherValue]] = {
       val in = input.run
-      val out = in.map(ProductAsMap(outputMapping))(context.cypherRecordEncoder)
+      val out = in.map(convert(outputMapping))(context.cypherRecordEncoder)
       out
     }
   }
 
-  final case class ProductAsMap(slots: Seq[(Symbol, Int)]) extends (Product => Map[String, CypherValue]) {
+  private final case class convert(slots: Seq[(Symbol, Int)]) extends (Product => Map[String, CypherValue]) {
 
     def apply(product: Product) = {
       val values = product.productIterator.toSeq

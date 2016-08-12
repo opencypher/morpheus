@@ -3,7 +3,7 @@ package org.opencypher.spark.impl.frame
 import org.opencypher.spark.api.types.{CTAny, CTNode}
 import org.opencypher.spark.api.{BinaryRepresentation, CypherString}
 
-class GetNodePropertyTest extends StdFrameTestSuite {
+class GetPropertyTest extends StdFrameTestSuite {
 
   test("GetNodeProperty gets a property from a node") {
     val n1 = add(newNode.withProperties("prop1" -> "foo"))

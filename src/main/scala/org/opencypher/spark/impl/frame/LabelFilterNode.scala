@@ -6,21 +6,21 @@ import org.opencypher.spark.impl.frame.AllNodes.CypherNodes
 import org.opencypher.spark.impl.{StdCypherFrame, StdRuntimeContext}
 
 object LabelFilterNode {
-  def apply(input: StdCypherFrame[CypherNode])(labels: Seq[String]): LabelFilterNodes = {
-    new LabelFilterNodes(input)(labels)
+  def apply(input: StdCypherFrame[CypherNode])(labels: Seq[String]): StdCypherFrame[CypherNode] = {
+    new LabelFilterNode(input)(labels)
   }
 
-  class LabelFilterNodes(input: StdCypherFrame[CypherNode])(labels: Seq[String])
+  private final class LabelFilterNode(input: StdCypherFrame[CypherNode])(labels: Seq[String])
     extends StdCypherFrame[CypherNode](input.signature) {
 
     override def execute(implicit context: StdRuntimeContext): Dataset[CypherNode] = {
       val in = input.run
-      val out = in.filter(HasLabels(labels))
+      val out = in.filter(labelFilter(labels))
       out
     }
   }
 
-  private case class HasLabels(labels: Seq[String]) extends (CypherNode => Boolean) {
+  private final case class labelFilter(labels: Seq[String]) extends (CypherNode => Boolean) {
 
     override def apply(node: CypherNode): Boolean = {
       labels.forall(node.labels.contains)

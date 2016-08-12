@@ -17,16 +17,26 @@ object ProductEncoderFactory {
     assert(slots.nonEmpty, throw new IllegalArgumentException("Needs at least one slot"))
 
     val encoders: List[ExpressionEncoder[_]] = slots.toList.map {
+
       case StdSlot(_, _, _, BinaryRepresentation) =>
         encoder[CypherValue]
 
       case StdSlot(_, CTString, _, EmbeddedRepresentation(StringType)) =>
         encoder[String]
 
+      case StdSlot(_, CTString.nullable, _, EmbeddedRepresentation(StringType)) =>
+        encoder[String]
+
       case StdSlot(_, CTInteger, _, EmbeddedRepresentation(IntegerType)) =>
         encoder[Long]
 
+      case StdSlot(_, CTInteger.nullable, _, EmbeddedRepresentation(IntegerType)) =>
+        encoder[Long]
+
       case StdSlot(_, CTBoolean, _, EmbeddedRepresentation(BooleanType)) =>
+        encoder[Boolean]
+
+      case StdSlot(_, CTBoolean.nullable, _, EmbeddedRepresentation(BooleanType)) =>
         encoder[Boolean]
 
       case _ =>

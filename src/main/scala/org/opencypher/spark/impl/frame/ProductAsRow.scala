@@ -5,9 +5,9 @@ import org.opencypher.spark.impl.StdCypherFrame
 
 object ProductAsRow {
   def apply(input: StdCypherFrame[Product]): StdCypherFrame[Row] =
-    new ProductsAsRows(input)
+    new ProductAsRow(input)
 
-  class ProductsAsRows(input: StdCypherFrame[Product]) extends StdCypherFrame[Row](input.signature) {
+  private final class ProductAsRow(input: StdCypherFrame[Product]) extends StdCypherFrame[Row](input.signature) {
 
     override def execute(implicit context: RuntimeContext): Dataset[Row] = {
       val in = input.run

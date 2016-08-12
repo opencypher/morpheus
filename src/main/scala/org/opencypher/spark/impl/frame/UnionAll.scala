@@ -9,7 +9,8 @@ object UnionAll {
     new UnionAll(lhs, rhs)
   }
 
-  private final class UnionAll(lhs: StdCypherFrame[Product], rhs: StdCypherFrame[Product]) extends StdCypherFrame[Product](lhs.signature) {
+  private final class UnionAll(lhs: StdCypherFrame[Product], rhs: StdCypherFrame[Product])
+    extends StdCypherFrame[Product](lhs.signature) {
 
     assert(lhs.signature.fields.equals(rhs.signature.fields), throw new IllegalArgumentException(
       s"""Fields must be equal in UNION

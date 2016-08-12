@@ -4,6 +4,7 @@ import org.apache.spark.sql.Dataset
 import org.opencypher.spark.impl._
 
 object SelectProductFields {
+
   def apply(input: StdCypherFrame[Product])(fields: StdField*): StdCypherFrame[Product] = {
     val (newSignature, slotMapping) = input.signature.selectFields(fields: _*)
     new SelectProductFields(input)(newSignature, slotMapping)
@@ -13,12 +14,12 @@ object SelectProductFields {
     extends StdCypherFrame[Product](sig) {
 
     override def execute(implicit context: StdRuntimeContext): Dataset[Product] = {
-      val out = input.run.map(SelectFieldsOfSingleProduct(slots))(context.productEncoder(sig.slots))
+      val out = input.run.map(selectFields(slots))(context.productEncoder(sig.slots))
       out
     }
   }
 
-  private final case class SelectFieldsOfSingleProduct(slots: Seq[StdSlot]) extends (Product => Product) {
+  private final case class selectFields(slots: Seq[StdSlot]) extends (Product => Product) {
 
     import org.opencypher.spark.impl.util._
 

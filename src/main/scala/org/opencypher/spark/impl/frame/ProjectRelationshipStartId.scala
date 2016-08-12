@@ -15,12 +15,12 @@ object ProjectRelationshipStartId {
 
     override def execute(implicit context: StdRuntimeContext): Dataset[Product] = {
       val in = input.run
-      val out = in.map(RelationshipStartId(index))(context.productEncoder(slots))
+      val out = in.map(relationshipStartId(index))(context.productEncoder(slots))
       out
     }
   }
 
-  private final case class RelationshipStartId(index: Int) extends (Product => Product) {
+  private final case class relationshipStartId(index: Int) extends (Product => Product) {
 
     import org.opencypher.spark.impl.util._
 

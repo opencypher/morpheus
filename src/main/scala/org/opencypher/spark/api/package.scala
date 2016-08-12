@@ -36,6 +36,6 @@ package object api {
   type CypherNumber = MaterialCypherValue with IsNumber
 
   // TODO: Should this move into the Cypher type system?
-  type CypherDictionary = MaterialCypherValue with HasProperties
-  type CypherEntity = CypherDictionary with HasEntityId
+  type CypherAnyMap = MaterialCypherValue with HasProperties
+  type CypherEntity = CypherAnyMap with HasEntityId
 }

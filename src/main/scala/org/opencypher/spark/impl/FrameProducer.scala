@@ -19,7 +19,7 @@ class FrameProducer(implicit val planningContext: PlanningContext) {
 
   implicit final class RichProductFrame(input: StdCypherFrame[Product]) {
     def getNodeProperty(node: Symbol, propertyKey: Symbol)(outputName: Symbol) =
-      GetNodeProperty(input)(node, propertyKey)(StdField(outputName, CTAny.nullable))
+      GetProperty(input)(node, propertyKey)(StdField(outputName, CTAny.nullable))
 
     def aliasField(alias: (Symbol, Symbol)) = {
       val (oldName, newName) = alias
