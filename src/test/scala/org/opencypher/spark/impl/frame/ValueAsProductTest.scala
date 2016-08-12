@@ -14,7 +14,7 @@ class ValueAsProductTest extends StdFrameTestSuite {
     new GraphTest {
       import frames._
 
-      val result = ValueAsProduct(allNodes('n)).frameResult
+      val result = allNodes('n).asProduct.frameResult
 
       result.signature shouldHaveFields ('n -> CTNode)
       result.signature shouldHaveFieldSlots ('n -> BinaryRepresentation)

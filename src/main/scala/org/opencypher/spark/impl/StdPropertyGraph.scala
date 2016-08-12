@@ -89,18 +89,15 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
         StdCypherResultContainer.fromProducts(selectField)
 
       case SupportedQueries.simpleUnionAll =>
-        val allNodesA = allNodes('a)
-        val aWithLabels = LabelFilterNode(allNodesA, Seq("A"))
-        val aAsProduct = ValueAsProduct(aWithLabels)
-        val aNames = GetNodeProperty(aAsProduct, 'a, 'name)(StdField(Symbol("a.name"), CTAny.nullable))
-        val aNameRenamed = AliasField(aNames, aNames.projectedField)('name)
+        val aAsProduct = allNodes('a).labelFilter("A").asProduct
+        val aNames = aAsProduct.getNodeProperty('a, 'name)(Symbol("a.name"))
+        val aNameRenamed = aNames.aliasField(Symbol("a.name") -> 'name)
         val selectFieldA = SelectProductFields(aNameRenamed)(aNameRenamed.projectedField)
 
         val allNodesB = allNodes('b)
-        val bWithLabels = LabelFilterNode(allNodesB, Seq("B"))
-        val bAsProduct = ValueAsProduct(bWithLabels)
-        val bNames = GetNodeProperty(bAsProduct, 'b, 'name)(StdField(Symbol("b.name"), CTAny.nullable))
-        val bNameRenamed = AliasField(bNames, bNames.projectedField)('name)
+        val bAsProduct = allNodesB.labelFilter("B").asProduct
+        val bNames = bAsProduct.getNodeProperty('b, 'name)(Symbol("b.name"))
+        val bNameRenamed = bNames.aliasField(Symbol("b.name") -> 'name)
         val selectFieldB = SelectProductFields(bNameRenamed)(bNameRenamed.projectedField)
 
         val union = UnionAll(selectFieldA, selectFieldB)

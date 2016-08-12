@@ -1,0 +1,22 @@
+package org.opencypher.spark.impl.frame
+
+import org.opencypher.spark.api.BinaryRepresentation
+import org.opencypher.spark.api.types.CTNode
+
+class AliasFieldTest extends StdFrameTestSuite {
+
+  test("AliasField renames fields") {
+    val a = add(newNode)
+    val b = add(newNode)
+
+    new GraphTest {
+      import frames._
+
+      val result = allNodes('n).asProduct.aliasField('n -> 'm).frameResult
+
+      result.signature shouldHaveFields('m -> CTNode)
+      result.signature shouldHaveFieldSlots('m -> BinaryRepresentation)
+      result.toSet should equal(Set(Tuple1(a), Tuple1(b)))
+    }
+  }
+}

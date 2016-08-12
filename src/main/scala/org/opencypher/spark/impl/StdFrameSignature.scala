@@ -50,8 +50,6 @@ class StdFrameSignature(private val map: Map[StdField, StdSlot] = Map.empty)
     (copy, new StdFrameSignature(newMap))
   }
 
-  override def removeField(sym: Symbol): StdFrameSignature = ???
-
   override def selectFields(fields: StdField*): (StdFrameSignature, Seq[Slot]) = {
     val thatSet = fields.toSet
     val remainingMap = map collect {

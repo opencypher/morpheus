@@ -2,7 +2,7 @@ package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.Dataset
 import org.opencypher.spark._
-import org.opencypher.spark.api.{CypherFrameSignature, CypherType, Representation}
+import org.opencypher.spark.api._
 import org.opencypher.spark.impl._
 import org.opencypher.spark.impl.util.SlotSymbolGenerator
 
@@ -18,6 +18,9 @@ abstract class StdFrameTestSuite extends StdTestSuite with TestSession.Fixture {
 
     implicit val runtimeContext = new StdRuntimeContext(session)
   }
+
+  def add(nodeData: NodeData) = factory.add(nodeData)
+  def add(relationshipData: RelationshipData) = factory.add(relationshipData)
 
   implicit final class RichFrame[Out](val frame: StdCypherFrame[Out]) extends AnyRef {
 

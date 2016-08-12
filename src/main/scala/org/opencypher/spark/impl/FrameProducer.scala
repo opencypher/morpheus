@@ -1,8 +1,8 @@
 package org.opencypher.spark.impl
 
-import org.opencypher.spark.api.CypherValue
+import org.opencypher.spark.api.{CypherNode, CypherValue}
 import org.opencypher.spark.api.types.CTAny
-import org.opencypher.spark.impl.frame.{AllNodes, AllRelationships, GetNodeProperty, ValueAsProduct}
+import org.opencypher.spark.impl.frame._
 
 class FrameProducer(implicit val planningContext: PlanningContext) {
   def allNodes(sym: Symbol) = AllNodes(sym)
@@ -10,11 +10,20 @@ class FrameProducer(implicit val planningContext: PlanningContext) {
 
 
   implicit final class RichValueFrame[T <: CypherValue](input: StdCypherFrame[T]) {
-    def valuesAsProduct = ValueAsProduct(input)
+    def asProduct = ValueAsProduct(input)
+  }
+
+  implicit final class RichNodeFrame(input: StdCypherFrame[CypherNode]) {
+    def labelFilter(labels: String*) = LabelFilterNode(input, labels)
   }
 
   implicit final class RichProductFrame(input: StdCypherFrame[Product]) {
     def getNodeProperty(node: Symbol, propertyKey: Symbol)(outputName: Symbol) =
       GetNodeProperty(input, node, propertyKey)(StdField(outputName, CTAny.nullable))
+
+    def aliasField(alias: (Symbol, Symbol)) = {
+      val (oldName, newName) = alias
+      AliasField(input, oldName)(newName)
+    }
   }
 }

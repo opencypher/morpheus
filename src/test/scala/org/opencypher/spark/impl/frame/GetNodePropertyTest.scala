@@ -16,7 +16,7 @@ class GetNodePropertyTest extends StdFrameTestSuite {
     new GraphTest {
       import frames._
 
-      val frame = allNodes('n).valuesAsProduct.getNodeProperty('n, 'prop1)(Symbol("n.prop1"))
+      val frame = allNodes('n).asProduct.getNodeProperty('n, 'prop1)(Symbol("n.prop1"))
       val result = frame.frameResult
 
       result.signature shouldHaveFields('n -> CTNode, Symbol("n.prop1") -> CTAny.nullable)
