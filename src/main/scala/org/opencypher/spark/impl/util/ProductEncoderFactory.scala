@@ -12,6 +12,8 @@ case object ProductEncoderFactory {
   def createEncoder(slots: Seq[StdSlot])(implicit session: SparkSession): ExpressionEncoder[Product] = {
     import session.implicits._
 
+    assert(slots.nonEmpty, throw new IllegalArgumentException("Needs at least one slot"))
+
     val encoders = slots.toList.map {
       case StdSlot(_, _, _, BinaryRepresentation) => CypherValue.implicits.cypherValueEncoder[CypherValue]
       case StdSlot(_, CTString, _, EmbeddedRepresentation(StringType)) => implicitly[Encoder[String]]

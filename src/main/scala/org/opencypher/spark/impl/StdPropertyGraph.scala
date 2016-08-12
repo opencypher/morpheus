@@ -88,7 +88,25 @@ class StdPropertyGraph(nodes: Dataset[CypherNode], relationships: Dataset[Cypher
 
         StdCypherResultContainer.fromProducts(selectField)
 
-      //      case SupportedQueries.simpleUnionAll =>
+      case SupportedQueries.simpleUnionAll =>
+        val allNodesA = AllNodes(nodes)('a)
+        val aWithLabels = LabelFilterNodes(allNodesA, Seq("A"))
+        val aAsProduct = ValueAsProduct(aWithLabels)
+        val aNames = PropertyAccessProducts(aAsProduct, allNodesA.nodeField, 'name)(StdField(Symbol("a.name"), CTAny.nullable))
+        val aNameRenamed = AliasField(aNames, aNames.projectedField)('name)
+        val selectFieldA = SelectProductFields(aNameRenamed)(aNameRenamed.projectedField)
+
+        val allNodesB = AllNodes(nodes)('b)
+        val bWithLabels = LabelFilterNodes(allNodesB, Seq("B"))
+        val bAsProduct = ValueAsProduct(bWithLabels)
+        val bNames = PropertyAccessProducts(bAsProduct, allNodesB.nodeField, 'name)(StdField(Symbol("b.name"), CTAny.nullable))
+        val bNameRenamed = AliasField(bNames, bNames.projectedField)('name)
+        val selectFieldB = SelectProductFields(bNameRenamed)(bNameRenamed.projectedField)
+
+        val union = UnionAll(selectFieldA, selectFieldB)
+
+        StdCypherResultContainer.fromProducts(union)
+
       //        val a = nodes.filter(_.labels.contains("A")).map(node => node.properties.getOrElse("name", CypherNull))(CypherValue.implicits.cypherValueEncoder[CypherValue]).toDF("name")
       //        val b = nodes.filter(_.labels.contains("B")).map(node => node.properties.getOrElse("name", CypherNull))(CypherValue.implicits.cypherValueEncoder[CypherValue]).toDF("name")
       //        val result = a.union(b).as[CypherValue](CypherValue.implicits.cypherValueEncoder[CypherValue])
