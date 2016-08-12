@@ -7,16 +7,15 @@ import org.opencypher.spark.impl.{PlanningContext, StdCypherFrame, StdField, Std
 
 object AllRelationships {
 
-  def apply(input: Dataset[CypherRelationship])(fieldSym: Symbol)
-           (implicit context: PlanningContext): AllRelationships = {
+  def apply(fieldSym: Symbol)(implicit context: PlanningContext): StdCypherFrame[CypherRelationship] = {
     val field = StdField(fieldSym, CTRelationship)
     new AllRelationships(
-      input = input,
+      input = context.relationships,
       sig = StdFrameSignature.empty.addField(field)
     )
   }
 
-  class AllRelationships(input: Dataset[CypherRelationship], sig: StdFrameSignature)
+  private final class AllRelationships(input: Dataset[CypherRelationship], sig: StdFrameSignature)
     extends StdCypherFrame[CypherRelationship](sig) {
 
     override def run(implicit context: RuntimeContext): Dataset[CypherRelationship] = {

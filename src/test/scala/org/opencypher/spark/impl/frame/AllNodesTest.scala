@@ -11,12 +11,13 @@ class AllNodesTest extends StdFrameTestSuite {
   test("AllNodes produces all input nodes") {
     val n1 = add(newNode.withLabels("A").withProperties("name" -> "Zippie"))
     val n2 = add(newNode.withLabels("B").withProperties("name" -> "Yggie"))
-    val nodes = session.createDataset(List(n1, n2))
 
-    val result = AllNodes(nodes)('n).frameResult
+    new GraphTest {
+      val result = frames.allNodes('n).frameResult
 
-    result.signature shouldHaveFields('n -> CTNode)
-    result.signature shouldHaveFieldSlots('n -> BinaryRepresentation)
-    result.toSet should equal(Set(n1, n2))
+      result.signature shouldHaveFields('n -> CTNode)
+      result.signature shouldHaveFieldSlots('n -> BinaryRepresentation)
+      result.toSet should equal(Set(n1, n2))
+    }
   }
 }

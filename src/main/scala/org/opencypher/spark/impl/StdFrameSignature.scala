@@ -18,10 +18,13 @@ class StdFrameSignature(private val map: Map[StdField, StdSlot] = Map.empty)
 
   def slotNames: Seq[String] = slots.map(_.sym.name)
 
+  override def field(sym: Symbol): Option[StdField] =
+    map.keys.find(_.sym == sym)
+
   override def slot(field: StdField): Option[StdSlot] =
     map.get(field)
 
-  override def slotBySymbol(sym: Symbol): Option[StdSlot] =
+  override def slot(sym: Symbol): Option[StdSlot] =
     map.collectFirst { case (field, slot) if field.sym == sym => slot }
 
   override def addField(field: StdField)(implicit context: PlanningContext): StdFrameSignature = {

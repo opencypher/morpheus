@@ -15,6 +15,8 @@ trait PropertyGraphFactory {
 
   self =>
 
+  type Graph <: PropertyGraph
+
   final def apply(f: PropertyGraphFactory => Unit): PropertyGraphFactory = {
     f(self)
     self
@@ -35,7 +37,7 @@ trait PropertyGraphFactory {
 
   def clear(): Unit
 
-  def graph: PropertyGraph
+  def graph: Graph
 }
 
 

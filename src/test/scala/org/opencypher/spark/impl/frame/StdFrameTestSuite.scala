@@ -3,13 +3,21 @@ package org.opencypher.spark.impl.frame
 import org.apache.spark.sql.Dataset
 import org.opencypher.spark._
 import org.opencypher.spark.api.{CypherFrameSignature, CypherType, Representation}
-import org.opencypher.spark.impl.{PlanningContext, StdCypherFrame, StdRuntimeContext}
+import org.opencypher.spark.impl._
 import org.opencypher.spark.impl.util.SlotSymbolGenerator
 
-class StdFrameTestSuite extends StdTestSuite with TestSession.Fixture {
+abstract class StdFrameTestSuite extends StdTestSuite with TestSession.Fixture {
 
-  implicit val planningContext = new PlanningContext(new SlotSymbolGenerator)
-  implicit val runtimeContext = new StdRuntimeContext(session)
+  trait GraphTest {
+    val graph = factory.graph
+
+    implicit val planningContext =
+      new PlanningContext(new SlotSymbolGenerator, graph.nodes, graph.relationships)
+
+    val frames = new FrameProducer
+
+    implicit val runtimeContext = new StdRuntimeContext(session)
+  }
 
   implicit final class RichFrame[Out](val frame: StdCypherFrame[Out]) extends AnyRef {
 

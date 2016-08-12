@@ -21,7 +21,7 @@ object GetNodeProperty {
     override def run(implicit context: StdRuntimeContext): Dataset[Product] = {
       val in = input.run
       val out = in.map(GetNodeProperty(index, propertyKey.name))(context.productEncoder(slots))
-      out
+      alias(out)(context.productEncoder(slots))
     }
   }
 

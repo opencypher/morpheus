@@ -29,7 +29,7 @@ object StdPropertyGraph {
 
 }
 
-class StdPropertyGraph(nodes: Dataset[CypherNode], relationships: Dataset[CypherRelationship])
+class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Dataset[CypherRelationship])
                       (implicit private val session: SparkSession) extends PropertyGraph {
 
   import StdPropertyGraph.SupportedQueries
@@ -37,66 +37,69 @@ class StdPropertyGraph(nodes: Dataset[CypherNode], relationships: Dataset[Cypher
   private implicit def stringFromSymbol(s: Symbol): String = s.name
 
   override def cypher(query: String): CypherResultContainer = {
-    val slotNames = new SlotSymbolGenerator
-    implicit val planningContext = new PlanningContext(slotNames)
+    implicit val planningContext = new PlanningContext(new SlotSymbolGenerator, nodes, relationships)
     implicit val runtimeContext = new StdRuntimeContext(session)
+
+    val frames = new FrameProducer
+    import frames._
 
     query match {
 
       case SupportedQueries.allNodesScan =>
-        val nodeFrame = AllNodes(nodes)('n)
+        val nodeFrame = allNodes('n)
         val rowFrame = ValueAsRow(nodeFrame)
         StdCypherResultContainer.fromRows(rowFrame)
 
       case SupportedQueries.allNodesScanProjectAgeName =>
-        val nodeFrame = AllNodes(nodes)('n)
+        val nodeFrame = allNodes('n)
         val rowFrame = ValueAsRow(nodeFrame)
         val productFrame = RowAsProduct(rowFrame)
-        val projectFrame1 = GetNodeProperty(productFrame, nodeFrame.nodeField, 'name)(StdField(Symbol("n.name"), CTAny.nullable))
-        val projectFrame2 = GetNodeProperty(projectFrame1, nodeFrame.nodeField, 'age)(StdField(Symbol("n.age"), CTAny.nullable))
+        val projectFrame1 = GetNodeProperty(productFrame, nodeFrame.signature.field('n).get, 'name)(StdField(Symbol("n.name"), CTAny.nullable))
+        val projectFrame2 = GetNodeProperty(projectFrame1, nodeFrame.signature.field('n).get, 'age)(StdField(Symbol("n.age"), CTAny.nullable))
         val selectFields = SelectProductFields(projectFrame2)(projectFrame1.projectedField, projectFrame2.projectedField)
 
         StdCypherResultContainer.fromProducts(selectFields)
 
       case SupportedQueries.getAllRelationshipsOfTypeTOfLabelA =>
-        val allNodesA = AllNodes(nodes)('a)
+        val allNodesA = allNodes('a)
         val aWithLabels = LabelFilterNode(allNodesA, Seq("A"))
         val aAsProduct = ValueAsProduct(aWithLabels)
-        val aWithId = ProjectNodeId(aAsProduct, allNodesA.nodeField)(StdField(Symbol("id(a)"), CTInteger))
+        val aWithId = ProjectNodeId(aAsProduct, allNodesA.signature.field('a).get)(StdField(Symbol("id(a)"), CTInteger))
         val aAsRows = ProductAsRow(aWithId)
 
-        val allNodesB = AllNodes(nodes)('b)
+        val allNodesB = allNodes('b)
         val bWithLabels = LabelFilterNode(allNodesB, Seq("B"))
         val bAsProduct = ValueAsProduct(bWithLabels)
-        val bWithId = ProjectNodeId(bAsProduct, allNodesB.nodeField)(StdField(Symbol("id(b)"), CTInteger))
+        val bWithId = ProjectNodeId(bAsProduct, allNodesB.signature.field('b).get)(StdField(Symbol("id(b)"), CTInteger))
         val bAsRows = ProductAsRow(bWithId)
 
-        val allRels = AllRelationships(relationships)('r)
+        val allRels = allRelationships('r)
         val rAsProduct = ValueAsProduct(allRels)
-        val rWithStartId = ProjectRelationshipStartId(rAsProduct, allRels.relField)(StdField(Symbol("startId(r)"), CTInteger))
-        val rWithStartAndEndId = ProjectRelationshipEndId(rWithStartId, allRels.relField)(StdField(Symbol("endId(r)"), CTInteger))
+        val relField = allRels.signature.field('r).get
+        val rWithStartId = ProjectRelationshipStartId(rAsProduct, relField)(StdField(Symbol("startId(r)"), CTInteger))
+        val rWithStartAndEndId = ProjectRelationshipEndId(rWithStartId, relField)(StdField(Symbol("endId(r)"), CTInteger))
         val relsAsRows = ProductAsRow(rWithStartAndEndId)
 
         val joinRelA = Join(relsAsRows, aAsRows, rWithStartId.projectedField, aWithId.projectedField)
         val joinRelB = Join(joinRelA, bAsRows, rWithStartAndEndId.projectedField, bWithId.projectedField)
 
         val asProduct = RowAsProduct(joinRelB)
-        val selectField = SelectProductFields(asProduct)(allRels.relField)
+        val selectField = SelectProductFields(asProduct)(relField)
 
         StdCypherResultContainer.fromProducts(selectField)
 
       case SupportedQueries.simpleUnionAll =>
-        val allNodesA = AllNodes(nodes)('a)
+        val allNodesA = allNodes('a)
         val aWithLabels = LabelFilterNode(allNodesA, Seq("A"))
         val aAsProduct = ValueAsProduct(aWithLabels)
-        val aNames = GetNodeProperty(aAsProduct, allNodesA.nodeField, 'name)(StdField(Symbol("a.name"), CTAny.nullable))
+        val aNames = GetNodeProperty(aAsProduct, allNodesA.signature.field('a).get, 'name)(StdField(Symbol("a.name"), CTAny.nullable))
         val aNameRenamed = AliasField(aNames, aNames.projectedField)('name)
         val selectFieldA = SelectProductFields(aNameRenamed)(aNameRenamed.projectedField)
 
-        val allNodesB = AllNodes(nodes)('b)
+        val allNodesB = allNodes('b)
         val bWithLabels = LabelFilterNode(allNodesB, Seq("B"))
         val bAsProduct = ValueAsProduct(bWithLabels)
-        val bNames = GetNodeProperty(bAsProduct, allNodesB.nodeField, 'name)(StdField(Symbol("b.name"), CTAny.nullable))
+        val bNames = GetNodeProperty(bAsProduct, allNodesB.signature.field('b).get, 'name)(StdField(Symbol("b.name"), CTAny.nullable))
         val bNameRenamed = AliasField(bNames, bNames.projectedField)('name)
         val selectFieldB = SelectProductFields(bNameRenamed)(bNameRenamed.projectedField)
 

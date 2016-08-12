@@ -7,15 +7,15 @@ import org.opencypher.spark.impl._
 
 object AllNodes {
 
-  def apply(input: Dataset[CypherNode])(fieldSym: Symbol)(implicit context: PlanningContext): CypherNodes = {
+  def apply(fieldSym: Symbol)(implicit context: PlanningContext): StdCypherFrame[CypherNode] = {
     val field = StdField(fieldSym, CTNode)
     new CypherNodes(
-      input = input,
+      input = context.nodes,
       sig = StdFrameSignature.empty.addField(field)
     )
   }
 
-  class CypherNodes(input: Dataset[CypherNode], sig: StdFrameSignature)
+  private final class CypherNodes(input: Dataset[CypherNode], sig: StdFrameSignature)
     extends StdCypherFrame[CypherNode](sig) {
 
     override def run(implicit context: RuntimeContext): Dataset[CypherNode] = {

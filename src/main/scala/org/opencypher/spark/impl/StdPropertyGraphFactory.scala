@@ -13,10 +13,12 @@ class StdPropertyGraphFactory(implicit private val session: SparkSession) extend
   private val nodeIds = new AtomicLong(0L)
   private val relationshipIds = new AtomicLong(0L)
 
-  private val nodes = Seq.newBuilder[CypherNode]
-  private val relationships = Seq.newBuilder[CypherRelationship]
+  val nodes = Seq.newBuilder[CypherNode]
+  val relationships = Seq.newBuilder[CypherRelationship]
 
   private def sc = session.sqlContext
+
+  override type Graph = StdPropertyGraph
 
   override def addNode(labels: Set[String], properties: Map[String, CypherValue]): CypherNode =
     nodeIds { id =>
@@ -32,7 +34,7 @@ class StdPropertyGraphFactory(implicit private val session: SparkSession) extend
       relationship
     }
 
-  override def graph: StdPropertyGraph = {
+  override def graph: Graph = {
     import CypherValue.Encoders._
 
     val nodes = sc.createDataset(factory.nodes.result)
