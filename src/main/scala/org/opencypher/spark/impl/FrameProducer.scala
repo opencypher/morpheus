@@ -8,11 +8,13 @@ class FrameProducer(implicit val planningContext: PlanningContext) {
   def allNodes(sym: Symbol) = AllNodes(sym)
   def allRelationships(sym: Symbol) = AllRelationships(sym)
 
-  def valuesAsProduct[T <: CypherValue](input: StdCypherFrame[T]) = {
-    ValueAsProduct(input)
+
+  implicit final class RichValueFrame[T <: CypherValue](input: StdCypherFrame[T]) {
+    def valuesAsProduct = ValueAsProduct(input)
   }
 
-  def getNodeProperty(input: StdCypherFrame[Product])(nodeField: StdField, propertyKey: Symbol)(outputName: Symbol) = {
-    GetNodeProperty(input, nodeField, propertyKey)(StdField(outputName, CTAny.nullable))
+  implicit final class RichProductFrame(input: StdCypherFrame[Product]) {
+    def getNodeProperty(node: Symbol, propertyKey: Symbol)(outputName: Symbol) =
+      GetNodeProperty(input, node, propertyKey)(StdField(outputName, CTAny.nullable))
   }
 }

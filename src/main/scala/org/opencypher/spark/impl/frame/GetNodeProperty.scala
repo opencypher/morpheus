@@ -6,9 +6,10 @@ import org.opencypher.spark.impl._
 
 object GetNodeProperty {
 
-  def apply(input: StdCypherFrame[Product], nodeField: StdField, propertyKey: Symbol)
+  def apply(input: StdCypherFrame[Product], node: Symbol, propertyKey: Symbol)
            (outputField: StdField)
            (implicit context: PlanningContext): ProjectFrame = {
+    val nodeField = input.signature.field(node)
     val signature = input.signature.addField(outputField)
     new PropertyAccessProducts(input, nodeField, propertyKey, outputField)(signature)
   }
@@ -16,7 +17,7 @@ object GetNodeProperty {
   private final class PropertyAccessProducts(input: StdCypherFrame[Product], nodeField: StdField, propertyKey: Symbol, outputField: StdField)(sig: StdFrameSignature)
     extends ProjectFrame(outputField, sig) {
 
-    val index = sig.slot(nodeField).getOrElse(throw new IllegalArgumentException("Unknown nodeField")).ordinal
+    val index = sig.slot(nodeField).ordinal
 
     override def execute(implicit context: StdRuntimeContext): Dataset[Product] = {
       val in = input.run

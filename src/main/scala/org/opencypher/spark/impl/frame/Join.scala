@@ -13,8 +13,8 @@ object Join {
       val lhsIn = lhs.run
       val rhsIn = rhs.run
 
-      val lhsSlot = signature.slot(lhsKey).getOrElse(throw new IllegalStateException("No slot found for given lhs field"))
-      val rhsSlot = signature.slot(rhsKey).getOrElse(throw new IllegalStateException("No slot found for given rhs field"))
+      val lhsSlot = signature.slot(lhsKey)
+      val rhsSlot = signature.slot(rhsKey)
 
       val joinExpr = functions.expr(s"${lhsSlot.sym.name} = ${rhsSlot.sym.name}")
 

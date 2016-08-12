@@ -18,14 +18,16 @@ class StdFrameSignature(private val map: Map[StdField, StdSlot] = Map.empty)
 
   def slotNames: Seq[String] = slots.map(_.sym.name)
 
-  override def field(sym: Symbol): Option[StdField] =
-    map.keys.find(_.sym == sym)
+  override def field(sym: Symbol): StdField =
+    map.keys.find(_.sym == sym).getOrElse(throw new IllegalArgumentException(s"Unknown field: $sym"))
 
-  override def slot(field: StdField): Option[StdSlot] =
-    map.get(field)
+  override def slot(field: StdField): StdSlot =
+    map.getOrElse(field, throw new IllegalArgumentException(s"Unknown field: $field"))
 
-  override def slot(sym: Symbol): Option[StdSlot] =
-    map.collectFirst { case (field, slot) if field.sym == sym => slot }
+  override def slot(sym: Symbol): StdSlot =
+    map.collectFirst {
+      case (field, slot) if field.sym == sym => slot
+    }.getOrElse(throw new IllegalArgumentException(s"Unknown slot: $sym"))
 
   override def addField(field: StdField)(implicit context: PlanningContext): StdFrameSignature = {
     val entry = field -> StdSlot(context.newSlotSymbol(field), field.cypherType, map.values.size, BinaryRepresentation)
@@ -40,10 +42,9 @@ class StdFrameSignature(private val map: Map[StdField, StdSlot] = Map.empty)
   override def aliasField(oldField: Symbol, newField: Symbol): (StdField, StdFrameSignature) = {
     var copy: StdField = null
     val newMap = map.map {
-      case (f, s) if f.sym == oldField => {
+      case (f, s) if f.sym == oldField =>
         copy = f.copy(sym = newField)
         copy -> s
-      }
       case t => t
     }
     (copy, new StdFrameSignature(newMap))
