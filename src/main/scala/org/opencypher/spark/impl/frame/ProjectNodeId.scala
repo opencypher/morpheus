@@ -11,7 +11,7 @@ object ProjectNodeId {
     new ProjectNodeId(input, nodeField, outputField)(input.signature.addIntegerField(outputField))
   }
 
-  private final class ProjectNodeId(input: StdCypherFrame[Product], nodeField: StdField, outputField: StdField)(sig: StdFrameSignature) extends ProjectFrame(sig) {
+  private final class ProjectNodeId(input: StdCypherFrame[Product], nodeField: StdField, outputField: StdField)(sig: StdFrameSignature) extends ProjectFrame(outputField, sig) {
 
     val index = sig(nodeField).getOrElse(throw new IllegalArgumentException("Unknown nodeField")).ordinal
 
@@ -20,8 +20,6 @@ object ProjectNodeId {
       val out = in.map(ProductNodeId(index))(context.productEncoder(slots))
       out
     }
-
-    override def projectedField: StdField = outputField
   }
 
   final case class ProductNodeId(index: Int) extends (Product => Product) {

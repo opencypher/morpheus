@@ -10,7 +10,7 @@ object ProjectRelationshipEndId {
   def apply(input: StdCypherFrame[Product], relField: StdField)(outputField: StdField)(implicit context: PlanningContext): ProjectFrame =
     new ProjectRelationshipEndId(input, relField, outputField)(input.signature.addIntegerField(outputField))
 
-  private final class ProjectRelationshipEndId(input: StdCypherFrame[Product], relField: StdField, outputField: StdField)(sig: StdFrameSignature) extends ProjectFrame(sig) {
+  private final class ProjectRelationshipEndId(input: StdCypherFrame[Product], relField: StdField, outputField: StdField)(sig: StdFrameSignature) extends ProjectFrame(outputField, sig) {
 
     val index = sig(relField).getOrElse(throw new IllegalArgumentException("Unknown relationship field")).ordinal
 
@@ -19,8 +19,6 @@ object ProjectRelationshipEndId {
       val mapped = in.map(RelationshipEndId(index))(context.productEncoder(slots))
       alias(mapped, context.productEncoder(slots))
     }
-
-    override def projectedField = outputField
   }
 
   private final case class RelationshipEndId(index: Int) extends (Product => Product) {
