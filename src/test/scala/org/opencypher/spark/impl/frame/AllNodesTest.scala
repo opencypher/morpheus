@@ -15,8 +15,8 @@ class AllNodesTest extends StdFrameTestSuite {
 
     val result = AllNodes(nodes)('n).frameResult
 
-    result.signature shouldHaveFields 'n -> CTNode
-    result.signature shouldHaveFieldSlots 'n -> BinaryRepresentation
+    result.signature shouldHaveFields('n -> CTNode)
+    result.signature shouldHaveFieldSlots('n -> BinaryRepresentation)
     result.toSet should equal(Set(n1, n2))
   }
 }

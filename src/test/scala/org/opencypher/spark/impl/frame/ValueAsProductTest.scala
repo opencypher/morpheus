@@ -14,8 +14,8 @@ class ValueAsProductTest extends StdFrameTestSuite {
 
     val result = ValueAsProduct(AllNodes(nodes)('n)).frameResult
 
-    result.signature shouldHaveFields 'n -> CTNode
-    result.signature shouldHaveFieldSlots 'n -> BinaryRepresentation
+    result.signature shouldHaveFields('n -> CTNode)
+    result.signature shouldHaveFieldSlots('n -> BinaryRepresentation)
     result.toSet should equal(Set(n1, n2).map(Tuple1(_)))
   }
 }

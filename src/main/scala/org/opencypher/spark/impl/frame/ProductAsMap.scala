@@ -16,7 +16,7 @@ object ProductAsMap {
 
     override def run(implicit context: RuntimeContext): Dataset[Map[String, CypherValue]] = {
       val in = input.run
-      val out = in.map(ProductAsMap(outputMapping))(context.cypherValueMapEncoder)
+      val out = in.map(ProductAsMap(outputMapping))(context.cypherRecordEncoder)
       out
     }
   }

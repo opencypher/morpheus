@@ -2,7 +2,6 @@ package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.Dataset
 import org.opencypher.spark.api.CypherValue
-import org.opencypher.spark.impl.util.productize
 import org.opencypher.spark.impl.{StdCypherFrame, StdRuntimeContext}
 
 object ValueAsProduct {
@@ -20,8 +19,6 @@ object ValueAsProduct {
   }
 
   case object valueAsProduct extends (CypherValue => Product) {
-
-    override def apply(v: CypherValue): Product = productize(Seq(v))
+    override def apply(v: CypherValue): Product = Tuple1(v)
   }
-
 }

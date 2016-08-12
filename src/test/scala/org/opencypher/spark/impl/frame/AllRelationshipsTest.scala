@@ -18,8 +18,8 @@ class AllRelationshipsTest extends StdFrameTestSuite {
 
     val result = AllRelationships(rels)('r).frameResult
 
-    result.signature shouldHaveFields 'r -> CTRelationship
-    result.signature shouldHaveFieldSlots 'r -> BinaryRepresentation
+    result.signature shouldHaveFields('r -> CTRelationship)
+    result.signature shouldHaveFieldSlots('r -> BinaryRepresentation)
     result.toSet should equal(Set(r1, r2, r3))
   }
 }

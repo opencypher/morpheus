@@ -7,7 +7,7 @@ import org.opencypher.spark.api.types.{CTBoolean, CTInteger, CTString}
 import org.opencypher.spark.api.{BinaryRepresentation, CypherValue, EmbeddedRepresentation}
 import org.opencypher.spark.impl.StdSlot
 
-case object ProductEncoderFactory {
+object ProductEncoderFactory {
 
   import CypherValue.Encoders._
 

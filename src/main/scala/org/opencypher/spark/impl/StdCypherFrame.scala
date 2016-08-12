@@ -1,10 +1,10 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.{Dataset, Encoder}
-import org.opencypher.spark._
 import org.opencypher.spark.api._
 
-abstract class StdCypherFrame[Out](sig: StdFrameSignature) extends CypherFrame[Out] {
+abstract class StdCypherFrame[Out](sig: StdFrameSignature)
+  extends CypherFrame[Out] {
 
   override type Frame = StdCypherFrame[Out]
   override type RuntimeContext = StdRuntimeContext

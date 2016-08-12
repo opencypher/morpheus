@@ -50,16 +50,10 @@ object CypherValue {
     implicit def asExpressionEncoder[T](v: Encoder[T]): ExpressionEncoder[T] = v.asInstanceOf[ExpressionEncoder[T]]
 
     implicit def cypherValueEncoder: ExpressionEncoder[CypherValue] = kryo[CypherValue]
-    implicit def cypherValueMapEncoder: ExpressionEncoder[Map[String, CypherValue]] = kryo[Map[String, CypherValue]]
+    implicit def cypherRecordEncoder: ExpressionEncoder[Map[String, CypherValue]] = kryo[Map[String, CypherValue]]
   }
 
   trait Encoders extends LowPriorityEncoders {
-    implicit def cypherEntityIdEncoder: ExpressionEncoder[EntityId] = kryo[EntityId]
-
-    implicit def cypherStringEncoder: ExpressionEncoder[CypherString] = kryo[CypherString]
-    implicit def cypherIntegerEncoder: ExpressionEncoder[CypherInteger] = kryo[CypherInteger]
-    implicit def cypherFloatEncoder: ExpressionEncoder[CypherFloat] = kryo[CypherFloat]
-    implicit def cypherBooleanEncoder: ExpressionEncoder[CypherBoolean] = kryo[CypherBoolean]
     implicit def cypherNodeEncoder: ExpressionEncoder[CypherNode] = kryo[CypherNode]
     implicit def cypherRelationshipEncoder: ExpressionEncoder[CypherRelationship] = kryo[CypherRelationship]
     implicit def cypherPathEncoder: ExpressionEncoder[CypherPath] = kryo[CypherPath]

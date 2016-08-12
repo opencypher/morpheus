@@ -3,7 +3,6 @@ package org.opencypher.spark.impl.frame
 import org.apache.spark.sql.Dataset
 import org.opencypher.spark.api.CypherRelationship
 import org.opencypher.spark.impl._
-import org.opencypher.spark.impl.util.productize
 
 object ProjectRelationshipStartId {
 
@@ -24,10 +23,13 @@ object ProjectRelationshipStartId {
   }
 
   private final case class RelationshipStartId(index: Int) extends (Product => Product) {
+
+    import org.opencypher.spark.impl.util._
+
     def apply(product: Product): Product = {
       val elts = product.productIterator.toVector
       val relationship = elts(index).asInstanceOf[CypherRelationship]
-      val result = productize(elts :+ relationship.start.v)
+      val result = (elts :+ relationship.start.v).toProduct
       result
     }
   }

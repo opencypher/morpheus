@@ -2,7 +2,6 @@ package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.Dataset
 import org.opencypher.spark.api.CypherNode
-import org.opencypher.spark.impl.util.productize
 import org.opencypher.spark.impl._
 
 object ProjectNodeId {
@@ -25,10 +24,13 @@ object ProjectNodeId {
   }
 
   final case class ProductNodeId(index: Int) extends (Product => Product) {
+
+    import org.opencypher.spark.impl.util._
+
     def apply(product: Product): Product = {
-      val elts = product.productIterator.toVector
+      val elts = product.toVector
       val node = elts(index).asInstanceOf[CypherNode]
-      val result = productize(elts :+ node.id.v)
+      val result = (elts :+ node.id.v).toProduct
       result
     }
   }
