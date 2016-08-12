@@ -29,7 +29,7 @@ class StdPropertyGraphFactory(implicit private val session: SparkSession) extend
 
   override def addRelationship(startId: EntityId, relationshipType: String, endId: EntityId, properties: Map[String, CypherValue]): CypherRelationship =
     relationshipIds { id =>
-      val relationship = CypherRelationship(id, startId, endId, relationshipType, properties)
+      val relationship = CypherRelationship(id, startId, relationshipType, endId, properties)
       relationships += relationship
       relationship
     }

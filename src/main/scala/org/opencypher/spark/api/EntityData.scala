@@ -27,13 +27,20 @@ object EntityData {
   }
 }
 
-sealed trait EntityData
+sealed trait EntityData {
+  def asEntity(id: EntityId): CypherEntity
+}
 
 object NodeData {
   val empty = NodeData(labels = Seq.empty, properties = Map.empty)
 }
 
-final case class NodeData(labels: Seq[String], properties: Map[String, CypherValue]) extends EntityData {
+final case class NodeData(labels: Seq[String],
+                          properties: Map[String, CypherValue])
+  extends EntityData {
+
+  override def asEntity(id: EntityId) = CypherNode(id, labels, properties)
+
   def withLabels(newLabels: String*) = copy(labels = newLabels)
 
   def withProperties(newProperties: (String, CypherValue)*) = copy(properties = newProperties.toMap)
@@ -41,7 +48,14 @@ final case class NodeData(labels: Seq[String], properties: Map[String, CypherVal
   def withProperties(newProperties: Map[String, CypherValue]) = copy(properties = newProperties)
 }
 
-final case class RelationshipData(startId: EntityId, relationshipType: String, endId: EntityId, properties: Map[String, CypherValue] = Map.empty) extends EntityData {
+final case class RelationshipData(startId: EntityId,
+                                  relationshipType: String,
+                                  endId: EntityId,
+                                  properties: Map[String, CypherValue] = Map.empty)
+  extends EntityData {
+
+  override def asEntity(id: EntityId) = CypherRelationship(id, startId, relationshipType, endId, properties)
+
   def withStartId(newStartId: EntityId) = copy(startId = newStartId)
 
   def withRelationshipType(newType: String) = copy(relationshipType = newType)

@@ -1,6 +1,6 @@
 package org.opencypher.spark
 
-import org.opencypher.spark.api.{CypherBoolean, CypherString, CypherValue}
+import org.opencypher.spark.api._
 
 object TestPropertyGraphs {
 
@@ -21,8 +21,8 @@ object TestPropertyGraphs {
     factory.add(newNode.withProperties("prop" -> true))
     factory.add(newNode.withProperties("prop" -> 42))
     factory.add(newNode.withProperties("prop" -> 23.1))
-    factory.add(newNode.withProperties("prop" -> Seq(CypherString("Hallo"), CypherBoolean(true))))
-    factory.add(newNode.withProperties("prop" -> Seq(Map[String, CypherValue]("a" -> "Hallo", "b" -> true))))
+    factory.add(newNode.withProperties("prop" -> Vector[CypherValue]("Hallo", true)))
+    factory.add(newNode.withProperties("prop" -> Vector(CypherRecord("a" -> "Hallo", "b" -> true))))
   }
 
   def createGraph3(factory: PropertyGraphFactory) = {

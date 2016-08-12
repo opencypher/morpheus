@@ -41,10 +41,9 @@ object Shell {
               |repl.prompt() = \"(cypher)-[:on]->(spark) \"
               |import org.opencypher.spark
               |import org.opencypher.spark._
-              |import CypherValue.implicits
-              |import CypherValue.implicits._
-              |import CypherTypes._
-              |import EntityData._
+              |import org.opencypher.spark.api._
+              |import org.opencypher.spark.api.implicits._
+              |import org.opencypher.spark.api.types._
               |""".stripMargin
       ).instantiateRepl(Seq(
         "session" -> session,

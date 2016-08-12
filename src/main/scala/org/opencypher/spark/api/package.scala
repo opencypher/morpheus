@@ -6,10 +6,6 @@ import scala.collection.immutable.ListMap
 
 package object api {
 
-  def cypherNull[T <: CypherValue] = null.asInstanceOf[T]
-
-  def cypherType(v: CypherValue) = if (v == null) CTNull else v.cypherType
-
   object implicits extends CypherImplicits
 
   object CypherRecord {
@@ -20,7 +16,26 @@ package object api {
   // Keys guaranteed to be in column order
   type CypherRecord = Map[String, CypherValue]
 
-  type CypherNumberValue = CypherValue with IsNumber
-  type CypherMapValue = CypherValue with HasProperties
-  type CypherEntityValue = CypherValue with HasEntityId with HasProperties
+  def cypherType(v: CypherValue) = v match {
+    case m: MaterialCypherValue => m.cypherType
+    case _                      => CTNull
+  }
+
+  object MaterialCypherValue {
+    def unapply(v: Any) = v match {
+      case m: MaterialCypherValue => Some(m.value)
+      case _                      => None
+    }
+  }
+
+  def cypherNull[T <: CypherValue] = null.asInstanceOf[T]
+
+  type MaterialCypherValue = CypherValue with IsMaterial
+
+  type CypherBoolean = MaterialCypherValue with IsBoolean
+  type CypherNumber = MaterialCypherValue with IsNumber
+
+  // TODO: Should this move into the Cypher type system?
+  type CypherDictionary = MaterialCypherValue with HasProperties
+  type CypherEntity = CypherDictionary with HasEntityId
 }
