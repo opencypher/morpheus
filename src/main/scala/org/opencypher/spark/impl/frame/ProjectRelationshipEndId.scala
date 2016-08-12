@@ -1,7 +1,7 @@
 package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.Dataset
-import org.opencypher.spark.api.CypherRelationship
+import org.opencypher.spark.api.{CypherNode, CypherRelationship}
 import org.opencypher.spark.impl._
 
 object ProjectRelationshipEndId {
@@ -25,9 +25,8 @@ object ProjectRelationshipEndId {
     import org.opencypher.spark.impl.util._
 
     def apply(product: Product): Product = {
-      val elts = product.toVector
-      val relationship = elts(index).asInstanceOf[CypherRelationship]
-      val result = (elts :+ relationship.end.v).toProduct
+      val relationship = product.getAs[CypherRelationship](index)
+      val result = product :+ relationship.endId.v
       result
     }
   }

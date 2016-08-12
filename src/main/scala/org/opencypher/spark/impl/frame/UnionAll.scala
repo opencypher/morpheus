@@ -23,7 +23,7 @@ object UnionAll {
 
       val union = lhsIn.union(rhsIn)
 
-      alias(union, context.productEncoder(slots))
+      alias(union)(context.productEncoder(slots))
     }
   }
 

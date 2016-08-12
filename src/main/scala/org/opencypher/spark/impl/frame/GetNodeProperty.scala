@@ -4,7 +4,7 @@ import org.apache.spark.sql.Dataset
 import org.opencypher.spark.api.CypherNode
 import org.opencypher.spark.impl._
 
-object PropertyAccessProduct {
+object GetNodeProperty {
 
   def apply(input: StdCypherFrame[Product], nodeField: StdField, propertyKey: Symbol)
            (outputField: StdField)
@@ -20,20 +20,19 @@ object PropertyAccessProduct {
 
     override def run(implicit context: StdRuntimeContext): Dataset[Product] = {
       val in = input.run
-      val out = in.map(ProductPropertyAccess(index, propertyKey.name))(context.productEncoder(slots))
+      val out = in.map(GetNodeProperty(index, propertyKey.name))(context.productEncoder(slots))
       out
     }
   }
 
-  private final case class ProductPropertyAccess(index: Int, propertyKeyName: String) extends (Product => Product) {
+  private final case class GetNodeProperty(index: Int, propertyKeyName: String) extends (Product => Product) {
 
     import org.opencypher.spark.impl.util._
 
     def apply(product: Product): Product = {
-      val elts = product.productIterator.toVector
-      val node = elts(index).asInstanceOf[CypherNode]
+      val node = product.getAs[CypherNode](index)
       val value = node.properties.get(propertyKeyName).orNull
-      val result = (elts :+ value).toProduct
+      val result = product :+ value
       result
     }
   }

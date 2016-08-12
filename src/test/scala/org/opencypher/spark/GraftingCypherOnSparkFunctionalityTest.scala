@@ -1,6 +1,6 @@
 package org.opencypher.spark
 
-import org.opencypher.spark.api.{CypherNode, CypherRecord}
+import org.opencypher.spark.api.{CypherNode, CypherRecord, CypherValue}
 import org.opencypher.spark.impl.StdPropertyGraph
 
 class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSession.Fixture {
@@ -77,7 +77,7 @@ class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessi
 
     result.show()
 
-    result.maps.collectAsScalaSet should equal(Set(
+    result.records.collectAsScalaSet should equal(Set(
       Map[String, CypherValue]("name" -> "Mats"),
       Map[String, CypherValue]("name" -> "Foo"),
       Map[String, CypherValue]("name" -> "Foo"),

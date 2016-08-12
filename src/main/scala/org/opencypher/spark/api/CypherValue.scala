@@ -166,19 +166,19 @@ final case class CypherNode(id: EntityId, labels: Seq[String], properties: Map[S
   def cypherType = CTNode
 }
 
-final case class CypherRelationship(id: EntityId, start: EntityId, end: EntityId, typ: String, properties: Map[String, CypherValue]) extends CypherValue with HasEntityId with HasProperties {
+final case class CypherRelationship(id: EntityId, startId: EntityId, endId: EntityId, relationshipType: String, properties: Map[String, CypherValue]) extends CypherValue with HasEntityId with HasProperties {
   type Repr = ((Long, Long), CypherRelationship)
 
-  def v = (start.v -> end.v) -> this
+  def v = (startId.v -> endId.v) -> this
 
   def other(otherId: EntityId) =
-    if (start == otherId)
-      end
+    if (startId == otherId)
+      endId
     else {
-      if (end == otherId)
-        start
+      if (endId == otherId)
+        startId
       else
-        throw new IllegalArgumentException(s"Expected either start $start or end $end of relationship $id, but got: $otherId")
+        throw new IllegalArgumentException(s"Expected either start $startId or end $endId of relationship $id, but got: $otherId")
     }
 
   def cypherType = CTRelationship

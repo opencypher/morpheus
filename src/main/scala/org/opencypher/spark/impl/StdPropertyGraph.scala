@@ -1,13 +1,10 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql._
-import org.apache.spark.sql.types.IntegerType
-import org.opencypher.spark.api.types.{CTAny, CTInteger, CTNode}
-import org.opencypher.spark._
+import org.opencypher.spark.api.types.{CTAny, CTInteger}
 import org.opencypher.spark.api.{CypherNode, CypherRelationship, CypherResultContainer, PropertyGraph}
-import org.opencypher.spark.impl.frame.ProjectNodeId.ProductNodeId
 import org.opencypher.spark.impl.frame._
-import org.opencypher.spark.impl.util.{ProductEncoderFactory, SlotSymbolGenerator, productize}
+import org.opencypher.spark.impl.util.SlotSymbolGenerator
 
 import scala.language.implicitConversions
 
@@ -55,8 +52,8 @@ class StdPropertyGraph(nodes: Dataset[CypherNode], relationships: Dataset[Cypher
         val nodeFrame = AllNodes(nodes)('n)
         val rowFrame = ValueAsRow(nodeFrame)
         val productFrame = RowAsProduct(rowFrame)
-        val projectFrame1 = PropertyAccessProduct(productFrame, nodeFrame.nodeField, 'name)(StdField(Symbol("n.name"), CTAny.nullable))
-        val projectFrame2 = PropertyAccessProduct(projectFrame1, nodeFrame.nodeField, 'age)(StdField(Symbol("n.age"), CTAny.nullable))
+        val projectFrame1 = GetNodeProperty(productFrame, nodeFrame.nodeField, 'name)(StdField(Symbol("n.name"), CTAny.nullable))
+        val projectFrame2 = GetNodeProperty(projectFrame1, nodeFrame.nodeField, 'age)(StdField(Symbol("n.age"), CTAny.nullable))
         val selectFields = SelectProductFields(projectFrame2)(projectFrame1.projectedField, projectFrame2.projectedField)
 
         StdCypherResultContainer.fromProducts(selectFields)
@@ -90,16 +87,16 @@ class StdPropertyGraph(nodes: Dataset[CypherNode], relationships: Dataset[Cypher
 
       case SupportedQueries.simpleUnionAll =>
         val allNodesA = AllNodes(nodes)('a)
-        val aWithLabels = LabelFilterNodes(allNodesA, Seq("A"))
+        val aWithLabels = LabelFilterNode(allNodesA, Seq("A"))
         val aAsProduct = ValueAsProduct(aWithLabels)
-        val aNames = PropertyAccessProducts(aAsProduct, allNodesA.nodeField, 'name)(StdField(Symbol("a.name"), CTAny.nullable))
+        val aNames = GetNodeProperty(aAsProduct, allNodesA.nodeField, 'name)(StdField(Symbol("a.name"), CTAny.nullable))
         val aNameRenamed = AliasField(aNames, aNames.projectedField)('name)
         val selectFieldA = SelectProductFields(aNameRenamed)(aNameRenamed.projectedField)
 
         val allNodesB = AllNodes(nodes)('b)
-        val bWithLabels = LabelFilterNodes(allNodesB, Seq("B"))
+        val bWithLabels = LabelFilterNode(allNodesB, Seq("B"))
         val bAsProduct = ValueAsProduct(bWithLabels)
-        val bNames = PropertyAccessProducts(bAsProduct, allNodesB.nodeField, 'name)(StdField(Symbol("b.name"), CTAny.nullable))
+        val bNames = GetNodeProperty(bAsProduct, allNodesB.nodeField, 'name)(StdField(Symbol("b.name"), CTAny.nullable))
         val bNameRenamed = AliasField(bNames, bNames.projectedField)('name)
         val selectFieldB = SelectProductFields(bNameRenamed)(bNameRenamed.projectedField)
 

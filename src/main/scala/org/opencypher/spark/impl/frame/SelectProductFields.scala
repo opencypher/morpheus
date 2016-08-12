@@ -21,10 +21,9 @@ object SelectProductFields {
     import org.opencypher.spark.impl.util._
 
     def apply(product: Product): Product = {
-      val values = product.toVector
       val builder = Vector.newBuilder[Any]
       builder.sizeHint(slots.size)
-      slots.foreach { slot => builder += values(slot.ordinal) }
+      slots.foreach { slot => builder += product.get(slot.ordinal) }
       val newValue = builder.result()
       newValue.toProduct
     }

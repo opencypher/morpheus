@@ -26,9 +26,8 @@ object ProjectNodeId {
     import org.opencypher.spark.impl.util._
 
     def apply(product: Product): Product = {
-      val elts = product.toVector
-      val node = elts(index).asInstanceOf[CypherNode]
-      val result = (elts :+ node.id.v).toProduct
+      val node = product.getAs[CypherNode](index)
+      val result = product :+ node.id.v
       result
     }
   }

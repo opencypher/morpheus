@@ -13,7 +13,7 @@ object AliasField {
   private final class AliasField(input: StdCypherFrame[Product], projectedField: StdField)(sig: StdFrameSignature) extends ProjectFrame(projectedField, sig) {
 
     override def run(implicit context: StdRuntimeContext): Dataset[Product] = {
-      alias(input.run, context.productEncoder(slots))
+      alias(input.run)(context.productEncoder(slots))
     }
   }
 

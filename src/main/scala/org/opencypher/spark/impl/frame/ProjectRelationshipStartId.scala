@@ -25,9 +25,8 @@ object ProjectRelationshipStartId {
     import org.opencypher.spark.impl.util._
 
     def apply(product: Product): Product = {
-      val elts = product.productIterator.toVector
-      val relationship = elts(index).asInstanceOf[CypherRelationship]
-      val result = (elts :+ relationship.start.v).toProduct
+      val relationship = product.getAs[CypherRelationship](index)
+      val result = product :+ relationship.startId.v
       result
     }
   }
