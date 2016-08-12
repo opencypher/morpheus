@@ -12,7 +12,7 @@ object LabelFilterNode {
 
   class LabelFilterNodes(input: StdCypherFrame[CypherNode], labels: Seq[String]) extends StdCypherFrame[CypherNode](input.signature) {
 
-    override def run(implicit context: StdRuntimeContext): Dataset[CypherNode] = {
+    override def execute(implicit context: StdRuntimeContext): Dataset[CypherNode] = {
       val in = input.run
       val out = in.filter(HasLabels(labels))
       out

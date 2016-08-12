@@ -18,7 +18,7 @@ object AllRelationships {
   private final class AllRelationships(input: Dataset[CypherRelationship], sig: StdFrameSignature)
     extends StdCypherFrame[CypherRelationship](sig) {
 
-    override def run(implicit context: RuntimeContext): Dataset[CypherRelationship] = {
+    override def execute(implicit context: RuntimeContext): Dataset[CypherRelationship] = {
       alias(input)(context.cypherRelationshipEncoder)
     }
 

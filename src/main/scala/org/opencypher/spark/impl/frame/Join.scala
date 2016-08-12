@@ -9,7 +9,7 @@ object Join {
 
   private final class Join(lhs: StdCypherFrame[Row], rhs: StdCypherFrame[Row], lhsKey: StdField, rhsKey: StdField) extends StdCypherFrame[Row](lhs.signature ++ rhs.signature) {
 
-    override def run(implicit context: StdRuntimeContext): Dataset[Row] = {
+    override def execute(implicit context: StdRuntimeContext): Dataset[Row] = {
       val lhsIn = lhs.run
       val rhsIn = rhs.run
 

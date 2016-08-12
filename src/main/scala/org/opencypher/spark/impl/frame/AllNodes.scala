@@ -18,7 +18,7 @@ object AllNodes {
   private final class CypherNodes(input: Dataset[CypherNode], sig: StdFrameSignature)
     extends StdCypherFrame[CypherNode](sig) {
 
-    override def run(implicit context: RuntimeContext): Dataset[CypherNode] = {
+    override def execute(implicit context: RuntimeContext): Dataset[CypherNode] = {
       // rename hard-coded column name 'value' to our slot name
       alias(input)(context.cypherNodeEncoder)
     }

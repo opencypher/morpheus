@@ -18,10 +18,10 @@ object GetNodeProperty {
 
     val index = sig.slot(nodeField).getOrElse(throw new IllegalArgumentException("Unknown nodeField")).ordinal
 
-    override def run(implicit context: StdRuntimeContext): Dataset[Product] = {
+    override def execute(implicit context: StdRuntimeContext): Dataset[Product] = {
       val in = input.run
       val out = in.map(GetNodeProperty(index, propertyKey.name))(context.productEncoder(slots))
-      alias(out)(context.productEncoder(slots))
+      out
     }
   }
 

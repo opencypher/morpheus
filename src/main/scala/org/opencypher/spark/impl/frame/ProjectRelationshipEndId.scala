@@ -13,10 +13,10 @@ object ProjectRelationshipEndId {
 
     val index = sig.slot(relField).getOrElse(throw new IllegalArgumentException("Unknown relationship field")).ordinal
 
-    override def run(implicit context: StdRuntimeContext): Dataset[Product] = {
+    override def execute(implicit context: StdRuntimeContext): Dataset[Product] = {
       val in = input.run
-      val mapped = in.map(RelationshipEndId(index))(context.productEncoder(slots))
-      alias(mapped)(context.productEncoder(slots))
+      val out = in.map(RelationshipEndId(index))(context.productEncoder(slots))
+      out
     }
   }
 

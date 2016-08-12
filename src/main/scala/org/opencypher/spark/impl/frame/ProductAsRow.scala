@@ -9,7 +9,7 @@ object ProductAsRow {
 
   class ProductsAsRows(input: StdCypherFrame[Product]) extends StdCypherFrame[Row](input.signature) {
 
-    override def run(implicit context: RuntimeContext): Dataset[Row] = {
+    override def execute(implicit context: RuntimeContext): Dataset[Row] = {
       val in = input.run
       val columnNames = slots.map(_.sym.name)
       val out = in.toDF(columnNames: _*)

@@ -14,7 +14,7 @@ object ProductAsMap {
 
     val outputMapping = fields.flatMap { (field: StdField)=> signature.slot(field).map( slot => field.sym -> slot.ordinal) }
 
-    override def run(implicit context: RuntimeContext): Dataset[Map[String, CypherValue]] = {
+    override def execute(implicit context: RuntimeContext): Dataset[Map[String, CypherValue]] = {
       val in = input.run
       val out = in.map(ProductAsMap(outputMapping))(context.cypherRecordEncoder)
       out

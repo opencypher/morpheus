@@ -10,7 +10,7 @@ object RowAsProduct {
 
   class RowsAsProducts(input: StdCypherFrame[Row]) extends StdCypherFrame[Product](input.signature) {
 
-    override def run(implicit context: RuntimeContext): Dataset[Product] = {
+    override def execute(implicit context: RuntimeContext): Dataset[Product] = {
       val in = input.run
       val out = in.as[Product](context.productEncoder(slots))
       out

@@ -17,13 +17,13 @@ object UnionAll {
         |${rhs.signature.fields}
       """.stripMargin))
 
-    override def run(implicit context: StdRuntimeContext): Dataset[Product] = {
+    override def execute(implicit context: StdRuntimeContext): Dataset[Product] = {
       val lhsIn = lhs.run
       val rhsIn = rhs.run
 
       val union = lhsIn.union(rhsIn)
 
-      alias(union)(context.productEncoder(slots))
+      union
     }
   }
 

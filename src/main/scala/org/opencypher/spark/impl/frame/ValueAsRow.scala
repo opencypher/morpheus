@@ -11,7 +11,7 @@ object ValueAsRow {
 
   class CypherValuesAsRows[T <: CypherValue](input: StdCypherFrame[T]) extends StdCypherFrame[Row](input.signature) {
 
-    override def run(implicit context: RuntimeContext): Dataset[Row] = {
+    override def execute(implicit context: RuntimeContext): Dataset[Row] = {
       val in = input.run
       val out = in.toDF(slots.head.sym.name)
       out

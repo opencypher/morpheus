@@ -39,7 +39,6 @@ trait CypherFrame[Out] {
   //  def parameters: Map[Symbol, CypherValue]
 
   def run(implicit context: RuntimeContext): Dataset[Out]
-  //  def expand(other: Frame)(from: Field, to: Field): Frame // just sketching
 }
 
 trait CypherRuntimeContext {
