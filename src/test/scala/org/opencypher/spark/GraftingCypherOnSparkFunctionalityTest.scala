@@ -63,19 +63,27 @@ class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessi
     ))
   }
 
-//  test("simple union all") {
-//    val a = add(newLabeledNode("A"))
-//    val ab = add(newLabeledNode("A", "B"))
-//    val c = add(newLabeledNode("C"))
-//    add(newNode)
-//    add(newUntypedRelationship(a -> ab))
-//    add(newUntypedRelationship(ab -> c))
-//
-//    // MATCH (a:A) RETURN a.name AS name UNION ALL MATCH (b:B) RETURN b.name AS name
-//    val result = graph.cypher(SupportedQueries.simpleUnionAll)
-//
-//    result.show()
-//  }
+  test("simple union all") {
+    val a = add(newLabeledNode("A").withProperties("name" -> "Mats"))
+    val b = add(newLabeledNode("B").withProperties("name" -> 123))
+    val ab = add(newLabeledNode("A", "B").withProperties("name" -> "Foo"))
+    val c = add(newLabeledNode("C").withProperties("name" -> "Bar"))
+    add(newNode)
+    add(newUntypedRelationship(a -> ab))
+    add(newUntypedRelationship(ab -> c))
+
+    // MATCH (a:A) RETURN a.name AS name UNION ALL MATCH (b:B) RETURN b.name AS name
+    val result = graph.cypher(SupportedQueries.simpleUnionAll)
+
+    result.show()
+
+    result.maps.collectAsScalaSet should equal(Set(
+      Map[String, CypherValue]("name" -> "Mats"),
+      Map[String, CypherValue]("name" -> "Foo"),
+      Map[String, CypherValue]("name" -> "Foo"),
+      Map[String, CypherValue]("name" -> 123)
+    ))
+  }
 
 
   //  test("all node scan on node-only graph that uses all kinds of properties") {

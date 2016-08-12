@@ -14,7 +14,7 @@ object PropertyAccessProduct {
   }
 
   private final class PropertyAccessProducts(input: StdCypherFrame[Product], nodeField: StdField, propertyKey: Symbol, outputField: StdField)(sig: StdFrameSignature)
-    extends ProjectFrame(sig) {
+    extends ProjectFrame(outputField, sig) {
 
     val index = sig.slot(nodeField).getOrElse(throw new IllegalArgumentException("Unknown nodeField")).ordinal
 
@@ -23,8 +23,6 @@ object PropertyAccessProduct {
       val out = in.map(ProductPropertyAccess(index, propertyKey.name))(context.productEncoder(slots))
       out
     }
-
-    override def projectedField: StdField = outputField
   }
 
   private final case class ProductPropertyAccess(index: Int, propertyKeyName: String) extends (Product => Product) {

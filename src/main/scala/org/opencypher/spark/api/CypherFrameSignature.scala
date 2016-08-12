@@ -13,7 +13,7 @@ trait CypherFrameSignature {
   def addField(field: Field)(implicit context: PlanningContext): CypherFrameSignature
   def addIntegerField(field: Field)(implicit context: PlanningContext): CypherFrameSignature
   def removeField(sym: Symbol): CypherFrameSignature
-  def aliasFields(aliases: (Symbol, Symbol)*): CypherFrameSignature
+  def aliasField(oldField: Symbol, newField: Symbol): (Field, CypherFrameSignature)
   def selectFields(fields: Field*): (CypherFrameSignature, Seq[Slot])
 
   def slots: Seq[Slot]

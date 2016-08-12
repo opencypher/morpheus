@@ -14,6 +14,8 @@ object ProductEncoderFactory {
   def createEncoder(slots: Seq[StdSlot])(implicit session: SparkSession): ExpressionEncoder[Product] = {
     import session.implicits._
 
+    assert(slots.nonEmpty, throw new IllegalArgumentException("Needs at least one slot"))
+
     val encoders: List[ExpressionEncoder[_]] = slots.toList.map {
       case StdSlot(_, _, _, BinaryRepresentation) =>
         encoder[CypherValue]
@@ -33,5 +35,11 @@ object ProductEncoderFactory {
     ExpressionEncoder.tuple(encoders).asInstanceOf[ExpressionEncoder[Product]]
   }
 
+  /**
+    * This function works by fetching encoders and encoder converters from the implicit scope,
+    * and then casts them to ExpressionEncoders via Encoders.asExpressionEncoder.
+    * @tparam T the type to encode
+    * @return an ExpressionEncoder for the requested type
+    */
   private def encoder[T : Encoder]: ExpressionEncoder[T] = implicitly[Encoder[T]]
 }

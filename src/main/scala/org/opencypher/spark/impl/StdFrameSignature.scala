@@ -34,7 +34,17 @@ class StdFrameSignature(private val map: Map[StdField, StdSlot] = Map.empty)
     new StdFrameSignature(map + entry)
   }
 
-  override def aliasFields(aliases: (Symbol, Symbol)*): StdFrameSignature = ???
+  override def aliasField(oldField: Symbol, newField: Symbol): (StdField, StdFrameSignature) = {
+    var copy: StdField = null
+    val newMap = map.map {
+      case (f, s) if f.sym == oldField => {
+        copy = f.copy(sym = newField)
+        copy -> s
+      }
+      case t => t
+    }
+    (copy, new StdFrameSignature(newMap))
+  }
 
   override def removeField(sym: Symbol): StdFrameSignature = ???
 
