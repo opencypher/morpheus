@@ -1,16 +1,16 @@
 package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.Dataset
-import org.opencypher.spark.api.CypherAnyMap
+import org.opencypher.spark.api.{CypherAnyMap, TypedSymbol}
 import org.opencypher.spark.impl._
 
 object GetProperty {
 
-  def apply(input: StdCypherFrame[Product])(properties: Symbol, propertyKey: Symbol)(outputField: StdField)
+  def apply(input: StdCypherFrame[Product])(properties: Symbol, propertyKey: Symbol)(output: TypedSymbol)
            (implicit context: PlanningContext): ProjectFrame = {
     val propertiesField = input.signature.field(properties)
-    val (_, signature) = input.signature.addField(outputField.sym, outputField.cypherType)
-    new GetProperty(input)(propertiesField, propertyKey, outputField)(signature)
+    val (field, signature) = input.signature.addField(output)
+    new GetProperty(input)(propertiesField, propertyKey, field)(signature)
   }
 
   private final class GetProperty(input: StdCypherFrame[Product])

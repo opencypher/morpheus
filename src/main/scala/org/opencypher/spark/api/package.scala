@@ -8,6 +8,8 @@ package object api {
 
   object implicits extends CypherImplicits
 
+  type TypedSymbol = (Symbol, CypherType)
+
   object CypherRecord {
     def apply(elts: (String, CypherValue)*): CypherRecord =
       ListMap(elts: _*)

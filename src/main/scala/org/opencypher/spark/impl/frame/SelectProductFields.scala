@@ -5,8 +5,8 @@ import org.opencypher.spark.impl._
 
 object SelectProductFields {
 
-  def apply(input: StdCypherFrame[Product])(fields: StdField*): StdCypherFrame[Product] = {
-    val (newSignature, slotMapping) = input.signature.selectFields(fields: _*)
+  def apply(input: StdCypherFrame[Product])(fields: Symbol*): StdCypherFrame[Product] = {
+    val (slotMapping, newSignature) = input.signature.selectFields(fields: _*)
     new SelectProductFields(input)(newSignature, slotMapping)
   }
 

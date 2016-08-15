@@ -8,14 +8,14 @@ import org.opencypher.spark.impl._
 object ProjectRelationshipEndId {
 
 
-  def apply(input: StdCypherFrame[Product])(relField: StdField)(outputField: StdField)
+  def apply(input: StdCypherFrame[Product])(relationship: Symbol)(output: Symbol)
            (implicit context: PlanningContext): ProjectFrame = {
-    val (field, sig) = input.signature.addField(outputField.sym -> CTInteger)
-    new ProjectRelationshipEndId(input)(relField, field)(sig)
+    val (field, sig) = input.signature.addField(output -> CTInteger)
+    new ProjectRelationshipEndId(input)(relationship, field)(sig)
   }
 
   private final class ProjectRelationshipEndId(input: StdCypherFrame[Product])
-                                              (relField: StdField, outputField: StdField)(sig: StdFrameSignature)
+                                              (relField: Symbol, outputField: StdField)(sig: StdFrameSignature)
     extends ProjectFrame(outputField, sig) {
 
     val index = sig.slot(relField).ordinal

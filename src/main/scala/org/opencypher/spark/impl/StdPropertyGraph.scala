@@ -54,9 +54,9 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
         val nodeFrame = allNodes('n)
         val rowFrame = ValueAsRow(nodeFrame)
         val productFrame = RowAsProduct(rowFrame)
-        val projectFrame1 = GetProperty(productFrame)('n, 'name)(StdField(Symbol("n.name"), CTAny.nullable))
-        val projectFrame2 = GetProperty(projectFrame1)('n, 'age)(StdField(Symbol("n.age"), CTAny.nullable))
-        val selectFields = SelectProductFields(projectFrame2)(projectFrame1.projectedField, projectFrame2.projectedField)
+        val projectFrame1 = GetProperty(productFrame)('n, 'name)(Symbol("n.name") -> CTAny.nullable)
+        val projectFrame2 = GetProperty(projectFrame1)('n, 'age)(Symbol("n.age") -> CTAny.nullable)
+        val selectFields = SelectProductFields(projectFrame2)(projectFrame1.projectedFieldSymbol, projectFrame2.projectedFieldSymbol)
 
         StdCypherResultContainer.fromProducts(selectFields)
 
@@ -73,16 +73,15 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
 
         val allRels = allRelationships('r)
         val rAsProduct = ValueAsProduct(allRels)
-        val relField = allRels.signature.field('r)
-        val rWithStartId = ProjectRelationshipStartId(rAsProduct)(relField)(StdField(Symbol("startId(r)"), CTInteger))
-        val rWithStartAndEndId = ProjectRelationshipEndId(rWithStartId)(relField)(StdField(Symbol("endId(r)"), CTInteger))
+        val rWithStartId = ProjectRelationshipStartId(rAsProduct)('r)(Symbol("startId(r)"))
+        val rWithStartAndEndId = ProjectRelationshipEndId(rWithStartId)('r)(Symbol("endId(r)"))
         val relsAsRows = ProductAsRow(rWithStartAndEndId)
 
         val joinRelA = Join(relsAsRows, aAsRows)(rWithStartId.projectedField, aWithId.projectedField)
         val joinRelB = Join(joinRelA, bAsRows)(rWithStartAndEndId.projectedField, bWithId.projectedField)
 
         val asProduct = RowAsProduct(joinRelB)
-        val selectField = SelectProductFields(asProduct)(relField)
+        val selectField = SelectProductFields(asProduct)('r)
 
         StdCypherResultContainer.fromProducts(selectField)
 
@@ -90,13 +89,13 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
         val aAsProduct = allNodes('a).labelFilter("A").asProduct
         val aNames = aAsProduct.getNodeProperty('a, 'name)(Symbol("a.name"))
         val aNameRenamed = aNames.aliasField(Symbol("a.name") -> 'name)
-        val selectFieldA = SelectProductFields(aNameRenamed)(aNameRenamed.projectedField)
+        val selectFieldA = SelectProductFields(aNameRenamed)(aNameRenamed.projectedFieldSymbol)
 
         val allNodesB = allNodes('b)
         val bAsProduct = allNodesB.labelFilter("B").asProduct
         val bNames = bAsProduct.getNodeProperty('b, 'name)(Symbol("b.name"))
         val bNameRenamed = bNames.aliasField(Symbol("b.name") -> 'name)
-        val selectFieldB = SelectProductFields(bNameRenamed)(bNameRenamed.projectedField)
+        val selectFieldB = SelectProductFields(bNameRenamed)(bNameRenamed.projectedFieldSymbol)
 
         val union = UnionAll(selectFieldA, selectFieldB)
 

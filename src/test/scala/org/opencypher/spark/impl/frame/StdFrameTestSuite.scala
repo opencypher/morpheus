@@ -44,7 +44,7 @@ abstract class StdFrameTestSuite extends StdTestSuite with TestSession.Fixture {
     }
 
     def shouldHaveFieldSlots(expected: (Symbol, Representation)*): Unit = {
-      sig.fields.map { f => f.sym -> sig.slot(f).representation }.toSet should equal(expected.toSet)
+      sig.fields.map { f => f.sym -> sig.slot(f.sym).representation }.toSet should equal(expected.toSet)
     }
   }
 }

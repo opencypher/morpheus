@@ -7,9 +7,9 @@ import org.opencypher.spark.impl._
 
 object ProjectRelationshipStartId {
 
-  def apply(input: StdCypherFrame[Product])(relField: StdField)(outputField: StdField)(implicit context: PlanningContext): ProjectFrame = {
-    val (field, sig) = input.signature.addField(outputField.sym -> CTInteger)
-    new ProjectRelationshipStartId(input)(relField, field)(sig)
+  def apply(input: StdCypherFrame[Product])(relationship: Symbol)(output: Symbol)(implicit context: PlanningContext): ProjectFrame = {
+    val (field, sig) = input.signature.addField(output -> CTInteger)
+    new ProjectRelationshipStartId(input)(input.signature.field(relationship), field)(sig)
   }
 
   private final class ProjectRelationshipStartId(input: StdCypherFrame[Product])(relField: StdField, outputField: StdField)(sig: StdFrameSignature) extends ProjectFrame(outputField, sig) {
