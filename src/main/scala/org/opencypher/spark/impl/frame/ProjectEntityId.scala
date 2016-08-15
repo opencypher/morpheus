@@ -2,13 +2,16 @@ package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.Dataset
 import org.opencypher.spark.api.CypherEntity
+import org.opencypher.spark.api.types.CTInteger
 import org.opencypher.spark.impl._
 
 object ProjectEntityId {
 
-  def apply(input: StdCypherFrame[Product])(entityField: StdField)(outputField: StdField)
+  def apply(input: StdCypherFrame[Product])(entity: Symbol)(output: Symbol)
            (implicit context: PlanningContext): ProjectFrame = {
-    new ProjectNodeId(input)(entityField, outputField)(input.signature.addIntegerField(outputField))
+    val outputField: StdField = StdField(output, CTInteger)
+    val signature: StdFrameSignature = input.signature.addIntegerField(outputField)
+    new ProjectNodeId(input)(input.signature.field(entity), outputField)(signature)
   }
 
   private final class ProjectNodeId(input: StdCypherFrame[Product])

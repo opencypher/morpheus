@@ -61,16 +61,14 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
         StdCypherResultContainer.fromProducts(selectFields)
 
       case SupportedQueries.getAllRelationshipsOfTypeTOfLabelA =>
-        val allNodesA = allNodes('a)
-        val aWithLabels = LabelFilterNode(allNodesA)(Seq("A"))
-        val aAsProduct = ValueAsProduct(aWithLabels)
-        val aWithId = ProjectEntityId(aAsProduct)(allNodesA.signature.field('a))(StdField(Symbol("id(a)"), CTInteger))
+        val aAsProduct = allNodes('a).labelFilter("A").asProduct
+        val aWithId = ProjectEntityId(aAsProduct)('a)(Symbol("id(a)"))
         val aAsRows = ProductAsRow(aWithId)
 
         val allNodesB = allNodes('b)
         val bWithLabels = LabelFilterNode(allNodesB)(Seq("B"))
         val bAsProduct = ValueAsProduct(bWithLabels)
-        val bWithId = ProjectEntityId(bAsProduct)(allNodesB.signature.field('b))(StdField(Symbol("id(b)"), CTInteger))
+        val bWithId = ProjectEntityId(bAsProduct)('b)(Symbol("id(b)"))
         val bAsRows = ProductAsRow(bWithId)
 
         val allRels = allRelationships('r)

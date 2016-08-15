@@ -25,5 +25,9 @@ class FrameProducer(implicit val planningContext: PlanningContext) {
       val (oldName, newName) = alias
       AliasField(input)(oldName)(newName)
     }
+
+    def projectId(entity: Symbol)(output: Symbol) = {
+      ProjectEntityId(input)(entity)(output)
+    }
   }
 }
