@@ -2,12 +2,15 @@ package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.Dataset
 import org.opencypher.spark.api.CypherRelationship
+import org.opencypher.spark.api.types.CTInteger
 import org.opencypher.spark.impl._
 
 object ProjectRelationshipStartId {
 
-  def apply(input: StdCypherFrame[Product])(relField: StdField)(outputField: StdField)(implicit context: PlanningContext): ProjectFrame =
-    new ProjectRelationshipStartId(input)(relField, outputField)(input.signature.addIntegerField(outputField))
+  def apply(input: StdCypherFrame[Product])(relField: StdField)(outputField: StdField)(implicit context: PlanningContext): ProjectFrame = {
+    val (field, sig) = input.signature.addField(outputField.sym -> CTInteger)
+    new ProjectRelationshipStartId(input)(relField, field)(sig)
+  }
 
   private final class ProjectRelationshipStartId(input: StdCypherFrame[Product])(relField: StdField, outputField: StdField)(sig: StdFrameSignature) extends ProjectFrame(outputField, sig) {
 

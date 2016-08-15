@@ -1,7 +1,8 @@
 package org.opencypher.spark.api
 
-import org.apache.spark.sql.types.{BinaryType, DataType}
+import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Dataset, SparkSession}
+import org.opencypher.spark.api.types._
 
 trait Expr
 
@@ -70,15 +71,7 @@ trait CypherSlot {
   def ordinal: Int
 }
 
-sealed trait Representation extends Serializable {
-  def dataType: DataType
-}
 
-case object BinaryRepresentation extends Representation {
-  def dataType = BinaryType
-}
-
-final case class EmbeddedRepresentation(dataType: DataType) extends Representation
 
 trait CypherExpression {
   def cypherType: CypherType

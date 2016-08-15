@@ -11,8 +11,7 @@ trait CypherFrameSignature {
   def slot(field: Field): Slot
   def slot(name: Symbol): Slot
 
-  def addField(field: Field)(implicit context: PlanningContext): CypherFrameSignature
-  def addIntegerField(field: Field)(implicit context: PlanningContext): CypherFrameSignature
+  def addField(pair: (Symbol, CypherType))(implicit context: PlanningContext): (Field, CypherFrameSignature)
   def aliasField(oldField: Symbol, newField: Symbol): (Field, CypherFrameSignature)
   def selectFields(fields: Field*): (CypherFrameSignature, Seq[Slot])
 

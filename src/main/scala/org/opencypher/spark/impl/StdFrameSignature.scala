@@ -1,7 +1,8 @@
 package org.opencypher.spark.impl
 
-import org.apache.spark.sql.types.IntegerType
-import org.opencypher.spark.api.{BinaryRepresentation, CypherFrameSignature, EmbeddedRepresentation}
+import org.apache.spark.sql.types._
+import org.opencypher.spark.api.types._
+import org.opencypher.spark.api._
 
 object StdFrameSignature {
   val empty = new StdFrameSignature
@@ -29,15 +30,12 @@ class StdFrameSignature(private val map: Map[StdField, StdSlot] = Map.empty)
       case (field, slot) if field.sym == sym => slot
     }.getOrElse(throw new IllegalArgumentException(s"Unknown slot: $sym"))
 
-  override def addField(field: StdField)(implicit context: PlanningContext): StdFrameSignature = {
-    val entry = field -> StdSlot(context.newSlotSymbol(field), field.cypherType, map.values.size, BinaryRepresentation)
-    new StdFrameSignature(map + entry)
+  override def addField(pair: (Symbol, CypherType))(implicit context: PlanningContext): (Field, StdFrameSignature) = {
+    val field = StdField(pair)
+    val slot = StdSlot(context.newSlotSymbol(field), field.cypherType, map.values.size, Representation.sparkReprForCypherType(field.cypherType))
+    field -> new StdFrameSignature(map + (field -> slot))
   }
 
-  override def addIntegerField(field: StdField)(implicit context: PlanningContext): StdFrameSignature = {
-    val entry = field -> StdSlot(context.newSlotSymbol(field), field.cypherType, map.values.size, EmbeddedRepresentation(IntegerType))
-    new StdFrameSignature(map + entry)
-  }
 
   override def aliasField(oldField: Symbol, newField: Symbol): (StdField, StdFrameSignature) = {
     var copy: StdField = null
@@ -47,7 +45,7 @@ class StdFrameSignature(private val map: Map[StdField, StdSlot] = Map.empty)
         copy -> s
       case t => t
     }
-    (copy, new StdFrameSignature(newMap))
+    copy -> new StdFrameSignature(newMap)
   }
 
   override def selectFields(fields: StdField*): (StdFrameSignature, Seq[Slot]) = {
@@ -60,7 +58,7 @@ class StdFrameSignature(private val map: Map[StdField, StdSlot] = Map.empty)
       case (field, slot) => field -> slot.copy(ordinal = newOrdinals(slot))
     }
     val retainedOldSlotsSortedByNewOrdinal = newOrdinals.toSeq.sortBy(_._2).map(_._1)
-    (new StdFrameSignature(newMap), retainedOldSlotsSortedByNewOrdinal)
+    new StdFrameSignature(newMap) -> retainedOldSlotsSortedByNewOrdinal
   }
 
   def ++(other: StdFrameSignature): StdFrameSignature = {

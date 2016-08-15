@@ -9,9 +9,8 @@ object ProjectEntityId {
 
   def apply(input: StdCypherFrame[Product])(entity: Symbol)(output: Symbol)
            (implicit context: PlanningContext): ProjectFrame = {
-    val outputField: StdField = StdField(output, CTInteger)
-    val signature: StdFrameSignature = input.signature.addIntegerField(outputField)
-    new ProjectNodeId(input)(input.signature.field(entity), outputField)(signature)
+    val (field, signature) = input.signature.addField(output -> CTInteger)
+    new ProjectNodeId(input)(input.signature.field(entity), field)(signature)
   }
 
   private final class ProjectNodeId(input: StdCypherFrame[Product])

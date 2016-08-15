@@ -9,7 +9,7 @@ object GetProperty {
   def apply(input: StdCypherFrame[Product])(properties: Symbol, propertyKey: Symbol)(outputField: StdField)
            (implicit context: PlanningContext): ProjectFrame = {
     val propertiesField = input.signature.field(properties)
-    val signature = input.signature.addField(outputField)
+    val (_, signature) = input.signature.addField(outputField.sym, outputField.cypherType)
     new GetProperty(input)(propertiesField, propertyKey, outputField)(signature)
   }
 

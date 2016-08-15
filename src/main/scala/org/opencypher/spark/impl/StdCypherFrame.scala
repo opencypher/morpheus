@@ -29,11 +29,6 @@ abstract class StdCypherFrame[Out](sig: StdFrameSignature)
     input.toDF(signature.slotNames: _*).as(encoder)
 }
 
-case class StdField(sym: Symbol, cypherType: CypherType) extends CypherField {
-  // TODO: Properly escape here
-  val columnSym: Symbol = Symbol(sym.name.filterNot(_ == '.').filterNot( _ == '(').filterNot(_ == ')'))
-}
-
 case class StdSlot(sym: Symbol, cypherType: CypherType, ordinal: Int, representation: Representation) extends CypherSlot
 
 abstract class ProductFrame(sig: StdFrameSignature) extends StdCypherFrame[Product](sig) {

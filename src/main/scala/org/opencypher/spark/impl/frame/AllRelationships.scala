@@ -1,17 +1,17 @@
 package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.Dataset
+import org.opencypher.spark.api.CypherRelationship
 import org.opencypher.spark.api.types.CTRelationship
-import org.opencypher.spark.api.{CypherRelationship, CypherValue}
-import org.opencypher.spark.impl.{PlanningContext, StdCypherFrame, StdField, StdFrameSignature}
+import org.opencypher.spark.impl.{PlanningContext, StdCypherFrame, StdFrameSignature}
 
 object AllRelationships {
 
-  def apply(fieldSym: Symbol)(implicit context: PlanningContext): StdCypherFrame[CypherRelationship] = {
-    val field = StdField(fieldSym, CTRelationship)
+  def apply(relationship: Symbol)(implicit context: PlanningContext): StdCypherFrame[CypherRelationship] = {
+    val (_, sig) = StdFrameSignature.empty.addField(relationship, CTRelationship)
     new AllRelationships(
       input = context.relationships,
-      sig = StdFrameSignature.empty.addField(field)
+      sig = sig
     )
   }
 
@@ -21,7 +21,5 @@ object AllRelationships {
     override def execute(implicit context: RuntimeContext): Dataset[CypherRelationship] = {
       alias(input)(context.cypherRelationshipEncoder)
     }
-
-    def relField: StdField = sig.fields.head
   }
 }
