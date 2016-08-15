@@ -241,7 +241,7 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
 //
 //      // CypherFrames and expression evaluation (including null issues)
       case _ =>
-        ???
+        throw new UnsupportedOperationException("I don't want a NotImplemented warning")
     }
   }
 }
