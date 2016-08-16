@@ -1,8 +1,8 @@
 package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.Dataset
-import org.opencypher.spark.api.CypherRelationship
-import org.opencypher.spark.api.types.{CTInteger, CTRelationship}
+import org.opencypher.spark.api.{CypherNode, CypherRelationship, CypherType}
+import org.opencypher.spark.api.types.{CTInteger, CTNode, CTRelationship}
 import org.opencypher.spark.impl._
 
 object ProjectFromEntity {
@@ -11,23 +11,39 @@ object ProjectFromEntity {
 
   def relationshipStartId(input: StdCypherFrame[Product])(relationship: Symbol)(output: Symbol)
                          (implicit context: PlanningContext): ProjectFrame = {
-    val (field, sig) = input.signature.addField(output -> CTInteger)
-    val entityField = input.signature.field(relationship)
-    requireRelationship(entityField)
-    new ProjectFromEntity[CypherRelationship](input)(entityField, relationshipStartId, field)(sig)
+    val (outputField, sig) = input.signature.addField(output -> CTInteger)
+    val relField = input.signature.field(relationship)
+    requireType(relField, CTRelationship)
+    new ProjectFromEntity[CypherRelationship](input)(relField, relationshipStartId, outputField)(sig)
   }
 
   def relationshipEndId(input: StdCypherFrame[Product])(relationship: Symbol)(output: Symbol)
                        (implicit context: PlanningContext): ProjectFrame = {
-    val (field, sig) = input.signature.addField(output -> CTInteger)
-    val entityField = input.signature.field(relationship)
-    requireRelationship(entityField)
-    new ProjectFromEntity[CypherRelationship](input)(entityField, relationshipEndId, field)(sig)
+    val (outputField, sig) = input.signature.addField(output -> CTInteger)
+    val relField = input.signature.field(relationship)
+    requireType(relField, CTRelationship)
+    new ProjectFromEntity[CypherRelationship](input)(relField, relationshipEndId, outputField)(sig)
   }
 
-  private def requireRelationship(field: StdField) = {
-    verify(field.cypherType == CTRelationship) failWith {
-      CypherTypeError(s"Expected $CTRelationship, but got: ${field.cypherType}")
+  def relationshipId(input: StdCypherFrame[Product])(relationship: Symbol)(output: Symbol)
+                    (implicit context: PlanningContext): ProjectFrame = {
+    val (outputField, signature) = input.signature.addField(output -> CTInteger)
+    val relField = input.signature.field(relationship)
+    requireType(relField, CTRelationship)
+    new ProjectFromEntity[CypherRelationship](input)(relField, relationshipId, outputField)(signature)
+  }
+
+  def nodeId(input: StdCypherFrame[Product])(node: Symbol)(output: Symbol)
+            (implicit context: PlanningContext): ProjectFrame = {
+    val (outputField, signature) = input.signature.addField(output -> CTInteger)
+    val nodeField = input.signature.field(node)
+    requireType(nodeField, CTNode)
+    new ProjectFromEntity[CypherNode](input)(nodeField, nodeId, outputField)(signature)
+  }
+
+  private def requireType(field: StdField, typ: CypherType) = {
+    verify(field.cypherType == typ) failWith {
+      CypherTypeError(s"Expected $typ, but got: ${field.cypherType}")
     }
   }
 
@@ -66,6 +82,16 @@ object ProjectFromEntity {
   private final case class relationshipEndId(override val index: Int)
     extends ProjectEntityPrimitive[CypherRelationship] {
     override def extract(relationship: CypherRelationship) = relationship.endId.v
+  }
+
+  private final case class nodeId(override val index: Int)
+    extends ProjectEntityPrimitive[CypherNode] {
+    override def extract(node: CypherNode) = node.id.v
+  }
+
+  private final case class relationshipId(override val index: Int)
+    extends ProjectEntityPrimitive[CypherRelationship] {
+    override def extract(relationship: CypherRelationship) = relationship.id.v
   }
 
   protected[frame] final case class CypherTypeError(msg: String) extends FrameVerificationError(msg)

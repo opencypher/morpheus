@@ -16,9 +16,9 @@ class SelectProductFieldsTest extends StdFrameTestSuite {
       val result =
         allNodes('n)
           .asProduct
-          .getNodeProperty('n, 'name)('name)
-          .getNodeProperty('n, 'age)('age)
-          .getNodeProperty('n, 'married)('married)
+          .nodeProperty('n, 'name)('name)
+          .nodeProperty('n, 'age)('age)
+          .nodeProperty('n, 'married)('married)
           .selectFields('age, 'married)
           .frameResult
 

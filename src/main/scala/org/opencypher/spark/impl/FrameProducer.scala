@@ -26,7 +26,7 @@ class FrameProducer(implicit val planningContext: PlanningContext) {
     def unionAll(other: StdCypherFrame[Product]) =
       UnionAll(input, other)
 
-    def getNodeProperty(node: Symbol, propertyKey: Symbol)(outputName: Symbol) =
+    def nodeProperty(node: Symbol, propertyKey: Symbol)(outputName: Symbol) =
       GetProperty(input)(node, propertyKey)(outputName -> CTAny.nullable)
 
     def aliasField(alias: (Symbol, Symbol)) = {
@@ -37,14 +37,17 @@ class FrameProducer(implicit val planningContext: PlanningContext) {
     def selectFields(fields: Symbol*) =
       SelectProductFields(input)(fields: _*)
 
-    def projectId(entity: Symbol)(output: Symbol) =
-      ProjectEntityId(input)(entity)(output)
-
     def relationshipStartId(entity: Symbol)(output: Symbol) =
       ProjectFromEntity.relationshipStartId(input)(entity)(output)
 
     def relationshipEndId(entity: Symbol)(output: Symbol) =
       ProjectFromEntity.relationshipEndId(input)(entity)(output)
+
+    def nodeId(entity: Symbol)(output: Symbol) =
+      ProjectFromEntity.nodeId(input)(entity)(output)
+
+    def relationshipId(entity: Symbol)(output: Symbol) =
+      ProjectFromEntity.relationshipId(input)(entity)(output)
   }
 
   implicit final class RichRowFrame(input: StdCypherFrame[Row]) {

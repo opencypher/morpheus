@@ -20,17 +20,17 @@ class UnionAllTest extends StdFrameTestSuite {
         allNodes('n)
           .labelFilter("A")
           .asProduct
-          .getNodeProperty('n, 'name)('name)
-          .getNodeProperty('n, 'age)('age)
-          .getNodeProperty('n, 'married)('married)
+          .nodeProperty('n, 'name)('name)
+          .nodeProperty('n, 'age)('age)
+          .nodeProperty('n, 'married)('married)
 
       val rhs =
         allNodes('n)
           .labelFilter("B")
           .asProduct
-          .getNodeProperty('n, 'name)('name)
-          .getNodeProperty('n, 'age)('age)
-          .getNodeProperty('n, 'married)('married)
+          .nodeProperty('n, 'name)('name)
+          .nodeProperty('n, 'age)('age)
+          .nodeProperty('n, 'married)('married)
 
       val result = lhs.unionAll(rhs).frameResult
 
@@ -71,16 +71,16 @@ class UnionAllTest extends StdFrameTestSuite {
       val lhs =
         allNodes('n)
           .asProduct
-          .getNodeProperty('n, 'name)('name)
-          .getNodeProperty('n, 'age)('age)
-          .getNodeProperty('n, 'married)('married)
+          .nodeProperty('n, 'name)('name)
+          .nodeProperty('n, 'age)('age)
+          .nodeProperty('n, 'married)('married)
 
       val rhs =
         allNodes('n)
           .asProduct
-          .getNodeProperty('n, 'married)('married)
-          .getNodeProperty('n, 'name)('name)
-          .getNodeProperty('n, 'age)('age)
+          .nodeProperty('n, 'married)('married)
+          .nodeProperty('n, 'name)('name)
+          .nodeProperty('n, 'age)('age)
 
       a [UnionAll.SignatureMismatch] shouldBe thrownBy {
         lhs.unionAll(rhs)
