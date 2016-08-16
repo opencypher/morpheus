@@ -4,7 +4,15 @@ import org.apache.spark.sql.Dataset
 import org.opencypher.spark._
 import org.opencypher.spark.api._
 import org.opencypher.spark.impl._
+import org.opencypher.spark.impl.frame.StdFrameTestSuite.FrameTestResult
 import org.opencypher.spark.impl.util.SlotSymbolGenerator
+
+object StdFrameTestSuite {
+  final case class FrameTestResult[Out](dataframe: Dataset[Out], signature: StdFrameSignature) {
+    def toList = dataframe.collect().toList
+    def toSet = dataframe.collect().toSet
+  }
+}
 
 abstract class StdFrameTestSuite extends StdTestSuite with TestSession.Fixture {
 
@@ -27,13 +35,7 @@ abstract class StdFrameTestSuite extends StdTestSuite with TestSession.Fixture {
     def testResult(implicit context: StdRuntimeContext) = {
       val out = frame.run(context)
       out.columns should equal(frame.slots.map(_.sym.name))
-      FrameTestResult(out)
-    }
-
-    final case class FrameTestResult(dataframe: Dataset[Out]) {
-      def signature = frame.signature
-      def toList = dataframe.collect().toList
-      def toSet = dataframe.collect().toSet
+      FrameTestResult(out, frame.signature)
     }
   }
 

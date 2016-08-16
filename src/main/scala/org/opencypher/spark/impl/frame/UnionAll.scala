@@ -15,10 +15,10 @@ object UnionAll {
       """.stripMargin
     }
 
-    new UnionAll(lhs, rhs)
+    UnionAll(lhs, rhs)
   }
 
-  private final class UnionAll(lhs: StdCypherFrame[Product], rhs: StdCypherFrame[Product])
+  private final case class UnionAll(lhs: StdCypherFrame[Product], rhs: StdCypherFrame[Product])
     extends StdCypherFrame[Product](lhs.signature) {
 
     override def execute(implicit context: StdRuntimeContext): Dataset[Product] = {

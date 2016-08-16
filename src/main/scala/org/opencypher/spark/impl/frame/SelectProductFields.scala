@@ -7,10 +7,10 @@ object SelectProductFields {
 
   def apply(input: StdCypherFrame[Product])(fields: Symbol*): StdCypherFrame[Product] = {
     val (slotMapping, newSignature) = input.signature.selectFields(fields: _*)
-    new SelectProductFields(input)(newSignature, slotMapping)
+    SelectProductFields(input)(newSignature, slotMapping)
   }
 
-  private final class SelectProductFields(input: StdCypherFrame[Product])(sig: StdFrameSignature, slots: Seq[StdSlot])
+  private final case class SelectProductFields(input: StdCypherFrame[Product])(sig: StdFrameSignature, slots: Seq[StdSlot])
     extends ProductFrame(sig) {
 
     override def execute(implicit context: StdRuntimeContext): Dataset[Product] = {

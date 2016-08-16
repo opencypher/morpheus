@@ -34,8 +34,6 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
 
   import StdPropertyGraph.SupportedQueries
 
-  private implicit def stringFromSymbol(s: Symbol): String = s.name
-
   override def cypher(query: String): CypherResultContainer = {
     implicit val planningContext = new PlanningContext(new SlotSymbolGenerator, nodes, relationships)
     implicit val runtimeContext = new StdRuntimeContext(session)

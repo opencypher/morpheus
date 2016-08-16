@@ -7,10 +7,10 @@ import org.opencypher.spark.impl.{StdCypherFrame, StdRuntimeContext}
 
 object LabelFilterNode {
   def apply(input: StdCypherFrame[CypherNode])(labels: Seq[String]): StdCypherFrame[CypherNode] = {
-    new LabelFilterNode(input)(labels)
+    LabelFilterNode(input)(labels)
   }
 
-  private final class LabelFilterNode(input: StdCypherFrame[CypherNode])(labels: Seq[String])
+  private final case class LabelFilterNode(input: StdCypherFrame[CypherNode])(labels: Seq[String])
     extends StdCypherFrame[CypherNode](input.signature) {
 
     override def execute(implicit context: StdRuntimeContext): Dataset[CypherNode] = {

@@ -19,11 +19,11 @@ object Join {
     unless(lhs.signature.slot(lhsField).representation.isEmbedded) failWith NotEmbedded(lhsKey)
     unless(rhs.signature.slot(rhsField).representation.isEmbedded) failWith NotEmbedded(rhsKey)
 
-    new Join(lhs, rhs)(lhsField, rhsField)
+    Join(lhs, rhs)(lhsField, rhsField)
   }
 
-  private final class Join(lhs: StdCypherFrame[Row], rhs: StdCypherFrame[Row])
-                          (lhsKey: StdField, rhsKey: StdField)
+  private final case class Join(lhs: StdCypherFrame[Row], rhs: StdCypherFrame[Row])
+                               (lhsKey: StdField, rhsKey: StdField)
     extends StdCypherFrame[Row](lhs.signature ++ rhs.signature) {
 
     override def execute(implicit context: StdRuntimeContext): Dataset[Row] = {

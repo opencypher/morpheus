@@ -7,10 +7,10 @@ import org.opencypher.spark.impl.{StdCypherFrame, StdField, StdSlot}
 object ProductAsMap {
 
   def apply(input: StdCypherFrame[Product]): StdCypherFrame[Map[String, CypherValue]] = {
-    new ProductAsMap(input)
+    ProductAsMap(input)
   }
 
-  private final class ProductAsMap(input: StdCypherFrame[Product]) extends StdCypherFrame[Map[String, CypherValue]](input.signature) {
+  private final case class ProductAsMap(input: StdCypherFrame[Product]) extends StdCypherFrame[Map[String, CypherValue]](input.signature) {
 
     val outputMapping = fields.map { field => field.sym -> signature.slot(field).ordinal }
 

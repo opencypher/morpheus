@@ -4,6 +4,8 @@ import org.apache.spark.sql.Dataset
 import org.opencypher.spark.api.CypherType
 import org.opencypher.spark.impl.{FrameVerificationError, PlanningContext, StdCypherFrame, StdFrameSignature}
 
+import scala.language.postfixOps
+
 object Upcast {
 
   import org.opencypher.spark.impl.FrameVerification._
@@ -18,7 +20,7 @@ object Upcast {
     unless(newType `superTypeOf` oldType isTrue) failWith TypeError(oldType, newType)
 
     val (_, sig) = input.signature.upcastField(field.sym, newType)
-    new CypherUpcast[Out](input)(sig)
+    CypherUpcast[Out](input)(sig)
   }
 
   private final case class CypherUpcast[Out](input: StdCypherFrame[Out])(sig: StdFrameSignature)

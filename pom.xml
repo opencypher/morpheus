@@ -10,7 +10,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <java.version>1.8</java.version>
+        <java.version>1.7</java.version>
         <scala.version>2.11.8</scala.version>
         <scala.binary.version>2.11</scala.binary.version>
     </properties>
@@ -58,9 +58,26 @@
                     <recompileMode>incremental</recompileMode>
                     <scalaVersion>${scala.version}</scalaVersion>
                     <scalaCompatVersion>${scala.binary.version}</scalaCompatVersion>
+                    <encoding>UTF-8</encoding>
+                    <args>
+                        <!-- need to pass encoding to scalac manually -->
+                        <arg>-encoding</arg>
+                        <arg>UTF-8</arg>
+                        <arg>-target:jvm-1.7</arg>
+                        <arg>-unchecked</arg>
+                        <arg>-deprecation</arg>
+                        <arg>-feature</arg>
+                        <arg>–explaintypes</arg>
+                        <arg>–optimise</arg>
+                        <arg>-Xfuture</arg>
+                        <arg>-Ywarn-adapted-args</arg>
+                        <arg>-Ywarn-dead-code</arg>
+                        <arg>-Yopt-warnings:at-inline-failed</arg>
+                        <arg>-Yopt:l:project</arg>
+                    </args>
                 </configuration>
             </plugin>
-            
+
             <!-- enable scalastyle (configured below in pluginManagement) -->
             <plugin>
                 <groupId>org.scalastyle</groupId>
@@ -121,7 +138,7 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>1.4.0</version>
                 <configuration>
-                    <mainClass>org.opencypher.spark.Shell</mainClass>
+                    <mainClass>org.opencypher.spark.shell.Shell</mainClass>
                     <classpathScope>test</classpathScope>
                 </configuration>
             </plugin>

@@ -6,9 +6,10 @@ import org.opencypher.spark.impl.{ProductFrame, StdCypherFrame, StdRuntimeContex
 
 object ValueAsProduct {
 
-  def apply[T <: CypherValue](input: StdCypherFrame[T]): ProductFrame = new ValueAsProduct(input)
+  def apply[T <: CypherValue](input: StdCypherFrame[T]): ProductFrame =
+    ValueAsProduct(input)
 
-  private final class ValueAsProduct[T <: CypherValue](input: StdCypherFrame[T]) extends ProductFrame(input.signature) {
+  private final case class ValueAsProduct[T <: CypherValue](input: StdCypherFrame[T]) extends ProductFrame(input.signature) {
 
     override def execute(implicit context: StdRuntimeContext): Dataset[Product] = {
       val in = input.run

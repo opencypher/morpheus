@@ -8,14 +8,14 @@ import org.opencypher.spark.impl.{PlanningContext, StdCypherFrame, StdFrameSigna
 object AllRelationships {
 
   def apply(relationship: Symbol)(implicit context: PlanningContext): StdCypherFrame[CypherRelationship] = {
-    val (_, sig) = StdFrameSignature.empty.addField(relationship, CTRelationship)
-    new AllRelationships(
+    val (_, sig) = StdFrameSignature.empty.addField(relationship -> CTRelationship)
+    AllRelationships(
       input = context.relationships,
       sig = sig
     )
   }
 
-  private final class AllRelationships(input: Dataset[CypherRelationship], sig: StdFrameSignature)
+  private final case class AllRelationships(input: Dataset[CypherRelationship], sig: StdFrameSignature)
     extends StdCypherFrame[CypherRelationship](sig) {
 
     override def execute(implicit context: RuntimeContext): Dataset[CypherRelationship] = {

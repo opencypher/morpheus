@@ -2,6 +2,8 @@ package org.opencypher.spark.impl
 
 import org.opencypher.spark.api._
 
+import scala.language.postfixOps
+
 object StdFrameSignature {
   val empty = new StdFrameSignature
 }

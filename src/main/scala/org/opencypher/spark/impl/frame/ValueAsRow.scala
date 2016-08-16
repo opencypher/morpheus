@@ -7,9 +7,9 @@ import org.opencypher.spark.impl.StdCypherFrame
 object ValueAsRow {
 
   def apply[T <: CypherValue](input: StdCypherFrame[T]): StdCypherFrame[Row] =
-    new ValueAsRow(input = input)
+    ValueAsRow(input = input)
 
-  class ValueAsRow[T <: CypherValue](input: StdCypherFrame[T]) extends StdCypherFrame[Row](input.signature) {
+  private final case class ValueAsRow[T <: CypherValue](input: StdCypherFrame[T]) extends StdCypherFrame[Row](input.signature) {
 
     override def execute(implicit context: RuntimeContext): Dataset[Row] = {
       val in = input.run

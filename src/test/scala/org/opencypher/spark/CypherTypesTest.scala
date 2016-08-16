@@ -25,19 +25,19 @@ class CypherTypesTest extends StdTestSuite {
 
   test("type names") {
     Seq[(CypherType, (String, String))](
-      CTAny -> ("ANY", "ANY?"),
-      CTString -> ("STRING", "STRING?"),
-      CTBoolean -> ("BOOLEAN", "BOOLEAN?"),
-      CTNumber -> ("NUMBER", "NUMBER?"),
-      CTInteger -> ("INTEGER", "INTEGER?"),
-      CTFloat -> ("FLOAT", "FLOAT?"),
-      CTMap -> ("MAP" , "MAP?"),
-      CTNode -> ("NODE", "NODE?"),
-      CTRelationship -> ("RELATIONSHIP", "RELATIONSHIP?"),
-      CTPath -> ("PATH", "PATH?"),
-      CTList(CTInteger) -> ("LIST OF INTEGER", "LIST? OF INTEGER"),
-      CTList(CTInteger.nullable) -> ("LIST OF INTEGER?", "LIST? OF INTEGER?"),
-      CTWildcard -> ("?", "??")
+      CTAny -> ("ANY" -> "ANY?"),
+      CTString -> ("STRING" -> "STRING?"),
+      CTBoolean -> ("BOOLEAN" -> "BOOLEAN?"),
+      CTNumber -> ("NUMBER" -> "NUMBER?"),
+      CTInteger -> ("INTEGER" -> "INTEGER?"),
+      CTFloat -> ("FLOAT" -> "FLOAT?"),
+      CTMap -> ("MAP" -> "MAP?"),
+      CTNode -> ("NODE" -> "NODE?"),
+      CTRelationship -> ("RELATIONSHIP" -> "RELATIONSHIP?"),
+      CTPath -> ("PATH" -> "PATH?"),
+      CTList(CTInteger) -> ("LIST OF INTEGER" -> "LIST? OF INTEGER"),
+      CTList(CTInteger.nullable) -> ("LIST OF INTEGER?" -> "LIST? OF INTEGER?"),
+      CTWildcard -> ("?" -> "??")
     ).foreach {
       case (t, (materialName, nullableName)) =>
 
