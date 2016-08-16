@@ -1,0 +1,26 @@
+package org.opencypher.spark.impl.frame
+
+import org.opencypher.spark.api.BinaryRepresentation
+import org.opencypher.spark.api.types.CTNode
+
+class ValueAsRowTest extends StdFrameTestSuite {
+
+  test("ValueAsRow converts DataSet[CypherNode]") {
+    val a = add(newNode.withLabels("A").withProperties("name" -> "Zippie"))
+    val b = add(newNode.withLabels("B").withProperties("name" -> "Yggie"))
+
+    new GraphTest {
+
+      import frames._
+
+      val rowResult = allNodes('n).asRow.frameResult
+
+      rowResult.signature shouldHaveFields ('n -> CTNode)
+      rowResult.signature shouldHaveFieldSlots ('n -> BinaryRepresentation)
+
+      val productResult = allNodes('n).asRow.asProduct.frameResult
+
+      productResult.toSet should equal(Set(a, b).map(Tuple1(_)))
+    }
+  }
+}
