@@ -5,7 +5,7 @@ import org.opencypher.spark.api.types._
 
 object Representation {
 
-  def sparkReprForCypherType(typ: CypherType): Representation = typ.material match {
+  def forCypherType(typ: CypherType): Representation = typ.material match {
     case CTInteger => EmbeddedRepresentation(IntegerType)
     case CTFloat => EmbeddedRepresentation(DoubleType)
     case CTBoolean => EmbeddedRepresentation(BooleanType)

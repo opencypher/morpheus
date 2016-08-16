@@ -12,6 +12,7 @@ trait CypherFrameSignature {
 
   def addField(symbol: TypedSymbol)(implicit context: PlanningContext): (Field, CypherFrameSignature)
   def addFields(symbols: TypedSymbol*)(implicit console: PlanningContext): (Seq[Field], CypherFrameSignature)
+  def upcastField(symbol: Symbol, newType: CypherType): (Field, CypherFrameSignature)
   def aliasField(oldField: Symbol, newField: Symbol): (Field, CypherFrameSignature)
   def selectFields(fields: Symbol*): (Seq[Slot], CypherFrameSignature)
 

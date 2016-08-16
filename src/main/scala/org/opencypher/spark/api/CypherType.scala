@@ -247,6 +247,9 @@ sealed trait MaterialCypherType extends CypherType {
 
   override def erasedSuperType: MaterialCypherType with DefiniteCypherType
   override def erasedSubType: MaterialCypherType with DefiniteCypherType
+
+  def asNullableAs(typ: CypherType) =
+    if (typ.isNullable) nullable else material
 }
 
 sealed trait NullableCypherType extends CypherType {

@@ -6,6 +6,8 @@ object StdFrameSignature {
   val empty = new StdFrameSignature
 }
 
+// TODO: Use verify instead of throwing
+// TODO: Check duplicate field
 class StdFrameSignature(private val fieldMap: Map[StdField, StdSlot] = Map.empty)
   extends CypherFrameSignature {
 
@@ -30,11 +32,13 @@ class StdFrameSignature(private val fieldMap: Map[StdField, StdSlot] = Map.empty
 
   override def addField(symbol: TypedSymbol)(implicit context: PlanningContext): (Field, StdFrameSignature) = {
     val field = StdField(symbol)
-    val slot = StdSlot(context.newSlotSymbol(field), field.cypherType, fieldMap.values.size, Representation.sparkReprForCypherType(field.cypherType))
+    val representation = Representation.forCypherType(field.cypherType)
+    val slot = StdSlot(context.newSlotSymbol(field), field.cypherType, fieldMap.values.size, representation)
     field -> new StdFrameSignature(fieldMap + (field -> slot))
   }
 
-  override def addFields(symbols: TypedSymbol*)(implicit console: PlanningContext): (Seq[StdField], StdFrameSignature) = {
+  override def addFields(symbols: TypedSymbol*)
+                        (implicit console: PlanningContext): (Seq[StdField], StdFrameSignature) = {
     symbols.foldLeft(Seq.empty[StdField] -> this) {
       case ((seq, sig), symbol) =>
         val (newField, newSig) = sig.addField(symbol)
@@ -65,6 +69,21 @@ class StdFrameSignature(private val fieldMap: Map[StdField, StdSlot] = Map.empty
     val retainedOldSlotsSortedByNewOrdinal = newOrdinals.toSeq.sortBy(_._2).map(_._1)
     retainedOldSlotsSortedByNewOrdinal -> new StdFrameSignature(newMap)
   }
+
+  override def upcastField(sym: Symbol, newType: CypherType): (StdField, StdFrameSignature) = {
+    val oldField = field(sym)
+    val oldType = oldField.cypherType
+
+    // We do an additional assert here since this is very critical
+    if (newType superTypeOf oldType isTrue) {
+      val oldSlot = slot(oldField)
+      val newField = oldField.copy(cypherType = newType)
+      val newSlot = oldSlot.copy(cypherType = newType)
+      newField -> new StdFrameSignature(fieldMap - oldField + (newField -> newSlot))
+    } else
+      throw new IllegalArgumentException(s"Cannot upcast $oldType to $newType")
+  }
+
 
   def ++(other: StdFrameSignature): StdFrameSignature = {
     // TODO: Remove var

@@ -50,8 +50,8 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
 
       case SupportedQueries.allNodesScanProjectAgeName =>
         val productFrame = allNodes('n).asProduct
-        val withName = productFrame.nodeProperty('n, 'name)(Symbol("n.name"))
-        val withAge = withName.nodeProperty('n, 'age)(Symbol("n.age"))
+        val withName = productFrame.property('n, 'name)(Symbol("n.name"))
+        val withAge = withName.property('n, 'age)(Symbol("n.age"))
         val selectFields = withAge.selectFields(Symbol("n.name"), Symbol("n.age"))
 
         StdCypherResultContainer.fromProducts(selectFields)
@@ -77,13 +77,13 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
 
       case SupportedQueries.simpleUnionAll =>
         val aAsProduct = allNodes('a).labelFilter("A").asProduct
-        val aNames = aAsProduct.nodeProperty('a, 'name)(Symbol("a.name"))
+        val aNames = aAsProduct.property('a, 'name)(Symbol("a.name"))
         val aNameRenamed = aNames.aliasField(Symbol("a.name") -> 'name)
         val selectFieldA = aNameRenamed.selectFields('name)
 
         val allNodesB = allNodes('b)
         val bAsProduct = allNodesB.labelFilter("B").asProduct
-        val bNames = bAsProduct.nodeProperty('b, 'name)(Symbol("b.name"))
+        val bNames = bAsProduct.property('b, 'name)(Symbol("b.name"))
         val bNameRenamed = bNames.aliasField(Symbol("b.name") -> 'name)
         val selectFieldB = bNameRenamed.selectFields('name)
 

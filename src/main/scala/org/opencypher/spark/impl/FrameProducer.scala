@@ -1,8 +1,7 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
-import org.opencypher.spark.api.{CypherNode, CypherValue}
-import org.opencypher.spark.api.types.CTAny
+import org.opencypher.spark.api.{CypherNode, CypherType, CypherValue}
 import org.opencypher.spark.impl.frame._
 
 class FrameProducer(implicit val planningContext: PlanningContext) {
@@ -10,24 +9,34 @@ class FrameProducer(implicit val planningContext: PlanningContext) {
   def allNodes(sym: Symbol) = AllNodes(sym)
   def allRelationships(sym: Symbol) = AllRelationships(sym)
 
+  abstract class AbstractRichFrame[T](input: StdCypherFrame[T]) {
+    def upcast(sym: Symbol)(widen: CypherType => CypherType): StdCypherFrame[T] =
+      Upcast(input)(sym)(widen)
+  }
 
-  implicit final class RichValueFrame[T <: CypherValue](input: StdCypherFrame[T]) {
+  abstract class AbstractRichValueFrame[T <: CypherValue](input: StdCypherFrame[T])
+    extends AbstractRichFrame[T](input) {
     def asProduct = ValueAsProduct(input)
     def asRow = ValueAsRow(input)
   }
 
-  implicit final class RichNodeFrame(input: StdCypherFrame[CypherNode]) {
+  implicit final class RichValueFrame[T <: CypherValue](input: StdCypherFrame[T])
+    extends AbstractRichValueFrame[T](input)
+
+  implicit final class RichNodeFrame(input: StdCypherFrame[CypherNode])
+    extends AbstractRichValueFrame[CypherNode](input) {
     def labelFilter(labels: String*) = LabelFilterNode(input)(labels)
   }
 
-  implicit final class RichProductFrame(input: StdCypherFrame[Product]) {
+  implicit final class RichProductFrame(input: StdCypherFrame[Product])
+    extends AbstractRichFrame[Product](input) {
     def asRow = ProductAsRow(input)
 
     def unionAll(other: StdCypherFrame[Product]) =
       UnionAll(input, other)
 
-    def nodeProperty(node: Symbol, propertyKey: Symbol)(outputName: Symbol) =
-      GetProperty(input)(node, propertyKey)(outputName -> CTAny.nullable)
+    def property(node: Symbol, propertyKey: Symbol)(outputName: Symbol) =
+      Extract.property(input)(node, propertyKey)(outputName)
 
     def aliasField(alias: (Symbol, Symbol)) = {
       val (oldName, newName) = alias
@@ -38,19 +47,23 @@ class FrameProducer(implicit val planningContext: PlanningContext) {
       SelectProductFields(input)(fields: _*)
 
     def relationshipStartId(entity: Symbol)(output: Symbol) =
-      ProjectFromEntity.relationshipStartId(input)(entity)(output)
+      Extract.relationshipStartId(input)(entity)(output)
 
     def relationshipEndId(entity: Symbol)(output: Symbol) =
-      ProjectFromEntity.relationshipEndId(input)(entity)(output)
+      Extract.relationshipEndId(input)(entity)(output)
 
     def nodeId(entity: Symbol)(output: Symbol) =
-      ProjectFromEntity.nodeId(input)(entity)(output)
+      Extract.nodeId(input)(entity)(output)
 
     def relationshipId(entity: Symbol)(output: Symbol) =
-      ProjectFromEntity.relationshipId(input)(entity)(output)
+      Extract.relationshipId(input)(entity)(output)
+
+    def nullable(value: Symbol) =
+      Upcast(input)(value)(_.nullable)
   }
 
-  implicit final class RichRowFrame(input: StdCypherFrame[Row]) {
+  implicit final class RichRowFrame(input: StdCypherFrame[Row])
+    extends AbstractRichFrame[Row](input) {
     def asProduct = RowAsProduct(input)
   }
 }

@@ -61,6 +61,18 @@ class StdFrameSignatureTest extends StdTestSuite {
     }
   }
 
+  test("upcast a field") {
+    val (_, sig) = StdFrameSignature.empty.addField('n -> CTFloat)
+    val (field, newSig) = sig.upcastField('n, CTNumber)
+
+    field should equal(StdField('n, CTNumber))
+    newSig.field('n) should equal(field)
+    newSig.slot('n).cypherType should equal(CTNumber)
+    an [IllegalArgumentException] should be thrownBy {
+      newSig.upcastField('n, CTRelationship)
+    }
+  }
+
   test("select fields") {
     val (_, sig) = StdFrameSignature.empty.addFields('n1 -> CTString, 'n2 -> CTRelationship, 'path -> CTPath)
 
