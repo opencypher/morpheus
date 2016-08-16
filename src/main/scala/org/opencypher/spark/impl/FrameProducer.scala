@@ -31,9 +31,11 @@ class FrameProducer(implicit val planningContext: PlanningContext) {
       AliasField(input)(oldName)(newName)
     }
 
-    def projectId(entity: Symbol)(output: Symbol) = {
+    def selectFields(fields: Symbol*) =
+      SelectProductFields(input)(fields: _*)
+
+    def projectId(entity: Symbol)(output: Symbol) =
       ProjectEntityId(input)(entity)(output)
-    }
   }
 
   implicit final class RichRowFrame(input: StdCypherFrame[Row]) {

@@ -11,7 +11,7 @@ object SelectProductFields {
   }
 
   private final class SelectProductFields(input: StdCypherFrame[Product])(sig: StdFrameSignature, slots: Seq[StdSlot])
-    extends StdCypherFrame[Product](sig) {
+    extends ProductFrame(sig) {
 
     override def execute(implicit context: StdRuntimeContext): Dataset[Product] = {
       val out = input.run.map(selectFields(slots))(context.productEncoder(sig.slots))

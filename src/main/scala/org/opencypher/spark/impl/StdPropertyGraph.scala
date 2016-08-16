@@ -52,7 +52,7 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
         val productFrame = allNodes('n).asProduct
         val withName = productFrame.getNodeProperty('n, 'name)(Symbol("n.name"))
         val withAge = withName.getNodeProperty('n, 'age)(Symbol("n.age"))
-        val selectFields = SelectProductFields(withAge)(withName.projectedFieldSymbol, withAge.projectedFieldSymbol)
+        val selectFields = withAge.selectFields(Symbol("n.name"), Symbol("n.age"))
 
         StdCypherResultContainer.fromProducts(selectFields)
 
@@ -71,8 +71,7 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
         val joinRelA = Join(relsAsRows, aWithId.asRow)(rWithStartId.projectedField, aWithId.projectedField)
         val joinRelB = Join(joinRelA, bWithId.asRow)(rWithStartAndEndId.projectedField, bWithId.projectedField)
 
-        val asProduct = joinRelB.asProduct
-        val selectField = SelectProductFields(asProduct)('r)
+        val selectField = joinRelB.asProduct.selectFields('r)
 
         StdCypherResultContainer.fromProducts(selectField)
 
@@ -80,13 +79,13 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
         val aAsProduct = allNodes('a).labelFilter("A").asProduct
         val aNames = aAsProduct.getNodeProperty('a, 'name)(Symbol("a.name"))
         val aNameRenamed = aNames.aliasField(Symbol("a.name") -> 'name)
-        val selectFieldA = SelectProductFields(aNameRenamed)(aNameRenamed.projectedFieldSymbol)
+        val selectFieldA = aNameRenamed.selectFields('name)
 
         val allNodesB = allNodes('b)
         val bAsProduct = allNodesB.labelFilter("B").asProduct
         val bNames = bAsProduct.getNodeProperty('b, 'name)(Symbol("b.name"))
         val bNameRenamed = bNames.aliasField(Symbol("b.name") -> 'name)
-        val selectFieldB = SelectProductFields(bNameRenamed)(bNameRenamed.projectedFieldSymbol)
+        val selectFieldB = bNameRenamed.selectFields('name)
 
         val union = UnionAll(selectFieldA, selectFieldB)
 
