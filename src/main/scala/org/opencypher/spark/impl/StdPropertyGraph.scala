@@ -51,8 +51,8 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
 
       case SupportedQueries.allNodesScanProjectAgeName =>
         val productFrame = allNodes('n).asProduct
-        val withName = productFrame.property('n, 'name)(Symbol("n.name"))
-        val withAge = withName.property('n, 'age)(Symbol("n.age"))
+        val withName = productFrame.propertyValue('n, 'name)(Symbol("n.name"))
+        val withAge = withName.propertyValue('n, 'age)(Symbol("n.age"))
         val selectFields = withAge.selectFields(Symbol("n.name"), Symbol("n.age"))
 
         StdCypherResultContainer.fromProducts(selectFields)
@@ -69,8 +69,8 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
         val rWithStartAndEndId = rWithStartId.relationshipEndId('r)(Symbol("endId(r)"))
         val relsAsRows = rWithStartAndEndId.asRow
 
-        val joinRelA = Join(relsAsRows, aWithId.asRow)(rWithStartId.projectedField, aWithId.projectedField)
-        val joinRelB = Join(joinRelA, bWithId.asRow)(rWithStartAndEndId.projectedField, bWithId.projectedField)
+        val joinRelA = relsAsRows.join(aWithId.asRow).on(rWithStartId.projectedField.sym)(aWithId.projectedField.sym)
+        val joinRelB = joinRelA.join(bWithId.asRow).on(rWithStartAndEndId.projectedField.sym)(bWithId.projectedField.sym)
 
         val selectField = joinRelB.asProduct.selectFields('r)
 
@@ -78,13 +78,13 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
 
       case SupportedQueries.simpleUnionAll =>
         val aAsProduct = allNodes('a).labelFilter("A").asProduct
-        val aNames = aAsProduct.property('a, 'name)(Symbol("a.name"))
+        val aNames = aAsProduct.propertyValue('a, 'name)(Symbol("a.name"))
         val aNameRenamed = aNames.aliasField(Symbol("a.name") -> 'name)
         val selectFieldA = aNameRenamed.selectFields('name)
 
         val allNodesB = allNodes('b)
         val bAsProduct = allNodesB.labelFilter("B").asProduct
-        val bNames = bAsProduct.property('b, 'name)(Symbol("b.name"))
+        val bNames = bAsProduct.propertyValue('b, 'name)(Symbol("b.name"))
         val bNameRenamed = bNames.aliasField(Symbol("b.name") -> 'name)
         val selectFieldB = bNameRenamed.selectFields('name)
 

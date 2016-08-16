@@ -1,7 +1,7 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
-import org.opencypher.spark.api.{CypherNode, CypherType, CypherValue}
+import org.opencypher.spark.api.{CypherNode, CypherType, CypherValue, TypedSymbol}
 import org.opencypher.spark.impl.frame._
 
 class FrameProducer(implicit val planningContext: PlanningContext) {
@@ -35,7 +35,7 @@ class FrameProducer(implicit val planningContext: PlanningContext) {
     def unionAll(other: StdCypherFrame[Product]) =
       UnionAll(input, other)
 
-    def property(node: Symbol, propertyKey: Symbol)(outputName: Symbol) =
+    def propertyValue(node: Symbol, propertyKey: Symbol)(outputName: Symbol) =
       Extract.property(input)(node, propertyKey)(outputName)
 
     def aliasField(alias: (Symbol, Symbol)) = {
@@ -58,6 +58,9 @@ class FrameProducer(implicit val planningContext: PlanningContext) {
     def relationshipId(entity: Symbol)(output: Symbol) =
       Extract.relationshipId(input)(entity)(output)
 
+    def relationshipType(entity: Symbol)(output: Symbol) =
+      Extract.relationshipType(input)(entity)(output)
+
     def nullable(value: Symbol) =
       Upcast(input)(value)(_.nullable)
   }
@@ -65,5 +68,14 @@ class FrameProducer(implicit val planningContext: PlanningContext) {
   implicit final class RichRowFrame(input: StdCypherFrame[Row])
     extends AbstractRichFrame[Row](input) {
     def asProduct = RowAsProduct(input)
+
+    def join(other: StdCypherFrame[Row]) = new JoinBuilder[Row] {
+      def on(lhsKey: Symbol)(rhsKey: Symbol): StdCypherFrame[Row] =
+        Join(input, other)(lhsKey, rhsKey)
+    }
+  }
+
+  sealed trait JoinBuilder[T] {
+    def on(lhsKey: Symbol)(rhsKey: Symbol): StdCypherFrame[T]
   }
 }

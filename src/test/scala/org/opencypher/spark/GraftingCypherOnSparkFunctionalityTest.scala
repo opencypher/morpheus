@@ -75,8 +75,6 @@ class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessi
     // MATCH (a:A) RETURN a.name AS name UNION ALL MATCH (b:B) RETURN b.name AS name
     val result = graph.cypher(SupportedQueries.simpleUnionAll)
 
-    result.show()
-
     result.records.collectAsScalaSet should equal(Set(
       CypherRecord("name" -> "Mats"),
       CypherRecord("name" -> "Foo"),

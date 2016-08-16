@@ -6,7 +6,7 @@ import org.opencypher.spark.api.types._
 object Representation {
 
   def forCypherType(typ: CypherType): Representation = typ.material match {
-    case CTInteger => EmbeddedRepresentation(IntegerType)
+    case CTInteger => EmbeddedRepresentation(LongType)
     case CTFloat => EmbeddedRepresentation(DoubleType)
     case CTBoolean => EmbeddedRepresentation(BooleanType)
     case CTString => EmbeddedRepresentation(StringType)
@@ -18,11 +18,15 @@ object Representation {
 
 sealed trait Representation extends Serializable {
   def dataType: DataType
+  def isEmbedded: Boolean
 }
 
 case object BinaryRepresentation extends Representation {
   def dataType = BinaryType
+  def isEmbedded = false
 }
 
-final case class EmbeddedRepresentation(dataType: DataType) extends Representation
+final case class EmbeddedRepresentation(dataType: DataType) extends Representation {
+  def isEmbedded = true
+}
 

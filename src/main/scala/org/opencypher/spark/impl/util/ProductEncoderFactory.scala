@@ -1,7 +1,7 @@
 package org.opencypher.spark.impl.util
 
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
-import org.apache.spark.sql.types.{BooleanType, IntegerType, StringType}
+import org.apache.spark.sql.types.{BooleanType, LongType, StringType}
 import org.apache.spark.sql.{Encoder, SparkSession}
 import org.opencypher.spark.api.types.{CTBoolean, CTInteger, CTString}
 import org.opencypher.spark.api.{BinaryRepresentation, CypherValue, EmbeddedRepresentation}
@@ -27,10 +27,10 @@ object ProductEncoderFactory {
       case StdSlot(_, CTString.nullable, _, EmbeddedRepresentation(StringType)) =>
         encoder[String]
 
-      case StdSlot(_, CTInteger, _, EmbeddedRepresentation(IntegerType)) =>
+      case StdSlot(_, CTInteger, _, EmbeddedRepresentation(LongType)) =>
         encoder[Long]
 
-      case StdSlot(_, CTInteger.nullable, _, EmbeddedRepresentation(IntegerType)) =>
+      case StdSlot(_, CTInteger.nullable, _, EmbeddedRepresentation(LongType)) =>
         encoder[Long]
 
       case StdSlot(_, CTBoolean, _, EmbeddedRepresentation(BooleanType)) =>

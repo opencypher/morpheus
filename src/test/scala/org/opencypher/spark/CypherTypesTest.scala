@@ -227,4 +227,12 @@ class CypherTypesTest extends StdTestSuite {
     CTList(CTList(CTWildcard)).containsNullable shouldBe false
     CTList(CTList(CTWildcard.nullable)).containsNullable shouldBe true
   }
+
+  test("is inhabited") {
+    allTypes.foreach {
+      case t @ CTVoid => t.isInhabited should be(False)
+      case t @ CTWildcard => t.isInhabited should be(Maybe)
+      case t => t.isInhabited should be(True)
+    }
+  }
 }

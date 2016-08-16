@@ -1,6 +1,6 @@
 package org.opencypher.spark.impl.frame
 
-import org.apache.spark.sql.types.IntegerType
+import org.apache.spark.sql.types.LongType
 import org.opencypher.spark.api._
 import org.opencypher.spark.api.types.{CTAny, CTInteger, CTNode, CTRelationship}
 
@@ -18,7 +18,7 @@ class ExtractTest extends StdFrameTestSuite {
       val result = allRelationships('r).asProduct.relationshipStartId('r)('startId).testResult
 
       result.signature shouldHaveFields('r -> CTRelationship, 'startId -> CTInteger)
-      result.signature shouldHaveFieldSlots('r -> BinaryRepresentation, 'startId -> EmbeddedRepresentation(IntegerType))
+      result.signature shouldHaveFieldSlots('r -> BinaryRepresentation, 'startId -> EmbeddedRepresentation(LongType))
       result.toSet should equal(Set(r -> r.startId.v))
     }
   }
@@ -35,7 +35,7 @@ class ExtractTest extends StdFrameTestSuite {
       val result = allRelationships('r).asProduct.nullable('r).relationshipStartId('r)('startId).testResult
 
       result.signature shouldHaveFields('r -> CTRelationship.nullable, 'startId -> CTInteger.nullable)
-      result.signature shouldHaveFieldSlots('r -> BinaryRepresentation, 'startId -> EmbeddedRepresentation(IntegerType))
+      result.signature shouldHaveFieldSlots('r -> BinaryRepresentation, 'startId -> EmbeddedRepresentation(LongType))
       result.toSet should equal(Set(r -> r.startId.v))
     }
   }
@@ -52,7 +52,7 @@ class ExtractTest extends StdFrameTestSuite {
       val result = allRelationships('r).asProduct.relationshipEndId('r)('endId).testResult
 
       result.signature shouldHaveFields('r -> CTRelationship, 'endId -> CTInteger)
-      result.signature shouldHaveFieldSlots('r -> BinaryRepresentation, 'endId -> EmbeddedRepresentation(IntegerType))
+      result.signature shouldHaveFieldSlots('r -> BinaryRepresentation, 'endId -> EmbeddedRepresentation(LongType))
       result.toSet should equal(Set(r -> r.endId.v))
     }
   }
@@ -69,7 +69,7 @@ class ExtractTest extends StdFrameTestSuite {
       val result = allRelationships('r).asProduct.nullable('r).relationshipEndId('r)('endId).testResult
 
       result.signature shouldHaveFields('r -> CTRelationship.nullable, 'endId -> CTInteger.nullable)
-      result.signature shouldHaveFieldSlots('r -> BinaryRepresentation, 'endId -> EmbeddedRepresentation(IntegerType))
+      result.signature shouldHaveFieldSlots('r -> BinaryRepresentation, 'endId -> EmbeddedRepresentation(LongType))
       result.toSet should equal(Set(r -> r.endId.v))
     }
   }
@@ -110,7 +110,7 @@ class ExtractTest extends StdFrameTestSuite {
       val result = allNodes('n).asProduct.nodeId('n)('nid).testResult
 
       result.signature shouldHaveFields('n -> CTNode, 'nid -> CTInteger)
-      result.signature shouldHaveFieldSlots('n -> BinaryRepresentation, 'nid -> EmbeddedRepresentation(IntegerType))
+      result.signature shouldHaveFieldSlots('n -> BinaryRepresentation, 'nid -> EmbeddedRepresentation(LongType))
       result.toSet should equal(Set(a -> a.id.v))
     }
   }
@@ -125,7 +125,7 @@ class ExtractTest extends StdFrameTestSuite {
       val result = allNodes('n).asProduct.nullable('n).nodeId('n)('nid).testResult
 
       result.signature shouldHaveFields('n -> CTNode.nullable, 'nid -> CTInteger.nullable)
-      result.signature shouldHaveFieldSlots('n -> BinaryRepresentation, 'nid -> EmbeddedRepresentation(IntegerType))
+      result.signature shouldHaveFieldSlots('n -> BinaryRepresentation, 'nid -> EmbeddedRepresentation(LongType))
       result.toSet should equal(Set(a -> a.id.v))
     }
   }
@@ -155,7 +155,7 @@ class ExtractTest extends StdFrameTestSuite {
       val result = allRelationships('r).asProduct.relationshipId('r)('rid).testResult
 
       result.signature shouldHaveFields('r -> CTRelationship, 'rid -> CTInteger)
-      result.signature shouldHaveFieldSlots('r -> BinaryRepresentation, 'rid -> EmbeddedRepresentation(IntegerType))
+      result.signature shouldHaveFieldSlots('r -> BinaryRepresentation, 'rid -> EmbeddedRepresentation(LongType))
       result.toSet should equal(Set(r -> r.id.v))
     }
   }
@@ -172,7 +172,7 @@ class ExtractTest extends StdFrameTestSuite {
       val result = allRelationships('r).asProduct.nullable('r).relationshipId('r)('rid).testResult
 
       result.signature shouldHaveFields('r -> CTRelationship.nullable, 'rid -> CTInteger.nullable)
-      result.signature shouldHaveFieldSlots('r -> BinaryRepresentation, 'rid -> EmbeddedRepresentation(IntegerType))
+      result.signature shouldHaveFieldSlots('r -> BinaryRepresentation, 'rid -> EmbeddedRepresentation(LongType))
       result.toSet should equal(Set(r -> r.id.v))
     }
   }
@@ -198,7 +198,7 @@ class ExtractTest extends StdFrameTestSuite {
     new GraphTest {
       import frames._
 
-      val frame = allNodes('n).asProduct.property('n, 'prop1)(Symbol("n.prop1"))
+      val frame = allNodes('n).asProduct.propertyValue('n, 'prop1)(Symbol("n.prop1"))
       val result = frame.testResult
 
       result.signature shouldHaveFields('n -> CTNode, Symbol("n.prop1") -> CTAny.nullable)
@@ -215,7 +215,7 @@ class ExtractTest extends StdFrameTestSuite {
     new GraphTest {
       import frames._
 
-      val frame = allNodes('n).asProduct.nullable('n).property('n, 'prop1)(Symbol("n.prop1"))
+      val frame = allNodes('n).asProduct.nullable('n).propertyValue('n, 'prop1)(Symbol("n.prop1"))
       val result = frame.testResult
 
       result.signature shouldHaveFields('n -> CTNode.nullable, Symbol("n.prop1") -> CTAny.nullable)

@@ -3,7 +3,7 @@ package org.opencypher.spark.impl
 object FrameVerification extends FrameVerification
 
 trait FrameVerification {
-  def verify[T <: FrameVerificationError](cond: => Boolean) = {
+  def unless[T <: FrameVerificationError](cond: => Boolean) = {
     object verifier {
       def failWith(error: => T) = if (!cond) throw error
     }

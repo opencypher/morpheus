@@ -35,6 +35,14 @@ object Extract {
     new Extract[CypherRelationship](input)(relField, relationshipId, outputField)(signature)
   }
 
+  def relationshipType(input: StdCypherFrame[Product])(relationship: Symbol)(output: Symbol)
+                      (implicit context: PlanningContext): ProjectFrame = {
+    val relField = input.signature.field(relationship)
+    requireType(relField, CTRelationship.nullable)
+    val (outputField, signature) = input.signature.addField(output -> CTString.asNullableAs(relField.cypherType))
+    new Extract[CypherRelationship](input)(relField, relationshipType, outputField)(signature)
+  }
+
   def nodeId(input: StdCypherFrame[Product])(node: Symbol)(output: Symbol)
             (implicit context: PlanningContext): ProjectFrame = {
     val nodeField = input.signature.field(node)
@@ -53,7 +61,7 @@ object Extract {
   }
 
   private def requireType(field: StdField, typ: CypherType) = {
-    verify(field.cypherType `subTypeOf` typ isTrue) failWith {
+    unless(field.cypherType `subTypeOf` typ isTrue) failWith {
       CypherTypeError(s"Expected $typ, but got: ${field.cypherType}")
     }
   }
@@ -104,6 +112,11 @@ object Extract {
   private final case class relationshipId(override val index: Int)
     extends ProjectEntityPrimitive[CypherRelationship] {
     override def extract(relationship: CypherRelationship): Java.Long = relationship.id.v
+  }
+
+  private final case class relationshipType(override val index: Int)
+    extends ProjectEntityPrimitive[CypherRelationship] {
+    override def extract(relationship: CypherRelationship) = relationship.relationshipType
   }
 
   private final case class propertyValue(propertyKey: Symbol)(override val index: Int)

@@ -8,7 +8,7 @@ object UnionAll {
   import org.opencypher.spark.impl.FrameVerification._
 
   def apply(lhs: StdCypherFrame[Product], rhs: StdCypherFrame[Product]): StdCypherFrame[Product] = {
-    verify(lhs.signature.fields.equals(rhs.signature.fields)) failWith SignatureMismatch {
+    unless(lhs.signature.fields.equals(rhs.signature.fields)) failWith SignatureMismatch {
       s"""Fields must be equal in UNION
           |${lhs.signature.fields}
           |${rhs.signature.fields}

@@ -113,6 +113,8 @@ object types {
 
     def nullable = CTNull
 
+    override def isInhabited: Ternary = False
+
     override def superTypeOf(other: CypherType) = other match {
       case _ if self == other => True
       case CTWildcard         => Maybe
@@ -133,6 +135,8 @@ object types {
     def name = "?"
 
     override def material = self
+
+    override def isInhabited: Ternary = Maybe
 
     override def sameTypeAs(other: CypherType) =
       if (other.isMaterial) Maybe else False
@@ -188,6 +192,8 @@ sealed trait CypherType extends Serializable {
 
   // true, if this type only (i.e. excluding type parameters) is a wildcard
   def isWildcard: Boolean
+
+  def isInhabited: Ternary = True
 
   final override def toString: String = name
 
