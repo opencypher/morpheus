@@ -39,6 +39,12 @@ class FrameProducer(implicit val planningContext: PlanningContext) {
 
     def projectId(entity: Symbol)(output: Symbol) =
       ProjectEntityId(input)(entity)(output)
+
+    def relationshipStartId(entity: Symbol)(output: Symbol) =
+      ProjectFromEntity.relationshipStartId(input)(entity)(output)
+
+    def relationshipEndId(entity: Symbol)(output: Symbol) =
+      ProjectFromEntity.relationshipEndId(input)(entity)(output)
   }
 
   implicit final class RichRowFrame(input: StdCypherFrame[Row]) {

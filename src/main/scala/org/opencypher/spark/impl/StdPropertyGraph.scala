@@ -64,8 +64,8 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
         val bWithId = ProjectEntityId(bAsProduct)('b)(Symbol("id(b)"))
 
         val rAsProduct = allRelationships('r).asProduct
-        val rWithStartId = ProjectRelationshipStartId(rAsProduct)('r)(Symbol("startId(r)"))
-        val rWithStartAndEndId = ProjectRelationshipEndId(rWithStartId)('r)(Symbol("endId(r)"))
+        val rWithStartId = rAsProduct.relationshipStartId('r)(Symbol("startId(r)"))
+        val rWithStartAndEndId = rWithStartId.relationshipEndId('r)(Symbol("endId(r)"))
         val relsAsRows = rWithStartAndEndId.asRow
 
         val joinRelA = Join(relsAsRows, aWithId.asRow)(rWithStartId.projectedField, aWithId.projectedField)
