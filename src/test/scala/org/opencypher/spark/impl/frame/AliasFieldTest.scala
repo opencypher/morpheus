@@ -12,7 +12,7 @@ class AliasFieldTest extends StdFrameTestSuite {
     new GraphTest {
       import frames._
 
-      val result = allNodes('n).asProduct.aliasField('n -> 'm).frameResult
+      val result = allNodes('n).asProduct.aliasField('n -> 'm).testResult
 
       result.signature shouldHaveFields('m -> CTNode)
       result.signature shouldHaveFieldSlots('m -> BinaryRepresentation)

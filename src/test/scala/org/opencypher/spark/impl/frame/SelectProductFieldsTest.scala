@@ -20,7 +20,7 @@ class SelectProductFieldsTest extends StdFrameTestSuite {
           .property('n, 'age)('age)
           .property('n, 'married)('married)
           .selectFields('age, 'married)
-          .frameResult
+          .testResult
 
       result.signature shouldHaveFields ('age -> CTAny.nullable, 'married -> CTAny.nullable)
       result.signature shouldHaveFieldSlots ('age -> BinaryRepresentation, 'married -> BinaryRepresentation)

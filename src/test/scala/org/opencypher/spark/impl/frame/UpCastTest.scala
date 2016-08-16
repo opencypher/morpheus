@@ -11,7 +11,7 @@ class UpCastTest extends StdFrameTestSuite {
     new GraphTest {
       import frames._
 
-      val result = allNodes('n).upcast('n)(_ => CTMap).frameResult
+      val result = allNodes('n).upcast('n)(_ => CTMap).testResult
 
       result.signature shouldHaveFields('n -> CTMap)
       result.signature shouldHaveFieldSlots('n -> BinaryRepresentation)

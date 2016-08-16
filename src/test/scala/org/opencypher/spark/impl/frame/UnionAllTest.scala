@@ -32,7 +32,7 @@ class UnionAllTest extends StdFrameTestSuite {
           .property('n, 'age)('age)
           .property('n, 'married)('married)
 
-      val result = lhs.unionAll(rhs).frameResult
+      val result = lhs.unionAll(rhs).testResult
 
       result.signature shouldHaveFields('n -> CTNode, 'name -> CTAny.nullable, 'age -> CTAny.nullable, 'married -> CTAny.nullable)
       result.signature shouldHaveFieldSlots('n -> BinaryRepresentation, 'name -> BinaryRepresentation, 'age -> BinaryRepresentation, 'married -> BinaryRepresentation)

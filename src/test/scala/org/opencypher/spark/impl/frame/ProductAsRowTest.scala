@@ -13,12 +13,12 @@ class ProductAsRowTest extends StdFrameTestSuite {
 
       import frames._
 
-      val rowResult = allNodes('n).asProduct.asRow.frameResult
+      val rowResult = allNodes('n).asProduct.asRow.testResult
 
       rowResult.signature shouldHaveFields ('n -> CTNode)
       rowResult.signature shouldHaveFieldSlots ('n -> BinaryRepresentation)
 
-      val productResult = allNodes('n).asProduct.asRow.asProduct.frameResult
+      val productResult = allNodes('n).asProduct.asRow.asProduct.testResult
 
       productResult.toSet should equal(Set(a, b).map(Tuple1(_)))
     }

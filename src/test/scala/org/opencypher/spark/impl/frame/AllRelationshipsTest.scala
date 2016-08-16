@@ -14,7 +14,7 @@ class AllRelationshipsTest extends StdFrameTestSuite {
     val r3 = add(newUntypedRelationship(n2 -> n3))
 
     new GraphTest {
-      val result = frames.allRelationships('r).frameResult
+      val result = frames.allRelationships('r).testResult
 
       result.signature shouldHaveFields('r -> CTRelationship)
       result.signature shouldHaveFieldSlots('r -> BinaryRepresentation)

@@ -10,7 +10,7 @@ class AllNodesTest extends StdFrameTestSuite {
     val n2 = add(newNode.withLabels("B").withProperties("name" -> "Yggie"))
 
     new GraphTest {
-      val result = frames.allNodes('n).frameResult
+      val result = frames.allNodes('n).testResult
 
       result.signature shouldHaveFields('n -> CTNode)
       result.signature shouldHaveFieldSlots('n -> BinaryRepresentation)

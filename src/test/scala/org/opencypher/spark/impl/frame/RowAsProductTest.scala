@@ -13,7 +13,7 @@ class RowAsProductTest extends StdFrameTestSuite {
 
       import frames._
 
-      val result = allNodes('n).asRow.asProduct.frameResult
+      val result = allNodes('n).asRow.asProduct.testResult
 
       result.signature shouldHaveFields ('n -> CTNode)
       result.signature shouldHaveFieldSlots ('n -> BinaryRepresentation)

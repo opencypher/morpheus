@@ -40,6 +40,7 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
     implicit val planningContext = new PlanningContext(new SlotSymbolGenerator, nodes, relationships)
     implicit val runtimeContext = new StdRuntimeContext(session)
 
+
     val frames = new FrameProducer
     import frames._
 

@@ -22,15 +22,15 @@ abstract class StdFrameTestSuite extends StdTestSuite with TestSession.Fixture {
   def add(nodeData: NodeData) = factory.add(nodeData)
   def add(relationshipData: RelationshipData) = factory.add(relationshipData)
 
-  implicit final class RichFrame[Out](val frame: StdCypherFrame[Out]) extends AnyRef {
+  implicit final class RichTestFrame[Out](val frame: StdCypherFrame[Out]) extends AnyRef {
 
-    def frameResult(implicit context: StdRuntimeContext) = {
+    def testResult(implicit context: StdRuntimeContext) = {
       val out = frame.run(context)
       out.columns should equal(frame.slots.map(_.sym.name))
-      FrameResult(out)
+      FrameTestResult(out)
     }
 
-    final case class FrameResult(dataframe: Dataset[Out]) {
+    final case class FrameTestResult(dataframe: Dataset[Out]) {
       def signature = frame.signature
       def toList = dataframe.collect().toList
       def toSet = dataframe.collect().toSet
