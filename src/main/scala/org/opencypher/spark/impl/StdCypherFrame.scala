@@ -41,3 +41,9 @@ abstract class RowFrame(sig: StdFrameSignature) extends StdCypherFrame[Row](sig)
   override def run(implicit context: RuntimeContext): Dataset[Row] =
     execute.toDF(signature.slotNames: _*)
 }
+
+
+
+
+
+

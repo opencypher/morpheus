@@ -23,6 +23,9 @@ class FrameProducer(implicit val planningContext: PlanningContext) {
   implicit final class RichProductFrame(input: StdCypherFrame[Product]) {
     def asRow = ProductAsRow(input)
 
+    def unionAll(other: StdCypherFrame[Product]) =
+      UnionAll(input, other)
+
     def getNodeProperty(node: Symbol, propertyKey: Symbol)(outputName: Symbol) =
       GetProperty(input)(node, propertyKey)(outputName -> CTAny.nullable)
 

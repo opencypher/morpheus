@@ -87,7 +87,7 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
         val bNameRenamed = bNames.aliasField(Symbol("b.name") -> 'name)
         val selectFieldB = bNameRenamed.selectFields('name)
 
-        val union = UnionAll(selectFieldA, selectFieldB)
+        val union = selectFieldA.unionAll(selectFieldB)
 
         StdCypherResultContainer.fromProducts(union)
 
