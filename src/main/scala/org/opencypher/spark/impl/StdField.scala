@@ -7,5 +7,5 @@ object StdField {
 }
 
 final case class StdField(sym: Symbol, cypherType: CypherType) extends CypherField {
-  val column = SparkIdentifier(sym.name)
+  val column = SparkIdentifier.from(sym.name)
 }

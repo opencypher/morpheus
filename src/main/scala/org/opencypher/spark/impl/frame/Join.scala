@@ -15,9 +15,11 @@ object Join {
     val rhsField = rhs.signature.field(rhsKey)
     val rhsType = rhsField.cypherType
 
-    unless((lhsType meet rhsType).isInhabited.maybeTrue) failWith EmptyJoin(lhsType, rhsType)
-    unless(lhs.signature.slot(lhsField).representation.isEmbedded) failWith NotEmbedded(lhsKey)
-    unless(rhs.signature.slot(rhsField).representation.isEmbedded) failWith NotEmbedded(rhsKey)
+    ifNot((lhsType meet rhsType).isInhabited.maybeTrue) failWith EmptyJoin(lhsType, rhsType)
+    ifNot(lhs.signature.slot(lhsField).representation.isEmbedded) failWith NotEmbedded(lhsKey)
+    ifNot(rhs.signature.slot(rhsField).representation.isEmbedded) failWith NotEmbedded(rhsKey)
+
+    // TODO: Should the join slots have the same representation?
 
     Join(lhs, rhs)(lhsField, rhsField)
   }

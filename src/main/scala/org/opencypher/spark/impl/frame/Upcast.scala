@@ -17,7 +17,7 @@ object Upcast {
     val oldType = field.cypherType
     val newType = widen(oldType)
 
-    unless(newType `superTypeOf` oldType isTrue) failWith TypeError(oldType, newType)
+    ifNot(newType `superTypeOf` oldType isTrue) failWith TypeError(oldType, newType)
 
     val (_, sig) = input.signature.upcastField(field.sym, newType)
     CypherUpcast[Out](input)(sig)

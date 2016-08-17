@@ -61,6 +61,7 @@ class FrameProducer(implicit val planningContext: PlanningContext) {
     def relationshipType(entity: Symbol)(output: Symbol) =
       Extract.relationshipType(input)(entity)(output)
 
+    // TODO: Remove once we have optional match
     def nullable(value: Symbol) =
       Upcast(input)(value)(_.nullable)
   }

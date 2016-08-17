@@ -205,6 +205,10 @@ sealed trait CypherType extends Serializable {
   // identical type that additionally does not include null
   def material: MaterialCypherType
 
+  // returns this type with the same 'nullability' (i.e. either material or nullable) as typ
+  def asNullableAs(typ: CypherType) =
+    if (typ.isNullable) nullable else material
+
   // true, if this type or any of its type parameters include null
   def containsNullable = isNullable
 
@@ -253,9 +257,6 @@ sealed trait MaterialCypherType extends CypherType {
 
   override def erasedSuperType: MaterialCypherType with DefiniteCypherType
   override def erasedSubType: MaterialCypherType with DefiniteCypherType
-
-  def asNullableAs(typ: CypherType) =
-    if (typ.isNullable) nullable else material
 }
 
 sealed trait NullableCypherType extends CypherType {

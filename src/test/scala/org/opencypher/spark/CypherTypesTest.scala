@@ -230,9 +230,30 @@ class CypherTypesTest extends StdTestSuite {
 
   test("is inhabited") {
     allTypes.foreach {
+      case t @ CTAny => t.isInhabited should be(True)
       case t @ CTVoid => t.isInhabited should be(False)
       case t @ CTWildcard => t.isInhabited should be(Maybe)
       case t => t.isInhabited should be(True)
+    }
+  }
+
+  test("as nullable as") {
+    materialTypes.foreach { t =>
+      materialTypes.foreach { m =>
+        m.asNullableAs(t) should equal(m)
+      }
+      nullableTypes.foreach { n =>
+        n.asNullableAs(t) should equal(n.material)
+      }
+    }
+
+    nullableTypes.foreach { t =>
+      materialTypes.foreach { m =>
+        m.asNullableAs(t) should equal(m.nullable)
+      }
+      nullableTypes.foreach { n =>
+        n.asNullableAs(t) should equal(n)
+      }
     }
   }
 }

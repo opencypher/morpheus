@@ -16,7 +16,7 @@ object Extract {
   def relationshipStartId(input: StdCypherFrame[Product])(relationship: Symbol)(output: Symbol)
                          (implicit context: PlanningContext): ProjectFrame = {
     val relField = input.signature.field(relationship)
-    requireType(relField, CTRelationship.nullable)
+    requireMaterialType(relField, CTRelationship)
     val (outputField, sig) = input.signature.addField(output -> CTInteger.asNullableAs(relField.cypherType))
     new Extract[CypherRelationship](input)(relField, relationshipStartId, outputField)(sig)
   }
@@ -24,7 +24,7 @@ object Extract {
   def relationshipEndId(input: StdCypherFrame[Product])(relationship: Symbol)(output: Symbol)
                        (implicit context: PlanningContext): ProjectFrame = {
     val relField = input.signature.field(relationship)
-    requireType(relField, CTRelationship.nullable)
+    requireMaterialType(relField, CTRelationship)
     val (outputField, sig) = input.signature.addField(output -> CTInteger.asNullableAs(relField.cypherType))
     new Extract[CypherRelationship](input)(relField, relationshipEndId, outputField)(sig)
   }
@@ -32,7 +32,7 @@ object Extract {
   def relationshipId(input: StdCypherFrame[Product])(relationship: Symbol)(output: Symbol)
                     (implicit context: PlanningContext): ProjectFrame = {
     val relField = input.signature.field(relationship)
-    requireType(relField, CTRelationship.nullable)
+    requireMaterialType(relField, CTRelationship)
     val (outputField, signature) = input.signature.addField(output -> CTInteger.asNullableAs(relField.cypherType))
     new Extract[CypherRelationship](input)(relField, relationshipId, outputField)(signature)
   }
@@ -40,7 +40,7 @@ object Extract {
   def relationshipType(input: StdCypherFrame[Product])(relationship: Symbol)(output: Symbol)
                       (implicit context: PlanningContext): ProjectFrame = {
     val relField = input.signature.field(relationship)
-    requireType(relField, CTRelationship.nullable)
+    requireMaterialType(relField, CTRelationship)
     val (outputField, signature) = input.signature.addField(output -> CTString.asNullableAs(relField.cypherType))
     new Extract[CypherRelationship](input)(relField, relationshipType, outputField)(signature)
   }
@@ -48,7 +48,7 @@ object Extract {
   def nodeId(input: StdCypherFrame[Product])(node: Symbol)(output: Symbol)
             (implicit context: PlanningContext): ProjectFrame = {
     val nodeField = input.signature.field(node)
-    requireType(nodeField, CTNode.nullable)
+    requireMaterialType(nodeField, CTNode)
     val (outputField, signature) = input.signature.addField(output -> CTInteger.asNullableAs(nodeField.cypherType))
     new Extract[CypherNode](input)(nodeField, nodeId, outputField)(signature)
   }
@@ -57,14 +57,15 @@ object Extract {
               (implicit context: PlanningContext): ProjectFrame = {
 
     val mapField = input.signature.field(map)
-    requireType(mapField, CTMap.nullable)
+    requireMaterialType(mapField, CTMap)
     val (outputField, signature) = input.signature.addField(output -> CTAny.nullable)
     new Extract[CypherAnyMap](input)(mapField, propertyValue(propertyKey), outputField)(signature)
   }
 
-  private def requireType(field: StdField, typ: CypherType) = {
-    unless(field.cypherType `subTypeOf` typ isTrue) failWith {
-      CypherTypeError(s"Expected $typ, but got: ${field.cypherType}")
+  private def requireMaterialType(field: StdField, typ: MaterialCypherType) = {
+    val materialType = field.cypherType.material
+    ifNot(materialType `subTypeOf` typ isTrue) failWith {
+      CypherTypeError(s"Expected $typ, but got: $materialType")
     }
   }
 
