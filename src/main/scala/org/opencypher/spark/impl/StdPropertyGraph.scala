@@ -102,7 +102,14 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
 //          StdRecord(Array(CypherInteger(node.id.v)), Array.empty)
 //        }, ListMap("value" -> 0)).result
 //
-//      case SupportedQueries.allNodeIdsSortedDesc =>
+      case SupportedQueries.allNodeIdsSortedDesc =>
+        val nodeWithId = allNodes('n).asProduct.nodeId('n)('nid)
+
+        nodeWithId.orderBy('nid)
+
+        ???
+
+
 //        new StdFrame(session.createDataset(nodes.map[StdRecord] { node: CypherNode =>
 //          StdRecord(Array(CypherInteger(node.id.v)), Array.empty)
 //        }.rdd.sortBy[Long]({ record =>

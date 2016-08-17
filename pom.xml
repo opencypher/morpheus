@@ -71,7 +71,6 @@
                         <arg>–optimise</arg>
                         <arg>-Xfuture</arg>
                         <arg>-Ywarn-adapted-args</arg>
-                        <arg>-Ywarn-dead-code</arg>
                         <arg>-Yopt-warnings:at-inline-failed</arg>
                         <arg>-Yopt:l:project</arg>
                     </args>
