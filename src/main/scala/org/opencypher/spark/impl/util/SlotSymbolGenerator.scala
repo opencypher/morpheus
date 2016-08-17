@@ -7,6 +7,10 @@ class SlotSymbolGenerator {
 
   def newSlotSymbol(field: StdField): Symbol = {
     id += 1
-    (field.column ++ SparkIdentifier(id.toString)).symbol
+    val fieldIdent = field.column
+    val idIdent = SparkIdentifier(id.toString)
+    val slotIdent = fieldIdent ++ idIdent
+    val slotSymbol = slotIdent.symbol
+    slotSymbol
   }
 }
