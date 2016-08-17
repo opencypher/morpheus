@@ -3,7 +3,8 @@ package org.opencypher.spark.impl.frame
 import org.apache.spark.sql.{Column, Dataset, Row}
 import org.opencypher.spark.impl.StdCypherFrame
 
-object ProductAsRow {
+object ProductAsRow extends FrameCompanion {
+
   def apply(input: StdCypherFrame[Product]): StdCypherFrame[Row] =
     ProductAsRow(input)
 

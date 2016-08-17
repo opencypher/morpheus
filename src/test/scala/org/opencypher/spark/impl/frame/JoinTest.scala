@@ -38,9 +38,10 @@ class JoinTest extends StdFrameTestSuite {
       val lhs = allNodes('l).asRow
       val rhs = allNodes('r).asRow
 
-      a [Join.NotEmbedded] shouldBe thrownBy {
+      val error = the [FrameVerification.SlotNotEmbeddable] thrownBy {
         lhs.join(rhs).on('l)('r)
       }
+      error.contextName should equal("requireEmbeddedRepresentation")
     }
   }
 
@@ -51,9 +52,10 @@ class JoinTest extends StdFrameTestSuite {
       val lhs = allNodes('l).asProduct.nodeId('l)('id).asRow
       val rhs = allRelationships('r).asProduct.relationshipType('r)('typ).asRow
 
-      a [Join.EmptyJoin] shouldBe thrownBy {
+      val error = the [FrameVerification.UnInhabitedMeetType] thrownBy {
         lhs.join(rhs).on('id)('typ)
       }
+      error.contextName should equal("requireInhabitedMeetType")
     }
   }
 }

@@ -3,7 +3,7 @@ package org.opencypher.spark.impl.frame
 import org.apache.spark.sql.Dataset
 import org.opencypher.spark.impl.{StdCypherFrame, StdField, StdFrameSignature, StdRuntimeContext}
 
-object AliasField {
+object AliasField extends FrameCompanion {
 
   def apply(input: StdCypherFrame[Product])(oldName: Symbol)(newName: Symbol): ProjectFrame = {
     val (newField, newSignature) = input.signature.aliasField(oldName, newName)

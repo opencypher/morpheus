@@ -1,26 +1,24 @@
 package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.{Dataset, Row, functions}
-import org.opencypher.spark.api.CypherType
-import org.opencypher.spark.impl.{FrameVerificationError, StdCypherFrame, StdField, StdRuntimeContext}
+import org.opencypher.spark.impl._
 
-object Join {
-
-  import org.opencypher.spark.impl.FrameVerification._
+object Join extends FrameCompanion {
 
   def apply(lhs: StdCypherFrame[Row], rhs: StdCypherFrame[Row])
            (lhsKey: Symbol, rhsKey: Symbol): StdCypherFrame[Row] = {
     val lhsField = lhs.signature.field(lhsKey)
     val lhsType = lhsField.cypherType
+    val lhsSlot = lhs.signature.slot(lhsField)
     val rhsField = rhs.signature.field(rhsKey)
     val rhsType = rhsField.cypherType
+    val rhsSlot = rhs.signature.slot(rhsField)
 
-    ifNot((lhsType meet rhsType).isInhabited.maybeTrue) failWith EmptyJoin(lhsType, rhsType)
-    ifNot(lhs.signature.slot(lhsField).representation.isEmbedded) failWith NotEmbedded(lhsKey)
-    ifNot(rhs.signature.slot(rhsField).representation.isEmbedded) failWith NotEmbedded(rhsKey)
+    requireInhabitedMeetType(lhsType, rhsType)
+    requireEmbeddedRepresentation(lhsKey, lhsSlot)
+    requireEmbeddedRepresentation(rhsKey, rhsSlot)
 
     // TODO: Should the join slots have the same representation?
-
     Join(lhs, rhs)(lhsField, rhsField)
   }
 
@@ -40,10 +38,4 @@ object Join {
       lhsIn.join(rhsIn, joinExpr)
     }
   }
-
-  protected[frame] final case class EmptyJoin(lhsType: CypherType, rhsType: CypherType)
-    extends FrameVerificationError(s"Refusing to construct empty join between $lhsType and $rhsType join keys")
-
-  protected[frame] final case class NotEmbedded(key: Symbol)
-    extends FrameVerificationError(s"Cannot join on slot $key using non-embedded representation")
 }

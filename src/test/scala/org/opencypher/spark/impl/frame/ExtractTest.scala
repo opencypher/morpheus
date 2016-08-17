@@ -12,7 +12,6 @@ class ExtractTest extends StdFrameTestSuite {
     val r = add(newUntypedRelationship(a -> b))
 
     new GraphTest {
-
       import frames._
 
       val result = allRelationships('r).asProduct.relationshipStartId('r)('startId).testResult
@@ -29,7 +28,6 @@ class ExtractTest extends StdFrameTestSuite {
     val r = add(newUntypedRelationship(a -> b))
 
     new GraphTest {
-
       import frames._
 
       val result = allRelationships('r).asProduct.nullable('r).relationshipStartId('r)('startId).testResult
@@ -46,7 +44,6 @@ class ExtractTest extends StdFrameTestSuite {
     val r = add(newUntypedRelationship(a -> b))
 
     new GraphTest {
-
       import frames._
 
       val result = allRelationships('r).asProduct.relationshipEndId('r)('endId).testResult
@@ -63,7 +60,6 @@ class ExtractTest extends StdFrameTestSuite {
     val r = add(newUntypedRelationship(a -> b))
 
     new GraphTest {
-
       import frames._
 
       val result = allRelationships('r).asProduct.nullable('r).relationshipEndId('r)('endId).testResult
@@ -76,27 +72,27 @@ class ExtractTest extends StdFrameTestSuite {
 
   test("Extract.relationshipStartId failing when symbol points to node") {
     new GraphTest {
-
       import frames._
 
-        val product = allNodes('r).asProduct
+      val product = allNodes('r).asProduct
 
-      a [Extract.CypherTypeError] shouldBe thrownBy {
+      val error = the [FrameVerification.TypeError] thrownBy {
         product.relationshipStartId('r)('startId)
       }
+      error.contextName should equal("requireMateriallyIsSubTypeOf")
     }
   }
 
   test("Extract.relationshipEndId failing when symbol points to node") {
     new GraphTest {
-
       import frames._
 
-        val product = allNodes('r).asProduct
+      val product = allNodes('r).asProduct
 
-      a [Extract.CypherTypeError] shouldBe thrownBy {
+      val error = the [FrameVerification.TypeError] thrownBy {
         product.relationshipEndId('r)('endId)
       }
+      error.contextName should equal("requireMateriallyIsSubTypeOf")
     }
   }
 
@@ -104,7 +100,6 @@ class ExtractTest extends StdFrameTestSuite {
     val a = add(newNode)
 
     new GraphTest {
-
       import frames._
 
       val result = allNodes('n).asProduct.nodeId('n)('nid).testResult
@@ -137,7 +132,7 @@ class ExtractTest extends StdFrameTestSuite {
 
       val product = allRelationships('n).asProduct
 
-      a [Extract.CypherTypeError] shouldBe thrownBy {
+      a [FrameVerification.TypeError] shouldBe thrownBy {
         product.nodeId('n)('nid)
       }
     }
@@ -184,9 +179,10 @@ class ExtractTest extends StdFrameTestSuite {
 
       val product = allNodes('r).asProduct
 
-      a [Extract.CypherTypeError] shouldBe thrownBy {
+      val error = the [FrameVerification.TypeError] thrownBy {
         product.relationshipId('r)('rid)
       }
+      error.contextName should equal("requireMateriallyIsSubTypeOf")
     }
   }
 

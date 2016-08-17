@@ -5,7 +5,7 @@ import org.opencypher.spark.api.CypherNode
 import org.opencypher.spark.api.types.CTNode
 import org.opencypher.spark.impl._
 
-object AllNodes {
+object AllNodes extends FrameCompanion {
 
   def apply(fieldSym: Symbol)(implicit context: PlanningContext): StdCypherFrame[CypherNode] = {
     val (_, sig) = StdFrameSignature.empty.addField(fieldSym -> CTNode)

@@ -5,7 +5,8 @@ import org.opencypher.spark.api.CypherNode
 import org.opencypher.spark.impl.frame.AllNodes.CypherNodes
 import org.opencypher.spark.impl.{StdCypherFrame, StdRuntimeContext}
 
-object LabelFilterNode {
+object LabelFilterNode extends FrameCompanion {
+
   def apply(input: StdCypherFrame[CypherNode])(labels: Seq[String]): StdCypherFrame[CypherNode] = {
     LabelFilterNode(input)(labels)
   }

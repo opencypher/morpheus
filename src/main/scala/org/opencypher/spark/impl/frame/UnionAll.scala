@@ -1,22 +1,26 @@
 package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.Dataset
-import org.opencypher.spark.impl.{FrameVerificationError, StdCypherFrame, StdRuntimeContext}
+import org.opencypher.spark.impl._
 
-object UnionAll {
-
-  import org.opencypher.spark.impl.FrameVerification._
+object UnionAll extends FrameCompanion {
 
   def apply(lhs: StdCypherFrame[Product], rhs: StdCypherFrame[Product]): StdCypherFrame[Product] = {
-    ifNot(lhs.signature.fields.equals(rhs.signature.fields)) failWith SignatureMismatch {
-      s"""Fields must be equal in UNION
-          |${lhs.signature.fields}
-          |${rhs.signature.fields}
-      """.stripMargin
-    }
+    val lhsFields = lhs.signature.fields
+    val rhsFields = rhs.signature.fields
+
+    requireMatchingFrameFields(lhsFields, rhsFields)
 
     UnionAll(lhs, rhs)
   }
+
+  private final def requireMatchingFrameFields(lhsFields: Seq[StdField], rhsFields: Seq[StdField]) =
+    ifNot(lhsFields.equals(rhsFields)) failWith FrameVerification.FrameSignatureMismatch(
+      s"""Fields of lhs and rhs of UNION must be equal
+          |$lhsFields
+          |$rhsFields
+      """.stripMargin
+    )
 
   private final case class UnionAll(lhs: StdCypherFrame[Product], rhs: StdCypherFrame[Product])
     extends StdCypherFrame[Product](lhs.signature) {
@@ -30,6 +34,4 @@ object UnionAll {
       union
     }
   }
-
-  protected[frame] final case class SignatureMismatch(msg: String) extends FrameVerificationError(msg)
 }

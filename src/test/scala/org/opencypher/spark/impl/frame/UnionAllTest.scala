@@ -1,8 +1,7 @@
 package org.opencypher.spark.impl.frame
 
 import org.opencypher.spark.api._
-import org.opencypher.spark.api.types.{CTAny, CTNode, CTString}
-import org.opencypher.spark.impl.FrameVerificationError
+import org.opencypher.spark.api.types.{CTAny, CTNode}
 
 class UnionAllTest extends StdFrameTestSuite {
 
@@ -13,7 +12,6 @@ class UnionAllTest extends StdFrameTestSuite {
     val xulu = add(newNode.withLabels("C").withProperties("name" -> "Xulu", "age" -> 5, "married" -> false))
 
     new GraphTest {
-
       import frames._
 
       val lhs =
@@ -48,15 +46,15 @@ class UnionAllTest extends StdFrameTestSuite {
     add(newNode)
 
     new GraphTest {
-
       import frames._
 
       val lhs = allNodes('n1).asProduct
       val rhs = allNodes('n2).asProduct
 
-      a [UnionAll.SignatureMismatch] shouldBe thrownBy {
+      val error = the [FrameVerification.FrameSignatureMismatch] thrownBy {
         lhs.unionAll(rhs)
       }
+      error.contextName should equal("requireMatchingFrameFields")
     }
   }
 
@@ -65,7 +63,6 @@ class UnionAllTest extends StdFrameTestSuite {
     val yggie = add(newNode.withProperties("name" -> "Yggie", "age" -> 16, "married" -> false))
 
     new GraphTest {
-
       import frames._
 
       val lhs =
@@ -82,9 +79,10 @@ class UnionAllTest extends StdFrameTestSuite {
           .propertyValue('n, 'name)('name)
           .propertyValue('n, 'age)('age)
 
-      a [UnionAll.SignatureMismatch] shouldBe thrownBy {
+      val error = the [FrameVerification.FrameSignatureMismatch] thrownBy {
         lhs.unionAll(rhs)
       }
+      error.contextName should equal("requireMatchingFrameFields")
     }
   }
 }

@@ -9,14 +9,12 @@ import org.opencypher.spark.impl._
 
 import scala.language.postfixOps
 
-object Extract {
-
-  import FrameVerification._
+object Extract extends FrameCompanion {
 
   def relationshipStartId(input: StdCypherFrame[Product])(relationship: Symbol)(output: Symbol)
                          (implicit context: PlanningContext): ProjectFrame = {
     val relField = input.signature.field(relationship)
-    requireMaterialType(relField, CTRelationship)
+    requireMateriallyIsSubTypeOf(relField.cypherType, CTRelationship)
     val (outputField, sig) = input.signature.addField(output -> CTInteger.asNullableAs(relField.cypherType))
     new Extract[CypherRelationship](input)(relField, relationshipStartId, outputField)(sig)
   }
@@ -24,7 +22,7 @@ object Extract {
   def relationshipEndId(input: StdCypherFrame[Product])(relationship: Symbol)(output: Symbol)
                        (implicit context: PlanningContext): ProjectFrame = {
     val relField = input.signature.field(relationship)
-    requireMaterialType(relField, CTRelationship)
+    requireMateriallyIsSubTypeOf(relField.cypherType, CTRelationship)
     val (outputField, sig) = input.signature.addField(output -> CTInteger.asNullableAs(relField.cypherType))
     new Extract[CypherRelationship](input)(relField, relationshipEndId, outputField)(sig)
   }
@@ -32,7 +30,7 @@ object Extract {
   def relationshipId(input: StdCypherFrame[Product])(relationship: Symbol)(output: Symbol)
                     (implicit context: PlanningContext): ProjectFrame = {
     val relField = input.signature.field(relationship)
-    requireMaterialType(relField, CTRelationship)
+    requireMateriallyIsSubTypeOf(relField.cypherType, CTRelationship)
     val (outputField, signature) = input.signature.addField(output -> CTInteger.asNullableAs(relField.cypherType))
     new Extract[CypherRelationship](input)(relField, relationshipId, outputField)(signature)
   }
@@ -40,7 +38,7 @@ object Extract {
   def relationshipType(input: StdCypherFrame[Product])(relationship: Symbol)(output: Symbol)
                       (implicit context: PlanningContext): ProjectFrame = {
     val relField = input.signature.field(relationship)
-    requireMaterialType(relField, CTRelationship)
+    requireMateriallyIsSubTypeOf(relField.cypherType, CTRelationship)
     val (outputField, signature) = input.signature.addField(output -> CTString.asNullableAs(relField.cypherType))
     new Extract[CypherRelationship](input)(relField, relationshipType, outputField)(signature)
   }
@@ -48,7 +46,7 @@ object Extract {
   def nodeId(input: StdCypherFrame[Product])(node: Symbol)(output: Symbol)
             (implicit context: PlanningContext): ProjectFrame = {
     val nodeField = input.signature.field(node)
-    requireMaterialType(nodeField, CTNode)
+    requireMateriallyIsSubTypeOf(nodeField.cypherType, CTNode)
     val (outputField, signature) = input.signature.addField(output -> CTInteger.asNullableAs(nodeField.cypherType))
     new Extract[CypherNode](input)(nodeField, nodeId, outputField)(signature)
   }
@@ -57,16 +55,9 @@ object Extract {
               (implicit context: PlanningContext): ProjectFrame = {
 
     val mapField = input.signature.field(map)
-    requireMaterialType(mapField, CTMap)
+    requireMateriallyIsSubTypeOf(mapField.cypherType, CTMap)
     val (outputField, signature) = input.signature.addField(output -> CTAny.nullable)
     new Extract[CypherAnyMap](input)(mapField, propertyValue(propertyKey), outputField)(signature)
-  }
-
-  private def requireMaterialType(field: StdField, typ: MaterialCypherType) = {
-    val materialType = field.cypherType.material
-    ifNot(materialType `subTypeOf` typ isTrue) failWith {
-      CypherTypeError(s"Expected $typ, but got: $materialType")
-    }
   }
 
   private final case class Extract[T](input: StdCypherFrame[Product])(entityField: StdField,
@@ -128,6 +119,4 @@ object Extract {
       // TODO: Make nice
       v.properties.getOrElse(propertyKey.name, null).asInstanceOf[AnyRef]
   }
-
-  protected[frame] final case class CypherTypeError(msg: String) extends FrameVerificationError(msg)
 }

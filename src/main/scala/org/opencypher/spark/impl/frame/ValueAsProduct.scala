@@ -4,7 +4,7 @@ import org.apache.spark.sql.Dataset
 import org.opencypher.spark.api.CypherValue
 import org.opencypher.spark.impl.{ProductFrame, StdCypherFrame, StdRuntimeContext}
 
-object ValueAsProduct {
+object ValueAsProduct extends FrameCompanion {
 
   def apply[T <: CypherValue](input: StdCypherFrame[T]): ProductFrame =
     ValueAsProduct(input)
