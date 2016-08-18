@@ -1,17 +1,21 @@
 package org.opencypher.spark.impl
 
 import org.opencypher.spark.api._
+import org.opencypher.spark.impl.StdFrameSignature.FieldAlreadyExists
+import org.opencypher.spark.impl.error.StdErrorInfo
+import org.opencypher.spark.impl.verify.Verification
 
 import scala.language.postfixOps
 
 object StdFrameSignature {
   val empty = new StdFrameSignature
+
+  final case class FieldAlreadyExists(sym: Symbol)(implicit info: StdErrorInfo)
+    extends Verification.Error(s"Field '${sym.name}' already exists")(info)
 }
 
-// TODO: Use verify instead of throwing
-// TODO: Check duplicate field
 class StdFrameSignature(private val fieldMap: Map[StdField, StdSlot] = Map.empty)
-  extends CypherFrameSignature {
+  extends CypherFrameSignature with Verification with StdErrorInfo.Implicits {
 
   override type Field = StdField
   override type Slot = StdSlot
@@ -28,21 +32,14 @@ class StdFrameSignature(private val fieldMap: Map[StdField, StdSlot] = Map.empty
 
   def fieldSlot(field: StdField): Option[StdSlot] = fieldMap.get(field)
 
-  private def _field(sym: Symbol): StdField =
-    fieldMap.keys.find(_.sym == sym).getOrElse(throw new IllegalArgumentException(s"Unknown field: $sym"))
-
-  private def _slot(field: StdField): StdSlot =
-    fieldMap.getOrElse(field, throw new IllegalArgumentException(s"Unknown field: $field"))
-
-  private def _slot(sym: Symbol): StdSlot =
-    fieldMap.collectFirst {
-      case (field, slot) if field.sym == sym => slot
-    }.getOrElse(throw new IllegalArgumentException(s"Unknown slot: $sym"))
-
   override def addField(symbol: TypedSymbol)(implicit context: PlanningContext): (Field, StdFrameSignature) = {
     val field = StdField(symbol)
+
+    requireNoSuchFieldExists(field.sym)
+
     val representation = Representation.forCypherType(field.cypherType)
     val slot = StdSlot(context.newSlotSymbol(field), field.cypherType, fieldMap.values.size, representation)
+
     field -> new StdFrameSignature(fieldMap + (field -> slot))
   }
 
@@ -55,15 +52,15 @@ class StdFrameSignature(private val fieldMap: Map[StdField, StdSlot] = Map.empty
     }
   }
 
-  override def aliasField(oldField: Symbol, newField: Symbol): (StdField, StdFrameSignature) = {
-    var copy: StdField = null
-    val newMap = fieldMap.map {
-      case (f, s) if f.sym == oldField =>
-        copy = f.copy(sym = newField)
-        copy -> s
-      case t => t
-    }
-    copy -> new StdFrameSignature(newMap)
+  override def aliasField(alias: Alias): (StdField, StdFrameSignature) = {
+    val (oldSym, newSym) = alias
+
+    requireNoSuchFieldExists(newSym)
+
+    val oldField = obtain(field)(oldSym)
+    val newField = oldField.copy(sym = newSym)
+
+    newField -> new StdFrameSignature(fieldMap - oldField + (newField -> fieldMap(oldField)))
   }
 
   override def selectFields(fields: Symbol*): (Seq[Slot], StdFrameSignature) = {
@@ -79,13 +76,14 @@ class StdFrameSignature(private val fieldMap: Map[StdField, StdSlot] = Map.empty
     retainedOldSlotsSortedByNewOrdinal -> new StdFrameSignature(newMap)
   }
 
-  override def upcastField(sym: Symbol, newType: CypherType): (StdField, StdFrameSignature) = {
-    val oldField = _field(sym)
+  override def upcastField(typedSym: TypedSymbol): (StdField, StdFrameSignature) = {
+    val (sym, newType) = typedSym
+    val oldField = obtain(field)(sym)
     val oldType = oldField.cypherType
 
     // We do an additional assert here since this is very critical
     if (newType superTypeOf oldType isTrue) {
-      val oldSlot = _slot(oldField)
+      val oldSlot = obtain(fieldSlot)(oldField)
       val newField = oldField.copy(cypherType = newType)
       val newSlot = oldSlot.copy(cypherType = newType)
       newField -> new StdFrameSignature(fieldMap - oldField + (newField -> newSlot))
@@ -108,4 +106,7 @@ class StdFrameSignature(private val fieldMap: Map[StdField, StdSlot] = Map.empty
   override def toString: String = {
     s"Signature($fieldMap)"
   }
+
+  private def requireNoSuchFieldExists(sym: Symbol) =
+    ifExists(field(sym)) failWith FieldAlreadyExists(sym)
 }

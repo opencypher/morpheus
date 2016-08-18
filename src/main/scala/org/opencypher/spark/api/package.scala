@@ -9,6 +9,7 @@ package object api {
   object implicits extends CypherImplicits
 
   type TypedSymbol = (Symbol, CypherType)
+  type Alias = (Symbol, Symbol)
 
   object CypherRecord {
     def apply(elts: (String, CypherValue)*): CypherRecord =

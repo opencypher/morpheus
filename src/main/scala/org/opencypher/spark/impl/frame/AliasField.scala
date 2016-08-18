@@ -6,7 +6,7 @@ import org.opencypher.spark.impl.{StdCypherFrame, StdField, StdFrameSignature, S
 object AliasField extends FrameCompanion {
 
   def apply(input: StdCypherFrame[Product])(oldName: Symbol)(newName: Symbol): ProjectFrame = {
-    val (newField, newSignature) = input.signature.aliasField(oldName, newName)
+    val (newField, newSignature) = input.signature.aliasField(oldName -> newName)
     AliasField(input)(newField)(newSignature)
   }
 

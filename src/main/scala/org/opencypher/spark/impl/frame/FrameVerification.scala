@@ -3,7 +3,7 @@ package org.opencypher.spark.impl.frame
 import org.opencypher.spark.api.{CypherType, MaterialCypherType}
 import org.opencypher.spark.impl.StdSlot
 import org.opencypher.spark.impl.error.StdErrorInfo
-import org.opencypher.spark.impl.util.Verification
+import org.opencypher.spark.impl.verify.Verification
 
 import scala.language.postfixOps
 
@@ -36,9 +36,6 @@ object FrameVerification {
 
   final case class SlotNotEmbeddable(key: Symbol)(implicit info: StdErrorInfo)
     extends Error(s"Cannot use slot $key that relies on a non-embedded representation")(info)
-
-  final case class UnObtainable[A](arg: A)(implicit info: StdErrorInfo)
-    extends Error(s"Cannot obtain ${info.enclosing} '$arg'")
 }
 
 trait FrameVerification extends Verification with StdErrorInfo.Implicits {
@@ -56,7 +53,4 @@ trait FrameVerification extends Verification with StdErrorInfo.Implicits {
 
   protected def requireMateriallyIsSubTypeOf(actualType: CypherType, materialType: MaterialCypherType) =
     ifNot(actualType.material `subTypeOf` materialType isTrue) failWith IsNoSubTypeOf(actualType, materialType)
-
-  protected def obtain[A, T](value: A => Option[T])(arg: A)(implicit info: StdErrorInfo): T =
-    ifMissing(value(arg)) failWith UnObtainable(arg)(info)
 }

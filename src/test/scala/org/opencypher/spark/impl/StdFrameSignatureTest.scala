@@ -20,6 +20,21 @@ class StdFrameSignatureTest extends StdTestSuite {
     sig.slots should equal(Seq(slot.get))
   }
 
+  test("fails when adding a field twice (1)") {
+    val (_, s1) = StdFrameSignature.empty.addField('n -> CTNode)
+    val error = the [StdFrameSignature.FieldAlreadyExists] thrownBy {
+      s1.addField('n -> CTInteger)
+    }
+    error.contextName should equal("requireNoSuchFieldExists")
+  }
+
+  test("fails when adding a field twice (2)") {
+    val error = the [StdFrameSignature.FieldAlreadyExists] thrownBy {
+      StdFrameSignature.empty.addFields('n -> CTNode, 'n -> CTInteger)
+    }
+    error.contextName should equal("requireNoSuchFieldExists")
+  }
+
   test("adding several fields") {
     val (fields, sig) = StdFrameSignature.empty.addFields('n1 -> CTNode, 'n2 -> CTString, 'n3 -> CTBoolean)
 
@@ -45,7 +60,7 @@ class StdFrameSignatureTest extends StdTestSuite {
 
   test("aliasing a field") {
     val (_, sig) = StdFrameSignature.empty.addField('n -> CTFloat)
-    val (field, newSig) = sig.aliasField('n, 'newN)
+    val (field, newSig) = sig.aliasField('n -> 'newN)
 
     field should equal(StdField('newN, CTFloat))
     newSig.field('newN) should equal(Some(field))
@@ -57,15 +72,24 @@ class StdFrameSignatureTest extends StdTestSuite {
     newSig.slot('n) should equal(None)
   }
 
+  test("aliasing a field to an already existing field") {
+    val (_, sig) = StdFrameSignature.empty.addFields('n -> CTFloat, 'm -> CTFloat)
+
+    val error = the [StdFrameSignature.FieldAlreadyExists] thrownBy {
+      sig.aliasField('n -> 'm)
+    }
+    error.contextName should equal("requireNoSuchFieldExists")
+  }
+
   test("upcast a field") {
     val (_, sig) = StdFrameSignature.empty.addField('n -> CTFloat)
-    val (field, newSig) = sig.upcastField('n, CTNumber)
+    val (field, newSig) = sig.upcastField('n -> CTNumber)
 
     field should equal(StdField('n, CTNumber))
     newSig.field('n) should equal(Some(field))
     newSig.slot('n).get.cypherType should equal(CTNumber)
     an [IllegalArgumentException] should be thrownBy {
-      newSig.upcastField('n, CTRelationship)
+      newSig.upcastField('n -> CTRelationship)
     }
   }
 

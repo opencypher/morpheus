@@ -17,7 +17,7 @@ object Upcast extends FrameCompanion {
 
     requireIsSuperTypeOf(newType, oldType)
 
-    val (_, sig) = input.signature.upcastField(field.sym, newType)
+    val (_, sig) = input.signature.upcastField(field.sym -> newType)
     CypherUpcast[Out](input)(sig)
   }
 
