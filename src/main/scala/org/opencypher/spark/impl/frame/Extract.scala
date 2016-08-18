@@ -13,7 +13,7 @@ object Extract extends FrameCompanion {
 
   def relationshipStartId(input: StdCypherFrame[Product])(relationship: Symbol)(output: Symbol)
                          (implicit context: PlanningContext): ProjectFrame = {
-    val relField = input.signature.field(relationship)
+    val relField = obtain(input.signature.field)(relationship)
     requireMateriallyIsSubTypeOf(relField.cypherType, CTRelationship)
     val (outputField, sig) = input.signature.addField(output -> CTInteger.asNullableAs(relField.cypherType))
     new Extract[CypherRelationship](input)(relField, relationshipStartId, outputField)(sig)
@@ -21,7 +21,7 @@ object Extract extends FrameCompanion {
 
   def relationshipEndId(input: StdCypherFrame[Product])(relationship: Symbol)(output: Symbol)
                        (implicit context: PlanningContext): ProjectFrame = {
-    val relField = input.signature.field(relationship)
+    val relField = obtain(input.signature.field)(relationship)
     requireMateriallyIsSubTypeOf(relField.cypherType, CTRelationship)
     val (outputField, sig) = input.signature.addField(output -> CTInteger.asNullableAs(relField.cypherType))
     new Extract[CypherRelationship](input)(relField, relationshipEndId, outputField)(sig)
@@ -29,7 +29,7 @@ object Extract extends FrameCompanion {
 
   def relationshipId(input: StdCypherFrame[Product])(relationship: Symbol)(output: Symbol)
                     (implicit context: PlanningContext): ProjectFrame = {
-    val relField = input.signature.field(relationship)
+    val relField = obtain(input.signature.field)(relationship)
     requireMateriallyIsSubTypeOf(relField.cypherType, CTRelationship)
     val (outputField, signature) = input.signature.addField(output -> CTInteger.asNullableAs(relField.cypherType))
     new Extract[CypherRelationship](input)(relField, relationshipId, outputField)(signature)
@@ -37,7 +37,7 @@ object Extract extends FrameCompanion {
 
   def relationshipType(input: StdCypherFrame[Product])(relationship: Symbol)(output: Symbol)
                       (implicit context: PlanningContext): ProjectFrame = {
-    val relField = input.signature.field(relationship)
+    val relField = obtain(input.signature.field)(relationship)
     requireMateriallyIsSubTypeOf(relField.cypherType, CTRelationship)
     val (outputField, signature) = input.signature.addField(output -> CTString.asNullableAs(relField.cypherType))
     new Extract[CypherRelationship](input)(relField, relationshipType, outputField)(signature)
@@ -45,7 +45,7 @@ object Extract extends FrameCompanion {
 
   def nodeId(input: StdCypherFrame[Product])(node: Symbol)(output: Symbol)
             (implicit context: PlanningContext): ProjectFrame = {
-    val nodeField = input.signature.field(node)
+    val nodeField = obtain(input.signature.field)(node)
     requireMateriallyIsSubTypeOf(nodeField.cypherType, CTNode)
     val (outputField, signature) = input.signature.addField(output -> CTInteger.asNullableAs(nodeField.cypherType))
     new Extract[CypherNode](input)(nodeField, nodeId, outputField)(signature)
@@ -54,7 +54,7 @@ object Extract extends FrameCompanion {
   def property(input: StdCypherFrame[Product])(map: Symbol,propertyKey: Symbol)(output: Symbol)
               (implicit context: PlanningContext): ProjectFrame = {
 
-    val mapField = input.signature.field(map)
+    val mapField = obtain(input.signature.field)(map)
     requireMateriallyIsSubTypeOf(mapField.cypherType, CTMap)
     val (outputField, signature) = input.signature.addField(output -> CTAny.nullable)
     new Extract[CypherAnyMap](input)(mapField, propertyValue(propertyKey), outputField)(signature)
@@ -65,7 +65,7 @@ object Extract extends FrameCompanion {
                                                                       outputField: StdField)
                                      (sig: StdFrameSignature) extends ProjectFrame(outputField, sig) {
 
-    val index = sig.slot(entityField).ordinal
+    val index = obtain(sig.fieldSlot)(entityField).ordinal
 
     override def execute(implicit context: StdRuntimeContext): Dataset[Product] = {
       val in = input.run

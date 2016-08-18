@@ -4,15 +4,17 @@ import org.apache.spark.sql.{Column, Dataset, Row}
 import org.opencypher.spark.api.CypherValue
 import org.opencypher.spark.impl.{StdCypherFrame, StdField, StdSlot}
 
-object ProductAsMap {
+object ProductAsMap extends FrameCompanion {
 
   def apply(input: StdCypherFrame[Product]): StdCypherFrame[Map[String, CypherValue]] = {
-    ProductAsMap(input)
+    val outputMapping = input.signature.fields.map {
+      field => field.sym -> obtain(input.signature.fieldSlot)(field).ordinal
+    }
+    ProductAsMap(input)(outputMapping)
   }
 
-  private final case class ProductAsMap(input: StdCypherFrame[Product]) extends StdCypherFrame[Map[String, CypherValue]](input.signature) {
-
-    val outputMapping = fields.map { field => field.sym -> signature.slot(field).ordinal }
+  private final case class ProductAsMap(input: StdCypherFrame[Product])(outputMapping: Seq[(Symbol, Int)])
+    extends StdCypherFrame[Map[String, CypherValue]](input.signature) {
 
     override def execute(implicit context: RuntimeContext): Dataset[Map[String, CypherValue]] = {
       val in = input.run

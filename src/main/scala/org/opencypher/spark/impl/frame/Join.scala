@@ -7,12 +7,12 @@ object Join extends FrameCompanion {
 
   def apply(lhs: StdCypherFrame[Row], rhs: StdCypherFrame[Row])
            (lhsKey: Symbol, rhsKey: Symbol): StdCypherFrame[Row] = {
-    val lhsField = lhs.signature.field(lhsKey)
+    val lhsField = obtain(lhs.signature.field)(lhsKey)
     val lhsType = lhsField.cypherType
-    val lhsSlot = lhs.signature.slot(lhsField)
-    val rhsField = rhs.signature.field(rhsKey)
+    val lhsSlot = obtain(lhs.signature.fieldSlot)(lhsField)
+    val rhsField = obtain(rhs.signature.field)(rhsKey)
     val rhsType = rhsField.cypherType
-    val rhsSlot = rhs.signature.slot(rhsField)
+    val rhsSlot = obtain(rhs.signature.fieldSlot)(rhsField)
 
     requireInhabitedMeetType(lhsType, rhsType)
     requireEmbeddedRepresentation(lhsKey, lhsSlot)
@@ -30,8 +30,8 @@ object Join extends FrameCompanion {
       val lhsIn = lhs.run
       val rhsIn = rhs.run
 
-      val lhsSlot = signature.slot(lhsKey)
-      val rhsSlot = signature.slot(rhsKey)
+      val lhsSlot = obtain(signature.fieldSlot)(lhsKey)
+      val rhsSlot = obtain(signature.fieldSlot)(rhsKey)
 
       val joinExpr = functions.expr(s"${lhsSlot.sym.name} = ${rhsSlot.sym.name}")
 

@@ -7,8 +7,8 @@ trait CypherFrameSignature {
   type Field <: CypherField
   type Slot <: CypherSlot
 
-  def field(sym: Symbol): Field
-  def slot(name: Symbol): Slot
+  def field(sym: Symbol): Option[Field]
+  def slot(name: Symbol): Option[Slot]
 
   def addField(symbol: TypedSymbol)(implicit context: PlanningContext): (Field, CypherFrameSignature)
   def addFields(symbols: TypedSymbol*)(implicit console: PlanningContext): (Seq[Field], CypherFrameSignature)

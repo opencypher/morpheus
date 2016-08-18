@@ -21,13 +21,20 @@ class StdFrameSignature(private val fieldMap: Map[StdField, StdSlot] = Map.empty
 
   def slotNames: Seq[String] = slots.map(_.sym.name)
 
-  override def field(sym: Symbol): StdField =
+  override def field(sym: Symbol): Option[StdField] = fieldMap.keys.find(_.sym == sym)
+
+  override def slot(sym: Symbol): Option[StdSlot] =
+    fieldMap.collectFirst { case (field, slot) if field.sym == sym => slot }
+
+  def fieldSlot(field: StdField): Option[StdSlot] = fieldMap.get(field)
+
+  private def _field(sym: Symbol): StdField =
     fieldMap.keys.find(_.sym == sym).getOrElse(throw new IllegalArgumentException(s"Unknown field: $sym"))
 
-  def slot(field: StdField): StdSlot =
+  private def _slot(field: StdField): StdSlot =
     fieldMap.getOrElse(field, throw new IllegalArgumentException(s"Unknown field: $field"))
 
-  override def slot(sym: Symbol): StdSlot =
+  private def _slot(sym: Symbol): StdSlot =
     fieldMap.collectFirst {
       case (field, slot) if field.sym == sym => slot
     }.getOrElse(throw new IllegalArgumentException(s"Unknown slot: $sym"))
@@ -73,12 +80,12 @@ class StdFrameSignature(private val fieldMap: Map[StdField, StdSlot] = Map.empty
   }
 
   override def upcastField(sym: Symbol, newType: CypherType): (StdField, StdFrameSignature) = {
-    val oldField = field(sym)
+    val oldField = _field(sym)
     val oldType = oldField.cypherType
 
     // We do an additional assert here since this is very critical
     if (newType superTypeOf oldType isTrue) {
-      val oldSlot = slot(oldField)
+      val oldSlot = _slot(oldField)
       val newField = oldField.copy(cypherType = newType)
       val newSlot = oldSlot.copy(cypherType = newType)
       newField -> new StdFrameSignature(fieldMap - oldField + (newField -> newSlot))

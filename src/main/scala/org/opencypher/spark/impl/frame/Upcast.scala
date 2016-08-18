@@ -11,7 +11,7 @@ object Upcast extends FrameCompanion {
   def apply[Out](input: StdCypherFrame[Out])(fieldSym: Symbol)(widen: CypherType => CypherType)
                 (implicit context: PlanningContext): StdCypherFrame[Out] = {
 
-    val field = input.signature.field(fieldSym)
+    val field = obtain(input.signature.field)(fieldSym)
     val oldType = field.cypherType
     val newType = widen(oldType)
 

@@ -12,12 +12,12 @@ class StdFrameSignatureTest extends StdTestSuite {
     val (field, sig) = StdFrameSignature.empty.addField('n -> CTNode)
 
     field should equal(StdField('n, CTNode))
-    sig.field('n) should equal(field)
+    sig.field('n) should equal(Some(field))
     sig.fields should equal(Seq(field))
 
-    val slot = sig.slot(field)
+    val slot = sig.fieldSlot(field)
     sig.slot(field.sym) should equal(slot)
-    sig.slots should equal(Seq(slot))
+    sig.slots should equal(Seq(slot.get))
   }
 
   test("adding several fields") {
@@ -30,13 +30,13 @@ class StdFrameSignatureTest extends StdTestSuite {
         n1 should equal(StdField('n1, CTNode))
         n2 should equal(StdField('n2, CTString))
         n3 should equal(StdField('n3, CTBoolean))
-        sig.field('n1) should equal(n1)
-        sig.field('n2) should equal(n2)
-        sig.field('n3) should equal(n3)
+        sig.field('n1) should equal(Some(n1))
+        sig.field('n2) should equal(Some(n2))
+        sig.field('n3) should equal(Some(n3))
     }
 
-    val slots = fields.map { field =>
-      val slot = sig.slot(field)
+    val slots = fields.flatMap { field =>
+      val slot = sig.fieldSlot(field)
       sig.slot(field.sym) should equal(slot)
       slot
     }
@@ -48,17 +48,13 @@ class StdFrameSignatureTest extends StdTestSuite {
     val (field, newSig) = sig.aliasField('n, 'newN)
 
     field should equal(StdField('newN, CTFloat))
-    newSig.field('newN) should equal(field)
-    an [IllegalArgumentException] should be thrownBy {
-      newSig.field('n)
-    }
+    newSig.field('newN) should equal(Some(field))
+    newSig.field('n) should equal(None)
 
-    val slot = newSig.slot(field)
+    val slot = newSig.fieldSlot(field)
     newSig.slot(field.sym) should equal(slot)
-    newSig.slots should equal(Seq(slot))
-    an [IllegalArgumentException] should be thrownBy {
-      newSig.slot('n)
-    }
+    newSig.slots should equal(Seq(slot.get))
+    newSig.slot('n) should equal(None)
   }
 
   test("upcast a field") {
@@ -66,8 +62,8 @@ class StdFrameSignatureTest extends StdTestSuite {
     val (field, newSig) = sig.upcastField('n, CTNumber)
 
     field should equal(StdField('n, CTNumber))
-    newSig.field('n) should equal(field)
-    newSig.slot('n).cypherType should equal(CTNumber)
+    newSig.field('n) should equal(Some(field))
+    newSig.slot('n).get.cypherType should equal(CTNumber)
     an [IllegalArgumentException] should be thrownBy {
       newSig.upcastField('n, CTRelationship)
     }
@@ -79,11 +75,8 @@ class StdFrameSignatureTest extends StdTestSuite {
     val (retainedOldSlotsSortedInNewOrder, newSig) = sig.selectFields('n2)
 
     retainedOldSlotsSortedInNewOrder.size shouldBe 1
-    retainedOldSlotsSortedInNewOrder.head should equal(sig.slot('n2))
+    retainedOldSlotsSortedInNewOrder.head should equal(sig.slot('n2).get)
     newSig.fields.size shouldBe 1
-    an [IllegalArgumentException] shouldBe thrownBy {
-      newSig.field('n1)
-    }
+    newSig.field('n1) should equal(None)
   }
-
 }

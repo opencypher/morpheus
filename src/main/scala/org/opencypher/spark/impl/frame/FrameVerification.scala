@@ -5,9 +5,6 @@ import org.opencypher.spark.impl.StdSlot
 import org.opencypher.spark.impl.error.StdErrorInfo
 import org.opencypher.spark.impl.util.Verification
 
-import scala.reflect.runtime.universe.TypeTag
-import scala.reflect.runtime.universe.typeOf
-
 import scala.language.postfixOps
 
 object FrameVerification {
@@ -40,8 +37,8 @@ object FrameVerification {
   final case class SlotNotEmbeddable(key: Symbol)(implicit info: StdErrorInfo)
     extends Error(s"Cannot use slot $key that relies on a non-embedded representation")(info)
 
-  final case class UnObtainable[A](thing: String, arg: A)(implicit info: StdErrorInfo)
-    extends Error(s"Cannot obtain $thing '$arg'")
+  final case class UnObtainable[A](arg: A)(implicit info: StdErrorInfo)
+    extends Error(s"Cannot obtain ${info.enclosing} '$arg'")
 }
 
 trait FrameVerification extends Verification with StdErrorInfo.Implicits {
@@ -60,8 +57,6 @@ trait FrameVerification extends Verification with StdErrorInfo.Implicits {
   protected def requireMateriallyIsSubTypeOf(actualType: CypherType, materialType: MaterialCypherType) =
     ifNot(actualType.material `subTypeOf` materialType isTrue) failWith IsNoSubTypeOf(actualType, materialType)
 
-  protected def obtain[A, T : TypeTag](value: A => Option[T])(arg: A): T = {
-    val thing = typeOf[T].termSymbol.name.toString
-    ifMissing(value(arg)) failWith UnObtainable(thing, arg)
-  }
+  protected def obtain[A, T](value: A => Option[T])(arg: A)(implicit info: StdErrorInfo): T =
+    ifMissing(value(arg)) failWith UnObtainable(arg)(info)
 }
