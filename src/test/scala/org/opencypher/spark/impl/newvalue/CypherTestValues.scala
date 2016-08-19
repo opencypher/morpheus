@@ -9,6 +9,12 @@ object CypherTestValues {
   type ValueGroups[V] = Seq[Values[V]]
   type Values[V] = Seq[V]
 
+  implicit val BOOLEAN_valueGroups: ValueGroups[CypherBoolean] = Seq(
+    Seq(CypherBoolean(false)),
+    Seq(CypherBoolean(true)),
+    Seq(cypherNull[CypherBoolean])
+  )
+
   implicit val INTEGER_valueGroups: ValueGroups[CypherInteger] = Seq(
     Seq(CypherInteger(Long.MinValue)),
     Seq(CypherInteger(-23L)),
@@ -65,6 +71,8 @@ object CypherTestValues {
   )
 
   implicit val ALL_valueGroups: ValueGroups[CypherValue] = Seq(
+    Seq(CypherBoolean(false)),
+    Seq(CypherBoolean(true)),
     Seq(CypherFloat(Double.NegativeInfinity)),
     Seq(CypherFloat(Double.MinValue)),
     Seq(CypherInteger(Long.MinValue)),
@@ -88,11 +96,11 @@ object CypherTestValues {
 
   implicit final class CypherValueGroups[V <: CypherValue](elts: ValueGroups[V]) {
     def materialValueGroups: ValueGroups[V] = elts.map(_.filter(_ != cypherNull)).filter(_.isEmpty)
-    def scalaValueGroups(implicit companion: CypherValue.Companion[V]): Seq[Seq[Option[Any]]] = elts.map(_.scalaValues)
+    def scalaValueGroups(implicit companion: CypherValueCompanion[V]): Seq[Seq[Option[Any]]] = elts.map(_.scalaValues)
     def indexed = elts.zipWithIndex.flatMap { case ((group), index) => group.map { v => index -> v } }
   }
 
   implicit final class CypherValues[V <: CypherValue](elts: Values[V]) {
-    def scalaValues(implicit companion: CypherValue.Companion[V]): Seq[Option[Any]] = elts.map(companion.scalaValue)
+    def scalaValues(implicit companion: CypherValueCompanion[V]): Seq[Option[Any]] = elts.map(companion.scalaValue)
   }
 }

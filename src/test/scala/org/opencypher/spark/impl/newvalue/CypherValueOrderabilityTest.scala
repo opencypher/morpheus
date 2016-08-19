@@ -1,6 +1,6 @@
 package org.opencypher.spark.impl.newvalue
 
-import org.opencypher.spark.impl.newvalue.CypherValue.{Companion, companion}
+import org.opencypher.spark.impl.newvalue.CypherValue.companion
 
 import scala.annotation.tailrec
 import scala.util.Random
@@ -8,6 +8,11 @@ import scala.util.Random
 class CypherValueOrderabilityTest extends CypherValueTestSuite {
 
   import CypherTestValues._
+
+  test("should order BOOLEAN values correctly") {
+    verifyOrderabilityReflexivity(BOOLEAN_valueGroups)
+    verifyOrderabilityOrder(BOOLEAN_valueGroups)
+  }
 
   test("should order INTEGER values correctly") {
     verifyOrderabilityReflexivity(INTEGER_valueGroups)
@@ -24,7 +29,7 @@ class CypherValueOrderabilityTest extends CypherValueTestSuite {
     verifyOrderabilityOrder(NUMBER_valueGroups)
   }
 
-  private def verifyOrderabilityReflexivity[V <: CypherValue : Companion](values: ValueGroups[V]): Unit = {
+  private def verifyOrderabilityReflexivity[V <: CypherValue : CypherValueCompanion](values: ValueGroups[V]): Unit = {
     values.flatten.foreach { v =>
       orderability[V].compare(v, v) should be(0)
       if (! companion[V].isNull(v)) {
@@ -44,7 +49,7 @@ class CypherValueOrderabilityTest extends CypherValueTestSuite {
     }
   }
 
-  private def verifyOrderabilityOrder[V <: CypherValue : Companion](expected: ValueGroups[V]): Unit = {
+  private def verifyOrderabilityOrder[V <: CypherValue : CypherValueCompanion](expected: ValueGroups[V]): Unit = {
     1.to(1000).foreach { _ =>
       val shuffled = Random.shuffle[Seq[V], Seq](expected)
       val sorted = shuffled.sortBy(values => Random.shuffle(values).head)(orderability)
@@ -77,5 +82,5 @@ class CypherValueOrderabilityTest extends CypherValueTestSuite {
         fail("Value groups have differing length")
     }
 
-  private def orderability[V <: CypherValue : Companion]: Ordering[V] = companion[V].orderability
+  private def orderability[V <: CypherValue : CypherValueCompanion]: Ordering[V] = companion[V].orderability
 }

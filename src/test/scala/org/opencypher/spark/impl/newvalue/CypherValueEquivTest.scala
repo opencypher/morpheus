@@ -1,10 +1,14 @@
 package org.opencypher.spark.impl.newvalue
 
-import org.opencypher.spark.impl.newvalue.CypherValue.{Companion, companion}
+import org.opencypher.spark.impl.newvalue.CypherValue.companion
 
 class CypherValueEquivTest extends CypherValueTestSuite {
 
   import CypherTestValues._
+
+  test("BOOLEAN equiv") {
+    verifyEquiv(BOOLEAN_valueGroups)
+  }
 
   test("INTEGER equiv") {
     verifyEquiv(INTEGER_valueGroups)
@@ -18,7 +22,7 @@ class CypherValueEquivTest extends CypherValueTestSuite {
     verifyEquiv(NUMBER_valueGroups)
   }
 
-  private def verifyEquiv[V <: CypherValue : Companion](values: ValueGroups[V]): Unit = {
+  private def verifyEquiv[V <: CypherValue : CypherValueCompanion](values: ValueGroups[V]): Unit = {
     values.flatten.foreach { v =>
       equiv(v, v) should be(true)
       if (! companion[V].isNull(v)) {
@@ -42,7 +46,7 @@ class CypherValueEquivTest extends CypherValueTestSuite {
     }
   }
 
-  private def equiv[V <: CypherValue : Companion](v1: V, v2: V): Boolean = {
+  private def equiv[V <: CypherValue : CypherValueCompanion](v1: V, v2: V): Boolean = {
     val b1 = companion[V].equiv(v1, v2)
     val b2 = companion[V].equiv(v2, v1)
 

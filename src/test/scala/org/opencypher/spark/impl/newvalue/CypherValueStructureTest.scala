@@ -4,6 +4,40 @@ class CypherValueStructureTest extends CypherValueTestSuite {
 
   import CypherTestValues._
 
+  test("Construct BOOLEAN values") {
+    val originalValueGroups = BOOLEAN_valueGroups
+    val scalaValueGroups = originalValueGroups.scalaValueGroups
+
+    val reconstructedValueGroups = scalaValueGroups.map {
+      values => values.map {
+        opt =>
+          opt match {
+            case Some(b: Boolean) =>
+              CypherBoolean(b)
+
+            case None =>
+              cypherNull[CypherBoolean]
+
+            case _ =>
+              fail("Unexpected scala value")
+          }
+      }
+    }
+
+    reconstructedValueGroups should equal(originalValueGroups)
+  }
+
+  test("Deconstruct BOOLEAN values") {
+    val cypherValueGroups = BOOLEAN_valueGroups.materialValueGroups
+
+    val expected = cypherValueGroups.scalaValueGroups
+    val actual = cypherValueGroups.map { values => values.map { case CypherBoolean(v) => v } }
+
+    actual should equal(expected)
+
+    CypherBoolean.unapply(cypherNull[CypherBoolean]) should equal(None)
+  }
+
   test("Construct INTEGER values") {
     val originalValueGroups = INTEGER_valueGroups
     val scalaValueGroups = originalValueGroups.scalaValueGroups

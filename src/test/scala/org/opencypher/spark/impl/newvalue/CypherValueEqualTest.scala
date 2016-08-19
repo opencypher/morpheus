@@ -1,11 +1,15 @@
 package org.opencypher.spark.impl.newvalue
 
 import org.opencypher.spark.api.{Maybe, Ternary, True}
-import org.opencypher.spark.impl.newvalue.CypherValue.{Companion, companion}
+import org.opencypher.spark.impl.newvalue.CypherValue.companion
 
 class CypherValueEqualTest extends CypherValueTestSuite {
 
   import CypherTestValues._
+
+  test("BOOLEAN equal") {
+    verifyEqual(BOOLEAN_valueGroups)
+  }
 
   test("INTEGER equal") {
     verifyEqual(INTEGER_valueGroups)
@@ -19,7 +23,7 @@ class CypherValueEqualTest extends CypherValueTestSuite {
     verifyEqual(NUMBER_valueGroups)
   }
 
-  def verifyEqual[V <: CypherValue : Companion](valueGroups: ValueGroups[V]): Unit = {
+  def verifyEqual[V <: CypherValue : CypherValueCompanion](valueGroups: ValueGroups[V]): Unit = {
     val values = valueGroups.flatten
 
     values.foreach { v => equal[V](v, v) should be(if (companion[V].containsNull(v)) Maybe else True) }
@@ -38,7 +42,7 @@ class CypherValueEqualTest extends CypherValueTestSuite {
     }
   }
 
-  private def equal[V <: CypherValue : Companion](v1: V, v2: V): Ternary = {
+  private def equal[V <: CypherValue : CypherValueCompanion](v1: V, v2: V): Ternary = {
     val cmp1 = companion[V].equal(v1, v2)
     val cmp2 = companion[V].equal(v2, v1)
 

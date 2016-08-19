@@ -4,6 +4,21 @@ class CypherValueConversionTest extends CypherValueTestSuite {
 
   import CypherTestValues._
 
+  test("BOOLEAN conversion") {
+    val originalValues = BOOLEAN_valueGroups.flatten
+    val scalaValues = originalValues.map(CypherBoolean.scalaValue).map(_.orNull)
+    val newValues = scalaValues.map {
+      case b: java.lang.Boolean => CypherBoolean(b)
+      case null                 => null
+    }
+
+    newValues should equal(originalValues)
+
+    originalValues.foreach { v =>
+      CypherBoolean.containsNull(v) should equal (v == null)
+    }
+  }
+
   test("INTEGER conversion") {
     val originalValues = INTEGER_valueGroups.flatten
     val scalaValues = originalValues.map(CypherInteger.scalaValue).map(_.orNull)

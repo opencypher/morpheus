@@ -1,10 +1,14 @@
 package org.opencypher.spark.impl.newvalue
 
-import org.opencypher.spark.impl.newvalue.CypherValue.{Companion, companion}
+import org.opencypher.spark.impl.newvalue.CypherValue.companion
 
 class CypherValueComparabilityTest extends CypherValueTestSuite {
 
   import CypherTestValues._
+
+  test("should order BOOLEAN values correctly") {
+    verifyComparability(BOOLEAN_valueGroups)
+  }
 
   test("should order INTEGER values correctly") {
     verifyComparability(INTEGER_valueGroups)
@@ -18,7 +22,7 @@ class CypherValueComparabilityTest extends CypherValueTestSuite {
     verifyComparability(FLOAT_valueGroups)
   }
 
-  private def verifyComparability[V <: CypherValue : Companion](values: ValueGroups[V]): Unit = {
+  private def verifyComparability[V <: CypherValue : CypherValueCompanion](values: ValueGroups[V]): Unit = {
     values.flatten.foreach { v =>
       tryCompare(v, v) should be(Some(0))
     }
@@ -42,7 +46,7 @@ class CypherValueComparabilityTest extends CypherValueTestSuite {
     }
   }
 
-  private def lteq[V <: CypherValue : Companion](v1: V, v2: V): Boolean = {
+  private def lteq[V <: CypherValue : CypherValueCompanion](v1: V, v2: V): Boolean = {
     val a = material(v1)
     val b = material(v2)
     val comparability = companion[V].comparability
@@ -51,7 +55,7 @@ class CypherValueComparabilityTest extends CypherValueTestSuite {
     result
   }
 
-  private def tryCompare[V <: CypherValue : Companion](v1: V, v2: V): Option[Int] = {
+  private def tryCompare[V <: CypherValue : CypherValueCompanion](v1: V, v2: V): Option[Int] = {
     val a = material(v1)
     val b = material(v2)
     val comparability = companion[V].comparability
@@ -77,6 +81,6 @@ class CypherValueComparabilityTest extends CypherValueTestSuite {
     result
   }
 
-  private def material[V <: CypherValue : Companion](v: V) =
+  private def material[V <: CypherValue : CypherValueCompanion](v: V) =
     companion[V].materialValue(v)
 }
