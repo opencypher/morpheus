@@ -1,19 +1,52 @@
 package org.opencypher.spark.impl.newvalue
 
-import org.scalatest.{FunSuite, Matchers}
+class CypherValueConversionTest extends CypherValueTestSuite {
 
-//TODO: class CypherValueConversionTest extends StdTestSuite with CypherValue.Conversion {
-class CypherValueConversionTest extends FunSuite with Matchers with CypherValue.Conversion {
+  import CypherTestValues._
 
-  test("Can convert to CypherInteger") {
-    convert(2) should equal(CypherInteger(2L))
-    convert(4L) should equal(CypherInteger(4L))
+  test("INTEGER conversion") {
+    val originalValues = INTEGER_valueGroups.flatten
+    val scalaValues = originalValues.map(CypherInteger.scalaValue).map(_.orNull)
+    val newValues = scalaValues.map {
+      case l: java.lang.Long => CypherInteger(l)
+      case null              => null
+    }
+
+    newValues should equal(originalValues)
+
+    originalValues.foreach { v =>
+      CypherInteger.containsNull(v) should equal (v == null)
+    }
   }
 
-  test("Can convert to CypherDouble") {
-    convert(2.0f) should equal(CypherFloat(2.0d))
-    convert(3.0) should equal(CypherFloat(3.0d))
+  test("FLOAT conversion") {
+    val originalValues = FLOAT_valueGroups.flatten
+    val scalaValues = originalValues.map(CypherFloat.scalaValue).map(_.orNull)
+    val newValues = scalaValues.map {
+      case d: java.lang.Double => CypherFloat(d)
+      case null                => null
+    }
+
+    newValues should equal(originalValues)
+
+    originalValues.foreach { v =>
+      CypherFloat.containsNull(v) should equal (v == null)
+    }
   }
 
-  private def convert[T](v: T)(implicit ev: T => CypherValue): CypherValue = ev(v)
+  test("NUMBER conversion") {
+    val originalValues = NUMBER_valueGroups.flatten
+    val scalaValues = originalValues.map(CypherNumber.scalaValue).map(_.orNull)
+    val newValues = scalaValues.map {
+      case l: java.lang.Long   => CypherInteger(l)
+      case d: java.lang.Double => CypherFloat(d)
+      case null                => null
+    }
+
+    newValues should equal(originalValues)
+
+    originalValues.foreach { v =>
+      CypherNumber.containsNull(v) should equal (v == null)
+    }
+  }
 }
