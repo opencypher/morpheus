@@ -79,7 +79,7 @@ object CypherTestValues {
     Seq(CypherFloat(Double.MaxValue)),
     Seq(CypherFloat(Double.PositiveInfinity)),
     Seq(CypherFloat(Double.NaN)),
-    Seq(cypherNull[CypherFloat], cypherNull[CypherInteger])
+    Seq(cypherNull[CypherFloat], cypherNull[CypherInteger], cypherNull[CypherNumber])
   )
 
   implicit val ALL_valueGroups: ValueGroups[CypherValue] = Seq(

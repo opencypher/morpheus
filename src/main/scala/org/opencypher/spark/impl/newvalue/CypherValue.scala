@@ -330,15 +330,22 @@ final class CypherInteger(private val v: Long) extends CypherNumber with Seriali
 }
 
 case object CypherFloat extends CypherNumberCompanion[CypherFloat] {
-  def apply(value: Double): CypherFloat = if (value.isNaN) cypherNull else new CypherFloat(value)
+  def apply(value: Double): CypherFloat = new CypherFloat(value)
   def unapply(value: CypherFloat): Option[Double] = if (value == null) None else Some(value.v)
 
   override def cypherType(value: CypherFloat) = if (value == null) CTNull else CTFloat
   override def scalaValue(value: CypherFloat) = unapply(value).map(double2Double)
 
   override protected[newvalue] def order(l: CypherFloat, r: CypherFloat): Int = (l, r) match {
-    case (CypherFloat(xv), CypherFloat(yv)) => Ordering.Double.compare(xv, yv)
-    case _                                  => super.order(l, r)
+    case (CypherFloat(xv), CypherFloat(yv)) =>
+      (xv.isNaN, yv.isNaN) match {
+        case (true, true)   => 0
+        case (false, true)  => -1
+        case (true, false)  => +1
+        case (false, false) => Ordering.Double.compare(xv, yv)
+      }
+    case _ =>
+      super.order(l, r)
   }
 }
 
