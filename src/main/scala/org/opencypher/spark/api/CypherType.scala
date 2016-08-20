@@ -1,10 +1,10 @@
 package org.opencypher.spark.api
 
+import org.opencypher.spark.api.CypherType.OrderGroups
+import org.opencypher.spark.api.Ternary.Conversion._
 import org.opencypher.spark.api.types._
 
 import scala.language.postfixOps
-
-import Ternary.Conversion._
 
 object types {
 
@@ -69,7 +69,7 @@ object types {
   }
 
   case class CTList(eltType: CypherType) extends MaterialDefiniteCypherType {
-    def name =s"LIST OF $eltType"
+    def name = s"LIST OF $eltType"
 
     def nullable =
       CTListOrNull(eltType)
@@ -166,6 +166,25 @@ object types {
 
       override def superTypeOf(other: CypherType) = Maybe
     }
+  }
+}
+
+
+object CypherType {
+
+  // Values in the same order group are ordered (sorted) together
+  type OrderGroup = OrderGroups.Value
+
+  object OrderGroups extends Enumeration {
+    val MapOrderGroup = Value("MAP ORDER GROUP")
+    val NodeOrderGroup = Value("NODE ORDER GROUP")
+    val RelationshipOrderGroup = Value("RELATIONSHIP ORDER GROUP")
+    val PathOrderGroup = Value("PATH ORDER GROUP")
+    val ListOrderGroup = Value("LIST ORDER GROUP")
+    val StringOrderGroup = Value("STRING ORDER GROUP")
+    val BooleanOrderGroup = Value("BOOLEAN ORDER GROUP")
+    val NumberOrderGroup = Value("NUMBER ODER GROUP")
+    val VoidOrderGroup = Value("VOID ODER GROUP")
   }
 }
 
@@ -301,11 +320,11 @@ private[spark] object MaterialDefiniteCypherType {
 
     val nullable = new NullableDefiniteCypherType {
       def material = self
-
       def name = self + "?"
     }
   }
 }
+
 
 sealed private[spark] trait MaterialDefiniteCypherType extends MaterialCypherType with DefiniteCypherType {
   self =>
@@ -325,7 +344,9 @@ sealed private[spark] trait NullableDefiniteCypherType extends NullableCypherTyp
   def erasedSubType: NullableCypherType with DefiniteCypherType = material.erasedSubType.nullable
 }
 
-sealed private[spark] trait MaterialDefiniteCypherLeafType extends MaterialDefiniteCypherType with MaterialDefiniteCypherType.DefaultOrNull {
+sealed private[spark] trait MaterialDefiniteCypherLeafType
+  extends MaterialDefiniteCypherType with MaterialDefiniteCypherType.DefaultOrNull {
+
   self =>
 
   def superTypeOf(other: CypherType) = other match {

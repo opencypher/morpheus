@@ -7,8 +7,8 @@ class CypherValueEncodingTest extends StdTestSuite with TestSession.Fixture {
 
   import CypherTestValues._
 
-  test("BOOLEAN encoding") {
-    val values = BOOLEAN_valueGroups.flatten
+  test("LIST encoding") {
+    val values = LIST_valueGroups.flatten
     val ds = session.createDataset[CypherValue](values)(Encoders.cypherValueEncoder)
 
     ds.collect().toSeq should equal(values)
@@ -16,6 +16,13 @@ class CypherValueEncodingTest extends StdTestSuite with TestSession.Fixture {
 
   test("STRING encoding") {
     val values = STRING_valueGroups.flatten
+    val ds = session.createDataset[CypherValue](values)(Encoders.cypherValueEncoder)
+
+    ds.collect().toSeq should equal(values)
+  }
+
+  test("BOOLEAN encoding") {
+    val values = BOOLEAN_valueGroups.flatten
     val ds = session.createDataset[CypherValue](values)(Encoders.cypherValueEncoder)
 
     ds.collect().toSeq should equal(values)
@@ -37,6 +44,13 @@ class CypherValueEncodingTest extends StdTestSuite with TestSession.Fixture {
 
   test("NUMBER encoding") {
     val values = NUMBER_valueGroups.flatten
+    val ds = session.createDataset[CypherValue](values)(Encoders.cypherValueEncoder)
+
+    ds.collect().toSeq should equal(values)
+  }
+
+  test("ANY encoding") {
+    val values = ANY_valueGroups.flatten
     val ds = session.createDataset[CypherValue](values)(Encoders.cypherValueEncoder)
 
     ds.collect().toSeq should equal(values)

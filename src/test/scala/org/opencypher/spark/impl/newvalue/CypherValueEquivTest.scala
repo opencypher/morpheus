@@ -6,12 +6,16 @@ class CypherValueEquivTest extends CypherValueTestSuite {
 
   import CypherTestValues._
 
-  test("BOOLEAN equiv") {
-    verifyEquiv(BOOLEAN_valueGroups)
+  test("LIST equiv") {
+    verifyEquiv(LIST_valueGroups)
   }
 
   test("STRING equiv") {
     verifyEquiv(STRING_valueGroups)
+  }
+
+  test("BOOLEAN equiv") {
+    verifyEquiv(BOOLEAN_valueGroups)
   }
 
   test("INTEGER equiv") {
@@ -24,6 +28,10 @@ class CypherValueEquivTest extends CypherValueTestSuite {
 
   test("NUMBER equiv") {
     verifyEquiv(NUMBER_valueGroups)
+  }
+
+  test("ANY equiv") {
+    verifyEquiv(ANY_valueGroups)
   }
 
   private def verifyEquiv[V <: CypherValue : CypherValueCompanion](values: ValueGroups[V]): Unit = {

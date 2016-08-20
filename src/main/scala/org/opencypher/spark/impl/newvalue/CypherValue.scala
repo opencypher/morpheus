@@ -3,87 +3,105 @@ package org.opencypher.spark.impl.newvalue
 import org.apache.spark.sql.Encoder
 import org.apache.spark.sql.Encoders._
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
+import org.opencypher.spark.api.CypherType.OrderGroup
+import org.opencypher.spark.api.CypherType.OrderGroups._
 import org.opencypher.spark.api.types._
 import org.opencypher.spark.api.{Ternary, _}
+import org.opencypher.spark.impl.error.StdErrorInfo
+import org.opencypher.spark.impl.verify.Verification
 
+import scala.annotation.tailrec
 import scala.language.implicitConversions
 
-// (1) construct them somehow
-// (2) Need be AnyRef
-// (3) null handling
-// (4) orderability/comparability
-// (5) equality/equivalence
-// (6) Compute compatible hash code
-// (7) interaction w spark
-
-// equality/equivalence (one flag)
-//
-// comparability
-
 sealed trait CypherValueCompanion[V <: CypherValue] extends Equiv[V] {
-  def cypherType(v: V) : CypherType
+
+  def cypherType(v: V): CypherType
+
+  // scala value representation of this cypher value
   def scalaValue(v: V): Option[Any]
 
   def containsNull(v: V): Boolean = isNull(v)
   final def isNull(v: V): Boolean = v == null
 
-  def equiv(l: V, r: V): Boolean =
-    if (l eq r) true else orderability.compare(l, r) == 0
+  // Values in the same order group are ordered (sorted) together by orderability
+  def orderGroup(v: V): OrderGroup
 
+  // Cypher equivalence (also used by `==` on CypherValue instances)
+  def equiv(l: V, r: V): Boolean =
+    orderability(l, r) == 0
+
+  // Cypher equality
   def equal(l: V, r: V): Ternary = {
-    val a = materialValue(l)
-    if (a.isIndeterminate)
-      Maybe
-    else {
-      val b = materialValue(r)
-      if (b.isIndeterminate)
+    if (l eq r) {
+      if (containsNull(l)) Maybe else True
+    } else {
+      if (containsNull(l) || containsNull(r))
         Maybe
-      else if (l eq r)
-        True
       else {
-        val cmp = comparability.tryCompare(a, b)
-        Ternary.fromComparison(cmp)
+        val xGroup = orderGroup(l)
+        val yGroup = orderGroup(r)
+        if (xGroup == yGroup)
+          Ternary(computeComparability(l, r) == 0)
+        else
+          False
       }
     }
   }
 
-  object orderability extends Ordering[V] {
-    override def compare(x: V, y: V): Int = order(x, y)
-  }
-
-  object comparability extends PartialOrdering[MaterialValue[V]] {
-    override def tryCompare(x: MaterialValue[V], y: MaterialValue[V]): Option[Int] =
-      // TODO: Handle incomparability
-      Some(orderability.compare(x.v, y.v))
-
-    override def lteq(x: MaterialValue[V], y: MaterialValue[V]): Boolean = tryCompare(x, y) match {
-      case Some(cmp) => cmp <= 0
-      case None      => false
+  // Cypher orderability
+  object orderability extends Ordering[V] with ((V, V) => Int) {
+    override def apply(x: V, y: V): Int = compare(x, y)
+    override def compare(x: V, y: V): Int = {
+      if (x eq y) 0
+      else if (y eq null) -1
+      else if (null eq x) +1
+      else computeOrderability(x,y)
     }
   }
 
-  final def materialValue(v: V): MaterialValue[V] =
-    MaterialValue(if (containsNull(v)) cypherNull else v)
-
-  protected[newvalue] def order(l: V, r: V): Int = (l, r) match {
-    case (null, null) => 0
-    case (null, _)    => +1
-    case (_, null)    => -1
+  // Cypher comparability
+  def comparability(x: V, y: V): Option[Int] = {
+    // This is not a partial order (it is not reflexive!)
+    if (x eq y) {
+      if (containsNull(x)) None else Some(0)
+    } else {
+      if (containsNull(x) || containsNull(y))
+        None
+      else {
+        val xGroup = orderGroup(x)
+        val yGroup = orderGroup(y)
+        if (xGroup == yGroup)
+          Some(computeComparability(x, y))
+        else
+          None
+      }
+    }
   }
+
+  // compute orderability of non-null values from possibly different oder groups and possibly containing nested nulls
+  protected[newvalue] def computeOrderability(l: V, r: V): Int
+
+  // compare comparability of values from same order group and never being/containing nested nulls
+  protected[newvalue] def computeComparability(l: V, r: V): Int
 }
 
-case object CypherValue extends CypherValueCompanion[CypherValue] {
+
+// *** ANY
+
+case object CypherValue extends CypherValueCompanion[CypherValue] with Verification {
+
+  import StdErrorInfo.Implicits._
 
   object Conversion extends Conversion
 
   trait Conversion extends LowPriorityConversion {
 
+    implicit def cypherBoolean(v: Boolean): CypherBoolean = CypherBoolean(v)
     implicit def cypherString(v: String): CypherString = CypherString(v)
     implicit def cypherInteger(v: Int): CypherInteger = CypherInteger(v)
     implicit def cypherInteger(v: Long): CypherInteger = CypherInteger(v)
     implicit def cypherFloat(v: Float): CypherFloat =  CypherFloat(v)
     implicit def cypherFloat(v: Double): CypherFloat = CypherFloat(v)
-    implicit def cypherBoolean(v: Boolean): CypherBoolean = CypherBoolean(v)
 
     implicit def cypherTernary(v: Ternary): CypherValue =
       if (v.isDefinite) CypherBoolean(v.isTrue) else cypherNull
@@ -91,8 +109,8 @@ case object CypherValue extends CypherValueCompanion[CypherValue] {
     implicit def cypherOption[T](v: Option[T])(implicit ev: T => CypherValue): CypherValue =
       v.map(ev).getOrElse(cypherNull)
 
-  //    implicit def cypherList[T](v: IndexedSeq[T])(implicit ev: T => CypherValue): CypherList =
-  //      CypherList(v.map(ev))
+    implicit def cypherList[T](v: IndexedSeq[T])(implicit ev: T => CypherValue): CypherList =
+      CypherList(v.map(ev))
   //
   //    implicit def cypherMap[T](v: Map[String, T])(implicit ev: T => CypherValue): CypherMap =
   //      CypherMap(v.mapValues(ev))
@@ -161,44 +179,75 @@ case object CypherValue extends CypherValueCompanion[CypherValue] {
 
   object Companions extends Companions
 
-  trait Companions extends LowPriorityCompanions {
+  trait Companions {
     implicit def cypherBooleanCompanion: CypherBoolean.type = CypherBoolean
     implicit def cypherStringCompanion: CypherString.type = CypherString
     implicit def cypherFloatCompanion: CypherFloat.type = CypherFloat
     implicit def cypherIntegerCompanion: CypherInteger.type = CypherInteger
     implicit def cypherNumberCompanion: CypherNumber.type = CypherNumber
-  }
-
-  trait LowPriorityCompanions {
+    implicit def cypherListCompanion: CypherList.type = CypherList
     implicit def cypherValueCompanion: CypherValue.type = CypherValue
   }
 
-  override def cypherType(value: CypherValue): CypherType =
-    value match {
-      case v: CypherNumber  => CypherNumber.cypherType(v)
-      case v: CypherBoolean => CypherBoolean.cypherType(v)
-      case v: CypherString  => CypherString.cypherType(v)
-      case null             => CTNull
-    }
-
-  override def scalaValue(value: CypherValue): Option[AnyRef] = value match {
-    case v: CypherNumber  => CypherNumber.scalaValue(v)
-    case _                => None
+  override def cypherType(value: CypherValue): CypherType = value match {
+    case null             => CTNull
+    case v: CypherBoolean => CypherBoolean.cypherType(v)
+    case v: CypherString  => CypherString.cypherType(v)
+    case v: CypherNumber  => CypherNumber.cypherType(v)
+    case v: CypherList    => CypherList.cypherType(v)
   }
 
-  override protected[newvalue] def order(l: CypherValue, r: CypherValue): Int =
-    (l, r) match {
-      case (a: CypherBoolean, b: CypherBoolean) => CypherBoolean.order(a, b)
-      case (a: CypherBoolean, b: CypherNumber)  => -1
-      case (a: CypherNumber, b: CypherNumber)   => CypherNumber.order(a, b)
-      case (a: CypherNumber, b: CypherBoolean)  => +1
-      case _                                    => super.order(l, r)
-    }
+  def unapply(value: CypherValue): Option[AnyRef] = scalaValue(value)
+
+  override def scalaValue(value: CypherValue): Option[AnyRef] = value match {
+    case null              => None
+    case v: CypherBoolean  => CypherBoolean.scalaValue(v)
+    case v: CypherString   => CypherString.scalaValue(v)
+    case v: CypherNumber   => CypherNumber.scalaValue(v)
+    case v: CypherList     => CypherList.scalaValue(v)
+  }
+
+  override def orderGroup(value: CypherValue) = value match {
+    case null             => VoidOrderGroup
+    case v: CypherBoolean => CypherBoolean.orderGroup(v)
+    case v: CypherString  => CypherString.orderGroup(v)
+    case v: CypherNumber  => CypherNumber.orderGroup(v)
+    case v: CypherList    => CypherList.orderGroup(v)
+  }
+
+  protected[newvalue] def computeOrderability(l: CypherValue, r: CypherValue): Int = {
+    val lGroup = orderGroup(l)
+    val rGroup = orderGroup(r)
+    val cmp = lGroup.id - rGroup.id
+    if (cmp == 0)
+      (l, r) match {
+        case (a: CypherBoolean, b: CypherBoolean) => CypherBoolean.computeOrderability(a, b)
+        case (a: CypherString, b: CypherString)   => CypherString.computeOrderability(a, b)
+        case (a: CypherNumber, b: CypherNumber)   => CypherNumber.computeOrderability(a, b)
+        case (a: CypherList, b: CypherList)       => CypherList.computeOrderability(a, b)
+        case _ =>
+          supposedlyImpossible("Call to computeOrderability with values of different types")
+      }
+    else
+      cmp
+  }
+
+  override protected[newvalue] def computeComparability(l: CypherValue, r: CypherValue): Int = (l, r) match {
+    case (a: CypherBoolean, b: CypherBoolean) => CypherBoolean.computeComparability(a, b)
+    case (a: CypherString, b: CypherString) => CypherString.computeComparability(a, b)
+    case (a: CypherNumber, b: CypherNumber) => CypherNumber.computeComparability(a, b)
+    case (a: CypherList, b: CypherList) => CypherList.computeComparability(a, b)
+    case _ =>
+      supposedlyImpossible("Call to computeComparability with values of different types")
+  }
 }
 
 sealed trait CypherValue {
   self: Serializable =>
 }
+
+
+// *** BOOLEAN
 
 case object CypherBoolean extends CypherValueCompanion[CypherBoolean] {
   val TRUE = new CypherBoolean(true)
@@ -210,14 +259,16 @@ case object CypherBoolean extends CypherValueCompanion[CypherBoolean] {
   override def cypherType(value: CypherBoolean) = if (value == null) CTNull else CTBoolean
   override def scalaValue(value: CypherBoolean) = unapply(value).map(boolean2Boolean)
 
-  override protected[newvalue] def order(l: CypherBoolean, r: CypherBoolean): Int =
-    (l, r) match {
-      case (CypherBoolean(xv), CypherBoolean(yv)) => Ordering.Boolean.compare(xv, yv)
-      case _                                      => super.order(l, r)
-    }
+  def orderGroup(v: CypherBoolean) = if (v == null) VoidOrderGroup else BooleanOrderGroup
+
+  override protected[newvalue] def computeOrderability(l: CypherBoolean, r: CypherBoolean): Int =
+    Ordering.Boolean.compare(l.v, r.v)
+
+  override protected[newvalue] def computeComparability(l: CypherBoolean, r: CypherBoolean): Int =
+    computeOrderability(l, r)
 }
 
-final class CypherBoolean(private val v: Boolean) extends CypherValue with Serializable {
+final class CypherBoolean(private[CypherBoolean] val v: Boolean) extends CypherValue with Serializable {
   override def hashCode(): Int = v.hashCode()
 
   override def equals(obj: scala.Any): Boolean = obj match {
@@ -228,6 +279,9 @@ final class CypherBoolean(private val v: Boolean) extends CypherValue with Seria
   override def toString: String = if (v) "TRUE" else "FALSE"
 }
 
+
+// *** STRING
+
 case object CypherString extends CypherValueCompanion[CypherString] {
   def apply(value: String): CypherString = if (value == null) cypherNull else new CypherString(value)
   def unapply(value: CypherString): Option[String] = if (value == null) None else Some(value.v)
@@ -235,14 +289,16 @@ case object CypherString extends CypherValueCompanion[CypherString] {
   override def cypherType(value: CypherString) = if (value == null) CTNull else CTString
   override def scalaValue(value: CypherString) = unapply(value)
 
-  override protected[newvalue] def order(l: CypherString, r: CypherString): Int =
-    (l, r) match {
-      case (CypherString(xv), CypherString(yv)) => Ordering.String.compare(xv, yv)
-      case _                                    => super.order(l, r)
-    }
+  def orderGroup(v: CypherString) = if (v == null) VoidOrderGroup else StringOrderGroup
+
+  override protected[newvalue] def computeOrderability(l: CypherString, r: CypherString): Int =
+    Ordering.String.compare(l.v, r.v)
+
+  override protected[newvalue] def computeComparability(l: CypherString, r: CypherString): Int =
+    computeOrderability(l, r)
 }
 
-final class CypherString(private val v: String) extends CypherValue with Serializable {
+final class CypherString(private[CypherString] val v: String) extends CypherValue with Serializable {
   override def hashCode(): Int = v.hashCode()
 
   override def equals(obj: scala.Any): Boolean = obj match {
@@ -255,8 +311,12 @@ final class CypherString(private val v: String) extends CypherValue with Seriali
 }
 
 
+// *** NUMBER
+
 sealed trait CypherNumberCompanion[V <: CypherNumber] extends CypherValueCompanion[V] {
   def scalaValue(v: V): Option[Number]
+
+  def orderGroup(v: V) = if (v == null) VoidOrderGroup else NumberOrderGroup
 }
 
 case object CypherNumber extends CypherNumberCompanion[CypherNumber] {
@@ -275,25 +335,24 @@ case object CypherNumber extends CypherNumberCompanion[CypherNumber] {
 
   override def scalaValue(v: CypherNumber): Option[Number] = unapply(v)
 
-  override protected[newvalue] def order(l: CypherNumber, r: CypherNumber): Int =
-    (l, r) match {
-      case (a: CypherInteger, b: CypherInteger) =>
-        CypherInteger.order(a, b)
+  override protected[newvalue] def computeOrderability(l: CypherNumber, r: CypherNumber): Int = (l, r) match {
+    case (a: CypherInteger, b: CypherInteger) =>
+      CypherInteger.computeOrderability(a, b)
 
-      case (a: CypherFloat, b: CypherFloat) =>
-        CypherFloat.order(a, b)
+    case (a: CypherFloat, b: CypherFloat) =>
+      CypherFloat.computeOrderability(a, b)
 
-      case (a@CypherFloat(f), b@CypherInteger(i)) =>
-        if (fitsDouble(i)) CypherFloat.order(a, CypherFloat(i))
-        else BigDecimal.decimal(f).compare(BigDecimal.decimal(i))
+    case (a@CypherFloat(f), b@CypherInteger(i)) =>
+      if (fitsDouble(i)) CypherFloat.computeOrderability(a, CypherFloat(i))
+      else BigDecimal.decimal(f).compare(BigDecimal.decimal(i))
 
-      case (a@CypherInteger(i), b@CypherFloat(f)) =>
-        if (fitsDouble(i)) CypherFloat.order(CypherFloat(i), b)
-        else BigDecimal.decimal(i).compare(BigDecimal.decimal(f))
+    case (a@CypherInteger(i), b@CypherFloat(f)) =>
+      if (fitsDouble(i)) CypherFloat.computeOrderability(CypherFloat(i), b)
+      else BigDecimal.decimal(i).compare(BigDecimal.decimal(f))
+  }
 
-      case _ =>
-        super.order(l, r)
-    }
+  override protected[newvalue] def computeComparability(l: CypherNumber, r: CypherNumber): Int =
+    computeOrderability(l, r)
 
   // TODO: Get code for this
   private def fitsDouble(v: Long): Boolean = true
@@ -303,6 +362,9 @@ sealed trait CypherNumber extends CypherValue {
   self: Serializable =>
 }
 
+
+// *** INTEGER
+
 case object CypherInteger extends CypherNumberCompanion[CypherInteger] {
   def apply(value: Long): CypherInteger = new CypherInteger(value)
   def unapply(value: CypherInteger): Option[Long] = if (value == null) None else Some(value.v)
@@ -310,14 +372,14 @@ case object CypherInteger extends CypherNumberCompanion[CypherInteger] {
   override def cypherType(value: CypherInteger) = if (value == null) CTNull else CTInteger
   override def scalaValue(value: CypherInteger) = unapply(value).map(long2Long)
 
-  override protected[newvalue] def order(l: CypherInteger, r: CypherInteger): Int =
-    (l, r) match {
-      case (CypherInteger(xv), CypherInteger(yv)) => Ordering.Long.compare(xv, yv)
-      case _                                      => super.order(l, r)
-    }
+  override protected[newvalue] def computeOrderability(l: CypherInteger, r: CypherInteger): Int =
+    Ordering.Long.compare(l.v, r.v)
+
+  override protected[newvalue] def computeComparability(l: CypherInteger, r: CypherInteger): Int =
+    computeOrderability(l, r)
 }
 
-final class CypherInteger(private val v: Long) extends CypherNumber with Serializable {
+final class CypherInteger(private[CypherInteger] val v: Long) extends CypherNumber with Serializable {
   override def hashCode(): Int = v.hashCode()
 
   override def equals(obj: scala.Any): Boolean = obj match {
@@ -329,6 +391,9 @@ final class CypherInteger(private val v: Long) extends CypherNumber with Seriali
   override def toString: String = s"$v :: INTEGER"
 }
 
+
+// *** FLOAT ***
+
 case object CypherFloat extends CypherNumberCompanion[CypherFloat] {
   def apply(value: Double): CypherFloat = new CypherFloat(value)
   def unapply(value: CypherFloat): Option[Double] = if (value == null) None else Some(value.v)
@@ -336,20 +401,21 @@ case object CypherFloat extends CypherNumberCompanion[CypherFloat] {
   override def cypherType(value: CypherFloat) = if (value == null) CTNull else CTFloat
   override def scalaValue(value: CypherFloat) = unapply(value).map(double2Double)
 
-  override protected[newvalue] def order(l: CypherFloat, r: CypherFloat): Int = (l, r) match {
-    case (CypherFloat(xv), CypherFloat(yv)) =>
-      (xv.isNaN, yv.isNaN) match {
-        case (true, true)   => 0
-        case (false, true)  => -1
-        case (true, false)  => +1
-        case (false, false) => Ordering.Double.compare(xv, yv)
-      }
-    case _ =>
-      super.order(l, r)
+  override protected[newvalue] def computeOrderability(l: CypherFloat, r: CypherFloat): Int = {
+    val lVal = l.v
+    val rVal = r.v
+    if (lVal.isNaN) {
+      if (rVal.isNaN) 0 else +1
+    } else {
+      if (rVal.isNaN) -1 else Ordering.Double.compare(lVal, rVal)
+    }
   }
+
+  override protected[newvalue] def computeComparability(l: CypherFloat, r: CypherFloat): Int =
+    computeOrderability(l, r)
 }
 
-final class CypherFloat(private val v: Double) extends CypherNumber with Serializable {
+final class CypherFloat(private[CypherFloat] val v: Double) extends CypherNumber with Serializable {
   override def hashCode(): Int = v.hashCode()
 
   override def equals(obj: scala.Any): Boolean = obj match {
@@ -359,4 +425,72 @@ final class CypherFloat(private val v: Double) extends CypherNumber with Seriali
   }
 
   override def toString: String = s"$v :: FLOAT"
+}
+
+
+// *** LIST
+
+case object CypherList extends CypherValueCompanion[CypherList] {
+  def apply(value: Seq[CypherValue]): CypherList = new CypherList(value)
+  def unapply(value: CypherList): Option[Seq[CypherValue]] = if (value == null) None else Some(value.v)
+
+  override def cypherType(value: CypherList) =
+    if (value == null) CTNull else CTList(value.cachedElementType)
+
+  override def scalaValue(value: CypherList) =
+    unapply(value)
+
+
+  override def containsNull(v: CypherList): Boolean =
+    isNull(v) || v.cachedContainsNull
+
+  override protected[newvalue] def computeOrderability(l: CypherList, r: CypherList): Int =
+    valueListOrderability.compare(l.v, r.v)
+
+  override protected[newvalue] def computeComparability(l: CypherList, r: CypherList): Int =
+    computeOrderability(l, r)
+
+  // Values in the same order group are ordered (sorted) together by orderability
+  override def orderGroup(v: CypherList): OrderGroup = ListOrderGroup
+
+  private val valueListOrderability = Ordering.Iterable(CypherValue.orderability)
+}
+
+final class CypherList(private[CypherList] val v: Seq[CypherValue])
+  extends CypherValue with Serializable {
+
+  @transient
+  private[CypherList] lazy val cachedContainsNull: Boolean =
+    v.exists(CypherValue.containsNull)
+
+  @transient
+  private[CypherList] lazy val cachedElementType: CypherType =
+    v.map(CypherValue.cypherType).reduceOption(_ join _).getOrElse(CTVoid)
+
+  override def hashCode(): Int = v.hashCode()
+
+  override def equals(obj: scala.Any): Boolean = obj match {
+    case other: CypherList  => CypherList.equiv(this, other)
+    case _                  => false
+  }
+
+  // TODO: Test all the toStrings
+  override def toString: String = {
+    val builder = new StringBuilder
+    builder.append('[')
+    var first = true
+    val iter = v.iterator
+    while (iter.hasNext) {
+      if (first)
+        first = false
+      else {
+        builder.append(',')
+        builder.append(' ')
+      }
+      builder.append(iter.next())
+    }
+
+    builder.append(']')
+    builder.result()
+  }
 }

@@ -9,13 +9,10 @@ object Ternary {
   trait Conversion {
     implicit def booleanAsTernary(b: Boolean): Ternary = Ternary(b)
     implicit def optionalBooleanAsTernary(optB: Option[Boolean]): Ternary = Ternary(optB)
-    implicit def optionalIntAsTernary(optI: Option[Int]): Ternary = Ternary.fromComparison(optI)
   }
 
   def apply(v: Boolean): Ternary = if (v) True else False
   def apply(v: Option[Boolean]): Ternary = v.map(Ternary(_)).getOrElse(Maybe)
-
-  def fromComparison(v: Option[Int]): Ternary = v.map(cmp => Ternary(cmp == 0)).getOrElse(Maybe)
 }
 
 sealed trait Ternary {

@@ -7,12 +7,12 @@ class CypherValueEqualTest extends CypherValueTestSuite {
 
   import CypherTestValues._
 
-  test("BOOLEAN equal") {
-    verifyEqual(BOOLEAN_valueGroups)
+  test("LIST equal") {
+    verifyEqual(LIST_valueGroups)
   }
 
-  test("STRING equal") {
-    verifyEqual(STRING_valueGroups)
+  test("BOOLEAN equal") {
+    verifyEqual(BOOLEAN_valueGroups)
   }
 
   test("INTEGER equal") {
@@ -25,6 +25,10 @@ class CypherValueEqualTest extends CypherValueTestSuite {
 
   test("NUMBER equal") {
     verifyEqual(NUMBER_valueGroups)
+  }
+
+  test("ANY equal") {
+    verifyEqual(ANY_valueGroups)
   }
 
   def verifyEqual[V <: CypherValue : CypherValueCompanion](valueGroups: ValueGroups[V]): Unit = {
@@ -40,8 +44,9 @@ class CypherValueEqualTest extends CypherValueTestSuite {
       values.foreach { v2 =>
         if (companion[V].containsNull(v1) || companion[V].containsNull(v2))
           equal[V](v1, v2) should be(Maybe)
-        else
+        else {
           equal[V](v1, v2) should be(Ternary(v1 == v2))
+        }
       }
     }
   }

@@ -9,29 +9,46 @@ class CypherValueOrderabilityTest extends CypherValueTestSuite {
 
   import CypherTestValues._
 
-  test("should order BOOLEAN values correctly") {
-    verifyOrderabilityReflexivity(BOOLEAN_valueGroups)
-    verifyOrderabilityOrder(BOOLEAN_valueGroups)
+  test("should order LIST values correctly") {
+    verifyOrderabilityReflexivity(LIST_valueGroups)
+    verifyOrderabilityTransitivity(LIST_valueGroups)
+    verifyOrderabilityOrder(LIST_valueGroups)
   }
 
   test("should order STRING values correctly") {
     verifyOrderabilityReflexivity(STRING_valueGroups)
+    verifyOrderabilityTransitivity(STRING_valueGroups)
     verifyOrderabilityOrder(STRING_valueGroups)
+  }
+
+  test("should order BOOLEAN values correctly") {
+    verifyOrderabilityReflexivity(BOOLEAN_valueGroups)
+    verifyOrderabilityTransitivity(BOOLEAN_valueGroups)
+    verifyOrderabilityOrder(BOOLEAN_valueGroups)
   }
 
   test("should order INTEGER values correctly") {
     verifyOrderabilityReflexivity(INTEGER_valueGroups)
+    verifyOrderabilityTransitivity(INTEGER_valueGroups)
     verifyOrderabilityOrder(INTEGER_valueGroups)
   }
 
   test("should order FLOAT values correctly") {
     verifyOrderabilityReflexivity(FLOAT_valueGroups)
+    verifyOrderabilityTransitivity(FLOAT_valueGroups)
     verifyOrderabilityOrder(FLOAT_valueGroups)
   }
 
   test("should order NUMBER values correctly") {
-    verifyOrderabilityReflexivity(FLOAT_valueGroups)
+    verifyOrderabilityReflexivity(NUMBER_valueGroups)
+    verifyOrderabilityTransitivity(NUMBER_valueGroups)
     verifyOrderabilityOrder(NUMBER_valueGroups)
+  }
+
+  test("should order ANY values correctly") {
+    verifyOrderabilityReflexivity(ANY_valueGroups)
+    verifyOrderabilityTransitivity(ANY_valueGroups)
+    verifyOrderabilityOrder(ANY_valueGroups)
   }
 
   private def verifyOrderabilityReflexivity[V <: CypherValue : CypherValueCompanion](values: ValueGroups[V]): Unit = {
@@ -52,6 +69,58 @@ class CypherValueOrderabilityTest extends CypherValueTestSuite {
       val isSameValue = leftIndex == rightIndex
       isEqual should be(isSameValue)
     }
+  }
+
+  private def verifyOrderabilityTransitivity[V <: CypherValue : CypherValueCompanion](values: ValueGroups[V]): Unit = {
+//    var count = 0
+    val flatValues = values.indexed
+    flatValues.foreach { a =>
+      flatValues.foreach { b =>
+        flatValues.foreach { c =>
+          val (i1, v1) = a
+          val (i2, v2) = b
+          val (i3, v3) = c
+
+          val cmp1 = companion[V].orderability(v1, v2)
+          val cmp2 = companion[V].orderability(v2, v3)
+          val cmp3 = companion[V].orderability(v1, v3)
+
+//          println(s"$count $a << $cmp1 >> $b << $cmp2 >> $c : $cmp3")
+//          count += 1
+
+          assertInIndexOrder(cmp1)(i1, i2)
+          assertInIndexOrder(cmp2)(i2, i3)
+          assertInIndexOrder(cmp3)(i1, i3)
+
+          if (cmp1 == 0 && cmp2 == 0)
+            (cmp3 == 0) should be(true)
+
+          if (cmp1 < 0 && cmp2 < 0)
+            (cmp3 < 0) should be(true)
+
+          if (cmp1 == 0 && cmp2 < 0)
+            (cmp3 < 0) should be(true)
+
+          if (cmp1 < 0 && cmp2 == 0)
+            (cmp3 < 0) should be(true)
+
+          if (cmp1 > 0 && cmp2 > 0)
+            (cmp3 > 0) should be(true)
+
+          if (cmp1 == 0 && cmp2 > 0)
+            (cmp3 > 0) should be(true)
+
+          if (cmp1 > 0 && cmp2 == 0)
+            (cmp3 > 0) should be(true)
+        }
+      }
+    }
+  }
+
+  private def assertInIndexOrder(cmp: Int)(leftIndex: Int, rightIndex: Int) = {
+    if (cmp < 0) (leftIndex < rightIndex)  should be(true)
+    if (cmp == 0) (leftIndex == rightIndex)should be(true)
+    if (cmp > 0) (leftIndex > rightIndex) should be(true)
   }
 
   private def verifyOrderabilityOrder[V <: CypherValue : CypherValueCompanion](expected: ValueGroups[V]): Unit = {
