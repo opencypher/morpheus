@@ -10,6 +10,10 @@ class CypherValueComparabilityTest extends CypherValueTestSuite {
     verifyComparability(BOOLEAN_valueGroups)
   }
 
+  test("should order STRING values correctly") {
+    verifyComparability(BOOLEAN_valueGroups)
+  }
+
   test("should order INTEGER values correctly") {
     verifyComparability(INTEGER_valueGroups)
   }

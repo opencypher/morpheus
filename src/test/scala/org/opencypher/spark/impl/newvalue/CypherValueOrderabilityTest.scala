@@ -14,6 +14,11 @@ class CypherValueOrderabilityTest extends CypherValueTestSuite {
     verifyOrderabilityOrder(BOOLEAN_valueGroups)
   }
 
+  test("should order STRING values correctly") {
+    verifyOrderabilityReflexivity(STRING_valueGroups)
+    verifyOrderabilityOrder(STRING_valueGroups)
+  }
+
   test("should order INTEGER values correctly") {
     verifyOrderabilityReflexivity(INTEGER_valueGroups)
     verifyOrderabilityOrder(INTEGER_valueGroups)

@@ -9,6 +9,18 @@ object CypherTestValues {
   type ValueGroups[V] = Seq[Values[V]]
   type Values[V] = Seq[V]
 
+  implicit val STRING_valueGroups: ValueGroups[CypherString] = Seq(
+    Seq(CypherString("")),
+    Seq(CypherString("  ")),
+    Seq(CypherString("1234567890")),
+    Seq(CypherString("a")),
+    Seq(CypherString("A")),
+    Seq(CypherString("AB")),
+    Seq(CypherString("ABC")),
+    Seq(CypherString("Is it a query, if no one sees it running?")),
+    Seq(cypherNull[CypherString])
+  )
+
   implicit val BOOLEAN_valueGroups: ValueGroups[CypherBoolean] = Seq(
     Seq(CypherBoolean(false)),
     Seq(CypherBoolean(true)),
@@ -71,6 +83,14 @@ object CypherTestValues {
   )
 
   implicit val ALL_valueGroups: ValueGroups[CypherValue] = Seq(
+    Seq(CypherString("")),
+    Seq(CypherString("  ")),
+    Seq(CypherString("1234567890")),
+    Seq(CypherString("a")),
+    Seq(CypherString("A")),
+    Seq(CypherString("AB")),
+    Seq(CypherString("ABC")),
+    Seq(CypherString("Is it a query, if no one sees it running?")),
     Seq(CypherBoolean(false)),
     Seq(CypherBoolean(true)),
     Seq(CypherFloat(Double.NegativeInfinity)),
@@ -91,7 +111,14 @@ object CypherTestValues {
     Seq(CypherFloat(Double.MaxValue)),
     Seq(CypherFloat(Double.PositiveInfinity)),
     Seq(CypherFloat(Double.NaN)),
-    Seq(cypherNull[CypherFloat], cypherNull[CypherInteger])
+    Seq(
+      cypherNull[CypherValue],
+      cypherNull[CypherBoolean],
+      cypherNull[CypherString],
+      cypherNull[CypherFloat],
+      cypherNull[CypherInteger],
+      cypherNull[CypherNumber]
+    )
   )
 
   implicit final class CypherValueGroups[V <: CypherValue](elts: ValueGroups[V]) {

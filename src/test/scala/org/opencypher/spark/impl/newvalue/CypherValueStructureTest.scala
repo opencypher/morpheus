@@ -38,6 +38,40 @@ class CypherValueStructureTest extends CypherValueTestSuite {
     CypherBoolean.unapply(cypherNull[CypherBoolean]) should equal(None)
   }
 
+  test("Construct STRING values") {
+    val originalValueGroups = STRING_valueGroups
+    val scalaValueGroups = originalValueGroups.scalaValueGroups
+
+    val reconstructedValueGroups = scalaValueGroups.map {
+      values => values.map {
+        opt =>
+          opt match {
+            case Some(s: String) =>
+              CypherString(s)
+
+            case None =>
+              cypherNull[CypherString]
+
+            case _ =>
+              fail("Unexpected scala value")
+          }
+      }
+    }
+
+    reconstructedValueGroups should equal(originalValueGroups)
+  }
+
+  test("Deconstruct STRING values") {
+    val cypherValueGroups = STRING_valueGroups.materialValueGroups
+
+    val expected = cypherValueGroups.scalaValueGroups
+    val actual = cypherValueGroups.map { values => values.map { case CypherString(v) => v } }
+
+    actual should equal(expected)
+
+    CypherString.unapply(cypherNull[CypherString]) should equal(None)
+  }
+
   test("Construct INTEGER values") {
     val originalValueGroups = INTEGER_valueGroups
     val scalaValueGroups = originalValueGroups.scalaValueGroups

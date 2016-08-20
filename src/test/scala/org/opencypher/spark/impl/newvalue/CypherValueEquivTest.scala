@@ -10,6 +10,10 @@ class CypherValueEquivTest extends CypherValueTestSuite {
     verifyEquiv(BOOLEAN_valueGroups)
   }
 
+  test("STRING equiv") {
+    verifyEquiv(STRING_valueGroups)
+  }
+
   test("INTEGER equiv") {
     verifyEquiv(INTEGER_valueGroups)
   }

@@ -11,6 +11,10 @@ class CypherValueEqualTest extends CypherValueTestSuite {
     verifyEqual(BOOLEAN_valueGroups)
   }
 
+  test("STRING equal") {
+    verifyEqual(STRING_valueGroups)
+  }
+
   test("INTEGER equal") {
     verifyEqual(INTEGER_valueGroups)
   }

@@ -19,6 +19,21 @@ class CypherValueConversionTest extends CypherValueTestSuite {
     }
   }
 
+  test("STRING conversion") {
+    val originalValues = STRING_valueGroups.flatten
+    val scalaValues = originalValues.map(CypherString.scalaValue).map(_.orNull)
+    val newValues = scalaValues.map {
+      case s: java.lang.String => CypherString(s)
+      case null                => null
+    }
+
+    newValues should equal(originalValues)
+
+    originalValues.foreach { v =>
+      CypherString.containsNull(v) should equal (v == null)
+    }
+  }
+
   test("INTEGER conversion") {
     val originalValues = INTEGER_valueGroups.flatten
     val scalaValues = originalValues.map(CypherInteger.scalaValue).map(_.orNull)

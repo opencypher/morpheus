@@ -3,7 +3,7 @@ package org.opencypher.spark.impl.newvalue
 import org.apache.spark.sql.Encoder
 import org.apache.spark.sql.Encoders._
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
-import org.opencypher.spark.api.types.{CTBoolean, CTFloat, CTInteger, CTNull}
+import org.opencypher.spark.api.types._
 import org.opencypher.spark.api.{Ternary, _}
 
 import scala.language.implicitConversions
@@ -77,8 +77,8 @@ case object CypherValue extends CypherValueCompanion[CypherValue] {
   object Conversion extends Conversion
 
   trait Conversion extends LowPriorityConversion {
-  //
-  //    implicit def cypherString(v: String): CypherString = CypherString(v)
+
+    implicit def cypherString(v: String): CypherString = CypherString(v)
     implicit def cypherInteger(v: Int): CypherInteger = CypherInteger(v)
     implicit def cypherInteger(v: Long): CypherInteger = CypherInteger(v)
     implicit def cypherFloat(v: Float): CypherFloat =  CypherFloat(v)
@@ -163,6 +163,7 @@ case object CypherValue extends CypherValueCompanion[CypherValue] {
 
   trait Companions extends LowPriorityCompanions {
     implicit def cypherBooleanCompanion: CypherBoolean.type = CypherBoolean
+    implicit def cypherStringCompanion: CypherString.type = CypherString
     implicit def cypherFloatCompanion: CypherFloat.type = CypherFloat
     implicit def cypherIntegerCompanion: CypherInteger.type = CypherInteger
     implicit def cypherNumberCompanion: CypherNumber.type = CypherNumber
@@ -176,6 +177,7 @@ case object CypherValue extends CypherValueCompanion[CypherValue] {
     value match {
       case v: CypherNumber  => CypherNumber.cypherType(v)
       case v: CypherBoolean => CypherBoolean.cypherType(v)
+      case v: CypherString  => CypherString.cypherType(v)
       case null             => CTNull
     }
 
@@ -225,6 +227,33 @@ final class CypherBoolean(private val v: Boolean) extends CypherValue with Seria
 
   override def toString: String = if (v) "TRUE" else "FALSE"
 }
+
+case object CypherString extends CypherValueCompanion[CypherString] {
+  def apply(value: String): CypherString = if (value == null) cypherNull else new CypherString(value)
+  def unapply(value: CypherString): Option[String] = if (value == null) None else Some(value.v)
+
+  override def cypherType(value: CypherString) = if (value == null) CTNull else CTString
+  override def scalaValue(value: CypherString) = unapply(value)
+
+  override protected[newvalue] def order(l: CypherString, r: CypherString): Int =
+    (l, r) match {
+      case (CypherString(xv), CypherString(yv)) => Ordering.String.compare(xv, yv)
+      case _                                    => super.order(l, r)
+    }
+}
+
+final class CypherString(private val v: String) extends CypherValue with Serializable {
+  override def hashCode(): Int = v.hashCode()
+
+  override def equals(obj: scala.Any): Boolean = obj match {
+    case other: CypherString => CypherString.equiv(this, other)
+    case _                   => false
+  }
+
+  // TODO: Improve
+  override def toString: String = s"'${v.replaceAllLiterally("'", "\'")}'"
+}
+
 
 sealed trait CypherNumberCompanion[V <: CypherNumber] extends CypherValueCompanion[V] {
   def scalaValue(v: V): Option[Number]
