@@ -2,7 +2,14 @@ package org.opencypher.spark.api
 
 import scala.language.implicitConversions
 
-object EntityId {
+case object EntityId {
+
+  def invalid: EntityId = EntityId(-1)
+
+  object ordering extends Ordering[EntityId] {
+    override def compare(x: EntityId, y: EntityId): Int =
+      Ordering.Long.compare(x.v, y.v)
+  }
 
   object Conversion extends Conversion
 
@@ -12,6 +19,7 @@ object EntityId {
   }
 }
 
+// TODO: Prohibit invalid ids
 final case class EntityId(v: Long) extends AnyVal {
   self =>
 

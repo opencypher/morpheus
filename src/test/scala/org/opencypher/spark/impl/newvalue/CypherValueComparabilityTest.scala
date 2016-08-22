@@ -6,6 +6,10 @@ class CypherValueComparabilityTest extends CypherValueTestSuite {
 
   import CypherTestValues._
 
+  test("should compare NODE values correctly") {
+    verifyComparability(NODE_valueGroups)
+  }
+
   test("should compare MAP values correctly") {
     verifyComparability(MAP_valueGroups)
   }
@@ -38,31 +42,55 @@ class CypherValueComparabilityTest extends CypherValueTestSuite {
     verifyComparability(ANY_valueGroups)
   }
 
-  private def verifyComparability[V <: CypherValue : CypherValueCompanion](values: ValueGroups[V]): Unit = {
-    values.flatten.foreach { v =>
+  private def verifyComparability[V <: CypherValue : CypherValueCompanion](valueGroups: ValueGroups[V]): Unit = {
+    valueGroups.flatten.foreach { v =>
       tryCompare(v, v) should be(if (companion[V].containsNull(v)) None else Some(0))
     }
 
-    values.indexed.zip(values.indexed).foreach { entry =>
-      val ((leftIndex, leftValue), (rightIndex, rightValue)) = entry
-      val cmp = tryCompare(leftValue, rightValue)
+    val indexedValueGroups =
+      valueGroups
+        .zipWithIndex
+        .flatMap { case ((group), index) => group.map { v => index -> v } }
 
-      // direction 1: knowing we have the same value
-      val isSameValue = leftIndex == rightIndex
-      if (isSameValue)
-        cmp should equal(if (companion[V].containsNull(leftValue) || companion[V].containsNull(rightValue)) None else Some(0))
-      else
-        cmp should not equal Some(0)
+    indexedValueGroups.foreach { left =>
+      val ((leftIndex, leftValue)) = left
+      indexedValueGroups.foreach { right =>
+        val ((rightIndex, rightValue)) = right
+        val cmp = tryCompare(leftValue, rightValue)
 
-      // direction 2: knowing the values are comparable
-      if (cmp.nonEmpty && cmp.get <= 0) {
-        (leftIndex <= rightIndex) should be(true)
-        (companion[V].orderability.compare(leftValue, rightValue) <= 0) should be(true)
+        // direction 1: knowing we have the same value
+        val isSameValue = leftIndex == rightIndex
+        if (isSameValue)
+          cmp should equal(if (companion[V].containsNull(leftValue) || companion[V].containsNull(rightValue)) None else Some(0))
+        else
+          cmp should not equal Some(0)
+
+        // direction 2: knowing the values are comparable
+        if (cmp.nonEmpty && cmp.get <= 0) {
+          (leftIndex <= rightIndex) should be(true)
+          (companion[V].orderability(leftValue, rightValue) <= 0) should be(true)
+        }
       }
     }
   }
 
   private def tryCompare[V <: CypherValue : CypherValueCompanion](a: V, b: V): Option[Int] = {
-    companion[V].comparability(a, b)
+    val l = companion[V].comparability(a, b)
+    val r = companion[V].comparability(b, a)
+
+    (l, r) match {
+      case (Some(0), Some(0)) =>
+        Some(0)
+
+      case (Some(x), Some(y)) =>
+        ((x < 0 && y > 0) || (x > 0 && y < 0)) should equal(true)
+        Some(x)
+
+      case (None, None) =>
+        None
+
+      case _ =>
+        fail("Comparability symmetry is broken")
+    }
   }
 }

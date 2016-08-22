@@ -23,4 +23,8 @@ object Properties {
   }
 }
 
-final class Properties private (val m: SortedMap[String, CypherValue]) extends AnyVal with Serializable
+final class Properties private (val m: SortedMap[String, CypherValue]) extends AnyVal with Serializable {
+  def apply(key: String) = m.getOrElse(key, cypherNull)
+
+  def containsNullValue: Boolean = m.values.exists(CypherValue.containsNull)
+}

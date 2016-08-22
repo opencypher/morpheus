@@ -1,8 +1,26 @@
 package org.opencypher.spark.impl.newvalue
 
+import org.opencypher.spark.api.EntityId
+
 class CypherValueConversionTest extends CypherValueTestSuite {
 
   import CypherTestValues._
+
+  test("NODE conversion") {
+    val originalValues = NODE_valueGroups.flatten
+    val scalaValues: Seq[(EntityId, NodeData)] = originalValues.map(CypherNode.scalaValue).map(_.orNull)
+    val newValues = scalaValues.map {
+      case null                             => null
+      case ((id: EntityId, data: NodeData)) => CypherNode(id, data.labels, data.properties)
+    }
+
+    newValues should equal(originalValues)
+
+    originalValues.foreach { v =>
+      CypherNode.containsNull(v) should equal(v == null || v.properties.containsNullValue)
+    }
+  }
+
 
   test("MAP conversion") {
     val originalValues = MAP_valueGroups.flatten
@@ -119,8 +137,9 @@ class CypherValueConversionTest extends CypherValueTestSuite {
       case s: java.lang.String => CypherString(s)
       case l: java.lang.Long => CypherInteger(l)
       case p: Properties => CypherMap(p)
+      case (id: EntityId, data: NodeData) => CypherNode(id, data.labels, data.properties)
       case d: java.lang.Double => CypherFloat(d)
-      case l: Seq[CypherValue] => CypherList(l)
+      case l: Seq[_] => CypherList(l.asInstanceOf[Seq[CypherValue]])
     }
 
     newValues should equal(originalValues)
