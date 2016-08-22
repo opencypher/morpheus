@@ -6,6 +6,10 @@ class CypherValueEquivTest extends CypherValueTestSuite {
 
   import CypherTestValues._
 
+  test("MAP equiv") {
+    verifyEquiv(MAP_valueGroups)
+  }
+
   test("LIST equiv") {
     verifyEquiv(LIST_valueGroups)
   }

@@ -7,6 +7,10 @@ class CypherValueEqualTest extends CypherValueTestSuite {
 
   import CypherTestValues._
 
+  test("MAP equal") {
+    verifyEqual(MAP_valueGroups)
+  }
+
   test("LIST equal") {
     verifyEqual(LIST_valueGroups)
   }

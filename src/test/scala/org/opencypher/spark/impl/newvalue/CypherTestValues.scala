@@ -1,5 +1,7 @@
 package org.opencypher.spark.impl.newvalue
 
+import scala.collection.immutable.SortedMap
+
 object CypherTestValues {
 
   // The inner seqs are supposed to be duplicate free
@@ -8,6 +10,20 @@ object CypherTestValues {
   //
   type ValueGroups[V] = Seq[Values[V]]
   type Values[V] = Seq[V]
+
+  implicit val MAP_valueGroups: ValueGroups[CypherMap] = Seq(
+    // TODO: Add more nested examples
+    Seq(CypherMap()),
+    Seq(CypherMap("a" -> CypherInteger(1))),
+    Seq(CypherMap("a" -> CypherInteger(1), "b" -> CypherInteger(1))),
+    Seq(
+      CypherMap("a" -> CypherInteger(1), "b" -> null),
+      CypherMap("a" -> CypherFloat(1.0d), "b" -> null)
+    ),
+    Seq(CypherMap("b" -> null)),
+    Seq(CypherMap("c" -> CypherInteger(10), "b" -> null)),
+    Seq(cypherNull[CypherMap])
+  )
 
   implicit val LIST_valueGroups: ValueGroups[CypherList] = Seq(
     // TODO: Add more nested examples
@@ -91,6 +107,15 @@ object CypherTestValues {
   )
 
   implicit val ANY_valueGroups: ValueGroups[CypherValue] = Seq(
+    Seq(CypherMap()),
+    Seq(CypherMap("a" -> CypherInteger(1))),
+    Seq(CypherMap("a" -> CypherInteger(1), "b" -> CypherInteger(1))),
+    Seq(
+      CypherMap("a" -> CypherInteger(1), "b" -> null),
+      CypherMap("a" -> CypherFloat(1.0d), "b" -> null)
+    ),
+    Seq(CypherMap("b" -> null)),
+    Seq(CypherMap("c" -> CypherInteger(10), "b" -> null)),
     Seq(CypherList(Seq())),
     Seq(CypherList(Seq(CypherInteger(1)))),
     Seq(CypherList(Seq(CypherInteger(1), CypherInteger(0)))),
@@ -132,7 +157,8 @@ object CypherTestValues {
       cypherNull[CypherBoolean],
       cypherNull[CypherNumber],
       cypherNull[CypherFloat],
-      cypherNull[CypherInteger]
+      cypherNull[CypherInteger],
+      cypherNull[CypherMap]
     )
   )
 

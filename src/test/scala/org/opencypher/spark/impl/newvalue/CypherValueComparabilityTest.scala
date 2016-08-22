@@ -6,6 +6,10 @@ class CypherValueComparabilityTest extends CypherValueTestSuite {
 
   import CypherTestValues._
 
+  test("should compare MAP values correctly") {
+    verifyComparability(MAP_valueGroups)
+  }
+
   test("should compare LIST values correctly") {
     verifyComparability(LIST_valueGroups)
   }

@@ -1,8 +1,41 @@
 package org.opencypher.spark.impl.newvalue
 
+import scala.collection.immutable.SortedMap
+
 class CypherValueStructureTest extends CypherValueTestSuite {
 
   import CypherTestValues._
+
+  test("Construct MAP values") {
+    val originalValueGroups = MAP_valueGroups
+    val scalaValueGroups = originalValueGroups.scalaValueGroups
+
+    val reconstructedValueGroups = scalaValueGroups.map {
+      values => values.map {
+        case Some(p: Properties) =>
+          CypherMap(p)
+
+        case None =>
+          cypherNull[CypherMap]
+
+        case _ =>
+          fail("Unexpected scala value")
+      }
+    }
+
+    reconstructedValueGroups should equal(originalValueGroups)
+  }
+
+  test("Deconstruct MAP values") {
+    val cypherValueGroups = MAP_valueGroups.materialValueGroups
+
+    val expected = cypherValueGroups.scalaValueGroups
+    val actual = cypherValueGroups.map { values => values.map { case CypherMap(m) => m } }
+
+    actual should equal(expected)
+
+    CypherMap.unapply(cypherNull[CypherMap]) should equal(None)
+  }
 
   test("Construct LIST values") {
     val originalValueGroups = LIST_valueGroups
@@ -199,6 +232,9 @@ class CypherValueStructureTest extends CypherValueTestSuite {
 
     val reconstructedValueGroups = scalaValueGroups.map {
       values => values.map {
+        case Some(p: Properties) =>
+          CypherMap(p)
+
         case Some(l: Seq[CypherValue]) =>
           CypherList(l)
 

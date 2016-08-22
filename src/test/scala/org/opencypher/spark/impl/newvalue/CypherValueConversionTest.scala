@@ -4,6 +4,21 @@ class CypherValueConversionTest extends CypherValueTestSuite {
 
   import CypherTestValues._
 
+  test("MAP conversion") {
+    val originalValues = MAP_valueGroups.flatten
+    val scalaValues = originalValues.map(CypherMap.scalaValue).map(_.asInstanceOf[Option[Any]]).map(_.orNull)
+    val newValues = scalaValues.map {
+      case null           => null
+      case p: Properties  => CypherMap(p)
+    }
+
+    newValues should equal(originalValues)
+
+    originalValues.foreach { v =>
+      CypherMap.containsNull(v) should equal (v == null || CypherMap.unapply(v).map(_.m).exists(_.values.exists(_ == null)))
+    }
+  }
+
   test("LIST conversion") {
     val originalValues = LIST_valueGroups.flatten
     val scalaValues = originalValues.map(CypherList.scalaValue).map(_.orNull)
@@ -99,12 +114,13 @@ class CypherValueConversionTest extends CypherValueTestSuite {
     val originalValues = ANY_valueGroups.flatten
     val scalaValues = originalValues.map(CypherValue.scalaValue).map(_.orNull)
     val newValues = scalaValues.map {
-      case null                 => null
+      case null => null
       case b: java.lang.Boolean => CypherBoolean(b)
-      case s: java.lang.String  => CypherString(s)
-      case l: java.lang.Long    => CypherInteger(l)
-      case d: java.lang.Double  => CypherFloat(d)
-      case l: Seq[CypherValue]  => CypherList(l)
+      case s: java.lang.String => CypherString(s)
+      case l: java.lang.Long => CypherInteger(l)
+      case p: Properties => CypherMap(p)
+      case d: java.lang.Double => CypherFloat(d)
+      case l: Seq[CypherValue] => CypherList(l)
     }
 
     newValues should equal(originalValues)

@@ -7,6 +7,13 @@ class CypherValueEncodingTest extends StdTestSuite with TestSession.Fixture {
 
   import CypherTestValues._
 
+  test("MAP encoding") {
+    val values = MAP_valueGroups.flatten
+    val ds = session.createDataset[CypherValue](values)(Encoders.cypherValueEncoder)
+
+    ds.collect().toSeq should equal(values)
+  }
+
   test("LIST encoding") {
     val values = LIST_valueGroups.flatten
     val ds = session.createDataset[CypherValue](values)(Encoders.cypherValueEncoder)
