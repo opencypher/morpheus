@@ -3,7 +3,7 @@ package org.opencypher.spark.impl.newvalue
 import org.apache.spark.sql.Encoder
 import org.apache.spark.sql.Encoders._
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
-import org.opencypher.spark.api._
+import org.opencypher.spark.api.{CypherType, Maybe, Ternary, True, False, EntityId}
 import org.opencypher.spark.api.CypherType.OrderGroup
 import org.opencypher.spark.api.CypherType.OrderGroups._
 import org.opencypher.spark.api.types._
@@ -187,39 +187,43 @@ case object CypherValue extends CypherValueCompanion[CypherValue] with Verificat
     implicit def cypherListCompanion: CypherList.type = CypherList
     implicit def cypherMapCompanion: CypherMap.type = CypherMap
     implicit def cypherNodeCompanion: CypherNode.type = CypherNode
+    implicit def cypherRelationshipCompanion: CypherRelationship.type = CypherRelationship
     implicit def cypherValueCompanion: CypherValue.type = CypherValue
   }
 
   override def cypherType(value: CypherValue): CypherType = value match {
-    case null             => CTNull
-    case v: CypherBoolean => CypherBoolean.cypherType(v)
-    case v: CypherString  => CypherString.cypherType(v)
-    case v: CypherNumber  => CypherNumber.cypherType(v)
-    case v: CypherList    => CypherList.cypherType(v)
-    case v: CypherNode    => CypherNode.cypherType(v)
-    case v: CypherMap     => CypherMap.cypherType(v)
+    case null                   => CTNull
+    case v: CypherBoolean       => CypherBoolean.cypherType(v)
+    case v: CypherString        => CypherString.cypherType(v)
+    case v: CypherNumber        => CypherNumber.cypherType(v)
+    case v: CypherList          => CypherList.cypherType(v)
+    case v: CypherNode          => CypherNode.cypherType(v)
+    case v: CypherRelationship  => CypherRelationship.cypherType(v)
+    case v: CypherMap           => CypherMap.cypherType(v)
   }
 
   def unapply(value: CypherValue): Option[Any] = scalaValue(value)
 
   override def scalaValue(value: CypherValue): Option[Any] = value match {
-    case null              => None
-    case v: CypherBoolean  => CypherBoolean.scalaValue(v)
-    case v: CypherString   => CypherString.scalaValue(v)
-    case v: CypherNumber   => CypherNumber.scalaValue(v)
-    case v: CypherList     => CypherList.scalaValue(v)
-    case v: CypherNode     => CypherNode.scalaValue(v)
-    case v: CypherMap      => CypherMap.scalaValue(v)
+    case null                      => None
+    case v: CypherBoolean          => CypherBoolean.scalaValue(v)
+    case v: CypherString           => CypherString.scalaValue(v)
+    case v: CypherNumber           => CypherNumber.scalaValue(v)
+    case v: CypherList             => CypherList.scalaValue(v)
+    case v: CypherNode             => CypherNode.scalaValue(v)
+    case v: CypherRelationship     => CypherRelationship.scalaValue(v)
+    case v: CypherMap              => CypherMap.scalaValue(v)
   }
 
   override def orderGroup(value: CypherValue) = value match {
-    case null             => VoidOrderGroup
-    case v: CypherBoolean => CypherBoolean.orderGroup(v)
-    case v: CypherString  => CypherString.orderGroup(v)
-    case v: CypherNumber  => CypherNumber.orderGroup(v)
-    case v: CypherList    => CypherList.orderGroup(v)
-    case v: CypherNode    => CypherNode.orderGroup(v)
-    case v: CypherMap     => CypherMap.orderGroup(v)
+    case null                     => VoidOrderGroup
+    case v: CypherBoolean         => CypherBoolean.orderGroup(v)
+    case v: CypherString          => CypherString.orderGroup(v)
+    case v: CypherNumber          => CypherNumber.orderGroup(v)
+    case v: CypherList            => CypherList.orderGroup(v)
+    case v: CypherNode            => CypherNode.orderGroup(v)
+    case v: CypherRelationship    => CypherRelationship.orderGroup(v)
+    case v: CypherMap             => CypherMap.orderGroup(v)
   }
 
   protected[newvalue] def computeOrderability(l: CypherValue, r: CypherValue): Int = {
@@ -228,12 +232,13 @@ case object CypherValue extends CypherValueCompanion[CypherValue] with Verificat
     val cmp = lGroup.id - rGroup.id
     if (cmp == 0)
       (l, r) match {
-        case (a: CypherBoolean, b: CypherBoolean) => CypherBoolean.computeOrderability(a, b)
-        case (a: CypherString, b: CypherString)   => CypherString.computeOrderability(a, b)
-        case (a: CypherNumber, b: CypherNumber)   => CypherNumber.computeOrderability(a, b)
-        case (a: CypherList, b: CypherList)       => CypherList.computeOrderability(a, b)
-        case (a: CypherNode, b: CypherNode)       => CypherNode.computeOrderability(a, b)
-        case (a: CypherMap, b: CypherMap)         => CypherMap.computeOrderability(a, b)
+        case (a: CypherBoolean, b: CypherBoolean)            => CypherBoolean.computeOrderability(a, b)
+        case (a: CypherString, b: CypherString)              => CypherString.computeOrderability(a, b)
+        case (a: CypherNumber, b: CypherNumber)              => CypherNumber.computeOrderability(a, b)
+        case (a: CypherList, b: CypherList)                  => CypherList.computeOrderability(a, b)
+        case (a: CypherNode, b: CypherNode)                  => CypherNode.computeOrderability(a, b)
+        case (a: CypherRelationship, b: CypherRelationship)  => CypherRelationship.computeOrderability(a, b)
+        case (a: CypherMap, b: CypherMap)                    => CypherMap.computeOrderability(a, b)
         case _ =>
           supposedlyImpossible("Call to computeOrderability with values of different types")
       }
@@ -247,6 +252,7 @@ case object CypherValue extends CypherValueCompanion[CypherValue] with Verificat
     case (a: CypherNumber, b: CypherNumber) => CypherNumber.computeComparability(a, b)
     case (a: CypherList, b: CypherList) => CypherList.computeComparability(a, b)
     case (a: CypherNode, b: CypherNode) => CypherNode.computeOrderability(a, b)
+    case (a: CypherRelationship, b: CypherRelationship) => CypherRelationship.computeOrderability(a, b)
     case (a: CypherMap, b: CypherMap) => CypherMap.computeComparability(a, b)
     case _ =>
       supposedlyImpossible("Call to computeComparability with values of different types")
@@ -632,7 +638,7 @@ case object CypherNode extends CypherEntityCompanion[CypherNode] {
     computeOrderability(l, r)
 
   // Values in the same order group are ordered (sorted) together by orderability
-  def orderGroup(v: CypherNode): OrderGroup = NodeOrderGroup
+  override def orderGroup(v: CypherNode): OrderGroup = NodeOrderGroup
 }
 
 sealed class CypherNode(protected[newvalue] val id: EntityId,
@@ -650,5 +656,52 @@ sealed class CypherNode(protected[newvalue] val id: EntityId,
   override protected[newvalue] def data = NodeData(labels, properties.m)
 
   override def toString = s"($id ${labels.map(":" + _).foldLeft("")(_ ++ _)} ${super.toString})"
+}
+
+// *** RELATIONSHIP
+
+case object CypherRelationship extends CypherEntityCompanion[CypherRelationship] {
+
+  def apply(id: EntityId, data: RelationshipData) =
+    new CypherRelationship(id, data.startId, data.endId, data.relationshipType, data.properties)
+
+  def apply(id: EntityId, startId: EntityId, endId: EntityId, relType: String, properties: Properties): CypherRelationship =
+    new CypherRelationship(id, startId, endId, relType, properties)
+
+  def unapply(value: CypherRelationship): Option[(EntityId, RelationshipData)] =
+    if (value == null) None else Some(value.id -> value.data)
+
+  override def scalaValue(value: CypherRelationship): Option[(EntityId, RelationshipData)] =
+    unapply(value)
+
+  override def cypherType(value: CypherRelationship) =
+    if (value == null) CTNull else CTRelationship
+
+  override protected[newvalue] def computeOrderability(l: CypherRelationship, r: CypherRelationship): Int =
+    EntityId.ordering.compare(l.id, r.id)
+
+  override protected[newvalue] def computeComparability(l: CypherRelationship, r: CypherRelationship): Int =
+    computeOrderability(l, r)
+
+  override def orderGroup(v: CypherRelationship): OrderGroup = RelationshipOrderGroup
+}
+
+sealed class CypherRelationship(protected[newvalue] val id: EntityId,
+                                protected[newvalue] val startId: EntityId,
+                                protected[newvalue] val endId: EntityId,
+                                protected[newvalue] val relType: String,
+                                override protected[newvalue] val properties: Properties)
+  extends CypherEntityValue(properties) with Serializable {
+
+  override def hashCode(): Int = id.hashCode()
+
+  override def equals(obj: scala.Any): Boolean = obj match {
+    case other: CypherRelationship => CypherRelationship.equiv(this, other)
+    case _                         => false
+  }
+
+  override protected[newvalue] def data = RelationshipData(startId, relType, endId, properties.m)
+
+  override def toString = s"[$id $startId - :$relType -> $endId ${super.toString}]"
 }
 

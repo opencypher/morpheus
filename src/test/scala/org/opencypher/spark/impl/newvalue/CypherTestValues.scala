@@ -1,6 +1,7 @@
 package org.opencypher.spark.impl.newvalue
 
 import org.opencypher.spark.api.EntityId
+import org.opencypher.spark.api.types.CTFloat
 
 object CypherTestValues {
 
@@ -14,6 +15,19 @@ object CypherTestValues {
   //
   type ValueGroups[V] = Seq[Values[V]]
   type Values[V] = Seq[V]
+
+  implicit val RELATIONSHIP_valueGroups: ValueGroups[CypherRelationship] = Seq(
+    Seq(
+      CypherRelationship(EntityId(1), EntityId(1), EntityId(1), "KNOWS", Properties("a" -> CypherInteger(1), "b" -> null)),
+      CypherRelationship(EntityId(1), EntityId(2), EntityId(4), "FORGETS", Properties("a" -> CypherFloat(1.0), "b" -> null))
+      ),
+    Seq(CypherRelationship(EntityId(10), EntityId(1), EntityId(1), "KNOWS", Properties("a" -> CypherInteger(1)))),
+    Seq(CypherRelationship(EntityId(20), EntityId(1), EntityId(1), "KNOWS", Properties("a" -> CypherInteger(1), "b" -> CypherInteger(1)))),
+    Seq(CypherRelationship(EntityId(21), EntityId(0), EntityId(-1), "KNOWS", Properties("b" -> null))),
+    Seq(CypherRelationship(EntityId(30), EntityId(1), EntityId(1), "_-&", Properties.empty)),
+    Seq(CypherRelationship(EntityId(40), EntityId(1), EntityId(1), "", Properties("c" -> CypherInteger(10), "b" -> null))),
+    Seq(cypherNull[CypherRelationship])
+  )
 
   implicit val NODE_valueGroups: ValueGroups[CypherNode] = Seq(
     Seq(
@@ -127,6 +141,7 @@ object CypherTestValues {
     val allGroups = Seq(
       MAP_valueGroups,
       NODE_valueGroups,
+      RELATIONSHIP_valueGroups,
       LIST_valueGroups,
       STRING_valueGroups,
       BOOLEAN_valueGroups,

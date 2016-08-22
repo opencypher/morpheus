@@ -6,6 +6,21 @@ class CypherValueConversionTest extends CypherValueTestSuite {
 
   import CypherTestValues._
 
+  test("RELATIONSHIP conversion") {
+    val originalValues = RELATIONSHIP_valueGroups.flatten
+    val scalaValues: Seq[(EntityId, RelationshipData)] = originalValues.map(CypherRelationship.scalaValue).map(_.orNull)
+    val newValues = scalaValues.map {
+      case null                             => null
+      case ((id: EntityId, data: RelationshipData)) => CypherRelationship(id, data.startId, data.endId, data.relationshipType, data.properties)
+    }
+
+    newValues should equal(originalValues)
+
+    originalValues.foreach { v =>
+      CypherRelationship.containsNull(v) should equal(v == null || v.properties.containsNullValue)
+    }
+  }
+
   test("NODE conversion") {
     val originalValues = NODE_valueGroups.flatten
     val scalaValues: Seq[(EntityId, NodeData)] = originalValues.map(CypherNode.scalaValue).map(_.orNull)
@@ -20,7 +35,6 @@ class CypherValueConversionTest extends CypherValueTestSuite {
       CypherNode.containsNull(v) should equal(v == null || v.properties.containsNullValue)
     }
   }
-
 
   test("MAP conversion") {
     val originalValues = MAP_valueGroups.flatten
@@ -138,6 +152,7 @@ class CypherValueConversionTest extends CypherValueTestSuite {
       case l: java.lang.Long => CypherInteger(l)
       case p: Properties => CypherMap(p)
       case (id: EntityId, data: NodeData) => CypherNode(id, data.labels, data.properties)
+      case (id: EntityId, data: RelationshipData) => CypherRelationship(id, data)
       case d: java.lang.Double => CypherFloat(d)
       case l: Seq[_] => CypherList(l.asInstanceOf[Seq[CypherValue]])
     }

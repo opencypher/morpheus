@@ -6,6 +6,10 @@ class CypherValueComparabilityTest extends CypherValueTestSuite {
 
   import CypherTestValues._
 
+  test("should compare RELATIONSHIP values correctly") {
+    verifyComparability(RELATIONSHIP_valueGroups)
+  }
+
   test("should compare NODE values correctly") {
     verifyComparability(NODE_valueGroups)
   }

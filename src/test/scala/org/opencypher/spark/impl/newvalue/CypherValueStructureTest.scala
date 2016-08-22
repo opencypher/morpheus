@@ -6,6 +6,37 @@ class CypherValueStructureTest extends CypherValueTestSuite {
 
   import CypherTestValues._
 
+  test("Construct RELATIONSHIP values") {
+    val originalValueGroups = RELATIONSHIP_valueGroups
+    val scalaValueGroups = originalValueGroups.scalaValueGroups
+
+    val reconstructedValueGroups = scalaValueGroups.map {
+      values => values.map {
+        case (id: EntityId, data: RelationshipData) =>
+           CypherRelationship(id, data.startId, data.endId, data.relationshipType, Properties.fromMap(data.properties))
+
+        case null =>
+          cypherNull[CypherRelationship]
+
+        case _ =>
+          fail("Unexpected scala value")
+      }
+    }
+
+    reconstructedValueGroups should equal(originalValueGroups)
+  }
+
+  test("Deconstruct RELATIONSHIP values") {
+    val cypherValueGroups = RELATIONSHIP_valueGroups.materialValueGroups
+
+    val expected = cypherValueGroups.scalaValueGroups
+    val actual = cypherValueGroups.map { values => values.map { case CypherRelationship(id, data) => id -> data } }
+
+    actual should equal(expected)
+
+    CypherRelationship.unapply(cypherNull[CypherRelationship]) should equal(None)
+  }
+
   test("Construct NODE values") {
     val originalValueGroups = NODE_valueGroups
     val scalaValueGroups = originalValueGroups.scalaValueGroups
@@ -36,7 +67,6 @@ class CypherValueStructureTest extends CypherValueTestSuite {
 
     CypherNode.unapply(cypherNull[CypherNode]) should equal(None)
   }
-
 
   test("Construct MAP values") {
     val originalValueGroups = MAP_valueGroups
@@ -271,6 +301,9 @@ class CypherValueStructureTest extends CypherValueTestSuite {
       values => values.map {
         case (id: EntityId, data: NodeData) =>
           CypherNode(id, data.labels, data.properties)
+
+        case (id: EntityId, data: RelationshipData) =>
+          CypherRelationship(id, data)
 
         case p: Properties =>
           CypherMap(p)

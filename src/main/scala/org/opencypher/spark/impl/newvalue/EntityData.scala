@@ -49,21 +49,21 @@ final case class NodeData(labels: Seq[String],
   def withProperties(newProperties: Map[String, CypherValue]) = copy(properties = newProperties)
 }
 
-//final case class RelationshipData(startId: EntityId,
-//                                  relationshipType: String,
-//                                  endId: EntityId,
-//                                  properties: Map[String, CypherValue] = Map.empty)
-//  extends EntityData {
-//
-//  override def asEntity(id: EntityId) = CypherRelationship(id, startId, relationshipType, endId, properties)
-//
-//  def withStartId(newStartId: EntityId) = copy(startId = newStartId)
-//
-//  def withRelationshipType(newType: String) = copy(relationshipType = newType)
-//
-//  def withEndId(newEndId: EntityId) = copy(endId = newEndId)
-//
-//  def withProperties(newProperties: (String, CypherValue)*) = copy(properties = newProperties.toMap)
-//
-//  def withProperties(newProperties: Map[String, CypherValue]) = copy(properties = newProperties)
-//}
+final case class RelationshipData(startId: EntityId,
+                                  relationshipType: String,
+                                  endId: EntityId,
+                                  properties: Map[String, CypherValue] = Map.empty)
+  extends EntityData {
+
+  override def asEntity(id: EntityId) = CypherRelationship(id, startId, endId, relationshipType, properties)
+
+  def withStartId(newStartId: EntityId) = copy(startId = newStartId)
+
+  def withRelationshipType(newType: String) = copy(relationshipType = newType)
+
+  def withEndId(newEndId: EntityId) = copy(endId = newEndId)
+
+  def withProperties(newProperties: (String, CypherValue)*) = copy(properties = newProperties.toMap)
+
+  def withProperties(newProperties: Map[String, CypherValue]) = copy(properties = newProperties)
+}
