@@ -1,5 +1,6 @@
-package org.opencypher.spark.api
+package org.opencypher.spark.api.frame
 
+import org.opencypher.spark.api._
 import org.opencypher.spark.impl.PlanningContext
 
 trait CypherFrameSignature {

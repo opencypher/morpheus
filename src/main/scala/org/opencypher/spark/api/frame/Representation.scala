@@ -1,6 +1,7 @@
-package org.opencypher.spark.api
+package org.opencypher.spark.api.frame
 
 import org.apache.spark.sql.types._
+import org.opencypher.spark.api.CypherType
 import org.opencypher.spark.api.types._
 
 object Representation {

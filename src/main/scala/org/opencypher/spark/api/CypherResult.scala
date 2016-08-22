@@ -1,6 +1,7 @@
 package org.opencypher.spark.api
 
 import org.apache.spark.sql.{DataFrame, Dataset}
+import org.opencypher.spark.api.frame.CypherFrameSignature
 
 trait CypherResult[T] {
 

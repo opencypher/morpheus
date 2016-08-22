@@ -1,8 +1,7 @@
 package org.opencypher.spark.impl
 
 import org.opencypher.spark._
-import org.opencypher.spark.api.EntityId
-import org.opencypher.spark.impl.newvalue.{CypherNode, CypherRelationship, CypherValue}
+import org.opencypher.spark.api.value._
 
 final class CachingPropertyGraphFactory[T <: PropertyGraphFactory](val underlying: T) extends PropertyGraphFactory {
 
@@ -10,10 +9,10 @@ final class CachingPropertyGraphFactory[T <: PropertyGraphFactory](val underlyin
 
   override type Graph = underlying.Graph
 
-  def addNode(labels: Set[String], properties: Map[String, CypherValue]): CypherNode =
+  def addNode(labels: Set[String], properties: Properties) =
     flushAfter { underlying.addNode(labels, properties) }
 
-  def addRelationship(startId: EntityId, relationshipType: String, endId: EntityId, properties: Map[String, CypherValue]): CypherRelationship =
+  def addRelationship(startId: EntityId, relationshipType: String, endId: EntityId, properties: Properties) =
     flushAfter { underlying.addRelationship(startId, relationshipType, endId, properties) }
 
   override def graph: underlying.Graph = graphCache match {
@@ -30,7 +29,7 @@ final class CachingPropertyGraphFactory[T <: PropertyGraphFactory](val underlyin
     flushAfter { underlying.clear() }
 
   // TODO: investigate IntelliJ warning
-  private def flushAfter[T](f: => T) =
+  private def flushAfter[V](f: => V) =
     try {
       f
     } finally  {

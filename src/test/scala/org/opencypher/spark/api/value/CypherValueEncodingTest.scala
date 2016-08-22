@@ -1,6 +1,6 @@
-package org.opencypher.spark.impl.newvalue
+package org.opencypher.spark.api.value
 
-import org.opencypher.spark.impl.newvalue.CypherValue._
+import org.opencypher.spark.api.value.CypherValue._
 import org.opencypher.spark.{StdTestSuite, TestSession}
 
 class CypherValueEncodingTest extends StdTestSuite with TestSession.Fixture {

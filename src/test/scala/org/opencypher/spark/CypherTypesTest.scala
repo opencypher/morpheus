@@ -2,6 +2,7 @@ package org.opencypher.spark
 
 import org.opencypher.spark.api.types._
 import org.opencypher.spark.api._
+import org.opencypher.spark.api.value._
 
 import scala.language.postfixOps
 

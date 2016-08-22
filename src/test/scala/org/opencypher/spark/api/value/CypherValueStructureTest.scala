@@ -1,6 +1,4 @@
-package org.opencypher.spark.impl.newvalue
-
-import org.opencypher.spark.api.EntityId
+package org.opencypher.spark.api.value
 
 class CypherValueStructureTest extends CypherValueTestSuite {
 
@@ -13,7 +11,7 @@ class CypherValueStructureTest extends CypherValueTestSuite {
     val reconstructedValueGroups = scalaValueGroups.map {
       values => values.map {
         case (id: EntityId, data: RelationshipData) =>
-           CypherRelationship(id, data.startId, data.endId, data.relationshipType, Properties.fromMap(data.properties))
+           CypherRelationship(id, data.startId, data.endId, data.relationshipType, data.properties)
 
         case null =>
           cypherNull[CypherRelationship]
@@ -44,7 +42,7 @@ class CypherValueStructureTest extends CypherValueTestSuite {
     val reconstructedValueGroups = scalaValueGroups.map {
       values => values.map {
         case (id: EntityId, data: NodeData) =>
-           CypherNode(id, data.labels, Properties.fromMap(data.properties))
+           CypherNode(id, data.labels, data.properties)
 
         case null =>
           cypherNull[CypherNode]

@@ -1,4 +1,4 @@
-package org.opencypher.spark.impl.newvalue
+package org.opencypher.spark.api.value
 
 import scala.collection.immutable.SortedMap
 

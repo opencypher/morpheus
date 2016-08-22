@@ -3,7 +3,7 @@ package org.opencypher.spark.impl
 import org.apache.spark.sql.Row
 import org.opencypher.spark.api.{CypherResult, CypherResultContainer}
 import org.opencypher.spark.impl.frame.{ProductAsRow, RowAsProduct}
-import org.opencypher.spark.impl.newvalue.CypherValue
+import org.opencypher.spark.api.value.CypherValue
 
 object StdCypherResultContainer {
 

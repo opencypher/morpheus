@@ -1,10 +1,6 @@
-package org.opencypher.spark.api
+package org.opencypher.spark.api.frame
 
-import org.apache.spark.sql.types._
-import org.apache.spark.sql.{Dataset, SparkSession}
-import org.opencypher.spark.api.types._
-
-trait Expr
+import org.apache.spark.sql.Dataset
 
 // A CypherFrame is a frame of cypher records. It doubles as
 //
@@ -40,39 +36,4 @@ trait CypherFrame[Out] {
   //  def parameters: Map[Symbol, CypherValue]
 
   def run(implicit context: RuntimeContext): Dataset[Out]
-}
-
-trait CypherRuntimeContext {
-  def session: SparkSession
-}
-
-trait CypherField {
-  self: Serializable =>
-
-  def sym: Symbol
-  def cypherType: CypherType
-}
-
-trait CypherSlot {
-  self: Serializable =>
-
-  // Unique name of this slot; fixed at creation
-  def sym: Symbol
-
-  // The actual expression whose evaluation result is stored in this slot
-  // def expr: Set[CypherExpression]
-
-  // Corresponding data frame representation type
-
-  def cypherType: CypherType
-
-  def representation: Representation
-
-  def ordinal: Int
-}
-
-
-
-trait CypherExpression {
-  def cypherType: CypherType
 }

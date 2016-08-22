@@ -2,7 +2,7 @@ package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.Dataset
 import org.opencypher.spark.api.types.CTRelationship
-import org.opencypher.spark.impl.newvalue.CypherRelationship
+import org.opencypher.spark.api.value.CypherRelationship
 import org.opencypher.spark.impl.{PlanningContext, StdCypherFrame, StdFrameSignature}
 
 object AllRelationships {

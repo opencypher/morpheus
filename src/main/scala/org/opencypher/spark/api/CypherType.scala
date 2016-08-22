@@ -1,7 +1,5 @@
 package org.opencypher.spark.api
 
-import org.opencypher.spark.api.CypherType.OrderGroups
-import org.opencypher.spark.api.Ternary.Conversion._
 import org.opencypher.spark.api.types._
 
 import scala.language.postfixOps

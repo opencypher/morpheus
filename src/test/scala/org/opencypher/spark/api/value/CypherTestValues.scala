@@ -1,6 +1,5 @@
-package org.opencypher.spark.impl.newvalue
+package org.opencypher.spark.api.value
 
-import org.opencypher.spark.api.EntityId
 import org.opencypher.spark.api.types.CTFloat
 
 object CypherTestValues {
@@ -161,6 +160,6 @@ object CypherTestValues {
   }
 
   implicit final class CypherValues[V <: CypherValue](elts: Values[V]) {
-    def scalaValues(implicit companion: CypherValueCompanion[V]): Seq[Option[Any]] = elts.map(companion.scalaValue)
+    def scalaValues(implicit companion: CypherValueCompanion[V]): Seq[Option[Any]] = elts.map(companion.contents)
   }
 }

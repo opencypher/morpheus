@@ -1,6 +1,4 @@
-package org.opencypher.spark.impl.newvalue
-
-import org.opencypher.spark.api.EntityId
+package org.opencypher.spark.api.value
 
 class CypherValueConversionTest extends CypherValueTestSuite {
 
@@ -8,7 +6,7 @@ class CypherValueConversionTest extends CypherValueTestSuite {
 
   test("RELATIONSHIP conversion") {
     val originalValues = RELATIONSHIP_valueGroups.flatten
-    val scalaValues: Seq[(EntityId, RelationshipData)] = originalValues.map(CypherRelationship.scalaValue).map(_.orNull)
+    val scalaValues: Seq[(EntityId, RelationshipData)] = originalValues.map(CypherRelationship.contents).map(_.orNull)
     val newValues = scalaValues.map {
       case null                             => null
       case ((id: EntityId, data: RelationshipData)) => CypherRelationship(id, data.startId, data.endId, data.relationshipType, data.properties)
@@ -23,7 +21,7 @@ class CypherValueConversionTest extends CypherValueTestSuite {
 
   test("NODE conversion") {
     val originalValues = NODE_valueGroups.flatten
-    val scalaValues: Seq[(EntityId, NodeData)] = originalValues.map(CypherNode.scalaValue).map(_.orNull)
+    val scalaValues: Seq[(EntityId, NodeData)] = originalValues.map(CypherNode.contents).map(_.orNull)
     val newValues = scalaValues.map {
       case null                             => null
       case ((id: EntityId, data: NodeData)) => CypherNode(id, data.labels, data.properties)
@@ -38,7 +36,7 @@ class CypherValueConversionTest extends CypherValueTestSuite {
 
   test("MAP conversion") {
     val originalValues = MAP_valueGroups.flatten
-    val scalaValues = originalValues.map(CypherMap.scalaValue).map(_.asInstanceOf[Option[Any]]).map(_.orNull)
+    val scalaValues = originalValues.map(CypherMap.contents).map(_.asInstanceOf[Option[Any]]).map(_.orNull)
     val newValues = scalaValues.map {
       case null           => null
       case p: Properties  => CypherMap(p)
@@ -53,7 +51,7 @@ class CypherValueConversionTest extends CypherValueTestSuite {
 
   test("LIST conversion") {
     val originalValues = LIST_valueGroups.flatten
-    val scalaValues = originalValues.map(CypherList.scalaValue).map(_.orNull)
+    val scalaValues = originalValues.map(CypherList.contents).map(_.orNull)
     val newValues = scalaValues.map {
       case null                 => null
       case l: Seq[CypherValue]  => CypherList(l)
@@ -68,7 +66,7 @@ class CypherValueConversionTest extends CypherValueTestSuite {
 
   test("STRING conversion") {
     val originalValues = STRING_valueGroups.flatten
-    val scalaValues = originalValues.map(CypherString.scalaValue).map(_.orNull)
+    val scalaValues = originalValues.map(CypherString.contents).map(_.orNull)
     val newValues = scalaValues.map {
       case null                => null
       case s: java.lang.String => CypherString(s)
@@ -83,7 +81,7 @@ class CypherValueConversionTest extends CypherValueTestSuite {
 
   test("BOOLEAN conversion") {
     val originalValues = BOOLEAN_valueGroups.flatten
-    val scalaValues = originalValues.map(CypherBoolean.scalaValue).map(_.orNull)
+    val scalaValues = originalValues.map(CypherBoolean.contents).map(_.orNull)
     val newValues = scalaValues.map {
       case null                 => null
       case b: java.lang.Boolean => CypherBoolean(b)
@@ -98,7 +96,7 @@ class CypherValueConversionTest extends CypherValueTestSuite {
 
   test("INTEGER conversion") {
     val originalValues = INTEGER_valueGroups.flatten
-    val scalaValues = originalValues.map(CypherInteger.scalaValue).map(_.orNull)
+    val scalaValues = originalValues.map(CypherInteger.contents).map(_.orNull)
     val newValues = scalaValues.map {
       case null              => null
       case l: java.lang.Long => CypherInteger(l)
@@ -113,7 +111,7 @@ class CypherValueConversionTest extends CypherValueTestSuite {
 
   test("FLOAT conversion") {
     val originalValues = FLOAT_valueGroups.flatten
-    val scalaValues = originalValues.map(CypherFloat.scalaValue).map(_.orNull)
+    val scalaValues = originalValues.map(CypherFloat.contents).map(_.orNull)
     val newValues = scalaValues.map {
       case null                => null
       case d: java.lang.Double => CypherFloat(d)
@@ -128,7 +126,7 @@ class CypherValueConversionTest extends CypherValueTestSuite {
 
   test("NUMBER conversion") {
     val originalValues = NUMBER_valueGroups.flatten
-    val scalaValues = originalValues.map(CypherNumber.scalaValue).map(_.orNull)
+    val scalaValues = originalValues.map(CypherNumber.contents).map(_.orNull)
     val newValues = scalaValues.map {
       case null                => null
       case l: java.lang.Long   => CypherInteger(l)
@@ -144,7 +142,7 @@ class CypherValueConversionTest extends CypherValueTestSuite {
 
   test("ALL conversion") {
     val originalValues = ANY_valueGroups.flatten
-    val scalaValues = originalValues.map(CypherValue.scalaValue).map(_.orNull)
+    val scalaValues = originalValues.map(CypherValue.contents).map(_.orNull)
     val newValues = scalaValues.map {
       case null => null
       case b: java.lang.Boolean => CypherBoolean(b)

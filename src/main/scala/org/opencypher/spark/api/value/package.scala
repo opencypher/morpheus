@@ -1,5 +1,5 @@
-package org.opencypher.spark.impl
+package org.opencypher.spark.api
 
-package object newvalue {
+package object value {
   def cypherNull[T <: CypherValue] = null.asInstanceOf[T]
 }

@@ -1,6 +1,6 @@
-package org.opencypher.spark.impl.newvalue
+package org.opencypher.spark.api.value
 
-import org.opencypher.spark.impl.newvalue.CypherValue.companion
+import org.opencypher.spark.api.value.CypherValue.companion
 
 class CypherValueComparabilityTest extends CypherValueTestSuite {
 

@@ -6,7 +6,7 @@ import java.{lang => Java}
 import org.apache.spark.sql.Dataset
 import org.opencypher.spark.api.types._
 import org.opencypher.spark.impl._
-import org.opencypher.spark.impl.newvalue.{CypherMap, CypherNode, CypherRelationship, CypherValue}
+import org.opencypher.spark.api.value.{CypherMap, CypherNode, CypherRelationship, CypherValue}
 
 import scala.language.postfixOps
 

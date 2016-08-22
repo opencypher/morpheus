@@ -4,8 +4,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 import org.apache.spark.sql.SparkSession
 import org.opencypher.spark._
-import org.opencypher.spark.api.EntityId
-import org.opencypher.spark.impl.newvalue.{CypherNode, CypherRelationship, CypherValue}
+import org.opencypher.spark.api.value._
 
 class StdPropertyGraphFactory(implicit private val session: SparkSession) extends PropertyGraphFactory {
 
@@ -21,14 +20,14 @@ class StdPropertyGraphFactory(implicit private val session: SparkSession) extend
 
   override type Graph = StdPropertyGraph
 
-  override def addNode(labels: Set[String], properties: Map[String, CypherValue]): CypherNode =
+  override def addNode(labels: Set[String], properties: Properties) =
     nodeIds { id =>
       val node = CypherNode(id, labels.toSeq, properties)
       nodes += node
       node
     }
 
-  override def addRelationship(startId: EntityId, relationshipType: String, endId: EntityId, properties: Map[String, CypherValue]): CypherRelationship =
+  override def addRelationship(startId: EntityId, relationshipType: String, endId: EntityId, properties: Properties) =
     relationshipIds { id =>
       val relationship = CypherRelationship(id, startId, endId, relationshipType, properties)
       relationships += relationship

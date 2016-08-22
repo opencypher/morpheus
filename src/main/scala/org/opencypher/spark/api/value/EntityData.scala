@@ -1,6 +1,4 @@
-package org.opencypher.spark.impl.newvalue
-
-import org.opencypher.spark.api.EntityId
+package org.opencypher.spark.api.value
 
 object EntityData {
 
@@ -33,37 +31,31 @@ sealed trait EntityData {
 }
 
 object NodeData {
-  val empty = NodeData(labels = Seq.empty, properties = Map.empty)
+  val empty = NodeData(labels = Seq.empty, properties = Properties.empty)
 }
 
 final case class NodeData(labels: Seq[String],
-                          properties: Map[String, CypherValue])
+                          properties: Properties)
   extends EntityData {
 
   override def asEntity(id: EntityId) = CypherNode(id, labels, properties)
 
   def withLabels(newLabels: String*) = copy(labels = newLabels)
-
-  def withProperties(newProperties: (String, CypherValue)*) = copy(properties = newProperties.toMap)
-
-  def withProperties(newProperties: Map[String, CypherValue]) = copy(properties = newProperties)
+  def withProperties(newProperties: (String, CypherValue)*) = copy(properties = Properties(newProperties: _*))
+  def withProperties(newProperties: Properties) = copy(properties = newProperties)
 }
 
 final case class RelationshipData(startId: EntityId,
                                   relationshipType: String,
                                   endId: EntityId,
-                                  properties: Map[String, CypherValue] = Map.empty)
+                                  properties: Properties = Properties.empty)
   extends EntityData {
 
   override def asEntity(id: EntityId) = CypherRelationship(id, startId, endId, relationshipType, properties)
 
   def withStartId(newStartId: EntityId) = copy(startId = newStartId)
-
   def withRelationshipType(newType: String) = copy(relationshipType = newType)
-
   def withEndId(newEndId: EntityId) = copy(endId = newEndId)
-
-  def withProperties(newProperties: (String, CypherValue)*) = copy(properties = newProperties.toMap)
-
-  def withProperties(newProperties: Map[String, CypherValue]) = copy(properties = newProperties)
+  def withProperties(newProperties: (String, CypherValue)*) = copy(properties = Properties(newProperties: _*))
+  def withProperties(newProperties: Properties) = copy(properties = newProperties)
 }

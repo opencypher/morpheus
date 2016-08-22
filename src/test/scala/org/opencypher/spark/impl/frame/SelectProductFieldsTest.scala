@@ -1,8 +1,8 @@
 package org.opencypher.spark.impl.frame
 
-import org.opencypher.spark.api.BinaryRepresentation
+import org.opencypher.spark.api.frame.BinaryRepresentation
 import org.opencypher.spark.api.types.CTAny
-import org.opencypher.spark.impl.newvalue.{CypherBoolean, CypherInteger}
+import org.opencypher.spark.api.value.{CypherBoolean, CypherInteger}
 
 class SelectProductFieldsTest extends StdFrameTestSuite {
 

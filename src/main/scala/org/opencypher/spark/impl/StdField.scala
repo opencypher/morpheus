@@ -1,6 +1,7 @@
 package org.opencypher.spark.impl
 
-import org.opencypher.spark.api.{CypherField, CypherType}
+import org.opencypher.spark.api.CypherType
+import org.opencypher.spark.api.frame.CypherField
 
 object StdField {
   def apply(pair: (Symbol, CypherType)): StdField = new StdField(pair._1, pair._2)

@@ -1,6 +1,6 @@
 package org.opencypher.spark.impl.frame
 
-import org.opencypher.spark.api.BinaryRepresentation
+import org.opencypher.spark.api.frame.BinaryRepresentation
 import org.opencypher.spark.api.types.CTNode
 
 class ValueAsRowTest extends StdFrameTestSuite {

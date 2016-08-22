@@ -2,8 +2,9 @@ package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.types.LongType
 import org.opencypher.spark.api._
-import org.opencypher.spark.api.types.{CTAny, CTInteger, CTNode, CTRelationship}
-import org.opencypher.spark.impl.newvalue.{CypherNode, CypherRelationship, CypherString}
+import org.opencypher.spark.api.frame.{BinaryRepresentation, EmbeddedRepresentation}
+import types.{CTAny, CTInteger, CTNode, CTRelationship}
+import org.opencypher.spark.api.value.{CypherNode, CypherRelationship, CypherString}
 
 class ExtractTest extends StdFrameTestSuite {
 

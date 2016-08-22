@@ -1,6 +1,7 @@
 package org.opencypher.spark.impl
 
 import org.opencypher.spark.api._
+import org.opencypher.spark.api.frame.{CypherFrameSignature, Representation}
 import org.opencypher.spark.impl.StdFrameSignature.FieldAlreadyExists
 import org.opencypher.spark.impl.error.StdErrorInfo
 import org.opencypher.spark.impl.verify.Verification

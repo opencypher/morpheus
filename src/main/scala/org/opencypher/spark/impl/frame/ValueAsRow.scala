@@ -2,7 +2,7 @@ package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.{Dataset, Row}
 import org.opencypher.spark.impl.StdCypherFrame
-import org.opencypher.spark.impl.newvalue.CypherValue
+import org.opencypher.spark.api.value.CypherValue
 
 object ValueAsRow {
 

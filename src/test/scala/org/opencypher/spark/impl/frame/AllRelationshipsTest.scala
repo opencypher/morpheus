@@ -1,7 +1,8 @@
 package org.opencypher.spark.impl.frame
 
 import org.opencypher.spark.api._
-import org.opencypher.spark.api.types._
+import org.opencypher.spark.api.frame.BinaryRepresentation
+import types._
 
 class AllRelationshipsTest extends StdFrameTestSuite {
 

@@ -1,10 +1,8 @@
 package org.opencypher.spark.api
 
-import org.opencypher.spark.impl.newvalue.{CypherValue, EntityData}
+import org.opencypher.spark.api.value.{CypherValue, EntityData}
 
 trait CypherImplicits
   extends CypherValue.Encoders
     with CypherValue.Conversion
-    with Ternary.Conversion
-    with EntityId.Conversion
     with EntityData.Creation

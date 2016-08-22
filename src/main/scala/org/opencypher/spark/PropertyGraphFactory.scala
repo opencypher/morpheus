@@ -1,8 +1,8 @@
 package org.opencypher.spark
 
 import org.apache.spark.sql.SparkSession
-import org.opencypher.spark.api.{EntityId, PropertyGraph}
-import org.opencypher.spark.impl.newvalue._
+import org.opencypher.spark.api.PropertyGraph
+import org.opencypher.spark.api.value._
 import org.opencypher.spark.impl.{CachingPropertyGraphFactory, StdPropertyGraphFactory}
 
 import scala.language.implicitConversions
@@ -33,8 +33,9 @@ trait PropertyGraphFactory {
   final def addRelationship(data: RelationshipData): CypherRelationship =
     addRelationship(data.startId, data.relationshipType, data.endId, data.properties)
 
-  def addNode(labels: Set[String], properties: Map[String, CypherValue]): CypherNode
-  def addRelationship(startId: EntityId, relationshipType: String, endId: EntityId, properties: Map[String, CypherValue]): CypherRelationship
+  def addNode(labels: Set[String], properties: Properties): CypherNode
+  def addRelationship(startId: EntityId, relationshipType: String, endId: EntityId,
+                      properties: Properties): CypherRelationship
 
   def clear(): Unit
 
