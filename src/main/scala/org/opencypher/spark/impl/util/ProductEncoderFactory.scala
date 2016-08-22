@@ -4,12 +4,13 @@ import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.sql.types.{BooleanType, LongType, StringType}
 import org.apache.spark.sql.{Encoder, SparkSession}
 import org.opencypher.spark.api.types.{CTBoolean, CTInteger, CTString}
-import org.opencypher.spark.api.{BinaryRepresentation, CypherValue, EmbeddedRepresentation}
+import org.opencypher.spark.api.{BinaryRepresentation, EmbeddedRepresentation}
 import org.opencypher.spark.impl.StdSlot
+import org.opencypher.spark.impl.newvalue.CypherValue
 
 object ProductEncoderFactory {
 
-  import CypherValue.Encoders._
+  import org.opencypher.spark.impl.newvalue.CypherValue.Encoders._
 
   def createEncoder(slots: Seq[StdSlot])(implicit session: SparkSession): ExpressionEncoder[Product] = {
     import session.implicits._

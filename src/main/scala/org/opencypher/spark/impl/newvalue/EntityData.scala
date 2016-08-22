@@ -14,17 +14,17 @@ object EntityData {
     def newLabeledNode(labels: String*) =
       newNode.withLabels(labels: _*)
 
-//    def newUntypedRelationship(nodes: (CypherNode, CypherNode)): RelationshipData =
-//      newUntypedRelationship(nodes._1, nodes._2)
-//
-//    def newUntypedRelationship(startNode: CypherNode, endNode: CypherNode): RelationshipData =
-//      RelationshipData(startNode.id, "", endNode.id)
-//
-//    def newRelationship(triple: ((CypherNode, String), CypherNode)): RelationshipData =
-//      newRelationship(triple._1._1, triple._1._2, triple._2)
-//
-//    def newRelationship(startNode: CypherNode, relType: String, endNode: CypherNode): RelationshipData =
-//      RelationshipData(startNode.id, relType, endNode.id)
+    def newUntypedRelationship(nodes: (CypherNode, CypherNode)): RelationshipData =
+      newUntypedRelationship(nodes._1, nodes._2)
+
+    def newUntypedRelationship(startNode: CypherNode, endNode: CypherNode): RelationshipData =
+      RelationshipData(startNode.id, "", endNode.id)
+
+    def newRelationship(triple: ((CypherNode, String), CypherNode)): RelationshipData =
+      newRelationship(triple._1._1, triple._1._2, triple._2)
+
+    def newRelationship(startNode: CypherNode, relType: String, endNode: CypherNode): RelationshipData =
+      RelationshipData(startNode.id, relType, endNode.id)
   }
 }
 

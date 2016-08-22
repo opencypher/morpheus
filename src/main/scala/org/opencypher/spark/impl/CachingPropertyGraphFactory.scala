@@ -1,7 +1,8 @@
 package org.opencypher.spark.impl
 
-import org.opencypher.spark.api._
 import org.opencypher.spark._
+import org.opencypher.spark.api.EntityId
+import org.opencypher.spark.impl.newvalue.{CypherNode, CypherRelationship, CypherValue}
 
 final class CachingPropertyGraphFactory[T <: PropertyGraphFactory](val underlying: T) extends PropertyGraphFactory {
 
@@ -28,6 +29,7 @@ final class CachingPropertyGraphFactory[T <: PropertyGraphFactory](val underlyin
   override def clear(): Unit =
     flushAfter { underlying.clear() }
 
+  // TODO: investigate IntelliJ warning
   private def flushAfter[T](f: => T) =
     try {
       f

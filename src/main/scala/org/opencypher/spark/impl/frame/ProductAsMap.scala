@@ -1,8 +1,8 @@
 package org.opencypher.spark.impl.frame
 
-import org.apache.spark.sql.{Column, Dataset, Row}
-import org.opencypher.spark.api.CypherValue
-import org.opencypher.spark.impl.{StdCypherFrame, StdField, StdSlot}
+import org.apache.spark.sql.Dataset
+import org.opencypher.spark.impl.StdCypherFrame
+import org.opencypher.spark.impl.newvalue.CypherValue
 
 object ProductAsMap extends FrameCompanion {
 

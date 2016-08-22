@@ -1,8 +1,9 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
-import org.opencypher.spark.api.{CypherNode, CypherType, CypherValue, TypedSymbol}
+import org.opencypher.spark.api.CypherType
 import org.opencypher.spark.impl.frame._
+import org.opencypher.spark.impl.newvalue.{CypherNode, CypherValue}
 
 class FrameProducer(implicit val planningContext: PlanningContext) {
 

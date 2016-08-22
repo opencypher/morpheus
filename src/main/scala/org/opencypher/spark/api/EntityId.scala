@@ -4,8 +4,6 @@ import scala.language.implicitConversions
 
 case object EntityId {
 
-  def invalid: EntityId = EntityId(-1)
-
   object ordering extends Ordering[EntityId] {
     override def compare(x: EntityId, y: EntityId): Int =
       Ordering.Long.compare(x.v, y.v)

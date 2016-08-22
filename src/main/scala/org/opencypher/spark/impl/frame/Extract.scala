@@ -1,11 +1,12 @@
 package org.opencypher.spark.impl.frame
 
+import java.lang.Long
 import java.{lang => Java}
 
 import org.apache.spark.sql.Dataset
-import org.opencypher.spark.api._
 import org.opencypher.spark.api.types._
 import org.opencypher.spark.impl._
+import org.opencypher.spark.impl.newvalue.{CypherMap, CypherNode, CypherRelationship, CypherValue}
 
 import scala.language.postfixOps
 
@@ -57,7 +58,7 @@ object Extract extends FrameCompanion {
     val mapField = obtain(input.signature.field)(map)
     requireMateriallyIsSubTypeOf(mapField.cypherType, CTMap)
     val (outputField, signature) = input.signature.addField(output -> CTAny.nullable)
-    new Extract[CypherAnyMap](input)(mapField, propertyValue(propertyKey), outputField)(signature)
+    new Extract[CypherMap](input)(mapField, propertyValue(propertyKey), outputField)(signature)
   }
 
   private final case class Extract[T](input: StdCypherFrame[Product])(entityField: StdField,
@@ -76,13 +77,13 @@ object Extract extends FrameCompanion {
 
   sealed trait ExtractPrimitive[T] extends (Product => Product) {
     def index: Int
-    def extract(value: T): AnyRef
+    def extract(value: T): Option[AnyRef]
 
     import org.opencypher.spark.impl.util._
 
     def apply(product: Product): Product = {
       val entity = product.getAs[T](index)
-      val value = if (entity == null) null else extract(entity)
+      val value = extract(entity).orNull
       val result = product :+ value
       result
     }
@@ -90,33 +91,37 @@ object Extract extends FrameCompanion {
 
   private final case class relationshipStartId(override val index: Int)
     extends ExtractPrimitive[CypherRelationship] {
-      override def extract(relationship: CypherRelationship): Java.Long = relationship.startId.v
+      override def extract(relationship: CypherRelationship): Option[Long] =
+        CypherRelationship.startId(relationship).map(_.v)
   }
 
   private final case class relationshipEndId(override val index: Int)
     extends ExtractPrimitive[CypherRelationship] {
-    override def extract(relationship: CypherRelationship): Java.Long = relationship.endId.v
+    override def extract(relationship: CypherRelationship): Option[Long] =
+      CypherRelationship.endId(relationship).map(_.v)
   }
 
   private final case class nodeId(override val index: Int)
     extends ExtractPrimitive[CypherNode] {
-    override def extract(node: CypherNode): Java.Long  = node.id.v
+    override def extract(node: CypherNode): Option[Long] =
+      CypherNode.id(node).map(_.v)
   }
 
   private final case class relationshipId(override val index: Int)
     extends ExtractPrimitive[CypherRelationship] {
-    override def extract(relationship: CypherRelationship): Java.Long = relationship.id.v
+    override def extract(relationship: CypherRelationship): Option[Long] =
+      CypherRelationship.id(relationship).map(_.v)
   }
 
   private final case class relationshipType(override val index: Int)
     extends ExtractPrimitive[CypherRelationship] {
-    override def extract(relationship: CypherRelationship) = relationship.relationshipType
+    override def extract(relationship: CypherRelationship): Option[String] =
+      CypherRelationship.relationshipType(relationship)
   }
 
   private final case class propertyValue(propertyKey: Symbol)(override val index: Int)
-    extends ExtractPrimitive[CypherAnyMap] {
-    override def extract(v: CypherAnyMap) =
-      // TODO: Make nice
-      v.properties.getOrElse(propertyKey.name, null).asInstanceOf[AnyRef]
+    extends ExtractPrimitive[CypherMap] {
+    override def extract(v: CypherMap): Option[CypherValue] =
+      CypherMap.properties(v).flatMap(_.get(propertyKey.name))
   }
 }

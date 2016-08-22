@@ -2,6 +2,7 @@ package org.opencypher.spark.impl.frame
 
 import org.opencypher.spark.api._
 import org.opencypher.spark.api.types.{CTAny, CTNode}
+import org.opencypher.spark.impl.newvalue.CypherNode
 
 class UnionAllTest extends StdFrameTestSuite {
 
@@ -37,7 +38,7 @@ class UnionAllTest extends StdFrameTestSuite {
 
       result.toSet should equal(Set(
           zippie, yggie, yggie, yggdrasil
-        ).map { node => (node, node.properties("name"), node.properties("age"), node.properties("married")) }
+        ).map { node => (node, CypherNode.property(node)("name"), CypherNode.property(node)("age"), CypherNode.property(node)("married")) }
       )
     }
   }

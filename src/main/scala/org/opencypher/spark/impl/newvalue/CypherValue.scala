@@ -129,9 +129,10 @@ case object CypherValue extends CypherValueCompanion[CypherValue] with Verificat
   object Encoders extends Encoders
 
   trait Encoders extends LowPriorityEncoders {
-    //    implicit def cypherNodeEncoder: ExpressionEncoder[CypherNode] = kryo[CypherNode]
-    //    implicit def cypherRelationshipEncoder: ExpressionEncoder[CypherRelationship] = kryo[CypherRelationship]
-    //    implicit def cypherPathEncoder: ExpressionEncoder[CypherPath] = kryo[CypherPath]
+      implicit def cypherNodeEncoder: ExpressionEncoder[CypherNode] = kryo[CypherNode]
+      implicit def cypherRelationshipEncoder: ExpressionEncoder[CypherRelationship] = kryo[CypherRelationship]
+
+//        implicit def cypherPathEncoder: ExpressionEncoder[CypherPath] = kryo[CypherPath]
     //
     //    implicit def cypherTuple1Encoder[T: ExpressionEncoder]: ExpressionEncoder[Tuple1[T]] =
     //      ExpressionEncoder.tuple(Seq(implicitly[ExpressionEncoder[T]])).asInstanceOf[ExpressionEncoder[Tuple1[T]]]
@@ -171,7 +172,7 @@ case object CypherValue extends CypherValueCompanion[CypherValue] with Verificat
   trait LowPriorityEncoders {
     implicit def asExpressionEncoder[T](v: Encoder[T]): ExpressionEncoder[T] = v.asInstanceOf[ExpressionEncoder[T]]
     implicit def cypherValueEncoder: ExpressionEncoder[CypherValue] = kryo[CypherValue]
-//    implicit def cypherRecordEncoder: ExpressionEncoder[Map[String, CypherValue]] = kryo[Map[String, CypherValue]]
+    implicit def cypherRecordEncoder: ExpressionEncoder[Map[String, CypherValue]] = kryo[Map[String, CypherValue]]
   }
 
   implicit def companion[V <: CypherValue : CypherValueCompanion] = implicitly[CypherValueCompanion[V]]
@@ -516,10 +517,10 @@ final class CypherList(private[CypherList] val v: Seq[CypherValue])
 
 sealed trait CypherMapCompanion[V <: CypherMap] extends CypherValueCompanion[V] {
 
-  def property(value: V)(name: String) =
+  def property(value: V)(name: String): CypherValue =
     if (value == null) null else value.properties(name)
 
-  def properties(value: V) =
+  def properties(value: V): Option[Properties] =
     if (value == null) None else Some(value.properties)
 
   override def containsNull(v: V): Boolean =
@@ -603,9 +604,9 @@ sealed class CypherMap(protected[newvalue] val properties: Properties)
 // *** ENTITY
 
 sealed trait CypherEntityCompanion[V <: CypherEntityValue] extends CypherMapCompanion[V] {
-  def id(v: V): EntityId = if (v == null) EntityId.invalid else v.id
-
   override def scalaValue(value: V): Option[(EntityId, EntityData)]
+
+  def id(v: V): Option[EntityId] = if (v == null) None else Some(v.id)
 }
 
 sealed abstract class CypherEntityValue(override protected[newvalue] val properties: Properties)
@@ -639,6 +640,8 @@ case object CypherNode extends CypherEntityCompanion[CypherNode] {
 
   // Values in the same order group are ordered (sorted) together by orderability
   override def orderGroup(v: CypherNode): OrderGroup = NodeOrderGroup
+
+  def labels(node: CypherNode): Option[Seq[String]] = if (node == null) None else Some(node.labels)
 }
 
 sealed class CypherNode(protected[newvalue] val id: EntityId,
@@ -655,7 +658,7 @@ sealed class CypherNode(protected[newvalue] val id: EntityId,
 
   override protected[newvalue] def data = NodeData(labels, properties.m)
 
-  override def toString = s"($id ${labels.map(":" + _).foldLeft("")(_ ++ _)} ${super.toString})"
+  override def toString = s"($id${labels.map(":" + _).foldLeft("")(_ ++ _)} ${super.toString})"
 }
 
 // *** RELATIONSHIP
@@ -684,12 +687,21 @@ case object CypherRelationship extends CypherEntityCompanion[CypherRelationship]
     computeOrderability(l, r)
 
   override def orderGroup(v: CypherRelationship): OrderGroup = RelationshipOrderGroup
+
+  def relationshipType(relationship: CypherRelationship): Option[String] =
+    if (relationship == null) None else Some(relationship.relationshipType)
+
+  def startId(relationship: CypherRelationship): Option[EntityId] =
+    if (relationship == null) None else Some(relationship.startId)
+
+  def endId(relationship: CypherRelationship): Option[EntityId] =
+    if (relationship == null) None else Some(relationship.endId)
 }
 
 sealed class CypherRelationship(protected[newvalue] val id: EntityId,
                                 protected[newvalue] val startId: EntityId,
                                 protected[newvalue] val endId: EntityId,
-                                protected[newvalue] val relType: String,
+                                protected[newvalue] val relationshipType: String,
                                 override protected[newvalue] val properties: Properties)
   extends CypherEntityValue(properties) with Serializable {
 
@@ -700,8 +712,8 @@ sealed class CypherRelationship(protected[newvalue] val id: EntityId,
     case _                         => false
   }
 
-  override protected[newvalue] def data = RelationshipData(startId, relType, endId, properties.m)
+  override protected[newvalue] def data = RelationshipData(startId, relationshipType, endId, properties.m)
 
-  override def toString = s"[$id $startId - :$relType -> $endId ${super.toString}]"
+  override def toString = s"($startId)-[[$id:$relationshipType ${super.toString}]->($endId)"
 }
 

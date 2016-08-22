@@ -1,11 +1,12 @@
 package org.opencypher.spark
 
 import org.opencypher.spark.api._
+import org.opencypher.spark.impl.newvalue.{CypherMap, CypherString, CypherValue}
 
 object TestPropertyGraphs {
 
-  import org.opencypher.spark.api.CypherValue.Conversion._
-  import org.opencypher.spark.api.EntityData.Creation._
+  import org.opencypher.spark.impl.newvalue.EntityData.Creation._
+  import org.opencypher.spark.impl.newvalue.CypherValue.Conversion._
 
   def createGraph1(factory: PropertyGraphFactory) = {
     val n1 = factory.add(newNode.withProperties("prop" -> CypherString("value")))
@@ -22,7 +23,7 @@ object TestPropertyGraphs {
     factory.add(newNode.withProperties("prop" -> 42))
     factory.add(newNode.withProperties("prop" -> 23.1))
     factory.add(newNode.withProperties("prop" -> Vector[CypherValue]("Hallo", true)))
-    factory.add(newNode.withProperties("prop" -> Vector(CypherRecord("a" -> "Hallo", "b" -> true))))
+    factory.add(newNode.withProperties("prop" -> Vector(CypherMap("a" -> "Hallo", "b" -> true))))
   }
 
   def createGraph3(factory: PropertyGraphFactory) = {

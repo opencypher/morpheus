@@ -3,6 +3,7 @@ package org.opencypher.spark.impl.frame
 import org.apache.spark.sql.types.LongType
 import org.opencypher.spark.api._
 import org.opencypher.spark.api.types.{CTAny, CTInteger, CTNode, CTRelationship}
+import org.opencypher.spark.impl.newvalue.{CypherNode, CypherRelationship, CypherString}
 
 class ExtractTest extends StdFrameTestSuite {
 
@@ -18,7 +19,7 @@ class ExtractTest extends StdFrameTestSuite {
 
       result.signature shouldHaveFields('r -> CTRelationship, 'startId -> CTInteger)
       result.signature shouldHaveFieldSlots('r -> BinaryRepresentation, 'startId -> EmbeddedRepresentation(LongType))
-      result.toSet should equal(Set(r -> r.startId.v))
+      result.toSet should equal(Set(r -> CypherRelationship.startId(r).get.v))
     }
   }
 
@@ -34,7 +35,7 @@ class ExtractTest extends StdFrameTestSuite {
 
       result.signature shouldHaveFields('r -> CTRelationship.nullable, 'startId -> CTInteger.nullable)
       result.signature shouldHaveFieldSlots('r -> BinaryRepresentation, 'startId -> EmbeddedRepresentation(LongType))
-      result.toSet should equal(Set(r -> r.startId.v))
+      result.toSet should equal(Set(r -> CypherRelationship.startId(r).get.v))
     }
   }
 
@@ -50,7 +51,7 @@ class ExtractTest extends StdFrameTestSuite {
 
       result.signature shouldHaveFields('r -> CTRelationship, 'endId -> CTInteger)
       result.signature shouldHaveFieldSlots('r -> BinaryRepresentation, 'endId -> EmbeddedRepresentation(LongType))
-      result.toSet should equal(Set(r -> r.endId.v))
+      result.toSet should equal(Set(r -> CypherRelationship.endId(r).get.v))
     }
   }
 
@@ -66,7 +67,7 @@ class ExtractTest extends StdFrameTestSuite {
 
       result.signature shouldHaveFields('r -> CTRelationship.nullable, 'endId -> CTInteger.nullable)
       result.signature shouldHaveFieldSlots('r -> BinaryRepresentation, 'endId -> EmbeddedRepresentation(LongType))
-      result.toSet should equal(Set(r -> r.endId.v))
+      result.toSet should equal(Set(r -> CypherRelationship.endId(r).get.v))
     }
   }
 
@@ -106,7 +107,7 @@ class ExtractTest extends StdFrameTestSuite {
 
       result.signature shouldHaveFields('n -> CTNode, 'nid -> CTInteger)
       result.signature shouldHaveFieldSlots('n -> BinaryRepresentation, 'nid -> EmbeddedRepresentation(LongType))
-      result.toSet should equal(Set(a -> a.id.v))
+      result.toSet should equal(Set(a -> CypherNode.id(a).get.v))
     }
   }
 
@@ -121,7 +122,7 @@ class ExtractTest extends StdFrameTestSuite {
 
       result.signature shouldHaveFields('n -> CTNode.nullable, 'nid -> CTInteger.nullable)
       result.signature shouldHaveFieldSlots('n -> BinaryRepresentation, 'nid -> EmbeddedRepresentation(LongType))
-      result.toSet should equal(Set(a -> a.id.v))
+      result.toSet should equal(Set(a -> CypherNode.id(a).get.v))
     }
   }
 
@@ -151,7 +152,7 @@ class ExtractTest extends StdFrameTestSuite {
 
       result.signature shouldHaveFields('r -> CTRelationship, 'rid -> CTInteger)
       result.signature shouldHaveFieldSlots('r -> BinaryRepresentation, 'rid -> EmbeddedRepresentation(LongType))
-      result.toSet should equal(Set(r -> r.id.v))
+      result.toSet should equal(Set(r -> CypherNode.id(a).get.v))
     }
   }
 
@@ -168,7 +169,7 @@ class ExtractTest extends StdFrameTestSuite {
 
       result.signature shouldHaveFields('r -> CTRelationship.nullable, 'rid -> CTInteger.nullable)
       result.signature shouldHaveFieldSlots('r -> BinaryRepresentation, 'rid -> EmbeddedRepresentation(LongType))
-      result.toSet should equal(Set(r -> r.id.v))
+      result.toSet should equal(Set(r -> CypherNode.id(a).get.v))
     }
   }
 

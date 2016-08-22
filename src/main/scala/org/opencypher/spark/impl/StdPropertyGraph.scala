@@ -1,9 +1,8 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql._
-import org.opencypher.spark.api.types.{CTAny, CTInteger}
-import org.opencypher.spark.api.{CypherNode, CypherRelationship, CypherResultContainer, PropertyGraph}
-import org.opencypher.spark.impl.frame._
+import org.opencypher.spark.api.{CypherResultContainer, PropertyGraph}
+import org.opencypher.spark.impl.newvalue.{CypherNode, CypherRelationship}
 import org.opencypher.spark.impl.util.SlotSymbolGenerator
 
 import scala.language.implicitConversions

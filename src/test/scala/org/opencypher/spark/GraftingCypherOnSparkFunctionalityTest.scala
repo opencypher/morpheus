@@ -1,6 +1,6 @@
 package org.opencypher.spark
 
-import org.opencypher.spark.api.{CypherNode, CypherRecord, CypherValue}
+import org.opencypher.spark.api.CypherRecord
 import org.opencypher.spark.impl.StdPropertyGraph
 
 class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSession.Fixture {

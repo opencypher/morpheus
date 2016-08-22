@@ -3,13 +3,14 @@ package org.opencypher.spark.impl.frame
 import org.apache.spark.sql.types.LongType
 import org.opencypher.spark.api.types.{CTInteger, CTNode}
 import org.opencypher.spark.api.{BinaryRepresentation, EmbeddedRepresentation}
+import org.opencypher.spark.impl.newvalue.CypherNode
 
 class JoinTest extends StdFrameTestSuite {
 
   test("Joins on node ids") {
     add(newLabeledNode("A"))
     val n = add(newLabeledNode("A", "B"))
-    val nid = n.id.v
+    val nid = CypherNode.id(n).get.v
     add(newLabeledNode("B"))
 
     new GraphTest {

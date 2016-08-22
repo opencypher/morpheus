@@ -1,7 +1,8 @@
 package org.opencypher.spark.impl.frame
 
-import org.opencypher.spark.api._
+import org.opencypher.spark.api.BinaryRepresentation
 import org.opencypher.spark.api.types.CTAny
+import org.opencypher.spark.impl.newvalue.{CypherBoolean, CypherInteger}
 
 class SelectProductFieldsTest extends StdFrameTestSuite {
 
@@ -26,8 +27,8 @@ class SelectProductFieldsTest extends StdFrameTestSuite {
       result.signature shouldHaveFieldSlots ('age -> BinaryRepresentation, 'married -> BinaryRepresentation)
 
       result.toSet should equal(Set(
-        CypherInteger(21) -> CypherTrue,
-        CypherInteger(16) -> CypherFalse
+        CypherInteger(21) -> CypherBoolean.TRUE,
+        CypherInteger(16) -> CypherBoolean.FALSE
       ))
     }
   }

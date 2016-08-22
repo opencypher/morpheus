@@ -1,8 +1,7 @@
 package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.Dataset
-import org.opencypher.spark.api.CypherNode
-import org.opencypher.spark.impl.frame.AllNodes.CypherNodes
+import org.opencypher.spark.impl.newvalue.CypherNode
 import org.opencypher.spark.impl.{StdCypherFrame, StdRuntimeContext}
 
 object LabelFilterNode extends FrameCompanion {
@@ -24,7 +23,7 @@ object LabelFilterNode extends FrameCompanion {
   private final case class labelFilter(labels: Seq[String]) extends (CypherNode => Boolean) {
 
     override def apply(node: CypherNode): Boolean = {
-      labels.forall(node.labels.contains)
+      labels.forall(l => CypherNode.labels(node).exists(_.contains(l)))
     }
   }
 }

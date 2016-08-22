@@ -1,7 +1,7 @@
 package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.Dataset
-import org.opencypher.spark.api.CypherValue
+import org.opencypher.spark.impl.newvalue.CypherValue
 import org.opencypher.spark.impl.{ProductFrame, StdCypherFrame, StdRuntimeContext}
 
 object ValueAsProduct extends FrameCompanion {
