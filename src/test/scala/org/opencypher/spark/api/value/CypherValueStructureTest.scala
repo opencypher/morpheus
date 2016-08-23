@@ -4,6 +4,37 @@ class CypherValueStructureTest extends CypherValueTestSuite {
 
   import CypherTestValues._
 
+  test("Construct PATH values") {
+    val originalValueGroups = PATH_valueGroups
+    val scalaValueGroups = originalValueGroups.scalaValueGroups
+
+    val reconstructedValueGroups = scalaValueGroups.map {
+      values => values.map {
+        case elements: Seq[_] =>
+           CypherPath(elements.asInstanceOf[Seq[CypherEntityValue]]: _*)
+
+        case null =>
+          cypherNull[CypherPath]
+
+        case _ =>
+          fail("Unexpected scala value")
+      }
+    }
+
+    reconstructedValueGroups should equal(originalValueGroups)
+  }
+
+  test("Deconstruct PATH values") {
+    val cypherValueGroups = PATH_valueGroups.materialValueGroups
+
+    val expected = cypherValueGroups.scalaValueGroups
+    val actual = cypherValueGroups.map { values => values.map { case CypherPath(elements) => elements } }
+
+    actual should equal(expected)
+
+    CypherPath.unapply(cypherNull[CypherPath]) should equal(None)
+  }
+
   test("Construct RELATIONSHIP values") {
     val originalValueGroups = RELATIONSHIP_valueGroups
     val scalaValueGroups = originalValueGroups.scalaValueGroups

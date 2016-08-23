@@ -15,6 +15,26 @@ object CypherTestValues {
   type ValueGroups[V] = Seq[Values[V]]
   type Values[V] = Seq[V]
 
+  implicit val PATH_valueGroups: ValueGroups[CypherPath] = Seq(
+    Seq(
+      CypherPath(CypherNode(1l, Seq("Label"), Properties.empty)),
+      CypherPath(CypherNode(1l, Seq("NotSignificant"), Properties.empty)),
+      CypherPath(CypherNode(1l, Seq("NotSignificant"), Properties("alsoNotSig" -> CypherBoolean(true))))
+    ),
+    Seq(CypherPath(CypherNode(1l, Seq("Label"), Properties.empty),
+                   CypherRelationship(100l, 1l, 2l, "KNOWS", Properties.empty),
+                   CypherNode(2l, Seq.empty, Properties.empty)),
+        CypherPath(CypherNode(1l, Seq("Label"), Properties.empty),
+                   CypherRelationship(100l, 1l, 2l, "FORGETS", Properties.empty),
+                   CypherNode(2l, Seq.empty, Properties.empty))),
+    Seq(CypherPath(CypherNode(1l, Seq("Label"), Properties.empty),
+                   CypherRelationship(100l, 1l, 2l, "KNOWS", Properties("aRelProp" -> CypherFloat(667.5))),
+                   CypherNode(2l, Seq.empty, Properties.empty),
+                   CypherRelationship(100l, 1l, 2l, "KNOWS", Properties.empty),
+                   CypherNode(2l, Seq("One", "Two", "Three"), Properties.empty))),
+    Seq(cypherNull[CypherPath])
+  )
+
   implicit val RELATIONSHIP_valueGroups: ValueGroups[CypherRelationship] = Seq(
     Seq(
       CypherRelationship(EntityId(1), EntityId(1), EntityId(1), "KNOWS", Properties("a" -> CypherInteger(1), "b" -> null)),

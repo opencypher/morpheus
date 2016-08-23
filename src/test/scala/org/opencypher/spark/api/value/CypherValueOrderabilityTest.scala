@@ -9,6 +9,12 @@ class CypherValueOrderabilityTest extends CypherValueTestSuite {
 
   import CypherTestValues._
 
+  test("should order PATH values correctly") {
+    verifyOrderabilityReflexivity(PATH_valueGroups)
+    verifyOrderabilityTransitivity(PATH_valueGroups)
+    verifyOrderabilityOrder(PATH_valueGroups)
+  }
+
   test("should order RELATIONSHIP values correctly") {
     verifyOrderabilityReflexivity(RELATIONSHIP_valueGroups)
     verifyOrderabilityTransitivity(RELATIONSHIP_valueGroups)

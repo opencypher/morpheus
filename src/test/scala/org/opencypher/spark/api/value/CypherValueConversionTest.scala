@@ -4,6 +4,21 @@ class CypherValueConversionTest extends CypherValueTestSuite {
 
   import CypherTestValues._
 
+  test("PATH conversion") {
+    val originalValues = PATH_valueGroups.flatten
+    val scalaValues = originalValues.map(CypherPath.contents).map(_.orNull)
+    val newValues = scalaValues.map {
+      case null             => null
+      case elements: Seq[_] => CypherPath(elements.asInstanceOf[Seq[CypherEntityValue]]: _*)
+    }
+
+    newValues should equal(originalValues)
+
+    originalValues.foreach { v =>
+      CypherPath.containsNull(v) should equal(v == null)
+    }
+  }
+
   test("RELATIONSHIP conversion") {
     val originalValues = RELATIONSHIP_valueGroups.flatten
     val scalaValues: Seq[(EntityId, RelationshipData)] = originalValues.map(CypherRelationship.contents).map(_.orNull)

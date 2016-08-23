@@ -7,6 +7,10 @@ class CypherValueEqualTest extends CypherValueTestSuite {
 
   import CypherTestValues._
 
+  test("PATH equal") {
+    verifyEqual(PATH_valueGroups)
+  }
+
   test("RELATIONSHIP equal") {
     verifyEqual(RELATIONSHIP_valueGroups)
   }

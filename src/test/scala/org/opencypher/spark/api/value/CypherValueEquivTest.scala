@@ -6,6 +6,10 @@ class CypherValueEquivTest extends CypherValueTestSuite {
 
   import CypherTestValues._
 
+  test("PATH equiv") {
+    verifyEquiv(PATH_valueGroups)
+  }
+
   test("RELATIONSHIP equiv") {
     verifyEquiv(RELATIONSHIP_valueGroups)
   }
