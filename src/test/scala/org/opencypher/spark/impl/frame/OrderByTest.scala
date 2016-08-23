@@ -15,7 +15,7 @@ class OrderByTest extends StdFrameTestSuite {
     new GraphTest {
       import frames._
 
-      val result = allNodes('n).asProduct.propertyValue('n, 'prop)('v).orderBy('v).testResult
+      val result = allNodes('n).asProduct.propertyValue('n, 'prop)('v).orderBy(SortItem('v, Asc)).testResult
 
       result.signature shouldHaveFields('n -> CTNode, 'v -> CTAny.nullable)
       result.signature shouldHaveFieldSlots('n -> BinaryRepresentation, 'v -> BinaryRepresentation)

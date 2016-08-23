@@ -84,6 +84,24 @@ class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessi
   }
 
 
+  test("get all node ids sorted desc") {
+    val n1 = add(newNode)
+    val n2 = add(newNode.withLabels("Foo"))
+    val n3 = add(newNode.withProperties("a" -> 10))
+    val n4 = add(newNode)
+
+      // MATCH (n) RETURN id(n) AS id ORDER BY id DESC
+    val result = graph.cypher(SupportedQueries.allNodeIdsSortedDesc)
+
+    result.records.collectAsScalaSet should equal(Set(
+      CypherRecord("id" -> 4),
+      CypherRecord("id" -> 3),
+      CypherRecord("id" -> 2),
+      CypherRecord("id" -> 1)
+    ))
+  }
+
+
   //  test("all node scan on node-only graph that uses all kinds of properties") {
 //    val pg = factory(createGraph2(_)).graph
 //
@@ -97,17 +115,6 @@ class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessi
 //    val pg = factory(createGraph1(_)).graph
 //
 //    val cypher: CypherResult = pg.cypher(SupportedQueries.allNodeIds)
-//    val result: Dataset[String] = cypher.map { map =>
-//      map.toString()
-//    }
-//
-//    result.show(false)
-//  }
-//
-//  test("get all node ids sorted desc") {
-//    val pg = factory(createGraph1(_)).graph
-//
-//    val cypher: CypherResult = pg.cypher(SupportedQueries.allNodeIdsSortedDesc)
 //    val result: Dataset[String] = cypher.map { map =>
 //      map.toString()
 //    }

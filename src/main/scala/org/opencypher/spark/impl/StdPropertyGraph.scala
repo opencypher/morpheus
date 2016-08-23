@@ -3,6 +3,7 @@ package org.opencypher.spark.impl
 import org.apache.spark.sql._
 import org.opencypher.spark.api.{CypherResultContainer, PropertyGraph}
 import org.opencypher.spark.api.value.{CypherNode, CypherRelationship}
+import org.opencypher.spark.impl.frame.{Desc, SortItem}
 import org.opencypher.spark.impl.util.SlotSymbolGenerator
 
 import scala.language.implicitConversions
@@ -89,25 +90,12 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
 
         StdCypherResultContainer.fromProducts(union)
 
-      //        val a = nodes.filter(_.labels.contains("A")).map(node => node.properties.getOrElse("name", CypherNull))(CypherValue.implicits.cypherValueEncoder[CypherValue]).toDF("name")
-      //        val b = nodes.filter(_.labels.contains("B")).map(node => node.properties.getOrElse("name", CypherNull))(CypherValue.implicits.cypherValueEncoder[CypherValue]).toDF("name")
-      //        val result = a.union(b).as[CypherValue](CypherValue.implicits.cypherValueEncoder[CypherValue])
-      //
-      //        new StdFrame(result.map(v => StdRecord(Array(v), Array.empty)), ListMap("name" -> 0)).result
-
-
-      //      case SupportedQueries.allNodeIds =>
-//        new StdFrame(nodes.map[StdRecord] { node: CypherNode =>
-//          StdRecord(Array(CypherInteger(node.id.v)), Array.empty)
-//        }, ListMap("value" -> 0)).result
-//
       case SupportedQueries.allNodeIdsSortedDesc =>
         val nodeWithId = allNodes('n).asProduct.nodeId('n)('nid)
 
-        nodeWithId.orderBy('nid)
+        val sorted = nodeWithId.orderBy(SortItem('nid, Desc)).selectFields('nid).aliasField('nid -> 'id)
 
-        ???
-
+        StdCypherResultContainer.fromProducts(sorted)
 
 //        new StdFrame(session.createDataset(nodes.map[StdRecord] { node: CypherNode =>
 //          StdRecord(Array(CypherInteger(node.id.v)), Array.empty)

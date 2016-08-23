@@ -61,6 +61,8 @@ sealed trait CypherValueCompanion[V <: CypherValue] extends Equiv[V] {
     }
   }
 
+  final val reverseOrderability = orderability.reverse
+
   // Cypher orderability
   implicit object orderability extends Ordering[V] with ((V, V) => Int) {
     override def apply(x: V, y: V): Int = compare(x, y)

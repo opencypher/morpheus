@@ -62,7 +62,7 @@ class FrameProducer(implicit val planningContext: PlanningContext) {
     def relationshipType(entity: Symbol)(output: Symbol) =
       Extract.relationshipType(input)(entity)(output)
 
-    def orderBy(key: Symbol) = OrderBy(input)(key)
+    def orderBy(item: SortItem) = OrderBy(input)(item)
 
     // TODO: Remove once we have optional match
     def nullable(value: Symbol) =
