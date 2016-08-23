@@ -15,7 +15,7 @@ class CypherValueConversionTest extends CypherValueTestSuite {
     newValues should equal(originalValues)
 
     originalValues.foreach { v =>
-      CypherPath.containsNull(v) should equal(v == null)
+      CypherPath.isComparable(v) should equal(v == null)
     }
   }
 
@@ -30,7 +30,7 @@ class CypherValueConversionTest extends CypherValueTestSuite {
     newValues should equal(originalValues)
 
     originalValues.foreach { v =>
-      CypherRelationship.containsNull(v) should equal(v == null || v.properties.containsNullValue)
+      CypherRelationship.isComparable(v) should equal(v == null || v.properties.containsNullValue)
     }
   }
 
@@ -45,7 +45,7 @@ class CypherValueConversionTest extends CypherValueTestSuite {
     newValues should equal(originalValues)
 
     originalValues.foreach { v =>
-      CypherNode.containsNull(v) should equal(v == null || v.properties.containsNullValue)
+      CypherNode.isComparable(v) should equal(v == null || v.properties.containsNullValue)
     }
   }
 
@@ -60,7 +60,7 @@ class CypherValueConversionTest extends CypherValueTestSuite {
     newValues should equal(originalValues)
 
     originalValues.foreach { v =>
-      CypherMap.containsNull(v) should equal (v == null || CypherMap.unapply(v).map(_.m).exists(_.values.exists(_ == null)))
+      CypherMap.isComparable(v) should equal (v == null || CypherMap.unapply(v).map(_.m).exists(_.values.exists(_ == null)))
     }
   }
 
@@ -75,7 +75,7 @@ class CypherValueConversionTest extends CypherValueTestSuite {
     newValues should equal(originalValues)
 
     originalValues.foreach { v =>
-      CypherList.containsNull(v) should equal (v == null || CypherList.unapply(v).exists(_.exists(_ == null)))
+      CypherList.isComparable(v) should equal (v == null || CypherList.unapply(v).exists(_.exists(_ == null)))
     }
   }
 
@@ -90,7 +90,7 @@ class CypherValueConversionTest extends CypherValueTestSuite {
     newValues should equal(originalValues)
 
     originalValues.foreach { v =>
-      CypherString.containsNull(v) should equal (v == null)
+      CypherString.isComparable(v) should equal (v == null)
     }
   }
 
@@ -105,7 +105,7 @@ class CypherValueConversionTest extends CypherValueTestSuite {
     newValues should equal(originalValues)
 
     originalValues.foreach { v =>
-      CypherBoolean.containsNull(v) should equal (v == null)
+      CypherBoolean.isComparable(v) should equal (v == null)
     }
   }
 
@@ -120,7 +120,7 @@ class CypherValueConversionTest extends CypherValueTestSuite {
     newValues should equal(originalValues)
 
     originalValues.foreach { v =>
-      CypherInteger.containsNull(v) should equal (v == null)
+      CypherInteger.isComparable(v) should equal (v == null)
     }
   }
 
@@ -135,7 +135,7 @@ class CypherValueConversionTest extends CypherValueTestSuite {
     newValues should equal(originalValues)
 
     originalValues.foreach { v =>
-      CypherFloat.containsNull(v) should equal (v == null)
+      CypherFloat.isComparable(v) should equal (v == null)
     }
   }
 
@@ -151,7 +151,7 @@ class CypherValueConversionTest extends CypherValueTestSuite {
     newValues should equal(originalValues)
 
     originalValues.foreach { v =>
-      CypherNumber.containsNull(v) should equal (v == null)
+      CypherNumber.isComparable(v) should equal (v == null)
     }
   }
 
@@ -173,7 +173,7 @@ class CypherValueConversionTest extends CypherValueTestSuite {
     newValues should equal(originalValues)
 
     originalValues.foreach { v =>
-      CypherValue.containsNull(v) should equal (v == null)
+      CypherValue.isComparable(v) should equal (v == null)
     }
   }
 }
