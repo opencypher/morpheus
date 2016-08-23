@@ -160,8 +160,7 @@ case object CypherValue extends CypherValueCompanion[CypherValue] with Verificat
     case v: CypherString        => CypherString.cypherType(v)
     case v: CypherNumber        => CypherNumber.cypherType(v)
     case v: CypherList          => CypherList.cypherType(v)
-    case v: CypherNode          => CypherNode.cypherType(v)
-    case v: CypherRelationship  => CypherRelationship.cypherType(v)
+    case v: CypherEntityValue   => CypherEntityCompanion.cypherType(v)
     case v: CypherMap           => CypherMap.cypherType(v)
     case v: CypherPath          => CypherPath.cypherType(v)
   }
@@ -172,8 +171,7 @@ case object CypherValue extends CypherValueCompanion[CypherValue] with Verificat
     case v: CypherString           => CypherString.contents(v)
     case v: CypherNumber           => CypherNumber.contents(v)
     case v: CypherList             => CypherList.contents(v)
-    case v: CypherNode             => CypherNode.contents(v)
-    case v: CypherRelationship     => CypherRelationship.contents(v)
+    case v: CypherEntityValue      => CypherEntityCompanion.contents(v)
     case v: CypherMap              => CypherMap.contents(v)
     case v: CypherPath             => CypherPath.contents(v)
   }
@@ -184,8 +182,7 @@ case object CypherValue extends CypherValueCompanion[CypherValue] with Verificat
     case v: CypherString          => CypherString.orderGroup(v)
     case v: CypherNumber          => CypherNumber.orderGroup(v)
     case v: CypherList            => CypherList.orderGroup(v)
-    case v: CypherNode            => CypherNode.orderGroup(v)
-    case v: CypherRelationship    => CypherRelationship.orderGroup(v)
+    case v: CypherEntityValue     => CypherEntityCompanion.orderGroup(v)
     case v: CypherMap             => CypherMap.orderGroup(v)
     case v: CypherPath            => CypherPath.orderGroup(v)
   }
@@ -200,8 +197,7 @@ case object CypherValue extends CypherValueCompanion[CypherValue] with Verificat
         case (a: CypherString, b: CypherString)              => CypherString.computeOrderability(a, b)
         case (a: CypherNumber, b: CypherNumber)              => CypherNumber.computeOrderability(a, b)
         case (a: CypherList, b: CypherList)                  => CypherList.computeOrderability(a, b)
-        case (a: CypherNode, b: CypherNode)                  => CypherNode.computeOrderability(a, b)
-        case (a: CypherRelationship, b: CypherRelationship)  => CypherRelationship.computeOrderability(a, b)
+        case (a: CypherEntityValue, b: CypherEntityValue)    => CypherEntityCompanion.computeOrderability(a, b)
         case (a: CypherMap, b: CypherMap)                    => CypherMap.computeOrderability(a, b)
         case (a: CypherPath, b: CypherPath)                  => CypherPath.computeOrderability(a, b)
         case _ =>
@@ -216,8 +212,7 @@ case object CypherValue extends CypherValueCompanion[CypherValue] with Verificat
     case (a: CypherString, b: CypherString) => CypherString.computeComparability(a, b)
     case (a: CypherNumber, b: CypherNumber) => CypherNumber.computeComparability(a, b)
     case (a: CypherList, b: CypherList) => CypherList.computeComparability(a, b)
-    case (a: CypherNode, b: CypherNode) => CypherNode.computeOrderability(a, b)
-    case (a: CypherRelationship, b: CypherRelationship) => CypherRelationship.computeOrderability(a, b)
+    case (a: CypherEntityValue, b: CypherEntityValue) => CypherEntityCompanion.computeOrderability(a, b)
     case (a: CypherMap, b: CypherMap) => CypherMap.computeComparability(a, b)
     case (a: CypherPath, b: CypherPath) => CypherPath.computeComparability(a, b)
     case _ =>
