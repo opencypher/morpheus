@@ -97,7 +97,25 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
 
         StdCypherResultContainer.fromProducts(sorted)
 
-//        new StdFrame(session.createDataset(nodes.map[StdRecord] { node: CypherNode =>
+        // TODO: This is where we left off
+//      case SupportedQueries.matchAggregateAndUnwind =>
+//        val nodesWithProperty = allNodes('n).labelFilter("A").asProduct.propertyValue('n, 'name)('name)
+//
+//        nodesWithProperty.run.groupByKey(_ => 2)
+//
+//        ???
+
+//        val lhs = nodes.filter(_.labels.contains("A"))
+//          .flatMap(_.properties.get("name"))(CypherValue.implicits.cypherValueEncoder[CypherValue])
+//
+//        val collected = lhs.rdd.aggregate(List.empty[CypherValue])((ls, c) => ls :+ c, _ ++ _)
+//        val result = session.createDataset(collected)(CypherValue.implicits.cypherValueEncoder[CypherValue])
+//
+//        new StdFrame(result.map(v => StdRecord(Array(v), Array.empty)), ListMap("name" -> 0)).result
+
+
+
+      //        new StdFrame(session.createDataset(nodes.map[StdRecord] { node: CypherNode =>
 //          StdRecord(Array(CypherInteger(node.id.v)), Array.empty)
 //        }.rdd.sortBy[Long]({ record =>
 //          record.values(0).asInstanceOf[CypherInteger].v
@@ -137,13 +155,6 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
 //
 //        new StdFrame(result.map(v => StdRecord(Array(v), Array.empty)), ListMap("x" -> 0)).result
 //
-//      case SupportedQueries.matchAggregateAndUnwind =>
-//        val lhs = nodes.filter(_.labels.contains("A")).flatMap(_.properties.get("name"))(CypherValue.implicits.cypherValueEncoder[CypherValue])
-//
-//        val collected = lhs.rdd.aggregate(List.empty[CypherValue])((ls, c) => ls :+ c, _ ++ _)
-//        val result = session.createDataset(collected)(CypherValue.implicits.cypherValueEncoder[CypherValue])
-//
-//        new StdFrame(result.map(v => StdRecord(Array(v), Array.empty)), ListMap("name" -> 0)).result
 //
 //      case SupportedQueries.shortestPath =>
 //        val a = nodes.flatMap(_.properties.get("name").filter(_ == "Ava"))(CypherValue.implicits.cypherValueEncoder[CypherValue])

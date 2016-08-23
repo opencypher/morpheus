@@ -83,7 +83,6 @@ class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessi
     ))
   }
 
-
   test("get all node ids sorted desc") {
     val n1 = add(newNode)
     val n2 = add(newNode.withLabels("Foo"))
@@ -93,11 +92,29 @@ class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessi
       // MATCH (n) RETURN id(n) AS id ORDER BY id DESC
     val result = graph.cypher(SupportedQueries.allNodeIdsSortedDesc)
 
-    result.records.collectAsScalaSet should equal(Set(
+    result.records.collectAsScalaList should equal(List(
       CypherRecord("id" -> 4),
       CypherRecord("id" -> 3),
       CypherRecord("id" -> 2),
       CypherRecord("id" -> 1)
+    ))
+  }
+
+  // TODO: Make this test pass
+  ignore("match aggregate unwind") {
+    add(newLabeledNode("A").withProperties("name" -> "Mats"))
+    add(newLabeledNode("A").withProperties("name" -> "Mats"))
+    add(newLabeledNode("A").withProperties("name" -> "Stefan"))
+    add(newLabeledNode("A", "B").withProperties("notName" -> "foo"))
+
+    // MATCH (a:A) WITH collect(a.name) AS names UNWIND names AS name RETURN name
+    val result = graph.cypher(SupportedQueries.matchAggregateAndUnwind)
+
+    result.records.collectAsScalaSet should equal(Set(
+      CypherRecord("name" -> "Mats"),
+      CypherRecord("name" -> "Mats"),
+      CypherRecord("name" -> "Stefan"),
+      CypherRecord("name" -> null)
     ))
   }
 
