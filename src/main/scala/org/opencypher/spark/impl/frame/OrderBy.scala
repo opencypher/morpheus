@@ -2,7 +2,7 @@ package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.Dataset
 import org.opencypher.spark.api.value.CypherValue
-import org.opencypher.spark.impl.{StdCypherFrame, StdField, StdRuntimeContext}
+import org.opencypher.spark.impl.{ProductFrame, StdCypherFrame, StdRuntimeContext}
 
 import scala.reflect._
 
@@ -13,12 +13,12 @@ object OrderBy extends FrameCompanion {
     OrderBy(input)(keyFieldIndex)
   }
 
-  private final case class OrderBy(input: StdCypherFrame[Product])(keyIndex: Int) extends StdCypherFrame[Product](input.signature) {
+  private final case class OrderBy(input: StdCypherFrame[Product])(keyIndex: Int) extends ProductFrame(input.signature) {
 
     override protected def execute(implicit context: StdRuntimeContext): Dataset[Product] = {
       val in = input.run
 
-      val sortedRdd = in.rdd.sortBy(OrderByColumn(keyIndex))(???, classTag[CypherValue])
+      val sortedRdd = in.rdd.sortBy(OrderByColumn(keyIndex))(CypherValue.orderability, classTag[CypherValue])
 
       val out = context.session.createDataset(sortedRdd)(context.productEncoder(slots))
       out
