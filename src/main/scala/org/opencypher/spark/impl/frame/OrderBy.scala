@@ -4,8 +4,6 @@ import org.apache.spark.sql.Dataset
 import org.opencypher.spark.api.value.CypherValue
 import org.opencypher.spark.impl.{ProductFrame, StdCypherFrame, StdRuntimeContext}
 
-import scala.reflect._
-
 object OrderBy extends FrameCompanion {
 
   def apply(input: StdCypherFrame[Product])(key: Symbol): StdCypherFrame[Product] = {
@@ -18,7 +16,7 @@ object OrderBy extends FrameCompanion {
     override protected def execute(implicit context: StdRuntimeContext): Dataset[Product] = {
       val in = input.run
 
-      val sortedRdd = in.rdd.sortBy(OrderByColumn(keyIndex))(CypherValue.orderability, classTag[CypherValue])
+      val sortedRdd = in.rdd.sortBy(OrderByColumn(keyIndex))
 
       val out = context.session.createDataset(sortedRdd)(context.productEncoder(slots))
       out
