@@ -30,7 +30,7 @@ class CypherValueConversionTest extends CypherValueTestSuite {
     newValues should equal(originalValues)
 
     originalValues.foreach { v =>
-      CypherRelationship.isComparable(v) should equal(v == null || v.properties.containsNullValue)
+      CypherRelationship.isComparable(v) should equal(v == null)
     }
   }
 
@@ -45,7 +45,7 @@ class CypherValueConversionTest extends CypherValueTestSuite {
     newValues should equal(originalValues)
 
     originalValues.foreach { v =>
-      CypherNode.isComparable(v) should equal(v == null || v.properties.containsNullValue)
+      CypherNode.isComparable(v) should equal(v == null)
     }
   }
 
@@ -167,6 +167,7 @@ class CypherValueConversionTest extends CypherValueTestSuite {
       case (id: EntityId, data: NodeData) => CypherNode(id, data.labels, data.properties)
       case (id: EntityId, data: RelationshipData) => CypherRelationship(id, data)
       case d: java.lang.Double => CypherFloat(d)
+      case l: Seq[_] if isPathLike(l) => CypherPath(l.asInstanceOf[Seq[CypherEntityValue]]: _*)
       case l: Seq[_] => CypherList(l.asInstanceOf[Seq[CypherValue]])
     }
 

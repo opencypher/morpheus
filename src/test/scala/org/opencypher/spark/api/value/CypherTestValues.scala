@@ -161,10 +161,12 @@ object CypherTestValues {
       MAP_valueGroups,
       NODE_valueGroups,
       RELATIONSHIP_valueGroups,
+      PATH_valueGroups,
       LIST_valueGroups,
       STRING_valueGroups,
       BOOLEAN_valueGroups,
-      NUMBER_valueGroups)
+      NUMBER_valueGroups
+    )
 
     val materials = allGroups.flatMap(_.materialValueGroups)
     val nulls = Seq(allGroups.flatMap(_.nullableValueGroups).flatten)
