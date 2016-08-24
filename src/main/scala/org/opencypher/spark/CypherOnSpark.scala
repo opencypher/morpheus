@@ -2,13 +2,18 @@ package org.opencypher.spark
 
 import java.util.Properties
 
+import org.apache.spark.serializer.{KryoRegistrator => SparkKryoRegistrator}
+
 import scala.io.Source
 import scala.language.postfixOps
 import scala.util.Try
 
+
 object CypherOnSpark {
 
   self =>
+
+  val registrator = new CypherKryoRegistrar
 
   def version = {
     val clazz = self.getClass

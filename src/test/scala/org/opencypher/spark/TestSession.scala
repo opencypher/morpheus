@@ -2,8 +2,8 @@ package org.opencypher.spark
 
 import java.util.UUID
 
+import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.{SparkConf, SparkContext}
 import org.scalatest.{BeforeAndAfterEach, FunSuite}
 
 object TestSession {
@@ -25,12 +25,24 @@ object TestSession {
 
 object TestSessionFactory {
   def create = {
+    val conf = new SparkConf(true)
+    conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+    conf.set("spark.kryo.registrator","org.opencypher.spark.CypherKryoRegistrar")
+
+    //
+    // This may or may not help - depending on the query
+    // conf.set("spark.kryo.referenceTracking","false")
+
+    //
+    // Enable to see if we cover enough
+    // conf.set("spark.kryo.registrationRequired", "true")
+
     //
     // If this is slow, you might be hitting: http://bugs.java.com/view_bug.do?bug_id=8077102
     //
     SparkSession
       .builder()
-      .config(new SparkConf(true))
+      .config(conf)
       .master("local[*]")
       .appName(s"cypher-on-spark-tests-${UUID.randomUUID()}")
       .getOrCreate()
