@@ -3,7 +3,7 @@ package org.opencypher.spark.impl
 import org.apache.spark.sql._
 import org.opencypher.spark.api.{CypherResultContainer, PropertyGraph}
 import org.opencypher.spark.api.value.{CypherNode, CypherRelationship}
-import org.opencypher.spark.impl.frame.{Desc, SortItem}
+import org.opencypher.spark.impl.frame.{Collect, Desc, SortItem}
 import org.opencypher.spark.impl.util.SlotSymbolGenerator
 
 import scala.language.implicitConversions
@@ -21,12 +21,12 @@ object StdPropertyGraph {
     val simpleUnionDistinct = "MATCH (a:A) RETURN a.name AS name UNION MATCH (b:B) RETURN b.name AS name"
     val optionalMatch = "MATCH (a:A) OPTIONAL MATCH (a)-[r]->(b) RETURN r"
     val unwind = "WITH [1, 2, 3] AS l UNWIND l AS x RETURN x"
+    val matchAggregate = "MATCH (a:A) RETURN collect(a.name) AS names"
     val matchAggregateAndUnwind = "MATCH (a:A) WITH collect(a.name) AS names UNWIND names AS name RETURN name"
     val shortestPath = "MATCH (a {name: 'Ava'}), (b {name: 'Sasha'}) MATCH p=shortestPath((a)-->(b)) RETURN p"
     // not implemented
     val boundVarLength = "MATCH (a:A)-[r*2]->(b:B) RETURN r"
   }
-
 }
 
 class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Dataset[CypherRelationship])
@@ -97,12 +97,18 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
 
         StdCypherResultContainer.fromProducts(sorted)
 
-        // TODO: This is where we left off
-//      case SupportedQueries.matchAggregateAndUnwind =>
-//        val nodesWithProperty = allNodes('n).labelFilter("A").asProduct.propertyValue('n, 'name)('name)
-//
-//        nodesWithProperty.run.groupByKey(_ => 2)
-//
+        // WITH avg(p1), collect(p2) | p3, p4 => [p3, p4]
+        // names
+//        MATCH (a:A) WITH a.name AS name WITH collect(name) AS names UNWIND names AS name RETURN name
+      case SupportedQueries.matchAggregate =>
+        val nodesWithProperty = allNodes('a).labelFilter("A").asProduct.propertyValue('a, 'name)('name)
+
+        val grouped = nodesWithProperty.groupBy()(Collect('name)('names))
+
+        StdCypherResultContainer.fromProducts(grouped)
+
+//        nodesWithProperty.run.groupByKey(_ => 0)
+
 //        ???
 
 //        val lhs = nodes.filter(_.labels.contains("A"))

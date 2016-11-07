@@ -1,6 +1,7 @@
 package org.opencypher.spark
 
 import org.opencypher.spark.api.CypherRecord
+import org.opencypher.spark.api.value.CypherList
 import org.opencypher.spark.impl.StdPropertyGraph
 
 class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSession.Fixture {
@@ -100,7 +101,20 @@ class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessi
     ))
   }
 
-  // TODO: Make this test pass
+  test("match aggregate") {
+    add(newLabeledNode("A").withProperties("name" -> "Mats"))
+    add(newLabeledNode("A").withProperties("name" -> "Mats"))
+    add(newLabeledNode("A").withProperties("name" -> "Stefan"))
+    add(newLabeledNode("A", "B").withProperties("notName" -> "foo"))
+
+    // MATCH (a:A) RETURN collect(a.name) AS names
+    val result = graph.cypher(SupportedQueries.matchAggregate)
+
+    result.records.collectAsScalaSet should equal(Set(
+      CypherRecord("names" -> CypherList(Seq("Mats", "Mats", "Stefan")))
+    ))
+  }
+
   ignore("match aggregate unwind") {
     add(newLabeledNode("A").withProperties("name" -> "Mats"))
     add(newLabeledNode("A").withProperties("name" -> "Mats"))

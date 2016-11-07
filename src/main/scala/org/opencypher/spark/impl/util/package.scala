@@ -2,6 +2,12 @@ package org.opencypher.spark.impl
 
 package object util {
 
+  object ZeroProduct extends Product {
+    override def productElement(n: Int): Any = throw new IndexOutOfBoundsException(n.toString)
+    override def productArity: Int = 0
+    override def canEqual(that: Any): Boolean = false
+  }
+
   implicit final class RichIndexedSeq[+T](val elts: IndexedSeq[T]) extends AnyVal {
 
     def asProduct: Product = elts.length match {
@@ -19,11 +25,15 @@ package object util {
     }
   }
 
+  final case class appendConstant[T](v: T) extends (Product => Product) {
+    override def apply(in: Product): Product = in :+ v
+  }
+
   implicit final class RichProduct(val product: Product) extends AnyVal {
 
     def :+(elt: Any) = product.productArity match {
       case 0 =>
-        throw new IllegalArgumentException("Invalid input product (tuple expected as zero arity products are unsupported)")
+        Tuple1(elt)
 
       case 1 =>
         val src = product.asInstanceOf[Tuple1[Any]]

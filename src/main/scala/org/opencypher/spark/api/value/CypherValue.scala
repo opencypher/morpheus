@@ -391,6 +391,8 @@ final class CypherFloat(private[CypherFloat] val v: Double) extends CypherNumber
 // *** LIST
 
 case object CypherList extends CypherValueCompanion[CypherList] {
+  val empty = CypherList(Seq.empty)
+
   def apply(value: Seq[CypherValue]): CypherList = new CypherList(value)
   def unapply(value: CypherList): Option[Seq[CypherValue]] = if (value == null) None else Some(value.v)
 
