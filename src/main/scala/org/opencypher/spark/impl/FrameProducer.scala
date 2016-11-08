@@ -9,6 +9,7 @@ class FrameProducer(implicit val planningContext: PlanningContext) {
 
   def allNodes(sym: Symbol) = AllNodes(sym)
   def allRelationships(sym: Symbol) = AllRelationships(sym)
+  def optionalAllNodes(sym: Symbol) = OptionalAllNodes(sym)
 
   abstract class AbstractRichFrame[T](input: StdCypherFrame[T]) {
     def upcast(sym: Symbol)(widen: CypherType => CypherType): StdCypherFrame[T] =

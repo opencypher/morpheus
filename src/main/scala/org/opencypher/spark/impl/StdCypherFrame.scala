@@ -3,6 +3,7 @@ package org.opencypher.spark.impl
 import org.apache.spark.sql.{Dataset, Encoder, Row}
 import org.opencypher.spark.api.{CypherType, _}
 import org.opencypher.spark.api.frame.{CypherFrame, CypherSlot, Representation}
+import org.opencypher.spark.api.value.CypherNode
 
 abstract class StdCypherFrame[Out](sig: StdFrameSignature)
   extends CypherFrame[Out] {
@@ -43,7 +44,10 @@ abstract class RowFrame(sig: StdFrameSignature) extends StdCypherFrame[Row](sig)
     execute.toDF(signature.slotNames: _*)
 }
 
-
+abstract class NodeFrame(sig: StdFrameSignature) extends StdCypherFrame[CypherNode](sig) {
+  override def run(implicit context: StdRuntimeContext): Dataset[CypherNode] =
+    alias(execute)(context.cypherNodeEncoder)
+}
 
 
 
