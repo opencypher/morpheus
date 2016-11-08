@@ -27,14 +27,14 @@ object Unwind {
     override def execute(implicit context: StdRuntimeContext): Dataset[Product] = {
       val in = input.run
 
-      val out = in.flatMap(DoUnwind(index))(context.productEncoder(sig.slots))
+      val out = in.flatMap(addItemsFromListAt(index))(context.productEncoder(sig.slots))
 
       out
     }
 
   }
 
-  private final case class DoUnwind(index: Int) extends (Product => TraversableOnce[Product]) {
+  private final case class addItemsFromListAt(index: Int) extends (Product => TraversableOnce[Product]) {
     import org.opencypher.spark.impl.util._
 
     override def apply(record: Product): TraversableOnce[Product] = {
