@@ -8,8 +8,9 @@ import org.opencypher.spark.api.value.{CypherNode, CypherRelationship, CypherVal
 class FrameProducer(implicit val planningContext: PlanningContext) {
 
   def allNodes(sym: Symbol) = AllNodes(sym)
-  def allRelationships(sym: Symbol) = AllRelationships(sym)
   def optionalAllNodes(sym: Symbol) = OptionalAllNodes(sym)
+  def allRelationships(sym: Symbol) = AllRelationships(sym)
+  def optionalAllRelationships(sym: Symbol) = OptionalAllRelationships(sym)
 
   abstract class AbstractRichFrame[T](input: StdCypherFrame[T]) {
     def upcast(sym: Symbol)(widen: CypherType => CypherType): StdCypherFrame[T] =

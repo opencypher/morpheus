@@ -3,7 +3,7 @@ package org.opencypher.spark.impl.frame
 import org.apache.spark.sql.Dataset
 import org.opencypher.spark.api.types.CTRelationship
 import org.opencypher.spark.api.value.CypherRelationship
-import org.opencypher.spark.impl.{PlanningContext, StdCypherFrame, StdFrameSignature}
+import org.opencypher.spark.impl.{PlanningContext, RelationshipFrame, StdCypherFrame, StdFrameSignature}
 
 object AllRelationships {
 
@@ -16,10 +16,8 @@ object AllRelationships {
   }
 
   private final case class AllRelationships(input: Dataset[CypherRelationship], sig: StdFrameSignature)
-    extends StdCypherFrame[CypherRelationship](sig) {
+    extends RelationshipFrame(sig) {
 
-    override def execute(implicit context: RuntimeContext): Dataset[CypherRelationship] = {
-      alias(input)(context.cypherRelationshipEncoder)
-    }
+    override def execute(implicit context: RuntimeContext): Dataset[CypherRelationship] = input
   }
 }

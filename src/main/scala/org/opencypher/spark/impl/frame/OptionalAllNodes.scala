@@ -10,10 +10,10 @@ object OptionalAllNodes extends FrameCompanion {
   def apply(fieldSym: Symbol)(implicit context: PlanningContext): StdCypherFrame[CypherNode] = {
     val (_, sig) = StdFrameSignature.empty.addField(fieldSym -> CTNode.nullable)
 
-    CypherNodes(context.nodes)(sig)
+    AllNodesOrNull(context.nodes)(sig)
   }
 
-  private final case class CypherNodes(input: Dataset[CypherNode])(sig: StdFrameSignature) extends NodeFrame(sig) {
+  private final case class AllNodesOrNull(input: Dataset[CypherNode])(sig: StdFrameSignature) extends NodeFrame(sig) {
 
     override def execute(implicit context: RuntimeContext): Dataset[CypherNode] = {
       if (input.rdd.isEmpty())
