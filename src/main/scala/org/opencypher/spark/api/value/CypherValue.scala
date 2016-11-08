@@ -9,6 +9,7 @@ import org.opencypher.spark.api._
 import org.opencypher.spark.api.types._
 import org.opencypher.spark.impl.verify.Verification
 
+import scala.collection.TraversableOnce
 import scala.language.implicitConversions
 
 object CypherValueCompanion {
@@ -417,6 +418,10 @@ case object CypherList extends CypherValueCompanion[CypherList] {
 
 final class CypherList(private[CypherList] val v: Seq[CypherValue])
   extends CypherValue with Serializable {
+
+  def mapToTraversable[B](f: CypherValue => B): TraversableOnce[B] = {
+    v.map(f)
+  }
 
   @transient
   private[CypherList] lazy val cachedContainsNull: Boolean =

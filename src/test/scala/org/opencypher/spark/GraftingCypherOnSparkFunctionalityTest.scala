@@ -115,7 +115,7 @@ class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessi
     ))
   }
 
-  ignore("match aggregate unwind") {
+  test("match aggregate unwind") {
     add(newLabeledNode("A").withProperties("name" -> "Mats"))
     add(newLabeledNode("A").withProperties("name" -> "Mats"))
     add(newLabeledNode("A").withProperties("name" -> "Stefan"))
@@ -127,8 +127,7 @@ class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessi
     result.records.collectAsScalaSet should equal(Set(
       CypherRecord("name" -> "Mats"),
       CypherRecord("name" -> "Mats"),
-      CypherRecord("name" -> "Stefan"),
-      CypherRecord("name" -> null)
+      CypherRecord("name" -> "Stefan")
     ))
   }
 

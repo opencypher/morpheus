@@ -97,15 +97,21 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
 
         StdCypherResultContainer.fromProducts(sorted)
 
-        // WITH avg(p1), collect(p2) | p3, p4 => [p3, p4]
-        // names
-//        MATCH (a:A) WITH a.name AS name WITH collect(name) AS names UNWIND names AS name RETURN name
       case SupportedQueries.matchAggregate =>
         val nodesWithProperty = allNodes('a).labelFilter("A").asProduct.propertyValue('a, 'name)('name)
 
         val grouped = nodesWithProperty.groupBy()(Collect('name)('names))
 
         StdCypherResultContainer.fromProducts(grouped)
+
+        // MATCH (a:A) WITH collect(a.name) AS names UNWIND names AS name RETURN name
+      case SupportedQueries.matchAggregateAndUnwind =>
+        val nodesWithProperty = allNodes('a).labelFilter("A").asProduct.propertyValue('a, 'name)('name)
+
+        val grouped = nodesWithProperty.groupBy()(Collect('name)('names))
+        val unwindedAndSelected = grouped.unwind('names, 'name).selectFields('name)
+
+        StdCypherResultContainer.fromProducts(unwindedAndSelected)
 
 //        nodesWithProperty.run.groupByKey(_ => 0)
 

@@ -67,6 +67,9 @@ class FrameProducer(implicit val planningContext: PlanningContext) {
     def groupBy(key: Symbol*)(agg: AggregationFunction) =
       GroupBy(input)(key:_*)(agg)
 
+    def unwind(list: Symbol, item: Symbol) =
+      Unwind(input)(list, item)
+
     // TODO: Remove once we have optional match
     def nullable(value: Symbol) =
       Upcast(input)(value)(_.nullable)
