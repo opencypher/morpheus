@@ -3,7 +3,7 @@ package org.opencypher.spark.impl
 import org.apache.spark.sql.Row
 import org.opencypher.spark.api.CypherType
 import org.opencypher.spark.impl.frame._
-import org.opencypher.spark.api.value.{CypherNode, CypherValue}
+import org.opencypher.spark.api.value.{CypherNode, CypherRelationship, CypherValue}
 
 class FrameProducer(implicit val planningContext: PlanningContext) {
 
@@ -27,6 +27,11 @@ class FrameProducer(implicit val planningContext: PlanningContext) {
   implicit final class RichNodeFrame(input: StdCypherFrame[CypherNode])
     extends AbstractRichValueFrame[CypherNode](input) {
     def labelFilter(labels: String*) = LabelFilterNode(input)(labels)
+  }
+
+  implicit final class RichRelationshipFrame(input: StdCypherFrame[CypherRelationship])
+    extends AbstractRichValueFrame[CypherRelationship](input) {
+    def typeFilter(types: String*) = TypeFilterRelationship(input)(types.toSet)
   }
 
   implicit final class RichProductFrame(input: StdCypherFrame[Product])

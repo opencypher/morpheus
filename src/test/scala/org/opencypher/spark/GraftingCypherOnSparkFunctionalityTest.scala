@@ -131,6 +131,25 @@ class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessi
     ))
   }
 
+  test("get all relationships of type T") {
+    val a = add(newNode)
+    val b = add(newNode)
+    val c = add(newNode)
+    val r1 = add(newRelationship(a, "T", b))
+    add(newRelationship(a, "NOT_T", b))
+    val r2 = add(newRelationship(a, "T", c))
+    val r3 = add(newRelationship(b, "T", b))
+    add(newRelationship(b, "FOO", b))
+
+    // MATCH ()-[r:T]->() RETURN r
+    val result = graph.cypher(SupportedQueries.getAllRelationshipsOfTypeT)
+
+    result.records.collectAsScalaSet should equal(Set(
+      CypherRecord("r" -> r1),
+      CypherRecord("r" -> r2),
+      CypherRecord("r" -> r3)
+    ))
+  }
 
   //  test("all node scan on node-only graph that uses all kinds of properties") {
 //    val pg = factory(createGraph2(_)).graph
@@ -162,16 +181,6 @@ class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessi
 //
 //    result.show(false)
 //  }
-//
-//
-//  test("get all rels of type T") {
-//    val pg = factory(createGraph1(_)).graph
-//
-//    val cypher = pg.cypher(SupportedQueries.getAllRelationshipsOfTypeT)
-//
-//    cypher.show()
-//  }
-//
 //
 //  test("simple union distinct") {
 //    val pg = factory(createGraph3(_)).graph

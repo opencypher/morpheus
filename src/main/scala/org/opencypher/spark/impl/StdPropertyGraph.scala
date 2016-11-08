@@ -112,6 +112,11 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
 
         StdCypherResultContainer.fromProducts(unwindedAndSelected)
 
+      case SupportedQueries.getAllRelationshipsOfTypeT =>
+        val relationships = allRelationships('r).typeFilter("T").asRow
+
+        StdCypherResultContainer.fromRows(relationships)
+
 
 //      case SupportedQueries.getAllRelationshipsOfTypeT =>
 //        new StdFrame(relationships.filter(_.typ == "T").map(r => StdRecord(Array(r), Array.empty)), ListMap("r" -> 0)).result
