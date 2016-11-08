@@ -104,7 +104,6 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
 
         StdCypherResultContainer.fromProducts(grouped)
 
-        // MATCH (a:A) WITH collect(a.name) AS names UNWIND names AS name RETURN name
       case SupportedQueries.matchAggregateAndUnwind =>
         val nodesWithProperty = allNodes('a).labelFilter("A").asProduct.propertyValue('a, 'name)('name)
 
@@ -113,26 +112,7 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
 
         StdCypherResultContainer.fromProducts(unwindedAndSelected)
 
-//        nodesWithProperty.run.groupByKey(_ => 0)
 
-//        ???
-
-//        val lhs = nodes.filter(_.labels.contains("A"))
-//          .flatMap(_.properties.get("name"))(CypherValue.implicits.cypherValueEncoder[CypherValue])
-//
-//        val collected = lhs.rdd.aggregate(List.empty[CypherValue])((ls, c) => ls :+ c, _ ++ _)
-//        val result = session.createDataset(collected)(CypherValue.implicits.cypherValueEncoder[CypherValue])
-//
-//        new StdFrame(result.map(v => StdRecord(Array(v), Array.empty)), ListMap("name" -> 0)).result
-
-
-
-      //        new StdFrame(session.createDataset(nodes.map[StdRecord] { node: CypherNode =>
-//          StdRecord(Array(CypherInteger(node.id.v)), Array.empty)
-//        }.rdd.sortBy[Long]({ record =>
-//          record.values(0).asInstanceOf[CypherInteger].v
-//        }, false)), ListMap("value" -> 0)).result
-//
 //      case SupportedQueries.getAllRelationshipsOfTypeT =>
 //        new StdFrame(relationships.filter(_.typ == "T").map(r => StdRecord(Array(r), Array.empty)), ListMap("r" -> 0)).result
 //
