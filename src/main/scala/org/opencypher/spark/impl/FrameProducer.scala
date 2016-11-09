@@ -88,7 +88,12 @@ class FrameProducer(implicit val planningContext: PlanningContext) {
 
     def join(other: StdCypherFrame[Row]) = new JoinBuilder[Row] {
       def on(lhsKey: Symbol)(rhsKey: Symbol): StdCypherFrame[Row] =
-        Join(input, other)(lhsKey, rhsKey)
+        Join(input, other)(lhsKey, rhsKey)(optional = false)
+    }
+
+    def optionalJoin(other: StdCypherFrame[Row]) = new JoinBuilder[Row] {
+      def on(lhsKey: Symbol)(rhsKey: Symbol): StdCypherFrame[Row] =
+        Join(input, other)(lhsKey, rhsKey)(optional = true)
     }
   }
 

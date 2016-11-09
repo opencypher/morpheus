@@ -19,7 +19,8 @@ object StdPropertyGraph {
     val getAllRelationshipsOfTypeTOfLabelA = "MATCH (:A)-[r]->(:B) RETURN r"
     val simpleUnionAll = "MATCH (a:A) RETURN a.name AS name UNION ALL MATCH (b:B) RETURN b.name AS name"
     val simpleUnionDistinct = "MATCH (a:A) RETURN a.name AS name UNION MATCH (b:B) RETURN b.name AS name"
-    val optionalMatch = "MATCH (a:A) OPTIONAL MATCH (a)-[r]->(b) RETURN r"
+    val matchOptionalMatch = "MATCH (a:A) OPTIONAL MATCH (a)-[r]->(b) RETURN r"
+    val optionalMatchRelationshipT = "OPTIONAL MATCH (a)-[r:T]->(b) RETURN r"
     val unwind = "WITH [1, 2, 3] AS l UNWIND l AS x RETURN x"
     val matchAggregate = "MATCH (a:A) RETURN collect(a.name) AS names"
     val matchAggregateAndUnwind = "MATCH (a:A) WITH collect(a.name) AS names UNWIND names AS name RETURN name"
@@ -117,13 +118,21 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
 
         StdCypherResultContainer.fromRows(relationships)
 
+      case SupportedQueries.matchOptionalMatch =>
+        val aNodes = allNodes('a).labelFilter("A").asProduct.nodeId('a)('aid).asRow
 
-//      case SupportedQueries.getAllRelationshipsOfTypeT =>
-//        new StdFrame(relationships.filter(_.typ == "T").map(r => StdRecord(Array(r), Array.empty)), ListMap("r" -> 0)).result
-//
-//
-//
-//      case SupportedQueries.optionalMatch =>
+        val bNodes = allNodes('b).asProduct.nodeId('b)('bid).asRow
+        val rRels = allRelationships('r).asProduct
+            .relationshipStartId('r)('rstart)
+            .relationshipEndId('r)('rend).asRow
+
+        val joinRB = bNodes.join(rRels).on('bid)('rend)
+        val joinAR = aNodes.optionalJoin(joinRB).on('aid)('rstart)
+
+        val selected = joinAR.asProduct.selectFields('r)
+
+        StdCypherResultContainer.fromProducts(selected)
+
 //        val lhs = nodes.filter(_.labels.contains("A")).map(node => (node.id.v, node))(Encoders.tuple(implicitly[Encoder[Long]], CypherValue.implicits.cypherValueEncoder[CypherNode])).toDF("id_a", "val_a")
 //
 //        val b = nodes.filter(_.labels.contains("B")).map(node => (node.id.v, node))(Encoders.tuple(implicitly[Encoder[Long]], CypherValue.implicits.cypherValueEncoder[CypherNode])).toDF("id_b", "val_b")

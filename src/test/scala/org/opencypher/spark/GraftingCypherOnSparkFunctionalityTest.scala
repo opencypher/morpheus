@@ -151,6 +151,26 @@ class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessi
     ))
   }
 
+  test("optional match") {
+    val a = add(newNode.withLabels("A"))
+    val b = add(newNode.withLabels("A"))
+    val c = add(newNode.withLabels("B"))
+    add(newNode)
+    val r1 = add(newUntypedRelationship(a, b))
+    val r2 = add(newUntypedRelationship(a, b))
+    add(newUntypedRelationship(c, a))
+    add(newUntypedRelationship(c, b))
+
+    // MATCH (a:A) OPTIONAL MATCH (a)-[r]->(b) RETURN r
+    val result = graph.cypher(SupportedQueries.matchOptionalMatch)
+
+    result.records.collectAsScalaSet should equal(Set(
+      CypherRecord("r" -> r1),
+      CypherRecord("r" -> r2),
+      CypherRecord("r" -> null)
+    ))
+  }
+
   //  test("all node scan on node-only graph that uses all kinds of properties") {
 //    val pg = factory(createGraph2(_)).graph
 //
@@ -190,26 +210,10 @@ class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessi
 //    result.show()
 //  }
 //
-//  test("optional match") {
-//    val pg = factory(createGraph1(_)).graph
-//
-//    val result: CypherResult = pg.cypher(SupportedQueries.optionalMatch)
-//
-//    result.show()
-//  }
-//
 //  test("unwind") {
 //    val pg = factory(createGraph1(_)).graph
 //
 //    val result: CypherResult = pg.cypher(SupportedQueries.unwind)
-//
-//    result.show()
-//  }
-//
-//  test("match aggregate unwind") {
-//    val pg = factory(createGraph3(_)).graph
-//
-//    val result: CypherResult = pg.cypher(SupportedQueries.matchAggregateAndUnwind)
 //
 //    result.show()
 //  }

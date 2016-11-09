@@ -7,6 +7,32 @@ import org.opencypher.spark.api.value.CypherNode
 
 class JoinTest extends StdFrameTestSuite {
 
+  test("optional join") {
+    val n1 = add(newNode.withLabels("A", "B"))
+    val n2 = add(newNode.withLabels("A", "B"))
+    val n3 = add(newNode.withLabels("A"))
+    add(newNode.withLabels("B"))
+    add(newNode)
+
+    new GraphTest {
+      import frames._
+
+      val a = allNodes('a).labelFilter("A").asProduct.nodeId('a)('aid).asRow
+      val b = allNodes('b).labelFilter("B").asProduct.nodeId('b)('bid).asRow
+
+      val result = a.optionalJoin(b).on('aid)('bid).asProduct.testResult
+
+      result.signature shouldHaveFields('a -> CTNode, 'aid -> CTInteger, 'b -> CTNode, 'bid -> CTInteger)
+      result.signature shouldHaveFieldSlots(
+        'a -> BinaryRepresentation,
+        'aid -> EmbeddedRepresentation(LongType),
+        'b -> BinaryRepresentation,
+        'bid -> EmbeddedRepresentation(LongType))
+      // TODO: Representation again; null value of primitive int is -1 (something with nullable columns)
+      result.toSet should equal(Set((n1, 1, n1, 1), (n2, 2, n2, 2), (n3, 3, null, -1)))
+    }
+  }
+
   test("Joins on node ids") {
     add(newLabeledNode("A"))
     val n = add(newLabeledNode("A", "B"))
