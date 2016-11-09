@@ -103,4 +103,17 @@ class StdFrameSignatureTest extends StdTestSuite {
     newSig.fields.size shouldBe 1
     newSig.field('n1) should equal(None)
   }
+
+  test("concatenating signatures") {
+    val (_, sig1) = StdFrameSignature.empty.addFields('n4 -> CTAny, 'n1 -> CTAny)
+    val (_, sig2) = StdFrameSignature.empty.addFields('n3 -> CTAny, 'n2 -> CTAny)
+
+    val concatenated = sig1 ++ sig2
+
+    val fieldToOrdinal = concatenated.fields.map { f =>
+      f.sym -> concatenated.slot(f.sym).get.ordinal
+    }.sortBy(_._2)
+
+    fieldToOrdinal should equal(Seq('n4 -> 0, 'n1 -> 1, 'n3 -> 2, 'n2 -> 3))
+  }
 }

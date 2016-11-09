@@ -92,14 +92,15 @@ class StdFrameSignature(private val fieldMap: Map[StdField, StdSlot] = Map.empty
       throw new IllegalArgumentException(s"Cannot upcast $oldType to $newType")
   }
 
-
   def ++(other: StdFrameSignature): StdFrameSignature = {
     // TODO: Remove var
     var highestSlotOrdinal = fieldMap.values.map(_.ordinal).max
-    val otherWithUpdatedOrdinals = other.fieldMap.map {
-      case (f, s) =>
-        highestSlotOrdinal = highestSlotOrdinal + 1
-        f -> s.copy(ordinal = highestSlotOrdinal)
+    val otherWithUpdatedOrdinals = other.fieldMap.toList.sortBy {
+      case (f, s) => s.ordinal
+    }.map {
+        case (f, s) =>
+          highestSlotOrdinal = highestSlotOrdinal + 1
+          f -> s.copy(ordinal = highestSlotOrdinal)
     }
     new StdFrameSignature(fieldMap ++ otherWithUpdatedOrdinals)
   }
