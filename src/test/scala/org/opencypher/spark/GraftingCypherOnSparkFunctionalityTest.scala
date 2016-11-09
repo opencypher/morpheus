@@ -66,7 +66,7 @@ class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessi
 
   test("simple union all") {
     val a = add(newLabeledNode("A").withProperties("name" -> "Mats"))
-    val b = add(newLabeledNode("B").withProperties("name" -> 123))
+    add(newLabeledNode("B").withProperties("name" -> 123))
     val ab = add(newLabeledNode("A", "B").withProperties("name" -> "Foo"))
     val c = add(newLabeledNode("C").withProperties("name" -> "Bar"))
     add(newNode)
@@ -85,10 +85,10 @@ class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessi
   }
 
   test("get all node ids sorted desc") {
-    val n1 = add(newNode)
-    val n2 = add(newNode.withLabels("Foo"))
-    val n3 = add(newNode.withProperties("a" -> 10))
-    val n4 = add(newNode)
+    add(newNode)
+    add(newNode.withLabels("Foo"))
+    add(newNode.withProperties("a" -> 10))
+    add(newNode)
 
       // MATCH (n) RETURN id(n) AS id ORDER BY id DESC
     val result = graph.cypher(SupportedQueries.allNodeIdsSortedDesc)
