@@ -76,10 +76,6 @@ class FrameProducer(implicit val planningContext: PlanningContext) {
 
     def unwind(list: Symbol, item: Symbol) =
       Unwind(input)(list, item)
-
-    // TODO: Remove once we have optional match
-    def nullable(value: Symbol) =
-      Upcast(input)(value)(_.nullable)
   }
 
   implicit final class RichRowFrame(input: StdCypherFrame[Row])

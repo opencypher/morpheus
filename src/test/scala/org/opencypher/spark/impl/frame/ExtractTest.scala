@@ -32,7 +32,7 @@ class ExtractTest extends StdFrameTestSuite {
     new GraphTest {
       import frames._
 
-      val result = allRelationships('r).asProduct.nullable('r).relationshipStartId('r)('startId).testResult
+      val result = optionalAllRelationships('r).asProduct.relationshipStartId('r)('startId).testResult
 
       result.signature shouldHaveFields('r -> CTRelationship.nullable, 'startId -> CTInteger.nullable)
       result.signature shouldHaveFieldSlots('r -> BinaryRepresentation, 'startId -> EmbeddedRepresentation(LongType))
@@ -64,7 +64,7 @@ class ExtractTest extends StdFrameTestSuite {
     new GraphTest {
       import frames._
 
-      val result = allRelationships('r).asProduct.nullable('r).relationshipEndId('r)('endId).testResult
+      val result = optionalAllRelationships('r).asProduct.relationshipEndId('r)('endId).testResult
 
       result.signature shouldHaveFields('r -> CTRelationship.nullable, 'endId -> CTInteger.nullable)
       result.signature shouldHaveFieldSlots('r -> BinaryRepresentation, 'endId -> EmbeddedRepresentation(LongType))
@@ -119,7 +119,7 @@ class ExtractTest extends StdFrameTestSuite {
 
       import frames._
 
-      val result = allNodes('n).asProduct.nullable('n).nodeId('n)('nid).testResult
+      val result = optionalAllNodes('n).asProduct.nodeId('n)('nid).testResult
 
       result.signature shouldHaveFields('n -> CTNode.nullable, 'nid -> CTInteger.nullable)
       result.signature shouldHaveFieldSlots('n -> BinaryRepresentation, 'nid -> EmbeddedRepresentation(LongType))
@@ -166,7 +166,7 @@ class ExtractTest extends StdFrameTestSuite {
 
       import frames._
 
-      val result = allRelationships('r).asProduct.nullable('r).relationshipId('r)('rid).testResult
+      val result = optionalAllRelationships('r).asProduct.relationshipId('r)('rid).testResult
 
       result.signature shouldHaveFields('r -> CTRelationship.nullable, 'rid -> CTInteger.nullable)
       result.signature shouldHaveFieldSlots('r -> BinaryRepresentation, 'rid -> EmbeddedRepresentation(LongType))
@@ -213,7 +213,7 @@ class ExtractTest extends StdFrameTestSuite {
     new GraphTest {
       import frames._
 
-      val frame = allNodes('n).asProduct.nullable('n).propertyValue('n, 'prop1)(Symbol("n.prop1"))
+      val frame = optionalAllNodes('n).asProduct.propertyValue('n, 'prop1)(Symbol("n.prop1"))
       val result = frame.testResult
 
       result.signature shouldHaveFields('n -> CTNode.nullable, Symbol("n.prop1") -> CTAny.nullable)
