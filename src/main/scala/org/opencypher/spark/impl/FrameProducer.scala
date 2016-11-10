@@ -76,6 +76,9 @@ class FrameProducer(implicit val planningContext: PlanningContext) {
 
     def unwind(list: Symbol, item: Symbol) =
       Unwind(input)(list, item)
+
+    def varExpand(node: Symbol, lowerBound: Int, upperBound: Int)(relationships: Symbol) =
+      VarExpand(input)(node, lowerBound, upperBound)(relationships)
   }
 
   implicit final class RichRowFrame(input: StdCypherFrame[Row])
