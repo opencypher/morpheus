@@ -7,7 +7,7 @@ import org.opencypher.spark.impl._
 
 import scala.collection.TraversableOnce
 
-object Unwind {
+object Unwind extends FrameCompanion {
 
   def apply(input: StdCypherFrame[Product])(list: Symbol, item: Symbol)(implicit context: PlanningContext): StdCypherFrame[Product] = {
 
@@ -16,7 +16,7 @@ object Unwind {
       case t if t.superTypeOf(CTList(CTAny)).isTrue => CTAny.nullable
       case x => throw new IllegalArgumentException(s"Expected $list to be a list, but it was a $x")
     }
-    val (_, outSig) = input.signature.addField(item, listInnerType)
+    val (_, outSig) = input.signature.addField(item -> listInnerType)
     val listSlotOrdinal = input.signature.slot(list).get.ordinal
 
     Unwind(input)(listSlotOrdinal)(outSig)

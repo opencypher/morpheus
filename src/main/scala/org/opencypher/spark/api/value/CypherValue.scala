@@ -41,7 +41,7 @@ sealed trait CypherValueCompanion[V <: CypherValue] extends Equiv[V] {
 
   // Cypher equivalence (also used by `==` on CypherValue instances)
   def equiv(l: V, r: V): Boolean =
-orderability(l, r) == 0
+    orderability(l, r) == 0
 
   // Cypher equality
   def equal(l: V, r: V): Ternary = {
@@ -70,7 +70,7 @@ orderability(l, r) == 0
       if (x eq y) 0
       else if (y eq null) -1
       else if (null eq x) +1
-      else computeOrderability(x,y)
+      else computeOrderability(x, y)
     }
   }
 
