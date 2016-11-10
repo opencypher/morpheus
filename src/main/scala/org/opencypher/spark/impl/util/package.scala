@@ -67,8 +67,56 @@ package object util {
         val src = product.asInstanceOf[(Any, Any, Any, Any, Any, Any, Any, Any)]
         (src._1, src._2, src._3, src._4, src._5, src._6, src._7, src._8, elt)
 
-      case _ =>
-        throw new UnsupportedOperationException("Implement support for larger products")
+      case 9 =>
+        val src = product.asInstanceOf[(Any, Any, Any, Any, Any, Any, Any, Any, Any)]
+        (src._1, src._2, src._3, src._4, src._5, src._6, src._7, src._8, src._9, elt)
+
+      case 10 =>
+        val src = product.asInstanceOf[(Any, Any, Any, Any, Any, Any, Any, Any, Any, Any)]
+        (src._1, src._2, src._3, src._4, src._5, src._6, src._7, src._8, src._9, src._10, elt)
+
+      case 11 =>
+        val src = product.asInstanceOf[(Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any)]
+        (src._1, src._2, src._3, src._4, src._5, src._6, src._7, src._8, src._9, src._10, src._11, elt)
+
+      case 12 =>
+        val src = product.asInstanceOf[(Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any)]
+        (src._1, src._2, src._3, src._4, src._5, src._6, src._7, src._8, src._9, src._10, src._11, src._12, elt)
+
+      case 13 =>
+        val src = product.asInstanceOf[(Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any)]
+        (src._1, src._2, src._3, src._4, src._5, src._6, src._7, src._8, src._9, src._10, src._11, src._12, src._13, elt)
+
+      case 14 =>
+        val src = product.asInstanceOf[(Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any)]
+        (src._1, src._2, src._3, src._4, src._5, src._6, src._7, src._8, src._9, src._10, src._11, src._12, src._13, src._14, elt)
+
+      case 15 =>
+        val src = product.asInstanceOf[(Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any)]
+        (src._1, src._2, src._3, src._4, src._5, src._6, src._7, src._8, src._9, src._10, src._11, src._12, src._13, src._14, src._15, elt)
+
+      case 16 =>
+        val src = product.asInstanceOf[(Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any)]
+        (src._1, src._2, src._3, src._4, src._5, src._6, src._7, src._8, src._9, src._10, src._11, src._12, src._13, src._14, src._15, src._16, elt)
+
+      case 17 =>
+        val src = product.asInstanceOf[(Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any)]
+        (src._1, src._2, src._3, src._4, src._5, src._6, src._7, src._8, src._9, src._10, src._11, src._12, src._13, src._14, src._15, src._16, src._17, elt)
+
+      case 18 =>
+        val src = product.asInstanceOf[(Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any)]
+        (src._1, src._2, src._3, src._4, src._5, src._6, src._7, src._8, src._9, src._10, src._11, src._12, src._13, src._14, src._15, src._16, src._17, src._18, elt)
+
+      case 19 =>
+        val src = product.asInstanceOf[(Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any)]
+        (src._1, src._2, src._3, src._4, src._5, src._6, src._7, src._8, src._9, src._10, src._11, src._12, src._13, src._14, src._15, src._16, src._17, src._18, src._19, elt)
+
+      case 20 =>
+        val src = product.asInstanceOf[(Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any)]
+        (src._1, src._2, src._3, src._4, src._5, src._6, src._7, src._8, src._9, src._10, src._11, src._12, src._13, src._14, src._15, src._16, src._17, src._18, src._19, src._20, elt)
+
+      case x =>
+        throw new UnsupportedOperationException(s"Implement support for larger products: $x")
     }
 
     def getAs[T](index: Int): T = get(index).asInstanceOf[T]
