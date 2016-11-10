@@ -3,7 +3,6 @@ package org.opencypher.spark.impl.frame
 import org.opencypher.spark.api.frame.BinaryRepresentation
 import org.opencypher.spark.api.types.{CTList, CTNode, CTRelationship}
 import org.opencypher.spark.api.value.CypherList
-import org.scalatest.FunSuite
 
 class VarExpandTest extends StdFrameTestSuite {
 

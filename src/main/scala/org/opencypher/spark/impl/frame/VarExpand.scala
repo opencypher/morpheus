@@ -1,7 +1,7 @@
 package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.{Dataset, Row, functions}
-import org.opencypher.spark.api.types.{CTInteger, CTList, CTRelationship}
+import org.opencypher.spark.api.types.{CTList, CTRelationship}
 import org.opencypher.spark.api.value.{CypherList, CypherRelationship}
 import org.opencypher.spark.impl._
 
@@ -37,12 +37,13 @@ object VarExpand extends FrameCompanion {
     val combines = (Math.max(lowerBound, 1) to upperBound).map { i =>
       val stepI = stepMap(i)
       val rFields = (1 to i).map { j => Symbol(s"R$j") }
-      val rSlots = rFields.map { f => obtain(stepI.signature.slot)(f) }
+      val rSlots = rFields.map { f => obtain(stepI.signature.slot)(f) }.map(_.ordinal)
       val (_ , sig) = stepI.signature.addField(relationships -> CTList(CTRelationship))(context)
-      val combine = Combine(stepI, rSlots.map(_.ordinal))(sig)
+      val combine = Combine(stepI, rSlots)(sig)
+      val filter = FilterDuplicates(combine, rSlots)
       // Selection phase
       // Only keep relationship list column, and start id of first relationship (for joining)
-      combine.selectFields(relationships, firstRelationship)
+      filter.selectFields(relationships, firstRelationship)
     }
 
     // Union phase
@@ -62,7 +63,7 @@ object VarExpand extends FrameCompanion {
     val plan = if (lowerBound == 0) {
       // compute empty lists for all input nodes
       val (_, emptySig) = startNodeWithId.signature.addField(relationships -> CTList(CTRelationship))(context)
-      val lists = Combine(startNodeWithId, Seq.empty)(emptySig).selectFields(node, relationships)
+      val lists = Combine(startNodeWithId, IndexedSeq.empty)(emptySig).selectFields(node, relationships)
       nonEmptyResults.unionAll(lists)
     } else
       nonEmptyResults
@@ -70,7 +71,26 @@ object VarExpand extends FrameCompanion {
     plan
   }
 
-  private final case class Combine(input: StdCypherFrame[Product], indices: Seq[Int])(sig: StdFrameSignature) extends ProductFrame(sig) {
+  private final case class FilterDuplicates(input: StdCypherFrame[Product], indices: IndexedSeq[Int])
+    extends ProductFrame(input.signature) {
+
+    override def execute(implicit context: StdRuntimeContext): Dataset[Product] = {
+      val in = input.run
+
+      in.filter(areUnique(indices))
+    }
+  }
+
+  private final case class areUnique(indices: IndexedSeq[Int]) extends (Product => Boolean) {
+    import org.opencypher.spark.impl.util._
+
+    override def apply(record: Product): Boolean = {
+      val items = indices.map(record.getAs[CypherRelationship](_))
+      items.distinct.size == indices.size
+    }
+  }
+
+  private final case class Combine(input: StdCypherFrame[Product], indices: IndexedSeq[Int])(sig: StdFrameSignature) extends ProductFrame(sig) {
 
     override def execute(implicit context: StdRuntimeContext): Dataset[Product] = {
       val in = input.run
@@ -79,13 +99,13 @@ object VarExpand extends FrameCompanion {
     }
   }
 
-  private final case class combineToList(indices: Seq[Int]) extends (Product => Product) {
+  private final case class combineToList(indices: IndexedSeq[Int]) extends (Product => Product) {
 
     import org.opencypher.spark.impl.util._
 
     override def apply(record: Product): Product = {
       val items = indices.map(record.getAs[CypherRelationship](_))
-      record :+ CypherList(items.distinct)
+      record :+ CypherList(items)
     }
   }
 
