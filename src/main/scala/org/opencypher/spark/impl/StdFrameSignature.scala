@@ -21,7 +21,7 @@ class StdFrameSignature(private val fieldMap: Map[StdField, StdSlot] = Map.empty
   override type Field = StdField
   override type Slot = StdSlot
 
-  override def fields: Seq[StdField] = fieldMap.keys.toSeq
+  override def fields: Seq[StdField] = fieldMap.keys.toSeq.sortBy(f => slot(f.sym).get.ordinal)
   override def slots: Seq[StdSlot] = fieldMap.values.toSeq.sortBy(_.ordinal)
 
   def slotNames: Seq[String] = slots.map(_.sym.name)

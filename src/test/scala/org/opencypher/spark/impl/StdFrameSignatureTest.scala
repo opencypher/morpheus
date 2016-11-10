@@ -116,4 +116,16 @@ class StdFrameSignatureTest extends StdTestSuite {
 
     fieldToOrdinal should equal(Seq('n4 -> 0, 'n1 -> 1, 'n3 -> 2, 'n2 -> 3))
   }
+
+  test("fields should be returned in slot order") {
+    val (_, sig1) = StdFrameSignature.empty.addField('n1 -> CTAny)._2.addFields('n2 -> CTAny, 'n3 -> CTAny)
+    val (_, sig2) = StdFrameSignature.empty.addFields('n4 -> CTAny, 'n5 -> CTAny, 'n6 -> CTAny)
+    val (_, sig) = (sig2 ++ sig1).selectFields('n2, 'n4, 'n6)
+
+    val sortedFields = sig.fields.sortBy { f =>
+      sig.slot(f.sym).get.ordinal
+    }
+
+    sig.fields should equal(sortedFields)
+  }
 }
