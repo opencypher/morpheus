@@ -171,6 +171,33 @@ class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessi
     ))
   }
 
+  test("bounded variable length") {
+    val a1 = add(newNode.withLabels("A"))
+    val a2 = add(newNode.withLabels("A"))
+    val b = add(newNode)
+    val c = add(newNode)
+    val d = add(newNode)
+    val r1 = add(newUntypedRelationship(a1, a1))
+    val r2 = add(newUntypedRelationship(a1, b))
+    val r3 = add(newUntypedRelationship(b, c))
+    add(newUntypedRelationship(c, d))
+
+    val r5 = add(newUntypedRelationship(a2, d))
+    val r6 = add(newUntypedRelationship(d, a1))
+
+    // MATCH (a:A)-[r*1..2]->() RETURN r
+    val result = graph.cypher(SupportedQueries.boundVarLength)
+
+    result.records.collectAsScalaSet should equal(Set(
+      CypherRecord("r" -> CypherList(Seq(r1))),
+      CypherRecord("r" -> CypherList(Seq(r1, r2))),
+      CypherRecord("r" -> CypherList(Seq(r2, r3))),
+      CypherRecord("r" -> CypherList(Seq(r5))),
+      CypherRecord("r" -> CypherList(Seq(r5, r6))),
+      CypherRecord("r" -> CypherList(Seq(r2)))
+    ))
+  }
+
   //  test("all node scan on node-only graph that uses all kinds of properties") {
 //    val pg = factory(createGraph2(_)).graph
 //

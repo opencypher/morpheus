@@ -1,7 +1,7 @@
 package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.{Dataset, Row, functions}
-import org.opencypher.spark.api.types.{CTList, CTRelationship}
+import org.opencypher.spark.api.types.{CTInteger, CTList, CTRelationship}
 import org.opencypher.spark.api.value.{CypherList, CypherRelationship}
 import org.opencypher.spark.impl._
 
@@ -17,12 +17,15 @@ object VarExpand extends FrameCompanion {
     val rStart = allRelationships('RNEXT).asProduct.relationshipStartId('RNEXT)('START).asRow
     val startIdSlot = obtain(rStart.signature.slot)('START).sym
 
-    // Initial input for stepping: all relationships
-
     val stepMap = new mutable.HashMap[Int, StdCypherFrame[Product]]()
-    stepMap(0) = allRelationships('R0).asProduct
 
-    (1 until upperBound).foreach { i =>
+    val firstRelationship = 'R1
+    if (upperBound > 0) {
+      // Initial input for stepping: all relationships
+      stepMap(1) = allRelationships(firstRelationship).asProduct
+    }
+
+    (2 to upperBound).foreach { i =>
       val prevStep = stepMap(i - 1)
       val prevWithEndId = prevStep.relationshipEndId(Symbol(s"R${i - 1}"))(Symbol(s"END${i - 1}"))
       val endIdSlot = obtain(prevWithEndId.signature.slot)(prevWithEndId.projectedField.sym).sym
@@ -31,31 +34,40 @@ object VarExpand extends FrameCompanion {
     }
 
     // Combine phase
-    val combines = (lowerBound - 1 until upperBound).map { i =>
+    val combines = (Math.max(lowerBound, 1) to upperBound).map { i =>
       val stepI = stepMap(i)
-      val rFields = (0 to i).map { j => Symbol(s"R$j") }
+      val rFields = (1 to i).map { j => Symbol(s"R$j") }
       val rSlots = rFields.map { f => obtain(stepI.signature.slot)(f) }
       val (_ , sig) = stepI.signature.addField(relationships -> CTList(CTRelationship))(context)
-      Combine(stepI, rSlots.map(_.ordinal))(sig)
+      val combine = Combine(stepI, rSlots.map(_.ordinal))(sig)
+      // Selection phase
+      // Only keep relationship list column, and start id of first relationship (for joining)
+      combine.selectFields(relationships, firstRelationship)
     }
-
-    // Selection phase
-    // Only keep relationship list column, and start id of first relationship (for joining)
-    val selections = combines.map(_.selectFields(relationships, 'R0))
 
     // Union phase
     // Union combinations into one table
-    val union = selections.reduce[StdCypherFrame[Product]] {
+    val union = combines.reduce[StdCypherFrame[Product]] {
       case (acc, next) => acc.unionAll(next)
     }
 
     // Join phase
     // Join with input start nodes
 
-    val startNodeWithId = input.nodeId(node)('nodeSTART).asRow
-    val allRelsWithFirstStartId = union.relationshipStartId('R0)('FIRST).asRow
+    val startNodeWithId = input.nodeId(node)('nodeSTART)
+    val allRelsWithFirstStartId = union.relationshipStartId(firstRelationship)('FIRST).asRow
 
-    startNodeWithId.join(allRelsWithFirstStartId).on('nodeSTART)('FIRST).asProduct.selectFields(node, relationships)
+    val nonEmptyResults = startNodeWithId.asRow.join(allRelsWithFirstStartId).on('nodeSTART)('FIRST).asProduct.selectFields(node, relationships)
+
+    val plan = if (lowerBound == 0) {
+      // compute empty lists for all input nodes
+      val (_, emptySig) = startNodeWithId.signature.addField(relationships -> CTList(CTRelationship))(context)
+      val lists = Combine(startNodeWithId, Seq.empty)(emptySig).selectFields(node, relationships)
+      nonEmptyResults.unionAll(lists)
+    } else
+      nonEmptyResults
+
+    plan
   }
 
   private final case class Combine(input: StdCypherFrame[Product], indices: Seq[Int])(sig: StdFrameSignature) extends ProductFrame(sig) {
@@ -73,7 +85,7 @@ object VarExpand extends FrameCompanion {
 
     override def apply(record: Product): Product = {
       val items = indices.map(record.getAs[CypherRelationship](_))
-      record :+ CypherList(items)
+      record :+ CypherList(items.distinct)
     }
   }
 
@@ -93,25 +105,4 @@ object VarExpand extends FrameCompanion {
       out
     }
   }
-
-  /*
-      f: rels_i, r_i+1, rels => rels_i+1
-
-      rels2 = f(rels1, 'rels2, relationships)
-      ...
-
-
-      rels1 = node r1
-      rels2 = node r1 r2
-      rels3 = node r1 r2 r3
-      ...
-
-      rels1' = r = [r1]
-      rels2' = r = [r1, r2]
-      rels3' = r = [r1, r2, r3]
-
-      result = UNION(rels1', rels2', ...)
-
-   */
-
 }

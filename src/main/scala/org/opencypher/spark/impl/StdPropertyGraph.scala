@@ -26,7 +26,17 @@ object StdPropertyGraph {
     val matchAggregateAndUnwind = "MATCH (a:A) WITH collect(a.name) AS names UNWIND names AS name RETURN name"
     val shortestPath = "MATCH (a {name: 'Ava'}), (b {name: 'Sasha'}) MATCH p=shortestPath((a)-->(b)) RETURN p"
     // not implemented
-    val boundVarLength = "MATCH (a:A)-[r*2]->(b:B) RETURN r"
+    val boundVarLength = "MATCH (a:A)-[r*1..2]->() RETURN r"
+
+    // TODO
+    // (2) Benchmarking
+    // val unboundedVarLength..
+    // val shortestPath=...
+    // val patternPredicates=...
+    // val skipLimit=...
+    // (3) Basic expression handling
+    // (4) Slot-field relationship
+    // (5) UDTs
   }
 }
 
@@ -130,6 +140,16 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
         val joinAR = aNodes.optionalJoin(joinRB).on('aid)('rstart)
 
         val selected = joinAR.asProduct.selectFields('r)
+
+        StdCypherResultContainer.fromProducts(selected)
+
+        // MATCH (a:A)-[r*1..2]->() RETURN r
+      case SupportedQueries.boundVarLength =>
+        val aNodes = allNodes('a).labelFilter("A").asProduct
+
+        val expanded = aNodes.varExpand('a, 1, 2)('r)
+
+        val selected = expanded.selectFields('r)
 
         StdCypherResultContainer.fromProducts(selected)
 

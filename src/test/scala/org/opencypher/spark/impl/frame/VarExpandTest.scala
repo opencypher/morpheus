@@ -84,4 +84,19 @@ class VarExpandTest extends StdFrameTestSuite {
     }
   }
 
+  test("var expand should not repeat relationships") {
+    val n1 = add(newNode)
+    val r1 = add(newUntypedRelationship(n1, n1))
+
+    new GraphTest {
+      import frames._
+
+      val result = allNodes('a).asProduct.varExpand('a, 1, 3)('r).testResult
+
+      result.signature shouldHaveFields('a -> CTNode, 'r -> CTList(CTRelationship))
+      result.signature shouldHaveFieldSlots('a -> BinaryRepresentation, 'r -> BinaryRepresentation)
+      result.toSet should equal(Set(n1 -> CypherList(Seq(r1))))
+    }
+  }
+
 }
