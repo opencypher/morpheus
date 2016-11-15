@@ -2,11 +2,10 @@ package org.opencypher.spark
 
 import org.opencypher.spark.api.CypherRecord
 import org.opencypher.spark.api.value.CypherList
-import org.opencypher.spark.impl.StdPropertyGraph
+import org.opencypher.spark.impl._
 
 class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSession.Fixture {
 
-  import StdPropertyGraph.SupportedQueries
   import factory._
 
   test("all node scan") {
@@ -16,7 +15,7 @@ class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessi
     add(newRelationship(a -> "KNOWS" -> b))
     add(newRelationship(a -> "KNOWS" -> a))
 
-    val result = graph.cypher(SupportedQueries.allNodesScan)
+    val result = graph.cypher(NodeScan())
 
     result.records.collectAsScalaSet should equal(Set(
       CypherRecord("n" -> a),
@@ -32,7 +31,7 @@ class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessi
     add(newNode)
 
     // MATCH (n) RETURN n.name, n.age
-    val result = graph.cypher(SupportedQueries.allNodesScanProjectAgeName)
+    val result = graph.cypher(NodeScanWithProjection())
 
     result.records.collectAsScalaSet should equal(Set(
       CypherRecord("n.name" -> "Mats", "n.age" -> null),
@@ -42,7 +41,7 @@ class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessi
     ))
   }
 
-  test("get all rels of type T from nodes of label A") {
+  test("simple pattern matching") {
     val a1 = add(newLabeledNode("A"))
     val a2 = add(newLabeledNode("A"))
     val b1 = add(newLabeledNode("B"))
@@ -55,7 +54,7 @@ class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessi
     add(newRelationship(b2 -> "B_TO_B" -> b3))
 
     // MATCH (:A)-[r]->(:B) RETURN r
-    val result = graph.cypher(SupportedQueries.getAllRelationshipsOfTypeTOfLabelA)
+    val result = graph.cypher(SimplePattern(startLabels = IndexedSeq("A"), endLabels = IndexedSeq("B")))
 
     result.records.collectAsScalaSet should equal(Set(
       CypherRecord("r" -> r1),
@@ -74,7 +73,7 @@ class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessi
     add(newUntypedRelationship(ab -> c))
 
     // MATCH (a:A) RETURN a.name AS name UNION ALL MATCH (b:B) RETURN b.name AS name
-    val result = graph.cypher(SupportedQueries.simpleUnionAll)
+    val result = graph.cypher(SimpleUnionAll(IndexedSeq("A"), 'name, IndexedSeq("B"), 'name))
 
     result.records.collectAsScalaSet should equal(Set(
       CypherRecord("name" -> "Mats"),
@@ -91,7 +90,7 @@ class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessi
     add(newNode)
 
       // MATCH (n) RETURN id(n) AS id ORDER BY id DESC
-    val result = graph.cypher(SupportedQueries.allNodeIdsSortedDesc)
+    val result = graph.cypher(NodeScanIdsSorted())
 
     result.records.collectAsScalaList should equal(List(
       CypherRecord("id" -> 4),
@@ -108,7 +107,7 @@ class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessi
     add(newLabeledNode("A", "B").withProperties("notName" -> "foo"))
 
     // MATCH (a:A) RETURN collect(a.name) AS names
-    val result = graph.cypher(SupportedQueries.matchAggregate)
+    val result = graph.cypher(CollectNodeProperties(IndexedSeq("A"), 'name))
 
     result.records.collectAsScalaSet should equal(Set(
       CypherRecord("names" -> CypherList(Seq("Mats", "Mats", "Stefan")))
@@ -122,7 +121,7 @@ class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessi
     add(newLabeledNode("A", "B").withProperties("notName" -> "foo"))
 
     // MATCH (a:A) WITH collect(a.name) AS names UNWIND names AS name RETURN name
-    val result = graph.cypher(SupportedQueries.matchAggregateAndUnwind)
+    val result = graph.cypher(CollectAndUnwindNodeProperties(IndexedSeq("A"), 'name, 'name))
 
     result.records.collectAsScalaSet should equal(Set(
       CypherRecord("name" -> "Mats"),
@@ -142,7 +141,7 @@ class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessi
     add(newRelationship(b, "FOO", b))
 
     // MATCH ()-[r:T]->() RETURN r
-    val result = graph.cypher(SupportedQueries.getAllRelationshipsOfTypeT)
+    val result = graph.cypher(SimplePattern(types = IndexedSeq("T")))
 
     result.records.collectAsScalaSet should equal(Set(
       CypherRecord("r" -> r1),
@@ -162,7 +161,7 @@ class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessi
     add(newUntypedRelationship(c, b))
 
     // MATCH (a:A) OPTIONAL MATCH (a)-[r]->(b) RETURN r
-    val result = graph.cypher(SupportedQueries.matchOptionalMatch)
+    val result = graph.cypher(MatchOptionalExpand(startLabels = IndexedSeq("A")))
 
     result.records.collectAsScalaSet should equal(Set(
       CypherRecord("r" -> r1),
@@ -186,7 +185,7 @@ class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSessi
     val r6 = add(newUntypedRelationship(d, a1))
 
     // MATCH (a:A)-[r*1..2]->() RETURN r
-    val result = graph.cypher(SupportedQueries.boundVarLength)
+    val result = graph.cypher(BoundVariableLength(1, 2, "A"))
 
     result.records.collectAsScalaSet should equal(Set(
       CypherRecord("r" -> CypherList(Seq(r1))),

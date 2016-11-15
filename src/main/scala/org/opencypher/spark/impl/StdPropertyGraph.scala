@@ -8,26 +8,6 @@ import org.opencypher.spark.impl.util.SlotSymbolGenerator
 
 import scala.language.implicitConversions
 
-object StdPropertyGraph {
-
-  object SupportedQueries {
-    val allNodesScan = "MATCH (n) RETURN (n)"
-    val allNodesScanProjectAgeName = "MATCH (n) RETURN n.name, n.age"
-    val allNodeIds = "MATCH (n) RETURN id(n)"
-    val allNodeIdsSortedDesc = "MATCH (n) RETURN id(n) AS id ORDER BY id DESC"
-    val getAllRelationshipsOfTypeT = "MATCH ()-[r:T]->() RETURN r"
-    val getAllRelationshipsOfTypeTOfLabelA = "MATCH (:A)-[r]->(:B) RETURN r"
-    val simpleUnionAll = "MATCH (a:A) RETURN a.name AS name UNION ALL MATCH (b:B) RETURN b.name AS name"
-    val simpleUnionDistinct = "MATCH (a:A) RETURN a.name AS name UNION MATCH (b:B) RETURN b.name AS name"
-    val matchOptionalMatch = "MATCH (a:A) OPTIONAL MATCH (a)-[r]->(b) RETURN r"
-    val optionalMatchRelationshipT = "OPTIONAL MATCH (a)-[r:T]->(b) RETURN r"
-    val unwind = "WITH [1, 2, 3] AS l UNWIND l AS x RETURN x"
-    val matchAggregate = "MATCH (a:A) RETURN collect(a.name) AS names"
-    val matchAggregateAndUnwind = "MATCH (a:A) WITH collect(a.name) AS names UNWIND names AS name RETURN name"
-    val shortestPath = "MATCH (a {name: 'Ava'}), (b {name: 'Sasha'}) MATCH p=shortestPath((a)-->(b)) RETURN p"
-    // not implemented
-    val boundVarLength = "MATCH (a:A)-[r*1..2]->() RETURN r"
-
     // TODO
     // (2) Benchmarking
     // val unboundedVarLength..
@@ -37,15 +17,11 @@ object StdPropertyGraph {
     // (3) Basic expression handling
     // (4) Slot-field relationship
     // (5) UDTs
-  }
-}
 
 class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Dataset[CypherRelationship])
                       (implicit private val session: SparkSession) extends PropertyGraph {
 
-  import StdPropertyGraph.SupportedQueries
-
-  override def cypher(query: String): CypherResultContainer = {
+  override def cypher(query: SupportedQuery): CypherResultContainer = {
     implicit val planningContext = new PlanningContext(new SlotSymbolGenerator, nodes, relationships)
     implicit val runtimeContext = new StdRuntimeContext(session)
 
@@ -55,25 +31,30 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
 
     query match {
 
-      case SupportedQueries.allNodesScan =>
-        StdCypherResultContainer.fromProducts(allNodes('n).asProduct)
+      case NodeScan(labels) =>
+        StdCypherResultContainer.fromProducts(labelScan('n)(labels).asProduct)
 
-      case SupportedQueries.allNodesScanProjectAgeName =>
-        val productFrame = allNodes('n).asProduct
-        val withName = productFrame.propertyValue('n, 'name)(Symbol("n.name"))
-        val withAge = withName.propertyValue('n, 'age)(Symbol("n.age"))
+      case NodeScanWithProjection(labels, firstKey, secondKey) =>
+        val productFrame = labelScan('n)(labels).asProduct
+        val withName = productFrame.propertyValue('n, firstKey)(Symbol("n.name"))
+        val withAge = withName.propertyValue('n, secondKey)(Symbol("n.age"))
         val selectFields = withAge.selectFields(Symbol("n.name"), Symbol("n.age"))
 
         StdCypherResultContainer.fromProducts(selectFields)
 
-      case SupportedQueries.getAllRelationshipsOfTypeTOfLabelA =>
-        val aAsProduct = allNodes('a).labelFilter("A").asProduct
+      case SimplePattern(startLabels, types, endLabels) if startLabels.isEmpty && endLabels.isEmpty =>
+        val relationships = typeScan('r)(types).asRow
+
+        StdCypherResultContainer.fromRows(relationships)
+
+      case SimplePattern(startLabels, types, endLabels) =>
+        val aAsProduct = labelScan('a)(startLabels).asProduct
         val aWithId = aAsProduct.nodeId('a)(Symbol("id(a)"))
 
-        val bAsProduct = allNodes('b).labelFilter("B").asProduct
+        val bAsProduct = labelScan('b)(endLabels).asProduct
         val bWithId = bAsProduct.nodeId('b)(Symbol("id(b)"))
 
-        val rAsProduct = allRelationships('r).asProduct
+        val rAsProduct = typeScan('r)(types).asProduct
         val rWithStartId = rAsProduct.relationshipStartId('r)(Symbol("startId(r)"))
         val rWithStartAndEndId = rWithStartId.relationshipEndId('r)(Symbol("endId(r)"))
         val relsAsRows = rWithStartAndEndId.asRow
@@ -85,15 +66,14 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
 
         StdCypherResultContainer.fromProducts(selectField)
 
-      case SupportedQueries.simpleUnionAll =>
-        val aAsProduct = allNodes('a).labelFilter("A").asProduct
-        val aNames = aAsProduct.propertyValue('a, 'name)(Symbol("a.name"))
+      case SimpleUnionAll(lhsLabels, lhsKey, rhsLabels, rhsKey) =>
+        val aAsProduct = labelScan('a)(lhsLabels).asProduct
+        val aNames = aAsProduct.propertyValue('a, lhsKey)(Symbol("a.name"))
         val aNameRenamed = aNames.aliasField(Symbol("a.name") -> 'name)
         val selectFieldA = aNameRenamed.selectFields('name)
 
-        val allNodesB = allNodes('b)
-        val bAsProduct = allNodesB.labelFilter("B").asProduct
-        val bNames = bAsProduct.propertyValue('b, 'name)(Symbol("b.name"))
+        val bAsProduct = labelScan('b)(rhsLabels).asProduct
+        val bNames = bAsProduct.propertyValue('b, rhsKey)(Symbol("b.name"))
         val bNameRenamed = bNames.aliasField(Symbol("b.name") -> 'name)
         val selectFieldB = bNameRenamed.selectFields('name)
 
@@ -101,38 +81,33 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
 
         StdCypherResultContainer.fromProducts(union)
 
-      case SupportedQueries.allNodeIdsSortedDesc =>
-        val nodeWithId = allNodes('n).asProduct.nodeId('n)('nid)
+      case NodeScanIdsSorted(labels) =>
+        val nodeWithId = labelScan('n)(labels).asProduct.nodeId('n)('nid)
 
         val sorted = nodeWithId.orderBy(SortItem('nid, Desc)).selectFields('nid).aliasField('nid -> 'id)
 
         StdCypherResultContainer.fromProducts(sorted)
 
-      case SupportedQueries.matchAggregate =>
-        val nodesWithProperty = allNodes('a).labelFilter("A").asProduct.propertyValue('a, 'name)('name)
+      case CollectNodeProperties(labels, key) =>
+        val nodesWithProperty = labelScan('a)(labels).asProduct.propertyValue('a, key)('name)
 
         val grouped = nodesWithProperty.groupBy()(Collect('name)('names))
 
         StdCypherResultContainer.fromProducts(grouped)
 
-      case SupportedQueries.matchAggregateAndUnwind =>
-        val nodesWithProperty = allNodes('a).labelFilter("A").asProduct.propertyValue('a, 'name)('name)
+      case CollectAndUnwindNodeProperties(labels, key, column) =>
+        val nodesWithProperty = labelScan('a)(labels).asProduct.propertyValue('a, key)('name)
 
         val grouped = nodesWithProperty.groupBy()(Collect('name)('names))
-        val unwindedAndSelected = grouped.unwind('names, 'name).selectFields('name)
+        val unwindedAndSelected = grouped.unwind('names, column).selectFields(column)
 
         StdCypherResultContainer.fromProducts(unwindedAndSelected)
 
-      case SupportedQueries.getAllRelationshipsOfTypeT =>
-        val relationships = allRelationships('r).typeFilter("T").asRow
+      case MatchOptionalExpand(startLabels, types, endLabels) =>
+        val aNodes = labelScan('a)(startLabels).asProduct.nodeId('a)('aid).asRow
 
-        StdCypherResultContainer.fromRows(relationships)
-
-      case SupportedQueries.matchOptionalMatch =>
-        val aNodes = allNodes('a).labelFilter("A").asProduct.nodeId('a)('aid).asRow
-
-        val bNodes = allNodes('b).asProduct.nodeId('b)('bid).asRow
-        val rRels = allRelationships('r).asProduct
+        val bNodes = labelScan('b)(endLabels).asProduct.nodeId('b)('bid).asRow
+        val rRels = typeScan('r)(types).asProduct
             .relationshipStartId('r)('rstart)
             .relationshipEndId('r)('rend).asRow
 
@@ -143,11 +118,10 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
 
         StdCypherResultContainer.fromProducts(selected)
 
-        // MATCH (a:A)-[r*1..2]->() RETURN r
-      case SupportedQueries.boundVarLength =>
-        val aNodes = allNodes('a).labelFilter("A").asProduct
+      case BoundVariableLength(startLabels, lowerBound, upperBound) =>
+        val aNodes = labelScan('a)(startLabels).asProduct
 
-        val expanded = aNodes.varExpand('a, 1, 2)('r)
+        val expanded = aNodes.varExpand('a, lowerBound, upperBound)('r)
 
         val selected = expanded.selectFields('r)
 

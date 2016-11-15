@@ -8,8 +8,14 @@ import org.opencypher.spark.api.value.{CypherNode, CypherRelationship, CypherVal
 class FrameProducer(implicit val planningContext: PlanningContext) {
 
   def allNodes(sym: Symbol) = AllNodes(sym)
+  def labelScan(sym: Symbol)(labels: IndexedSeq[String]) =
+    if (labels.isEmpty) allNodes(sym)
+    else allNodes(sym).labelFilter(labels:_*)
   def optionalAllNodes(sym: Symbol) = OptionalAllNodes(sym)
   def allRelationships(sym: Symbol) = AllRelationships(sym)
+  def typeScan(sym: Symbol)(types: IndexedSeq[String]) =
+    if (types.isEmpty) allRelationships(sym)
+    else allRelationships(sym).typeFilter(types:_*)
   def optionalAllRelationships(sym: Symbol) = OptionalAllRelationships(sym)
 
   abstract class AbstractRichFrame[T](input: StdCypherFrame[T]) {
