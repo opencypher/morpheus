@@ -38,14 +38,14 @@ object Benchmark {
       .getOrCreate()
   }
 
-  def createGraph() = {
+  def createGraph(nbrNodes: Long, nbrRels: Long) = {
     val neo4j = Neo4j(sparkSession.sparkContext)
-    val allNodes = neo4j.cypher("MATCH (a) RETURN a LIMIT 100000").loadNodeRdds.map { row =>
+    val allNodes = neo4j.cypher(s"MATCH (a) RETURN a LIMIT $nbrNodes").loadNodeRdds.map { row =>
       val node = row(0).asInstanceOf[InternalNode]
       internalNodeToCypherNode(node)
     }
 
-    val allRels = neo4j.cypher("MATCH (:Employee)-[r]->() RETURN r LIMIT 100 UNION ALL MATCH (:Employee)<-[r]-() RETURN r LIMIT 100 ").loadRowRdd.map { row =>
+    val allRels = neo4j.cypher(s"MATCH ()-[r]->() RETURN r LIMIT $nbrRels").loadRowRdd.map { row =>
       val relationship = row(0).asInstanceOf[InternalRelationship]
       internalRelationshipToCypherRelationship(relationship)
     }
@@ -57,17 +57,28 @@ object Benchmark {
   }
 
   def main(args: Array[String]): Unit = {
-    val graph = createGraph()
+    // create a CypherOnSpark graph
+    val nbrNodes = 100
+    val nbrRels = 100
+    val graph = createGraph(nbrNodes, nbrRels)
+    println("Graph created!")
+
+    val query = NodeScanIdsSorted(IndexedSeq("Employee"))
+    println(s"Starting testing of query: $query")
 
     // warmup
     println("Begin warmup")
-    runAndTime(3)(graph.cypher(NodeScanIdsSorted(IndexedSeq("Employee"))))
+    runAndTime(3)(graph.cypher(query))
 
     println("Begin measurements")
-    val times = runAndTime()(graph.cypher(NodeScanIdsSorted(IndexedSeq("Employee"))))
+    val times = runAndTime()(graph.cypher(query))
 
     val avg = times.sum / times.length
     val median = times.sorted.apply(times.length / 2)
+
+    println("=================================")
+    println(s"Finished benchmarking of \n\t$query")
+    println(s"We limited ourselves to $nbrNodes nodes and $nbrRels relationships")
 
     println(s"Min: ${times.min} ms")
     println(s"Max: ${times.max} ms")
