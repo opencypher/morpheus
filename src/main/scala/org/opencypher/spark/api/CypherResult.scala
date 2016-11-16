@@ -12,6 +12,12 @@ trait CypherResult[T] {
 
   def collectAsScalaList = toDS.collect().toList
   def collectAsScalaSet = toDS.collect().toSet
+
+  def exhaust = {
+    val itr = toDS.toLocalIterator()
+    while (itr.hasNext) itr.next()
+
+  }
 }
 
 
