@@ -33,25 +33,26 @@ object OrderBy extends FrameCompanion {
           }
 
         case BinaryRepresentation =>
-          val ordering = order match {
-            case Asc => CypherValue.orderability
-            case Desc => CypherValue.reverseOrderability
-          }
-          val sortedRdd = in.rdd.sortBy(OrderByColumn(slot.ordinal))
-          context.session.createDataset(sortedRdd)(context.productEncoder(slots))
+          throw new UnsupportedOperationException("Need to implement orderability for complex values")
+//          val ordering = order match {
+//            case Asc => CypherValue.orderability
+//            case Desc => CypherValue.reverseOrderability
+//          }
+//          val sortedRdd = in.rdd.sortBy(OrderByColumn(slot.ordinal))
+//          context.session.createDataset(sortedRdd)(context.productEncoder(slots))
       }
 
       out
     }
   }
 
-  private final case class OrderByColumn(index: Int) extends (Product => CypherValue) {
-
-    import org.opencypher.spark.impl.util._
-
-    override def apply(product: Product): CypherValue = {
-      product.getAs[CypherValue](index)
-    }
-  }
+//  private final case class OrderByColumn(index: Int) extends (Product => CypherValue) {
+//
+//    import org.opencypher.spark.impl.util._
+//
+//    override def apply(product: Product): CypherValue = {
+//      product.getAs[CypherValue](index)
+//    }
+//  }
 
 }
