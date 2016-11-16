@@ -33,6 +33,20 @@ class StdFrameSignature(private val fieldMap: Map[StdField, StdSlot] = Map.empty
 
   def fieldSlot(field: StdField): Option[StdSlot] = fieldMap.get(field)
 
+  override def dropField(field: Symbol): StdFrameSignature = {
+    val filtered = fieldMap.filterKeys(_.sym != field)
+    val corrected = filtered.zipWithIndex.map {
+      case ((f, s), i) => f -> s.copy(ordinal = i)
+    }
+    new StdFrameSignature(corrected)
+  }
+
+  def fieldOrdinals: IndexedSeq[(Symbol, Int)] = {
+    fieldMap.map {
+      case (f, s) => f.sym -> s.ordinal
+    }.toIndexedSeq
+  }
+
   override def addField(symbol: TypedSymbol)(implicit context: PlanningContext): (Field, StdFrameSignature) = {
     val field = StdField(symbol)
 

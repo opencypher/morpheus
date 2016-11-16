@@ -85,6 +85,9 @@ class FrameProducer(implicit val planningContext: PlanningContext) {
 
     def varExpand(node: Symbol, lowerBound: Int, upperBound: Int)(relationships: Symbol) =
       VarExpand(input)(node, lowerBound, upperBound)(relationships)
+
+    def dropField(field: Symbol) =
+      DropField(input)(field)
   }
 
   implicit final class RichRowFrame(input: StdCypherFrame[Row])

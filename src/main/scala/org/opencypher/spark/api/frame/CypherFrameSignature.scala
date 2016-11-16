@@ -18,6 +18,8 @@ trait CypherFrameSignature {
   def aliasField(alias: Alias): (Field, CypherFrameSignature)
   def selectFields(fields: Symbol*): (Seq[Slot], CypherFrameSignature)
 
+  def dropField(symbol: Symbol): CypherFrameSignature
+
   def slots: Seq[Slot]
   def fields: Seq[Field]
 }

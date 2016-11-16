@@ -128,4 +128,15 @@ class StdFrameSignatureTest extends StdTestSuite {
 
     sig.fields should equal(sortedFields)
   }
+
+  test("dropping a field") {
+    val (_, sig) = StdFrameSignature.empty.addFields('n1 -> CTAny, 'n2 -> CTInteger, 'n3 -> CTBoolean)
+    val dropped = sig.dropField('n2)
+
+    dropped.fieldOrdinals should equal(Seq('n1 -> 0, 'n3 -> 1))
+
+    val dropped2 = dropped.addField('n4 -> CTNode)._2.dropField('n1)
+
+    dropped2.fieldOrdinals should equal(Seq('n3 -> 0, 'n4 -> 1))
+  }
 }

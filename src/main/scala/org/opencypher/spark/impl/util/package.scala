@@ -31,6 +31,17 @@ package object util {
 
   implicit final class RichProduct(val product: Product) extends AnyVal {
 
+    def drop(index: Int) = {
+      val arity = product.productArity
+
+      if (arity < index)
+        throw new IllegalArgumentException(s"Can't drop field $index from a product of arity $arity")
+
+      (0 until arity).filter(_ != index).map { i =>
+        product.productElement(i)
+      }.asProduct
+    }
+
     def :+(elt: Any) = product.productArity match {
       case 0 =>
         Tuple1(elt)
