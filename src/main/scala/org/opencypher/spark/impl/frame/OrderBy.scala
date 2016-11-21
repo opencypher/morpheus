@@ -28,8 +28,10 @@ object OrderBy extends FrameCompanion {
       val out = slot.representation match {
         case EmbeddedRepresentation(_) =>
           order match {
-            case Asc => in.sort(slot.sym.name)
-            case Desc => in.sort(desc(slot.sym.name))
+            case Asc => in.sort(in.columns(slot.ordinal))
+            case Desc =>
+//              context.session.createDataset(in.rdd.sortBy(_.productElement(slot.ordinal).asInstanceOf[Long], ascending = false))(context.productEncoder(slots))
+              in.sort(desc(in.columns(slot.ordinal)))
           }
 
         case BinaryRepresentation =>

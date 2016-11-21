@@ -35,8 +35,8 @@ case class StdSlot(sym: Symbol, cypherType: CypherType, ordinal: Int, representa
 
 abstract class ProductFrame(sig: StdFrameSignature) extends StdCypherFrame[Product](sig) {
 
-  override def run(implicit context: RuntimeContext): Dataset[Product] =
-    alias(execute)(context.productEncoder(slots))
+  override def run(implicit context: RuntimeContext): Dataset[Product] = execute
+//    alias(execute)(context.productEncoder(slots))
 }
 
 abstract class RowFrame(sig: StdFrameSignature) extends StdCypherFrame[Row](sig) {
@@ -45,8 +45,8 @@ abstract class RowFrame(sig: StdFrameSignature) extends StdCypherFrame[Row](sig)
 }
 
 abstract class NodeFrame(sig: StdFrameSignature) extends StdCypherFrame[CypherNode](sig) {
-  override def run(implicit context: StdRuntimeContext): Dataset[CypherNode] =
-    alias(execute)(context.cypherNodeEncoder)
+  override def run(implicit context: StdRuntimeContext): Dataset[CypherNode] = execute
+//    alias(execute)(context.cypherNodeEncoder)
 }
 
 abstract class RelationshipFrame(sig: StdFrameSignature) extends StdCypherFrame[CypherRelationship](sig) {
