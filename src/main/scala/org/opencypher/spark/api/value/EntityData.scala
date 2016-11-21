@@ -31,16 +31,16 @@ sealed trait EntityData {
 }
 
 object NodeData {
-  val empty = NodeData(labels = Seq.empty, properties = Properties.empty)
+  val empty = NodeData(labels = Array.empty, properties = Properties.empty)
 }
 
-final case class NodeData(labels: Seq[String],
+final case class NodeData(labels: Array[String],
                           properties: Properties)
   extends EntityData {
 
   override def asEntity(id: EntityId) = CypherNode(id, labels, properties)
 
-  def withLabels(newLabels: String*) = copy(labels = newLabels)
+  def withLabels(newLabels: String*) = copy(labels = newLabels.toArray)
   def withProperties(newProperties: (String, CypherValue)*) = copy(properties = Properties(newProperties: _*))
   def withProperties(newProperties: Properties) = copy(properties = newProperties)
 }

@@ -604,10 +604,10 @@ sealed abstract class CypherEntityValue(override protected[value] val properties
 
 case object CypherNode extends CypherEntityCompanion[CypherNode] {
 
-  def apply(id: EntityId, labels: Seq[String], properties: Properties): CypherNode =
+  def apply(id: EntityId, labels: Array[String], properties: Properties): CypherNode =
     new CypherNode(id, labels, properties)
 
-  def unapply(value: CypherNode): Option[(EntityId, Seq[String], Properties)] =
+  def unapply(value: CypherNode): Option[(EntityId, Array[String], Properties)] =
     if (value == null) None else Some((value.id, value.labels, value.properties))
 
   override def contents(value: CypherNode): Option[(EntityId, NodeData)] =
@@ -623,7 +623,7 @@ case object CypherNode extends CypherEntityCompanion[CypherNode] {
 }
 
 sealed class CypherNode(protected[value] val id: EntityId,
-                        protected[value] val labels: Seq[String],
+                        protected[value] val labels: Array[String],
                         override protected[value] val properties: Properties)
   extends CypherEntityValue(properties) with Serializable {
 

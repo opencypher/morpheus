@@ -22,7 +22,7 @@ class StdPropertyGraphFactory(implicit private val session: SparkSession) extend
 
   override def addNode(labels: Set[String], properties: Properties) =
     nodeIds { id =>
-      val node = CypherNode(id, labels.toSeq, properties)
+      val node = CypherNode(id, labels.toArray, properties)
       nodes += node
       node
     }
