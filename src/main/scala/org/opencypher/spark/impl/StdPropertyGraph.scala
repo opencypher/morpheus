@@ -82,7 +82,7 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
         StdCypherResultContainer.fromProducts(union)
 
       case NodeScanIdsSorted(labels) =>
-        val nodeWithId = labelScan('n)(labels).asProduct.nodeId('n)('nid)
+        val nodeWithId = labelScan('n)(labels).asProduct.nodeId('n)('nid).dropField('n)
 
         val sorted = nodeWithId.orderBy(SortItem('nid, Desc)).selectFields('nid).aliasField('nid -> 'id)
 
