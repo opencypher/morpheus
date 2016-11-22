@@ -3,7 +3,7 @@ package org.opencypher.spark.benchmark
 import org.opencypher.spark.api.value.{CypherNode, CypherRelationship}
 import org.opencypher.spark.impl.StdPropertyGraph
 
-object RDD {
+object RDDs {
 
   def nodeScanIdsSorted(label: String) = (graph: StdPropertyGraph) => {
     val ids = graph.nodes.rdd.filter(CypherNode.labels(_).exists(_.contains(label))).map(CypherNode.id(_).map(_.v).get)
