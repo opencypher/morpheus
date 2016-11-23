@@ -19,7 +19,7 @@ import scala.language.implicitConversions
     // (5) UDTs
 
 class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Dataset[CypherRelationship])
-                      (implicit private val session: SparkSession) extends PropertyGraph {
+                      (implicit val session: SparkSession) extends PropertyGraph {
 
   override def cypher(query: SupportedQuery): CypherResultContainer = {
     implicit val planningContext = new PlanningContext(new SlotSymbolGenerator, nodes, relationships)

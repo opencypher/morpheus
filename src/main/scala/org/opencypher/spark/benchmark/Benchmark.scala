@@ -7,62 +7,62 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.execution.QueryExecution
 import org.apache.spark.sql.{Dataset, SparkSession}
 import org.neo4j.driver.internal.{InternalNode, InternalRelationship}
-import org.neo4j.driver.v1.{AuthToken, AuthTokens, Driver, GraphDatabase}
-import org.opencypher.spark.CypherOnSpark
-import org.opencypher.spark.api.CypherResultContainer
+import org.neo4j.driver.v1.{AuthTokens, GraphDatabase}
 import org.opencypher.spark.api.value._
 import org.opencypher.spark.impl.{NodeScanIdsSorted, SimplePattern, StdPropertyGraph, SupportedQuery}
 
 object Benchmark {
 
-  import org.neo4j.spark._
+  implicit var sparkSession: SparkSession = _
 
-  implicit val sparkSession: SparkSession = {
+  def init() = {
     val conf = new SparkConf(true)
     conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-    conf.set("spark.kryo.registrator","org.opencypher.spark.CypherKryoRegistrar")
+    conf.set("spark.kryo.registrator", "org.opencypher.spark.CypherKryoRegistrar")
     conf.set("spark.neo4j.bolt.password", ".")
+    conf.set("spark.driver.memory", "471859200")
+    // Enable to see if we cover enough
+    conf.set("spark.kryo.registrationRequired", "true")
+    conf.set("spark.default.parallelism", Parallelism.get())
 
     //
     // This may or may not help - depending on the query
     // conf.set("spark.kryo.referenceTracking","false")
-
     //
-    // Enable to see if we cover enough
-    conf.set("spark.kryo.registrationRequired", "true")
 
-    //
-    // If this is slow, you might be hitting: http://bugs.java.com/view_bug.do?bug_id=8077102
-    //
-    val foo = SparkSession
-      .builder()
-      .config(conf)
-      .master("local[*]")
-      .appName(s"cypher-on-spark-benchmark-${UUID.randomUUID()}")
-      .getOrCreate()
+    val builder = SparkSession.builder().config(conf)
+    if (MasterAddress.get().nonEmpty)
+      sparkSession = SparkSession.builder().config(conf).master(MasterAddress.get()).getOrCreate()
+    else {
+      //
+      // If this is slow, you might be hitting: http://bugs.java.com/view_bug.do?bug_id=8077102
+      //
+      sparkSession = builder.master("local[*]").appName(s"cypher-on-spark-benchmark-${UUID.randomUUID()}").getOrCreate()
+    }
+    sparkSession.sparkContext.setLogLevel(Logging.get())
 
-    foo.sparkContext.setLogLevel("OFF")
+    sparkSession
+  }
 
-    foo
+  def loadRDDs() = {
+    val nodeRDD = sparkSession.sparkContext.objectFile[CypherNode](NodeFilePath.get())
+    val relsRDD = sparkSession.sparkContext.objectFile[CypherRelationship](RelFilePath.get())
+
+    Tests.printSums(nodeRDD, relsRDD)
+
+    nodeRDD -> relsRDD
   }
 
   def createGraph(size: Long) = {
-    val neo4j = Neo4j(sparkSession.sparkContext)
+    val (allNodes, allRels) = loadRDDs()
+    println("Nodes and relationships read from disk")
 
-    val limit = if (size > 0) s"LIMIT $size"
-    val allNodes = neo4j.cypher(s"MATCH (b)-->(a) WITH a, b $limit UNWIND [a, b] AS n RETURN DISTINCT n").loadNodeRdds.map { row =>
-      val node = row(0).asInstanceOf[InternalNode]
-      internalNodeToCypherNode(node)
-    }
+    val defaultParallelism: Int = sparkSession.sparkContext.defaultParallelism
+    println(s"Parallelism: $defaultParallelism")
 
-    val allRels = neo4j.cypher(s"MATCH ()-[r]->() RETURN r $limit").loadRowRdd.map { row =>
-      val relationship = row(0).asInstanceOf[InternalRelationship]
-      internalRelationshipToCypherRelationship(relationship)
-    }
-
-    val nodes = sparkSession.createDataset(allNodes)(CypherValue.Encoders.cypherNodeEncoder).cache()
+    val nodes = sparkSession.createDataset(allNodes)(CypherValue.Encoders.cypherNodeEncoder).limit(size.toInt).cache().repartition(defaultParallelism).cache()
     println(s"Finished creating dataset of ${nodes.count()} nodes")
-    val relationships = sparkSession.createDataset(allRels)(CypherValue.Encoders.cypherRelationshipEncoder).cache()
+    val relationships = sparkSession.createDataset(allRels)(CypherValue.Encoders.cypherRelationshipEncoder).limit(size.toInt).cache().repartition(defaultParallelism).cache()
     println(s"Finished creating dataset of ${relationships.count()} relationships")
 
     new StdPropertyGraph(nodes, relationships)
@@ -98,14 +98,15 @@ object Benchmark {
   }
 
   def benchmarkWithRdds[T](f: StdPropertyGraph => RDD[T])(graph: StdPropertyGraph) = {
-    val result = f(graph)
+    val count = f(graph).count()
+    val sum = f(graph).map(_.hashCode()).sum
 
     // warmup
     runAndTime(3)(f(graph))(_.count)
 
     val times = runAndTime()(f(graph))(_.count)
 
-    RddResult(times, result.asInstanceOf[RDD[Long]])
+    RddResult(times, count, sum)
   }
 
   def benchmarkWithDatasets[T](f: StdPropertyGraph => Dataset[T])(graph: StdPropertyGraph) = {
@@ -117,12 +118,15 @@ object Benchmark {
 
     val times = runAndTime()(f(graph))(_.count())
 
-    DatasetsResult(times, plan, result.asInstanceOf[Dataset[Long]])
+    DatasetsResult(times, plan, result, sparkSession)
   }
 
   def benchmarkCypherOnSpark(query: SupportedQuery)(graph: StdPropertyGraph) = {
+    import graph.session.implicits._
+
     val plan = graph.cypher(query).products.toDS.queryExecution
-    val result = graph.cypher(query).products.toDS
+    val count = graph.cypher(query).products.toDS.count()
+    val checksum = graph.cypher(query).products.toDS.map(_.productElement(0).hashCode()).rdd.sum()
 
     // warmup
     println("Begin warmup")
@@ -131,35 +135,48 @@ object Benchmark {
     println("Begin measurements")
     val times = runAndTime()(graph.cypher(query))(_.products.count())
 
-    CypherOnSparkResult(times, plan, query, result.asInstanceOf[Dataset[Product]])(sparkSession)
+    CypherOnSparkResult(times, plan, query, count, checksum)
   }
 
+  abstract class ConfigOption[T](val name: String, val defaultValue: T)(convert: String => Option[T]) {
+    def get(): T = Option(System.getProperty(name)).flatMap(convert).getOrElse(defaultValue)
+  }
+
+  object GRAPH_SIZE extends ConfigOption("cos.graph-size", 10000l)(x => Some(java.lang.Long.parseLong(x)))
+  object MasterAddress extends ConfigOption("cos.master", "")(Some(_))
+  object Logging extends ConfigOption("cos.logging", "OFF")(Some(_))
+  object Parallelism extends ConfigOption("cos.parallelism", "8")(Some(_))
+  object NodeFilePath extends ConfigOption("cos.nodeFile", "")(Some(_))
+  object RelFilePath extends ConfigOption("cos.relFile", "")(Some(_))
+
   def main(args: Array[String]): Unit = {
+    init()
+
+    val nbr = GRAPH_SIZE.get()
     // create a CypherOnSpark graph
-    val nbr = 10000
     val graph = createGraph(nbr)
     println("Graph created!")
 
-    val datasets = benchmarkWithDatasets(Dataset.nodeScanIdsSorted("Group", sparkSession))(graph)
-    val cypherOnSpark = benchmarkCypherOnSpark(NodeScanIdsSorted(IndexedSeq("Group")))(graph)
-    val rdds = benchmarkWithRdds(RDD.nodeScanIdsSorted("Group"))(graph)
-
 //    val datasets = benchmarkWithDatasets(Dataset.nodeScanIdsSorted("Group", sparkSession))(graph)
-//    val cypherOnSpark = benchmarkCypherOnSpark(SimplePattern(IndexedSeq("Group"), IndexedSeq("ALLOWED_INHERIT"), IndexedSeq("Company")))(graph)
+//    val cypherOnSpark = benchmarkCypherOnSpark(NodeScanIdsSorted(IndexedSeq("Group")))(graph)
 //    val rdds = benchmarkWithRdds(RDD.nodeScanIdsSorted("Group"))(graph)
+
+//    val datasets = benchmarkWithDatasets(Dataset.simplePattern("Group", "ALLOWED_INHERIT", "Company", sparkSession))(graph)
+    val cypherOnSpark = benchmarkCypherOnSpark(SimplePattern(IndexedSeq("Group"), IndexedSeq("ALLOWED_INHERIT"), IndexedSeq("Company")))(graph)
+    val rdds = benchmarkWithRdds(RDDs.simplePattern("Group", "ALLOWED_INHERIT", "Company"))(graph)
 
     println(s"We limited ourselves to ${if(nbr < 0) "ALL" else nbr} nodes and ${if(nbr < 0) "ALL" else nbr} relationships")
 
-    //    printSummary(cypherOnSpark)
+        printSummary(cypherOnSpark)
     //    printSummary(datasets)
     //    printSummary(rdds)
-    compare(cypherOnSpark, datasets, rdds)
+    compare(cypherOnSpark, rdds)
   }
 
   def compare[T](results: Result*) = {
     results.foreach { r =>
       println(s"$r: ${r.count} rows")
-      println(s"$r: ${r.hash} hashed")
+      println(s"$r: ${r.checksum} checksum")
       println(s"$r: ${r.avg} ms")
     }
   }
@@ -201,14 +218,12 @@ sealed trait Result {
   def query: String
 //  def result: RDD[Long]
   def count: Long
-  def hash: Long
+  def checksum: Double
 
   def avg = times.sum / times.length
 }
 
-case class CypherOnSparkResult(times: Seq[Long], _plan: QueryExecution, _query: SupportedQuery, _result: Dataset[Product])(sparkSession: SparkSession) extends Result {
-
-  import sparkSession.implicits._
+case class CypherOnSparkResult(times: Seq[Long], _plan: QueryExecution, _query: SupportedQuery, count: Long, checksum: Double) extends Result {
 
   override def plan: String = _plan.toString()
 
@@ -217,15 +232,12 @@ case class CypherOnSparkResult(times: Seq[Long], _plan: QueryExecution, _query: 
 //  override def result: RDD[Long] = _result.map(_.productElement(0).asInstanceOf[Long]).rdd
 
   override def toString: String = "CypherOnSpark"
-
-  override def count: Long = _result.count()
-
-  override def hash: Long = _result.map(_.productElement(0).asInstanceOf[Long]).reduce {
-    (acc, next) => acc.hashCode() + next.hashCode()
-  }
 }
 
-case class DatasetsResult(times: Seq[Long], _plan: QueryExecution, _result: Dataset[Long]) extends Result {
+case class DatasetsResult[T](times: Seq[Long], _plan: QueryExecution, _result: Dataset[T], sparkSession: SparkSession) extends Result {
+
+  import sparkSession.implicits._
+
   override def plan: String = _plan.toString()
 
   override def query: String = "DATASET BENCHMARK"
@@ -236,23 +248,15 @@ case class DatasetsResult(times: Seq[Long], _plan: QueryExecution, _result: Data
 
   override def count: Long = _result.count()
 
-  override def hash: Long = _result.reduce {
-    (acc, next) => acc.hashCode() + next.hashCode()
-  }
+  override def checksum: Double = _result.map(_.hashCode()).rdd.sum()
 }
 
-case class RddResult[T](times: Seq[Long], result: RDD[Long]) extends Result {
+case class RddResult[T](times: Seq[Long], count: Long, checksum: Double) extends Result {
   override def plan: String = "no plan for rdds"
 
   override def query: String = "RDD BENCHMARK"
 
   override def toString: String = "RDDs"
-
-  override def count: Long = result.count()
-
-  override def hash: Long = result.reduce {
-    (acc, next) => acc.hashCode() + next.hashCode()
-  }
 }
 
 object cypherValue extends (Any => CypherValue) {
