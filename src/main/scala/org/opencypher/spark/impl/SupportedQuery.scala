@@ -52,6 +52,17 @@ case class SimplePattern(startLabels: IndexedSeq[String] = IndexedSeq.empty, typ
   }
 }
 
+case class SimplePatternIds(startLabels: IndexedSeq[String] = IndexedSeq.empty, types: IndexedSeq[String] = IndexedSeq.empty,
+                            endLabels: IndexedSeq[String] = IndexedSeq.empty) extends SupportedQuery {
+  override def cypher: String = {
+    val s = colonList(startLabels)
+    val t = colonList(types)
+    val e = colonList(endLabels)
+
+    s"MATCH ($s)-[r$t]->($e) RETURN id(r)"
+  }
+}
+
 case class SimpleUnionAll(lhsLabels: IndexedSeq[String] = IndexedSeq.empty, lhsKey: Symbol,
                           rhsLabels: IndexedSeq[String] = IndexedSeq.empty, rhsKey: Symbol) extends SupportedQuery {
   override def cypher: String = {

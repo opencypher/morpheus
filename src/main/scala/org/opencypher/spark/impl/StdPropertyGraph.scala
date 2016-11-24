@@ -66,6 +66,25 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
 
         StdCypherResultContainer.fromProducts(selectField)
 
+      case SimplePatternIds(startLabels, types, endLabels) =>
+        val aAsProduct = labelScan('a)(startLabels).asProduct
+        val aWithId = aAsProduct.nodeId('a)('aid).dropField('a)
+
+        val bAsProduct = labelScan('b)(endLabels).asProduct
+        val bWithId = bAsProduct.nodeId('b)('bid).dropField('b)
+
+        val rAsProduct = typeScan('r)(types).asProduct.relationshipId('r)('rid)
+        val rWithStartId = rAsProduct.relationshipStartId('r)('rstart)
+        val rWithStartAndEndId = rWithStartId.relationshipEndId('r)('rend).dropField('r)
+        val relsAsRows = rWithStartAndEndId.asRow
+
+        val joinRelA = relsAsRows.join(aWithId.asRow).on('rstart)('aid)
+        val joinRelB = joinRelA.join(bWithId.asRow).on('rend)('bid)
+
+        val selectField = joinRelB.asProduct.selectFields('rid)
+
+        StdCypherResultContainer.fromProducts(selectField)
+
       case SimpleUnionAll(lhsLabels, lhsKey, rhsLabels, rhsKey) =>
         val aAsProduct = labelScan('a)(lhsLabels).asProduct
         val aNames = aAsProduct.propertyValue('a, lhsKey)(Symbol("a.name"))
