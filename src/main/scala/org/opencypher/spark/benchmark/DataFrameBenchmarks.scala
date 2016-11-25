@@ -10,7 +10,7 @@ object DataFrameBenchmarks extends SupportedQueryBenchmarks[SimpleDataFrameGraph
 
   def apply(query: SupportedQuery): Benchmark[SimpleDataFrameGraph] = query match {
     case SimplePatternIds(startLabels, types, endLabels) =>
-      simplePatternIds(query.toString, labelIndex(startLabels.head), types.head, labelIndex(endLabels.head))
+      simplePatternIds(query.toString, startLabels.head, types.head, endLabels.head)
     case _ =>
       throw new IllegalArgumentException(s"No DataFrame implementation of $query")
   }
@@ -23,18 +23,16 @@ object DataFrameBenchmarks extends SupportedQueryBenchmarks[SimpleDataFrameGraph
 //  }
 
   //MATCH (:Group)-[r:ALLOWED]->(:Company) RETURN id(r)
-  def simplePatternIds(query: String, startLabel: Int, relType: String, endLabel: Int) = new DataFrameBenchmark(query) {
+  def simplePatternIds(query: String, startLabel: String, relType: String, endLabel: String) = new DataFrameBenchmark(query) {
 
     override def innerRun(graph: SimpleDataFrameGraph) = {
-      val nodes = graph.nodes.as("nodes")
-      val rels = graph.relationships.filter(col("typ").equalTo(relType)).as("rels")
-
-      val startLabeled = nodes.filter(row => row.getBoolean(startLabel)).alias("startLabeled")
-      val endLabeled = nodes.filter(_.getBoolean(endLabel)).alias("endLabeled")
+      val startLabeled = graph.nodes(startLabel).as("startLabeled")
+      val rels = graph.relationships(relType).as("rels")
+      val endLabeled = graph.nodes(endLabel).as("endLabeled")
 
       val startJoined = startLabeled.join(rels, col("startLabeled.id") === col("rels.startId"))
-
-      val endJoined = startJoined.join(endLabeled, col("endId") === col("endLabeled.id"))
+      val startJoinedShuffled = startJoined.sortWithinPartitions(startJoined.col("endId"))
+      val endJoined = startJoinedShuffled.join(endLabeled, col("endId") === col("endLabeled.id"))
 
       val result = endJoined.select(col("rels.id"))
 
@@ -104,4 +102,4 @@ abstract class DataFrameBenchmark(query: String) extends Benchmark[SimpleDataFra
  */
 
 
-case class SimpleDataFrameGraph(nodes: DataFrame, relationships: DataFrame)
+case class SimpleDataFrameGraph(nodes: Map[String, DataFrame], relationships: Map[String, DataFrame])

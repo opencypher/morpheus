@@ -1,7 +1,7 @@
 package org.opencypher.spark.benchmark
 
 object BenchmarkSeries {
-  def run[B <: Benchmark[G], G](benchmarkAndGraph: (Benchmark[G], G), nbrTimes: Int = 5, warmupTimes: Int = 2): BenchmarkResult = {
+  def run[B <: Benchmark[G], G](benchmarkAndGraph: (Benchmark[G], G), nbrTimes: Int = 6, warmupTimes: Int = 3): BenchmarkResult = {
     warmup(benchmarkAndGraph, warmupTimes)
 
     measure(benchmarkAndGraph, nbrTimes)

@@ -41,7 +41,12 @@ package org.opencypher.spark {
       Class.forName("scala.reflect.ClassTag$$anon$1"),
       Class.forName("org.apache.spark.sql.execution.joins.LongHashedRelation"),
       Class.forName("org.apache.spark.sql.execution.joins.LongToUnsafeRowMap"),
+      Class.forName("org.apache.spark.sql.execution.columnar.CachedBatch"),
+      Class.forName("org.apache.spark.sql.catalyst.expressions.GenericInternalRow"),
+      Class.forName("org.apache.spark.unsafe.types.UTF8String"),
 
+
+      classOf[Array[java.lang.Object]],
       classOf[Array[InternalRow]],
       classOf[UnsafeRow],
       classOf[AccessControlNode],
