@@ -70,84 +70,38 @@ object RunBenchmark {
     new StdPropertyGraph(nodes, relationships)
   }
 
-  def benchmarkNeo4j(query: String) = {
-    import scala.collection.JavaConverters._
 
-    val driver = GraphDatabase.driver("bolt://localhost:7687", AuthTokens.basic("neo4j", "."))
-
-    val session = driver.session()
-
-    val result = session.run(query)
-    val list = result.list()
-    val count = list.size()
-    val checksum = list.asScala.map(_.get(0).hashCode()).sum
-
-    val plan = session.run(s"EXPLAIN $query").consume().plan()
-
-    // warmup
-    runAndTime(3)(session.run(query))(_.consume())
-
-    // timing
-    val times = runAndTime()(session.run(query))(_.consume())
-
-    Neo4jResult(times, count, checksum, plan.toString, query)
-  }
-
-  def benchmarkWithRdds[T](f: StdPropertyGraph => RDD[T])(graph: StdPropertyGraph) = {
-    val count = f(graph).count()
-    val sum = f(graph).map(_.hashCode()).reduce(_ + _)
-
-    // warmup
-    runAndTime(3)(f(graph))(_.count)
-
-    val times = runAndTime()(f(graph))(_.count)
-
-    RddResult(times, count, sum)
-  }
-
-  def benchmarkWithDatasets[T](f: StdPropertyGraph => Dataset[T])(graph: StdPropertyGraph) = {
-    val plan = f(graph).queryExecution
-    val result = f(graph)
-
-    // warmup
-    runAndTime(3)(f(graph))(_.count())
-
-    val times = runAndTime()(f(graph))(_.count())
-
-    DatasetsResult(times, plan, result, sparkSession)
-  }
-
-  def benchmarkCypherOnSpark(query: SupportedQuery)(graph: StdPropertyGraph) = {
-    import graph.session.implicits._
-
-    val result = graph.cypher(query).products.toDS
-
-    val plan = result.queryExecution
-    val count = result.count()
-    val checksum = result.map(_.productElement(0).hashCode()).rdd.reduce(_ + _)
-
-    // warmup
-    println("Begin warmup")
-    runAndTime(3)(graph.cypher(query))(_.products.count())
-
-    println("Begin measurements")
-    val times = runAndTime()(graph.cypher(query))(_.products.count())
-
-    CypherOnSparkResult(times, plan, query, count, checksum)
-  }
+//  def benchmarkCypherOnSpark(query: SupportedQuery)(graph: StdPropertyGraph) = {
+//    import graph.session.implicits._
+//
+//    val result = graph.cypher(query).products.toDS
+//
+//    val plan = result.queryExecution
+//    val count = result.count()
+//    val checksum = result.map(_.productElement(0).hashCode()).rdd.reduce(_ + _)
+//
+//    // warmup
+//    println("Begin warmup")
+//    runAndTime(3)(graph.cypher(query))(_.products.count())
+//
+//    println("Begin measurements")
+//    val times = runAndTime()(graph.cypher(query))(_.products.count())
+//
+//    CypherOnSparkResult(times, plan, query, count, checksum)
+//  }
 
   abstract class ConfigOption[T](val name: String, val defaultValue: T)(convert: String => Option[T]) {
     def get(): T = Option(System.getProperty(name)).flatMap(convert).getOrElse(defaultValue)
   }
 
-  object GRAPH_SIZE extends ConfigOption("cos.graph-size", 100000l)(x => Some(java.lang.Long.parseLong(x)))
+  object GraphSize extends ConfigOption("cos.graph-size", 100000l)(x => Some(java.lang.Long.parseLong(x)))
   object MasterAddress extends ConfigOption("cos.master", "")(Some(_))
   object Logging extends ConfigOption("cos.logging", "OFF")(Some(_))
   object Parallelism extends ConfigOption("cos.parallelism", "8")(Some(_))
   object NodeFilePath extends ConfigOption("cos.nodeFile", "")(Some(_))
   object RelFilePath extends ConfigOption("cos.relFile", "")(Some(_))
 
-  def createGraphFromNeo(size: Long) = {
+  def createStdPropertyGraphFromNeo(size: Long) = {
     val (nodeRDD, relRDD) = Importers.importFromNeo(size)
     val nMapped = nodeRDD.map(internalNodeToCypherNode)
     val rMapped = relRDD.map(internalRelationshipToCypherRelationship)
@@ -160,7 +114,7 @@ object RunBenchmark {
     new StdPropertyGraph(nodeSet, relSet)
   }
 
-  def createExperimentalGraph(size: Long) = {
+  def createSimpleDataFrameGraph(size: Long) = {
     val (nodeRDD, relRDD) = Importers.importFromNeo(size)
     val nMapped = nodeRDD.map(internalNodeToAccessControlNode)
     val rMapped = relRDD.map(internalRelToAccessControlRel)
@@ -181,153 +135,32 @@ object RunBenchmark {
 //    }
 //    println(s"Done creating dataframes for $size relationships (${map.size} unique types)")
 
-    DataFrameGraph(nodeFrame, relFrame)
-  }
-
-  def benchmarkWithDataframes(f: (DataFrameGraph => DataFrame))(graph: DataFrameGraph) = {
-    import graph.nodes.sparkSession.implicits._
-
-    val result = f(graph)
-    val count = result.count()
-    val sum = result.map(row => row.apply(0).hashCode()).rdd.reduce(_ + _)
-
-    // warmup
-    runAndTime(3)(f(graph))(_.count)
-
-    val times = runAndTime()(f(graph))(_.count)
-
-    FrameResult(times, count, sum, result)
+    SimpleDataFrameGraph(nodeFrame, relFrame)
   }
 
   def main(args: Array[String]): Unit = {
     init()
 
-    val nbr = GRAPH_SIZE.get()
-    // create a CypherOnSpark graph
-    val graph = createGraphFromNeo(nbr)
-    val expGraph = createExperimentalGraph(nbr)
+    val graphSize = GraphSize.get()
+
+    val stdGraph = createStdPropertyGraphFromNeo(graphSize)
+    val sdfGraph = createSimpleDataFrameGraph(graphSize)
+    val neoGraph = new Neo4jViaDriverGraph(GraphDatabase.driver("bolt://localhost:7687", AuthTokens.basic("neo4j", "foo")))
     println("Graph(s) created!")
 
-//    val datasets = benchmarkWithDatasets(Dataset.nodeScanIdsSorted("Group", sparkSession))(graph)
 //    val cypherOnSpark = benchmarkCypherOnSpark(NodeScanIdsSorted(IndexedSeq("Group")))(graph)
-//    val rdds = benchmarkWithRdds(RDD.nodeScanIdsSorted("Group"))(graph)
-
-//    val datasets = benchmarkWithDatasets(Dataset.simplePattern("Group", "ALLOWED_INHERIT", "Company", sparkSession))(graph)
 //    val cypherOnSpark = benchmarkCypherOnSpark(SimplePattern(IndexedSeq("Group"), IndexedSeq("ALLOWED_INHERIT"), IndexedSeq("Company")))(graph)
-//    val rdds = benchmarkWithRdds(RDDs.simplePattern("Group", "ALLOWED_INHERIT", "Company"))(graph)
 
-    val query = SimplePatternIds(IndexedSeq("Group"), IndexedSeq("ALLOWED_INHERIT"), IndexedSeq("Company"))
-//    val query = SimplePattern(IndexedSeq("Group"), IndexedSeq("ALLOWED_INHERIT"), IndexedSeq("Company"))
+    val query1 = SimplePatternIds(IndexedSeq("Group"), IndexedSeq("ALLOWED_INHERIT"), IndexedSeq("Company"))
+    val query2 = SimplePattern(IndexedSeq("Group"), IndexedSeq("ALLOWED_INHERIT"), IndexedSeq("Company"))
 
-    val frameResult = BenchmarkSeries.run(DataFrameBenchmarks(query) -> expGraph)
-//    val frames = benchmarkWithDataframes(DataFrameBenchmarks(query))(expGraph)
-//    val neo4j = benchmarkNeo4j(query.toString)
-//    val cypherOnSpark = benchmarkCypherOnSpark(query)(graph)
+    val frameResult = BenchmarkSeries.run(DataFrameBenchmarks(query1) -> sdfGraph)
+    val rddResult = BenchmarkSeries.run(RDDBenchmarks(query2) -> stdGraph)
+    val neoResult = BenchmarkSeries.run(Neo4jViaDriverBenchmarks(query2) -> neoGraph)
 
-    println(BenchmarkSummary(query.toString, expGraph.nodes.count(), expGraph.relationships.count()))
-    Seq(frameResult).foreach(println)
-//    println(s"We limited ourselves to ${if(nbr < 0) "ALL" else nbr} nodes and ${if(nbr < 0) "ALL" else nbr} relationships")
-//    println(s"Running query: $query")
-//    println(s"Using parallelism ${sparkSession.sparkContext.defaultParallelism}")
-
-//    compare(frames, neo4j, cypherOnSpark)
+    println(BenchmarkSummary(query1.toString, sdfGraph.nodes.count(), sdfGraph.relationships.count()))
+    println(BenchmarkSummary(query2.toString, stdGraph.nodes.count(), stdGraph.relationships.count()))
+    Seq(frameResult, rddResult, neoResult).foreach(println)
+    println(s"Using parallelism ${sparkSession.sparkContext.defaultParallelism}")
   }
-
-  def compare[T](results: Result*) = {
-    results.foreach { r =>
-      println(s"$r: ${r.count} rows")
-      println(s"$r: ${r.checksum} checksum")
-      println(s"$r: ${r.avg} ms")
-    }
-  }
-
-  def printSummary[T](result: Result) = {
-    val times = result.times
-    val plan = result.plan
-    val query = result.query
-
-    val median = times.sorted.apply(times.length / 2)
-
-    println(s"\nQuery plan:\n $plan")
-    println("=================================")
-    println(s"Finished benchmarking of \n\t$query")
-    println(s"number of returned rows: $result")
-
-    println(s"Min: ${times.min} ms")
-    println(s"Max: ${times.max} ms")
-    println(s"Avg: ${result.avg} ms")
-    println(s"Median: $median ms")
-  }
-
-  def runAndTime[T, U](nbrTimes: Int = 10)(f: => T)(drainer: T => U): Seq[Long] = {
-    (0 until nbrTimes).map { i =>
-      println(s"Timing -- Run $i")
-      val start = System.currentTimeMillis()
-      drainer(f)
-      val time = System.currentTimeMillis() - start
-      println(s"Done -- $time ms")
-      time
-    }
-  }
-
 }
-
-
-
-
-
-
-sealed trait Result {
-  def times: Seq[Long]
-  def plan: String
-  def query: String
-  def count: Long
-  def checksum: Int
-
-  def avg = times.sum / times.length
-}
-
-case class CypherOnSparkResult(times: Seq[Long], _plan: QueryExecution, _query: SupportedQuery, count: Long, checksum: Int) extends Result {
-
-  override def plan: String = _plan.toString()
-
-  override def query: String = _query.toString
-
-  override def toString: String = "CypherOnSpark"
-}
-
-case class DatasetsResult[T](times: Seq[Long], _plan: QueryExecution, _result: Dataset[T], sparkSession: SparkSession) extends Result {
-
-  import sparkSession.implicits._
-
-  override def plan: String = _plan.toString()
-
-  override def query: String = "DATASET BENCHMARK"
-
-  override def toString: String = "Datasets"
-
-  override def count: Long = _result.count()
-
-  override def checksum: Int = _result.map(_.hashCode()).rdd.reduce(_ + _)
-}
-
-case class RddResult(times: Seq[Long], count: Long, checksum: Int) extends Result {
-  override def plan: String = "no plan for rdds"
-
-  override def query: String = "RDD BENCHMARK"
-
-  override def toString: String = "RDDs"
-}
-
-case class FrameResult(times: Seq[Long], count: Long, checksum: Int, _result: DataFrame) extends Result {
-  override def plan: String = _result.queryExecution.toString()
-
-  override def query: String = "DATAFRAME BENCHMARK W OTHER REPRESENTATION"
-
-  override def toString: String = "DataFrames"
-}
-
-case class Neo4jResult(times: Seq[Long], count: Long, checksum: Int, plan: String, query: String) extends Result {
-  override def toString: String = "Neo4j"
-}
-

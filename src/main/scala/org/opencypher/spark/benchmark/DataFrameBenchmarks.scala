@@ -6,9 +6,9 @@ import org.opencypher.spark.api.value.CypherNode
 import org.opencypher.spark.benchmark.AccessControlSchema.labelIndex
 import org.opencypher.spark.impl.{SimplePatternIds, StdPropertyGraph, SupportedQuery}
 
-object DataFrameBenchmarks {
+object DataFrameBenchmarks extends SupportedQueryBenchmarks[SimpleDataFrameGraph] {
 
-  def apply(query: SupportedQuery): Benchmark[DataFrameGraph] = query match {
+  def apply(query: SupportedQuery): Benchmark[SimpleDataFrameGraph] = query match {
     case SimplePatternIds(startLabels, types, endLabels) =>
       simplePatternIds(query.toString, labelIndex(startLabels.head), types.head, labelIndex(endLabels.head))
     case _ =>
@@ -25,7 +25,7 @@ object DataFrameBenchmarks {
   //MATCH (:Group)-[r:ALLOWED]->(:Company) RETURN id(r)
   def simplePatternIds(query: String, startLabel: Int, relType: String, endLabel: Int) = new DataFrameBenchmark(query) {
 
-    override def innerRun(graph: DataFrameGraph) = {
+    override def innerRun(graph: SimpleDataFrameGraph) = {
       val nodes = graph.nodes.as("nodes")
       val rels = graph.relationships.filter(col("typ").equalTo(relType)).as("rels")
 
@@ -36,32 +36,35 @@ object DataFrameBenchmarks {
 
       val endJoined = startJoined.join(endLabeled, col("endId") === col("endLabeled.id"))
 
-      endJoined.select(col("rels.id")) -> checksum(graph)
-    }
+      val result = endJoined.select(col("rels.id"))
 
-    def checksum(graph: DataFrameGraph)(frame: DataFrame) = {
-      import graph.nodes.sparkSession.implicits._
+      val (count, checksum) = result.rdd.treeAggregate((0, 0))({
+        case ((c, cs), rel) => (c + 1, cs ^ rel.get(0).hashCode())
+      }, {
+        case ((lCount, lChecksum), (rCount, rChecksum)) => (lCount + rCount, lChecksum ^ rChecksum)
+      })
 
-      frame.map(_.get(0).hashCode()).reduce(_ + _)
+
+      (result, count, checksum)
     }
   }
 }
 
-abstract class DataFrameBenchmark(query: String) extends Benchmark[DataFrameGraph] with Serializable {
-  override def name: String = "DataFrame"
+abstract class DataFrameBenchmark(query: String) extends Benchmark[SimpleDataFrameGraph] with Serializable {
+  override def name: String = "DataFrame "
 
-  override def run(graph: DataFrameGraph): Outcome = {
-    val (frame, checksum) = innerRun(graph)
+  override def run(graph: SimpleDataFrameGraph): Outcome = {
+    val (frame, count,  checksum) = innerRun(graph)
 
     new Outcome {
 
       override lazy val plan = frame.queryExecution.toString()
-      override lazy val computeCount = frame.count()
-      override lazy val computeChecksum = checksum(frame)
+      override lazy val computeCount = count
+      override lazy val computeChecksum = checksum
     }
   }
 
-  def innerRun(graph: DataFrameGraph): (DataFrame, DataFrame => Int)
+  def innerRun(graph: SimpleDataFrameGraph): (DataFrame, Long, Int)
 }
 
 
@@ -102,4 +105,4 @@ abstract class DataFrameBenchmark(query: String) extends Benchmark[DataFrameGrap
  */
 
 
-case class DataFrameGraph(nodes: DataFrame, relationships: DataFrame)
+case class SimpleDataFrameGraph(nodes: DataFrame, relationships: DataFrame)

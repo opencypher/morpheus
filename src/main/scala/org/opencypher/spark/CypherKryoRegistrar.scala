@@ -27,6 +27,7 @@ package org.opencypher.spark {
       classOf[CypherPath],
       classOf[CypherList],
       classOf[Properties],
+      classOf[Array[CypherRelationship]],
 
       classOf[TreeMap[String, Any]],
       Ordering.String.getClass,
