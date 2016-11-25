@@ -126,6 +126,12 @@ object RunBenchmark {
     SimpleDataFrameGraph(cachedNodeFrame, cachedRelFrame)
   }
 
+  def createNeo4jViaDriverGraph: Neo4jViaDriverGraph = {
+    new Neo4jViaDriverGraph(
+      GraphDatabase.driver("bolt://localhost:7687", AuthTokens.basic("neo4j", Neo4jPassword.get()))
+    )
+  }
+
   def main(args: Array[String]): Unit = {
     init()
 
@@ -133,7 +139,7 @@ object RunBenchmark {
 
     val stdGraph = createStdPropertyGraphFromNeo(graphSize)
     val sdfGraph = createSimpleDataFrameGraph(graphSize)
-    val neoGraph = new Neo4jViaDriverGraph(GraphDatabase.driver("bolt://localhost:7687", AuthTokens.basic("neo4j", Neo4jPassword.get())))
+    val neoGraph = createNeo4jViaDriverGraph
     println("Graph(s) created!")
 
     val query = SimplePatternIds(IndexedSeq("Group"), IndexedSeq("ALLOWED_INHERIT"), IndexedSeq("Company"))
