@@ -124,7 +124,7 @@ object RunBenchmark {
 
     val stdGraph = createStdPropertyGraphFromNeo(graphSize)
     val sdfGraph = createSimpleDataFrameGraph(graphSize)
-    val neoGraph = new Neo4jViaDriverGraph(GraphDatabase.driver("bolt://localhost:7687", AuthTokens.basic("neo4j", "foo")))
+    val neoGraph = new Neo4jViaDriverGraph(GraphDatabase.driver("bolt://localhost:7687", AuthTokens.basic("neo4j", Neo4jPassword.get())))
     println("Graph(s) created!")
 
     val query = SimplePatternIds(IndexedSeq("Group"), IndexedSeq("ALLOWED_INHERIT"), IndexedSeq("Company"))
