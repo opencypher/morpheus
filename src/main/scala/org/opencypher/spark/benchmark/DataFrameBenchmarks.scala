@@ -44,7 +44,6 @@ object DataFrameBenchmarks extends SupportedQueryBenchmarks[SimpleDataFrameGraph
         case ((lCount, lChecksum), (rCount, rChecksum)) => (lCount + rCount, lChecksum ^ rChecksum)
       })
 
-
       (result, count, checksum)
     }
   }

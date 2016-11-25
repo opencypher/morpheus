@@ -70,26 +70,6 @@ object RunBenchmark {
     new StdPropertyGraph(nodes, relationships)
   }
 
-
-//  def benchmarkCypherOnSpark(query: SupportedQuery)(graph: StdPropertyGraph) = {
-//    import graph.session.implicits._
-//
-//    val result = graph.cypher(query).products.toDS
-//
-//    val plan = result.queryExecution
-//    val count = result.count()
-//    val checksum = result.map(_.productElement(0).hashCode()).rdd.reduce(_ + _)
-//
-//    // warmup
-//    println("Begin warmup")
-//    runAndTime(3)(graph.cypher(query))(_.products.count())
-//
-//    println("Begin measurements")
-//    val times = runAndTime()(graph.cypher(query))(_.products.count())
-//
-//    CypherOnSparkResult(times, plan, query, count, checksum)
-//  }
-
   abstract class ConfigOption[T](val name: String, val defaultValue: T)(convert: String => Option[T]) {
     def get(): T = Option(System.getProperty(name)).flatMap(convert).getOrElse(defaultValue)
   }
@@ -148,19 +128,21 @@ object RunBenchmark {
     val neoGraph = new Neo4jViaDriverGraph(GraphDatabase.driver("bolt://localhost:7687", AuthTokens.basic("neo4j", "foo")))
     println("Graph(s) created!")
 
-//    val cypherOnSpark = benchmarkCypherOnSpark(NodeScanIdsSorted(IndexedSeq("Group")))(graph)
-//    val cypherOnSpark = benchmarkCypherOnSpark(SimplePattern(IndexedSeq("Group"), IndexedSeq("ALLOWED_INHERIT"), IndexedSeq("Company")))(graph)
+    val query = SimplePatternIds(IndexedSeq("Group"), IndexedSeq("ALLOWED_INHERIT"), IndexedSeq("Company"))
 
-    val query1 = SimplePatternIds(IndexedSeq("Group"), IndexedSeq("ALLOWED_INHERIT"), IndexedSeq("Company"))
-    val query2 = SimplePattern(IndexedSeq("Group"), IndexedSeq("ALLOWED_INHERIT"), IndexedSeq("Company"))
+    val frameResult = BenchmarkSeries.run(DataFrameBenchmarks(query) -> sdfGraph)
+    val rddResult = BenchmarkSeries.run(RDDBenchmarks(query) -> stdGraph)
+    val neoResult = BenchmarkSeries.run(Neo4jViaDriverBenchmarks(query) -> neoGraph)
+    val cosResult = BenchmarkSeries.run(CypherOnSparkBenchmarks(query) -> stdGraph)
+    val results = Seq(frameResult, rddResult, neoResult, cosResult)
 
-    val frameResult = BenchmarkSeries.run(DataFrameBenchmarks(query1) -> sdfGraph)
-    val rddResult = BenchmarkSeries.run(RDDBenchmarks(query2) -> stdGraph)
-    val neoResult = BenchmarkSeries.run(Neo4jViaDriverBenchmarks(query2) -> neoGraph)
-
-    println(BenchmarkSummary(query1.toString, sdfGraph.nodes.count(), sdfGraph.relationships.count()))
-    println(BenchmarkSummary(query2.toString, stdGraph.nodes.count(), stdGraph.relationships.count()))
-    Seq(frameResult, rddResult, neoResult).foreach(println)
+    println(BenchmarkSummary(query.toString, sdfGraph.nodes.count(), sdfGraph.relationships.count()))
+    results.foreach { result =>
+      println(s">>>>> Plan for ${result.name}")
+      println(result.plan)
+      println(s"<<<<< Plan for ${result.name}")
+    }
+    results.foreach(println)
     println(s"Using parallelism ${sparkSession.sparkContext.defaultParallelism}")
   }
 }
