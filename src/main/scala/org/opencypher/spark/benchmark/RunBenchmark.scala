@@ -3,9 +3,7 @@ package org.opencypher.spark.benchmark
 import java.util.UUID
 
 import org.apache.spark.SparkConf
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.execution.QueryExecution
-import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
+import org.apache.spark.sql.SparkSession
 import org.neo4j.driver.v1.{AuthTokens, GraphDatabase}
 import org.opencypher.spark.api.value._
 import org.opencypher.spark.benchmark.Converters.{internalNodeToAccessControlNode, internalNodeToCypherNode, internalRelToAccessControlRel, internalRelationshipToCypherRelationship}
@@ -21,7 +19,7 @@ object RunBenchmark {
     val conf = new SparkConf(true)
     conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     conf.set("spark.kryo.registrator", "org.opencypher.spark.CypherKryoRegistrar")
-    conf.set("spark.neo4j.bolt.password", "foo")
+    conf.set("spark.neo4j.bolt.password", Neo4jPassword.get())
     conf.set("spark.driver.memory", "471859200")
     // Enable to see if we cover enough
     conf.set("spark.kryo.registrationRequired", "true")
@@ -80,6 +78,7 @@ object RunBenchmark {
   object Parallelism extends ConfigOption("cos.parallelism", "8")(Some(_))
   object NodeFilePath extends ConfigOption("cos.nodeFile", "")(Some(_))
   object RelFilePath extends ConfigOption("cos.relFile", "")(Some(_))
+  object Neo4jPassword extends ConfigOption("cos.neo4j-pw", ".")(Some(_))
 
   def createStdPropertyGraphFromNeo(size: Long) = {
     val (nodeRDD, relRDD) = Importers.importFromNeo(size)
