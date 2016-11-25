@@ -2,7 +2,7 @@ package org.opencypher.spark.benchmark
 
 import org.opencypher.spark.{StdTestSuite, TestSession}
 
-class DataFramesTest extends StdTestSuite with TestSession.Fixture {
+class DataFrameBenchmarksTest extends StdTestSuite with TestSession.Fixture {
 
   case class NodeRow(id: Long, group: Boolean, company: Boolean)
   case class RelRow(id: Long, startId: Long, endId: Long, typ: String = "ALLOWED_INHERIT")
@@ -27,9 +27,10 @@ class DataFramesTest extends StdTestSuite with TestSession.Fixture {
     val rels = session.createDataFrame(Seq(r0, r1, r2, r3, r4, r5))
 
 //    val result = Datasets.simplePattern(1, "ALLOWED_INHERIT", 2)(ExperimentalGraph(nodes, Map("ALLOWED_INHERIT" -> rels)))
-    val result = DataFrames.simplePatternIds(1, "ALLOWED_INHERIT", 2)(ExperimentalGraph(nodes, rels))
-
-    result.show()
+//    val result = DataFrameBenchmarks.simplePatternIds(1, "ALLOWED_INHERIT", 2)(DataFrameGraph(nodes, rels))
+//
+//    result.show()
+    ???
   }
 
 }

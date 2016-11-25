@@ -5,7 +5,7 @@ import org.neo4j.spark.Neo4j
 
 object Importers {
   def importFromNeo(size: Long) = {
-    val neo4j = Neo4j(Benchmark.sparkSession.sparkContext)
+    val neo4j = Neo4j(RunBenchmark.sparkSession.sparkContext)
 
     if (size > 0) limit(neo4j, size)
     else all(neo4j)
