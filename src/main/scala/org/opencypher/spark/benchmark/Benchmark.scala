@@ -13,7 +13,7 @@ case class BenchmarkResult(name: String, times: Seq[Long], plan: String, count: 
   lazy val median = times.sorted.apply(times.length / 2)
 
   override def toString: String =
-    s"$name: \t$avg [$min .. $median .. $max] ms\t${avg.toDouble/count * 1000} avg ms/Krow\t$count rows\t$checksum checksum"
+    s"$name: \t$avg [$min .. $median .. $max] ms\t${count.toDouble/avg.toDouble} avg Krow/sec\t$count rows\t$checksum checksum"
 }
 
 case class BenchmarkSummary(query: String, nodes: Long, relationships: Long) {

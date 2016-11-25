@@ -9,6 +9,7 @@ package org.opencypher.spark {
 
   import org.apache.spark.sql.catalyst.InternalRow
   import org.apache.spark.sql.catalyst.expressions.UnsafeRow
+  import org.opencypher.spark.benchmark.{AccessControlNode, AccessControlRelationship}
 
   import scala.collection.PrivateCollectionClasses
 
@@ -27,6 +28,7 @@ package org.opencypher.spark {
       classOf[CypherPath],
       classOf[CypherList],
       classOf[Properties],
+      classOf[Array[CypherNode]],
       classOf[Array[CypherRelationship]],
 
       classOf[TreeMap[String, Any]],
@@ -41,7 +43,11 @@ package org.opencypher.spark {
       Class.forName("org.apache.spark.sql.execution.joins.LongToUnsafeRowMap"),
 
       classOf[Array[InternalRow]],
-      classOf[UnsafeRow]
+      classOf[UnsafeRow],
+      classOf[AccessControlNode],
+      classOf[AccessControlRelationship],
+      classOf[Array[AccessControlNode]],
+      classOf[Array[AccessControlRelationship]]
     )
 
     override def registerClasses(kryo: Kryo): Unit = {

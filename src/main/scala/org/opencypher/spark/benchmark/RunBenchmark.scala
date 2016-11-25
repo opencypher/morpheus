@@ -72,7 +72,7 @@ object RunBenchmark {
     def get(): T = Option(System.getProperty(name)).flatMap(convert).getOrElse(defaultValue)
   }
 
-  object GraphSize extends ConfigOption("cos.graph-size", 100000l)(x => Some(java.lang.Long.parseLong(x)))
+  object GraphSize extends ConfigOption("cos.graph-size", 250000l)(x => Some(java.lang.Long.parseLong(x)))
   object MasterAddress extends ConfigOption("cos.master", "")(Some(_))
   object Logging extends ConfigOption("cos.logging", "OFF")(Some(_))
   object Parallelism extends ConfigOption("cos.parallelism", "8")(Some(_))
@@ -81,16 +81,21 @@ object RunBenchmark {
   object Neo4jPassword extends ConfigOption("cos.neo4j-pw", ".")(Some(_))
 
   def createStdPropertyGraphFromNeo(size: Long) = {
+    val session = sparkSession
+    import CypherValue.Encoders._
+
+    val parallelism = sparkSession.sparkContext.defaultParallelism
+
     val (nodeRDD, relRDD) = Importers.importFromNeo(size)
     val nMapped = nodeRDD.map(internalNodeToCypherNode)
     val rMapped = relRDD.map(internalRelationshipToCypherRelationship)
 
-    val parallelism = sparkSession.sparkContext.defaultParallelism
+    val nodeSet = session.createDataset[CypherNode](nMapped)
+    val cachedNodeSet = nodeSet.repartition(parallelism).cache()
+    val relSet = session.createDataset[CypherRelationship](rMapped)
+    val cachedRelSet = relSet.repartition(parallelism).cache()
 
-    val nodeSet = sparkSession.createDataset(nMapped)(CypherValue.Encoders.cypherNodeEncoder).repartition(parallelism).cache()
-    val relSet = sparkSession.createDataset(rMapped)(CypherValue.Encoders.cypherRelationshipEncoder).repartition(parallelism).cache()
-
-    new StdPropertyGraph(nodeSet, relSet)
+    new StdPropertyGraph(cachedNodeSet, cachedRelSet)
   }
 
   def createSimpleDataFrameGraph(size: Long) = {
@@ -107,14 +112,18 @@ object RunBenchmark {
     val parallelism = sparkSession.sparkContext.defaultParallelism
 
     println("Repartitioning...")
-    val nodeFrame = sparkSession.createDataFrame(nMapped).repartition(parallelism).cache()
-    val relFrame = sparkSession.createDataFrame(rMapped).repartition(parallelism).cache()
+    val nodeFrame = sparkSession.createDataFrame(nMapped)
+    val idCol = nodeFrame.col("id")
+    val cachedNodeFrame = nodeFrame.repartition(parallelism, idCol).sortWithinPartitions(idCol).cache()
+    val relFrame = sparkSession.createDataFrame(rMapped)
+    val startIdCol = relFrame.col("startId")
+    val cachedRelFrame = relFrame.repartition(parallelism, startIdCol).sortWithinPartitions(startIdCol).cache()
 //    val relFrames = map.map {
 //      case (t, r) => t -> sparkSession.createDataFrame(r)
 //    }
 //    println(s"Done creating dataframes for $size relationships (${map.size} unique types)")
 
-    SimpleDataFrameGraph(nodeFrame, relFrame)
+    SimpleDataFrameGraph(cachedNodeFrame, cachedRelFrame)
   }
 
   def main(args: Array[String]): Unit = {
@@ -136,12 +145,13 @@ object RunBenchmark {
     val results = Seq(frameResult, rddResult, neoResult, cosResult)
 
     println(BenchmarkSummary(query.toString, sdfGraph.nodes.count(), sdfGraph.relationships.count()))
+    println(s"(using parallelism ${sparkSession.sparkContext.defaultParallelism})")
+
     results.foreach { result =>
       println(s">>>>> Plan for ${result.name}")
       println(result.plan)
       println(s"<<<<< Plan for ${result.name}")
     }
     results.foreach(println)
-    println(s"Using parallelism ${sparkSession.sparkContext.defaultParallelism}")
   }
 }
