@@ -36,6 +36,12 @@ class Neo4jViaDriverBenchmark(query: String) extends Benchmark[Neo4jViaDriverGra
       }
     }
   }
+
+  def numNodes(graph: Neo4jViaDriverGraph): Long =
+    graph.withSession(_.run("MATCH (n) RETURN count(n)").single().get(0).asLong())
+
+  def numRelationships(graph: Neo4jViaDriverGraph): Long =
+    graph.withSession(_.run("MATCH ()-[r]->() RETURN count(r)").single().get(0).asLong())
 }
 
 class Neo4jViaDriverGraph(driver: Driver) {

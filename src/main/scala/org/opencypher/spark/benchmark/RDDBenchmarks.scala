@@ -82,6 +82,12 @@ object RDDBenchmarks extends SupportedQueryBenchmarks[StdPropertyGraph] {
 abstract class RDDBenchmark[T](query: String) extends Benchmark[StdPropertyGraph] with Serializable {
   override def name: String = "DataFrame"
 
+  def numNodes(graph: StdPropertyGraph): Long =
+    graph.nodes.count()
+
+  def numRelationships(graph: StdPropertyGraph): Long =
+    graph.relationships.count()
+
   override def run(graph: StdPropertyGraph): Outcome = {
     val (rdd, count, checksum) = innerRun(graph)
 

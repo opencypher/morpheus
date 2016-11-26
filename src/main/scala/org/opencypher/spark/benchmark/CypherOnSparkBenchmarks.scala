@@ -8,6 +8,9 @@ object CypherOnSparkBenchmarks extends SupportedQueryBenchmarks[StdPropertyGraph
 
     override def name: String = "CoS       "
 
+    override def numNodes(graph: StdPropertyGraph): Long = graph.nodes.count()
+    override def numRelationships(graph: StdPropertyGraph): Long = graph.relationships.count()
+
     override def run(graph: StdPropertyGraph): Outcome = {
       val result = graph.cypher(query).products.toDS
 

@@ -1,7 +1,7 @@
 package org.opencypher.spark.benchmark
 
 object BenchmarkSeries {
-  def run[B <: Benchmark[G], G](benchmarkAndGraph: (Benchmark[G], G), nbrTimes: Int = 6, warmupTimes: Int = 3): BenchmarkResult = {
+  def run[G](benchmarkAndGraph: BenchmarkAndGraph[G], nbrTimes: Int = 6, warmupTimes: Int = 3): BenchmarkResult = {
     warmup(benchmarkAndGraph, warmupTimes)
 
     measure(benchmarkAndGraph, nbrTimes)
@@ -16,26 +16,27 @@ object BenchmarkSeries {
     time -> outcome
   }
 
-  private def warmup[B <: Benchmark[G], G](benchmarkAndGraph: (Benchmark[G], G), nbrTimes: Int) = {
-    val (benchmark, graph) = benchmarkAndGraph
-
-    println("Begin warmup")
-    (0 until nbrTimes).foreach { i =>
-      runAndTime(i, benchmark.run(graph))
+  private def warmup[G](benchmarkAndGraph: BenchmarkAndGraph[G], nbrTimes: Int) = {
+    benchmarkAndGraph.use { (benchmark, graph) =>
+      println("Begin warmup")
+      (0 until nbrTimes).foreach { i =>
+        runAndTime(i, benchmark.run(graph))
+      }
     }
   }
 
-  private def measure[B <: Benchmark[G], G](benchmarkAndGraph: (Benchmark[G], G), nbrTimes: Int) = {
-    val (benchmark, graph) = benchmarkAndGraph
-    val outcome = benchmark.run(graph)
-    val plan = outcome.plan
-    val count = outcome.computeCount
-    val checksum = outcome.computeChecksum
+  private def measure[G](benchmarkAndGraph: BenchmarkAndGraph[G], nbrTimes: Int) = {
+    benchmarkAndGraph.use { (benchmark, graph) =>
+      val outcome = benchmark.run(graph)
+      val plan = outcome.plan
+      val count = outcome.computeCount
+      val checksum = outcome.computeChecksum
 
-    println("Begin measurements")
-    val outcomes = (0 until nbrTimes).map { i =>
-      runAndTime(i, benchmark.run(graph))
+      println("Begin measurements")
+      val outcomes = (0 until nbrTimes).map { i =>
+        runAndTime(i, benchmark.run(graph))
+      }
+      BenchmarkResult(benchmark.name, outcomes.map(_._1), plan, count, checksum)
     }
-    BenchmarkResult(benchmark.name, outcomes.map(_._1), plan, count, checksum)
   }
 }

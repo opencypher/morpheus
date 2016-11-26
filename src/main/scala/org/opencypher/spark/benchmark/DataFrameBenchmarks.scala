@@ -31,8 +31,9 @@ object DataFrameBenchmarks extends SupportedQueryBenchmarks[SimpleDataFrameGraph
       val endLabeled = graph.nodes(endLabel).as("endLabeled")
 
       val startJoined = startLabeled.join(rels, col("startLabeled.id") === col("rels.startId"))
-      val startJoinedShuffled = startJoined.sortWithinPartitions(startJoined.col("endId"))
-      val endJoined = startJoinedShuffled.join(endLabeled, col("endId") === col("endLabeled.id"))
+      val endCol = startJoined.col("endId")
+      val startJoinedShuffled = startJoined.sortWithinPartitions(endCol)
+      val endJoined = startJoinedShuffled.join(endLabeled, endCol === col("endLabeled.id"))
 
       val result = endJoined.select(col("rels.id"))
 
@@ -49,6 +50,12 @@ object DataFrameBenchmarks extends SupportedQueryBenchmarks[SimpleDataFrameGraph
 
 abstract class DataFrameBenchmark(query: String) extends Benchmark[SimpleDataFrameGraph] with Serializable {
   override def name: String = "DataFrame "
+
+  def numNodes(graph: SimpleDataFrameGraph): Long =
+    graph.nodes.values.map(_.count()).sum
+
+  def numRelationships(graph: SimpleDataFrameGraph): Long =
+    graph.relationships.values.map(_.count()).sum
 
   override def run(graph: SimpleDataFrameGraph): Outcome = {
     val (frame, count,  checksum) = innerRun(graph)
@@ -100,6 +107,5 @@ abstract class DataFrameBenchmark(query: String) extends Benchmark[SimpleDataFra
     id   -> .prop1
 
  */
-
 
 case class SimpleDataFrameGraph(nodes: Map[String, DataFrame], relationships: Map[String, DataFrame])

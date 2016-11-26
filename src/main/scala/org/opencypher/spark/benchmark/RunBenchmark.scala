@@ -4,8 +4,7 @@ import java.util.UUID
 
 import org.apache.spark.SparkConf
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SparkSession
-import org.apache.spark.storage.StorageLevel
+import org.apache.spark.sql.{Dataset, SparkSession}
 import org.neo4j.driver.v1.{AuthTokens, GraphDatabase}
 import org.opencypher.spark.api.value._
 import org.opencypher.spark.benchmark.Converters.{internalNodeToAccessControlNode, internalNodeToCypherNode, internalRelToAccessControlRel, internalRelationshipToCypherRelationship}
@@ -74,7 +73,7 @@ object RunBenchmark {
     def get(): T = Option(System.getProperty(name)).flatMap(convert).getOrElse(defaultValue)
   }
 
-  object GraphSize extends ConfigOption("cos.graph-size", -1l)(x => Some(java.lang.Long.parseLong(x)))
+  object GraphSize extends ConfigOption("cos.graph-size", 250000l)(x => Some(java.lang.Long.parseLong(x)))
   object MasterAddress extends ConfigOption("cos.master", "")(Some(_))
   object Logging extends ConfigOption("cos.logging", "OFF")(Some(_))
   object Parallelism extends ConfigOption("cos.parallelism", "8")(Some(_))
@@ -110,14 +109,14 @@ object RunBenchmark {
     println("Repartitioning...")
     val nodeFrame = sparkSession.createDataFrame(nMapped)
     val idCol = nodeFrame.col("id")
-    val cachedNodeFrame = nodeFrame.repartition(parallelism, idCol).sortWithinPartitions(idCol).cache()
+    val cachedNodeFrame = cacheNow( nodeFrame.repartition(parallelism, idCol).sortWithinPartitions(idCol) )
     val labeledNodes = Map(
-      "Account" -> cachedNodeFrame.filter(cachedNodeFrame.col("account")).cache(),
-      "Administrator" -> cachedNodeFrame.filter(cachedNodeFrame.col("administrator")).cache(),
-      "Company" -> cachedNodeFrame.filter(cachedNodeFrame.col("company")).cache(),
-      "Employee" -> cachedNodeFrame.filter(cachedNodeFrame.col("employee")).cache(),
-      "Group" -> cachedNodeFrame.filter(cachedNodeFrame.col("group")).cache(),
-      "Resource" -> cachedNodeFrame.filter(cachedNodeFrame.col("resource")).cache()
+      "Account" -> cacheNow( cachedNodeFrame.filter(cachedNodeFrame.col("account")) ),
+      "Administrator" -> cacheNow( cachedNodeFrame.filter(cachedNodeFrame.col("administrator")) ),
+      "Company" -> cacheNow( cachedNodeFrame.filter(cachedNodeFrame.col("company")) ),
+      "Employee" -> cacheNow( cachedNodeFrame.filter(cachedNodeFrame.col("employee")) ),
+      "Group" -> cacheNow( cachedNodeFrame.filter(cachedNodeFrame.col("group")) ),
+      "Resource" -> cacheNow( cachedNodeFrame.filter(cachedNodeFrame.col("resource")) )
     )
 
     cachedNodeFrame.unpersist()
@@ -128,12 +127,18 @@ object RunBenchmark {
     val typCol = relFrame.col("typ")
     val types = cachedRelFrame.select(typCol).distinct().rdd.map(_.getString(0)).collect()
     val relsByStart = types.map { typ =>
-      typ -> cachedRelFrame.filter(typCol === typ).cache()
+      typ -> cacheNow( cachedRelFrame.filter(typCol === typ) )
     }.toMap
 
     cachedRelFrame.unpersist()
 
     SimpleDataFrameGraph(labeledNodes, relsByStart)
+  }
+
+  private def cacheNow[T](dataset: Dataset[T]): Dataset[T] = {
+    val result = dataset.cache()
+    result.rdd.localCheckpoint()
+    result
   }
 
   def createNeo4jViaDriverGraph: Neo4jViaDriverGraph = {
@@ -147,26 +152,38 @@ object RunBenchmark {
 
     val graphSize = GraphSize.get()
 
-    val stdGraph = createStdPropertyGraphFromNeo(graphSize)
-    val sdfGraph = createSimpleDataFrameGraph(graphSize)
-    val neoGraph = createNeo4jViaDriverGraph
+    lazy val stdGraph = createStdPropertyGraphFromNeo(graphSize)
+    lazy val sdfGraph = createSimpleDataFrameGraph(graphSize)
+    lazy val neoGraph = createNeo4jViaDriverGraph
     println("Graph(s) created!")
 
     val query = SimplePatternIds(IndexedSeq("Group"), IndexedSeq("ALLOWED_INHERIT"), IndexedSeq("Company"))
 
-    val frameResult = BenchmarkSeries.run(DataFrameBenchmarks(query) -> sdfGraph)
-    val rddResult = BenchmarkSeries.run(RDDBenchmarks(query) -> stdGraph)
-    val neoResult = BenchmarkSeries.run(Neo4jViaDriverBenchmarks(query) -> neoGraph)
-    val cosResult = BenchmarkSeries.run(CypherOnSparkBenchmarks(query) -> stdGraph)
-    val results = Seq(frameResult, rddResult, neoResult, cosResult)
+    lazy val frameResult = DataFrameBenchmarks(query).using(sdfGraph)
+    lazy val rddResult = RDDBenchmarks(query).using(stdGraph)
+    lazy val neoResult = Neo4jViaDriverBenchmarks(query).using(neoGraph)
+    lazy val cosResult = CypherOnSparkBenchmarks(query).using(stdGraph)
+    lazy val benchmarksAndGraphs = Seq(
+        neoResult
+      , frameResult
+      , rddResult
+      , cosResult
+    )
 
-    println(BenchmarkSummary(query.toString, stdGraph.nodes.count(), stdGraph.relationships.count()))
-    println(s"(using parallelism ${sparkSession.sparkContext.defaultParallelism})")
+    neoResult.use { (benchmark, graph) =>
+      println(BenchmarkSummary(query.toString, benchmark.numNodes(graph), benchmark.numRelationships(graph)))
+    }
+    println(s"GraphSize used by spark benchmarks is ${graphSize}")
 
-    results.foreach { result =>
-      println(s">>>>> Plan for ${result.name}")
-      println(result.plan)
-      println(s"<<<<< Plan for ${result.name}")
+    val results = benchmarksAndGraphs.map { benchmarkAndGraph =>
+      benchmarkAndGraph.use { (benchmark, graph) =>
+        println(s"About to benchmark ${benchmark.name.trim} (using parallelism ${sparkSession.sparkContext.defaultParallelism})")
+        val result = BenchmarkSeries.run(benchmarkAndGraph)
+        println(s">>>>> Plan for ${result.name}")
+        println(result.plan)
+        println(s"<<<<< Plan for ${result.name}")
+        result
+      }
     }
     results.foreach(println)
   }

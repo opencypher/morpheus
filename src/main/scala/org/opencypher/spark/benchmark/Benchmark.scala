@@ -1,9 +1,19 @@
 package org.opencypher.spark.benchmark
 
+case class BenchmarkAndGraph[G](benchmark: Benchmark[G], graph: G) {
+  def use[T](f: (Benchmark[G], G) => T) = f(benchmark, graph)
+}
 
 trait Benchmark[G] {
+  self =>
+
   def name: String
   def run(graph: G): Outcome
+
+  def using(graph: G) = BenchmarkAndGraph(self, graph)
+
+  def numNodes(graph: G): Long
+  def numRelationships(graph: G): Long
 }
 
 case class BenchmarkResult(name: String, times: Seq[Long], plan: String, count: Long, checksum: Int) {
@@ -17,7 +27,7 @@ case class BenchmarkResult(name: String, times: Seq[Long], plan: String, count: 
 }
 
 case class BenchmarkSummary(query: String, nodes: Long, relationships: Long) {
-  override def toString: String = s"Running query $query\non a graph with $nodes nodes and $relationships relationships."
+  override def toString: String = s"Benchmarking query $query\nbased on a source graph with $nodes nodes and $relationships relationships."
 }
 
 trait Outcome {
@@ -25,4 +35,3 @@ trait Outcome {
   def computeChecksum: Int
   def plan: String
 }
-
