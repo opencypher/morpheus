@@ -73,7 +73,7 @@ object RunBenchmark {
     def get(): T = Option(System.getProperty(name)).flatMap(convert).getOrElse(defaultValue)
   }
 
-  object GraphSize extends ConfigOption("cos.graph-size", 250000l)(x => Some(java.lang.Long.parseLong(x)))
+  object GraphSize extends ConfigOption("cos.graph-size", -1l)(x => Some(java.lang.Long.parseLong(x)))
   object MasterAddress extends ConfigOption("cos.master", "")(Some(_))
   object Logging extends ConfigOption("cos.logging", "OFF")(Some(_))
   object Parallelism extends ConfigOption("cos.parallelism", "8")(Some(_))
@@ -157,7 +157,8 @@ object RunBenchmark {
     lazy val neoGraph = createNeo4jViaDriverGraph
     println("Graph(s) created!")
 
-    val query = SimplePatternIds(IndexedSeq("Group"), IndexedSeq("ALLOWED_INHERIT"), IndexedSeq("Company"))
+    val query = SimplePatternIds(IndexedSeq("Employee"), IndexedSeq("HAS_ACCOUNT"), IndexedSeq("Account"))
+//    val query = SimplePatternIds(IndexedSeq("Group"), IndexedSeq("ALLOWED_INHERIT"), IndexedSeq("Company"))
 
     lazy val frameResult = DataFrameBenchmarks(query).using(sdfGraph)
     lazy val rddResult = RDDBenchmarks(query).using(stdGraph)
@@ -173,11 +174,12 @@ object RunBenchmark {
     neoResult.use { (benchmark, graph) =>
       println(BenchmarkSummary(query.toString, benchmark.numNodes(graph), benchmark.numRelationships(graph)))
     }
-    println(s"GraphSize used by spark benchmarks is ${graphSize}")
+    println(s"GraphSize used by spark benchmarks is ${graphSize}.")
+    println(s"Default parallelism is ${sparkSession.sparkContext.defaultParallelism}.")
 
     val results = benchmarksAndGraphs.map { benchmarkAndGraph =>
       benchmarkAndGraph.use { (benchmark, graph) =>
-        println(s"About to benchmark ${benchmark.name.trim} (using parallelism ${sparkSession.sparkContext.defaultParallelism})")
+        println(s"About to benchmark ${benchmark.name.trim}")
         val result = BenchmarkSeries.run(benchmarkAndGraph)
         println(s">>>>> Plan for ${result.name}")
         println(result.plan)
