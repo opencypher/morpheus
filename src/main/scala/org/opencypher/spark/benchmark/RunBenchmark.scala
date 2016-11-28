@@ -79,9 +79,9 @@ object RunBenchmark {
   object Partitions extends ConfigOption("cos.shuffle-partitions", 40)(x => Some(java.lang.Integer.parseInt(x)))
   object NodeFilePath extends ConfigOption("cos.nodeFile", "")(Some(_))
   object RelFilePath extends ConfigOption("cos.relFile", "")(Some(_))
-  object Neo4jPassword extends ConfigOption("cos.neo4j-pw", ".")(Some(_))
+  object Neo4jPassword extends ConfigOption("cos.neo4j-pw", "foo")(Some(_))
   object Benchmarks extends ConfigOption("cos.benchmarks", "fast")(Some(_))
-  object Query extends ConfigOption("cos.query", 3)(x => Some(java.lang.Integer.parseInt(x)))
+  object Query extends ConfigOption("cos.query", 1)(x => Some(java.lang.Integer.parseInt(x)))
 
   def createStdPropertyGraphFromNeo(size: Long) = {
     val session = sparkSession
@@ -178,13 +178,15 @@ object RunBenchmark {
     lazy val neoResult = Neo4jViaDriverBenchmarks(query).using(neoGraph)
     lazy val cosResult = CypherOnSparkBenchmarks(query).using(stdGraph)
     lazy val benchmarksAndGraphs = Benchmarks.get() match {
-      case "all" => Seq(
-        neoResult
-        , frameResult
-        , rddResult
-        , cosResult
-      )
-      case "fast" => Seq(frameResult, neoResult)
+      case "all" =>
+        Seq(
+          neoResult
+          , frameResult
+          , rddResult
+          , cosResult
+        )
+      case "fast" =>
+        Seq(frameResult, neoResult)
     }
 
     neoResult.use { (benchmark, graph) =>

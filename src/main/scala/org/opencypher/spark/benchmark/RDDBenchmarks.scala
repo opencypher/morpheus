@@ -88,13 +88,15 @@ abstract class RDDBenchmark[T](query: String) extends Benchmark[StdPropertyGraph
   def numRelationships(graph: StdPropertyGraph): Long =
     graph.relationships.count()
 
+  override def plan(graph: StdPropertyGraph): String = "RDD"
+
   override def run(graph: StdPropertyGraph): Outcome = {
     val (rdd, count, checksum) = innerRun(graph)
 
     new Outcome {
-      override lazy val plan = "RDD"
       override val computeCount = count
       override lazy val computeChecksum = checksum
+      override def usedCachedPlan: Boolean = false
     }
   }
 

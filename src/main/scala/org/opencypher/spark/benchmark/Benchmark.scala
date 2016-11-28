@@ -8,6 +8,10 @@ trait Benchmark[G] {
   self =>
 
   def name: String
+
+  def init(graph: G): Unit = ()
+
+  def plan(graph: G): String
   def run(graph: G): Outcome
 
   def using(graph: G) = BenchmarkAndGraph(self, graph)
@@ -33,5 +37,5 @@ case class BenchmarkSummary(query: String, nodes: Long, relationships: Long) {
 trait Outcome {
   def computeCount: Long
   def computeChecksum: Int
-  def plan: String
+  def usedCachedPlan: Boolean
 }

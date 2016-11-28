@@ -13,6 +13,15 @@ class Neo4jViaDriverBenchmark(query: String) extends Benchmark[Neo4jViaDriverGra
 
   override def name: String = "Neo4j     "
 
+  override def init(graph: Neo4jViaDriverGraph): Unit = {
+    // TODO: Find better way to flush plan cache
+    graph.withSession(session => session.run(s"CREATE CONSTRAINT ON (n:Foo) ASSERT n.baz IS UNIQUE"))
+    graph.withSession(session => session.run(s"DROP CONSTRAINT ON (n:Foo) ASSERT n.baz IS UNIQUE"))
+  }
+
+  override def plan(graph: Neo4jViaDriverGraph): String =
+    graph.withSession(session => session.run(s"EXPLAIN $query").consume().plan().toString)
+
   override def run(graph: Neo4jViaDriverGraph): Outcome = {
     graph.withSession { session =>
       val intType = session.typeSystem().INTEGER()
@@ -30,9 +39,9 @@ class Neo4jViaDriverBenchmark(query: String) extends Benchmark[Neo4jViaDriverGra
       val summary = result.consume()
 
       new Outcome {
-        override lazy val plan = graph.withSession(session => session.run(s"EXPLAIN $query").consume().plan().toString)
         override val computeCount: Long = count
         override val computeChecksum: Int = checksum
+        override def usedCachedPlan: Boolean = true
       }
     }
   }

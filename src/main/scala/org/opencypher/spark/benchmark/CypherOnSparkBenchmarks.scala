@@ -11,6 +11,9 @@ object CypherOnSparkBenchmarks extends SupportedQueryBenchmarks[StdPropertyGraph
     override def numNodes(graph: StdPropertyGraph): Long = graph.nodes.count()
     override def numRelationships(graph: StdPropertyGraph): Long = graph.relationships.count()
 
+    override def plan(graph: StdPropertyGraph) =
+      graph.cypher(query).products.toDS.queryExecution.toString()
+
     override def run(graph: StdPropertyGraph): Outcome = {
       val result = graph.cypher(query).products.toDS
 
@@ -21,9 +24,9 @@ object CypherOnSparkBenchmarks extends SupportedQueryBenchmarks[StdPropertyGraph
       })
 
       new Outcome {
-        override def plan: String = result.queryExecution.toString()
         override def computeCount: Long = count
         override def computeChecksum: Int = checksum
+        override def usedCachedPlan: Boolean = false
       }
     }
   }

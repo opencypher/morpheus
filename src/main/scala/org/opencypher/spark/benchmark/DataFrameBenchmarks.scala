@@ -38,19 +38,12 @@ object DataFrameBenchmarks extends SupportedQueryBenchmarks[SimpleDataFrameGraph
       val endJoined = startJoinedShuffled.join(endLabeled, endCol === col("endLabeled.id"))
 
       val result = endJoined.select(col("rels.id"))
-
-      val (count, checksum) = result.rdd.treeAggregate((0, 0))({
-        case ((c, cs), rel) => (c + 1, cs ^ rel.get(0).hashCode())
-      }, {
-        case ((lCount, lChecksum), (rCount, rChecksum)) => (lCount + rCount, lChecksum ^ rChecksum)
-      })
-
-      (result, count, checksum)
+      result
     }
   }
 
   def midPattern(query: String)(startLabel: String, type1: String, midLabel: String, type2: String, endLabel: String) = new DataFrameBenchmark(query) {
-    override def innerRun(graph: SimpleDataFrameGraph): (DataFrame, Long, Int) = {
+    override def innerRun(graph: SimpleDataFrameGraph) = {
       val startLabeled = graph.nodes(startLabel).as("startLabeled")
       val rel1 = graph.relationships(type1).as("rel1")
       val midLabeled = graph.nodes(midLabel).as("midLabeled")
@@ -70,19 +63,12 @@ object DataFrameBenchmarks extends SupportedQueryBenchmarks[SimpleDataFrameGraph
       val endJoined = step2Sorted.join(endLabeled, endId2 === col("endLabeled.id"))
 
       val result = endJoined.select(col("rel1.id"), col("rel2.id"))
-
-      val (count, checksum) = result.rdd.treeAggregate((0, 0))({
-        case ((c, cs), rel) => (c + 1, cs ^ rel.get(0).hashCode())
-      }, {
-        case ((lCount, lChecksum), (rCount, rChecksum)) => (lCount + rCount, lChecksum ^ rChecksum)
-      })
-
-      (result, count, checksum)
+      result
     }
   }
 
   def largePattern(query: String)(startLabel: String, type1: String, midLabel1: String, type2: String, midLabel2: String, type3: String, endLabel: String) = new DataFrameBenchmark(query) {
-    override def innerRun(graph: SimpleDataFrameGraph): (DataFrame, Long, Int) = {
+    override def innerRun(graph: SimpleDataFrameGraph) = {
       val startLabeled = graph.nodes(startLabel).as("startLabeled")
       val rel1 = graph.relationships(type1).as("rel1")
       val midLabeled = graph.nodes(midLabel1).as("midLabeled")
@@ -102,14 +88,7 @@ object DataFrameBenchmarks extends SupportedQueryBenchmarks[SimpleDataFrameGraph
       val endJoined = step2Sorted.join(endLabeled, endId2 === col("endLabeled.id"))
 
       val result = endJoined.select(col("rel1.id"), col("rel2.id"))
-
-      val (count, checksum) = result.rdd.treeAggregate((0, 0))({
-        case ((c, cs), rel) => (c + 1, cs ^ rel.get(0).hashCode())
-      }, {
-        case ((lCount, lChecksum), (rCount, rChecksum)) => (lCount + rCount, lChecksum ^ rChecksum)
-      })
-
-      (result, count, checksum)
+      result
     }
   }
 }
@@ -123,18 +102,25 @@ abstract class DataFrameBenchmark(query: String) extends Benchmark[SimpleDataFra
   def numRelationships(graph: SimpleDataFrameGraph): Long =
     graph.relationships.values.map(_.count()).sum
 
+  override def plan(graph: SimpleDataFrameGraph): String =
+      innerRun(graph).queryExecution.toString()
+
   override def run(graph: SimpleDataFrameGraph): Outcome = {
-    val (frame, count,  checksum) = innerRun(graph)
+    val frame = innerRun(graph)
+    val (count, checksum) = frame.rdd.treeAggregate((0l, 0))({
+      case ((c, cs), rel) => (c + 1l, cs ^ rel.get(0).hashCode())
+    }, {
+      case ((lCount, lChecksum), (rCount, rChecksum)) => (lCount + rCount, lChecksum ^ rChecksum)
+    })
 
     new Outcome {
-
-      override lazy val plan = frame.queryExecution.toString()
       override lazy val computeCount = count
       override lazy val computeChecksum = checksum
+      override def usedCachedPlan: Boolean = false
     }
   }
 
-  def innerRun(graph: SimpleDataFrameGraph): (DataFrame, Long, Int)
+  def innerRun(graph: SimpleDataFrameGraph): DataFrame
 }
 
 
