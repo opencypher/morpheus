@@ -24,7 +24,7 @@ object RunBenchmark {
     conf.set("spark.driver.memory", "471859200")
     // Enable to see if we cover enough
     conf.set("spark.kryo.registrationRequired", "true")
-    conf.set("spark.default.parallelism", Parallelism.get())
+    conf.set("spark.sql.shuffle.partitions", Partitions.get().toString)
 
     //
     // This may or may not help - depending on the query
@@ -76,27 +76,25 @@ object RunBenchmark {
   object GraphSize extends ConfigOption("cos.graph-size", -1l)(x => Some(java.lang.Long.parseLong(x)))
   object MasterAddress extends ConfigOption("cos.master", "")(Some(_))
   object Logging extends ConfigOption("cos.logging", "OFF")(Some(_))
-  object Parallelism extends ConfigOption("cos.parallelism", "8")(Some(_))
+  object Partitions extends ConfigOption("cos.shuffle-partitions", 64)(x => Some(java.lang.Integer.parseInt(x)))
   object NodeFilePath extends ConfigOption("cos.nodeFile", "")(Some(_))
   object RelFilePath extends ConfigOption("cos.relFile", "")(Some(_))
   object Neo4jPassword extends ConfigOption("cos.neo4j-pw", ".")(Some(_))
-  object Benchmarks extends ConfigOption("cos.benchmarks", "all")(Some(_))
+  object Benchmarks extends ConfigOption("cos.benchmarks", "fast")(Some(_))
   object Query extends ConfigOption("cos.query", 1)(x => Some(java.lang.Integer.parseInt(x)))
 
   def createStdPropertyGraphFromNeo(size: Long) = {
     val session = sparkSession
     import CypherValue.Encoders._
 
-    val parallelism = sparkSession.sparkContext.defaultParallelism
-
     val (nodeRDD, relRDD) = Importers.importFromNeo(size)
     val nMapped = nodeRDD.map(internalNodeToCypherNode)
     val rMapped = relRDD.map(internalRelationshipToCypherRelationship)
 
     val nodeSet = session.createDataset[CypherNode](nMapped)
-    val cachedNodeSet = nodeSet.repartition(parallelism).cache()
+    val cachedNodeSet = nodeSet.repartition().cache()
     val relSet = session.createDataset[CypherRelationship](rMapped)
-    val cachedRelSet = relSet.repartition(parallelism).cache()
+    val cachedRelSet = relSet.repartition().cache()
 
     new StdPropertyGraph(cachedNodeSet, cachedRelSet)
   }
@@ -106,12 +104,10 @@ object RunBenchmark {
     val nMapped: RDD[AccessControlNode] = nodeRDD.map(internalNodeToAccessControlNode)
     val rMapped = relRDD.map(internalRelToAccessControlRel)
 
-    val parallelism = sparkSession.sparkContext.defaultParallelism
-
     println("Repartitioning...")
     val nodeFrame = sparkSession.createDataFrame(nMapped)
     val idCol = nodeFrame.col("id")
-    val cachedNodeFrame = cacheNow( nodeFrame.repartition(parallelism, idCol).sortWithinPartitions(idCol) )
+    val cachedNodeFrame = cacheNow( nodeFrame.repartition(idCol).sortWithinPartitions(idCol) )
     val labeledNodes = Map(
       "Account" -> cacheNow( cachedNodeFrame.filter(cachedNodeFrame.col("account")) ),
       "Administrator" -> cacheNow( cachedNodeFrame.filter(cachedNodeFrame.col("administrator")) ),
@@ -125,7 +121,7 @@ object RunBenchmark {
 
     val relFrame = sparkSession.createDataFrame(rMapped)
     val startIdCol = relFrame.col("startId")
-    val cachedRelFrame = relFrame.repartition(parallelism, startIdCol).sortWithinPartitions(startIdCol).cache()
+    val cachedRelFrame = relFrame.repartition(startIdCol).sortWithinPartitions(startIdCol).cache()
     val typCol = relFrame.col("typ")
     val types = cachedRelFrame.select(typCol).distinct().rdd.map(_.getString(0)).collect()
     val relsByStart = types.map { typ =>
@@ -187,14 +183,14 @@ object RunBenchmark {
         , rddResult
         , cosResult
       )
-      case "fast" => Seq(neoResult, frameResult)
+      case "fast" => Seq(frameResult)
     }
 
     neoResult.use { (benchmark, graph) =>
       println(BenchmarkSummary(query.toString, benchmark.numNodes(graph), benchmark.numRelationships(graph)))
     }
-    println(s"GraphSize used by spark benchmarks is ${graphSize}.")
-    println(s"Default parallelism is ${sparkSession.sparkContext.defaultParallelism}.")
+    println(s"GraphSize used by spark benchmarks is $graphSize.")
+    println(s"Using ${Partitions.get()} partitions.")
 
     val results = benchmarksAndGraphs.map { benchmarkAndGraph =>
       benchmarkAndGraph.use { (benchmark, graph) =>
