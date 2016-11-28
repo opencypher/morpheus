@@ -20,6 +20,7 @@ object RunBenchmark {
     val conf = new SparkConf(true)
     conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     conf.set("spark.kryo.registrator", "org.opencypher.spark.CypherKryoRegistrar")
+    conf.set("spark.sql.crossJoin.enabled", "true")
     conf.set("spark.neo4j.bolt.password", Neo4jPassword.get())
     conf.set("spark.driver.memory", "471859200")
     // Enable to see if we cover enough
@@ -81,7 +82,7 @@ object RunBenchmark {
   object RelFilePath extends ConfigOption("cos.relFile", "")(Some(_))
   object Neo4jPassword extends ConfigOption("cos.neo4j-pw", "foo")(Some(_))
   object Benchmarks extends ConfigOption("cos.benchmarks", "fast")(Some(_))
-  object Query extends ConfigOption("cos.query", 1)(x => Some(java.lang.Integer.parseInt(x)))
+  object Query extends ConfigOption("cos.query", 5)(x => Some(java.lang.Integer.parseInt(x)))
 
   def createStdPropertyGraphFromNeo(size: Long) = {
     val session = sparkSession
@@ -121,16 +122,20 @@ object RunBenchmark {
 
     val relFrame = sparkSession.createDataFrame(rMapped)
     val startIdCol = relFrame.col("startId")
-    val cachedRelFrame = relFrame.repartition(startIdCol).sortWithinPartitions(startIdCol).cache()
+    val cachedStartRelFrame = relFrame.repartition(startIdCol).sortWithinPartitions(startIdCol).cache()
+    val endIdCol = relFrame.col("endId")
+    val cachedEndRelFrame = relFrame.repartition(endIdCol).sortWithinPartitions(endIdCol).cache()
     val typCol = relFrame.col("typ")
-    val types = cachedRelFrame.select(typCol).distinct().rdd.map(_.getString(0)).collect()
-    val relsByStart = types.map { typ =>
-      typ -> cacheNow( cachedRelFrame.filter(typCol === typ) )
+    val types = cachedStartRelFrame.select(typCol).distinct().rdd.map(_.getString(0)).collect()
+    val rels = types.map { typ =>
+      typ ->
+        (cacheNow( cachedStartRelFrame.filter(typCol === typ) ) -> cacheNow( cachedEndRelFrame.filter(typCol === typ)))
     }.toMap
 
-    cachedRelFrame.unpersist()
+    cachedStartRelFrame.unpersist()
+    cachedEndRelFrame.unpersist()
 
-    SimpleDataFrameGraph(labeledNodes, relsByStart)
+    SimpleDataFrameGraph(labeledNodes, rels)
   }
 
   private def cacheNow[T](dataset: Dataset[T]): Dataset[T] = {
@@ -148,7 +153,9 @@ object RunBenchmark {
   val queries = Map(
     1 -> SimplePatternIds(IndexedSeq("Employee"), IndexedSeq("HAS_ACCOUNT"), IndexedSeq("Account")),
     2 -> SimplePatternIds(IndexedSeq("Group"), IndexedSeq("ALLOWED_INHERIT"), IndexedSeq("Company")),
-    3 -> MidPattern("Employee", "WORKS_FOR", "Company", "CHILD_OF", "Company")
+    3 -> MidPattern("Employee", "WORKS_FOR", "Company", "CHILD_OF", "Company"),
+    4 -> FixedLengthPattern("Administrator", Seq(Out("MEMBER_OF") -> "Group", Out("ALLOWED_DO_NOT_INHERIT") -> "Company", Out("CHILD_OF") -> "Company")),
+    5 -> FixedLengthPattern("Resource", Seq(Out("WORKS_FOR") -> "Company", In("ALLOWED_DO_NOT_INHERIT") -> "Group", Out("ALLOWED_INHERIT") -> "Company"))
   )
 
   def loadQuery(): SupportedQuery = {
@@ -198,11 +205,7 @@ object RunBenchmark {
     val results = benchmarksAndGraphs.map { benchmarkAndGraph =>
       benchmarkAndGraph.use { (benchmark, graph) =>
         println(s"About to benchmark ${benchmark.name.trim}")
-        val result = BenchmarkSeries.run(benchmarkAndGraph)
-        println(s">>>>> Plan for ${result.name}")
-        println(result.plan)
-        println(s"<<<<< Plan for ${result.name}")
-        result
+        BenchmarkSeries.run(benchmarkAndGraph)
       }
     }
     results.foreach(println)

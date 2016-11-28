@@ -1,10 +1,8 @@
 package org.opencypher.spark.benchmark
 
+import org.apache.spark.sql.{Column, DataFrame}
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.{DataFrame, SparkSession}
-import org.opencypher.spark.api.value.CypherNode
-import org.opencypher.spark.benchmark.AccessControlSchema.labelIndex
-import org.opencypher.spark.impl.{MidPattern, SimplePatternIds, StdPropertyGraph, SupportedQuery}
+import org.opencypher.spark.impl._
 
 object DataFrameBenchmarks extends SupportedQueryBenchmarks[SimpleDataFrameGraph] {
 
@@ -13,6 +11,8 @@ object DataFrameBenchmarks extends SupportedQueryBenchmarks[SimpleDataFrameGraph
       simplePatternIds(query.toString, startLabels.head, types.head, endLabels.head)
     case MidPattern(startLabel, type1, midLabel, type2, endLabel) =>
       midPattern(query.toString)(startLabel, type1, midLabel, type2, endLabel)
+    case FixedLengthPattern(start, steps) =>
+      fixedLengthPattern(query.toString)(start, steps)
     case _ =>
       throw new IllegalArgumentException(s"No DataFrame implementation of $query")
   }
@@ -24,12 +24,11 @@ object DataFrameBenchmarks extends SupportedQueryBenchmarks[SimpleDataFrameGraph
 //    ids.sort(desc(ids.columns(0)))
 //  }
 
-  //MATCH (:Group)-[r:ALLOWED]->(:Company) RETURN id(r)
   def simplePatternIds(query: String, startLabel: String, relType: String, endLabel: String) = new DataFrameBenchmark(query) {
 
     override def innerRun(graph: SimpleDataFrameGraph) = {
       val startLabeled = graph.nodes(startLabel).as("startLabeled")
-      val rels = graph.relationships(relType).as("rels")
+      val rels = graph.relationshipsByStartId(relType).as("rels")
       val endLabeled = graph.nodes(endLabel).as("endLabeled")
 
       val startJoined = startLabeled.join(rels, col("startLabeled.id") === col("rels.startId"))
@@ -45,9 +44,9 @@ object DataFrameBenchmarks extends SupportedQueryBenchmarks[SimpleDataFrameGraph
   def midPattern(query: String)(startLabel: String, type1: String, midLabel: String, type2: String, endLabel: String) = new DataFrameBenchmark(query) {
     override def innerRun(graph: SimpleDataFrameGraph) = {
       val startLabeled = graph.nodes(startLabel).as("startLabeled")
-      val rel1 = graph.relationships(type1).as("rel1")
+      val rel1 = graph.relationshipsByStartId(type1).as("rel1")
       val midLabeled = graph.nodes(midLabel).as("midLabeled")
-      val rel2 = graph.relationships(type2).as("rel2")
+      val rel2 = graph.relationshipsByStartId(type2).as("rel2")
       val endLabeled = graph.nodes(endLabel).as("endLabeled")
 
       val startJoined = startLabeled.join(rel1, col("startLabeled.id") === col("rel1.startId"))
@@ -55,9 +54,9 @@ object DataFrameBenchmarks extends SupportedQueryBenchmarks[SimpleDataFrameGraph
       val startSorted = startJoined.sortWithinPartitions(endId1)
       val step1 = startSorted.join(midLabeled, endId1 === col("midLabeled.id"))
       val startId = step1.col("midLabeled.id")
-      val step1Sorted = step1.sortWithinPartitions(startId)
+      // val step1Sorted = step1.sortWithinPartitions(startId)
 
-      val step2 = step1Sorted.join(rel2, startId === col("rel2.startId"))
+      val step2 = step1.join(rel2, startId === col("rel2.startId"))
       val endId2 = step2.col("rel2.endId")
       val step2Sorted = step2.sortWithinPartitions(endId2)
       val endJoined = step2Sorted.join(endLabeled, endId2 === col("endLabeled.id"))
@@ -67,27 +66,26 @@ object DataFrameBenchmarks extends SupportedQueryBenchmarks[SimpleDataFrameGraph
     }
   }
 
-  def largePattern(query: String)(startLabel: String, type1: String, midLabel1: String, type2: String, midLabel2: String, type3: String, endLabel: String) = new DataFrameBenchmark(query) {
+  def fixedLengthPattern(query: String)(startLabel: String, steps: Seq[(Rel, String)]) = new DataFrameBenchmark(query) {
     override def innerRun(graph: SimpleDataFrameGraph) = {
-      val startLabeled = graph.nodes(startLabel).as("startLabeled")
-      val rel1 = graph.relationships(type1).as("rel1")
-      val midLabeled = graph.nodes(midLabel1).as("midLabeled")
-      val rel2 = graph.relationships(type2).as("rel2")
-      val endLabeled = graph.nodes(endLabel).as("endLabeled")
+      var step = 1
+      var current = graph.nodes(startLabel).as(s"n$step")
+      var cols = Seq[Column]()
 
-      val startJoined = startLabeled.join(rel1, col("startLabeled.id") === col("rel1.startId"))
-      val endId1 = startJoined.col("rel1.endId")
-      val startSorted = startJoined.sortWithinPartitions(endId1)
-      val step1 = startSorted.join(midLabeled, endId1 === col("midLabeled.id"))
-      val startId = step1.col("midLabeled.id")
-      val step1Sorted = step1.sortWithinPartitions(startId)
+      steps.foreach {
+        case (rel, label) =>
+          val rels = graph.relationshipsForRel(rel).as(s"r$step")
+          val joined = current.join(rels, col(s"n$step.id") === rel.source(s"r$step"))
+          val sorted = joined.sortWithinPartitions(rel.target(s"r$step"))
+          val nextStep = step + 1
+          val other = graph.nodes(label).as(s"n$nextStep")
+          val filtered = sorted.join(other, rel.target(s"r$step") === col(s"n$nextStep.id"))
+          current = filtered.sortWithinPartitions(col(s"n$nextStep.id"))
+          cols = cols :+ col(s"r$step.id")
+          step = nextStep
+      }
 
-      val step2 = step1Sorted.join(rel2, startId === col("rel2.startId"))
-      val endId2 = step2.col("rel2.endId")
-      val step2Sorted = step2.sortWithinPartitions(endId2)
-      val endJoined = step2Sorted.join(endLabeled, endId2 === col("endLabeled.id"))
-
-      val result = endJoined.select(col("rel1.id"), col("rel2.id"))
+      val result = current.select(cols.reduce(_ + _))
       result
     }
   }
@@ -100,7 +98,7 @@ abstract class DataFrameBenchmark(query: String) extends Benchmark[SimpleDataFra
     graph.nodes.values.map(_.count()).sum
 
   def numRelationships(graph: SimpleDataFrameGraph): Long =
-    graph.relationships.values.map(_.count()).sum
+    graph.relationships.values.map(_._1.count()).sum
 
   override def plan(graph: SimpleDataFrameGraph): String =
       innerRun(graph).queryExecution.toString()
@@ -160,4 +158,11 @@ abstract class DataFrameBenchmark(query: String) extends Benchmark[SimpleDataFra
 
  */
 
-case class SimpleDataFrameGraph(nodes: Map[String, DataFrame], relationships: Map[String, DataFrame])
+case class SimpleDataFrameGraph(nodes: Map[String, DataFrame], relationships: Map[String, (DataFrame, DataFrame)]) {
+  def relationshipsByStartId(name: String): DataFrame = relationships(name)._1
+  def relationshipsByEndId(name: String): DataFrame = relationships(name)._2
+  def relationshipsForRel(rel: Rel) = rel match {
+    case Out(name) => relationshipsByStartId(name)
+    case In(name) => relationshipsByEndId(name)
+  }
+}

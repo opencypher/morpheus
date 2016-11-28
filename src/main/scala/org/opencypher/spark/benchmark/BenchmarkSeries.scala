@@ -1,17 +1,20 @@
 package org.opencypher.spark.benchmark
 
 object BenchmarkSeries {
-  def run[G](benchmarkAndGraph: BenchmarkAndGraph[G], nbrTimes: Int = 7, warmupTimes: Int = 3): BenchmarkResult = {
+  def run[G](benchmarkAndGraph: BenchmarkAndGraph[G], nbrTimes: Int = 6, warmupTimes: Int = 2): BenchmarkResult = {
     val (planTime, plan) = warmup(benchmarkAndGraph, warmupTimes)
     measure(benchmarkAndGraph, nbrTimes, planTime, plan)
   }
 
-  private def planAndTime(f: => String): (Long, String) = {
+  private def planAndTime(name: String)(f: => String): (Long, String) = {
     println(s"Timing -- Plan")
     val start = System.currentTimeMillis()
     val plan = f
     val time = System.currentTimeMillis() - start
     println(s"Done -- $time ms")
+    println(s">>>>> Plan for $name")
+    println(plan)
+    println(s"<<<<< Plan for $name")
     time -> plan
   }
 
@@ -27,9 +30,12 @@ object BenchmarkSeries {
   private def warmup[G](benchmarkAndGraph: BenchmarkAndGraph[G], nbrTimes: Int): (Long, String) = {
     benchmarkAndGraph.use { (benchmark, graph) =>
       benchmark.init(graph)
-      val planInfo = planAndTime(benchmark.plan(graph))
+      val planInfo = planAndTime(benchmark.name)(benchmark.plan(graph))
       println("Begin warmup")
-      (0 until nbrTimes).foreach { i =>
+      val (_, outcome) = runAndTime(0, benchmark.run(graph))
+      println(s"Count -- ${outcome.computeCount}")
+      println(s"Checksum -- ${outcome.computeChecksum}")
+      (1 until nbrTimes).foreach { i =>
         runAndTime(i, benchmark.run(graph))
       }
       planInfo

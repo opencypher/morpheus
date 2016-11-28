@@ -1,5 +1,27 @@
 package org.opencypher.spark.impl
 
+import org.apache.spark.sql.{Column, DataFrame}
+import org.apache.spark.sql.functions._
+
+sealed trait Rel {
+  def relType: String
+  def cypher(name: String): String
+  def source(frame: String): Column
+  def target(frame: String): Column
+}
+
+final case class In(relType: String) extends Rel {
+  override def cypher(name: String) = s"<-[$name:$relType]-"
+  override def source(frame: String): Column = col(s"$frame.endId")
+  override def target(frame: String): Column = col(s"$frame.startId")
+}
+
+final case class Out(relType: String) extends Rel {
+  override def cypher(name: String) = s"-[$name:$relType]->"
+  override def source(frame: String): Column = col(s"$frame.startId")
+  override def target(frame: String): Column = col(s"$frame.endId")
+}
+
 sealed trait SupportedQuery {
   def colonList(tokens: IndexedSeq[String]) = s"${tokens.mkString(":", ":", "")}"
   def cypher: String
@@ -12,20 +34,16 @@ object BoundVariableLength {
     new BoundVariableLength(startLabels.toIndexedSeq, lowerBound, upperBound)
 }
 
-case class MidPattern(label1: String, type1: String, label2: String, type2: String, label3: String) extends SupportedQuery {
-
+case class FixedLengthPattern(start: String, steps: Seq[(Rel, String)]) extends SupportedQuery {
   override def cypher: String = {
-    val sl = label1
-    val t1 = type1
-    val l = label2
-    val t2 = type2
-    val el = label3
-
-    s"MATCH (:$sl)-[r1:$t1]->(:$l)-[r2:$t2]->(:$el) RETURN id(r1), id(r2)"
+    val namedSteps = steps.zipWithIndex.map { case ((rel, label), index) => (s"r${index+1}", rel, label) }
+    val expansion = namedSteps.map { case (name, rel, label) => s"${rel.cypher(name)}(:$label)" }.mkString
+    val sum = namedSteps.map { case (name, _, _) => s"id($name)" }.mkString(" + ")
+    s"MATCH (:$start)$expansion RETURN $sum"
   }
 }
 
-case class LargePattern(label1: String, type1: String, label2: String, type2: String, label3: String, type3: String, label4: String) extends SupportedQuery {
+case class MidPattern(label1: String, type1: String, label2: String, type2: String, label3: String) extends SupportedQuery {
 
   override def cypher: String = {
     val sl = label1
