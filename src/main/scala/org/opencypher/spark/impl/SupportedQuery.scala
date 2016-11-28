@@ -12,6 +12,19 @@ object BoundVariableLength {
     new BoundVariableLength(startLabels.toIndexedSeq, lowerBound, upperBound)
 }
 
+case class MidPattern(label1: String, type1: String, label2: String, type2: String, label3: String) extends SupportedQuery {
+
+  override def cypher: String = {
+    val sl = label1
+    val t1 = type1
+    val l = label2
+    val t2 = type2
+    val el = label3
+
+    s"MATCH (:$sl)-[r1:$t1]->(:$l)-[r2:$t2]->(:$el) RETURN id(r1), id(r2)"
+  }
+}
+
 case class BoundVariableLength(startLabels: IndexedSeq[String] = IndexedSeq.empty, lowerBound: Int, upperBound: Int) extends SupportedQuery {
   override def cypher: String = {
     val l = colonList(startLabels)

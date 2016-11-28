@@ -4,13 +4,15 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.opencypher.spark.api.value.CypherNode
 import org.opencypher.spark.benchmark.AccessControlSchema.labelIndex
-import org.opencypher.spark.impl.{SimplePatternIds, StdPropertyGraph, SupportedQuery}
+import org.opencypher.spark.impl.{MidPattern, SimplePatternIds, StdPropertyGraph, SupportedQuery}
 
 object DataFrameBenchmarks extends SupportedQueryBenchmarks[SimpleDataFrameGraph] {
 
   def apply(query: SupportedQuery): Benchmark[SimpleDataFrameGraph] = query match {
     case SimplePatternIds(startLabels, types, endLabels) =>
       simplePatternIds(query.toString, startLabels.head, types.head, endLabels.head)
+    case MidPattern(startLabel, type1, midLabel, type2, endLabel) =>
+      midPattern(query.toString)(startLabel, type1, midLabel, type2, endLabel)
     case _ =>
       throw new IllegalArgumentException(s"No DataFrame implementation of $query")
   }
@@ -36,6 +38,38 @@ object DataFrameBenchmarks extends SupportedQueryBenchmarks[SimpleDataFrameGraph
       val endJoined = startJoinedShuffled.join(endLabeled, endCol === col("endLabeled.id"))
 
       val result = endJoined.select(col("rels.id"))
+
+      val (count, checksum) = result.rdd.treeAggregate((0, 0))({
+        case ((c, cs), rel) => (c + 1, cs ^ rel.get(0).hashCode())
+      }, {
+        case ((lCount, lChecksum), (rCount, rChecksum)) => (lCount + rCount, lChecksum ^ rChecksum)
+      })
+
+      (result, count, checksum)
+    }
+  }
+
+  def midPattern(query: String)(startLabel: String, type1: String, midLabel: String, type2: String, endLabel: String) = new DataFrameBenchmark(query) {
+    override def innerRun(graph: SimpleDataFrameGraph): (DataFrame, Long, Int) = {
+      val startLabeled = graph.nodes(startLabel).as("startLabeled")
+      val rel1 = graph.relationships(type1).as("rel1")
+      val midLabeled = graph.nodes(midLabel).as("midLabeled")
+      val rel2 = graph.relationships(type2).as("rel2")
+      val endLabeled = graph.nodes(endLabel).as("endLabeled")
+
+      val startJoined = startLabeled.join(rel1, col("startLabeled.id") === col("rel1.startId"))
+      val endId1 = startJoined.col("rel1.endId")
+      val startSorted = startJoined.sortWithinPartitions(endId1)
+      val step1 = startSorted.join(midLabeled, endId1 === col("midLabeled.id"))
+      val startId = step1.col("midLabeled.id")
+      val step1Sorted = step1.sortWithinPartitions(startId)
+
+      val step2 = step1Sorted.join(rel2, startId === col("rel2.startId"))
+      val endId2 = step2.col("rel2.endId")
+      val step2Sorted = step2.sortWithinPartitions(endId2)
+      val endJoined = step2Sorted.join(endLabeled, endId2 === col("endLabeled.id"))
+
+      val result = endJoined.select(col("rel1.id"), col("rel2.id"))
 
       val (count, checksum) = result.rdd.treeAggregate((0, 0))({
         case ((c, cs), rel) => (c + 1, cs ^ rel.get(0).hashCode())

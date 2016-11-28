@@ -76,12 +76,12 @@ object RunBenchmark {
   object GraphSize extends ConfigOption("cos.graph-size", -1l)(x => Some(java.lang.Long.parseLong(x)))
   object MasterAddress extends ConfigOption("cos.master", "")(Some(_))
   object Logging extends ConfigOption("cos.logging", "OFF")(Some(_))
-  object Partitions extends ConfigOption("cos.shuffle-partitions", 64)(x => Some(java.lang.Integer.parseInt(x)))
+  object Partitions extends ConfigOption("cos.shuffle-partitions", 40)(x => Some(java.lang.Integer.parseInt(x)))
   object NodeFilePath extends ConfigOption("cos.nodeFile", "")(Some(_))
   object RelFilePath extends ConfigOption("cos.relFile", "")(Some(_))
   object Neo4jPassword extends ConfigOption("cos.neo4j-pw", ".")(Some(_))
   object Benchmarks extends ConfigOption("cos.benchmarks", "fast")(Some(_))
-  object Query extends ConfigOption("cos.query", 1)(x => Some(java.lang.Integer.parseInt(x)))
+  object Query extends ConfigOption("cos.query", 3)(x => Some(java.lang.Integer.parseInt(x)))
 
   def createStdPropertyGraphFromNeo(size: Long) = {
     val session = sparkSession
@@ -147,7 +147,8 @@ object RunBenchmark {
 
   val queries = Map(
     1 -> SimplePatternIds(IndexedSeq("Employee"), IndexedSeq("HAS_ACCOUNT"), IndexedSeq("Account")),
-    2 -> SimplePatternIds(IndexedSeq("Group"), IndexedSeq("ALLOWED_INHERIT"), IndexedSeq("Company"))
+    2 -> SimplePatternIds(IndexedSeq("Group"), IndexedSeq("ALLOWED_INHERIT"), IndexedSeq("Company")),
+    3 -> MidPattern("Employee", "WORKS_FOR", "Company", "CHILD_OF", "Company")
   )
 
   def loadQuery(): SupportedQuery = {
@@ -183,7 +184,7 @@ object RunBenchmark {
         , rddResult
         , cosResult
       )
-      case "fast" => Seq(frameResult)
+      case "fast" => Seq(frameResult, neoResult)
     }
 
     neoResult.use { (benchmark, graph) =>
