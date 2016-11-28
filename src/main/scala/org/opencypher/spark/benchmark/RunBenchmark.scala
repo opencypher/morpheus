@@ -81,6 +81,7 @@ object RunBenchmark {
   object RelFilePath extends ConfigOption("cos.relFile", "")(Some(_))
   object Neo4jPassword extends ConfigOption("cos.neo4j-pw", ".")(Some(_))
   object Benchmarks extends ConfigOption("cos.benchmarks", "all")(Some(_))
+  object Query extends ConfigOption("cos.query", 1)(x => Some(java.lang.Integer.parseInt(x)))
 
   def createStdPropertyGraphFromNeo(size: Long) = {
     val session = sparkSession
@@ -148,6 +149,21 @@ object RunBenchmark {
     )
   }
 
+  val queries = Map(
+    1 -> SimplePatternIds(IndexedSeq("Employee"), IndexedSeq("HAS_ACCOUNT"), IndexedSeq("Account")),
+    2 -> SimplePatternIds(IndexedSeq("Group"), IndexedSeq("ALLOWED_INHERIT"), IndexedSeq("Company"))
+  )
+
+  def loadQuery(): SupportedQuery = {
+    queries.get(Query.get()) match {
+      case Some(q) => q
+      case None =>
+        println(s"Unknown query specified: ${Query.get()}")
+        println(s"Known queries are: $queries")
+        throw new IllegalArgumentException(s"No such query ${Query.get()}")
+    }
+  }
+
   def main(args: Array[String]): Unit = {
     init()
 
@@ -158,8 +174,7 @@ object RunBenchmark {
     lazy val neoGraph = createNeo4jViaDriverGraph
     println("Graph(s) created!")
 
-    val query = SimplePatternIds(IndexedSeq("Employee"), IndexedSeq("HAS_ACCOUNT"), IndexedSeq("Account"))
-//    val query = SimplePatternIds(IndexedSeq("Group"), IndexedSeq("ALLOWED_INHERIT"), IndexedSeq("Company"))
+    val query = loadQuery()
 
     lazy val frameResult = DataFrameBenchmarks(query).using(sdfGraph)
     lazy val rddResult = RDDBenchmarks(query).using(stdGraph)
