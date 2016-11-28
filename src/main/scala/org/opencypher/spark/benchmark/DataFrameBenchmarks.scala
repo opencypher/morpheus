@@ -80,6 +80,38 @@ object DataFrameBenchmarks extends SupportedQueryBenchmarks[SimpleDataFrameGraph
       (result, count, checksum)
     }
   }
+
+  def largePattern(query: String)(startLabel: String, type1: String, midLabel1: String, type2: String, midLabel2: String, type3: String, endLabel: String) = new DataFrameBenchmark(query) {
+    override def innerRun(graph: SimpleDataFrameGraph): (DataFrame, Long, Int) = {
+      val startLabeled = graph.nodes(startLabel).as("startLabeled")
+      val rel1 = graph.relationships(type1).as("rel1")
+      val midLabeled = graph.nodes(midLabel1).as("midLabeled")
+      val rel2 = graph.relationships(type2).as("rel2")
+      val endLabeled = graph.nodes(endLabel).as("endLabeled")
+
+      val startJoined = startLabeled.join(rel1, col("startLabeled.id") === col("rel1.startId"))
+      val endId1 = startJoined.col("rel1.endId")
+      val startSorted = startJoined.sortWithinPartitions(endId1)
+      val step1 = startSorted.join(midLabeled, endId1 === col("midLabeled.id"))
+      val startId = step1.col("midLabeled.id")
+      val step1Sorted = step1.sortWithinPartitions(startId)
+
+      val step2 = step1Sorted.join(rel2, startId === col("rel2.startId"))
+      val endId2 = step2.col("rel2.endId")
+      val step2Sorted = step2.sortWithinPartitions(endId2)
+      val endJoined = step2Sorted.join(endLabeled, endId2 === col("endLabeled.id"))
+
+      val result = endJoined.select(col("rel1.id"), col("rel2.id"))
+
+      val (count, checksum) = result.rdd.treeAggregate((0, 0))({
+        case ((c, cs), rel) => (c + 1, cs ^ rel.get(0).hashCode())
+      }, {
+        case ((lCount, lChecksum), (rCount, rChecksum)) => (lCount + rCount, lChecksum ^ rChecksum)
+      })
+
+      (result, count, checksum)
+    }
+  }
 }
 
 abstract class DataFrameBenchmark(query: String) extends Benchmark[SimpleDataFrameGraph] with Serializable {
