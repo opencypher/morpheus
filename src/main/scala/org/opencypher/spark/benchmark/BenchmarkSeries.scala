@@ -1,9 +1,49 @@
 package org.opencypher.spark.benchmark
 
+import org.opencypher.spark.benchmark.RunBenchmark.{Runs, WarmUpRuns}
+
 object BenchmarkSeries {
-  def run[G](benchmarkAndGraph: BenchmarkAndGraph[G], nbrTimes: Int = 6, warmupTimes: Int = 2): BenchmarkResult = {
-    val (planTime, plan) = warmup(benchmarkAndGraph, warmupTimes)
-    measure(benchmarkAndGraph, nbrTimes, planTime, plan)
+  def run[G](benchmarkAndGraph: BenchmarkAndGraph[G], runs: Int = Runs.get(), warmupRuns: Int = WarmUpRuns.get()): BenchmarkResult = {
+    val (planTime, plan, count, checksum) = warmup(benchmarkAndGraph, warmupRuns)
+    measure(benchmarkAndGraph, runs, planTime, plan, count, checksum)
+  }
+
+  private def warmup[G](benchmarkAndGraph: BenchmarkAndGraph[G], warmUpRuns: Int): (Long, String, Long, Int) = {
+    benchmarkAndGraph.use { (benchmark, graph) =>
+      benchmark.init(graph)
+      val name = benchmark.name
+
+      val (planTime, plan, count, checksum) = wrap(s"Initial run for $name") {
+        val (planTime, plan) = planAndTime(name)(benchmark.plan(graph))
+        val (_, outcome) = runAndTime(0, benchmark.run(graph))
+        wrap(s"Plan for $name")(println(plan))
+        val count = outcome.computeCount
+        println(s"Count -- $count")
+        val checksum = outcome.computeChecksum
+        println(s"Checksum -- $checksum")
+        (planTime, plan, count, checksum)
+      }
+
+      wrap(s"Warmup for $name") {
+        (1 until warmUpRuns).foreach { i =>
+          runAndTime(i, benchmark.run(graph))
+        }
+      }
+
+      (planTime, plan, count, checksum)
+    }
+  }
+
+  private def measure[G](benchmarkAndGraph: BenchmarkAndGraph[G], runs: Int, planTime: Long, plan: String, count: Long, checksum: Int) = {
+    benchmarkAndGraph.use { (benchmark, graph) =>
+      wrap(s"Measurements for ${benchmark.name}") {
+        val outcomes = (0 until runs).map { i =>
+          val (time, outcome) = runAndTime(i, benchmark.run(graph))
+          if (outcome.usedCachedPlan) time + planTime else time
+        }
+        BenchmarkResult(benchmark.name, outcomes, plan, count, checksum)
+      }
+    }
   }
 
   private def planAndTime(name: String)(f: => String): (Long, String) = {
@@ -12,9 +52,6 @@ object BenchmarkSeries {
     val plan = f
     val time = System.currentTimeMillis() - start
     println(s"Done -- $time ms")
-    println(s">>>>> Plan for $name")
-    println(plan)
-    println(s"<<<<< Plan for $name")
     time -> plan
   }
 
@@ -27,33 +64,10 @@ object BenchmarkSeries {
     time -> outcome
   }
 
-  private def warmup[G](benchmarkAndGraph: BenchmarkAndGraph[G], nbrTimes: Int): (Long, String) = {
-    benchmarkAndGraph.use { (benchmark, graph) =>
-      benchmark.init(graph)
-      val planInfo = planAndTime(benchmark.name)(benchmark.plan(graph))
-      println("Begin warmup")
-      val (_, outcome) = runAndTime(0, benchmark.run(graph))
-      println(s"Count -- ${outcome.computeCount}")
-      println(s"Checksum -- ${outcome.computeChecksum}")
-      (1 until nbrTimes).foreach { i =>
-        runAndTime(i, benchmark.run(graph))
-      }
-      planInfo
-    }
-  }
-
-  private def measure[G](benchmarkAndGraph: BenchmarkAndGraph[G], nbrTimes: Int, planTime: Long, plan: String) = {
-    benchmarkAndGraph.use { (benchmark, graph) =>
-      val initialOutcome = benchmark.run(graph)
-      val count = initialOutcome.computeCount
-      val checksum = initialOutcome.computeChecksum
-
-      println("Begin measurements")
-      val outcomes = (0 until nbrTimes).map { i =>
-        val (time, outcome) = runAndTime(i, benchmark.run(graph))
-        if (outcome.usedCachedPlan) time + planTime else time
-      }
-      BenchmarkResult(benchmark.name, outcomes, plan, count, checksum)
-    }
+  private def wrap[T](header: String)(f: => T): T = {
+    println(s">>>>> $header")
+    val result = f
+    println(s"<<<<< $header")
+    result
   }
 }
