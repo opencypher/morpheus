@@ -236,7 +236,7 @@ object RunBenchmark {
         println(s"About to benchmark ${benchmark.name.trim}")
         BenchmarkSeries.run(benchmarkAndGraph)
       }
-    }
-    results.foreach(println)
+    }.sortBy(_.avg)
+    results.foreach(r => println(r.summary(Some(results.last.avg))))
   }
 }

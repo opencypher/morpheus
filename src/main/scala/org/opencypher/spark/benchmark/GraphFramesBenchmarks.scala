@@ -10,6 +10,8 @@ object GraphFramesBenchmarks extends SupportedQueryBenchmarks[GraphFrame] {
   override def apply(query: SupportedQuery): Benchmark[GraphFrame] = query match {
     case SimplePatternIds(startLabels, types, endLabels) =>
       simplePatternIds(startLabels.head, types.head, endLabels.head)
+    case _ =>
+      throw new IllegalArgumentException(s"No GraphFrame implementation of $query")
   }
 
   def simplePatternIds(startLabel: String, relType: String, endLabel: String) = new GraphFrameBenchmark {
