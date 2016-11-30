@@ -8,11 +8,11 @@ object DataFrameBenchmarks extends SupportedQueryBenchmarks[SimpleDataFrameGraph
 
   def apply(query: SupportedQuery): Benchmark[SimpleDataFrameGraph] = query match {
     case SimplePatternIds(startLabels, types, endLabels) =>
-      simplePatternIds(query.toString, startLabels.head, types.head, endLabels.head)
+      simplePatternIds(startLabels.head, types.head, endLabels.head)
     case MidPattern(startLabel, type1, midLabel, type2, endLabel) =>
-      midPattern(query.toString)(startLabel, type1, midLabel, type2, endLabel)
+      midPattern(startLabel, type1, midLabel, type2, endLabel)
     case FixedLengthPattern(start, steps) =>
-      fixedLengthPattern(query.toString)(start, steps)
+      fixedLengthPattern(start, steps)
     case _ =>
       throw new IllegalArgumentException(s"No DataFrame implementation of $query")
   }
@@ -24,7 +24,7 @@ object DataFrameBenchmarks extends SupportedQueryBenchmarks[SimpleDataFrameGraph
 //    ids.sort(desc(ids.columns(0)))
 //  }
 
-  def simplePatternIds(query: String, startLabel: String, relType: String, endLabel: String) = new DataFrameBenchmark(query) {
+  def simplePatternIds(startLabel: String, relType: String, endLabel: String) = new DataFrameBenchmark {
 
     override def innerRun(graph: SimpleDataFrameGraph) = {
       val startLabeled = graph.nodes(startLabel).as("startLabeled")
@@ -41,7 +41,7 @@ object DataFrameBenchmarks extends SupportedQueryBenchmarks[SimpleDataFrameGraph
     }
   }
 
-  def midPattern(query: String)(startLabel: String, type1: String, midLabel: String, type2: String, endLabel: String) = new DataFrameBenchmark(query) {
+  def midPattern(startLabel: String, type1: String, midLabel: String, type2: String, endLabel: String) = new DataFrameBenchmark {
     override def innerRun(graph: SimpleDataFrameGraph) = {
       val startLabeled = graph.nodes(startLabel).as("startLabeled")
       val rel1 = graph.relationshipsByStartId(type1).as("rel1")
@@ -66,7 +66,7 @@ object DataFrameBenchmarks extends SupportedQueryBenchmarks[SimpleDataFrameGraph
     }
   }
 
-  def fixedLengthPattern(query: String)(startLabel: String, steps: Seq[(Rel, String)]) = new DataFrameBenchmark(query) {
+  def fixedLengthPattern(startLabel: String, steps: Seq[(Rel, String)]) = new DataFrameBenchmark {
     override def innerRun(graph: SimpleDataFrameGraph) = {
       var step = 1
       var current = graph.nodes(startLabel).as(s"n$step")
@@ -91,7 +91,7 @@ object DataFrameBenchmarks extends SupportedQueryBenchmarks[SimpleDataFrameGraph
   }
 }
 
-abstract class DataFrameBenchmark(query: String) extends Benchmark[SimpleDataFrameGraph] with Serializable {
+abstract class DataFrameBenchmark extends Benchmark[SimpleDataFrameGraph] with Serializable {
   override def name: String = "DataFrame "
 
   def numNodes(graph: SimpleDataFrameGraph): Long =
@@ -101,7 +101,7 @@ abstract class DataFrameBenchmark(query: String) extends Benchmark[SimpleDataFra
     graph.relationships.values.map(_._1.count()).sum
 
   override def plan(graph: SimpleDataFrameGraph): String =
-      innerRun(graph).queryExecution.toString()
+      innerRun(graph).queryExecution.toString
 
   override def run(graph: SimpleDataFrameGraph): Outcome = {
     val frame = innerRun(graph)
@@ -114,49 +114,12 @@ abstract class DataFrameBenchmark(query: String) extends Benchmark[SimpleDataFra
     new Outcome {
       override lazy val computeCount = count
       override lazy val computeChecksum = checksum
-      override def usedCachedPlan: Boolean = false
+      override val usedCachedPlan: Boolean = false
     }
   }
 
   def innerRun(graph: SimpleDataFrameGraph): DataFrame
 }
-
-
-/*
-
- n
-
- id(n), n.prop, n.prop2, n:X, properties(n), cast(n.prop, INTEGER)
-
-
- MATCH (:Group)-[r:ALLOWED]->(:Company) RETURN id(r)
-
- SELECT id FROM nodes
- SELECT id FROM nodes
- SELECT id, startId, endId FROM relationships
-
- join(all three)
-
-
- MATCH (:Group)-[r:ALLOWED]->(:Company) RETURN id(r)
-
- SELECT id FROM nodes_partitioned_by_id
- SELECT left_rel_ids, startId FROM relationships_partitioned_by_start
- SELECT right_rel_ids, endId FROM relationships_partitioned_by_end
- join(left_rel_ids, right_rel_ids)
-
-
- id -> :X, :Y, .prop1, .prop2
-
- 1) One big flat table
-
- 2) Multiple tables but with rules
-
-    id (:X) -> .prop1 .prop2
-    id (:Y) -> .prop4 .prop4
-    id   -> .prop1
-
- */
 
 case class SimpleDataFrameGraph(nodes: Map[String, DataFrame], relationships: Map[String, (DataFrame, DataFrame)]) {
   def relationshipsByStartId(name: String): DataFrame = relationships(name)._1
