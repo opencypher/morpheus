@@ -32,9 +32,11 @@ class Neo4jViaDriverBenchmark(query: String) extends Benchmark[Neo4jViaDriverGra
       while (result.hasNext) {
         val record = result.next()
         count += 1
-        val value = record.get(0)
-        val increment = if (value.hasType(intType)) value.asLong() else if (value.isNull) -1L else value.asEntity().id()
-        checksum ^= increment.hashCode()
+        (0 until record.size).foreach { i =>
+          val value = record.get(i)
+          val increment = if (value.hasType(intType)) value.asLong() else if (value.isNull) -1L else value.asEntity().id()
+          checksum ^= increment.hashCode()
+        }
       }
       val summary = result.consume()
 

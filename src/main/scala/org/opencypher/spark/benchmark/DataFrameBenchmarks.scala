@@ -105,11 +105,7 @@ abstract class DataFrameBenchmark extends Benchmark[SimpleDataFrameGraph] with S
 
   override def run(graph: SimpleDataFrameGraph): Outcome = {
     val frame = innerRun(graph)
-    val (count, checksum) = frame.rdd.treeAggregate((0l, 0))({
-      case ((c, cs), rel) => (c + 1l, cs ^ rel.get(0).hashCode())
-    }, {
-      case ((lCount, lChecksum), (rCount, rChecksum)) => (lCount + rCount, lChecksum ^ rChecksum)
-    })
+    val (count, checksum) = countAndChecksum(frame)
 
     new Outcome {
       override lazy val computeCount = count
