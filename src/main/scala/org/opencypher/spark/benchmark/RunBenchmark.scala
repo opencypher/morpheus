@@ -112,12 +112,12 @@ object RunBenchmark {
     val idCol = nodeFrame.col("id")
     val cachedNodeFrame = cacheNow( nodeFrame.repartition(idCol).sortWithinPartitions(idCol) )
     val labeledNodes = Map(
-      "Account" -> cacheNow( cachedNodeFrame.filter(cachedNodeFrame.col("account")) ),
-      "Administrator" -> cacheNow( cachedNodeFrame.filter(cachedNodeFrame.col("administrator")) ),
-      "Company" -> cacheNow( cachedNodeFrame.filter(cachedNodeFrame.col("company")) ),
-      "Employee" -> cacheNow( cachedNodeFrame.filter(cachedNodeFrame.col("employee")) ),
-      "Group" -> cacheNow( cachedNodeFrame.filter(cachedNodeFrame.col("group")) ),
-      "Resource" -> cacheNow( cachedNodeFrame.filter(cachedNodeFrame.col("resource")) )
+      "Account" -> cacheNow(cachedNodeFrame.filter(cachedNodeFrame.col("account"))),
+      "Administrator" -> cacheNow(cachedNodeFrame.filter(cachedNodeFrame.col("administrator"))),
+      "Company" -> cacheNow(cachedNodeFrame.filter(cachedNodeFrame.col("company"))),
+      "Employee" -> cacheNow(cachedNodeFrame.filter(cachedNodeFrame.col("employee"))),
+      "Group" -> cacheNow(cachedNodeFrame.filter(cachedNodeFrame.col("group"))),
+      "Resource" -> cacheNow(cachedNodeFrame.filter(cachedNodeFrame.col("resource")))
     )
 
     cachedNodeFrame.unpersist()
@@ -131,7 +131,7 @@ object RunBenchmark {
     val types = cachedStartRelFrame.select(typCol).distinct().rdd.map(_.getString(0)).collect()
     val rels = types.map { typ =>
       typ ->
-        (cacheNow( cachedStartRelFrame.filter(typCol === typ) ) -> cacheNow( cachedEndRelFrame.filter(typCol === typ)))
+        (cacheNow(cachedStartRelFrame.filter(typCol === typ)) -> cacheNow(cachedEndRelFrame.filter(typCol === typ)))
     }.toMap
 
     cachedStartRelFrame.unpersist()
