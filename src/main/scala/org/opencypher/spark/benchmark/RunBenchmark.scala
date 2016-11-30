@@ -23,7 +23,6 @@ object RunBenchmark {
     conf.set("spark.kryo.registrator", "org.opencypher.spark.CypherKryoRegistrar")
     conf.set("spark.sql.crossJoin.enabled", "true")
     conf.set("spark.neo4j.bolt.password", Neo4jPassword.get())
-    conf.set("spark.driver.memory", "471859200")
     // Enable to see if we cover enough
     conf.set("spark.kryo.registrationRequired", "true")
     conf.set("spark.sql.shuffle.partitions", Partitions.get().toString)
@@ -192,7 +191,16 @@ object RunBenchmark {
     }
   }
 
+  def parseArgs(args: Array[String]): Unit = {
+    args.foreach { s =>
+      println(s"Setting argument $s")
+      val split = s.split("=")
+      System.setProperty(split(0), split(1))
+    }
+  }
+
   def main(args: Array[String]): Unit = {
+    parseArgs(args)
     init()
 
     val graphSize = GraphSize.get()
