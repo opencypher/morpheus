@@ -177,6 +177,7 @@ object RunBenchmark {
     1 -> SimplePatternIds(IndexedSeq("Employee"), IndexedSeq("HAS_ACCOUNT"), IndexedSeq("Account")),
     2 -> SimplePatternIds(IndexedSeq("Group"), IndexedSeq("ALLOWED_INHERIT"), IndexedSeq("Company")),
     3 -> MidPattern("Employee", "WORKS_FOR", "Company", "CHILD_OF", "Company"),
+    6 -> FixedLengthPattern("Employee", Seq(Out("WORKS_FOR") -> "Company", Out("CHILD_OF") -> "Company")),
     4 -> FixedLengthPattern("Administrator", Seq(Out("MEMBER_OF") -> "Group", Out("ALLOWED_DO_NOT_INHERIT") -> "Company", Out("CHILD_OF") -> "Company")),
     5 -> FixedLengthPattern("Resource", Seq(Out("WORKS_FOR") -> "Company", In("ALLOWED_DO_NOT_INHERIT") -> "Group", Out("ALLOWED_INHERIT") -> "Company"))
   )
