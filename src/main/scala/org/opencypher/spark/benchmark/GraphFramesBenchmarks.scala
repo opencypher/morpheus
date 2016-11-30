@@ -1,9 +1,9 @@
 package org.opencypher.spark.benchmark
 
-import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.{Column, DataFrame}
 import org.apache.spark.sql.functions._
 import org.graphframes.GraphFrame
-import org.opencypher.spark.impl.{MidPattern, SimplePatternIds, SupportedQuery}
+import org.opencypher.spark.impl._
 
 object GraphFramesBenchmarks extends SupportedQueryBenchmarks[GraphFrame] {
 
@@ -12,6 +12,8 @@ object GraphFramesBenchmarks extends SupportedQueryBenchmarks[GraphFrame] {
       simplePatternIds(startLabels.head.toLowerCase, types.head, endLabels.head.toLowerCase)
     case MidPattern(startLabel, type1, midLabel, type2, endLabel) =>
       midPattern(startLabel.toLowerCase, type1, midLabel.toLowerCase, type2, endLabel.toLowerCase)
+    case FixedLengthPattern(start, steps) =>
+      fixedLengthPattern(start.toLowerCase, steps.map(p => p._1 -> p._2.toLowerCase))
     case _ =>
       throw new IllegalArgumentException(s"No GraphFrame implementation of $query")
   }
@@ -42,6 +44,44 @@ object GraphFramesBenchmarks extends SupportedQueryBenchmarks[GraphFrame] {
         .filter(col(s"c.$endLabel"))
 
       val result = filtered.select("r1.id", "r2.id")
+
+      result
+    }
+  }
+
+  def fixedLengthPattern(startLabel: String, steps: Seq[(Rel, String)]) = new GraphFrameBenchmark {
+    override def innerRun(graphFrame: GraphFrame): DataFrame = {
+      var step = 0
+
+      val motif = steps.foldLeft(new StringBuilder(s"(n$step)")) {
+        case (builder, (Out(typ), label)) =>
+          if (step > 0) builder.append(s"; (n$step)")
+          val nextStep = step + 1
+          val acc = builder.append(s"-[r$step]->(n$nextStep)")
+          step = nextStep
+          acc
+        case (builder, (In(typ), label)) =>
+          if (step > 0) builder.append(s"; (n$step)")
+          val nextStep = step + 1
+          val acc = builder.append(s"<-[r$step]-(n$nextStep)")
+          step = nextStep
+          acc
+      }
+
+      step = 0
+      var cols = Seq[Column]()
+
+      val df = graphFrame.find(motif.toString)
+      val filtered = steps.foldLeft(df.filter(col(s"n$step.$startLabel"))) {
+        case (frame, (rel, label)) =>
+          cols = cols :+ col(s"r$step.id")
+          step = step + 1
+          frame
+          .filter(col(s"r${step - 1}.type") === rel.relType)
+          .filter(col(s"n$step.$label"))
+      }
+
+      val result = filtered.select(cols.reduce(_ + _))
 
       result
     }
