@@ -298,6 +298,12 @@
     <dependencies>
 
         <dependency>
+            <groupId>default</groupId>
+            <artifactId>graphframes_2.11</artifactId>
+            <version>0.4.0-SNAPSHOT-spark2.0</version>
+        </dependency>
+
+        <dependency>
             <groupId>neo4j-contrib</groupId>
             <artifactId>neo4j-spark-connector</artifactId>
             <version>2.0.0-M2</version>
