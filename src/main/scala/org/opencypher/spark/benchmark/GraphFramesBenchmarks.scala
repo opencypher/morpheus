@@ -61,9 +61,10 @@ object GraphFramesBenchmarks extends SupportedQueryBenchmarks[GraphFrame] {
           step = nextStep
           acc
         case (builder, (In(typ), label)) =>
-          if (step > 0) builder.append(s"; (n$step)")
           val nextStep = step + 1
-          val acc = builder.append(s"<-[r$step]-(n$nextStep)")
+          val acc = builder.append(s"; (n$nextStep)-[r$step]->")
+          // not going to work if the first one is `In` ... let's not do that query
+          if (step > 0) builder.append(s"(n$step)")
           step = nextStep
           acc
       }
