@@ -1,6 +1,6 @@
 package org.opencypher.spark.benchmark
 
-import java.util.UUID
+import java.util.Calendar
 
 import org.apache.spark.SparkConf
 import org.apache.spark.rdd.RDD
@@ -18,7 +18,7 @@ object RunBenchmark {
 
   implicit var sparkSession: SparkSession = _
 
-  def init() = {
+  def init(): SparkSession = {
     val conf = new SparkConf(true)
     conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     conf.set("spark.kryo.registrator", "org.opencypher.spark.CypherKryoRegistrar")
@@ -36,14 +36,14 @@ object RunBenchmark {
     sparkSession = SparkSession.builder()
       .config(conf)
       .master(MasterAddress.get())
-      .appName(s"cypher-on-spark-benchmark-${UUID.randomUUID()}")
+      .appName(s"cypher-on-spark-benchmark-${Calendar.getInstance()}")
       .getOrCreate()
     sparkSession.sparkContext.setLogLevel(Logging.get())
 
     sparkSession
   }
 
-  def loadRDDs() = {
+  def loadRDDs(): (RDD[CypherNode], RDD[CypherRelationship]) = {
     val nodeRDD = sparkSession.sparkContext.objectFile[CypherNode](NodeFilePath.get())
     val relsRDD = sparkSession.sparkContext.objectFile[CypherRelationship](RelFilePath.get())
 
@@ -52,7 +52,7 @@ object RunBenchmark {
     nodeRDD -> relsRDD
   }
 
-  def createGraph(size: Long) = {
+  private def createGraph(size: Long) = {
     val (allNodes, allRels) = loadRDDs()
     println("Nodes and relationships read from disk")
 
@@ -67,7 +67,7 @@ object RunBenchmark {
     new StdPropertyGraph(nodes, relationships)
   }
 
-  def createStdPropertyGraphFromNeo(size: Long) = {
+  private def createStdPropertyGraphFromNeo(size: Long) = {
     val session = sparkSession
     import CypherValue.Encoders._
 
@@ -215,6 +215,11 @@ object RunBenchmark {
           neoResult,
           graphFrameResult
         )
+      case "frames" =>
+        Seq(
+          frameResult,
+          graphFrameResult
+        )
     }
 
     neoResult.use { (benchmark, graph) =>
@@ -224,7 +229,7 @@ object RunBenchmark {
     println(s"Using ${Partitions.get()} partitions.")
 
     val results = benchmarksAndGraphs.map { benchmarkAndGraph =>
-      benchmarkAndGraph.use { (benchmark, graph) =>
+      benchmarkAndGraph.use { (benchmark, _) =>
         println(s"About to benchmark ${benchmark.name.trim}")
         BenchmarkSeries.run(benchmarkAndGraph)
       }
