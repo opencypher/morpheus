@@ -33,8 +33,7 @@ object DataFrameBenchmarks extends SupportedQueryBenchmarks[SimpleDataFrameGraph
 
       val startJoined = startLabeled.join(rels, col("startLabeled.id") === col("rels.startId"))
       val endCol = startJoined.col("endId")
-      val startJoinedShuffled = startJoined.sortWithinPartitions(endCol)
-      val endJoined = startJoinedShuffled.join(endLabeled, endCol === col("endLabeled.id"))
+      val endJoined = startJoined.join(endLabeled, endCol === col("endLabeled.id"))
 
       val result = endJoined.select(col("rels.id"))
       result
@@ -51,15 +50,12 @@ object DataFrameBenchmarks extends SupportedQueryBenchmarks[SimpleDataFrameGraph
 
       val startJoined = startLabeled.join(rel1, col("startLabeled.id") === col("rel1.startId"))
       val endId1 = startJoined.col("rel1.endId")
-      val startSorted = startJoined.sortWithinPartitions(endId1)
-      val step1 = startSorted.join(midLabeled, endId1 === col("midLabeled.id"))
+      val step1 = startJoined.join(midLabeled, endId1 === col("midLabeled.id"))
       val startId = step1.col("midLabeled.id")
-      // val step1Sorted = step1.sortWithinPartitions(startId)
 
       val step2 = step1.join(rel2, startId === col("rel2.startId"))
       val endId2 = step2.col("rel2.endId")
-      val step2Sorted = step2.sortWithinPartitions(endId2)
-      val endJoined = step2Sorted.join(endLabeled, endId2 === col("endLabeled.id"))
+      val endJoined = step2.join(endLabeled, endId2 === col("endLabeled.id"))
 
       val result = endJoined.select(col("rel1.id"), col("rel2.id"))
       result
@@ -76,11 +72,9 @@ object DataFrameBenchmarks extends SupportedQueryBenchmarks[SimpleDataFrameGraph
         case (rel, label) =>
           val rels = graph.relationshipsForRel(rel).as(s"r$step")
           val joined = current.join(rels, col(s"n$step.id") === rel.source(s"r$step"))
-          val sorted = joined.sortWithinPartitions(rel.target(s"r$step"))
           val nextStep = step + 1
           val other = graph.nodes(label).as(s"n$nextStep")
-          val filtered = sorted.join(other, rel.target(s"r$step") === col(s"n$nextStep.id"))
-          current = filtered.sortWithinPartitions(col(s"n$nextStep.id"))
+          current = joined.join(other, rel.target(s"r$step") === col(s"n$nextStep.id"))
           cols = cols :+ col(s"r$step.id")
           step = nextStep
       }
@@ -120,7 +114,7 @@ abstract class DataFrameBenchmark extends Benchmark[SimpleDataFrameGraph] with S
 case class SimpleDataFrameGraph(nodes: Map[String, DataFrame], relationships: Map[String, (DataFrame, DataFrame)]) {
   def relationshipsByStartId(name: String): DataFrame = relationships(name)._1
   def relationshipsByEndId(name: String): DataFrame = relationships(name)._2
-  def relationshipsForRel(rel: Rel) = rel match {
+  def relationshipsForRel(rel: Rel): DataFrame = rel match {
     case Out(name) => relationshipsByStartId(name)
     case In(name) => relationshipsByEndId(name)
   }
