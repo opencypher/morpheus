@@ -8,6 +8,7 @@ import org.apache.spark.sql.{Dataset, SparkSession}
 import org.graphframes.GraphFrame
 import org.neo4j.driver.v1.{AuthTokens, GraphDatabase}
 import org.opencypher.spark.api.value._
+import org.opencypher.spark.benchmark.Configuration._
 import org.opencypher.spark.benchmark.Converters.{internalNodeToAccessControlNode, internalNodeToCypherNode, internalRelToAccessControlRel, internalRelationshipToCypherRelationship}
 import org.opencypher.spark.impl._
 
@@ -21,7 +22,7 @@ object RunBenchmark {
     val conf = new SparkConf(true)
     conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     conf.set("spark.kryo.registrator", "org.opencypher.spark.CypherKryoRegistrar")
-    conf.set("spark.sql.crossJoin.enabled", "true")
+//    conf.set("spark.sql.crossJoin.enabled", "false")
     conf.set("spark.neo4j.bolt.password", Neo4jPassword.get())
     // Enable to see if we cover enough
     conf.set("spark.kryo.registrationRequired", "true")
@@ -32,15 +33,11 @@ object RunBenchmark {
     // conf.set("spark.kryo.referenceTracking","false")
     //
 
-    val builder = SparkSession.builder().config(conf)
-    if (MasterAddress.get().nonEmpty)
-      sparkSession = SparkSession.builder().config(conf).master(MasterAddress.get()).getOrCreate()
-    else {
-      //
-      // If this is slow, you might be hitting: http://bugs.java.com/view_bug.do?bug_id=8077102
-      //
-      sparkSession = builder.master("local[*]").appName(s"cypher-on-spark-benchmark-${UUID.randomUUID()}").getOrCreate()
-    }
+    sparkSession = SparkSession.builder()
+      .config(conf)
+      .master(MasterAddress.get())
+      .appName(s"cypher-on-spark-benchmark-${UUID.randomUUID()}")
+      .getOrCreate()
     sparkSession.sparkContext.setLogLevel(Logging.get())
 
     sparkSession
@@ -69,22 +66,6 @@ object RunBenchmark {
 
     new StdPropertyGraph(nodes, relationships)
   }
-
-  abstract class ConfigOption[T](val name: String, val defaultValue: T)(convert: String => Option[T]) {
-    def get(): T = Option(System.getProperty(name)).flatMap(convert).getOrElse(defaultValue)
-  }
-
-  object GraphSize extends ConfigOption("cos.graph-size", -1l)(x => Some(java.lang.Long.parseLong(x)))
-  object MasterAddress extends ConfigOption("cos.master", "")(Some(_))
-  object Logging extends ConfigOption("cos.logging", "OFF")(Some(_))
-  object Partitions extends ConfigOption("cos.shuffle-partitions", 40)(x => Some(java.lang.Integer.parseInt(x)))
-  object Runs extends ConfigOption("cos.runs", 6)(x => Some(java.lang.Integer.parseInt(x)))
-  object WarmUpRuns extends ConfigOption("cos.warmupRuns", 2)(x => Some(java.lang.Integer.parseInt(x)))
-  object NodeFilePath extends ConfigOption("cos.nodeFile", "")(Some(_))
-  object RelFilePath extends ConfigOption("cos.relFile", "")(Some(_))
-  object Neo4jPassword extends ConfigOption("cos.neo4j-pw", "foo")(Some(_))
-  object Benchmarks extends ConfigOption("cos.benchmarks", "fast")(Some(_))
-  object Query extends ConfigOption("cos.query", 1)(x => Some(java.lang.Integer.parseInt(x)))
 
   def createStdPropertyGraphFromNeo(size: Long) = {
     val session = sparkSession
@@ -193,7 +174,6 @@ object RunBenchmark {
 
   def parseArgs(args: Array[String]): Unit = {
     args.foreach { s =>
-      println(s"Setting argument $s")
       val split = s.split("=")
       System.setProperty(split(0), split(1))
     }
@@ -201,6 +181,8 @@ object RunBenchmark {
 
   def main(args: Array[String]): Unit = {
     parseArgs(args)
+    // print conf
+    Configuration.print()
     init()
 
     val graphSize = GraphSize.get()

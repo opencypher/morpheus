@@ -1,6 +1,6 @@
 package org.opencypher.spark.benchmark
 
-import org.opencypher.spark.benchmark.RunBenchmark.{Runs, WarmUpRuns}
+import org.opencypher.spark.benchmark.Configuration.{Runs, WarmUpRuns}
 
 object BenchmarkSeries {
   def run[G](benchmarkAndGraph: BenchmarkAndGraph[G], runs: Int = Runs.get(), warmupRuns: Int = WarmUpRuns.get()): BenchmarkResult = {
