@@ -205,7 +205,9 @@ object RunBenchmark {
     // same as #1
     7 -> FixedLengthPattern("Employee", Seq(Out("HAS_ACCOUNT") -> "Account")),
     // same as #2
-    8 -> FixedLengthPattern("Group", Seq(Out("ALLOWED_INHERIT") -> "Company"))
+    8 -> FixedLengthPattern("Group", Seq(Out("ALLOWED_INHERIT") -> "Company")),
+    // match (:Entry)-[:MEMBER_OF_BAND]->(:Entry)-[:FROM_AREA]->(:Area)-[:PART_OF]-(:Subdivision) return
+    10 -> FixedLengthPattern("Entry", Seq(Out("MEMBER_OF_BAND") -> "Entry", Out("FROM_AREA") -> "Area", Out("PART_OF") -> "Subdivision"))
   )
 
   def loadQuery(): SupportedQuery = {
@@ -274,8 +276,6 @@ object RunBenchmark {
     neoResult.use { (benchmark, graph) =>
       println(BenchmarkSummary(query.toString, benchmark.numNodes(graph), benchmark.numRelationships(graph)))
     }
-    println(s"GraphSize used by spark benchmarks is $graphSize.")
-    println(s"Using ${Partitions.get()} partitions.")
 
     val results = benchmarksAndGraphs.map { benchmarkAndGraph =>
       benchmarkAndGraph.use { (benchmark, _) =>
