@@ -20,13 +20,13 @@ object Configuration {
   object NodeFilePath extends ConfigOption("cos.nodeFile", "<>")(Some(_))
   object RelFilePath extends ConfigOption("cos.relFile", "<>")(Some(_))
   object Neo4jPassword extends ConfigOption("cos.neo4j-pw", ".")(Some(_))
-  object Benchmarks extends ConfigOption("cos.benchmarks", "fast")(Some(_))
-  object Query extends ConfigOption("cos.query", 1)(x => Some(java.lang.Integer.parseInt(x)))
+  object Benchmarks extends ConfigOption("cos.benchmarks", "frames")(Some(_))
+  object Query extends ConfigOption("cos.query", 5)(x => Some(java.lang.Integer.parseInt(x)))
 
   val conf = Seq(GraphSize, MasterAddress, Logging, Partitions, Runs, WarmUpRuns, NodeFilePath,
     RelFilePath, Neo4jPassword, Benchmarks, Query)
 
-  def print() = {
+  def print(): Unit = {
     conf.foreach(println)
   }
 

@@ -28,7 +28,7 @@ case class BenchmarkResult(name: String, times: Seq[Long], plan: String, count: 
   lazy val avg = BigDecimal(times.sum.toDouble / times.length).setScale(2, HALF_UP)
   lazy val median = times.sorted.apply(times.length / 2)
 
-  def summary(slowest: Option[BigDecimal]) = {
+  def summary(slowest: Option[BigDecimal]): String = {
     val normalized = slowest.map(bd => (bd / avg).setScale(2, HALF_UP).toString + "x").getOrElse("")
     s"$name: \t$avg $normalized [$min .. $median .. $max] ms\t${count.toDouble/avg.toDouble} avg Krow/sec\t$count rows\t$checksum checksum"
   }

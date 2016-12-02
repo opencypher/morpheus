@@ -89,7 +89,7 @@ abstract class DataFrameBenchmark extends Benchmark[SimpleDataFrameGraph] with S
   override def name: String = "DataFrame "
 
   def numNodes(graph: SimpleDataFrameGraph): Long =
-    graph.nodes.values.map(_.count()).sum
+    graph.nodes.values.map(_.count()).sum // not correct if nodes have > 1 label
 
   def numRelationships(graph: SimpleDataFrameGraph): Long =
     graph.relationships.values.map(_._1.count()).sum

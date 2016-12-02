@@ -4,7 +4,7 @@ import java.util.Calendar
 
 import org.apache.spark.SparkConf
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{Dataset, SparkSession}
+import org.apache.spark.sql._
 import org.graphframes.GraphFrame
 import org.neo4j.driver.v1.{AuthTokens, GraphDatabase}
 import org.opencypher.spark.api.value._
@@ -86,6 +86,7 @@ object RunBenchmark {
   def createGraphFrameGraph(size: Long): GraphFrame = {
     val (nodeRDD, relRDD) = importAndConvert(size)
 
+    printf("Creating GraphFrame graph ... ")
     val nodeFrame = sparkSession.createDataFrame(nodeRDD)
     val idCol = nodeFrame.col("id")
     val cachedNodeFrame = cacheNow(nodeFrame.repartition(idCol).sortWithinPartitions(idCol))
@@ -93,50 +94,90 @@ object RunBenchmark {
     val relFrame = sparkSession.createDataFrame(relRDD).toDF("id", "src", "dst", "type")
     val srcCol = relFrame.col("src")
     val cachedStartRelFrame = cacheNow(relFrame.repartition(srcCol).sortWithinPartitions(srcCol))
+    println("Finished GraphFrame graph!")
 
     GraphFrame(cachedNodeFrame, cachedStartRelFrame)
   }
 
-  private def importAndConvert(size: Long): (RDD[AccessControlNode], RDD[AccessControlRelationship]) = {
-    val (nodeRDD, relRDD) = Importers.importFromNeo(size)
-    val nMapped = nodeRDD.map(internalNodeToAccessControlNode)
-    val rMapped = relRDD.map(internalRelToAccessControlRel)
+  // TODO: Solve this less ugly
+  private var cNodeRDD: RDD[AccessControlNode] = _
+  private var cRelRDD: RDD[AccessControlRelationship] = _
 
-    nMapped -> rMapped
+  private def importAndConvert(size: Long): (RDD[AccessControlNode], RDD[AccessControlRelationship]) = {
+    if (cNodeRDD == null || cRelRDD == null) {
+      val (nodeRDD, relRDD) = Importers.importFromNeo(size)
+      cNodeRDD = nodeRDD.map(internalNodeToAccessControlNode)
+      cRelRDD = relRDD.map(internalRelToAccessControlRel)
+    }
+    cNodeRDD -> cRelRDD
+  }
+
+  // TODO: Solve this less ugly
+  private var cLabeledNodes: Map[String, Dataset[Row]] = _
+  private var cNodeFrame: DataFrame = _
+  private var cIdCol: Column = _
+
+  private def cacheNodeMap(nodeRDD: RDD[AccessControlNode]) = {
+    if (cLabeledNodes == null || cNodeFrame == null || cIdCol == null) {
+      printf("Creating node frame map... ")
+      cNodeFrame = sparkSession.createDataFrame(nodeRDD)
+      cIdCol = cNodeFrame.col("id")
+      cLabeledNodes = Map(
+        "Account" -> cacheNow(cNodeFrame.filter(cNodeFrame.col("account")).repartition(cIdCol).sortWithinPartitions(cIdCol)),
+        "Administrator" -> cacheNow(cNodeFrame.filter(cNodeFrame.col("administrator")).repartition(cIdCol).sortWithinPartitions(cIdCol)),
+        "Company" -> cacheNow(cNodeFrame.filter(cNodeFrame.col("company")).repartition(cIdCol).sortWithinPartitions(cIdCol)),
+        "Employee" -> cacheNow(cNodeFrame.filter(cNodeFrame.col("employee")).repartition(cIdCol).sortWithinPartitions(cIdCol)),
+        "Group" -> cacheNow(cNodeFrame.filter(cNodeFrame.col("group")).repartition(cIdCol).sortWithinPartitions(cIdCol)),
+        "Resource" -> cacheNow(cNodeFrame.filter(cNodeFrame.col("resource")).repartition(cIdCol).sortWithinPartitions(cIdCol))
+      )
+      println(" Done!")
+    }
+    (cLabeledNodes, cNodeFrame, cIdCol)
+  }
+
+  def createTripletGraph(size: Long): TripletGraph = {
+    val (nodeRDD, relRDD) = importAndConvert(size)
+
+    val (labeledNodes, nodeFrame, idCol) = cacheNodeMap(nodeRDD)
+
+    printf("Creating triplet views ... ")
+    val relFrame = sparkSession.createDataFrame(relRDD)
+    val startIdCol = relFrame.col("startId")
+    val endIdCol = relFrame.col("endId")
+
+    // join 'other' (source/target) node labels into triplet view
+    val outTriplet = relFrame.join(nodeFrame, endIdCol === idCol).drop(idCol)
+    val inTriplet = relFrame.join(nodeFrame, startIdCol === idCol).drop(idCol)
+
+    val typCol = relFrame.col("typ")
+    val types = relFrame.select(typCol).distinct().rdd.map(_.getString(0)).collect()
+    val rels = types.map { typ =>
+      typ ->
+        (cacheNow(outTriplet.filter(typCol === typ).repartition(startIdCol).sortWithinPartitions(startIdCol))
+          -> cacheNow(inTriplet.filter(typCol === typ).repartition(endIdCol).sortWithinPartitions(endIdCol)))
+    }.toMap
+    println("Finished triplet views!")
+
+    TripletGraph(labeledNodes, rels)
   }
 
   def createSimpleDataFrameGraph(size: Long): SimpleDataFrameGraph = {
     val (nodeRDD, relRDD) = importAndConvert(size)
 
-    println("Repartitioning...")
-    val nodeFrame = sparkSession.createDataFrame(nodeRDD)
-    val idCol = nodeFrame.col("id")
-    val cachedNodeFrame = cacheNow(nodeFrame.repartition(idCol).sortWithinPartitions(idCol))
-    val labeledNodes = Map(
-      "Account" -> cacheNow(cachedNodeFrame.filter(cachedNodeFrame.col("account"))),
-      "Administrator" -> cacheNow(cachedNodeFrame.filter(cachedNodeFrame.col("administrator"))),
-      "Company" -> cacheNow(cachedNodeFrame.filter(cachedNodeFrame.col("company"))),
-      "Employee" -> cacheNow(cachedNodeFrame.filter(cachedNodeFrame.col("employee"))),
-      "Group" -> cacheNow(cachedNodeFrame.filter(cachedNodeFrame.col("group"))),
-      "Resource" -> cacheNow(cachedNodeFrame.filter(cachedNodeFrame.col("resource")))
-    )
+    val (labeledNodes, _, _) = cacheNodeMap(nodeRDD)
 
-    cachedNodeFrame.unpersist()
-
+    printf("Creating relationship views ... ")
     val relFrame = sparkSession.createDataFrame(relRDD)
     val startIdCol = relFrame.col("startId")
-    val cachedStartRelFrame = relFrame.repartition(startIdCol).sortWithinPartitions(startIdCol).cache()
     val endIdCol = relFrame.col("endId")
-    val cachedEndRelFrame = relFrame.repartition(endIdCol).sortWithinPartitions(endIdCol).cache()
     val typCol = relFrame.col("typ")
-    val types = cachedStartRelFrame.select(typCol).distinct().rdd.map(_.getString(0)).collect()
+    val types = relFrame.select(typCol).distinct().rdd.map(_.getString(0)).collect()
     val rels = types.map { typ =>
       typ ->
-        (cacheNow(cachedStartRelFrame.filter(typCol === typ)) -> cacheNow(cachedEndRelFrame.filter(typCol === typ)))
+        (cacheNow(relFrame.filter(typCol === typ).repartition(startIdCol).sortWithinPartitions(startIdCol)) ->
+          cacheNow(relFrame.filter(typCol === typ).repartition(endIdCol).sortWithinPartitions(endIdCol)))
     }.toMap
-
-    cachedStartRelFrame.unpersist()
-    cachedEndRelFrame.unpersist()
+    println("Finished relationship views!")
 
     SimpleDataFrameGraph(labeledNodes, rels)
   }
@@ -192,6 +233,7 @@ object RunBenchmark {
     lazy val sdfGraph = createSimpleDataFrameGraph(graphSize)
     lazy val neoGraph = createNeo4jViaDriverGraph
     lazy val graphFrame = createGraphFrameGraph(graphSize)
+    lazy val tripletGraph = createTripletGraph(graphSize)
 
     val query = loadQuery()
 
@@ -200,6 +242,7 @@ object RunBenchmark {
     lazy val neoResult = Neo4jViaDriverBenchmarks(query).using(neoGraph)
     lazy val cosResult = CypherOnSparkBenchmarks(query).using(stdGraph)
     lazy val graphFrameResult = GraphFramesBenchmarks(query).using(graphFrame)
+    lazy val tripletResult = TripletBenchmarks(query).using(tripletGraph)
 
     lazy val benchmarksAndGraphs = Benchmarks.get() match {
       case "all" =>
@@ -211,12 +254,14 @@ object RunBenchmark {
         )
       case "fast" =>
         Seq(
+          tripletResult,
           frameResult,
-          neoResult,
-          graphFrameResult
+          graphFrameResult,
+          neoResult
         )
       case "frames" =>
         Seq(
+          tripletResult,
           frameResult,
           graphFrameResult
         )
