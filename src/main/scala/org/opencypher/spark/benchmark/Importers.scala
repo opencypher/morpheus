@@ -1,14 +1,65 @@
 package org.opencypher.spark.benchmark
 
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.types.{BooleanType, LongType, StructField, StructType}
 import org.neo4j.driver.internal.{InternalNode, InternalRelationship}
 import org.neo4j.spark.Neo4j
 
 object Importers {
-  def importFromNeo(size: Long) = {
-    val neo4j = Neo4j(RunBenchmark.sparkSession.sparkContext)
 
+  val neo4j = Neo4j(RunBenchmark.sparkSession.sparkContext)
+
+  def importFromNeo(size: Long): (RDD[InternalNode], RDD[InternalRelationship]) = {
     if (size > 0) limit(neo4j, size)
     else all(neo4j)
+  }
+
+  def importMusicBrainz(size: Long) = {
+    import scala.reflect.classTag
+
+    val labels: Array[String] = neo4j.cypher("call db.labels").loadRdd(classTag[String]).collect()
+
+    val nodeMap = labels.map { l =>
+      l -> neo4j.cypher(s"MATCH (n:$l) RETURN n").loadNodeRdds.map(row => row(0).asInstanceOf[InternalNode])
+    }.toMap
+
+    val labelFields = labels.map { l =>
+      StructField(l.toLowerCase, BooleanType)
+    }
+    val nodeFields = StructField("id", LongType) +: labelFields
+    val nodeSchema = StructType(nodeFields)
+
+    val frameMap = nodeMap.mapValues { rdd =>
+      val rowRdd = rdd.map { node =>
+        val fields = node.id() +: labels.map(node.hasLabel)
+        Row(fields: _*)
+      }
+      RunBenchmark.sparkSession.createDataFrame(rowRdd, nodeSchema)
+    }
+    val types: Array[String] = neo4j.cypher("call db.relationshipTypes").loadRdd(classTag[String]).collect()
+
+    val tripletMap = types.map { t =>
+      t -> {
+        neo4j.cypher(s"MATCH ()-[r:$t]->(e) RETURN r, e").loadRowRdd.map { row =>
+          row(0).asInstanceOf[InternalRelationship] -> row(1).asInstanceOf[InternalNode]
+        }
+      }
+    }.toMap
+
+    val tripletFields = Array(StructField("id", LongType), StructField("startId", LongType), StructField("endId", LongType)) ++ labelFields
+    val tripletSchema = StructType(tripletFields)
+
+    val tripletFrames = tripletMap.mapValues { rdd =>
+      val rowRdd = rdd.map {
+        case (rel, node) =>
+          val fields = Array(rel.id(), rel.startNodeId(), rel.endNodeId()) ++ labels.map(node.hasLabel)
+          Row(fields: _*)
+      }
+      RunBenchmark.sparkSession.createDataFrame(rowRdd, tripletSchema)
+    }
+
+    frameMap -> tripletFrames
   }
 
   private def limit(neo4j: Neo4j, limit: Long) = {

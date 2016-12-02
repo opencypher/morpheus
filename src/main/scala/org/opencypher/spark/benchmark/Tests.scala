@@ -8,9 +8,7 @@ import org.opencypher.spark.api.value.{CypherNode, CypherRelationship}
 object Tests {
 
   def main(args: Array[String]): Unit = {
-    val sparkSession = RunBenchmark.init()
-
-    writeGraph(sparkSession)
+    writeGraph(RunBenchmark.sparkSession)
 //    readGraph(sparkSession)
 //    write(sparkSession)
 //    read(sparkSession)

@@ -16,9 +16,7 @@ import scala.collection.immutable.IndexedSeq
 
 object RunBenchmark {
 
-  implicit var sparkSession: SparkSession = _
-
-  def init(): SparkSession = {
+  implicit lazy val sparkSession: SparkSession = {
     val conf = new SparkConf(true)
     conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     conf.set("spark.kryo.registrator", "org.opencypher.spark.CypherKryoRegistrar")
@@ -33,14 +31,13 @@ object RunBenchmark {
     // conf.set("spark.kryo.referenceTracking","false")
     //
 
-    sparkSession = SparkSession.builder()
+    val session = SparkSession.builder()
       .config(conf)
       .master(MasterAddress.get())
       .appName(s"cypher-on-spark-benchmark-${Calendar.getInstance().toInstant}")
       .getOrCreate()
-    sparkSession.sparkContext.setLogLevel(Logging.get())
-
-    sparkSession
+    session.sparkContext.setLogLevel(Logging.get())
+    session
   }
 
   def loadRDDs(): (RDD[CypherNode], RDD[CypherRelationship]) = {
@@ -231,7 +228,6 @@ object RunBenchmark {
     parseArgs(args)
     // print conf
     Configuration.print()
-    init()
 
     val graphSize = GraphSize.get()
 
