@@ -2,12 +2,35 @@
 
 Talk to the openCypher team if you have questions.
 
-
 === Setting it up on Spark
 
+==== Neo4j
+
+The benchmarks rely on pulling data from a running Neo4j server.
+You'll need a `3.0.7` version of Neo4j, with all data loaded.
+The `neo4j` needs to exist, and you need to supply the Neo4j password to the application.
+
+==== Spark cluster
+
+First, you need a Spark cluster set up.
+So far, we've only been testing on `standalone` Spark clusters (one machine).
+Spark is set up on `mattis` and `borka` in `/home/neo/openCypher/spark`.
+
+To start Spark in standalone mode, run `sbin/start-master.sh` and `sbin/start-slave.sh <master address>` from the spark home directory.
+
+==== Running the benchmarks
+
 1. Build the JAR for this project `mvn clean package`.
-2. Deploy the JAR (the standalone one) into the `jars` directory of your Spark installation.
+** Upload the JAR to the machine that hosts the master, or do the necessary network management to deploy from your local machine.
 3. Start the Spark master.
-4. Start Spark workers (at least one).
-5. Run application with the master URL as argument.
-** `scala -classpath target/cypher-on-spark-1.0-SNAPSHOT-standalone-shell.jar org.opencypher.spark.benchmark.RunBenchmark`
+5. Submit the application to the Spark master.
+
+.Example bash script for running the benchmarks (master address is the default for `mattis`).
+[source, bash]
+----
+#!/bin/bash
+
+spark-submit --class org.opencypher.spark.benchmark.RunBenchmark --master spark://mattis.malmo.neohq.net:7077 --deploy-mode client cypher-on-spark-1.0-SNAPSHOT-standalone-shell.jar cos.neo4j-pw=<Neo4j password> cos.master=spark://mattis.malmo.neohq.net:7077
+----
+
+There are more configuration options to use; see the class `Configuration.scala`.
