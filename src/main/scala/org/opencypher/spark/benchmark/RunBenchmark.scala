@@ -201,7 +201,11 @@ object RunBenchmark {
     4 -> FixedLengthPattern("Administrator", Seq(Out("MEMBER_OF") -> "Group", Out("ALLOWED_DO_NOT_INHERIT") -> "Company", Out("CHILD_OF") -> "Company")),
     5 -> FixedLengthPattern("Resource", Seq(Out("WORKS_FOR") -> "Company", In("ALLOWED_DO_NOT_INHERIT") -> "Group", Out("ALLOWED_INHERIT") -> "Company")),
     // almost the same as #3
-    6 -> FixedLengthPattern("Employee", Seq(Out("WORKS_FOR") -> "Company", Out("CHILD_OF") -> "Company"))
+    6 -> FixedLengthPattern("Employee", Seq(Out("WORKS_FOR") -> "Company", Out("CHILD_OF") -> "Company")),
+    // same as #1
+    7 -> FixedLengthPattern("Employee", Seq(Out("HAS_ACCOUNT") -> "Account")),
+    // same as #2
+    8 -> FixedLengthPattern("Group", Seq(Out("ALLOWED_INHERIT") -> "Company"))
   )
 
   def loadQuery(): SupportedQuery = {
