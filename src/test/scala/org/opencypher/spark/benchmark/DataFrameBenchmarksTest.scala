@@ -1,13 +1,15 @@
 package org.opencypher.spark.benchmark
 
 import org.opencypher.spark.{StdTestSuite, TestSession}
+import org.apache.spark.sql.functions.col
+import org.opencypher.spark.impl.{FixedLengthPattern, Out}
 
 class DataFrameBenchmarksTest extends StdTestSuite with TestSession.Fixture {
 
   case class NodeRow(id: Long, group: Boolean, company: Boolean)
   case class RelRow(id: Long, startId: Long, endId: Long, typ: String = "ALLOWED_INHERIT")
 
-  test("foo") {
+  test("query example") {
     session.sparkContext.setLogLevel("OFF")
 
     val n0 = NodeRow(0, group = true, company = false)
@@ -26,11 +28,14 @@ class DataFrameBenchmarksTest extends StdTestSuite with TestSession.Fixture {
     val nodes = session.createDataFrame(Seq(n0, n1, n2, n3, n4))
     val rels = session.createDataFrame(Seq(r0, r1, r2, r3, r4, r5))
 
-//    val result = Datasets.simplePattern(1, "ALLOWED_INHERIT", 2)(ExperimentalGraph(nodes, Map("ALLOWED_INHERIT" -> rels)))
-//    val result = DataFrameBenchmarks.simplePatternIds(1, "ALLOWED_INHERIT", 2)(DataFrameGraph(nodes, rels))
-//
-//    result.show()
-    ???
+    val g = SimpleDataFrameGraph(
+      Map("Group" -> nodes.filter(col("group")), "Company" -> nodes.filter(col("company"))),
+      Map("FOO" -> (rels, rels))
+    )
+    val b = DataFrameBenchmarks(FixedLengthPattern("Group", Seq(Out("FOO") -> "Company")))
+
+    b.run(g).computeCount shouldBe 2
+    b.run(g).computeChecksum shouldBe 3 ^ 4
   }
 
 }

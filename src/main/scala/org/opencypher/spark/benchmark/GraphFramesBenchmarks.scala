@@ -49,30 +49,33 @@ object GraphFramesBenchmarks extends SupportedQueryBenchmarks[GraphFrame] {
     }
   }
 
+  def buildMotif(steps: Seq[(Rel, String)]): String = {
+    if (steps.head._1.isInstanceOf[In]) throw new IllegalArgumentException("Can not start with In step")
+    steps.foldLeft(new StringBuilder(s"(n0)") -> 0) {
+      case ((builder, step), (Out(_), _)) =>
+        if (step > 0) builder.append(s"; (n$step)")
+        val nextStep = step + 1
+        val acc = builder.append(s"-[r$step]->(n$nextStep)")
+        acc -> nextStep
+      case ((builder, step), (In(_), _)) =>
+        val nextStep = step + 1
+        val acc = builder.append(s"; (n$nextStep)-[r$step]->")
+        // not going to work if the first one is `In` ... let's not do that query
+        if (step > 0) builder.append(s"(n$step)")
+        acc -> nextStep
+    }._1.toString
+  }
+
   def fixedLengthPattern(startLabel: String, steps: Seq[(Rel, String)]) = new GraphFrameBenchmark {
     override def innerRun(graphFrame: GraphFrame): DataFrame = {
       var step = 0
 
-      val motif = steps.foldLeft(new StringBuilder(s"(n$step)")) {
-        case (builder, (Out(typ), label)) =>
-          if (step > 0) builder.append(s"; (n$step)")
-          val nextStep = step + 1
-          val acc = builder.append(s"-[r$step]->(n$nextStep)")
-          step = nextStep
-          acc
-        case (builder, (In(typ), label)) =>
-          val nextStep = step + 1
-          val acc = builder.append(s"; (n$nextStep)-[r$step]->")
-          // not going to work if the first one is `In` ... let's not do that query
-          if (step > 0) builder.append(s"(n$step)")
-          step = nextStep
-          acc
-      }
+      val motif = buildMotif(steps)
 
       step = 0
       var cols = Seq[Column]()
 
-      val df = graphFrame.find(motif.toString)
+      val df = graphFrame.find(motif)
       val filtered = steps.foldLeft(df.filter(col(s"n$step.$startLabel"))) {
         case (frame, (rel, label)) =>
           cols = cols :+ col(s"r$step.id")
