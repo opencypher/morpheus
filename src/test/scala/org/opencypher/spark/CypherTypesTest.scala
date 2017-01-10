@@ -17,6 +17,8 @@ class CypherTypesTest extends StdTestSuite {
     CTString,
     CTMap,
     CTNode,
+    CTNode("Person"),
+    CTNode("Person", "Employee"),
     CTRelationship,
     CTRelationship("KNOWS"),
     CTRelationship("KNOWS", "LOVES"),
@@ -44,6 +46,8 @@ class CypherTypesTest extends StdTestSuite {
       CTFloat -> ("FLOAT" -> "FLOAT?"),
       CTMap -> ("MAP" -> "MAP?"),
       CTNode -> ("NODE" -> "NODE?"),
+      CTNode("Person") -> (":Person NODE" -> ":Person NODE?"),
+      CTNode("Person", "Employee") -> (":Person:Employee NODE" -> ":Person:Employee NODE?"),
       CTRelationship -> ("RELATIONSHIP" -> "RELATIONSHIP?"),
       CTRelationship("KNOWS") -> (":KNOWS RELATIONSHIP" -> ":KNOWS RELATIONSHIP?"),
       CTRelationship("KNOWS", "LOVES") -> (":KNOWS|LOVES RELATIONSHIP" -> ":KNOWS|LOVES RELATIONSHIP?"),
@@ -82,6 +86,27 @@ class CypherTypesTest extends StdTestSuite {
     CTRelationshipOrNull("KNOWS", "LOVES").superTypeOf(CTRelationshipOrNull("LOVES")) shouldBe True
     CTRelationshipOrNull("KNOWS").superTypeOf(CTRelationshipOrNull("NOSE")) shouldBe False
     CTRelationshipOrNull("FOO").superTypeOf(CTNull) shouldBe True
+  }
+
+  test("Node type typing") {
+    CTNode().superTypeOf(CTNode()) shouldBe True
+    CTNode().superTypeOf(CTNode("Person")) shouldBe True
+    CTNode("Person").superTypeOf(CTNode()) shouldBe False
+    CTNode().subTypeOf(CTNode("Person")) shouldBe False
+    CTNode("Person").superTypeOf(CTNode("Person")) shouldBe True
+    CTNode("Person").superTypeOf(CTNode("Person", "Employee")) shouldBe True
+    CTNode("Person", "Employee").superTypeOf(CTNode("Employee")) shouldBe False
+    CTNode("Person").superTypeOf(CTNode("Foo")) shouldBe False
+  }
+
+  test("nullable node type typing") {
+    CTNodeOrNull().superTypeOf(CTNodeOrNull()) shouldBe True
+    CTNodeOrNull().superTypeOf(CTNodeOrNull("Person")) shouldBe True
+    CTNodeOrNull("Person").superTypeOf(CTNodeOrNull("Person")) shouldBe True
+    CTNodeOrNull("Person").superTypeOf(CTNodeOrNull("Person", "Employee")) shouldBe True
+    CTNodeOrNull("Person", "Employee").superTypeOf(CTNodeOrNull("Employee")) shouldBe False
+    CTNodeOrNull("Person").superTypeOf(CTNodeOrNull("Foo")) shouldBe False
+    CTNodeOrNull("Foo").superTypeOf(CTNull) shouldBe True
   }
 
   test("conversion between VOID and NULL") {

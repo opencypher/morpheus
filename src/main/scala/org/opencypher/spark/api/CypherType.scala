@@ -46,7 +46,7 @@ object types {
 
     def superTypeOf(other: CypherType) = other match {
       case CTMap             => True
-      case CTNode            => True
+      case _: CTNode         => True
       case _: CTRelationship => True
       case CTWildcard        => Maybe
       case CTVoid            => True
@@ -54,8 +54,38 @@ object types {
     }
   }
 
-  case object CTNode extends MaterialDefiniteCypherLeafType {
-    def name = "NODE"
+  object CTNode extends CTNode(Set.empty) {
+    def apply(labels: String*): CTNode =
+      if (labels.isEmpty) this else CTNode(labels.toSet)
+  }
+
+  case class CTNode(labels: Set[String]) extends MaterialDefiniteCypherType {
+    override def name =
+      if (labels.isEmpty) "NODE" else s"${labels.map(t => s"$t").mkString(":", ":", "")} NODE"
+
+    override def nullable =
+      if (labels.isEmpty) CTNodeOrNull else CTNodeOrNull(labels)
+
+    def superTypeOf(other: CypherType) = other match {
+      case CTNode(_) if labels.isEmpty                => True
+      case CTNode(otherLabels) if otherLabels.isEmpty => False
+      case CTNode(otherLabels)                        => labels subsetOf otherLabels
+      case CTWildcard                                 => Maybe
+      case CTVoid                                     => True
+      case _                                          => False
+    }
+  }
+
+  object CTNodeOrNull extends CTNodeOrNull(Set.empty) {
+    def apply(labels: String*): CTNodeOrNull =
+      if (labels.isEmpty) this else CTNodeOrNull(labels.toSet)
+  }
+
+  case class CTNodeOrNull(labels: Set[String]) extends NullableDefiniteCypherType {
+    override def name = s"$material?"
+
+    override def material =
+      if (labels.isEmpty) CTNode else CTNode(labels)
   }
 
   object CTRelationship extends CTRelationship(Set.empty) {
@@ -64,7 +94,8 @@ object types {
   }
 
   case class CTRelationship(types: Set[String]) extends MaterialDefiniteCypherType {
-    def name = if (types.isEmpty) "RELATIONSHIP" else s"${types.map(t => s"$t").mkString(":", "|", "")} RELATIONSHIP"
+    override def name =
+      if (types.isEmpty) "RELATIONSHIP" else s"${types.map(t => s"$t").mkString(":", "|", "")} RELATIONSHIP"
 
     override def nullable =
       if (types.isEmpty) CTRelationshipOrNull else CTRelationshipOrNull(types)
