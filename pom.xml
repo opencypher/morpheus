@@ -304,6 +304,14 @@
         </dependency>
 
         <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher-frontend-3.2</artifactId>
+            <version>3.2.0-alpha01</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>default</groupId>
             <artifactId>graphframes_2.11</artifactId>
             <version>0.4.0-SNAPSHOT-spark2.1</version>
