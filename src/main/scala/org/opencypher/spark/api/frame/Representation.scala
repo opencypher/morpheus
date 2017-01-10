@@ -13,7 +13,7 @@ object Representation {
     case CTString => EmbeddedRepresentation(StringType)
     case CTVoid => EmbeddedRepresentation(NullType)
     case _: CTList => BinaryRepresentation
-    case CTNode | CTRelationship | CTPath | CTMap | CTAny | CTNumber | CTWildcard => BinaryRepresentation
+    case CTNode | _: CTRelationship | CTPath | CTMap | CTAny | CTNumber | CTWildcard => BinaryRepresentation
   }
 }
 

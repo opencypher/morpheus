@@ -1,7 +1,7 @@
 package org.opencypher.spark.impl.frame
 
 import org.opencypher.spark.api.frame.BinaryRepresentation
-import org.opencypher.spark.api.types.CTRelationship
+import org.opencypher.spark.api.types.{CTRelationship, CTRelationshipOrNull}
 
 class OptionalAllRelationshipsTest extends StdFrameTestSuite {
 
@@ -28,7 +28,7 @@ class OptionalAllRelationshipsTest extends StdFrameTestSuite {
 
       val result = optionalAllRelationships('a).testResult
 
-      result.signature shouldHaveFields('a -> CTRelationship.nullable)
+      result.signature shouldHaveFields('a -> CTRelationshipOrNull)
       result.signature shouldHaveFieldSlots('a -> BinaryRepresentation)
       result.toSet should equal(Set(null))
     }
@@ -42,7 +42,7 @@ class OptionalAllRelationshipsTest extends StdFrameTestSuite {
 
       val result = optionalAllRelationships('a).testResult
 
-      result.signature shouldHaveFields('a -> CTRelationship.nullable)
+      result.signature shouldHaveFields('a -> CTRelationshipOrNull)
       result.signature shouldHaveFieldSlots('a -> BinaryRepresentation)
       result.toSet should equal(Set(a))
     }

@@ -45,12 +45,12 @@ object types {
     def name = "MAP"
 
     def superTypeOf(other: CypherType) = other match {
-      case CTMap          => True
-      case CTNode         => True
-      case CTRelationship => True
-      case CTWildcard     => Maybe
-      case CTVoid         => True
-      case _              => False
+      case CTMap             => True
+      case CTNode            => True
+      case _: CTRelationship => True
+      case CTWildcard        => Maybe
+      case CTVoid            => True
+      case _                 => False
     }
   }
 
@@ -58,8 +58,37 @@ object types {
     def name = "NODE"
   }
 
-  case object CTRelationship extends MaterialDefiniteCypherLeafType {
-    def name = "RELATIONSHIP"
+  object CTRelationship extends CTRelationship(Set.empty) {
+    def apply(types: String*): CTRelationship =
+      if (types.isEmpty) this else CTRelationship(types.toSet)
+  }
+
+  case class CTRelationship(types: Set[String]) extends MaterialDefiniteCypherType {
+    def name = if (types.isEmpty) "RELATIONSHIP" else s"${types.map(t => s"$t").mkString(":", "|", "")} RELATIONSHIP"
+
+    override def nullable =
+      if (types.isEmpty) CTRelationshipOrNull else CTRelationshipOrNull(types)
+
+    def superTypeOf(other: CypherType) = other match {
+      case CTRelationship(_) if types.isEmpty               => True
+      case CTRelationship(otherTypes) if otherTypes.isEmpty => False
+      case CTRelationship(otherTypes)                       => otherTypes subsetOf types
+      case CTWildcard                                       => Maybe
+      case CTVoid                                           => True
+      case _                                                => False
+    }
+  }
+
+  object CTRelationshipOrNull extends CTRelationshipOrNull(Set.empty) {
+    def apply(types: String*): CTRelationshipOrNull =
+      if (types.isEmpty) this else CTRelationshipOrNull(types.toSet)
+  }
+
+  case class CTRelationshipOrNull(types: Set[String]) extends NullableDefiniteCypherType {
+    override def name = s"$material?"
+
+    override def material =
+      if (types.isEmpty) CTRelationship else CTRelationship(types)
   }
 
   case object CTPath extends MaterialDefiniteCypherLeafType {
@@ -317,8 +346,8 @@ private[spark] object MaterialDefiniteCypherType {
     self: MaterialDefiniteCypherType =>
 
     val nullable = new NullableDefiniteCypherType {
-      def material = self
-      def name = self + "?"
+      override def material = self
+      override def name = self + "?"
     }
   }
 }

@@ -3,7 +3,7 @@ package org.opencypher.spark.impl.frame
 import org.apache.spark.sql.types.LongType
 import org.opencypher.spark.api._
 import org.opencypher.spark.api.frame.{BinaryRepresentation, EmbeddedRepresentation}
-import types.{CTAny, CTInteger, CTNode, CTRelationship}
+import types._
 import org.opencypher.spark.api.value.{CypherNode, CypherRelationship, CypherString}
 
 class ExtractTest extends StdFrameTestSuite {
@@ -34,7 +34,7 @@ class ExtractTest extends StdFrameTestSuite {
 
       val result = optionalAllRelationships('r).asProduct.relationshipStartId('r)('startId).testResult
 
-      result.signature shouldHaveFields('r -> CTRelationship.nullable, 'startId -> CTInteger.nullable)
+      result.signature shouldHaveFields('r -> CTRelationshipOrNull, 'startId -> CTInteger.nullable)
       result.signature shouldHaveFieldSlots('r -> BinaryRepresentation, 'startId -> EmbeddedRepresentation(LongType))
       result.toSet should equal(Set(r -> CypherRelationship.startId(r).get.v))
     }
@@ -66,7 +66,7 @@ class ExtractTest extends StdFrameTestSuite {
 
       val result = optionalAllRelationships('r).asProduct.relationshipEndId('r)('endId).testResult
 
-      result.signature shouldHaveFields('r -> CTRelationship.nullable, 'endId -> CTInteger.nullable)
+      result.signature shouldHaveFields('r -> CTRelationshipOrNull, 'endId -> CTInteger.nullable)
       result.signature shouldHaveFieldSlots('r -> BinaryRepresentation, 'endId -> EmbeddedRepresentation(LongType))
       result.toSet should equal(Set(r -> CypherRelationship.endId(r).get.v))
     }
@@ -168,7 +168,7 @@ class ExtractTest extends StdFrameTestSuite {
 
       val result = optionalAllRelationships('r).asProduct.relationshipId('r)('rid).testResult
 
-      result.signature shouldHaveFields('r -> CTRelationship.nullable, 'rid -> CTInteger.nullable)
+      result.signature shouldHaveFields('r -> CTRelationshipOrNull, 'rid -> CTInteger.nullable)
       result.signature shouldHaveFieldSlots('r -> BinaryRepresentation, 'rid -> EmbeddedRepresentation(LongType))
       result.toSet should equal(Set(r -> CypherNode.id(a).get.v))
     }

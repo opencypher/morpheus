@@ -9,8 +9,18 @@ import scala.language.postfixOps
 class CypherTypesTest extends StdTestSuite {
 
   val materialTypes: Seq[MaterialCypherType] = Seq(
-    CTAny, CTBoolean, CTNumber, CTInteger, CTFloat, CTString, CTMap,
-    CTNode, CTRelationship, CTPath,
+    CTAny,
+    CTBoolean,
+    CTNumber,
+    CTInteger,
+    CTFloat,
+    CTString,
+    CTMap,
+    CTNode,
+    CTRelationship,
+    CTRelationship("KNOWS"),
+    CTRelationship("KNOWS", "LOVES"),
+    CTPath,
     CTList(CTAny),
     CTList(CTList(CTBoolean)),
     CTList(CTWildcard),
@@ -35,6 +45,8 @@ class CypherTypesTest extends StdTestSuite {
       CTMap -> ("MAP" -> "MAP?"),
       CTNode -> ("NODE" -> "NODE?"),
       CTRelationship -> ("RELATIONSHIP" -> "RELATIONSHIP?"),
+      CTRelationship("KNOWS") -> (":KNOWS RELATIONSHIP" -> ":KNOWS RELATIONSHIP?"),
+      CTRelationship("KNOWS", "LOVES") -> (":KNOWS|LOVES RELATIONSHIP" -> ":KNOWS|LOVES RELATIONSHIP?"),
       CTPath -> ("PATH" -> "PATH?"),
       CTList(CTInteger) -> ("LIST OF INTEGER" -> "LIST? OF INTEGER"),
       CTList(CTInteger.nullable) -> ("LIST OF INTEGER?" -> "LIST? OF INTEGER?"),
@@ -49,6 +61,27 @@ class CypherTypesTest extends StdTestSuite {
 
     CTVoid.toString shouldBe "VOID"
     CTNull.toString shouldBe "NULL"
+  }
+
+  test("relationship type typing") {
+    CTRelationship().superTypeOf(CTRelationship()) shouldBe True
+    CTRelationship().superTypeOf(CTRelationship("KNOWS")) shouldBe True
+    CTRelationship("KNOWS").superTypeOf(CTRelationship()) shouldBe False
+    CTRelationship().subTypeOf(CTRelationship("KNOWS")) shouldBe False
+    CTRelationship("KNOWS").superTypeOf(CTRelationship("KNOWS")) shouldBe True
+    CTRelationship("KNOWS").superTypeOf(CTRelationship("KNOWS", "LOVES")) shouldBe False
+    CTRelationship("KNOWS", "LOVES").superTypeOf(CTRelationship("LOVES")) shouldBe True
+    CTRelationship("KNOWS").superTypeOf(CTRelationship("NOSE")) shouldBe False
+  }
+
+  test("nullable relationship type typing") {
+    CTRelationshipOrNull().superTypeOf(CTRelationshipOrNull()) shouldBe True
+    CTRelationshipOrNull().superTypeOf(CTRelationshipOrNull("KNOWS")) shouldBe True
+    CTRelationshipOrNull("KNOWS").superTypeOf(CTRelationshipOrNull("KNOWS")) shouldBe True
+    CTRelationshipOrNull("KNOWS").superTypeOf(CTRelationshipOrNull("KNOWS", "LOVES")) shouldBe False
+    CTRelationshipOrNull("KNOWS", "LOVES").superTypeOf(CTRelationshipOrNull("LOVES")) shouldBe True
+    CTRelationshipOrNull("KNOWS").superTypeOf(CTRelationshipOrNull("NOSE")) shouldBe False
+    CTRelationshipOrNull("FOO").superTypeOf(CTNull) shouldBe True
   }
 
   test("conversion between VOID and NULL") {
