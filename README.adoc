@@ -7,9 +7,12 @@ Talk to the openCypher team if you have questions.
 This project requires the _manual_ installation of graph frames.
 
 * Get graphframes from github (https://github.com/graphframes/graphframes)
-* Append the following line to build.sbt: `publishTo := Some(Resolver.file("file",  new File(Path.userHome.absolutePath+"/.m2/repository")))`
-* Run: `make 2.1.0`
-* This will provide you with a zip of the required artifacts. Either use sbt to install them or copy them manually to your $HOME.m2.
+* Append the following line to build.sbt:
+----
+publishTo := Some(Resolver.file("file", new File(Path.userHome.absolutePath + "/.m2/repository")))
+----
+* Run `sbt publish`
+** This will install the project into your local maven repository.
 
 And the end of this, your local maven cache should contain:
 
