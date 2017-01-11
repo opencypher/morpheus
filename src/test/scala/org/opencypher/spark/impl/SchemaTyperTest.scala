@@ -4,6 +4,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.frontend.v3_2.parser.Expressions
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, SyntaxException, ast}
 import org.opencypher.spark.StdTestSuite
+import org.opencypher.spark.api.CypherType
 import org.opencypher.spark.api.schema.StdSchema
 import org.opencypher.spark.api.types._
 import org.parboiled.scala._
@@ -45,7 +46,31 @@ class SchemaTyperTest extends StdTestSuite with AstConstructionTestSupport {
     typer.infer(expr, context) match {
       case TypingFailed(errors) => errors should contain(MissingVariable(varFor("r")))
     }
+  }
 
+  test("basic literals") {
+    assertExpr("1") hasType CTInteger
+    assertExpr("-3") hasType CTInteger
+    assertExpr("true") hasType CTBoolean
+    assertExpr("false") hasType CTBoolean
+    assertExpr("null") hasType CTNull
+    assertExpr("3.14") hasType CTFloat
+    assertExpr("-3.14") hasType CTFloat
+    assertExpr("'-3.14'") hasType CTString
+  }
+
+
+  private case class assertExpr(exprText: String)  {
+    def hasType(t: CypherType) = {
+      val context = TypeContext.empty
+      val expr = ExpressionParser.parse(exprText)
+      typer.infer(expr, context) match {
+        case result: TypeContext =>
+          result.typeTable should contain(expr -> t)
+        case _ =>
+          fail(s"Failed to type $exprText")
+      }
+    }
   }
 
   object ExpressionParser extends Parser with Expressions {

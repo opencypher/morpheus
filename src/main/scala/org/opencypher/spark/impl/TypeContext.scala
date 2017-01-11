@@ -3,7 +3,7 @@ package org.opencypher.spark.impl
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.opencypher.spark.api.CypherType
 import org.opencypher.spark.api.schema.Schema
-import org.opencypher.spark.api.types.{CTNode, CTRelationship}
+import org.opencypher.spark.api.types._
 
 sealed trait TypingError
 case class MissingVariable(v: Variable) extends TypingError
@@ -12,8 +12,8 @@ case class MissingVariable(v: Variable) extends TypingError
   TODO:
 
   * [X] Property Lookup
-  * [ ] List literals
   * [ ] Some basic literals
+  * [ ] List literals
   * [ ] Stuff which messes with scope
   * [ ] Function application, esp. considering overloading
   * [ ] Some operators: +, [], unary minus, AND
@@ -26,6 +26,22 @@ case class SchemaTyper(schema: Schema) {
   def infer(expr: Expression, tr: TypingResult): TypingResult = {
     tr.bind { tc: TypeContext =>
       expr match {
+
+        case _: SignedDecimalIntegerLiteral =>
+          tc.updateType(expr -> CTInteger)
+
+        case _: DecimalDoubleLiteral =>
+          tc.updateType(expr -> CTFloat)
+
+        case _: BooleanLiteral =>
+          tc.updateType(expr -> CTBoolean)
+
+        case _: StringLiteral =>
+          tc.updateType(expr -> CTString)
+
+        case _: Null =>
+          tc.updateType(expr -> CTNull)
+
         case Property(v: Variable, PropertyKeyName(name)) =>
           tc.variableType(v) {
             case CTNode(labels) =>
