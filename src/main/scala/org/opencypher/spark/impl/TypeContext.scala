@@ -8,7 +8,21 @@ import org.opencypher.spark.api.types.{CTNode, CTRelationship}
 sealed trait TypingError
 case class MissingVariable(v: Variable) extends TypingError
 
-case class Typer(schema: Schema) {
+/*
+  TODO:
+
+  * [X] Property Lookup
+  * [ ] List literals
+  * [ ] Some basic literals
+  * [ ] Stuff which messes with scope
+  * [ ] Function application, esp. considering overloading
+  * [ ] Some operators: +, [], unary minus, AND
+  *
+  * [ ] Dealing with same expression in multiple scopes
+  * [ ] Make sure to always infer all implied labels
+  * [ ] Actually using the schema to get list of slots
+ */
+case class SchemaTyper(schema: Schema) {
   def infer(expr: Expression, tr: TypingResult): TypingResult = {
     tr.bind { tc: TypeContext =>
       expr match {
@@ -34,6 +48,8 @@ case class Typer(schema: Schema) {
 
 sealed trait TypingResult {
   def bind(f: TypeContext => TypingResult): TypingResult
+
+  def inferLabels(schema: Schema): TypingResult = ???
 }
 
 final case class TypingFailed(errors: Seq[TypingError]) extends TypingResult {

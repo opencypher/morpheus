@@ -8,12 +8,12 @@ import org.opencypher.spark.api.schema.StdSchema
 import org.opencypher.spark.api.types._
 import org.parboiled.scala._
 
-class TyperTest extends StdTestSuite with AstConstructionTestSupport {
+class SchemaTyperTest extends StdTestSuite with AstConstructionTestSupport {
 
   val schema = StdSchema.empty
     .withNodeKeys("Person")("name" -> CTString, "age" -> CTInteger)
     .withRelationshipKeys("KNOWS")("since" -> CTInteger, "relative" -> CTBoolean)
-  val typer = Typer(schema)
+  val typer = SchemaTyper(schema)
 
   test("infer type of node property lookup") {
     val context = TypeContext.empty.updateType(varFor("n") -> CTNode("Person"))
@@ -36,6 +36,16 @@ class TyperTest extends StdTestSuite with AstConstructionTestSupport {
       case result: TypeContext =>
         result.typeTable should contain(prop("r", "relative") -> CTBoolean)
     }
+  }
+
+  test("report missing variable") {
+    val context = TypeContext.empty
+    val expr = ExpressionParser.parse("r.relative")
+
+    typer.infer(expr, context) match {
+      case TypingFailed(errors) => errors should contain(MissingVariable(varFor("r")))
+    }
+
   }
 
   object ExpressionParser extends Parser with Expressions {
