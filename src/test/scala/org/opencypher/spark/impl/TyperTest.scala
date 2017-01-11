@@ -1,19 +1,21 @@
 package org.opencypher.spark.impl
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{AstConstructionTestSupport, Property, PropertyKeyName}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.frontend.v3_2.parser.Expressions
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, SyntaxException, ast}
 import org.opencypher.spark.StdTestSuite
 import org.opencypher.spark.api.schema.StdSchema
-import org.opencypher.spark.api.types.{CTInteger, CTNode, CTString}
+import org.opencypher.spark.api.types._
 import org.parboiled.scala._
 
 class TyperTest extends StdTestSuite with AstConstructionTestSupport {
 
-  val schema = StdSchema.empty.withNodeKeys("Person")("name" -> CTString, "age" -> CTInteger)
+  val schema = StdSchema.empty
+    .withNodeKeys("Person")("name" -> CTString, "age" -> CTInteger)
+    .withRelationshipKeys("KNOWS")("since" -> CTInteger, "relative" -> CTBoolean)
   val typer = Typer(schema)
 
-  test("infer pattern and expression types") {
+  test("infer type of node property lookup") {
     val context = TypeContext.empty.updateType(varFor("n") -> CTNode("Person"))
     val expr = ExpressionParser.parse("n.name")
 
@@ -23,6 +25,16 @@ class TyperTest extends StdTestSuite with AstConstructionTestSupport {
           varFor("n") -> CTNode("Person"),
           prop("n", "name") -> CTString
         ))
+    }
+  }
+
+  test("infer type of relationship property lookup") {
+    val context = TypeContext.empty.updateType(varFor("r") -> CTRelationship("KNOWS"))
+    val expr = ExpressionParser.parse("r.relative")
+
+    typer.infer(expr, context) match {
+      case result: TypeContext =>
+        result.typeTable should contain(prop("r", "relative") -> CTBoolean)
     }
   }
 

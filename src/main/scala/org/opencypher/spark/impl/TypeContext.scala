@@ -3,7 +3,7 @@ package org.opencypher.spark.impl
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.opencypher.spark.api.CypherType
 import org.opencypher.spark.api.schema.Schema
-import org.opencypher.spark.api.types.{CTMap, CTNode, CTWildcard}
+import org.opencypher.spark.api.types.{CTNode, CTRelationship}
 
 sealed trait TypingError
 case class MissingVariable(v: Variable) extends TypingError
@@ -15,12 +15,14 @@ case class Typer(schema: Schema) {
         case Property(v: Variable, PropertyKeyName(name)) =>
           tc.variableType(v) {
             case CTNode(labels) =>
-              val keys = labels.map(schema.nodeKeys)
-              val combinedKeys = keys.reduce(_ ++ _)
-              tc.updateType(expr -> combinedKeys(name))
+              val keys = labels.map(schema.nodeKeys).reduce(_ ++ _)
+              tc.updateType(expr -> keys(name))
 
-            case _ =>
-              ???
+            case CTRelationship(types) =>
+              val keys = types.map(schema.relationshipKeys).reduce(_ ++ _)
+              tc.updateType(expr -> keys(name))
+
+            case _ => tc
           }
 
         case _ =>
