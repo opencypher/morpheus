@@ -169,6 +169,61 @@ class CypherTypesTest extends StdTestSuite {
     CTAny superTypeOf CTBoolean.nullable shouldBe False
   }
 
+  test("tests for join") {
+    CTInteger join CTFloat shouldBe CTNumber
+    CTFloat join CTInteger shouldBe CTNumber
+    CTNumber join CTFloat shouldBe CTNumber
+    CTNumber join CTInteger shouldBe CTNumber
+    CTNumber join CTString shouldBe CTAny
+
+    CTNode join CTRelationship shouldBe CTMap
+    CTNode join CTMap shouldBe CTMap
+    CTString join CTBoolean shouldBe CTAny
+    CTAny join CTInteger shouldBe CTAny
+  }
+
+  test("tests for join with nullables") {
+    CTInteger join CTFloat.nullable shouldBe CTNumber.nullable
+    CTFloat.nullable join CTInteger.nullable shouldBe CTNumber.nullable
+    CTNumber.nullable join CTString shouldBe CTAny.nullable
+
+    CTNode join CTRelationship.nullable shouldBe CTMap.nullable
+    CTNode.nullable join CTMap shouldBe CTMap.nullable
+    CTString.nullable join CTBoolean.nullable shouldBe CTAny.nullable
+    CTAny join CTInteger.nullable shouldBe CTAny.nullable
+  }
+
+  test("tests for join with labels and types") {
+    CTNode join CTNode("Person") shouldBe CTNode
+    CTNode("Other") join CTNode("Person") shouldBe CTNode
+    CTNode("Person") join CTNode("Person") shouldBe CTNode("Person")
+    CTNode("L1", "L2", "Lx") join CTNode("L1", "L2", "Ly") shouldBe CTNode("L1", "L2")
+
+    CTRelationship join CTRelationship("KNOWS") shouldBe CTRelationship
+    CTRelationship("OTHER") join CTRelationship("KNOWS") shouldBe CTRelationship("KNOWS", "OTHER")
+    CTRelationship("KNOWS") join CTRelationship("KNOWS") shouldBe CTRelationship("KNOWS")
+    CTRelationship("T1", "T2", "Tx") join CTRelationship("T1", "T2", "Ty") shouldBe CTRelationship("T1", "T2", "Tx", "Ty")
+
+    CTNode("Person") join CTRelationship("KNOWS") shouldBe CTMap
+    CTNode("Person") join CTRelationship shouldBe CTMap
+    CTRelationship("KNOWS") join CTNode("Person") shouldBe CTMap
+    CTRelationship("KNOWS") join CTNode shouldBe CTMap
+  }
+
+  test("meet with labels and types") {
+    CTMap meet CTNode shouldBe CTNode
+    CTMap meet CTNode("Person") shouldBe CTNode("Person")
+    CTMap meet CTRelationship("KNOWS") shouldBe CTRelationship("KNOWS")
+
+    CTNode("Person") meet CTNode shouldBe CTNode("Person")
+    CTNode("Person") meet CTNode("Foo") shouldBe CTNode("Person", "Foo")
+    CTNode("Person", "Foo") meet CTNode("Foo") shouldBe CTNode("Person", "Foo")
+
+    CTRelationship("KNOWS") meet CTRelationship shouldBe CTRelationship("KNOWS")
+    CTRelationship("KNOWS") meet CTRelationship("LOVES") shouldBe CTVoid
+    CTRelationship("KNOWS", "LOVES") meet CTRelationship("LOVES") shouldBe CTRelationship("LOVES")
+  }
+
   test("type equality between different types") {
     allTypes.foreach { t1 =>
       allTypes.foreach { t2 =>
@@ -229,19 +284,19 @@ class CypherTypesTest extends StdTestSuite {
   }
 
   test("computing definite types (type erasure)") {
-    CTWildcard.erasedSuperType sameTypeAs CTAny shouldBe True
-    CTWildcard.nullable.erasedSuperType sameTypeAs CTAny.nullable shouldBe True
-    CTList(CTWildcard).erasedSuperType sameTypeAs CTList(CTAny) shouldBe True
-    CTList(CTWildcard.nullable).erasedSuperType sameTypeAs CTList(CTAny.nullable) shouldBe True
-    CTList(CTBoolean).erasedSuperType sameTypeAs CTList(CTBoolean) shouldBe True
-    CTList(CTBoolean).nullable.erasedSuperType sameTypeAs CTList(CTBoolean).nullable shouldBe True
+    CTWildcard.wildcardErasedSuperType sameTypeAs CTAny shouldBe True
+    CTWildcard.nullable.wildcardErasedSuperType sameTypeAs CTAny.nullable shouldBe True
+    CTList(CTWildcard).wildcardErasedSuperType sameTypeAs CTList(CTAny) shouldBe True
+    CTList(CTWildcard.nullable).wildcardErasedSuperType sameTypeAs CTList(CTAny.nullable) shouldBe True
+    CTList(CTBoolean).wildcardErasedSuperType sameTypeAs CTList(CTBoolean) shouldBe True
+    CTList(CTBoolean).nullable.wildcardErasedSuperType sameTypeAs CTList(CTBoolean).nullable shouldBe True
 
-    CTWildcard.erasedSubType sameTypeAs CTVoid shouldBe True
-    CTWildcard.nullable.erasedSubType sameTypeAs CTNull shouldBe True
-    CTList(CTWildcard).erasedSubType sameTypeAs CTList(CTVoid) shouldBe True
-    CTList(CTWildcard.nullable).erasedSubType sameTypeAs CTList(CTNull) shouldBe True
-    CTList(CTBoolean).erasedSubType sameTypeAs CTList(CTBoolean) shouldBe True
-    CTList(CTBoolean).nullable.erasedSubType sameTypeAs CTList(CTBoolean).nullable shouldBe True
+    CTWildcard.wildcardErasedSubType sameTypeAs CTVoid shouldBe True
+    CTWildcard.nullable.wildcardErasedSubType sameTypeAs CTNull shouldBe True
+    CTList(CTWildcard).wildcardErasedSubType sameTypeAs CTList(CTVoid) shouldBe True
+    CTList(CTWildcard.nullable).wildcardErasedSubType sameTypeAs CTList(CTNull) shouldBe True
+    CTList(CTBoolean).wildcardErasedSubType sameTypeAs CTList(CTBoolean) shouldBe True
+    CTList(CTBoolean).nullable.wildcardErasedSubType sameTypeAs CTList(CTBoolean).nullable shouldBe True
   }
 
   test("handling wildcard types") {
@@ -255,17 +310,17 @@ class CypherTypesTest extends StdTestSuite {
     (CTWildcard subTypeOf CTAny) shouldBe True
     (CTVoid subTypeOf CTWildcard) shouldBe True
 
-    materialTypes.foreach { t => (t join CTWildcard).erasedSuperType shouldBe CTAny }
-    materialTypes.foreach { t => (t meet CTWildcard).erasedSubType shouldBe CTVoid }
+    materialTypes.foreach { t => (t join CTWildcard).wildcardErasedSuperType shouldBe CTAny }
+    materialTypes.foreach { t => (t meet CTWildcard).wildcardErasedSubType shouldBe CTVoid }
 
-    materialTypes.foreach { t => (t join CTWildcard.nullable).erasedSuperType shouldBe CTAny.nullable }
-    materialTypes.foreach { t => (t meet CTWildcard.nullable).erasedSubType shouldBe CTVoid }
+    materialTypes.foreach { t => (t join CTWildcard.nullable).wildcardErasedSuperType shouldBe CTAny.nullable }
+    materialTypes.foreach { t => (t meet CTWildcard.nullable).wildcardErasedSubType shouldBe CTVoid }
 
-    nullableTypes.foreach { t => (t join CTWildcard.nullable).erasedSuperType shouldBe CTAny.nullable }
-    nullableTypes.foreach { t => (t meet CTWildcard.nullable).erasedSubType shouldBe CTNull }
+    nullableTypes.foreach { t => (t join CTWildcard.nullable).wildcardErasedSuperType shouldBe CTAny.nullable }
+    nullableTypes.foreach { t => (t meet CTWildcard.nullable).wildcardErasedSubType shouldBe CTNull }
 
-    nullableTypes.foreach { t => (t join CTWildcard).erasedSuperType shouldBe CTAny.nullable }
-    nullableTypes.foreach { t => (t meet CTWildcard).erasedSubType shouldBe CTVoid }
+    nullableTypes.foreach { t => (t join CTWildcard).wildcardErasedSuperType shouldBe CTAny.nullable }
+    nullableTypes.foreach { t => (t meet CTWildcard).wildcardErasedSubType shouldBe CTVoid }
   }
 
   test("contains wildcard") {

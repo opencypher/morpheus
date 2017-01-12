@@ -24,39 +24,52 @@ case class MissingVariable(v: Variable) extends TypingError
  */
 case class SchemaTyper(schema: Schema) {
   def infer(expr: Expression, tr: TypingResult): TypingResult = {
-    tr.bind { tc: TypeContext =>
+    tr.bind { tc0: TypeContext =>
       expr match {
 
         case _: SignedDecimalIntegerLiteral =>
-          tc.updateType(expr -> CTInteger)
+          tc0.updateType(expr -> CTInteger)
 
         case _: DecimalDoubleLiteral =>
-          tc.updateType(expr -> CTFloat)
+          tc0.updateType(expr -> CTFloat)
 
         case _: BooleanLiteral =>
-          tc.updateType(expr -> CTBoolean)
+          tc0.updateType(expr -> CTBoolean)
 
         case _: StringLiteral =>
-          tc.updateType(expr -> CTString)
+          tc0.updateType(expr -> CTString)
 
         case _: Null =>
-          tc.updateType(expr -> CTNull)
+          tc0.updateType(expr -> CTNull)
+
+        case ListLiteral(elts) =>
+          elts.foldLeft[TypingResult](tc0) {
+            case (innerTc, elt) => infer(elt, innerTc)
+          }
+          .bind { tc1: TypeContext =>
+            val optEltType = elts.foldLeft[Option[CypherType]](None) {
+              case (None, elt) => tc1.typeTable.get(elt)
+              case (Some(accType), elt) => Some(tc1.joinType(accType, elt))
+            }
+            val eltType = optEltType.getOrElse(CTVoid)
+            tc1.updateType(expr -> CTList(eltType))
+          }
 
         case Property(v: Variable, PropertyKeyName(name)) =>
-          tc.variableType(v) {
+          tc0.variableType(v) {
             case CTNode(labels) =>
               val keys = labels.map(schema.nodeKeys).reduce(_ ++ _)
-              tc.updateType(expr -> keys(name))
+              tc0.updateType(expr -> keys(name))
 
             case CTRelationship(types) =>
               val keys = types.map(schema.relationshipKeys).reduce(_ ++ _)
-              tc.updateType(expr -> keys(name))
+              tc0.updateType(expr -> keys(name))
 
-            case _ => tc
+            case _ => tc0
           }
 
         case _ =>
-          tc
+          tc0
       }
     }
   }
@@ -77,7 +90,15 @@ object TypeContext {
 }
 
 final case class TypeContext(typeTable: Map[Expression, CypherType]) extends TypingResult {
+
   override def bind(f: TypeContext => TypingResult): TypingResult = f(this)
+
+  // TODO: Error handling
+  def joinType(accType: CypherType, expr: Expression): CypherType = {
+    val cypherType = typeTable(expr)
+    val foo = accType join cypherType
+    foo
+  }
 
   def updateType(update: (Expression, CypherType)) = {
     val (k, v) = update

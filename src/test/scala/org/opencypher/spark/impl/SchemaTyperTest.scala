@@ -59,6 +59,13 @@ class SchemaTyperTest extends StdTestSuite with AstConstructionTestSupport {
     assertExpr("'-3.14'") hasType CTString
   }
 
+  test("list literals") {
+    assertExpr("[]") hasType CTList(CTVoid)
+    assertExpr("[1, 2]") hasType CTList(CTInteger)
+    assertExpr("[1, 1.0]") hasType CTList(CTNumber)
+    assertExpr("[1, 1.0, '']") hasType CTList(CTAny)
+    assertExpr("[1, 1.0, null]") hasType CTList(CTNumber.nullable)
+  }
 
   private case class assertExpr(exprText: String)  {
     def hasType(t: CypherType) = {
