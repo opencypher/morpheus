@@ -12,17 +12,33 @@ import org.opencypher.spark.api.types._
   * [X] Some basic literals
   * [X] List literals
   * [X] Function application, esp. considering overloading
-  * [ ] Stuff which messes with scope
   * [ ] Some operators: +, [], unary minus, AND
+  * [ ] Stuff which messes with scope
   *
   * [ ] Dealing with same expression in multiple scopes
   * [ ] Make sure to always infer all implied labels
   * [ ] Actually using the schema to get list of slots
  */
 case class SchemaTyper(schema: Schema) {
+  implicit class RichCypherType(left: CypherType) {
+    def couldBe(right: CypherType): Boolean = {
+      left.superTypeOf(right).maybeTrue || left.subTypeOf(right).maybeTrue
+    }
+  }
+
   def infer(expr: Expression, tr: TypingResult): TypingResult = {
     tr.bind { tc0: TypeContext =>
       expr match {
+
+        case ContainerIndex(list, _) =>
+          infer(list, tc0).bind { tc1 =>
+            tc1.typeTable(list) match {
+              case CTList(inner) =>
+                tc1.updateType(expr -> inner)
+                // TODO: Which inner type here? Only use a message instead?
+              case x => TypingFailed(Seq(InvalidType(list, CTList(CTWildcard), x)))
+            }
+          }
 
         case invocation: FunctionInvocation =>
           invocation.function match {
@@ -39,7 +55,7 @@ case class SchemaTyper(schema: Schema) {
                   val possibleOutputs = f.signatures.collect {
                     case sig
                       if argTypes.zip(sig.argumentTypes.map(toCosTypes)).forall {
-                        case (given, declared) => given.subTypeOf(declared).maybeTrue
+                        case (given, declared) => given.couldBe(declared)
                       } =>
                         toCosTypes(sig.outputType)
                   }
@@ -96,8 +112,7 @@ case class SchemaTyper(schema: Schema) {
             case _ => tc0
           }
 
-        case _ =>
-          ???
+        case x => throw new UnsupportedOperationException(s"Don't know how to type $x")
       }
     }
   }

@@ -18,8 +18,8 @@ class SchemaTyperTest extends StdTestSuite with AstConstructionTestSupport {
   val typer = SchemaTyper(schema)
 
   test("typing of simple function") {
-    val context = TypeContext.empty.updateType(varFor("n") -> CTNode("Person"))
-    val expr = ExpressionParser.parse("toInteger(1)")
+    val context = TypeContext.empty
+    val expr = parse("timestamp()")
 
     typer.infer(expr, context) match {
       case result: TypeContext =>
@@ -27,22 +27,77 @@ class SchemaTyperTest extends StdTestSuite with AstConstructionTestSupport {
     }
   }
 
-    test("infer type of node property lookup") {
+  test("typing of function with multiple similar signatures") {
+    val expr = parse("toInteger(1.0)")
+
+    typer.infer(expr, TypeContext.empty) match {
+      case result: TypeContext =>
+        result.typeTable should contain(expr -> CTInteger)
+    }
+  }
+
+  test("typing of function with multiple different signatures") {
+    val expr = "size([0, true, []])"
+
+    typer.infer(parse(expr), TypeContext.empty) match {
+      case result: TypeContext =>
+        result.typeTable should contain(parse(expr) -> CTInteger)
+    }
+  }
+
+  test("typing of function with multiple signatures with different output types") {
+    val intFloatArgs = parse("percentileDisc(1, 3.14)")
+    typer.infer(intFloatArgs, TypeContext.empty) match {
+      case result: TypeContext =>
+        result.typeTable should contain(intFloatArgs -> CTInteger)
+    }
+
+    val floatFloatArgs = parse("percentileDisc(6.67, 3.14)")
+    typer.infer(floatFloatArgs, TypeContext.empty) match {
+      case result: TypeContext =>
+        result.typeTable should contain(floatFloatArgs -> CTFloat)
+    }
+
+    val numberFloatArgs = parse("percentileDisc([1, 3.14][0], 3.14)")
+    typer.infer(numberFloatArgs, TypeContext.empty) match {
+      case result: TypeContext =>
+        result.typeTable should contain(numberFloatArgs -> CTNumber)
+    }
+  }
+
+  test("typing of list indexing") {
+    val intList = parse("[1, 2][15]")
+    typer.infer(intList, TypeContext.empty) match {
+      case result: TypeContext =>
+        result.typeTable should contain(intList -> CTInteger)
+    }
+
+    val numberList = parse("[3.14, -1, 5000][15]")
+    typer.infer(numberList, TypeContext.empty) match {
+      case result: TypeContext =>
+        result.typeTable should contain(numberList -> CTNumber)
+    }
+
+    val mixedList = parse("[[], 1, true][15]")
+    typer.infer(mixedList, TypeContext.empty) match {
+      case result: TypeContext =>
+        result.typeTable should contain(mixedList -> CTAny)
+    }
+  }
+
+  test("infer type of node property lookup") {
     val context = TypeContext.empty.updateType(varFor("n") -> CTNode("Person"))
-    val expr = ExpressionParser.parse("n.name")
+    val expr = parse("n.name")
 
     typer.infer(expr, context) match {
       case result: TypeContext =>
-        result.typeTable should equal(Map(
-          varFor("n") -> CTNode("Person"),
-          prop("n", "name") -> CTString
-        ))
+        result.typeTable should contain(expr -> CTString)
     }
   }
 
   test("infer type of relationship property lookup") {
     val context = TypeContext.empty.updateType(varFor("r") -> CTRelationship("KNOWS"))
-    val expr = ExpressionParser.parse("r.relative")
+    val expr = parse("r.relative")
 
     typer.infer(expr, context) match {
       case result: TypeContext =>
@@ -52,7 +107,7 @@ class SchemaTyperTest extends StdTestSuite with AstConstructionTestSupport {
 
   test("report missing variable") {
     val context = TypeContext.empty
-    val expr = ExpressionParser.parse("r.relative")
+    val expr = parse("r.relative")
 
     typer.infer(expr, context) match {
       case TypingFailed(errors) => errors should contain(UntypedExpression(varFor("r")))
@@ -81,7 +136,7 @@ class SchemaTyperTest extends StdTestSuite with AstConstructionTestSupport {
   private case class assertExpr(exprText: String)  {
     def hasType(t: CypherType) = {
       val context = TypeContext.empty
-      val expr = ExpressionParser.parse(exprText)
+      val expr = parse(exprText)
       typer.infer(expr, context) match {
         case result: TypeContext =>
           result.typeTable should contain(expr -> t)
@@ -91,6 +146,8 @@ class SchemaTyperTest extends StdTestSuite with AstConstructionTestSupport {
     }
   }
 
+  def parse(exprText: String): ast.Expression = ExpressionParser.parse(exprText, None)
+
   object ExpressionParser extends Parser with Expressions {
 
     def Expressions = rule {
@@ -98,7 +155,7 @@ class SchemaTyperTest extends StdTestSuite with AstConstructionTestSupport {
     }
 
     @throws(classOf[SyntaxException])
-    def parse(exprText: String, offset: Option[InputPosition] = None): ast.Expression =
+    def parse(exprText: String, offset: Option[InputPosition]): ast.Expression =
       parseOrThrow(exprText, offset, Expressions)
   }
 }
