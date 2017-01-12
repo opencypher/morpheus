@@ -29,7 +29,7 @@ final case class TypeContext(typeTable: Map[Expression, CypherType]) extends Typ
     foo
   }
 
-  def updateType(update: (Expression, CypherType)) = {
+  def updateType(update: (Expression, CypherType)): TypeContext = {
     val (k, v) = update
     copy(typeTable.updated(k, v))
   }
@@ -37,6 +37,12 @@ final case class TypeContext(typeTable: Map[Expression, CypherType]) extends Typ
   def typeOf(expr: Expression)(f: CypherType => TypingResult): TypingResult = typeTable.get(expr) match {
     case Some(typ) => f(typ)
     case None => TypingFailed(Seq(UntypedExpression(expr)))
+  }
+
+  def typeOf(expr1: Expression, expr2: Expression)(f: (CypherType, CypherType) => TypingResult): TypingResult =
+    typeTable.get(expr1) match {
+      case Some(typ) => typeOf(expr2)(f(typ, _))
+      case None => TypingFailed(Seq(UntypedExpression(expr1)))
   }
 
   def typeOf(expr: Seq[Expression])(f: Seq[CypherType] => TypingResult): TypingResult = {

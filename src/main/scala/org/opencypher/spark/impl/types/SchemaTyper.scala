@@ -19,16 +19,58 @@ import org.opencypher.spark.api.types._
   * [ ] Make sure to always infer all implied labels
   * [ ] Actually using the schema to get list of slots
  */
-case class SchemaTyper(schema: Schema) {
+object CypherTypeExtras {
   implicit class RichCypherType(left: CypherType) {
     def couldBe(right: CypherType): Boolean = {
       left.superTypeOf(right).maybeTrue || left.subTypeOf(right).maybeTrue
     }
+
+    def addJoin(right: CypherType): CypherType = (left, right) match {
+      case (CTInteger, CTFloat) => CTFloat
+      case (CTFloat, CTInteger) => CTFloat
+      case (CTString, _) if right.subTypeOf(CTNumber).maybeTrue => CTString
+      case (_, CTString) if left.subTypeOf(CTNumber).maybeTrue => CTString
+      case _                    => left join right
+    }
   }
+
+
+  implicit class RichCTList(left: CTList) {
+
+    def listConcatJoin(right: CypherType): CTList = (left, right) match {
+      case (CTList(lInner), CTList(rInner)) => CTList(lInner join rInner)
+      case (CTList(CTString), CTString) => left
+      case (CTList(CTVoid), _) => CTList(right)
+      case _ => ???
+//      case (CTString, CTList(CTString)) => CTList(CTString)
+//      case (CTList(CTString), CTString) => CTList(CTString)
+//      case (CTList(inner), _) if (right subTypeOf inner).maybeTrue => CTList(inner)
+//      case (_, CTList(inner)) if (left subTypeOf inner).maybeTrue => CTList(inner)
+//      case (CTList(leftInner), CTList(rightInner)) => CTList(leftInner coerceOrJoin rightInner)
+//      case (CTList(inner), _) if inner == CTVoid => CTList(right)
+//      case (_, CTList(inner)) if inner == CTVoid => CTList(left)
+    }
+  }
+}
+
+case class SchemaTyper(schema: Schema) {
+  import CypherTypeExtras._
 
   def infer(expr: Expression, tr: TypingResult): TypingResult = {
     tr.bind { tc0: TypeContext =>
       expr match {
+
+        case Add(lhs, rhs) =>
+          infer(lhs, tc0).bind(infer(rhs, _)).bind { tc1 =>
+            tc1.typeOf(lhs, rhs) {
+              case (lhsType: CTList, rhsType) =>
+                tc1.updateType(expr -> (lhsType listConcatJoin rhsType))
+              case (lhsType, rhsType: CTList) =>
+                tc1.updateType(expr -> (rhsType listConcatJoin lhsType))
+              case (lhsType, rhsType) =>
+                tc1.updateType(expr -> (lhsType addJoin rhsType))
+            }
+          }
 
         case ContainerIndex(list, _) =>
           infer(list, tc0).bind { tc1 =>

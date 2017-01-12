@@ -36,6 +36,25 @@ class CypherTypesTest extends StdTestSuite {
   val allTypes: Seq[CypherType] =
     materialTypes ++ nullableTypes
 
+  test("couldBe") {
+    import org.opencypher.spark.impl.types.CypherTypeExtras._
+
+    CTAny couldBe CTNode shouldBe true
+    CTNode couldBe CTAny shouldBe true
+    CTInteger couldBe CTNumber shouldBe true
+    CTNumber couldBe CTInteger shouldBe true
+    CTFloat couldBe CTInteger shouldBe false
+    CTBoolean couldBe CTInteger shouldBe false
+
+    CTNode couldBe CTMap shouldBe true
+    CTRelationship couldBe CTNode shouldBe false
+    CTRelationship couldBe CTMap shouldBe true
+
+    CTList(CTInteger) couldBe CTList(CTFloat) shouldBe false
+    CTList(CTInteger) couldBe CTList(CTAny) shouldBe true
+    CTList(CTAny) couldBe CTList(CTInteger) shouldBe true
+  }
+
   test("type names") {
     Seq[(CypherType, (String, String))](
       CTAny -> ("ANY" -> "ANY?"),

@@ -17,6 +17,21 @@ class SchemaTyperTest extends StdTestSuite with AstConstructionTestSupport {
     .withRelationshipKeys("KNOWS")("since" -> CTInteger, "relative" -> CTBoolean)
   val typer = SchemaTyper(schema)
 
+  test("typing of plus operator") {
+    assertExpr("1 + 1") hasType CTInteger
+    assertExpr("3.14 + 1") hasType CTFloat
+    assertExpr("'foo' + 'bar'") hasType CTString
+    assertExpr("[] + [1, 2, 3]") hasType CTList(CTInteger)
+    assertExpr("[true] + [1, 2, 3]") hasType CTList(CTAny)
+
+    assertExpr("'foo' + 1") hasType CTString
+    assertExpr("'foo' + 3.14") hasType CTString
+    assertExpr("'foo' + ['bar', 'giz']") hasType CTList(CTString)
+
+    assertExpr("[] + 1") hasType CTList(CTInteger)
+//    assertExpr("[3.14] + 1") hasType CTList(CTNumber)
+  }
+
   test("typing of functions") {
     assertExpr("timestamp()") hasType CTInteger
     assertExpr("toInteger(1.0)") hasType CTInteger
