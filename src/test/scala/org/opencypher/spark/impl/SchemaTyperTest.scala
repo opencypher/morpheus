@@ -7,7 +7,7 @@ import org.opencypher.spark.StdTestSuite
 import org.opencypher.spark.api.CypherType
 import org.opencypher.spark.api.schema.StdSchema
 import org.opencypher.spark.api.types._
-import org.opencypher.spark.impl.types.{MissingVariable, SchemaTyper, TypeContext, TypingFailed}
+import org.opencypher.spark.impl.types.{UntypedExpression, SchemaTyper, TypeContext, TypingFailed}
 import org.parboiled.scala._
 
 class SchemaTyperTest extends StdTestSuite with AstConstructionTestSupport {
@@ -17,7 +17,17 @@ class SchemaTyperTest extends StdTestSuite with AstConstructionTestSupport {
     .withRelationshipKeys("KNOWS")("since" -> CTInteger, "relative" -> CTBoolean)
   val typer = SchemaTyper(schema)
 
-  test("infer type of node property lookup") {
+  test("typing of simple function") {
+    val context = TypeContext.empty.updateType(varFor("n") -> CTNode("Person"))
+    val expr = ExpressionParser.parse("toInteger(1)")
+
+    typer.infer(expr, context) match {
+      case result: TypeContext =>
+        result.typeTable should contain(expr -> CTInteger)
+    }
+  }
+
+    test("infer type of node property lookup") {
     val context = TypeContext.empty.updateType(varFor("n") -> CTNode("Person"))
     val expr = ExpressionParser.parse("n.name")
 
@@ -45,7 +55,7 @@ class SchemaTyperTest extends StdTestSuite with AstConstructionTestSupport {
     val expr = ExpressionParser.parse("r.relative")
 
     typer.infer(expr, context) match {
-      case TypingFailed(errors) => errors should contain(MissingVariable(varFor("r")))
+      case TypingFailed(errors) => errors should contain(UntypedExpression(varFor("r")))
     }
   }
 

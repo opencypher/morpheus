@@ -34,9 +34,21 @@ final case class TypeContext(typeTable: Map[Expression, CypherType]) extends Typ
     copy(typeTable.updated(k, v))
   }
 
-  def variableType(v: Variable)(f: CypherType => TypingResult): TypingResult = typeTable.get(v) match {
+  def typeOf(expr: Expression)(f: CypherType => TypingResult): TypingResult = typeTable.get(expr) match {
     case Some(typ) => f(typ)
-    case None      => TypingFailed(Seq(MissingVariable(v)))
+    case None => TypingFailed(Seq(UntypedExpression(expr)))
+  }
+
+  def typeOf(expr: Seq[Expression])(f: Seq[CypherType] => TypingResult): TypingResult = {
+    val maybeTypes = expr.foldLeft[Either[Expression, Seq[CypherType]]](Right(Seq())) {
+      case (Right(types), next) => typeTable.get(next).map { (tpe: CypherType) => types :+ tpe }.toRight(next)
+      case (left, _) => left
+    }
+
+    maybeTypes match {
+      case Right(types) => f(types)
+      case Left(missing) => TypingFailed(Seq(UntypedExpression(missing)))
+    }
   }
 }
 

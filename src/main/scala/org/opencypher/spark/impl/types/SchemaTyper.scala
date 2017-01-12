@@ -11,7 +11,7 @@ import org.opencypher.spark.api.types._
   * [X] Property Lookup
   * [X] Some basic literals
   * [X] List literals
-  * [ ] Function application, esp. considering overloading
+  * [X] Function application, esp. considering overloading
   * [ ] Stuff which messes with scope
   * [ ] Some operators: +, [], unary minus, AND
   *
@@ -23,6 +23,37 @@ case class SchemaTyper(schema: Schema) {
   def infer(expr: Expression, tr: TypingResult): TypingResult = {
     tr.bind { tc0: TypeContext =>
       expr match {
+
+        case invocation: FunctionInvocation =>
+          invocation.function match {
+            case f: SimpleTypedFunction =>
+              val args = invocation.args
+              args.foldLeft[TypingResult](tc0) {
+                case (innerTc, arg) => infer(arg, innerTc)
+              }.bind { tc1: TypeContext =>
+                tc1.typeOf(args) { argTypes =>
+
+                  // TODO: Failing
+                  // find all output types for which the whole signature is a match given args
+//                  f.signatures.map(toCosTypes)
+                  val possibleOutputs = f.signatures.collect {
+                    case sig
+                      if argTypes.zip(sig.argumentTypes.map(toCosTypes)).forall {
+                        case (given, declared) => given.subTypeOf(declared).maybeTrue
+                      } =>
+                        toCosTypes(sig.outputType)
+                  }
+                  val output = possibleOutputs.reduce(_ join _)
+                  val nullableArg = argTypes.exists(_.isNullable)
+                  val exprType = if (nullableArg) output.nullable else output
+
+                  tc1.updateType(expr, exprType)
+                }
+              }
+
+            case _ =>
+              ???
+          }
 
         case _: SignedDecimalIntegerLiteral =>
           tc0.updateType(expr -> CTInteger)
@@ -53,7 +84,7 @@ case class SchemaTyper(schema: Schema) {
           }
 
         case Property(v: Variable, PropertyKeyName(name)) =>
-          tc0.variableType(v) {
+          tc0.typeOf(v) {
             case CTNode(labels) =>
               val keys = labels.map(schema.nodeKeys).reduce(_ ++ _)
               tc0.updateType(expr -> keys(name))
@@ -66,7 +97,7 @@ case class SchemaTyper(schema: Schema) {
           }
 
         case _ =>
-          tc0
+          ???
       }
     }
   }
