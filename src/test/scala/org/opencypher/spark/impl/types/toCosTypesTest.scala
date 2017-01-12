@@ -12,5 +12,4 @@ class toCosTypesTest extends StdTestSuite {
     toCosTypes(neo4j.CTFloat) shouldBe CTFloat
     toCosTypes(neo4j.CTNumber) shouldBe CTNumber
   }
-
 }

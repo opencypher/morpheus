@@ -104,7 +104,7 @@ case class SchemaTyper(schema: Schema) {
                   val nullableArg = argTypes.exists(_.isNullable)
                   val exprType = if (nullableArg) output.nullable else output
 
-                  tc1.updateType(expr, exprType)
+                  tc1.updateType(expr -> exprType)
                 }
               }
 

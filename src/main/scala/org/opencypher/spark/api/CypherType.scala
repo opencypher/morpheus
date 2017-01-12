@@ -4,9 +4,6 @@ import org.opencypher.spark.api.types._
 
 import scala.language.postfixOps
 
-// TODO: sealed case class overrides should be marked as final
-// TODO: CTWildcard sameTypeAs
-
 object types {
 
   case object CTAny extends MaterialDefiniteCypherType with MaterialDefiniteCypherType.DefaultOrNull {
@@ -15,6 +12,8 @@ object types {
     override def superTypeOf(other: CypherType): Ternary = other.isMaterial
 
     override def joinMaterially(other: MaterialCypherType): MaterialCypherType = this
+
+    override def meetMaterially(other: MaterialCypherType): MaterialCypherType = other
   }
 
   case object CTBoolean extends MaterialDefiniteCypherLeafType {
@@ -116,13 +115,13 @@ object types {
 
     self =>
 
-    override def name =
+    final override def name =
       if (labels.isEmpty) "NODE" else s"${labels.map(t => s"$t").mkString(":", ":", "")} NODE"
 
-    override def nullable =
+    final override def nullable =
       if (labels.isEmpty) CTNodeOrNull else CTNodeOrNull(labels)
 
-    override def superTypeOf(other: CypherType) = other match {
+    final override def superTypeOf(other: CypherType) = other match {
       case CTNode(_) if labels.isEmpty                => True
       case CTNode(otherLabels) if otherLabels.isEmpty => False
       case CTNode(otherLabels)                        => labels subsetOf otherLabels
@@ -131,7 +130,7 @@ object types {
       case _                                          => False
     }
 
-    override def joinMaterially(other: MaterialCypherType): MaterialCypherType = other match {
+    final override def joinMaterially(other: MaterialCypherType): MaterialCypherType = other match {
       case CTMap               => CTMap
       case CTNode(otherLabels) => CTNode(labels intersect otherLabels)
       case _: CTRelationship   => CTMap
@@ -140,7 +139,7 @@ object types {
       case _                   => CTAny
     }
 
-    override def meetMaterially(other: MaterialCypherType): MaterialCypherType = other match {
+    final override def meetMaterially(other: MaterialCypherType): MaterialCypherType = other match {
       case CTNode(otherLabels) => CTNode(labels union otherLabels)
       case _                   => super.meetMaterially(other)
     }
@@ -152,9 +151,9 @@ object types {
   }
 
   sealed case class CTNodeOrNull(labels: Set[String]) extends NullableDefiniteCypherType {
-    override def name = s"$material?"
+    final override def name = s"$material?"
 
-    override def material =
+    final override def material =
       if (labels.isEmpty) CTNode else CTNode(labels)
   }
 
@@ -167,13 +166,13 @@ object types {
 
     self =>
 
-    override def name =
+    final override def name =
       if (types.isEmpty) "RELATIONSHIP" else s"${types.map(t => s"$t").mkString(":", "|", "")} RELATIONSHIP"
 
-    override def nullable =
+    final override def nullable =
       if (types.isEmpty) CTRelationshipOrNull else CTRelationshipOrNull(types)
 
-    override def superTypeOf(other: CypherType) = other match {
+    final override def superTypeOf(other: CypherType) = other match {
       case CTRelationship(_) if types.isEmpty               => True
       case CTRelationship(otherTypes) if otherTypes.isEmpty => False
       case CTRelationship(otherTypes)                       => otherTypes subsetOf types
@@ -182,7 +181,7 @@ object types {
       case _                                                => False
     }
 
-    override def joinMaterially(other: MaterialCypherType): MaterialCypherType = other match {
+    final override def joinMaterially(other: MaterialCypherType): MaterialCypherType = other match {
       case CTMap                      => CTMap
       case CTRelationship(otherTypes) =>
         if (types.isEmpty || otherTypes.isEmpty) CTRelationship else CTRelationship(types union otherTypes)
@@ -192,7 +191,7 @@ object types {
       case _                          => CTAny
     }
 
-    override def meetMaterially(other: MaterialCypherType): MaterialCypherType = other match {
+    final override def meetMaterially(other: MaterialCypherType): MaterialCypherType = other match {
       case CTRelationship(otherTypes) =>
         if (types.isEmpty) other
         else if (otherTypes.isEmpty) self
@@ -212,9 +211,9 @@ object types {
   }
 
   sealed case class CTRelationshipOrNull(types: Set[String]) extends NullableDefiniteCypherType {
-    override def name = s"$material?"
+    final override def name = s"$material?"
 
-    override def material =
+    final override def material =
       if (types.isEmpty) CTRelationship else CTRelationship(types)
   }
 
@@ -305,7 +304,6 @@ object types {
 
     override def isInhabited: Ternary = Maybe
 
-    // TODO: Shouldn't this always be Maybe?
     override def sameTypeAs(other: CypherType) =
       if (other.isMaterial) Maybe else False
 
@@ -331,7 +329,6 @@ object types {
       override def wildcardErasedSuperType = CTAny.nullable
       override def wildcardErasedSubType = CTNull
 
-      // TODO: Shouldn't this always be Maybe?
       override def sameTypeAs(other: CypherType) =
         if (other.isNullable) Maybe else False
 
@@ -339,7 +336,6 @@ object types {
     }
   }
 }
-
 
 object CypherType {
 
