@@ -35,8 +35,7 @@ case class SchemaTyper(schema: Schema) {
             tc1.typeTable(list) match {
               case CTList(inner) =>
                 tc1.updateType(expr -> inner)
-                // TODO: Which inner type here? Only use a message instead?
-              case x => TypingFailed(Seq(InvalidType(list, CTList(CTWildcard), x)))
+              case x => throw new IllegalStateException(s"Indexing on a non-list: $x")
             }
           }
 
