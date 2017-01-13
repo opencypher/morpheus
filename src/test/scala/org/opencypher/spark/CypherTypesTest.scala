@@ -86,7 +86,7 @@ class CypherTypesTest extends StdTestSuite {
     CTNull.toString shouldBe "NULL"
   }
 
-  test("relationship type typing") {
+  test("RELATIONSHIP type") {
     CTRelationship().superTypeOf(CTRelationship()) shouldBe True
     CTRelationship().superTypeOf(CTRelationship("KNOWS")) shouldBe True
     CTRelationship("KNOWS").superTypeOf(CTRelationship()) shouldBe False
@@ -97,7 +97,7 @@ class CypherTypesTest extends StdTestSuite {
     CTRelationship("KNOWS").superTypeOf(CTRelationship("NOSE")) shouldBe False
   }
 
-  test("nullable relationship type typing") {
+  test("RELATIONSHIP? type") {
     CTRelationshipOrNull().superTypeOf(CTRelationshipOrNull()) shouldBe True
     CTRelationshipOrNull().superTypeOf(CTRelationshipOrNull("KNOWS")) shouldBe True
     CTRelationshipOrNull("KNOWS").superTypeOf(CTRelationshipOrNull("KNOWS")) shouldBe True
@@ -107,7 +107,7 @@ class CypherTypesTest extends StdTestSuite {
     CTRelationshipOrNull("FOO").superTypeOf(CTNull) shouldBe True
   }
 
-  test("Node type typing") {
+  test("NODE type") {
     CTNode().superTypeOf(CTNode()) shouldBe True
     CTNode().superTypeOf(CTNode("Person")) shouldBe True
     CTNode("Person").superTypeOf(CTNode()) shouldBe False
@@ -118,7 +118,7 @@ class CypherTypesTest extends StdTestSuite {
     CTNode("Person").superTypeOf(CTNode("Foo")) shouldBe False
   }
 
-  test("nullable node type typing") {
+  test("NODE? type") {
     CTNodeOrNull().superTypeOf(CTNodeOrNull()) shouldBe True
     CTNodeOrNull().superTypeOf(CTNodeOrNull("Person")) shouldBe True
     CTNodeOrNull("Person").superTypeOf(CTNodeOrNull("Person")) shouldBe True
@@ -188,7 +188,7 @@ class CypherTypesTest extends StdTestSuite {
     CTAny superTypeOf CTBoolean.nullable shouldBe False
   }
 
-  test("tests for join") {
+  test("join") {
     CTInteger join CTFloat shouldBe CTNumber
     CTFloat join CTInteger shouldBe CTNumber
     CTNumber join CTFloat shouldBe CTNumber
@@ -199,9 +199,17 @@ class CypherTypesTest extends StdTestSuite {
     CTNode join CTMap shouldBe CTMap
     CTString join CTBoolean shouldBe CTAny
     CTAny join CTInteger shouldBe CTAny
+
+    CTList(CTInteger) join CTList(CTFloat) shouldBe CTList(CTNumber)
+    CTList(CTInteger) join CTNode shouldBe CTAny
+
+    CTAny join CTWildcard shouldBe CTAny
+    CTAny join CTVoid shouldBe CTAny
+    CTWildcard join CTAny shouldBe CTAny
+    CTVoid join CTAny shouldBe CTAny
   }
 
-  test("tests for join with nullables") {
+  test("join with nullables") {
     CTInteger join CTFloat.nullable shouldBe CTNumber.nullable
     CTFloat.nullable join CTInteger.nullable shouldBe CTNumber.nullable
     CTNumber.nullable join CTString shouldBe CTAny.nullable
@@ -212,7 +220,7 @@ class CypherTypesTest extends StdTestSuite {
     CTAny join CTInteger.nullable shouldBe CTAny.nullable
   }
 
-  test("tests for join with labels and types") {
+  test("join with labels and types") {
     CTNode join CTNode("Person") shouldBe CTNode
     CTNode("Other") join CTNode("Person") shouldBe CTNode
     CTNode("Person") join CTNode("Person") shouldBe CTNode("Person")
@@ -227,6 +235,24 @@ class CypherTypesTest extends StdTestSuite {
     CTNode("Person") join CTRelationship shouldBe CTMap
     CTRelationship("KNOWS") join CTNode("Person") shouldBe CTMap
     CTRelationship("KNOWS") join CTNode shouldBe CTMap
+  }
+
+  test("meet") {
+    CTInteger meet CTNumber shouldBe CTInteger
+    CTAny meet CTNumber shouldBe CTNumber
+
+    CTWildcard meet CTNumber shouldBe CTWildcard
+
+    CTList(CTInteger) meet CTList(CTFloat) shouldBe CTList(CTVoid)
+    CTList(CTInteger) meet CTNode shouldBe CTVoid
+    CTList(CTWildcard) meet CTList(CTNumber) shouldBe CTList(CTWildcard)
+
+    CTVoid meet CTInteger shouldBe CTVoid
+    CTVoid meet CTWildcard shouldBe CTVoid
+    CTVoid meet CTAny shouldBe CTVoid
+
+    CTInteger meet CTVoid shouldBe CTVoid
+    CTWildcard meet CTVoid shouldBe CTVoid
   }
 
   test("meet with labels and types") {

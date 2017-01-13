@@ -252,6 +252,11 @@ object types {
       case CTWildcard           => CTWildcard
       case _                    => CTAny
     }
+
+    override def meetMaterially(other: MaterialCypherType): MaterialCypherType = other match {
+      case CTList(otherEltType) => CTList(eltType meet otherEltType)
+      case _                    => super.meetMaterially(other)
+    }
   }
 
   final case class CTListOrNull(eltType: CypherType) extends NullableDefiniteCypherType {
@@ -287,6 +292,8 @@ object types {
     }
 
     override def joinMaterially(other: MaterialCypherType): MaterialCypherType = other
+
+    override def meetMaterially(other: MaterialCypherType): MaterialCypherType = self
   }
 
   case object CTNull extends NullableDefiniteCypherType {
@@ -310,9 +317,16 @@ object types {
     override def wildcardErasedSuperType = CTAny
     override def wildcardErasedSubType = CTVoid
 
-    override def joinMaterially(other: MaterialCypherType): MaterialCypherType = CTWildcard
+    override def joinMaterially(other: MaterialCypherType): MaterialCypherType = other match {
+      case CTAny => CTAny
+      case _     => CTWildcard
+    }
 
-    // super type of
+    override def meetMaterially(other: MaterialCypherType): MaterialCypherType = other match {
+      case CTVoid => CTVoid
+      case _      => CTWildcard
+    }
+
     override def superTypeOf(other: CypherType): Ternary = other match {
       case CTVoid => True
       case _      => if (other.isMaterial) Maybe else False
@@ -442,10 +456,9 @@ sealed trait MaterialCypherType extends CypherType {
   def joinMaterially(other: MaterialCypherType): MaterialCypherType
 
   def meetMaterially(other: MaterialCypherType): MaterialCypherType =
-    if (self subTypeOf other isTrue) self
-    else if (other subTypeOf self isTrue) other
+    if (self superTypeOf other isTrue) other
+    else if (other superTypeOf self isTrue) self
     else CTVoid
-
 
   override def wildcardErasedSuperType: MaterialCypherType with DefiniteCypherType
   override def wildcardErasedSubType: MaterialCypherType with DefiniteCypherType
