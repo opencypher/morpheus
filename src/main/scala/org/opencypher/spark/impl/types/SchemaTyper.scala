@@ -95,10 +95,10 @@ case class SchemaTyper(schema: Schema) {
 //                  f.signatures.map(toCosTypes)
                   val possibleOutputs = f.signatures.collect {
                     case sig
-                      if argTypes.zip(sig.argumentTypes.map(toCosTypes)).forall {
+                      if argTypes.zip(sig.argumentTypes.map(toCosType)).forall {
                         case (given, declared) => given.couldBe(declared)
                       } =>
-                        toCosTypes(sig.outputType)
+                        toCosType(sig.outputType)
                   }
                   val output = possibleOutputs.reduce(_ join _)
                   val nullableArg = argTypes.exists(_.isNullable)
@@ -158,3 +158,40 @@ case class SchemaTyper(schema: Schema) {
     }
   }
 }
+
+
+sealed trait InvocationTyper {
+  def apply(argTypes: Seq[CypherType]): Option[CypherType]
+}
+
+sealed trait SignatureBasedInvocationTyper {
+  def apply(argTypes: Seq[CypherType]): Option[CypherType] = {
+    val smallestOutputType = signatures.flatMap(_(argTypes)).reduceLeftOption(_ join _)
+    smallestOutputType.map { tpe =>
+      val couldHaveNullArg = argTypes.exists(_.isNullable)
+      if (couldHaveNullArg) tpe.nullable else tpe
+    }
+  }
+
+  protected def signatures: Set[Seq[CypherType] => Option[CypherType]]
+}
+
+
+final case class SimpleTypedFunctionTyper(f: SimpleTypedFunction) extends SignatureBasedInvocationTyper {
+
+  override protected val signatures = {
+    f.signatures.map { sig =>
+      val sigInputTypes = sig.argumentTypes.map(toCosType)
+      val sigOutputType = toCosType(sig.outputType)
+
+      (argTypes: Seq[CypherType]) => {
+        if ((sigInputTypes.size == argTypes.size) &&
+           sigInputTypes.zip(argTypes).forall(((_: CypherType) alwaysAssignableFrom (_: CypherType)).tupled)) {
+          Some(sigOutputType)
+        } else
+          None
+      }
+    }.toSet
+  }
+}
+

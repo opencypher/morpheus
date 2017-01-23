@@ -36,7 +36,7 @@ class TripletBenchmarksTest extends StdTestSuite with TestSession.Fixture {
     val outRels = session.createDataFrame(Seq(rEnd0, rEnd1, rEnd2, rEnd3, rEnd4, rEnd5))
     val inRels = session.createDataFrame(Seq(rStart0, rStart1, rStart2, rStart3, rStart4, rStart5))
 
-    val g = TripletGraph(Map("Group" -> nodes.filter(col("group"))), Map("FOO" -> (outRels, inRels)))
+    val g = TripletGraph(Map("Group" -> nodes.filter(col("group"))), Map("FOO" -> (outRels -> inRels)))
     val b = TripletBenchmarks(FixedLengthPattern("Group", Seq(Out("FOO") -> "Company")))
 
     b.run(g).computeCount shouldBe 2

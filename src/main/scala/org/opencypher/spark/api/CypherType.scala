@@ -445,6 +445,8 @@ sealed trait CypherType extends Serializable {
     other superTypeOf self
 
   def superTypeOf(other: CypherType): Ternary
+
+  final def alwaysAssignableFrom(other: CypherType) = superTypeOf(other).isTrue
 }
 
 sealed trait MaterialCypherType extends CypherType {

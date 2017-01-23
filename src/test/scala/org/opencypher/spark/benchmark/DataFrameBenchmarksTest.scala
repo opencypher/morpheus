@@ -30,7 +30,7 @@ class DataFrameBenchmarksTest extends StdTestSuite with TestSession.Fixture {
 
     val g = SimpleDataFrameGraph(
       Map("Group" -> nodes.filter(col("group")), "Company" -> nodes.filter(col("company"))),
-      Map("FOO" -> (rels, rels))
+      Map("FOO" -> (rels -> rels))
     )
     val b = DataFrameBenchmarks(FixedLengthPattern("Group", Seq(Out("FOO") -> "Company")))
 

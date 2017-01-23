@@ -4,7 +4,8 @@ import org.opencypher.spark.api.CypherType
 import org.neo4j.cypher.internal.frontend.v3_2.{symbols => neo4j}
 import org.opencypher.spark.api.types._
 
-object toCosTypes extends (neo4j.CypherType => CypherType) {
+// TODO: Should go to option I think
+case object toCosType extends (neo4j.CypherType => CypherType) {
   override def apply(in: neo4j.CypherType): CypherType = in match {
     case neo4j.CTAny => CTAny
     case neo4j.CTNumber => CTNumber
@@ -15,7 +16,7 @@ object toCosTypes extends (neo4j.CypherType => CypherType) {
     case neo4j.CTMap => CTMap
     case neo4j.CTNode => CTNode
     case neo4j.CTRelationship => CTRelationship
-    case neo4j.ListType(inner) => CTList(toCosTypes(inner))
+    case neo4j.ListType(inner) => CTList(toCosType(inner))
     case x => throw new UnsupportedOperationException(s"No support for type $x")
   }
 }
