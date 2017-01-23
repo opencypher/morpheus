@@ -74,8 +74,17 @@
                         <arg>-Ywarn-adapted-args</arg>
                         <arg>-Yopt-warnings:at-inline-failed</arg>
                         <arg>-Yopt:l:project</arg>
-                        <arg>-Ypartial-unification</arg>
+                        <!-- Enable once available in 2.11.9 or 2.12.x -->
+                        <!-- arg>-Ypartial-unification</arg -->
                     </args>
+                    <compilerPlugins>
+                        <!-- Remove once -Ypartial-unification is available in 2.11.9 or 2.12.x -->
+                        <compilerPlugin>
+                            <groupId>com.milessabin</groupId>
+                            <artifactId>si2712fix-plugin_2.11.8</artifactId>
+                            <version>1.2.0</version>
+                        </compilerPlugin>
+                    </compilerPlugins>
                 </configuration>
             </plugin>
 
@@ -409,6 +418,13 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <version>1.10.19</version>
             <scope>test</scope>
         </dependency>
 

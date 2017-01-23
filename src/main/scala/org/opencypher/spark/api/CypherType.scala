@@ -1,5 +1,6 @@
 package org.opencypher.spark.api
 
+import cats.Monoid
 import org.opencypher.spark.api.types._
 
 import scala.language.postfixOps
@@ -367,6 +368,16 @@ object CypherType {
     val NumberOrderGroup = Value("NUMBER ODER GROUP")
     val VoidOrderGroup = Value("VOID ODER GROUP")
   }
+
+  implicit val joinMonoid: Monoid[CypherType] = new Monoid[CypherType] {
+    override def empty: CypherType = CTVoid
+    override def combine(x: CypherType, y: CypherType): CypherType = x join y
+  }
+
+  implicit val meetMonoid: Monoid[CypherType] = new Monoid[CypherType] {
+    override def empty: CypherType = CTAny.nullable
+    override def combine(x: CypherType, y: CypherType): CypherType = x meet y
+  }
 }
 
 sealed trait CypherType extends Serializable {
@@ -406,7 +417,7 @@ sealed trait CypherType extends Serializable {
   def material: MaterialCypherType
 
   // returns this type with the same 'nullability' (i.e. either material or nullable) as typ
-  def asNullableAs(typ: CypherType) =
+  final def asNullableAs(typ: CypherType) =
     if (typ.isNullable) nullable else material
 
   // true, if this type or any of its type parameters include null
@@ -433,6 +444,12 @@ sealed trait CypherType extends Serializable {
     if (self.isNullable && other.isNullable) met.nullable else met
   }
 
+  final def alwaysSameTypeAs(other: CypherType) = superTypeOf(other).isTrue
+
+  final def couldBeSameTypeAs(other: CypherType): Boolean = {
+    self.superTypeOf(other).maybeTrue || self.subTypeOf(other).maybeTrue
+  }
+
   def sameTypeAs(other: CypherType): Ternary =
     if (other.isWildcard)
       // wildcard types override sameTypeAs
@@ -445,8 +462,6 @@ sealed trait CypherType extends Serializable {
     other superTypeOf self
 
   def superTypeOf(other: CypherType): Ternary
-
-  final def alwaysAssignableFrom(other: CypherType) = superTypeOf(other).isTrue
 }
 
 sealed trait MaterialCypherType extends CypherType {

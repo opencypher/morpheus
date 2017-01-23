@@ -1,9 +1,19 @@
 package org.opencypher.spark.impl.types
 
+import java.lang.Integer.parseInt
+
+import cats.data._
+import cats.implicits._
+import cats.{Foldable, Monoid}
+import org.atnos.eff._
+import org.atnos.eff.all._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.opencypher.spark.api.CypherType
+import org.opencypher.spark.api.CypherType.joinMonoid
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.types._
+
+import scala.util.Try
 
 /*
   TODO:
@@ -18,180 +28,221 @@ import org.opencypher.spark.api.types._
   * [ ] Dealing with same expression in multiple scopes
   * [ ] Make sure to always infer all implied labels
   * [ ] Actually using the schema to get list of slots
+  *
+  * [ ] Change type system to support union types (?)
  */
-object CypherTypeExtras {
-  implicit class RichCypherType(left: CypherType) {
-    def couldBe(right: CypherType): Boolean = {
-      left.superTypeOf(right).maybeTrue || left.subTypeOf(right).maybeTrue
-    }
+final case class SchemaTyper(schema: Schema) {
 
-    def addJoin(right: CypherType): CypherType = (left, right) match {
-      case (CTInteger, CTFloat) => CTFloat
-      case (CTFloat, CTInteger) => CTFloat
-      case (CTString, _) if right.subTypeOf(CTNumber).maybeTrue => CTString
-      case (_, CTString) if left.subTypeOf(CTNumber).maybeTrue => CTString
-      case _                    => left join right
-    }
-  }
+  def infer(expr: Expression, ctx: TyperContext = TyperContext.empty)
+  : Either[NonEmptyList[TyperError], TyperResult[CypherType]] =
+    SchemaTyper.processInContext[TyperStack[CypherType]](expr, ctx).run(schema)
 
-
-  implicit class RichCTList(left: CTList) {
-
-    def listConcatJoin(right: CypherType): CTList = (left, right) match {
-      case (CTList(lInner), CTList(rInner)) => CTList(lInner join rInner)
-      case (CTList(CTString), CTString) => left
-      case (CTList(CTVoid), _) => CTList(right)
-      case _ => ???
-//      case (CTString, CTList(CTString)) => CTList(CTString)
-//      case (CTList(CTString), CTString) => CTList(CTString)
-//      case (CTList(inner), _) if (right subTypeOf inner).maybeTrue => CTList(inner)
-//      case (_, CTList(inner)) if (left subTypeOf inner).maybeTrue => CTList(inner)
-//      case (CTList(leftInner), CTList(rightInner)) => CTList(leftInner coerceOrJoin rightInner)
-//      case (CTList(inner), _) if inner == CTVoid => CTList(right)
-//      case (_, CTList(inner)) if inner == CTVoid => CTList(left)
-    }
-  }
+  def inferOrThrow(expr: Expression, ctx: TyperContext = TyperContext.empty)
+  : TyperResult[CypherType] =
+    SchemaTyper.processInContext[TyperStack[CypherType]](expr, ctx).runOrThrow(schema)
 }
 
-case class SchemaTyper(schema: Schema) {
-  import CypherTypeExtras._
+object SchemaTyper {
 
-  def infer(expr: Expression, tr: TypingResult): TypingResult = {
-    tr.bind { tc0: TypeContext =>
-      expr match {
+  def processInContext[R: _hasSchema : _mayFail : _hasContext](expr: Expression, ctx: TyperContext)
+  : Eff[R, CypherType] = for {
+    _ <- put[R, TyperContext](ctx)
+    result <- process[R](expr)
+  } yield result
 
-        case Add(lhs, rhs) =>
-          infer(lhs, tc0).bind(infer(rhs, _)).bind { tc1 =>
-            tc1.typeOf(lhs, rhs) {
-              case (lhsType: CTList, rhsType) =>
-                tc1.updateType(expr -> (lhsType listConcatJoin rhsType))
-              case (lhsType, rhsType: CTList) =>
-                tc1.updateType(expr -> (rhsType listConcatJoin lhsType))
-              case (lhsType, rhsType) =>
-                tc1.updateType(expr -> (lhsType addJoin rhsType))
-            }
-          }
+  def process[R: _hasSchema : _mayFail : _hasContext](expr: Expression): Eff[R, CypherType] = expr match {
 
-        case ContainerIndex(list, _) =>
-          infer(list, tc0).bind { tc1 =>
-            tc1.typeTable(list) match {
-              case CTList(inner) =>
-                tc1.updateType(expr -> inner)
-              case x => throw new IllegalStateException(s"Indexing on a non-list: $x")
-            }
-          }
+    case _: Variable | _: Parameter =>
+      typeOf[R](expr)
 
-        case invocation: FunctionInvocation =>
-          invocation.function match {
-            case f: SimpleTypedFunction =>
-              val args = invocation.args
-              args.foldLeft[TypingResult](tc0) {
-                case (innerTc, arg) => infer(arg, innerTc)
-              }.bind { tc1: TypeContext =>
-                tc1.typeOf(args) { argTypes =>
+    case Property(v, PropertyKeyName(name)) =>
+      for {
+        varTyp <- process[R](v)
+        schema <- ask[R, Schema]
+        result <- varTyp.material match {
+          case CTNode(labels) =>
+            val keys = labels.map(schema.nodeKeys).reduce(_ ++ _)
+            updateTyping(expr -> keys.getOrElse(name, CTVoid).asNullableAs(varTyp))
 
-                  // TODO: Failing
-                  // find all output types for which the whole signature is a match given args
-//                  f.signatures.map(toCosTypes)
-                  val possibleOutputs = f.signatures.collect {
-                    case sig
-                      if argTypes.zip(sig.argumentTypes.map(toCosType)).forall {
-                        case (given, declared) => given.couldBe(declared)
-                      } =>
-                        toCosType(sig.outputType)
-                  }
-                  val output = possibleOutputs.reduce(_ join _)
-                  val nullableArg = argTypes.exists(_.isNullable)
-                  val exprType = if (nullableArg) output.nullable else output
+          case CTRelationship(types) =>
+            val keys = types.map(schema.relationshipKeys).reduce(_ ++ _)
+            updateTyping(expr -> keys.getOrElse(name, CTVoid).asNullableAs(varTyp))
 
-                  tc1.updateType(expr -> exprType)
-                }
-              }
+          case CTMap =>
+            updateTyping(expr -> CTWildcard)
 
-            case _ =>
-              ???
-          }
+          case _ =>
+            error(InvalidContainerAccess(expr))
+        }
+      } yield result
 
-        case _: SignedDecimalIntegerLiteral =>
-          tc0.updateType(expr -> CTInteger)
+    case _: SignedDecimalIntegerLiteral =>
+      updateTyping(expr -> CTInteger)
 
-        case _: DecimalDoubleLiteral =>
-          tc0.updateType(expr -> CTFloat)
+    case _: DecimalDoubleLiteral =>
+      updateTyping(expr -> CTFloat)
 
-        case _: BooleanLiteral =>
-          tc0.updateType(expr -> CTBoolean)
+    case _: BooleanLiteral =>
+      updateTyping(expr -> CTBoolean)
 
-        case _: StringLiteral =>
-          tc0.updateType(expr -> CTString)
+    case _: StringLiteral =>
+      updateTyping(expr -> CTString)
 
-        case _: Null =>
-          tc0.updateType(expr -> CTNull)
+    case _: Null =>
+      updateTyping(expr -> CTNull)
 
-        case ListLiteral(elts) =>
-          elts.foldLeft[TypingResult](tc0) {
-            case (innerTc, elt) => infer(elt, innerTc)
-          }
-          .bind { tc1: TypeContext =>
-            val optEltType = elts.foldLeft[Option[CypherType]](None) {
-              case (None, elt) => tc1.typeTable.get(elt)
-              case (Some(accType), elt) => Some(tc1.joinType(accType, elt))
-            }
-            val eltType = optEltType.getOrElse(CTVoid)
-            tc1.updateType(expr -> CTList(eltType))
-          }
+    case ListLiteral(elts) =>
+      for {
+        eltType <- Foldable[Vector].foldMap(elts.toVector)(process[R])(joinMonoid)
+        listTyp <- updateTyping(expr -> CTList(eltType))
+      } yield listTyp
 
-        case Property(v: Variable, PropertyKeyName(name)) =>
-          tc0.typeOf(v) {
-            case CTNode(labels) =>
-              val keys = labels.map(schema.nodeKeys).reduce(_ ++ _)
-              tc0.updateType(expr -> keys(name))
+    case expr: FunctionInvocation =>
+      FunctionInvocationTyper(expr)
 
-            case CTRelationship(types) =>
-              val keys = types.map(schema.relationshipKeys).reduce(_ ++ _)
-              tc0.updateType(expr -> keys(name))
+    case expr: Add =>
+      AddTyper(expr)
 
-            case _ => tc0
-          }
+    // TODO: This would be better handled by having a type of heterogenous lists instead
+    case indexing@ContainerIndex(list@ListLiteral(exprs), index: SignedDecimalIntegerLiteral)
+      if Try(parseInt(index.stringVal)).nonEmpty =>
+      for {
+        listType <- process[R](list)
+        indexType <- process[R](index)
+        eltType <- {
+          Try(parseInt(index.stringVal)).map { rawPos =>
+            val pos = if (rawPos < 0) exprs.size + rawPos else rawPos
+            typeOf[R](exprs(pos))
+          }.getOrElse(pure[R, CypherType](CTVoid))
+        }
+        result <- updateTyping(indexing -> eltType)
+      } yield result
 
-        case x => throw new UnsupportedOperationException(s"Don't know how to type $x")
+    case indexing@ContainerIndex(list, index) =>
+      for {
+        listTyp <- process[R](list)
+        indexTyp <- process[R](index)
+        result <- (listTyp, indexTyp.material) match {
+
+          // TODO: Test all cases
+          case (CTList(eltTyp), CTInteger) =>
+            updateTyping(expr -> eltTyp.asNullableAs(indexTyp join eltTyp))
+
+          case (CTListOrNull(eltTyp), CTInteger) =>
+            updateTyping(expr -> eltTyp.nullable)
+
+          case (typ, CTString) if typ.subTypeOf(CTMap).maybeTrue =>
+            updateTyping(expr -> CTWildcard.nullable)
+
+          case _ =>
+            error(InvalidContainerAccess(indexing))
+        }
+      } yield result
+
+    case _ =>
+      error(UnsupportedExpr(expr))
+  }
+
+  private implicit class LiftedMonoid[R, A](val monoid: Monoid[A]) extends AnyVal with Monoid[Eff[R, A]] {
+    override def empty: Eff[R, A] =
+      pure(monoid.empty)
+
+    override def combine(x: Eff[R, A], y: Eff[R, A]): Eff[R, A] =
+      for {xTyp <- x; yTyp <- y} yield monoid.combine(xTyp, yTyp)
+  }
+
+  private sealed trait ExpressionTyper[T <: Expression] {
+    def apply[R : _hasSchema : _mayFail : _hasContext](expr: T): Eff[R, CypherType]
+  }
+
+  private sealed trait SignatureBasedInvocationTyper[T <: Expression] extends ExpressionTyper[T] {
+
+    def apply[R : _hasSchema : _mayFail : _hasContext](expr: T): Eff[R, CypherType] =
+      for {
+        argExprs <- pure(expr.arguments)
+        argTypes <- EffMonad.traverse(argExprs.toList)(process[R])
+        arguments <- pure(argExprs.zip(argTypes))
+        signatures <- selectSignaturesFor(expr, arguments)
+        computedType <- signatures.map(_._2).reduceLeftOption(_ join _) match {
+          case Some(outputType) =>
+            pure[R, CypherType](if (argTypes.exists(_.isNullable)) outputType.nullable else outputType)
+
+          case None =>
+            error(NoSuitableSignatureForExpr(expr))
+        }
+        resultType <- updateTyping(expr -> computedType)
       }
-    }
-  }
-}
+      yield resultType
 
+    protected def selectSignaturesFor[R : _hasSchema : _mayFail : _hasContext]
+      (expr: T, args: Seq[(Expression, CypherType)])
+    : Eff[R, Set[(Seq[CypherType], CypherType)]] =
+      for {
+        signatures <- generateSignaturesFor(expr, args)
+        eligible <- pure(signatures.flatMap { sig =>
+          val (sigInputTypes, sigOutputType) = sig
 
-sealed trait InvocationTyper {
-  def apply(argTypes: Seq[CypherType]): Option[CypherType]
-}
+          val compatibleArity = sigInputTypes.size == args.size
+          val sigArgTypes = sigInputTypes.zip(args.map(_._2))
+          val compatibleTypes = sigArgTypes.forall(((_: CypherType) couldBeSameTypeAs (_: CypherType)).tupled)
 
-sealed trait SignatureBasedInvocationTyper {
-  def apply(argTypes: Seq[CypherType]): Option[CypherType] = {
-    val smallestOutputType = signatures.flatMap(_(argTypes)).reduceLeftOption(_ join _)
-    smallestOutputType.map { tpe =>
-      val couldHaveNullArg = argTypes.exists(_.isNullable)
-      if (couldHaveNullArg) tpe.nullable else tpe
-    }
-  }
-
-  protected def signatures: Set[Seq[CypherType] => Option[CypherType]]
-}
-
-
-final case class SimpleTypedFunctionTyper(f: SimpleTypedFunction) extends SignatureBasedInvocationTyper {
-
-  override protected val signatures = {
-    f.signatures.map { sig =>
-      val sigInputTypes = sig.argumentTypes.map(toCosType)
-      val sigOutputType = toCosType(sig.outputType)
-
-      (argTypes: Seq[CypherType]) => {
-        if ((sigInputTypes.size == argTypes.size) &&
-           sigInputTypes.zip(argTypes).forall(((_: CypherType) alwaysAssignableFrom (_: CypherType)).tupled)) {
-          Some(sigOutputType)
-        } else
-          None
+          if (compatibleArity && compatibleTypes) Some(sigInputTypes -> sigOutputType) else None
+        })
       }
-    }.toSet
+      yield eligible
+
+    protected def generateSignaturesFor[R : _hasSchema : _mayFail : _hasContext]
+      (expr: T, args: Seq[(Expression, CypherType)])
+    : Eff[R, Set[(Seq[CypherType], CypherType)]]
+  }
+
+  private case object FunctionInvocationTyper extends SignatureBasedInvocationTyper[FunctionInvocation] {
+    override protected def generateSignaturesFor[R : _hasSchema : _mayFail : _hasContext]
+      (expr: FunctionInvocation, args: Seq[(Expression, CypherType)])
+    : Eff[R, Set[(Seq[CypherType], CypherType)]] =
+      expr.function match {
+        case f: SimpleTypedFunction =>
+          pure(f.signatures.map { sig =>
+            val sigInputTypes = sig.argumentTypes.map(toCosType)
+            val sigOutputType = toCosType(sig.outputType)
+            sigInputTypes -> sigOutputType
+          }.toSet)
+
+        case _ =>
+          wrong[R, TyperError](UnsupportedExpr(expr)) >> pure(Set.empty)
+      }
+  }
+
+  private case object AddTyper extends SignatureBasedInvocationTyper[Add] {
+    override protected def generateSignaturesFor[R : _hasSchema : _mayFail : _hasContext]
+    (expr: Add, args: Seq[(Expression, CypherType)])
+    : Eff[R, Set[(Seq[CypherType], CypherType)]] = {
+      val (_, left) = args.head
+      val (_, right) = args(1)
+      val outTyp = left.material -> right.material match {
+        case (left: CTList, _) => left listConcatJoin right
+        case (_, right: CTList) => right listConcatJoin left
+        case (CTInteger, CTFloat) => CTFloat
+        case (CTFloat, CTInteger) => CTFloat
+        case (CTString, _) if right.subTypeOf(CTNumber).maybeTrue => CTString
+        case (_, CTString) if left.subTypeOf(CTNumber).maybeTrue => CTString
+        case _  => left join right
+      }
+      pure(Set(Seq(left, right) -> outTyp.asNullableAs(left join right)))
+    }
+
+      private implicit class RichCTList(val left: CTList) extends AnyVal {
+        def listConcatJoin(right: CypherType): CypherType = (left, right) match {
+          case (CTList(lInner), CTList(rInner)) => CTList(lInner join rInner)
+          case (CTList(CTString), CTString) => left
+          case (CTList(CTInteger), CTInteger) => left
+          case (CTList(CTFloat), CTInteger) => CTList(CTNumber)
+          case (CTList(CTVoid), _) => CTList(right)
+          // TODO: Throw type error instead
+          case _ => CTVoid
+        }
+      }
   }
 }
+
 
