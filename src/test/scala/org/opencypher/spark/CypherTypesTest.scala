@@ -37,8 +37,6 @@ class CypherTypesTest extends StdTestSuite {
     materialTypes ++ nullableTypes
 
   test("couldBe") {
-    import org.opencypher.spark.impl.types.CypherTypeExtras._
-
     CTAny couldBeSameTypeAs CTNode shouldBe true
     CTNode couldBeSameTypeAs CTAny shouldBe true
     CTInteger couldBeSameTypeAs CTNumber shouldBe true
