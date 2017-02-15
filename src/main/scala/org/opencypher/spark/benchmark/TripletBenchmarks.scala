@@ -10,6 +10,7 @@ object TripletBenchmarks extends SupportedQueryBenchmarks[TripletGraph] {
       simplePatternIds(startLabels.head, types.head, endLabels.head.toLowerCase)
     case FixedLengthPattern(start, steps) =>
       fixedLength(start, steps.map(p => p._1 -> p._2.toLowerCase))
+    case x => throw new UnsupportedOperationException(s"TripletBenchmarks doesn't support $x")
   }
 
   private def simplePatternIds(startLabel: String, typ: String, endLabel: String) = new TripletBenchmark {

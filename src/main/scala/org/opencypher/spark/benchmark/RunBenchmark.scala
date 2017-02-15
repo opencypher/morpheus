@@ -64,7 +64,7 @@ object RunBenchmark {
     new StdPropertyGraph(nodes, relationships)
   }
 
-  private def createStdPropertyGraphFromNeo(size: Long) = {
+  def createStdPropertyGraphFromNeo(size: Long) = {
     val session = sparkSession
     import CypherValue.Encoders._
 

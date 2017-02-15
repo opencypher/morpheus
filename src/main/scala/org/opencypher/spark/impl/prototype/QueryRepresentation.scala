@@ -13,11 +13,7 @@ trait QueryRepresentation {
 
 trait RootBlock {
   def fields: Set[Field]
-
-  def labels: Map[LabelRef, LabelDef]
-  def relTypes: Map[RelTypeRef, RelTypeDef]
-  def propertyKeys: Map[PropertyKeyRef, PropertyKeyDef]
-
+  def tokens: TokenDefs
   def blocks: Map[BlockRef, BlockDef]
 
   def solve: BlockRef
@@ -42,7 +38,6 @@ final case class BlockRef(name: String)
 final case class Field(name: String)
 
 sealed trait TokenDef {
-  def handle: String
   def name: String
 }
 
@@ -50,13 +45,13 @@ sealed trait TokenRef[D <: TokenDef] {
   def id: Int
 }
 
-final case class LabelDef(handle: String, name: String) extends TokenDef
+final case class LabelDef(name: String) extends TokenDef
 final case class LabelRef(id: Int) extends TokenRef[LabelDef]
 
-final case class PropertyKeyDef(handle: String, name: String) extends TokenDef
+final case class PropertyKeyDef(name: String) extends TokenDef
 final case class PropertyKeyRef(id: Int) extends TokenRef[PropertyKeyDef]
 
-final case class RelTypeDef(handle: String, name: String) extends TokenDef
+final case class RelTypeDef(name: String) extends TokenDef
 final case class RelTypeRef(id: Int) extends TokenRef[RelTypeDef]
 
 sealed trait AnyEntity
@@ -78,6 +73,11 @@ final case class Connected(source: Field, rel: Field, target: Field) extends Exp
   override def usedFields = Set(source, rel, target)
 }
 
+// TODO: NonEmptySet(?)
+object Ands {
+  def apply(exprs: Expr*): Ands = Ands(exprs.toSet)
+}
+final case class Ands(exprs: Set[Expr]) extends Expr
 final case class HasLabel(node: Expr, label: LabelRef) extends Expr
 final case class HasType(rel: Expr, relType: RelTypeRef) extends Expr
 final case class Equals(lhs: Expr, rhs: Expr) extends Expr
@@ -85,8 +85,8 @@ final case class Equals(lhs: Expr, rhs: Expr) extends Expr
 case class Property(m: Expr, key: PropertyKeyRef) extends Expr
 
 sealed trait Literal extends Expr
-final case class IntegerLiteral(v: Long) extends Literal
-final case class StringLiteral(v: String) extends Literal
+final case class IntegerLit(v: Long) extends Literal
+final case class StringLit(v: String) extends Literal
 
 sealed trait BlockType
 case object OptionalBlock extends BlockType

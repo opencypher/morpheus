@@ -12,6 +12,7 @@ package org.opencypher.spark {
   import org.opencypher.spark.benchmark.{AccessControlNode, AccessControlRelationship}
 
   import scala.collection.PrivateCollectionClasses
+  import scala.language.existentials
 
   class CypherKryoRegistrar extends SparkKryoRegistrar {
 
