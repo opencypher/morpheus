@@ -9,11 +9,11 @@ class ExpressionConverter(val tokenDefs: TokenDefs) {
     case ast.Variable(name) => Var(name)
     case astExpr: ast.IntegerLiteral => IntegerLit(astExpr.value)
     case ast.StringLiteral(value) => StringLit(value)
-    case ast.Property(m, ast.PropertyKeyName(name)) => Property(convert(m), tokenDefs.propertyKey(name).get)
+    case ast.Property(m, ast.PropertyKeyName(name)) => Property(convert(m), tokenDefs.propertyKey(name))
     case ast.Equals(lhs, rhs) => Equals(convert(lhs), convert(rhs))
     case ast.HasLabels(node, labels) =>
       val expr = convert(node)
-      val map: Set[Expr] = labels.toSet.map { (l: LabelName) => HasLabel(expr, tokenDefs.label(l.name).get) }
+      val map: Set[Expr] = labels.toSet.map { (l: LabelName) => HasLabel(expr, tokenDefs.label(l.name)) }
       Ands(map)
     case _ => throw new UnsupportedOperationException(s"No mapping defined for $e")
   }

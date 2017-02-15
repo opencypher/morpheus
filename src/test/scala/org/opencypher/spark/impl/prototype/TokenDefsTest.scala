@@ -11,14 +11,14 @@ class TokenDefsTest extends StdTestSuite {
   )
 
   test("token lookup") {
-    tokens.label(LabelRef(0)).get should equal(LabelDef("Person"))
-    tokens.label(LabelRef(1)).get should equal(LabelDef("Employee"))
+    tokens.label(LabelRef(0)) should equal(LabelDef("Person"))
+    tokens.label(LabelRef(1)) should equal(LabelDef("Employee"))
     tokens.label(LabelRef(2)) should equal(None)
 
-    tokens.relType(RelTypeRef(0)).get should equal(RelTypeDef("KNOWS"))
+    tokens.relType(RelTypeRef(0)) should equal(RelTypeDef("KNOWS"))
     tokens.relType(RelTypeRef(1)) should equal(None)
 
-    tokens.propertyKey(PropertyKeyRef(0)).get should equal(PropertyKeyDef("prop"))
+    tokens.propertyKey(PropertyKeyRef(0)) should equal(PropertyKeyDef("prop"))
     tokens.propertyKey(PropertyKeyRef(1)) should equal(None)
   }
 

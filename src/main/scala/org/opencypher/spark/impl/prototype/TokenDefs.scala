@@ -10,14 +10,14 @@ final case class TokenDefs(
   propertyKeys: IndexedSeq[PropertyKeyDef]
 ) {
 
-  def label(name: String): Option[LabelRef] = idx(labels.indexWhere(_.name == name)).map(LabelRef)
-  def label(ref: LabelRef): Option[LabelDef] = labels.lift(ref.id)
+  def label(name: String): LabelRef = LabelRef(idx(labels.indexWhere(_.name == name)).get)
+  def label(ref: LabelRef): LabelDef = labels(ref.id)
 
-  def relType(name: String): Option[RelTypeRef] = idx(relTypes.indexWhere(_.name == name)).map(RelTypeRef)
-  def relType(ref: RelTypeRef): Option[RelTypeDef] = relTypes.lift(ref.id)
+  def relType(name: String): RelTypeRef = RelTypeRef(idx(relTypes.indexWhere(_.name == name)).get)
+  def relType(ref: RelTypeRef): RelTypeDef = relTypes(ref.id)
 
-  def propertyKey(name: String): Option[PropertyKeyRef] = idx(propertyKeys.indexWhere(_.name == name)).map(PropertyKeyRef)
-  def propertyKey(ref: PropertyKeyRef): Option[PropertyKeyDef] = propertyKeys.lift(ref.id)
+  def propertyKey(name: String): PropertyKeyRef = PropertyKeyRef(idx(propertyKeys.indexWhere(_.name == name)).get)
+  def propertyKey(ref: PropertyKeyRef): PropertyKeyDef = propertyKeys(ref.id)
 
   def withLabel(defn: LabelDef): TokenDefs = {
     val (tokens, _) = withLabelAndRef(defn)
