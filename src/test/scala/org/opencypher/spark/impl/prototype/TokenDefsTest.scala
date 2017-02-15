@@ -2,6 +2,8 @@ package org.opencypher.spark.impl.prototype
 
 import org.opencypher.spark.StdTestSuite
 
+import scala.util.Try
+
 class TokenDefsTest extends StdTestSuite {
 
   val tokens = TokenDefs(
@@ -13,13 +15,13 @@ class TokenDefsTest extends StdTestSuite {
   test("token lookup") {
     tokens.label(LabelRef(0)) should equal(LabelDef("Person"))
     tokens.label(LabelRef(1)) should equal(LabelDef("Employee"))
-    tokens.label(LabelRef(2)) should equal(None)
+    Try(tokens.label(LabelRef(2))).toOption should equal(None)
 
     tokens.relType(RelTypeRef(0)) should equal(RelTypeDef("KNOWS"))
-    tokens.relType(RelTypeRef(1)) should equal(None)
+    Try(tokens.relType(RelTypeRef(1))).toOption should equal(None)
 
     tokens.propertyKey(PropertyKeyRef(0)) should equal(PropertyKeyDef("prop"))
-    tokens.propertyKey(PropertyKeyRef(1)) should equal(None)
+    Try(tokens.propertyKey(PropertyKeyRef(1))).toOption should equal(None)
   }
 
   test("token definition") {
