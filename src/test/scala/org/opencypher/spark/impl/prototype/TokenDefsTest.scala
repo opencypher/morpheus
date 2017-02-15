@@ -25,22 +25,22 @@ class TokenDefsTest extends StdTestSuite {
   test("token definition") {
     TokenDefs
       .empty
-      .withLabel(LabelDef("Person"))._2
-      .withLabel(LabelDef("Employee"))._2
-      .withRelType(RelTypeDef("KNOWS"))._2
-      .withPropertyKey(PropertyKeyDef("prop"))._2 should equal(tokens)
+      .withLabel(LabelDef("Person"))
+      .withLabel(LabelDef("Employee"))
+      .withRelType(RelTypeDef("KNOWS"))
+      .withPropertyKey(PropertyKeyDef("prop")) should equal(tokens)
   }
 
   test("token definition is idempotent") {
     TokenDefs
       .empty
-      .withLabel(LabelDef("Person"))._2
-      .withLabel(LabelDef("Person"))._2
-      .withLabel(LabelDef("Employee"))._2
-      .withLabel(LabelDef("Employee"))._2
-      .withRelType(RelTypeDef("KNOWS"))._2
-      .withRelType(RelTypeDef("KNOWS"))._2
-      .withPropertyKey(PropertyKeyDef("prop"))._2
-      .withPropertyKey(PropertyKeyDef("prop"))._2 should equal(tokens)
+      .withLabel(LabelDef("Person"))
+      .withLabel(LabelDef("Person"))
+      .withLabel(LabelDef("Employee"))
+      .withLabel(LabelDef("Employee"))
+      .withRelType(RelTypeDef("KNOWS"))
+      .withRelType(RelTypeDef("KNOWS"))
+      .withPropertyKey(PropertyKeyDef("prop"))
+      .withPropertyKey(PropertyKeyDef("prop")) should equal(tokens)
   }
 }

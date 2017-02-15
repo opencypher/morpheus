@@ -29,9 +29,9 @@ class ExpressionConverterTest extends StdTestSuite with AstConstructionTestSuppo
   }
 
   val c = new ExpressionConverter(TokenDefs.empty
-    .withPropertyKey(PropertyKeyDef("key"))._2
-    .withLabel(LabelDef("Person"))._2
-    .withLabel(LabelDef("Duck"))._2)
+    .withPropertyKey(PropertyKeyDef("key"))
+    .withLabel(LabelDef("Person"))
+    .withLabel(LabelDef("Duck")))
 
   private def convert(e: ast.Expression): Expr = c.convert(e)
 }

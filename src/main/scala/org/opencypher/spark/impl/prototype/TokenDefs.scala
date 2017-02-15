@@ -4,7 +4,7 @@ object TokenDefs {
   val empty = TokenDefs(Vector.empty, Vector.empty, Vector.empty)
 }
 
-case class TokenDefs(
+final case class TokenDefs(
   labels: IndexedSeq[LabelDef],
   relTypes: IndexedSeq[RelTypeDef],
   propertyKeys: IndexedSeq[PropertyKeyDef]
@@ -19,37 +19,52 @@ case class TokenDefs(
   def propertyKey(name: String): Option[PropertyKeyRef] = idx(propertyKeys.indexWhere(_.name == name)).map(PropertyKeyRef)
   def propertyKey(ref: PropertyKeyRef): Option[PropertyKeyDef] = propertyKeys.lift(ref.id)
 
-  def withLabel(defn: LabelDef): (LabelRef, TokenDefs) = idx(labels.indexOf(defn)) match {
+  def withLabel(defn: LabelDef): TokenDefs = {
+    val (tokens, _) = withLabelAndRef(defn)
+    tokens
+  }
+
+  def withLabelAndRef(defn: LabelDef): (TokenDefs, LabelRef) = idx(labels.indexOf(defn)) match {
     case None =>
       val newLabels = labels :+ defn
       val newTokens = copy(labels = newLabels)
       val newRef = LabelRef(newLabels.size - 1)
-      newRef -> newTokens
+      newTokens -> newRef
 
     case Some(idx) =>
-      LabelRef(idx) -> this
+      this -> LabelRef(idx)
   }
 
-  def withRelType(defn: RelTypeDef): (RelTypeRef, TokenDefs) = idx(relTypes.indexOf(defn)) match {
+  def withRelType(defn: RelTypeDef): TokenDefs = {
+    val (tokens, _) = withRelTypeAndRef(defn)
+    tokens
+  }
+
+  def withRelTypeAndRef(defn: RelTypeDef): (TokenDefs, RelTypeRef) = idx(relTypes.indexOf(defn)) match {
     case None =>
       val newRelTypes = relTypes :+ defn
       val newTokens = copy(relTypes = newRelTypes)
       val newRef = RelTypeRef(newRelTypes.size - 1)
-      newRef -> newTokens
+      newTokens -> newRef
 
     case Some(idx) =>
-      RelTypeRef(idx) -> this
+      this -> RelTypeRef(idx)
   }
 
-  def withPropertyKey(defn: PropertyKeyDef): (PropertyKeyRef, TokenDefs) = idx(propertyKeys.indexOf(defn)) match {
+  def withPropertyKey(defn: PropertyKeyDef): TokenDefs = {
+    val (tokens, _) = withPropertyKeyAndRef(defn)
+    tokens
+  }
+
+  def withPropertyKeyAndRef(defn: PropertyKeyDef): (TokenDefs, PropertyKeyRef) = idx(propertyKeys.indexOf(defn)) match {
     case None =>
       val newPropertyKeys = propertyKeys :+ defn
       val newTokens = copy(propertyKeys = newPropertyKeys)
       val newRef = PropertyKeyRef(newPropertyKeys.size - 1)
-      newRef -> newTokens
+      newTokens -> newRef
 
     case Some(idx) =>
-      PropertyKeyRef(idx) -> this
+      this -> PropertyKeyRef(idx)
   }
 
   private def idx(idx: Int) = if (idx == -1) None else Some(idx)
