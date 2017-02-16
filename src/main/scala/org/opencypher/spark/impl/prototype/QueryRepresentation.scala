@@ -1,20 +1,24 @@
 package org.opencypher.spark.impl.prototype
 
-import org.opencypher.spark.api.CypherType
-
 import scala.collection.immutable.SortedSet
 
 trait QueryRepresentation {
   def cypherQuery: String
   def cypherVersion: String
-  def returns: SortedSet[(String, CypherType)]
+  def returns: SortedSet[(Field, String)]
+  def params: Map[Param, String]
   def root: RootBlock
 }
 
 trait RootBlock {
-  def fields: Set[Field]
-  def tokens: TokenDefs
-  def blocks: Map[BlockRef, BlockDef]
+  def outputs: Set[Field]
 
-  def solve: BlockRef
+  def params: Set[Param]
+  def variables: Set[Var]
+  def tokens: TokenDefs
+  def blocks: BlockStructure
+
+  def solve: BlockRef = blocks.solve
 }
+
+case class BlockStructure(blocks: Map[BlockRef, BlockDef], solve: BlockRef)

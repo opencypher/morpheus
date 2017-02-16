@@ -28,10 +28,21 @@ class ExpressionConverterTest extends StdTestSuite with AstConstructionTestSuppo
     given should equal(Ands(HasLabel(Var("x"), LabelRef(0)), HasLabel(Var("x"), LabelRef(1))))
   }
 
+  test("can convert single has-labels") {
+    val given = ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _)) _
+    convert(given) should equal(HasLabel(Var("x"), LabelRef(0)))
+  }
+
+  test("can convert conjunctions") {
+    val given = ast.Ands(Set(ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _)) _, ast.Equals(prop("x", "name"), ast.StringLiteral("Mats") _) _)) _
+    convert(given) should equal(Ands(HasLabel(Var("x"), LabelRef(0)), Equals(Property(Var("x"), PropertyKeyRef(1)), StringLit("Mats"))))
+  }
+
   val c = new ExpressionConverter(TokenDefs.empty
     .withPropertyKey(PropertyKeyDef("key"))
     .withLabel(LabelDef("Person"))
-    .withLabel(LabelDef("Duck")))
+    .withLabel(LabelDef("Duck"))
+    .withPropertyKey(PropertyKeyDef("name")))
 
   private def convert(e: ast.Expression): Expr = c.convert(e)
 }

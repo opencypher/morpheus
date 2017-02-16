@@ -2,7 +2,7 @@ package org.opencypher.spark.impl.prototype
 
 trait BlockDef {
   def blockType: BlockType
-  def isLeaf = dependencies.isEmpty
+  def isLeaf: Boolean = dependencies.isEmpty
   def dependencies: Seq[BlockRef]
 
   def inputs: Seq[Field]
@@ -20,5 +20,6 @@ case object StandardMatchBlockType extends MatchBlockType { override def name = 
 case object OptionalMatchBlockType extends MatchBlockType { override def name = "optional-match" }
 
 final case class Field(name: String) extends AnyVal
+final case class Param(name: String) extends AnyVal
 final case class BlockRef(name: String) extends AnyVal
 

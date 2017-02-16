@@ -11,14 +11,11 @@ import scala.reflect.ClassTag
 
 trait Prototype {
   def cypher(query: String): CypherResultContainer = {
-    val startState = CompilationState(query, None, null)
-    val endState = pipeLine.transform(startState, FrontendContext())
+    val (stmt, params) = parser.parseAndExtract(query)
 
-    //    val semanticState = endState.semantics
-    val params = endState.extractedParams
-    val rewritten = endState.statement
+    val tokens = TokenCollector(stmt)
 
-    val ir = SparkQueryGraph.from(rewritten)
+    val ir = QueryReprBuilder.from(stmt, query, tokens, params.keySet)
     val plan = planner.plan(ir)
 
     val result = graph.cypher(plan)
@@ -30,9 +27,8 @@ trait Prototype {
 
   val planner = new SupportedQueryPlanner
 
-  val pipeLine =
-    CompilationPhases.parsing(RewriterStepSequencer.newPlain) andThen
-      CompilationPhases.lateAstRewriting
+  val parser = CypherParser
+
 }
 
 //trait CypherResult[T] {

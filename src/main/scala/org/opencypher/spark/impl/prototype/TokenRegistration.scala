@@ -26,7 +26,7 @@ object TokenRegistration {
     def merge(defn: D)(implicit registration: Registration): Registry[D] = registration.merge(registry, defn)
   }
 
-  def apply[R <: TokenRef[D], D <: TokenDef](implicit registration: TokenRegistration[R, D]) = registration
+  def apply[R <: TokenRef[D], D <: TokenDef](implicit registration: TokenRegistration[R, D]): TokenRegistration[R, D] = registration
 }
 
 abstract class TokenRegistration[R <: TokenRef[D], D <: TokenDef](val tokenKindName: String) {
