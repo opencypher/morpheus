@@ -74,10 +74,10 @@ class QueryReprBuilder(query: String, tokenDefs: TokenDefs, paramNames: Set[Stri
     exprConverter.convert(e)
   }
 
-  private def convertWhere(where: Option[Where]): Set[Predicate] = where match {
+  private def convertWhere(where: Option[Where]): Set[Expr] = where match {
     case Some(Where(expr)) => convert(expr) match {
-      case Ands(exprs) => exprs.map(Predicate)
-      case e => Set(Predicate(e))
+      case Ands(exprs) => exprs
+      case e => Set(e)
     }
     case None => Set.empty
   }

@@ -10,7 +10,6 @@ sealed trait Expr {
 }
 
 final case class Param(name: String) extends Expr
-
 final case class Var(name: String) extends Expr
 
 final case class Connected(source: Field, rel: Field, target: Field) extends Expr {
@@ -86,15 +85,15 @@ final class Ors(_exprs: Set[Expr]) extends FlatteningOpExpr(_exprs) {
 final case class HasLabel(node: Expr, label: LabelRef) extends Expr
 final case class HasType(rel: Expr, relType: RelTypeRef) extends Expr
 final case class Equals(lhs: Expr, rhs: Expr) extends Expr
+final case class Property(m: Expr, key: PropertyKeyRef) extends Expr
 
-case class Property(m: Expr, key: PropertyKeyRef) extends Expr
-
-sealed trait Literal[T] extends Expr {
+sealed trait Lit[T] extends Expr {
   def v: T
 }
-final case class IntegerLit(v: Long) extends Literal[Long]
-final case class StringLit(v: String) extends Literal[String]
 
-sealed abstract class BoolLit(val v: Boolean) extends Literal[Boolean]
+final case class IntegerLit(v: Long) extends Lit[Long]
+final case class StringLit(v: String) extends Lit[String]
+
+sealed abstract class BoolLit(val v: Boolean) extends Lit[Boolean]
 case object TrueLit extends BoolLit(true)
 case object FalseLit extends BoolLit(false)
