@@ -26,7 +26,7 @@ class TokenDefsTest extends StdTestSuite {
 
   test("token definition") {
     TokenDefs
-      .empty
+      .none
       .withLabel(LabelDef("Person"))
       .withLabel(LabelDef("Employee"))
       .withRelType(RelTypeDef("KNOWS"))
@@ -35,7 +35,7 @@ class TokenDefsTest extends StdTestSuite {
 
   test("token definition is idempotent") {
     TokenDefs
-      .empty
+      .none
       .withLabel(LabelDef("Person"))
       .withLabel(LabelDef("Person"))
       .withLabel(LabelDef("Employee"))

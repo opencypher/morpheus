@@ -1,12 +1,20 @@
 package org.opencypher.spark.impl.prototype
 
+import scala.language.implicitConversions
+
 trait BlockDef {
   def blockType: BlockType
-  def isLeaf: Boolean = signature.dependencies.isEmpty
-  def signature: BlockSignature
+  def isLeaf: Boolean = after.isEmpty
+
+  def after: Set[BlockRef]
+  def over: BlockSignature
 }
 
-final case class BlockSignature(dependencies: Set[BlockRef], inputs: Set[Field], outputs: Set[Field])
+case object BlockSignature {
+  implicit def signature(pairs: (Set[Field], Set[Field])): BlockSignature = BlockSignature(pairs._1, pairs._2)
+}
+
+final case class BlockSignature(inputs: Set[Field], outputs: Set[Field])
 
 sealed trait BlockType {
   def name: String

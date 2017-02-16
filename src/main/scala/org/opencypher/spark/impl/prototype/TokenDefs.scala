@@ -3,7 +3,7 @@ package org.opencypher.spark.impl.prototype
 import TokenRegistration._
 
 object TokenDefs {
-  val empty = TokenDefs(
+  val none = TokenDefs(
     labels = TokenRegistration[LabelRef, LabelDef].empty,
     relTypes = TokenRegistration[RelTypeRef, RelTypeDef].empty,
     propertyKeys = TokenRegistration[PropertyKeyRef, PropertyKeyDef].empty

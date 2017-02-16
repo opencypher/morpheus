@@ -10,7 +10,7 @@ class TokenCollectorTest extends StdTestSuite {
     val given = parse("MATCH (a:Person)-[r:KNOWS]->(b:Duck) RETURN a.name, r.since, b.quack")
     val actual = TokenCollector(given)
     val expected = TokenDefs
-      .empty
+      .none
       .withLabel(LabelDef("Duck"))
       .withLabel(LabelDef("Person"))
       .withRelType(RelTypeDef("KNOWS"))

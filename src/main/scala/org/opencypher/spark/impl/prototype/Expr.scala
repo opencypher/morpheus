@@ -25,7 +25,8 @@ trait FlatteningOpExprCompanion[T] {
 sealed abstract class FlatteningOpExpr(_exprs: Set[Expr]) extends Expr with Serializable with Product1[Set[Expr]] {
 
   val exprs: Set[Expr] =
-    if (_exprs.isEmpty) throw new IllegalStateException("Attempt to construct empty Ands") else flatExpr(_exprs)
+    if (_exprs.isEmpty) throw new IllegalStateException(s"Attempt to construct empty $productPrefix")
+    else flatExpr(_exprs)
 
   override def _1: Set[Expr] = exprs
 
@@ -51,9 +52,9 @@ sealed abstract class FlatteningOpExpr(_exprs: Set[Expr]) extends Expr with Seri
 }
 
 object Ands extends FlatteningOpExprCompanion[Ands] {
-  def apply(exprs: Expr*): Ands = Ands(exprs.toSet)
-  def apply(exprs: Set[Expr]): Ands = new Ands(exprs)
-  def unapply(expr: Any): Option[Set[Expr]] = expr match {
+  override def apply(exprs: Expr*): Ands = Ands(exprs.toSet)
+  override def apply(exprs: Set[Expr]): Ands = new Ands(exprs)
+  override def unapply(expr: Any): Option[Set[Expr]] = expr match {
     case ands: Ands => Some(ands.exprs)
     case _ => None
   }
@@ -67,9 +68,9 @@ final class Ands(_exprs: Set[Expr]) extends FlatteningOpExpr(_exprs) {
 }
 
 object Ors extends FlatteningOpExprCompanion[Ors] {
-  def apply(exprs: Expr*): Ors = Ors(exprs.toSet)
-  def apply(exprs: Set[Expr]): Ors = new Ors(exprs)
-  def unapply(expr: Any): Option[Set[Expr]] = expr match {
+  override def apply(exprs: Expr*): Ors = Ors(exprs.toSet)
+  override def apply(exprs: Set[Expr]): Ors = new Ors(exprs)
+  override def unapply(expr: Any): Option[Set[Expr]] = expr match {
     case ors: Ors => Some(ors.exprs)
     case _ => None
   }

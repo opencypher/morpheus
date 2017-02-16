@@ -7,7 +7,7 @@ class SupportedQueryPlanner extends SparkCypherPlanner {
     val blocks = sparkQueryGraph.root.blocks
 
     blocks.blocks(blocks.solve) match {
-      case MatchBlock(sig, giv, pred) => ???
+      case _: MatchBlock => ???
     }
   }
 }

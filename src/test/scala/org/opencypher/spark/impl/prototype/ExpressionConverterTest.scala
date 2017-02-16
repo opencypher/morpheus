@@ -49,7 +49,7 @@ class ExpressionConverterTest extends StdTestSuite with AstConstructionTestSuppo
     convert(given) should equal(Ands(HasLabel(Var("x"), LabelRef(0)), Equals(Property(Var("x"), PropertyKeyRef(1)), StringLit("Mats"))))
   }
 
-  val c = new ExpressionConverter(TokenDefs.empty
+  val c = new ExpressionConverter(TokenDefs.none
     .withPropertyKey(PropertyKeyDef("key"))
     .withLabel(LabelDef("Person"))
     .withLabel(LabelDef("Duck"))

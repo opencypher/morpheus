@@ -4,7 +4,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast
 
 object TokenCollector {
 
-  def apply(expr: ast.ASTNode, tokens: TokenDefs = TokenDefs.empty): TokenDefs = {
+  def apply(expr: ast.ASTNode, tokens: TokenDefs = TokenDefs.none): TokenDefs = {
     expr.fold(tokens) {
       case ast.LabelName(name) => _.withLabel(LabelDef(name))
       case ast.RelTypeName(name) => _.withRelType(RelTypeDef(name))

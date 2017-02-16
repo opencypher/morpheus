@@ -3,7 +3,7 @@ package org.opencypher.spark.impl.prototype
 import org.neo4j.cypher.internal.frontend.v3_2.ast
 import org.neo4j.cypher.internal.frontend.v3_2.ast.LabelName
 
-class ExpressionConverter(val tokenDefs: TokenDefs) {
+final class ExpressionConverter(val tokenDefs: TokenDefs) extends AnyVal {
 
   def convert(e: ast.Expression): Expr = e match {
     case ast.Variable(name) => Var(name)

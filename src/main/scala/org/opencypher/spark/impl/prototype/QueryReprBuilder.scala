@@ -41,7 +41,7 @@ case class BlockRegistry(reg: Seq[(BlockRef, BlockDef)]) {
 
 class QueryReprBuilder(query: String, tokenDefs: TokenDefs, paramNames: Set[String]) {
   val exprConverter = new ExpressionConverter(tokenDefs)
-  val patternConverter = new PatternConverter
+  val patternConverter = new PatternConverter(tokenDefs)
 
   var firstBlock: Option[BlockRef] = None
 
@@ -49,37 +49,34 @@ class QueryReprBuilder(query: String, tokenDefs: TokenDefs, paramNames: Set[Stri
 
   def add(c: Clause, blockRegistry: BlockRegistry): BlockRegistry = {
     c match {
-      case Match(_, pattern, _, where) =>
-        val entities = convert(pattern)
-        val preds = convertWhere(where)
+      case Match(_, pattern, _, astWhere) =>
+        val given = convertPattern(pattern)
+        val where = convertWhere(astWhere)
 
-        val sig = BlockSignature(blockRegistry.reg.headOption.map(_._1).toSet, Set.empty, Set.empty)
-
-        val block = MatchBlock(sig, entities, preds)
+        val after = blockRegistry.reg.headOption.map(_._1).toSet
+        val over = BlockSignature(Set.empty, Set.empty)
+        val block = MatchBlock(after, over, given, where)
         val (ref, reg) = blockRegistry.register(block)
-
         reg
-      case With(_, _, _, _, _, _) => throw new IllegalArgumentException("With")
+
+      case With(_, _, _, _, _, _) =>
+        throw new IllegalArgumentException("With")
+
       case Return(_, ReturnItems(_, items), _, _, _, _) =>
         items.foreach(addReturn)
         blockRegistry
     }
   }
 
-  private def convert(p: ast.Pattern) = {
-    patternConverter.convert(p)
-  }
+  private def convertPattern(p: ast.Pattern): Given = patternConverter.convert(p)
+  private def convertExpr(e: ast.Expression): Expr = exprConverter.convert(e)
 
-  private def convert(e: ast.Expression) = {
-    exprConverter.convert(e)
-  }
-
-  private def convertWhere(where: Option[Where]): Set[Expr] = where match {
-    case Some(Where(expr)) => convert(expr) match {
-      case Ands(exprs) => exprs
-      case e => Set(e)
+  private def convertWhere(where: Option[ast.Where]): Where = where match {
+    case Some(ast.Where(expr)) => convertExpr(expr) match {
+      case Ands(exprs) => Where(exprs)
+      case e => Where(Set(e))
     }
-    case None => Set.empty
+    case None => Where.everything
   }
 
   private def addReturn(r: ReturnItem) = {

@@ -17,15 +17,22 @@ class PatternConverterTest extends StdTestSuite {
   test("simple rel pattern") {
     val pattern = parse("(x)-[r]->(b)")
 
-    convert(pattern) should equal(Set(AnyNode(Field("x")), AnyNode(Field("b")), AnyRelationship(Field("r"))))
+    convert(pattern) should equal(Set(
+      AnyNode(Field("x")),
+      AnyNode(Field("b")),
+      AnyRelationship(Field("x"), Field("r"), Field("b")))
+    )
   }
 
   test("larger pattern") {
     val pattern = parse("(x)-[r1]->(y)-[r2]->(z)")
 
     convert(pattern) should equal(Set(
-      AnyNode(Field("x")), AnyNode(Field("y")), AnyNode(Field("z")),
-      AnyRelationship(Field("r1")), AnyRelationship(Field("r2"))
+      AnyNode(Field("x")),
+      AnyNode(Field("y")),
+      AnyNode(Field("z")),
+      AnyRelationship(Field("x"), Field("r1"), Field("y")),
+      AnyRelationship(Field("y"), Field("r2"), Field("z"))
     ))
   }
 
@@ -33,32 +40,38 @@ class PatternConverterTest extends StdTestSuite {
     val pattern = parse("(x), (y)-[r]->(z), (foo)")
 
     convert(pattern) should equal(Set(
-      AnyNode(Field("x")), AnyNode(Field("y")), AnyNode(Field("z")),
-      AnyRelationship(Field("r")), AnyNode(Field("foo"))
+      AnyNode(Field("x")),
+      AnyNode(Field("y")),
+      AnyNode(Field("z")),
+      AnyRelationship(Field("y"), Field("r"), Field("z")),
+      AnyNode(Field("foo"))
     ))
   }
 
-//  test("get predicates from pattern") {
-//    val pattern = parse("(x)-[r]->(y)")
-//
-//    val (entities, predicates) = convert(pattern)
-//
-//    entities should equal(Set(AnyNode(Field("x")), AnyNode(Field("y")), AnyRelationship(Field("r"))))
-//    predicates should equal(Set(Predicate(Connected(Field("x"), Field("r"), Field("y")))))
-//  }
-//
-//  test("get predicates from undirected pattern") {
-//    val pattern = parse("(x)-[r]-(y)")
-//
-//    val (entities, predicates) = convert(pattern)
-//
-//    entities should equal(Set(AnyNode(Field("x")), AnyNode(Field("y")), AnyRelationship(Field("r"))))
-//    predicates should equal(Set(Predicate(Ors(Connected(Field("x"), Field("r"), Field("y")), Connected(Field("y"), Field("r"), Field("x"))))))
-//  }
+  test("get predicates from pattern") {
+    val pattern = parse("(x)-[r]->(y)")
 
-  val converter = new PatternConverter
+    convert(pattern) should equal(Set(
+      AnyNode(Field("x")),
+      AnyNode(Field("y")),
+      AnyRelationship(Field("x"), Field("r"), Field("y"))
+    ))
+  }
 
-  def convert(p: Pattern) = converter.convert(p)
+  test("get predicates from undirected pattern") {
+    val pattern = parse("(x)-[r]-(y)")
+
+    convert(pattern) should equal(Set(
+      AnyNode(Field("x")),
+      AnyNode(Field("y")),
+      AnyRelationship(Field("x"), Field("r"), Field("y")),
+      AnyRelationship(Field("y"), Field("r"), Field("x"))
+    ))
+  }
+
+  val converter = new PatternConverter(TokenDefs.none)
+
+  def convert(p: Pattern) = converter.convert(p).entities
 
   def parse(exprText: String): ast.Pattern = PatternParser.parse(exprText, None)
 
@@ -72,5 +85,4 @@ class PatternConverterTest extends StdTestSuite {
     def parse(exprText: String, offset: Option[InputPosition]): ast.Pattern =
       parseOrThrow(exprText, offset, SinglePattern)
   }
-
 }
