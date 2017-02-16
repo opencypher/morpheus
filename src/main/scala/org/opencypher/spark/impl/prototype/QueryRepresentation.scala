@@ -22,3 +22,9 @@ trait RootBlock {
 }
 
 case class BlockStructure(blocks: Map[BlockRef, BlockDef], solve: BlockRef)
+
+case class QueryRepr(cypherQuery: String, returns: SortedSet[(Field, String)], params: Map[Param, String], root: RootBlock) extends QueryRepresentation {
+  override val cypherVersion = "Spark Cypher 0.1"
+}
+
+case class RootBlockImpl(outputs: Set[Field], params: Set[Param], variables: Set[Var], tokens: TokenDefs, blocks: BlockStructure) extends RootBlock

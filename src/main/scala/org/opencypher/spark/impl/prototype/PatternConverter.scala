@@ -2,7 +2,7 @@ package org.opencypher.spark.impl.prototype
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast
 
-class PatternConverter(input: Set[Field]) {
+class PatternConverter {
 
   def convert(p: ast.Pattern): Set[AnyEntity] = p.patternParts.foldLeft(State.empty) {
     case (state, part) => convert(state, part)

@@ -1,51 +1,77 @@
 package org.opencypher.spark.impl.prototype
 
+import java.util.concurrent.atomic.AtomicLong
+
 import org.neo4j.cypher.internal.frontend.v3_2.ast
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.opencypher.spark.api.CypherType
 
-import scala.collection.mutable
+import scala.collection.{SortedSet, mutable}
 
 object QueryReprBuilder {
   def from(s: Statement, q: String, tokenDefs: TokenDefs, params: Set[String]): QueryRepresentation = {
     val builder = new QueryReprBuilder(q, tokenDefs, params)
-    s match {
+    val blocks = s match {
       case Query(_, part) => part match {
-        case SingleQuery(clauses) => clauses.foreach(builder.add)
+        case SingleQuery(clauses) => clauses.foldLeft(BlockRegistry.empty) {
+          case (reg, c) => builder.add(c, reg)
+        }
       }
       case _ => ???
     }
 
-    builder.build()
+    builder.build(blocks)
   }
 }
 
+object BlockRegistry {
+  val empty = BlockRegistry(Seq.empty)
+}
+
+case class BlockRegistry(reg: Seq[(BlockRef, BlockDef)]) {
+
+  def register(blockDef: BlockDef): (BlockRef, BlockRegistry) = {
+    val ref = BlockRef(generateName(blockDef.blockType))
+    ref -> copy(reg = reg :+ ref -> blockDef)
+  }
+
+  val c = new AtomicLong()
+
+  private def generateName(t: BlockType) = s"${t.name}_${c.incrementAndGet()}"
+}
+
 class QueryReprBuilder(query: String, tokenDefs: TokenDefs, paramNames: Set[String]) {
-  val predicates: mutable.Set[Expr] = mutable.Set.empty
-  val nodes: mutable.Set[String] = mutable.Set.empty
-  val rels: mutable.Set[Expr] = mutable.Set.empty
-  val returns: mutable.Set[ast.Expression] = mutable.Set.empty
+  val exprConverter = new ExpressionConverter(tokenDefs)
+  val patternConverter = new PatternConverter
 
-  val returnColumns = mutable.Seq.empty[(String, CypherType)]
+  var firstBlock: Option[BlockRef] = None
 
+  val rColumns: mutable.Buffer[(ast.Expression, Field)] = mutable.Buffer.empty
 
-
-  def add(c: Clause): Unit = {
+  def add(c: Clause, blockRegistry: BlockRegistry): BlockRegistry = {
     c match {
       case Match(_, pattern, _, where) =>
-        add(pattern)
+        val entities = convert(pattern)
         val preds = convertWhere(where)
-        new BasicBlockDef {
-          override def predicates = preds
-          override def given = ???
-          override def outputs = ???
-          override def dependencies = ???
-          override def inputs = ???
-          override def blockType = ???
-        }
+
+        val sig = BlockSignature(blockRegistry.reg.headOption.map(_._1).toSet, Set.empty, Set.empty)
+
+        val block = MatchBlock(sig, entities, preds)
+        val (ref, reg) = blockRegistry.register(block)
+
+        reg
+      case With(_, _, _, _, _, _) => throw new IllegalArgumentException("With")
       case Return(_, ReturnItems(_, items), _, _, _, _) =>
         items.foreach(addReturn)
+        blockRegistry
     }
+  }
+
+  private def convert(p: ast.Pattern) = {
+    patternConverter.convert(p)
+  }
+
+  private def convert(e: ast.Expression) = {
+    exprConverter.convert(e)
   }
 
   private def convertWhere(where: Option[Where]): Set[Predicate] = where match {
@@ -56,33 +82,22 @@ class QueryReprBuilder(query: String, tokenDefs: TokenDefs, paramNames: Set[Stri
     case None => Set.empty
   }
 
-  def addReturn(r: ReturnItem) = {
+  private def addReturn(r: ReturnItem) = {
     r match {
-      case AliasedReturnItem(expr, variable) => returns.add(expr)
-      case UnaliasedReturnItem(expr, text) => returns.add(expr)
+      case AliasedReturnItem(expr, variable) => rColumns += expr -> Field(variable.name)
+      case UnaliasedReturnItem(expr, text) => rColumns += expr -> Field(text)
     }
   }
 
-  def add(p: Pattern): Unit = {
+  def build(blocks: BlockRegistry): QueryRepresentation = {
 
-  }
+    val blockStructure = BlockStructure(blocks.reg.toMap, blocks.reg.head._1)
 
-  private def convert(e: ast.Expression) = new ExpressionConverter(tokenDefs).convert(e)
+    val parameters = paramNames.map(s => ParameterNameGenerator.generate(s) -> s).toMap
 
-  def addPredicate(e: ast.Expression): Unit = {
-    convert(e)
-  }
+    val root = RootBlockImpl(rColumns.toMap.values.toSet, parameters.keySet, Set.empty, tokenDefs, blockStructure)
 
-  def build(): QueryRepresentation = {
-
-    new QueryRepresentation {
-      override def root = ???
-      override def returns = ???
-      override def cypherQuery = query
-      override def cypherVersion = "SparkCypher 1"
-
-      override def params: Map[Param, String] = paramNames.map(s => ParameterNameGenerator.generate(s) -> s).toMap
-    }
+    QueryRepr(query, null, parameters, root)
   }
 }
 

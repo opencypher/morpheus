@@ -1,8 +1,6 @@
 package org.opencypher.spark.impl.prototype
 
 import org.neo4j.cypher.internal.compiler.v3_2.AstRewritingMonitor
-import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationPhases, CompilationState}
-import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.phases._
 import org.neo4j.cypher.internal.frontend.v3_2.{CypherException, InputPosition}
 import org.opencypher.spark.api.{CypherResultContainer, PropertyGraph}
