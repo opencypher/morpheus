@@ -1,8 +1,9 @@
 package org.opencypher.spark.impl.prototype
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast
+import org.neo4j.cypher.internal.frontend.v3_2.{ast, symbols}
 import org.neo4j.cypher.internal.frontend.v3_2.ast.AstConstructionTestSupport
 import org.opencypher.spark.StdTestSuite
+import org.opencypher.spark.api.types.CTString
 
 class ExpressionConverterTest extends StdTestSuite with AstConstructionTestSupport {
 
@@ -21,6 +22,16 @@ class ExpressionConverterTest extends StdTestSuite with AstConstructionTestSuppo
 
   test("can convert equals") {
     convert(ast.Equals(varFor("a"), varFor("b")) _) should equal(Equals(Var("a"), Var("b")))
+  }
+
+  test("can convert IN for single-element lists") {
+    val in = ast.In(varFor("x"), ast.ListLiteral(Seq(ast.StringLiteral("foo") _)) _) _
+    convert(in) should equal(Equals(Var("x"), StringLit("foo")))
+  }
+
+  test("can convert parameters") {
+    val given = ast.Parameter("p", symbols.CTString) _
+    convert(given) should equal(Param("p"))
   }
 
   test("can convert has-labels") {

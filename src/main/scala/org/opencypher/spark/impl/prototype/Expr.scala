@@ -9,6 +9,8 @@ sealed trait Expr {
   def usedPropertyKeys: Set[PropertyKeyRef] = Set.empty
 }
 
+final case class Param(name: String) extends Expr
+
 final case class Var(name: String) extends Expr
 
 final case class Connected(source: Field, rel: Field, target: Field) extends Expr {
