@@ -29,4 +29,8 @@ case object Where {
 
 final case class Where(predicates: Set[Expr])
 
+case object Yields {
+  val nothing = Yields(Set.empty)
+}
 
+final case class Yields(exprs: Set[Expr])

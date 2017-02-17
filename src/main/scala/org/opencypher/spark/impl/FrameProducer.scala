@@ -88,6 +88,9 @@ class FrameProducer(implicit val planningContext: PlanningContext) {
 
     def dropField(field: Symbol) =
       DropField(input)(field)
+
+    def labelFilter(field: Symbol, labels: Set[String]) =
+      FilterProduct.labelFilter(input)(field, labels.toSeq)
   }
 
   implicit final class RichRowFrame(input: StdCypherFrame[Row])

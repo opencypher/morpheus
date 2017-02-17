@@ -26,7 +26,8 @@ sealed trait MatchBlockType extends BlockType
 case object StandardMatchBlockType extends MatchBlockType { override def name = "match" }
 case object OptionalMatchBlockType extends MatchBlockType { override def name = "optional-match" }
 
-case object ReturnBlockType extends BlockType { override def name: String = "return" }
+case object ProjectBlockType extends BlockType { override def name = "project"}
+case object ReturnBlockType extends BlockType { override def name = "return" }
 
 final case class Field(name: String) extends AnyVal
 final case class BlockRef(name: String) extends AnyVal

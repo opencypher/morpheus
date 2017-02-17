@@ -1,7 +1,7 @@
 package org.opencypher.spark.impl.prototype
 
 import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationPhases, CompilationState}
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
+import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
 
 object CypherParser extends CypherParser

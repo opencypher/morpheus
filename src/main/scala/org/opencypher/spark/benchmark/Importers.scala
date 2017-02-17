@@ -64,9 +64,9 @@ object Importers {
 
   private def limit(neo4j: Neo4j, limit: Long) = {
     println(s"Importing $limit relationships from Neo4j")
-    val nodes = neo4j.cypher(s"MATCH (b)-->(a) WITH a, b LIMIT $limit UNWIND [a, b] AS n RETURN DISTINCT n").loadNodeRdds.map(row => row(0).asInstanceOf[InternalNode])
+    val nodes = neo4j.cypher(s"MATCH (b)-[r:MEMBER_OF]->(a) WITH a, b LIMIT $limit UNWIND [a, b] AS n RETURN DISTINCT n").loadNodeRdds.map(row => row(0).asInstanceOf[InternalNode])
 
-    val rels = neo4j.cypher(s"MATCH ()-[r]->() RETURN r LIMIT $limit").loadRowRdd.map(row => row(0).asInstanceOf[InternalRelationship])
+    val rels = neo4j.cypher(s"MATCH ()-[r:MEMBER_OF]->() RETURN r LIMIT $limit").loadRowRdd.map(row => row(0).asInstanceOf[InternalRelationship])
 
     nodes -> rels
   }

@@ -3,6 +3,7 @@ package org.opencypher.spark.impl.prototype
 import org.neo4j.cypher.internal.compiler.v3_2.AstRewritingMonitor
 import org.neo4j.cypher.internal.frontend.v3_2.phases._
 import org.neo4j.cypher.internal.frontend.v3_2.{CypherException, InputPosition}
+import org.opencypher.spark.api.value.CypherString
 import org.opencypher.spark.api.{CypherResultContainer, PropertyGraph}
 
 import scala.reflect.ClassTag
@@ -14,16 +15,20 @@ trait Prototype {
     val tokens = TokenCollector(stmt)
 
     val ir = QueryReprBuilder.from(stmt, query, tokens, params.keySet)
-    val plan = planner.plan(ir)
 
-    val result = graph.cypher(plan)
+    val cvs = params.mapValues {
+      case s: String => CypherString(s)
+      case x => throw new UnsupportedOperationException(s"Can't convert $x to CypherType yet")
+    }
+
+    val result = graph.cypherNew(ir, cvs)
 
     result
   }
 
   def graph: PropertyGraph
 
-  val planner = new SupportedQueryPlanner
+//  val planner = new SupportedQueryPlanner
 
   val parser = CypherParser
 

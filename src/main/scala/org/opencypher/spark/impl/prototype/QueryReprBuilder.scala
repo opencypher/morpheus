@@ -45,8 +45,6 @@ class QueryReprBuilder(query: String, tokenDefs: TokenDefs, paramNames: Set[Stri
 
   var firstBlock: Option[BlockRef] = None
 
-  val rColumns: mutable.Buffer[(ast.Expression, Field)] = mutable.Buffer.empty
-
   def add(c: Clause, blockRegistry: BlockRegistry): BlockRegistry = {
     c match {
       case Match(_, pattern, _, astWhere) =>
@@ -63,8 +61,20 @@ class QueryReprBuilder(query: String, tokenDefs: TokenDefs, paramNames: Set[Stri
         throw new IllegalArgumentException("With")
 
       case Return(_, ReturnItems(_, items), _, _, _, _) =>
-        items.foreach(addReturn)
-        blockRegistry
+        val yields = Yields(items.map(i => convertExpr(i.expression)).toSet)
+
+        val after = blockRegistry.reg.headOption.map(_._1).toSet
+        val projSig = BlockSignature(Set.empty, Set.empty)
+        val projs = ProjectBlock(after = after, over = projSig, where = Where.everything, yields = yields)
+
+        val (ref, reg) = blockRegistry.register(projs)
+        // TODO: Add rewriter and put the above in case With(...)
+
+        val returnSig = BlockSignature(Set.empty, items.map(extract).toSet)
+        val returns = ReturnBlock(Set(ref), returnSig)
+
+        val (_, reg2) = reg.register(returns)
+        reg2
     }
   }
 
@@ -79,10 +89,10 @@ class QueryReprBuilder(query: String, tokenDefs: TokenDefs, paramNames: Set[Stri
     case None => Where.everything
   }
 
-  private def addReturn(r: ReturnItem) = {
+  private def extract(r: ReturnItem) = {
     r match {
-      case AliasedReturnItem(expr, variable) => rColumns += expr -> Field(variable.name)
-      case UnaliasedReturnItem(expr, text) => rColumns += expr -> Field(text)
+      case AliasedReturnItem(expr, variable) => Field(variable.name)
+      case UnaliasedReturnItem(expr, text) => Field(text)
     }
   }
 
@@ -92,7 +102,16 @@ class QueryReprBuilder(query: String, tokenDefs: TokenDefs, paramNames: Set[Stri
 
     val parameters = paramNames.map(s => ParameterNameGenerator.generate(s) -> s).toMap
 
-    val root = RootBlockImpl(rColumns.toMap.values.toSet, parameters.keySet, Set.empty, tokenDefs, blockStructure)
+    val maybeReturn = blockStructure.blocks.values.find {
+      case _: ReturnBlock => true
+      case _ => false
+    }
+
+    val returns = maybeReturn match {
+      case None => Set.empty[Field]
+      case Some(block) => block.over.outputs
+    }
+    val root = RootBlockImpl(returns, parameters.keySet, Set.empty, tokenDefs, blockStructure)
 
     QueryRepr(query, null, parameters, root)
   }

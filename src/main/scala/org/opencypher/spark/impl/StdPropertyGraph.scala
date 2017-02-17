@@ -1,9 +1,11 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql._
+import org.opencypher.spark.api.types.CTNode
 import org.opencypher.spark.api.{CypherResultContainer, PropertyGraph}
-import org.opencypher.spark.api.value.{CypherNode, CypherRelationship}
-import org.opencypher.spark.impl.frame.{Collect, Desc, SortItem}
+import org.opencypher.spark.api.value.{CypherNode, CypherRelationship, CypherValue}
+import org.opencypher.spark.impl.frame._
+import org.opencypher.spark.impl.prototype._
 import org.opencypher.spark.impl.util.SlotSymbolGenerator
 
 import scala.language.implicitConversions
@@ -21,13 +23,16 @@ import scala.language.implicitConversions
 class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Dataset[CypherRelationship])
                       (implicit val session: SparkSession) extends PropertyGraph {
 
+  implicit val planningContext = new PlanningContext(new SlotSymbolGenerator, nodes, relationships)
+  implicit val runtimeContext = new StdRuntimeContext(session, Map.empty)
+
+
+  val frames = new FrameProducer
+  import frames._
+
   override def cypher(query: SupportedQuery): CypherResultContainer = {
-    implicit val planningContext = new PlanningContext(new SlotSymbolGenerator, nodes, relationships)
-    implicit val runtimeContext = new StdRuntimeContext(session)
+    implicit val pInner = planningContext
 
-
-    val frames = new FrameProducer
-    import frames._
 
     query match {
 
@@ -256,4 +261,113 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
         throw new UnsupportedOperationException("I don't want a NotImplemented warning")
     }
   }
+
+  import org.opencypher.spark.impl.foo._
+
+  override def cypherNew(ir: QueryRepresentation, params: Map[String, CypherValue]): CypherResultContainer = {
+
+    implicit val pInner = planningContext
+    implicit val runtimeContext = new StdRuntimeContext(session, params)
+
+    val root = ir.root
+
+    implicit val tokenDefs = root.tokens
+
+    val first = root.solve
+
+    val plan = first match {
+      case MatchBlock(_, _, given, where, _) =>
+        // plan given
+        val plan = givenPlanner(given).asProduct
+        // all variables are now projected to fields
+        // and will be available to predicates
+        val withFilters = wherePlanner(plan, where)
+
+        withFilters
+    }
+
+    val finished = root.blocks.blocks.values.foldLeft(plan) {
+      case (acc, next) => next match {
+        case ProjectBlock(_, _, _, _, Yields(exprs), _) =>
+          planProjections(acc, exprs)
+        case ReturnBlock(_, BlockSignature(_, out), _) =>
+          acc.selectFields(out.toSeq.map(f => Symbol(f.name.replaceAllLiterally(".", "_"))):_*)
+        case _ => acc
+      }
+    }
+
+    // all blocks planned, drop extra columns
+
+    StdCypherResultContainer.fromProducts(finished)
+  }
+
+  private def planProjections(in: StdCypherFrame[Product], exprs: Set[Expr])(implicit tokens: TokenDefs) = {
+    exprs.foldLeft(in) {
+      case (acc, Property(Var(m), key)) =>
+        acc.propertyValue(Symbol(m), Symbol(tokens.propertyKey(key).name))(prop(m, tokens.propertyKey(key)))
+      case x => throw new UnsupportedOperationException(s"can not project $x")
+    }
+  }
+
+  private def wherePlanner(in: StdCypherFrame[Product], where: Where)(implicit tokens: TokenDefs) = {
+    val labels = where.predicates.collect {
+      case HasLabel(Var(n), l) => n -> l
+    }.toMap.groupBy(_._1).mapValues(_.values.toSet)
+
+    val withLabelFilters = labels.foldLeft(in) {
+      case (acc, (n, lbls)) =>
+        FilterProduct.labelFilter(acc)(Symbol(n), lbls.map(tokens.label(_).name).toSeq)
+    }
+
+    val equalities = where.predicates.foldLeft(withLabelFilters) {
+      case (acc, Equals(Property(Var(m), key), p: Param)) =>
+        val withProp = acc.propertyValue(Symbol(m), Symbol(tokens.propertyKey(key).name))(prop(m, tokens.propertyKey(key)))
+        FilterProduct.paramEqFilter(withProp)(withProp.projectedField.sym, p)
+//        withProp
+      case (acc, _: HasLabel) => acc
+      case (acc, x) => throw new UnsupportedOperationException(s"Can't deal with $x")
+    }
+
+    equalities
+//    withLabelFilters
+
+  }
+
+  private def givenPlanner(given: Given)(implicit tokens: TokenDefs) = {
+    val nodeFrames: Set[ProjectFrame] = given.entities.collect { case x: AnyNode => x }.map(nodePlan)
+    val rels = given.entities.collect { case x: AnyRelationship => x }.map(relPlan)
+
+    val nodesToJoin = nodeFrames.map { frame =>
+      frame.projectedField.sym -> frame.asRow
+    }.toMap
+
+    if (rels.size == 1) {
+      val (s, (e, r), t) = rels.head
+      val sFrame = nodesToJoin(s)
+      val tFrame = nodesToJoin(t)
+
+      r.join(sFrame).on(relStart(e))(s).join(tFrame).on(relEnd(e))(t)
+    } else ???
+  }
+
+  private def nodePlan(e: AnyNode) =
+    allNodes(e.entity).asProduct.nodeId(e.entity)(nodeId(e.entity))
+
+  private def relPlan(e: AnyRelationship)(implicit tokens: TokenDefs) = {
+    val plan = typeScan(e.entity)(e.typ.toIndexedSeq.map(ref => tokens.relType(ref).name))
+      .asProduct.relationshipStartId(e.entity)(relStart(e)).relationshipEndId(e.entity)(relEnd(e))
+    (nodeId(e.from), e -> plan.asRow, nodeId(e.to))
+  }
+
+  private def nodeId(n: Field): Symbol = Symbol(n.name + "_id")
+  private def relId(r: AnyRelationship): Symbol = Symbol(r.entity.name + "_id")
+  private def relStart(r: AnyRelationship): Symbol = Symbol(r.entity.name + "_start")
+  private def relEnd(r: AnyRelationship): Symbol = Symbol(r.entity.name + "_end")
+  private def prop(m: String, key: PropertyKeyDef) = Symbol(m + "_" + key.name)
+
+}
+
+object foo {
+  import scala.languageFeature.implicitConversions._
+  implicit def fieldToSym(f: Field): Symbol = Symbol(f.name)
 }

@@ -26,7 +26,7 @@ abstract class StdFrameTestSuite extends StdTestSuite with TestSession.Fixture {
 
     val frames = new FrameProducer
 
-    implicit val runtimeContext = new StdRuntimeContext(session)
+    implicit val runtimeContext = new StdRuntimeContext(session, Map.empty)
   }
 
   def add(nodeData: NodeData) = factory.add(nodeData)

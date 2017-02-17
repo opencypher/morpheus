@@ -18,10 +18,12 @@ trait RootBlock {
   def tokens: TokenDefs
   def blocks: BlockStructure
 
-  def solve: BlockRef = blocks.solve
+  def solve: BlockDef = blocks(blocks.solve)
 }
 
-case class BlockStructure(blocks: Map[BlockRef, BlockDef], solve: BlockRef)
+case class BlockStructure(blocks: Map[BlockRef, BlockDef], solve: BlockRef) {
+  def apply(ref: BlockRef): BlockDef = blocks(ref)
+}
 
 case class QueryRepr(cypherQuery: String, returns: SortedSet[(Field, String)], params: Map[Param, String], root: RootBlock) extends QueryRepresentation {
   override val cypherVersion = "Spark Cypher 0.1"
