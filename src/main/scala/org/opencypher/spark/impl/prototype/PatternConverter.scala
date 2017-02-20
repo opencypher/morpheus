@@ -27,33 +27,28 @@ final class PatternConverter(val tokens: TokenDefs) extends AnyVal {
   }
 
   private def convertElement(p: ast.PatternElement): Result[Field] = p match {
-    case ast.NodePattern(Some(v), _, None) => for {
+    case ast.NodePattern(Some(v), labels, None) => for {
         entity <- pure(Field(v.name))
-        _ <- modify[Given](_ + AnyNode(entity))
+        _ <- modify[Given](_.withEntity(entity, AnyNode(WithEvery(labels.map(l => tokens.label(l.name)).toSet))))
       } yield entity
 
     case ast.RelationshipChain(left, ast.RelationshipPattern(Some(eVar), types, None, None, dir), right) => for {
-      from <- convertElement(left)
-      to <- convertElement(right)
-      entity <- pure(Field(eVar.name))
+      source <- convertElement(left)
+      target <- convertElement(right)
+      rel <- pure(Field(eVar.name))
       _ <- modify[Given] { given =>
-        val newTypes = if (types.isEmpty) Seq(None) else types.map(t => Some(tokens.relType(t.name)))
-        val newEntities = dir match {
-          case OUTGOING =>
-            newTypes.map(t => AnyRelationship(from, entity, to, t))
+        val typeRefs =
+          if (types.isEmpty) WithAny.empty[RelTypeRef]
+          else WithAny[RelTypeRef](types.map(t => tokens.relType(t.name)).toSet)
+        val registered = given.withEntity(rel, AnyRelationship(typeRefs))
 
-          case INCOMING =>
-            newTypes.map(t => AnyRelationship(to, entity, from, t))
-
-          case BOTH =>
-            newTypes.flatMap(t => Seq(
-              AnyRelationship(from, entity, to, t),
-              AnyRelationship(to, entity, from, t))
-            )
+        dir match {
+          case OUTGOING => registered.withConnection(rel, SimpleConnection(source, target))
+          case INCOMING => registered.withConnection(rel, SimpleConnection(target, source))
+          case BOTH => registered.withConnection(rel, UndirectedConnection(source, target))
         }
-        newEntities.foldLeft(given)(_ + _)
       }
-    } yield to
+    } yield target
   }
 
   private def stomp[T](result: Result[T]): Result[Unit] = result >> pure(())

@@ -335,35 +335,41 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
   }
 
   private def givenPlanner(given: Given)(implicit tokens: TokenDefs) = {
-    val nodeFrames: Set[ProjectFrame] = given.entities.collect { case x: AnyNode => x }.map(nodePlan)
-    val rels = given.entities.collect { case x: AnyRelationship => x }.map(relPlan)
+    val nodeFrames = given.nodes.map(nodePlan)
+    val rels = given.rels.toSeq.map(relPlan)
 
     val nodesToJoin = nodeFrames.map { frame =>
       frame.projectedField.sym -> frame.asRow
     }.toMap
 
     if (rels.size == 1) {
-      val (s, (e, r), t) = rels.head
-      val sFrame = nodesToJoin(s)
-      val tFrame = nodesToJoin(t)
+      val (rel, frame) = rels.head
 
-      r.join(sFrame).on(relStart(e))(s).join(tFrame).on(relEnd(e))(t)
+      val conn = given.topology(rel)
+
+      val sFrame = nodesToJoin(conn.source)
+      val tFrame = nodesToJoin(conn.target)
+
+      frame.join(sFrame).on(relStart(rel))(conn.source).join(tFrame).on(relEnd(rel))(conn.target)
     } else ???
   }
 
-  private def nodePlan(e: AnyNode) =
-    allNodes(e.entity).asProduct.nodeId(e.entity)(nodeId(e.entity))
+  private def nodePlan(entity: (Field, AnyNode)) = {
+    val (field, anyNode) = entity
+    allNodes(field).asProduct.nodeId(field)(nodeId(field))
+  }
 
-  private def relPlan(e: AnyRelationship)(implicit tokens: TokenDefs) = {
-    val plan = typeScan(e.entity)(e.typ.toIndexedSeq.map(ref => tokens.relType(ref).name))
-      .asProduct.relationshipStartId(e.entity)(relStart(e)).relationshipEndId(e.entity)(relEnd(e))
-    (nodeId(e.from), e -> plan.asRow, nodeId(e.to))
+  private def relPlan(entity: (Field, AnyRelationship))(implicit tokens: TokenDefs) = {
+    val (field, anyRel) = entity
+    val plan = typeScan(field)(anyRel.relTypes.elts.toIndexedSeq.map(ref => tokens.relType(ref).name))
+      .asProduct.relationshipStartId(field)(relStart(field)).relationshipEndId(field)(relEnd(field))
+    field -> plan.asRow
   }
 
   private def nodeId(n: Field): Symbol = Symbol(n.name + "_id")
-  private def relId(r: AnyRelationship): Symbol = Symbol(r.entity.name + "_id")
-  private def relStart(r: AnyRelationship): Symbol = Symbol(r.entity.name + "_start")
-  private def relEnd(r: AnyRelationship): Symbol = Symbol(r.entity.name + "_end")
+  private def relId(r: Field): Symbol = Symbol(r.name + "_id")
+  private def relStart(r: Field): Symbol = Symbol(r.name + "_start")
+  private def relEnd(r: Field): Symbol = Symbol(r.name + "_end")
   private def prop(m: String, key: PropertyKeyDef) = Symbol(m + "_" + key.name)
 
 }
