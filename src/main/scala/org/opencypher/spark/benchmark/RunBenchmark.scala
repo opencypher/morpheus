@@ -77,6 +77,8 @@ object RunBenchmark {
     val relSet = session.createDataset[CypherRelationship](rMapped)
     val cachedRelSet = relSet.repartition().cache()
 
+    println("Graph cached!")
+
     new StdPropertyGraph(cachedNodeSet, cachedRelSet)
   }
 

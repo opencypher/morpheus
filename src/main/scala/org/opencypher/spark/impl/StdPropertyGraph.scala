@@ -293,13 +293,18 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
         case ReturnBlock(_, BlockSignature(_, out), _) =>
 
           // all blocks planned, drop extra columns
-          acc.selectFields(out.toSeq.map(f => Symbol(f.name.replaceAllLiterally(".", "_"))):_*)
+          acc.selectFields(out.toSeq.map(f => Symbol(f.name.replace(".", "_"))):_*)
         case _ => acc
       }
     }
 
+    // map to user requested columns
 
-    StdCypherResultContainer.fromProducts(finished)
+    val renamed = ir.returns.foldLeft(finished) {
+      case (acc, (f, name)) => acc.aliasField(Symbol(f.name.replace(".", "_")), Symbol(name))
+    }
+
+    StdCypherResultContainer.fromProducts(renamed)
   }
 
   private def planProjections(in: StdCypherFrame[Product], exprs: Set[Expr])(implicit tokens: TokenDefs) = {
@@ -311,27 +316,15 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
   }
 
   private def wherePlanner(in: StdCypherFrame[Product], where: Where[Expr])(implicit tokens: TokenDefs) = {
-    val labels = where.predicates.collect {
-      case HasLabel(Var(n), l) => n -> l
-    }.toMap.groupBy(_._1).mapValues(_.values.toSet)
-
-    val withLabelFilters = labels.foldLeft(in) {
-      case (acc, (n, lbls)) =>
-        FilterProduct.labelFilter(acc)(Symbol(n), lbls.map(tokens.label(_).name).toSeq)
-    }
-
-    val equalities = where.predicates.foldLeft(withLabelFilters) {
+    val equalities = where.predicates.foldLeft(in) {
       case (acc, Equals(Property(Var(m), key), p: Param)) =>
         val withProp = acc.propertyValue(Symbol(m), Symbol(tokens.propertyKey(key).name))(prop(m, tokens.propertyKey(key)))
         FilterProduct.paramEqFilter(withProp)(withProp.projectedField.sym, p)
-//        withProp
       case (acc, _: HasLabel) => acc
       case (acc, x) => throw new UnsupportedOperationException(s"Can't deal with $x")
     }
 
     equalities
-//    withLabelFilters
-
   }
 
   private def givenPlanner(given: Given)(implicit tokens: TokenDefs) = {
@@ -347,16 +340,18 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
 
       val conn = given.topology(rel)
 
-      val sFrame = nodesToJoin(conn.source)
-      val tFrame = nodesToJoin(conn.target)
+      val sField = nodeId(conn.source)
+      val tField = nodeId(conn.target)
+      val sFrame = nodesToJoin(sField)
+      val tFrame = nodesToJoin(tField)
 
-      frame.join(sFrame).on(relStart(rel))(conn.source).join(tFrame).on(relEnd(rel))(conn.target)
+      frame.join(sFrame).on(relStart(rel))(sField).join(tFrame).on(relEnd(rel))(tField)
     } else ???
   }
 
-  private def nodePlan(entity: (Field, AnyNode)) = {
+  private def nodePlan(entity: (Field, AnyNode))(implicit tokens: TokenDefs) = {
     val (field, anyNode) = entity
-    allNodes(field).asProduct.nodeId(field)(nodeId(field))
+    labelScan(field)(anyNode.labels.elts.map(l => tokens.label(l).name).toIndexedSeq).asProduct.nodeId(field)(nodeId(field))
   }
 
   private def relPlan(entity: (Field, AnyRelationship))(implicit tokens: TokenDefs) = {

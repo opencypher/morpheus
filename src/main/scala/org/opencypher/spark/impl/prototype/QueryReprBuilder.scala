@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicLong
 import org.neo4j.cypher.internal.frontend.v3_2.ast
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 
-import scala.collection.{SortedSet, mutable}
+import scala.collection.immutable.SortedSet
 
 object QueryReprBuilder {
   def from(s: Statement, q: String, tokenDefs: TokenDefs, params: Set[String]): QueryRepresentation[Expr] = {
@@ -113,8 +113,14 @@ class QueryReprBuilder(query: String, tokenDefs: TokenDefs, paramNames: Set[Stri
     }
     val root = RootBlockImpl(returns, parameters.keySet, Set.empty, tokenDefs, blockStructure)
 
-    QueryRepr(query, null, parameters, root)
+    val userOut = SortedSet(returns.map(f => f -> f.name).toSeq:_*)(fieldOrdering)
+
+    QueryRepr(query, userOut, parameters, root)
   }
+}
+
+object fieldOrdering extends Ordering[(Field, String)] {
+  override def compare(x: (Field, String), y: (Field, String)): Int = 0
 }
 
 object ParameterNameGenerator {
