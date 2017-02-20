@@ -8,11 +8,11 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import scala.collection.{SortedSet, mutable}
 
 object QueryReprBuilder {
-  def from(s: Statement, q: String, tokenDefs: TokenDefs, params: Set[String]): QueryRepresentation = {
+  def from(s: Statement, q: String, tokenDefs: TokenDefs, params: Set[String]): QueryRepresentation[Expr] = {
     val builder = new QueryReprBuilder(q, tokenDefs, params)
     val blocks = s match {
       case Query(_, part) => part match {
-        case SingleQuery(clauses) => clauses.foldLeft(BlockRegistry.empty) {
+        case SingleQuery(clauses) => clauses.foldLeft(BlockRegistry.empty[Expr]) {
           case (reg, c) => builder.add(c, reg)
         }
       }
@@ -24,12 +24,12 @@ object QueryReprBuilder {
 }
 
 object BlockRegistry {
-  val empty = BlockRegistry(Seq.empty)
+  def empty[E] = BlockRegistry[E](Seq.empty)
 }
 
-case class BlockRegistry(reg: Seq[(BlockRef, BlockDef)]) {
+case class BlockRegistry[E](reg: Seq[(BlockRef, BlockDef[E])]) {
 
-  def register(blockDef: BlockDef): (BlockRef, BlockRegistry) = {
+  def register(blockDef: BlockDef[E]): (BlockRef, BlockRegistry[E]) = {
     val ref = BlockRef(generateName(blockDef.blockType))
     ref -> copy(reg = reg :+ ref -> blockDef)
   }
@@ -45,7 +45,7 @@ class QueryReprBuilder(query: String, tokenDefs: TokenDefs, paramNames: Set[Stri
 
   var firstBlock: Option[BlockRef] = None
 
-  def add(c: Clause, blockRegistry: BlockRegistry): BlockRegistry = {
+  def add(c: Clause, blockRegistry: BlockRegistry[Expr]): BlockRegistry[Expr] = {
     c match {
       case Match(_, pattern, _, astWhere) =>
         val given = convertPattern(pattern)
@@ -53,7 +53,7 @@ class QueryReprBuilder(query: String, tokenDefs: TokenDefs, paramNames: Set[Stri
 
         val after = blockRegistry.reg.headOption.map(_._1).toSet
         val over = BlockSignature(Set.empty, Set.empty)
-        val block = MatchBlock(after, over, given, where)
+        val block = MatchBlock[Expr](after, over, given, where)
         val (ref, reg) = blockRegistry.register(block)
         reg
 
@@ -71,7 +71,7 @@ class QueryReprBuilder(query: String, tokenDefs: TokenDefs, paramNames: Set[Stri
         // TODO: Add rewriter and put the above in case With(...)
 
         val returnSig = BlockSignature(Set.empty, items.map(extract).toSet)
-        val returns = ReturnBlock(Set(ref), returnSig)
+        val returns = ReturnBlock[Expr](Set(ref), returnSig)
 
         val (_, reg2) = reg.register(returns)
         reg2
@@ -81,7 +81,7 @@ class QueryReprBuilder(query: String, tokenDefs: TokenDefs, paramNames: Set[Stri
   private def convertPattern(p: ast.Pattern): Given = patternConverter.convert(p)
   private def convertExpr(e: ast.Expression): Expr = exprConverter.convert(e)
 
-  private def convertWhere(where: Option[ast.Where]): Where = where match {
+  private def convertWhere(where: Option[ast.Where]): Where[Expr] = where match {
     case Some(ast.Where(expr)) => convertExpr(expr) match {
       case Ands(exprs) => Where(exprs)
       case e => Where(Set(e))
@@ -96,14 +96,14 @@ class QueryReprBuilder(query: String, tokenDefs: TokenDefs, paramNames: Set[Stri
     }
   }
 
-  def build(blocks: BlockRegistry): QueryRepresentation = {
+  def build(blocks: BlockRegistry[Expr]): QueryRepresentation[Expr] = {
 
     val blockStructure = BlockStructure(blocks.reg.toMap, blocks.reg.head._1)
 
     val parameters = paramNames.map(s => ParameterNameGenerator.generate(s) -> s).toMap
 
     val maybeReturn = blockStructure.blocks.values.find {
-      case _: ReturnBlock => true
+      case _: ReturnBlock[_] => true
       case _ => false
     }
 

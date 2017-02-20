@@ -1,24 +1,24 @@
 package org.opencypher.spark.impl.prototype
 
-case class MatchBlock(
+case class MatchBlock[E](
   after: Set[BlockRef],
   over: BlockSignature,
   given: Given,
-  where: Where = Where.everything,
+  where: Where[E] = Where.everything,
   blockType: MatchBlockType = StandardMatchBlockType
-) extends BasicBlockDef
+) extends BasicBlockDef[E]
 
-case class ProjectBlock(
+case class ProjectBlock[E](
   after: Set[BlockRef],
   over: BlockSignature,
   given: Given = Given.nothing,
-  where: Where,
-  yields: Yields,
+  where: Where[E],
+  yields: Yields[E],
   blockType: BlockType = ProjectBlockType
-) extends BasicBlockDef
+) extends BasicBlockDef[E]
 
-case class ReturnBlock(
+case class ReturnBlock[E](
   after: Set[BlockRef],
   over: BlockSignature,
   blockType: BlockType = ReturnBlockType
-) extends BlockDef
+) extends BlockDef[E]

@@ -2,7 +2,7 @@ package org.opencypher.spark.impl.prototype
 
 import scala.language.implicitConversions
 
-trait BlockDef {
+trait BlockDef[E] {
   def blockType: BlockType
   def isLeaf: Boolean = after.isEmpty
 

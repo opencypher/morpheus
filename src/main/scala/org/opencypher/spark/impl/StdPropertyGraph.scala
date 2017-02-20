@@ -264,7 +264,7 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
 
   import org.opencypher.spark.impl.foo._
 
-  override def cypherNew(ir: QueryRepresentation, params: Map[String, CypherValue]): CypherResultContainer = {
+  override def cypherNew(ir: QueryRepresentation[Expr], params: Map[String, CypherValue]): CypherResultContainer = {
 
     implicit val pInner = planningContext
     implicit val runtimeContext = new StdRuntimeContext(session, params)
@@ -291,12 +291,13 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
         case ProjectBlock(_, _, _, _, Yields(exprs), _) =>
           planProjections(acc, exprs)
         case ReturnBlock(_, BlockSignature(_, out), _) =>
+
+          // all blocks planned, drop extra columns
           acc.selectFields(out.toSeq.map(f => Symbol(f.name.replaceAllLiterally(".", "_"))):_*)
         case _ => acc
       }
     }
 
-    // all blocks planned, drop extra columns
 
     StdCypherResultContainer.fromProducts(finished)
   }
@@ -309,7 +310,7 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
     }
   }
 
-  private def wherePlanner(in: StdCypherFrame[Product], where: Where)(implicit tokens: TokenDefs) = {
+  private def wherePlanner(in: StdCypherFrame[Product], where: Where[Expr])(implicit tokens: TokenDefs) = {
     val labels = where.predicates.collect {
       case HasLabel(Var(n), l) => n -> l
     }.toMap.groupBy(_._1).mapValues(_.values.toSet)

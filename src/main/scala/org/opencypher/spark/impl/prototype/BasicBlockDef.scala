@@ -1,8 +1,8 @@
 package org.opencypher.spark.impl.prototype
 
-trait BasicBlockDef extends BlockDef {
+trait BasicBlockDef[E] extends BlockDef[E] {
   def given: Given
-  def where: Where
+  def where: Where[E]
 }
 
 case object Given {
@@ -24,13 +24,13 @@ final case class AnyRelationship(from: Field, entity: Field, to: Field, typ: Opt
 
 
 case object Where {
-  val everything = Where(Set.empty)
+  def everything[E] = Where[E](Set.empty)
 }
 
-final case class Where(predicates: Set[Expr])
+final case class Where[E](predicates: Set[E])
 
 case object Yields {
   val nothing = Yields(Set.empty)
 }
 
-final case class Yields(exprs: Set[Expr])
+final case class Yields[E](exprs: Set[E])
