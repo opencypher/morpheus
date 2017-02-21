@@ -11,6 +11,8 @@ sealed trait Expr {
 
 final case class Param(name: String) extends Expr
 final case class Var(name: String) extends Expr
+final case class StartNode(e: Expr) extends Expr
+final case class EndNode(e: Expr) extends Expr
 
 final case class Connected(source: Field, rel: Field, target: Field) extends Expr {
   override def usedFields = Set(source, rel, target)
