@@ -6,6 +6,8 @@ import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, SyntaxException, 
 import org.opencypher.spark.StdTestSuite
 import org.parboiled.scala.{EOI, Parser, Rule1}
 
+import scala.language.implicitConversions
+
 class PatternConverterTest extends StdTestSuite {
 
   implicit def toField(s: Symbol) = Field(s.name)
@@ -26,7 +28,7 @@ class PatternConverterTest extends StdTestSuite {
         .withEntity('x, AnyNode())
         .withEntity('b, AnyNode())
         .withEntity('r, AnyRelationship())
-        .withConnection('r, SimpleConnection('x, 'b))
+        .withConnection('r, DirectedRelationship('x, 'b))
     )
   }
 
@@ -40,8 +42,8 @@ class PatternConverterTest extends StdTestSuite {
         .withEntity('z, AnyNode())
         .withEntity('r1, AnyRelationship())
         .withEntity('r2, AnyRelationship())
-        .withConnection('r1, SimpleConnection('x, 'y))
-        .withConnection('r2, SimpleConnection('y, 'z))
+        .withConnection('r1, DirectedRelationship('x, 'y))
+        .withConnection('r2, DirectedRelationship('y, 'z))
     )
   }
 
@@ -55,7 +57,7 @@ class PatternConverterTest extends StdTestSuite {
         .withEntity('z, AnyNode())
         .withEntity('foo, AnyNode())
         .withEntity('r, AnyRelationship())
-        .withConnection('r, SimpleConnection('y, 'z))
+        .withConnection('r, DirectedRelationship('y, 'z))
     )
   }
 
@@ -67,7 +69,7 @@ class PatternConverterTest extends StdTestSuite {
         .withEntity('x, AnyNode())
         .withEntity('y, AnyNode())
         .withEntity('r, AnyRelationship())
-        .withConnection('r, UndirectedConnection('y, 'x))
+        .withConnection('r, UndirectedRelationship('y, 'x))
     )
   }
 
@@ -89,7 +91,7 @@ class PatternConverterTest extends StdTestSuite {
         .withEntity('x, AnyNode())
         .withEntity('y, AnyNode())
         .withEntity('r, AnyRelationship(WithAny.of(RelTypeRef(0), RelTypeRef(1))))
-        .withConnection('r, SimpleConnection('x, 'y))
+        .withConnection('r, DirectedRelationship('x, 'y))
     )
   }
 

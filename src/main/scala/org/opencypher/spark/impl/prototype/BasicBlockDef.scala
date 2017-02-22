@@ -27,30 +27,6 @@ final case class AnyNode(labels: WithEvery[LabelRef] = WithEvery.empty[LabelRef]
 
 final case class AnyRelationship(relTypes: WithAny[RelTypeRef] = WithAny.empty[RelTypeRef]) extends EntityDef
 
-sealed trait Connection {
-  def endpoints: Set[Field]
-  def source: Field
-  def target: Field
-}
-
-final case class SimpleConnection(source: Field, target: Field) extends Connection {
-  override def endpoints = Set(source, target)
-  def reverse = copy(target, source)
-}
-
-case object UndirectedConnection {
-  def apply(fst: Field, snd: Field): UndirectedConnection = UndirectedConnection(Set(fst, snd))
-}
-
-// TODO: Can we hide this constructor
-final case class UndirectedConnection(endpoints: Set[Field]) extends Connection {
-  if (endpoints.size != 2)
-    throw new IllegalStateException("Undirected connection must have exactly two endpoints")
-
-  override def source = endpoints.head
-  override def target = endpoints.tail.head
-}
-
 case object Where {
   def everything[E] = Where[E](Set.empty)
 }

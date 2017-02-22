@@ -42,10 +42,23 @@ final class PatternConverter(val tokens: TokenDefs) extends AnyVal {
           else WithAny[RelTypeRef](types.map(t => tokens.relType(t.name)).toSet)
         val registered = given.withEntity(rel, AnyRelationship(typeRefs))
 
-        dir match {
-          case OUTGOING => registered.withConnection(rel, SimpleConnection(source, target))
-          case INCOMING => registered.withConnection(rel, SimpleConnection(target, source))
-          case BOTH => registered.withConnection(rel, UndirectedConnection(source, target))
+        Endpoints.apply(source, target) match {
+          case ends: IdenticalEndpoints =>
+            registered.withConnection(rel, CyclicRelationship(ends))
+
+          case ends: DifferentEndpoints =>
+            dir match {
+              case OUTGOING =>
+                registered.withConnection(rel, DirectedRelationship(ends))
+
+              case INCOMING =>
+                registered.withConnection(rel, DirectedRelationship(ends.flip))
+
+              case BOTH =>
+                registered
+                  .withConnection(rel, DirectedRelationship(ends))
+                  .withConnection(rel, DirectedRelationship(ends.flip))
+            }
         }
       }
     } yield target
