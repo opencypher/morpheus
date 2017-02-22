@@ -3,7 +3,7 @@ package org.opencypher.spark.impl
 import org.apache.spark.sql.SparkSession
 import org.opencypher.spark.api.frame.CypherRuntimeContext
 import org.opencypher.spark.api.value.CypherValue
-import org.opencypher.spark.impl.prototype.Param
+import org.opencypher.spark.prototype.Param
 import org.opencypher.spark.impl.util.ProductEncoderFactory
 
 class StdRuntimeContext(val session: SparkSession, val parameters: Map[String, CypherValue])

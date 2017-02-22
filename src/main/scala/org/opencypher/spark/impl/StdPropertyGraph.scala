@@ -5,8 +5,10 @@ import org.opencypher.spark.api.types.CTNode
 import org.opencypher.spark.api.{CypherResultContainer, PropertyGraph}
 import org.opencypher.spark.api.value.{CypherNode, CypherRelationship, CypherValue}
 import org.opencypher.spark.impl.frame._
-import org.opencypher.spark.impl.prototype._
+import org.opencypher.spark.prototype._
+import org.opencypher.spark.prototype.ir._
 import org.opencypher.spark.impl.util.SlotSymbolGenerator
+import org.opencypher.spark.prototype.ir.impl.blocks.{MatchBlock, ProjectBlock, ReturnBlock}
 
 import scala.language.implicitConversions
 
@@ -264,7 +266,7 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
 
   import org.opencypher.spark.impl.foo._
 
-  override def cypherNew(ir: QueryRepresentation[Expr], params: Map[String, CypherValue]): CypherResultContainer = {
+  override def cypherNew(ir: QueryModel[Expr], params: Map[String, CypherValue]): CypherResultContainer = {
 
     implicit val pInner = planningContext
     implicit val runtimeContext = new StdRuntimeContext(session, params)
@@ -307,7 +309,7 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
     StdCypherResultContainer.fromProducts(renamed)
   }
 
-  private def planProjections(in: StdCypherFrame[Product], exprs: Set[Expr])(implicit tokens: TokenDefs) = {
+  private def planProjections(in: StdCypherFrame[Product], exprs: Set[Expr])(implicit tokens: TokenRegistry) = {
     exprs.foldLeft(in) {
       case (acc, Property(Var(m), key)) =>
         acc.propertyValue(Symbol(m), Symbol(tokens.propertyKey(key).name))(prop(m, tokens.propertyKey(key)))
@@ -315,7 +317,7 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
     }
   }
 
-  private def wherePlanner(in: StdCypherFrame[Product], where: Where[Expr])(implicit tokens: TokenDefs) = {
+  private def wherePlanner(in: StdCypherFrame[Product], where: Where[Expr])(implicit tokens: TokenRegistry) = {
     val equalities = where.predicates.foldLeft(in) {
       case (acc, Equals(Property(Var(m), key), p: Param)) =>
         val withProp = acc.propertyValue(Symbol(m), Symbol(tokens.propertyKey(key).name))(prop(m, tokens.propertyKey(key)))
@@ -327,7 +329,7 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
     equalities
   }
 
-  private def givenPlanner(given: Given)(implicit tokens: TokenDefs) = {
+  private def givenPlanner(given: Given)(implicit tokens: TokenRegistry) = {
     val nodeFrames = given.nodes.map(nodePlan)
     val rels = given.rels.toSeq.map(relPlan)
 
@@ -349,12 +351,12 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
     } else ???
   }
 
-  private def nodePlan(entity: (Field, AnyNode))(implicit tokens: TokenDefs) = {
+  private def nodePlan(entity: (Field, AnyNode))(implicit tokens: TokenRegistry) = {
     val (field, anyNode) = entity
     labelScan(field)(anyNode.labels.elts.map(l => tokens.label(l).name).toIndexedSeq).asProduct.nodeId(field)(nodeId(field))
   }
 
-  private def relPlan(entity: (Field, AnyRelationship))(implicit tokens: TokenDefs) = {
+  private def relPlan(entity: (Field, AnyRelationship))(implicit tokens: TokenRegistry) = {
     val (field, anyRel) = entity
     val plan = typeScan(field)(anyRel.relTypes.elts.toIndexedSeq.map(ref => tokens.relType(ref).name))
       .asProduct.relationshipStartId(field)(relStart(field)).relationshipEndId(field)(relEnd(field))
