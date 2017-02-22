@@ -2,7 +2,9 @@ package org.opencypher.spark.impl.prototype
 
 import scala.language.implicitConversions
 
-sealed trait Endpoints extends Traversable[Field]
+sealed trait Endpoints extends Traversable[Field] {
+  def contains(f: Field): Boolean
+}
 
 case object Endpoints {
 
@@ -17,9 +19,13 @@ case object Endpoints {
     apply(source, target)
   }
 
-  private case class OneSingleEndpoint(field: Field) extends IdenticalEndpoints
+  private case class OneSingleEndpoint(field: Field) extends IdenticalEndpoints {
+    override def contains(f: Field) = field == f
+  }
   private case class TwoDifferentEndpoints(source: Field, target: Field) extends DifferentEndpoints {
-    def flip = copy(target, source)
+    override def flip = copy(target, source)
+
+    override def contains(f: Field) = f == source || f == target
   }
 }
 

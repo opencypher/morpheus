@@ -123,6 +123,10 @@ object fieldOrdering extends Ordering[(Field, String)] {
   override def compare(x: (Field, String), y: (Field, String)): Int = 0
 }
 
+object exprOrdering extends Ordering[(Expr, String)] {
+  override def compare(x: (Expr, String), y: (Expr, String)): Int = 0
+}
+
 object ParameterNameGenerator {
   def generate(n: String): Param = Param(n)
 }

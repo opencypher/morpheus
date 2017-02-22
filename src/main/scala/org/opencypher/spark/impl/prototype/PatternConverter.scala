@@ -55,9 +55,7 @@ final class PatternConverter(val tokens: TokenDefs) extends AnyVal {
                 registered.withConnection(rel, DirectedRelationship(ends.flip))
 
               case BOTH =>
-                registered
-                  .withConnection(rel, DirectedRelationship(ends))
-                  .withConnection(rel, DirectedRelationship(ends.flip))
+                registered.withConnection(rel, UndirectedRelationship(ends))
             }
         }
       }

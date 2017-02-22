@@ -40,6 +40,7 @@ final case class Signature(items: Set[Item]) {
 
 case object Item {
   implicit def of(expr: Expr): Item = Item(Set(expr))
+  def apply(exprs: Expr*): Item = Item(exprs.toSet)
 }
 
 // TODO: Non-Empty!
@@ -57,7 +58,7 @@ sealed trait LogicalLeafOperator extends LogicalOperator {
 }
 
 final case class NodeScan(node: Var, nodeDef: AnyNode) extends LogicalLeafOperator {
-  override def signature = Signature.empty
+  override def signature = Signature.empty.withExpr(node)
 }
 
 final case class Filter(expr: Expr, in: LogicalOperator) extends StackingLogicalOperator {
@@ -65,20 +66,21 @@ final case class Filter(expr: Expr, in: LogicalOperator) extends StackingLogical
 }
 
 sealed trait ExpandOperator extends StackingLogicalOperator {
-  def node: Var
+  def source: Var
   def rel: Var
+  def target: Var
 }
 
-final case class ExpandSource(node: Var, rel: Var, in: LogicalOperator)
+final case class ExpandSource(source: Var, rel: Var, target: Var, in: LogicalOperator)
   extends ExpandOperator {
 
-  override def signature = in.signature.extendItemFor(node)(StartNode(rel)) withItem rel withItem EndNode(rel)
+  override def signature = in.signature.extendItemFor(source)(StartNode(rel)) withItem rel withItem Item(EndNode(rel), target)
 }
 
-final case class ExpandTarget(node: Var, rel: Var, in: LogicalOperator)
+final case class ExpandTarget(source: Var, rel: Var, target: Var, in: LogicalOperator)
   extends ExpandOperator {
 
-  override def signature = in.signature.extendItemFor(node)(EndNode(rel)) withItem rel withItem StartNode(rel)
+  override def signature = in.signature.extendItemFor(target)(EndNode(rel)) withItem rel withItem Item(StartNode(rel), source)
 }
 
 final case class Project(e: Expr, in: LogicalOperator) extends StackingLogicalOperator {

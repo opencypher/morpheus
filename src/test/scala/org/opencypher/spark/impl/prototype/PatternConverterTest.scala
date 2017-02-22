@@ -3,14 +3,11 @@ package org.opencypher.spark.impl.prototype
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Pattern
 import org.neo4j.cypher.internal.frontend.v3_2.parser.{Expressions, Patterns}
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, SyntaxException, ast}
-import org.opencypher.spark.StdTestSuite
 import org.parboiled.scala.{EOI, Parser, Rule1}
 
 import scala.language.implicitConversions
 
-class PatternConverterTest extends StdTestSuite {
-
-  implicit def toField(s: Symbol) = Field(s.name)
+class PatternConverterTest extends IrTestSupport {
 
   test("simple node pattern") {
     val pattern = parse("(x)")

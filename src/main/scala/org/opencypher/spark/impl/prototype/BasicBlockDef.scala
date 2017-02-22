@@ -14,10 +14,28 @@ final case class Given(entities: Map[Field, EntityDef], topology: Map[Field, Con
   lazy val nodes: Map[Field, AnyNode] = entities.collect { case (k, v: AnyNode) => k -> v }
   lazy val rels: Map[Field, AnyRelationship] = entities.collect { case (k, v: AnyRelationship) => k -> v }
 
-  def withConnection(key: Field, connection: Connection) =
+  def connectionsFor(node: Field): Map[Field, Connection] = {
+    topology.filter {
+      case (_, c) => c.endpoints.contains(node)
+    }
+  }
+
+  def solvedConnection(rel: Field): Given = {
+    val c = topology(rel)
+    copy(entities = entities - c.source - c.target - rel,
+         topology = topology - rel)
+  }
+
+  def solvedNode(key: Field): Given = {
+    copy(entities = entities - key)
+  }
+
+  def solved: Boolean = this == Given.nothing
+
+  def withConnection(key: Field, connection: Connection): Given =
     if (topology.get(key).contains(connection)) this else copy(topology = topology.updated(key, connection))
 
-  def withEntity(key: Field, value: EntityDef) =
+  def withEntity(key: Field, value: EntityDef): Given =
     if (entities.get(key).contains(value)) this else copy(entities = entities.updated(key, value))
 }
 
