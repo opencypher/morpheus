@@ -4,7 +4,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.parser.{Expressions, Patterns}
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, SyntaxException, ast}
 import org.opencypher.spark.prototype.ir._
 import org.opencypher.spark.prototype.ir.pattern._
-import org.opencypher.spark.prototype.ir.token._
+import org.opencypher.spark.prototype.ir.global._
 import org.parboiled.scala.{EOI, Parser, Rule1}
 
 import scala.language.implicitConversions
@@ -94,7 +94,7 @@ class PatternConverterTest extends IrTestSupport {
     )
   }
 
-  val converter = new PatternConverter(TokenRegistry.none
+  val converter = new PatternConverter(GlobalsRegistry.none
     .withLabel(Label("Person")).withLabel(Label("Dog"))
     .withRelType(RelType("KNOWS")).withRelType(RelType("LOVES")))
 

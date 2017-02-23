@@ -1,6 +1,6 @@
 package org.opencypher.spark.prototype
 
-import org.opencypher.spark.prototype.ir.token.{LabelRef, ParameterRef, PropertyKeyRef, RelTypeRef}
+import org.opencypher.spark.prototype.ir.global.{LabelRef, ConstantRef, PropertyKeyRef, RelTypeRef}
 import org.opencypher.spark.prototype.ir.Field
 
 import scala.annotation.tailrec
@@ -12,7 +12,7 @@ sealed trait Expr {
   def usedPropertyKeys: Set[PropertyKeyRef] = Set.empty
 }
 
-final case class Param(ref: ParameterRef) extends Expr
+final case class Const(ref: ConstantRef) extends Expr
 final case class Var(name: String) extends Expr
 final case class StartNode(e: Expr) extends Expr
 final case class EndNode(e: Expr) extends Expr

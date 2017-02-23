@@ -1,6 +1,6 @@
 package org.opencypher.spark.prototype.ir.pattern
 
-import org.opencypher.spark.prototype.ir.token.{LabelRef, RelTypeRef}
+import org.opencypher.spark.prototype.ir.global.{LabelRef, RelTypeRef}
 
 sealed trait AnyEntity
 final case class AnyNode(labels: WithEvery[LabelRef] = WithEvery.empty[LabelRef]) extends AnyEntity

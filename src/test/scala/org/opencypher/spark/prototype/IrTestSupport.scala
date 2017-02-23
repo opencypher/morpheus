@@ -3,7 +3,7 @@ package org.opencypher.spark.prototype
 import org.opencypher.spark.StdTestSuite
 import org.opencypher.spark.prototype.ir._
 import org.opencypher.spark.prototype.ir.block._
-import org.opencypher.spark.prototype.ir.token.TokenRegistry
+import org.opencypher.spark.prototype.ir.global.GlobalsRegistry
 
 import scala.language.implicitConversions
 
@@ -19,7 +19,7 @@ class IrTestSupport extends StdTestSuite {
       binds = ResultFields(root.over.outputs.toSeq),
       where = Where.everything
     )
-    val model = QueryModel(result, TokenRegistry.none, Map(BlockRef("root") -> root))
+    val model = QueryModel(result, GlobalsRegistry.none, Map(BlockRef("root") -> root))
     QueryDescriptor(QueryInfo("test"), model)
   }
 }

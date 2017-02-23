@@ -2,7 +2,7 @@ package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.Dataset
 import org.opencypher.spark.api.value.{CypherNode, CypherValue}
-import org.opencypher.spark.prototype.Param
+import org.opencypher.spark.prototype.Const
 import org.opencypher.spark.impl.{ProductFrame, StdCypherFrame, StdField, StdRuntimeContext}
 
 object LabelFilterNode extends FrameCompanion {
@@ -35,12 +35,12 @@ object FilterProduct extends FrameCompanion {
     LabelFilterProduct(input)(input.signature.slot(node).get.ordinal, labels)
   }
 
-  def paramEqFilter(input: StdCypherFrame[Product])(lhs: Symbol, param: Param): StdCypherFrame[Product] = {
+  def paramEqFilter(input: StdCypherFrame[Product])(lhs: Symbol, param: Const): StdCypherFrame[Product] = {
     val lhsIdx = input.signature.slot(lhs).get.ordinal
     ParamEqFilter(input)(lhsIdx, param)
   }
 
-  private final case class ParamEqFilter(input: StdCypherFrame[Product])(lhs: Int, param: Param) extends ProductFrame(input.signature) {
+  private final case class ParamEqFilter(input: StdCypherFrame[Product])(lhs: Int, param: Const) extends ProductFrame(input.signature) {
     override protected def execute(implicit context: StdRuntimeContext): Dataset[Product] = {
       val in = input.run
       val out = in.filter(paramEq(lhs, context.paramValue(param)))

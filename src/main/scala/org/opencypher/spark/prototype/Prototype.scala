@@ -12,7 +12,7 @@ trait Prototype {
   def cypher(query: String): CypherResultContainer = {
     val (stmt, params) = parser.parseAndExtract(query)
 
-    val tokens = TokenCollector(stmt)
+    val tokens = GlobalsExtractor(stmt)
 
     val ir = QueryReprBuilder.from(stmt, query, tokens, params.keySet)
 

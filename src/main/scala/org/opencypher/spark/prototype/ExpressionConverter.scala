@@ -2,9 +2,9 @@ package org.opencypher.spark.prototype
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast
 import org.neo4j.cypher.internal.frontend.v3_2.ast.LabelName
-import org.opencypher.spark.prototype.ir.token.TokenRegistry
+import org.opencypher.spark.prototype.ir.global.GlobalsRegistry
 
-final class ExpressionConverter(val tokenDefs: TokenRegistry) extends AnyVal {
+final class ExpressionConverter(val tokenDefs: GlobalsRegistry) extends AnyVal {
 
   def convert(e: ast.Expression): Expr = e match {
     case ast.Variable(name) => Var(name)
@@ -18,7 +18,7 @@ final class ExpressionConverter(val tokenDefs: TokenRegistry) extends AnyVal {
       val exprs = labels.map { (l: LabelName) => HasLabel(convert(node), tokenDefs.label(l.name)) }
       if (exprs.size == 1) exprs.head else Ands(exprs: _*)
     case ast.Ands(exprs) => Ands(exprs.map(convert))
-    case ast.Parameter(name, _) => Param(tokenDefs.param(name))
+    case ast.Parameter(name, _) => Const(tokenDefs.constant(name))
     case _ => throw new UnsupportedOperationException(s"No mapping defined for $e")
   }
 

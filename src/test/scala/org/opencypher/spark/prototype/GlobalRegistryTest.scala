@@ -2,17 +2,17 @@ package org.opencypher.spark.prototype
 
 import org.opencypher.spark.StdTestSuite
 import org.opencypher.spark.prototype.ir._
-import org.opencypher.spark.prototype.ir.token._
+import org.opencypher.spark.prototype.ir.global._
 
 import scala.util.Try
 
-class TokenRegistryTest extends StdTestSuite {
+class GlobalRegistryTest extends StdTestSuite {
 
-  val tokens = TokenRegistry(
+  val tokens = GlobalsRegistry(
     labels = Vector(Label("Person"), Label("Employee")),
     relTypes = Vector(RelType("KNOWS")),
     propertyKeys = Vector(PropertyKey("prop")),
-    params = Vector.empty
+    constants = Vector.empty
   )
 
   test("token lookup") {
@@ -28,7 +28,7 @@ class TokenRegistryTest extends StdTestSuite {
   }
 
   test("token definition") {
-    TokenRegistry
+    GlobalsRegistry
       .none
       .withLabel(Label("Person"))
       .withLabel(Label("Employee"))
@@ -37,7 +37,7 @@ class TokenRegistryTest extends StdTestSuite {
   }
 
   test("token definition is idempotent") {
-    TokenRegistry
+    GlobalsRegistry
       .none
       .withLabel(Label("Person"))
       .withLabel(Label("Person"))

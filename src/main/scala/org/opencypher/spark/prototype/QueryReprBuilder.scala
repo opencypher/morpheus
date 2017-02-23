@@ -9,12 +9,12 @@ import org.opencypher.spark.prototype.ir._
 import org.opencypher.spark.prototype.ir.block._
 import org.opencypher.spark.prototype.ir.block.{Where => IrWhere}
 import org.opencypher.spark.prototype.ir.pattern.Pattern
-import org.opencypher.spark.prototype.ir.token.TokenRegistry
+import org.opencypher.spark.prototype.ir.global.GlobalsRegistry
 
 import scala.collection.immutable.SortedSet
 
 object QueryReprBuilder {
-  def from(s: Statement, q: String, tokenDefs: TokenRegistry, params: Set[String]): QueryDescriptor[Expr] = {
+  def from(s: Statement, q: String, tokenDefs: GlobalsRegistry, params: Set[String]): QueryDescriptor[Expr] = {
     val builder = new QueryReprBuilder(q, tokenDefs, params)
     val blocks = s match {
       case Query(_, part) => part match {
@@ -45,7 +45,7 @@ case class BlockRegistry[E](reg: Seq[(BlockRef, Block[E])]) {
   private def generateName(t: BlockType) = s"${t.name}_${c.incrementAndGet()}"
 }
 
-class QueryReprBuilder(query: String, tokenDefs: TokenRegistry, paramNames: Set[String]) {
+class QueryReprBuilder(query: String, tokenDefs: GlobalsRegistry, paramNames: Set[String]) {
   val exprConverter = new ExpressionConverter(tokenDefs)
   val patternConverter = new PatternConverter(tokenDefs)
 

@@ -9,7 +9,7 @@ import org.opencypher.spark.prototype._
 import org.opencypher.spark.prototype.ir._
 import org.opencypher.spark.prototype.ir.block._
 import org.opencypher.spark.prototype.ir.pattern.{AnyNode, AnyRelationship, Pattern}
-import org.opencypher.spark.prototype.ir.token.{PropertyKey, TokenRegistry}
+import org.opencypher.spark.prototype.ir.global.{PropertyKey, GlobalsRegistry}
 
 import scala.language.implicitConversions
 
@@ -274,7 +274,7 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
 
     val model = ir.model
 
-    implicit val tokenDefs = model.tokens
+    implicit val tokenDefs = model.globals
 
     val first = model.blocks.head._2
 
@@ -310,7 +310,7 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
     StdCypherResultContainer.fromProducts(renamed)
   }
 
-  private def planProjections(in: StdCypherFrame[Product], exprs: Set[Expr])(implicit tokens: TokenRegistry) = {
+  private def planProjections(in: StdCypherFrame[Product], exprs: Set[Expr])(implicit tokens: GlobalsRegistry) = {
     exprs.foldLeft(in) {
       case (acc, Property(Var(m), key)) =>
         acc.propertyValue(Symbol(m), Symbol(tokens.propertyKey(key).name))(prop(m, tokens.propertyKey(key)))
@@ -318,9 +318,9 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
     }
   }
 
-  private def wherePlanner(in: StdCypherFrame[Product], where: Where[Expr])(implicit tokens: TokenRegistry) = {
+  private def wherePlanner(in: StdCypherFrame[Product], where: Where[Expr])(implicit tokens: GlobalsRegistry) = {
     val equalities = where.predicates.foldLeft(in) {
-      case (acc, Equals(Property(Var(m), key), p: Param)) =>
+      case (acc, Equals(Property(Var(m), key), p: Const)) =>
         val withProp = acc.propertyValue(Symbol(m), Symbol(tokens.propertyKey(key).name))(prop(m, tokens.propertyKey(key)))
         FilterProduct.paramEqFilter(withProp)(withProp.projectedField.sym, p)
       case (acc, _: HasLabel) => acc
@@ -330,7 +330,7 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
     equalities
   }
 
-  private def planPattern(given: Pattern[Expr])(implicit tokens: TokenRegistry) = {
+  private def planPattern(given: Pattern[Expr])(implicit tokens: GlobalsRegistry) = {
     val nodeFrames = given.nodes.map(nodePlan)
     val rels = given.rels.toSeq.map(relPlan)
 
@@ -352,12 +352,12 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
     } else ???
   }
 
-  private def nodePlan(entity: (Field, AnyNode))(implicit tokens: TokenRegistry) = {
+  private def nodePlan(entity: (Field, AnyNode))(implicit tokens: GlobalsRegistry) = {
     val (field, anyNode) = entity
     labelScan(field)(anyNode.labels.elts.map(l => tokens.label(l).name).toIndexedSeq).asProduct.nodeId(field)(nodeId(field))
   }
 
-  private def relPlan(entity: (Field, AnyRelationship))(implicit tokens: TokenRegistry) = {
+  private def relPlan(entity: (Field, AnyRelationship))(implicit tokens: GlobalsRegistry) = {
     val (field, anyRel) = entity
     val plan = typeScan(field)(anyRel.relTypes.elts.toIndexedSeq.map(ref => tokens.relType(ref).name))
       .asProduct.relationshipStartId(field)(relStart(field)).relationshipEndId(field)(relEnd(field))

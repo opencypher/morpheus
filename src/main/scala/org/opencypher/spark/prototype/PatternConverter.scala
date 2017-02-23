@@ -9,11 +9,11 @@ import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection._
 import org.neo4j.cypher.internal.frontend.v3_2.ast
 import org.opencypher.spark.prototype.ir._
 import org.opencypher.spark.prototype.ir.pattern._
-import org.opencypher.spark.prototype.ir.token.{RelTypeRef, TokenRegistry}
+import org.opencypher.spark.prototype.ir.global.{RelTypeRef, GlobalsRegistry}
 
 import scala.annotation.tailrec
 
-final class PatternConverter(val tokens: TokenRegistry) extends AnyVal {
+final class PatternConverter(val tokens: GlobalsRegistry) extends AnyVal {
 
   type Result[A] = State[Pattern[Expr], A]
 

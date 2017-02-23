@@ -5,7 +5,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast.AstConstructionTestSupport
 import org.opencypher.spark.StdTestSuite
 import org.opencypher.spark.api.types.CTString
 import org.opencypher.spark.prototype.ir._
-import org.opencypher.spark.prototype.ir.token._
+import org.opencypher.spark.prototype.ir.global._
 
 class ExpressionConverterTest extends StdTestSuite with AstConstructionTestSupport {
 
@@ -33,7 +33,7 @@ class ExpressionConverterTest extends StdTestSuite with AstConstructionTestSuppo
 
   test("can convert parameters") {
     val given = ast.Parameter("p", symbols.CTString) _
-    convert(given) should equal(Param(ParameterRef(0)))
+    convert(given) should equal(Const(ConstantRef(0)))
   }
 
   test("can convert has-labels") {
@@ -51,12 +51,12 @@ class ExpressionConverterTest extends StdTestSuite with AstConstructionTestSuppo
     convert(given) should equal(Ands(HasLabel(Var("x"), LabelRef(0)), Equals(Property(Var("x"), PropertyKeyRef(1)), StringLit("Mats"))))
   }
 
-  val c = new ExpressionConverter(TokenRegistry.none
+  val c = new ExpressionConverter(GlobalsRegistry.none
     .withPropertyKey(PropertyKey("key"))
     .withLabel(Label("Person"))
     .withLabel(Label("Duck"))
     .withPropertyKey(PropertyKey("name"))
-    .withParameter(Parameter("p")))
+    .withConstant(Constant("p")))
 
   private def convert(e: ast.Expression): Expr = c.convert(e)
 }

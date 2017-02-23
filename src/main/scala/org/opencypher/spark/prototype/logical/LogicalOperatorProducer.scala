@@ -5,7 +5,7 @@ import org.opencypher.spark.prototype._
 import org.opencypher.spark.prototype.ir._
 import org.opencypher.spark.prototype.ir.block._
 import org.opencypher.spark.prototype.ir.pattern.Pattern
-import org.opencypher.spark.prototype.ir.token.TokenRegistry
+import org.opencypher.spark.prototype.ir.global.GlobalsRegistry
 
 import scala.collection.immutable.SortedSet
 
@@ -14,7 +14,7 @@ class LogicalOperatorProducer {
   def plan(ir: QueryDescriptor[Expr]): LogicalOperator = {
     val model = ir.model
 
-    implicit val tokenDefs = model.tokens
+    implicit val tokenDefs = model.globals
 
     val solve = model.result
 
@@ -39,7 +39,8 @@ class LogicalOperatorProducer {
           val map = SortedSet(fields.map { f =>
             val expr: Expr = Var(f.name)
             expr -> f.name
-          }: _*)(exprOrdering)
+          }
+            : _*)(exprOrdering)
           Select(map, acc)
         case _ => acc
       }
@@ -48,7 +49,7 @@ class LogicalOperatorProducer {
     finished
   }
 
-  private def planProjections(in: LogicalOperator, exprs: Set[Expr])(implicit tokens: TokenRegistry) = {
+  private def planProjections(in: LogicalOperator, exprs: Set[Expr])(implicit tokens: GlobalsRegistry) = {
     exprs.foldLeft(in) {
       case (acc, p: Property) =>
         Project(p, acc)
@@ -56,9 +57,9 @@ class LogicalOperatorProducer {
     }
   }
 
-  private def wherePlanner(in: LogicalOperator, where: Where[Expr])(implicit tokens: TokenRegistry) = {
+  private def wherePlanner(in: LogicalOperator, where: Where[Expr])(implicit tokens: GlobalsRegistry) = {
     val equalities = where.predicates.foldLeft(in) {
-      case (acc, eq@Equals(prop: Property, _: Param)) =>
+      case (acc, eq@Equals(prop: Property, _: Const)) =>
         Filter(eq, Project(prop, acc))
       case (acc, _: HasLabel) => acc // ignore label predicates; solved by scans
       case (_, x) => throw new UnsupportedOperationException(s"Can't deal with $x")
@@ -67,7 +68,7 @@ class LogicalOperatorProducer {
     equalities
   }
 
-  private def givenPlanner(pattern: Pattern[Expr])(implicit tokens: TokenRegistry) = {
+  private def givenPlanner(pattern: Pattern[Expr])(implicit tokens: GlobalsRegistry) = {
     val (lhsLeaf, solvedNode) = nodePlan(pattern)
 
     val (newPlan, solvedConns) = fixedPoint(planExpansions)(lhsLeaf -> solvedNode)
@@ -98,7 +99,7 @@ class LogicalOperatorProducer {
     }
   }
 
-  private def nodePlan(given: Pattern[Expr])(implicit tokens: TokenRegistry): (LogicalOperator, Pattern[Expr]) = {
+  private def nodePlan(given: Pattern[Expr])(implicit tokens: GlobalsRegistry): (LogicalOperator, Pattern[Expr]) = {
     val (field, anyNode) = given.nodes.head
     NodeScan(Var(field.name), anyNode) -> given.solvedNode(field)
   }
