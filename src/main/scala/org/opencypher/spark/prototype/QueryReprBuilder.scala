@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicLong
 import org.apache.hadoop.yarn.proto.YarnProtos.QueueInfoProto
 import org.neo4j.cypher.internal.frontend.v3_2.ast
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.opencypher.spark.prototype.ir.{Field, QueryDescriptor, QueryInfo, QueryModel}
+import org.opencypher.spark.prototype.ir._
 import org.opencypher.spark.prototype.ir.block._
 import org.opencypher.spark.prototype.ir.block.{Where => IrWhere}
 import org.opencypher.spark.prototype.ir.pattern.Pattern
@@ -107,16 +107,7 @@ class QueryReprBuilder(query: String, tokenDefs: TokenRegistry, paramNames: Set[
 
     val model = QueryModel(blocks.reg.head._1, tokenDefs, blocks.reg.toMap)
 
-    val maybeReturn = model.blocks.values.find {
-      case _: SelectBlock[_] => true
-      case _ => false
-    }
-
-    val returns = maybeReturn match {
-      case None => Set.empty[Field]
-      case Some(block) => block.over.outputs
-    }
-    val userOut = SortedSet(returns.map(f => f -> f.name).toSeq:_*)(fieldOrdering)
+//    QueryReturns(.map(s => s.).toSeq.map(f => f.name -> f))
 
     val info = QueryInfo(query)
 
