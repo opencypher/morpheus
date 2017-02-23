@@ -7,7 +7,7 @@ import org.opencypher.spark.benchmark.RunBenchmark
 class PrototypeTest extends StdTestSuite {
 
   val engine = new Prototype {
-    override def graph = RunBenchmark.createStdPropertyGraphFromNeo(-1)
+    override def graph = RunBenchmark.createStdPropertyGraphFromNeo(100)
   }
 
   test("run cypher query") {

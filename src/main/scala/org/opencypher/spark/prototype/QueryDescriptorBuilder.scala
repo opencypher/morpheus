@@ -2,20 +2,16 @@ package org.opencypher.spark.prototype
 
 import java.util.concurrent.atomic.AtomicLong
 
-import org.apache.hadoop.yarn.proto.YarnProtos.QueueInfoProto
 import org.neo4j.cypher.internal.frontend.v3_2.ast
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.opencypher.spark.prototype.ir._
-import org.opencypher.spark.prototype.ir.block._
-import org.opencypher.spark.prototype.ir.block.{Where => IrWhere}
-import org.opencypher.spark.prototype.ir.pattern.Pattern
+import org.opencypher.spark.prototype.ir.block.{Where => IrWhere, _}
 import org.opencypher.spark.prototype.ir.global.GlobalsRegistry
+import org.opencypher.spark.prototype.ir.pattern.Pattern
 
-import scala.collection.immutable.SortedSet
-
-object QueryReprBuilder {
-  def from(s: Statement, q: String, tokenDefs: GlobalsRegistry, params: Set[String]): QueryDescriptor[Expr] = {
-    val builder = new QueryReprBuilder(q, tokenDefs, params)
+object QueryDescriptorBuilder {
+  def from(s: Statement, q: String, tokenDefs: GlobalsRegistry): QueryDescriptor[Expr] = {
+    val builder = new QueryDescriptorBuilder(q, tokenDefs)
     val blocks = s match {
       case Query(_, part) => part match {
         case SingleQuery(clauses) => clauses.foldLeft(BlockRegistry.empty[Expr]) {
@@ -45,7 +41,7 @@ case class BlockRegistry[E](reg: Seq[(BlockRef, Block[E])]) {
   private def generateName(t: BlockType) = s"${t.name}_${c.incrementAndGet()}"
 }
 
-class QueryReprBuilder(query: String, tokenDefs: GlobalsRegistry, paramNames: Set[String]) {
+class QueryDescriptorBuilder(query: String, tokenDefs: GlobalsRegistry) {
   val exprConverter = new ExpressionConverter(tokenDefs)
   val patternConverter = new PatternConverter(tokenDefs)
 

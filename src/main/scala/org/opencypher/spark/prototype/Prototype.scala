@@ -5,6 +5,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.phases._
 import org.neo4j.cypher.internal.frontend.v3_2.{CypherException, InputPosition}
 import org.opencypher.spark.api.value.CypherString
 import org.opencypher.spark.api.{CypherResultContainer, PropertyGraph}
+import org.opencypher.spark.prototype.logical.LogicalOperatorProducer
 
 import scala.reflect.ClassTag
 
@@ -14,12 +15,14 @@ trait Prototype {
 
     val tokens = GlobalsExtractor(stmt)
 
-    val ir = QueryReprBuilder.from(stmt, query, tokens, params.keySet)
+    val ir = QueryDescriptorBuilder.from(stmt, query, tokens)
 
     val cvs = params.mapValues {
       case s: String => CypherString(s)
       case x => throw new UnsupportedOperationException(s"Can't convert $x to CypherType yet")
     }
+
+    val plan = new LogicalOperatorProducer().plan(ir)
 
     val result = graph.cypherNew(ir, cvs)
 
@@ -28,15 +31,9 @@ trait Prototype {
 
   def graph: PropertyGraph
 
-//  val planner = new SupportedQueryPlanner
-
   val parser = CypherParser
 
 }
-
-//trait CypherResult[T] {
-//  def get(): T
-//}
 
 case class FrontendContext() extends BaseContext {
   override def tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING

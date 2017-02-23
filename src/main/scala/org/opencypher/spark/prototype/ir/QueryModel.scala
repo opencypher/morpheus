@@ -8,9 +8,12 @@ final case class QueryModel[E](
   globals: GlobalsRegistry,
 //  bindings: Map[ConstantRef, ConstantBinding],
   blocks: Map[BlockRef, Block[E]]
-) extends (BlockRef => Block[E]) {
+) {
 
-  override def apply(ref: BlockRef): Block[E] = blocks(ref)
+  def apply(ref: BlockRef): Block[E] = blocks(ref)
+
+  def find[T](f: PartialFunction[(BlockRef, Block[E]), T]): Option[T] =
+    blocks.collectFirst(f)
 }
 
 // sealed trait ConstantBinding
