@@ -276,9 +276,9 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
 
     implicit val tokenDefs = model.tokens
 
-    val first = model.root
+    val first = model.blocks.head._2
 
-    val plan = model(first) match {
+    val plan = first match {
       case MatchBlock(_, _, pattern, where, _) =>
         // plan given
         val plan = planPattern(pattern).asProduct
@@ -293,7 +293,7 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
       case (acc, next) => next match {
         case ProjectBlock(_, _, ProjectedFields(exprs), _) =>
           planProjections(acc, exprs.values.toSet)
-        case SelectBlock(_, BlockSig(_, out), _, _) =>
+        case ResultBlock(_, BlockSig(_, out), _, _) =>
 
           // all blocks planned, drop extra columns
           acc.selectFields(out.toSeq.map(f => Symbol(f.name.replace(".", "_"))):_*)
@@ -303,8 +303,8 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
 
     // map to user requested columns
 
-    val renamed = ir.returns.foldLeft(finished) {
-      case (acc, (name, f)) => acc.aliasField(Symbol(f.name.replace(".", "_")), Symbol(name))
+    val renamed = ir.model.result.binds.fieldsOrder.foldLeft(finished) {
+      case (acc, f) => acc.aliasField(Symbol(f.name.replace(".", "_")), Symbol(f.name))
     }
 
     StdCypherResultContainer.fromProducts(renamed)

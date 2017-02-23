@@ -1,10 +1,10 @@
 package org.opencypher.spark.prototype.ir
 
-import org.opencypher.spark.prototype.ir.block.{Block, BlockRef}
+import org.opencypher.spark.prototype.ir.block._
 import org.opencypher.spark.prototype.ir.token.TokenRegistry
 
 final case class QueryModel[E](
-  root: BlockRef,
+  result: ResultBlock[E],
   tokens: TokenRegistry,
   blocks: Map[BlockRef, Block[E]]
 ) extends (BlockRef => Block[E]) {

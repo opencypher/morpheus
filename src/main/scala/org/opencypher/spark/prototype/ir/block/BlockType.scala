@@ -11,4 +11,4 @@ case object StandardMatchBlockType extends MatchBlockType { override def name = 
 case object OptionalMatchBlockType extends MatchBlockType { override def name = "optional-match" }
 
 case object ProjectBlockType extends BlockType { override def name = "project"}
-case object SelectBlockType extends BlockType { override def name = "select" }
+case object ResultBlockType extends BlockType { override def name = "select" }

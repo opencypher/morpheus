@@ -78,7 +78,7 @@ class QueryReprBuilder(query: String, tokenDefs: TokenRegistry, paramNames: Set[
 
         val returnSig = BlockSig(Set.empty, items.map(extract).toSet)
 
-        val returns = SelectBlock[Expr](Set(ref), returnSig, SelectedFields(items.map(extract).toSet))
+        val returns = ResultBlock[Expr](Set(ref), returnSig, ResultFields(items.map(extract)))
 
         val (_, reg2) = reg.register(returns)
         reg2
@@ -105,13 +105,15 @@ class QueryReprBuilder(query: String, tokenDefs: TokenRegistry, paramNames: Set[
 
   def build(blocks: BlockRegistry[Expr]): QueryDescriptor[Expr] = {
 
-    val model = QueryModel(blocks.reg.head._1, tokenDefs, blocks.reg.toMap)
+    val maybeReturn: Option[ResultBlock[Expr]] = blocks.reg.collectFirst {
+      case (_, r: ResultBlock[Expr]) => r
+    }
 
-//    QueryReturns(.map(s => s.).toSeq.map(f => f.name -> f))
+    val model = QueryModel(maybeReturn.get, tokenDefs, blocks.reg.toMap)
 
     val info = QueryInfo(query)
 
-    QueryDescriptor(info, model, null)
+    QueryDescriptor(info, model)
   }
 }
 

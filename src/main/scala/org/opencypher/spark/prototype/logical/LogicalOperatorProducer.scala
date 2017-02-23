@@ -16,7 +16,9 @@ class LogicalOperatorProducer {
 
     implicit val tokenDefs = model.tokens
 
-    val plan = model(model.root) match {
+    val solve = model.result
+
+    val plan = model(solve.after.head) match {
       case MatchBlock(_, _, given, where, _) =>
         // plan given
         val plan = givenPlanner(given)
@@ -31,14 +33,13 @@ class LogicalOperatorProducer {
       case (acc, next) => next match {
         case ProjectBlock(_, _, ProjectedFields(exprs), _) =>
           planProjections(acc, exprs.values.toSet)
-        case SelectBlock(_, _, _, _) =>
+        case ResultBlock(_, _, ResultFields(fields), _) =>
 
           // all blocks planned, drop extra columns
-          val map = SortedSet(ir.returns.map {
-            case (s, f) =>
-              val expr: Expr = Var(f.name)
-              expr -> s
-          }.toSeq: _*)(exprOrdering)
+          val map = SortedSet(fields.map { f =>
+            val expr: Expr = Var(f.name)
+            expr -> f.name
+          }: _*)(exprOrdering)
           Select(map, acc)
         case _ => acc
       }
