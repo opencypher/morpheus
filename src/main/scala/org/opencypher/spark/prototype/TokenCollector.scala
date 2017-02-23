@@ -1,7 +1,7 @@
 package org.opencypher.spark.prototype
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast
-import org.opencypher.spark.prototype.ir.token.{Label, PropertyKey, RelType, TokenRegistry}
+import org.opencypher.spark.prototype.ir.token._
 
 object TokenCollector {
 
@@ -10,6 +10,7 @@ object TokenCollector {
       case ast.LabelName(name) => _.withLabel(Label(name))
       case ast.RelTypeName(name) => _.withRelType(RelType(name))
       case ast.PropertyKeyName(name) => _.withPropertyKey(PropertyKey(name))
+      case ast.Parameter(name, _) => _.withParameter(Parameter(name))
     }
   }
 }

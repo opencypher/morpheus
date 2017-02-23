@@ -33,7 +33,7 @@ class ExpressionConverterTest extends StdTestSuite with AstConstructionTestSuppo
 
   test("can convert parameters") {
     val given = ast.Parameter("p", symbols.CTString) _
-    convert(given) should equal(Parameter("p"))
+    convert(given) should equal(Param(ParameterRef(0)))
   }
 
   test("can convert has-labels") {
@@ -55,7 +55,8 @@ class ExpressionConverterTest extends StdTestSuite with AstConstructionTestSuppo
     .withPropertyKey(PropertyKey("key"))
     .withLabel(Label("Person"))
     .withLabel(Label("Duck"))
-    .withPropertyKey(PropertyKey("name")))
+    .withPropertyKey(PropertyKey("name"))
+    .withParameter(Parameter("p")))
 
   private def convert(e: ast.Expression): Expr = c.convert(e)
 }

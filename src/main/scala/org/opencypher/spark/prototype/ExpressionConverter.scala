@@ -18,7 +18,7 @@ final class ExpressionConverter(val tokenDefs: TokenRegistry) extends AnyVal {
       val exprs = labels.map { (l: LabelName) => HasLabel(convert(node), tokenDefs.label(l.name)) }
       if (exprs.size == 1) exprs.head else Ands(exprs: _*)
     case ast.Ands(exprs) => Ands(exprs.map(convert))
-    case ast.Parameter(name, _) => Param(name)
+    case ast.Parameter(name, _) => Param(tokenDefs.param(name))
     case _ => throw new UnsupportedOperationException(s"No mapping defined for $e")
   }
 

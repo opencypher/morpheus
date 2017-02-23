@@ -107,8 +107,6 @@ class QueryReprBuilder(query: String, tokenDefs: TokenRegistry, paramNames: Set[
 
     val model = QueryModel(blocks.reg.head._1, tokenDefs, blocks.reg.toMap)
 
-    val parameters = paramNames.map(s => ParameterNameGenerator.generate(s) -> s).toMap
-
     val maybeReturn = model.blocks.values.find {
       case _: SelectBlock[_] => true
       case _ => false
@@ -132,8 +130,4 @@ object fieldOrdering extends Ordering[(Field, String)] {
 
 object exprOrdering extends Ordering[(Expr, String)] {
   override def compare(x: (Expr, String), y: (Expr, String)): Int = 0
-}
-
-object ParameterNameGenerator {
-  def generate(n: String): Param = Param(n)
 }

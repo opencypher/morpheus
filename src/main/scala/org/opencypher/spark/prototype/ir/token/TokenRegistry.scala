@@ -45,7 +45,7 @@ final case class TokenRegistry(
     if (merged eq propertyKeys) this else copy(propertyKeys = merged)
   }
 
-  def withParam(defn: Parameter): TokenRegistry = {
+  def withParameter(defn: Parameter): TokenRegistry = {
     val merged = params.merge(defn)
     if (merged eq params) this else copy(params = merged)
   }
