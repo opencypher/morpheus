@@ -3,20 +3,20 @@ package org.opencypher.spark.prototype.logical
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.fixedPoint
 import org.opencypher.spark.prototype._
 import org.opencypher.spark.prototype.ir._
-import org.opencypher.spark.prototype.ir.impl.blocks.{MatchBlock, ProjectBlock, ReturnBlock}
+import org.opencypher.spark.prototype.ir.block._
+import org.opencypher.spark.prototype.ir.pattern.Pattern
+import org.opencypher.spark.prototype.ir.token.TokenRegistry
 
 import scala.collection.immutable.SortedSet
 
 class LogicalOperatorProducer {
 
-  def plan(ir: QueryModel[Expr]): LogicalOperator = {
-    val root = ir.root
+  def plan(ir: QueryDescriptor[Expr]): LogicalOperator = {
+    val model = ir.model
 
-    implicit val tokenDefs = root.tokens
+    implicit val tokenDefs = model.tokens
 
-    val first = root.solve
-
-    val plan = first match {
+    val plan = model(model.root) match {
       case MatchBlock(_, _, given, where, _) =>
         // plan given
         val plan = givenPlanner(given)
@@ -27,15 +27,15 @@ class LogicalOperatorProducer {
         withFilters
     }
 
-    val finished = root.blocks.blocks.values.foldLeft(plan) {
+    val finished = model.blocks.values.foldLeft(plan) {
       case (acc, next) => next match {
-        case ProjectBlock(_, _, _, _, Yields(exprs), _) =>
-          planProjections(acc, exprs)
-        case ReturnBlock(_, BlockSignature(_, out), _) =>
+        case ProjectBlock(_, _, ProjectedFields(exprs), _) =>
+          planProjections(acc, exprs.values.toSet)
+        case SelectBlock(_, _, _, _) =>
 
           // all blocks planned, drop extra columns
           val map = SortedSet(ir.returns.map {
-            case (f, s) =>
+            case (s, f) =>
               val expr: Expr = Var(f.name)
               expr -> s
           }.toSeq: _*)(exprOrdering)
@@ -66,8 +66,8 @@ class LogicalOperatorProducer {
     equalities
   }
 
-  private def givenPlanner(given: Given)(implicit tokens: TokenRegistry) = {
-    val (lhsLeaf, solvedNode) = nodePlan(given)
+  private def givenPlanner(pattern: Pattern[Expr])(implicit tokens: TokenRegistry) = {
+    val (lhsLeaf, solvedNode) = nodePlan(pattern)
 
     val (newPlan, solvedConns) = fixedPoint(planExpansions)(lhsLeaf -> solvedNode)
 
@@ -78,7 +78,7 @@ class LogicalOperatorProducer {
   }
 
   @scala.annotation.tailrec
-  private def planExpansions(input: (LogicalOperator, Given)): (LogicalOperator, Given) = {
+  private def planExpansions(input: (LogicalOperator, Pattern[Expr])): (LogicalOperator, Pattern[Expr]) = {
     val (in, given) = input
 
     val knownVars = in.signature.items.flatMap(_.exprs.collect { case v: Var => v })
@@ -97,7 +97,7 @@ class LogicalOperatorProducer {
     }
   }
 
-  private def nodePlan(given: Given)(implicit tokens: TokenRegistry): (LogicalOperator, Given) = {
+  private def nodePlan(given: Pattern[Expr])(implicit tokens: TokenRegistry): (LogicalOperator, Pattern[Expr]) = {
     val (field, anyNode) = given.nodes.head
     NodeScan(Var(field.name), anyNode) -> given.solvedNode(field)
   }

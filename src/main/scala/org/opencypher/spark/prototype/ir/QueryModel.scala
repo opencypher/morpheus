@@ -1,15 +1,13 @@
 package org.opencypher.spark.prototype.ir
 
-import org.opencypher.spark.prototype._
+import org.opencypher.spark.prototype.ir.block.{Block, BlockRef}
+import org.opencypher.spark.prototype.ir.token.TokenRegistry
 
-import scala.collection.immutable.SortedSet
-trait QueryModel[E] {
-  def cypherQuery: String
-  def cypherVersion: String
-  def returns: SortedSet[(Field, String)]
-  def params: Map[Param, String]
-  def root: RootBlock[E]
+final case class QueryModel[E](
+  root: BlockRef,
+  tokens: TokenRegistry,
+  blocks: Map[BlockRef, Block[E]]
+) extends (BlockRef => Block[E]) {
+
+  override def apply(ref: BlockRef): Block[E] = blocks(ref)
 }
-
-final case class Field(name: String) extends AnyVal
-

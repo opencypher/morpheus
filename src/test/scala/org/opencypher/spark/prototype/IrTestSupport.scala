@@ -1,19 +1,19 @@
 package org.opencypher.spark.prototype
 
 import org.opencypher.spark.StdTestSuite
-import org.opencypher.spark.prototype.ir.{Field, QueryModel, RootBlock}
+import org.opencypher.spark.prototype.ir.block.{Block, BlockRef}
+import org.opencypher.spark.prototype.ir.token.TokenRegistry
+import org.opencypher.spark.prototype.ir.{Field, QueryDescriptor, QueryInfo, QueryModel}
 
-import scala.collection.immutable.SortedSet
+import scala.collection.immutable.SortedMap
 
 class IrTestSupport extends StdTestSuite {
 
   implicit def toField(s: Symbol): Field = Field(s.name)
   implicit def toVar(s: Symbol): Var = Var(s.name)
 
-  protected class TestIR(override val root: RootBlock[Expr]) extends QueryModel[Expr] {
-    override def cypherQuery: String = "test"
-    override def cypherVersion: String = "test"
-    override def returns: SortedSet[(Field, String)] = SortedSet.empty[(Field, String)](fieldOrdering)
-    override def params: Map[Param, String] = Map.empty
+  def irFor(root: Block[Expr]): QueryDescriptor[Expr] = {
+    val model = QueryModel(BlockRef("root"), TokenRegistry.none, Map(BlockRef("root") -> root))
+    QueryDescriptor(QueryInfo("test"), model, SortedMap.empty)
   }
 }

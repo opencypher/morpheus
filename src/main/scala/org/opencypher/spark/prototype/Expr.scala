@@ -1,6 +1,7 @@
 package org.opencypher.spark.prototype
 
-import org.opencypher.spark.prototype.ir.{Field, LabelRef, PropertyKeyRef, RelTypeRef}
+import org.opencypher.spark.prototype.ir.token.{LabelRef, PropertyKeyRef, RelTypeRef}
+import org.opencypher.spark.prototype.ir.Field
 
 import scala.annotation.tailrec
 

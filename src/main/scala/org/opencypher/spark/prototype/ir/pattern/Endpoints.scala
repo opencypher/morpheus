@@ -1,4 +1,6 @@
-package org.opencypher.spark.prototype.ir
+package org.opencypher.spark.prototype.ir.pattern
+
+import org.opencypher.spark.prototype.ir.Field
 
 import scala.language.implicitConversions
 

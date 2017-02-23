@@ -1,7 +1,7 @@
 package org.opencypher.spark.prototype
 
 import org.opencypher.spark.StdTestSuite
-import org.opencypher.spark.prototype.ir.{LabelDef, PropertyKeyDef, RelTypeDef, TokenRegistry}
+import org.opencypher.spark.prototype.ir.token.{Label, PropertyKey, RelType, TokenRegistry}
 
 class TokenCollectorTest extends StdTestSuite {
 
@@ -12,12 +12,12 @@ class TokenCollectorTest extends StdTestSuite {
     val actual = TokenCollector(given)
     val expected = TokenRegistry
       .none
-      .withLabel(LabelDef("Duck"))
-      .withLabel(LabelDef("Person"))
-      .withRelType(RelTypeDef("KNOWS"))
-      .withPropertyKey(PropertyKeyDef("name"))
-      .withPropertyKey(PropertyKeyDef("since"))
-      .withPropertyKey(PropertyKeyDef("quack"))
+      .withLabel(Label("Duck"))
+      .withLabel(Label("Person"))
+      .withRelType(RelType("KNOWS"))
+      .withPropertyKey(PropertyKey("name"))
+      .withPropertyKey(PropertyKey("since"))
+      .withPropertyKey(PropertyKey("quack"))
 
     actual should equal(expected)
   }

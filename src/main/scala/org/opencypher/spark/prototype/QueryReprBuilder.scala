@@ -2,16 +2,19 @@ package org.opencypher.spark.prototype
 
 import java.util.concurrent.atomic.AtomicLong
 
+import org.apache.hadoop.yarn.proto.YarnProtos.QueueInfoProto
 import org.neo4j.cypher.internal.frontend.v3_2.ast
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.opencypher.spark.prototype.ir.impl._
-import org.opencypher.spark.prototype.ir.impl.blocks.{MatchBlock, ProjectBlock, ReturnBlock}
-import org.opencypher.spark.prototype.ir.{Where => _, _}
+import org.opencypher.spark.prototype.ir.{Field, QueryDescriptor, QueryInfo, QueryModel}
+import org.opencypher.spark.prototype.ir.block._
+import org.opencypher.spark.prototype.ir.block.{Where => IrWhere}
+import org.opencypher.spark.prototype.ir.pattern.Pattern
+import org.opencypher.spark.prototype.ir.token.TokenRegistry
 
 import scala.collection.immutable.SortedSet
 
 object QueryReprBuilder {
-  def from(s: Statement, q: String, tokenDefs: TokenRegistry, params: Set[String]): QueryModel[Expr] = {
+  def from(s: Statement, q: String, tokenDefs: TokenRegistry, params: Set[String]): QueryDescriptor[Expr] = {
     val builder = new QueryReprBuilder(q, tokenDefs, params)
     val blocks = s match {
       case Query(_, part) => part match {
@@ -30,9 +33,9 @@ object BlockRegistry {
   def empty[E] = BlockRegistry[E](Seq.empty)
 }
 
-case class BlockRegistry[E](reg: Seq[(BlockRef, BlockDef[E])]) {
+case class BlockRegistry[E](reg: Seq[(BlockRef, Block[E])]) {
 
-  def register(blockDef: BlockDef[E]): (BlockRef, BlockRegistry[E]) = {
+  def register(blockDef: Block[E]): (BlockRef, BlockRegistry[E]) = {
     val ref = BlockRef(generateName(blockDef.blockType))
     ref -> copy(reg = reg :+ ref -> blockDef)
   }
@@ -55,7 +58,7 @@ class QueryReprBuilder(query: String, tokenDefs: TokenRegistry, paramNames: Set[
         val where = convertWhere(astWhere)
 
         val after = blockRegistry.reg.headOption.map(_._1).toSet
-        val over = BlockSignature(Set.empty, Set.empty)
+        val over = BlockSig(Set.empty, Set.empty)
         val block = MatchBlock[Expr](after, over, given, where)
         val (ref, reg) = blockRegistry.register(block)
         reg
@@ -64,32 +67,33 @@ class QueryReprBuilder(query: String, tokenDefs: TokenRegistry, paramNames: Set[
         throw new IllegalArgumentException("With")
 
       case Return(_, ReturnItems(_, items), _, _, _, _) =>
-        val yields = Yields(items.map(i => convertExpr(i.expression)).toSet)
+        val yields = ProjectedFields[Expr](items.map(i => Field(i.name) -> convertExpr(i.expression)).toMap)
 
         val after = blockRegistry.reg.headOption.map(_._1).toSet
-        val projSig = BlockSignature(Set.empty, Set.empty)
-        val projs = ProjectBlock(after = after, over = projSig, where = ir.Where.everything, yields = yields)
+        val projSig = BlockSig(Set.empty, Set.empty)
+        val projs = ProjectBlock[Expr](after = after, over = projSig, where = IrWhere.everything, binds = yields)
 
         val (ref, reg) = blockRegistry.register(projs)
         // TODO: Add rewriter and put the above in case With(...)
 
-        val returnSig = BlockSignature(Set.empty, items.map(extract).toSet)
-        val returns = ReturnBlock[Expr](Set(ref), returnSig)
+        val returnSig = BlockSig(Set.empty, items.map(extract).toSet)
+
+        val returns = SelectBlock[Expr](Set(ref), returnSig, SelectedFields(items.map(extract).toSet))
 
         val (_, reg2) = reg.register(returns)
         reg2
     }
   }
 
-  private def convertPattern(p: ast.Pattern): Given = patternConverter.convert(p)
+  private def convertPattern(p: ast.Pattern): Pattern[Expr] = patternConverter.convert(p)
   private def convertExpr(e: ast.Expression): Expr = exprConverter.convert(e)
 
-  private def convertWhere(where: Option[ast.Where]): ir.Where[Expr] = where match {
+  private def convertWhere(where: Option[ast.Where]): IrWhere[Expr] = where match {
     case Some(ast.Where(expr)) => convertExpr(expr) match {
-      case Ands(exprs) => ir.Where(exprs)
-      case e => ir.Where(Set(e))
+      case Ands(exprs) => IrWhere(exprs)
+      case e => IrWhere(Set(e))
     }
-    case None => ir.Where.everything
+    case None => IrWhere.everything
   }
 
   private def extract(r: ReturnItem) = {
@@ -99,14 +103,14 @@ class QueryReprBuilder(query: String, tokenDefs: TokenRegistry, paramNames: Set[
     }
   }
 
-  def build(blocks: BlockRegistry[Expr]): QueryModel[Expr] = {
+  def build(blocks: BlockRegistry[Expr]): QueryDescriptor[Expr] = {
 
-    val blockStructure = BlocksImpl(blocks.reg.toMap, blocks.reg.head._1)
+    val model = QueryModel(blocks.reg.head._1, tokenDefs, blocks.reg.toMap)
 
     val parameters = paramNames.map(s => ParameterNameGenerator.generate(s) -> s).toMap
 
-    val maybeReturn = blockStructure.blocks.values.find {
-      case _: ReturnBlock[_] => true
+    val maybeReturn = model.blocks.values.find {
+      case _: SelectBlock[_] => true
       case _ => false
     }
 
@@ -114,11 +118,11 @@ class QueryReprBuilder(query: String, tokenDefs: TokenRegistry, paramNames: Set[
       case None => Set.empty[Field]
       case Some(block) => block.over.outputs
     }
-    val root = RootBlockImpl(returns, parameters.keySet, Set.empty, tokenDefs, blockStructure)
-
     val userOut = SortedSet(returns.map(f => f -> f.name).toSeq:_*)(fieldOrdering)
 
-    QueryModelImpl(query, userOut, parameters, root)
+    val info = QueryInfo(query)
+
+    QueryDescriptor(info, model, null)
   }
 }
 

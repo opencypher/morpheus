@@ -2,7 +2,7 @@ package org.opencypher.spark.prototype
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast
 import org.neo4j.cypher.internal.frontend.v3_2.ast.LabelName
-import org.opencypher.spark.prototype.ir.TokenRegistry
+import org.opencypher.spark.prototype.ir.token.TokenRegistry
 
 final class ExpressionConverter(val tokenDefs: TokenRegistry) extends AnyVal {
 

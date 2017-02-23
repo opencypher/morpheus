@@ -1,14 +1,15 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql._
-import org.opencypher.spark.api.types.CTNode
-import org.opencypher.spark.api.{CypherResultContainer, PropertyGraph}
 import org.opencypher.spark.api.value.{CypherNode, CypherRelationship, CypherValue}
+import org.opencypher.spark.api.{CypherResultContainer, PropertyGraph}
 import org.opencypher.spark.impl.frame._
+import org.opencypher.spark.impl.util.SlotSymbolGenerator
 import org.opencypher.spark.prototype._
 import org.opencypher.spark.prototype.ir._
-import org.opencypher.spark.impl.util.SlotSymbolGenerator
-import org.opencypher.spark.prototype.ir.impl.blocks.{MatchBlock, ProjectBlock, ReturnBlock}
+import org.opencypher.spark.prototype.ir.block._
+import org.opencypher.spark.prototype.ir.pattern.{AnyNode, AnyRelationship, Pattern}
+import org.opencypher.spark.prototype.ir.token.{PropertyKey, TokenRegistry}
 
 import scala.language.implicitConversions
 
@@ -266,21 +267,21 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
 
   import org.opencypher.spark.impl.foo._
 
-  override def cypherNew(ir: QueryModel[Expr], params: Map[String, CypherValue]): CypherResultContainer = {
+  override def cypherNew(ir: QueryDescriptor[Expr], params: Map[String, CypherValue]): CypherResultContainer = {
 
     implicit val pInner = planningContext
     implicit val runtimeContext = new StdRuntimeContext(session, params)
 
-    val root = ir.root
+    val model = ir.model
 
-    implicit val tokenDefs = root.tokens
+    implicit val tokenDefs = model.tokens
 
-    val first = root.solve
+    val first = model.root
 
-    val plan = first match {
-      case MatchBlock(_, _, given, where, _) =>
+    val plan = model(first) match {
+      case MatchBlock(_, _, pattern, where, _) =>
         // plan given
-        val plan = givenPlanner(given).asProduct
+        val plan = planPattern(pattern).asProduct
         // all variables are now projected to fields
         // and will be available to predicates
         val withFilters = wherePlanner(plan, where)
@@ -288,11 +289,11 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
         withFilters
     }
 
-    val finished = root.blocks.blocks.values.foldLeft(plan) {
+    val finished = model.blocks.values.foldLeft(plan) {
       case (acc, next) => next match {
-        case ProjectBlock(_, _, _, _, Yields(exprs), _) =>
-          planProjections(acc, exprs)
-        case ReturnBlock(_, BlockSignature(_, out), _) =>
+        case ProjectBlock(_, _, ProjectedFields(exprs), _) =>
+          planProjections(acc, exprs.values.toSet)
+        case SelectBlock(_, BlockSig(_, out), _, _) =>
 
           // all blocks planned, drop extra columns
           acc.selectFields(out.toSeq.map(f => Symbol(f.name.replace(".", "_"))):_*)
@@ -303,7 +304,7 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
     // map to user requested columns
 
     val renamed = ir.returns.foldLeft(finished) {
-      case (acc, (f, name)) => acc.aliasField(Symbol(f.name.replace(".", "_")), Symbol(name))
+      case (acc, (name, f)) => acc.aliasField(Symbol(f.name.replace(".", "_")), Symbol(name))
     }
 
     StdCypherResultContainer.fromProducts(renamed)
@@ -329,7 +330,7 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
     equalities
   }
 
-  private def givenPlanner(given: Given)(implicit tokens: TokenRegistry) = {
+  private def planPattern(given: Pattern[Expr])(implicit tokens: TokenRegistry) = {
     val nodeFrames = given.nodes.map(nodePlan)
     val rels = given.rels.toSeq.map(relPlan)
 
@@ -367,7 +368,7 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
   private def relId(r: Field): Symbol = Symbol(r.name + "_id")
   private def relStart(r: Field): Symbol = Symbol(r.name + "_start")
   private def relEnd(r: Field): Symbol = Symbol(r.name + "_end")
-  private def prop(m: String, key: PropertyKeyDef) = Symbol(m + "_" + key.name)
+  private def prop(m: String, key: PropertyKey) = Symbol(m + "_" + key.name)
 
 }
 

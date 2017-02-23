@@ -1,7 +1,7 @@
 package org.opencypher.spark.prototype.logical
 
 import org.opencypher.spark.prototype._
-import org.opencypher.spark.prototype.ir.AnyNode
+import org.opencypher.spark.prototype.ir.pattern.AnyNode
 
 import scala.collection.immutable.SortedSet
 

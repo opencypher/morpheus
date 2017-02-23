@@ -8,15 +8,17 @@ import cats.syntax.flatMap._
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection._
 import org.neo4j.cypher.internal.frontend.v3_2.ast
 import org.opencypher.spark.prototype.ir._
+import org.opencypher.spark.prototype.ir.pattern._
+import org.opencypher.spark.prototype.ir.token.{RelTypeRef, TokenRegistry}
 
 import scala.annotation.tailrec
 
 final class PatternConverter(val tokens: TokenRegistry) extends AnyVal {
 
-  type Result[A] = State[Given, A]
+  type Result[A] = State[Pattern[Expr], A]
 
-  def convert(p: ast.Pattern, given: Given = Given.nothing): Given =
-    convertPattern(p).runS(given).value
+  def convert(p: ast.Pattern, pattern: Pattern[Expr] = Pattern.empty): Pattern[Expr] =
+    convertPattern(p).runS(pattern).value
 
   private def convertPattern(p: ast.Pattern): Result[Unit] =
     Foldable[List].sequence_[Result, Unit](p.patternParts.toList.map(convertPart))
@@ -30,14 +32,14 @@ final class PatternConverter(val tokens: TokenRegistry) extends AnyVal {
   private def convertElement(p: ast.PatternElement): Result[Field] = p match {
     case ast.NodePattern(Some(v), labels, None) => for {
         entity <- pure(Field(v.name))
-        _ <- modify[Given](_.withEntity(entity, AnyNode(WithEvery(labels.map(l => tokens.label(l.name)).toSet))))
+        _ <- modify[Pattern[Expr]](_.withEntity(entity, AnyNode(WithEvery(labels.map(l => tokens.label(l.name)).toSet))))
       } yield entity
 
     case ast.RelationshipChain(left, ast.RelationshipPattern(Some(eVar), types, None, None, dir), right) => for {
       source <- convertElement(left)
       target <- convertElement(right)
       rel <- pure(Field(eVar.name))
-      _ <- modify[Given] { given =>
+      _ <- modify[Pattern[Expr]] { given =>
         val typeRefs =
           if (types.isEmpty) WithAny.empty[RelTypeRef]
           else WithAny[RelTypeRef](types.map(t => tokens.relType(t.name)).toSet)

@@ -1,7 +1,7 @@
 package org.opencypher.spark.prototype
 
 import org.opencypher.spark.StdTestSuite
-import org.opencypher.spark.prototype.ir.LabelRef
+import org.opencypher.spark.prototype.ir.token.LabelRef
 
 class AndsTest extends StdTestSuite {
 

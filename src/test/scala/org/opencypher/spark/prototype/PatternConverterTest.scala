@@ -1,9 +1,10 @@
 package org.opencypher.spark.prototype
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Pattern
 import org.neo4j.cypher.internal.frontend.v3_2.parser.{Expressions, Patterns}
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, SyntaxException, ast}
 import org.opencypher.spark.prototype.ir._
+import org.opencypher.spark.prototype.ir.pattern._
+import org.opencypher.spark.prototype.ir.token._
 import org.parboiled.scala.{EOI, Parser, Rule1}
 
 import scala.language.implicitConversions
@@ -14,7 +15,7 @@ class PatternConverterTest extends IrTestSupport {
     val pattern = parse("(x)")
 
     convert(pattern) should equal(
-      Given.nothing.withEntity('x, AnyNode())
+      Pattern.empty.withEntity('x, AnyNode())
     )
   }
 
@@ -22,7 +23,7 @@ class PatternConverterTest extends IrTestSupport {
     val pattern = parse("(x)-[r]->(b)")
 
     convert(pattern) should equal(
-      Given.nothing
+      Pattern.empty
         .withEntity('x, AnyNode())
         .withEntity('b, AnyNode())
         .withEntity('r, AnyRelationship())
@@ -34,7 +35,7 @@ class PatternConverterTest extends IrTestSupport {
     val pattern = parse("(x)-[r1]->(y)-[r2]->(z)")
 
     convert(pattern) should equal(
-      Given.nothing
+      Pattern.empty
         .withEntity('x, AnyNode())
         .withEntity('y, AnyNode())
         .withEntity('z, AnyNode())
@@ -49,7 +50,7 @@ class PatternConverterTest extends IrTestSupport {
     val pattern = parse("(x), (y)-[r]->(z), (foo)")
 
     convert(pattern) should equal(
-      Given.nothing
+      Pattern.empty
         .withEntity('x, AnyNode())
         .withEntity('y, AnyNode())
         .withEntity('z, AnyNode())
@@ -63,7 +64,7 @@ class PatternConverterTest extends IrTestSupport {
     val pattern = parse("(x)-[r]-(y)")
 
     convert(pattern) should equal(
-      Given.nothing
+      Pattern.empty
         .withEntity('x, AnyNode())
         .withEntity('y, AnyNode())
         .withEntity('r, AnyRelationship())
@@ -75,7 +76,7 @@ class PatternConverterTest extends IrTestSupport {
     val pattern = parse("(x:Person), (y:Dog:Person)")
 
     convert(pattern) should equal(
-      Given.nothing
+      Pattern.empty
         .withEntity('x, AnyNode(WithEvery.of(LabelRef(0))))
         .withEntity('y, AnyNode(WithEvery.of(LabelRef(0), LabelRef(1))))
     )
@@ -85,7 +86,7 @@ class PatternConverterTest extends IrTestSupport {
     val pattern = parse("(x)-[r:KNOWS | LOVES]->(y)")
 
     convert(pattern) should equal(
-      Given.nothing
+      Pattern.empty
         .withEntity('x, AnyNode())
         .withEntity('y, AnyNode())
         .withEntity('r, AnyRelationship(WithAny.of(RelTypeRef(0), RelTypeRef(1))))
@@ -94,16 +95,16 @@ class PatternConverterTest extends IrTestSupport {
   }
 
   val converter = new PatternConverter(TokenRegistry.none
-    .withLabel(LabelDef("Person")).withLabel(LabelDef("Dog"))
-    .withRelType(RelTypeDef("KNOWS")).withRelType(RelTypeDef("LOVES")))
+    .withLabel(Label("Person")).withLabel(Label("Dog"))
+    .withRelType(RelType("KNOWS")).withRelType(RelType("LOVES")))
 
-  def convert(p: Pattern) = converter.convert(p)
+  def convert(p: ast.Pattern) = converter.convert(p)
 
   def parse(exprText: String): ast.Pattern = PatternParser.parse(exprText, None)
 
   object PatternParser extends Parser with Patterns with Expressions {
 
-    def SinglePattern: Rule1[Seq[Pattern]] = rule {
+    def SinglePattern: Rule1[Seq[ast.Pattern]] = rule {
       oneOrMore(Pattern) ~~ EOI.label("end of input")
     }
 

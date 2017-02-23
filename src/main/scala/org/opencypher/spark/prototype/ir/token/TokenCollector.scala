@@ -1,22 +1,26 @@
-package org.opencypher.spark.prototype.ir
+package org.opencypher.spark.prototype.ir.token
 
 object TokenCollector {
 
-  type TokenCollection[D <: TokenDef] = IndexedSeq[D]
+  type TokenCollection[D <: Token] = IndexedSeq[D]
 
-  implicit object labelCollector extends TokenCollector[LabelRef, LabelDef]("label") {
+  implicit object parameterCollector extends TokenCollector[ParameterRef, Parameter]("parameter") {
+    override protected def createRef(id: Int): ParameterRef = ParameterRef(id)
+  }
+
+  implicit object labelCollector extends TokenCollector[LabelRef, Label]("label") {
     override protected def createRef(id: Int): LabelRef = LabelRef(id)
   }
 
-  implicit object relTypeCollector extends TokenCollector[RelTypeRef, RelTypeDef]("rel-type") {
+  implicit object relTypeCollector extends TokenCollector[RelTypeRef, RelType]("rel-type") {
     override protected def createRef(id: Int): RelTypeRef = RelTypeRef(id)
   }
 
-  implicit object propertyKeyCollector extends TokenCollector[PropertyKeyRef, PropertyKeyDef]("property-key") {
+  implicit object propertyKeyCollector extends TokenCollector[PropertyKeyRef, PropertyKey]("property-key") {
     override protected def createRef(id: Int): PropertyKeyRef = PropertyKeyRef(id)
   }
 
-  implicit final class TokenCollectorOps[R <: TokenRef[D], D <: TokenDef](val tokens: TokenCollection[D])
+  implicit final class TokenCollectorOps[R <: TokenRef[D], D <: Token](val tokens: TokenCollection[D])
     extends AnyVal {
 
     type Collector = TokenCollector[R, D]
@@ -27,10 +31,10 @@ object TokenCollector {
     def merge(defn: D)(implicit collector: Collector): TokenCollection[D] = collector.merge(tokens, defn)
   }
 
-  def apply[R <: TokenRef[D], D <: TokenDef](implicit collector: TokenCollector[R, D]): TokenCollector[R, D] = collector
+  def apply[R <: TokenRef[D], D <: Token](implicit collector: TokenCollector[R, D]): TokenCollector[R, D] = collector
 }
 
-sealed abstract class TokenCollector[R <: TokenRef[D], D <: TokenDef](val tokenKindName: String) {
+sealed abstract class TokenCollector[R <: TokenRef[D], D <: Token](val tokenKindName: String) {
 
   import TokenCollector.TokenCollection
 

@@ -1,34 +1,34 @@
 package org.opencypher.spark.prototype
 
-import org.opencypher.spark.prototype.ir.{AnyNode, AnyRelationship, DirectedRelationship, Given}
+import org.opencypher.spark.prototype.ir.pattern.{AnyNode, AnyRelationship, DirectedRelationship, Pattern}
 
-class GivenTest extends IrTestSupport {
+class PatternTest extends IrTestSupport {
 
   test("add connection") {
-    Given.nothing
+    Pattern.empty[Expr]
       .withConnection('r, DirectedRelationship('a, 'b)) should equal(
-      Given(Map.empty, Map(toField('r) -> DirectedRelationship('a, 'b)))
+      Pattern(Map.empty, Map(toField('r) -> DirectedRelationship('a, 'b)))
     )
   }
 
   test("mark node as solved") {
-    Given.nothing
+    Pattern.empty[Expr]
       .withEntity('a, AnyNode())
       .withEntity('b, AnyNode())
       .withEntity('r, AnyRelationship())
       .solvedNode('a) should equal(
-        Given(Map(toField('b) -> AnyNode(), toField('r) -> AnyRelationship()), Map.empty)
+        Pattern(Map(toField('b) -> AnyNode(), toField('r) -> AnyRelationship()), Map.empty)
     )
   }
 
   test("mark connection as solved") {
-    Given.nothing
+    Pattern.empty[Expr]
       .withEntity('a, AnyNode())
       .withEntity('b, AnyNode())
       .withEntity('r, AnyRelationship())
       .withConnection('r, DirectedRelationship('a, 'b))
       .solvedConnection('r) should equal(
-        Given(Map.empty, Map.empty)
+        Pattern(Map.empty, Map.empty)
     )
   }
 

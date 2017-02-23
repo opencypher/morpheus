@@ -1,6 +1,7 @@
-package org.opencypher.spark.prototype.ir
+package org.opencypher.spark.prototype.ir.pattern
 
-import org.opencypher.spark.prototype.ir.Orientation._
+import org.opencypher.spark.prototype.ir._
+import org.opencypher.spark.prototype.ir.pattern.Orientation.{Cyclic, Directed, Undirected}
 
 import scala.language.higherKinds
 
