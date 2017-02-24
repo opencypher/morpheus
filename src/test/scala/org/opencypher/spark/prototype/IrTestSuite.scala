@@ -20,8 +20,8 @@ class IrTestSuite extends StdTestSuite {
     val root = blocks(rootRef)
     val result = ResultBlock[Expr](
       after = Set(rootRef),
-      over = root.over,
-      binds = OrderedFields(root.over.outputs.toSeq),
+      // TODO
+      binds = OrderedFields[Expr](),
       where = AllGiven[Expr]()
     )
     val model = QueryModel(result, GlobalsRegistry.none, blocks)

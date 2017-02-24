@@ -5,7 +5,6 @@ import org.opencypher.spark.prototype.ir.pattern.AllGiven
 
 final case class ResultBlock[E](
   after: Set[BlockRef],
-  over: BlockSig,
   binds: OrderedFields[E],
   where: AllGiven[E] = AllGiven[E]()
 ) extends BasicBlock[OrderedFields[E], E](BlockType("result"))

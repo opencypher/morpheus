@@ -19,7 +19,7 @@ class LogicalOperatorProducer {
     val solve = model.result
 
     val plan = model(solve.after.head) match {
-      case MatchBlock(_, _, given, where) =>
+      case MatchBlock(_, given, where) =>
         // plan given
         val plan = givenPlanner(given)
         // all variables are now projected to fields
@@ -31,9 +31,9 @@ class LogicalOperatorProducer {
 
     val finished = model.blocks.values.foldLeft(plan) {
       case (acc, next) => next match {
-        case ProjectBlock(_, _, ProjectedFields(exprs), _) =>
+        case ProjectBlock(_, ProjectedFields(exprs), _) =>
           planProjections(acc, exprs.values.toSet)
-        case ResultBlock(_, _, OrderedFields(fields), _) =>
+        case ResultBlock(_, OrderedFields(fields), _) =>
 
           // all blocks planned, drop extra columns
           val map = SortedSet(fields.map { f =>

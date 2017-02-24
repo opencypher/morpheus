@@ -279,7 +279,7 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
     val first = model.blocks.head._2
 
     val plan = first match {
-      case MatchBlock(_, _, pattern, where) =>
+      case MatchBlock(_, pattern, where) =>
         // plan given
         val plan = planPattern(pattern).asProduct
         // all variables are now projected to fields
@@ -291,12 +291,12 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
 
     val finished = model.blocks.values.foldLeft(plan) {
       case (acc, next) => next match {
-        case ProjectBlock(_, _, ProjectedFields(exprs), _) =>
+        case ProjectBlock(_, ProjectedFields(exprs), _) =>
           planProjections(acc, exprs.values.toSet)
-        case ResultBlock(_, BlockSig(_, out), _, _) =>
+        case ResultBlock(_, OrderedFields(fields), _) =>
 
           // all blocks planned, drop extra columns
-          acc.selectFields(out.toSeq.map(f => Symbol(f.name.replace(".", "_"))):_*)
+          acc.selectFields(fields.map(f => Symbol(f.name.replace(".", "_"))):_*)
         case _ => acc
       }
     }

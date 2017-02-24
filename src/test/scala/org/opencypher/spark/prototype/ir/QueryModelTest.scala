@@ -64,7 +64,6 @@ class QueryModelTest extends IrTestSuite {
 
   case class DummyBlock[E](after: Set[BlockRef] = Set.empty) extends BasicBlock[DummyBinds[E], E](BlockType("dummy")) {
     override def binds: DummyBinds[E] = DummyBinds[E]()
-    override def over: BlockSig = BlockSig.empty
     override def where: AllGiven[E] = AllGiven[E]()
   }
 

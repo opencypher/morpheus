@@ -21,7 +21,7 @@ class LogicalOperatorProducerTest extends IrTestSuite {
   }
 
   private def matchBlock(pattern: Pattern[Expr]): Block[Expr] =
-    MatchBlock[Expr](Set.empty, BlockSig.empty, pattern, AllGiven[Expr]())
+    MatchBlock[Expr](Set.empty, pattern, AllGiven[Expr]())
 
   private val producer = new LogicalOperatorProducer
 

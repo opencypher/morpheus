@@ -54,8 +54,7 @@ class CypherQueryBuilder(query: String, tokenDefs: GlobalsRegistry) {
         val where = convertWhere(astWhere)
 
         val after = blockRegistry.reg.headOption.map(_._1).toSet
-        val over = BlockSig(Set.empty, Set.empty)
-        val block = MatchBlock[Expr](after, over, given, where)
+        val block = MatchBlock[Expr](after, given, where)
         val (ref, reg) = blockRegistry.register(block)
         reg
 
@@ -66,15 +65,12 @@ class CypherQueryBuilder(query: String, tokenDefs: GlobalsRegistry) {
         val yields = ProjectedFields[Expr](items.map(i => Field(i.name) -> convertExpr(i.expression)).toMap)
 
         val after = blockRegistry.reg.headOption.map(_._1).toSet
-        val projSig = BlockSig(Set.empty, Set.empty)
-        val projs = ProjectBlock[Expr](after = after, over = projSig, where = AllGiven[Expr](), binds = yields)
+        val projs = ProjectBlock[Expr](after = after, where = AllGiven[Expr](), binds = yields)
 
         val (ref, reg) = blockRegistry.register(projs)
         // TODO: Add rewriter and put the above in case With(...)
 
-        val returnSig = BlockSig(Set.empty, items.map(extract).toSet)
-
-        val returns = ResultBlock[Expr](Set(ref), returnSig, OrderedFields(items.map(extract)))
+        val returns = ResultBlock[Expr](Set(ref), OrderedFields(items.map(extract)))
 
         val (_, reg2) = reg.register(returns)
         reg2

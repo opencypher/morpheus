@@ -10,7 +10,6 @@ trait Block[E] {
   def isLeaf: Boolean = after.isEmpty
 
   def after: Set[BlockRef]
-  def over: BlockSig
 
   def binds: Binds[E]
   def where: AllGiven[E]
