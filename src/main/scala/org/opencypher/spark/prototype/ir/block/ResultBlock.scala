@@ -8,9 +8,7 @@ final case class ResultBlock[E](
   over: BlockSig,
   binds: OrderedFields[E],
   where: AllGiven[E] = AllGiven[E]()
-) extends BasicBlock[OrderedFields[E], E, ResultBlockType.type] {
-  override def blockType = ResultBlockType
-}
+) extends BasicBlock[OrderedFields[E], E](BlockType("result"))
 
 final case class OrderedFields[E](fieldsOrder: Seq[Field] = Seq.empty) extends Binds[E] {
   override def fields = fieldsOrder.toSet

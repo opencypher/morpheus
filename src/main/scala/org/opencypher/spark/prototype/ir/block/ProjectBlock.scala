@@ -9,9 +9,7 @@ final case class ProjectBlock[E](
   over: BlockSig,
   binds: ProjectedFields[E] = ProjectedFields[E](),
   where: AllGiven[E] = AllGiven[E]()
-) extends BasicBlock[ProjectedFields[E], E, ProjectBlockType.type] {
-  override def blockType = ProjectBlockType
-}
+) extends BasicBlock[ProjectedFields[E], E](BlockType("project"))
 
 final case class ProjectedFields[E](items: Map[Field, E] = Map.empty[Field, E]) extends Binds[E] {
   override def fields = items.keySet

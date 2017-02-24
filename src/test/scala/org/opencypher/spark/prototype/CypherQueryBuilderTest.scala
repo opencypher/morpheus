@@ -14,7 +14,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
       import globals._
 
       val matchRef = model.findExactlyOne {
-        case MatchBlock(_, _, Pattern(entities, topo), AllGiven(exprs), _) =>
+        case MatchBlock(_, _, Pattern(entities, topo), AllGiven(exprs)) =>
           entities should equal(Map(toField('a) -> EveryNode(AllOf(label("Person")))))
           topo shouldBe empty
           exprs should equal(Set(HasLabel(toVar('a), label("Person"))))
@@ -41,7 +41,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
       import globals._
 
       val matchRef = model.findExactlyOne {
-        case NoWhereBlock(MatchBlock(_, _, Pattern(entities, topo), _, _)) =>
+        case NoWhereBlock(MatchBlock(_, _, Pattern(entities, topo), _)) =>
           entities should equal(Map(toField('a) -> EveryNode(), toField('b) -> EveryNode(), toField('r) -> EveryRelationship()))
           topo should equal(Map(toField('r) -> DirectedRelationship('a, 'b)))
       }

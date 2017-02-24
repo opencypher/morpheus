@@ -19,7 +19,7 @@ class LogicalOperatorProducer {
     val solve = model.result
 
     val plan = model(solve.after.head) match {
-      case MatchBlock(_, _, given, where, _) =>
+      case MatchBlock(_, _, given, where) =>
         // plan given
         val plan = givenPlanner(given)
         // all variables are now projected to fields

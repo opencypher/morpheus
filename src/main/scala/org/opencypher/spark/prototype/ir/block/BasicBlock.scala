@@ -1,6 +1,5 @@
 package org.opencypher.spark.prototype.ir.block
 
-trait BasicBlock[B <: Binds[E], E, T <: BlockType] extends Block[E] {
-  override def blockType: T
+abstract class BasicBlock[B <: Binds[E], E](override val blockType: BlockType) extends Block[E] {
   override def binds: B
 }

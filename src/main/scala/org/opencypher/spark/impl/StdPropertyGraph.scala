@@ -279,7 +279,7 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
     val first = model.blocks.head._2
 
     val plan = first match {
-      case MatchBlock(_, _, pattern, where, _) =>
+      case MatchBlock(_, _, pattern, where) =>
         // plan given
         val plan = planPattern(pattern).asProduct
         // all variables are now projected to fields

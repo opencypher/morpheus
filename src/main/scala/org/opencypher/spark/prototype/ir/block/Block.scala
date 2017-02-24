@@ -16,6 +16,8 @@ trait Block[E] {
   def where: AllGiven[E]
 }
 
+final case class BlockType(name: String)
+
 trait Binds[E] {
   def fields: Set[Field]
 }
