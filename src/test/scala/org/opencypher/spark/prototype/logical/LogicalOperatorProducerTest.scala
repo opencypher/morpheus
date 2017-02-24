@@ -20,6 +20,16 @@ class LogicalOperatorProducerTest extends IrTestSuite {
     )
   }
 
+  test("convert project block") {
+    val fields = ProjectedFields[Expr](Map(toField('a) -> toVar('a)))
+
+    val block = ProjectBlock[Expr](Set.empty, fields)
+
+    plan(block) should equal(
+      Project('a, null)
+    )
+  }
+
   private def matchBlock(pattern: Pattern[Expr]): Block[Expr] =
     MatchBlock[Expr](Set.empty, pattern, AllGiven[Expr]())
 

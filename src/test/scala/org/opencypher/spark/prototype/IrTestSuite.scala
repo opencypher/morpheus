@@ -8,7 +8,7 @@ import org.opencypher.spark.prototype.ir.pattern.AllGiven
 
 import scala.language.implicitConversions
 
-class IrTestSuite extends StdTestSuite {
+abstract class IrTestSuite extends StdTestSuite {
 
   implicit def toField(s: Symbol): Field = Field(s.name)
   implicit def toVar(s: Symbol): Var = Var(s.name)
