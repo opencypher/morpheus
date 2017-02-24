@@ -4,14 +4,14 @@ import org.neo4j.cypher.internal.frontend.v3_2.helpers.fixedPoint
 import org.opencypher.spark.prototype._
 import org.opencypher.spark.prototype.ir._
 import org.opencypher.spark.prototype.ir.block._
-import org.opencypher.spark.prototype.ir.pattern.Pattern
+import org.opencypher.spark.prototype.ir.pattern.{AllGiven, Pattern}
 import org.opencypher.spark.prototype.ir.global.GlobalsRegistry
 
 import scala.collection.immutable.SortedSet
 
 class LogicalOperatorProducer {
 
-  def plan(ir: QueryDescriptor[Expr]): LogicalOperator = {
+  def plan(ir: CypherQuery[Expr]): LogicalOperator = {
     val model = ir.model
 
     implicit val tokenDefs = model.globals
@@ -33,7 +33,7 @@ class LogicalOperatorProducer {
       case (acc, next) => next match {
         case ProjectBlock(_, _, ProjectedFields(exprs), _) =>
           planProjections(acc, exprs.values.toSet)
-        case ResultBlock(_, _, ResultFields(fields), _) =>
+        case ResultBlock(_, _, OrderedFields(fields), _) =>
 
           // all blocks planned, drop extra columns
           val map = SortedSet(fields.map { f =>
@@ -57,8 +57,8 @@ class LogicalOperatorProducer {
     }
   }
 
-  private def wherePlanner(in: LogicalOperator, where: Where[Expr])(implicit tokens: GlobalsRegistry) = {
-    val equalities = where.predicates.foldLeft(in) {
+  private def wherePlanner(in: LogicalOperator, where: AllGiven[Expr])(implicit tokens: GlobalsRegistry) = {
+    val equalities = where.elts.foldLeft(in) {
       case (acc, eq@Equals(prop: Property, _: Const)) =>
         Filter(eq, Project(prop, acc))
       case (acc, _: HasLabel) => acc // ignore label predicates; solved by scans

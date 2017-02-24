@@ -7,10 +7,10 @@ case object Pattern {
   def empty[E] = Pattern[E](entities = Map.empty, topology = Map.empty)
 }
 
-final case class Pattern[E](entities: Map[Field, AnyEntity], topology: Map[Field, Connection]) extends Binds[E] {
+final case class Pattern[E](entities: Map[Field, EveryEntity], topology: Map[Field, Connection]) extends Binds[E] {
 
-  lazy val nodes: Map[Field, AnyNode] = entities.collect { case (k, v: AnyNode) => k -> v }
-  lazy val rels: Map[Field, AnyRelationship] = entities.collect { case (k, v: AnyRelationship) => k -> v }
+  lazy val nodes: Map[Field, EveryNode] = entities.collect { case (k, v: EveryNode) => k -> v }
+  lazy val rels: Map[Field, EveryRelationship] = entities.collect { case (k, v: EveryRelationship) => k -> v }
 
   override def fields = entities.keySet
 
@@ -35,7 +35,7 @@ final case class Pattern[E](entities: Map[Field, AnyEntity], topology: Map[Field
   def withConnection(key: Field, connection: Connection): Pattern[E] =
     if (topology.get(key).contains(connection)) this else copy(topology = topology.updated(key, connection))
 
-  def withEntity(key: Field, value: AnyEntity): Pattern[E] =
+  def withEntity(key: Field, value: EveryEntity): Pattern[E] =
     if (entities.get(key).contains(value)) this else copy(entities = entities.updated(key, value))
 }
 

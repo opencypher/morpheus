@@ -1,11 +1,11 @@
 package org.opencypher.spark.prototype.ir.block
 
-import org.opencypher.spark.prototype.ir.pattern.Pattern
+import org.opencypher.spark.prototype.ir.pattern.{AllGiven, Pattern}
 
 final case class MatchBlock[E](
   after: Set[BlockRef],
   over: BlockSig,
   binds: Pattern[E],
-  where: Where[E] = Where.everything,
+  where: AllGiven[E] = AllGiven[E](),
   blockType: MatchBlockType = StandardMatchBlockType
 ) extends BasicBlock[Pattern[E], E, MatchBlockType]

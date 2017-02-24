@@ -1,7 +1,7 @@
 package org.opencypher.spark.prototype.logical
 
 import org.opencypher.spark.prototype._
-import org.opencypher.spark.prototype.ir.pattern.AnyNode
+import org.opencypher.spark.prototype.ir.pattern.EveryNode
 
 import scala.collection.immutable.SortedSet
 
@@ -58,7 +58,7 @@ sealed trait LogicalLeafOperator extends LogicalOperator {
   override def isLeaf = true
 }
 
-final case class NodeScan(node: Var, nodeDef: AnyNode) extends LogicalLeafOperator {
+final case class NodeScan(node: Var, nodeDef: EveryNode) extends LogicalLeafOperator {
   override def signature = Signature.empty.withExpr(node)
 }
 

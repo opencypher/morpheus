@@ -15,7 +15,7 @@ trait Prototype {
 
     val tokens = GlobalsExtractor(stmt)
 
-    val ir = QueryDescriptorBuilder.from(stmt, query, tokens)
+    val ir = CypherQueryBuilder.from(stmt, query, tokens)
 
     val cvs = params.mapValues {
       case s: String => CypherString(s)

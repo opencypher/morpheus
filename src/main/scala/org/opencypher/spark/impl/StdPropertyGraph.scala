@@ -8,8 +8,8 @@ import org.opencypher.spark.impl.util.SlotSymbolGenerator
 import org.opencypher.spark.prototype._
 import org.opencypher.spark.prototype.ir._
 import org.opencypher.spark.prototype.ir.block._
-import org.opencypher.spark.prototype.ir.pattern.{AnyNode, AnyRelationship, Pattern}
-import org.opencypher.spark.prototype.ir.global.{PropertyKey, GlobalsRegistry}
+import org.opencypher.spark.prototype.ir.pattern.{AllGiven, EveryNode, EveryRelationship, Pattern}
+import org.opencypher.spark.prototype.ir.global.{GlobalsRegistry, PropertyKey}
 
 import scala.language.implicitConversions
 
@@ -267,7 +267,7 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
 
   import org.opencypher.spark.impl.foo._
 
-  override def cypherNew(ir: QueryDescriptor[Expr], params: Map[String, CypherValue]): CypherResultContainer = {
+  override def cypherNew(ir: CypherQuery[Expr], params: Map[String, CypherValue]): CypherResultContainer = {
 
     implicit val pInner = planningContext
     implicit val runtimeContext = new StdRuntimeContext(session, params)
@@ -318,8 +318,8 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
     }
   }
 
-  private def wherePlanner(in: StdCypherFrame[Product], where: Where[Expr])(implicit tokens: GlobalsRegistry) = {
-    val equalities = where.predicates.foldLeft(in) {
+  private def wherePlanner(in: StdCypherFrame[Product], where: AllGiven[Expr])(implicit tokens: GlobalsRegistry) = {
+    val equalities = where.elts.foldLeft(in) {
       case (acc, Equals(Property(Var(m), key), p: Const)) =>
         val withProp = acc.propertyValue(Symbol(m), Symbol(tokens.propertyKey(key).name))(prop(m, tokens.propertyKey(key)))
         FilterProduct.paramEqFilter(withProp)(withProp.projectedField.sym, p)
@@ -352,12 +352,12 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
     } else ???
   }
 
-  private def nodePlan(entity: (Field, AnyNode))(implicit tokens: GlobalsRegistry) = {
+  private def nodePlan(entity: (Field, EveryNode))(implicit tokens: GlobalsRegistry) = {
     val (field, anyNode) = entity
     labelScan(field)(anyNode.labels.elts.map(l => tokens.label(l).name).toIndexedSeq).asProduct.nodeId(field)(nodeId(field))
   }
 
-  private def relPlan(entity: (Field, AnyRelationship))(implicit tokens: GlobalsRegistry) = {
+  private def relPlan(entity: (Field, EveryRelationship))(implicit tokens: GlobalsRegistry) = {
     val (field, anyRel) = entity
     val plan = typeScan(field)(anyRel.relTypes.elts.toIndexedSeq.map(ref => tokens.relType(ref).name))
       .asProduct.relationshipStartId(field)(relStart(field)).relationshipEndId(field)(relEnd(field))

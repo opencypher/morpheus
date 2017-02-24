@@ -5,13 +5,13 @@ import java.util.concurrent.atomic.AtomicLong
 import org.neo4j.cypher.internal.frontend.v3_2.ast
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.opencypher.spark.prototype.ir._
-import org.opencypher.spark.prototype.ir.block.{Where => IrWhere, _}
+import org.opencypher.spark.prototype.ir.block._
 import org.opencypher.spark.prototype.ir.global.GlobalsRegistry
-import org.opencypher.spark.prototype.ir.pattern.Pattern
+import org.opencypher.spark.prototype.ir.pattern.{AllGiven, Pattern}
 
-object QueryDescriptorBuilder {
-  def from(s: Statement, q: String, tokenDefs: GlobalsRegistry): QueryDescriptor[Expr] = {
-    val builder = new QueryDescriptorBuilder(q, tokenDefs)
+object CypherQueryBuilder {
+  def from(s: Statement, q: String, tokenDefs: GlobalsRegistry): CypherQuery[Expr] = {
+    val builder = new CypherQueryBuilder(q, tokenDefs)
     val blocks = s match {
       case Query(_, part) => part match {
         case SingleQuery(clauses) => clauses.foldLeft(BlockRegistry.empty[Expr]) {
@@ -41,7 +41,7 @@ case class BlockRegistry[E](reg: Seq[(BlockRef, Block[E])]) {
   private def generateName(t: BlockType) = s"${t.name}_${c.incrementAndGet()}"
 }
 
-class QueryDescriptorBuilder(query: String, tokenDefs: GlobalsRegistry) {
+class CypherQueryBuilder(query: String, tokenDefs: GlobalsRegistry) {
   val exprConverter = new ExpressionConverter(tokenDefs)
   val patternConverter = new PatternConverter(tokenDefs)
 
@@ -67,14 +67,14 @@ class QueryDescriptorBuilder(query: String, tokenDefs: GlobalsRegistry) {
 
         val after = blockRegistry.reg.headOption.map(_._1).toSet
         val projSig = BlockSig(Set.empty, Set.empty)
-        val projs = ProjectBlock[Expr](after = after, over = projSig, where = IrWhere.everything, binds = yields)
+        val projs = ProjectBlock[Expr](after = after, over = projSig, where = AllGiven[Expr](), binds = yields)
 
         val (ref, reg) = blockRegistry.register(projs)
         // TODO: Add rewriter and put the above in case With(...)
 
         val returnSig = BlockSig(Set.empty, items.map(extract).toSet)
 
-        val returns = ResultBlock[Expr](Set(ref), returnSig, ResultFields(items.map(extract)))
+        val returns = ResultBlock[Expr](Set(ref), returnSig, OrderedFields(items.map(extract)))
 
         val (_, reg2) = reg.register(returns)
         reg2
@@ -84,12 +84,12 @@ class QueryDescriptorBuilder(query: String, tokenDefs: GlobalsRegistry) {
   private def convertPattern(p: ast.Pattern): Pattern[Expr] = patternConverter.convert(p)
   private def convertExpr(e: ast.Expression): Expr = exprConverter.convert(e)
 
-  private def convertWhere(where: Option[ast.Where]): IrWhere[Expr] = where match {
+  private def convertWhere(where: Option[ast.Where]): AllGiven[Expr] = where match {
     case Some(ast.Where(expr)) => convertExpr(expr) match {
-      case Ands(exprs) => IrWhere(exprs)
-      case e => IrWhere(Set(e))
+      case Ands(exprs) => AllGiven(exprs)
+      case e => AllGiven(Set(e))
     }
-    case None => IrWhere.everything
+    case None => AllGiven[Expr]()
   }
 
   private def extract(r: ReturnItem) = {
@@ -99,17 +99,17 @@ class QueryDescriptorBuilder(query: String, tokenDefs: GlobalsRegistry) {
     }
   }
 
-  def build(blocks: BlockRegistry[Expr]): QueryDescriptor[Expr] = {
+  def build(blocks: BlockRegistry[Expr]): CypherQuery[Expr] = {
 
-    val maybeReturn: Option[ResultBlock[Expr]] = blocks.reg.collectFirst {
-      case (_, r: ResultBlock[Expr]) => r
-    }
+    val (ref, r) = blocks.reg.collectFirst {
+      case (_ref, r: ResultBlock[Expr]) => _ref -> r
+    }.get
 
-    val model = QueryModel(maybeReturn.get, tokenDefs, blocks.reg.toMap)
+    val model = QueryModel(r, tokenDefs, blocks.reg.toMap - ref)
 
     val info = QueryInfo(query)
 
-    QueryDescriptor(info, model)
+    CypherQuery(info, model)
   }
 }
 

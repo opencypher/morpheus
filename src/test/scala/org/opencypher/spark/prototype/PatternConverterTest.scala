@@ -9,13 +9,13 @@ import org.parboiled.scala.{EOI, Parser, Rule1}
 
 import scala.language.implicitConversions
 
-class PatternConverterTest extends IrTestSupport {
+class PatternConverterTest extends IrTestSuite {
 
   test("simple node pattern") {
     val pattern = parse("(x)")
 
     convert(pattern) should equal(
-      Pattern.empty.withEntity('x, AnyNode())
+      Pattern.empty.withEntity('x, EveryNode())
     )
   }
 
@@ -24,9 +24,9 @@ class PatternConverterTest extends IrTestSupport {
 
     convert(pattern) should equal(
       Pattern.empty
-        .withEntity('x, AnyNode())
-        .withEntity('b, AnyNode())
-        .withEntity('r, AnyRelationship())
+        .withEntity('x, EveryNode())
+        .withEntity('b, EveryNode())
+        .withEntity('r, EveryRelationship())
         .withConnection('r, DirectedRelationship('x, 'b))
     )
   }
@@ -36,11 +36,11 @@ class PatternConverterTest extends IrTestSupport {
 
     convert(pattern) should equal(
       Pattern.empty
-        .withEntity('x, AnyNode())
-        .withEntity('y, AnyNode())
-        .withEntity('z, AnyNode())
-        .withEntity('r1, AnyRelationship())
-        .withEntity('r2, AnyRelationship())
+        .withEntity('x, EveryNode())
+        .withEntity('y, EveryNode())
+        .withEntity('z, EveryNode())
+        .withEntity('r1, EveryRelationship())
+        .withEntity('r2, EveryRelationship())
         .withConnection('r1, DirectedRelationship('x, 'y))
         .withConnection('r2, DirectedRelationship('y, 'z))
     )
@@ -51,11 +51,11 @@ class PatternConverterTest extends IrTestSupport {
 
     convert(pattern) should equal(
       Pattern.empty
-        .withEntity('x, AnyNode())
-        .withEntity('y, AnyNode())
-        .withEntity('z, AnyNode())
-        .withEntity('foo, AnyNode())
-        .withEntity('r, AnyRelationship())
+        .withEntity('x, EveryNode())
+        .withEntity('y, EveryNode())
+        .withEntity('z, EveryNode())
+        .withEntity('foo, EveryNode())
+        .withEntity('r, EveryRelationship())
         .withConnection('r, DirectedRelationship('y, 'z))
     )
   }
@@ -65,9 +65,9 @@ class PatternConverterTest extends IrTestSupport {
 
     convert(pattern) should equal(
       Pattern.empty
-        .withEntity('x, AnyNode())
-        .withEntity('y, AnyNode())
-        .withEntity('r, AnyRelationship())
+        .withEntity('x, EveryNode())
+        .withEntity('y, EveryNode())
+        .withEntity('r, EveryRelationship())
         .withConnection('r, UndirectedRelationship('y, 'x))
     )
   }
@@ -77,8 +77,8 @@ class PatternConverterTest extends IrTestSupport {
 
     convert(pattern) should equal(
       Pattern.empty
-        .withEntity('x, AnyNode(WithEvery.of(LabelRef(0))))
-        .withEntity('y, AnyNode(WithEvery.of(LabelRef(0), LabelRef(1))))
+        .withEntity('x, EveryNode(AllOf(LabelRef(0))))
+        .withEntity('y, EveryNode(AllOf(LabelRef(0), LabelRef(1))))
     )
   }
 
@@ -87,9 +87,9 @@ class PatternConverterTest extends IrTestSupport {
 
     convert(pattern) should equal(
       Pattern.empty
-        .withEntity('x, AnyNode())
-        .withEntity('y, AnyNode())
-        .withEntity('r, AnyRelationship(WithAny.of(RelTypeRef(0), RelTypeRef(1))))
+        .withEntity('x, EveryNode())
+        .withEntity('y, EveryNode())
+        .withEntity('r, EveryRelationship(AnyOf(RelTypeRef(0), RelTypeRef(1))))
         .withConnection('r, DirectedRelationship('x, 'y))
     )
   }

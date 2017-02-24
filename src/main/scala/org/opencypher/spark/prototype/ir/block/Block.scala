@@ -1,6 +1,7 @@
 package org.opencypher.spark.prototype.ir.block
 
 import org.opencypher.spark.prototype.ir.Field
+import org.opencypher.spark.prototype.ir.pattern.AllGiven
 
 import scala.language.implicitConversions
 
@@ -12,16 +13,20 @@ trait Block[E] {
   def over: BlockSig
 
   def binds: Binds[E]
-  def where: Where[E]
+  def where: AllGiven[E]
 }
 
 trait Binds[E] {
   def fields: Set[Field]
 }
 
-case object Where {
-  def everything[E]: Where[E] = Where[E](Set.empty)
+object BlockWhere {
+  def unapply[E](block: Block[E]): Option[Set[E]] = Some(block.where.elts)
 }
 
-final case class Where[E](predicates: Set[E])
+object NoWhereBlock {
+  def unapply[E](block: Block[E]): Option[Block[E]] =
+    if (block.where.elts.isEmpty) Some(block) else None
+}
+
 

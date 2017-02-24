@@ -1,21 +1,23 @@
 package org.opencypher.spark.prototype.ir.block
 
 import org.opencypher.spark.prototype.ir._
+import org.opencypher.spark.prototype.ir.pattern.AllGiven
 
 final case class ResultBlock[E](
   after: Set[BlockRef],
   over: BlockSig,
-  binds: ResultFields[E],
-  where: Where[E] = Where.everything[E]
-) extends BasicBlock[ResultFields[E], E, ResultBlockType.type] {
+  binds: OrderedFields[E],
+  where: AllGiven[E] = AllGiven[E]()
+) extends BasicBlock[OrderedFields[E], E, ResultBlockType.type] {
   override def blockType = ResultBlockType
 }
 
-final case class ResultFields[E](fieldsOrder: Seq[Field]) extends Binds[E] {
+final case class OrderedFields[E](fieldsOrder: Seq[Field] = Seq.empty) extends Binds[E] {
   override def fields = fieldsOrder.toSet
 }
 
-case object ResultFields {
-  def none[E] = ResultFields[E](Seq.empty)
+case object FieldsInOrder {
+  def apply(fields: Field*) = OrderedFields(fields)
+  def unapplySeq(arg: OrderedFields[_]): Option[Seq[Field]] = Some(arg.fieldsOrder)
 }
 
