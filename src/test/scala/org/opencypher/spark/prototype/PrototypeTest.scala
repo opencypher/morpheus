@@ -10,7 +10,7 @@ class PrototypeTest extends StdTestSuite {
     override def graph = RunBenchmark.createStdPropertyGraphFromNeo(100)
   }
 
-  test("run cypher query") {
+  ignore("run cypher query") {
     val query = "MATCH (a:Administrator)-->(g:Group) WHERE g.name = 'Group-1' RETURN a.name"
 
     val result = engine.cypher(query)

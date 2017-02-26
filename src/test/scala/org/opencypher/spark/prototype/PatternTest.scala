@@ -27,7 +27,7 @@ class PatternTest extends IrTestSuite {
       .withEntity('b, EveryNode())
       .withEntity('r, EveryRelationship())
       .withConnection('r, DirectedRelationship('a, 'b))
-      .solvedConnection('r) should equal(
+      .withoutConnection('r) should equal(
         Pattern(Map.empty, Map.empty)
     )
   }

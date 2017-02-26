@@ -20,7 +20,7 @@ final case class Pattern[E](entities: Map[Field, EveryEntity], topology: Map[Fie
     }
   }
 
-  def solvedConnection(rel: Field): Pattern[E] = {
+  def withoutConnection(rel: Field): Pattern[E] = {
     val c = topology(rel)
     copy(entities = entities - c.source - c.target - rel,
          topology = topology - rel)
@@ -30,7 +30,7 @@ final case class Pattern[E](entities: Map[Field, EveryEntity], topology: Map[Fie
     copy(entities = entities - key)
   }
 
-  def solved: Boolean = this == Pattern.empty
+  def isEmpty: Boolean = this == Pattern.empty
 
   def withConnection(key: Field, connection: Connection): Pattern[E] =
     if (topology.get(key).contains(connection)) this else copy(topology = topology.updated(key, connection))

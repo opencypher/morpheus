@@ -2,7 +2,6 @@ package org.opencypher.spark.prototype.ir
 
 import org.opencypher.spark.prototype.IrTestSuite
 import org.opencypher.spark.prototype.ir.block._
-import org.opencypher.spark.prototype.ir.pattern.AllGiven
 
 class QueryModelTest extends IrTestSuite {
 
@@ -61,11 +60,4 @@ class QueryModelTest extends IrTestSuite {
       model.allDependencies(block_d)
     }
   }
-
-  case class DummyBlock[E](after: Set[BlockRef] = Set.empty) extends BasicBlock[DummyBinds[E], E](BlockType("dummy")) {
-    override def binds: DummyBinds[E] = DummyBinds[E]()
-    override def where: AllGiven[E] = AllGiven[E]()
-  }
-
-  case class DummyBinds[E](fields: Set[Field] = Set.empty) extends Binds[E]
 }

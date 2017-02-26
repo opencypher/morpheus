@@ -1,13 +1,13 @@
 package org.opencypher.spark.prototype.logical
 
 import org.opencypher.spark.prototype._
+import org.opencypher.spark.prototype.ir.SolvedQueryModel
 import org.opencypher.spark.prototype.ir.pattern.EveryNode
-
-import scala.collection.immutable.SortedSet
 
 sealed trait LogicalOperator {
   def signature: Signature
   def isLeaf = false
+  def solved: SolvedQueryModel[Expr]
 }
 
 case object Signature {
@@ -58,11 +58,13 @@ sealed trait LogicalLeafOperator extends LogicalOperator {
   override def isLeaf = true
 }
 
-final case class NodeScan(node: Var, nodeDef: EveryNode) extends LogicalLeafOperator {
+final case class NodeScan(node: Var, nodeDef: EveryNode)
+                         (override val solved: SolvedQueryModel[Expr]) extends LogicalLeafOperator {
   override def signature = Signature.empty.withExpr(node)
 }
 
-final case class Filter(expr: Expr, in: LogicalOperator) extends StackingLogicalOperator {
+final case class Filter(expr: Expr, in: LogicalOperator)
+                       (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
   override def signature = in.signature
 }
 
@@ -73,21 +75,25 @@ sealed trait ExpandOperator extends StackingLogicalOperator {
 }
 
 final case class ExpandSource(source: Var, rel: Var, target: Var, in: LogicalOperator)
+                             (override val solved: SolvedQueryModel[Expr])
   extends ExpandOperator {
 
   override def signature = in.signature.extendItemFor(source)(StartNode(rel)) withItem rel withItem Item(EndNode(rel), target)
 }
 
 final case class ExpandTarget(source: Var, rel: Var, target: Var, in: LogicalOperator)
+                             (override val solved: SolvedQueryModel[Expr])
   extends ExpandOperator {
 
   override def signature = in.signature.extendItemFor(target)(EndNode(rel)) withItem rel withItem Item(StartNode(rel), source)
 }
 
-final case class Project(e: Expr, in: LogicalOperator) extends StackingLogicalOperator {
+final case class Project(e: Expr, in: LogicalOperator)
+                        (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
   override def signature = in.signature.withExpr(e)
 }
 
-final case class Select(fields: SortedSet[(Expr, String)], in: LogicalOperator) extends StackingLogicalOperator {
-  override def signature = in.signature.selectItems(fields.map(_._1))
+final case class Select(fields: Seq[(Expr, String)], in: LogicalOperator)
+                       (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
+  override def signature = in.signature.selectItems(fields.map(_._1).toSet)
 }
