@@ -1,8 +1,8 @@
 package org.opencypher.spark.prototype
 
-import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationPhases, CompilationState}
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
+import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseStateImpl, CompilationPhases}
 
 object CypherParser extends CypherParser
 
@@ -14,7 +14,7 @@ trait CypherParser {
   }
 
   def parseAndExtract(query: String): (Statement, Map[String, Any]) = {
-    val startState = CompilationState(query, None, null)
+    val startState = BaseStateImpl(query, None, null)
     val endState = pipeLine.transform(startState, FrontendContext())
     val params = endState.extractedParams
     val rewritten = endState.statement

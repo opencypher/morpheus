@@ -14,7 +14,7 @@
         <scala.version>2.11.8</scala.version>
         <scala.binary.version>2.11</scala.binary.version>
         <spark.version>2.1.0</spark.version>
-        <neo4j.version>3.2.0-alpha04</neo4j.version>
+        <neo4j.version>3.2.0-alpha05</neo4j.version>
     </properties>
 
     <build>
@@ -307,12 +307,6 @@
     </repositories>
 
     <dependencies>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cypher-compiler-3.2</artifactId>
-            <version>${neo4j.version}</version>
-        </dependency>
 
         <dependency>
             <groupId>org.neo4j</groupId>
