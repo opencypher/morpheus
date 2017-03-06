@@ -24,9 +24,23 @@ final class StdCypherResultContainer(rowFrame: StdCypherFrame[Row], productFrame
   override lazy val records: CypherResult[Map[String, CypherValue]] = new StdRecordResult(productFrame)
 
   override def show(): Unit = {
-    println("Showing row results")
-    rows.toDF.show()
-    println("Showing product results")
-    products.toDS.show()
+    var sep = ""
+    records.signature.fields.foreach { f =>
+      print(sep)
+      print(fitTo20(f.sym.name))
+      sep = " | "
+    }
+    println()
+    records.collectAsScalaList.foreach { r =>
+      sep = ""
+      r.foreach {
+        case (_, value) =>
+          print(fitTo20(value.toString))
+          sep = " | "
+      }
+      println()
+    }
   }
+
+  private def fitTo20(s: String) = (s + "                    ").take(20)
 }
