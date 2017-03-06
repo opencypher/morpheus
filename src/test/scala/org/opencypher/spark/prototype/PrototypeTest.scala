@@ -7,17 +7,17 @@ import org.opencypher.spark.benchmark.RunBenchmark
 class PrototypeTest extends StdTestSuite {
 
   val engine = new Prototype {
-    override def graph = RunBenchmark.createStdPropertyGraphFromNeo(100)
+    override def graph = RunBenchmark.createStdPropertyGraphFromNeo(-1)
   }
 
-  ignore("run cypher query") {
+  test("run cypher query") {
     val query = "MATCH (a:Administrator)-->(g:Group) WHERE g.name = 'Group-1' RETURN a.name"
 
     val result = engine.cypher(query)
 
     result.records.collectAsScalaSet should equal(
-      CypherRecord("a.name" -> "Administrator-583"),
-      CypherRecord("a.name" -> "Administrator-1")
+      CypherRecord("a_name" -> "Administrator-583"),
+      CypherRecord("a_name" -> "Administrator-1")
     )
   }
 

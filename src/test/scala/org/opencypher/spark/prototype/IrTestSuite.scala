@@ -57,4 +57,14 @@ abstract class IrTestSuite extends StdTestSuite {
   }
 
   case class DummyBinds[E](fields: Set[Field] = Set.empty) extends Binds[E]
+
+  implicit class RichString(queryText: String) {
+    def model: QueryModel[Expr] = ir.model
+
+    def ir: CypherQuery[Expr] = {
+      val (stmt, _) = CypherParser.parseAndExtract(queryText)
+      CypherQueryBuilder.from(stmt, queryText, GlobalsExtractor(stmt))
+    }
+  }
+
 }

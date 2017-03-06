@@ -5,11 +5,8 @@ import org.opencypher.spark.api.value.{CypherNode, CypherRelationship, CypherVal
 import org.opencypher.spark.api.{CypherResultContainer, PropertyGraph}
 import org.opencypher.spark.impl.frame._
 import org.opencypher.spark.impl.util.SlotSymbolGenerator
-import org.opencypher.spark.prototype._
-import org.opencypher.spark.prototype.ir._
-import org.opencypher.spark.prototype.ir.block._
-import org.opencypher.spark.prototype.ir.pattern.{AllGiven, EveryNode, EveryRelationship, Pattern}
 import org.opencypher.spark.prototype.ir.global.{GlobalsRegistry, PropertyKey}
+import org.opencypher.spark.prototype.{logical, _}
 
 import scala.language.implicitConversions
 
@@ -265,114 +262,76 @@ class StdPropertyGraph(val nodes: Dataset[CypherNode], val relationships: Datase
     }
   }
 
-  import org.opencypher.spark.impl.foo._
-
-  override def cypherNew(ir: CypherQuery[Expr], params: Map[String, CypherValue]): CypherResultContainer = {
-
+  override def cypherNew(logicalPlan: logical.LogicalOperator, globals: GlobalsRegistry, params: Map[String, CypherValue]): CypherResultContainer = {
     implicit val pInner = planningContext
-    implicit val runtimeContext = new StdRuntimeContext(session, params)
 
-    val model = ir.model
+    val physical = new PhysicalPlanner(frames).planOp(logicalPlan)(globals)
+    implicit val runtimeContext = new StdRuntimeContext(session, params, globals)
 
-    implicit val tokenDefs = model.globals
-
-    val first = model.blocks.head._2
-
-    val plan = first match {
-      case MatchBlock(_, pattern, where) =>
-        // plan given
-        val plan = planPattern(pattern).asProduct
-        // all variables are now projected to fields
-        // and will be available to predicates
-        val withFilters = wherePlanner(plan, where)
-
-        withFilters
-    }
-
-    val finished = model.blocks.values.foldLeft(plan) {
-      case (acc, next) => next match {
-        case ProjectBlock(_, ProjectedFields(exprs), _) =>
-          planProjections(acc, exprs.values.toSet)
-        case ResultBlock(_, OrderedFields(fields), _) =>
-
-          // all blocks planned, drop extra columns
-          acc.selectFields(fields.map(f => Symbol(f.name.replace(".", "_"))):_*)
-        case _ => acc
-      }
-    }
-
-    // map to user requested columns
-
-    val renamed = ir.model.result.binds.fieldsOrder.foldLeft(finished) {
-      case (acc, f) => acc.aliasField(Symbol(f.name.replace(".", "_")), Symbol(f.name))
-    }
-
-    StdCypherResultContainer.fromProducts(renamed)
+    StdCypherResultContainer.fromProducts(physical)
   }
-
-  private def planProjections(in: StdCypherFrame[Product], exprs: Set[Expr])(implicit tokens: GlobalsRegistry) = {
-    exprs.foldLeft(in) {
-      case (acc, Property(Var(m), key)) =>
-        acc.propertyValue(Symbol(m), Symbol(tokens.propertyKey(key).name))(prop(m, tokens.propertyKey(key)))
-      case x => throw new UnsupportedOperationException(s"can not project $x")
-    }
-  }
-
-  private def wherePlanner(in: StdCypherFrame[Product], where: AllGiven[Expr])(implicit tokens: GlobalsRegistry) = {
-    val equalities = where.elts.foldLeft(in) {
-      case (acc, Equals(Property(Var(m), key), p: Const)) =>
-        val withProp = acc.propertyValue(Symbol(m), Symbol(tokens.propertyKey(key).name))(prop(m, tokens.propertyKey(key)))
-        FilterProduct.paramEqFilter(withProp)(withProp.projectedField.sym, p)
-      case (acc, _: HasLabel) => acc
-      case (acc, x) => throw new UnsupportedOperationException(s"Can't deal with $x")
-    }
-
-    equalities
-  }
-
-  private def planPattern(given: Pattern[Expr])(implicit tokens: GlobalsRegistry) = {
-    val nodeFrames = given.nodes.map(nodePlan)
-    val rels = given.rels.toSeq.map(relPlan)
-
-    val nodesToJoin = nodeFrames.map { frame =>
-      frame.projectedField.sym -> frame.asRow
-    }.toMap
-
-    if (rels.size == 1) {
-      val (rel, frame) = rels.head
-
-      val conn = given.topology(rel)
-
-      val sField = nodeId(conn.source)
-      val tField = nodeId(conn.target)
-      val sFrame = nodesToJoin(sField)
-      val tFrame = nodesToJoin(tField)
-
-      frame.join(sFrame).on(relStart(rel))(sField).join(tFrame).on(relEnd(rel))(tField)
-    } else ???
-  }
-
-  private def nodePlan(entity: (Field, EveryNode))(implicit tokens: GlobalsRegistry) = {
-    val (field, anyNode) = entity
-    labelScan(field)(anyNode.labels.elts.map(l => tokens.label(l).name).toIndexedSeq).asProduct.nodeId(field)(nodeId(field))
-  }
-
-  private def relPlan(entity: (Field, EveryRelationship))(implicit tokens: GlobalsRegistry) = {
-    val (field, anyRel) = entity
-    val plan = typeScan(field)(anyRel.relTypes.elts.toIndexedSeq.map(ref => tokens.relType(ref).name))
-      .asProduct.relationshipStartId(field)(relStart(field)).relationshipEndId(field)(relEnd(field))
-    field -> plan.asRow
-  }
-
-  private def nodeId(n: Field): Symbol = Symbol(n.name + "_id")
-  private def relId(r: Field): Symbol = Symbol(r.name + "_id")
-  private def relStart(r: Field): Symbol = Symbol(r.name + "_start")
-  private def relEnd(r: Field): Symbol = Symbol(r.name + "_end")
-  private def prop(m: String, key: PropertyKey) = Symbol(m + "_" + key.name)
-
 }
 
-object foo {
-  import scala.languageFeature.implicitConversions._
-  implicit def fieldToSym(f: Field): Symbol = Symbol(f.name)
+class PhysicalPlanner(frameProducer: FrameProducer) {
+  import frameProducer._
+
+  implicit def prop(p: Property)(implicit globals: GlobalsRegistry): Symbol = p match {
+    case Property(m: Var, ref) =>
+      val key = globals.propertyKey(ref)
+      Symbol(m.name + "_" + key.name)
+    case _ => ???
+  }
+  implicit def keyToSym(key: PropertyKey): Symbol = Symbol(key.name)
+  implicit def varToSym(v: Var): Symbol = Symbol(v.name)
+
+  private def nodeId(n: Var): Symbol = Symbol(n.name + "_id")
+  private def relId(r: Var): Symbol = Symbol(r.name + "_id")
+  private def relStart(r: Var): Symbol = Symbol(r.name + "_start")
+  private def relEnd(r: Var): Symbol = Symbol(r.name + "_end")
+
+  def planOp(op: logical.LogicalOperator)(implicit globals: GlobalsRegistry): StdCypherFrame[Product] = op match {
+    case logical.Select(fields, in) =>
+      val frame = planOp(in).selectFields(fields.map(t => Symbol(t._2.replaceAllLiterally(".", "_"))): _*)
+      frame
+    case logical.NodeScan(v, every) =>
+      labelScan(v)(every.labels.elts.map(globals.label(_).name).toIndexedSeq).asProduct
+    case logical.Project(expr, in) =>
+      planExpr(planOp(in), expr)
+    case logical.Filter(expr, in) =>
+//      if (in.signature.items.exists(_.exprs.contains(expr))) {
+//        planExpr(planOp(in), expr)
+//      }
+      planExpr(planOp(in), expr)
+    case logical.ExpandSource(source, rel, target, in) =>
+      // TODO: where is the rel-type info?
+      val rels = allRelationships(rel).asProduct
+        .relationshipStartId(rel)(relStart(rel))
+        .relationshipEndId(rel)(relEnd(rel))
+        .asRow
+      // TODO: where is the node label info?
+      val rhs = allNodes(target).asProduct.nodeId(target)(nodeId(target)).asRow
+      val lhs = planOp(in).nodeId(source)(nodeId(source))
+
+      lhs.asRow.join(rels).on(nodeId(source))(relStart(rel)).join(rhs).on(relEnd(rel))(nodeId(target)).asProduct
+    case x => throw new NotImplementedError(s"Can't plan operator $x yet")
+  }
+
+  private def planExpr(in: StdCypherFrame[Product], expr: Expr)(implicit globals: GlobalsRegistry): StdCypherFrame[Product] = expr match {
+    case _: Property => projectExpr(in, expr)
+    case Equals(p: Property, c: Const) =>
+      // we assume the necessary projections have been made
+//      val l = projectExpr(in, p)
+      FilterProduct.paramEqFilter(in)(p, c)
+    case HasLabel(node: Var, label) =>
+      FilterProduct.labelFilter(in)(node, Seq(globals.label(label).name))
+    case x => throw new NotImplementedError(s"Can't plan expr $x yet")
+  }
+
+  private def projectExpr(in: StdCypherFrame[Product], expr: Expr)(implicit globals: GlobalsRegistry): ProjectFrame = expr match {
+    case p@Property(m: Var, ref) =>
+      val key = globals.propertyKey(ref)
+      in.propertyValue(m, key)(p)
+    case x => throw new NotImplementedError(s"Can't project $x yet")
+  }
+
 }

@@ -13,18 +13,18 @@ trait Prototype {
   def cypher(query: String): CypherResultContainer = {
     val (stmt, params) = parser.parseAndExtract(query)
 
-    val tokens = GlobalsExtractor(stmt)
+    val globals = GlobalsExtractor(stmt)
 
-    val ir = CypherQueryBuilder.from(stmt, query, tokens)
+    val ir = CypherQueryBuilder.from(stmt, query, globals)
 
     val cvs = params.mapValues {
       case s: String => CypherString(s)
-      case x => throw new UnsupportedOperationException(s"Can't convert $x to CypherType yet")
+      case x => throw new UnsupportedOperationException(s"Can't convert $x to CypherValue yet")
     }
 
     val plan = new LogicalOperatorProducer().plan(ir)
 
-    val result = graph.cypherNew(ir, cvs)
+    val result = graph.cypherNew(plan, globals, cvs)
 
     result
   }

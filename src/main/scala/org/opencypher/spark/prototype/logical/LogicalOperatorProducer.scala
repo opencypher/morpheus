@@ -78,9 +78,10 @@ class LogicalOperatorProducer {
   private def planFilter(in: LogicalOperator, where: AllGiven[Expr])(implicit tokens: GlobalsRegistry) = {
     val equalities = where.elts.foldLeft(in) {
       case (acc, eq@Equals(prop: Property, _: Const)) =>
-        val project = Project(prop, acc)(in.solved)
+        val project = Project(prop, acc)(acc.solved)
         Filter(eq, project)(project.solved.withPredicate(eq))
-      case (acc, _: HasLabel) => acc // ignore label predicates; solved by scans
+      case (acc, h: HasLabel) =>
+        Filter(h, acc)(acc.solved.withPredicate(h))
       case (_, x) => throw new UnsupportedOperationException(s"Can't deal with $x")
     }
 
@@ -117,6 +118,10 @@ class LogicalOperatorProducer {
 
   private def nodePlan(pattern: Pattern[Expr])(implicit tokens: GlobalsRegistry) = {
     val (field, everyNode) = pattern.nodes.head
-    NodeScan(Var(field.name), everyNode)(SolvedQueryModel.empty.withField(field))
+    val node = Var(field.name)
+    val solved = everyNode.labels.elts.foldLeft(SolvedQueryModel.empty[Expr].withField(field)) {
+      case (acc, ref) => acc.withPredicate(HasLabel(node, ref))
+    }
+    NodeScan(node, everyNode)(solved)
   }
 }

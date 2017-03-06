@@ -3,7 +3,7 @@ package org.opencypher.spark.prototype.logical
 import org.opencypher.spark.prototype._
 import org.opencypher.spark.prototype.ir._
 import org.opencypher.spark.prototype.ir.block._
-import org.opencypher.spark.prototype.ir.global.PropertyKeyRef
+import org.opencypher.spark.prototype.ir.global.{ConstantRef, PropertyKeyRef}
 import org.opencypher.spark.prototype.ir.pattern.{DirectedRelationship, EveryNode, Pattern}
 import org.scalatest.matchers.{MatchResult, Matcher}
 
@@ -31,6 +31,30 @@ class LogicalOperatorProducerTest extends IrTestSuite {
 
     plan(irWithLeaf(block)) should equalWithoutResult(
       Project(Property('n, PropertyKeyRef(0)), leafPlan)(emptySqm.withFields('n, 'a))
+    )
+  }
+
+  test("plan query") {
+    val ir = "MATCH (a:Administrator)-[r]->(g:Group) WHERE g.name = 'Group-1' RETURN a.name".ir
+
+    val globals = ir.model.globals
+
+    plan(ir) should equal(
+      Select(Seq(Var("a.name") -> "a.name"),
+        Project(Property(Var("a"), globals.propertyKey("name")),
+          Filter(Equals(Property(Var("g"), globals.propertyKey("name")), Const(ConstantRef(0))),
+            Project(Property(Var("g"), globals.propertyKey("name")),
+              Filter(HasLabel(Var("g"), globals.label("Group")),
+                Filter(HasLabel(Var("a"), globals.label("Administrator")),
+                  ExpandSource(Var("a"), Var("r"), Var("g"),
+                    NodeScan(Var("a"), EveryNode())(emptySqm)
+                  )(emptySqm)
+                )(emptySqm)
+              )(emptySqm)
+            )(emptySqm)
+          )(emptySqm)
+        )(emptySqm)
+      )(emptySqm)
     )
   }
 

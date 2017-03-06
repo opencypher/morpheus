@@ -65,15 +65,6 @@ class CypherQueryBuilderTest extends IrTestSuite {
     }
   }
 
-  implicit class RichString(queryText: String) {
-    def model: QueryModel[Expr] = ir.model
-
-    def ir: CypherQuery[Expr] = {
-      val (stmt, _) = CypherParser.parseAndExtract(queryText)
-      CypherQueryBuilder.from(stmt, queryText, GlobalsExtractor(stmt))
-    }
-  }
-
   implicit class RichModel(model: QueryModel[Expr]) {
 
     def ensureThat(f: (QueryModel[Expr], GlobalsRegistry) => Unit) = f(model, model.globals)
