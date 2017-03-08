@@ -1,4 +1,4 @@
-package org.opencypher.spark.api.schema
+package org.opencypher.spark.prototype.schema
 
 import org.opencypher.spark.StdTestSuite
 import org.opencypher.spark.api.types.{CTBoolean, CTInteger, CTString}

@@ -1,6 +1,6 @@
 package org.opencypher.spark.prototype.graph
 
-import org.opencypher.spark.api.schema.Schema
+import org.opencypher.spark.prototype.schema.Schema
 
 trait Graph {
   def space: GraphSpace
