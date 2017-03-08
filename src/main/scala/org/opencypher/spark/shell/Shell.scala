@@ -3,12 +3,13 @@ package org.opencypher.spark.shell
 import ammonite.util.Bind._
 import ammonite.util.Util
 import org.apache.spark.sql.SparkSession
+import org.opencypher.spark.benchmark.RunBenchmark
 import org.opencypher.spark.{CypherOnSpark, PropertyGraphFactory}
 
 object Shell {
 
   def main(args: Array[String]): Unit = {
-    implicit val session = SparkSession.builder().master("local[4]").getOrCreate()
+    implicit val session = RunBenchmark.sparkSession
     try {
       val welcomeBanner = {
         val ownVersion = CypherOnSpark.version.getOrElse("<unknown>")
@@ -34,16 +35,17 @@ object Shell {
       }
       val frontend = if (System.getProperty("os.name").startsWith("Windows")) "JLineWindows" else "JLineUnix"
 
+//      import org.opencypher.spark
+//      import org.opencypher.spark._
+//      import org.opencypher.spark.api._
+//      import org.opencypher.spark.api.implicits._
+//      import org.opencypher.spark.api.types._
       val repl = new ammonite.Main(
         welcomeBanner = Some(welcomeBanner),
         predef =
           s"""|repl.frontEnd() = ammonite.frontend.FrontEnd.$frontend
               |repl.prompt() = \"(cypher)-[:on]->(spark) \"
-              |import org.opencypher.spark
-              |import org.opencypher.spark._
-              |import org.opencypher.spark.api._
-              |import org.opencypher.spark.api.implicits._
-              |import org.opencypher.spark.api.types._
+              |import org.opencypher.spark.prototype.PrototypeDemo._
               |""".stripMargin
       ).instantiateRepl(Seq(
         "session" -> session,
