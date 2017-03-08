@@ -4,6 +4,7 @@ import java.util.UUID
 
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
+import org.opencypher.spark.benchmark.Configuration.Logging
 import org.scalatest.{BeforeAndAfterEach, FunSuite}
 
 object TestSession {
@@ -40,11 +41,14 @@ object TestSessionFactory {
     //
     // If this is slow, you might be hitting: http://bugs.java.com/view_bug.do?bug_id=8077102
     //
-    SparkSession
+    val session = SparkSession
       .builder()
       .config(conf)
       .master("local[*]")
       .appName(s"cypher-on-spark-tests-${UUID.randomUUID()}")
       .getOrCreate()
+
+    session.sparkContext.setLogLevel(Logging.get())
+    session
   }
 }

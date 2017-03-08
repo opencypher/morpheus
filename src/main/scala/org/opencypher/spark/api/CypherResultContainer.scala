@@ -1,5 +1,7 @@
 package org.opencypher.spark.api
 
+import java.io.PrintWriter
+
 import org.apache.spark.sql.Row
 
 trait CypherResultContainer {
@@ -8,5 +10,6 @@ trait CypherResultContainer {
   def products: CypherResult[Product]
   def records: CypherResult[CypherRecord]
 
-  def show(): Unit
+  def show(): Unit = print(new PrintWriter(System.out))
+  def print(writer: PrintWriter): Unit
 }
