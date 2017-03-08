@@ -15,10 +15,12 @@ class PrototypeTest extends StdTestSuite {
 
     val result = engine.cypher(query)
 
-    result.records.collectAsScalaSet should equal(
+    val start = System.currentTimeMillis()
+    result.records.collectAsScalaSet should equal(Set(
       CypherRecord("a_name" -> "Administrator-583"),
       CypherRecord("a_name" -> "Administrator-1")
-    )
+    ))
+    println(s"Time: ${System.currentTimeMillis() - start}")
   }
 
   test("parser error") {
