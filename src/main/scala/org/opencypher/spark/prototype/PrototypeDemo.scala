@@ -8,7 +8,7 @@ import scala.io.StdIn
 object PrototypeDemo {
 
   lazy val prototype = new Prototype {
-    override val graph = RunBenchmark.createStdPropertyGraphFromNeo(1000)
+    override val graph = RunBenchmark.createStdPropertyGraphFromNeo(-1)
   }
 
   def cypher(query: String): CypherResultContainer = {
@@ -33,4 +33,8 @@ object PrototypeDemo {
       prototype.cypher(query).show()
     }
   }
+
+  /*
+  * MATCH (a:Answer)-->(b:Question) RETURN b.title, b.is_answered
+  */
 }
