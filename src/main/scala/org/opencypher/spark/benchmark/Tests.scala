@@ -3,7 +3,7 @@ package org.opencypher.spark.benchmark
 import org.apache.spark.SparkConf
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
-import org.opencypher.spark.api.value.{CypherNode, CypherRelationship}
+import org.opencypher.spark.prototype.api.value.{CypherNode, CypherRelationship}
 
 object Tests {
 

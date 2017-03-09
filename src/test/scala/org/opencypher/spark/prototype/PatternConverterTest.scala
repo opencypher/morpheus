@@ -2,9 +2,10 @@ package org.opencypher.spark.prototype
 
 import org.neo4j.cypher.internal.frontend.v3_2.parser.{Expressions, Patterns}
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, SyntaxException, ast}
-import org.opencypher.spark.prototype.ir._
-import org.opencypher.spark.prototype.ir.pattern._
-import org.opencypher.spark.prototype.ir.global._
+import org.opencypher.spark.prototype.api.ir._
+import org.opencypher.spark.prototype.api.ir.pattern._
+import org.opencypher.spark.prototype.api.ir.global._
+import org.opencypher.spark.prototype.impl.convert.PatternConverter
 import org.parboiled.scala.{EOI, Parser, Rule1}
 
 import scala.language.implicitConversions

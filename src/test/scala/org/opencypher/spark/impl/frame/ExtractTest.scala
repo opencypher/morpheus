@@ -4,7 +4,7 @@ import org.apache.spark.sql.types.LongType
 import org.opencypher.spark.api._
 import org.opencypher.spark.api.frame.{BinaryRepresentation, EmbeddedRepresentation}
 import types._
-import org.opencypher.spark.api.value.{CypherNode, CypherRelationship, CypherString}
+import org.opencypher.spark.prototype.api.value.{CypherNode, CypherRelationship, CypherString}
 
 class ExtractTest extends StdFrameTestSuite {
 

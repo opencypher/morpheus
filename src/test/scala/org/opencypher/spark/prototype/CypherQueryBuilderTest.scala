@@ -1,9 +1,10 @@
 package org.opencypher.spark.prototype
 
-import org.opencypher.spark.prototype.ir.block._
-import org.opencypher.spark.prototype.ir.global.GlobalsRegistry
-import org.opencypher.spark.prototype.ir.pattern._
-import org.opencypher.spark.prototype.ir.{CypherQuery, Field, QueryModel}
+import org.opencypher.spark.prototype.api.expr.{Expr, HasLabel}
+import org.opencypher.spark.prototype.api.ir.block._
+import org.opencypher.spark.prototype.api.ir.global.GlobalsRegistry
+import org.opencypher.spark.prototype.api.ir.pattern._
+import org.opencypher.spark.prototype.api.ir.{CypherQuery, Field, QueryModel}
 
 import scala.collection.immutable.Set
 

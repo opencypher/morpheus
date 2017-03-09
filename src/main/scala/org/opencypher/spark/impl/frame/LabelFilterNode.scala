@@ -1,9 +1,9 @@
 package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.Dataset
-import org.opencypher.spark.api.value.{CypherNode, CypherValue}
-import org.opencypher.spark.prototype.Const
+import org.opencypher.spark.prototype.api.value.{CypherNode, CypherValue}
 import org.opencypher.spark.impl.{ProductFrame, StdCypherFrame, StdField, StdRuntimeContext}
+import org.opencypher.spark.prototype.api.expr.Const
 
 object LabelFilterNode extends FrameCompanion {
 

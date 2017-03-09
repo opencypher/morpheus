@@ -10,7 +10,7 @@ import org.atnos.eff.all._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.opencypher.spark.api.CypherType
 import org.opencypher.spark.api.CypherType.joinMonoid
-import org.opencypher.spark.prototype.schema.Schema
+import org.opencypher.spark.prototype.api.schema.Schema
 import org.opencypher.spark.api.types._
 
 import scala.util.Try

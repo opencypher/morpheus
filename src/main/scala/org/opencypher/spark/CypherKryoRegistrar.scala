@@ -1,7 +1,7 @@
 
 import com.esotericsoftware.kryo.Kryo
 import org.apache.spark.serializer.{KryoRegistrator => SparkKryoRegistrar}
-import org.opencypher.spark.api.value._
+import org.opencypher.spark.prototype.api.value._
 
 import scala.collection.immutable.TreeMap
 

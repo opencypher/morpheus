@@ -2,7 +2,7 @@ package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.{Dataset, Row, functions}
 import org.opencypher.spark.api.types.{CTList, CTRelationship}
-import org.opencypher.spark.api.value.{CypherList, CypherRelationship}
+import org.opencypher.spark.prototype.api.value.{CypherList, CypherRelationship}
 import org.opencypher.spark.impl._
 
 import scala.collection.mutable

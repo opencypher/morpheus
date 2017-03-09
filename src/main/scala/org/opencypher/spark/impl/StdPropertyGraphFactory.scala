@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 import org.apache.spark.sql.SparkSession
 import org.opencypher.spark._
-import org.opencypher.spark.api.value._
+import org.opencypher.spark.prototype.api.value._
 
 class StdPropertyGraphFactory(implicit private val session: SparkSession) extends PropertyGraphFactory {
 

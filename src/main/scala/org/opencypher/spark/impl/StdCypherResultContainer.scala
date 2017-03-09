@@ -5,7 +5,7 @@ import java.io.PrintWriter
 import org.apache.spark.sql.Row
 import org.opencypher.spark.api.{CypherResult, CypherResultContainer}
 import org.opencypher.spark.impl.frame.{ProductAsRow, RowAsProduct}
-import org.opencypher.spark.api.value.CypherValue
+import org.opencypher.spark.prototype.api.value.CypherValue
 
 object StdCypherResultContainer {
 

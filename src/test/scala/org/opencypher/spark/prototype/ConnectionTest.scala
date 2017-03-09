@@ -1,8 +1,8 @@
 package org.opencypher.spark.prototype
 
 import org.opencypher.spark.StdTestSuite
-import org.opencypher.spark.prototype.ir.Field
-import org.opencypher.spark.prototype.ir.pattern.{DirectedRelationship, UndirectedRelationship}
+import org.opencypher.spark.prototype.api.ir.Field
+import org.opencypher.spark.prototype.api.ir.pattern.{DirectedRelationship, UndirectedRelationship}
 
 class ConnectionTest extends StdTestSuite {
 

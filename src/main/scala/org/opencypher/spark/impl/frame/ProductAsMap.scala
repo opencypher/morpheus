@@ -3,7 +3,7 @@ package org.opencypher.spark.impl.frame
 import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.types._
 import org.opencypher.spark.api.frame.{BinaryRepresentation, EmbeddedRepresentation}
-import org.opencypher.spark.api.value._
+import org.opencypher.spark.prototype.api.value._
 import org.opencypher.spark.impl.{StdCypherFrame, StdSlot}
 
 object ProductAsMap extends FrameCompanion {

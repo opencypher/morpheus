@@ -3,7 +3,7 @@ package org.opencypher.spark.impl.frame
 import org.apache.spark.sql.types.{IntegerType, LongType}
 import org.opencypher.spark.api.frame.{BinaryRepresentation, EmbeddedRepresentation}
 import org.opencypher.spark.api.types.{CTAny, CTInteger, CTList, CTNode}
-import org.opencypher.spark.api.value.{CypherList, CypherString}
+import org.opencypher.spark.prototype.api.value.{CypherList, CypherString}
 import org.scalatest.FunSuite
 
 class GroupByTest extends StdFrameTestSuite {

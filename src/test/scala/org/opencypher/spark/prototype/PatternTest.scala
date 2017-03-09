@@ -1,6 +1,7 @@
 package org.opencypher.spark.prototype
 
-import org.opencypher.spark.prototype.ir.pattern.{EveryNode, EveryRelationship, DirectedRelationship, Pattern}
+import org.opencypher.spark.prototype.api.expr.Expr
+import org.opencypher.spark.prototype.api.ir.pattern.{DirectedRelationship, EveryNode, EveryRelationship, Pattern}
 
 class PatternTest extends IrTestSuite {
 

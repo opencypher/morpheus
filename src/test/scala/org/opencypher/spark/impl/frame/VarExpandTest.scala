@@ -2,7 +2,7 @@ package org.opencypher.spark.impl.frame
 
 import org.opencypher.spark.api.frame.BinaryRepresentation
 import org.opencypher.spark.api.types.{CTList, CTNode, CTRelationship}
-import org.opencypher.spark.api.value.CypherList
+import org.opencypher.spark.prototype.api.value.CypherList
 
 class VarExpandTest extends StdFrameTestSuite {
 

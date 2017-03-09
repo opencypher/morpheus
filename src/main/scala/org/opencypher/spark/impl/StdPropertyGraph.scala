@@ -1,12 +1,13 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql._
-import org.opencypher.spark.api.value.{CypherNode, CypherRelationship, CypherValue}
+import org.opencypher.spark.prototype.api.value.{CypherNode, CypherRelationship, CypherValue}
 import org.opencypher.spark.api.{CypherResultContainer, PropertyGraph}
 import org.opencypher.spark.impl.frame._
 import org.opencypher.spark.impl.util.SlotSymbolGenerator
-import org.opencypher.spark.prototype.ir.global.{GlobalsRegistry, PropertyKey}
-import org.opencypher.spark.prototype.{logical, _}
+import org.opencypher.spark.prototype.api.expr._
+import org.opencypher.spark.prototype.api.ir.global.{GlobalsRegistry, PropertyKey}
+import org.opencypher.spark.prototype.impl.logical
 
 import scala.language.implicitConversions
 

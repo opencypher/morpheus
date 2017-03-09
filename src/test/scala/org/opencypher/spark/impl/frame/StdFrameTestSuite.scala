@@ -6,7 +6,7 @@ import org.opencypher.spark.api._
 import org.opencypher.spark.api.frame.{CypherFrameSignature, Representation}
 import org.opencypher.spark.impl._
 import org.opencypher.spark.impl.frame.StdFrameTestSuite.FrameTestResult
-import org.opencypher.spark.api.value.{NodeData, RelationshipData}
+import org.opencypher.spark.prototype.api.value.{NodeData, RelationshipData}
 import org.opencypher.spark.impl.util.SlotSymbolGenerator
 
 object StdFrameTestSuite {

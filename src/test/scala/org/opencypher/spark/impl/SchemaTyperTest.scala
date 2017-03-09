@@ -6,7 +6,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.parser.Expressions
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, SyntaxException, ast, symbols}
 import org.opencypher.spark.StdTestSuite
 import org.opencypher.spark.api.CypherType
-import org.opencypher.spark.prototype.schema.StdSchema
+import org.opencypher.spark.prototype.api.schema.StdSchema
 import org.opencypher.spark.api.types._
 import org.opencypher.spark.impl.types._
 import org.parboiled.scala._

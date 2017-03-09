@@ -2,7 +2,7 @@ package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.Dataset
 import org.opencypher.spark.api.types.{CTAny, CTList}
-import org.opencypher.spark.api.value.CypherList
+import org.opencypher.spark.prototype.api.value.CypherList
 import org.opencypher.spark.impl._
 
 import scala.collection.TraversableOnce

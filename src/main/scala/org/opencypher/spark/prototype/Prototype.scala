@@ -2,9 +2,10 @@ package org.opencypher.spark.prototype
 
 import org.neo4j.cypher.internal.frontend.v3_2.phases._
 import org.neo4j.cypher.internal.frontend.v3_2.{AstRewritingMonitor, CypherException, InputPosition}
-import org.opencypher.spark.api.value.CypherString
 import org.opencypher.spark.api.{CypherResultContainer, PropertyGraph}
-import org.opencypher.spark.prototype.logical.LogicalOperatorProducer
+import org.opencypher.spark.prototype.api.value.CypherString
+import org.opencypher.spark.prototype.impl.convert.{CypherParser, CypherQueryBuilder, GlobalsExtractor}
+import org.opencypher.spark.prototype.impl.planner.LogicalOperatorProducer
 
 import scala.reflect.ClassTag
 

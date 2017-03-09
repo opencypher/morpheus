@@ -2,7 +2,7 @@ package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.Dataset
 import org.opencypher.spark.api.types.CTNode
-import org.opencypher.spark.api.value.CypherNode
+import org.opencypher.spark.prototype.api.value.CypherNode
 import org.opencypher.spark.impl._
 
 object OptionalAllNodes extends FrameCompanion {

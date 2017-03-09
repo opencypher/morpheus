@@ -1,7 +1,7 @@
 package org.opencypher.spark.benchmark
 
 import org.apache.spark.rdd.RDD
-import org.opencypher.spark.api.value.{CypherNode, CypherRelationship}
+import org.opencypher.spark.prototype.api.value.{CypherNode, CypherRelationship}
 import org.opencypher.spark.impl.{SimplePattern, SimplePatternIds, StdPropertyGraph, SupportedQuery}
 
 object RDDBenchmarks extends SupportedQueryBenchmarks[StdPropertyGraph] {

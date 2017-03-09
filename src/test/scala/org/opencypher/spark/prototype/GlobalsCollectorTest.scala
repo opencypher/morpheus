@@ -1,11 +1,12 @@
 package org.opencypher.spark.prototype
 
 import org.opencypher.spark.StdTestSuite
-import org.opencypher.spark.prototype.ir.global._
+import org.opencypher.spark.prototype.api.ir.global._
+import org.opencypher.spark.prototype.impl.convert.GlobalsExtractor
 
 class GlobalsCollectorTest extends StdTestSuite {
 
-  import CypherParser._
+  import org.opencypher.spark.prototype.impl.convert.CypherParser._
 
   test("collect tokens") {
     val given = parse("MATCH (a:Person)-[r:KNOWS]->(b:Duck) RETURN a.name, r.since, b.quack")

@@ -3,7 +3,7 @@ package org.opencypher.spark.impl.frame
 import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.functions.desc
 import org.opencypher.spark.api.frame.{BinaryRepresentation, EmbeddedRepresentation}
-import org.opencypher.spark.api.value.CypherValue
+import org.opencypher.spark.prototype.api.value.CypherValue
 import org.opencypher.spark.impl.{ProductFrame, StdCypherFrame, StdRuntimeContext, StdSlot}
 
 sealed trait SortOrder

@@ -2,7 +2,7 @@ package org.opencypher.spark.impl.frame
 
 import org.opencypher.spark.api.CypherType
 import org.opencypher.spark.api.types.{CTInteger, CTList}
-import org.opencypher.spark.api.value.{CypherInteger, CypherList, CypherValue}
+import org.opencypher.spark.prototype.api.value.{CypherInteger, CypherList, CypherValue}
 import org.opencypher.spark.impl.StdFrameSignature
 
 sealed trait AggregationFunction {

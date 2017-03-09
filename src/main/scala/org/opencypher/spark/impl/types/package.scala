@@ -7,7 +7,7 @@ import org.atnos.eff.all._
 import org.atnos.eff.syntax.all._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression
 import org.opencypher.spark.api.CypherType
-import org.opencypher.spark.prototype.schema.Schema
+import org.opencypher.spark.prototype.api.schema.Schema
 import org.opencypher.spark.api.types.CTWildcard
 
 package object types {

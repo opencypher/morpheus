@@ -1,8 +1,8 @@
 package org.opencypher.spark.prototype
 
 import org.opencypher.spark.StdTestSuite
-import org.opencypher.spark.prototype.ir._
-import org.opencypher.spark.prototype.ir.global._
+import org.opencypher.spark.prototype.api.ir._
+import org.opencypher.spark.prototype.api.ir.global._
 
 import scala.util.Try
 

@@ -3,7 +3,7 @@ package org.opencypher.spark.impl.frame
 import org.apache.spark.sql.types.LongType
 import org.opencypher.spark.api.types.{CTInteger, CTNode}
 import org.opencypher.spark.api.frame.{BinaryRepresentation, EmbeddedRepresentation}
-import org.opencypher.spark.api.value.CypherNode
+import org.opencypher.spark.prototype.api.value.CypherNode
 
 class JoinTest extends StdFrameTestSuite {
 

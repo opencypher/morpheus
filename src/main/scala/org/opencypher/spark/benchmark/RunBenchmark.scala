@@ -7,7 +7,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.graphframes.GraphFrame
 import org.neo4j.driver.v1.{AuthTokens, GraphDatabase}
-import org.opencypher.spark.api.value._
+import org.opencypher.spark.prototype.api.value._
 import org.opencypher.spark.benchmark.Configuration._
 import org.opencypher.spark.benchmark.Converters.{internalNodeToAccessControlNode, internalNodeToCypherNode, internalRelToAccessControlRel, internalRelationshipToCypherRelationship}
 import org.opencypher.spark.impl._

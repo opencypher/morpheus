@@ -1,11 +1,13 @@
 package org.opencypher.spark.prototype
 
 import org.opencypher.spark.StdTestSuite
-import org.opencypher.spark.prototype.ir._
-import org.opencypher.spark.prototype.ir.block._
-import org.opencypher.spark.prototype.ir.global.GlobalsRegistry
-import org.opencypher.spark.prototype.ir.pattern.{AllGiven, EveryNode, Pattern}
-import org.opencypher.spark.prototype.logical.NodeScan
+import org.opencypher.spark.prototype.api.expr.{Expr, Var}
+import org.opencypher.spark.prototype.api.ir._
+import org.opencypher.spark.prototype.api.ir.block._
+import org.opencypher.spark.prototype.api.ir.global.GlobalsRegistry
+import org.opencypher.spark.prototype.api.ir.pattern.{AllGiven, EveryNode, Pattern}
+import org.opencypher.spark.prototype.impl.convert.{CypherParser, CypherQueryBuilder, GlobalsExtractor}
+import org.opencypher.spark.prototype.impl.logical.NodeScan
 
 import scala.language.implicitConversions
 
@@ -66,5 +68,4 @@ abstract class IrTestSuite extends StdTestSuite {
       CypherQueryBuilder.from(stmt, queryText, GlobalsExtractor(stmt))
     }
   }
-
 }

@@ -1,7 +1,7 @@
 package org.opencypher.spark
 
 import org.opencypher.spark.api.CypherRecord
-import org.opencypher.spark.api.value.CypherList
+import org.opencypher.spark.prototype.api.value.CypherList
 import org.opencypher.spark.impl._
 
 class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSession.Fixture {

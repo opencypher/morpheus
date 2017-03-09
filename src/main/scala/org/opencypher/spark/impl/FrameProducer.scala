@@ -3,7 +3,7 @@ package org.opencypher.spark.impl
 import org.apache.spark.sql.Row
 import org.opencypher.spark.api.CypherType
 import org.opencypher.spark.impl.frame._
-import org.opencypher.spark.api.value.{CypherNode, CypherRelationship, CypherValue}
+import org.opencypher.spark.prototype.api.value.{CypherNode, CypherRelationship, CypherValue}
 
 class FrameProducer(implicit val planningContext: PlanningContext) {
 

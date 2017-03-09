@@ -3,7 +3,7 @@ package org.opencypher.spark.impl
 import org.apache.spark.sql._
 import org.opencypher.spark.api.CypherResult
 import org.opencypher.spark.impl.frame.{ProductAsMap, ProductAsRow}
-import org.opencypher.spark.api.value.CypherValue
+import org.opencypher.spark.prototype.api.value.CypherValue
 
 class StdRowResult(frame: StdCypherFrame[Row])(implicit val context: StdRuntimeContext) extends CypherResult[Row] {
 

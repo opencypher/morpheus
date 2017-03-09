@@ -7,11 +7,11 @@ import org.opencypher.spark.api.types.{CTBoolean, CTInteger, CTString}
 import org.opencypher.spark.api.frame.EmbeddedRepresentation
 import org.opencypher.spark.api.frame.BinaryRepresentation
 import org.opencypher.spark.impl.StdSlot
-import org.opencypher.spark.api.value.CypherValue
+import org.opencypher.spark.prototype.api.value.CypherValue
 
 object ProductEncoderFactory {
 
-  import org.opencypher.spark.api.value.CypherValue.Encoders._
+  import org.opencypher.spark.prototype.api.value.CypherValue.Encoders._
 
   def createEncoder(slots: Seq[StdSlot])(implicit session: SparkSession): ExpressionEncoder[Product] = {
     import session.implicits._

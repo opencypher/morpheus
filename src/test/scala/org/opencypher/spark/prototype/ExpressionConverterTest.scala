@@ -4,8 +4,10 @@ import org.neo4j.cypher.internal.frontend.v3_2.{ast, symbols}
 import org.neo4j.cypher.internal.frontend.v3_2.ast.AstConstructionTestSupport
 import org.opencypher.spark.StdTestSuite
 import org.opencypher.spark.api.types.CTString
-import org.opencypher.spark.prototype.ir._
-import org.opencypher.spark.prototype.ir.global._
+import org.opencypher.spark.prototype.api.expr._
+import org.opencypher.spark.prototype.api.ir._
+import org.opencypher.spark.prototype.api.ir.global._
+import org.opencypher.spark.prototype.impl.convert.ExpressionConverter
 
 class ExpressionConverterTest extends StdTestSuite with AstConstructionTestSupport {
 

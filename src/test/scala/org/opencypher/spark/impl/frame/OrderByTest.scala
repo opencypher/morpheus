@@ -2,7 +2,7 @@ package org.opencypher.spark.impl.frame
 
 import org.opencypher.spark.api.frame.BinaryRepresentation
 import org.opencypher.spark.api.types.{CTAny, CTNode}
-import org.opencypher.spark.api.value.CypherValue
+import org.opencypher.spark.prototype.api.value.CypherValue
 
 class OrderByTest extends StdFrameTestSuite {
 

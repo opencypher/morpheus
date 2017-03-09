@@ -2,7 +2,7 @@ package org.opencypher.spark
 
 import org.apache.spark.sql.SparkSession
 import org.opencypher.spark.api.PropertyGraph
-import org.opencypher.spark.api.value._
+import org.opencypher.spark.prototype.api.value._
 import org.opencypher.spark.impl.{CachingPropertyGraphFactory, StdPropertyGraphFactory}
 
 import scala.language.implicitConversions

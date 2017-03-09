@@ -1,7 +1,7 @@
 package org.opencypher.spark.benchmark
 
 import org.neo4j.driver.internal.{InternalNode, InternalRelationship}
-import org.opencypher.spark.api.value._
+import org.opencypher.spark.prototype.api.value._
 
 object Converters {
   import scala.collection.JavaConverters._
