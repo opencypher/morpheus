@@ -7,11 +7,11 @@ import org.apache.spark.sql.Dataset
 // - plan operator for cypher on spark
 // - knows how to produce a concrete cypher result
 //
-trait CypherFrame[Out] {
+trait OldCypherFrame[Out] {
 
   // Implementations may specialize
   //
-  type Frame <: CypherFrame[Out]
+  type Frame <: OldCypherFrame[Out]
   type Field <: CypherField
   type Slot <: CypherSlot
   type RuntimeContext <: CypherRuntimeContext

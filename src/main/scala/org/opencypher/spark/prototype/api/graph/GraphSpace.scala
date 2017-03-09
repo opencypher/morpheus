@@ -8,7 +8,7 @@ import org.opencypher.spark.prototype.api.ir.global.GlobalsRegistry
 // (4) Figure out physical plan
 // (5) Execute and flesh out user facing api
 trait GraphSpace {
-  def base: Graph
+  def base: CypherGraph
   def globals: GlobalsRegistry
 //  def graphs: Set[Graph]
 }
