@@ -2,8 +2,8 @@ package org.opencypher.spark.prototype.api.schema
 
 import org.opencypher.spark.api.CypherType
 
-object StdSchema {
-  val empty: Schema = StdSchema(
+object Schema {
+  val empty: Schema = Schema(
     labels = Set.empty,
     relationshipTypes = Set.empty,
     nodeKeyMap = PropertyKeyMap.empty,
@@ -48,70 +48,52 @@ case class LabelCombinations(combos: Set[Set[String]]) {
   }
 }
 
-case class StdSchema(labels: Set[String], relationshipTypes: Set[String],
-                     nodeKeyMap: PropertyKeyMap, relKeyMap: PropertyKeyMap,
-                     labelImplications: LabelImplications, labelCombinations: LabelCombinations) extends Schema {
-  override def impliedLabels(knownLabels: Set[String]): Set[String] =
+case class Schema(
+    /**
+     * All labels present in this graph
+     */
+    labels: Set[String],
+    /**
+     * All relationship types present in this graph
+     */
+    relationshipTypes: Set[String],
+    nodeKeyMap: PropertyKeyMap,
+    relKeyMap: PropertyKeyMap,
+    labelImplications: LabelImplications,
+    labelCombinations: LabelCombinations) {
+
+  /**
+   * Given a set of labels that a node definitely has, returns all labels the node _must_ have.
+   */
+  def impliedLabels(knownLabels: Set[String]): Set[String] =
     labelImplications.transitiveImplicationsFor(knownLabels.intersect(labels))
 
-  override def combinedLabels(knownLabels: Set[String]): Set[String] = knownLabels.flatMap(labelCombinations.combinationsFor)
+  /**
+   * Given a set of labels that a node definitely has, returns all the labels that the node could possibly have.
+   */
+  def combinedLabels(knownLabels: Set[String]): Set[String] = knownLabels.flatMap(labelCombinations.combinationsFor)
 
-  override def nodeKeys(label: String): Map[String, CypherType] = nodeKeyMap.keysFor(label)
+  /**
+   * Given a set of labels that a node definitely has, returns its property schema.
+   */
+  def nodeKeys(label: String): Map[String, CypherType] = nodeKeyMap.keysFor(label)
 
-  override def relationshipKeys(typ: String): Map[String, CypherType] = relKeyMap.keysFor(typ)
+  /**
+   * Returns the property schema for a given relationship type
+   */
+  def relationshipKeys(typ: String): Map[String, CypherType] = relKeyMap.keysFor(typ)
 
-  override def withImpliedLabel(existingLabel: String, impliedLabel: String): Schema =
+  def withImpliedLabel(existingLabel: String, impliedLabel: String): Schema =
     copy(labels = labels + existingLabel + impliedLabel,
       labelImplications = labelImplications.withImplication(existingLabel, impliedLabel))
 
-  override def withCombinedLabels(a: String, b: String): Schema =
+  def withCombinedLabels(a: String, b: String): Schema =
     copy(labels = labels + a + b, labelCombinations = labelCombinations.withCombination(a, b))
 
-  override def withNodeKeys(label: String)(keys: (String, CypherType)*): Schema =
+  def withNodeKeys(label: String)(keys: (String, CypherType)*): Schema =
     copy(labels = labels + label, nodeKeyMap = nodeKeyMap.withKeys(label, keys))
 
-  override def withRelationshipKeys(typ: String)(keys: (String, CypherType)*): Schema =
+  def withRelationshipKeys(typ: String)(keys: (String, CypherType)*): Schema =
     copy(relationshipTypes = relationshipTypes + typ, relKeyMap = relKeyMap.withKeys(typ, keys))
-}
-
-trait Schema {
-
-  /**
-    * All labels present in this graph
-    */
-  def labels: Set[String]
-
-  /**
-    * All relationship types present in this graph
-    */
-  def relationshipTypes: Set[String]
-
-  /**
-    * Given a set of labels that a node definitely has, returns all labels the node _must_ have.
-    */
-  def impliedLabels(knownLabels: Set[String]): Set[String]
-
-  /**
-    * Given a set of labels that a node definitely has, returns all the labels that the node could possibly have.
-    */
-  def combinedLabels(knownLabels: Set[String]): Set[String]
-
-  /**
-    * Given a set of labels that a node definitely has, returns its property schema.
-    */
-  def nodeKeys(label: String): Map[String, CypherType]
-
-  /**
-    * Returns the property schema for a given relationship type
-    */
-  def relationshipKeys(typ: String): Map[String, CypherType]
-
-  def withImpliedLabel(existingLabel: String, impliedLabel: String): Schema
-
-  def withCombinedLabels(existingLabel: String, possibleLabel: String): Schema
-
-  def withNodeKeys(label: String)(keys: (String, CypherType)*): Schema
-
-  def withRelationshipKeys(typ: String)(keys: (String, CypherType)*): Schema
 }
 
