@@ -92,6 +92,7 @@ final case class HasLabel(node: Expr, label: LabelRef) extends Expr
 final case class HasType(rel: Expr, relType: RelTypeRef) extends Expr
 final case class Equals(lhs: Expr, rhs: Expr) extends Expr
 final case class Property(m: Expr, key: PropertyKeyRef) extends Expr
+final case class TypeId(rel: Expr) extends Expr
 
 sealed trait Lit[T] extends Expr {
   def v: T
