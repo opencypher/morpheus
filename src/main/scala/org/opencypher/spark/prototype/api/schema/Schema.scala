@@ -25,6 +25,8 @@ case class PropertyKeyMap(m: Map[String, Map[String, CypherType]]) {
   def keysFor(classifier: String): Map[String, CypherType] = m.getOrElse(classifier, Map.empty)
   def withKeys(classifier: String, keys: Seq[(String, CypherType)]): PropertyKeyMap =
     copy(m.updated(classifier, keys.toMap))
+
+  def keys = m.values.flatMap(_.keySet).toSet
 }
 
 case class ImpliedLabels(m: Map[String, Set[String]]) {
@@ -83,6 +85,8 @@ case class Schema(
    * Given a label that a node definitely has, returns its property schema.
    */
   def nodeKeys(label: String): Map[String, CypherType] = nodeKeyMap.keysFor(label)
+
+  def keys = nodeKeyMap.keys ++ relKeyMap.keys
 
   /**
    * Returns the property schema for a given relationship type

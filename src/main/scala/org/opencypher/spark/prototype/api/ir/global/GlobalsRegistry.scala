@@ -1,6 +1,7 @@
 package org.opencypher.spark.prototype.api.ir.global
 
 import org.opencypher.spark.prototype.api.ir.global.GlobalsCollector._
+import org.opencypher.spark.prototype.api.schema.VerifiedSchema
 
 object GlobalsRegistry {
   val none = GlobalsRegistry(
@@ -9,6 +10,14 @@ object GlobalsRegistry {
     propertyKeys = GlobalsCollector[PropertyKeyRef, PropertyKey].empty,
     constants = GlobalsCollector[ConstantRef, Constant].empty
   )
+
+  def fromSchema(verified: VerifiedSchema): GlobalsRegistry = {
+    val schema = verified.schema
+    val withLabels = schema.labels.foldLeft(GlobalsRegistry.none) { case (acc, l) => acc.withLabel(Label(l)) }
+    val withKeys = schema.keys.foldLeft(withLabels) { case (acc, name) => acc.withPropertyKey(PropertyKey(name)) }
+    val withTypes = schema.relationshipTypes.foldLeft(withKeys) { case (acc, name) => acc.withRelType(RelType(name)) }
+    withTypes
+  }
 }
 
 final case class GlobalsRegistry(

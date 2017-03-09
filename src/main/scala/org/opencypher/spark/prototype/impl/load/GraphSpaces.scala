@@ -1,4 +1,4 @@
-package org.opencypher.spark.prototype.impl.`import`
+package org.opencypher.spark.prototype.impl.load
 
 import org.apache.spark.SparkConf
 import org.apache.spark.rdd.RDD
@@ -18,14 +18,17 @@ import org.opencypher.spark.prototype.api.schema.{Schema, VerifiedSchema}
 import org.opencypher.spark.prototype.api.value.{CypherNode, Properties}
 
 object GraphSpaces {
-  def fromNeo4j(verified: VerifiedSchema)(implicit sc: SparkSession): SparkGraphSpace = {
+  def fromNeo4j(verified: VerifiedSchema,
+                nodeQuery: String = "CYPHER runtime=compiled MATCH (n) RETURN n",
+                relQuery: String = "CYPHER runtime=compiled MATCH ()-[r]->() RETURN r")
+               (implicit sc: SparkSession): SparkGraphSpace = {
     val neo4j = Neo4j(sc.sparkContext)
     val schema = verified.schema
 
-    val nodes = neo4j.cypher("CYPHER runtime=compiled MATCH (n) RETURN n").loadNodeRdds.map(row => row(0).asInstanceOf[InternalNode])
-    val rels = neo4j.cypher("CYPHER runtime=compiled MATCH ()-[r]->() RETURN r").loadRowRdd.map(row => row(0).asInstanceOf[InternalRelationship])
+    val nodes = neo4j.cypher(nodeQuery).loadNodeRdds.map(row => row(0).asInstanceOf[InternalNode])
+    val rels = neo4j.cypher(relQuery).loadRowRdd.map(row => row(0).asInstanceOf[InternalRelationship])
 
-    val schemaGlobals = extractGlobals(schema)
+    val schemaGlobals = GlobalsRegistry.fromSchema(verified)
     val exprField = nodeFields(schema, schemaGlobals)
 
     val struct = StructType(exprField.map(_._3).toArray)
@@ -38,24 +41,23 @@ object GraphSpaces {
       override def header = constructHeader(exprField)
     }
 
-    val nodeView = new SparkCypherView {
-      override def parameters = Map.empty
-      override def domain = ???
-      override def model = QueryModel[Expr](null, schemaGlobals, Map.empty)
-      override def records = nodeRecords
-      override def graph = ???
-    }
-
-    val baseGraph = new SparkCypherGraph {
-      override def nodes = nodeView
-      override def relationships = ???
-      override def views = ???
-      override def space = ???
-      override def schema = ???
-    }
-
     new SparkGraphSpace {
-      override def base = baseGraph
+      selfSpace =>
+
+      override def base = new SparkCypherGraph {
+        selfBase =>
+        override def nodes = new SparkCypherView {
+          override def parameters = Map.empty
+          override def domain = selfBase
+          override def model = QueryModel[Expr](null, schemaGlobals, Map.empty)
+          override def records = nodeRecords
+          override def graph = ???
+        }
+        override def relationships = ???
+        override def views = ???
+        override def space = selfSpace
+        override def schema = ???
+      }
       override def globals = schemaGlobals
     }
   }
@@ -65,7 +67,6 @@ object GraphSpaces {
       case (expr, t, field) => RecordSlot(field.name, Set(expr), t)
     }
   }
-  private def extractGlobals(schema: Schema): GlobalsRegistry = ???
 
   private def columnForLabel(name: String) = s"label_$name"
   private def columnForProperty(name: String) = s"prop_$name"
@@ -81,7 +82,7 @@ object GraphSpaces {
       schema.nodeKeys(l).map {
         case (name, t) =>
           val property = Property(nodeVar, globals.propertyKey(name))
-          val field = StructField(columnForProperty(name), sparkType(t), nullable = true)
+          val field = StructField(columnForProperty(name), sparkType(t), nullable = t.isNullable)
           (property, t, field)
       }
     }
@@ -89,7 +90,7 @@ object GraphSpaces {
   }
 
   object sparkType {
-    def apply(ct: CypherType): DataType = ct match {
+    def apply(ct: CypherType): DataType = ct.material match {
       case CTString => StringType
       case CTInteger => LongType
       case CTBoolean => BooleanType
@@ -108,7 +109,7 @@ object GraphSpaces {
       val values = fieldMap.map {
         case (Property(_, ref), _, field) =>
           val key = globals.propertyKey(ref).name
-          val value = props(key)
+          val value = props.get(key).orNull
           sparkValue(field.dataType, value)
 
         case (HasLabel(_, ref), _, field) =>
