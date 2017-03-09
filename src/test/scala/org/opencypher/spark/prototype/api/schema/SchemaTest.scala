@@ -1,7 +1,7 @@
 package org.opencypher.spark.prototype.api.schema
 
 import org.opencypher.spark.StdTestSuite
-import org.opencypher.spark.api.types.{CTBoolean, CTInteger, CTString}
+import org.opencypher.spark.api.types.{CTBoolean, CTFloat, CTInteger, CTString}
 
 class SchemaTest extends StdTestSuite {
 
@@ -58,21 +58,65 @@ class SchemaTest extends StdTestSuite {
   test("should get chained combinations correct") {
     val schema = Schema.empty.withCombinedLabels("Person", "Employee").withCombinedLabels("Person", "Director")
 
-    schema.combinedLabels(Set("Employee")) should equal(Set("Person", "Employee", "Director"))
-    schema.combinedLabels(Set("Director")) should equal(Set("Person", "Employee", "Director"))
-    schema.combinedLabels(Set("Person")) should equal(Set("Person", "Employee", "Director"))
-    schema.combinedLabels(Set("Person", "Employee")) should equal(Set("Person", "Employee", "Director"))
+    schema.optionalLabels(Set("Employee")) should equal(Set("Person", "Employee", "Director"))
+    schema.optionalLabels(Set("Director")) should equal(Set("Person", "Employee", "Director"))
+    schema.optionalLabels(Set("Person")) should equal(Set("Person", "Employee", "Director"))
+    schema.optionalLabels(Set("Person", "Employee")) should equal(Set("Person", "Employee", "Director"))
     schema.labels should equal(Set("Person", "Employee", "Director"))
   }
 
   test("should get simple combinations correct") {
     val schema = Schema.empty.withCombinedLabels("Person", "Employee").withCombinedLabels("Dog", "Pet")
 
-    schema.combinedLabels(Set("NotEmployee")) should equal(Set())
-    schema.combinedLabels(Set("Employee")) should equal(Set("Person", "Employee"))
-    schema.combinedLabels(Set("Person")) should equal(Set("Person", "Employee"))
-    schema.combinedLabels(Set("Dog")) should equal(Set("Dog", "Pet"))
-    schema.combinedLabels(Set("Pet", "Employee")) should equal(Set("Person", "Employee", "Dog", "Pet"))
+    schema.optionalLabels(Set("NotEmployee")) should equal(Set())
+    schema.optionalLabels(Set("Employee")) should equal(Set("Person", "Employee"))
+    schema.optionalLabels(Set("Person")) should equal(Set("Person", "Employee"))
+    schema.optionalLabels(Set("Dog")) should equal(Set("Dog", "Pet"))
+    schema.optionalLabels(Set("Pet", "Employee")) should equal(Set("Person", "Employee", "Dog", "Pet"))
     schema.labels should equal(Set("Person", "Employee", "Dog", "Pet"))
+  }
+
+  test("verifying empty schema") {
+    Schema.empty.verify.schema should equal(Schema.empty)
+  }
+
+  test("verifying valid schema") {
+    val schema = Schema.empty
+      .withNodeKeys("Person")("name" -> CTString)
+      .withNodeKeys("Employee")("name" -> CTString, "salary" -> CTInteger)
+      .withNodeKeys("Dog")("name" -> CTFloat)
+      .withNodeKeys("Pet")("notName" -> CTBoolean)
+      .withCombinedLabels("Person", "Employee")
+      .withImpliedLabel("Dog", "Pet")
+
+    schema.verify.schema should equal(schema)
+  }
+
+  test("verifying schema with conflict on implied labels") {
+    val schema = Schema.empty
+      .withNodeKeys("Person")("name" -> CTString)
+      .withNodeKeys("Employee")("name" -> CTString, "salary" -> CTInteger)
+      .withNodeKeys("Dog")("name" -> CTFloat)
+      .withNodeKeys("Pet")("name" -> CTBoolean)
+      .withCombinedLabels("Person", "Employee")
+      .withImpliedLabel("Dog", "Pet")
+
+    an [IllegalArgumentException] shouldBe thrownBy {
+      schema.verify
+    }
+  }
+
+  test("verifying schema with conflict on combined labels") {
+    val schema = Schema.empty
+      .withNodeKeys("Person")("name" -> CTString)
+      .withNodeKeys("Employee")("name" -> CTInteger, "salary" -> CTInteger)
+      .withNodeKeys("Dog")("name" -> CTFloat)
+      .withNodeKeys("Pet")("notName" -> CTBoolean)
+      .withCombinedLabels("Person", "Employee")
+      .withImpliedLabel("Dog", "Pet")
+
+    an [IllegalArgumentException] shouldBe thrownBy {
+      schema.verify
+    }
   }
 }
