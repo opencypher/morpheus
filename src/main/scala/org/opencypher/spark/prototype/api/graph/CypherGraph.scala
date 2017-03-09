@@ -3,16 +3,24 @@ package org.opencypher.spark.prototype.api.graph
 import org.opencypher.spark.prototype.api.schema.Schema
 
 trait CypherGraph {
-  def space: GraphSpace
+  type Space <: GraphSpace
+  type View <: CypherView
 
-  def nodes: CypherView
-  def relationships: CypherView
+  def space: Space
 
-  def views: Set[CypherView]
+  def nodes: View
+  def relationships: View
+
+  def views: Set[View]
 
   def schema: Schema
 
   // identity
   // properties
   // labels
+}
+
+trait SparkCypherGraph extends CypherGraph {
+  override type Space = SparkGraphSpace
+  override type View = SparkCypherView
 }
