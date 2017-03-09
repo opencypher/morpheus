@@ -1,7 +1,7 @@
 package org.opencypher.spark.prototype.impl.load
 
 import org.apache.spark.sql.types._
-import org.opencypher.spark.api.types.{CTInteger, CTString}
+import org.opencypher.spark.api.types.{CTAny, CTInteger, CTString}
 import org.opencypher.spark.prototype.api.schema.Schema
 import org.opencypher.spark.{StdTestSuite, TestSession}
 
@@ -36,5 +36,20 @@ class SparkGraphSpaceTest extends StdTestSuite with TestSession.Fixture {
       StructField("prop_guests", LongType, nullable = false),
       StructField("prop_comments", StringType, nullable = true)
     ))
+  }
+
+  test("import a graph from neo") {
+    val schema = Schema.empty
+      .withRelationshipKeys("ATTENDED")("guests" -> CTInteger, "comments" -> CTString.nullable)
+      .withNodeKeys("User")("id" -> CTInteger.nullable, "text" -> CTString.nullable, "country" -> CTString.nullable, "city" -> CTString.nullable)
+      .withNodeKeys("Meetup")("id" -> CTInteger.nullable, "city" -> CTString.nullable, "country" -> CTString.nullable)
+      .withNodeKeys("Graph")("title" -> CTString.nullable, "updated" -> CTInteger.nullable)
+      .withNodeKeys("Event")("time" -> CTInteger.nullable, "link" -> CTAny.nullable)
+    val space = SparkGraphSpace.fromNeo4j(schema, "MATCH (a)-[:ATTENDED]->(b) UNWIND [a, b] AS n RETURN DISTINCT n", "MATCH ()-[r:ATTENDED]->() RETURN r")
+    val rels = space.base.relationships.records.toDF
+    val nodes = space.base.nodes.records.toDF
+
+    rels.count() shouldBe 4832
+    nodes.count() shouldBe 2901
   }
 }

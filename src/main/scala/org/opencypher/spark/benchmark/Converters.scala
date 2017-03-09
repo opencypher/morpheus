@@ -6,6 +6,8 @@ import org.opencypher.spark.prototype.api.value._
 object Converters {
   import scala.collection.JavaConverters._
 
+  // TODO: Complete and test
+  // TODO: Support scala types
   object cypherValue extends (Any => CypherValue) {
     override def apply(v: Any): CypherValue = v match {
       case v: String => CypherString(v)
@@ -20,7 +22,6 @@ object Converters {
       case null => null
       case x => throw new IllegalArgumentException(s"Unexpected property value: $x")
     }
-
   }
 
   case object internalNodeToCypherNode extends (InternalNode => CypherNode) {

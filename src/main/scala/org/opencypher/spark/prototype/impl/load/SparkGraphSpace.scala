@@ -7,7 +7,8 @@ import org.apache.spark.sql.{Row, SparkSession}
 import org.neo4j.driver.internal.{InternalNode, InternalRelationship}
 import org.neo4j.spark.Neo4j
 import org.opencypher.spark.api.CypherType
-import org.opencypher.spark.api.types.{CTBoolean, CTInteger, CTString}
+import org.opencypher.spark.api.types.{CTAny, CTBoolean, CTInteger, CTString}
+import org.opencypher.spark.benchmark.Converters.cypherValue
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.graph.{SparkCypherGraph, SparkCypherView, SparkGraphSpace}
 import org.opencypher.spark.prototype.api.ir.QueryModel
@@ -122,6 +123,7 @@ object SparkGraphSpace {
       case CTString => StringType
       case CTInteger => LongType
       case CTBoolean => BooleanType
+      case CTAny => BinaryType
       case x => throw new NotImplementedError(s"No mapping for $x")
     }
   }
@@ -179,7 +181,8 @@ object SparkGraphSpace {
 
   private def sparkValue(typ: DataType, value: AnyRef): Any = typ match {
     case StringType | LongType | BooleanType => value
-    case value => ???
+    case BinaryType => if (value == null) null else value.toString.getBytes // TODO: Call kryo
+    case _ => cypherValue(value)
   }
 
   def configureNeo4jAccess(config: SparkConf)(url: String, user: String = "", pw: String = ""): SparkConf = {
