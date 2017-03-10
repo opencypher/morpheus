@@ -1,34 +1,38 @@
 package org.opencypher.spark.prototype.impl.planner
 
-import org.opencypher.spark.prototype.api.expr.{Ands, Expr, HasLabel, Var}
+import org.apache.spark.sql.DataFrame
+import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.graph.{SparkCypherGraph, SparkCypherView}
 import org.opencypher.spark.prototype.api.ir.QueryModel
-import org.opencypher.spark.prototype.api.ir.global.LabelRef
+import org.opencypher.spark.prototype.api.ir.global.{GlobalsRegistry, LabelRef}
 import org.opencypher.spark.prototype.api.ir.pattern.AllGiven
-import org.opencypher.spark.prototype.api.record.SparkCypherRecords
+import org.opencypher.spark.prototype.api.record.{RecordSlot, SparkCypherRecords}
 import org.opencypher.spark.prototype.impl.logical
+import org.opencypher.spark.prototype.impl.instances.all._
+import org.opencypher.spark.prototype.impl.syntax.all._
 
 class PhysicalPlanner {
 
   def plan(logicalPlan: logical.LogicalOperator)(implicit context: PhysicalPlanningContext): SparkCypherView = logicalPlan match {
     case logical.Select(fields, in) =>
-      Select(fields, plan(in))
+      PhysicalSelect(fields.toMap, plan(in))
 //      plan(in)
 //      val frame = planOp(in).selectFields(fields.map(t => Symbol(t._2.replaceAllLiterally(".", "_"))): _*)
 //      frame
     case logical.NodeScan(v, every) =>
       AllNodesScan(v, context.graph)
-      context.graph.nodes
 //      labelScan(v)(every.labels.elts.map(globals.label(_).name).toIndexedSeq).asProduct
     case logical.Project(expr, in) =>
-//      planExpr(planOp(in), expr)
-      ???
-    case logical.Filter(expr, in) =>
+      PhysicalProject(expr, context.globals, plan(in))
+    case logical.Filter(expr, in) => expr match {
+      case HasLabel(n: Var, ref) =>
+        LabelFilter(n, AllGiven(Set(ref)), plan(in))
+      case _ => ???
+    }
       //      if (in.signature.items.exists(_.exprs.contains(expr))) {
       //        planExpr(planOp(in), expr)
       //      }
 //      planExpr(planOp(in), expr)
-      ???
     case logical.ExpandSource(source, rel, target, in) =>
       // TODO: where is the rel-type info?
 //      val rels = allRelationships(rel).asProduct
@@ -48,12 +52,30 @@ class PhysicalPlanner {
 
 case class AllNodesScan(node: Var, domain: SparkCypherGraph) extends SparkCypherView {
   override def graph: SparkCypherGraph = ???
-  override def records: SparkCypherRecords = domain.nodes.records
+  override def records: SparkCypherRecords = {
+    val nodes = domain.nodes.records
+    val newHeader = nodes.header.map { r =>
+      val newExpr = r.expr match {
+        case _: Var => node
+        case p: Property => p.copy(m = node)
+        case l: HasLabel => l.copy(node = node)
+        case _ => ???
+      }
+
+      RecordSlot(r.name, newExpr, r.cypherType)
+    }
+
+    new SparkCypherRecords with Serializable {
+      override def data: DataFrame = nodes.data
+      override def header: Seq[RecordSlot] = newHeader
+    }
+  }
 
   override def model: QueryModel[Expr] = ???
 }
 
 case class LabelFilter(node: Var, labels: AllGiven[LabelRef], in: SparkCypherView) extends SparkCypherView {
+
   override def domain: SparkCypherGraph = in.domain
   override def graph: SparkCypherGraph = ???
   override def records: SparkCypherRecords = {
@@ -64,18 +86,28 @@ case class LabelFilter(node: Var, labels: AllGiven[LabelRef], in: SparkCypherVie
   override def model: QueryModel[Expr] = ???
 }
 
-case class Select(fields: Seq[(Expr, String)], in: SparkCypherView) extends SparkCypherView {
+case class PhysicalSelect(fields: Map[Expr, String], in: SparkCypherView) extends SparkCypherView {
   override def domain: SparkCypherGraph = in.domain
   override def graph: SparkCypherGraph = ???
 
-//  override def records: SparkCypherRecords = {
-//    val records = in.records
-//    records.select(fields.toSet)
-//  }
+  override def records: SparkCypherRecords = {
+    val records = in.records
+    records.select(fields)
+  }
 
   override def model: QueryModel[Expr] = ???
-
-  override def records: SparkCypherRecords = ???
 }
 
-case class PhysicalPlanningContext(graph: SparkCypherGraph)
+case class PhysicalProject(expr: Expr, globals: GlobalsRegistry, in: SparkCypherView) extends SparkCypherView {
+  override def domain: SparkCypherGraph = in.domain
+  override def graph: SparkCypherGraph = ???
+
+  override def records: SparkCypherRecords = {
+    val records = in.records
+    records.project(expr, globals)
+  }
+
+  override def model: QueryModel[Expr] = ???
+}
+
+case class PhysicalPlanningContext(graph: SparkCypherGraph, globals: GlobalsRegistry)

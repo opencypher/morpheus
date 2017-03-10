@@ -34,7 +34,7 @@ object SparkGraphSpace {
     val nodeRDD: RDD[Row] = nodes.map(nodeToRow(nodeFields, schemaGlobals))
     val nodeFrame = sc.createDataFrame(nodeRDD, nodeStruct)
 
-    val nodeRecords = new SparkCypherRecords {
+    val nodeRecords = new SparkCypherRecords with Serializable {
       override def data = nodeFrame
       override def header = constructHeader(nodeFields)
     }
@@ -44,23 +44,23 @@ object SparkGraphSpace {
     val relRDD: RDD[Row] = rels.map(relToRow(relFields, schemaGlobals))
     val relFrame = sc.createDataFrame(relRDD, relStruct)
 
-    val relRecords = new SparkCypherRecords {
+    val relRecords = new SparkCypherRecords with Serializable {
       override def data = relFrame
       override def header = constructHeader(relFields)
     }
 
-    new SparkGraphSpace {
+    new SparkGraphSpace with Serializable {
       selfSpace =>
 
-      override def base = new SparkCypherGraph {
+      override def base = new SparkCypherGraph with Serializable {
         selfBase =>
-        override def nodes = new SparkCypherView {
+        override def nodes = new SparkCypherView with Serializable {
           override def domain = selfBase
           override def model = QueryModel[Expr](null, schemaGlobals, Map.empty)
           override def records = nodeRecords
           override def graph = ???
         }
-        override def relationships = new SparkCypherView {
+        override def relationships = new SparkCypherView with Serializable {
           override def domain = selfBase
           override def model = QueryModel[Expr](null, schemaGlobals, Map.empty)
           override def records = relRecords

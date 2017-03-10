@@ -14,9 +14,13 @@ trait CypherView {
   def records: Records
 
   def model: QueryModel[Expr]
+
+  def show(): Unit
 }
 
 trait SparkCypherView extends CypherView {
   override type Graph = SparkCypherGraph
   override type Records = SparkCypherRecords
+
+  override def show() = records.toDF.show()
 }
