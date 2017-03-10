@@ -8,8 +8,8 @@ import org.opencypher.spark.prototype.api.ir.global.{GlobalsRegistry, LabelRef}
 import org.opencypher.spark.prototype.api.ir.pattern.AllGiven
 import org.opencypher.spark.prototype.api.record.{RecordSlot, SparkCypherRecords}
 import org.opencypher.spark.prototype.impl.logical
-import org.opencypher.spark.prototype.impl.instances.all._
-import org.opencypher.spark.prototype.impl.syntax.all._
+import org.opencypher.spark.prototype.impl.instances.spark.records._
+import org.opencypher.spark.prototype.impl.syntax.transform._
 
 class PhysicalPlanner {
 

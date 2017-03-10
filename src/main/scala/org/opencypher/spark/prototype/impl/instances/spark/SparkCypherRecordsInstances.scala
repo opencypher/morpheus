@@ -1,4 +1,4 @@
-package org.opencypher.spark.prototype.impl.instances
+package org.opencypher.spark.prototype.impl.instances.spark
 
 import org.apache.spark.sql.Column
 import org.opencypher.spark.prototype.api.expr._
