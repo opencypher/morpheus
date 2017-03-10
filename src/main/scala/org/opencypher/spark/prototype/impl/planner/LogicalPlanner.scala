@@ -8,7 +8,7 @@ import org.opencypher.spark.prototype.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.prototype.api.ir.pattern.{AllGiven, Pattern}
 import org.opencypher.spark.prototype.impl.logical._
 
-class LogicalOperatorProducer {
+class LogicalPlanner {
 
   def plan(ir: CypherQuery[Expr]): LogicalOperator = {
     val model = ir.model

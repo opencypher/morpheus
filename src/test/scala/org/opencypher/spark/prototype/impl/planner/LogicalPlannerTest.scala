@@ -6,10 +6,11 @@ import org.opencypher.spark.prototype.api.ir._
 import org.opencypher.spark.prototype.api.ir.block._
 import org.opencypher.spark.prototype.api.ir.global.{ConstantRef, PropertyKeyRef}
 import org.opencypher.spark.prototype.api.ir.pattern.{DirectedRelationship, EveryNode, Pattern}
+import org.opencypher.spark.prototype.impl.logical
 import org.opencypher.spark.prototype.impl.logical._
 import org.scalatest.matchers.{MatchResult, Matcher}
 
-class LogicalOperatorProducerTest extends IrTestSuite {
+class LogicalPlannerTest extends IrTestSuite {
 
   test("convert match block") {
     val pattern = Pattern.empty[Expr]
@@ -42,7 +43,7 @@ class LogicalOperatorProducerTest extends IrTestSuite {
     val globals = ir.model.globals
 
     plan(ir) should equal(
-      Select(Seq(Var("a.name") -> "a.name"),
+      logical.Select(Seq(Var("a.name") -> "a.name"),
         Project(Property(Var("a"), globals.propertyKey("name")),
           Filter(Equals(Property(Var("g"), globals.propertyKey("name")), Const(ConstantRef(0))),
             Project(Property(Var("g"), globals.propertyKey("name")),
@@ -60,7 +61,7 @@ class LogicalOperatorProducerTest extends IrTestSuite {
     )
   }
 
-  private val producer = new LogicalOperatorProducer
+  private val producer = new LogicalPlanner
 
   private def plan(ir: CypherQuery[Expr]): LogicalOperator =
     producer.plan(ir)
@@ -68,7 +69,7 @@ class LogicalOperatorProducerTest extends IrTestSuite {
   case class equalWithoutResult(plan: LogicalOperator) extends Matcher[LogicalOperator] {
     override def apply(left: LogicalOperator): MatchResult = {
       left match {
-        case Select(_, in) =>
+        case logical.Select(_, in) =>
           val matches = in == plan && in.solved == plan.solved
           MatchResult(matches, s"$in did not equal $plan", s"$in was not supposed to equal $plan")
         case _ => MatchResult(matches = false, "Expected a Select plan on top", "Expected a Select plan on top")

@@ -12,6 +12,8 @@ trait GraphSpace {
 
   def base: Graph
   def globals: GlobalsRegistry
+
+//  def view: Set[CypherView]
 //  def graphs: Set[Graph]
 }
 

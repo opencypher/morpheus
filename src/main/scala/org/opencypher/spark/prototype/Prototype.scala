@@ -5,7 +5,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.{AstRewritingMonitor, CypherExcep
 import org.opencypher.spark.api.{CypherResultContainer, PropertyGraph}
 import org.opencypher.spark.prototype.api.value.CypherString
 import org.opencypher.spark.prototype.impl.convert.{CypherParser, CypherQueryBuilder, GlobalsExtractor}
-import org.opencypher.spark.prototype.impl.planner.LogicalOperatorProducer
+import org.opencypher.spark.prototype.impl.planner.LogicalPlanner
 
 import scala.reflect.ClassTag
 
@@ -22,7 +22,7 @@ trait Prototype {
       case x => throw new UnsupportedOperationException(s"Can't convert $x to CypherValue yet")
     }
 
-    val plan = new LogicalOperatorProducer().plan(ir)
+    val plan = new LogicalPlanner().plan(ir)
 
     val result = graph.cypherNew(plan, globals, cvs)
 

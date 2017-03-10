@@ -55,20 +55,18 @@ object SparkGraphSpace {
       override def base = new SparkCypherGraph {
         selfBase =>
         override def nodes = new SparkCypherView {
-          override def parameters = Map.empty
           override def domain = selfBase
           override def model = QueryModel[Expr](null, schemaGlobals, Map.empty)
           override def records = nodeRecords
           override def graph = ???
         }
         override def relationships = new SparkCypherView {
-          override def parameters = Map.empty
           override def domain = selfBase
           override def model = QueryModel[Expr](null, schemaGlobals, Map.empty)
           override def records = relRecords
           override def graph = ???
         }
-        override def views = ???
+        override def constituents = ???
         override def space = selfSpace
         override def schema = ???
       }
@@ -78,7 +76,7 @@ object SparkGraphSpace {
 
   private def constructHeader(stuff: Seq[(Expr, CypherType, StructField)]): Seq[RecordSlot] = {
     stuff.map {
-      case (expr, t, field) => RecordSlot(field.name, Set(expr), t)
+      case (expr, t, field) => RecordSlot(field.name, expr, t)
     }
   }
 

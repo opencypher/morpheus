@@ -11,7 +11,7 @@ trait CypherGraph {
   def nodes: View
   def relationships: View
 
-  def views: Set[View]
+  def constituents: Set[View]
 
   def schema: Schema
 

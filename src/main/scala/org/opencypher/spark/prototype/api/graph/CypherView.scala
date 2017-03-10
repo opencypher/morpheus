@@ -1,9 +1,8 @@
 package org.opencypher.spark.prototype.api.graph
 
 import org.opencypher.spark.prototype.api.expr.Expr
-import org.opencypher.spark.prototype.api.value.CypherValue
-import org.opencypher.spark.prototype.api.record.{CypherRecords, SparkCypherRecords}
 import org.opencypher.spark.prototype.api.ir.QueryModel
+import org.opencypher.spark.prototype.api.record.{CypherRecords, SparkCypherRecords}
 
 trait CypherView {
   type Graph <: CypherGraph
@@ -13,8 +12,6 @@ trait CypherView {
 
   def graph: Graph
   def records: Records
-
-  def parameters: Map[String, CypherValue]
 
   def model: QueryModel[Expr]
 }
