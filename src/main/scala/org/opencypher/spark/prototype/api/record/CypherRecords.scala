@@ -1,22 +1,13 @@
 package org.opencypher.spark.prototype.api.record
 
-import org.apache.spark.sql.DataFrame
-
 trait CypherRecords {
   type Data
   type Records <: CypherRecords
+  type Header <: RecordsHeader
 
-  def header: Seq[RecordSlot]
+  def header: Header
   def data: Data
+
+  def columns: IndexedSeq[String]
+  def column(slot: RecordSlot): String
 }
-
-trait SparkCypherRecords extends CypherRecords {
-  self =>
-
-  override type Data = DataFrame
-  override type Records = SparkCypherRecords
-
-  def toDF = data
-}
-
-

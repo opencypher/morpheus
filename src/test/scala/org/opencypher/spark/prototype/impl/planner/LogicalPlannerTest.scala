@@ -1,11 +1,13 @@
 package org.opencypher.spark.prototype.impl.planner
 
+import org.opencypher.spark.api.types.CTAny
 import org.opencypher.spark.prototype.IrTestSuite
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir._
 import org.opencypher.spark.prototype.api.ir.block._
 import org.opencypher.spark.prototype.api.ir.global.{ConstantRef, PropertyKeyRef}
 import org.opencypher.spark.prototype.api.ir.pattern.{DirectedRelationship, EveryNode, Pattern}
+import org.opencypher.spark.prototype.api.record.ProjectedExpr
 import org.opencypher.spark.prototype.impl.logical
 import org.opencypher.spark.prototype.impl.logical._
 import org.scalatest.matchers.{MatchResult, Matcher}
@@ -76,4 +78,6 @@ class LogicalPlannerTest extends IrTestSuite {
       }
     }
   }
+
+  implicit def content(expr: Expr): ProjectedExpr = ProjectedExpr(expr, CTAny.nullable)
 }

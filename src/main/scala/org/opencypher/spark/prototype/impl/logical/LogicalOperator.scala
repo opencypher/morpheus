@@ -1,8 +1,9 @@
 package org.opencypher.spark.prototype.impl.logical
 
-import org.opencypher.spark.prototype.api.expr.{EndNode, Expr, StartNode, Var}
+import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir.SolvedQueryModel
 import org.opencypher.spark.prototype.api.ir.pattern.EveryNode
+import org.opencypher.spark.prototype.api.record.ProjectedSlotContent
 
 import scala.language.implicitConversions
 
@@ -90,9 +91,9 @@ final case class ExpandTarget(source: Var, rel: Var, target: Var, in: LogicalOpe
   override def signature = in.signature.extendItemFor(target)(EndNode(rel)) withItem rel withItem Item(StartNode(rel), source)
 }
 
-final case class Project(e: Expr, in: LogicalOperator)
+final case class Project(it: ProjectedSlotContent, in: LogicalOperator)
                         (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
-  override def signature = in.signature.withExpr(e)
+  override def signature = it.alias.map(v => in.signature.withExpr(v)).getOrElse(in.signature).withExpr(it.expr)
 }
 
 final case class Select(fields: Seq[(Expr, String)], in: LogicalOperator)

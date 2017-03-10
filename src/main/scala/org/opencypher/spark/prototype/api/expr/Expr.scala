@@ -1,5 +1,6 @@
 package org.opencypher.spark.prototype.api.expr
 
+import org.opencypher.spark.impl.util.SparkIdentifier
 import org.opencypher.spark.prototype.api.ir.Field
 import org.opencypher.spark.prototype.api.ir.global.{ConstantRef, LabelRef, PropertyKeyRef, RelTypeRef}
 
@@ -13,7 +14,9 @@ sealed trait Expr {
 }
 
 final case class Const(ref: ConstantRef) extends Expr
-final case class Var(name: String) extends Expr
+final case class Var(name: String) extends Expr {
+  override def toString = SparkIdentifier.from(name)
+}
 final case class StartNode(e: Expr) extends Expr
 final case class EndNode(e: Expr) extends Expr
 
@@ -88,10 +91,14 @@ final class Ors(_exprs: Set[Expr]) extends FlatteningOpExpr(_exprs) {
   override protected def hashPrime: Int = 61
 }
 
-final case class HasLabel(node: Expr, label: LabelRef) extends Expr
+final case class HasLabel(node: Expr, label: LabelRef) extends Expr {
+  override def toString = s"$node:${label.id}"
+}
 final case class HasType(rel: Expr, relType: RelTypeRef) extends Expr
 final case class Equals(lhs: Expr, rhs: Expr) extends Expr
-final case class Property(m: Expr, key: PropertyKeyRef) extends Expr
+final case class Property(m: Expr, key: PropertyKeyRef) extends Expr {
+  override def toString = s"$m.${key.id}"
+}
 final case class TypeId(rel: Expr) extends Expr
 
 sealed trait Lit[T] extends Expr {

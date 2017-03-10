@@ -2,13 +2,13 @@ package org.opencypher.spark.prototype.impl.planner
 
 import org.apache.spark.sql.DataFrame
 import org.opencypher.spark.prototype.api.expr._
-import org.opencypher.spark.prototype.api.graph.{SparkCypherGraph, SparkCypherView}
 import org.opencypher.spark.prototype.api.ir.QueryModel
 import org.opencypher.spark.prototype.api.ir.global.{GlobalsRegistry, LabelRef}
 import org.opencypher.spark.prototype.api.ir.pattern.AllGiven
-import org.opencypher.spark.prototype.api.record.{RecordSlot, SparkCypherRecords}
-import org.opencypher.spark.prototype.impl.logical
+import org.opencypher.spark.prototype.api.record.{ProjectedSlotContent}
+import org.opencypher.spark.prototype.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherView}
 import org.opencypher.spark.prototype.impl.instances.spark.records._
+import org.opencypher.spark.prototype.impl.logical
 import org.opencypher.spark.prototype.impl.syntax.transform._
 
 class PhysicalPlanner {
@@ -22,8 +22,10 @@ class PhysicalPlanner {
     case logical.NodeScan(v, every) =>
       AllNodesScan(v, context.graph)
 //      labelScan(v)(every.labels.elts.map(globals.label(_).name).toIndexedSeq).asProduct
-    case logical.Project(expr, in) =>
-      PhysicalProject(expr, context.globals, plan(in))
+
+    case logical.Project(it, in) =>
+      PhysicalProject(it, plan(in))
+
     case logical.Filter(expr, in) => expr match {
       case HasLabel(n: Var, ref) =>
         LabelFilter(n, AllGiven(Set(ref)), plan(in))
@@ -53,21 +55,21 @@ class PhysicalPlanner {
 case class AllNodesScan(node: Var, domain: SparkCypherGraph) extends SparkCypherView {
   override def graph: SparkCypherGraph = ???
   override def records: SparkCypherRecords = {
-    val nodes = domain.nodes.records
-    val newHeader = nodes.header.map { r =>
-      val newExpr = r.expr match {
-        case _: Var => node
-        case p: Property => p.copy(m = node)
-        case l: HasLabel => l.copy(node = node)
-        case _ => ???
-      }
-
-      RecordSlot(r.name, newExpr, r.cypherType)
-    }
+//    val nodes = domain.nodes.records
+//    val newHeader = nodes.header.slots.map { r =>
+//      val newExpr = r.expr match {
+//        case _: Var => node
+//        case p: Property => p.copy(m = node)
+//        case l: HasLabel => l.copy(node = node)
+//        case _ => ???
+//      }
+//
+//      RecordSlot(ExprSlotKey(newExpr), r.cypherType)
+//    }
 
     new SparkCypherRecords with Serializable {
-      override def data: DataFrame = nodes.data
-      override def header: Seq[RecordSlot] = newHeader
+      override def data: DataFrame = ??? // nodes.data
+      override def header = ??? // RecordsHeader.from(newHeader)
     }
   }
 
@@ -98,13 +100,13 @@ case class PhysicalSelect(fields: Map[Expr, String], in: SparkCypherView) extend
   override def model: QueryModel[Expr] = ???
 }
 
-case class PhysicalProject(expr: Expr, globals: GlobalsRegistry, in: SparkCypherView) extends SparkCypherView {
+case class PhysicalProject(it: ProjectedSlotContent, in: SparkCypherView) extends SparkCypherView {
   override def domain: SparkCypherGraph = in.domain
   override def graph: SparkCypherGraph = ???
 
   override def records: SparkCypherRecords = {
     val records = in.records
-    records.project(expr, globals)
+    records.project(it)
   }
 
   override def model: QueryModel[Expr] = ???

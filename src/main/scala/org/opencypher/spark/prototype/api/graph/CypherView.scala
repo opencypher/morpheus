@@ -2,7 +2,7 @@ package org.opencypher.spark.prototype.api.graph
 
 import org.opencypher.spark.prototype.api.expr.Expr
 import org.opencypher.spark.prototype.api.ir.QueryModel
-import org.opencypher.spark.prototype.api.record.{CypherRecords, SparkCypherRecords}
+import org.opencypher.spark.prototype.api.record.CypherRecords
 
 trait CypherView {
   type Graph <: CypherGraph
@@ -18,9 +18,4 @@ trait CypherView {
   def show(): Unit
 }
 
-trait SparkCypherView extends CypherView {
-  override type Graph = SparkCypherGraph
-  override type Records = SparkCypherRecords
 
-  override def show() = records.toDF.show()
-}

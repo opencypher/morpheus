@@ -64,9 +64,18 @@ class CypherQueryBuilder(query: String, tokenDefs: GlobalsRegistry) {
         throw new IllegalArgumentException("With")
 
       case Return(_, ReturnItems(_, items), _, _, _, _) =>
-        val yields = ProjectedFields[Expr](items.map(i => Field(i.name) -> convertExpr(i.expression)).toMap)
+        val yields = ProjectedFields[Expr](items.map {
+          case AliasedReturnItem(e, v) => {
+            val expr = convertExpr(e)
+            Field(v.name) -> expr
+          }
+          case UnaliasedReturnItem(e, t) => {
+            val expr = convertExpr(e)
+            Field(expr.toString) -> expr
+          }
+        }.toMap)
 
-        val after = blockRegistry.reg.headOption.map(_._1).toSet
+      val after = blockRegistry.reg.headOption.map(_._1).toSet
         val projs = ProjectBlock[Expr](after = after, where = AllGiven[Expr](), binds = yields)
 
         val (ref, reg) = blockRegistry.register(projs)
@@ -79,6 +88,13 @@ class CypherQueryBuilder(query: String, tokenDefs: GlobalsRegistry) {
     }
   }
 
+  private def extract(r: ReturnItem): Field = {
+    r match {
+      case AliasedReturnItem(expr, variable) => Field(variable.name)
+      case UnaliasedReturnItem(expr, text) => Field(convertExpr(expr).toString)
+    }
+  }
+
   private def convertPattern(p: ast.Pattern): Pattern[Expr] = patternConverter.convert(p)
   private def convertExpr(e: ast.Expression): Expr = exprConverter.convert(e)
 
@@ -88,13 +104,6 @@ class CypherQueryBuilder(query: String, tokenDefs: GlobalsRegistry) {
       case e => AllGiven(Set(e))
     }
     case None => AllGiven[Expr]()
-  }
-
-  private def extract(r: ReturnItem) = {
-    r match {
-      case AliasedReturnItem(expr, variable) => Field(variable.name)
-      case UnaliasedReturnItem(expr, text) => Field(text)
-    }
   }
 
   def build(blocks: BlockRegistry[Expr]): CypherQuery[Expr] = {

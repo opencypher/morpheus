@@ -1,12 +1,11 @@
 package org.opencypher.spark.prototype.impl.instances.spark
 
-import org.apache.spark.sql.Column
 import org.opencypher.spark.prototype.api.expr._
-import org.opencypher.spark.prototype.api.ir.global.GlobalsRegistry
-import org.opencypher.spark.prototype.api.record.{RecordSlot, SparkCypherRecords}
+import org.opencypher.spark.prototype.api.record._
+import org.opencypher.spark.prototype.api.spark.SparkCypherRecords
 import org.opencypher.spark.prototype.impl.classy.Transform
 
-class SparkCypherRecordsInstances {
+trait SparkCypherRecordsInstances {
 
   implicit val sparkCypherRecordsTransform = new Transform[SparkCypherRecords] {
     override def filter(subject: SparkCypherRecords, expr: Expr): SparkCypherRecords = {
@@ -15,10 +14,10 @@ class SparkCypherRecordsInstances {
           case Ands(exprs) =>
             exprs.foldLeft(true) {
               case (acc, expr@HasLabel(node, label)) =>
-                val optSlot = subject.header.find { p =>
-                  p.expr == expr
-                }
-                acc && optSlot.exists(slot => row.getBoolean(row.fieldIndex(slot.name)))
+                val header = subject.header
+                val optSlot: Option[RecordSlot] = ???
+                println(subject.data.schema)
+                acc && optSlot.exists(slot => row.getBoolean(row.fieldIndex(??? /* header.column(slot) */)))
             }
           case x =>
             throw new NotImplementedError(s"Can't filter using $x")
@@ -32,35 +31,36 @@ class SparkCypherRecordsInstances {
     }
 
     override def select(subject: SparkCypherRecords, fields: Map[Expr, String]): SparkCypherRecords = {
-      val columns = subject.header.collect {
-        case RecordSlot(name, expr, _) if fields.contains(expr) => name -> fields(expr)
-      }.map {
-        case (col, name) => new Column(col).as(name)
-      }
-      val newData = subject.data.select(columns: _*)
+//      val columns = subject.header.slots.collect {
+//        case r@RecordSlot(ExprSlotKey(expr), _) if fields.contains(expr) => r.toString -> fields(expr)
+//        case RecordSlot(FieldSlotKey(field, expr), _) => field -> fields(expr) // TODO: Really?
+//      }.map {
+//        case (col, name) => new Column(col).as(name)
+//      }
+//      val newData = subject.data.select(columns: _*)
 
       new SparkCypherRecords {
-        override def data = newData
+        override def data = ???
         override def header = subject.header
       }
     }
 
-    def exprToVariable(expr: Expr, globalsRegistry: GlobalsRegistry) = expr match {
-      case v: Var => v
-      case Property(v: Var, ref) => Var(v.name + "." + globalsRegistry.propertyKey(ref).name)
-      case _ => ???
-    }
+    override def project(subject: SparkCypherRecords, it: ProjectedSlotContent): SparkCypherRecords = {
 
-    override def project(subject: SparkCypherRecords, expr: Expr, globalsRegistry: GlobalsRegistry): SparkCypherRecords = {
+      val expr = it.expr
+      val field = it.alias.get
 
-      val newHeader = subject.header.find(_.expr == expr) match {
-        case None => ??? // new expression
-        case Some(slot) => subject.header :+ RecordSlot(slot.name, exprToVariable(expr, globalsRegistry), slot.cypherType)
-      }
+//      val newHeader = subject.header.slotsByExpr(expr).headOption match {
+//        case None => ??? // new expression
+//        case Some(slot) =>
+//          val newExpr = RecordSlot(FieldSlotKey(field, expr), slot.cypherType)
+//          val newVar = RecordSlot(FieldSlotKey(field, Var(field)), slot.cypherType)
+//          subject.header + newExpr + newVar
+//      }
 
       new SparkCypherRecords {
         override def data = subject.data
-        override def header = newHeader
+        override def header = ??? // newHeader
       }
     }
   }

@@ -3,6 +3,7 @@ package org.opencypher.spark.prototype.api.ir.global
 import org.opencypher.spark.prototype.api.ir.global.GlobalsCollector._
 import org.opencypher.spark.prototype.api.schema.VerifiedSchema
 
+// TODO: Use Register typeclass
 object GlobalsRegistry {
   val none = GlobalsRegistry(
     labels = GlobalsCollector[LabelRef, Label].empty,

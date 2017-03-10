@@ -17,6 +17,4 @@ trait GraphSpace {
 //  def graphs: Set[Graph]
 }
 
-trait SparkGraphSpace extends GraphSpace {
-  override type Graph = SparkCypherGraph
-}
+

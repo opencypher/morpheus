@@ -1,10 +1,41 @@
-package org.opencypher.spark.impl
+package org.opencypher.spark.impl.util
+
+import org.opencypher.spark.prototype.api.expr.Expr
 
 object SparkIdentifier {
 
   val empty = new SparkIdentifier("_")
 
-  def from(name: String): SparkIdentifier = {
+  def from(expr: Expr): String = //expr match {
+    expr.toString
+
+
+  def from(name: String): String = {
+    if (name.isEmpty) name
+    else {
+      val builder = new StringBuilder()
+      builder.sizeHint(name.length + 16)
+      val ch0 = name.charAt(0)
+      if (isValidIdentStart(ch0)) {
+        builder.append(ch0)
+      } else {
+        if (Character.isDigit(ch0))
+          builder.append('_')
+        addEscapedUnlessValidPart(builder, ch0)
+      }
+
+      name
+        .substring(1)
+        .replaceAllLiterally("<-", "_left_arrow_")
+        .replaceAllLiterally("->", "_right_arrow_")
+        .replaceAllLiterally("--", "_double_dash_")
+        .foreach(addEscapedUnlessValidPart(builder, _))
+
+      builder.result()
+    }
+  }
+
+  def fromString(name: String): SparkIdentifier = {
     if (name.isEmpty)
       SparkIdentifier.empty
     else {

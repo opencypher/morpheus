@@ -21,8 +21,4 @@ trait CypherGraph {
   // labels
 }
 
-trait SparkCypherGraph extends CypherGraph {
-  override type Space = SparkGraphSpace
-  override type View = SparkCypherView
-  override type Graph = SparkCypherGraph
-}
+

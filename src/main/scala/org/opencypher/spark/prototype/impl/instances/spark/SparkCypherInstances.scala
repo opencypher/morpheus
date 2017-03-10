@@ -1,22 +1,23 @@
 package org.opencypher.spark.prototype.impl.instances.spark
 
 import org.apache.spark.sql.DataFrame
-import org.opencypher.spark.prototype.api.graph.{SparkCypherGraph, SparkCypherView, SparkGraphSpace}
-import org.opencypher.spark.prototype.api.record.SparkCypherRecords
+import org.opencypher.spark.prototype.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherView, SparkGraphSpace}
 import org.opencypher.spark.prototype.api.value.CypherValue
-import org.opencypher.spark.prototype.impl.classy.CypherEngine
+import org.opencypher.spark.prototype.impl.classy.Cypher
 import org.opencypher.spark.prototype.impl.convert.{CypherParser, CypherQueryBuilder, GlobalsExtractor}
 import org.opencypher.spark.prototype.impl.planner.{LogicalPlanner, PhysicalPlanner, PhysicalPlanningContext}
 
-trait SparkCypherEngineInstance {
-  implicit val sparkCypherEngineInstance = new CypherEngine {
-    override type EGraph = SparkCypherGraph
-    override type ESpace = SparkGraphSpace
-    override type EView = SparkCypherView
-    override type ERecords = SparkCypherRecords
-    override type EData = DataFrame
+trait SparkCypherInstances {
 
-    override def cypher(graph: SparkCypherGraph, query: String, parameters: Map[String, CypherValue]): SparkCypherView = {
+  implicit val sparkCypherEngineInstance = new Cypher {
+
+    override type Graph = SparkCypherGraph
+    override type Space = SparkGraphSpace
+    override type View = SparkCypherView
+    override type Records = SparkCypherRecords
+    override type Data = DataFrame
+
+    override def cypher(graph: Graph, query: String, parameters: Map[String, CypherValue]): View = {
       val (stmt, params) = parser.parseAndExtract(query)
 
       val globals = GlobalsExtractor(stmt, graph.space.globals)

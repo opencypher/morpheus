@@ -1,5 +1,5 @@
 package org.opencypher.spark.prototype.impl.instances.spark
 
-trait AllSparkInstances
+trait AllInstances
   extends SparkCypherRecordsInstances
-  with SparkCypherEngineInstance
+  with SparkCypherInstances

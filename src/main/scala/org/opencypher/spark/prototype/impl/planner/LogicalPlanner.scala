@@ -1,11 +1,13 @@
 package org.opencypher.spark.prototype.impl.planner
 
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.fixedPoint
+import org.opencypher.spark.api.types.CTAny
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir._
 import org.opencypher.spark.prototype.api.ir.block._
 import org.opencypher.spark.prototype.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.prototype.api.ir.pattern.{AllGiven, Pattern}
+import org.opencypher.spark.prototype.api.record.ProjectedExpr
 import org.opencypher.spark.prototype.impl.logical._
 
 class LogicalPlanner {
@@ -71,7 +73,7 @@ class LogicalPlanner {
   private def planProjections(in: LogicalOperator, exprs: Map[Field, Expr])(implicit tokens: GlobalsRegistry) = {
     exprs.foldLeft(in) {
       case (acc, (f, p: Property)) =>
-        Project(p, acc)(in.solved.withField(f))
+        Project(ProjectedExpr(p, CTAny.nullable), acc)(in.solved.withField(f))
       case (_, x) => throw new UnsupportedOperationException(s"can not project $x")
     }
   }
@@ -79,7 +81,7 @@ class LogicalPlanner {
   private def planFilter(in: LogicalOperator, where: AllGiven[Expr])(implicit tokens: GlobalsRegistry) = {
     val equalities = where.elts.foldLeft(in) {
       case (acc, eq@Equals(prop: Property, _: Const)) =>
-        val project = Project(prop, acc)(acc.solved)
+        val project = Project(ProjectedExpr(prop, CTAny.nullable), acc)(acc.solved)
         Filter(eq, project)(project.solved.withPredicate(eq))
       case (acc, h: HasLabel) =>
         Filter(h, acc)(acc.solved.withPredicate(h))

@@ -7,6 +7,7 @@ import org.opencypher.spark.impl.frame._
 import org.opencypher.spark.impl.util.SlotSymbolGenerator
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir.global.{GlobalsRegistry, PropertyKey}
+import org.opencypher.spark.prototype.api.record.ProjectedSlotContent
 import org.opencypher.spark.prototype.impl.logical
 
 import scala.language.implicitConversions
@@ -302,7 +303,8 @@ class PhysicalPlanner(frameProducer: FrameProducer) {
 //      if (in.signature.items.exists(_.exprs.contains(expr))) {
 //        planExpr(planOp(in), expr)
 //      }
-      planExpr(planOp(in), expr)
+      ???
+      // planExpr(planOp(in), UnaliasedExpr(expr))
     case logical.ExpandSource(source, rel, target, in) =>
       // TODO: where is the rel-type info?
       val rels = allRelationships(rel).asProduct
@@ -317,15 +319,18 @@ class PhysicalPlanner(frameProducer: FrameProducer) {
     case x => throw new NotImplementedError(s"Can't plan operator $x yet")
   }
 
-  private def planExpr(in: StdCypherFrame[Product], expr: Expr)(implicit globals: GlobalsRegistry): StdCypherFrame[Product] = expr match {
-    case _: Property => projectExpr(in, expr)
-    case Equals(p: Property, c: Const) =>
-      // we assume the necessary projections have been made
-//      val l = projectExpr(in, p)
-      FilterProduct.paramEqFilter(in)(p, c)
-    case HasLabel(node: Var, label) =>
-      FilterProduct.labelFilter(in)(node, Seq(globals.label(label).name))
-    case x => throw new NotImplementedError(s"Can't plan expr $x yet")
+  private def planExpr(in: StdCypherFrame[Product], it: ProjectedSlotContent)(implicit globals: GlobalsRegistry): StdCypherFrame[Product] = {
+    val newPlan = it.expr match {
+      case _: Property => projectExpr(in, it.expr)
+      case Equals(p: Property, c: Const) =>
+        // we assume the necessary projections have been made
+        //      val l = projectExpr(in, p)
+        FilterProduct.paramEqFilter(in)(p, c)
+      case HasLabel(node: Var, label) =>
+        FilterProduct.labelFilter(in)(node, Seq(globals.label(label).name))
+      case x => throw new NotImplementedError(s"Can't plan expr $x yet")
+    }
+    newPlan
   }
 
   private def projectExpr(in: StdCypherFrame[Product], expr: Expr)(implicit globals: GlobalsRegistry): ProjectFrame = expr match {

@@ -2,4 +2,6 @@ package org.opencypher.spark.prototype.impl.syntax
 
 trait AllSyntax
   extends TransformSyntax
-  with CypherEngineSyntax
+  with CypherSyntax
+  with RegisterSyntax
+  with util.AllSyntax

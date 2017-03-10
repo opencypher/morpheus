@@ -3,6 +3,7 @@ package org.opencypher.spark.prototype.impl.load
 import org.apache.spark.sql.types._
 import org.opencypher.spark.api.types.{CTAny, CTInteger, CTString}
 import org.opencypher.spark.prototype.api.schema.Schema
+import org.opencypher.spark.prototype.api.spark.SparkGraphSpace
 import org.opencypher.spark.{StdTestSuite, TestSession}
 
 class SparkGraphSpaceTest extends StdTestSuite with TestSession.Fixture {
@@ -52,5 +53,4 @@ class SparkGraphSpaceTest extends StdTestSuite with TestSession.Fixture {
     rels.count() shouldBe 4832
     nodes.count() shouldBe 2901
   }
-
 }
