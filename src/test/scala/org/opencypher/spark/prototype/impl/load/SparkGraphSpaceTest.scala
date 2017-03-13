@@ -21,12 +21,12 @@ class SparkGraphSpaceTest extends StdTestSuite with TestSession.Fixture {
     val df = space.base.nodes().records.toDF
 
     df.count() shouldBe 100
-    df.schema.fields.toSet should equal(Set(
-      StructField("n", LongType, nullable = false),
-      StructField("label_Tweet", BooleanType, nullable = false),
-      StructField("prop_id", LongType, nullable = false),
-      StructField("prop_text", StringType, nullable = true),
-      StructField("prop_created", LongType, nullable = true)
+    df.schema.fields.map(f => f.dataType -> f.nullable).toSet should equal(Set(
+      LongType -> false,
+      BooleanType -> false,
+      LongType -> false,
+      StringType -> true,
+      LongType -> true
     ))
   }
 
@@ -37,11 +37,11 @@ class SparkGraphSpaceTest extends StdTestSuite with TestSession.Fixture {
     val df = space.base.rels().records.toDF
 
     df.count() shouldBe 100
-    df.schema.fields.toSet should equal(Set(
-      StructField("r", LongType, nullable = false),
-      StructField("type", IntegerType, nullable = false),
-      StructField("prop_guests", LongType, nullable = false),
-      StructField("prop_comments", StringType, nullable = true)
+    df.schema.fields.map(f => f.dataType -> f.nullable).toSet should equal(Set(
+      LongType -> false,
+      IntegerType -> false,
+      LongType -> false,
+      StringType -> true
     ))
   }
 
