@@ -5,7 +5,7 @@ import cats.data.State.{get, set}
 import org.opencypher.spark.api.CypherType
 import org.opencypher.spark.prototype.api.expr.{Expr, Var}
 import org.opencypher.spark.prototype.api.record._
-import org.opencypher.spark.prototype.impl.spark.SparkColumnName.NameBuilder
+import org.opencypher.spark.prototype.impl.spark.SparkColumnName
 import org.opencypher.spark.prototype.impl.syntax.register._
 import org.opencypher.spark.prototype.impl.util.RefCollection.AbstractRegister
 import org.opencypher.spark.prototype.impl.util._
@@ -43,17 +43,12 @@ final class InternalHeader protected[spark](
   def column(slot: RecordSlot) = cachedColumns(slot.index)
 
   private def computeColumnName(slot: RecordSlot): String = {
-    val RecordSlot(index, content) = slot
-
-    val builder = content match {
-      case ProjectedExpr(expr, _) => new NameBuilder() += None += expr.toString
-      case fieldContent: FieldSlotContent => new NameBuilder() += fieldContent.field.name
-    }
-
-    if (slotsFor(content.key, content.cypherType).take(2).size > 1)
-      builder += content.cypherType.material.name
-
-    builder.result()
+    val content = slot.content
+    val optExtraType = slotsFor(content.key, content.cypherType).slice(1, 2).headOption
+    if (optExtraType.isEmpty)
+      SparkColumnName.of(slot.content)
+    else
+      SparkColumnName.withType(content)
   }
 }
 
