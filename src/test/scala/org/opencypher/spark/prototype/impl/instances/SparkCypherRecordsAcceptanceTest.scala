@@ -24,7 +24,7 @@ class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fix
 
     resultView.records.data.count() shouldBe 1806
     resultView.records.header.slots.size shouldBe 1
-    resultView.records.header.slots.head.content.cypherType shouldBe CTAny.nullable // TODO: read from schema
+    resultView.records.header.slots.head.content.cypherType shouldBe CTString.nullable
     resultView.records.header.slots.head.content.key should equal(Var("a.text"))
   }
 

@@ -74,7 +74,15 @@ class LogicalPlanner(schema: Schema) {
   private def planProjections(in: LogicalOperator, exprs: Map[Field, Expr])(implicit tokens: GlobalsRegistry) = {
     exprs.foldLeft(in) {
       case (acc, (f, p: Property)) =>
-        Project(ProjectedField(Var(f.name), p, CTAny.nullable), acc)(in.solved.withField(f))
+        val labelsOnNode = in.solved.predicates.collect {
+          case h: HasLabel if h.node == p.m => h.label
+        }
+        val propType = labelsOnNode.headOption.flatMap { ref =>
+          val label = tokens.label(ref).name
+          val keys = schema.nodeKeys(label)
+          keys.get(tokens.propertyKey(p.key).name)
+        }
+        Project(ProjectedField(Var(f.name), p, propType.getOrElse(CTAny.nullable)), acc)(in.solved.withField(f))
       case (_, x) => throw new UnsupportedOperationException(s"can not project $x")
     }
   }
