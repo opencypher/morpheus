@@ -5,4 +5,5 @@ package object syntax {
   object transform extends TransformSyntax
   object cypher extends CypherSyntax
   object register extends RegisterSyntax
+  object header extends RecordHeaderSyntax
 }

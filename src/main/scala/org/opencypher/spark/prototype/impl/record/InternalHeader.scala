@@ -1,4 +1,4 @@
-package org.opencypher.spark.prototype.impl.spark
+package org.opencypher.spark.prototype.impl.record
 
 import cats.data.State
 import cats.data.State.{get, set}
@@ -11,19 +11,18 @@ import org.opencypher.spark.prototype.impl.util.RefCollection.AbstractRegister
 import org.opencypher.spark.prototype.impl.util._
 
 // TODO: Prevent projection of expressions with unfulfilled dependencies
-final class SparkInternalHeader protected[spark](
+final class InternalHeader protected[spark](
     private val slotContents: RefCollection[SlotContent],
     private val exprSlots: Map[Expr, Vector[Int]],
     private val cachedFields: Set[Var]
   )
-  extends RecordsHeader with Serializable {
+  extends Serializable {
 
   self =>
 
-  import SparkInternalHeader.recordSlotRegister
-  import SparkInternalHeader.addContent
+  import InternalHeader.{addContent, recordSlotRegister}
 
-  private lazy val cachedSlots = slotContents.contents.map(RecordSlot.from)
+  private lazy val cachedSlots = slotContents.contents.map(RecordSlot.from).toIndexedSeq
   private lazy val cachedColumns = slots.map(computeColumnName).toVector
 
   def slots = cachedSlots
@@ -36,7 +35,7 @@ final class SparkInternalHeader protected[spark](
   def slotsFor(expr: Expr): Traversable[RecordSlot] =
     exprSlots.getOrElse(expr, Vector.empty).flatMap(ref => slotContents.get(ref).map(RecordSlot(ref, _)))
 
-  def +(addedContent: SlotContent): SparkInternalHeader =
+  def +(addedContent: SlotContent): InternalHeader =
     addContent(addedContent).runS(self).value
 
   def columns = cachedColumns
@@ -58,8 +57,8 @@ final class SparkInternalHeader protected[spark](
   }
 }
 
-object SparkInternalHeader {
-  val empty = new SparkInternalHeader(RefCollection.empty, Map.empty, Set.empty)
+object InternalHeader {
+  val empty = new InternalHeader(RefCollection.empty, Map.empty, Set.empty)
 
   def apply(contents: SlotContent*) =
     from(contents)
@@ -67,16 +66,16 @@ object SparkInternalHeader {
   def from(contents: TraversableOnce[SlotContent]) =
     contents.foldLeft(empty) { case (header, slot) => header + slot }
 
-  def addContent(addedContent: SlotContent): State[SparkInternalHeader, AdditiveUpdateResult[RecordSlot]] =
+  def addContent(addedContent: SlotContent): State[InternalHeader, AdditiveUpdateResult[RecordSlot]] =
     addedContent match {
       case (it: ProjectedExpr) => addProjectedExpr(it)
       case (it: OpaqueField) => addOpaqueField(it)
       case (it: ProjectedField) => addProjectedField(it)
     }
 
-  def addProjectedExpr(content: ProjectedExpr): State[SparkInternalHeader, AdditiveUpdateResult[RecordSlot]] =
+  def addProjectedExpr(content: ProjectedExpr): State[InternalHeader, AdditiveUpdateResult[RecordSlot]] =
     for (
-      header <- get[SparkInternalHeader];
+      header <- get[InternalHeader];
       result <- {
         val existingSlot =
           for (slot <- header.slotsFor(content.expr, content.cypherType).headOption)
@@ -91,15 +90,15 @@ object SparkInternalHeader {
     )
     yield result
 
-  def addOpaqueField(addedContent: OpaqueField): State[SparkInternalHeader, AdditiveUpdateResult[RecordSlot]] =
+  def addOpaqueField(addedContent: OpaqueField): State[InternalHeader, AdditiveUpdateResult[RecordSlot]] =
     addField(addedContent)
 
-  def addProjectedField(addedContent: ProjectedField): State[SparkInternalHeader, AdditiveUpdateResult[RecordSlot]] =
+  def addProjectedField(addedContent: ProjectedField): State[InternalHeader, AdditiveUpdateResult[RecordSlot]] =
     for(
-      header <- get[SparkInternalHeader];
+      header <- get[InternalHeader];
       result <- {
         val existingSlot = header.slotsFor(addedContent.expr, addedContent.cypherType).headOption
-        existingSlot.flatMap[State[SparkInternalHeader, AdditiveUpdateResult[RecordSlot]]] {
+        existingSlot.flatMap[State[InternalHeader, AdditiveUpdateResult[RecordSlot]]] {
           case RecordSlot(ref, _: ProjectedExpr) =>
             Some(header.slotContents.update(ref, addedContent) match {
               case Left(conflict) =>
@@ -116,9 +115,9 @@ object SparkInternalHeader {
     )
     yield result
 
-  private def addField(addedContent: FieldSlotContent): State[SparkInternalHeader, AdditiveUpdateResult[RecordSlot]] =
+  private def addField(addedContent: FieldSlotContent): State[InternalHeader, AdditiveUpdateResult[RecordSlot]] =
     for (
-      header <- get[SparkInternalHeader];
+      header <- get[InternalHeader];
       result <- {
         header.slotContents.insert(addedContent) match {
           case Left(ref) => pureState(Failed(slot(header, ref), Added(RecordSlot(ref, addedContent))))
@@ -130,9 +129,9 @@ object SparkInternalHeader {
 
 
   private def addSlotContent(optNewSlots: Option[RefCollection[SlotContent]], ref: Int, addedContent: SlotContent)
-  : State[SparkInternalHeader, AdditiveUpdateResult[RecordSlot]] =
+  : State[InternalHeader, AdditiveUpdateResult[RecordSlot]] =
     for (
-      header <- get[SparkInternalHeader];
+      header <- get[InternalHeader];
       result <-
         optNewSlots match {
           case Some(newSlots) =>
@@ -140,8 +139,8 @@ object SparkInternalHeader {
               case (slots, expr) => addExprSlots(slots, expr, ref)
             }
             val newFields = addedContent.alias.map(header.cachedFields + _).getOrElse(header.cachedFields)
-            val newHeader = new SparkInternalHeader(newSlots, newExprSlots, newFields)
-            set[SparkInternalHeader](newHeader).map(_ => Added(RecordSlot(ref, addedContent)))
+            val newHeader = new InternalHeader(newSlots, newExprSlots, newFields)
+            set[InternalHeader](newHeader).map(_ => Added(RecordSlot(ref, addedContent)))
 
           case None =>
             pureState(Found(slot(header, ref)))
@@ -149,7 +148,7 @@ object SparkInternalHeader {
     )
     yield result
 
-  private def pureState[X](it: X) = State.pure[SparkInternalHeader, X](it)
+  private def pureState[X](it: X) = State.pure[InternalHeader, X](it)
 
   private implicit def recordSlotRegister: AbstractRegister[Int, (Expr, CypherType), SlotContent] =
     new AbstractRegister[Int, (Expr, CypherType), SlotContent]() {
@@ -161,5 +160,5 @@ object SparkInternalHeader {
   private def addExprSlots(m: Map[Expr, Vector[Int]], key: Expr, value: Int): Map[Expr, Vector[Int]] =
     if (m.getOrElse(key, Vector.empty).contains(value)) m else m.updated(key, m.getOrElse(key, Vector.empty) :+ value)
 
-  private def slot(header: SparkInternalHeader, ref: Int) = RecordSlot(ref, header.slotContents.elts(ref))
+  private def slot(header: InternalHeader, ref: Int) = RecordSlot(ref, header.slotContents.elts(ref))
 }

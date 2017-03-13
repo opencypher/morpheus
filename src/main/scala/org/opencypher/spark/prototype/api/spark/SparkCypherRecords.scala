@@ -9,7 +9,6 @@ trait SparkCypherRecords extends CypherRecords {
 
   override type Data = DataFrame
   override type Records = SparkCypherRecords
-  override type Header = SparkRecordsHeader
 
   override def columns: IndexedSeq[String] =
     header.internalHeader.columns
