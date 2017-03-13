@@ -64,10 +64,10 @@ class LogicalPlannerTest extends IrTestSuite {
     )
   }
 
-  private val producer = new LogicalPlanner(Schema.empty)
+  private val producer = new LogicalPlanner
 
   private def plan(ir: CypherQuery[Expr]): LogicalOperator =
-    producer.plan(ir)
+    producer.plan(ir)(LogicalPlannerContext(Schema.empty))
 
   case class equalWithoutResult(plan: LogicalOperator) extends Matcher[LogicalOperator] {
     override def apply(left: LogicalOperator): MatchResult = {

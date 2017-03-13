@@ -11,17 +11,19 @@ import org.opencypher.spark.prototype.api.record.{ProjectedExpr, ProjectedField}
 import org.opencypher.spark.prototype.api.schema.Schema
 import org.opencypher.spark.prototype.impl.logical._
 
-class LogicalPlanner(schema: Schema) {
+final case class LogicalPlannerContext(schema: Schema)
 
-  def plan(ir: CypherQuery[Expr]): LogicalOperator = {
+class LogicalPlanner extends Stage[CypherQuery[Expr], LogicalOperator, LogicalPlannerContext] {
+
+  def plan(ir: CypherQuery[Expr])(implicit context: LogicalPlannerContext): LogicalOperator = {
     val model = ir.model
 
     implicit val tokenDefs = model.globals
 
-    planModel(model.result, model)
+    planModel(model.result, model)(context.schema, tokenDefs)
   }
 
-  def planModel(block: ResultBlock[Expr], model: QueryModel[Expr])(implicit tokens: GlobalsRegistry): LogicalOperator = {
+  def planModel(block: ResultBlock[Expr], model: QueryModel[Expr])(implicit schema: Schema, tokens: GlobalsRegistry): LogicalOperator = {
     val first = block.after.head // there should only be one, right?
     val plan = planBlock(first, model, None)
 
@@ -29,7 +31,7 @@ class LogicalPlanner(schema: Schema) {
     Select(block.binds.fieldsOrder.map(f => Var(f.name) -> f.name), plan)(plan.solved)
   }
 
-  final def planBlock(ref: BlockRef, model: QueryModel[Expr], plan: Option[LogicalOperator])(implicit tokens: GlobalsRegistry): LogicalOperator = {
+  final def planBlock(ref: BlockRef, model: QueryModel[Expr], plan: Option[LogicalOperator])(implicit schema: Schema, tokens: GlobalsRegistry): LogicalOperator = {
     val block = model(ref)
     if (block.after.isEmpty) {
       // this is a leaf block, just plan it
@@ -63,7 +65,7 @@ class LogicalPlanner(schema: Schema) {
     }
   }
 
-  def planNonLeaf(ref: BlockRef, model: QueryModel[Expr], plan: LogicalOperator)(implicit tokens: GlobalsRegistry): LogicalOperator = {
+  def planNonLeaf(ref: BlockRef, model: QueryModel[Expr], plan: LogicalOperator)(implicit tokens: GlobalsRegistry, schema: Schema): LogicalOperator = {
     model(ref) match {
       case ProjectBlock(_, ProjectedFields(exprs), _) =>
         planProjections(plan, exprs)
@@ -71,7 +73,7 @@ class LogicalPlanner(schema: Schema) {
     }
   }
 
-  private def planProjections(in: LogicalOperator, exprs: Map[Field, Expr])(implicit tokens: GlobalsRegistry) = {
+  private def planProjections(in: LogicalOperator, exprs: Map[Field, Expr])(implicit tokens: GlobalsRegistry, schema: Schema) = {
     exprs.foldLeft(in) {
       case (acc, (f, p: Property)) =>
         val labelsOnNode = in.solved.predicates.collect {
@@ -105,7 +107,7 @@ class LogicalPlanner(schema: Schema) {
 
     val (newPlan, _) = fixedPoint(planExpansions)(lhsLeaf -> pattern)
 
-      newPlan
+    newPlan
   }
 
   private def planExpansions(input: (LogicalOperator, Pattern[Expr])): (LogicalOperator, Pattern[Expr]) = {

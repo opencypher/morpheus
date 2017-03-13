@@ -5,7 +5,7 @@ import org.opencypher.spark.prototype.api.spark.{SparkCypherGraph, SparkCypherRe
 import org.opencypher.spark.prototype.api.value.CypherValue
 import org.opencypher.spark.prototype.impl.classy.Cypher
 import org.opencypher.spark.prototype.impl.convert.{CypherParser, CypherQueryBuilder, GlobalsExtractor}
-import org.opencypher.spark.prototype.impl.planner.{LogicalPlanner, PhysicalPlanner, PhysicalPlanningContext}
+import org.opencypher.spark.prototype.impl.planner.{LogicalPlanner, LogicalPlannerContext, PhysicalPlanner, PhysicalPlannerContext}
 
 trait SparkCypherInstances {
 
@@ -16,6 +16,10 @@ trait SparkCypherInstances {
     override type View = SparkCypherView
     override type Records = SparkCypherRecords
     override type Data = DataFrame
+
+    private val logicalPlanner = new LogicalPlanner()
+    private val physicalPlanner = new PhysicalPlanner()
+    private val parser = CypherParser
 
     override def cypher(graph: Graph, query: String, parameters: Map[String, CypherValue]): View = {
       val (stmt, params) = parser.parseAndExtract(query)
@@ -29,14 +33,12 @@ trait SparkCypherInstances {
       //      case x => throw new UnsupportedOperationException(s"Can't convert $x to CypherValue yet")
       //    }
 
-      val plan = new LogicalPlanner(graph.schema).plan(ir)
+      val logicalPlan = logicalPlanner.plan(ir)(LogicalPlannerContext(graph.schema))
 
-      println(plan.solved)
+      println(logicalPlan.solved)
 
-      physicalPlanner.plan(plan)(PhysicalPlanningContext(graph, globals))
+      val physicalPlan = physicalPlanner.plan(logicalPlan)(PhysicalPlannerContext(graph, globals))
+      physicalPlan
     }
-
-    val physicalPlanner = new PhysicalPlanner
-    val parser = CypherParser
   }
 }
