@@ -1,5 +1,6 @@
 package org.opencypher.spark.prototype.api.graph
 
+import org.opencypher.spark.prototype.api.expr.Var
 import org.opencypher.spark.prototype.api.schema.Schema
 
 trait CypherGraph {
@@ -9,8 +10,8 @@ trait CypherGraph {
 
   def space: Space
 
-  def nodes: View
-  def relationships: View
+  def nodes(v: Var): View
+  def relationships(v: Var): View
 
   def constituents: Set[View]
 

@@ -41,7 +41,7 @@ trait SparkCypherRecordsInstances {
 
       val data = subject.data
       val columns = newHeader.slots.map { s =>
-        val oldName = data.columns(s.index)
+        val oldName = data.columns(subject.header.indexOf(s.content).get)
         val newName = fields(s.content.key)
         data.col(oldName).as(newName)
       }

@@ -20,12 +20,24 @@ class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fix
   val space = SparkGraphSpace.fromNeo4j(schema, "MATCH (a)-[:ATTENDED]->(b) UNWIND [a, b] AS n RETURN DISTINCT n", "MATCH ()-[r:ATTENDED]->() RETURN r")
 
   test("label scan and project") {
-    val resultView = space.base.cypher("MATCH (a:User) RETURN a.text")
+    val records = space.base.cypher("MATCH (a:User) RETURN a.text").records
 
-    resultView.records.data.count() shouldBe 1806
-    resultView.records.header.slots.size shouldBe 1
-    resultView.records.header.slots.head.content.cypherType shouldBe CTString.nullable
-    resultView.records.header.slots.head.content.key should equal(Var("a.text"))
+    records.data.count() shouldBe 1806
+    records.data.head().getString(0) shouldBe a[String]
+    records.header.slots.size shouldBe 1
+    records.header.slots.head.content.cypherType shouldBe CTString.nullable
+    records.header.slots.head.content.key should equal(Var("a.text"))
+  }
+
+  test("expand and project") {
+    val resultView = space.base.cypher("MATCH (a:User)-->(m:Meetup) RETURN a.country, m.id")
+
+    resultView.records.data.count() shouldBe 1000
+    resultView.records.header.slots.size shouldBe 2
+    resultView.records.header.slots(0).content.cypherType shouldBe CTString.nullable
+    resultView.records.header.slots(0).content.key should equal(Var("a.country"))
+    resultView.records.header.slots(1).content.cypherType shouldBe CTInteger.nullable
+    resultView.records.header.slots(1).content.key should equal(Var("m.id"))
   }
 
 }

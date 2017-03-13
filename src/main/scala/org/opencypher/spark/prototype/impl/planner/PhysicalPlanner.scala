@@ -1,16 +1,13 @@
 package org.opencypher.spark.prototype.impl.planner
 
-import org.apache.spark.sql.DataFrame
-import org.opencypher.spark.api.types.CTNode
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir.QueryModel
 import org.opencypher.spark.prototype.api.ir.global.{GlobalsRegistry, LabelRef}
 import org.opencypher.spark.prototype.api.ir.pattern.AllGiven
-import org.opencypher.spark.prototype.api.record.{OpaqueField, ProjectedExpr, ProjectedSlotContent, RecordHeader}
+import org.opencypher.spark.prototype.api.record.ProjectedSlotContent
 import org.opencypher.spark.prototype.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherView}
 import org.opencypher.spark.prototype.impl.instances.spark.records._
 import org.opencypher.spark.prototype.impl.logical
-import org.opencypher.spark.prototype.impl.syntax.header._
 import org.opencypher.spark.prototype.impl.syntax.transform._
 
 class PhysicalPlanner {
@@ -56,36 +53,7 @@ class PhysicalPlanner {
 
 case class AllNodesScan(node: Var, domain: SparkCypherGraph) extends SparkCypherView {
   override def graph: SparkCypherGraph = ???
-  override def records: SparkCypherRecords = {
-    val nodes = domain.nodes.records
-
-    val newHeader = nodes.header.slots.foldLeft(RecordHeader.empty) {
-      case (acc, s) => s.content.key match {
-        case p: Property =>
-          val (withP, _) = acc.update(addProjectedExpr(ProjectedExpr(p.copy(m = node), s.content.cypherType)))
-          withP
-        case l: HasLabel =>
-          val (withL, _) = acc.update(addProjectedExpr(ProjectedExpr(l.copy(node = node), s.content.cypherType)))
-          withL
-        case _: Var =>
-          acc.update(addOpaqueField(OpaqueField(node, CTNode)))._1
-
-        case _ => ??? // this should never happen
-      }
-    }
-
-    val newData = newHeader.slots.foldLeft(nodes.data) {
-      case (acc, s) =>
-        val oldName = nodes.column(nodes.header.slots(s.index))
-        val newName = newHeader.internalHeader.column(s)
-        acc.withColumnRenamed(oldName, newName)
-    }
-
-    new SparkCypherRecords with Serializable {
-      override def data: DataFrame = newData
-      override def header = newHeader
-    }
-  }
+  override def records: SparkCypherRecords = domain.nodes(node).records
 
   override def model: QueryModel[Expr] = ???
 }

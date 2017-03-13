@@ -12,7 +12,7 @@ import org.opencypher.spark.benchmark.Converters.cypherValue
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir.QueryModel
 import org.opencypher.spark.prototype.api.ir.global.GlobalsRegistry
-import org.opencypher.spark.prototype.api.record.{ProjectedExpr, RecordHeader, SlotContent}
+import org.opencypher.spark.prototype.api.record.{OpaqueField, ProjectedExpr, RecordHeader, SlotContent}
 import org.opencypher.spark.prototype.api.schema.{Schema, VerifiedSchema}
 import org.opencypher.spark.prototype.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherView, SparkGraphSpace}
 import org.opencypher.spark.prototype.impl.syntax.header._
@@ -31,17 +31,17 @@ trait SparkGraphSpaceLoading {
 
     val schemaGlobals = GlobalsRegistry.fromSchema(verified)
 
-    val nodeFields = computeNodeFields(graphSchema, schemaGlobals)
-    val nodeHeader = nodeFields.map(_._1).foldLeft(RecordHeader.empty) {
+    val nodeFields = (v: Var) => computeNodeFields(v, graphSchema, schemaGlobals)
+    val nodeHeader = (v: Var) => nodeFields(v).map(_._1).foldLeft(RecordHeader.empty) {
       case (acc, next) => acc.update(addContent(next))._1
     }
-    val nodeStruct = StructType(nodeFields.map(_._2).toArray)
-    val nodeRDD: RDD[Row] = nodes.map(nodeToRow(nodeHeader, nodeStruct, schemaGlobals))
-    val nodeFrame = sc.createDataFrame(nodeRDD, nodeStruct)
+    val nodeStruct = (v: Var) => StructType(nodeFields(v).map(_._2).toArray)
+    val nodeRDD = (v: Var) => nodes.map(nodeToRow(nodeHeader(v), nodeStruct(v), schemaGlobals))
+    val nodeFrame = (v: Var) => sc.createDataFrame(nodeRDD(v), nodeStruct(v))
 
-    val nodeRecords = new SparkCypherRecords with Serializable {
-      override def data = nodeFrame
-      override def header = nodeHeader
+    val nodeRecords = (v: Var) => new SparkCypherRecords with Serializable {
+      override def data = nodeFrame(v)
+      override def header = nodeHeader(v)
     }
 
     val relFields = computeRelFields(graphSchema, schemaGlobals)
@@ -59,13 +59,13 @@ trait SparkGraphSpaceLoading {
 
       override def base = new SparkCypherGraph with Serializable {
         selfBase =>
-        override def nodes = new SparkCypherView with Serializable {
+        override def nodes(v: Var) = new SparkCypherView with Serializable {
           override def domain = selfBase
           override def model = QueryModel[Expr](null, schemaGlobals, Map.empty)
-          override def records = nodeRecords
+          override def records = nodeRecords(v)
           override def graph = ???
         }
-        override def relationships = new SparkCypherView with Serializable {
+        override def relationships(v: Var) = new SparkCypherView with Serializable {
           override def domain = selfBase
           override def model = QueryModel[Expr](null, schemaGlobals, Map.empty)
           override def records = relRecords
@@ -79,16 +79,9 @@ trait SparkGraphSpaceLoading {
     }
   }
 
-  private def constructHeader(stuff: Seq[(Expr, CypherType, StructField)]): Seq[SlotContent] = {
-    stuff.map {
-      case (expr, t, field) => ??? /// RecordSlot(ExprSlotKey(expr), t)
-    }
-  }
-
-  private def computeNodeFields(schema: Schema, globals: GlobalsRegistry): Seq[(SlotContent, StructField)] = {
-    val nodeVar = Var("n")
+  private def computeNodeFields(node: Var, schema: Schema, globals: GlobalsRegistry): Seq[(SlotContent, StructField)] = {
     val labelFields = schema.labels.map { name =>
-      val label = HasLabel(nodeVar, globals.label(name))
+      val label = HasLabel(node, globals.label(name))
       val slot = ProjectedExpr(label, CTBoolean)
       val field = StructField(SparkColumnName.of(slot), BooleanType, nullable = false)
       slot -> field
@@ -96,14 +89,15 @@ trait SparkGraphSpaceLoading {
     val propertyFields = schema.labels.flatMap { l =>
       schema.nodeKeys(l).map {
         case (name, t) =>
-          val property = Property(nodeVar, globals.propertyKey(name))
+          val property = Property(node, globals.propertyKey(name))
           val slot = ProjectedExpr(property, t)
           val field = StructField(SparkColumnName.of(slot), sparkType(t), nullable = t.isNullable)
-          (slot, field)
+          slot -> field
       }
     }
-    val nodeSlot = ProjectedExpr(nodeVar, CTNode)
-    val slotField = nodeSlot -> StructField(SparkColumnName.of(nodeSlot), LongType, nullable = false)
+    val nodeSlot = OpaqueField(node, CTNode)
+    val nodeField = StructField(SparkColumnName.of(nodeSlot), LongType, nullable = false)
+    val slotField = nodeSlot -> nodeField
     Seq(slotField) ++ labelFields ++ propertyFields
   }
 

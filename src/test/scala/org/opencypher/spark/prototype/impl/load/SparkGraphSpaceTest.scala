@@ -2,17 +2,23 @@ package org.opencypher.spark.prototype.impl.load
 
 import org.apache.spark.sql.types._
 import org.opencypher.spark.api.types.{CTAny, CTInteger, CTString}
+import org.opencypher.spark.prototype.api.expr.Var
 import org.opencypher.spark.prototype.api.schema.Schema
-import org.opencypher.spark.prototype.api.spark.SparkGraphSpace
+import org.opencypher.spark.prototype.api.spark.{SparkCypherGraph, SparkGraphSpace}
 import org.opencypher.spark.{StdTestSuite, TestSession}
 
 class SparkGraphSpaceTest extends StdTestSuite with TestSession.Fixture {
+
+  implicit class RichGraph(val graph: SparkCypherGraph) {
+    def nodes() = graph.nodes(Var("n"))
+    def rels() = graph.relationships(Var("r"))
+  }
 
   test("import nodes from neo") {
     val schema = Schema.empty
       .withNodeKeys("Tweet")("id" -> CTInteger, "text" -> CTString.nullable, "created" -> CTInteger.nullable)
     val space = SparkGraphSpace.fromNeo4j(schema, "MATCH (n:Tweet) RETURN n LIMIT 100", "RETURN 1 LIMIT 0")
-    val df = space.base.nodes.records.toDF
+    val df = space.base.nodes().records.toDF
 
     df.count() shouldBe 100
     df.schema.fields.toSet should equal(Set(
@@ -28,7 +34,7 @@ class SparkGraphSpaceTest extends StdTestSuite with TestSession.Fixture {
     val schema = Schema.empty
       .withRelationshipKeys("ATTENDED")("guests" -> CTInteger, "comments" -> CTString.nullable)
     val space = SparkGraphSpace.fromNeo4j(schema, "RETURN 1 LIMIT 0", "MATCH ()-[r:ATTENDED]->() RETURN r LIMIT 100")
-    val df = space.base.relationships.records.toDF
+    val df = space.base.rels().records.toDF
 
     df.count() shouldBe 100
     df.schema.fields.toSet should equal(Set(
@@ -47,8 +53,8 @@ class SparkGraphSpaceTest extends StdTestSuite with TestSession.Fixture {
       .withNodeKeys("Graph")("title" -> CTString.nullable, "updated" -> CTInteger.nullable)
       .withNodeKeys("Event")("time" -> CTInteger.nullable, "link" -> CTAny.nullable)
     val space = SparkGraphSpace.fromNeo4j(schema, "MATCH (a)-[:ATTENDED]->(b) UNWIND [a, b] AS n RETURN DISTINCT n", "MATCH ()-[r:ATTENDED]->() RETURN r")
-    val rels = space.base.relationships.records.toDF
-    val nodes = space.base.nodes.records.toDF
+    val rels = space.base.rels().records.toDF
+    val nodes = space.base.nodes().records.toDF
 
     rels.count() shouldBe 4832
     nodes.count() shouldBe 2901
