@@ -12,9 +12,10 @@ import org.opencypher.spark.benchmark.Converters.cypherValue
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir.QueryModel
 import org.opencypher.spark.prototype.api.ir.global.GlobalsRegistry
-import org.opencypher.spark.prototype.api.record.SlotContent
+import org.opencypher.spark.prototype.api.record.{ProjectedExpr, RecordHeader, SlotContent}
 import org.opencypher.spark.prototype.api.schema.{Schema, VerifiedSchema}
 import org.opencypher.spark.prototype.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherView, SparkGraphSpace}
+import org.opencypher.spark.prototype.impl.syntax.header._
 
 trait SparkGraphSpaceLoading {
 
@@ -23,24 +24,27 @@ trait SparkGraphSpaceLoading {
                 relQuery: String = "CYPHER runtime=compiled MATCH ()-[r]->() RETURN r")
                (implicit sc: SparkSession): SparkGraphSpace = {
     val neo4j = Neo4j(sc.sparkContext)
-    val schema = verified.schema
+    val graphSchema = verified.schema
 
     val nodes = neo4j.cypher(nodeQuery).loadNodeRdds.map(row => row(0).asInstanceOf[InternalNode])
     val rels = neo4j.cypher(relQuery).loadRowRdd.map(row => row(0).asInstanceOf[InternalRelationship])
 
     val schemaGlobals = GlobalsRegistry.fromSchema(verified)
 
-    val nodeFields = computeNodeFields(schema, schemaGlobals)
+    val nodeFields = computeNodeFields(graphSchema, schemaGlobals)
+    val nodeHeader = nodeFields.map(_._1).foldLeft(RecordHeader.empty) {
+      case (acc, next) => acc.update(addContent(next))._1
+    }
     val nodeStruct = StructType(nodeFields.map(_._2).toArray)
-    val nodeRDD: RDD[Row] = nodes.map(nodeToRow(nodeFields, schemaGlobals))
+    val nodeRDD: RDD[Row] = nodes.map(nodeToRow(nodeHeader, nodeStruct, schemaGlobals))
     val nodeFrame = sc.createDataFrame(nodeRDD, nodeStruct)
 
     val nodeRecords = new SparkCypherRecords with Serializable {
       override def data = nodeFrame
-      override def header = ??? // RecordsHeader.from(nodeFields.map(_._1))
+      override def header = nodeHeader
     }
 
-    val relFields = computeRelFields(schema, schemaGlobals)
+    val relFields = computeRelFields(graphSchema, schemaGlobals)
     val relStruct = StructType(relFields.map(_._3).toArray)
     val relRDD: RDD[Row] = rels.map(relToRow(relFields, schemaGlobals))
     val relFrame = sc.createDataFrame(relRDD, relStruct)
@@ -69,7 +73,7 @@ trait SparkGraphSpaceLoading {
         }
         override def constituents = ???
         override def space = selfSpace
-        override def schema = ???
+        override def schema = graphSchema
       }
       override def globals = schemaGlobals
     }
@@ -85,23 +89,22 @@ trait SparkGraphSpaceLoading {
     val nodeVar = Var("n")
     val labelFields = schema.labels.map { name =>
       val label = HasLabel(nodeVar, globals.label(name))
-      val slot = ??? // RecordSlot(ExprSlotKey(label), CTBoolean)
-      val field = StructField(slot.toString, BooleanType, nullable = false)
-      ??? // slot -> field
+      val slot = ProjectedExpr(label, CTBoolean)
+      val field = StructField(SparkColumnName.of(slot), BooleanType, nullable = false)
+      slot -> field
     }
     val propertyFields = schema.labels.flatMap { l =>
       schema.nodeKeys(l).map {
         case (name, t) =>
           val property = Property(nodeVar, globals.propertyKey(name))
-          val slot = ??? /// RecordSlot(ExprSlotKey(property), t)
-          val field = StructField(slot.toString, sparkType(t), nullable = t.isNullable)
+          val slot = ProjectedExpr(property, t)
+          val field = StructField(SparkColumnName.of(slot), sparkType(t), nullable = t.isNullable)
           (slot, field)
       }
     }
-    val nodeSlot = ??? // RecordSlot(ExprSlotKey(nodeVar), CTNode)
-//    val slotField = nodeSlot -> StructField(nodeSlot.toString, LongType, nullable = false)
-//    Seq(slotField) ++ labelFields ++ propertyFields
-    ???
+    val nodeSlot = ProjectedExpr(nodeVar, CTNode)
+    val slotField = nodeSlot -> StructField(SparkColumnName.of(nodeSlot), LongType, nullable = false)
+    Seq(slotField) ++ labelFields ++ propertyFields
   }
 
   private def computeRelFields(schema: Schema, globals: GlobalsRegistry): Seq[(Expr, CypherType, StructField)] = {
@@ -110,8 +113,8 @@ trait SparkGraphSpaceLoading {
       schema.relationshipKeys(typ).map {
         case (name, t) =>
           val property = Property(relVar, globals.propertyKey(name))
-          val slot = ??? // RecordSlot(ExprSlotKey(property), t)
-          val field = StructField(slot.toString, sparkType(t), nullable = t.isNullable)
+          val slot = ProjectedExpr(property, t)
+          val field = StructField(SparkColumnName.of(slot), sparkType(t), nullable = t.isNullable)
           (property, t, field)
       }
     }
@@ -120,7 +123,7 @@ trait SparkGraphSpaceLoading {
     Seq(idField, typeField) ++ propertyFields
   }
 
-  object sparkType {
+  object sparkType extends Serializable {
     def apply(ct: CypherType): DataType = ct.material match {
       case CTString => StringType
       case CTInteger => LongType
@@ -130,7 +133,7 @@ trait SparkGraphSpaceLoading {
     }
   }
 
-  private case class nodeToRow(fieldMap: Seq[(SlotContent, StructField)], globals: GlobalsRegistry) extends (InternalNode => Row) {
+  private case class nodeToRow(header: RecordHeader, schema: StructType, globals: GlobalsRegistry) extends (InternalNode => Row) {
     override def apply(importedNode: InternalNode): Row = {
 
       import scala.collection.JavaConverters._
@@ -138,25 +141,21 @@ trait SparkGraphSpaceLoading {
       val props = importedNode.asMap().asScala
       val labels = importedNode.labels().asScala.toSet
 
-//      val values = fieldMap.map {
-//        case (RecordSlot(ExprSlotKey(Property(_, ref)), _), field) =>
-//          val key = globals.propertyKey(ref).name
-//          val value = props.get(key).orNull
-//          sparkValue(field.dataType, value)
-//
-//        case (RecordSlot(ExprSlotKey(HasLabel(_, ref)), _), _) =>
-//          val key = globals.label(ref).name
-//          val value = labels(key)
-//          value
-//
-//        case (RecordSlot(ExprSlotKey(_: Var), _), _) =>
-//          importedNode.id()
-//
-//        case _ => ???
-//      }
-//
-//      Row(values: _*)
-      ???
+      val values = header.slots.map { s =>
+        s.content.key match {
+          case Property(_, ref) =>
+            val propValue = props.get(globals.propertyKey(ref).name).orNull
+            sparkValue(schema(s.index).dataType, propValue)
+          case HasLabel(_, ref) =>
+            labels(globals.label(ref).name)
+          case _: Var =>
+            importedNode.id()
+
+          case _ => ??? // nothing else should appear
+        }
+      }
+
+      Row(values: _*)
     }
   }
 

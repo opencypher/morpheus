@@ -14,8 +14,6 @@ trait CypherView {
   def records: Records
 
   def model: QueryModel[Expr]
-
-  def show(): Unit
 }
 
 

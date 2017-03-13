@@ -29,9 +29,9 @@ trait SparkCypherInstances {
       //      case x => throw new UnsupportedOperationException(s"Can't convert $x to CypherValue yet")
       //    }
 
-      val plan = new LogicalPlanner().plan(ir)
+      val plan = new LogicalPlanner(graph.schema).plan(ir)
 
-      println(plan)
+      println(plan.solved)
 
       physicalPlanner.plan(plan)(PhysicalPlanningContext(graph, globals))
     }

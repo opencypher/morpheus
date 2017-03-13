@@ -17,7 +17,7 @@ sealed trait SlotContent {
   def support: Traversable[Expr]
 }
 
-sealed trait ProjectedSlotContent extends SlotContent{
+sealed trait ProjectedSlotContent extends SlotContent {
   def expr: Expr
 }
 

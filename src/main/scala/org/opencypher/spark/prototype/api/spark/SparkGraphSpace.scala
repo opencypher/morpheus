@@ -7,4 +7,4 @@ trait SparkGraphSpace extends GraphSpace {
   override type Graph = SparkCypherGraph
 }
 
-object SparkGraphSpace extends SparkGraphSpaceLoading
+object SparkGraphSpace extends SparkGraphSpaceLoading with Serializable

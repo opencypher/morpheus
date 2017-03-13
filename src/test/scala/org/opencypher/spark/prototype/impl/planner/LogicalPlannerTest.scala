@@ -8,6 +8,7 @@ import org.opencypher.spark.prototype.api.ir.block._
 import org.opencypher.spark.prototype.api.ir.global.{ConstantRef, PropertyKeyRef}
 import org.opencypher.spark.prototype.api.ir.pattern.{DirectedRelationship, EveryNode, Pattern}
 import org.opencypher.spark.prototype.api.record.ProjectedExpr
+import org.opencypher.spark.prototype.api.schema.Schema
 import org.opencypher.spark.prototype.impl.logical
 import org.opencypher.spark.prototype.impl.logical._
 import org.scalatest.matchers.{MatchResult, Matcher}
@@ -63,7 +64,7 @@ class LogicalPlannerTest extends IrTestSuite {
     )
   }
 
-  private val producer = new LogicalPlanner
+  private val producer = new LogicalPlanner(Schema.empty)
 
   private def plan(ir: CypherQuery[Expr]): LogicalOperator =
     producer.plan(ir)

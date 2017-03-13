@@ -9,4 +9,6 @@ trait CypherRecords {
 
   def columns: IndexedSeq[String]
   def column(slot: RecordSlot): String
+
+  def show(): Unit
 }

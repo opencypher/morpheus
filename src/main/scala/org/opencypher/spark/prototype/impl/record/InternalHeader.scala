@@ -30,7 +30,7 @@ final class InternalHeader protected[spark](
   def fields = cachedFields
 
   def slotsFor(expr: Expr, cypherType: CypherType): Traversable[RecordSlot] =
-    slotsFor(expr).filter(_.content.cypherType == cypherType)
+    slotsFor(expr).filter(_.content.cypherType.subTypeOf(cypherType).maybeTrue)
 
   def slotsFor(expr: Expr): Traversable[RecordSlot] =
     exprSlots.getOrElse(expr, Vector.empty).flatMap(ref => slotContents.get(ref).map(RecordSlot(ref, _)))

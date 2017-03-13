@@ -1,13 +1,14 @@
 package org.opencypher.spark.prototype.impl.instances
 
 import org.opencypher.spark.api.types.{CTAny, CTInteger, CTString}
+import org.opencypher.spark.prototype.api.expr.Var
 import org.opencypher.spark.prototype.api.schema.Schema
 import org.opencypher.spark.prototype.impl.instances.spark.cypher._
 import org.opencypher.spark.prototype.impl.syntax.cypher._
 import org.opencypher.spark.prototype.api.spark.SparkGraphSpace
 import org.opencypher.spark.{StdTestSuite, TestSession}
 
-class SparkCypherAcceptanceTest extends StdTestSuite with TestSession.Fixture {
+class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fixture {
 
   val schema = Schema.empty
     .withRelationshipKeys("ATTENDED")("guests" -> CTInteger, "comments" -> CTString.nullable)
@@ -21,7 +22,10 @@ class SparkCypherAcceptanceTest extends StdTestSuite with TestSession.Fixture {
   test("label scan and project") {
     val resultView = space.base.cypher("MATCH (a:User) RETURN a.text")
 
-    resultView.show()
+    resultView.records.data.count() shouldBe 1806
+    resultView.records.header.slots.size shouldBe 1
+    resultView.records.header.slots.head.content.cypherType shouldBe CTAny.nullable // TODO: read from schema
+    resultView.records.header.slots.head.content.key should equal(Var("a.text"))
   }
 
 }

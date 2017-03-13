@@ -1,8 +1,9 @@
 package org.opencypher.spark.prototype.api.record
 
 import org.opencypher.spark.StdTestSuite
-import org.opencypher.spark.api.types.{CTBoolean, CTNode}
-import org.opencypher.spark.prototype.api.expr.{TrueLit, Var}
+import org.opencypher.spark.api.types.{CTBoolean, CTNode, CTString}
+import org.opencypher.spark.prototype.api.expr.{Property, TrueLit, Var}
+import org.opencypher.spark.prototype.api.ir.global.PropertyKeyRef
 import org.opencypher.spark.prototype.impl.syntax.header._
 import org.opencypher.spark.prototype.impl.util.{Added, Found, Replaced}
 
@@ -79,5 +80,18 @@ class RecordHeaderTest extends StdTestSuite {
     newSlot should equal(RecordSlot(0, newContent))
     newHeader.slots should equal(Seq(newSlot))
     newHeader.fields should equal(Set(Var("n")))
+  }
+
+  test("Adding projected field will alias previously added projected expression 2") {
+    val oldContent = ProjectedExpr(Property(Var("n"), PropertyKeyRef(0)), CTString)
+    val (oldHeader, Added(oldSlot)) = RecordHeader.empty.update(addContent(oldContent))
+    val newContent = ProjectedField(Var("n.text"), Property(Var("n"), PropertyKeyRef(0)), CTString)
+    val (newHeader, Replaced(prevSlot, newSlot)) = oldHeader.update(addContent(newContent))
+
+    oldSlot should equal(RecordSlot(0, oldContent))
+    prevSlot should equal(oldSlot)
+    newSlot should equal(RecordSlot(0, newContent))
+    newHeader.slots should equal(Seq(newSlot))
+    newHeader.fields should equal(Set(Var("n.text")))
   }
 }

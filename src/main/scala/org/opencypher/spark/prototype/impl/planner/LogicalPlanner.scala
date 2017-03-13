@@ -7,10 +7,11 @@ import org.opencypher.spark.prototype.api.ir._
 import org.opencypher.spark.prototype.api.ir.block._
 import org.opencypher.spark.prototype.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.prototype.api.ir.pattern.{AllGiven, Pattern}
-import org.opencypher.spark.prototype.api.record.ProjectedExpr
+import org.opencypher.spark.prototype.api.record.{ProjectedExpr, ProjectedField}
+import org.opencypher.spark.prototype.api.schema.Schema
 import org.opencypher.spark.prototype.impl.logical._
 
-class LogicalPlanner {
+class LogicalPlanner(schema: Schema) {
 
   def plan(ir: CypherQuery[Expr]): LogicalOperator = {
     val model = ir.model
@@ -73,7 +74,7 @@ class LogicalPlanner {
   private def planProjections(in: LogicalOperator, exprs: Map[Field, Expr])(implicit tokens: GlobalsRegistry) = {
     exprs.foldLeft(in) {
       case (acc, (f, p: Property)) =>
-        Project(ProjectedExpr(p, CTAny.nullable), acc)(in.solved.withField(f))
+        Project(ProjectedField(Var(f.name), p, CTAny.nullable), acc)(in.solved.withField(f))
       case (_, x) => throw new UnsupportedOperationException(s"can not project $x")
     }
   }

@@ -17,4 +17,6 @@ trait SparkCypherRecords extends CypherRecords {
     header.internalHeader.column(slot)
 
   def toDF = data
+
+  override def show() = data.show()
 }
