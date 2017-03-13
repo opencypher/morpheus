@@ -28,9 +28,10 @@ class RecordHeaderTest extends StdTestSuite {
 
   test("Can re-add opaque fields") {
     val content = OpaqueField(Var("n"), CTNode)
-    val (result, Found(slot)) = RecordHeader.empty.update(addContent(content).flatMap(_ => addContent(content)))
+    val (result, slots) = RecordHeader.empty.update(addContents(Seq(content, content)))
+    val slot = RecordSlot(0, content)
 
-    slot should equal(RecordSlot(0, content))
+    slots should equal(Vector(Added(slot), Found(slot)))
     result.slots should equal(Seq(slot))
     result.fields should equal(Set(Var("n")))
   }
