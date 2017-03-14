@@ -1,6 +1,6 @@
 package org.opencypher.spark.prototype.impl.planner
 
-import org.opencypher.spark.api.types.CTAny
+import org.opencypher.spark.api.types.{CTAny, CTFloat, CTString}
 import org.opencypher.spark.prototype.IrTestSuite
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir._
@@ -67,10 +67,37 @@ class LogicalPlannerTest extends IrTestSuite {
     )
   }
 
+  test("plan query with type information") {
+    val ir = "MATCH (a:Administrator)-[r]->(g:Group) WHERE g.name = 'Group-1' RETURN a.name".ir
+
+    val globals = ir.model.globals
+    val schema = Schema.empty
+      .withNodeKeys("Group")("name" -> CTString)
+      .withNodeKeys("Administrator")("name" -> CTFloat)
+
+    plan(ir, globals, schema) should equal(
+      Select(Seq(Var("a.name") -> "a.name"),
+        Project(ProjectedField(Var("a.name"), Property(Var("a"), globals.propertyKey("name")), CTFloat),
+          Filter(Equals(Property(Var("g"), globals.propertyKey("name")), Const(ConstantRef(0))),
+            Project(ProjectedExpr(Property(Var("g"), globals.propertyKey("name")), CTString),
+              Filter(HasLabel(Var("g"), globals.label("Group")),
+                Filter(HasLabel(Var("a"), globals.label("Administrator")),
+                  ExpandSource(Var("a"), Var("r"), Var("g"),
+                    NodeScan(Var("a"), EveryNode(), emptySig)(emptySqm), emptySig
+                  )(emptySqm), emptySig
+                )(emptySqm), emptySig
+              )(emptySqm), emptySig
+            )(emptySqm), emptySig
+          )(emptySqm), emptySig
+        )(emptySqm), emptySig
+      )(emptySqm)
+    )
+  }
+
   private val producer = new LogicalPlanner
 
-  private def plan(ir: CypherQuery[Expr], globalsRegistry: GlobalsRegistry = GlobalsRegistry.none): LogicalOperator =
-    producer.plan(ir)(LogicalPlannerContext(Schema.empty, globalsRegistry))
+  private def plan(ir: CypherQuery[Expr], globalsRegistry: GlobalsRegistry = GlobalsRegistry.none, schema: Schema = Schema.empty): LogicalOperator =
+    producer.plan(ir)(LogicalPlannerContext(schema, globalsRegistry))
 
   case class equalWithoutResult(plan: LogicalOperator) extends Matcher[LogicalOperator] {
     override def apply(left: LogicalOperator): MatchResult = {

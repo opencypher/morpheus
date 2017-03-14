@@ -98,9 +98,9 @@ class LogicalPlanner extends Stage[CypherQuery[Expr], LogicalOperator, LogicalPl
   }
 
   private def planFilter(in: LogicalOperator, where: AllGiven[Expr])(implicit context: LogicalPlannerContext) = {
-    val equalities = where.elts.foldLeft(in) {
+    val filtersAndProjs = where.elts.foldLeft(in) {
       case (acc, eq@Equals(prop: Property, _: Const)) =>
-        val propType = propertyType(prop, in)
+        val propType = propertyType(prop, acc)
         val project = producer.projectExpr(prop, propType, acc)
         producer.planFilter(eq, project)
       case (acc, h: HasLabel) =>
@@ -108,7 +108,7 @@ class LogicalPlanner extends Stage[CypherQuery[Expr], LogicalOperator, LogicalPl
       case (_, x) => throw new UnsupportedOperationException(s"Can't deal with $x")
     }
 
-    equalities
+    filtersAndProjs
   }
 
   private def planPattern(pattern: Pattern[Expr])(implicit context: LogicalPlannerContext) = {
