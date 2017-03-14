@@ -1,15 +1,15 @@
 package org.opencypher.spark.prototype.api.expr
 
-import org.opencypher.spark.prototype.api.ir.Field
 import org.opencypher.spark.prototype.api.ir.global.{ConstantRef, LabelRef, PropertyKeyRef, RelTypeRef}
-import org.opencypher.spark.prototype.impl.spark.SparkColumnName
 
 import scala.annotation.tailrec
 
 sealed trait Expr
 
 final case class Const(ref: ConstantRef) extends Expr
-final case class Var(name: String) extends Expr
+final case class Var(name: String) extends Expr {
+  override def toString = name
+}
 final case class StartNode(e: Expr) extends Expr
 final case class EndNode(e: Expr) extends Expr
 
