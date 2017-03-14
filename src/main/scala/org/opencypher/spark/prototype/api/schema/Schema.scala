@@ -23,10 +23,15 @@ object PropertyKeyMap {
 
 case class PropertyKeyMap(m: Map[String, Map[String, CypherType]]) {
   def keysFor(classifier: String): Map[String, CypherType] = m.getOrElse(classifier, Map.empty)
-  def withKeys(classifier: String, keys: Seq[(String, CypherType)]): PropertyKeyMap =
-    copy(m.updated(classifier, keys.toMap))
+  def withKeys(classifier: String, keys: Seq[(String, CypherType)]): PropertyKeyMap = {
+    val oldKeys = m.get(classifier)
+    val newKeys = oldKeys.getOrElse(Map.empty) ++ keys.toMap
+    copy(m.updated(classifier, newKeys))
+  }
 
   def keys = m.values.flatMap(_.keySet).toSet
+
+  def ++(other: PropertyKeyMap) = copy(m ++ other.m)
 }
 
 case class ImpliedLabels(m: Map[String, Set[String]]) {
@@ -41,6 +46,8 @@ case class ImpliedLabels(m: Map[String, Set[String]]) {
     if (implied(target)) this else copy(m = m.updated(source, implied + target))
   }
 
+  def ++(other: ImpliedLabels) = copy(m ++ other.m)
+
   private def implicationsFor(source: String) = m.getOrElse(source, Set.empty) + source
 }
 
@@ -52,6 +59,8 @@ case class OptionalLabels(combos: Set[Set[String]]) {
     val (lhs, rhs) = combos.partition(labels => labels(a) || labels(b))
     copy(combos = rhs + (lhs.flatten + a + b))
   }
+
+  def ++(other: OptionalLabels) = copy(combos ++ other.combos)
 }
 
 case class Schema(
@@ -105,6 +114,10 @@ case class Schema(
 
   def withRelationshipKeys(typ: String)(keys: (String, CypherType)*): Schema =
     copy(relationshipTypes = relationshipTypes + typ, relKeyMap = relKeyMap.withKeys(typ, keys))
+
+  def ++(other: Schema) = {
+    copy(labels ++ other.labels, relationshipTypes ++ other.relationshipTypes, nodeKeyMap ++ other.nodeKeyMap, relKeyMap ++ other.relKeyMap, impliedLabels ++ other.impliedLabels, optionalLabels ++ other.optionalLabels)
+  }
 
   def verify: VerifiedSchema = {
     // TODO:

@@ -119,4 +119,15 @@ class SchemaTest extends StdTestSuite {
       schema.verify
     }
   }
+
+  test("chaining calls should work") {
+    val schema = Schema.empty
+      .withNodeKeys("Foo")("name" -> CTString)
+      .withNodeKeys("Foo")("age" -> CTInteger)
+      .withRelationshipKeys("BAR")("p1" -> CTBoolean)
+      .withRelationshipKeys("BAR")("p2" -> CTFloat)
+
+    schema.nodeKeys("Foo") should equal(Map("name" -> CTString, "age" -> CTInteger))
+    schema.relationshipKeys("BAR") should equal(Map("p1" -> CTBoolean, "p2" -> CTFloat))
+  }
 }
