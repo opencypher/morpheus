@@ -7,7 +7,7 @@ import org.opencypher.spark.prototype.api.ir._
 import org.opencypher.spark.prototype.api.ir.block._
 import org.opencypher.spark.prototype.api.ir.global.{ConstantRef, GlobalsRegistry, PropertyKeyRef}
 import org.opencypher.spark.prototype.api.ir.pattern.{DirectedRelationship, EveryNode, Pattern}
-import org.opencypher.spark.prototype.api.record.ProjectedExpr
+import org.opencypher.spark.prototype.api.record.{ProjectedExpr, ProjectedField}
 import org.opencypher.spark.prototype.api.schema.Schema
 import org.opencypher.spark.prototype.impl.logical
 import org.opencypher.spark.prototype.impl.logical._
@@ -38,7 +38,8 @@ class LogicalPlannerTest extends IrTestSuite {
     val block = project(fields)
 
     plan(irWithLeaf(block)) should equalWithoutResult(
-      Project(Property('n, PropertyKeyRef(0)), leafPlan, emptySig)(emptySqm.withFields('n, 'a))
+      Project(ProjectedField('a, Property('n, PropertyKeyRef(0)), CTAny.nullable),
+        leafPlan, emptySig)(emptySqm.withFields('n, 'a))
     )
   }
 
@@ -47,11 +48,11 @@ class LogicalPlannerTest extends IrTestSuite {
 
     val globals = ir.model.globals
 
-    plan(ir) should equal(
+    plan(ir, globals) should equal(
       Select(Seq(Var("a.name") -> "a.name"),
-        Project(Property(Var("a"), globals.propertyKey("name")),
+        Project(ProjectedField(Var("a.name"), Property(Var("a"), globals.propertyKey("name")), CTAny.nullable),
           Filter(Equals(Property(Var("g"), globals.propertyKey("name")), Const(ConstantRef(0))),
-            Project(Property(Var("g"), globals.propertyKey("name")),
+            Project(ProjectedExpr(Property(Var("g"), globals.propertyKey("name")), CTAny.nullable),
               Filter(HasLabel(Var("g"), globals.label("Group")),
                 Filter(HasLabel(Var("a"), globals.label("Administrator")),
                   ExpandSource(Var("a"), Var("r"), Var("g"),
@@ -68,8 +69,8 @@ class LogicalPlannerTest extends IrTestSuite {
 
   private val producer = new LogicalPlanner
 
-  private def plan(ir: CypherQuery[Expr]): LogicalOperator =
-    producer.plan(ir)(LogicalPlannerContext(Schema.empty, GlobalsRegistry.none))
+  private def plan(ir: CypherQuery[Expr], globalsRegistry: GlobalsRegistry = GlobalsRegistry.none): LogicalOperator =
+    producer.plan(ir)(LogicalPlannerContext(Schema.empty, globalsRegistry))
 
   case class equalWithoutResult(plan: LogicalOperator) extends Matcher[LogicalOperator] {
     override def apply(left: LogicalOperator): MatchResult = {
@@ -81,6 +82,4 @@ class LogicalPlannerTest extends IrTestSuite {
       }
     }
   }
-
-  implicit def content(expr: Expr): ProjectedExpr = ProjectedExpr(expr, CTAny.nullable)
 }
