@@ -32,8 +32,12 @@ trait SparkGraphLoading {
     import scala.collection.JavaConverters._
 
     val nodeSchema = nodes.aggregate(Schema.empty)({
+      // TODO: what about nodes without labels?
       case (acc, next) => next.labels().asScala.foldLeft(acc) {
-        case (acc2, l) => next.asMap().asScala.foldLeft(acc2) {
+        case (acc2, l) =>
+          // for nodes without properties
+          val withLabel = acc2.withNodeKeys(l)()
+          next.asMap().asScala.foldLeft(withLabel) {
           case (acc3, (k, v)) =>
             acc3.withNodeKeys(l)(k -> typeOf(v))
         }
@@ -41,8 +45,12 @@ trait SparkGraphLoading {
     }, _ ++ _)
 
     val relSchema = rels.aggregate(nodeSchema)({
-      case (acc, next) => next.asMap().asScala.foldLeft(acc) {
-        case (acc3, (k, v)) => acc3.withNodeKeys(next.`type`())(k -> typeOf(v))
+      case (acc, next) =>
+        // for rels without properties
+        val withType = acc.withRelationshipKeys(next.`type`())()
+        next.asMap().asScala.foldLeft(withType) {
+        case (acc3, (k, v)) =>
+          acc3.withRelationshipKeys(next.`type`())(k -> typeOf(v))
       }
     },  _ ++ _)
 
@@ -62,24 +70,35 @@ trait SparkGraphLoading {
     t.nullable
   }
 
-  def fromNeo4j(verified: VerifiedSchema,
-                nodeQuery: String = "CYPHER runtime=compiled MATCH (n) RETURN n",
-                relQuery: String = "CYPHER runtime=compiled MATCH ()-[r]->() RETURN r")
+  def fromNeo4j(nodeQ: String, relQ: String)(implicit sc: SparkSession): SparkGraphSpace = {
+    val neo4j = Neo4j(sc.sparkContext)
+
+    val nodes = neo4j.cypher(nodeQ).loadNodeRdds.map(row => row(0).asInstanceOf[InternalNode])
+    val rels = neo4j.cypher(relQ).loadRowRdd.map(row => row(0).asInstanceOf[InternalRelationship])
+
+    val schema = loadSchema(nodes, rels)
+    createSpace(schema, nodes, rels)
+  }
+
+  def fromNeo4j(verified: VerifiedSchema, nodeQuery: String, relQuery: String)
                (implicit sc: SparkSession): SparkGraphSpace = {
     val neo4j = Neo4j(sc.sparkContext)
-    val graphSchema = verified.schema
-
     val nodes = neo4j.cypher(nodeQuery).loadNodeRdds.map(row => row(0).asInstanceOf[InternalNode])
     val rels = neo4j.cypher(relQuery).loadRowRdd.map(row => row(0).asInstanceOf[InternalRelationship])
 
-    val schemaGlobals = GlobalsRegistry.fromSchema(verified)
+    createSpace(verified.schema, nodes, rels)
+  }
+
+  private def createSpace(graphSchema: Schema, nodes: RDD[InternalNode], rels: RDD[InternalRelationship])
+                         (implicit sc: SparkSession)= {
+    val schemaGlobals = GlobalsRegistry.fromSchema(graphSchema)
 
     val nodeFields = (v: Var) => computeNodeFields(v, graphSchema, schemaGlobals)
     val nodeHeader = (v: Var) => nodeFields(v).map(_._1).foldLeft(RecordHeader.empty) {
       case (acc, next) => acc.update(addContent(next))._1
     }
     val nodeStruct = (v: Var) => StructType(nodeFields(v).map(_._2).toArray)
-    val nodeRDD = (v: Var) => nodes.map(nodeToRow(nodeHeader(v), nodeStruct(v), schemaGlobals))
+    val nodeRDD = (v: Var) => nodes.map(nodeToRow(nodeHeader(v), nodeStruct(v), schemaGlobals, graphSchema))
     val nodeFrame = (v: Var) => sc.createDataFrame(nodeRDD(v), nodeStruct(v))
 
     val nodeRecords = (v: Var) => new SparkCypherRecords with Serializable {
@@ -137,7 +156,7 @@ trait SparkGraphLoading {
         case (name, t) =>
           val property = Property(node, globals.propertyKey(name))
           val slot = ProjectedExpr(property, t)
-          val field = StructField(SparkColumnName.of(slot), sparkType(t), nullable = t.isNullable)
+          val field = StructField(SparkColumnName.withType(slot), sparkType(t), nullable = t.isNullable)
           slot -> field
       }
     }
@@ -178,11 +197,12 @@ trait SparkGraphLoading {
       case CTInteger => LongType
       case CTBoolean => BooleanType
       case CTAny => BinaryType
+      case CTFloat => DoubleType
       case x => throw new NotImplementedError(s"No mapping for $x")
     }
   }
 
-  private case class nodeToRow(header: RecordHeader, schema: StructType, globals: GlobalsRegistry) extends (InternalNode => Row) {
+  private case class nodeToRow(header: RecordHeader, schema: StructType, globals: GlobalsRegistry, graphSchema: Schema) extends (InternalNode => Row) {
     override def apply(importedNode: InternalNode): Row = {
 
       import scala.collection.JavaConverters._
@@ -190,10 +210,16 @@ trait SparkGraphLoading {
       val props = importedNode.asMap().asScala
       val labels = importedNode.labels().asScala.toSet
 
+      val keys = labels.map(l => graphSchema.nodeKeys(l)).reduce(_ ++ _)
+
       val values = header.slots.map { s =>
         s.content.key match {
           case Property(_, ref) =>
-            val propValue = props.get(globals.propertyKey(ref).name).orNull
+            val keyName = globals.propertyKey(ref).name
+            val propValue = keys.get(keyName) match {
+              case Some(t) if t == s.content.cypherType => props.get(keyName).orNull
+              case _ => null
+            }
             sparkValue(schema(s.index).dataType, propValue)
           case HasLabel(_, ref) =>
             labels(globals.label(ref).name)
@@ -240,7 +266,7 @@ trait SparkGraphLoading {
   }
 
   private def sparkValue(typ: DataType, value: AnyRef): Any = typ match {
-    case StringType | LongType | BooleanType => value
+    case StringType | LongType | BooleanType | DoubleType => value
     case BinaryType => if (value == null) null else value.toString.getBytes // TODO: Call kryo
     case _ => cypherValue(value)
   }
