@@ -5,7 +5,7 @@ import org.opencypher.spark.prototype.api.spark.{SparkCypherGraph, SparkCypherRe
 import org.opencypher.spark.prototype.api.value.CypherValue
 import org.opencypher.spark.prototype.impl.classy.Cypher
 import org.opencypher.spark.prototype.impl.convert.{CypherParser, CypherQueryBuilder, GlobalsExtractor}
-import org.opencypher.spark.prototype.impl.planner.{LogicalPlanner, LogicalPlannerContext, FramePlanner, FramePlannerContext}
+import org.opencypher.spark.prototype.impl.planner.{LogicalPlanner, LogicalPlannerContext, ViewPlanner, ViewPlannerContext}
 
 trait SparkCypherInstances {
 
@@ -18,7 +18,7 @@ trait SparkCypherInstances {
     override type Data = DataFrame
 
     private val logicalPlanner = new LogicalPlanner()
-    private val physicalPlanner = new FramePlanner()
+    private val physicalPlanner = new ViewPlanner()
     private val parser = CypherParser
 
     override def cypher(graph: Graph, query: String, parameters: Map[String, CypherValue]): View = {
@@ -37,7 +37,7 @@ trait SparkCypherInstances {
 
       println(logicalPlan.solved)
 
-      val physicalPlan = physicalPlanner.plan(logicalPlan)(FramePlannerContext(graph, globals))
+      val physicalPlan = physicalPlanner.plan(logicalPlan)(ViewPlannerContext(graph, globals))
       physicalPlan
     }
   }
