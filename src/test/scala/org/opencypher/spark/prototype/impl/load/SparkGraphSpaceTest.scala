@@ -59,4 +59,16 @@ class SparkGraphSpaceTest extends StdTestSuite with TestSession.Fixture {
     rels.count() shouldBe 4832
     nodes.count() shouldBe 2901
   }
+
+  test("read schema from loaded neo graph") {
+    val schema = SparkGraphSpace.loadSchema("MATCH (a) RETURN a", "MATCH ()-[r]->() RETURN r")
+
+    println(schema)
+    schema.labels.foreach { l =>
+      println(s"$l -> ${schema.nodeKeys(l)}")
+    }
+    schema.relationshipTypes.foreach { t =>
+      println(s"$t -> ${schema.relationshipKeys(t)}")
+    }
+  }
 }

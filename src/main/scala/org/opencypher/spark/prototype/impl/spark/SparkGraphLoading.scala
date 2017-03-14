@@ -19,6 +19,49 @@ import org.opencypher.spark.prototype.impl.syntax.header._
 
 trait SparkGraphLoading {
 
+  def loadSchema(nodeQ: String, relQ: String)(implicit sc: SparkSession): Schema = {
+    val neo4j = Neo4j(sc.sparkContext)
+
+    val nodes = neo4j.cypher(nodeQ).loadNodeRdds.map(row => row(0).asInstanceOf[InternalNode])
+    val rels = neo4j.cypher(relQ).loadRowRdd.map(row => row(0).asInstanceOf[InternalRelationship])
+
+    loadSchema(nodes, rels)
+  }
+
+  private def loadSchema(nodes: RDD[InternalNode], rels: RDD[InternalRelationship]): Schema = {
+    import scala.collection.JavaConverters._
+
+    val nodeSchema = nodes.aggregate(Schema.empty)({
+      case (acc, next) => next.labels().asScala.foldLeft(acc) {
+        case (acc2, l) => next.asMap().asScala.foldLeft(acc2) {
+          case (acc3, (k, v)) =>
+            acc3.withNodeKeys(l)(k -> typeOf(v))
+        }
+      }
+    }, _ ++ _)
+
+    val relSchema = rels.aggregate(nodeSchema)({
+      case (acc, next) => next.asMap().asScala.foldLeft(acc) {
+        case (acc3, (k, v)) => acc3.withNodeKeys(next.`type`())(k -> typeOf(v))
+      }
+    },  _ ++ _)
+
+    relSchema
+  }
+
+  private def typeOf(v: AnyRef): CypherType = {
+    val t = v match {
+      case null => CTVoid
+      case _: String => CTString
+      case _: java.lang.Long => CTInteger
+      case _: java.lang.Double => CTFloat
+      case _: java.lang.Boolean => CTBoolean
+      case x => throw new IllegalArgumentException(s"Expected a Cypher value, but was $x")
+    }
+
+    t.nullable
+  }
+
   def fromNeo4j(verified: VerifiedSchema,
                 nodeQuery: String = "CYPHER runtime=compiled MATCH (n) RETURN n",
                 relQuery: String = "CYPHER runtime=compiled MATCH ()-[r]->() RETURN r")
