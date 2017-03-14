@@ -2,7 +2,6 @@ package org.opencypher.spark.shell
 
 import ammonite.util.Bind._
 import ammonite.util.Util
-import org.apache.spark.sql.SparkSession
 import org.opencypher.spark.benchmark.RunBenchmark
 import org.opencypher.spark.{CypherOnSpark, PropertyGraphFactory}
 
@@ -45,12 +44,9 @@ object Shell {
         predef =
           s"""|repl.frontEnd() = ammonite.frontend.FrontEnd.$frontend
               |repl.prompt() = \"(cypher)-[:on]->(spark) \"
-              |import org.opencypher.spark.prototype.PrototypeDemo._
+              |import org.opencypher.spark.prototype.PrototypeDemo2._
               |""".stripMargin
-      ).instantiateRepl(Seq(
-        "session" -> session,
-        "factory" -> PropertyGraphFactory.create
-      ))
+      ).instantiateRepl(Seq("session" -> session))
       repl.run()
     } finally {
       session.stop()

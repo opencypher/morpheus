@@ -10,6 +10,7 @@ package org.opencypher.spark {
   import org.apache.spark.sql.catalyst.InternalRow
   import org.apache.spark.sql.catalyst.expressions.UnsafeRow
   import org.opencypher.spark.benchmark.{AccessControlNode, AccessControlRelationship}
+  import org.opencypher.spark.prototype.api.schema.{ImpliedLabels, OptionalLabels, PropertyKeyMap, Schema}
 
   import scala.collection.PrivateCollectionClasses
   import scala.language.existentials
@@ -47,6 +48,12 @@ package org.opencypher.spark {
       Class.forName("org.apache.spark.unsafe.types.UTF8String"),
       Class.forName("org.apache.spark.sql.execution.joins.UnsafeHashedRelation"),
 
+      classOf[Schema],
+      classOf[ImpliedLabels],
+      classOf[OptionalLabels],
+      classOf[PropertyKeyMap],
+      Class.forName("scala.collection.immutable.Map$EmptyMap$"),
+      Class.forName("scala.collection.immutable.Set$EmptySet$"),
 
       classOf[Array[java.lang.Object]],
       classOf[Array[InternalRow]],
