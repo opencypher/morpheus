@@ -7,11 +7,11 @@ import org.opencypher.spark.prototype.api.spark.{SparkCypherGraph, SparkCypherVi
 import org.opencypher.spark.prototype.impl.logical
 import org.opencypher.spark.prototype.impl.physical.RecordsViewProducer._
 
-case class PhysicalPlannerContext(graph: SparkCypherGraph, globals: GlobalsRegistry)
+case class FramePlannerContext(graph: SparkCypherGraph, globals: GlobalsRegistry)
 
-class PhysicalPlanner extends Stage[logical.LogicalOperator, SparkCypherView, PhysicalPlannerContext] {
+class FramePlanner extends Stage[logical.LogicalOperator, SparkCypherView, FramePlannerContext] {
 
-  def plan(logicalPlan: logical.LogicalOperator)(implicit context: PhysicalPlannerContext): SparkCypherView =
+  def plan(logicalPlan: logical.LogicalOperator)(implicit context: FramePlannerContext): SparkCypherView =
     logicalPlan match {
       case logical.Select(fields, in, _) =>
         plan(in).select(fields.toMap)
