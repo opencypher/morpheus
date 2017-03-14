@@ -6,6 +6,7 @@ import org.opencypher.spark.prototype.api.ir._
 import org.opencypher.spark.prototype.api.ir.block._
 import org.opencypher.spark.prototype.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.prototype.api.ir.pattern.{AllGiven, EveryNode, Pattern}
+import org.opencypher.spark.prototype.api.record.RecordHeader
 import org.opencypher.spark.prototype.impl.convert.{CypherParser, CypherQueryBuilder, GlobalsExtractor}
 import org.opencypher.spark.prototype.impl.logical.NodeScan
 
@@ -14,7 +15,8 @@ import scala.language.implicitConversions
 abstract class IrTestSuite extends StdTestSuite {
   val leafRef = BlockRef("leaf")
   val leafBlock = matchBlock(Pattern.empty[Expr].withEntity('n, EveryNode()))
-  val leafPlan = NodeScan('n, EveryNode())(SolvedQueryModel.empty)
+  val emptySig = RecordHeader.empty
+  val leafPlan = NodeScan('n, EveryNode(), emptySig)(SolvedQueryModel.empty)
 
   implicit def toField(s: Symbol): Field = Field(s.name)
   implicit def toVar(s: Symbol): Var = Var(s.name)

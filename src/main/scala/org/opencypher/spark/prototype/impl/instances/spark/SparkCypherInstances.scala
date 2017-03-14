@@ -33,7 +33,7 @@ trait SparkCypherInstances {
       //      case x => throw new UnsupportedOperationException(s"Can't convert $x to CypherValue yet")
       //    }
 
-      val logicalPlan = logicalPlanner.plan(ir)(LogicalPlannerContext(graph.schema))
+      val logicalPlan = logicalPlanner.plan(ir)(LogicalPlannerContext(graph.schema, globals))
 
       println(logicalPlan.solved)
 

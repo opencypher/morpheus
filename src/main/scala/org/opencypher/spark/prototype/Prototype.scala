@@ -23,7 +23,7 @@ trait Prototype {
       case x => throw new UnsupportedOperationException(s"Can't convert $x to CypherValue yet")
     }
 
-    val plan = new LogicalPlanner().plan(ir)(LogicalPlannerContext(Schema.empty))
+    val plan = new LogicalPlanner().plan(ir)(LogicalPlannerContext(Schema.empty, globals))
 
     val result = graph.cypherNew(plan, globals, cvs)
 

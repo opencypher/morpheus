@@ -5,13 +5,15 @@ import org.opencypher.spark.prototype.IrTestSuite
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir._
 import org.opencypher.spark.prototype.api.ir.block._
-import org.opencypher.spark.prototype.api.ir.global.{ConstantRef, PropertyKeyRef}
+import org.opencypher.spark.prototype.api.ir.global.{ConstantRef, GlobalsRegistry, PropertyKeyRef}
 import org.opencypher.spark.prototype.api.ir.pattern.{DirectedRelationship, EveryNode, Pattern}
 import org.opencypher.spark.prototype.api.record.ProjectedExpr
 import org.opencypher.spark.prototype.api.schema.Schema
 import org.opencypher.spark.prototype.impl.logical
 import org.opencypher.spark.prototype.impl.logical._
 import org.scalatest.matchers.{MatchResult, Matcher}
+
+import scala.language.implicitConversions
 
 class LogicalPlannerTest extends IrTestSuite {
 
@@ -23,9 +25,9 @@ class LogicalPlannerTest extends IrTestSuite {
 
     val block = matchBlock(pattern)
 
-    val scan = NodeScan('a, EveryNode())(emptySqm.withField('a))
+    val scan = NodeScan('a, EveryNode(), emptySig)(emptySqm.withField('a))
     plan(irFor(block)) should equalWithoutResult(
-      ExpandSource('a, 'r, 'b, scan)(scan.solved.withFields('r, 'b))
+      ExpandSource('a, 'r, 'b, scan, emptySig)(scan.solved.withFields('r, 'b))
     )
   }
 
@@ -36,7 +38,7 @@ class LogicalPlannerTest extends IrTestSuite {
     val block = project(fields)
 
     plan(irWithLeaf(block)) should equalWithoutResult(
-      Project(Property('n, PropertyKeyRef(0)), leafPlan)(emptySqm.withFields('n, 'a))
+      Project(Property('n, PropertyKeyRef(0)), leafPlan, emptySig)(emptySqm.withFields('n, 'a))
     )
   }
 
@@ -46,20 +48,20 @@ class LogicalPlannerTest extends IrTestSuite {
     val globals = ir.model.globals
 
     plan(ir) should equal(
-      logical.Select(Seq(Var("a.name") -> "a.name"),
+      Select(Seq(Var("a.name") -> "a.name"),
         Project(Property(Var("a"), globals.propertyKey("name")),
           Filter(Equals(Property(Var("g"), globals.propertyKey("name")), Const(ConstantRef(0))),
             Project(Property(Var("g"), globals.propertyKey("name")),
               Filter(HasLabel(Var("g"), globals.label("Group")),
                 Filter(HasLabel(Var("a"), globals.label("Administrator")),
                   ExpandSource(Var("a"), Var("r"), Var("g"),
-                    NodeScan(Var("a"), EveryNode())(emptySqm)
-                  )(emptySqm)
-                )(emptySqm)
-              )(emptySqm)
-            )(emptySqm)
-          )(emptySqm)
-        )(emptySqm)
+                    NodeScan(Var("a"), EveryNode(), emptySig)(emptySqm), emptySig
+                  )(emptySqm), emptySig
+                )(emptySqm), emptySig
+              )(emptySqm), emptySig
+            )(emptySqm), emptySig
+          )(emptySqm), emptySig
+        )(emptySqm), emptySig
       )(emptySqm)
     )
   }
@@ -67,12 +69,12 @@ class LogicalPlannerTest extends IrTestSuite {
   private val producer = new LogicalPlanner
 
   private def plan(ir: CypherQuery[Expr]): LogicalOperator =
-    producer.plan(ir)(LogicalPlannerContext(Schema.empty))
+    producer.plan(ir)(LogicalPlannerContext(Schema.empty, GlobalsRegistry.none))
 
   case class equalWithoutResult(plan: LogicalOperator) extends Matcher[LogicalOperator] {
     override def apply(left: LogicalOperator): MatchResult = {
       left match {
-        case logical.Select(_, in) =>
+        case logical.Select(_, in, _) =>
           val matches = in == plan && in.solved == plan.solved
           MatchResult(matches, s"$in did not equal $plan", s"$in was not supposed to equal $plan")
         case _ => MatchResult(matches = false, "Expected a Select plan on top", "Expected a Select plan on top")

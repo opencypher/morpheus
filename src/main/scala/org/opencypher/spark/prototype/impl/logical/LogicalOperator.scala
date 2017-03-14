@@ -3,13 +3,14 @@ package org.opencypher.spark.prototype.impl.logical
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir.SolvedQueryModel
 import org.opencypher.spark.prototype.api.ir.pattern.EveryNode
-import org.opencypher.spark.prototype.api.record.ProjectedSlotContent
+import org.opencypher.spark.prototype.api.record.{ProjectedSlotContent, RecordHeader}
 
 import scala.language.implicitConversions
 
 sealed trait LogicalOperator {
   def isLeaf = false
   def solved: SolvedQueryModel[Expr]
+  def signature: RecordHeader
 }
 
 sealed trait StackingLogicalOperator extends LogicalOperator {
@@ -20,11 +21,11 @@ sealed trait LogicalLeafOperator extends LogicalOperator {
   override def isLeaf = true
 }
 
-final case class NodeScan(node: Var, nodeDef: EveryNode)
+final case class NodeScan(node: Var, nodeDef: EveryNode, signature: RecordHeader)
                          (override val solved: SolvedQueryModel[Expr]) extends LogicalLeafOperator {
 }
 
-final case class Filter(expr: Expr, in: LogicalOperator)
+final case class Filter(expr: Expr, in: LogicalOperator, signature: RecordHeader)
                        (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
 }
 
@@ -34,20 +35,20 @@ sealed trait ExpandOperator extends StackingLogicalOperator {
   def target: Var
 }
 
-final case class ExpandSource(source: Var, rel: Var, target: Var, in: LogicalOperator)
+final case class ExpandSource(source: Var, rel: Var, target: Var, in: LogicalOperator, signature: RecordHeader)
                              (override val solved: SolvedQueryModel[Expr])
   extends ExpandOperator {
 }
 
-final case class ExpandTarget(source: Var, rel: Var, target: Var, in: LogicalOperator)
+final case class ExpandTarget(source: Var, rel: Var, target: Var, in: LogicalOperator, signature: RecordHeader)
                              (override val solved: SolvedQueryModel[Expr])
   extends ExpandOperator {
 }
 
-final case class Project(it: ProjectedSlotContent, in: LogicalOperator)
+final case class Project(it: ProjectedSlotContent, in: LogicalOperator, signature: RecordHeader)
                         (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
 }
 
-final case class Select(fields: Seq[(Expr, String)], in: LogicalOperator)
+final case class Select(fields: Seq[(Expr, String)], in: LogicalOperator, signature: RecordHeader)
                        (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
 }

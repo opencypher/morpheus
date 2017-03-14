@@ -1,37 +1,39 @@
 package org.opencypher.spark.prototype.impl.planner
 
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.fixedPoint
-import org.opencypher.spark.api.types.CTAny
+import org.opencypher.spark.api.CypherType
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir._
 import org.opencypher.spark.prototype.api.ir.block._
 import org.opencypher.spark.prototype.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.prototype.api.ir.pattern.{AllGiven, Pattern}
-import org.opencypher.spark.prototype.api.record.{ProjectedExpr, ProjectedField}
 import org.opencypher.spark.prototype.api.schema.Schema
 import org.opencypher.spark.prototype.impl.logical._
 
-final case class LogicalPlannerContext(schema: Schema)
+final case class LogicalPlannerContext(schema: Schema, tokens: GlobalsRegistry)
 
 class LogicalPlanner extends Stage[CypherQuery[Expr], LogicalOperator, LogicalPlannerContext] {
+
+  val producer = new LogicalOperatorProducer
 
   def plan(ir: CypherQuery[Expr])(implicit context: LogicalPlannerContext): LogicalOperator = {
     val model = ir.model
 
     implicit val tokenDefs = model.globals
 
-    planModel(model.result, model)(context.schema, tokenDefs)
+    planModel(model.result, model)
   }
 
-  def planModel(block: ResultBlock[Expr], model: QueryModel[Expr])(implicit schema: Schema, tokens: GlobalsRegistry): LogicalOperator = {
+  def planModel(block: ResultBlock[Expr], model: QueryModel[Expr])(implicit context: LogicalPlannerContext): LogicalOperator = {
     val first = block.after.head // there should only be one, right?
     val plan = planBlock(first, model, None)
 
     // always plan a select at the top
-    Select(block.binds.fieldsOrder.map(f => Var(f.name) -> f.name), plan)(plan.solved)
+    val fields = block.binds.fieldsOrder.map(f => Var(f.name) -> f.name)
+    producer.planSelect(fields, plan)
   }
 
-  final def planBlock(ref: BlockRef, model: QueryModel[Expr], plan: Option[LogicalOperator])(implicit schema: Schema, tokens: GlobalsRegistry): LogicalOperator = {
+  final def planBlock(ref: BlockRef, model: QueryModel[Expr], plan: Option[LogicalOperator])(implicit context: LogicalPlannerContext): LogicalOperator = {
     val block = model(ref)
     if (block.after.isEmpty) {
       // this is a leaf block, just plan it
@@ -55,7 +57,7 @@ class LogicalPlanner extends Stage[CypherQuery[Expr], LogicalOperator, LogicalPl
     }
   }
 
-  def planLeaf(ref: BlockRef, model: QueryModel[Expr])(implicit tokens: GlobalsRegistry): LogicalOperator = {
+  def planLeaf(ref: BlockRef, model: QueryModel[Expr])(implicit context: LogicalPlannerContext): LogicalOperator = {
     model(ref) match {
       case MatchBlock(_, pattern, where) =>
         // this plans a leaf + filter for convenience -- TODO
@@ -65,7 +67,7 @@ class LogicalPlanner extends Stage[CypherQuery[Expr], LogicalOperator, LogicalPl
     }
   }
 
-  def planNonLeaf(ref: BlockRef, model: QueryModel[Expr], plan: LogicalOperator)(implicit tokens: GlobalsRegistry, schema: Schema): LogicalOperator = {
+  def planNonLeaf(ref: BlockRef, model: QueryModel[Expr], plan: LogicalOperator)(implicit context: LogicalPlannerContext): LogicalOperator = {
     model(ref) match {
       case ProjectBlock(_, ProjectedFields(exprs), _) =>
         planProjections(plan, exprs)
@@ -73,36 +75,43 @@ class LogicalPlanner extends Stage[CypherQuery[Expr], LogicalOperator, LogicalPl
     }
   }
 
-  private def planProjections(in: LogicalOperator, exprs: Map[Field, Expr])(implicit tokens: GlobalsRegistry, schema: Schema) = {
+  private def planProjections(in: LogicalOperator, exprs: Map[Field, Expr])(implicit context: LogicalPlannerContext) = {
     exprs.foldLeft(in) {
       case (acc, (f, p: Property)) =>
-        val labelsOnNode = in.solved.predicates.collect {
-          case h: HasLabel if h.node == p.m => h.label
-        }
-        val propType = labelsOnNode.headOption.flatMap { ref =>
-          val label = tokens.label(ref).name
-          val keys = schema.nodeKeys(label)
-          keys.get(tokens.propertyKey(p.key).name)
-        }
-        Project(ProjectedField(Var(f.name), p, propType.getOrElse(CTAny.nullable)), acc)(in.solved.withField(f))
+        val propType = propertyType(p, in)
+        producer.projectField(f, p, propType, acc)
       case (_, x) => throw new UnsupportedOperationException(s"can not project $x")
     }
   }
 
-  private def planFilter(in: LogicalOperator, where: AllGiven[Expr])(implicit tokens: GlobalsRegistry) = {
+  private def propertyType(p: Property, plan: LogicalOperator)(implicit context: LogicalPlannerContext): Option[CypherType] = {
+    val labelsOnNode = plan.solved.predicates.collect {
+      case h: HasLabel if h.node == p.m => h.label
+    }
+    val propType = labelsOnNode.headOption.flatMap { ref =>
+      val label = context.tokens.label(ref).name
+      val keys = context.schema.nodeKeys(label)
+      keys.get(context.tokens.propertyKey(p.key).name)
+    }
+
+    propType
+  }
+
+  private def planFilter(in: LogicalOperator, where: AllGiven[Expr])(implicit context: LogicalPlannerContext) = {
     val equalities = where.elts.foldLeft(in) {
       case (acc, eq@Equals(prop: Property, _: Const)) =>
-        val project = Project(ProjectedExpr(prop, CTAny.nullable), acc)(acc.solved)
-        Filter(eq, project)(project.solved.withPredicate(eq))
+        val propType = propertyType(prop, in)
+        val project = producer.projectExpr(prop, propType, acc)
+        producer.planFilter(eq, project)
       case (acc, h: HasLabel) =>
-        Filter(h, acc)(acc.solved.withPredicate(h))
+        producer.planFilter(h, acc)
       case (_, x) => throw new UnsupportedOperationException(s"Can't deal with $x")
     }
 
     equalities
   }
 
-  private def planPattern(pattern: Pattern[Expr])(implicit tokens: GlobalsRegistry) = {
+  private def planPattern(pattern: Pattern[Expr])(implicit context: LogicalPlannerContext) = {
     val lhsLeaf = nodePlan(pattern)
 
     val (newPlan, _) = fixedPoint(planExpansions)(lhsLeaf -> pattern)
@@ -130,12 +139,9 @@ class LogicalPlanner extends Stage[CypherQuery[Expr], LogicalOperator, LogicalPl
     ???
   }
 
-  private def nodePlan(pattern: Pattern[Expr])(implicit tokens: GlobalsRegistry) = {
+  private def nodePlan(pattern: Pattern[Expr])(implicit context: LogicalPlannerContext) = {
     val (field, everyNode) = pattern.nodes.head
-    val node = Var(field.name)
-    val solved = everyNode.labels.elts.foldLeft(SolvedQueryModel.empty[Expr].withField(field)) {
-      case (acc, ref) => acc.withPredicate(HasLabel(node, ref))
-    }
-    NodeScan(node, everyNode)(solved)
+
+    producer.planNodeScan(field, everyNode)
   }
 }

@@ -13,16 +13,16 @@ class PhysicalPlanner extends Stage[logical.LogicalOperator, SparkCypherView, Ph
 
   def plan(logicalPlan: logical.LogicalOperator)(implicit context: PhysicalPlannerContext): SparkCypherView =
     logicalPlan match {
-      case logical.Select(fields, in) =>
+      case logical.Select(fields, in, _) =>
         plan(in).select(fields.toMap)
 
-      case logical.NodeScan(v, every) =>
+      case logical.NodeScan(v, every, _) =>
         context.graph.allNodes(v)
 
-      case logical.Project(it, in) =>
+      case logical.Project(it, in, _) =>
         plan(in).project(it)
 
-      case logical.Filter(expr, in) => expr match {
+      case logical.Filter(expr, in, _) => expr match {
         case HasLabel(n: Var, ref) =>
           plan(in).labelFilter(n, AllGiven(Set(ref)))
         case _ => ???
@@ -31,7 +31,7 @@ class PhysicalPlanner extends Stage[logical.LogicalOperator, SparkCypherView, Ph
         //        planExpr(planOp(in), expr)
         //      }
   //      planExpr(planOp(in), expr)
-      case logical.ExpandSource(source, rel, target, in) =>
+      case logical.ExpandSource(source, rel, target, in, _) =>
         // TODO: where is the rel-type info?
   //      val rels = allRelationships(rel).asProduct
   //        .relationshipStartId(rel)(relStart(rel))
