@@ -1,5 +1,6 @@
 package org.opencypher.spark.prototype.impl.planner
 
+import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.prototype.api.schema.Schema
 import org.opencypher.spark.prototype.impl.logical
@@ -14,6 +15,11 @@ class PhysicalPlanner extends Stage[LogicalOperator, PhysicalOperator, PhysicalP
     val mkPhysical = new PhysicalOperatorProducer()
 
     input match {
+
+      case logical.Select(fields, in, _) =>
+        val remaining = fields.collect { case (k, v) => Var(v) }.toSet
+        mkPhysical.select(fields, plan(in))
+
       case logical.Filter(expr, in, _) =>
         mkPhysical.filter(expr, plan(in))
 

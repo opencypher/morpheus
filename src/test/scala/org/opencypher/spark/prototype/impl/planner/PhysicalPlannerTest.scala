@@ -1,7 +1,5 @@
 package org.opencypher.spark.prototype.impl.planner
 
-import javax.print.DocFlavor.STRING
-
 import org.opencypher.spark.StdTestSuite
 import org.opencypher.spark.api.types.{CTBoolean, CTInteger, CTString}
 import org.opencypher.spark.prototype.api.expr.{HasLabel, Property, TrueLit, Var}
@@ -25,6 +23,9 @@ class PhysicalPlannerTest extends StdTestSuite {
 
   val mkLogical = new LogicalOperatorProducer
   val physicalPlanner = new PhysicalPlanner
+
+  // TODO: Ids missing
+  // TODO: Do not name schema provided columns
 
   test("Construct node scan") {
     val mkPhysical = new PhysicalOperatorProducer()

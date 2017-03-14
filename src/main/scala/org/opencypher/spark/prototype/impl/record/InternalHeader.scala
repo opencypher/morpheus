@@ -73,7 +73,7 @@ object InternalHeader {
       case (it: ProjectedField) => addProjectedField(it)
     }
 
-  def addProjectedExpr(content: ProjectedExpr): State[InternalHeader, AdditiveUpdateResult[RecordSlot]] =
+  private def addProjectedExpr(content: ProjectedExpr): State[InternalHeader, AdditiveUpdateResult[RecordSlot]] =
     for (
       header <- get[InternalHeader];
       result <- {
@@ -90,10 +90,10 @@ object InternalHeader {
     )
     yield result
 
-  def addOpaqueField(addedContent: OpaqueField): State[InternalHeader, AdditiveUpdateResult[RecordSlot]] =
+  private def addOpaqueField(addedContent: OpaqueField): State[InternalHeader, AdditiveUpdateResult[RecordSlot]] =
     addField(addedContent)
 
-  def addProjectedField(addedContent: ProjectedField): State[InternalHeader, AdditiveUpdateResult[RecordSlot]] =
+  private def addProjectedField(addedContent: ProjectedField): State[InternalHeader, AdditiveUpdateResult[RecordSlot]] =
     for(
       header <- get[InternalHeader];
       result <- {
@@ -102,7 +102,7 @@ object InternalHeader {
           case RecordSlot(ref, _: ProjectedExpr) =>
             Some(header.slotContents.update(ref, addedContent) match {
               case Left(conflict) =>
-                pureState(Failed(slot(header, conflict), Added(RecordSlot(ref, addedContent))))
+                pureState(FailedToAdd(slot(header, conflict), Added(RecordSlot(ref, addedContent))))
 
               case Right(newSlots) =>
                 addSlotContent(Some(newSlots), ref, addedContent).map(added => Replaced(slot(header, ref), added.it))
@@ -120,13 +120,15 @@ object InternalHeader {
       header <- get[InternalHeader];
       result <- {
         header.slotContents.insert(addedContent) match {
-          case Left(ref) => pureState(Failed(slot(header, ref), Added(RecordSlot(ref, addedContent))))
+          case Left(ref) => pureState(FailedToAdd(slot(header, ref), Added(RecordSlot(ref, addedContent))))
           case Right((optNewSlots, ref)) => addSlotContent(optNewSlots, ref, addedContent)
         }
       }
     )
     yield result
 
+
+//  def removeContent(removedContent: SlotContent)
 
   private def addSlotContent(optNewSlots: Option[RefCollection[SlotContent]], ref: Int, addedContent: SlotContent)
   : State[InternalHeader, AdditiveUpdateResult[RecordSlot]] =

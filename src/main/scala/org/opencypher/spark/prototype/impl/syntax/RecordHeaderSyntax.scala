@@ -7,7 +7,7 @@ import cats.instances.all._
 import cats.syntax.all._
 import org.opencypher.spark.prototype.api.record._
 import org.opencypher.spark.prototype.impl.record.InternalHeader
-import org.opencypher.spark.prototype.impl.util.AdditiveUpdateResult
+import org.opencypher.spark.prototype.impl.util.{AdditiveUpdateResult, Removed}
 
 trait RecordHeaderSyntax {
 
@@ -24,14 +24,7 @@ trait RecordHeaderSyntax {
   def addContent(content: SlotContent): State[RecordHeader, AdditiveUpdateResult[RecordSlot]] =
     add(InternalHeader.addContent(content))
 
-  def addProjectedExpr(content: ProjectedExpr): State[RecordHeader, AdditiveUpdateResult[RecordSlot]] =
-    add(InternalHeader.addProjectedExpr(content))
-
-  def addOpaqueField(content: OpaqueField): State[RecordHeader, AdditiveUpdateResult[RecordSlot]] =
-    add(InternalHeader.addOpaqueField(content))
-
-  def addProjectedField(content: ProjectedField): State[RecordHeader, AdditiveUpdateResult[RecordSlot]] =
-    add(InternalHeader.addProjectedField(content))
+  def removeContent(content: SlotContent): State[RecordHeader, Removed[RecordSlot]] = ???
 
   private def add[O](inner: State[InternalHeader, O]): State[RecordHeader, O] =
     get[RecordHeader]

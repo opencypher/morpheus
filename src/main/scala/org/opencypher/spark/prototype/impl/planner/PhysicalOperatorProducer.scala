@@ -3,12 +3,14 @@ package org.opencypher.spark.prototype.impl.planner
 import cats.Monoid
 import org.opencypher.spark.api.CypherType
 import org.opencypher.spark.api.types.CTBoolean
-import org.opencypher.spark.prototype.api.expr.{Expr, HasLabel, Property, Var}
+import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir.pattern.EveryNode
 import org.opencypher.spark.prototype.api.record.{ProjectedExpr, RecordHeader}
 import org.opencypher.spark.prototype.impl.physical._
 import org.opencypher.spark.prototype.impl.syntax.header._
 import org.opencypher.spark.prototype.impl.syntax.util.traversable._
+
+import scala.annotation.tailrec
 
 class PhysicalOperatorProducer(implicit context: PhysicalPlannerContext) {
 
@@ -20,6 +22,11 @@ class PhysicalOperatorProducer(implicit context: PhysicalPlannerContext) {
   private implicit val typeVectorMonoid = new Monoid[Vector[CypherType]] {
     override def empty: Vector[CypherType] = Vector.empty
     override def combine(x: Vector[CypherType], y: Vector[CypherType]): Vector[CypherType] = x ++ y
+  }
+
+  def select(fields: Seq[(Expr, String)], in: PhysicalOperator) = {
+    val remaining = fields.collect { case (k, v) => Var(v) }.toSet
+    Select(fields, in, in.header)
   }
 
   def filter(expr: Expr, in: PhysicalOperator): Filter = {
@@ -52,5 +59,24 @@ class PhysicalOperatorProducer(implicit context: PhysicalPlannerContext) {
     val (header, _) = RecordHeader.empty.update(addContents(labelHeaderContents ++ keyHeaderContents))
 
     NodeScan(node, nodeDef)(header)
+  }
+
+
+  // TODO: Test and move this some place proper
+  @tailrec
+  private def dependencies(remaining: List[Expr], result: Set[Var]): Set[Var] = remaining match {
+    case (expr: Var) :: tl => dependencies(tl, result + expr)
+    case Equals(l, r) :: tl => dependencies(l :: r :: tl, result)
+    case StartNode(expr) :: tl => dependencies(expr :: tl, result)
+    case EndNode(expr) :: tl => dependencies(expr :: tl, result)
+    case TypeId(expr) :: tl => dependencies(expr :: tl, result)
+    case HasLabel(expr, _) :: tl => dependencies(expr :: tl, result)
+    case HasType(expr, _) :: tl => dependencies(expr :: tl, result)
+    case Property(expr, _) :: tl => dependencies(expr :: tl, result)
+    case (expr: Ands) :: tl => dependencies(expr.exprs.toList ++ tl, result)
+    case (expr: Ors) :: tl => dependencies(expr.exprs.toList ++ tl, result)
+    case (expr: Lit[_]) :: tl => dependencies(tl, result)
+    case (expr: Const) :: tl => dependencies(tl, result)
+    case _ => result
   }
 }
