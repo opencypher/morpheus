@@ -120,9 +120,9 @@ trait SparkGraphSpaceLoading {
     val idSlot = OpaqueField(rel, CTRelationship)
     val idField = StructField(SparkColumnName.of(idSlot), LongType, nullable = false)
 
-    val sourceSlot = ProjectedExpr(StartNode(rel), CTInteger)
+    val sourceSlot = ProjectedExpr(StartNode(rel), CTNode)
     val sourceField = StructField(SparkColumnName.of(sourceSlot), LongType, nullable = false)
-    val targetSlot = ProjectedExpr(EndNode(rel), CTInteger)
+    val targetSlot = ProjectedExpr(EndNode(rel), CTNode)
     val targetField = StructField(SparkColumnName.of(targetSlot), LongType, nullable = false)
 
     Seq(sourceSlot -> sourceField, idSlot -> idField,

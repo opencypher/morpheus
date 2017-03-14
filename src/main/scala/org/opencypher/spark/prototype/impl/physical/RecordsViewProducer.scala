@@ -1,11 +1,11 @@
 package org.opencypher.spark.prototype.impl.physical
 
-import org.apache.spark.sql.Column
+import org.opencypher.spark.api.types.{CTNode, CTRelationship}
 import org.opencypher.spark.prototype.api.expr.{Ands, Expr, HasLabel, Var}
 import org.opencypher.spark.prototype.api.ir.QueryModel
 import org.opencypher.spark.prototype.api.ir.global.LabelRef
 import org.opencypher.spark.prototype.api.ir.pattern.AllGiven
-import org.opencypher.spark.prototype.api.record.ProjectedSlotContent
+import org.opencypher.spark.prototype.api.record.{ProjectedSlotContent, RecordSlot}
 import org.opencypher.spark.prototype.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherView}
 import org.opencypher.spark.prototype.impl.instances.spark.records._
 import org.opencypher.spark.prototype.impl.syntax.transform._
@@ -31,61 +31,39 @@ object RecordsViewProducer {
 
     def expandSource(relView: SparkCypherView) = new JoinBuilder {
       override def on(node: Var)(rel: Var) = {
-        val lhsHeader = view.records.header
-        val rhsHeader = relView.records.header
+        val lhsSlot = view.records.header.slotFor(node)
+        val rhsSlot = relView.records.header.sourceNode(rel)
 
-        val lhsSlot = lhsHeader.slotFor(node)
-        val rhsSlot = rhsHeader.sourceNode(rel)
+        assertIsNode(lhsSlot)
+        assertIsNode(rhsSlot)
 
-        val lhsDF = view.records.data
-        val rhsDF = relView.records.data
-
-        val lhsColumn = lhsDF.col(lhsDF.columns(lhsSlot.index))
-        val rhsColumn = rhsDF.col(rhsDF.columns(rhsSlot.index))
-
-        val joinExpr: Column = lhsColumn === rhsColumn
-        val joined = lhsDF.join(rhsDF, joinExpr)
-
-        val records = new SparkCypherRecords {
-          override def data = joined
-          override def header = lhsHeader ++ rhsHeader
-        }
-
+        val records = view.records.join(relView.records)(lhsSlot, rhsSlot)
         SparkCypherRecordsView(records)
       }
     }
 
-    /*
-     * This only makes sense if `rel` exists and is a relationship
-     */
     def joinTarget(nodeView: SparkCypherView) = new JoinBuilder {
       override def on(rel: Var)(node: Var) = {
-        val lhsHeader = view.records.header
-        val rhsHeader = nodeView.records.header
+        val lhsSlot = view.records.header.targetNode(rel)
+        val rhsSlot = nodeView.records.header.slotFor(node)
 
-        val lhsSlot = lhsHeader.targetNode(rel)
-        val rhsSlot = rhsHeader.slotFor(node)
+        assertIsNode(lhsSlot)
+        assertIsNode(rhsSlot)
 
-        val lhsDF = view.records.data
-        val rhsDF = nodeView.records.data
-
-        val lhsColumn = lhsDF.col(lhsDF.columns(lhsSlot.index))
-        val rhsColumn = rhsDF.col(rhsDF.columns(rhsSlot.index))
-
-        val joinExpr: Column = lhsColumn === rhsColumn
-        val joined = lhsDF.join(rhsDF, joinExpr)
-
-        val records = new SparkCypherRecords {
-          override def data = joined
-          override def header = lhsHeader ++ rhsHeader
-        }
-
+        val records = view.records.join(nodeView.records)(lhsSlot, rhsSlot)
         SparkCypherRecordsView(records)
       }
     }
 
     sealed trait JoinBuilder {
       def on(lhsKey: Var)(rhsKey: Var): SparkCypherView
+    }
+
+    private def assertIsNode(slot: RecordSlot): Unit = {
+      slot.content.cypherType match {
+        case CTNode =>
+        case x => throw new IllegalArgumentException(s"Expected $slot to contain a node, but was $x")
+      }
     }
 
     final case class SparkCypherRecordsView(records: SparkCypherRecords) extends SparkCypherView {
