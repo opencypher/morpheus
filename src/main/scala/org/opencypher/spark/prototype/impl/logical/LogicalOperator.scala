@@ -21,11 +21,11 @@ sealed trait LogicalLeafOperator extends LogicalOperator {
   override def isLeaf = true
 }
 
-final case class NodeScan(node: Var, nodeDef: EveryNode, signature: RecordHeader)
+final case class NodeScan(node: Var, nodeDef: EveryNode, signature: RecordHeader = RecordHeader.empty)
                          (override val solved: SolvedQueryModel[Expr]) extends LogicalLeafOperator {
 }
 
-final case class Filter(expr: Expr, in: LogicalOperator, signature: RecordHeader)
+final case class Filter(expr: Expr, in: LogicalOperator, signature: RecordHeader = RecordHeader.empty)
                        (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
 }
 
@@ -35,20 +35,20 @@ sealed trait ExpandOperator extends StackingLogicalOperator {
   def target: Var
 }
 
-final case class ExpandSource(source: Var, rel: Var, target: Var, in: LogicalOperator, signature: RecordHeader)
+final case class ExpandSource(source: Var, rel: Var, target: Var, in: LogicalOperator, signature: RecordHeader = RecordHeader.empty)
                              (override val solved: SolvedQueryModel[Expr])
   extends ExpandOperator {
 }
 
-final case class ExpandTarget(source: Var, rel: Var, target: Var, in: LogicalOperator, signature: RecordHeader)
+final case class ExpandTarget(source: Var, rel: Var, target: Var, in: LogicalOperator, signature: RecordHeader = RecordHeader.empty)
                              (override val solved: SolvedQueryModel[Expr])
   extends ExpandOperator {
 }
 
-final case class Project(it: ProjectedSlotContent, in: LogicalOperator, signature: RecordHeader)
+final case class Project(it: ProjectedSlotContent, in: LogicalOperator, signature: RecordHeader = RecordHeader.empty)
                         (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
 }
 
-final case class Select(fields: Seq[(Expr, String)], in: LogicalOperator, signature: RecordHeader)
+final case class Select(fields: Seq[(Expr, String)], in: LogicalOperator, signature: RecordHeader = RecordHeader.empty)
                        (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
 }

@@ -292,20 +292,20 @@ class PhysicalPlanner(frameProducer: FrameProducer) {
   private def relEnd(r: Var): Symbol = Symbol(r.name + "_end")
 
   def planOp(op: logical.LogicalOperator)(implicit globals: GlobalsRegistry): StdCypherFrame[Product] = op match {
-    case logical.Select(fields, in) =>
+    case logical.Select(fields, in, _) =>
       val frame = planOp(in).selectFields(fields.map(t => Symbol(t._2.replaceAllLiterally(".", "_"))): _*)
       frame
-    case logical.NodeScan(v, every) =>
+    case logical.NodeScan(v, every, _) =>
       labelScan(v)(every.labels.elts.map(globals.label(_).name).toIndexedSeq).asProduct
-    case logical.Project(expr, in) =>
+    case logical.Project(expr, in, _) =>
       planExpr(planOp(in), expr)
-    case logical.Filter(expr, in) =>
+    case logical.Filter(expr, in, _) =>
 //      if (in.signature.items.exists(_.exprs.contains(expr))) {
 //        planExpr(planOp(in), expr)
 //      }
       ???
       // planExpr(planOp(in), UnaliasedExpr(expr))
-    case logical.ExpandSource(source, rel, target, in) =>
+    case logical.ExpandSource(source, rel, target, in, _) =>
       // TODO: where is the rel-type info?
       val rels = allRelationships(rel).asProduct
         .relationshipStartId(rel)(relStart(rel))

@@ -14,9 +14,7 @@ sealed trait Expr {
 }
 
 final case class Const(ref: ConstantRef) extends Expr
-final case class Var(name: String) extends Expr {
-  override def toString = SparkColumnName.from(Some(name))
-}
+final case class Var(name: String) extends Expr
 final case class StartNode(e: Expr) extends Expr
 final case class EndNode(e: Expr) extends Expr
 

@@ -17,7 +17,7 @@ import org.opencypher.spark.prototype.api.schema.{Schema, VerifiedSchema}
 import org.opencypher.spark.prototype.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherView, SparkGraphSpace}
 import org.opencypher.spark.prototype.impl.syntax.header._
 
-trait SparkGraphSpaceLoading {
+trait SparkGraphLoading {
 
   def fromNeo4j(verified: VerifiedSchema,
                 nodeQuery: String = "CYPHER runtime=compiled MATCH (n) RETURN n",
