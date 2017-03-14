@@ -10,7 +10,7 @@ class PrototypeTest extends StdTestSuite {
     override def graph = RunBenchmark.createStdPropertyGraphFromNeo(-1)
   }
 
-  test("run cypher query") {
+  ignore("run cypher query") {
     val query = "MATCH (a:Administrator)-->(g:Group) WHERE g.name = 'Group-1' RETURN a.name"
 
     val result = engine.cypher(query)
@@ -22,15 +22,4 @@ class PrototypeTest extends StdTestSuite {
     ))
     println(s"Time: ${System.currentTimeMillis() - start}")
   }
-
-  test("parser error") {
-    val nonQuery = "this is not a query"
-
-
-  }
-
-  test("semantic error") {
-    val q = "MATCH (n) RETURN foo"
-  }
-
 }
