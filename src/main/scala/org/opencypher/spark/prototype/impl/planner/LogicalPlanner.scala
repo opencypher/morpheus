@@ -120,23 +120,24 @@ class LogicalPlanner extends Stage[CypherQuery[Expr], LogicalOperator, LogicalPl
   }
 
   private def planExpansions(input: (LogicalOperator, Pattern[Expr])): (LogicalOperator, Pattern[Expr]) = {
-//    val (in, remainingPattern) = input
-//
-//    val knownVars = ???
-//
-//    val result: Option[ExpandOperator] = remainingPattern.topology.collectFirst {
-//      case (r, c) =>
-//        knownVars.collectFirst {
-//          case v if Var(c.source.name) == v => ExpandSource(Var(c.source.name), Var(r.name), Var(c.target.name), in)(in.solved.withFields(r, c.target))
-//          case v if Var(c.target.name) == v => ExpandTarget(Var(c.source.name), Var(r.name), Var(c.target.name), in)(in.solved.withFields(r, c.source))
-//        }
-//    }.flatten
-//
-//    result match {
-//      case None => input
-//      case Some(op) => planExpansions(op -> remainingPattern.withoutConnection(Field(op.rel.name)))
-//    }
-    ???
+    val (in, remainingPattern) = input
+
+    val solvedFields = in.solved.fields
+
+    val result: Option[ExpandOperator] = remainingPattern.topology.collectFirst {
+      case (r, c) =>
+        solvedFields.collectFirst {
+          case v if c.source == v =>
+            producer.planSourceExpand(c.source, r, c.target, in)
+          case v if c.target == v =>
+            producer.planTargetExpand(c.source, r, c.target, in)
+        }
+    }.flatten
+
+    result match {
+      case None => input
+      case Some(op) => planExpansions(op -> remainingPattern.withoutConnection(Field(op.rel.name)))
+    }
   }
 
   private def nodePlan(pattern: Pattern[Expr])(implicit context: LogicalPlannerContext) = {

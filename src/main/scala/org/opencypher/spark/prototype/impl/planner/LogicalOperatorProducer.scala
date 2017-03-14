@@ -10,6 +10,20 @@ import org.opencypher.spark.prototype.impl.logical._
 
 class LogicalOperatorProducer {
 
+  def planTargetExpand(source: Field, rel: Field, target: Field, prev: LogicalOperator): ExpandTarget = {
+    val signature = RecordHeader.empty
+    val solved = prev.solved.withFields(rel, source)
+
+    ExpandTarget(Var(source.name), Var(rel.name), Var(target.name), prev, signature)(solved)
+  }
+
+  def planSourceExpand(source: Field, rel: Field, target: Field, prev: LogicalOperator): ExpandSource = {
+    val signature = RecordHeader.empty
+    val solved = prev.solved.withFields(rel, target)
+
+    ExpandSource(Var(source.name), Var(rel.name), Var(target.name), prev, signature)(solved)
+  }
+
   def planNodeScan(node: Field, everyNode: EveryNode): NodeScan = {
     val signature = RecordHeader.empty
 
