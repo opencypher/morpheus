@@ -14,6 +14,9 @@ class PhysicalPlanner extends Stage[LogicalOperator, PhysicalOperator, PhysicalP
     val mkPhysical = new PhysicalOperatorProducer()
 
     input match {
+      case logical.Filter(expr, in, _) =>
+        mkPhysical.filter(expr, plan(in))
+
       case logical.NodeScan(node, nodeDef, _) =>
         mkPhysical.nodeScan(node, nodeDef)
     }

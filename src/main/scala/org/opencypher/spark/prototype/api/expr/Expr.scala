@@ -6,21 +6,14 @@ import org.opencypher.spark.prototype.impl.spark.SparkColumnName
 
 import scala.annotation.tailrec
 
-sealed trait Expr {
-  def usedFields: Set[Field] = Set.empty
-  def usedLabels: Set[LabelRef] = Set.empty
-  def usedRelTypes: Set[RelTypeRef] = Set.empty
-  def usedPropertyKeys: Set[PropertyKeyRef] = Set.empty
-}
+sealed trait Expr
 
 final case class Const(ref: ConstantRef) extends Expr
 final case class Var(name: String) extends Expr
 final case class StartNode(e: Expr) extends Expr
 final case class EndNode(e: Expr) extends Expr
 
-final case class Connected(source: Field, rel: Field, target: Field) extends Expr {
-  override def usedFields = Set(source, rel, target)
-}
+final case class Connected(source: Field, rel: Field, target: Field) extends Expr
 
 trait FlatteningOpExprCompanion[T] {
   def apply(exprs: Expr*): T

@@ -1,6 +1,6 @@
 package org.opencypher.spark.prototype.impl.physical
 
-import org.opencypher.spark.prototype.api.expr.Var
+import org.opencypher.spark.prototype.api.expr.{Expr, Var}
 import org.opencypher.spark.prototype.api.ir.pattern.EveryNode
 import org.opencypher.spark.prototype.api.record.RecordHeader
 
@@ -18,3 +18,7 @@ sealed trait PhysicalLeafOperator extends PhysicalOperator
 final case class NodeScan(node: Var, nodeDef: EveryNode)(override val header: RecordHeader)
   extends PhysicalLeafOperator {
 }
+
+final case class Filter(expr: Expr, in: PhysicalOperator, header: RecordHeader = RecordHeader.empty)
+  extends StackingPhysicalOperator
+

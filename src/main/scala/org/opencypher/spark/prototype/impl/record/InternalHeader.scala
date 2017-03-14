@@ -11,7 +11,7 @@ import org.opencypher.spark.prototype.impl.util.RefCollection.AbstractRegister
 import org.opencypher.spark.prototype.impl.util._
 
 // TODO: Prevent projection of expressions with unfulfilled dependencies
-final class InternalHeader protected[spark](
+final case class InternalHeader protected[spark](
     private val slotContents: RefCollection[SlotContent],
     private val exprSlots: Map[Expr, Vector[Int]],
     private val cachedFields: Set[Var]
@@ -139,7 +139,7 @@ object InternalHeader {
               case (slots, expr) => addExprSlots(slots, expr, ref)
             }
             val newFields = addedContent.alias.map(header.cachedFields + _).getOrElse(header.cachedFields)
-            val newHeader = new InternalHeader(newSlots, newExprSlots, newFields)
+            val newHeader = InternalHeader(newSlots, newExprSlots, newFields)
             set[InternalHeader](newHeader).map(_ => Added(RecordSlot(ref, addedContent)))
 
           case None =>

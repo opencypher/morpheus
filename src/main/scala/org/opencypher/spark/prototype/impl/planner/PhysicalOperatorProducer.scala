@@ -3,7 +3,7 @@ package org.opencypher.spark.prototype.impl.planner
 import cats.Monoid
 import org.opencypher.spark.api.CypherType
 import org.opencypher.spark.api.types.CTBoolean
-import org.opencypher.spark.prototype.api.expr.{HasLabel, Property, Var}
+import org.opencypher.spark.prototype.api.expr.{Expr, HasLabel, Property, Var}
 import org.opencypher.spark.prototype.api.ir.pattern.EveryNode
 import org.opencypher.spark.prototype.api.record.{ProjectedExpr, RecordHeader}
 import org.opencypher.spark.prototype.impl.physical._
@@ -20,6 +20,10 @@ class PhysicalOperatorProducer(implicit context: PhysicalPlannerContext) {
   private implicit val typeVectorMonoid = new Monoid[Vector[CypherType]] {
     override def empty: Vector[CypherType] = Vector.empty
     override def combine(x: Vector[CypherType], y: Vector[CypherType]): Vector[CypherType] = x ++ y
+  }
+
+  def filter(expr: Expr, in: PhysicalOperator): Filter = {
+    Filter(expr, in, in.header)
   }
 
   def nodeScan(node: Var, nodeDef: EveryNode): NodeScan = {
