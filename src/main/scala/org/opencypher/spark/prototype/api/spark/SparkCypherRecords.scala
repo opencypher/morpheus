@@ -3,7 +3,7 @@ package org.opencypher.spark.prototype.api.spark
 import org.apache.spark.sql.DataFrame
 import org.opencypher.spark.prototype.api.record._
 
-trait SparkCypherRecords extends CypherRecords {
+trait SparkCypherRecords extends CypherRecords with Serializable {
 
   self =>
 

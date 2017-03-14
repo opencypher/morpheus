@@ -1,7 +1,7 @@
 package org.opencypher.spark.prototype.api.record
 
 import org.opencypher.spark.api.CypherType
-import org.opencypher.spark.prototype.api.expr.{Expr, Var}
+import org.opencypher.spark.prototype.api.expr.{EndNode, Expr, StartNode, Var}
 import org.opencypher.spark.prototype.impl.record.InternalHeader
 
 final case class RecordHeader(internalHeader: InternalHeader) {
@@ -18,6 +18,11 @@ final case class RecordHeader(internalHeader: InternalHeader) {
 
   def slotsFor(expr: Expr): Traversable[RecordSlot] =
     internalHeader.slotsFor(expr)
+
+  def slotFor(variable: Var): RecordSlot = slotsFor(variable).headOption.getOrElse(???)
+
+  def sourceNode(rel: Var): RecordSlot = slotsFor(StartNode(rel)).headOption.getOrElse(???)
+  def targetNode(rel: Var): RecordSlot = slotsFor(EndNode(rel)).headOption.getOrElse(???)
 }
 
 object RecordHeader {

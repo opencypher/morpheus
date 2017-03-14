@@ -32,17 +32,16 @@ class ViewPlanner extends Stage[logical.LogicalOperator, SparkCypherView, ViewPl
         //      }
   //      planExpr(planOp(in), expr)
       case logical.ExpandSource(source, rel, target, in, _) =>
-        // TODO: where is the rel-type info?
-  //      val rels = allRelationships(rel).asProduct
-  //        .relationshipStartId(rel)(relStart(rel))
-  //        .relationshipEndId(rel)(relEnd(rel))
-  //        .asRow
-  //      // TODO: where is the node label info?
-  //      val rhs = allNodes(target).asProduct.nodeId(target)(nodeId(target)).asRow
-  //      val lhs = planOp(in).nodeId(source)(nodeId(source))
-  //
-  //      lhs.asRow.join(rels).on(nodeId(source))(relStart(rel)).join(rhs).on(relEnd(rel))(nodeId(target)).asProduct
-        ???
+        val lhs = plan(in)
+        // TODO: where is the node label info? We could plan a filter here
+        val nodeRhs = context.graph.nodes(target)
+        // TODO: where is the rel-type info? We could plan a filter here
+        val relRhs = context.graph.relationships(rel)
+
+        val rhs = relRhs.joinTarget(nodeRhs).on(rel)(target)
+        val expanded = lhs.expandSource(rhs).on(source)(rel)
+
+        expanded
       case x => throw new NotImplementedError(s"Can't plan operator $x yet")
     }
 }
