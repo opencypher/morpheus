@@ -30,14 +30,14 @@ class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fix
   }
 
   test("expand and project") {
-    val resultView = space.base.cypher("MATCH (a:User)-->(m:Meetup) RETURN a.country, m.id")
+    val records = space.base.cypher("MATCH (a:User)-[r]->(m:Meetup) RETURN a.country, m.id").records
 
-    resultView.records.data.count() shouldBe 1000
-    resultView.records.header.slots.size shouldBe 2
-    resultView.records.header.slots(0).content.cypherType shouldBe CTString.nullable
-    resultView.records.header.slots(0).content.key should equal(Var("a.country"))
-    resultView.records.header.slots(1).content.cypherType shouldBe CTInteger.nullable
-    resultView.records.header.slots(1).content.key should equal(Var("m.id"))
+    records.data.count() shouldBe 4832
+    records.header.slots.size shouldBe 2
+    records.header.slots(0).content.cypherType shouldBe CTString.nullable
+    records.header.slots(0).content.key should equal(Var("a.country"))
+    records.header.slots(1).content.cypherType shouldBe CTInteger.nullable
+    records.header.slots(1).content.key should equal(Var("m.id"))
   }
 
 }

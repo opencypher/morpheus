@@ -44,14 +44,17 @@ trait SparkGraphLoading {
       override def header = nodeHeader(v)
     }
 
-    val relFields = computeRelFields(graphSchema, schemaGlobals)
-    val relStruct = StructType(relFields.map(_._3).toArray)
-    val relRDD: RDD[Row] = rels.map(relToRow(relFields, schemaGlobals))
-    val relFrame = sc.createDataFrame(relRDD, relStruct)
+    val relFields = (v: Var) => computeRelFields(v, graphSchema, schemaGlobals)
+    val relHeader = (v: Var) => relFields(v).map(_._1).foldLeft(RecordHeader.empty) {
+      case (acc, next) => acc.update(addContent(next))._1
+    }
+    val relStruct = (v: Var) => StructType(relFields(v).map(_._2).toArray)
+    val relRDD = (v: Var) => rels.map(relToRow(relHeader(v), relStruct(v), schemaGlobals))
+    val relFrame = (v: Var) => sc.createDataFrame(relRDD(v), relStruct(v))
 
-    val relRecords = new SparkCypherRecords with Serializable {
-      override def data = relFrame
-      override def header = ??? // RecordsHeader.from(constructHeader(relFields))
+    val relRecords = (v: Var) => new SparkCypherRecords with Serializable {
+      override def data = relFrame(v)
+      override def header = relHeader(v)
     }
 
     new SparkGraphSpace with Serializable {
@@ -68,7 +71,7 @@ trait SparkGraphLoading {
         override def relationships(v: Var) = new SparkCypherView with Serializable {
           override def domain = selfBase
           override def model = QueryModel[Expr](null, schemaGlobals, Map.empty)
-          override def records = relRecords
+          override def records = relRecords(v)
           override def graph = ???
         }
         override def constituents = ???
@@ -101,20 +104,29 @@ trait SparkGraphLoading {
     Seq(slotField) ++ labelFields ++ propertyFields
   }
 
-  private def computeRelFields(schema: Schema, globals: GlobalsRegistry): Seq[(Expr, CypherType, StructField)] = {
-    val relVar = Var("r")
+  private def computeRelFields(rel: Var, schema: Schema, globals: GlobalsRegistry): Seq[(SlotContent, StructField)] = {
     val propertyFields = schema.relationshipTypes.flatMap { typ =>
       schema.relationshipKeys(typ).map {
         case (name, t) =>
-          val property = Property(relVar, globals.propertyKey(name))
+          val property = Property(rel, globals.propertyKey(name))
           val slot = ProjectedExpr(property, t)
           val field = StructField(SparkColumnName.of(slot), sparkType(t), nullable = t.isNullable)
-          (property, t, field)
+          slot -> field
       }
     }
-    val typeField = (TypeId(relVar), CTInteger, StructField("type", IntegerType, nullable = false))
-    val idField = (relVar, CTInteger, StructField("r", LongType, nullable = false))
-    Seq(idField, typeField) ++ propertyFields
+    val typeSlot = ProjectedExpr(TypeId(rel), CTInteger)
+    val typeField = StructField(SparkColumnName.of(typeSlot), IntegerType, nullable = false)
+
+    val idSlot = OpaqueField(rel, CTRelationship)
+    val idField = StructField(SparkColumnName.of(idSlot), LongType, nullable = false)
+
+    val sourceSlot = ProjectedExpr(StartNode(rel), CTNode)
+    val sourceField = StructField(SparkColumnName.of(sourceSlot), LongType, nullable = false)
+    val targetSlot = ProjectedExpr(EndNode(rel), CTNode)
+    val targetField = StructField(SparkColumnName.of(targetSlot), LongType, nullable = false)
+
+    Seq(sourceSlot -> sourceField, idSlot -> idField,
+      typeSlot -> typeField, targetSlot -> targetField) ++ propertyFields
   }
 
   object sparkType extends Serializable {
@@ -153,24 +165,31 @@ trait SparkGraphLoading {
     }
   }
 
-  private case class relToRow(fieldMap: Seq[(Expr, CypherType, StructField)], globals: GlobalsRegistry) extends (InternalRelationship => Row) {
+  private case class relToRow(header: RecordHeader, schema: StructType, globals: GlobalsRegistry) extends (InternalRelationship => Row) {
     override def apply(importedRel: InternalRelationship): Row = {
 
       import scala.collection.JavaConverters._
 
       val props = importedRel.asMap().asScala
 
-      val values = fieldMap.map {
-        case (Property(_, ref), _, field) =>
-          val key = globals.propertyKey(ref).name
-          val value = props.get(key).orNull
-          sparkValue(field.dataType, value)
+      val values = header.slots.map { s =>
+        s.content.key match {
+          case Property(_, ref) =>
+            val propValue = props.get(globals.propertyKey(ref).name).orNull
+            sparkValue(schema(s.index).dataType, propValue)
 
-        case (TypeId(_), _, _) =>
-          globals.relType(importedRel.`type`()).id
+          case _: StartNode =>
+            importedRel.startNodeId()
 
-        case (Var(_), _, field) =>
-          importedRel.id()
+          case _: EndNode =>
+            importedRel.endNodeId()
+
+          case _: TypeId =>
+            globals.relType(importedRel.`type`()).id
+
+          case _: Var =>
+            importedRel.id()
+        }
       }
 
       Row(values: _*)

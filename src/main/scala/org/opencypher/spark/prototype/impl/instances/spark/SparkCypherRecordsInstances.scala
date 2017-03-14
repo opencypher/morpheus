@@ -1,5 +1,6 @@
 package org.opencypher.spark.prototype.impl.instances.spark
 
+import org.apache.spark.sql.Column
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.record._
 import org.opencypher.spark.prototype.api.spark.SparkCypherRecords
@@ -66,6 +67,22 @@ trait SparkCypherRecordsInstances {
       new SparkCypherRecords {
         override def data = newData
         override def header = newHeader
+      }
+    }
+
+    override def join(lhs: SparkCypherRecords, rhs: SparkCypherRecords)(lhsSlot: RecordSlot, rhsSlot: RecordSlot): SparkCypherRecords = {
+      val lhsData = lhs.data
+      val rhsData = rhs.data
+
+      val lhsColumn = lhsData.col(lhsData.columns(lhsSlot.index))
+      val rhsColumn = rhsData.col(rhsData.columns(rhsSlot.index))
+
+      val joinExpr: Column = lhsColumn === rhsColumn
+      val joined = lhsData.join(rhsData, joinExpr)
+
+      new SparkCypherRecords {
+        override def data = joined
+        override def header = lhs.header ++ rhs.header
       }
     }
   }

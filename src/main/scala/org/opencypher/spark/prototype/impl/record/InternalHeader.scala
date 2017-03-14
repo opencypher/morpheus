@@ -25,6 +25,11 @@ final class InternalHeader protected[spark](
   private lazy val cachedSlots = slotContents.contents.map(RecordSlot.from).toIndexedSeq
   private lazy val cachedColumns = slots.map(computeColumnName).toVector
 
+  def ++(other: InternalHeader): InternalHeader =
+    other.slotContents.elts.foldLeft(this) {
+      case (acc, content) => acc + content
+    }
+
   def slots = cachedSlots
 
   def fields = cachedFields
