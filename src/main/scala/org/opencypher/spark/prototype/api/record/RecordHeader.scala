@@ -6,6 +6,9 @@ import org.opencypher.spark.prototype.impl.record.InternalHeader
 
 final case class RecordHeader(internalHeader: InternalHeader) {
 
+  def ++(other: RecordHeader): RecordHeader =
+    copy(internalHeader ++ other.internalHeader)
+
   def indexOf(content: SlotContent): Option[Int] = slots.find(_.content == content).map(_.index)
   def slots: IndexedSeq[RecordSlot] = internalHeader.slots
   def fields: Set[Var] = internalHeader.fields
