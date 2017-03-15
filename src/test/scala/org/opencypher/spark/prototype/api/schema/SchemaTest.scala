@@ -134,11 +134,11 @@ class SchemaTest extends StdTestSuite {
   test("should not allow updates to conflict with existing types") {
     val schema = Schema.empty.withNodeKeys("Foo")("name" -> CTString)
 
-    schema.withNodeKeys("Foo")("name" -> CTString)    // same type: fine
-    schema.withNodeKeys("Foo2")("name" -> CTInteger)  // different label: fine
-    schema.withNodeKeys("Foo")("name2" -> CTInteger)  // different key: fine
-    an [IllegalArgumentException] shouldBe thrownBy {
-      schema.withNodeKeys("Foo")("name" -> CTInteger) // not fine
+    schema.withNodeKeys("Foo")("name" -> CTString).verify    // same type: fine
+    schema.withNodeKeys("Foo2")("name" -> CTInteger).verify  // different label: fine
+    schema.withNodeKeys("Foo")("name2" -> CTInteger).verify  // different key: fine
+    an [IllegalStateException] shouldBe thrownBy {
+      schema.withNodeKeys("Foo")("name" -> CTInteger).verify // not fine
     }
   }
 }

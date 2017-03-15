@@ -2,6 +2,7 @@ package org.opencypher.spark.prototype.api.schema
 
 import org.opencypher.spark.api.CypherType
 
+import scala.collection.mutable
 import scala.language.implicitConversions
 
 object Schema {
@@ -13,6 +14,8 @@ object Schema {
     impliedLabels = ImpliedLabels(Map.empty),
     optionalLabels = OptionalLabels(Set.empty)
   )
+
+  val conflictSet = mutable.Set.empty[String]
 
   implicit def verifySchema(schema: Schema): VerifiedSchema = schema.verify
 }
@@ -30,7 +33,7 @@ final case class PropertyKeyMap(m: Map[String, Map[String, CypherType]]) {
       case (k, t) =>
         newKeys.get(k) match {
           case Some(otherT) if t != otherT =>
-            throw new IllegalArgumentException(s"Conflicting schema! Key $k is $t but also ${newKeys(k)}")
+            Schema.conflictSet.add(s"Conflicting schema for '$classifier'! Key $k is $t but also ${newKeys(k)}")
           case _ => // this is fine
         }
     }
@@ -134,6 +137,13 @@ case class Schema(
     // (1) Only enforce correct types for a property key between implied labels
     // (2) Use union types (and generally support them) for combined labels
     //
+
+    Schema.conflictSet.foreach { m =>
+      println(m)
+    }
+
+    if (Schema.conflictSet.nonEmpty)
+      throw new IllegalStateException("Schema invalid")
 
     val coOccurringLabels =
       for (
