@@ -7,9 +7,11 @@ import org.opencypher.spark.prototype.api.expr.{Expr, Var}
 import org.opencypher.spark.prototype.api.record._
 import org.opencypher.spark.prototype.impl.spark.SparkColumnName
 import org.opencypher.spark.prototype.impl.syntax.register._
-import org.opencypher.spark.prototype.impl.syntax.header._
+import org.opencypher.spark.prototype.impl.syntax.expr._
 import org.opencypher.spark.prototype.impl.util.RefCollection.AbstractRegister
 import org.opencypher.spark.prototype.impl.util._
+
+import scala.annotation.tailrec
 
 // TODO: Prevent projection of expressions with unfulfilled dependencies
 final case class InternalHeader protected[spark](
@@ -39,7 +41,7 @@ final case class InternalHeader protected[spark](
     slotsFor(expr).filter(_.content.cypherType == cypherType)
 
   def slotsFor(expr: Expr): Traversable[RecordSlot] =
-    exprSlots.getOrElse(expr, Vector.empty).flatMap(ref => slotContents.get(ref).map(RecordSlot(ref, _)))
+    exprSlots.getOrElse(expr, Vector.empty).flatMap(ref => slotContents.lookup(ref).map(RecordSlot(ref, _)))
 
   def +(addedContent: SlotContent): InternalHeader =
     addContent(addedContent).runS(self).value
@@ -66,27 +68,6 @@ object InternalHeader {
 
   def from(contents: TraversableOnce[SlotContent]) =
     contents.foldLeft(empty) { case (header, slot) => header + slot }
-
-  def removeContent(removedContent: SlotContent): State[InternalHeader, RemovingUpdateResult[SlotContent]] = {
-    for (
-      header <- get[InternalHeader]
-    )
-    yield
-      header
-        .slotContents
-        .find(removedContent)
-        .map { (ref: Int) =>
-          header.slotContents.remove(ref) match {
-            case Some(newColl) =>
-              // TODO: Recurse
-              Removed(removedContent, Seq.empty)
-
-            case None =>
-              NotFound(removedContent)
-          }
-        }
-        .getOrElse(NotFound(removedContent))
-  }
 
   def addContent(addedContent: SlotContent): State[InternalHeader, AdditiveUpdateResult[RecordSlot]] =
     addedContent match {
@@ -150,8 +131,6 @@ object InternalHeader {
     yield result
 
 
-//  def removeContent(removedContent: SlotContent)
-
   private def addSlotContent(optNewSlots: Option[RefCollection[SlotContent]], ref: Int, addedContent: SlotContent)
   : State[InternalHeader, AdditiveUpdateResult[RecordSlot]] =
     for (
@@ -172,6 +151,54 @@ object InternalHeader {
     )
     yield result
 
+  private def addExprSlots(m: Map[Expr, Vector[Int]], key: Expr, value: Int): Map[Expr, Vector[Int]] =
+    if (m.getOrElse(key, Vector.empty).contains(value)) m else m.updated(key, m.getOrElse(key, Vector.empty) :+ value)
+
+  def removeContent(removedContent: SlotContent): State[InternalHeader, RemovingUpdateResult[SlotContent]] = {
+    for (
+      header <- get[InternalHeader]
+    )
+      yield
+        header.slotContents.find(removedContent) match {
+          case Some(ref) =>
+            val slot = RecordSlot(ref, removedContent)
+            val dependencies = removeDependencies(List(List(slot)), header.slots.toSet, Set.empty, Set.empty)
+            // TODO: Actually make this happen
+            Removed(removedContent, dependencies.map(_.content) - removedContent)
+
+          case None =>
+            NotFound(removedContent)
+        }
+  }
+
+  @tailrec
+  private def removeDependencies(
+    drop: List[List[RecordSlot]], remaining: Set[RecordSlot], removedFields: Set[Var], removedSlots: Set[RecordSlot]
+  ) : Set[RecordSlot] =
+    drop match {
+      case (hdList: List[RecordSlot]) :: (tlList: List[List[RecordSlot]]) =>
+        hdList match {
+          case hd :: tl if !removedSlots.contains(hd) =>
+            hd.content match {
+              case s: FieldSlotContent =>
+                val newFields = removedFields + s.field
+                val (nonDepending, depending) = remaining.partition {
+                  case RecordSlot(_, c: ProjectedSlotContent) => (c.expr.dependencies intersect newFields).isEmpty
+                  case _ => true
+                }
+                val newRemaining = nonDepending
+                val newRemoved = depending.toList :: tlList
+                removeDependencies(newRemoved, nonDepending, newFields, removedSlots + hd)
+              case _ =>
+                removeDependencies(tlList, remaining - hd, removedFields, removedSlots + hd)
+            }
+          case _ =>
+            removeDependencies(tlList, remaining, removedFields, removedSlots)
+        }
+      case _ =>
+        removedSlots
+    }
+
   private def pureState[X](it: X) = State.pure[InternalHeader, X](it)
 
   private implicit def recordSlotRegister: AbstractRegister[Int, (Expr, CypherType), SlotContent] =
@@ -180,9 +207,6 @@ object InternalHeader {
       override protected def id(ref: Int): Int = ref
       override protected def ref(id: Int): Int = id
     }
-
-  private def addExprSlots(m: Map[Expr, Vector[Int]], key: Expr, value: Int): Map[Expr, Vector[Int]] =
-    if (m.getOrElse(key, Vector.empty).contains(value)) m else m.updated(key, m.getOrElse(key, Vector.empty) :+ value)
 
   private def slot(header: InternalHeader, ref: Int) = RecordSlot(ref, header.slotContents.elts(ref))
 }

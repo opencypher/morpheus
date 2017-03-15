@@ -6,4 +6,5 @@ package object syntax {
   object cypher extends CypherSyntax
   object register extends RegisterSyntax
   object header extends RecordHeaderSyntax
+  object expr extends ExprSyntax
 }

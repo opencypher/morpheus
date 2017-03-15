@@ -35,7 +35,7 @@ final case class FailedToAdd[T](
   def it = update.it
 }
 
-final case class Removed[T](it: T, dependents: Seq[T] = Seq.empty)
+final case class Removed[T](it: T, dependents: Set[T] = Set.empty)
   extends SuccessfulUpdateResult[T] with MutatingUpdateResult[T] with RemovingUpdateResult[T]
 
 final case class NotFound[T](it: T)

@@ -19,8 +19,8 @@ trait Register[Collection] {
   def key(defn: Def): Key
 
   def find(collection: Collection, defn: Def): Option[Ref]
-  def lookup(collection: Collection, key: Key): Option[Ref]
-  def get(collection: Collection, ref: Ref): Option[Def]
+  def findByKey(collection: Collection, key: Key): Option[Ref]
+  def lookup(collection: Collection, ref: Ref): Option[Def]
 
   // left if key(defn) is already inserted at different ref, right otherwise
   def update(collection: Collection, ref: Ref, defn: Def): Either[Ref, Collection]

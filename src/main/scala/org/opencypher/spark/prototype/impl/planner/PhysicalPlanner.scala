@@ -17,7 +17,7 @@ class PhysicalPlanner extends Stage[LogicalOperator, PhysicalOperator, PhysicalP
     input match {
 
       case logical.Select(fields, in, _) =>
-        val remaining = fields.collect { case (k, v) => Var(v) }.toSet
+        val remaining = fields.collect { case (_, v) => Var(v) }.toSet
         mkPhysical.select(fields, plan(in))
 
       case logical.Filter(expr, in, _) =>

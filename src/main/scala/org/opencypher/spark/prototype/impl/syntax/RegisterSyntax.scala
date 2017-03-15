@@ -19,9 +19,9 @@ final class RegisterOps[C, R, K, D](coll: C)
 ) {
   def contents: Traversable[(R, D)] = register.contents(coll)
 
-  def get(ref: R): Option[D] = register.get(coll, ref)
+  def lookup(ref: R): Option[D] = register.lookup(coll, ref)
   def find(defn: D): Option[R] = register.find(coll, defn)
-  def lookup(key: K): Option[R] = register.lookup(coll, key)
+  def findByKey(key: K): Option[R] = register.findByKey(coll, key)
   def insert(defn: D): Either[R, (Option[C], R)] = register.insert(coll, defn)
   def update(ref: R, defn: D): Either[R, C] = register.update(coll, ref, defn)
   def remove(ref: R): Option[C] = register.remove(coll, ref)

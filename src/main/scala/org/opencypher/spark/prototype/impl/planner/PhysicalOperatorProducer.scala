@@ -60,23 +60,4 @@ class PhysicalOperatorProducer(implicit context: PhysicalPlannerContext) {
 
     NodeScan(node, nodeDef)(header)
   }
-
-
-  // TODO: Test and move this some place proper
-  @tailrec
-  private def dependencies(remaining: List[Expr], result: Set[Var]): Set[Var] = remaining match {
-    case (expr: Var) :: tl => dependencies(tl, result + expr)
-    case Equals(l, r) :: tl => dependencies(l :: r :: tl, result)
-    case StartNode(expr) :: tl => dependencies(expr :: tl, result)
-    case EndNode(expr) :: tl => dependencies(expr :: tl, result)
-    case TypeId(expr) :: tl => dependencies(expr :: tl, result)
-    case HasLabel(expr, _) :: tl => dependencies(expr :: tl, result)
-    case HasType(expr, _) :: tl => dependencies(expr :: tl, result)
-    case Property(expr, _) :: tl => dependencies(expr :: tl, result)
-    case (expr: Ands) :: tl => dependencies(expr.exprs.toList ++ tl, result)
-    case (expr: Ors) :: tl => dependencies(expr.exprs.toList ++ tl, result)
-    case (expr: Lit[_]) :: tl => dependencies(tl, result)
-    case (expr: Const) :: tl => dependencies(tl, result)
-    case _ => result
-  }
 }
