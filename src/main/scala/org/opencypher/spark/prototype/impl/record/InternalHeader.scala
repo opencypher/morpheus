@@ -78,6 +78,7 @@ object InternalHeader {
         .map { (ref: Int) =>
           header.slotContents.remove(ref) match {
             case Some(newColl) =>
+              // TODO: Recurse
               Removed(removedContent, Seq.empty)
 
             case None =>
