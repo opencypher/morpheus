@@ -7,7 +7,7 @@ import cats.instances.all._
 import cats.syntax.all._
 import org.opencypher.spark.prototype.api.record._
 import org.opencypher.spark.prototype.impl.record.InternalHeader
-import org.opencypher.spark.prototype.impl.util.{AdditiveUpdateResult, Removed}
+import org.opencypher.spark.prototype.impl.util.{AdditiveUpdateResult, Removed, RemovingUpdateResult}
 
 trait RecordHeaderSyntax {
 
@@ -22,11 +22,12 @@ trait RecordHeaderSyntax {
   }
 
   def addContent(content: SlotContent): State[RecordHeader, AdditiveUpdateResult[RecordSlot]] =
-    add(InternalHeader.addContent(content))
+    exec(InternalHeader.addContent(content))
 
-  def removeContent(content: SlotContent): State[RecordHeader, Removed[RecordSlot]] = ???
+  def removeContent(content: SlotContent): State[RecordHeader, RemovingUpdateResult[SlotContent]] =
+    exec(InternalHeader.removeContent(content))
 
-  private def add[O](inner: State[InternalHeader, O]): State[RecordHeader, O] =
+  private def exec[O](inner: State[InternalHeader, O]): State[RecordHeader, O] =
     get[RecordHeader]
     .map(header => inner.run(header.internalHeader).value)
     .flatMap { case (newInternalHeader, value) => set(RecordHeader(newInternalHeader)).map(_ => value) }
