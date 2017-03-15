@@ -17,7 +17,7 @@ class SparkGraphSpaceTest extends StdTestSuite with TestSession.Fixture {
   test("import nodes from neo") {
     val schema = Schema.empty
       .withNodeKeys("Tweet")("id" -> CTInteger, "text" -> CTString.nullable, "created" -> CTInteger.nullable)
-    val space = SparkGraphSpace.fromNeo4j(schema, "MATCH (n:Tweet) RETURN n LIMIT 100", "RETURN 1 LIMIT 0")
+    val space = SparkGraphSpace.fromNeo4j("MATCH (n:Tweet) RETURN n LIMIT 100", "RETURN 1 LIMIT 0", Some(schema))
     val df = space.base.nodes().records.toDF
 
     df.count() shouldBe 100
@@ -33,7 +33,9 @@ class SparkGraphSpaceTest extends StdTestSuite with TestSession.Fixture {
   test("import relationships from neo") {
     val schema = Schema.empty
       .withRelationshipKeys("ATTENDED")("guests" -> CTInteger, "comments" -> CTString.nullable)
-    val space = SparkGraphSpace.fromNeo4j(schema, "RETURN 1 LIMIT 0", "MATCH ()-[r:ATTENDED]->() RETURN r LIMIT 100")
+    val space = SparkGraphSpace.fromNeo4j(
+      "RETURN 1 LIMIT 0",
+      "MATCH ()-[r:ATTENDED]->() RETURN r LIMIT 100", Some(schema))
     val df = space.base.rels().records.toDF
 
     df.count() shouldBe 100
@@ -52,7 +54,9 @@ class SparkGraphSpaceTest extends StdTestSuite with TestSession.Fixture {
       .withNodeKeys("Meetup")("id" -> CTInteger.nullable, "city" -> CTString.nullable, "country" -> CTString.nullable)
       .withNodeKeys("Graph")("title" -> CTString.nullable, "updated" -> CTInteger.nullable)
       .withNodeKeys("Event")("time" -> CTInteger.nullable, "link" -> CTAny.nullable)
-    val space = SparkGraphSpace.fromNeo4j(schema, "MATCH (a)-[:ATTENDED]->(b) UNWIND [a, b] AS n RETURN DISTINCT n", "MATCH ()-[r:ATTENDED]->() RETURN r")
+    val space = SparkGraphSpace.fromNeo4j(
+      "MATCH (a)-[:ATTENDED]->(b) UNWIND [a, b] AS n RETURN DISTINCT n",
+      "MATCH ()-[r:ATTENDED]->() RETURN r", Some(schema))
     val rels = space.base.rels().records.toDF
     val nodes = space.base.nodes().records.toDF
 
@@ -61,7 +65,7 @@ class SparkGraphSpaceTest extends StdTestSuite with TestSession.Fixture {
   }
 
   test("read schema from loaded neo graph") {
-    val schema = SparkGraphSpace.loadSchema("MATCH (a) RETURN a", "MATCH ()-[r]->() RETURN r")
+    val schema = SparkGraphSpace.loadSchema("MATCH (a) RETURN a", "MATCH ()-[r]->() RETURN r").schema
 
     schema.labels.size shouldBe 32
     schema.relationshipTypes.size shouldBe 14
