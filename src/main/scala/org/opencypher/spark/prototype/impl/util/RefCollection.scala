@@ -52,5 +52,10 @@ object RefCollection {
     protected def ref(id: Int): Ref
 
     private def inCollection(collection: RefCollection[D], idx: Int) = idx >= 0 && idx <= collection.elts.size
+
+    override def remove(collection: RefCollection[D], ref: R): Option[RefCollection[D]] =
+      get(collection, ref).map { defn =>
+        RefCollection(collection.elts.filter(_ != defn))
+      }
   }
 }

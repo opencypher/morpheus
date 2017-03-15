@@ -24,4 +24,5 @@ final class RegisterOps[C, R, K, D](coll: C)
   def lookup(key: K): Option[R] = register.lookup(coll, key)
   def insert(defn: D): Either[R, (Option[C], R)] = register.insert(coll, defn)
   def update(ref: R, defn: D): Either[R, C] = register.update(coll, ref, defn)
+  def remove(ref: R): Option[C] = register.remove(coll, ref)
 }

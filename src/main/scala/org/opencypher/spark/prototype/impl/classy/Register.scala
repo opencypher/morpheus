@@ -27,6 +27,9 @@ trait Register[Collection] {
 
   // left if key(defn) is already inserted with a different defn, right otherwise
   def insert(collection: Collection, defn: Def): Either[Ref, (Option[Collection], Ref)]
+
+  // none if not contained. All previous refs are invalid after a remove!
+  def remove(collection: Collection, ref: Ref): Option[Collection]
 }
 
 object Register {

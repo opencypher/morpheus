@@ -7,6 +7,7 @@ import org.opencypher.spark.prototype.api.expr.{Expr, Var}
 import org.opencypher.spark.prototype.api.record._
 import org.opencypher.spark.prototype.impl.spark.SparkColumnName
 import org.opencypher.spark.prototype.impl.syntax.register._
+import org.opencypher.spark.prototype.impl.syntax.header._
 import org.opencypher.spark.prototype.impl.util.RefCollection.AbstractRegister
 import org.opencypher.spark.prototype.impl.util._
 
@@ -65,6 +66,26 @@ object InternalHeader {
 
   def from(contents: TraversableOnce[SlotContent]) =
     contents.foldLeft(empty) { case (header, slot) => header + slot }
+
+  def removeContent(removedContent: SlotContent): State[InternalHeader, RemovingUpdateResult[SlotContent]] = {
+    for (
+      header <- get[InternalHeader]
+    )
+    yield
+      header
+        .slotContents
+        .find(removedContent)
+        .map { (ref: Int) =>
+          header.slotContents.remove(ref) match {
+            case Some(newColl) =>
+              Removed(removedContent, Seq.empty)
+
+            case None =>
+              NotFound(removedContent)
+          }
+        }
+        .getOrElse(NotFound(removedContent))
+  }
 
   def addContent(addedContent: SlotContent): State[InternalHeader, AdditiveUpdateResult[RecordSlot]] =
     addedContent match {
