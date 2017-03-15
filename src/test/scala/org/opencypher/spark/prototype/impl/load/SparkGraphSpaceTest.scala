@@ -16,9 +16,9 @@ class SparkGraphSpaceTest extends StdTestSuite with TestSession.Fixture {
 
   test("import nodes from neo") {
     val schema = Schema.empty
-      .withNodeKeys("Tweet")("id" -> CTInteger, "text" -> CTString.nullable, "created" -> CTInteger.nullable)
+      .withNodeKeys("Tweet")("id" -> CTInteger, "text" -> CTString.nullable, "created" -> CTString.nullable)
     val space = SparkGraphSpace.fromNeo4j("MATCH (n:Tweet) RETURN n LIMIT 100", "RETURN 1 LIMIT 0", Some(schema))
-    val df = space.base.nodes().records.toDF
+    val df = space.base.nodes().records.toDF()
 
     df.count() shouldBe 100
     df.schema.fields.map(f => f.dataType -> f.nullable).toSet should equal(Set(
@@ -26,7 +26,7 @@ class SparkGraphSpaceTest extends StdTestSuite with TestSession.Fixture {
       BooleanType -> false,
       LongType -> false,
       StringType -> true,
-      LongType -> true
+      StringType -> true
     ))
   }
 

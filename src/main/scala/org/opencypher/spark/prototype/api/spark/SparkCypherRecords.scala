@@ -16,9 +16,9 @@ trait SparkCypherRecords extends CypherRecords with Serializable {
   override def column(slot: RecordSlot): String =
     header.internalHeader.column(slot)
 
-  def toDF = {
+  def toDF(): Data = {
     data.cache()
   }
 
-  override def show() = toDF.show()
+  override def show() = toDF().show()
 }

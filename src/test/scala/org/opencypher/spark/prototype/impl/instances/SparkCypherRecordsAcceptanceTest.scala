@@ -54,18 +54,19 @@ class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fix
     val records = fullSpace.base.cypher(query).records
 
     val start = System.currentTimeMillis()
-    val rows = records.data.collect()
+    val rows = records.data.collect().toSeq
     val time = System.currentTimeMillis() - start
     println(s"Time to collect: ${time / 1000.0} s")
+    // TODO: Do not rely on ordering of columns in the dataframe: use the header!
     rows.length shouldBe 815
-    rows.toSet.exists { r =>
+    rows.exists { r =>
       r.getString(0) == "@Khanoisseur @roygrubb @Parsifalssister @Rockmedia a perfect problem for a graph database like #neo4j"
     } shouldBe true
-    rows.toSet.exists { r =>
+    rows.exists { r =>
       r.getString(1) == "Szeged and Gent"
     } shouldBe true
-    rows.toSet.exists { r =>
-      r.getLong(2) == 83266l
+    rows.exists { r =>
+      !r.isNullAt(2) && r.getLong(2) == 83266l
     } shouldBe true
   }
 

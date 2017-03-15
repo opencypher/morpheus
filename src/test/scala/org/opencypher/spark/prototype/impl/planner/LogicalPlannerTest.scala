@@ -21,6 +21,7 @@ class LogicalPlannerTest extends IrTestSuite {
     val pattern = Pattern.empty[Expr]
       .withEntity('a, EveryNode())
       .withEntity('b, EveryNode())
+      .withEntity('r, EveryRelationship())
       .withConnection('r, DirectedRelationship('a, 'b))
 
     val block = matchBlock(pattern)

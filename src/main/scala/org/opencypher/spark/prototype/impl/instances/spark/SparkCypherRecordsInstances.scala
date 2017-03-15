@@ -1,6 +1,6 @@
 package org.opencypher.spark.prototype.impl.instances.spark
 
-import org.apache.spark.sql.{Column, Row}
+import org.apache.spark.sql.{Column, DataFrame, Row}
 import org.opencypher.spark.api.types.{CTBoolean, CTFloat, CTInteger, CTString}
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.record._
@@ -14,39 +14,51 @@ import CypherValue.Conversion._
 
 trait SparkCypherRecordsInstances extends Serializable {
 
-  case class equality(row: Row, rhs: CypherValue, slot: RecordSlot) {
-    def apply(): Boolean = {
+  /*
+   * Used when the predicate depends on values not stored inside the dataframe.
+   */
+  case class cypherFilter(header: RecordHeader, expr: Expr)
+                         (implicit context: RuntimeContext) extends (Row => Boolean) {
+    def apply(row: Row) = expr match {
+      case Equals(p: Property, c: Const) =>
+        val slot = header.slotsFor(p).head
+        val rhs = context.constants(c.ref)
 
-      // TODO: Could also use an Any => CypherValue conversion -- not sure which is better
-      slot.content.cypherType.material match {
-        case CTBoolean => cypherBoolean(row.getBoolean(slot.index)) == rhs
-        case CTString => cypherString(row.getString(slot.index)) == rhs
-        case CTInteger => cypherInteger(row.getLong(slot.index)) == rhs
-        case CTFloat => cypherFloat(row.getDouble(slot.index)) == rhs
-        case x => throw new NotImplementedError(
-          s"Can not compare values of type $x yet (attempted ${row.get(slot.index)} = $rhs")
-      }
+        // TODO: Could also use an Any => CypherValue conversion -- not sure which is better
+        slot.content.cypherType.material match {
+          case CTBoolean => cypherBoolean(row.getBoolean(slot.index)) == rhs
+          case CTString => cypherString(row.getString(slot.index)) == rhs
+          case CTInteger => cypherInteger(row.getLong(slot.index)) == rhs
+          case CTFloat => cypherFloat(row.getDouble(slot.index)) == rhs
+          case x => throw new NotImplementedError(
+            s"Can not compare values of type $x yet (attempted ${row.get(slot.index)} = $rhs")
+        }
+      case x =>
+        throw new NotImplementedError(s"Predicate $x not yet supported")
     }
   }
 
-  case class filtering(subject: SparkCypherRecords, expr: Expr, context: RuntimeContext) extends (Row => Boolean) {
-    def apply(row: Row): Boolean = expr match {
+  /*
+   * Attempts to create SparkSQL expression for use when filtering
+   */
+  def sqlFilter(header: RecordHeader, expr: Expr, df: DataFrame): Option[Column] = {
+    expr match {
       case Ands(exprs) =>
-        exprs.foldLeft(true) {
-          case (acc, HasType(rel, ref)) =>
-            val idSlot = subject.header.typeId(rel)
-            acc && row.getInt(idSlot.index) == ref.id
-          case (acc, subPredicate) =>
-            val header = subject.header
-            val slots = header.slotsFor(subPredicate)
-            acc && row.getBoolean(slots.head.index)
+        val cols = exprs.map(sqlFilter(header, _, df))
+        if (cols.contains(None)) None
+        else {
+          cols.reduce[Option[Column]] {
+            case (Some(l: Column), Some(r: Column)) => Some(l && r)
+            case _ => throw new IllegalStateException("This should never happen")
+          }
         }
-      case Equals(p: Property, c: Const) =>
-        val slot = subject.header.slotsFor(p).head
-        val rhs = context.constants(c.ref)
-        equality(row, rhs, slot)()
-      case x =>
-        throw new NotImplementedError(s"Can't filter using $x")
+      case HasType(rel, ref) =>
+        val idSlot = header.typeId(rel)
+        Some(new Column(df.columns(idSlot.index)) === ref.id)
+      case h: HasLabel =>
+        val slot = header.slotsFor(h).head
+        Some(new Column(df.columns(slot.index))) // it's a boolean column
+      case _ => None
     }
   }
 
@@ -54,11 +66,13 @@ trait SparkCypherRecordsInstances extends Serializable {
 
     override def filter(subject: SparkCypherRecords, expr: Expr)
                        (implicit context: RuntimeContext): SparkCypherRecords = {
-      // TODO: Construct Spark SQL expression for filters that may be done on columns
 
-
-
-      val newData = subject.data.filter(filtering(subject, expr, context))
+      val newData = sqlFilter(subject.header, expr, subject.data) match {
+        case Some(sqlExpr) =>
+          subject.data.where(sqlExpr)
+        case None =>
+          subject.data.filter(cypherFilter(subject.header, expr))
+      }
 
       new SparkCypherRecords {
         override def data = newData
