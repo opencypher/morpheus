@@ -21,12 +21,20 @@ object PropertyKeyMap {
   val empty = PropertyKeyMap(Map.empty)
 }
 
-case class PropertyKeyMap(m: Map[String, Map[String, CypherType]]) {
+final case class PropertyKeyMap(m: Map[String, Map[String, CypherType]]) {
   def keysFor(classifier: String): Map[String, CypherType] = m.getOrElse(classifier, Map.empty)
   def withKeys(classifier: String, keys: Seq[(String, CypherType)]): PropertyKeyMap = {
-    val oldKeys = m.get(classifier)
-    val newKeys = oldKeys.getOrElse(Map.empty) ++ keys.toMap
-    copy(m.updated(classifier, newKeys))
+    val oldKeys = m.getOrElse(classifier, Map.empty)
+    val newKeys = keys.toMap
+    oldKeys.foreach {
+      case (k, t) =>
+        newKeys.get(k) match {
+          case Some(otherT) if t != otherT =>
+            throw new IllegalArgumentException(s"Conflicting schema! Key $k is $t but also ${newKeys(k)}")
+          case _ => // this is fine
+        }
+    }
+    copy(m.updated(classifier, oldKeys ++ newKeys))
   }
 
   def keys = m.values.flatMap(_.keySet).toSet

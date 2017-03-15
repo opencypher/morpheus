@@ -130,4 +130,15 @@ class SchemaTest extends StdTestSuite {
     schema.nodeKeys("Foo") should equal(Map("name" -> CTString, "age" -> CTInteger))
     schema.relationshipKeys("BAR") should equal(Map("p1" -> CTBoolean, "p2" -> CTFloat))
   }
+
+  test("should not allow updates to conflict with existing types") {
+    val schema = Schema.empty.withNodeKeys("Foo")("name" -> CTString)
+
+    schema.withNodeKeys("Foo")("name" -> CTString)    // same type: fine
+    schema.withNodeKeys("Foo2")("name" -> CTInteger)  // different label: fine
+    schema.withNodeKeys("Foo")("name2" -> CTInteger)  // different key: fine
+    an [IllegalArgumentException] shouldBe thrownBy {
+      schema.withNodeKeys("Foo")("name" -> CTInteger) // not fine
+    }
+  }
 }
