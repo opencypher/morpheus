@@ -10,8 +10,12 @@ final case class Const(ref: ConstantRef) extends Expr
 final case class Var(name: String) extends Expr {
   override def toString = name
 }
-final case class StartNode(e: Expr) extends Expr
-final case class EndNode(e: Expr) extends Expr
+final case class StartNode(e: Expr) extends Expr {
+  override def toString = s"source($e)"
+}
+final case class EndNode(e: Expr) extends Expr {
+  override def toString = s"target($e)"
+}
 
 trait FlatteningOpExprCompanion[T] {
   def apply(exprs: Expr*): T
@@ -88,7 +92,9 @@ final case class Equals(lhs: Expr, rhs: Expr) extends Expr
 final case class Property(m: Expr, key: PropertyKeyRef) extends Expr {
   override def toString = s"$m.${key.id}"
 }
-final case class TypeId(rel: Expr) extends Expr
+final case class TypeId(rel: Expr) extends Expr {
+  override def toString = s"type($rel)"
+}
 
 sealed trait Lit[T] extends Expr {
   def v: T
