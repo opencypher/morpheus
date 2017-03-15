@@ -2,7 +2,7 @@ package org.opencypher.spark.prototype.impl.logical
 
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir.SolvedQueryModel
-import org.opencypher.spark.prototype.api.ir.pattern.EveryNode
+import org.opencypher.spark.prototype.api.ir.pattern.{EveryNode, EveryRelationship}
 import org.opencypher.spark.prototype.api.record.{ProjectedSlotContent, RecordHeader}
 
 import scala.language.implicitConversions
@@ -35,7 +35,7 @@ sealed trait ExpandOperator extends StackingLogicalOperator {
   def target: Var
 }
 
-final case class ExpandSource(source: Var, rel: Var, target: Var, in: LogicalOperator, signature: RecordHeader = RecordHeader.empty)
+final case class ExpandSource(source: Var, rel: Var, types: EveryRelationship, target: Var, in: LogicalOperator, signature: RecordHeader = RecordHeader.empty)
                              (override val solved: SolvedQueryModel[Expr])
   extends ExpandOperator {
 }

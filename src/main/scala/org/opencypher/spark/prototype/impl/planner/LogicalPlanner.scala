@@ -6,7 +6,7 @@ import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir._
 import org.opencypher.spark.prototype.api.ir.block._
 import org.opencypher.spark.prototype.api.ir.global.GlobalsRegistry
-import org.opencypher.spark.prototype.api.ir.pattern.{AllGiven, Pattern}
+import org.opencypher.spark.prototype.api.ir.pattern.{AllGiven, Connection, Pattern}
 import org.opencypher.spark.prototype.api.schema.Schema
 import org.opencypher.spark.prototype.impl.logical._
 
@@ -125,10 +125,10 @@ class LogicalPlanner extends Stage[CypherQuery[Expr], LogicalOperator, LogicalPl
     val solvedFields = in.solved.fields
 
     val result: Option[ExpandOperator] = remainingPattern.topology.collectFirst {
-      case (r, c) =>
+      case (r, c: Connection) =>
         solvedFields.collectFirst {
           case v if c.source == v =>
-            producer.planSourceExpand(c.source, r, c.target, in)
+            producer.planSourceExpand(c.source, r -> remainingPattern.rels(r), c.target, in)
           case v if c.target == v =>
             producer.planTargetExpand(c.source, r, c.target, in)
         }

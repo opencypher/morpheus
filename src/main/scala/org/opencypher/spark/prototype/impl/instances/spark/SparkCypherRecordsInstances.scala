@@ -16,6 +16,9 @@ trait SparkCypherRecordsInstances {
         expr match {
           case Ands(exprs) =>
             exprs.foldLeft(true) {
+              case (acc, HasType(rel, ref)) =>
+                val idSlot = subject.header.typeId(rel)
+                acc && row.getInt(idSlot.index) == ref.id
               case (acc, subPredicate) =>
                 val header = subject.header
                 val slots = header.slotsFor(subPredicate)

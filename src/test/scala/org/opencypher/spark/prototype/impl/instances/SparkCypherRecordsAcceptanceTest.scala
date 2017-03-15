@@ -32,14 +32,19 @@ class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fix
   }
 
   test("expand and project on full graph") {
-    val records = fullSpace.base.cypher("MATCH (g:Graph)-[r]->(e:Event) RETURN g.key, e.title").records
+    val records = fullSpace.base.cypher("MATCH (g:Graph)-[r:CONTAINED]->(e:Event) RETURN g.key, e.title").records
 
-    records.data.count() shouldBe 25
-    records.header.slots.size shouldBe 2
-    records.header.slots(0).content.cypherType shouldBe CTString.nullable
-    records.header.slots(0).content.key should equal(Var("a.country"))
-    records.header.slots(1).content.cypherType shouldBe CTInteger.nullable
-    records.header.slots(1).content.key should equal(Var("m.id"))
+    val start = System.currentTimeMillis()
+    val rows = records.data.collect()
+    val time = System.currentTimeMillis() - start
+    println(s"Time to collect: ${time / 1000.0} s")
+    rows.length shouldBe 25
+    rows.toSet.exists { r =>
+      r.getString(0) == "GraphDB-Sydney"
+    } shouldBe true
+    rows.toSet.exists { r =>
+      r.getString(1) == "May Neo4J/graphdb meetup"
+    } shouldBe true
   }
 
   test("handle properties with same key and different type between labels") {

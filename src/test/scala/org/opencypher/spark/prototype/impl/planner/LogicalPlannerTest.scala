@@ -6,7 +6,7 @@ import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir._
 import org.opencypher.spark.prototype.api.ir.block._
 import org.opencypher.spark.prototype.api.ir.global.{ConstantRef, GlobalsRegistry, PropertyKeyRef}
-import org.opencypher.spark.prototype.api.ir.pattern.{DirectedRelationship, EveryNode, Pattern}
+import org.opencypher.spark.prototype.api.ir.pattern.{DirectedRelationship, EveryNode, EveryRelationship, Pattern}
 import org.opencypher.spark.prototype.api.record.{ProjectedExpr, ProjectedField}
 import org.opencypher.spark.prototype.api.schema.Schema
 import org.opencypher.spark.prototype.impl.logical
@@ -27,7 +27,7 @@ class LogicalPlannerTest extends IrTestSuite {
 
     val scan = NodeScan('a, EveryNode(), emptySig)(emptySqm.withField('a))
     plan(irFor(block)) should equalWithoutResult(
-      ExpandSource('a, 'r, 'b, scan, emptySig)(scan.solved.withFields('r, 'b))
+      ExpandSource('a, 'r, EveryRelationship(), 'b, scan, emptySig)(scan.solved.withFields('r, 'b))
     )
   }
 
@@ -55,7 +55,7 @@ class LogicalPlannerTest extends IrTestSuite {
             Project(ProjectedExpr(Property(Var("g"), globals.propertyKey("name")), CTAny.nullable),
               Filter(HasLabel(Var("g"), globals.label("Group")),
                 Filter(HasLabel(Var("a"), globals.label("Administrator")),
-                  ExpandSource(Var("a"), Var("r"), Var("g"),
+                  ExpandSource(Var("a"), Var("r"), EveryRelationship(), Var("g"),
                     NodeScan(Var("a"), EveryNode(), emptySig)(emptySqm), emptySig
                   )(emptySqm), emptySig
                 )(emptySqm), emptySig
@@ -82,7 +82,7 @@ class LogicalPlannerTest extends IrTestSuite {
             Project(ProjectedExpr(Property(Var("g"), globals.propertyKey("name")), CTString),
               Filter(HasLabel(Var("g"), globals.label("Group")),
                 Filter(HasLabel(Var("a"), globals.label("Administrator")),
-                  ExpandSource(Var("a"), Var("r"), Var("g"),
+                  ExpandSource(Var("a"), Var("r"), EveryRelationship(), Var("g"),
                     NodeScan(Var("a"), EveryNode(), emptySig)(emptySqm), emptySig
                   )(emptySqm), emptySig
                 )(emptySqm), emptySig

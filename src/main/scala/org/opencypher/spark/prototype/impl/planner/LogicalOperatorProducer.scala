@@ -4,7 +4,7 @@ import org.opencypher.spark.api.CypherType
 import org.opencypher.spark.api.types.CTAny
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir.{Field, SolvedQueryModel}
-import org.opencypher.spark.prototype.api.ir.pattern.EveryNode
+import org.opencypher.spark.prototype.api.ir.pattern.{EveryNode, EveryRelationship}
 import org.opencypher.spark.prototype.api.record.{ProjectedExpr, ProjectedField, RecordHeader}
 import org.opencypher.spark.prototype.impl.logical._
 
@@ -17,11 +17,17 @@ class LogicalOperatorProducer {
     ExpandTarget(Var(source.name), Var(rel.name), Var(target.name), prev, signature)(solved)
   }
 
-  def planSourceExpand(source: Field, rel: Field, target: Field, prev: LogicalOperator): ExpandSource = {
+  def planSourceExpand(source: Field, r: (Field, EveryRelationship), target: Field, prev: LogicalOperator): ExpandSource = {
     val signature = RecordHeader.empty
-    val solved = prev.solved.withFields(rel, target)
 
-    ExpandSource(Var(source.name), Var(rel.name), Var(target.name), prev, signature)(solved)
+    val (rel, types) = r
+    val relVar = Var(rel.name)
+
+    val solved = types.relTypes.elts.foldLeft(prev.solved.withFields(rel, target)) {
+      case (acc, next) => acc.withPredicate(HasType(relVar, next))
+    }
+
+    ExpandSource(Var(source.name), relVar, types, Var(target.name), prev, signature)(solved)
   }
 
   def planNodeScan(node: Field, everyNode: EveryNode): NodeScan = {

@@ -31,12 +31,11 @@ class ViewPlanner extends Stage[logical.LogicalOperator, SparkCypherView, ViewPl
         //        planExpr(planOp(in), expr)
         //      }
   //      planExpr(planOp(in), expr)
-      case logical.ExpandSource(source, rel, target, in, _) =>
+      case logical.ExpandSource(source, rel, types, target, in, _) =>
         val lhs = plan(in)
         // TODO: where is the node label info? We could plan a filter here
         val nodeRhs = context.graph.nodes(target)
-        // TODO: where is the rel-type info? We could plan a filter here
-        val relRhs = context.graph.relationships(rel)
+        val relRhs = context.graph.relationships(rel).typeFilter(rel, types.relTypes)
 
         val rhs = relRhs.joinTarget(nodeRhs).on(rel)(target)
         val expanded = lhs.expandSource(rhs).on(source)(rel)

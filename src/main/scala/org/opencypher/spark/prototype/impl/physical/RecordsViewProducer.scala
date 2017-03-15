@@ -1,10 +1,10 @@
 package org.opencypher.spark.prototype.impl.physical
 
 import org.opencypher.spark.api.types.{CTNode, CTRelationship}
-import org.opencypher.spark.prototype.api.expr.{Ands, Expr, HasLabel, Var}
+import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir.QueryModel
-import org.opencypher.spark.prototype.api.ir.global.LabelRef
-import org.opencypher.spark.prototype.api.ir.pattern.AllGiven
+import org.opencypher.spark.prototype.api.ir.global.{LabelRef, RelTypeRef}
+import org.opencypher.spark.prototype.api.ir.pattern.{AllGiven, AnyGiven}
 import org.opencypher.spark.prototype.api.record.{ProjectedSlotContent, RecordSlot}
 import org.opencypher.spark.prototype.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherView}
 import org.opencypher.spark.prototype.impl.instances.spark.records._
@@ -27,6 +27,11 @@ object RecordsViewProducer {
     def labelFilter(node: Var, labels: AllGiven[LabelRef]): SparkCypherView = {
       val labelExprs: Set[Expr] = labels.elts.map { ref => HasLabel(node, ref) }
       SparkCypherRecordsView(view.records.filter(Ands(labelExprs)))
+    }
+
+    def typeFilter(rel: Var, types: AnyGiven[RelTypeRef]): SparkCypherView = {
+      val typeExprs: Set[Expr] = types.elts.map { ref => HasType(rel, ref) }
+      SparkCypherRecordsView(view.records.filter(Ands(typeExprs)))
     }
 
     def expandSource(relView: SparkCypherView) = new JoinBuilder {
