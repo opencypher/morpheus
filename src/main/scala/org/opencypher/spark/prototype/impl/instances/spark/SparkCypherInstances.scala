@@ -28,6 +28,8 @@ trait SparkCypherInstances {
 
       val ir = CypherQueryBuilder.from(stmt, query, globals)
 
+      println("IR constructed")
+
       //    val cvs = params.mapValues {
       //      case s: String => CypherString(s)
       //      case x => throw new UnsupportedOperationException(s"Can't convert $x to CypherValue yet")
@@ -35,9 +37,11 @@ trait SparkCypherInstances {
 
       val logicalPlan = logicalPlanner.plan(ir)(LogicalPlannerContext(graph.schema, globals))
 
+      println("Logical plan constructed")
       println(logicalPlan.solved)
 
       val physicalPlan = physicalPlanner.plan(logicalPlan)(ViewPlannerContext(graph, globals))
+      println("Physical plan constructed")
       physicalPlan
     }
   }

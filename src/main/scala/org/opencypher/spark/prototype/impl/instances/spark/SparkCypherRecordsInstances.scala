@@ -78,7 +78,7 @@ trait SparkCypherRecordsInstances {
       val rhsColumn = rhsData.col(rhsData.columns(rhsSlot.index))
 
       val joinExpr: Column = lhsColumn === rhsColumn
-      val joined = lhsData.join(rhsData, joinExpr)
+      val joined = lhsData.join(rhsData, joinExpr, "inner")
 
       new SparkCypherRecords {
         override def data = joined

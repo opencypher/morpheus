@@ -63,12 +63,9 @@ class SparkGraphSpaceTest extends StdTestSuite with TestSession.Fixture {
   test("read schema from loaded neo graph") {
     val schema = SparkGraphSpace.loadSchema("MATCH (a) RETURN a", "MATCH ()-[r]->() RETURN r")
 
-    println(schema)
-    schema.labels.foreach { l =>
-      println(s"$l -> ${schema.nodeKeys(l)}")
-    }
-    schema.relationshipTypes.foreach { t =>
-      println(s"$t -> ${schema.relationshipKeys(t)}")
-    }
+    schema.labels.size shouldBe 32
+    schema.relationshipTypes.size shouldBe 14
+    schema.nodeKeys("User").size shouldBe 37  // number of unique prop keys for all nodes of that label
+    schema.relationshipKeys("ATTENDED").size shouldBe 5
   }
 }

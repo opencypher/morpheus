@@ -144,6 +144,26 @@ case class Schema(
       override def schema = self
     }
   }
+
+  override def toString = {
+    val builder = new StringBuilder
+
+    labels.foreach { label =>
+      builder.append(s":$label\n")
+      nodeKeys(label).foreach {
+        case (key, typ) => builder.append(s"\t$key: $typ\n")
+      }
+    }
+
+    relationshipTypes.foreach { relType =>
+      builder.append(s":$relType\n")
+      relationshipKeys(relType).foreach {
+        case (key, typ) => builder.append(s"\t$key: $typ\n")
+      }
+    }
+
+    builder.toString
+  }
 }
 
 sealed trait VerifiedSchema {
