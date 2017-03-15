@@ -1,33 +1,64 @@
 package org.opencypher.spark.prototype.impl.instances.spark
 
-import org.apache.spark.sql.Column
+import org.apache.spark.sql.{Column, Row}
+import org.opencypher.spark.api.types.{CTBoolean, CTFloat, CTInteger, CTString}
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.record._
 import org.opencypher.spark.prototype.api.spark.SparkCypherRecords
+import org.opencypher.spark.prototype.api.value.{CypherBoolean, CypherValue}
 import org.opencypher.spark.prototype.impl.classy.Transform
+import org.opencypher.spark.prototype.impl.physical.RuntimeContext
 import org.opencypher.spark.prototype.impl.syntax.header._
-import org.opencypher.spark.prototype.impl.util.Replaced
+import org.opencypher.spark.prototype.impl.util.{Found, Replaced}
+import CypherValue.Conversion._
 
-trait SparkCypherRecordsInstances {
+trait SparkCypherRecordsInstances extends Serializable {
 
-  implicit val sparkCypherRecordsTransform = new Transform[SparkCypherRecords] {
-    override def filter(subject: SparkCypherRecords, expr: Expr): SparkCypherRecords = {
-      val newData = subject.data.filter { row =>
-        expr match {
-          case Ands(exprs) =>
-            exprs.foldLeft(true) {
-              case (acc, HasType(rel, ref)) =>
-                val idSlot = subject.header.typeId(rel)
-                acc && row.getInt(idSlot.index) == ref.id
-              case (acc, subPredicate) =>
-                val header = subject.header
-                val slots = header.slotsFor(subPredicate)
-                acc && row.getBoolean(slots.head.index)
-            }
-          case x =>
-            throw new NotImplementedError(s"Can't filter using $x")
-        }
+  case class equality(row: Row, rhs: CypherValue, slot: RecordSlot) {
+    def apply(): Boolean = {
+
+      // TODO: Could also use an Any => CypherValue conversion -- not sure which is better
+      slot.content.cypherType.material match {
+        case CTBoolean => cypherBoolean(row.getBoolean(slot.index)) == rhs
+        case CTString => cypherString(row.getString(slot.index)) == rhs
+        case CTInteger => cypherInteger(row.getLong(slot.index)) == rhs
+        case CTFloat => cypherFloat(row.getDouble(slot.index)) == rhs
+        case x => throw new NotImplementedError(
+          s"Can not compare values of type $x yet (attempted ${row.get(slot.index)} = $rhs")
       }
+    }
+  }
+
+  case class filtering(subject: SparkCypherRecords, expr: Expr, context: RuntimeContext) extends (Row => Boolean) {
+    def apply(row: Row): Boolean = expr match {
+      case Ands(exprs) =>
+        exprs.foldLeft(true) {
+          case (acc, HasType(rel, ref)) =>
+            val idSlot = subject.header.typeId(rel)
+            acc && row.getInt(idSlot.index) == ref.id
+          case (acc, subPredicate) =>
+            val header = subject.header
+            val slots = header.slotsFor(subPredicate)
+            acc && row.getBoolean(slots.head.index)
+        }
+      case Equals(p: Property, c: Const) =>
+        val slot = subject.header.slotsFor(p).head
+        val rhs = context.constants(c.ref)
+        equality(row, rhs, slot)()
+      case x =>
+        throw new NotImplementedError(s"Can't filter using $x")
+    }
+  }
+
+  implicit val sparkCypherRecordsTransform = new Transform[SparkCypherRecords] with Serializable {
+
+    override def filter(subject: SparkCypherRecords, expr: Expr)
+                       (implicit context: RuntimeContext): SparkCypherRecords = {
+      // TODO: Construct Spark SQL expression for filters that may be done on columns
+
+
+
+      val newData = subject.data.filter(filtering(subject, expr, context))
 
       new SparkCypherRecords {
         override def data = newData
@@ -62,9 +93,10 @@ trait SparkCypherRecordsInstances {
       val (newHeader, result) = subject.header.update(addContent(it))
 
       val newData = result match {
-        case _: Replaced[_] =>
-          subject.data  // no need to do more work
-        case _ => ??? // need to evaluate the expression and construct new column
+        case _: Replaced[_] => subject.data
+        case _: Found[_] => subject.data
+        case x => // need to evaluate the expression and construct new column
+          throw new NotImplementedError(s"Expected the slot to be replaced, but was $x")
       }
 
       new SparkCypherRecords {

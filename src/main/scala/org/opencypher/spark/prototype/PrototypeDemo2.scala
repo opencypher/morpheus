@@ -22,6 +22,6 @@ object PrototypeDemo2 {
   }
 
   def main(args: Array[String]): Unit = {
-    cypher("MATCH (t:Tweet) RETURN t.text")
+    cypher("MATCH (t:User)-[:ATTENDED]->() WHERE t.country = 'ca' RETURN t.city, t.id")
   }
 }

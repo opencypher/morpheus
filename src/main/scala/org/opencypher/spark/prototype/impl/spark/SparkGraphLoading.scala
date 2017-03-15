@@ -89,7 +89,7 @@ trait SparkGraphLoading {
   case class LoadingContext(schema: Schema, globals: GlobalsRegistry)
 
   private def createSpace(nodes: RDD[InternalNode], rels: RDD[InternalRelationship])
-                         (implicit sc: SparkSession, context: LoadingContext)= {
+                         (implicit sc: SparkSession, context: LoadingContext): SparkGraphSpace = {
 
     val nodeFields = (v: Var) => computeNodeFields(v)
     val nodeHeader = (v: Var) => nodeFields(v).map(_._1).foldLeft(RecordHeader.empty) {

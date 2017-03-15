@@ -5,11 +5,13 @@ import org.opencypher.spark.prototype.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.prototype.api.ir.pattern.AllGiven
 import org.opencypher.spark.prototype.api.spark.{SparkCypherGraph, SparkCypherView}
 import org.opencypher.spark.prototype.impl.logical
-import org.opencypher.spark.prototype.impl.physical.RecordsViewProducer._
+import org.opencypher.spark.prototype.impl.physical.RecordsViewProducer
 
 case class ViewPlannerContext(graph: SparkCypherGraph, globals: GlobalsRegistry)
 
-class ViewPlanner extends Stage[logical.LogicalOperator, SparkCypherView, ViewPlannerContext] {
+class ViewPlanner(producer: RecordsViewProducer) extends Stage[logical.LogicalOperator, SparkCypherView, ViewPlannerContext] {
+
+  import producer._
 
   def plan(logicalPlan: logical.LogicalOperator)(implicit context: ViewPlannerContext): SparkCypherView =
     logicalPlan match {
@@ -23,14 +25,13 @@ class ViewPlanner extends Stage[logical.LogicalOperator, SparkCypherView, ViewPl
         plan(in).project(it)
 
       case logical.Filter(expr, in, _) => expr match {
+          // TODO: Is it justified to treat labels separately?
         case HasLabel(n: Var, ref) =>
           plan(in).labelFilter(n, AllGiven(Set(ref)))
-        case _ => ???
+        case e =>
+          plan(in).filter(e)
       }
-        //      if (in.signature.items.exists(_.exprs.contains(expr))) {
-        //        planExpr(planOp(in), expr)
-        //      }
-  //      planExpr(planOp(in), expr)
+
       case logical.ExpandSource(source, rel, types, target, in, _) =>
         val lhs = plan(in)
         // TODO: where is the node label info? We could plan a filter here

@@ -1,16 +1,25 @@
 package org.opencypher.spark.prototype.impl.physical
 
-import org.opencypher.spark.api.types.{CTNode, CTRelationship}
+import org.opencypher.spark.api.types.CTNode
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir.QueryModel
-import org.opencypher.spark.prototype.api.ir.global.{LabelRef, RelTypeRef}
+import org.opencypher.spark.prototype.api.ir.global.{ConstantRef, LabelRef, RelTypeRef}
 import org.opencypher.spark.prototype.api.ir.pattern.{AllGiven, AnyGiven}
 import org.opencypher.spark.prototype.api.record.{ProjectedSlotContent, RecordSlot}
 import org.opencypher.spark.prototype.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherView}
+import org.opencypher.spark.prototype.api.value.CypherValue
 import org.opencypher.spark.prototype.impl.instances.spark.records._
 import org.opencypher.spark.prototype.impl.syntax.transform._
 
-object RecordsViewProducer {
+object RuntimeContext {
+  val empty = RuntimeContext(Map.empty)
+}
+
+case class RuntimeContext(constants: Map[ConstantRef, CypherValue])
+
+class RecordsViewProducer(context: RuntimeContext) {
+
+  implicit val c = context
 
   implicit final class RichCypherGraph(val graph: SparkCypherGraph) {
     def allNodes(v: Var): SparkCypherView = graph.nodes(v)
@@ -23,6 +32,9 @@ object RecordsViewProducer {
 
     def project(slot: ProjectedSlotContent): SparkCypherView =
       SparkCypherRecordsView(view.records.project(slot))
+
+    def filter(expr: Expr): SparkCypherView =
+      SparkCypherRecordsView(view.records.filter(expr))
 
     def labelFilter(node: Var, labels: AllGiven[LabelRef]): SparkCypherView = {
       val labelExprs: Set[Expr] = labels.elts.map { ref => HasLabel(node, ref) }

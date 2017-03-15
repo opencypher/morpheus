@@ -1,5 +1,6 @@
 package org.opencypher.spark.prototype.impl.instances
 
+import org.apache.spark.sql.Row
 import org.opencypher.spark.api.types.{CTAny, CTInteger, CTString}
 import org.opencypher.spark.prototype.api.expr.Var
 import org.opencypher.spark.prototype.api.schema.Schema
@@ -11,7 +12,7 @@ import org.opencypher.spark.{StdTestSuite, TestSession}
 class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fixture {
 
   test("label scan and project") {
-    val records = initSmallSpace().base.cypher("MATCH (a:User) RETURN a.text").records
+    val records = smallSpace.base.cypher("MATCH (a:User) RETURN a.text").records
 
     records.data.count() shouldBe 1806
     records.data.head().getString(0) shouldBe a[String]
@@ -21,7 +22,7 @@ class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fix
   }
 
   test("expand and project") {
-    val records = initSmallSpace().base.cypher("MATCH (a:User)-[r]->(m:Meetup) RETURN a.country, m.id").records
+    val records = smallSpace.base.cypher("MATCH (a:User)-[r]->(m:Meetup) RETURN a.country, m.id").records
 
     records.data.count() shouldBe 4832
     records.header.slots.size shouldBe 2
@@ -84,6 +85,17 @@ class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fix
     githubs.header.slots(0).content.cypherType shouldBe CTInteger.nullable
   }
 
+  test("property filter in small space") {
+    val records = smallSpace.base.cypher("MATCH (t:User) WHERE t.country = 'ca' RETURN t.city").records
+
+    val results = records.toDF.collect().toSeq.map {
+      (r: Row) => r.getString(0)
+    }
+
+    results.size shouldBe 38
+    results should contain("Vancouver")
+  }
+
   private val smallSchema = Schema.empty
     .withRelationshipKeys("ATTENDED")("guests" -> CTInteger, "comments" -> CTString.nullable)
     .withNodeKeys("User")("id" -> CTInteger.nullable, "text" -> CTString.nullable, "country" -> CTString.nullable, "city" -> CTString.nullable)
@@ -96,6 +108,8 @@ class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fix
                              relQ: String = "MATCH ()-[r:ATTENDED]->() RETURN r") = {
     SparkGraphSpace.fromNeo4j(nodeQ, relQ, Some(schema))
   }
+
+  private lazy val smallSpace = initSmallSpace()
 
   private lazy val fullSpace = SparkGraphSpace.fromNeo4j("MATCH (n) RETURN n", "MATCH ()-[r]->() RETURN r")
 }
