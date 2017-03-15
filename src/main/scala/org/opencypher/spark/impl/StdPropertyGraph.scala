@@ -305,7 +305,7 @@ class PhysicalPlanner(frameProducer: FrameProducer) {
 //      }
       ???
       // planExpr(planOp(in), UnaliasedExpr(expr))
-    case logical.ExpandSource(source, rel, target, in, _) =>
+    case logical.ExpandSource(source, rel, _, target, in, _) =>
       // TODO: where is the rel-type info?
       val rels = allRelationships(rel).asProduct
         .relationshipStartId(rel)(relStart(rel))
