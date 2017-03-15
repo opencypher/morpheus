@@ -47,6 +47,27 @@ class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fix
     } shouldBe true
   }
 
+  test("expand and project on full graph, three properties") {
+    val query = "MATCH (t:Tweet)-[:MENTIONED]->(l:User) RETURN t.text, l.location, l.followers"
+
+    val records = fullSpace.base.cypher(query).records
+
+    val start = System.currentTimeMillis()
+    val rows = records.data.collect()
+    val time = System.currentTimeMillis() - start
+    println(s"Time to collect: ${time / 1000.0} s")
+    rows.length shouldBe 815
+    rows.toSet.exists { r =>
+      r.getString(0) == "@Khanoisseur @roygrubb @Parsifalssister @Rockmedia a perfect problem for a graph database like #neo4j"
+    } shouldBe true
+    rows.toSet.exists { r =>
+      r.getString(1) == "Szeged and Gent"
+    } shouldBe true
+    rows.toSet.exists { r =>
+      r.getLong(2) == 83266l
+    } shouldBe true
+  }
+
   test("handle properties with same key and different type between labels") {
     val space = initSmallSpace(Schema.empty
       .withNodeKeys("Channel")("id" -> CTString.nullable)
