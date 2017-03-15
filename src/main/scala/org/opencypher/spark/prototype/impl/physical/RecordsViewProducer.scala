@@ -30,8 +30,11 @@ object RecordsViewProducer {
     }
 
     def typeFilter(rel: Var, types: AnyGiven[RelTypeRef]): SparkCypherView = {
-      val typeExprs: Set[Expr] = types.elts.map { ref => HasType(rel, ref) }
-      SparkCypherRecordsView(view.records.filter(Ands(typeExprs)))
+      if (types.elts.isEmpty) view
+      else {
+        val typeExprs: Set[Expr] = types.elts.map { ref => HasType(rel, ref) }
+        SparkCypherRecordsView(view.records.filter(Ands(typeExprs)))
+      }
     }
 
     def expandSource(relView: SparkCypherView) = new JoinBuilder {
