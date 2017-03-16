@@ -12,7 +12,7 @@ trait TransformSyntax {
 }
 
 final class TransformOps[T](subject: T)(implicit transform: Transform[T]) {
-  def filter(expr: Expr)(implicit context: RuntimeContext): T = transform.filter(subject, expr)
+  def filter(expr: Expr): T = transform.filter(subject, expr)
   def select(fields: Map[Expr, String]): T = transform.select(subject, fields)
   def project(it: ProjectedSlotContent): T = transform.project(subject, it)
   def join(other: T)(lhs: RecordSlot, rhs: RecordSlot): T = transform.join(subject, other)(lhs, rhs)

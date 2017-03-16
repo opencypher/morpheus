@@ -186,7 +186,6 @@ object InternalHeader {
                   case RecordSlot(_, c: ProjectedSlotContent) => (c.expr.dependencies intersect newFields).isEmpty
                   case _ => true
                 }
-                val newRemaining = nonDepending
                 val newRemoved = depending.toList :: tlList
                 removeDependencies(newRemoved, nonDepending, newFields, removedSlots + hd)
               case _ =>

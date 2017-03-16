@@ -62,10 +62,9 @@ trait SparkCypherRecordsInstances extends Serializable {
     }
   }
 
-  implicit val sparkCypherRecordsTransform = new Transform[SparkCypherRecords] with Serializable {
+  implicit def sparkCypherRecordsTransform(implicit context: RuntimeContext) = new Transform[SparkCypherRecords] with Serializable {
 
-    override def filter(subject: SparkCypherRecords, expr: Expr)
-                       (implicit context: RuntimeContext): SparkCypherRecords = {
+    override def filter(subject: SparkCypherRecords, expr: Expr): SparkCypherRecords = {
 
       val newData = sqlFilter(subject.header, expr, subject.data) match {
         case Some(sqlExpr) =>
