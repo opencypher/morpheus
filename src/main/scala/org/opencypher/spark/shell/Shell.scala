@@ -17,12 +17,13 @@ object Shell {
         val javaVersion = System.getProperty("java.version")
         val sparkVersion = session.version
         Util.normalizeNewlines(
-          """=
-              = open      |                                     |
-              =/~~\  /|~~\|/~\ /~/|/~\  /~\|/~\   (~|~~\/~~||/~\|_/
-              =\__ \/ |__/|   |\/_|     \_/|   |  _)|__/\__||   | \
-              =   _/  |                             |
-              =""".stripMargin('=') +
+          """=   ____              __   _____          __
+             =  / __/__  ___ _____/ /__/ ___/_ _____  / /  ___ ____
+             = _\ \/ _ \/ _ `/ __/  '_/ /__/ // / _ \/ _ \/ -_) __/
+             =/___/ .__/\_,_/_/ /_/\_\\___/\_, / .__/_//_/\__/_/
+             =   /_/                      /___/_/
+             =
+             =""".stripMargin('=') +
           s"""|
               |Version $ownVersion
               |(Apache Spark $sparkVersion, Scala $scalaVersion, Java $javaVersion, Ammonite $ammoniteVersion)
@@ -43,7 +44,7 @@ object Shell {
         welcomeBanner = Some(welcomeBanner),
         predef =
           s"""|repl.frontEnd() = ammonite.frontend.FrontEnd.$frontend
-              |repl.prompt() = \"(cypher)-[:on]->(spark) \"
+              |repl.prompt() = \"(:spark)-->(:cypher) \"
               |import org.opencypher.spark.prototype.PrototypeDemo2._
               |""".stripMargin
       ).instantiateRepl(Seq("session" -> session))
