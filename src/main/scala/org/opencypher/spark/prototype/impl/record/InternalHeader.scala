@@ -37,10 +37,10 @@ final case class InternalHeader protected[spark](
 
   def fields = cachedFields
 
-  def slotsFor(expr: Expr, cypherType: CypherType): Traversable[RecordSlot] =
+  def slotsFor(expr: Expr, cypherType: CypherType): Seq[RecordSlot] =
     slotsFor(expr).filter(_.content.cypherType == cypherType)
 
-  def slotsFor(expr: Expr): Traversable[RecordSlot] =
+  def slotsFor(expr: Expr): Seq[RecordSlot] =
     exprSlots.getOrElse(expr, Vector.empty).flatMap(ref => slotContents.lookup(ref).map(RecordSlot(ref, _)))
 
   def +(addedContent: SlotContent): InternalHeader =
@@ -49,6 +49,11 @@ final case class InternalHeader protected[spark](
   def columns = cachedColumns
 
   def column(slot: RecordSlot) = cachedColumns(slot.index)
+
+  def mandatory(slot: RecordSlot) = slot.content match {
+    case _: FieldSlotContent => slot.content.cypherType.isMaterial
+    case ProjectedExpr(expr, cypherType) => cypherType.isMaterial && slotsFor(expr).size <=1
+  }
 
   private def computeColumnName(slot: RecordSlot): String = {
     val content = slot.content

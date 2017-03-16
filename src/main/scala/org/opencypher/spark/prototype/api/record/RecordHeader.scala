@@ -13,14 +13,17 @@ final case class RecordHeader(internalHeader: InternalHeader) {
   def slots: IndexedSeq[RecordSlot] = internalHeader.slots
   def fields: Set[Var] = internalHeader.fields
 
-  def slotsFor(expr: Expr, cypherType: CypherType): Traversable[RecordSlot] =
+  def slotsFor(expr: Expr, cypherType: CypherType): Seq[RecordSlot] =
     internalHeader.slotsFor(expr, cypherType)
 
-  def slotsFor(expr: Expr): Traversable[RecordSlot] =
+  def slotsFor(expr: Expr): Seq[RecordSlot] =
     internalHeader.slotsFor(expr)
 
   def slotFor(variable: Var): RecordSlot = slotsFor(variable).headOption.getOrElse(???)
   def slotsFor(names: String*): Seq[RecordSlot] = names.map(n => slotFor(Var(n)))
+
+  def mandatory(slot: RecordSlot): Boolean =
+    internalHeader.mandatory(slot)
 
   def sourceNode(rel: Var): RecordSlot = slotsFor(StartNode(rel)).headOption.getOrElse(???)
   def targetNode(rel: Var): RecordSlot = slotsFor(EndNode(rel)).headOption.getOrElse(???)

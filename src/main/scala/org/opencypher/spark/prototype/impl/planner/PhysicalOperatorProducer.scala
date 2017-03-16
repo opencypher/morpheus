@@ -42,18 +42,14 @@ class PhysicalOperatorProducer(implicit context: PhysicalPlannerContext) {
     val optionalNullableKeys = optionalKeys.map { case (k, v) => k -> v.nullable }
     val allKeys = (impliedKeys ++ optionalNullableKeys).toSeq.map { case (k, v) => k -> Vector(v) }
     val keyGroups = allKeys.groups[String, Vector[CypherType]]
-    val keyMaps = keyGroups.map {
-      case (k, types) if types.exists(_.isNullable) => k -> types.map(_.nullable)
-      case (k, types) => k -> types
-    }
 
     val labelHeaderContents = (impliedLabels ++ possibleLabels).map {
       labelName => ProjectedExpr(HasLabel(node, label(labelName)), CTBoolean)
     }.toSeq
 
-    val keyHeaderContents = allKeys.toSeq.flatMap {
+    val keyHeaderContents = keyGroups.toSeq.flatMap {
       case (k, types) => types.map { t => ProjectedExpr(Property(node, propertyKey(k)), t) }
-    }.toSeq
+    }
 
     // TODO: Check results for errors
     val (header, _) = RecordHeader.empty.update(addContents(labelHeaderContents ++ keyHeaderContents))
