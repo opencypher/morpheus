@@ -86,8 +86,9 @@ class RecordsViewProducer(context: RuntimeContext) {
       }
     }
 
-    final case class InternalCypherView(records: SparkCypherRecords, graph: SparkCypherGraph = ???) extends SparkCypherView {
+    final case class InternalCypherView(records: SparkCypherRecords) extends SparkCypherView {
       override def domain: SparkCypherGraph = view.domain
+      override def graph: SparkCypherGraph = ???
       override def model: QueryModel[Expr] = ???
     }
   }
