@@ -1,18 +1,16 @@
 package org.opencypher.spark.impl
 
 import cats.data.NonEmptyList
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{AstConstructionTestSupport, Expression, Parameter}
-import org.neo4j.cypher.internal.frontend.v3_2.parser.Expressions
-import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, SyntaxException, ast, symbols}
-import org.opencypher.spark.StdTestSuite
+import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, Parameter}
+import org.neo4j.cypher.internal.frontend.v3_2.symbols
 import org.opencypher.spark.api.CypherType
 import org.opencypher.spark.api.types._
 import org.opencypher.spark.impl.types._
 import org.opencypher.spark.prototype.api.schema.Schema
-import org.parboiled.scala._
+import org.opencypher.spark.{Neo4jAstTestSupport, StdTestSuite}
 import org.scalatest.mockito.MockitoSugar
 
-class SchemaTyperTest extends StdTestSuite with AstConstructionTestSupport with MockitoSugar {
+class SchemaTyperTest extends StdTestSuite with Neo4jAstTestSupport with MockitoSugar {
 
   val schema = Schema.empty
     .withNodeKeys("Person")("name" -> CTString, "age" -> CTInteger)
@@ -137,18 +135,5 @@ class SchemaTyperTest extends StdTestSuite with AstConstructionTestSupport with 
           fail("Expected to get typing errors, but succeeded")
       }
     }
-  }
-
-  def parse(exprText: String): ast.Expression = ExpressionParser.parse(exprText, None)
-
-  object ExpressionParser extends Parser with Expressions {
-
-    def Expressions = rule {
-      oneOrMore(Expression, separator = WS) ~~ EOI.label("end of input")
-    }
-
-    @throws(classOf[SyntaxException])
-    def parse(exprText: String, offset: Option[InputPosition]): ast.Expression =
-      parseOrThrow(exprText, offset, Expressions)
   }
 }
