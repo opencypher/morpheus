@@ -89,12 +89,28 @@ class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fix
   test("property filter in small space") {
     val records = smallSpace.base.cypher("MATCH (t:User) WHERE t.country = 'ca' RETURN t.city").records
 
-    val results = records.toDF.collect().toSeq.map {
+    val results = records.toDF().collect().toSeq.map {
       (r: Row) => r.getString(0)
     }
 
     results.size shouldBe 38
     results should contain("Vancouver")
+  }
+
+  test("multiple hops of expand with different reltypes") {
+    val query = "MATCH (u1:User)-[:POSTED]->(t:Tweet)-[:MENTIONED]->(u2:User) RETURN u1.name, u2.name, t.text"
+
+    val records = fullSpace.base.cypher(query).records
+
+    val slots = records.header.slotsFor("u1.name", "u2.name", "t.text")
+    val tuples = records.toDF().collect().toSeq.map { r =>
+      (r.get(slots.head.index), r.get(slots(1).index), r.get(slots(2).index))
+    }
+
+    tuples.size shouldBe 79
+    val tuple = ("Brendan Madden", "Tom Sawyer Software",
+      "#tsperspectives 7.6 is 15% faster with #neo4j Bolt support. https://t.co/1xPxB9slrB @TSawyerSoftware #graphviz")
+    tuples should contain(tuple)
   }
 
   private val smallSchema = Schema.empty
