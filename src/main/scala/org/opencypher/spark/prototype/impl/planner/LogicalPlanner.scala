@@ -63,7 +63,8 @@ class LogicalPlanner extends Stage[CypherQuery[Expr], LogicalOperator, LogicalPl
         // this plans a leaf + filter for convenience -- TODO
         val plan = planPattern(pattern)
         planFilter(plan, where)
-      case x => throw new IllegalArgumentException(s"Don't know how to leaf-plan $x")
+      case x =>
+        throw new NotImplementedError(s"Not yet able to leaf-plan $x (only queries starting with MATCH are supported)")
     }
   }
 
@@ -99,16 +100,34 @@ class LogicalPlanner extends Stage[CypherQuery[Expr], LogicalOperator, LogicalPl
 
   private def planFilter(in: LogicalOperator, where: AllGiven[Expr])(implicit context: LogicalPlannerContext) = {
     val filtersAndProjs = where.elts.foldLeft(in) {
-      case (acc, eq@Equals(prop: Property, _: Const)) =>
-        val propType = propertyType(prop, acc)
-        val project = producer.projectExpr(prop, propType, acc)
-        producer.planFilter(eq, project)
+      case (acc, eq@Equals(expr1, expr2)) =>
+        val project1 = planInnerExpr(expr1, acc)
+        val project2 = planInnerExpr(expr2, project1)
+        producer.planFilter(eq, project2)
       case (acc, h: HasLabel) =>
         producer.planFilter(h, acc)
-      case (_, x) => throw new UnsupportedOperationException(s"Can't deal with $x")
+      case (acc, not@Not(expr)) =>
+        val project = planInnerExpr(expr, acc)
+        producer.planFilter(not, project)
+      case (_, x) => throw new NotImplementedError(s"Not yet able to plan filter using predicate $x")
     }
 
     filtersAndProjs
+  }
+
+  private def planInnerExpr(expr: Expr, in: LogicalOperator)(implicit context: LogicalPlannerContext): LogicalOperator = {
+    expr match {
+      case _: Const => in
+      case _: Var => in
+      case p: Property =>
+        val propType = propertyType(p, in)
+        val project = producer.projectExpr(p, propType, in)
+        project
+      case Equals(expr1, expr2) =>
+        val project1 = planInnerExpr(expr1, in)
+        planInnerExpr(expr2, project1)
+      case x => throw new NotImplementedError(s"Not yet able to plan projection for inner expression $x")
+    }
   }
 
   private def planPattern(pattern: Pattern[Expr])(implicit context: LogicalPlannerContext) = {

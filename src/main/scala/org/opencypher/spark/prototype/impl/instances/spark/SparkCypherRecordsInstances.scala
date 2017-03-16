@@ -43,6 +43,10 @@ trait SparkCypherRecordsInstances extends Serializable {
    */
   def sqlFilter(header: RecordHeader, expr: Expr, df: DataFrame): Option[Column] = {
     expr match {
+      case Not(Equals(v1: Var, v2: Var)) =>
+        val lhsSlot = header.slotFor(v1)
+        val rhsSlot = header.slotFor(v2)
+        Some(new Column(df.columns(lhsSlot.index)) =!= new Column(df.columns(rhsSlot.index)))
       case Ands(exprs) =>
         val cols = exprs.map(sqlFilter(header, _, df))
         if (cols.contains(None)) None

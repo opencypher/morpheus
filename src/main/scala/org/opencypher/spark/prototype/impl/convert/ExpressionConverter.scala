@@ -19,7 +19,8 @@ final class ExpressionConverter(val tokenDefs: GlobalsRegistry) extends AnyVal {
       if (exprs.size == 1) exprs.head else Ands(exprs: _*)
     case ast.Ands(exprs) => Ands(exprs.map(convert))
     case ast.Parameter(name, _) => Const(tokenDefs.constant(name))
-    case _ => throw new UnsupportedOperationException(s"No mapping defined for $e")
+    case ast.Not(expr) => Not(convert(expr))
+    case _ => throw new NotImplementedError(s"Not yet able to convert expression: $e")
   }
 
 }

@@ -9,7 +9,7 @@ object CypherParser extends CypherParser
 
 trait CypherParser {
 
-  def parse(query: String) = {
+  def parse(query: String): Statement = {
     val (statement, _) = parseAndExtract(query)
     statement
   }

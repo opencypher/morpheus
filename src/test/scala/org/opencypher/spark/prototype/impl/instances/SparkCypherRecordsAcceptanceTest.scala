@@ -113,6 +113,22 @@ class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fix
     tuples should contain(tuple)
   }
 
+  test("multiple hops of expand with possible reltype conflict") {
+    val query = "MATCH (u1:User)-[r1:POSTED]->(t:Tweet)-[r2]->(u2:User) RETURN u1.name, u2.name, t.text"
+
+    val records = fullSpace.base.cypher(query).records
+
+    val slots = records.header.slotsFor("u1.name", "u2.name", "t.text")
+    val tuples = records.toDF().collect().toSeq.map { r =>
+      (r.get(slots.head.index), r.get(slots(1).index), r.get(slots(2).index))
+    }
+
+    tuples.size shouldBe 79
+    val tuple = ("Brendan Madden", "Tom Sawyer Software",
+      "#tsperspectives 7.6 is 15% faster with #neo4j Bolt support. https://t.co/1xPxB9slrB @TSawyerSoftware #graphviz")
+    tuples should contain(tuple)
+  }
+
   private val smallSchema = Schema.empty
     .withRelationshipKeys("ATTENDED")("guests" -> CTInteger, "comments" -> CTString.nullable)
     .withNodeKeys("User")("id" -> CTInteger.nullable, "text" -> CTString.nullable, "country" -> CTString.nullable, "city" -> CTString.nullable)

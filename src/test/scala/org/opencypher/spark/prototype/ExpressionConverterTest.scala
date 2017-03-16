@@ -53,6 +53,12 @@ class ExpressionConverterTest extends StdTestSuite with AstConstructionTestSuppo
     convert(given) should equal(Ands(HasLabel(Var("x"), LabelRef(0)), Equals(Property(Var("x"), PropertyKeyRef(1)), StringLit("Mats"))))
   }
 
+  test("can convert negation") {
+    val given = ast.Not(ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _)) _) _
+
+    convert(given) should equal(Not(HasLabel(Var("x"), LabelRef(0))))
+  }
+
   val c = new ExpressionConverter(GlobalsRegistry.none
     .withPropertyKey(PropertyKey("key"))
     .withLabel(Label("Person"))
