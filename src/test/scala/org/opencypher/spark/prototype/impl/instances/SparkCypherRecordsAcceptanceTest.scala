@@ -15,7 +15,7 @@ class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fix
     val records = smallSpace.base.cypher("MATCH (a:User) RETURN a.text").records
 
     records.data.count() shouldBe 1806
-    records.data.head().getString(0) shouldBe a[String]
+    records.data.collect().toSet.map((r: Row) => r.get(0)) should contain("Application Developer")
     records.header.slots.size shouldBe 1
     records.header.slots.head.content.cypherType shouldBe CTString.nullable
     records.header.slots.head.content.key should equal(Var("a.text"))
@@ -53,20 +53,18 @@ class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fix
 
     val records = fullSpace.base.cypher(query).records
 
-    val start = System.currentTimeMillis()
     val rows = records.data.collect().toSeq
-    val time = System.currentTimeMillis() - start
-    println(s"Time to collect: ${time / 1000.0} s")
-    // TODO: Do not rely on ordering of columns in the dataframe: use the header!
+    val slots = records.header.slotsFor("t.text", "l.location", "l.followers")
+
     rows.length shouldBe 815
     rows.exists { r =>
-      r.getString(0) == "@Khanoisseur @roygrubb @Parsifalssister @Rockmedia a perfect problem for a graph database like #neo4j"
+      r.getString(slots.head.index) == "@Khanoisseur @roygrubb @Parsifalssister @Rockmedia a perfect problem for a graph database like #neo4j"
     } shouldBe true
     rows.exists { r =>
-      r.getString(1) == "Szeged and Gent"
+      r.getString(slots(1).index) == "Szeged and Gent"
     } shouldBe true
     rows.exists { r =>
-      !r.isNullAt(2) && r.getLong(2) == 83266l
+      !r.isNullAt(slots(2).index) && r.getLong(slots(2).index) == 83266l
     } shouldBe true
   }
 
