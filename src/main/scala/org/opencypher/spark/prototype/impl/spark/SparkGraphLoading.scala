@@ -120,19 +120,47 @@ trait SparkGraphLoading {
     new SparkGraphSpace with Serializable {
       selfSpace =>
 
+      private val emptyGraph = new SparkCypherGraph {
+        override def nodes(v: Var) = ???
+        override def relationships(v: Var) = ???
+        override def space = selfSpace
+        override def constituents = ???
+        override def schema = Schema.empty
+      }
+
+      private def emptyView(viewDomain: SparkCypherGraph) = new SparkCypherView {
+        override def domain = viewDomain
+        override def model = ???
+        override def records = SparkCypherRecords.empty(sc)
+        override def graph = emptyGraph
+      }
+
       override def base = new SparkCypherGraph with Serializable {
         selfBase =>
         override def nodes(v: Var) = new SparkCypherView with Serializable {
           override def domain = selfBase
           override def model = QueryModel[Expr](null, context.globals, Map.empty)
           override def records = nodeRecords(v)
-          override def graph = ???
+          override def graph = new SparkCypherGraph {
+            nodeGraph =>
+
+            override def nodes(v: Var) = new SparkCypherView {
+              override def domain = nodeGraph
+              override def model = ???
+              override def records = nodeRecords(v)
+              override def graph = nodeGraph
+            }
+            override def relationships(v: Var) = emptyView(nodeGraph)
+            override def space = selfSpace
+            override def constituents = ???
+            override def schema = context.schema
+          }
         }
         override def relationships(v: Var) = new SparkCypherView with Serializable {
           override def domain = selfBase
           override def model = QueryModel[Expr](null, context.globals, Map.empty)
           override def records = relRecords(v)
-          override def graph = ???
+          override def graph = selfBase
         }
         override def constituents = ???
         override def space = selfSpace

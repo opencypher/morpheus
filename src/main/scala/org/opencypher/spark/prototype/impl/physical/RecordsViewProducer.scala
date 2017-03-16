@@ -28,24 +28,24 @@ class RecordsViewProducer(context: RuntimeContext) {
   implicit final class RichCypherView(val view: SparkCypherView) {
 
     def select(fields: Map[Expr, String]): SparkCypherView =
-      SparkCypherRecordsView(view.records.select(fields))
+      InternalCypherView(view.records.select(fields))
 
     def project(slot: ProjectedSlotContent): SparkCypherView =
-      SparkCypherRecordsView(view.records.project(slot))
+      InternalCypherView(view.records.project(slot))
 
     def filter(expr: Expr): SparkCypherView =
-      SparkCypherRecordsView(view.records.filter(expr))
+      InternalCypherView(view.records.filter(expr))
 
     def labelFilter(node: Var, labels: AllGiven[LabelRef]): SparkCypherView = {
       val labelExprs: Set[Expr] = labels.elts.map { ref => HasLabel(node, ref) }
-      SparkCypherRecordsView(view.records.filter(Ands(labelExprs)))
+      InternalCypherView(view.records.filter(Ands(labelExprs)))
     }
 
     def typeFilter(rel: Var, types: AnyGiven[RelTypeRef]): SparkCypherView = {
       if (types.elts.isEmpty) view
       else {
         val typeExprs: Set[Expr] = types.elts.map { ref => HasType(rel, ref) }
-        SparkCypherRecordsView(view.records.filter(Ands(typeExprs)))
+        InternalCypherView(view.records.filter(Ands(typeExprs)))
       }
     }
 
@@ -58,7 +58,7 @@ class RecordsViewProducer(context: RuntimeContext) {
         assertIsNode(rhsSlot)
 
         val records = view.records.join(relView.records)(lhsSlot, rhsSlot)
-        SparkCypherRecordsView(records)
+        InternalCypherView(records)
       }
     }
 
@@ -71,7 +71,7 @@ class RecordsViewProducer(context: RuntimeContext) {
         assertIsNode(rhsSlot)
 
         val records = view.records.join(nodeView.records)(lhsSlot, rhsSlot)
-        SparkCypherRecordsView(records)
+        InternalCypherView(records)
       }
     }
 
@@ -86,9 +86,8 @@ class RecordsViewProducer(context: RuntimeContext) {
       }
     }
 
-    final case class SparkCypherRecordsView(records: SparkCypherRecords) extends SparkCypherView {
+    final case class InternalCypherView(records: SparkCypherRecords, graph: SparkCypherGraph = ???) extends SparkCypherView {
       override def domain: SparkCypherGraph = view.domain
-      override def graph: SparkCypherGraph = ???
       override def model: QueryModel[Expr] = ???
     }
   }

@@ -1,6 +1,6 @@
 package org.opencypher.spark.prototype.api.spark
 
-import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.opencypher.spark.prototype.api.record._
 
 trait SparkCypherRecords extends CypherRecords with Serializable {
@@ -21,4 +21,11 @@ trait SparkCypherRecords extends CypherRecords with Serializable {
   }
 
   override def show() = toDF().show()
+}
+
+object SparkCypherRecords {
+  def empty(session: SparkSession) = new SparkCypherRecords {
+    override def data = session.emptyDataFrame
+    override def header = RecordHeader.empty
+  }
 }
