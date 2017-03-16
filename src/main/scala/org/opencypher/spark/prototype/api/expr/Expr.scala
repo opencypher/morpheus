@@ -84,6 +84,10 @@ final class Ors(_exprs: Set[Expr]) extends FlatteningOpExpr(_exprs) {
   override protected def hashPrime: Int = 61
 }
 
+final case class Not(expr: Expr) extends Expr {
+  override def toString = s"NOT $expr"
+}
+
 final case class HasLabel(node: Expr, label: LabelRef) extends Expr {
   override def toString = s"$node:${label.id}"
 }

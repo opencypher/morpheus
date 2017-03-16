@@ -20,6 +20,7 @@ final case class RecordHeader(internalHeader: InternalHeader) {
     internalHeader.slotsFor(expr)
 
   def slotFor(variable: Var): RecordSlot = slotsFor(variable).headOption.getOrElse(???)
+  def slotsFor(names: String*): Seq[RecordSlot] = names.map(n => slotFor(Var(n)))
 
   def sourceNode(rel: Var): RecordSlot = slotsFor(StartNode(rel)).headOption.getOrElse(???)
   def targetNode(rel: Var): RecordSlot = slotsFor(EndNode(rel)).headOption.getOrElse(???)

@@ -97,7 +97,12 @@ trait SparkGraphLoading {
     }
     val nodeStruct = (v: Var) => StructType(nodeFields(v).map(_._2).toArray)
     val nodeRDD = (v: Var) => nodes.map(nodeToRow(nodeHeader(v), nodeStruct(v)))
-    val nodeFrame = (v: Var) => sc.createDataFrame(nodeRDD(v), nodeStruct(v)).cache()
+    val nodeFrame = (v: Var) => {
+      val slot = nodeHeader(v).slotFor(v)
+      val df = sc.createDataFrame(nodeRDD(v), nodeStruct(v))
+      val col = df.col(df.columns(slot.index))
+      df.repartition(col).sortWithinPartitions(col).cache()
+    }
 
     val nodeRecords = (v: Var) => new SparkCypherRecords with Serializable {
       override def data = nodeFrame(v)
@@ -110,7 +115,12 @@ trait SparkGraphLoading {
     }
     val relStruct = (v: Var) => StructType(relFields(v).map(_._2).toArray)
     val relRDD = (v: Var) => rels.map(relToRow(relHeader(v), relStruct(v)))
-    val relFrame = (v: Var) => sc.createDataFrame(relRDD(v), relStruct(v)).cache()
+    val relFrame = (v: Var) => {
+      val slot = nodeHeader(v).slotFor(v)
+      val df = sc.createDataFrame(relRDD(v), relStruct(v)).cache()
+      val col = df.col(df.columns(slot.index))
+      df.repartition(col).sortWithinPartitions(col).cache()
+    }
 
     val relRecords = (v: Var) => new SparkCypherRecords with Serializable {
       override def data = relFrame(v)

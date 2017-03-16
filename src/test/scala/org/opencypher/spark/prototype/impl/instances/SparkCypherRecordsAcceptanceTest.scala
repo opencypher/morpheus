@@ -15,7 +15,7 @@ class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fix
     val records = smallSpace.base.cypher("MATCH (a:User) RETURN a.text").records
 
     records.data.count() shouldBe 1806
-    records.data.head().getString(0) shouldBe a[String]
+    records.data.collect().toSet.map((r: Row) => r.get(0)) should contain("Application Developer")
     records.header.slots.size shouldBe 1
     records.header.slots.head.content.cypherType shouldBe CTString.nullable
     records.header.slots.head.content.key should equal(Var("a.text"))
@@ -53,20 +53,18 @@ class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fix
 
     val records = fullSpace.base.cypher(query).records
 
-    val start = System.currentTimeMillis()
     val rows = records.data.collect().toSeq
-    val time = System.currentTimeMillis() - start
-    println(s"Time to collect: ${time / 1000.0} s")
-    // TODO: Do not rely on ordering of columns in the dataframe: use the header!
+    val slots = records.header.slotsFor("t.text", "l.location", "l.followers")
+
     rows.length shouldBe 815
     rows.exists { r =>
-      r.getString(0) == "@Khanoisseur @roygrubb @Parsifalssister @Rockmedia a perfect problem for a graph database like #neo4j"
+      r.getString(slots.head.index) == "@Khanoisseur @roygrubb @Parsifalssister @Rockmedia a perfect problem for a graph database like #neo4j"
     } shouldBe true
     rows.exists { r =>
-      r.getString(1) == "Szeged and Gent"
+      r.getString(slots(1).index) == "Szeged and Gent"
     } shouldBe true
     rows.exists { r =>
-      !r.isNullAt(2) && r.getLong(2) == 83266l
+      !r.isNullAt(slots(2).index) && r.getLong(slots(2).index) == 83266l
     } shouldBe true
   }
 
@@ -89,12 +87,44 @@ class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fix
   test("property filter in small space") {
     val records = smallSpace.base.cypher("MATCH (t:User) WHERE t.country = 'ca' RETURN t.city").records
 
-    val results = records.toDF.collect().toSeq.map {
+    val results = records.toDF().collect().toSeq.map {
       (r: Row) => r.getString(0)
     }
 
     results.size shouldBe 38
     results should contain("Vancouver")
+  }
+
+  test("multiple hops of expand with different reltypes") {
+    val query = "MATCH (u1:User)-[:POSTED]->(t:Tweet)-[:MENTIONED]->(u2:User) RETURN u1.name, u2.name, t.text"
+
+    val records = fullSpace.base.cypher(query).records
+
+    val slots = records.header.slotsFor("u1.name", "u2.name", "t.text")
+    val tuples = records.toDF().collect().toSeq.map { r =>
+      (r.get(slots.head.index), r.get(slots(1).index), r.get(slots(2).index))
+    }
+
+    tuples.size shouldBe 79
+    val tuple = ("Brendan Madden", "Tom Sawyer Software",
+      "#tsperspectives 7.6 is 15% faster with #neo4j Bolt support. https://t.co/1xPxB9slrB @TSawyerSoftware #graphviz")
+    tuples should contain(tuple)
+  }
+
+  test("multiple hops of expand with possible reltype conflict") {
+    val query = "MATCH (u1:User)-[r1:POSTED]->(t:Tweet)-[r2]->(u2:User) RETURN u1.name, u2.name, t.text"
+
+    val records = fullSpace.base.cypher(query).records
+
+    val slots = records.header.slotsFor("u1.name", "u2.name", "t.text")
+    val tuples = records.toDF().collect().toSeq.map { r =>
+      (r.get(slots.head.index), r.get(slots(1).index), r.get(slots(2).index))
+    }
+
+    tuples.size shouldBe 79
+    val tuple = ("Brendan Madden", "Tom Sawyer Software",
+      "#tsperspectives 7.6 is 15% faster with #neo4j Bolt support. https://t.co/1xPxB9slrB @TSawyerSoftware #graphviz")
+    tuples should contain(tuple)
   }
 
   private val smallSchema = Schema.empty

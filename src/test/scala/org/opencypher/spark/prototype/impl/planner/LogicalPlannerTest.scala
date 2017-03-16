@@ -1,6 +1,6 @@
 package org.opencypher.spark.prototype.impl.planner
 
-import org.opencypher.spark.api.types.{CTAny, CTFloat, CTString}
+import org.opencypher.spark.api.types.{CTAny, CTBoolean, CTFloat, CTString}
 import org.opencypher.spark.prototype.IrTestSuite
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir._
@@ -26,9 +26,9 @@ class LogicalPlannerTest extends IrTestSuite {
 
     val block = matchBlock(pattern)
 
-    val scan = NodeScan('a, EveryNode(), emptySig)(emptySqm.withField('a))
+    val scan = NodeScan('a, EveryNode())(emptySqm.withField('a))
     plan(irFor(block)) should equalWithoutResult(
-      ExpandSource('a, 'r, EveryRelationship(), 'b, scan, emptySig)(scan.solved.withFields('r, 'b))
+      ExpandSource('a, 'r, EveryRelationship(), 'b, scan)(scan.solved.withFields('r, 'b))
     )
   }
 
@@ -40,7 +40,7 @@ class LogicalPlannerTest extends IrTestSuite {
 
     plan(irWithLeaf(block)) should equalWithoutResult(
       Project(ProjectedField('a, Property('n, PropertyKeyRef(0)), CTAny.nullable),
-        leafPlan, emptySig)(emptySqm.withFields('n, 'a))
+        leafPlan)(emptySqm.withFields('n, 'a))
     )
   }
 
@@ -57,13 +57,13 @@ class LogicalPlannerTest extends IrTestSuite {
               Filter(HasLabel(Var("g"), globals.label("Group")),
                 Filter(HasLabel(Var("a"), globals.label("Administrator")),
                   ExpandSource(Var("a"), Var("r"), EveryRelationship(), Var("g"),
-                    NodeScan(Var("a"), EveryNode(), emptySig)(emptySqm), emptySig
-                  )(emptySqm), emptySig
-                )(emptySqm), emptySig
-              )(emptySqm), emptySig
-            )(emptySqm), emptySig
-          )(emptySqm), emptySig
-        )(emptySqm), emptySig
+                    NodeScan(Var("a"), EveryNode())(emptySqm)
+                  )(emptySqm)
+                )(emptySqm)
+              )(emptySqm)
+            )(emptySqm)
+          )(emptySqm)
+        )(emptySqm)
       )(emptySqm)
     )
   }
@@ -84,13 +84,29 @@ class LogicalPlannerTest extends IrTestSuite {
               Filter(HasLabel(Var("g"), globals.label("Group")),
                 Filter(HasLabel(Var("a"), globals.label("Administrator")),
                   ExpandSource(Var("a"), Var("r"), EveryRelationship(), Var("g"),
-                    NodeScan(Var("a"), EveryNode(), emptySig)(emptySqm), emptySig
-                  )(emptySqm), emptySig
-                )(emptySqm), emptySig
-              )(emptySqm), emptySig
-            )(emptySqm), emptySig
-          )(emptySqm), emptySig
-        )(emptySqm), emptySig
+                    NodeScan(Var("a"), EveryNode())(emptySqm)
+                  )(emptySqm)
+                )(emptySqm)
+              )(emptySqm)
+            )(emptySqm)
+          )(emptySqm)
+        )(emptySqm)
+      )(emptySqm)
+    )
+  }
+
+  test("plan query with negation") {
+    val ir = "MATCH (a) WHERE NOT 1 = false RETURN a.prop".ir
+
+    val globals = ir.model.globals
+
+    plan(ir, globals) should equal(
+      Select(Seq(Var("a.prop") -> "a.prop"),
+        Project(ProjectedField(Var("a.prop"), Property(Var("a"), globals.propertyKey("prop")), CTAny.nullable),
+          Filter(Not(Equals(Const(globals.constant("  AUTOINT0")), Const(globals.constant("  AUTOBOOL1")))),
+            NodeScan(Var("a"), EveryNode())(emptySqm)
+          )(emptySqm)
+        )(emptySqm)
       )(emptySqm)
     )
   }
