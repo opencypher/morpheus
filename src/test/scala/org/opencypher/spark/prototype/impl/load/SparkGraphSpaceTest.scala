@@ -17,7 +17,7 @@ class SparkGraphSpaceTest extends StdTestSuite with TestSession.Fixture {
   test("import nodes from neo") {
     val schema = Schema.empty
       .withNodeKeys("Tweet")("id" -> CTInteger, "text" -> CTString.nullable, "created" -> CTString.nullable)
-    val space = SparkGraphSpace.fromNeo4j("MATCH (n:Tweet) RETURN n LIMIT 100", "RETURN 1 LIMIT 0", Some(schema))
+    val space = SparkGraphSpace.fromNeo4j("MATCH (n:Tweet) RETURN n LIMIT 100", "RETURN 1 LIMIT 0", schema)
     val df = space.base.nodes().records.toDF()
 
     df.count() shouldBe 100
@@ -35,7 +35,7 @@ class SparkGraphSpaceTest extends StdTestSuite with TestSession.Fixture {
       .withRelationshipKeys("ATTENDED")("guests" -> CTInteger, "comments" -> CTString.nullable)
     val space = SparkGraphSpace.fromNeo4j(
       "RETURN 1 LIMIT 0",
-      "MATCH ()-[r:ATTENDED]->() RETURN r LIMIT 100", Some(schema))
+      "MATCH ()-[r:ATTENDED]->() RETURN r LIMIT 100", schema)
     val df = space.base.rels().records.toDF
 
     df.count() shouldBe 100
@@ -56,7 +56,7 @@ class SparkGraphSpaceTest extends StdTestSuite with TestSession.Fixture {
       .withNodeKeys("Event")("time" -> CTInteger.nullable, "link" -> CTAny.nullable)
     val space = SparkGraphSpace.fromNeo4j(
       "MATCH (a)-[:ATTENDED]->(b) UNWIND [a, b] AS n RETURN DISTINCT n",
-      "MATCH ()-[r:ATTENDED]->() RETURN r", Some(schema))
+      "MATCH ()-[r:ATTENDED]->() RETURN r", schema)
     val rels = space.base.rels().records.toDF
     val nodes = space.base.nodes().records.toDF
 

@@ -2,12 +2,12 @@ package org.opencypher.spark.prototype.impl.instances.spark
 
 import org.apache.spark.sql.DataFrame
 import org.opencypher.spark.benchmark.Converters
-import org.opencypher.spark.prototype.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherView, SparkGraphSpace}
+import org.opencypher.spark.prototype.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkGraphSpace}
 import org.opencypher.spark.prototype.api.value.CypherValue
 import org.opencypher.spark.prototype.impl.classy.Cypher
 import org.opencypher.spark.prototype.impl.convert.{CypherParser, CypherQueryBuilder, GlobalsExtractor}
-import org.opencypher.spark.prototype.impl.physical.{RecordsViewProducer, RuntimeContext}
-import org.opencypher.spark.prototype.impl.planner.{LogicalPlanner, LogicalPlannerContext, ViewPlanner, ViewPlannerContext}
+import org.opencypher.spark.prototype.impl.physical.{GraphProducer, RuntimeContext}
+import org.opencypher.spark.prototype.impl.planner.{GraphPlanner, GraphPlannerContext, LogicalPlanner, LogicalPlannerContext}
 
 trait SparkCypherInstances {
 
@@ -15,14 +15,13 @@ trait SparkCypherInstances {
 
     override type Graph = SparkCypherGraph
     override type Space = SparkGraphSpace
-    override type View = SparkCypherView
     override type Records = SparkCypherRecords
     override type Data = DataFrame
 
     private val logicalPlanner = new LogicalPlanner()
     private val parser = CypherParser
 
-    override def cypher(graph: Graph, query: String, parameters: Map[String, CypherValue]): View = {
+    override def cypher(graph: Graph, query: String, parameters: Map[String, CypherValue]): Graph = {
       val (stmt, extractedLiterals) = parser.parseAndExtract(query)
 
       val globals = GlobalsExtractor(stmt, graph.space.globals)
@@ -32,7 +31,7 @@ trait SparkCypherInstances {
         case (k, v) => globals.constant(k) -> v
       }
 
-      val physicalPlanner = new ViewPlanner(new RecordsViewProducer(RuntimeContext(constants)))
+      val physicalPlanner = new GraphPlanner(new GraphProducer(RuntimeContext(constants)))
 
       val ir = CypherQueryBuilder.from(stmt, query, globals)
 
@@ -43,7 +42,7 @@ trait SparkCypherInstances {
       println("Logical plan constructed")
       println(logicalPlan.solved)
 
-      val physicalPlan = physicalPlanner.plan(logicalPlan)(ViewPlannerContext(graph, globals))
+      val physicalPlan = physicalPlanner.plan(logicalPlan)(GraphPlannerContext(graph, globals))
       println("Physical plan constructed")
       physicalPlan
     }

@@ -1,7 +1,10 @@
 package org.opencypher.spark.prototype.api.spark
 
-import org.apache.spark.sql.{DataFrame, SparkSession}
+import java.util.Collections
+
+import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import org.opencypher.spark.prototype.api.record._
+import org.opencypher.spark.prototype.impl.spark.SparkSchema
 
 trait SparkCypherRecords extends CypherRecords with Serializable {
 
@@ -24,8 +27,8 @@ trait SparkCypherRecords extends CypherRecords with Serializable {
 }
 
 object SparkCypherRecords {
-  def empty(session: SparkSession) = new SparkCypherRecords {
-    override def data = session.emptyDataFrame
-    override def header = RecordHeader.empty
+  def empty(session: SparkSession, emptyHeader: RecordHeader = RecordHeader.empty) = new SparkCypherRecords {
+    override def data = session.createDataFrame(Collections.emptyList[Row](), SparkSchema.from(emptyHeader))
+    override def header = emptyHeader
   }
 }

@@ -14,9 +14,9 @@ import scala.language.implicitConversions
 
 abstract class IrTestSuite extends StdTestSuite {
   val leafRef = BlockRef("leaf")
-  val leafBlock = matchBlock(Pattern.empty[Expr].withEntity('n, EveryNode()))
+  val leafBlock = matchBlock(Pattern.empty[Expr].withEntity('n, EveryNode))
   val emptySig = RecordHeader.empty
-  val leafPlan = NodeScan('n, EveryNode(), emptySig)(SolvedQueryModel.empty)
+  val leafPlan = NodeScan('n, EveryNode, emptySig)(SolvedQueryModel.empty)
 
   implicit def toField(s: Symbol): Field = Field(s.name)
   implicit def toVar(s: Symbol): Var = Var(s.name)

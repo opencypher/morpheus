@@ -14,19 +14,19 @@ class PatternTest extends IrTestSuite {
 
   test("mark node as solved") {
     Pattern.empty[Expr]
-      .withEntity('a, EveryNode())
-      .withEntity('b, EveryNode())
-      .withEntity('r, EveryRelationship())
+      .withEntity('a, EveryNode)
+      .withEntity('b, EveryNode)
+      .withEntity('r, EveryRelationship)
       .solvedNode('a) should equal(
-        Pattern(Map(toField('b) -> EveryNode(), toField('r) -> EveryRelationship()), Map.empty)
+        Pattern(Map(toField('b) -> EveryNode, toField('r) -> EveryRelationship), Map.empty)
     )
   }
 
   test("mark connection as solved") {
     Pattern.empty[Expr]
-      .withEntity('a, EveryNode())
-      .withEntity('b, EveryNode())
-      .withEntity('r, EveryRelationship())
+      .withEntity('a, EveryNode)
+      .withEntity('b, EveryNode)
+      .withEntity('r, EveryRelationship)
       .withConnection('r, DirectedRelationship('a, 'b))
       .withoutConnection('r) should equal(
         Pattern(Map.empty, Map.empty)

@@ -60,9 +60,9 @@ final case class InternalHeader protected[spark](
     val content = slot.content
     val optExtraType = slotsFor(content.key, content.cypherType).slice(1, 2).headOption
     if (optExtraType.isEmpty)
-      SparkColumnName.of(slot.content)
+      SparkColumnName.withoutType(slot.content)
     else
-      SparkColumnName.withType(content)
+      SparkColumnName.of(content)
   }
 }
 

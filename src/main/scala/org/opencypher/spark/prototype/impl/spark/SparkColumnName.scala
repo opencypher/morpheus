@@ -6,7 +6,7 @@ import scala.collection.mutable
 
 object SparkColumnName {
 
-  def of(slot: SlotContent): String = {
+  def withoutType(slot: SlotContent): String = {
     val builder = slot match {
       case ProjectedExpr(expr, _) => new NameBuilder() += None += expr.toString
       case fieldContent: FieldSlotContent => new NameBuilder() += fieldContent.field.name
@@ -15,7 +15,7 @@ object SparkColumnName {
     builder.result()
   }
 
-  def withType(slot: SlotContent): String = {
+  def of(slot: SlotContent): String = {
     val builder = slot match {
       case ProjectedExpr(expr, _) => new NameBuilder() += None += expr.toString
       case fieldContent: FieldSlotContent => new NameBuilder() += fieldContent.field.name

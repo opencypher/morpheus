@@ -12,9 +12,9 @@ trait CypherSyntax {
 
 final class CypherOps[G <: CypherGraph, C <: Cypher { type Graph = G }](graph: G)(implicit val engine: C) {
 
-  def cypher(query: String): engine.View =
+  def cypher(query: String): G =
     engine.cypher(graph, query)
 
-  def cypher(query: String, parameters: Map[String, CypherValue]): engine.View =
+  def cypher(query: String, parameters: Map[String, CypherValue]): G =
     engine.cypher(graph, query, parameters)
 }

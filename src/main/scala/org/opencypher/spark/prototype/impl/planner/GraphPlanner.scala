@@ -3,17 +3,18 @@ package org.opencypher.spark.prototype.impl.planner
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.prototype.api.ir.pattern.AllGiven
-import org.opencypher.spark.prototype.api.spark.{SparkCypherGraph, SparkCypherView}
+import org.opencypher.spark.prototype.api.spark.SparkCypherGraph
 import org.opencypher.spark.prototype.impl.logical
-import org.opencypher.spark.prototype.impl.physical.RecordsViewProducer
+import org.opencypher.spark.prototype.impl.physical.GraphProducer
 
-case class ViewPlannerContext(graph: SparkCypherGraph, globals: GlobalsRegistry)
+case class GraphPlannerContext(graph: SparkCypherGraph, globals: GlobalsRegistry)
 
-class ViewPlanner(producer: RecordsViewProducer) extends Stage[logical.LogicalOperator, SparkCypherView, ViewPlannerContext] {
+class GraphPlanner(producer: GraphProducer)
+  extends Stage[logical.LogicalOperator, SparkCypherGraph, GraphPlannerContext] {
 
   import producer._
 
-  def plan(logicalPlan: logical.LogicalOperator)(implicit context: ViewPlannerContext): SparkCypherView =
+  def plan(logicalPlan: logical.LogicalOperator)(implicit context: GraphPlannerContext): SparkCypherGraph =
     logicalPlan match {
       case logical.Select(fields, in, _) =>
         plan(in).select(fields.toMap)
@@ -35,8 +36,8 @@ class ViewPlanner(producer: RecordsViewProducer) extends Stage[logical.LogicalOp
       case logical.ExpandSource(source, rel, types, target, in, _) =>
         val lhs = plan(in)
         // TODO: where is the node label info? We could plan a filter here
-        val nodeRhs = context.graph.nodes(target)
-        val relRhs = context.graph.relationships(rel).typeFilter(rel, types.relTypes)
+        val nodeRhs = context.graph.allNodes(target)
+        val relRhs = context.graph.allRelationships(rel).typeFilter(rel, types.relTypes)
 
         val rhs = relRhs.joinTarget(nodeRhs).on(rel)(target)
         val expanded = lhs.expandSource(rhs).on(source)(rel)

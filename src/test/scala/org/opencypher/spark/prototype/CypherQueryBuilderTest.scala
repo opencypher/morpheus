@@ -42,7 +42,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
 
       val matchRef = model.findExactlyOne {
         case NoWhereBlock(MatchBlock(_, Pattern(entities, topo), _)) =>
-          entities should equal(Map(toField('a) -> EveryNode(), toField('b) -> EveryNode(), toField('r) -> EveryRelationship()))
+          entities should equal(Map(toField('a) -> EveryNode, toField('b) -> EveryNode, toField('r) -> EveryRelationship))
           topo should equal(Map(toField('r) -> DirectedRelationship('a, 'b)))
       }
 

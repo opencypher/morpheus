@@ -19,16 +19,16 @@ class LogicalPlannerTest extends IrTestSuite {
 
   test("convert match block") {
     val pattern = Pattern.empty[Expr]
-      .withEntity('a, EveryNode())
-      .withEntity('b, EveryNode())
-      .withEntity('r, EveryRelationship())
+      .withEntity('a, EveryNode)
+      .withEntity('b, EveryNode)
+      .withEntity('r, EveryRelationship)
       .withConnection('r, DirectedRelationship('a, 'b))
 
     val block = matchBlock(pattern)
 
-    val scan = NodeScan('a, EveryNode())(emptySqm.withField('a))
+    val scan = NodeScan('a, EveryNode)(emptySqm.withField('a))
     plan(irFor(block)) should equalWithoutResult(
-      ExpandSource('a, 'r, EveryRelationship(), 'b, scan)(scan.solved.withFields('r, 'b))
+      ExpandSource('a, 'r, EveryRelationship, 'b, scan)(scan.solved.withFields('r, 'b))
     )
   }
 
@@ -56,8 +56,8 @@ class LogicalPlannerTest extends IrTestSuite {
             Project(ProjectedExpr(Property(Var("g"), globals.propertyKey("name")), CTAny.nullable),
               Filter(HasLabel(Var("g"), globals.label("Group")),
                 Filter(HasLabel(Var("a"), globals.label("Administrator")),
-                  ExpandSource(Var("a"), Var("r"), EveryRelationship(), Var("g"),
-                    NodeScan(Var("a"), EveryNode())(emptySqm)
+                  ExpandSource(Var("a"), Var("r"), EveryRelationship, Var("g"),
+                    NodeScan(Var("a"), EveryNode)(emptySqm)
                   )(emptySqm)
                 )(emptySqm)
               )(emptySqm)
@@ -83,8 +83,8 @@ class LogicalPlannerTest extends IrTestSuite {
             Project(ProjectedExpr(Property(Var("g"), globals.propertyKey("name")), CTString),
               Filter(HasLabel(Var("g"), globals.label("Group")),
                 Filter(HasLabel(Var("a"), globals.label("Administrator")),
-                  ExpandSource(Var("a"), Var("r"), EveryRelationship(), Var("g"),
-                    NodeScan(Var("a"), EveryNode())(emptySqm)
+                  ExpandSource(Var("a"), Var("r"), EveryRelationship, Var("g"),
+                    NodeScan(Var("a"), EveryNode)(emptySqm)
                   )(emptySqm)
                 )(emptySqm)
               )(emptySqm)
@@ -104,7 +104,7 @@ class LogicalPlannerTest extends IrTestSuite {
       Select(Seq(Var("a.prop") -> "a.prop"),
         Project(ProjectedField(Var("a.prop"), Property(Var("a"), globals.propertyKey("prop")), CTAny.nullable),
           Filter(Not(Equals(Const(globals.constant("  AUTOINT0")), Const(globals.constant("  AUTOBOOL1")))),
-            NodeScan(Var("a"), EveryNode())(emptySqm)
+            NodeScan(Var("a"), EveryNode)(emptySqm)
           )(emptySqm)
         )(emptySqm)
       )(emptySqm)

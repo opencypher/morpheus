@@ -6,7 +6,7 @@ import org.opencypher.spark.prototype.api.expr.Var
 import org.opencypher.spark.prototype.api.schema.Schema
 import org.opencypher.spark.prototype.impl.instances.spark.cypher._
 import org.opencypher.spark.prototype.impl.syntax.cypher._
-import org.opencypher.spark.prototype.api.spark.SparkGraphSpace
+import org.opencypher.spark.prototype.api.spark.{SparkCypherGraph, SparkGraphSpace}
 import org.opencypher.spark.{StdTestSuite, TestSession}
 
 class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fixture {
@@ -137,7 +137,7 @@ class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fix
   private def initSmallSpace(schema: Schema = smallSchema,
                              nodeQ: String = "MATCH (a)-[:ATTENDED]->(b) UNWIND [a, b] AS n RETURN DISTINCT n",
                              relQ: String = "MATCH ()-[r:ATTENDED]->() RETURN r") = {
-    SparkGraphSpace.fromNeo4j(nodeQ, relQ, Some(schema))
+    SparkGraphSpace.fromNeo4j(nodeQ, relQ, schema)
   }
 
   private lazy val smallSpace = initSmallSpace()
