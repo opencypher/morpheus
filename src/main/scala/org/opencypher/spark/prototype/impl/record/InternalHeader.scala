@@ -1,13 +1,15 @@
 package org.opencypher.spark.prototype.impl.record
 
+import cats.Monad
 import cats.data.State
 import cats.data.State.{get, set}
+import cats.instances.all._
 import org.opencypher.spark.api.CypherType
 import org.opencypher.spark.prototype.api.expr.{Expr, Var}
 import org.opencypher.spark.prototype.api.record._
 import org.opencypher.spark.prototype.impl.spark.SparkColumnName
-import org.opencypher.spark.prototype.impl.syntax.register._
 import org.opencypher.spark.prototype.impl.syntax.expr._
+import org.opencypher.spark.prototype.impl.syntax.register._
 import org.opencypher.spark.prototype.impl.util.RefCollection.AbstractRegister
 import org.opencypher.spark.prototype.impl.util._
 
@@ -33,9 +35,8 @@ final case class InternalHeader protected[spark](
       case (acc, content) => acc + content
     }
 
-  def slots = cachedSlots
-
-  def fields = cachedFields
+  def slots: IndexedSeq[RecordSlot] = cachedSlots
+  def fields: Set[Var] = cachedFields
 
   def slotsFor(expr: Expr, cypherType: CypherType): Seq[RecordSlot] =
     slotsFor(expr).filter(_.content.cypherType == cypherType)
@@ -66,6 +67,9 @@ final case class InternalHeader protected[spark](
 }
 
 object InternalHeader {
+
+  private type HeaderState[X] = State[InternalHeader, X]
+
   val empty = new InternalHeader(RefCollection.empty, Map.empty, Set.empty)
 
   def apply(contents: SlotContent*) =
@@ -73,6 +77,9 @@ object InternalHeader {
 
   def from(contents: TraversableOnce[SlotContent]) =
     contents.foldLeft(empty) { case (header, slot) => header + slot }
+
+  def addContents(contents: Seq[SlotContent]): State[InternalHeader, Vector[AdditiveUpdateResult[RecordSlot]]] =
+    execAll(contents.map(addContent).toVector)
 
   def addContent(addedContent: SlotContent): State[InternalHeader, AdditiveUpdateResult[RecordSlot]] =
     addedContent match {
@@ -159,27 +166,32 @@ object InternalHeader {
   private def addExprSlots(m: Map[Expr, Vector[Int]], key: Expr, value: Int): Map[Expr, Vector[Int]] =
     if (m.getOrElse(key, Vector.empty).contains(value)) m else m.updated(key, m.getOrElse(key, Vector.empty) :+ value)
 
-  def removeContent(removedContent: SlotContent): State[InternalHeader, RemovingUpdateResult[SlotContent]] = {
-    for (
-      header <- get[InternalHeader]
-    )
-      yield
-        header.slotContents.find(removedContent) match {
-          case Some(ref) =>
-            val slot = RecordSlot(ref, removedContent)
-            val dependencies = removeDependencies(List(List(slot)), header.slots.toSet, Set.empty, Set.empty)
-            // TODO: Actually make this happen
-            Removed(removedContent, dependencies.map(_.content) - removedContent)
 
-          case None =>
-            NotFound(removedContent)
-        }
+  def removeContent(removedContent: SlotContent)
+  : State[InternalHeader, (RemovingUpdateResult[SlotContent], Vector[AdditiveUpdateResult[RecordSlot]])] = {
+    get[InternalHeader].flatMap { header =>
+      header.slotContents.find(removedContent) match {
+        case Some(ref) =>
+          val slot = RecordSlot(ref, removedContent)
+          val (remainingSlots, removedSlots) = removeDependencies(List(List(slot)), header.slots.toSet)
+          val remainingContent = remainingSlots.toSeq.sortBy(_.index).map(_.content)
+          val removedResult = Removed(removedContent, removedSlots.map(_.content) - removedContent)
+          addContents(remainingContent).map { addedResult => removedResult -> addedResult }
+
+        case None =>
+          pureState(NotFound(removedContent) -> Vector.empty)
+      }
+    }
   }
 
   @tailrec
   private def removeDependencies(
-    drop: List[List[RecordSlot]], remaining: Set[RecordSlot], removedFields: Set[Var], removedSlots: Set[RecordSlot]
-  ) : Set[RecordSlot] =
+    drop: List[List[RecordSlot]],
+    remaining: Set[RecordSlot],
+    removedFields: Set[Var] = Set.empty,
+    removedSlots: Set[RecordSlot] = Set.empty
+  )
+  : (Set[RecordSlot], Set[RecordSlot]) =
     drop match {
       case (hdList: List[RecordSlot]) :: (tlList: List[List[RecordSlot]]) =>
         hdList match {
@@ -200,7 +212,7 @@ object InternalHeader {
             removeDependencies(tlList, remaining, removedFields, removedSlots)
         }
       case _ =>
-        removedSlots
+        remaining -> removedSlots
     }
 
   private def pureState[X](it: X) = State.pure[InternalHeader, X](it)
@@ -213,4 +225,7 @@ object InternalHeader {
     }
 
   private def slot(header: InternalHeader, ref: Int) = RecordSlot(ref, header.slotContents.elts(ref))
+
+  private def execAll[O](input: Vector[State[InternalHeader, O]]): State[InternalHeader, Vector[O]] =
+    Monad[HeaderState].sequence(input)
 }

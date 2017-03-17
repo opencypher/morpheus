@@ -10,8 +10,6 @@ import org.opencypher.spark.prototype.impl.physical._
 import org.opencypher.spark.prototype.impl.syntax.header._
 import org.opencypher.spark.prototype.impl.syntax.util.traversable._
 
-import scala.annotation.tailrec
-
 class PhysicalOperatorProducer(implicit context: PhysicalPlannerContext) {
 
   private val globals = context.globalsRegistry
@@ -50,6 +48,8 @@ class PhysicalOperatorProducer(implicit context: PhysicalPlannerContext) {
     val keyHeaderContents = keyGroups.toSeq.flatMap {
       case (k, types) => types.map { t => ProjectedExpr(Property(node, propertyKey(k)), t) }
     }
+
+    // TODO: Add is null column(?)
 
     // TODO: Check results for errors
     val (header, _) = RecordHeader.empty.update(addContents(labelHeaderContents ++ keyHeaderContents))
