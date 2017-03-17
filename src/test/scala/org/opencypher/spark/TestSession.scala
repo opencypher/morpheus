@@ -29,7 +29,9 @@ object TestSessionFactory {
     val conf = new SparkConf(true)
     conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     conf.set("spark.kryo.registrator","org.opencypher.spark.CypherKryoRegistrar")
-    conf.set("spark.neo4j.bolt.password", Neo4jPassword.get())
+    conf.set("spark.neo4j.bolt.password", "try-planet-stand-art")
+    conf.set("spark.neo4j.bolt.user", "openCypher_tests")
+    conf.set("spark.neo4j.bolt.url", "bolt://ff01adf3.databases.neo4j.io")
 
     //
     // This may or may not help - depending on the query

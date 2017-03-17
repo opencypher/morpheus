@@ -22,6 +22,7 @@ object RunBenchmark {
     conf.set("spark.kryo.registrator", "org.opencypher.spark.CypherKryoRegistrar")
 //    conf.set("spark.sql.crossJoin.enabled", "false")
     conf.set("spark.neo4j.bolt.password", Neo4jPassword.get())
+    conf.set("spark.neo4j.bolt.url", "bolt://ff01adf3.databases.neo4j.io")
     // Enable to see if we cover enough
 //    conf.set("spark.kryo.registrationRequired", "true")
     conf.set("spark.sql.shuffle.partitions", Partitions.get().toString)
