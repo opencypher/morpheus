@@ -5,7 +5,6 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SparkSession}
 import org.neo4j.driver.internal.{InternalNode, InternalRelationship}
-import org.neo4j.spark.Neo4j
 import org.opencypher.spark.api.CypherType
 import org.opencypher.spark.api.types._
 import org.opencypher.spark.benchmark.Converters.cypherValue
@@ -78,8 +77,8 @@ trait SparkGraphLoading {
     createSpace(nodes, rels)
   }
 
-  private def loadRDDs(nodeQ: String, relQ: String)(implicit sc: SparkSession) = {
-    val neo4j = Neo4j(sc.sparkContext)
+  private def loadRDDs(nodeQ: String, relQ: String)(implicit session: SparkSession) = {
+    val neo4j = EncryptedNeo4j(session)
     val nodes = neo4j.cypher(nodeQ).loadNodeRdds.map(row => row(0).asInstanceOf[InternalNode])
     val rels = neo4j.cypher(relQ).loadRowRdd.map(row => row(0).asInstanceOf[InternalRelationship])
 
