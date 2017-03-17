@@ -1,7 +1,7 @@
 package org.opencypher.spark.prototype.api.record
 
 import org.opencypher.spark.api.CypherType
-import org.opencypher.spark.prototype.api.expr.{Expr, Var}
+import org.opencypher.spark.prototype.api.expr._
 
 final case class RecordSlot(index: Int, content: SlotContent)
 
@@ -12,6 +12,7 @@ object RecordSlot {
 sealed trait SlotContent {
   def key: Expr
   def alias: Option[Var]
+  def owner: Option[Var]
   def cypherType: CypherType
 
   def support: Traversable[Expr]
@@ -19,6 +20,13 @@ sealed trait SlotContent {
 
 sealed trait ProjectedSlotContent extends SlotContent {
   def expr: Expr
+
+  override def owner = expr match {
+    case Property(v: Var, _) => Some(v)
+    case HasLabel(v: Var, _) => Some(v)
+    case HasType(v: Var, _) => Some(v)
+    case _ => None
+  }
 }
 
 sealed trait FieldSlotContent extends SlotContent {
@@ -36,6 +44,7 @@ final case class ProjectedExpr(expr: Expr, cypherType: CypherType) extends Proje
 
 final case class OpaqueField(field: Var, cypherType: CypherType) extends FieldSlotContent {
   def expr = field
+  override def owner = Some(field)
 
   override def support = Seq(field)
 }

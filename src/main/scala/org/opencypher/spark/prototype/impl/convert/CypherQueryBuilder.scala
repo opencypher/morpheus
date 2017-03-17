@@ -81,7 +81,9 @@ class CypherQueryBuilder(query: String, tokenDefs: GlobalsRegistry) {
         val (ref, reg) = blockRegistry.register(projs)
         // TODO: Add rewriter and put the above in case With(...)
 
-        val returns = ResultBlock[Expr](Set(ref), OrderedFields(items.map(extract)))
+        // TODO: Figure out nodes and relationships
+        val rItems: Seq[Field] = items.map(extract)
+        val returns = ResultBlock[Expr](Set(ref), OrderedFields(rItems), Set.empty, Set.empty)
 
         val (_, reg2) = reg.register(returns)
         reg2

@@ -48,6 +48,19 @@ class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fix
     } shouldBe true
   }
 
+  test("filter rels on property") {
+    val query = "MATCH (a:User)-[r:ATTENDED]->() WHERE r.response = 'no' RETURN a, r"
+
+    val graph = fullSpace.base.cypher(query)
+
+    graph.records.data.count() shouldBe 1173
+
+    val graph2 = graph.cypher("MATCH (a) RETURN a")
+
+    graph2.records.toDF().show()
+    graph2.records.data.count() shouldBe 1173
+  }
+
   test("expand and project on full graph, three properties") {
     val query = "MATCH (t:Tweet)-[:MENTIONED]->(l:User) RETURN t.text, l.location, l.followers"
 

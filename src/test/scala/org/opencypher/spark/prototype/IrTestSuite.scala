@@ -49,6 +49,8 @@ abstract class IrTestSuite extends StdTestSuite {
       after = Set(rootRef),
       // TODO
       binds = OrderedFields[Expr](),
+      nodes = Set.empty, // TODO: Fill these sets correctly
+      relationships = Set.empty,
       where = AllGiven[Expr]()
     )
     val model = QueryModel(result, GlobalsRegistry.none, blocks)

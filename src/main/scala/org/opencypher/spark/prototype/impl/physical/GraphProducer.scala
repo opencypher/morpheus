@@ -1,15 +1,19 @@
 package org.opencypher.spark.prototype.impl.physical
 
+import org.apache.spark.sql.Column
+import org.apache.spark.sql.catalyst.expressions.Literal
 import org.opencypher.spark.api.types.CTNode
 import org.opencypher.spark.prototype.api.expr._
-import org.opencypher.spark.prototype.api.ir.QueryModel
 import org.opencypher.spark.prototype.api.ir.global.{ConstantRef, LabelRef, RelTypeRef}
 import org.opencypher.spark.prototype.api.ir.pattern.{AllGiven, AnyGiven}
-import org.opencypher.spark.prototype.api.record.{ProjectedSlotContent, RecordSlot}
+import org.opencypher.spark.prototype.api.ir.{Field, QueryModel}
+import org.opencypher.spark.prototype.api.record._
 import org.opencypher.spark.prototype.api.schema.Schema
-import org.opencypher.spark.prototype.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherView, SparkGraphSpace}
+import org.opencypher.spark.prototype.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkGraphSpace}
 import org.opencypher.spark.prototype.api.value.CypherValue
 import org.opencypher.spark.prototype.impl.instances.spark.records._
+import org.opencypher.spark.prototype.impl.spark.{SparkColumnName, sparkType}
+import org.opencypher.spark.prototype.impl.syntax.header._
 import org.opencypher.spark.prototype.impl.syntax.transform._
 
 object RuntimeContext {
@@ -28,24 +32,27 @@ class GraphProducer(context: RuntimeContext) {
     def allRelationships(v: Var): SparkCypherGraph = graph.relationships(v)
 
     def select(fields: Map[Expr, String]): SparkCypherGraph =
-      InternalCypherGraph(graph.records.select(fields))
+      InternalCypherGraph(
+        graph.records.select(fields),
+        graph.model.select(fields.keySet.collect { case Var(n) => Field(n) })
+      )
 
     def project(slot: ProjectedSlotContent): SparkCypherGraph =
-      InternalCypherGraph(graph.records.project(slot))
+      InternalCypherGraph(graph.records.project(slot), graph.model)
 
     def filter(expr: Expr): SparkCypherGraph =
-      InternalCypherGraph(graph.records.filter(expr))
+      InternalCypherGraph(graph.records.filter(expr), graph.model)
 
     def labelFilter(node: Var, labels: AllGiven[LabelRef]): SparkCypherGraph = {
       val labelExprs: Set[Expr] = labels.elts.map { ref => HasLabel(node, ref) }
-      InternalCypherGraph(graph.records.filter(Ands(labelExprs)))
+      InternalCypherGraph(graph.records.filter(Ands(labelExprs)), graph.model)
     }
 
     def typeFilter(rel: Var, types: AnyGiven[RelTypeRef]): SparkCypherGraph = {
       if (types.elts.isEmpty) graph
       else {
         val typeExprs: Set[Expr] = types.elts.map { ref => HasType(rel, ref) }
-        InternalCypherGraph(graph.records.filter(Ands(typeExprs)))
+        InternalCypherGraph(graph.records.filter(Ands(typeExprs)), graph.model)
       }
     }
 
@@ -58,7 +65,7 @@ class GraphProducer(context: RuntimeContext) {
         assertIsNode(rhsSlot)
 
         val records = graph.records.join(relView.records)(lhsSlot, rhsSlot)
-        InternalCypherGraph(records)
+        InternalCypherGraph(records, graph.model)
       }
     }
 
@@ -71,7 +78,7 @@ class GraphProducer(context: RuntimeContext) {
         assertIsNode(rhsSlot)
 
         val records = graph.records.join(nodeView.records)(lhsSlot, rhsSlot)
-        InternalCypherGraph(records)
+        InternalCypherGraph(records, graph.model)
       }
     }
 
@@ -86,14 +93,76 @@ class GraphProducer(context: RuntimeContext) {
       }
     }
 
-    final case class InternalCypherGraph(records: SparkCypherRecords) extends SparkCypherGraph {
-      override def domain: SparkCypherGraph = graph.domain
-      override def model: QueryModel[Expr] = ???
+    final case class InternalCypherGraph(graphRecords: SparkCypherRecords, graphModel: QueryModel[Expr]) extends SparkCypherGraph {
+      override def nodes(v: Var): SparkCypherGraph = new SparkCypherGraph {
+        override def domain = graph
+        override def nodes(v: Var) = ???
+        override def relationships(v: Var) = SparkCypherGraph.empty(graph.space)
 
-      override def space: SparkGraphSpace = ???
-      override def schema: Schema = ???
-      override def nodes(v: Var): SparkCypherGraph = ???
+        override def model = graphModel
+        override def space = graph.space
+        override def records = {
+          val nodes = graphModel.result.nodes
+          // TODO: Assert no duplicate entries
+          val oldIndices: Map[SlotContent, Int] = graphRecords.header.slots.flatMap { slot: RecordSlot =>
+              slot.content match {
+                case p: ProjectedSlotContent =>
+                  p.expr match {
+                    case HasLabel(Var(name), label) if nodes(Field(name)) => Some(ProjectedExpr(HasLabel(v, label), p.cypherType) -> slot.index)
+                    case Property(Var(name), key) if nodes(Field(name)) => Some(ProjectedExpr(Property(v, key), p.cypherType)-> slot.index)
+                    case _ => None
+                  }
+
+                case o@OpaqueField(Var(name), _) if nodes(Field(name)) => Some(OpaqueField(v, CTNode) -> slot.index)
+                case _ => None
+              }
+          }.toMap
+
+          // TODO: Check result for failure to add
+          val (newHeader, _) = RecordHeader.empty.update(addContents(oldIndices.keySet.toSeq))
+          val newIndices = newHeader.slots.map(slot => slot.content -> slot.index).toMap
+          val mappingTable = oldIndices.map {
+            case (content, oldIndex) => oldIndex -> newIndices(content)
+          }
+
+          val frames = nodes.map { nodeField =>
+            val nodeVar = Var(nodeField.name)
+            val nodeIndices: Seq[(Int, Option[Int])] = oldIndices.map {
+              case (_, oldIndex) =>
+                if (graphRecords.header.slots(oldIndex).content.owner.contains(nodeVar))
+                  mappingTable(oldIndex) -> Some(oldIndex)
+                else
+                  mappingTable(oldIndex) -> None
+            }.toSeq.sortBy(_._1)
+
+            val columns = nodeIndices.map {
+              case (newIndex, Some(oldIndex)) => new Column(graphRecords.data.toDF.columns(oldIndex))
+              case (newIndex, None) =>
+                val slot = newHeader.slots(newIndex)
+                new Column(Literal(null, sparkType(slot.content.cypherType))).as(SparkColumnName.of(slot.content))
+            }
+            graphRecords.data.select(columns: _*)
+
+          }
+
+          val finalDf = frames.reduce(_ union _)
+
+          new SparkCypherRecords {
+            override def data = finalDf
+            override def header = newHeader
+          }
+        }
+
+        override def schema = ???
+      }
       override def relationships(v: Var): SparkCypherGraph = ???
+
+      override def domain: SparkCypherGraph = graph.domain
+      override def space: SparkGraphSpace = graph.space
+      override def schema: Schema = graph.schema
+
+      override def model: QueryModel[Expr] = graphModel
+      override def records: SparkCypherRecords = graphRecords
     }
   }
 }

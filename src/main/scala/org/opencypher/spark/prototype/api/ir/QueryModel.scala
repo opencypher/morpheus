@@ -16,6 +16,9 @@ final case class QueryModel[E](
 
   def apply(ref: BlockRef): Block[E] = blocks(ref)
 
+  def select(fields: Set[Field]) =
+    copy(result = result.select(fields))
+
   def dependencies(ref: BlockRef): Set[BlockRef] = apply(ref).after
 
   def allDependencies(ref: BlockRef): Set[BlockRef] =
@@ -63,7 +66,7 @@ object QueryModel {
       .withConnection(rel, DirectedRelationship(sourceNode, targetNode)))
     val blocks: Map[BlockRef, Block[E]] = Map(ref -> matchBlock)
 
-    QueryModel(ResultBlock(Set(ref), FieldsInOrder(sourceNode, rel, targetNode)), globals, blocks)
+    QueryModel(ResultBlock(Set(ref), FieldsInOrder(sourceNode, rel, targetNode), Set(sourceNode, targetNode), Set(rel)), globals, blocks)
   }
 
   def nodes[E](node: Field, globals: GlobalsRegistry): QueryModel[E] = {
@@ -73,7 +76,7 @@ object QueryModel {
 
     val blocks: Map[BlockRef, Block[E]] = Map(ref -> matchBlock)
 
-    QueryModel(ResultBlock(Set(ref), FieldsInOrder(node)), globals, blocks)
+    QueryModel(ResultBlock(Set(ref), FieldsInOrder(node), Set(node), Set.empty), globals, blocks)
   }
 
   def relationships[E](rel: Field, globals: GlobalsRegistry): QueryModel[E] = {
@@ -82,7 +85,7 @@ object QueryModel {
       .withEntity(rel, EveryRelationship))
     val blocks: Map[BlockRef, Block[E]] = Map(ref -> matchBlock)
 
-    QueryModel(ResultBlock(Set(ref), FieldsInOrder(rel)), globals, blocks)
+    QueryModel(ResultBlock(Set(ref), FieldsInOrder(rel), Set.empty, Set(rel)), globals, blocks)
   }
 }
 
