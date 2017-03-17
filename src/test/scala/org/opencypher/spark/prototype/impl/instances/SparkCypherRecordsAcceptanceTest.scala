@@ -55,7 +55,7 @@ class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fix
 
     graph.records.data.count() shouldBe 1173
 
-    val graph2 = graph.cypher("MATCH (a) RETURN a")
+    val graph2 = graph.cypher("MATCH (a:User) RETURN a, a.name")
 
     graph2.records.toDF().show()
     graph2.records.data.count() shouldBe 1173

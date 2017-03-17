@@ -33,51 +33,51 @@ class GraphProducer(context: RuntimeContext) {
 
     def select(fields: Map[Expr, String]): SparkCypherGraph =
       InternalCypherGraph(
-        graph.records.select(fields),
+        graph.details.select(fields),
         graph.model.select(fields.keySet.collect { case Var(n) => Field(n) })
       )
 
     def project(slot: ProjectedSlotContent): SparkCypherGraph =
-      InternalCypherGraph(graph.records.project(slot), graph.model)
+      InternalCypherGraph(graph.details.project(slot), graph.model)
 
     def filter(expr: Expr): SparkCypherGraph =
-      InternalCypherGraph(graph.records.filter(expr), graph.model)
+      InternalCypherGraph(graph.details.filter(expr), graph.model)
 
     def labelFilter(node: Var, labels: AllGiven[LabelRef]): SparkCypherGraph = {
       val labelExprs: Set[Expr] = labels.elts.map { ref => HasLabel(node, ref) }
-      InternalCypherGraph(graph.records.filter(Ands(labelExprs)), graph.model)
+      InternalCypherGraph(graph.details.filter(Ands(labelExprs)), graph.model)
     }
 
     def typeFilter(rel: Var, types: AnyGiven[RelTypeRef]): SparkCypherGraph = {
       if (types.elts.isEmpty) graph
       else {
         val typeExprs: Set[Expr] = types.elts.map { ref => HasType(rel, ref) }
-        InternalCypherGraph(graph.records.filter(Ands(typeExprs)), graph.model)
+        InternalCypherGraph(graph.details.filter(Ands(typeExprs)), graph.model)
       }
     }
 
     def expandSource(relView: SparkCypherGraph) = new JoinBuilder {
       override def on(node: Var)(rel: Var) = {
-        val lhsSlot = graph.records.header.slotFor(node)
-        val rhsSlot = relView.records.header.sourceNode(rel)
+        val lhsSlot = graph.details.header.slotFor(node)
+        val rhsSlot = relView.details.header.sourceNode(rel)
 
         assertIsNode(lhsSlot)
         assertIsNode(rhsSlot)
 
-        val records = graph.records.join(relView.records)(lhsSlot, rhsSlot)
+        val records = graph.details.join(relView.details)(lhsSlot, rhsSlot)
         InternalCypherGraph(records, graph.model)
       }
     }
 
     def joinTarget(nodeView: SparkCypherGraph) = new JoinBuilder {
       override def on(rel: Var)(node: Var) = {
-        val lhsSlot = graph.records.header.targetNode(rel)
-        val rhsSlot = nodeView.records.header.slotFor(node)
+        val lhsSlot = graph.details.header.targetNode(rel)
+        val rhsSlot = nodeView.details.header.slotFor(node)
 
         assertIsNode(lhsSlot)
         assertIsNode(rhsSlot)
 
-        val records = graph.records.join(nodeView.records)(lhsSlot, rhsSlot)
+        val records = graph.details.join(nodeView.details)(lhsSlot, rhsSlot)
         InternalCypherGraph(records, graph.model)
       }
     }
@@ -101,7 +101,7 @@ class GraphProducer(context: RuntimeContext) {
 
         override def model = graphModel
         override def space = graph.space
-        override def records = {
+        override def details = {
           val nodes = graphModel.result.nodes
           // TODO: Assert no duplicate entries
           val oldIndices: Map[SlotContent, Int] = graphRecords.header.slots.flatMap { slot: RecordSlot =>
@@ -136,7 +136,7 @@ class GraphProducer(context: RuntimeContext) {
             }.toSeq.sortBy(_._1)
 
             val columns = nodeIndices.map {
-              case (newIndex, Some(oldIndex)) => new Column(graphRecords.data.toDF.columns(oldIndex))
+              case (newIndex, Some(oldIndex)) => new Column(graphRecords.data.columns(oldIndex))
               case (newIndex, None) =>
                 val slot = newHeader.slots(newIndex)
                 new Column(Literal(null, sparkType(slot.content.cypherType))).as(SparkColumnName.of(slot.content))
@@ -162,7 +162,7 @@ class GraphProducer(context: RuntimeContext) {
       override def schema: Schema = graph.schema
 
       override def model: QueryModel[Expr] = graphModel
-      override def records: SparkCypherRecords = graphRecords
+      override def details: SparkCypherRecords = graphRecords
     }
   }
 }

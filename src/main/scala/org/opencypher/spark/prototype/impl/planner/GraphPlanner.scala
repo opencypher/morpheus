@@ -43,6 +43,7 @@ class GraphPlanner(producer: GraphProducer)
         val expanded = lhs.expandSource(rhs).on(source)(rel)
 
         expanded
-      case x => throw new NotImplementedError(s"Can't plan operator $x yet")
+      case x =>
+        throw new NotImplementedError(s"Can't plan operator $x yet")
     }
 }

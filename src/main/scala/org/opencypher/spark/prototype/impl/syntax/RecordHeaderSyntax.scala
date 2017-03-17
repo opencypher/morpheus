@@ -19,6 +19,9 @@ trait RecordHeaderSyntax {
   def addContent(content: SlotContent): State[RecordHeader, AdditiveUpdateResult[RecordSlot]] =
     exec(InternalHeader.addContent(content))
 
+  def selectFields: State[RecordHeader, Vector[AdditiveUpdateResult[RecordSlot]]] =
+    exec(InternalHeader.selectFields)
+
   def removeContent(content: SlotContent)
   : State[RecordHeader, (RemovingUpdateResult[SlotContent], Vector[AdditiveUpdateResult[RecordSlot]])] =
     exec(InternalHeader.removeContent(content))

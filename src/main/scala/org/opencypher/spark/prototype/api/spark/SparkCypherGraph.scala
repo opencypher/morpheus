@@ -21,17 +21,17 @@ object SparkCypherGraph {
   private sealed case class EmptyGraph(
     graphSpace: SparkGraphSpace,
     override val model: QueryModel[Expr],
-    override val records: SparkCypherRecords
+    override val details: SparkCypherRecords
   ) extends SparkCypherGraph {
 
     override def nodes(v: Var): SparkCypherGraph = copy(
       model = QueryModel.nodes(Field(v.name), space.globals),
-      records = SparkCypherRecords.empty(graphSpace.session, RecordHeader.from(OpaqueField(v, CTNode)))
+      details = SparkCypherRecords.empty(graphSpace.session, RecordHeader.from(OpaqueField(v, CTNode)))
     )
 
     override def relationships(v: Var): SparkCypherGraph = copy(
       model = QueryModel.relationships(Field(v.name), space.globals),
-      records = SparkCypherRecords.empty(graphSpace.session, RecordHeader.from(OpaqueField(v, CTRelationship)))
+      details = SparkCypherRecords.empty(graphSpace.session, RecordHeader.from(OpaqueField(v, CTRelationship)))
     )
 
     override def space = graphSpace

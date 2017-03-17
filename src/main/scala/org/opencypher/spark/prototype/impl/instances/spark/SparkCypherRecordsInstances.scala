@@ -11,6 +11,7 @@ import org.opencypher.spark.prototype.impl.physical.RuntimeContext
 import org.opencypher.spark.prototype.impl.syntax.header._
 import org.opencypher.spark.prototype.impl.util.{Found, Replaced}
 import CypherValue.Conversion._
+import org.opencypher.spark.prototype.impl.spark.SparkColumnName
 
 trait SparkCypherRecordsInstances extends Serializable {
 
@@ -89,13 +90,18 @@ trait SparkCypherRecordsInstances extends Serializable {
       val newHeader = subject.header.slots.foldLeft(RecordHeader.empty) {
         case (acc, RecordSlot(_, f: OpaqueField)) if fields.contains(f.key) => acc.update(addContent(f))._1
         case (acc, RecordSlot(_, f: ProjectedField)) if fields.contains(f.key) => acc.update(addContent(f))._1
-        case (acc, _) => acc // drop projected exprs
+        case (acc, RecordSlot(_, f)) =>
+          f.owner match {
+            case Some(owner) if fields.contains(owner) => acc.update(addContent(f))._1
+            case _ => acc
+          }
+        case (acc, _) => acc // drop unrelated projected exprs
       }
 
       val data = subject.data
       val columns = newHeader.slots.map { s =>
         val oldName = data.columns(subject.header.indexOf(s.content).get)
-        val newName = fields(s.content.key)
+        val newName = SparkColumnName.of(s.content)
         data.col(oldName).as(newName)
       }
       val newData = subject.data.select(columns: _*)

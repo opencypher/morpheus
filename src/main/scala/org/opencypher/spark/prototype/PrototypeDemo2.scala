@@ -15,7 +15,7 @@ object PrototypeDemo2 {
     val graph = space.base.cypher(query)
 
     val start = System.currentTimeMillis()
-    graph.records.show()
+    graph.details.show()
     println(s"Time: ${System.currentTimeMillis() - start} ms")
 
     graph

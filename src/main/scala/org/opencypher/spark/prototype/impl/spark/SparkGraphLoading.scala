@@ -9,11 +9,11 @@ import org.opencypher.spark.api.CypherType
 import org.opencypher.spark.api.types._
 import org.opencypher.spark.benchmark.Converters.cypherValue
 import org.opencypher.spark.prototype.api.expr._
-import org.opencypher.spark.prototype.api.ir.{Field, QueryModel}
 import org.opencypher.spark.prototype.api.ir.global.GlobalsRegistry
+import org.opencypher.spark.prototype.api.ir.{Field, QueryModel}
 import org.opencypher.spark.prototype.api.record.{OpaqueField, ProjectedExpr, RecordHeader, SlotContent}
 import org.opencypher.spark.prototype.api.schema.{Schema, VerifiedSchema}
-import org.opencypher.spark.prototype.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherView, SparkGraphSpace}
+import org.opencypher.spark.prototype.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkGraphSpace}
 import org.opencypher.spark.prototype.impl.syntax.header._
 
 trait SparkGraphLoading {
@@ -154,7 +154,7 @@ trait SparkGraphLoading {
 
           override def model = QueryModel.nodes[Expr](Field(v.name), context.globals)
           override def space = selfSpace
-          override def records = nodeRecords(v)
+          override def details = nodeRecords(v)
 
           override def schema = context.schema // TODO remove rels
         }
@@ -165,7 +165,7 @@ trait SparkGraphLoading {
 
           override def model = QueryModel.relationships[Expr](Field(v.name), context.globals)
           override def space = selfSpace
-          override def records = relRecords(v)
+          override def details = relRecords(v)
 
           override def schema = context.schema // TODO remove node props
         }
@@ -177,7 +177,7 @@ trait SparkGraphLoading {
 
         override def schema: Schema = context.schema
 
-        override def records: SparkCypherRecords = ???
+        override def details: SparkCypherRecords = ???
       }
 
       override def session: SparkSession = sparkSession

@@ -18,7 +18,7 @@ class SparkGraphSpaceTest extends StdTestSuite with TestSession.Fixture {
     val schema = Schema.empty
       .withNodeKeys("Tweet")("id" -> CTInteger, "text" -> CTString.nullable, "created" -> CTString.nullable)
     val space = SparkGraphSpace.fromNeo4j("MATCH (n:Tweet) RETURN n LIMIT 100", "RETURN 1 LIMIT 0", schema)
-    val df = space.base.nodes().records.toDF()
+    val df = space.base.nodes().details.toDF()
 
     df.count() shouldBe 100
     df.schema.fields.map(f => f.dataType -> f.nullable).toSet should equal(Set(
@@ -36,7 +36,7 @@ class SparkGraphSpaceTest extends StdTestSuite with TestSession.Fixture {
     val space = SparkGraphSpace.fromNeo4j(
       "RETURN 1 LIMIT 0",
       "MATCH ()-[r:ATTENDED]->() RETURN r LIMIT 100", schema)
-    val df = space.base.rels().records.toDF
+    val df = space.base.rels().details.toDF
 
     df.count() shouldBe 100
     df.schema.fields.map(f => f.dataType -> f.nullable).toSet should equal(Set(
@@ -57,8 +57,8 @@ class SparkGraphSpaceTest extends StdTestSuite with TestSession.Fixture {
     val space = SparkGraphSpace.fromNeo4j(
       "MATCH (a)-[:ATTENDED]->(b) UNWIND [a, b] AS n RETURN DISTINCT n",
       "MATCH ()-[r:ATTENDED]->() RETURN r", schema)
-    val rels = space.base.rels().records.toDF
-    val nodes = space.base.nodes().records.toDF
+    val rels = space.base.rels().details.toDF
+    val nodes = space.base.nodes().details.toDF
 
     rels.count() shouldBe 4832
     nodes.count() shouldBe 2901

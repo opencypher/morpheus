@@ -166,6 +166,15 @@ object InternalHeader {
   private def addExprSlots(m: Map[Expr, Vector[Int]], key: Expr, value: Int): Map[Expr, Vector[Int]] =
     if (m.getOrElse(key, Vector.empty).contains(value)) m else m.updated(key, m.getOrElse(key, Vector.empty) :+ value)
 
+  def selectFields : State[InternalHeader, Vector[AdditiveUpdateResult[RecordSlot]]] =
+    get[InternalHeader].flatMap { header =>
+      val remaining = header.slots.collect {
+        case RecordSlot(idx, content: ProjectedExpr) => None
+        case RecordSlot(idx, content) => Some(idx -> content)
+      }.flatten
+      val contents = remaining.sortBy(_._1).map(_._2)
+      set(InternalHeader.empty).flatMap(_ => addContents(contents))
+    }
 
   def removeContent(removedContent: SlotContent)
   : State[InternalHeader, (RemovingUpdateResult[SlotContent], Vector[AdditiveUpdateResult[RecordSlot]])] = {

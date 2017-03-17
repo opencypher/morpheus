@@ -6,9 +6,12 @@ import org.opencypher.spark.prototype.api.record.CypherRecords
 import org.opencypher.spark.prototype.api.schema.Schema
 
 trait CypherGraph {
+
+  self =>
+
   type Space <: GraphSpace
   type Graph <: CypherGraph
-  type Records <: CypherRecords
+  type Records <: CypherRecords { type Records = self.Records }
 
   def space: Space
   def domain: Graph
@@ -16,7 +19,8 @@ trait CypherGraph {
   def model: QueryModel[Expr]
   def schema: Schema
 
-  def records: Records
+  def records: Records = details.compact
+  def details: Records
 
   def nodes(v: Var): Graph
   def relationships(v: Var): Graph
