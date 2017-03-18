@@ -167,10 +167,16 @@ object InternalHeader {
     if (m.getOrElse(key, Vector.empty).contains(value)) m else m.updated(key, m.getOrElse(key, Vector.empty) :+ value)
 
   def selectFields : State[InternalHeader, Vector[AdditiveUpdateResult[RecordSlot]]] =
+    selectFields {
+      case _: ProjectedExpr => false
+      case _ => true
+    }
+
+  def selectFields(predicate: SlotContent => Boolean) : State[InternalHeader, Vector[AdditiveUpdateResult[RecordSlot]]] =
     get[InternalHeader].flatMap { header =>
       val remaining = header.slots.collect {
-        case RecordSlot(idx, content: ProjectedExpr) => None
-        case RecordSlot(idx, content) => Some(idx -> content)
+        case RecordSlot(idx, content) if predicate(content) => Some(idx -> content)
+        case _=> None
       }.flatten
       val contents = remaining.sortBy(_._1).map(_._2)
       set(InternalHeader.empty).flatMap(_ => addContents(contents))

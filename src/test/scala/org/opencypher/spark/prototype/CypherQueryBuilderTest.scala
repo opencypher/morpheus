@@ -27,7 +27,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
       }
 
       model.result match {
-        case NoWhereBlock(ResultBlock(_, FieldsInOrder(Field("a")), _)) =>
+        case NoWhereBlock(ResultBlock(_, FieldsInOrder(Field("a")), _, _, _)) =>
       }
 
       model.requirements should equal(Map(
@@ -56,7 +56,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
       }
 
       model.result match {
-        case NoWhereBlock(ResultBlock(_, FieldsInOrder(Field("otherB"), Field("a"), Field("r")), _)) =>
+        case NoWhereBlock(ResultBlock(_, FieldsInOrder(Field("otherB"), Field("a"), Field("r")), _, _, _)) =>
       }
 
       model.requirements should equal(Map(

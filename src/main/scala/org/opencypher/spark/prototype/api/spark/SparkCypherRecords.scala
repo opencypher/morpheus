@@ -2,10 +2,12 @@ package org.opencypher.spark.prototype.api.spark
 
 import java.util.Collections
 
+import org.apache.spark.sql.catalyst.expressions.Literal
 import org.apache.spark.sql.{Column, DataFrame, Row, SparkSession}
+import org.opencypher.spark.prototype.api.expr.{HasLabel, Property, Var}
 import org.opencypher.spark.prototype.api.record._
-import org.opencypher.spark.prototype.impl.syntax.header._
-import org.opencypher.spark.prototype.impl.spark.{SparkColumnName, SparkSchema}
+import org.opencypher.spark.prototype.impl.spark.{SparkColumnName, SparkSchema, sparkType}
+import org.opencypher.spark.prototype.impl.syntax.header.{addContents, selectFields, _}
 
 trait SparkCypherRecords extends CypherRecords with Serializable {
 
@@ -20,14 +22,13 @@ trait SparkCypherRecords extends CypherRecords with Serializable {
   override def column(slot: RecordSlot): String =
     header.internalHeader.column(slot)
 
-  def toDF(): Data = {
-    data.cache()
-  }
+  //noinspection AccessorLikeMethodIsEmptyParen
+  def toDF(): Data = data.cache()
 
-  override def compact = new SparkCypherRecords {
+  override def show() = data.show
 
+  def compact = new SparkCypherRecords {
     private lazy val cachedHeader = self.header.update(selectFields)._1
-
     private lazy val cachedData = {
       val columns = cachedHeader.slots.map(c => new Column(SparkColumnName.of(c.content)))
       self.data.select(columns: _*)
@@ -37,7 +38,84 @@ trait SparkCypherRecords extends CypherRecords with Serializable {
     override def data = cachedData
   }
 
-  override def show() = toDF().show()
+  // only keep slots with v as their owner
+  def focus(v: Var): SparkCypherRecords = {
+    val (newHeader, _) = self.header.update(selectFields(content => content.owner.contains(v)))
+    val newColumns = newHeader.slots.collect {
+      case RecordSlot(_, content: FieldSlotContent) => new Column(SparkColumnName.of(content))
+    }
+    new SparkCypherRecords {
+      override def header = newHeader
+      override def data = self.data.select(newColumns: _*)
+    }
+  }
+
+  // alias oldVar to newVar, without guarding against shadowing
+  def alias(oldVar: Var, newVar: Var): SparkCypherRecords = {
+    val oldIndices: Map[SlotContent, Int] = self.header.slots.map { slot: RecordSlot =>
+      slot.content match {
+        case p: ProjectedSlotContent =>
+          p.expr match {
+            case HasLabel(`oldVar`, label) => ProjectedExpr(HasLabel(newVar, label), p.cypherType) -> slot.index
+            case Property(`oldVar`, key) => ProjectedExpr(Property(newVar, key), p.cypherType)-> slot.index
+            case _ => p -> slot.index
+          }
+
+        case OpaqueField(`oldVar`, cypherType) => OpaqueField(newVar, cypherType) -> slot.index
+        case content => content -> slot.index
+      }
+    }.toMap
+
+    // TODO: Check result for failure to add
+    val (newHeader, _) = RecordHeader.empty.update(addContents(oldIndices.keySet.toSeq))
+    val newIndices = newHeader.slots.map(slot => slot.content -> slot.index).toMap
+    val indexMapping = oldIndices.map {
+      case (content, oldIndex) => oldIndex -> newIndices(content)
+    }.toSeq.sortBy(_._2)
+
+    val columns = indexMapping.map {
+      case (oldIndex, newIndex) =>
+        val oldName = SparkColumnName.of(self.header.slots(oldIndex).content)
+        val newName = SparkColumnName.of(newHeader.slots(newIndex).content)
+        new Column(oldName).as(newName)
+    }.toSeq
+
+    val newData = self.data.select(columns: _*)
+
+    new SparkCypherRecords {
+      override def data = newData
+      override def header = newHeader
+    }
+  }
+
+  // concatenates two record sets, using a union of their columns and using null as as default for
+  // missing values, but discarding overlapping slots
+  def concat(other: SparkCypherRecords): SparkCypherRecords = {
+    val duplicate = (self.header.slots intersect other.header.slots).map(_.content).toSet
+    val contents = (self.header.slots ++ other.header.slots).map(_.content).filter(content => !duplicate(content))
+    val (newHeader, _) = RecordHeader.empty.update(addContents(contents))
+
+    val selfColumns =
+      self.header.slots.collect { case slot if !duplicate(slot.content) => new Column(SparkColumnName.of(slot.content))} ++
+      other.header.slots.collect { case slot if !duplicate(slot.content) => new Column(Literal(null, sparkType(slot.content.cypherType))).as(SparkColumnName.of(slot.content)) }
+    val newSelfData = self.data.select(selfColumns: _*)
+
+    val otherColumns =
+      self.header.slots.collect { case slot if !duplicate(slot.content) => new Column(Literal(null, sparkType(slot.content.cypherType))).as(SparkColumnName.of(slot.content)) } ++
+      other.header.slots.collect { case slot if !duplicate(slot.content) => new Column(SparkColumnName.of(slot.content))}
+    val newOtherData = other.data.select(otherColumns: _*)
+
+    new SparkCypherRecords {
+      override def header = newHeader
+      override def data = newSelfData.union(newOtherData)
+    }
+  }
+
+  def distinct: SparkCypherRecords =
+    new SparkCypherRecords {
+      override def header = self.header
+      override def data = self.data.distinct()
+    }
 }
 
 object SparkCypherRecords {

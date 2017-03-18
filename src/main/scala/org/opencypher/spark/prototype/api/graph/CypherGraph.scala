@@ -24,6 +24,12 @@ trait CypherGraph {
   def nodes(v: Var): Graph
   def relationships(v: Var): Graph
 
+//  def filterNodes()
+//  def filterRelationships()
+
+//  def union(other: Graph): Graph
+//  def intersect(other: Graph): Graph
+
   // TODO
   // other attributes, other views (constituents, triplets, domain)
 }
