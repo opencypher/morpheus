@@ -14,7 +14,6 @@ trait CypherGraph {
   type Records <: CypherRecords { type Records = self.Records }
 
   def space: Space
-  def domain: Graph
 
   def model: QueryModel[Expr]
   def schema: Schema
@@ -24,12 +23,8 @@ trait CypherGraph {
 
   def nodes(v: Var): Graph
   def relationships(v: Var): Graph
-  // def triplets(start: Var, rel: Var, end: Var): Records
 
-  //  def constituents: Set[Graph]
-
-  // identity
-  // properties
-  // labels
+  // TODO
+  // other attributes, other views (constituents, triplets, domain)
 }
 

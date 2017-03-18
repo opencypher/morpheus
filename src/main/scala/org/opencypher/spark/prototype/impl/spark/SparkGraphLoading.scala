@@ -147,7 +147,6 @@ trait SparkGraphLoading {
         selfBase =>
 
         override def nodes(v: Var) = new SparkCypherGraph {
-          override def domain = selfBase
           override def nodes(v: Var) = selfBase.nodes(v)
           override def relationships(v: Var) =
             SparkCypherGraph.empty(selfSpace)
@@ -159,7 +158,6 @@ trait SparkGraphLoading {
           override def schema = context.schema // TODO remove rels
         }
         override def relationships(v: Var) = new SparkCypherGraph {
-          override def domain = selfBase
           override def nodes(v: Var) = selfBase.nodes(v) // TODO Remove unconnected nodes and all attributes
           override def relationships(v: Var) = selfBase.relationships(v)
 
@@ -170,7 +168,6 @@ trait SparkGraphLoading {
           override def schema = context.schema // TODO remove node props
         }
         override def space: SparkGraphSpace = selfSpace
-        override def domain: SparkCypherGraph = selfBase
 
         override def model: QueryModel[Expr] =
           QueryModel.base[Expr](Field(sourceNode), Field(rel), Field(targetNode), selfSpace.globals)

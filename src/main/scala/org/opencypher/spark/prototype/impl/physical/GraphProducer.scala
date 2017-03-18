@@ -95,7 +95,6 @@ class GraphProducer(context: RuntimeContext) {
 
     final case class InternalCypherGraph(graphRecords: SparkCypherRecords, graphModel: QueryModel[Expr]) extends SparkCypherGraph {
       override def nodes(v: Var): SparkCypherGraph = new SparkCypherGraph {
-        override def domain = graph
         override def nodes(v: Var) = ???
         override def relationships(v: Var) = SparkCypherGraph.empty(graph.space)
 
@@ -157,7 +156,6 @@ class GraphProducer(context: RuntimeContext) {
       }
       override def relationships(v: Var): SparkCypherGraph = ???
 
-      override def domain: SparkCypherGraph = graph.domain
       override def space: SparkGraphSpace = graph.space
       override def schema: Schema = graph.schema
 

@@ -36,6 +36,5 @@ object SparkCypherGraph {
 
     override def space = graphSpace
     override def schema = Schema.empty
-    override def domain = graphSpace.base
   }
 }
