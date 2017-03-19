@@ -88,11 +88,51 @@ trait SparkCypherRecords extends CypherRecords with Serializable {
     }
   }
 
+
+  // union two record sets in their shared columns, dropping all non-shared columns
+  // missing values, but discarding overlapping slots
+  def union(other: SparkCypherRecords): SparkCypherRecords = {
+    val shared = (self.header.slots intersect other.header.slots).map(_.content).toSet
+    val contents = (self.header.slots ++ other.header.slots).map(_.content).filter(content => shared(content)).distinct
+    val (newHeader, _) = RecordHeader.empty.update(addContents(contents))
+
+    val newColumns = self.header.slots.collect { case slot if shared(slot.content) => new Column(SparkColumnName.of(slot.content)) }
+
+    val selfData = self.data.select(newColumns: _*)
+    val otherData = other.data.select(newColumns: _*)
+
+    // TODO: Make distinct per entity fields
+    val newData = selfData.union(otherData).distinct()
+    new SparkCypherRecords {
+      override def header = newHeader
+      override def data = newData
+    }
+  }
+
+  def intersect(other: SparkCypherRecords): SparkCypherRecords = {
+    val shared = (self.header.slots intersect other.header.slots).map(_.content).toSet
+    val contents = (self.header.slots ++ other.header.slots).map(_.content).filter(content => shared(content)).distinct
+    val (newHeader, _) = RecordHeader.empty.update(addContents(contents))
+
+    val newColumns = self.header.slots.collect { case slot if shared(slot.content) => new Column(SparkColumnName.of(slot.content)) }
+
+    val selfData = self.data.select(newColumns: _*)
+    val otherData = other.data.select(newColumns: _*)
+
+    // TODO: Make distinct per entity fields
+    val newData = selfData.intersect(otherData).distinct()
+
+    new SparkCypherRecords {
+      override def header = newHeader
+      override def data = newData
+    }
+  }
+
   // concatenates two record sets, using a union of their columns and using null as as default for
   // missing values, but discarding overlapping slots
   def concat(other: SparkCypherRecords): SparkCypherRecords = {
     val duplicate = (self.header.slots intersect other.header.slots).map(_.content).toSet
-    val contents = (self.header.slots ++ other.header.slots).map(_.content).filter(content => !duplicate(content))
+    val contents = (self.header.slots ++ other.header.slots).map(_.content).filter(content => !duplicate(content)).distinct
     val (newHeader, _) = RecordHeader.empty.update(addContents(contents))
 
     val selfColumns =

@@ -61,6 +61,28 @@ class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fix
     graph2.records.data.count() shouldBe 1173
   }
 
+  test("union rels") {
+    val query1 = "MATCH (a:User)-[r:ATTENDED]->() WHERE r.response = 'no' RETURN a, r"
+    val graph1 = fullSpace.base.cypher(query1)
+
+    val query2 = "MATCH (a:User)-[r:ATTENDED]->() WHERE r.response = 'yes' RETURN a, r"
+    val graph2 = fullSpace.base.cypher(query2)
+
+    val result = graph1.union(graph2)
+    result.records.data.count() should equal(4711)
+  }
+
+  test("intersect rels") {
+    val query1 = "MATCH (a:User)-[r:ATTENDED]->() WHERE r.response = 'no' RETURN a, r"
+    val graph1 = fullSpace.base.cypher(query1)
+
+    val query2 = "MATCH (a:User)-[r:ATTENDED]->() WHERE r.response = 'yes' RETURN a, r"
+    val graph2 = fullSpace.base.cypher(query2)
+
+    val result = graph1.intersect(graph2)
+    result.records.data.count() should equal(0)
+  }
+
   test("expand and project on full graph, three properties") {
     val query = "MATCH (t:Tweet)-[:MENTIONED]->(l:User) RETURN t.text, l.location, l.followers"
 
