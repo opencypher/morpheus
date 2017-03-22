@@ -28,6 +28,9 @@ class PhysicalPlanner extends Stage[LogicalOperator, PhysicalOperator, PhysicalP
 
       case logical.Project(it, in, _) =>
         mkPhysical.project(it, plan(in))
+
+      case logical.ExpandSource(source, rel, types, target, in, _) =>
+        mkPhysical.expandSource(source, rel, types, target, plan(in))
     }
   }
 }

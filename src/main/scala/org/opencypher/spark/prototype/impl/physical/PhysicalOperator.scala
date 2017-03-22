@@ -1,7 +1,7 @@
 package org.opencypher.spark.prototype.impl.physical
 
 import org.opencypher.spark.prototype.api.expr.{Expr, Var}
-import org.opencypher.spark.prototype.api.ir.pattern.EveryNode
+import org.opencypher.spark.prototype.api.ir.pattern.{EveryNode, EveryRelationship}
 import org.opencypher.spark.prototype.api.record.{ProjectedSlotContent, RecordHeader}
 
 sealed trait PhysicalOperator {
@@ -28,5 +28,10 @@ final case class Select(fields: Set[Var], in: PhysicalOperator, header: RecordHe
 }
 
 final case class Alias(expr: Expr, alias: Var, in: PhysicalOperator, header: RecordHeader)
+  extends StackingPhysicalOperator {
+}
+
+
+final case class ExpandSource(source: Var, rel: Var, types: EveryRelationship, target: Var, in: PhysicalOperator, header: RecordHeader)
   extends StackingPhysicalOperator {
 }

@@ -35,6 +35,23 @@ sealed trait ExpandOperator extends StackingLogicalOperator {
   def target: Var
 }
 
+/*
+          implicit graph
+
+ source                  target?
+  1                        4
+  2                        5
+  3                        6
+
+
+
+ source  graph target
+  1
+  2
+  3
+
+ */
+
 final case class ExpandSource(source: Var, rel: Var, types: EveryRelationship, target: Var, in: LogicalOperator, signature: RecordHeader = RecordHeader.empty)
                              (override val solved: SolvedQueryModel[Expr])
   extends ExpandOperator {

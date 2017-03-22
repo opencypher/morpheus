@@ -33,6 +33,7 @@ class GraphPlanner(producer: GraphProducer)
           plan(in).filter(e)
       }
 
+        // MATCH (a)-[r]->(b) => MATCH (a), (b), (a)-[r]->(b)
       case logical.ExpandSource(source, rel, types, target, in, _) =>
         val lhs = plan(in)
         // TODO: where is the node label info? We could plan a filter here

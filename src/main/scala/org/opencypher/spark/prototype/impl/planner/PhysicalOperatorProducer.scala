@@ -2,9 +2,9 @@ package org.opencypher.spark.prototype.impl.planner
 
 import cats.Monoid
 import org.opencypher.spark.api.CypherType
-import org.opencypher.spark.api.types.CTBoolean
+import org.opencypher.spark.api.types.{CTBoolean, CTInteger}
 import org.opencypher.spark.prototype.api.expr._
-import org.opencypher.spark.prototype.api.ir.pattern.EveryNode
+import org.opencypher.spark.prototype.api.ir.pattern.{AnyGiven, EveryNode, EveryRelationship}
 import org.opencypher.spark.prototype.api.record._
 import org.opencypher.spark.prototype.impl.physical._
 import org.opencypher.spark.prototype.impl.syntax.header._
@@ -72,5 +72,33 @@ class PhysicalOperatorProducer(implicit context: PhysicalPlannerContext) {
       case _: Replaced[_] => Alias(it.expr, it.alias.get, in, newHeader)
       case _ => throw new NotImplementedError("No support yet for projecting non-attribute expressions") // TODO: Error handling
     }
+  }
+
+  // TODO: Specialize per kind of slot content
+  def expandSource(source: Var, rel: Var, types: EveryRelationship, target: Var, in: PhysicalOperator): PhysicalOperator = {
+    // TODO: This should consider multiple types per property
+    val allNodeProperties = schema.nodeKeyMap.m.values.reduce(_ ++ _).toSeq.distinct
+    val allLabels = schema.nodeKeyMap.keys.toSeq
+
+    val targetLabelHeaderContents = allLabels.map {
+      labelName => ProjectedExpr(HasLabel(target, label(labelName)), CTBoolean)
+    }
+
+    // TODO: This should consider multiple types per property
+    val relKeyHeaderProperties = types.relTypes.elts.flatMap(t => schema.relationshipKeys(globals.relType(t).name).toSeq)
+    val relKeyHeaderContents = relKeyHeaderProperties.map {
+      case ((k, t)) => ProjectedExpr(Property(rel, propertyKey(k)), t)
+    }
+
+    val targetKeyHeaderContents = allNodeProperties.map {
+      case ((k, t)) => ProjectedExpr(Property(target, propertyKey(k)), t)
+    }
+
+    val typeIdContent = ProjectedExpr(TypeId(rel), CTInteger)
+
+    val (newHeader, _) = in.header.update(addContents(
+      Seq(typeIdContent) ++ relKeyHeaderContents ++ targetLabelHeaderContents ++ targetKeyHeaderContents
+    ))
+    ExpandSource(source, rel, types, target, in, newHeader)
   }
 }
