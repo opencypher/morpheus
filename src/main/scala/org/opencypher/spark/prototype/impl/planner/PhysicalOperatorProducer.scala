@@ -5,10 +5,11 @@ import org.opencypher.spark.api.CypherType
 import org.opencypher.spark.api.types.CTBoolean
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir.pattern.EveryNode
-import org.opencypher.spark.prototype.api.record.{FieldSlotContent, ProjectedExpr, RecordHeader, RecordSlot}
+import org.opencypher.spark.prototype.api.record._
 import org.opencypher.spark.prototype.impl.physical._
 import org.opencypher.spark.prototype.impl.syntax.header._
 import org.opencypher.spark.prototype.impl.syntax.util.traversable._
+import org.opencypher.spark.prototype.impl.util.{Added, Found, Replaced}
 
 class PhysicalOperatorProducer(implicit context: PhysicalPlannerContext) {
 
@@ -59,6 +60,17 @@ class PhysicalOperatorProducer(implicit context: PhysicalPlannerContext) {
     // TODO: Check results for errors
     val (header, _) = RecordHeader.empty.update(addContents(labelHeaderContents ++ keyHeaderContents))
 
-    NodeScan(node, nodeDef)(header)
+    NodeScan(node, nodeDef, header)
+  }
+
+  // TODO: Specialize per kind of slot content
+  def project(it: ProjectedSlotContent, in: PhysicalOperator): PhysicalOperator = {
+    val (newHeader, result) = in.header.update(addContent(it))
+
+    result match {
+      case _: Found[_] => in
+      case _: Replaced[_] => Alias(it.expr, it.alias.get, in, newHeader)
+      case _ => throw new NotImplementedError("No support yet for projecting non-attribute expressions") // TODO: Error handling
+    }
   }
 }

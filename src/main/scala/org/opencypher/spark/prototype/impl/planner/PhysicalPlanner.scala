@@ -25,6 +25,9 @@ class PhysicalPlanner extends Stage[LogicalOperator, PhysicalOperator, PhysicalP
 
       case logical.NodeScan(node, nodeDef, _) =>
         mkPhysical.nodeScan(node, nodeDef)
+
+      case logical.Project(it, in, _) =>
+        mkPhysical.project(it, plan(in))
     }
   }
 }
