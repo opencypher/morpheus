@@ -51,7 +51,7 @@ class CypherQueryBuilder(query: String, tokenDefs: GlobalsRegistry) {
   def add(c: Clause, blockRegistry: BlockRegistry[Expr]): BlockRegistry[Expr] = {
     c match {
       case Match(_, pattern, _, astWhere) =>
-        // TODO: labels are not inside the pattern anymore here -- need to consider that
+        // TODO: labels are not inside the pattern anymore here -- need to consider that  MATCH (a:A) ==> MATCH (a:A) WHERE a:A
         val given = convertPattern(pattern)
         val where = convertWhere(astWhere)
 

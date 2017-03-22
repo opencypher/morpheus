@@ -4,7 +4,7 @@ import cats.Monoid
 import org.opencypher.spark.api.CypherType
 import org.opencypher.spark.api.types.{CTBoolean, CTInteger}
 import org.opencypher.spark.prototype.api.expr._
-import org.opencypher.spark.prototype.api.ir.pattern.{AnyGiven, EveryNode, EveryRelationship}
+import org.opencypher.spark.prototype.api.ir.pattern.{AllGiven, AnyGiven, EveryNode, EveryRelationship}
 import org.opencypher.spark.prototype.api.record._
 import org.opencypher.spark.prototype.impl.physical._
 import org.opencypher.spark.prototype.impl.syntax.header._
@@ -37,7 +37,9 @@ class PhysicalOperatorProducer(implicit context: PhysicalPlannerContext) {
     Filter(expr, in, in.header)
   }
 
-  def nodeScan(node: Var, nodeDef: EveryNode): NodeScan = {
+  def nodeScan(node: Var, _nodeDef: EveryNode): NodeScan = {
+    val nodeDef = if (_nodeDef.labels.elts.isEmpty) EveryNode(AllGiven(schema.labels.map(globals.label))) else _nodeDef
+
     val givenLabels = nodeDef.labels.elts.map(ref => label(ref).name)
     val impliedLabels = schema.impliedLabels.transitiveImplicationsFor(givenLabels)
     val impliedKeys = impliedLabels.flatMap(label => schema.nodeKeyMap.keysFor(label).toSet)
@@ -78,7 +80,7 @@ class PhysicalOperatorProducer(implicit context: PhysicalPlannerContext) {
   def expandSource(source: Var, rel: Var, types: EveryRelationship, target: Var, in: PhysicalOperator): PhysicalOperator = {
     // TODO: This should consider multiple types per property
     val allNodeProperties = schema.nodeKeyMap.m.values.reduce(_ ++ _).toSeq.distinct
-    val allLabels = schema.nodeKeyMap.keys.toSeq
+    val allLabels = schema.labels
 
     val targetLabelHeaderContents = allLabels.map {
       labelName => ProjectedExpr(HasLabel(target, label(labelName)), CTBoolean)

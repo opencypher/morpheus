@@ -7,7 +7,7 @@ import org.opencypher.spark.prototype.api.value.CypherValue
 import org.opencypher.spark.prototype.impl.classy.Cypher
 import org.opencypher.spark.prototype.impl.convert.{CypherParser, CypherQueryBuilder, GlobalsExtractor}
 import org.opencypher.spark.prototype.impl.physical.{GraphProducer, RuntimeContext}
-import org.opencypher.spark.prototype.impl.planner.{GraphPlanner, GraphPlannerContext, LogicalPlanner, LogicalPlannerContext}
+import org.opencypher.spark.prototype.impl.planner._
 
 trait SparkCypherInstances {
 
@@ -19,6 +19,8 @@ trait SparkCypherInstances {
     override type Data = DataFrame
 
     private val logicalPlanner = new LogicalPlanner()
+    private val physicalPlanner = new PhysicalPlanner()
+    private val graphPlanner = new GraphPlanner()
     private val parser = CypherParser
 
     override def cypher(graph: Graph, query: String, parameters: Map[String, CypherValue]): Graph = {
@@ -31,20 +33,23 @@ trait SparkCypherInstances {
         case (k, v) => globals.constant(k) -> v
       }
 
-      val physicalPlanner = new GraphPlanner(new GraphProducer(RuntimeContext(constants)))
-
+      print("IR ... ")
       val ir = CypherQueryBuilder.from(stmt, query, globals)
+      println("Done!")
 
-      println("IR constructed")
-
+      print("Logical plan ... ")
       val logicalPlan = logicalPlanner.plan(ir)(LogicalPlannerContext(graph.schema, globals))
+      println("Done!")
 
-      println("Logical plan constructed")
-      println(logicalPlan.solved)
+//      print("Physical plan ...")
+//      val physicalPlan = physicalPlanner.plan(logicalPlan)(PhysicalPlannerContext(graph.schema, globals))
+//      println("Done!")
 
-      val physicalPlan = physicalPlanner.plan(logicalPlan)(GraphPlannerContext(graph, globals))
-      println("Physical plan constructed")
-      physicalPlan
+      print("Graph plan ...")
+      val graphPlan = graphPlanner.plan(logicalPlan)(GraphPlannerContext(graph, globals, constants))
+      println("Done!")
+
+      graphPlan
     }
   }
 }

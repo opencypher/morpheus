@@ -1,50 +1,58 @@
 package org.opencypher.spark.prototype.impl.planner
 
 import org.opencypher.spark.prototype.api.expr._
-import org.opencypher.spark.prototype.api.ir.global.GlobalsRegistry
+import org.opencypher.spark.prototype.api.ir.global.{ConstantRef, GlobalsRegistry}
 import org.opencypher.spark.prototype.api.ir.pattern.AllGiven
 import org.opencypher.spark.prototype.api.spark.SparkCypherGraph
+import org.opencypher.spark.prototype.api.value.CypherValue
 import org.opencypher.spark.prototype.impl.logical
-import org.opencypher.spark.prototype.impl.physical.GraphProducer
+import org.opencypher.spark.prototype.impl.physical.{GraphProducer, RuntimeContext}
 
-case class GraphPlannerContext(graph: SparkCypherGraph, globals: GlobalsRegistry)
+case class GraphPlannerContext(graph: SparkCypherGraph, globals: GlobalsRegistry, constants: Map[ConstantRef, CypherValue])
 
-class GraphPlanner(producer: GraphProducer)
+class GraphPlanner
   extends Stage[logical.LogicalOperator, SparkCypherGraph, GraphPlannerContext] {
 
-  import producer._
+  def plan(logicalPlan: logical.LogicalOperator)(implicit context: GraphPlannerContext): SparkCypherGraph = {
 
-  def plan(logicalPlan: logical.LogicalOperator)(implicit context: GraphPlannerContext): SparkCypherGraph =
-    logicalPlan match {
-      case logical.Select(fields, in, _) =>
-        plan(in).select(fields)
+    val producer = new GraphProducer(RuntimeContext(context.constants))
 
-      case logical.NodeScan(v, every, _) =>
-        context.graph.allNodes(v)
+    import producer._
 
-      case logical.Project(it, in, _) =>
-        plan(in).project(it)
+    def innerPlan(logicalPlan: logical.LogicalOperator): SparkCypherGraph =
+      logicalPlan match {
+        case logical.Select(fields, in, _) =>
+          innerPlan(in).select(fields)
 
-      case logical.Filter(expr, in, _) => expr match {
+        case logical.NodeScan(v, every, _) =>
+          context.graph.allNodes(v)
+
+        case logical.Project(it, in, _) =>
+          innerPlan(in).project(it)
+
+        case logical.Filter(expr, in, _) => expr match {
           // TODO: Is it justified to treat labels separately?
-        case HasLabel(n: Var, ref) =>
-          plan(in).labelFilter(n, AllGiven(Set(ref)))
-        case e =>
-          plan(in).filter(e)
-      }
+          case HasLabel(n: Var, ref) =>
+            innerPlan(in).labelFilter(n, AllGiven(Set(ref)))
+          case e =>
+            innerPlan(in).filter(e)
+        }
 
         // MATCH (a)-[r]->(b) => MATCH (a), (b), (a)-[r]->(b)
-      case logical.ExpandSource(source, rel, types, target, in, _) =>
-        val lhs = plan(in)
-        // TODO: where is the node label info? We could plan a filter here
-        val nodeRhs = context.graph.allNodes(target)
-        val relRhs = context.graph.allRelationships(rel).typeFilter(rel, types.relTypes)
+        case logical.ExpandSource(source, rel, types, target, in, _) =>
+          val lhs = innerPlan(in)
+          // TODO: where is the node label info? We could plan a filter here
+          val nodeRhs = context.graph.allNodes(target)
+          val relRhs = context.graph.allRelationships(rel).typeFilter(rel, types.relTypes)
 
-        val rhs = relRhs.joinTarget(nodeRhs).on(rel)(target)
-        val expanded = lhs.expandSource(rhs).on(source)(rel)
+          val rhs = relRhs.joinTarget(nodeRhs).on(rel)(target)
+          val expanded = lhs.expandSource(rhs).on(source)(rel)
 
-        expanded
-      case x =>
-        throw new NotImplementedError(s"Can't plan operator $x yet")
-    }
+          expanded
+        case x =>
+          throw new NotImplementedError(s"Can't plan operator $x yet")
+      }
+
+    innerPlan(logicalPlan)
+  }
 }
