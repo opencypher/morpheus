@@ -41,7 +41,6 @@ class PhysicalPlannerTest extends StdTestSuite {
     ))
   }
 
-
   test("Construct filtered node scan") {
     val mkPhysical = new PhysicalOperatorProducer()
 

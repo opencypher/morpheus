@@ -50,7 +50,7 @@ class LogicalPlannerTest extends IrTestSuite {
     val globals = ir.model.globals
 
     plan(ir, globals) should equal(
-      Select(Seq(Var("a.name") -> "a.name"),
+      Select(Set(Var("a.name")),
         Project(ProjectedField(Var("a.name"), Property(Var("a"), globals.propertyKey("name")), CTAny.nullable),
           Filter(Equals(Property(Var("g"), globals.propertyKey("name")), Const(ConstantRef(0))),
             Project(ProjectedExpr(Property(Var("g"), globals.propertyKey("name")), CTAny.nullable),
@@ -77,7 +77,7 @@ class LogicalPlannerTest extends IrTestSuite {
       .withNodeKeys("Administrator")("name" -> CTFloat)
 
     plan(ir, globals, schema) should equal(
-      Select(Seq(Var("a.name") -> "a.name"),
+      Select(Set(Var("a.name")),
         Project(ProjectedField(Var("a.name"), Property(Var("a"), globals.propertyKey("name")), CTFloat),
           Filter(Equals(Property(Var("g"), globals.propertyKey("name")), Const(ConstantRef(0))),
             Project(ProjectedExpr(Property(Var("g"), globals.propertyKey("name")), CTString),
@@ -101,7 +101,7 @@ class LogicalPlannerTest extends IrTestSuite {
     val globals = ir.model.globals
 
     plan(ir, globals) should equal(
-      Select(Seq(Var("a.prop") -> "a.prop"),
+      Select(Set(Var("a.prop")),
         Project(ProjectedField(Var("a.prop"), Property(Var("a"), globals.propertyKey("prop")), CTAny.nullable),
           Filter(Not(Equals(Const(globals.constant("  AUTOINT0")), Const(globals.constant("  AUTOBOOL1")))),
             NodeScan(Var("a"), EveryNode)(emptySqm)

@@ -5,7 +5,7 @@ import org.opencypher.spark.api.CypherType
 import org.opencypher.spark.api.types.CTBoolean
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir.pattern.EveryNode
-import org.opencypher.spark.prototype.api.record.{ProjectedExpr, RecordHeader}
+import org.opencypher.spark.prototype.api.record.{FieldSlotContent, ProjectedExpr, RecordHeader, RecordSlot}
 import org.opencypher.spark.prototype.impl.physical._
 import org.opencypher.spark.prototype.impl.syntax.header._
 import org.opencypher.spark.prototype.impl.syntax.util.traversable._
@@ -22,9 +22,14 @@ class PhysicalOperatorProducer(implicit context: PhysicalPlannerContext) {
     override def combine(x: Vector[CypherType], y: Vector[CypherType]): Vector[CypherType] = x ++ y
   }
 
-  def select(fields: Seq[(Expr, String)], in: PhysicalOperator) = {
-    val remaining = fields.collect { case (k, v) => Var(v) }.toSet
-    Select(fields, in, in.header)
+  // TODO: Unalias dependencies MATCH (n) WITH n.prop AS m, n WITH n // frees up m, don't lose n.prop
+  def select(fields: Set[Var], in: PhysicalOperator) = {
+    // TODO: Error handling
+    val (newHeader, removed) = in.header.update(selectFields {
+      case RecordSlot(_, content: FieldSlotContent) => fields(content.field)
+      case _ => false
+    })
+    Select(fields, in, newHeader)
   }
 
   def filter(expr: Expr, in: PhysicalOperator): Filter = {

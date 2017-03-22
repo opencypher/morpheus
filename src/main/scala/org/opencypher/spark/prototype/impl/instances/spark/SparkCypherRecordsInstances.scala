@@ -85,14 +85,14 @@ trait SparkCypherRecordsInstances extends Serializable {
     }
 
     // TODO: Correctly handle aliasing in the header
-    override def select(subject: SparkCypherRecords, fields: Map[Expr, String]): SparkCypherRecords = {
+    override def select(subject: SparkCypherRecords, fields: Set[Var]): SparkCypherRecords = {
 
       val newHeader = subject.header.slots.foldLeft(RecordHeader.empty) {
         case (acc, RecordSlot(_, f: OpaqueField)) if fields.contains(f.key) => acc.update(addContent(f))._1
         case (acc, RecordSlot(_, f: ProjectedField)) if fields.contains(f.key) => acc.update(addContent(f))._1
         case (acc, RecordSlot(_, f)) =>
           f.owner match {
-            case Some(owner) if fields.contains(owner) => acc.update(addContent(f))._1
+            case Some(owner) if fields(owner) => acc.update(addContent(f))._1
             case _ => acc
           }
         case (acc, _) => acc // drop unrelated projected exprs
@@ -100,9 +100,7 @@ trait SparkCypherRecordsInstances extends Serializable {
 
       val data = subject.data
       val columns = newHeader.slots.map { s =>
-        val oldName = data.columns(subject.header.indexOf(s.content).get)
-        val newName = SparkColumnName.of(s.content)
-        data.col(oldName).as(newName)
+        data.col(data.columns(subject.header.indexOf(s.content).get))
       }
       val newData = subject.data.select(columns: _*)
 
@@ -117,7 +115,8 @@ trait SparkCypherRecordsInstances extends Serializable {
       val (newHeader, result) = subject.header.update(addContent(it))
 
       val newData = result match {
-        case _: Replaced[_] => subject.data
+          // TODO: Put SparkColumnName into runtime context
+        case r: Replaced[RecordSlot] => subject.data.withColumnRenamed(SparkColumnName.of(r.old.content), SparkColumnName.of(r.it.content))
         case _: Found[_] => subject.data
         case x => // need to evaluate the expression and construct new column
           throw new NotImplementedError(s"Expected the slot to be replaced, but was $x")

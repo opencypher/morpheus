@@ -17,7 +17,7 @@ class GraphPlanner(producer: GraphProducer)
   def plan(logicalPlan: logical.LogicalOperator)(implicit context: GraphPlannerContext): SparkCypherGraph =
     logicalPlan match {
       case logical.Select(fields, in, _) =>
-        plan(in).select(fields.toMap)
+        plan(in).select(fields)
 
       case logical.NodeScan(v, every, _) =>
         context.graph.allNodes(v)

@@ -19,16 +19,16 @@ trait RecordHeaderSyntax {
   def addContent(content: SlotContent): State[RecordHeader, AdditiveUpdateResult[RecordSlot]] =
     exec(InternalHeader.addContent(content))
 
-  def selectFields: State[RecordHeader, Vector[AdditiveUpdateResult[RecordSlot]]] =
-    exec(InternalHeader.selectFields)
+  def compactFields: State[RecordHeader, Vector[RemovingUpdateResult[RecordSlot]]] =
+    exec(InternalHeader.compactFields)
 
-  def selectFields(predicate: SlotContent => Boolean)
-  : State[RecordHeader, Vector[AdditiveUpdateResult[RecordSlot]]] =
+  def selectFields(predicate: RecordSlot => Boolean)
+  : State[RecordHeader, Vector[RemovingUpdateResult[RecordSlot]]] =
     exec(InternalHeader.selectFields(predicate))
 
-  def removeContent(content: SlotContent)
-  : State[RecordHeader, (RemovingUpdateResult[SlotContent], Vector[AdditiveUpdateResult[RecordSlot]])] =
-    exec(InternalHeader.removeContent(content))
+//  def removeContent(content: SlotContent)
+//  : State[RecordHeader, RemovingUpdateResult[SlotContent]] =
+//    exec(InternalHeader.removeContent(content))
 
   private def exec[O](inner: State[InternalHeader, O]): State[RecordHeader, O] =
     get[RecordHeader]

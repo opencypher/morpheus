@@ -29,8 +29,9 @@ class LogicalPlanner extends Stage[CypherQuery[Expr], LogicalOperator, LogicalPl
     val plan = planBlock(first, model, None)
 
     // always plan a select at the top
-    val fields = block.binds.fieldsOrder.map(f => Var(f.name) -> f.name)
-    producer.planSelect(fields, plan)
+    val fields = block.binds.fieldsOrder.map(f => Var(f.name))
+    producer.planSelect(fields.toSet, plan)
+    // TODO: plan reorder for enforcing order and renaming
   }
 
   final def planBlock(ref: BlockRef, model: QueryModel[Expr], plan: Option[LogicalOperator])(implicit context: LogicalPlannerContext): LogicalOperator = {

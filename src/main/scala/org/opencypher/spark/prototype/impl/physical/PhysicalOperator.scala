@@ -24,6 +24,6 @@ final case class NodeScan(node: Var, nodeDef: EveryNode)(override val header: Re
 final case class Filter(expr: Expr, in: PhysicalOperator, header: RecordHeader = RecordHeader.empty)
   extends StackingPhysicalOperator
 
-final case class Select(fields: Seq[(Expr, String)], in: PhysicalOperator, header: RecordHeader = RecordHeader.empty)
+final case class Select(fields: Set[Var], in: PhysicalOperator, header: RecordHeader = RecordHeader.empty)
   extends StackingPhysicalOperator {
 }

@@ -1,19 +1,12 @@
 package org.opencypher.spark.prototype.impl.spark
 
-import org.opencypher.spark.prototype.api.record.{FieldSlotContent, ProjectedExpr, SlotContent}
+import org.opencypher.spark.prototype.api.record.{FieldSlotContent, ProjectedExpr, RecordSlot, SlotContent}
 
 import scala.collection.mutable
 
 object SparkColumnName {
 
-  def withoutType(slot: SlotContent): String = {
-    val builder = slot match {
-      case ProjectedExpr(expr, _) => new NameBuilder() += None += expr.toString
-      case fieldContent: FieldSlotContent => new NameBuilder() += fieldContent.field.name
-    }
-
-    builder.result()
-  }
+  def of(slot: RecordSlot): String = of(slot.content)
 
   def of(slot: SlotContent): String = {
     val builder = slot match {

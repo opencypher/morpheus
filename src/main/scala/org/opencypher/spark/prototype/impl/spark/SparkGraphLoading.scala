@@ -190,7 +190,7 @@ trait SparkGraphLoading {
     val labelFields = schema.labels.map { name =>
       val label = HasLabel(node, globals.label(name))
       val slot = ProjectedExpr(label, CTBoolean)
-      val field = StructField(SparkColumnName.withoutType(slot), BooleanType, nullable = false)
+      val field = StructField(SparkColumnName.of(slot), BooleanType, nullable = false)
       slot -> field
     }
     val propertyFields = schema.labels.flatMap { l =>
@@ -203,7 +203,7 @@ trait SparkGraphLoading {
       }
     }
     val nodeSlot = OpaqueField(node, CTNode)
-    val nodeField = StructField(SparkColumnName.withoutType(nodeSlot), LongType, nullable = false)
+    val nodeField = StructField(SparkColumnName.of(nodeSlot), LongType, nullable = false)
     val slotField = nodeSlot -> nodeField
     Seq(slotField) ++ labelFields ++ propertyFields
   }
@@ -217,20 +217,20 @@ trait SparkGraphLoading {
         case (name, t) =>
           val property = Property(rel, globals.propertyKey(name))
           val slot = ProjectedExpr(property, t)
-          val field = StructField(SparkColumnName.withoutType(slot), sparkType(t), nullable = t.isNullable)
+          val field = StructField(SparkColumnName.of(slot), sparkType(t), nullable = t.isNullable)
           slot -> field
       }
     }
     val typeSlot = ProjectedExpr(TypeId(rel), CTInteger)
-    val typeField = StructField(SparkColumnName.withoutType(typeSlot), IntegerType, nullable = false)
+    val typeField = StructField(SparkColumnName.of(typeSlot), IntegerType, nullable = false)
 
     val idSlot = OpaqueField(rel, CTRelationship)
-    val idField = StructField(SparkColumnName.withoutType(idSlot), LongType, nullable = false)
+    val idField = StructField(SparkColumnName.of(idSlot), LongType, nullable = false)
 
     val sourceSlot = ProjectedExpr(StartNode(rel), CTNode)
-    val sourceField = StructField(SparkColumnName.withoutType(sourceSlot), LongType, nullable = false)
+    val sourceField = StructField(SparkColumnName.of(sourceSlot), LongType, nullable = false)
     val targetSlot = ProjectedExpr(EndNode(rel), CTNode)
-    val targetField = StructField(SparkColumnName.withoutType(targetSlot), LongType, nullable = false)
+    val targetField = StructField(SparkColumnName.of(targetSlot), LongType, nullable = false)
 
     Seq(sourceSlot -> sourceField, idSlot -> idField,
       typeSlot -> typeField, targetSlot -> targetField) ++ propertyFields

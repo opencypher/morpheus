@@ -62,7 +62,7 @@ class LogicalOperatorProducer {
     Project(projection, prev, signature)(prev.solved)
   }
 
-  def planSelect(fields: Seq[(Var, String)], prev: LogicalOperator): Select = {
+  def planSelect(fields: Set[Var], prev: LogicalOperator): Select = {
     val signature = RecordHeader.empty
 
     Select(fields, prev, signature)(prev.solved)

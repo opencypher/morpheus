@@ -49,6 +49,6 @@ final case class Project(it: ProjectedSlotContent, in: LogicalOperator, signatur
                         (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
 }
 
-final case class Select(fields: Seq[(Expr, String)], in: LogicalOperator, signature: RecordHeader = RecordHeader.empty)
+final case class Select(fields: Set[Var], in: LogicalOperator, signature: RecordHeader = RecordHeader.empty)
                        (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
 }

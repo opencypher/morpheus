@@ -56,14 +56,7 @@ final case class InternalHeader protected[spark](
     case ProjectedExpr(expr, cypherType) => cypherType.isMaterial && slotsFor(expr).size <=1
   }
 
-  private def computeColumnName(slot: RecordSlot): String = {
-    val content = slot.content
-    val optExtraType = slotsFor(content.key, content.cypherType).slice(1, 2).headOption
-    if (optExtraType.isEmpty)
-      SparkColumnName.withoutType(slot.content)
-    else
-      SparkColumnName.of(content)
-  }
+  private def computeColumnName(slot: RecordSlot): String = SparkColumnName.of(slot)
 }
 
 object InternalHeader {
@@ -166,35 +159,33 @@ object InternalHeader {
   private def addExprSlots(m: Map[Expr, Vector[Int]], key: Expr, value: Int): Map[Expr, Vector[Int]] =
     if (m.getOrElse(key, Vector.empty).contains(value)) m else m.updated(key, m.getOrElse(key, Vector.empty) :+ value)
 
-  def selectFields : State[InternalHeader, Vector[AdditiveUpdateResult[RecordSlot]]] =
+  def compactFields : State[InternalHeader, Vector[RemovingUpdateResult[RecordSlot]]] =
     selectFields {
-      case _: ProjectedExpr => false
+      case RecordSlot(_, content: ProjectedExpr) => content.owner.nonEmpty
       case _ => true
     }
 
-  def selectFields(predicate: SlotContent => Boolean) : State[InternalHeader, Vector[AdditiveUpdateResult[RecordSlot]]] =
+  def selectFields(predicate: RecordSlot => Boolean)
+  : State[InternalHeader, Vector[RemovingUpdateResult[RecordSlot]]] =
     get[InternalHeader].flatMap { header =>
-      val remaining = header.slots.collect {
-        case RecordSlot(idx, content) if predicate(content) => Some(idx -> content)
-        case _=> None
-      }.flatten
-      val contents = remaining.sortBy(_._1).map(_._2)
-      set(InternalHeader.empty).flatMap(_ => addContents(contents))
+      val toBeRemoved = header.slots.filterNot(predicate)
+      val removals = toBeRemoved.map(slot => removeContent(slot)).toVector
+      execAll(removals)
     }
 
-  def removeContent(removedContent: SlotContent)
-  : State[InternalHeader, (RemovingUpdateResult[SlotContent], Vector[AdditiveUpdateResult[RecordSlot]])] = {
+  private def removeContent(removedSlot: RecordSlot)
+  : State[InternalHeader, RemovingUpdateResult[RecordSlot]] = {
     get[InternalHeader].flatMap { header =>
-      header.slotContents.find(removedContent) match {
-        case Some(ref) =>
-          val slot = RecordSlot(ref, removedContent)
-          val (remainingSlots, removedSlots) = removeDependencies(List(List(slot)), header.slots.toSet)
-          val remainingContent = remainingSlots.toSeq.sortBy(_.index).map(_.content)
-          val removedResult = Removed(removedContent, removedSlots.map(_.content) - removedContent)
-          addContents(remainingContent).map { addedResult => removedResult -> addedResult }
+      header.slotContents.find(removedSlot.content) match {
+        case Some(ref) if ref == removedSlot.index =>
+          val (remainingSlots, removedSlots) = removeDependencies(List(List(removedSlot)), header.slots.toSet)
+          val remainingSlotsInOrder = remainingSlots.toSeq.sortBy(_.index)
+          addContents(remainingSlotsInOrder.map(_.content)).map { _ =>
+            Removed(removedSlot, removedSlots - removedSlot)
+          }
 
-        case None =>
-          pureState(NotFound(removedContent) -> Vector.empty)
+        case _ =>
+          pureState(NotFound(removedSlot))
       }
     }
   }

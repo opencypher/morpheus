@@ -28,7 +28,7 @@ trait SparkCypherRecords extends CypherRecords with Serializable {
   override def show() = data.show
 
   def compact = new SparkCypherRecords {
-    private lazy val cachedHeader = self.header.update(selectFields)._1
+    private lazy val cachedHeader = self.header.update(compactFields)._1
     private lazy val cachedData = {
       val columns = cachedHeader.slots.map(c => new Column(SparkColumnName.of(c.content)))
       self.data.select(columns: _*)
@@ -40,7 +40,7 @@ trait SparkCypherRecords extends CypherRecords with Serializable {
 
   // only keep slots with v as their owner
   def focus(v: Var): SparkCypherRecords = {
-    val (newHeader, _) = self.header.update(selectFields(content => content.owner.contains(v)))
+    val (newHeader, _) = self.header.update(selectFields(slot => slot.content.owner.contains(v)))
     val newColumns = newHeader.slots.collect {
       case RecordSlot(_, content: FieldSlotContent) => new Column(SparkColumnName.of(content))
     }

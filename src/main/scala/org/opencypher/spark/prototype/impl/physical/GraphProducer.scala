@@ -31,10 +31,10 @@ class GraphProducer(context: RuntimeContext) {
 
     def allRelationships(v: Var): SparkCypherGraph = graph.relationships(v)
 
-    def select(fields: Map[Expr, String]): SparkCypherGraph =
+    def select(fields: Set[Var]): SparkCypherGraph =
       InternalCypherGraph(
         graph.details.select(fields),
-        graph.model.select(fields.keySet.collect { case Var(n) => Field(n) })
+        graph.model.select(fields.map { case Var(n) => Field(n) })
       )
 
     def project(slot: ProjectedSlotContent): SparkCypherGraph =
