@@ -1,6 +1,7 @@
 package org.opencypher.spark.api
 
 import cats.Monoid
+import org.apache.avro.io.Perf.ReflectNestedObjectArrayTest.Foo
 import org.opencypher.spark.api.types._
 
 import scala.language.postfixOps
@@ -107,17 +108,20 @@ object types {
     }
   }
 
-  object CTNode extends CTNode(Set.empty) with Serializable {
+  object CTNode extends CTNode(Map.empty) with Serializable {
     def apply(labels: String*): CTNode =
-      if (labels.isEmpty) this else CTNode(labels.toSet)
+      if (labels.isEmpty) this else CTNode(labels.map(l => l -> true).toMap)
   }
 
-  sealed case class CTNode(labels: Set[String]) extends MaterialDefiniteCypherType {
+  sealed case class CTNode(labels: Map[String, Boolean]) extends MaterialDefiniteCypherType {
 
     self =>
 
     final override def name =
-      if (labels.isEmpty) "NODE" else s"${labels.map(t => s"$t").mkString(":", ":", "")} NODE"
+      if (labels.isEmpty) "NODE" else s"${labels.map {
+        case (l, true) => s"$l"
+        case (l, false) => s"-$l"
+      }.mkString(":", ":", "")} NODE"
 
     final override def nullable =
       if (labels.isEmpty) CTNodeOrNull else CTNodeOrNull(labels)
@@ -125,7 +129,7 @@ object types {
     final override def superTypeOf(other: CypherType) = other match {
       case CTNode(_) if labels.isEmpty                => True
       case CTNode(otherLabels) if otherLabels.isEmpty => False
-      case CTNode(otherLabels)                        => labels subsetOf otherLabels
+      case CTNode(otherLabels)                        => containsLabels(otherLabels)
       case CTWildcard                                 => Maybe
       case CTVoid                                     => True
       case _                                          => False
@@ -144,14 +148,32 @@ object types {
       case CTNode(otherLabels) => CTNode(labels union otherLabels)
       case _                   => super.meetMaterially(other)
     }
+
+//    NODE :: Foo        Match (n:Foo)
+//    NODE :: -Foo       MATCH (n) WHERE NOT n:Foo
+//    NODE :: map.empty  MATCH (n)
+
+    private def containsLabels(other: Map[String, Boolean]): Ternary = {
+      other.foldLeft[Ternary](True) {
+        case (False, _) =>
+          False
+
+        case (acc, (otherLabel, otherState)) =>
+          labels.get(otherLabel).map { state =>
+            if (state == otherState) acc
+            else False
+          }.getOrElse(acc)
+      }
+      ???
+    }
   }
 
-  object CTNodeOrNull extends CTNodeOrNull(Set.empty) with Serializable {
+  object CTNodeOrNull extends CTNodeOrNull(Map.empty) with Serializable {
     def apply(labels: String*): CTNodeOrNull =
-      if (labels.isEmpty) this else CTNodeOrNull(labels.toSet)
+      if (labels.isEmpty) this else CTNodeOrNull(labels.map(l => l -> true).toMap)
   }
 
-  sealed case class CTNodeOrNull(labels: Set[String]) extends NullableDefiniteCypherType {
+  sealed case class CTNodeOrNull(labels: Map[String, Boolean]) extends NullableDefiniteCypherType {
     final override def name = s"$material?"
 
     final override def material =
