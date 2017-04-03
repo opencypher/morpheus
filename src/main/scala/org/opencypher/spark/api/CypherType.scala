@@ -1,7 +1,6 @@
 package org.opencypher.spark.api
 
 import cats.Monoid
-import org.apache.avro.io.Perf.ReflectNestedObjectArrayTest.Foo
 import org.opencypher.spark.api.types._
 
 import scala.language.postfixOps
@@ -137,7 +136,7 @@ object types {
 
     final override def joinMaterially(other: MaterialCypherType): MaterialCypherType = other match {
       case CTMap               => CTMap
-      case CTNode(otherLabels) => CTNode(labels intersect otherLabels)
+      case CTNode(otherLabels) => intersectLabels(otherLabels)
       case _: CTRelationship   => CTMap
       case CTVoid              => self
       case CTWildcard          => CTWildcard
@@ -145,26 +144,42 @@ object types {
     }
 
     final override def meetMaterially(other: MaterialCypherType): MaterialCypherType = other match {
-      case CTNode(otherLabels) => CTNode(labels union otherLabels)
+      case CTNode(otherLabels) => unionLabels(otherLabels)
       case _                   => super.meetMaterially(other)
     }
 
-//    NODE :: Foo        Match (n:Foo)
-//    NODE :: -Foo       MATCH (n) WHERE NOT n:Foo
-//    NODE :: map.empty  MATCH (n)
-
-    private def containsLabels(other: Map[String, Boolean]): Ternary = {
-      other.foldLeft[Ternary](True) {
-        case (False, _) =>
-          False
-
-        case (acc, (otherLabel, otherState)) =>
-          labels.get(otherLabel).map { state =>
-            if (state == otherState) acc
-            else False
-          }.getOrElse(acc)
+    private def containsLabels(otherLabels: Map[String, Boolean]): Ternary = {
+      val pieces = labels.keySet.union(otherLabels.keySet).map { key =>
+        (labels.get(key), otherLabels.get(key)) match {
+          case (Some(x), Some(y)) => if (x == y) True else False
+          case _ => Maybe
+        }
       }
-      ???
+      pieces.foldLeft[Ternary](True)(_ and _)
+    }
+
+    private def intersectLabels(otherLabels: Map[String, Boolean]): MaterialCypherType = {
+      labels.keySet.union(otherLabels.keySet).foldLeft[Option[Map[String, Boolean]]](Some(Map.empty)) {
+        case (None, _) => None
+        case (acc@Some(m), key) =>
+          (labels.get(key), otherLabels.get(key)) match {
+            case (Some(x), Some(y)) => if (x == y) Some(m.updated(key, x)) else None
+            case _ => acc
+          }
+      }.map(CTNode.apply).getOrElse(CTVoid)
+    }
+
+    private def unionLabels(otherLabels: Map[String, Boolean]): MaterialCypherType = {
+      labels.keySet.union(otherLabels.keySet).foldLeft[Option[Map[String, Boolean]]](Some(Map.empty)) {
+        case (None, _) => None
+        case (acc@Some(m), key) =>
+          (labels.get(key), otherLabels.get(key)) match {
+            case (Some(x), Some(y)) => if (x == y) Some(m.updated(key, x)) else acc
+            case (Some(x), None) => Some(m.updated(key, x))
+            case (None, Some(y)) => Some(m.updated(key, y))
+            case (None, None) => acc
+          }
+      }.map(CTNode.apply).getOrElse(CTVoid)
     }
   }
 

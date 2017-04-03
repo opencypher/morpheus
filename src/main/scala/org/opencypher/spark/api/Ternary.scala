@@ -16,6 +16,9 @@ sealed trait Ternary {
   def maybeTrue: Boolean
   def maybeFalse: Boolean
 
+  def and(other: Ternary): Ternary
+  def or(other: Ternary): Ternary
+
   def negated: Ternary
 }
 
@@ -31,6 +34,18 @@ case object True extends DefiniteTernary {
   def maybeTrue = true
   def maybeFalse = false
 
+  def and(other: Ternary): Ternary = other match {
+    case True => True
+    case False => False
+    case Maybe => Maybe
+  }
+
+  def or(other: Ternary): Ternary = other match {
+    case True => True
+    case False => True
+    case Maybe => True
+  }
+
   def negated = False
 
   override def toString = "definitely true"
@@ -42,6 +57,18 @@ case object False extends DefiniteTernary {
 
   def maybeTrue = false
   def maybeFalse = true
+
+  def and(other: Ternary): Ternary = other match {
+    case True => False
+    case False => False
+    case Maybe => False
+  }
+
+  def or(other: Ternary): Ternary = other match {
+    case True => True
+    case False => False
+    case Maybe => Maybe
+  }
 
   def negated = True
 
@@ -56,6 +83,18 @@ case object Maybe extends Ternary {
 
   def maybeTrue = true
   def maybeFalse = true
+
+  def and(other: Ternary): Ternary = other match {
+    case True => Maybe
+    case False => False
+    case Maybe => Maybe
+  }
+
+  def or(other: Ternary): Ternary = other match {
+    case True => True
+    case False => Maybe
+    case Maybe => Maybe
+  }
 
   def negated = Maybe
 
