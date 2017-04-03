@@ -4,7 +4,7 @@ import java.util.UUID
 
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
-import org.opencypher.spark.benchmark.Configuration.{Logging, Neo4jPassword}
+import org.opencypher.spark.benchmark.Configuration.{Logging, Neo4jAddress, Neo4jPassword, Neo4jUser}
 import org.scalatest.{BeforeAndAfterEach, FunSuite}
 
 object TestSession {
@@ -29,9 +29,9 @@ object TestSessionFactory {
     val conf = new SparkConf(true)
     conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     conf.set("spark.kryo.registrator","org.opencypher.spark.CypherKryoRegistrar")
-    conf.set("spark.neo4j.bolt.password", "try-planet-stand-art")
-    conf.set("spark.neo4j.bolt.user", "openCypher_tests")
-    conf.set("spark.neo4j.bolt.url", "bolt://ff01adf3.databases.neo4j.io")
+    conf.set("spark.neo4j.bolt.password", Neo4jPassword.get())
+    conf.set("spark.neo4j.bolt.user", Neo4jUser.get())
+    conf.set("spark.neo4j.bolt.url", Neo4jAddress.get())
 
     //
     // This may or may not help - depending on the query

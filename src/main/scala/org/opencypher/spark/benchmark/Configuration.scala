@@ -19,7 +19,9 @@ object Configuration {
   object WarmUpRuns extends ConfigOption("cos.warmupRuns", 2)(x => Some(java.lang.Integer.parseInt(x)))
   object NodeFilePath extends ConfigOption("cos.nodeFile", "<>")(Some(_))
   object RelFilePath extends ConfigOption("cos.relFile", "<>")(Some(_))
-  object Neo4jPassword extends ConfigOption("cos.neo4j-pw", ".")(Some(_))
+  object Neo4jAddress extends ConfigOption("cos.neo4j-address", "bolt://ff01adf3.databases.neo4j.io")(Some(_))
+  object Neo4jUser extends ConfigOption("cos.neo4j-user", "openCypher_tests")(Some(_))
+  object Neo4jPassword extends ConfigOption("cos.neo4j-pw", "try-planet-stand-art")(Some(_))
   object Benchmarks extends ConfigOption("cos.benchmarks", "frames")(Some(_))
   object Query extends ConfigOption("cos.query", 5)(x => Some(java.lang.Integer.parseInt(x)))
 

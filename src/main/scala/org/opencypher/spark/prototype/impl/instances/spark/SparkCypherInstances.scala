@@ -6,7 +6,6 @@ import org.opencypher.spark.prototype.api.spark.{SparkCypherGraph, SparkCypherRe
 import org.opencypher.spark.prototype.api.value.CypherValue
 import org.opencypher.spark.prototype.impl.classy.Cypher
 import org.opencypher.spark.prototype.impl.convert.{CypherParser, CypherQueryBuilder, GlobalsExtractor}
-import org.opencypher.spark.prototype.impl.physical.{GraphProducer, RuntimeContext}
 import org.opencypher.spark.prototype.impl.planner._
 
 trait SparkCypherInstances {

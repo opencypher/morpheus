@@ -1,15 +1,15 @@
 package org.opencypher.spark.prototype
 
 import org.opencypher.spark.benchmark.RunBenchmark
-import org.opencypher.spark.prototype.api.spark.SparkGraphSpace
+import org.opencypher.spark.prototype.api.spark.{SparkCypherGraph, SparkGraphSpace}
 import org.opencypher.spark.prototype.impl.instances.spark.cypher._
 import org.opencypher.spark.prototype.impl.syntax.cypher._
 
 object PrototypeDemo2 {
 
-  val space = SparkGraphSpace.fromNeo4j("MATCH (n) RETURN n", "MATCH ()-[r]->() RETURN r")(RunBenchmark.sparkSession)
+  lazy val space = SparkGraphSpace.fromNeo4j("MATCH (n) RETURN n", "MATCH ()-[r]->() RETURN r")(RunBenchmark.sparkSession)
 
-  def cypher(query: String) = {
+  def cypher(query: String): SparkCypherGraph = {
     println(s"Now executing query: $query")
 
     val graph = space.base.cypher(query)
