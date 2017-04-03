@@ -20,7 +20,10 @@ object RuntimeContext {
   val empty = RuntimeContext(Map.empty)
 }
 
-case class RuntimeContext(constants: Map[ConstantRef, CypherValue])
+case class RuntimeContext(constants: Map[ConstantRef, CypherValue]) {
+  def columnName(slot: RecordSlot): String = SparkColumnName.of(slot)
+  def columnName(content: SlotContent): String = SparkColumnName.of(content)
+}
 
 class GraphProducer(context: RuntimeContext) {
 

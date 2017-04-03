@@ -5,13 +5,12 @@ import org.opencypher.spark.api.types.{CTBoolean, CTFloat, CTInteger, CTString}
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.record._
 import org.opencypher.spark.prototype.api.spark.SparkCypherRecords
-import org.opencypher.spark.prototype.api.value.{CypherBoolean, CypherValue}
+import org.opencypher.spark.prototype.api.value.CypherValue
+import org.opencypher.spark.prototype.api.value.CypherValue.Conversion._
 import org.opencypher.spark.prototype.impl.classy.Transform
 import org.opencypher.spark.prototype.impl.physical.RuntimeContext
 import org.opencypher.spark.prototype.impl.syntax.header._
 import org.opencypher.spark.prototype.impl.util.{Found, Replaced}
-import CypherValue.Conversion._
-import org.opencypher.spark.prototype.impl.spark.SparkColumnName
 
 trait SparkCypherRecordsInstances extends Serializable {
 
@@ -115,11 +114,10 @@ trait SparkCypherRecordsInstances extends Serializable {
       val (newHeader, result) = subject.header.update(addContent(it))
 
       val newData = result match {
-          // TODO: Put SparkColumnName into runtime context
         case r: Replaced[RecordSlot] =>
-          val oldColumnName = SparkColumnName.of(r.old.content)
+          val oldColumnName: String = context.columnName(r.old.content)
           if (subject.data.columns.contains(oldColumnName)) {
-            subject.data.withColumnRenamed(oldColumnName, SparkColumnName.of(r.it.content))
+            subject.data.withColumnRenamed(oldColumnName, context.columnName(r.it.content))
           } else {
             throw new IllegalStateException(s"Wanted to rename column $oldColumnName, but it was not present!")
           }
