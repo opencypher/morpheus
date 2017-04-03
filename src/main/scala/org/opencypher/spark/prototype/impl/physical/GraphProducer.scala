@@ -135,7 +135,8 @@ class GraphProducer(context: RuntimeContext) {
             }.toSeq.sortBy(_._1)
 
             val columns = nodeIndices.map {
-              case (newIndex, Some(oldIndex)) => new Column(graphRecords.data.columns(oldIndex))
+              case (newIndex, Some(oldIndex)) =>
+                new Column(graphRecords.data.columns(oldIndex)).as(SparkColumnName.of(newHeader.slots(newIndex)))
               case (newIndex, None) =>
                 val slot = newHeader.slots(newIndex)
                 new Column(Literal(null, sparkType(slot.content.cypherType))).as(SparkColumnName.of(slot.content))

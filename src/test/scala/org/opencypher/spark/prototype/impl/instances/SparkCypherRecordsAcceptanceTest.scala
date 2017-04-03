@@ -82,6 +82,22 @@ class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fix
     result.records.data.count() should equal(0)
   }
 
+  test("get a subgraph and query it") {
+    val subgraphQ =
+      """MATCH (u1:User)-[p:POSTED]->(t:Tweet)-[m:MENTIONED]->(u2:User)
+        |WHERE u2.name = 'Neo4j'
+        |RETURN u1, p, t, m, u2
+      """.stripMargin
+
+    val subgraph = fullSpace.base.cypher(subgraphQ)
+
+    val usernamesQ = "MATCH (u:User) RETURN u.name"
+
+    val records = subgraph.cypher(usernamesQ).records
+
+    records.show()
+  }
+
   test("expand and project on full graph, three properties") {
     val query = "MATCH (t:Tweet)-[:MENTIONED]->(l:User) RETURN t.text, l.location, l.followers"
 

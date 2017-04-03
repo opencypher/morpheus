@@ -116,7 +116,13 @@ trait SparkCypherRecordsInstances extends Serializable {
 
       val newData = result match {
           // TODO: Put SparkColumnName into runtime context
-        case r: Replaced[RecordSlot] => subject.data.withColumnRenamed(SparkColumnName.of(r.old.content), SparkColumnName.of(r.it.content))
+        case r: Replaced[RecordSlot] =>
+          val oldColumnName = SparkColumnName.of(r.old.content)
+          if (subject.data.columns.contains(oldColumnName)) {
+            subject.data.withColumnRenamed(oldColumnName, SparkColumnName.of(r.it.content))
+          } else {
+            throw new IllegalStateException(s"Wanted to rename column $oldColumnName, but it was not present!")
+          }
         case _: Found[_] => subject.data
         case x => // need to evaluate the expression and construct new column
           throw new NotImplementedError(s"Expected the slot to be replaced, but was $x")
