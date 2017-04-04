@@ -251,14 +251,14 @@ trait SparkGraphLoading {
 
       val values = header.slots.map { s =>
         s.content.key match {
-          case Property(_, ref) =>
+          case Property(_, ref, _) =>
             val keyName = globals.propertyKey(ref).name
             val propValue = keys.get(keyName) match {
               case Some(t) if t == s.content.cypherType => props.get(keyName).orNull
               case _ => null
             }
             sparkValue(schema(s.index).dataType, propValue)
-          case HasLabel(_, ref) =>
+          case HasLabel(_, ref, _) =>
             labels(globals.label(ref).name)
           case _: Var =>
             importedNode.id()
@@ -286,7 +286,7 @@ trait SparkGraphLoading {
 
       val values = header.slots.map { s =>
         s.content.key match {
-          case Property(_, ref) =>
+          case Property(_, ref, _) =>
             val keyName = globals.propertyKey(ref).name
             val propValue = keys.get(keyName) match {
               case Some(t) if t == s.content.cypherType => props.get(keyName).orNull

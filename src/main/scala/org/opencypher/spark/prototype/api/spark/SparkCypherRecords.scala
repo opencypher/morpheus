@@ -56,8 +56,8 @@ trait SparkCypherRecords extends CypherRecords with Serializable {
       slot.content match {
         case p: ProjectedSlotContent =>
           p.expr match {
-            case HasLabel(`oldVar`, label) => ProjectedExpr(HasLabel(newVar, label), p.cypherType) -> slot.index
-            case Property(`oldVar`, key) => ProjectedExpr(Property(newVar, key), p.cypherType)-> slot.index
+            case HasLabel(`oldVar`, label, _) => ProjectedExpr(HasLabel(newVar, label), p.cypherType) -> slot.index
+            case Property(`oldVar`, key, _) => ProjectedExpr(Property(newVar, key), p.cypherType)-> slot.index
             case _ => p -> slot.index
           }
 

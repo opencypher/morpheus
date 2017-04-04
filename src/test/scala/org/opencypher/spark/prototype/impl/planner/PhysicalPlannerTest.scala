@@ -45,14 +45,14 @@ class PhysicalPlannerTest extends StdTestSuite {
     val mkPhysical = new PhysicalOperatorProducer()
 
     val result = physicalPlanner.plan(
-      mkLogical.planFilter(TrueLit,
+      mkLogical.planFilter(TrueLit(),
         mkLogical.planNodeScan(Field("n")(CTNode), EveryNode(AllOf(label("Person"))))
       )
     )
     val slots = result.header.slots
 
     result should equal(mkPhysical.filter(
-      TrueLit,
+      TrueLit(),
       mkPhysical.nodeScan(Var("n"), EveryNode(AllOf(label("Person"))))
     ))
     slots should equal(Seq(

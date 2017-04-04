@@ -10,7 +10,7 @@ import org.opencypher.spark.prototype.impl.util.{Added, Found, Replaced}
 class RecordHeaderTest extends StdTestSuite {
 
   test("Can add projected expressions") {
-    val content = ProjectedExpr(TrueLit, CTBoolean)
+    val content = ProjectedExpr(TrueLit(), CTBoolean)
     val (result, Added(slot)) = RecordHeader.empty.update(addContent(content))
 
     slot should equal(RecordSlot(0, content))
@@ -38,7 +38,7 @@ class RecordHeaderTest extends StdTestSuite {
   }
 
   test("Can add projected fields") {
-    val content = ProjectedField(Var("n"), TrueLit, CTBoolean)
+    val content = ProjectedField(Var("n"), TrueLit(), CTBoolean)
     val (result, Added(slot)) = RecordHeader.empty.update(addContent(content))
 
     slot should equal(RecordSlot(0, content))
@@ -47,7 +47,7 @@ class RecordHeaderTest extends StdTestSuite {
   }
 
   test("Adding projected expressions re-uses previously added projected expressions") {
-    val content = ProjectedExpr(TrueLit, CTBoolean)
+    val content = ProjectedExpr(TrueLit(), CTBoolean)
     val (oldHeader, Added(oldSlot)) = RecordHeader.empty.update(addContent(content))
     val (newHeader, Found(newSlot)) = oldHeader.update(addContent(content))
 
@@ -58,9 +58,9 @@ class RecordHeaderTest extends StdTestSuite {
   }
 
   test("Adding projected expressions re-uses previously added projected fields") {
-    val oldContent = ProjectedField(Var("n"), TrueLit, CTBoolean)
+    val oldContent = ProjectedField(Var("n"), TrueLit(), CTBoolean)
     val (oldHeader, Added(oldSlot)) = RecordHeader.empty.update(addContent(oldContent))
-    val newContent = ProjectedExpr(TrueLit, CTBoolean)
+    val newContent = ProjectedExpr(TrueLit(), CTBoolean)
     val (newHeader, Found(newSlot)) = oldHeader.update(addContent(newContent))
 
     oldSlot should equal(RecordSlot(0, oldContent))
@@ -70,9 +70,9 @@ class RecordHeaderTest extends StdTestSuite {
   }
 
   test("Adding projected field will alias previously added projected expression") {
-    val oldContent = ProjectedExpr(TrueLit, CTBoolean)
+    val oldContent = ProjectedExpr(TrueLit(), CTBoolean)
     val (oldHeader, Added(oldSlot)) = RecordHeader.empty.update(addContent(oldContent))
-    val newContent = ProjectedField(Var("n"), TrueLit, CTBoolean)
+    val newContent = ProjectedField(Var("n"), TrueLit(), CTBoolean)
     val (newHeader, Replaced(prevSlot, newSlot)) = oldHeader.update(addContent(newContent))
 
     oldSlot should equal(RecordSlot(0, oldContent))

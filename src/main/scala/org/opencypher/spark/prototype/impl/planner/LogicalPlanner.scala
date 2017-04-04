@@ -121,13 +121,13 @@ class LogicalPlanner extends Stage[CypherQuery[Expr], LogicalOperator, LogicalPl
 
   private def planFilter(in: LogicalOperator, where: AllGiven[Expr])(implicit context: LogicalPlannerContext) = {
     val filtersAndProjs = where.elts.foldLeft(in) {
-      case (acc, eq@Equals(expr1, expr2)) =>
+      case (acc, eq@Equals(expr1, expr2, _)) =>
         val project1 = planInnerExpr(expr1, acc)
         val project2 = planInnerExpr(expr2, project1)
         producer.planFilter(eq, project2)
       case (acc, h: HasLabel) =>
         producer.planFilter(h, acc)
-      case (acc, not@Not(expr)) =>
+      case (acc, not@Not(expr, _)) =>
         val project = planInnerExpr(expr, acc)
         producer.planFilter(not, project)
       case (_, x) => throw new NotImplementedError(s"Not yet able to plan filter using predicate $x")
@@ -144,7 +144,7 @@ class LogicalPlanner extends Stage[CypherQuery[Expr], LogicalOperator, LogicalPl
         val propType = propertyType(p, in)
         val project = producer.projectExpr(p, propType, in)
         project
-      case Equals(expr1, expr2) =>
+      case Equals(expr1, expr2, _) =>
         val project1 = planInnerExpr(expr1, in)
         planInnerExpr(expr2, project1)
       case x => throw new NotImplementedError(s"Not yet able to plan projection for inner expression $x")

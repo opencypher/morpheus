@@ -1,19 +1,23 @@
 package org.opencypher.spark.prototype.api.expr
 
+import org.opencypher.spark.api.CypherType
+import org.opencypher.spark.api.types.{CTBoolean, CTWildcard}
 import org.opencypher.spark.prototype.api.ir.global.{ConstantRef, LabelRef, PropertyKeyRef, RelTypeRef}
 
 import scala.annotation.tailrec
 
-sealed trait Expr
+sealed trait Expr {
+  def cypherType: CypherType
+}
 
-final case class Const(ref: ConstantRef) extends Expr
-final case class Var(name: String) extends Expr {
+final case class Const(ref: ConstantRef, cypherType: CypherType = CTWildcard) extends Expr
+final case class Var(name: String, cypherType: CypherType = CTWildcard) extends Expr {
   override def toString = name
 }
-final case class StartNode(e: Expr) extends Expr {
+final case class StartNode(e: Expr, cypherType: CypherType = CTWildcard) extends Expr {
   override def toString = s"source($e)"
 }
-final case class EndNode(e: Expr) extends Expr {
+final case class EndNode(e: Expr, cypherType: CypherType = CTWildcard) extends Expr {
   override def toString = s"target($e)"
 }
 
@@ -61,7 +65,7 @@ object Ands extends FlatteningOpExprCompanion[Ands] {
   }
 }
 
-final class Ands(_exprs: Set[Expr]) extends FlatteningOpExpr(_exprs) {
+final class Ands(_exprs: Set[Expr], override val cypherType: CypherType = CTWildcard) extends FlatteningOpExpr(_exprs) {
   override def productPrefix = "Ands"
   override def canEqual(that: Any): Boolean = that.isInstanceOf[Ands]
   override protected def companion: FlatteningOpExprCompanion[Ands] = Ands
@@ -77,26 +81,26 @@ object Ors extends FlatteningOpExprCompanion[Ors] {
   }
 }
 
-final class Ors(_exprs: Set[Expr]) extends FlatteningOpExpr(_exprs) {
+final class Ors(_exprs: Set[Expr], override val cypherType: CypherType = CTWildcard) extends FlatteningOpExpr(_exprs) {
   override def productPrefix = "Ors"
   override def canEqual(that: Any): Boolean = that.isInstanceOf[Ors]
   override protected def companion: FlatteningOpExprCompanion[Ors] = Ors
   override protected def hashPrime: Int = 61
 }
 
-final case class Not(expr: Expr) extends Expr {
+final case class Not(expr: Expr, cypherType: CypherType = CTWildcard) extends Expr {
   override def toString = s"NOT $expr"
 }
 
-final case class HasLabel(node: Expr, label: LabelRef) extends Expr {
+final case class HasLabel(node: Expr, label: LabelRef, cypherType: CypherType = CTWildcard) extends Expr {
   override def toString = s"$node:${label.id}"
 }
-final case class HasType(rel: Expr, relType: RelTypeRef) extends Expr
-final case class Equals(lhs: Expr, rhs: Expr) extends Expr
-final case class Property(m: Expr, key: PropertyKeyRef) extends Expr {
+final case class HasType(rel: Expr, relType: RelTypeRef, cypherType: CypherType = CTWildcard) extends Expr
+final case class Equals(lhs: Expr, rhs: Expr, cypherType: CypherType = CTWildcard) extends Expr
+final case class Property(m: Expr, key: PropertyKeyRef, cypherType: CypherType = CTWildcard) extends Expr {
   override def toString = s"$m.${key.id}"
 }
-final case class TypeId(rel: Expr) extends Expr {
+final case class TypeId(rel: Expr, cypherType: CypherType = CTWildcard) extends Expr {
   override def toString = s"type($rel)"
 }
 
@@ -104,9 +108,9 @@ sealed trait Lit[T] extends Expr {
   def v: T
 }
 
-final case class IntegerLit(v: Long) extends Lit[Long]
-final case class StringLit(v: String) extends Lit[String]
+final case class IntegerLit(v: Long, cypherType: CypherType = CTWildcard) extends Lit[Long]
+final case class StringLit(v: String, cypherType: CypherType = CTWildcard) extends Lit[String]
 
 sealed abstract class BoolLit(val v: Boolean) extends Lit[Boolean]
-case object TrueLit extends BoolLit(true)
-case object FalseLit extends BoolLit(false)
+final case class TrueLit(cypherType: CypherType = CTWildcard) extends BoolLit(true)
+final case class FalseLit(cypherType: CypherType = CTWildcard) extends BoolLit(false)

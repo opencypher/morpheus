@@ -37,7 +37,7 @@ class GraphProducer(context: RuntimeContext) {
     def select(fields: Set[Var]): SparkCypherGraph =
       InternalCypherGraph(
         graph.details.select(fields),
-        graph.model.select(fields.map { case Var(n) => Field(n)() })
+        graph.model.select(fields.map { case Var(n, _) => Field(n)() })
       )
 
     def project(slot: ProjectedSlotContent): SparkCypherGraph =
@@ -110,12 +110,12 @@ class GraphProducer(context: RuntimeContext) {
               slot.content match {
                 case p: ProjectedSlotContent =>
                   p.expr match {
-                    case HasLabel(Var(name), label) if nodes(Field(name)()) => Some(ProjectedExpr(HasLabel(v, label), p.cypherType) -> slot.index)
-                    case Property(Var(name), key) if nodes(Field(name)()) => Some(ProjectedExpr(Property(v, key), p.cypherType)-> slot.index)
+                    case HasLabel(Var(name, _), label, _) if nodes(Field(name)()) => Some(ProjectedExpr(HasLabel(v, label), p.cypherType) -> slot.index)
+                    case Property(Var(name, _), key, _) if nodes(Field(name)()) => Some(ProjectedExpr(Property(v, key), p.cypherType)-> slot.index)
                     case _ => None
                   }
 
-                case o@OpaqueField(Var(name), _) if nodes(Field(name)()) => Some(OpaqueField(v, CTNode) -> slot.index)
+                case o@OpaqueField(Var(name, _), _) if nodes(Field(name)()) => Some(OpaqueField(v, CTNode) -> slot.index)
                 case _ => None
               }
           }.toMap
