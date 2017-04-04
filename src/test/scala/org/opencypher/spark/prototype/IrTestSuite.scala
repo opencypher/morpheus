@@ -18,7 +18,7 @@ abstract class IrTestSuite extends StdTestSuite {
   val emptySig = RecordHeader.empty
   val leafPlan = NodeScan('n, EveryNode, emptySig)(SolvedQueryModel.empty)
 
-  implicit def toField(s: Symbol): Field = Field(s.name)
+  implicit def toField(s: Symbol): Field = Field(s.name)()
   implicit def toVar(s: Symbol): Var = Var(s.name)
 
   /**

@@ -1,5 +1,6 @@
 package org.opencypher.spark.prototype.api.ir
 
+import org.opencypher.spark.api.types.{CTNode, CTRelationship}
 import org.opencypher.spark.prototype.api.ir.block._
 import org.opencypher.spark.prototype.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.prototype.api.ir.pattern.{DirectedRelationship, EveryNode, EveryRelationship, Pattern}
@@ -55,7 +56,11 @@ object QueryModel {
 
   def empty[E](globals: GlobalsRegistry) = QueryModel[E](ResultBlock.empty, globals, Map.empty)
 
-  def base[E](sourceNode: Field, rel: Field, targetNode: Field, globals: GlobalsRegistry): QueryModel[E] = {
+  def base[E](sourceNodeName: String, relName: String, targetNodeName: String, globals: GlobalsRegistry): QueryModel[E] = {
+    val sourceNode = Field(sourceNodeName)(CTNode)
+    val rel = Field(relName)(CTRelationship)
+    val targetNode = Field(targetNodeName)(CTNode)
+
     assert(sourceNode != targetNode, "don't do that")
 
     val ref: BlockRef = BlockRef("match")
@@ -69,7 +74,8 @@ object QueryModel {
     QueryModel(ResultBlock(Set(ref), FieldsInOrder(sourceNode, rel, targetNode), Set(sourceNode, targetNode), Set(rel)), globals, blocks)
   }
 
-  def nodes[E](node: Field, globals: GlobalsRegistry): QueryModel[E] = {
+  def nodes[E](nodeName: String, globals: GlobalsRegistry): QueryModel[E] = {
+    val node = Field(nodeName)(CTNode)
     val ref: BlockRef = BlockRef("match")
     val matchBlock = MatchBlock[E](Set.empty, Pattern.empty
       .withEntity(node, EveryNode))
@@ -79,7 +85,8 @@ object QueryModel {
     QueryModel(ResultBlock(Set(ref), FieldsInOrder(node), Set(node), Set.empty), globals, blocks)
   }
 
-  def relationships[E](rel: Field, globals: GlobalsRegistry): QueryModel[E] = {
+  def relationships[E](relName: String, globals: GlobalsRegistry): QueryModel[E] = {
+    val rel = Field(relName)(CTRelationship)
     val ref: BlockRef = BlockRef("match")
     val matchBlock = MatchBlock[E](Set.empty, Pattern.empty
       .withEntity(rel, EveryRelationship))

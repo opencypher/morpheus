@@ -176,7 +176,7 @@ class LogicalPlanner extends Stage[CypherQuery[Expr], LogicalOperator, LogicalPl
 
     result match {
       case None => input
-      case Some(op) => planExpansions(op -> remainingPattern.withoutConnection(Field(op.rel.name)))
+      case Some(op) => planExpansions(op -> remainingPattern.withoutConnection(Field(op.rel.name)()))
     }
   }
 

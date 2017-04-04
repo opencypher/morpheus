@@ -1,7 +1,7 @@
 package org.opencypher.spark.prototype.impl.planner
 
 import org.opencypher.spark.StdTestSuite
-import org.opencypher.spark.api.types.{CTBoolean, CTInteger, CTString}
+import org.opencypher.spark.api.types.{CTBoolean, CTInteger, CTNode, CTString}
 import org.opencypher.spark.prototype.api.expr.{HasLabel, Property, TrueLit, Var}
 import org.opencypher.spark.prototype.api.ir.Field
 import org.opencypher.spark.prototype.api.ir.global.GlobalsRegistry
@@ -30,7 +30,7 @@ class PhysicalPlannerTest extends StdTestSuite {
   test("Construct node scan") {
     val mkPhysical = new PhysicalOperatorProducer()
 
-    val result = physicalPlanner.plan(mkLogical.planNodeScan(Field("n"), EveryNode(AllOf(label("Person")))))
+    val result = physicalPlanner.plan(mkLogical.planNodeScan(Field("n")(CTNode), EveryNode(AllOf(label("Person")))))
     val slots = result.header.slots
 
     result should equal(mkPhysical.nodeScan(Var("n"), EveryNode(AllOf(label("Person")))))
@@ -46,7 +46,7 @@ class PhysicalPlannerTest extends StdTestSuite {
 
     val result = physicalPlanner.plan(
       mkLogical.planFilter(TrueLit,
-        mkLogical.planNodeScan(Field("n"), EveryNode(AllOf(label("Person"))))
+        mkLogical.planNodeScan(Field("n")(CTNode), EveryNode(AllOf(label("Person"))))
       )
     )
     val slots = result.header.slots

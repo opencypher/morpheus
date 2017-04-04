@@ -7,6 +7,7 @@ import cats.instances.list._
 import cats.syntax.flatMap._
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection._
 import org.neo4j.cypher.internal.frontend.v3_2.ast
+import org.opencypher.spark.api.types.{CTNode, CTRelationship}
 import org.opencypher.spark.prototype.api.expr.Expr
 import org.opencypher.spark.prototype.api.ir._
 import org.opencypher.spark.prototype.api.ir.global.{GlobalsRegistry, RelTypeRef}
@@ -32,14 +33,14 @@ final class PatternConverter(val tokens: GlobalsRegistry) extends AnyVal {
 
   private def convertElement(p: ast.PatternElement): Result[Field] = p match {
     case ast.NodePattern(Some(v), labels, None) => for {
-        entity <- pure(Field(v.name))
+        entity <- pure(Field(v.name)(CTNode))
         _ <- modify[Pattern[Expr]](_.withEntity(entity, EveryNode(AllGiven(labels.map(l => tokens.label(l.name)).toSet))))
       } yield entity
 
     case ast.RelationshipChain(left, ast.RelationshipPattern(Some(eVar), types, None, None, dir), right) => for {
       source <- convertElement(left)
       target <- convertElement(right)
-      rel <- pure(Field(eVar.name))
+      rel <- pure(Field(eVar.name)(CTRelationship))
       _ <- modify[Pattern[Expr]] { given =>
         val typeRefs =
           if (types.isEmpty) AnyGiven[RelTypeRef]()

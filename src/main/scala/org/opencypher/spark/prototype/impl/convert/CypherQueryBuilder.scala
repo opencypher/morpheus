@@ -4,6 +4,8 @@ import java.util.concurrent.atomic.AtomicLong
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
+import org.opencypher.spark.api.CypherType
+import org.opencypher.spark.api.types.CTAny
 import org.opencypher.spark.prototype.api.expr.Expr
 import org.opencypher.spark.prototype.api.ir._
 import org.opencypher.spark.prototype.api.ir.block._
@@ -19,7 +21,7 @@ object CypherQueryBuilder {
           case (reg, c) => builder.add(c, reg)
         }
       }
-      case _ => ???
+      case x => throw new NotImplementedError(s"Statement not yet supported: $x")
     }
 
     builder.build(blocks)
@@ -51,7 +53,7 @@ class CypherQueryBuilder(query: String, tokenDefs: GlobalsRegistry) {
   def add(c: Clause, blockRegistry: BlockRegistry[Expr]): BlockRegistry[Expr] = {
     c match {
       case Match(_, pattern, _, astWhere) =>
-        // TODO: labels are not inside the pattern anymore here -- need to consider that  MATCH (a:A) ==> MATCH (a:A) WHERE a:A
+        // TODO: labels are not inside the pattern anymore here -- need to consider that  MATCH (a:A) ==> MATCH (a) WHERE a:A
         val given = convertPattern(pattern)
         val where = convertWhere(astWhere)
 
@@ -61,25 +63,25 @@ class CypherQueryBuilder(query: String, tokenDefs: GlobalsRegistry) {
         reg
 
       case With(_, _, _, _, _, _) =>
-        throw new IllegalArgumentException("With")
+        throw new NotImplementedError("WITH not yet supported")
 
       case Return(_, ReturnItems(_, items), _, _, _, _) =>
         val yields = ProjectedFields[Expr](items.map {
           case AliasedReturnItem(e, v) => {
-            val expr = convertExpr(e)
-            Field(v.name) -> expr
+            val (expr, typ) = convertExpr(e)
+            Field(v.name)(typ) -> expr
           }
           case UnaliasedReturnItem(e, t) => {
-            val expr = convertExpr(e)
-            Field(expr.toString) -> expr
+            val (expr, typ) = convertExpr(e)
+            Field(expr.toString)(typ) -> expr
           }
         }.toMap)
 
-      val after = blockRegistry.reg.headOption.map(_._1).toSet
+        val after = blockRegistry.reg.headOption.map(_._1).toSet
         val projs = ProjectBlock[Expr](after = after, where = AllGiven[Expr](), binds = yields)
 
         val (ref, reg) = blockRegistry.register(projs)
-        // TODO: Add rewriter and put the above in case With(...)
+        // TODO: Add rewriter and put the above case in With(...)
 
         // TODO: Figure out nodes and relationships
         val rItems: Seq[Field] = items.map(extract)
@@ -92,16 +94,20 @@ class CypherQueryBuilder(query: String, tokenDefs: GlobalsRegistry) {
 
   private def extract(r: ReturnItem): Field = {
     r match {
-      case AliasedReturnItem(expr, variable) => Field(variable.name)
-      case UnaliasedReturnItem(expr, text) => Field(convertExpr(expr).toString)
+      case AliasedReturnItem(expr, variable) => Field(variable.name)()
+      case UnaliasedReturnItem(expr, text) => Field(convertExpr(expr).toString)()
     }
   }
 
   private def convertPattern(p: ast.Pattern): Pattern[Expr] = patternConverter.convert(p)
-  private def convertExpr(e: ast.Expression): Expr = exprConverter.convert(e)
+  private def convertExpr(e: ast.Expression): (Expr, CypherType) = {
+    val expr = exprConverter.convert(e)
+
+    expr -> CTAny.nullable
+  }
 
   private def convertWhere(where: Option[ast.Where]): AllGiven[Expr] = where match {
-    case Some(ast.Where(expr)) => convertExpr(expr) match {
+    case Some(ast.Where(expr)) => convertExpr(expr)._1 match {
       case org.opencypher.spark.prototype.api.expr.Ands(exprs) => AllGiven(exprs)
       case e => AllGiven(Set(e))
     }

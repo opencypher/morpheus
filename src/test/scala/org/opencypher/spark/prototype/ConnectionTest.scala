@@ -6,9 +6,9 @@ import org.opencypher.spark.prototype.api.ir.pattern.{DirectedRelationship, Undi
 
 class ConnectionTest extends StdTestSuite {
 
-  val field_a = Field("a")
-  val field_b = Field("b")
-  val field_c = Field("c")
+  val field_a = Field("a")()
+  val field_b = Field("b")()
+  val field_c = Field("c")()
 
   test("SimpleConnection.flip") {
     DirectedRelationship(field_a, field_b).flip should equal(DirectedRelationship(field_b, field_a))
