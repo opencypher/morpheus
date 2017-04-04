@@ -60,9 +60,9 @@ object SchemaTyper {
         varTyp <- process[R](v)
         schema <- ask[R, Schema]
         result <- varTyp.material match {
-//          case CTNode(labels) =>
-//            val keys = labels.map(schema.nodeKeys).reduce(_ ++ _)
-//            updateTyping(expr -> keys.getOrElse(name, CTVoid).asNullableAs(varTyp))
+          case CTNode(labels) =>
+            val keys = labels.collect { case (k, true) => k }.map(schema.nodeKeys).reduce(_ ++ _)
+            updateTyping(expr -> keys.getOrElse(name, CTVoid).asNullableAs(varTyp))
 
           case CTRelationship(types) =>
             val keys = types.map(schema.relationshipKeys).reduce(_ ++ _)
