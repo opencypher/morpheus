@@ -65,6 +65,7 @@ class CypherTypesTest extends StdTestSuite {
       CTNode -> ("NODE" -> "NODE?"),
       CTNode("Person") -> (":Person NODE" -> ":Person NODE?"),
       CTNode("Person", "Employee") -> (":Person:Employee NODE" -> ":Person:Employee NODE?"),
+      CTNode(Map("Person" -> true, "Car" -> false)) -> (":Person:-Car NODE" -> ":Person:-Car NODE?"),
       CTRelationship -> ("RELATIONSHIP" -> "RELATIONSHIP?"),
       CTRelationship("KNOWS") -> (":KNOWS RELATIONSHIP" -> ":KNOWS RELATIONSHIP?"),
       CTRelationship("KNOWS", "LOVES") -> (":KNOWS|LOVES RELATIONSHIP" -> ":KNOWS|LOVES RELATIONSHIP?"),
@@ -114,6 +115,13 @@ class CypherTypesTest extends StdTestSuite {
     CTNode("Person").superTypeOf(CTNode("Person", "Employee")) shouldBe True
     CTNode("Person", "Employee").superTypeOf(CTNode("Employee")) shouldBe Maybe
     CTNode("Person").superTypeOf(CTNode("Foo")) shouldBe Maybe
+    CTNode().superTypeOf(CTNode(Map("Person" -> false))) shouldBe True
+    CTNode("Person").superTypeOf(CTNode(Map("Person" -> false))) shouldBe False
+    CTNode(Map("Car" -> false)).superTypeOf(CTNode("Car")) shouldBe False
+    CTNode(Map("Car" -> false)).superTypeOf(CTNode(Map("Person" -> false))) shouldBe Maybe
+    CTNode(Map("Car" -> false, "Person" -> true)).superTypeOf(CTNode(Map("Car" -> false))) shouldBe Maybe
+    CTNode(Map("Car" -> false)).superTypeOf(CTNode(Map("Car" -> false, "Person" -> true))) shouldBe True
+    CTNode(Map("Car" -> false, "Person" -> true)).superTypeOf(CTNode(Map("Car" -> false, "Person" -> true))) shouldBe True
   }
 
   test("NODE? type") {
@@ -205,6 +213,12 @@ class CypherTypesTest extends StdTestSuite {
     CTAny join CTVoid shouldBe CTAny
     CTWildcard join CTAny shouldBe CTAny
     CTVoid join CTAny shouldBe CTAny
+
+    CTNode(Map("Car" -> false)) join CTNode shouldBe CTNode
+    CTNode(Map("Car" -> false)) join CTNode(Map("Person" -> false)) shouldBe CTNode
+    CTNode(Map("Car" -> false, "Person" -> true)) join CTNode(Map("Person" -> false)) shouldBe CTNode
+    CTNode(Map("Car" -> false, "Person" -> false)) join CTNode(Map("Person" -> false)) shouldBe CTNode(Map("Person" -> false))
+    CTNode join CTNode("Person") shouldBe CTNode
   }
 
   test("join with nullables") {
@@ -251,6 +265,12 @@ class CypherTypesTest extends StdTestSuite {
 
     CTInteger meet CTVoid shouldBe CTVoid
     CTWildcard meet CTVoid shouldBe CTVoid
+
+    CTNode(Map("Car" -> false)) meet CTNode shouldBe CTNode(Map("Car" -> false))
+    CTNode(Map("Car" -> false)) meet CTNode(Map("Person" -> false)) shouldBe CTNode(Map("Car" -> false, "Person" -> false))
+    CTNode(Map("Car" -> false, "Person" -> true)) meet CTNode(Map("Person" -> false)) shouldBe CTVoid
+    CTNode(Map("Car" -> false, "Person" -> false)) meet CTNode(Map("Person" -> false)) shouldBe CTNode(Map("Car" -> false, "Person" -> false))
+    CTNode meet CTNode("Person") shouldBe CTNode("Person")
   }
 
   test("meet with labels and types") {
