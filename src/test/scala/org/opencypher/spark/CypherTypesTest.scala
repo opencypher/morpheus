@@ -111,7 +111,7 @@ class CypherTypesTest extends StdTestSuite {
     CTNode("Person").superTypeOf(CTNode()) shouldBe False
     CTNode().subTypeOf(CTNode("Person")) shouldBe False
     CTNode("Person").superTypeOf(CTNode("Person")) shouldBe True
-    CTNode("Person").superTypeOf(CTNode("Person", "Employee")) shouldBe Maybe
+    CTNode("Person").superTypeOf(CTNode("Person", "Employee")) shouldBe True
     CTNode("Person", "Employee").superTypeOf(CTNode("Employee")) shouldBe Maybe
     CTNode("Person").superTypeOf(CTNode("Foo")) shouldBe Maybe
   }
@@ -120,7 +120,7 @@ class CypherTypesTest extends StdTestSuite {
     CTNodeOrNull().superTypeOf(CTNodeOrNull()) shouldBe True
     CTNodeOrNull().superTypeOf(CTNodeOrNull("Person")) shouldBe True
     CTNodeOrNull("Person").superTypeOf(CTNodeOrNull("Person")) shouldBe True
-    CTNodeOrNull("Person").superTypeOf(CTNodeOrNull("Person", "Employee")) shouldBe Maybe
+    CTNodeOrNull("Person").superTypeOf(CTNodeOrNull("Person", "Employee")) shouldBe True
     CTNodeOrNull("Person", "Employee").superTypeOf(CTNodeOrNull("Employee")) shouldBe Maybe
     CTNodeOrNull("Person").superTypeOf(CTNodeOrNull("Foo")) shouldBe Maybe
     CTNodeOrNull("Foo").superTypeOf(CTNull) shouldBe True

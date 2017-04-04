@@ -128,7 +128,7 @@ object types {
     final override def superTypeOf(other: CypherType) = other match {
       case CTNode(_) if labels.isEmpty                => True
       case CTNode(otherLabels) if otherLabels.isEmpty => False
-      case CTNode(otherLabels)                        => containsLabels(otherLabels)
+      case CTNode(otherLabels)                        => superLabelsOf(otherLabels)
       case CTWildcard                                 => Maybe
       case CTVoid                                     => True
       case _                                          => False
@@ -136,7 +136,7 @@ object types {
 
     final override def joinMaterially(other: MaterialCypherType): MaterialCypherType = other match {
       case CTMap               => CTMap
-      case CTNode(otherLabels) => intersectLabels(otherLabels)
+      case CTNode(otherLabels) => unionLabels(otherLabels)
       case _: CTRelationship   => CTMap
       case CTVoid              => self
       case CTWildcard          => CTWildcard
@@ -144,15 +144,33 @@ object types {
     }
 
     final override def meetMaterially(other: MaterialCypherType): MaterialCypherType = other match {
-      case CTNode(otherLabels) => unionLabels(otherLabels)
+      case CTNode(otherLabels) => intersectLabels(otherLabels)
       case _                   => super.meetMaterially(other)
     }
 
-    private def containsLabels(otherLabels: Map[String, Boolean]): Ternary = {
+    // returns if any node that matches otherLabels is also a node that matches labels
+    private def superLabelsOf(otherLabels: Map[String, Boolean]): Ternary = {
       val pieces = labels.keySet.union(otherLabels.keySet).map { key =>
         (labels.get(key), otherLabels.get(key)) match {
-          case (Some(x), Some(y)) => if (x == y) True else False
-          case _ => Maybe
+
+          // TRUE :Person >= :Person
+          // TRUE :-Person >= :-Person
+          case (Some(x), Some(y)) if x == y => True
+
+          // FALSE :-Person >= :Person
+          // FALSE :Person >= :-Person
+          case (Some(_), Some(_)) => False
+
+          // TRUE ?Person >= :Person
+          // TRUE ?Person >= :-Person
+          case (None, Some(_)) => True
+
+          // MAYBE :Person >= ?Person
+          // MAYBE :-Person >= ?Person
+          case (Some(_), None) => Maybe
+
+          // TRUE ?Person >= ?Person
+          case (None, None) => True
         }
       }
       pieces.foldLeft[Ternary](True)(_ and _)
@@ -160,26 +178,50 @@ object types {
 
     private def intersectLabels(otherLabels: Map[String, Boolean]): MaterialCypherType = {
       labels.keySet.union(otherLabels.keySet).foldLeft[Option[Map[String, Boolean]]](Some(Map.empty)) {
+
+        // Empty => Empty
         case (None, _) => None
+
         case (acc@Some(m), key) =>
           (labels.get(key), otherLabels.get(key)) match {
-            case (Some(x), Some(y)) => if (x == y) Some(m.updated(key, x)) else None
+
+            // :Person /\ :Person => :Person
+            // :-Person /\ :-Person => :Person
+            case (Some(x), Some(y)) if x == y => Some(m.updated(key, x))
+
+            // :Person /\ :-Person => Empty
+            // :-Person /\ :Person => Empty
+            case (Some(_), Some(_)) => None
+
+            // :[x]Person /\ ?Person => :[x]Person
+            case (Some(x), None) => Some(m.updated(key, x))
+
+            // :?Person /\ [x]Person => :[x]Person
+            case (None, Some(y)) => Some(m.updated(key, y))
+
+            // ?Person /\ ?Person => ?Person
             case _ => acc
           }
       }.map(CTNode.apply).getOrElse(CTVoid)
     }
 
     private def unionLabels(otherLabels: Map[String, Boolean]): MaterialCypherType = {
-      labels.keySet.union(otherLabels.keySet).foldLeft[Option[Map[String, Boolean]]](Some(Map.empty)) {
-        case (None, _) => None
-        case (acc@Some(m), key) =>
+      val newLabels = labels.keySet.union(otherLabels.keySet).foldLeft[Map[String, Boolean]](Map.empty) {
+        case (m, key) =>
           (labels.get(key), otherLabels.get(key)) match {
-            case (Some(x), Some(y)) => if (x == y) Some(m.updated(key, x)) else acc
-            case (Some(x), None) => Some(m.updated(key, x))
-            case (None, Some(y)) => Some(m.updated(key, y))
-            case (None, None) => acc
+            // :Person \/ :Person => :Person
+            // :-Person \/ :-Person => :Person
+            case (Some(x), Some(y)) if x == y => m.updated(key, x)
+
+            // :Person \/ :-Person => ?Person
+            // :-Person \/ :Person => ?Person
+            // :[x]Person \/ ?Person => ?Person
+            // :?Person \/ [x]Person => ?Person
+            // ?Person \/ ?Person => ?Person
+            case _ => m
           }
-      }.map(CTNode.apply).getOrElse(CTVoid)
+      }
+      CTNode(newLabels)
     }
   }
 
