@@ -1,4 +1,4 @@
-package org.opencypher.spark.prototype.impl.convert
+package org.opencypher.spark.prototype.impl.ir
 
 import org.opencypher.spark.prototype.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.{Neo4jAstTestSupport, StdTestSuite}

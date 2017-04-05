@@ -1,4 +1,4 @@
-package org.opencypher.spark.prototype.impl.planner
+package org.opencypher.spark.prototype.impl.flat
 
 import org.opencypher.spark.StdTestSuite
 import org.opencypher.spark.api.types.{CTBoolean, CTInteger, CTNode, CTString}
@@ -8,8 +8,9 @@ import org.opencypher.spark.prototype.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.prototype.api.ir.pattern.{AllOf, EveryNode}
 import org.opencypher.spark.prototype.api.record.{ProjectedExpr, RecordSlot}
 import org.opencypher.spark.prototype.api.schema.Schema
+import org.opencypher.spark.prototype.impl.logical.LogicalOperatorProducer
 
-class PhysicalPlannerTest extends StdTestSuite {
+class FlatPlannerTest extends StdTestSuite {
 
   val schema = Schema
     .empty
@@ -17,18 +18,18 @@ class PhysicalPlannerTest extends StdTestSuite {
 
   val globals = GlobalsRegistry.fromSchema(schema)
 
-  implicit val context = PhysicalPlannerContext(schema, globals)
+  implicit val context = FlatPlannerContext(schema, globals)
 
   import globals._
 
   val mkLogical = new LogicalOperatorProducer
-  val physicalPlanner = new PhysicalPlanner
+  val physicalPlanner = new FlatPlanner
 
   // TODO: Ids missing
   // TODO: Do not name schema provided columns
 
   test("Construct node scan") {
-    val mkPhysical = new PhysicalOperatorProducer()
+    val mkPhysical = new FlatOperatorProducer()
 
     val result = physicalPlanner.plan(mkLogical.planNodeScan(Field("n")(CTNode), EveryNode(AllOf(label("Person")))))
     val slots = result.header.slots
@@ -42,7 +43,7 @@ class PhysicalPlannerTest extends StdTestSuite {
   }
 
   test("Construct filtered node scan") {
-    val mkPhysical = new PhysicalOperatorProducer()
+    val mkPhysical = new FlatOperatorProducer()
 
     val result = physicalPlanner.plan(
       mkLogical.planFilter(TrueLit(),

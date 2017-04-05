@@ -1,4 +1,4 @@
-package org.opencypher.spark.prototype.impl.convert
+package org.opencypher.spark.prototype.impl.ir
 
 import cats._
 import cats.data.State

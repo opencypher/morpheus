@@ -1,4 +1,4 @@
-package org.opencypher.spark.prototype.impl.convert
+package org.opencypher.spark.prototype.impl.parse
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer

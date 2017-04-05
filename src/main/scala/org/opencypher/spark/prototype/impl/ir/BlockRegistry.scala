@@ -1,4 +1,4 @@
-package org.opencypher.spark.prototype.impl.convert
+package org.opencypher.spark.prototype.impl.ir
 
 import java.util.concurrent.atomic.AtomicLong
 

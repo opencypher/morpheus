@@ -1,6 +1,6 @@
-package org.opencypher.spark.prototype.impl.planner
+package org.opencypher.spark.prototype.impl.logical
 
-import org.opencypher.spark.api.types.{CTAny, CTBoolean, CTFloat, CTString}
+import org.opencypher.spark.api.types.{CTAny, CTFloat, CTString}
 import org.opencypher.spark.prototype.IrTestSuite
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir._
@@ -10,7 +10,6 @@ import org.opencypher.spark.prototype.api.ir.pattern.{DirectedRelationship, Ever
 import org.opencypher.spark.prototype.api.record.{ProjectedExpr, ProjectedField}
 import org.opencypher.spark.prototype.api.schema.Schema
 import org.opencypher.spark.prototype.impl.logical
-import org.opencypher.spark.prototype.impl.logical._
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.language.implicitConversions

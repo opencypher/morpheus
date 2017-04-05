@@ -5,8 +5,9 @@ import org.neo4j.cypher.internal.frontend.v3_2.{AstRewritingMonitor, CypherExcep
 import org.opencypher.spark.api.{CypherResultContainer, PropertyGraph}
 import org.opencypher.spark.prototype.api.schema.Schema
 import org.opencypher.spark.prototype.api.value.CypherString
-import org.opencypher.spark.prototype.impl.convert.{CypherParser, CypherQueryBuilder, GlobalsExtractor, IRBuilderContext}
-import org.opencypher.spark.prototype.impl.planner.{LogicalPlanner, LogicalPlannerContext}
+import org.opencypher.spark.prototype.impl.ir.{CypherQueryBuilder, GlobalsExtractor, IRBuilderContext}
+import org.opencypher.spark.prototype.impl.logical.{LogicalPlanner, LogicalPlannerContext}
+import org.opencypher.spark.prototype.impl.parse.CypherParser
 
 import scala.reflect.ClassTag
 

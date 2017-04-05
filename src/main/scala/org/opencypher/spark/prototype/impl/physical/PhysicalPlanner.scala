@@ -1,19 +1,18 @@
-package org.opencypher.spark.prototype.impl.planner
+package org.opencypher.spark.prototype.impl.physical
 
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir.global.{ConstantRef, GlobalsRegistry}
 import org.opencypher.spark.prototype.api.ir.pattern.AllGiven
 import org.opencypher.spark.prototype.api.spark.SparkCypherGraph
 import org.opencypher.spark.prototype.api.value.CypherValue
-import org.opencypher.spark.prototype.impl.logical
-import org.opencypher.spark.prototype.impl.physical.{GraphProducer, RuntimeContext}
+import org.opencypher.spark.prototype.impl.{PlannerStage, logical}
 
-case class GraphPlannerContext(graph: SparkCypherGraph, globals: GlobalsRegistry, constants: Map[ConstantRef, CypherValue])
+case class PhysicalPlannerContext(graph: SparkCypherGraph, globals: GlobalsRegistry, constants: Map[ConstantRef, CypherValue])
 
-class GraphPlanner
-  extends Stage[logical.LogicalOperator, SparkCypherGraph, GraphPlannerContext] {
+class PhysicalPlanner
+  extends PlannerStage[logical.LogicalOperator, SparkCypherGraph, PhysicalPlannerContext] {
 
-  def plan(logicalPlan: logical.LogicalOperator)(implicit context: GraphPlannerContext): SparkCypherGraph = {
+  def plan(logicalPlan: logical.LogicalOperator)(implicit context: PhysicalPlannerContext): SparkCypherGraph = {
 
     val producer = new GraphProducer(RuntimeContext(context.constants))
 

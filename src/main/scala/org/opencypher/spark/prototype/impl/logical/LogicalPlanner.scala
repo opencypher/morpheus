@@ -1,4 +1,4 @@
-package org.opencypher.spark.prototype.impl.planner
+package org.opencypher.spark.prototype.impl.logical
 
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.fixedPoint
 import org.opencypher.spark.api.CypherType
@@ -8,11 +8,11 @@ import org.opencypher.spark.prototype.api.ir.block._
 import org.opencypher.spark.prototype.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.prototype.api.ir.pattern.{AllGiven, Connection, Pattern}
 import org.opencypher.spark.prototype.api.schema.Schema
-import org.opencypher.spark.prototype.impl.logical._
+import org.opencypher.spark.prototype.impl.PlannerStage
 
 final case class LogicalPlannerContext(schema: Schema, tokens: GlobalsRegistry)
 
-class LogicalPlanner extends Stage[CypherQuery[Expr], LogicalOperator, LogicalPlannerContext] {
+class LogicalPlanner extends PlannerStage[CypherQuery[Expr], LogicalOperator, LogicalPlannerContext] {
 
   val producer = new LogicalOperatorProducer
 

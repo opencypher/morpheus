@@ -1,4 +1,4 @@
-package org.opencypher.spark.prototype.impl.convert
+package org.opencypher.spark.prototype.impl.ir
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast
 import org.opencypher.spark.api.CypherType

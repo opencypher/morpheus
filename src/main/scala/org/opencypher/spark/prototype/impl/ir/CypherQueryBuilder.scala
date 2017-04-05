@@ -1,4 +1,4 @@
-package org.opencypher.spark.prototype.impl.convert
+package org.opencypher.spark.prototype.impl.ir
 
 import cats.implicits._
 import org.atnos.eff._
@@ -9,10 +9,10 @@ import org.opencypher.spark.prototype.api.expr.Expr
 import org.opencypher.spark.prototype.api.ir._
 import org.opencypher.spark.prototype.api.ir.block._
 import org.opencypher.spark.prototype.api.ir.pattern.{AllGiven, Pattern}
-import org.opencypher.spark.prototype.impl.convert.types.{_fails, _hasContext, _}
-import org.opencypher.spark.prototype.impl.planner.Stage
+import org.opencypher.spark.prototype.impl.PlannerStage
+import org.opencypher.spark.prototype.impl.ir.types.{_fails, _hasContext, _}
 
-object CypherQueryBuilder extends Stage[ast.Statement, CypherQuery[Expr], IRBuilderContext] {
+object CypherQueryBuilder extends PlannerStage[ast.Statement, CypherQuery[Expr], IRBuilderContext] {
 
   override def plan(input: Statement)(implicit context: IRBuilderContext): CypherQuery[Expr] =
     buildIROrThrow(input, context)

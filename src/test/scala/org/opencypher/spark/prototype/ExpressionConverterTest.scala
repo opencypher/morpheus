@@ -7,7 +7,7 @@ import org.opencypher.spark.api.types.CTString
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir._
 import org.opencypher.spark.prototype.api.ir.global._
-import org.opencypher.spark.prototype.impl.convert.ExpressionConverter
+import org.opencypher.spark.prototype.impl.ir.ExpressionConverter
 
 class ExpressionConverterTest extends StdTestSuite with AstConstructionTestSupport {
 

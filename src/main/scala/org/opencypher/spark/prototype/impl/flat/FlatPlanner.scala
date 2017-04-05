@@ -1,18 +1,16 @@
-package org.opencypher.spark.prototype.impl.planner
+package org.opencypher.spark.prototype.impl.flat
 
-import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.prototype.api.schema.Schema
-import org.opencypher.spark.prototype.impl.logical
+import org.opencypher.spark.prototype.impl.{PlannerStage, logical}
 import org.opencypher.spark.prototype.impl.logical.LogicalOperator
-import org.opencypher.spark.prototype.impl.physical.PhysicalOperator
 
-final case class PhysicalPlannerContext(schema: Schema, globalsRegistry: GlobalsRegistry)
+final case class FlatPlannerContext(schema: Schema, globalsRegistry: GlobalsRegistry)
 
-class PhysicalPlanner extends Stage[LogicalOperator, PhysicalOperator, PhysicalPlannerContext] {
+class FlatPlanner extends PlannerStage[LogicalOperator, FlatOperator, FlatPlannerContext] {
 
-  override def plan(input: LogicalOperator)(implicit context: PhysicalPlannerContext): PhysicalOperator = {
-    val mkPhysical = new PhysicalOperatorProducer()
+  override def plan(input: LogicalOperator)(implicit context: FlatPlannerContext): FlatOperator = {
+    val mkPhysical = new FlatOperatorProducer()
 
     input match {
 

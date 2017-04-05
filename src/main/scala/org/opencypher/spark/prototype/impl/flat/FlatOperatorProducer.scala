@@ -1,17 +1,16 @@
-package org.opencypher.spark.prototype.impl.planner
+package org.opencypher.spark.prototype.impl.flat
 
 import cats.Monoid
 import org.opencypher.spark.api.CypherType
 import org.opencypher.spark.api.types.{CTBoolean, CTInteger}
 import org.opencypher.spark.prototype.api.expr._
-import org.opencypher.spark.prototype.api.ir.pattern.{AllGiven, AnyGiven, EveryNode, EveryRelationship}
+import org.opencypher.spark.prototype.api.ir.pattern.{AllGiven, EveryNode, EveryRelationship}
 import org.opencypher.spark.prototype.api.record._
-import org.opencypher.spark.prototype.impl.physical._
 import org.opencypher.spark.prototype.impl.syntax.header._
 import org.opencypher.spark.prototype.impl.syntax.util.traversable._
-import org.opencypher.spark.prototype.impl.util.{Added, Found, Replaced}
+import org.opencypher.spark.prototype.impl.util.{Found, Replaced}
 
-class PhysicalOperatorProducer(implicit context: PhysicalPlannerContext) {
+class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
   private val globals = context.globalsRegistry
   private val schema = context.schema
@@ -24,7 +23,7 @@ class PhysicalOperatorProducer(implicit context: PhysicalPlannerContext) {
   }
 
   // TODO: Unalias dependencies MATCH (n) WITH n.prop AS m, n WITH n // frees up m, don't lose n.prop
-  def select(fields: Set[Var], in: PhysicalOperator) = {
+  def select(fields: Set[Var], in: FlatOperator) = {
     // TODO: Error handling
     val (newHeader, removed) = in.header.update(selectFields {
       case RecordSlot(_, content: FieldSlotContent) => fields(content.field)
@@ -33,7 +32,7 @@ class PhysicalOperatorProducer(implicit context: PhysicalPlannerContext) {
     Select(fields, in, newHeader)
   }
 
-  def filter(expr: Expr, in: PhysicalOperator): Filter = {
+  def filter(expr: Expr, in: FlatOperator): Filter = {
     Filter(expr, in, in.header)
   }
 
@@ -66,7 +65,7 @@ class PhysicalOperatorProducer(implicit context: PhysicalPlannerContext) {
   }
 
   // TODO: Specialize per kind of slot content
-  def project(it: ProjectedSlotContent, in: PhysicalOperator): PhysicalOperator = {
+  def project(it: ProjectedSlotContent, in: FlatOperator): FlatOperator = {
     val (newHeader, result) = in.header.update(addContent(it))
 
     result match {
@@ -77,7 +76,7 @@ class PhysicalOperatorProducer(implicit context: PhysicalPlannerContext) {
   }
 
   // TODO: Specialize per kind of slot content
-  def expandSource(source: Var, rel: Var, types: EveryRelationship, target: Var, in: PhysicalOperator): PhysicalOperator = {
+  def expandSource(source: Var, rel: Var, types: EveryRelationship, target: Var, in: FlatOperator): FlatOperator = {
     // TODO: This should consider multiple types per property
     val allNodeProperties = schema.nodeKeyMap.m.values.reduce(_ ++ _).toSeq.distinct
     val allLabels = schema.labels

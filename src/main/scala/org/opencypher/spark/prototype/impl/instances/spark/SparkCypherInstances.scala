@@ -5,8 +5,11 @@ import org.opencypher.spark.benchmark.Converters
 import org.opencypher.spark.prototype.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkGraphSpace}
 import org.opencypher.spark.prototype.api.value.CypherValue
 import org.opencypher.spark.prototype.impl.classy.Cypher
-import org.opencypher.spark.prototype.impl.convert.{CypherParser, CypherQueryBuilder, GlobalsExtractor, IRBuilderContext}
-import org.opencypher.spark.prototype.impl.planner._
+import org.opencypher.spark.prototype.impl.flat.FlatPlanner
+import org.opencypher.spark.prototype.impl.ir.{CypherQueryBuilder, GlobalsExtractor, IRBuilderContext}
+import org.opencypher.spark.prototype.impl.logical.{LogicalPlanner, LogicalPlannerContext}
+import org.opencypher.spark.prototype.impl.parse.CypherParser
+import org.opencypher.spark.prototype.impl.physical.{PhysicalPlanner, PhysicalPlannerContext}
 
 trait SparkCypherInstances {
 
@@ -18,8 +21,8 @@ trait SparkCypherInstances {
     override type Data = DataFrame
 
     private val logicalPlanner = new LogicalPlanner()
-    private val physicalPlanner = new PhysicalPlanner()
-    private val graphPlanner = new GraphPlanner()
+    private val physicalPlanner = new FlatPlanner()
+    private val graphPlanner = new PhysicalPlanner()
     private val parser = CypherParser
 
     override def cypher(graph: Graph, query: String, parameters: Map[String, CypherValue]): Graph = {
@@ -45,7 +48,7 @@ trait SparkCypherInstances {
 //      println("Done!")
 
       print("Graph plan ...")
-      val graphPlan = graphPlanner.plan(logicalPlan)(GraphPlannerContext(graph, globals, constants))
+      val graphPlan = graphPlanner.plan(logicalPlan)(PhysicalPlannerContext(graph, globals, constants))
       println("Done!")
 
       graphPlan

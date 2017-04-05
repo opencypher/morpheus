@@ -8,8 +8,9 @@ import org.opencypher.spark.prototype.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.prototype.api.ir.pattern.{AllGiven, EveryNode, Pattern}
 import org.opencypher.spark.prototype.api.record.RecordHeader
 import org.opencypher.spark.prototype.api.schema.Schema
-import org.opencypher.spark.prototype.impl.convert.{CypherParser, CypherQueryBuilder, GlobalsExtractor, IRBuilderContext}
+import org.opencypher.spark.prototype.impl.ir.{CypherQueryBuilder, GlobalsExtractor, IRBuilderContext}
 import org.opencypher.spark.prototype.impl.logical.NodeScan
+import org.opencypher.spark.prototype.impl.parse.CypherParser
 
 import scala.language.implicitConversions
 
