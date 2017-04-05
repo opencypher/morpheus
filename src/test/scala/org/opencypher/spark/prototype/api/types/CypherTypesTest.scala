@@ -1,8 +1,7 @@
-package org.opencypher.spark
+package org.opencypher.spark.prototype.api.types
 
-import org.opencypher.spark.api.types._
+import org.opencypher.spark.StdTestSuite
 import org.opencypher.spark.api._
-import org.opencypher.spark.prototype.api.value._
 
 import scala.language.postfixOps
 

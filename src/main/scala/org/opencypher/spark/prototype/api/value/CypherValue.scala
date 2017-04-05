@@ -3,12 +3,11 @@ package org.opencypher.spark.prototype.api.value
 import org.apache.spark.sql.Encoder
 import org.apache.spark.sql.Encoders._
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
-import org.opencypher.spark.api.CypherType.OrderGroup
-import org.opencypher.spark.api.CypherType.OrderGroups._
 import org.opencypher.spark.api._
-import org.opencypher.spark.prototype.api.value._
-import org.opencypher.spark.api.types._
 import org.opencypher.spark.impl.verify.Verification
+import org.opencypher.spark.prototype.api.types.CypherType._
+import org.opencypher.spark.prototype.api.types.CypherType.OrderGroups._
+import org.opencypher.spark.prototype.api.types._
 
 import scala.collection.TraversableOnce
 import scala.language.implicitConversions

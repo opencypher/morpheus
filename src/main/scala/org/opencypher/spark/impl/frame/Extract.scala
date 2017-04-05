@@ -4,7 +4,7 @@ import java.lang.Long
 import java.{lang => Java}
 
 import org.apache.spark.sql.Dataset
-import org.opencypher.spark.api.types._
+import org.opencypher.spark.prototype.api.types._
 import org.opencypher.spark.impl._
 import org.opencypher.spark.prototype.api.value.{CypherMap, CypherNode, CypherRelationship, CypherValue}
 

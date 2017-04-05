@@ -4,7 +4,7 @@ import cats.Monad
 import cats.data.State
 import cats.data.State.{get, set}
 import cats.instances.all._
-import org.opencypher.spark.api.CypherType
+import org.opencypher.spark.prototype.api.types._
 import org.opencypher.spark.prototype.api.expr.{Expr, Var}
 import org.opencypher.spark.prototype.api.record._
 import org.opencypher.spark.prototype.impl.spark.SparkColumnName

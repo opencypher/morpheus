@@ -7,7 +7,7 @@ import cats.instances.list._
 import cats.syntax.flatMap._
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection._
 import org.neo4j.cypher.internal.frontend.v3_2.ast
-import org.opencypher.spark.api.types.{CTNode, CTRelationship}
+import org.opencypher.spark.prototype.api.types.{CTNode, CTRelationship}
 import org.opencypher.spark.prototype.api.expr.Expr
 import org.opencypher.spark.prototype.api.ir._
 import org.opencypher.spark.prototype.api.ir.global.{GlobalsRegistry, RelTypeRef}

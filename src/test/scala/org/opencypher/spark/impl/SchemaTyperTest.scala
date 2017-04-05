@@ -3,9 +3,8 @@ package org.opencypher.spark.impl
 import cats.data.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, Parameter}
 import org.neo4j.cypher.internal.frontend.v3_2.symbols
-import org.opencypher.spark.api.CypherType
-import org.opencypher.spark.api.types._
-import org.opencypher.spark.impl.types._
+import org.opencypher.spark.impl.types.{SchemaTyper, TyperContext, TyperError, UnsupportedExpr}
+import org.opencypher.spark.prototype.api.types._
 import org.opencypher.spark.prototype.api.schema.Schema
 import org.opencypher.spark.{Neo4jAstTestSupport, StdTestSuite}
 import org.scalatest.mockito.MockitoSugar

@@ -1,6 +1,6 @@
 package org.opencypher.spark.api.frame
 
-import org.opencypher.spark.api.CypherType
+import org.opencypher.spark.prototype.api.types.CypherType
 
 trait CypherSlot {
   self: Serializable =>

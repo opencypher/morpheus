@@ -1,8 +1,8 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.{Dataset, Encoder, Row}
-import org.opencypher.spark.api.{CypherType, _}
-import org.opencypher.spark.api.frame.{OldCypherFrame, CypherSlot, Representation}
+import org.opencypher.spark.api.frame.{CypherSlot, OldCypherFrame, Representation}
+import org.opencypher.spark.prototype.api.types.CypherType
 import org.opencypher.spark.prototype.api.value.{CypherNode, CypherRelationship}
 
 abstract class StdCypherFrame[Out](sig: StdFrameSignature)

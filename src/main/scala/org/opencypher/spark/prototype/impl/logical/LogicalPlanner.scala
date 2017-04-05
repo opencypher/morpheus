@@ -1,7 +1,7 @@
 package org.opencypher.spark.prototype.impl.logical
 
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.fixedPoint
-import org.opencypher.spark.api.CypherType
+import org.opencypher.spark.prototype.api.types._
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir._
 import org.opencypher.spark.prototype.api.ir.block._

@@ -1,6 +1,6 @@
 package org.opencypher.spark.prototype.api.record
 
-import org.opencypher.spark.api.CypherType
+import org.opencypher.spark.prototype.api.types._
 import org.opencypher.spark.prototype.api.expr._
 
 final case class RecordSlot(index: Int, content: SlotContent)

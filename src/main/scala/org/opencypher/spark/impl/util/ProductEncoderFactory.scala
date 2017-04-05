@@ -3,7 +3,7 @@ package org.opencypher.spark.impl.util
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.sql.types.{BooleanType, LongType, StringType}
 import org.apache.spark.sql.{Encoder, SparkSession}
-import org.opencypher.spark.api.types.{CTBoolean, CTInteger, CTString}
+import org.opencypher.spark.prototype.api.types.{CTBoolean, CTInteger, CTString}
 import org.opencypher.spark.api.frame.EmbeddedRepresentation
 import org.opencypher.spark.api.frame.BinaryRepresentation
 import org.opencypher.spark.impl.StdSlot

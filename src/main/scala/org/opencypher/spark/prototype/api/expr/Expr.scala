@@ -1,8 +1,7 @@
 package org.opencypher.spark.prototype.api.expr
 
-import org.opencypher.spark.api.CypherType
-import org.opencypher.spark.api.types.{CTBoolean, CTWildcard}
 import org.opencypher.spark.prototype.api.ir.global.{ConstantRef, LabelRef, PropertyKeyRef, RelTypeRef}
+import org.opencypher.spark.prototype.api.types._
 
 import scala.annotation.tailrec
 

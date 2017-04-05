@@ -1,8 +1,7 @@
 package org.opencypher.spark.prototype.impl.spark
 
 import org.apache.spark.sql.types._
-import org.opencypher.spark.api.CypherType
-import org.opencypher.spark.api.types._
+import org.opencypher.spark.prototype.api.types._
 
 object sparkType extends Serializable {
   def apply(ct: CypherType): DataType = ct.material match {

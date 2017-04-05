@@ -1,6 +1,6 @@
 package org.opencypher.spark.prototype.api.ir
 
-import org.opencypher.spark.api.types.{CTNode, CTRelationship}
+import org.opencypher.spark.prototype.api.types.{CTNode, CTRelationship}
 import org.opencypher.spark.prototype.api.ir.block._
 import org.opencypher.spark.prototype.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.prototype.api.ir.pattern.{DirectedRelationship, EveryNode, EveryRelationship, Pattern}

@@ -2,12 +2,12 @@ package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.Dataset
 import org.opencypher.spark._
-import org.opencypher.spark.api._
 import org.opencypher.spark.api.frame.{CypherFrameSignature, Representation}
 import org.opencypher.spark.impl._
 import org.opencypher.spark.impl.frame.StdFrameTestSuite.FrameTestResult
-import org.opencypher.spark.prototype.api.value.{NodeData, RelationshipData}
 import org.opencypher.spark.impl.util.SlotSymbolGenerator
+import org.opencypher.spark.prototype.api.types._
+import org.opencypher.spark.prototype.api.value.{NodeData, RelationshipData}
 
 object StdFrameTestSuite {
   final case class FrameTestResult[Out](dataframe: Dataset[Out], signature: StdFrameSignature) {

@@ -1,7 +1,7 @@
 package org.opencypher.spark.impl
 
 import org.opencypher.spark.StdTestSuite
-import org.opencypher.spark.api.types._
+import org.opencypher.spark.prototype.api.types._
 import org.opencypher.spark.impl.util.SlotSymbolGenerator
 
 class StdFrameSignatureTest extends StdTestSuite {

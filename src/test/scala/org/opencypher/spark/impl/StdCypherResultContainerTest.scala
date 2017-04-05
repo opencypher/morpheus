@@ -5,7 +5,7 @@ import java.io.{PrintWriter, StringWriter}
 import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.types.{LongType, StringType}
 import org.opencypher.spark.api.frame.EmbeddedRepresentation
-import org.opencypher.spark.api.types.{CTInteger, CTString}
+import org.opencypher.spark.prototype.api.types.{CTInteger, CTString}
 import org.opencypher.spark.{StdTestSuite, TestSession}
 
 class StdCypherResultContainerTest extends StdTestSuite with TestSession.Fixture {

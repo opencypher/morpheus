@@ -1,5 +1,6 @@
 package org.opencypher.spark
 
+import org.opencypher.spark.prototype.api.types.CypherType
 import org.opencypher.spark.prototype.api.value.CypherValue
 
 import scala.collection.immutable.ListMap

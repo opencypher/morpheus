@@ -5,8 +5,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SparkSession}
 import org.neo4j.driver.internal.{InternalNode, InternalRelationship}
-import org.opencypher.spark.api.CypherType
-import org.opencypher.spark.api.types._
+import org.opencypher.spark.prototype.api.types._
 import org.opencypher.spark.benchmark.Converters.cypherValue
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir.global.GlobalsRegistry

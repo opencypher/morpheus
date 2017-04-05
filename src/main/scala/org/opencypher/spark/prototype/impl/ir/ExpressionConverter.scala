@@ -1,7 +1,7 @@
 package org.opencypher.spark.prototype.impl.ir
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast
-import org.opencypher.spark.api.CypherType
+import org.opencypher.spark.prototype.api.types._
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir.global.GlobalsRegistry
 

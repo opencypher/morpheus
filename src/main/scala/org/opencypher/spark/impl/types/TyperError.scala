@@ -1,7 +1,7 @@
 package org.opencypher.spark.impl.types
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression
-import org.opencypher.spark.api.CypherType
+import org.opencypher.spark.prototype.api.types._
 
 object TyperError {
   def show[T <: Expression](it: T) = s"$it [${it.position}]"

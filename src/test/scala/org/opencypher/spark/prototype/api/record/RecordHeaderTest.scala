@@ -1,7 +1,7 @@
 package org.opencypher.spark.prototype.api.record
 
 import org.opencypher.spark.StdTestSuite
-import org.opencypher.spark.api.types.{CTBoolean, CTNode, CTRelationship, CTString}
+import org.opencypher.spark.prototype.api.types.{CTBoolean, CTNode, CTRelationship, CTString}
 import org.opencypher.spark.prototype.api.expr.{Property, TrueLit, Var}
 import org.opencypher.spark.prototype.api.ir.global.PropertyKeyRef
 import org.opencypher.spark.prototype.impl.syntax.header._

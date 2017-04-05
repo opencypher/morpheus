@@ -1,7 +1,7 @@
 package org.opencypher.spark.prototype.impl.flat
 
 import org.opencypher.spark.StdTestSuite
-import org.opencypher.spark.api.types.{CTBoolean, CTInteger, CTNode, CTString}
+import org.opencypher.spark.prototype.api.types.{CTBoolean, CTInteger, CTNode, CTString}
 import org.opencypher.spark.prototype.api.expr.{HasLabel, Property, TrueLit, Var}
 import org.opencypher.spark.prototype.api.ir.Field
 import org.opencypher.spark.prototype.api.ir.global.GlobalsRegistry

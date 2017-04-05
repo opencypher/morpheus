@@ -1,9 +1,9 @@
 package org.opencypher.spark.impl.frame
 
-import org.opencypher.spark.api.{CypherType, MaterialCypherType}
 import org.opencypher.spark.impl.StdSlot
 import org.opencypher.spark.impl.error.StdErrorInfo
 import org.opencypher.spark.impl.verify.Verification
+import org.opencypher.spark.prototype.api.types._
 
 import scala.language.postfixOps
 

@@ -1,7 +1,7 @@
 package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.Dataset
-import org.opencypher.spark.api.types.CTInteger
+import org.opencypher.spark.prototype.api.types.CTInteger
 import org.opencypher.spark.prototype.api.value.{CypherList, CypherValue}
 import org.opencypher.spark.impl._
 

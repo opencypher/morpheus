@@ -1,7 +1,7 @@
 package org.opencypher.spark.prototype.impl.spark
 
 import org.apache.spark.sql.DataFrame
-import org.opencypher.spark.api.CypherType
+import org.opencypher.spark.prototype.api.types._
 import org.opencypher.spark.prototype.api.spark.{SparkCypherGraph, SparkGraphSpace}
 
 trait SparkGraphConstruction {

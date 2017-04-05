@@ -1,7 +1,6 @@
 package org.opencypher.spark.prototype.api.ir
 
-import org.opencypher.spark.api.CypherType
-import org.opencypher.spark.api.types.CTWildcard
+import org.opencypher.spark.prototype.api.types._
 
 final case class Field(name: String)(val cypherType: CypherType = CTWildcard) {
   def escapedName: String = name.replaceAll("`", "``")

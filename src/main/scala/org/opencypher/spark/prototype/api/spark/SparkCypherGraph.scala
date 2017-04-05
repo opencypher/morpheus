@@ -1,6 +1,6 @@
 package org.opencypher.spark.prototype.api.spark
 
-import org.opencypher.spark.api.types.{CTNode, CTRelationship}
+import org.opencypher.spark.prototype.api.types.{CTNode, CTRelationship}
 import org.opencypher.spark.prototype.api.expr.{Expr, Var}
 import org.opencypher.spark.prototype.api.graph.CypherGraph
 import org.opencypher.spark.prototype.api.ir.{Field, QueryModel}

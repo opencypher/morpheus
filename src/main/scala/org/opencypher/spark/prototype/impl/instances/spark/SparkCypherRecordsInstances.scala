@@ -1,7 +1,7 @@
 package org.opencypher.spark.prototype.impl.instances.spark
 
 import org.apache.spark.sql.{Column, DataFrame, Row}
-import org.opencypher.spark.api.types.{CTBoolean, CTFloat, CTInteger, CTString}
+import org.opencypher.spark.prototype.api.types.{CTBoolean, CTFloat, CTInteger, CTString}
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.record._
 import org.opencypher.spark.prototype.api.spark.SparkCypherRecords

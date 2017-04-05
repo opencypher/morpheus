@@ -2,7 +2,7 @@ package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.types.LongType
 import org.opencypher.spark.api.frame.{BinaryRepresentation, EmbeddedRepresentation}
-import org.opencypher.spark.api.types.{CTAny, CTInteger}
+import org.opencypher.spark.prototype.api.types.{CTAny, CTInteger}
 import org.opencypher.spark.prototype.api.value.{CypherInteger, CypherString}
 
 class DropFieldTest extends StdFrameTestSuite {

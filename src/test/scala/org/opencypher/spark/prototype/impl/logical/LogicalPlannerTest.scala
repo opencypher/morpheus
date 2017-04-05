@@ -1,6 +1,6 @@
 package org.opencypher.spark.prototype.impl.logical
 
-import org.opencypher.spark.api.types.{CTAny, CTFloat, CTString}
+import org.opencypher.spark.prototype.api.types.{CTAny, CTFloat, CTString}
 import org.opencypher.spark.prototype.IrTestSuite
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir._

@@ -2,7 +2,7 @@ package org.opencypher.spark.prototype.impl.physical
 
 import org.apache.spark.sql.Column
 import org.apache.spark.sql.catalyst.expressions.Literal
-import org.opencypher.spark.api.types.CTNode
+import org.opencypher.spark.prototype.api.types.CTNode
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir.global.{ConstantRef, LabelRef, RelTypeRef}
 import org.opencypher.spark.prototype.api.ir.pattern.{AllGiven, AnyGiven}

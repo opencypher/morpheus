@@ -1,4 +1,4 @@
-package org.opencypher.spark.api
+package org.opencypher.spark.prototype.api.types
 
 import org.opencypher.spark.StdTestSuite
 

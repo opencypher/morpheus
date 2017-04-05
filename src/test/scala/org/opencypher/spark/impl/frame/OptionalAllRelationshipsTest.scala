@@ -1,7 +1,7 @@
 package org.opencypher.spark.impl.frame
 
 import org.opencypher.spark.api.frame.BinaryRepresentation
-import org.opencypher.spark.api.types.{CTRelationship, CTRelationshipOrNull}
+import org.opencypher.spark.prototype.api.types.{CTRelationship, CTRelationshipOrNull}
 
 class OptionalAllRelationshipsTest extends StdFrameTestSuite {
 

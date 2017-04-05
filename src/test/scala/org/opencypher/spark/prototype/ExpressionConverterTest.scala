@@ -3,7 +3,7 @@ package org.opencypher.spark.prototype
 import org.neo4j.cypher.internal.frontend.v3_2.{ast, symbols}
 import org.neo4j.cypher.internal.frontend.v3_2.ast.AstConstructionTestSupport
 import org.opencypher.spark.StdTestSuite
-import org.opencypher.spark.api.types.CTString
+import org.opencypher.spark.prototype.api.types.CTString
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir._
 import org.opencypher.spark.prototype.api.ir.global._

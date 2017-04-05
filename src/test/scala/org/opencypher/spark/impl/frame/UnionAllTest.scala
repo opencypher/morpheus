@@ -2,7 +2,7 @@ package org.opencypher.spark.impl.frame
 
 import org.opencypher.spark.api._
 import org.opencypher.spark.api.frame.BinaryRepresentation
-import types.{CTAny, CTNode}
+import org.opencypher.spark.prototype.api.types.{CTAny, CTNode}
 import org.opencypher.spark.prototype.api.value.CypherNode
 
 class UnionAllTest extends StdFrameTestSuite {

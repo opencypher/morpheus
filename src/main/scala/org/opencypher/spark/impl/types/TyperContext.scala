@@ -5,8 +5,7 @@ import org.atnos.eff._
 import org.atnos.eff.all._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, Parameter}
 import org.neo4j.cypher.internal.frontend.v3_2.symbols
-import org.opencypher.spark.api.CypherType
-import org.opencypher.spark.api.types.CTWildcard
+import org.opencypher.spark.prototype.api.types._
 
 object TyperContext {
   def empty = TyperContext(Map.empty)

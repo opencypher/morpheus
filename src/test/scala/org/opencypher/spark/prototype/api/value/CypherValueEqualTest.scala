@@ -1,6 +1,6 @@
 package org.opencypher.spark.prototype.api.value
 
-import org.opencypher.spark.api.{Maybe, Ternary, True}
+import org.opencypher.spark.prototype.api.types.{Maybe, Ternary, True}
 import org.opencypher.spark.prototype.api.value.CypherValue.companion
 
 class CypherValueEqualTest extends CypherValueTestSuite {

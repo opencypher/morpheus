@@ -1,7 +1,7 @@
 package org.opencypher.spark.prototype.impl.load
 
 import org.apache.spark.sql.types._
-import org.opencypher.spark.api.types.{CTAny, CTInteger, CTString}
+import org.opencypher.spark.prototype.api.types.{CTAny, CTInteger, CTString}
 import org.opencypher.spark.prototype.api.expr.Var
 import org.opencypher.spark.prototype.api.schema.Schema
 import org.opencypher.spark.prototype.api.spark.{SparkCypherGraph, SparkGraphSpace}

@@ -1,7 +1,7 @@
 package org.opencypher.spark.prototype.api.value
 
 import org.opencypher.spark.StdTestSuite
-import org.opencypher.spark.api.{False, Maybe, Ternary, True}
+import org.opencypher.spark.prototype.api.types.{False, Maybe, Ternary, True}
 
 import scala.annotation.tailrec
 

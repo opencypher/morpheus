@@ -1,7 +1,7 @@
 package org.opencypher.spark.impl.frame
 
 import org.apache.spark.sql.Dataset
-import org.opencypher.spark.api.types.CTRelationship
+import org.opencypher.spark.prototype.api.types.CTRelationship
 import org.opencypher.spark.prototype.api.value.CypherRelationship
 import org.opencypher.spark.impl.{PlanningContext, RelationshipFrame, StdCypherFrame, StdFrameSignature}
 

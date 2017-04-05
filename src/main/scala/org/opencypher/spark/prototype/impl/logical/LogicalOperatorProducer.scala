@@ -1,7 +1,6 @@
 package org.opencypher.spark.prototype.impl.logical
 
-import org.opencypher.spark.api.CypherType
-import org.opencypher.spark.api.types.CTAny
+import org.opencypher.spark.prototype.api.types._
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir.pattern.{EveryNode, EveryRelationship}
 import org.opencypher.spark.prototype.api.ir.{Field, SolvedQueryModel}

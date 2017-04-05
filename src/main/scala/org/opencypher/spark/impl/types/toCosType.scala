@@ -1,8 +1,7 @@
 package org.opencypher.spark.impl.types
 
-import org.opencypher.spark.api.CypherType
 import org.neo4j.cypher.internal.frontend.v3_2.{symbols => neo4j}
-import org.opencypher.spark.api.types._
+import org.opencypher.spark.prototype.api.types._
 
 // TODO: Should go to option I think
 case object toCosType extends (neo4j.CypherType => CypherType) {

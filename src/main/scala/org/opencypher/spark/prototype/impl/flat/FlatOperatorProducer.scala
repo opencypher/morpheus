@@ -1,8 +1,7 @@
 package org.opencypher.spark.prototype.impl.flat
 
 import cats.Monoid
-import org.opencypher.spark.api.CypherType
-import org.opencypher.spark.api.types.{CTBoolean, CTInteger}
+import org.opencypher.spark.prototype.api.types._
 import org.opencypher.spark.prototype.api.expr._
 import org.opencypher.spark.prototype.api.ir.pattern.{AllGiven, EveryNode, EveryRelationship}
 import org.opencypher.spark.prototype.api.record._

@@ -1,6 +1,6 @@
 package org.opencypher.spark.prototype.api.schema
 
-import org.opencypher.spark.api.CypherType
+import org.opencypher.spark.prototype.api.types._
 
 import scala.collection.mutable
 import scala.language.implicitConversions

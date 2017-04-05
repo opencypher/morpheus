@@ -1,7 +1,7 @@
 package org.opencypher.spark.prototype.api.schema
 
 import org.opencypher.spark.StdTestSuite
-import org.opencypher.spark.api.types.{CTBoolean, CTFloat, CTInteger, CTString}
+import org.opencypher.spark.prototype.api.types.{CTBoolean, CTFloat, CTInteger, CTString}
 
 class SchemaTest extends StdTestSuite {
 
