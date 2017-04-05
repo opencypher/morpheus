@@ -1,6 +1,6 @@
 package org.opencypher.spark.prototype
 
-import org.opencypher.spark.benchmark.RunBenchmark
+import org.opencypher.spark.legacy.benchmark.RunBenchmark
 import org.opencypher.spark.prototype.api.spark.{SparkCypherGraph, SparkGraphSpace}
 import org.opencypher.spark.prototype.impl.instances.spark.cypher._
 import org.opencypher.spark.prototype.impl.syntax.cypher._

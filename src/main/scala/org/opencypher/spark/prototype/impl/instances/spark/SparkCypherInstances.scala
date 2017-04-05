@@ -1,7 +1,7 @@
 package org.opencypher.spark.prototype.impl.instances.spark
 
 import org.apache.spark.sql.DataFrame
-import org.opencypher.spark.benchmark.Converters
+import org.opencypher.spark.legacy.benchmark.Converters
 import org.opencypher.spark.prototype.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkGraphSpace}
 import org.opencypher.spark.prototype.api.value.CypherValue
 import org.opencypher.spark.prototype.impl.classy.Cypher

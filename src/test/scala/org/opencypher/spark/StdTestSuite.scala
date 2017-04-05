@@ -1,7 +1,7 @@
 package org.opencypher.spark
 
 import org.junit.runner.RunWith
-import org.opencypher.spark.api.CypherImplicits
+import org.opencypher.spark.legacy.api.CypherImplicits
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FunSuite, Matchers}
 

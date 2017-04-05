@@ -4,7 +4,8 @@ import java.util.UUID
 
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
-import org.opencypher.spark.benchmark.Configuration.{Logging, Neo4jAddress, Neo4jPassword, Neo4jUser}
+import org.opencypher.spark.legacy.PropertyGraphFactory
+import org.opencypher.spark.legacy.benchmark.Configuration.{Logging, Neo4jAddress, Neo4jPassword, Neo4jUser}
 import org.scalatest.{BeforeAndAfterEach, FunSuite}
 
 object TestSession {

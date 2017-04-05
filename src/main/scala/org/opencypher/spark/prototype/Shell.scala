@@ -2,8 +2,8 @@ package org.opencypher.spark.prototype
 
 import ammonite.util.Bind._
 import ammonite.util.Util
-import org.opencypher.spark.CypherOnSpark
-import org.opencypher.spark.benchmark.RunBenchmark
+import org.opencypher.spark.legacy.CypherOnSpark
+import org.opencypher.spark.legacy.benchmark.RunBenchmark
 
 object Shell {
 

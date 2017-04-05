@@ -3,8 +3,8 @@ package org.opencypher.spark.prototype.api.value
 import org.apache.spark.sql.Encoder
 import org.apache.spark.sql.Encoders._
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
-import org.opencypher.spark.api._
-import org.opencypher.spark.impl.verify.Verification
+import org.opencypher.spark.legacy.api._
+import org.opencypher.spark.legacy.impl.verify.Verification
 import org.opencypher.spark.prototype.api.types.CypherType._
 import org.opencypher.spark.prototype.api.types.CypherType.OrderGroups._
 import org.opencypher.spark.prototype.api.types._
@@ -106,7 +106,7 @@ sealed trait CypherValueCompanion[V <: CypherValue] extends Equiv[V] {
 
 case object CypherValue extends CypherValueCompanion[CypherValue] with Verification {
 
-  import org.opencypher.spark.impl.error.StdErrorInfo.Implicits._
+  import org.opencypher.spark.legacy.impl.error.StdErrorInfo.Implicits._
 
   object Conversion extends Conversion
 
