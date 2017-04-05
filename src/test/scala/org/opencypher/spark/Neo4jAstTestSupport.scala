@@ -1,8 +1,8 @@
 package org.opencypher.spark
 
-import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, SyntaxException, ast}
 import org.neo4j.cypher.internal.frontend.v3_2.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.frontend.v3_2.parser.Expressions
+import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, SyntaxException, ast}
 import org.parboiled.scala.{EOI, Parser}
 
 trait Neo4jAstTestSupport extends AstConstructionTestSupport {

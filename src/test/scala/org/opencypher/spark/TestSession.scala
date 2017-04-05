@@ -3,9 +3,10 @@ package org.opencypher.spark
 import java.util.UUID
 
 import org.apache.spark.SparkConf
+import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.sql.SparkSession
-import org.opencypher.spark.legacy.PropertyGraphFactory
-import org.opencypher.spark.legacy.benchmark.Configuration.{Logging, Neo4jAddress, Neo4jPassword, Neo4jUser}
+import org.opencypher.spark_legacy.{CypherKryoRegistrar, PropertyGraphFactory}
+import org.opencypher.spark_legacy.benchmark.Configuration.{Logging, Neo4jAddress, Neo4jPassword, Neo4jUser}
 import org.scalatest.{BeforeAndAfterEach, FunSuite}
 
 object TestSession {
@@ -28,8 +29,8 @@ object TestSession {
 object TestSessionFactory {
   def create = {
     val conf = new SparkConf(true)
-    conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-    conf.set("spark.kryo.registrator","org.opencypher.spark.CypherKryoRegistrar")
+    conf.set("spark.serializer", classOf[KryoSerializer].getCanonicalName)
+    conf.set("spark.kryo.registrator", classOf[CypherKryoRegistrar].getCanonicalName)
     conf.set("spark.neo4j.bolt.password", Neo4jPassword.get())
     conf.set("spark.neo4j.bolt.user", Neo4jUser.get())
     conf.set("spark.neo4j.bolt.url", Neo4jAddress.get())
