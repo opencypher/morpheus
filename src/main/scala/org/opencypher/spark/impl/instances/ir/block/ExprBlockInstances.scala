@@ -1,4 +1,4 @@
-package org.opencypher.spark.impl.instances.spark
+package org.opencypher.spark.impl.instances.ir.block
 
 import org.opencypher.spark.api.expr.Expr
 import org.opencypher.spark.api.ir.Field

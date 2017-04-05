@@ -3,7 +3,7 @@ package org.opencypher.spark.impl.ir.block
 import org.opencypher.spark.api.expr.Expr
 import org.opencypher.spark.api.ir.block.MatchBlock
 import org.opencypher.spark.api.types.CTNode
-import org.opencypher.spark.impl.instances.spark.ir._
+import org.opencypher.spark.impl.instances.ir._
 import org.opencypher.spark.impl.ir.IrTestSuite
 import org.opencypher.spark.impl.syntax.block._
 

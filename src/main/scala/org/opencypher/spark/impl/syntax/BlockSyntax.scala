@@ -8,10 +8,10 @@ import scala.language.implicitConversions
 
 trait BlockSyntax {
   implicit def typedBlockOps[B <: Block[_], E](block: B)(implicit instance: TypedBlock[B] { type BlockExpr = E })
-  : BlockOps[B, E] =
-    new BlockOps[B, E](block)
+  : TypedBlockOps[B, E] =
+    new TypedBlockOps[B, E](block)
 }
 
-final class BlockOps[B <: Block[_], E](block: B)(implicit instance: TypedBlock[B] { type BlockExpr = E }) {
+final class TypedBlockOps[B <: Block[_], E](block: B)(implicit instance: TypedBlock[B] { type BlockExpr = E }) {
   def outputs: Set[Field] = instance.outputs(block)
 }
