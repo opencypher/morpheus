@@ -76,6 +76,31 @@ object SchemaTyper {
         }
       } yield result
 
+    case HasLabels(node, labels) =>
+      for {
+        nodeType <- process[R](node)
+        result <- nodeType.material match {
+          // TODO: Consider labels vs labels here
+          case CTNode(nodeLabels) =>
+            updateTyping(expr -> CTBoolean)
+
+          case x =>
+            error(InvalidType(node, CTNode, x))
+        }
+      } yield result
+
+    case Not(inner) =>
+      for {
+        innerType <- process[R](inner)
+        result <- innerType.material match {
+          case CTBoolean =>
+            updateTyping(expr -> CTBoolean)
+
+          case x =>
+            error(InvalidType(inner, CTBoolean, x))
+        }
+      } yield result
+
     case _: SignedDecimalIntegerLiteral =>
       updateTyping(expr -> CTInteger)
 

@@ -22,9 +22,9 @@ sealed trait ProjectedSlotContent extends SlotContent {
   def expr: Expr
 
   override def owner = expr match {
-    case Property(v: Var, _) => Some(v)
-    case HasLabel(v: Var, _) => Some(v)
-    case HasType(v: Var, _) => Some(v)
+    case Property(v: Var, _, _) => Some(v)
+    case HasLabel(v: Var, _, _) => Some(v)
+    case HasType(v: Var, _, _) => Some(v)
     case _ => None
   }
 }

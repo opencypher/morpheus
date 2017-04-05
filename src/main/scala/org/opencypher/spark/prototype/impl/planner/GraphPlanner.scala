@@ -32,7 +32,7 @@ class GraphPlanner
 
         case logical.Filter(expr, in, _) => expr match {
           // TODO: Is it justified to treat labels separately?
-          case HasLabel(n: Var, ref) =>
+          case HasLabel(n: Var, ref, _) =>
             innerPlan(in).labelFilter(n, AllGiven(Set(ref)))
           case e =>
             innerPlan(in).filter(e)

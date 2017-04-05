@@ -30,3 +30,7 @@ case class AlreadyTypedExpr(it: Expression, oldTyp: CypherType, newTyp: CypherTy
 case class InvalidContainerAccess(it: Expression) extends TyperError {
   override def toString = s"Invalid indexing into a container detected when typing ${show(it)}"
 }
+
+case class InvalidType(it: Expression, expected: CypherType, actual: CypherType) extends TyperError {
+  override def toString = s"Expected ${show(it)} to be of type $expected, but it was of type $actual"
+}

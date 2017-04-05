@@ -20,7 +20,7 @@ trait SparkCypherRecordsInstances extends Serializable {
   case class cypherFilter(header: RecordHeader, expr: Expr)
                          (implicit context: RuntimeContext) extends (Row => Boolean) {
     def apply(row: Row) = expr match {
-      case Equals(p: Property, c: Const) =>
+      case Equals(p: Property, c: Const, _) =>
         val slot = header.slotsFor(p).head
         val rhs = context.constants(c.ref)
 
@@ -43,7 +43,7 @@ trait SparkCypherRecordsInstances extends Serializable {
    */
   def sqlFilter(header: RecordHeader, expr: Expr, df: DataFrame): Option[Column] = {
     expr match {
-      case Not(Equals(v1: Var, v2: Var)) =>
+      case Not(Equals(v1: Var, v2: Var, _), _) =>
         val lhsSlot = header.slotFor(v1)
         val rhsSlot = header.slotFor(v2)
         Some(new Column(df.columns(lhsSlot.index)) =!= new Column(df.columns(rhsSlot.index)))
@@ -56,7 +56,7 @@ trait SparkCypherRecordsInstances extends Serializable {
             case _ => throw new IllegalStateException("This should never happen")
           }
         }
-      case HasType(rel, ref) =>
+      case HasType(rel, ref, _) =>
         val idSlot = header.typeId(rel)
         Some(new Column(df.columns(idSlot.index)) === ref.id)
       case h: HasLabel =>

@@ -1,5 +1,6 @@
 package org.opencypher.spark.impl
 
+import cats.Eval
 import cats.data._
 import cats.syntax.all._
 import org.atnos.eff._

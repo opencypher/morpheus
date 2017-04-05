@@ -5,7 +5,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.{AstRewritingMonitor, CypherExcep
 import org.opencypher.spark.api.{CypherResultContainer, PropertyGraph}
 import org.opencypher.spark.prototype.api.schema.Schema
 import org.opencypher.spark.prototype.api.value.CypherString
-import org.opencypher.spark.prototype.impl.convert.{CypherParser, CypherQueryBuilder, GlobalsExtractor}
+import org.opencypher.spark.prototype.impl.convert.{CypherParser, CypherQueryBuilder, GlobalsExtractor, IRBuilderContext}
 import org.opencypher.spark.prototype.impl.planner.{LogicalPlanner, LogicalPlannerContext}
 
 import scala.reflect.ClassTag
@@ -16,7 +16,7 @@ trait Prototype {
 
     val globals = GlobalsExtractor(stmt)
 
-    val ir = CypherQueryBuilder.from(stmt, query, globals)
+    val ir = CypherQueryBuilder.buildIROrThrow(stmt, IRBuilderContext(query, globals, Schema.empty))
 
     val cvs = params.mapValues {
       case s: String => CypherString(s)

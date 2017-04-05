@@ -2,125 +2,172 @@ package org.opencypher.spark.prototype.impl.convert
 
 import java.util.concurrent.atomic.AtomicLong
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast
-import org.neo4j.cypher.internal.frontend.v3_2.ast._
+import cats.data._
+import cats.implicits._
+import cats.{Foldable, Monad, Monoid}
+import org.atnos.eff._
+import org.atnos.eff.all._
+import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, ast}
 import org.opencypher.spark.api.CypherType
-import org.opencypher.spark.api.types.CTAny
+import org.opencypher.spark.api.types.CTWildcard
+import org.opencypher.spark.impl.types.{SchemaTyper, TyperContext, TyperError, TyperResult}
 import org.opencypher.spark.prototype.api.expr.Expr
 import org.opencypher.spark.prototype.api.ir._
 import org.opencypher.spark.prototype.api.ir.block._
 import org.opencypher.spark.prototype.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.prototype.api.ir.pattern.{AllGiven, Pattern}
+import org.opencypher.spark.prototype.api.schema.Schema
+import org.opencypher.spark.prototype.impl.convert.types.{_fails, _hasContext}
+import org.opencypher.spark.prototype.impl.convert.types._
 
 object CypherQueryBuilder {
-  def from(s: Statement, q: String, tokenDefs: GlobalsRegistry): CypherQuery[Expr] = {
-    val builder = new CypherQueryBuilder(q, tokenDefs)
-    val blocks = s match {
-      case Query(_, part) => part match {
-        case SingleQuery(clauses) => clauses.foldLeft(BlockRegistry.empty[Expr]) {
-          case (reg, c) => builder.add(c, reg)
-        }
+  def buildIROrThrow(s: ast.Statement, context: IRBuilderContext): CypherQuery[Expr] = {
+    constructIR(s, context) match {
+      case Left(error) => throw new IllegalStateException(s"Error during IR construction: $error")
+      case Right(q) => q
+    }
+  }
+
+  def constructIR(s: ast.Statement, context: IRBuilderContext): Either[IRBuilderError, CypherQuery[Expr]] = {
+    val builder = new CypherQueryBuilder(context.queryString, context.globals)
+
+    val irFromClauses = s match {
+      case ast.Query(_, part) => part match {
+        case ast.SingleQuery(clauses) =>
+          val clause1 = clauses.head
+          val clause2 = clauses(1)
+          val step1: Eff[IRBuilderStack[BlockRegistry[Expr]], BlockRegistry[Expr]] = builder.add(clause1, BlockRegistry.empty[Expr])
+
+          step1.run(context) match {
+            case l@Left(_) => l
+            case Right((reg, nextContext)) =>
+              val next: Eff[IRBuilderStack[BlockRegistry[Expr]], BlockRegistry[Expr]] = builder.add(clause2, reg)
+              next.run(nextContext)
+          }
       }
       case x => throw new NotImplementedError(s"Statement not yet supported: $x")
     }
 
-    builder.build(blocks)
+    irFromClauses match {
+      case Left(error) => Left(error)
+      case Right((blockReg, _)) => Right(builder.build(blockReg))
+    }
   }
 }
 
-object BlockRegistry {
-  def empty[E] = BlockRegistry[E](Seq.empty)
-}
-
-case class BlockRegistry[E](reg: Seq[(BlockRef, Block[E])]) {
-
-  def register(blockDef: Block[E]): (BlockRef, BlockRegistry[E]) = {
-    val ref = BlockRef(generateName(blockDef.blockType))
-    ref -> copy(reg = reg :+ ref -> blockDef)
-  }
-
-  val c = new AtomicLong()
-
-  private def generateName(t: BlockType) = s"${t.name}_${c.incrementAndGet()}"
-}
-
-class CypherQueryBuilder(query: String, tokenDefs: GlobalsRegistry) {
-  val exprConverter = new ExpressionConverter(tokenDefs)
-  val patternConverter = new PatternConverter(tokenDefs)
+class CypherQueryBuilder(query: String, globals: GlobalsRegistry) {
+  val exprConverter = new ExpressionConverter(globals)
+  val patternConverter = new PatternConverter(globals)
 
   var firstBlock: Option[BlockRef] = None
 
-  def add(c: Clause, blockRegistry: BlockRegistry[Expr]): BlockRegistry[Expr] = {
+  def add[R: _fails : _hasContext](c: ast.Clause, blockRegistry: BlockRegistry[Expr]): Eff[R, BlockRegistry[Expr]] = {
+
     c match {
-      case Match(_, pattern, _, astWhere) =>
-        // TODO: labels are not inside the pattern anymore here -- need to consider that  MATCH (a:A) ==> MATCH (a) WHERE a:A
-        val given = convertPattern(pattern)
-        val where = convertWhere(astWhere)
+      case ast.Match(_, pattern, _, astWhere) =>
+        for {
+          given <- convertPattern(pattern)
+          where <- convertWhere(astWhere)
+        } yield {
 
-        val after = blockRegistry.reg.headOption.map(_._1).toSet
-        val block = MatchBlock[Expr](after, given, where)
-        val (ref, reg) = blockRegistry.register(block)
-        reg
+          val after = blockRegistry.reg.headOption.map(_._1).toSet
+          val block = MatchBlock[Expr](after, given, where)
+          val (ref, reg) = blockRegistry.register(block)
+          reg
+        }
 
-      case With(_, _, _, _, _, _) =>
-        throw new NotImplementedError("WITH not yet supported")
-
-      case Return(_, ReturnItems(_, items), _, _, _, _) =>
-        val yields = ProjectedFields[Expr](items.map {
-          case AliasedReturnItem(e, v) => {
-            val (expr, typ) = convertExpr(e)
-            Field(v.name)(typ) -> expr
+      case ast.Return(_, ast.ReturnItems(_, items), _, _, _, _) =>
+        for {
+          fieldExprs <- {
+            val elts: Vector[Eff[R, (Field, Expr)]] = items.map(r => convertReturnItem[R](r)).toVector
+            val result = EffMonad[R].sequence(elts)
+            result
           }
-          case UnaliasedReturnItem(e, t) => {
-            val (expr, typ) = convertExpr(e)
-            Field(expr.toString)(typ) -> expr
-          }
-        }.toMap)
+        } yield {
 
-        val after = blockRegistry.reg.headOption.map(_._1).toSet
-        val projs = ProjectBlock[Expr](after = after, where = AllGiven[Expr](), binds = yields)
+          val yields = ProjectedFields(fieldExprs.toMap)
 
-        val (ref, reg) = blockRegistry.register(projs)
-        // TODO: Add rewriter and put the above case in With(...)
+          val after = blockRegistry.reg.headOption.map(_._1).toSet
+          val projs = ProjectBlock[Expr](after = after, where = AllGiven[Expr](), binds = yields)
 
-        // TODO: Figure out nodes and relationships
-        val rItems: Seq[Field] = items.map(extract)
-        val returns = ResultBlock[Expr](Set(ref), OrderedFields(rItems), Set.empty, Set.empty)
+          val (ref, reg) = blockRegistry.register(projs)
+          //         TODO: Add rewriter and put the above case in With(...)
 
-        val (_, reg2) = reg.register(returns)
-        reg2
+          //         TODO: Figure out nodes and relationships
+          val rItems: Seq[Field] = fieldExprs.map(_._1)
+          val returns = ResultBlock[Expr](Set(ref), OrderedFields(rItems), Set.empty, Set.empty)
+
+          val (_, reg2) = reg.register(returns)
+          reg2
+        }
+
+
+      case x =>
+        left[R, IRBuilderError, BlockRegistry[Expr]](IRBuilderError(s"Clause not yet supported: $x")) >> pure(BlockRegistry.empty[Expr])
+
     }
   }
 
-  private def extract(r: ReturnItem): Field = {
-    r match {
-      case AliasedReturnItem(expr, variable) => Field(variable.name)()
-      case UnaliasedReturnItem(expr, text) => Field(convertExpr(expr).toString)()
+  private def convertReturnItem[R: _fails : _hasContext](item: ast.ReturnItem): Eff[R, (Field, Expr)] = item match {
+
+    case ast.AliasedReturnItem(e, v) =>
+      for {
+        expr <- convertExpr(e)
+      } yield {
+        Field(v.name)(expr.cypherType) -> expr
+      }
+
+    case ast.UnaliasedReturnItem(e, t) =>
+      for {
+        expr <- convertExpr(e)
+      } yield {
+        // TODO: should this field be named t?
+        Field(expr.toString)(expr.cypherType) -> expr
+      }
+  }
+
+  private def convertPattern[R: _fails : _hasContext](p: ast.Pattern): Eff[R, Pattern[Expr]] = {
+    for {
+      context <- get[R, IRBuilderContext]
+      _ <- put[R, IRBuilderContext] {
+        val pattern = patternConverter.convert(p)
+        val patternTypes = pattern.fields.foldLeft(context.knownTypes) {
+          case (acc, f) => acc.updated(ast.Variable(f.name)(InputPosition.NONE), f.cypherType)
+        }
+        context.copy(knownTypes = patternTypes)
+      }
+    } yield patternConverter.convert(p)
+  }
+
+  private def convertExpr[R: _fails : _hasContext](e: ast.Expression): Eff[R, Expr] = {
+    for {
+      context <- get[R, IRBuilderContext]
+    } yield {
+      val typings = context.infer(e)
+      exprConverter.convert(e)(typings)
     }
   }
 
-  private def convertPattern(p: ast.Pattern): Pattern[Expr] = patternConverter.convert(p)
-  private def convertExpr(e: ast.Expression): (Expr, CypherType) = {
-    val expr = exprConverter.convert(e)
+  private def convertWhere[R: _fails : _hasContext](where: Option[ast.Where]): Eff[R, AllGiven[Expr]] = where match {
+    case Some(ast.Where(expr)) =>
+      for {
+        predicate <- convertExpr(expr)
+      } yield {
+        predicate match {
+          case org.opencypher.spark.prototype.api.expr.Ands(exprs) => AllGiven(exprs)
+          case e => AllGiven(Set(e))
+        }
+      }
 
-    expr -> CTAny.nullable
-  }
-
-  private def convertWhere(where: Option[ast.Where]): AllGiven[Expr] = where match {
-    case Some(ast.Where(expr)) => convertExpr(expr)._1 match {
-      case org.opencypher.spark.prototype.api.expr.Ands(exprs) => AllGiven(exprs)
-      case e => AllGiven(Set(e))
-    }
-    case None => AllGiven[Expr]()
+    case None => pure[R, AllGiven[Expr]](AllGiven[Expr]())
   }
 
   def build(blocks: BlockRegistry[Expr]): CypherQuery[Expr] = {
-
     val (ref, r) = blocks.reg.collectFirst {
       case (_ref, r: ResultBlock[Expr]) => _ref -> r
     }.get
 
-    val model = QueryModel(r, tokenDefs, blocks.reg.toMap - ref)
+    val model = QueryModel(r, globals, blocks.reg.toMap - ref)
 
     val info = QueryInfo(query)
 
@@ -135,3 +182,33 @@ object fieldOrdering extends Ordering[(Field, String)] {
 object exprOrdering extends Ordering[(Expr, String)] {
   override def compare(x: (Expr, String), y: (Expr, String)): Int = 0
 }
+
+object BlockRegistry {
+  def empty[E] = BlockRegistry[E](Seq.empty)
+}
+
+// TODO: Make this inherit from Register
+case class BlockRegistry[E](reg: Seq[(BlockRef, Block[E])]) {
+
+  def register(blockDef: Block[E]): (BlockRef, BlockRegistry[E]) = {
+    val ref = BlockRef(generateName(blockDef.blockType))
+    ref -> copy(reg = reg :+ ref -> blockDef)
+  }
+
+  val c = new AtomicLong()
+
+  private def generateName(t: BlockType) = s"${t.name}_${c.incrementAndGet()}"
+}
+
+case class IRBuilderContext(queryString: String, globals: GlobalsRegistry, schema: Schema, knownTypes: Map[ast.Expression, CypherType] = Map.empty) {
+  private lazy val typer = SchemaTyper(schema)
+
+  def infer(expr: ast.Expression): Map[ast.Expression, CypherType] = {
+    typer.infer(expr, TyperContext(knownTypes)) match {
+      case Right(result) => result.context.typings
+      case Left(errors) => throw new IllegalArgumentException(s"Some error in type inference: ${errors.toList.mkString(", ")}")
+    }
+  }
+}
+
+case class IRBuilderError(msg: String)

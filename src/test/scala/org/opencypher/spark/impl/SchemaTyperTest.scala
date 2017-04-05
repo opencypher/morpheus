@@ -18,6 +18,15 @@ class SchemaTyperTest extends StdTestSuite with Neo4jAstTestSupport with Mockito
 
   val typer = SchemaTyper(schema)
 
+  test("typing predicates") {
+    implicit val context = TyperContext.empty :+ varFor("n") -> CTNode()
+
+    assertExpr.from("n:Person") shouldHaveInferredType CTBoolean
+    assertExpr.from("n:Person:Car") shouldHaveInferredType CTBoolean
+    assertExpr.from("NOT n:Person:Car") shouldHaveInferredType CTBoolean
+    assertExpr.from("NOT(NOT(n:Person:Car))") shouldHaveInferredType CTBoolean
+  }
+
   test("typing of unsupported expressions") {
     val expr = mock[Expression]
     assertExpr(expr) shouldFailToInferTypeWithErrors UnsupportedExpr(expr)

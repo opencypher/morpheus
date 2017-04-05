@@ -7,7 +7,8 @@ import org.opencypher.spark.prototype.api.ir.block._
 import org.opencypher.spark.prototype.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.prototype.api.ir.pattern.{AllGiven, EveryNode, Pattern}
 import org.opencypher.spark.prototype.api.record.RecordHeader
-import org.opencypher.spark.prototype.impl.convert.{CypherParser, CypherQueryBuilder, GlobalsExtractor}
+import org.opencypher.spark.prototype.api.schema.Schema
+import org.opencypher.spark.prototype.impl.convert.{CypherParser, CypherQueryBuilder, GlobalsExtractor, IRBuilderContext}
 import org.opencypher.spark.prototype.impl.logical.NodeScan
 
 import scala.language.implicitConversions
@@ -69,7 +70,7 @@ abstract class IrTestSuite extends StdTestSuite {
 
     def ir: CypherQuery[Expr] = {
       val (stmt, _) = CypherParser.parseAndExtract(queryText)
-      CypherQueryBuilder.from(stmt, queryText, GlobalsExtractor(stmt))
+      CypherQueryBuilder.buildIROrThrow(stmt, IRBuilderContext(queryText, GlobalsExtractor(stmt), Schema.empty))
     }
   }
 }

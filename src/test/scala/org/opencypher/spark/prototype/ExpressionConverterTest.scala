@@ -66,5 +66,5 @@ class ExpressionConverterTest extends StdTestSuite with AstConstructionTestSuppo
     .withPropertyKey(PropertyKey("name"))
     .withConstant(Constant("p")))
 
-  private def convert(e: ast.Expression): Expr = c.convert(e)
+  private def convert(e: ast.Expression): Expr = c.convert(e)(Map.empty)
 }

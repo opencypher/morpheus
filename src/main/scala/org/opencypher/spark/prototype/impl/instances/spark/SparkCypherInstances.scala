@@ -5,7 +5,7 @@ import org.opencypher.spark.benchmark.Converters
 import org.opencypher.spark.prototype.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkGraphSpace}
 import org.opencypher.spark.prototype.api.value.CypherValue
 import org.opencypher.spark.prototype.impl.classy.Cypher
-import org.opencypher.spark.prototype.impl.convert.{CypherParser, CypherQueryBuilder, GlobalsExtractor}
+import org.opencypher.spark.prototype.impl.convert.{CypherParser, CypherQueryBuilder, GlobalsExtractor, IRBuilderContext}
 import org.opencypher.spark.prototype.impl.planner._
 
 trait SparkCypherInstances {
@@ -33,7 +33,7 @@ trait SparkCypherInstances {
       }
 
       print("IR ... ")
-      val ir = CypherQueryBuilder.from(stmt, query, globals)
+      val ir = CypherQueryBuilder.buildIROrThrow(stmt, IRBuilderContext(query, globals, graph.schema))
       println("Done!")
 
       print("Logical plan ... ")
