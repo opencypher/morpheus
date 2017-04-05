@@ -8,7 +8,6 @@ import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, ast}
 import org.opencypher.spark.prototype.api.expr.Expr
 import org.opencypher.spark.prototype.api.ir._
 import org.opencypher.spark.prototype.api.ir.block._
-import org.opencypher.spark.prototype.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.prototype.api.ir.pattern.{AllGiven, Pattern}
 import org.opencypher.spark.prototype.impl.convert.types.{_fails, _hasContext, _}
 import org.opencypher.spark.prototype.impl.planner.Stage
@@ -29,32 +28,24 @@ object CypherQueryBuilder extends Stage[ast.Statement, CypherQuery[Expr], IRBuil
     s match {
       case ast.Query(_, part) =>
         for {
-          context <- get[R, IRBuilderContext]
           query <- {
-            val builder = new CypherQueryBuilder(context.queryString, context.globals)
-
             part match {
               case ast.SingleQuery(clauses) =>
-                val steps = clauses.map(builder.add[R]).toVector
+                val steps = clauses.map(convertClause[R]).toVector
                 val blocks = EffMonad[R].sequence(steps)
-                blocks >> builder.build
+                blocks >> convertRegistry
+
+              case x =>
+                error(IRBuilderError(s"Query not supported: $x"))(None)
             }
           }
-        } yield Some(query)
+        } yield query
 
       case x =>
         error(IRBuilderError(s"Statement not yet supported: $x"))(None)
     }
-}
 
-class CypherQueryBuilder(query: String, globals: GlobalsRegistry) {
-
-  val exprConverter = new ExpressionConverter(globals)
-  val patternConverter = new PatternConverter(globals)
-
-  var firstBlock: Option[BlockRef] = None
-
-  def add[R: _fails : _hasContext](c: ast.Clause): Eff[R, Vector[BlockRef]] = {
+  private def convertClause[R: _fails : _hasContext](c: ast.Clause): Eff[R, Vector[BlockRef]] = {
 
     c match {
       case ast.Match(_, pattern, _, astWhere) =>
@@ -120,24 +111,21 @@ class CypherQueryBuilder(query: String, globals: GlobalsRegistry) {
   private def convertPattern[R: _fails : _hasContext](p: ast.Pattern): Eff[R, Pattern[Expr]] = {
     for {
       context <- get[R, IRBuilderContext]
-      _ <- put[R, IRBuilderContext] {
-        val pattern = patternConverter.convert(p)
+      result <- {
+        val pattern = context.convertPattern(p)
         val patternTypes = pattern.fields.foldLeft(context.knownTypes) {
           case (acc, f) => acc.updated(ast.Variable(f.name)(InputPosition.NONE), f.cypherType)
         }
-        context.copy(knownTypes = patternTypes)
+        put[R, IRBuilderContext](context.copy(knownTypes = patternTypes)) >> pure[R, Pattern[Expr]](pattern)
       }
-    } yield patternConverter.convert(p)
+    } yield result
   }
 
-  private def convertExpr[R: _fails : _hasContext](e: ast.Expression): Eff[R, Expr] = {
+  private def convertExpr[R: _fails : _hasContext](e: ast.Expression): Eff[R, Expr] =
     for {
       context <- get[R, IRBuilderContext]
-    } yield {
-      val typings = context.infer(e)
-      exprConverter.convert(e)(typings)
     }
-  }
+    yield context.convertExpression(e)
 
   private def convertWhere[R: _fails : _hasContext](where: Option[ast.Where]): Eff[R, AllGiven[Expr]] = where match {
     case Some(ast.Where(expr)) =>
@@ -154,7 +142,7 @@ class CypherQueryBuilder(query: String, globals: GlobalsRegistry) {
       pure[R, AllGiven[Expr]](AllGiven[Expr]())
   }
 
-  def build[R: _fails : _hasContext]: Eff[R, CypherQuery[Expr]] =
+  private def convertRegistry[R: _fails : _hasContext]: Eff[R, Option[CypherQuery[Expr]]] =
     for {
       context <- get[R, IRBuilderContext]
     } yield {
@@ -163,10 +151,10 @@ class CypherQueryBuilder(query: String, globals: GlobalsRegistry) {
         case (_ref, r: ResultBlock[Expr]) => _ref -> r
       }.get
 
-      val model = QueryModel(r, globals, blocks.reg.toMap - ref)
-      val info = QueryInfo(query)
+      val model = QueryModel(r, context.globals, blocks.reg.toMap - ref)
+      val info = QueryInfo(context.queryString)
 
-      CypherQuery(info, model)
+      Some(CypherQuery(info, model))
     }
 }
 
