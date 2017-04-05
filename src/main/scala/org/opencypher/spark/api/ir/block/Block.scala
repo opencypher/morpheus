@@ -11,8 +11,6 @@ trait Block[E] {
 
   def after: Set[BlockRef]
 
-  def outputs: Set[Field] = binds.fields
-
   def binds: Binds[E]
   def where: AllGiven[E]
 }

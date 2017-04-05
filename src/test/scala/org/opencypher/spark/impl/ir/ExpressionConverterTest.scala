@@ -66,3 +66,33 @@ class ExpressionConverterTest extends StdTestSuite with AstConstructionTestSuppo
 
   private def convert(e: ast.Expression): Expr = c.convert(e)(_ => CTWildcard)
 }
+
+
+/*
+ n => n:Person
+
+ MATCH (n) WHERE n:Person, ...
+ |
+ v
+ n:Person
+
+
+ (n) -> Var(n)
+ (n) -> n:Person n.prop, n.ddd
+
+
+ Expand(n-[r]->m)-----|
+ |                    |
+ Filter(n:Person)     Filter(r, "ATTENDED")
+ |
+ NodeScan(n, n.prop1, n.prop2, ....)
+
+ (1) Stage 1
+ (2) Use-analysis
+
+
+
+ LabelScan(n:Person) -> LabelScan(n:Person(name, age))
+ */
+
+

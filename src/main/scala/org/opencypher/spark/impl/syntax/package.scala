@@ -7,4 +7,5 @@ package object syntax {
   object register extends RegisterSyntax
   object header extends RecordHeaderSyntax
   object expr extends ExprSyntax
+  object block extends BlockSyntax
 }

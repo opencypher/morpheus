@@ -6,3 +6,4 @@ trait AllSyntax
   with RegisterSyntax
   with RecordHeaderSyntax
   with util.AllSyntax
+  with BlockSyntax
