@@ -1,4 +1,4 @@
-package org.opencypher.spark.impl.types
+package org.opencypher.spark.prototype.impl.typer
 
 import cats.syntax.all._
 import org.atnos.eff._
@@ -17,7 +17,7 @@ final case class TyperContext(typings: Map[Expression, CypherType]) {
     val (expr, typ) = entry
     expr match {
       case param: Parameter =>
-        val realTyp = typ meet toCosType(param.parameterType)
+        val realTyp = typ meet fromFrontendType(param.parameterType)
         copy(typings = typings
           .updated(expr, realTyp)
           .updated(param.copy(parameterType = symbols.CTAny)(param.position), realTyp)

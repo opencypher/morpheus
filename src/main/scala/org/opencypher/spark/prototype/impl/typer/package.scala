@@ -1,6 +1,6 @@
-package org.opencypher.spark.impl
+package org.opencypher.spark.prototype.impl
 
-import cats.Eval
+import cats.Show
 import cats.data._
 import cats.syntax.all._
 import org.atnos.eff._
@@ -10,7 +10,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression
 import org.opencypher.spark.prototype.api.schema.Schema
 import org.opencypher.spark.prototype.api.types._
 
-package object types {
+package object typer {
 
   type _mayFail[R] = MayFail |= R
   type _hasContext[R] = HasContext |= R
@@ -59,4 +59,8 @@ package object types {
 
   def error[R : _mayFail](failure: TyperError): Eff[R, CypherType] =
     wrong[R, TyperError](failure) >> pure(CTWildcard)
+
+  implicit val showExpr = new Show[Expression] {
+    override def show(it: Expression): String = s"$it [${it.position}]"
+  }
 }

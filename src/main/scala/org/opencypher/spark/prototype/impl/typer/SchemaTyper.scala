@@ -1,4 +1,4 @@
-package org.opencypher.spark.impl.types
+package org.opencypher.spark.prototype.impl.typer
 
 import java.lang.Integer.parseInt
 
@@ -9,8 +9,8 @@ import org.atnos.eff._
 import org.atnos.eff.all._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.opencypher.spark.prototype.api.schema.Schema
-import org.opencypher.spark.prototype.api.types._
 import org.opencypher.spark.prototype.api.types.CypherType.joinMonoid
+import org.opencypher.spark.prototype.api.types._
 
 import scala.util.Try
 
@@ -227,8 +227,8 @@ object SchemaTyper {
       expr.function match {
         case f: SimpleTypedFunction =>
           pure(f.signatures.map { sig =>
-            val sigInputTypes = sig.argumentTypes.map(toCosType)
-            val sigOutputType = toCosType(sig.outputType)
+            val sigInputTypes = sig.argumentTypes.map(fromFrontendType)
+            val sigOutputType = fromFrontendType(sig.outputType)
             sigInputTypes -> sigOutputType
           }.toSet)
 
