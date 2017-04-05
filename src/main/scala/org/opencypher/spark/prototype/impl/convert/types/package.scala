@@ -1,8 +1,10 @@
 package org.opencypher.spark.prototype.impl.convert
-import cats.Eval
-import cats.data.{State, StateT}
-import org.atnos.eff.syntax.all._
+import cats.data.State
+import cats.implicits._
 import org.atnos.eff._
+import org.atnos.eff.all.{left, pure}
+import org.atnos.eff.syntax.all._
+import org.opencypher.spark.prototype.api.expr.Expr
 
 package object types {
 
@@ -17,19 +19,12 @@ package object types {
   implicit final class RichIRBuilderStack[A](val program: Eff[IRBuilderStack[A], A]) {
 
     def run(context: IRBuilderContext): Either[IRBuilderError, (A, IRBuilderContext)] = {
-
       val stateRun = program.runState(context)
-      val errorRun: Eff[NoFx, Either[IRBuilderError, (A, IRBuilderContext)]] = stateRun.runEither[IRBuilderError, NoFx]
-
-//      val foo: Eff[Fx1[StateT[Eval, IRBuilderContext, _]], Either[IRBuilderError, A]] = program.runEither
-//      val result = foo.runState(context).run
-
+      val errorRun = stateRun.runEither[IRBuilderError, NoFx]
       errorRun.run
-//      match {
-//        case Left(error) => throw new IllegalStateException(s"Whoopsie: $error")
-//        case Right((r, c)) => r
-//      }
     }
   }
 
+  def error[R: _fails : _hasContext, A](err: IRBuilderError)(v: A): Eff[R, A] =
+    left[R, IRBuilderError, BlockRegistry[Expr]](err) >> pure(v)
 }

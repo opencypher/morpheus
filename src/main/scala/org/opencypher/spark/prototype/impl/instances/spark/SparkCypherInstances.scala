@@ -33,7 +33,7 @@ trait SparkCypherInstances {
       }
 
       print("IR ... ")
-      val ir = CypherQueryBuilder.buildIROrThrow(stmt, IRBuilderContext(query, globals, graph.schema))
+      val ir = CypherQueryBuilder.plan(stmt)(IRBuilderContext(query, globals, graph.schema))
       println("Done!")
 
       print("Logical plan ... ")

@@ -16,7 +16,7 @@ trait Prototype {
 
     val globals = GlobalsExtractor(stmt)
 
-    val ir = CypherQueryBuilder.buildIROrThrow(stmt, IRBuilderContext(query, globals, Schema.empty))
+    val ir = CypherQueryBuilder.plan(stmt)(IRBuilderContext(query, globals, Schema.empty))
 
     val cvs = params.mapValues {
       case s: String => CypherString(s)
