@@ -1,40 +1,27 @@
 package org.opencypher.spark.prototype
 
-import org.opencypher.spark.api.CypherResultContainer
 import org.opencypher.spark.benchmark.RunBenchmark
-
-import scala.io.StdIn
+import org.opencypher.spark.prototype.api.spark.{SparkCypherGraph, SparkGraphSpace}
+import org.opencypher.spark.prototype.impl.instances.spark.cypher._
+import org.opencypher.spark.prototype.impl.syntax.cypher._
 
 object PrototypeDemo {
 
-  lazy val prototype = new Prototype {
-    override val graph = RunBenchmark.createStdPropertyGraphFromNeo(-1)
-  }
+  lazy val space = SparkGraphSpace.fromNeo4j("MATCH (n) RETURN n", "MATCH ()-[r]->() RETURN r")(RunBenchmark.sparkSession)
 
-  def cypher(query: String): CypherResultContainer = {
-    val result = prototype.cypher(query)
+  def cypher(query: String): SparkCypherGraph = {
+    println(s"Now executing query: $query")
+
+    val graph = space.base.cypher(query)
 
     val start = System.currentTimeMillis()
-    result.show()
+    graph.details.show()
     println(s"Time: ${System.currentTimeMillis() - start} ms")
 
-    result
+    graph
   }
 
   def main(args: Array[String]): Unit = {
-
-    // cache graph up front
-    prototype.cypher("MATCH (a) RETURN a.name")
-
-    while (true) {
-      println("Type your query:\n")
-      val query = StdIn.readLine()
-
-      prototype.cypher(query).show()
-    }
+    cypher("MATCH (t:User)-[:ATTENDED]->() WHERE t.country = 'ca' RETURN t.city, t.id")
   }
-
-  /*
-  * MATCH (a:Answer)-->(b:Question) RETURN b.title, b.is_answered
-  */
 }
