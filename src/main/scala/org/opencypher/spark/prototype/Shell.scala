@@ -1,4 +1,4 @@
-package org.opencypher.spark.shell
+package org.opencypher.spark.prototype
 
 import ammonite.util.Bind._
 import ammonite.util.Util
@@ -45,7 +45,7 @@ object Shell {
         predef =
           s"""|repl.frontEnd() = ammonite.frontend.FrontEnd.$frontend
               |repl.prompt() = \"(:spark)-->(:cypher) \"
-              |import org.opencypher.spark.prototype.PrototypeDemo2._
+              |import org.opencypher.spark.prototype.PrototypeDemo._
               |import org.opencypher.spark.prototype.impl.instances.spark.cypher._
               |import org.opencypher.spark.prototype.impl.syntax.cypher._
               |""".stripMargin
