@@ -6,7 +6,7 @@ import org.apache.spark.sql.catalyst.expressions.Literal
 import org.apache.spark.sql.{Column, DataFrame, Row, SparkSession}
 import org.opencypher.spark.api.expr.{HasLabel, Property, Var}
 import org.opencypher.spark.api.record._
-import org.opencypher.spark.impl.spark.{SparkColumnName, SparkSchema, sparkType}
+import org.opencypher.spark.impl.spark.{SparkColumnName, SparkSchema, toSparkType}
 import org.opencypher.spark.impl.syntax.header.{addContents, selectFields, _}
 
 trait SparkCypherRecords extends CypherRecords with Serializable {
@@ -137,11 +137,11 @@ trait SparkCypherRecords extends CypherRecords with Serializable {
 
     val selfColumns =
       self.header.slots.collect { case slot if !duplicate(slot.content) => new Column(SparkColumnName.of(slot.content))} ++
-      other.header.slots.collect { case slot if !duplicate(slot.content) => new Column(Literal(null, sparkType(slot.content.cypherType))).as(SparkColumnName.of(slot.content)) }
+      other.header.slots.collect { case slot if !duplicate(slot.content) => new Column(Literal(null, toSparkType(slot.content.cypherType))).as(SparkColumnName.of(slot.content)) }
     val newSelfData = self.data.select(selfColumns: _*)
 
     val otherColumns =
-      self.header.slots.collect { case slot if !duplicate(slot.content) => new Column(Literal(null, sparkType(slot.content.cypherType))).as(SparkColumnName.of(slot.content)) } ++
+      self.header.slots.collect { case slot if !duplicate(slot.content) => new Column(Literal(null, toSparkType(slot.content.cypherType))).as(SparkColumnName.of(slot.content)) } ++
       other.header.slots.collect { case slot if !duplicate(slot.content) => new Column(SparkColumnName.of(slot.content))}
     val newOtherData = other.data.select(otherColumns: _*)
 

@@ -43,13 +43,13 @@ final case class SchemaTyper(schema: Schema) {
 
 object SchemaTyper {
 
-  def processInContext[R: _hasSchema : _mayFail : _hasContext](expr: Expression, ctx: TyperContext)
+  def processInContext[R: _hasSchema : _keepsErrors : _hasContext](expr: Expression, ctx: TyperContext)
   : Eff[R, CypherType] = for {
     _ <- put[R, TyperContext](ctx)
     result <- process[R](expr)
   } yield result
 
-  def process[R: _hasSchema : _mayFail : _hasContext](expr: Expression): Eff[R, CypherType] = expr match {
+  def process[R: _hasSchema : _keepsErrors : _hasContext](expr: Expression): Eff[R, CypherType] = expr match {
 
     case _: Variable | _: Parameter =>
       typeOf[R](expr)
@@ -176,12 +176,12 @@ object SchemaTyper {
   }
 
   private sealed trait ExpressionTyper[T <: Expression] {
-    def apply[R : _hasSchema : _mayFail : _hasContext](expr: T): Eff[R, CypherType]
+    def apply[R : _hasSchema : _keepsErrors : _hasContext](expr: T): Eff[R, CypherType]
   }
 
   private sealed trait SignatureBasedInvocationTyper[T <: Expression] extends ExpressionTyper[T] {
 
-    def apply[R : _hasSchema : _mayFail : _hasContext](expr: T): Eff[R, CypherType] =
+    def apply[R : _hasSchema : _keepsErrors : _hasContext](expr: T): Eff[R, CypherType] =
       for {
         argExprs <- pure(expr.arguments)
         argTypes <- EffMonad.traverse(argExprs.toList)(process[R])
@@ -198,7 +198,7 @@ object SchemaTyper {
       }
       yield resultType
 
-    protected def selectSignaturesFor[R : _hasSchema : _mayFail : _hasContext]
+    protected def selectSignaturesFor[R : _hasSchema : _keepsErrors : _hasContext]
       (expr: T, args: Seq[(Expression, CypherType)])
     : Eff[R, Set[(Seq[CypherType], CypherType)]] =
       for {
@@ -215,13 +215,13 @@ object SchemaTyper {
       }
       yield eligible
 
-    protected def generateSignaturesFor[R : _hasSchema : _mayFail : _hasContext]
+    protected def generateSignaturesFor[R : _hasSchema : _keepsErrors : _hasContext]
       (expr: T, args: Seq[(Expression, CypherType)])
     : Eff[R, Set[(Seq[CypherType], CypherType)]]
   }
 
   private case object FunctionInvocationTyper extends SignatureBasedInvocationTyper[FunctionInvocation] {
-    override protected def generateSignaturesFor[R : _hasSchema : _mayFail : _hasContext]
+    override protected def generateSignaturesFor[R : _hasSchema : _keepsErrors : _hasContext]
       (expr: FunctionInvocation, args: Seq[(Expression, CypherType)])
     : Eff[R, Set[(Seq[CypherType], CypherType)]] =
       expr.function match {
@@ -238,7 +238,7 @@ object SchemaTyper {
   }
 
   private case object AddTyper extends SignatureBasedInvocationTyper[Add] {
-    override protected def generateSignaturesFor[R : _hasSchema : _mayFail : _hasContext]
+    override protected def generateSignaturesFor[R : _hasSchema : _keepsErrors : _hasContext]
     (expr: Add, args: Seq[(Expression, CypherType)])
     : Eff[R, Set[(Seq[CypherType], CypherType)]] = {
       val (_, left) = args.head

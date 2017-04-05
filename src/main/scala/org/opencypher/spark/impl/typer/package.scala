@@ -12,15 +12,15 @@ import org.opencypher.spark.api.types._
 
 package object typer {
 
-  type _mayFail[R] = MayFail |= R
+  type _keepsErrors[R] = KeepsErrors |= R
   type _hasContext[R] = HasContext |= R
   type _hasSchema[R] = HasSchema |= R
 
-  type MayFail[A] = Validate[TyperError, A]
+  type KeepsErrors[A] = Validate[TyperError, A]
   type HasContext[A] = State[TyperContext, A]
   type HasSchema[A] = Reader[Schema, A]
 
-  type TyperStack[A] = Fx.fx3[HasSchema, MayFail, HasContext]
+  type TyperStack[A] = Fx.fx3[HasSchema, KeepsErrors, HasContext]
 
   implicit final class RichTyperStack[A](val program: Eff[TyperStack[A], A]) extends AnyVal {
 
@@ -51,13 +51,13 @@ package object typer {
 
   // These combinators just delegate to the current context
 
-  def typeOf[R : _mayFail : _hasContext](it: Expression): Eff[R, CypherType] =
+  def typeOf[R : _keepsErrors : _hasContext](it: Expression): Eff[R, CypherType] =
     get[R, TyperContext] >>= { _.getTypeOf(it) }
 
-  def updateTyping[R : _hasContext : _mayFail](entry: (Expression, CypherType)): Eff[R, CypherType] =
+  def updateTyping[R : _hasContext : _keepsErrors](entry: (Expression, CypherType)): Eff[R, CypherType] =
     get[R, TyperContext] >>= { _.putUpdated(entry) }
 
-  def error[R : _mayFail](failure: TyperError): Eff[R, CypherType] =
+  def error[R : _keepsErrors](failure: TyperError): Eff[R, CypherType] =
     wrong[R, TyperError](failure) >> pure(CTWildcard)
 
   implicit val showExpr = new Show[Expression] {

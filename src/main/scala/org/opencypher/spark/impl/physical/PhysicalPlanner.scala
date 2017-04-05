@@ -5,14 +5,14 @@ import org.opencypher.spark.api.ir.global.{ConstantRef, GlobalsRegistry}
 import org.opencypher.spark.api.ir.pattern.AllGiven
 import org.opencypher.spark.api.spark.SparkCypherGraph
 import org.opencypher.spark.api.value.CypherValue
-import org.opencypher.spark.impl.{PlannerStage, logical}
+import org.opencypher.spark.impl.{DirectCompilationStage, logical}
 
 case class PhysicalPlannerContext(graph: SparkCypherGraph, globals: GlobalsRegistry, constants: Map[ConstantRef, CypherValue])
 
 class PhysicalPlanner
-  extends PlannerStage[logical.LogicalOperator, SparkCypherGraph, PhysicalPlannerContext] {
+  extends DirectCompilationStage[logical.LogicalOperator, SparkCypherGraph, PhysicalPlannerContext] {
 
-  def plan(logicalPlan: logical.LogicalOperator)(implicit context: PhysicalPlannerContext): SparkCypherGraph = {
+  def process(logicalPlan: logical.LogicalOperator)(implicit context: PhysicalPlannerContext): SparkCypherGraph = {
 
     val producer = new GraphProducer(RuntimeContext(context.constants))
 

@@ -4,5 +4,5 @@ package object spark {
   object all extends spark.AllInstances
   object records extends SparkCypherRecordsInstances
   object cypher extends SparkCypherInstances
-  object ir extends IrBlockInstances
+  object ir extends ExprBlockInstances
 }

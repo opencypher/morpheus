@@ -1,20 +1,21 @@
-package org.opencypher.spark.impl.ir
+package org.opencypher.spark.impl
+
 import cats.data.State
-import cats.implicits._
+import cats.syntax.flatMap._
 import org.atnos.eff._
-import org.atnos.eff.all.{left, pure}
+import org.atnos.eff.all._
 import org.atnos.eff.syntax.all._
 import org.opencypher.spark.api.expr.Expr
 
-package object types {
+package object ir {
 
-  type _fails[R] = Fails |= R
+  type _mayFail[R] = MayFail |= R
   type _hasContext[R] = HasContext |= R
 
-  type Fails[A] = Either[IRBuilderError, A]
+  type MayFail[A] = Either[IRBuilderError, A]
   type HasContext[A] = State[IRBuilderContext, A]
 
-  type IRBuilderStack[A] = Fx.fx2[Fails, HasContext]
+  type IRBuilderStack[A] = Fx.fx2[MayFail, HasContext]
 
   implicit final class RichIRBuilderStack[A](val program: Eff[IRBuilderStack[A], A]) {
 
@@ -25,6 +26,6 @@ package object types {
     }
   }
 
-  def error[R: _fails : _hasContext, A](err: IRBuilderError)(v: A): Eff[R, A] =
+  def error[R: _mayFail : _hasContext, A](err: IRBuilderError)(v: A): Eff[R, A] =
     left[R, IRBuilderError, BlockRegistry[Expr]](err) >> pure(v)
 }

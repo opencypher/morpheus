@@ -8,15 +8,15 @@ import org.opencypher.spark.api.ir.block._
 import org.opencypher.spark.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.api.ir.pattern.{AllGiven, Connection, Pattern}
 import org.opencypher.spark.api.schema.Schema
-import org.opencypher.spark.impl.PlannerStage
+import org.opencypher.spark.impl.{CompilationStage, DirectCompilationStage}
 
 final case class LogicalPlannerContext(schema: Schema, tokens: GlobalsRegistry)
 
-class LogicalPlanner extends PlannerStage[CypherQuery[Expr], LogicalOperator, LogicalPlannerContext] {
+class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOperator, LogicalPlannerContext] {
 
   val producer = new LogicalOperatorProducer
 
-  def plan(ir: CypherQuery[Expr])(implicit context: LogicalPlannerContext): LogicalOperator = {
+  override def process(ir: CypherQuery[Expr])(implicit context: LogicalPlannerContext): LogicalOperator = {
     val model = ir.model
 
     implicit val tokenDefs = model.globals

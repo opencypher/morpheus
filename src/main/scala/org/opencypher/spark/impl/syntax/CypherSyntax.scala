@@ -2,7 +2,7 @@ package org.opencypher.spark.impl.syntax
 
 import org.opencypher.spark.api.graph.CypherGraph
 import org.opencypher.spark.api.value.CypherValue
-import org.opencypher.spark.impl.classy.Cypher
+import org.opencypher.spark.impl.classes.Cypher
 
 trait CypherSyntax {
 

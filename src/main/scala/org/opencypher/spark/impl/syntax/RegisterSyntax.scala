@@ -1,6 +1,6 @@
 package org.opencypher.spark.impl.syntax
 
-import org.opencypher.spark.impl.classy.Register
+import org.opencypher.spark.impl.classes.Register
 
 trait RegisterSyntax {
   def key[D, K](defn: D)(implicit register: Register[_] { type Def = D; type Key = K }) =

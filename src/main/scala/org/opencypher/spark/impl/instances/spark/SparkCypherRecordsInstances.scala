@@ -7,7 +7,7 @@ import org.opencypher.spark.api.record._
 import org.opencypher.spark.api.spark.SparkCypherRecords
 import org.opencypher.spark.api.value.CypherValue
 import org.opencypher.spark.api.value.CypherValue.Conversion._
-import org.opencypher.spark.impl.classy.Transform
+import org.opencypher.spark.impl.classes.Transform
 import org.opencypher.spark.impl.physical.RuntimeContext
 import org.opencypher.spark.impl.syntax.header._
 import org.opencypher.spark.impl.util.{Found, Replaced}

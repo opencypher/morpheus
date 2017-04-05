@@ -1,6 +1,6 @@
 package org.opencypher.spark.impl.util
 
-import org.opencypher.spark.impl.classy.Register
+import org.opencypher.spark.impl.classes.Register
 
 final case class RefCollection[D](elts: Vector[D])
 

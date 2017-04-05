@@ -28,10 +28,10 @@ final case class TyperContext(typings: Map[Expression, CypherType]) {
     }
   }
 
-  def getTypeOf[R : _mayFail : _hasContext](it: Expression): Eff[R, CypherType] =
+  def getTypeOf[R : _keepsErrors : _hasContext](it: Expression): Eff[R, CypherType] =
     typings.get(it).map(pure[R, CypherType]).getOrElse(error(UnTypedExpr(it)))
 
-  def putUpdated[R : _mayFail : _hasContext](entry: (Expression, CypherType)): Eff[R, CypherType] = {
+  def putUpdated[R : _keepsErrors : _hasContext](entry: (Expression, CypherType)): Eff[R, CypherType] = {
     val (ref, newTyp) = entry
     typings.get(ref) match {
       case Some(oldTyp) if oldTyp == newTyp =>

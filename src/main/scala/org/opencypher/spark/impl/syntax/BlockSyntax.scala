@@ -2,7 +2,7 @@ package org.opencypher.spark.impl.syntax
 
 import org.opencypher.spark.api.ir.Field
 import org.opencypher.spark.api.ir.block.Block
-import org.opencypher.spark.impl.classy.TypedBlock
+import org.opencypher.spark.impl.classes.TypedBlock
 
 import scala.language.implicitConversions
 

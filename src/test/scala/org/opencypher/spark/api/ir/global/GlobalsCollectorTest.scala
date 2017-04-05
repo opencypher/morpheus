@@ -5,7 +5,8 @@ import org.opencypher.spark.impl.ir.GlobalsExtractor
 
 class GlobalsCollectorTest extends StdTestSuite {
 
-  import org.opencypher.spark.impl.parse.CypherParser._
+  import org.opencypher.spark.impl.parse.{CypherParser => parse}
+  import parse.defaultContext
 
   test("collect tokens") {
     val given = parse("MATCH (a:Person)-[r:KNOWS]->(b:Duck) RETURN a.name, r.since, b.quack")

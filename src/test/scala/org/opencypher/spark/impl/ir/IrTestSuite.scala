@@ -69,8 +69,8 @@ abstract class IrTestSuite extends StdTestSuite {
     def model: QueryModel[Expr] = ir.model
 
     def ir: CypherQuery[Expr] = {
-      val (stmt, _) = CypherParser.parseAndExtract(queryText)
-      CypherQueryBuilder.plan(stmt)(IRBuilderContext(queryText, GlobalsExtractor(stmt), Schema.empty))
+      val stmt = CypherParser(queryText)(CypherParser.defaultContext)
+      CypherQueryBuilder(stmt)(IRBuilderContext(queryText, GlobalsExtractor(stmt), Schema.empty))
     }
   }
 }

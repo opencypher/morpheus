@@ -3,22 +3,21 @@ package org.opencypher.spark.impl.parse
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.phases._
-import org.neo4j.cypher.internal.frontend.v3_2.{AstRewritingMonitor, CypherException, InputPosition}
+import org.opencypher.spark.impl.CompilationStage
 
-import scala.reflect.ClassTag
+object CypherParser extends CypherParser {
+  implicit object defaultContext extends BlankBaseContext
+}
 
-object CypherParser extends CypherParser
+trait CypherParser extends CompilationStage[String, Statement, BaseContext] {
 
-trait CypherParser {
+  override type Out = (Statement, Map[String, Any])
 
-  def parse(query: String): Statement = {
-    val (statement, _) = parseAndExtract(query)
-    statement
-  }
+  override def extract(output: (Statement, Map[String, Any])) = output._1
 
-  def parseAndExtract(query: String): (Statement, Map[String, Any]) = {
+  override def process(query: String)(implicit context: BaseContext): (Statement, Map[String, Any]) = {
     val startState = BaseStateImpl(query, None, null)
-    val endState = pipeLine.transform(startState, ParserContext())
+    val endState = pipeLine.transform(startState, context)
     val params = endState.extractedParams
     val rewritten = endState.statement
     rewritten -> params
@@ -29,21 +28,3 @@ trait CypherParser {
     CompilationPhases.lateAstRewriting
 }
 
-case class ParserContext() extends BaseContext {
-  override def tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING
-
-  override def notificationLogger: InternalNotificationLogger = devNullLogger
-
-  override def exceptionCreator: (String, InputPosition) => CypherException = (_, _) => null
-
-  override def monitors: Monitors = new Monitors {
-    override def newMonitor[T <: AnyRef : ClassTag](tags: String*): T = {
-      new AstRewritingMonitor {
-        override def abortedRewriting(obj: AnyRef): Unit = ()
-        override def abortedRewritingDueToLargeDNF(obj: AnyRef): Unit = ()
-      }
-    }.asInstanceOf[T]
-
-    override def addMonitorListener[T](monitor: T, tags: String*): Unit = ()
-  }
-}

@@ -197,7 +197,7 @@ trait SparkGraphLoading {
         case (name, t) =>
           val property = Property(node, globals.propertyKey(name))
           val slot = ProjectedExpr(property, t)
-          val field = StructField(SparkColumnName.of(slot), sparkType(t), nullable = t.isNullable)
+          val field = StructField(SparkColumnName.of(slot), toSparkType(t), nullable = t.isNullable)
           slot -> field
       }
     }
@@ -216,7 +216,7 @@ trait SparkGraphLoading {
         case (name, t) =>
           val property = Property(rel, globals.propertyKey(name))
           val slot = ProjectedExpr(property, t)
-          val field = StructField(SparkColumnName.of(slot), sparkType(t), nullable = t.isNullable)
+          val field = StructField(SparkColumnName.of(slot), toSparkType(t), nullable = t.isNullable)
           slot -> field
       }
     }

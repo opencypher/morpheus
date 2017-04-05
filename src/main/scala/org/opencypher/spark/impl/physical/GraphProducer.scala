@@ -12,7 +12,7 @@ import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkGraphSpace}
 import org.opencypher.spark.api.value.CypherValue
 import org.opencypher.spark.impl.instances.spark.records._
-import org.opencypher.spark.impl.spark.{SparkColumnName, sparkType}
+import org.opencypher.spark.impl.spark.{SparkColumnName, toSparkType}
 import org.opencypher.spark.impl.syntax.header._
 import org.opencypher.spark.impl.syntax.transform._
 
@@ -142,7 +142,7 @@ class GraphProducer(context: RuntimeContext) {
                 new Column(graphRecords.data.columns(oldIndex)).as(SparkColumnName.of(newHeader.slots(newIndex)))
               case (newIndex, None) =>
                 val slot = newHeader.slots(newIndex)
-                new Column(Literal(null, sparkType(slot.content.cypherType))).as(SparkColumnName.of(slot.content))
+                new Column(Literal(null, toSparkType(slot.content.cypherType))).as(SparkColumnName.of(slot.content))
             }
             graphRecords.data.select(columns: _*)
 

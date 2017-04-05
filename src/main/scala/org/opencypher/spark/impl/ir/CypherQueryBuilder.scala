@@ -9,22 +9,23 @@ import org.opencypher.spark.api.expr.Expr
 import org.opencypher.spark.api.ir._
 import org.opencypher.spark.api.ir.block._
 import org.opencypher.spark.api.ir.pattern.{AllGiven, Pattern}
-import org.opencypher.spark.impl.PlannerStage
-import org.opencypher.spark.impl.ir.types.{_fails, _hasContext, _}
+import org.opencypher.spark.impl.CompilationStage
 
-object CypherQueryBuilder extends PlannerStage[ast.Statement, CypherQuery[Expr], IRBuilderContext] {
+object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBuilderContext] {
 
-  override def plan(input: Statement)(implicit context: IRBuilderContext): CypherQuery[Expr] =
-    buildIROrThrow(input, context)
+  override type Out = Either[IRBuilderError, (Option[CypherQuery[Expr]], IRBuilderContext)]
 
-  private def buildIROrThrow(s: ast.Statement, context: IRBuilderContext): CypherQuery[Expr] =
-    buildIR[IRBuilderStack[Option[CypherQuery[Expr]]]](s).run(context) match {
+  override def process(input: Statement)(implicit context: IRBuilderContext): Out =
+    buildIR[IRBuilderStack[Option[CypherQuery[Expr]]]](input).run(context)
+
+  override def extract(output: Out): CypherQuery[Expr] =
+    output match {
       case Left(error) => throw new IllegalStateException(s"Error during IR construction: $error")
       case Right((Some(q), _)) => q
       case Right((None, _)) => throw new IllegalStateException(s"Failed to construct IR")
     }
 
-  private def buildIR[R: _fails : _hasContext](s: ast.Statement): Eff[R, Option[CypherQuery[Expr]]] =
+  private def buildIR[R: _mayFail : _hasContext](s: ast.Statement): Eff[R, Option[CypherQuery[Expr]]] =
     s match {
       case ast.Query(_, part) =>
         for {
@@ -45,7 +46,7 @@ object CypherQueryBuilder extends PlannerStage[ast.Statement, CypherQuery[Expr],
         error(IRBuilderError(s"Statement not yet supported: $x"))(None)
     }
 
-  private def convertClause[R: _fails : _hasContext](c: ast.Clause): Eff[R, Vector[BlockRef]] = {
+  private def convertClause[R: _mayFail : _hasContext](c: ast.Clause): Eff[R, Vector[BlockRef]] = {
 
     c match {
       case ast.Match(_, pattern, _, astWhere) =>
@@ -90,7 +91,7 @@ object CypherQueryBuilder extends PlannerStage[ast.Statement, CypherQuery[Expr],
     }
   }
 
-  private def convertReturnItem[R: _fails : _hasContext](item: ast.ReturnItem): Eff[R, (Field, Expr)] = item match {
+  private def convertReturnItem[R: _mayFail : _hasContext](item: ast.ReturnItem): Eff[R, (Field, Expr)] = item match {
 
     case ast.AliasedReturnItem(e, v) =>
       for {
@@ -108,7 +109,7 @@ object CypherQueryBuilder extends PlannerStage[ast.Statement, CypherQuery[Expr],
       }
   }
 
-  private def convertPattern[R: _fails : _hasContext](p: ast.Pattern): Eff[R, Pattern[Expr]] = {
+  private def convertPattern[R: _mayFail : _hasContext](p: ast.Pattern): Eff[R, Pattern[Expr]] = {
     for {
       context <- get[R, IRBuilderContext]
       result <- {
@@ -121,13 +122,13 @@ object CypherQueryBuilder extends PlannerStage[ast.Statement, CypherQuery[Expr],
     } yield result
   }
 
-  private def convertExpr[R: _fails : _hasContext](e: ast.Expression): Eff[R, Expr] =
+  private def convertExpr[R: _mayFail : _hasContext](e: ast.Expression): Eff[R, Expr] =
     for {
       context <- get[R, IRBuilderContext]
     }
     yield context.convertExpression(e)
 
-  private def convertWhere[R: _fails : _hasContext](where: Option[ast.Where]): Eff[R, AllGiven[Expr]] = where match {
+  private def convertWhere[R: _mayFail : _hasContext](where: Option[ast.Where]): Eff[R, AllGiven[Expr]] = where match {
     case Some(ast.Where(expr)) =>
       for {
         predicate <- convertExpr(expr)
@@ -142,7 +143,7 @@ object CypherQueryBuilder extends PlannerStage[ast.Statement, CypherQuery[Expr],
       pure[R, AllGiven[Expr]](AllGiven[Expr]())
   }
 
-  private def convertRegistry[R: _fails : _hasContext]: Eff[R, Option[CypherQuery[Expr]]] =
+  private def convertRegistry[R: _mayFail : _hasContext]: Eff[R, Option[CypherQuery[Expr]]] =
     for {
       context <- get[R, IRBuilderContext]
     } yield {

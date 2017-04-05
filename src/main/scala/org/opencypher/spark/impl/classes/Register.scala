@@ -1,4 +1,4 @@
-package org.opencypher.spark.impl.classy
+package org.opencypher.spark.impl.classes
 
 // Manage collections of elements of type Def such that the collection holds at most one element
 // with a key of type Key.

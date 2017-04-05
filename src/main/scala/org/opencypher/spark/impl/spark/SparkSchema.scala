@@ -11,7 +11,7 @@ object SparkSchema {
 
   private def structField(slot: RecordSlot, nullable: Boolean): StructField = {
     val name = SparkColumnName.of(slot.content)
-    val dataType = sparkType(slot.content.cypherType)
+    val dataType = toSparkType(slot.content.cypherType)
     StructField(name, dataType, nullable)
   }
 }
