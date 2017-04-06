@@ -6,6 +6,8 @@ import org.opencypher.spark.api.record._
 import org.opencypher.spark.impl.record.InternalHeader
 import org.opencypher.spark.impl.util.{AdditiveUpdateResult, RemovingUpdateResult}
 
+import scala.language.implicitConversions
+
 trait RecordHeaderSyntax {
 
   implicit def sparkRecordHeaderSyntax(header: RecordHeader): RecordHeaderOps =

@@ -29,6 +29,8 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
 
       case logical.ExpandSource(source, rel, types, target, in, _) =>
         mkPhysical.expandSource(source, rel, types, target, process(in))
+
+      case x => throw new NotImplementedError(s"Flat planning not done yet for $x")
     }
   }
 }

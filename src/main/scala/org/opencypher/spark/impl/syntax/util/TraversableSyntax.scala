@@ -3,6 +3,8 @@ package org.opencypher.spark.impl.syntax.util
 import cats.Monoid
 import cats.syntax.monoid._
 
+import scala.language.implicitConversions
+
 trait TraversableSyntax {
   implicit def traversableSyntax[E](elts: Traversable[(E)]): TraversableOps[E] =
     new TraversableOps[E](elts)

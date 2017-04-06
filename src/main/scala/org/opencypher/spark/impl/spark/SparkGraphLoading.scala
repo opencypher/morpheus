@@ -304,6 +304,8 @@ trait SparkGraphLoading {
 
           case _: Var =>
             importedRel.id()
+
+          case x => throw new IllegalArgumentException(s"Header contained unexpected expression: $x")
         }
       }
 

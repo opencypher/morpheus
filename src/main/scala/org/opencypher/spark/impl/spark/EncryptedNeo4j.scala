@@ -41,7 +41,7 @@ case class EncryptedNeo4j(session: SparkSession) extends Neo4j(session.sparkCont
 
 }
 
-class EncryptedNeo4jRDD(@transient sc: SparkContext, query: String, parameters: Map[String,Any] = Map.empty, partitions : Partitions = Partitions())
+class EncryptedNeo4jRDD(sc: SparkContext, query: String, parameters: Map[String,Any] = Map.empty, partitions : Partitions = Partitions())
   extends Neo4jRDD(sc, query, parameters, partitions) {
 
   override val neo4jConfig: Neo4jConfig = EncryptedNeo4jConfig(sc.getConf)

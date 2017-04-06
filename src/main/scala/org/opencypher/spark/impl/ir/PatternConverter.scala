@@ -65,6 +65,8 @@ final class PatternConverter(val tokens: GlobalsRegistry) extends AnyVal {
         }
       }
     } yield target
+
+    case x => throw new NotImplementedError(s"Pattern conversion not yet done for $x")
   }
 
   private def stomp[T](result: Result[T]): Result[Unit] = result >> pure(())
