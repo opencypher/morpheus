@@ -1,13 +1,18 @@
 package org.opencypher.spark.impl.ir
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.frontend.v3_2.{ast, symbols}
-import org.opencypher.spark.StdTestSuite
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.global._
-import org.opencypher.spark.api.types.CTWildcard
+import org.opencypher.spark.api.types.{CTBoolean, CTRelationship, CTWildcard, CypherType}
+import org.opencypher.spark.{Neo4jAstTestSupport, StdTestSuite}
 
-class ExpressionConverterTest extends StdTestSuite with AstConstructionTestSupport {
+class ExpressionConverterTest extends StdTestSuite with Neo4jAstTestSupport {
+
+  test("can convert type() function calls used as predicates") {
+    convert(parse("type(r) = 'REL_TYPE'")) should equal(
+      HasType(Var("r", CTRelationship), RelTypeRef(0), CTBoolean)
+    )
+  }
 
   test("can convert variables") {
     convert(varFor("n")) should equal(Var("n"))
@@ -62,9 +67,16 @@ class ExpressionConverterTest extends StdTestSuite with AstConstructionTestSuppo
     .withLabel(Label("Person"))
     .withLabel(Label("Duck"))
     .withPropertyKey(PropertyKey("name"))
-    .withConstant(Constant("p")))
+    .withConstant(Constant("p"))
+    .withRelType(RelType("REL_TYPE"))
+  )
 
-  private def convert(e: ast.Expression): Expr = c.convert(e)(_ => CTWildcard)
+  private def typings(e: ast.Expression): CypherType = e match {
+    case ast.Variable("r") => CTRelationship
+    case _ => CTWildcard
+  }
+
+  private def convert(e: ast.Expression): Expr = c.convert(e)(typings)
 }
 
 
