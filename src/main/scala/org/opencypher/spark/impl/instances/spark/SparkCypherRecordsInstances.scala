@@ -1,11 +1,10 @@
 package org.opencypher.spark.impl.instances.spark
 
 import org.apache.spark.sql.{Column, DataFrame, Row}
-import org.opencypher.spark.api.types.{CTBoolean, CTFloat, CTInteger, CTString}
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.record._
 import org.opencypher.spark.api.spark.SparkCypherRecords
-import org.opencypher.spark.api.value.CypherValue
+import org.opencypher.spark.api.types.{CTBoolean, CTFloat, CTInteger, CTString}
 import org.opencypher.spark.api.value.CypherValue.Conversion._
 import org.opencypher.spark.impl.classes.Transform
 import org.opencypher.spark.impl.physical.RuntimeContext

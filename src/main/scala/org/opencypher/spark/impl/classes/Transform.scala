@@ -2,7 +2,6 @@ package org.opencypher.spark.impl.classes
 
 import org.opencypher.spark.api.expr.{Expr, Var}
 import org.opencypher.spark.api.record.{ProjectedSlotContent, RecordSlot}
-import org.opencypher.spark.impl.physical.RuntimeContext
 
 import scala.language.implicitConversions
 
