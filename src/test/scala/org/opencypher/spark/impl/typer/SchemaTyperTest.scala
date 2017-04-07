@@ -17,12 +17,31 @@ class SchemaTyperTest extends StdTestSuite with Neo4jAstTestSupport with Mockito
   val typer = SchemaTyper(schema)
 
   test("typing predicates") {
-    implicit val context = TyperContext.empty :+ varFor("n") -> CTNode()
+    implicit val context = typerContext("n" -> CTNode())
 
     assertExpr.from("n:Person") shouldHaveInferredType CTBoolean
     assertExpr.from("n:Person:Car") shouldHaveInferredType CTBoolean
     assertExpr.from("NOT n:Person:Car") shouldHaveInferredType CTBoolean
     assertExpr.from("NOT(NOT(n:Person:Car))") shouldHaveInferredType CTBoolean
+  }
+
+  test("typing AND and OR") {
+    implicit val context = typerContext("b" -> CTBoolean, "c" -> CTBoolean, "int" -> CTInteger)
+
+    assertExpr.from("b AND true") shouldHaveInferredType CTBoolean
+    assertExpr.from("b OR false") shouldHaveInferredType CTBoolean
+    assertExpr.from("(b AND true) OR (b AND c)") shouldHaveInferredType CTBoolean
+
+    Seq("b AND int", "int OR b", "b AND int AND c").foreach { s =>
+      assertExpr(parse(s)) shouldFailToInferTypeWithErrors InvalidType(varFor("int"), CTBoolean, CTInteger)
+    }
+  }
+
+  test("typing equality") {
+    implicit val context = typerContext("n" -> CTInteger)
+
+    assertExpr.from("n = 1") shouldHaveInferredType CTBoolean
+    assertExpr.from("n <> 1") shouldHaveInferredType CTBoolean
   }
 
   test("typing of unsupported expressions") {
@@ -31,7 +50,7 @@ class SchemaTyperTest extends StdTestSuite with Neo4jAstTestSupport with Mockito
   }
 
   test("typing of variables") {
-    implicit val context = TyperContext.empty :+ varFor("n") -> CTNode("Person")
+    implicit val context = typerContext("n" -> CTNode("Person"))
 
     assertExpr.from("n") shouldHaveInferredType CTNode("Person")
   }
@@ -81,13 +100,13 @@ class SchemaTyperTest extends StdTestSuite with Neo4jAstTestSupport with Mockito
   }
 
   test("infer type of node property lookup") {
-    implicit val context = TyperContext(Map(varFor("n") -> CTNode("Person")))
+    implicit val context = typerContext("n" -> CTNode("Person"))
 
     assertExpr.from("n.name") shouldHaveInferredType CTString
   }
 
   test("infer type of relationship property lookup") {
-    implicit val context = TyperContext(Map(varFor("r") -> CTRelationship("KNOWS")))
+    implicit val context = typerContext("r" -> CTRelationship("KNOWS"))
 
     assertExpr.from("r.relative") shouldHaveInferredType CTBoolean
   }
@@ -121,6 +140,9 @@ class SchemaTyperTest extends StdTestSuite with Neo4jAstTestSupport with Mockito
     // implicit val context = TyperContext.empty :+ Parameter("param", symbols.CTAny)(pos) -> CTInteger
     // assertExpr.from("percentileDisc([1, 3.14][$param], 3.14)") shouldHaveInferredType CTInteger
   }
+
+  private def typerContext(typings: (String, CypherType)*): TyperContext =
+    TyperContext(typings.map { case (v, t) => varFor(v) -> t }.toMap)
 
   private object assertExpr {
     def from(exprText: String)(implicit context: TyperContext = TyperContext.empty) =

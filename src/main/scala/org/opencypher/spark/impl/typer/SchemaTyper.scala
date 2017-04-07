@@ -100,6 +100,17 @@ object SchemaTyper {
         }
       } yield result
 
+    case Ands(exprs) => processAndsOrs(expr, exprs.toVector)
+
+    case Ors(exprs) => processAndsOrs(expr, exprs.toVector)
+
+    case Equals(lhs, rhs) =>
+      for {
+        _ <- process[R](lhs)
+        _ <- process[R](rhs)
+        result <- updateTyping(expr -> CTBoolean)
+      } yield result
+
     case _: SignedDecimalIntegerLiteral =>
       updateTyping(expr -> CTInteger)
 
@@ -165,6 +176,20 @@ object SchemaTyper {
 
     case _ =>
       error(UnsupportedExpr(expr))
+  }
+
+  private def processAndsOrs[R : _hasSchema : _keepsErrors : _hasContext](expr: Expression, orderedExprs: Vector[Expression]): Eff[R, CypherType] = {
+    for {
+      innerTypes <- EffMonad[R].sequence(orderedExprs.map(process[R]))
+      result <- {
+        val typeErrors = innerTypes.zipWithIndex.collect {
+          case (t, idx) if t != CTBoolean =>
+            error(InvalidType(orderedExprs(idx), CTBoolean, t))
+        }
+        if (typeErrors.isEmpty) updateTyping(expr -> CTBoolean)
+        else typeErrors.reduce(_ >> _)
+      }
+    } yield result
   }
 
   private implicit class LiftedMonoid[R, A](val monoid: Monoid[A]) extends AnyVal with Monoid[Eff[R, A]] {

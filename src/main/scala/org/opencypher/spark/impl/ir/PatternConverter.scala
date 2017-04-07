@@ -32,39 +32,41 @@ final class PatternConverter(val tokens: GlobalsRegistry) extends AnyVal {
   }
 
   private def convertElement(p: ast.PatternElement): Result[Field] = p match {
-    case ast.NodePattern(Some(v), labels, None) => for {
+    case ast.NodePattern(Some(v), labels, None) =>
+      for {
         entity <- pure(Field(v.name)(CTNode))
         _ <- modify[Pattern[Expr]](_.withEntity(entity, EveryNode(AllGiven(labels.map(l => tokens.label(l.name)).toSet))))
       } yield entity
 
-    case ast.RelationshipChain(left, ast.RelationshipPattern(Some(eVar), types, None, None, dir), right) => for {
-      source <- convertElement(left)
-      target <- convertElement(right)
-      rel <- pure(Field(eVar.name)(CTRelationship))
-      _ <- modify[Pattern[Expr]] { given =>
-        val typeRefs =
-          if (types.isEmpty) AnyGiven[RelTypeRef]()
-          else AnyGiven[RelTypeRef](types.map(t => tokens.relType(t.name)).toSet)
-        val registered = given.withEntity(rel, EveryRelationship(typeRefs))
+    case ast.RelationshipChain(left, ast.RelationshipPattern(Some(eVar), types, None, None, dir), right) =>
+      for {
+        source <- convertElement(left)
+        target <- convertElement(right)
+        rel <- pure(Field(eVar.name)(CTRelationship(types.map(_.name).toSet)))
+        _ <- modify[Pattern[Expr]] { given =>
+          val typeRefs =
+            if (types.isEmpty) AnyGiven[RelTypeRef]()
+            else AnyGiven[RelTypeRef](types.map(t => tokens.relType(t.name)).toSet)
+          val registered = given.withEntity(rel, EveryRelationship(typeRefs))
 
-        Endpoints.apply(source, target) match {
-          case ends: IdenticalEndpoints =>
-            registered.withConnection(rel, CyclicRelationship(ends))
+          Endpoints.apply(source, target) match {
+            case ends: IdenticalEndpoints =>
+              registered.withConnection(rel, CyclicRelationship(ends))
 
-          case ends: DifferentEndpoints =>
-            dir match {
-              case OUTGOING =>
-                registered.withConnection(rel, DirectedRelationship(ends))
+            case ends: DifferentEndpoints =>
+              dir match {
+                case OUTGOING =>
+                  registered.withConnection(rel, DirectedRelationship(ends))
 
-              case INCOMING =>
-                registered.withConnection(rel, DirectedRelationship(ends.flip))
+                case INCOMING =>
+                  registered.withConnection(rel, DirectedRelationship(ends.flip))
 
-              case BOTH =>
-                registered.withConnection(rel, UndirectedRelationship(ends))
-            }
+                case BOTH =>
+                  registered.withConnection(rel, UndirectedRelationship(ends))
+              }
+          }
         }
-      }
-    } yield target
+      } yield target
 
     case x => throw new NotImplementedError(s"Pattern conversion not yet done for $x")
   }

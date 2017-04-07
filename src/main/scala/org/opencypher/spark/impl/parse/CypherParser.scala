@@ -23,7 +23,7 @@ trait CypherParser extends CompilationStage[String, Statement, BaseContext] {
     rewritten -> params
   }
 
-  private val pipeLine =
+  protected val pipeLine =
     CompilationPhases.parsing(RewriterStepSequencer.newPlain) andThen
     CompilationPhases.lateAstRewriting
 }
