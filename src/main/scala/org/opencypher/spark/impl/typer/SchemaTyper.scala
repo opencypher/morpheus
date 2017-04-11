@@ -111,6 +111,16 @@ object SchemaTyper {
         result <- updateTyping(expr -> CTBoolean)
       } yield result
 
+    case In(lhs, rhs) =>
+      for {
+        _ <- process[R](lhs)
+        rhsType <- process[R](rhs)
+        result <- rhsType match {
+          case _: CTList => updateTyping(expr -> CTBoolean)
+          case x => error(InvalidType(rhs, CTList(CTWildcard), x))
+        }
+      } yield result
+
     case _: SignedDecimalIntegerLiteral =>
       updateTyping(expr -> CTInteger)
 

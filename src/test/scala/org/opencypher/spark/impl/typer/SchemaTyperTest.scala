@@ -16,7 +16,7 @@ class SchemaTyperTest extends StdTestSuite with Neo4jAstTestSupport with Mockito
 
   val typer = SchemaTyper(schema)
 
-  test("typing predicates") {
+  test("typing label predicates") {
     implicit val context = typerContext("n" -> CTNode())
 
     assertExpr.from("n:Person") shouldHaveInferredType CTBoolean
@@ -42,6 +42,15 @@ class SchemaTyperTest extends StdTestSuite with Neo4jAstTestSupport with Mockito
 
     assertExpr.from("n = 1") shouldHaveInferredType CTBoolean
     assertExpr.from("n <> 1") shouldHaveInferredType CTBoolean
+  }
+
+  test("typing property equality and IN") {
+    implicit val context = typerContext("n" -> CTNode("Person"))
+
+    assertExpr.from("n.name = 'foo'") shouldHaveInferredType CTBoolean
+    assertExpr.from("n.name IN ['foo', 'bar']") shouldHaveInferredType CTBoolean
+    assertExpr.from("n.name IN 'foo'") shouldFailToInferTypeWithErrors
+      InvalidType(parse("'foo'"), CTList(CTWildcard), CTString)
   }
 
   test("typing of unsupported expressions") {
