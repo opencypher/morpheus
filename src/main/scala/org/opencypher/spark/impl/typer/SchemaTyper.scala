@@ -79,9 +79,9 @@ object SchemaTyper {
       for {
         nodeType <- process[R](node)
         result <- nodeType.material match {
-          // TODO: Consider labels vs labels here
           case CTNode(nodeLabels) =>
-            updateTyping(expr -> CTBoolean)
+            val detailed = nodeLabels ++ labels.map(_.name -> true).toMap
+            updateTyping(node -> CTNode(detailed)) >> updateTyping(expr -> CTBoolean)
 
           case x =>
             error(InvalidType(node, CTNode, x))
@@ -102,7 +102,12 @@ object SchemaTyper {
 
     case Ands(exprs) => processAndsOrs(expr, exprs.toVector)
 
-    case Ors(exprs) => processAndsOrs(expr, exprs.toVector)
+    case Ors(exprs) => for {
+      context <- get[R, TyperContext]
+      _ <- put[R, TyperContext](context.dive())
+      result <- processAndsOrs(expr, exprs.toVector)
+      _ <- put[R, TyperContext](context.ascend())
+    } yield result
 
     case Equals(lhs, rhs) =>
       for {

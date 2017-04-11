@@ -8,10 +8,14 @@ import org.neo4j.cypher.internal.frontend.v3_2.symbols
 import org.opencypher.spark.api.types._
 
 object TyperContext {
-  def empty = TyperContext(Map.empty)
+  def empty = TyperContext(Map.empty, 0)
 }
 
-final case class TyperContext(typings: Map[Expression, CypherType]) {
+final case class TyperContext(typings: Map[Expression, CypherType], depth: Int) {
+
+  def dive(): TyperContext = copy(depth = depth + 1)
+  def ascend(): TyperContext = copy(depth = depth - 1)
+  def atTopLevel: Boolean = depth == 0
 
   def :+(entry: (Expression, CypherType)): TyperContext = {
     val (expr, typ) = entry
@@ -31,18 +35,34 @@ final case class TyperContext(typings: Map[Expression, CypherType]) {
   def getTypeOf[R : _keepsErrors : _hasContext](it: Expression): Eff[R, CypherType] =
     typings.get(it).map(pure[R, CypherType]).getOrElse(error(UnTypedExpr(it)))
 
-  def putUpdated[R : _keepsErrors : _hasContext](entry: (Expression, CypherType)): Eff[R, CypherType] = {
-    val (ref, newTyp) = entry
-    typings.get(ref) match {
-      case Some(oldTyp) if oldTyp == newTyp =>
-        pure(oldTyp)
+  def putUpdated[R : _keepsErrors : _hasContext](entry: (Expression, CypherType)): Eff[R, CypherType] =
+    for {
+      context <- get[R, TyperContext]
+      result <- {
+        val (ref, newTyp) = entry
+        typings.get(ref) match {
+          case Some(oldTyp) if oldTyp == newTyp =>
+            pure[R, CypherType](oldTyp)
 
-      case Some(oldTyp) =>
-        put[R, TyperContext](copy(typings = typings.updated(ref, CTWildcard))) >>
-        error(AlreadyTypedExpr(ref, oldTyp, newTyp))
+          case Some(oldTyp) if detailingEntityType(oldTyp, newTyp) =>
+            if (context.atTopLevel)
+              put[R, TyperContext](copy(typings = typings.updated(ref, newTyp))) >> pure[R, CypherType](newTyp)
+            else
+              pure[R, CypherType](oldTyp)
 
-      case None =>
-        put[R, TyperContext](copy(typings = typings.updated(ref, newTyp))) >> pure(newTyp)
-    }
+          case Some(oldTyp) =>
+            put[R, TyperContext](copy(typings = typings.updated(ref, CTWildcard))) >>
+              error[R](AlreadyTypedExpr(ref, oldTyp, newTyp))
+
+          case None =>
+            put[R, TyperContext](copy(typings = typings.updated(ref, newTyp))) >> pure[R, CypherType](newTyp)
+        }
+      }
+    } yield result
+
+  private def detailingEntityType(old: CypherType, newT: CypherType): Boolean = (old, newT) match {
+    case (o: CTNode, n: CTNode) if (o superTypeOf n).isTrue => true
+    case (o: CTRelationship, n: CTRelationship) if (o superTypeOf n).isTrue => true
+    case _ => false
   }
 }

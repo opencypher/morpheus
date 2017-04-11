@@ -1,7 +1,7 @@
 package org.opencypher.spark.impl.typer
 
 import cats.data.NonEmptyList
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, Parameter}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, Parameter, Variable}
 import org.neo4j.cypher.internal.frontend.v3_2.symbols
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.types._
@@ -35,6 +35,15 @@ class SchemaTyperTest extends StdTestSuite with Neo4jAstTestSupport with Mockito
     Seq("b AND int", "int OR b", "b AND int AND c").foreach { s =>
       assertExpr(parse(s)) shouldFailToInferTypeWithErrors InvalidType(varFor("int"), CTBoolean, CTInteger)
     }
+  }
+
+  test("should detail entity type from predicate") {
+    implicit val context = typerContext("n" -> CTNode)
+
+    assertExpr.from("n:Person") shouldMake varFor("n") haveType CTNode("Person")
+    assertExpr.from("n:Person AND n:Dog") shouldMake varFor("n") haveType CTNode("Person", "Dog")
+
+    assertExpr.from("n:Person OR n:Dog") shouldMake varFor("n") haveType CTNode // not enough information for us to act
   }
 
   test("typing equality") {
@@ -151,14 +160,21 @@ class SchemaTyperTest extends StdTestSuite with Neo4jAstTestSupport with Mockito
   }
 
   private def typerContext(typings: (String, CypherType)*): TyperContext =
-    TyperContext(typings.map { case (v, t) => varFor(v) -> t }.toMap)
+    TyperContext(typings.map { case (v, t) => varFor(v) -> t }.toMap, 0)
 
   private object assertExpr {
     def from(exprText: String)(implicit context: TyperContext = TyperContext.empty) =
       assertExpr(parse(exprText))
   }
 
-  private case class assertExpr(expr: Expression)(implicit val context: TyperContext = TyperContext.empty)  {
+  private case class assertExpr(expr: Expression)(implicit val context: TyperContext = TyperContext.empty) {
+
+    def shouldMake(variable: Variable) = new {
+      val maybeType = typer.inferOrThrow(expr, context).context.typings.get(variable)
+      def haveType(t: CypherType) = {
+        maybeType should equal(Some(t))
+      }
+    }
 
     def shouldHaveInferredType(expected: CypherType) = {
       val actual = typer.inferOrThrow(expr, context).context.typings.get(expr)
