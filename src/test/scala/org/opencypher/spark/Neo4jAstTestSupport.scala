@@ -1,7 +1,7 @@
 package org.opencypher.spark
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.{CNFNormalizer, Namespacer, rewriteEqualityToInPredicate}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.{CNFNormalizer, Namespacer, Never, rewriteEqualityToInPredicate}
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.parser.Expressions
 import org.neo4j.cypher.internal.frontend.v3_2.phases._
@@ -38,7 +38,7 @@ object CypherParserWithoutSemanticChecking extends CypherParser {
       SyntaxDeprecationWarnings andThen
       PreparatoryRewriting andThen
       NonThrowingSemanticAnalysis andThen
-      AstRewriting(RewriterStepSequencer.newPlain, shouldExtractParams = false) andThen
+      AstRewriting(RewriterStepSequencer.newPlain, Never) andThen
       Namespacer andThen
       rewriteEqualityToInPredicate andThen
       CNFNormalizer andThen
