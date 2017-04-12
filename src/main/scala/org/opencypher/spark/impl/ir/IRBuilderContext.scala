@@ -21,7 +21,7 @@ final case class IRBuilderContext(
 
   // TODO: Fuse monads
   def infer(expr: ast.Expression): Map[ast.Expression, CypherType] = {
-    typer.infer(expr, TyperContext(knownTypes)) match {
+    typer.infer(expr, TyperContext(knownTypes, 0)) match {
       case Right(result) =>
         result.context.typings
 
