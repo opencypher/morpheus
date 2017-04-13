@@ -64,12 +64,14 @@ object SchemaTyper {
         schema <- ask[R, Schema]
         result <- varTyp.material match {
           case CTNode(labels) =>
-            val keys = labels.collect { case (k, true) => k }.map(schema.nodeKeys).reduce(_ ++ _)
-            recordType(v -> varTyp) >> recordAndUpdate(expr -> keys.getOrElse(name, CTVoid))
+            val keys = labels.collect { case (k, true) => k }.map(schema.nodeKeys).reduceOption(_ ++ _)
+            val propType = keys.getOrElse(Map.empty).getOrElse(name, CTVoid)
+            recordType(v -> varTyp) >> recordAndUpdate(expr -> propType)
 
           case CTRelationship(types) =>
-            val keys = types.map(schema.relationshipKeys).reduce(_ ++ _)
-            recordType(v -> varTyp) >> recordAndUpdate(expr -> keys.getOrElse(name, CTVoid))
+            val keys = types.map(schema.relationshipKeys).reduceOption(_ ++ _)
+            val propType = keys.getOrElse(Map.empty).getOrElse(name, CTVoid)
+            recordType(v -> varTyp) >> recordAndUpdate(expr -> propType)
 
           case CTMap =>
             recordType(v -> varTyp) >> recordAndUpdate(expr -> CTWildcard)
@@ -87,7 +89,7 @@ object SchemaTyper {
             val detailed = nodeLabels ++ labels.map(_.name -> true).toMap
             recordType[R](node -> nodeType) >>
               updateTyping[R](node -> CTNode(detailed)) >>
-              updateTyping[R](expr -> CTBoolean)
+              recordAndUpdate[R](expr -> CTBoolean)
 
           case x =>
             error(InvalidType(node, CTNode, x))
@@ -96,7 +98,7 @@ object SchemaTyper {
 
     case RetypingPredicate(left, rhs) =>
       for {
-        result <- processAndsOrs(expr, left.toVector)
+        result <- if (left.isEmpty) pure[R, CypherType](CTBoolean) else processAndsOrs(expr, left.toVector)
         rhsType <- process[R](rhs)
         _ <- recordType(rhs -> rhsType) >> recordAndUpdate(expr -> result)
       } yield result

@@ -15,7 +15,6 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
     input match {
 
       case logical.Select(fields, in, _) =>
-        val remaining = fields.toSet
         mkPhysical.select(fields, process(in))
 
       case logical.Filter(expr, in, _) =>

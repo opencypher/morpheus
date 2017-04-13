@@ -2,9 +2,9 @@ package org.opencypher.spark.impl.physical
 
 import org.apache.spark.sql.Column
 import org.apache.spark.sql.catalyst.expressions.Literal
-import org.opencypher.spark.api.types.CTNode
+import org.opencypher.spark.api.types.{CTBoolean, CTNode}
 import org.opencypher.spark.api.expr._
-import org.opencypher.spark.api.ir.global.{ConstantRef, LabelRef, RelTypeRef}
+import org.opencypher.spark.api.ir.global.{ConstantRef, GlobalsRegistry, LabelRef, RelTypeRef}
 import org.opencypher.spark.api.ir.pattern.{AllGiven, AnyGiven}
 import org.opencypher.spark.api.ir.{Field, QueryModel}
 import org.opencypher.spark.api.record._
@@ -17,10 +17,10 @@ import org.opencypher.spark.impl.syntax.header._
 import org.opencypher.spark.impl.syntax.transform._
 
 object RuntimeContext {
-  val empty = RuntimeContext(Map.empty)
+  val empty = RuntimeContext(Map.empty, GlobalsRegistry.none)
 }
 
-case class RuntimeContext(constants: Map[ConstantRef, CypherValue]) {
+case class RuntimeContext(constants: Map[ConstantRef, CypherValue], globals: GlobalsRegistry) {
   def columnName(slot: RecordSlot): String = SparkColumnName.of(slot)
   def columnName(content: SlotContent): String = SparkColumnName.of(content)
 }
@@ -34,28 +34,26 @@ class GraphProducer(context: RuntimeContext) {
 
     def allRelationships(v: Var): SparkCypherGraph = graph.relationships(v)
 
-    def select(fields: Set[Var]): SparkCypherGraph =
+    def select(fields: Set[Var], header: RecordHeader): SparkCypherGraph =
       InternalCypherGraph(
-        graph.details.select(fields),
-        graph.model.select(fields.map { case Var(n, _) => Field(n)() })
+        graph.details.select(fields, header),
+        graph.model.select(fields.map { case Var(n) => Field(n)() })
       )
 
-    def project(slot: ProjectedSlotContent): SparkCypherGraph =
-      InternalCypherGraph(graph.details.project(slot), graph.model)
+//    def project(slot: ProjectedSlotContent): SparkCypherGraph =
+//      InternalCypherGraph(graph.details.project(slot), graph.model)
 
-    def filter(expr: Expr): SparkCypherGraph =
-      InternalCypherGraph(graph.details.filter(expr), graph.model)
+    def alias(expr: Expr, v: Var, header: RecordHeader): SparkCypherGraph =
+      InternalCypherGraph(graph.details.alias2(expr, v, header), graph.model)
 
-    def labelFilter(node: Var, labels: AllGiven[LabelRef]): SparkCypherGraph = {
-      val labelExprs: Set[Expr] = labels.elts.map { ref => HasLabel(node, ref) }
-      InternalCypherGraph(graph.details.filter(Ands(labelExprs)), graph.model)
-    }
+    def filter(expr: Expr, header: RecordHeader): SparkCypherGraph =
+      InternalCypherGraph(graph.details.filter(expr, header), graph.model)
 
-    def typeFilter(rel: Var, types: AnyGiven[RelTypeRef]): SparkCypherGraph = {
+    def typeFilter(rel: Var, types: AnyGiven[RelTypeRef], header: RecordHeader): SparkCypherGraph = {
       if (types.elts.isEmpty) graph
       else {
-        val typeExprs: Set[Expr] = types.elts.map { ref => HasType(rel, ref) }
-        InternalCypherGraph(graph.details.filter(Ands(typeExprs)), graph.model)
+        val typeExprs: Set[Expr] = types.elts.map { ref => HasType(rel, ref)(CTBoolean) }
+        InternalCypherGraph(graph.details.filter(Ands(typeExprs), header), graph.model)
       }
     }
 
@@ -110,12 +108,14 @@ class GraphProducer(context: RuntimeContext) {
               slot.content match {
                 case p: ProjectedSlotContent =>
                   p.expr match {
-                    case HasLabel(Var(name, _), label, _) if nodes(Field(name)()) => Some(ProjectedExpr(HasLabel(v, label), p.cypherType) -> slot.index)
-                    case Property(Var(name, _), key, _) if nodes(Field(name)()) => Some(ProjectedExpr(Property(v, key), p.cypherType)-> slot.index)
+                    case h@HasLabel(Var(name), label) if nodes(Field(name)()) =>
+                      Some(ProjectedExpr(HasLabel(v, label)(h.cypherType)) -> slot.index)
+                    case p@Property(Var(name), key) if nodes(Field(name)()) =>
+                      Some(ProjectedExpr(Property(v, key)(p.cypherType))-> slot.index)
                     case _ => None
                   }
 
-                case o@OpaqueField(Var(name, _), _) if nodes(Field(name)()) => Some(OpaqueField(v, CTNode) -> slot.index)
+                case OpaqueField(Var(name)) if nodes(Field(name)()) => Some(OpaqueField(v) -> slot.index)
                 case _ => None
               }
           }.toMap
@@ -128,7 +128,7 @@ class GraphProducer(context: RuntimeContext) {
           }
 
           val frames = nodes.map { nodeField =>
-            val nodeVar = Var(nodeField.name)
+            val nodeVar = Var(nodeField.name)(CTNode)
             val nodeIndices: Seq[(Int, Option[Int])] = oldIndices.map {
               case (_, oldIndex) =>
                 if (graphRecords.header.slots(oldIndex).content.owner.contains(nodeVar))

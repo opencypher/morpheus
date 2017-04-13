@@ -1,6 +1,5 @@
 package org.opencypher.spark.api.record
 
-import org.opencypher.spark.api.types._
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.impl.record.InternalHeader
 
@@ -13,21 +12,24 @@ final case class RecordHeader(internalHeader: InternalHeader) {
   def slots: IndexedSeq[RecordSlot] = internalHeader.slots
   def fields: Set[Var] = internalHeader.fields
 
-  def slotsFor(expr: Expr, cypherType: CypherType): Seq[RecordSlot] =
-    internalHeader.slotsFor(expr, cypherType)
-
   def slotsFor(expr: Expr): Seq[RecordSlot] =
     internalHeader.slotsFor(expr)
 
   def slotFor(variable: Var): RecordSlot = slotsFor(variable).headOption.getOrElse(???)
-  def slotsFor(names: String*): Seq[RecordSlot] = names.map(n => slotFor(Var(n)))
+  def slotsFor(names: String*): Seq[RecordSlot] =
+    names.map(n => internalHeader.slotsByName(n).headOption.getOrElse(???))
 
   def mandatory(slot: RecordSlot): Boolean =
     internalHeader.mandatory(slot)
 
-  def sourceNode(rel: Var): RecordSlot = slotsFor(StartNode(rel)).headOption.getOrElse(???)
-  def targetNode(rel: Var): RecordSlot = slotsFor(EndNode(rel)).headOption.getOrElse(???)
-  def typeId(rel: Expr): RecordSlot = slotsFor(TypeId(rel)).headOption.getOrElse(???)
+  def sourceNode(rel: Var): RecordSlot = slotsFor(StartNode(rel)()).headOption.getOrElse(???)
+  def targetNode(rel: Var): RecordSlot = slotsFor(EndNode(rel)()).headOption.getOrElse(???)
+  def typeId(rel: Expr): RecordSlot = slotsFor(TypeId(rel)()).headOption.getOrElse(???)
+
+  override def toString = {
+    val s = slots
+    s"RecordHeader with ${s.size} slots: \n\t ${slots.mkString("\n\t")}"
+  }
 }
 
 object RecordHeader {

@@ -18,7 +18,7 @@ class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fix
     records.data.collect().toSet.map((r: Row) => r.get(0)) should contain("Application Developer")
     records.header.slots.size shouldBe 1
     records.header.slots.head.content.cypherType shouldBe CTString.nullable
-    records.header.slots.head.content.key should equal(Var("a.text"))
+    records.header.slots.head.content.key should equal(Var("a.text")(CTString.nullable))
   }
 
   test("expand and project") {
@@ -27,9 +27,9 @@ class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fix
     records.data.count() shouldBe 4832
     records.header.slots.size shouldBe 2
     records.header.slots(0).content.cypherType shouldBe CTString.nullable
-    records.header.slots(0).content.key should equal(Var("a.country"))
+    records.header.slots(0).content.key should equal(Var("a.country")(CTString.nullable))
     records.header.slots(1).content.cypherType shouldBe CTInteger.nullable
-    records.header.slots(1).content.key should equal(Var("m.id"))
+    records.header.slots(1).content.key should equal(Var("m.id")(CTInteger.nullable))
   }
 
   test("expand and project on full graph") {

@@ -182,53 +182,57 @@ trait SparkGraphLoading {
     }
   }
 
-  private def computeNodeFields(node: Var)(implicit context: LoadingContext): Seq[(SlotContent, StructField)] = {
+  private def computeNodeFields(in: Var)(implicit context: LoadingContext): Seq[(SlotContent, StructField)] = {
+    val node = Var(in.name)(CTNode)
+
     val schema = context.schema
     val globals = context.globals
 
     val labelFields = schema.labels.map { name =>
-      val label = HasLabel(node, globals.label(name))
-      val slot = ProjectedExpr(label, CTBoolean)
+      val label = HasLabel(node, globals.label(name))(CTBoolean)
+      val slot = ProjectedExpr(label)
       val field = StructField(SparkColumnName.of(slot), BooleanType, nullable = false)
       slot -> field
     }
     val propertyFields = schema.labels.flatMap { l =>
       schema.nodeKeys(l).map {
         case (name, t) =>
-          val property = Property(node, globals.propertyKey(name))
-          val slot = ProjectedExpr(property, t)
+          val property = Property(node, globals.propertyKey(name))(t)
+          val slot = ProjectedExpr(property)
           val field = StructField(SparkColumnName.of(slot), toSparkType(t), nullable = t.isNullable)
           slot -> field
       }
     }
-    val nodeSlot = OpaqueField(node, CTNode)
+    val nodeSlot = OpaqueField(node)
     val nodeField = StructField(SparkColumnName.of(nodeSlot), LongType, nullable = false)
     val slotField = nodeSlot -> nodeField
     Seq(slotField) ++ labelFields ++ propertyFields
   }
 
-  private def computeRelFields(rel: Var)(implicit context: LoadingContext): Seq[(SlotContent, StructField)] = {
+  private def computeRelFields(in: Var)(implicit context: LoadingContext): Seq[(SlotContent, StructField)] = {
+    val rel = Var(in.name)(CTRelationship)
+
     val schema = context.schema
     val globals = context.globals
 
     val propertyFields = schema.relationshipTypes.flatMap { typ =>
       schema.relationshipKeys(typ).map {
         case (name, t) =>
-          val property = Property(rel, globals.propertyKey(name))
-          val slot = ProjectedExpr(property, t)
+          val property = Property(rel, globals.propertyKey(name))(t)
+          val slot = ProjectedExpr(property)
           val field = StructField(SparkColumnName.of(slot), toSparkType(t), nullable = t.isNullable)
           slot -> field
       }
     }
-    val typeSlot = ProjectedExpr(TypeId(rel), CTInteger)
+    val typeSlot = ProjectedExpr(TypeId(rel)(CTInteger))
     val typeField = StructField(SparkColumnName.of(typeSlot), IntegerType, nullable = false)
 
-    val idSlot = OpaqueField(rel, CTRelationship)
+    val idSlot = OpaqueField(rel)
     val idField = StructField(SparkColumnName.of(idSlot), LongType, nullable = false)
 
-    val sourceSlot = ProjectedExpr(StartNode(rel), CTNode)
+    val sourceSlot = ProjectedExpr(StartNode(rel)(CTNode))
     val sourceField = StructField(SparkColumnName.of(sourceSlot), LongType, nullable = false)
-    val targetSlot = ProjectedExpr(EndNode(rel), CTNode)
+    val targetSlot = ProjectedExpr(EndNode(rel)(CTNode))
     val targetField = StructField(SparkColumnName.of(targetSlot), LongType, nullable = false)
 
     Seq(sourceSlot -> sourceField, idSlot -> idField,
@@ -250,14 +254,14 @@ trait SparkGraphLoading {
 
       val values = header.slots.map { s =>
         s.content.key match {
-          case Property(_, ref, _) =>
+          case Property(_, ref) =>
             val keyName = globals.propertyKey(ref).name
             val propValue = keys.get(keyName) match {
               case Some(t) if t == s.content.cypherType => props.get(keyName).orNull
               case _ => null
             }
             sparkValue(schema(s.index).dataType, propValue)
-          case HasLabel(_, ref, _) =>
+          case HasLabel(_, ref) =>
             labels(globals.label(ref).name)
           case _: Var =>
             importedNode.id()
@@ -285,7 +289,7 @@ trait SparkGraphLoading {
 
       val values = header.slots.map { s =>
         s.content.key match {
-          case Property(_, ref, _) =>
+          case Property(_, ref) =>
             val keyName = globals.propertyKey(ref).name
             val propValue = keys.get(keyName) match {
               case Some(t) if t == s.content.cypherType => props.get(keyName).orNull

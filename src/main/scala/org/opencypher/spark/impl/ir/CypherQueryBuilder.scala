@@ -5,11 +5,13 @@ import org.atnos.eff._
 import org.atnos.eff.all._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, ast}
-import org.opencypher.spark.api.expr.Expr
+import org.opencypher.spark.api.expr.{Expr, Var}
 import org.opencypher.spark.api.ir._
 import org.opencypher.spark.api.ir.block._
 import org.opencypher.spark.api.ir.pattern.{AllGiven, Pattern}
 import org.opencypher.spark.impl.CompilationStage
+import org.opencypher.spark.impl.instances.ir.block.expr._
+import org.opencypher.spark.impl.syntax.block._
 
 object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBuilderContext] {
 
@@ -58,15 +60,20 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
             val blockRegistry = context.blocks
             val after = blockRegistry.reg.headOption.map(_._1).toSet
             val block = MatchBlock[Expr](after, given, where)
+
+            implicit val globals = context.globals
+            val typedOutputs = block.outputs
+
             val (ref, reg) = blockRegistry.register(block)
-            put[R, IRBuilderContext](context.copy(blocks = reg)) >> pure[R, Vector[BlockRef]](Vector(ref))
+            val updatedContext = context.withBlocks(reg).withFields(typedOutputs)
+            put[R, IRBuilderContext](updatedContext) >> pure[R, Vector[BlockRef]](Vector(ref))
           }
         } yield refs
 
       case ast.Return(_, ast.ReturnItems(_, items), _, _, _, _) =>
         for {
-          fieldExprs <- EffMonad[R].sequence(items.map(convertReturnItem[R]).toVector)
           context <- get[R, IRBuilderContext]
+          fieldExprs <- EffMonad[R].sequence(items.map(convertReturnItem[R]).toVector)
           refs <- {
             val blockRegistry = context.blocks
             val yields = ProjectedFields(fieldExprs.toMap)
@@ -101,12 +108,8 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
       }
 
     case ast.UnaliasedReturnItem(e, t) =>
-      for {
-        expr <- convertExpr(e)
-      } yield {
-        // TODO: should this field be named t?
-        Field(expr.toString)(expr.cypherType) -> expr
-      }
+      error(IRBuilderError(s"Did not expect unnamed return item"))(Field(t)() -> Var(t)())
+
   }
 
   private def convertPattern[R: _mayFail : _hasContext](p: ast.Pattern): Eff[R, Pattern[Expr]] = {

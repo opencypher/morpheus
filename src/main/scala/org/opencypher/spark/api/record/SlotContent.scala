@@ -13,7 +13,7 @@ sealed trait SlotContent {
   def key: Expr
   def alias: Option[Var]
   def owner: Option[Var]
-  def cypherType: CypherType
+  final def cypherType: CypherType = key.cypherType
 
   def support: Traversable[Expr]
 }
@@ -22,9 +22,9 @@ sealed trait ProjectedSlotContent extends SlotContent {
   def expr: Expr
 
   override def owner = expr match {
-    case Property(v: Var, _, _) => Some(v)
-    case HasLabel(v: Var, _, _) => Some(v)
-    case HasType(v: Var, _, _) => Some(v)
+    case Property(v: Var, _) => Some(v)
+    case HasLabel(v: Var, _) => Some(v)
+    case HasType(v: Var, _) => Some(v)
     case _ => None
   }
 }
@@ -35,21 +35,20 @@ sealed trait FieldSlotContent extends SlotContent {
   def field: Var
 }
 
-final case class ProjectedExpr(expr: Expr, cypherType: CypherType) extends ProjectedSlotContent {
+final case class ProjectedExpr(expr: Expr) extends ProjectedSlotContent {
   override def key = expr
   override def alias = None
 
   override def support = Seq(expr)
 }
 
-final case class OpaqueField(field: Var, cypherType: CypherType) extends FieldSlotContent {
-  def expr = field
+final case class OpaqueField(field: Var) extends FieldSlotContent {
   override def owner = Some(field)
 
   override def support = Seq(field)
 }
 
-final case class ProjectedField(field: Var, expr: Expr, cypherType: CypherType)
+final case class ProjectedField(field: Var, expr: Expr)
   extends ProjectedSlotContent with FieldSlotContent {
 
   override def support = Seq(field, expr)

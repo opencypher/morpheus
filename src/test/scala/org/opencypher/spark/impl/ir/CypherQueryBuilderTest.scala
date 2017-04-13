@@ -5,6 +5,7 @@ import org.opencypher.spark.api.ir.block._
 import org.opencypher.spark.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.api.ir.pattern._
 import org.opencypher.spark.api.ir.{Field, QueryModel}
+import org.opencypher.spark.toVar
 
 import scala.collection.immutable.Set
 
@@ -18,7 +19,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
         case MatchBlock(_, Pattern(entities, topo), AllGiven(exprs)) =>
           entities should equal(Map(toField('a) -> EveryNode(AllOf(label("Person")))))
           topo shouldBe empty
-          exprs should equal(Set(HasLabel(toVar('a), label("Person"))))
+          exprs should equal(Set(HasLabel(toVar('a), label("Person"))()))
       }
 
       val projectRef = model.findExactlyOne {

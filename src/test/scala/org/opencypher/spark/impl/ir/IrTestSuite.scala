@@ -1,15 +1,18 @@
 package org.opencypher.spark.impl.ir
 
-import org.opencypher.spark.StdTestSuite
-import org.opencypher.spark.api.expr.{Expr, Var}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, Parameter}
+import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, symbols}
+import org.opencypher.spark.api.expr.Expr
 import org.opencypher.spark.api.ir._
 import org.opencypher.spark.api.ir.block._
 import org.opencypher.spark.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.api.ir.pattern.{AllGiven, EveryNode, Pattern}
 import org.opencypher.spark.api.record.RecordHeader
 import org.opencypher.spark.api.schema.Schema
+import org.opencypher.spark.api.types.CypherType
 import org.opencypher.spark.impl.logical.NodeScan
 import org.opencypher.spark.impl.parse.CypherParser
+import org.opencypher.spark.StdTestSuite
 
 import scala.language.implicitConversions
 
@@ -20,7 +23,6 @@ abstract class IrTestSuite extends StdTestSuite {
   val leafPlan = NodeScan('n, EveryNode, emptySig)(SolvedQueryModel.empty)
 
   implicit def toField(s: Symbol): Field = Field(s.name)()
-  implicit def toVar(s: Symbol): Var = Var(s.name)
 
   /**
     * Construct a single-block ir; the parameter block has to be a block that could be planned as a leaf.
@@ -68,9 +70,15 @@ abstract class IrTestSuite extends StdTestSuite {
   implicit class RichString(queryText: String) {
     def model: QueryModel[Expr] = ir.model
 
-    def ir: CypherQuery[Expr] = {
+    def ir(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
-      CypherQueryBuilder(stmt)(IRBuilderContext(queryText, GlobalsExtractor(stmt), Schema.empty))
+      CypherQueryBuilder(stmt)(IRBuilderContext(queryText, GlobalsExtractor(stmt), schema))
+    }
+
+    def irWithParams(params: (String, CypherType)*)(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
+      val stmt = CypherParser(queryText)(CypherParser.defaultContext)
+      val knownTypes: Map[Expression, CypherType] = params.map(p => Parameter(p._1, symbols.CTAny)(InputPosition.NONE) -> p._2).toMap
+      CypherQueryBuilder(stmt)(IRBuilderContext(queryText, GlobalsExtractor(stmt), schema, knownTypes = knownTypes))
     }
   }
 }

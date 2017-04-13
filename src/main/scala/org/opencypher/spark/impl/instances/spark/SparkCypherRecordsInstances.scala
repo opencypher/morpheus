@@ -4,7 +4,7 @@ import org.apache.spark.sql.{Column, DataFrame, Row}
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.record._
 import org.opencypher.spark.api.spark.SparkCypherRecords
-import org.opencypher.spark.api.types.{CTBoolean, CTFloat, CTInteger, CTString}
+import org.opencypher.spark.api.types._
 import org.opencypher.spark.api.value.CypherValue.Conversion._
 import org.opencypher.spark.impl.classes.Transform
 import org.opencypher.spark.impl.physical.RuntimeContext
@@ -19,7 +19,7 @@ trait SparkCypherRecordsInstances extends Serializable {
   case class cypherFilter(header: RecordHeader, expr: Expr)
                          (implicit context: RuntimeContext) extends (Row => Boolean) {
     def apply(row: Row) = expr match {
-      case Equals(p: Property, c: Const, _) =>
+      case Equals(p: Property, c: Const) =>
         val slot = header.slotsFor(p).head
         val rhs = context.constants(c.ref)
 
@@ -42,7 +42,7 @@ trait SparkCypherRecordsInstances extends Serializable {
    */
   def sqlFilter(header: RecordHeader, expr: Expr, df: DataFrame): Option[Column] = {
     expr match {
-      case Not(Equals(v1: Var, v2: Var, _), _) =>
+      case Not(Equals(v1: Var, v2: Var)) =>
         val lhsSlot = header.slotFor(v1)
         val rhsSlot = header.slotFor(v2)
         Some(new Column(df.columns(lhsSlot.index)) =!= new Column(df.columns(rhsSlot.index)))
@@ -55,7 +55,7 @@ trait SparkCypherRecordsInstances extends Serializable {
             case _ => throw new IllegalStateException("This should never happen")
           }
         }
-      case HasType(rel, ref, _) =>
+      case HasType(rel, ref) =>
         val idSlot = header.typeId(rel)
         Some(new Column(df.columns(idSlot.index)) === ref.id)
       case h: HasLabel =>
@@ -67,44 +67,70 @@ trait SparkCypherRecordsInstances extends Serializable {
 
   implicit def sparkCypherRecordsTransform(implicit context: RuntimeContext) = new Transform[SparkCypherRecords] with Serializable {
 
-    override def filter(subject: SparkCypherRecords, expr: Expr): SparkCypherRecords = {
+    override def filter(subject: SparkCypherRecords, expr: Expr, nextHeader: RecordHeader): SparkCypherRecords = {
 
-      val newData = sqlFilter(subject.header, expr, subject.data) match {
+      val filteredRows = sqlFilter(nextHeader, expr, subject.data) match {
         case Some(sqlExpr) =>
           subject.data.where(sqlExpr)
         case None =>
-          subject.data.filter(cypherFilter(subject.header, expr))
+          subject.data.filter(cypherFilter(nextHeader, expr))
       }
 
+      // TODO
+      // we want to select the columns in the data that correspond to the slots in the nextHeader
+      // we don't know which indices these are, as we have no correlation between oldHeader and nextHeader
+      // we're trying below with a name-based lookup, but it doesn't work in all cases
+
+      val selectedColumns = nextHeader.slots.map { c =>
+        val oldCol = filteredRows.col(context.columnName(c))
+        oldCol
+      }
+
+      val bar = nextHeader.slots.map { s =>
+        val foo = subject.header.slotsFor(s.content.key)
+        foo
+      }
+
+      val nextData = filteredRows.select(selectedColumns: _*)
+
       new SparkCypherRecords {
-        override def data = newData
-        override def header = subject.header
+        override def data = nextData
+        override def header = nextHeader
       }
     }
 
     // TODO: Correctly handle aliasing in the header
-    override def select(subject: SparkCypherRecords, fields: Set[Var]): SparkCypherRecords = {
-
-      val newHeader = subject.header.slots.foldLeft(RecordHeader.empty) {
-        case (acc, RecordSlot(_, f: OpaqueField)) if fields.contains(f.key) => acc.update(addContent(f))._1
-        case (acc, RecordSlot(_, f: ProjectedField)) if fields.contains(f.key) => acc.update(addContent(f))._1
-        case (acc, RecordSlot(_, f)) =>
-          f.owner match {
-            case Some(owner) if fields(owner) => acc.update(addContent(f))._1
-            case _ => acc
-          }
-        case (acc, _) => acc // drop unrelated projected exprs
-      }
+    override def select(subject: SparkCypherRecords, fields: Set[Var], nextHeader: RecordHeader): SparkCypherRecords = {
 
       val data = subject.data
-      val columns = newHeader.slots.map { s =>
+      val columns = nextHeader.slots.map { s =>
         data.col(data.columns(subject.header.indexOf(s.content).get))
       }
       val newData = subject.data.select(columns: _*)
 
       new SparkCypherRecords {
         override def data = newData
-        override def header = newHeader
+        override def header = nextHeader
+      }
+    }
+
+    override def alias2(subject: SparkCypherRecords, expr: Expr, v: Var, nextHeader: RecordHeader): SparkCypherRecords = {
+      val oldSlot = subject.header.slotsFor(expr).head
+
+      val newSlot = nextHeader.slotsFor(v).head
+
+      val oldColumnName = context.columnName(oldSlot)
+      val newColumnName = context.columnName(newSlot)
+
+      val nextData = if (subject.data.columns.contains(oldColumnName)) {
+        subject.data.withColumnRenamed(oldColumnName, newColumnName)
+      } else {
+        throw new IllegalStateException(s"Wanted to rename column $oldColumnName, but it was not present!")
+      }
+
+      new SparkCypherRecords {
+        override def data = nextData
+        override def header = nextHeader
       }
     }
 

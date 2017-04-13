@@ -7,7 +7,7 @@ class GlobalsExtractorTest extends StdTestSuite with Neo4jAstTestSupport {
 
   test("extracts labels") {
     extracting("n:Foo") shouldRegisterLabel "Foo"
-    extracting("true OR n:Foo AND r:Bar") shouldRegisterLabels ("Foo", "Bar")
+    extracting("$p OR n:Foo AND r:Bar") shouldRegisterLabels ("Foo", "Bar")
     extracting("(:Foo)-->(:Bar)") shouldRegisterLabels ("Foo", "Bar")
   }
 

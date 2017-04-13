@@ -83,12 +83,12 @@ object SparkCypherGraph {
 
     override def nodes(v: Var): SparkCypherGraph = copy(
       model = QueryModel.nodes(v.name, space.globals),
-      details = SparkCypherRecords.empty(graphSpace.session, RecordHeader.from(OpaqueField(v, CTNode)))
+      details = SparkCypherRecords.empty(graphSpace.session, RecordHeader.from(OpaqueField(v)))
     )
 
     override def relationships(v: Var): SparkCypherGraph = copy(
       model = QueryModel.relationships(v.name, space.globals),
-      details = SparkCypherRecords.empty(graphSpace.session, RecordHeader.from(OpaqueField(v, CTRelationship)))
+      details = SparkCypherRecords.empty(graphSpace.session, RecordHeader.from(OpaqueField(v)))
     )
 
     override def space = graphSpace

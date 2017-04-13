@@ -4,14 +4,14 @@ import org.apache.spark.sql.types._
 import org.opencypher.spark.api.expr.Var
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkGraphSpace}
-import org.opencypher.spark.api.types.{CTAny, CTInteger, CTString}
+import org.opencypher.spark.api.types._
 import org.opencypher.spark.{StdTestSuite, TestSession}
 
 class SparkGraphSpaceTest extends StdTestSuite with TestSession.Fixture {
 
   implicit class RichGraph(val graph: SparkCypherGraph) {
-    def nodes() = graph.nodes(Var("n"))
-    def rels() = graph.relationships(Var("r"))
+    def nodes() = graph.nodes(Var("n")(CTNode))
+    def rels() = graph.relationships(Var("r")(CTRelationship))
   }
 
   test("import nodes from neo") {

@@ -5,8 +5,8 @@ import org.opencypher.spark_legacy.benchmark.Converters
 import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkGraphSpace}
 import org.opencypher.spark.api.value.CypherValue
 import org.opencypher.spark.impl.classes.Cypher
-import org.opencypher.spark.impl.flat.FlatPlanner
-import org.opencypher.spark.impl.ir.{CypherQueryBuilder, GlobalsExtractor, IRBuilderContext}
+import org.opencypher.spark.impl.flat.{FlatPlanner, FlatPlannerContext}
+import org.opencypher.spark.impl.ir.{BlockRegistry, CypherQueryBuilder, GlobalsExtractor, IRBuilderContext}
 import org.opencypher.spark.impl.logical.{LogicalPlanner, LogicalPlannerContext}
 import org.opencypher.spark.impl.parse.CypherParser
 import org.opencypher.spark.impl.physical.{PhysicalPlanner, PhysicalPlannerContext}
@@ -21,8 +21,8 @@ trait SparkCypherInstances {
     override type Data = DataFrame
 
     private val logicalPlanner = new LogicalPlanner()
-    private val physicalPlanner = new FlatPlanner()
-    private val graphPlanner = new PhysicalPlanner()
+    private val flatPlanner = new FlatPlanner()
+    private val physicalPlanner = new PhysicalPlanner()
     private val parser = CypherParser
 
     override def cypher(graph: Graph, query: String, parameters: Map[String, CypherValue]): Graph = {
@@ -35,23 +35,25 @@ trait SparkCypherInstances {
         case (k, v) => globals.constant(k) -> v
       }
 
+      val paramsAndTypes = GlobalsExtractor.paramWithTypes(stmt)
+
       print("IR ... ")
-      val ir = CypherQueryBuilder(stmt)(IRBuilderContext(query, globals, graph.schema))
+      val ir = CypherQueryBuilder(stmt)(IRBuilderContext(query, globals, graph.schema, BlockRegistry.empty, paramsAndTypes))
       println("Done!")
 
       print("Logical plan ... ")
       val logicalPlan = logicalPlanner(ir)(LogicalPlannerContext(graph.schema, globals))
       println("Done!")
 
-//      print("Physical plan ...")
-//      val physicalPlan = physicalPlanner.plan(logicalPlan)(PhysicalPlannerContext(graph.schema, globals))
-//      println("Done!")
-
-      print("Graph plan ...")
-      val graphPlan = graphPlanner(logicalPlan)(PhysicalPlannerContext(graph, globals, constants))
+      print("Flat plan ... ")
+      val flatPlan = flatPlanner(logicalPlan)(FlatPlannerContext(graph.schema, globals))
       println("Done!")
 
-      graphPlan
+      print("Physical plan ... ")
+      val physicalPlan = physicalPlanner(flatPlan)(PhysicalPlannerContext(graph, globals, constants))
+      println("Done!")
+
+      physicalPlan
     }
   }
 }

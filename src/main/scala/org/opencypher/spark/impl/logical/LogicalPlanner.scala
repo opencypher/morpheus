@@ -29,7 +29,7 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
     val plan = planBlock(first, model, None)
 
     // always plan a select at the top
-    val fields = block.binds.fieldsOrder.map(f => Var(f.name))
+    val fields = block.binds.fieldsOrder.map(f => Var(f.name)(f.cypherType))
     producer.planSelect(fields.toSet, plan)
     // TODO: plan reorder for enforcing order and renaming
   }
@@ -81,7 +81,7 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
     exprs.foldLeft(in) {
       case (acc, (f, p: Property)) =>
         val propType = propertyType(p, in)
-        producer.projectField(f, p, propType, acc)
+        producer.projectField(f, p, acc)
       case (acc, (f, v: Var)) => acc
       case (_, x) => throw new UnsupportedOperationException(s"can not project $x")
     }
@@ -121,15 +121,17 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
 
   private def planFilter(in: LogicalOperator, where: AllGiven[Expr])(implicit context: LogicalPlannerContext) = {
     val filtersAndProjs = where.elts.foldLeft(in) {
-      case (acc, eq@Equals(expr1, expr2, _)) =>
+      case (acc, eq@Equals(expr1, expr2)) =>
         val project1 = planInnerExpr(expr1, acc)
         val project2 = planInnerExpr(expr2, project1)
         producer.planFilter(eq, project2)
-      case (acc, h: HasLabel) =>
+      case (acc, h@HasLabel(_: Var, l)) =>
         producer.planFilter(h, acc)
-      case (acc, not@Not(expr, _)) =>
+      case (acc, not@Not(expr)) =>
         val project = planInnerExpr(expr, acc)
         producer.planFilter(not, project)
+      case (acc, t: TrueLit) =>
+        producer.planFilter(t, acc) // optimise away this one somehow... currently we do that in PhysicalPlanner
       case (_, x) => throw new NotImplementedError(s"Not yet able to plan filter using predicate $x")
     }
 
@@ -142,9 +144,9 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
       case _: Var => in
       case p: Property =>
         val propType = propertyType(p, in)
-        val project = producer.projectExpr(p, propType, in)
+        val project = producer.projectExpr(p, in)
         project
-      case Equals(expr1, expr2, _) =>
+      case Equals(expr1, expr2) =>
         val project1 = planInnerExpr(expr1, in)
         planInnerExpr(expr2, project1)
       case x => throw new NotImplementedError(s"Not yet able to plan projection for inner expression $x")

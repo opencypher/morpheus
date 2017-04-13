@@ -1,6 +1,6 @@
 package org.opencypher.spark.impl.logical
 
-import org.opencypher.spark.api.types.{CTAny, CTFloat, CTString}
+import org.opencypher.spark.api.types._
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir._
 import org.opencypher.spark.api.ir.block._
@@ -34,29 +34,29 @@ class LogicalPlannerTest extends IrTestSuite {
   val emptySqm = SolvedQueryModel.empty[Expr]
 
   test("convert project block") {
-    val fields = ProjectedFields[Expr](Map(toField('a) -> Property('n, PropertyKeyRef(0))))
+    val fields = ProjectedFields[Expr](Map(toField('a) -> Property('n, PropertyKeyRef(0))(CTFloat)))
     val block = project(fields)
 
     plan(irWithLeaf(block)) should equalWithoutResult(
-      Project(ProjectedField('a, Property('n, PropertyKeyRef(0)), CTAny.nullable),
+      Project(ProjectedField('a, Property('n, PropertyKeyRef(0))(CTFloat)),
         leafPlan)(emptySqm.withFields('n, 'a))
     )
   }
 
   test("plan query") {
-    val ir = "MATCH (a:Administrator)-[r]->(g:Group) WHERE g.name = 'Group-1' RETURN a.name".ir
+    val ir = "MATCH (a:Administrator)-[r]->(g:Group) WHERE g.name = $foo RETURN a.name".irWithParams("foo" -> CTString)
 
     val globals = ir.model.globals
 
     plan(ir, globals) should equal(
-      Select(Set(Var("a.name")),
-        Project(ProjectedField(Var("a.name"), Property(Var("a"), globals.propertyKey("name")), CTAny.nullable),
-          Filter(Equals(Property(Var("g"), globals.propertyKey("name")), Const(ConstantRef(0))),
-            Project(ProjectedExpr(Property(Var("g"), globals.propertyKey("name")), CTAny.nullable),
-              Filter(HasLabel(Var("g"), globals.label("Group")),
-                Filter(HasLabel(Var("a"), globals.label("Administrator")),
-                  ExpandSource(Var("a"), Var("r"), EveryRelationship, Var("g"),
-                    NodeScan(Var("a"), EveryNode)(emptySqm)
+      Select(Set(Var("a.name")(CTVoid)),
+        Project(ProjectedField(Var("a.name")(CTVoid), Property(Var("a")(CTNode("Administrator")), globals.propertyKey("name"))(CTVoid)),
+          Filter(Equals(Property(Var("g")(CTNode("Group")), globals.propertyKey("name"))(CTVoid), Const(ConstantRef(0))(CTString))(CTBoolean),
+            Project(ProjectedExpr(Property(Var("g")(CTNode("Group")), globals.propertyKey("name"))(CTVoid)),
+              Filter(HasLabel(Var("g")(CTNode), globals.label("Group"))(CTBoolean),
+                Filter(HasLabel(Var("a")(CTNode), globals.label("Administrator"))(CTBoolean),
+                  ExpandSource(Var("a")(CTNode), Var("r")(CTRelationship), EveryRelationship, Var("g")(CTNode),
+                    NodeScan(Var("a")(CTNode), EveryNode)(emptySqm)
                   )(emptySqm)
                 )(emptySqm)
               )(emptySqm)
@@ -68,22 +68,23 @@ class LogicalPlannerTest extends IrTestSuite {
   }
 
   test("plan query with type information") {
-    val ir = "MATCH (a:Administrator)-[r]->(g:Group) WHERE g.name = 'Group-1' RETURN a.name".ir
-
-    val globals = ir.model.globals
-    val schema = Schema.empty
+    implicit val schema = Schema.empty
       .withNodeKeys("Group")("name" -> CTString)
       .withNodeKeys("Administrator")("name" -> CTFloat)
 
+    val ir = "MATCH (a:Administrator)-[r]->(g:Group) WHERE g.name = $foo RETURN a.name".irWithParams("foo" -> CTString)
+
+    val globals = ir.model.globals
+
     plan(ir, globals, schema) should equal(
-      Select(Set(Var("a.name")),
-        Project(ProjectedField(Var("a.name"), Property(Var("a"), globals.propertyKey("name")), CTFloat),
-          Filter(Equals(Property(Var("g"), globals.propertyKey("name")), Const(ConstantRef(0))),
-            Project(ProjectedExpr(Property(Var("g"), globals.propertyKey("name")), CTString),
-              Filter(HasLabel(Var("g"), globals.label("Group")),
-                Filter(HasLabel(Var("a"), globals.label("Administrator")),
-                  ExpandSource(Var("a"), Var("r"), EveryRelationship, Var("g"),
-                    NodeScan(Var("a"), EveryNode)(emptySqm)
+      Select(Set(Var("a.name")(CTFloat)),
+        Project(ProjectedField(Var("a.name")(CTFloat), Property(Var("a")(CTNode("Administrator")), globals.propertyKey("name"))(CTFloat)),
+          Filter(Equals(Property(Var("g")(CTNode("Group")), globals.propertyKey("name"))(CTString), Const(ConstantRef(0))(CTString))(CTBoolean),
+            Project(ProjectedExpr(Property(Var("g")(CTNode("Group")), globals.propertyKey("name"))(CTString)),
+              Filter(HasLabel(Var("g")(CTNode), globals.label("Group"))(CTBoolean),
+                Filter(HasLabel(Var("a")(CTNode), globals.label("Administrator"))(CTBoolean),
+                  ExpandSource(Var("a")(CTNode), Var("r")(CTRelationship), EveryRelationship, Var("g")(CTNode),
+                    NodeScan(Var("a")(CTNode), EveryNode)(emptySqm)
                   )(emptySqm)
                 )(emptySqm)
               )(emptySqm)
@@ -94,16 +95,17 @@ class LogicalPlannerTest extends IrTestSuite {
     )
   }
 
+  // TODO: Doesn't work with new typing scheme
   test("plan query with negation") {
-    val ir = "MATCH (a) WHERE NOT 1 = false RETURN a.prop".ir
+    val ir = "MATCH (a) WHERE NOT $p1 = $p2 RETURN a.prop".irWithParams("p1" -> CTInteger, "p2" -> CTBoolean)
 
     val globals = ir.model.globals
 
     plan(ir, globals) should equal(
-      Select(Set(Var("a.prop")),
-        Project(ProjectedField(Var("a.prop"), Property(Var("a"), globals.propertyKey("prop")), CTAny.nullable),
-          Filter(Not(Equals(Const(globals.constant("  AUTOINT0")), Const(globals.constant("  AUTOBOOL1")))),
-            NodeScan(Var("a"), EveryNode)(emptySqm)
+      Select(Set(Var("a.prop")(CTVoid)),
+        Project(ProjectedField(Var("a.prop")(CTVoid), Property(Var("a")(CTNode), globals.propertyKey("prop"))(CTVoid)),
+          Filter(Not(Equals(Const(globals.constant("p1"))(CTInteger), Const(globals.constant("p2"))(CTBoolean))(CTBoolean))(CTBoolean),
+            NodeScan(Var("a")(CTNode), EveryNode)(emptySqm)
           )(emptySqm)
         )(emptySqm)
       )(emptySqm)

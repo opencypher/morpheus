@@ -1,14 +1,15 @@
 package org.opencypher.spark.impl.classes
 
 import org.opencypher.spark.api.expr.{Expr, Var}
-import org.opencypher.spark.api.record.{ProjectedSlotContent, RecordSlot}
+import org.opencypher.spark.api.record.{ProjectedSlotContent, RecordHeader, RecordSlot}
 
 import scala.language.implicitConversions
 
 trait Transform[T] {
-  def filter(subject: T, expr: Expr): T
-  def select(subject: T, fields: Set[Var]): T
+  def filter(subject: T, expr: Expr, nextHeader: RecordHeader): T
+  def select(subject: T, fields: Set[Var], nextHeader: RecordHeader): T
   def project(subject: T, it: ProjectedSlotContent): T
+  def alias2(subject: T, expr: Expr, v: Var, nextHeader: RecordHeader): T
   def join(subject: T, other: T)(lhs: RecordSlot, rhs: RecordSlot): T
 }
 

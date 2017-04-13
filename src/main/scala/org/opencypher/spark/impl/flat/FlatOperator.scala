@@ -31,7 +31,6 @@ final case class Alias(expr: Expr, alias: Var, in: FlatOperator, header: RecordH
   extends StackingFlatOperator {
 }
 
-
 final case class ExpandSource(source: Var, rel: Var, types: EveryRelationship, target: Var, in: FlatOperator, header: RecordHeader)
   extends StackingFlatOperator {
 }

@@ -11,7 +11,7 @@ import org.opencypher.spark.impl.syntax.block._
 class TypedMatchBlockTest extends IrTestSuite {
 
   test("computes detailed type of pattern variables") {
-    implicit val (block, globals)  = matchBlock("MATCH (n:Person:Foo)-[r:TYPE]->(m) RETURN n")
+    implicit val (block, globals) = matchBlock("MATCH (n:Person:Foo)-[r:TYPE]->(m) RETURN n")
 
     block.outputs.map(_.toTypedTuple) should equal(Set(
       "n" -> CTNode("Person", "Foo"),

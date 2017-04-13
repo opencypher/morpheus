@@ -1,11 +1,11 @@
 package org.opencypher.spark.impl.record
 
-import cats.Monad
-import cats.data.State
+import cats.{Eval, Monad}
+import cats.data.{State, StateT}
 import cats.data.State.{get, set}
 import cats.instances.all._
 import org.opencypher.spark.api.types._
-import org.opencypher.spark.api.expr.{Expr, Var}
+import org.opencypher.spark.api.expr.{Expr, HasLabel, Property, Var}
 import org.opencypher.spark.api.record._
 import org.opencypher.spark.impl.spark.SparkColumnName
 import org.opencypher.spark.impl.syntax.expr._
@@ -38,8 +38,15 @@ final case class InternalHeader protected[spark](
   def slots: IndexedSeq[RecordSlot] = cachedSlots
   def fields: Set[Var] = cachedFields
 
-  def slotsFor(expr: Expr, cypherType: CypherType): Seq[RecordSlot] =
-    slotsFor(expr).filter(_.content.cypherType == cypherType)
+  def slotsByName(name: String): Seq[RecordSlot] = {
+    val filtered = exprSlots.filterKeys {
+      case inner: Var => inner.name == name
+      case Property(v: Var, _) => v.name == name
+      case HasLabel(v: Var, _) => v.name == name
+      case _ => false
+    }
+    filtered.values.headOption.getOrElse(Vector.empty).flatMap(ref => slotContents.lookup(ref).map(RecordSlot(ref, _)))
+  }
 
   def slotsFor(expr: Expr): Seq[RecordSlot] =
     exprSlots.getOrElse(expr, Vector.empty).flatMap(ref => slotContents.lookup(ref).map(RecordSlot(ref, _)))
@@ -53,7 +60,7 @@ final case class InternalHeader protected[spark](
 
   def mandatory(slot: RecordSlot) = slot.content match {
     case _: FieldSlotContent => slot.content.cypherType.isMaterial
-    case ProjectedExpr(expr, cypherType) => cypherType.isMaterial && slotsFor(expr).size <=1
+    case p@ProjectedExpr(expr) => p.cypherType.isMaterial && slotsFor(expr).size <=1
   }
 
   private def computeColumnName(slot: RecordSlot): String = SparkColumnName.of(slot)
@@ -86,7 +93,7 @@ object InternalHeader {
       header <- get[InternalHeader];
       result <- {
         val existingSlot =
-          for (slot <- header.slotsFor(content.expr, content.cypherType).headOption)
+          for (slot <- header.slotsFor(content.expr).headOption)
           yield pureState[AdditiveUpdateResult[RecordSlot]](Found(slot))
         existingSlot.getOrElse {
             header.slotContents.insert(content) match {
@@ -98,14 +105,34 @@ object InternalHeader {
     )
     yield result
 
-  private def addOpaqueField(addedContent: OpaqueField): State[InternalHeader, AdditiveUpdateResult[RecordSlot]] =
-    addField(addedContent)
+  private def addOpaqueField(addedContent: OpaqueField): State[InternalHeader, AdditiveUpdateResult[RecordSlot]] = {
+    for {
+      header <- get[InternalHeader]
+      result <- {
+        val existingSlots = header.slotsByName(addedContent.field.name)
+        val replacement = existingSlots.headOption.flatMap[State[InternalHeader, AdditiveUpdateResult[RecordSlot]]] {
+          case RecordSlot(ref, f: OpaqueField) if f == addedContent =>
+            Some(pureState(Found(slot(header, ref))))
+          case RecordSlot(ref, _: OpaqueField) =>
+            Some(header.slotContents.update(ref, addedContent) match {
+              case Left(conflict) =>
+                pureState(FailedToAdd(slot(header, conflict), Added(RecordSlot(ref, addedContent))))
+              case Right(newSlots) =>
+                addSlotContent(Some(newSlots), ref, addedContent).map(added => Replaced(slot(header, ref), added.it))
+            })
+          case _ => None
+        }
+
+        replacement.getOrElse(addField(addedContent))
+      }
+    } yield result
+  }
 
   private def addProjectedField(addedContent: ProjectedField): State[InternalHeader, AdditiveUpdateResult[RecordSlot]] =
     for(
       header <- get[InternalHeader];
       result <- {
-        val existingSlot = header.slotsFor(addedContent.expr, addedContent.cypherType).headOption
+        val existingSlot = header.slotsFor(addedContent.expr).headOption
         existingSlot.flatMap[State[InternalHeader, AdditiveUpdateResult[RecordSlot]]] {
           case RecordSlot(ref, _: ProjectedExpr) =>
             Some(header.slotContents.update(ref, addedContent) match {
@@ -146,7 +173,12 @@ object InternalHeader {
             val newExprSlots = addedContent.support.foldLeft(header.exprSlots) {
               case (slots, expr) => addExprSlots(slots, expr, ref)
             }
-            val newFields = addedContent.alias.map(header.cachedFields + _).getOrElse(header.cachedFields)
+            val newFields = addedContent.alias.map { alias =>
+              (header.cachedFields + alias).map {
+                case v if v.name == alias.name => alias
+                case v => v
+              }
+            }.getOrElse(header.cachedFields)
             val newHeader = InternalHeader(newSlots, newExprSlots, newFields)
             set[InternalHeader](newHeader).map(_ => Added(RecordSlot(ref, addedContent)))
 
@@ -204,13 +236,15 @@ object InternalHeader {
           case hd :: tl if !removedSlots.contains(hd) =>
             hd.content match {
               case s: FieldSlotContent =>
-                val newFields = removedFields + s.field
+                val newRemovedFields = removedFields + s.field
                 val (nonDepending, depending) = remaining.partition {
-                  case RecordSlot(_, c: ProjectedSlotContent) => (c.expr.dependencies intersect newFields).isEmpty
+                  // a slot is a dependency of itself
+                  case slot if slot == hd => false
+                  case RecordSlot(_, c: ProjectedSlotContent) => (c.expr.dependencies intersect newRemovedFields).isEmpty
                   case _ => true
                 }
                 val newRemoved = depending.toList :: tlList
-                removeDependencies(newRemoved, nonDepending, newFields, removedSlots + hd)
+                removeDependencies(newRemoved, nonDepending, newRemovedFields, removedSlots + hd)
               case _ =>
                 removeDependencies(tlList, remaining - hd, removedFields, removedSlots + hd)
             }

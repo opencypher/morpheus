@@ -516,13 +516,13 @@ sealed trait CypherType extends Serializable {
   // largest sub type of this type that does not contain a wildcard
   def wildcardErasedSubType: CypherType with DefiniteCypherType
 
-  // join == union type == smallest shared super type
+  /** join == union type == smallest shared super type */
   final def join(other: CypherType): CypherType = {
     val joined = self.material joinMaterially other.material
     if (self.isNullable || other.isNullable) joined.nullable else joined
   }
 
-  // meet == intersection type == largest shared sub type
+  /** meet == intersection type == largest shared sub type */
   final def meet(other: CypherType): CypherType = {
     val met = self.material meetMaterially other.material
     if (self.isNullable && other.isNullable) met.nullable else met

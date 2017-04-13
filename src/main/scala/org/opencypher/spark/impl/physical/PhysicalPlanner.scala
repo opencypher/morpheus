@@ -2,47 +2,47 @@ package org.opencypher.spark.impl.physical
 
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.global.{ConstantRef, GlobalsRegistry}
-import org.opencypher.spark.api.ir.pattern.AllGiven
 import org.opencypher.spark.api.spark.SparkCypherGraph
 import org.opencypher.spark.api.value.CypherValue
-import org.opencypher.spark.impl.{DirectCompilationStage, logical}
+import org.opencypher.spark.impl.flat.FlatOperator
+import org.opencypher.spark.impl.flat
+import org.opencypher.spark.impl.DirectCompilationStage
 
 case class PhysicalPlannerContext(graph: SparkCypherGraph, globals: GlobalsRegistry, constants: Map[ConstantRef, CypherValue])
 
 class PhysicalPlanner
-  extends DirectCompilationStage[logical.LogicalOperator, SparkCypherGraph, PhysicalPlannerContext] {
+  extends DirectCompilationStage[FlatOperator, SparkCypherGraph, PhysicalPlannerContext] {
 
-  def process(logicalPlan: logical.LogicalOperator)(implicit context: PhysicalPlannerContext): SparkCypherGraph = {
+  def process(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext): SparkCypherGraph = {
 
-    val producer = new GraphProducer(RuntimeContext(context.constants))
+    val producer = new GraphProducer(RuntimeContext(context.constants, context.globals))
 
     import producer._
 
-    def innerPlan(logicalPlan: logical.LogicalOperator): SparkCypherGraph =
-      logicalPlan match {
-        case logical.Select(fields, in, _) =>
-          innerPlan(in).select(fields)
+    def innerPlan(flatPlan: FlatOperator): SparkCypherGraph =
+      flatPlan match {
+        case flat.Select(fields, in, header) =>
+          innerPlan(in).select(fields, header)
 
-        case logical.NodeScan(v, every, _) =>
+        case flat.NodeScan(v, labels, header) =>
           context.graph.allNodes(v)
 
-        case logical.Project(it, in, _) =>
-          innerPlan(in).project(it)
+        case flat.Alias(expr, alias, in, header) =>
+          innerPlan(in).alias(expr, alias, header)
 
-        case logical.Filter(expr, in, _) => expr match {
+        case flat.Filter(expr, in, header) => expr match {
           // TODO: Is it justified to treat labels separately?
-          case HasLabel(n: Var, ref, _) =>
-            innerPlan(in).labelFilter(n, AllGiven(Set(ref)))
+          case TrueLit() => innerPlan(in)
           case e =>
-            innerPlan(in).filter(e)
+            innerPlan(in).filter(e, header)
         }
 
         // MATCH (a)-[r]->(b) => MATCH (a), (b), (a)-[r]->(b)
-        case logical.ExpandSource(source, rel, types, target, in, _) =>
+        case flat.ExpandSource(source, rel, types, target, in, header) =>
           val lhs = innerPlan(in)
           // TODO: where is the node label info? We could plan a filter here
           val nodeRhs = context.graph.allNodes(target)
-          val relRhs = context.graph.allRelationships(rel).typeFilter(rel, types.relTypes)
+          val relRhs = context.graph.allRelationships(rel).typeFilter(rel, types.relTypes, header)
 
           val rhs = relRhs.joinTarget(nodeRhs).on(rel)(target)
           val expanded = lhs.expandSource(rhs).on(source)(rel)
@@ -52,6 +52,6 @@ class PhysicalPlanner
           throw new NotImplementedError(s"Can't plan operator $x yet")
       }
 
-    innerPlan(logicalPlan)
+    innerPlan(flatPlan)
   }
 }

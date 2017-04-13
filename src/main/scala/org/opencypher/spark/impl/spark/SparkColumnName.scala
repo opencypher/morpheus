@@ -10,10 +10,10 @@ object SparkColumnName {
 
   def of(slot: SlotContent): String = {
     val builder = slot match {
-      case ProjectedExpr(expr, _) => new NameBuilder() += None += expr.toString
+      case ProjectedExpr(expr) => new NameBuilder() += None += expr.withoutType
       case fieldContent: FieldSlotContent => new NameBuilder() += fieldContent.field.name
     }
-    builder += slot.cypherType.material.name
+//    builder += slot.cypherType.material.name
 
     builder.result()
   }
@@ -88,7 +88,7 @@ object SparkColumnName {
       case '$' => "_dollar_"
       case '?' => "_query_"
       case '!' => "_exclamation_"
-      case ':' => "_colon_"
+      case ':' => ":"
       case ';' => "_semicolon_"
       case '-' => "_dash_"
       case '+' => "_plus_"
