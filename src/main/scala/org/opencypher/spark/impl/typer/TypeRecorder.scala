@@ -7,7 +7,7 @@ import org.opencypher.spark.api.types.CypherType
 
 import scala.annotation.tailrec
 
-final case class TypeRecorder(recordedTypes: Seq[(Ref[Expression], CypherType)]) {
+final case class TypeRecorder(recordedTypes: List[(Ref[Expression], CypherType)]) {
 
   def toMap: Map[Ref[Expression], CypherType] = toMap(Map.empty, recordedTypes)
 
@@ -26,6 +26,18 @@ final case class TypeRecorder(recordedTypes: Seq[(Ref[Expression], CypherType)])
 }
 
 object TypeRecorder {
+
+  def from(tuples: List[(Expression, CypherType)]): TypeRecorder = {
+    TypeRecorder(tuples.map {
+      case (e, t) => Ref(e) -> t
+    })
+  }
+
+  def single(entry: (Expression, CypherType)): TypeRecorder = {
+    val (expr, cypherType) = entry
+    TypeRecorder(List(Ref(expr) -> cypherType))
+  }
+
   implicit object recorderSemigroup extends Semigroup[TypeRecorder] {
     override def combine(x: TypeRecorder, y: TypeRecorder): TypeRecorder = {
       TypeRecorder(x.recordedTypes ++ y.recordedTypes)

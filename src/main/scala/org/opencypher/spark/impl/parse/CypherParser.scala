@@ -26,6 +26,7 @@ trait CypherParser extends CompilationStage[String, Statement, BaseContext] {
 
   protected val pipeLine =
     CompilationPhases.parsing(RewriterStepSequencer.newPlain, Forced) andThen
-    CompilationPhases.lateAstRewriting
+    CompilationPhases.lateAstRewriting andThen sparkCypherRewriting
+
 }
 

@@ -11,6 +11,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.types.CypherType.joinMonoid
 import org.opencypher.spark.api.types._
+import org.opencypher.spark.impl.parse.RetypingPredicate
 
 import scala.util.Try
 
@@ -32,27 +33,30 @@ import scala.util.Try
  */
 final case class SchemaTyper(schema: Schema) {
 
-  def infer(expr: Expression, ctx: TyperContext = TyperContext.empty)
+  def infer(expr: Expression, tracker: TypeTracker = TypeTracker.empty)
   : Either[NonEmptyList[TyperError], TyperResult[CypherType]] =
-    SchemaTyper.processInContext[TyperStack[CypherType]](expr, ctx).run(schema)
+    SchemaTyper.processInContext[TyperStack[CypherType]](expr, tracker).run(schema)
 
-  def inferOrThrow(expr: Expression, ctx: TyperContext = TyperContext.empty)
+  def inferOrThrow(expr: Expression, tracker: TypeTracker = TypeTracker.empty)
   : TyperResult[CypherType] =
-    SchemaTyper.processInContext[TyperStack[CypherType]](expr, ctx).runOrThrow(schema)
+    SchemaTyper.processInContext[TyperStack[CypherType]](expr, tracker).runOrThrow(schema)
 }
 
 object SchemaTyper {
 
-  def processInContext[R: _hasSchema : _keepsErrors : _hasContext](expr: Expression, ctx: TyperContext)
+  def processInContext[R: _hasSchema : _keepsErrors : _hasTracker : _logsTypes](expr: Expression, tracker: TypeTracker)
   : Eff[R, CypherType] = for {
-    _ <- put[R, TyperContext](ctx)
+    _ <- put[R, TypeTracker](tracker)
     result <- process[R](expr)
   } yield result
 
-  def process[R: _hasSchema : _keepsErrors : _hasContext](expr: Expression): Eff[R, CypherType] = expr match {
+  def process[R: _hasSchema : _keepsErrors : _hasTracker : _logsTypes](expr: Expression): Eff[R, CypherType] = expr match {
 
     case _: Variable | _: Parameter =>
-      typeOf[R](expr)
+      for {
+        t <- typeOf[R](expr)
+        _ <- recordType[R](expr -> t)
+      } yield t
 
     case Property(v, PropertyKeyName(name)) =>
       for {
@@ -61,14 +65,14 @@ object SchemaTyper {
         result <- varTyp.material match {
           case CTNode(labels) =>
             val keys = labels.collect { case (k, true) => k }.map(schema.nodeKeys).reduce(_ ++ _)
-            updateTyping(expr -> keys.getOrElse(name, CTVoid).asNullableAs(varTyp))
+            recordType(v -> varTyp) >> recordAndUpdate(expr -> keys.getOrElse(name, CTVoid))
 
           case CTRelationship(types) =>
             val keys = types.map(schema.relationshipKeys).reduce(_ ++ _)
-            updateTyping(expr -> keys.getOrElse(name, CTVoid).asNullableAs(varTyp))
+            recordType(v -> varTyp) >> recordAndUpdate(expr -> keys.getOrElse(name, CTVoid))
 
           case CTMap =>
-            updateTyping(expr -> CTWildcard)
+            recordType(v -> varTyp) >> recordAndUpdate(expr -> CTWildcard)
 
           case _ =>
             error(InvalidContainerAccess(expr))
@@ -81,11 +85,20 @@ object SchemaTyper {
         result <- nodeType.material match {
           case CTNode(nodeLabels) =>
             val detailed = nodeLabels ++ labels.map(_.name -> true).toMap
-            updateTyping(node -> CTNode(detailed)) >> updateTyping(expr -> CTBoolean)
+            recordType[R](node -> nodeType) >>
+              updateTyping[R](node -> CTNode(detailed)) >>
+              updateTyping[R](expr -> CTBoolean)
 
           case x =>
             error(InvalidType(node, CTNode, x))
         }
+      } yield result
+
+    case RetypingPredicate(left, rhs) =>
+      for {
+        result <- processAndsOrs(expr, left.toVector)
+        rhsType <- process[R](rhs)
+        _ <- recordType(rhs -> rhsType) >> recordAndUpdate(expr -> result)
       } yield result
 
     case Not(inner) =>
@@ -93,7 +106,8 @@ object SchemaTyper {
         innerType <- process[R](inner)
         result <- innerType.material match {
           case CTBoolean =>
-            updateTyping(expr -> CTBoolean)
+            recordType(inner -> innerType) >>
+              recordAndUpdate(expr -> CTBoolean)
 
           case x =>
             error(InvalidType(inner, CTBoolean, x))
@@ -103,48 +117,52 @@ object SchemaTyper {
     case Ands(exprs) => processAndsOrs(expr, exprs.toVector)
 
     case Ors(exprs) => for {
-      context <- get[R, TyperContext]
-      _ <- put[R, TyperContext](context.dive())
+      t1 <- get[R, TypeTracker]
+      t2 <- put[R, TypeTracker](t1.pushScope()) >> get[R, TypeTracker]
       result <- processAndsOrs(expr, exprs.toVector)
-      _ <- put[R, TyperContext](context.ascend())
+      _ <- t2.popScope() match {
+          case None => error(TypeTrackerScopeError) >> put[R, TypeTracker](TypeTracker.empty)
+          case Some(t) =>
+            put[R, TypeTracker](t)
+        }
     } yield result
 
     case Equals(lhs, rhs) =>
       for {
-        _ <- process[R](lhs)
-        _ <- process[R](rhs)
-        result <- updateTyping(expr -> CTBoolean)
+        lhsType <- process[R](lhs)
+        rhsType <- process[R](rhs)
+        result <- recordTypes(lhs -> lhsType, rhs -> rhsType) >> recordAndUpdate(expr -> CTBoolean)
       } yield result
 
     case In(lhs, rhs) =>
       for {
-        _ <- process[R](lhs)
+        lhsType <- process[R](lhs)
         rhsType <- process[R](rhs)
         result <- rhsType match {
-          case _: CTList => updateTyping(expr -> CTBoolean)
+          case _: CTList => recordTypes(lhs -> lhsType, rhs -> rhsType) >> recordAndUpdate(expr -> CTBoolean)
           case x => error(InvalidType(rhs, CTList(CTWildcard), x))
         }
       } yield result
 
     case _: SignedDecimalIntegerLiteral =>
-      updateTyping(expr -> CTInteger)
+      recordAndUpdate(expr -> CTInteger)
 
     case _: DecimalDoubleLiteral =>
-      updateTyping(expr -> CTFloat)
+      recordAndUpdate(expr -> CTFloat)
 
     case _: BooleanLiteral =>
-      updateTyping(expr -> CTBoolean)
+      recordAndUpdate(expr -> CTBoolean)
 
     case _: StringLiteral =>
-      updateTyping(expr -> CTString)
+      recordAndUpdate(expr -> CTString)
 
     case _: Null =>
-      updateTyping(expr -> CTNull)
+      recordAndUpdate(expr -> CTNull)
 
     case ListLiteral(elts) =>
       for {
         eltType <- Foldable[Vector].foldMap(elts.toVector)(process[R])(joinMonoid)
-        listTyp <- updateTyping(expr -> CTList(eltType))
+        listTyp <- recordAndUpdate(expr -> CTList(eltType))
       } yield listTyp
 
     case expr: FunctionInvocation =>
@@ -193,7 +211,7 @@ object SchemaTyper {
       error(UnsupportedExpr(expr))
   }
 
-  private def processAndsOrs[R : _hasSchema : _keepsErrors : _hasContext](expr: Expression, orderedExprs: Vector[Expression]): Eff[R, CypherType] = {
+  private def processAndsOrs[R : _hasSchema : _keepsErrors : _hasTracker : _logsTypes](expr: Expression, orderedExprs: Vector[Expression]): Eff[R, CypherType] = {
     for {
       innerTypes <- EffMonad[R].sequence(orderedExprs.map(process[R]))
       result <- {
@@ -201,7 +219,10 @@ object SchemaTyper {
           case (t, idx) if t != CTBoolean =>
             error(InvalidType(orderedExprs(idx), CTBoolean, t))
         }
-        if (typeErrors.isEmpty) updateTyping(expr -> CTBoolean)
+        if (typeErrors.isEmpty) {
+          recordTypes(orderedExprs.zip(innerTypes): _*) >>
+            recordAndUpdate(expr -> CTBoolean)
+        }
         else typeErrors.reduce(_ >> _)
       }
     } yield result
@@ -216,12 +237,12 @@ object SchemaTyper {
   }
 
   private sealed trait ExpressionTyper[T <: Expression] {
-    def apply[R : _hasSchema : _keepsErrors : _hasContext](expr: T): Eff[R, CypherType]
+    def apply[R : _hasSchema : _keepsErrors : _hasTracker : _logsTypes](expr: T): Eff[R, CypherType]
   }
 
   private sealed trait SignatureBasedInvocationTyper[T <: Expression] extends ExpressionTyper[T] {
 
-    def apply[R : _hasSchema : _keepsErrors : _hasContext](expr: T): Eff[R, CypherType] =
+    def apply[R : _hasSchema : _keepsErrors : _hasTracker : _logsTypes](expr: T): Eff[R, CypherType] =
       for {
         argExprs <- pure(expr.arguments)
         argTypes <- EffMonad.traverse(argExprs.toList)(process[R])
@@ -238,7 +259,7 @@ object SchemaTyper {
       }
       yield resultType
 
-    protected def selectSignaturesFor[R : _hasSchema : _keepsErrors : _hasContext]
+    protected def selectSignaturesFor[R : _hasSchema : _keepsErrors : _hasTracker : _logsTypes]
       (expr: T, args: Seq[(Expression, CypherType)])
     : Eff[R, Set[(Seq[CypherType], CypherType)]] =
       for {
@@ -255,13 +276,13 @@ object SchemaTyper {
       }
       yield eligible
 
-    protected def generateSignaturesFor[R : _hasSchema : _keepsErrors : _hasContext]
+    protected def generateSignaturesFor[R : _hasSchema : _keepsErrors : _hasTracker : _logsTypes]
       (expr: T, args: Seq[(Expression, CypherType)])
     : Eff[R, Set[(Seq[CypherType], CypherType)]]
   }
 
   private case object FunctionInvocationTyper extends SignatureBasedInvocationTyper[FunctionInvocation] {
-    override protected def generateSignaturesFor[R : _hasSchema : _keepsErrors : _hasContext]
+    override protected def generateSignaturesFor[R : _hasSchema : _keepsErrors : _hasTracker : _logsTypes]
       (expr: FunctionInvocation, args: Seq[(Expression, CypherType)])
     : Eff[R, Set[(Seq[CypherType], CypherType)]] =
       expr.function match {
@@ -278,7 +299,7 @@ object SchemaTyper {
   }
 
   private case object AddTyper extends SignatureBasedInvocationTyper[Add] {
-    override protected def generateSignaturesFor[R : _hasSchema : _keepsErrors : _hasContext]
+    override protected def generateSignaturesFor[R : _hasSchema : _keepsErrors : _hasTracker : _logsTypes]
     (expr: Add, args: Seq[(Expression, CypherType)])
     : Eff[R, Set[(Seq[CypherType], CypherType)]] = {
       val (_, left) = args.head

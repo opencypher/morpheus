@@ -18,7 +18,9 @@ case class TypeTracker(maps: List[Map[Expression, CypherType]]) {
     case Some(map) if map.contains(e) => map.get(e)
     case Some(_) => get(e, maps.tail)
   }
-  def updated(e: Expression, t: CypherType) = copy(maps = head.updated(e, t) +: tail)
+
+  def updated(e: Expression, t: CypherType): TypeTracker = copy(maps = head.updated(e, t) +: tail)
+  def updated(entry: (Expression, CypherType)): TypeTracker = updated(entry._1, entry._2)
   def pushScope(): TypeTracker = copy(maps = Map.empty[Expression, CypherType] +: maps)
   def popScope(): Option[TypeTracker] = if (maps.isEmpty) None else Some(copy(maps = maps.tail))
 

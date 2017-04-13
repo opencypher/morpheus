@@ -6,7 +6,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_2.parser.Expressions
 import org.neo4j.cypher.internal.frontend.v3_2.phases._
 import org.neo4j.cypher.internal.frontend.v3_2.{CypherException, InputPosition, SemanticCheckResult, SemanticState, SyntaxException, ast}
-import org.opencypher.spark.impl.parse.CypherParser
+import org.opencypher.spark.impl.parse.{CypherParser, sparkCypherRewriting}
 import org.parboiled.scala.{EOI, Parser}
 
 trait Neo4jAstTestSupport extends AstConstructionTestSupport {
@@ -42,7 +42,8 @@ object CypherParserWithoutSemanticChecking extends CypherParser {
       Namespacer andThen
       rewriteEqualityToInPredicate andThen
       CNFNormalizer andThen
-      LateAstRewriting
+      LateAstRewriting andThen
+      sparkCypherRewriting
 
   object NonThrowingSemanticAnalysis extends SemanticAnalysis(true) {
     override def process(from: BaseState, context: BaseContext): BaseState = {

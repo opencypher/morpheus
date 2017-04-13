@@ -13,14 +13,16 @@ import org.opencypher.spark.api.types._
 package object typer {
 
   type _keepsErrors[R] = KeepsErrors |= R
-  type _hasContext[R] = HasContext |= R
+  type _hasTracker[R] = HasTracker |= R
   type _hasSchema[R] = HasSchema |= R
+  type _logsTypes[R] = LogsTypes |= R
 
   type KeepsErrors[A] = Validate[TyperError, A]
-  type HasContext[A] = State[TyperContext, A]
+  type HasTracker[A] = State[TypeTracker, A]
   type HasSchema[A] = Reader[Schema, A]
+  type LogsTypes[A] = Writer[(Expression, CypherType), A]
 
-  type TyperStack[A] = Fx.fx3[HasSchema, KeepsErrors, HasContext]
+  type TyperStack[A] = Fx.fx4[HasSchema, KeepsErrors, LogsTypes, HasTracker]
 
   implicit final class RichTyperStack[A](val program: Eff[TyperStack[A], A]) extends AnyVal {
 
@@ -36,26 +38,48 @@ package object typer {
       }
 
     def run(schema: Schema): Either[NonEmptyList[TyperError], TyperResult[A]] = {
-      val rawResult: (Either[NonEmptyList[TyperError], A], TyperContext) = program
+      val rawResult: ((Either[NonEmptyList[TyperError], A], List[(Expression, CypherType)]), TypeTracker) = program
         .runReader(schema)
         .runNel[TyperError]
-        .runState(TyperContext.empty)
+        .runWriter[(Expression, CypherType)]
+        .runState(TypeTracker.empty)
         .run
 
       rawResult match {
-        case (Left(errors), _) => Left(errors)
-        case (Right(value), context) => Right(TyperResult(value, context))
+        case ((Left(errors), _), _) => Left(errors)
+        case ((Right(value), recordedTypes), tracker) =>
+          Right(TyperResult(value, TypeRecorder.from(recordedTypes), tracker))
       }
     }
   }
 
-  // These combinators just delegate to the current context
+  def typeOf[R: _hasTracker : _keepsErrors](it: Expression): Eff[R, CypherType] =
+    for {
+      tracker <- get[R, TypeTracker]
+      cypherType <- tracker.get(it) match {
+        case None => error(UnTypedExpr(it)) >> pure[R, CypherType](CTWildcard)
+        case Some(t) => pure[R, CypherType](t)
+      }
+    } yield cypherType
 
-  def typeOf[R : _keepsErrors : _hasContext](it: Expression): Eff[R, CypherType] =
-    get[R, TyperContext] >>= { _.getTypeOf(it) }
+  def recordAndUpdate[R : _hasTracker : _logsTypes](entry: (Expression, CypherType)): Eff[R, CypherType] =
+    recordType(entry) >> updateTyping(entry)
 
-  def updateTyping[R : _hasContext : _keepsErrors](entry: (Expression, CypherType)): Eff[R, CypherType] =
-    get[R, TyperContext] >>= { _.putUpdated(entry) }
+  def updateTyping[R : _hasTracker](entry: (Expression, CypherType)): Eff[R, CypherType] = {
+    val (expr, cypherType) = entry
+    for {
+      tracker <- get[R, TypeTracker]
+      _ <- put[R, TypeTracker](tracker.updated(expr, cypherType))
+    } yield cypherType
+  }
+
+  def recordType[R : _logsTypes](entry: (Expression, CypherType)): Eff[R, Unit] = {
+    tell[R, (Expression, CypherType)](entry)
+  }
+
+  def recordTypes[R : _logsTypes](entries: (Expression, CypherType)*): Eff[R, Unit] = {
+    entries.map(entry => tell[R, (Expression, CypherType)](entry)).reduce(_ >> _)
+  }
 
   def error[R : _keepsErrors](failure: TyperError): Eff[R, CypherType] =
     wrong[R, TyperError](failure) >> pure(CTWildcard)

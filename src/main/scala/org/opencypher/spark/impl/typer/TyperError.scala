@@ -29,3 +29,7 @@ case class InvalidContainerAccess(it: Expression) extends TyperError {
 case class InvalidType(it: Expression, expected: CypherType, actual: CypherType) extends TyperError {
   override def toString = s"Expected ${it.show} to be of type $expected, but it was of type $actual"
 }
+
+case object TypeTrackerScopeError extends TyperError {
+  override def toString = "Tried to pop scope of type tracker, but it was at top level already"
+}

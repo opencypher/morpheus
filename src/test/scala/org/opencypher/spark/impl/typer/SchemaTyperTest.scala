@@ -1,8 +1,8 @@
 package org.opencypher.spark.impl.typer
 
 import cats.data.NonEmptyList
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, Parameter, Variable}
-import org.neo4j.cypher.internal.frontend.v3_2.symbols
+import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, Parameter, Property, Variable}
+import org.neo4j.cypher.internal.frontend.v3_2.{Ref, symbols}
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.types._
 import org.opencypher.spark.{Neo4jAstTestSupport, StdTestSuite}
@@ -17,7 +17,7 @@ class SchemaTyperTest extends StdTestSuite with Neo4jAstTestSupport with Mockito
   val typer = SchemaTyper(schema)
 
   test("typing label predicates") {
-    implicit val context = typerContext("n" -> CTNode())
+    implicit val context = typeTracker("n" -> CTNode())
 
     assertExpr.from("n:Person") shouldHaveInferredType CTBoolean
     assertExpr.from("n:Person:Car") shouldHaveInferredType CTBoolean
@@ -26,7 +26,7 @@ class SchemaTyperTest extends StdTestSuite with Neo4jAstTestSupport with Mockito
   }
 
   test("typing AND and OR") {
-    implicit val context = typerContext("b" -> CTBoolean, "c" -> CTBoolean, "int" -> CTInteger)
+    implicit val context = typeTracker("b" -> CTBoolean, "c" -> CTBoolean, "int" -> CTInteger)
 
     assertExpr.from("b AND true") shouldHaveInferredType CTBoolean
     assertExpr.from("b OR false") shouldHaveInferredType CTBoolean
@@ -37,8 +37,17 @@ class SchemaTyperTest extends StdTestSuite with Neo4jAstTestSupport with Mockito
     }
   }
 
+  test("can convert RetypingPredicate") {
+    implicit val tracker = typeTracker("b" -> CTBoolean, "n" -> CTNode())
+
+    assertExpr.from("b AND n:Person AND b AND n:Foo") shouldHaveInferredType CTBoolean
+    assertExpr.from("b AND n:Person AND b AND n:Foo") shouldMake varFor("n") haveType CTNode("Person", "Foo")
+    assertExpr.from("n.prop AND n:Person") shouldMake varFor("n") haveType CTNode("Person")
+    assertExpr.from("n.name AND n:Person") shouldMake prop("n", "name") haveType CTString
+  }
+
   test("should detail entity type from predicate") {
-    implicit val context = typerContext("n" -> CTNode)
+    implicit val context = typeTracker("n" -> CTNode)
 
     assertExpr.from("n:Person") shouldMake varFor("n") haveType CTNode("Person")
     assertExpr.from("n:Person AND n:Dog") shouldMake varFor("n") haveType CTNode("Person", "Dog")
@@ -47,14 +56,14 @@ class SchemaTyperTest extends StdTestSuite with Neo4jAstTestSupport with Mockito
   }
 
   test("typing equality") {
-    implicit val context = typerContext("n" -> CTInteger)
+    implicit val context = typeTracker("n" -> CTInteger)
 
     assertExpr.from("n = 1") shouldHaveInferredType CTBoolean
     assertExpr.from("n <> 1") shouldHaveInferredType CTBoolean
   }
 
   test("typing property equality and IN") {
-    implicit val context = typerContext("n" -> CTNode("Person"))
+    implicit val context = typeTracker("n" -> CTNode("Person"))
 
     assertExpr.from("n.name = 'foo'") shouldHaveInferredType CTBoolean
     assertExpr.from("n.name IN ['foo', 'bar']") shouldHaveInferredType CTBoolean
@@ -68,21 +77,21 @@ class SchemaTyperTest extends StdTestSuite with Neo4jAstTestSupport with Mockito
   }
 
   test("typing of variables") {
-    implicit val context = typerContext("n" -> CTNode("Person"))
+    implicit val tracker = typeTracker("n" -> CTNode("Person"))
 
     assertExpr.from("n") shouldHaveInferredType CTNode("Person")
   }
 
   test("typing of parameters (1)") {
-    implicit val context = TyperContext.empty :+ Parameter("param", symbols.CTAny)(pos) -> CTNode("Person")
+    implicit val tracker = TypeTracker.empty.updated(Parameter("param", symbols.CTAny)(pos), CTNode("Person"))
 
     assertExpr.from("$param") shouldHaveInferredType CTNode("Person")
   }
 
   test("typing of parameters (2)") {
-    implicit val context = TyperContext.empty :+ Parameter("param", symbols.CTNode)(pos) -> CTAny
+    implicit val tracker = TypeTracker.empty.updated(Parameter("param", symbols.CTAny)(pos), CTAny)
 
-    assertExpr.from("$param") shouldHaveInferredType CTNode
+    assertExpr.from("$param") shouldHaveInferredType CTAny
   }
 
   test("typing of basic literals") {
@@ -111,20 +120,20 @@ class SchemaTyperTest extends StdTestSuite with Neo4jAstTestSupport with Mockito
 
     assertExpr.from("[1, 2][1]") shouldHaveInferredType CTInteger
 
-    implicit val context = TyperContext.empty :+ Parameter("param", symbols.CTAny)(pos) -> CTInteger
+    implicit val context = TypeTracker.empty.updated(Parameter("param", symbols.CTAny)(pos), CTInteger)
 
     assertExpr.from("[3.14, -1, 5000][$param]") shouldHaveInferredType CTNumber
     assertExpr.from("[[], 1, true][$param]") shouldHaveInferredType CTAny
   }
 
   test("infer type of node property lookup") {
-    implicit val context = typerContext("n" -> CTNode("Person"))
+    implicit val context = typeTracker("n" -> CTNode("Person"))
 
     assertExpr.from("n.name") shouldHaveInferredType CTString
   }
 
   test("infer type of relationship property lookup") {
-    implicit val context = typerContext("r" -> CTRelationship("KNOWS"))
+    implicit val context = typeTracker("r" -> CTRelationship("KNOWS"))
 
     assertExpr.from("r.relative") shouldHaveInferredType CTBoolean
   }
@@ -159,30 +168,30 @@ class SchemaTyperTest extends StdTestSuite with Neo4jAstTestSupport with Mockito
     // assertExpr.from("percentileDisc([1, 3.14][$param], 3.14)") shouldHaveInferredType CTInteger
   }
 
-  private def typerContext(typings: (String, CypherType)*): TyperContext =
-    TyperContext(typings.map { case (v, t) => varFor(v) -> t }.toMap, 0)
+  private def typeTracker(typings: (String, CypherType)*): TypeTracker =
+    TypeTracker(List(typings.map { case (v, t) => varFor(v) -> t }.toMap))
 
   private object assertExpr {
-    def from(exprText: String)(implicit context: TyperContext = TyperContext.empty) =
+    def from(exprText: String)(implicit tracker: TypeTracker = TypeTracker.empty) =
       assertExpr(parse(exprText))
   }
 
-  private case class assertExpr(expr: Expression)(implicit val context: TyperContext = TyperContext.empty) {
+  private case class assertExpr(expr: Expression)(implicit val tracker: TypeTracker = TypeTracker.empty) {
 
-    def shouldMake(variable: Variable) = new {
-      val maybeType = typer.inferOrThrow(expr, context).context.typings.get(variable)
+    def shouldMake(inner: Expression) = new {
+      val inferredTypes = typer.inferOrThrow(expr, tracker).tracker
       def haveType(t: CypherType) = {
-        maybeType should equal(Some(t))
+        inferredTypes.get(inner) should equal(Some(t))
       }
     }
 
     def shouldHaveInferredType(expected: CypherType) = {
-      val actual = typer.inferOrThrow(expr, context).context.typings.get(expr)
-      actual shouldBe Some(expected)
+      val result = typer.inferOrThrow(expr, tracker)
+      result.value shouldBe expected
     }
 
     def shouldFailToInferTypeWithErrors(expectedHd: TyperError, expectedTail: TyperError*) = {
-      typer.infer(expr, context) match {
+      typer.infer(expr, tracker) match {
         case Left(actual) =>
           actual.toList.toSet should equal(NonEmptyList.of(expectedHd, expectedTail: _*).toList.toSet)
         case _ =>
