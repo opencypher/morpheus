@@ -1,4 +1,4 @@
-= Cypher on Spark experiment
+= Cypher for Apache Spark
 
 Talk to the openCypher team if you have questions.
 
@@ -47,7 +47,7 @@ To start Spark in standalone mode, run `sbin/start-master.sh` and `sbin/start-sl
 ----
 #!/bin/bash
 
-spark-submit --class org.opencypher.spark.benchmark.RunBenchmark --master spark://mattis.malmo.neohq.net:7077 --deploy-mode client cypher-on-spark-1.0-SNAPSHOT-standalone-shell.jar cos.neo4j-pw=<Neo4j password> cos.master=spark://mattis.malmo.neohq.net:7077
+spark-submit --class org.opencypher.spark.benchmark.RunBenchmark --master spark://mattis.malmo.neohq.net:7077 --deploy-mode client cypher-for-apache-spark-1.0-SNAPSHOT-standalone-shell.jar cos.neo4j-pw=<Neo4j password> cos.master=spark://mattis.malmo.neohq.net:7077
 ----
 
 There are more configuration options to use; see the class `Configuration.scala`.

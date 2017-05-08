@@ -50,7 +50,7 @@ object TestSessionFactory {
       .builder()
       .config(conf)
       .master("local[*]")
-      .appName(s"cypher-on-spark-tests-${UUID.randomUUID()}")
+      .appName(s"cypher-for-apache-spark-tests-${UUID.randomUUID()}")
       .getOrCreate()
 
     session.sparkContext.setLogLevel(Logging.get())

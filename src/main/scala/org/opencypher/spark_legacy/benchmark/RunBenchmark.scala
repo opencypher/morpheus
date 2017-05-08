@@ -38,7 +38,7 @@ object RunBenchmark {
     val session = SparkSession.builder()
       .config(conf)
       .master(MasterAddress.get())
-      .appName(s"cypher-on-spark-benchmark-${Calendar.getInstance().getTime}")
+      .appName(s"cypher-for-apache-spark-benchmark-${Calendar.getInstance().getTime}")
       .getOrCreate()
     session.sparkContext.setLogLevel(Logging.get())
     session

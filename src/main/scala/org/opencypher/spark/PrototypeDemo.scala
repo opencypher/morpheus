@@ -15,7 +15,7 @@ object PrototypeDemo {
     val graph = space.base.cypher(query)
 
     val start = System.currentTimeMillis()
-    graph.details.show()
+    graph.records.toDF().count()
     println(s"Time: ${System.currentTimeMillis() - start} ms")
 
     graph

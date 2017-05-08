@@ -5,8 +5,10 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.opencypher</groupId>
-    <artifactId>cypher-on-spark</artifactId>
+    <artifactId>cypher-for-apache-spark</artifactId>
     <version>1.0-SNAPSHOT</version>
+
+    <name>Cypher for Apache Spark</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

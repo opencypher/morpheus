@@ -1,25 +1,20 @@
-package org.opencypher.spark_legacy
+package org.opencypher.spark
 
 import java.util.Properties
-
-import org.apache.spark.serializer.{KryoRegistrator => SparkKryoRegistrator}
 
 import scala.io.Source
 import scala.language.postfixOps
 import scala.util.Try
 
-
-object CypherOnSpark {
+object CypherForApacheSpark {
 
   self =>
-
-  val registrator = new CypherKryoRegistrar
 
   def version = {
     val clazz = self.getClass
     Try {
       // 1) Try to read from maven descriptor
-      val inputStream = clazz.getResourceAsStream("/META-INF/maven/org.opencypher/cypher-on-spark/pom.properties")
+      val inputStream = clazz.getResourceAsStream("/META-INF/maven/org.opencypher/cypher-for-apache-spark/pom.properties")
       val properties = new Properties()
       properties.load(inputStream)
       value(properties.getProperty("version"))
