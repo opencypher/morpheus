@@ -10,57 +10,46 @@ import org.opencypher.spark.impl.util._
 class LogicalOperatorProducer {
 
   def planTargetExpand(source: Field, rel: Field, target: Field, prev: LogicalOperator): ExpandTarget = {
-    val signature = RecordHeader.empty
     val solved = prev.solved.withFields(rel, source)
 
-    ExpandTarget(source, rel, target, prev, signature)(solved)
+    ExpandTarget(source, rel, target, prev)(solved)
   }
 
   def planSourceExpand(source: Field, r: (Field, EveryRelationship), target: Field, prev: LogicalOperator): ExpandSource = {
-    val signature = RecordHeader.empty
-
     val (rel, types) = r
 
     val solved = types.relTypes.elts.foldLeft(prev.solved.withFields(rel, target)) {
       case (acc, next) => acc.withPredicate(HasType(rel, next)(CTBoolean))
     }
 
-    ExpandSource(source, rel, types, target, prev, signature)(solved)
+    ExpandSource(source, rel, types, target, prev)(solved)
   }
 
   def planNodeScan(node: Field, everyNode: EveryNode): NodeScan = {
-    val signature = RecordHeader.empty
-
     val solved = everyNode.labels.elts.foldLeft(SolvedQueryModel.empty[Expr].withField(node)) {
       case (acc, ref) => acc.withPredicate(HasLabel(node, ref)(CTBoolean))
     }
 
-    NodeScan(node, everyNode, signature)(solved)
+    NodeScan(node, everyNode)(solved)
   }
 
   def planFilter(expr: Expr, prev: LogicalOperator): Filter = {
-    val signature = RecordHeader.empty
-
-    Filter(expr, prev, signature)(prev.solved.withPredicate(expr))
+    Filter(expr, prev)(prev.solved.withPredicate(expr))
   }
 
   def projectField(field: Field, expr: Expr, prev: LogicalOperator): Project = {
-    val signature = RecordHeader.empty
     val projection = ProjectedField(field, expr)
 
-    Project(projection, prev, signature)(prev.solved.withField(field))
+    Project(projection, prev)(prev.solved.withField(field))
   }
 
   def projectExpr(expr: Expr, prev: LogicalOperator): Project = {
-    val signature = RecordHeader.empty
     val projection = ProjectedExpr(expr)
 
-    Project(projection, prev, signature)(prev.solved)
+    Project(projection, prev)(prev.solved)
   }
 
   def planSelect(fields: Set[Var], prev: LogicalOperator): Select = {
-    val signature = RecordHeader.empty
-
-    Select(fields, prev, signature)(prev.solved)
+    Select(fields, prev)(prev.solved)
   }
 }

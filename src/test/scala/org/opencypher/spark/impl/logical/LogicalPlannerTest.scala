@@ -120,7 +120,7 @@ class LogicalPlannerTest extends IrTestSuite {
   case class equalWithoutResult(plan: LogicalOperator) extends Matcher[LogicalOperator] {
     override def apply(left: LogicalOperator): MatchResult = {
       left match {
-        case logical.Select(_, in, _) =>
+        case logical.Select(_, in) =>
           val matches = in == plan && in.solved == plan.solved
           MatchResult(matches, s"$in did not equal $plan", s"$in was not supposed to equal $plan")
         case _ => MatchResult(matches = false, "Expected a Select plan on top", "Expected a Select plan on top")

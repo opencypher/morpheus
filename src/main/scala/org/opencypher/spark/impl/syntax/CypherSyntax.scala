@@ -4,6 +4,8 @@ import org.opencypher.spark.api.graph.CypherGraph
 import org.opencypher.spark.api.value.CypherValue
 import org.opencypher.spark.impl.classes.Cypher
 
+import scala.language.implicitConversions
+
 trait CypherSyntax {
 
   implicit def cypherEngineSyntax[G <: CypherGraph, C <: Cypher { type Graph = G }](graph: G)(implicit engine: C) =

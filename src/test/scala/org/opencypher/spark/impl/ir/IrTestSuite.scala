@@ -2,25 +2,23 @@ package org.opencypher.spark.impl.ir
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, Parameter}
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, symbols}
+import org.opencypher.spark.StdTestSuite
 import org.opencypher.spark.api.expr.Expr
 import org.opencypher.spark.api.ir._
 import org.opencypher.spark.api.ir.block._
 import org.opencypher.spark.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.api.ir.pattern.{AllGiven, EveryNode, Pattern}
-import org.opencypher.spark.api.record.RecordHeader
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.types.CypherType
 import org.opencypher.spark.impl.logical.NodeScan
 import org.opencypher.spark.impl.parse.CypherParser
-import org.opencypher.spark.StdTestSuite
 
 import scala.language.implicitConversions
 
 abstract class IrTestSuite extends StdTestSuite {
   val leafRef = BlockRef("leaf")
   val leafBlock = matchBlock(Pattern.empty[Expr].withEntity('n, EveryNode))
-  val emptySig = RecordHeader.empty
-  val leafPlan = NodeScan('n, EveryNode, emptySig)(SolvedQueryModel.empty)
+  val leafPlan = NodeScan('n, EveryNode)(SolvedQueryModel.empty)
 
   implicit def toField(s: Symbol): Field = Field(s.name)()
 
