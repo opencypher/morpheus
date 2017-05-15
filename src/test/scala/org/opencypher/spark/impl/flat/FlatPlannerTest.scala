@@ -24,85 +24,93 @@ class FlatPlannerTest extends StdTestSuite {
   import globals._
 
   val mkLogical = new LogicalOperatorProducer
-  val mkPhysical = new FlatOperatorProducer()
-  val physicalPlanner = new FlatPlanner
+  val mkFlat = new FlatOperatorProducer()
+  val flatPlanner = new FlatPlanner
 
   // TODO: Ids missing
   // TODO: Do not name schema provided columns
 
   test("Construct node scan") {
-    val result = physicalPlanner.process(mkLogical.planNodeScan(Field("n")(CTNode), EveryNode(AllOf(label("Person")))))
-    val slots = result.header.slots
+    val result = flatPlanner.process(mkLogical.planNodeScan(Field("n")(CTNode), EveryNode(AllOf(label("Person")))))
+    val headerContents = result.header.contents
 
-    result should equal(mkPhysical.nodeScan(Var("n")(CTNode), EveryNode(AllOf(label("Person")))))
-    slots should equal(Seq(
-      RecordSlot(0, OpaqueField(Var("n")(CTNode))),
-      RecordSlot(1, ProjectedExpr(HasLabel(Var("n")(CTNode), label("Person"))(CTBoolean))),
-      RecordSlot(2, ProjectedExpr(Property(Var("n")(CTNode), propertyKey("name"))(CTString))),
-      RecordSlot(3, ProjectedExpr(Property(Var("n")(CTNode), propertyKey("age"))(CTInteger.nullable)))
+    val nodeVar = Var("n")(CTNode)
+
+    result should equal(mkFlat.nodeScan(nodeVar, EveryNode(AllOf(label("Person")))))
+    headerContents should equal(Set(
+      OpaqueField(nodeVar),
+      ProjectedExpr(HasLabel(nodeVar, label("Person"))(CTBoolean)),
+      ProjectedExpr(Property(nodeVar, propertyKey("name"))(CTString)),
+      ProjectedExpr(Property(nodeVar, propertyKey("age"))(CTInteger.nullable))
     ))
   }
 
   test("Construct unlabeled node scan") {
-    val result = physicalPlanner.process(mkLogical.planNodeScan(Field("n")(CTNode), EveryNode))
-    val slots = result.header.slots
+    val result = flatPlanner.process(mkLogical.planNodeScan(Field("n")(CTNode), EveryNode))
+    val headerContents = result.header.contents
 
-    result should equal(mkPhysical.nodeScan(Var("n")(CTNode), EveryNode))
-    slots should equal(Seq(
-      RecordSlot(0, OpaqueField(Var("n")(CTNode))),
-      RecordSlot(1, ProjectedExpr(HasLabel(Var("n")(CTNode), label("Person"))(CTBoolean))),
-      RecordSlot(2, ProjectedExpr(HasLabel(Var("n")(CTNode), label("Employee"))(CTBoolean))),
-      RecordSlot(3, ProjectedExpr(Property(Var("n")(CTNode), propertyKey("name"))(CTString))),
-      RecordSlot(4, ProjectedExpr(Property(Var("n")(CTNode), propertyKey("age"))(CTInteger.nullable))),
-      RecordSlot(5, ProjectedExpr(Property(Var("n")(CTNode), propertyKey("salary"))(CTFloat.nullable)))
+    val nodeVar = Var("n")(CTNode)
+
+    result should equal(mkFlat.nodeScan(nodeVar, EveryNode))
+    headerContents should equal(Set(
+      OpaqueField(nodeVar),
+      ProjectedExpr(HasLabel(nodeVar, label("Person"))(CTBoolean)),
+      ProjectedExpr(HasLabel(nodeVar, label("Employee"))(CTBoolean)),
+      ProjectedExpr(Property(nodeVar, propertyKey("name"))(CTString)),
+      ProjectedExpr(Property(nodeVar, propertyKey("age"))(CTInteger.nullable)),
+      ProjectedExpr(Property(nodeVar, propertyKey("salary"))(CTFloat.nullable))
     ))
   }
 
   test("Construct filtered node scan") {
-    val result = physicalPlanner.process(
+    val result = flatPlanner.process(
       mkLogical.planFilter(TrueLit(),
         mkLogical.planNodeScan(Field("n")(CTNode), EveryNode)
       )
     )
-    val slots = result.header.slots
+    val headerContents = result.header.contents
+
+    val nodeVar = Var("n")(CTNode)
 
     result should equal(
-      mkPhysical.filter(
+      mkFlat.filter(
         TrueLit(),
-        mkPhysical.nodeScan(Var("n")(CTNode), EveryNode)
+        mkFlat.nodeScan(nodeVar, EveryNode)
       )
     )
-    slots should equal(Seq(
-      RecordSlot(0, OpaqueField(Var("n")(CTNode))),
-      RecordSlot(1, ProjectedExpr(HasLabel(Var("n")(CTNode), label("Person"))(CTBoolean))),
-      RecordSlot(2, ProjectedExpr(Property(Var("n")(CTNode), propertyKey("name"))(CTString))),
-      RecordSlot(3, ProjectedExpr(Property(Var("n")(CTNode), propertyKey("age"))(CTInteger.nullable)))
+    headerContents should equal(Set(
+      OpaqueField(nodeVar),
+      ProjectedExpr(HasLabel(nodeVar, label("Person"))(CTBoolean)),
+      ProjectedExpr(HasLabel(nodeVar, label("Employee"))(CTBoolean)),
+      ProjectedExpr(Property(nodeVar, propertyKey("name"))(CTString)),
+      ProjectedExpr(Property(nodeVar, propertyKey("age"))(CTInteger.nullable)),
+      ProjectedExpr(Property(nodeVar, propertyKey("salary"))(CTFloat.nullable))
     ))
   }
 
   test("Construct selection") {
-    val result = physicalPlanner.process(
+    val result = flatPlanner.process(
       mkLogical.planSelect(Set(Var("foo")(CTString)),
         mkLogical.projectField(Field("foo")(CTString), Property(Var("n")(CTNode), propertyKey("name"))(CTString),
           mkLogical.planNodeScan(Field("n")(CTNode), EveryNode(AllOf(label("Person"))))
         )
       )
     )
-    val slots = result.header.slots
+    val headerContents = result.header.contents
 
     result should equal(
-      mkPhysical.select(
+      mkFlat.select(
         Set(Var("foo")(CTString)),
-        mkPhysical.project(
+        mkFlat.project(
           ProjectedField(Var("foo")(CTString), Property(Var("n")(CTNode), propertyKey("name"))(CTString)),
-          mkPhysical.nodeScan(
+          mkFlat.nodeScan(
             Var("n")(CTNode), EveryNode(AllOf(label("Person")))
           )
         )
       )
     )
-    slots should equal(Seq(
-      RecordSlot(0, ProjectedField(Var("foo")(CTString), Property(Var("n")(CTNode), propertyKey("name"))(CTString)))
+    headerContents should equal(Set(
+      ProjectedField(Var("foo")(CTString), Property(Var("n")(CTNode), propertyKey("name"))(CTString))
     ))
   }
 }

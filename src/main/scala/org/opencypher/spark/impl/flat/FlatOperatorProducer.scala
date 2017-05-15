@@ -22,7 +22,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   // TODO: Unalias dependencies MATCH (n) WITH n.prop AS m, n WITH n // frees up m, don't lose n.prop
-  def select(fields: Set[Var], in: FlatOperator) = {
+  def select(fields: Set[Var], in: FlatOperator): Select = {
     // TODO: Error handling
 
     // TODO: doesn't work! reports removing slots, but returns header with them still in!
