@@ -1,13 +1,13 @@
 package org.opencypher.spark.impl.flat
 
 import org.opencypher.spark.StdTestSuite
-import org.opencypher.spark.api.types._
-import org.opencypher.spark.api.expr.{HasLabel, Property, TrueLit, Var}
+import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.Field
 import org.opencypher.spark.api.ir.global.GlobalsRegistry
-import org.opencypher.spark.api.ir.pattern.{AllOf, EveryNode}
-import org.opencypher.spark.api.record.{OpaqueField, ProjectedExpr, ProjectedField, RecordSlot}
+import org.opencypher.spark.api.ir.pattern.{AllOf, EveryNode, EveryRelationship}
+import org.opencypher.spark.api.record.{OpaqueField, ProjectedExpr, ProjectedField}
 import org.opencypher.spark.api.schema.Schema
+import org.opencypher.spark.api.types._
 import org.opencypher.spark.impl.logical.LogicalOperatorProducer
 
 class FlatPlannerTest extends StdTestSuite {
@@ -62,7 +62,7 @@ class FlatPlannerTest extends StdTestSuite {
     ))
   }
 
-  test("Construct filtered node scan") {
+  test("Construct simple filtered node scan") {
     val result = flatPlanner.process(
       mkLogical.planFilter(TrueLit(),
         mkLogical.planNodeScan(Field("n")(CTNode), EveryNode)
@@ -85,6 +85,65 @@ class FlatPlannerTest extends StdTestSuite {
       ProjectedExpr(Property(nodeVar, propertyKey("name"))(CTString)),
       ProjectedExpr(Property(nodeVar, propertyKey("age"))(CTInteger.nullable)),
       ProjectedExpr(Property(nodeVar, propertyKey("salary"))(CTFloat.nullable))
+    ))
+  }
+
+  test("flat plan for expand") {
+    val result = flatPlanner.process(
+      mkLogical.planSourceExpand(Field("n")(CTNode), Field("r")(CTRelationship) -> EveryRelationship, Field("m")(CTNode),
+        mkLogical.planNodeScan(Field("n")(CTNode), EveryNode)
+      )
+    )
+    val headerContents = result.header.contents
+
+    val source = Var("n")(CTNode)
+    val rel = Var("r")(CTRelationship)
+    val target = Var("m")(CTNode)
+
+    result should equal(
+      mkFlat.expandSource(source, rel, EveryRelationship, target,
+        mkFlat.nodeScan(source, EveryNode)
+      )
+    )
+    headerContents should equal(Set(
+      OpaqueField(source),
+      ProjectedExpr(HasLabel(source, label("Person"))(CTBoolean)),
+      ProjectedExpr(HasLabel(source, label("Employee"))(CTBoolean)),
+      ProjectedExpr(Property(source, propertyKey("name"))(CTString)),
+      ProjectedExpr(Property(source, propertyKey("age"))(CTInteger.nullable)),
+      ProjectedExpr(Property(source, propertyKey("salary"))(CTFloat)),
+      OpaqueField(rel),
+      ProjectedExpr(TypeId(rel)(CTInteger)),
+      OpaqueField(target),
+      ProjectedExpr(HasLabel(target, label("Person"))(CTBoolean)),
+      ProjectedExpr(HasLabel(target, label("Employee"))(CTBoolean)),
+      ProjectedExpr(Property(target, propertyKey("name"))(CTString)),
+      ProjectedExpr(Property(target, propertyKey("age"))(CTInteger.nullable)),
+      ProjectedExpr(Property(target, propertyKey("salary"))(CTFloat))
+    ))
+  }
+
+  ignore("Construct label-filtered node scan") {
+    val nodeVar = Var("n")(CTNode)
+
+    val result = flatPlanner.process(
+      mkLogical.planFilter(HasLabel(nodeVar, label("Person"))(CTBoolean),
+        mkLogical.planNodeScan(Field("n")(CTNode), EveryNode)
+      )
+    )
+    val headerContents = result.header.contents
+
+    result should equal(
+      mkFlat.filter(
+        HasLabel(nodeVar, label("Person"))(CTBoolean),
+        mkFlat.nodeScan(nodeVar, EveryNode)
+      )
+    )
+    headerContents should equal(Set(
+      OpaqueField(nodeVar),
+      ProjectedExpr(HasLabel(nodeVar, label("Person"))(CTBoolean)),
+      ProjectedExpr(Property(nodeVar, propertyKey("name"))(CTString)),
+      ProjectedExpr(Property(nodeVar, propertyKey("age"))(CTInteger.nullable))
     ))
   }
 

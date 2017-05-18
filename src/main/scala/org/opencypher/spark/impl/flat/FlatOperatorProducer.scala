@@ -42,6 +42,14 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   def filter(expr: Expr, in: FlatOperator): Filter = {
     in.header
 
+//    expr match {
+//      case HasLabel(n, label) =>
+//        in.header.contents.map { c =>
+//
+//        }
+//      case _ => in.header
+//    }
+
     // TODO: Should replace SlotContent expressions with detailed type of entity
     // TODO: Should reduce width of header due to more label information
 
@@ -106,21 +114,24 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
       labelName => ProjectedExpr(HasLabel(target, label(labelName))(CTBoolean))
     }
 
+    val targetKeyHeaderContents = allNodeProperties.map {
+      case ((k, t)) => ProjectedExpr(Property(target, propertyKey(k))(t))
+    }
+
     // TODO: This should consider multiple types per property
     val relKeyHeaderProperties = types.relTypes.elts.flatMap(t => schema.relationshipKeys(globals.relType(t).name).toSeq)
     val relKeyHeaderContents = relKeyHeaderProperties.map {
       case ((k, t)) => ProjectedExpr(Property(rel, propertyKey(k))(t))
     }
 
-    val targetKeyHeaderContents = allNodeProperties.map {
-      case ((k, t)) => ProjectedExpr(Property(target, propertyKey(k))(t))
-    }
-
     val typeIdContent = ProjectedExpr(TypeId(rel)(CTInteger))
 
+    val targetNode = OpaqueField(target)
+
     val (newHeader, _) = in.header.update(addContents(
-      Seq(typeIdContent) ++ relKeyHeaderContents ++ targetLabelHeaderContents ++ targetKeyHeaderContents
+      Seq(OpaqueField(rel), typeIdContent) ++ relKeyHeaderContents ++ Seq(targetNode) ++ targetLabelHeaderContents ++ targetKeyHeaderContents
     ))
+
     ExpandSource(source, rel, types, target, in, newHeader)
   }
 }
