@@ -8,6 +8,7 @@ final case class ResultBlock[E](
   binds: OrderedFields[E],
   nodes: Set[Field],
   relationships: Set[Field],
+  graph: BlockRef,
   where: AllGiven[E] = AllGiven[E]()
 ) extends BasicBlock[OrderedFields[E], E](BlockType("result")) {
 
@@ -16,7 +17,7 @@ final case class ResultBlock[E](
 }
 
 object ResultBlock {
-  def empty[E] = ResultBlock(Set.empty, OrderedFields[E](), Set.empty, Set.empty, AllOf[E]())
+  def empty[E](graphBlock: BlockRef) = ResultBlock(Set.empty, OrderedFields[E](), Set.empty, Set.empty, graphBlock, AllOf[E]())
 }
 
 final case class OrderedFields[E](fieldsOrder: Seq[Field] = Seq.empty) extends Binds[E] {

@@ -5,5 +5,6 @@ import org.opencypher.spark.api.ir.pattern.{AllGiven, Pattern}
 final case class MatchBlock[E](
   after: Set[BlockRef],
   binds: Pattern[E],
-  where: AllGiven[E] = AllGiven[E]()
+  where: AllGiven[E] = AllGiven[E](),
+  graph: BlockRef
 ) extends BasicBlock[Pattern[E], E](BlockType("match"))

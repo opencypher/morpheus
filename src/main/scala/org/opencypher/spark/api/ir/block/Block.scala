@@ -13,6 +13,8 @@ trait Block[E] {
 
   def binds: Binds[E]
   def where: AllGiven[E]
+
+  def graph: BlockRef
 }
 
 final case class BlockType(name: String)

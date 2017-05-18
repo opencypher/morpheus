@@ -38,7 +38,7 @@ trait SparkCypherInstances {
       val paramsAndTypes = GlobalsExtractor.paramWithTypes(stmt)
 
       print("IR ... ")
-      val ir = CypherQueryBuilder(stmt)(IRBuilderContext(query, globals, graph.schema, BlockRegistry.empty, paramsAndTypes))
+      val ir = CypherQueryBuilder(stmt)(IRBuilderContext.initial(query, globals, graph.schema, paramsAndTypes))
       println("Done!")
 
       print("Logical plan ... ")

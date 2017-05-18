@@ -20,6 +20,9 @@ abstract class IrTestSuite extends StdTestSuite {
   val leafBlock = matchBlock(Pattern.empty[Expr].withEntity('n, EveryNode))
   val leafPlan = NodeScan('n, EveryNode)(SolvedQueryModel.empty)
 
+  val graphBlockRef = BlockRef("graph")
+  val graphBlock = LoadGraphBlock[Expr](Set.empty, DefaultGraph())
+
   implicit def toField(s: Symbol): Field = Field(s.name)()
 
   /**
@@ -40,10 +43,10 @@ abstract class IrTestSuite extends StdTestSuite {
 
   def project(fields: ProjectedFields[Expr], after: Set[BlockRef] = Set(leafRef),
               given: AllGiven[Expr] = AllGiven[Expr]()) =
-    ProjectBlock(after, fields, given)
+    ProjectBlock(after, fields, given, graphBlockRef)
 
   protected def matchBlock(pattern: Pattern[Expr]): Block[Expr] =
-    MatchBlock[Expr](Set.empty, pattern, AllGiven[Expr]())
+    MatchBlock[Expr](Set.empty, pattern, AllGiven[Expr](), graphBlockRef)
 
   def irFor(rootRef: BlockRef, blocks: Map[BlockRef, Block[Expr]]): CypherQuery[Expr] = {
     val result = ResultBlock[Expr](
@@ -52,15 +55,17 @@ abstract class IrTestSuite extends StdTestSuite {
       binds = OrderedFields[Expr](),
       nodes = Set.empty, // TODO: Fill these sets correctly
       relationships = Set.empty,
-      where = AllGiven[Expr]()
+      where = AllGiven[Expr](),
+      graph = graphBlockRef
     )
-    val model = QueryModel(result, GlobalsRegistry.none, blocks)
+    val model = QueryModel(result, GlobalsRegistry.none, blocks, Map(graphBlockRef -> Schema.empty))
     CypherQuery(QueryInfo("test"), model)
   }
 
   case class DummyBlock[E](after: Set[BlockRef] = Set.empty) extends BasicBlock[DummyBinds[E], E](BlockType("dummy")) {
     override def binds: DummyBinds[E] = DummyBinds[E]()
     override def where: AllGiven[E] = AllGiven[E]()
+    override val graph = graphBlockRef
   }
 
   case class DummyBinds[E](fields: Set[Field] = Set.empty) extends Binds[E]
@@ -70,13 +75,13 @@ abstract class IrTestSuite extends StdTestSuite {
 
     def ir(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
-      CypherQueryBuilder(stmt)(IRBuilderContext(queryText, GlobalsExtractor(stmt), schema))
+      CypherQueryBuilder(stmt)(IRBuilderContext.initial(queryText, GlobalsExtractor(stmt), schema, Map.empty))
     }
 
     def irWithParams(params: (String, CypherType)*)(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
       val knownTypes: Map[Expression, CypherType] = params.map(p => Parameter(p._1, symbols.CTAny)(InputPosition.NONE) -> p._2).toMap
-      CypherQueryBuilder(stmt)(IRBuilderContext(queryText, GlobalsExtractor(stmt), schema, knownTypes = knownTypes))
+      CypherQueryBuilder(stmt)(IRBuilderContext.initial(queryText, GlobalsExtractor(stmt), schema, knownTypes))
     }
   }
 }

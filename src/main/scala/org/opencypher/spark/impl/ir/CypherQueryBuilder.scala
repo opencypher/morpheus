@@ -59,7 +59,7 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
           refs <- {
             val blockRegistry = context.blocks
             val after = blockRegistry.reg.headOption.map(_._1).toSet
-            val block = MatchBlock[Expr](after, given, where)
+            val block = MatchBlock[Expr](after, given, where, context.graphBlock)
 
             implicit val globals = context.globals
             val typedOutputs = block.outputs
@@ -79,14 +79,14 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
             val yields = ProjectedFields(fieldExprs.toMap)
 
             val after = blockRegistry.reg.headOption.map(_._1).toSet
-            val projs = ProjectBlock[Expr](after = after, where = AllGiven[Expr](), binds = yields)
+            val projs = ProjectBlock[Expr](after = after, where = AllGiven[Expr](), binds = yields, graph = context.graphBlock)
 
             val (ref, reg) = blockRegistry.register(projs)
 
             //         TODO: Add rewriter and put the above case in With(...)
             //         TODO: Figure out nodes and relationships
             val rItems: Seq[Field] = fieldExprs.map(_._1)
-            val returns = ResultBlock[Expr](Set(ref), OrderedFields(rItems), Set.empty, Set.empty)
+            val returns = ResultBlock[Expr](Set(ref), OrderedFields(rItems), Set.empty, Set.empty, context.graphBlock)
 
             val (ref2, reg2) = reg.register(returns)
             put[R, IRBuilderContext](context.copy(blocks = reg2)) >> pure[R, Vector[BlockRef]](Vector(ref, ref2))
@@ -155,7 +155,7 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
         case (_ref, r: ResultBlock[Expr]) => _ref -> r
       }.get
 
-      val model = QueryModel(r, context.globals, blocks.reg.toMap - ref)
+      val model = QueryModel(r, context.globals, blocks.reg.toMap - ref, context.schemas)
       val info = QueryInfo(context.queryString)
 
       Some(CypherQuery(info, model))

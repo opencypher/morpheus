@@ -16,6 +16,10 @@ case class BlockRegistry[E](reg: Seq[(BlockRef, Block[E])]) {
     ref -> copy(reg = reg :+ ref -> blockDef)
   }
 
+  def apply(ref: BlockRef): Block[E] = reg.find {
+    case (_ref, b) => ref == _ref
+  }.getOrElse(throw new NoSuchElementException(s"Didn't find block with reference $ref"))._2
+
   // TODO: Add name generation to monads working with this?
   val c = new AtomicLong()
 

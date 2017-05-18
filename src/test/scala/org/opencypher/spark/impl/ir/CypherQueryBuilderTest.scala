@@ -16,19 +16,19 @@ class CypherQueryBuilderTest extends IrTestSuite {
       import globals._
 
       val matchRef = model.findExactlyOne {
-        case MatchBlock(_, Pattern(entities, topo), AllGiven(exprs)) =>
+        case MatchBlock(_, Pattern(entities, topo), AllGiven(exprs), _) =>
           entities should equal(Map(toField('a) -> EveryNode(AllOf(label("Person")))))
           topo shouldBe empty
           exprs should equal(Set(HasLabel(toVar('a), label("Person"))()))
       }
 
       val projectRef = model.findExactlyOne {
-        case NoWhereBlock(ProjectBlock(_, ProjectedFields(map), _)) =>
+        case NoWhereBlock(ProjectBlock(_, ProjectedFields(map), _, _)) =>
           map should equal(Map(toField('a) -> toVar('a)))
       }
 
       model.result match {
-        case NoWhereBlock(ResultBlock(_, FieldsInOrder(Field("a")), _, _, _)) =>
+        case NoWhereBlock(ResultBlock(_, FieldsInOrder(Field("a")), _, _, _, _)) =>
       }
 
       model.requirements should equal(Map(
@@ -42,13 +42,13 @@ class CypherQueryBuilderTest extends IrTestSuite {
     "MATCH (a)-[r]->(b) RETURN b AS otherB, a, r".model.ensureThat { (model, globals) =>
 
       val matchRef = model.findExactlyOne {
-        case NoWhereBlock(MatchBlock(_, Pattern(entities, topo), _)) =>
+        case NoWhereBlock(MatchBlock(_, Pattern(entities, topo), _, _)) =>
           entities should equal(Map(toField('a) -> EveryNode, toField('b) -> EveryNode, toField('r) -> EveryRelationship))
           topo should equal(Map(toField('r) -> DirectedRelationship('a, 'b)))
       }
 
       val projectRef = model.findExactlyOne {
-        case NoWhereBlock(ProjectBlock(_, ProjectedFields(map), _)) =>
+        case NoWhereBlock(ProjectBlock(_, ProjectedFields(map), _, _)) =>
           map should equal(Map(
             toField('a) -> toVar('a),
             toField('otherB) -> toVar('b),
@@ -57,7 +57,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
       }
 
       model.result match {
-        case NoWhereBlock(ResultBlock(_, FieldsInOrder(Field("otherB"), Field("a"), Field("r")), _, _, _)) =>
+        case NoWhereBlock(ResultBlock(_, FieldsInOrder(Field("otherB"), Field("a"), Field("r")), _, _, _, _)) =>
       }
 
       model.requirements should equal(Map(

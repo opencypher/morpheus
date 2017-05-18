@@ -3,7 +3,8 @@ package org.opencypher.spark.api.ir
 import org.opencypher.spark.api.types.{CTNode, CTRelationship}
 import org.opencypher.spark.api.ir.block._
 import org.opencypher.spark.api.ir.global.GlobalsRegistry
-import org.opencypher.spark.api.ir.pattern.{DirectedRelationship, EveryNode, EveryRelationship, Pattern}
+import org.opencypher.spark.api.ir.pattern._
+import org.opencypher.spark.api.schema.Schema
 
 import scala.annotation.tailrec
 import scala.collection.generic.CanBuildFrom
@@ -12,7 +13,8 @@ final case class QueryModel[E](
   result: ResultBlock[E],
   globals: GlobalsRegistry,
 //  bindings: Map[ConstantRef, ConstantBinding],
-  blocks: Map[BlockRef, Block[E]]
+  blocks: Map[BlockRef, Block[E]],
+  schemas: Map[BlockRef, Schema]
 ) {
 
   def apply(ref: BlockRef): Block[E] = blocks(ref)
@@ -54,7 +56,12 @@ final case class QueryModel[E](
 
 object QueryModel {
 
-  def empty[E](globals: GlobalsRegistry) = QueryModel[E](ResultBlock.empty, globals, Map.empty)
+  def empty[E](globals: GlobalsRegistry) = {
+    // TODO: empty graph?
+    val graphBlock = LoadGraphBlock[E](Set.empty, DefaultGraph())
+    val ref = BlockRef("graph")
+    QueryModel[E](ResultBlock.empty(ref), globals, Map(ref -> graphBlock), Map(ref -> Schema.empty))
+  }
 
   def base[E](sourceNodeName: String, relName: String, targetNodeName: String, globals: GlobalsRegistry): QueryModel[E] = {
     val sourceNode = Field(sourceNodeName)(CTNode)
@@ -63,36 +70,50 @@ object QueryModel {
 
     assert(sourceNode != targetNode, "don't do that")
 
+    val graphBlockRef = BlockRef("graph")
+    val graphBlock = LoadGraphBlock[E](Set.empty, DefaultGraph())
+
     val ref: BlockRef = BlockRef("match")
     val matchBlock = MatchBlock[E](Set.empty, Pattern.empty
       .withEntity(sourceNode, EveryNode)
       .withEntity(rel, EveryRelationship)
       .withEntity(targetNode, EveryNode)
-      .withConnection(rel, DirectedRelationship(sourceNode, targetNode)))
+      .withConnection(rel, DirectedRelationship(sourceNode, targetNode)), AllGiven[E](), graphBlockRef)
     val blocks: Map[BlockRef, Block[E]] = Map(ref -> matchBlock)
 
-    QueryModel(ResultBlock(Set(ref), FieldsInOrder(sourceNode, rel, targetNode), Set(sourceNode, targetNode), Set(rel)), globals, blocks)
+    val resultBlock = ResultBlock[E](Set(ref), FieldsInOrder(sourceNode, rel, targetNode), Set(sourceNode, targetNode), Set(rel), graphBlockRef)
+    QueryModel(resultBlock, globals, blocks, Map(graphBlockRef -> Schema.empty))
   }
 
   def nodes[E](nodeName: String, globals: GlobalsRegistry): QueryModel[E] = {
     val node = Field(nodeName)(CTNode)
+
+    val graphBlockRef = BlockRef("graph")
+    val graphBlock = LoadGraphBlock[E](Set.empty, DefaultGraph())
+
     val ref: BlockRef = BlockRef("match")
     val matchBlock = MatchBlock[E](Set.empty, Pattern.empty
-      .withEntity(node, EveryNode))
+      .withEntity(node, EveryNode), AllGiven[E](), graphBlockRef)
 
     val blocks: Map[BlockRef, Block[E]] = Map(ref -> matchBlock)
 
-    QueryModel(ResultBlock(Set(ref), FieldsInOrder(node), Set(node), Set.empty), globals, blocks)
+    val resultBlock = ResultBlock[E](Set(ref), FieldsInOrder(node), Set(node), Set.empty, graphBlockRef)
+    QueryModel(resultBlock, globals, blocks, Map(graphBlockRef -> Schema.empty))
   }
 
   def relationships[E](relName: String, globals: GlobalsRegistry): QueryModel[E] = {
     val rel = Field(relName)(CTRelationship)
+
+    val graphBlockRef = BlockRef("graph")
+    val graphBlock = LoadGraphBlock[E](Set.empty, DefaultGraph())
+
     val ref: BlockRef = BlockRef("match")
     val matchBlock = MatchBlock[E](Set.empty, Pattern.empty
-      .withEntity(rel, EveryRelationship))
+      .withEntity(rel, EveryRelationship), AllGiven[E](), graphBlockRef)
     val blocks: Map[BlockRef, Block[E]] = Map(ref -> matchBlock)
 
-    QueryModel(ResultBlock(Set(ref), FieldsInOrder(rel), Set.empty, Set(rel)), globals, blocks)
+    val resultBlock = ResultBlock[E](Set(ref), FieldsInOrder(rel), Set.empty, Set(rel), graphBlockRef)
+    QueryModel(resultBlock, globals, blocks, Map(graphBlockRef -> Schema.empty))
   }
 }
 

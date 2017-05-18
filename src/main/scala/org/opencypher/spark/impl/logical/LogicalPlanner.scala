@@ -60,7 +60,7 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
 
   def planLeaf(ref: BlockRef, model: QueryModel[Expr])(implicit context: LogicalPlannerContext): LogicalOperator = {
     model(ref) match {
-      case MatchBlock(_, pattern, where) =>
+      case MatchBlock(_, pattern, where, graph) =>
         // this plans a leaf + filter for convenience -- TODO
         val plan = planPattern(pattern)
         planFilter(plan, where)
@@ -71,7 +71,7 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
 
   def planNonLeaf(ref: BlockRef, model: QueryModel[Expr], plan: LogicalOperator)(implicit context: LogicalPlannerContext): LogicalOperator = {
     model(ref) match {
-      case ProjectBlock(_, ProjectedFields(exprs), _) =>
+      case ProjectBlock(_, ProjectedFields(exprs), _, graph) =>
         planProjections(plan, exprs)
       case x => throw new IllegalArgumentException(s"Don't know how to plan $x")
     }

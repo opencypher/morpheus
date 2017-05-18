@@ -3,6 +3,7 @@ package org.opencypher.spark.impl.ir
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, Ref, ast}
 import org.opencypher.spark.api.expr.Expr
 import org.opencypher.spark.api.ir.Field
+import org.opencypher.spark.api.ir.block.{BlockRef, DefaultGraph, LoadGraphBlock}
 import org.opencypher.spark.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.api.ir.pattern.Pattern
 import org.opencypher.spark.api.schema.Schema
@@ -12,11 +13,12 @@ import org.opencypher.spark.impl.typer.{SchemaTyper, TypeTracker}
 final case class IRBuilderContext(
   queryString: String,
   globals: GlobalsRegistry,
-  schema: Schema,
+  graphBlock: BlockRef,
   blocks: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
+  schemas: Map[BlockRef, Schema],
   knownTypes: Map[ast.Expression, CypherType] = Map.empty)
 {
-  private lazy val typer = SchemaTyper(schema)
+  private lazy val typer = SchemaTyper(schemas(graphBlock))
   private lazy val exprConverter = new ExpressionConverter(globals)
   private lazy val patternConverter = new PatternConverter(globals)
 
@@ -50,4 +52,15 @@ final case class IRBuilderContext(
     copy(knownTypes = withFieldTypes)
   }
 
+}
+
+object IRBuilderContext {
+  def initial(query: String, globals: GlobalsRegistry, schema: Schema, knownTypes: Map[ast.Expression, CypherType]): IRBuilderContext = {
+    val registry = BlockRegistry.empty[Expr]
+
+    val block = LoadGraphBlock[Expr](Set.empty, DefaultGraph())
+    val (ref, reg) = registry.register(block)
+
+    IRBuilderContext(query, globals, ref, reg, Map(ref -> schema), knownTypes)
+  }
 }
