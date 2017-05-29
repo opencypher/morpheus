@@ -23,5 +23,7 @@ case class BlockRegistry[E](reg: Seq[(BlockRef, Block[E])]) {
   // TODO: Add name generation to monads working with this?
   val c = new AtomicLong()
 
+  def lastAdded: Option[BlockRef] = reg.lastOption.map(_._1)
+
   private def generateName(t: BlockType) = s"${t.name}_${c.incrementAndGet()}"
 }

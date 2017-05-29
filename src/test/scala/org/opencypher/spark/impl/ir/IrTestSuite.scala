@@ -9,8 +9,8 @@ import org.opencypher.spark.api.ir.block._
 import org.opencypher.spark.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.api.ir.pattern.{AllGiven, EveryNode, Pattern}
 import org.opencypher.spark.api.schema.Schema
-import org.opencypher.spark.api.types.CypherType
-import org.opencypher.spark.impl.logical.NodeScan
+import org.opencypher.spark.api.types.{CTWildcard, CypherType}
+import org.opencypher.spark.impl.logical.{IDontCareGraph, LoadGraph, NamedLogicalGraph, NodeScan}
 import org.opencypher.spark.impl.parse.CypherParser
 
 import scala.language.implicitConversions
@@ -24,6 +24,7 @@ abstract class IrTestSuite extends StdTestSuite {
   val graphBlock = LoadGraphBlock[Expr](Set.empty, DefaultGraph())
 
   implicit def toField(s: Symbol): Field = Field(s.name)()
+  def toField(s: Symbol, t: CypherType): Field = Field(s.name)(t)
 
   /**
     * Construct a single-block ir; the parameter block has to be a block that could be planned as a leaf.

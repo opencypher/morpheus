@@ -58,7 +58,7 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
           context <- get[R, IRBuilderContext]
           refs <- {
             val blockRegistry = context.blocks
-            val after = blockRegistry.reg.headOption.map(_._1).toSet
+            val after = blockRegistry.lastAdded.toSet
             val block = MatchBlock[Expr](after, given, where, context.graphBlock)
 
             implicit val globals = context.globals
@@ -78,7 +78,7 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
             val blockRegistry = context.blocks
             val yields = ProjectedFields(fieldExprs.toMap)
 
-            val after = blockRegistry.reg.headOption.map(_._1).toSet
+            val after = blockRegistry.lastAdded.toSet
             val projs = ProjectBlock[Expr](after = after, where = AllGiven[Expr](), binds = yields, graph = context.graphBlock)
 
             val (ref, reg) = blockRegistry.register(projs)

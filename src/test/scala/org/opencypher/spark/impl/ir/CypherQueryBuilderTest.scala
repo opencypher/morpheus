@@ -5,6 +5,7 @@ import org.opencypher.spark.api.ir.block._
 import org.opencypher.spark.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.api.ir.pattern._
 import org.opencypher.spark.api.ir.{Field, QueryModel}
+import org.opencypher.spark.api.types.CTNode
 import org.opencypher.spark.toVar
 
 import scala.collection.immutable.Set
@@ -15,25 +16,34 @@ class CypherQueryBuilderTest extends IrTestSuite {
     "MATCH (a:Person) RETURN a".model.ensureThat { (model, globals) =>
       import globals._
 
+      val loadRef = model.findExactlyOne {
+        case NoWhereBlock(LoadGraphBlock(binds, DefaultGraph())) =>
+          binds shouldBe empty
+      }
+
       val matchRef = model.findExactlyOne {
-        case MatchBlock(_, Pattern(entities, topo), AllGiven(exprs), _) =>
-          entities should equal(Map(toField('a) -> EveryNode(AllOf(label("Person")))))
+        case MatchBlock(deps, Pattern(entities, topo), AllGiven(exprs), _) =>
+          deps should equal(Set(loadRef))
+          entities should equal(Map(toField('a, CTNode) -> EveryNode))
           topo shouldBe empty
           exprs should equal(Set(HasLabel(toVar('a), label("Person"))()))
       }
 
       val projectRef = model.findExactlyOne {
-        case NoWhereBlock(ProjectBlock(_, ProjectedFields(map), _, _)) =>
+        case NoWhereBlock(ProjectBlock(deps, ProjectedFields(map), _, _)) =>
+          deps should equal(Set(matchRef))
           map should equal(Map(toField('a) -> toVar('a)))
       }
 
       model.result match {
-        case NoWhereBlock(ResultBlock(_, FieldsInOrder(Field("a")), _, _, _, _)) =>
+        case NoWhereBlock(ResultBlock(deps, FieldsInOrder(Field("a")), _, _, _, _)) =>
+          deps should equal(Set(projectRef))
       }
 
       model.requirements should equal(Map(
         projectRef -> Set(matchRef),
-        matchRef -> Set()
+        matchRef -> Set(loadRef),
+        loadRef -> Set()
       ))
     }
   }
@@ -41,14 +51,22 @@ class CypherQueryBuilderTest extends IrTestSuite {
   test("match simple relationship pattern and return some fields") {
     "MATCH (a)-[r]->(b) RETURN b AS otherB, a, r".model.ensureThat { (model, globals) =>
 
+      val loadRef = model.findExactlyOne {
+        case NoWhereBlock(LoadGraphBlock(binds, DefaultGraph())) =>
+          binds shouldBe empty
+      }
+
       val matchRef = model.findExactlyOne {
-        case NoWhereBlock(MatchBlock(_, Pattern(entities, topo), _, _)) =>
+        case NoWhereBlock(MatchBlock(deps, Pattern(entities, topo), _, _)) =>
+          deps should equal(Set(loadRef))
           entities should equal(Map(toField('a) -> EveryNode, toField('b) -> EveryNode, toField('r) -> EveryRelationship))
-          topo should equal(Map(toField('r) -> DirectedRelationship('a, 'b)))
+          val map = Map(toField('r) -> DirectedRelationship('a, 'b))
+          topo should equal(map)
       }
 
       val projectRef = model.findExactlyOne {
-        case NoWhereBlock(ProjectBlock(_, ProjectedFields(map), _, _)) =>
+        case NoWhereBlock(ProjectBlock(deps, ProjectedFields(map), _, _)) =>
+          deps should equal(Set(matchRef))
           map should equal(Map(
             toField('a) -> toVar('a),
             toField('otherB) -> toVar('b),
@@ -62,7 +80,8 @@ class CypherQueryBuilderTest extends IrTestSuite {
 
       model.requirements should equal(Map(
         projectRef -> Set(matchRef),
-        matchRef -> Set()
+        matchRef -> Set(loadRef),
+        loadRef -> Set()
       ))
     }
   }
@@ -80,7 +99,9 @@ class CypherQueryBuilderTest extends IrTestSuite {
 
     def findExactlyOne(f: PartialFunction[Block[Expr], Unit]): BlockRef = {
       val result = model.collect {
-        case (ref, block) if f.isDefinedAt(block) => ref
+        case (ref, block) if f.isDefinedAt(block) =>
+          f(block)
+          ref
       }
       withClue(s"Failed to extract single matching block from ${model.blocks}") {
         result.size should equal(1)
