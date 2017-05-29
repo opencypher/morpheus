@@ -10,10 +10,9 @@ import scala.language.implicitConversions
 sealed trait LogicalOperator {
   def isLeaf = false
   def solved: SolvedQueryModel[Expr]
-  def graph: LogicalGraph
 
-  // TODO: Make this better
-  def passingOn: NamedLogicalGraph = graph.asInstanceOf[NamedLogicalGraph]
+  def inGraph: LogicalGraph
+  def outGraph: NamedLogicalGraph
 }
 
 sealed trait LogicalGraph
@@ -22,6 +21,9 @@ final case class NamedLogicalGraph(name: String) extends LogicalGraph
 
 sealed trait StackingLogicalOperator extends LogicalOperator {
   def in: LogicalOperator
+
+  override def outGraph = in.outGraph
+  override def inGraph = in.outGraph
 }
 
 sealed trait LogicalLeafOperator extends LogicalOperator {
@@ -30,12 +32,10 @@ sealed trait LogicalLeafOperator extends LogicalOperator {
 
 final case class NodeScan(node: Var, nodeDef: EveryNode, in: LogicalOperator)
                          (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
-  override def graph = in.passingOn
 }
 
 final case class Filter(expr: Expr, in: LogicalOperator)
                        (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
-  override def graph = in.passingOn
 }
 
 sealed trait ExpandOperator extends StackingLogicalOperator {
@@ -47,26 +47,21 @@ sealed trait ExpandOperator extends StackingLogicalOperator {
 final case class ExpandSource(source: Var, rel: Var, types: EveryRelationship, target: Var, in: LogicalOperator)
                              (override val solved: SolvedQueryModel[Expr])
   extends ExpandOperator {
-  override def graph = in.passingOn
 }
 
 final case class ExpandTarget(source: Var, rel: Var, target: Var, in: LogicalOperator)
                              (override val solved: SolvedQueryModel[Expr])
   extends ExpandOperator {
-  override def graph = in.passingOn
 }
 
 final case class Project(it: ProjectedSlotContent, in: LogicalOperator)
                         (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
-  override def graph = in.passingOn
 }
 
 final case class Select(fields: Set[Var], in: LogicalOperator)
                        (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
-  override def graph = in.passingOn
 }
 
-final case class LoadGraph(graph: LogicalGraph, loaded: NamedLogicalGraph)
+final case class LoadGraph(inGraph: LogicalGraph, outGraph: NamedLogicalGraph)
                           (override val solved: SolvedQueryModel[Expr]) extends LogicalLeafOperator {
-  override def passingOn: NamedLogicalGraph = loaded
 }
