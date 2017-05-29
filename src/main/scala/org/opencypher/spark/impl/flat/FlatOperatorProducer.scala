@@ -1,13 +1,14 @@
 package org.opencypher.spark.impl.flat
 
 import cats.Monoid
-import org.opencypher.spark.api.types._
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.pattern.{AllGiven, EveryNode, EveryRelationship}
 import org.opencypher.spark.api.record._
+import org.opencypher.spark.api.types._
+import org.opencypher.spark.impl.logical.{GraphSource, NamedLogicalGraph}
 import org.opencypher.spark.impl.syntax.header._
 import org.opencypher.spark.impl.syntax.util.traversable._
-import org.opencypher.spark.impl.util.{Found, Removed, Replaced}
+import org.opencypher.spark.impl.util.{Found, Replaced}
 
 class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
@@ -56,14 +57,14 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     Filter(expr, in, in.header)
   }
 
-  def nodeScan(node: Var, _nodeDef: EveryNode): NodeScan = {
+  def nodeScan(node: Var, _nodeDef: EveryNode, prev: FlatOperator): NodeScan = {
     val nodeDef = if (_nodeDef.labels.elts.isEmpty) EveryNode(AllGiven(schema.labels.map(globals.label))) else _nodeDef
 
     val givenLabels = nodeDef.labels.elts.map(ref => label(ref).name)
 
     val header = constructHeaderFromKnownLabels(node, givenLabels)
 
-    NodeScan(node, nodeDef, header)
+    NodeScan(node, nodeDef, prev, header)
   }
 
   private def constructHeaderFromKnownLabels(node: Var, labels: Set[String]) = {
@@ -133,5 +134,10 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     ))
 
     ExpandSource(source, rel, types, target, in, newHeader)
+  }
+
+  def planLoadGraph(logicalGraph: NamedLogicalGraph, source: GraphSource): LoadGraph = {
+
+    LoadGraph(logicalGraph, source)
   }
 }

@@ -69,7 +69,10 @@ final case class Select(fields: Set[Var], in: LogicalOperator)
                        (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
 }
 
-final case class LoadGraph(outGraph: NamedLogicalGraph)
+final case class LoadGraph(outGraph: NamedLogicalGraph, source: GraphSource)
                           (override val solved: SolvedQueryModel[Expr]) extends LogicalLeafOperator {
   override val inGraph = EmptyGraph
 }
+
+sealed trait GraphSource
+case object DefaultGraphSource extends GraphSource

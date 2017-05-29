@@ -24,7 +24,8 @@ class PhysicalPlanner
         case flat.Select(fields, in, header) =>
           innerPlan(in).select(fields, header)
 
-        case flat.NodeScan(v, labels, header) =>
+        case flat.NodeScan(v, labels, in, header) =>
+          // TODO: Recursively plan input tree
           context.graph.allNodes(v)
 
         case flat.Alias(expr, alias, in, header) =>

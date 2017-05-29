@@ -28,10 +28,15 @@ class FlatPlannerTest extends StdTestSuite {
   val mkFlat = new FlatOperatorProducer()
   val flatPlanner = new FlatPlanner
 
-  val loadGraph = mkLogical.planLoadDefaultGraph(schema)
+  val logicalLoadGraph = mkLogical.planLoadDefaultGraph(schema)
+  val flatLoadGraph = mkFlat.planLoadGraph(logicalLoadGraph.outGraph, logicalLoadGraph.source)
 
   // TODO: Ids missing
   // TODO: Do not name schema provided columns
+
+  test("construct load graph") {
+    flatPlanner.process(logicalLoadGraph) should equal(flatLoadGraph)
+  }
 
   test("Construct node scan") {
     val result = flatPlanner.process(logicalNodeScan("n", "Person"))
@@ -39,7 +44,7 @@ class FlatPlannerTest extends StdTestSuite {
 
     val nodeVar = Var("n")(CTNode)
 
-    result should equal(mkFlat.nodeScan(nodeVar, EveryNode(AllOf(label("Person")))))
+    result should equal(flatNodeScan(nodeVar, "Person"))
     headerContents should equal(Set(
       OpaqueField(nodeVar),
       ProjectedExpr(HasLabel(nodeVar, label("Person"))(CTBoolean)),
@@ -54,7 +59,7 @@ class FlatPlannerTest extends StdTestSuite {
 
     val nodeVar = Var("n")(CTNode)
 
-    result should equal(mkFlat.nodeScan(nodeVar, EveryNode))
+    result should equal(flatNodeScan(nodeVar))
     headerContents should equal(Set(
       OpaqueField(nodeVar),
       ProjectedExpr(HasLabel(nodeVar, label("Person"))(CTBoolean)),
@@ -78,7 +83,7 @@ class FlatPlannerTest extends StdTestSuite {
     result should equal(
       mkFlat.filter(
         TrueLit(),
-        mkFlat.nodeScan(nodeVar, EveryNode)
+        flatNodeScan(nodeVar)
       )
     )
     headerContents should equal(Set(
@@ -105,7 +110,7 @@ class FlatPlannerTest extends StdTestSuite {
 
     result should equal(
       mkFlat.expandSource(source, rel, EveryRelationship, target,
-        mkFlat.nodeScan(source, EveryNode)
+        flatNodeScan(source)
       )
     )
     headerContents should equal(Set(
@@ -139,7 +144,7 @@ class FlatPlannerTest extends StdTestSuite {
     result should equal(
       mkFlat.filter(
         HasLabel(nodeVar, label("Person"))(CTBoolean),
-        mkFlat.nodeScan(nodeVar, EveryNode)
+        flatNodeScan(nodeVar)
       )
     )
     headerContents should equal(Set(
@@ -165,9 +170,7 @@ class FlatPlannerTest extends StdTestSuite {
         Set(Var("foo")(CTString)),
         mkFlat.project(
           ProjectedField(Var("foo")(CTString), Property(Var("n")(CTNode), propertyKey("name"))(CTString)),
-          mkFlat.nodeScan(
-            Var("n")(CTNode), EveryNode(AllOf(label("Person")))
-          )
+          flatNodeScan(Var("n")(CTNode), "Person")
         )
       )
     )
@@ -179,6 +182,12 @@ class FlatPlannerTest extends StdTestSuite {
   private def logicalNodeScan(nodeField: String, labelNames: String*) = {
     val labelRefs = labelNames.map(label)
 
-    mkLogical.planNodeScan(Field(nodeField)(CTNode), EveryNode(AllOf(labelRefs: _*)), loadGraph)
+    mkLogical.planNodeScan(Field(nodeField)(CTNode), EveryNode(AllOf(labelRefs: _*)), logicalLoadGraph)
+  }
+
+  private def flatNodeScan(node: Var, labelNames: String*) = {
+    val labelRefs = labelNames.map(label)
+
+    mkFlat.nodeScan(node, EveryNode(AllOf(labelRefs: _*)), flatLoadGraph)
   }
 }

@@ -21,14 +21,16 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
         producer.filter(expr, process(in))
 
       case logical.NodeScan(node, nodeDef, in) =>
-        // TODO: Recursively process nested plan
-        producer.nodeScan(node, nodeDef)
+        producer.nodeScan(node, nodeDef, process(in))
 
       case logical.Project(it, in) =>
         producer.project(it, process(in))
 
       case logical.ExpandSource(source, rel, types, target, in) =>
         producer.expandSource(source, rel, types, target, process(in))
+
+      case logical.LoadGraph(outGraph, source) =>
+        producer.planLoadGraph(outGraph, source)
 
       case x => throw new NotImplementedError(s"Flat planning not done yet for $x")
     }
