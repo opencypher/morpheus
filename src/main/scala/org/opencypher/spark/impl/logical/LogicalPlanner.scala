@@ -60,17 +60,19 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
 
   def planLeaf(ref: BlockRef, model: QueryModel[Expr])(implicit context: LogicalPlannerContext): LogicalOperator = {
     model(ref) match {
-      case MatchBlock(_, pattern, where, graph) =>
-        // this plans a leaf + filter for convenience -- TODO
-        val plan = planPattern(pattern)
-        planFilter(plan, where)
+      case LoadGraphBlock(_, descriptor) =>
+        producer.planLoadGraph(descriptor)
       case x =>
-        throw new NotImplementedError(s"Not yet able to leaf-plan $x (only queries starting with MATCH are supported)")
+        throw new NotImplementedError(s"Not yet able to leaf-plan $x (only queries starting with MATCH or LOAD GRAPH are supported)")
     }
   }
 
   def planNonLeaf(ref: BlockRef, model: QueryModel[Expr], plan: LogicalOperator)(implicit context: LogicalPlannerContext): LogicalOperator = {
     model(ref) match {
+      case MatchBlock(_, pattern, where, graph) =>
+        // this plans both pattern and filter for convenience -- TODO: split up
+        val patternPlan = planPattern(plan, pattern)
+        planFilter(patternPlan, where)
       case ProjectBlock(_, ProjectedFields(exprs), _, graph) =>
         planProjections(plan, exprs)
       case x => throw new IllegalArgumentException(s"Don't know how to plan $x")
@@ -153,8 +155,8 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
     }
   }
 
-  private def planPattern(pattern: Pattern[Expr])(implicit context: LogicalPlannerContext) = {
-    val lhsLeaf = nodePlan(pattern)
+  private def planPattern(plan: LogicalOperator, pattern: Pattern[Expr])(implicit context: LogicalPlannerContext) = {
+    val lhsLeaf = nodePlan(plan: LogicalOperator, pattern)
 
     val (newPlan, _) = fixedPoint(planExpansions)(lhsLeaf -> pattern)
 
@@ -182,9 +184,9 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
     }
   }
 
-  private def nodePlan(pattern: Pattern[Expr])(implicit context: LogicalPlannerContext) = {
+  private def nodePlan(plan: LogicalOperator, pattern: Pattern[Expr])(implicit context: LogicalPlannerContext) = {
     val (field, everyNode) = pattern.nodes.head
 
-    producer.planNodeScan(field, everyNode)
+    producer.planNodeScan(field, everyNode, plan)
   }
 }

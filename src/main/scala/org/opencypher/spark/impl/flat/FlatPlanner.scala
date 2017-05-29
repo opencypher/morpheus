@@ -20,7 +20,8 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
       case logical.Filter(expr, in) =>
         producer.filter(expr, process(in))
 
-      case logical.NodeScan(node, nodeDef) =>
+      case logical.NodeScan(node, nodeDef, in) =>
+        // TODO: Recursively process nested plan
         producer.nodeScan(node, nodeDef)
 
       case logical.Project(it, in) =>

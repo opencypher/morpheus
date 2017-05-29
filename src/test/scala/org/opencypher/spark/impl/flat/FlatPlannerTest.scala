@@ -3,7 +3,8 @@ package org.opencypher.spark.impl.flat
 import org.opencypher.spark.StdTestSuite
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.Field
-import org.opencypher.spark.api.ir.global.GlobalsRegistry
+import org.opencypher.spark.api.ir.block.DefaultGraph
+import org.opencypher.spark.api.ir.global.{GlobalsRegistry, LabelRef}
 import org.opencypher.spark.api.ir.pattern.{AllOf, EveryNode, EveryRelationship}
 import org.opencypher.spark.api.record.{OpaqueField, ProjectedExpr, ProjectedField}
 import org.opencypher.spark.api.schema.Schema
@@ -27,11 +28,13 @@ class FlatPlannerTest extends StdTestSuite {
   val mkFlat = new FlatOperatorProducer()
   val flatPlanner = new FlatPlanner
 
+  val loadGraph = mkLogical.planLoadGraph(DefaultGraph())
+
   // TODO: Ids missing
   // TODO: Do not name schema provided columns
 
   test("Construct node scan") {
-    val result = flatPlanner.process(mkLogical.planNodeScan(Field("n")(CTNode), EveryNode(AllOf(label("Person")))))
+    val result = flatPlanner.process(logicalNodeScan("n", "Person"))
     val headerContents = result.header.contents
 
     val nodeVar = Var("n")(CTNode)
@@ -46,7 +49,7 @@ class FlatPlannerTest extends StdTestSuite {
   }
 
   test("Construct unlabeled node scan") {
-    val result = flatPlanner.process(mkLogical.planNodeScan(Field("n")(CTNode), EveryNode))
+    val result = flatPlanner.process(logicalNodeScan("n"))
     val headerContents = result.header.contents
 
     val nodeVar = Var("n")(CTNode)
@@ -65,7 +68,7 @@ class FlatPlannerTest extends StdTestSuite {
   test("Construct simple filtered node scan") {
     val result = flatPlanner.process(
       mkLogical.planFilter(TrueLit(),
-        mkLogical.planNodeScan(Field("n")(CTNode), EveryNode)
+        logicalNodeScan("n")
       )
     )
     val headerContents = result.header.contents
@@ -91,7 +94,7 @@ class FlatPlannerTest extends StdTestSuite {
   test("flat plan for expand") {
     val result = flatPlanner.process(
       mkLogical.planSourceExpand(Field("n")(CTNode), Field("r")(CTRelationship) -> EveryRelationship, Field("m")(CTNode),
-        mkLogical.planNodeScan(Field("n")(CTNode), EveryNode)
+        logicalNodeScan("n")
       )
     )
     val headerContents = result.header.contents
@@ -128,7 +131,7 @@ class FlatPlannerTest extends StdTestSuite {
 
     val result = flatPlanner.process(
       mkLogical.planFilter(HasLabel(nodeVar, label("Person"))(CTBoolean),
-        mkLogical.planNodeScan(Field("n")(CTNode), EveryNode)
+        logicalNodeScan("n")
       )
     )
     val headerContents = result.header.contents
@@ -151,7 +154,7 @@ class FlatPlannerTest extends StdTestSuite {
     val result = flatPlanner.process(
       mkLogical.planSelect(Set(Var("foo")(CTString)),
         mkLogical.projectField(Field("foo")(CTString), Property(Var("n")(CTNode), propertyKey("name"))(CTString),
-          mkLogical.planNodeScan(Field("n")(CTNode), EveryNode(AllOf(label("Person"))))
+          logicalNodeScan("n", "Person")
         )
       )
     )
@@ -171,5 +174,11 @@ class FlatPlannerTest extends StdTestSuite {
     headerContents should equal(Set(
       ProjectedField(Var("foo")(CTString), Property(Var("n")(CTNode), propertyKey("name"))(CTString))
     ))
+  }
+
+  private def logicalNodeScan(nodeField: String, labelNames: String*) = {
+    val labelRefs = labelNames.map(label)
+
+    mkLogical.planNodeScan(Field(nodeField)(CTNode), EveryNode(AllOf(labelRefs: _*)), loadGraph)
   }
 }

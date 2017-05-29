@@ -1,6 +1,5 @@
 package org.opencypher.spark.impl.logical
 
-import org.opencypher.spark.api.types._
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir._
 import org.opencypher.spark.api.ir.block._
@@ -8,6 +7,7 @@ import org.opencypher.spark.api.ir.global.{ConstantRef, GlobalsRegistry, Propert
 import org.opencypher.spark.api.ir.pattern.{DirectedRelationship, EveryNode, EveryRelationship, Pattern}
 import org.opencypher.spark.api.record.{ProjectedExpr, ProjectedField}
 import org.opencypher.spark.api.schema.Schema
+import org.opencypher.spark.api.types._
 import org.opencypher.spark.impl.ir.IrTestSuite
 import org.opencypher.spark.impl.logical
 import org.scalatest.matchers.{MatchResult, Matcher}
@@ -15,6 +15,10 @@ import org.scalatest.matchers.{MatchResult, Matcher}
 import scala.language.implicitConversions
 
 class LogicalPlannerTest extends IrTestSuite {
+
+  test("convert load graph block") {
+    plan(irFor(leafBlock)) should equal(Select(Set.empty, leafPlan)(emptySqm))
+  }
 
   test("convert match block") {
     val pattern = Pattern.empty[Expr]
@@ -25,8 +29,8 @@ class LogicalPlannerTest extends IrTestSuite {
 
     val block = matchBlock(pattern)
 
-    val scan = NodeScan('a, EveryNode)(emptySqm.withField('a))
-    plan(irFor(block)) should equalWithoutResult(
+    val scan = NodeScan('a, EveryNode, leafPlan)(emptySqm.withField('a))
+    plan(irWithLeaf(block)) should equalWithoutResult(
       ExpandSource('a, 'r, EveryRelationship, 'b, scan)(scan.solved.withFields('r, 'b))
     )
   }
@@ -38,8 +42,8 @@ class LogicalPlannerTest extends IrTestSuite {
     val block = project(fields)
 
     plan(irWithLeaf(block)) should equalWithoutResult(
-      Project(ProjectedField('a, Property('n, PropertyKeyRef(0))(CTFloat)),
-        leafPlan)(emptySqm.withFields('n, 'a))
+      Project(ProjectedField('a, Property('n, PropertyKeyRef(0))(CTFloat)),   // n is a dangling reference here
+        leafPlan)(emptySqm.withFields('a))
     )
   }
 
@@ -56,7 +60,9 @@ class LogicalPlannerTest extends IrTestSuite {
               Filter(HasLabel(Var("g")(CTNode), globals.label("Group"))(CTBoolean),
                 Filter(HasLabel(Var("a")(CTNode), globals.label("Administrator"))(CTBoolean),
                   ExpandSource(Var("a")(CTNode), Var("r")(CTRelationship), EveryRelationship, Var("g")(CTNode),
-                    NodeScan(Var("a")(CTNode), EveryNode)(emptySqm)
+                    NodeScan(Var("a")(CTNode), EveryNode,
+                      LoadGraph(IDontCareGraph, NamedLogicalGraph("default"))(emptySqm)
+                    )(emptySqm)
                   )(emptySqm)
                 )(emptySqm)
               )(emptySqm)
@@ -84,7 +90,9 @@ class LogicalPlannerTest extends IrTestSuite {
               Filter(HasLabel(Var("g")(CTNode), globals.label("Group"))(CTBoolean),
                 Filter(HasLabel(Var("a")(CTNode), globals.label("Administrator"))(CTBoolean),
                   ExpandSource(Var("a")(CTNode), Var("r")(CTRelationship), EveryRelationship, Var("g")(CTNode),
-                    NodeScan(Var("a")(CTNode), EveryNode)(emptySqm)
+                    NodeScan(Var("a")(CTNode), EveryNode,
+                      LoadGraph(IDontCareGraph, NamedLogicalGraph("default"))(emptySqm)
+                    )(emptySqm)
                   )(emptySqm)
                 )(emptySqm)
               )(emptySqm)
@@ -105,7 +113,9 @@ class LogicalPlannerTest extends IrTestSuite {
       Select(Set(Var("a.prop")(CTVoid)),
         Project(ProjectedField(Var("a.prop")(CTVoid), Property(Var("a")(CTNode), globals.propertyKey("prop"))(CTVoid)),
           Filter(Not(Equals(Const(globals.constant("p1"))(CTInteger), Const(globals.constant("p2"))(CTBoolean))(CTBoolean))(CTBoolean),
-            NodeScan(Var("a")(CTNode), EveryNode)(emptySqm)
+            NodeScan(Var("a")(CTNode), EveryNode,
+              LoadGraph(IDontCareGraph, NamedLogicalGraph("default"))(emptySqm)
+            )(emptySqm)
           )(emptySqm)
         )(emptySqm)
       )(emptySqm)

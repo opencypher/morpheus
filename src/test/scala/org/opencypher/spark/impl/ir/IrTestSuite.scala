@@ -7,18 +7,18 @@ import org.opencypher.spark.api.expr.Expr
 import org.opencypher.spark.api.ir._
 import org.opencypher.spark.api.ir.block._
 import org.opencypher.spark.api.ir.global.GlobalsRegistry
-import org.opencypher.spark.api.ir.pattern.{AllGiven, EveryNode, Pattern}
+import org.opencypher.spark.api.ir.pattern.{AllGiven, Pattern}
 import org.opencypher.spark.api.schema.Schema
-import org.opencypher.spark.api.types.{CTWildcard, CypherType}
-import org.opencypher.spark.impl.logical.{IDontCareGraph, LoadGraph, NamedLogicalGraph, NodeScan}
+import org.opencypher.spark.api.types.CypherType
+import org.opencypher.spark.impl.logical.{IDontCareGraph, LoadGraph, NamedLogicalGraph}
 import org.opencypher.spark.impl.parse.CypherParser
 
 import scala.language.implicitConversions
 
 abstract class IrTestSuite extends StdTestSuite {
   val leafRef = BlockRef("leaf")
-  val leafBlock = matchBlock(Pattern.empty[Expr].withEntity('n, EveryNode))
-  val leafPlan = NodeScan('n, EveryNode)(SolvedQueryModel.empty)
+  val leafBlock = LoadGraphBlock[Expr](Set.empty, DefaultGraph())
+  val leafPlan = LoadGraph(IDontCareGraph, NamedLogicalGraph("default"))(SolvedQueryModel.empty)
 
   val graphBlockRef = BlockRef("graph")
   val graphBlock = LoadGraphBlock[Expr](Set.empty, DefaultGraph())
@@ -47,7 +47,7 @@ abstract class IrTestSuite extends StdTestSuite {
     ProjectBlock(after, fields, given, graphBlockRef)
 
   protected def matchBlock(pattern: Pattern[Expr]): Block[Expr] =
-    MatchBlock[Expr](Set.empty, pattern, AllGiven[Expr](), graphBlockRef)
+    MatchBlock[Expr](Set(leafRef), pattern, AllGiven[Expr](), graphBlockRef)
 
   def irFor(rootRef: BlockRef, blocks: Map[BlockRef, Block[Expr]]): CypherQuery[Expr] = {
     val result = ResultBlock[Expr](

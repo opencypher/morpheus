@@ -2,6 +2,7 @@ package org.opencypher.spark.impl.logical
 
 import org.opencypher.spark.api.types._
 import org.opencypher.spark.api.expr._
+import org.opencypher.spark.api.ir.block.{DefaultGraph, GraphDescriptor}
 import org.opencypher.spark.api.ir.pattern.{EveryNode, EveryRelationship}
 import org.opencypher.spark.api.ir.{Field, SolvedQueryModel}
 import org.opencypher.spark.api.record.{ProjectedExpr, ProjectedField, RecordHeader}
@@ -25,12 +26,12 @@ class LogicalOperatorProducer {
     ExpandSource(source, rel, types, target, prev)(solved)
   }
 
-  def planNodeScan(node: Field, everyNode: EveryNode): NodeScan = {
+  def planNodeScan(node: Field, everyNode: EveryNode, prev: LogicalOperator): NodeScan = {
     val solved = everyNode.labels.elts.foldLeft(SolvedQueryModel.empty[Expr].withField(node)) {
       case (acc, ref) => acc.withPredicate(HasLabel(node, ref)(CTBoolean))
     }
 
-    NodeScan(node, everyNode)(solved)
+    NodeScan(node, everyNode, prev)(solved)
   }
 
   def planFilter(expr: Expr, prev: LogicalOperator): Filter = {
@@ -51,5 +52,15 @@ class LogicalOperatorProducer {
 
   def planSelect(fields: Set[Var], prev: LogicalOperator): Select = {
     Select(fields, prev)(prev.solved)
+  }
+
+  def planLoadGraph(descriptor: GraphDescriptor[Expr]): LoadGraph = {
+
+    val loaded = descriptor match {
+      case _: DefaultGraph[_] => NamedLogicalGraph("default")
+      case _ => throw new NotImplementedError("No support for loading graphs other than the default yet")
+    }
+
+    LoadGraph(IDontCareGraph, loaded)(SolvedQueryModel.empty)
   }
 }
