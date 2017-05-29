@@ -56,6 +56,6 @@ class LogicalOperatorProducer {
   }
 
   def planLoadDefaultGraph(schema: Schema): LoadGraph = {
-    LoadGraph(IDontCareGraph, NamedLogicalGraph("default", schema))(SolvedQueryModel.empty)
+    LoadGraph(NamedLogicalGraph("default", schema))(SolvedQueryModel.empty)
   }
 }

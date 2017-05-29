@@ -20,7 +20,7 @@ sealed trait LogicalGraph {
   def schema: Schema
 }
 
-case object IDontCareGraph extends LogicalGraph {
+case object EmptyGraph extends LogicalGraph {
   override val schema = Schema.empty
 }
 
@@ -69,6 +69,7 @@ final case class Select(fields: Set[Var], in: LogicalOperator)
                        (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
 }
 
-final case class LoadGraph(inGraph: LogicalGraph, outGraph: NamedLogicalGraph)
+final case class LoadGraph(outGraph: NamedLogicalGraph)
                           (override val solved: SolvedQueryModel[Expr]) extends LogicalLeafOperator {
+  override val inGraph = EmptyGraph
 }

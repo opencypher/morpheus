@@ -10,7 +10,7 @@ import org.opencypher.spark.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.api.ir.pattern.{AllGiven, Pattern}
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.types.CypherType
-import org.opencypher.spark.impl.logical.{IDontCareGraph, LoadGraph, NamedLogicalGraph}
+import org.opencypher.spark.impl.logical.{LoadGraph, NamedLogicalGraph}
 import org.opencypher.spark.impl.parse.CypherParser
 
 import scala.language.implicitConversions
@@ -18,7 +18,7 @@ import scala.language.implicitConversions
 abstract class IrTestSuite extends StdTestSuite {
   val leafRef = BlockRef("leaf")
   val leafBlock = LoadGraphBlock[Expr](Set.empty, DefaultGraph())
-  val leafPlan = LoadGraph(IDontCareGraph, NamedLogicalGraph("default", Schema.empty))(SolvedQueryModel.empty)
+  val leafPlan = LoadGraph(NamedLogicalGraph("default", Schema.empty))(SolvedQueryModel.empty)
 
   val graphBlockRef = BlockRef("graph")
   val graphBlock = LoadGraphBlock[Expr](Set.empty, DefaultGraph())
