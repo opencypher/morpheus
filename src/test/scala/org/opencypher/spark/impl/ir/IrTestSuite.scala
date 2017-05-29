@@ -18,7 +18,7 @@ import scala.language.implicitConversions
 abstract class IrTestSuite extends StdTestSuite {
   val leafRef = BlockRef("leaf")
   val leafBlock = LoadGraphBlock[Expr](Set.empty, DefaultGraph())
-  val leafPlan = LoadGraph(IDontCareGraph, NamedLogicalGraph("default"))(SolvedQueryModel.empty)
+  val leafPlan = LoadGraph(IDontCareGraph, NamedLogicalGraph("default", Schema.empty))(SolvedQueryModel.empty)
 
   val graphBlockRef = BlockRef("graph")
   val graphBlock = LoadGraphBlock[Expr](Set.empty, DefaultGraph())

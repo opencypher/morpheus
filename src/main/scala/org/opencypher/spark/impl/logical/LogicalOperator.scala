@@ -4,6 +4,7 @@ import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.SolvedQueryModel
 import org.opencypher.spark.api.ir.pattern.{EveryNode, EveryRelationship}
 import org.opencypher.spark.api.record.ProjectedSlotContent
+import org.opencypher.spark.api.schema.Schema
 
 import scala.language.implicitConversions
 
@@ -15,9 +16,15 @@ sealed trait LogicalOperator {
   def outGraph: NamedLogicalGraph
 }
 
-sealed trait LogicalGraph
-case object IDontCareGraph extends LogicalGraph
-final case class NamedLogicalGraph(name: String) extends LogicalGraph
+sealed trait LogicalGraph {
+  def schema: Schema
+}
+
+case object IDontCareGraph extends LogicalGraph {
+  override val schema = Schema.empty
+}
+
+final case class NamedLogicalGraph(name: String, schema: Schema) extends LogicalGraph
 
 sealed trait StackingLogicalOperator extends LogicalOperator {
   def in: LogicalOperator

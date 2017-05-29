@@ -28,7 +28,7 @@ class FlatPlannerTest extends StdTestSuite {
   val mkFlat = new FlatOperatorProducer()
   val flatPlanner = new FlatPlanner
 
-  val loadGraph = mkLogical.planLoadGraph(DefaultGraph())
+  val loadGraph = mkLogical.planLoadDefaultGraph(schema)
 
   // TODO: Ids missing
   // TODO: Do not name schema provided columns

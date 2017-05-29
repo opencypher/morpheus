@@ -60,8 +60,8 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
 
   def planLeaf(ref: BlockRef, model: QueryModel[Expr])(implicit context: LogicalPlannerContext): LogicalOperator = {
     model(ref) match {
-      case LoadGraphBlock(_, descriptor) =>
-        producer.planLoadGraph(descriptor)
+      case LoadGraphBlock(_, DefaultGraph()) =>
+        producer.planLoadDefaultGraph(context.schema)
       case x =>
         throw new NotImplementedError(s"Not yet able to leaf-plan $x (only queries starting with MATCH or LOAD GRAPH are supported)")
     }

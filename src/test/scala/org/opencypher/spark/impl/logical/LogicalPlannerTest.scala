@@ -61,7 +61,7 @@ class LogicalPlannerTest extends IrTestSuite {
                 Filter(HasLabel(Var("a")(CTNode), globals.label("Administrator"))(CTBoolean),
                   ExpandSource(Var("a")(CTNode), Var("r")(CTRelationship), EveryRelationship, Var("g")(CTNode),
                     NodeScan(Var("a")(CTNode), EveryNode,
-                      LoadGraph(IDontCareGraph, NamedLogicalGraph("default"))(emptySqm)
+                      LoadGraph(IDontCareGraph, NamedLogicalGraph("default", Schema.empty))(emptySqm)
                     )(emptySqm)
                   )(emptySqm)
                 )(emptySqm)
@@ -91,7 +91,7 @@ class LogicalPlannerTest extends IrTestSuite {
                 Filter(HasLabel(Var("a")(CTNode), globals.label("Administrator"))(CTBoolean),
                   ExpandSource(Var("a")(CTNode), Var("r")(CTRelationship), EveryRelationship, Var("g")(CTNode),
                     NodeScan(Var("a")(CTNode), EveryNode,
-                      LoadGraph(IDontCareGraph, NamedLogicalGraph("default"))(emptySqm)
+                      LoadGraph(IDontCareGraph, NamedLogicalGraph("default", schema))(emptySqm)
                     )(emptySqm)
                   )(emptySqm)
                 )(emptySqm)
@@ -114,7 +114,7 @@ class LogicalPlannerTest extends IrTestSuite {
         Project(ProjectedField(Var("a.prop")(CTVoid), Property(Var("a")(CTNode), globals.propertyKey("prop"))(CTVoid)),
           Filter(Not(Equals(Const(globals.constant("p1"))(CTInteger), Const(globals.constant("p2"))(CTBoolean))(CTBoolean))(CTBoolean),
             NodeScan(Var("a")(CTNode), EveryNode,
-              LoadGraph(IDontCareGraph, NamedLogicalGraph("default"))(emptySqm)
+              LoadGraph(IDontCareGraph, NamedLogicalGraph("default", Schema.empty))(emptySqm)
             )(emptySqm)
           )(emptySqm)
         )(emptySqm)

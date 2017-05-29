@@ -6,6 +6,7 @@ import org.opencypher.spark.api.ir.block.{DefaultGraph, GraphDescriptor}
 import org.opencypher.spark.api.ir.pattern.{EveryNode, EveryRelationship}
 import org.opencypher.spark.api.ir.{Field, SolvedQueryModel}
 import org.opencypher.spark.api.record.{ProjectedExpr, ProjectedField, RecordHeader}
+import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.impl.util._
 
 class LogicalOperatorProducer {
@@ -54,13 +55,7 @@ class LogicalOperatorProducer {
     Select(fields, prev)(prev.solved)
   }
 
-  def planLoadGraph(descriptor: GraphDescriptor[Expr]): LoadGraph = {
-
-    val loaded = descriptor match {
-      case _: DefaultGraph[_] => NamedLogicalGraph("default")
-      case _ => throw new NotImplementedError("No support for loading graphs other than the default yet")
-    }
-
-    LoadGraph(IDontCareGraph, loaded)(SolvedQueryModel.empty)
+  def planLoadDefaultGraph(schema: Schema): LoadGraph = {
+    LoadGraph(IDontCareGraph, NamedLogicalGraph("default", schema))(SolvedQueryModel.empty)
   }
 }
