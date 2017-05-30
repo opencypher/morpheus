@@ -145,27 +145,8 @@ trait SparkGraphLoading {
       override def base = new SparkCypherGraph with Serializable {
         selfBase =>
 
-        override def nodes(v: Var) = new SparkCypherGraph {
-          override def nodes(v: Var) = selfBase.nodes(v)
-          override def relationships(v: Var) =
-            SparkCypherGraph.empty(selfSpace)
-
-          override def model = QueryModel.nodes[Expr](v.name, context.globals)
-          override def space = selfSpace
-          override def details = nodeRecords(v)
-
-          override def schema = context.schema // TODO remove rels
-        }
-        override def relationships(v: Var) = new SparkCypherGraph {
-          override def nodes(v: Var) = selfBase.nodes(v) // TODO Remove unconnected nodes and all attributes
-          override def relationships(v: Var) = selfBase.relationships(v)
-
-          override def model = QueryModel.relationships[Expr](v.name, context.globals)
-          override def space = selfSpace
-          override def details = relRecords(v)
-
-          override def schema = context.schema // TODO remove node props
-        }
+        override def nodes(v: Var) = nodeRecords(v)
+        override def relationships(v: Var) = relRecords(v)
         override def space: SparkGraphSpace = selfSpace
 
         override def model: QueryModel[Expr] =

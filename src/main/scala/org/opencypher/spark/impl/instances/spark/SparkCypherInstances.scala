@@ -51,7 +51,7 @@ trait SparkCypherInstances {
       println("Done!")
 
       print("Physical plan ... ")
-      val physicalPlan = physicalPlanner(flatPlan)(PhysicalPlannerContext(graph, globals, constants, Map.empty))
+      val physicalPlan = physicalPlanner(flatPlan)(PhysicalPlannerContext(graph, globals, constants, graph.space.session))
       println("Done!")
 
       physicalPlan

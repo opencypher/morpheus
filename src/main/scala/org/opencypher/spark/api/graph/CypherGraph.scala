@@ -22,8 +22,8 @@ trait CypherGraph {
   def details: Records
 
   // TODO: This opens up for someone to send a wrongly typed variable here -- name here, type on inside?
-  def nodes(v: Var): Graph
-  def relationships(v: Var): Graph
+  def nodes(v: Var): Records
+  def relationships(v: Var): Records
 
 //  def filterNodes()
 //  def filterRelationships()
