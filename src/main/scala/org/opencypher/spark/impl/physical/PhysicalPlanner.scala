@@ -2,18 +2,31 @@ package org.opencypher.spark.impl.physical
 
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.global.{ConstantRef, GlobalsRegistry}
-import org.opencypher.spark.api.spark.SparkCypherGraph
+import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherResult}
 import org.opencypher.spark.api.value.CypherValue
 import org.opencypher.spark.impl.flat.FlatOperator
 import org.opencypher.spark.impl.flat
 import org.opencypher.spark.impl.DirectCompilationStage
+import org.opencypher.spark.impl.logical.DefaultGraphSource
 
-case class PhysicalPlannerContext(graph: SparkCypherGraph, globals: GlobalsRegistry, constants: Map[ConstantRef, CypherValue])
+case class PhysicalPlannerContext(graph: SparkCypherGraph, globals: GlobalsRegistry, constants: Map[ConstantRef, CypherValue], graphs: Map[String, SparkCypherResult]) {
+  def withResult(name: String, result: SparkCypherResult): PhysicalPlannerContext = copy(graphs = graphs.updated(name, result))
+}
 
 class PhysicalPlanner
-  extends DirectCompilationStage[FlatOperator, SparkCypherGraph, PhysicalPlannerContext] {
+  extends DirectCompilationStage[FlatOperator, SparkCypherResult, PhysicalPlannerContext] {
 
-  def process(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext): SparkCypherGraph = {
+
+  def process(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext): SparkCypherResult = {
+
+    val otherInterface = inner(flatPlan)
+
+    // wrap into SparkCypherResult
+
+    ???
+  }
+
+  def inner(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext): SparkCypherGraph = {
 
     val producer = new GraphProducer(RuntimeContext(context.constants, context.globals))
 
@@ -22,10 +35,21 @@ class PhysicalPlanner
     def innerPlan(flatPlan: FlatOperator): SparkCypherGraph =
       flatPlan match {
         case flat.Select(fields, in, header) =>
-          innerPlan(in).select(fields, header)
+          val graph: SparkCypherGraph = innerPlan(in)
+          graph.select(fields, header)
+
+        case flat.LoadGraph(outGraph, source) =>
+          val default = source match {
+            case DefaultGraphSource => source
+            case _ => throw new NotImplementedError("")
+          }
+
+//          context.addGraph(outGraph, default)
+          ???
 
         case flat.NodeScan(v, labels, in, header) =>
           // TODO: Recursively plan input tree
+
           context.graph.allNodes(v)
 
         case flat.Alias(expr, alias, in, header) =>

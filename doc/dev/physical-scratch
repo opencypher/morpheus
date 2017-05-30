@@ -1,0 +1,92 @@
+
+    /*
+
+    Query: (G, T) => (G', T', named graphs)
+
+    IR: (G, T+) => (name: G', T')
+
+    Logical Operator: ExpandSource@G_by_name( T1, T2 ) => ([name:  G']|G, T')
+
+    (a)-[r]->(b)
+
+    T1: a
+    T2: b
+    G: ()-[r]->()
+
+    T: a
+    G: ()-[r]->(b)
+    ...
+
+
+    Physical Output 1:
+
+    {
+      anon graph
+      anon table
+
+      [name: G0
+]    }
+
+
+
+    Physical Output 2:
+
+    {
+      anon (G, T)
+      [ name: (G, T), ... ]
+    }
+
+  MATCH
+  EMIT GRAPH foo
+  MATCH
+  CREATE
+  EMIT GRAPH bar
+  RETURN ...
+
+  val result: GraphResult = (graph: Graph).execute(cypher)
+  result
+
+    engine(defaultGraph).execute("... IN GRAPH fooo RETURN ...")
+    -> G
+    -> T
+    G.execute
+    T.execute("...")
+
+    GraphResult {
+      def execute(cypher): GraphResult = graph.execute(cypher)
+      def andThen(cypher): GraphResult = ..
+      def graph: Graph
+      def records: Records
+
+      def graph(name: String): Option[Graph] = result(name).map(_.graph)
+      def result(name: string): Option[GraphResult]
+      ...
+    }
+
+   CypherResult
+
+   CypherGraph
+   CypherRecords
+
+
+   MATCH ...
+   ...
+   WITH *
+
+   Q1
+   Q2
+   Q3
+
+   MATCH (a)
+   RETURN ...
+   THEN
+   MATCH ..
+
+
+
+    CSG {
+      anon graph
+      anon table
+    }
+
+     */

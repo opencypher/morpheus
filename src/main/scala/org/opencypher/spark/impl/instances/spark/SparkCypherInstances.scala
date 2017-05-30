@@ -2,7 +2,7 @@ package org.opencypher.spark.impl.instances.spark
 
 import org.apache.spark.sql.DataFrame
 import org.opencypher.spark_legacy.benchmark.Converters
-import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkGraphSpace}
+import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherResult, SparkGraphSpace}
 import org.opencypher.spark.api.value.CypherValue
 import org.opencypher.spark.impl.classes.Cypher
 import org.opencypher.spark.impl.flat.{FlatPlanner, FlatPlannerContext}
@@ -18,6 +18,7 @@ trait SparkCypherInstances {
     override type Graph = SparkCypherGraph
     override type Space = SparkGraphSpace
     override type Records = SparkCypherRecords
+    override type Result = SparkCypherResult
     override type Data = DataFrame
 
     private val logicalPlanner = new LogicalPlanner()
@@ -25,7 +26,7 @@ trait SparkCypherInstances {
     private val physicalPlanner = new PhysicalPlanner()
     private val parser = CypherParser
 
-    override def cypher(graph: Graph, query: String, parameters: Map[String, CypherValue]): Graph = {
+    override def cypher(graph: Graph, query: String, parameters: Map[String, CypherValue]): Result = {
       val (stmt, extractedLiterals) = parser.process(query)(CypherParser.defaultContext)
 
       val globals = GlobalsExtractor(stmt, graph.space.globals)
@@ -50,7 +51,7 @@ trait SparkCypherInstances {
       println("Done!")
 
       print("Physical plan ... ")
-      val physicalPlan = physicalPlanner(flatPlan)(PhysicalPlannerContext(graph, globals, constants))
+      val physicalPlan = physicalPlanner(flatPlan)(PhysicalPlannerContext(graph, globals, constants, Map.empty))
       println("Done!")
 
       physicalPlan

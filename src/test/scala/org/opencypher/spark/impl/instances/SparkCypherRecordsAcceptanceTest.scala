@@ -55,7 +55,7 @@ class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fix
 
     graph.records.data.count() shouldBe 1173
 
-    val graph2 = graph.cypher("MATCH (a:User) RETURN a, a.name")
+    val graph2 = graph.graph.cypher("MATCH (a:User) RETURN a, a.name")
 
     graph2.records.data.count() shouldBe 1173
   }
@@ -67,7 +67,7 @@ class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fix
     val query2 = "MATCH (a:User)-[r:ATTENDED]->() WHERE r.response = 'yes' RETURN a, r"
     val graph2 = fullSpace.base.cypher(query2)
 
-    val result = graph1.union(graph2)
+    val result = graph1.graph.union(graph2.graph)
     result.records.data.count() should equal(4711)
   }
 
@@ -78,7 +78,7 @@ class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fix
     val query2 = "MATCH (a:User)-[r:ATTENDED]->() WHERE r.response = 'yes' RETURN a, r"
     val graph2 = fullSpace.base.cypher(query2)
 
-    val result = graph1.intersect(graph2)
+    val result = graph1.graph.intersect(graph2.graph)
     result.records.data.count() should equal(0)
   }
 
@@ -93,7 +93,7 @@ class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fix
 
     val usernamesQ = "MATCH (u:User) RETURN u.name"
 
-    val records = subgraph.cypher(usernamesQ).records
+    val records = subgraph.graph.cypher(usernamesQ).records
 
     records.show()
   }
