@@ -55,19 +55,15 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, SparkCypherRe
       }
 
       // MATCH (a)-[r]->(b) => MATCH (a), (b), (a)-[r]->(b)
-      case op@flat.ExpandSource(source, rel, types, target, in, header) =>
-        val lhs = inner(in)
-        val g: SparkCypherGraph = lhs.graphs(op.inGraph.name)
+      case op@flat.ExpandSource(source, rel, types, target, sourceOp, targetOp, header) =>
+        val lhs = inner(sourceOp)
+        val rhs = inner(targetOp)
 
-        // TODO: Plan this in nested plan -- make Expand a binary operator
-        val nodeRhs = g.nodes(target)
-        val resultFromRhs = InternalResult(nodeRhs, lhs.graphs)
+        val g = lhs.graphs(op.inGraph.name)
+        val relRhs = InternalResult(g.relationships(rel), lhs.graphs).typeFilter(rel, types.relTypes, header)
 
-        val relationships: SparkCypherRecords = g.relationships(rel)
-        val relRhs = InternalResult(relationships, lhs.graphs).typeFilter(rel, types.relTypes, header)
-
-        val rhs = relRhs.joinTarget(resultFromRhs).on(rel)(target)
-        val expanded = lhs.expandSource(rhs).on(source)(rel)
+        val relAndTarget = relRhs.joinTarget(rhs).on(rel)(target)
+        val expanded = lhs.expandSource(relAndTarget).on(source)(rel)
 
         expanded
       case x =>

@@ -14,6 +14,14 @@ sealed trait FlatOperator {
   def outGraph: NamedLogicalGraph
 }
 
+sealed trait BinaryFlatOperator extends FlatOperator {
+  def lhs: FlatOperator
+  def rhs: FlatOperator
+
+  override def inGraph = lhs.outGraph
+  override def outGraph = lhs.outGraph
+}
+
 sealed trait StackingFlatOperator extends FlatOperator {
   def in: FlatOperator
 
@@ -38,8 +46,12 @@ final case class Alias(expr: Expr, alias: Var, in: FlatOperator, header: RecordH
   extends StackingFlatOperator {
 }
 
-final case class ExpandSource(source: Var, rel: Var, types: EveryRelationship, target: Var, in: FlatOperator, header: RecordHeader)
-  extends StackingFlatOperator {
+final case class ExpandSource(source: Var, rel: Var, types: EveryRelationship, target: Var,
+                              sourceOp: FlatOperator, targetOp: FlatOperator, header: RecordHeader)
+  extends BinaryFlatOperator {
+
+  override def lhs = sourceOp
+  override def rhs = targetOp
 }
 
 final case class LoadGraph(outGraph: NamedLogicalGraph, source: GraphSource) extends FlatLeafOperator {

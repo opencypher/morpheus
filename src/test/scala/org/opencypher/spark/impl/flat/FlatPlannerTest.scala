@@ -110,7 +110,7 @@ class FlatPlannerTest extends StdTestSuite {
 
     result should equal(
       mkFlat.expandSource(source, rel, EveryRelationship, target,
-        flatNodeScan(source)
+        flatNodeScan(source), flatNodeScan(target)
       )
     )
     headerContents should equal(Set(

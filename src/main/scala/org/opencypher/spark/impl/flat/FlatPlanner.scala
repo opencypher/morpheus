@@ -27,7 +27,7 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
         producer.project(it, process(in))
 
       case logical.ExpandSource(source, rel, types, target, sourceOp, targetOp) =>
-        producer.expandSource(source, rel, types, target, process(sourceOp))
+        producer.expandSource(source, rel, types, target, process(sourceOp), process(targetOp))
 
       case logical.LoadGraph(outGraph, source) =>
         producer.planLoadGraph(outGraph, source)

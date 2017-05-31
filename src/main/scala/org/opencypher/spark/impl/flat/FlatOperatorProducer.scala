@@ -81,6 +81,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
       labelName => ProjectedExpr(HasLabel(node, label(labelName))(CTBoolean))
     }.toSeq
 
+    // TODO: This should consider multiple types per property
     val keyHeaderContents = keyGroups.toSeq.flatMap {
       case (k, types) => types.map { t => ProjectedExpr(Property(node, propertyKey(k))(t)) }
     }
@@ -106,20 +107,8 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   // TODO: Specialize per kind of slot content
-  def expandSource(source: Var, rel: Var, types: EveryRelationship, target: Var, in: FlatOperator): FlatOperator = {
-    // TODO: This should consider multiple types per property
-    val allNodeProperties = schema.nodeKeyMap.m.values.reduce(_ ++ _).toSeq.distinct
-    val allLabels = schema.labels
-
-    val targetLabelHeaderContents = allLabels.map {
-      labelName => ProjectedExpr(HasLabel(target, label(labelName))(CTBoolean))
-    }
-
-    val targetKeyHeaderContents = allNodeProperties.map {
-      case ((k, t)) => ProjectedExpr(Property(target, propertyKey(k))(t))
-    }
-
-    // TODO: This should consider multiple types per property
+  def expandSource(source: Var, rel: Var, types: EveryRelationship, target: Var,
+                   sourceOp: FlatOperator, targetOp: FlatOperator): FlatOperator = {
     val relKeyHeaderProperties = types.relTypes.elts.flatMap(t => schema.relationshipKeys(globals.relType(t).name).toSeq)
     val relKeyHeaderContents = relKeyHeaderProperties.map {
       case ((k, t)) => ProjectedExpr(Property(rel, propertyKey(k))(t))
@@ -127,13 +116,12 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
     val typeIdContent = ProjectedExpr(TypeId(rel)(CTInteger))
 
-    val targetNode = OpaqueField(target)
+    val relHeaderContents = Seq(OpaqueField(rel), typeIdContent) ++ relKeyHeaderContents
+    val (sourceWithRelHeader, _) = sourceOp.header.update(addContents(relHeaderContents))
 
-    val (newHeader, _) = in.header.update(addContents(
-      Seq(OpaqueField(rel), typeIdContent) ++ relKeyHeaderContents ++ Seq(targetNode) ++ targetLabelHeaderContents ++ targetKeyHeaderContents
-    ))
+    val expandHeader = sourceWithRelHeader ++ targetOp.header
 
-    ExpandSource(source, rel, types, target, in, newHeader)
+    ExpandSource(source, rel, types, target, sourceOp, targetOp, expandHeader)
   }
 
   def planLoadGraph(logicalGraph: NamedLogicalGraph, source: GraphSource): LoadGraph = {
