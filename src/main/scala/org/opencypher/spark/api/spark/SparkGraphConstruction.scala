@@ -11,8 +11,8 @@ trait SparkGraphConstruction {
 }
 
 trait SparkGraphBuilder {
-  def withNodesDF(df: DataFrame, id: String): SparkNodesMapper
-  def withRelationshipsDF(df: DataFrame, ids: (String, String, String)): SparkRelationshipsMapper
+  def withNodesDF(df: DataFrame, id: Int): SparkNodesMapper
+  def withRelationshipsDF(df: DataFrame, ids: (Int, Int, Int)): SparkRelationshipsMapper
   def graph: SparkCypherGraph
 }
 
@@ -23,11 +23,10 @@ trait SparkEntitySource {
 
   final def graph: SparkCypherGraph = and.graph
 
-  final def property(name: String): Self = property(name, name)
-  def property(name: String, column: String): Self
+  final def property(name: String, column: Int): Self =
+    property(name, column, CTAny.nullable)
 
-  final def property(name: String, cypherType: CypherType): Self = property(name, name, cypherType)
-  def property(name: String, column: String, cypherType: CypherType): Self
+  def property(name: String, column: Int, cypherType: CypherType): Self
 
   def propertiesAsGiven: SparkGraphBuilder
   def and: SparkGraphBuilder
@@ -39,15 +38,14 @@ trait SparkNodesMapper extends SparkEntitySource {
 
   // def withCommonLabels(labels: String*): SparkNodesMapper
 
-  final def label(name: String): SparkNodesMapper = label(name, name)
-  def label(name: String, column: String): SparkNodesMapper
+  def label(name: String, column: Int): SparkNodesMapper
 }
 
 trait SparkRelationshipsMapper extends SparkEntitySource {
   override type Self = SparkRelationshipsMapper
 
   def withRelationshipTypeName(relTypeName: String): SparkRelationshipsMapper
-  def withRelationshipTypeColumn(relTypeColumn: String): SparkRelationshipsMapper
+  def withRelationshipTypeColumn(relTypeColumn: Int): SparkRelationshipsMapper
 }
 
 
