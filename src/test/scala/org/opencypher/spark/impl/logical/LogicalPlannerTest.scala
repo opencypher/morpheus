@@ -11,10 +11,16 @@ import org.opencypher.spark.api.types._
 import org.opencypher.spark.impl.ir.IrTestSuite
 import org.opencypher.spark.impl.logical
 import org.scalatest.matchers.{MatchResult, Matcher}
+import org.opencypher.spark.impl.util.toVar
 
 import scala.language.implicitConversions
 
 class LogicalPlannerTest extends IrTestSuite {
+
+  val nodeA = Field("a")(CTNode)
+  val nodeB = Field("b")(CTNode)
+  val nodeG = Field("g")(CTNode)
+  val relR = Field("r")(CTRelationship)
 
   test("convert load graph block") {
     plan(irFor(leafBlock)) should equal(Select(Set.empty, leafPlan)(emptySqm))
@@ -22,16 +28,17 @@ class LogicalPlannerTest extends IrTestSuite {
 
   test("convert match block") {
     val pattern = Pattern.empty[Expr]
-      .withEntity('a, EveryNode)
-      .withEntity('b, EveryNode)
-      .withEntity('r, EveryRelationship)
-      .withConnection('r, DirectedRelationship('a, 'b))
+      .withEntity(nodeA, EveryNode)
+      .withEntity(nodeB, EveryNode)
+      .withEntity(relR, EveryRelationship)
+      .withConnection(relR, DirectedRelationship(nodeA, nodeB))
 
     val block = matchBlock(pattern)
 
-    val scan = NodeScan('a, EveryNode, leafPlan)(emptySqm.withField('a))
+    val scan1 = NodeScan(nodeA, EveryNode, leafPlan)(emptySqm.withField(nodeA))
+    val scan2 = NodeScan(nodeB, EveryNode, leafPlan)(emptySqm.withField(nodeB))
     plan(irWithLeaf(block)) should equalWithoutResult(
-      ExpandSource('a, 'r, EveryRelationship, 'b, scan)(scan.solved.withFields('r, 'b))
+      ExpandSource(nodeA, relR, EveryRelationship, nodeB, scan1, scan2)(emptySqm.withFields(nodeA, nodeB, relR))
     )
   }
 
@@ -61,6 +68,9 @@ class LogicalPlannerTest extends IrTestSuite {
                 Filter(HasLabel(Var("a")(CTNode), globals.label("Administrator"))(CTBoolean),
                   ExpandSource(Var("a")(CTNode), Var("r")(CTRelationship), EveryRelationship, Var("g")(CTNode),
                     NodeScan(Var("a")(CTNode), EveryNode,
+                      LoadGraph(NamedLogicalGraph("default", Schema.empty), DefaultGraphSource)(emptySqm)
+                    )(emptySqm),
+                    NodeScan(Var("g")(CTNode), EveryNode,
                       LoadGraph(NamedLogicalGraph("default", Schema.empty), DefaultGraphSource)(emptySqm)
                     )(emptySqm)
                   )(emptySqm)
@@ -92,6 +102,9 @@ class LogicalPlannerTest extends IrTestSuite {
                   ExpandSource(Var("a")(CTNode), Var("r")(CTRelationship), EveryRelationship, Var("g")(CTNode),
                     NodeScan(Var("a")(CTNode), EveryNode,
                       LoadGraph(NamedLogicalGraph("default", schema), DefaultGraphSource)(emptySqm)
+                    )(emptySqm),
+                    NodeScan(Var("g")(CTNode), EveryNode,
+                      LoadGraph(NamedLogicalGraph("default", schema), DefaultGraphSource)(emptySqm)
                     )(emptySqm)
                   )(emptySqm)
                 )(emptySqm)
@@ -103,7 +116,6 @@ class LogicalPlannerTest extends IrTestSuite {
     )
   }
 
-  // TODO: Doesn't work with new typing scheme
   test("plan query with negation") {
     val ir = "MATCH (a) WHERE NOT $p1 = $p2 RETURN a.prop".irWithParams("p1" -> CTInteger, "p2" -> CTBoolean)
 
@@ -111,9 +123,9 @@ class LogicalPlannerTest extends IrTestSuite {
 
     plan(ir, globals) should equal(
       Select(Set(Var("a.prop")(CTVoid)),
-        Project(ProjectedField(Var("a.prop")(CTVoid), Property(Var("a")(CTNode), globals.propertyKey("prop"))(CTVoid)),
+        Project(ProjectedField(Var("a.prop")(CTVoid), Property(nodeA, globals.propertyKey("prop"))(CTVoid)),
           Filter(Not(Equals(Const(globals.constant("p1"))(CTInteger), Const(globals.constant("p2"))(CTBoolean))(CTBoolean))(CTBoolean),
-            NodeScan(Var("a")(CTNode), EveryNode,
+            NodeScan(nodeA, EveryNode,
               LoadGraph(NamedLogicalGraph("default", Schema.empty), DefaultGraphSource)(emptySqm)
             )(emptySqm)
           )(emptySqm)

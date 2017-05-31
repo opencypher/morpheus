@@ -11,20 +11,24 @@ import org.opencypher.spark.impl.util._
 
 class LogicalOperatorProducer {
 
-  def planTargetExpand(source: Field, rel: Field, target: Field, prev: LogicalOperator): ExpandTarget = {
-    val solved = prev.solved.withFields(rel, source)
+  def planTargetExpand(source: Field, rel: Field, target: Field, sourcePlan: LogicalOperator, targetPlan: LogicalOperator): ExpandTarget = {
+    val prevSolved = sourcePlan.solved ++ targetPlan.solved
 
-    ExpandTarget(source, rel, target, prev)(solved)
+    val solved = prevSolved.withField(rel)
+
+    ExpandTarget(source, rel, target, sourcePlan, targetPlan)(solved)
   }
 
-  def planSourceExpand(source: Field, r: (Field, EveryRelationship), target: Field, prev: LogicalOperator): ExpandSource = {
+  def planSourceExpand(source: Field, r: (Field, EveryRelationship), target: Field, sourcePlan: LogicalOperator, targetPlan: LogicalOperator): ExpandSource = {
     val (rel, types) = r
 
-    val solved = types.relTypes.elts.foldLeft(prev.solved.withFields(rel, target)) {
+    val prevSolved = sourcePlan.solved ++ targetPlan.solved
+
+    val solved = types.relTypes.elts.foldLeft(prevSolved.withField(rel)) {
       case (acc, next) => acc.withPredicate(HasType(rel, next)(CTBoolean))
     }
 
-    ExpandSource(source, rel, types, target, prev)(solved)
+    ExpandSource(source, rel, types, target, sourcePlan, targetPlan)(solved)
   }
 
   def planNodeScan(node: Field, everyNode: EveryNode, prev: LogicalOperator): NodeScan = {

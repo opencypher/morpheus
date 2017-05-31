@@ -99,7 +99,7 @@ class FlatPlannerTest extends StdTestSuite {
   test("flat plan for expand") {
     val result = flatPlanner.process(
       mkLogical.planSourceExpand(Field("n")(CTNode), Field("r")(CTRelationship) -> EveryRelationship, Field("m")(CTNode),
-        logicalNodeScan("n")
+        logicalNodeScan("n"), logicalNodeScan("m")
       )
     )
     val headerContents = result.header.contents

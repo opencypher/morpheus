@@ -6,9 +6,11 @@ import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir._
 import org.opencypher.spark.api.ir.block._
 import org.opencypher.spark.api.ir.global.GlobalsRegistry
-import org.opencypher.spark.api.ir.pattern.{AllGiven, Connection, Pattern}
+import org.opencypher.spark.api.ir.pattern._
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.impl.{CompilationStage, DirectCompilationStage}
+
+import scala.annotation.tailrec
 
 final case class LogicalPlannerContext(schema: Schema, tokens: GlobalsRegistry)
 
@@ -156,37 +158,43 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
   }
 
   private def planPattern(plan: LogicalOperator, pattern: Pattern[Expr])(implicit context: LogicalPlannerContext) = {
-    val lhsLeaf = nodePlan(plan: LogicalOperator, pattern)
-
-    val (newPlan, _) = fixedPoint(planExpansions)(lhsLeaf -> pattern)
-
-    newPlan
-  }
-
-  private def planExpansions(input: (LogicalOperator, Pattern[Expr])): (LogicalOperator, Pattern[Expr]) = {
-    val (in, remainingPattern) = input
-
-    val solvedFields = in.solved.fields
-
-    val result: Option[ExpandOperator] = remainingPattern.topology.collectFirst {
-      case (r, c: Connection) =>
-        solvedFields.collectFirst {
-          case v if c.source == v =>
-            producer.planSourceExpand(c.source, r -> remainingPattern.rels(r), c.target, in)
-          case v if c.target == v =>
-            producer.planTargetExpand(c.source, r, c.target, in)
-        }
-    }.flatten
-
-    result match {
-      case None => input
-      case Some(op) => planExpansions(op -> remainingPattern.withoutConnection(Field(op.rel.name)()))
+    val nodes = pattern.entities.collect {
+      case (f, e: EveryNode) if f.cypherType.subTypeOf(CTNode).isTrue => f -> e
     }
+
+    val nodePlans = nodes.map {
+      // TODO: This copies the full subtree underneath each node -- only a LoadGraph is necessary
+      case (f, e) => nodePlan(plan, f, e)
+    }
+
+    if (pattern.topology.nonEmpty)
+      planExpansions(nodePlans.toSet, pattern)
+    else if (nodePlans.size == 1) nodePlans.head
+    else throw new IllegalStateException("What kind of a pattern is this???")
   }
 
-  private def nodePlan(plan: LogicalOperator, pattern: Pattern[Expr])(implicit context: LogicalPlannerContext) = {
-    val (field, everyNode) = pattern.nodes.head
+  @tailrec
+  private def planExpansions(disconnectedPlans: Set[LogicalOperator], pattern: Pattern[Expr]): LogicalOperator = {
+    val allSolved = disconnectedPlans.map(_.solved).reduce(_ ++ _)
 
+    val (r, c) = pattern.topology.collectFirst {
+      case (rel, conn: Connection) if !allSolved.solves(rel) => rel -> conn
+    }.getOrElse(throw new IllegalStateException("Recursion / solved failure during logical planning: unable to find unsolved connection"))
+
+    val sourcePlan = disconnectedPlans.collectFirst {
+      case p if p.solved.solves(c.source) => p
+    }.getOrElse(throw new IllegalStateException("A connection must have a known source!"))
+    val targetPlan = disconnectedPlans.collectFirst {
+      case p if p.solved.solves(c.target) => p
+    }.getOrElse(throw new IllegalStateException("A connection must have a known target!"))
+
+    val expand = producer.planSourceExpand(c.source, r -> pattern.rels(r), c.target, sourcePlan, targetPlan)
+
+    if (expand.solved.solves(pattern)) expand
+    else planExpansions((disconnectedPlans - sourcePlan - targetPlan) + expand, pattern)
+  }
+
+  private def nodePlan(plan: LogicalOperator, field: Field, everyNode: EveryNode)(implicit context: LogicalPlannerContext) = {
     producer.planNodeScan(field, everyNode, plan)
   }
 }

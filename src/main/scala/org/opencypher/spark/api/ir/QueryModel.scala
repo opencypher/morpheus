@@ -117,6 +117,7 @@ object QueryModel {
   }
 }
 
+// TODO: Test this class
 case class SolvedQueryModel[E](fields: Set[Field], predicates: Set[E]) {
   def solves(block: Block[E]) = {
     block.binds.fields.subsetOf(fields) && block.where.elts.subsetOf(predicates)
@@ -131,6 +132,12 @@ case class SolvedQueryModel[E](fields: Set[Field], predicates: Set[E]) {
 
     binds && preds
   }
+
+  def ++(other: SolvedQueryModel[E]): SolvedQueryModel[E] =
+    copy(fields ++ other.fields, predicates ++ other.predicates)
+
+  def solves(f: Field): Boolean = fields(f)
+  def solves(p: Pattern[E]): Boolean = p.fields.subsetOf(fields)
 }
 object SolvedQueryModel {
   def empty[E] = SolvedQueryModel[E](Set.empty, Set.empty)
