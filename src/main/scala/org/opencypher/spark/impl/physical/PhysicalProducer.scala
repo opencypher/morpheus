@@ -26,7 +26,7 @@ case class RuntimeContext(constants: Map[ConstantRef, CypherValue], globals: Glo
   def columnName(content: SlotContent): String = SparkColumnName.of(content)
 }
 
-class RecordsProducer(context: RuntimeContext) {
+class PhysicalProducer(context: RuntimeContext) {
 
   implicit val c = context
 
@@ -65,44 +65,33 @@ class RecordsProducer(context: RuntimeContext) {
         prev.mapRecords(_.filter(Ands(typeExprs), header))
       }
     }
-  }
-}
 
-class GraphProducer(context: RuntimeContext) {
-
-
-  implicit val c = context
-
-  implicit final class RichCypherGraph(val graph: SparkCypherGraph) {
-
-    def expandSource(relView: SparkCypherGraph) = new JoinBuilder {
-      override def on(node: Var)(rel: Var) = {
-        val lhsSlot = graph.details.header.slotFor(node)
-        val rhsSlot = relView.details.header.sourceNode(rel)
+    def joinTarget(nodeView: InternalResult) = new JoinBuilder {
+      override def on(rel: Var)(node: Var) = {
+        val lhsSlot = prev.records.header.targetNode(rel)
+        val rhsSlot = nodeView.records.header.slotFor(node)
 
         assertIsNode(lhsSlot)
         assertIsNode(rhsSlot)
 
-        val records = graph.details.join(relView.details)(lhsSlot, rhsSlot)
-        InternalCypherGraph(records, graph.model)
+        prev.mapRecords(_.join(nodeView.records)(lhsSlot, rhsSlot))
       }
     }
 
-    def joinTarget(nodeView: SparkCypherGraph) = new JoinBuilder {
-      override def on(rel: Var)(node: Var) = {
-        val lhsSlot = graph.details.header.targetNode(rel)
-        val rhsSlot = nodeView.details.header.slotFor(node)
+    def expandSource(relView: InternalResult) = new JoinBuilder {
+      override def on(node: Var)(rel: Var) = {
+        val lhsSlot = prev.records.header.slotFor(node)
+        val rhsSlot = relView.records.header.sourceNode(rel)
 
         assertIsNode(lhsSlot)
         assertIsNode(rhsSlot)
 
-        val records = graph.details.join(nodeView.details)(lhsSlot, rhsSlot)
-        InternalCypherGraph(records, graph.model)
+        prev.mapRecords(_.join(relView.records)(lhsSlot, rhsSlot))
       }
     }
 
     sealed trait JoinBuilder {
-      def on(lhsKey: Var)(rhsKey: Var): SparkCypherGraph
+      def on(lhsKey: Var)(rhsKey: Var): InternalResult
     }
 
     private def assertIsNode(slot: RecordSlot): Unit = {
@@ -111,6 +100,12 @@ class GraphProducer(context: RuntimeContext) {
         case x => throw new IllegalArgumentException(s"Expected $slot to contain a node, but was $x")
       }
     }
+  }
+}
+
+class GraphProducer(context: RuntimeContext) {
+
+  implicit final class RichCypherGraph(val graph: SparkCypherGraph) {
 
     final case class InternalCypherGraph(graphRecords: SparkCypherRecords, graphModel: QueryModel[Expr]) extends SparkCypherGraph {
       override def nodes(v: Var): SparkCypherRecords = {

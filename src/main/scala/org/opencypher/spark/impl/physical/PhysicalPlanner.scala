@@ -46,17 +46,9 @@ class PhysicalPlanner
 
   def inner(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext): InternalResult = {
 
-    val producer = new RecordsProducer(RuntimeContext(context.constants, context.globals))
+    val producer = new PhysicalProducer(RuntimeContext(context.constants, context.globals))
 
     import producer._
-
-    // visit(node, context)
-    //   context <- plan(children)
-    //   context <- ...
-    //   fuse(contexts)
-    //   build plan for node
-    //  return plan and context
-
 
     def innerPlan(flatPlan: FlatOperator): InternalResult =
       flatPlan match {
@@ -72,33 +64,32 @@ class PhysicalPlanner
           InternalResult(unitTable(context.session), Map(outGraph.name -> context.defaultGraph))
 
         case op@flat.NodeScan(v, labels, in, header) =>
-          // TODO: Recursively plan input tree
-
           innerPlan(in).nodeScan(op.inGraph, v, labels, header)
 
         case flat.Alias(expr, alias, in, header) =>
           innerPlan(in).alias(expr, alias, header)
 
         case flat.Filter(expr, in, header) => expr match {
-          // TODO: Is it justified to treat labels separately?
-          case TrueLit() => innerPlan(in)
+          case TrueLit() => innerPlan(in)     // optimise away filter
           case e => innerPlan(in).filter(e, header)
         }
 
         // MATCH (a)-[r]->(b) => MATCH (a), (b), (a)-[r]->(b)
         case op@flat.ExpandSource(source, rel, types, target, in, header) =>
           val lhs = innerPlan(in)
-          // TODO: where is the node label info? We could plan a filter here
           val g: SparkCypherGraph = lhs.graphs(op.inGraph.name)
+
+          // TODO: Plan this in nested plan -- make Expand a binary operator
           val nodeRhs = g.nodes(target)
+          val resultFromRhs = InternalResult(nodeRhs, lhs.graphs)
+
           val relationships: SparkCypherRecords = g.relationships(rel)
           val relRhs = InternalResult(relationships, lhs.graphs).typeFilter(rel, types.relTypes, header)
 
-//          val rhs = relRhs.joinTarget(nodeRhs).on(rel)(target)
-//          val expanded = lhs.expandSource(rhs).on(source)(rel)
-//
-//          expanded
-          ???
+          val rhs = relRhs.joinTarget(resultFromRhs).on(rel)(target)
+          val expanded = lhs.expandSource(rhs).on(source)(rel)
+
+          expanded
         case x =>
           throw new NotImplementedError(s"Can't plan operator $x yet")
       }
