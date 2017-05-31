@@ -12,4 +12,5 @@ trait CypherResult {
   def records: Records
 
   def result(name: String): Option[Result]
+  def namedGraph(name: String): Option[Graph]
 }

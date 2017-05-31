@@ -1,20 +1,14 @@
 package org.opencypher.spark.impl.physical
 
-import org.apache.spark.sql.Column
-import org.apache.spark.sql.catalyst.expressions.Literal
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.global.{ConstantRef, GlobalsRegistry, RelTypeRef}
 import org.opencypher.spark.api.ir.pattern.{AnyGiven, EveryNode}
-import org.opencypher.spark.api.ir.{Field, QueryModel}
 import org.opencypher.spark.api.record._
-import org.opencypher.spark.api.schema.Schema
-import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkGraphSpace}
 import org.opencypher.spark.api.types.{CTBoolean, CTNode}
 import org.opencypher.spark.api.value.CypherValue
 import org.opencypher.spark.impl.instances.spark.records._
 import org.opencypher.spark.impl.logical.NamedLogicalGraph
-import org.opencypher.spark.impl.spark.{SparkColumnName, toSparkType}
-import org.opencypher.spark.impl.syntax.header._
+import org.opencypher.spark.impl.spark.SparkColumnName
 import org.opencypher.spark.impl.syntax.transform._
 
 object RuntimeContext {
@@ -99,77 +93,6 @@ class PhysicalProducer(context: RuntimeContext) {
         case CTNode =>
         case x => throw new IllegalArgumentException(s"Expected $slot to contain a node, but was $x")
       }
-    }
-  }
-}
-
-class GraphProducer(context: RuntimeContext) {
-
-  implicit final class RichCypherGraph(val graph: SparkCypherGraph) {
-
-    final case class InternalCypherGraph(graphRecords: SparkCypherRecords, graphModel: QueryModel[Expr]) extends SparkCypherGraph {
-      override def nodes(v: Var): SparkCypherRecords = {
-          val nodes = graphModel.result.nodes
-          // TODO: Assert no duplicate entries
-          val oldIndices: Map[SlotContent, Int] = graphRecords.header.slots.flatMap { slot: RecordSlot =>
-              slot.content match {
-                case p: ProjectedSlotContent =>
-                  p.expr match {
-                    case h@HasLabel(Var(name), label) if nodes(Field(name)()) =>
-                      Some(ProjectedExpr(HasLabel(v, label)(h.cypherType)) -> slot.index)
-                    case p@Property(Var(name), key) if nodes(Field(name)()) =>
-                      Some(ProjectedExpr(Property(v, key)(p.cypherType))-> slot.index)
-                    case _ => None
-                  }
-
-                case OpaqueField(Var(name)) if nodes(Field(name)()) => Some(OpaqueField(v) -> slot.index)
-                case _ => None
-              }
-          }.toMap
-
-          // TODO: Check result for failure to add
-          val (newHeader, _) = RecordHeader.empty.update(addContents(oldIndices.keySet.toSeq))
-          val newIndices = newHeader.slots.map(slot => slot.content -> slot.index).toMap
-          val mappingTable = oldIndices.map {
-            case (content, oldIndex) => oldIndex -> newIndices(content)
-          }
-
-          val frames = nodes.map { nodeField =>
-            val nodeVar = Var(nodeField.name)(CTNode)
-            val nodeIndices: Seq[(Int, Option[Int])] = oldIndices.map {
-              case (_, oldIndex) =>
-                if (graphRecords.header.slots(oldIndex).content.owner.contains(nodeVar))
-                  mappingTable(oldIndex) -> Some(oldIndex)
-                else
-                  mappingTable(oldIndex) -> None
-            }.toSeq.sortBy(_._1)
-
-            val columns = nodeIndices.map {
-              case (newIndex, Some(oldIndex)) =>
-                new Column(graphRecords.data.columns(oldIndex)).as(SparkColumnName.of(newHeader.slots(newIndex)))
-              case (newIndex, None) =>
-                val slot = newHeader.slots(newIndex)
-                new Column(Literal(null, toSparkType(slot.content.cypherType))).as(SparkColumnName.of(slot.content))
-            }
-            graphRecords.data.select(columns: _*)
-
-          }
-
-          val finalDf = frames.reduce(_ union _)
-
-          new SparkCypherRecords {
-            override def data = finalDf
-            override def header = newHeader
-          }
-        }
-
-      override def relationships(v: Var) = ???
-
-      override def space: SparkGraphSpace = graph.space
-      override def schema: Schema = graph.schema
-
-      override def model: QueryModel[Expr] = graphModel
-      override def details: SparkCypherRecords = graphRecords
     }
   }
 }
