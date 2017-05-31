@@ -2,6 +2,7 @@ package org.opencypher.spark.api.ir.pattern
 
 import org.opencypher.spark.api.expr.Expr
 import org.opencypher.spark.impl.ir.IrTestSuite
+import org.opencypher.spark.toField
 
 class PatternTest extends IrTestSuite {
 

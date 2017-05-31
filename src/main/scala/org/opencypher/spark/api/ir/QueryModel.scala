@@ -117,14 +117,18 @@ object QueryModel {
   }
 }
 
-// TODO: Test this class
 case class SolvedQueryModel[E](fields: Set[Field], predicates: Set[E]) {
-  def solves(block: Block[E]) = {
-    block.binds.fields.subsetOf(fields) && block.where.elts.subsetOf(predicates)
-  }
-  def withField(f: Field) = copy(fields = fields + f)
-  def withFields(fs: Field*) = copy(fields = fields ++ fs)
-  def withPredicate(pred: E) = copy(predicates = predicates + pred)
+
+  // extension
+  def withField(f: Field): SolvedQueryModel[E] = copy(fields = fields + f)
+  def withFields(fs: Field*): SolvedQueryModel[E] = copy(fields = fields ++ fs)
+  def withPredicate(pred: E): SolvedQueryModel[E] = copy(predicates = predicates + pred)
+
+  def ++(other: SolvedQueryModel[E]): SolvedQueryModel[E] =
+    copy(fields ++ other.fields, predicates ++ other.predicates)
+
+  // containment
+  def contains(blocks: Block[E]*): Boolean = contains(blocks.toSet)
   def contains(blocks: Set[Block[E]]): Boolean = blocks.forall(contains)
   def contains(block: Block[E]): Boolean = {
     val binds = block.binds.fields subsetOf fields
@@ -133,14 +137,10 @@ case class SolvedQueryModel[E](fields: Set[Field], predicates: Set[E]) {
     binds && preds
   }
 
-  def ++(other: SolvedQueryModel[E]): SolvedQueryModel[E] =
-    copy(fields ++ other.fields, predicates ++ other.predicates)
-
   def solves(f: Field): Boolean = fields(f)
   def solves(p: Pattern[E]): Boolean = p.fields.subsetOf(fields)
 }
+
 object SolvedQueryModel {
-  def empty[E] = SolvedQueryModel[E](Set.empty, Set.empty)
+  def empty[E]: SolvedQueryModel[E] = SolvedQueryModel[E](Set.empty, Set.empty)
 }
-// sealed trait ConstantBinding
-// final case class ParameterBinding(name: String)

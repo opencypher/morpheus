@@ -6,7 +6,7 @@ import org.opencypher.spark.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.api.ir.pattern._
 import org.opencypher.spark.api.ir.{Field, QueryModel}
 import org.opencypher.spark.api.types.CTNode
-import org.opencypher.spark.toVar
+import org.opencypher.spark._
 
 import scala.collection.immutable.Set
 

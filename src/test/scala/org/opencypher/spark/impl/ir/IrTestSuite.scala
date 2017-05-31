@@ -23,9 +23,6 @@ abstract class IrTestSuite extends StdTestSuite {
   val graphBlockRef = BlockRef("graph")
   val graphBlock = LoadGraphBlock[Expr](Set.empty, DefaultGraph())
 
-  implicit def toField(s: Symbol): Field = Field(s.name)()
-  def toField(s: Symbol, t: CypherType): Field = Field(s.name)(t)
-
   /**
     * Construct a single-block ir; the parameter block has to be a block that could be planned as a leaf.
     */

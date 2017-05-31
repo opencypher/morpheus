@@ -10,8 +10,9 @@ import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.types._
 import org.opencypher.spark.impl.ir.IrTestSuite
 import org.opencypher.spark.impl.logical
-import org.scalatest.matchers.{MatchResult, Matcher}
 import org.opencypher.spark.impl.util.toVar
+import org.opencypher.spark.toField
+import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.language.implicitConversions
 
