@@ -1,9 +1,9 @@
 package org.opencypher.spark.api.graph
 
-import org.opencypher.spark.api.expr.{Expr, Var}
-import org.opencypher.spark.api.ir.QueryModel
+import org.opencypher.spark.api.expr.Var
 import org.opencypher.spark.api.record.CypherRecords
 import org.opencypher.spark.api.schema.Schema
+import org.opencypher.spark.api.types.{CTNode, CTRelationship}
 
 trait CypherGraph {
 
@@ -15,15 +15,14 @@ trait CypherGraph {
 
   def space: Space
 
-  def model: QueryModel[Expr]
   def schema: Schema
-
-  def records: Records = details.compact
-  def details: Records
 
   // TODO: This opens up for someone to send a wrongly typed variable here -- name here, type on inside?
   def nodes(v: Var): Records
   def relationships(v: Var): Records
+
+  def _nodes(name: String, typ: CTNode): Records = ???
+  def _relationships(name: String, typ: CTRelationship): Records = ???
 
 //  def filterNodes()
 //  def filterRelationships()

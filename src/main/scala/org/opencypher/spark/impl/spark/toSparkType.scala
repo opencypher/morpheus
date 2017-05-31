@@ -10,6 +10,8 @@ object toSparkType extends Serializable {
     case CTBoolean => BooleanType
     case CTAny => BinaryType
     case CTFloat => DoubleType
+    case CTNode => LongType
+    case CTRelationship => LongType
     case x => throw new NotImplementedError(s"No mapping for $x")
   }
 }

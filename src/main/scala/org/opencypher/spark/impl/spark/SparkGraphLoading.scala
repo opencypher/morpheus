@@ -149,12 +149,7 @@ trait SparkGraphLoading {
         override def relationships(v: Var) = relRecords(v)
         override def space: SparkGraphSpace = selfSpace
 
-        override def model: QueryModel[Expr] =
-          QueryModel.base[Expr](sourceNode, rel, targetNode, selfSpace.globals)
-
         override def schema: Schema = context.schema
-
-        override def details: SparkCypherRecords = ???
       }
 
       override def session: SparkSession = sparkSession
