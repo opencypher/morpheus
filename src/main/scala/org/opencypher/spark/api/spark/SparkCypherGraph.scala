@@ -5,6 +5,7 @@ import org.opencypher.spark.api.graph.CypherGraph
 import org.opencypher.spark.api.record.{OpaqueField, RecordHeader}
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.types.{CTNode, CTRelationship}
+import org.opencypher.spark.impl.spark.{ExternalGraph, SparkGraphBuilderImpl}
 
 trait SparkCypherGraph extends CypherGraph {
 

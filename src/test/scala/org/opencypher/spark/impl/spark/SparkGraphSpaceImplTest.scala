@@ -1,21 +1,22 @@
 package org.opencypher.spark.impl.spark
 
-import org.opencypher.spark.api.spark.SparkGraphSpace
+import org.opencypher.spark.api.spark.{DescribeExternalGraph, SparkCypherGraph, SparkGraphSpace}
 import org.opencypher.spark.api.types.{CTFloat, CTNode, CTRelationship, CTString}
 import org.opencypher.spark.{StdTestSuite, TestSession}
 
-class SparkGraphBuilderImplTest extends StdTestSuite with TestSession.Fixture {
+class SparkGraphSpaceImplTest extends StdTestSuite with TestSession.Fixture {
 
-  test("construct graph builder for empty graph") {
+  test("import empty graph") {
     val space = SparkGraphSpace.createEmpty(session)
-    val builder = new SparkGraphBuilderImpl(space)
-    val graph = builder.graph
 
+    val graph = space.importGraph("test", DescribeExternalGraph.empty)
+
+    space.graph("test") should equal(Some(graph))
     graph._nodes("a", CTNode).data.count() should equal(0)
     graph._relationships("r", CTRelationship).data.count() should equal(0)
   }
 
-  test("construct graph using node table") {
+  test("import graph using node table") {
     val space = SparkGraphSpace.createEmpty(session)
 
     import session.implicits._
@@ -25,15 +26,16 @@ class SparkGraphBuilderImplTest extends StdTestSuite with TestSession.Fixture {
       (2L, "Bob", 4.0d, true, false)
     ).toDF("id", "name", "carat", "m", "f")
 
-    val builder = new SparkGraphBuilderImpl(space)
+    val graph = space.importGraph("test", DescribeExternalGraph
       .withNodesDF(nodes, 0)
       .property("name", 1, CTString)
       .property("carat", 2, CTFloat)
       .label("Male", 3)
       .label("Female", 4)
+      .done
+    )
 
-    val graph = builder.graph
-
+    space.graph("test") should equal(Some(graph))
     graph._nodes("a", CTNode).data.count() should equal(2)
   }
 }
