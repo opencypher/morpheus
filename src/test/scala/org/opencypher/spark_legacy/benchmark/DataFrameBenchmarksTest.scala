@@ -2,9 +2,9 @@ package org.opencypher.spark_legacy.benchmark
 
 import org.apache.spark.sql.functions.col
 import org.opencypher.spark_legacy.impl.{FixedLengthPattern, Out}
-import org.opencypher.spark.{StdTestSuite, TestSession}
+import org.opencypher.spark.{TestSuiteImpl, TestSession}
 
-class DataFrameBenchmarksTest extends StdTestSuite with TestSession.Fixture {
+class DataFrameBenchmarksTest extends TestSuiteImpl with TestSession.Fixture {
 
   case class NodeRow(id: Long, group: Boolean, company: Boolean)
   case class RelRow(id: Long, startId: Long, endId: Long, typ: String = "ALLOWED_INHERIT")

@@ -1,8 +1,8 @@
 package org.opencypher.spark.impl.syntax
 
+import org.opencypher.spark.api.classes.Cypher
 import org.opencypher.spark.api.graph.{CypherGraph, CypherResult}
 import org.opencypher.spark.api.value.CypherValue
-import org.opencypher.spark.impl.classes.Cypher
 
 import scala.language.implicitConversions
 

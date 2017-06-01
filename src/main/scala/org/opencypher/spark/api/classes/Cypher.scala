@@ -1,4 +1,4 @@
-package org.opencypher.spark.impl.classes
+package org.opencypher.spark.api.classes
 
 import org.opencypher.spark.api.graph.{CypherGraph, CypherResult, GraphSpace}
 import org.opencypher.spark.api.record.CypherRecords

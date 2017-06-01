@@ -1,9 +1,9 @@
-package org.opencypher.spark.impl.ir
+package org.opencypher.spark.impl.ir.global
 
-import org.opencypher.spark.api.ir.global.GlobalsRegistry
-import org.opencypher.spark.{Neo4jAstTestSupport, StdTestSuite}
+import org.opencypher.spark.api.ir.global._
+import org.opencypher.spark.{Neo4jAstTestSupport, TestSuiteImpl}
 
-class GlobalsExtractorTest extends StdTestSuite with Neo4jAstTestSupport {
+class GlobalsExtractorTest extends TestSuiteImpl with Neo4jAstTestSupport {
 
   test("extracts labels") {
     extracting("n:Foo") shouldRegisterLabel "Foo"
@@ -11,7 +11,7 @@ class GlobalsExtractorTest extends StdTestSuite with Neo4jAstTestSupport {
     extracting("(:Foo)-->(:Bar)") shouldRegisterLabels ("Foo", "Bar")
   }
 
-  test("extracts reltypes") {
+  test("extracts rel types") {
     extracting("(:Foo)-[:TYPE]->()") shouldRegisterRelType "TYPE"
     extracting("(:Foo)-[r:TYPE]->()-->()<-[:SWEET]-()") shouldRegisterRelTypes ("TYPE", "SWEET")
   }
@@ -26,12 +26,35 @@ class GlobalsExtractorTest extends StdTestSuite with Neo4jAstTestSupport {
     extracting("$param OR n.prop + $c[$bar]") shouldRegisterConstants ("param", "c", "bar")
   }
 
-  def extracting(expr: String): GlobalsMatcher = {
-    val ast = parse(expr)
+  test("collect tokens") {
+    val (given, _) = parseQuery("MATCH (a:Person)-[r:KNOWS]->(b:Duck) RETURN a.name, r.since, b.quack")
+    val actual = GlobalsExtractor(given)
+    val expected = GlobalsRegistry
+      .none
+      .withLabel(Label("Duck"))
+      .withLabel(Label("Person"))
+      .withRelType(RelType("KNOWS"))
+      .withPropertyKey(PropertyKey("name"))
+      .withPropertyKey(PropertyKey("since"))
+      .withPropertyKey(PropertyKey("quack"))
+
+    actual should equal(expected)
+  }
+
+  test("collect parameters") {
+    val (given, _) = parseQuery("WITH $param AS p RETURN p, $another")
+    val actual = GlobalsExtractor(given)
+    val expected = GlobalsRegistry.none.withConstant(Constant("param")).withConstant(Constant("another"))
+
+    actual should equal(expected)
+  }
+
+  private def extracting(expr: String): GlobalsMatcher = {
+    val ast = parseExpr(expr)
     GlobalsMatcher(GlobalsExtractor(ast))
   }
 
-  case class GlobalsMatcher(registry: GlobalsRegistry) {
+  private case class GlobalsMatcher(registry: GlobalsRegistry) {
     def shouldRegisterLabel(name: String) = registry.label(name)
     def shouldRegisterLabels(names: String*) = names.foreach(registry.label)
 
@@ -44,5 +67,4 @@ class GlobalsExtractorTest extends StdTestSuite with Neo4jAstTestSupport {
     def shouldRegisterConstant(name: String) = registry.constant(name)
     def shouldRegisterConstants(names: String*) = names.foreach(registry.constant)
   }
-
 }

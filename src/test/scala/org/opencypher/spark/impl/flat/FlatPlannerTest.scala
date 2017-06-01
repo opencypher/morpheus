@@ -1,6 +1,6 @@
 package org.opencypher.spark.impl.flat
 
-import org.opencypher.spark.StdTestSuite
+import org.opencypher.spark.TestSuiteImpl
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.Field
 import org.opencypher.spark.api.ir.global.GlobalsRegistry
@@ -10,7 +10,7 @@ import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.types._
 import org.opencypher.spark.impl.logical.LogicalOperatorProducer
 
-class FlatPlannerTest extends StdTestSuite {
+class FlatPlannerTest extends TestSuiteImpl {
 
   val schema = Schema
     .empty

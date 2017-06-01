@@ -1,6 +1,6 @@
 package org.opencypher.spark.api.record
 
-import org.opencypher.spark.StdTestSuite
+import org.opencypher.spark.TestSuiteImpl
 import org.opencypher.spark.api.types._
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.global.{LabelRef, PropertyKeyRef}
@@ -10,7 +10,7 @@ import org.opencypher.spark.toVar
 
 import scala.language.implicitConversions
 
-class RecordHeaderTest extends StdTestSuite {
+class RecordHeaderTest extends TestSuiteImpl {
 
   test("Can add projected expressions") {
     val content = ProjectedExpr(TrueLit())

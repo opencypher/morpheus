@@ -1,4 +1,4 @@
-package org.opencypher.spark.impl.ir
+package org.opencypher.spark.impl.ir.global
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast
 import org.opencypher.spark.api.ir.global._

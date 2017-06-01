@@ -1,9 +1,9 @@
 package org.opencypher.spark.api.ir.pattern
 
-import org.opencypher.spark.StdTestSuite
+import org.opencypher.spark.TestSuiteImpl
 import org.opencypher.spark.api.ir.Field
 
-class ConnectionTest extends StdTestSuite {
+class ConnectionTest extends TestSuiteImpl {
 
   val field_a = Field("a")()
   val field_b = Field("b")()

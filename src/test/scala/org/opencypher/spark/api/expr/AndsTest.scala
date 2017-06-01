@@ -1,9 +1,9 @@
 package org.opencypher.spark.api.expr
 
-import org.opencypher.spark.StdTestSuite
+import org.opencypher.spark.TestSuiteImpl
 import org.opencypher.spark.api.ir.global.LabelRef
 
-class AndsTest extends StdTestSuite {
+class AndsTest extends TestSuiteImpl {
 
   test("unnests inner ands") {
     val args: Set[Expr] = Set(Ands(TrueLit()), HasLabel(Var("x")(), LabelRef(1))(), Ands(Ands(Ands(FalseLit()))))
@@ -16,5 +16,4 @@ class AndsTest extends StdTestSuite {
       Ands()
     }
   }
-
 }

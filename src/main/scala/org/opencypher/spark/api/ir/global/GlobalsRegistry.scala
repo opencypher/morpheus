@@ -1,15 +1,15 @@
 package org.opencypher.spark.api.ir.global
 
-import org.opencypher.spark.api.ir.global.GlobalsCollector._
 import org.opencypher.spark.api.schema.VerifiedSchema
+import org.opencypher.spark.impl.syntax.register._
+import org.opencypher.spark.impl.util.RefCollection
 
-// TODO: Use Register typeclass
 object GlobalsRegistry {
   val none = GlobalsRegistry(
-    labels = GlobalsCollector[LabelRef, Label].empty,
-    relTypes = GlobalsCollector[RelTypeRef, RelType].empty,
-    propertyKeys = GlobalsCollector[PropertyKeyRef, PropertyKey].empty,
-    constants = GlobalsCollector[ConstantRef, Constant].empty
+    labels = RefCollection.empty[Label],
+    relTypes = RefCollection.empty[RelType],
+    propertyKeys = RefCollection.empty[PropertyKey],
+    constants = RefCollection.empty[Constant]
   )
 
   def fromSchema(verified: VerifiedSchema): GlobalsRegistry = {
@@ -22,41 +22,51 @@ object GlobalsRegistry {
 }
 
 final case class GlobalsRegistry(
-  labels: GlobalsCollection[Label],
-  relTypes: GlobalsCollection[RelType],
-  propertyKeys: GlobalsCollection[PropertyKey],
-  constants: GlobalsCollection[Constant]
+  labels: RefCollection[Label],
+  relTypes: RefCollection[RelType],
+  propertyKeys: RefCollection[PropertyKey],
+  constants: RefCollection[Constant]
 ) {
 
-  def label(name: String): LabelRef = labels.ref(name)
-  def label(ref: LabelRef): Label = labels.get(ref)
+  self =>
 
-  def relType(name: String): RelTypeRef = relTypes.ref(name)
-  def relType(ref: RelTypeRef): RelType = relTypes.get(ref)
+  def label(name: String): LabelRef = labels.findByKey(name).get
+  def label(ref: LabelRef): Label = labels.lookup(ref).get
 
-  def propertyKey(name: String): PropertyKeyRef = propertyKeys.ref(name)
-  def propertyKey(ref: PropertyKeyRef): PropertyKey = propertyKeys.get(ref)
+  def relType(name: String): RelTypeRef = relTypes.findByKey(name).get
+  def relType(ref: RelTypeRef): RelType = relTypes.lookup(ref).get
 
-  def constant(name: String): ConstantRef = constants.ref(name)
-  def constant(ref: ConstantRef): Constant = constants.get(ref)
+  def propertyKey(name: String): PropertyKeyRef = propertyKeys.findByKey(name).get
+  def propertyKey(ref: PropertyKeyRef): PropertyKey = propertyKeys.lookup(ref).get
+
+  def constant(name: String): ConstantRef = constants.findByKey(name).get
+  def constant(ref: ConstantRef): Constant = constants.lookup(ref).get
 
   def withLabel(defn: Label): GlobalsRegistry = {
-    val merged = labels.merge(defn)
-    if (merged eq labels) this else copy(labels = merged)
+    labels.insert(defn) match {
+      case Right((Some(newLabels), _)) => copy(labels = newLabels)
+      case _ => self
+    }
   }
 
   def withRelType(defn: RelType): GlobalsRegistry = {
-    val merged = relTypes.merge(defn)
-    if (merged eq relTypes) this else copy(relTypes = merged)
+    relTypes.insert(defn) match {
+      case Right((Some(newTypes), _)) => copy(relTypes = newTypes)
+      case _ => self
+    }
   }
 
   def withPropertyKey(defn: PropertyKey): GlobalsRegistry = {
-    val merged = propertyKeys.merge(defn)
-    if (merged eq propertyKeys) this else copy(propertyKeys = merged)
+    propertyKeys.insert(defn) match {
+      case Right((Some(newKeys), _)) => copy(propertyKeys = newKeys)
+      case _ => self
+    }
   }
 
   def withConstant(defn: Constant): GlobalsRegistry = {
-    val merged = constants.merge(defn)
-    if (merged eq constants) this else copy(constants = merged)
+    constants.insert(defn) match {
+      case Right((Some(newConstants), _)) => copy(constants = newConstants)
+      case _ => self
+    }
   }
 }

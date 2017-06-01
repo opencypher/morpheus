@@ -1,10 +1,10 @@
 package org.opencypher.spark.impl.typer
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{AstConstructionTestSupport, False, True}
-import org.opencypher.spark.StdTestSuite
+import org.opencypher.spark.TestSuiteImpl
 import org.opencypher.spark.api.types.{CTBoolean, CTString}
 
-class TypeTrackerTest extends StdTestSuite with AstConstructionTestSupport {
+class TypeTrackerTest extends TestSuiteImpl with AstConstructionTestSupport {
 
   test("insert and lookup") {
     val tracker = TypeTracker.empty.updated(True()(pos), CTString)

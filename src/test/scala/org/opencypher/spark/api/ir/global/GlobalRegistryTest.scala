@@ -1,16 +1,17 @@
 package org.opencypher.spark.api.ir.global
 
-import org.opencypher.spark.StdTestSuite
+import org.opencypher.spark.TestSuiteImpl
+import org.opencypher.spark.impl.util.RefCollection
 
 import scala.util.Try
 
-class GlobalRegistryTest extends StdTestSuite {
+class GlobalRegistryTest extends TestSuiteImpl {
 
   val tokens = GlobalsRegistry(
-    labels = Vector(Label("Person"), Label("Employee")),
-    relTypes = Vector(RelType("KNOWS")),
-    propertyKeys = Vector(PropertyKey("prop")),
-    constants = Vector.empty
+    labels = RefCollection(Vector(Label("Person"), Label("Employee"))),
+    relTypes = RefCollection(Vector(RelType("KNOWS"))),
+    propertyKeys = RefCollection(Vector(PropertyKey("prop"))),
+    constants = RefCollection(Vector.empty)
   )
 
   test("token lookup") {

@@ -4,10 +4,10 @@ import org.neo4j.cypher.internal.frontend.v3_2.{Ref, ast, symbols}
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.global._
 import org.opencypher.spark.api.types._
-import org.opencypher.spark.{Neo4jAstTestSupport, StdTestSuite}
+import org.opencypher.spark.{Neo4jAstTestSupport, TestSuiteImpl}
 import org.opencypher.spark.toVar
 
-class ExpressionConverterTest extends StdTestSuite with Neo4jAstTestSupport {
+class ExpressionConverterTest extends TestSuiteImpl with Neo4jAstTestSupport {
 
   private val globals = GlobalsRegistry.none
     .withPropertyKey(PropertyKey("key"))
@@ -27,7 +27,7 @@ class ExpressionConverterTest extends StdTestSuite with Neo4jAstTestSupport {
 
 
   test("can convert type() function calls used as predicates") {
-    convert(parse("type(r) = 'REL_TYPE'")) should equal(
+    convert(parseExpr("type(r) = 'REL_TYPE'")) should equal(
       HasType(Var("r")(CTRelationship), RelTypeRef(0))(CTBoolean)
     )
   }
@@ -39,8 +39,8 @@ class ExpressionConverterTest extends StdTestSuite with Neo4jAstTestSupport {
   test("can convert literals") {
     convert(literalInt(1)) should equal(IntegerLit(1L)())
     convert(ast.StringLiteral("Hello") _) should equal(StringLit("Hello")())
-    convert(parse("false")) should equal(FalseLit())
-    convert(parse("true")) should equal(TrueLit())
+    convert(parseExpr("false")) should equal(FalseLit())
+    convert(parseExpr("true")) should equal(TrueLit())
   }
 
   test("can convert property access") {
@@ -84,7 +84,7 @@ class ExpressionConverterTest extends StdTestSuite with Neo4jAstTestSupport {
   }
 
   test("can convert retyping predicate") {
-    val given = parse("$p1 AND n:Foo AND $p2 AND m:Bar")
+    val given = parseExpr("$p1 AND n:Foo AND $p2 AND m:Bar")
 
     convert(given) should equal(Ands(
       HasLabel('n, label("Foo"))(),
