@@ -114,9 +114,11 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
       case ((k, t)) => ProjectedExpr(Property(rel, propertyKey(k))(t))
     }
 
+    val startNode = ProjectedExpr(StartNode(rel)(CTNode))
     val typeIdContent = ProjectedExpr(TypeId(rel)(CTInteger))
+    val endNode = ProjectedExpr(EndNode(rel)(CTNode))
 
-    val relHeaderContents = Seq(OpaqueField(rel), typeIdContent) ++ relKeyHeaderContents
+    val relHeaderContents = Seq(startNode, OpaqueField(rel), typeIdContent, endNode) ++ relKeyHeaderContents
     val (sourceWithRelHeader, _) = sourceOp.header.update(addContents(relHeaderContents))
 
     val expandHeader = sourceWithRelHeader ++ targetOp.header
