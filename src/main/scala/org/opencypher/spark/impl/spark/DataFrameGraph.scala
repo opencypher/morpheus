@@ -1,14 +1,15 @@
 package org.opencypher.spark.impl.spark
 
 import org.apache.spark.sql.DataFrame
+import org.opencypher.spark.api.spark.DataFrameGraphBuilder
 import org.opencypher.spark.api.types.CypherType
 import org.opencypher.spark.impl.util.{Verifiable, Verified}
 
 import scala.language.implicitConversions
 
-sealed trait ExternalEntities {
+sealed trait EntityDataFrame {
 
-  type Self <: ExternalEntities
+  type Self <: EntityDataFrame
 
   def df: DataFrame
   def id: Int
@@ -17,16 +18,16 @@ sealed trait ExternalEntities {
   def withProperty(name: String, column: Int, cypherType: CypherType): Self
 }
 
-final case class ExternalNodes(
+final case class NodeDataFrame(
   df: DataFrame,
   id: Int,
   labelInfo: Map[String, Int],
   propertyInfo: Map[String, (Int, CypherType)]
-) extends ExternalEntities {
+) extends EntityDataFrame {
 
   self =>
 
-  override type Self = ExternalNodes
+  override type Self = NodeDataFrame
 
   def withLabel(name: String, column: Int) =
     copy(labelInfo = labelInfo.updated(name, column))
@@ -35,14 +36,14 @@ final case class ExternalNodes(
     copy(propertyInfo = propertyInfo.updated(name, column -> cypherType))
 }
 
-final case class ExternalRelationships(
+final case class RelationshipDataFrame(
   df: DataFrame,
   ids: (Int, Int, Int),
   relInfo: Either[String, Int],
   propertyInfo: Map[String, (Int, CypherType)]
-) extends ExternalEntities {
+) extends EntityDataFrame {
 
-  override type Self = ExternalRelationships
+  override type Self = RelationshipDataFrame
 
   override def id = ids._2
 
@@ -50,23 +51,25 @@ final case class ExternalRelationships(
     copy(propertyInfo = propertyInfo.updated(name, column -> cypherType))
 }
 
-object ExternalGraph {
-  implicit def verifyExternalGraph(graph: ExternalGraph): VerifiedExternalGraph = graph.verify
+object DataFrameGraph {
+  val empty = DataFrameGraphBuilder.build
+
+  implicit def verifyDataFrameGraph(graph: DataFrameGraph): VerifiedDataFrameGraph = graph.verify
 }
 
-final case class ExternalGraph(nodeFrame: Option[ExternalNodes], relFrame: Option[ExternalRelationships])
+final case class DataFrameGraph(nodeDf: Option[NodeDataFrame], relDf: Option[RelationshipDataFrame])
 extends Verifiable {
 
   self =>
 
-  override type Self = ExternalGraph
-  override type VerifiedSelf = VerifiedExternalGraph
+  override type Self = DataFrameGraph
+  override type VerifiedSelf = VerifiedDataFrameGraph
 
-  override def verify: VerifiedExternalGraph = new VerifiedExternalGraph {
-    override def verified: ExternalGraph = self
+  override def verify: VerifiedDataFrameGraph = new VerifiedDataFrameGraph {
+    override def verified: DataFrameGraph = self
   }
 }
 
-sealed trait VerifiedExternalGraph extends Verified[ExternalGraph] {
+sealed trait VerifiedDataFrameGraph extends Verified[DataFrameGraph] {
   final def entities = verified
 }
