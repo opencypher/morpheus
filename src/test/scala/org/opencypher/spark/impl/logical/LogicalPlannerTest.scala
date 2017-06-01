@@ -24,7 +24,7 @@ class LogicalPlannerTest extends IrTestSuite {
   val relR = Field("r")(CTRelationship)
 
   test("convert load graph block") {
-    plan(irFor(leafBlock)) should equal(Select(Set.empty, leafPlan)(emptySqm))
+    plan(irFor(leafBlock)) should equal(Select(IndexedSeq.empty, leafPlan)(emptySqm))
   }
 
   test("convert match block") {
@@ -61,7 +61,7 @@ class LogicalPlannerTest extends IrTestSuite {
     val globals = ir.model.globals
 
     plan(ir, globals) should equal(
-      Select(Set(Var("a.name")(CTVoid)),
+      Select(IndexedSeq(Var("a.name")(CTVoid)),
         Project(ProjectedField(Var("a.name")(CTVoid), Property(Var("a")(CTNode("Administrator")), globals.propertyKey("name"))(CTVoid)),
           Filter(Equals(Property(Var("g")(CTNode("Group")), globals.propertyKey("name"))(CTVoid), Const(ConstantRef(0))(CTString))(CTBoolean),
             Project(ProjectedExpr(Property(Var("g")(CTNode("Group")), globals.propertyKey("name"))(CTVoid)),
@@ -94,7 +94,7 @@ class LogicalPlannerTest extends IrTestSuite {
     val globals = ir.model.globals
 
     plan(ir, globals, schema) should equal(
-      Select(Set(Var("a.name")(CTFloat)),
+      Select(IndexedSeq(Var("a.name")(CTFloat)),
         Project(ProjectedField(Var("a.name")(CTFloat), Property(Var("a")(CTNode("Administrator")), globals.propertyKey("name"))(CTFloat)),
           Filter(Equals(Property(Var("g")(CTNode("Group")), globals.propertyKey("name"))(CTString), Const(ConstantRef(0))(CTString))(CTBoolean),
             Project(ProjectedExpr(Property(Var("g")(CTNode("Group")), globals.propertyKey("name"))(CTString)),
@@ -123,7 +123,7 @@ class LogicalPlannerTest extends IrTestSuite {
     val globals = ir.model.globals
 
     plan(ir, globals) should equal(
-      Select(Set(Var("a.prop")(CTVoid)),
+      Select(IndexedSeq(Var("a.prop")(CTVoid)),
         Project(ProjectedField(Var("a.prop")(CTVoid), Property(nodeA, globals.propertyKey("prop"))(CTVoid)),
           Filter(Not(Equals(Const(globals.constant("p1"))(CTInteger), Const(globals.constant("p2"))(CTBoolean))(CTBoolean))(CTBoolean),
             NodeScan(nodeA, EveryNode,

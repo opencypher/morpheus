@@ -20,7 +20,7 @@ object ResultBlock {
   def empty[E](graphBlock: BlockRef) = ResultBlock(Set.empty, OrderedFields[E](), Set.empty, Set.empty, graphBlock, AllOf[E]())
 }
 
-final case class OrderedFields[E](fieldsOrder: Seq[Field] = Seq.empty) extends Binds[E] {
+final case class OrderedFields[E](fieldsOrder: IndexedSeq[Field] = IndexedSeq.empty) extends Binds[E] {
   override def fields = fieldsOrder.toSet
 
   def select(fields: Set[Field]): OrderedFields[E] =
@@ -28,7 +28,7 @@ final case class OrderedFields[E](fieldsOrder: Seq[Field] = Seq.empty) extends B
 }
 
 case object FieldsInOrder {
-  def apply[E](fields: Field*) = OrderedFields[E](fields)
+  def apply[E](fields: Field*) = OrderedFields[E](fields.toIndexedSeq)
   def unapplySeq(arg: OrderedFields[_]): Option[Seq[Field]] = Some(arg.fieldsOrder)
 }
 

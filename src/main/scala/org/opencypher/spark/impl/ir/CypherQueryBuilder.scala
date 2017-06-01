@@ -85,7 +85,7 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
 
             //         TODO: Add rewriter and put the above case in With(...)
             //         TODO: Figure out nodes and relationships
-            val rItems: Seq[Field] = fieldExprs.map(_._1)
+            val rItems = fieldExprs.map(_._1)
             val returns = ResultBlock[Expr](Set(ref), OrderedFields(rItems), Set.empty, Set.empty, context.graphBlock)
 
             val (ref2, reg2) = reg.register(returns)

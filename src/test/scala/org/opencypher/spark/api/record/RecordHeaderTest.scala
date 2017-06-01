@@ -111,25 +111,25 @@ class RecordHeaderTest extends StdTestSuite {
     newHeader.fields should equal(Set(Var("n")(CTNode("User"))))
   }
 
-  test("selecting an independent slot") {
-    val (h1, Added(nSlot)) = RecordHeader.empty.update(addContent(OpaqueField('n)))
-    val (h2, Added(mSlot)) = h1.update(addContent(OpaqueField('m)))
-    val (h3, Added(oSlot)) = h2.update(addContent(OpaqueField('o)))
-    val (h4, removed) = h3.update(selectFields(s => s.index == nSlot.index))
-
-    removed should equal(Vector(Removed(mSlot, Set.empty), Removed(oSlot, Set.empty)))
-    h4.slots should equal(Seq(nSlot))
-  }
-
-  test("selecting two independent slots") {
-    val (h1, Added(nSlot)) = RecordHeader.empty.update(addContent(OpaqueField('n)))
-    val (h2, Added(mSlot)) = h1.update(addContent(OpaqueField('m)))
-    val (h3, Added(oSlot)) = h2.update(addContent(OpaqueField('o)))
-    val (h4, removed) = h3.update(selectFields(s => s.index < 2))
-
-    removed should equal(Vector(Removed(oSlot, Set.empty)))
-    h4.slots should equal(Seq(nSlot, mSlot))
-  }
+//  test("selecting an independent slot") {
+//    val (h1, Added(nSlot)) = RecordHeader.empty.update(addContent(OpaqueField('n)))
+//    val (h2, Added(mSlot)) = h1.update(addContent(OpaqueField('m)))
+//    val (h3, Added(oSlot)) = h2.update(addContent(OpaqueField('o)))
+//    val (h4, removed) = h3.update(selectFields(s => s.index == nSlot.index))
+//
+//    removed should equal(Vector(Removed(mSlot, Set.empty), Removed(oSlot, Set.empty)))
+//    h4.slots should equal(Seq(nSlot))
+//  }
+//
+//  test("selecting two independent slots") {
+//    val (h1, Added(nSlot)) = RecordHeader.empty.update(addContent(OpaqueField('n)))
+//    val (h2, Added(mSlot)) = h1.update(addContent(OpaqueField('m)))
+//    val (h3, Added(oSlot)) = h2.update(addContent(OpaqueField('o)))
+//    val (h4, removed) = h3.update(selectFields(s => s.index < 2))
+//
+//    removed should equal(Vector(Removed(oSlot, Set.empty)))
+//    h4.slots should equal(Seq(nSlot, mSlot))
+//  }
 
   // TODO: is this what we want? Probably not
   ignore("Adding opaque field will replace previously existing and update dependent expressions") {
