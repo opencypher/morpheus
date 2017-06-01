@@ -111,7 +111,7 @@ object InternalHeader {
       result <- {
         val existingSlots = header.slotsByName(addedContent.field.name)
         val replacement = existingSlots.headOption.flatMap[State[InternalHeader, AdditiveUpdateResult[RecordSlot]]] {
-          case RecordSlot(ref, f: OpaqueField) if f == addedContent =>
+          case RecordSlot(ref, f: OpaqueField) if f == addedContent && f.cypherType == addedContent.cypherType =>
             Some(pureState(Found(slot(header, ref))))
           case RecordSlot(ref, _: OpaqueField) =>
             Some(header.slotContents.update(ref, addedContent) match {
