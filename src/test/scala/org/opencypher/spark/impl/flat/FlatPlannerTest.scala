@@ -159,7 +159,7 @@ class FlatPlannerTest extends StdTestSuite {
 
   test("Construct selection") {
     val result = flatPlanner.process(
-      mkLogical.planSelect(Set(Var("foo")(CTString)),
+      mkLogical.planSelect(IndexedSeq(Var("foo")(CTString)),
         mkLogical.projectField(Field("foo")(CTString), Property(Var("n")(CTNode), propertyKey("name"))(CTString),
           logicalNodeScan("n", "Person")
         )
@@ -169,7 +169,7 @@ class FlatPlannerTest extends StdTestSuite {
 
     result should equal(
       mkFlat.select(
-        Set(Var("foo")(CTString)),
+        IndexedSeq(Var("foo")(CTString)),
         mkFlat.project(
           ProjectedField(Var("foo")(CTString), Property(Var("n")(CTNode), propertyKey("name"))(CTString)),
           flatNodeScan(Var("n")(CTNode), "Person")
@@ -179,6 +179,32 @@ class FlatPlannerTest extends StdTestSuite {
     headerContents should equal(Set(
       ProjectedField(Var("foo")(CTString), Property(Var("n")(CTNode), propertyKey("name"))(CTString))
     ))
+  }
+
+  test("Construct selection with several fields") {
+    val result = flatPlanner.process(
+      mkLogical.planSelect(IndexedSeq(Var("foo")(CTString), Var("n")(CTNode), Var("baz")(CTInteger.nullable)),
+        mkLogical.projectField(Field("baz")(CTInteger), Property(Var("n")(CTNode), propertyKey("age"))(CTInteger.nullable),
+          mkLogical.projectField(Field("foo")(CTString), Property(Var("n")(CTNode), propertyKey("name"))(CTString),
+            logicalNodeScan("n", "Person")
+          )
+        )
+      )
+    )
+    val orderedContents = result.header.slots.map(_.content.key)
+
+    result should equal(
+      mkFlat.select(
+        IndexedSeq(Var("foo")(CTString), Var("n")(CTNode), Var("baz")(CTInteger.nullable)),
+        mkFlat.project(
+          ProjectedField(Var("baz")(CTInteger.nullable), Property(Var("n")(CTNode), propertyKey("age"))(CTInteger.nullable)),
+          mkFlat.project(ProjectedField(Var("foo")(CTString), Property(Var("n")(CTNode), propertyKey("name"))(CTString)),
+            flatNodeScan(Var("n")(CTNode), "Person")
+          )
+        )
+      )
+    )
+    orderedContents should equal(IndexedSeq(Var("foo")(CTString), Var("n")(CTNode), Var("baz")(CTInteger)))
   }
 
   private def logicalNodeScan(nodeField: String, labelNames: String*) = {

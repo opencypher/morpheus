@@ -24,9 +24,9 @@ trait RecordHeaderSyntax {
   def compactFields: State[RecordHeader, Vector[RemovingUpdateResult[RecordSlot]]] =
     exec(InternalHeader.compactFields)
 
-  def selectFields(predicate: RecordSlot => Boolean)
-  : State[RecordHeader, Vector[RemovingUpdateResult[RecordSlot]]] =
-    exec(InternalHeader.selectFields(predicate))
+//  def selectFields(predicate: RecordSlot => Boolean)
+//  : State[RecordHeader, Vector[RemovingUpdateResult[RecordSlot]]] =
+//    exec(InternalHeader.selectFields(predicate))
 
 //  def removeContent(content: SlotContent)
 //  : State[RecordHeader, RemovingUpdateResult[SlotContent]] =

@@ -104,11 +104,11 @@ trait SparkCypherRecordsInstances extends Serializable {
     }
 
     // TODO: Correctly handle aliasing in the header
-    override def select(subject: SparkCypherRecords, fields: Set[Var], nextHeader: RecordHeader): SparkCypherRecords = {
+    override def select(subject: SparkCypherRecords, fields: IndexedSeq[Var], nextHeader: RecordHeader): SparkCypherRecords = {
 
       val data = subject.data
-      val columns = nextHeader.slots.map { s =>
-        data.col(data.columns(subject.header.indexOf(s.content).get))
+      val columns = fields.map { f =>
+        data.col(data.columns(subject.header.slotsFor(f).head.index))
       }
       val newData = subject.data.select(columns: _*)
 

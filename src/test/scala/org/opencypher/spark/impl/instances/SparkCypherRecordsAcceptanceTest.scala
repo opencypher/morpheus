@@ -1,9 +1,7 @@
 package org.opencypher.spark.impl.instances
 
-import org.apache.spark.sql.Row
-import org.opencypher.spark.api.expr.Var
 import org.opencypher.spark.api.schema.Schema
-import org.opencypher.spark.api.spark.SparkGraphSpace
+import org.opencypher.spark.api.spark.{SparkCypherRecords, SparkGraphSpace}
 import org.opencypher.spark.api.types.{CTAny, CTInteger, CTString}
 import org.opencypher.spark.impl.instances.spark.cypher._
 import org.opencypher.spark.impl.syntax.cypher._
@@ -12,126 +10,116 @@ import org.opencypher.spark.{StdTestSuite, TestSession}
 class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fixture {
 
   test("label scan and project") {
-    val records = smallSpace.base.cypher("MATCH (a:User) RETURN a.text").records
+    // When
+    val result = smallSpace.base.cypher("MATCH (a:User) RETURN a.text")
 
-    records.data.count() shouldBe 1806
-    records.data.collect().toSet.map((r: Row) => r.get(0)) should contain("Application Developer")
-    records.header.slots.size shouldBe 1
-    records.header.slots.head.content.cypherType shouldBe CTString.nullable
-    records.header.slots.head.content.key should equal(Var("a.text")(CTString.nullable))
+    // Then
+    result.records shouldHaveSize 1806 andContain "Application Developer"
   }
 
   test("expand and project") {
-    val records = smallSpace.base.cypher("MATCH (a:User)-[r]->(m:Meetup) RETURN a.country, m.id").records
+    // When
+    val result = smallSpace.base.cypher("MATCH (a:User)-[r]->(m:Meetup) RETURN a.country, m.id")
 
-    records.data.count() shouldBe 4832
-    records.header.slots.size shouldBe 2
-    records.header.slots(0).content.cypherType shouldBe CTString.nullable
-    records.header.slots(0).content.key should equal(Var("a.country")(CTString.nullable))
-    records.header.slots(1).content.cypherType shouldBe CTInteger.nullable
-    records.header.slots(1).content.key should equal(Var("m.id")(CTInteger.nullable))
+    // Then
+    result.records shouldHaveSize 4832 andContain "de" -> 168960972
   }
 
   test("expand and project on full graph") {
-    val records = fullSpace.base.cypher("MATCH (g:Graph)-[r:CONTAINED]->(e:Event) RETURN g.key, e.title").records
+    // Given
+    val query = "MATCH (g:Graph)-[r:CONTAINED]->(e:Event) RETURN g.key, e.title"
 
-    val start = System.currentTimeMillis()
-    val rows = records.data.collect()
+    // When
+    val result = fullSpace.base.cypher(query)
 
-    rows.length shouldBe 25
-    rows.toSet.exists { r =>
-      r.getString(0) == "GraphDB-Sydney"
-    } shouldBe true
-    rows.toSet.exists { r =>
-      r.getString(1) == "May Neo4J/graphdb meetup"
-    } shouldBe true
+    // Then
+    val tuple = "GraphDB-Sydney" -> "What's new and fabulous in Neo4j 2.0 with Jim Webber"
+
+    result.records shouldHaveSize 25 andContain tuple
   }
 
   test("filter rels on property") {
+    // Given
     val query = "MATCH (a:User)-[r:ATTENDED]->() WHERE r.response = 'no' RETURN a, r"
 
-    val graph = fullSpace.base.cypher(query)
+    // When
+    val result = fullSpace.base.cypher(query)
 
-    graph.records.data.count() shouldBe 1173
+    // Then
+    // TODO: Come up with a way to construct a node in a short test tuple for containment test
+    result.records shouldHaveSize 1173
   }
 
   test("expand and project on full graph, three properties") {
+    // Given
     val query = "MATCH (t:Tweet)-[:MENTIONED]->(l:User) RETURN t.text, l.location, l.followers"
 
-    val records = fullSpace.base.cypher(query).records
+    // When
+    val result = fullSpace.base.cypher(query)
 
-    val rows = records.data.collect().toSeq
-    val slots = records.header.slotsFor("t.text", "l.location", "l.followers")
-
-    rows.length shouldBe 815
-    rows.exists { r =>
-      r.getString(slots.head.index) == "@Khanoisseur @roygrubb @Parsifalssister @Rockmedia a perfect problem for a graph database like #neo4j"
-    } shouldBe true
-    rows.exists { r =>
-      r.getString(slots(1).index) == "Szeged and Gent"
-    } shouldBe true
-    rows.exists { r =>
-      !r.isNullAt(slots(2).index) && r.getLong(slots(2).index) == 83266l
-    } shouldBe true
+    // Then
+    val tuple = (
+      "RT @pronovix: We created a #Drupal integration that makes it possible for non-developers to work with #Neo4j.\n\nhttps://t.co/dERL8Czwkl",
+      "Szeged and Gent",
+      293
+    )
+    result.records shouldHaveSize 815 andContain tuple
   }
 
   test("handle properties with same key and different type between labels") {
+    // Given
     val space = initSmallSpace(Schema.empty
       .withNodeKeys("Channel")("id" -> CTString.nullable)
       .withNodeKeys("GitHub")("id" -> CTInteger.nullable), "MATCH (n) RETURN n", "RETURN 1 LIMIT 0")
 
-    val channels = space.base.cypher("MATCH (c:Channel) RETURN c.id").records
+    // When
+    val channelResult = space.base.cypher("MATCH (c:Channel) RETURN c.id")
 
-    channels.data.count() shouldBe 78
-    channels.header.slots(0).content.cypherType shouldBe CTString.nullable
+    // Then
+    channelResult.records shouldHaveSize 78 andContain "C08JCQDTM"
 
-    val githubs = space.base.cypher("MATCH (g:GitHub) RETURN g.id").records
+    // When
+    val githubResult = space.base.cypher("MATCH (g:GitHub) RETURN g.id")
 
-    githubs.data.count() shouldBe 365
-    githubs.header.slots(0).content.cypherType shouldBe CTInteger.nullable
+    // Then
+    githubResult.records shouldHaveSize 365 andContain 80841140
   }
 
   test("property filter in small space") {
-    val records = smallSpace.base.cypher("MATCH (t:User) WHERE t.country = 'ca' RETURN t.city").records
+    // When
+    val result = smallSpace.base.cypher("MATCH (t:User) WHERE t.country = 'ca' RETURN t.city")
 
-    val results = records.toDF().collect().toSeq.map {
-      (r: Row) => r.getString(0)
-    }
-
-    results.size shouldBe 38
-    results should contain("Vancouver")
+    // Then
+    result.records shouldHaveSize 38 andContain "Vancouver"
   }
 
   test("multiple hops of expand with different reltypes") {
+    // Given
     val query = "MATCH (u1:User)-[p:POSTED]->(t:Tweet)-[m:MENTIONED]->(u2:User) RETURN u1.name, u2.name, t.text"
 
+    // When
     val records = fullSpace.base.cypher(query).records
 
-    val slots = records.header.slotsFor("u1.name", "u2.name", "t.text")
-    val tuples = records.toDF().collect().toSeq.map { r =>
-      (r.get(slots.head.index), r.get(slots(1).index), r.get(slots(2).index))
-    }
-
-    tuples.size shouldBe 79
-    val tuple = ("Brendan Madden", "Tom Sawyer Software",
-      "#tsperspectives 7.6 is 15% faster with #neo4j Bolt support. https://t.co/1xPxB9slrB @TSawyerSoftware #graphviz")
-    tuples should contain(tuple)
+    // Then
+    val tuple = (
+      "Brendan Madden",
+      "Tom Sawyer Software",
+      "#tsperspectives 7.6 is 15% faster with #neo4j Bolt support. https://t.co/1xPxB9slrB @TSawyerSoftware #graphviz"
+    )
+    records shouldHaveSize 79 andContain tuple
   }
 
   test("multiple hops of expand with possible reltype conflict") {
+    // Given
     val query = "MATCH (u1:User)-[r1:POSTED]->(t:Tweet)-[r2]->(u2:User) RETURN u1.name, u2.name, t.text"
 
-    val records = fullSpace.base.cypher(query).records
+    // When
+    val result = fullSpace.base.cypher(query)
 
-    val slots = records.header.slotsFor("u1.name", "u2.name", "t.text")
-    val tuples = records.toDF().collect().toSeq.map { r =>
-      (r.get(slots.head.index), r.get(slots(1).index), r.get(slots(2).index))
-    }
-
-    tuples.size shouldBe 79
+    // Then
     val tuple = ("Brendan Madden", "Tom Sawyer Software",
       "#tsperspectives 7.6 is 15% faster with #neo4j Bolt support. https://t.co/1xPxB9slrB @TSawyerSoftware #graphviz")
-    tuples should contain(tuple)
+    result.records shouldHaveSize 79 andContain tuple
   }
 
   // TODO: Reimplement union
@@ -178,6 +166,30 @@ class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fix
 
     records.show()
     // TODO: assertions
+  }
+
+  implicit class RichRecords(records: SparkCypherRecords) {
+    def shouldHaveSize(size: Int) = {
+      import org.opencypher.spark_legacy.impl.util._
+
+      val tuples = records.data.collect().toSeq.map { r =>
+        val cells = records.header.slots.map { s =>
+          r.get(s.index)
+        }
+
+        cells.asProduct
+      }
+
+      tuples.size shouldBe size
+
+      new {
+        def andContain(contents: Product): Unit = {
+          tuples should contain(contents)
+        }
+
+        def andContain(contents: Any): Unit = andContain(Tuple1(contents))
+      }
+    }
   }
 
   private val smallSchema = Schema.empty

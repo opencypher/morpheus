@@ -7,7 +7,7 @@ import scala.language.implicitConversions
 
 trait Transform[T] {
   def filter(subject: T, expr: Expr, nextHeader: RecordHeader): T
-  def select(subject: T, fields: Set[Var], nextHeader: RecordHeader): T
+  def select(subject: T, fields: IndexedSeq[Var], nextHeader: RecordHeader): T
   def reorder(subject: T, nextHeader: RecordHeader): T
   def project(subject: T, it: ProjectedSlotContent): T
   def alias2(subject: T, expr: Expr, v: Var, nextHeader: RecordHeader): T

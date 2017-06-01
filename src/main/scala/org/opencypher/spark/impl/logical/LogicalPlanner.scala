@@ -32,8 +32,7 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
 
     // always plan a select at the top
     val fields = block.binds.fieldsOrder.map(f => Var(f.name)(f.cypherType))
-    producer.planSelect(fields.toSet, plan)
-    // TODO: plan reorder for enforcing order and renaming
+    producer.planSelect(fields, plan)
   }
 
   final def planBlock(ref: BlockRef, model: QueryModel[Expr], plan: Option[LogicalOperator])(implicit context: LogicalPlannerContext): LogicalOperator = {

@@ -7,7 +7,7 @@ import org.apache.spark.sql.{Column, DataFrame, Row, SparkSession}
 import org.opencypher.spark.api.expr.{HasLabel, Property, Var}
 import org.opencypher.spark.api.record._
 import org.opencypher.spark.impl.spark.{SparkColumnName, SparkSchema, toSparkType}
-import org.opencypher.spark.impl.syntax.header.{addContents, selectFields, _}
+import org.opencypher.spark.impl.syntax.header.{addContents, _}
 
 trait SparkCypherRecords extends CypherRecords with Serializable {
 
@@ -39,16 +39,16 @@ trait SparkCypherRecords extends CypherRecords with Serializable {
   }
 
   // only keep slots with v as their owner
-  def focus(v: Var): SparkCypherRecords = {
-    val (newHeader, _) = self.header.update(selectFields(slot => slot.content.owner.contains(v)))
-    val newColumns = newHeader.slots.collect {
-      case RecordSlot(_, content: FieldSlotContent) => new Column(SparkColumnName.of(content))
-    }
-    new SparkCypherRecords {
-      override def header = newHeader
-      override def data = self.data.select(newColumns: _*)
-    }
-  }
+//  def focus(v: Var): SparkCypherRecords = {
+//    val (newHeader, _) = self.header.update(selectFields(slot => slot.content.owner.contains(v)))
+//    val newColumns = newHeader.slots.collect {
+//      case RecordSlot(_, content: FieldSlotContent) => new Column(SparkColumnName.of(content))
+//    }
+//    new SparkCypherRecords {
+//      override def header = newHeader
+//      override def data = self.data.select(newColumns: _*)
+//    }
+//  }
 
   // alias oldVar to newVar, without guarding against shadowing
   def alias(oldVar: Var, newVar: Var): SparkCypherRecords = {

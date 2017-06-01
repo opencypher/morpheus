@@ -22,20 +22,10 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     override def combine(x: Vector[CypherType], y: Vector[CypherType]): Vector[CypherType] = x ++ y
   }
 
-  // TODO: Unalias dependencies MATCH (n) WITH n.prop AS m, n WITH n // frees up m, don't lose n.prop
-  def select(fields: Set[Var], in: FlatOperator): Select = {
-    // TODO: Error handling
+  def select(fields: IndexedSeq[Var], in: FlatOperator): Select = {
+    val slotContents = fields.map(in.header.slotsFor(_).head.content)
 
-    // TODO: doesn't work! reports removing slots, but returns header with them still in!
-    val (header, removed) = in.header.update(selectFields {
-      case RecordSlot(_, content: FieldSlotContent) => fields(content.field)
-      case _ => false
-    })
-    val removedSlots = removed.map(_.it)
-    val nextHeader = header.slots.foldLeft(RecordHeader.empty) {
-      case (acc, s) if removedSlots.contains(s) => acc
-      case (acc, s) => acc.update(addContent(s.content))._1
-    }
+    val (nextHeader, _) = RecordHeader.empty.update(addContents(slotContents))
 
     Select(fields, in, nextHeader)
   }

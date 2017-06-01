@@ -55,7 +55,7 @@ class LogicalOperatorProducer {
     Project(projection, prev)(prev.solved)
   }
 
-  def planSelect(fields: Set[Var], prev: LogicalOperator): Select = {
+  def planSelect(fields: IndexedSeq[Var], prev: LogicalOperator): Select = {
     Select(fields, prev)(prev.solved)
   }
 
