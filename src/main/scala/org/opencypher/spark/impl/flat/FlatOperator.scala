@@ -47,7 +47,7 @@ final case class Alias(expr: Expr, alias: Var, in: FlatOperator, header: RecordH
 }
 
 final case class ExpandSource(source: Var, rel: Var, types: EveryRelationship, target: Var,
-                              sourceOp: FlatOperator, targetOp: FlatOperator, header: RecordHeader)
+                              sourceOp: FlatOperator, targetOp: FlatOperator, header: RecordHeader, relHeader: RecordHeader)
   extends BinaryFlatOperator {
 
   override def lhs = sourceOp

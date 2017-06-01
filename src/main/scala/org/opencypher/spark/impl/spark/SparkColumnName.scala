@@ -1,5 +1,6 @@
 package org.opencypher.spark.impl.spark
 
+import org.opencypher.spark.api.expr.Property
 import org.opencypher.spark.api.record.{FieldSlotContent, ProjectedExpr, RecordSlot, SlotContent}
 
 import scala.collection.mutable
@@ -10,10 +11,10 @@ object SparkColumnName {
 
   def of(slot: SlotContent): String = {
     val builder = slot match {
+      case ProjectedExpr(p: Property) => new NameBuilder() += None += p.withoutType + p.cypherType.material.name
       case ProjectedExpr(expr) => new NameBuilder() += None += expr.withoutType
       case fieldContent: FieldSlotContent => new NameBuilder() += fieldContent.field.name
     }
-    builder += slot.cypherType.material.name
 
     builder.result()
   }

@@ -3,9 +3,8 @@ package org.opencypher.spark.impl.flat
 import org.opencypher.spark.StdTestSuite
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.Field
-import org.opencypher.spark.api.ir.block.DefaultGraph
-import org.opencypher.spark.api.ir.global.{GlobalsRegistry, LabelRef}
-import org.opencypher.spark.api.ir.pattern.{AllOf, EveryNode, EveryRelationship}
+import org.opencypher.spark.api.ir.global.GlobalsRegistry
+import org.opencypher.spark.api.ir.pattern._
 import org.opencypher.spark.api.record.{OpaqueField, ProjectedExpr, ProjectedField}
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.types._
@@ -17,6 +16,8 @@ class FlatPlannerTest extends StdTestSuite {
     .empty
     .withNodeKeys("Person")("name" -> CTString, "age" -> CTInteger.nullable)
     .withNodeKeys("Employee")("name" -> CTString, "salary" -> CTFloat)
+    .withRelationshipKeys("KNOWS")("since" -> CTString)
+    .withRelationshipKeys("FOO")("bar" -> CTBoolean)
 
   val globals = GlobalsRegistry.fromSchema(schema)
 
@@ -124,6 +125,49 @@ class FlatPlannerTest extends StdTestSuite {
       OpaqueField(rel),
       ProjectedExpr(TypeId(rel)(CTInteger)),
       ProjectedExpr(EndNode(rel)(CTInteger)),
+      ProjectedExpr(Property(rel, propertyKey("since"))(CTString)),
+      ProjectedExpr(Property(rel, propertyKey("bar"))(CTBoolean)),
+      OpaqueField(target),
+      ProjectedExpr(HasLabel(target, label("Person"))(CTBoolean)),
+      ProjectedExpr(HasLabel(target, label("Employee"))(CTBoolean)),
+      ProjectedExpr(Property(target, propertyKey("name"))(CTString)),
+      ProjectedExpr(Property(target, propertyKey("age"))(CTInteger.nullable)),
+      ProjectedExpr(Property(target, propertyKey("salary"))(CTFloat))
+    ))
+  }
+
+  test("flat plan for expand with rel type info") {
+    val result = flatPlanner.process(
+      mkLogical.planSourceExpand(
+        Field("n")(CTNode),
+        Field("r")(CTRelationship("KNOWS")) -> EveryRelationship(AnyOf(relType("KNOWS"))),
+        Field("m")(CTNode),
+        logicalNodeScan("n"), logicalNodeScan("m")
+      )
+    )
+    val headerContents = result.header.contents
+
+    val source = Var("n")(CTNode)
+    val rel = Var("r")(CTRelationship("KNOWS"))
+    val target = Var("m")(CTNode)
+
+    result should equal(
+      mkFlat.expandSource(source, rel, EveryRelationship(AnyOf(relType("KNOWS"))), target,
+        flatNodeScan(source), flatNodeScan(target)
+      )
+    )
+    headerContents should equal(Set(
+      OpaqueField(source),
+      ProjectedExpr(HasLabel(source, label("Person"))(CTBoolean)),
+      ProjectedExpr(HasLabel(source, label("Employee"))(CTBoolean)),
+      ProjectedExpr(Property(source, propertyKey("name"))(CTString)),
+      ProjectedExpr(Property(source, propertyKey("age"))(CTInteger.nullable)),
+      ProjectedExpr(Property(source, propertyKey("salary"))(CTFloat)),
+      ProjectedExpr(StartNode(rel)(CTInteger)),
+      OpaqueField(rel),
+      ProjectedExpr(TypeId(rel)(CTInteger)),
+      ProjectedExpr(EndNode(rel)(CTInteger)),
+      ProjectedExpr(Property(rel, propertyKey("since"))(CTString)),
       OpaqueField(target),
       ProjectedExpr(HasLabel(target, label("Person"))(CTBoolean)),
       ProjectedExpr(HasLabel(target, label("Employee"))(CTBoolean)),

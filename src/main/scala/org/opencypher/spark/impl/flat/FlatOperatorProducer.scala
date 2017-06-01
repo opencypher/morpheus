@@ -99,8 +99,9 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   // TODO: Specialize per kind of slot content
   def expandSource(source: Var, rel: Var, types: EveryRelationship, target: Var,
                    sourceOp: FlatOperator, targetOp: FlatOperator): FlatOperator = {
-//    val relKeyHeaderProperties = types.relTypes.elts.flatMap(t => schema.relationshipKeys(globals.relType(t).name).toSeq)
-    val relKeyHeaderProperties = schema.relationshipTypes.flatMap(t => schema.relationshipKeys(t).toSeq)
+    val relKeyHeaderProperties = if (types.relTypes.elts.isEmpty) schema.relationshipTypes.flatMap(t => schema.relationshipKeys(t).toSeq)
+    else types.relTypes.elts.flatMap(t => schema.relationshipKeys(globals.relType(t).name).toSeq)
+
     val relKeyHeaderContents = relKeyHeaderProperties.map {
       case ((k, t)) => ProjectedExpr(Property(rel, propertyKey(k))(t))
     }
@@ -110,11 +111,12 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     val endNode = ProjectedExpr(EndNode(rel)(CTNode))
 
     val relHeaderContents = Seq(startNode, OpaqueField(rel), typeIdContent, endNode) ++ relKeyHeaderContents
-    val (sourceWithRelHeader, _) = sourceOp.header.update(addContents(relHeaderContents))
+    // this header is necessary on its own to get the type filtering right
+    val (relHeader, _) = RecordHeader.empty.update(addContents(relHeaderContents))
 
-    val expandHeader = sourceWithRelHeader ++ targetOp.header
+    val expandHeader = sourceOp.header ++ relHeader ++ targetOp.header
 
-    ExpandSource(source, rel, types, target, sourceOp, targetOp, expandHeader)
+    ExpandSource(source, rel, types, target, sourceOp, targetOp, expandHeader, relHeader)
   }
 
   def planLoadGraph(logicalGraph: NamedLogicalGraph, source: GraphSource): LoadGraph = {

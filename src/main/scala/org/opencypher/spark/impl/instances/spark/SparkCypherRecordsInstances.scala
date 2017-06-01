@@ -79,23 +79,12 @@ trait SparkCypherRecordsInstances extends Serializable {
           subject.data.filter(cypherFilter(nextHeader, expr))
       }
 
-      // TODO
-      // we want to select the columns in the data that correspond to the slots in the nextHeader
-      // we don't know which indices these are, as we have no correlation between oldHeader and nextHeader
-      // we're trying below with a name-based lookup, but it doesn't work in all cases
+      val selectedColumns = nextHeader.slots.map { c =>
+        val name = context.columnName(c)
+        filteredRows.col(name)
+      }
 
-//      val selectedColumns = nextHeader.slots.map { c =>
-//        val name = context.columnName(c)
-//        val oldCol = filteredRows.col(name)
-//        oldCol
-//      }
-
-//      val bar = nextHeader.slots.map { s =>
-//        val foo = subject.header.slotsFor(s.content.key)
-//        foo
-//      }
-
-      val nextData = filteredRows//select(selectedColumns: _*)
+      val nextData = filteredRows.select(selectedColumns: _*)
 
       new SparkCypherRecords {
         override def data = nextData

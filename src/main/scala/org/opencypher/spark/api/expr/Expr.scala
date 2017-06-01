@@ -21,9 +21,13 @@ final case class Var(name: String)(val cypherType: CypherType = CTWildcard) exte
 }
 final case class StartNode(e: Expr)(val cypherType: CypherType = CTWildcard) extends Expr {
   override def toString = s"source($e)"
+
+  override def withoutType: String = s"source(${e.withoutType})"
 }
 final case class EndNode(e: Expr)(val cypherType: CypherType = CTWildcard) extends Expr {
   override def toString = s"target($e)"
+
+  override def withoutType: String = s"target(${e.withoutType})"
 }
 
 trait FlatteningOpExprCompanion[T] {
@@ -105,7 +109,7 @@ final case class HasLabel(node: Expr, label: LabelRef)(val cypherType: CypherTyp
 final case class HasType(rel: Expr, relType: RelTypeRef)(val cypherType: CypherType = CTWildcard) extends Expr
 final case class Equals(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends Expr {
   override def toString = s"$withoutType :: $cypherType"
-  override def withoutType: String = s"$lhs = $rhs"
+  override def withoutType: String = s"${lhs.withoutType} = ${rhs.withoutType}"
 }
 final case class Property(m: Expr, key: PropertyKeyRef)(val cypherType: CypherType = CTWildcard) extends Expr {
   override def toString = s"$withoutType :: $cypherType"
@@ -119,7 +123,7 @@ final case class Property(m: Expr, key: PropertyKeyRef)(val cypherType: CypherTy
 }
 final case class TypeId(rel: Expr)(val cypherType: CypherType = CTWildcard) extends Expr {
   override def toString = s"$withoutType :: $cypherType"
-  override def withoutType = s"type($rel)"
+  override def withoutType = s"type(${rel.withoutType})"
 }
 
 sealed trait Lit[T] extends Expr {
