@@ -66,7 +66,7 @@ class FlatPlannerTest extends StdTestSuite {
       ProjectedExpr(HasLabel(nodeVar, label("Employee"))(CTBoolean)),
       ProjectedExpr(Property(nodeVar, propertyKey("name"))(CTString)),
       ProjectedExpr(Property(nodeVar, propertyKey("age"))(CTInteger.nullable)),
-      ProjectedExpr(Property(nodeVar, propertyKey("salary"))(CTFloat.nullable))
+      ProjectedExpr(Property(nodeVar, propertyKey("salary"))(CTFloat))
     ))
   }
 
@@ -92,7 +92,7 @@ class FlatPlannerTest extends StdTestSuite {
       ProjectedExpr(HasLabel(nodeVar, label("Employee"))(CTBoolean)),
       ProjectedExpr(Property(nodeVar, propertyKey("name"))(CTString)),
       ProjectedExpr(Property(nodeVar, propertyKey("age"))(CTInteger.nullable)),
-      ProjectedExpr(Property(nodeVar, propertyKey("salary"))(CTFloat.nullable))
+      ProjectedExpr(Property(nodeVar, propertyKey("salary"))(CTFloat))
     ))
   }
 

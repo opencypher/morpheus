@@ -44,7 +44,7 @@ class ExpressionConverterTest extends StdTestSuite with Neo4jAstTestSupport {
   }
 
   test("can convert property access") {
-    convert(prop("n", "key")) should equal(Property('n, PropertyKeyRef(0))(CTVoid))
+    convert(prop("n", "key")) should equal(Property('n, PropertyKeyRef(0))(CTWildcard))
   }
 
   test("can convert equals") {

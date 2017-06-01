@@ -4,7 +4,7 @@ import org.opencypher.spark.StdTestSuite
 
 class ImportersTest extends StdTestSuite {
 
-  test("importing labels") {
+  ignore("importing labels") {
     Importers.importMusicBrainz(10)
   }
 
