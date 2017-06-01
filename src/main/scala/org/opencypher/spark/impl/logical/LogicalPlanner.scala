@@ -1,14 +1,13 @@
 package org.opencypher.spark.impl.logical
 
-import org.neo4j.cypher.internal.frontend.v3_2.helpers.fixedPoint
-import org.opencypher.spark.api.types._
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir._
 import org.opencypher.spark.api.ir.block._
 import org.opencypher.spark.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.api.ir.pattern._
 import org.opencypher.spark.api.schema.Schema
-import org.opencypher.spark.impl.{CompilationStage, DirectCompilationStage}
+import org.opencypher.spark.api.types._
+import org.opencypher.spark.impl.DirectCompilationStage
 
 import scala.annotation.tailrec
 
@@ -83,43 +82,10 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
   private def planProjections(in: LogicalOperator, exprs: Map[Field, Expr])(implicit context: LogicalPlannerContext) = {
     exprs.foldLeft(in) {
       case (acc, (f, p: Property)) =>
-        val propType = propertyType(p, in)
         producer.projectField(f, p, acc)
       case (acc, (f, v: Var)) => acc
       case (_, x) => throw new UnsupportedOperationException(s"can not project $x")
     }
-  }
-
-  private def propertyType(p: Property, plan: LogicalOperator)(implicit context: LogicalPlannerContext): Option[CypherType] = {
-    nodePropertyType(p, plan) orElse relPropertyType(p, plan)
-  }
-
-  private def nodePropertyType(p: Property, plan: LogicalOperator)(implicit context: LogicalPlannerContext): Option[CypherType] = {
-    val labelsOnNode = plan.solved.predicates.collect {
-      case h: HasLabel if h.node == p.m => h.label
-    }
-
-    // TODO: HeadOption? Move code into schema
-    val propType = labelsOnNode.headOption.flatMap { ref =>
-      val label = context.tokens.label(ref).name
-      val keys = context.schema.nodeKeys(label)
-      keys.get(context.tokens.propertyKey(p.key).name)
-    }
-
-    propType
-  }
-
-  private def relPropertyType(p: Property, plan: LogicalOperator)(implicit context: LogicalPlannerContext): Option[CypherType] = {
-    val relTypes = plan.solved.predicates.collect {
-      case h: HasType if h.rel == p.m => h.relType
-    }
-    val propType = relTypes.headOption.flatMap { ref =>
-      val label = context.tokens.relType(ref).name
-      val keys = context.schema.relationshipKeys(label)
-      keys.get(context.tokens.propertyKey(p.key).name)
-    }
-
-    propType
   }
 
   private def planFilter(in: LogicalOperator, where: AllGiven[Expr])(implicit context: LogicalPlannerContext) = {
@@ -146,9 +112,7 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
       case _: Const => in
       case _: Var => in
       case p: Property =>
-        val propType = propertyType(p, in)
-        val project = producer.projectExpr(p, in)
-        project
+        producer.projectExpr(p, in)
       case Equals(expr1, expr2) =>
         val project1 = planInnerExpr(expr1, in)
         planInnerExpr(expr2, project1)
