@@ -53,13 +53,13 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
     c match {
       case ast.Match(_, pattern, _, astWhere) =>
         for {
-          given <- convertPattern(pattern)
-          where <- convertWhere(astWhere)
+          pattern <- convertPattern(pattern)
+          given <- convertWhere(astWhere)
           context <- get[R, IRBuilderContext]
           refs <- {
             val blockRegistry = context.blocks
             val after = blockRegistry.lastAdded.toSet
-            val block = MatchBlock[Expr](after, given, where, context.graphBlock)
+            val block = MatchBlock[Expr](after, pattern, given, context.graphBlock)
 
             implicit val globals = context.globals
             val typedOutputs = block.outputs
