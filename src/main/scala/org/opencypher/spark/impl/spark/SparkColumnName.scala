@@ -13,7 +13,7 @@ object SparkColumnName {
       case ProjectedExpr(expr) => new NameBuilder() += None += expr.withoutType
       case fieldContent: FieldSlotContent => new NameBuilder() += fieldContent.field.name
     }
-//    builder += slot.cypherType.material.name
+    builder += slot.cypherType.material.name
 
     builder.result()
   }

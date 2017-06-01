@@ -37,8 +37,7 @@ class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fix
 
     val start = System.currentTimeMillis()
     val rows = records.data.collect()
-    val time = System.currentTimeMillis() - start
-    println(s"Time to collect: ${time / 1000.0} s")
+
     rows.length shouldBe 25
     rows.toSet.exists { r =>
       r.getString(0) == "GraphDB-Sydney"
@@ -54,50 +53,6 @@ class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fix
     val graph = fullSpace.base.cypher(query)
 
     graph.records.data.count() shouldBe 1173
-
-    val graph2 = graph.graph.cypher("MATCH (a:User) RETURN a, a.name")
-
-    graph2.records.data.count() shouldBe 1173
-  }
-
-  // TODO: Reimplement union
-  ignore("union rels") {
-    val query1 = "MATCH (a:User)-[r:ATTENDED]->() WHERE r.response = 'no' RETURN a, r"
-    val graph1 = fullSpace.base.cypher(query1)
-
-    val query2 = "MATCH (a:User)-[r:ATTENDED]->() WHERE r.response = 'yes' RETURN a, r"
-    val graph2 = fullSpace.base.cypher(query2)
-
-//    val result = graph1.graph.union(graph2.graph)
-//    result.records.data.count() should equal(4711)
-  }
-
-  // TODO: Reimplement intersect
-  ignore("intersect rels") {
-    val query1 = "MATCH (a:User)-[r:ATTENDED]->() WHERE r.response = 'no' RETURN a, r"
-    val graph1 = fullSpace.base.cypher(query1)
-
-    val query2 = "MATCH (a:User)-[r:ATTENDED]->() WHERE r.response = 'yes' RETURN a, r"
-    val graph2 = fullSpace.base.cypher(query2)
-
-//    val result = graph1.graph.intersect(graph2.graph)
-//    result.records.data.count() should equal(0)
-  }
-
-  test("get a subgraph and query it") {
-    val subgraphQ =
-      """MATCH (u1:User)-[p:POSTED]->(t:Tweet)-[m:MENTIONED]->(u2:User)
-        |WHERE u2.name = 'Neo4j'
-        |RETURN u1, p, t, m, u2
-      """.stripMargin
-
-    val subgraph = fullSpace.base.cypher(subgraphQ)
-
-    val usernamesQ = "MATCH (u:User) RETURN u.name"
-
-    val records = subgraph.graph.cypher(usernamesQ).records
-
-    records.show()
   }
 
   test("expand and project on full graph, three properties") {
@@ -148,7 +103,7 @@ class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fix
   }
 
   test("multiple hops of expand with different reltypes") {
-    val query = "MATCH (u1:User)-[:POSTED]->(t:Tweet)-[:MENTIONED]->(u2:User) RETURN u1.name, u2.name, t.text"
+    val query = "MATCH (u1:User)-[p:POSTED]->(t:Tweet)-[m:MENTIONED]->(u2:User) RETURN u1.name, u2.name, t.text"
 
     val records = fullSpace.base.cypher(query).records
 
@@ -177,6 +132,52 @@ class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fix
     val tuple = ("Brendan Madden", "Tom Sawyer Software",
       "#tsperspectives 7.6 is 15% faster with #neo4j Bolt support. https://t.co/1xPxB9slrB @TSawyerSoftware #graphviz")
     tuples should contain(tuple)
+  }
+
+  // TODO: Reimplement union
+  ignore("union rels") {
+    val query1 = "MATCH (a:User)-[r:ATTENDED]->() WHERE r.response = 'no' RETURN a, r"
+    val graph1 = fullSpace.base.cypher(query1)
+
+    val query2 = "MATCH (a:User)-[r:ATTENDED]->() WHERE r.response = 'yes' RETURN a, r"
+    val graph2 = fullSpace.base.cypher(query2)
+
+    //    val result = graph1.graph.union(graph2.graph)
+    //    result.records.data.count() should equal(4711)
+  }
+
+  // TODO: Reimplement intersect
+  ignore("intersect rels") {
+    val query1 = "MATCH (a:User)-[r:ATTENDED]->() WHERE r.response = 'no' RETURN a, r"
+    val graph1 = fullSpace.base.cypher(query1)
+
+    val query2 = "MATCH (a:User)-[r:ATTENDED]->() WHERE r.response = 'yes' RETURN a, r"
+    val graph2 = fullSpace.base.cypher(query2)
+
+    //    val result = graph1.graph.intersect(graph2.graph)
+    //    result.records.data.count() should equal(0)
+  }
+
+  // TODO: Implement new syntax to make this work
+  ignore("get a subgraph and query it") {
+    val subgraphQ =
+      """MATCH (u1:User)-[p:POSTED]->(t:Tweet)-[m:MENTIONED]->(u2:User)
+        |WHERE u2.name = 'Neo4j'
+        |RETURN u1, p, t, m, u2
+      """.stripMargin
+
+    val result = fullSpace.base.cypher(subgraphQ)
+
+    val usernamesQ = "MATCH (u:User) RETURN u.name"
+
+    val graph = result.namedGraph("someName") match {
+      case Some(g) => g
+      case None => fail("graph 'someName' not found")
+    }
+    val records = graph.cypher(usernamesQ).records
+
+    records.show()
+    // TODO: assertions
   }
 
   private val smallSchema = Schema.empty

@@ -110,6 +110,12 @@ final case class Equals(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWil
 final case class Property(m: Expr, key: PropertyKeyRef)(val cypherType: CypherType = CTWildcard) extends Expr {
   override def toString = s"$withoutType :: $cypherType"
   override def withoutType: String = s"${m.withoutType}.${key.id}"
+
+  override def equals(obj: scala.Any) = obj match {
+    case null => false
+    case other: Property => m == other.m && key == other.key && cypherType == other.cypherType
+    case _ => false
+  }
 }
 final case class TypeId(rel: Expr)(val cypherType: CypherType = CTWildcard) extends Expr {
   override def toString = s"$withoutType :: $cypherType"

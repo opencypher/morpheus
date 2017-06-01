@@ -28,7 +28,7 @@ class PhysicalProducer(context: RuntimeContext) {
     def nodeScan(inGraph: NamedLogicalGraph, v: Var, labels: EveryNode, header: RecordHeader): InternalResult = {
       val graph = prev.graphs(inGraph.name)
 
-      val records = graph.nodes(v)
+      val records = graph.nodes(v).reorder(header)
 
       // TODO: Should not discard prev records here
       prev.mapRecords(_ => records)
@@ -37,7 +37,7 @@ class PhysicalProducer(context: RuntimeContext) {
     def relationshipScan(inGraph: NamedLogicalGraph, v: Var, header: RecordHeader): InternalResult = {
       val graph = prev.graphs(inGraph.name)
 
-      val records = graph.relationships(v)
+      val records = graph.relationships(v).reorder(header)
 
       // TODO: Should not discard prev records here
       prev.mapRecords(_ => records)
@@ -72,7 +72,7 @@ class PhysicalProducer(context: RuntimeContext) {
       }
     }
 
-    def expandSource(relView: InternalResult) = new JoinBuilder {
+    def expandSource(relView: InternalResult, header: RecordHeader) = new JoinBuilder {
       override def on(node: Var)(rel: Var) = {
         val lhsSlot = prev.records.header.slotFor(node)
         val rhsSlot = relView.records.header.sourceNode(rel)
@@ -80,7 +80,7 @@ class PhysicalProducer(context: RuntimeContext) {
         assertIsNode(lhsSlot)
         assertIsNode(rhsSlot)
 
-        prev.mapRecords(_.join(relView.records)(lhsSlot, rhsSlot))
+        prev.mapRecords(_.join(relView.records, header)(lhsSlot, rhsSlot))
       }
     }
 

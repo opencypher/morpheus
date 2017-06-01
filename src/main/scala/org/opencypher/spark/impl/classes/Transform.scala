@@ -8,9 +8,11 @@ import scala.language.implicitConversions
 trait Transform[T] {
   def filter(subject: T, expr: Expr, nextHeader: RecordHeader): T
   def select(subject: T, fields: Set[Var], nextHeader: RecordHeader): T
+  def reorder(subject: T, nextHeader: RecordHeader): T
   def project(subject: T, it: ProjectedSlotContent): T
   def alias2(subject: T, expr: Expr, v: Var, nextHeader: RecordHeader): T
   def join(subject: T, other: T)(lhs: RecordSlot, rhs: RecordSlot): T
+  def join(subject: T, other: T, header: RecordHeader)(lhs: RecordSlot, rhs: RecordSlot): T
 }
 
 object Transform {

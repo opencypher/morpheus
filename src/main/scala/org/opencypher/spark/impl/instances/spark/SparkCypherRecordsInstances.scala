@@ -20,7 +20,10 @@ trait SparkCypherRecordsInstances extends Serializable {
                          (implicit context: RuntimeContext) extends (Row => Boolean) {
     def apply(row: Row) = expr match {
       case Equals(p: Property, c: Const) =>
-        val slot = header.slotsFor(p).head
+        val slot = header.slotsFor(p).headOption match {
+          case Some(s) => s
+          case None => throw new IllegalStateException(s"Expected to find $p in $header")
+        }
         val rhs = context.constants(c.ref)
 
         // TODO: Could also use an Any => CypherValue conversion -- not sure which is better
@@ -69,7 +72,7 @@ trait SparkCypherRecordsInstances extends Serializable {
 
     override def filter(subject: SparkCypherRecords, expr: Expr, nextHeader: RecordHeader): SparkCypherRecords = {
 
-      val filteredRows = sqlFilter(nextHeader, expr, subject.data) match {
+      val filteredRows = sqlFilter(subject.header, expr, subject.data) match {
         case Some(sqlExpr) =>
           subject.data.where(sqlExpr)
         case None =>
@@ -81,17 +84,18 @@ trait SparkCypherRecordsInstances extends Serializable {
       // we don't know which indices these are, as we have no correlation between oldHeader and nextHeader
       // we're trying below with a name-based lookup, but it doesn't work in all cases
 
-      val selectedColumns = nextHeader.slots.map { c =>
-        val oldCol = filteredRows.col(context.columnName(c))
-        oldCol
-      }
+//      val selectedColumns = nextHeader.slots.map { c =>
+//        val name = context.columnName(c)
+//        val oldCol = filteredRows.col(name)
+//        oldCol
+//      }
 
-      val bar = nextHeader.slots.map { s =>
-        val foo = subject.header.slotsFor(s.content.key)
-        foo
-      }
+//      val bar = nextHeader.slots.map { s =>
+//        val foo = subject.header.slotsFor(s.content.key)
+//        foo
+//      }
 
-      val nextData = filteredRows.select(selectedColumns: _*)
+      val nextData = filteredRows//select(selectedColumns: _*)
 
       new SparkCypherRecords {
         override def data = nextData
@@ -107,6 +111,17 @@ trait SparkCypherRecordsInstances extends Serializable {
         data.col(data.columns(subject.header.indexOf(s.content).get))
       }
       val newData = subject.data.select(columns: _*)
+
+      new SparkCypherRecords {
+        override def data = newData
+        override def header = nextHeader
+      }
+    }
+
+    override def reorder(subject: SparkCypherRecords, nextHeader: RecordHeader): SparkCypherRecords = {
+      val columns = nextHeader.slots.map(context.columnName)
+
+      val newData = subject.data.select(columns.head, columns.tail: _*)
 
       new SparkCypherRecords {
         override def data = newData
@@ -157,7 +172,12 @@ trait SparkCypherRecordsInstances extends Serializable {
       }
     }
 
-    override def join(lhs: SparkCypherRecords, rhs: SparkCypherRecords)(lhsSlot: RecordSlot, rhsSlot: RecordSlot): SparkCypherRecords = {
+    override def join(lhs: SparkCypherRecords, rhs: SparkCypherRecords)
+                     (lhsSlot: RecordSlot, rhsSlot: RecordSlot): SparkCypherRecords =
+      join(lhs, rhs, lhs.header ++ rhs.header)(lhsSlot, rhsSlot)
+
+    override def join(lhs: SparkCypherRecords, rhs: SparkCypherRecords, nextHeader: RecordHeader)
+                     (lhsSlot: RecordSlot, rhsSlot: RecordSlot): SparkCypherRecords = {
       val lhsData = lhs.data
       val rhsData = rhs.data
 
@@ -169,7 +189,7 @@ trait SparkCypherRecordsInstances extends Serializable {
 
       new SparkCypherRecords {
         override def data = joined
-        override def header = lhs.header ++ rhs.header
+        override def header = nextHeader
       }
     }
   }

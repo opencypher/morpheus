@@ -60,10 +60,11 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, SparkCypherRe
         val rhs = inner(targetOp)
 
         val g = lhs.graphs(op.inGraph.name)
-        val relRhs = InternalResult(g.relationships(rel), lhs.graphs).typeFilter(rel, types.relTypes, header)
+        val relationships = g.relationships(rel)
+        val relRhs = InternalResult(relationships, lhs.graphs).typeFilter(rel, types.relTypes, relationships.header)
 
         val relAndTarget = relRhs.joinTarget(rhs).on(rel)(target)
-        val expanded = lhs.expandSource(relAndTarget).on(source)(rel)
+        val expanded = lhs.expandSource(relAndTarget, header).on(source)(rel)
 
         expanded
       case x =>

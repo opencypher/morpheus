@@ -109,7 +109,8 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   // TODO: Specialize per kind of slot content
   def expandSource(source: Var, rel: Var, types: EveryRelationship, target: Var,
                    sourceOp: FlatOperator, targetOp: FlatOperator): FlatOperator = {
-    val relKeyHeaderProperties = types.relTypes.elts.flatMap(t => schema.relationshipKeys(globals.relType(t).name).toSeq)
+//    val relKeyHeaderProperties = types.relTypes.elts.flatMap(t => schema.relationshipKeys(globals.relType(t).name).toSeq)
+    val relKeyHeaderProperties = schema.relationshipTypes.flatMap(t => schema.relationshipKeys(t).toSeq)
     val relKeyHeaderContents = relKeyHeaderProperties.map {
       case ((k, t)) => ProjectedExpr(Property(rel, propertyKey(k))(t))
     }
