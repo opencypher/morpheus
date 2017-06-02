@@ -1,9 +1,9 @@
 package org.opencypher.spark.impl.util
 
-import org.opencypher.spark.StdTestSuite
+import org.opencypher.spark.TestSuiteImpl
 import org.opencypher.spark.impl.spark.SparkColumnName
 
-class SparkColumnNameTest extends StdTestSuite {
+class SparkColumnNameTest extends TestSuiteImpl {
 
   test("escape length 0 spark identifier") {
     fromString("") should equal("_empty_")

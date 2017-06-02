@@ -1,11 +1,12 @@
 package org.opencypher.spark.impl.instances.spark
 
 import org.apache.spark.sql.DataFrame
+import org.opencypher.spark.api.classes.Cypher
 import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherResult, SparkGraphSpace}
 import org.opencypher.spark.api.value.CypherValue
-import org.opencypher.spark.impl.classes.Cypher
 import org.opencypher.spark.impl.flat.{FlatPlanner, FlatPlannerContext}
-import org.opencypher.spark.impl.ir.{CypherQueryBuilder, GlobalsExtractor, IRBuilderContext}
+import org.opencypher.spark.impl.ir.global.GlobalsExtractor
+import org.opencypher.spark.impl.ir.{CypherQueryBuilder, IRBuilderContext}
 import org.opencypher.spark.impl.logical.{LogicalPlanner, LogicalPlannerContext}
 import org.opencypher.spark.impl.parse.CypherParser
 import org.opencypher.spark.impl.physical.{PhysicalPlanner, PhysicalPlannerContext}

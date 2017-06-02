@@ -6,7 +6,7 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FunSuite, Matchers}
 
 @RunWith(classOf[JUnitRunner])
-abstract class StdTestSuite
+abstract class TestSuiteImpl
   extends FunSuite
   with Matchers
   with CypherImplicits

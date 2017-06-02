@@ -3,9 +3,9 @@ package org.opencypher.spark_legacy
 import org.opencypher.spark_legacy.api.CypherRecord
 import org.opencypher.spark_legacy.impl._
 import org.opencypher.spark.api.value.CypherList
-import org.opencypher.spark.{StdTestSuite, TestSession}
+import org.opencypher.spark.{TestSuiteImpl, TestSession}
 
-class GraftingCypherOnSparkFunctionalityTest extends StdTestSuite with TestSession.Fixture {
+class GraftingCypherOnSparkFunctionalityTest extends TestSuiteImpl with TestSession.Fixture {
 
   import factory._
 

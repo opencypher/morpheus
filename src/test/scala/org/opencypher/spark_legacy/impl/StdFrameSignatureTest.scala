@@ -2,9 +2,9 @@ package org.opencypher.spark_legacy.impl
 
 import org.opencypher.spark.api.types._
 import org.opencypher.spark_legacy.impl.util.SlotSymbolGenerator
-import org.opencypher.spark.StdTestSuite
+import org.opencypher.spark.TestSuiteImpl
 
-class StdFrameSignatureTest extends StdTestSuite {
+class StdFrameSignatureTest extends TestSuiteImpl {
 
   implicit val planningContext = new PlanningContext(new SlotSymbolGenerator, null, null)
 

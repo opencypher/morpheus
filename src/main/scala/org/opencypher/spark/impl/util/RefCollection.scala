@@ -2,7 +2,7 @@ package org.opencypher.spark.impl.util
 
 import org.opencypher.spark.impl.classes.Register
 
-final case class RefCollection[D](elts: Vector[D])
+final case class RefCollection[D](elts: Vector[D]) extends AnyVal
 
 object RefCollection {
   def empty[D] = RefCollection(Vector.empty[D])

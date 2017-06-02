@@ -5,12 +5,12 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, Parameter}
 import org.neo4j.cypher.internal.frontend.v3_2.symbols
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.types._
-import org.opencypher.spark.{Neo4jAstTestSupport, StdTestSuite}
+import org.opencypher.spark.{Neo4jAstTestSupport, TestSuiteImpl}
 import org.scalatest.mockito.MockitoSugar
 
 import scala.language.reflectiveCalls
 
-class SchemaTyperTest extends StdTestSuite with Neo4jAstTestSupport with MockitoSugar {
+class SchemaTyperTest extends TestSuiteImpl with Neo4jAstTestSupport with MockitoSugar {
 
   val schema = Schema.empty
     .withNodeKeys("Person")("name" -> CTString, "age" -> CTInteger)
@@ -35,7 +35,7 @@ class SchemaTyperTest extends StdTestSuite with Neo4jAstTestSupport with Mockito
     assertExpr.from("(b AND true) OR (b AND c)") shouldHaveInferredType CTBoolean
 
     Seq("b AND int", "int OR b", "b AND int AND c").foreach { s =>
-      assertExpr(parse(s)) shouldFailToInferTypeWithErrors InvalidType(varFor("int"), CTBoolean, CTInteger)
+      assertExpr(parseExpr(s)) shouldFailToInferTypeWithErrors InvalidType(varFor("int"), CTBoolean, CTInteger)
     }
   }
 
@@ -70,7 +70,7 @@ class SchemaTyperTest extends StdTestSuite with Neo4jAstTestSupport with Mockito
     assertExpr.from("n.name = 'foo'") shouldHaveInferredType CTBoolean
     assertExpr.from("n.name IN ['foo', 'bar']") shouldHaveInferredType CTBoolean
     assertExpr.from("n.name IN 'foo'") shouldFailToInferTypeWithErrors
-      InvalidType(parse("'foo'"), CTList(CTWildcard), CTString)
+      InvalidType(parseExpr("'foo'"), CTList(CTWildcard), CTString)
   }
 
   test("typing of unsupported expressions") {
@@ -175,7 +175,7 @@ class SchemaTyperTest extends StdTestSuite with Neo4jAstTestSupport with Mockito
 
   private object assertExpr {
     def from(exprText: String)(implicit tracker: TypeTracker = TypeTracker.empty) =
-      assertExpr(parse(exprText))
+      assertExpr(parseExpr(exprText))
   }
 
   private case class assertExpr(expr: Expression)(implicit val tracker: TypeTracker = TypeTracker.empty) {

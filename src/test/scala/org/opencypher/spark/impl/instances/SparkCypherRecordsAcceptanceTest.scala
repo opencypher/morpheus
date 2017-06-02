@@ -5,9 +5,9 @@ import org.opencypher.spark.api.spark.{SparkCypherRecords, SparkGraphSpace}
 import org.opencypher.spark.api.types.{CTAny, CTInteger, CTString}
 import org.opencypher.spark.impl.instances.spark.cypher._
 import org.opencypher.spark.impl.syntax.cypher._
-import org.opencypher.spark.{StdTestSuite, TestSession}
+import org.opencypher.spark.{TestSuiteImpl, TestSession}
 
-class SparkCypherRecordsAcceptanceTest extends StdTestSuite with TestSession.Fixture {
+class SparkCypherRecordsAcceptanceTest extends TestSuiteImpl with TestSession.Fixture {
 
   test("label scan and project") {
     // When
