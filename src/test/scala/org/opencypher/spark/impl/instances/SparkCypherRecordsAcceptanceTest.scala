@@ -7,6 +7,8 @@ import org.opencypher.spark.impl.instances.spark.cypher._
 import org.opencypher.spark.impl.syntax.cypher._
 import org.opencypher.spark.{TestSuiteImpl, TestSession}
 
+import scala.language.reflectiveCalls
+
 class SparkCypherRecordsAcceptanceTest extends TestSuiteImpl with TestSession.Fixture {
 
   test("label scan and project") {
