@@ -32,19 +32,16 @@ sealed trait StackingFlatOperator extends FlatOperator {
 sealed trait FlatLeafOperator extends FlatOperator
 
 final case class NodeScan(node: Var, nodeDef: EveryNode, in: FlatOperator, header: RecordHeader)
-  extends StackingFlatOperator {
-}
+  extends StackingFlatOperator
 
 final case class Filter(expr: Expr, in: FlatOperator, header: RecordHeader)
   extends StackingFlatOperator
 
 final case class Select(fields: IndexedSeq[Var], in: FlatOperator, header: RecordHeader)
-  extends StackingFlatOperator {
-}
+  extends StackingFlatOperator
 
 final case class Alias(expr: Expr, alias: Var, in: FlatOperator, header: RecordHeader)
-  extends StackingFlatOperator {
-}
+  extends StackingFlatOperator
 
 final case class ExpandSource(source: Var, rel: Var, types: EveryRelationship, target: Var,
                               sourceOp: FlatOperator, targetOp: FlatOperator, header: RecordHeader, relHeader: RecordHeader)
