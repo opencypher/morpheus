@@ -6,7 +6,7 @@ import cats.syntax.all._
 import org.atnos.eff._
 import org.atnos.eff.all._
 import org.atnos.eff.syntax.all._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.types._
 

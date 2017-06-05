@@ -1,10 +1,10 @@
 package org.opencypher.spark
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
-import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.{CNFNormalizer, Namespacer, Never, rewriteEqualityToInPredicate}
-import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_2.phases._
-import org.neo4j.cypher.internal.frontend.v3_2.{CypherException, InputPosition, SemanticCheckResult, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{CNFNormalizer, Namespacer, Never, rewriteEqualityToInPredicate}
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
+import org.neo4j.cypher.internal.frontend.v3_3.phases._
+import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, InputPosition, SemanticCheckResult, SemanticState}
 import org.opencypher.spark.impl.parse.{CypherParser, sparkCypherRewriting}
 
 object CypherParserWithoutSemanticChecking extends CypherParser {

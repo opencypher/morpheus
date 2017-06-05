@@ -3,8 +3,8 @@ package org.opencypher.spark.impl.ir
 import cats.implicits._
 import org.atnos.eff._
 import org.atnos.eff.all._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
-import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, ast}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
+import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, ast}
 import org.opencypher.spark.api.expr.{Expr, Var}
 import org.opencypher.spark.api.ir._
 import org.opencypher.spark.api.ir.block._

@@ -1,13 +1,24 @@
 package org.opencypher.spark.impl.parse
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.Forced
-import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_2.phases._
+import org.neo4j.cypher.internal.frontend.v3_3.{InvalidSemanticsException, SemanticError, SemanticErrorDef, SyntaxException, UnsupportedOpenCypher}
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.Forced
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
+import org.neo4j.cypher.internal.frontend.v3_3.phases._
 import org.opencypher.spark.impl.CompilationStage
 
 object CypherParser extends CypherParser {
-  implicit object defaultContext extends BlankBaseContext
+
+  def defaultContext(query: String) = CypherForApacheSparkContext(query)
+
+  case class CypherForApacheSparkContext(query: String) extends BlankBaseContext {
+    override def errorHandler: (Seq[SemanticErrorDef]) => Unit = errors => errors.foreach {
+      case e: SemanticError => throw new SyntaxException(e.msg, query, e.position)
+      case _: UnsupportedOpenCypher => // do nothing
+      case x => throw new IllegalArgumentException(s"Expected a semantic error, got $x")
+    }
+  }
+
 }
 
 trait CypherParser extends CompilationStage[String, Statement, BaseContext] {

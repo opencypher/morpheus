@@ -1,7 +1,7 @@
 package org.opencypher.spark.impl.ir
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, Parameter}
-import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, symbols}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, Parameter}
+import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, symbols}
 import org.opencypher.spark.TestSuiteImpl
 import org.opencypher.spark.api.expr.Expr
 import org.opencypher.spark.api.ir._
@@ -73,12 +73,12 @@ abstract class IrTestSuite extends TestSuiteImpl {
     def model: QueryModel[Expr] = ir.model
 
     def ir(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
-      val stmt = CypherParser(queryText)(CypherParser.defaultContext)
+      val stmt = CypherParser(queryText)(CypherParser.defaultContext(queryText))
       CypherQueryBuilder(stmt)(IRBuilderContext.initial(queryText, GlobalsExtractor(stmt), schema, Map.empty))
     }
 
     def irWithParams(params: (String, CypherType)*)(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
-      val stmt = CypherParser(queryText)(CypherParser.defaultContext)
+      val stmt = CypherParser(queryText)(CypherParser.defaultContext(queryText))
       val knownTypes: Map[Expression, CypherType] = params.map(p => Parameter(p._1, symbols.CTAny)(InputPosition.NONE) -> p._2).toMap
       CypherQueryBuilder(stmt)(IRBuilderContext.initial(queryText, GlobalsExtractor(stmt), schema, knownTypes))
     }

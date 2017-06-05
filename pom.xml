@@ -16,7 +16,7 @@
         <scala.version>2.11.8</scala.version>
         <scala.binary.version>2.11</scala.binary.version>
         <spark.version>2.1.0</spark.version>
-        <neo4j.version>3.2.0-alpha08</neo4j.version>
+        <neo4j.version>3.3.0-alpha02</neo4j.version>
         <graphframes.version>0.4.0-spark2.1-s_2.11</graphframes.version>
         <gdl.version>0.3.0-SNAPSHOT</gdl.version>
     </properties>
@@ -326,7 +326,7 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cypher-frontend-3.2</artifactId>
+            <artifactId>neo4j-cypher-frontend-3.3</artifactId>
             <version>${neo4j.version}</version>
         </dependency>
 
@@ -338,7 +338,7 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cypher-frontend-3.2</artifactId>
+            <artifactId>neo4j-cypher-frontend-3.3</artifactId>
             <version>${neo4j.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
