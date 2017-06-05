@@ -47,12 +47,10 @@ sealed trait LogicalLeafOperator extends LogicalOperator {
 }
 
 final case class NodeScan(node: Var, nodeDef: EveryNode, in: LogicalOperator)
-                         (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
-}
+                         (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator
 
 final case class Filter(expr: Expr, in: LogicalOperator)
-                       (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
-}
+                       (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator
 
 sealed trait ExpandOperator extends BinaryLogicalOperator {
   def source: Var
@@ -82,12 +80,10 @@ final case class ExpandTarget(source: Var, rel: Var, target: Var,
 }
 
 final case class Project(it: ProjectedSlotContent, in: LogicalOperator)
-                        (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
-}
+                        (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator
 
 final case class Select(fields: IndexedSeq[Var], in: LogicalOperator)
-                       (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
-}
+                       (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator
 
 final case class LoadGraph(outGraph: NamedLogicalGraph, source: GraphSource)
                           (override val solved: SolvedQueryModel[Expr]) extends LogicalLeafOperator {
