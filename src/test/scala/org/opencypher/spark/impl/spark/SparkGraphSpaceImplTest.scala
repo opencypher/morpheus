@@ -2,9 +2,9 @@ package org.opencypher.spark.impl.spark
 
 import org.opencypher.spark.api.spark.{DataFrameGraphBuilder, SparkCypherGraph, SparkGraphSpace}
 import org.opencypher.spark.api.types.{CTFloat, CTNode, CTRelationship, CTString}
-import org.opencypher.spark.{StdTestSuite, TestSession}
+import org.opencypher.spark.{TestSparkCypherSession, TestSuiteImpl}
 
-class SparkGraphSpaceImplTest extends StdTestSuite with TestSession.Fixture {
+class SparkGraphSpaceImplTest extends TestSuiteImpl with TestSparkCypherSession.Fixture {
 
   test("import empty graph") {
     val space = SparkGraphSpace.createEmpty(session)
@@ -19,7 +19,7 @@ class SparkGraphSpaceImplTest extends StdTestSuite with TestSession.Fixture {
   test("import graph using node table") {
     val space = SparkGraphSpace.createEmpty(session)
 
-    import session.implicits._
+    import sparkSession.implicits._
 
     val nodes = List(
       (1L, "Alice", 12.0d, false, true),

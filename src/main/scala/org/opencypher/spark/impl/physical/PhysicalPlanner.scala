@@ -38,7 +38,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, SparkCypherRe
 
       case flat.LoadGraph(outGraph, source) => source match {
         case DefaultGraphSource =>
-          InternalResult(unitTable(context.session), Map(outGraph.name -> context.defaultGraph))
+          InternalResult(unitTable(context.session.sparkSession), Map(outGraph.name -> context.defaultGraph))
         case _ =>
           throw new NotImplementedError(s"Unable to load graph source other than default, got $source")
       }

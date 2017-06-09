@@ -2,15 +2,15 @@ package org.opencypher.spark_legacy.benchmark
 
 import org.apache.spark.sql.functions.col
 import org.opencypher.spark_legacy.impl.{FixedLengthPattern, Out}
-import org.opencypher.spark.{TestSuiteImpl, TestSession}
+import org.opencypher.spark.{TestSuiteImpl, TestSparkCypherSession}
 
-class DataFrameBenchmarksTest extends TestSuiteImpl with TestSession.Fixture {
+class DataFrameBenchmarksTest extends TestSuiteImpl with TestSparkCypherSession.Fixture {
 
   case class NodeRow(id: Long, group: Boolean, company: Boolean)
   case class RelRow(id: Long, startId: Long, endId: Long, typ: String = "ALLOWED_INHERIT")
 
   test("query example") {
-    session.sparkContext.setLogLevel("OFF")
+    sparkSession.sparkContext.setLogLevel("OFF")
 
     val n0 = NodeRow(0, group = true, company = false)
     val n1 = NodeRow(1, group = true, company = false)
@@ -25,8 +25,8 @@ class DataFrameBenchmarksTest extends TestSuiteImpl with TestSession.Fixture {
     val r4 = RelRow(4, 2, 4) // include
     val r5 = RelRow(5, 3, 4) // not include
 
-    val nodes = session.createDataFrame(Seq(n0, n1, n2, n3, n4))
-    val rels = session.createDataFrame(Seq(r0, r1, r2, r3, r4, r5))
+    val nodes = sparkSession.createDataFrame(Seq(n0, n1, n2, n3, n4))
+    val rels = sparkSession.createDataFrame(Seq(r0, r1, r2, r3, r4, r5))
 
     val g = SimpleDataFrameGraph(
       Map("Group" -> nodes.filter(col("group")), "Company" -> nodes.filter(col("company"))),

@@ -159,8 +159,8 @@ trait SparkCypherRecords extends CypherRecords with Serializable {
 }
 
 object SparkCypherRecords {
-  def empty(session: SparkSession, emptyHeader: RecordHeader = RecordHeader.empty) = new SparkCypherRecords {
-    override def data = session.createDataFrame(Collections.emptyList[Row](), SparkSchema.from(emptyHeader))
+  def empty(emptyHeader: RecordHeader = RecordHeader.empty)(implicit session: SparkCypherSession) = new SparkCypherRecords {
+    override def data = session.sparkSession.createDataFrame(Collections.emptyList[Row](), SparkSchema.from(emptyHeader))
     override def header = emptyHeader
   }
 }

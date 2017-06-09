@@ -5,19 +5,18 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SparkSession}
 import org.neo4j.driver.internal.{InternalNode, InternalRelationship}
-import org.opencypher.spark.api.types._
-import org.opencypher.spark_legacy.benchmark.Converters.cypherValue
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.global.GlobalsRegistry
-import org.opencypher.spark.api.ir.{Field, QueryModel}
 import org.opencypher.spark.api.record.{OpaqueField, ProjectedExpr, RecordHeader, SlotContent}
 import org.opencypher.spark.api.schema.{Schema, VerifiedSchema}
-import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkGraphSpace}
+import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherSession, SparkGraphSpace}
+import org.opencypher.spark.api.types._
 import org.opencypher.spark.impl.syntax.header._
+import org.opencypher.spark_legacy.benchmark.Converters.cypherValue
 
 trait SparkGraphLoading {
 
-  def loadSchema(nodeQ: String, relQ: String)(implicit sc: SparkSession): VerifiedSchema = {
+  def loadSchema(nodeQ: String, relQ: String)(implicit sc: SparkCypherSession): VerifiedSchema = {
     val (nodes, rels) = loadRDDs(nodeQ, relQ)
 
     loadSchema(nodes, rels)
@@ -66,18 +65,18 @@ trait SparkGraphLoading {
   }
 
   def fromNeo4j(nodeQuery: String, relQuery: String)
-               (implicit sc: SparkSession): SparkGraphSpace =
+               (implicit sc: SparkCypherSession): SparkGraphSpace =
     fromNeo4j(nodeQuery, relQuery, "source", "rel", "target", None)
 
   def fromNeo4j(nodeQuery: String, relQuery: String, schema: VerifiedSchema)
-               (implicit sc: SparkSession): SparkGraphSpace =
+               (implicit sc: SparkCypherSession): SparkGraphSpace =
     fromNeo4j(nodeQuery, relQuery, "source", "rel", "target", Some(schema))
 
 
   def fromNeo4j(nodeQuery: String, relQuery: String,
                 sourceNode: String, rel: String, targetNode: String,
                 maybeSchema: Option[VerifiedSchema] = None)
-               (implicit sc: SparkSession): SparkGraphSpace = {
+               (implicit sc: SparkCypherSession): SparkGraphSpace = {
     val (nodes, rels) = loadRDDs(nodeQuery, relQuery)
 
     val verified = maybeSchema.getOrElse(loadSchema(nodes, rels))
@@ -87,8 +86,8 @@ trait SparkGraphLoading {
     createSpace(nodes, rels, sourceNode, rel, targetNode)
   }
 
-  private def loadRDDs(nodeQ: String, relQ: String)(implicit session: SparkSession) = {
-    val neo4j = EncryptedNeo4j(session)
+  private def loadRDDs(nodeQ: String, relQ: String)(implicit session: SparkCypherSession) = {
+    val neo4j = EncryptedNeo4j(session.sparkSession)
     val nodes = neo4j.cypher(nodeQ).loadNodeRdds.map(row => row(0).asInstanceOf[InternalNode])
     val rels = neo4j.cypher(relQ).loadRowRdd.map(row => row(0).asInstanceOf[InternalRelationship])
 
@@ -99,8 +98,9 @@ trait SparkGraphLoading {
 
   private def createSpace(nodes: RDD[InternalNode], rels: RDD[InternalRelationship],
                           sourceNode: String = "source", rel: String = "rel", targetNode: String = "target")
-                         (implicit sparkSession: SparkSession, context: LoadingContext): SparkGraphSpace = {
+                         (implicit session: SparkCypherSession, context: LoadingContext): SparkGraphSpace = {
 
+    val sparkSession = session.sparkSession
     val nodeFields = (v: Var) => computeNodeFields(v)
     val nodeHeader = (v: Var) => nodeFields(v).map(_._1).foldLeft(RecordHeader.empty) {
       case (acc, next) => acc.update(addContent(next))._1
@@ -152,9 +152,8 @@ trait SparkGraphLoading {
         override def schema: Schema = context.schema
       }
 
-      override def session: SparkSession = sparkSession
+      override def session: SparkCypherSession = selfSpace.session
       override def globals: GlobalsRegistry = context.globals
-
     }
   }
 

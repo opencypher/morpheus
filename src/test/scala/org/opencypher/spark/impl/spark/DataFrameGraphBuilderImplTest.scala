@@ -1,11 +1,11 @@
 package org.opencypher.spark.impl.spark
 
 import org.apache.spark.sql.DataFrame
-import org.opencypher.spark.StdTestSuite
+import org.opencypher.spark.TestSuiteImpl
 import org.opencypher.spark.api.types.{CTFloat, CTString}
 import org.scalatest.mockito.MockitoSugar
 
-class DataFrameGraphBuilderImplTest extends StdTestSuite with MockitoSugar {
+class DataFrameGraphBuilderImplTest extends TestSuiteImpl with MockitoSugar {
 
   def start = new DataFrameGraphBuilderImpl(DataFrameGraph(None, None))
   val nodes = mock[DataFrame]

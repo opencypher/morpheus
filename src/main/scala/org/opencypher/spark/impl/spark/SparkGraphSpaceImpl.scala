@@ -5,12 +5,12 @@ import org.opencypher.spark.api.expr.Var
 import org.opencypher.spark.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.api.record.{OpaqueField, RecordHeader}
 import org.opencypher.spark.api.schema.Schema
-import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkGraphSpace}
+import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherSession, SparkGraphSpace}
 import org.opencypher.spark.api.types.{CTNode, CTRelationship}
 
 import scala.collection.mutable
 
-class SparkGraphSpaceImpl(val session: SparkSession) extends SparkGraphSpace {
+class SparkGraphSpaceImpl(implicit val session: SparkCypherSession) extends SparkGraphSpace {
 
   graphSpace =>
 
@@ -38,7 +38,7 @@ class SparkGraphSpaceImpl(val session: SparkSession) extends SparkGraphSpace {
         ???
 
       case None =>
-        SparkCypherRecords.empty(graphSpace.session, RecordHeader.from(OpaqueField(Var(name)(typ))))
+        SparkCypherRecords.empty(RecordHeader.from(OpaqueField(Var(name)(typ))))
     }
 
     override def _relationships(name: String, typ: CTRelationship): SparkCypherRecords = dfGraph.verified.relDf match {
@@ -46,7 +46,7 @@ class SparkGraphSpaceImpl(val session: SparkSession) extends SparkGraphSpace {
         ???
 
       case None =>
-        SparkCypherRecords.empty(graphSpace.session, RecordHeader.from(OpaqueField(Var(name)(typ))))
+        SparkCypherRecords.empty(RecordHeader.from(OpaqueField(Var(name)(typ))))
     }
   })
 
