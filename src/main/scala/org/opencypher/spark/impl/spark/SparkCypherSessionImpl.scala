@@ -6,6 +6,7 @@ import org.opencypher.spark.api.record.{OpaqueField, RecordHeader}
 import org.opencypher.spark.api.spark.{SparkCypherRecords, SparkCypherSession}
 
 final class SparkCypherSessionImpl(val sparkSession: SparkSession) extends SparkCypherSession {
+
   override def importDataFrame(df: DataFrame): SparkCypherRecords =
     if (df.sparkSession == sparkSession) {
       new SparkCypherRecords {

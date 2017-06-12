@@ -14,6 +14,7 @@ trait CypherRecords {
   // TODO: Implement
   def shape(node: EmbeddedNode): Records = ???
   def shape(rel: EmbeddedRelationship): Records = ???
+  // def shape(slot: String, combinedSlots: String*) = ???
 
   def compact: Records
 

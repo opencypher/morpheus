@@ -146,13 +146,14 @@ sealed case class EmbeddedRelationshipBuilder[FROM, VIA, TYP, TO](
     copy(relTypeOrSlotName = Right(newRelTypeName))
 
   def relTypes(newRelTypeSlot: String, relTypeNames: String*) =
-    Left(newRelTypeSlot -> relTypeNames.toSet)
+    copy(relTypeOrSlotName = Left(newRelTypeSlot -> relTypeNames.toSet))
 
   def to(newToSlot: String) =
     copy(toSlot = newToSlot)
 }
 
 object EmbeddedRelationshipBuilder {
+
   implicit final class RichBuilder[TYP <: Either[(String, Set[String]), String]](
     val builder: EmbeddedRelationshipBuilder[String, (String, String), TYP, String]
   ) extends AnyVal {

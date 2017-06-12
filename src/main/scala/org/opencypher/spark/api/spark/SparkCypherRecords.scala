@@ -22,6 +22,7 @@ trait SparkCypherRecords extends CypherRecords with Serializable {
   override def column(slot: RecordSlot): String =
     header.internalHeader.column(slot)
 
+  // TODO: Should this really be cached?
   //noinspection AccessorLikeMethodIsEmptyParen
   def toDF(): Data = data.cache()
 
