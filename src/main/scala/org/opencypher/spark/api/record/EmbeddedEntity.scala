@@ -1,7 +1,9 @@
 package org.opencypher.spark.api.record
 
-import org.opencypher.spark.api.expr.Var
-import org.opencypher.spark.api.types.{CTNode, CTRelationship}
+import org.opencypher.spark.api.expr.{Expr, HasLabel, Property, Var}
+import org.opencypher.spark.api.ir.global.{GlobalsRegistry, Label, PropertyKey}
+import org.opencypher.spark.api.schema.Schema
+import org.opencypher.spark.api.types.{CTBoolean, CTNode, CTRelationship, CTWildcard}
 
 import scala.language.implicitConversions
 
@@ -58,6 +60,44 @@ final case class EmbeddedNode(
     val (labelName, slotName) = optionalLabel
     copy(labelsFromSlotOrImplied = labelsFromSlotOrImplied.updated(labelName, Some(slotName)))
   }
+
+//  def compile(globals: GlobalsRegistry): (GlobalsRegistry, Var, Map[String, Expr]) = {
+//    // Register new globals
+//    val allLabels = labelsFromSlotOrImplied.keys
+//    val globalsWithLabels = allLabels.foldLeft(globals) { case (g, label) => g.withLabel(Label(label)) }
+//    val allKeys = propertiesFromSlots.keys
+//    val globalsWithKeys = allKeys.foldLeft(globalsWithLabels) { case (g, key) => g.withPropertyKey(PropertyKey(key)) }
+//    val newGlobals = globalsWithKeys
+//
+//    // Build entity entry
+//    val impliedLabels = labelsFromSlotOrImplied.toSeq.collect { case (label, None) => label }
+//    val entity = Var(entitySlot)(CTNode(impliedLabels: _*))
+//    val entityEntry = idSlot -> entity
+//
+//    // Build optional label entries
+//    val labelEntries = labelsFromSlotOrImplied.toSeq.collect {
+//      case (label, Some(slot)) => slot -> HasLabel(entity, newGlobals.label(label))(CTBoolean)
+//    }
+//
+//    // Build property key entries
+//    val keyEntries = propertiesFromSlots.collect { case (key, slots) => slots.map { slot =>
+//      // TODO: Figure out type by looking at schema
+//      slot -> Property(entity, globals.propertyKey(key))(CTWildcard)
+//    } }.flatten
+//
+//    // Detect duplicates
+//    val labelMap = labelEntries.foldLeft(Map.empty[String, Expr]) {
+//      case (m, (slot, expr)) => if (m.contains(slot)) ??? else m.updated(slot, expr)
+//    }
+//
+//    val keyMap = keyEntries.foldLeft(labelMap) {
+//      case (m, (slot, expr)) => if (m.contains(slot)) ??? else m.updated(slot, expr)
+//    }
+//
+//    val resMap = if (keyMap.contains(idSlot)) ??? else keyMap.updated(idSlot, entity)
+//
+//    (newGlobals, entity, resMap)
+//  }
 }
 
 object EmbeddedNode extends EmbeddedNodeBuilder(()) {

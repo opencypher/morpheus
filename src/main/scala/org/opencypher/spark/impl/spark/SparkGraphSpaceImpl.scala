@@ -1,15 +1,11 @@
 package org.opencypher.spark.impl.spark
 
-import org.apache.spark.sql.SparkSession
-import org.opencypher.spark.api.expr.Var
 import org.opencypher.spark.api.ir.global.GlobalsRegistry
-import org.opencypher.spark.api.record.{OpaqueField, RecordHeader}
-import org.opencypher.spark.api.schema.Schema
-import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherSession, SparkGraphSpace}
-import org.opencypher.spark.api.types.{CTNode, CTRelationship}
+import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherSession, SparkGraphSpace}
 
 import scala.collection.mutable
 
+// TODO: Finish and bring in this new implementation
 class SparkGraphSpaceImpl(implicit val session: SparkCypherSession) extends SparkGraphSpace {
 
   graphSpace =>
@@ -23,32 +19,32 @@ class SparkGraphSpaceImpl(implicit val session: SparkCypherSession) extends Spar
 
   override def base: SparkCypherGraph = ???
 
-  override def importGraph(name: String, dfGraph: VerifiedDataFrameGraph) = register(name, new SparkCypherGraph {
-
-    override def space: SparkGraphSpace = graphSpace
-
-    override def relationships(v: Var): SparkCypherRecords = ???
-    override def nodes(v: Var): SparkCypherRecords = ???
-
-    // TODO: This should come from the input or be computed here
-    override def schema: Schema = Schema.empty
-
-    override def _nodes(name: String, typ: CTNode): SparkCypherRecords = dfGraph.verified.nodeDf match {
-      case Some(input) =>
-        ???
-
-      case None =>
-        SparkCypherRecords.empty(RecordHeader.from(OpaqueField(Var(name)(typ))))
-    }
-
-    override def _relationships(name: String, typ: CTRelationship): SparkCypherRecords = dfGraph.verified.relDf match {
-      case Some(input) =>
-        ???
-
-      case None =>
-        SparkCypherRecords.empty(RecordHeader.from(OpaqueField(Var(name)(typ))))
-    }
-  })
+//  override def importGraph(name: String, dfGraph: VerifiedDataFrameGraph) = register(name, new SparkCypherGraph {
+//
+//    override def space: SparkGraphSpace = graphSpace
+//
+//    override def relationships(v: Var): SparkCypherRecords = ???
+//    override def nodes(v: Var): SparkCypherRecords = ???
+//
+//    // TODO: This should come from the input or be computed here
+//    override def schema: Schema = Schema.empty
+//
+//    override def _nodes(name: String, typ: CTNode): SparkCypherRecords = dfGraph.verified.nodeDf match {
+//      case Some(input) =>
+//        ???
+//
+//      case None =>
+//        SparkCypherRecords.empty(RecordHeader.from(OpaqueField(Var(name)(typ))))
+//    }
+//
+//    override def _relationships(name: String, typ: CTRelationship): SparkCypherRecords = dfGraph.verified.relDf match {
+//      case Some(input) =>
+//        ???
+//
+//      case None =>
+//        SparkCypherRecords.empty(RecordHeader.from(OpaqueField(Var(name)(typ))))
+//    }
+//  })
 
   private def register(name: String, graph: SparkCypherGraph): SparkCypherGraph = {
     if (_graphs.contains(name))

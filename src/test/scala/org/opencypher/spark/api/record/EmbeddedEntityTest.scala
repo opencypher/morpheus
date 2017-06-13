@@ -61,4 +61,12 @@ class EmbeddedEntityTest extends TestSuiteImpl {
 
     given should equal(actual)
   }
+
+//  test("Refuses to use the same slot multiple times when constructing nodes") {
+//    raisesSlotReUse(EmbeddedNode("n" -> "the_slot").build.withOptionalLabel("Person" -> "the_slot"))
+//  }
+//
+//  private def raisesSlotReUse[T](f: => T): Unit = {
+//    an[IllegalArgumentException] should be thrownBy(f)
+//  }
 }

@@ -1,14 +1,12 @@
 package org.opencypher.spark.api.spark
 
 import org.opencypher.spark.api.graph.GraphSpace
-import org.opencypher.spark.impl.spark.{SparkGraphLoading, SparkGraphSpaceImpl, VerifiedDataFrameGraph}
+import org.opencypher.spark.impl.spark.{SparkGraphLoading, SparkGraphSpaceImpl}
 
 trait SparkGraphSpace extends GraphSpace {
   override type Graph = SparkCypherGraph
 
   def session: SparkCypherSession
-
-  def importGraph(name: String, externalGraph: VerifiedDataFrameGraph): SparkCypherGraph = ???
 }
 
 object SparkGraphSpace extends SparkGraphLoading with Serializable {

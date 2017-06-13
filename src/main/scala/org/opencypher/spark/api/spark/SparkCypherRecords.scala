@@ -5,7 +5,8 @@ import java.util.Collections
 import org.apache.spark.sql.{Column, DataFrame, Row}
 import org.opencypher.spark.api.expr.Var
 import org.opencypher.spark.api.record._
-import org.opencypher.spark.impl.spark.{SparkColumnName, SparkSchema, fromSparkType}
+import org.opencypher.spark.impl.record.SparkCypherRecordHeader
+import org.opencypher.spark.impl.spark.{SparkColumnName, fromSparkType}
 import org.opencypher.spark.impl.syntax.header._
 
 sealed abstract class SparkCypherRecords(initialHeader: RecordHeader, initialData: DataFrame)
@@ -26,6 +27,26 @@ sealed abstract class SparkCypherRecords(initialHeader: RecordHeader, initialDat
 
   override def column(slot: RecordSlot): String =
     header.internalHeader.column(slot)
+
+
+  override def shape(node: EmbeddedNode): SparkCypherRecords = {
+    /*
+     No column name re-use allowed!
+
+
+     id(n)  n:Label n.prop
+
+     foo    bar     baz
+
+     Rename: idSlot: String => entitySlot: String; CTnteger => CTNode
+     Label slot: Mark as n:Label
+     Property slot: Mark as n.prop
+     */
+    val newHeader = ???
+    SparkCypherRecords.create(newHeader, data)
+  }
+
+  override def shape(rel: EmbeddedRelationship): SparkCypherRecords = ???
 
   //noinspection AccessorLikeMethodIsEmptyParen
   def toDF(): Data = data
@@ -164,10 +185,7 @@ sealed abstract class SparkCypherRecords(initialHeader: RecordHeader, initialDat
 object SparkCypherRecords {
 
   def create(initialDataFrame: DataFrame)(implicit session: SparkCypherSession): SparkCypherRecords = {
-    val initialHeader = RecordHeader.from(initialDataFrame.schema.fields.map {
-      field =>
-        OpaqueField(Var(field.name)(fromSparkType(field.dataType, field.nullable)))
-    }: _*)
+    val initialHeader = SparkCypherRecordHeader.fromSparkStructType(initialDataFrame.schema)
     create(initialHeader, initialDataFrame)
   }
 
@@ -182,9 +200,10 @@ object SparkCypherRecords {
     }
   }
 
-  def empty(initialHeader: RecordHeader = RecordHeader.empty)(implicit session: SparkCypherSession): SparkCypherRecords = {
-    val initialDataFrame =
-      session.sparkSession.createDataFrame(Collections.emptyList[Row](), SparkSchema.from(initialHeader))
+  def empty(initialHeader: RecordHeader = RecordHeader.empty)(implicit session: SparkCypherSession)
+  : SparkCypherRecords = {
+    val initialSparkStructType = SparkCypherRecordHeader.asSparkStructType(initialHeader)
+    val initialDataFrame = session.sparkSession.createDataFrame(Collections.emptyList[Row](), initialSparkStructType)
     create(initialHeader, initialDataFrame)
   }
 }
