@@ -28,7 +28,7 @@ class SparkCypherRecordsAcceptanceTest extends TestSuiteImpl with TestSparkCyphe
   }
 
   test("label scan and project") {
-    session
+
     // When
     val result = smallSpace.base.cypher("MATCH (a:User) RETURN a.text")
 

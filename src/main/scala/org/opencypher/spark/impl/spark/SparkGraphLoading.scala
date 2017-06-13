@@ -98,9 +98,9 @@ trait SparkGraphLoading {
 
   private def createSpace(nodes: RDD[InternalNode], rels: RDD[InternalRelationship],
                           sourceNode: String = "source", rel: String = "rel", targetNode: String = "target")
-                         (implicit session: SparkCypherSession, context: LoadingContext): SparkGraphSpace = {
+                         (implicit mainSession: SparkCypherSession, context: LoadingContext): SparkGraphSpace = {
 
-    val sparkSession = session.sparkSession
+    val sparkSession = mainSession.sparkSession
     val nodeFields = (v: Var) => computeNodeFields(v)
     val nodeHeader = (v: Var) => nodeFields(v).map(_._1).foldLeft(RecordHeader.empty) {
       case (acc, next) => acc.update(addContent(next))._1
@@ -114,11 +114,7 @@ trait SparkGraphLoading {
       df.repartition(col).sortWithinPartitions(col).cache()
     }
 
-    val nodeRecords = (v: Var) => new SparkCypherRecords with Serializable {
-      override def data = nodeFrame(v)
-
-      override def header = nodeHeader(v)
-    }
+    val nodeRecords = (v: Var) => SparkCypherRecords.create(nodeHeader(v), nodeFrame(v))
 
     val relFields = (v: Var) => computeRelFields(v)
     val relHeader = (v: Var) => relFields(v).map(_._1).foldLeft(RecordHeader.empty) {
@@ -133,11 +129,7 @@ trait SparkGraphLoading {
       df.repartition(col).sortWithinPartitions(col).cache()
     }
 
-    val relRecords = (v: Var) => new SparkCypherRecords with Serializable {
-      override def data = relFrame(v)
-
-      override def header = relHeader(v)
-    }
+    val relRecords = (v: Var) => SparkCypherRecords.create(relHeader(v), relFrame(v))
 
     new SparkGraphSpace with Serializable {
       selfSpace =>
@@ -152,7 +144,7 @@ trait SparkGraphLoading {
         override def schema: Schema = context.schema
       }
 
-      override def session: SparkCypherSession = selfSpace.session
+      override def session: SparkCypherSession = mainSession
       override def globals: GlobalsRegistry = context.globals
     }
   }

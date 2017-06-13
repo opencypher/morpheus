@@ -5,8 +5,6 @@ import org.opencypher.spark.impl.spark.SparkCypherSessionImpl
 
 trait SparkCypherSession {
   def sparkSession: SparkSession
-
-  def importDataFrame(df: DataFrame): SparkCypherRecords
 }
 
 object SparkCypherSession {
