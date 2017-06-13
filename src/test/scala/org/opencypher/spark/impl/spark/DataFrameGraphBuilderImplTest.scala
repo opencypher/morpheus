@@ -8,6 +8,7 @@ import org.scalatest.mockito.MockitoSugar
 class DataFrameGraphBuilderImplTest extends TestSuiteImpl with MockitoSugar {
 
   def start = new DataFrameGraphBuilderImpl(DataFrameGraph(None, None))
+  
   val nodes = mock[DataFrame]
 
   test("build empty graph") {
