@@ -21,10 +21,22 @@ class ExpressionConverterTest extends TestSuiteImpl with Neo4jAstTestSupport {
     .withConstant(Constant("p2"))
     .withRelType(RelType("REL_TYPE"))
 
+  private def testTypes(ref: Ref[ast.Expression]): CypherType = ref.value match {
+    case ast.Variable("r") => CTRelationship
+    case ast.Variable("n") => CTNode
+    case ast.Variable("m") => CTNode
+    case _ => CTWildcard
+  }
+
   import globals._
 
   private val c = new ExpressionConverter(globals)
 
+  test("subtract") {
+    convert("a - b") should equal(
+      Subtract(Var("a")(), Var("b")())()
+    )
+  }
 
   test("can convert type() function calls used as predicates") {
     convert(parseExpr("type(r) = 'REL_TYPE'")) should equal(
@@ -94,14 +106,7 @@ class ExpressionConverterTest extends TestSuiteImpl with Neo4jAstTestSupport {
     )
   }
 
-  private def typings(ref: Ref[ast.Expression]): CypherType = ref.value match {
-    case ast.Variable("r") => CTRelationship
-    case ast.Variable("n") => CTNode
-    case ast.Variable("m") => CTNode
-    case _ => CTWildcard
-  }
-
-  private def convert(e: ast.Expression): Expr = c.convert(e)(typings)
+  private def convert(e: ast.Expression): Expr = c.convert(e)(testTypes)
 }
 
 

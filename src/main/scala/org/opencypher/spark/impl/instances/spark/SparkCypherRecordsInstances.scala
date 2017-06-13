@@ -138,26 +138,35 @@ trait SparkCypherRecordsInstances extends Serializable {
       }
     }
 
-    override def project(subject: SparkCypherRecords, it: ProjectedSlotContent): SparkCypherRecords = {
+    override def project(subject: SparkCypherRecords, expr: Expr, nextHeader: RecordHeader): SparkCypherRecords = {
 
-      val (newHeader, result) = subject.header.update(addContent(it))
+      val slots = nextHeader.slotsFor(expr)
 
-      val newData = result match {
-        case r: Replaced[RecordSlot] =>
-          val oldColumnName: String = context.columnName(r.old.content)
-          if (subject.data.columns.contains(oldColumnName)) {
-            subject.data.withColumnRenamed(oldColumnName, context.columnName(r.it.content))
-          } else {
-            throw new IllegalStateException(s"Wanted to rename column $oldColumnName, but it was not present!")
-          }
-        case _: Found[_] => subject.data
-        case x => // need to evaluate the expression and construct new column
-          throw new NotImplementedError(s"Expected the slot to be replaced, but was $x")
-      }
+      if (slots.isEmpty) {
+        throw new IllegalStateException(s"No slot found for expression $expr")
+      } else if (slots.size > 1) {
+        throw new NotImplementedError("No support for multi-column expressions yet")
+      } else {
+        val slot = slots.head
 
-      new SparkCypherRecords {
-        override def data = newData
-        override def header = newHeader
+        val newData = expr match {
+          case Subtract(lhs, rhs) =>
+            val lhsSlot = nextHeader.slotsFor(lhs).head
+            val rhsSlot = nextHeader.slotsFor(rhs).head
+
+            val columns = subject.data.columns
+            val lhsColumn = subject.data.col(columns(lhsSlot.index))
+            val rhsColumn = subject.data.col(columns(rhsSlot.index))
+
+            val columnsToSelect = columns.map(subject.data.col) :+ (lhsColumn - rhsColumn).as(context.columnName(slot))
+            subject.data.select(columnsToSelect: _*)
+          case _ => throw new NotImplementedError(s"No support for $expr yet")
+        }
+
+        new SparkCypherRecords {
+          override def data = newData
+          override def header = nextHeader
+        }
       }
     }
 

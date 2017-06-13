@@ -126,6 +126,11 @@ final case class TypeId(rel: Expr)(val cypherType: CypherType = CTWildcard) exte
   override def withoutType = s"type(${rel.withoutType})"
 }
 
+// Arithmetics
+final case class Subtract(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends Expr {
+  override def toString = s"$lhs - $rhs"
+}
+
 sealed trait Lit[T] extends Expr {
   def v: T
 }
