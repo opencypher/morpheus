@@ -34,7 +34,7 @@ trait SparkCypherInstances {
 
       val converted = extractedLiterals.mapValues(v => Converters.cypherValue(v))
       val constants = (parameters ++ converted).map {
-        case (k, v) => globals.constant(k) -> v
+        case (k, v) => globals.constantRefByName(k) -> v
       }
 
       val paramsAndTypes = GlobalsExtractor.paramWithTypes(stmt)

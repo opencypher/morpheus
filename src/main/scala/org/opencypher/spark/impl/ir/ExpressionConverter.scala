@@ -15,7 +15,7 @@ final class ExpressionConverter(val globals: GlobalsRegistry) extends AnyVal {
 
   def convert(e: ast.Expression)(implicit typings: (Ref[ast.Expression]) => CypherType): Expr = e match {
     case ast.Variable(name) => Var(name)(typings(e))
-    case ast.Parameter(name, _) => Const(globals.constant(name))(typings(e))
+    case ast.Parameter(name, _) => Const(globals.constantRefByName(name))(typings(e))
 
       // Literals
     case astExpr: ast.IntegerLiteral => IntegerLit(astExpr.value)(typings(e))
@@ -23,17 +23,17 @@ final class ExpressionConverter(val globals: GlobalsRegistry) extends AnyVal {
     case _: ast.True => TrueLit()
     case _: ast.False => FalseLit()
 
-    case ast.Property(m, ast.PropertyKeyName(name)) => Property(convert(m), globals.propertyKey(name))(typings(e))
+    case ast.Property(m, ast.PropertyKeyName(name)) => Property(convert(m), globals.propertyKeyRefByName(name))(typings(e))
 
       // Predicates
     case ast.Ands(exprs) => new Ands(exprs.map(convert))(typings(e))
     case ast.HasLabels(node, labels) =>
-      val exprs = labels.map { (l: ast.LabelName) => HasLabel(convert(node), globals.label(l.name))(typings(e)) }
+      val exprs = labels.map { (l: ast.LabelName) => HasLabel(convert(node), globals.labelRefByName(l.name))(typings(e)) }
       if (exprs.size == 1) exprs.head else new Ands(exprs.toSet)(typings(e))
     case ast.Not(expr) => Not(convert(expr))(typings(e))
     // MATCH ()-[r]->() WHERE type(r) IN ['FOO', 'BAR] ==> MATCH ()-[r]->() WHERE r[:FOO|BAR]
     case ast.Equals(f: ast.FunctionInvocation, s: ast.StringLiteral) if f.function == functions.Type =>
-      HasType(convert(f.args.head), globals.relType(s.value))(CTBoolean)
+      HasType(convert(f.args.head), globals.relTypeRefByName(s.value))(CTBoolean)
     case ast.Equals(lhs, rhs) => Equals(convert(lhs), convert(rhs))(typings(e))
     case ast.LessThan(lhs, rhs) => LessThan(convert(lhs), convert(rhs))(typings(e))
     case ast.In(lhs, ast.ListLiteral(elems)) if elems.size == 1 =>

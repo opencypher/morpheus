@@ -170,7 +170,7 @@ trait SparkGraphLoading {
     val globals = context.globals
 
     val labelFields = schema.labels.map { name =>
-      val label = HasLabel(node, globals.label(name))(CTBoolean)
+      val label = HasLabel(node, globals.labelRefByName(name))(CTBoolean)
       val slot = ProjectedExpr(label)
       val field = StructField(SparkColumnName.of(slot), BooleanType, nullable = false)
       slot -> field
@@ -178,7 +178,7 @@ trait SparkGraphLoading {
     val propertyFields = schema.labels.flatMap { l =>
       schema.nodeKeys(l).map {
         case (name, t) =>
-          val property = Property(node, globals.propertyKey(name))(t)
+          val property = Property(node, globals.propertyKeyRefByName(name))(t)
           val slot = ProjectedExpr(property)
           val field = StructField(SparkColumnName.of(slot), toSparkType(t), nullable = t.isNullable)
           slot -> field
@@ -199,7 +199,7 @@ trait SparkGraphLoading {
     val propertyFields = schema.relationshipTypes.flatMap { typ =>
       schema.relationshipKeys(typ).map {
         case (name, t) =>
-          val property = Property(rel, globals.propertyKey(name))(t)
+          val property = Property(rel, globals.propertyKeyRefByName(name))(t)
           val slot = ProjectedExpr(property)
           val field = StructField(SparkColumnName.of(slot), toSparkType(t), nullable = t.isNullable)
           slot -> field
@@ -285,7 +285,7 @@ trait SparkGraphLoading {
             importedRel.endNodeId()
 
           case _: TypeId =>
-            globals.relType(relType).id
+            globals.relTypeRefByName(relType).id
 
           case _: Var =>
             importedRel.id()

@@ -55,16 +55,16 @@ class GlobalsExtractorTest extends TestSuiteImpl with Neo4jAstTestSupport {
   }
 
   private case class GlobalsMatcher(registry: GlobalsRegistry) {
-    def shouldRegisterLabel(name: String) = registry.label(name)
-    def shouldRegisterLabels(names: String*) = names.foreach(registry.label)
+    def shouldRegisterLabel(name: String) = registry.labelRefByName(name)
+    def shouldRegisterLabels(names: String*) = names.foreach(registry.labelRefByName)
 
-    def shouldRegisterRelType(name: String) = registry.relType(name)
-    def shouldRegisterRelTypes(names: String*) = names.foreach(registry.relType)
+    def shouldRegisterRelType(name: String) = registry.relTypeRefByName(name)
+    def shouldRegisterRelTypes(names: String*) = names.foreach(registry.relTypeRefByName)
 
-    def shouldRegisterPropertyKey(name: String) = registry.propertyKey(name)
-    def shouldRegisterPropertyKeys(names: String*) = names.foreach(registry.propertyKey)
+    def shouldRegisterPropertyKey(name: String) = registry.propertyKeyRefByName(name)
+    def shouldRegisterPropertyKeys(names: String*) = names.foreach(registry.propertyKeyRefByName)
 
-    def shouldRegisterConstant(name: String) = registry.constant(name)
-    def shouldRegisterConstants(names: String*) = names.foreach(registry.constant)
+    def shouldRegisterConstant(name: String) = registry.constantRefByName(name)
+    def shouldRegisterConstants(names: String*) = names.foreach(registry.constantRefByName)
   }
 }

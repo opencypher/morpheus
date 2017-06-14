@@ -62,11 +62,11 @@ class LogicalPlannerTest extends IrTestSuite {
 
     plan(ir, globals) should equal(
       Select(IndexedSeq(Var("a.name")(CTVoid)),
-        Project(ProjectedField(Var("a.name")(CTVoid), Property(Var("a")(CTNode("Administrator")), globals.propertyKey("name"))(CTVoid)),
-          Filter(Equals(Property(Var("g")(CTNode("Group")), globals.propertyKey("name"))(CTVoid), Const(ConstantRef(0))(CTString))(CTBoolean),
-            Project(ProjectedExpr(Property(Var("g")(CTNode("Group")), globals.propertyKey("name"))(CTVoid)),
-              Filter(HasLabel(Var("g")(CTNode), globals.label("Group"))(CTBoolean),
-                Filter(HasLabel(Var("a")(CTNode), globals.label("Administrator"))(CTBoolean),
+        Project(ProjectedField(Var("a.name")(CTVoid), Property(Var("a")(CTNode("Administrator")), globals.propertyKeyRefByName("name"))(CTVoid)),
+          Filter(Equals(Property(Var("g")(CTNode("Group")), globals.propertyKeyRefByName("name"))(CTVoid), Const(ConstantRef(0))(CTString))(CTBoolean),
+            Project(ProjectedExpr(Property(Var("g")(CTNode("Group")), globals.propertyKeyRefByName("name"))(CTVoid)),
+              Filter(HasLabel(Var("g")(CTNode), globals.labelRefByName("Group"))(CTBoolean),
+                Filter(HasLabel(Var("a")(CTNode), globals.labelRefByName("Administrator"))(CTBoolean),
                   ExpandSource(Var("a")(CTNode), Var("r")(CTRelationship), EveryRelationship, Var("g")(CTNode),
                     NodeScan(Var("a")(CTNode), EveryNode,
                       LoadGraph(NamedLogicalGraph("default", Schema.empty), DefaultGraphSource)(emptySqm)
@@ -95,11 +95,11 @@ class LogicalPlannerTest extends IrTestSuite {
 
     plan(ir, globals, schema) should equal(
       Select(IndexedSeq(Var("a.name")(CTFloat)),
-        Project(ProjectedField(Var("a.name")(CTFloat), Property(Var("a")(CTNode("Administrator")), globals.propertyKey("name"))(CTFloat)),
-          Filter(Equals(Property(Var("g")(CTNode("Group")), globals.propertyKey("name"))(CTString), Const(ConstantRef(0))(CTString))(CTBoolean),
-            Project(ProjectedExpr(Property(Var("g")(CTNode("Group")), globals.propertyKey("name"))(CTString)),
-              Filter(HasLabel(Var("g")(CTNode), globals.label("Group"))(CTBoolean),
-                Filter(HasLabel(Var("a")(CTNode), globals.label("Administrator"))(CTBoolean),
+        Project(ProjectedField(Var("a.name")(CTFloat), Property(Var("a")(CTNode("Administrator")), globals.propertyKeyRefByName("name"))(CTFloat)),
+          Filter(Equals(Property(Var("g")(CTNode("Group")), globals.propertyKeyRefByName("name"))(CTString), Const(ConstantRef(0))(CTString))(CTBoolean),
+            Project(ProjectedExpr(Property(Var("g")(CTNode("Group")), globals.propertyKeyRefByName("name"))(CTString)),
+              Filter(HasLabel(Var("g")(CTNode), globals.labelRefByName("Group"))(CTBoolean),
+                Filter(HasLabel(Var("a")(CTNode), globals.labelRefByName("Administrator"))(CTBoolean),
                   ExpandSource(Var("a")(CTNode), Var("r")(CTRelationship), EveryRelationship, Var("g")(CTNode),
                     NodeScan(Var("a")(CTNode), EveryNode,
                       LoadGraph(NamedLogicalGraph("default", schema), DefaultGraphSource)(emptySqm)
@@ -124,8 +124,8 @@ class LogicalPlannerTest extends IrTestSuite {
 
     plan(ir, globals) should equal(
       Select(IndexedSeq(Var("a.prop")(CTVoid)),
-        Project(ProjectedField(Var("a.prop")(CTVoid), Property(nodeA, globals.propertyKey("prop"))(CTVoid)),
-          Filter(Not(Equals(Const(globals.constant("p1"))(CTInteger), Const(globals.constant("p2"))(CTBoolean))(CTBoolean))(CTBoolean),
+        Project(ProjectedField(Var("a.prop")(CTVoid), Property(nodeA, globals.propertyKeyRefByName("prop"))(CTVoid)),
+          Filter(Not(Equals(Const(globals.constantRefByName("p1"))(CTInteger), Const(globals.constantRefByName("p2"))(CTBoolean))(CTBoolean))(CTBoolean),
             NodeScan(nodeA, EveryNode,
               LoadGraph(NamedLogicalGraph("default", Schema.empty), DefaultGraphSource)(emptySqm)
             )(emptySqm)

@@ -49,7 +49,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   def nodeScan(node: Var, _nodeDef: EveryNode, prev: FlatOperator): NodeScan = {
-    val nodeDef = if (_nodeDef.labels.elts.isEmpty) EveryNode(AllGiven(schema.labels.map(globals.label))) else _nodeDef
+    val nodeDef = if (_nodeDef.labels.elts.isEmpty) EveryNode(AllGiven(schema.labels.map(globals.labelRefByName))) else _nodeDef
 
     val givenLabels = nodeDef.labels.elts.map(ref => label(ref).name)
 
@@ -69,12 +69,12 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     val keyGroups = allKeys.groups[String, Vector[CypherType]]
 
     val labelHeaderContents = (impliedLabels ++ possibleLabels).map {
-      labelName => ProjectedExpr(HasLabel(node, label(labelName))(CTBoolean))
+      labelName => ProjectedExpr(HasLabel(node, labelRefByName(labelName))(CTBoolean))
     }.toSeq
 
     // TODO: This should consider multiple types per property
     val keyHeaderContents = keyGroups.toSeq.flatMap {
-      case (k, types) => types.map { t => ProjectedExpr(Property(node, propertyKey(k))(t)) }
+      case (k, types) => types.map { t => ProjectedExpr(Property(node, propertyKeyRefByName(k))(t)) }
     }
 
     // TODO: Add is null column(?)
@@ -105,7 +105,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     else types.relTypes.elts.flatMap(t => schema.relationshipKeys(globals.relType(t).name).toSeq)
 
     val relKeyHeaderContents = relKeyHeaderProperties.map {
-      case ((k, t)) => ProjectedExpr(Property(rel, propertyKey(k))(t))
+      case ((k, t)) => ProjectedExpr(Property(rel, propertyKeyRefByName(k))(t))
     }
 
     val startNode = ProjectedExpr(StartNode(rel)(CTNode))
