@@ -29,9 +29,9 @@ trait ExprBlockInstances {
 
       predicates.foldLeft(opaqueTypedFields) {
         case (fields, predicate) => predicate match {
-          case HasLabel(node: Var, labelRef) => fields.map {
+          case HasLabel(node: Var, label) => fields.map {
             case f if f representsNode node =>
-              f.withLabel(globals.label(labelRef))
+              f.withLabel(label)
             case f => f
           }
             // The below predicate is never present currently

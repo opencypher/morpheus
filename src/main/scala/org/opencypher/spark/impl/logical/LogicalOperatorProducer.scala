@@ -33,7 +33,7 @@ class LogicalOperatorProducer(globals: GlobalsRegistry) {
 
   def planNodeScan(node: Field, everyNode: EveryNode, prev: LogicalOperator): NodeScan = {
     val solved = everyNode.labels.elts.foldLeft(SolvedQueryModel.empty[Expr].withField(node)) {
-      case (acc, label) => acc.withPredicate(HasLabel(node, globals.labelRef(label))(CTBoolean))
+      case (acc, label) => acc.withPredicate(HasLabel(node, label)(CTBoolean))
     }
 
     NodeScan(node, everyNode, prev)(solved)

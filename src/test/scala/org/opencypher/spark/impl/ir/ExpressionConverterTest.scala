@@ -81,32 +81,32 @@ class ExpressionConverterTest extends TestSuiteImpl with Neo4jAstTestSupport {
 
   test("can convert has-labels") {
     val given = convert(ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _, ast.LabelName("Duck") _)) _)
-    given should equal(Ands(HasLabel('x, labelRefByName("Person"))(CTBoolean), HasLabel('x, LabelRef(1))(CTBoolean)))
+    given should equal(Ands(HasLabel('x, labelByName("Person"))(CTBoolean), HasLabel('x, Label("Duck"))(CTBoolean)))
   }
 
   test("can convert single has-labels") {
     val given = ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _)) _
-    convert(given) should equal(HasLabel('x, labelRefByName("Person"))(CTBoolean))
+    convert(given) should equal(HasLabel('x, labelByName("Person"))(CTBoolean))
   }
 
   test("can convert conjunctions") {
     val given = ast.Ands(Set(ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _)) _, ast.Equals(prop("x", "name"), ast.StringLiteral("Mats") _) _)) _
 
-    convert(given) should equal(Ands(HasLabel('x, labelRefByName("Person"))(CTBoolean), Equals(Property('x, PropertyKeyRef(1))(), StringLit("Mats")())(CTBoolean)))
+    convert(given) should equal(Ands(HasLabel('x, labelByName("Person"))(CTBoolean), Equals(Property('x, PropertyKeyRef(1))(), StringLit("Mats")())(CTBoolean)))
   }
 
   test("can convert negation") {
     val given = ast.Not(ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _)) _) _
 
-    convert(given) should equal(Not(HasLabel('x, labelRefByName("Person"))(CTBoolean))(CTBoolean))
+    convert(given) should equal(Not(HasLabel('x, labelByName("Person"))(CTBoolean))(CTBoolean))
   }
 
   test("can convert retyping predicate") {
     val given = parseExpr("$p1 AND n:Foo AND $p2 AND m:Bar")
 
     convert(given) should equal(Ands(
-      HasLabel('n, labelRefByName("Foo"))(),
-      HasLabel('m, labelRefByName("Bar"))(),
+      HasLabel('n, labelByName("Foo"))(),
+      HasLabel('m, labelByName("Bar"))(),
       Const(constantRefByName("p1"))(),
       Const(constantRefByName("p2"))())
     )

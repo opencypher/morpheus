@@ -70,7 +70,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     val keyGroups = allKeys.groups[String, Vector[CypherType]]
 
     val labelHeaderContents = (impliedLabels ++ possibleLabels).map {
-      labelName => ProjectedExpr(HasLabel(node, labelRefByName(labelName))(CTBoolean))
+      labelName => ProjectedExpr(HasLabel(node, labelByName(labelName))(CTBoolean))
     }.toSeq
 
     // TODO: This should consider multiple types per property

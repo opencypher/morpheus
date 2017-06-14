@@ -26,7 +26,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
           deps should equal(Set(loadRef))
           entities should equal(Map(toField('a, CTNode) -> EveryNode))
           topo shouldBe empty
-          exprs should equal(Set(HasLabel(toVar('a), labelRefByName("Person"))()))
+          exprs should equal(Set(HasLabel(toVar('a), labelByName("Person"))()))
       }
 
       val projectRef = model.findExactlyOne {

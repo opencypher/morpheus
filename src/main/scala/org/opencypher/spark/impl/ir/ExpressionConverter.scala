@@ -28,7 +28,7 @@ final class ExpressionConverter(val globals: GlobalsRegistry) extends AnyVal {
       // Predicates
     case ast.Ands(exprs) => new Ands(exprs.map(convert))(typings(e))
     case ast.HasLabels(node, labels) =>
-      val exprs = labels.map { (l: ast.LabelName) => HasLabel(convert(node), globals.labelRefByName(l.name))(typings(e)) }
+      val exprs = labels.map { (l: ast.LabelName) => HasLabel(convert(node), globals.labelByName(l.name))(typings(e)) }
       if (exprs.size == 1) exprs.head else new Ands(exprs.toSet)(typings(e))
     case ast.Not(expr) => Not(convert(expr))(typings(e))
     // MATCH ()-[r]->() WHERE type(r) IN ['FOO', 'BAR] ==> MATCH ()-[r]->() WHERE r[:FOO|BAR]

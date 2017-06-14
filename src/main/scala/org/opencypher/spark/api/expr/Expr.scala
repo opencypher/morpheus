@@ -101,10 +101,10 @@ final case class Not(expr: Expr)(val cypherType: CypherType = CTWildcard) extend
   override def toString = s"NOT $expr"
 }
 
-final case class HasLabel(node: Expr, label: LabelRef)(val cypherType: CypherType = CTWildcard) extends Expr {
+final case class HasLabel(node: Expr, label: Label)(val cypherType: CypherType = CTWildcard) extends Expr {
   override def toString = s"$withoutType :: $cypherType"
 
-  override def withoutType: String = s"${node.withoutType}:${label.id}"
+  override def withoutType: String = s"${node.withoutType}:${label.name}"
 }
 
 final case class HasType(rel: Expr, relType: RelType)(val cypherType: CypherType = CTWildcard) extends Expr {
