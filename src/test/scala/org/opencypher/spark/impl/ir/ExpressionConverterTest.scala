@@ -32,6 +32,12 @@ class ExpressionConverterTest extends TestSuiteImpl with Neo4jAstTestSupport {
 
   private val c = new ExpressionConverter(globals)
 
+  test("can convert less than") {
+    convert(parseExpr("a < b")) should equal(
+      LessThan(Var("a")(), Var("b")())()
+    )
+  }
+  
   test("subtract") {
     convert("a - b") should equal(
       Subtract(Var("a")(), Var("b")())()

@@ -94,6 +94,10 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
         val project1 = planInnerExpr(expr1, acc)
         val project2 = planInnerExpr(expr2, project1)
         producer.planFilter(eq, project2)
+      case (acc, lt@LessThan(expr1, expr2)) =>
+        val project1 = planInnerExpr(expr1, acc)
+        val project2 = planInnerExpr(expr2, project1)
+        producer.planFilter(lt, project2)
       case (acc, h@HasLabel(_: Var, l)) =>
         producer.planFilter(h, acc)
       case (acc, not@Not(expr)) =>

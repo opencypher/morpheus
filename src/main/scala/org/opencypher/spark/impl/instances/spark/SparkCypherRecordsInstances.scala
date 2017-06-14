@@ -4,9 +4,9 @@ import org.apache.spark.sql.{Column, Row}
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.record._
 import org.opencypher.spark.api.spark.SparkCypherRecords
-import org.opencypher.spark.api.types._
-import org.opencypher.spark.api.value.CypherValue.Conversion._
+import org.opencypher.spark.api.value.CypherValueUtils._
 import org.opencypher.spark.impl.classes.Transform
+import org.opencypher.spark.impl.instances.spark.RowUtils._
 import org.opencypher.spark.impl.instances.spark.SparkSQLExprMapper.asSparkSQLExpr
 import org.opencypher.spark.impl.physical.RuntimeContext
 
@@ -16,24 +16,24 @@ trait SparkCypherRecordsInstances extends Serializable {
    * Used when the predicate depends on values not stored inside the dataframe.
    */
   case class cypherFilter(header: RecordHeader, expr: Expr)
-                         (implicit context: RuntimeContext) extends (Row => Boolean) {
+                         (implicit context: RuntimeContext) extends (Row => Option[Boolean]) {
     def apply(row: Row) = expr match {
       case Equals(p: Property, c: Const) =>
         val slot = header.slotsFor(p).headOption match {
           case Some(s) => s
           case None => throw new IllegalStateException(s"Expected to find $p in $header")
         }
+        val lhs = row.getCypherValue(slot.index, slot.content.cypherType)
         val rhs = context.constants(c.ref)
 
-        // TODO: Could also use an Any => CypherValue conversion -- not sure which is better
-        slot.content.cypherType.material match {
-          case CTBoolean => cypherBoolean(row.getBoolean(slot.index)) == rhs
-          case CTString => cypherString(row.getString(slot.index)) == rhs
-          case CTInteger => cypherInteger(row.getLong(slot.index)) == rhs
-          case CTFloat => cypherFloat(row.getDouble(slot.index)) == rhs
-          case x => throw new NotImplementedError(
-            s"Can not compare values of type $x yet (attempted ${row.get(slot.index)} = $rhs")
-        }
+        Some(lhs == rhs)
+      case LessThan(lhs, rhs) =>
+        val leftSlot = header.slotsFor(lhs).head
+        val rightSlot = header.slotsFor(rhs).head
+        val leftValue = row.getCypherValue(leftSlot.index, leftSlot.content.cypherType)
+        val rightValue = row.getCypherValue(rightSlot.index, rightSlot.content.cypherType)
+
+        leftValue < rightValue
       case x =>
         throw new NotImplementedError(s"Predicate $x not yet supported")
     }
@@ -41,13 +41,21 @@ trait SparkCypherRecordsInstances extends Serializable {
 
   implicit def sparkCypherRecordsTransform(implicit context: RuntimeContext) = new Transform[SparkCypherRecords] with Serializable {
 
+    private def liftTernary(f: Row => Option[Boolean]): (Row => Boolean) = {
+      (r: Row) => f(r) match {
+        case None => false
+        case Some(x) => x
+      }
+    }
+
     override def filter(subject: SparkCypherRecords, expr: Expr, nextHeader: RecordHeader): SparkCypherRecords = {
 
       val filteredRows = asSparkSQLExpr(subject.header, expr, subject.data) match {
         case Some(sqlExpr) =>
           subject.data.where(sqlExpr)
         case None =>
-          subject.data.filter(cypherFilter(nextHeader, expr))
+          val predicate = cypherFilter(nextHeader, expr)
+          subject.data.filter(liftTernary(predicate))
       }
 
       val selectedColumns = nextHeader.slots.map { c =>

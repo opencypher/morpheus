@@ -35,6 +35,7 @@ final class ExpressionConverter(val globals: GlobalsRegistry) extends AnyVal {
     case ast.Equals(f: ast.FunctionInvocation, s: ast.StringLiteral) if f.function == functions.Type =>
       HasType(convert(f.args.head), globals.relType(s.value))(CTBoolean)
     case ast.Equals(lhs, rhs) => Equals(convert(lhs), convert(rhs))(typings(e))
+    case ast.LessThan(lhs, rhs) => LessThan(convert(lhs), convert(rhs))(typings(e))
     case ast.In(lhs, ast.ListLiteral(elems)) if elems.size == 1 =>
       Equals(convert(lhs), convert(elems.head))(typings(e))
     case RetypingPredicate(lhs, rhs) =>

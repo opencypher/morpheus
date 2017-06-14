@@ -11,9 +11,19 @@ import scala.language.reflectiveCalls
 
 class SparkCypherRecordsAcceptanceTest extends TestSuiteImpl with TestSession.Fixture {
 
+  test("less than") {
+    // When
+    val result = smallSpace.base.cypher("MATCH (a:User)-[r:ATTENDED]->() WHERE r.guests < a.id  RETURN a.id")
+
+    // Then
+    result.records shouldHaveSize 4832 andContain 116765532
+  }
+
   test("subtraction") {
+    // When
     val result = smallSpace.base.cypher("MATCH (a:User)-[r:ATTENDED]->() RETURN a.id - r.guests")
 
+    // Then
     result.records shouldHaveSize 4832 andContain 116765532
   }
 
