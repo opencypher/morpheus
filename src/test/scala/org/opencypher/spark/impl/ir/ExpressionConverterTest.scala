@@ -62,7 +62,7 @@ class ExpressionConverterTest extends TestSuiteImpl with Neo4jAstTestSupport {
   }
 
   test("can convert property access") {
-    convert(prop("n", "key")) should equal(Property('n, PropertyKeyRef(0))(CTWildcard))
+    convert(prop("n", "key")) should equal(Property('n, PropertyKey("key"))(CTWildcard))
   }
 
   test("can convert equals") {
@@ -92,7 +92,7 @@ class ExpressionConverterTest extends TestSuiteImpl with Neo4jAstTestSupport {
   test("can convert conjunctions") {
     val given = ast.Ands(Set(ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _)) _, ast.Equals(prop("x", "name"), ast.StringLiteral("Mats") _) _)) _
 
-    convert(given) should equal(Ands(HasLabel('x, labelByName("Person"))(CTBoolean), Equals(Property('x, PropertyKeyRef(1))(), StringLit("Mats")())(CTBoolean)))
+    convert(given) should equal(Ands(HasLabel('x, labelByName("Person"))(CTBoolean), Equals(Property('x, PropertyKey("name"))(), StringLit("Mats")())(CTBoolean)))
   }
 
   test("can convert negation") {

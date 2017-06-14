@@ -23,7 +23,7 @@ final class ExpressionConverter(val globals: GlobalsRegistry) extends AnyVal {
     case _: ast.True => TrueLit()
     case _: ast.False => FalseLit()
 
-    case ast.Property(m, ast.PropertyKeyName(name)) => Property(convert(m), globals.propertyKeyRefByName(name))(typings(e))
+    case ast.Property(m, ast.PropertyKeyName(name)) => Property(convert(m), globals.propertyKeyByName(name))(typings(e))
 
       // Predicates
     case ast.Ands(exprs) => new Ands(exprs.map(convert))(typings(e))

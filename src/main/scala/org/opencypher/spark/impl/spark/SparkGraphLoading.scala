@@ -8,7 +8,7 @@ import org.neo4j.driver.internal.{InternalNode, InternalRelationship}
 import org.opencypher.spark.api.types._
 import org.opencypher.spark_legacy.benchmark.Converters.cypherValue
 import org.opencypher.spark.api.expr._
-import org.opencypher.spark.api.ir.global.GlobalsRegistry
+import org.opencypher.spark.api.ir.global.{GlobalsRegistry, PropertyKey}
 import org.opencypher.spark.api.ir.{Field, QueryModel}
 import org.opencypher.spark.api.record.{OpaqueField, ProjectedExpr, RecordHeader, SlotContent}
 import org.opencypher.spark.api.schema.{Schema, VerifiedSchema}
@@ -178,7 +178,7 @@ trait SparkGraphLoading {
     val propertyFields = schema.labels.flatMap { l =>
       schema.nodeKeys(l).map {
         case (name, t) =>
-          val property = Property(node, globals.propertyKeyRefByName(name))(t)
+          val property = Property(node, globals.propertyKeyByName(name))(t)
           val slot = ProjectedExpr(property)
           val field = StructField(SparkColumnName.of(slot), toSparkType(t), nullable = t.isNullable)
           slot -> field
@@ -199,7 +199,7 @@ trait SparkGraphLoading {
     val propertyFields = schema.relationshipTypes.flatMap { typ =>
       schema.relationshipKeys(typ).map {
         case (name, t) =>
-          val property = Property(rel, globals.propertyKeyRefByName(name))(t)
+          val property = Property(rel, globals.propertyKeyByName(name))(t)
           val slot = ProjectedExpr(property)
           val field = StructField(SparkColumnName.of(slot), toSparkType(t), nullable = t.isNullable)
           slot -> field
@@ -235,8 +235,7 @@ trait SparkGraphLoading {
 
       val values = header.slots.map { s =>
         s.content.key match {
-          case Property(_, ref) =>
-            val keyName = globals.propertyKey(ref).name
+          case Property(_, PropertyKey(keyName)) =>
             val propValue = keys.get(keyName) match {
               case Some(t) if t == s.content.cypherType => props.get(keyName).orNull
               case _ => null
@@ -270,8 +269,7 @@ trait SparkGraphLoading {
 
       val values = header.slots.map { s =>
         s.content.key match {
-          case Property(_, ref) =>
-            val keyName = globals.propertyKey(ref).name
+          case Property(_, PropertyKey(keyName)) =>
             val propValue = keys.get(keyName) match {
               case Some(t) if t == s.content.cypherType => props.get(keyName).orNull
               case _ => null

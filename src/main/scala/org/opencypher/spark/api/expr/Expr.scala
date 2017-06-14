@@ -123,9 +123,9 @@ final case class LessThan(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTW
   override def withoutType: String = s"${lhs.withoutType} < ${rhs.withoutType}"
 }
 
-final case class Property(m: Expr, key: PropertyKeyRef)(val cypherType: CypherType = CTWildcard) extends Expr {
+final case class Property(m: Expr, key: PropertyKey)(val cypherType: CypherType = CTWildcard) extends Expr {
   override def toString = s"$withoutType :: $cypherType"
-  override def withoutType: String = s"${m.withoutType}.${key.id}"
+  override def withoutType: String = s"${m.withoutType}.${key.name}"
 
   override def equals(obj: scala.Any) = obj match {
     case null => false

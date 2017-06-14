@@ -3,7 +3,7 @@ package org.opencypher.spark.impl.logical
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir._
 import org.opencypher.spark.api.ir.block._
-import org.opencypher.spark.api.ir.global.{ConstantRef, GlobalsRegistry, PropertyKeyRef}
+import org.opencypher.spark.api.ir.global.{ConstantRef, GlobalsRegistry, PropertyKey, PropertyKeyRef}
 import org.opencypher.spark.api.ir.pattern.{DirectedRelationship, EveryNode, EveryRelationship, Pattern}
 import org.opencypher.spark.api.record.{ProjectedExpr, ProjectedField}
 import org.opencypher.spark.api.schema.Schema
@@ -46,11 +46,11 @@ class LogicalPlannerTest extends IrTestSuite {
   val emptySqm = SolvedQueryModel.empty[Expr]
 
   test("convert project block") {
-    val fields = ProjectedFields[Expr](Map(toField('a) -> Property('n, PropertyKeyRef(0))(CTFloat)))
+    val fields = ProjectedFields[Expr](Map(toField('a) -> Property('n, PropertyKey("prop"))(CTFloat)))
     val block = project(fields)
 
     plan(irWithLeaf(block)) should equalWithoutResult(
-      Project(ProjectedField('a, Property('n, PropertyKeyRef(0))(CTFloat)),   // n is a dangling reference here
+      Project(ProjectedField('a, Property('n, PropertyKey("prop"))(CTFloat)),   // n is a dangling reference here
         leafPlan)(emptySqm.withFields('a))
     )
   }
@@ -62,9 +62,9 @@ class LogicalPlannerTest extends IrTestSuite {
 
     plan(ir, globals) should equal(
       Select(IndexedSeq(Var("a.name")(CTVoid)),
-        Project(ProjectedField(Var("a.name")(CTVoid), Property(Var("a")(CTNode("Administrator")), globals.propertyKeyRefByName("name"))(CTVoid)),
-          Filter(Equals(Property(Var("g")(CTNode("Group")), globals.propertyKeyRefByName("name"))(CTVoid), Const(ConstantRef(0))(CTString))(CTBoolean),
-            Project(ProjectedExpr(Property(Var("g")(CTNode("Group")), globals.propertyKeyRefByName("name"))(CTVoid)),
+        Project(ProjectedField(Var("a.name")(CTVoid), Property(Var("a")(CTNode("Administrator")), globals.propertyKeyByName("name"))(CTVoid)),
+          Filter(Equals(Property(Var("g")(CTNode("Group")), globals.propertyKeyByName("name"))(CTVoid), Const(ConstantRef(0))(CTString))(CTBoolean),
+            Project(ProjectedExpr(Property(Var("g")(CTNode("Group")), globals.propertyKeyByName("name"))(CTVoid)),
               Filter(HasLabel(Var("g")(CTNode), globals.labelByName("Group"))(CTBoolean),
                 Filter(HasLabel(Var("a")(CTNode), globals.labelByName("Administrator"))(CTBoolean),
                   ExpandSource(Var("a")(CTNode), Var("r")(CTRelationship), EveryRelationship, Var("g")(CTNode),
@@ -95,9 +95,9 @@ class LogicalPlannerTest extends IrTestSuite {
 
     plan(ir, globals, schema) should equal(
       Select(IndexedSeq(Var("a.name")(CTFloat)),
-        Project(ProjectedField(Var("a.name")(CTFloat), Property(Var("a")(CTNode("Administrator")), globals.propertyKeyRefByName("name"))(CTFloat)),
-          Filter(Equals(Property(Var("g")(CTNode("Group")), globals.propertyKeyRefByName("name"))(CTString), Const(ConstantRef(0))(CTString))(CTBoolean),
-            Project(ProjectedExpr(Property(Var("g")(CTNode("Group")), globals.propertyKeyRefByName("name"))(CTString)),
+        Project(ProjectedField(Var("a.name")(CTFloat), Property(Var("a")(CTNode("Administrator")), globals.propertyKeyByName("name"))(CTFloat)),
+          Filter(Equals(Property(Var("g")(CTNode("Group")), globals.propertyKeyByName("name"))(CTString), Const(ConstantRef(0))(CTString))(CTBoolean),
+            Project(ProjectedExpr(Property(Var("g")(CTNode("Group")), globals.propertyKeyByName("name"))(CTString)),
               Filter(HasLabel(Var("g")(CTNode), globals.labelByName("Group"))(CTBoolean),
                 Filter(HasLabel(Var("a")(CTNode), globals.labelByName("Administrator"))(CTBoolean),
                   ExpandSource(Var("a")(CTNode), Var("r")(CTRelationship), EveryRelationship, Var("g")(CTNode),
@@ -124,7 +124,7 @@ class LogicalPlannerTest extends IrTestSuite {
 
     plan(ir, globals) should equal(
       Select(IndexedSeq(Var("a.prop")(CTVoid)),
-        Project(ProjectedField(Var("a.prop")(CTVoid), Property(nodeA, globals.propertyKeyRefByName("prop"))(CTVoid)),
+        Project(ProjectedField(Var("a.prop")(CTVoid), Property(nodeA, globals.propertyKeyByName("prop"))(CTVoid)),
           Filter(Not(Equals(Const(globals.constantRefByName("p1"))(CTInteger), Const(globals.constantRefByName("p2"))(CTBoolean))(CTBoolean))(CTBoolean),
             NodeScan(nodeA, EveryNode,
               LoadGraph(NamedLogicalGraph("default", Schema.empty), DefaultGraphSource)(emptySqm)

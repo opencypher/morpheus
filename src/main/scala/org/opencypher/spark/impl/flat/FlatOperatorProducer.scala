@@ -75,7 +75,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
     // TODO: This should consider multiple types per property
     val keyHeaderContents = keyGroups.toSeq.flatMap {
-      case (k, types) => types.map { t => ProjectedExpr(Property(node, propertyKeyRefByName(k))(t)) }
+      case (k, types) => types.map { t => ProjectedExpr(Property(node, propertyKeyByName(k))(t)) }
     }
 
     // TODO: Add is null column(?)
@@ -106,7 +106,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     else types.relTypes.elts.flatMap(t => schema.relationshipKeys(t.name).toSeq)
 
     val relKeyHeaderContents = relKeyHeaderProperties.map {
-      case ((k, t)) => ProjectedExpr(Property(rel, propertyKeyRefByName(k))(t))
+      case ((k, t)) => ProjectedExpr(Property(rel, propertyKeyByName(k))(t))
     }
 
     val startNode = ProjectedExpr(StartNode(rel)(CTNode))
