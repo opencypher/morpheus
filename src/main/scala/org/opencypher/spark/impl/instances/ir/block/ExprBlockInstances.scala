@@ -37,9 +37,8 @@ trait ExprBlockInstances {
             // The below predicate is never present currently
             // Possibly it will be if we introduce a rewrite
             // Rel types are currently detailed already in pattern conversion
-          case HasType(rel: Var, relTypeRef) => fields.map {
+          case HasType(rel: Var, relType) => fields.map {
             case f if f representsRel rel =>
-              val relType = globals.relType(relTypeRef)
               throw new NotImplementedError("No support for annotating relationships in IR yet")
             case f => f
           }

@@ -33,7 +33,7 @@ final class ExpressionConverter(val globals: GlobalsRegistry) extends AnyVal {
     case ast.Not(expr) => Not(convert(expr))(typings(e))
     // MATCH ()-[r]->() WHERE type(r) IN ['FOO', 'BAR] ==> MATCH ()-[r]->() WHERE r[:FOO|BAR]
     case ast.Equals(f: ast.FunctionInvocation, s: ast.StringLiteral) if f.function == functions.Type =>
-      HasType(convert(f.args.head), globals.relTypeRefByName(s.value))(CTBoolean)
+      HasType(convert(f.args.head), globals.relTypeByName(s.value))(CTBoolean)
     case ast.Equals(lhs, rhs) => Equals(convert(lhs), convert(rhs))(typings(e))
     case ast.LessThan(lhs, rhs) => LessThan(convert(lhs), convert(rhs))(typings(e))
     case ast.In(lhs, ast.ListLiteral(elems)) if elems.size == 1 =>

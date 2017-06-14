@@ -46,7 +46,7 @@ class ExpressionConverterTest extends TestSuiteImpl with Neo4jAstTestSupport {
 
   test("can convert type() function calls used as predicates") {
     convert(parseExpr("type(r) = 'REL_TYPE'")) should equal(
-      HasType(Var("r")(CTRelationship), RelTypeRef(0))(CTBoolean)
+      HasType(Var("r")(CTRelationship), RelType("REL_TYPE"))(CTBoolean)
     )
   }
 

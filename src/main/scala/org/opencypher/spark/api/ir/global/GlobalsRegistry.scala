@@ -30,21 +30,29 @@ final case class GlobalsRegistry(
 
   self =>
 
-  def labelRef(defn: Label): LabelRef = labelRefByName(defn.name)
-  def labelRefByName(name: String): LabelRef = labels.findByKey(name).get
+  def labelByName(name: String): Label = label(labelRefByName(name))
   def label(ref: LabelRef): Label = labels.lookup(ref).get
 
-  def relTypeRef(defn: RelType): RelTypeRef = relTypeRefByName(defn.name)
-  def relTypeRefByName(name: String): RelTypeRef = relTypes.findByKey(name).get
+  def labelRefByName(name: String): LabelRef = labels.findByKey(name).get
+  def labelRef(defn: Label): LabelRef = labelRefByName(defn.name)
+
+  def relTypeByName(name: String): RelType = relType(relTypeRefByName(name))
   def relType(ref: RelTypeRef): RelType = relTypes.lookup(ref).get
 
-  def propertyKeyRef(defn: PropertyKey): PropertyKeyRef = propertyKeyRefByName(defn.name)
-  def propertyKeyRefByName(name: String): PropertyKeyRef = propertyKeys.findByKey(name).get
+  def relTypeRefByName(name: String): RelTypeRef = relTypes.findByKey(name).get
+  def relTypeRef(defn: RelType): RelTypeRef = relTypeRefByName(defn.name)
+
+  def propertyKeyByName(name: String): PropertyKey = propertyKey(propertyKeyRefByName(name))
   def propertyKey(ref: PropertyKeyRef): PropertyKey = propertyKeys.lookup(ref).get
 
-  def constantRef(defn: Constant): ConstantRef = constantRefByName(defn.name)
-  def constantRefByName(name: String): ConstantRef = constants.findByKey(name).get
+  def propertyKeyRefByName(name: String): PropertyKeyRef = propertyKeys.findByKey(name).get
+  def propertyKeyRef(defn: PropertyKey): PropertyKeyRef = propertyKeyRefByName(defn.name)
+
+  def constantByName(name: String): Constant = constant(constantRefByName(name))
   def constant(ref: ConstantRef): Constant = constants.lookup(ref).get
+
+  def constantRefByName(name: String): ConstantRef = constants.findByKey(name).get
+  def constantRef(defn: Constant): ConstantRef = constantRefByName(defn.name)
 
   def withLabel(defn: Label): GlobalsRegistry = {
     labels.insert(defn) match {

@@ -58,7 +58,7 @@ class PhysicalProducer(context: RuntimeContext) {
     def typeFilter(rel: Var, types: AnyGiven[RelTypeRef], header: RecordHeader): InternalResult = {
       if (types.elts.isEmpty) prev
       else {
-        val typeExprs: Set[Expr] = types.elts.map { ref => HasType(rel, ref)(CTBoolean) }
+        val typeExprs: Set[Expr] = types.elts.map { ref => HasType(rel, context.globals.relType(ref))(CTBoolean) }
         prev.mapRecords(_.filter(Ands(typeExprs), header))
       }
     }

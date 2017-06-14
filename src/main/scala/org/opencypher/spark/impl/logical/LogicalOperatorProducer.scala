@@ -25,7 +25,7 @@ class LogicalOperatorProducer(globals: GlobalsRegistry) {
     val prevSolved = sourcePlan.solved ++ targetPlan.solved
 
     val solved = types.relTypes.elts.foldLeft(prevSolved.withField(rel)) {
-      case (acc, next) => acc.withPredicate(HasType(rel, globals.relTypeRef(next))(CTBoolean))
+      case (acc, next) => acc.withPredicate(HasType(rel, next)(CTBoolean))
     }
 
     ExpandSource(source, rel, types, target, sourcePlan, targetPlan)(solved)

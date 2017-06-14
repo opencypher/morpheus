@@ -1,6 +1,6 @@
 package org.opencypher.spark.api.expr
 
-import org.opencypher.spark.api.ir.global.{ConstantRef, LabelRef, PropertyKeyRef, RelTypeRef}
+import org.opencypher.spark.api.ir.global._
 import org.opencypher.spark.api.types._
 
 import scala.annotation.tailrec
@@ -106,7 +106,12 @@ final case class HasLabel(node: Expr, label: LabelRef)(val cypherType: CypherTyp
 
   override def withoutType: String = s"${node.withoutType}:${label.id}"
 }
-final case class HasType(rel: Expr, relType: RelTypeRef)(val cypherType: CypherType = CTWildcard) extends Expr
+
+final case class HasType(rel: Expr, relType: RelType)(val cypherType: CypherType = CTWildcard) extends Expr {
+  override def toString = s"$withoutType :: $cypherType"
+
+  override def withoutType: String = s"type(${rel.withoutType}) = '${relType.name}'"
+}
 
 final case class Equals(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends Expr {
   override def toString = s"$withoutType :: $cypherType"
