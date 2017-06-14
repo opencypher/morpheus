@@ -2,18 +2,18 @@ package org.opencypher.spark.impl.spark
 
 import org.apache.spark.SparkConf
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SparkSession}
+import org.apache.spark.sql.types._
 import org.neo4j.driver.internal.{InternalNode, InternalRelationship}
-import org.opencypher.spark.api.types._
-import org.opencypher.spark_legacy.benchmark.Converters.cypherValue
 import org.opencypher.spark.api.expr._
+import org.opencypher.spark.api.ir.QueryModel
 import org.opencypher.spark.api.ir.global.{GlobalsRegistry, PropertyKey}
-import org.opencypher.spark.api.ir.{Field, QueryModel}
 import org.opencypher.spark.api.record.{OpaqueField, ProjectedExpr, RecordHeader, SlotContent}
 import org.opencypher.spark.api.schema.{Schema, VerifiedSchema}
 import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkGraphSpace}
+import org.opencypher.spark.api.types._
 import org.opencypher.spark.impl.syntax.header._
+import org.opencypher.spark_legacy.benchmark.Converters.cypherValue
 
 trait SparkGraphLoading {
 
@@ -33,9 +33,9 @@ trait SparkGraphLoading {
           // for nodes without properties
           val withLabel = acc2.withNodeKeys(l)()
           next.asMap().asScala.foldLeft(withLabel) {
-          case (acc3, (k, v)) =>
-            acc3.withNodeKeys(l)(k -> typeOf(v))
-        }
+            case (acc3, (k, v)) =>
+              acc3.withNodeKeys(l)(k -> typeOf(v))
+          }
       }
     }, _ ++ _)
 
@@ -44,9 +44,9 @@ trait SparkGraphLoading {
         // for rels without properties
         val withType = acc.withRelationshipKeys(next.`type`())()
         next.asMap().asScala.foldLeft(withType) {
-        case (acc3, (k, v)) =>
-          acc3.withRelationshipKeys(next.`type`())(k -> typeOf(v))
-      }
+          case (acc3, (k, v)) =>
+            acc3.withRelationshipKeys(next.`type`())(k -> typeOf(v))
+        }
     },  _ ++ _)
 
     completeSchema.verify
@@ -114,12 +114,6 @@ trait SparkGraphLoading {
       df.repartition(col).sortWithinPartitions(col).cache()
     }
 
-    val nodeRecords = (v: Var) => new SparkCypherRecords with Serializable {
-      override def data = nodeFrame(v)
-
-      override def header = nodeHeader(v)
-    }
-
     val relFields = (v: Var) => computeRelFields(v)
     val relHeader = (v: Var) => relFields(v).map(_._1).foldLeft(RecordHeader.empty) {
       case (acc, next) => acc.update(addContent(next))._1
@@ -133,33 +127,26 @@ trait SparkGraphLoading {
       df.repartition(col).sortWithinPartitions(col).cache()
     }
 
-    val relRecords = (v: Var) => new SparkCypherRecords with Serializable {
-      override def data = relFrame(v)
-
-      override def header = relHeader(v)
-    }
-
     new SparkGraphSpace with Serializable {
       selfSpace =>
 
       override def base = new SparkCypherGraph with Serializable {
         selfBase =>
 
-        override def nodes(v: Var) = nodeRecords(v)
-        override def relationships(v: Var) = relRecords(v)
+        override def nodes(v: Var) = SparkCypherRecords.create(nodeHeader(v), nodeFrame(v))(selfSpace)
+        override def relationships(v: Var) = SparkCypherRecords.create(relHeader(v), relFrame(v))(selfSpace)
         override def space: SparkGraphSpace = selfSpace
 
         override def model: QueryModel[Expr] =
           QueryModel.base[Expr](sourceNode, rel, targetNode, selfSpace.globals)
 
-        override def schema: Schema = context.schema
-
         override def details: SparkCypherRecords = ???
+
+        override def schema: Schema = context.schema
       }
 
-      override def session: SparkSession = sparkSession
+      override def session = sparkSession
       override def globals: GlobalsRegistry = context.globals
-
     }
   }
 

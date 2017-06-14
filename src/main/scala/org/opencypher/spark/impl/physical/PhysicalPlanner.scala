@@ -1,10 +1,8 @@
 package org.opencypher.spark.impl.physical
 
-import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.opencypher.spark.api.expr._
-import org.opencypher.spark.api.ir.global.{ConstantRef, GlobalsRegistry, RelType, RelTypeRef}
-import org.opencypher.spark.api.record.RecordHeader
-import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherResult}
+import org.opencypher.spark.api.ir.global.{ConstantRef, GlobalsRegistry}
+import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherResult, SparkGraphSpace}
 import org.opencypher.spark.api.value.CypherValue
 import org.opencypher.spark.impl.{DirectCompilationStage, flat}
 import org.opencypher.spark.impl.flat.FlatOperator
@@ -15,7 +13,8 @@ case class PhysicalPlannerContext(
   globals: GlobalsRegistry,
   constants: Map[ConstantRef, CypherValue]) {
 
-  val session = defaultGraph.space.session
+  val space = defaultGraph.space
+  val session = space.session
 }
 
 class PhysicalPlanner extends DirectCompilationStage[FlatOperator, SparkCypherResult, PhysicalPlannerContext] {
@@ -40,7 +39,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, SparkCypherRe
 
       case flat.LoadGraph(outGraph, source) => source match {
         case DefaultGraphSource =>
-          InternalResult(unitTable(context.session), Map(outGraph.name -> context.defaultGraph))
+          InternalResult(unitTable(context.space), Map(outGraph.name -> context.defaultGraph))
         case _ =>
           throw new NotImplementedError(s"Unable to load graph source other than default, got $source")
       }
@@ -75,12 +74,8 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, SparkCypherRe
       case x =>
         throw new NotImplementedError(s"Can't plan operator $x yet")
     }
-
   }
 
-  private def unitTable(session: SparkSession): SparkCypherRecords = new SparkCypherRecords {
-    override def data: DataFrame = session.createDataFrame(Seq())
-
-    override def header: RecordHeader = RecordHeader.empty
-  }
+  private def unitTable(graphSpace: SparkGraphSpace): SparkCypherRecords =
+    SparkCypherRecords.empty()(graphSpace)
 }
