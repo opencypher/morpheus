@@ -24,7 +24,7 @@ trait SparkCypherRecordsInstances extends Serializable {
           case None => throw new IllegalStateException(s"Expected to find $p in $header")
         }
         val lhs = row.getCypherValue(slot.index, slot.content.cypherType)
-        val rhs = context.constants(c.ref)
+        val rhs = context.constants(context.globals.constantRef(c.constant))
 
         Some(lhs == rhs)
       case LessThan(lhs, rhs) =>

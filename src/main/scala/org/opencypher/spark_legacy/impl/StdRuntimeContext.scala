@@ -14,6 +14,6 @@ class StdRuntimeContext(val session: SparkSession, val parameters: Map[String, C
     ProductEncoderFactory.createEncoder(slots)(session)
 
   def paramValue(p: Const): CypherValue = {
-    parameters(globals.constant(p.ref).name)
+    parameters(p.constant.name)
   }
 }

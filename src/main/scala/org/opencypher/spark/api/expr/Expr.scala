@@ -11,9 +11,12 @@ sealed trait Expr {
   def withoutType: String = toString
 }
 
-final case class Const(ref: ConstantRef)(val cypherType: CypherType = CTWildcard) extends Expr {
-  override def toString = s"$$${ref.id}"
+final case class Const(constant: Constant)(val cypherType: CypherType = CTWildcard) extends Expr {
+  override def toString = s"$$${constant.name} :: $cypherType"
+
+  override def withoutType: String = s"${constant.name}"
 }
+
 final case class Var(name: String)(val cypherType: CypherType = CTWildcard) extends Expr {
   override def toString = s"$name :: $cypherType"
 

@@ -3,7 +3,7 @@ package org.opencypher.spark.impl.logical
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir._
 import org.opencypher.spark.api.ir.block._
-import org.opencypher.spark.api.ir.global.{ConstantRef, GlobalsRegistry, PropertyKey, PropertyKeyRef}
+import org.opencypher.spark.api.ir.global._
 import org.opencypher.spark.api.ir.pattern.{DirectedRelationship, EveryNode, EveryRelationship, Pattern}
 import org.opencypher.spark.api.record.{ProjectedExpr, ProjectedField}
 import org.opencypher.spark.api.schema.Schema
@@ -63,7 +63,7 @@ class LogicalPlannerTest extends IrTestSuite {
     plan(ir, globals) should equal(
       Select(IndexedSeq(Var("a.name")(CTVoid)),
         Project(ProjectedField(Var("a.name")(CTVoid), Property(Var("a")(CTNode("Administrator")), globals.propertyKeyByName("name"))(CTVoid)),
-          Filter(Equals(Property(Var("g")(CTNode("Group")), globals.propertyKeyByName("name"))(CTVoid), Const(ConstantRef(0))(CTString))(CTBoolean),
+          Filter(Equals(Property(Var("g")(CTNode("Group")), globals.propertyKeyByName("name"))(CTVoid), Const(Constant("foo"))(CTString))(CTBoolean),
             Project(ProjectedExpr(Property(Var("g")(CTNode("Group")), globals.propertyKeyByName("name"))(CTVoid)),
               Filter(HasLabel(Var("g")(CTNode), globals.labelByName("Group"))(CTBoolean),
                 Filter(HasLabel(Var("a")(CTNode), globals.labelByName("Administrator"))(CTBoolean),
@@ -96,7 +96,7 @@ class LogicalPlannerTest extends IrTestSuite {
     plan(ir, globals, schema) should equal(
       Select(IndexedSeq(Var("a.name")(CTFloat)),
         Project(ProjectedField(Var("a.name")(CTFloat), Property(Var("a")(CTNode("Administrator")), globals.propertyKeyByName("name"))(CTFloat)),
-          Filter(Equals(Property(Var("g")(CTNode("Group")), globals.propertyKeyByName("name"))(CTString), Const(ConstantRef(0))(CTString))(CTBoolean),
+          Filter(Equals(Property(Var("g")(CTNode("Group")), globals.propertyKeyByName("name"))(CTString), Const(Constant("foo"))(CTString))(CTBoolean),
             Project(ProjectedExpr(Property(Var("g")(CTNode("Group")), globals.propertyKeyByName("name"))(CTString)),
               Filter(HasLabel(Var("g")(CTNode), globals.labelByName("Group"))(CTBoolean),
                 Filter(HasLabel(Var("a")(CTNode), globals.labelByName("Administrator"))(CTBoolean),
@@ -125,7 +125,7 @@ class LogicalPlannerTest extends IrTestSuite {
     plan(ir, globals) should equal(
       Select(IndexedSeq(Var("a.prop")(CTVoid)),
         Project(ProjectedField(Var("a.prop")(CTVoid), Property(nodeA, globals.propertyKeyByName("prop"))(CTVoid)),
-          Filter(Not(Equals(Const(globals.constantRefByName("p1"))(CTInteger), Const(globals.constantRefByName("p2"))(CTBoolean))(CTBoolean))(CTBoolean),
+          Filter(Not(Equals(Const(globals.constantByName("p1"))(CTInteger), Const(globals.constantByName("p2"))(CTBoolean))(CTBoolean))(CTBoolean),
             NodeScan(nodeA, EveryNode,
               LoadGraph(NamedLogicalGraph("default", Schema.empty), DefaultGraphSource)(emptySqm)
             )(emptySqm)

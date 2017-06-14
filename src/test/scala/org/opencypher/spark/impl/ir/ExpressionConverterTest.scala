@@ -76,7 +76,7 @@ class ExpressionConverterTest extends TestSuiteImpl with Neo4jAstTestSupport {
 
   test("can convert parameters") {
     val given = ast.Parameter("p", symbols.CTString) _
-    convert(given) should equal(Const(ConstantRef(0))())
+    convert(given) should equal(Const(Constant("p"))(CTWildcard))
   }
 
   test("can convert has-labels") {
@@ -107,8 +107,8 @@ class ExpressionConverterTest extends TestSuiteImpl with Neo4jAstTestSupport {
     convert(given) should equal(Ands(
       HasLabel('n, labelByName("Foo"))(),
       HasLabel('m, labelByName("Bar"))(),
-      Const(constantRefByName("p1"))(),
-      Const(constantRefByName("p2"))())
+      Const(constantByName("p1"))(),
+      Const(constantByName("p2"))())
     )
   }
 

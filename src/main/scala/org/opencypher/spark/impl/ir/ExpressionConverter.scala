@@ -15,7 +15,7 @@ final class ExpressionConverter(val globals: GlobalsRegistry) extends AnyVal {
 
   def convert(e: ast.Expression)(implicit typings: (Ref[ast.Expression]) => CypherType): Expr = e match {
     case ast.Variable(name) => Var(name)(typings(e))
-    case ast.Parameter(name, _) => Const(globals.constantRefByName(name))(typings(e))
+    case ast.Parameter(name, _) => Const(globals.constantByName(name))(typings(e))
 
       // Literals
     case astExpr: ast.IntegerLiteral => IntegerLit(astExpr.value)(typings(e))
