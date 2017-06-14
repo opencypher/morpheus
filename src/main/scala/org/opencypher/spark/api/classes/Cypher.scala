@@ -9,9 +9,9 @@ trait Cypher {
   self =>
 
   type Graph <: CypherGraph { type Space = self.Space; type Graph = self.Graph; type Records = self.Records }
-  type Space <: GraphSpace { type Graph = self.Graph }
+  type Space <: GraphSpace { type Space = self.Space; type Graph = self.Graph; type Records = self.Records }
   type Records <: CypherRecords { type Records = self.Records; type Data = self.Data }
-  type Result <: CypherResult { type Graph = self.Graph; type Records = self.Records; type Result = self.Result }
+  type Result <: CypherResult { type Result = self.Result; type Graph = self.Graph; type Records = self.Records }
   type Data
 
   final def cypher(graph: Graph, query: String): Result =
