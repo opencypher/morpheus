@@ -49,6 +49,9 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, SparkCypherRe
       case flat.Alias(expr, alias, in, header) =>
         inner(in).alias(expr, alias, header)
 
+      case flat.Project(expr, in, header) =>
+        inner(in).project(expr, header)
+
       case flat.Filter(expr, in, header) => expr match {
         case TrueLit() => inner(in) // optimise away filter
         case e => inner(in).filter(e, header)

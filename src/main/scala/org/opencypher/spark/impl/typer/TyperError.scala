@@ -26,8 +26,17 @@ case class InvalidContainerAccess(it: Expression) extends TyperError {
   override def toString = s"Invalid indexing into a container detected when typing ${it.show}"
 }
 
-case class InvalidType(it: Expression, expected: CypherType, actual: CypherType) extends TyperError {
-  override def toString = s"Expected ${it.show} to be of type $expected, but it was of type $actual"
+object InvalidType {
+  def apply(it: Expression, expected: CypherType, actual: CypherType): InvalidType =
+    InvalidType(it, Seq(expected), actual)
+}
+
+case class InvalidType(it: Expression, expected: Seq[CypherType], actual: CypherType) extends TyperError {
+  override def toString = s"Expected ${it.show} to have $expectedString, but it was of type $actual"
+
+  private def expectedString =
+    if (expected.size == 1) s"type ${expected.head}"
+    else s"one of the types in ${expected.mkString("{ ", ",", " }")}"
 }
 
 case object TypeTrackerScopeError extends TyperError {

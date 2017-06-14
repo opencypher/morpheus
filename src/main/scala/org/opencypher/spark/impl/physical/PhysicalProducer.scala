@@ -49,6 +49,9 @@ class PhysicalProducer(context: RuntimeContext) {
     def alias(expr: Expr, v: Var, header: RecordHeader): InternalResult =
       prev.mapRecords(_.alias2(expr, v, header))
 
+    def project(expr: Expr, header: RecordHeader): InternalResult =
+      prev.mapRecords(_.project(expr, header))
+
     def select(fields: IndexedSeq[Var], header: RecordHeader): InternalResult =
       prev.mapRecords(_.select(fields, header))
 

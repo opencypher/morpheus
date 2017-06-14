@@ -1,15 +1,14 @@
 package org.opencypher.spark.impl.instances.spark
 
-import org.apache.spark.sql.{Column, DataFrame, Row}
+import org.apache.spark.sql.{Column, Row}
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.record._
 import org.opencypher.spark.api.spark.SparkCypherRecords
 import org.opencypher.spark.api.types._
 import org.opencypher.spark.api.value.CypherValue.Conversion._
 import org.opencypher.spark.impl.classes.Transform
+import org.opencypher.spark.impl.instances.spark.SparkSQLExprMapper.asSparkSQLExpr
 import org.opencypher.spark.impl.physical.RuntimeContext
-import org.opencypher.spark.impl.syntax.header._
-import org.opencypher.spark.impl.util.{Found, Replaced}
 
 trait SparkCypherRecordsInstances extends Serializable {
 
@@ -40,39 +39,11 @@ trait SparkCypherRecordsInstances extends Serializable {
     }
   }
 
-  /*
-   * Attempts to create SparkSQL expression for use when filtering
-   */
-  def sqlFilter(header: RecordHeader, expr: Expr, df: DataFrame): Option[Column] = {
-    expr match {
-      case Not(Equals(v1: Var, v2: Var)) =>
-        val lhsSlot = header.slotFor(v1)
-        val rhsSlot = header.slotFor(v2)
-        Some(new Column(df.columns(lhsSlot.index)) =!= new Column(df.columns(rhsSlot.index)))
-      case Ands(exprs) =>
-        val cols = exprs.map(sqlFilter(header, _, df))
-        if (cols.contains(None)) None
-        else {
-          cols.reduce[Option[Column]] {
-            case (Some(l: Column), Some(r: Column)) => Some(l && r)
-            case _ => throw new IllegalStateException("This should never happen")
-          }
-        }
-      case HasType(rel, ref) =>
-        val idSlot = header.typeId(rel)
-        Some(new Column(df.columns(idSlot.index)) === ref.id)
-      case h: HasLabel =>
-        val slot = header.slotsFor(h).head
-        Some(new Column(df.columns(slot.index))) // it's a boolean column
-      case _ => None
-    }
-  }
-
   implicit def sparkCypherRecordsTransform(implicit context: RuntimeContext) = new Transform[SparkCypherRecords] with Serializable {
 
     override def filter(subject: SparkCypherRecords, expr: Expr, nextHeader: RecordHeader): SparkCypherRecords = {
 
-      val filteredRows = sqlFilter(subject.header, expr, subject.data) match {
+      val filteredRows = asSparkSQLExpr(subject.header, expr, subject.data) match {
         case Some(sqlExpr) =>
           subject.data.where(sqlExpr)
         case None =>
@@ -138,26 +109,20 @@ trait SparkCypherRecordsInstances extends Serializable {
       }
     }
 
-    override def project(subject: SparkCypherRecords, it: ProjectedSlotContent): SparkCypherRecords = {
+    override def project(subject: SparkCypherRecords, expr: Expr, nextHeader: RecordHeader): SparkCypherRecords = {
 
-      val (newHeader, result) = subject.header.update(addContent(it))
+      val newData = asSparkSQLExpr(nextHeader, expr, subject.data) match {
+        case None => throw new NotImplementedError(s"No support for projecting $expr yet")
 
-      val newData = result match {
-        case r: Replaced[RecordSlot] =>
-          val oldColumnName: String = context.columnName(r.old.content)
-          if (subject.data.columns.contains(oldColumnName)) {
-            subject.data.withColumnRenamed(oldColumnName, context.columnName(r.it.content))
-          } else {
-            throw new IllegalStateException(s"Wanted to rename column $oldColumnName, but it was not present!")
-          }
-        case _: Found[_] => subject.data
-        case x => // need to evaluate the expression and construct new column
-          throw new NotImplementedError(s"Expected the slot to be replaced, but was $x")
+        case Some(sparkSqlExpr) =>
+          val columnsToSelect = subject.data.columns.map(subject.data.col) :+ sparkSqlExpr
+          subject.data.select(columnsToSelect: _*)
       }
 
       new SparkCypherRecords {
         override def data = newData
-        override def header = newHeader
+
+        override def header = nextHeader
       }
     }
 

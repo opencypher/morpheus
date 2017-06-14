@@ -1,6 +1,7 @@
 package org.opencypher.spark.impl.flat
 
 import cats.Monoid
+import org.opencypher.spark.api.exception.SparkCypherException
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.pattern.{AllGiven, EveryNode, EveryRelationship}
 import org.opencypher.spark.api.record._
@@ -8,7 +9,7 @@ import org.opencypher.spark.api.types._
 import org.opencypher.spark.impl.logical.{GraphSource, NamedLogicalGraph}
 import org.opencypher.spark.impl.syntax.header._
 import org.opencypher.spark.impl.syntax.util.traversable._
-import org.opencypher.spark.impl.util.{Found, Replaced}
+import org.opencypher.spark.impl.util.{Added, FailedToAdd, Found, Replaced}
 
 class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
@@ -92,7 +93,8 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     result match {
       case _: Found[_] => in
       case _: Replaced[_] => Alias(it.expr, it.alias.get, in, newHeader)
-      case _ => throw new NotImplementedError("No support yet for projecting non-attribute expressions") // TODO: Error handling
+      case _: Added[_] => Project(it.expr, in, newHeader)
+      case f: FailedToAdd[_] => throw SparkCypherException(s"Failed to add new slot: $f")
     }
   }
 

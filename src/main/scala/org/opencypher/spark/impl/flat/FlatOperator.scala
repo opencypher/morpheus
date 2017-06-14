@@ -40,6 +40,8 @@ final case class Filter(expr: Expr, in: FlatOperator, header: RecordHeader)
 final case class Select(fields: IndexedSeq[Var], in: FlatOperator, header: RecordHeader)
   extends StackingFlatOperator
 
+final case class Project(expr: Expr, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
+
 final case class Alias(expr: Expr, alias: Var, in: FlatOperator, header: RecordHeader)
   extends StackingFlatOperator
 

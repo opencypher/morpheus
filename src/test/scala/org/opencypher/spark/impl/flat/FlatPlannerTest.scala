@@ -9,6 +9,7 @@ import org.opencypher.spark.api.record.{OpaqueField, ProjectedExpr, ProjectedFie
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.types._
 import org.opencypher.spark.impl.logical.LogicalOperatorProducer
+import org.opencypher.spark.toField
 
 class FlatPlannerTest extends TestSuiteImpl {
 
@@ -34,6 +35,17 @@ class FlatPlannerTest extends TestSuiteImpl {
 
   // TODO: Ids missing
   // TODO: Do not name schema provided columns
+
+  test("projecting a new expression") {
+    val expr = Subtract('a, 'b)()
+    val result = flatPlanner.process(mkLogical.projectField('c, expr, logicalLoadGraph))
+    val headerContents = result.header.contents
+
+    result should equal(mkFlat.project(ProjectedField('c, expr), flatLoadGraph))
+    headerContents should equal(Set(
+      ProjectedField('c, expr)
+    ))
+  }
 
   test("construct load graph") {
     flatPlanner.process(logicalLoadGraph) should equal(flatLoadGraph)
