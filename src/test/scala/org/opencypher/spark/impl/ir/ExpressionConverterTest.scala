@@ -21,6 +21,13 @@ class ExpressionConverterTest extends TestSuiteImpl with Neo4jAstTestSupport {
     .withConstant(Constant("p2"))
     .withRelType(RelType("REL_TYPE"))
 
+  private def testTypes(ref: Ref[ast.Expression]): CypherType = ref.value match {
+    case ast.Variable("r") => CTRelationship
+    case ast.Variable("n") => CTNode
+    case ast.Variable("m") => CTNode
+    case _ => CTWildcard
+  }
+
   import globals._
 
   private val c = new ExpressionConverter(globals)
@@ -28,6 +35,12 @@ class ExpressionConverterTest extends TestSuiteImpl with Neo4jAstTestSupport {
   test("can convert less than") {
     convert(parseExpr("a < b")) should equal(
       LessThan(Var("a")(), Var("b")())()
+    )
+  }
+  
+  test("subtract") {
+    convert("a - b") should equal(
+      Subtract(Var("a")(), Var("b")())()
     )
   }
 
@@ -99,14 +112,7 @@ class ExpressionConverterTest extends TestSuiteImpl with Neo4jAstTestSupport {
     )
   }
 
-  private def typings(ref: Ref[ast.Expression]): CypherType = ref.value match {
-    case ast.Variable("r") => CTRelationship
-    case ast.Variable("n") => CTNode
-    case ast.Variable("m") => CTNode
-    case _ => CTWildcard
-  }
-
-  private def convert(e: ast.Expression): Expr = c.convert(e)(typings)
+  private def convert(e: ast.Expression): Expr = c.convert(e)(testTypes)
 }
 
 

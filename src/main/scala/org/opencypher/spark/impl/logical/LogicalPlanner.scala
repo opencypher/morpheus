@@ -81,9 +81,9 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
 
   private def planProjections(in: LogicalOperator, exprs: Map[Field, Expr])(implicit context: LogicalPlannerContext) = {
     exprs.foldLeft(in) {
-      case (acc, (f, p: Property)) =>
-        producer.projectField(f, p, acc)
-      case (acc, (f, v: Var)) => acc
+      case (acc, (f, p: Property)) => producer.projectField(f, p, acc)
+      case (acc, (_, _: Var)) => acc
+      case (acc, (f, s: Subtract)) => producer.projectField(f, s, acc)
       case (_, x) => throw new UnsupportedOperationException(s"can not project $x")
     }
   }

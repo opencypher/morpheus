@@ -19,6 +19,14 @@ class SparkCypherRecordsAcceptanceTest extends TestSuiteImpl with TestSession.Fi
     result.records shouldHaveSize 4832 andContain 116765532
   }
 
+  test("subtraction") {
+    // When
+    val result = smallSpace.base.cypher("MATCH (a:User)-[r:ATTENDED]->() RETURN a.id - r.guests")
+
+    // Then
+    result.records shouldHaveSize 4832 andContain 116765532
+  }
+
   test("label scan and project") {
     // When
     val result = smallSpace.base.cypher("MATCH (a:User) RETURN a.text")
