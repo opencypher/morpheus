@@ -18,6 +18,7 @@
         <spark.version>2.1.0</spark.version>
         <neo4j.version>3.2.0-alpha08</neo4j.version>
         <graphframes.version>0.4.0-spark2.1-s_2.11</graphframes.version>
+        <gdl.version>0.3.0-SNAPSHOT</gdl.version>
     </properties>
 
     <build>
@@ -307,6 +308,18 @@
             <id>SparkPackagesRepo</id>
             <url>http://dl.bintray.com/spark-packages/maven</url>
         </repository>
+
+        <repository>
+            <id>dbleipzig</id>
+            <name>Database Group Leipzig University</name>
+            <url>https://wdiserv1.informatik.uni-leipzig.de:443/archiva/repository/dbleipzig/</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
     </repositories>
 
     <dependencies>
@@ -315,6 +328,12 @@
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-cypher-frontend-3.2</artifactId>
             <version>${neo4j.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.s1ck</groupId>
+            <artifactId>gdl</artifactId>
+            <version>${gdl.version}</version>
         </dependency>
 
         <dependency>
