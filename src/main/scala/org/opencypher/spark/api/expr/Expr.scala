@@ -107,10 +107,17 @@ final case class HasLabel(node: Expr, label: LabelRef)(val cypherType: CypherTyp
   override def withoutType: String = s"${node.withoutType}:${label.id}"
 }
 final case class HasType(rel: Expr, relType: RelTypeRef)(val cypherType: CypherType = CTWildcard) extends Expr
+
 final case class Equals(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends Expr {
   override def toString = s"$withoutType :: $cypherType"
   override def withoutType: String = s"${lhs.withoutType} = ${rhs.withoutType}"
 }
+
+final case class LessThan(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends Expr {
+  override def toString = s"$lhs < $rhs"
+  override def withoutType: String = s"${lhs.withoutType} < ${rhs.withoutType}"
+}
+
 final case class Property(m: Expr, key: PropertyKeyRef)(val cypherType: CypherType = CTWildcard) extends Expr {
   override def toString = s"$withoutType :: $cypherType"
   override def withoutType: String = s"${m.withoutType}.${key.id}"
