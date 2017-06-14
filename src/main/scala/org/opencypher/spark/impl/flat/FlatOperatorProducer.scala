@@ -3,6 +3,7 @@ package org.opencypher.spark.impl.flat
 import cats.Monoid
 import org.opencypher.spark.api.exception.SparkCypherException
 import org.opencypher.spark.api.expr._
+import org.opencypher.spark.api.ir.global.Label
 import org.opencypher.spark.api.ir.pattern.{AllGiven, EveryNode, EveryRelationship}
 import org.opencypher.spark.api.record._
 import org.opencypher.spark.api.types._
@@ -49,9 +50,9 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   def nodeScan(node: Var, _nodeDef: EveryNode, prev: FlatOperator): NodeScan = {
-    val nodeDef = if (_nodeDef.labels.elts.isEmpty) EveryNode(AllGiven(schema.labels.map(globals.labelRefByName))) else _nodeDef
+    val nodeDef = if (_nodeDef.labels.elts.isEmpty) EveryNode(AllGiven(schema.labels.map(Label))) else _nodeDef
 
-    val givenLabels = nodeDef.labels.elts.map(ref => label(ref).name)
+    val givenLabels = nodeDef.labels.elts.map(_.name)
 
     val header = constructHeaderFromKnownLabels(node, givenLabels)
 
@@ -102,7 +103,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   def expandSource(source: Var, rel: Var, types: EveryRelationship, target: Var,
                    sourceOp: FlatOperator, targetOp: FlatOperator): FlatOperator = {
     val relKeyHeaderProperties = if (types.relTypes.elts.isEmpty) schema.relationshipTypes.flatMap(t => schema.relationshipKeys(t).toSeq)
-    else types.relTypes.elts.flatMap(t => schema.relationshipKeys(globals.relType(t).name).toSeq)
+    else types.relTypes.elts.flatMap(t => schema.relationshipKeys(t.name).toSeq)
 
     val relKeyHeaderContents = relKeyHeaderProperties.map {
       case ((k, t)) => ProjectedExpr(Property(rel, propertyKeyRefByName(k))(t))

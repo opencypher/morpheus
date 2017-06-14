@@ -2,7 +2,7 @@ package org.opencypher.spark.impl.physical
 
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.opencypher.spark.api.expr._
-import org.opencypher.spark.api.ir.global.{ConstantRef, GlobalsRegistry}
+import org.opencypher.spark.api.ir.global.{ConstantRef, GlobalsRegistry, RelType, RelTypeRef}
 import org.opencypher.spark.api.record.RecordHeader
 import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherResult}
 import org.opencypher.spark.api.value.CypherValue
@@ -28,6 +28,8 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, SparkCypherRe
   }
 
   def inner(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext): InternalResult = {
+
+    import context.globals
 
     val producer = new PhysicalProducer(RuntimeContext(context.constants, context.globals))
     import producer._
@@ -64,7 +66,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, SparkCypherRe
 
         val g = lhs.graphs(op.inGraph.name)
         val relationships = g.relationships(rel)
-        val relRhs = InternalResult(relationships, lhs.graphs).typeFilter(rel, types.relTypes, relHeader)
+        val relRhs = InternalResult(relationships, lhs.graphs).typeFilter(rel, types.relTypes.map(globals.relTypeRef), relHeader)
 
         val relAndTarget = relRhs.joinTarget(rhs).on(rel)(target)
         val expanded = lhs.expandSource(relAndTarget, header).on(source)(rel)

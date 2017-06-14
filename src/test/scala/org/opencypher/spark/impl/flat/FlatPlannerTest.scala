@@ -1,15 +1,14 @@
 package org.opencypher.spark.impl.flat
 
-import org.opencypher.spark.TestSuiteImpl
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.Field
-import org.opencypher.spark.api.ir.global.GlobalsRegistry
+import org.opencypher.spark.api.ir.global.{GlobalsRegistry, Label, RelType}
 import org.opencypher.spark.api.ir.pattern._
 import org.opencypher.spark.api.record.{OpaqueField, ProjectedExpr, ProjectedField}
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.types._
 import org.opencypher.spark.impl.logical.LogicalOperatorProducer
-import org.opencypher.spark.toField
+import org.opencypher.spark.{TestSuiteImpl, toField}
 
 class FlatPlannerTest extends TestSuiteImpl {
 
@@ -28,7 +27,7 @@ class FlatPlannerTest extends TestSuiteImpl {
 
   import globals._
 
-  val mkLogical = new LogicalOperatorProducer
+  val mkLogical = new LogicalOperatorProducer(globals)
   val mkFlat = new FlatOperatorProducer()
   val flatPlanner = new FlatPlanner
 
@@ -154,7 +153,7 @@ class FlatPlannerTest extends TestSuiteImpl {
     val result = flatPlanner.process(
       mkLogical.planSourceExpand(
         Field("n")(CTNode),
-        Field("r")(CTRelationship("KNOWS")) -> EveryRelationship(AnyOf(relTypeRefByName("KNOWS"))),
+        Field("r")(CTRelationship("KNOWS")) -> EveryRelationship(AnyOf(RelType("KNOWS"))),
         Field("m")(CTNode),
         logicalNodeScan("n"), logicalNodeScan("m")
       )
@@ -166,7 +165,7 @@ class FlatPlannerTest extends TestSuiteImpl {
     val target = Var("m")(CTNode)
 
     result should equal(
-      mkFlat.expandSource(source, rel, EveryRelationship(AnyOf(relTypeRefByName("KNOWS"))), target,
+      mkFlat.expandSource(source, rel, EveryRelationship(AnyOf(RelType("KNOWS"))), target,
         flatNodeScan(source), flatNodeScan(target)
       )
     )
@@ -266,14 +265,14 @@ class FlatPlannerTest extends TestSuiteImpl {
   }
 
   private def logicalNodeScan(nodeField: String, labelNames: String*) = {
-    val labelRefs = labelNames.map(labelRefByName)
+    val labels = labelNames.map(Label)
 
-    mkLogical.planNodeScan(Field(nodeField)(CTNode), EveryNode(AllOf(labelRefs: _*)), logicalLoadGraph)
+    mkLogical.planNodeScan(Field(nodeField)(CTNode), EveryNode(AllOf(labels: _*)), logicalLoadGraph)
   }
 
   private def flatNodeScan(node: Var, labelNames: String*) = {
-    val labelRefs = labelNames.map(labelRefByName)
+    val labels = labelNames.map(Label)
 
-    mkFlat.nodeScan(node, EveryNode(AllOf(labelRefs: _*)), flatLoadGraph)
+    mkFlat.nodeScan(node, EveryNode(AllOf(labels: _*)), flatLoadGraph)
   }
 }
