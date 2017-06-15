@@ -53,7 +53,9 @@ trait SparkCypherInstances {
       val flatPlan = flatPlanner(logicalPlan)(FlatPlannerContext(graph.schema, globals))
       println("Done!")
 
-      // TODO: Track tokens in physical planner instead of snatching them from the graph space behind the scenes
+      // TODO: It may be better to pass tokens around in the physical planner explicitly (via the records)
+      //       instead of just using a single global tokens instance derived from the graph space
+      //
       print("Physical plan ... ")
       val physicalPlan = physicalPlanner(flatPlan)(PhysicalPlannerContext(graph, globals, constants))
       println("Done!")

@@ -63,7 +63,6 @@ trait SparkCypherRecordsInstances extends Serializable {
         SparkCypherRecords.create(newHeader, newData)(subject.space)
       }
 
-      // TODO: Correctly handle aliasing in the header
       override def select(subject: SparkCypherRecords, fields: IndexedSeq[Var], newHeader: RecordHeader)
       : SparkCypherRecords = {
         val data = subject.data

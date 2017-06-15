@@ -14,13 +14,9 @@ final case class SparkCypherTokens(globals: GlobalsRegistry) {
   def relTypeName(id: Int): String = globals.relType(RelTypeRef(id)).name
   def relTypeId(name: String): Int = globals.relTypeRefByName(name).id
 
-  def constName(id: Int): String = globals.constant(ConstantRef(id)).name
-  def constId(name: String): Int = globals.constantRefByName(name).id
-
   def withLabel(name: String) = copy(globals = globals.withLabel(Label(name)))
   def withRelType(name: String) = copy(globals = globals.withRelType(RelType(name)))
   def withPropertyKey(name: String) = copy(globals = globals.withPropertyKey(PropertyKey(name)))
-  def withConstant(name: String) = copy(globals = globals.withConstant(Constant(name)))
 }
 
 
