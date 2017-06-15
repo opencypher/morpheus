@@ -1,8 +1,8 @@
 package org.opencypher.spark.api.schema
 
 import org.opencypher.spark.api.types._
+import org.opencypher.spark.api.util.{Verifiable, Verified}
 
-import scala.collection.mutable
 import scala.language.implicitConversions
 
 object Schema {
@@ -73,7 +73,7 @@ case class OptionalLabels(combos: Set[Set[String]]) {
   def ++(other: OptionalLabels) = copy(combos ++ other.combos)
 }
 
-case class Schema(
+final case class Schema(
   /**
    * All labels present in this graph
    */
@@ -85,9 +85,12 @@ case class Schema(
   nodeKeyMap: PropertyKeyMap,
   relKeyMap: PropertyKeyMap,
   impliedLabels: ImpliedLabels,
-  optionalLabels: OptionalLabels) {
+  optionalLabels: OptionalLabels) extends Verifiable {
 
   self: Schema =>
+
+  override type Self = Schema
+  override type VerifiedSelf = VerifiedSchema
 
   /**
    * Given a set of labels that a node definitely has, returns all labels the node _must_ have.
@@ -131,7 +134,7 @@ case class Schema(
     copy(labels ++ other.labels, relationshipTypes ++ other.relationshipTypes, nodeKeyMap ++ other.nodeKeyMap, relKeyMap ++ other.relKeyMap, impliedLabels ++ other.impliedLabels, optionalLabels ++ other.optionalLabels)
   }
 
-  def verify: VerifiedSchema = {
+  override def verify: VerifiedSchema = {
     // TODO:
     //
     // We envision this to change in two ways
@@ -183,6 +186,7 @@ case class Schema(
   }
 }
 
-sealed trait VerifiedSchema {
+sealed trait VerifiedSchema extends Verified[Schema] {
+  final override def subject = schema
   def schema: Schema
 }
