@@ -76,8 +76,8 @@ class PatternConverterTest extends IrTestSuite {
 
     convert(pattern) should equal(
       Pattern.empty
-        .withEntity('x, EveryNode(AllOf(LabelRef(0))))
-        .withEntity('y, EveryNode(AllOf(LabelRef(0), LabelRef(1))))
+        .withEntity('x, EveryNode(AllOf(Label("Person"))))
+        .withEntity('y, EveryNode(AllOf(Label("Person"), Label("Dog"))))
     )
   }
 
@@ -88,7 +88,7 @@ class PatternConverterTest extends IrTestSuite {
       Pattern.empty
         .withEntity('x, EveryNode)
         .withEntity('y, EveryNode)
-        .withEntity('r, EveryRelationship(AnyOf(RelTypeRef(0), RelTypeRef(1))))
+        .withEntity('r, EveryRelationship(AnyOf(RelType("KNOWS"), RelType("LOVES"))))
         .withConnection('r, DirectedRelationship('x, 'y))
     )
   }

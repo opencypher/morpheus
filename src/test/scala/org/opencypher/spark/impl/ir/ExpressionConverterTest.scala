@@ -46,7 +46,7 @@ class ExpressionConverterTest extends TestSuiteImpl with Neo4jAstTestSupport {
 
   test("can convert type() function calls used as predicates") {
     convert(parseExpr("type(r) = 'REL_TYPE'")) should equal(
-      HasType(Var("r")(CTRelationship), RelTypeRef(0))(CTBoolean)
+      HasType(Var("r")(CTRelationship), RelType("REL_TYPE"))(CTBoolean)
     )
   }
 
@@ -62,7 +62,7 @@ class ExpressionConverterTest extends TestSuiteImpl with Neo4jAstTestSupport {
   }
 
   test("can convert property access") {
-    convert(prop("n", "key")) should equal(Property('n, PropertyKeyRef(0))(CTWildcard))
+    convert(prop("n", "key")) should equal(Property('n, PropertyKey("key"))(CTWildcard))
   }
 
   test("can convert equals") {
@@ -76,39 +76,39 @@ class ExpressionConverterTest extends TestSuiteImpl with Neo4jAstTestSupport {
 
   test("can convert parameters") {
     val given = ast.Parameter("p", symbols.CTString) _
-    convert(given) should equal(Const(ConstantRef(0))())
+    convert(given) should equal(Const(Constant("p"))(CTWildcard))
   }
 
   test("can convert has-labels") {
     val given = convert(ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _, ast.LabelName("Duck") _)) _)
-    given should equal(Ands(HasLabel('x, label("Person"))(CTBoolean), HasLabel('x, LabelRef(1))(CTBoolean)))
+    given should equal(Ands(HasLabel('x, labelByName("Person"))(CTBoolean), HasLabel('x, Label("Duck"))(CTBoolean)))
   }
 
   test("can convert single has-labels") {
     val given = ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _)) _
-    convert(given) should equal(HasLabel('x, label("Person"))(CTBoolean))
+    convert(given) should equal(HasLabel('x, labelByName("Person"))(CTBoolean))
   }
 
   test("can convert conjunctions") {
     val given = ast.Ands(Set(ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _)) _, ast.Equals(prop("x", "name"), ast.StringLiteral("Mats") _) _)) _
 
-    convert(given) should equal(Ands(HasLabel('x, label("Person"))(CTBoolean), Equals(Property('x, PropertyKeyRef(1))(), StringLit("Mats")())(CTBoolean)))
+    convert(given) should equal(Ands(HasLabel('x, labelByName("Person"))(CTBoolean), Equals(Property('x, PropertyKey("name"))(), StringLit("Mats")())(CTBoolean)))
   }
 
   test("can convert negation") {
     val given = ast.Not(ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _)) _) _
 
-    convert(given) should equal(Not(HasLabel('x, label("Person"))(CTBoolean))(CTBoolean))
+    convert(given) should equal(Not(HasLabel('x, labelByName("Person"))(CTBoolean))(CTBoolean))
   }
 
   test("can convert retyping predicate") {
     val given = parseExpr("$p1 AND n:Foo AND $p2 AND m:Bar")
 
     convert(given) should equal(Ands(
-      HasLabel('n, label("Foo"))(),
-      HasLabel('m, label("Bar"))(),
-      Const(constant("p1"))(),
-      Const(constant("p2"))())
+      HasLabel('n, labelByName("Foo"))(),
+      HasLabel('m, labelByName("Bar"))(),
+      Const(constantByName("p1"))(),
+      Const(constantByName("p2"))())
     )
   }
 

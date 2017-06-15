@@ -1,6 +1,6 @@
 package org.opencypher.spark.api.expr
 
-import org.opencypher.spark.api.ir.global.{ConstantRef, LabelRef, PropertyKeyRef, RelTypeRef}
+import org.opencypher.spark.api.ir.global._
 import org.opencypher.spark.api.types._
 
 import scala.annotation.tailrec
@@ -11,9 +11,12 @@ sealed trait Expr {
   def withoutType: String = toString
 }
 
-final case class Const(ref: ConstantRef)(val cypherType: CypherType = CTWildcard) extends Expr {
-  override def toString = s"$$${ref.id}"
+final case class Const(constant: Constant)(val cypherType: CypherType = CTWildcard) extends Expr {
+  override def toString = s"$$${constant.name} :: $cypherType"
+
+  override def withoutType: String = s"${constant.name}"
 }
+
 final case class Var(name: String)(val cypherType: CypherType = CTWildcard) extends Expr {
   override def toString = s"$name :: $cypherType"
 
@@ -101,12 +104,17 @@ final case class Not(expr: Expr)(val cypherType: CypherType = CTWildcard) extend
   override def toString = s"NOT $expr"
 }
 
-final case class HasLabel(node: Expr, label: LabelRef)(val cypherType: CypherType = CTWildcard) extends Expr {
+final case class HasLabel(node: Expr, label: Label)(val cypherType: CypherType = CTWildcard) extends Expr {
   override def toString = s"$withoutType :: $cypherType"
 
-  override def withoutType: String = s"${node.withoutType}:${label.id}"
+  override def withoutType: String = s"${node.withoutType}:${label.name}"
 }
-final case class HasType(rel: Expr, relType: RelTypeRef)(val cypherType: CypherType = CTWildcard) extends Expr
+
+final case class HasType(rel: Expr, relType: RelType)(val cypherType: CypherType = CTWildcard) extends Expr {
+  override def toString = s"$withoutType :: $cypherType"
+
+  override def withoutType: String = s"type(${rel.withoutType}) = '${relType.name}'"
+}
 
 final case class Equals(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends Expr {
   override def toString = s"$withoutType :: $cypherType"
@@ -118,9 +126,9 @@ final case class LessThan(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTW
   override def withoutType: String = s"${lhs.withoutType} < ${rhs.withoutType}"
 }
 
-final case class Property(m: Expr, key: PropertyKeyRef)(val cypherType: CypherType = CTWildcard) extends Expr {
+final case class Property(m: Expr, key: PropertyKey)(val cypherType: CypherType = CTWildcard) extends Expr {
   override def toString = s"$withoutType :: $cypherType"
-  override def withoutType: String = s"${m.withoutType}.${key.id}"
+  override def withoutType: String = s"${m.withoutType}.${key.name}"
 
   override def equals(obj: scala.Any) = obj match {
     case null => false

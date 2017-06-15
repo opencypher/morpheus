@@ -7,10 +7,11 @@ import cats.instances.list._
 import cats.syntax.flatMap._
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection._
 import org.neo4j.cypher.internal.frontend.v3_2.ast
+import org.neo4j.cypher.internal.frontend.v3_2.ast.LabelName
 import org.opencypher.spark.api.types.{CTNode, CTRelationship}
 import org.opencypher.spark.api.expr.Expr
 import org.opencypher.spark.api.ir._
-import org.opencypher.spark.api.ir.global.{GlobalsRegistry, RelTypeRef}
+import org.opencypher.spark.api.ir.global.{GlobalsRegistry, Label, RelType, RelTypeRef}
 import org.opencypher.spark.api.ir.pattern._
 
 import scala.annotation.tailrec
@@ -32,10 +33,10 @@ final class PatternConverter(val tokens: GlobalsRegistry) extends AnyVal {
   }
 
   private def convertElement(p: ast.PatternElement): Result[Field] = p match {
-    case ast.NodePattern(Some(v), labels, None) =>
+    case ast.NodePattern(Some(v), labels: Seq[LabelName], None) =>
       for {
         entity <- pure(Field(v.name)(CTNode))
-        _ <- modify[Pattern[Expr]](_.withEntity(entity, EveryNode(AllGiven(labels.map(l => tokens.label(l.name)).toSet))))
+        _ <- modify[Pattern[Expr]](_.withEntity(entity, EveryNode(AllGiven(labels.map(l => Label(l.name)).toSet))))
       } yield entity
 
     case ast.RelationshipChain(left, ast.RelationshipPattern(Some(eVar), types, None, None, dir), right) =>
@@ -44,10 +45,10 @@ final class PatternConverter(val tokens: GlobalsRegistry) extends AnyVal {
         target <- convertElement(right)
         rel <- pure(Field(eVar.name)(CTRelationship(types.map(_.name).toSet)))
         _ <- modify[Pattern[Expr]] { given =>
-          val typeRefs =
-            if (types.isEmpty) AnyGiven[RelTypeRef]()
-            else AnyGiven[RelTypeRef](types.map(t => tokens.relType(t.name)).toSet)
-          val registered = given.withEntity(rel, EveryRelationship(typeRefs))
+          val relTypes =
+            if (types.isEmpty) AnyGiven[RelType]()
+            else AnyGiven[RelType](types.map(t => RelType(t.name)).toSet)
+          val registered = given.withEntity(rel, EveryRelationship(relTypes))
 
           Endpoints.apply(source, target) match {
             case ends: IdenticalEndpoints =>

@@ -3,7 +3,7 @@ package org.opencypher.spark.api.record
 import org.opencypher.spark.TestSuiteImpl
 import org.opencypher.spark.api.types._
 import org.opencypher.spark.api.expr._
-import org.opencypher.spark.api.ir.global.{LabelRef, PropertyKeyRef}
+import org.opencypher.spark.api.ir.global.{LabelRef, PropertyKey, PropertyKeyRef}
 import org.opencypher.spark.impl.syntax.header._
 import org.opencypher.spark.impl.util.{Added, Found, Removed, Replaced}
 import org.opencypher.spark.toVar
@@ -86,9 +86,9 @@ class RecordHeaderTest extends TestSuiteImpl {
   }
 
   test("Adding projected field will alias previously added projected expression 2") {
-    val oldContent = ProjectedExpr(Property('n, PropertyKeyRef(0))())
+    val oldContent = ProjectedExpr(Property('n, PropertyKey("prop"))())
     val (oldHeader, Added(oldSlot)) = RecordHeader.empty.update(addContent(oldContent))
-    val newContent = ProjectedField(Var("n.text")(CTString), Property('n, PropertyKeyRef(0))())
+    val newContent = ProjectedField(Var("n.text")(CTString), Property('n, PropertyKey("prop"))())
     val (newHeader, Replaced(prevSlot, newSlot)) = oldHeader.update(addContent(newContent))
 
     oldSlot should equal(RecordSlot(0, oldContent))

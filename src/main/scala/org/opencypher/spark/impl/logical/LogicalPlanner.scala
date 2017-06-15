@@ -11,11 +11,13 @@ import org.opencypher.spark.impl.DirectCompilationStage
 
 import scala.annotation.tailrec
 
-final case class LogicalPlannerContext(schema: Schema, tokens: GlobalsRegistry)
+final case class LogicalPlannerContext(schema: Schema, tokens: GlobalsRegistry) {
+  val producer = new LogicalOperatorProducer(tokens)
+}
 
 class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOperator, LogicalPlannerContext] {
 
-  val producer = new LogicalOperatorProducer
+  private def producer(implicit context: LogicalPlannerContext) = context.producer
 
   override def process(ir: CypherQuery[Expr])(implicit context: LogicalPlannerContext): LogicalOperator = {
     val model = ir.model
@@ -135,13 +137,13 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
     }
 
     if (pattern.topology.nonEmpty)
-      planExpansions(nodePlans.toSet, pattern)
+      planExpansions(nodePlans.toSet, pattern, producer)
     else if (nodePlans.size == 1) nodePlans.head
     else throw new IllegalStateException("What kind of a pattern is this???")
   }
 
   @tailrec
-  private def planExpansions(disconnectedPlans: Set[LogicalOperator], pattern: Pattern[Expr]): LogicalOperator = {
+  private def planExpansions(disconnectedPlans: Set[LogicalOperator], pattern: Pattern[Expr], producer: LogicalOperatorProducer): LogicalOperator = {
     val allSolved = disconnectedPlans.map(_.solved).reduce(_ ++ _)
 
     val (r, c) = pattern.topology.collectFirst {
@@ -158,7 +160,7 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
     val expand = producer.planSourceExpand(c.source, r -> pattern.rels(r), c.target, sourcePlan, targetPlan)
 
     if (expand.solved.solves(pattern)) expand
-    else planExpansions((disconnectedPlans - sourcePlan - targetPlan) + expand, pattern)
+    else planExpansions((disconnectedPlans - sourcePlan - targetPlan) + expand, pattern, producer)
   }
 
   private def nodePlan(plan: LogicalOperator, field: Field, everyNode: EveryNode)(implicit context: LogicalPlannerContext) = {

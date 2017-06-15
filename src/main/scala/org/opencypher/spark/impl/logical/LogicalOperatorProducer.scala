@@ -2,14 +2,14 @@ package org.opencypher.spark.impl.logical
 
 import org.opencypher.spark.api.types._
 import org.opencypher.spark.api.expr._
-import org.opencypher.spark.api.ir.block.{DefaultGraph, GraphDescriptor}
+import org.opencypher.spark.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.api.ir.pattern.{EveryNode, EveryRelationship}
 import org.opencypher.spark.api.ir.{Field, SolvedQueryModel}
-import org.opencypher.spark.api.record.{ProjectedExpr, ProjectedField, RecordHeader}
+import org.opencypher.spark.api.record.{ProjectedExpr, ProjectedField}
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.impl.util._
 
-class LogicalOperatorProducer {
+class LogicalOperatorProducer(globals: GlobalsRegistry) {
 
   def planTargetExpand(source: Field, rel: Field, target: Field, sourcePlan: LogicalOperator, targetPlan: LogicalOperator): ExpandTarget = {
     val prevSolved = sourcePlan.solved ++ targetPlan.solved
@@ -33,7 +33,7 @@ class LogicalOperatorProducer {
 
   def planNodeScan(node: Field, everyNode: EveryNode, prev: LogicalOperator): NodeScan = {
     val solved = everyNode.labels.elts.foldLeft(SolvedQueryModel.empty[Expr].withField(node)) {
-      case (acc, ref) => acc.withPredicate(HasLabel(node, ref)(CTBoolean))
+      case (acc, label) => acc.withPredicate(HasLabel(node, label)(CTBoolean))
     }
 
     NodeScan(node, everyNode, prev)(solved)

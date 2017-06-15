@@ -32,9 +32,10 @@ object SparkSQLExprMapper {
           case _ => throw new IllegalStateException("This should never happen")
         }
       }
-    case HasType(rel, ref) =>
+    case HasType(rel, relType) =>
+      val relTypeId = context.globals.relTypeRef(relType).id
       val idSlot = header.typeId(rel)
-      Some(new Column(df.columns(idSlot.index)) === ref.id)
+      Some(new Column(df.columns(idSlot.index)) === relTypeId)
     case h: HasLabel =>
       val slot = header.slotsFor(h).head
       Some(new Column(df.columns(slot.index))) // it's a boolean column
