@@ -616,7 +616,8 @@ private[spark] object MaterialDefiniteCypherType {
     self: MaterialDefiniteCypherType =>
 
     override val nullable = self match {
-      case CTString => CTStringOrNull // workaround
+      case CTString => CTStringOrNull // workaround]
+      case CTInteger => CTIntegerOrNull
     // TODO: This causes some nullable types to be non-equal ?!
       case x => new NullableDefiniteCypherType {
         override def material = self
@@ -625,6 +626,12 @@ private[spark] object MaterialDefiniteCypherType {
       }
     }
   }
+}
+
+case object CTIntegerOrNull extends NullableDefiniteCypherType {
+  override def name = CTInteger + "?"
+
+  override def material = CTInteger
 }
 
 case object CTStringOrNull extends NullableDefiniteCypherType {

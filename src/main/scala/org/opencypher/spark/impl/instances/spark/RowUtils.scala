@@ -1,18 +1,36 @@
 package org.opencypher.spark.impl.instances.spark
 
 import org.apache.spark.sql.Row
+import org.opencypher.spark.api.exception.SparkCypherException
+import org.opencypher.spark.api.expr.{Const, Expr}
+import org.opencypher.spark.api.record.RecordHeader
 import org.opencypher.spark.api.types._
 import org.opencypher.spark.api.value.CypherValue
 import org.opencypher.spark.api.value.CypherValue.Conversion._
+import org.opencypher.spark.impl.physical.RuntimeContext
 
 object RowUtils {
+
   implicit class CypherRow(r: Row) {
-    def getCypherValue[T <: CypherType](index: Int, cypherType: T): CypherValue = cypherType.material match {
-      case CTBoolean => cypherBoolean(r.getBoolean(index))
-      case CTInteger => cypherInteger(r.getLong(index))
-      case CTString => cypherString(r.getString(index))
-      case CTFloat => cypherFloat(r.getDouble(index))
-      case _ => throw new NotImplementedError(s"Cannot get value from row having type $cypherType")
+    def getCypherValue(expr: Expr, header: RecordHeader)(implicit context: RuntimeContext): CypherValue = {
+      expr match {
+        case c: Const => context.constants(context.globals.constantRef(c.constant))
+        case _ =>
+          header.slotsFor(expr).headOption match {
+            case None => throw SparkCypherException(s"Did not find slot for $expr")
+            case Some(slot) =>
+              val index = slot.index
+
+              slot.content.cypherType.material match {
+                case _ if r.isNullAt(index) => null
+                case CTBoolean => cypherBoolean(r.getBoolean(index))
+                case CTInteger => cypherInteger(r.getLong(index))
+                case CTString => cypherString(r.getString(index))
+                case CTFloat => cypherFloat(r.getDouble(index))
+                case _ => throw new NotImplementedError(s"Cannot get value from row having type ${slot.content.cypherType}")
+              }
+          }
+      }
     }
   }
 }

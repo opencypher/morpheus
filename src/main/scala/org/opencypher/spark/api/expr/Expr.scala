@@ -126,6 +126,11 @@ final case class LessThan(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTW
   override def withoutType: String = s"${lhs.withoutType} < ${rhs.withoutType}"
 }
 
+final case class LessThanOrEqual(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends Expr {
+  override def toString: String = s"$lhs <= $rhs"
+  override def withoutType: String = s"${lhs.withoutType} <= ${rhs.withoutType}"
+}
+
 final case class Property(m: Expr, key: PropertyKey)(val cypherType: CypherType = CTWildcard) extends Expr {
   override def toString = s"$withoutType :: $cypherType"
   override def withoutType: String = s"${m.withoutType}.${key.name}"

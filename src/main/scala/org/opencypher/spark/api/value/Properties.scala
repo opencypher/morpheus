@@ -27,5 +27,5 @@ final class Properties private (val m: SortedMap[String, CypherValue]) extends A
   def apply(key: String) = m.getOrElse(key, cypherNull)
   def get(key: String) = m.get(key)
 
-  def containsNullValue: Boolean = m.values.exists(CypherValue.isComparable)
+  def containsNullValue: Boolean = m.values.exists(CypherValue.isIncomparable)
 }
