@@ -7,7 +7,7 @@ import org.opencypher.spark.impl.syntax.cypher._
 
 object PrototypeDemo {
 
-  lazy val space = SparkGraphSpace.fromNeo4j("MATCH (n) RETURN n", "MATCH ()-[r]->() RETURN r")(RunBenchmark.sparkSession)
+  lazy val space = SparkGraphSpace.fromNeo4j("MATCH (n) RETURN n", "MATCH ()-[r]->() RETURN r")(RunBenchmark.session)
 
   def cypher(query: String): SparkCypherGraph = {
     println(s"Now executing query: $query")

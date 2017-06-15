@@ -5,11 +5,11 @@ import org.opencypher.spark.api.spark.{SparkCypherRecords, SparkGraphSpace}
 import org.opencypher.spark.api.types.{CTAny, CTInteger, CTString}
 import org.opencypher.spark.impl.instances.spark.cypher._
 import org.opencypher.spark.impl.syntax.cypher._
-import org.opencypher.spark.{TestSuiteImpl, TestSession}
+import org.opencypher.spark.{TestSuiteImpl, TestSparkCypherSession}
 
 import scala.language.reflectiveCalls
 
-class SparkCypherRecordsAcceptanceTest extends TestSuiteImpl with TestSession.Fixture {
+class SparkCypherRecordsAcceptanceTest extends TestSuiteImpl with TestSparkCypherSession.Fixture {
 
   test("less than") {
     // When
@@ -28,6 +28,7 @@ class SparkCypherRecordsAcceptanceTest extends TestSuiteImpl with TestSession.Fi
   }
 
   test("label scan and project") {
+
     // When
     val result = smallSpace.base.cypher("MATCH (a:User) RETURN a.text")
 

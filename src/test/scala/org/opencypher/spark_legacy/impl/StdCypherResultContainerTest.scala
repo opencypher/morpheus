@@ -6,9 +6,9 @@ import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.types.{LongType, StringType}
 import org.opencypher.spark_legacy.api.frame.EmbeddedRepresentation
 import org.opencypher.spark.api.types.{CTInteger, CTString}
-import org.opencypher.spark.{TestSuiteImpl, TestSession}
+import org.opencypher.spark.{TestSuiteImpl, TestSparkCypherSession}
 
-class StdCypherResultContainerTest extends TestSuiteImpl with TestSession.Fixture {
+class StdCypherResultContainerTest extends TestSuiteImpl with TestSparkCypherSession.Fixture {
 
   test("should output a nice table") {
     val signature = new StdFrameSignature(Map(
@@ -22,7 +22,7 @@ class StdCypherResultContainerTest extends TestSuiteImpl with TestSession.Fixtur
       }
     }
 
-    val resultContainer = new StdCypherResultContainer(null, frame)(new StdRuntimeContext(session, Map.empty))
+    val resultContainer = new StdCypherResultContainer(null, frame)(new StdRuntimeContext(sparkSession, Map.empty))
 
     val out = new StringWriter()
     resultContainer.print(new PrintWriter(out))

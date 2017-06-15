@@ -9,11 +9,11 @@ import org.opencypher.spark.api.record.{OpaqueField, ProjectedField, RecordHeade
 import org.opencypher.spark.impl.instances.spark.SparkSQLExprMapper.asSparkSQLExpr
 import org.opencypher.spark.impl.physical.RuntimeContext
 import org.opencypher.spark.impl.syntax.header.{addContents, _}
-import org.opencypher.spark.{TestSession, TestSuiteImpl}
+import org.opencypher.spark.{TestSparkCypherSession, TestSuiteImpl}
 
 import scala.language.implicitConversions
 
-class SparkSQLExprMapperTest extends TestSuiteImpl with TestSession.Fixture {
+class SparkSQLExprMapperTest extends TestSuiteImpl with TestSparkCypherSession.Fixture {
 
   test("can map subtract") {
     val expr = Subtract(Var("a")(), Var("b")())()
@@ -28,7 +28,7 @@ class SparkSQLExprMapperTest extends TestSuiteImpl with TestSession.Fixture {
   }
 
   val _header: RecordHeader = RecordHeader.empty.update(addContents(Seq(OpaqueField('a), OpaqueField('b))))
-  val df: DataFrame = session.createDataFrame(Collections.emptyList[Row](),
+  val df: DataFrame = sparkSession.createDataFrame(Collections.emptyList[Row](),
     StructType(Seq(StructField("a", IntegerType), StructField("b", IntegerType))))
 
   implicit def extractRecordHeaderFromResult[T](tuple: (RecordHeader, T)): RecordHeader = tuple._1

@@ -8,6 +8,7 @@ import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.sql._
 import org.graphframes.GraphFrame
 import org.neo4j.driver.v1.{AuthTokens, GraphDatabase}
+import org.opencypher.spark.api.spark.SparkCypherSession
 import org.opencypher.spark.api.value._
 import org.opencypher.spark_legacy.CypherKryoRegistrar
 import org.opencypher.spark_legacy.benchmark.Configuration._
@@ -43,6 +44,8 @@ object RunBenchmark {
     session.sparkContext.setLogLevel(Logging.get())
     session
   }
+
+  implicit lazy val session = SparkCypherSession.create
 
   def loadRDDs(): (RDD[CypherNode], RDD[CypherRelationship]) = {
     val nodeRDD = sparkSession.sparkContext.objectFile[CypherNode](NodeFilePath.get())

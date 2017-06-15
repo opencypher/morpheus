@@ -1,6 +1,7 @@
 package org.opencypher.spark.api.schema
 
 import org.opencypher.spark.api.types._
+import org.opencypher.spark.impl.util.{Verifiable, Verified}
 
 import scala.collection.mutable
 import scala.language.implicitConversions
@@ -85,9 +86,13 @@ case class Schema(
   nodeKeyMap: PropertyKeyMap,
   relKeyMap: PropertyKeyMap,
   impliedLabels: ImpliedLabels,
-  optionalLabels: OptionalLabels) {
+  optionalLabels: OptionalLabels
+) extends Verifiable {
 
   self: Schema =>
+
+  override type Self = Schema
+  override type VerifiedSelf = VerifiedSchema
 
   /**
    * Given a set of labels that a node definitely has, returns all labels the node _must_ have.
@@ -183,6 +188,7 @@ case class Schema(
   }
 }
 
-sealed trait VerifiedSchema {
+sealed trait VerifiedSchema extends Verified[Schema] {
+  final override def verified = schema
   def schema: Schema
 }
