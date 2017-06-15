@@ -44,6 +44,10 @@ sealed abstract class SparkCypherRecords(tokens: SparkCypherTokens, initialHeade
     SparkCypherRecords.create(cachedHeader, cachedData)
   }
 
+  override def contract(node: EmbeddedNode): Records = ???
+
+  override def contract(node: EmbeddedRelationship): Records = ???
+
   // only keep slots with v as their owner
   //  def focus(v: Var): SparkCypherRecords = {
   //    val (newHeader, _) = self.header.update(selectFields(slot => slot.content.owner.contains(v)))
