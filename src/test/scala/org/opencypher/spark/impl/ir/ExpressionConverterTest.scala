@@ -9,17 +9,22 @@ import org.opencypher.spark.toVar
 
 class ExpressionConverterTest extends TestSuiteImpl with Neo4jAstTestSupport {
 
-  private val globals = GlobalsRegistry.none
+  private val globals = GlobalsRegistry(
+    TokenRegistry
+    .empty
     .withPropertyKey(PropertyKey("key"))
     .withLabel(Label("Person"))
     .withLabel(Label("Duck"))
     .withLabel(Label("Foo"))
     .withLabel(Label("Bar"))
     .withPropertyKey(PropertyKey("name"))
+    .withRelType(RelType("REL_TYPE")),
+    ConstantRegistry
+    .empty
     .withConstant(Constant("p"))
     .withConstant(Constant("p1"))
     .withConstant(Constant("p2"))
-    .withRelType(RelType("REL_TYPE"))
+  )
 
   private def testTypes(ref: Ref[ast.Expression]): CypherType = ref.value match {
     case ast.Variable("r") => CTRelationship
@@ -28,7 +33,8 @@ class ExpressionConverterTest extends TestSuiteImpl with Neo4jAstTestSupport {
     case _ => CTWildcard
   }
 
-  import globals._
+  import globals.tokens._
+  import globals.constants._
 
   private val c = new ExpressionConverter(globals)
 

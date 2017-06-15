@@ -1,6 +1,7 @@
 package org.opencypher.spark.api.record
 
 trait CypherRecords {
+
   type Data
   type Records <: CypherRecords
 

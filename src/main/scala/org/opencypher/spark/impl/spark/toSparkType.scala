@@ -10,7 +10,9 @@ object toSparkType extends Serializable {
     case CTBoolean => BooleanType
     case CTAny => BinaryType
     case CTFloat => DoubleType
-    case x => throw new NotImplementedError(s"No mapping for $x")
+    case CTNode => LongType
+    case CTRelationship => LongType
+    case x => throw new NotImplementedError(s"Cannot map CypherType $x to a suitable Apache Spark DataType")
   }
 }
 

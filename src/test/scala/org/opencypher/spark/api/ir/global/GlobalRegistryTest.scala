@@ -7,12 +7,17 @@ import scala.util.Try
 
 class GlobalRegistryTest extends TestSuiteImpl {
 
-  val tokens = GlobalsRegistry(
-    labels = RefCollection(Vector(Label("Person"), Label("Employee"))),
-    relTypes = RefCollection(Vector(RelType("KNOWS"))),
-    propertyKeys = RefCollection(Vector(PropertyKey("prop"))),
-    constants = RefCollection(Vector.empty)
+  val globals = GlobalsRegistry(
+    TokenRegistry(
+      labels = RefCollection(Vector(Label("Person"), Label("Employee"))),
+      relTypes = RefCollection(Vector(RelType("KNOWS"))),
+      propertyKeys = RefCollection(Vector(PropertyKey("prop")))
+    ),
+    ConstantRegistry(constants = RefCollection(Vector.empty))
   )
+
+  import globals.tokens
+  import globals.constants
 
   test("token lookup") {
     tokens.label(LabelRef(0)) should equal(Label("Person"))
@@ -28,23 +33,23 @@ class GlobalRegistryTest extends TestSuiteImpl {
 
   test("token definition") {
     GlobalsRegistry
-      .none
-      .withLabel(Label("Person"))
-      .withLabel(Label("Employee"))
-      .withRelType(RelType("KNOWS"))
-      .withPropertyKey(PropertyKey("prop")) should equal(tokens)
+      .empty
+      .mapTokens(_.withLabel(Label("Person")))
+      .mapTokens(_.withLabel(Label("Employee")))
+      .mapTokens(_.withRelType(RelType("KNOWS")))
+      .mapTokens(_.withPropertyKey(PropertyKey("prop"))) should equal(globals)
   }
 
   test("token definition is idempotent") {
     GlobalsRegistry
-      .none
-      .withLabel(Label("Person"))
-      .withLabel(Label("Person"))
-      .withLabel(Label("Employee"))
-      .withLabel(Label("Employee"))
-      .withRelType(RelType("KNOWS"))
-      .withRelType(RelType("KNOWS"))
-      .withPropertyKey(PropertyKey("prop"))
-      .withPropertyKey(PropertyKey("prop")) should equal(tokens)
+      .empty
+      .mapTokens(_.withLabel(Label("Person")))
+      .mapTokens(_.withLabel(Label("Person")))
+      .mapTokens(_.withLabel(Label("Employee")))
+      .mapTokens(_.withLabel(Label("Employee")))
+      .mapTokens(_.withRelType(RelType("KNOWS")))
+      .mapTokens(_.withRelType(RelType("KNOWS")))
+      .mapTokens(_.withPropertyKey(PropertyKey("prop")))
+      .mapTokens(_.withPropertyKey(PropertyKey("prop"))) should equal(globals)
   }
 }

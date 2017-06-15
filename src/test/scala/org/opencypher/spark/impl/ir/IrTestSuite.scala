@@ -57,7 +57,7 @@ abstract class IrTestSuite extends TestSuiteImpl {
       where = AllGiven[Expr](),
       graph = graphBlockRef
     )
-    val model = QueryModel(result, GlobalsRegistry.none, blocks, Map(graphBlockRef -> Schema.empty))
+    val model = QueryModel(result, GlobalsRegistry.empty, blocks, Map(graphBlockRef -> Schema.empty))
     CypherQuery(QueryInfo("test"), model)
   }
 

@@ -59,14 +59,16 @@ class LogicalPlannerTest extends IrTestSuite {
     val ir = "MATCH (a:Administrator)-[r]->(g:Group) WHERE g.name = $foo RETURN a.name".irWithParams("foo" -> CTString)
 
     val globals = ir.model.globals
+    import globals.tokens
+    import globals.constants
 
     plan(ir, globals) should equal(
       Select(IndexedSeq(Var("a.name")(CTVoid)),
-        Project(ProjectedField(Var("a.name")(CTVoid), Property(Var("a")(CTNode("Administrator")), globals.propertyKeyByName("name"))(CTVoid)),
-          Filter(Equals(Property(Var("g")(CTNode("Group")), globals.propertyKeyByName("name"))(CTVoid), Const(Constant("foo"))(CTString))(CTBoolean),
-            Project(ProjectedExpr(Property(Var("g")(CTNode("Group")), globals.propertyKeyByName("name"))(CTVoid)),
-              Filter(HasLabel(Var("g")(CTNode), globals.labelByName("Group"))(CTBoolean),
-                Filter(HasLabel(Var("a")(CTNode), globals.labelByName("Administrator"))(CTBoolean),
+        Project(ProjectedField(Var("a.name")(CTVoid), Property(Var("a")(CTNode("Administrator")), tokens.propertyKeyByName("name"))(CTVoid)),
+          Filter(Equals(Property(Var("g")(CTNode("Group")), tokens.propertyKeyByName("name"))(CTVoid), Const(Constant("foo"))(CTString))(CTBoolean),
+            Project(ProjectedExpr(Property(Var("g")(CTNode("Group")), tokens.propertyKeyByName("name"))(CTVoid)),
+              Filter(HasLabel(Var("g")(CTNode), tokens.labelByName("Group"))(CTBoolean),
+                Filter(HasLabel(Var("a")(CTNode), tokens.labelByName("Administrator"))(CTBoolean),
                   ExpandSource(Var("a")(CTNode), Var("r")(CTRelationship), EveryRelationship, Var("g")(CTNode),
                     NodeScan(Var("a")(CTNode), EveryNode,
                       LoadGraph(NamedLogicalGraph("default", Schema.empty), DefaultGraphSource)(emptySqm)
@@ -92,14 +94,16 @@ class LogicalPlannerTest extends IrTestSuite {
     val ir = "MATCH (a:Administrator)-[r]->(g:Group) WHERE g.name = $foo RETURN a.name".irWithParams("foo" -> CTString)
 
     val globals = ir.model.globals
+    import globals.tokens
+    import globals.constants
 
     plan(ir, globals, schema) should equal(
       Select(IndexedSeq(Var("a.name")(CTFloat)),
-        Project(ProjectedField(Var("a.name")(CTFloat), Property(Var("a")(CTNode("Administrator")), globals.propertyKeyByName("name"))(CTFloat)),
-          Filter(Equals(Property(Var("g")(CTNode("Group")), globals.propertyKeyByName("name"))(CTString), Const(Constant("foo"))(CTString))(CTBoolean),
-            Project(ProjectedExpr(Property(Var("g")(CTNode("Group")), globals.propertyKeyByName("name"))(CTString)),
-              Filter(HasLabel(Var("g")(CTNode), globals.labelByName("Group"))(CTBoolean),
-                Filter(HasLabel(Var("a")(CTNode), globals.labelByName("Administrator"))(CTBoolean),
+        Project(ProjectedField(Var("a.name")(CTFloat), Property(Var("a")(CTNode("Administrator")), tokens.propertyKeyByName("name"))(CTFloat)),
+          Filter(Equals(Property(Var("g")(CTNode("Group")), tokens.propertyKeyByName("name"))(CTString), Const(Constant("foo"))(CTString))(CTBoolean),
+            Project(ProjectedExpr(Property(Var("g")(CTNode("Group")), tokens.propertyKeyByName("name"))(CTString)),
+              Filter(HasLabel(Var("g")(CTNode), tokens.labelByName("Group"))(CTBoolean),
+                Filter(HasLabel(Var("a")(CTNode), tokens.labelByName("Administrator"))(CTBoolean),
                   ExpandSource(Var("a")(CTNode), Var("r")(CTRelationship), EveryRelationship, Var("g")(CTNode),
                     NodeScan(Var("a")(CTNode), EveryNode,
                       LoadGraph(NamedLogicalGraph("default", schema), DefaultGraphSource)(emptySqm)
@@ -121,11 +125,13 @@ class LogicalPlannerTest extends IrTestSuite {
     val ir = "MATCH (a) WHERE NOT $p1 = $p2 RETURN a.prop".irWithParams("p1" -> CTInteger, "p2" -> CTBoolean)
 
     val globals = ir.model.globals
+    import globals.tokens
+    import globals.constants
 
     plan(ir, globals) should equal(
       Select(IndexedSeq(Var("a.prop")(CTVoid)),
-        Project(ProjectedField(Var("a.prop")(CTVoid), Property(nodeA, globals.propertyKeyByName("prop"))(CTVoid)),
-          Filter(Not(Equals(Const(globals.constantByName("p1"))(CTInteger), Const(globals.constantByName("p2"))(CTBoolean))(CTBoolean))(CTBoolean),
+        Project(ProjectedField(Var("a.prop")(CTVoid), Property(nodeA, tokens.propertyKeyByName("prop"))(CTVoid)),
+          Filter(Not(Equals(Const(constants.constantByName("p1"))(CTInteger), Const(constants.constantByName("p2"))(CTBoolean))(CTBoolean))(CTBoolean),
             NodeScan(nodeA, EveryNode,
               LoadGraph(NamedLogicalGraph("default", Schema.empty), DefaultGraphSource)(emptySqm)
             )(emptySqm)
@@ -137,8 +143,8 @@ class LogicalPlannerTest extends IrTestSuite {
 
   private val producer = new LogicalPlanner
 
-  private def plan(ir: CypherQuery[Expr], globalsRegistry: GlobalsRegistry = GlobalsRegistry.none, schema: Schema = Schema.empty): LogicalOperator =
-    producer.process(ir)(LogicalPlannerContext(schema, globalsRegistry))
+  private def plan(ir: CypherQuery[Expr], globalsRegistry: GlobalsRegistry = GlobalsRegistry.empty, schema: Schema = Schema.empty): LogicalOperator =
+    producer.process(ir)(LogicalPlannerContext(schema))
 
   case class equalWithoutResult(plan: LogicalOperator) extends Matcher[LogicalOperator] {
     override def apply(left: LogicalOperator): MatchResult = {

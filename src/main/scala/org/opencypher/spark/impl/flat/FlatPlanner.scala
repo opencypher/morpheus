@@ -1,11 +1,11 @@
 package org.opencypher.spark.impl.flat
 
-import org.opencypher.spark.api.ir.global.GlobalsRegistry
+import org.opencypher.spark.api.ir.global.{ConstantRegistry, GlobalsRegistry, TokenRegistry}
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.impl.logical.LogicalOperator
 import org.opencypher.spark.impl.{DirectCompilationStage, logical}
 
-final case class FlatPlannerContext(schema: Schema, globalsRegistry: GlobalsRegistry)
+final case class FlatPlannerContext(schema: Schema, tokens: TokenRegistry, constants: ConstantRegistry)
 
 class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, FlatPlannerContext] {
 

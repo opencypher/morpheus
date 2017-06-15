@@ -11,11 +11,14 @@ import scala.language.implicitConversions
 
 final class ExpressionConverter(val globals: GlobalsRegistry) extends AnyVal {
 
+  import globals.constants
+  import globals.tokens
+
   implicit def toRef(e: ast.Expression): Ref[ast.Expression] = Ref(e)
 
   def convert(e: ast.Expression)(implicit typings: (Ref[ast.Expression]) => CypherType): Expr = e match {
     case ast.Variable(name) => Var(name)(typings(e))
-    case ast.Parameter(name, _) => Const(globals.constantByName(name))(typings(e))
+    case ast.Parameter(name, _) => Const(constants.constantByName(name))(typings(e))
 
       // Literals
     case astExpr: ast.IntegerLiteral => IntegerLit(astExpr.value)(typings(e))
@@ -23,17 +26,17 @@ final class ExpressionConverter(val globals: GlobalsRegistry) extends AnyVal {
     case _: ast.True => TrueLit()
     case _: ast.False => FalseLit()
 
-    case ast.Property(m, ast.PropertyKeyName(name)) => Property(convert(m), globals.propertyKeyByName(name))(typings(e))
+    case ast.Property(m, ast.PropertyKeyName(name)) => Property(convert(m), tokens.propertyKeyByName(name))(typings(e))
 
       // Predicates
     case ast.Ands(exprs) => new Ands(exprs.map(convert))(typings(e))
     case ast.HasLabels(node, labels) =>
-      val exprs = labels.map { (l: ast.LabelName) => HasLabel(convert(node), globals.labelByName(l.name))(typings(e)) }
+      val exprs = labels.map { (l: ast.LabelName) => HasLabel(convert(node), tokens.labelByName(l.name))(typings(e)) }
       if (exprs.size == 1) exprs.head else new Ands(exprs.toSet)(typings(e))
     case ast.Not(expr) => Not(convert(expr))(typings(e))
     // MATCH ()-[r]->() WHERE type(r) IN ['FOO', 'BAR] ==> MATCH ()-[r]->() WHERE r[:FOO|BAR]
     case ast.Equals(f: ast.FunctionInvocation, s: ast.StringLiteral) if f.function == functions.Type =>
-      HasType(convert(f.args.head), globals.relTypeByName(s.value))(CTBoolean)
+      HasType(convert(f.args.head), tokens.relTypeByName(s.value))(CTBoolean)
     case ast.Equals(lhs, rhs) => Equals(convert(lhs), convert(rhs))(typings(e))
     case ast.LessThan(lhs, rhs) => LessThan(convert(lhs), convert(rhs))(typings(e))
     case ast.LessThanOrEqual(lhs, rhs) => LessThanOrEqual(convert(lhs), convert(rhs))(typings(e))

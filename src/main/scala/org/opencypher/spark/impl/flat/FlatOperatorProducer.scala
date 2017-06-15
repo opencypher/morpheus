@@ -14,10 +14,10 @@ import org.opencypher.spark.impl.util.{Added, FailedToAdd, Found, Replaced}
 
 class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
-  private val globals = context.globalsRegistry
   private val schema = context.schema
 
-  import globals._
+  import context.tokens._
+  import context.constants._
 
   private implicit val typeVectorMonoid = new Monoid[Vector[CypherType]] {
     override def empty: Vector[CypherType] = Vector.empty
