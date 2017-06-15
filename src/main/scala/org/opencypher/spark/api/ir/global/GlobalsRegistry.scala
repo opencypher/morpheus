@@ -22,6 +22,7 @@ object ConstantRegistry {
   val empty = ConstantRegistry()
 }
 
+// Constants are globals that are provided as part of invoking a query
 final case class ConstantRegistry(constants: RefCollection[Constant] = RefCollection.empty[Constant]) {
 
   self =>
@@ -56,6 +57,8 @@ object TokenRegistry {
   }
 }
 
+// Tokens are all globals that materially occur in the data graph
+// (even though they may initially be registered based on a query)
 final case class TokenRegistry(
   labels: RefCollection[Label],
   relTypes: RefCollection[RelType],
