@@ -3,6 +3,7 @@ package org.opencypher.spark.api.spark
 import java.util.Collections
 
 import org.apache.spark.sql.{Column, DataFrame, Row}
+import org.opencypher.spark.api.expr.{Property, Var}
 import org.opencypher.spark.api.record._
 import org.opencypher.spark.impl.record.SparkCypherRecordHeader
 import org.opencypher.spark.impl.spark.SparkColumnName
@@ -44,9 +45,7 @@ sealed abstract class SparkCypherRecords(tokens: SparkCypherTokens, initialHeade
     SparkCypherRecords.create(cachedHeader, cachedData)
   }
 
-  override def contract(node: EmbeddedNode): Records = ???
 
-  override def contract(node: EmbeddedRelationship): Records = ???
 
   // only keep slots with v as their owner
   //  def focus(v: Var): SparkCypherRecords = {
@@ -160,6 +159,24 @@ sealed abstract class SparkCypherRecords(tokens: SparkCypherTokens, initialHeade
   //      override def data = newSelfData.union(newOtherData)
   //    }
   //  }
+
+  override def contract[E <: EmbeddedEntity](entity: VerifiedEmbeddedEntity[E]): SparkCypherRecords = {
+    val slotExprs = entity.slots
+    val newSlots = header.slots.map {
+      case slot@RecordSlot(idx, content: FieldSlotContent) =>
+        slotExprs.get(content.field.name).map {
+          case expr: Var      => OpaqueField(expr)
+          case expr: Property => ProjectedExpr(expr.copy()(content.cypherType))
+          case expr           => ProjectedExpr(expr)
+        }
+        .getOrElse(slot.content)
+
+      case slot =>
+        slot.content
+    }
+    val newHeader = RecordHeader.from(newSlots: _*)
+    SparkCypherRecords.create(newHeader, data)
+  }
 
   def distinct: SparkCypherRecords = SparkCypherRecords.create(self.header, self.data.distinct())
 }
