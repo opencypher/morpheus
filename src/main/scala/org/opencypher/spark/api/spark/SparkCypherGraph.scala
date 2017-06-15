@@ -13,13 +13,12 @@ trait SparkCypherGraph extends CypherGraph {
   override type Space = SparkGraphSpace
   override type Graph = SparkCypherGraph
   override type Records = SparkCypherRecords
-
 }
 
 object SparkCypherGraph {
 
   def empty(graphSpace: SparkGraphSpace): SparkCypherGraph =
-    EmptyGraph(graphSpace, QueryModel.empty[Expr](graphSpace.globals), SparkCypherRecords.empty()(graphSpace))
+    EmptyGraph(graphSpace, QueryModel.empty[Expr](graphSpace.tokens.globals), SparkCypherRecords.empty()(graphSpace))
 
   private sealed case class EmptyGraph(
     graphSpace: SparkGraphSpace,

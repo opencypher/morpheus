@@ -9,7 +9,7 @@ import org.opencypher.spark.toVar
 
 class ExpressionConverterTest extends TestSuiteImpl with Neo4jAstTestSupport {
 
-  private val globals = GlobalsRegistry.none
+  private val globals = GlobalsRegistry.empty
     .withPropertyKey(PropertyKey("key"))
     .withLabel(Label("Person"))
     .withLabel(Label("Duck"))

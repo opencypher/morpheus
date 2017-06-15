@@ -2,15 +2,15 @@ package org.opencypher.spark.impl.spark
 
 import org.apache.spark.SparkConf
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{Row, SparkSession}
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.{Row, SparkSession}
 import org.neo4j.driver.internal.{InternalNode, InternalRelationship}
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.QueryModel
 import org.opencypher.spark.api.ir.global.{GlobalsRegistry, PropertyKey}
 import org.opencypher.spark.api.record.{OpaqueField, ProjectedExpr, RecordHeader, SlotContent}
 import org.opencypher.spark.api.schema.{Schema, VerifiedSchema}
-import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkGraphSpace}
+import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherTokens, SparkGraphSpace}
 import org.opencypher.spark.api.types._
 import org.opencypher.spark.impl.syntax.header._
 import org.opencypher.spark_legacy.benchmark.Converters.cypherValue
@@ -137,8 +137,7 @@ trait SparkGraphLoading {
         override def relationships(v: Var) = SparkCypherRecords.create(relHeader(v), relFrame(v))(selfSpace)
         override def space: SparkGraphSpace = selfSpace
 
-        override def model: QueryModel[Expr] =
-          QueryModel.base[Expr](sourceNode, rel, targetNode, selfSpace.globals)
+        override def model: QueryModel[Expr] = QueryModel.base[Expr](sourceNode, rel, targetNode, context.globals)
 
         override def details: SparkCypherRecords = ???
 
@@ -146,7 +145,7 @@ trait SparkGraphLoading {
       }
 
       override def session = sparkSession
-      override def globals: GlobalsRegistry = context.globals
+      override def tokens = SparkCypherTokens(context.globals)
     }
   }
 

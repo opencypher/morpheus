@@ -30,7 +30,7 @@ class GlobalsExtractorTest extends TestSuiteImpl with Neo4jAstTestSupport {
     val (given, _) = parseQuery("MATCH (a:Person)-[r:KNOWS]->(b:Duck) RETURN a.name, r.since, b.quack")
     val actual = GlobalsExtractor(given)
     val expected = GlobalsRegistry
-      .none
+      .empty
       .withLabel(Label("Duck"))
       .withLabel(Label("Person"))
       .withRelType(RelType("KNOWS"))
@@ -44,7 +44,7 @@ class GlobalsExtractorTest extends TestSuiteImpl with Neo4jAstTestSupport {
   test("collect parameters") {
     val (given, _) = parseQuery("WITH $param AS p RETURN p, $another")
     val actual = GlobalsExtractor(given)
-    val expected = GlobalsRegistry.none.withConstant(Constant("param")).withConstant(Constant("another"))
+    val expected = GlobalsRegistry.empty.withConstant(Constant("param")).withConstant(Constant("another"))
 
     actual should equal(expected)
   }

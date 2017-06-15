@@ -5,7 +5,7 @@ import org.opencypher.spark.impl.syntax.register._
 import org.opencypher.spark.impl.util.RefCollection
 
 object GlobalsRegistry {
-  val none = GlobalsRegistry(
+  val empty = GlobalsRegistry(
     labels = RefCollection.empty[Label],
     relTypes = RefCollection.empty[RelType],
     propertyKeys = RefCollection.empty[PropertyKey],
@@ -14,7 +14,7 @@ object GlobalsRegistry {
 
   def fromSchema(verified: VerifiedSchema): GlobalsRegistry = {
     val schema = verified.schema
-    val withLabels = schema.labels.foldLeft(GlobalsRegistry.none) { case (acc, l) => acc.withLabel(Label(l)) }
+    val withLabels = schema.labels.foldLeft(GlobalsRegistry.empty) { case (acc, l) => acc.withLabel(Label(l)) }
     val withKeys = schema.keys.foldLeft(withLabels) { case (acc, name) => acc.withPropertyKey(PropertyKey(name)) }
     val withTypes = schema.relationshipTypes.foldLeft(withKeys) { case (acc, name) => acc.withRelType(RelType(name)) }
     withTypes

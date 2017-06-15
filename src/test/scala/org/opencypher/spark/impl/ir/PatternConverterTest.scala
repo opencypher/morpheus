@@ -93,7 +93,7 @@ class PatternConverterTest extends IrTestSuite {
     )
   }
 
-  val converter = new PatternConverter(GlobalsRegistry.none
+  val converter = new PatternConverter(GlobalsRegistry.empty
     .withLabel(Label("Person")).withLabel(Label("Dog"))
     .withRelType(RelType("KNOWS")).withRelType(RelType("LOVES")))
 

@@ -137,8 +137,8 @@ class LogicalPlannerTest extends IrTestSuite {
 
   private val producer = new LogicalPlanner
 
-  private def plan(ir: CypherQuery[Expr], globalsRegistry: GlobalsRegistry = GlobalsRegistry.none, schema: Schema = Schema.empty): LogicalOperator =
-    producer.process(ir)(LogicalPlannerContext(schema, globalsRegistry))
+  private def plan(ir: CypherQuery[Expr], globalsRegistry: GlobalsRegistry = GlobalsRegistry.empty, schema: Schema = Schema.empty): LogicalOperator =
+    producer.process(ir)(LogicalPlannerContext(schema))
 
   case class equalWithoutResult(plan: LogicalOperator) extends Matcher[LogicalOperator] {
     override def apply(left: LogicalOperator): MatchResult = {

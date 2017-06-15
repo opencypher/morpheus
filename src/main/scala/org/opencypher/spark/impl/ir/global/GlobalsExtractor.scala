@@ -7,7 +7,7 @@ import org.opencypher.spark.impl.typer.fromFrontendType
 
 object GlobalsExtractor {
 
-  def apply(expr: ast.ASTNode, tokens: GlobalsRegistry = GlobalsRegistry.none): GlobalsRegistry = {
+  def apply(expr: ast.ASTNode, tokens: GlobalsRegistry = GlobalsRegistry.empty): GlobalsRegistry = {
     expr.fold(tokens) {
       case ast.LabelName(name) => _.withLabel(Label(name))
       case ast.RelTypeName(name) => _.withRelType(RelType(name))

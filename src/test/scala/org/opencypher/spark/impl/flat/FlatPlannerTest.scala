@@ -27,7 +27,7 @@ class FlatPlannerTest extends TestSuiteImpl {
 
   import globals._
 
-  val mkLogical = new LogicalOperatorProducer(globals)
+  val mkLogical = new LogicalOperatorProducer
   val mkFlat = new FlatOperatorProducer()
   val flatPlanner = new FlatPlanner
 

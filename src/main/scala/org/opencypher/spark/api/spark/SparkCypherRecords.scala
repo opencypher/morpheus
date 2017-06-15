@@ -8,7 +8,7 @@ import org.opencypher.spark.impl.record.SparkCypherRecordHeader
 import org.opencypher.spark.impl.spark.SparkColumnName
 import org.opencypher.spark.impl.syntax.header._
 
-sealed abstract class SparkCypherRecords(initialHeader: RecordHeader, initialData: DataFrame)
+sealed abstract class SparkCypherRecords(tokens: SparkCypherTokens, initialHeader: RecordHeader, initialData: DataFrame)
                                         (implicit val space: SparkGraphSpace)
   extends CypherRecords with Serializable {
 
@@ -162,7 +162,7 @@ sealed abstract class SparkCypherRecords(initialHeader: RecordHeader, initialDat
 
 object SparkCypherRecords {
 
-  def create(initialDataFrame: DataFrame)(implicit graph: SparkGraphSpace): SparkCypherRecords = {
+  def create(initialDataFrame: DataFrame)(implicit graphSpace: SparkGraphSpace): SparkCypherRecords = {
     val initialHeader = SparkCypherRecordHeader.fromSparkStructType(initialDataFrame.schema)
     create(initialHeader, initialDataFrame)
   }
@@ -171,7 +171,7 @@ object SparkCypherRecords {
   : SparkCypherRecords = {
     if (initialDataFrame.sparkSession == graphSpace.session) {
       // TODO: Add header verification
-      new SparkCypherRecords(initialHeader, initialDataFrame) {}
+      new SparkCypherRecords(graphSpace.tokens, initialHeader, initialDataFrame) {}
     }
     else {
       throw new IllegalArgumentException("Import of a data frame not created in the same session as the graph space")

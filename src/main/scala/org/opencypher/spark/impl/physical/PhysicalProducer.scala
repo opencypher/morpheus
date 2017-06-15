@@ -12,7 +12,7 @@ import org.opencypher.spark.impl.spark.SparkColumnName
 import org.opencypher.spark.impl.syntax.transform._
 
 object RuntimeContext {
-  val empty = RuntimeContext(Map.empty, GlobalsRegistry.none)
+  val empty = RuntimeContext(Map.empty, GlobalsRegistry.empty)
 }
 
 case class RuntimeContext(constants: Map[ConstantRef, CypherValue], globals: GlobalsRegistry) {

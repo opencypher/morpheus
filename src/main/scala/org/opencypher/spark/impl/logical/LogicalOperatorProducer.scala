@@ -1,15 +1,14 @@
 package org.opencypher.spark.impl.logical
 
-import org.opencypher.spark.api.types._
 import org.opencypher.spark.api.expr._
-import org.opencypher.spark.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.api.ir.pattern.{EveryNode, EveryRelationship}
 import org.opencypher.spark.api.ir.{Field, SolvedQueryModel}
 import org.opencypher.spark.api.record.{ProjectedExpr, ProjectedField}
 import org.opencypher.spark.api.schema.Schema
+import org.opencypher.spark.api.types._
 import org.opencypher.spark.impl.util._
 
-class LogicalOperatorProducer(globals: GlobalsRegistry) {
+class LogicalOperatorProducer {
 
   def planTargetExpand(source: Field, rel: Field, target: Field, sourcePlan: LogicalOperator, targetPlan: LogicalOperator): ExpandTarget = {
     val prevSolved = sourcePlan.solved ++ targetPlan.solved

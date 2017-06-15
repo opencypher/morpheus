@@ -28,7 +28,7 @@ class GlobalRegistryTest extends TestSuiteImpl {
 
   test("token definition") {
     GlobalsRegistry
-      .none
+      .empty
       .withLabel(Label("Person"))
       .withLabel(Label("Employee"))
       .withRelType(RelType("KNOWS"))
@@ -37,7 +37,7 @@ class GlobalRegistryTest extends TestSuiteImpl {
 
   test("token definition is idempotent") {
     GlobalsRegistry
-      .none
+      .empty
       .withLabel(Label("Person"))
       .withLabel(Label("Person"))
       .withLabel(Label("Employee"))

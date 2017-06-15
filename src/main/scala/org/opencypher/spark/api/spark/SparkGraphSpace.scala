@@ -10,6 +10,9 @@ trait SparkGraphSpace extends GraphSpace {
   override type Graph = SparkCypherGraph
   override type Records = SparkCypherRecords
 
+  // TODO: Remove
+  def tokens: SparkCypherTokens
+
   def session: SparkSession
 }
 

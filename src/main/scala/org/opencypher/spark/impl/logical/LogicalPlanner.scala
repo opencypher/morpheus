@@ -11,13 +11,11 @@ import org.opencypher.spark.impl.DirectCompilationStage
 
 import scala.annotation.tailrec
 
-final case class LogicalPlannerContext(schema: Schema, tokens: GlobalsRegistry) {
-  val producer = new LogicalOperatorProducer(tokens)
-}
+final case class LogicalPlannerContext(schema: Schema)
 
 class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOperator, LogicalPlannerContext] {
 
-  private def producer(implicit context: LogicalPlannerContext) = context.producer
+  val producer = new LogicalOperatorProducer
 
   override def process(ir: CypherQuery[Expr])(implicit context: LogicalPlannerContext): LogicalOperator = {
     val model = ir.model
