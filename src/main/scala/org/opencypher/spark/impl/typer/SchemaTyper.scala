@@ -151,6 +151,22 @@ object SchemaTyper {
         }
       } yield result
 
+    // TODO: code is identical to the previous case
+    case LessThanOrEqual(lhs, rhs) =>
+      for {
+        lhsType <- process[R](lhs)
+        rhsType <- process[R](rhs)
+        result <- {
+          val resultType = (lhsType, rhsType) match {
+            case (CTInteger, CTFloat) => CTBoolean
+            case (CTFloat, CTInteger) => CTBoolean
+            case (x, y) if !x.couldBeSameTypeAs(y) => CTVoid
+            case _ => CTBoolean
+          }
+          recordTypes(lhs -> lhsType, rhs -> rhsType) >> recordAndUpdate(expr -> resultType)
+        }
+      } yield result
+
     case In(lhs, rhs) =>
       for {
         lhsType <- process[R](lhs)

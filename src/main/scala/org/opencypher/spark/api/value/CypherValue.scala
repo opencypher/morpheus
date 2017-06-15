@@ -33,7 +33,7 @@ sealed trait CypherValueCompanion[V <: CypherValue] extends Equiv[V] {
   // Scala value representation of this cypher value
   def contents(v: V): Option[Any]
 
-  def isComparable(v: V): Boolean = isNull(v)
+  def isIncomparable(v: V): Boolean = isNull(v)
   final def isNull(v: V): Boolean = v == null
 
   // Values in the same order group are ordered (sorted) together by orderability
@@ -46,9 +46,9 @@ sealed trait CypherValueCompanion[V <: CypherValue] extends Equiv[V] {
   // Cypher equality
   def equal(l: V, r: V): Ternary = {
     if (l eq r) {
-      if (isComparable(l)) Maybe else True
+      if (isIncomparable(l)) Maybe else True
     } else {
-      if (isComparable(l) || isComparable(r))
+      if (isIncomparable(l) || isIncomparable(r))
         Maybe
       else {
         val xGroup = orderGroup(l)
@@ -78,9 +78,9 @@ sealed trait CypherValueCompanion[V <: CypherValue] extends Equiv[V] {
   def comparability(x: V, y: V): Option[Int] = {
     // This is not a partial order (it is not reflexive!)
     if (x eq y) {
-      if (isComparable(x)) None else Some(0)
+      if (isIncomparable(x)) None else Some(0)
     } else {
-      if (isComparable(x) || isComparable(y))
+      if (isIncomparable(x) || isIncomparable(y))
         None
       else {
         val xGroup = orderGroup(x)
@@ -404,7 +404,7 @@ case object CypherList extends CypherValueCompanion[CypherList] {
     unapply(value)
 
 
-  override def isComparable(v: CypherList): Boolean =
+  override def isIncomparable(v: CypherList): Boolean =
     isNull(v) || v.cachedContainsNull
 
   override protected[value] def computeOrderability(l: CypherList, r: CypherList): Int =
@@ -425,7 +425,7 @@ final class CypherList(private[CypherList] val v: Seq[CypherValue])
 
   @transient
   private[CypherList] lazy val cachedContainsNull: Boolean =
-    v.exists(CypherValue.isComparable)
+    v.exists(CypherValue.isIncomparable)
 
   @transient
   private[CypherList] lazy val cachedElementType: CypherType =
@@ -469,7 +469,7 @@ sealed trait CypherMapCompanion[V <: CypherMap] extends CypherValueCompanion[V] 
   def properties(value: V): Option[Properties] =
     if (value == null) None else Some(value.properties)
 
-  override def isComparable(v: V): Boolean =
+  override def isIncomparable(v: V): Boolean =
     isNull(v) || v.cachedIsComparable
 }
 
@@ -519,7 +519,7 @@ sealed class CypherMap(protected[value] val properties: Properties)
 
   @transient
   protected[value] lazy val cachedIsComparable: Boolean =
-    properties.m.values.exists(CypherValue.isComparable)
+    properties.m.values.exists(CypherValue.isIncomparable)
 
   override def hashCode(): Int = properties.hashCode()
 
@@ -583,7 +583,7 @@ case object CypherEntityCompanion extends CypherEntityCompanion[CypherEntityValu
 
 sealed trait CypherEntityCompanion[V <: CypherEntityValue] extends CypherMapCompanion[V] {
 
-  override def isComparable(v: V): Boolean = isNull(v)
+  override def isIncomparable(v: V): Boolean = isNull(v)
 
   override def contents(value: V): Option[(EntityId, EntityData)]
 

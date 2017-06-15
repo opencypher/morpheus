@@ -8,6 +8,7 @@ import org.opencypher.spark.api.value.CypherValue.Conversion._
 object RowUtils {
   implicit class CypherRow(r: Row) {
     def getCypherValue[T <: CypherType](index: Int, cypherType: T): CypherValue = cypherType.material match {
+      case _ if r.isNullAt(index) => null
       case CTBoolean => cypherBoolean(r.getBoolean(index))
       case CTInteger => cypherInteger(r.getLong(index))
       case CTString => cypherString(r.getString(index))

@@ -13,10 +13,18 @@ class SparkCypherRecordsAcceptanceTest extends TestSuiteImpl with TestSession.Fi
 
   test("less than") {
     // When
-    val result = smallSpace.base.cypher("MATCH (a:User)-[r:ATTENDED]->() WHERE r.guests < a.id  RETURN a.id")
+    val result = fullSpace.base.cypher("MATCH (n:User)-[r:POSTED]->(c:Content) WHERE n.reputation < c.comment_count RETURN n.id")
 
     // Then
-    result.records shouldHaveSize 4832 andContain 116765532
+    result.records shouldHaveSize 23 andContain 5040231
+  }
+
+  test("less than or equal") {
+    // When
+    val result = fullSpace.base.cypher("MATCH (n:User)-[r:POSTED]->(c:Content) WHERE n.reputation <= c.comment_count RETURN n.id")
+
+    // Then
+    result.records shouldHaveSize 36 andContain 5040231
   }
 
   test("subtraction") {

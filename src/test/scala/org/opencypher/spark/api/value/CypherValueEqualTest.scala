@@ -50,7 +50,7 @@ class CypherValueEqualTest extends CypherValueTestSuite {
   def verifyEqual[V <: CypherValue : CypherValueCompanion](valueGroups: ValueGroups[V]): Unit = {
     val values = valueGroups.flatten
 
-    values.foreach { v => equal[V](v, v) should be(if (companion[V].isComparable(v)) Maybe else True) }
+    values.foreach { v => equal[V](v, v) should be(if (companion[V].isIncomparable(v)) Maybe else True) }
     values.foreach { v => equal[V](cypherNull, v) should be(Maybe) }
     values.foreach { v => equal[V](v, cypherNull) should be(Maybe) }
 
@@ -58,7 +58,7 @@ class CypherValueEqualTest extends CypherValueTestSuite {
 
     values.foreach { v1 =>
       values.foreach { v2 =>
-        if (companion[V].isComparable(v1) || companion[V].isComparable(v2))
+        if (companion[V].isIncomparable(v1) || companion[V].isIncomparable(v2))
           equal[V](v1, v2) should be(Maybe)
         else {
           equal[V](v1, v2) should be(Ternary(v1 == v2))

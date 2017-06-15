@@ -27,6 +27,7 @@ trait SparkCypherRecordsInstances extends Serializable {
         val rhs = context.constants(context.globals.constantRef(c.constant))
 
         Some(lhs == rhs)
+
       case LessThan(lhs, rhs) =>
         val leftSlot = header.slotsFor(lhs).head
         val rightSlot = header.slotsFor(rhs).head
@@ -34,6 +35,15 @@ trait SparkCypherRecordsInstances extends Serializable {
         val rightValue = row.getCypherValue(rightSlot.index, rightSlot.content.cypherType)
 
         leftValue < rightValue
+
+      case LessThanOrEqual(lhs, rhs) =>
+        val leftSlot = header.slotsFor(lhs).head
+        val rightSlot = header.slotsFor(rhs).head
+        val leftValue = row.getCypherValue(leftSlot.index, leftSlot.content.cypherType)
+        val rightValue = row.getCypherValue(rightSlot.index, rightSlot.content.cypherType)
+
+        leftValue <= rightValue
+
       case x =>
         throw new NotImplementedError(s"Predicate $x not yet supported")
     }
