@@ -2,6 +2,7 @@ package org.opencypher.spark.api.spark
 
 import org.apache.spark.sql.SparkSession
 import org.opencypher.spark.api.graph.GraphSpace
+import org.opencypher.spark.impl.record.SparkCypherRecordsTokens
 import org.opencypher.spark.impl.spark.SparkGraphLoading
 
 trait SparkGraphSpace extends GraphSpace {
@@ -11,7 +12,7 @@ trait SparkGraphSpace extends GraphSpace {
   override type Records = SparkCypherRecords
 
   // TODO: Remove
-  def tokens: SparkCypherTokens
+  def tokens: SparkCypherRecordsTokens
 
   def session: SparkSession
 }

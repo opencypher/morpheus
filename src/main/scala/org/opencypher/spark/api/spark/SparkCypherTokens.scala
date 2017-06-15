@@ -1,20 +1,29 @@
 package org.opencypher.spark.api.spark
 
 import org.opencypher.spark.api.ir.global._
+import org.opencypher.spark.impl.record.SparkCypherRecordsTokens
 
 // Lightweight wrapper around token registry to expose a simple lookup api for all tokens that may occur in a data frame
-final case class SparkCypherTokens(registry: TokenRegistry) {
+trait SparkCypherTokens {
 
-  def labelName(id: Int): String = registry.label(LabelRef(id)).name
-  def labelId(name: String): Int = registry.labelRefByName(name).id
+  self: Serializable =>
 
-  def relTypeName(id: Int): String = registry.relType(RelTypeRef(id)).name
-  def relTypeId(name: String): Int = registry.relTypeRefByName(name).id
+  type Tokens <: SparkCypherTokens
 
-  def withLabel(name: String) = copy(registry = registry.withLabel(Label(name)))
-  def withRelType(name: String) = copy(registry = registry.withRelType(RelType(name)))
+  def labels: Set[String]
+  def relTypes: Set[String]
+
+  def labelName(id: Int): String
+  def labelId(name: String): Int
+
+  def relTypeName(id: Int): String
+  def relTypeId(name: String): Int
+
+  def withLabel(name: String): Tokens
+  def withRelType(name: String): Tokens
 }
 
+
 object SparkCypherTokens {
-  val empty = SparkCypherTokens(TokenRegistry.empty)
+  val empty = SparkCypherRecordsTokens(TokenRegistry.empty)
 }
