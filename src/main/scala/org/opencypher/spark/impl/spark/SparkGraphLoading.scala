@@ -53,19 +53,6 @@ trait SparkGraphLoading {
     completeSchema.verify
   }
 
-  private def typeOf(v: AnyRef): CypherType = {
-    val t = v match {
-      case null => CTVoid
-      case _: String => CTString
-      case _: java.lang.Long => CTInteger
-      case _: java.lang.Double => CTFloat
-      case _: java.lang.Boolean => CTBoolean
-      case x => throw new IllegalArgumentException(s"Expected a Cypher value, but was $x")
-    }
-
-    t.nullable
-  }
-
   def fromNeo4j(nodeQuery: String, relQuery: String)
                (implicit sc: SparkSession): SparkGraphSpace =
     fromNeo4j(nodeQuery, relQuery, "source", "rel", "target", None)

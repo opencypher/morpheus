@@ -5,11 +5,13 @@ import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import org.opencypher.spark.api.expr.{Expr, HasLabel, Property, Var}
 import org.opencypher.spark.api.ir.QueryModel
 import org.opencypher.spark.api.ir.global.GlobalsRegistry
-import org.opencypher.spark.api.record.{OpaqueField, ProjectedExpr, RecordHeader}
+import org.opencypher.spark.api.record.{FieldSlotContent, OpaqueField, ProjectedExpr, RecordHeader}
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkGraphSpace}
-import org.opencypher.spark.api.types.{CTBoolean, CTNode, CTString}
+import org.opencypher.spark.api.types.{CTBoolean, CTNode, CTString, _}
+import org.opencypher.spark.api.value.{CypherString, CypherValue}
 import org.opencypher.spark.impl.instances.spark.cypher._
+import org.opencypher.spark.impl.physical.RuntimeContext
 import org.opencypher.spark.impl.spark.SparkColumnName
 import org.opencypher.spark.impl.syntax.cypher._
 import org.opencypher.spark.impl.syntax.header._
@@ -31,8 +33,8 @@ class ExpressionAcceptanceTest extends TestSuiteImpl with TestSession.Fixture {
     val result = graph.cypher("MATCH (p:Person) RETURN p.name")
 
     result.records.toMaps should equal(Set(
-      Map("p.name" -> "Mats"),
-      Map("p.name" -> "Martin")
+      Map("p.name" -> CypherString("Mats")),
+      Map("p.name" -> CypherString("Martin"))
     ))
     result.graph shouldMatch theGraph
   }
@@ -67,8 +69,17 @@ class ExpressionAcceptanceTest extends TestSuiteImpl with TestSession.Fixture {
       self =>
 
       override val schema: Schema = {
-        Schema.empty.withNodeKeys("Person")("name" -> CTString)
+        val labelAndProps = queryGraph.getVertices.asScala.map { v =>
+          v.getLabel -> v.getProperties.asScala.map {
+            case (name, prop) => name -> typeOf(prop)
+          }
+        }
+
+        labelAndProps.foldLeft(Schema.empty) {
+          case (acc, (label, props)) => acc.withNodeKeys(label)(props.toSeq: _*)
+        }
       }
+
       override val space: SparkGraphSpace = new SparkGraphSpace {
         override val session: SparkSession = _session
         override val globals: GlobalsRegistry = GlobalsRegistry.fromSchema(schema)
@@ -80,8 +91,8 @@ class ExpressionAcceptanceTest extends TestSuiteImpl with TestSession.Fixture {
       override def nodes(v: Var): SparkCypherRecords = new SparkCypherRecords {
 
         private val contents = Seq(OpaqueField(v),
-          ProjectedExpr(HasLabel(v, space.globals.label("Person"))(CTBoolean)),
-          ProjectedExpr(Property(v, space.globals.propertyKey("name"))(CTString)))
+          ProjectedExpr(HasLabel(v, space.globals.labelByName("Person"))(CTBoolean)),
+          ProjectedExpr(Property(v, space.globals.propertyKeyByName("name"))(CTString)))
 
         private def computeLabel(v: Vertex, labelToConsider: String): Boolean = v.getLabel == labelToConsider
 
@@ -102,11 +113,18 @@ class ExpressionAcceptanceTest extends TestSuiteImpl with TestSession.Fixture {
     }
   }
 
+  import org.opencypher.spark.impl.instances.spark.RowUtils._
+
+  implicit val context = RuntimeContext(Map.empty, GlobalsRegistry.none)
+
   implicit class RichRecords(records: SparkCypherRecords) {
-    def toMaps: Set[Map[String, Any]] = {
+    def toMaps: Set[Map[String, CypherValue]] = {
       records.toDF().collect().map { r =>
-        records.header.fields.toIndexedSeq.zipWithIndex.map {
-          case (v, idx) => v.name -> r.get(idx)
+        records.header.slots.map { s =>
+          s.content match {
+            case f: FieldSlotContent => f.field.name -> r.getCypherValue(f.key, records.header)
+            case x => x.key.withoutType -> r.getCypherValue(x.key, records.header)
+          }
         }.toMap
       }.toSet
     }
