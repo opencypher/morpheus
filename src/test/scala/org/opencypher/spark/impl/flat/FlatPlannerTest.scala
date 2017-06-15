@@ -20,6 +20,8 @@ class FlatPlannerTest extends TestSuiteImpl {
     .withRelationshipKeys("KNOWS")("since" -> CTString)
     .withRelationshipKeys("FOO")("bar" -> CTBoolean)
 
+  schema.verify
+
   val globals = GlobalsRegistry.fromSchema(schema)
 
   implicit val context = FlatPlannerContext(schema, globals)

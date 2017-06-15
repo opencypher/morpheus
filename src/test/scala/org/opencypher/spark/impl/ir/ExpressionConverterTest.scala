@@ -37,7 +37,7 @@ class ExpressionConverterTest extends TestSuiteImpl with Neo4jAstTestSupport {
       LessThan(Var("a")(), Var("b")())()
     )
   }
-  
+
   test("subtract") {
     convert("a - b") should equal(
       Subtract(Var("a")(), Var("b")())()

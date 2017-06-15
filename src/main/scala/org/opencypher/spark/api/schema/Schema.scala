@@ -15,34 +15,33 @@ object Schema {
     optionalLabels = OptionalLabels(Set.empty)
   )
 
-  val conflictSet = mutable.Set.empty[String]
-
   implicit def verifySchema(schema: Schema): VerifiedSchema = schema.verify
 }
 
 object PropertyKeyMap {
-  val empty = PropertyKeyMap(Map.empty)
+  val empty = PropertyKeyMap(Map.empty)()
 }
 
-final case class PropertyKeyMap(m: Map[String, Map[String, CypherType]]) {
+final case class PropertyKeyMap(m: Map[String, Map[String, CypherType]])(val conflicts: Set[String] = Set.empty) {
   def keysFor(classifier: String): Map[String, CypherType] = m.getOrElse(classifier, Map.empty)
   def withKeys(classifier: String, keys: Seq[(String, CypherType)]): PropertyKeyMap = {
     val oldKeys = m.getOrElse(classifier, Map.empty)
     val newKeys = keys.toMap
-    oldKeys.foreach {
+    val newConflicts = oldKeys.collect {
       case (k, t) =>
         newKeys.get(k) match {
           case Some(otherT) if t != otherT =>
-            Schema.conflictSet.add(s"Conflicting schema for '$classifier'! Key $k is $t but also ${newKeys(k)}")
-          case _ => // this is fine
+            Some(s"Conflicting schema for '$classifier'! Key '$k' has type $t but also has type ${newKeys(k)}")
+          case _ =>
+            None
         }
-    }
-    copy(m.updated(classifier, oldKeys ++ newKeys))
+    }.flatten.toSet
+    copy(m.updated(classifier, oldKeys ++ newKeys))(conflicts = conflicts ++ newConflicts)
   }
 
   def keys = m.values.flatMap(_.keySet).toSet
 
-  def ++(other: PropertyKeyMap) = copy(m ++ other.m)
+  def ++(other: PropertyKeyMap) = copy(m ++ other.m)(conflicts ++ other.conflicts)
 }
 
 case class ImpliedLabels(m: Map[String, Set[String]]) {
@@ -108,6 +107,8 @@ case class Schema(
 
   def keys = nodeKeyMap.keys ++ relKeyMap.keys
 
+  lazy val conflictSet = nodeKeyMap.conflicts ++ relKeyMap.conflicts
+
   /**
    * Returns the property schema for a given relationship type
    */
@@ -138,12 +139,10 @@ case class Schema(
     // (2) Use union types (and generally support them) for combined labels
     //
 
-    Schema.conflictSet.foreach { m =>
-      println(m)
+    if (conflictSet.nonEmpty) {
+      conflictSet.foreach(println)
+      throw new IllegalStateException(s"Schema invalid: $self")
     }
-
-    if (Schema.conflictSet.nonEmpty)
-      throw new IllegalStateException("Schema invalid")
 
     val coOccurringLabels =
       for (
