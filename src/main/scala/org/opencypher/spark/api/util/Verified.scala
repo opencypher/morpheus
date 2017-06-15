@@ -11,7 +11,7 @@ trait Verifiable {
 }
 
 trait Verified[+V] {
-  def subject: V
+  def v: V
 }
 
 object Verified {

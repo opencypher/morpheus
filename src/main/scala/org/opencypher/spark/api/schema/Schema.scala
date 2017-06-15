@@ -187,6 +187,6 @@ final case class Schema(
 }
 
 sealed trait VerifiedSchema extends Verified[Schema] {
-  final override def subject = schema
+  final override def v = schema
   def schema: Schema
 }

@@ -2,7 +2,6 @@ package org.opencypher.spark.api.record
 
 import org.opencypher.spark.TestSuiteImpl
 import org.opencypher.spark.api.exception.SparkCypherException
-import org.opencypher.spark.api.expr.Expr
 
 class EmbeddedEntityTest extends TestSuiteImpl {
 
@@ -23,7 +22,7 @@ class EmbeddedEntityTest extends TestSuiteImpl {
     )
 
     given should equal(actual)
-    show(given.slots) should equal("Seq((AGE,n.age :: ?), (YEARS,n.age :: ?), (id,n :: :Person:-Employee NODE), (is_emp,n:Employee :: BOOLEAN), (name,n.name :: ?))")
+    show(given) should equal("Seq((AGE,n.age :: ?), (YEARS,n.age :: ?), (id,n :: :Person:-Employee NODE), (is_emp,n:Employee :: BOOLEAN), (name,n.name :: ?))")
   }
 
   test("Construct embedded relationship with static type") {
@@ -43,7 +42,7 @@ class EmbeddedEntityTest extends TestSuiteImpl {
     )
 
     given should equal(actual)
-    show(given.slots) should equal("Seq((AGE,r.age :: ?), (YEARS,r.age :: ?), (dst,target(r :: :KNOWS RELATIONSHIP)), (name,r.name :: ?), (r,r :: :KNOWS RELATIONSHIP), (src,source(r :: :KNOWS RELATIONSHIP)))")
+    show(given) should equal("Seq((AGE,r.age :: ?), (YEARS,r.age :: ?), (dst,target(r :: :KNOWS RELATIONSHIP)), (name,r.name :: ?), (r,r :: :KNOWS RELATIONSHIP), (src,source(r :: :KNOWS RELATIONSHIP)))")
   }
 
   test("Construct embedded relationship with dynamic type") {
@@ -63,22 +62,23 @@ class EmbeddedEntityTest extends TestSuiteImpl {
     )
 
     given should equal(actual)
-    show(given.slots) should equal("Seq((AGE,r.age :: ?), (YEARS,r.age :: ?), (dst,target(r :: :ADMIRES|IGNORES RELATIONSHIP)), (name,r.name :: ?), (r,r :: :ADMIRES|IGNORES RELATIONSHIP), (src,source(r :: :ADMIRES|IGNORES RELATIONSHIP)), (typ,type(r) :: STRING))")
+    show(given) should equal("Seq((AGE,r.age :: ?), (YEARS,r.age :: ?), (dst,target(r :: :ADMIRES|IGNORES RELATIONSHIP)), (name,r.name :: ?), (r,r :: :ADMIRES|IGNORES RELATIONSHIP), (src,source(r :: :ADMIRES|IGNORES RELATIONSHIP)), (typ,type(r) :: STRING))")
   }
 
     test("Refuses to use the same slot multiple times when constructing nodes") {
-      raisesSlotReUse(EmbeddedNode("n" -> "the_slot").build.withOptionalLabel("Person" -> "the_slot").slots)
-      raisesSlotReUse(EmbeddedNode("n" -> "the_slot").build.withProperty("a" -> "the_slot").slots)
+      raisesSlotReUse(EmbeddedNode("n" -> "the_slot").build.withOptionalLabel("Person" -> "the_slot").verify)
+      raisesSlotReUse(EmbeddedNode("n" -> "the_slot").build.withProperty("a" -> "the_slot").verify)
     }
 
     test("Refuses to use the same slot multiple times when constructing relationships") {
-      raisesSlotReUse(EmbeddedRelationship("r").from("r").to("b").relType("KNOWS").build.slots)
-      raisesSlotReUse(EmbeddedRelationship("r").from("a").to("r").relType("KNOWS").build.slots)
-      raisesSlotReUse(EmbeddedRelationship("r").from("a").to("b").relTypes("r", "KNOWS").build.slots)
-      raisesSlotReUse(EmbeddedRelationship("r" -> "the_slot").from("a").to("b").relType("KNOWS").build.withProperty("a" -> "the_slot").slots)
+      raisesSlotReUse(EmbeddedRelationship("r").from("r").to("b").relType("KNOWS").build.verify)
+      raisesSlotReUse(EmbeddedRelationship("r").from("a").to("r").relType("KNOWS").build.verify)
+      raisesSlotReUse(EmbeddedRelationship("r").from("a").to("b").relTypes("r", "KNOWS").build.verify)
+      raisesSlotReUse(EmbeddedRelationship("r" -> "the_slot").from("a").to("b").relType("KNOWS").build.withProperty("a" -> "the_slot").verify)
     }
 
-    private def show(slots: Map[String, Expr]) = {
+    private def show(entity: VerifiedEmbeddedEntity[_]) = {
+      val slots = entity.slots
       val result = slots.keys.toSeq.sorted.map(k => k -> slots(k)).mkString("Seq(", ", ", ")")
       // println(result)
       result
