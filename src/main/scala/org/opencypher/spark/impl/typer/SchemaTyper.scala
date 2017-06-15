@@ -136,10 +136,10 @@ object SchemaTyper {
         result <- recordTypes(lhs -> lhsType, rhs -> rhsType) >> recordAndUpdate(expr -> CTBoolean)
       } yield result
 
-    case LessThan(lhs, rhs) =>
+    case cmp: InequalityExpression =>
       for {
-        lhsType <- process[R](lhs)
-        rhsType <- process[R](rhs)
+        lhsType <- process[R](cmp.lhs)
+        rhsType <- process[R](cmp.rhs)
         result <- {
           val resultType = (lhsType, rhsType) match {
             case (CTInteger, CTFloat) => CTBoolean
@@ -147,23 +147,7 @@ object SchemaTyper {
             case (x, y) if !x.couldBeSameTypeAs(y) => CTVoid
             case _ => CTBoolean
           }
-          recordTypes(lhs -> lhsType, rhs -> rhsType) >> recordAndUpdate(expr -> resultType)
-        }
-      } yield result
-
-    // TODO: code is identical to the previous case
-    case LessThanOrEqual(lhs, rhs) =>
-      for {
-        lhsType <- process[R](lhs)
-        rhsType <- process[R](rhs)
-        result <- {
-          val resultType = (lhsType, rhsType) match {
-            case (CTInteger, CTFloat) => CTBoolean
-            case (CTFloat, CTInteger) => CTBoolean
-            case (x, y) if !x.couldBeSameTypeAs(y) => CTVoid
-            case _ => CTBoolean
-          }
-          recordTypes(lhs -> lhsType, rhs -> rhsType) >> recordAndUpdate(expr -> resultType)
+          recordTypes(cmp.lhs -> lhsType, cmp.rhs -> rhsType) >> recordAndUpdate(expr -> resultType)
         }
       } yield result
 

@@ -17,32 +17,15 @@ trait SparkCypherRecordsInstances extends Serializable {
    */
   case class cypherFilter(header: RecordHeader, expr: Expr)
                          (implicit context: RuntimeContext) extends (Row => Option[Boolean]) {
-    def apply(row: Row) = expr match {
+    def apply(row: Row): Option[Boolean] = expr match {
       case Equals(p: Property, c: Const) =>
-        val slot = header.slotsFor(p).headOption match {
-          case Some(s) => s
-          case None => throw new IllegalStateException(s"Expected to find $p in $header")
-        }
-        val lhs = row.getCypherValue(slot.index, slot.content.cypherType)
-        val rhs = context.constants(context.globals.constantRef(c.constant))
-
-        Some(lhs == rhs)
+        Some(row.getCypherValue(p, header) == row.getCypherValue(c, header))
 
       case LessThan(lhs, rhs) =>
-        val leftSlot = header.slotsFor(lhs).head
-        val rightSlot = header.slotsFor(rhs).head
-        val leftValue = row.getCypherValue(leftSlot.index, leftSlot.content.cypherType)
-        val rightValue = row.getCypherValue(rightSlot.index, rightSlot.content.cypherType)
-
-        leftValue < rightValue
+        row.getCypherValue(lhs, header) < row.getCypherValue(rhs, header)
 
       case LessThanOrEqual(lhs, rhs) =>
-        val leftSlot = header.slotsFor(lhs).head
-        val rightSlot = header.slotsFor(rhs).head
-        val leftValue = row.getCypherValue(leftSlot.index, leftSlot.content.cypherType)
-        val rightValue = row.getCypherValue(rightSlot.index, rightSlot.content.cypherType)
-
-        leftValue <= rightValue
+        row.getCypherValue(lhs, header) <= row.getCypherValue(rhs, header)
 
       case x =>
         throw new NotImplementedError(s"Predicate $x not yet supported")
