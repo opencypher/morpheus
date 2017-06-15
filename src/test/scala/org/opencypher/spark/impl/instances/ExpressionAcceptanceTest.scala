@@ -7,6 +7,52 @@ import org.opencypher.spark.{GraphMatchingTestSupport, TestSession, TestSuiteImp
 
 class ExpressionAcceptanceTest extends TestSuiteImpl with GraphMatchingTestSupport with TestSession.Fixture {
 
+  test("less than") {
+    // Given
+    val inputGraph = """(:Node {val: 4L})-->(:Node {val: 5L})"""
+
+    // When
+    val result = inputGraph.toGraph.cypher("MATCH (n:Node)-->(m:Node) WHERE n.val < m.val RETURN n.val")
+
+    // Then
+    result.records.toMaps should equal(Set(
+      Map("n.val" -> CypherInteger(4))
+    ))
+    // And
+    result.graph shouldMatch inputGraph
+  }
+
+  test("less than or equal") {
+    // Given
+    val inputGraph = """(:Node {id: 1L, val: 4L})-->(:Node {id: 2L, val: 5L})-->(:Node {id: 3L, val: 5L})"""
+
+    // When
+    val result = inputGraph.toGraph.cypher("MATCH (n:Node)-->(m:Node) WHERE n.val <= m.val RETURN n.id, n.val")
+
+    // Then
+    result.records.toMaps should equal(Set(
+      Map("n.id" -> CypherInteger(1), "n.val" -> CypherInteger(4)),
+      Map("n.id" -> CypherInteger(2), "n.val" -> CypherInteger(5))
+    ))
+    // And
+    result.graph shouldMatch inputGraph
+  }
+
+  test("subtraction") {
+    // Given
+    val inputGraph = """(:Node {val: 4L})-->(:Node {val: 5L})"""
+
+    // When
+    val result = inputGraph.toGraph.cypher("MATCH (n:Node)-->(m:Node) RETURN m.val - n.val AS res")
+
+    // Then
+    result.records.toMaps should equal(Set(
+      Map("res" -> CypherInteger(1))
+    ))
+    // And
+    result.graph shouldMatch inputGraph
+  }
+
   test("property expression") {
     val theGraph = """(:Person {name: "Mats"})-->(:Person {name: "Martin"})"""
 
@@ -33,6 +79,5 @@ class ExpressionAcceptanceTest extends TestSuiteImpl with GraphMatchingTestSuppo
     ))
     result.graph shouldMatch theGraph
   }
-
 }
 
