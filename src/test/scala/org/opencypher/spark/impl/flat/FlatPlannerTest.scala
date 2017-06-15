@@ -23,9 +23,10 @@ class FlatPlannerTest extends TestSuiteImpl {
 
   val globals = GlobalsRegistry.fromSchema(schema)
 
-  implicit val context = FlatPlannerContext(schema, globals)
+  implicit val context = FlatPlannerContext(schema, globals.tokens, globals.constants)
 
-  import globals._
+  import globals.tokens._
+  import globals.constants._
 
   val mkLogical = new LogicalOperatorProducer
   val mkFlat = new FlatOperatorProducer()

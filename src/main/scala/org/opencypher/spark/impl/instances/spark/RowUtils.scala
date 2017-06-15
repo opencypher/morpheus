@@ -14,7 +14,7 @@ object RowUtils {
   implicit class CypherRow(r: Row) {
     def getCypherValue(expr: Expr, header: RecordHeader)(implicit context: RuntimeContext): CypherValue = {
       expr match {
-        case c: Const => context.constants(context.globals.constantRef(c.constant))
+        case c: Const => context.parameters(context.constants.constantRef(c.constant))
         case _ =>
           header.slotsFor(expr).headOption match {
             case None => throw SparkCypherException(s"Did not find slot for $expr")

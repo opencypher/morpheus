@@ -14,7 +14,9 @@ class CypherQueryBuilderTest extends IrTestSuite {
 
   test("match node and return it") {
     "MATCH (a:Person) RETURN a".model.ensureThat { (model, globals) =>
-      import globals._
+
+      import globals.tokens._
+      import globals.constants._
 
       val loadRef = model.findExactlyOne {
         case NoWhereBlock(LoadGraphBlock(binds, DefaultGraph())) =>

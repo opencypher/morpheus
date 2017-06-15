@@ -7,7 +7,7 @@ import org.apache.spark.sql.{Row, SparkSession}
 import org.neo4j.driver.internal.{InternalNode, InternalRelationship}
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.QueryModel
-import org.opencypher.spark.api.ir.global.{GlobalsRegistry, PropertyKey}
+import org.opencypher.spark.api.ir.global.{GlobalsRegistry, PropertyKey, TokenRegistry}
 import org.opencypher.spark.api.record.{OpaqueField, ProjectedExpr, RecordHeader, SlotContent}
 import org.opencypher.spark.api.schema.{Schema, VerifiedSchema}
 import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherTokens, SparkGraphSpace}
@@ -82,7 +82,7 @@ trait SparkGraphLoading {
 
     val verified = maybeSchema.getOrElse(loadSchema(nodes, rels))
 
-    implicit val context = LoadingContext(verified.schema, GlobalsRegistry.fromSchema(verified))
+    implicit val context = LoadingContext(verified.schema, GlobalsRegistry(TokenRegistry.fromSchema(verified)))
 
     createSpace(nodes, rels, sourceNode, rel, targetNode)
   }
@@ -145,7 +145,7 @@ trait SparkGraphLoading {
       }
 
       override def session = sparkSession
-      override def tokens = SparkCypherTokens(context.globals)
+      override def tokens = SparkCypherTokens(context.globals.tokens)
     }
   }
 
@@ -153,10 +153,10 @@ trait SparkGraphLoading {
     val node = Var(in.name)(CTNode)
 
     val schema = context.schema
-    val globals = context.globals
+    val tokens = context.globals.tokens
 
     val labelFields = schema.labels.map { name =>
-      val label = HasLabel(node, globals.labelByName(name))(CTBoolean)
+      val label = HasLabel(node, tokens.labelByName(name))(CTBoolean)
       val slot = ProjectedExpr(label)
       val field = StructField(SparkColumnName.of(slot), BooleanType, nullable = false)
       slot -> field
@@ -164,7 +164,7 @@ trait SparkGraphLoading {
     val propertyFields = schema.labels.flatMap { l =>
       schema.nodeKeys(l).map {
         case (name, t) =>
-          val property = Property(node, globals.propertyKeyByName(name))(t)
+          val property = Property(node, tokens.propertyKeyByName(name))(t)
           val slot = ProjectedExpr(property)
           val field = StructField(SparkColumnName.of(slot), toSparkType(t), nullable = t.isNullable)
           slot -> field
@@ -180,12 +180,12 @@ trait SparkGraphLoading {
     val rel = Var(in.name)(CTRelationship)
 
     val schema = context.schema
-    val globals = context.globals
+    val tokens = context.globals.tokens
 
     val propertyFields = schema.relationshipTypes.flatMap { typ =>
       schema.relationshipKeys(typ).map {
         case (name, t) =>
-          val property = Property(rel, globals.propertyKeyByName(name))(t)
+          val property = Property(rel, tokens.propertyKeyByName(name))(t)
           val slot = ProjectedExpr(property)
           val field = StructField(SparkColumnName.of(slot), toSparkType(t), nullable = t.isNullable)
           slot -> field
@@ -244,7 +244,7 @@ trait SparkGraphLoading {
                              (implicit context: LoadingContext) extends (InternalRelationship => Row) {
     override def apply(importedRel: InternalRelationship): Row = {
       val graphSchema = context.schema
-      val globals = context.globals
+      val tokens = context.globals.tokens
 
       import scala.collection.JavaConverters._
 
@@ -269,7 +269,7 @@ trait SparkGraphLoading {
             importedRel.endNodeId()
 
           case _: TypeId =>
-            globals.relTypeRefByName(relType).id
+            tokens.relTypeRefByName(relType).id
 
           case _: Var =>
             importedRel.id()

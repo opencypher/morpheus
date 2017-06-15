@@ -93,9 +93,14 @@ class PatternConverterTest extends IrTestSuite {
     )
   }
 
-  val converter = new PatternConverter(GlobalsRegistry.empty
-    .withLabel(Label("Person")).withLabel(Label("Dog"))
-    .withRelType(RelType("KNOWS")).withRelType(RelType("LOVES")))
+  val converter = new PatternConverter(GlobalsRegistry(
+    TokenRegistry
+    .empty
+    .withLabel(Label("Person"))
+    .withLabel(Label("Dog"))
+    .withRelType(RelType("KNOWS"))
+    .withRelType(RelType("LOVES"))
+  ))
 
   def convert(p: ast.Pattern) = converter.convert(p)
 

@@ -29,7 +29,8 @@ class GlobalsExtractorTest extends TestSuiteImpl with Neo4jAstTestSupport {
   test("collect tokens") {
     val (given, _) = parseQuery("MATCH (a:Person)-[r:KNOWS]->(b:Duck) RETURN a.name, r.since, b.quack")
     val actual = GlobalsExtractor(given)
-    val expected = GlobalsRegistry
+    val expected = GlobalsRegistry(
+      TokenRegistry
       .empty
       .withLabel(Label("Duck"))
       .withLabel(Label("Person"))
@@ -37,6 +38,7 @@ class GlobalsExtractorTest extends TestSuiteImpl with Neo4jAstTestSupport {
       .withPropertyKey(PropertyKey("name"))
       .withPropertyKey(PropertyKey("since"))
       .withPropertyKey(PropertyKey("quack"))
+    )
 
     actual should equal(expected)
   }
@@ -44,7 +46,10 @@ class GlobalsExtractorTest extends TestSuiteImpl with Neo4jAstTestSupport {
   test("collect parameters") {
     val (given, _) = parseQuery("WITH $param AS p RETURN p, $another")
     val actual = GlobalsExtractor(given)
-    val expected = GlobalsRegistry.empty.withConstant(Constant("param")).withConstant(Constant("another"))
+    val expected = GlobalsRegistry(
+      TokenRegistry.empty,
+      ConstantRegistry.empty.withConstant(Constant("param")).withConstant(Constant("another"))
+    )
 
     actual should equal(expected)
   }
@@ -55,16 +60,16 @@ class GlobalsExtractorTest extends TestSuiteImpl with Neo4jAstTestSupport {
   }
 
   private case class GlobalsMatcher(registry: GlobalsRegistry) {
-    def shouldRegisterLabel(name: String) = registry.labelRefByName(name)
-    def shouldRegisterLabels(names: String*) = names.foreach(registry.labelRefByName)
+    def shouldRegisterLabel(name: String) = registry.tokens.labelRefByName(name)
+    def shouldRegisterLabels(names: String*) = names.foreach(registry.tokens.labelRefByName)
 
-    def shouldRegisterRelType(name: String) = registry.relTypeRefByName(name)
-    def shouldRegisterRelTypes(names: String*) = names.foreach(registry.relTypeRefByName)
+    def shouldRegisterRelType(name: String) = registry.tokens.relTypeRefByName(name)
+    def shouldRegisterRelTypes(names: String*) = names.foreach(registry.tokens.relTypeRefByName)
 
-    def shouldRegisterPropertyKey(name: String) = registry.propertyKeyRefByName(name)
-    def shouldRegisterPropertyKeys(names: String*) = names.foreach(registry.propertyKeyRefByName)
+    def shouldRegisterPropertyKey(name: String) = registry.tokens.propertyKeyRefByName(name)
+    def shouldRegisterPropertyKeys(names: String*) = names.foreach(registry.tokens.propertyKeyRefByName)
 
-    def shouldRegisterConstant(name: String) = registry.constantRefByName(name)
-    def shouldRegisterConstants(names: String*) = names.foreach(registry.constantRefByName)
+    def shouldRegisterConstant(name: String) = registry.constants.constantRefByName(name)
+    def shouldRegisterConstants(names: String*) = names.foreach(registry.constants.constantRefByName)
   }
 }

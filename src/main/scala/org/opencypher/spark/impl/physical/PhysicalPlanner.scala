@@ -1,17 +1,18 @@
 package org.opencypher.spark.impl.physical
 
 import org.opencypher.spark.api.expr._
-import org.opencypher.spark.api.ir.global.{ConstantRef, GlobalsRegistry}
+import org.opencypher.spark.api.ir.global.{ConstantRef, ConstantRegistry, TokenRegistry}
 import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherResult, SparkGraphSpace}
 import org.opencypher.spark.api.value.CypherValue
-import org.opencypher.spark.impl.{DirectCompilationStage, flat}
 import org.opencypher.spark.impl.flat.FlatOperator
 import org.opencypher.spark.impl.logical.DefaultGraphSource
+import org.opencypher.spark.impl.{DirectCompilationStage, flat}
 
 case class PhysicalPlannerContext(
   defaultGraph: SparkCypherGraph,
-  globals: GlobalsRegistry,
-  constants: Map[ConstantRef, CypherValue]) {
+  tokens: TokenRegistry,
+  constants: ConstantRegistry,
+  parameters: Map[ConstantRef, CypherValue]) {
 
   val space = defaultGraph.space
   val session = space.session
@@ -28,9 +29,9 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, SparkCypherRe
 
   def inner(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext): InternalResult = {
 
-    import context.globals
+    import context.tokens
 
-    val producer = new PhysicalProducer(RuntimeContext(context.constants, context.globals))
+    val producer = new PhysicalProducer(RuntimeContext(context.parameters, context.tokens, context.constants))
     import producer._
 
     flatPlan match {
@@ -65,7 +66,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, SparkCypherRe
 
         val g = lhs.graphs(op.inGraph.name)
         val relationships = g.relationships(rel)
-        val relRhs = InternalResult(relationships, lhs.graphs).typeFilter(rel, types.relTypes.map(globals.relTypeRef), relHeader)
+        val relRhs = InternalResult(relationships, lhs.graphs).typeFilter(rel, types.relTypes.map(tokens.relTypeRef), relHeader)
 
         val relAndTarget = relRhs.joinTarget(rhs).on(rel)(target)
         val expanded = lhs.expandSource(relAndTarget, header).on(source)(rel)

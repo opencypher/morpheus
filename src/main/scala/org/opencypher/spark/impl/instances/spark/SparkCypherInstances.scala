@@ -2,6 +2,7 @@ package org.opencypher.spark.impl.instances.spark
 
 import org.apache.spark.sql.DataFrame
 import org.opencypher.spark.api.classes.Cypher
+import org.opencypher.spark.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.api.spark._
 import org.opencypher.spark.api.value.CypherValue
 import org.opencypher.spark.impl.flat.{FlatPlanner, FlatPlannerContext}
@@ -27,15 +28,14 @@ trait SparkCypherInstances {
     private val physicalPlanner = new PhysicalPlanner()
     private val parser = CypherParser
 
-    override def cypher(graph: Graph, query: String, parameters: Map[String, CypherValue]): Result = {
+    override def cypher(graph: Graph, query: String, queryParameters: Map[String, CypherValue]): Result = {
       val (stmt, extractedLiterals) = parser.process(query)(CypherParser.defaultContext)
 
-      val globals = GlobalsExtractor(stmt, graph.space.tokens.globals)
+      val globals = GlobalsExtractor(stmt, GlobalsRegistry(graph.space.tokens.registry))
+      val GlobalsRegistry(tokens, constants) = globals
 
       val converted = extractedLiterals.mapValues(v => Converters.cypherValue(v))
-      val constants = (parameters ++ converted).map {
-        case (k, v) => globals.constantRefByName(k) -> v
-      }
+      val allParameters = (queryParameters ++ converted).map { case (k, v) => constants.constantRefByName(k) -> v }
 
       val paramsAndTypes = GlobalsExtractor.paramWithTypes(stmt)
 
@@ -50,14 +50,14 @@ trait SparkCypherInstances {
       // TODO: Remove dependency on globals (?) Only needed to enforce everything is known, that could be done
       //       differently
       print("Flat plan ... ")
-      val flatPlan = flatPlanner(logicalPlan)(FlatPlannerContext(graph.schema, globals))
+      val flatPlan = flatPlanner(logicalPlan)(FlatPlannerContext(graph.schema, tokens, constants))
       println("Done!")
 
       // TODO: It may be better to pass tokens around in the physical planner explicitly (via the records)
       //       instead of just using a single global tokens instance derived from the graph space
       //
       print("Physical plan ... ")
-      val physicalPlan = physicalPlanner(flatPlan)(PhysicalPlannerContext(graph, globals, constants))
+      val physicalPlan = physicalPlanner(flatPlan)(PhysicalPlannerContext(graph, tokens, constants, allParameters))
       println("Done!")
 
       physicalPlan

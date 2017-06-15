@@ -1,7 +1,7 @@
 package org.opencypher.spark.impl.physical
 
 import org.opencypher.spark.api.expr._
-import org.opencypher.spark.api.ir.global.{ConstantRef, GlobalsRegistry, RelTypeRef}
+import org.opencypher.spark.api.ir.global._
 import org.opencypher.spark.api.ir.pattern.{AnyGiven, EveryNode}
 import org.opencypher.spark.api.record._
 import org.opencypher.spark.api.types.{CTBoolean, CTNode}
@@ -12,10 +12,10 @@ import org.opencypher.spark.impl.spark.SparkColumnName
 import org.opencypher.spark.impl.syntax.transform._
 
 object RuntimeContext {
-  val empty = RuntimeContext(Map.empty, GlobalsRegistry.empty)
+  val empty = RuntimeContext(Map.empty, TokenRegistry.empty, ConstantRegistry.empty)
 }
 
-case class RuntimeContext(constants: Map[ConstantRef, CypherValue], globals: GlobalsRegistry) {
+case class RuntimeContext(parameters: Map[ConstantRef, CypherValue], tokens: TokenRegistry, constants: ConstantRegistry) {
   def columnName(slot: RecordSlot): String = SparkColumnName.of(slot)
   def columnName(content: SlotContent): String = SparkColumnName.of(content)
 }
@@ -58,7 +58,7 @@ class PhysicalProducer(context: RuntimeContext) {
     def typeFilter(rel: Var, types: AnyGiven[RelTypeRef], header: RecordHeader): InternalResult = {
       if (types.elts.isEmpty) prev
       else {
-        val typeExprs: Set[Expr] = types.elts.map { ref => HasType(rel, context.globals.relType(ref))(CTBoolean) }
+        val typeExprs: Set[Expr] = types.elts.map { ref => HasType(rel, context.tokens.relType(ref))(CTBoolean) }
         prev.mapRecords(_.filter(Ands(typeExprs), header))
       }
     }

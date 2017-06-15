@@ -33,7 +33,7 @@ object SparkSQLExprMapper {
         }
       }
     case HasType(rel, relType) =>
-      val relTypeId = context.globals.relTypeRef(relType).id
+      val relTypeId = context.tokens.relTypeRef(relType).id
       val idSlot = header.typeId(rel)
       Some(new Column(df.columns(idSlot.index)) === relTypeId)
     case h: HasLabel =>
