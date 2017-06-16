@@ -11,30 +11,6 @@ import scala.language.reflectiveCalls
 
 class SparkCypherRecordsAcceptanceTest extends TestSuiteImpl with TestSession.Fixture {
 
-  test("less than") {
-    // When
-    val result = fullSpace.base.cypher("MATCH (n:User)-[r:POSTED]->(c:Content) WHERE n.reputation < c.comment_count RETURN n.id")
-
-    // Then
-    result.records shouldHaveSize 23 andContain 5040231
-  }
-
-  test("less than or equal") {
-    // When
-    val result = fullSpace.base.cypher("MATCH (n:User)-[r:POSTED]->(c:Content) WHERE n.reputation <= c.comment_count RETURN n.id")
-
-    // Then
-    result.records shouldHaveSize 36 andContain 5040231
-  }
-
-  test("subtraction") {
-    // When
-    val result = smallSpace.base.cypher("MATCH (a:User)-[r:ATTENDED]->() RETURN a.id - r.guests")
-
-    // Then
-    result.records shouldHaveSize 4832 andContain 116765532
-  }
-
   test("label scan and project") {
     // When
     val result = smallSpace.base.cypher("MATCH (a:User) RETURN a.text")

@@ -20,6 +20,11 @@ object CypherType {
     val VoidOrderGroup = Value("VOID ODER GROUP")
   }
 
+  implicit val typeVectorMonoid = new Monoid[Vector[CypherType]] {
+    override def empty: Vector[CypherType] = Vector.empty
+    override def combine(x: Vector[CypherType], y: Vector[CypherType]): Vector[CypherType] = x ++ y
+  }
+
   implicit val joinMonoid: Monoid[CypherType] = new Monoid[CypherType] {
     override def empty: CypherType = CTVoid
 

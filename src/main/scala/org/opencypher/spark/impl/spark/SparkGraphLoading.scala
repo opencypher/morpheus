@@ -12,6 +12,7 @@ import org.opencypher.spark.api.record.{OpaqueField, ProjectedExpr, RecordHeader
 import org.opencypher.spark.api.schema.{Schema, VerifiedSchema}
 import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherTokens, SparkGraphSpace}
 import org.opencypher.spark.api.types._
+import org.opencypher.spark.impl.convert.{fromJavaType, toSparkType}
 import org.opencypher.spark.impl.record.SparkCypherRecordsTokens
 import org.opencypher.spark.impl.syntax.header._
 import org.opencypher.spark_legacy.benchmark.Converters.cypherValue
@@ -35,7 +36,7 @@ trait SparkGraphLoading {
           val withLabel = acc2.withNodeKeys(l)()
           next.asMap().asScala.foldLeft(withLabel) {
             case (acc3, (k, v)) =>
-              acc3.withNodeKeys(l)(k -> typeOf(v))
+              acc3.withNodeKeys(l)(k -> fromJavaType(v))
           }
       }
     }, _ ++ _)
@@ -46,24 +47,11 @@ trait SparkGraphLoading {
         val withType = acc.withRelationshipKeys(next.`type`())()
         next.asMap().asScala.foldLeft(withType) {
           case (acc3, (k, v)) =>
-            acc3.withRelationshipKeys(next.`type`())(k -> typeOf(v))
+            acc3.withRelationshipKeys(next.`type`())(k -> fromJavaType(v))
         }
     },  _ ++ _)
 
     completeSchema.verify
-  }
-
-  private def typeOf(v: AnyRef): CypherType = {
-    val t = v match {
-      case null => CTVoid
-      case _: String => CTString
-      case _: java.lang.Long => CTInteger
-      case _: java.lang.Double => CTFloat
-      case _: java.lang.Boolean => CTBoolean
-      case x => throw new IllegalArgumentException(s"Expected a Cypher value, but was $x")
-    }
-
-    t.nullable
   }
 
   def fromNeo4j(nodeQuery: String, relQuery: String)
@@ -167,7 +155,7 @@ trait SparkGraphLoading {
         case (name, t) =>
           val property = Property(node, tokens.propertyKeyByName(name))(t)
           val slot = ProjectedExpr(property)
-          val field = StructField(SparkColumnName.of(slot), toSparkType(t), nullable = t.isNullable)
+          val field = StructField(SparkColumnName.of(slot), toSparkType(t), nullable = true)
           slot -> field
       }
     }
@@ -188,7 +176,7 @@ trait SparkGraphLoading {
         case (name, t) =>
           val property = Property(rel, tokens.propertyKeyByName(name))(t)
           val slot = ProjectedExpr(property)
-          val field = StructField(SparkColumnName.of(slot), toSparkType(t), nullable = t.isNullable)
+          val field = StructField(SparkColumnName.of(slot), toSparkType(t), nullable = true)
           slot -> field
       }
     }

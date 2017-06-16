@@ -2,6 +2,7 @@ package org.opencypher.spark.impl.spark
 
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.opencypher.spark.api.record.{RecordHeader, RecordSlot}
+import org.opencypher.spark.impl.convert.toSparkType
 
 object SparkSchema {
   def from(header: RecordHeader): StructType = {

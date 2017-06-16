@@ -14,8 +14,7 @@ trait Cypher {
   type Result <: CypherResult { type Result = self.Result; type Graph = self.Graph; type Records = self.Records }
   type Data
 
-  final def cypher(graph: Graph, query: String): Result =
-    cypher(graph, query, Map.empty)
+  final def cypher(graph: Graph, query: String): Result = cypher(graph, query, Map.empty)
 
   def cypher(graph: Graph, query: String, parameters: Map[String, CypherValue]): Result
 }
