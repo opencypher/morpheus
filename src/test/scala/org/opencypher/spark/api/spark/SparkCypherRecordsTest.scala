@@ -26,7 +26,6 @@ class SparkCypherRecordsTest extends TestSuiteImpl with TestSession.Fixture {
         .verify
     )
 
-    // TODO: Do we really need to track negative label information?
     val entity = Var("n")(CTNode(Map("Person" -> true)))
 
     result.header.slots.map(_.content).toVector should equal(Vector(

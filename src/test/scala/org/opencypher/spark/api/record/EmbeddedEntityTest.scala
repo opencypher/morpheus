@@ -79,12 +79,11 @@ class EmbeddedEntityTest extends TestSuiteImpl {
 
     private def show(entity: VerifiedEmbeddedEntity[_]) = {
       val slots = entity.slots
-      val result = slots.keys.toSeq.sorted.map(k => k -> slots(k)).mkString("Seq(", ", ", ")")
-      // println(result)
-      result
+
+      slots.keys.toSeq.sorted.map(k => k -> slots(k)).mkString("Seq(", ", ", ")")
     }
 
     private def raisesSlotReUse[T](f: => T): Unit = {
-      an[SparkCypherException] should be thrownBy(f)
+      an[SparkCypherException] should be thrownBy f
     }
 }
