@@ -2,6 +2,7 @@ package org.opencypher.spark.api.spark
 
 import org.apache.spark.sql.SparkSession
 import org.opencypher.spark.api.graph.GraphSpace
+import org.opencypher.spark.api.ir.global.TokenRegistry
 import org.opencypher.spark.impl.record.SparkCypherRecordsTokens
 import org.opencypher.spark.impl.spark.SparkGraphLoading
 
@@ -17,4 +18,10 @@ trait SparkGraphSpace extends GraphSpace {
   def session: SparkSession
 }
 
-object SparkGraphSpace extends SparkGraphLoading with Serializable
+object SparkGraphSpace extends SparkGraphLoading with Serializable {
+  def empty(sparkSession: SparkSession, registry: TokenRegistry) = new SparkGraphSpace {
+    override def session: SparkSession = sparkSession
+    override def tokens: SparkCypherRecordsTokens = SparkCypherRecordsTokens(registry)
+    override def base: SparkCypherGraph = SparkCypherGraph.empty(this)
+  }
+}
