@@ -5,6 +5,7 @@ import java.util.Collections
 import org.apache.spark.sql.{Column, DataFrame, Row}
 import org.opencypher.spark.api.expr.{Property, Var}
 import org.opencypher.spark.api.record._
+import org.opencypher.spark.impl.convert.{fromSparkType, toSparkType}
 import org.opencypher.spark.impl.record.SparkCypherRecordHeader
 import org.opencypher.spark.impl.spark.SparkColumnName
 import org.opencypher.spark.impl.syntax.header._
@@ -191,15 +192,27 @@ object SparkCypherRecords {
   def create(initialHeader: RecordHeader, initialData: DataFrame)(implicit graphSpace: SparkGraphSpace)
   : SparkCypherRecords = {
     if (initialData.sparkSession == graphSpace.session) {
-      // TODO: Add header type verification
-      val oldColumns = initialData.columns.toSeq
-      if (oldColumns.toSet.size == oldColumns.size) {
-        val newColumns = initialHeader.internalHeader.columns
-        val newData = if (oldColumns == newColumns) initialData else initialData.toDF(newColumns: _*)
-        new SparkCypherRecords(graphSpace.tokens, initialHeader, newData) {}
-      } else {
+
+      // Ensure no duplicate columns in initialData
+      val initialDataColumns = initialData.columns.toSeq
+      if (initialDataColumns.size != initialDataColumns.distinct.size)
         throw new IllegalArgumentException("Cannot use data frames with duplicate column names")
+
+      // Correctly name columns in initialData
+      val columns = initialHeader.internalHeader.columns
+      val data = if (columns == initialDataColumns) initialData else initialData.toDF(columns: _*)
+
+      // Verify column types
+      initialHeader.slots.foreach { slot =>
+        val field = data.schema.fields(slot.index)
+        val cypherType = fromSparkType(field.dataType, field.nullable)
+        val headerType = slot.content.cypherType
+
+        if (toSparkType(headerType) != toSparkType(cypherType))
+          throw new IllegalArgumentException(s"Invalid data type for column ${field.name}. Expected at least $headerType but got conflicting $cypherType")
       }
+
+      new SparkCypherRecords(graphSpace.tokens, initialHeader, data) {}
     }
     else {
       throw new IllegalArgumentException("Import of a data frame not created in the same session as the graph space")

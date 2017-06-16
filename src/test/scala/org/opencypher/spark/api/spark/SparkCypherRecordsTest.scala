@@ -70,17 +70,17 @@ class SparkCypherRecordsTest extends TestSuiteImpl with TestSession.Fixture {
     )).toDF("ID", "FROM", "TO", "COLOR"))
 
     val result = given.contract(
-      EmbeddedRelationship("r" -> "ID").from("FROM").to("TO").relTypes("COLOR", "red", "blue", "green", "yellow").build
+      EmbeddedRelationship("r" -> "ID").from("FROM").to("TO").relTypes("COLOR", "RED", "BLUE", "GREEN", "YELLOW").build
     )
 
-    val entity = Var("r")(CTRelationship("red", "blue", "green", "yellow"))
+    val entity = Var("r")(CTRelationship("RED", "BLUE", "GREEN", "YELLOW"))
 
     // TODO: Use schema for determining more precise node types
     result.header.slots.map(_.content).toVector should equal(Vector(
       OpaqueField(entity),
       ProjectedExpr(StartNode(entity)(CTNode)),
       ProjectedExpr(EndNode(entity)(CTNode)),
-      ProjectedExpr(TypeId(entity)(CTRelationship("red", "blue", "green", "yellow")))
+      ProjectedExpr(TypeId(entity)(CTRelationship("RED", "BLUE", "GREEN", "YELLOW")))
     ))
   }
 }
