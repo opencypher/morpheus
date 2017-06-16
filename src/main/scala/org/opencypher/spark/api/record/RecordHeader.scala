@@ -1,8 +1,7 @@
 package org.opencypher.spark.api.record
 
-import cats.Monoid
 import org.opencypher.spark.api.expr._
-import org.opencypher.spark.api.ir.global.GlobalsRegistry
+import org.opencypher.spark.api.ir.global.TokenRegistry
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.types.{CTBoolean, CTInteger, CTNode, CypherType}
 import org.opencypher.spark.impl.record.InternalHeader
@@ -48,30 +47,25 @@ object RecordHeader {
     RecordHeader(contents.foldLeft(InternalHeader.empty) { case (header, slot) => header + slot })
 
   // TODO: Probably move this to an implicit class RichSchema?
-  private implicit val typeVectorMonoid = new Monoid[Vector[CypherType]] {
-    override def empty: Vector[CypherType] = Vector.empty
-    override def combine(x: Vector[CypherType], y: Vector[CypherType]): Vector[CypherType] = x ++ y
-  }
+  def nodeFromSchema(node: Var, schema: Schema, tokens: TokenRegistry): RecordHeader =
+    nodeFromSchema(node, schema, tokens, schema.labels)
 
-  def nodeFromSchema(node: Var, schema: Schema, globals: GlobalsRegistry): RecordHeader =
-    nodeFromSchema(node, schema, globals, schema.labels)
-
-  def nodeFromSchema(node: Var, schema: Schema, globals: GlobalsRegistry, labels: Set[String]): RecordHeader = {
+  def nodeFromSchema(node: Var, schema: Schema, tokens: TokenRegistry, labels: Set[String]): RecordHeader = {
     val impliedLabels = schema.impliedLabels.transitiveImplicationsFor(schema.labels)
     val impliedKeys = impliedLabels.flatMap(label => schema.nodeKeyMap.keysFor(label).toSet)
     val possibleLabels = impliedLabels.flatMap(label => schema.optionalLabels.combinationsFor(label))
     val optionalKeys = possibleLabels.flatMap(label => schema.nodeKeyMap.keysFor(label).toSet)
     val optionalNullableKeys = optionalKeys.map { case (k, v) => k -> v.nullable }
-    val allKeys = (impliedKeys ++ optionalNullableKeys).toSeq.map { case (k, v) => k -> Vector(v) }
-    val keyGroups = allKeys.groups[String, Vector[CypherType]]
+    val allKeys: Seq[(String, Vector[CypherType])] = (impliedKeys ++ optionalNullableKeys).toSeq.map { case (k, v) => k -> Vector(v) }
+    val keyGroups: Map[String, Vector[CypherType]] = allKeys.groups[String, Vector[CypherType]]
 
     val labelHeaderContents = (impliedLabels ++ possibleLabels).map {
-      labelName => ProjectedExpr(HasLabel(node, globals.labelByName(labelName))(CTBoolean))
+      labelName => ProjectedExpr(HasLabel(node, tokens.labelByName(labelName))(CTBoolean))
     }.toSeq
 
     // TODO: This should consider multiple types per property
     val keyHeaderContents = keyGroups.toSeq.flatMap {
-      case (k, types) => types.map { t => ProjectedExpr(Property(node, globals.propertyKeyByName(k))(t)) }
+      case (k, types) => types.map { t => ProjectedExpr(Property(node, tokens.propertyKeyByName(k))(t)) }
     }
 
     // TODO: Add is null column(?)
@@ -83,14 +77,14 @@ object RecordHeader {
     header
   }
 
-  def relationshipFromSchema(rel: Var, schema: Schema, globals: GlobalsRegistry): RecordHeader =
-    relationshipFromSchema(rel, schema, globals, schema.relationshipTypes)
+  def relationshipFromSchema(rel: Var, schema: Schema, tokens: TokenRegistry): RecordHeader =
+    relationshipFromSchema(rel, schema, tokens, schema.relationshipTypes)
 
-  def relationshipFromSchema(rel: Var, schema: Schema, globals: GlobalsRegistry, relTypes: Set[String]): RecordHeader = {
+  def relationshipFromSchema(rel: Var, schema: Schema, tokens: TokenRegistry, relTypes: Set[String]): RecordHeader = {
     val relKeyHeaderProperties = relTypes.flatMap(t => schema.relationshipKeys(t).toSeq)
 
     val relKeyHeaderContents = relKeyHeaderProperties.map {
-      case ((k, t)) => ProjectedExpr(Property(rel, globals.propertyKeyByName(k))(t))
+      case ((k, t)) => ProjectedExpr(Property(rel, tokens.propertyKeyByName(k))(t))
     }
 
     val startNode = ProjectedExpr(StartNode(rel)(CTNode))

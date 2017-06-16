@@ -1,16 +1,17 @@
 package org.opencypher.spark
 
-import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import org.apache.spark.sql.types.{StructField, StructType}
+import org.apache.spark.sql.{Row, SparkSession}
 import org.opencypher.spark.api.expr.{Expr, HasLabel, Property, Var}
 import org.opencypher.spark.api.ir.QueryModel
-import org.opencypher.spark.api.ir.global.GlobalsRegistry
+import org.opencypher.spark.api.ir.global.TokenRegistry
 import org.opencypher.spark.api.record.{FieldSlotContent, RecordHeader}
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkGraphSpace}
 import org.opencypher.spark.api.types.{CTNode, CTRelationship, typeOf}
 import org.opencypher.spark.api.value.CypherValue
 import org.opencypher.spark.impl.physical.RuntimeContext
+import org.opencypher.spark.impl.record.SparkCypherRecordsTokens
 import org.opencypher.spark.impl.spark.toSparkType
 import org.s1ck.gdl.GDLHandler
 import org.s1ck.gdl.model.Element
@@ -22,7 +23,8 @@ trait GraphMatchingTestSupport {
   self: TestSuiteImpl =>
 
   val DEFAULT_LABEL = "DEFAULT"
-  implicit val context = RuntimeContext(Map.empty, GlobalsRegistry.none)
+
+  implicit val context: RuntimeContext = RuntimeContext.empty
 
   implicit class GraphMatcher(graph: SparkCypherGraph) {
     def shouldMatch(gdl: String): Assertion = {
@@ -70,43 +72,17 @@ trait GraphMatchingTestSupport {
 
       override val space: SparkGraphSpace = new SparkGraphSpace {
         override val session: SparkSession = _session
-        override val globals: GlobalsRegistry = GlobalsRegistry.fromSchema(schema)
+        override val tokens: SparkCypherRecordsTokens = SparkCypherRecordsTokens(TokenRegistry.fromSchema(schema))
         override val base: SparkCypherGraph = {
           self
         }
       }
 
-      override def relationships(v: Var): SparkCypherRecords = new SparkCypherRecords {
-        override val header: RecordHeader = RecordHeader.relationshipFromSchema(v, schema, space.globals)
+      override def nodes(v: Var): SparkCypherRecords = {
 
-        override def data: DataFrame = {
-          val rels = queryGraph.getEdges.asScala.map { e =>
-            val staticFields = Seq(e.getSourceVertexId, e.getId, space.globals.relTypeRefByName(e.getLabel).id.toLong, e.getTargetVertexId)
+        val header = RecordHeader.nodeFromSchema(v, schema, space.tokens.registry)
 
-            val propertyFields = header.slots.slice(4, header.slots.size).map(_.content.key).map {
-              case Property(_, k) => e.getProperties.get(k.name)
-              case _ => throw new IllegalArgumentException("Only properties expected in the header")
-            }
-
-            Row(staticFields ++ propertyFields: _*)
-          }.toList.asJava
-
-
-          val fields = header.slots.map { s =>
-            StructField(context.columnName(s), toSparkType(s.content.cypherType))
-          }
-
-          val schema = StructType(fields)
-
-          _session.createDataFrame(rels, schema)
-        }
-      }
-
-      override def nodes(v: Var): SparkCypherRecords = new SparkCypherRecords {
-
-        override val header: RecordHeader = RecordHeader.nodeFromSchema(v, schema, space.globals)
-
-        override val data: DataFrame = {
+        val data = {
           val nodes = queryGraph.getVertices.asScala.map { v =>
             val exprs = header.slots.map(_.content.key)
             val labelFields: Seq[Boolean] = exprs.collect {
@@ -126,6 +102,36 @@ trait GraphMatchingTestSupport {
           val schema = StructType(fields)
           _session.createDataFrame(nodes, schema)
         }
+
+        SparkCypherRecords.create(header, data)(space)
+      }
+
+      override def relationships(v: Var): SparkCypherRecords = {
+
+        val header = RecordHeader.relationshipFromSchema(v, schema, space.tokens.registry)
+
+        val data = {
+          val rels = queryGraph.getEdges.asScala.map { e =>
+            val staticFields = Seq(e.getSourceVertexId, e.getId, space.tokens.registry.relTypeRefByName(e.getLabel).id.toLong, e.getTargetVertexId)
+
+            val propertyFields = header.slots.slice(4, header.slots.size).map(_.content.key).map {
+              case Property(_, k) => e.getProperties.get(k.name)
+              case _ => throw new IllegalArgumentException("Only properties expected in the header")
+            }
+
+            Row(staticFields ++ propertyFields: _*)
+          }.toList.asJava
+
+
+          val fields = header.slots.map { s =>
+            StructField(context.columnName(s), toSparkType(s.content.cypherType))
+          }
+
+          val schema = StructType(fields)
+
+          _session.createDataFrame(rels, schema)
+        }
+        SparkCypherRecords.create(header, data)(space)
       }
 
       override def model: QueryModel[Expr] = ???
