@@ -12,6 +12,7 @@ import org.opencypher.spark.api.record.{OpaqueField, ProjectedExpr, RecordHeader
 import org.opencypher.spark.api.schema.{Schema, VerifiedSchema}
 import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherTokens, SparkGraphSpace}
 import org.opencypher.spark.api.types._
+import org.opencypher.spark.impl.convert.{fromJavaType, toSparkType}
 import org.opencypher.spark.impl.record.SparkCypherRecordsTokens
 import org.opencypher.spark.impl.syntax.header._
 import org.opencypher.spark_legacy.benchmark.Converters.cypherValue

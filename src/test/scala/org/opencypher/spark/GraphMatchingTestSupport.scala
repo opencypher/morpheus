@@ -9,11 +9,11 @@ import org.opencypher.spark.api.ir.global.TokenRegistry
 import org.opencypher.spark.api.record.{FieldSlotContent, RecordHeader}
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherResult, SparkGraphSpace}
-import org.opencypher.spark.api.types.{CTNode, CTRelationship, fromJavaType}
+import org.opencypher.spark.api.types.{CTNode, CTRelationship}
 import org.opencypher.spark.api.value.{CypherMap, CypherValue}
+import org.opencypher.spark.impl.convert.{fromJavaType, toSparkType}
 import org.opencypher.spark.impl.physical.RuntimeContext
 import org.opencypher.spark.impl.record.SparkCypherRecordsTokens
-import org.opencypher.spark.impl.spark.toSparkType
 import org.s1ck.gdl.GDLHandler
 import org.s1ck.gdl.model.Element
 import org.scalatest.Assertion

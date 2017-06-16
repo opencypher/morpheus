@@ -3,7 +3,8 @@ package org.opencypher.spark.impl.record
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.opencypher.spark.api.expr.Var
 import org.opencypher.spark.api.record.{OpaqueField, RecordHeader, RecordSlot}
-import org.opencypher.spark.impl.spark.{SparkColumnName, fromSparkType, toSparkType}
+import org.opencypher.spark.impl.convert.{fromSparkType, toSparkType}
+import org.opencypher.spark.impl.spark.SparkColumnName
 
 object SparkCypherRecordHeader {
 
