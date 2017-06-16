@@ -62,28 +62,28 @@ class EmbeddedEntityTest extends TestSuiteImpl {
     )
 
     given should equal(actual)
-    show(given) should equal("Seq((AGE,r.age :: ?), (YEARS,r.age :: ?), (dst,target(r :: :ADMIRES|IGNORES RELATIONSHIP)), (name,r.name :: ?), (r,r :: :ADMIRES|IGNORES RELATIONSHIP), (src,source(r :: :ADMIRES|IGNORES RELATIONSHIP)), (typ,type(r) :: STRING))")
+    show(given) should equal("Seq((AGE,r.age :: ?), (YEARS,r.age :: ?), (dst,target(r :: :ADMIRES|IGNORES RELATIONSHIP)), (name,r.name :: ?), (r,r :: :ADMIRES|IGNORES RELATIONSHIP), (src,source(r :: :ADMIRES|IGNORES RELATIONSHIP)), (typ,type(r) :: INTEGER))")
   }
 
-    test("Refuses to use the same slot multiple times when constructing nodes") {
-      raisesSlotReUse(EmbeddedNode("n" -> "the_slot").build.withOptionalLabel("Person" -> "the_slot").verify)
-      raisesSlotReUse(EmbeddedNode("n" -> "the_slot").build.withProperty("a" -> "the_slot").verify)
-    }
+  test("Refuses to use the same slot multiple times when constructing nodes") {
+    raisesSlotReUse(EmbeddedNode("n" -> "the_slot").build.withOptionalLabel("Person" -> "the_slot").verify)
+    raisesSlotReUse(EmbeddedNode("n" -> "the_slot").build.withProperty("a" -> "the_slot").verify)
+  }
 
-    test("Refuses to use the same slot multiple times when constructing relationships") {
-      raisesSlotReUse(EmbeddedRelationship("r").from("r").to("b").relType("KNOWS").build.verify)
-      raisesSlotReUse(EmbeddedRelationship("r").from("a").to("r").relType("KNOWS").build.verify)
-      raisesSlotReUse(EmbeddedRelationship("r").from("a").to("b").relTypes("r", "KNOWS").build.verify)
-      raisesSlotReUse(EmbeddedRelationship("r" -> "the_slot").from("a").to("b").relType("KNOWS").build.withProperty("a" -> "the_slot").verify)
-    }
+  test("Refuses to use the same slot multiple times when constructing relationships") {
+    raisesSlotReUse(EmbeddedRelationship("r").from("r").to("b").relType("KNOWS").build.verify)
+    raisesSlotReUse(EmbeddedRelationship("r").from("a").to("r").relType("KNOWS").build.verify)
+    raisesSlotReUse(EmbeddedRelationship("r").from("a").to("b").relTypes("r", "KNOWS").build.verify)
+    raisesSlotReUse(EmbeddedRelationship("r" -> "the_slot").from("a").to("b").relType("KNOWS").build.withProperty("a" -> "the_slot").verify)
+  }
 
-    private def show(entity: VerifiedEmbeddedEntity[_]) = {
-      val slots = entity.slots
+  private def show(entity: VerifiedEmbeddedEntity[_]) = {
+    val slots = entity.slots
 
-      slots.keys.toSeq.sorted.map(k => k -> slots(k)).mkString("Seq(", ", ", ")")
-    }
+    slots.keys.toSeq.sorted.map(k => k -> slots(k)).mkString("Seq(", ", ", ")")
+  }
 
-    private def raisesSlotReUse[T](f: => T): Unit = {
-      an[SparkCypherException] should be thrownBy f
-    }
+  private def raisesSlotReUse[T](f: => T): Unit = {
+    an[SparkCypherException] should be thrownBy f
+  }
 }
