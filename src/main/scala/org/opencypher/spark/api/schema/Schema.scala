@@ -14,8 +14,6 @@ object Schema {
     impliedLabels = ImpliedLabels(Map.empty),
     optionalLabels = OptionalLabels(Set.empty)
   )
-
-  implicit def verifySchema(schema: Schema): VerifiedSchema = schema.verify
 }
 
 object PropertyKeyMap {
