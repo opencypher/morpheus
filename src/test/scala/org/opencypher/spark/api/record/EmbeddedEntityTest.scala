@@ -22,7 +22,7 @@ class EmbeddedEntityTest extends TestSuiteImpl {
     )
 
     given should equal(actual)
-    show(given) should equal("Seq((AGE,n.age :: ?), (YEARS,n.age :: ?), (id,n :: :Person:-Employee NODE), (is_emp,n:Employee :: BOOLEAN), (name,n.name :: ?))")
+    show(given) should equal("Seq((AGE,n.age :: ?), (YEARS,n.age :: ?), (id,n :: :Person NODE), (is_emp,n:Employee :: BOOLEAN), (name,n.name :: ?))")
   }
 
   test("Construct embedded relationship with static type") {

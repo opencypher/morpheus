@@ -52,7 +52,8 @@ final case class EmbeddedNode(
 
   override type Self = EmbeddedNode
 
-  override val entityVar = Var(entitySlot)(CTNode(labelsFromSlotOrImplied.mapValues(_.isEmpty)))
+  override val entityVar =
+    Var(entitySlot)(CTNode(labelsFromSlotOrImplied.collect { case (label, None) => label -> true }))
 
   override def verify: VerifiedSelf = new VerifiedEmbeddedEntity[EmbeddedNode] {
     override val v: EmbeddedNode = self
