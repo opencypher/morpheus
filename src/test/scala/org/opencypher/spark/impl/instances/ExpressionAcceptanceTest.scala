@@ -3,9 +3,9 @@ package org.opencypher.spark.impl.instances
 import org.opencypher.spark.api.value.{CypherInteger, CypherString}
 import org.opencypher.spark.impl.instances.spark.cypher._
 import org.opencypher.spark.impl.syntax.cypher._
-import org.opencypher.spark.{GraphMatchingTestSupport, TestSession, TestSuiteImpl}
+import org.opencypher.spark.{GraphMatchingTestSupport, TestSuiteImpl}
 
-class ExpressionAcceptanceTest extends TestSuiteImpl with GraphMatchingTestSupport with TestSession.Fixture {
+class ExpressionAcceptanceTest extends TestSuiteImpl with GraphMatchingTestSupport {
 
   test("less than") {
     // Given

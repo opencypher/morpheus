@@ -19,10 +19,11 @@ import org.scalatest.Assertion
 
 import scala.collection.JavaConverters._
 
-trait GraphMatchingTestSupport {
+trait GraphMatchingTestSupport extends TestSession.Fixture {
   self: TestSuiteImpl =>
 
   val DEFAULT_LABEL = "DEFAULT"
+  val sparkSession = session
 
   implicit val context: RuntimeContext = RuntimeContext.empty
 
@@ -44,7 +45,7 @@ trait GraphMatchingTestSupport {
     }
   }
 
-  implicit class RichString(pattern: String)(implicit _session: SparkSession) {
+  implicit class RichString(pattern: String) {
     private val queryGraph = new GDLHandler.Builder()
       .setDefaultEdgeLabel(DEFAULT_LABEL)
       .setDefaultVertexLabel(DEFAULT_LABEL)
@@ -71,7 +72,7 @@ trait GraphMatchingTestSupport {
       }
 
       override val space: SparkGraphSpace = new SparkGraphSpace {
-        override val session: SparkSession = _session
+        override val session: SparkSession = sparkSession
         override val tokens: SparkCypherRecordsTokens = SparkCypherRecordsTokens(TokenRegistry.fromSchema(schema))
         override val base: SparkCypherGraph = {
           self
@@ -99,8 +100,7 @@ trait GraphMatchingTestSupport {
             StructField(context.columnName(s), toSparkType(s.content.cypherType))
           }
 
-          val schema = StructType(fields)
-          _session.createDataFrame(nodes, schema)
+          sparkSession.createDataFrame(nodes, StructType(fields))
         }
 
         SparkCypherRecords.create(header, data)(space)
@@ -122,14 +122,11 @@ trait GraphMatchingTestSupport {
             Row(staticFields ++ propertyFields: _*)
           }.toList.asJava
 
-
           val fields = header.slots.map { s =>
             StructField(context.columnName(s), toSparkType(s.content.cypherType))
           }
 
-          val schema = StructType(fields)
-
-          _session.createDataFrame(rels, schema)
+          sparkSession.createDataFrame(rels, StructType(fields))
         }
         SparkCypherRecords.create(header, data)(space)
       }
@@ -138,7 +135,6 @@ trait GraphMatchingTestSupport {
       override def details: SparkCypherRecords = ???
     }
   }
-
 
   implicit class RichRecords(records: SparkCypherRecords) {
     import org.opencypher.spark.impl.instances.spark.RowUtils._
