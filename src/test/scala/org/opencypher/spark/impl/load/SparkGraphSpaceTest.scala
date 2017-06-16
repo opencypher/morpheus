@@ -24,7 +24,7 @@ class SparkGraphSpaceTest extends TestSuiteImpl with TestSession.Fixture {
     df.schema.fields.map(f => f.dataType -> f.nullable).toSet should equal(Set(
       LongType -> false,
       BooleanType -> false,
-      LongType -> false,
+      LongType -> true,
       StringType -> true,
       StringType -> true
     ))
@@ -42,7 +42,7 @@ class SparkGraphSpaceTest extends TestSuiteImpl with TestSession.Fixture {
     df.schema.fields.map(f => f.dataType -> f.nullable).toSet should equal(Set(
       LongType -> false,
       IntegerType -> false,
-      LongType -> false,
+      LongType -> true,
       StringType -> true
     ))
   }
