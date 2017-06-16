@@ -9,8 +9,8 @@ import org.opencypher.spark.api.ir.global.TokenRegistry
 import org.opencypher.spark.api.record.{FieldSlotContent, RecordHeader}
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherResult, SparkGraphSpace}
-import org.opencypher.spark.api.types.{CTNode, CTRelationship, typeOf}
-import org.opencypher.spark.api.value.CypherValue
+import org.opencypher.spark.api.types.{CTNode, CTRelationship, fromJavaType}
+import org.opencypher.spark.api.value.{CypherMap, CypherValue}
 import org.opencypher.spark.impl.physical.RuntimeContext
 import org.opencypher.spark.impl.record.SparkCypherRecordsTokens
 import org.opencypher.spark.impl.spark.toSparkType
@@ -62,7 +62,7 @@ trait GraphMatchingTestSupport extends TestSession.Fixture {
       self =>
 
       private def extractFromElement(e: Element) = e.getLabel -> e.getProperties.asScala.map {
-        case (name, prop) => name -> typeOf(prop)
+        case (name, prop) => name -> fromJavaType(prop)
       }
 
       override val schema: Schema = {

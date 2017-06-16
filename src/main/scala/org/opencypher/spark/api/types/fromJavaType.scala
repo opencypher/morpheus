@@ -1,9 +1,8 @@
-package org.opencypher.spark.api
+package org.opencypher.spark.api.types
 
-package object types {
+object fromJavaType extends Serializable {
 
-  // TODO: test this
-  def typeOf(v: AnyRef): CypherType = v match {
+  def apply(v: AnyRef): CypherType = v match {
     case null => CTVoid
     case _: String => CTString
     case _: java.lang.Integer => CTInteger

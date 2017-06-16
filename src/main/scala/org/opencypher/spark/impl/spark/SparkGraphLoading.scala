@@ -35,7 +35,7 @@ trait SparkGraphLoading {
           val withLabel = acc2.withNodeKeys(l)()
           next.asMap().asScala.foldLeft(withLabel) {
             case (acc3, (k, v)) =>
-              acc3.withNodeKeys(l)(k -> typeOf(v))
+              acc3.withNodeKeys(l)(k -> fromJavaType(v))
           }
       }
     }, _ ++ _)
@@ -46,7 +46,7 @@ trait SparkGraphLoading {
         val withType = acc.withRelationshipKeys(next.`type`())()
         next.asMap().asScala.foldLeft(withType) {
           case (acc3, (k, v)) =>
-            acc3.withRelationshipKeys(next.`type`())(k -> typeOf(v))
+            acc3.withRelationshipKeys(next.`type`())(k -> fromJavaType(v))
         }
     },  _ ++ _)
 
