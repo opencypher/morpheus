@@ -2,12 +2,13 @@ package org.opencypher.spark
 
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.apache.spark.sql.{Row, SparkSession}
+import org.opencypher.spark.api.classes.Cypher
 import org.opencypher.spark.api.expr.{Expr, HasLabel, Property, Var}
 import org.opencypher.spark.api.ir.QueryModel
 import org.opencypher.spark.api.ir.global.TokenRegistry
 import org.opencypher.spark.api.record.{FieldSlotContent, RecordHeader}
 import org.opencypher.spark.api.schema.Schema
-import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkGraphSpace}
+import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherResult, SparkGraphSpace}
 import org.opencypher.spark.api.types.{CTNode, CTRelationship, typeOf}
 import org.opencypher.spark.api.value.CypherValue
 import org.opencypher.spark.impl.physical.RuntimeContext
@@ -28,14 +29,9 @@ trait GraphMatchingTestSupport extends TestSession.Fixture {
   implicit val context: RuntimeContext = RuntimeContext.empty
 
   implicit class GraphMatcher(graph: SparkCypherGraph) {
-    def shouldMatch(gdl: String): Assertion = {
-      val expectedGraph = new GDLHandler.Builder()
-        .setDefaultEdgeLabel(DEFAULT_LABEL)
-        .setDefaultVertexLabel(DEFAULT_LABEL)
-        .buildFromString(gdl)
-
-      val expectedNodeIds = expectedGraph.getVertices.asScala.map(_.getId).toSet
-      val expectedRelIds = expectedGraph.getEdges.asScala.map(_.getId).toSet
+    def shouldMatch(expectedGraph: SparkCypherGraph): Assertion = {
+      val expectedNodeIds = expectedGraph.nodes(Var("n")(CTNode)).data.select("n").collect().map(_.getLong(0)).toSet
+      val expectedRelIds = expectedGraph.relationships(Var("r")(CTRelationship)).data.select("r").collect().map(_.getLong(0)).toSet
 
       val actualNodeIds = graph.nodes(Var("n")(CTNode)).data.select("n").collect().map(_.getLong(0)).toSet
       val actualRelIds = graph.relationships(Var("r")(CTRelationship)).data.select("r").collect().map(_.getLong(0)).toSet
@@ -45,13 +41,24 @@ trait GraphMatchingTestSupport extends TestSession.Fixture {
     }
   }
 
-  implicit class RichString(pattern: String) {
+  final case class TestGraph(gdl: String)(implicit sparkSession: SparkSession) {
+
     private val queryGraph = new GDLHandler.Builder()
       .setDefaultEdgeLabel(DEFAULT_LABEL)
       .setDefaultVertexLabel(DEFAULT_LABEL)
-      .buildFromString(pattern)
+      .buildFromString(gdl)
 
-    def toGraph: SparkCypherGraph = new SparkCypherGraph {
+    def cypher[C <: Cypher { type Graph = SparkCypherGraph; type Result = SparkCypherResult }]
+      (query: String)(implicit engine: C)
+    : SparkCypherResult =
+      engine.cypher(graph, query)
+
+    def cypher[C <: Cypher { type Graph = SparkCypherGraph; type Result = SparkCypherResult }]
+      (query: String, parameters: Map[String, CypherValue])(implicit engine: C)
+    : SparkCypherResult =
+      engine.cypher(graph, query, parameters)
+
+    lazy val graph: SparkCypherGraph = new SparkCypherGraph {
       self =>
 
       private def extractFromElement(e: Element) = e.getLabel -> e.getProperties.asScala.map {
