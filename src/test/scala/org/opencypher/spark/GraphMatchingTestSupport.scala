@@ -146,14 +146,15 @@ trait GraphMatchingTestSupport extends TestSession.Fixture {
   implicit class RichRecords(records: SparkCypherRecords) {
     import org.opencypher.spark.impl.instances.spark.RowUtils._
 
-    def toMaps: Set[Map[String, CypherValue]] = {
+    def toMaps: Set[CypherMap] = {
       records.toDF().collect().map { r =>
-        records.header.slots.map { s =>
+        val properties = records.header.slots.map { s =>
           s.content match {
             case f: FieldSlotContent => f.field.name -> r.getCypherValue(f.key, records.header)
             case x => x.key.withoutType -> r.getCypherValue(x.key, records.header)
           }
         }.toMap
+        CypherMap(properties)
       }.toSet
     }
   }

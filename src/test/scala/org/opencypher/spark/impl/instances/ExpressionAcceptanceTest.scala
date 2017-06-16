@@ -1,6 +1,6 @@
 package org.opencypher.spark.impl.instances
 
-import org.opencypher.spark.api.value.{CypherInteger, CypherString}
+import org.opencypher.spark.api.value.CypherMap
 import org.opencypher.spark.impl.instances.spark.cypher._
 import org.opencypher.spark.impl.syntax.cypher._
 import org.opencypher.spark.{GraphMatchingTestSupport, TestSuiteImpl}
@@ -18,7 +18,7 @@ class ExpressionAcceptanceTest extends TestSuiteImpl with GraphMatchingTestSuppo
 
     // Then
     result.records.toMaps should equal(Set(
-      Map("n.val" -> CypherInteger(4))
+      CypherMap("n.val" -> 4)
     ))
 
     // And
@@ -34,8 +34,8 @@ class ExpressionAcceptanceTest extends TestSuiteImpl with GraphMatchingTestSuppo
 
     // Then
     result.records.toMaps should equal(Set(
-      Map("n.id" -> CypherInteger(1), "n.val" -> CypherInteger(4)),
-      Map("n.id" -> CypherInteger(2), "n.val" -> CypherInteger(5))
+      CypherMap("n.id" -> 1, "n.val" -> 4),
+      CypherMap("n.id" -> 2, "n.val" -> 5)
     ))
     // And
     result.graph shouldMatch given.graph
@@ -50,7 +50,7 @@ class ExpressionAcceptanceTest extends TestSuiteImpl with GraphMatchingTestSuppo
 
     // Then
     result.records.toMaps should equal(Set(
-      Map("res" -> CypherInteger(1))
+      CypherMap("res" -> 1)
     ))
     // And
     result.graph shouldMatch given.graph
@@ -65,8 +65,8 @@ class ExpressionAcceptanceTest extends TestSuiteImpl with GraphMatchingTestSuppo
 
     // Then
     result.records.toMaps should equal(Set(
-      Map("p.name" -> CypherString("Mats")),
-      Map("p.name" -> CypherString("Martin"))
+      CypherMap("p.name" -> "Mats"),
+      CypherMap("p.name" -> "Martin")
     ))
 
     result.graph shouldMatch given.graph
@@ -81,7 +81,7 @@ class ExpressionAcceptanceTest extends TestSuiteImpl with GraphMatchingTestSuppo
 
     // Then
     result.records.toMaps should equal(Set(
-      Map("r.since" -> CypherInteger(2017))
+      CypherMap("r.since" -> 2017)
     ))
 
     result.graph shouldMatch given.graph
