@@ -188,11 +188,18 @@ object SparkCypherRecords {
     create(initialHeader, initialDataFrame)
   }
 
-  def create(initialHeader: RecordHeader, initialDataFrame: DataFrame)(implicit graphSpace: SparkGraphSpace)
+  def create(initialHeader: RecordHeader, initialData: DataFrame)(implicit graphSpace: SparkGraphSpace)
   : SparkCypherRecords = {
-    if (initialDataFrame.sparkSession == graphSpace.session) {
-      // TODO: Add header verification
-      new SparkCypherRecords(graphSpace.tokens, initialHeader, initialDataFrame) {}
+    if (initialData.sparkSession == graphSpace.session) {
+      // TODO: Add header type verification
+      val oldColumns = initialData.columns.toSeq
+      if (oldColumns.toSet.size == oldColumns.size) {
+        val newColumns = initialHeader.internalHeader.columns
+        val newData = if (oldColumns == newColumns) initialData else initialData.toDF(newColumns: _*)
+        new SparkCypherRecords(graphSpace.tokens, initialHeader, newData) {}
+      } else {
+        throw new IllegalArgumentException("Cannot use data frames with duplicate column names")
+      }
     }
     else {
       throw new IllegalArgumentException("Import of a data frame not created in the same session as the graph space")
