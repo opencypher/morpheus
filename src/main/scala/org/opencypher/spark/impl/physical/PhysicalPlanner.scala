@@ -69,7 +69,9 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, SparkCypherRe
         val relRhs = InternalResult(relationships, lhs.graphs).typeFilter(rel, types.relTypes.map(tokens.relTypeRef), relHeader)
 
         val relAndTarget = relRhs.joinTarget(rhs).on(rel)(target)
-        val expanded = lhs.expandSource(relAndTarget, header).on(source)(rel)
+        // TODO: Reinsert the calculated header from above
+        // For some reason the calculated header put properties in a different order from the data that came through the lhs
+        val expanded = lhs.expandSource(relAndTarget, lhs.records.header ++ relAndTarget.records.header).on(source)(rel)
 
         expanded
       case x =>

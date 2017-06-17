@@ -1,11 +1,14 @@
 package org.opencypher.spark.impl.instances
 
+import org.opencypher.spark.api.expr._
+import org.opencypher.spark.api.ir.global.{Label, PropertyKey}
+import org.opencypher.spark.api.record._
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.spark.{SparkCypherRecords, SparkGraphSpace}
-import org.opencypher.spark.api.types.{CTAny, CTInteger, CTString}
+import org.opencypher.spark.api.types._
 import org.opencypher.spark.impl.instances.spark.cypher._
 import org.opencypher.spark.impl.syntax.cypher._
-import org.opencypher.spark.{TestSuiteImpl, TestSession}
+import org.opencypher.spark.{TestSession, TestSuiteImpl}
 
 import scala.language.reflectiveCalls
 

@@ -11,9 +11,9 @@ object SparkColumnName {
 
   def of(slot: SlotContent): String = {
     val builder = slot match {
+      case fieldContent: FieldSlotContent => new NameBuilder() += fieldContent.field.name
       case ProjectedExpr(p: Property) => new NameBuilder() += None += p.withoutType + p.cypherType.material.name
       case ProjectedExpr(expr) => new NameBuilder() += None += expr.withoutType
-      case fieldContent: FieldSlotContent => new NameBuilder() += fieldContent.field.name
     }
 
     builder.result()

@@ -11,6 +11,8 @@ trait CypherRecords {
   def columns: IndexedSeq[String]
   def column(slot: RecordSlot): String
 
+  def contract[E <: EmbeddedEntity](entity: VerifiedEmbeddedEntity[E]): Records
+
   def compact: Records
 
   def show(): Unit

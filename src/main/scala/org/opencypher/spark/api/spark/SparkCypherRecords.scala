@@ -3,7 +3,9 @@ package org.opencypher.spark.api.spark
 import java.util.Collections
 
 import org.apache.spark.sql.{Column, DataFrame, Row}
+import org.opencypher.spark.api.expr.{Property, Var}
 import org.opencypher.spark.api.record._
+import org.opencypher.spark.impl.convert.{fromSparkType, toSparkType}
 import org.opencypher.spark.impl.record.SparkCypherRecordHeader
 import org.opencypher.spark.impl.spark.SparkColumnName
 import org.opencypher.spark.impl.syntax.header._
@@ -43,6 +45,8 @@ sealed abstract class SparkCypherRecords(tokens: SparkCypherTokens, initialHeade
 
     SparkCypherRecords.create(cachedHeader, cachedData)
   }
+
+
 
   // only keep slots with v as their owner
   //  def focus(v: Var): SparkCypherRecords = {
@@ -157,6 +161,24 @@ sealed abstract class SparkCypherRecords(tokens: SparkCypherTokens, initialHeade
   //    }
   //  }
 
+  override def contract[E <: EmbeddedEntity](entity: VerifiedEmbeddedEntity[E]): SparkCypherRecords = {
+    val slotExprs = entity.slots
+    val newSlots = header.slots.map {
+      case slot@RecordSlot(idx, content: FieldSlotContent) =>
+        slotExprs.get(content.field.name).map {
+          case expr: Var      => OpaqueField(expr)
+          case expr: Property => ProjectedExpr(expr.copy()(content.cypherType))
+          case expr           => ProjectedExpr(expr)
+        }
+        .getOrElse(slot.content)
+
+      case slot =>
+        slot.content
+    }
+    val newHeader = RecordHeader.from(newSlots: _*)
+    SparkCypherRecords.create(newHeader, data)
+  }
+
   def distinct: SparkCypherRecords = SparkCypherRecords.create(self.header, self.data.distinct())
 }
 
@@ -167,11 +189,30 @@ object SparkCypherRecords {
     create(initialHeader, initialDataFrame)
   }
 
-  def create(initialHeader: RecordHeader, initialDataFrame: DataFrame)(implicit graphSpace: SparkGraphSpace)
+  def create(initialHeader: RecordHeader, initialData: DataFrame)(implicit graphSpace: SparkGraphSpace)
   : SparkCypherRecords = {
-    if (initialDataFrame.sparkSession == graphSpace.session) {
-      // TODO: Add header verification
-      new SparkCypherRecords(graphSpace.tokens, initialHeader, initialDataFrame) {}
+    if (initialData.sparkSession == graphSpace.session) {
+
+      // Ensure no duplicate columns in initialData
+      val initialDataColumns = initialData.columns.toSeq
+      if (initialDataColumns.size != initialDataColumns.distinct.size)
+        throw new IllegalArgumentException("Cannot use data frames with duplicate column names")
+
+      // Correctly name columns in initialData
+      val columns = initialHeader.internalHeader.columns
+      val data = if (columns == initialDataColumns) initialData else initialData.toDF(columns: _*)
+
+      // Verify column types
+      initialHeader.slots.foreach { slot =>
+        val field = data.schema.fields(slot.index)
+        val cypherType = fromSparkType(field.dataType, field.nullable)
+        val headerType = slot.content.cypherType
+
+        if (toSparkType(headerType) != toSparkType(cypherType))
+          throw new IllegalArgumentException(s"Invalid data type for column ${field.name}. Expected at least $headerType but got conflicting $cypherType")
+      }
+
+      new SparkCypherRecords(graphSpace.tokens, initialHeader, data) {}
     }
     else {
       throw new IllegalArgumentException("Import of a data frame not created in the same session as the graph space")
