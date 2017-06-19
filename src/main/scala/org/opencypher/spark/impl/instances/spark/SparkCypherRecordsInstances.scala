@@ -73,7 +73,7 @@ trait SparkCypherRecordsInstances extends Serializable {
       : SparkCypherRecords = {
         val data = subject.data
         val columns = fields.map { f =>
-          data.col(data.columns(subject.header.slotsFor(f).head.index))
+          data.col(context.columnName(subject.header.slotsFor(f).head))
         }
         val newData = subject.data.select(columns: _*)
 
@@ -130,8 +130,8 @@ trait SparkCypherRecordsInstances extends Serializable {
           val lhsData = lhs.data
           val rhsData = rhs.data
 
-          val lhsColumn = lhsData.col(lhsData.columns(lhsSlot.index))
-          val rhsColumn = rhsData.col(rhsData.columns(rhsSlot.index))
+          val lhsColumn = lhsData.col(context.columnName(lhsSlot))
+          val rhsColumn = rhsData.col(context.columnName(rhsSlot))
 
           val joinExpr: Column = lhsColumn === rhsColumn
           val jointData = lhsData.join(rhsData, joinExpr, "inner")
