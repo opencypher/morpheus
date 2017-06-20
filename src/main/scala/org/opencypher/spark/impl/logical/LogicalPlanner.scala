@@ -3,7 +3,6 @@ package org.opencypher.spark.impl.logical
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir._
 import org.opencypher.spark.api.ir.block._
-import org.opencypher.spark.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.api.ir.pattern._
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.types._
@@ -102,7 +101,15 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
         val project1 = planInnerExpr(expr1, acc)
         val project2 = planInnerExpr(expr2, project1)
         producer.planFilter(lte, project2)
-      case (acc, h@HasLabel(_: Var, l)) =>
+      case (acc, gt@GreaterThan(expr1, expr2)) =>
+        val project1 = planInnerExpr(expr1, acc)
+        val project2 = planInnerExpr(expr2, project1)
+        producer.planFilter(gt, project2)
+      case (acc, gte@GreaterThanOrEqual(expr1, expr2)) =>
+        val project1 = planInnerExpr(expr1, acc)
+        val project2 = planInnerExpr(expr2, project1)
+        producer.planFilter(gte, project2)
+      case (acc, h@HasLabel(_: Var, _)) =>
         producer.planFilter(h, acc)
       case (acc, not@Not(expr)) =>
         val project = planInnerExpr(expr, acc)

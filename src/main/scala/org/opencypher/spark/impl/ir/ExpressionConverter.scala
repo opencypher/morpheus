@@ -40,6 +40,8 @@ final class ExpressionConverter(val globals: GlobalsRegistry) extends AnyVal {
     case ast.Equals(lhs, rhs) => Equals(convert(lhs), convert(rhs))(typings(e))
     case ast.LessThan(lhs, rhs) => LessThan(convert(lhs), convert(rhs))(typings(e))
     case ast.LessThanOrEqual(lhs, rhs) => LessThanOrEqual(convert(lhs), convert(rhs))(typings(e))
+    case ast.GreaterThan(lhs, rhs) => GreaterThan(convert(lhs), convert(rhs))(typings(e))
+    case ast.GreaterThanOrEqual(lhs, rhs) => GreaterThanOrEqual(convert(lhs), convert(rhs))(typings(e))
     case ast.In(lhs, ast.ListLiteral(elems)) if elems.size == 1 =>
       Equals(convert(lhs), convert(elems.head))(typings(e))
     case RetypingPredicate(lhs, rhs) =>

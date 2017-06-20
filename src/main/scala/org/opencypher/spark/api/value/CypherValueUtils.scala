@@ -4,19 +4,19 @@ object CypherValueUtils {
   implicit class RichCypherValue(value: CypherValue) {
 
     def <(rhs: CypherValue): Option[Boolean] = {
-      CypherValue.comparability(value, rhs) match {
-        case None => None
-        case Some(x) if x < 0 => Some(true)
-        case _ => Some(false)
-      }
+      CypherValue.comparability(value, rhs).map(_ < 0)
     }
 
     def <=(rhs: CypherValue): Option[Boolean] = {
-      CypherValue.comparability(value, rhs) match {
-        case None => None
-        case Some(x) if x < 0 || x == 0 => Some(true)
-        case _ => Some(false)
-      }
+      CypherValue.comparability(value, rhs).map(_ <= 0)
+    }
+
+    def >(rhs: CypherValue): Option[Boolean] = {
+      CypherValue.comparability(value, rhs).map(_ > 0)
+    }
+
+    def >=(rhs: CypherValue): Option[Boolean] = {
+      CypherValue.comparability(value, rhs).map(_ >= 0)
     }
   }
 }
