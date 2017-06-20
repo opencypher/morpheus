@@ -89,7 +89,7 @@ class SchemaTyperTest extends TestSuiteImpl with Neo4jAstTestSupport with Mockit
     assertExpr.from("o < n") shouldHaveInferredType CTVoid
   }
 
-  test("typing less than or equals") {
+  test("typing less than or equal") {
     implicit val context = typeTracker("n" -> CTInteger, "m" -> CTInteger, "o" -> CTString)
 
     assertExpr.from("n <= m") shouldHaveInferredType CTBoolean
@@ -103,6 +103,14 @@ class SchemaTyperTest extends TestSuiteImpl with Neo4jAstTestSupport with Mockit
     assertExpr.from("n > m") shouldHaveInferredType CTBoolean
     assertExpr.from("n > o") shouldHaveInferredType CTVoid
     assertExpr.from("o > n") shouldHaveInferredType CTVoid
+  }
+
+  test("typing greater than or equal") {
+    implicit val context = typeTracker("n" -> CTInteger, "m" -> CTInteger, "o" -> CTString)
+
+    assertExpr.from("n >= m") shouldHaveInferredType CTBoolean
+    assertExpr.from("n >= o") shouldHaveInferredType CTVoid
+    assertExpr.from("o >= n") shouldHaveInferredType CTVoid
   }
 
   test("typing property equality and IN") {
