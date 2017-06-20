@@ -27,6 +27,9 @@ trait SparkCypherRecordsInstances extends Serializable {
       case LessThanOrEqual(lhs, rhs) =>
         row.getCypherValue(lhs, header) <= row.getCypherValue(rhs, header)
 
+      case GreaterThan(lhs, rhs) =>
+        row.getCypherValue(lhs, header) > row.getCypherValue(rhs, header)
+
       case x =>
         throw new NotImplementedError(s"Predicate $x not yet supported")
     }

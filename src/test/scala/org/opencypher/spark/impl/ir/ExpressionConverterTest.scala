@@ -50,6 +50,12 @@ class ExpressionConverterTest extends TestSuiteImpl with Neo4jAstTestSupport {
     )
   }
 
+  test("can convert greater than") {
+    convert(parseExpr("a > b")) should equal(
+      GreaterThan(Var("a")(), Var("b")())()
+    )
+  }
+
   test("subtract") {
     convert("a - b") should equal(
       Subtract(Var("a")(), Var("b")())()
