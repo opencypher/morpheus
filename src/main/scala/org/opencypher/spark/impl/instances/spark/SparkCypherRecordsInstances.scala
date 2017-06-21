@@ -1,6 +1,7 @@
 package org.opencypher.spark.impl.instances.spark
 
 import org.apache.spark.sql.{Column, Row}
+import org.opencypher.spark.api.exception.SparkCypherException
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.record._
 import org.opencypher.spark.api.spark.SparkCypherRecords
@@ -112,7 +113,12 @@ trait SparkCypherRecordsInstances extends Serializable {
           case None => throw new NotImplementedError(s"No support for projecting $expr yet")
 
           case Some(sparkSqlExpr) =>
-            val columnsToSelect = subject.data.columns.map(subject.data.col) :+ sparkSqlExpr
+            // align the name of the column to what the header expects
+            val name = newHeader.slotsFor(expr).headOption match {
+              case None => throw SparkCypherException("Only a single slot per expression currently supported")
+              case Some(s) => context.columnName(s)
+            }
+            val columnsToSelect = subject.data.columns.map(subject.data.col) :+ sparkSqlExpr.as(name)
             subject.data.select(columnsToSelect: _*)
         }
 
