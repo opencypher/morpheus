@@ -74,6 +74,21 @@ class ExpressionAcceptanceTest extends TestSuiteImpl with GraphMatchingTestSuppo
     result.graph shouldMatch given.graph
   }
 
+  test("addition") {
+    // Given
+    val given = TestGraph("""(:Node {val: 4L})-->(:Node {val: 5L})""")
+
+    // When
+    val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN m.val + n.val AS res")
+
+    // Then
+    result.records.toMaps should equal(Set(
+      CypherMap("res" -> 9)
+    ))
+    // And
+    result.graph shouldMatch given.graph
+  }
+
   test("subtraction") {
     // Given
     val given = TestGraph("""(:Node {val: 4L})-->(:Node {val: 5L})""")

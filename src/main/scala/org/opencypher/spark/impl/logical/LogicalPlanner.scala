@@ -82,6 +82,7 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
     exprs.foldLeft(in) {
       case (acc, (f, p: Property)) => producer.projectField(f, p, acc)
       case (acc, (_, _: Var)) => acc
+      case (acc, (f, s: Add)) => producer.projectField(f, s, acc)
       case (acc, (f, s: Subtract)) => producer.projectField(f, s, acc)
       case (_, x) => throw new UnsupportedOperationException(s"can not project $x")
     }

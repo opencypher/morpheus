@@ -157,6 +157,10 @@ final case class TypeId(rel: Expr)(val cypherType: CypherType = CTWildcard) exte
 }
 
 // Arithmetics
+final case class Add(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends Expr {
+  override def toString = s"$lhs + $rhs"
+}
+
 final case class Subtract(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends Expr {
   override def toString = s"$lhs - $rhs"
 }

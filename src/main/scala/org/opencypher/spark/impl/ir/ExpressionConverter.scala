@@ -48,6 +48,7 @@ final class ExpressionConverter(val globals: GlobalsRegistry) extends AnyVal {
       new Ands(lhs.map(convert) + convert(rhs))(typings(e))
 
     // Arithmetics
+    case ast.Add(lhs, rhs) => Add(convert(lhs), convert(rhs))(typings(e))
     case ast.Subtract(lhs, rhs) => Subtract(convert(lhs), convert(rhs))(typings(e))
 
     case _ => throw new NotImplementedError(s"Not yet able to convert expression: $e")

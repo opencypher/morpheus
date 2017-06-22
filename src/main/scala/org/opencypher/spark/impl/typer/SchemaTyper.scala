@@ -185,8 +185,32 @@ object SchemaTyper {
     case expr: FunctionInvocation =>
       FunctionInvocationTyper(expr)
 
-    case expr: Add =>
-      AddTyper(expr)
+    case Add(lhs, rhs) =>
+      for {
+        lhsType <- process[R](lhs)
+        rhsType <- process[R](rhs)
+        result <- {
+          val inferTypeOrError = (lhsType.material, rhsType.material) match {
+            case (CTInteger, CTInteger) => Right(CTInteger)
+            case (CTFloat, CTInteger) => Right(CTFloat)
+            case (CTInteger, CTFloat) => Right(CTFloat)
+            case (CTFloat, CTFloat) => Right(CTFloat)
+            case (CTNumber, y) if y.subTypeOf(CTNumber).isTrue => Right(CTNumber)
+            case (x, CTNumber) if x.subTypeOf(CTNumber).isTrue => Right(CTNumber)
+            case (x, _) if !x.couldBeSameTypeAs(CTNumber) => Left(lhs -> lhsType)
+            case (_, y) if !y.couldBeSameTypeAs(CTNumber) => Left(rhs -> rhsType)
+            case _ => Right(CTAny)
+          }
+
+          inferTypeOrError match {
+            case Right(t) =>
+              val typ = if (lhsType.isNullable || rhsType.isNullable) t.nullable else t
+              recordTypes(lhs -> lhsType, rhs -> rhsType) >> recordAndUpdate(expr -> typ)
+            case Left((e, t)) =>
+              recordTypes(lhs -> lhsType, rhs -> rhsType) >> error(InvalidType(e, Seq(CTInteger, CTFloat, CTNumber), t))
+          }
+        }
+      } yield result
 
     case Subtract(lhs, rhs) =>
       for {
