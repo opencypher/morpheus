@@ -41,7 +41,7 @@ trait GraphMatchingTestSupport extends TestSession.Fixture {
     }
   }
 
-  final case class TestGraph(gdl: String)(implicit sparkSession: SparkSession) {
+  case class TestGraph(gdl: String)(implicit sparkSession: SparkSession) {
 
     private val queryGraph = new GDLHandler.Builder()
       .setDefaultEdgeLabel(DEFAULT_LABEL)
