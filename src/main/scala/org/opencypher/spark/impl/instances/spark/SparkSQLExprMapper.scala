@@ -17,9 +17,12 @@ object SparkSQLExprMapper {
     }
   }
 
-  private def getColumn(expr: Expr, header: RecordHeader, dataFrame: DataFrame): Column = {
+  private def getColumn(expr: Expr, header: RecordHeader, dataFrame: DataFrame)
+                       (implicit context: RuntimeContext): Column = {
+    verifyExpression(header, expr)
     val slot = header.slotsFor(expr).head
-    dataFrame.col(dataFrame.columns(slot.index))
+
+    dataFrame.col(context.columnName(slot))
   }
 
   /**
@@ -38,7 +41,7 @@ object SparkSQLExprMapper {
     case Not(Equals(v1: Var, v2: Var)) =>
       val lhsSlot = header.slotFor(v1)
       val rhsSlot = header.slotFor(v2)
-      Some(new Column(df.columns(lhsSlot.index)) =!= new Column(df.columns(rhsSlot.index)))
+      Some(df.col(context.columnName(lhsSlot)) =!= df.col(context.columnName(rhsSlot)))
 
     case Ands(exprs) =>
       val cols = exprs.map(asSparkSQLExpr(header, _, df))
@@ -53,11 +56,11 @@ object SparkSQLExprMapper {
     case HasType(rel, relType) =>
       val relTypeId = context.tokens.relTypeRef(relType).id
       val idSlot = header.typeId(rel)
-      Some(new Column(df.columns(idSlot.index)) === relTypeId)
+      Some(df.col(context.columnName(idSlot)) === relTypeId)
 
     case h: HasLabel =>
       val slot = header.slotsFor(h).head
-      Some(new Column(df.columns(slot.index))) // it's a boolean column
+      Some(df.col(context.columnName(slot))) // it's a boolean column
 
     // Arithmetics
     case add: Add =>
