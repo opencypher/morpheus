@@ -64,8 +64,14 @@ object SchemaTyper {
         schema <- ask[R, Schema]
         result <- varTyp.material match {
           case CTNode(labels) =>
-            val keys = labels.collect { case (k, true) => k }.map(schema.nodeKeys).reduceOption(_ ++ _)
-            val propType = keys.getOrElse(Map.empty).getOrElse(name, CTVoid)
+            val propType = if (labels.isEmpty)
+              schema.labels.map(schema.nodeKeys).foldLeft[CypherType](CTVoid) {
+                case (acc, next) => acc.join(next.getOrElse(name, CTVoid))
+              }
+            else {
+              val keys = labels.collect { case (k, true) => k }.map(schema.nodeKeys).reduce(_ ++ _)
+              keys.getOrElse(name, CTVoid)
+            }
             recordType(v -> varTyp) >> recordAndUpdate(expr -> propType)
 
           case CTRelationship(types) =>

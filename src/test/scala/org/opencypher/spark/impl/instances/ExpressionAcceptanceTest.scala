@@ -2,23 +2,24 @@ package org.opencypher.spark.impl.instances
 
 import org.opencypher.spark.api.value.CypherMap
 import org.opencypher.spark.impl.instances.spark.cypher._
-import org.opencypher.spark.impl.syntax.cypher._
 import org.opencypher.spark.{GraphMatchingTestSupport, TestSuiteImpl}
-import org.opencypher.spark.{GraphMatchingTestSupport, TestSession, TestSuiteImpl}
 
 class ExpressionAcceptanceTest extends TestSuiteImpl with GraphMatchingTestSupport {
 
   test("less than") {
 
     // Given
-    val given = TestGraph("""(:Node {val: 4L})-->(:Node {val: 5L})""")
+    val given = TestGraph("""({val: 4L})-->({val: 5L})-->({val: 5L})-->({val: 2L})-->()""")
 
     // When
-    val result = given.cypher("MATCH (n:Node)-->(m:Node) WHERE n.val < m.val RETURN n.val")
+    val result = given.cypher("MATCH (n)-->(m) RETURN n.val < m.val")
 
     // Then
     result.records.toMaps should equal(Set(
-      CypherMap("n.val" -> 4)
+      CypherMap("n.val < m.val" -> true),
+      CypherMap("n.val < m.val" -> false),
+      CypherMap("n.val < m.val" -> false),
+      CypherMap("n.val < m.val" -> null)
     ))
 
     // And
@@ -27,15 +28,17 @@ class ExpressionAcceptanceTest extends TestSuiteImpl with GraphMatchingTestSuppo
 
   test("less than or equal") {
     // Given
-    val given = TestGraph("""(:Node {id: 1L, val: 4L})-->(:Node {id: 2L, val: 5L})-->(:Node {id: 3L, val: 5L})""")
+    val given = TestGraph("""({val: 4L})-->({val: 5L})-->({val: 5L})-->({val: 2L})-->()""")
 
     // When
-    val result = given.cypher("MATCH (n:Node)-->(m:Node) WHERE n.val <= m.val RETURN n.id, n.val")
+    val result = given.cypher("MATCH (n)-->(m) RETURN n.val <= m.val")
 
     // Then
     result.records.toMaps should equal(Set(
-      CypherMap("n.id" -> 1, "n.val" -> 4),
-      CypherMap("n.id" -> 2, "n.val" -> 5)
+      CypherMap("n.val <= m.val" -> true),
+      CypherMap("n.val <= m.val" -> true),
+      CypherMap("n.val <= m.val" -> false),
+      CypherMap("n.val <= m.val" -> null)
     ))
     // And
     result.graph shouldMatch given.graph
@@ -43,14 +46,17 @@ class ExpressionAcceptanceTest extends TestSuiteImpl with GraphMatchingTestSuppo
 
   test("greater than") {
     // Given
-    val given = TestGraph("""(:Node {val: 4L})-->(:Node {val:5L})""")
+    val given = TestGraph("""({val: 4L})-->({val: 5L})-->({val: 5L})-->({val: 2L})-->()""")
 
     // When
-    val result = given.cypher("MATCH (n:Node)<--(m:Node) WHERE n.val > m.val RETURN n.val")
+    val result = given.cypher("MATCH (n)-->(m) RETURN n.val > m.val AS gt")
 
     // Then
     result.records.toMaps should equal(Set(
-      CypherMap("n.val" -> 5)
+      CypherMap("gt" -> false),
+      CypherMap("gt" -> false),
+      CypherMap("gt" -> true),
+      CypherMap("gt" -> null)
     ))
 
     // And
@@ -59,15 +65,17 @@ class ExpressionAcceptanceTest extends TestSuiteImpl with GraphMatchingTestSuppo
 
   test("greater than or equal") {
     // Given
-    val given = TestGraph("""(:Node {id: 1L, val: 4L})-->(:Node {id: 2L, val: 5L})-->(:Node {id: 3L, val: 5L})""")
+    val given = TestGraph("""({val: 4L})-->({val: 5L})-->({val: 5L})-->({val: 2L})-->()""")
 
     // When
-    val result = given.cypher("MATCH (n:Node)<--(m:Node) WHERE n.val >= m.val RETURN n.id, n.val")
+    val result = given.cypher("MATCH (n)-->(m) RETURN n.val >= m.val")
 
     // Then
     result.records.toMaps should equal(Set(
-      CypherMap("n.id" -> 2, "n.val" -> 5),
-      CypherMap("n.id" -> 3, "n.val" -> 5)
+      CypherMap("n.val >= m.val" -> false),
+      CypherMap("n.val >= m.val" -> true),
+      CypherMap("n.val >= m.val" -> true),
+      CypherMap("n.val >= m.val" -> null)
     ))
 
     // And
@@ -76,14 +84,15 @@ class ExpressionAcceptanceTest extends TestSuiteImpl with GraphMatchingTestSuppo
 
   test("addition") {
     // Given
-    val given = TestGraph("""(:Node {val: 4L})-->(:Node {val: 5L, other: 3L})""")
+    val given = TestGraph("""({val: 4L})-->({val: 5L, other: 3L})-->()""")
 
     // When
-    val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN m.other + m.val + n.val AS res")
+    val result = given.cypher("MATCH (n)-->(m) RETURN m.other + m.val + n.val AS res")
 
     // Then
     result.records.toMaps should equal(Set(
-      CypherMap("res" -> 12)
+      CypherMap("res" -> 12),
+      CypherMap("res" -> null)
     ))
     // And
     result.graph shouldMatch given.graph
@@ -91,14 +100,15 @@ class ExpressionAcceptanceTest extends TestSuiteImpl with GraphMatchingTestSuppo
 
   test("subtraction with name") {
     // Given
-    val given = TestGraph("""(:Node {val: 4L})-->(:Node {val: 5L, other: 3L})""")
+    val given = TestGraph("""({val: 4L})-->({val: 5L, other: 3L})-->()""")
 
     // When
-    val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN m.val - n.val - m.other AS res")
+    val result = given.cypher("MATCH (n)-->(m) RETURN m.val - n.val - m.other AS res")
 
     // Then
     result.records.toMaps should equal(Set(
-      CypherMap("res" -> -2)
+      CypherMap("res" -> -2),
+      CypherMap("res" -> null)
     ))
     // And
     result.graph shouldMatch given.graph
@@ -206,6 +216,5 @@ class ExpressionAcceptanceTest extends TestSuiteImpl with GraphMatchingTestSuppo
 
     result.graph shouldMatch given.graph
   }
-
 }
 
