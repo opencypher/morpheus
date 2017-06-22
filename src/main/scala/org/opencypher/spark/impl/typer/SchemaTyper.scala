@@ -185,59 +185,11 @@ object SchemaTyper {
     case expr: FunctionInvocation =>
       FunctionInvocationTyper(expr)
 
-    case Add(lhs, rhs) =>
-      for {
-        lhsType <- process[R](lhs)
-        rhsType <- process[R](rhs)
-        result <- {
-          val inferTypeOrError = (lhsType.material, rhsType.material) match {
-            case (CTInteger, CTInteger) => Right(CTInteger)
-            case (CTFloat, CTInteger) => Right(CTFloat)
-            case (CTInteger, CTFloat) => Right(CTFloat)
-            case (CTFloat, CTFloat) => Right(CTFloat)
-            case (CTNumber, y) if y.subTypeOf(CTNumber).isTrue => Right(CTNumber)
-            case (x, CTNumber) if x.subTypeOf(CTNumber).isTrue => Right(CTNumber)
-            case (x, _) if !x.couldBeSameTypeAs(CTNumber) => Left(lhs -> lhsType)
-            case (_, y) if !y.couldBeSameTypeAs(CTNumber) => Left(rhs -> rhsType)
-            case _ => Right(CTAny)
-          }
+    case add: Add =>
+      processArithmeticExpressions(add)
 
-          inferTypeOrError match {
-            case Right(t) =>
-              val typ = if (lhsType.isNullable || rhsType.isNullable) t.nullable else t
-              recordTypes(lhs -> lhsType, rhs -> rhsType) >> recordAndUpdate(expr -> typ)
-            case Left((e, t)) =>
-              recordTypes(lhs -> lhsType, rhs -> rhsType) >> error(InvalidType(e, Seq(CTInteger, CTFloat, CTNumber), t))
-          }
-        }
-      } yield result
-
-    case Subtract(lhs, rhs) =>
-      for {
-        lhsType <- process[R](lhs)
-        rhsType <- process[R](rhs)
-        result <- {
-          val inferTypeOrError = (lhsType.material, rhsType.material) match {
-            case (CTInteger, CTInteger) => Right(CTInteger)
-            case (CTFloat, CTInteger) => Right(CTFloat)
-            case (CTInteger, CTFloat) => Right(CTFloat)
-            case (CTFloat, CTFloat) => Right(CTFloat)
-            case (CTNumber, y) if y.subTypeOf(CTNumber).isTrue => Right(CTNumber)
-            case (x, CTNumber) if x.subTypeOf(CTNumber).isTrue => Right(CTNumber)
-            case (x, _) if !x.couldBeSameTypeAs(CTNumber) => Left(lhs -> lhsType)
-            case (_, y) if !y.couldBeSameTypeAs(CTNumber) => Left(rhs -> rhsType)
-            case _ => Right(CTAny)
-          }
-
-          inferTypeOrError match {
-            case Right(t) =>
-              val typ = if (lhsType.isNullable || rhsType.isNullable) t.nullable else t
-              recordTypes(lhs -> lhsType, rhs -> rhsType) >> recordAndUpdate(expr -> typ)
-            case Left((e, t)) =>
-              recordTypes(lhs -> lhsType, rhs -> rhsType) >> error(InvalidType(e, Seq(CTInteger, CTFloat, CTNumber), t))
-          }
-        }
-      } yield result
+    case sub: Subtract =>
+      processArithmeticExpressions(sub)
 
     // TODO: This would be better handled by having a type of heterogenous lists instead
     case indexing@ContainerIndex(list@ListLiteral(exprs), index: SignedDecimalIntegerLiteral)
@@ -277,6 +229,34 @@ object SchemaTyper {
 
     case _ =>
       error(UnsupportedExpr(expr))
+  }
+
+  private def processArithmeticExpressions[R: _hasSchema : _keepsErrors : _hasTracker : _logsTypes](expr: Expression with BinaryOperatorExpression) = {
+    for {
+      lhsType <- process[R](expr.lhs)
+      rhsType <- process[R](expr.rhs)
+      result <- {
+        val inferTypeOrError = (lhsType.material, rhsType.material) match {
+          case (CTInteger, CTInteger) => Right(CTInteger)
+          case (CTFloat, CTInteger) => Right(CTFloat)
+          case (CTInteger, CTFloat) => Right(CTFloat)
+          case (CTFloat, CTFloat) => Right(CTFloat)
+          case (CTNumber, y) if y.subTypeOf(CTNumber).isTrue => Right(CTNumber)
+          case (x, CTNumber) if x.subTypeOf(CTNumber).isTrue => Right(CTNumber)
+          case (x, _) if !x.couldBeSameTypeAs(CTNumber) => Left(expr.lhs -> lhsType)
+          case (_, y) if !y.couldBeSameTypeAs(CTNumber) => Left(expr.lhs -> rhsType)
+          case _ => Right(CTAny)
+        }
+
+        inferTypeOrError match {
+          case Right(t) =>
+            val typ = if (lhsType.isNullable || rhsType.isNullable) t.nullable else t
+            recordTypes(expr.lhs -> lhsType, expr.rhs -> rhsType) >> recordAndUpdate(expr -> typ)
+          case Left((e, t)) =>
+            recordTypes(expr.lhs -> lhsType, expr.rhs -> rhsType) >> error(InvalidType(e, Seq(CTInteger, CTFloat, CTNumber), t))
+        }
+      }
+    } yield result
   }
 
   private def processAndsOrs[R : _hasSchema : _keepsErrors : _hasTracker : _logsTypes](expr: Expression, orderedExprs: Vector[Expression]): Eff[R, CypherType] = {
