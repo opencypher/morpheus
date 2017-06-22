@@ -244,7 +244,7 @@ object SchemaTyper {
           case (CTNumber, y) if y.subTypeOf(CTNumber).isTrue => Right(CTNumber)
           case (x, CTNumber) if x.subTypeOf(CTNumber).isTrue => Right(CTNumber)
           case (x, _) if !x.couldBeSameTypeAs(CTNumber) => Left(expr.lhs -> lhsType)
-          case (_, y) if !y.couldBeSameTypeAs(CTNumber) => Left(expr.lhs -> rhsType)
+          case (_, y) if !y.couldBeSameTypeAs(CTNumber) => Left(expr.rhs -> rhsType)
           case _ => Right(CTAny)
         }
 
