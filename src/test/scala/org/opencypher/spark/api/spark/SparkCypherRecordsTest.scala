@@ -5,14 +5,14 @@ import org.opencypher.spark.api.exception.SparkCypherException
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.global.{Label, PropertyKey, TokenRegistry}
 import org.opencypher.spark.api.record._
-import org.opencypher.spark.api.types._
+import org.opencypher.spark.api.types.{CTBoolean, CTNode, CTRelationship, CTString, _}
 import org.opencypher.spark.{TestSession, TestSuiteImpl}
 
 class SparkCypherRecordsTest extends TestSuiteImpl with TestSession.Fixture {
 
   implicit val space = SparkGraphSpace.empty(session, TokenRegistry.empty)
 
-  test("contract nodes") {
+  test("contract and scan nodes") {
     val given = SparkCypherRecords.create(session.createDataFrame(Seq(
       (1, true, "Mats"),
       (2, false, "Martin"),
@@ -20,21 +20,25 @@ class SparkCypherRecordsTest extends TestSuiteImpl with TestSession.Fixture {
       (4, false, "Stefan")
     )).toDF("ID", "IS_SWEDE", "NAME"))
 
-    val result = given.contract(
-      EmbeddedNode("n" -> "ID").build
-        .withImpliedLabel("Person")
-        .withOptionalLabel("Swedish" -> "IS_SWEDE")
-        .withProperty("name" -> "NAME")
-        .verify
-    )
+    val embeddedNode = EmbeddedNode("n" -> "ID").build
+      .withImpliedLabel("Person")
+      .withOptionalLabel("Swedish" -> "IS_SWEDE")
+      .withProperty("name" -> "NAME")
+      .verify
 
-    val entity = Var("n")(CTNode(Map("Person" -> true)))
+
+    val result = given.contract(embeddedNode)
+    val entityVar = Var("n")(CTNode(Map("Person" -> true)))
 
     result.header.slots.map(_.content).toVector should equal(Vector(
-      OpaqueField(entity),
-      ProjectedExpr(HasLabel(entity, Label("Swedish"))(CTBoolean)),
-      ProjectedExpr(Property(entity, PropertyKey("name"))(CTString.nullable))
+      OpaqueField(entityVar),
+      ProjectedExpr(HasLabel(entityVar, Label("Swedish"))(CTBoolean)),
+      ProjectedExpr(Property(entityVar, PropertyKey("name"))(CTString.nullable))
     ))
+
+    val scan = given.scan(embeddedNode)
+    scan.entityVar should equal(entityVar)
+    scan.records.header should equal(result.header)
   }
 
   test("contract relationships with a fixed type") {
@@ -46,20 +50,23 @@ class SparkCypherRecordsTest extends TestSuiteImpl with TestSession.Fixture {
       (13, 4, 1, "yellow")
     )).toDF("ID", "FROM", "TO", "COLOR"))
 
-    val result = given.contract(
-      EmbeddedRelationship("r" -> "ID").from("FROM").to("TO").relType("NEXT").build
-        .withProperty("color" -> "COLOR")
-        .verify
-    )
+    val embeddedRel = EmbeddedRelationship("r" -> "ID").from("FROM").to("TO").relType("NEXT").build
+      .withProperty("color" -> "COLOR")
+      .verify
+    val result = given.contract(embeddedRel)
 
-    val entity = Var("r")(CTRelationship("NEXT"))
+    val entityVar = Var("r")(CTRelationship("NEXT"))
 
     result.header.slots.map(_.content).toVector should equal(Vector(
-      OpaqueField(entity),
-      ProjectedExpr(StartNode(entity)(CTNode)),
-      ProjectedExpr(EndNode(entity)(CTNode)),
-      ProjectedExpr(Property(entity, PropertyKey("color"))(CTString.nullable))
+      OpaqueField(entityVar),
+      ProjectedExpr(StartNode(entityVar)(CTNode)),
+      ProjectedExpr(EndNode(entityVar)(CTNode)),
+      ProjectedExpr(Property(entityVar, PropertyKey("color"))(CTString.nullable))
     ))
+
+    val scan = given.scan(embeddedRel)
+    scan.entityVar should equal(entityVar)
+    scan.records.header should equal(result.header)
   }
 
   test("contract relationships with a dynamic type") {
@@ -71,19 +78,24 @@ class SparkCypherRecordsTest extends TestSuiteImpl with TestSession.Fixture {
       (13, 4, 1, 53)
     )).toDF("ID", "FROM", "TO", "COLOR"))
 
-    val result = given.contract(
+    val embeddedRel =
       EmbeddedRelationship("r" -> "ID").from("FROM").to("TO").relTypes("COLOR", "RED", "BLUE", "GREEN", "YELLOW").build
-    )
 
-    val entity = Var("r")(CTRelationship("RED", "BLUE", "GREEN", "YELLOW"))
+    val result = given.contract(embeddedRel)
+
+    val entityVar = Var("r")(CTRelationship("RED", "BLUE", "GREEN", "YELLOW"))
 
     // TODO: Use schema for determining more precise node types
     result.header.slots.map(_.content).toVector should equal(Vector(
-      OpaqueField(entity),
-      ProjectedExpr(StartNode(entity)(CTNode)),
-      ProjectedExpr(EndNode(entity)(CTNode)),
-      ProjectedExpr(TypeId(entity)(CTRelationship("RED", "BLUE", "GREEN", "YELLOW")))
+      OpaqueField(entityVar),
+      ProjectedExpr(StartNode(entityVar)(CTNode)),
+      ProjectedExpr(EndNode(entityVar)(CTNode)),
+      ProjectedExpr(TypeId(entityVar)(CTRelationship("RED", "BLUE", "GREEN", "YELLOW")))
     ))
+
+    val scan = given.scan(embeddedRel)
+    scan.entityVar should equal(entityVar)
+    scan.records.header should equal(result.header)
   }
 
   test("can not construct records with data/header column name conflict") {

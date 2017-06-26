@@ -21,9 +21,10 @@ final case class RecordHeader(internalHeader: InternalHeader) {
   def slotsFor(expr: Expr): Seq[RecordSlot] =
     internalHeader.slotsFor(expr)
 
-  def slotFor(variable: Var): RecordSlot = slotsFor(variable).headOption.getOrElse(???)
-  def slotsFor(names: String*): Seq[RecordSlot] =
-    names.map(n => internalHeader.slotsByName(n).headOption.getOrElse(???))
+  // TODO: Push error handling to API consumers
+
+  def slotFor(variable: Var): RecordSlot =
+    slotsFor(variable).headOption.getOrElse(???)
 
   def mandatory(slot: RecordSlot): Boolean =
     internalHeader.mandatory(slot)

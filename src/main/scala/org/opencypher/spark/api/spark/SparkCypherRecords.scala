@@ -6,9 +6,10 @@ import org.apache.spark.sql.{Column, DataFrame, Row}
 import org.opencypher.spark.api.exception.SparkCypherException
 import org.opencypher.spark.api.expr.{Property, Var}
 import org.opencypher.spark.api.record._
+import org.opencypher.spark.api.types.CypherType
 import org.opencypher.spark.impl.convert.{fromSparkType, toSparkType}
 import org.opencypher.spark.impl.record.SparkCypherRecordHeader
-import org.opencypher.spark.impl.spark.SparkColumnName
+import org.opencypher.spark.impl.spark.{SparkColumn, SparkColumnName}
 import org.opencypher.spark.impl.syntax.header._
 
 sealed abstract class SparkCypherRecords(tokens: SparkCypherTokens, initialHeader: RecordHeader, initialData: DataFrame)
@@ -161,6 +162,24 @@ sealed abstract class SparkCypherRecords(tokens: SparkCypherTokens, initialHeade
   //      override def data = newSelfData.union(newOtherData)
   //    }
   //  }
+
+  def scan[E <: EmbeddedEntity, S <: GraphScan](entity: VerifiedEmbeddedEntity[E])
+                                               (implicit factory: GraphScanFactory[VerifiedEmbeddedEntity[E], S]): S = {
+    val contracted = contract(entity)
+    val oldSlots = contracted.header.contents
+    val newSlots = oldSlots.filter(_.owner.contains(entity.v.entityVar))
+    val newRecords =
+      if (newSlots.size == oldSlots.size)
+        contracted
+      else {
+        val newHeader = RecordHeader.from(newSlots.toSeq: _*)
+        val newCols = newHeader.slots.map(SparkColumn.from(contracted.data))
+        val newData = contracted.data.select(newCols: _*)
+        SparkCypherRecords.create(newHeader, newData)
+      }
+    factory.create(entity, newRecords)
+  }
+
 
   override def contract[E <: EmbeddedEntity](entity: VerifiedEmbeddedEntity[E]): SparkCypherRecords = {
     val slotExprs = entity.slots
