@@ -1,11 +1,10 @@
 package org.opencypher.spark.api.spark
 
-import org.opencypher.spark.api.expr.{Expr, Var}
+import org.opencypher.spark.api.expr.Var
 import org.opencypher.spark.api.graph.CypherGraph
-import org.opencypher.spark.api.ir.QueryModel
-import org.opencypher.spark.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.api.record.{OpaqueField, RecordHeader}
 import org.opencypher.spark.api.schema.Schema
+import org.opencypher.spark.api.types.{CTNode, CTRelationship, CypherType}
 
 trait SparkCypherGraph extends CypherGraph {
 
@@ -18,14 +17,11 @@ trait SparkCypherGraph extends CypherGraph {
 
 object SparkCypherGraph {
 
-  def empty(graphSpace: SparkGraphSpace): SparkCypherGraph = {
-    val globals = GlobalsRegistry(graphSpace.tokens.registry)
-    EmptyGraph(graphSpace, QueryModel.empty[Expr](globals), SparkCypherRecords.empty()(graphSpace))
-  }
+  def empty(graphSpace: SparkGraphSpace): SparkCypherGraph =
+    EmptyGraph(graphSpace, SparkCypherRecords.empty()(graphSpace))
 
   private sealed case class EmptyGraph(
     graphSpace: SparkGraphSpace,
-    override val model: QueryModel[Expr],
     override val details: SparkCypherRecords
   ) extends SparkCypherGraph {
 

@@ -15,7 +15,6 @@ trait CypherGraph {
 
   def space: Space
 
-  def model: QueryModel[Expr]
   def schema: Schema
 
   def records: Records = details.compact
