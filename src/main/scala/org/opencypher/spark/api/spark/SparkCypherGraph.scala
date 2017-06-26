@@ -4,7 +4,6 @@ import org.opencypher.spark.api.expr.Var
 import org.opencypher.spark.api.graph.CypherGraph
 import org.opencypher.spark.api.record.{OpaqueField, RecordHeader}
 import org.opencypher.spark.api.schema.Schema
-import org.opencypher.spark.api.types.{CTNode, CTRelationship, CypherType}
 
 trait SparkCypherGraph extends CypherGraph {
 
@@ -18,11 +17,10 @@ trait SparkCypherGraph extends CypherGraph {
 object SparkCypherGraph {
 
   def empty(graphSpace: SparkGraphSpace): SparkCypherGraph =
-    EmptyGraph(graphSpace, SparkCypherRecords.empty()(graphSpace))
+    EmptyGraph(graphSpace)
 
   private sealed case class EmptyGraph(
-    graphSpace: SparkGraphSpace,
-    override val details: SparkCypherRecords
+    graphSpace: SparkGraphSpace
   ) extends SparkCypherGraph {
 
     override def nodes(v: Var): SparkCypherRecords =

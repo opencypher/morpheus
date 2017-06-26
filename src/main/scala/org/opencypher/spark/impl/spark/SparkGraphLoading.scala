@@ -126,8 +126,6 @@ trait SparkGraphLoading {
         override def relationships(v: Var) = SparkCypherRecords.create(relHeader(v), relFrame(v))(selfSpace)
         override def space: SparkGraphSpace = selfSpace
 
-        override def details: SparkCypherRecords = ???
-
         override def schema: Schema = context.schema
       }
 
