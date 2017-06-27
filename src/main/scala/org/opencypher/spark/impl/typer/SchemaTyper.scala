@@ -305,7 +305,7 @@ object SchemaTyper {
           case None =>
             error(NoSuitableSignatureForExpr(expr, argTypes))
         }
-        resultType <- updateTyping(expr -> computedType)
+        resultType <- recordAndUpdate(expr -> computedType)
       }
       yield resultType
 
