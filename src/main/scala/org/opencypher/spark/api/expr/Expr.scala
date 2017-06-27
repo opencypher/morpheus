@@ -166,7 +166,7 @@ final case class TypeId(rel: Expr)(val cypherType: CypherType = CTWildcard) exte
 
 // Arithmetic expressions
 
-sealed trait ArithmeticExpr extends BinaryExpr { }
+sealed trait ArithmeticExpr extends BinaryExpr
 
 final case class Add(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends ArithmeticExpr {
   override def toString = s"$lhs + $rhs"
