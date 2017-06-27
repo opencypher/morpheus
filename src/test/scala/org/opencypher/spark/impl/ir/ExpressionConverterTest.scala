@@ -62,7 +62,13 @@ class ExpressionConverterTest extends TestSuiteImpl with Neo4jAstTestSupport {
     )
   }
 
-  test("subtract") {
+  test("can convert add") {
+    convert("a + b") should equal(
+      Add(Var("a")(), Var("b")())()
+    )
+  }
+
+  test("can convert subtract") {
     convert("a - b") should equal(
       Subtract(Var("a")(), Var("b")())()
     )

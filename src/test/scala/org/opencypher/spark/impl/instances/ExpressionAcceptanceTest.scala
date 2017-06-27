@@ -74,16 +74,52 @@ class ExpressionAcceptanceTest extends TestSuiteImpl with GraphMatchingTestSuppo
     result.graph shouldMatch given.graph
   }
 
-  test("subtraction") {
+  test("addition") {
     // Given
-    val given = TestGraph("""(:Node {val: 4L})-->(:Node {val: 5L})""")
+    val given = TestGraph("""(:Node {val: 4L})-->(:Node {val: 5L, other: 3L})""")
 
     // When
-    val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN m.val - n.val AS res")
+    val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN m.other + m.val + n.val AS res")
 
     // Then
     result.records.toMaps should equal(Set(
-      CypherMap("res" -> 1)
+      CypherMap("res" -> 12)
+    ))
+    // And
+    result.graph shouldMatch given.graph
+  }
+
+  test("subtraction") {
+    // Given
+    val given = TestGraph("""(:Node {val: 4L})-->(:Node {val: 5L, other: 3L})""")
+
+    // When
+    val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN m.val - n.val - m.other AS res")
+
+    // Then
+    result.records.toMaps should equal(Set(
+      CypherMap("res" -> -2)
+    ))
+    // And
+    result.graph shouldMatch given.graph
+  }
+
+  ignore("equality") {
+    // Given
+    val given = TestGraph(
+      """(:Node {val: 4L})-->(:Node {val: 5L}),
+        |(:Node {val: 4L})-->(:Node {val: 4L}),
+        |(:Node)-->(:Node {val: 5L})
+      """.stripMargin)
+
+    // When
+    val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN m.val = n.val AS res")
+
+    // Then
+    result.records.toMaps should equal(Set(
+      CypherMap("res" -> false),
+      CypherMap("res" -> true),
+      CypherMap("res" -> null)
     ))
     // And
     result.graph shouldMatch given.graph

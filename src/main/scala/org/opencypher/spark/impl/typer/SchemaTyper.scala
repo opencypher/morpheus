@@ -185,35 +185,11 @@ object SchemaTyper {
     case expr: FunctionInvocation =>
       FunctionInvocationTyper(expr)
 
-    case expr: Add =>
-      AddTyper(expr)
+    case add: Add =>
+      AddTyper(add)
 
-    case Subtract(lhs, rhs) =>
-      for {
-        lhsType <- process[R](lhs)
-        rhsType <- process[R](rhs)
-        result <- {
-          val inferTypeOrError = (lhsType.material, rhsType.material) match {
-            case (CTInteger, CTInteger) => Right(CTInteger)
-            case (CTFloat, CTInteger) => Right(CTFloat)
-            case (CTInteger, CTFloat) => Right(CTFloat)
-            case (CTFloat, CTFloat) => Right(CTFloat)
-            case (CTNumber, y) if y.subTypeOf(CTNumber).isTrue => Right(CTNumber)
-            case (x, CTNumber) if x.subTypeOf(CTNumber).isTrue => Right(CTNumber)
-            case (x, _) if !x.couldBeSameTypeAs(CTNumber) => Left(lhs -> lhsType)
-            case (_, y) if !y.couldBeSameTypeAs(CTNumber) => Left(rhs -> rhsType)
-            case _ => Right(CTAny)
-          }
-
-          inferTypeOrError match {
-            case Right(t) =>
-              val typ = if (lhsType.isNullable || rhsType.isNullable) t.nullable else t
-              recordTypes(lhs -> lhsType, rhs -> rhsType) >> recordAndUpdate(expr -> typ)
-            case Left((e, t)) =>
-              recordTypes(lhs -> lhsType, rhs -> rhsType) >> error(InvalidType(e, Seq(CTInteger, CTFloat, CTNumber), t))
-          }
-        }
-      } yield result
+    case sub: Subtract =>
+      processArithmeticExpressions(sub)
 
     // TODO: This would be better handled by having a type of heterogenous lists instead
     case indexing@ContainerIndex(list@ListLiteral(exprs), index: SignedDecimalIntegerLiteral)
@@ -253,6 +229,36 @@ object SchemaTyper {
 
     case _ =>
       error(UnsupportedExpr(expr))
+  }
+
+  private def processArithmeticExpressions[R: _hasSchema : _keepsErrors : _hasTracker : _logsTypes]
+  (expr: Expression with BinaryOperatorExpression)
+  : Eff[R, CypherType] = {
+    for {
+      lhsType <- process[R](expr.lhs)
+      rhsType <- process[R](expr.rhs)
+      result <- {
+        numericTypeOrError(expr, lhsType, rhsType) match {
+          case Right(t) =>
+            val typ = if (lhsType.isNullable || rhsType.isNullable) t.nullable else t
+            recordTypes(expr.lhs -> lhsType, expr.rhs -> rhsType) >> recordAndUpdate(expr -> typ)
+          case Left((e, t)) =>
+            recordTypes(expr.lhs -> lhsType, expr.rhs -> rhsType) >> error(InvalidType(e, Seq(CTInteger, CTFloat, CTNumber), t))
+        }
+      }
+    } yield result
+  }
+
+  private def numericTypeOrError(expr: Expression with BinaryOperatorExpression, lhsType: CypherType, rhsType: CypherType) = (lhsType.material, rhsType.material) match {
+    case (CTInteger, CTInteger) => Right(CTInteger)
+    case (CTFloat, CTInteger) => Right(CTFloat)
+    case (CTInteger, CTFloat) => Right(CTFloat)
+    case (CTFloat, CTFloat) => Right(CTFloat)
+    case (CTNumber, y) if y.subTypeOf(CTNumber).isTrue => Right(CTNumber)
+    case (x, CTNumber) if x.subTypeOf(CTNumber).isTrue => Right(CTNumber)
+    case (x, _) if !x.couldBeSameTypeAs(CTNumber) => Left(expr.lhs -> lhsType)
+    case (_, y) if !y.couldBeSameTypeAs(CTNumber) => Left(expr.rhs -> rhsType)
+    case _ => Right(CTAny)
   }
 
   private def processAndsOrs[R : _hasSchema : _keepsErrors : _hasTracker : _logsTypes](expr: Expression, orderedExprs: Vector[Expression]): Eff[R, CypherType] = {
@@ -297,9 +303,9 @@ object SchemaTyper {
             pure[R, CypherType](if (argTypes.exists(_.isNullable)) outputType.nullable else outputType)
 
           case None =>
-            error(NoSuitableSignatureForExpr(expr))
+            error(NoSuitableSignatureForExpr(expr, argTypes))
         }
-        resultType <- updateTyping(expr -> computedType)
+        resultType <- recordAndUpdate(expr -> computedType)
       }
       yield resultType
 
@@ -348,16 +354,20 @@ object SchemaTyper {
     : Eff[R, Set[(Seq[CypherType], CypherType)]] = {
       val (_, left) = args.head
       val (_, right) = args(1)
-      val outTyp = left.material -> right.material match {
-        case (left: CTList, _) => left listConcatJoin right
-        case (_, right: CTList) => right listConcatJoin left
-        case (CTInteger, CTFloat) => CTFloat
-        case (CTFloat, CTInteger) => CTFloat
-        case (CTString, _) if right.subTypeOf(CTNumber).maybeTrue => CTString
-        case (_, CTString) if left.subTypeOf(CTNumber).maybeTrue => CTString
-        case _  => left join right
+      (left.material -> right.material match {
+        case (left: CTList, _) => Some(left listConcatJoin right)
+        case (_, right: CTList) => Some(right listConcatJoin left)
+        case (CTString, _) if right.subTypeOf(CTNumber).maybeTrue => Some(CTString)
+        case (_, CTString) if left.subTypeOf(CTNumber).maybeTrue => Some(CTString)
+        case (CTString, CTString) => Some(CTString)
+        case (l, r) => numericTypeOrError(expr, l, r) match {
+          case Right(t) => Some(t)
+          case _ => None
+        }
+      }) match {
+        case Some(t) => pure(Set(Seq(left, right) -> t.asNullableAs(left join right)))
+        case None => pure(Set.empty)
       }
-      pure(Set(Seq(left, right) -> outTyp.asNullableAs(left join right)))
     }
 
       private implicit class RichCTList(val left: CTList) extends AnyVal {

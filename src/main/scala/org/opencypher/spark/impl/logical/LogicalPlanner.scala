@@ -82,35 +82,26 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
     exprs.foldLeft(in) {
       case (acc, (f, p: Property)) => producer.projectField(f, p, acc)
       case (acc, (_, _: Var)) => acc
-      case (acc, (f, s: Subtract)) => producer.projectField(f, s, acc)
+      case (acc, (f, be: BinaryExpr)) =>
+        val projectLhs = planInnerExpr(be.lhs, acc)
+        val projectRhs = planInnerExpr(be.rhs, projectLhs)
+        producer.projectField(f, be, projectRhs)
       case (_, x) => throw new UnsupportedOperationException(s"can not project $x")
     }
   }
 
   private def planFilter(in: LogicalOperator, where: AllGiven[Expr])(implicit context: LogicalPlannerContext) = {
     val filtersAndProjs = where.elts.foldLeft(in) {
-      case (acc, eq@Equals(expr1, expr2)) =>
-        val project1 = planInnerExpr(expr1, acc)
-        val project2 = planInnerExpr(expr2, project1)
-        producer.planFilter(eq, project2)
-      case (acc, lt@LessThan(expr1, expr2)) =>
-        val project1 = planInnerExpr(expr1, acc)
-        val project2 = planInnerExpr(expr2, project1)
-        producer.planFilter(lt, project2)
-      case (acc, lte@LessThanOrEqual(expr1, expr2)) =>
-        val project1 = planInnerExpr(expr1, acc)
-        val project2 = planInnerExpr(expr2, project1)
-        producer.planFilter(lte, project2)
-      case (acc, gt@GreaterThan(expr1, expr2)) =>
-        val project1 = planInnerExpr(expr1, acc)
-        val project2 = planInnerExpr(expr2, project1)
-        producer.planFilter(gt, project2)
-      case (acc, gte@GreaterThanOrEqual(expr1, expr2)) =>
-        val project1 = planInnerExpr(expr1, acc)
-        val project2 = planInnerExpr(expr2, project1)
-        producer.planFilter(gte, project2)
+      case (acc, be: BinaryExpr) =>
+        val project1 = planInnerExpr(be.lhs, acc)
+        val project2 = planInnerExpr(be.rhs, project1)
+        producer.planFilter(be, project2)
       case (acc, h@HasLabel(_: Var, _)) =>
         producer.planFilter(h, acc)
+      case (acc, not@Not(Equals(lhs, rhs))) =>
+        val p1 = planInnerExpr(lhs, acc)
+        val p2 = planInnerExpr(rhs, p1)
+        producer.planFilter(not, p2)
       case (acc, not@Not(expr)) =>
         val project = planInnerExpr(expr, acc)
         producer.planFilter(not, project)
@@ -128,9 +119,10 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
       case _: Var => in
       case p: Property =>
         producer.projectExpr(p, in)
-      case Equals(expr1, expr2) =>
-        val project1 = planInnerExpr(expr1, in)
-        planInnerExpr(expr2, project1)
+      case be: BinaryExpr =>
+        val project1 = planInnerExpr(be.lhs, in)
+        val project2 = planInnerExpr(be.rhs, project1)
+        producer.projectExpr(be, project2)
       case x => throw new NotImplementedError(s"Not yet able to plan projection for inner expression $x")
     }
   }

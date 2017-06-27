@@ -18,6 +18,40 @@ class SchemaTyperTest extends TestSuiteImpl with Neo4jAstTestSupport with Mockit
 
   val typer = SchemaTyper(schema)
 
+  test("typing add") {
+    implicit val context = typeTracker("a" -> CTInteger, "b" -> CTFloat, "c" -> CTNumber, "d" -> CTAny.nullable, "e" -> CTBoolean)
+
+    assertExpr.from("a + a") shouldHaveInferredType CTInteger
+    assertExpr.from("b + b") shouldHaveInferredType CTFloat
+    assertExpr.from("a + b") shouldHaveInferredType CTFloat
+    assertExpr.from("b + a") shouldHaveInferredType CTFloat
+    assertExpr.from("a + c") shouldHaveInferredType CTNumber
+    assertExpr.from("c + b") shouldHaveInferredType CTNumber
+
+    assertExpr.from("a + d") shouldHaveInferredType CTAny.nullable
+    assertExpr.from("d + c") shouldHaveInferredType CTAny.nullable
+
+    assertExpr.from("a + e") shouldFailToInferTypeWithErrors
+      NoSuitableSignatureForExpr("a + e", Seq(CTInteger, CTBoolean))
+    assertExpr.from("e + a") shouldFailToInferTypeWithErrors
+      NoSuitableSignatureForExpr("e + a", Seq(CTBoolean, CTInteger))
+    assertExpr.from("e + e") shouldFailToInferTypeWithErrors
+      NoSuitableSignatureForExpr("e + e", Seq(CTBoolean, CTBoolean))
+  }
+
+  test("typing add for string and list concatenation") {
+    assertExpr.from("'foo' + 'bar'") shouldHaveInferredType CTString
+    assertExpr.from("[] + [1, 2, 3]") shouldHaveInferredType CTList(CTInteger)
+    assertExpr.from("[true] + [1, 2, 3]") shouldHaveInferredType CTList(CTAny)
+
+    assertExpr.from("'foo' + 1") shouldHaveInferredType CTString
+    assertExpr.from("'foo' + 3.14") shouldHaveInferredType CTString
+    assertExpr.from("'foo' + ['bar', 'giz']") shouldHaveInferredType CTList(CTString)
+
+    assertExpr.from("[] + 1") shouldHaveInferredType CTList(CTInteger)
+    assertExpr.from("[3.14] + 1") shouldHaveInferredType CTList(CTNumber)
+  }
+
   test("typing subtract") {
     implicit val context = typeTracker("a" -> CTInteger, "b" -> CTFloat, "c" -> CTNumber, "d" -> CTAny.nullable, "e" -> CTString)
 
@@ -187,21 +221,6 @@ class SchemaTyperTest extends TestSuiteImpl with Neo4jAstTestSupport with Mockit
     implicit val context = typeTracker("r" -> CTRelationship("KNOWS"))
 
     assertExpr.from("r.relative") shouldHaveInferredType CTBoolean
-  }
-
-  test("typing of plus operator") {
-    assertExpr.from("1 + 1") shouldHaveInferredType CTInteger
-    assertExpr.from("3.14 + 1") shouldHaveInferredType CTFloat
-    assertExpr.from("'foo' + 'bar'") shouldHaveInferredType CTString
-    assertExpr.from("[] + [1, 2, 3]") shouldHaveInferredType CTList(CTInteger)
-    assertExpr.from("[true] + [1, 2, 3]") shouldHaveInferredType CTList(CTAny)
-
-    assertExpr.from("'foo' + 1") shouldHaveInferredType CTString
-    assertExpr.from("'foo' + 3.14") shouldHaveInferredType CTString
-    assertExpr.from("'foo' + ['bar', 'giz']") shouldHaveInferredType CTList(CTString)
-
-    assertExpr.from("[] + 1") shouldHaveInferredType CTList(CTInteger)
-    assertExpr.from("[3.14] + 1") shouldHaveInferredType CTList(CTNumber)
   }
 
   test("typing of functions") {
