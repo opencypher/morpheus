@@ -186,7 +186,7 @@ object SchemaTyper {
       FunctionInvocationTyper(expr)
 
     case add: Add =>
-      processArithmeticExpressions(add)
+      AddTyper(add)
 
     case sub: Subtract =>
       processArithmeticExpressions(sub)
@@ -231,24 +231,14 @@ object SchemaTyper {
       error(UnsupportedExpr(expr))
   }
 
-  private def processArithmeticExpressions[R: _hasSchema : _keepsErrors : _hasTracker : _logsTypes](expr: Expression with BinaryOperatorExpression) = {
+  private def processArithmeticExpressions[R: _hasSchema : _keepsErrors : _hasTracker : _logsTypes]
+  (expr: Expression with BinaryOperatorExpression)
+  : Eff[R, CypherType] = {
     for {
       lhsType <- process[R](expr.lhs)
       rhsType <- process[R](expr.rhs)
       result <- {
-        val inferTypeOrError = (lhsType.material, rhsType.material) match {
-          case (CTInteger, CTInteger) => Right(CTInteger)
-          case (CTFloat, CTInteger) => Right(CTFloat)
-          case (CTInteger, CTFloat) => Right(CTFloat)
-          case (CTFloat, CTFloat) => Right(CTFloat)
-          case (CTNumber, y) if y.subTypeOf(CTNumber).isTrue => Right(CTNumber)
-          case (x, CTNumber) if x.subTypeOf(CTNumber).isTrue => Right(CTNumber)
-          case (x, _) if !x.couldBeSameTypeAs(CTNumber) => Left(expr.lhs -> lhsType)
-          case (_, y) if !y.couldBeSameTypeAs(CTNumber) => Left(expr.rhs -> rhsType)
-          case _ => Right(CTAny)
-        }
-
-        inferTypeOrError match {
+        numericTypeOrError(expr, lhsType, rhsType) match {
           case Right(t) =>
             val typ = if (lhsType.isNullable || rhsType.isNullable) t.nullable else t
             recordTypes(expr.lhs -> lhsType, expr.rhs -> rhsType) >> recordAndUpdate(expr -> typ)
@@ -257,6 +247,18 @@ object SchemaTyper {
         }
       }
     } yield result
+  }
+
+  private def numericTypeOrError(expr: Expression with BinaryOperatorExpression, lhsType: CypherType, rhsType: CypherType) = (lhsType.material, rhsType.material) match {
+    case (CTInteger, CTInteger) => Right(CTInteger)
+    case (CTFloat, CTInteger) => Right(CTFloat)
+    case (CTInteger, CTFloat) => Right(CTFloat)
+    case (CTFloat, CTFloat) => Right(CTFloat)
+    case (CTNumber, y) if y.subTypeOf(CTNumber).isTrue => Right(CTNumber)
+    case (x, CTNumber) if x.subTypeOf(CTNumber).isTrue => Right(CTNumber)
+    case (x, _) if !x.couldBeSameTypeAs(CTNumber) => Left(expr.lhs -> lhsType)
+    case (_, y) if !y.couldBeSameTypeAs(CTNumber) => Left(expr.rhs -> rhsType)
+    case _ => Right(CTAny)
   }
 
   private def processAndsOrs[R : _hasSchema : _keepsErrors : _hasTracker : _logsTypes](expr: Expression, orderedExprs: Vector[Expression]): Eff[R, CypherType] = {
@@ -301,7 +303,7 @@ object SchemaTyper {
             pure[R, CypherType](if (argTypes.exists(_.isNullable)) outputType.nullable else outputType)
 
           case None =>
-            error(NoSuitableSignatureForExpr(expr))
+            error(NoSuitableSignatureForExpr(expr, argTypes))
         }
         resultType <- updateTyping(expr -> computedType)
       }
@@ -352,16 +354,20 @@ object SchemaTyper {
     : Eff[R, Set[(Seq[CypherType], CypherType)]] = {
       val (_, left) = args.head
       val (_, right) = args(1)
-      val outTyp = left.material -> right.material match {
-        case (left: CTList, _) => left listConcatJoin right
-        case (_, right: CTList) => right listConcatJoin left
-        case (CTInteger, CTFloat) => CTFloat
-        case (CTFloat, CTInteger) => CTFloat
-        case (CTString, _) if right.subTypeOf(CTNumber).maybeTrue => CTString
-        case (_, CTString) if left.subTypeOf(CTNumber).maybeTrue => CTString
-        case _  => left join right
+      (left.material -> right.material match {
+        case (left: CTList, _) => Some(left listConcatJoin right)
+        case (_, right: CTList) => Some(right listConcatJoin left)
+        case (CTString, _) if right.subTypeOf(CTNumber).maybeTrue => Some(CTString)
+        case (_, CTString) if left.subTypeOf(CTNumber).maybeTrue => Some(CTString)
+        case (CTString, CTString) => Some(CTString)
+        case (l, r) => numericTypeOrError(expr, l, r) match {
+          case Right(t) => Some(t)
+          case _ => None
+        }
+      }) match {
+        case Some(t) => pure(Set(Seq(left, right) -> t.asNullableAs(left join right)))
+        case None => pure(Set.empty)
       }
-      pure(Set(Seq(left, right) -> outTyp.asNullableAs(left join right)))
     }
 
       private implicit class RichCTList(val left: CTList) extends AnyVal {
