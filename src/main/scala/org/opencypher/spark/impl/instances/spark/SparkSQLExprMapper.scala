@@ -39,15 +39,16 @@ object SparkSQLExprMapper {
 
     // predicates
     case Not(Equals(v1: Var, v2: Var)) =>
-      val lhsSlot = header.slotFor(v1)
-      val rhsSlot = header.slotFor(v2)
-      Some(df.col(context.columnName(lhsSlot)) =!= df.col(context.columnName(rhsSlot)))
+      val lCol = getColumn(v1, header, df)
+      val rCol = getColumn(v2, header, df)
+      Some(lCol =!= rCol)
 
     case Ands(exprs) =>
       val cols = exprs.map(asSparkSQLExpr(header, _, df))
       if (cols.contains(None)) None
       else {
         cols.reduce[Option[Column]] {
+          // TODO: Does this work with Cypher's ternary logic?
           case (Some(l: Column), Some(r: Column)) => Some(l && r)
           case _ => throw new IllegalStateException("This should never happen")
         }
@@ -55,12 +56,11 @@ object SparkSQLExprMapper {
 
     case HasType(rel, relType) =>
       val relTypeId = context.tokens.relTypeRef(relType).id
-      val idSlot = header.typeId(rel)
-      Some(df.col(context.columnName(idSlot)) === relTypeId)
+      val col = getColumn(TypeId(rel)(), header, df)
+      Some(col === relTypeId)
 
     case h: HasLabel =>
-      val slot = header.slotsFor(h).head
-      Some(df.col(context.columnName(slot))) // it's a boolean column
+      Some(getColumn(h, header, df)) // it's a boolean column
 
     // Arithmetics
     case add: Add =>
