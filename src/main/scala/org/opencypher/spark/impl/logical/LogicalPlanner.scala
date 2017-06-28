@@ -7,6 +7,7 @@ import org.opencypher.spark.api.ir.pattern._
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.types._
 import org.opencypher.spark.impl.DirectCompilationStage
+import org.opencypher.spark.impl.exception.Raise
 
 import scala.annotation.tailrec
 
@@ -50,7 +51,7 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
           block.after.head
         case Some(_plan) =>
           // we need to plan a block that hasn't already been solved
-          block.after.find(r => !_plan.solved.contains(model(r))).getOrElse(throw new IllegalStateException("Impossible because of above if case!"))
+          block.after.find(r => !_plan.solved.contains(model(r))).getOrElse(Raise.logicalPlanningFailure())
       }
       val dependency = planBlock(depRef, model, plan)
       planBlock(ref, model, Some(dependency))
@@ -62,7 +63,7 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
       case LoadGraphBlock(_, DefaultGraph()) =>
         producer.planLoadDefaultGraph(context.schema)
       case x =>
-        throw new NotImplementedError(s"Not yet able to leaf-plan $x (only queries starting with MATCH or LOAD GRAPH are supported)")
+        Raise.notYetImplemented(s"leaf planning of $x")
     }
   }
 
@@ -74,7 +75,8 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
         planFilter(patternPlan, where)
       case ProjectBlock(_, ProjectedFields(exprs), _, graph) =>
         planProjections(plan, exprs)
-      case x => throw new IllegalArgumentException(s"Don't know how to plan $x")
+      case x =>
+        Raise.notYetImplemented(s"logical planning of $x")
     }
   }
 
@@ -86,7 +88,8 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
         val projectLhs = planInnerExpr(be.lhs, acc)
         val projectRhs = planInnerExpr(be.rhs, projectLhs)
         producer.projectField(f, be, projectRhs)
-      case (_, x) => throw new UnsupportedOperationException(s"can not project $x")
+      case (_, x) =>
+        Raise.notYetImplemented(s"projection of $x")
     }
   }
 
@@ -107,7 +110,8 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
         producer.planFilter(not, project)
       case (acc, t: TrueLit) =>
         producer.planFilter(t, acc) // optimise away this one somehow... currently we do that in PhysicalPlanner
-      case (_, x) => throw new NotImplementedError(s"Not yet able to plan filter using predicate $x")
+      case (_, x) =>
+        Raise.notYetImplemented(s"logical planning of predicate $x")
     }
 
     filtersAndProjs
@@ -123,7 +127,8 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
         val project1 = planInnerExpr(be.lhs, in)
         val project2 = planInnerExpr(be.rhs, project1)
         producer.projectExpr(be, project2)
-      case x => throw new NotImplementedError(s"Not yet able to plan projection for inner expression $x")
+      case x =>
+        Raise.notYetImplemented(s"projection of inner expression $x")
     }
   }
 
@@ -140,7 +145,7 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
     if (pattern.topology.nonEmpty)
       planExpansions(nodePlans.toSet, pattern, producer)
     else if (nodePlans.size == 1) nodePlans.head
-    else throw new IllegalStateException("What kind of a pattern is this???")
+    else Raise.invalidPattern(pattern.toString)
   }
 
   @tailrec
@@ -149,14 +154,14 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
 
     val (r, c) = pattern.topology.collectFirst {
       case (rel, conn: Connection) if !allSolved.solves(rel) => rel -> conn
-    }.getOrElse(throw new IllegalStateException("Recursion / solved failure during logical planning: unable to find unsolved connection"))
+    }.getOrElse(Raise.patternPlanningFailure())
 
     val sourcePlan = disconnectedPlans.collectFirst {
       case p if p.solved.solves(c.source) => p
-    }.getOrElse(throw new IllegalStateException("A connection must have a known source!"))
+    }.getOrElse(Raise.invalidConnection("source"))
     val targetPlan = disconnectedPlans.collectFirst {
       case p if p.solved.solves(c.target) => p
-    }.getOrElse(throw new IllegalStateException("A connection must have a known target!"))
+    }.getOrElse(Raise.invalidConnection("target"))
 
     val expand = producer.planSourceExpand(c.source, r -> pattern.rels(r), c.target, sourcePlan, targetPlan)
 

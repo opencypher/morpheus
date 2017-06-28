@@ -1,12 +1,12 @@
 package org.opencypher.spark.impl.flat
 
 import cats.Monoid
-import org.opencypher.spark.api.exception.SparkCypherException
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.global.Label
 import org.opencypher.spark.api.ir.pattern.{AllGiven, EveryNode, EveryRelationship}
 import org.opencypher.spark.api.record._
 import org.opencypher.spark.api.types._
+import org.opencypher.spark.impl.exception.Raise
 import org.opencypher.spark.impl.logical.{GraphSource, NamedLogicalGraph}
 import org.opencypher.spark.impl.syntax.header._
 import org.opencypher.spark.impl.util.{Added, FailedToAdd, Found, Replaced}
@@ -64,7 +64,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
       case _: Found[_] => in
       case _: Replaced[_] => Alias(it.expr, it.alias.get, in, newHeader)
       case _: Added[_] => Project(it.expr, in, newHeader)
-      case f: FailedToAdd[_] => throw SparkCypherException(s"Failed to add new slot: $f")
+      case f: FailedToAdd[_] => Raise.slotNotAdded(f.toString)
     }
   }
 

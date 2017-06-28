@@ -1,12 +1,12 @@
 package org.opencypher.spark.impl.instances.spark
 
 import org.apache.spark.sql.{Column, Row}
-import org.opencypher.spark.api.exception.SparkCypherException
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.record._
 import org.opencypher.spark.api.spark.SparkCypherRecords
 import org.opencypher.spark.api.value.CypherValueUtils._
 import org.opencypher.spark.impl.classes.Transform
+import org.opencypher.spark.impl.exception.Raise
 import org.opencypher.spark.impl.instances.spark.RowUtils._
 import org.opencypher.spark.impl.instances.spark.SparkSQLExprMapper.asSparkSQLExpr
 import org.opencypher.spark.impl.physical.RuntimeContext
@@ -35,7 +35,7 @@ trait SparkCypherRecordsInstances extends Serializable {
         row.getCypherValue(lhs, header) >= row.getCypherValue(rhs, header)
 
       case x =>
-        throw new NotImplementedError(s"Predicate $x not yet supported")
+        Raise.notYetImplemented(s"Predicate $x")
     }
   }
 
@@ -101,7 +101,7 @@ trait SparkCypherRecordsInstances extends Serializable {
         val newData = if (subject.data.columns.contains(oldColumnName)) {
           subject.data.withColumnRenamed(oldColumnName, newColumnName)
         } else {
-          throw new IllegalStateException(s"Wanted to rename column $oldColumnName, but it was not present!")
+          Raise.columnNotFound(oldColumnName)
         }
 
         SparkCypherRecords.create(newHeader, newData)(subject.space)
@@ -110,12 +110,12 @@ trait SparkCypherRecordsInstances extends Serializable {
       override def project(subject: SparkCypherRecords, expr: Expr, newHeader: RecordHeader): SparkCypherRecords = {
 
         val newData = asSparkSQLExpr(newHeader, expr, subject.data) match {
-          case None => throw new NotImplementedError(s"No support for projecting $expr yet")
+          case None => Raise.notYetImplemented(s"projecting $expr")
 
           case Some(sparkSqlExpr) =>
             // align the name of the column to what the header expects
             val name = newHeader.slotsFor(expr).headOption match {
-              case None => throw SparkCypherException("Only a single slot per expression currently supported")
+              case None => Raise.multipleSlotsForExpression()
               case Some(s) => context.columnName(s)
             }
             val columnsToSelect = subject.data.columns.map(subject.data.col) :+ sparkSqlExpr.as(name)
@@ -144,7 +144,7 @@ trait SparkCypherRecordsInstances extends Serializable {
 
           SparkCypherRecords.create(jointHeader, jointData)(lhs.space)
         } else {
-          throw new IllegalArgumentException("Cannot join records from different sessions")
+          Raise.graphSpaceMismatch()
         }
       }
     }
