@@ -221,9 +221,7 @@ object SparkCypherRecords {
       // Verify column types
       initialHeader.slots.foreach { slot =>
         val dfSchema = initialData.schema
-        val dfIndex = dfSchema.fieldIndex(SparkColumnName.of(slot)) // this will throw if the name does not exist
-//        if (dfIndex != slot.index) // we don't really care about this
-        val field = dfSchema.fields(dfIndex)
+        val field = dfSchema(SparkColumnName.of(slot))
         val cypherType = fromSparkType(field.dataType, field.nullable)
         val headerType = slot.content.cypherType
 
