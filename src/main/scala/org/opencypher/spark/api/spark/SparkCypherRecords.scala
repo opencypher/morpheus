@@ -3,10 +3,10 @@ package org.opencypher.spark.api.spark
 import java.util.Collections
 
 import org.apache.spark.sql.{Column, DataFrame, Row}
-import org.opencypher.spark.api.exception.SparkCypherException
 import org.opencypher.spark.api.expr.{Property, Var}
 import org.opencypher.spark.api.record._
 import org.opencypher.spark.impl.convert.{fromSparkType, toSparkType}
+import org.opencypher.spark.impl.exception.Raise
 import org.opencypher.spark.impl.record.SparkCypherRecordHeader
 import org.opencypher.spark.impl.spark.SparkColumnName
 import org.opencypher.spark.impl.syntax.header._
@@ -212,11 +212,11 @@ object SparkCypherRecords {
       // Ensure no duplicate columns in initialData
       val initialDataColumns = initialData.columns.toSeq
       if (initialDataColumns.size != initialDataColumns.distinct.size)
-        throw new IllegalArgumentException("Cannot use data frames with duplicate column names")
+        Raise.duplicateColumnNamesInData()
 
       // Verify correct column names
       if (initialData.columns.toSet != initialHeader.internalHeader.columns.toSet)
-        throw SparkCypherException("Column mismatch between data and header!")
+        Raise.recordsDataHeaderMismatch()
 
       // Verify column types
       initialHeader.slots.foreach { slot =>
@@ -226,13 +226,13 @@ object SparkCypherRecords {
         val headerType = slot.content.cypherType
 
         if (toSparkType(headerType) != toSparkType(cypherType))
-          throw new IllegalArgumentException(s"Invalid data type for column ${field.name}. Expected at least $headerType but got conflicting $cypherType")
+          Raise.invalidDataTypeForColumn(field.name, headerType.toString, cypherType.toString)
       }
 
       new SparkCypherRecords(graphSpace.tokens, initialHeader, initialData) {}
     }
     else {
-      throw new IllegalArgumentException("Import of a data frame not created in the same session as the graph space")
+      Raise.graphSpaceMismatch()
     }
   }
 

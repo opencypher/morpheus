@@ -1,12 +1,12 @@
 package org.opencypher.spark.impl.instances.spark
 
 import org.apache.spark.sql.Row
-import org.opencypher.spark.api.exception.SparkCypherException
 import org.opencypher.spark.api.expr.{Const, Expr}
 import org.opencypher.spark.api.record.RecordHeader
 import org.opencypher.spark.api.types._
 import org.opencypher.spark.api.value.CypherValue
 import org.opencypher.spark.api.value.CypherValue.Conversion._
+import org.opencypher.spark.impl.exception.Raise
 import org.opencypher.spark.impl.physical.RuntimeContext
 
 object RowUtils {
@@ -17,7 +17,7 @@ object RowUtils {
         case c: Const => context.parameters(context.constants.constantRef(c.constant))
         case _ =>
           header.slotsFor(expr).headOption match {
-            case None => throw SparkCypherException(s"Did not find slot for $expr")
+            case None => Raise.slotNotFound(expr.toString)
             case Some(slot) =>
               val index = slot.index
 
