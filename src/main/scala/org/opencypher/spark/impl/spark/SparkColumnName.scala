@@ -1,9 +1,14 @@
 package org.opencypher.spark.impl.spark
 
+import org.apache.spark.sql.{Column, DataFrame}
 import org.opencypher.spark.api.expr.Property
 import org.opencypher.spark.api.record.{FieldSlotContent, ProjectedExpr, RecordSlot, SlotContent}
 
 import scala.collection.mutable
+
+object SparkColumn {
+  def from(df: DataFrame): RecordSlot => Column = (record) => df.col(SparkColumnName.of(record.content))
+}
 
 object SparkColumnName {
 

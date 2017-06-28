@@ -137,9 +137,6 @@ trait GraphMatchingTestSupport extends TestSession.Fixture {
         }
         SparkCypherRecords.create(header, data)(space)
       }
-
-      override def model: QueryModel[Expr] = ???
-      override def details: SparkCypherRecords = ???
     }
   }
 

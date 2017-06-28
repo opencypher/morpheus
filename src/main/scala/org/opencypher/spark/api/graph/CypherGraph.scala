@@ -15,11 +15,7 @@ trait CypherGraph {
 
   def space: Space
 
-  def model: QueryModel[Expr]
   def schema: Schema
-
-  def records: Records = details.compact
-  def details: Records
 
   // TODO: This opens up for someone to send a wrongly typed variable here -- name here, type on inside?
   def nodes(v: Var): Records

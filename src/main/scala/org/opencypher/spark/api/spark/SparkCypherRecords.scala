@@ -6,9 +6,10 @@ import org.apache.spark.sql.{Column, DataFrame, Row}
 import org.opencypher.spark.api.exception.SparkCypherException
 import org.opencypher.spark.api.expr.{Property, Var}
 import org.opencypher.spark.api.record._
+import org.opencypher.spark.api.types.CypherType
 import org.opencypher.spark.impl.convert.{fromSparkType, toSparkType}
 import org.opencypher.spark.impl.record.SparkCypherRecordHeader
-import org.opencypher.spark.impl.spark.SparkColumnName
+import org.opencypher.spark.impl.spark.{SparkColumn, SparkColumnName}
 import org.opencypher.spark.impl.syntax.header._
 
 sealed abstract class SparkCypherRecords(tokens: SparkCypherTokens, initialHeader: RecordHeader, initialData: DataFrame)

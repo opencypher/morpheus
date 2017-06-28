@@ -13,7 +13,12 @@ sealed trait EmbeddedEntity extends Verifiable {
   override type Self <: EmbeddedEntity
   override type VerifiedSelf = VerifiedEmbeddedEntity[Self]
 
+  type EntityCypherType <: CypherType
+
+  // This method is not implemented here to avoid initialization order issues
   def entityVar: Var
+  def entityType: EntityCypherType
+
   def entitySlot: String
   def idSlot: String
   def propertiesFromSlots: Map[String, Set[String]]
@@ -51,9 +56,10 @@ final case class EmbeddedNode(
   self =>
 
   override type Self = EmbeddedNode
+  override type EntityCypherType = CTNode
 
-  override val entityVar =
-    Var(entitySlot)(CTNode(labelsFromSlotOrImplied.collect { case (label, None) => label -> true }))
+  override val entityType = CTNode(labelsFromSlotOrImplied.collect { case (label, None) => label -> true })
+  override val entityVar = Var(entitySlot)(entityType)
 
   override def verify: VerifiedSelf = new VerifiedEmbeddedEntity[EmbeddedNode] {
     override val v: EmbeddedNode = self
@@ -129,8 +135,10 @@ final case class EmbeddedRelationship(
   self =>
 
   override type Self = EmbeddedRelationship
+  override type EntityCypherType = CTRelationship
 
-  override val entityVar = Var(entitySlot)(CTRelationship(relTypeNames))
+  override val entityType = CTRelationship(relTypeNames)
+  override val entityVar = Var(entitySlot)(entityType)
 
   override def verify: VerifiedSelf = new VerifiedEmbeddedEntity[EmbeddedRelationship] {
     override val v: EmbeddedRelationship = self
