@@ -1,9 +1,11 @@
 package org.opencypher.spark.api.spark
 
+import org.apache.spark.sql.Row
+import org.opencypher.spark.api.exception.SparkCypherException
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.global.{Label, PropertyKey, TokenRegistry}
-import org.opencypher.spark.api.record.{EmbeddedNode, EmbeddedRelationship, OpaqueField, ProjectedExpr}
-import org.opencypher.spark.api.types.{CTBoolean, CTNode, CTRelationship, CTString}
+import org.opencypher.spark.api.record._
+import org.opencypher.spark.api.types._
 import org.opencypher.spark.{TestSession, TestSuiteImpl}
 
 class SparkCypherRecordsTest extends TestSuiteImpl with TestSession.Fixture {
@@ -82,5 +84,22 @@ class SparkCypherRecordsTest extends TestSuiteImpl with TestSession.Fixture {
       ProjectedExpr(EndNode(entity)(CTNode)),
       ProjectedExpr(TypeId(entity)(CTRelationship("RED", "BLUE", "GREEN", "YELLOW")))
     ))
+  }
+
+  test("can not construct records with data/header column name conflict") {
+    val data = session.createDataFrame(Seq((1, "foo"), (2, "bar"))).toDF("int", "string")
+    val header = RecordHeader.from(OpaqueField(Var("int")()), OpaqueField(Var("notString")()))
+
+    a [SparkCypherException] shouldBe thrownBy {
+      SparkCypherRecords.create(header, data)
+    }
+  }
+
+  test("can construct records with matching data/header") {
+    val data = session.createDataFrame(Seq((1, "foo"), (2, "bar"))).toDF("int", "string")
+    val header = RecordHeader.from(OpaqueField(Var("int")(CTInteger)), OpaqueField(Var("string")(CTString)))
+
+    val records = SparkCypherRecords.create(header, data) // no exception is thrown
+    records.data.select("int").collect() should equal(Array(Row(1), Row(2)))
   }
 }

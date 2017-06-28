@@ -3,6 +3,7 @@ package org.opencypher.spark.api.spark
 import java.util.Collections
 
 import org.apache.spark.sql.{Column, DataFrame, Row}
+import org.opencypher.spark.api.exception.SparkCypherException
 import org.opencypher.spark.api.expr.{Property, Var}
 import org.opencypher.spark.api.record._
 import org.opencypher.spark.impl.convert.{fromSparkType, toSparkType}
@@ -176,7 +177,8 @@ sealed abstract class SparkCypherRecords(tokens: SparkCypherTokens, initialHeade
         slot.content
     }
     val newHeader = RecordHeader.from(newSlots: _*)
-    SparkCypherRecords.create(newHeader, data)
+    val renamed = data.toDF(newHeader.internalHeader.columns: _*)
+    SparkCypherRecords.create(newHeader, renamed)
   }
 
   def distinct: SparkCypherRecords = SparkCypherRecords.create(self.header, self.data.distinct())
@@ -186,9 +188,23 @@ object SparkCypherRecords {
 
   def create(initialDataFrame: DataFrame)(implicit graphSpace: SparkGraphSpace): SparkCypherRecords = {
     val initialHeader = SparkCypherRecordHeader.fromSparkStructType(initialDataFrame.schema)
-    create(initialHeader, initialDataFrame)
+
+    // rename data to match generated header
+    // we trust the order of the generated header
+    val renamed = initialDataFrame.toDF(initialHeader.internalHeader.columns: _*)
+
+    create(initialHeader, renamed)
   }
 
+  /**
+    * This does not mandate that the <i>order</i> of the RecordHeader and the DataFrame are aligned, as long as the
+    * <i>names</i> are the same (and not duplicated).
+    *
+    * @param initialHeader the header of the records.
+    * @param initialData the data of the records.
+    * @param graphSpace the space in which the data belongs.
+    * @return a new SparkCypherRecords representing the input.
+    */
   def create(initialHeader: RecordHeader, initialData: DataFrame)(implicit graphSpace: SparkGraphSpace)
   : SparkCypherRecords = {
     if (initialData.sparkSession == graphSpace.session) {
@@ -198,13 +214,16 @@ object SparkCypherRecords {
       if (initialDataColumns.size != initialDataColumns.distinct.size)
         throw new IllegalArgumentException("Cannot use data frames with duplicate column names")
 
-      // Correctly name columns in initialData
-      val columns = initialHeader.internalHeader.columns
-      val data = if (columns == initialDataColumns) initialData else initialData.toDF(columns: _*)
+      // Verify correct column names
+      if (initialData.columns.toSet != initialHeader.internalHeader.columns.toSet)
+        throw SparkCypherException("Column mismatch between data and header!")
 
       // Verify column types
       initialHeader.slots.foreach { slot =>
-        val field = data.schema.fields(slot.index)
+        val dfSchema = initialData.schema
+        val dfIndex = dfSchema.fieldIndex(SparkColumnName.of(slot)) // this will throw if the name does not exist
+//        if (dfIndex != slot.index) // we don't really care about this
+        val field = dfSchema.fields(dfIndex)
         val cypherType = fromSparkType(field.dataType, field.nullable)
         val headerType = slot.content.cypherType
 
@@ -212,7 +231,7 @@ object SparkCypherRecords {
           throw new IllegalArgumentException(s"Invalid data type for column ${field.name}. Expected at least $headerType but got conflicting $cypherType")
       }
 
-      new SparkCypherRecords(graphSpace.tokens, initialHeader, data) {}
+      new SparkCypherRecords(graphSpace.tokens, initialHeader, initialData) {}
     }
     else {
       throw new IllegalArgumentException("Import of a data frame not created in the same session as the graph space")
