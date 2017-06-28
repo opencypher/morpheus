@@ -163,24 +163,6 @@ sealed abstract class SparkCypherRecords(tokens: SparkCypherTokens, initialHeade
   //    }
   //  }
 
-  def scan[E <: EmbeddedEntity, S <: GraphScan](entity: VerifiedEmbeddedEntity[E])
-                                               (implicit factory: GraphScanFactory[VerifiedEmbeddedEntity[E], S]): S = {
-    val contracted = contract(entity)
-    val oldSlots = contracted.header.contents
-    val newSlots = oldSlots.filter(_.owner.contains(entity.v.entityVar))
-    val newRecords =
-      if (newSlots.size == oldSlots.size)
-        contracted
-      else {
-        val newHeader = RecordHeader.from(newSlots.toSeq: _*)
-        val newCols = newHeader.slots.map(SparkColumn.from(contracted.data))
-        val newData = contracted.data.select(newCols: _*)
-        SparkCypherRecords.create(newHeader, newData)
-      }
-    factory.create(entity, newRecords)
-  }
-
-
   override def contract[E <: EmbeddedEntity](entity: VerifiedEmbeddedEntity[E]): SparkCypherRecords = {
     val slotExprs = entity.slots
     val newSlots = header.slots.map {

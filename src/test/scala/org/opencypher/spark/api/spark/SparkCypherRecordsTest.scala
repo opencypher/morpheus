@@ -36,8 +36,8 @@ class SparkCypherRecordsTest extends TestSuiteImpl with TestSession.Fixture {
       ProjectedExpr(Property(entityVar, PropertyKey("name"))(CTString.nullable))
     ))
 
-    val scan = given.scan(embeddedNode)
-    scan.entityVar should equal(entityVar)
+    val scan = GraphScan(embeddedNode).from(given)
+    scan.entity should equal(entityVar)
     scan.records.header should equal(result.header)
   }
 
@@ -64,8 +64,8 @@ class SparkCypherRecordsTest extends TestSuiteImpl with TestSession.Fixture {
       ProjectedExpr(Property(entityVar, PropertyKey("color"))(CTString.nullable))
     ))
 
-    val scan = given.scan(embeddedRel)
-    scan.entityVar should equal(entityVar)
+    val scan = GraphScan(embeddedRel).from(given)
+    scan.entity should equal(entityVar)
     scan.records.header should equal(result.header)
   }
 
@@ -93,8 +93,8 @@ class SparkCypherRecordsTest extends TestSuiteImpl with TestSession.Fixture {
       ProjectedExpr(TypeId(entityVar)(CTRelationship("RED", "BLUE", "GREEN", "YELLOW")))
     ))
 
-    val scan = given.scan(embeddedRel)
-    scan.entityVar should equal(entityVar)
+    val scan = GraphScan(embeddedRel).from(given)
+    scan.entity should equal(entityVar)
     scan.records.header should equal(result.header)
   }
 
