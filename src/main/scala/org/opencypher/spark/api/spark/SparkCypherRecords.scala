@@ -49,7 +49,7 @@ sealed abstract class SparkCypherRecords(tokens: SparkCypherTokens,
   override def header = initialHeader
   override def data = initialData
 
-  override def columns: IndexedSeq[String] =
+  override val columns: IndexedSeq[String] =
     header.internalHeader.columns
 
   override def column(slot: RecordSlot): String =
