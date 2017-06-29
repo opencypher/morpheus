@@ -1,8 +1,8 @@
 package org.opencypher.spark.api.types
 
-import org.opencypher.spark.TestSuiteImpl
+import org.opencypher.spark.BaseTestSuite
 
-class TernaryTest extends TestSuiteImpl {
+class TernaryTest extends BaseTestSuite {
 
   test("Ternary.toString") {
     True.toString shouldBe "definitely true"

@@ -1,8 +1,8 @@
 package org.opencypher.spark_legacy.impl.util
 
-import org.opencypher.spark.TestSuiteImpl
+import org.opencypher.spark.BaseTestSuite
 
-class ProductConversionTest extends TestSuiteImpl {
+class ProductConversionTest extends BaseTestSuite {
 
   test("Converts vector to products") {
     (1 to 9).foreach { size =>

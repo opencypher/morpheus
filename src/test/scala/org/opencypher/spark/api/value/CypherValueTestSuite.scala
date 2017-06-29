@@ -1,11 +1,11 @@
 package org.opencypher.spark.api.value
 
-import org.opencypher.spark.TestSuiteImpl
+import org.opencypher.spark.BaseTestSuite
 import org.opencypher.spark.api.types.{False, Maybe, Ternary, True}
 
 import scala.annotation.tailrec
 
-class CypherValueTestSuite extends TestSuiteImpl with CypherValue.Conversion {
+class CypherValueTestSuite extends BaseTestSuite with CypherValue.Conversion {
 
   @tailrec
   final def isPathLike(l: Seq[Any], nextIsNode: Ternary = Maybe): Boolean = l match {

@@ -1,9 +1,9 @@
 package org.opencypher.spark.api.record
 
-import org.opencypher.spark.TestSuiteImpl
+import org.opencypher.spark.BaseTestSuite
 import org.opencypher.spark.api.exception.SparkCypherException
 
-class EmbeddedEntityTest extends TestSuiteImpl {
+class EmbeddedEntityTest extends BaseTestSuite {
 
   test("Construct embedded node") {
     val given =

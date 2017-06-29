@@ -8,9 +8,9 @@ import org.opencypher.spark.api.record.{OpaqueField, ProjectedExpr, ProjectedFie
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.types._
 import org.opencypher.spark.impl.logical.LogicalOperatorProducer
-import org.opencypher.spark.{TestSuiteImpl, toField}
+import org.opencypher.spark.{BaseTestSuite, toField}
 
-class FlatPlannerTest extends TestSuiteImpl {
+class FlatPlannerTest extends BaseTestSuite {
 
   val schema = Schema
     .empty

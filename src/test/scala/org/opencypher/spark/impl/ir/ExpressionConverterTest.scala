@@ -4,10 +4,11 @@ import org.neo4j.cypher.internal.frontend.v3_2.{Ref, ast, symbols}
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.global._
 import org.opencypher.spark.api.types._
-import org.opencypher.spark.{Neo4jAstTestSupport, TestSuiteImpl}
+import org.opencypher.spark.BaseTestSuite
+import org.opencypher.spark.support.Neo4jAstTestSupport
 import org.opencypher.spark.toVar
 
-class ExpressionConverterTest extends TestSuiteImpl with Neo4jAstTestSupport {
+class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   private val globals = GlobalsRegistry(
     TokenRegistry

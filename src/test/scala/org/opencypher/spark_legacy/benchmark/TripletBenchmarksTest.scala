@@ -2,9 +2,9 @@ package org.opencypher.spark_legacy.benchmark
 
 import org.apache.spark.sql.functions.col
 import org.opencypher.spark_legacy.impl.{FixedLengthPattern, Out}
-import org.opencypher.spark.{TestSuiteImpl, TestSession}
+import org.opencypher.spark.{BaseTestSuite, SparkTestSession}
 
-class TripletBenchmarksTest extends TestSuiteImpl with TestSession.Fixture {
+class TripletBenchmarksTest extends BaseTestSuite with SparkTestSession.Fixture {
 
   case class NodeRow(id: Long, group: Boolean, company: Boolean)
   case class TripletRow(id: Long, startId: Long, endId: Long, group: Boolean, company: Boolean)

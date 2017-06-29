@@ -1,11 +1,11 @@
 package org.opencypher.spark.api.types
 
 import org.opencypher.spark_legacy.api._
-import org.opencypher.spark.TestSuiteImpl
+import org.opencypher.spark.BaseTestSuite
 
 import scala.language.postfixOps
 
-class CypherTypesTest extends TestSuiteImpl {
+class CypherTypesTest extends BaseTestSuite {
 
   val materialTypes: Seq[MaterialCypherType] = Seq(
     CTAny,

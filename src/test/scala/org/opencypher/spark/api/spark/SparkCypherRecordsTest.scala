@@ -6,9 +6,9 @@ import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.global.{Label, PropertyKey, TokenRegistry}
 import org.opencypher.spark.api.record._
 import org.opencypher.spark.api.types.{CTBoolean, CTNode, CTRelationship, CTString, _}
-import org.opencypher.spark.{TestSession, TestSuiteImpl}
+import org.opencypher.spark.{BaseTestSuite, SparkTestSession}
 
-class SparkCypherRecordsTest extends TestSuiteImpl with TestSession.Fixture {
+class SparkCypherRecordsTest extends BaseTestSuite with SparkTestSession.Fixture {
 
   implicit val space = SparkGraphSpace.empty(session, TokenRegistry.empty)
 

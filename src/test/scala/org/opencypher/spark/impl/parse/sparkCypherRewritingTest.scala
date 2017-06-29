@@ -1,9 +1,9 @@
 package org.opencypher.spark.impl.parse
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.opencypher.spark.TestSuiteImpl
+import org.opencypher.spark.BaseTestSuite
 
-class sparkCypherRewritingTest extends TestSuiteImpl with AstConstructionTestSupport {
+class sparkCypherRewritingTest extends BaseTestSuite with AstConstructionTestSupport {
 
   test("extracts haslabels from ands") {
     val hasLabels = HasLabels(Variable("n") _, Seq(LabelName("name") _))(pos)

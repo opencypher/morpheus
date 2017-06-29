@@ -1,9 +1,9 @@
 package org.opencypher.spark.api.schema
 
-import org.opencypher.spark.TestSuiteImpl
+import org.opencypher.spark.BaseTestSuite
 import org.opencypher.spark.api.types.{CTBoolean, CTFloat, CTInteger, CTString}
 
-class SchemaTest extends TestSuiteImpl {
+class SchemaTest extends BaseTestSuite {
 
   test("should provide all labels") {
     Schema.empty.withNodeKeys("Person")().labels should equal(Set("Person"))

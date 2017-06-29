@@ -4,9 +4,9 @@ import org.apache.spark.sql.types._
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkGraphSpace}
 import org.opencypher.spark.api.types._
-import org.opencypher.spark.{TestSession, TestSuiteImpl}
+import org.opencypher.spark.{BaseTestSuite, SparkTestSession}
 
-class SparkGraphSpaceTest extends TestSuiteImpl with TestSession.Fixture {
+class SparkGraphSpaceTest extends BaseTestSuite with SparkTestSession.Fixture {
 
   implicit class RichGraph(val graph: SparkCypherGraph) {
     def nodes() = graph.nodes("n")

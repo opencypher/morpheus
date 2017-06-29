@@ -7,7 +7,8 @@ import org.opencypher.spark_legacy.impl.frame.StdFrameTestSuite.FrameTestResult
 import org.opencypher.spark_legacy.impl.util.SlotSymbolGenerator
 import org.opencypher.spark.api.types._
 import org.opencypher.spark.api.value.{NodeData, RelationshipData}
-import org.opencypher.spark.{TestSuiteImpl, TestSession}
+import org.opencypher.spark.{BaseTestSuite, SparkTestSession}
+import org.opencypher.spark_legacy.PropertyGraphFactory
 
 object StdFrameTestSuite {
   final case class FrameTestResult[Out](dataframe: Dataset[Out], signature: StdFrameSignature) {
@@ -16,7 +17,9 @@ object StdFrameTestSuite {
   }
 }
 
-abstract class StdFrameTestSuite extends TestSuiteImpl with TestSession.Fixture {
+abstract class StdFrameTestSuite extends BaseTestSuite with SparkTestSession.Fixture {
+
+  implicit val factory = PropertyGraphFactory.create
 
   trait GraphTest {
     val graph = factory.graph

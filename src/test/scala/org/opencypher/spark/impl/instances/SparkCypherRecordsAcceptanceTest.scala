@@ -5,11 +5,11 @@ import org.opencypher.spark.api.spark.{SparkCypherRecords, SparkGraphSpace}
 import org.opencypher.spark.api.types._
 import org.opencypher.spark.impl.instances.spark.cypher._
 import org.opencypher.spark.impl.syntax.cypher._
-import org.opencypher.spark.{TestSession, TestSuiteImpl}
+import org.opencypher.spark.{BaseTestSuite, SparkTestSession}
 
 import scala.language.reflectiveCalls
 
-class SparkCypherRecordsAcceptanceTest extends TestSuiteImpl with TestSession.Fixture {
+class SparkCypherRecordsAcceptanceTest extends BaseTestSuite with SparkTestSession.Fixture {
 
   test("label scan and project") {
     // When

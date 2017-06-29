@@ -2,7 +2,7 @@ package org.opencypher.spark.impl.ir
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, Parameter}
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, symbols}
-import org.opencypher.spark.TestSuiteImpl
+import org.opencypher.spark.BaseTestSuite
 import org.opencypher.spark.api.expr.Expr
 import org.opencypher.spark.api.ir._
 import org.opencypher.spark.api.ir.block._
@@ -16,7 +16,7 @@ import org.opencypher.spark.impl.parse.CypherParser
 
 import scala.language.implicitConversions
 
-abstract class IrTestSuite extends TestSuiteImpl {
+abstract class IrTestSuite extends BaseTestSuite {
   val leafRef = BlockRef("leaf")
   val leafBlock = LoadGraphBlock[Expr](Set.empty, DefaultGraph())
   val leafPlan = LoadGraph(NamedLogicalGraph("default", Schema.empty), DefaultGraphSource)(SolvedQueryModel.empty)
