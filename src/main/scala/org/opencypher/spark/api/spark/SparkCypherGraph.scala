@@ -17,7 +17,7 @@ package org.opencypher.spark.api.spark
 
 import org.opencypher.spark.api.expr.Var
 import org.opencypher.spark.api.graph.CypherGraph
-import org.opencypher.spark.api.record.{OpaqueField, RecordHeader}
+import org.opencypher.spark.api.record.{GraphScan, NodeScan, OpaqueField, RecordHeader}
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.types.{CTNode, CTRelationship}
 
@@ -32,20 +32,26 @@ trait SparkCypherGraph extends CypherGraph {
 
 object SparkCypherGraph {
 
-  def empty(graphSpace: SparkGraphSpace): SparkCypherGraph =
-    EmptyGraph(graphSpace)
+  def empty(implicit space: SparkGraphSpace): SparkCypherGraph =
+    new EmptyGraph() {}
 
-  private sealed case class EmptyGraph(
-    graphSpace: SparkGraphSpace
-  ) extends SparkCypherGraph {
+  def create(nodes: NodeScan, scans: GraphScan*)(implicit space: SparkGraphSpace): SparkCypherGraph = {
+    val allScans = nodes +: scans
+    val schema = ???
+    new ScanGraph(allScans, schema) {}
+  }
 
-    override def nodes(name: String): SparkCypherRecords =
-      SparkCypherRecords.empty(RecordHeader.from(OpaqueField(Var(name)(CTNode))))(graphSpace)
-
-    override def relationships(name: String): SparkCypherRecords =
-      SparkCypherRecords.empty(RecordHeader.from(OpaqueField(Var(name)(CTRelationship))))(graphSpace)
-
-    override def space = graphSpace
+  sealed abstract case class EmptyGraph(implicit val space: SparkGraphSpace) extends SparkCypherGraph {
     override def schema = Schema.empty
+
+    override def nodes(name: String) = SparkCypherRecords.empty(RecordHeader.from(OpaqueField(Var(name)(CTNode))))
+    override def relationships(name: String) = SparkCypherRecords.empty(RecordHeader.from(OpaqueField(Var(name)(CTRelationship))))
+  }
+
+  sealed abstract case class ScanGraph(scans: Seq[GraphScan], schema: Schema)
+                                      (implicit val space: SparkGraphSpace) extends SparkCypherGraph {
+
+    override def nodes(name: String): SparkCypherRecords = ???
+    override def relationships(name: String): SparkCypherRecords = ???
   }
 }
