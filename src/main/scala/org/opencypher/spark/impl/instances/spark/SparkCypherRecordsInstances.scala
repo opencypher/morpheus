@@ -113,13 +113,19 @@ trait SparkCypherRecordsInstances extends Serializable {
           case None => Raise.notYetImplemented(s"projecting $expr")
 
           case Some(sparkSqlExpr) =>
-            // align the name of the column to what the header expects
-            val name = newHeader.slotsFor(expr).headOption match {
-              case None => Raise.multipleSlotsForExpression()
-              case Some(s) => context.columnName(s)
+            val headerNames = newHeader.slotsFor(expr).map(context.columnName)
+            val dataNames = subject.data.columns.toSeq
+
+            // TODO: Can optimise for var AS var2 case -- avoid duplicating data
+            headerNames.diff(dataNames) match {
+              case Seq(one) =>
+                // align the name of the column to what the header expects
+                val newCol = sparkSqlExpr.as(one)
+                val columnsToSelect = subject.data.columns.map(subject.data.col) :+ newCol
+
+                subject.data.select(columnsToSelect: _*)
+              case _ => Raise.multipleSlotsForExpression()
             }
-            val columnsToSelect = subject.data.columns.map(subject.data.col) :+ sparkSqlExpr.as(name)
-            subject.data.select(columnsToSelect: _*)
         }
 
         SparkCypherRecords.create(newHeader, newData)(subject.space)

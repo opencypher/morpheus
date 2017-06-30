@@ -57,6 +57,23 @@ class WithAcceptanceTest extends TestSuiteImpl with GraphMatchingTestSupport {
     result.graph shouldMatch given.graph
   }
 
+  test("aliasing variables") {
+
+    // Given
+    val given = TestGraph("""(:Node {val: 4L})-->(:Node {val: 5L})""")
+
+    // When
+    val result = given.cypher("MATCH (n:Node)-[r]->(m:Node) WITH n.val + m.val AS sum WITH sum AS sum2 RETURN sum2")
+
+    // Then
+    result.records.toMaps should equal(Set(
+      CypherMap("sum2" -> 9)
+    ))
+
+    // And
+    result.graph shouldMatch given.graph
+  }
+
   test("projecting mixed expression") {
 
     // Given

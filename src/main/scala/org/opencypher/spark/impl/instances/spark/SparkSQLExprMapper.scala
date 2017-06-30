@@ -12,7 +12,7 @@ object SparkSQLExprMapper {
 
     if (slots.isEmpty) {
       throw new IllegalStateException(s"No slot found for expression $expr")
-    } else if (slots.size > 1) {
+    } else if (slots.size > 1 && !expr.isInstanceOf[Var]) {
       throw new NotImplementedError("No support for multi-column expressions yet")
     }
   }
@@ -36,6 +36,10 @@ object SparkSQLExprMapper {
     */
   def asSparkSQLExpr(header: RecordHeader, expr: Expr, df: DataFrame)
                     (implicit context: RuntimeContext): Option[Column] = expr match {
+
+    case _: Var =>
+      val col = getColumn(expr, header, df)
+      Some(col)
 
     // predicates
     case Not(Equals(v1: Var, v2: Var)) =>
