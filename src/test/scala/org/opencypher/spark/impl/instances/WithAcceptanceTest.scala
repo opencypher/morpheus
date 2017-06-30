@@ -39,4 +39,39 @@ class WithAcceptanceTest extends TestSuiteImpl with GraphMatchingTestSupport {
     // And
     result.graph shouldMatch given.graph
   }
+
+  test("projecting addition expression") {
+
+    // Given
+    val given = TestGraph("""(:Node {val: 4L})-->(:Node {val: 5L})""")
+
+    // When
+    val result = given.cypher("MATCH (n:Node)-->(m:Node) WITH n.val + m.val AS sum_n_m_val RETURN sum_n_m_val")
+
+    // Then
+    result.records.toMaps should equal(Set(
+      CypherMap("sum_n_m_val" -> 9)
+    ))
+
+    // And
+    result.graph shouldMatch given.graph
+  }
+
+  test("projecting mixed expression") {
+
+    // Given
+    val given = TestGraph("""(:Node {val: 4L})-->(:Node {val: 5L})-->(:Node)""")
+
+    // When
+    val result = given.cypher("MATCH (n:Node)-[r]->(m:Node) WITH n.val AS n_val, n.val + m.val AS sum_n_m_val RETURN sum_n_m_val, n_val")
+
+    // Then
+    result.records.toMaps should equal(Set(
+      CypherMap("sum_n_m_val" -> 9, "n_val" -> 4),
+      CypherMap("sum_n_m_val" -> null, "n_val" -> 5)
+    ))
+
+    // And
+    result.graph shouldMatch given.graph
+  }
 }
