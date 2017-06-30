@@ -40,6 +40,24 @@ class WithAcceptanceTest extends TestSuiteImpl with GraphMatchingTestSupport {
     result.graph shouldMatch given.graph
   }
 
+  test("projecting property expression with filter") {
+
+    // Given
+    val given = TestGraph("""(:Node {val: 3L}), (:Node {val: 4L}), (:Node {val: 5L})""")
+
+    // When
+    val result = given.cypher("MATCH (n:Node) WITH n.val AS n_val WHERE n_val <= 4 RETURN n_val")
+
+    // Then
+    result.records.toMaps should equal(Set(
+      CypherMap("n_val" -> 3),
+      CypherMap("n_val" -> 4)
+    ))
+
+    // And
+    result.graph shouldMatch given.graph
+  }
+
   test("projecting addition expression") {
 
     // Given

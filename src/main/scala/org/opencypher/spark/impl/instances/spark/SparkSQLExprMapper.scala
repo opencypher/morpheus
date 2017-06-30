@@ -1,9 +1,14 @@
 package org.opencypher.spark.impl.instances.spark
 
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types.BooleanType
 import org.apache.spark.sql.{Column, DataFrame}
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.record.RecordHeader
+import org.opencypher.spark.api.value.CypherValue
+import org.opencypher.spark.impl.convert.{toJavaType, toSparkType}
 import org.opencypher.spark.impl.physical.RuntimeContext
+import org.opencypher.spark_legacy.benchmark.Converters.cypherValue
 
 object SparkSQLExprMapper {
 
@@ -19,10 +24,15 @@ object SparkSQLExprMapper {
 
   private def getColumn(expr: Expr, header: RecordHeader, dataFrame: DataFrame)
                        (implicit context: RuntimeContext): Column = {
-    verifyExpression(header, expr)
-    val slot = header.slotsFor(expr).head
+    expr match {
+      case c: Const =>
+        udf(const(context.parameters(context.constants.constantRef(c.constant))), toSparkType(c.cypherType))()
+      case _ =>
+        verifyExpression(header, expr)
+        val slot = header.slotsFor(expr).head
 
-    dataFrame.col(context.columnName(slot))
+        dataFrame.col(context.columnName(slot))
+    }
   }
 
   /**
@@ -66,6 +76,13 @@ object SparkSQLExprMapper {
     case h: HasLabel =>
       Some(getColumn(h, header, df)) // it's a boolean column
 
+    case l: LessThanOrEqual => {
+      val lhs = getColumn(l.lhs, header, df)
+      val rhs = getColumn(l.rhs, header, df)
+
+      Some(udf(lteq _, BooleanType)(lhs, rhs))
+    }
+
     // Arithmetics
     case add: Add =>
       verifyExpression(header, expr)
@@ -83,5 +100,11 @@ object SparkSQLExprMapper {
 
     case _ => None
   }
+
+  // TODO: Move to UDF package
+  import org.opencypher.spark.api.value.CypherValueUtils._
+
+  private def lteq(lhs: Any, rhs: Any): Any = (cypherValue(lhs) <= cypherValue(rhs)).orNull
+  private def const(v: CypherValue): () => Any = () => toJavaType(v)
 
 }
