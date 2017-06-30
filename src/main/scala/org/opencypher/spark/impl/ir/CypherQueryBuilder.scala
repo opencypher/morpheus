@@ -72,8 +72,8 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
 
       case ast.With(_, ast.ReturnItems(_, items), _, _, _, _) =>
         for {
-          context <- get[R, IRBuilderContext]
           fieldExprs <- EffMonad[R].sequence(items.map(convertReturnItem[R]).toVector)
+          context <- get[R, IRBuilderContext]
           refs <- {
             val (ref, reg) = registerProjectBlock(context, fieldExprs)
             put[R, IRBuilderContext](context.copy(blocks = reg)) >> pure[R, Vector[BlockRef]](Vector(ref))
@@ -82,8 +82,8 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
 
       case ast.Return(_, ast.ReturnItems(_, items), _, _, _, _) =>
         for {
-          context <- get[R, IRBuilderContext]
           fieldExprs <- EffMonad[R].sequence(items.map(convertReturnItem[R]).toVector)
+          context <- get[R, IRBuilderContext]
           refs <- {
             val (ref, reg) = registerProjectBlock(context, fieldExprs)
 
@@ -117,9 +117,12 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
     case ast.AliasedReturnItem(e, v) =>
       for {
         expr <- convertExpr(e)
-      } yield {
-        Field(v.name)(expr.cypherType) -> expr
-      }
+        context <- get[R, IRBuilderContext]
+        field <- {
+          val field = Field(v.name)(expr.cypherType)
+          put[R, IRBuilderContext](context.withFields(Set(field))) >> pure[R, Field](field)
+        }
+      } yield field -> expr
 
     case ast.UnaliasedReturnItem(e, t) =>
       error(IRBuilderError(s"Did not expect unnamed return item"))(Field(t)() -> Var(t)())

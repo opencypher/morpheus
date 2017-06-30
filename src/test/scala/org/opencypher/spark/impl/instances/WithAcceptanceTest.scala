@@ -22,4 +22,21 @@ class WithAcceptanceTest extends TestSuiteImpl with GraphMatchingTestSupport {
     // And
     result.graph shouldMatch given.graph
   }
+
+  test("projecting property expression") {
+
+    // Given
+    val given = TestGraph("""(:Node {val: 4L})-->(:Node {val: 5L})""")
+
+    // When
+    val result = given.cypher("MATCH (n:Node)-->(m:Node) WITH n.val AS n_val RETURN n_val")
+
+    // Then
+    result.records.toMaps should equal(Set(
+      CypherMap("n_val" -> 4)
+    ))
+
+    // And
+    result.graph shouldMatch given.graph
+  }
 }
