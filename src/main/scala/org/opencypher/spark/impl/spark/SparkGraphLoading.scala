@@ -6,11 +6,10 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SparkSession}
 import org.neo4j.driver.internal.{InternalNode, InternalRelationship}
 import org.opencypher.spark.api.expr._
-import org.opencypher.spark.api.ir.QueryModel
 import org.opencypher.spark.api.ir.global.{GlobalsRegistry, PropertyKey, TokenRegistry}
 import org.opencypher.spark.api.record.{OpaqueField, ProjectedExpr, RecordHeader, SlotContent}
 import org.opencypher.spark.api.schema.{Schema, VerifiedSchema}
-import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherTokens, SparkGraphSpace}
+import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkGraphSpace}
 import org.opencypher.spark.api.types._
 import org.opencypher.spark.impl.convert.{fromJavaType, toSparkType}
 import org.opencypher.spark.impl.record.SparkCypherRecordsTokens
@@ -90,28 +89,28 @@ trait SparkGraphLoading {
                           sourceNode: String = "source", rel: String = "rel", targetNode: String = "target")
                          (implicit sparkSession: SparkSession, context: LoadingContext): SparkGraphSpace = {
 
-    val nodeFields = (v: Var) => computeNodeFields(v)
-    val nodeHeader = (v: Var) => nodeFields(v).map(_._1).foldLeft(RecordHeader.empty) {
+    val nodeFields = (name: String) => computeNodeFields(name)
+    val nodeHeader = (name: String) => nodeFields(name).map(_._1).foldLeft(RecordHeader.empty) {
       case (acc, next) => acc.update(addContent(next))._1
     }
-    val nodeStruct = (v: Var) => StructType(nodeFields(v).map(_._2).toArray)
-    val nodeRDD = (v: Var) => nodes.map(nodeToRow(nodeHeader(v), nodeStruct(v)))
-    val nodeFrame = (v: Var) => {
-      val slot = nodeHeader(v).slotFor(v)
-      val df = sparkSession.createDataFrame(nodeRDD(v), nodeStruct(v))
+    val nodeStruct = (name: String) => StructType(nodeFields(name).map(_._2).toArray)
+    val nodeRDD = (name: String) => nodes.map(nodeToRow(nodeHeader(name), nodeStruct(name)))
+    val nodeFrame = (name: String) => {
+      val slot = nodeHeader(name).slotFor(Var(name)())
+      val df = sparkSession.createDataFrame(nodeRDD(name), nodeStruct(name))
       val col = df.col(df.columns(slot.index))
       df.repartition(col).sortWithinPartitions(col).cache()
     }
 
-    val relFields = (v: Var) => computeRelFields(v)
-    val relHeader = (v: Var) => relFields(v).map(_._1).foldLeft(RecordHeader.empty) {
+    val relFields = (name: String) => computeRelFields(name)
+    val relHeader = (name: String) => relFields(name).map(_._1).foldLeft(RecordHeader.empty) {
       case (acc, next) => acc.update(addContent(next))._1
     }
-    val relStruct = (v: Var) => StructType(relFields(v).map(_._2).toArray)
-    val relRDD = (v: Var) => rels.map(relToRow(relHeader(v), relStruct(v)))
-    val relFrame = (v: Var) => {
-      val slot = nodeHeader(v).slotFor(v)
-      val df = sparkSession.createDataFrame(relRDD(v), relStruct(v)).cache()
+    val relStruct = (name: String) => StructType(relFields(name).map(_._2).toArray)
+    val relRDD = (name: String) => rels.map(relToRow(relHeader(name), relStruct(name)))
+    val relFrame = (name: String) => {
+      val slot = nodeHeader(name).slotFor(Var(name)())
+      val df = sparkSession.createDataFrame(relRDD(name), relStruct(name)).cache()
       val col = df.col(df.columns(slot.index))
       df.repartition(col).sortWithinPartitions(col).cache()
     }
@@ -122,8 +121,8 @@ trait SparkGraphLoading {
       override def base = new SparkCypherGraph with Serializable {
         selfBase =>
 
-        override def nodes(v: Var) = SparkCypherRecords.create(nodeHeader(v), nodeFrame(v))(selfSpace)
-        override def relationships(v: Var) = SparkCypherRecords.create(relHeader(v), relFrame(v))(selfSpace)
+        override def nodes(name: String) = SparkCypherRecords.create(nodeHeader(name), nodeFrame(name))(selfSpace)
+        override def relationships(name: String) = SparkCypherRecords.create(relHeader(name), relFrame(name))(selfSpace)
         override def space: SparkGraphSpace = selfSpace
 
         override def schema: Schema = context.schema
@@ -134,8 +133,8 @@ trait SparkGraphLoading {
     }
   }
 
-  private def computeNodeFields(in: Var)(implicit context: LoadingContext): Seq[(SlotContent, StructField)] = {
-    val node = Var(in.name)(CTNode)
+  private def computeNodeFields(name: String)(implicit context: LoadingContext): Seq[(SlotContent, StructField)] = {
+    val node = Var(name)(CTNode)
 
     val schema = context.schema
     val tokens = context.globals.tokens
@@ -148,8 +147,8 @@ trait SparkGraphLoading {
     }
     val propertyFields = schema.labels.flatMap { l =>
       schema.nodeKeys(l).map {
-        case (name, t) =>
-          val property = Property(node, tokens.propertyKeyByName(name))(t)
+        case (key, t) =>
+          val property = Property(node, tokens.propertyKeyByName(key))(t)
           val slot = ProjectedExpr(property)
           val field = StructField(SparkColumnName.of(slot), toSparkType(t), nullable = true)
           slot -> field
@@ -161,16 +160,16 @@ trait SparkGraphLoading {
     Seq(slotField) ++ labelFields ++ propertyFields
   }
 
-  private def computeRelFields(in: Var)(implicit context: LoadingContext): Seq[(SlotContent, StructField)] = {
-    val rel = Var(in.name)(CTRelationship)
+  private def computeRelFields(name: String)(implicit context: LoadingContext): Seq[(SlotContent, StructField)] = {
+    val rel = Var(name)(CTRelationship)
 
     val schema = context.schema
     val tokens = context.globals.tokens
 
     val propertyFields = schema.relationshipTypes.flatMap { typ =>
       schema.relationshipKeys(typ).map {
-        case (name, t) =>
-          val property = Property(rel, tokens.propertyKeyByName(name))(t)
+        case (key, t) =>
+          val property = Property(rel, tokens.propertyKeyByName(key))(t)
           val slot = ProjectedExpr(property)
           val field = StructField(SparkColumnName.of(slot), toSparkType(t), nullable = true)
           slot -> field

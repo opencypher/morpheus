@@ -1,17 +1,16 @@
 package org.opencypher.spark.impl.load
 
 import org.apache.spark.sql.types._
-import org.opencypher.spark.api.expr.Var
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkGraphSpace}
 import org.opencypher.spark.api.types._
-import org.opencypher.spark.{TestSuiteImpl, TestSession}
+import org.opencypher.spark.{TestSession, TestSuiteImpl}
 
 class SparkGraphSpaceTest extends TestSuiteImpl with TestSession.Fixture {
 
   implicit class RichGraph(val graph: SparkCypherGraph) {
-    def nodes() = graph.nodes(Var("n")(CTNode))
-    def rels() = graph.relationships(Var("r")(CTRelationship))
+    def nodes() = graph.nodes("n")
+    def rels() = graph.relationships("r")
   }
 
   test("import nodes from neo") {

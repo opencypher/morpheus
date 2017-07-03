@@ -28,7 +28,7 @@ class PhysicalProducer(context: RuntimeContext) {
     def nodeScan(inGraph: NamedLogicalGraph, v: Var, labels: EveryNode, header: RecordHeader): InternalResult = {
       val graph = prev.graphs(inGraph.name)
 
-      val records = graph.nodes(v).reorder(header)
+      val records = graph.nodes(v.name).reorder(header)
 
       // TODO: Should not discard prev records here
       prev.mapRecords(_ => records)
@@ -37,7 +37,7 @@ class PhysicalProducer(context: RuntimeContext) {
     def relationshipScan(inGraph: NamedLogicalGraph, v: Var, header: RecordHeader): InternalResult = {
       val graph = prev.graphs(inGraph.name)
 
-      val records = graph.relationships(v).reorder(header)
+      val records = graph.relationships(v.name).reorder(header)
 
       // TODO: Should not discard prev records here
       prev.mapRecords(_ => records)

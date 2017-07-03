@@ -3,8 +3,7 @@ package org.opencypher.spark
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.apache.spark.sql.{Row, SparkSession}
 import org.opencypher.spark.api.classes.Cypher
-import org.opencypher.spark.api.expr.{Expr, HasLabel, Property, Var}
-import org.opencypher.spark.api.ir.QueryModel
+import org.opencypher.spark.api.expr.{HasLabel, Property, Var}
 import org.opencypher.spark.api.ir.global.TokenRegistry
 import org.opencypher.spark.api.record.{FieldSlotContent, RecordHeader}
 import org.opencypher.spark.api.schema.Schema
@@ -30,11 +29,11 @@ trait GraphMatchingTestSupport extends TestSession.Fixture {
 
   implicit class GraphMatcher(graph: SparkCypherGraph) {
     def shouldMatch(expectedGraph: SparkCypherGraph): Assertion = {
-      val expectedNodeIds = expectedGraph.nodes(Var("n")(CTNode)).data.select("n").collect().map(_.getLong(0)).toSet
-      val expectedRelIds = expectedGraph.relationships(Var("r")(CTRelationship)).data.select("r").collect().map(_.getLong(0)).toSet
+      val expectedNodeIds = expectedGraph.nodes("n").data.select("n").collect().map(_.getLong(0)).toSet
+      val expectedRelIds = expectedGraph.relationships("r").data.select("r").collect().map(_.getLong(0)).toSet
 
-      val actualNodeIds = graph.nodes(Var("n")(CTNode)).data.select("n").collect().map(_.getLong(0)).toSet
-      val actualRelIds = graph.relationships(Var("r")(CTRelationship)).data.select("r").collect().map(_.getLong(0)).toSet
+      val actualNodeIds = graph.nodes("n").data.select("n").collect().map(_.getLong(0)).toSet
+      val actualRelIds = graph.relationships("r").data.select("r").collect().map(_.getLong(0)).toSet
 
       expectedNodeIds should equal(actualNodeIds)
       expectedRelIds should equal(actualRelIds)
@@ -86,9 +85,9 @@ trait GraphMatchingTestSupport extends TestSession.Fixture {
         }
       }
 
-      override def nodes(v: Var): SparkCypherRecords = {
+      override def nodes(name: String): SparkCypherRecords = {
 
-        val header = RecordHeader.nodeFromSchema(v, schema, space.tokens.registry)
+        val header = RecordHeader.nodeFromSchema(Var(name)(CTNode), schema, space.tokens.registry)
 
         val data = {
           val nodes = queryGraph.getVertices.asScala.map { v =>
@@ -113,9 +112,9 @@ trait GraphMatchingTestSupport extends TestSession.Fixture {
         SparkCypherRecords.create(header, data)(space)
       }
 
-      override def relationships(v: Var): SparkCypherRecords = {
+      override def relationships(name: String): SparkCypherRecords = {
 
-        val header = RecordHeader.relationshipFromSchema(v, schema, space.tokens.registry)
+        val header = RecordHeader.relationshipFromSchema(Var(name)(CTRelationship), schema, space.tokens.registry)
 
         val data = {
           val rels = queryGraph.getEdges.asScala.map { e =>
