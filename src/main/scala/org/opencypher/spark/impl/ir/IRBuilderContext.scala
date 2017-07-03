@@ -8,6 +8,7 @@ import org.opencypher.spark.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.api.ir.pattern.Pattern
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.types._
+import org.opencypher.spark.impl.exception.Raise
 import org.opencypher.spark.impl.typer.{SchemaTyper, TypeTracker}
 
 final case class IRBuilderContext(
@@ -29,7 +30,7 @@ final case class IRBuilderContext(
         result.recorder.toMap
 
       case Left(errors) =>
-        throw new IllegalArgumentException(s"Some error in type inference: ${errors.toList.mkString(", ")}")
+        Raise.typeInferenceFailed(s"${errors.toList.mkString(", ")}")
     }
   }
 

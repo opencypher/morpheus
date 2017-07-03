@@ -58,4 +58,16 @@ object Raise {
   def logicalPlanningFailure() = throw SparkCypherException(
     "Error during logical planning"
   )
+
+  def impossible() = throw SparkCypherException(
+    "Something impossible happened!"
+  )
+
+  def invalidArgument(expected: String, actual: String) = throw SparkCypherException(
+    s"Expected a $expected but got a $actual"
+  )
+
+  def typeInferenceFailed(detail: String) = throw SparkCypherException(
+    s"Some error in type inference: $detail"
+  )
 }

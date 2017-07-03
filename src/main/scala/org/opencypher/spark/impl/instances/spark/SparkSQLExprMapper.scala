@@ -7,6 +7,7 @@ import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.record.RecordHeader
 import org.opencypher.spark.api.value.CypherValue
 import org.opencypher.spark.impl.convert.{toJavaType, toSparkType}
+import org.opencypher.spark.impl.exception.Raise
 import org.opencypher.spark.impl.physical.RuntimeContext
 import org.opencypher.spark_legacy.benchmark.Converters.cypherValue
 
@@ -16,9 +17,9 @@ object SparkSQLExprMapper {
     val slots = header.slotsFor(expr)
 
     if (slots.isEmpty) {
-      throw new IllegalStateException(s"No slot found for expression $expr")
+      Raise.slotNotFound(expr.toString)
     } else if (slots.size > 1 && !expr.isInstanceOf[Var]) {
-      throw new NotImplementedError("No support for multi-column expressions yet")
+      Raise.notYetImplemented("support for multi-column expressions")
     }
   }
 
@@ -64,7 +65,7 @@ object SparkSQLExprMapper {
         cols.reduce[Option[Column]] {
           // TODO: Does this work with Cypher's ternary logic?
           case (Some(l: Column), Some(r: Column)) => Some(l && r)
-          case _ => throw new IllegalStateException("This should never happen")
+          case _ => Raise.impossible()
         }
       }
 
