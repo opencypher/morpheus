@@ -98,10 +98,16 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
 
   private def planFilter(in: LogicalOperator, where: AllGiven[Expr])(implicit context: LogicalPlannerContext) = {
     val filtersAndProjs = where.elts.foldLeft(in) {
+      case (acc, eq: Equals) =>
+        val project1 = planInnerExpr(eq.lhs, acc)
+        val project2 = planInnerExpr(eq.rhs, project1)
+        producer.planFilter(eq, project2)
       case (acc, be: BinaryExpr) =>
         val project1 = planInnerExpr(be.lhs, acc)
         val project2 = planInnerExpr(be.rhs, project1)
-        producer.planFilter(be, project2)
+        // TODO: Come up with a strategy on whether to project filters or not -- or when/how?
+        val projectParent = producer.projectExpr(be, project2)
+        producer.planFilter(be, projectParent)
       case (acc, h@HasLabel(_: Var, _)) =>
         producer.planFilter(h, acc)
       case (acc, not@Not(Equals(lhs, rhs))) =>
