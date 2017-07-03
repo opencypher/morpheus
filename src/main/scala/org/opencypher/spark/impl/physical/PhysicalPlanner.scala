@@ -4,6 +4,7 @@ import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.global.{ConstantRef, ConstantRegistry, TokenRegistry}
 import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherResult, SparkGraphSpace}
 import org.opencypher.spark.api.value.CypherValue
+import org.opencypher.spark.impl.exception.Raise
 import org.opencypher.spark.impl.flat.FlatOperator
 import org.opencypher.spark.impl.logical.DefaultGraphSource
 import org.opencypher.spark.impl.{DirectCompilationStage, flat}
@@ -42,7 +43,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, SparkCypherRe
         case DefaultGraphSource =>
           InternalResult(unitTable(context.space), Map(outGraph.name -> context.defaultGraph))
         case _ =>
-          throw new NotImplementedError(s"Unable to load graph source other than default, got $source")
+          Raise.notYetImplemented(s"Loading a graph source other than default, tried $source")
       }
 
       case op@flat.NodeScan(v, labels, in, header) =>
@@ -73,7 +74,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, SparkCypherRe
 
         expanded
       case x =>
-        throw new NotImplementedError(s"Can't plan operator $x yet")
+        Raise.notYetImplemented(s"operator $x")
     }
   }
 

@@ -53,7 +53,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
     val nodeDef = if (_nodeDef.labels.elts.isEmpty) EveryNode(AllGiven(schema.labels.map(Label))) else _nodeDef
 
-    NodeScan(node, nodeDef, prev, header)
+    new NodeScan(node, nodeDef, prev, header)
   }
 
   // TODO: Specialize per kind of slot content

@@ -70,18 +70,23 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
           }
         } yield refs
 
+      case ast.With(_, ast.ReturnItems(_, items), _, _, _, where) =>
+        for {
+          fieldExprs <- EffMonad[R].sequence(items.map(convertReturnItem[R]).toVector)
+          given <- convertWhere(where)
+          context <- get[R, IRBuilderContext]
+          refs <- {
+            val (ref, reg) = registerProjectBlock(context, fieldExprs, given)
+            put[R, IRBuilderContext](context.copy(blocks = reg)) >> pure[R, Vector[BlockRef]](Vector(ref))
+          }
+        } yield refs
+
       case ast.Return(_, ast.ReturnItems(_, items), _, _, _, _) =>
         for {
-          context <- get[R, IRBuilderContext]
           fieldExprs <- EffMonad[R].sequence(items.map(convertReturnItem[R]).toVector)
+          context <- get[R, IRBuilderContext]
           refs <- {
-            val blockRegistry = context.blocks
-            val yields = ProjectedFields(fieldExprs.toMap)
-
-            val after = blockRegistry.lastAdded.toSet
-            val projs = ProjectBlock[Expr](after = after, where = AllGiven[Expr](), binds = yields, graph = context.graphBlock)
-
-            val (ref, reg) = blockRegistry.register(projs)
+            val (ref, reg) = registerProjectBlock(context, fieldExprs)
 
             //         TODO: Add rewriter and put the above case in With(...)
             //         TODO: Figure out nodes and relationships
@@ -98,14 +103,27 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
     }
   }
 
+  private def registerProjectBlock(context: IRBuilderContext, fieldExprs: Vector[(Field, Expr)], given: AllGiven[Expr] = AllGiven[Expr]()) = {
+    val blockRegistry = context.blocks
+    val binds = ProjectedFields(fieldExprs.toMap)
+
+    val after = blockRegistry.lastAdded.toSet
+    val projs = ProjectBlock[Expr](after, binds, given, graph = context.graphBlock)
+
+    blockRegistry.register(projs)
+  }
+
   private def convertReturnItem[R: _mayFail : _hasContext](item: ast.ReturnItem): Eff[R, (Field, Expr)] = item match {
 
     case ast.AliasedReturnItem(e, v) =>
       for {
         expr <- convertExpr(e)
-      } yield {
-        Field(v.name)(expr.cypherType) -> expr
-      }
+        context <- get[R, IRBuilderContext]
+        field <- {
+          val field = Field(v.name)(expr.cypherType)
+          put[R, IRBuilderContext](context.withFields(Set(field))) >> pure[R, Field](field)
+        }
+      } yield field -> expr
 
     case ast.UnaliasedReturnItem(e, t) =>
       error(IRBuilderError(s"Did not expect unnamed return item"))(Field(t)() -> Var(t)())

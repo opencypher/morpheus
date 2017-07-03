@@ -73,8 +73,9 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
         // this plans both pattern and filter for convenience -- TODO: split up
         val patternPlan = planPattern(plan, pattern)
         planFilter(patternPlan, where)
-      case ProjectBlock(_, ProjectedFields(exprs), _, graph) =>
-        planProjections(plan, exprs)
+      case ProjectBlock(_, ProjectedFields(exprs), where, graph) =>
+        val projPlan = planProjections(plan, exprs)
+        planFilter(projPlan, where)
       case x =>
         Raise.notYetImplemented(s"logical planning of $x")
     }
@@ -83,6 +84,8 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
   private def planProjections(in: LogicalOperator, exprs: Map[Field, Expr])(implicit context: LogicalPlannerContext) = {
     exprs.foldLeft(in) {
       case (acc, (f, p: Property)) => producer.projectField(f, p, acc)
+        // this is for aliasing
+      case (acc, (f, v: Var)) if f.name != v.name => producer.projectField(f, v, acc)
       case (acc, (_, _: Var)) => acc
       case (acc, (f, be: BinaryExpr)) =>
         val projectLhs = planInnerExpr(be.lhs, acc)
@@ -110,6 +113,8 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
         producer.planFilter(not, project)
       case (acc, t: TrueLit) =>
         producer.planFilter(t, acc) // optimise away this one somehow... currently we do that in PhysicalPlanner
+      case (acc, v: Var) =>
+        producer.planFilter(v, acc)
       case (_, x) =>
         Raise.notYetImplemented(s"logical planning of predicate $x")
     }
