@@ -176,6 +176,10 @@ final case class Subtract(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTW
   override def toString = s"$lhs - $rhs"
 }
 
+final case class Divide(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends ArithmeticExpr {
+  override def toString = s"$lhs / $rhs"
+}
+
 // Literal expressions
 
 sealed trait Lit[T] extends Expr {

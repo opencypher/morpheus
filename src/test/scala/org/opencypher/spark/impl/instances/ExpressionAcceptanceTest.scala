@@ -104,6 +104,55 @@ class ExpressionAcceptanceTest extends TestSuiteImpl with GraphMatchingTestSuppo
     result.graph shouldMatch given.graph
   }
 
+  test("subtraction without name") {
+    // Given
+    val given = TestGraph("""(:Node {val: 4L})-->(:Node {val: 5L})""")
+
+    // When
+    val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN m.val - n.val")
+
+    // Then
+    result.records.toMaps should equal(Set(
+      CypherMap("m.val - n.val" -> 1)
+    ))
+    // And
+    result.graph shouldMatch given.graph
+  }
+
+  test("division with no remainder") {
+    // Given
+    val given = TestGraph("""(:Node {val: 9L})-->(:Node {val: 3L})-->(:Node {val: 2L})""")
+
+    // When
+    val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN n.val / m.val")
+
+    // Then
+    result.records.toMaps should equal(Set(
+      CypherMap("n.val / m.val" -> 3),
+      CypherMap("n.val / m.val" -> 1)
+    ))
+
+    // And
+    result.graph shouldMatch given.graph
+  }
+
+  test("division integer and float and null") {
+    // Given
+    val given = TestGraph("""(:Node {val: 9L})-->(:Node {val2: 4.5D})-->(:Node)""")
+
+    // When
+    val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN n.val / m.val2")
+
+    // Then
+    result.records.toMaps should equal(Set(
+      CypherMap("n.val / m.val2" -> 2.0),
+      CypherMap("n.val / m.val2" -> null)
+    ))
+
+    // And
+    result.graph shouldMatch given.graph
+  }
+
   ignore("equality") {
     // Given
     val given = TestGraph(
@@ -125,20 +174,7 @@ class ExpressionAcceptanceTest extends TestSuiteImpl with GraphMatchingTestSuppo
     result.graph shouldMatch given.graph
   }
 
-  test("subtraction without name") {
-    // Given
-    val given = TestGraph("""(:Node {val: 4L})-->(:Node {val: 5L})""")
 
-    // When
-    val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN m.val - n.val")
-
-    // Then
-    result.records.toMaps should equal(Set(
-      CypherMap("m.val - n.val" -> 1)
-    ))
-    // And
-    result.graph shouldMatch given.graph
-  }
 
   test("property expression") {
     // Given

@@ -99,6 +99,13 @@ object SparkSQLExprMapper {
       val rhsColumn = getColumn(sub.rhs, header, df)
       Some(lhsColumn - rhsColumn)
 
+    case div: Divide =>
+      verifyExpression(header, expr)
+
+      val lhsColumn = getColumn(div.lhs, header, df)
+      val rhsColumn = getColumn(div.rhs, header, df)
+      Some((lhsColumn / rhsColumn).cast(toSparkType(div.cypherType)))
+
     case _ => None
   }
 
