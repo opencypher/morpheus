@@ -191,6 +191,9 @@ object SchemaTyper {
     case sub: Subtract =>
       processArithmeticExpressions(sub)
 
+    case div: Divide =>
+      processArithmeticExpressions(div)
+
     // TODO: This would be better handled by having a type of heterogenous lists instead
     case indexing@ContainerIndex(list@ListLiteral(exprs), index: SignedDecimalIntegerLiteral)
       if Try(parseInt(index.stringVal)).nonEmpty =>
