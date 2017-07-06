@@ -20,6 +20,7 @@ trait SparkCypherRecordsInstances extends Serializable {
                          (implicit context: RuntimeContext) extends (Row => Option[Boolean]) {
     def apply(row: Row): Option[Boolean] = expr match {
       case Equals(p: Property, c: Const) =>
+        // TODO: Make this ternary
         Some(row.getCypherValue(p, header) == row.getCypherValue(c, header))
 
       case LessThan(lhs, rhs) =>

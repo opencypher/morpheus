@@ -159,4 +159,16 @@ class RecordHeaderTest extends TestSuiteImpl {
       ProjectedExpr(Var("n")(CTNode)), OpaqueField(Var("m")(CTRelationship))
     ))
   }
+
+  test("concatenating headers with similar properties") {
+    val (lhs, _) = RecordHeader.empty.update(addContent(ProjectedExpr(Property(Var("n")(), PropertyKey("name"))(CTInteger))))
+    val (rhs, _) = RecordHeader.empty.update(addContent(ProjectedExpr(Property(Var("n")(), PropertyKey("name"))(CTString))))
+
+    val concatenated = lhs ++ rhs
+
+    concatenated.slots should equal(IndexedSeq(
+      RecordSlot(0, ProjectedExpr(Property(Var("n")(), PropertyKey("name"))(CTInteger))),
+      RecordSlot(1, ProjectedExpr(Property(Var("n")(), PropertyKey("name"))(CTString)))
+    ))
+  }
 }

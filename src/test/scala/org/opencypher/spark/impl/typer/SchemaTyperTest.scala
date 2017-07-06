@@ -14,9 +14,17 @@ class SchemaTyperTest extends TestSuiteImpl with Neo4jAstTestSupport with Mockit
 
   val schema = Schema.empty
     .withNodeKeys("Person")("name" -> CTString, "age" -> CTInteger)
+    .withNodeKeys("Foo")("name" -> CTBoolean, "age" -> CTFloat)
     .withRelationshipKeys("KNOWS")("since" -> CTInteger, "relative" -> CTBoolean)
 
   val typer = SchemaTyper(schema)
+
+  test("typing property of node without label") {
+    implicit val context = typeTracker("a" -> CTNode)
+
+    assertExpr.from("a.name") shouldHaveInferredType CTAny
+    assertExpr.from("a.age") shouldHaveInferredType CTNumber
+  }
 
   test("typing add") {
     implicit val context = typeTracker("a" -> CTInteger, "b" -> CTFloat, "c" -> CTNumber, "d" -> CTAny.nullable, "e" -> CTBoolean)

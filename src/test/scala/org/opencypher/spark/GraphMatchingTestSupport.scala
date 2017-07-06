@@ -96,7 +96,10 @@ trait GraphMatchingTestSupport extends TestSession.Fixture {
               case HasLabel(_, label) => v.getLabel == label.name
             }
             val propertyFields: Seq[Any] = exprs.collect {
-              case Property(_, k) => v.getProperties.get(k.name)
+              case p@Property(_, k) =>
+                val pValue = v.getProperties.get(k.name)
+                if (fromJavaType(pValue) == p.cypherType) pValue
+                else null
             }
 
             Row(v.getId +: (labelFields ++ propertyFields): _*)
