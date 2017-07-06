@@ -17,11 +17,11 @@ package org.opencypher.spark.api.spark
 
 import org.opencypher.spark.api.expr.Var
 import org.opencypher.spark.api.graph.CypherGraph
-import org.opencypher.spark.api.record.{GraphScan, NodeScan, OpaqueField, RecordHeader}
+import org.opencypher.spark.api.record._
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.types.{CTNode, CTRelationship}
 
-trait SparkCypherGraph extends CypherGraph {
+trait SparkCypherGraph extends CypherGraph with Serializable {
 
   self =>
 
@@ -41,17 +41,26 @@ object SparkCypherGraph {
     new ScanGraph(allScans, schema) {}
   }
 
-  sealed abstract case class EmptyGraph(implicit val space: SparkGraphSpace) extends SparkCypherGraph {
+  sealed abstract class EmptyGraph(implicit val space: SparkGraphSpace) extends SparkCypherGraph {
     override def schema = Schema.empty
 
-    override def nodes(name: String) = SparkCypherRecords.empty(RecordHeader.from(OpaqueField(Var(name)(CTNode))))
-    override def relationships(name: String) = SparkCypherRecords.empty(RecordHeader.from(OpaqueField(Var(name)(CTRelationship))))
+    override def nodes(name: String, cypherType: CTNode) =
+      SparkCypherRecords.empty(RecordHeader.from(OpaqueField(Var(name)(cypherType))))
+
+    override def relationships(name: String, cypherType: CTRelationship) =
+      SparkCypherRecords.empty(RecordHeader.from(OpaqueField(Var(name)(cypherType))))
   }
 
-  sealed abstract case class ScanGraph(scans: Seq[GraphScan], schema: Schema)
-                                      (implicit val space: SparkGraphSpace) extends SparkCypherGraph {
+  sealed abstract class ScanGraph(val scans: Seq[GraphScan], val schema: Schema)
+                                 (implicit val space: SparkGraphSpace) extends SparkCypherGraph {
 
-    override def nodes(name: String): SparkCypherRecords = ???
-    override def relationships(name: String): SparkCypherRecords = ???
+    private val nodeScans = scans.collect { case it: NodeScan => it }
+    private val relScans = scans.collect { case it: RelationshipScan => it }
+
+    override def nodes(name: String, cypherType: CTNode) =
+      ???
+
+    override def relationships(name: String, cypherType: CTRelationship) =
+      ???
   }
 }

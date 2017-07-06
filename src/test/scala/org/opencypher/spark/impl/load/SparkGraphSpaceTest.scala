@@ -16,12 +16,12 @@
 package org.opencypher.spark.impl.load
 
 import org.apache.spark.sql.types._
+import org.opencypher.spark.SparkCypherTestSuite
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkGraphSpace}
 import org.opencypher.spark.api.types._
-import org.opencypher.spark.{BaseTestSuite, SparkTestSession}
 
-class SparkGraphSpaceTest extends BaseTestSuite with SparkTestSession.Fixture {
+class SparkGraphSpaceTest extends SparkCypherTestSuite {
 
   implicit class RichGraph(val graph: SparkCypherGraph) {
     def nodes() = graph.nodes("n")

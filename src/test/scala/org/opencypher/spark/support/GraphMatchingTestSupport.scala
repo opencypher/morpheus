@@ -107,9 +107,9 @@ trait GraphMatchingTestSupport {
         }
       }
 
-      override def nodes(name: String): SparkCypherRecords = {
+      override def nodes(name: String, cypherType: CTNode): SparkCypherRecords = {
 
-        val header = RecordHeader.nodeFromSchema(Var(name)(CTNode), schema, space.tokens.registry)
+        val header = RecordHeader.nodeFromSchema(Var(name)(cypherType), schema, space.tokens.registry)
 
         val data = {
           val nodes = queryGraph.getVertices.asScala.map { v =>
@@ -137,9 +137,9 @@ trait GraphMatchingTestSupport {
         SparkCypherRecords.create(header, data)(space)
       }
 
-      override def relationships(name: String): SparkCypherRecords = {
+      override def relationships(name: String, cypherType: CTRelationship): SparkCypherRecords = {
 
-        val header = RecordHeader.relationshipFromSchema(Var(name)(CTRelationship), schema, space.tokens.registry)
+        val header = RecordHeader.relationshipFromSchema(Var(name)(cypherType), schema, space.tokens.registry)
 
         val data = {
           val rels = queryGraph.getEdges.asScala.map { e =>
