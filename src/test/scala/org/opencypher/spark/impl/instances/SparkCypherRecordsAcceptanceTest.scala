@@ -1,8 +1,5 @@
 package org.opencypher.spark.impl.instances
 
-import org.opencypher.spark.api.expr._
-import org.opencypher.spark.api.ir.global.{Label, PropertyKey}
-import org.opencypher.spark.api.record._
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.spark.{SparkCypherRecords, SparkGraphSpace}
 import org.opencypher.spark.api.types._
