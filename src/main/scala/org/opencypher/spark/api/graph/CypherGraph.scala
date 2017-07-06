@@ -17,6 +17,7 @@ package org.opencypher.spark.api.graph
 
 import org.opencypher.spark.api.record.CypherRecords
 import org.opencypher.spark.api.schema.Schema
+import org.opencypher.spark.api.types.{CTNode, CTRelationship}
 
 trait CypherGraph {
 
@@ -30,7 +31,9 @@ trait CypherGraph {
 
   def schema: Schema
 
-  def nodes(name: String): Records
-  def relationships(name: String): Records
+  final def nodes(name: String): Records = nodes(name, CTNode)
+  def nodes(name: String, cypherType: CTNode): Records
 
+  final def relationships(name: String): Records = relationships(name, CTRelationship)
+  def relationships(name: String, cypherType: CTRelationship): Records
 }
