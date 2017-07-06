@@ -1,6 +1,6 @@
 package org.opencypher.spark.impl.ir
 
-import org.neo4j.cypher.internal.frontend.v3_2.{Ref, ast, symbols}
+import org.neo4j.cypher.internal.frontend.v3_3.{Ref, ast, symbols}
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.global._
 import org.opencypher.spark.api.types._

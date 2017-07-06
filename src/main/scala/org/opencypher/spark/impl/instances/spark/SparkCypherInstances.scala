@@ -29,7 +29,7 @@ trait SparkCypherInstances {
     private val parser = CypherParser
 
     override def cypher(graph: Graph, query: String, queryParameters: Map[String, CypherValue]): Result = {
-      val (stmt, extractedLiterals) = parser.process(query)(CypherParser.defaultContext)
+      val (stmt, extractedLiterals) = parser.process(query)(CypherParser.defaultContext(query))
 
       val globals = GlobalsExtractor(stmt, GlobalsRegistry(graph.space.tokens.registry))
       val GlobalsRegistry(tokens, constants) = globals

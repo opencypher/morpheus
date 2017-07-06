@@ -1,6 +1,6 @@
 package org.opencypher.spark.impl.typer
 
-import org.neo4j.cypher.internal.frontend.v3_2.{symbols => frontend}
+import org.neo4j.cypher.internal.frontend.v3_3.{symbols => frontend}
 import org.opencypher.spark.api.types._
 
 // TODO: Should go to option I think

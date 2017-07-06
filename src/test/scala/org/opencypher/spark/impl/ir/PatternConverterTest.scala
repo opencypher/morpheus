@@ -1,7 +1,7 @@
 package org.opencypher.spark.impl.ir
 
-import org.neo4j.cypher.internal.frontend.v3_2.parser.{Expressions, Patterns}
-import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, SyntaxException, ast}
+import org.neo4j.cypher.internal.frontend.v3_3.parser.{Expressions, Patterns}
+import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SyntaxException, ast}
 import org.opencypher.spark.api.ir.global._
 import org.opencypher.spark.api.ir.pattern._
 import org.parboiled.scala.{EOI, Parser, Rule1}

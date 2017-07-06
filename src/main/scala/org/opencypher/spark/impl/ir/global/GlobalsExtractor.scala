@@ -1,6 +1,6 @@
 package org.opencypher.spark.impl.ir.global
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast
+import org.neo4j.cypher.internal.frontend.v3_3.ast
 import org.opencypher.spark.api.ir.global._
 import org.opencypher.spark.api.types.CypherType
 import org.opencypher.spark.impl.typer.fromFrontendType

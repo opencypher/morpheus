@@ -1,8 +1,8 @@
 package org.opencypher.spark.impl.typer
 
 import cats.data.NonEmptyList
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, Parameter}
-import org.neo4j.cypher.internal.frontend.v3_2.symbols
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, Parameter}
+import org.neo4j.cypher.internal.frontend.v3_3.symbols
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.types._
 import org.opencypher.spark.{Neo4jAstTestSupport, TestSuiteImpl}

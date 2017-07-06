@@ -5,14 +5,14 @@ import cats.data.State
 import cats.data.State._
 import cats.instances.list._
 import cats.syntax.flatMap._
-import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection._
-import org.neo4j.cypher.internal.frontend.v3_2.ast
-import org.neo4j.cypher.internal.frontend.v3_2.ast.LabelName
-import org.opencypher.spark.api.types.{CTNode, CTRelationship}
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection._
+import org.neo4j.cypher.internal.frontend.v3_3.ast
+import org.neo4j.cypher.internal.frontend.v3_3.ast.LabelName
 import org.opencypher.spark.api.expr.Expr
 import org.opencypher.spark.api.ir._
-import org.opencypher.spark.api.ir.global.{GlobalsRegistry, Label, RelType, RelTypeRef}
+import org.opencypher.spark.api.ir.global.{GlobalsRegistry, Label, RelType}
 import org.opencypher.spark.api.ir.pattern._
+import org.opencypher.spark.api.types.{CTNode, CTRelationship}
 
 import scala.annotation.tailrec
 
@@ -39,7 +39,7 @@ final class PatternConverter(val tokens: GlobalsRegistry) extends AnyVal {
         _ <- modify[Pattern[Expr]](_.withEntity(entity, EveryNode(AllGiven(labels.map(l => Label(l.name)).toSet))))
       } yield entity
 
-    case ast.RelationshipChain(left, ast.RelationshipPattern(Some(eVar), types, None, None, dir), right) =>
+    case ast.RelationshipChain(left, ast.RelationshipPattern(Some(eVar), types, None, None, dir, _), right) =>
       for {
         source <- convertElement(left)
         target <- convertElement(right)

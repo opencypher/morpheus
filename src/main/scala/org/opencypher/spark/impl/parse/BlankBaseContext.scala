@@ -1,7 +1,7 @@
 package org.opencypher.spark.impl.parse
 
-import org.neo4j.cypher.internal.frontend.v3_2.phases._
-import org.neo4j.cypher.internal.frontend.v3_2.{AstRewritingMonitor, CypherException, InputPosition}
+import org.neo4j.cypher.internal.frontend.v3_3.phases._
+import org.neo4j.cypher.internal.frontend.v3_3.{AstRewritingMonitor, CypherException, InputPosition}
 
 import scala.reflect.ClassTag
 
