@@ -41,6 +41,7 @@ sealed trait GraphScanCompanion[E <: EmbeddedEntity] {
 
 sealed trait NodeScan extends GraphScan {
   override type EntityCypherType = CTNode
+  override def entityType: CTNode
 }
 
 object NodeScan extends GraphScanCompanion[EmbeddedNode]
