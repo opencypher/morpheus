@@ -2,6 +2,7 @@ package org.opencypher.spark.impl.flat
 
 import org.opencypher.spark.api.ir.global.{ConstantRegistry, GlobalsRegistry, TokenRegistry}
 import org.opencypher.spark.api.schema.Schema
+import org.opencypher.spark.impl.exception.Raise
 import org.opencypher.spark.impl.logical.LogicalOperator
 import org.opencypher.spark.impl.{DirectCompilationStage, logical}
 
@@ -32,8 +33,11 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
       case logical.Start(outGraph, source, fields) =>
         producer.planStart(outGraph, source, fields)
 
+      case logical.BoundedVarLengthExpand(source, rel, target, lower, upper, sourceOp, targetOp) =>
+        producer.boundedVarLength(source, rel, target, lower, upper, process(sourceOp), process(targetOp))
+
       case x =>
-        throw new NotImplementedError(s"Flat planning not done yet for $x")
+        Raise.notYetImplemented(s"Flat planning not done yet for $x")
     }
   }
 }

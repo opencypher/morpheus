@@ -113,7 +113,7 @@ class FlatPlannerTest extends BaseTestSuite {
 
   test("flat plan for expand") {
     val result = flatPlanner.process(
-      mkLogical.planSourceExpand(Field("n")(CTNode), Field("r")(CTRelationship) -> EveryRelationship, Field("m")(CTNode),
+      mkLogical.planSourceExpand(Field("n")(CTNode), Field("r")(CTRelationship), EveryRelationship, Field("m")(CTNode),
         logicalNodeScan("n"), logicalNodeScan("m")
       )
     )
@@ -154,7 +154,7 @@ class FlatPlannerTest extends BaseTestSuite {
     val result = flatPlanner.process(
       mkLogical.planSourceExpand(
         Field("n")(CTNode),
-        Field("r")(CTRelationship("KNOWS")) -> EveryRelationship(AnyOf(RelType("KNOWS"))),
+        Field("r")(CTRelationship("KNOWS")), EveryRelationship(AnyOf(RelType("KNOWS"))),
         Field("m")(CTNode),
         logicalNodeScan("n"), logicalNodeScan("m")
       )

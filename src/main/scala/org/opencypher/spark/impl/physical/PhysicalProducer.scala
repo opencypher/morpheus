@@ -138,6 +138,15 @@ class PhysicalProducer(context: RuntimeContext) {
       }
     }
 
+    def varExpand(rels: InternalResult, path: Var, lower: Int, upper: Int, header: RecordHeader) = new JoinBuilder {
+      override def on(node: Var)(rel: Var) = {
+        val nodeSlot = prev.records.header.slotFor(node)
+        val sourceNode = rels.records.header.sourceNode(rel)
+
+        prev.mapRecords(_.varExpand(rels.records, lower, upper, header)(nodeSlot, sourceNode, rel, path))
+      }
+    }
+
     sealed trait JoinBuilder {
       def on(lhsKey: Var)(rhsKey: Var): InternalResult
     }

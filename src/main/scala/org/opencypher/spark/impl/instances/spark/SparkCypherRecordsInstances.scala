@@ -1,13 +1,17 @@
 package org.opencypher.spark.impl.instances.spark
 
-import org.apache.spark.sql.{Column, Row}
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types.{ArrayType, BooleanType, LongType}
+import org.apache.spark.sql.{Column, DataFrame, Row}
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.record._
 import org.opencypher.spark.api.spark.SparkCypherRecords
+import org.opencypher.spark.api.types.CTInteger
 import org.opencypher.spark.impl.classes.Transform
 import org.opencypher.spark.impl.exception.Raise
-import org.opencypher.spark.impl.instances.spark.SparkSQLExprMapper.asSparkSQLExpr
 import org.opencypher.spark.impl.physical.RuntimeContext
+
+import scala.collection.mutable
 
 trait SparkCypherRecordsInstances extends Serializable {
 
@@ -68,6 +72,84 @@ trait SparkCypherRecordsInstances extends Serializable {
           SparkCypherRecords.create(jointHeader, jointData)(lhs.space)
         } else {
           Raise.graphSpaceMismatch()
+        }
+      }
+
+      override def varExpand(lhs: SparkCypherRecords, rels: SparkCypherRecords, lower: Int, upper: Int, header: RecordHeader)
+                            (nodeSlot: RecordSlot, startSlot: RecordSlot, rel: Var, path: Var): SparkCypherRecords = {
+        val steps = new mutable.HashMap[Int, DataFrame]
+        val startPoints = new mutable.HashMap[Int, Column]
+
+        val nodeData = lhs.data
+        val relsData = rels.data
+
+        val keep = nodeData.columns.map(nodeData.col)
+
+        val pathColName = context.columnName(OpaqueField(path))
+        val edgeListColumn = udf(initArray _, ArrayType(LongType))()
+        val lhsWithEmptyArray = nodeData.withColumn(pathColName, edgeListColumn)
+        val expandCol = lhsWithEmptyArray.col(context.columnName(nodeSlot))
+
+        val endNodeIdColName = "inventedName"
+        val cols = nodeData.columns.map(nodeData.col) ++ Seq(lhsWithEmptyArray.col(pathColName), nodeData.col(context.columnName(nodeSlot)).as(endNodeIdColName))
+        val withEndCol = lhsWithEmptyArray.select(cols: _*)
+        steps(0) = withEndCol
+        startPoints(0) = expandCol
+
+        (1 to upper).foreach { i =>
+          val (nextStart, result) = iterate(startPoints(i - 1), startSlot, rel, path, steps(i - 1), relsData, pathColName, endNodeIdColName, keep)
+
+          // TODO: Check whether we can abort iteration if result has no cardinality (eg count > 0?)
+          steps(i) = result
+          startPoints(i) = nextStart
+        }
+
+        // TODO: respect lower bound > 1
+        val union = steps.values.reduce[DataFrame] {
+          case (l, r) => l.union(r)
+        }
+
+        val renamed = union.withColumnRenamed(endNodeIdColName, context.columnName(ProjectedExpr(EndNode(rel)(CTInteger))))
+
+        SparkCypherRecords.create(header, renamed)(lhs.space)
+      }
+
+      private def iterate(expandColumn: Column, startId: RecordSlot, rel: Var, path: Var, lhs: DataFrame, rels: DataFrame, pathColName: String, endNodeIdColName: String, keep: Seq[Column]): (Column, DataFrame) = {
+
+        val relIdColumn = rels.col(context.columnName(OpaqueField(rel)))
+        val startColumn = rels.col(context.columnName(startId))
+
+        val join1 = lhs.join(rels, expandColumn === startColumn, "inner")
+
+        val appendUdf = udf(arrayAppend _, ArrayType(LongType))
+        val extendedArray = appendUdf(lhs.col(pathColName), relIdColumn)
+        val tempArrayColName = "temp" // TODO watch out for already existing names!
+        val withExtendedArray = join1.withColumn(tempArrayColName, extendedArray)
+        val tempColumn = withExtendedArray.col(tempArrayColName)
+        val arrayContains = udf(contains _, BooleanType)(tempColumn, relIdColumn)
+        val filtered = withExtendedArray.filter(arrayContains)
+
+        val endNodeIdColumn = filtered.col(context.columnName(ProjectedExpr(EndNode(rel)(CTInteger)))).as(endNodeIdColName)
+
+        val columns = keep ++ Seq(tempColumn.as(pathColName), endNodeIdColumn)
+        val result1 = filtered.select(columns: _*)
+
+        endNodeIdColumn -> result1
+      }
+
+      private def initArray(): Any = {
+        Array[Long]()
+      }
+
+      private def arrayAppend(array: Any, next: Any): Any = {
+        array match {
+          case a:mutable.WrappedArray[Long] => a :+ next
+        }
+      }
+
+      private def contains(array: Any, elem: Any): Any = {
+        array match {
+          case a:mutable.WrappedArray[Long] => a.contains(elem)
         }
       }
     }

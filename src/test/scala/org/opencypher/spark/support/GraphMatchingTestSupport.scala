@@ -18,12 +18,15 @@ import org.s1ck.gdl.GDLHandler
 import org.s1ck.gdl.model.Element
 import org.scalatest.Assertion
 
+import scala.collection.Bag
+import scala.collection.immutable._
 import scala.collection.JavaConverters._
 
 trait GraphMatchingTestSupport {
 
   self: BaseTestSuite with SparkTestSession.Fixture  =>
 
+  implicit val bagConfig = Bag.configuration.compact[CypherMap]
   val DEFAULT_LABEL = "DEFAULT"
   val sparkSession = session
 
@@ -94,10 +97,10 @@ trait GraphMatchingTestSupport {
         val data = {
           val nodes = queryGraph.getVertices.asScala.map { v =>
             val exprs = header.slots.map(_.content.key)
-            val labelFields: Seq[Boolean] = exprs.collect {
+            val labelFields = exprs.collect {
               case HasLabel(_, label) => v.getLabel == label.name
             }
-            val propertyFields: Seq[Any] = exprs.collect {
+            val propertyFields = exprs.collect {
               case p@Property(_, k) =>
                 val pValue = v.getProperties.get(k.name)
                 if (fromJavaType(pValue) == p.cypherType) pValue
@@ -147,8 +150,8 @@ trait GraphMatchingTestSupport {
   implicit class RichRecords(records: SparkCypherRecords) {
     import org.opencypher.spark.impl.instances.spark.RowUtils._
 
-    def toMaps: Set[CypherMap] = {
-      records.toDF().collect().map { r =>
+    def toMaps: Bag[CypherMap] = {
+      val rows = records.toDF().collect().map { r =>
         val properties = records.header.slots.map { s =>
           s.content match {
             case f: FieldSlotContent => f.field.name -> r.getCypherValue(f.key, records.header)
@@ -156,7 +159,8 @@ trait GraphMatchingTestSupport {
           }
         }.toMap
         CypherMap(properties)
-      }.toSet
+      }
+      Bag(rows: _*)
     }
   }
 }

@@ -9,6 +9,15 @@ import org.opencypher.spark.api.types._
 import org.opencypher.spark.impl.util._
 
 class LogicalOperatorProducer {
+  def planBoundedVarLengthExpand(source: Field, r: Field, types: EveryRelationship, target: Field, lower: Int, upper: Int, sourcePlan: LogicalOperator, targetPlan: LogicalOperator): BoundedVarLengthExpand = {
+    val prevSolved = sourcePlan.solved ++ targetPlan.solved
+
+    val solved = types.relTypes.elts.foldLeft(prevSolved.withField(r)) {
+      case (acc, next) => acc.withPredicate(HasType(r, next)(CTBoolean))
+    }
+
+    BoundedVarLengthExpand(source, r, target, lower, upper, sourcePlan, targetPlan)(solved)
+  }
 
   def planTargetExpand(source: Field, rel: Field, target: Field, sourcePlan: LogicalOperator, targetPlan: LogicalOperator): ExpandTarget = {
     val prevSolved = sourcePlan.solved ++ targetPlan.solved
@@ -18,8 +27,7 @@ class LogicalOperatorProducer {
     ExpandTarget(source, rel, target, sourcePlan, targetPlan)(solved)
   }
 
-  def planSourceExpand(source: Field, r: (Field, EveryRelationship), target: Field, sourcePlan: LogicalOperator, targetPlan: LogicalOperator): ExpandSource = {
-    val (rel, types) = r
+  def planSourceExpand(source: Field, rel: Field, types: EveryRelationship, target: Field, sourcePlan: LogicalOperator, targetPlan: LogicalOperator): ExpandSource = {
 
     val prevSolved = sourcePlan.solved ++ targetPlan.solved
 

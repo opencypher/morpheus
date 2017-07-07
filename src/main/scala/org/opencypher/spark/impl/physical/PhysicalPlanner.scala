@@ -1,8 +1,10 @@
 package org.opencypher.spark.impl.physical
 
 import org.opencypher.spark.api.expr._
-import org.opencypher.spark.api.ir.global.{ConstantRef, ConstantRegistry, TokenRegistry}
+import org.opencypher.spark.api.ir.global._
+import org.opencypher.spark.api.ir.pattern.AnyGiven
 import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherResult, SparkGraphSpace}
+import org.opencypher.spark.api.types.CTRelationship
 import org.opencypher.spark.api.value.CypherValue
 import org.opencypher.spark.impl.exception.Raise
 import org.opencypher.spark.impl.flat.FlatOperator
@@ -74,8 +76,28 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, SparkCypherRe
         val expanded = lhs.expandSource(relAndTarget, header).on(source)(rel)
 
         expanded
+
+      case op@flat.BoundedVarLength(source, path, target, lower, upper, sourceOp, targetOp, header, relHeader, tempJoinHeader, lastRel) =>
+        val lhs = inner(sourceOp)
+        val rhs = inner(targetOp)
+
+        val g = lhs.graphs(op.inGraph.name)
+        val types = relTypes(path, tokens)
+        val relationships = g.relationships(lastRel.name)
+
+        val filteredRels = InternalResult(relationships, lhs.graphs).typeFilter(lastRel, AnyGiven(types.map(tokens.relTypeRefByName)), relHeader)
+
+        val expanded = lhs.varExpand(filteredRels, path, lower, upper, tempJoinHeader).on(source)(lastRel)
+
+        expanded.joinTarget(rhs).on(lastRel)(target)
+
       case x =>
         Raise.notYetImplemented(s"operator $x")
     }
+  }
+
+  private def relTypes(r: Var, tokens: TokenRegistry): Set[String] = r.cypherType match {
+    case t: CTRelationship => t.types
+    case _ => Set.empty
   }
 }

@@ -6,15 +6,18 @@ import org.apache.spark.api.java.JavaRDD
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.types.StructType
-import scala.reflect.runtime.universe.TypeTag
 import org.opencypher.spark.api.expr.{Property, Var}
 import org.opencypher.spark.api.record._
+import org.opencypher.spark.api.types.{CTList, CTNode, CTRelationship, CypherType}
 import org.opencypher.spark.api.value.{CypherMap, CypherValue}
 import org.opencypher.spark.impl.convert.{fromSparkType, toSparkType}
 import org.opencypher.spark.impl.exception.Raise
 import org.opencypher.spark.impl.record.SparkCypherRecordHeader
 import org.opencypher.spark.impl.spark.SparkColumnName
 import org.opencypher.spark.impl.syntax.header._
+
+import scala.annotation.tailrec
+import scala.reflect.runtime.universe.TypeTag
 
 sealed abstract class SparkCypherRecords(tokens: SparkCypherTokens, initialHeader: RecordHeader, initialData: DataFrame)
                                         (implicit val space: SparkGraphSpace)
@@ -283,7 +286,10 @@ object SparkCypherRecords {
         val cypherType = fromSparkType(field.dataType, field.nullable)
         val headerType = slot.content.cypherType
 
-        if (toSparkType(headerType) != toSparkType(cypherType))
+        // if the type in the data doesn't correspond to the type in the header we fail
+        // except: we encode nodes, rels and integers with the same data type, so we can't fail
+        // on conflicts when we expect entities (alternative: change reverse-mapping function somehow)
+        if (toSparkType(headerType) != toSparkType(cypherType) && !containsEntity(headerType))
           Raise.invalidDataTypeForColumn(field.name, headerType.toString, cypherType.toString)
       }
 
@@ -292,6 +298,14 @@ object SparkCypherRecords {
     else {
       Raise.graphSpaceMismatch()
     }
+  }
+
+  @tailrec
+  private def containsEntity(t: CypherType): Boolean = t match {
+    case _: CTNode => true
+    case _: CTRelationship => true
+    case l: CTList => containsEntity(l.elementType)
+    case _ => false
   }
 
   def empty(initialHeader: RecordHeader = RecordHeader.empty)(implicit graphSpace: SparkGraphSpace)

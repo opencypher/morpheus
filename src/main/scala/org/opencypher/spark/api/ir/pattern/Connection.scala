@@ -118,3 +118,26 @@ final case class CyclicRelationship(endpoints: IdenticalEndpoints) extends Singl
 
   override def flip = this
 }
+
+object VarLengthRelationship {
+  val seed = "VarLengthRelationship".hashCode
+}
+
+sealed trait VarLengthRelationship extends Connection {
+  override type SELF[XO, XE] <: VarLengthRelationship { type O = XO; type E = XE }
+  final protected override def seed = VarLengthRelationship.seed
+
+  def lower: Int
+  def upper: Option[Int]
+}
+
+final case class DirectedVarLengthRelationship(endpoints: DifferentEndpoints, lower: Int, upper: Option[Int]) extends VarLengthRelationship with DirectedConnection {
+  override type SELF[XO, XE] = DirectedVarLengthRelationship { type O = XO; type E = XE }
+
+  override def flip = copy(endpoints.flip)
+
+  override protected def equalsIfNotEq(obj: Any): Boolean = obj match {
+    case other: DirectedVarLengthRelationship => orientation.eqv(endpoints, other.endpoints)
+    case _ => false
+  }
+}

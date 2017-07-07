@@ -53,6 +53,15 @@ final case class ExpandSource(source: Var, rel: Var, types: EveryRelationship, t
   override def rhs = targetOp
 }
 
+final case class BoundedVarLength(source: Var, rel: Var, target: Var, lower: Int, upper: Int,
+                                  sourceOp: FlatOperator, targetOp: FlatOperator,
+                                  header: RecordHeader, relHeader: RecordHeader, tempJoinHeader: RecordHeader, lastRel: Var)
+  extends BinaryFlatOperator {
+
+  override def lhs = sourceOp
+  override def rhs = targetOp
+}
+
 final case class Start(outGraph: NamedLogicalGraph, source: GraphSource, fields: Set[Var]) extends FlatLeafOperator {
   override val inGraph = EmptyGraph
   override val header = RecordHeader.from(fields.map(OpaqueField).toSeq: _*)

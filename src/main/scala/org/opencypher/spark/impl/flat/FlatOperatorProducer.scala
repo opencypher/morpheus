@@ -69,6 +69,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   // TODO: Specialize per kind of slot content
+  // TODO: Remove types parameter and read rel-types from the rel variable
   def expandSource(source: Var, rel: Var, types: EveryRelationship, target: Var,
                    sourceOp: FlatOperator, targetOp: FlatOperator): FlatOperator = {
     val relHeader = if (types.relTypes.elts.isEmpty) RecordHeader.relationshipFromSchema(rel, schema, tokens)
@@ -81,5 +82,26 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
   def planStart(logicalGraph: NamedLogicalGraph, source: GraphSource, fields: Set[Var]): Start = {
     Start(logicalGraph, source, fields)
+  }
+
+  def boundedVarLength(source: Var, rel: Var, target: Var,
+                       lower: Int, upper: Int, sourceOp: FlatOperator, targetOp: FlatOperator): FlatOperator = {
+    val (listEntry, _) = RecordHeader.empty.update(addContent(OpaqueField(rel)))
+
+    val types = relTypes(rel)
+    val relHeader = if (types.isEmpty) RecordHeader.relationshipFromSchema(rel, schema, tokens)
+    else RecordHeader.relationshipFromSchema(rel, schema, tokens, types)
+
+    val expandHeader = sourceOp.header ++ listEntry ++ targetOp.header
+
+    val lastRel = Var("inventedName")(CTRelationship)
+    val tempJoinHeader = sourceOp.header ++ listEntry.update(addContent(ProjectedExpr(EndNode(lastRel)(CTNode))))._1
+
+    BoundedVarLength(source, rel, target, lower, upper, sourceOp, targetOp, expandHeader, relHeader, tempJoinHeader, lastRel)
+  }
+
+  private def relTypes(r: Var): Set[String] = r.cypherType match {
+    case t: CTRelationship => t.types
+    case _ => Set.empty
   }
 }

@@ -3,6 +3,8 @@ package org.opencypher.spark.impl.instances
 import org.opencypher.spark.SparkCypherTestSuite
 import org.opencypher.spark.api.value.CypherMap
 
+import scala.collection.Bag
+
 class PredicateAcceptanceTest extends SparkCypherTestSuite {
 
   test("less than") {
@@ -14,7 +16,7 @@ class PredicateAcceptanceTest extends SparkCypherTestSuite {
     val result = given.cypher("MATCH (n:Node)-->(m:Node) WHERE n.val < m.val RETURN n.val")
 
     // Then
-    result.records.toMaps should equal(Set(
+    result.records.toMaps should equal(Bag(
       CypherMap("n.val" -> 4)
     ))
 
@@ -30,7 +32,7 @@ class PredicateAcceptanceTest extends SparkCypherTestSuite {
     val result = given.cypher("MATCH (n:Node)-->(m:Node) WHERE n.val <= m.val RETURN n.id, n.val")
 
     // Then
-    result.records.toMaps should equal(Set(
+    result.records.toMaps should equal(Bag(
       CypherMap("n.id" -> 1, "n.val" -> 4),
       CypherMap("n.id" -> 2, "n.val" -> 5)
     ))
@@ -46,7 +48,7 @@ class PredicateAcceptanceTest extends SparkCypherTestSuite {
     val result = given.cypher("MATCH (n:Node)<--(m:Node) WHERE n.val > m.val RETURN n.val")
 
     // Then
-    result.records.toMaps should equal(Set(
+    result.records.toMaps should equal(Bag(
       CypherMap("n.val" -> 5)
     ))
 
@@ -62,7 +64,7 @@ class PredicateAcceptanceTest extends SparkCypherTestSuite {
     val result = given.cypher("MATCH (n:Node)<--(m:Node) WHERE n.val >= m.val RETURN n.id, n.val")
 
     // Then
-    result.records.toMaps should equal(Set(
+    result.records.toMaps should equal(Bag(
       CypherMap("n.id" -> 2, "n.val" -> 5),
       CypherMap("n.id" -> 3, "n.val" -> 5)
     ))
