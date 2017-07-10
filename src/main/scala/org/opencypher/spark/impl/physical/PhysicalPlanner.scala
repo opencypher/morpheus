@@ -40,7 +40,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, SparkCypherRe
       case flat.Select(fields, in, header) =>
         inner(in).select(fields, header)
 
-      case flat.LoadGraph(outGraph, source, _) => source match {
+      case flat.Start(outGraph, source, _) => source match {
         case DefaultGraphSource =>
           InternalResult(context.defaultRecords, Map(outGraph.name -> context.defaultGraph))
         case _ =>

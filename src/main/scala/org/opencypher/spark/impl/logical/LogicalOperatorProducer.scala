@@ -58,8 +58,8 @@ class LogicalOperatorProducer {
     Select(fields, prev)(prev.solved)
   }
 
-  def planLoadDefaultGraph(schema: Schema, fields: Set[Var]): LoadGraph = {
+  def planStart(schema: Schema, fields: Set[Var]): Start = {
     val irFields = fields.map { v => Field(v.name)(v.cypherType) }
-    LoadGraph(NamedLogicalGraph("default", schema), DefaultGraphSource, fields)(SolvedQueryModel(irFields, Set.empty))
+    Start(NamedLogicalGraph("default", schema), DefaultGraphSource, fields)(SolvedQueryModel(irFields, Set.empty))
   }
 }

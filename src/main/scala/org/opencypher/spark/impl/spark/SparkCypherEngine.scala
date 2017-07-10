@@ -50,7 +50,7 @@ final class SparkCypherEngine extends Cypher with Serializable {
   }
 
   def filter(graph: Graph, in: Records, expr: Expr, queryParameters: Map[String, CypherValue]): Records = {
-    val scan = producer.planLoadDefaultGraph(graph.schema, in.header.fields)
+    val scan = producer.planStart(graph.schema, in.header.fields)
     val filter = producer.planFilter(expr, scan)
     plan(graph, in, queryParameters, filter).records
   }

@@ -53,7 +53,7 @@ final case class ExpandSource(source: Var, rel: Var, types: EveryRelationship, t
   override def rhs = targetOp
 }
 
-final case class LoadGraph(outGraph: NamedLogicalGraph, source: GraphSource, fields: Set[Var]) extends FlatLeafOperator {
+final case class Start(outGraph: NamedLogicalGraph, source: GraphSource, fields: Set[Var]) extends FlatLeafOperator {
   override val inGraph = EmptyGraph
   override val header = RecordHeader.from(fields.map(OpaqueField).toSeq: _*)
 }

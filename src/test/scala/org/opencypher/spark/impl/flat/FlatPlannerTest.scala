@@ -32,25 +32,25 @@ class FlatPlannerTest extends BaseTestSuite {
   val mkFlat = new FlatOperatorProducer()
   val flatPlanner = new FlatPlanner
 
-  val logicalLoadGraph = mkLogical.planLoadDefaultGraph(schema, Set.empty)
-  val flatLoadGraph = mkFlat.planLoadGraph(logicalLoadGraph.outGraph, logicalLoadGraph.source, logicalLoadGraph.fields)
+  val logicalStartOperator = mkLogical.planStart(schema, Set.empty)
+  val flatStartOperator = mkFlat.planStart(logicalStartOperator.outGraph, logicalStartOperator.source, logicalStartOperator.fields)
 
   // TODO: Ids missing
   // TODO: Do not name schema provided columns
 
   test("projecting a new expression") {
     val expr = Subtract('a, 'b)()
-    val result = flatPlanner.process(mkLogical.projectField('c, expr, logicalLoadGraph))
+    val result = flatPlanner.process(mkLogical.projectField('c, expr, logicalStartOperator))
     val headerContents = result.header.contents
 
-    result should equal(mkFlat.project(ProjectedField('c, expr), flatLoadGraph))
+    result should equal(mkFlat.project(ProjectedField('c, expr), flatStartOperator))
     headerContents should equal(Set(
       ProjectedField('c, expr)
     ))
   }
 
   test("construct load graph") {
-    flatPlanner.process(logicalLoadGraph) should equal(flatLoadGraph)
+    flatPlanner.process(logicalStartOperator) should equal(flatStartOperator)
   }
 
   test("Construct node scan") {
@@ -268,12 +268,12 @@ class FlatPlannerTest extends BaseTestSuite {
   private def logicalNodeScan(nodeField: String, labelNames: String*) = {
     val labels = labelNames.map(Label)
 
-    mkLogical.planNodeScan(Field(nodeField)(CTNode), EveryNode(AllOf(labels: _*)), logicalLoadGraph)
+    mkLogical.planNodeScan(Field(nodeField)(CTNode), EveryNode(AllOf(labels: _*)), logicalStartOperator)
   }
 
   private def flatNodeScan(node: Var, labelNames: String*) = {
     val labels = labelNames.map(Label)
 
-    mkFlat.nodeScan(node, EveryNode(AllOf(labels: _*)), flatLoadGraph)
+    mkFlat.nodeScan(node, EveryNode(AllOf(labels: _*)), flatStartOperator)
   }
 }

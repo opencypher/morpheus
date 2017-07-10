@@ -60,7 +60,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
   def planLeaf(ref: BlockRef, model: QueryModel[Expr])(implicit context: LogicalPlannerContext): LogicalOperator = {
     model(ref) match {
       case LoadGraphBlock(_, DefaultGraph()) =>
-        producer.planLoadDefaultGraph(context.schema, context.fields)
+        producer.planStart(context.schema, context.fields)
       case x =>
         Raise.notYetImplemented(s"leaf planning of $x")
     }

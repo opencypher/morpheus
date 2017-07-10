@@ -71,10 +71,10 @@ class LogicalPlannerTest extends IrTestSuite {
                 Filter(HasLabel(Var("a")(CTNode), tokens.labelByName("Administrator"))(CTBoolean),
                   ExpandSource(Var("a")(CTNode), Var("r")(CTRelationship), EveryRelationship, Var("g")(CTNode),
                     NodeScan(Var("a")(CTNode), EveryNode,
-                      LoadGraph(NamedLogicalGraph("default", Schema.empty), DefaultGraphSource, Set.empty)(emptySqm)
+                      Start(NamedLogicalGraph("default", Schema.empty), DefaultGraphSource, Set.empty)(emptySqm)
                     )(emptySqm),
                     NodeScan(Var("g")(CTNode), EveryNode,
-                      LoadGraph(NamedLogicalGraph("default", Schema.empty), DefaultGraphSource, Set.empty)(emptySqm)
+                      Start(NamedLogicalGraph("default", Schema.empty), DefaultGraphSource, Set.empty)(emptySqm)
                     )(emptySqm)
                   )(emptySqm)
                 )(emptySqm)
@@ -106,10 +106,10 @@ class LogicalPlannerTest extends IrTestSuite {
                 Filter(HasLabel(Var("a")(CTNode), tokens.labelByName("Administrator"))(CTBoolean),
                   ExpandSource(Var("a")(CTNode), Var("r")(CTRelationship), EveryRelationship, Var("g")(CTNode),
                     NodeScan(Var("a")(CTNode), EveryNode,
-                      LoadGraph(NamedLogicalGraph("default", schema), DefaultGraphSource, Set.empty)(emptySqm)
+                      Start(NamedLogicalGraph("default", schema), DefaultGraphSource, Set.empty)(emptySqm)
                     )(emptySqm),
                     NodeScan(Var("g")(CTNode), EveryNode,
-                      LoadGraph(NamedLogicalGraph("default", schema), DefaultGraphSource, Set.empty)(emptySqm)
+                      Start(NamedLogicalGraph("default", schema), DefaultGraphSource, Set.empty)(emptySqm)
                     )(emptySqm)
                   )(emptySqm)
                 )(emptySqm)
@@ -133,7 +133,7 @@ class LogicalPlannerTest extends IrTestSuite {
         Project(ProjectedField(Var("a.prop")(CTVoid), Property(nodeA, tokens.propertyKeyByName("prop"))(CTVoid)),
           Filter(Not(Equals(Const(constants.constantByName("p1"))(CTInteger), Const(constants.constantByName("p2"))(CTBoolean))(CTBoolean))(CTBoolean),
             NodeScan(nodeA, EveryNode,
-              LoadGraph(NamedLogicalGraph("default", Schema.empty), DefaultGraphSource, Set.empty)(emptySqm)
+              Start(NamedLogicalGraph("default", Schema.empty), DefaultGraphSource, Set.empty)(emptySqm)
             )(emptySqm)
           )(emptySqm)
         )(emptySqm)
