@@ -8,6 +8,11 @@ import org.opencypher.spark.{BaseTestSuite, SparkTestSession}
 class GraftingCypherOnSparkFunctionalityTest extends BaseTestSuite with SparkTestSession.Fixture {
 
   implicit val factory = PropertyGraphFactory.create
+
+  override protected def beforeEach(): Unit = {
+    factory.clear()
+  }
+
   import factory._
 
   test("all node scan") {

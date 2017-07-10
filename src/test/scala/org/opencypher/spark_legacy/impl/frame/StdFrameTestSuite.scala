@@ -21,6 +21,10 @@ abstract class StdFrameTestSuite extends BaseTestSuite with SparkTestSession.Fix
 
   implicit val factory = PropertyGraphFactory.create
 
+  override protected def beforeEach(): Unit = {
+    factory.clear()
+  }
+
   trait GraphTest {
     val graph = factory.graph
 

@@ -2,7 +2,6 @@ package org.opencypher.spark.impl.instances
 
 import org.opencypher.spark.SparkCypherTestSuite
 import org.opencypher.spark.api.value.CypherMap
-import org.opencypher.spark.impl.instances.spark.cypher._
 
 class WithAcceptanceTest extends SparkCypherTestSuite {
 
