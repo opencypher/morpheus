@@ -2,10 +2,14 @@ package org.opencypher.spark.api.spark
 
 import java.util.Collections
 
-import org.apache.spark.sql.{Column, DataFrame, Row}
+import org.apache.spark.api.java.JavaRDD
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql._
+import org.apache.spark.sql.types.StructType
+import scala.reflect.runtime.universe.TypeTag
 import org.opencypher.spark.api.expr.{Property, Var}
 import org.opencypher.spark.api.record._
-import org.opencypher.spark.api.value.{CypherMap, CypherValue, cypherNull}
+import org.opencypher.spark.api.value.{CypherMap, CypherValue}
 import org.opencypher.spark.impl.convert.{fromSparkType, toSparkType}
 import org.opencypher.spark.impl.exception.Raise
 import org.opencypher.spark.impl.record.SparkCypherRecordHeader
@@ -204,6 +208,30 @@ sealed abstract class SparkCypherRecords(tokens: SparkCypherTokens, initialHeade
 }
 
 object SparkCypherRecords {
+
+  def create[A <: Product : TypeTag](rdd: RDD[A])(implicit graphSpace: SparkGraphSpace): SparkCypherRecords =
+    create(graphSpace.session.createDataFrame(rdd))
+
+  def create[A <: Product : TypeTag](data: Seq[A])(implicit graphSpace: SparkGraphSpace): SparkCypherRecords =
+    create(graphSpace.session.createDataFrame(data))
+
+  def create(rowRDD: RDD[Row], schema: StructType)(implicit graphSpace: SparkGraphSpace): SparkCypherRecords =
+    create(graphSpace.session.createDataFrame(rowRDD, schema))
+
+  def create(rowRDD: JavaRDD[Row], schema: StructType)(implicit graphSpace: SparkGraphSpace): SparkCypherRecords =
+    create(graphSpace.session.createDataFrame(rowRDD, schema))
+
+  def create(rows: java.util.List[Row], schema: StructType)(implicit graphSpace: SparkGraphSpace): SparkCypherRecords =
+    create(graphSpace.session.createDataFrame(rows, schema))
+
+  def createDataFrame(rdd: RDD[_], beanClass: Class[_])(implicit graphSpace: SparkGraphSpace): SparkCypherRecords =
+    create(graphSpace.session.createDataFrame(rdd, beanClass))
+
+  def create(rdd: JavaRDD[_], beanClass: Class[_])(implicit graphSpace: SparkGraphSpace): SparkCypherRecords =
+    create(graphSpace.session.createDataFrame(rdd, beanClass))
+
+  def create(data: java.util.List[_], beanClass: Class[_])(implicit graphSpace: SparkGraphSpace): SparkCypherRecords =
+    create(graphSpace.session.createDataFrame(data, beanClass))
 
   def create(initialDataFrame: DataFrame)(implicit graphSpace: SparkGraphSpace): SparkCypherRecords = {
     val initialHeader = SparkCypherRecordHeader.fromSparkStructType(initialDataFrame.schema)
