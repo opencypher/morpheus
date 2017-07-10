@@ -114,9 +114,31 @@ class PhysicalProducer(context: RuntimeContext) {
       }
     }
 
+    def initVarExpand(source: Var, edgeList: Var, endNode: Var, header: RecordHeader): InternalResult = {
+      val sourceSlot = header.slotFor(source)
+      val edgeListSlot = header.slotFor(edgeList)
+      val endNodeSlot = header.slotFor(endNode)
+
+      assertIsNode(endNodeSlot)
+
+      prev.mapRecords(_.initVarExpand(sourceSlot, edgeListSlot, endNodeSlot, header))
+    }
+
     def joinTarget(nodeView: InternalResult) = new JoinBuilder {
       override def on(rel: Var)(node: Var) = {
         val lhsSlot = prev.records.header.targetNode(rel)
+        val rhsSlot = nodeView.records.header.slotFor(node)
+
+        assertIsNode(lhsSlot)
+        assertIsNode(rhsSlot)
+
+        prev.mapRecords(_.join(nodeView.records)(lhsSlot, rhsSlot))
+      }
+    }
+
+    def joinNode(nodeView: InternalResult) = new JoinBuilder {
+      override def on(endNode: Var)(node: Var) = {
+        val lhsSlot = prev.records.header.slotFor(endNode)
         val rhsSlot = nodeView.records.header.slotFor(node)
 
         assertIsNode(lhsSlot)
@@ -138,14 +160,12 @@ class PhysicalProducer(context: RuntimeContext) {
       }
     }
 
-    def varExpand(rels: InternalResult, path: Var, lower: Int, upper: Int, header: RecordHeader) = new JoinBuilder {
-      override def on(node: Var)(rel: Var) = {
-        val nodeSlot = prev.records.header.slotFor(node)
-        val sourceNode = rels.records.header.sourceNode(rel)
+    def varExpand(rels: InternalResult, edgeList: Var, endNode: Var, rel: Var, lower: Int, upper: Int, header: RecordHeader) = {
+        val startSlot = rels.records.header.sourceNode(rel)
+        val endNodeSlot = prev.records.header.slotFor(endNode)
 
-        prev.mapRecords(_.varExpand(rels.records, lower, upper, header)(nodeSlot, sourceNode, rel, path))
+        prev.mapRecords(_.varExpand(rels.records, lower, upper, header)(edgeList, endNodeSlot, rel, startSlot))
       }
-    }
 
     sealed trait JoinBuilder {
       def on(lhsKey: Var)(rhsKey: Var): InternalResult

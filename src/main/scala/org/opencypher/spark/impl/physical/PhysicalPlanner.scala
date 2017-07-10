@@ -52,6 +52,9 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, SparkCypherRe
       case op@flat.NodeScan(v, labels, in, header) =>
         inner(in).nodeScan(op.inGraph, v, labels, header)
 
+      case op@flat.EdgeScan(e, _, in, header) =>
+        inner(in).relationshipScan(op.inGraph, e, header)
+
       case flat.Alias(expr, alias, in, header) =>
         inner(in).alias(expr, alias, header)
 
@@ -77,19 +80,19 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, SparkCypherRe
 
         expanded
 
-      case op@flat.BoundedVarLength(source, path, target, lower, upper, sourceOp, targetOp, header, relHeader, tempJoinHeader, lastRel) =>
-        val lhs = inner(sourceOp)
-        val rhs = inner(targetOp)
+      case flat.InitVarExpand(source, edgeList, endNode, in, header) =>
+        val prev = inner(in)
+        prev.initVarExpand(source, edgeList, endNode, header)
 
-        val g = lhs.graphs(op.inGraph.name)
-        val types = relTypes(path, tokens)
-        val relationships = g.relationships(lastRel.name)
 
-        val filteredRels = InternalResult(relationships, lhs.graphs).typeFilter(lastRel, AnyGiven(types.map(tokens.relTypeRefByName)), relHeader)
+      case flat.BoundedVarExpand(rel, edgeList, target, lower, upper, sourceOp, relOp, targetOp, header) =>
+        val first  = inner(sourceOp)
+        val second = inner(relOp)
+        val third  = inner(targetOp)
 
-        val expanded = lhs.varExpand(filteredRels, path, lower, upper, tempJoinHeader).on(source)(lastRel)
+        val expanded = first.varExpand(second, edgeList, sourceOp.endNode, rel, lower, upper, header)
 
-        expanded.joinTarget(rhs).on(lastRel)(target)
+        expanded.joinNode(third).on(sourceOp.endNode)(target)
 
       case x =>
         Raise.notYetImplemented(s"operator $x")

@@ -22,6 +22,15 @@ sealed trait BinaryFlatOperator extends FlatOperator {
   override def outGraph = lhs.outGraph
 }
 
+sealed trait TernaryFlatOperator extends FlatOperator {
+  def first:  FlatOperator
+  def second: FlatOperator
+  def third:  FlatOperator
+
+  override def inGraph = first.outGraph
+  override def outGraph = first.outGraph
+}
+
 sealed trait StackingFlatOperator extends FlatOperator {
   def in: FlatOperator
 
@@ -32,6 +41,9 @@ sealed trait StackingFlatOperator extends FlatOperator {
 sealed trait FlatLeafOperator extends FlatOperator
 
 final case class NodeScan(node: Var, nodeDef: EveryNode, in: FlatOperator, header: RecordHeader)
+  extends StackingFlatOperator
+
+final case class EdgeScan(edge: Var, edgeDef: EveryRelationship, in: FlatOperator, header: RecordHeader)
   extends StackingFlatOperator
 
 final case class Filter(expr: Expr, in: FlatOperator, header: RecordHeader)
@@ -53,13 +65,17 @@ final case class ExpandSource(source: Var, rel: Var, types: EveryRelationship, t
   override def rhs = targetOp
 }
 
-final case class BoundedVarLength(source: Var, rel: Var, target: Var, lower: Int, upper: Int,
-                                  sourceOp: FlatOperator, targetOp: FlatOperator,
-                                  header: RecordHeader, relHeader: RecordHeader, tempJoinHeader: RecordHeader, lastRel: Var)
-  extends BinaryFlatOperator {
+final case class InitVarExpand(source: Var, edgeList: Var, endNode: Var, in: FlatOperator,
+                               header: RecordHeader)
+  extends StackingFlatOperator
 
-  override def lhs = sourceOp
-  override def rhs = targetOp
+final case class BoundedVarExpand(rel: Var, edgeList: Var, target: Var, lower: Int, upper: Int,
+                                  sourceOp: InitVarExpand, relOp: FlatOperator, targetOp: FlatOperator, header: RecordHeader)
+  extends TernaryFlatOperator {
+
+  override def first  = sourceOp
+  override def second = relOp
+  override def third  = targetOp
 }
 
 final case class Start(outGraph: NamedLogicalGraph, source: GraphSource, fields: Set[Var]) extends FlatLeafOperator {

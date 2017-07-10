@@ -5,7 +5,7 @@ import org.opencypher.spark.api.value.CypherMap
 
 import scala.collection.Bag
 
-class BoundedVarLengthAcceptanceTest extends SparkCypherTestSuite {
+class BoundedVarExpandAcceptanceTest extends SparkCypherTestSuite {
 
   test("bounded to single relationship") {
 
@@ -22,6 +22,23 @@ class BoundedVarLengthAcceptanceTest extends SparkCypherTestSuite {
       CypherMap("m.val" -> "mid1"),
       CypherMap("m.val" -> "end"),
       CypherMap("m.val" -> "end")
+    ))
+
+    // And
+    result.graph shouldMatch given.graph
+  }
+
+  test("bounded with lower bound") {
+
+    // Given
+    val given = TestGraph("""(:Node {val: "source"})-->(:Node {val: "mid1"})-->(:Node {val: "end"})""")
+
+    // When
+    val result = given.cypher("MATCH (t:Node)-[r*2..3]->(y:Node) RETURN y.val")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("y.val" -> "end")
     ))
 
     // And

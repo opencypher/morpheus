@@ -46,14 +46,26 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     Filter(expr, in, in.header)
   }
 
-  def nodeScan(node: Var, _nodeDef: EveryNode, prev: FlatOperator): NodeScan = {
+  def nodeScan(node: Var, nodeDef: EveryNode, prev: FlatOperator): NodeScan = {
 
-    val header = if (_nodeDef.labels.elts.isEmpty) RecordHeader.nodeFromSchema(node, schema, tokens)
-    else RecordHeader.nodeFromSchema(node, schema, tokens, _nodeDef.labels.elts.map(_.name))
+    val header = if (nodeDef.labels.elts.isEmpty) RecordHeader.nodeFromSchema(node, schema, tokens)
+    else RecordHeader.nodeFromSchema(node, schema, tokens, nodeDef.labels.elts.map(_.name))
 
-    val nodeDef = if (_nodeDef.labels.elts.isEmpty) EveryNode(AllGiven(schema.labels.map(Label))) else _nodeDef
+    val _nodeDef = if (nodeDef.labels.elts.isEmpty) EveryNode(AllGiven(schema.labels.map(Label))) else nodeDef
 
-    new NodeScan(node, nodeDef, prev, header)
+    new NodeScan(node, _nodeDef, prev, header)
+  }
+
+  def edgeScan(edge: Var, edgeDef: EveryRelationship, prev: FlatOperator): EdgeScan = {
+    val edgeHeader = if (edgeDef.relTypes.elts.isEmpty) RecordHeader.relationshipFromSchema(edge, schema, tokens)
+    else RecordHeader.relationshipFromSchema(edge, schema, tokens, edgeDef.relTypes.elts.map(_.name))
+
+    EdgeScan(edge, edgeDef, prev, edgeHeader)
+  }
+
+  def varLengthEdgeScan(edgeList: Var, edgeDef: EveryRelationship, prev: FlatOperator): EdgeScan = {
+    val edge = FreshVariableNamer(edgeList.name + "extended", CTRelationship)
+    edgeScan(edge, edgeDef, prev)
   }
 
   // TODO: Specialize per kind of slot content
@@ -84,24 +96,19 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     Start(logicalGraph, source, fields)
   }
 
-  def boundedVarLength(source: Var, rel: Var, target: Var,
-                       lower: Int, upper: Int, sourceOp: FlatOperator, targetOp: FlatOperator): FlatOperator = {
-    val (listEntry, _) = RecordHeader.empty.update(addContent(OpaqueField(rel)))
+  def initVarExpand(source: Var, edgeList: Var, in: FlatOperator): InitVarExpand = {
+    val endNodeId = FreshVariableNamer(edgeList.name + "endNode", CTNode)
+    val (header, _) = in.header.update(addContents(Seq(OpaqueField(edgeList), OpaqueField(endNodeId))))
 
-    val types = relTypes(rel)
-    val relHeader = if (types.isEmpty) RecordHeader.relationshipFromSchema(rel, schema, tokens)
-    else RecordHeader.relationshipFromSchema(rel, schema, tokens, types)
-
-    val expandHeader = sourceOp.header ++ listEntry ++ targetOp.header
-
-    val lastRel = Var("inventedName")(CTRelationship)
-    val tempJoinHeader = sourceOp.header ++ listEntry.update(addContent(ProjectedExpr(EndNode(lastRel)(CTNode))))._1
-
-    BoundedVarLength(source, rel, target, lower, upper, sourceOp, targetOp, expandHeader, relHeader, tempJoinHeader, lastRel)
+    InitVarExpand(source, edgeList, endNodeId, in, header)
   }
 
-  private def relTypes(r: Var): Set[String] = r.cypherType match {
-    case t: CTRelationship => t.types
-    case _ => Set.empty
+  def boundedVarExpand(edge: Var, edgeList: Var, target: Var, lower: Int, upper: Int,
+                       sourceOp: InitVarExpand, edgeOp: FlatOperator, targetOp: FlatOperator) : FlatOperator = {
+
+    val (initHeader, _) = sourceOp.in.header.update(addContent(OpaqueField(edgeList)))
+    val header = initHeader ++ targetOp.header
+
+    BoundedVarExpand(edge, edgeList, target, lower, upper, sourceOp, edgeOp, targetOp, header)
   }
 }

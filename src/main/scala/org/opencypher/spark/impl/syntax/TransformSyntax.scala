@@ -15,6 +15,8 @@ final class TransformOps[T](subject: T)(implicit transform: Transform[T]) {
   def alias2(expr: Expr, v: Var, nextHeader: RecordHeader): T = transform.alias2(subject, expr, v, nextHeader)
   def join(other: T)(lhs: RecordSlot, rhs: RecordSlot): T = transform.join(subject, other)(lhs, rhs)
   def join(other: T, header: RecordHeader)(lhs: RecordSlot, rhs: RecordSlot): T = transform.join(subject, other, header)(lhs, rhs)
+  def initVarExpand(sourceSlot: RecordSlot, edgeList: RecordSlot, lastEdge: RecordSlot, header: RecordHeader): T = transform.initVarExpand(subject, sourceSlot, edgeList, lastEdge, header)
   def varExpand(rels: T, lower: Int, upper: Int, header: RecordHeader)
-               (nodeSlot: RecordSlot, startSlot: RecordSlot, rel: Var, path: Var): T = transform.varExpand(subject, rels, lower, upper, header)(nodeSlot, startSlot, rel, path)
+               (edgeList: Var, endNode: RecordSlot, rel: Var, relStartNode: RecordSlot): T =
+    transform.varExpand(subject, rels, lower, upper, header)(edgeList, endNode, rel, relStartNode)
 }
