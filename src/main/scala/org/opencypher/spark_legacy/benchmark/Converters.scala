@@ -6,33 +6,10 @@ import org.opencypher.spark.api.value._
 object Converters {
   import scala.collection.JavaConverters._
 
-  // TODO: Complete and test
-  // TODO: Support scala types
-  object cypherValue extends (Any => CypherValue) {
-    override def apply(v: Any): CypherValue = v match {
-      case v: CypherValue => v
-      case v: String => CypherString(v)
-      case v: java.lang.Byte => CypherInteger(v.toLong)
-      case v: java.lang.Short => CypherInteger(v.toLong)
-      case v: java.lang.Integer => CypherInteger(v.toLong)
-      case v: java.lang.Long => CypherInteger(v)
-      case v: java.lang.Float => CypherFloat(v.toDouble)
-      case v: java.lang.Double => CypherFloat(v)
-      case v: java.lang.Boolean => CypherBoolean(v)
-      case v: java.util.Map[_, _] if v.isEmpty => CypherMap.empty
-      case v: java.util.Map[_, _] => CypherMap(v.asScala.collect { case (k,v) => k.toString -> apply(v) }.toMap)
-      case v: java.util.List[_] if v.isEmpty => CypherList.empty
-      case v: java.util.List[_] => CypherList(v.asScala.map(apply))
-      case v: Array[_] => CypherList(v.map(apply))
-      case null => null
-      case x => throw new IllegalArgumentException(s"Unexpected property value: $x")
-    }
-  }
-
   case object internalNodeToCypherNode extends (InternalNode => CypherNode) {
 
     override def apply(michael: InternalNode): CypherNode = {
-      val props = michael.asMap().asScala.mapValues(cypherValue)
+      val props = michael.asMap().asScala.mapValues(CypherValue.apply)
       val properties = Properties(props.toSeq:_*)
       CypherNode(michael.id(), michael.labels().asScala.toArray, properties)
     }
@@ -41,7 +18,7 @@ object Converters {
   case object internalRelationshipToCypherRelationship extends (InternalRelationship => CypherRelationship) {
 
     override def apply(michael: InternalRelationship): CypherRelationship = {
-      val props = michael.asMap().asScala.mapValues(cypherValue)
+      val props = michael.asMap().asScala.mapValues(CypherValue.apply)
       val properties = Properties(props.toSeq:_*)
       CypherRelationship(michael.id(), michael.startNodeId(), michael.endNodeId(), michael.`type`(), properties)
     }

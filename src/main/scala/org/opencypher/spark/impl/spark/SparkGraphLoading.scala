@@ -11,10 +11,10 @@ import org.opencypher.spark.api.record.{OpaqueField, ProjectedExpr, RecordHeader
 import org.opencypher.spark.api.schema.{Schema, VerifiedSchema}
 import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkGraphSpace}
 import org.opencypher.spark.api.types._
+import org.opencypher.spark.api.value.CypherValue
 import org.opencypher.spark.impl.convert.{fromJavaType, toSparkType}
 import org.opencypher.spark.impl.record.SparkCypherRecordsTokens
 import org.opencypher.spark.impl.syntax.header._
-import org.opencypher.spark_legacy.benchmark.Converters.cypherValue
 
 trait SparkGraphLoading {
 
@@ -269,7 +269,7 @@ trait SparkGraphLoading {
   private def sparkValue(typ: DataType, value: AnyRef): Any = typ match {
     case StringType | LongType | BooleanType | DoubleType => value
     case BinaryType => if (value == null) null else value.toString.getBytes // TODO: Call kryo
-    case _ => cypherValue(value)
+    case _ => CypherValue(value)
   }
 
   def configureNeo4jAccess(config: SparkConf)(url: String, user: String = "", pw: String = ""): SparkConf = {

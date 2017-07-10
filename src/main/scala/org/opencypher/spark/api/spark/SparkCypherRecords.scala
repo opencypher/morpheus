@@ -5,7 +5,7 @@ import java.util.Collections
 import org.apache.spark.sql.{Column, DataFrame, Row}
 import org.opencypher.spark.api.expr.{Property, Var}
 import org.opencypher.spark.api.record._
-import org.opencypher.spark.api.value.{CypherMap, cypherNull}
+import org.opencypher.spark.api.value.{CypherMap, CypherValue, cypherNull}
 import org.opencypher.spark.impl.convert.{fromSparkType, toSparkType}
 import org.opencypher.spark.impl.exception.Raise
 import org.opencypher.spark.impl.record.SparkCypherRecordHeader
@@ -192,7 +192,7 @@ sealed abstract class SparkCypherRecords(tokens: SparkCypherTokens, initialHeade
         val entries = columns.map { (column) =>
           val fieldIndex = it.fieldIndex(column)
           val javaValue = it.get(fieldIndex)
-          val scalaValue = cypherNull
+          val scalaValue = CypherValue(javaValue)
           column -> scalaValue
         }
         CypherMap(entries: _*)

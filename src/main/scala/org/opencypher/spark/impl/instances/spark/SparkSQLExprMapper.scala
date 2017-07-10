@@ -120,13 +120,12 @@ object SparkSQLExprMapper {
 
   // TODO: Move to UDF package
   import org.opencypher.spark.api.value.CypherValueUtils._
-  import org.opencypher.spark_legacy.benchmark.Converters.cypherValue
 
   private def const(v: CypherValue): () => Any = () => toJavaType(v)
 
   // TODO: Try to share code with cypherFilter()
-  private def lt(lhs: Any, rhs: Any): Any = (cypherValue(lhs) < cypherValue(rhs)).orNull
-  private def lteq(lhs: Any, rhs: Any): Any = (cypherValue(lhs) <= cypherValue(rhs)).orNull
-  private def gteq(lhs: Any, rhs: Any): Any = (cypherValue(lhs) >= cypherValue(rhs)).orNull
-  private def gt(lhs: Any, rhs: Any): Any = (cypherValue(lhs) > cypherValue(rhs)).orNull
+  private def lt(lhs: Any, rhs: Any): Any = (CypherValue(lhs) < CypherValue(rhs)).orNull
+  private def lteq(lhs: Any, rhs: Any): Any = (CypherValue(lhs) <= CypherValue(rhs)).orNull
+  private def gteq(lhs: Any, rhs: Any): Any = (CypherValue(lhs) >= CypherValue(rhs)).orNull
+  private def gt(lhs: Any, rhs: Any): Any = (CypherValue(lhs) > CypherValue(rhs)).orNull
 }

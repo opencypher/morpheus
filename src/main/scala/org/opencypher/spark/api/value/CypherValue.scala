@@ -110,6 +110,8 @@ case object CypherValue extends CypherValueCompanion[CypherValue] with Verificat
 
   import scala.collection.JavaConverters._
 
+  // TODO: Complete and test
+  // TODO: Support scala types
   def apply(v: Any): CypherValue = v match {
     case v: CypherValue => v
     case v: String => CypherString(v)
