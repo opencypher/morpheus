@@ -11,6 +11,7 @@ import org.opencypher.spark.impl.{DirectCompilationStage, flat}
 
 case class PhysicalPlannerContext(
   defaultGraph: SparkCypherGraph,
+  defaultRecords: SparkCypherRecords,
   tokens: TokenRegistry,
   constants: ConstantRegistry,
   parameters: Map[ConstantRef, CypherValue]) {
@@ -39,9 +40,9 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, SparkCypherRe
       case flat.Select(fields, in, header) =>
         inner(in).select(fields, header)
 
-      case flat.LoadGraph(outGraph, source) => source match {
+      case flat.LoadGraph(outGraph, source, _) => source match {
         case DefaultGraphSource =>
-          InternalResult(unitTable(context.space), Map(outGraph.name -> context.defaultGraph))
+          InternalResult(context.defaultRecords, Map(outGraph.name -> context.defaultGraph))
         case _ =>
           Raise.notYetImplemented(s"Loading a graph source other than default, tried $source")
       }
@@ -77,7 +78,4 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, SparkCypherRe
         Raise.notYetImplemented(s"operator $x")
     }
   }
-
-  private def unitTable(graphSpace: SparkGraphSpace): SparkCypherRecords =
-    SparkCypherRecords.empty()(graphSpace)
 }

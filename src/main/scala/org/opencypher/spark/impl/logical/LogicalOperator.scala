@@ -85,7 +85,7 @@ final case class Project(it: ProjectedSlotContent, in: LogicalOperator)
 final case class Select(fields: IndexedSeq[Var], in: LogicalOperator)
                        (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator
 
-final case class LoadGraph(outGraph: NamedLogicalGraph, source: GraphSource)
+final case class LoadGraph(outGraph: NamedLogicalGraph, source: GraphSource, fields: Set[Var])
                           (override val solved: SolvedQueryModel[Expr]) extends LogicalLeafOperator {
   override val inGraph = EmptyGraph
 }

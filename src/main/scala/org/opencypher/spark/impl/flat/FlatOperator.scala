@@ -2,7 +2,7 @@ package org.opencypher.spark.impl.flat
 
 import org.opencypher.spark.api.expr.{Expr, Var}
 import org.opencypher.spark.api.ir.pattern.{EveryNode, EveryRelationship}
-import org.opencypher.spark.api.record.RecordHeader
+import org.opencypher.spark.api.record.{OpaqueField, RecordHeader}
 import org.opencypher.spark.impl.logical.{EmptyGraph, GraphSource, LogicalGraph, NamedLogicalGraph}
 
 sealed trait FlatOperator {
@@ -53,7 +53,7 @@ final case class ExpandSource(source: Var, rel: Var, types: EveryRelationship, t
   override def rhs = targetOp
 }
 
-final case class LoadGraph(outGraph: NamedLogicalGraph, source: GraphSource) extends FlatLeafOperator {
+final case class LoadGraph(outGraph: NamedLogicalGraph, source: GraphSource, fields: Set[Var]) extends FlatLeafOperator {
   override val inGraph = EmptyGraph
-  override val header = RecordHeader.empty
+  override val header = RecordHeader.from(fields.map(OpaqueField).toSeq: _*)
 }

@@ -79,8 +79,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     ExpandSource(source, rel, types, target, sourceOp, targetOp, expandHeader, relHeader)
   }
 
-  def planLoadGraph(logicalGraph: NamedLogicalGraph, source: GraphSource): LoadGraph = {
-
-    LoadGraph(logicalGraph, source)
+  def planLoadGraph(logicalGraph: NamedLogicalGraph, source: GraphSource, fields: Set[Var]): LoadGraph = {
+    LoadGraph(logicalGraph, source, fields)
   }
 }

@@ -32,8 +32,8 @@ class FlatPlannerTest extends BaseTestSuite {
   val mkFlat = new FlatOperatorProducer()
   val flatPlanner = new FlatPlanner
 
-  val logicalLoadGraph = mkLogical.planLoadDefaultGraph(schema)
-  val flatLoadGraph = mkFlat.planLoadGraph(logicalLoadGraph.outGraph, logicalLoadGraph.source)
+  val logicalLoadGraph = mkLogical.planLoadDefaultGraph(schema, Set.empty)
+  val flatLoadGraph = mkFlat.planLoadGraph(logicalLoadGraph.outGraph, logicalLoadGraph.source, logicalLoadGraph.fields)
 
   // TODO: Ids missing
   // TODO: Do not name schema provided columns
