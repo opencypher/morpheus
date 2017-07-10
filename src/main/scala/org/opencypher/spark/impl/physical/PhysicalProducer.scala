@@ -8,6 +8,7 @@ import org.opencypher.spark.api.record._
 import org.opencypher.spark.api.spark.SparkCypherRecords
 import org.opencypher.spark.api.types.{CTBoolean, CTNode}
 import org.opencypher.spark.api.value.CypherValue
+import org.opencypher.spark.impl.exception.Raise
 import org.opencypher.spark.impl.instances.spark.SparkSQLExprMapper.asSparkSQLExpr
 import org.opencypher.spark.impl.instances.spark.records._
 import org.opencypher.spark.impl.logical.NamedLogicalGraph
@@ -71,7 +72,28 @@ class PhysicalProducer(context: RuntimeContext) {
       prev.mapRecords(_.alias2(expr, v, header))
 
     def project(expr: Expr, header: RecordHeader): InternalResult =
-      prev.mapRecords(_.project(expr, header))
+      prev.mapRecords { subject =>
+        val newData = asSparkSQLExpr(header, expr, subject.data) match {
+          case None => Raise.notYetImplemented(s"projecting $expr")
+
+          case Some(sparkSqlExpr) =>
+            val headerNames = header.slotsFor(expr).map(context.columnName)
+            val dataNames = subject.data.columns.toSeq
+
+            // TODO: Can optimise for var AS var2 case -- avoid duplicating data
+            headerNames.diff(dataNames) match {
+              case Seq(one) =>
+                // align the name of the column to what the header expects
+                val newCol = sparkSqlExpr.as(one)
+                val columnsToSelect = subject.data.columns.map(subject.data.col) :+ newCol
+
+                subject.data.select(columnsToSelect: _*)
+              case _ => Raise.multipleSlotsForExpression()
+            }
+        }
+
+        SparkCypherRecords.create(header, newData)(subject.space)
+      }
 
     def select(fields: IndexedSeq[Var], header: RecordHeader): InternalResult =
       prev.mapRecords { subject =>

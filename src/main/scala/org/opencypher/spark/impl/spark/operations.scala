@@ -18,8 +18,9 @@ object operations {
               (implicit engine: SparkCypherEngine): SparkCypherRecords =
       engine.select(graph, subject, fields, parameters)
 
-    def project(subject: SparkCypherRecords, expr: Expr)(implicit engine: SparkCypherEngine): SparkCypherRecords =
-      ???
+    def project(subject: SparkCypherRecords, expr: Expr, parameters: Map[String, CypherValue] = Map.empty)
+               (implicit engine: SparkCypherEngine): SparkCypherRecords =
+      engine.project(graph, subject, expr, parameters)
 
     def alias(subject: SparkCypherRecords, alias: (Expr, Var))(implicit engine: SparkCypherEngine): SparkCypherRecords =
       ???

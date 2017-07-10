@@ -48,30 +48,6 @@ trait SparkCypherRecordsInstances extends Serializable {
         SparkCypherRecords.create(newHeader, newData)(subject.space)
       }
 
-      override def project(subject: SparkCypherRecords, expr: Expr, newHeader: RecordHeader): SparkCypherRecords = {
-
-        val newData = asSparkSQLExpr(newHeader, expr, subject.data) match {
-          case None => Raise.notYetImplemented(s"projecting $expr")
-
-          case Some(sparkSqlExpr) =>
-            val headerNames = newHeader.slotsFor(expr).map(context.columnName)
-            val dataNames = subject.data.columns.toSeq
-
-            // TODO: Can optimise for var AS var2 case -- avoid duplicating data
-            headerNames.diff(dataNames) match {
-              case Seq(one) =>
-                // align the name of the column to what the header expects
-                val newCol = sparkSqlExpr.as(one)
-                val columnsToSelect = subject.data.columns.map(subject.data.col) :+ newCol
-
-                subject.data.select(columnsToSelect: _*)
-              case _ => Raise.multipleSlotsForExpression()
-            }
-        }
-
-        SparkCypherRecords.create(newHeader, newData)(subject.space)
-      }
-
       override def join(lhs: SparkCypherRecords, rhs: SparkCypherRecords)
                        (lhsSlot: RecordSlot, rhsSlot: RecordSlot): SparkCypherRecords =
         join(lhs, rhs, lhs.header ++ rhs.header)(lhsSlot, rhsSlot)

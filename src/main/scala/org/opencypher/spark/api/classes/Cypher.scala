@@ -19,10 +19,6 @@ trait Cypher {
   final def cypher(graph: Graph, query: String): Result = cypher(graph, query, Map.empty)
 
   def cypher(graph: Graph, query: String, parameters: Map[String, CypherValue]): Result
-
-  // Auxiliary operators
-  def filter(graph: Graph, in: Records, expr: Expr, queryParameters: Map[String, CypherValue]): Records
-  def select(graph: Graph, in: Records, fields: IndexedSeq[Var], queryParameters: Map[String, CypherValue]): Records
 }
 
 

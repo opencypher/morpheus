@@ -49,15 +49,21 @@ final class SparkCypherEngine extends Cypher with Serializable {
     plan(graph, SparkCypherRecords.empty()(graph.space), tokens, constants, allParameters, logicalPlan)
   }
 
-  override def filter(graph: Graph, in: Records, expr: Expr, queryParameters: Map[String, CypherValue]): Records = {
+  def filter(graph: Graph, in: Records, expr: Expr, queryParameters: Map[String, CypherValue]): Records = {
     val scan = producer.planStart(graph.schema, in.header.fields)
     val filter = producer.planFilter(expr, scan)
     plan(graph, in, queryParameters, filter).records
   }
 
-  override def select(graph: Graph, in: Records, fields: IndexedSeq[Var], queryParameters: Map[String, CypherValue]): Records = {
+  def select(graph: Graph, in: Records, fields: IndexedSeq[Var], queryParameters: Map[String, CypherValue]): Records = {
     val scan = producer.planStart(graph.schema, in.header.fields)
     val select = producer.planSelect(fields, scan)
+    plan(graph, in, queryParameters, select).records
+  }
+
+  def project(graph: Graph, in: Records, expr: Expr, queryParameters: Map[String, CypherValue]): Records = {
+    val scan = producer.planStart(graph.schema, in.header.fields)
+    val select = producer.projectExpr(expr, scan)
     plan(graph, in, queryParameters, select).records
   }
 

@@ -53,10 +53,14 @@ object SparkSQLExprMapper {
         Some(col)
 
       // predicates
-      case Not(Equals(v1: Var, v2: Var)) =>
+      case Equals(v1: Var, v2: Var) =>
         val lCol = getColumn(v1, header, df)
         val rCol = getColumn(v2, header, df)
-        Some(lCol =!= rCol)
+        Some(lCol === rCol)
+
+      case Not(expr) =>
+        val column = getColumn(expr, header, df)
+        Some(! column)
 
       case Ands(exprs) =>
         val cols = exprs.map(asSparkSQLExpr(header, _, df))
