@@ -11,7 +11,6 @@ trait TransformSyntax {
 }
 
 final class TransformOps[T](subject: T)(implicit transform: Transform[T]) {
-  def filter(expr: Expr, header: RecordHeader): T = transform.filter(subject, expr, header)
   def select(fields: IndexedSeq[Var], header: RecordHeader): T = transform.select(subject, fields, header)
   def reorder(header: RecordHeader): T = transform.reorder(subject, header)
   def project(expr: Expr, header: RecordHeader): T = transform.project(subject, expr, header)

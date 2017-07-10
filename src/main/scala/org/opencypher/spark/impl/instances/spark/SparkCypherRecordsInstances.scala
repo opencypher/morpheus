@@ -13,33 +13,6 @@ import org.opencypher.spark.impl.physical.RuntimeContext
 
 trait SparkCypherRecordsInstances extends Serializable {
 
-  /*
-   * Used when the predicate depends on values not stored inside the dataframe.
-   */
-  case class cypherFilter(header: RecordHeader, expr: Expr)
-                         (implicit context: RuntimeContext) extends (Row => Option[Boolean]) {
-    def apply(row: Row): Option[Boolean] = expr match {
-      case Equals(p: Property, c: Const) =>
-        // TODO: Make this ternary
-        Some(row.getCypherValue(p, header) == row.getCypherValue(c, header))
-
-      case LessThan(lhs, rhs) =>
-        row.getCypherValue(lhs, header) < row.getCypherValue(rhs, header)
-
-      case LessThanOrEqual(lhs, rhs) =>
-        row.getCypherValue(lhs, header) <= row.getCypherValue(rhs, header)
-
-      case GreaterThan(lhs, rhs) =>
-        row.getCypherValue(lhs, header) > row.getCypherValue(rhs, header)
-
-      case GreaterThanOrEqual(lhs, rhs) =>
-        row.getCypherValue(lhs, header) >= row.getCypherValue(rhs, header)
-
-      case x =>
-        Raise.notYetImplemented(s"Predicate $x")
-    }
-  }
-
   implicit def sparkCypherRecordsTransform(implicit context: RuntimeContext) =
     new Transform[SparkCypherRecords] with Serializable {
 
@@ -49,26 +22,6 @@ trait SparkCypherRecordsInstances extends Serializable {
             case None => false
             case Some(x) => x
           }
-      }
-
-      override def filter(subject: SparkCypherRecords, expr: Expr, newHeader: RecordHeader): SparkCypherRecords = {
-
-        val filteredRows = asSparkSQLExpr(subject.header, expr, subject.data) match {
-          case Some(sqlExpr) =>
-            subject.data.where(sqlExpr)
-          case None =>
-            val predicate = cypherFilter(newHeader, expr)
-            subject.data.filter(liftTernary(predicate))
-        }
-
-        val selectedColumns = newHeader.slots.map { c =>
-          val name = context.columnName(c)
-          filteredRows.col(name)
-        }
-
-        val newData = filteredRows.select(selectedColumns: _*)
-
-        SparkCypherRecords.create(newHeader, newData)(subject.space)
       }
 
       override def select(subject: SparkCypherRecords, fields: IndexedSeq[Var], newHeader: RecordHeader)

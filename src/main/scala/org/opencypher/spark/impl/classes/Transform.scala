@@ -6,7 +6,6 @@ import org.opencypher.spark.api.record.{ProjectedSlotContent, RecordHeader, Reco
 import scala.language.implicitConversions
 
 trait Transform[T] {
-  def filter(subject: T, expr: Expr, nextHeader: RecordHeader): T
   def select(subject: T, fields: IndexedSeq[Var], nextHeader: RecordHeader): T
   def reorder(subject: T, nextHeader: RecordHeader): T
   def project(subject: T, expr: Expr, header: RecordHeader): T
