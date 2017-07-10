@@ -37,6 +37,8 @@ sealed abstract class SparkCypherRecords(tokens: SparkCypherTokens, initialHeade
   //noinspection AccessorLikeMethodIsEmptyParen
   def toDF(): Data = data
 
+  def mapDF(f: Data => Data) = SparkCypherRecords.create(f(data))
+
   // TODO: Check that this does not change the caching of our data frame
   def cached = SparkCypherRecords.create(header, data.cache())
 
@@ -209,11 +211,26 @@ sealed abstract class SparkCypherRecords(tokens: SparkCypherTokens, initialHeade
 
 object SparkCypherRecords {
 
-  def create[A <: Product : TypeTag](rdd: RDD[A])(implicit graphSpace: SparkGraphSpace): SparkCypherRecords =
-    create(graphSpace.session.createDataFrame(rdd))
+  def create[A <: Product : TypeTag](columns: Seq[String], data: Seq[A])(implicit graphSpace: SparkGraphSpace): SparkCypherRecords =
+    create(graphSpace.session.createDataFrame(data).toDF(columns: _*))
 
   def create[A <: Product : TypeTag](data: Seq[A])(implicit graphSpace: SparkGraphSpace): SparkCypherRecords =
     create(graphSpace.session.createDataFrame(data))
+
+  def create(columns: String*)(rows: java.util.List[Row], schema: StructType)(implicit graphSpace: SparkGraphSpace): SparkCypherRecords =
+    create(graphSpace.session.createDataFrame(rows, schema).toDF(columns: _*))
+
+  def create(rows: java.util.List[Row], schema: StructType)(implicit graphSpace: SparkGraphSpace): SparkCypherRecords =
+    create(graphSpace.session.createDataFrame(rows, schema))
+
+  def create(columns: Seq[String], data: java.util.List[_], beanClass: Class[_])(implicit graphSpace: SparkGraphSpace): SparkCypherRecords =
+    create(graphSpace.session.createDataFrame(data, beanClass).toDF(columns: _*))
+
+  def create(data: java.util.List[_], beanClass: Class[_])(implicit graphSpace: SparkGraphSpace): SparkCypherRecords =
+    create(graphSpace.session.createDataFrame(data, beanClass))
+
+  def create[A <: Product : TypeTag](rdd: RDD[A])(implicit graphSpace: SparkGraphSpace): SparkCypherRecords =
+    create(graphSpace.session.createDataFrame(rdd))
 
   def create(rowRDD: RDD[Row], schema: StructType)(implicit graphSpace: SparkGraphSpace): SparkCypherRecords =
     create(graphSpace.session.createDataFrame(rowRDD, schema))
@@ -221,17 +238,11 @@ object SparkCypherRecords {
   def create(rowRDD: JavaRDD[Row], schema: StructType)(implicit graphSpace: SparkGraphSpace): SparkCypherRecords =
     create(graphSpace.session.createDataFrame(rowRDD, schema))
 
-  def create(rows: java.util.List[Row], schema: StructType)(implicit graphSpace: SparkGraphSpace): SparkCypherRecords =
-    create(graphSpace.session.createDataFrame(rows, schema))
-
-  def createDataFrame(rdd: RDD[_], beanClass: Class[_])(implicit graphSpace: SparkGraphSpace): SparkCypherRecords =
+  def create(rdd: RDD[_], beanClass: Class[_])(implicit graphSpace: SparkGraphSpace): SparkCypherRecords =
     create(graphSpace.session.createDataFrame(rdd, beanClass))
 
   def create(rdd: JavaRDD[_], beanClass: Class[_])(implicit graphSpace: SparkGraphSpace): SparkCypherRecords =
     create(graphSpace.session.createDataFrame(rdd, beanClass))
-
-  def create(data: java.util.List[_], beanClass: Class[_])(implicit graphSpace: SparkGraphSpace): SparkCypherRecords =
-    create(graphSpace.session.createDataFrame(data, beanClass))
 
   def create(initialDataFrame: DataFrame)(implicit graphSpace: SparkGraphSpace): SparkCypherRecords = {
     val initialHeader = SparkCypherRecordHeader.fromSparkStructType(initialDataFrame.schema)
