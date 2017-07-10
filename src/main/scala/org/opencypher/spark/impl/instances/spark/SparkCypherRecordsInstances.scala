@@ -4,10 +4,8 @@ import org.apache.spark.sql.{Column, Row}
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.record._
 import org.opencypher.spark.api.spark.SparkCypherRecords
-import org.opencypher.spark.api.value.CypherValueUtils._
 import org.opencypher.spark.impl.classes.Transform
 import org.opencypher.spark.impl.exception.Raise
-import org.opencypher.spark.impl.instances.spark.RowUtils._
 import org.opencypher.spark.impl.instances.spark.SparkSQLExprMapper.asSparkSQLExpr
 import org.opencypher.spark.impl.physical.RuntimeContext
 
@@ -22,17 +20,6 @@ trait SparkCypherRecordsInstances extends Serializable {
             case None => false
             case Some(x) => x
           }
-      }
-
-      override def select(subject: SparkCypherRecords, fields: IndexedSeq[Var], newHeader: RecordHeader)
-      : SparkCypherRecords = {
-        val data = subject.data
-        val columns = fields.map { f =>
-          data.col(context.columnName(subject.header.slotsFor(f).head))
-        }
-        val newData = subject.data.select(columns: _*)
-
-        SparkCypherRecords.create(newHeader, newData)(subject.space)
       }
 
       override def reorder(subject: SparkCypherRecords, newHeader: RecordHeader): SparkCypherRecords = {

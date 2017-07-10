@@ -74,7 +74,15 @@ class PhysicalProducer(context: RuntimeContext) {
       prev.mapRecords(_.project(expr, header))
 
     def select(fields: IndexedSeq[Var], header: RecordHeader): InternalResult =
-      prev.mapRecords(_.select(fields, header))
+      prev.mapRecords { subject =>
+        val data = subject.data
+        val columns = fields.map { f =>
+          data.col(context.columnName(subject.header.slotsFor(f).head))
+        }
+        val newData = subject.data.select(columns: _*)
+
+        SparkCypherRecords.create(header, newData)(subject.space)
+      }
 
     def typeFilter(rel: Var, types: AnyGiven[RelTypeRef], header: RecordHeader): InternalResult = {
       if (types.elts.isEmpty) prev

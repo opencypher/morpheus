@@ -59,7 +59,6 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, SparkCypherRe
       case flat.Filter(expr, in, header) => expr match {
         case TrueLit() => inner(in) // optimise away filter
         case e => inner(in).filter(expr, header)
-
       }
 
       // MATCH (a)-[r]->(b) => MATCH (a), (b), (a)-[r]->(b)

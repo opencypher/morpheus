@@ -2,7 +2,7 @@ package org.opencypher.spark.impl.spark
 
 import org.apache.spark.sql.DataFrame
 import org.opencypher.spark.api.classes.Cypher
-import org.opencypher.spark.api.expr.Expr
+import org.opencypher.spark.api.expr.{Expr, Var}
 import org.opencypher.spark.api.ir.global.{ConstantRef, ConstantRegistry, GlobalsRegistry, TokenRegistry}
 import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherResult, SparkGraphSpace}
 import org.opencypher.spark.api.value.CypherValue
@@ -49,10 +49,16 @@ final class SparkCypherEngine extends Cypher with Serializable {
     plan(graph, SparkCypherRecords.empty()(graph.space), tokens, constants, allParameters, logicalPlan)
   }
 
-  def filter(graph: Graph, in: Records, expr: Expr, queryParameters: Map[String, CypherValue]): Records = {
+  override def filter(graph: Graph, in: Records, expr: Expr, queryParameters: Map[String, CypherValue]): Records = {
     val scan = producer.planStart(graph.schema, in.header.fields)
     val filter = producer.planFilter(expr, scan)
     plan(graph, in, queryParameters, filter).records
+  }
+
+  override def select(graph: Graph, in: Records, fields: IndexedSeq[Var], queryParameters: Map[String, CypherValue]): Records = {
+    val scan = producer.planStart(graph.schema, in.header.fields)
+    val select = producer.planSelect(fields, scan)
+    plan(graph, in, queryParameters, select).records
   }
 
   private def plan(graph: SparkCypherGraph,

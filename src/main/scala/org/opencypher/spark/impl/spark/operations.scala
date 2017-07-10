@@ -14,8 +14,9 @@ object operations {
     : SparkCypherRecords =
       engine.filter(graph, subject, expr, parameters)
 
-    def select(subject: SparkCypherRecords, fields: IndexedSeq[Var])(implicit engine: SparkCypherEngine): SparkCypherRecords =
-      ???
+    def select(subject: SparkCypherRecords, fields: IndexedSeq[Var], parameters: Map[String, CypherValue] = Map.empty)
+              (implicit engine: SparkCypherEngine): SparkCypherRecords =
+      engine.select(graph, subject, fields, parameters)
 
     def project(subject: SparkCypherRecords, expr: Expr)(implicit engine: SparkCypherEngine): SparkCypherRecords =
       ???

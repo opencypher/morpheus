@@ -2,8 +2,7 @@ package org.opencypher.spark.api.classes
 
 import org.opencypher.spark.api.expr.{Expr, Var}
 import org.opencypher.spark.api.graph.{CypherGraph, CypherResult, GraphSpace}
-import org.opencypher.spark.api.record.{CypherRecords, RecordHeader, RecordSlot}
-import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords}
+import org.opencypher.spark.api.record.CypherRecords
 import org.opencypher.spark.api.value.CypherValue
 
 
@@ -20,6 +19,10 @@ trait Cypher {
   final def cypher(graph: Graph, query: String): Result = cypher(graph, query, Map.empty)
 
   def cypher(graph: Graph, query: String, parameters: Map[String, CypherValue]): Result
+
+  // Auxiliary operators
+  def filter(graph: Graph, in: Records, expr: Expr, queryParameters: Map[String, CypherValue]): Records
+  def select(graph: Graph, in: Records, fields: IndexedSeq[Var], queryParameters: Map[String, CypherValue]): Records
 }
 
 
