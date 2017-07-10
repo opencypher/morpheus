@@ -1,4 +1,4 @@
-package org.opencypher.spark
+package org.opencypher.spark.support
 
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.apache.spark.sql.{Row, SparkSession}
@@ -13,14 +13,16 @@ import org.opencypher.spark.api.value.{CypherMap, CypherValue}
 import org.opencypher.spark.impl.convert.{fromJavaType, toSparkType}
 import org.opencypher.spark.impl.physical.RuntimeContext
 import org.opencypher.spark.impl.record.SparkCypherRecordsTokens
+import org.opencypher.spark.{BaseTestSuite, SparkTestSession}
 import org.s1ck.gdl.GDLHandler
 import org.s1ck.gdl.model.Element
 import org.scalatest.Assertion
 
 import scala.collection.JavaConverters._
 
-trait GraphMatchingTestSupport extends TestSession.Fixture {
-  self: TestSuiteImpl =>
+trait GraphMatchingTestSupport {
+
+  self: BaseTestSuite with SparkTestSession.Fixture  =>
 
   val DEFAULT_LABEL = "DEFAULT"
   val sparkSession = session

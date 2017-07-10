@@ -1,11 +1,11 @@
 package org.opencypher.spark.api.ir.global
 
-import org.opencypher.spark.TestSuiteImpl
+import org.opencypher.spark.BaseTestSuite
 import org.opencypher.spark.impl.util.RefCollection
 
 import scala.util.Try
 
-class GlobalRegistryTest extends TestSuiteImpl {
+class GlobalRegistryTest extends BaseTestSuite {
 
   val globals = GlobalsRegistry(
     TokenRegistry(

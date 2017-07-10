@@ -5,11 +5,11 @@ import java.util.Collections
 import org.apache.spark.sql.{Column, DataFrame, Row}
 import org.opencypher.spark.api.expr.{Property, Var}
 import org.opencypher.spark.api.record._
-import org.opencypher.spark.api.types.CypherType
+import org.opencypher.spark.api.value.{CypherMap, cypherNull}
 import org.opencypher.spark.impl.convert.{fromSparkType, toSparkType}
 import org.opencypher.spark.impl.exception.Raise
 import org.opencypher.spark.impl.record.SparkCypherRecordHeader
-import org.opencypher.spark.impl.spark.{SparkColumn, SparkColumnName}
+import org.opencypher.spark.impl.spark.SparkColumnName
 import org.opencypher.spark.impl.syntax.header._
 
 sealed abstract class SparkCypherRecords(tokens: SparkCypherTokens, initialHeader: RecordHeader, initialData: DataFrame)
@@ -183,6 +183,24 @@ sealed abstract class SparkCypherRecords(tokens: SparkCypherTokens, initialHeade
   }
 
   def distinct: SparkCypherRecords = SparkCypherRecords.create(self.header, self.data.distinct())
+
+  def toLocalIterator: java.util.Iterator[CypherMap] = {
+    val iterator = data.toLocalIterator()
+    new java.util.Iterator[CypherMap] {
+      override def next(): CypherMap = {
+        val it = iterator.next()
+        val entries = columns.map { (column) =>
+          val fieldIndex = it.fieldIndex(column)
+          val javaValue = it.get(fieldIndex)
+          val scalaValue = cypherNull
+          column -> scalaValue
+        }
+        CypherMap(entries: _*)
+      }
+
+      override def hasNext: Boolean = iterator.hasNext
+    }
+  }
 }
 
 object SparkCypherRecords {

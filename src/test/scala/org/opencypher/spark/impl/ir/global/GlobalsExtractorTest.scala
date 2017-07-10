@@ -1,9 +1,10 @@
 package org.opencypher.spark.impl.ir.global
 
 import org.opencypher.spark.api.ir.global._
-import org.opencypher.spark.{Neo4jAstTestSupport, TestSuiteImpl}
+import org.opencypher.spark.BaseTestSuite
+import org.opencypher.spark.support.Neo4jAstTestSupport
 
-class GlobalsExtractorTest extends TestSuiteImpl with Neo4jAstTestSupport {
+class GlobalsExtractorTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   test("extracts labels") {
     extracting("n:Foo") shouldRegisterLabel "Foo"

@@ -1,9 +1,9 @@
 package org.opencypher.spark.api.value
 
 import org.opencypher.spark.api.value.CypherValue._
-import org.opencypher.spark.{TestSuiteImpl, TestSession}
+import org.opencypher.spark.{BaseTestSuite, SparkTestSession}
 
-class CypherValueEncodingTest extends TestSuiteImpl with TestSession.Fixture {
+class CypherValueEncodingTest extends BaseTestSuite with SparkTestSession.Fixture {
 
   import CypherTestValues._
 

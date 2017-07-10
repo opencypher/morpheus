@@ -1,10 +1,10 @@
 package org.opencypher.spark.impl.convert
 
 import org.apache.spark.sql.types._
-import org.opencypher.spark.TestSuiteImpl
+import org.opencypher.spark.BaseTestSuite
 import org.opencypher.spark.api.types._
 
-class ConvertersTest extends TestSuiteImpl {
+class ConvertersTest extends BaseTestSuite {
 
   test("converts from spark types to cypher types") {
     val mappings = Seq(

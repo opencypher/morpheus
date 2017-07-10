@@ -5,12 +5,13 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, Parameter}
 import org.neo4j.cypher.internal.frontend.v3_2.symbols
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.types._
-import org.opencypher.spark.{Neo4jAstTestSupport, TestSuiteImpl}
+import org.opencypher.spark.BaseTestSuite
+import org.opencypher.spark.support.Neo4jAstTestSupport
 import org.scalatest.mockito.MockitoSugar
 
 import scala.language.reflectiveCalls
 
-class SchemaTyperTest extends TestSuiteImpl with Neo4jAstTestSupport with MockitoSugar {
+class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with MockitoSugar {
 
   val schema = Schema.empty
     .withNodeKeys("Person")("name" -> CTString, "age" -> CTInteger)

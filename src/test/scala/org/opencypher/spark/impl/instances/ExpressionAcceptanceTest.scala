@@ -1,10 +1,10 @@
 package org.opencypher.spark.impl.instances
 
+import org.opencypher.spark.SparkCypherTestSuite
 import org.opencypher.spark.api.value.CypherMap
 import org.opencypher.spark.impl.instances.spark.cypher._
-import org.opencypher.spark.{GraphMatchingTestSupport, TestSuiteImpl}
 
-class ExpressionAcceptanceTest extends TestSuiteImpl with GraphMatchingTestSupport {
+class ExpressionAcceptanceTest extends SparkCypherTestSuite {
 
   test("less than") {
 

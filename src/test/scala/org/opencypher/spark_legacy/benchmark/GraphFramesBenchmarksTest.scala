@@ -1,9 +1,9 @@
 package org.opencypher.spark_legacy.benchmark
 
 import org.opencypher.spark_legacy.impl.{In, Out}
-import org.opencypher.spark.TestSuiteImpl
+import org.opencypher.spark.BaseTestSuite
 
-class GraphFramesBenchmarksTest extends TestSuiteImpl {
+class GraphFramesBenchmarksTest extends BaseTestSuite {
 
   test("motif construction") {
     GraphFramesBenchmarks.buildMotif(Seq(Out("") -> "")) should equal("(n0)-[r0]->(n1)")

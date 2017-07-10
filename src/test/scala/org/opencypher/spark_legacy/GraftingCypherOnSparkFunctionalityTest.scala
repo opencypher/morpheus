@@ -3,9 +3,15 @@ package org.opencypher.spark_legacy
 import org.opencypher.spark_legacy.api.CypherRecord
 import org.opencypher.spark_legacy.impl._
 import org.opencypher.spark.api.value.CypherList
-import org.opencypher.spark.{TestSuiteImpl, TestSession}
+import org.opencypher.spark.{BaseTestSuite, SparkTestSession}
 
-class GraftingCypherOnSparkFunctionalityTest extends TestSuiteImpl with TestSession.Fixture {
+class GraftingCypherOnSparkFunctionalityTest extends BaseTestSuite with SparkTestSession.Fixture {
+
+  implicit val factory = PropertyGraphFactory.create
+
+  override protected def beforeEach(): Unit = {
+    factory.clear()
+  }
 
   import factory._
 
