@@ -19,6 +19,9 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
 
     input match {
 
+      case logical.Sanitize(in) =>
+        producer.sanitize(process(in))
+
       case logical.Select(fields, in) =>
         producer.select(fields, process(in))
 

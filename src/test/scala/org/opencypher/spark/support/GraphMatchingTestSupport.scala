@@ -147,6 +147,7 @@ trait GraphMatchingTestSupport {
     }
   }
 
+  // TODO: Move to RecordMatchingTestSupport
   implicit class RichRecords(records: SparkCypherRecords) {
     import org.opencypher.spark.impl.instances.spark.RowUtils._
 

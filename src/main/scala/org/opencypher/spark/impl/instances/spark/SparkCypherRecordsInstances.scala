@@ -19,14 +19,6 @@ trait SparkCypherRecordsInstances extends Serializable {
   implicit def sparkCypherRecordsTransform(implicit context: RuntimeContext) =
     new Transform[SparkCypherRecords] with Serializable {
 
-      override def reorder(subject: SparkCypherRecords, newHeader: RecordHeader): SparkCypherRecords = {
-        val columns = newHeader.slots.map(context.columnName)
-
-        val newData = subject.data.select(columns.head, columns.tail: _*)
-
-        SparkCypherRecords.create(newHeader, newData)(subject.space)
-      }
-
       override def join(lhs: SparkCypherRecords, rhs: SparkCypherRecords)
                        (lhsSlot: RecordSlot, rhsSlot: RecordSlot): SparkCypherRecords =
         join(lhs, rhs, lhs.header ++ rhs.header)(lhsSlot, rhsSlot)

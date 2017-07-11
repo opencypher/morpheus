@@ -10,9 +10,9 @@ import org.opencypher.spark.api.value.CypherValue
 import org.opencypher.spark.impl.flat.{FlatPlanner, FlatPlannerContext}
 import org.opencypher.spark.impl.ir.global.GlobalsExtractor
 import org.opencypher.spark.impl.ir.{CypherQueryBuilder, IRBuilderContext}
-import org.opencypher.spark.impl.logical.{LogicalOperator, LogicalOperatorProducer, LogicalPlanner, LogicalPlannerContext}
+import org.opencypher.spark.impl.logical._
 import org.opencypher.spark.impl.parse.CypherParser
-import org.opencypher.spark.impl.physical.{PhysicalPlanner, PhysicalPlannerContext}
+import org.opencypher.spark.impl.physical.{PhysicalPlanner, PhysicalPlannerContext, ResultBuilder}
 
 final class SparkCypherEngine extends Cypher with Serializable {
 
@@ -54,6 +54,12 @@ final class SparkCypherEngine extends Cypher with Serializable {
     val scan = producer.planStart(graph.schema, in.header.fields)
     val filter = producer.planFilter(expr, scan)
     plan(graph, in, queryParameters, filter).records
+  }
+
+  def sanitize(graph: Graph, in: Records): Records = {
+    val scan = producer.planStart(graph.schema, in.header.fields)
+    val select = producer.planSanitize(scan)
+    plan(graph, in, Map.empty, select).records
   }
 
   def select(graph: Graph, in: Records, fields: IndexedSeq[Var], queryParameters: Map[String, CypherValue]): Records = {
@@ -102,9 +108,15 @@ final class SparkCypherEngine extends Cypher with Serializable {
     //       instead of just using a single global tokens instance derived from the graph space
     //
     print("Physical plan ... ")
-    val physicalPlan = physicalPlanner(flatPlan)(PhysicalPlannerContext(graph, records, tokens, constants, allParameters))
+    val physicalPlannerContext = PhysicalPlannerContext(graph, records, tokens, constants, allParameters)
+    val internalResult = physicalPlanner(flatPlan)(physicalPlannerContext)
     println("Done!")
 
-    physicalPlan
+    val sanitizedRecords = logicalPlan match {
+      case _: Sanitize => internalResult.records
+      case _ => sanitize(graph, internalResult.records)
+    }
+
+    ResultBuilder.from(internalResult, sanitizedRecords)
   }
 }

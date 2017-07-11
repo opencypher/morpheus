@@ -22,13 +22,10 @@ case class PhysicalPlannerContext(
   val session = space.session
 }
 
-class PhysicalPlanner extends DirectCompilationStage[FlatOperator, SparkCypherResult, PhysicalPlannerContext] {
+class PhysicalPlanner extends DirectCompilationStage[FlatOperator, InternalResult, PhysicalPlannerContext] {
 
-  def process(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext): SparkCypherResult = {
-
-    val internal = inner(flatPlan)
-
-    ResultBuilder.from(internal)
+  def process(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext): InternalResult = {
+    inner(flatPlan)
   }
 
   def inner(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext): InternalResult = {
@@ -39,6 +36,9 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, SparkCypherRe
     import producer._
 
     flatPlan match {
+      case flat.Sanitize(in, header) =>
+        inner(in).sanitize(header)
+
       case flat.Select(fields, in, header) =>
         inner(in).select(fields, header)
 

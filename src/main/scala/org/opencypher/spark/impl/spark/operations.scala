@@ -9,6 +9,7 @@ import org.opencypher.spark.api.value.CypherValue
 object operations {
 
   implicit final class RichSparkCypherGraph(val graph: SparkCypherGraph) extends AnyVal {
+
     def filter(subject: SparkCypherRecords, expr: Expr, parameters: Map[String, CypherValue] = Map.empty)
               (implicit engine: SparkCypherEngine)
     : SparkCypherRecords =
@@ -17,6 +18,10 @@ object operations {
     def select(subject: SparkCypherRecords, fields: IndexedSeq[Var], parameters: Map[String, CypherValue] = Map.empty)
               (implicit engine: SparkCypherEngine): SparkCypherRecords =
       engine.select(graph, subject, fields, parameters)
+
+    def sanitize(subject: SparkCypherRecords)
+                (implicit engine: SparkCypherEngine): SparkCypherRecords =
+      engine.sanitize(graph, subject)
 
     def project(subject: SparkCypherRecords, expr: Expr, parameters: Map[String, CypherValue] = Map.empty)
                (implicit engine: SparkCypherEngine): SparkCypherRecords =

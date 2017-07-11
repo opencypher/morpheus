@@ -4,7 +4,7 @@ import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.Field
 import org.opencypher.spark.api.ir.global.{GlobalsRegistry, Label, RelType}
 import org.opencypher.spark.api.ir.pattern._
-import org.opencypher.spark.api.record.{OpaqueField, ProjectedExpr, ProjectedField}
+import org.opencypher.spark.api.record.{FieldSlotContent, OpaqueField, ProjectedExpr, ProjectedField}
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.types._
 import org.opencypher.spark.impl.logical.LogicalOperatorProducer
@@ -284,7 +284,7 @@ class FlatPlannerTest extends BaseTestSuite {
         )
       )
     )
-    val orderedContents = result.header.slots.map(_.content.key)
+    val orderedContents = result.header.slots.map(_.content).collect { case content: FieldSlotContent => content.key }
 
     result should equal(
       mkFlat.select(

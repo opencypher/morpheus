@@ -11,7 +11,6 @@ trait TransformSyntax {
 }
 
 final class TransformOps[T](subject: T)(implicit transform: Transform[T]) {
-  def reorder(header: RecordHeader): T = transform.reorder(subject, header)
   def join(other: T)(lhs: RecordSlot, rhs: RecordSlot): T = transform.join(subject, other)(lhs, rhs)
   def join(other: T, header: RecordHeader)(lhs: RecordSlot, rhs: RecordSlot): T = transform.join(subject, other, header)(lhs, rhs)
   def initVarExpand(sourceSlot: RecordSlot, edgeList: RecordSlot, lastEdge: RecordSlot, header: RecordHeader): T = transform.initVarExpand(subject, sourceSlot, edgeList, lastEdge, header)

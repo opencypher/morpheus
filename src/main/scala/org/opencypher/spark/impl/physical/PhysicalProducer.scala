@@ -26,13 +26,15 @@ case class RuntimeContext(parameters: Map[ConstantRef, CypherValue], tokens: Tok
 
 class PhysicalProducer(context: RuntimeContext) {
 
+  import org.opencypher.spark.impl.spark.operations._
+
   implicit val c = context
 
   implicit final class RichCypherResult(val prev: InternalResult) {
     def nodeScan(inGraph: NamedLogicalGraph, v: Var, labels: EveryNode, header: RecordHeader): InternalResult = {
       val graph = prev.graphs(inGraph.name)
 
-      val records = graph.nodes(v.name).reorder(header)
+      val records = graph.nodes(v.name)
 
       // TODO: Should not discard prev records here
       prev.mapRecords(_ => records)
@@ -41,7 +43,7 @@ class PhysicalProducer(context: RuntimeContext) {
     def relationshipScan(inGraph: NamedLogicalGraph, v: Var, header: RecordHeader): InternalResult = {
       val graph = prev.graphs(inGraph.name)
 
-      val records = graph.relationships(v.name).reorder(header)
+      val records = graph.relationships(v.name)
 
       // TODO: Should not discard prev records here
       prev.mapRecords(_ => records)
@@ -110,12 +112,37 @@ class PhysicalProducer(context: RuntimeContext) {
         SparkCypherRecords.create(header, newData)(subject.space)
       }
 
+
+    import org.opencypher.spark.impl.syntax.expr._
+
+    def sanitize(header: RecordHeader): InternalResult = {
+      prev.mapRecords { subject =>
+        val remainingColumnNames = header.slots.map { s => context.columnName(s.content) }.toSet
+        val data = subject.data
+        val existingColumns = data.columns
+        val sanitizedColumns = existingColumns.filter(remainingColumnNames).map(data.col)
+        val sanitizedData = data.select(sanitizedColumns: _*)
+
+        SparkCypherRecords.create(header, sanitizedData)(subject.space)
+      }
+    }
+
     def select(fields: IndexedSeq[Var], header: RecordHeader): InternalResult =
       prev.mapRecords { subject =>
-        val data = subject.data
-        val columns = fields.map { f =>
-          data.col(context.columnName(subject.header.slotsFor(f).head))
+        val fieldIndices = fields.zipWithIndex.toMap
+
+        val groupedSlots = header.slots.sortBy {
+          _.content match {
+            case content: FieldSlotContent =>
+              fieldIndices.getOrElse(content.field, Int.MaxValue)
+            case content@ProjectedExpr(expr) =>
+              val deps = expr.dependencies
+              deps.headOption.filter(_ => deps.size == 1).flatMap(fieldIndices.get).getOrElse(Int.MaxValue)
+          }
         }
+
+        val data = subject.data
+        val columns = groupedSlots.map { s => data.col(context.columnName(s)) }
         val newData = subject.data.select(columns: _*)
 
         SparkCypherRecords.create(header, newData)(subject.space)

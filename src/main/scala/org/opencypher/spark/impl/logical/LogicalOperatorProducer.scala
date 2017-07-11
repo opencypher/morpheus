@@ -66,6 +66,10 @@ class LogicalOperatorProducer {
     Select(fields, prev)(prev.solved)
   }
 
+  def planSanitize(prev: LogicalOperator): Sanitize = {
+    Sanitize(prev)(prev.solved)
+  }
+
 
   def planStart(schema: Schema, fields: Set[Var]): Start = {
     val irFields = fields.map { v => Field(v.name)(v.cypherType) }
