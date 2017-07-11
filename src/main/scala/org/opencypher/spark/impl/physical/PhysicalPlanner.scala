@@ -22,17 +22,17 @@ case class PhysicalPlannerContext(
   val session = space.session
 }
 
-class PhysicalPlanner extends DirectCompilationStage[FlatOperator, InternalResult, PhysicalPlannerContext] {
+class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResult, PhysicalPlannerContext] {
 
-  def process(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext): InternalResult = {
+  def process(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext): PhysicalResult = {
     inner(flatPlan)
   }
 
-  def inner(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext): InternalResult = {
+  def inner(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext): PhysicalResult = {
 
     import context.tokens
 
-    val producer = new PhysicalProducer(RuntimeContext(context.parameters, context.tokens, context.constants))
+    val producer = new PhysicalResultProducer(RuntimeContext(context.parameters, context.tokens, context.constants))
     import producer._
 
     flatPlan match {
@@ -41,7 +41,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, InternalResul
 
       case flat.Start(outGraph, source, _) => source match {
         case DefaultGraphSource =>
-          InternalResult(context.inputRecords, Map(outGraph.name -> context.defaultGraph))
+          PhysicalResult(context.inputRecords, Map(outGraph.name -> context.defaultGraph))
         case _ =>
           Raise.notYetImplemented(s"Loading a graph source other than default, tried $source")
       }
@@ -70,7 +70,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, InternalResul
 
         val g = lhs.graphs(op.inGraph.name)
         val relationships = g.relationships(rel.name)
-        val relRhs = InternalResult(relationships, lhs.graphs).typeFilter(rel, types.relTypes.map(tokens.relTypeRef), relHeader)
+        val relRhs = PhysicalResult(relationships, lhs.graphs).typeFilter(rel, types.relTypes.map(tokens.relTypeRef), relHeader)
 
         val relAndTarget = relRhs.joinTarget(rhs).on(rel)(target)
         val expanded = lhs.expandSource(relAndTarget, header).on(source)(rel)

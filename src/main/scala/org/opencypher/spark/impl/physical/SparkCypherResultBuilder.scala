@@ -2,8 +2,8 @@ package org.opencypher.spark.impl.physical
 
 import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherResult}
 
-object ResultBuilder {
-  def from(internal: InternalResult): SparkCypherResult = new SparkCypherResult {
+object SparkCypherResultBuilder {
+  def from(internal: PhysicalResult): SparkCypherResult = new SparkCypherResult {
     override def records: SparkCypherRecords = internal.records
 
     // TODO: Track which graph was the 'latest' used one

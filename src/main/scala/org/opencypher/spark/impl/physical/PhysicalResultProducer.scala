@@ -25,12 +25,12 @@ case class RuntimeContext(parameters: Map[ConstantRef, CypherValue], tokens: Tok
   def columnName(content: SlotContent): String = SparkColumnName.of(content)
 }
 
-class PhysicalProducer(context: RuntimeContext) {
+class PhysicalResultProducer(context: RuntimeContext) {
 
   implicit val c = context
 
-  implicit final class RichCypherResult(val prev: InternalResult) {
-    def nodeScan(inGraph: NamedLogicalGraph, v: Var, labels: EveryNode, header: RecordHeader): InternalResult = {
+  implicit final class RichCypherResult(val prev: PhysicalResult) {
+    def nodeScan(inGraph: NamedLogicalGraph, v: Var, labels: EveryNode, header: RecordHeader): PhysicalResult = {
       val graph = prev.graphs(inGraph.name)
 
       val records = graph.nodes(v.name)
@@ -39,7 +39,7 @@ class PhysicalProducer(context: RuntimeContext) {
       prev.mapRecordsWithDetails(_ => records)
     }
 
-    def relationshipScan(inGraph: NamedLogicalGraph, v: Var, header: RecordHeader): InternalResult = {
+    def relationshipScan(inGraph: NamedLogicalGraph, v: Var, header: RecordHeader): PhysicalResult = {
       val graph = prev.graphs(inGraph.name)
 
       val records = graph.relationships(v.name)
@@ -48,7 +48,7 @@ class PhysicalProducer(context: RuntimeContext) {
       prev.mapRecordsWithDetails(_ => records)
     }
 
-    def filter(expr: Expr, header: RecordHeader): InternalResult = {
+    def filter(expr: Expr, header: RecordHeader): PhysicalResult = {
       prev.mapRecordsWithDetails { subject =>
         val filteredRows = asSparkSQLExpr(subject.header, expr, subject.data) match {
           case Some(sqlExpr) =>
@@ -69,7 +69,7 @@ class PhysicalProducer(context: RuntimeContext) {
       }
     }
 
-    def alias(expr: Expr, v: Var, header: RecordHeader): InternalResult =
+    def alias(expr: Expr, v: Var, header: RecordHeader): PhysicalResult =
       prev.mapRecordsWithDetails { subject =>
         val oldSlot = subject.header.slotsFor(expr).head
 
@@ -87,7 +87,7 @@ class PhysicalProducer(context: RuntimeContext) {
         SparkCypherRecords.create(header, newData)(subject.space)
       }
 
-    def project(expr: Expr, header: RecordHeader): InternalResult =
+    def project(expr: Expr, header: RecordHeader): PhysicalResult =
       prev.mapRecordsWithDetails { subject =>
         val newData = asSparkSQLExpr(header, expr, subject.data) match {
           case None => Raise.notYetImplemented(s"projecting $expr")
@@ -111,7 +111,7 @@ class PhysicalProducer(context: RuntimeContext) {
         SparkCypherRecords.create(header, newData)(subject.space)
       }
 
-    def select(fields: IndexedSeq[Var], header: RecordHeader): InternalResult =
+    def select(fields: IndexedSeq[Var], header: RecordHeader): PhysicalResult =
       prev.mapRecordsWithDetails { subject =>
         val fieldIndices = fields.zipWithIndex.toMap
 
@@ -132,7 +132,7 @@ class PhysicalProducer(context: RuntimeContext) {
         SparkCypherRecords.create(header, newData)(subject.space)
       }
 
-    def typeFilter(rel: Var, types: AnyGiven[RelTypeRef], header: RecordHeader): InternalResult = {
+    def typeFilter(rel: Var, types: AnyGiven[RelTypeRef], header: RecordHeader): PhysicalResult = {
       if (types.elts.isEmpty) prev
       else {
         val typeExprs: Set[Expr] = types.elts.map { ref => HasType(rel, context.tokens.relType(ref))(CTBoolean) }
@@ -140,17 +140,7 @@ class PhysicalProducer(context: RuntimeContext) {
       }
     }
 
-    def initVarExpand(source: Var, edgeList: Var, endNode: Var, header: RecordHeader): InternalResult = {
-      val sourceSlot = header.slotFor(source)
-      val edgeListSlot = header.slotFor(edgeList)
-      val endNodeSlot = header.slotFor(endNode)
-
-      assertIsNode(endNodeSlot)
-
-      prev.mapRecords(_.initVarExpand(sourceSlot, edgeListSlot, endNodeSlot, header))
-    }
-
-    def joinTarget(nodeView: InternalResult) = new JoinBuilder {
+    def joinTarget(nodeView: PhysicalResult) = new JoinBuilder {
       override def on(rel: Var)(node: Var) = {
         val lhsSlot = prev.records.withDetails.header.targetNode(rel)
         val rhsSlot = nodeView.records.withDetails.header.slotFor(node)
@@ -162,7 +152,7 @@ class PhysicalProducer(context: RuntimeContext) {
       }
     }
 
-    def joinNode(nodeView: InternalResult) = new JoinBuilder {
+    def joinNode(nodeView: PhysicalResult) = new JoinBuilder {
       override def on(endNode: Var)(node: Var) = {
         val lhsSlot = prev.records.header.slotFor(endNode)
         val rhsSlot = nodeView.records.header.slotFor(node)
@@ -170,11 +160,11 @@ class PhysicalProducer(context: RuntimeContext) {
         assertIsNode(lhsSlot)
         assertIsNode(rhsSlot)
 
-        prev.mapRecords(_.join(nodeView.records)(lhsSlot, rhsSlot))
+        prev.mapRecordsWithDetails(_.join(nodeView.records)(lhsSlot, rhsSlot))
       }
     }
 
-    def expandSource(relView: InternalResult, header: RecordHeader) = new JoinBuilder {
+    def expandSource(relView: PhysicalResult, header: RecordHeader) = new JoinBuilder {
       override def on(node: Var)(rel: Var) = {
         val lhsSlot = prev.records.withDetails.header.slotFor(node)
         val rhsSlot = relView.records.withDetails.header.sourceNode(rel)
@@ -186,15 +176,25 @@ class PhysicalProducer(context: RuntimeContext) {
       }
     }
 
-    def varExpand(rels: InternalResult, edgeList: Var, endNode: Var, rel: Var, lower: Int, upper: Int, header: RecordHeader) = {
+    def initVarExpand(source: Var, edgeList: Var, endNode: Var, header: RecordHeader): InternalResult = {
+      val sourceSlot = header.slotFor(source)
+      val edgeListSlot = header.slotFor(edgeList)
+      val endNodeSlot = header.slotFor(endNode)
+
+      assertIsNode(endNodeSlot)
+
+      prev.mapRecordsWithDetails(_.initVarExpand(sourceSlot, edgeListSlot, endNodeSlot, header))
+    }
+
+    def varExpand(rels: PhysicalResult, edgeList: Var, endNode: Var, rel: Var, lower: Int, upper: Int, header: RecordHeader) = {
         val startSlot = rels.records.header.sourceNode(rel)
         val endNodeSlot = prev.records.header.slotFor(endNode)
 
-        prev.mapRecords(_.varExpand(rels.records, lower, upper, header)(edgeList, endNodeSlot, rel, startSlot))
+        prev.mapRecordsWithDetails(_.varExpand(rels.records, lower, upper, header)(edgeList, endNodeSlot, rel, startSlot))
       }
 
     sealed trait JoinBuilder {
-      def on(lhsKey: Var)(rhsKey: Var): InternalResult
+      def on(lhsKey: Var)(rhsKey: Var): PhysicalResult
     }
 
     private def assertIsNode(slot: RecordSlot): Unit = {

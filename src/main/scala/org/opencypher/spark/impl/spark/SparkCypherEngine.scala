@@ -12,7 +12,7 @@ import org.opencypher.spark.impl.ir.global.GlobalsExtractor
 import org.opencypher.spark.impl.ir.{CypherQueryBuilder, IRBuilderContext}
 import org.opencypher.spark.impl.logical._
 import org.opencypher.spark.impl.parse.CypherParser
-import org.opencypher.spark.impl.physical.{PhysicalPlanner, PhysicalPlannerContext, ResultBuilder}
+import org.opencypher.spark.impl.physical.{PhysicalPlanner, PhysicalPlannerContext, SparkCypherResultBuilder}
 
 final class SparkCypherEngine extends Cypher with Serializable {
 
@@ -103,9 +103,9 @@ final class SparkCypherEngine extends Cypher with Serializable {
     //
     print("Physical plan ... ")
     val physicalPlannerContext = PhysicalPlannerContext(graph, records, tokens, constants, allParameters)
-    val internalResult = physicalPlanner(flatPlan)(physicalPlannerContext)
+    val physicalResult = physicalPlanner(flatPlan)(physicalPlannerContext)
     println("Done!")
 
-    ResultBuilder.from(internalResult)
+    SparkCypherResultBuilder.from(physicalResult)
   }
 }
