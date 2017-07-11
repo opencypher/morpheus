@@ -58,9 +58,11 @@ object SparkSQLExprMapper {
         val rCol = getColumn(v2, header, df)
         Some(lCol === rCol)
 
-      case Not(expr) =>
-        val column = getColumn(expr, header, df)
-        Some(! column)
+      case Not(e) =>
+        apply(header, e, df) match {
+          case Some(res) => Some(!res)
+          case _ => Raise.impossible()
+        }
 
       case Ands(exprs) =>
         val cols = exprs.map(asSparkSQLExpr(header, _, df))
