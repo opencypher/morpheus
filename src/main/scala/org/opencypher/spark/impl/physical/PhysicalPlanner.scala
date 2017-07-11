@@ -52,8 +52,8 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, SparkCypherRe
       case op@flat.NodeScan(v, labels, in, header) =>
         inner(in).nodeScan(op.inGraph, v, labels, header)
 
-      case op@flat.EdgeScan(e, _, in, header) =>
-        inner(in).relationshipScan(op.inGraph, e, header)
+      case op@flat.EdgeScan(e, edgeDef, in, header) =>
+        inner(in).relationshipScan(op.inGraph, e, header).typeFilter(e, edgeDef.relTypes.map(context.tokens.relTypeRef), header)
 
       case flat.Alias(expr, alias, in, header) =>
         inner(in).alias(expr, alias, header)

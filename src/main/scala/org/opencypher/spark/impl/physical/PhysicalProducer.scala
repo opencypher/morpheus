@@ -110,7 +110,7 @@ class PhysicalProducer(context: RuntimeContext) {
       if (types.elts.isEmpty) prev
       else {
         val typeExprs: Set[Expr] = types.elts.map { ref => HasType(rel, context.tokens.relType(ref))(CTBoolean) }
-        prev.filter(Ands(typeExprs), header)
+        prev.filter(Ors(typeExprs), header)
       }
     }
 
