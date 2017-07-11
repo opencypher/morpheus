@@ -28,6 +28,28 @@ class WithAcceptanceTest extends SparkCypherTestSuite {
     result.graph shouldMatch given.graph
   }
 
+  test("projecting constants") {
+    // Given
+    val given = TestGraph("""(), ()""")
+
+    // When
+    val result = given.cypher(
+      """MATCH ()
+        |WITH 3 AS foo
+        |WITH foo + 2 AS bar
+        |RETURN bar
+      """.stripMargin)
+
+    // Then
+    result.records.toMaps should equal(Set(
+      CypherMap("bar" -> 5),
+      CypherMap("bar" -> 5)
+    ))
+
+    // And
+    result.graph shouldMatch given.graph
+  }
+
   test("projecting variables in scope") {
 
     // Given
