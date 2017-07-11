@@ -65,5 +65,32 @@ class BoundedVarExpandAcceptanceTest extends SparkCypherTestSuite {
       CypherMap("b.v" -> "c"),
       CypherMap("b.v" -> "c")
     ))
+
+    // And
+    result.graph shouldMatch given.graph
+  }
+
+  test("var expand return list of rel ids") {
+    // Given
+    val given = TestGraph("""(a:Node {v: "a"})-->(:Node {v: "b"})-->(:Node {v: "c"})-->(a)""")
+
+    // When
+    val result = given.cypher("MATCH (a:Node)-[r*..6]->(b:Node) RETURN r")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("r" -> CypherList(Seq(0))),
+      CypherMap("r" -> CypherList(Seq(0, 1))),
+      CypherMap("r" -> CypherList(Seq(0, 1, 2))),
+      CypherMap("r" -> CypherList(Seq(1))),
+      CypherMap("r" -> CypherList(Seq(1, 2))),
+      CypherMap("r" -> CypherList(Seq(1, 2, 0))),
+      CypherMap("r" -> CypherList(Seq(2))),
+      CypherMap("r" -> CypherList(Seq(2, 0))),
+      CypherMap("r" -> CypherList(Seq(2, 0, 1)))
+    ))
+
+    // And
+    result.graph shouldMatch given.graph
   }
 }
