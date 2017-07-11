@@ -1,6 +1,5 @@
 package org.opencypher.spark.api.classes
 
-import org.opencypher.spark.api.expr.{Expr, Var}
 import org.opencypher.spark.api.graph.{CypherGraph, CypherResult, GraphSpace}
 import org.opencypher.spark.api.record.CypherRecords
 import org.opencypher.spark.api.value.CypherValue

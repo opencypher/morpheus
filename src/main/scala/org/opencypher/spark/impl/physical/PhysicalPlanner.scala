@@ -13,7 +13,7 @@ import org.opencypher.spark.impl.{DirectCompilationStage, flat}
 
 case class PhysicalPlannerContext(
   defaultGraph: SparkCypherGraph,
-  defaultRecords: SparkCypherRecords,
+  inputRecords: SparkCypherRecords,
   tokens: TokenRegistry,
   constants: ConstantRegistry,
   parameters: Map[ConstantRef, CypherValue]) {
@@ -44,7 +44,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, SparkCypherRe
 
       case flat.Start(outGraph, source, _) => source match {
         case DefaultGraphSource =>
-          InternalResult(context.defaultRecords, Map(outGraph.name -> context.defaultGraph))
+          InternalResult(context.inputRecords, Map(outGraph.name -> context.defaultGraph))
         case _ =>
           Raise.notYetImplemented(s"Loading a graph source other than default, tried $source")
       }
@@ -63,7 +63,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, SparkCypherRe
 
       case flat.Filter(expr, in, header) => expr match {
         case TrueLit() => inner(in) // optimise away filter
-        case e => inner(in).filter(expr, header)
+        case _ => inner(in).filter(expr, header)
       }
 
       // MATCH (a)-[r]->(b) => MATCH (a), (b), (a)-[r]->(b)
