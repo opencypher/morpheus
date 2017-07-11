@@ -7,7 +7,6 @@ import scala.language.implicitConversions
 
 trait Transform[T] {
   def reorder(subject: T, nextHeader: RecordHeader): T
-  def alias2(subject: T, expr: Expr, v: Var, nextHeader: RecordHeader): T
   def join(subject: T, other: T)(lhs: RecordSlot, rhs: RecordSlot): T
   def join(subject: T, other: T, header: RecordHeader)(lhs: RecordSlot, rhs: RecordSlot): T
   def initVarExpand(subject: T, sourceSlot: RecordSlot, edgeList: RecordSlot, lastEdge: RecordSlot, header: RecordHeader): T

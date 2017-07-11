@@ -69,7 +69,22 @@ class PhysicalProducer(context: RuntimeContext) {
     }
 
     def alias(expr: Expr, v: Var, header: RecordHeader): InternalResult =
-      prev.mapRecords(_.alias2(expr, v, header))
+      prev.mapRecords { subject =>
+        val oldSlot = subject.header.slotsFor(expr).head
+
+        val newSlot = header.slotsFor(v).head
+
+        val oldColumnName = context.columnName(oldSlot)
+        val newColumnName = context.columnName(newSlot)
+
+        val newData = if (subject.data.columns.contains(oldColumnName)) {
+          subject.data.withColumnRenamed(oldColumnName, newColumnName)
+        } else {
+          Raise.columnNotFound(oldColumnName)
+        }
+
+        SparkCypherRecords.create(header, newData)(subject.space)
+      }
 
     def project(expr: Expr, header: RecordHeader): InternalResult =
       prev.mapRecords { subject =>

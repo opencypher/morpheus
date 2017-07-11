@@ -3,6 +3,7 @@ package org.opencypher.spark.impl.spark
 import org.apache.spark.sql.DataFrame
 import org.opencypher.spark.api.classes.Cypher
 import org.opencypher.spark.api.expr.{Expr, Var}
+import org.opencypher.spark.api.ir.Field
 import org.opencypher.spark.api.ir.global.{ConstantRef, ConstantRegistry, GlobalsRegistry, TokenRegistry}
 import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherResult, SparkGraphSpace}
 import org.opencypher.spark.api.value.CypherValue
@@ -64,6 +65,13 @@ final class SparkCypherEngine extends Cypher with Serializable {
   def project(graph: Graph, in: Records, expr: Expr, queryParameters: Map[String, CypherValue]): Records = {
     val scan = producer.planStart(graph.schema, in.header.fields)
     val select = producer.projectExpr(expr, scan)
+    plan(graph, in, queryParameters, select).records
+  }
+
+  def alias(graph: Graph, in: Records, alias: (Expr, Var),  queryParameters: Map[String, CypherValue]): Records = {
+    val (expr, v) = alias
+    val scan = producer.planStart(graph.schema, in.header.fields)
+    val select = producer.projectField(Field(v.name)(v.cypherType), expr, scan)
     plan(graph, in, queryParameters, select).records
   }
 

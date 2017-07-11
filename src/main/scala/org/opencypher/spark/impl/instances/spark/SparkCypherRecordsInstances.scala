@@ -27,24 +27,6 @@ trait SparkCypherRecordsInstances extends Serializable {
         SparkCypherRecords.create(newHeader, newData)(subject.space)
       }
 
-      override def alias2(subject: SparkCypherRecords, expr: Expr, v: Var, newHeader: RecordHeader)
-      : SparkCypherRecords = {
-        val oldSlot = subject.header.slotsFor(expr).head
-
-        val newSlot = newHeader.slotsFor(v).head
-
-        val oldColumnName = context.columnName(oldSlot)
-        val newColumnName = context.columnName(newSlot)
-
-        val newData = if (subject.data.columns.contains(oldColumnName)) {
-          subject.data.withColumnRenamed(oldColumnName, newColumnName)
-        } else {
-          Raise.columnNotFound(oldColumnName)
-        }
-
-        SparkCypherRecords.create(newHeader, newData)(subject.space)
-      }
-
       override def join(lhs: SparkCypherRecords, rhs: SparkCypherRecords)
                        (lhsSlot: RecordSlot, rhsSlot: RecordSlot): SparkCypherRecords =
         join(lhs, rhs, lhs.header ++ rhs.header)(lhsSlot, rhsSlot)
