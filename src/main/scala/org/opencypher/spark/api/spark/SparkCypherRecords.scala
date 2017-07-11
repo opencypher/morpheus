@@ -15,11 +15,14 @@ import org.opencypher.spark.impl.exception.Raise
 import org.opencypher.spark.impl.record.SparkCypherRecordHeader
 import org.opencypher.spark.impl.spark.SparkColumnName
 import org.opencypher.spark.impl.syntax.header._
-
 import scala.annotation.tailrec
 import scala.reflect.runtime.universe.TypeTag
 
-sealed abstract class SparkCypherRecords(tokens: SparkCypherTokens, initialHeader: RecordHeader, initialData: DataFrame)
+sealed abstract class SparkCypherRecords(tokens: SparkCypherTokens,
+                                         initialHeader: RecordHeader,
+                                         initialData: DataFrame,
+                                         optDetailedRecords: Option[SparkCypherRecords]
+                                        )
                                         (implicit val space: SparkGraphSpace)
   extends CypherRecords with Serializable {
 
@@ -46,6 +49,8 @@ sealed abstract class SparkCypherRecords(tokens: SparkCypherTokens, initialHeade
   def cached = SparkCypherRecords.create(header, data.cache())
 
   override def show() = data.show
+
+  def withDetails = optDetailedRecords.getOrElse(this)
 
   def compact = {
     val cachedHeader = self.header.update(compactFields)._1
@@ -297,12 +302,28 @@ object SparkCypherRecords {
           Raise.invalidDataTypeForColumn(field.name, headerType.toString, cypherType.toString)
       }
 
-      new SparkCypherRecords(graphSpace.tokens, initialHeader, initialData) {}
+      val internalRecords = createInternal(initialHeader, initialData, None)
+      val isSanitized = initialHeader.slots.map(_.content).collectFirst { case _: ProjectedExpr => true }.isEmpty
+      if (isSanitized) {
+        internalRecords
+      } else {
+        val fieldContents = initialHeader.contents.collect { case content: FieldSlotContent => content }.toSeq
+        val (sanitizedHeader, _) = RecordHeader.empty.update(addContents(fieldContents))
+        val remainingColumnNames = sanitizedHeader.slots.map { s => SparkColumnName.of(s.content) }.toSet
+        val existingColumns = initialData.columns
+        val sanitizedColumns = existingColumns.filter(remainingColumnNames).map(initialData.col)
+        val sanitizedData = initialData.select(sanitizedColumns: _*)
+        createInternal(sanitizedHeader, sanitizedData, Some(internalRecords))
+      }
     }
     else {
       Raise.graphSpaceMismatch()
     }
   }
+
+  private def createInternal(header: RecordHeader, data: DataFrame, optRecordsWithDetails: Option[SparkCypherRecords])
+                            (implicit graphSpace: SparkGraphSpace) =
+    new SparkCypherRecords(graphSpace.tokens, header, data, optRecordsWithDetails) {}
 
   @tailrec
   private def containsEntity(t: CypherType): Boolean = t match {

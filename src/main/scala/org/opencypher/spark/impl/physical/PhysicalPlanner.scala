@@ -36,9 +36,6 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, InternalResul
     import producer._
 
     flatPlan match {
-      case flat.Sanitize(in, header) =>
-        inner(in).sanitize(header)
-
       case flat.Select(fields, in, header) =>
         inner(in).select(fields, header)
 

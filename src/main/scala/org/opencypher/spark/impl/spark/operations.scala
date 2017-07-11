@@ -19,10 +19,6 @@ object operations {
               (implicit engine: SparkCypherEngine): SparkCypherRecords =
       engine.select(graph, subject, fields, parameters)
 
-    def sanitize(subject: SparkCypherRecords)
-                (implicit engine: SparkCypherEngine): SparkCypherRecords =
-      engine.sanitize(graph, subject)
-
     def project(subject: SparkCypherRecords, expr: Expr, parameters: Map[String, CypherValue] = Map.empty)
                (implicit engine: SparkCypherEngine): SparkCypherRecords =
       engine.project(graph, subject, expr, parameters)

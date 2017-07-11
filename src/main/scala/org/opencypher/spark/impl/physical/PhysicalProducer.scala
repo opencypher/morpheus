@@ -14,6 +14,7 @@ import org.opencypher.spark.impl.instances.spark.records._
 import org.opencypher.spark.impl.logical.NamedLogicalGraph
 import org.opencypher.spark.impl.spark.SparkColumnName
 import org.opencypher.spark.impl.syntax.transform._
+import org.opencypher.spark.impl.syntax.expr._
 
 object RuntimeContext {
   val empty = RuntimeContext(Map.empty, TokenRegistry.empty, ConstantRegistry.empty)
@@ -26,8 +27,6 @@ case class RuntimeContext(parameters: Map[ConstantRef, CypherValue], tokens: Tok
 
 class PhysicalProducer(context: RuntimeContext) {
 
-  import org.opencypher.spark.impl.spark.operations._
-
   implicit val c = context
 
   implicit final class RichCypherResult(val prev: InternalResult) {
@@ -37,7 +36,7 @@ class PhysicalProducer(context: RuntimeContext) {
       val records = graph.nodes(v.name)
 
       // TODO: Should not discard prev records here
-      prev.mapRecords(_ => records)
+      prev.mapRecordsWithDetails(_ => records)
     }
 
     def relationshipScan(inGraph: NamedLogicalGraph, v: Var, header: RecordHeader): InternalResult = {
@@ -46,11 +45,11 @@ class PhysicalProducer(context: RuntimeContext) {
       val records = graph.relationships(v.name)
 
       // TODO: Should not discard prev records here
-      prev.mapRecords(_ => records)
+      prev.mapRecordsWithDetails(_ => records)
     }
 
     def filter(expr: Expr, header: RecordHeader): InternalResult = {
-      prev.mapRecords { subject =>
+      prev.mapRecordsWithDetails { subject =>
         val filteredRows = asSparkSQLExpr(subject.header, expr, subject.data) match {
           case Some(sqlExpr) =>
             subject.data.where(sqlExpr)
@@ -71,7 +70,7 @@ class PhysicalProducer(context: RuntimeContext) {
     }
 
     def alias(expr: Expr, v: Var, header: RecordHeader): InternalResult =
-      prev.mapRecords { subject =>
+      prev.mapRecordsWithDetails { subject =>
         val oldSlot = subject.header.slotsFor(expr).head
 
         val newSlot = header.slotsFor(v).head
@@ -89,7 +88,7 @@ class PhysicalProducer(context: RuntimeContext) {
       }
 
     def project(expr: Expr, header: RecordHeader): InternalResult =
-      prev.mapRecords { subject =>
+      prev.mapRecordsWithDetails { subject =>
         val newData = asSparkSQLExpr(header, expr, subject.data) match {
           case None => Raise.notYetImplemented(s"projecting $expr")
 
@@ -112,23 +111,8 @@ class PhysicalProducer(context: RuntimeContext) {
         SparkCypherRecords.create(header, newData)(subject.space)
       }
 
-
-    import org.opencypher.spark.impl.syntax.expr._
-
-    def sanitize(header: RecordHeader): InternalResult = {
-      prev.mapRecords { subject =>
-        val remainingColumnNames = header.slots.map { s => context.columnName(s.content) }.toSet
-        val data = subject.data
-        val existingColumns = data.columns
-        val sanitizedColumns = existingColumns.filter(remainingColumnNames).map(data.col)
-        val sanitizedData = data.select(sanitizedColumns: _*)
-
-        SparkCypherRecords.create(header, sanitizedData)(subject.space)
-      }
-    }
-
     def select(fields: IndexedSeq[Var], header: RecordHeader): InternalResult =
-      prev.mapRecords { subject =>
+      prev.mapRecordsWithDetails { subject =>
         val fieldIndices = fields.zipWithIndex.toMap
 
         val groupedSlots = header.slots.sortBy {
@@ -168,13 +152,13 @@ class PhysicalProducer(context: RuntimeContext) {
 
     def joinTarget(nodeView: InternalResult) = new JoinBuilder {
       override def on(rel: Var)(node: Var) = {
-        val lhsSlot = prev.records.header.targetNode(rel)
-        val rhsSlot = nodeView.records.header.slotFor(node)
+        val lhsSlot = prev.records.withDetails.header.targetNode(rel)
+        val rhsSlot = nodeView.records.withDetails.header.slotFor(node)
 
         assertIsNode(lhsSlot)
         assertIsNode(rhsSlot)
 
-        prev.mapRecords(_.join(nodeView.records)(lhsSlot, rhsSlot))
+        prev.mapRecordsWithDetails(_.join(nodeView.records.withDetails)(lhsSlot, rhsSlot))
       }
     }
 
@@ -192,13 +176,13 @@ class PhysicalProducer(context: RuntimeContext) {
 
     def expandSource(relView: InternalResult, header: RecordHeader) = new JoinBuilder {
       override def on(node: Var)(rel: Var) = {
-        val lhsSlot = prev.records.header.slotFor(node)
-        val rhsSlot = relView.records.header.sourceNode(rel)
+        val lhsSlot = prev.records.withDetails.header.slotFor(node)
+        val rhsSlot = relView.records.withDetails.header.sourceNode(rel)
 
         assertIsNode(lhsSlot)
         assertIsNode(rhsSlot)
 
-        prev.mapRecords(_.join(relView.records, header)(lhsSlot, rhsSlot))
+        prev.mapRecordsWithDetails(_.join(relView.records.withDetails, header)(lhsSlot, rhsSlot))
       }
     }
 

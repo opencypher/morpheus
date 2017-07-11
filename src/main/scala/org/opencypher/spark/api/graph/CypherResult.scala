@@ -11,8 +11,6 @@ trait CypherResult {
   def graph: Graph
   def records: Records
 
-  def internalRecords: Records
-
   def result(name: String): Option[Result]
   def namedGraph(name: String): Option[Graph]
 }

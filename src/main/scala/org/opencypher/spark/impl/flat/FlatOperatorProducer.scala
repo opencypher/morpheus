@@ -22,14 +22,6 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     override def combine(x: Vector[CypherType], y: Vector[CypherType]): Vector[CypherType] = x ++ y
   }
 
-  def sanitize(in: FlatOperator): Sanitize = {
-    val fieldContents = in.header.contents.collect { case content: FieldSlotContent => content }.toSeq
-
-    val (nextHeader, _) = RecordHeader.empty.update(addContents(fieldContents))
-
-    Sanitize(in, nextHeader)
-  }
-
   def select(fields: IndexedSeq[Var], in: FlatOperator): Select = {
     val fieldContents = fields.map { field => in.header.slotsFor(field).head.content }
     val exprContents = in.header.contents.collect {

@@ -8,5 +8,7 @@ trait SparkCypherResult extends CypherResult {
   override type Graph = SparkCypherGraph
   override type Records = SparkCypherRecords
 
+  def recordsWithDetails = records.withDetails
+
   override def namedGraph(name: String): Option[SparkCypherGraph] = result(name).map(_.graph)
 }
