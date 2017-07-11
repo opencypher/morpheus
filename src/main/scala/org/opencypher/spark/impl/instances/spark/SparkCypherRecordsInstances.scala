@@ -14,14 +14,6 @@ trait SparkCypherRecordsInstances extends Serializable {
   implicit def sparkCypherRecordsTransform(implicit context: RuntimeContext) =
     new Transform[SparkCypherRecords] with Serializable {
 
-      private def liftTernary(f: Row => Option[Boolean]): (Row => Boolean) = {
-        (r: Row) =>
-          f(r) match {
-            case None => false
-            case Some(x) => x
-          }
-      }
-
       override def reorder(subject: SparkCypherRecords, newHeader: RecordHeader): SparkCypherRecords = {
         val columns = newHeader.slots.map(context.columnName)
 

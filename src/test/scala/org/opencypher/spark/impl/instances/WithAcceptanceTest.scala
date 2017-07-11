@@ -5,6 +5,29 @@ import org.opencypher.spark.api.value.CypherMap
 
 class WithAcceptanceTest extends SparkCypherTestSuite {
 
+  test("rebinding of dropped variables") {
+    // Given
+    val given = TestGraph("""(:Node {val: 1l}), (:Node {val: 2L})""")
+
+    // When
+    val result = given.cypher(
+      """MATCH (n:Node)
+        |WITH n.val AS foo
+        |WITH foo + 2 AS bar
+        |WITH bar + 2 AS foo
+        |RETURN foo
+      """.stripMargin)
+
+    // Then
+    result.records.toMaps should equal(Set(
+      CypherMap("foo" -> 5),
+      CypherMap("foo" -> 6)
+    ))
+
+    // And
+    result.graph shouldMatch given.graph
+  }
+
   test("projecting variables in scope") {
 
     // Given
