@@ -72,7 +72,8 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
         val relationships = g.relationships(rel.name)
         val relRhs = PhysicalResult(relationships, lhs.graphs).typeFilter(rel, types.relTypes.map(tokens.relTypeRef), relHeader)
 
-        val relAndTarget = relRhs.joinTarget(rhs).on(rel)(target)
+        val relAndTargetHeader = relRhs.records.withDetails.header ++ rhs.records.withDetails.header
+        val relAndTarget = relRhs.joinTarget(rhs, relAndTargetHeader).on(rel)(target)
         val expanded = lhs.expandSource(relAndTarget, header).on(source)(rel)
 
         expanded

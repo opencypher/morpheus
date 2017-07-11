@@ -1,9 +1,9 @@
 package org.opencypher.spark.impl.instances.spark
 
-import org.apache.spark.sql.functions._
+import org.apache.spark.sql.{Column, DataFrame}
+import org.apache.spark.sql.functions.udf
 import org.apache.spark.sql.types.{ArrayType, BooleanType, LongType}
-import org.apache.spark.sql.{Column, DataFrame, Row}
-import org.opencypher.spark.api.expr._
+import org.opencypher.spark.api.expr.{EndNode, Var}
 import org.opencypher.spark.api.record._
 import org.opencypher.spark.api.spark.SparkCypherRecords
 import org.opencypher.spark.api.types.CTNode
@@ -18,30 +18,6 @@ trait SparkCypherRecordsInstances extends Serializable {
 
   implicit def sparkCypherRecordsTransform(implicit context: RuntimeContext) =
     new Transform[SparkCypherRecords] with Serializable {
-
-      override def join(lhs: SparkCypherRecords, rhs: SparkCypherRecords)
-                       (lhsSlot: RecordSlot, rhsSlot: RecordSlot): SparkCypherRecords =
-        join(lhs, rhs, lhs.header ++ rhs.header)(lhsSlot, rhsSlot)
-
-      override def join(lhs: SparkCypherRecords, rhs: SparkCypherRecords, jointHeader: RecordHeader)
-                       (lhsSlot: RecordSlot, rhsSlot: RecordSlot): SparkCypherRecords = {
-
-        if (lhs.space == rhs.space) {
-          val lhsData = lhs.data
-          val rhsData = rhs.data
-
-          val lhsColumn = lhsData.col(context.columnName(lhsSlot))
-          val rhsColumn = rhsData.col(context.columnName(rhsSlot))
-
-          val joinExpr: Column = lhsColumn === rhsColumn
-          val jointData = lhsData.join(rhsData, joinExpr, "inner")
-
-          SparkCypherRecords.create(jointHeader, jointData)(lhs.space)
-        } else {
-          Raise.graphSpaceMismatch()
-        }
-      }
-
       override def initVarExpand(in: SparkCypherRecords, source: RecordSlot, edgeList: RecordSlot,
                                  target: RecordSlot, header: RecordHeader): SparkCypherRecords = {
         val inputData = in.data

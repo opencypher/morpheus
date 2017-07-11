@@ -140,7 +140,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
       }
     }
 
-    def joinTarget(nodeView: PhysicalResult) = new JoinBuilder {
+    def joinTarget(nodeView: PhysicalResult, header: RecordHeader) = new JoinBuilder {
       override def on(rel: Var)(node: Var) = {
         val lhsSlot = prev.records.withDetails.header.targetNode(rel)
         val rhsSlot = nodeView.records.withDetails.header.slotFor(node)
@@ -148,11 +148,11 @@ class PhysicalResultProducer(context: RuntimeContext) {
         assertIsNode(lhsSlot)
         assertIsNode(rhsSlot)
 
-        prev.mapRecordsWithDetails(_.join(nodeView.records.withDetails)(lhsSlot, rhsSlot))
+        prev.mapRecordsWithDetails(join(nodeView.records, lhsSlot, rhsSlot, header))
       }
     }
 
-    def joinNode(nodeView: PhysicalResult) = new JoinBuilder {
+    def joinNode(nodeView: PhysicalResult, header: RecordHeader) = new JoinBuilder {
       override def on(endNode: Var)(node: Var) = {
         val lhsSlot = prev.records.header.slotFor(endNode)
         val rhsSlot = nodeView.records.header.slotFor(node)
@@ -160,7 +160,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
         assertIsNode(lhsSlot)
         assertIsNode(rhsSlot)
 
-        prev.mapRecordsWithDetails(_.join(nodeView.records)(lhsSlot, rhsSlot))
+        prev.mapRecordsWithDetails(join(nodeView.records, lhsSlot, rhsSlot, header))
       }
     }
 
@@ -172,8 +172,28 @@ class PhysicalResultProducer(context: RuntimeContext) {
         assertIsNode(lhsSlot)
         assertIsNode(rhsSlot)
 
-        prev.mapRecordsWithDetails(_.join(relView.records.withDetails, header)(lhsSlot, rhsSlot))
+        prev.mapRecordsWithDetails(join(relView.records, lhsSlot, rhsSlot, header))
       }
+    }
+
+    private def join(rhs: SparkCypherRecords, lhsSlot: RecordSlot, rhsSlot: RecordSlot, header: RecordHeader)
+    : SparkCypherRecords => SparkCypherRecords = {
+      def f(lhs: SparkCypherRecords) = {
+        if (lhs.space == rhs.space) {
+          val lhsData = lhs.withDetails.data
+          val rhsData = rhs.withDetails.data
+          val lhsColumn = lhsData.col(context.columnName(lhsSlot))
+          val rhsColumn = rhsData.col(context.columnName(rhsSlot))
+
+          val joinExpr = lhsColumn === rhsColumn
+          val jointData = lhsData.join(rhsData, joinExpr, "inner")
+
+          SparkCypherRecords.create(header, jointData)(lhs.space)
+        } else {
+          Raise.graphSpaceMismatch()
+        }
+      }
+      f
     }
 
     def initVarExpand(source: Var, edgeList: Var, endNode: Var, header: RecordHeader): InternalResult = {
