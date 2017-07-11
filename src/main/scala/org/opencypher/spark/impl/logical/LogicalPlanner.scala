@@ -90,6 +90,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         val projectLhs = planInnerExpr(be.lhs, acc)
         val projectRhs = planInnerExpr(be.rhs, projectLhs)
         producer.projectField(f, be, projectRhs)
+      case (acc, (f, c: Const)) => producer.projectField(f, c, acc)
       case (_, x) =>
         Raise.notYetImplemented(s"projection of $x")
     }
