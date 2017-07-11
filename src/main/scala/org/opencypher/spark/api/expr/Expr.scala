@@ -9,17 +9,15 @@ sealed trait Expr {
   def cypherType: CypherType
 
   def withoutType: String = toString
+
+  override def toString = s"$withoutType :: $cypherType"
 }
 
 final case class Const(constant: Constant)(val cypherType: CypherType = CTWildcard) extends Expr {
-  override def toString = s"$$${constant.name} :: $cypherType"
-
-  override def withoutType: String = s"${constant.name}"
+  override def withoutType: String = s"$$${constant.name}"
 }
 
 final case class Var(name: String)(val cypherType: CypherType = CTWildcard) extends Expr {
-  override def toString = s"$name :: $cypherType"
-
   override def withoutType: String = s"$name"
 }
 final case class StartNode(e: Expr)(val cypherType: CypherType = CTWildcard) extends Expr {
@@ -101,18 +99,14 @@ final class Ors(_exprs: Set[Expr])(val cypherType: CypherType = CTWildcard) exte
 }
 
 final case class Not(expr: Expr)(val cypherType: CypherType = CTWildcard) extends Expr {
-  override def toString = s"NOT $expr"
+  override def withoutType = s"NOT ${expr.withoutType}"
 }
 
 final case class HasLabel(node: Expr, label: Label)(val cypherType: CypherType = CTWildcard) extends Expr {
-  override def toString = s"$withoutType :: $cypherType"
-
   override def withoutType: String = s"${node.withoutType}:${label.name}"
 }
 
 final case class HasType(rel: Expr, relType: RelType)(val cypherType: CypherType = CTWildcard) extends Expr {
-  override def toString = s"$withoutType :: $cypherType"
-
   override def withoutType: String = s"type(${rel.withoutType}) = '${relType.name}'"
 }
 
@@ -125,7 +119,6 @@ sealed trait BinaryExpr extends Expr {
 }
 
 final case class Equals(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends BinaryExpr {
-  override def toString = s"$withoutType :: $cypherType"
   override def withoutType: String = s"${lhs.withoutType} = ${rhs.withoutType}"
 }
 
@@ -150,7 +143,6 @@ final case class GreaterThanOrEqual(lhs: Expr, rhs: Expr)(val cypherType: Cypher
 }
 
 final case class Property(m: Expr, key: PropertyKey)(val cypherType: CypherType = CTWildcard) extends Expr {
-  override def toString = s"$withoutType :: $cypherType"
   override def withoutType: String = s"${m.withoutType}.${key.name}"
 
   override def equals(obj: scala.Any) = obj match {
@@ -160,24 +152,29 @@ final case class Property(m: Expr, key: PropertyKey)(val cypherType: CypherType 
   }
 }
 final case class TypeId(rel: Expr)(val cypherType: CypherType = CTWildcard) extends Expr {
-  override def toString = s"$withoutType :: $cypherType"
   override def withoutType = s"type(${rel.withoutType})"
 }
 
 // Arithmetic expressions
 
-sealed trait ArithmeticExpr extends BinaryExpr
+sealed trait ArithmeticExpr extends BinaryExpr {
+  def lhs: Expr
+  def rhs: Expr
+}
 
 final case class Add(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends ArithmeticExpr {
   override def toString = s"$lhs + $rhs"
+  override def withoutType = s"${lhs.withoutType} + ${rhs.withoutType}"
 }
 
 final case class Subtract(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends ArithmeticExpr {
   override def toString = s"$lhs - $rhs"
+  override def withoutType = s"${lhs.withoutType} - ${rhs.withoutType}"
 }
 
 final case class Divide(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends ArithmeticExpr {
   override def toString = s"$lhs / $rhs"
+  override def withoutType = s"${lhs.withoutType} / ${rhs.withoutType}"
 }
 
 // Literal expressions

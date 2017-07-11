@@ -29,10 +29,11 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
       case logical.ExpandSource(source, rel, types, target, sourceOp, targetOp) =>
         producer.expandSource(source, rel, types, target, process(sourceOp), process(targetOp))
 
-      case logical.LoadGraph(outGraph, source) =>
-        producer.planLoadGraph(outGraph, source)
+      case logical.Start(outGraph, source, fields) =>
+        producer.planStart(outGraph, source, fields)
 
-      case x => throw new NotImplementedError(s"Flat planning not done yet for $x")
+      case x =>
+        throw new NotImplementedError(s"Flat planning not done yet for $x")
     }
   }
 }

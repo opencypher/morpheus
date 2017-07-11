@@ -4,41 +4,12 @@ import org.apache.spark.sql.{Column, Row}
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.record._
 import org.opencypher.spark.api.spark.SparkCypherRecords
-import org.opencypher.spark.api.value.CypherValueUtils._
 import org.opencypher.spark.impl.classes.Transform
 import org.opencypher.spark.impl.exception.Raise
-import org.opencypher.spark.impl.instances.spark.RowUtils._
 import org.opencypher.spark.impl.instances.spark.SparkSQLExprMapper.asSparkSQLExpr
 import org.opencypher.spark.impl.physical.RuntimeContext
 
 trait SparkCypherRecordsInstances extends Serializable {
-
-  /*
-   * Used when the predicate depends on values not stored inside the dataframe.
-   */
-  case class cypherFilter(header: RecordHeader, expr: Expr)
-                         (implicit context: RuntimeContext) extends (Row => Option[Boolean]) {
-    def apply(row: Row): Option[Boolean] = expr match {
-      case Equals(p: Property, c: Const) =>
-        // TODO: Make this ternary
-        Some(row.getCypherValue(p, header) == row.getCypherValue(c, header))
-
-      case LessThan(lhs, rhs) =>
-        row.getCypherValue(lhs, header) < row.getCypherValue(rhs, header)
-
-      case LessThanOrEqual(lhs, rhs) =>
-        row.getCypherValue(lhs, header) <= row.getCypherValue(rhs, header)
-
-      case GreaterThan(lhs, rhs) =>
-        row.getCypherValue(lhs, header) > row.getCypherValue(rhs, header)
-
-      case GreaterThanOrEqual(lhs, rhs) =>
-        row.getCypherValue(lhs, header) >= row.getCypherValue(rhs, header)
-
-      case x =>
-        Raise.notYetImplemented(s"Predicate $x")
-    }
-  }
 
   implicit def sparkCypherRecordsTransform(implicit context: RuntimeContext) =
     new Transform[SparkCypherRecords] with Serializable {
@@ -49,37 +20,6 @@ trait SparkCypherRecordsInstances extends Serializable {
             case None => false
             case Some(x) => x
           }
-      }
-
-      override def filter(subject: SparkCypherRecords, expr: Expr, newHeader: RecordHeader): SparkCypherRecords = {
-
-        val filteredRows = asSparkSQLExpr(subject.header, expr, subject.data) match {
-          case Some(sqlExpr) =>
-            subject.data.where(sqlExpr)
-          case None =>
-            val predicate = cypherFilter(newHeader, expr)
-            subject.data.filter(liftTernary(predicate))
-        }
-
-        val selectedColumns = newHeader.slots.map { c =>
-          val name = context.columnName(c)
-          filteredRows.col(name)
-        }
-
-        val newData = filteredRows.select(selectedColumns: _*)
-
-        SparkCypherRecords.create(newHeader, newData)(subject.space)
-      }
-
-      override def select(subject: SparkCypherRecords, fields: IndexedSeq[Var], newHeader: RecordHeader)
-      : SparkCypherRecords = {
-        val data = subject.data
-        val columns = fields.map { f =>
-          data.col(context.columnName(subject.header.slotsFor(f).head))
-        }
-        val newData = subject.data.select(columns: _*)
-
-        SparkCypherRecords.create(newHeader, newData)(subject.space)
       }
 
       override def reorder(subject: SparkCypherRecords, newHeader: RecordHeader): SparkCypherRecords = {
@@ -103,30 +43,6 @@ trait SparkCypherRecordsInstances extends Serializable {
           subject.data.withColumnRenamed(oldColumnName, newColumnName)
         } else {
           Raise.columnNotFound(oldColumnName)
-        }
-
-        SparkCypherRecords.create(newHeader, newData)(subject.space)
-      }
-
-      override def project(subject: SparkCypherRecords, expr: Expr, newHeader: RecordHeader): SparkCypherRecords = {
-
-        val newData = asSparkSQLExpr(newHeader, expr, subject.data) match {
-          case None => Raise.notYetImplemented(s"projecting $expr")
-
-          case Some(sparkSqlExpr) =>
-            val headerNames = newHeader.slotsFor(expr).map(context.columnName)
-            val dataNames = subject.data.columns.toSeq
-
-            // TODO: Can optimise for var AS var2 case -- avoid duplicating data
-            headerNames.diff(dataNames) match {
-              case Seq(one) =>
-                // align the name of the column to what the header expects
-                val newCol = sparkSqlExpr.as(one)
-                val columnsToSelect = subject.data.columns.map(subject.data.col) :+ newCol
-
-                subject.data.select(columnsToSelect: _*)
-              case _ => Raise.multipleSlotsForExpression()
-            }
         }
 
         SparkCypherRecords.create(newHeader, newData)(subject.space)

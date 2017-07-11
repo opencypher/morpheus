@@ -1,11 +1,15 @@
 package org.opencypher.spark.impl.physical
 
+import org.apache.spark.sql.Row
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.global._
 import org.opencypher.spark.api.ir.pattern.{AnyGiven, EveryNode}
 import org.opencypher.spark.api.record._
+import org.opencypher.spark.api.spark.SparkCypherRecords
 import org.opencypher.spark.api.types.{CTBoolean, CTNode}
 import org.opencypher.spark.api.value.CypherValue
+import org.opencypher.spark.impl.exception.Raise
+import org.opencypher.spark.impl.instances.spark.SparkSQLExprMapper.asSparkSQLExpr
 import org.opencypher.spark.impl.instances.spark.records._
 import org.opencypher.spark.impl.logical.NamedLogicalGraph
 import org.opencypher.spark.impl.spark.SparkColumnName
@@ -43,23 +47,70 @@ class PhysicalProducer(context: RuntimeContext) {
       prev.mapRecords(_ => records)
     }
 
-    def filter(expr: Expr, header: RecordHeader): InternalResult =
-      prev.mapRecords(_.filter(expr, header))
+    def filter(expr: Expr, header: RecordHeader): InternalResult = {
+      prev.mapRecords { subject =>
+        val filteredRows = asSparkSQLExpr(subject.header, expr, subject.data) match {
+          case Some(sqlExpr) =>
+            subject.data.where(sqlExpr)
+          case None =>
+            val predicate = cypherFilter(header, expr)
+            subject.data.filter(liftTernary(predicate))
+        }
+
+        val selectedColumns = header.slots.map { c =>
+          val name = context.columnName(c)
+          filteredRows.col(name)
+        }
+
+        val newData = filteredRows.select(selectedColumns: _*)
+
+        SparkCypherRecords.create(header, newData)(subject.space)
+      }
+    }
 
     def alias(expr: Expr, v: Var, header: RecordHeader): InternalResult =
       prev.mapRecords(_.alias2(expr, v, header))
 
     def project(expr: Expr, header: RecordHeader): InternalResult =
-      prev.mapRecords(_.project(expr, header))
+      prev.mapRecords { subject =>
+        val newData = asSparkSQLExpr(header, expr, subject.data) match {
+          case None => Raise.notYetImplemented(s"projecting $expr")
+
+          case Some(sparkSqlExpr) =>
+            val headerNames = header.slotsFor(expr).map(context.columnName)
+            val dataNames = subject.data.columns.toSeq
+
+            // TODO: Can optimise for var AS var2 case -- avoid duplicating data
+            headerNames.diff(dataNames) match {
+              case Seq(one) =>
+                // align the name of the column to what the header expects
+                val newCol = sparkSqlExpr.as(one)
+                val columnsToSelect = subject.data.columns.map(subject.data.col) :+ newCol
+
+                subject.data.select(columnsToSelect: _*)
+              case _ => Raise.multipleSlotsForExpression()
+            }
+        }
+
+        SparkCypherRecords.create(header, newData)(subject.space)
+      }
 
     def select(fields: IndexedSeq[Var], header: RecordHeader): InternalResult =
-      prev.mapRecords(_.select(fields, header))
+      prev.mapRecords { subject =>
+        val data = subject.data
+        val columns = fields.map { f =>
+          data.col(context.columnName(subject.header.slotsFor(f).head))
+        }
+        val newData = subject.data.select(columns: _*)
+
+        SparkCypherRecords.create(header, newData)(subject.space)
+      }
 
     def typeFilter(rel: Var, types: AnyGiven[RelTypeRef], header: RecordHeader): InternalResult = {
       if (types.elts.isEmpty) prev
       else {
         val typeExprs: Set[Expr] = types.elts.map { ref => HasType(rel, context.tokens.relType(ref))(CTBoolean) }
-        prev.mapRecords(_.filter(Ands(typeExprs), header))
+        prev.filter(Ands(typeExprs), header)
       }
     }
 
@@ -98,4 +149,13 @@ class PhysicalProducer(context: RuntimeContext) {
       }
     }
   }
+
+  private def liftTernary(f: Row => Option[Boolean]): (Row => Boolean) = {
+    (r: Row) =>
+      f(r) match {
+        case None => false
+        case Some(x) => x
+      }
+  }
 }
+

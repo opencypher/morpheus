@@ -11,11 +11,10 @@ import org.opencypher.spark.impl.exception.Raise
 
 import scala.annotation.tailrec
 
-final case class LogicalPlannerContext(schema: Schema)
+final case class LogicalPlannerContext(schema: Schema, fields: Set[Var])
 
-class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOperator, LogicalPlannerContext] {
-
-  val producer = new LogicalOperatorProducer
+class LogicalPlanner(producer: LogicalOperatorProducer)
+  extends DirectCompilationStage[CypherQuery[Expr], LogicalOperator, LogicalPlannerContext] {
 
   override def process(ir: CypherQuery[Expr])(implicit context: LogicalPlannerContext): LogicalOperator = {
     val model = ir.model
@@ -61,7 +60,7 @@ class LogicalPlanner extends DirectCompilationStage[CypherQuery[Expr], LogicalOp
   def planLeaf(ref: BlockRef, model: QueryModel[Expr])(implicit context: LogicalPlannerContext): LogicalOperator = {
     model(ref) match {
       case LoadGraphBlock(_, DefaultGraph()) =>
-        producer.planLoadDefaultGraph(context.schema)
+        producer.planStart(context.schema, context.fields)
       case x =>
         Raise.notYetImplemented(s"leaf planning of $x")
     }

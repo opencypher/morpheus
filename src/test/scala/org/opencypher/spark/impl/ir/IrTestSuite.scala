@@ -11,7 +11,7 @@ import org.opencypher.spark.api.ir.pattern.{AllGiven, Pattern}
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.types.CypherType
 import org.opencypher.spark.impl.ir.global.GlobalsExtractor
-import org.opencypher.spark.impl.logical.{DefaultGraphSource, LoadGraph, NamedLogicalGraph}
+import org.opencypher.spark.impl.logical.{DefaultGraphSource, Start, NamedLogicalGraph}
 import org.opencypher.spark.impl.parse.CypherParser
 
 import scala.language.implicitConversions
@@ -19,7 +19,7 @@ import scala.language.implicitConversions
 abstract class IrTestSuite extends BaseTestSuite {
   val leafRef = BlockRef("leaf")
   val leafBlock = LoadGraphBlock[Expr](Set.empty, DefaultGraph())
-  val leafPlan = LoadGraph(NamedLogicalGraph("default", Schema.empty), DefaultGraphSource)(SolvedQueryModel.empty)
+  val leafPlan = Start(NamedLogicalGraph("default", Schema.empty), DefaultGraphSource, Set.empty)(SolvedQueryModel.empty)
 
   val graphBlockRef = BlockRef("graph")
   val graphBlock = LoadGraphBlock[Expr](Set.empty, DefaultGraph())
