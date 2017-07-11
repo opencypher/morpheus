@@ -1,7 +1,8 @@
 package org.opencypher.spark.impl.instances
 
 import org.opencypher.spark.SparkCypherTestSuite
-import org.opencypher.spark.api.value.CypherMap
+import org.opencypher.spark.api.types.CTInteger
+import org.opencypher.spark.api.value._
 
 import scala.collection.Bag
 
@@ -43,5 +44,26 @@ class BoundedVarExpandAcceptanceTest extends SparkCypherTestSuite {
 
     // And
     result.graph shouldMatch given.graph
+  }
+
+  test("var expand with default lower and loop") {
+    // Given
+    val given = TestGraph("""(a:Node {v: "a"})-->(:Node {v: "b"})-->(:Node {v: "c"})-->(a)""")
+
+    // When
+    val result = given.cypher("MATCH (a:Node)-[r*..6]->(b:Node) RETURN b.v")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("b.v" -> "a"),
+      CypherMap("b.v" -> "a"),
+      CypherMap("b.v" -> "a"),
+      CypherMap("b.v" -> "b"),
+      CypherMap("b.v" -> "b"),
+      CypherMap("b.v" -> "b"),
+      CypherMap("b.v" -> "c"),
+      CypherMap("b.v" -> "c"),
+      CypherMap("b.v" -> "c")
+    ))
   }
 }

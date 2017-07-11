@@ -134,8 +134,8 @@ trait SparkCypherRecordsInstances extends Serializable {
         val appendUdf = udf(arrayAppend _, ArrayType(LongType))
         val extendedArray = appendUdf(lhs.col(edgeListColName), relIdColumn)
         val withExtendedArray = joined.withColumn(listTempColName, extendedArray)
-        val arrayContains = udf(contains _, BooleanType)(withExtendedArray.col(listTempColName), relIdColumn)
-        val filtered = withExtendedArray.filter(arrayContains)
+        val arrayContains = udf(contains _, BooleanType)(withExtendedArray.col(edgeListColName), relIdColumn)
+        val filtered = withExtendedArray.filter(!arrayContains)
 
         // TODO: Try and get rid of the Var rel here
         val endNodeIdColNameOfJoinedRel = context.columnName(ProjectedExpr(EndNode(rel)(CTNode)))
@@ -156,13 +156,15 @@ trait SparkCypherRecordsInstances extends Serializable {
 
       private def arrayAppend(array: Any, next: Any): Any = {
         array match {
-          case a:mutable.WrappedArray[Long] => a :+ next
+          case a:mutable.WrappedArray[Long] =>
+            a :+ next
         }
       }
 
       private def contains(array: Any, elem: Any): Any = {
         array match {
-          case a:mutable.WrappedArray[Long] => a.contains(elem)
+          case a:mutable.WrappedArray[Long] =>
+            a.contains(elem)
         }
       }
     }
