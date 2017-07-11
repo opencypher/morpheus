@@ -53,7 +53,7 @@ final class SparkCypherEngine extends Cypher with Serializable {
   def filter(graph: Graph, in: Records, expr: Expr, queryParameters: Map[String, CypherValue]): Records = {
     val scan = producer.planStart(graph.schema, in.header.fields)
     val filter = producer.planFilter(expr, scan)
-    plan(graph, in, queryParameters, filter).records
+    plan(graph, in, queryParameters, filter).internalRecords
   }
 
   def sanitize(graph: Graph, in: Records): Records = {
@@ -65,20 +65,20 @@ final class SparkCypherEngine extends Cypher with Serializable {
   def select(graph: Graph, in: Records, fields: IndexedSeq[Var], queryParameters: Map[String, CypherValue]): Records = {
     val scan = producer.planStart(graph.schema, in.header.fields)
     val select = producer.planSelect(fields, scan)
-    plan(graph, in, queryParameters, select).records
+    plan(graph, in, queryParameters, select).internalRecords
   }
 
   def project(graph: Graph, in: Records, expr: Expr, queryParameters: Map[String, CypherValue]): Records = {
     val scan = producer.planStart(graph.schema, in.header.fields)
-    val select = producer.projectExpr(expr, scan)
-    plan(graph, in, queryParameters, select).records
+    val project = producer.projectExpr(expr, scan)
+    plan(graph, in, queryParameters, project).internalRecords
   }
 
   def alias(graph: Graph, in: Records, alias: (Expr, Var),  queryParameters: Map[String, CypherValue]): Records = {
     val (expr, v) = alias
     val scan = producer.planStart(graph.schema, in.header.fields)
     val select = producer.projectField(Field(v.name)(v.cypherType), expr, scan)
-    plan(graph, in, queryParameters, select).records
+    plan(graph, in, queryParameters, select).internalRecords
   }
 
   private def plan(graph: SparkCypherGraph,
