@@ -111,4 +111,24 @@ class BoundedVarExpandAcceptanceTest extends SparkCypherTestSuite {
     // And
     result.graph shouldMatch given.graph
   }
+
+  // Property predicates on var-length patterns get rewritten in AST to WHERE all(_foo IN r | _foo.prop = value)
+  // We could do that better by pre-filtering candidate relationships prior to the iterate step
+  ignore("var expand with property filter") {
+    // Given
+    val given = TestGraph("""(a:Node {v: "a"})-[{v: 1L}]->(:Node {v: "b"})-[{v: 2L}]->(:Node {v: "c"})-[{v: 2L}]->(a)""")
+
+    // When
+    val result = given.cypher("MATCH (a:Node)-[r*..6 {v: 2}]->(b:Node) RETURN b.v")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("b.v" -> "c"),
+      CypherMap("b.v" -> "a"),
+      CypherMap("b.v" -> "a")
+    ))
+
+    // And
+    result.graph shouldMatch given.graph
+  }
 }
