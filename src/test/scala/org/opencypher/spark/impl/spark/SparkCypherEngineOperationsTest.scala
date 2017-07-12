@@ -40,7 +40,7 @@ class SparkCypherEngineOperationsTest extends SparkCypherTestSuite {
 
     val result = space.base.select(given, IndexedSeq(Var("ID")(CTInteger), Var("NAME")(CTString)))
 
-    result.withDetails shouldMatch SparkCypherRecords.create(
+    result.details shouldMatch SparkCypherRecords.create(
       Seq("ID", "NAME"), Seq(
         (1, "Mats"),
         (2, "Martin"),
@@ -62,7 +62,7 @@ class SparkCypherEngineOperationsTest extends SparkCypherTestSuite {
     val expr: Expr = Not(Var("IS_SWEDE")(CTBoolean))(CTBoolean)
     val result = space.base.project(given, expr)
 
-    result.withDetails shouldMatchOpaquely SparkCypherRecords.create(
+    result.details shouldMatchOpaquely SparkCypherRecords.create(
       Seq("ID", "IS_SWEDE", "NAME", "NOT IS_SWEDE"),
       Seq(
         (1, true, "Mats", false),
@@ -85,7 +85,7 @@ class SparkCypherEngineOperationsTest extends SparkCypherTestSuite {
     val exprVar = Not(Var("IS_SWEDE")(CTBoolean))(CTBoolean) -> Var("IS_NOT_SWEDE")(CTBoolean)
     val result = space.base.alias(given, exprVar)
 
-    result.withDetails shouldMatchOpaquely SparkCypherRecords.create(
+    result.details shouldMatchOpaquely SparkCypherRecords.create(
       Seq("ID", "IS_SWEDE", "NAME", "IS_NOT_SWEDE"),
       Seq(
         (1, true, "Mats", false),

@@ -15,14 +15,14 @@ import org.opencypher.spark.impl.exception.Raise
 import org.opencypher.spark.impl.record.SparkCypherRecordHeader
 import org.opencypher.spark.impl.spark.SparkColumnName
 import org.opencypher.spark.impl.syntax.header._
+
 import scala.annotation.tailrec
 import scala.reflect.runtime.universe.TypeTag
 
 sealed abstract class SparkCypherRecords(tokens: SparkCypherTokens,
                                          initialHeader: RecordHeader,
                                          initialData: DataFrame,
-                                         optDetailedRecords: Option[SparkCypherRecords]
-                                        )
+                                         optDetailedRecords: Option[SparkCypherRecords])
                                         (implicit val space: SparkGraphSpace)
   extends CypherRecords with Serializable {
 
@@ -50,7 +50,7 @@ sealed abstract class SparkCypherRecords(tokens: SparkCypherTokens,
 
   override def show() = data.show
 
-  def withDetails = optDetailedRecords.getOrElse(this)
+  def details = optDetailedRecords.getOrElse(this)
 
   def compact = {
     val cachedHeader = self.header.update(compactFields)._1
@@ -61,8 +61,6 @@ sealed abstract class SparkCypherRecords(tokens: SparkCypherTokens,
 
     SparkCypherRecords.create(cachedHeader, cachedData)
   }
-
-
 
   // only keep slots with v as their owner
   //  def focus(v: Var): SparkCypherRecords = {

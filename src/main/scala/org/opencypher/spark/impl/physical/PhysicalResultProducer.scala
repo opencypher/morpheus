@@ -33,6 +33,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
   implicit val c = context
 
   implicit final class RichCypherResult(val prev: PhysicalResult) {
+
     def nodeScan(inGraph: NamedLogicalGraph, v: Var, labels: EveryNode, header: RecordHeader): PhysicalResult = {
       val graph = prev.graphs(inGraph.name)
 
@@ -143,10 +144,22 @@ class PhysicalResultProducer(context: RuntimeContext) {
       }
     }
 
+    def joinSource(relView: PhysicalResult, header: RecordHeader) = new JoinBuilder {
+      override def on(node: Var)(rel: Var) = {
+        val lhsSlot = prev.records.details.header.slotFor(node)
+        val rhsSlot = relView.records.details.header.sourceNode(rel)
+
+        assertIsNode(lhsSlot)
+        assertIsNode(rhsSlot)
+
+        prev.mapRecordsWithDetails(join(relView.records, lhsSlot, rhsSlot, header))
+      }
+    }
+
     def joinTarget(nodeView: PhysicalResult, header: RecordHeader) = new JoinBuilder {
       override def on(rel: Var)(node: Var) = {
-        val lhsSlot = prev.records.withDetails.header.targetNode(rel)
-        val rhsSlot = nodeView.records.withDetails.header.slotFor(node)
+        val lhsSlot = prev.records.details.header.targetNode(rel)
+        val rhsSlot = nodeView.records.details.header.slotFor(node)
 
         assertIsNode(lhsSlot)
         assertIsNode(rhsSlot)
@@ -167,24 +180,12 @@ class PhysicalResultProducer(context: RuntimeContext) {
       }
     }
 
-    def expandSource(relView: PhysicalResult, header: RecordHeader) = new JoinBuilder {
-      override def on(node: Var)(rel: Var) = {
-        val lhsSlot = prev.records.withDetails.header.slotFor(node)
-        val rhsSlot = relView.records.withDetails.header.sourceNode(rel)
-
-        assertIsNode(lhsSlot)
-        assertIsNode(rhsSlot)
-
-        prev.mapRecordsWithDetails(join(relView.records, lhsSlot, rhsSlot, header))
-      }
-    }
-
     private def join(rhs: SparkCypherRecords, lhsSlot: RecordSlot, rhsSlot: RecordSlot, header: RecordHeader)
     : SparkCypherRecords => SparkCypherRecords = {
       def f(lhs: SparkCypherRecords) = {
         if (lhs.space == rhs.space) {
-          val lhsData = lhs.withDetails.data
-          val rhsData = rhs.withDetails.data
+          val lhsData = lhs.details.data
+          val rhsData = rhs.details.data
           val lhsColumn = lhsData.col(context.columnName(lhsSlot))
           val rhsColumn = rhsData.col(context.columnName(rhsSlot))
 
@@ -225,12 +226,12 @@ class PhysicalResultProducer(context: RuntimeContext) {
     }
 
     def varExpand(rels: PhysicalResult, edgeList: Var, endNode: Var, rel: Var, lower: Int, upper: Int, header: RecordHeader) = {
-      val startSlot = rels.records.withDetails.header.sourceNode(rel)
-      val endNodeSlot = prev.records.withDetails.header.slotFor(endNode)
+      val startSlot = rels.records.details.header.sourceNode(rel)
+      val endNodeSlot = prev.records.details.header.slotFor(endNode)
 
       prev.mapRecordsWithDetails { lhs =>
         val initData = lhs.data
-        val relsData = rels.records.withDetails.data
+        val relsData = rels.records.details.data
 
         val edgeListColName = context.columnName(lhs.header.slotFor(edgeList))
 
