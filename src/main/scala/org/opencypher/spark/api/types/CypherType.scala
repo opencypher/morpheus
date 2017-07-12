@@ -334,41 +334,41 @@ case object CTPath extends MaterialDefiniteCypherLeafType {
   override def name = "PATH"
 }
 
-final case class CTList(eltType: CypherType) extends MaterialDefiniteCypherType {
+final case class CTList(elementType: CypherType) extends MaterialDefiniteCypherType {
 
   self =>
 
-  override def name = s"LIST OF $eltType"
+  override def name = s"LIST OF $elementType"
 
   override def nullable =
-    CTListOrNull(eltType)
+    CTListOrNull(elementType)
 
-  override def containsNullable = eltType.containsNullable
+  override def containsNullable = elementType.containsNullable
 
-  override def containsWildcard = eltType.containsWildcard
+  override def containsWildcard = elementType.containsWildcard
 
   override def wildcardErasedSuperType =
-    CTList(eltType.wildcardErasedSuperType)
+    CTList(elementType.wildcardErasedSuperType)
 
   override def wildcardErasedSubType =
-    CTList(eltType.wildcardErasedSubType)
+    CTList(elementType.wildcardErasedSubType)
 
   override def superTypeOf(other: CypherType) = other match {
-    case CTList(otherEltType) => eltType superTypeOf otherEltType
+    case CTList(otherEltType) => elementType superTypeOf otherEltType
     case CTWildcard => Maybe
     case CTVoid => True
     case _ => False
   }
 
   override def joinMaterially(other: MaterialCypherType): MaterialCypherType = other match {
-    case CTList(otherEltType) => CTList(eltType join otherEltType)
+    case CTList(otherEltType) => CTList(elementType join otherEltType)
     case CTVoid => self
     case CTWildcard => CTWildcard
     case _ => CTAny
   }
 
   override def meetMaterially(other: MaterialCypherType): MaterialCypherType = other match {
-    case CTList(otherEltType) => CTList(eltType meet otherEltType)
+    case CTList(otherEltType) => CTList(elementType meet otherEltType)
     case _ => super.meetMaterially(other)
   }
 }

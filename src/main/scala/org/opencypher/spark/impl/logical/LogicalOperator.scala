@@ -79,6 +79,16 @@ final case class ExpandTarget(source: Var, rel: Var, target: Var,
   override def rhs = sourceOp
 }
 
+final case class BoundedVarLengthExpand(source: Var, rel: Var, target: Var,
+                                        lower: Int, upper: Int,
+                                        sourceOp: LogicalOperator, targetOp: LogicalOperator)
+                                       (override val solved: SolvedQueryModel[Expr])
+  extends ExpandOperator {
+
+  override def lhs = sourceOp
+  override def rhs = targetOp
+}
+
 final case class Project(it: ProjectedSlotContent, in: LogicalOperator)
                         (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator
 

@@ -46,14 +46,26 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     Filter(expr, in, in.header)
   }
 
-  def nodeScan(node: Var, _nodeDef: EveryNode, prev: FlatOperator): NodeScan = {
+  def nodeScan(node: Var, nodeDef: EveryNode, prev: FlatOperator): NodeScan = {
 
-    val header = if (_nodeDef.labels.elts.isEmpty) RecordHeader.nodeFromSchema(node, schema, tokens)
-    else RecordHeader.nodeFromSchema(node, schema, tokens, _nodeDef.labels.elts.map(_.name))
+    val header = if (nodeDef.labels.elts.isEmpty) RecordHeader.nodeFromSchema(node, schema, tokens)
+    else RecordHeader.nodeFromSchema(node, schema, tokens, nodeDef.labels.elts.map(_.name))
 
-    val nodeDef = if (_nodeDef.labels.elts.isEmpty) EveryNode(AllGiven(schema.labels.map(Label))) else _nodeDef
+    val _nodeDef = if (nodeDef.labels.elts.isEmpty) EveryNode(AllGiven(schema.labels.map(Label))) else nodeDef
 
-    new NodeScan(node, nodeDef, prev, header)
+    new NodeScan(node, _nodeDef, prev, header)
+  }
+
+  def edgeScan(edge: Var, edgeDef: EveryRelationship, prev: FlatOperator): EdgeScan = {
+    val edgeHeader = if (edgeDef.relTypes.elts.isEmpty) RecordHeader.relationshipFromSchema(edge, schema, tokens)
+    else RecordHeader.relationshipFromSchema(edge, schema, tokens, edgeDef.relTypes.elts.map(_.name))
+
+    EdgeScan(edge, edgeDef, prev, edgeHeader)
+  }
+
+  def varLengthEdgeScan(edgeList: Var, edgeDef: EveryRelationship, prev: FlatOperator): EdgeScan = {
+    val edge = FreshVariableNamer(edgeList.name + "extended", CTRelationship)
+    edgeScan(edge, edgeDef, prev)
   }
 
   // TODO: Specialize per kind of slot content
@@ -69,6 +81,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   // TODO: Specialize per kind of slot content
+  // TODO: Remove types parameter and read rel-types from the rel variable
   def expandSource(source: Var, rel: Var, types: EveryRelationship, target: Var,
                    sourceOp: FlatOperator, targetOp: FlatOperator): FlatOperator = {
     val relHeader = if (types.relTypes.elts.isEmpty) RecordHeader.relationshipFromSchema(rel, schema, tokens)
@@ -81,5 +94,21 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
   def planStart(logicalGraph: NamedLogicalGraph, source: GraphSource, fields: Set[Var]): Start = {
     Start(logicalGraph, source, fields)
+  }
+
+  def initVarExpand(source: Var, edgeList: Var, in: FlatOperator): InitVarExpand = {
+    val endNodeId = FreshVariableNamer(edgeList.name + "endNode", CTNode)
+    val (header, _) = in.header.update(addContents(Seq(OpaqueField(edgeList), OpaqueField(endNodeId))))
+
+    InitVarExpand(source, edgeList, endNodeId, in, header)
+  }
+
+  def boundedVarExpand(edge: Var, edgeList: Var, target: Var, lower: Int, upper: Int,
+                       sourceOp: InitVarExpand, edgeOp: FlatOperator, targetOp: FlatOperator) : FlatOperator = {
+
+    val (initHeader, _) = sourceOp.in.header.update(addContent(OpaqueField(edgeList)))
+    val header = initHeader ++ targetOp.header
+
+    BoundedVarExpand(edge, edgeList, target, lower, upper, sourceOp, edgeOp, targetOp, header)
   }
 }

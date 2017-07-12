@@ -77,6 +77,16 @@ object SparkSQLExprMapper {
           }
         }
 
+      case Ors(exprs) =>
+        val cols = exprs.map(asSparkSQLExpr(header, _, df))
+        if (cols.contains(None)) None
+        else {
+          cols.reduce[Option[Column]] {
+            case (Some(l: Column), Some(r: Column)) => Some(l || r)
+            case _ => Raise.impossible()
+          }
+        }
+
       case HasType(rel, relType) =>
         val relTypeId = context.tokens.relTypeRef(relType).id
         val col = getColumn(TypeId(rel)(), header, df)

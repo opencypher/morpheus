@@ -3,6 +3,8 @@ package org.opencypher.spark.impl.instances
 import org.opencypher.spark.SparkCypherTestSuite
 import org.opencypher.spark.api.value.CypherMap
 
+import scala.collection.Bag
+
 class WithAcceptanceTest extends SparkCypherTestSuite {
 
   test("rebinding of dropped variables") {
@@ -59,7 +61,7 @@ class WithAcceptanceTest extends SparkCypherTestSuite {
     val result = given.cypher("MATCH (n:Node)-->(m:Node) WITH n, m RETURN n.val")
 
     // Then
-    result.records.toMaps should equal(Set(
+    result.records.toMaps should equal(Bag(
       CypherMap("n.val" -> 4)
     ))
 
@@ -76,7 +78,7 @@ class WithAcceptanceTest extends SparkCypherTestSuite {
     val result = given.cypher("MATCH (n:Node)-->(m:Node) WITH n.val AS n_val RETURN n_val")
 
     // Then
-    result.records.toMaps should equal(Set(
+    result.records.toMaps should equal(Bag(
       CypherMap("n_val" -> 4)
     ))
 
@@ -93,7 +95,7 @@ class WithAcceptanceTest extends SparkCypherTestSuite {
     val result = given.cypher("MATCH (n:Node) WITH n.val AS n_val WHERE n_val <= 4 RETURN n_val")
 
     // Then
-    result.records.toMaps should equal(Set(
+    result.records.toMaps should equal(Bag(
       CypherMap("n_val" -> 3),
       CypherMap("n_val" -> 4)
     ))
@@ -111,7 +113,7 @@ class WithAcceptanceTest extends SparkCypherTestSuite {
     val result = given.cypher("MATCH (n:Node)-->(m:Node) WITH n.val + m.val AS sum_n_m_val RETURN sum_n_m_val")
 
     // Then
-    result.records.toMaps should equal(Set(
+    result.records.toMaps should equal(Bag(
       CypherMap("sum_n_m_val" -> 9)
     ))
 
@@ -128,7 +130,7 @@ class WithAcceptanceTest extends SparkCypherTestSuite {
     val result = given.cypher("MATCH (n:Node)-[r]->(m:Node) WITH n.val + m.val AS sum WITH sum AS sum2 RETURN sum2")
 
     // Then
-    result.records.toMaps should equal(Set(
+    result.records.toMaps should equal(Bag(
       CypherMap("sum2" -> 9)
     ))
 
@@ -145,7 +147,7 @@ class WithAcceptanceTest extends SparkCypherTestSuite {
     val result = given.cypher("MATCH (n:Node)-[r]->(m:Node) WITH n.val AS n_val, n.val + m.val AS sum_n_m_val RETURN sum_n_m_val, n_val")
 
     // Then
-    result.records.toMaps should equal(Set(
+    result.records.toMaps should equal(Bag(
       CypherMap("sum_n_m_val" -> 9, "n_val" -> 4),
       CypherMap("sum_n_m_val" -> null, "n_val" -> 5)
     ))

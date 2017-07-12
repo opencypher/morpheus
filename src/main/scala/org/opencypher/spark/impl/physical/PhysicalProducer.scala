@@ -110,13 +110,35 @@ class PhysicalProducer(context: RuntimeContext) {
       if (types.elts.isEmpty) prev
       else {
         val typeExprs: Set[Expr] = types.elts.map { ref => HasType(rel, context.tokens.relType(ref))(CTBoolean) }
-        prev.filter(Ands(typeExprs), header)
+        prev.filter(Ors(typeExprs), header)
       }
+    }
+
+    def initVarExpand(source: Var, edgeList: Var, endNode: Var, header: RecordHeader): InternalResult = {
+      val sourceSlot = header.slotFor(source)
+      val edgeListSlot = header.slotFor(edgeList)
+      val endNodeSlot = header.slotFor(endNode)
+
+      assertIsNode(endNodeSlot)
+
+      prev.mapRecords(_.initVarExpand(sourceSlot, edgeListSlot, endNodeSlot, header))
     }
 
     def joinTarget(nodeView: InternalResult) = new JoinBuilder {
       override def on(rel: Var)(node: Var) = {
         val lhsSlot = prev.records.header.targetNode(rel)
+        val rhsSlot = nodeView.records.header.slotFor(node)
+
+        assertIsNode(lhsSlot)
+        assertIsNode(rhsSlot)
+
+        prev.mapRecords(_.join(nodeView.records)(lhsSlot, rhsSlot))
+      }
+    }
+
+    def joinNode(nodeView: InternalResult) = new JoinBuilder {
+      override def on(endNode: Var)(node: Var) = {
+        val lhsSlot = prev.records.header.slotFor(endNode)
         val rhsSlot = nodeView.records.header.slotFor(node)
 
         assertIsNode(lhsSlot)
@@ -137,6 +159,13 @@ class PhysicalProducer(context: RuntimeContext) {
         prev.mapRecords(_.join(relView.records, header)(lhsSlot, rhsSlot))
       }
     }
+
+    def varExpand(rels: InternalResult, edgeList: Var, endNode: Var, rel: Var, lower: Int, upper: Int, header: RecordHeader) = {
+        val startSlot = rels.records.header.sourceNode(rel)
+        val endNodeSlot = prev.records.header.slotFor(endNode)
+
+        prev.mapRecords(_.varExpand(rels.records, lower, upper, header)(edgeList, endNodeSlot, rel, startSlot))
+      }
 
     sealed trait JoinBuilder {
       def on(lhsKey: Var)(rhsKey: Var): InternalResult

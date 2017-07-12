@@ -113,7 +113,7 @@ class FlatPlannerTest extends BaseTestSuite {
 
   test("flat plan for expand") {
     val result = flatPlanner.process(
-      mkLogical.planSourceExpand(Field("n")(CTNode), Field("r")(CTRelationship) -> EveryRelationship, Field("m")(CTNode),
+      mkLogical.planSourceExpand(Field("n")(CTNode), Field("r")(CTRelationship), EveryRelationship, Field("m")(CTNode),
         logicalNodeScan("n"), logicalNodeScan("m")
       )
     )
@@ -154,7 +154,7 @@ class FlatPlannerTest extends BaseTestSuite {
     val result = flatPlanner.process(
       mkLogical.planSourceExpand(
         Field("n")(CTNode),
-        Field("r")(CTRelationship("KNOWS")) -> EveryRelationship(AnyOf(RelType("KNOWS"))),
+        Field("r")(CTRelationship("KNOWS")), EveryRelationship(AnyOf(RelType("KNOWS"))),
         Field("m")(CTNode),
         logicalNodeScan("n"), logicalNodeScan("m")
       )
@@ -182,6 +182,41 @@ class FlatPlannerTest extends BaseTestSuite {
       ProjectedExpr(TypeId(rel)(CTInteger)),
       ProjectedExpr(EndNode(rel)(CTInteger)),
       ProjectedExpr(Property(rel, propertyKeyByName("since"))(CTString)),
+      OpaqueField(target),
+      ProjectedExpr(HasLabel(target, labelByName("Person"))(CTBoolean)),
+      ProjectedExpr(HasLabel(target, labelByName("Employee"))(CTBoolean)),
+      ProjectedExpr(Property(target, propertyKeyByName("name"))(CTString)),
+      ProjectedExpr(Property(target, propertyKeyByName("age"))(CTInteger.nullable)),
+      ProjectedExpr(Property(target, propertyKeyByName("salary"))(CTFloat))
+    ))
+  }
+
+  test("flat plan for init var expand") {
+    val sourceScan = logicalNodeScan("n")
+    val targetScan = logicalNodeScan("m")
+    val logicalPlan = mkLogical.planBoundedVarLengthExpand('n -> CTNode, 'r -> CTList(CTRelationship), EveryRelationship, 'm -> CTNode, 1, 1, sourceScan, targetScan)
+    val result = flatPlanner.process(logicalPlan)
+
+    val source = Var("n")(CTNode)
+    val edgeList = Var("r")(CTList(CTRelationship))
+    val target = Var("m")(CTNode)
+
+    val initVarExpand = mkFlat.initVarExpand(source, edgeList, flatNodeScan(source))
+
+    val edgeScan = flatVarLengthEdgeScan(initVarExpand.edgeList)
+    val flatOp = mkFlat.boundedVarExpand(edgeScan.edge, edgeList, target, 1, 1,
+      initVarExpand, edgeScan, flatNodeScan(target))
+
+    result should equal(flatOp)
+
+    result.header.contents should equal(Set(
+      OpaqueField(source),
+      ProjectedExpr(HasLabel(source, labelByName("Person"))(CTBoolean)),
+      ProjectedExpr(HasLabel(source, labelByName("Employee"))(CTBoolean)),
+      ProjectedExpr(Property(source, propertyKeyByName("name"))(CTString)),
+      ProjectedExpr(Property(source, propertyKeyByName("age"))(CTInteger.nullable)),
+      ProjectedExpr(Property(source, propertyKeyByName("salary"))(CTFloat)),
+      OpaqueField(edgeList),
       OpaqueField(target),
       ProjectedExpr(HasLabel(target, labelByName("Person"))(CTBoolean)),
       ProjectedExpr(HasLabel(target, labelByName("Employee"))(CTBoolean)),
@@ -275,5 +310,11 @@ class FlatPlannerTest extends BaseTestSuite {
     val labels = labelNames.map(Label)
 
     mkFlat.nodeScan(node, EveryNode(AllOf(labels: _*)), flatStartOperator)
+  }
+
+  private def flatVarLengthEdgeScan(edgeList: Var, edgeTypes: String*) = {
+    val types = edgeTypes.map(RelType)
+
+    mkFlat.varLengthEdgeScan(edgeList, EveryRelationship(AnyOf(types: _*)), flatStartOperator)
   }
 }

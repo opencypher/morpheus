@@ -174,7 +174,12 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       case p if p.solved.solves(c.target) => p
     }.getOrElse(Raise.invalidConnection("target"))
 
-    val expand = producer.planSourceExpand(c.source, r -> pattern.rels(r), c.target, sourcePlan, targetPlan)
+    val expand = c match {
+      case v: VarLengthRelationship if v.upper.nonEmpty =>
+        producer.planBoundedVarLengthExpand(c.source, r, pattern.rels(r), c.target, v.lower, v.upper.get, sourcePlan, targetPlan)
+      case _ =>
+        producer.planSourceExpand(c.source, r, pattern.rels(r), c.target, sourcePlan, targetPlan)
+    }
 
     if (expand.solved.solves(pattern)) expand
     else planExpansions((disconnectedPlans - sourcePlan - targetPlan) + expand, pattern, producer)

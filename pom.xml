@@ -17,6 +17,7 @@
         <scala.binary.version>2.11</scala.binary.version>
         <spark.version>2.1.0</spark.version>
         <neo4j.version>3.2.0-alpha08</neo4j.version>
+        <multiset.version>0.4</multiset.version>
         <graphframes.version>0.4.0-spark2.1-s_2.11</graphframes.version>
         <gdl.version>0.3.0-SNAPSHOT</gdl.version>
     </properties>
@@ -323,6 +324,12 @@
     </repositories>
 
     <dependencies>
+
+        <dependency>
+            <groupId>io.github.nicolasstucki</groupId>
+            <artifactId>multisets_2.11</artifactId>
+            <version>${multiset.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.neo4j</groupId>

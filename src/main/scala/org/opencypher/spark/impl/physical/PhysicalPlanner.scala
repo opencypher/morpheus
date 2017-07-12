@@ -1,8 +1,10 @@
 package org.opencypher.spark.impl.physical
 
 import org.opencypher.spark.api.expr._
-import org.opencypher.spark.api.ir.global.{ConstantRef, ConstantRegistry, TokenRegistry}
+import org.opencypher.spark.api.ir.global._
+import org.opencypher.spark.api.ir.pattern.AnyGiven
 import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherResult, SparkGraphSpace}
+import org.opencypher.spark.api.types.CTRelationship
 import org.opencypher.spark.api.value.CypherValue
 import org.opencypher.spark.impl.exception.Raise
 import org.opencypher.spark.impl.flat.FlatOperator
@@ -50,6 +52,9 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, SparkCypherRe
       case op@flat.NodeScan(v, labels, in, header) =>
         inner(in).nodeScan(op.inGraph, v, labels, header)
 
+      case op@flat.EdgeScan(e, edgeDef, in, header) =>
+        inner(in).relationshipScan(op.inGraph, e, header).typeFilter(e, edgeDef.relTypes.map(context.tokens.relTypeRef), header)
+
       case flat.Alias(expr, alias, in, header) =>
         inner(in).alias(expr, alias, header)
 
@@ -74,8 +79,28 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, SparkCypherRe
         val expanded = lhs.expandSource(relAndTarget, header).on(source)(rel)
 
         expanded
+
+      case flat.InitVarExpand(source, edgeList, endNode, in, header) =>
+        val prev = inner(in)
+        prev.initVarExpand(source, edgeList, endNode, header)
+
+
+      case flat.BoundedVarExpand(rel, edgeList, target, lower, upper, sourceOp, relOp, targetOp, header) =>
+        val first  = inner(sourceOp)
+        val second = inner(relOp)
+        val third  = inner(targetOp)
+
+        val expanded = first.varExpand(second, edgeList, sourceOp.endNode, rel, lower, upper, header)
+
+        expanded.joinNode(third).on(sourceOp.endNode)(target)
+
       case x =>
         Raise.notYetImplemented(s"operator $x")
     }
+  }
+
+  private def relTypes(r: Var, tokens: TokenRegistry): Set[String] = r.cypherType match {
+    case t: CTRelationship => t.types
+    case _ => Set.empty
   }
 }
