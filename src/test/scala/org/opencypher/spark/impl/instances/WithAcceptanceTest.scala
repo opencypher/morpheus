@@ -21,7 +21,7 @@ class WithAcceptanceTest extends SparkCypherTestSuite {
       """.stripMargin)
 
     // Then
-    result.records.toMaps should equal(Set(
+    result.records.toMaps should equal(Bag(
       CypherMap("foo" -> 5),
       CypherMap("foo" -> 6)
     ))
@@ -43,7 +43,7 @@ class WithAcceptanceTest extends SparkCypherTestSuite {
       """.stripMargin)
 
     // Then
-    result.records.toMaps should equal(Set(
+    result.records.toMaps should equal(Bag(
       CypherMap("bar" -> 5),
       CypherMap("bar" -> 5)
     ))
