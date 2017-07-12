@@ -21,6 +21,18 @@ class SparkGraphSpaceTest extends BaseTestSuite with SparkTestSession.Fixture {
 
     df.count() shouldBe 100
     df.schema.fields.map(f => f.dataType -> f.nullable).toSet should equal(Set(
+      LongType -> false
+    ))
+  }
+
+  test("import nodes from neo with details") {
+    val schema = Schema.empty
+      .withNodeKeys("Tweet")("id" -> CTInteger, "text" -> CTString.nullable, "created" -> CTString.nullable)
+    val space = SparkGraphSpace.fromNeo4j("MATCH (n:Tweet) RETURN n LIMIT 100", "RETURN 1 LIMIT 0", schema)
+    val df = space.base.nodes().details.toDF()
+
+    df.count() shouldBe 100
+    df.schema.fields.map(f => f.dataType -> f.nullable).toSet should equal(Set(
       LongType -> false,
       BooleanType -> false,
       LongType -> true,
@@ -36,6 +48,20 @@ class SparkGraphSpaceTest extends BaseTestSuite with SparkTestSession.Fixture {
       "RETURN 1 LIMIT 0",
       "MATCH ()-[r:ATTENDED]->() RETURN r LIMIT 100", schema)
     val df = space.base.rels().toDF()
+
+    df.count() shouldBe 100
+    df.schema.fields.map(f => f.dataType -> f.nullable).toSet should equal(Set(
+      LongType -> false
+    ))
+  }
+
+  test("import relationships from neo with details") {
+    val schema = Schema.empty
+      .withRelationshipKeys("ATTENDED")("guests" -> CTInteger, "comments" -> CTString.nullable)
+    val space = SparkGraphSpace.fromNeo4j(
+      "RETURN 1 LIMIT 0",
+      "MATCH ()-[r:ATTENDED]->() RETURN r LIMIT 100", schema)
+    val df = space.base.rels().details.toDF()
 
     df.count() shouldBe 100
     df.schema.fields.map(f => f.dataType -> f.nullable).toSet should equal(Set(

@@ -3,15 +3,16 @@ package org.opencypher.spark.impl.spark
 import org.apache.spark.sql.DataFrame
 import org.opencypher.spark.api.classes.Cypher
 import org.opencypher.spark.api.expr.{Expr, Var}
+import org.opencypher.spark.api.ir.Field
 import org.opencypher.spark.api.ir.global.{ConstantRef, ConstantRegistry, GlobalsRegistry, TokenRegistry}
 import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherResult, SparkGraphSpace}
 import org.opencypher.spark.api.value.CypherValue
 import org.opencypher.spark.impl.flat.{FlatPlanner, FlatPlannerContext}
 import org.opencypher.spark.impl.ir.global.GlobalsExtractor
 import org.opencypher.spark.impl.ir.{CypherQueryBuilder, IRBuilderContext}
-import org.opencypher.spark.impl.logical.{LogicalOperator, LogicalOperatorProducer, LogicalPlanner, LogicalPlannerContext}
+import org.opencypher.spark.impl.logical._
 import org.opencypher.spark.impl.parse.CypherParser
-import org.opencypher.spark.impl.physical.{PhysicalPlanner, PhysicalPlannerContext}
+import org.opencypher.spark.impl.physical.{PhysicalPlanner, PhysicalPlannerContext, SparkCypherResultBuilder}
 
 final class SparkCypherEngine extends Cypher with Serializable {
 
@@ -63,7 +64,14 @@ final class SparkCypherEngine extends Cypher with Serializable {
 
   def project(graph: Graph, in: Records, expr: Expr, queryParameters: Map[String, CypherValue]): Records = {
     val scan = producer.planStart(graph.schema, in.header.fields)
-    val select = producer.projectExpr(expr, scan)
+    val project = producer.projectExpr(expr, scan)
+    plan(graph, in, queryParameters, project).records
+  }
+
+  def alias(graph: Graph, in: Records, alias: (Expr, Var),  queryParameters: Map[String, CypherValue]): Records = {
+    val (expr, v) = alias
+    val scan = producer.planStart(graph.schema, in.header.fields)
+    val select = producer.projectField(Field(v.name)(v.cypherType), expr, scan)
     plan(graph, in, queryParameters, select).records
   }
 
@@ -94,9 +102,10 @@ final class SparkCypherEngine extends Cypher with Serializable {
     //       instead of just using a single global tokens instance derived from the graph space
     //
     print("Physical plan ... ")
-    val physicalPlan = physicalPlanner(flatPlan)(PhysicalPlannerContext(graph, records, tokens, constants, allParameters))
+    val physicalPlannerContext = PhysicalPlannerContext(graph, records, tokens, constants, allParameters)
+    val physicalResult = physicalPlanner(flatPlan)(physicalPlannerContext)
     println("Done!")
 
-    physicalPlan
+    SparkCypherResultBuilder.from(physicalResult)
   }
 }

@@ -13,7 +13,7 @@ import org.opencypher.spark.impl.{DirectCompilationStage, flat}
 
 case class PhysicalPlannerContext(
   defaultGraph: SparkCypherGraph,
-  defaultRecords: SparkCypherRecords,
+  inputRecords: SparkCypherRecords,
   tokens: TokenRegistry,
   constants: ConstantRegistry,
   parameters: Map[ConstantRef, CypherValue]) {
@@ -22,20 +22,17 @@ case class PhysicalPlannerContext(
   val session = space.session
 }
 
-class PhysicalPlanner extends DirectCompilationStage[FlatOperator, SparkCypherResult, PhysicalPlannerContext] {
+class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResult, PhysicalPlannerContext] {
 
-  def process(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext): SparkCypherResult = {
-
-    val internal = inner(flatPlan)
-
-    ResultBuilder.from(internal)
+  def process(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext): PhysicalResult = {
+    inner(flatPlan)
   }
 
-  def inner(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext): InternalResult = {
+  def inner(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext): PhysicalResult = {
 
     import context.tokens
 
-    val producer = new PhysicalProducer(RuntimeContext(context.parameters, context.tokens, context.constants))
+    val producer = new PhysicalResultProducer(RuntimeContext(context.parameters, context.tokens, context.constants))
     import producer._
 
     flatPlan match {
@@ -44,7 +41,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, SparkCypherRe
 
       case flat.Start(outGraph, source, _) => source match {
         case DefaultGraphSource =>
-          InternalResult(context.defaultRecords, Map(outGraph.name -> context.defaultGraph))
+          PhysicalResult(context.inputRecords, Map(outGraph.name -> context.defaultGraph))
         case _ =>
           Raise.notYetImplemented(s"Loading a graph source other than default, tried $source")
       }
@@ -63,9 +60,10 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, SparkCypherRe
 
       case flat.Filter(expr, in, header) => expr match {
         case TrueLit() => inner(in) // optimise away filter
-        case e => inner(in).filter(expr, header)
+        case _ => inner(in).filter(expr, header)
       }
 
+      // TODO: This needs to be a ternary operator taking source, rels and target records instead of using the graph
       // MATCH (a)-[r]->(b) => MATCH (a), (b), (a)-[r]->(b)
       case op@flat.ExpandSource(source, rel, types, target, sourceOp, targetOp, header, relHeader) =>
         val lhs = inner(sourceOp)
@@ -73,10 +71,11 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, SparkCypherRe
 
         val g = lhs.graphs(op.inGraph.name)
         val relationships = g.relationships(rel.name)
-        val relRhs = InternalResult(relationships, lhs.graphs).typeFilter(rel, types.relTypes.map(tokens.relTypeRef), relHeader)
+        val relRhs = PhysicalResult(relationships, lhs.graphs).typeFilter(rel, types.relTypes.map(tokens.relTypeRef), relHeader)
 
-        val relAndTarget = relRhs.joinTarget(rhs).on(rel)(target)
-        val expanded = lhs.expandSource(relAndTarget, header).on(source)(rel)
+        val relAndTargetHeader = relRhs.records.details.header ++ rhs.records.details.header
+        val relAndTarget = relRhs.joinTarget(rhs, relAndTargetHeader).on(rel)(target)
+        val expanded = lhs.joinSource(relAndTarget, header).on(source)(rel)
 
         expanded
 
@@ -92,7 +91,8 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, SparkCypherRe
 
         val expanded = first.varExpand(second, edgeList, sourceOp.endNode, rel, lower, upper, header)
 
-        expanded.joinNode(third).on(sourceOp.endNode)(target)
+        val joinHeader = first.records.details.header ++ third.records.details.header
+        expanded.joinNode(third, joinHeader).on(sourceOp.endNode)(target)
 
       case x =>
         Raise.notYetImplemented(s"operator $x")

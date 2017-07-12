@@ -10,6 +10,7 @@ import org.opencypher.spark.impl.exception.Raise
 import org.opencypher.spark.impl.logical.{GraphSource, NamedLogicalGraph}
 import org.opencypher.spark.impl.syntax.header._
 import org.opencypher.spark.impl.util.{Added, FailedToAdd, Found, Replaced}
+import org.opencypher.spark.impl.syntax.expr._
 
 class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
@@ -22,9 +23,13 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   def select(fields: IndexedSeq[Var], in: FlatOperator): Select = {
-    val slotContents = fields.map(in.header.slotsFor(_).head.content)
+    val fieldContents = fields.map { field => in.header.slotsFor(field).head.content }
+    val exprContents = in.header.contents.collect {
+      case content@ProjectedExpr(expr) if (expr.dependencies -- fields).isEmpty => content
+    }
+    val finalContents = fieldContents ++ exprContents
 
-    val (nextHeader, _) = RecordHeader.empty.update(addContents(slotContents))
+    val (nextHeader, _) = RecordHeader.empty.update(addContents(finalContents))
 
     Select(fields, in, nextHeader)
   }

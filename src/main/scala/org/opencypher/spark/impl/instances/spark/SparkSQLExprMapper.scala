@@ -63,7 +63,7 @@ object SparkSQLExprMapper {
       case Not(e) =>
         apply(header, e, df) match {
           case Some(res) => Some(!res)
-          case _ => Raise.impossible()
+          case _ => Raise.notYetImplemented(s"Support for expression $e")
         }
 
       case Ands(exprs) =>
@@ -122,7 +122,8 @@ object SparkSQLExprMapper {
         val rhsColumn = getColumn(div.rhs, header, df)
         Some((lhsColumn / rhsColumn).cast(toSparkType(div.cypherType)))
 
-      case _ => None
+      case _ =>
+        None
     }
 
     private def inequality(f: (Any, Any) => Any, header: RecordHeader, expr: BinaryExpr, df: DataFrame)

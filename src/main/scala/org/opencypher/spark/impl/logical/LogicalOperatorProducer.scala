@@ -66,7 +66,6 @@ class LogicalOperatorProducer {
     Select(fields, prev)(prev.solved)
   }
 
-
   def planStart(schema: Schema, fields: Set[Var]): Start = {
     val irFields = fields.map { v => Field(v.name)(v.cypherType) }
     Start(NamedLogicalGraph("default", schema), DefaultGraphSource, fields)(SolvedQueryModel(irFields, Set.empty))

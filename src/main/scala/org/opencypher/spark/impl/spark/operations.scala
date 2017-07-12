@@ -1,7 +1,6 @@
 package org.opencypher.spark.impl.spark
 
 import org.opencypher.spark.api.expr.{Expr, Var}
-import org.opencypher.spark.api.record.RecordSlot
 import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords}
 import org.opencypher.spark.api.value.CypherValue
 
@@ -9,6 +8,7 @@ import org.opencypher.spark.api.value.CypherValue
 object operations {
 
   implicit final class RichSparkCypherGraph(val graph: SparkCypherGraph) extends AnyVal {
+
     def filter(subject: SparkCypherRecords, expr: Expr, parameters: Map[String, CypherValue] = Map.empty)
               (implicit engine: SparkCypherEngine)
     : SparkCypherRecords =
@@ -22,10 +22,8 @@ object operations {
                (implicit engine: SparkCypherEngine): SparkCypherRecords =
       engine.project(graph, subject, expr, parameters)
 
-    def alias(subject: SparkCypherRecords, alias: (Expr, Var))(implicit engine: SparkCypherEngine): SparkCypherRecords =
-      ???
-
-    def join(subject: SparkCypherRecords, other: SparkCypherRecords)(lhs: RecordSlot, rhs: RecordSlot)(implicit engine: SparkCypherEngine): SparkCypherRecords =
-      ???
+    def alias(subject: SparkCypherRecords, alias: (Expr, Var), parameters: Map[String, CypherValue] = Map.empty)
+             (implicit engine: SparkCypherEngine): SparkCypherRecords =
+      engine.alias(graph, subject, alias, parameters)
   }
 }
