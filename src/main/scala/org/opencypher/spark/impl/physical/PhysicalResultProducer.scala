@@ -1,6 +1,8 @@
 package org.opencypher.spark.impl.physical
 
-import org.apache.spark.sql.Row
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types.{ArrayType, BooleanType, LongType}
+import org.apache.spark.sql.{DataFrame, Row}
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.global._
 import org.opencypher.spark.api.ir.pattern.{AnyGiven, EveryNode}
@@ -9,12 +11,13 @@ import org.opencypher.spark.api.spark.SparkCypherRecords
 import org.opencypher.spark.api.types.{CTBoolean, CTNode}
 import org.opencypher.spark.api.value.CypherValue
 import org.opencypher.spark.impl.exception.Raise
+import org.opencypher.spark.impl.flat.FreshVariableNamer
 import org.opencypher.spark.impl.instances.spark.SparkSQLExprMapper.asSparkSQLExpr
-import org.opencypher.spark.impl.instances.spark.records._
 import org.opencypher.spark.impl.logical.NamedLogicalGraph
 import org.opencypher.spark.impl.spark.SparkColumnName
-import org.opencypher.spark.impl.syntax.transform._
 import org.opencypher.spark.impl.syntax.expr._
+
+import scala.collection.mutable
 
 object RuntimeContext {
   val empty = RuntimeContext(Map.empty, TokenRegistry.empty, ConstantRegistry.empty)
@@ -196,22 +199,90 @@ class PhysicalResultProducer(context: RuntimeContext) {
       f
     }
 
-    def initVarExpand(source: Var, edgeList: Var, endNode: Var, header: RecordHeader): InternalResult = {
+    def initVarExpand(source: Var, edgeList: Var, target: Var, header: RecordHeader): PhysicalResult = {
       val sourceSlot = header.slotFor(source)
       val edgeListSlot = header.slotFor(edgeList)
-      val endNodeSlot = header.slotFor(endNode)
+      val targetSlot = header.slotFor(target)
 
-      assertIsNode(endNodeSlot)
+      assertIsNode(targetSlot)
 
-      prev.mapRecordsWithDetails(_.initVarExpand(sourceSlot, edgeListSlot, endNodeSlot, header))
+      prev.mapRecordsWithDetails { subject =>
+        val inputData = subject.data
+        val keep = inputData.columns.map(inputData.col)
+
+        val edgeListColName = context.columnName(edgeListSlot)
+        val edgeListColumn = udf(udfUtils.initArray _, ArrayType(LongType))()
+        val withEmptyList = inputData.withColumn(edgeListColName, edgeListColumn)
+
+        val cols = keep ++ Seq(
+          withEmptyList.col(edgeListColName),
+          inputData.col(context.columnName(sourceSlot)).as(context.columnName(targetSlot)))
+
+        val initializedData = withEmptyList.select(cols: _*)
+
+        SparkCypherRecords.create(header, initializedData)(subject.space)
+      }
     }
 
     def varExpand(rels: PhysicalResult, edgeList: Var, endNode: Var, rel: Var, lower: Int, upper: Int, header: RecordHeader) = {
-        val startSlot = rels.records.header.sourceNode(rel)
-        val endNodeSlot = prev.records.header.slotFor(endNode)
+      val startSlot = rels.records.withDetails.header.sourceNode(rel)
+      val endNodeSlot = prev.records.withDetails.header.slotFor(endNode)
 
-        prev.mapRecordsWithDetails(_.varExpand(rels.records, lower, upper, header)(edgeList, endNodeSlot, rel, startSlot))
+      prev.mapRecordsWithDetails { lhs =>
+        val initData = lhs.data
+        val relsData = rels.records.withDetails.data
+
+        val edgeListColName = context.columnName(lhs.header.slotFor(edgeList))
+
+        val steps = new mutable.HashMap[Int, DataFrame]
+        steps(0) = initData
+
+        val keep = initData.columns
+
+        val listTempColName = FreshVariableNamer.generateUniqueName(lhs.header)
+
+        (1 to upper).foreach { i =>
+          // TODO: Check whether we can abort iteration if result has no cardinality (eg count > 0?)
+          steps(i) = iterate(steps(i - 1), relsData)(endNodeSlot, rel, startSlot, listTempColName, edgeListColName, keep)
+        }
+
+        val union = steps.filterKeys(_ >= lower).values.reduce[DataFrame] {
+          case (l, r) => l.union(r)
+        }
+
+        SparkCypherRecords.create(lhs.header, union)(lhs.space)
       }
+    }
+
+    private def iterate(lhs: DataFrame, rels: DataFrame)
+                       (endNode: RecordSlot, rel: Var, relStartNode: RecordSlot,
+                        listTempColName: String, edgeListColName: String, keep: Array[String]): DataFrame = {
+
+      val relIdColumn = rels.col(context.columnName(OpaqueField(rel)))
+      val startColumn = rels.col(context.columnName(relStartNode))
+      val expandColumnName = context.columnName(endNode)
+      val expandColumn = lhs.col(expandColumnName)
+
+      val joined = lhs.join(rels, expandColumn === startColumn, "inner")
+
+      val appendUdf = udf(udfUtils.arrayAppend _, ArrayType(LongType))
+      val extendedArray = appendUdf(lhs.col(edgeListColName), relIdColumn)
+      val withExtendedArray = joined.withColumn(listTempColName, extendedArray)
+      val arrayContains = udf(udfUtils.contains _, BooleanType)(withExtendedArray.col(edgeListColName), relIdColumn)
+      val filtered = withExtendedArray.filter(!arrayContains)
+
+      // TODO: Try and get rid of the Var rel here
+      val endNodeIdColNameOfJoinedRel = context.columnName(ProjectedExpr(EndNode(rel)(CTNode)))
+
+      val columns = keep ++ Seq(listTempColName, endNodeIdColNameOfJoinedRel)
+      val withoutRelProperties = filtered.select(columns.head, columns.tail: _*)  // drops joined columns from relationship table
+
+      withoutRelProperties
+        .drop(expandColumn)
+        .withColumnRenamed(endNodeIdColNameOfJoinedRel, expandColumnName)
+        .drop(edgeListColName)
+        .withColumnRenamed(listTempColName, edgeListColName)
+    }
 
     sealed trait JoinBuilder {
       def on(lhsKey: Var)(rhsKey: Var): PhysicalResult
@@ -231,6 +302,26 @@ class PhysicalResultProducer(context: RuntimeContext) {
         case None => false
         case Some(x) => x
       }
+  }
+}
+
+case object udfUtils {
+  def initArray(): Any = {
+    Array[Long]()
+  }
+
+  def arrayAppend(array: Any, next: Any): Any = {
+    array match {
+      case a:mutable.WrappedArray[Long] =>
+        a :+ next
+    }
+  }
+
+  def contains(array: Any, elem: Any): Any = {
+    array match {
+      case a:mutable.WrappedArray[Long] =>
+        a.contains(elem)
+    }
   }
 }
 

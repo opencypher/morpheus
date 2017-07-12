@@ -63,6 +63,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
         case _ => inner(in).filter(expr, header)
       }
 
+      // TODO: This needs to be a ternary operator taking source, rels and target records instead of using the graph
       // MATCH (a)-[r]->(b) => MATCH (a), (b), (a)-[r]->(b)
       case op@flat.ExpandSource(source, rel, types, target, sourceOp, targetOp, header, relHeader) =>
         val lhs = inner(sourceOp)
@@ -90,7 +91,8 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
 
         val expanded = first.varExpand(second, edgeList, sourceOp.endNode, rel, lower, upper, header)
 
-        expanded.joinNode(third).on(sourceOp.endNode)(target)
+        val joinHeader = first.records.withDetails.header ++ third.records.withDetails.header
+        expanded.joinNode(third, joinHeader).on(sourceOp.endNode)(target)
 
       case x =>
         Raise.notYetImplemented(s"operator $x")
