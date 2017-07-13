@@ -40,5 +40,9 @@ object operations {
     def alias(subject: SparkCypherRecords, alias: (Expr, Var), parameters: Map[String, CypherValue] = Map.empty)
              (implicit engine: SparkCypherEngine): SparkCypherRecords =
       engine.alias(graph, subject, alias, parameters)
+
+    def rename(subject: SparkCypherRecords, alias: (Var, Var))
+              (implicit engine: SparkCypherEngine): SparkCypherRecords =
+      engine.rename(graph, subject, alias)
   }
 }
