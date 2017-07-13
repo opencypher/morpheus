@@ -78,6 +78,23 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
       InvalidType("e", Seq(CTInteger, CTFloat, CTNumber), CTString)
   }
 
+  test("typing multiply") {
+    implicit val context = typeTracker("a" -> CTInteger, "b" -> CTFloat, "c" -> CTNumber, "d" -> CTAny.nullable, "e" -> CTString)
+
+    assertExpr.from("a * a") shouldHaveInferredType CTInteger
+    assertExpr.from("b * b") shouldHaveInferredType CTFloat
+    assertExpr.from("a * b") shouldHaveInferredType CTFloat
+    assertExpr.from("b * a") shouldHaveInferredType CTFloat
+    assertExpr.from("a * c") shouldHaveInferredType CTNumber
+    assertExpr.from("c * b") shouldHaveInferredType CTNumber
+
+    assertExpr.from("a * d") shouldHaveInferredType CTAny.nullable
+    assertExpr.from("d * c") shouldHaveInferredType CTAny.nullable
+
+    assertExpr.from("a * e") shouldFailToInferTypeWithErrors
+      InvalidType("e", Seq(CTInteger, CTFloat, CTNumber), CTString)
+  }
+
   test("typing divide") {
     implicit val context = typeTracker("a" -> CTInteger, "b" -> CTFloat, "c" -> CTNumber, "d" -> CTAny.nullable, "e" -> CTString)
 

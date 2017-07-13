@@ -172,6 +172,11 @@ final case class Subtract(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTW
   override def withoutType = s"${lhs.withoutType} - ${rhs.withoutType}"
 }
 
+final case class Multiply(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends ArithmeticExpr {
+  override def toString = s"$lhs * $rhs"
+  override def withoutType = s"${lhs.withoutType} * ${rhs.withoutType}"
+}
+
 final case class Divide(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends ArithmeticExpr {
   override def toString = s"$lhs / $rhs"
   override def withoutType = s"${lhs.withoutType} / ${rhs.withoutType}"

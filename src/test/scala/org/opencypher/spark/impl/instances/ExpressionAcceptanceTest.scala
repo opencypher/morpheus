@@ -130,6 +130,55 @@ class ExpressionAcceptanceTest extends SparkCypherTestSuite {
     result.graph shouldMatch given.graph
   }
 
+  test("multiplication with integer") {
+    // Given
+    val given = TestGraph("""(:Node {val: 9L})-->(:Node {val: 2L})-->(:Node {val: 3L})""")
+
+    // When
+    val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN n.val * m.val")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("n.val * m.val" -> 18),
+      CypherMap("n.val * m.val" -> 6)
+    ))
+
+    // And
+    result.graph shouldMatch given.graph
+  }
+
+  test("multiplication with float") {
+    // Given
+    val given = TestGraph("""(:Node {val: 4.5D})-->(:Node {val: 2.5D})""")
+
+    // When
+    val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN n.val * m.val")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("n.val * m.val" -> 11.25)
+    ))
+
+    // And
+    result.graph shouldMatch given.graph
+  }
+
+  test("multiplication with integer and float") {
+    // Given
+    val given = TestGraph("""(:Node {val: 9L})-->(:Node {val2: 2.5D})""")
+
+    // When
+    val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN n.val * m.val2")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("n.val * m.val2" -> 22.5)
+    ))
+
+    // And
+    result.graph shouldMatch given.graph
+  }
+
   test("division with no remainder") {
     // Given
     val given = TestGraph("""(:Node {val: 9L})-->(:Node {val: 3L})-->(:Node {val: 2L})""")
