@@ -115,6 +115,13 @@ object SparkSQLExprMapper {
         val rhsColumn = getColumn(sub.rhs, header, df)
         Some(lhsColumn - rhsColumn)
 
+      case mul: Multiply =>
+        verifyExpression(header, expr)
+
+        val lhsColumn = getColumn(mul.lhs, header, df)
+        val rhsColumn = getColumn(mul.rhs, header, df)
+        Some(lhsColumn * rhsColumn)
+
       case div: Divide =>
         verifyExpression(header, expr)
 

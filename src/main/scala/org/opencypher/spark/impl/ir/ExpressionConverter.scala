@@ -50,6 +50,7 @@ final class ExpressionConverter(val globals: GlobalsRegistry) extends AnyVal {
     // Arithmetics
     case ast.Add(lhs, rhs) => Add(convert(lhs), convert(rhs))(typings(e))
     case ast.Subtract(lhs, rhs) => Subtract(convert(lhs), convert(rhs))(typings(e))
+    case ast.Multiply(lhs, rhs) => Multiply(convert(lhs), convert(rhs))(typings(e))
     case ast.Divide(lhs, rhs) => Divide(convert(lhs), convert(rhs))(typings(e))
 
     case _ => throw new NotImplementedError(s"Not yet able to convert expression: $e")

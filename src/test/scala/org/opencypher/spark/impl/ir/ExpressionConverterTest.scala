@@ -75,6 +75,12 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     )
   }
 
+  test("can convert multiply") {
+    convert("a * b") should equal(
+      Multiply(Var("a")(), Var("b")())()
+    )
+  }
+
   test("can convert divide") {
     convert("a / b") should equal(
       Divide(Var("a")(), Var("b")())()

@@ -197,6 +197,9 @@ object SchemaTyper {
     case sub: Subtract =>
       processArithmeticExpressions(sub)
 
+    case mul: Multiply =>
+      processArithmeticExpressions(mul)
+
     case div: Divide =>
       processArithmeticExpressions(div)
 
