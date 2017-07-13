@@ -44,13 +44,32 @@ sealed trait NodeScan extends GraphScan {
   override def entityType: CTNode
 }
 
-object NodeScan extends GraphScanCompanion[EmbeddedNode]
+object NodeScan extends GraphScanCompanion[EmbeddedNode] {
+  def on(entityAndIdSlot: String)(f: EmbeddedNodeBuilder[(String, String)] => EmbeddedNode)
+  : GraphScanBuilder[EmbeddedNode] =
+    NodeScan(f(EmbeddedNode(entityAndIdSlot)).verify)
+
+  def on(entitySlotAndIdSlot: (String, String))
+        (f: EmbeddedNodeBuilder[(String, String)] => EmbeddedNode)
+  : GraphScanBuilder[EmbeddedNode] =
+    NodeScan(f(EmbeddedNode(entitySlotAndIdSlot)).verify)
+}
 
 sealed trait RelationshipScan extends GraphScan {
   override type EntityCypherType = CTRelationship
 }
 
-object RelationshipScan extends GraphScanCompanion[EmbeddedRelationship]
+object RelationshipScan extends GraphScanCompanion[EmbeddedRelationship] {
+  def on(entityAndIdSlot: String)
+        (f: EmbeddedRelationshipBuilder[Unit, (String, String), Unit, Unit] => EmbeddedRelationship)
+  : GraphScanBuilder[EmbeddedRelationship] =
+    RelationshipScan(f(EmbeddedRelationship(entityAndIdSlot)).verify)
+
+  def on(entitySlotAndIdSlot: (String, String))
+        (f: EmbeddedRelationshipBuilder[Unit, (String, String), Unit, Unit] => EmbeddedRelationship)
+  : GraphScanBuilder[EmbeddedRelationship] =
+    RelationshipScan(f(EmbeddedRelationship(entitySlotAndIdSlot)).verify)
+}
 
 sealed case class GraphScanBuilder[E <: EmbeddedEntity](entity: VerifiedEmbeddedEntity[E])
 

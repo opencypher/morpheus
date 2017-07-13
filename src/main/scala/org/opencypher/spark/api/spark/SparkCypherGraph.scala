@@ -38,6 +38,7 @@ object SparkCypherGraph {
   def empty(implicit space: SparkGraphSpace): SparkCypherGraph =
     new EmptyGraph() {}
 
+  // TODO: Compute schema
   def create(nodes: NodeScan, scans: GraphScan*)(implicit space: SparkGraphSpace): SparkCypherGraph = {
     val allScans = nodes +: scans
     val schema = ???
@@ -54,8 +55,15 @@ object SparkCypherGraph {
       SparkCypherRecords.empty(RecordHeader.from(OpaqueField(Var(name)(cypherType))))
   }
 
+  // TODO: Header map
+  // TODO: CapsContext
+
   sealed abstract class ScanGraph(val scans: Seq[GraphScan], val schema: Schema)
                                  (implicit val space: SparkGraphSpace) extends SparkCypherGraph {
+
+    // Q: Caching?
+
+    // TODO: Normalize (dh partition away/remove all optional label fields, rel type fields)
 
     private val nodeEntityScans = NodeEntityScans(scans.collect { case it: NodeScan => it }.toVector)
     private val relEntityScans = RelationshipEntityScans(scans.collect { case it: RelationshipScan => it }.toVector)
@@ -69,6 +77,9 @@ object SparkCypherGraph {
 //    private val nodeScanTypes: Set[CTNode] = nodeScansByType.keySet
 //
 //    private val relScans = scans.collect { case it: RelationshipScan => it }
+
+    // TODO: Union
+    // TODO: Projection
 
     override def nodes(name: String, cypherType: CTNode) = {
 //      // find all scans smaller than or equal to the given cypher type if any
