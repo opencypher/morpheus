@@ -18,12 +18,14 @@ package org.opencypher.spark.api.spark
 import org.apache.spark.sql.SparkSession
 import org.opencypher.spark.api.graph.GraphSpace
 import org.opencypher.spark.api.ir.global.TokenRegistry
+import org.opencypher.spark.impl.instances.spark.SparkCypherInstances
 import org.opencypher.spark.impl.record.SparkCypherRecordsTokens
-import org.opencypher.spark.impl.spark.SparkGraphLoading
+import org.opencypher.spark.impl.spark.{SparkCypherEngine, SparkGraphLoading}
 
 trait SparkGraphSpace extends GraphSpace {
 
   override type Space = SparkGraphSpace
+  override type Engine = SparkCypherEngine
   override type Graph = SparkCypherGraph
   override type Records = SparkCypherRecords
 
@@ -31,6 +33,8 @@ trait SparkGraphSpace extends GraphSpace {
   def tokens: SparkCypherRecordsTokens
 
   def session: SparkSession
+
+  def engine = org.opencypher.spark.impl.instances.spark.cypher.sparkCypherEngineInstance
 }
 
 object SparkGraphSpace extends SparkGraphLoading with Serializable {

@@ -16,14 +16,13 @@
 package org.opencypher.spark.api.spark
 
 import cats.data.NonEmptyVector
-import cats.kernel.Monoid
 import org.opencypher.spark.api.expr.Var
 import org.opencypher.spark.api.graph.CypherGraph
 import org.opencypher.spark.api.record._
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.types.{CTNode, CTRelationship, CypherType, DefiniteCypherType}
-import org.opencypher.spark.impl.instances.map._
-import org.opencypher.spark.impl.spark.operations
+import org.opencypher.spark.impl.spark.operations._
+import org.opencypher.spark.impl.syntax.expr._
 
 trait SparkCypherGraph extends CypherGraph with Serializable {
 
@@ -47,6 +46,9 @@ object SparkCypherGraph {
   }
 
   sealed abstract class EmptyGraph(implicit val space: SparkGraphSpace) extends SparkCypherGraph {
+
+    implicit val engine = space.engine
+
     override def schema = Schema.empty
 
     override def nodes(name: String, cypherType: CTNode) =
@@ -68,8 +70,7 @@ object SparkCypherGraph {
 
     self: SparkCypherGraph =>
 
-    import operations._
-    import org.opencypher.spark.impl.syntax.expr._
+    implicit val engine = space.engine
 
     private val nodeEntityScans = NodeEntityScans(scans.collect { case it: NodeScan => it }.toVector)
     private val relEntityScans = RelationshipEntityScans(scans.collect { case it: RelationshipScan => it }.toVector)
