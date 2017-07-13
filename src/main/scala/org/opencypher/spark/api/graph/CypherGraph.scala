@@ -32,8 +32,8 @@ trait CypherGraph {
   def schema: Schema
 
   final def nodes(name: String): Records = nodes(name, CTNode)
-  def nodes(name: String, cypherType: CTNode): Records
+  def nodes(name: String, nodeCypherType: CTNode): Records
 
   final def relationships(name: String): Records = relationships(name, CTRelationship)
-  def relationships(name: String, cypherType: CTRelationship): Records
+  def relationships(name: String, relCypherType: CTRelationship): Records
 }

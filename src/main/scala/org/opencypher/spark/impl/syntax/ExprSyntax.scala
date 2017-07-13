@@ -26,6 +26,9 @@ trait ExprSyntax {
 
 final class ExprOps(val e: Expr) extends AnyVal {
 
+  // TODO: Implement this
+  def nullable: Expr = ???
+
   def dependencies: Set[Var] = computeDependencies(List(e), Set.empty)
 
   // TODO: Test this

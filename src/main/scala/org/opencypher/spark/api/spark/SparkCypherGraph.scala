@@ -23,6 +23,7 @@ import org.opencypher.spark.api.record._
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.types.{CTNode, CTRelationship, CypherType, DefiniteCypherType}
 import org.opencypher.spark.impl.instances.map._
+import org.opencypher.spark.impl.spark.operations
 
 trait SparkCypherGraph extends CypherGraph with Serializable {
 
@@ -65,39 +66,59 @@ object SparkCypherGraph {
 
     // TODO: Normalize (dh partition away/remove all optional label fields, rel type fields)
 
+    self: SparkCypherGraph =>
+
+    import operations._
+    import org.opencypher.spark.impl.syntax.expr._
+
     private val nodeEntityScans = NodeEntityScans(scans.collect { case it: NodeScan => it }.toVector)
     private val relEntityScans = RelationshipEntityScans(scans.collect { case it: RelationshipScan => it }.toVector)
-
-//
-//    private val nodeScansByType: Map[CTNode, NonEmptyVector[NodeScan]] =
-//      Monoid[Map[CTNode, NonEmptyVector[NodeScan]]]
-//        .combineAll(nodeScans.map { it => Map(it.entityType -> NonEmptyVector.of(it)) })
-//        .mapValues(_.distinct)
-//
-//    private val nodeScanTypes: Set[CTNode] = nodeScansByType.keySet
-//
-//    private val relScans = scans.collect { case it: RelationshipScan => it }
 
     // TODO: Union
     // TODO: Projection
 
-    override def nodes(name: String, cypherType: CTNode) = {
-//      // find all scans smaller than or equal to the given cypher type if any
-//      val subScanTypes = nodeScanTypes.foldLeft(Set.empty[CTNode]) {
-//        case (acc, typ) if typ.subTypeOf(cypherType).maybeTrue =>
-//          acc.filter(_.subTypeOf(typ).isTrue) + typ
-//      }
-//
-//
-//      val subScans = subScanTypes.map(nodeScansByType).map(_.head)
-//
-//      if (subScans.isEmpty) {
-//
-//      }
-//      else {
-//        // compute union plan
-//      }
+    override def nodes(name: String, nodeCypherType: CTNode) = {
+
+      // TODO: Drop aliases in node scans or here?
+      // TODO: Handle empty case
+
+      // (1) find all scans smaller than or equal to the given cypher type if any
+      val selectedScanTypes = nodeEntityScans.entityScanTypes.filter(_.subTypeOf(nodeCypherType).isTrue)
+      val selectedScans = selectedScanTypes.map { nodeType => nodeEntityScans.entityScansByType(nodeType).head }
+
+      // (2) rename scans consitently
+      val newEntity = Var(name)(nodeCypherType)
+      val selectedRecords = selectedScans.map { scan =>
+        self.rename(scan.records.details, scan.entity -> newEntity)
+      }
+
+      // (3) Compute shared signature
+      val selectedContents = selectedRecords.toSet.map { _.header.contents }
+      val sharedContent = selectedContents.reduce(_ intersect _)
+      val exclusiveContent = selectedContents.reduce(_ union _) -- sharedContent
+      val sharedExprs = contentExprs(sharedContent)
+
+      // (4) Adjust individual scans to same header
+      val adjustedRecords = selectedRecords.map { scanRecords =>
+        val extraContent = scanRecords.header.contents intersect exclusiveContent
+        val extraExprs = contentExprs(extraContent)
+        val projectedExprs = sharedExprs ++ extraExprs.map(_.nullable)
+
+        // TODO: Ensure same order between different scans
+        // TODO: Select mit slot content
+        // self.select(slots)
+        self.select(scanRecords, IndexedSeq.empty)
+      }
+
+      // (5) Union
       ???
+    }
+
+    private def contentExprs(content: Set[SlotContent]) = {
+      content.map {
+        case OpaqueField(v) => v
+        case content: ProjectedSlotContent => content.expr
+      }
     }
 
     override def relationships(name: String, cypherType: CTRelationship) =
