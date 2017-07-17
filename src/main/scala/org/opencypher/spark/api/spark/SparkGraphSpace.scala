@@ -24,17 +24,15 @@ import org.opencypher.spark.impl.spark.{SparkCypherEngine, SparkGraphLoading}
 
 trait SparkGraphSpace extends GraphSpace {
 
-  override type Space = SparkGraphSpace
+  self =>
+
   override type Engine = SparkCypherEngine
-  override type Graph = SparkCypherGraph
-  override type Records = SparkCypherRecords
 
   // TODO: Remove
   def tokens: SparkCypherRecordsTokens
 
   def session: SparkSession
-
-  def engine = org.opencypher.spark.impl.instances.spark.cypher.sparkCypherEngineInstance
+  val engine = org.opencypher.spark.impl.instances.spark.cypher.sparkCypherEngineInstance
 }
 
 object SparkGraphSpace extends SparkGraphLoading with Serializable {

@@ -22,13 +22,15 @@ trait GraphSpace {
 
   self =>
 
-  type Space <: GraphSpace { type Space = self.Space; type Records = self.Records; type Graph = self.Graph }
-  type Engine <: Cypher { type Space = self.Space; type Record = self.Records; type Graph = self.Graph }
-  type Records <: CypherRecords { type Records = self.Records }
-  type Graph <: CypherGraph { type Space = self.Space; type Graph = self.Graph; type Records = self.Records }
+  type Engine <: Cypher
+
+  val engine: Engine
+
+  type Graph = engine.Graph
+  type Space = engine.Space
+  type Records = engine.Records
 
   def base: Graph
-  def engine: Engine
 }
 
 
