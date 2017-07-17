@@ -28,9 +28,9 @@ trait SparkCypherGraph extends CypherGraph with Serializable {
 
   self =>
 
-  override type Space = SparkGraphSpace
-  override type Graph = SparkCypherGraph
-  override type Records = SparkCypherRecords
+  final override type Space = SparkGraphSpace
+  final override type Graph = SparkCypherGraph
+  final override type Records = SparkCypherRecords
 }
 
 object SparkCypherGraph {
@@ -94,7 +94,7 @@ object SparkCypherGraph {
       }
 
       // (3) Compute shared signature
-      val selectedContents = selectedRecords.toSet.map { _.header.contents }
+      val selectedContents = selectedRecords.toSet[SparkCypherRecords].map { _.header.contents }
       val sharedContent = selectedContents.reduce(_ intersect _)
       val exclusiveContent = selectedContents.reduce(_ union _) -- sharedContent
       val sharedExprs = contentExprs(sharedContent)
