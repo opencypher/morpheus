@@ -83,7 +83,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
   private def planProjections(in: LogicalOperator, exprs: Map[Field, Expr])(implicit context: LogicalPlannerContext) = {
     exprs.foldLeft(in) {
       case (acc, (f, p: Property)) => producer.projectField(f, p, acc)
-      case (acc, (f, func: Function)) => producer.projectField(f, func, acc)
+      case (acc, (f, func: FunctionExpr)) => producer.projectField(f, func, acc)
         // this is for aliasing
       case (acc, (f, v: Var)) if f.name != v.name => producer.projectField(f, v, acc)
       case (acc, (_, _: Var)) => acc

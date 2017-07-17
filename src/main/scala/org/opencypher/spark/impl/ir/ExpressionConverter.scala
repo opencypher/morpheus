@@ -7,6 +7,8 @@ import org.opencypher.spark.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.api.types._
 import org.opencypher.spark.impl.parse.RetypingPredicate
 
+import org.opencypher.spark.impl.ir.FunctionUtils._
+
 import scala.language.implicitConversions
 
 final class ExpressionConverter(val globals: GlobalsRegistry) extends AnyVal {
@@ -20,7 +22,7 @@ final class ExpressionConverter(val globals: GlobalsRegistry) extends AnyVal {
     case ast.Variable(name) => Var(name)(typings(e))
     case ast.Parameter(name, _) => Const(constants.constantByName(name))(typings(e))
 
-      // Literals
+    // Literals
     case astExpr: ast.IntegerLiteral => IntegerLit(astExpr.value)(typings(e))
     case ast.StringLiteral(value) => StringLit(value)(typings(e))
     case _: ast.True => TrueLit()
@@ -28,7 +30,7 @@ final class ExpressionConverter(val globals: GlobalsRegistry) extends AnyVal {
 
     case ast.Property(m, ast.PropertyKeyName(name)) => Property(convert(m), tokens.propertyKeyByName(name))(typings(e))
 
-      // Predicates
+    // Predicates
     case ast.Ands(exprs) => new Ands(exprs.map(convert))(typings(e))
     case ast.HasLabels(node, labels) =>
       val exprs = labels.map { (l: ast.LabelName) => HasLabel(convert(node), tokens.labelByName(l.name))(typings(e)) }
@@ -54,9 +56,7 @@ final class ExpressionConverter(val globals: GlobalsRegistry) extends AnyVal {
     case ast.Divide(lhs, rhs) => Divide(convert(lhs), convert(rhs))(typings(e))
 
     // Functions
-    case ast.FunctionInvocation(_, functionName, _, exprs)
-      // TODO: replace with more sophisticated function handling (e.g. like in Neo)
-      if functionName.name.toLowerCase.equals("id") => Id(convert(exprs.head))(typings(e))
+    case funcInv:ast.FunctionInvocation => funcInv.toCAPSFunction(funcInv.args.map(convert), typings(e))
 
     case _ => throw new NotImplementedError(s"Not yet able to convert expression: $e")
   }

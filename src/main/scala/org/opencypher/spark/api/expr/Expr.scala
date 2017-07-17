@@ -183,10 +183,10 @@ final case class Divide(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWil
 }
 
 // Functions
-sealed trait Function extends Expr {
+sealed trait FunctionExpr extends Expr {
   def expr: Expr
 }
-final case class Id(expr: Expr)(val cypherType: CypherType = CTWildcard) extends Function {
+final case class Id(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr {
   override def toString = s"id($expr)"
   override def withoutType = s"id(${expr.withoutType})"
 }
