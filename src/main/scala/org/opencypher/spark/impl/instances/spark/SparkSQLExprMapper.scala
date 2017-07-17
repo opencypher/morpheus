@@ -129,6 +129,13 @@ object SparkSQLExprMapper {
         val rhsColumn = getColumn(div.rhs, header, df)
         Some((lhsColumn / rhsColumn).cast(toSparkType(div.cypherType)))
 
+      // Functions
+      case id: Id =>
+        verifyExpression(header, expr)
+
+        val column = getColumn(id.expr, header, df)
+        Some(column)
+
       case _ =>
         None
     }

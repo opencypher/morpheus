@@ -53,6 +53,11 @@ final class ExpressionConverter(val globals: GlobalsRegistry) extends AnyVal {
     case ast.Multiply(lhs, rhs) => Multiply(convert(lhs), convert(rhs))(typings(e))
     case ast.Divide(lhs, rhs) => Divide(convert(lhs), convert(rhs))(typings(e))
 
+    // Functions
+    case ast.FunctionInvocation(_, functionName, _, exprs)
+      // TODO: replace with more sophisticated function handling (e.g. like in Neo)
+      if functionName.name.toLowerCase.equals("id") => Id(convert(exprs.head))(typings(e))
+
     case _ => throw new NotImplementedError(s"Not yet able to convert expression: $e")
   }
 }
