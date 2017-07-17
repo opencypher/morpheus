@@ -186,6 +186,7 @@ final case class Divide(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWil
 
 sealed trait Lit[T] extends Expr {
   def v: T
+  override def withoutType = s"$v"
 }
 
 final case class IntegerLit(v: Long)(val cypherType: CypherType = CTInteger) extends Lit[Long]
