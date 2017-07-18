@@ -38,10 +38,11 @@ object SparkCypherGraph {
   def empty(implicit space: SparkGraphSpace): SparkCypherGraph =
     new EmptyGraph() {}
 
-  // TODO: Compute schema
   def create(nodes: NodeScan, scans: GraphScan*)(implicit space: SparkGraphSpace): SparkCypherGraph = {
     val allScans = nodes +: scans
-    val schema = ???
+
+    val schema = allScans.map(_.schema).reduce(_ ++ _)
+
     new ScanGraph(allScans, schema) {}
   }
 

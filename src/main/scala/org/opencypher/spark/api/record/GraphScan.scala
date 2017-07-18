@@ -16,6 +16,7 @@
 package org.opencypher.spark.api.record
 
 import org.opencypher.spark.api.expr.Var
+import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.spark.SparkCypherRecords
 import org.opencypher.spark.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.spark.impl.spark.SparkColumn
@@ -31,6 +32,8 @@ sealed trait GraphScan extends Serializable {
 
   def entityName: String
   def entityType: EntityCypherType
+
+  def schema: Schema
 }
 
 object GraphScan extends GraphScanCompanion[EmbeddedEntity]
@@ -92,31 +95,58 @@ object GraphScanBuilder {
           val newData = contracted.data.select(newCols: _*)
           SparkCypherRecords.create(newHeader, newData)(records.space)
         }
-      create(entity, newRecords)
+      create(entity, newRecords, schema(entity, newRecords.details.header))
     }
 
-    protected def create(entity: E, records: SparkCypherRecords): S
+    protected def create(entity: E, records: SparkCypherRecords, schema: Schema): S
+
+    protected def schema(entity: E, header: RecordHeader): Schema
+
+    protected def getPropertyKeys(entity: EmbeddedEntity, header: RecordHeader): Seq[(String, CypherType)] =
+      entity.propertiesFromSlots.keys
+        .map(key => key -> header.slots
+          .find(slot => slot.content.key.withoutType.equals(s"${entity.entitySlot}.$key"))
+          .get.content.cypherType)
+        .toSeq
   }
 
   implicit final class RichNodeScanBuilder(val builder: GraphScanBuilder[EmbeddedNode])
     extends RichGraphScanBuilder[EmbeddedNode, NodeScan] {
 
-    override protected def create(scanEntity: EmbeddedNode, scanRecords: SparkCypherRecords): NodeScan =
+    override protected def create(scanEntity: EmbeddedNode, scanRecords: SparkCypherRecords, scanSchema: Schema): NodeScan =
       new NodeScan {
         override def records: SparkCypherRecords = scanRecords
         override def entityType: CTNode = scanEntity.entityType
         override def entityName: String = scanEntity.entitySlot
+        override def schema: Schema = scanSchema
       }
+
+    override protected def schema(entity: EmbeddedNode, header: RecordHeader): Schema = {
+      entity
+        .labelsFromSlotOrImplied
+        .keys
+        .foldLeft(Schema.empty)((schema, label) => schema.withNodeKeys(label)(getPropertyKeys(entity, header): _*))
+    }
   }
 
   implicit final class RichRelScanBuilder(val builder: GraphScanBuilder[EmbeddedRelationship])
     extends RichGraphScanBuilder[EmbeddedRelationship, RelationshipScan] {
 
-    override protected def create(scanEntity: EmbeddedRelationship, scanRecords: SparkCypherRecords): RelationshipScan =
+    override protected def create(scanEntity: EmbeddedRelationship, scanRecords: SparkCypherRecords, scanSchema: Schema): RelationshipScan =
       new RelationshipScan {
         override def records: SparkCypherRecords = scanRecords
         override def entityType: CTRelationship = scanEntity.entityType
         override def entityName: String = scanEntity.entitySlot
+        override def schema: Schema = scanSchema
       }
+
+    override protected def schema(entity: EmbeddedRelationship, header: RecordHeader): Schema = {
+      val relType = entity.relTypeSlotOrName match {
+        case Right(name) => name
+        case Left((key, _)) => key
+      }
+      Schema.empty
+        .withRelationshipKeys(relType)(getPropertyKeys(entity, header): _*)
+    }
   }
 }

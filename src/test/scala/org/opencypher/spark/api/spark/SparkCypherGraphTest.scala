@@ -42,6 +42,12 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
         (3, 6, 4, 2016))
     ))
 
+  test("Construct graph from node scan") {
+    val graph = SparkCypherGraph.create(`:Person`)
+    val nodes = graph.nodes("n")
+    nodes shouldMatch `:Person`.records
+  }
+
   test("Construct graph from scans") {
      val graph = SparkCypherGraph.create(`:Person`, `:KNOWS`)
 
