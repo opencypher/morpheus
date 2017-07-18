@@ -266,6 +266,12 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     assertExpr.from("r.relative") shouldHaveInferredType CTBoolean
   }
 
+  test("typing of id function") {
+    implicit val context = typeTracker("n" -> CTNode("Person"))
+
+    assertExpr.from("id(n)") shouldHaveInferredType CTInteger
+  }
+
   test("typing of functions") {
     assertExpr.from("timestamp()") shouldHaveInferredType CTInteger
     assertExpr.from("toInteger(1.0)") shouldHaveInferredType CTInteger

@@ -155,6 +155,12 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     )
   }
 
+  test("can convert id function") {
+    convert("id(a)") should equal(
+      Id(Var("a")())()
+    )
+  }
+
   private def convert(e: ast.Expression): Expr = c.convert(e)(testTypes)
 }
 
