@@ -3,13 +3,14 @@ package org.opencypher.spark.api.spark
 import org.opencypher.spark.SparkCypherTestSuite
 import org.opencypher.spark.api.ir.global.TokenRegistry
 import org.opencypher.spark.api.record._
+import org.opencypher.spark.api.types.CTNode
 
 class SparkCypherGraphTest extends SparkCypherTestSuite {
 
   implicit val space = SparkGraphSpace.empty(session, TokenRegistry.empty)
 
   val `:Person` =
-    NodeScan.on("n" -> "ID") {
+    NodeScan.on("p" -> "ID") {
       _.build
        .withImpliedLabel("Person")
        .withOptionalLabel("Swedish" -> "IS_SWEDE")
@@ -24,6 +25,22 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
         (3, false, "Max", 1337),
         (4, false, "Stefan", 9))
     ))
+
+  val `:Book` =
+    NodeScan.on("b" -> "ID") {
+      _.build
+        .withImpliedLabel("Book")
+        .withProperty("title" -> "NAME")
+        .withProperty("year" -> "YEAR")
+    }
+      .from(SparkCypherRecords.create(
+        Seq("ID", "NAME", "YEAR"),
+        Seq(
+          (1, "1984", 1949),
+          (2, "Cryptonomicon", 1999),
+          (3, "The Eye of the World", 1990),
+          (4, "The Circle", 2013))
+      ))
 
   val `:KNOWS` =
     RelationshipScan.on("r" -> "ID") {
@@ -42,9 +59,16 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
         (3, 6, 4, 2016))
     ))
 
-  test("Construct graph from node scan") {
+  test("Construct graph from single node scan") {
     val graph = SparkCypherGraph.create(`:Person`)
     val nodes = graph.nodes("n")
+    nodes shouldMatch `:Person`.records
+  }
+
+  test("Construct graph from multiple node scans") {
+    val graph = SparkCypherGraph.create(`:Person`, `:Book`)
+    val nodes = graph.nodes("n")
+
     nodes shouldMatch `:Person`.records
   }
 
