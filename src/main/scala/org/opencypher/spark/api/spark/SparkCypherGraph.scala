@@ -16,11 +16,14 @@
 package org.opencypher.spark.api.spark
 
 import cats.data.NonEmptyVector
-import org.opencypher.spark.api.expr.Var
+import org.opencypher.spark.api.expr.{HasLabel, Property, Var}
 import org.opencypher.spark.api.graph.CypherGraph
 import org.opencypher.spark.api.record._
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.types.{CTNode, CTRelationship, CypherType, DefiniteCypherType}
+import org.opencypher.spark.impl.exception.Raise
+import org.opencypher.spark.impl.record.InternalHeader
+import org.opencypher.spark.impl.spark.SparkColumnName
 import org.opencypher.spark.impl.spark.operations._
 import org.opencypher.spark.impl.syntax.expr._
 
@@ -88,10 +91,26 @@ object SparkCypherGraph {
       val selectedScanTypes = nodeEntityScans.entityScanTypes.filter(_.subTypeOf(nodeCypherType).isTrue)
       val selectedScans = selectedScanTypes.map { nodeType => nodeEntityScans.entityScansByType(nodeType).head }
 
-      // (2) rename scans consitently
+      // (2) rename scans consistently
       val newEntity = Var(name)(nodeCypherType)
       val selectedRecords = selectedScans.map { scan =>
-        self.rename(scan.records.details, scan.entity -> newEntity)
+
+        val recordSlots = scan.records.details.header.contents
+        val renamedRecordSlots: Set[SlotContent] = recordSlots.map {
+          case o:OpaqueField => OpaqueField(Var(newEntity.name)(o.cypherType))
+          case ProjectedExpr(expr) => expr match {
+            case p: Property => ProjectedExpr(Property(newEntity, p.key)(p.cypherType))
+            case h: HasLabel => ProjectedExpr(HasLabel(newEntity, h.label)(h.cypherType))
+            case _ => Raise.impossible()
+          }
+        }
+
+        val nameMap = recordSlots.zip(renamedRecordSlots).map(t => SparkColumnName.of(t._1) -> SparkColumnName.of(t._2)).toMap
+        val renamedHeader = RecordHeader(InternalHeader(renamedRecordSlots.toSeq: _*))
+        val df = scan.records.details.toDF()
+        val renamedDF = df.columns.foldLeft(df)((df, col) => df.withColumnRenamed(col, nameMap(col)))
+
+        SparkCypherRecords.create(renamedHeader, renamedDF)
       }
 
       // (3) Compute shared signature
