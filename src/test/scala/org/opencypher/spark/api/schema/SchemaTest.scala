@@ -156,4 +156,50 @@ class SchemaTest extends BaseTestSuite {
       schema.withNodeKeys("Foo")("name" -> CTInteger).verify // not fine
     }
   }
+
+  test("combining non-conflicting schemas") {
+    val schema1 = Schema.empty.withNodeKeys("A")("foo" -> CTString)
+    val schema2 = Schema.empty.withNodeKeys("B")("bar" -> CTString)
+    val schema3 = Schema.empty.withNodeKeys("C")("baz" -> CTString)
+
+    schema1 ++ schema2 ++ schema3 should equal(Schema.empty
+      .withNodeKeys("A")("foo" -> CTString)
+      .withNodeKeys("B")("bar" -> CTString)
+      .withNodeKeys("C")("baz" -> CTString))
+  }
+
+  test("combining non-conflicting schemas with implied labels") {
+    val schema1 = Schema.empty.withImpliedLabel("A", "B")
+      .withNodeKeys("A")("foo" -> CTString)
+      .withNodeKeys("B")("bar" -> CTString)
+    val schema2 = Schema.empty.withNodeKeys("B")("bar" -> CTString)
+
+    schema1 ++ schema2 should equal(Schema.empty
+      .withImpliedLabel("A", "B")
+      .withNodeKeys("A")("foo" -> CTString)
+      .withNodeKeys("B")("bar" -> CTString))
+   }
+
+  test("combining schemas with restricting label implications") {
+    val schema1 = Schema.empty
+      .withImpliedLabel("A", "B")
+      .withImpliedLabel("B", "C")
+      .withNodeKeys("A")()
+      .withNodeKeys("B")()
+      .withNodeKeys("C")()
+    val schema2 = Schema.empty
+      .withImpliedLabel("B", "C")
+      .withImpliedLabel("C", "D")
+      .withNodeKeys("B")()
+      .withNodeKeys("C")()
+      .withNodeKeys("D")()
+
+    schema1 ++ schema2 should equal(Schema.empty
+      .withImpliedLabel("A", "B")
+      .withImpliedLabel("B", "C")
+      .withNodeKeys("A")()
+      .withNodeKeys("B")()
+      .withNodeKeys("C")()
+      .withNodeKeys("D")())
+  }
 }
