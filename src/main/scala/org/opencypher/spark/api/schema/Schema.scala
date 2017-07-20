@@ -69,8 +69,6 @@ case class ImpliedLabels(m: Map[String, Set[String]]) {
     if (implied(target)) this else copy(m = m.updated(source, implied + target))
   }
 
-  def ++(other: ImpliedLabels) = copy(m ++ other.m)
-
   private def implicationsFor(source: String) = m.getOrElse(source, Set.empty) + source
 }
 
@@ -95,9 +93,21 @@ final case class Schema(
    * All relationship types present in this graph
    */
   relationshipTypes: Set[String],
+  /**
+    * Property keys associated with a node label
+    */
   nodeKeyMap: PropertyKeyMap,
+  /**
+    * Property keys associated with a relationship type
+    */
   relKeyMap: PropertyKeyMap,
+  /**
+    * Implied labels for each existing label
+    */
   impliedLabels: ImpliedLabels,
+  /**
+    * Groups of labels where each group contains possible label combinations.
+    */
   optionalLabels: OptionalLabels) extends Verifiable {
 
   self: Schema =>
@@ -114,10 +124,13 @@ final case class Schema(
   /**
    * Given a set of labels that a node definitely has, returns all the labels that the node could possibly have.
    */
-  def optionalLabels(knownLabels: Set[String]): Set[String] = knownLabels.flatMap(optionalLabels.combinationsFor)
+  def optionalLabels(knownLabels: Set[String]): Set[String] =
+    knownLabels.flatMap(optionalLabels.combinationsFor)
 
   /**
    * Given a label that a node definitely has, returns its property schema.
+    *
+    * TODO: consider implied labels here?
    */
   def nodeKeys(label: String): Map[String, CypherType] = nodeKeyMap.keysFor(label)
 
@@ -144,7 +157,64 @@ final case class Schema(
     copy(relationshipTypes = relationshipTypes + typ, relKeyMap = relKeyMap.withKeys(typ, keys))
 
   def ++(other: Schema) = {
-    copy(labels ++ other.labels, relationshipTypes ++ other.relationshipTypes, nodeKeyMap ++ other.nodeKeyMap, relKeyMap ++ other.relKeyMap, impliedLabels ++ other.impliedLabels, optionalLabels ++ other.optionalLabels)
+    val newLabels = labels ++ other.labels
+    val newRelTypes = relationshipTypes ++ other.relationshipTypes
+    val newNodeKeyMap = nodeKeyMap ++ other.nodeKeyMap
+    val newRelKeyMap = relKeyMap ++ other.relKeyMap
+    val newImpliedLabels = inferImpliedLabels(other)
+    val newOptionalLabels = this.optionalLabels ++ other.optionalLabels
+
+    copy(newLabels,
+      newRelTypes,
+      newNodeKeyMap,
+      newRelKeyMap,
+      newImpliedLabels,
+      newOptionalLabels)
+  }
+
+  /**
+    * Computes the resulting implied labels from the current and the given schema.
+    *
+    * Example:
+    *
+    * this.labels = {A, B, C}
+    * this.impliedLabels:
+    * A -> B
+    * B -> C
+    *
+    * other.labels = {B, C, D}
+    * other.impliedLabels
+    * B -> C
+    * C -> D
+    *
+    * (1) compute intersection between this.impliedLabels and other.impliedLabels
+    * (2) compute implied labels exclusive for left and right side
+    * (3) from exclusive labels remove those pairs where the first item is not contained in the other one's label set
+    * (4) union intersecting pairs with filtered pairs from both sides
+    *
+    * @param other other schema
+    * @return implied labels inferred from the given implied labels
+    */
+  private def inferImpliedLabels(other: Schema) = {
+    val expand: ((String, Set[String])) => Set[(String, String)] = pair => pair._2.map(elem => (pair._1, elem))
+
+    val leftImpliedPairs = this.impliedLabels.m.toArray
+      .flatMap(expand)
+      .toSet
+
+    val rightImpliedPairs = other.impliedLabels.m.toArray
+      .flatMap(expand)
+      .toSet
+
+    val intersectPairs = leftImpliedPairs intersect rightImpliedPairs
+    val exclusivePairsLeft = (leftImpliedPairs -- intersectPairs)
+      .filterNot(pair => other.labels.contains(pair._1))
+    val exclusivePairsRight = (rightImpliedPairs -- intersectPairs)
+      .filterNot(pair => this.labels.contains(pair._1))
+
+    ImpliedLabels((exclusivePairsLeft ++ exclusivePairsRight ++ intersectPairs)
+      .groupBy(_._1)
+      .map(pair => pair._1 -> pair._2.map(_._2)))
   }
 
   override def verify: VerifiedSchema = {
@@ -181,6 +251,7 @@ final case class Schema(
   override def toString = {
     val builder = new StringBuilder
 
+    builder.append("Node labels:\n")
     labels.foreach { label =>
       builder.append(s":$label\n")
       nodeKeys(label).foreach {
@@ -188,6 +259,12 @@ final case class Schema(
       }
     }
 
+    builder.append("Implied labels:\n")
+    impliedLabels.m.foreach { pair =>
+      builder.append(s":${pair._1} -> ${pair._2}\n")
+    }
+
+    builder.append("Rel types:\n")
     relationshipTypes.foreach { relType =>
       builder.append(s":$relType\n")
       relationshipKeys(relType).foreach {
