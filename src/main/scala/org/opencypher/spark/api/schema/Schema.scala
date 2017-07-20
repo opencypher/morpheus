@@ -69,6 +69,12 @@ case class ImpliedLabels(m: Map[String, Set[String]]) {
     if (implied(target)) this else copy(m = m.updated(source, implied + target))
   }
 
+  def toPairs: Set[(String, String)] = {
+    m.toArray
+      .flatMap(pair => pair._2.map(elem => (pair._1, elem)))
+      .toSet
+  }
+
   private def implicationsFor(source: String) = m.getOrElse(source, Set.empty) + source
 }
 
@@ -147,7 +153,7 @@ final case class Schema(
     copy(labels = labels + existingLabel + impliedLabel,
       impliedLabels = impliedLabels.withImplication(existingLabel, impliedLabel))
 
-  def withCombinedLabels(a: String, b: String): Schema =
+  def withOptionalLabels(a: String, b: String): Schema =
     copy(labels = labels + a + b, optionalLabels = optionalLabels.withCombination(a, b))
 
   def withNodeKeys(label: String)(keys: (String, CypherType)*): Schema =
@@ -162,7 +168,11 @@ final case class Schema(
     val newNodeKeyMap = nodeKeyMap ++ other.nodeKeyMap
     val newRelKeyMap = relKeyMap ++ other.relKeyMap
     val newImpliedLabels = inferImpliedLabels(other)
-    val newOptionalLabels = this.optionalLabels ++ other.optionalLabels
+
+    // new optional labels are previous optional labels and all revoked implied labels
+    val combinedOptionalLabels = this.optionalLabels ++ other.optionalLabels
+    val newOptionalPairs = this.impliedLabels.toPairs ++ other.impliedLabels.toPairs -- newImpliedLabels.toPairs
+    val newOptionalLabels = newOptionalPairs.foldLeft(combinedOptionalLabels)((o,p) => o.withCombination(p._1,p._2))
 
     copy(newLabels,
       newRelTypes,
@@ -196,15 +206,8 @@ final case class Schema(
     * @return implied labels inferred from the given implied labels
     */
   private def inferImpliedLabels(other: Schema) = {
-    val expand: ((String, Set[String])) => Set[(String, String)] = pair => pair._2.map(elem => (pair._1, elem))
-
-    val leftImpliedPairs = this.impliedLabels.m.toArray
-      .flatMap(expand)
-      .toSet
-
-    val rightImpliedPairs = other.impliedLabels.m.toArray
-      .flatMap(expand)
-      .toSet
+    val leftImpliedPairs = this.impliedLabels.toPairs
+    val rightImpliedPairs = other.impliedLabels.toPairs
 
     val intersectPairs = leftImpliedPairs intersect rightImpliedPairs
     val exclusivePairsLeft = (leftImpliedPairs -- intersectPairs)
