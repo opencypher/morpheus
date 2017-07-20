@@ -1,53 +1,11 @@
 = Cypher for Apache Spark
 
-Talk to the openCypher team if you have questions.
+This is an extension to https://spark.apache.org/[Apache Spark] which adds graph querying support via the industry's most widely used graph query language, Cypher.
 
-=== Installing GraphFrames
+== Copyright
 
-This project requires the _manual_ installation of graph frames.
+© Copyright 2016-2017 Neo4j, Inc.
 
-* Get graphframes from github (https://github.com/graphframes/graphframes)
-* Append the following line to build.sbt:
-----
-publishTo := Some(Resolver.file("file", new File(Path.userHome.absolutePath + "/.m2/repository")))
-----
-* Run `sbt publish`
-** This will install the project into your local maven repository.
+== License
 
-And the end of this, your local maven cache should contain:
-
-* `~/.m2/repository/default/graphframes_2.11/0.4.0-SNAPSHOT-spark2.1/graphframes_2.11-0.4.0-SNAPSHOT-spark2.1.jar`
-* `~/.m2/repository/default/graphframes_2.11/0.4.0-SNAPSHOT-spark2.1/graphframes_2.11-0.4.0-SNAPSHOT-spark2.1.pom`
-
-=== Setting it up on Spark
-
-==== Neo4j
-
-The benchmarks rely on pulling data from a running Neo4j server.
-You'll need a `3.0.7` version of Neo4j, with all data loaded.
-The `neo4j` needs to exist, and you need to supply the Neo4j password to the application.
-
-==== Spark cluster
-
-First, you need a Spark cluster set up.
-So far, we've only been testing on `standalone` Spark clusters (one machine).
-Spark is set up on `mattis` and `borka` in `/home/neo/openCypher/spark`.
-
-To start Spark in standalone mode, run `sbin/start-master.sh` and `sbin/start-slave.sh <master address>` from the spark home directory.
-
-==== Running the benchmarks
-
-1. Build the JAR for this project `mvn clean package`.
-** Upload the JAR to the machine that hosts the master, or do the necessary network management to deploy from your local machine.
-3. Start the Spark master.
-5. Submit the application to the Spark master.
-
-.Example bash script for running the benchmarks (master address is the default for `mattis`).
-[source, bash]
-----
-#!/bin/bash
-
-spark-submit --class org.opencypher.spark.benchmark.RunBenchmark --master spark://mattis.malmo.neohq.net:7077 --deploy-mode client cypher-for-apache-spark-1.0-SNAPSHOT-standalone-shell.jar cos.neo4j-pw=<Neo4j password> cos.master=spark://mattis.malmo.neohq.net:7077
-----
-
-There are more configuration options to use; see the class `Configuration.scala`.
+The project is licensed under the Apache Software License, 2.0.
