@@ -47,10 +47,10 @@ trait SparkGraphLoading {
       case (acc, next) => next.labels().asScala.foldLeft(acc) {
         case (acc2, l) =>
           // for nodes without properties
-          val withLabel = acc2.withNodeKeys(l)()
+          val withLabel = acc2.withNodePropertyKeys(l)()
           next.asMap().asScala.foldLeft(withLabel) {
             case (acc3, (k, v)) =>
-              acc3.withNodeKeys(l)(k -> fromJavaType(v))
+              acc3.withNodePropertyKeys(l)(k -> fromJavaType(v))
           }
       }
     }, _ ++ _)
@@ -58,10 +58,10 @@ trait SparkGraphLoading {
     val completeSchema = rels.aggregate(nodeSchema)({
       case (acc, next) =>
         // for rels without properties
-        val withType = acc.withRelationshipKeys(next.`type`())()
+        val withType = acc.withRelationshipPropertyKeys(next.`type`())()
         next.asMap().asScala.foldLeft(withType) {
           case (acc3, (k, v)) =>
-            acc3.withRelationshipKeys(next.`type`())(k -> fromJavaType(v))
+            acc3.withRelationshipPropertyKeys(next.`type`())(k -> fromJavaType(v))
         }
     },  _ ++ _)
 

@@ -91,11 +91,11 @@ trait GraphMatchingTestSupport {
         val typesAndProps = queryGraph.getEdges.asScala.flatMap(extractFromElement)
 
         val schemaWithLabels = labelAndProps.foldLeft(Schema.empty) {
-          case (acc, (label, props)) => acc.withNodeKeys(label)(props.toSeq: _*)
+          case (acc, (label, props)) => acc.withNodePropertyKeys(label)(props.toSeq: _*)
         }
 
         typesAndProps.foldLeft(schemaWithLabels) {
-          case (acc, (t, props)) => acc.withRelationshipKeys(t)(props.toSeq: _*)
+          case (acc, (t, props)) => acc.withRelationshipPropertyKeys(t)(props.toSeq: _*)
         }
       }
 

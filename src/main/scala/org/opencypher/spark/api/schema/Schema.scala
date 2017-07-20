@@ -27,7 +27,7 @@ object Schema {
     nodeKeyMap = PropertyKeyMap.empty,
     relKeyMap = PropertyKeyMap.empty,
     impliedLabels = ImpliedLabels(Map.empty),
-    optionalLabels = OptionalLabels(Set.empty)
+    labelCombinations = LabelCombinations(Set.empty)
   )
 }
 
@@ -78,16 +78,16 @@ case class ImpliedLabels(m: Map[String, Set[String]]) {
   private def implicationsFor(source: String) = m.getOrElse(source, Set.empty) + source
 }
 
-case class OptionalLabels(combos: Set[Set[String]]) {
+case class LabelCombinations(combos: Set[Set[String]]) {
 
   def combinationsFor(label: String): Set[String] = combos.find(_(label)).getOrElse(Set.empty)
 
-  def withCombination(a: String, b: String): OptionalLabels = {
-    val (lhs, rhs) = combos.partition(labels => labels(a) || labels(b))
-    copy(combos = rhs + (lhs.flatten + a + b))
+  def withCombinations(as: String*): LabelCombinations = {
+    val (lhs, rhs) = combos.partition(labels => as.exists(labels(_)))
+    copy(combos = rhs + (lhs.flatten ++ as))
   }
 
-  def ++(other: OptionalLabels) = copy(combos ++ other.combos)
+  def ++(other: LabelCombinations) = copy(combos ++ other.combos)
 }
 
 final case class Schema(
@@ -114,7 +114,7 @@ final case class Schema(
   /**
     * Groups of labels where each group contains possible label combinations.
     */
-  optionalLabels: OptionalLabels) extends Verifiable {
+  labelCombinations: LabelCombinations) extends Verifiable {
 
   self: Schema =>
 
@@ -130,8 +130,8 @@ final case class Schema(
   /**
    * Given a set of labels that a node definitely has, returns all the labels that the node could possibly have.
    */
-  def optionalLabels(knownLabels: Set[String]): Set[String] =
-    knownLabels.flatMap(optionalLabels.combinationsFor)
+  def labelCombination(knownLabels: Set[String]): Set[String] =
+    knownLabels.flatMap(labelCombinations.combinationsFor)
 
   /**
    * Given a label that a node definitely has, returns its property schema.
@@ -149,17 +149,21 @@ final case class Schema(
    */
   def relationshipKeys(typ: String): Map[String, CypherType] = relKeyMap.keysFor(typ)
 
+  def withImpliedLabel(pair: (String, String)): Schema = withImpliedLabel(pair._1, pair._2)
+
   def withImpliedLabel(existingLabel: String, impliedLabel: String): Schema =
     copy(labels = labels + existingLabel + impliedLabel,
       impliedLabels = impliedLabels.withImplication(existingLabel, impliedLabel))
 
-  def withOptionalLabels(a: String, b: String): Schema =
-    copy(labels = labels + a + b, optionalLabels = optionalLabels.withCombination(a, b))
+  def withLabelCombination(pair: (String, String)): Schema = withLabelCombination(pair._1, pair._2)
 
-  def withNodeKeys(label: String)(keys: (String, CypherType)*): Schema =
+  def withLabelCombination(as: String*): Schema =
+    copy(labels = labels ++ as, labelCombinations = labelCombinations.withCombinations(as: _*))
+
+  def withNodePropertyKeys(label: String)(keys: (String, CypherType)*): Schema =
     copy(labels = labels + label, nodeKeyMap = nodeKeyMap.withKeys(label, keys))
 
-  def withRelationshipKeys(typ: String)(keys: (String, CypherType)*): Schema =
+  def withRelationshipPropertyKeys(typ: String)(keys: (String, CypherType)*): Schema =
     copy(relationshipTypes = relationshipTypes + typ, relKeyMap = relKeyMap.withKeys(typ, keys))
 
   def ++(other: Schema) = {
@@ -170,16 +174,16 @@ final case class Schema(
     val newImpliedLabels = inferImpliedLabels(other)
 
     // new optional labels are previous optional labels and all revoked implied labels
-    val combinedOptionalLabels = this.optionalLabels ++ other.optionalLabels
-    val newOptionalPairs = this.impliedLabels.toPairs ++ other.impliedLabels.toPairs -- newImpliedLabels.toPairs
-    val newOptionalLabels = newOptionalPairs.foldLeft(combinedOptionalLabels)((o,p) => o.withCombination(p._1,p._2))
+    val combinedOptionalLabels = this.labelCombinations ++ other.labelCombinations
+    val newLabelCombinationPairs = this.impliedLabels.toPairs ++ other.impliedLabels.toPairs -- newImpliedLabels.toPairs
+    val newLabelCombinations = newLabelCombinationPairs.foldLeft(combinedOptionalLabels)((o,p) => o.withCombinations(p._1, p._2))
 
     copy(newLabels,
       newRelTypes,
       newNodeKeyMap,
       newRelKeyMap,
       newImpliedLabels,
-      newOptionalLabels)
+      newLabelCombinations)
   }
 
   /**
@@ -236,7 +240,7 @@ final case class Schema(
     val coOccurringLabels =
       for (
         label <- labels;
-        other <- impliedLabels(Set(label)) ++ optionalLabels(Set(label))
+        other <- impliedLabels(Set(label)) ++ labelCombination(Set(label))
       ) yield label -> other
 
     for ((label, other) <- coOccurringLabels) {
@@ -265,6 +269,11 @@ final case class Schema(
     builder.append("Implied labels:\n")
     impliedLabels.m.foreach { pair =>
       builder.append(s":${pair._1} -> ${pair._2}\n")
+    }
+
+    builder.append("Label combinations:\n")
+    this.labelCombinations.combos.foreach { set =>
+      builder.append(s"$set\n")
     }
 
     builder.append("Rel types:\n")

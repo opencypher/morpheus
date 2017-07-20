@@ -30,7 +30,7 @@ class SparkGraphSpaceTest extends SparkCypherTestSuite {
 
   test("import nodes from neo") {
     val schema = Schema.empty
-      .withNodeKeys("Tweet")("id" -> CTInteger, "text" -> CTString.nullable, "created" -> CTString.nullable)
+      .withNodePropertyKeys("Tweet")("id" -> CTInteger, "text" -> CTString.nullable, "created" -> CTString.nullable)
     val space = SparkGraphSpace.fromNeo4j("MATCH (n:Tweet) RETURN n LIMIT 100", "RETURN 1 LIMIT 0", schema)
     val df = space.base.nodes().toDF()
 
@@ -42,7 +42,7 @@ class SparkGraphSpaceTest extends SparkCypherTestSuite {
 
   test("import nodes from neo with details") {
     val schema = Schema.empty
-      .withNodeKeys("Tweet")("id" -> CTInteger, "text" -> CTString.nullable, "created" -> CTString.nullable)
+      .withNodePropertyKeys("Tweet")("id" -> CTInteger, "text" -> CTString.nullable, "created" -> CTString.nullable)
     val space = SparkGraphSpace.fromNeo4j("MATCH (n:Tweet) RETURN n LIMIT 100", "RETURN 1 LIMIT 0", schema)
     val df = space.base.nodes().details.toDF()
 
@@ -58,7 +58,7 @@ class SparkGraphSpaceTest extends SparkCypherTestSuite {
 
   test("import relationships from neo") {
     val schema = Schema.empty
-      .withRelationshipKeys("ATTENDED")("guests" -> CTInteger, "comments" -> CTString.nullable)
+      .withRelationshipPropertyKeys("ATTENDED")("guests" -> CTInteger, "comments" -> CTString.nullable)
     val space = SparkGraphSpace.fromNeo4j(
       "RETURN 1 LIMIT 0",
       "MATCH ()-[r:ATTENDED]->() RETURN r LIMIT 100", schema)
@@ -72,7 +72,7 @@ class SparkGraphSpaceTest extends SparkCypherTestSuite {
 
   test("import relationships from neo with details") {
     val schema = Schema.empty
-      .withRelationshipKeys("ATTENDED")("guests" -> CTInteger, "comments" -> CTString.nullable)
+      .withRelationshipPropertyKeys("ATTENDED")("guests" -> CTInteger, "comments" -> CTString.nullable)
     val space = SparkGraphSpace.fromNeo4j(
       "RETURN 1 LIMIT 0",
       "MATCH ()-[r:ATTENDED]->() RETURN r LIMIT 100", schema)
@@ -89,11 +89,11 @@ class SparkGraphSpaceTest extends SparkCypherTestSuite {
 
   test("import a graph from neo") {
     val schema = Schema.empty
-      .withRelationshipKeys("ATTENDED")("guests" -> CTInteger, "comments" -> CTString.nullable)
-      .withNodeKeys("User")("id" -> CTInteger.nullable, "text" -> CTString.nullable, "country" -> CTString.nullable, "city" -> CTString.nullable)
-      .withNodeKeys("Meetup")("id" -> CTInteger.nullable, "city" -> CTString.nullable, "country" -> CTString.nullable)
-      .withNodeKeys("Graph")("title" -> CTString.nullable, "updated" -> CTInteger.nullable)
-      .withNodeKeys("Event")("time" -> CTInteger.nullable, "link" -> CTAny.nullable)
+      .withRelationshipPropertyKeys("ATTENDED")("guests" -> CTInteger, "comments" -> CTString.nullable)
+      .withNodePropertyKeys("User")("id" -> CTInteger.nullable, "text" -> CTString.nullable, "country" -> CTString.nullable, "city" -> CTString.nullable)
+      .withNodePropertyKeys("Meetup")("id" -> CTInteger.nullable, "city" -> CTString.nullable, "country" -> CTString.nullable)
+      .withNodePropertyKeys("Graph")("title" -> CTString.nullable, "updated" -> CTInteger.nullable)
+      .withNodePropertyKeys("Event")("time" -> CTInteger.nullable, "link" -> CTAny.nullable)
     val space = SparkGraphSpace.fromNeo4j(
       "MATCH (a)-[:ATTENDED]->(b) UNWIND [a, b] AS n RETURN DISTINCT n",
       "MATCH ()-[r:ATTENDED]->() RETURN r", schema)

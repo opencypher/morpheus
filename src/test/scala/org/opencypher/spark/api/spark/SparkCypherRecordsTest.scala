@@ -38,7 +38,7 @@ class SparkCypherRecordsTest extends BaseTestSuite with SparkTestSession.Fixture
     val embeddedNode = EmbeddedNode("n" -> "ID").build
       .withImpliedLabel("Person")
       .withOptionalLabel("Swedish" -> "IS_SWEDE")
-      .withProperty("name" -> "NAME")
+      .withPropertyKey("name" -> "NAME")
       .verify
 
 
@@ -66,7 +66,7 @@ class SparkCypherRecordsTest extends BaseTestSuite with SparkTestSession.Fixture
     )).toDF("ID", "FROM", "TO", "COLOR"))
 
     val embeddedRel = EmbeddedRelationship("r" -> "ID").from("FROM").to("TO").relType("NEXT").build
-      .withProperty("color" -> "COLOR")
+      .withPropertyKey("color" -> "COLOR")
       .verify
     val result = given.contract(embeddedRel)
 

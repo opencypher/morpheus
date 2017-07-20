@@ -29,9 +29,9 @@ import scala.language.reflectiveCalls
 class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with MockitoSugar {
 
   val schema = Schema.empty
-    .withNodeKeys("Person")("name" -> CTString, "age" -> CTInteger)
-    .withNodeKeys("Foo")("name" -> CTBoolean, "age" -> CTFloat)
-    .withRelationshipKeys("KNOWS")("since" -> CTInteger, "relative" -> CTBoolean)
+    .withNodePropertyKeys("Person")("name" -> CTString, "age" -> CTInteger)
+    .withNodePropertyKeys("Foo")("name" -> CTBoolean, "age" -> CTFloat)
+    .withRelationshipPropertyKeys("KNOWS")("since" -> CTInteger, "relative" -> CTBoolean)
 
   val typer = SchemaTyper(schema)
 

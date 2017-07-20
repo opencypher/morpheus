@@ -103,8 +103,8 @@ class LogicalPlannerTest extends IrTestSuite {
 
   test("plan query with type information") {
     implicit val schema = Schema.empty
-      .withNodeKeys("Group")("name" -> CTString)
-      .withNodeKeys("Administrator")("name" -> CTFloat)
+      .withNodePropertyKeys("Group")("name" -> CTString)
+      .withNodePropertyKeys("Administrator")("name" -> CTFloat)
 
     val ir = "MATCH (a:Administrator)-[r]->(g:Group) WHERE g.name = $foo RETURN a.name".irWithParams("foo" -> CTString)
 

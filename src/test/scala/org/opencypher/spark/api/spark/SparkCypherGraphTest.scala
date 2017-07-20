@@ -14,8 +14,8 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
       _.build
        .withImpliedLabel("Person")
        .withOptionalLabel("Swedish" -> "IS_SWEDE")
-       .withProperty("name" -> "NAME")
-       .withProperty("lucky_number" -> "NUM")
+       .withPropertyKey("name" -> "NAME")
+       .withPropertyKey("lucky_number" -> "NUM")
     }
     .from(SparkCypherRecords.create(
       Seq("ID", "IS_SWEDE", "NAME", "NUM"),
@@ -30,8 +30,8 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
     NodeScan.on("b" -> "ID") {
       _.build
         .withImpliedLabel("Book")
-        .withProperty("title" -> "NAME")
-        .withProperty("year" -> "YEAR")
+        .withPropertyKey("title" -> "NAME")
+        .withPropertyKey("year" -> "YEAR")
     }
       .from(SparkCypherRecords.create(
         Seq("ID", "NAME", "YEAR"),
@@ -46,7 +46,7 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
     RelationshipScan.on("r" -> "ID") {
       _.from("SRC").to("DST").relType("KNOWS")
        .build
-       .withProperty("since" -> "SINCE")
+       .withPropertyKey("since" -> "SINCE")
     }
     .from(SparkCypherRecords.create(
       Seq("SRC", "ID", "DST", "SINCE"),
