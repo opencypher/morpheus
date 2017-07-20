@@ -86,8 +86,8 @@ class SparkCypherRecordsAcceptanceTest extends BaseTestSuite with SparkTestSessi
   test("handle properties with same key and different type between labels") {
     // Given
     val space = initSmallSpace(Schema.empty
-      .withNodeKeys("Channel")("id" -> CTString.nullable)
-      .withNodeKeys("GitHub")("id" -> CTInteger.nullable), "MATCH (n) RETURN n", "RETURN 1 LIMIT 0")
+      .withNodePropertyKeys("Channel")("id" -> CTString.nullable)
+      .withNodePropertyKeys("GitHub")("id" -> CTInteger.nullable), "MATCH (n) RETURN n", "RETURN 1 LIMIT 0")
 
     // When
     val channelResult = space.base.cypher("MATCH (c:Channel) RETURN c.id")
@@ -210,11 +210,11 @@ class SparkCypherRecordsAcceptanceTest extends BaseTestSuite with SparkTestSessi
   }
 
   private val smallSchema = Schema.empty
-    .withRelationshipKeys("ATTENDED")("guests" -> CTInteger, "comments" -> CTString.nullable)
-    .withNodeKeys("User")("id" -> CTInteger.nullable, "text" -> CTString.nullable, "country" -> CTString.nullable, "city" -> CTString.nullable)
-    .withNodeKeys("Meetup")("id" -> CTInteger.nullable, "city" -> CTString.nullable, "country" -> CTString.nullable)
-    .withNodeKeys("Graph")("title" -> CTString.nullable, "updated" -> CTInteger.nullable)
-    .withNodeKeys("Event")("time" -> CTInteger.nullable, "link" -> CTAny.nullable)
+    .withRelationshipPropertyKeys("ATTENDED")("guests" -> CTInteger, "comments" -> CTString.nullable)
+    .withNodePropertyKeys("User")("id" -> CTInteger.nullable, "text" -> CTString.nullable, "country" -> CTString.nullable, "city" -> CTString.nullable)
+    .withNodePropertyKeys("Meetup")("id" -> CTInteger.nullable, "city" -> CTString.nullable, "country" -> CTString.nullable)
+    .withNodePropertyKeys("Graph")("title" -> CTString.nullable, "updated" -> CTInteger.nullable)
+    .withNodePropertyKeys("Event")("time" -> CTInteger.nullable, "link" -> CTAny.nullable)
 
   private def initSmallSpace(schema: Schema = smallSchema,
                              nodeQ: String = "MATCH (a)-[:ATTENDED]->(b) UNWIND [a, b] AS n RETURN DISTINCT n",

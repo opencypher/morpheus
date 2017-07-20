@@ -26,8 +26,8 @@ class EmbeddedEntityTest extends BaseTestSuite {
         .withImpliedLabel("Person")
         .withOptionalLabel("Employee" -> "is_emp")
         .withProperty("name")
-        .withProperty("age" -> "YEARS")
-        .withProperty("age" -> "AGE")
+        .withPropertyKey("age" -> "YEARS")
+        .withPropertyKey("age" -> "AGE")
 
     val actual = EmbeddedNode(
       "n",
@@ -44,8 +44,8 @@ class EmbeddedEntityTest extends BaseTestSuite {
     val given =
       EmbeddedRelationship("r").from("src").relType("KNOWS").to("dst").build
         .withProperty("name")
-        .withProperty("age" -> "YEARS")
-        .withProperty("age" -> "AGE")
+        .withPropertyKey("age" -> "YEARS")
+        .withPropertyKey("age" -> "AGE")
 
     val actual = EmbeddedRelationship(
       "r",
@@ -64,8 +64,8 @@ class EmbeddedEntityTest extends BaseTestSuite {
     val given =
       EmbeddedRelationship("r").from("src").relTypes("typ", "ADMIRES", "IGNORES").to("dst").build
         .withProperty("name")
-        .withProperty("age" -> "YEARS")
-        .withProperty("age" -> "AGE")
+        .withPropertyKey("age" -> "YEARS")
+        .withPropertyKey("age" -> "AGE")
 
     val actual = EmbeddedRelationship(
       "r",
@@ -82,14 +82,14 @@ class EmbeddedEntityTest extends BaseTestSuite {
 
   test("Refuses to use the same slot multiple times when constructing nodes") {
     raisesSlotReUse(EmbeddedNode("n" -> "the_slot").build.withOptionalLabel("Person" -> "the_slot").verify)
-    raisesSlotReUse(EmbeddedNode("n" -> "the_slot").build.withProperty("a" -> "the_slot").verify)
+    raisesSlotReUse(EmbeddedNode("n" -> "the_slot").build.withPropertyKey("a" -> "the_slot").verify)
   }
 
   test("Refuses to use the same slot multiple times when constructing relationships") {
     raisesSlotReUse(EmbeddedRelationship("r").from("r").to("b").relType("KNOWS").build.verify)
     raisesSlotReUse(EmbeddedRelationship("r").from("a").to("r").relType("KNOWS").build.verify)
     raisesSlotReUse(EmbeddedRelationship("r").from("a").to("b").relTypes("r", "KNOWS").build.verify)
-    raisesSlotReUse(EmbeddedRelationship("r" -> "the_slot").from("a").to("b").relType("KNOWS").build.withProperty("a" -> "the_slot").verify)
+    raisesSlotReUse(EmbeddedRelationship("r" -> "the_slot").from("a").to("b").relType("KNOWS").build.withPropertyKey("a" -> "the_slot").verify)
   }
 
   private def show(entity: VerifiedEmbeddedEntity[_]) = {

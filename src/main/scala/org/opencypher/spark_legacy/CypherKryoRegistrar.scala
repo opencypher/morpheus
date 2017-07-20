@@ -20,7 +20,7 @@ import org.apache.spark.serializer.{KryoRegistrator => SparkKryoRegistrar}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.opencypher.spark_legacy.benchmark.{AccessControlNode, AccessControlRelationship}
-import org.opencypher.spark.api.schema.{ImpliedLabels, OptionalLabels, PropertyKeyMap, Schema}
+import org.opencypher.spark.api.schema.{ImpliedLabels, LabelCombinations, PropertyKeyMap, Schema}
 import org.opencypher.spark.api.value._
 
 import scala.collection.PrivateCollectionClasses
@@ -62,7 +62,7 @@ import scala.language.existentials
 
       classOf[Schema],
       classOf[ImpliedLabels],
-      classOf[OptionalLabels],
+      classOf[LabelCombinations],
       classOf[PropertyKeyMap],
       Class.forName("scala.collection.immutable.Map$EmptyMap$"),
       Class.forName("scala.collection.immutable.Set$EmptySet$"),

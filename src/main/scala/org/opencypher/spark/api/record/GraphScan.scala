@@ -122,10 +122,27 @@ object GraphScanBuilder {
       }
 
     override protected def schema(entity: EmbeddedNode, header: RecordHeader): Schema = {
+      val impliedLabels = entity.labelsFromSlotOrImplied.filterNot(_._2.isDefined).keys
+
+      val impliedPairs = for {
+        l <- impliedLabels
+        r <- impliedLabels
+      } yield l -> r
+
+      val schemaWithImpliedLabels = impliedPairs
+        .foldLeft(Schema.empty)((schema, pair) => schema withImpliedLabel pair)
+
+      val combinations = entity.labelsFromSlotOrImplied.keys.toSeq
+
+      val schemaWithOptionalLabels = schemaWithImpliedLabels.withLabelCombination(combinations: _*)
+
+      val propertyKeys = getPropertyKeys(entity, header)
       entity
         .labelsFromSlotOrImplied
         .keys
-        .foldLeft(Schema.empty)((schema, label) => schema.withNodeKeys(label)(getPropertyKeys(entity, header): _*))
+        .foldLeft(schemaWithOptionalLabels)((schema, label) =>
+          schema.withNodePropertyKeys(label)(propertyKeys: _*)
+        )
     }
   }
 
@@ -146,7 +163,7 @@ object GraphScanBuilder {
         case Left((key, _)) => key
       }
       Schema.empty
-        .withRelationshipKeys(relType)(getPropertyKeys(entity, header): _*)
+        .withRelationshipPropertyKeys(relType)(getPropertyKeys(entity, header): _*)
     }
   }
 }

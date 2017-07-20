@@ -76,7 +76,7 @@ object RecordHeader {
   def nodeFromSchema(node: Var, schema: Schema, tokens: TokenRegistry, labels: Set[String]): RecordHeader = {
     val impliedLabels = schema.impliedLabels.transitiveImplicationsFor(labels)
     val impliedKeys = impliedLabels.flatMap(label => schema.nodeKeyMap.keysFor(label).toSet)
-    val possibleLabels = impliedLabels.flatMap(label => schema.optionalLabels.combinationsFor(label))
+    val possibleLabels = impliedLabels.flatMap(label => schema.labelCombinations.combinationsFor(label))
     val optionalKeys = possibleLabels.flatMap(label => schema.nodeKeyMap.keysFor(label).toSet)
     val optionalNullableKeys = optionalKeys.map { case (k, v) => k -> v.nullable }
     val allKeys: Seq[(String, Vector[CypherType])] = (impliedKeys ++ optionalNullableKeys).toSeq.map { case (k, v) => k -> Vector(v) }

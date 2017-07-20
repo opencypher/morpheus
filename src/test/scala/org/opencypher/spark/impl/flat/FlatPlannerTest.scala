@@ -29,10 +29,10 @@ class FlatPlannerTest extends BaseTestSuite {
 
   val schema = Schema
     .empty
-    .withNodeKeys("Person")("name" -> CTString, "age" -> CTInteger.nullable)
-    .withNodeKeys("Employee")("name" -> CTString, "salary" -> CTFloat)
-    .withRelationshipKeys("KNOWS")("since" -> CTString)
-    .withRelationshipKeys("FOO")("bar" -> CTBoolean)
+    .withNodePropertyKeys("Person")("name" -> CTString, "age" -> CTInteger.nullable)
+    .withNodePropertyKeys("Employee")("name" -> CTString, "salary" -> CTFloat)
+    .withRelationshipPropertyKeys("KNOWS")("since" -> CTString)
+    .withRelationshipPropertyKeys("FOO")("bar" -> CTBoolean)
 
   schema.verify
 
