@@ -71,7 +71,7 @@ class SchemaTest extends BaseTestSuite {
   }
 
   test("should get chained combinations correct") {
-    val schema = Schema.empty.withCombinedLabels("Person", "Employee").withCombinedLabels("Person", "Director")
+    val schema = Schema.empty.withOptionalLabels("Person", "Employee").withOptionalLabels("Person", "Director")
 
     schema.optionalLabels(Set("Employee")) should equal(Set("Person", "Employee", "Director"))
     schema.optionalLabels(Set("Director")) should equal(Set("Person", "Employee", "Director"))
@@ -81,7 +81,7 @@ class SchemaTest extends BaseTestSuite {
   }
 
   test("should get simple combinations correct") {
-    val schema = Schema.empty.withCombinedLabels("Person", "Employee").withCombinedLabels("Dog", "Pet")
+    val schema = Schema.empty.withOptionalLabels("Person", "Employee").withOptionalLabels("Dog", "Pet")
 
     schema.optionalLabels(Set("NotEmployee")) should equal(Set())
     schema.optionalLabels(Set("Employee")) should equal(Set("Person", "Employee"))
@@ -101,7 +101,7 @@ class SchemaTest extends BaseTestSuite {
       .withNodeKeys("Employee")("name" -> CTString, "salary" -> CTInteger)
       .withNodeKeys("Dog")("name" -> CTFloat)
       .withNodeKeys("Pet")("notName" -> CTBoolean)
-      .withCombinedLabels("Person", "Employee")
+      .withOptionalLabels("Person", "Employee")
       .withImpliedLabel("Dog", "Pet")
 
     schema.verify.schema should equal(schema)
@@ -113,7 +113,7 @@ class SchemaTest extends BaseTestSuite {
       .withNodeKeys("Employee")("name" -> CTString, "salary" -> CTInteger)
       .withNodeKeys("Dog")("name" -> CTFloat)
       .withNodeKeys("Pet")("name" -> CTBoolean)
-      .withCombinedLabels("Person", "Employee")
+      .withOptionalLabels("Person", "Employee")
       .withImpliedLabel("Dog", "Pet")
 
     an [IllegalArgumentException] shouldBe thrownBy {
@@ -127,7 +127,7 @@ class SchemaTest extends BaseTestSuite {
       .withNodeKeys("Employee")("name" -> CTInteger, "salary" -> CTInteger)
       .withNodeKeys("Dog")("name" -> CTFloat)
       .withNodeKeys("Pet")("notName" -> CTBoolean)
-      .withCombinedLabels("Person", "Employee")
+      .withOptionalLabels("Person", "Employee")
       .withImpliedLabel("Dog", "Pet")
 
     an [IllegalArgumentException] shouldBe thrownBy {
@@ -184,22 +184,32 @@ class SchemaTest extends BaseTestSuite {
     val schema1 = Schema.empty
       .withImpliedLabel("A", "B")
       .withImpliedLabel("B", "C")
+      .withOptionalLabels("A","E")
       .withNodeKeys("A")()
       .withNodeKeys("B")()
       .withNodeKeys("C")()
+      .withNodeKeys("E")()
     val schema2 = Schema.empty
       .withImpliedLabel("B", "C")
       .withImpliedLabel("C", "D")
+      .withOptionalLabels("B","F")
       .withNodeKeys("B")()
       .withNodeKeys("C")()
       .withNodeKeys("D")()
+      .withNodeKeys("F")()
+
 
     schema1 ++ schema2 should equal(Schema.empty
       .withImpliedLabel("A", "B")
       .withImpliedLabel("B", "C")
+      .withOptionalLabels("A","E")
+      .withOptionalLabels("B","F")
+      .withOptionalLabels("C","D")
       .withNodeKeys("A")()
       .withNodeKeys("B")()
       .withNodeKeys("C")()
-      .withNodeKeys("D")())
+      .withNodeKeys("D")()
+      .withNodeKeys("E")()
+      .withNodeKeys("F")())
   }
 }
