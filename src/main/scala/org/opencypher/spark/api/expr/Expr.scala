@@ -206,6 +206,11 @@ final case class Id(expr: Expr)(val cypherType: CypherType = CTWildcard) extends
   override def withoutType = s"id(${expr.withoutType})"
 }
 
+final case class Labels(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr {
+  override def toString = s"labels($expr)"
+  override def withoutType = s"labels(${expr.withoutType})"
+}
+
 // Literal expressions
 
 sealed trait Lit[T] extends Expr {
