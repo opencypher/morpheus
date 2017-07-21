@@ -11,19 +11,60 @@
     <name>Cypher for Apache Spark</name>
 
     <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <java.version>1.7</java.version>
-        <scala.version>2.11.8</scala.version>
-        <scala.binary.version>2.11</scala.binary.version>
-        <spark.version>2.1.0</spark.version>
-        <neo4j.version>3.2.0-alpha08</neo4j.version>
-        <multiset.version>0.4</multiset.version>
-        <graphframes.version>0.4.0-spark2.1-s_2.11</graphframes.version>
-        <gdl.version>0.3.0-SNAPSHOT</gdl.version>
+        <!-- Project settings -->
+        <project.build.encoding>UTF-8</project.build.encoding>
+        <project.java.version>1.7</project.java.version>
+        <project.scala.version>2.11.8</project.scala.version>
+        <project.scala.binary.version>2.11</project.scala.binary.version>
+
+        <!-- Used plugins -->
+        <plugin.exec-maven.version>1.4.0</plugin.exec-maven.version>
+        <plugin.license-maven.version>3.0</plugin.license-maven.version>
+        <plugin.maven-compiler.version>3.5.1</plugin.maven-compiler.version>
+        <plugin.maven-jar.version>3.0.2</plugin.maven-jar.version>
+        <plugin.maven-resources.version>2.7</plugin.maven-resources.version>
+        <plugin.maven-shade.version>2.4.3</plugin.maven-shade.version>
+        <plugin.scala-maven.version>3.2.1</plugin.scala-maven.version>
+        <plugin.scalastyle-maven.version>0.8.0</plugin.scalastyle-maven.version>
+
+        <!-- Used dependencies -->
+        <dep.ammonite.version>0.7.0</dep.ammonite.version>
+        <dep.cats.version>0.9.0</dep.cats.version>
+        <dep.eff.version>2.2.0</dep.eff.version>
+        <dep.gdl.version>0.3.0-SNAPSHOT</dep.gdl.version>
+        <dep.graphframes.version>0.4.0-spark2.1-s_2.11</dep.graphframes.version>
+        <dep.junit.version>4.12</dep.junit.version>
+        <dep.mockito.version>1.10.19</dep.mockito.version>
+        <dep.multiset.version>0.4</dep.multiset.version>
+        <dep.neo4j-spark-connector>2.0.0-M2</dep.neo4j-spark-connector>
+        <dep.neo4j.version>3.2.0-alpha08</dep.neo4j.version>
+        <dep.scalatest.version>3.0.0</dep.scalatest.version>
+        <dep.sourcecode.version>0.1.2</dep.sourcecode.version>
+        <dep.spark.version>2.1.0</dep.spark.version>
     </properties>
 
-    <build>
+    <repositories>
+        <!-- list of other repositories -->
+        <repository>
+            <id>SparkPackagesRepo</id>
+            <url>http://dl.bintray.com/spark-packages/maven</url>
+        </repository>
 
+        <!-- necessary for GDL dependency in tests -->
+        <repository>
+            <id>dbleipzig</id>
+            <name>Database Group Leipzig University</name>
+            <url>https://wdiserv1.informatik.uni-leipzig.de:443/archiva/repository/dbleipzig/</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
+    <build>
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
@@ -35,15 +76,14 @@
         </resources>
 
         <plugins>
-
             <!-- javac -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.5.1</version>
+                <version>${plugin.maven-compiler.version}</version>
                 <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
+                    <source>${project.java.version}</source>
+                    <target>${project.java.version}</target>
                 </configuration>
             </plugin>
 
@@ -51,7 +91,7 @@
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
-                <version>3.2.1</version>
+                <version>${plugin.scala-maven.version}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -63,13 +103,13 @@
                 </executions>
                 <configuration>
                     <recompileMode>incremental</recompileMode>
-                    <scalaVersion>${scala.version}</scalaVersion>
-                    <scalaCompatVersion>${scala.binary.version}</scalaCompatVersion>
-                    <encoding>UTF-8</encoding>
+                    <scalaVersion>${project.scala.version}</scalaVersion>
+                    <scalaCompatVersion>${project.scala.binary.version}</scalaCompatVersion>
+                    <encoding>${project.build.encoding}</encoding>
                     <args>
                         <!-- need to pass encoding to scalac manually -->
                         <arg>-encoding</arg>
-                        <arg>UTF-8</arg>
+                        <arg>${project.build.encoding}</arg>
                         <arg>-target:jvm-1.7</arg>
                         <arg>-unchecked</arg>
                         <arg>-deprecation</arg>
@@ -94,17 +134,38 @@
                 </configuration>
             </plugin>
 
-            <!-- enable scalastyle (configured below in pluginManagement) -->
+            <!-- scalastyle) -->
             <plugin>
                 <groupId>org.scalastyle</groupId>
                 <artifactId>scalastyle-maven-plugin</artifactId>
+                <version>${plugin.scalastyle-maven.version}</version>
+                <configuration>
+                    <verbose>false</verbose>
+                    <failOnViolation>true</failOnViolation>
+                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                    <failOnWarning>false</failOnWarning>
+                    <inputEncoding>${project.build.encoding}</inputEncoding>
+                    <sourceDirectory>${basedir}/src/main/scala</sourceDirectory>
+                    <testSourceDirectory>${basedir}/src/test/scala</testSourceDirectory>
+                    <configLocation>${project.basedir}/etc/scalastyle_config.xml</configLocation>
+                    <outputFile>${basedir}/target/scalastyle-output.xml</outputFile>
+                    <outputEncoding>${project.build.encoding}</outputEncoding>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- add version information to jar -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>3.0.2</version>
+                <version>${plugin.maven-jar.version}</version>
                 <configuration>
                     <archive>
                         <index>true</index>
@@ -124,7 +185,7 @@
             <!-- generate version.txt -->
             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>
-                <version>2.7</version>
+                <version>${plugin.maven-resources.version}</version>
                 <executions>
                     <execution>
                         <id>copy-resources</id>
@@ -152,7 +213,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
-                <version>1.4.0</version>
+                <version>${plugin.exec-maven.version}</version>
                 <configuration>
                     <mainClass>org.opencypher.spark.shell.Shell</mainClass>
                     <classpathScope>test</classpathScope>
@@ -163,46 +224,13 @@
             <plugin>
                 <groupId>com.mycila</groupId>
                 <artifactId>license-maven-plugin</artifactId>
-                <version>3.0</version>
+                <version>${plugin.license-maven.version}</version>
                 <configuration>
                     <header>license-header</header>
                     <basedir>src</basedir>
                 </configuration>
             </plugin>
         </plugins>
-
-        <pluginManagement>
-
-            <plugins>
-                <plugin>
-                    <groupId>org.scalastyle</groupId>
-                    <artifactId>scalastyle-maven-plugin</artifactId>
-                    <version>0.8.0</version>
-                    <configuration>
-                        <verbose>false</verbose>
-                        <failOnViolation>true</failOnViolation>
-                        <includeTestSourceDirectory>true</includeTestSourceDirectory>
-                        <failOnWarning>false</failOnWarning>
-                        <inputEncoding>UTF-8</inputEncoding>
-                        <sourceDirectory>${basedir}/src/main/scala</sourceDirectory>
-                        <testSourceDirectory>${basedir}/src/test/scala</testSourceDirectory>
-                        <configLocation>${project.basedir}/etc/scalastyle_config.xml</configLocation>
-                        <outputFile>${basedir}/target/scalastyle-output.xml</outputFile>
-                        <outputEncoding>UTF-8</outputEncoding>
-                    </configuration>
-                    <executions>
-                        <execution>
-                            <phase>test</phase>
-                            <goals>
-                                <goal>check</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-            </plugins>
-
-        </pluginManagement>
-
     </build>
 
     <profiles>
@@ -220,7 +248,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-shade-plugin</artifactId>
-                        <version>2.4.3</version>
+                        <version>${plugin.maven-shade.version}</version>
                         <executions>
                             <!-- run shade goal on package phase -->
                             <execution>
@@ -313,138 +341,125 @@
         </profile>
     </profiles>
 
-    <repositories>
-        <!-- list of other repositories -->
-        <repository>
-            <id>SparkPackagesRepo</id>
-            <url>http://dl.bintray.com/spark-packages/maven</url>
-        </repository>
-
-        <repository>
-            <id>dbleipzig</id>
-            <name>Database Group Leipzig University</name>
-            <url>https://wdiserv1.informatik.uni-leipzig.de:443/archiva/repository/dbleipzig/</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-
     <dependencies>
-
-        <dependency>
-            <groupId>io.github.nicolasstucki</groupId>
-            <artifactId>multisets_2.11</artifactId>
-            <version>${multiset.version}</version>
-        </dependency>
+        <!-- Neo4j -->
 
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-cypher-frontend-3.2</artifactId>
-            <version>${neo4j.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.s1ck</groupId>
-            <artifactId>gdl</artifactId>
-            <version>${gdl.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cypher-frontend-3.2</artifactId>
-            <version>${neo4j.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>graphframes</groupId>
-            <artifactId>graphframes</artifactId>
-            <version>${graphframes.version}</version>
+            <version>${dep.neo4j.version}</version>
         </dependency>
 
         <dependency>
             <groupId>neo4j-contrib</groupId>
             <artifactId>neo4j-spark-connector</artifactId>
-            <version>2.0.0-M2</version>
+            <version>${dep.neo4j-spark-connector}</version>
         </dependency>
+
+        <!-- Scala -->
 
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
-            <version>${scala.version}</version>
+            <version>${project.scala.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-reflect</artifactId>
-            <version>${scala.version}</version>
+            <version>${project.scala.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.typelevel</groupId>
             <artifactId>cats_2.11</artifactId>
-            <version>0.9.0</version>
+            <version>${dep.cats.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.atnos</groupId>
             <artifactId>eff_2.11</artifactId>
-            <version>2.2.0</version>
+            <version>${dep.eff.version}</version>
         </dependency>
+
+        <!-- Spark -->
 
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-core_2.11</artifactId>
-            <version>${spark.version}</version>
+            <version>${dep.spark.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-sql_2.11</artifactId>
-            <version>${spark.version}</version>
+            <version>${dep.spark.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-catalyst_2.11</artifactId>
-            <version>${spark.version}</version>
+            <version>${dep.spark.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>graphframes</groupId>
+            <artifactId>graphframes</artifactId>
+            <version>${dep.graphframes.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-graphx_2.11</artifactId>
-            <version>${spark.version}</version>
+            <version>${dep.spark.version}</version>
         </dependency>
+
+        <!-- Utils -->
 
         <dependency>
             <groupId>com.lihaoyi</groupId>
             <artifactId>ammonite_2.11.8</artifactId>
-            <version>0.7.0</version>
+            <version>${dep.ammonite.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.lihaoyi</groupId>
             <artifactId>ammonite-ops_2.11</artifactId>
-            <version>0.7.0</version>
+            <version>${dep.ammonite.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.s1ck</groupId>
+            <artifactId>gdl</artifactId>
+            <version>${dep.gdl.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.github.nicolasstucki</groupId>
+            <artifactId>multisets_2.11</artifactId>
+            <version>${dep.multiset.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.lihaoyi</groupId>
             <artifactId>sourcecode_2.11</artifactId>
-            <version>0.1.2</version>
+            <version>${dep.sourcecode.version}</version>
         </dependency>
 
         <!-- Tests -->
 
         <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher-frontend-3.2</artifactId>
+            <version>${dep.neo4j.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>org.scalatest</groupId>
             <artifactId>scalatest_2.11</artifactId>
-            <version>3.0.0</version>
+            <version>${dep.scalatest.version}</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -457,24 +472,15 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.12</version>
+            <version>${dep.junit.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-all</artifactId>
-            <version>1.10.19</version>
+            <version>${dep.mockito.version}</version>
             <scope>test</scope>
         </dependency>
-
-        <!--<dependency>-->
-        <!--<groupId>org.scalacheck</groupId>-->
-        <!--<artifactId>scalacheck_2.11</artifactId>-->
-        <!--<version>1.13.0</version>-->
-        <!--<scope>test</scope>-->
-        <!--</dependency>-->
-
     </dependencies>
-
 </project>
