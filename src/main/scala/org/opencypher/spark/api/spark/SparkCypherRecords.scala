@@ -23,7 +23,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.types.StructType
 import org.opencypher.spark.api.expr.{Property, Var}
 import org.opencypher.spark.api.record._
-import org.opencypher.spark.api.types.{CTList, CTNode, CTRelationship, CypherType}
+import org.opencypher.spark.api.types._
 import org.opencypher.spark.api.value.{CypherMap, CypherValue}
 import org.opencypher.spark.impl.convert.{fromSparkType, toSparkType}
 import org.opencypher.spark.impl.exception.Raise

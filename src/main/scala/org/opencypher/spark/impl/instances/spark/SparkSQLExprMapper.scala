@@ -16,14 +16,19 @@
 package org.opencypher.spark.impl.instances.spark
 
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types.BooleanType
-import org.apache.spark.sql.{Column, DataFrame}
+import org.apache.spark.sql.types.{ArrayType, BooleanType, StringType}
+import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.spark.api.expr._
+import org.opencypher.spark.api.ir.global.Label
 import org.opencypher.spark.api.record.RecordHeader
+import org.opencypher.spark.api.types.CTNode
 import org.opencypher.spark.api.value.CypherValue
 import org.opencypher.spark.impl.convert.{toJavaType, toSparkType}
 import org.opencypher.spark.impl.exception.Raise
 import org.opencypher.spark.impl.physical.RuntimeContext
+import org.opencypher.spark.impl.spark.SparkColumnName
+
+import scala.collection.mutable
 
 object SparkSQLExprMapper {
 
@@ -151,6 +156,16 @@ object SparkSQLExprMapper {
         val column = getColumn(id.expr, header, df)
         Some(column)
 
+      case labels: Labels =>
+        verifyExpression(header, expr)
+
+        val node = Var(SparkColumnName.of(header.slotsFor(labels.expr).head))(CTNode)
+        val labelExprs = header.labels(node)
+        val labelColumns = labelExprs.map(getColumn(_, header, df))
+        val labelNames = labelExprs.map(_.label)
+        val labelsUDF = udf(getNodeLabels(labelNames), ArrayType(StringType, containsNull = false))
+        Some(labelsUDF(functions.array(labelColumns: _*)))
+
       case _ =>
         None
     }
@@ -176,4 +191,12 @@ object SparkSQLExprMapper {
   private def lteq(lhs: Any, rhs: Any): Any = (CypherValue(lhs) <= CypherValue(rhs)).orNull
   private def gteq(lhs: Any, rhs: Any): Any = (CypherValue(lhs) >= CypherValue(rhs)).orNull
   private def gt(lhs: Any, rhs: Any): Any = (CypherValue(lhs) > CypherValue(rhs)).orNull
+  private def getNodeLabels(labelNames: Seq[Label])= (labelSwitches: Any) =>
+    labelSwitches match {
+      case a:mutable.WrappedArray[Boolean] =>
+        a.zip(labelNames).collect({
+          case (true, label) => label.name
+        }).toArray
+    }
+
 }

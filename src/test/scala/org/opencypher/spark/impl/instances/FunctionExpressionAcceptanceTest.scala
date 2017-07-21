@@ -47,4 +47,26 @@ class FunctionExpressionAcceptanceTest extends SparkCypherTestSuite {
 
     result.graph shouldMatch given.graph
   }
+
+  test("get single label") {
+    val given = TestGraph("(:A)(:B)")
+
+    val result = given.cypher("MATCH (a) RETURN labels(a)")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("labels(a)" -> cypherList(IndexedSeq("A"))),
+      CypherMap("labels(a)" -> cypherList(IndexedSeq("B")))
+    ))
+  }
+
+  ignore("get multiple labels") {
+    val given = TestGraph("(:A:B)(:C:D)")
+
+    val result = given.cypher("MATCH (a) RETURN labels(a)")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("labels(a)" -> cypherList(IndexedSeq("A","B"))),
+      CypherMap("labels(a)" -> cypherList(IndexedSeq("C","D")))
+    ))
+  }
 }
