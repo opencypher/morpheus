@@ -80,13 +80,15 @@ trait GraphMatchingTestSupport {
     lazy val graph: SparkCypherGraph = new SparkCypherGraph {
       self =>
 
-      private def extractFromElement(e: Element) = e.getLabel -> e.getProperties.asScala.map {
-        case (name, prop) => name -> fromJavaType(prop)
+      private def extractFromElement(e: Element) = e.getLabels.asScala.map { label =>
+        label -> e.getProperties.asScala.map {
+          case (name, prop) => name -> fromJavaType(prop)
+        }
       }
 
       override val schema: Schema = {
-        val labelAndProps = queryGraph.getVertices.asScala.map(extractFromElement)
-        val typesAndProps = queryGraph.getEdges.asScala.map(extractFromElement)
+        val labelAndProps = queryGraph.getVertices.asScala.flatMap(extractFromElement)
+        val typesAndProps = queryGraph.getEdges.asScala.flatMap(extractFromElement)
 
         val schemaWithLabels = labelAndProps.foldLeft(Schema.empty) {
           case (acc, (label, props)) => acc.withNodeKeys(label)(props.toSeq: _*)
@@ -113,7 +115,7 @@ trait GraphMatchingTestSupport {
           val nodes = queryGraph.getVertices.asScala.map { v =>
             val exprs = header.slots.map(_.content.key)
             val labelFields = exprs.collect {
-              case HasLabel(_, label) => v.getLabel == label.name
+              case HasLabel(_, label) => v.getLabels.contains(label.name)
             }
             val propertyFields = exprs.collect {
               case p@Property(_, k) =>

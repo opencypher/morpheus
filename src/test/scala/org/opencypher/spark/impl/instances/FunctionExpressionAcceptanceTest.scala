@@ -59,7 +59,7 @@ class FunctionExpressionAcceptanceTest extends SparkCypherTestSuite {
     ))
   }
 
-  ignore("get multiple labels") {
+  test("get multiple labels") {
     val given = TestGraph("(:A:B)(:C:D)")
 
     val result = given.cypher("MATCH (a) RETURN labels(a)")
