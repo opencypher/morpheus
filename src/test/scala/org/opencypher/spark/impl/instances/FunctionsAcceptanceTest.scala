@@ -20,7 +20,7 @@ import org.opencypher.spark.api.value.CypherMap
 
 import scala.collection.immutable.Bag
 
-class FunctionExpressionAcceptanceTest extends SparkCypherTestSuite {
+class FunctionsAcceptanceTest extends SparkCypherTestSuite {
 
   test("id for node") {
     val given = TestGraph("(),()")
