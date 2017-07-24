@@ -16,16 +16,17 @@
 package org.opencypher.spark.api.spark
 
 import cats.data.NonEmptyVector
+import org.apache.spark.sql.functions.lit
 import org.opencypher.spark.api.expr.{HasLabel, Property, Var}
 import org.opencypher.spark.api.graph.CypherGraph
+import org.opencypher.spark.api.ir.global.TokenRegistry
 import org.opencypher.spark.api.record._
-import org.opencypher.spark.api.schema.Schema
+import org.opencypher.spark.api.schema.{PropertyKeyMap, Schema}
 import org.opencypher.spark.api.types.{CTNode, CTRelationship, CypherType, DefiniteCypherType}
+import org.opencypher.spark.impl.convert.toSparkType
 import org.opencypher.spark.impl.exception.Raise
 import org.opencypher.spark.impl.record.InternalHeader
 import org.opencypher.spark.impl.spark.SparkColumnName
-import org.opencypher.spark.impl.spark.operations._
-import org.opencypher.spark.impl.syntax.expr._
 
 trait SparkCypherGraph extends CypherGraph with Serializable {
 
@@ -92,19 +93,20 @@ object SparkCypherGraph {
       val selectedScans = selectedScanTypes.map { nodeType => nodeEntityScans.entityScansByType(nodeType).head }
 
       // (2) rename scans consistently
-      val targetSchema = selectedScans
+      val node = Var(name)(nodeCypherType)
+      val tempSchema = selectedScans
         .map(_.schema)
         .reduce(_ ++ _)
+      val tempHeader = RecordHeader.nodeFromSchema(node, tempSchema, TokenRegistry.fromSchema(tempSchema))
 
-      val newEntity = Var(name)(nodeCypherType)
       val selectedRecords = selectedScans.map { scan =>
 
         val recordSlots = scan.records.details.header.contents
         val renamedRecordSlots: Set[SlotContent] = recordSlots.map {
-          case o:OpaqueField => OpaqueField(Var(newEntity.name)(o.cypherType))
+          case o:OpaqueField => OpaqueField(Var(node.name)(o.cypherType))
           case ProjectedExpr(expr) => expr match {
-            case p: Property => ProjectedExpr(Property(newEntity, p.key)(p.cypherType))
-            case h: HasLabel => ProjectedExpr(HasLabel(newEntity, h.label)(h.cypherType))
+            case p: Property => ProjectedExpr(Property(node, p.key)(p.cypherType))
+            case h: HasLabel => ProjectedExpr(HasLabel(node, h.label)(h.cypherType))
             case _ => Raise.impossible()
           }
         }
@@ -117,26 +119,49 @@ object SparkCypherGraph {
         SparkCypherRecords.create(renamedHeader, renamedDF)
       }
 
-      // (3) Compute shared signature
-      val selectedContents = selectedRecords.toSet[SparkCypherRecords].map { _.details.header.contents }
-      val sharedContent = selectedContents.reduce(_ intersect _)
-      val exclusiveContent = selectedContents.reduce(_ union _) -- sharedContent
-      val sharedExprs = contentExprs(sharedContent)
+      // (3) Update all non-nullable property types to nullable and create final schema and header
+      val updatedNodeKeyMap = PropertyKeyMap(tempSchema.nodeKeyMap.m.map {
+        pair => pair._1 -> pair._2.map(p2 => p2._1 -> p2._2.nullable)
+      })()
+
+      val targetSchema = Schema(tempSchema.labels,
+        tempSchema.relationshipTypes,
+        updatedNodeKeyMap,
+        tempSchema.relKeyMap,
+        tempSchema.impliedLabels,
+        tempSchema.labelCombinations)
+
+      val targetHeader = RecordHeader.nodeFromSchema(node, targetSchema, TokenRegistry.fromSchema(targetSchema))
 
       // (4) Adjust individual scans to same header
       val adjustedRecords = selectedRecords.map { scanRecords =>
-        val extraContent = scanRecords.header.contents intersect exclusiveContent
-        val extraExprs = contentExprs(extraContent)
-        val projectedExprs = sharedExprs ++ extraExprs.map(_.nullable)
 
-        // TODO: Ensure same order between different scans
-        // TODO: Select mit slot content
-        // self.select(slots)
-        self.select(scanRecords, IndexedSeq.empty)
+        val data = scanRecords.details.toDF()
+        val labels = scanRecords.header.slotFor(scanRecords.header.fields.head).content match {
+          case o:OpaqueField => o.field.cypherType match {
+            case cn:CTNode => cn.labels.filter(p => p._2).keys.toSeq
+          }
+        }
+
+        val newData = tempHeader.slots.foldLeft(data) { (acc, slot) =>
+          scanRecords.details.header.slots.find(_.content == slot.content) match {
+            case None =>
+              val columnName = SparkColumnName.of(slot)
+              slot.content.key match {
+                case h:HasLabel =>
+                  acc.withColumn(columnName, lit(labels.contains(h.label.name)))
+                case _ => acc.withColumn(columnName, lit(null).cast(toSparkType(slot.content.cypherType.nullable)))
+              }
+            case _ => acc
+          }
+        }
+        // order dataframe columns according to common header
+        val columnNames = targetHeader.slots.map(SparkColumnName.of)
+        SparkCypherRecords.create(targetHeader, newData.select(columnNames.head, columnNames.tail: _*))
       }
 
-      // (5) Union
-      ???
+      // (5) Union all scan records based on final schema
+      SparkCypherRecords.create(targetHeader, adjustedRecords.map(_.details.toDF()).reduce(_ union _))
     }
 
     private def contentExprs(content: Set[SlotContent]) = {

@@ -125,7 +125,7 @@ object GraphScanBuilder {
       val impliedLabels = entity.labelsFromSlotOrImplied.filterNot(_._2.isDefined).keys
 
       val impliedPairs = for {
-        l <- impliedLabels
+        l <- entity.labelsFromSlotOrImplied.keys
         r <- impliedLabels
       } yield l -> r
 
@@ -137,12 +137,9 @@ object GraphScanBuilder {
       val schemaWithOptionalLabels = schemaWithImpliedLabels.withLabelCombination(combinations: _*)
 
       val propertyKeys = getPropertyKeys(entity, header)
-      entity
-        .labelsFromSlotOrImplied
-        .keys
-        .foldLeft(schemaWithOptionalLabels)((schema, label) =>
-          schema.withNodePropertyKeys(label)(propertyKeys: _*)
-        )
+      impliedLabels.foldLeft(schemaWithOptionalLabels)((schema, label) =>
+        schema.withNodePropertyKeys(label)(propertyKeys: _*)
+      )
     }
   }
 

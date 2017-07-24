@@ -27,11 +27,12 @@ class NodeScanTest extends SparkCypherTestSuite {
     nodeScan.schema should equal (Schema.empty
       .withImpliedLabel("A","B")
       .withImpliedLabel("B","A")
+      .withImpliedLabel("C","A")
+      .withImpliedLabel("C","B")
       .withLabelCombination("A","C")
       .withLabelCombination("B","C")
       .withNodePropertyKeys("A")("foo" -> CTString.nullable, "bar" -> CTInteger)
       .withNodePropertyKeys("B")("foo" -> CTString.nullable, "bar" -> CTInteger)
-      .withNodePropertyKeys("C")("foo" -> CTString.nullable, "bar" -> CTInteger)
     )
   }
 }
