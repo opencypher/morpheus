@@ -159,7 +159,7 @@ object SparkSQLExprMapper {
       case labels: Labels =>
         verifyExpression(header, expr)
 
-        val node = Var(SparkColumnName.of(header.slotsFor(labels.expr).head))(CTNode)
+        val node = Var(context.columnName(header.slotsFor(labels.expr).head))(CTNode)
         val labelExprs = header.labels(node)
         val labelColumns = labelExprs.map(getColumn(_, header, df))
         val labelNames = labelExprs.map(_.label)
@@ -194,9 +194,9 @@ object SparkSQLExprMapper {
   private def getNodeLabels(labelNames: Seq[Label])= (labelSwitches: Any) =>
     labelSwitches match {
       case a:mutable.WrappedArray[Boolean] =>
-        a.zip(labelNames).collect({
+        a.zip(labelNames).collect {
           case (true, label) => label.name
-        }).toArray
+        }.toArray
     }
 
 }
