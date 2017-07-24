@@ -77,7 +77,7 @@ object RecordHeader {
     val impliedLabels = schema.impliedLabels.transitiveImplicationsFor(labels)
     val impliedKeys = impliedLabels.flatMap(label => schema.nodeKeyMap.keysFor(label).toSet)
     val possibleLabels = impliedLabels.flatMap(label => schema.labelCombinations.combinationsFor(label))
-    val optionalKeys = possibleLabels.flatMap(label => schema.nodeKeyMap.keysFor(label).toSet)
+    val optionalKeys = possibleLabels.flatMap(label => schema.nodeKeyMap.keysFor(label).toSet) -- impliedKeys
     val optionalNullableKeys = optionalKeys.map { case (k, v) => k -> v.nullable }
     val allKeys: Seq[(String, Vector[CypherType])] = (impliedKeys ++ optionalNullableKeys).toSeq.map { case (k, v) => k -> Vector(v) }
     val keyGroups: Map[String, Vector[CypherType]] = allKeys.groups[String, Vector[CypherType]]
