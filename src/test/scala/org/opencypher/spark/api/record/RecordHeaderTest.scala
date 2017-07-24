@@ -18,7 +18,7 @@ package org.opencypher.spark.api.record
 import org.opencypher.spark.BaseTestSuite
 import org.opencypher.spark.api.types._
 import org.opencypher.spark.api.expr._
-import org.opencypher.spark.api.ir.global.{LabelRef, PropertyKey, PropertyKeyRef}
+import org.opencypher.spark.api.ir.global.{Label, LabelRef, PropertyKey, PropertyKeyRef}
 import org.opencypher.spark.impl.syntax.header._
 import org.opencypher.spark.impl.util.{Added, Found, Removed, Replaced}
 import org.opencypher.spark.toVar
@@ -185,5 +185,28 @@ class RecordHeaderTest extends BaseTestSuite {
       RecordSlot(0, ProjectedExpr(Property(Var("n")(), PropertyKey("name"))(CTInteger))),
       RecordSlot(1, ProjectedExpr(Property(Var("n")(), PropertyKey("name"))(CTString)))
     ))
+  }
+
+  test("can get labels") {
+    val field1 = OpaqueField('n)
+    val label1 = ProjectedExpr(HasLabel('n, Label("A"))(CTBoolean))
+    val label2 = ProjectedExpr(HasLabel('n, Label("B"))(CTBoolean))
+    val prop = ProjectedExpr(Property('n, PropertyKey("foo"))(CTString))
+    val field2 = OpaqueField('m)
+    val prop2 = ProjectedExpr(Property('m, PropertyKey("bar"))(CTString))
+
+    val (h1, _) = RecordHeader.empty.update(addContent(field1))
+    val (h2, _) = h1.update(addContent(label1))
+    val (h3, _) = h2.update(addContent(label2))
+    val (h4, _) = h3.update(addContent(prop))
+    val (h5, _) = h3.update(addContent(field2))
+    val (header, _) = h3.update(addContent(prop2))
+
+    header.labels(Var("n")(CTNode)) should equal(
+      Seq(
+        HasLabel('n, Label("A"))(CTBoolean),
+        HasLabel('n, Label("B"))(CTBoolean)
+      )
+    )
   }
 }

@@ -48,6 +48,13 @@ final case class RecordHeader(internalHeader: InternalHeader) {
   def targetNode(rel: Var): RecordSlot = slotsFor(EndNode(rel)()).headOption.getOrElse(???)
   def typeId(rel: Expr): RecordSlot = slotsFor(TypeId(rel)()).headOption.getOrElse(???)
 
+  def labels(node: Var): Seq[HasLabel] = {
+    val slotsForNode = slots.filter(_.content.owner.orNull == node)
+    slotsForNode.collect({
+      case RecordSlot(_, ProjectedExpr(h: HasLabel)) => h
+    })
+  }
+
   override def toString = {
     val s = slots
     s"RecordHeader with ${s.size} slots: \n\t ${slots.mkString("\n\t")}"
