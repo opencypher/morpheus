@@ -29,7 +29,7 @@ trait SparkGraphSpace extends GraphSpace {
   override type Engine = SparkCypherEngine
 
   // TODO: Remove
-  def tokens: SparkCypherRecordsTokens
+  var tokens: SparkCypherRecordsTokens
 
   def session: SparkSession
   val engine = org.opencypher.spark.impl.instances.spark.cypher.sparkCypherEngineInstance
@@ -38,7 +38,7 @@ trait SparkGraphSpace extends GraphSpace {
 object SparkGraphSpace extends SparkGraphLoading with Serializable {
   def empty(sparkSession: SparkSession, registry: TokenRegistry) = new SparkGraphSpace {
     override def session: SparkSession = sparkSession
-    override def tokens: SparkCypherRecordsTokens = SparkCypherRecordsTokens(registry)
+    override var tokens: SparkCypherRecordsTokens = SparkCypherRecordsTokens(registry)
     override def base: SparkCypherGraph = SparkCypherGraph.empty(this)
   }
 }

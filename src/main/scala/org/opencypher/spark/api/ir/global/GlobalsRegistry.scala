@@ -64,8 +64,12 @@ object TokenRegistry {
   )
 
   def fromSchema(verified: VerifiedSchema): TokenRegistry = {
+    fromSchema(TokenRegistry.empty, verified)
+  }
+
+  def fromSchema(existing: TokenRegistry, verified: VerifiedSchema): TokenRegistry = {
     val schema = verified.schema
-    val withLabels = schema.labels.foldLeft(TokenRegistry.empty) { case (acc, l) => acc.withLabel(Label(l)) }
+    val withLabels = schema.labels.foldLeft(existing) { case (acc, l) => acc.withLabel(Label(l)) }
     val withKeys = schema.keys.foldLeft(withLabels) { case (acc, name) => acc.withPropertyKey(PropertyKey(name)) }
     val withTypes = schema.relationshipTypes.foldLeft(withKeys) { case (acc, name) => acc.withRelType(RelType(name)) }
     withTypes

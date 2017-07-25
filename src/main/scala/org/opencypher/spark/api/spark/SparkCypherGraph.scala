@@ -25,7 +25,7 @@ import org.opencypher.spark.api.schema.{PropertyKeyMap, Schema}
 import org.opencypher.spark.api.types.{CTNode, CTRelationship, CypherType, DefiniteCypherType}
 import org.opencypher.spark.impl.convert.toSparkType
 import org.opencypher.spark.impl.exception.Raise
-import org.opencypher.spark.impl.record.InternalHeader
+import org.opencypher.spark.impl.record.{InternalHeader, SparkCypherRecordsTokens}
 import org.opencypher.spark.impl.spark.SparkColumnName
 
 trait SparkCypherGraph extends CypherGraph with Serializable {
@@ -46,6 +46,9 @@ object SparkCypherGraph {
     val allScans = nodes +: scans
 
     val schema = allScans.map(_.schema).reduce(_ ++ _)
+
+    // updates the registry associated with the graph space
+    space.tokens = SparkCypherRecordsTokens(TokenRegistry.fromSchema(space.tokens.registry, schema))
 
     new ScanGraph(allScans, schema) {}
   }
