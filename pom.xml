@@ -215,7 +215,7 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>${plugin.exec-maven.version}</version>
                 <configuration>
-                    <mainClass>org.opencypher.spark.shell.Shell</mainClass>
+                    <mainClass>org.opencypher.spark.Shell</mainClass>
                     <classpathScope>test</classpathScope>
                 </configuration>
             </plugin>
