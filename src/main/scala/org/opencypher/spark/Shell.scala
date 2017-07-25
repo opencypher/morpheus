@@ -62,9 +62,7 @@ object Shell {
         predef =
           s"""|repl.frontEnd() = ammonite.frontend.FrontEnd.$frontend
               |repl.prompt() = \"(:spark)-->(:cypher) \"
-              |import org.opencypher.spark.prototype.PrototypeDemo._
-              |import org.opencypher.spark.prototype.impl.instances.spark.cypher._
-              |import org.opencypher.spark.prototype.impl.syntax.cypher._
+              |import org.opencypher.spark.PrototypeDemo._
               |""".stripMargin
       ).instantiateRepl(Seq("session" -> session))
       repl.run()
