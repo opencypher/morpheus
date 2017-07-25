@@ -70,7 +70,11 @@ object SparkSQLExprMapper {
         val col = getColumn(expr, header, df)
         Some(col)
 
-      case _: Const => Some(getColumn(expr, header, df))
+      case _: Const =>
+        Some(getColumn(expr, header, df))
+
+      case _: Property =>
+        Some(getColumn(expr, header, df))
 
       // predicates
       case Equals(e1, e2) =>

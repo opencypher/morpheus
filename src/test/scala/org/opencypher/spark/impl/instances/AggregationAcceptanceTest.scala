@@ -32,7 +32,7 @@ class AggregationAcceptanceTest extends SparkCypherTestSuite {
     ))
   }
 
-  ignore("simple count()") {
+  test("simple count()") {
     val graph = TestGraph("({name: 'foo'}), ({name: 'bar'}), (), (), (), ({name: 'baz'})")
 
     val result = graph.cypher("MATCH (n) WITH count(n.name) AS nonNullNames RETURN nonNullNames")

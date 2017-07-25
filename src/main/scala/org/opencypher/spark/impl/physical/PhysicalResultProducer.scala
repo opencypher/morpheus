@@ -137,12 +137,21 @@ class PhysicalResultProducer(context: RuntimeContext) {
       prev.mapRecordsWithDetails { records =>
         val data = records.data
 
+        if (group.nonEmpty)
+          Raise.notYetImplemented("grouping")
+
         val newData = agg match {
           case _: CountStar =>
-            if (group.isEmpty)
-              data.agg(functions.count(functions.lit(0)).as(to.name))
-            else
-              Raise.notYetImplemented("grouping")
+            data.agg(functions.count(functions.lit(0)).as(to.name))
+
+            // TODO: Consider not implicitly projecting the inner expr here, but rewriting it into a variable in logical planning or IR construction
+          case Count(expr) =>
+            asSparkSQLExpr(records.header, expr, data) match {
+              case None =>
+                Raise.notYetImplemented(s"projecting $expr")
+              case Some(column) =>
+                data.agg(functions.count(column).as(to.name))
+            }
 
           case x =>
             Raise.notYetImplemented(s"Aggregator $x")

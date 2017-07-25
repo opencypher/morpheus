@@ -227,13 +227,17 @@ final case class Type(expr: Expr)(val cypherType: CypherType = CTWildcard) exten
 }
 
 // Aggregators
-sealed trait Aggregator extends Expr
+sealed trait Aggregator extends Expr {
+  def inner: Option[Expr]
+}
 
 final case class CountStar()(val cypherType: CypherType = CTWildcard) extends Aggregator {
+  override val inner = None
   override def toString = "count(*)"
 }
 
 final case class Count(expr: Expr)(val cypherType: CypherType = CTWildcard) extends Aggregator {
+  override val inner = Some(expr)
   override def toString = s"count($expr)"
   override def withoutType: String = s"count(${expr.withoutType})"
 }

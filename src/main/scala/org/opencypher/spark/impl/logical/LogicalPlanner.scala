@@ -106,8 +106,10 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
           case None => skipOp
         }
 
-      case AggregationBlock(_, agg, group) =>
-        producer.aggregate(agg, group, plan)
+      case AggregationBlock(_, af@AggField(_, agg: Aggregator), group) =>
+        // plan projection of aggregation argument
+        val prev = agg.inner.map(e => planInnerExpr(e, plan)).getOrElse(plan)
+        producer.aggregate(af, group, prev)
 
       case x =>
         Raise.notYetImplemented(s"logical planning of $x")
