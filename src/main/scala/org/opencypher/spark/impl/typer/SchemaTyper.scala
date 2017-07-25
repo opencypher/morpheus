@@ -218,6 +218,9 @@ object SchemaTyper {
     case expr: FunctionInvocation =>
       FunctionInvocationTyper(expr)
 
+    case CountStar() =>
+      recordAndUpdate(expr -> CTInteger)
+
     case add: Add =>
       AddTyper(add)
 
