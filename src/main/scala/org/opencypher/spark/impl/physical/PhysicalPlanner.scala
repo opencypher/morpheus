@@ -73,6 +73,9 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
       case flat.Project(expr, in, header) =>
         inner(in).project(expr, header)
 
+      case flat.Aggregate(to, agg, group, in , header) =>
+        inner(in).aggregate(to, agg, group, header)
+
       case flat.Filter(expr, in, header) => expr match {
         case TrueLit() => inner(in) // optimise away filter
         case _ => inner(in).filter(expr, header)

@@ -86,6 +86,12 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     edgeScan(edge, edgeDef, prev)
   }
 
+  def aggregate(to: Var, agg: Aggregator, group: Set[Var], in: FlatOperator) = {
+    val (newHeader, result) = RecordHeader.empty.update(addContents(group.toSeq.map(OpaqueField) :+ OpaqueField(to)))
+
+    Aggregate(to, agg, group, in, newHeader)
+  }
+
   // TODO: Specialize per kind of slot content
   def project(it: ProjectedSlotContent, in: FlatOperator): FlatOperator = {
     val (newHeader, result) = in.header.update(addContent(it))

@@ -17,7 +17,7 @@ package org.opencypher.spark.impl.physical
 
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{ArrayType, BooleanType, LongType}
-import org.apache.spark.sql.{Column, DataFrame, Row}
+import org.apache.spark.sql.{Column, DataFrame, Row, functions}
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.block.{Asc, Desc, SortItem}
 import org.opencypher.spark.api.ir.global._
@@ -131,6 +131,24 @@ class PhysicalResultProducer(context: RuntimeContext) {
         }
 
         SparkCypherRecords.create(header, newData)(subject.space)
+      }
+
+    def aggregate(to: Var, agg: Aggregator, group: Set[Var], header: RecordHeader): PhysicalResult =
+      prev.mapRecordsWithDetails { records =>
+        val data = records.data
+
+        val newData = agg match {
+          case _: CountStar =>
+            if (group.isEmpty)
+              data.agg(functions.count(functions.lit(0)).as(to.name))
+            else
+              Raise.notYetImplemented("grouping")
+
+          case x =>
+            Raise.notYetImplemented(s"Aggregator $x")
+        }
+
+        SparkCypherRecords.create(header, newData)(records.space)
       }
 
     def select(fields: IndexedSeq[Var], header: RecordHeader): PhysicalResult =

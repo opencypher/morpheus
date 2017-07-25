@@ -15,7 +15,7 @@
  */
 package org.opencypher.spark.impl.flat
 
-import org.opencypher.spark.api.expr.{Expr, Var}
+import org.opencypher.spark.api.expr.{Aggregator, Expr, Var}
 import org.opencypher.spark.api.ir.block.SortItem
 import org.opencypher.spark.api.ir.pattern.{EveryNode, EveryRelationship}
 import org.opencypher.spark.api.record.{OpaqueField, RecordHeader}
@@ -69,6 +69,8 @@ final case class Select(fields: IndexedSeq[Var], in: FlatOperator, header: Recor
   extends StackingFlatOperator
 
 final case class Project(expr: Expr, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
+
+final case class Aggregate(to: Var, agg: Aggregator, group: Set[Var], in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
 final case class Alias(expr: Expr, alias: Var, in: FlatOperator, header: RecordHeader)
   extends StackingFlatOperator

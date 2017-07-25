@@ -74,8 +74,8 @@ object Raise {
     "Error during logical planning"
   )
 
-  def impossible(msg: String = "") = throw SparkCypherException(
-    s"Something impossible happened! $msg"
+  def impossible(detail: String = "") = throw SparkCypherException(
+    s"Something impossible happened! $detail"
   )
 
   def invalidArgument(expected: String, actual: String) = throw SparkCypherException(

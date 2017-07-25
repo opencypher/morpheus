@@ -21,6 +21,7 @@ import org.atnos.eff.all._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Limit, OrderBy, Skip, Statement}
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, ast}
 import org.opencypher.spark.api.expr._
+import org.opencypher.spark.api.expr.{Aggregator, Expr, Var}
 import org.opencypher.spark.api.ir._
 import org.opencypher.spark.api.ir.block.{SortItem, _}
 import org.opencypher.spark.api.ir.pattern.{AllGiven, Pattern}
@@ -86,7 +87,7 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
           }
         } yield refs
 
-      case ast.With(_, ast.ReturnItems(_, items), orderBy, skip, limit, where) =>
+      case ast.With(_, ast.ReturnItems(_, items), orderBy, skip, limit, where) if !items.exists(_.expression.containsAggregate) =>
         for {
           fieldExprs <- EffMonad[R].sequence(items.map(convertReturnItem[R]).toVector)
           given <- convertWhere(where)
@@ -96,6 +97,33 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
             val appendList = (list: Vector[BlockRef]) => pure[R, Vector[BlockRef]](projectRef +: list)
             val orderAndSliceBlock = registerOrderAndSliceBlock(orderBy, skip, limit)
             put[R,IRBuilderContext](context.copy(blocks = projectReg)) >> orderAndSliceBlock >>= appendList
+          }
+        } yield refs
+
+      case ast.With(_, ast.ReturnItems(_, items), _, _, _, None) =>
+        for {
+          fieldExprs <- EffMonad[R].sequence(items.map(convertReturnItem[R]).toVector)
+          context <- get[R, IRBuilderContext]
+          refs <- {
+            val (agg, group) = fieldExprs.partition {
+              case (_, _: Aggregator) => true
+            }
+
+            if (agg.size != 1)
+              error(IRBuilderError("More than one top-level aggregation!"))(Vector.empty)
+            else {
+              // First project the group
+              val (ref1, reg1) = registerProjectBlock(context, group)
+
+              // Second, aggregate with grouping
+              val (aggField, aggExpr: Aggregator) = agg.head
+
+              val after = reg1.lastAdded.toSet
+              val aggBlock = AggregationBlock[Expr](after, AggField(aggField, aggExpr), group.map(_._1).toSet)
+              val (ref2, reg2) = reg1.register(aggBlock)
+
+              put[R, IRBuilderContext](context.copy(blocks = reg2)) >> pure[R, Vector[BlockRef]](Vector(ref1, ref2))
+            }
           }
         } yield refs
 
