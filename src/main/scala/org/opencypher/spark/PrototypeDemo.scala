@@ -37,6 +37,6 @@ object PrototypeDemo {
   }
 
   def main(args: Array[String]): Unit = {
-    cypher("MATCH (t:User)-[:ATTENDED]->() WHERE t.country = 'ca' RETURN t.city, t.id")
+    cypher("MATCH (t:User)-[:ATTENDED]->() WHERE t.country = 'ca' RETURN t.city, t.id").showRecords()
   }
 }

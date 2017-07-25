@@ -63,7 +63,7 @@ sealed abstract class SparkCypherRecords(tokens: SparkCypherTokens,
   // TODO: Check that this does not change the caching of our data frame
   def cached = SparkCypherRecords.create(header, data.cache())
 
-  override def show() = data.show
+  override def show() = RecordsPrinter.print(this)
 
   def details = optDetailedRecords.getOrElse(this)
 
@@ -214,6 +214,24 @@ sealed abstract class SparkCypherRecords(tokens: SparkCypherTokens,
   def toLocalIterator: java.util.Iterator[CypherMap] = {
     val iterator = data.toLocalIterator()
     new java.util.Iterator[CypherMap] {
+      override def next(): CypherMap = {
+        val it = iterator.next()
+        val entries = columns.map { (column) =>
+          val fieldIndex = it.fieldIndex(column)
+          val javaValue = it.get(fieldIndex)
+          val scalaValue = CypherValue(javaValue)
+          column -> scalaValue
+        }
+        CypherMap(entries: _*)
+      }
+
+      override def hasNext: Boolean = iterator.hasNext
+    }
+  }
+
+  def toScalaIterator: Iterator[CypherMap] = {
+    val iterator = data.toLocalIterator()
+    new Iterator[CypherMap] {
       override def next(): CypherMap = {
         val it = iterator.next()
         val entries = columns.map { (column) =>
