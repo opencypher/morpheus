@@ -22,6 +22,17 @@ import scala.collection.immutable.Bag
 
 class FunctionsAcceptanceTest extends SparkCypherTestSuite {
 
+  test("type()") {
+    val given = TestGraph("()-[:KNOWS]->()-[:HATES]->()")
+
+    val result = given.cypher("MATCH ()-[r]->() RETURN type(r)")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("type(r)" -> "KNOWS"),
+      CypherMap("type(r)" -> "HATES")
+    ))
+  }
+
   test("id for node") {
     val given = TestGraph("(),()")
 

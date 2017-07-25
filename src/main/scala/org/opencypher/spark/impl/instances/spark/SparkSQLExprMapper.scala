@@ -19,7 +19,7 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{ArrayType, BooleanType, StringType}
 import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.spark.api.expr._
-import org.opencypher.spark.api.ir.global.Label
+import org.opencypher.spark.api.ir.global.{Label, RelTypeRef}
 import org.opencypher.spark.api.record.RecordHeader
 import org.opencypher.spark.api.types.CTNode
 import org.opencypher.spark.api.value.CypherValue
@@ -165,6 +165,21 @@ object SparkSQLExprMapper {
         val labelNames = labelExprs.map(_.label)
         val labelsUDF = udf(getNodeLabels(labelNames), ArrayType(StringType, containsNull = false))
         Some(labelsUDF(functions.array(labelColumns: _*)))
+
+      case Type(inner) =>
+        verifyExpression(header, expr)
+
+        inner match {
+          case v: Var =>
+            val typeIdSlot = header.typeId(v)
+            val typeIdCol = df.col(context.columnName(typeIdSlot))
+            val map = (i: Long) => context.tokens.relType(RelTypeRef(i.toInt)).name
+            val typeUdf = udf(map, StringType)
+            Some(typeUdf(typeIdCol))
+
+          case _ =>
+            Raise.notYetImplemented("type() of non-variables")
+        }
 
       case _ =>
         None

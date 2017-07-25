@@ -16,7 +16,7 @@
 package org.opencypher.spark.impl.ir
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{FunctionInvocation, _}
-import org.opencypher.spark.api.expr.{Expr, FunctionExpr, Id, Labels}
+import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.types.CypherType
 import org.opencypher.spark.impl.exception.Raise
 
@@ -27,6 +27,7 @@ object FunctionUtils {
       functionInvocation.function match {
         case functions.Id => Id(expr.head)(cypherType)
         case functions.Labels => Labels(expr.head)(cypherType)
+        case functions.Type => Type(expr.head)(cypherType)
         case a:Function => Raise.notYetImplemented(s"parsing ${a.name} function")
       }
     }
