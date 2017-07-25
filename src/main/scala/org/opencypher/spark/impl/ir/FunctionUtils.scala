@@ -23,11 +23,12 @@ import org.opencypher.spark.impl.exception.Raise
 object FunctionUtils {
 
   implicit class RichFunctionInvocation(functionInvocation: FunctionInvocation) {
-    def toCAPSFunction(expr: IndexedSeq[Expr], cypherType: CypherType): FunctionExpr = {
+    def toCAPSFunction(expr: IndexedSeq[Expr], cypherType: CypherType): Expr = {
       functionInvocation.function match {
         case functions.Id => Id(expr.head)(cypherType)
         case functions.Labels => Labels(expr.head)(cypherType)
         case functions.Type => Type(expr.head)(cypherType)
+        case functions.Count => Count(expr.head)(cypherType)
         case a:Function => Raise.notYetImplemented(s"parsing ${a.name} function")
       }
     }
