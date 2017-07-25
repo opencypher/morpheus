@@ -33,6 +33,16 @@ object Schema {
 
 object PropertyKeyMap {
   val empty = PropertyKeyMap(Map.empty)()
+
+  /**
+    * Updates all contained cypher types to their corresponding nullable type.
+    *
+    * @param map property key map
+    * @return updated property key map
+    */
+  def asNullable(map: PropertyKeyMap): PropertyKeyMap = PropertyKeyMap(map.m.map {
+    pair => pair._1 -> pair._2.map(p2 => p2._1 -> p2._2.nullable)
+  })()
 }
 
 final case class PropertyKeyMap(m: Map[String, Map[String, CypherType]])(val conflicts: Set[String] = Set.empty) {
