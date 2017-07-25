@@ -43,7 +43,7 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
       ))
 
   val `:KNOWS` =
-    RelationshipScan.on("r" -> "ID") {
+    RelationshipScan.on("k" -> "ID") {
       _.from("SRC").to("DST").relType("KNOWS")
        .build
        .withPropertyKey("since" -> "SINCE")
@@ -57,6 +57,21 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
         (2, 4, 3, 2016),
         (2, 5, 4, 2013),
         (3, 6, 4, 2016))
+    ))
+
+  val `:READS` =
+    RelationshipScan.on("r" -> "ID") {
+      _.from("SRC").to("DST").relType("READS")
+        .build
+        .withPropertyKey("recommends" -> "RECOMMENDS")
+    }
+    .from(SparkCypherRecords.create(
+      Seq("SRC", "ID", "DST", "RECOMMENDS"),
+      Seq(
+        (1, 100, 10, true),
+        (2, 200, 40, true),
+        (3, 300, 30, true),
+        (4, 400, 20, false))
     ))
 
   test("Construct graph from single node scan") {
@@ -83,7 +98,7 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
       "n", "____n:Person", "____n:Swedish", "____n:Book", "____n_dot_nameSTRING", "____n_dot_lucky_bar_numberINTEGER", "____n_dot_titleSTRING", "____n_dot_yearINTEGER"
     ))
 
-    nodes.details.toDF().collect().toSet should equal (Set(
+    nodes.details.toDF().collect().toSet should equal(Set(
       Row( 1,  true,  true,  false,   "Mats",   23,                   null, null),
       Row( 2,  true,  false, false, "Martin",   42,                   null, null),
       Row( 3,  true,  false, false,    "Max", 1337,                   null, null),
@@ -95,11 +110,46 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
     ))
   }
 
-  ignore("Construct graph from scans") {
-     val graph = SparkCypherGraph.create(`:Person`, `:KNOWS`)
+  test("Construct graph from single node and single relationship scan") {
+    val graph = SparkCypherGraph.create(`:Person`, `:KNOWS`)
+    val rels  = graph.relationships("e")
 
-     val nodes = graph.nodes("n")
+    rels.details.toDF().columns should equal(Array(
+      "____source(e)", "e", "____type(e)", "____target(e)", "____e_dot_sinceINTEGER"
+    ))
 
-     nodes shouldMatch `:Person`.records
+    rels.details.toDF().collect().toSet should equal(Set(
+      Row(1, 1, 0, 2, 2017),
+      Row(1, 2, 0, 3, 2016),
+      Row(1, 3, 0, 4, 2015),
+      Row(2, 4, 0, 3, 2016),
+      Row(2, 5, 0, 4, 2013),
+      Row(3, 6, 0, 4, 2016)
+    ))
+  }
+
+  test("Construct graph from multiple node and multiple relationship scan") {
+    val graph = SparkCypherGraph.create(`:Person`, `:Book`, `:KNOWS`, `:READS`)
+
+    val rels  = graph.relationships("e")
+
+    rels.details.toDF().columns should equal(Array(
+      "____source(e)", "e", "____type(e)", "____target(e)", "____e_dot_sinceINTEGER", "____e_dot_recommendsBOOLEAN"
+    ))
+
+    rels.details.toDF().collect().toSet should equal(Set(
+      // knows
+      Row(1, 1, 0, 2, 2017, null),
+      Row(1, 2, 0, 3, 2016, null),
+      Row(1, 3, 0, 4, 2015, null),
+      Row(2, 4, 0, 3, 2016, null),
+      Row(2, 5, 0, 4, 2013, null),
+      Row(3, 6, 0, 4, 2016, null),
+      // reads
+      Row(1, 100, 1, 10, null, true),
+      Row(2, 200, 1, 40, null, true),
+      Row(3, 300, 1, 30, null, true),
+      Row(4, 400, 1, 20, null, false)
+    ))
   }
 }
