@@ -71,6 +71,7 @@
                 <filtering>true</filtering>
                 <includes>
                     <include>**/version.txt</include>
+                    <include>**/demo/**</include>
                 </includes>
             </resource>
         </resources>

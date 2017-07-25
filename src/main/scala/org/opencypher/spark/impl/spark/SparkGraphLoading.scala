@@ -148,7 +148,7 @@ trait SparkGraphLoading {
       }
 
       override def session = sparkSession
-      override def tokens = SparkCypherRecordsTokens(context.globals.tokens)
+      override var tokens = SparkCypherRecordsTokens(context.globals.tokens)
     }
   }
 

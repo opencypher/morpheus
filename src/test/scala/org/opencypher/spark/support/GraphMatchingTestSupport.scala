@@ -101,7 +101,7 @@ trait GraphMatchingTestSupport {
 
       override val space: SparkGraphSpace = new SparkGraphSpace {
         override val session: SparkSession = sparkSession
-        override val tokens: SparkCypherRecordsTokens = SparkCypherRecordsTokens(TokenRegistry.fromSchema(schema))
+        override var tokens: SparkCypherRecordsTokens = SparkCypherRecordsTokens(TokenRegistry.fromSchema(schema))
         override val base: SparkCypherGraph = {
           self
         }
