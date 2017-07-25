@@ -24,7 +24,7 @@ object PrototypeDemo {
 
   lazy val space = SparkGraphSpace.fromNeo4j("MATCH (n) RETURN n", "MATCH ()-[r]->() RETURN r")(RunBenchmark.sparkSession)
 
-  def cypher(query: String): SparkCypherGraph = {
+  def cypher(query: String): SparkCypherResult = {
     println(s"Now executing query: $query")
 
     val result: SparkCypherResult = space.base.cypher(query)
@@ -33,10 +33,10 @@ object PrototypeDemo {
     result.records.toDF().count()
     println(s"Time: ${System.currentTimeMillis() - start} ms")
 
-    result.graph
+    result
   }
 
   def main(args: Array[String]): Unit = {
-    cypher("MATCH (t:User)-[:ATTENDED]->() WHERE t.country = 'ca' RETURN t.city, t.id")
+    cypher("MATCH (t:User)-[:ATTENDED]->() WHERE t.country = 'ca' RETURN t.city, t.id").showRecords()
   }
 }

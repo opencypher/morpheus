@@ -555,6 +555,8 @@ case object CypherMap extends CypherMapCompanion[CypherMap] {
 sealed class CypherMap(protected[value] val properties: Properties)
   extends CypherValue with Serializable {
 
+  def get(key: String): Option[CypherValue] = properties.get(key)
+
   @transient
   protected[value] lazy val cachedIsComparable: Boolean =
     properties.m.values.exists(CypherValue.isIncomparable)
