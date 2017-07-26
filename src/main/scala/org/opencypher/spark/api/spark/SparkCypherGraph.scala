@@ -225,7 +225,9 @@ object SparkCypherGraph {
             case _ => Raise.impossible()
           }
         }
-        val nameMap = recordSlots.zip(renamedRecordSlots).map(t => SparkColumnName.of(t._1) -> SparkColumnName.of(t._2)).toMap
+        val nameMap = recordSlots.toSeq.sortBy(slot => slot.key.toString)(Ordering.String)
+          .zip(renamedRecordSlots.toSeq.sortBy(_.key.toString)(Ordering.String))
+          .map(t => SparkColumnName.of(t._1) -> SparkColumnName.of(t._2)).toMap
         val renamedHeader = RecordHeader(InternalHeader(renamedRecordSlots.toSeq: _*))
         val df = scan.records.details.toDF()
         val renamedDF = df.columns.foldLeft(df)((df, col) => df.withColumnRenamed(col, nameMap(col)))
