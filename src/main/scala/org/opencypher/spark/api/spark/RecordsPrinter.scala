@@ -15,7 +15,7 @@ object RecordsPrinter {
   }
 
   def print(records: SparkCypherRecords, stream: PrintStream): Unit = {
-    val fieldContents = records.header.slots.map(_.content)
+    val fieldContents = records.header.slots.sortBy(_.index).map(_.content)
     val lineWidth = 20 * fieldContents.size + 5
     val --- = "+" + repeat("-", lineWidth) + "+"
 
