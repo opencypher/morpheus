@@ -262,6 +262,7 @@ object SparkCypherGraph {
       def scans(entityType: EntityType) = {
         val candidateTypes = entityScanTypes.filter(_.subTypeOf(entityType).isTrue)
         // TODO: we always select the head of the NonEmptyVector, why not changing to Map[EntityType, EntityScan]?
+        // TODO: does this work for relationships?
         val selectedScans = candidateTypes.flatMap(typ => entityScansByType.get(typ).map(_.head))
         selectedScans
       }

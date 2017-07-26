@@ -85,4 +85,8 @@ object Raise {
   def typeInferenceFailed(detail: String) = throw SparkCypherException(
     s"Some error in type inference: $detail"
   )
+
+  def schemaMismatch(detail: String) = throw SparkCypherException(
+    s"Incompatible schemas: $detail"
+  )
 }

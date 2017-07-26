@@ -45,10 +45,10 @@ class StdCypherResultContainerTest extends BaseTestSuite with SparkTestSession.F
       """|+---------------------------------------------+
          || name                 | age                  |
          |+---------------------------------------------+
-         || 'Mats'               | 29 :: INTEGER        |
-         || 'Stefan'             | 36 :: INTEGER        |
-         || 'Third guy'          | 55 :: INTEGER        |
-         || 'Nobody'             | -1 :: INTEGER        |
+         || 'Mats'               | 29                   |
+         || 'Stefan'             | 36                   |
+         || 'Third guy'          | 55                   |
+         || 'Nobody'             | -1                   |
          |+---------------------------------------------+
          |""".stripMargin)
   }

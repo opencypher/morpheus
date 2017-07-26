@@ -16,6 +16,7 @@
 package org.opencypher.spark.api.schema
 
 import org.opencypher.spark.BaseTestSuite
+import org.opencypher.spark.api.exception.SparkCypherException
 import org.opencypher.spark.api.types.{CTBoolean, CTFloat, CTInteger, CTString}
 
 class SchemaTest extends BaseTestSuite {
@@ -180,6 +181,38 @@ class SchemaTest extends BaseTestSuite {
       .withNodePropertyKeys("B")("bar" -> CTString))
    }
 
+  test("combining key non-conflicting schemas") {
+    val schema1 = Schema.empty
+      .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString)
+    val schema2 = Schema.empty
+      .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString, "baz" -> CTString)
+
+    schema1 ++ schema2 should equal(Schema.empty
+      .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString, "baz" -> CTString))
+  }
+
+  test("combining key conflicting schemas") {
+    val schema1 = Schema.empty
+      .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString)
+    val schema2 = Schema.empty
+      .withNodePropertyKeys("A")("foo" -> CTString, "baz" -> CTString)
+
+    the [SparkCypherException] thrownBy {
+      schema1 ++ schema2
+    } should have message s"Incompatible schemas: Conflicting property key maps ${schema1.nodeKeyMap} and ${schema2.nodeKeyMap}"
+  }
+
+  test("combining type conflicting schemas") {
+    val schema1 = Schema.empty
+      .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString)
+    val schema2 = Schema.empty
+      .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTInteger)
+
+    the [SparkCypherException] thrownBy {
+      schema1 ++ schema2
+    } should have message s"Incompatible schemas: Conflicting property key maps ${schema1.nodeKeyMap} and ${schema2.nodeKeyMap}"
+  }
+
   test("combining schemas with restricting label implications") {
     val schema1 = Schema.empty
       .withImpliedLabel("A", "B")
@@ -197,7 +230,6 @@ class SchemaTest extends BaseTestSuite {
       .withNodePropertyKeys("C")()
       .withNodePropertyKeys("D")()
       .withNodePropertyKeys("F")()
-
 
     schema1 ++ schema2 should equal(Schema.empty
       .withImpliedLabel("A", "B")
