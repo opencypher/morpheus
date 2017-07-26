@@ -17,6 +17,7 @@ package org.opencypher.spark.api.schema
 
 import org.opencypher.spark.api.types._
 import org.opencypher.spark.api.util.{Verifiable, Verified}
+import org.opencypher.spark.impl.exception.Raise
 
 import scala.language.implicitConversions
 
@@ -64,7 +65,15 @@ final case class PropertyKeyMap(m: Map[String, Map[String, CypherType]])(val con
 
   def keys = m.values.flatMap(_.keySet).toSet
 
-  def ++(other: PropertyKeyMap) = copy(m ++ other.m)(conflicts ++ other.conflicts)
+  def ++(other: PropertyKeyMap) = {
+    if (m.keySet.intersect(other.m.keySet).forall(key =>
+      (this.m(key).toSet -- other.m(key).toSet).isEmpty || (other.m(key).toSet -- this.m(key).toSet).isEmpty)
+    ) {
+      copy(m ++ other.m)(conflicts ++ other.conflicts)
+    } else {
+      Raise.schemaMismatch(s"Conflicting property key maps $this and $other")
+    }
+  }
 }
 
 case class ImpliedLabels(m: Map[String, Set[String]]) {
@@ -92,9 +101,9 @@ case class LabelCombinations(combos: Set[Set[String]]) {
 
   def combinationsFor(label: String): Set[String] = combos.find(_(label)).getOrElse(Set.empty)
 
-  def withCombinations(as: String*): LabelCombinations = {
-    val (lhs, rhs) = combos.partition(labels => as.exists(labels(_)))
-    copy(combos = rhs + (lhs.flatten ++ as))
+  def withCombinations(coExistingLabels: String*): LabelCombinations = {
+    val (lhs, rhs) = combos.partition(labels => coExistingLabels.exists(labels(_)))
+    copy(combos = rhs + (lhs.flatten ++ coExistingLabels))
   }
 
   def ++(other: LabelCombinations) = copy(combos ++ other.combos)

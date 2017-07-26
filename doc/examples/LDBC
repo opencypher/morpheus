@@ -1,0 +1,37 @@
+Graph
+
+- LDBC Social Network (Graphalytics)
+- Node count: 	 61,613
+- Rels count: 2,026,082
+
+Query 1
+
+val result1 = cypher("MATCH (n:Person) WHERE n.lastName = 'Richter' RETURN n.firstName, n.lastName")
+result1.showRecords
+
+Query 2
+
+val result2 = cypher("MATCH (n:Person)-[:KNOWS]->(m:Person) WHERE n.lastName = 'Richter' RETURN m.firstName, m.lastName")
+result2.showRecords
+
+Query 3
+
+val result3 = cypher("MATCH (n:Person)-[:KNOWS*1..2]->(m:Person) WHERE n.lastName = 'Richter' RETURN m.firstName, m.lastName")
+result3.showRecords
+
+Query 4
+
+val result4 = cypher("""
+      MATCH  (n:Person)-[k:KNOWS]->(m:Person),
+             (m)-[s:STUDY_AT]->(u:University),
+             (n)-[h:HAS_INTEREST]->(t:Tag)
+       WHERE n.lastName = 'Richter'
+             AND m.lastName = 'Anton'
+             AND t.name = 'Isaac_Newton'
+       RETURN  n.firstName, n.lastName,
+               m.firstName, m.lastName,
+               u.name,
+               t.name,
+               s.classYear
+            """.stripMargin)
+result4.showRecords

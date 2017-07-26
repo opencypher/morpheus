@@ -390,7 +390,7 @@ final class CypherInteger(private val v: Long) extends CypherNumber with Seriali
     case _                    => false
   }
 
-  override def toString: String = s"$v :: INTEGER"
+  override def toString: String = s"$v"
 }
 
 

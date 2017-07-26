@@ -2,8 +2,10 @@ package org.opencypher.spark.api.spark
 
 import org.apache.spark.sql.Row
 import org.opencypher.spark.SparkCypherTestSuite
+import org.opencypher.spark.api.exception.SparkCypherException
 import org.opencypher.spark.api.ir.global.TokenRegistry
 import org.opencypher.spark.api.record._
+import org.opencypher.spark.api.types.{CTNode, CTRelationship}
 
 class SparkCypherGraphTest extends SparkCypherTestSuite {
 
@@ -25,6 +27,43 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
         (3, false, "Max", 1337),
         (4, false, "Stefan", 9))
     ))
+
+  // required to test conflicting input data
+  val `:Brogrammer` =
+    NodeScan.on("p" -> "ID") {
+      _.build
+        .withImpliedLabel("Brogrammer")
+        .withImpliedLabel("Person")
+        .withPropertyKey("language" -> "LANG")
+    }
+    .from(SparkCypherRecords.create(
+      Seq("ID", "LANG"),
+      Seq(
+        (100, "Node"),
+        (200, "Coffeescript"),
+        (300, "Javascript"),
+        (400, "Typescript")
+      )
+    ))
+
+  val `:Programmer` =
+    NodeScan.on("p" -> "ID") {
+      _.build
+        .withImpliedLabel("Programmer")
+        .withImpliedLabel("Person")
+        .withPropertyKey("name" -> "NAME")
+        .withPropertyKey("lucky_number" -> "NUM")
+        .withPropertyKey("language" -> "LANG")
+    }
+      .from(SparkCypherRecords.create(
+        Seq("ID", "NAME", "NUM", "LANG"),
+        Seq(
+          (100, "Alice", 42, "C"),
+          (200,   "Bob", 23, "D"),
+          (300,   "Eve", 84, "F"),
+          (400,  "Carl", 49, "R")
+        )
+      ))
 
   val `:Book` =
     NodeScan.on("b" -> "ID") {
@@ -79,7 +118,11 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
     val nodes = graph.nodes("n")
 
     nodes.details.toDF().columns should equal(Array(
-      "n", "____n:Person", "____n:Swedish", "____n_dot_nameSTRING", "____n_dot_lucky_bar_numberINTEGER"
+      "n",
+      "____n:Person",
+      "____n:Swedish",
+      "____n_dot_nameSTRING",
+      "____n_dot_lucky_bar_numberINTEGER"
     ))
 
     nodes.details.toDF().collect().toSet should equal (Set(
@@ -95,7 +138,14 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
     val nodes = graph.nodes("n")
 
     nodes.details.toDF().columns should equal(Array(
-      "n", "____n:Person", "____n:Swedish", "____n:Book", "____n_dot_nameSTRING", "____n_dot_lucky_bar_numberINTEGER", "____n_dot_titleSTRING", "____n_dot_yearINTEGER"
+      "n",
+      "____n:Person",
+      "____n:Swedish",
+      "____n:Book",
+      "____n_dot_nameSTRING",
+      "____n_dot_lucky_bar_numberINTEGER",
+      "____n_dot_titleSTRING",
+      "____n_dot_yearINTEGER"
     ))
 
     nodes.details.toDF().collect().toSet should equal(Set(
@@ -115,7 +165,11 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
     val rels  = graph.relationships("e")
 
     rels.details.toDF().columns should equal(Array(
-      "____source(e)", "e", "____type(e)", "____target(e)", "____e_dot_sinceINTEGER"
+      "____source(e)",
+      "e",
+      "____type(e)",
+      "____target(e)",
+      "____e_dot_sinceINTEGER"
     ))
 
     rels.details.toDF().collect().toSet should equal(Set(
@@ -134,22 +188,104 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
     val rels  = graph.relationships("e")
 
     rels.details.toDF().columns should equal(Array(
-      "____source(e)", "e", "____type(e)", "____target(e)", "____e_dot_sinceINTEGER", "____e_dot_recommendsBOOLEAN"
+      "____source(e)",
+      "e",
+      "____type(e)",
+      "____target(e)",
+      "____e_dot_sinceINTEGER",
+      "____e_dot_recommendsBOOLEAN"
     ))
 
     rels.details.toDF().collect().toSet should equal(Set(
-      // knows
+      // :KNOWS
       Row(1, 1, 0, 2, 2017, null),
       Row(1, 2, 0, 3, 2016, null),
       Row(1, 3, 0, 4, 2015, null),
       Row(2, 4, 0, 3, 2016, null),
       Row(2, 5, 0, 4, 2013, null),
       Row(3, 6, 0, 4, 2016, null),
-      // reads
+      // :READS
       Row(1, 100, 1, 10, null, true),
       Row(2, 200, 1, 40, null, true),
       Row(3, 300, 1, 30, null, true),
       Row(4, 400, 1, 20, null, false)
     ))
+  }
+
+  test("Extract node scan subset") {
+    val graph = SparkCypherGraph.create(`:Person`, `:Book`)
+
+    val nodes = graph.nodes("n", CTNode("Person"))
+
+    nodes.details.toDF().columns should equal(Array(
+      "n",
+      "____n:Person",
+      "____n:Swedish",
+      "____n_dot_nameSTRING",
+      "____n_dot_lucky_bar_numberINTEGER"
+    ))
+
+    nodes.details.toDF().collect().toSet should equal (Set(
+      Row(1, true, true,    "Mats",   23),
+      Row(2, true, false, "Martin",   42),
+      Row(3, true, false,    "Max", 1337),
+      Row(4, true, false, "Stefan",    9)
+    ))
+  }
+
+  test("Extract relationship scan subset") {
+    val graph = SparkCypherGraph.create(`:Person`, `:Book`, `:KNOWS`, `:READS`)
+
+    val rels  = graph.relationships("e", CTRelationship("KNOWS"))
+
+    rels.details.toDF().columns should equal(Array(
+      "____source(e)",
+      "e",
+      "____type(e)",
+      "____target(e)",
+      "____e_dot_sinceINTEGER"
+    ))
+
+    rels.details.toDF().collect().toSet should equal(Set(
+      Row(1, 1, 0, 2, 2017),
+      Row(1, 2, 0, 3, 2016),
+      Row(1, 3, 0, 4, 2015),
+      Row(2, 4, 0, 3, 2016),
+      Row(2, 5, 0, 4, 2013),
+      Row(3, 6, 0, 4, 2016)
+    ))
+  }
+
+  test("Extract from scans with overlapping labels") {
+    val graph = SparkCypherGraph.create(`:Person`, `:Programmer`)
+
+    val nodes = graph.nodes("n", CTNode("Person"))
+
+    nodes.details.toDF().columns should equal(Array(
+      "n",
+      "____n:Person",
+      "____n:Swedish",
+      "____n:Programmer",
+      "____n_dot_nameSTRING",
+      "____n_dot_lucky_bar_numberINTEGER",
+      "____n_dot_languageSTRING"
+    ))
+
+    nodes.details.toDF().collect().toSet should equal (Set(
+      Row(1,   true, true,  false,   "Mats",   23, null),
+      Row(2,   true, false, false, "Martin",   42, null),
+      Row(3,   true, false, false,    "Max", 1337, null),
+      Row(4,   true, false, false, "Stefan",    9, null),
+      Row(100, true, false, true,   "Alice",   42, "C"),
+      Row(200, true, false, true,     "Bob",   23, "D"),
+      Row(300, true, false, true,     "Eve",   84, "F"),
+      Row(400, true, false, true,    "Carl",   49, "R")
+    ))
+  }
+
+  test("Extract from scans with overlapping labels having conflicting schemas") {
+    the[SparkCypherException] thrownBy {
+      SparkCypherGraph.create(`:Person`, `:Brogrammer`)
+    } should have message s"Incompatible schemas: Conflicting property key maps ${`:Person`.schema.nodeKeyMap} and ${`:Brogrammer`.schema.nodeKeyMap}"
   }
 }

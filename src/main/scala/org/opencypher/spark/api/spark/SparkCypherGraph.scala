@@ -166,9 +166,9 @@ object SparkCypherGraph {
       * @return updates records
       */
     private def alignRecords(records: Seq[SparkCypherRecords],
-                          tempHeader: RecordHeader,
-                          targetHeader: RecordHeader,
-                          tokenRegistry: TokenRegistry)
+                             tempHeader: RecordHeader,
+                             targetHeader: RecordHeader,
+                             tokenRegistry: TokenRegistry)
     : Seq[SparkCypherRecords] = {
 
       records.map { scanRecords =>
@@ -181,7 +181,7 @@ object SparkCypherGraph {
         }
 
         val newData = tempHeader.slots.foldLeft(data) { (acc, slot) =>
-          scanRecords.details.header.slots.find(_.content== slot.content) match {
+          scanRecords.details.header.slots.find(_.content == slot.content) match {
             case None =>
               val columnName = SparkColumnName.of(slot)
               slot.content.key match {
@@ -262,6 +262,7 @@ object SparkCypherGraph {
       def scans(entityType: EntityType) = {
         val candidateTypes = entityScanTypes.filter(_.subTypeOf(entityType).isTrue)
         // TODO: we always select the head of the NonEmptyVector, why not changing to Map[EntityType, EntityScan]?
+        // TODO: does this work for relationships?
         val selectedScans = candidateTypes.flatMap(typ => entityScansByType.get(typ).map(_.head))
         selectedScans
       }

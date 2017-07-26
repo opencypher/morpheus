@@ -45,7 +45,7 @@ object Shell {
               |Version $ownVersion
               |(Apache Spark $sparkVersion, Scala $scalaVersion, Java $javaVersion, Ammonite $ammoniteVersion)
               |
-              |Cypher is a registered trademark of Neo Technology, Inc.
+              |Cypher is a registered trademark of Neo4j, Inc.
               |
            """.stripMargin
         )
@@ -62,7 +62,7 @@ object Shell {
         predef =
           s"""|repl.frontEnd() = ammonite.frontend.FrontEnd.$frontend
               |repl.prompt() = \"(:spark)-->(:cypher) \"
-              |import org.opencypher.spark.PrototypeDemo._
+              |import org.opencypher.spark.CSVDemo._
               |""".stripMargin
       ).instantiateRepl(Seq("session" -> session))
       repl.run()
