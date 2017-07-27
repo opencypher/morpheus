@@ -90,10 +90,6 @@ final class SparkCypherEngine extends Cypher with Serializable {
     plan(graph, in, queryParameters, select).records
   }
 
-  def rename(graph: Graph, in: Records, alias: (Expr, Var)): Records = {
-    ???
-  }
-
   private def plan(graph: SparkCypherGraph,
                    records: SparkCypherRecords,
                    queryParameters: Map[String, CypherValue],

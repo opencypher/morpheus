@@ -101,9 +101,9 @@ case class LabelCombinations(combos: Set[Set[String]]) {
 
   def combinationsFor(label: String): Set[String] = combos.find(_(label)).getOrElse(Set.empty)
 
-  def withCombinations(as: String*): LabelCombinations = {
-    val (lhs, rhs) = combos.partition(labels => as.exists(labels(_)))
-    copy(combos = rhs + (lhs.flatten ++ as))
+  def withCombinations(coExistingLabels: String*): LabelCombinations = {
+    val (lhs, rhs) = combos.partition(labels => coExistingLabels.exists(labels(_)))
+    copy(combos = rhs + (lhs.flatten ++ coExistingLabels))
   }
 
   def ++(other: LabelCombinations) = copy(combos ++ other.combos)

@@ -218,18 +218,10 @@ class SchemaTest extends BaseTestSuite {
       .withImpliedLabel("A", "B")
       .withImpliedLabel("B", "C")
       .withLabelCombination("A","E")
-      .withNodePropertyKeys("A")()
-      .withNodePropertyKeys("B")()
-      .withNodePropertyKeys("C")()
-      .withNodePropertyKeys("E")()
     val schema2 = Schema.empty
       .withImpliedLabel("B", "C")
       .withImpliedLabel("C", "D")
       .withLabelCombination("B","F")
-      .withNodePropertyKeys("B")()
-      .withNodePropertyKeys("C")()
-      .withNodePropertyKeys("D")()
-      .withNodePropertyKeys("F")()
 
     schema1 ++ schema2 should equal(Schema.empty
       .withImpliedLabel("A", "B")
@@ -237,11 +229,6 @@ class SchemaTest extends BaseTestSuite {
       .withLabelCombination("A","E")
       .withLabelCombination("B","F")
       .withLabelCombination("C","D")
-      .withNodePropertyKeys("A")()
-      .withNodePropertyKeys("B")()
-      .withNodePropertyKeys("C")()
-      .withNodePropertyKeys("D")()
-      .withNodePropertyKeys("E")()
-      .withNodePropertyKeys("F")())
+    )
   }
 }

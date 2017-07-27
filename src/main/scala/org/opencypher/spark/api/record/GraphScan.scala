@@ -15,10 +15,11 @@
  */
 package org.opencypher.spark.api.record
 
-import org.opencypher.spark.api.expr.Var
+import org.opencypher.spark.api.expr.{Property, Var}
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.spark.SparkCypherRecords
 import org.opencypher.spark.api.types.{CTNode, CTRelationship, CypherType}
+import org.opencypher.spark.impl.exception.Raise
 import org.opencypher.spark.impl.spark.SparkColumn
 
 sealed trait GraphScan extends Serializable {
@@ -102,12 +103,14 @@ object GraphScanBuilder {
 
     protected def schema(entity: E, header: RecordHeader): Schema
 
-    protected def getPropertyKeys(entity: EmbeddedEntity, header: RecordHeader): Seq[(String, CypherType)] =
+    protected def getPropertyKeys(entity: EmbeddedEntity, header: RecordHeader): Seq[(String, CypherType)] = {
+      val headerKeys = header.slots.map(_.content.key)
       entity.propertiesFromSlots.keys
-        .map(key => key -> header.slots
-          .find(slot => slot.content.key.withoutType.equals(s"${entity.entitySlot}.$key"))
-          .get.content.cypherType)
-        .toSeq
+        .map(key => key -> headerKeys
+          .collectFirst { case p: Property if p.m == entity.entityVar && p.key.name == key => p.cypherType }
+          .getOrElse(Raise.impossible())
+        ).toSeq
+    }
   }
 
   implicit final class RichNodeScanBuilder(val builder: GraphScanBuilder[EmbeddedNode])
