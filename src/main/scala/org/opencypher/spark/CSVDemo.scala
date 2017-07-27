@@ -29,6 +29,7 @@ object CSVDemo {
   implicit val graphSpace = SparkGraphSpace.empty(session, TokenRegistry.empty)
 
   lazy val graph = {
+
     // (1) Load node CSV files (by label)
     val `:Person` =
       NodeScan.on("n0" -> "ID") {
@@ -39,7 +40,7 @@ object CSVDemo {
           .withPropertyKey("firstName" -> "FIRST_NAME")
           .withPropertyKey("lastName" -> "LAST_NAME")
           .withPropertyKey("createdAt" -> "CREATED_AT")
-      }.from(loadCSV("/demo/ldbc_1/nodes/person.csv", StructType(Array(
+      }.from(loadCSV("/demo/ldbc_1/nodes/person.csv.gz", StructType(Array(
         StructField("ID", LongType, false),
         StructField("FIRST_NAME", StringType, false),
         StructField("LAST_NAME", StringType, false),
@@ -53,7 +54,7 @@ object CSVDemo {
         _.build
           .withImpliedLabel("University")
           .withPropertyKey("name" -> "NAME")
-      }.from(loadCSV("/demo/ldbc_1/nodes/university.csv", StructType(Array(
+      }.from(loadCSV("/demo/ldbc_1/nodes/university.csv.gz", StructType(Array(
         StructField("ID", LongType, false),
         StructField("NAME", StringType, false)
       ))))
@@ -63,7 +64,7 @@ object CSVDemo {
         _.build
           .withImpliedLabel("Company")
           .withPropertyKey("name" -> "NAME")
-      }.from(loadCSV("/demo/ldbc_1/nodes/company.csv", StructType(Array(
+      }.from(loadCSV("/demo/ldbc_1/nodes/company.csv.gz", StructType(Array(
         StructField("ID", LongType, false),
         StructField("NAME", StringType, false)
       ))))
@@ -73,7 +74,7 @@ object CSVDemo {
         _.build
           .withImpliedLabel("City")
           .withPropertyKey("name" -> "NAME")
-      }.from(loadCSV("/demo/ldbc_1/nodes/city.csv", StructType(Array(
+      }.from(loadCSV("/demo/ldbc_1/nodes/city.csv.gz", StructType(Array(
         StructField("ID", LongType, false),
         StructField("NAME", StringType, false)
       ))))
@@ -83,7 +84,7 @@ object CSVDemo {
         _.build
           .withImpliedLabel("Country")
           .withPropertyKey("name" -> "NAME")
-      }.from(loadCSV("/demo/ldbc_1/nodes/country.csv", StructType(Array(
+      }.from(loadCSV("/demo/ldbc_1/nodes/country.csv.gz", StructType(Array(
         StructField("ID", LongType, false),
         StructField("NAME", StringType, false)
       ))))
@@ -93,7 +94,7 @@ object CSVDemo {
         _.build
           .withImpliedLabel("Continent")
           .withPropertyKey("name" -> "NAME")
-      }.from(loadCSV("/demo/ldbc_1/nodes/continent.csv", StructType(Array(
+      }.from(loadCSV("/demo/ldbc_1/nodes/continent.csv.gz", StructType(Array(
         StructField("ID", LongType, false),
         StructField("NAME", StringType, false)
       ))))
@@ -103,7 +104,7 @@ object CSVDemo {
         _.build
           .withImpliedLabel("Tag")
           .withPropertyKey("name" -> "NAME")
-      }.from(loadCSV("/demo/ldbc_1/nodes/tag.csv", StructType(Array(
+      }.from(loadCSV("/demo/ldbc_1/nodes/tag.csv.gz", StructType(Array(
         StructField("ID", LongType, false),
         StructField("NAME", StringType, false)
       ))))
@@ -113,7 +114,7 @@ object CSVDemo {
       RelationshipScan.on("e0" -> "ID") {
         _.from("SRC").to("DST").relType("KNOWS")
           .build
-      }.from(loadCSV("/demo/ldbc_1/rels/knows.csv", StructType(Array(
+      }.from(loadCSV("/demo/ldbc_1/rels/knows.csv.gz", StructType(Array(
         StructField("SRC", LongType, false),
         StructField("ID", LongType, false),
         StructField("DST", LongType, false)
@@ -124,7 +125,7 @@ object CSVDemo {
         _.from("SRC").to("DST").relType("STUDY_AT")
           .build
           .withPropertyKey("classYear" -> "CLASS_YEAR")
-      }.from(loadCSV("/demo/ldbc_1/rels/studyAt.csv", StructType(Array(
+      }.from(loadCSV("/demo/ldbc_1/rels/studyAt.csv.gz", StructType(Array(
         StructField("SRC", LongType, false),
         StructField("ID", LongType, false),
         StructField("DST", LongType, false),
@@ -136,7 +137,7 @@ object CSVDemo {
         _.from("SRC").to("DST").relType("WORK_AT")
           .build
           .withPropertyKey("workFrom" -> "WORK_FROM")
-      }.from(loadCSV("/demo/ldbc_1/rels/workAt.csv", StructType(Array(
+      }.from(loadCSV("/demo/ldbc_1/rels/workAt.csv.gz", StructType(Array(
         StructField("SRC", LongType, false),
         StructField("ID", LongType, false),
         StructField("DST", LongType, false),
@@ -147,7 +148,7 @@ object CSVDemo {
       RelationshipScan.on("e3" -> "ID") {
         _.from("SRC").to("DST").relType("IS_LOCATED_IN")
           .build
-      }.from(loadCSV("/demo/ldbc_1/rels/isLocatedIn.csv", StructType(Array(
+      }.from(loadCSV("/demo/ldbc_1/rels/isLocatedIn.csv.gz", StructType(Array(
         StructField("SRC", LongType, false),
         StructField("ID", LongType, false),
         StructField("DST", LongType, false)
@@ -157,7 +158,7 @@ object CSVDemo {
       RelationshipScan.on("e4" -> "ID") {
         _.from("SRC").to("DST").relType("IS_PART_OF")
           .build
-      }.from(loadCSV("/demo/ldbc_1/rels/isPartOf.csv", StructType(Array(
+      }.from(loadCSV("/demo/ldbc_1/rels/isPartOf.csv.gz", StructType(Array(
         StructField("SRC", LongType, false),
         StructField("ID", LongType, false),
         StructField("DST", LongType, false)
@@ -167,7 +168,7 @@ object CSVDemo {
       RelationshipScan.on("e5" -> "ID") {
         _.from("SRC").to("DST").relType("HAS_INTEREST")
           .build
-      }.from(loadCSV("/demo/ldbc_1/rels/hasInterest.csv", StructType(Array(
+      }.from(loadCSV("/demo/ldbc_1/rels/hasInterest.csv.gz", StructType(Array(
         StructField("SRC", LongType, false),
         StructField("ID", LongType, false),
         StructField("DST", LongType, false)
@@ -207,7 +208,7 @@ object CSVDemo {
   def loadCSV(file: String, schema: StructType)(implicit sc: SparkSession): SparkCypherRecords = {
     val df = sc.read
       .schema(schema)
-      .csv(getClass.getResource(file).getFile)
+      .csv(getClass().getResource(file).getFile)
 
     SparkCypherRecords.create(df)
   }

@@ -67,7 +67,7 @@ final case class PropertyKeyMap(m: Map[String, Map[String, CypherType]])(val con
 
   def ++(other: PropertyKeyMap) = {
     if (m.keySet.intersect(other.m.keySet).forall(key =>
-      (this.m(key).toSet -- other.m(key).toSet isEmpty) || (other.m(key).toSet -- this.m(key).toSet isEmpty))
+      (this.m(key).toSet -- other.m(key).toSet).isEmpty || (other.m(key).toSet -- this.m(key).toSet).isEmpty)
     ) {
       copy(m ++ other.m)(conflicts ++ other.conflicts)
     } else {
