@@ -114,6 +114,11 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
   private def planFilter(in: LogicalOperator, where: AllGiven[Expr])(implicit context: LogicalPlannerContext) = {
     val filtersAndProjs = where.elements.foldLeft(in) {
+      case (acc, ors: Ors) =>
+        val withInnerExprs = ors.exprs.foldLeft(acc) {
+          case (_acc, expr) => planInnerExpr(expr, _acc)
+        }
+        producer.planFilter(ors, withInnerExprs)
       case (acc, eq: Equals) =>
         val project1 = planInnerExpr(eq.lhs, acc)
         val project2 = planInnerExpr(eq.rhs, project1)

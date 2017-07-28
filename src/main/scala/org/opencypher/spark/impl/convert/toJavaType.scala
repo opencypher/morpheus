@@ -15,13 +15,17 @@
  */
 package org.opencypher.spark.impl.convert
 
-import org.opencypher.spark.api.value.{CypherInteger, CypherValue}
+import org.opencypher.spark.api.value._
 
 object toJavaType extends Serializable {
 
-  // TODO: Replace with CypherValue.apply later (in other PR)
+  // TODO: Tests
+  // Inverse operation found in CypherValue.apply()
   def apply(v: CypherValue): Any = v match {
     case CypherInteger(long) => long
+    case CypherString(s) => s
+    case CypherBoolean(b) => b
+    case CypherFloat(f) => f
     case x => throw new IllegalArgumentException(s"Expected a (representation of a) Cypher value, but was $x (${x.getClass})")
   }
 }
