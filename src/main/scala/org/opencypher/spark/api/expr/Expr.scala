@@ -158,6 +158,11 @@ final case class GreaterThanOrEqual(lhs: Expr, rhs: Expr)(val cypherType: Cypher
   override val op = ">="
 }
 
+final case class In(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard)
+  extends BinaryExpr {
+  override val op = "IN"
+}
+
 final case class Property(m: Expr, key: PropertyKey)(val cypherType: CypherType = CTWildcard) extends Expr {
   override def withoutType: String = s"${m.withoutType}.${key.name}"
 
@@ -219,6 +224,12 @@ sealed trait Lit[T] extends Expr {
   def v: T
   override def withoutType = s"$v"
 }
+
+object ListLit {
+  def apply(exprs: Expr*): ListLit = new ListLit(exprs.toIndexedSeq)()
+}
+
+final case class ListLit(v: IndexedSeq[Expr])(val cypherType: CypherType = CTList(CTVoid)) extends Lit[IndexedSeq[Expr]]
 
 final case class IntegerLit(v: Long)(val cypherType: CypherType = CTInteger) extends Lit[Long]
 final case class StringLit(v: String)(val cypherType: CypherType = CTString) extends Lit[String]

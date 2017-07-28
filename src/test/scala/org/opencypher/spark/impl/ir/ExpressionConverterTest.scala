@@ -54,6 +54,12 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   private val c = new ExpressionConverter(globals)
 
+  test("converting in predicate and literal list") {
+    convert(parseExpr("a IN [a, b, c]")) should equal(
+      In('a, ListLit('a, 'b, 'c))()
+    )
+  }
+
   test("converting or predicate") {
     convert(parseExpr("n = a OR n > b")) should equal(
       Ors(Equals('n, 'a)(), GreaterThan('n, 'b)())

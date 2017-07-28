@@ -138,10 +138,11 @@ case object CypherValue extends CypherValueCompanion[CypherValue] with Verificat
     case v: java.lang.Double => CypherFloat(v)
     case v: java.lang.Boolean => CypherBoolean(v)
     case v: java.util.Map[_, _] if v.isEmpty => CypherMap.empty
-    case v: java.util.Map[_, _] => CypherMap(v.asScala.collect { case (k,v) => k.toString -> apply(v) }.toMap)
+    case v: java.util.Map[_, _] => CypherMap(v.asScala.collect { case (k, _v) => k.toString -> apply(_v) }.toMap)
     case v: java.util.List[_] if v.isEmpty => CypherList.empty
     case v: java.util.List[_] => CypherList(v.asScala.map(apply))
     case v: Array[_] => CypherList(v.map(apply))
+    case v: Vector[_] => CypherList(v.map(apply))
     case null => null
     case x => throw new IllegalArgumentException(s"Unexpected property value: $x")
   }

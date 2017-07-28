@@ -22,6 +22,22 @@ import scala.collection.Bag
 
 class PredicateAcceptanceTest extends SparkCypherTestSuite {
 
+  test("in") {
+    // Given
+    val given = TestGraph("""(:A {val: 1L}), (:A {val: 2L}), (:A {val: 3L})""")
+
+    // When
+    val result = given.cypher("MATCH (a:A) WHERE a.val IN [-1, 2, 5, 0] RETURN a.val")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("a.val" -> 2)
+    ))
+
+    // And
+    result.graph shouldMatch given.graph
+  }
+
   test("or") {
     // Given
     val given = TestGraph("""(:A {val: 1L}), (:A {val: 2L}), (:A {val: 3L})""")

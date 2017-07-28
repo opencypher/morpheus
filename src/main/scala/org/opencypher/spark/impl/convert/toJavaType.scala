@@ -26,6 +26,7 @@ object toJavaType extends Serializable {
     case CypherString(s) => s
     case CypherBoolean(b) => b
     case CypherFloat(f) => f
+    case CypherList(list) => list.map(apply)
     case x => throw new IllegalArgumentException(s"Expected a (representation of a) Cypher value, but was $x (${x.getClass})")
   }
 }

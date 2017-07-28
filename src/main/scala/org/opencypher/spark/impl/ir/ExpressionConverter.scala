@@ -48,6 +48,8 @@ final class ExpressionConverter(val globals: GlobalsRegistry) extends AnyVal {
       TrueLit()
     case _: ast.False =>
       FalseLit()
+    case ast.ListLiteral(exprs) =>
+      ListLit(exprs.map(convert).toIndexedSeq)(typings(e))
 
     case ast.Property(m, ast.PropertyKeyName(name)) => Property(convert(m), tokens.propertyKeyByName(name))(typings(e))
 
@@ -74,10 +76,13 @@ final class ExpressionConverter(val globals: GlobalsRegistry) extends AnyVal {
       GreaterThan(convert(lhs), convert(rhs))(typings(e))
     case ast.GreaterThanOrEqual(lhs, rhs) =>
       GreaterThanOrEqual(convert(lhs), convert(rhs))(typings(e))
-    case ast.In(lhs, ast.ListLiteral(elems)) if elems.size == 1 =>
-      Equals(convert(lhs), convert(elems.head))(typings(e))
     case RetypingPredicate(lhs, rhs) =>
       new Ands(lhs.map(convert) + convert(rhs))(typings(e))
+    // if the list only contains a single element, convert to simple equality to avoid list construction
+    case ast.In(lhs, ast.ListLiteral(elems)) if elems.size == 1 =>
+      Equals(convert(lhs), convert(elems.head))(typings(e))
+    case ast.In(lhs, rhs) =>
+      In(convert(lhs), convert(rhs))(typings(e))
 
     // Arithmetics
     case ast.Add(lhs, rhs) =>
