@@ -197,20 +197,20 @@ final case class Divide(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWil
 // Functions
 sealed trait FunctionExpr extends Expr {
   def expr: Expr
+
+  def name: String
+
+  override final def toString = s"$name($expr)"
+  override final def withoutType = s"$name(${expr.withoutType})"
+
 }
-final case class Id(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr {
-  override def toString = s"id($expr)"
-  override def withoutType = s"id(${expr.withoutType})"
+final case class Id(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr {  override val name = "id"
 }
 
-final case class Labels(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr {
-  override def toString = s"labels($expr)"
-  override def withoutType = s"labels(${expr.withoutType})"
+final case class Labels(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr {  override val name = "labels"
 }
 
-final case class Type(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr {
-  override def toString = s"type($expr)"
-  override def withoutType = s"type(${expr.withoutType})"
+final case class Type(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr {  override val name = "type"
 }
 
 // Literal expressions
