@@ -53,7 +53,6 @@ object Neo4jAstTestSupport {
         NonThrowingSemanticAnalysis andThen
         AstRewriting(RewriterStepSequencer.newPlain, Never) andThen
         Namespacer andThen
-        rewriteEqualityToInPredicate andThen
         CNFNormalizer andThen
         LateAstRewriting andThen
         sparkCypherRewriting

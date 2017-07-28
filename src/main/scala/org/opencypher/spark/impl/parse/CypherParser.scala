@@ -16,7 +16,7 @@
 package org.opencypher.spark.impl.parse
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.Forced
+import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.{CNFNormalizer, Forced, Namespacer}
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.phases._
 import org.opencypher.spark.impl.CompilationStage
@@ -41,7 +41,10 @@ trait CypherParser extends CompilationStage[String, Statement, BaseContext] {
 
   protected val pipeLine =
     CompilationPhases.parsing(RewriterStepSequencer.newPlain, Forced) andThen
-    CompilationPhases.lateAstRewriting andThen sparkCypherRewriting
+      SemanticAnalysis(warn = false) andThen
+      Namespacer andThen
+      CNFNormalizer andThen
+      LateAstRewriting andThen sparkCypherRewriting
 
 }
 

@@ -54,6 +54,12 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   private val c = new ExpressionConverter(globals)
 
+  test("converting or predicate") {
+    convert(parseExpr("n = a OR n > b")) should equal(
+      Ors(Equals('n, 'a)(), GreaterThan('n, 'b)())
+    )
+  }
+
   test("can convert type()") {
     convert(parseExpr("type(a)")) should equal(
       Type(Var("a")())()
