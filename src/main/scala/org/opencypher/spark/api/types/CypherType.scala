@@ -158,6 +158,7 @@ object CTNode extends CTNode(Map.empty) with Serializable {
     if (labels.isEmpty) this else CTNode(labels.map(l => l -> true).toMap)
 }
 
+// TODO replace Map with Set
 sealed case class CTNode(labels: Map[String, Boolean]) extends MaterialDefiniteCypherType {
 
   self =>

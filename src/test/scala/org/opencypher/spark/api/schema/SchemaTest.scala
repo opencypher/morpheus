@@ -191,6 +191,7 @@ class SchemaTest extends BaseTestSuite {
       .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString, "baz" -> CTString))
   }
 
+  //TODO instead of raising an error build a relaxed Schema (bar -> String?, baz -> String?)
   test("combining key conflicting schemas") {
     val schema1 = Schema.empty
       .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString)

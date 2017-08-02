@@ -101,6 +101,7 @@ object SparkCypherGraph {
       val selectedRecords = alignEntityVariable(selectedScans, node)
 
       // (3) Update all non-nullable property types to nullable
+      // TODO Check for properties that exist in all scans
       val targetSchema = Schema(tempSchema.labels,
         tempSchema.relationshipTypes,
         PropertyKeyMap.asNullable(tempSchema.nodeKeyMap),
@@ -179,7 +180,8 @@ object SparkCypherGraph {
             case cr: CTRelationship => cr.types.toSeq
           }
         }
-
+        //TODO speed up using hash lookups?
+        //TODO don't expand common labels, use CTNode label instead
         val newData = tempHeader.slots.foldLeft(data) { (acc, slot) =>
           scanRecords.details.header.slots.find(_.content == slot.content) match {
             case None =>

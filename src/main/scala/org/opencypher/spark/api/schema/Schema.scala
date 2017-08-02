@@ -65,6 +65,7 @@ final case class PropertyKeyMap(m: Map[String, Map[String, CypherType]])(val con
 
   def keys = m.values.flatMap(_.keySet).toSet
 
+  //TODO Instead of raising an error for type conflicts use common cypher type (CypherType.join)
   def ++(other: PropertyKeyMap) = {
     if (m.keySet.intersect(other.m.keySet).forall(key =>
       (this.m(key).toSet -- other.m(key).toSet).isEmpty || (other.m(key).toSet -- this.m(key).toSet).isEmpty)
