@@ -1,0 +1,18 @@
+{
+  "idField": {
+     "name": "id",
+     "column": 1,
+     "valueType": "LONG"
+  },
+  "startIdField": {
+     "name": "startId",
+     "column": 0,
+     "valueType": "LONG"
+  },
+  "endIdField":  {
+     "name": "endId",
+     "column": 2,
+     "valueType": "LONG"
+  },
+  "relationshipType": "KNOWS"
+}
