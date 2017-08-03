@@ -9,7 +9,7 @@ object JsonUtils {
       case Left(failure) => throw new RuntimeException(s"Invalid json file: $failure")
       case Right(json) => json.hcursor.as[T] match {
         case Left(failure) => {
-          val msg= s"Invalid JSON schema: Could not find mandatory element '${failure.history.head.productElement(0)}'"
+          val msg = s"Invalid JSON schema: Could not find mandatory element '${failure.history.head.productElement(0)}'"
           throw new RuntimeException(msg)
         }
         case Right(elem) => elem

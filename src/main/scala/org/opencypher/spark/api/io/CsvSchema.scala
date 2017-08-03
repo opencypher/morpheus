@@ -81,7 +81,7 @@ object CsvNodeSchema {
     implicitLabels <- Decoder.instance(_.get[List[String]]("implicitLabels"))
     optionalLabels <- Decoder.instance(_.getOrElse[List[CsvField]]("optionalLabels")(List()))
     propertyFields <- Decoder.instance(_.getOrElse[List[CsvField]]("propertyFields")(List()))
-  } yield  new CsvNodeSchema(idField, implicitLabels, optionalLabels, propertyFields)
+  } yield new CsvNodeSchema(idField, implicitLabels, optionalLabels, propertyFields)
 
   def apply(schemaJson: String): CsvNodeSchema = {
     JsonUtils.parseJson(schemaJson)
@@ -139,7 +139,7 @@ object CsvRelSchema {
     endIdField <- Decoder.instance(_.get[CsvField]("endIdField"))
     relType <- Decoder.instance(_.get[String]("relationshipType"))
     propertyFields <- Decoder.instance(_.getOrElse[List[CsvField]]("propertyFields")(List()))
-  } yield  new CsvRelSchema(id, startIdField, endIdField, relType, propertyFields)
+  } yield new CsvRelSchema(id, startIdField, endIdField, relType, propertyFields)
 
   def apply(schemaJson: String): CsvRelSchema = {
     JsonUtils.parseJson(schemaJson)

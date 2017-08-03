@@ -12,7 +12,7 @@
       "valueType": "BOOLEAN"
     },
     {
-      "name": "isFemale",
+      "name": "IsFemale",
       "column": 4,
       "valueType": "BOOLEAN"
     }
