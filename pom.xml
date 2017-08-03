@@ -41,6 +41,7 @@
         <dep.scalatest.version>3.0.0</dep.scalatest.version>
         <dep.sourcecode.version>0.1.2</dep.sourcecode.version>
         <dep.spark.version>2.1.0</dep.spark.version>
+        <dep.circe.version>0.8.0</dep.circe.version>
     </properties>
 
     <repositories>
@@ -74,6 +75,12 @@
                 </includes>
             </resource>
         </resources>
+        <testResources>
+            <testResource>
+                <directory>${project.basedir}/src/test/resources</directory>
+                <filtering>true</filtering>
+            </testResource>
+        </testResources>
 
         <plugins>
             <!-- javac -->
@@ -444,6 +451,24 @@
             <groupId>com.lihaoyi</groupId>
             <artifactId>sourcecode_2.11</artifactId>
             <version>${dep.sourcecode.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.circe</groupId>
+            <artifactId>circe-core_2.11</artifactId>
+            <version>${dep.circe.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.circe</groupId>
+            <artifactId>circe-generic_2.11</artifactId>
+            <version>${dep.circe.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.circe</groupId>
+            <artifactId>circe-parser_2.11</artifactId>
+            <version>${dep.circe.version}</version>
         </dependency>
 
         <!-- Tests -->

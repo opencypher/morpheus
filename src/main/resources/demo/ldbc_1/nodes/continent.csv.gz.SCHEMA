@@ -1,0 +1,16 @@
+
+{
+  "idField": {
+    "name": "id",
+    "column": 0,
+    "valueType": "LONG"
+  },
+  "implicitLabels": ["Continent"],
+  "propertyFields": [
+    {
+      "name": "name",
+      "column": 1,
+      "valueType": "STRING"
+    }
+  ]
+}
