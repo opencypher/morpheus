@@ -170,4 +170,20 @@ class WithAcceptanceTest extends SparkCypherTestSuite {
     // And
     result.graph shouldMatch given.graph
   }
+
+  test("order by") {
+    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+
+    val result = given.cypher("MATCH (a) WITH a.val as val ORDER BY val ASC RETURN val")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("val" -> 3L),
+      CypherMap("val" -> 4L),
+      CypherMap("val" -> 42L)
+    ))
+
+    // And
+    result.graph shouldMatch given.graph
+  }
 }
