@@ -195,6 +195,34 @@ class PhysicalResultProducer(context: RuntimeContext) {
       }
     }
 
+    def joinInto(relView: PhysicalResult, header: RecordHeader) = new JoinIntoBuilder {
+      override def on(sourceKey: Var, targetKey: Var)(rel: Var): PhysicalResult = {
+        val sourceSlot = prev.records.header.slotFor(sourceKey)
+        val targetSlot = prev.records.header.slotFor(targetKey)
+        val relSourceSlot = relView.records.details.header.sourceNode(rel)
+        val relTargetSlot = relView.records.details.header.targetNode(rel)
+
+        assertIsNode(sourceSlot)
+        assertIsNode(targetSlot)
+
+        prev.mapRecordsWithDetails { records =>
+
+          val nodeData = records.details.data
+          val relData = relView.records.details.data
+
+          val sourceColumn = nodeData.col(context.columnName(sourceSlot))
+          val targetColumn = nodeData.col(context.columnName(targetSlot))
+          val relSourceColumn = relData.col(context.columnName(relSourceSlot))
+          val relTargetColumn = relData.col(context.columnName(relTargetSlot))
+
+          val joinExpr = sourceColumn === relSourceColumn && targetColumn === relTargetColumn
+          val jointData = nodeData.join(relData, joinExpr)
+
+          SparkCypherRecords.create(header, jointData)(records.space)
+        }
+      }
+    }
+
     private def join(rhs: SparkCypherRecords, lhsSlot: RecordSlot, rhsSlot: RecordSlot, header: RecordHeader)
     : SparkCypherRecords => SparkCypherRecords = {
       def f(lhs: SparkCypherRecords) = {
@@ -302,6 +330,10 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
     sealed trait JoinBuilder {
       def on(lhsKey: Var)(rhsKey: Var): PhysicalResult
+    }
+
+    sealed trait JoinIntoBuilder {
+      def on(sourceKey: Var, targetKey: Var)(rhsKey: Var): PhysicalResult
     }
 
     private def assertIsNode(slot: RecordSlot): Unit = {

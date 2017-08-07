@@ -104,12 +104,23 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   // TODO: Remove types parameter and read rel-types from the rel variable
   def expandSource(source: Var, rel: Var, types: EveryRelationship, target: Var,
                    sourceOp: FlatOperator, targetOp: FlatOperator): FlatOperator = {
-    val relHeader = if (types.relTypes.elts.isEmpty) RecordHeader.relationshipFromSchema(rel, schema, tokens)
-    else RecordHeader.relationshipFromSchema(rel, schema, tokens, types.relTypes.elts.map(_.name))
+    val relHeader =
+      if (types.relTypes.elts.isEmpty) RecordHeader.relationshipFromSchema(rel, schema, tokens)
+      else RecordHeader.relationshipFromSchema(rel, schema, tokens, types.relTypes.elts.map(_.name))
 
     val expandHeader = sourceOp.header ++ relHeader ++ targetOp.header
 
     ExpandSource(source, rel, types, target, sourceOp, targetOp, expandHeader, relHeader)
+  }
+
+  def expandInto(source: Var, rel: Var, types: EveryRelationship, target: Var, sourceOp: FlatOperator): FlatOperator = {
+    val relHeader =
+      if (types.relTypes.elts.isEmpty) RecordHeader.relationshipFromSchema(rel, schema, tokens)
+      else RecordHeader.relationshipFromSchema(rel, schema, tokens, types.relTypes.elts.map(_.name))
+
+    val expandHeader = sourceOp.header ++ relHeader
+
+    ExpandInto(source, rel, types, target, sourceOp, expandHeader, relHeader)
   }
 
   def planStart(logicalGraph: NamedLogicalGraph, source: GraphSource, fields: Set[Var]): Start = {

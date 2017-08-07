@@ -193,6 +193,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     val expand = c match {
       case v: VarLengthRelationship if v.upper.nonEmpty =>
         producer.planBoundedVarLengthExpand(c.source, r, pattern.rels(r), c.target, v.lower, v.upper.get, sourcePlan, targetPlan)
+      case _ if sourcePlan == targetPlan =>
+        producer.planExpandInto(c.source, r, pattern.rels(r), c.target, sourcePlan)
       case _ =>
         producer.planSourceExpand(c.source, r, pattern.rels(r), c.target, sourcePlan, targetPlan)
     }

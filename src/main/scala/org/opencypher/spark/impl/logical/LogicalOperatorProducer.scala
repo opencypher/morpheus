@@ -53,6 +53,14 @@ class LogicalOperatorProducer {
     ExpandSource(source, rel, types, target, sourcePlan, targetPlan)(solved)
   }
 
+  def planExpandInto(source: Field, rel: Field, types: EveryRelationship, target: Field, sourcePlan: LogicalOperator): ExpandInto = {
+    val solved = types.relTypes.elts.foldLeft(sourcePlan.solved.withField(rel)) {
+      case (acc, next) => acc.withPredicate(HasType(rel, next)(CTBoolean))
+    }
+
+    ExpandInto(source, rel, types, target, sourcePlan)(solved)
+  }
+
   def planNodeScan(node: Field, everyNode: EveryNode, prev: LogicalOperator): NodeScan = {
     val solved = everyNode.labels.elts.foldLeft(SolvedQueryModel.empty[Expr].withField(node)) {
       case (acc, label) => acc.withPredicate(HasLabel(node, label)(CTBoolean))

@@ -133,6 +133,20 @@ final case class BoundedVarLengthExpand(source: Var, rel: Var, target: Var,
        #${targetOp.pretty(depth + 1)}""".stripMargin('#')
 }
 
+final case class ExpandInto(source: Var, rel: Var, types: EveryRelationship, target: Var, sourceOp: LogicalOperator)
+                           (override val solved: SolvedQueryModel[Expr])
+  extends ExpandOperator {
+
+  override def targetOp: LogicalOperator = sourceOp
+
+  override def lhs: LogicalOperator = sourceOp
+  override def rhs: LogicalOperator = targetOp
+
+  override def pretty(depth: Int): String =
+    s"""${prefix(depth)} ExpandInto(source = $source, rel = $rel)
+       #${sourceOp.pretty(depth + 1)}""".stripMargin('#')
+}
+
 final case class Project(it: ProjectedSlotContent, in: LogicalOperator)
                         (override val solved: SolvedQueryModel[Expr])
   extends StackingLogicalOperator {
