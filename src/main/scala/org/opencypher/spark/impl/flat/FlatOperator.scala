@@ -87,7 +87,6 @@ final case class ExpandInto(source: Var, rel: Var, types: EveryRelationship, tar
   override def in: FlatOperator = sourceOp
 }
 
-
 final case class InitVarExpand(source: Var, edgeList: Var, endNode: Var, in: FlatOperator,
                                header: RecordHeader)
   extends StackingFlatOperator
