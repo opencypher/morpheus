@@ -106,16 +106,13 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
         val prev = inner(in)
         prev.initVarExpand(source, edgeList, endNode, header)
 
-
       case flat.BoundedVarExpand(rel, edgeList, target, lower, upper, sourceOp, relOp, targetOp, header) =>
         val first  = inner(sourceOp)
         val second = inner(relOp)
         val third  = inner(targetOp)
 
         val expanded = first.varExpand(second, edgeList, sourceOp.endNode, rel, lower, upper, header)
-
-        val joinHeader = first.records.details.header ++ third.records.details.header
-        expanded.joinNode(third, joinHeader).on(sourceOp.endNode)(target)
+        expanded.finalizeVarExpand(third, sourceOp.endNode, target, header)
 
       case x =>
         Raise.notYetImplemented(s"operator $x")
