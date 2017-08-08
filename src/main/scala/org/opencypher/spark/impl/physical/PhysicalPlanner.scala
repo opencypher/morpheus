@@ -94,6 +94,14 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
 
         expanded
 
+      case op@flat.ExpandInto(source, rel, types, target, sourceOp, header, relHeader) =>
+        val in = inner(sourceOp)
+        val g = in.graphs(op.inGraph.name)
+        val relationships = PhysicalResult(g.relationships(rel.name), in.graphs)
+          .typeFilter(rel, types.relTypes.map(tokens.relTypeRef), relHeader)
+        // in join rels on source == rel.source and target == rels.target
+        in.joinInto(relationships, header).on(source, target)(rel)
+
       case flat.InitVarExpand(source, edgeList, endNode, in, header) =>
         val prev = inner(in)
         prev.initVarExpand(source, edgeList, endNode, header)

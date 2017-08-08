@@ -160,51 +160,67 @@ class PhysicalResultProducer(context: RuntimeContext) {
     }
 
     def joinSource(relView: PhysicalResult, header: RecordHeader) = new JoinBuilder {
-      override def on(node: Var)(rel: Var) = {
+      override def on(node: Var)(rel: Var): PhysicalResult = {
         val lhsSlot = prev.records.details.header.slotFor(node)
         val rhsSlot = relView.records.details.header.sourceNode(rel)
 
         assertIsNode(lhsSlot)
         assertIsNode(rhsSlot)
 
-        prev.mapRecordsWithDetails(join(relView.records, lhsSlot, rhsSlot, header))
+        prev.mapRecordsWithDetails(join(relView.records, header, lhsSlot -> rhsSlot))
       }
     }
 
     def joinTarget(nodeView: PhysicalResult, header: RecordHeader) = new JoinBuilder {
-      override def on(rel: Var)(node: Var) = {
+      override def on(rel: Var)(node: Var): PhysicalResult = {
         val lhsSlot = prev.records.details.header.targetNode(rel)
         val rhsSlot = nodeView.records.details.header.slotFor(node)
 
         assertIsNode(lhsSlot)
         assertIsNode(rhsSlot)
 
-        prev.mapRecordsWithDetails(join(nodeView.records, lhsSlot, rhsSlot, header))
+        prev.mapRecordsWithDetails(join(nodeView.records, header, lhsSlot -> rhsSlot))
       }
     }
 
     def joinNode(nodeView: PhysicalResult, header: RecordHeader) = new JoinBuilder {
-      override def on(endNode: Var)(node: Var) = {
+      override def on(endNode: Var)(node: Var): PhysicalResult = {
         val lhsSlot = prev.records.header.slotFor(endNode)
         val rhsSlot = nodeView.records.header.slotFor(node)
 
         assertIsNode(lhsSlot)
         assertIsNode(rhsSlot)
 
-        prev.mapRecordsWithDetails(join(nodeView.records, lhsSlot, rhsSlot, header))
+        prev.mapRecordsWithDetails(join(nodeView.records, header, lhsSlot -> rhsSlot))
       }
     }
 
-    private def join(rhs: SparkCypherRecords, lhsSlot: RecordSlot, rhsSlot: RecordSlot, header: RecordHeader)
+    def joinInto(relView: PhysicalResult, header: RecordHeader) = new JoinIntoBuilder {
+      override def on(sourceKey: Var, targetKey: Var)(rel: Var): PhysicalResult = {
+        val sourceSlot = prev.records.header.slotFor(sourceKey)
+        val targetSlot = prev.records.header.slotFor(targetKey)
+        val relSourceSlot = relView.records.details.header.sourceNode(rel)
+        val relTargetSlot = relView.records.details.header.targetNode(rel)
+
+        assertIsNode(sourceSlot)
+        assertIsNode(targetSlot)
+
+        prev.mapRecordsWithDetails(join(relView.records, header,
+          sourceSlot -> relSourceSlot,
+          targetSlot -> relTargetSlot))
+      }
+    }
+
+    private def join(rhs: SparkCypherRecords, header: RecordHeader, joinSlots: (RecordSlot, RecordSlot)*)
     : SparkCypherRecords => SparkCypherRecords = {
       def f(lhs: SparkCypherRecords) = {
         if (lhs.space == rhs.space) {
           val lhsData = lhs.details.data
           val rhsData = rhs.details.data
-          val lhsColumn = lhsData.col(context.columnName(lhsSlot))
-          val rhsColumn = rhsData.col(context.columnName(rhsSlot))
 
-          val joinExpr = lhsColumn === rhsColumn
+          val joinExpr = joinSlots
+            .map { case (l, r) => lhsData.col(context.columnName(l)) === rhsData.col(context.columnName(r)) }
+            .reduce(_ && _)
           val jointData = lhsData.join(rhsData, joinExpr, "inner")
 
           SparkCypherRecords.create(header, jointData)(lhs.space)
@@ -302,6 +318,10 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
     sealed trait JoinBuilder {
       def on(lhsKey: Var)(rhsKey: Var): PhysicalResult
+    }
+
+    sealed trait JoinIntoBuilder {
+      def on(sourceKey: Var, targetKey: Var)(rhsKey: Var): PhysicalResult
     }
 
     private def assertIsNode(slot: RecordSlot): Unit = {
