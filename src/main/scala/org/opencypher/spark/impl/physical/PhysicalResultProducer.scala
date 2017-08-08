@@ -256,7 +256,8 @@ class PhysicalResultProducer(context: RuntimeContext) {
       }
     }
 
-    def varExpand(rels: PhysicalResult, edgeList: Var, endNode: Var, rel: Var, lower: Int, upper: Int, header: RecordHeader) = {
+    def varExpand(rels: PhysicalResult, edgeList: Var, endNode: Var, rel: Var,
+                  lower: Int, upper: Int, header: RecordHeader): PhysicalResult = {
       val startSlot = rels.records.details.header.sourceNode(rel)
       val endNodeSlot = prev.records.details.header.slotFor(endNode)
 
@@ -284,6 +285,18 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
         SparkCypherRecords.create(lhs.header, union)(lhs.space)
       }
+    }
+
+    def finalizeVarExpand(target: PhysicalResult, endNode: Var, targetNode: Var, header: RecordHeader)
+    : PhysicalResult = {
+      val joinHeader = prev.records.details.header ++ target.records.details.header
+      val joined = prev.joinNode(target, joinHeader).on(endNode)(targetNode)
+
+      val endNodeSlot =  prev.records.details.header.slotFor(endNode)
+      val endNodeCol = context.columnName(endNodeSlot)
+      joined.mapRecordsWithDetails(records =>
+        SparkCypherRecords.create(header, records.details.toDF().drop(endNodeCol))(records.space)
+      )
     }
 
     private def iterate(lhs: DataFrame, rels: DataFrame)

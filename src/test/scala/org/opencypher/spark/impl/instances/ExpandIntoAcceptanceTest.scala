@@ -84,4 +84,41 @@ class ExpandIntoAcceptanceTest extends SparkCypherTestSuite {
 
     result.graph shouldMatch given.graph
   }
+
+  test("Expand into after var expand") {
+    // Given
+    val given = TestGraph(
+      """
+        |(p1:Person {name: "Alice"}),
+        |(p2:Person {name: "Bob"}),
+        |(comment:Comment),
+        |(post1:Post {content: "asdf"}),
+        |(post2:Post {content: "foobar"}),
+        |(p1)-[:KNOWS]->(p2),
+        |(p2)<-[:HASCREATOR]-(comment),
+        |(comment)-[:REPLYOF]->(post1)-[:REPLYOF]->(post2),
+        |(post2)-[:HASCREATOR]->(p1)
+      """.stripMargin)
+
+    // When
+    val result = given.cypher(
+      """
+        |MATCH (p1:Person)-[e1:KNOWS]->(p2:Person),
+        |      (p2)<-[e2:HASCREATOR]-(comment:Comment),
+        |      (comment)-[e3:REPLYOF*1..10]->(post:Post),
+        |      (p1)<-[:HASCREATOR]-(post)
+        |WHERE p1.name = "Alice"
+        |RETURN p1.name, p2.name, post.content
+      """.stripMargin
+    )
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap(
+        "p1.name" -> "Alice",
+        "p2.name" -> "Bob",
+        "post.content" -> "foobar"
+      )
+    ))
+  }
 }

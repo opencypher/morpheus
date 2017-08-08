@@ -146,4 +146,24 @@ class BoundedVarExpandAcceptanceTest extends SparkCypherTestSuite {
     // And
     result.graph shouldMatch given.graph
   }
+
+  test("var expand with additional hop") {
+    // Given
+    val given = TestGraph(
+      """
+        |(a:Node {v: "a"})-[:KNOWS]->(:Node {v: "b"})-[:KNOWS]->(:Node {v: "c"})-[:HATES]->(d:Node {v: "d"})
+      """.stripMargin)
+
+    // When
+    val result = given.cypher("MATCH (a:Node)-[r:KNOWS*..6]->(b:Node)-[:HATES]->(c:Node) RETURN c.v")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("c.v" -> "d"),
+      CypherMap("c.v" -> "d")
+    ))
+
+    // And
+    result.graph shouldMatch given.graph
+  }
 }
