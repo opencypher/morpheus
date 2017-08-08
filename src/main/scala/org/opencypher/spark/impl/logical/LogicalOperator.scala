@@ -30,7 +30,7 @@ sealed trait LogicalOperator {
   def inGraph: LogicalGraph
   def outGraph: NamedLogicalGraph
 
-  protected def prefix(depth: Int): String = ("· " * (depth - 1)) + "|-"
+  protected def prefix(depth: Int): String = ("· " * depth ) + "|-"
   def pretty(depth: Int = 0): String
 }
 
