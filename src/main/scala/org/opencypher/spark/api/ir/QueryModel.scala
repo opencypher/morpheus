@@ -147,7 +147,7 @@ case class SolvedQueryModel[E](fields: Set[Field], predicates: Set[E]) {
   def contains(blocks: Set[Block[E]]): Boolean = blocks.forall(contains)
   def contains(block: Block[E]): Boolean = {
     val binds = block.binds.fields subsetOf fields
-    val preds = block.where.elts subsetOf predicates
+    val preds = block.where.elements subsetOf predicates
 
     binds && preds
   }

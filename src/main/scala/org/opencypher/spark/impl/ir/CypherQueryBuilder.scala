@@ -151,7 +151,9 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
       result <- {
         val pattern = context.convertPattern(p)
         val patternTypes = pattern.fields.foldLeft(context.knownTypes) {
-          case (acc, f) => acc.updated(ast.Variable(f.name)(InputPosition.NONE), f.cypherType)
+          case (acc, f) => {
+            acc.updated(ast.Variable(f.name)(InputPosition.NONE), f.cypherType)
+          }
         }
         put[R, IRBuilderContext](context.copy(knownTypes = patternTypes)) >> pure[R, Pattern[Expr]](pattern)
       }

@@ -39,12 +39,12 @@ trait Binds[E] {
 }
 
 object BlockWhere {
-  def unapply[E](block: Block[E]): Option[Set[E]] = Some(block.where.elts)
+  def unapply[E](block: Block[E]): Option[Set[E]] = Some(block.where.elements)
 }
 
 object NoWhereBlock {
   def unapply[E](block: Block[E]): Option[Block[E]] =
-    if (block.where.elts.isEmpty) Some(block) else None
+    if (block.where.elements.isEmpty) Some(block) else None
 }
 
 

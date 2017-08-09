@@ -40,7 +40,7 @@ trait ExprBlockInstances {
 
     override def outputs(block: MatchBlock[Expr]): Set[Field] = {
       val opaqueTypedFields = block.binds.fields
-      val predicates = block.where.elts
+      val predicates = block.where.elements
 
       predicates.foldLeft(opaqueTypedFields) {
         case (fields, predicate) => predicate match {

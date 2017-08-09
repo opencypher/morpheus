@@ -20,10 +20,10 @@ import org.apache.spark.sql.types.{ArrayType, BooleanType, LongType}
 import org.apache.spark.sql.{DataFrame, Row}
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.global._
-import org.opencypher.spark.api.ir.pattern.{AnyGiven, EveryNode}
+import org.opencypher.spark.api.ir.pattern.{AnyGiven, EveryNode, EveryRelationship}
 import org.opencypher.spark.api.record._
 import org.opencypher.spark.api.spark.SparkCypherRecords
-import org.opencypher.spark.api.types.{CTBoolean, CTNode}
+import org.opencypher.spark.api.types.{CTBoolean, CTNode, CTRelationship}
 import org.opencypher.spark.api.value.CypherValue
 import org.opencypher.spark.impl.exception.Raise
 import org.opencypher.spark.impl.flat.FreshVariableNamer
@@ -49,19 +49,21 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
   implicit final class RichCypherResult(val prev: PhysicalResult) {
 
-    def nodeScan(inGraph: NamedLogicalGraph, v: Var, labels: EveryNode, header: RecordHeader): PhysicalResult = {
+    def nodeScan(inGraph: NamedLogicalGraph, v: Var, labelPredicates: EveryNode, header: RecordHeader)
+    : PhysicalResult = {
       val graph = prev.graphs(inGraph.name)
 
-      val records = graph.nodes(v.name)
+      val records = graph.nodes(v.name, CTNode(labelPredicates.labels.elements.map(_.name).toSeq: _*))
 
       // TODO: Should not discard prev records here
       prev.mapRecordsWithDetails(_ => records)
     }
 
-    def relationshipScan(inGraph: NamedLogicalGraph, v: Var, header: RecordHeader): PhysicalResult = {
+    def relationshipScan(inGraph: NamedLogicalGraph, v: Var, typePredicates: EveryRelationship, header: RecordHeader)
+    : PhysicalResult = {
       val graph = prev.graphs(inGraph.name)
 
-      val records = graph.relationships(v.name)
+      val records = graph.relationships(v.name, CTRelationship(typePredicates.relTypes.elements.map(_.name)))
 
       // TODO: Should not discard prev records here
       prev.mapRecordsWithDetails(_ => records)
@@ -152,9 +154,9 @@ class PhysicalResultProducer(context: RuntimeContext) {
       }
 
     def typeFilter(rel: Var, types: AnyGiven[RelTypeRef], header: RecordHeader): PhysicalResult = {
-      if (types.elts.isEmpty) prev
+      if (types.elements.isEmpty) prev
       else {
-        val typeExprs: Set[Expr] = types.elts.map { ref => HasType(rel, context.tokens.relType(ref))(CTBoolean) }
+        val typeExprs: Set[Expr] = types.elements.map { ref => HasType(rel, context.tokens.relType(ref))(CTBoolean) }
         prev.filter(Ors(typeExprs), header)
       }
     }
@@ -339,7 +341,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
     private def assertIsNode(slot: RecordSlot): Unit = {
       slot.content.cypherType match {
-        case CTNode =>
+        case CTNode(_) =>
         case x => throw new IllegalArgumentException(s"Expected $slot to contain a node, but was $x")
       }
     }
