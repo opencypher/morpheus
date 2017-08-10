@@ -62,6 +62,9 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
         producer.boundedVarExpand(edgeScan.edge, edgeList, target, lower, upper, initVarExpand,
           edgeScan, process(targetOp))
 
+      case logical.OrderByAndSlice(sortListItems, sourceOp) =>
+        producer.orderByAndSlice(sortListItems, process(sourceOp))
+
       case x =>
         Raise.notYetImplemented(s"Flat planning not done yet for $x")
     }

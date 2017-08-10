@@ -171,7 +171,23 @@ class WithAcceptanceTest extends SparkCypherTestSuite {
     result.graph shouldMatch given.graph
   }
 
-  test("order by") {
+  test("order by with same type") {
+    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+
+    val result = given.cypher("MATCH (a) WITH a.val as val ORDER BY val RETURN val")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("val" -> 3L),
+      CypherMap("val" -> 4L),
+      CypherMap("val" -> 42L)
+    ))
+
+    // And
+    result.graph shouldMatch given.graph
+  }
+
+  test("order by with same type asc") {
     val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
 
     val result = given.cypher("MATCH (a) WITH a.val as val ORDER BY val ASC RETURN val")
@@ -179,6 +195,37 @@ class WithAcceptanceTest extends SparkCypherTestSuite {
     // Then
     result.records.toMaps should equal(Bag(
       CypherMap("val" -> 3L),
+      CypherMap("val" -> 4L),
+      CypherMap("val" -> 42L)
+    ))
+
+    // And
+    result.graph shouldMatch given.graph
+  }
+
+  test("order by with same type desc") {
+    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+
+    val result = given.cypher("MATCH (a) WITH a.val as val ORDER BY val DESC RETURN val")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("val" -> 42L),
+      CypherMap("val" -> 4L),
+      CypherMap("val" -> 3L)
+    ))
+
+    // And
+    result.graph shouldMatch given.graph
+  }
+
+  test("order by skip with same type") {
+    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+
+    val result = given.cypher("MATCH (a) WITH a.val as val SKIP 1 RETURN val")
+
+    // Then
+    result.records.toMaps should equal(Bag(
       CypherMap("val" -> 4L),
       CypherMap("val" -> 42L)
     ))

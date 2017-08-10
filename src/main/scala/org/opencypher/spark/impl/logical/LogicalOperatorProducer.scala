@@ -16,6 +16,7 @@
 package org.opencypher.spark.impl.logical
 
 import org.opencypher.spark.api.expr._
+import org.opencypher.spark.api.ir.block.SortItem
 import org.opencypher.spark.api.ir.pattern.{EveryNode, EveryRelationship}
 import org.opencypher.spark.api.ir.{Field, SolvedQueryModel}
 import org.opencypher.spark.api.record.{ProjectedExpr, ProjectedField}
@@ -92,5 +93,9 @@ class LogicalOperatorProducer {
   def planStart(schema: Schema, fields: Set[Var]): Start = {
     val irFields = fields.map { v => Field(v.name)(v.cypherType) }
     Start(NamedLogicalGraph("default", schema), DefaultGraphSource, fields)(SolvedQueryModel(irFields, Set.empty))
+  }
+
+  def planOrderByAndSlice(sortItems: Seq[SortItem[Expr]], prev: LogicalOperator): OrderByAndSlice = {
+    OrderByAndSlice(sortItems, prev)(prev.solved)
   }
 }

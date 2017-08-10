@@ -17,6 +17,7 @@ package org.opencypher.spark.impl.flat
 
 import cats.Monoid
 import org.opencypher.spark.api.expr._
+import org.opencypher.spark.api.ir.block.SortItem
 import org.opencypher.spark.api.ir.global.Label
 import org.opencypher.spark.api.ir.pattern.{AllGiven, EveryNode, EveryRelationship}
 import org.opencypher.spark.api.record._
@@ -138,5 +139,9 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     val header = initHeader ++ targetOp.header
 
     BoundedVarExpand(edge, edgeList, target, lower, upper, sourceOp, edgeOp, targetOp, header)
+  }
+
+  def orderByAndSlice(sortItems: Seq[SortItem[Expr]], sourceOp: FlatOperator): FlatOperator = {
+    OrderByAndSlice(sortItems, sourceOp, sourceOp.header)
   }
 }

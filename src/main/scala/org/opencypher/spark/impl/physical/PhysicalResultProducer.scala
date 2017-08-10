@@ -19,6 +19,7 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{ArrayType, BooleanType, LongType}
 import org.apache.spark.sql.{DataFrame, Row}
 import org.opencypher.spark.api.expr._
+import org.opencypher.spark.api.ir.block.{Asc, Desc, SortItem}
 import org.opencypher.spark.api.ir.global._
 import org.opencypher.spark.api.ir.pattern.{AnyGiven, EveryNode, EveryRelationship}
 import org.opencypher.spark.api.record._
@@ -158,6 +159,22 @@ class PhysicalResultProducer(context: RuntimeContext) {
       else {
         val typeExprs: Set[Expr] = types.elements.map { ref => HasType(rel, context.tokens.relType(ref))(CTBoolean) }
         prev.filter(Ors(typeExprs), header)
+      }
+    }
+
+    def orderByAndSlice(sortItems: Seq[SortItem[Expr]], header: RecordHeader): PhysicalResult = {
+
+      val getColumnName = (expr: Var) => context.columnName(prev.records.details.header.slotFor(expr))
+
+      val sortExpression = sortItems.map {
+        case Asc(expr: Var) => asc(getColumnName(expr))
+        case Desc(expr: Var) => desc(getColumnName(expr))
+        case _ => Raise.impossible()
+      }
+
+      prev.mapRecordsWithDetails { subject =>
+        val sortedData = subject.details.toDF().sort(sortExpression: _*)
+        SparkCypherRecords.create(header, sortedData)(subject.space)
       }
     }
 

@@ -87,9 +87,14 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         // this plans both pattern and filter for convenience -- TODO: split up
         val patternPlan = planPattern(plan, pattern)
         planFilter(patternPlan, where)
+
       case ProjectBlock(_, ProjectedFields(exprs), where, graph) =>
         val projPlan = planProjections(plan, exprs)
         planFilter(projPlan, where)
+
+      case OrderAndSliceBlock(_, _, sortItems, _, _, _) =>
+        planOrderByAndSlice(sortItems, plan)
+
       case x =>
         Raise.notYetImplemented(s"logical planning of $x")
     }
@@ -142,6 +147,10 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     }
 
     filtersAndProjs
+  }
+
+  private def planOrderByAndSlice(sortItems: Seq[SortItem[Expr]], in: LogicalOperator) = {
+    producer.planOrderByAndSlice(sortItems, in)
   }
 
   private def planInnerExpr(expr: Expr, in: LogicalOperator)(implicit context: LogicalPlannerContext): LogicalOperator = {
