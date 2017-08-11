@@ -182,7 +182,7 @@ object SparkCypherGraph {
         //TODO speed up using hash lookups?
         //TODO don't expand common labels, use CTNode label instead
         val newData = tempHeader.slots.foldLeft(data) { (acc, slot) =>
-          scanRecords.details.header.slots.find(_.content == slot.content) match {
+          scanRecords.details.header.slots.find(_.content.key.withoutType == slot.content.key.withoutType) match {
             case None =>
               val columnName = SparkColumnName.of(slot)
               slot.content.key match {

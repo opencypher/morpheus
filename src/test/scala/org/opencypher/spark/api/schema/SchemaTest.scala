@@ -187,7 +187,7 @@ class SchemaTest extends BaseTestSuite {
       .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString, "baz" -> CTString)
 
     schema1 ++ schema2 should equal(Schema.empty
-      .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString, "baz" -> CTString))
+      .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString, "baz" -> CTString.nullable))
   }
 
   test("combining key conflicting schemas") {
