@@ -113,6 +113,17 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
         (4, 400, 20, false))
     ))
 
+  val `:INFLUENCES` =
+    RelationshipScan.on("i" -> "ID") {
+      _.from("SRC").to("DST").relType("INFLUENCES")
+        .build
+    }
+    .from(SparkCypherRecords.create(
+      Seq("SRC", "ID", "DST"),
+      Seq(
+        (10, 1000, 20))
+    ))
+
   test("Construct graph from single node scan") {
     val graph = SparkCypherGraph.create(`:Person`)
     val nodes = graph.nodes("n")
@@ -182,7 +193,56 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
     ))
   }
 
-  test("Construct graph from multiple node and multiple relationship scan") {
+  test("Extract all node scans") {
+    val graph = SparkCypherGraph.create(`:Person`, `:Book`)
+
+    val nodes = graph.nodes("n", CTNode())
+
+    nodes.details.toDF().columns should equal(Array(
+      "n",
+      "____n:Person",
+      "____n:Swedish",
+      "____n:Book",
+      "____n_dot_nameSTRING",
+      "____n_dot_lucky_bar_numberINTEGER",
+      "____n_dot_titleSTRING",
+      "____n_dot_yearINTEGER"
+    ))
+
+    nodes.details.toDF().collect().toSet should equal(Set(
+      Row( 1,  true,  true,  false,   "Mats",   23,                   null, null),
+      Row( 2,  true,  false, false, "Martin",   42,                   null, null),
+      Row( 3,  true,  false, false,    "Max", 1337,                   null, null),
+      Row( 4,  true,  false, false, "Stefan",    9,                   null, null),
+      Row(10, false,  false,  true,     null, null,                 "1984", 1949),
+      Row(20, false,  false,  true,     null, null,        "Cryptonomicon", 1999),
+      Row(30, false,  false,  true,     null, null, "The Eye of the World", 1990),
+      Row(40, false,  false,  true,     null, null,           "The Circle", 2013)
+    ))
+  }
+
+  test("Extract node scan subset") {
+    val graph = SparkCypherGraph.create(`:Person`, `:Book`)
+
+    val nodes = graph.nodes("n", CTNode("Person"))
+
+    nodes.details.toDF().columns should equal(Array(
+      "n",
+      "____n:Person",
+      "____n:Swedish",
+      "____n_dot_nameSTRING",
+      "____n_dot_lucky_bar_numberINTEGER"
+    ))
+
+    nodes.details.toDF().collect().toSet should equal (Set(
+      Row(1, true, true,    "Mats",   23),
+      Row(2, true, false, "Martin",   42),
+      Row(3, true, false,    "Max", 1337),
+      Row(4, true, false, "Stefan",    9)
+    ))
+  }
+
+  test("Extract all relationship scans") {
     val graph = SparkCypherGraph.create(`:Person`, `:Book`, `:KNOWS`, `:READS`)
 
     val rels  = graph.relationships("e")
@@ -212,27 +272,6 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
     ))
   }
 
-  test("Extract node scan subset") {
-    val graph = SparkCypherGraph.create(`:Person`, `:Book`)
-
-    val nodes = graph.nodes("n", CTNode("Person"))
-
-    nodes.details.toDF().columns should equal(Array(
-      "n",
-      "____n:Person",
-      "____n:Swedish",
-      "____n_dot_nameSTRING",
-      "____n_dot_lucky_bar_numberINTEGER"
-    ))
-
-    nodes.details.toDF().collect().toSet should equal (Set(
-      Row(1, true, true,    "Mats",   23),
-      Row(2, true, false, "Martin",   42),
-      Row(3, true, false,    "Max", 1337),
-      Row(4, true, false, "Stefan",    9)
-    ))
-  }
-
   test("Extract relationship scan subset") {
     val graph = SparkCypherGraph.create(`:Person`, `:Book`, `:KNOWS`, `:READS`)
 
@@ -253,6 +292,32 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
       Row(2, 4, 0, 3, 2016),
       Row(2, 5, 0, 4, 2013),
       Row(3, 6, 0, 4, 2016)
+    ))
+  }
+
+  test("Extract relationship scan strict subset") {
+    val graph = SparkCypherGraph.create(`:Person`, `:Book`, `:KNOWS`, `:READS`, `:INFLUENCES`)
+
+    val rels  = graph.relationships("e", CTRelationship("KNOWS", "INFLUENCES"))
+
+    rels.details.toDF().columns should equal(Array(
+      "____source(e)",
+      "e",
+      "____type(e)",
+      "____target(e)",
+      "____e_dot_sinceINTEGER"
+    ))
+
+    rels.details.toDF().collect().toSet should equal(Set(
+      // :KNOWS
+      Row(1, 1, 0, 2, 2017),
+      Row(1, 2, 0, 3, 2016),
+      Row(1, 3, 0, 4, 2015),
+      Row(2, 4, 0, 3, 2016),
+      Row(2, 5, 0, 4, 2013),
+      Row(3, 6, 0, 4, 2016),
+      // :INFLUENCES
+      Row(10, 1000, 2, 20, null)
     ))
   }
 

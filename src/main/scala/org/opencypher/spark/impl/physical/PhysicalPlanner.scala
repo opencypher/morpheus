@@ -17,8 +17,7 @@ package org.opencypher.spark.impl.physical
 
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.global._
-import org.opencypher.spark.api.ir.pattern.AnyGiven
-import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherResult, SparkGraphSpace}
+import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords}
 import org.opencypher.spark.api.types.CTRelationship
 import org.opencypher.spark.api.value.CypherValue
 import org.opencypher.spark.impl.exception.Raise
@@ -65,7 +64,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
         inner(in).nodeScan(op.inGraph, v, labels, header)
 
       case op@flat.EdgeScan(e, edgeDef, in, header) =>
-        inner(in).relationshipScan(op.inGraph, e, header).typeFilter(e, edgeDef.relTypes.map(context.tokens.relTypeRef), header)
+        inner(in).relationshipScan(op.inGraph, e, edgeDef, header)
 
       case flat.Alias(expr, alias, in, header) =>
         inner(in).alias(expr, alias, header)
@@ -84,8 +83,9 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
         val lhs = inner(sourceOp)
         val rhs = inner(targetOp)
 
+        val ctRelType = CTRelationship.apply(types.relTypes.elements.map(_.name))
         val g = lhs.graphs(op.inGraph.name)
-        val relationships = g.relationships(rel.name)
+        val relationships = g.relationships(rel.name, ctRelType)
         val relRhs = PhysicalResult(relationships, lhs.graphs).typeFilter(rel, types.relTypes.map(tokens.relTypeRef), relHeader)
 
         val relAndTargetHeader = relRhs.records.details.header ++ rhs.records.details.header
@@ -97,7 +97,9 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
       case op@flat.ExpandInto(source, rel, types, target, sourceOp, header, relHeader) =>
         val in = inner(sourceOp)
         val g = in.graphs(op.inGraph.name)
-        val relationships = PhysicalResult(g.relationships(rel.name), in.graphs)
+
+        val ctRelType = CTRelationship.apply(types.relTypes.elements.map(_.name))
+        val relationships = PhysicalResult(g.relationships(rel.name, ctRelType), in.graphs)
           .typeFilter(rel, types.relTypes.map(tokens.relTypeRef), relHeader)
         // in join rels on source == rel.source and target == rels.target
         in.joinInto(relationships, header).on(source, target)(rel)

@@ -83,6 +83,8 @@ object SparkCypherGraph {
     private val nodeEntityScans = NodeEntityScans(scans.collect { case it: NodeScan => it }.toVector)
     private val relEntityScans = RelationshipEntityScans(scans.collect { case it: RelationshipScan => it }.toVector)
 
+    private def globalRegistry: TokenRegistry = space.tokens.registry
+
     override def nodes(name: String, nodeCypherType: CTNode) = {
 
       // TODO: Drop aliases in node scans or here?
@@ -96,7 +98,7 @@ object SparkCypherGraph {
       val tempSchema = selectedScans
         .map(_.schema)
         .reduce(_ ++ _)
-      val tempHeader = RecordHeader.nodeFromSchema(node, tempSchema, TokenRegistry.fromSchema(tempSchema))
+      val tempHeader = RecordHeader.nodeFromSchema(node, tempSchema, globalRegistry)
 
       val selectedRecords = alignEntityVariable(selectedScans, node)
 
@@ -109,11 +111,10 @@ object SparkCypherGraph {
         tempSchema.impliedLabels,
         tempSchema.labelCombinations)
 
-      val tokenRegistry = TokenRegistry.fromSchema(targetSchema)
-      val targetHeader = RecordHeader.nodeFromSchema(node, targetSchema, tokenRegistry)
+      val targetHeader = RecordHeader.nodeFromSchema(node, targetSchema, globalRegistry)
 
       // (4) Adjust individual scans to same header
-      val alignedRecords = alignRecords(selectedRecords, tempHeader, targetHeader, tokenRegistry)
+      val alignedRecords = alignRecords(selectedRecords, tempHeader, targetHeader)
 
       // (5) Union all scan records based on final schema
       SparkCypherRecords.create(targetHeader, alignedRecords.map(_.details.toDF()).reduce(_ union _))
@@ -136,7 +137,7 @@ object SparkCypherGraph {
       val rel = Var(name)(relCypherType)
       val tempSchema = selectedScans.map(_.schema).reduce(_ ++ _)
       val selectedRecords = alignEntityVariable(selectedScans, rel)
-      val tempHeader = RecordHeader.relationshipFromSchema(rel, tempSchema, TokenRegistry.fromSchema(tempSchema))
+      val tempHeader = RecordHeader.relationshipFromSchema(rel, tempSchema, globalRegistry)
 
       // (3) Update all non-nullable property types to nullable
       val targetSchema = Schema(tempSchema.labels,
@@ -146,14 +147,14 @@ object SparkCypherGraph {
         tempSchema.impliedLabels,
         tempSchema.labelCombinations)
 
-      val tokenRegistry = TokenRegistry.fromSchema(targetSchema)
-      val targetHeader = RecordHeader.relationshipFromSchema(rel, targetSchema, tokenRegistry)
+      val targetHeader = RecordHeader.relationshipFromSchema(rel, targetSchema, globalRegistry)
 
       // (4) Adjust individual scans to same header
-      val alignedRecords = alignRecords(selectedRecords, tempHeader, targetHeader, tokenRegistry)
+      val alignedRecords = alignRecords(selectedRecords, tempHeader, targetHeader)
 
       // (5) Union all scan records based on final schema
-      SparkCypherRecords.create(targetHeader, alignedRecords.map(_.details.toDF()).reduce(_ union _))
+      val data = alignedRecords.map(_.details.toDF()).reduce(_ union _)
+      SparkCypherRecords.create(targetHeader, data)
     }
 
     /**
@@ -163,13 +164,11 @@ object SparkCypherGraph {
       * @param records records to update
       * @param tempHeader original union header
       * @param targetHeader final union header (including nullable types)
-      * @param tokenRegistry token registry of the target schema
       * @return updates records
       */
     private def alignRecords(records: Seq[SparkCypherRecords],
                              tempHeader: RecordHeader,
-                             targetHeader: RecordHeader,
-                             tokenRegistry: TokenRegistry)
+                             targetHeader: RecordHeader)
     : Seq[SparkCypherRecords] = {
 
       records.map { scanRecords =>
@@ -192,7 +191,7 @@ object SparkCypherGraph {
                 case h: HasType =>
                   acc.withColumn(columnName, lit(labels.contains(h.relType.name)))
                 case t: TypeId =>
-                  acc.withColumn(columnName, lit(tokenRegistry.relTypeRefByName(labels.head).id))
+                  acc.withColumn(columnName, lit(globalRegistry.relTypeRefByName(labels.head).id))
                 case _ => acc.withColumn(columnName, lit(null).cast(toSparkType(slot.content.cypherType.nullable)))
               }
             case _ => acc

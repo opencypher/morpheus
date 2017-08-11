@@ -112,20 +112,22 @@ trait GraphMatchingTestSupport {
         val header = RecordHeader.nodeFromSchema(Var(name)(cypherType), schema, space.tokens.registry)
 
         val data = {
-          val nodes = queryGraph.getVertices.asScala.map { v =>
-            val exprs = header.slots.map(_.content.key)
-            val labelFields = exprs.collect {
-              case HasLabel(_, label) => v.getLabels.contains(label.name)
-            }
-            val propertyFields = exprs.collect {
-              case p@Property(_, k) =>
-                val pValue = v.getProperties.get(k.name)
-                if (fromJavaType(pValue) == p.cypherType) pValue
-                else null
-            }
+          val nodes = queryGraph.getVertices.asScala
+            .filter(v => v.getLabels.containsAll(cypherType.labels.filter(_._2).keySet.asJava))
+            .map { v =>
+              val exprs = header.slots.map(_.content.key)
+              val labelFields = exprs.collect {
+                case HasLabel(_, label) => v.getLabels.contains(label.name)
+              }
+              val propertyFields = exprs.collect {
+                case p@Property(_, k) =>
+                  val pValue = v.getProperties.get(k.name)
+                  if (fromJavaType(pValue) == p.cypherType) pValue
+                  else null
+              }
 
-            Row(v.getId +: (labelFields ++ propertyFields): _*)
-          }.toList.asJava
+              Row(v.getId +: (labelFields ++ propertyFields): _*)
+            }.toList.asJava
 
           val fields = header.slots.map { s =>
             StructField(context.columnName(s), toSparkType(s.content.cypherType))
@@ -133,7 +135,6 @@ trait GraphMatchingTestSupport {
 
           sparkSession.createDataFrame(nodes, StructType(fields))
         }
-
         SparkCypherRecords.create(header, data)(space)
       }
 
@@ -142,15 +143,17 @@ trait GraphMatchingTestSupport {
         val header = RecordHeader.relationshipFromSchema(Var(name)(cypherType), schema, space.tokens.registry)
 
         val data = {
-          val rels = queryGraph.getEdges.asScala.map { e =>
-            val staticFields = Seq(e.getSourceVertexId, e.getId, space.tokens.registry.relTypeRefByName(e.getLabel).id.toLong, e.getTargetVertexId)
+          val rels = queryGraph.getEdges.asScala
+            .filter(e => cypherType.types.asJava.isEmpty || cypherType.types.asJava.containsAll(e.getLabels))
+            .map { e =>
+              val staticFields = Seq(e.getSourceVertexId, e.getId, space.tokens.registry.relTypeRefByName(e.getLabel).id.toLong, e.getTargetVertexId)
 
-            val propertyFields = header.slots.slice(4, header.slots.size).map(_.content.key).map {
-              case Property(_, k) => e.getProperties.get(k.name)
-              case _ => throw new IllegalArgumentException("Only properties expected in the header")
-            }
+              val propertyFields = header.slots.slice(4, header.slots.size).map(_.content.key).map {
+                case Property(_, k) => e.getProperties.get(k.name)
+                case _ => throw new IllegalArgumentException("Only properties expected in the header")
+              }
 
-            Row(staticFields ++ propertyFields: _*)
+              Row(staticFields ++ propertyFields: _*)
           }.toList.asJava
 
           val fields = header.slots.map { s =>
