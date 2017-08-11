@@ -65,15 +65,21 @@ final case class PropertyKeyMap(m: Map[String, Map[String, CypherType]])(val con
 
   def keys = m.values.flatMap(_.keySet).toSet
 
-  //TODO Instead of raising an error for type conflicts use common cypher type (CypherType.join)
   def ++(other: PropertyKeyMap) = {
-    if (m.keySet.intersect(other.m.keySet).forall(key =>
-      (this.m(key).toSet -- other.m(key).toSet).isEmpty || (other.m(key).toSet -- this.m(key).toSet).isEmpty)
-    ) {
-      copy(m ++ other.m)(conflicts ++ other.conflicts)
-    } else {
-      Raise.schemaMismatch(s"Conflicting property key maps $this and $other")
-    }
+    val joined = joinMaps(m, other.m)((leftAttr, rightAttr) => joinMaps(leftAttr, rightAttr)(_ join _, _.nullable))
+    copy(joined)(conflicts ++ other.conflicts)
+  }
+
+  private def joinMaps[A, B](left: Map[A, B], right: Map[A, B])
+                            (joinF: (B, B) => B, mapF: B => B = (x: B) => x): Map[A, B] = {
+    val uniqueLeft = left.keySet -- right.keySet
+    val withUniqueLeft = uniqueLeft.foldLeft(Map[A, B]())((map, key) => map.updated(key, mapF(left(key))))
+
+    val uniqueRight = right.keySet -- left.keySet
+    val withUniqueRight = uniqueRight.foldLeft(withUniqueLeft)((map, key) => map.updated(key, mapF(right(key))))
+
+    val common = left.keySet.intersect(right.keySet)
+    common.foldLeft(withUniqueRight) {(map, key) => map.updated(key, joinF(left(key), right(key)))}
   }
 }
 
