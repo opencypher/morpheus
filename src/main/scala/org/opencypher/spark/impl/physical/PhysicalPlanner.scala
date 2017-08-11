@@ -65,8 +65,6 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
 
       case op@flat.EdgeScan(e, edgeDef, in, header) =>
         inner(in).relationshipScan(op.inGraph, e, edgeDef, header)
-          // TODO remove?
-          .typeFilter(e, edgeDef.relTypes.map(context.tokens.relTypeRef), header)
 
       case flat.Alias(expr, alias, in, header) =>
         inner(in).alias(expr, alias, header)
