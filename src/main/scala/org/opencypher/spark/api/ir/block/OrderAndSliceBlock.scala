@@ -1,12 +1,11 @@
 package org.opencypher.spark.api.ir.block
 import org.opencypher.spark.api.ir.pattern.AllGiven
 
-final case class OrderAndSliceBlock[E](
-    after: Set[BlockRef],
-    orderBy: Seq[SortItem[E]],
-    graph: BlockRef,
-    skip: Option[E],
-    limit: Option[E] )
+final case class OrderAndSliceBlock[E](after: Set[BlockRef],
+                                       orderBy: Seq[SortItem[E]],
+                                       skip: Option[E],
+                                       limit: Option[E],
+                                       graph: BlockRef)
 extends BasicBlock[OrderedFields[E], E](BlockType("order-and-slice")) {
   override val binds = OrderedFields[E]()
   override def where: AllGiven[E] = AllGiven(Set())

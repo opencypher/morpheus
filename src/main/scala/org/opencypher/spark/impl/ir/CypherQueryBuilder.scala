@@ -131,7 +131,6 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
   private def registerOrderAndSliceBlock[R: _mayFail : _hasContext](orderBy: Option[OrderBy],
                                                                     skip: Option[Skip],
                                                                     limit: Option[Limit])= {
-
     for {
       context <- get[R, IRBuilderContext]
       sortItems <- orderBy match {
@@ -143,18 +142,18 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
       skipExpr <- convertExpr(skip.map(_.expression))
       limitExpr <- convertExpr(limit.map(_.expression))
 
-      foo <- {
+      refs <- {
         if (sortItems.isEmpty && skipExpr.isEmpty && limitExpr.isEmpty) pure[R, Vector[BlockRef]](Vector())
         else {
           val blockRegistry = context.blocks
           val after = blockRegistry.lastAdded.toSet
 
-          val orderAndSliceBlock = OrderAndSliceBlock[Expr](after, sortItems, context.graphBlock, skipExpr, limitExpr)
+          val orderAndSliceBlock = OrderAndSliceBlock[Expr](after, sortItems, skipExpr, limitExpr, context.graphBlock)
           val (ref,reg) = blockRegistry.register(orderAndSliceBlock)
           put[R, IRBuilderContext](context.copy(blocks = reg)) >> pure[R, Vector[BlockRef]](Vector(ref))
         }
       }
-    } yield foo
+    } yield refs
   }
 
   private def convertReturnItem[R: _mayFail : _hasContext](item: ast.ReturnItem): Eff[R, (Field, Expr)] = item match {

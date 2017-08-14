@@ -141,7 +141,11 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     BoundedVarExpand(edge, edgeList, target, lower, upper, sourceOp, edgeOp, targetOp, header)
   }
 
-  def orderByAndSlice(sortItems: Seq[SortItem[Expr]], sourceOp: FlatOperator): FlatOperator = {
-    OrderByAndSlice(sortItems, sourceOp, sourceOp.header)
+  def orderBy(sortItems: Seq[SortItem[Expr]], sourceOp: FlatOperator): FlatOperator = {
+    OrderBy(sortItems, sourceOp, sourceOp.header)
+  }
+
+  def limit(expr: Expr, sourceOp: FlatOperator): FlatOperator = {
+    Limit(expr, sourceOp, sourceOp.header)
   }
 }

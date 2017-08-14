@@ -117,9 +117,12 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
         val expanded = first.varExpand(second, edgeList, sourceOp.endNode, rel, lower, upper, header)
         expanded.finalizeVarExpand(third, sourceOp.endNode, target, header)
 
-      case flat.OrderByAndSlice(sortItems: Seq[SortItem[Expr]], in, header) =>
+      case flat.OrderBy(sortItems: Seq[SortItem[Expr]], in, header) =>
         val prev = inner(in)
-        prev.orderByAndSlice(sortItems, header)
+        prev.orderBy(sortItems, header)
+
+      case flat.Limit(expr, in, header) =>
+        inner(in).limit(expr, header)
 
       case x =>
         Raise.notYetImplemented(s"operator $x")

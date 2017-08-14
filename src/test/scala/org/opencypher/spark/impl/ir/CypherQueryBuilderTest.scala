@@ -107,7 +107,6 @@ class CypherQueryBuilderTest extends IrTestSuite {
     "MATCH (a:Person) WITH a.name AS name, a.age AS age ORDER BY age RETURN age, name".model.ensureThat { (model, globals) =>
 
       import globals.tokens._
-      import globals.constants._
 
       val loadRef = model.findExactlyOne {
         case NoWhereBlock(LoadGraphBlock(binds, DefaultGraph())) =>
@@ -123,8 +122,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
       }
 
       val projectRef = model.findExactlyOne {
-        case NoWhereBlock(ProjectBlock(deps, ProjectedFields(map), _, _))
-          if map.exists(_._2 == Property(Var("a")(CTNode), propertyKeyByName("name"))(CTVoid)) =>
+        case NoWhereBlock(ProjectBlock(deps, ProjectedFields(map), _, _)) if deps.head == matchRef =>
           deps should equal(Set(matchRef))
           map should equal(Map(
             toField('name) -> Property(Var("a")(CTNode), propertyKeyByName("name"))(CTVoid),
@@ -132,16 +130,24 @@ class CypherQueryBuilderTest extends IrTestSuite {
           ))
       }
 
-      val orderByRef = model.findExactlyOne {
-        case NoWhereBlock(OrderAndSliceBlock(deps, FieldsInOrder(Field("name"),Field("age")), orderBy , _, None, None)) =>
-          val ordered = Vector(Asc(toVar('age)))
-          orderBy should equal(ordered)
-          deps should equal(Set(projectRef))
+      val project2Ref = model.findExactlyOne {
+        case NoWhereBlock(ProjectBlock(deps, ProjectedFields(map), _, _)) if deps.head == projectRef =>
+        deps should equal(Set(projectRef))
+          map should equal(Map(
+            toField('age) -> toVar('age),
+            toField('name) -> toVar('name)
+          ))
       }
 
-      val project2Ref = model.findExactlyOne {
-        case NoWhereBlock(ProjectBlock(deps, ProjectedFields(map), _, _))
-          if map.exists(_._2 == Var("name")(CTVoid)) =>
+      val orderByRef = model.findExactlyOne {
+        case NoWhereBlock(OrderAndSliceBlock(deps, orderBy, None, None, _)) =>
+          val ordered = Vector(Asc(toVar('age)))
+          orderBy should equal(ordered)
+          deps should equal(Set(project2Ref))
+      }
+
+      val project3Ref = model.findExactlyOne {
+        case NoWhereBlock(ProjectBlock(deps, ProjectedFields(map), _, _)) if deps.head == orderByRef =>
           deps should equal(Set(orderByRef))
           map should equal(Map(
             toField('age) -> toVar('age),
@@ -151,12 +157,13 @@ class CypherQueryBuilderTest extends IrTestSuite {
 
       model.result match {
         case NoWhereBlock(ResultBlock(deps, FieldsInOrder(Field("age"),Field("name")), _, _, _, _)) =>
-          deps should equal(Set(project2Ref))
+        deps should equal(Set(project3Ref))
       }
 
       model.requirements should equal(Map(
-        project2Ref -> Set(orderByRef),
-        orderByRef -> Set(projectRef),
+        project3Ref -> Set(orderByRef),
+        orderByRef -> Set(project2Ref),
+        project2Ref -> Set(projectRef),
         projectRef -> Set(matchRef),
         matchRef -> Set(loadRef),
         loadRef -> Set()

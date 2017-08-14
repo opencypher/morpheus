@@ -162,7 +162,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
       }
     }
 
-    def orderByAndSlice(sortItems: Seq[SortItem[Expr]], header: RecordHeader): PhysicalResult = {
+    def orderBy(sortItems: Seq[SortItem[Expr]], header: RecordHeader): PhysicalResult = {
 
       val getColumnName = (expr: Var) => context.columnName(prev.records.details.header.slotFor(expr))
 
@@ -175,6 +175,17 @@ class PhysicalResultProducer(context: RuntimeContext) {
       prev.mapRecordsWithDetails { subject =>
         val sortedData = subject.details.toDF().sort(sortExpression: _*)
         SparkCypherRecords.create(header, sortedData)(subject.space)
+      }
+    }
+
+    def limit(expr: Expr, header: RecordHeader): PhysicalResult = {
+      val limit = expr match {
+        case IntegerLit(v) => v
+        case _ => Raise.impossible()
+      }
+
+      prev.mapRecordsWithDetails { subject =>
+        SparkCypherRecords.create(header, subject.details.toDF().limit(limit.toInt))(subject.space)
       }
     }
 

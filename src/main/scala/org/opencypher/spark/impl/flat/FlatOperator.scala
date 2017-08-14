@@ -100,7 +100,10 @@ final case class BoundedVarExpand(rel: Var, edgeList: Var, target: Var, lower: I
   override def third  = targetOp
 }
 
-final case class OrderByAndSlice(sortItems: Seq[SortItem[Expr]], in: FlatOperator, header: RecordHeader)
+final case class OrderBy(sortItems: Seq[SortItem[Expr]], in: FlatOperator, header: RecordHeader)
+  extends StackingFlatOperator
+
+final case class Limit(expr: Expr, in: FlatOperator, header: RecordHeader)
   extends StackingFlatOperator
 
 final case class Start(outGraph: NamedLogicalGraph, source: GraphSource, fields: Set[Var]) extends FlatLeafOperator {

@@ -172,10 +172,17 @@ final case class Start(outGraph: NamedLogicalGraph, source: GraphSource, fields:
   override def pretty(depth: Int): String = s"${prefix(depth)} Start()"
 }
 
-final case class OrderByAndSlice(sortItems: Seq[SortItem[Expr]], in: LogicalOperator)
-                                (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
+final case class OrderBy(sortItems: Seq[SortItem[Expr]], in: LogicalOperator)
+                        (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
   override def pretty(depth: Int): String =
     s"""${prefix(depth)} OrderByAndSlice(sortItems = ${sortItems.mkString(", ")})
+       #${in.pretty(depth + 1)}""".stripMargin('#')
+}
+
+final case class Limit(expr: Expr, in: LogicalOperator)
+                      (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
+  override def pretty(depth: Int): String =
+    s"""${prefix(depth)} Limit(expr = $expr})
        #${in.pretty(depth + 1)}""".stripMargin('#')
 }
 

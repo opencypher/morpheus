@@ -95,7 +95,11 @@ class LogicalOperatorProducer {
     Start(NamedLogicalGraph("default", schema), DefaultGraphSource, fields)(SolvedQueryModel(irFields, Set.empty))
   }
 
-  def planOrderByAndSlice(sortItems: Seq[SortItem[Expr]], prev: LogicalOperator): OrderByAndSlice = {
-    OrderByAndSlice(sortItems, prev)(prev.solved)
+  def planOrderBy(sortItems: Seq[SortItem[Expr]], prev: LogicalOperator): OrderBy = {
+    OrderBy(sortItems, prev)(prev.solved)
+  }
+
+  def planLimit(expr: Expr, prev: LogicalOperator): Limit = {
+    Limit(expr, prev)(prev.solved)
   }
 }
