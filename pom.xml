@@ -13,7 +13,7 @@
     <properties>
         <!-- Project settings -->
         <project.build.encoding>UTF-8</project.build.encoding>
-        <project.java.version>1.7</project.java.version>
+        <project.java.version>1.8</project.java.version>
         <project.scala.version>2.11.11</project.scala.version>
         <project.scala.binary.version>2.11</project.scala.binary.version>
 
@@ -39,7 +39,7 @@
         <dep.neo4j-driver.version>1.4.2</dep.neo4j-driver.version>
         <dep.scalatest.version>3.0.3</dep.scalatest.version>
         <dep.sourcecode.version>0.1.2</dep.sourcecode.version>
-        <dep.spark.version>2.1.0</dep.spark.version>
+        <dep.spark.version>2.2.0</dep.spark.version>
         <dep.circe.version>0.8.0</dep.circe.version>
     </properties>
 
@@ -424,6 +424,12 @@
         </dependency>
 
         <!-- Utils -->
+
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bctls-jdk15on</artifactId>
+            <version>1.57</version>
+        </dependency>
 
         <dependency>
             <groupId>com.lihaoyi</groupId>

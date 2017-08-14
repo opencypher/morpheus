@@ -57,5 +57,4 @@ class TripletBenchmarksTest extends BaseTestSuite with SparkTestSession {
     b.run(g).computeCount shouldBe 2
     b.run(g).computeChecksum shouldBe 3 ^ 4
   }
-
 }
