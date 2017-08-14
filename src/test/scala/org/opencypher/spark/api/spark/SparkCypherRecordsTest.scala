@@ -23,7 +23,7 @@ import org.opencypher.spark.api.record._
 import org.opencypher.spark.api.types.{CTBoolean, CTNode, CTRelationship, CTString, _}
 import org.opencypher.spark.{BaseTestSuite, SparkTestSession}
 
-class SparkCypherRecordsTest extends BaseTestSuite with SparkTestSession.Fixture {
+class SparkCypherRecordsTest extends BaseTestSuite with SparkTestSession {
 
   implicit val space = SparkGraphSpace.empty(session, TokenRegistry.empty)
 

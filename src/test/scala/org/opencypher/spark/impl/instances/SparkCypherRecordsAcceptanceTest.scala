@@ -24,7 +24,7 @@ import org.opencypher.spark.{BaseTestSuite, SparkTestSession}
 
 import scala.language.reflectiveCalls
 
-class SparkCypherRecordsAcceptanceTest extends BaseTestSuite with SparkTestSession.Fixture {
+class SparkCypherRecordsAcceptanceTest extends BaseTestSuite with SparkTestSession {
 
   test("label scan and project") {
     // When

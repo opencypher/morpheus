@@ -23,7 +23,7 @@ import org.opencypher.spark_legacy.api.frame.EmbeddedRepresentation
 import org.opencypher.spark.api.types.{CTInteger, CTString}
 import org.opencypher.spark.{BaseTestSuite, SparkTestSession}
 
-class StdCypherResultContainerTest extends BaseTestSuite with SparkTestSession.Fixture {
+class StdCypherResultContainerTest extends BaseTestSuite with SparkTestSession {
 
   test("should output a nice table") {
     val signature = new StdFrameSignature(Map(

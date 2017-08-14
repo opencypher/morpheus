@@ -39,7 +39,7 @@ import scala.collection.JavaConverters._
 
 trait GraphMatchingTestSupport {
 
-  self: BaseTestSuite with SparkTestSession.Fixture  =>
+  self: BaseTestSuite with SparkTestSession  =>
 
   implicit val bagConfig = Bag.configuration.compact[CypherMap]
   val DEFAULT_LABEL = "DEFAULT"

@@ -17,12 +17,12 @@ package org.opencypher.spark
 
 import ammonite.repl.FrontEnd
 import ammonite.util.{Bind, Util}
-import org.opencypher.spark_legacy.benchmark.RunBenchmark
+import org.opencypher.spark.support.SparkSessionFactory
 
 object Shell {
 
   def main(args: Array[String]): Unit = {
-    implicit val session = RunBenchmark.sparkSession
+    implicit val session = SparkSessionFactory.getMatchingOrRestart(SparkSessionFactory.createConf)
     try {
       val welcomeBanner = {
         val ownVersion = CypherForApacheSpark.version.getOrElse("<unknown>")

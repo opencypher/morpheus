@@ -23,7 +23,7 @@ import org.scalatest.junit.JUnitRunner
 @RunWith(classOf[JUnitRunner])
 abstract class SparkCypherTestSuite
   extends BaseTestSuite
-    with SparkTestSession.Fixture
+    with SparkTestSession
     with GraphMatchingTestSupport
     with SparkCypherInstances
     with RecordMatchingTestSupport

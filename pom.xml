@@ -32,12 +32,11 @@
         <dep.cats.version>0.9.0</dep.cats.version>
         <dep.eff.version>4.5.0</dep.eff.version>
         <dep.gdl.version>0.3.0-SNAPSHOT</dep.gdl.version>
-        <dep.graphframes.version>0.4.0-spark2.1-s_2.11</dep.graphframes.version>
         <dep.junit.version>4.12</dep.junit.version>
         <dep.mockito.version>1.10.19</dep.mockito.version>
         <dep.multiset.version>0.4</dep.multiset.version>
-        <dep.neo4j-spark-connector>2.0.0-M2</dep.neo4j-spark-connector>
         <dep.neo4j.version>3.2.0-alpha08</dep.neo4j.version>
+        <dep.neo4j-driver.version>1.4.2</dep.neo4j-driver.version>
         <dep.scalatest.version>3.0.3</dep.scalatest.version>
         <dep.sourcecode.version>0.1.2</dep.sourcecode.version>
         <dep.spark.version>2.1.0</dep.spark.version>
@@ -101,11 +100,19 @@
                 <version>${plugin.scala-maven.version}</version>
                 <executions>
                     <execution>
+                        <id>scala-compile</id>
                         <goals>
-                            <goal>compile</goal>
-                            <goal>testCompile</goal>
                             <goal>add-source</goal>
+                            <goal>compile</goal>
                         </goals>
+                        <phase>process-resources</phase>
+                    </execution>
+                    <execution>
+                        <id>scala-test-compile</id>
+                        <goals>
+                            <goal>testCompile</goal>
+                        </goals>
+                        <phase>test-compile</phase>
                     </execution>
                 </executions>
                 <configuration>
@@ -349,6 +356,7 @@
     </profiles>
 
     <dependencies>
+
         <!-- Neo4j -->
 
         <dependency>
@@ -358,9 +366,9 @@
         </dependency>
 
         <dependency>
-            <groupId>neo4j-contrib</groupId>
-            <artifactId>neo4j-spark-connector</artifactId>
-            <version>${dep.neo4j-spark-connector}</version>
+            <groupId>org.neo4j.driver</groupId>
+            <artifactId>neo4j-java-driver</artifactId>
+            <version>${dep.neo4j-driver.version}</version>
         </dependency>
 
         <!-- Scala -->
@@ -407,12 +415,6 @@
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-catalyst_2.11</artifactId>
             <version>${dep.spark.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>graphframes</groupId>
-            <artifactId>graphframes</artifactId>
-            <version>${dep.graphframes.version}</version>
         </dependency>
 
         <dependency>
@@ -478,6 +480,20 @@
             <artifactId>neo4j-cypher-frontend-3.2</artifactId>
             <version>${dep.neo4j.version}</version>
             <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.neo4j.test</groupId>
+            <artifactId>neo4j-harness</artifactId>
+            <version>${dep.neo4j.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+            <version>4.1.8.Final</version>
             <scope>test</scope>
         </dependency>
 
