@@ -17,10 +17,12 @@ package org.opencypher.spark_legacy.benchmark
 
 import org.apache.spark.sql.{Column, DataFrame}
 import org.apache.spark.sql.functions._
-import org.graphframes.GraphFrame
 import org.opencypher.spark_legacy.impl._
 
-object GraphFramesBenchmarks extends SupportedQueryBenchmarks[GraphFrame] {
+object GraphFramesBenchmarks
+/*
+
+  extends SupportedQueryBenchmarks[GraphFrame] {
 
   override def apply(query: SupportedQuery): Benchmark[GraphFrame] = query match {
     case SimplePatternIds(startLabels, types, endLabels) =>
@@ -130,3 +132,4 @@ abstract class GraphFrameBenchmark extends Benchmark[GraphFrame] with Serializab
   def innerRun(graphFrame: GraphFrame): DataFrame
 }
 
+*/

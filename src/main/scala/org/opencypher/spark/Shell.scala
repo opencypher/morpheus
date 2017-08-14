@@ -15,8 +15,8 @@
  */
 package org.opencypher.spark
 
-import ammonite.util.Bind._
-import ammonite.util.Util
+import ammonite.repl.FrontEnd
+import ammonite.util.{Bind, Util}
 import org.opencypher.spark_legacy.benchmark.RunBenchmark
 
 object Shell {
@@ -50,22 +50,29 @@ object Shell {
            """.stripMargin
         )
       }
-      val frontend = if (System.getProperty("os.name").startsWith("Windows")) "JLineWindows" else "JLineUnix"
+      val frontend =
+        if (System.getProperty("os.name").startsWith("Windows"))
+          FrontEnd.JLineWindows
+        else
+          FrontEnd.JLineUnix
 
-//      import org.opencypher.spark
-//      import org.opencypher.spark._
-//      import org.opencypher.spark.api._
-//      import org.opencypher.spark.api.implicits._
-//      import org.opencypher.spark.api.types._
-      val repl = new ammonite.Main(
+      val main = new ammonite.Main(
         welcomeBanner = Some(welcomeBanner),
-        predef =
-          s"""|repl.frontEnd() = ammonite.frontend.FrontEnd.$frontend
-              |repl.prompt() = \"(:spark)-->(:cypher) \"
-              |import org.opencypher.spark.CSVDemo._
+        predefCode =
+          s"""|import org.opencypher.spark.CSVDemo._
               |""".stripMargin
-      ).instantiateRepl(Seq("session" -> session))
-      repl.run()
+      ).instantiateRepl(Vector(
+        Bind("session", session)
+      ), None) match {
+        case Right(repl) =>
+          repl.prompt.bind("(:Cypher)-[:FOR]->(:Apache:Spark) ")
+          repl.frontEnd.bind(frontend)
+          repl.initializePredef()
+          repl.run()
+
+        case Left((failure, paths)) =>
+          throw new RuntimeException(s"${failure.msg} [$paths]")
+      }
     } finally {
       session.stop()
     }
