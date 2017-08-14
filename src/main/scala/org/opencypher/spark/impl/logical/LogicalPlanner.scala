@@ -163,7 +163,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     producer.planOrderBy(sortItems, in)
   }
 
-  def planSkip(expr: Expr, operator: LogicalOperator) = Raise.notYetImplemented("logical planning of skip")
+  def planSkip(expr: Expr, operator: LogicalOperator): LogicalOperator =
+    producer.planSkip(expr, operator)
 
   def planLimit(expr: Expr, operator: LogicalOperator): LogicalOperator =
     producer.planLimit(expr, operator)

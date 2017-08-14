@@ -65,6 +65,9 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
       case logical.OrderBy(sortListItems, sourceOp) =>
         producer.orderBy(sortListItems, process(sourceOp))
 
+      case logical.Skip(expr, sourceOp) =>
+        producer.skip(expr, process(sourceOp))
+
       case logical.Limit(expr, sourceOp) =>
         producer.limit(expr, process(sourceOp))
 

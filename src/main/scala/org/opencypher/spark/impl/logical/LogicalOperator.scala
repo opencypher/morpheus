@@ -179,6 +179,13 @@ final case class OrderBy(sortItems: Seq[SortItem[Expr]], in: LogicalOperator)
        #${in.pretty(depth + 1)}""".stripMargin('#')
 }
 
+final case class Skip(expr: Expr, in: LogicalOperator)
+                     (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
+  override def pretty(depth: Int): String =
+    s"""${prefix(depth)} Skip(expr = $expr})
+       #${in.pretty(depth + 1)}""".stripMargin('#')
+}
+
 final case class Limit(expr: Expr, in: LogicalOperator)
                       (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
   override def pretty(depth: Int): String =

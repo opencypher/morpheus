@@ -99,6 +99,10 @@ class LogicalOperatorProducer {
     OrderBy(sortItems, prev)(prev.solved)
   }
 
+  def planSkip(expr: Expr, prev: LogicalOperator): Skip = {
+    Skip(expr, prev)(prev.solved)
+  }
+
   def planLimit(expr: Expr, prev: LogicalOperator): Limit = {
     Limit(expr, prev)(prev.solved)
   }

@@ -29,6 +29,8 @@ import org.opencypher.spark.impl.logical._
 import org.opencypher.spark.impl.parse.CypherParser
 import org.opencypher.spark.impl.physical.{PhysicalPlanner, PhysicalPlannerContext, SparkCypherResultBuilder}
 
+import scala.util.Try
+
 final class SparkCypherEngine extends Cypher with Serializable {
 
   override type Graph = SparkCypherGraph
@@ -50,7 +52,9 @@ final class SparkCypherEngine extends Cypher with Serializable {
     val GlobalsRegistry(tokens, constants) = globals
 
     val converted = extractedLiterals.mapValues(v => CypherValue(v))
-    val allParameters = (queryParameters ++ converted).map { case (k, v) => constants.constantRefByName(k) -> v }
+    val allParameters = (queryParameters ++ converted).collect {
+      case (k, v) if Try(constants.constantRefByName(k)).isSuccess => constants.constantRefByName(k) -> v
+    }
 
     val paramsAndTypes = GlobalsExtractor.paramWithTypes(stmt)
 

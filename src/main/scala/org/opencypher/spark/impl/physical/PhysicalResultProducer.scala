@@ -25,7 +25,7 @@ import org.opencypher.spark.api.ir.pattern.{AnyGiven, EveryNode, EveryRelationsh
 import org.opencypher.spark.api.record._
 import org.opencypher.spark.api.spark.SparkCypherRecords
 import org.opencypher.spark.api.types.{CTBoolean, CTNode, CTRelationship}
-import org.opencypher.spark.api.value.CypherValue
+import org.opencypher.spark.api.value.{CypherInteger, CypherValue}
 import org.opencypher.spark.impl.exception.Raise
 import org.opencypher.spark.impl.flat.FreshVariableNamer
 import org.opencypher.spark.impl.instances.spark.SparkSQLExprMapper.asSparkSQLExpr
@@ -175,6 +175,32 @@ class PhysicalResultProducer(context: RuntimeContext) {
       prev.mapRecordsWithDetails { subject =>
         val sortedData = subject.details.toDF().sort(sortExpression: _*)
         SparkCypherRecords.create(header, sortedData)(subject.space)
+      }
+    }
+
+    def skip(expr: Expr, header: RecordHeader): PhysicalResult = {
+      val skip = expr match {
+        case IntegerLit(v) => v
+        case Const(constant) =>
+          context.parameters(context.constants.constantRef(constant)) match {
+            case CypherInteger(v) => v
+            case _ => Raise.impossible()
+          }
+        case _ => Raise.impossible()
+      }
+
+      prev.mapRecordsWithDetails { subject =>
+        // TODO: filter call manipulates the generated ids => check this with newer spark versions
+//        val tmpColName = "__SKIPPY_MC_SKIPFACE"
+//        val tmpDf = subject.details.toDF().withColumn(tmpColName, monotonically_increasing_id())
+//        val tmpCol = tmpDf.col(tmpColName)
+//        val newDf = tmpDf.filter(tmpCol >= skip)
+
+        val newDf = subject.space.session.createDataFrame(
+          subject.details.toDF().rdd.zipWithIndex().filter((pair) => pair._2 >= skip).map(_._1),
+          subject.details.toDF().schema
+        )
+        SparkCypherRecords.create(header, newDf)(subject.space)
       }
     }
 

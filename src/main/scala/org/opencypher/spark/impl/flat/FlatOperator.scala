@@ -103,6 +103,9 @@ final case class BoundedVarExpand(rel: Var, edgeList: Var, target: Var, lower: I
 final case class OrderBy(sortItems: Seq[SortItem[Expr]], in: FlatOperator, header: RecordHeader)
   extends StackingFlatOperator
 
+final case class Skip(expr: Expr, in: FlatOperator, header: RecordHeader)
+  extends StackingFlatOperator
+
 final case class Limit(expr: Expr, in: FlatOperator, header: RecordHeader)
   extends StackingFlatOperator
 

@@ -145,6 +145,10 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     OrderBy(sortItems, sourceOp, sourceOp.header)
   }
 
+  def skip(expr: Expr, sourceOp: FlatOperator): FlatOperator = {
+    Skip(expr, sourceOp, sourceOp.header)
+  }
+
   def limit(expr: Expr, sourceOp: FlatOperator): FlatOperator = {
     Limit(expr, sourceOp, sourceOp.header)
   }
