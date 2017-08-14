@@ -18,7 +18,7 @@ package org.opencypher.spark.impl.ir
 import cats.implicits._
 import org.atnos.eff._
 import org.atnos.eff.all._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
+import org.neo4j.cypher.internal.frontend.v3_2.ast.{Limit, OrderBy, Skip, Statement}
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, ast}
 import org.opencypher.spark.api.expr.{Expr, Var}
 import org.opencypher.spark.api.ir._
@@ -86,33 +86,22 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
           }
         } yield refs
 
-      case ast.With(_, ast.ReturnItems(_, items), orderBy, skip, _, where) =>
+      case ast.With(_, ast.ReturnItems(_, items), orderBy, skip, limit, where) =>
         for {
           fieldExprs <- EffMonad[R].sequence(items.map(convertReturnItem[R]).toVector)
           given <- convertWhere(where)
           context <- get[R, IRBuilderContext]
-          projectRefs <- {
+          refs <- {
             val (projectRef, projectReg) = registerProjectBlock(context, fieldExprs, given)
-            put[R, IRBuilderContext](context.copy(blocks = projectReg)) >> pure[R, Vector[BlockRef]](Vector(projectRef))
+            val appendList = (list: Vector[BlockRef]) => pure[R, Vector[BlockRef]](projectRef +: list)
+            val orderAndSliceBlock = registerOrderAndSliceBlock(orderBy, skip, limit)
+            put[R,IRBuilderContext](context.copy(blocks = projectReg)) >> orderAndSliceBlock >>= appendList
           }
-          orderByRef <- {
-            orderBy match {
-              case None => projectRefs
-              case Some(ast.OrderBy(astSortItems)) =>
-                for {
-                  sortItems <- EffMonad[R].sequence(astSortItems.map(convertSortItem[R]).toVector)
-                  orderByRefs <- {
-                    val (ref,reg) = registerOrderBlock(context, sortItems, context.graphBlock, None, None)
-                    put[R, IRBuilderContext](context.copy(blocks = reg)) >> pure[R, Vector[BlockRef]](Vector(ref))
-                  }
-                } yield orderByRefs
-            }
-          }
-        } yield orderByRef
+        } yield refs
 
       case ast.Return(_, ast.ReturnItems(_, items), _, _, _, _) =>
         for {
-          fieldExprs <- EffMonad[R].sequence(items.map(convertReturnItem[R]).toVector)yp
+          fieldExprs <- EffMonad[R].sequence(items.map(convertReturnItem[R]).toVector)
           context <- get[R, IRBuilderContext]
           refs <- {
             val (ref, reg) = registerProjectBlock(context, fieldExprs)
@@ -139,17 +128,33 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
     blockRegistry.register(projs)
   }
 
-  private def registerOrderBlock(context: IRBuilderContext,
-                                         orderBy: Seq[SortItem[Expr]],
-                                         graph: BlockRef,
-                                         skip: Option[Expr],
-                                         limit: Option[Expr]) = {
+  private def registerOrderAndSliceBlock[R: _mayFail : _hasContext](orderBy: Option[OrderBy],
+                                                                    skip: Option[Skip],
+                                                                    limit: Option[Limit])= {
 
-    val blockRegistry = context.blocks
-    val after = blockRegistry.lastAdded.toSet
+    for {
+      context <- get[R, IRBuilderContext]
+      sortItems <- orderBy match {
+        case Some(ast.OrderBy(sortItems)) =>
+          val vector = sortItems.map(convertSortItem[R]).toVector
+          EffMonad[R].sequence(vector)
+        case None => EffMonad[R].sequence(Vector[Eff[R,SortItem[Expr]]]())
+      }
+      skipExpr <- convertExpr(skip.map(_.expression))
+      limitExpr <- convertExpr(limit.map(_.expression))
 
-    val orderAndSliceBlock = OrderAndSliceBlock[Expr](after, null, orderBy, context.graphBlock, None, None )
-    blockRegistry.register(orderAndSliceBlock)
+      foo <- {
+        if (sortItems.isEmpty && skipExpr.isEmpty && limitExpr.isEmpty) pure[R, Vector[BlockRef]](Vector())
+        else {
+          val blockRegistry = context.blocks
+          val after = blockRegistry.lastAdded.toSet
+
+          val orderAndSliceBlock = OrderAndSliceBlock[Expr](after, sortItems, context.graphBlock, skipExpr, limitExpr)
+          val (ref,reg) = blockRegistry.register(orderAndSliceBlock)
+          put[R, IRBuilderContext](context.copy(blocks = reg)) >> pure[R, Vector[BlockRef]](Vector(ref))
+        }
+      }
+    } yield foo
   }
 
   private def convertReturnItem[R: _mayFail : _hasContext](item: ast.ReturnItem): Eff[R, (Field, Expr)] = item match {
@@ -183,6 +188,15 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
       }
     } yield result
   }
+
+  private def convertExpr[R: _mayFail : _hasContext](e: Option[ast.Expression]): Eff[R, Option[Expr]] =
+    for {
+      context <- get[R, IRBuilderContext]
+    }
+      yield e match {
+        case Some(expr) => Some(context.convertExpression(expr))
+        case None => None
+      }
 
   private def convertExpr[R: _mayFail : _hasContext](e: ast.Expression): Eff[R, Expr] =
     for {
