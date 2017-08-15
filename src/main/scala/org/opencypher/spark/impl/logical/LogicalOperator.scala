@@ -49,6 +49,8 @@ sealed trait StackingLogicalOperator extends LogicalOperator {
 
   override def outGraph = in.outGraph
   override def inGraph = in.outGraph
+
+  def clone(in: LogicalOperator = in): LogicalOperator
 }
 
 sealed trait BinaryLogicalOperator extends LogicalOperator {
@@ -58,6 +60,8 @@ sealed trait BinaryLogicalOperator extends LogicalOperator {
   // Always follow the left-hand side
   override def outGraph = lhs.outGraph
   override def inGraph = lhs.outGraph
+
+  def clone(lhs: LogicalOperator = lhs, rhs: LogicalOperator = rhs): LogicalOperator
 }
 
 sealed trait LogicalLeafOperator extends LogicalOperator {
@@ -69,8 +73,11 @@ final case class NodeScan(node: Var, nodeDef: EveryNode, in: LogicalOperator)
   extends StackingLogicalOperator {
 
   override def pretty(depth: Int): String =
-    s"""${prefix(depth)} NodeScan(node = $node)
+    s"""${prefix(depth)} NodeScan(node = $node, nodeDef: $nodeDef)
        #${in.pretty(depth + 1)}""".stripMargin('#')
+
+  override def clone(in: LogicalOperator = in): LogicalOperator = NodeScan(node, nodeDef, in)(solved)
+
 }
 final case class Filter(expr: Expr, in: LogicalOperator)
                        (override val solved: SolvedQueryModel[Expr])
@@ -79,6 +86,8 @@ final case class Filter(expr: Expr, in: LogicalOperator)
   override def pretty(depth: Int): String =
     s"""${prefix(depth)} Filter(expr = $expr)
        #${in.pretty(depth + 1)}""".stripMargin('#')
+
+  override def clone(in: LogicalOperator = in): LogicalOperator = Filter(expr, in)(solved)
 }
 
 sealed trait ExpandOperator extends BinaryLogicalOperator {
@@ -102,6 +111,9 @@ final case class ExpandSource(source: Var, rel: Var, types: EveryRelationship, t
     s"""${prefix(depth)} ExpandSource(source = $source, rel = $rel, target = $target)
        #${sourceOp.pretty(depth + 1)}
        #${targetOp.pretty(depth + 1)}""".stripMargin('#')
+
+  override def clone(lhs: LogicalOperator = lhs, rhs: LogicalOperator = rhs): LogicalOperator =
+    ExpandSource(source, rel, types, target, lhs, rhs)(solved)
 }
 
 final case class ExpandTarget(source: Var, rel: Var, target: Var,
@@ -116,6 +128,9 @@ final case class ExpandTarget(source: Var, rel: Var, target: Var,
     s"""${prefix(depth)} ExpandTarget(source = $source, rel = $rel, target = $target)
        #${sourceOp.pretty(depth + 1)}
        #${targetOp.pretty(depth + 1)}""".stripMargin('#')
+
+  override def clone(lhs: LogicalOperator = lhs, rhs: LogicalOperator= rhs): LogicalOperator =
+    ExpandTarget(source, rel, target, lhs, rhs)(solved)
 }
 
 final case class BoundedVarLengthExpand(source: Var, rel: Var, target: Var,
@@ -131,6 +146,9 @@ final case class BoundedVarLengthExpand(source: Var, rel: Var, target: Var,
     s"""${prefix(depth)} VarExpand(source = $source, rel = $rel, target = $target, lower = $lower, upper = $upper)
        #${sourceOp.pretty(depth + 1)}
        #${targetOp.pretty(depth + 1)}""".stripMargin('#')
+
+  override def clone(lhs: LogicalOperator = lhs, rhs: LogicalOperator = rhs): LogicalOperator =
+    BoundedVarLengthExpand(source, rel, target, lower, upper, lhs, rhs)(solved)
 }
 
 final case class ExpandInto(source: Var, rel: Var, types: EveryRelationship, target: Var, sourceOp: LogicalOperator)
@@ -145,6 +163,9 @@ final case class ExpandInto(source: Var, rel: Var, types: EveryRelationship, tar
   override def pretty(depth: Int): String =
     s"""${prefix(depth)} ExpandInto(source = $source, rel = $rel)
        #${sourceOp.pretty(depth + 1)}""".stripMargin('#')
+
+  override def clone(lhs: LogicalOperator = lhs, rhs: LogicalOperator = rhs): LogicalOperator =
+    ExpandInto(source, rel, types, target, lhs)(solved)
 }
 
 final case class Project(it: ProjectedSlotContent, in: LogicalOperator)
@@ -154,14 +175,19 @@ final case class Project(it: ProjectedSlotContent, in: LogicalOperator)
   override def pretty(depth: Int): String =
     s"""${prefix(depth)} Project(slotContent = $it)
        #${in.pretty(depth + 1)}""".stripMargin('#')
+
+  override def clone(in: LogicalOperator = in): LogicalOperator = Project(it, in)(solved)
 }
 
 final case class Select(fields: IndexedSeq[Var], in: LogicalOperator)
                        (override val solved: SolvedQueryModel[Expr])
   extends StackingLogicalOperator {
+
   override def pretty(depth: Int): String =
     s"""${prefix(depth)} Select(fields = ${fields.mkString(", ")})
        #${in.pretty(depth + 1)}""".stripMargin('#')
+
+  override def clone(in: LogicalOperator = in): LogicalOperator = Select(fields, in)(solved)
 }
 
 final case class Start(outGraph: NamedLogicalGraph, source: GraphSource, fields: Set[Var])
@@ -169,6 +195,8 @@ final case class Start(outGraph: NamedLogicalGraph, source: GraphSource, fields:
   override val inGraph = EmptyGraph
 
   override def pretty(depth: Int): String = s"${prefix(depth)} Start()"
+
+  override def clone(): Start = Start(outGraph, source, fields)(solved)
 }
 
 sealed trait GraphSource

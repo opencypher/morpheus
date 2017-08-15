@@ -39,6 +39,7 @@ final class SparkCypherEngine extends Cypher with Serializable {
 
   private val producer = new LogicalOperatorProducer
   private val logicalPlanner = new LogicalPlanner(producer)
+  private val logicalRewriter = new LogicalRewriter(producer)
   private val flatPlanner = new FlatPlanner()
   private val physicalPlanner = new PhysicalPlanner()
   private val parser = CypherParser
@@ -59,10 +60,15 @@ final class SparkCypherEngine extends Cypher with Serializable {
     println("Done!")
 
     print("Logical plan ... ")
-    val logicalPlan = logicalPlanner(ir)(LogicalPlannerContext(graph.schema, Set.empty))
+    val logicalPlannerContext = LogicalPlannerContext(graph.schema, Set.empty)
+    val logicalPlan = logicalPlanner(ir)(logicalPlannerContext)
     println("Done!")
 
-    plan(graph, SparkCypherRecords.empty()(graph.space), tokens, constants, allParameters, logicalPlan)
+    print("Rewriting logical plan ... ")
+    val rewrittenLogicalPlan = logicalRewriter(logicalPlan)(logicalPlannerContext)
+    println("Done!")
+
+    plan(graph, SparkCypherRecords.empty()(graph.space), tokens, constants, allParameters, rewrittenLogicalPlan)
   }
 
   def filter(graph: Graph, in: Records, expr: Expr, queryParameters: Map[String, CypherValue]): Records = {

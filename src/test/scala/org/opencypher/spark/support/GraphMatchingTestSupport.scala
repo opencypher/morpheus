@@ -108,8 +108,8 @@ trait GraphMatchingTestSupport {
       }
 
       override def nodes(name: String, cypherType: CTNode): SparkCypherRecords = {
-
-        val header = RecordHeader.nodeFromSchema(Var(name)(cypherType), schema, space.tokens.registry)
+        val header = RecordHeader.nodeFromSchema(Var(name)(cypherType), schema, space.tokens.registry,
+          cypherType.labels.filter(_._2).keySet)
 
         val data = {
           val nodes = queryGraph.getVertices.asScala
