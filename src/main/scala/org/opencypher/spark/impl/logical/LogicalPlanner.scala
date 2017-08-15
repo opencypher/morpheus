@@ -83,10 +83,16 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
   def planNonLeaf(ref: BlockRef, model: QueryModel[Expr], plan: LogicalOperator)(implicit context: LogicalPlannerContext): LogicalOperator = {
     model(ref) match {
-      case MatchBlock(_, pattern, where, graph) =>
+      case MatchBlock(_, pattern, where, optional, graph) =>
         // this plans both pattern and filter for convenience -- TODO: split up
-        val patternPlan = planPattern(plan, pattern)
-        planFilter(patternPlan, where)
+        val patternPlan = planPattern(plan, pattern, optional)
+
+        val resolvedFields = (patternPlan.solved.fields -- plan.solved.fields)
+          .map(field => Var(field.name)(field.cypherType))
+
+        val filterPlan = planFilter(patternPlan, where)
+
+        if(optional) planOptional(pattern, filterPlan, resolvedFields) else filterPlan
 
       case ProjectBlock(_, ProjectedFields(exprs), where, graph) =>
         val projPlan = planProjections(plan, exprs)
@@ -164,6 +170,11 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     filtersAndProjs
   }
 
+  private def planOptional(pattern: Pattern[Expr], prev: LogicalOperator, resolvedFields: Set[Var])
+                          (implicit context: LogicalPlannerContext) = {
+    producer.planOptional(resolvedFields, prev)
+  }
+
   private def planInnerExpr(expr: Expr, in: LogicalOperator)(implicit context: LogicalPlannerContext): LogicalOperator = {
     expr match {
       case _: Const => in
@@ -174,12 +185,13 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         val project1 = planInnerExpr(be.lhs, in)
         val project2 = planInnerExpr(be.rhs, project1)
         producer.projectExpr(be, project2)
+      case Ands(e) => planFilter(in, AllGiven(e))
       case x =>
         Raise.notYetImplemented(s"projection of inner expression $x")
     }
   }
 
-  private def planPattern(plan: LogicalOperator, pattern: Pattern[Expr])(implicit context: LogicalPlannerContext) = {
+  private def planPattern(plan: LogicalOperator, pattern: Pattern[Expr], optional: Boolean)(implicit context: LogicalPlannerContext) = {
     val nodes = pattern.entities.collect {
       case (f, e: EveryNode) if f.cypherType.subTypeOf(CTNode).isTrue => f -> e
     }
@@ -190,13 +202,14 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     }
 
     if (pattern.topology.nonEmpty)
-      planExpansions(nodePlans.toSet, pattern, producer)
+      planExpansions(nodePlans.toSet, pattern, producer, optional)
     else if (nodePlans.size == 1) nodePlans.head
     else Raise.invalidPattern(pattern.toString)
   }
 
   @tailrec
-  private def planExpansions(disconnectedPlans: Set[LogicalOperator], pattern: Pattern[Expr], producer: LogicalOperatorProducer): LogicalOperator = {
+  private def planExpansions(disconnectedPlans: Set[LogicalOperator], pattern: Pattern[Expr],
+                             producer: LogicalOperatorProducer, optional: Boolean): LogicalOperator = {
     val allSolved = disconnectedPlans.map(_.solved).reduce(_ ++ _)
 
     val (r, c) = pattern.topology.collectFirst {
@@ -216,11 +229,11 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       case _ if sourcePlan == targetPlan =>
         producer.planExpandInto(c.source, r, pattern.rels(r), c.target, sourcePlan)
       case _ =>
-        producer.planSourceExpand(c.source, r, pattern.rels(r), c.target, sourcePlan, targetPlan)
+        producer.planSourceExpand(c.source, r, pattern.rels(r), c.target, sourcePlan, targetPlan, optional)
     }
 
     if (expand.solved.solves(pattern)) expand
-    else planExpansions((disconnectedPlans - sourcePlan - targetPlan) + expand, pattern, producer)
+    else planExpansions((disconnectedPlans - sourcePlan - targetPlan) + expand, pattern, producer, optional)
   }
 
   private def nodePlan(plan: LogicalOperator, field: Field, everyNode: EveryNode)(implicit context: LogicalPlannerContext) = {

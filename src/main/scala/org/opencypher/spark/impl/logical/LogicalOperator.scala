@@ -101,7 +101,7 @@ sealed trait ExpandOperator extends BinaryLogicalOperator {
 }
 
 final case class ExpandSource(source: Var, rel: Var, types: EveryRelationship, target: Var,
-                              sourceOp: LogicalOperator, targetOp: LogicalOperator)
+                              sourceOp: LogicalOperator, targetOp: LogicalOperator, optional: Boolean)
                              (override val solved: SolvedQueryModel[Expr])
   extends ExpandOperator {
 
@@ -216,6 +216,14 @@ final case class Limit(expr: Expr, in: LogicalOperator)
        #${in.pretty(depth + 1)}""".stripMargin('#')
 
   override def clone(newIn: LogicalOperator): LogicalOperator = copy(in = newIn)(solved)
+}
+
+final case class Optional(optionalFields: Set[Var], in: LogicalOperator)
+                         (override val solved: SolvedQueryModel[Expr])
+  extends StackingLogicalOperator {
+  override def pretty(depth: Int): String =
+    s"""${prefix(depth)} Optional(fields = ${optionalFields.mkString(", ")})
+       #${in.pretty(depth + 1)}""".stripMargin('#')
 }
 
 final case class Start(outGraph: NamedLogicalGraph, source: GraphSource, fields: Set[Var])

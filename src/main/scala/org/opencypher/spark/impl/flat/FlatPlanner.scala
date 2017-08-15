@@ -46,8 +46,8 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
       case logical.Project(it, in) =>
         producer.project(it, process(in))
 
-      case logical.ExpandSource(source, rel, types, target, sourceOp, targetOp) =>
-        producer.expandSource(source, rel, types, target, process(sourceOp), process(targetOp))
+      case logical.ExpandSource(source, rel, types, target, sourceOp, targetOp, optional) =>
+        producer.expandSource(source, rel, types, target, process(sourceOp), process(targetOp), optional)
 
       case logical.ExpandInto(source, rel, types, target, sourceOp) =>
         producer.expandInto(source, rel, types, target, process(sourceOp))
@@ -61,6 +61,9 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
         val edgeScan = producer.varLengthEdgeScan(edgeList, EveryRelationship(AnyGiven(types)), producer.planStart(initVarExpand.inGraph, DefaultGraphSource, Set.empty))
         producer.boundedVarExpand(edgeScan.edge, edgeList, target, lower, upper, initVarExpand,
           edgeScan, process(targetOp))
+
+      case logical.Optional(optionalFields, sourceOp) =>
+        producer.planOptional(optionalFields, process(sourceOp))
 
       case logical.OrderBy(sortListItems, sourceOp) =>
         producer.orderBy(sortListItems, process(sourceOp))

@@ -93,7 +93,7 @@ object QueryModel {
       .withEntity(sourceNode, EveryNode)
       .withEntity(rel, EveryRelationship)
       .withEntity(targetNode, EveryNode)
-      .withConnection(rel, DirectedRelationship(sourceNode, targetNode)), AllGiven[E](), graphBlockRef)
+      .withConnection(rel, DirectedRelationship(sourceNode, targetNode)), AllGiven[E](), false, graphBlockRef)
     val blocks: Map[BlockRef, Block[E]] = Map(ref -> matchBlock)
 
     val resultBlock = ResultBlock[E](Set(ref), FieldsInOrder(sourceNode, rel, targetNode), Set(sourceNode, targetNode), Set(rel), graphBlockRef)
@@ -108,7 +108,7 @@ object QueryModel {
 
     val ref: BlockRef = BlockRef("match")
     val matchBlock = MatchBlock[E](Set.empty, Pattern.empty
-      .withEntity(node, EveryNode), AllGiven[E](), graphBlockRef)
+      .withEntity(node, EveryNode), AllGiven[E](), false, graphBlockRef)
 
     val blocks: Map[BlockRef, Block[E]] = Map(ref -> matchBlock)
 
@@ -124,7 +124,7 @@ object QueryModel {
 
     val ref: BlockRef = BlockRef("match")
     val matchBlock = MatchBlock[E](Set.empty, Pattern.empty
-      .withEntity(rel, EveryRelationship), AllGiven[E](), graphBlockRef)
+      .withEntity(rel, EveryRelationship), AllGiven[E](), false, graphBlockRef)
     val blocks: Map[BlockRef, Block[E]] = Map(ref -> matchBlock)
 
     val resultBlock = ResultBlock[E](Set(ref), FieldsInOrder(rel), Set.empty, Set(rel), graphBlockRef)

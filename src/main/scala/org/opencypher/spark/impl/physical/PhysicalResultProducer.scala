@@ -191,10 +191,10 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
       prev.mapRecordsWithDetails { subject =>
         // TODO: filter call manipulates the generated ids => check this with newer spark versions
-//        val tmpColName = "__SKIPPY_MC_SKIPFACE"
-//        val tmpDf = subject.details.toDF().withColumn(tmpColName, monotonically_increasing_id())
-//        val tmpCol = tmpDf.col(tmpColName)
-//        val newDf = tmpDf.filter(tmpCol >= skip)
+        //        val tmpColName = "__SKIPPY_MC_SKIPFACE"
+        //        val tmpDf = subject.details.toDF().withColumn(tmpColName, monotonically_increasing_id())
+        //        val tmpCol = tmpDf.col(tmpColName)
+        //        val newDf = tmpDf.filter(tmpCol >= skip)
 
         val newDf = subject.space.session.createDataFrame(
           subject.details.toDF().rdd.zipWithIndex().filter((pair) => pair._2 >= skip).map(_._1),
@@ -215,7 +215,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
       }
     }
 
-    def joinSource(relView: PhysicalResult, header: RecordHeader) = new JoinBuilder {
+    def joinSource(relView: PhysicalResult, header: RecordHeader, joinType: String) = new JoinBuilder {
       override def on(node: Var)(rel: Var): PhysicalResult = {
         val lhsSlot = prev.records.details.header.slotFor(node)
         val rhsSlot = relView.records.details.header.sourceNode(rel)
@@ -223,11 +223,11 @@ class PhysicalResultProducer(context: RuntimeContext) {
         assertIsNode(lhsSlot)
         assertIsNode(rhsSlot)
 
-        prev.mapRecordsWithDetails(join(relView.records, header, lhsSlot -> rhsSlot))
+        prev.mapRecordsWithDetails(join(relView.records, header, lhsSlot -> rhsSlot)(joinType))
       }
     }
 
-    def joinTarget(nodeView: PhysicalResult, header: RecordHeader) = new JoinBuilder {
+    def joinTarget(nodeView: PhysicalResult, header: RecordHeader, joinType: String) = new JoinBuilder {
       override def on(rel: Var)(node: Var): PhysicalResult = {
         val lhsSlot = prev.records.details.header.targetNode(rel)
         val rhsSlot = nodeView.records.details.header.slotFor(node)
@@ -235,7 +235,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
         assertIsNode(lhsSlot)
         assertIsNode(rhsSlot)
 
-        prev.mapRecordsWithDetails(join(nodeView.records, header, lhsSlot -> rhsSlot))
+        prev.mapRecordsWithDetails(join(nodeView.records, header, lhsSlot -> rhsSlot)(joinType))
       }
     }
 
@@ -247,7 +247,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
         assertIsNode(lhsSlot)
         assertIsNode(rhsSlot)
 
-        prev.mapRecordsWithDetails(join(nodeView.records, header, lhsSlot -> rhsSlot))
+        prev.mapRecordsWithDetails(join(nodeView.records, header, lhsSlot -> rhsSlot)())
       }
     }
 
@@ -263,11 +263,11 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
         prev.mapRecordsWithDetails(join(relView.records, header,
           sourceSlot -> relSourceSlot,
-          targetSlot -> relTargetSlot))
+          targetSlot -> relTargetSlot)())
       }
     }
 
-    private def join(rhs: SparkCypherRecords, header: RecordHeader, joinSlots: (RecordSlot, RecordSlot)*)
+    private def join(rhs: SparkCypherRecords, header: RecordHeader, joinSlots: (RecordSlot, RecordSlot)*)(joinType: String = "inner")
     : SparkCypherRecords => SparkCypherRecords = {
       def f(lhs: SparkCypherRecords) = {
         if (lhs.space == rhs.space) {
@@ -277,14 +277,28 @@ class PhysicalResultProducer(context: RuntimeContext) {
           val joinExpr = joinSlots
             .map { case (l, r) => lhsData.col(context.columnName(l)) === rhsData.col(context.columnName(r)) }
             .reduce(_ && _)
-          val jointData = lhsData.join(rhsData, joinExpr, "inner")
-
+          val jointData = lhsData.join(rhsData, joinExpr, joinType)
           SparkCypherRecords.create(header, jointData)(lhs.space)
         } else {
           Raise.graphSpaceMismatch()
         }
       }
       f
+    }
+
+    def optional(optionalFields: Set[Var], header: RecordHeader): PhysicalResult = {
+      prev.mapRecordsWithDetails { records =>
+        val data = records.details.toDF()
+        val fieldColumns = optionalFields
+          .map(header.slotFor)
+          .map(context.columnName)
+          .map(data.col)
+
+        val allNull = fieldColumns.map(_.isNull).reduce(_ && _)
+        val noneNull = fieldColumns.map(_.isNotNull).reduce(_ && _)
+        val filtered = records.details.toDF().filter(allNull || noneNull)
+        SparkCypherRecords.create(header, filtered)(records.space)
+      }
     }
 
     def initVarExpand(source: Var, edgeList: Var, target: Var, header: RecordHeader): PhysicalResult = {

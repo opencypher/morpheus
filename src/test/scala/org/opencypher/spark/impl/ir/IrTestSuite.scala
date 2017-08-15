@@ -60,7 +60,7 @@ abstract class IrTestSuite extends BaseTestSuite {
     ProjectBlock(after, fields, given, graphBlockRef)
 
   protected def matchBlock(pattern: Pattern[Expr]): Block[Expr] =
-    MatchBlock[Expr](Set(leafRef), pattern, AllGiven[Expr](), graphBlockRef)
+    MatchBlock[Expr](Set(leafRef), pattern, AllGiven[Expr](), false, graphBlockRef)
 
   def irFor(rootRef: BlockRef, blocks: Map[BlockRef, Block[Expr]]): CypherQuery[Expr] = {
     val result = ResultBlock[Expr](

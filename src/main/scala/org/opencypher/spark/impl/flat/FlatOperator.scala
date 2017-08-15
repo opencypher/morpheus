@@ -73,8 +73,11 @@ final case class Project(expr: Expr, in: FlatOperator, header: RecordHeader) ext
 final case class Alias(expr: Expr, alias: Var, in: FlatOperator, header: RecordHeader)
   extends StackingFlatOperator
 
+final case class Optional(optionalFields: Set[Var], in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
+
 final case class ExpandSource(source: Var, rel: Var, types: EveryRelationship, target: Var,
-                              sourceOp: FlatOperator, targetOp: FlatOperator, header: RecordHeader, relHeader: RecordHeader)
+                              sourceOp: FlatOperator, targetOp: FlatOperator, header: RecordHeader, relHeader: RecordHeader,
+                              optional: Boolean)
   extends BinaryFlatOperator {
 
   override def lhs = sourceOp

@@ -67,7 +67,7 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
   private def convertClause[R: _mayFail : _hasContext](c: ast.Clause): Eff[R, Vector[BlockRef]] = {
 
     c match {
-      case ast.Match(_, pattern, _, astWhere) =>
+      case ast.Match(optional, pattern, _, astWhere) =>
         for {
           pattern <- convertPattern(pattern)
           given <- convertWhere(astWhere)
@@ -75,7 +75,7 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
           refs <- {
             val blockRegistry = context.blocks
             val after = blockRegistry.lastAdded.toSet
-            val block = MatchBlock[Expr](after, pattern, given, context.graphBlock)
+            val block = MatchBlock[Expr](after, pattern, given,optional, context.graphBlock)
 
             implicit val globals = context.globals
             val typedOutputs = block.outputs

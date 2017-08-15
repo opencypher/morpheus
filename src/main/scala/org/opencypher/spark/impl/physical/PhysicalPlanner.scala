@@ -80,9 +80,10 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
 
       // TODO: This needs to be a ternary operator taking source, rels and target records instead of using the graph
       // MATCH (a)-[r]->(b) => MATCH (a), (b), (a)-[r]->(b)
-      case op@flat.ExpandSource(source, rel, types, target, sourceOp, targetOp, header, relHeader) =>
+      case op@flat.ExpandSource(source, rel, types, target, sourceOp, targetOp, header, relHeader, optional) =>
         val lhs = inner(sourceOp)
         val rhs = inner(targetOp)
+        val joinType = getJoinType(optional)
 
         val ctRelType = CTRelationship.apply(types.relTypes.elements.map(_.name))
         val g = lhs.graphs(op.inGraph.name)
@@ -90,8 +91,8 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
         val relRhs = PhysicalResult(relationships, lhs.graphs).typeFilter(rel, types.relTypes.map(tokens.relTypeRef), relHeader)
 
         val relAndTargetHeader = relRhs.records.details.header ++ rhs.records.details.header
-        val relAndTarget = relRhs.joinTarget(rhs, relAndTargetHeader).on(rel)(target)
-        val expanded = lhs.joinSource(relAndTarget, header).on(source)(rel)
+        val relAndTarget = relRhs.joinTarget(rhs, relAndTargetHeader, joinType).on(rel)(target)
+        val expanded = lhs.joinSource(relAndTarget, header, joinType).on(source)(rel)
 
         expanded
 
@@ -117,6 +118,9 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
         val expanded = first.varExpand(second, edgeList, sourceOp.endNode, rel, lower, upper, header)
         expanded.finalizeVarExpand(third, sourceOp.endNode, target, header)
 
+      case flat.Optional(optionalFields, in, header) =>
+        inner(in).optional(optionalFields, header)
+
       case flat.OrderBy(sortItems: Seq[SortItem[Expr]], in, header) =>
         inner(in).orderBy(sortItems, header)
 
@@ -134,5 +138,9 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
   private def relTypes(r: Var, tokens: TokenRegistry): Set[String] = r.cypherType match {
     case t: CTRelationship => t.types
     case _ => Set.empty
+  }
+
+  private def getJoinType(optional: Boolean): String = {
+    if(optional) "left_outer" else "inner"
   }
 }
