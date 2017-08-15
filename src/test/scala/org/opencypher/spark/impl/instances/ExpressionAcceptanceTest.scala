@@ -22,6 +22,33 @@ import scala.collection.Bag
 
 class ExpressionAcceptanceTest extends SparkCypherTestSuite {
 
+  test("equality between properties") {
+    // Given
+    val given = TestGraph("""(:A {val: 1L})-->(:B {p: 2L}),
+                            |(:A {val: 2L})-->(:B {p: 1L}),
+                            |(:A {val: 100L})-->(:B {p: 100L}),
+                            |(:A {val: 1L})-->(:B),
+                            |(:A)-->(:B {p: 2L}),
+                            |(:A)-->(:B),
+                          """.stripMargin)
+
+    // When
+    val result = given.cypher("MATCH (a:A)-->(b:B) RETURN a.val = b.p AS eq")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("eq" -> false),
+      CypherMap("eq" -> false),
+      CypherMap("eq" -> true),
+      CypherMap("eq" -> null),
+      CypherMap("eq" -> null),
+      CypherMap("eq" -> null)
+    ))
+
+    // And
+    result.graph shouldMatch given.graph
+  }
+
   test("less than") {
 
     // Given

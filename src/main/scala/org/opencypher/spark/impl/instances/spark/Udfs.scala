@@ -4,6 +4,7 @@ import org.opencypher.spark.api.ir.global.Label
 import org.opencypher.spark.api.value.CypherValue
 import org.opencypher.spark.api.value.CypherValueUtils._
 import org.opencypher.spark.impl.convert.toJavaType
+import org.opencypher.spark.impl.exception.Raise
 
 import scala.collection.mutable
 
@@ -25,6 +26,11 @@ object Udfs {
       a.zip(labelNames).collect {
         case (true, label) => label.name
       }.toArray
+  }
+
+  def in[T](elem: Any, list: Any): Boolean = list match {
+    case a: mutable.WrappedArray[_] => a.contains(elem)
+    case x => Raise.invalidArgument("an array", x.toString)
   }
 
 }

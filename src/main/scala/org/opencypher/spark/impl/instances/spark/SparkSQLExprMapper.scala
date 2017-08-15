@@ -73,9 +73,9 @@ object SparkSQLExprMapper {
       case _: Const => Some(getColumn(expr, header, df))
 
       // predicates
-      case Equals(v1: Var, v2: Var) =>
-        val lCol = getColumn(v1, header, df)
-        val rCol = getColumn(v2, header, df)
+      case Equals(e1, e2) =>
+        val lCol = getColumn(e1, header, df)
+        val rCol = getColumn(e2, header, df)
         Some(lCol === rCol)
 
       case Not(e) =>
@@ -104,6 +104,18 @@ object SparkSQLExprMapper {
             case _ => Raise.impossible()
           }
         }
+
+      case In(lhs, rhs) =>
+        verifyExpression(header, expr)
+
+        val lhsColumn = getColumn(lhs, header, df)
+        val rhsColumn = getColumn(rhs, header, df)
+
+        // optionally, we could flatten the list to a number of columns and use Column#isin(Any*)
+
+        val inPred = udf(Udfs.in _, BooleanType)(lhsColumn, rhsColumn)
+
+        Some(inPred)
 
       case HasType(rel, relType) =>
         val relTypeId = context.tokens.relTypeRef(relType).id

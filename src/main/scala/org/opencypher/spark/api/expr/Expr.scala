@@ -131,30 +131,36 @@ sealed trait BinaryExpr extends Expr {
   def lhs: Expr
 
   def rhs: Expr
+
+  def op: String
+
+  override final def toString = s"$lhs $op $rhs"
+  override final def withoutType: String = s"${lhs.withoutType} $op ${rhs.withoutType}"
 }
 
 final case class Equals(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends BinaryExpr {
-  override def withoutType: String = s"${lhs.withoutType} = ${rhs.withoutType}"
+  override val op = "="
 }
 
 final case class LessThan(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends BinaryExpr {
-  override def toString = s"$lhs < $rhs"
-  override def withoutType: String = s"${lhs.withoutType} < ${rhs.withoutType}"
+  override val op = "<"
 }
 
 final case class LessThanOrEqual(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends BinaryExpr {
-  override def toString: String = s"$lhs <= $rhs"
-  override def withoutType: String = s"${lhs.withoutType} <= ${rhs.withoutType}"
+  override val op = "<="
 }
 
 final case class GreaterThan(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends BinaryExpr {
-  override def toString: String = s"$lhs > $rhs"
-  override def withoutType: String = s"${lhs.withoutType} > ${rhs.withoutType}"
+  override val op = ">"
 }
 
 final case class GreaterThanOrEqual(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends BinaryExpr {
-  override def toString: String = s"$lhs >= $rhs"
-  override def withoutType: String = s"${lhs.withoutType} >= ${rhs.withoutType}"
+  override val op = ">="
+}
+
+final case class In(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard)
+  extends BinaryExpr {
+  override val op = "IN"
 }
 
 final case class Property(m: Expr, key: PropertyKey)(val cypherType: CypherType = CTWildcard) extends Expr {
@@ -178,42 +184,38 @@ sealed trait ArithmeticExpr extends BinaryExpr {
 }
 
 final case class Add(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends ArithmeticExpr {
-  override def toString = s"$lhs + $rhs"
-  override def withoutType = s"${lhs.withoutType} + ${rhs.withoutType}"
+  override val op = "+"
 }
 
 final case class Subtract(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends ArithmeticExpr {
-  override def toString = s"$lhs - $rhs"
-  override def withoutType = s"${lhs.withoutType} - ${rhs.withoutType}"
+  override val op = "-"
 }
 
 final case class Multiply(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends ArithmeticExpr {
-  override def toString = s"$lhs * $rhs"
-  override def withoutType = s"${lhs.withoutType} * ${rhs.withoutType}"
+  override val op = "*"
 }
 
 final case class Divide(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends ArithmeticExpr {
-  override def toString = s"$lhs / $rhs"
-  override def withoutType = s"${lhs.withoutType} / ${rhs.withoutType}"
+  override val op = "/"
 }
 
 // Functions
 sealed trait FunctionExpr extends Expr {
   def expr: Expr
+
+  def name: String
+
+  override final def toString = s"$name($expr)"
+  override final def withoutType = s"$name(${expr.withoutType})"
+
 }
-final case class Id(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr {
-  override def toString = s"id($expr)"
-  override def withoutType = s"id(${expr.withoutType})"
+final case class Id(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr {  override val name = "id"
 }
 
-final case class Labels(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr {
-  override def toString = s"labels($expr)"
-  override def withoutType = s"labels(${expr.withoutType})"
+final case class Labels(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr {  override val name = "labels"
 }
 
-final case class Type(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr {
-  override def toString = s"type($expr)"
-  override def withoutType = s"type(${expr.withoutType})"
+final case class Type(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr {  override val name = "type"
 }
 
 // Literal expressions
@@ -222,6 +224,12 @@ sealed trait Lit[T] extends Expr {
   def v: T
   override def withoutType = s"$v"
 }
+
+object ListLit {
+  def apply(exprs: Expr*): ListLit = new ListLit(exprs.toIndexedSeq)()
+}
+
+final case class ListLit(v: IndexedSeq[Expr])(val cypherType: CypherType = CTList(CTVoid)) extends Lit[IndexedSeq[Expr]]
 
 final case class IntegerLit(v: Long)(val cypherType: CypherType = CTInteger) extends Lit[Long]
 final case class StringLit(v: String)(val cypherType: CypherType = CTString) extends Lit[String]
