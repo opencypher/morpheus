@@ -109,7 +109,10 @@ trait SparkGraphLoading {
       case (acc, next) => acc.update(addContent(next))._1
     }
     val nodeStruct = (name: String, cypherType: CTNode) => StructType(nodeFields(name, cypherType).map(_._2).toArray)
-    val nodeRDD = (name: String, cypherType: CTNode) => nodes.map(nodeToRow(nodeHeader(name, cypherType), nodeStruct(name, cypherType)))
+    val nodeRDD = (name: String, cypherType: CTNode) => nodes
+      .filter(filterNode(cypherType))
+      .map(nodeToRow(nodeHeader(name, cypherType), nodeStruct(name, cypherType)))
+
     val nodeFrame = (name: String, cypherType: CTNode) => {
       val slot = nodeHeader(name, cypherType).slotFor(Var(name)(cypherType))
       val df = sparkSession.createDataFrame(nodeRDD(name, cypherType), nodeStruct(name, cypherType))
@@ -122,7 +125,10 @@ trait SparkGraphLoading {
       case (acc, next) => acc.update(addContent(next))._1
     }
     val relStruct = (name: String, cypherType: CTRelationship) => StructType(relFields(name, cypherType).map(_._2).toArray)
-    val relRDD = (name: String, cypherType: CTRelationship) => rels.map(relToRow(relHeader(name, cypherType), relStruct(name, cypherType)))
+    val relRDD = (name: String, cypherType: CTRelationship) => rels
+      .filter(filterRel(cypherType))
+      .map(relToRow(relHeader(name, cypherType), relStruct(name, cypherType)))
+
     val relFrame = (name: String, cypherType: CTRelationship) => {
       val slot = relHeader(name, cypherType).slotFor(Var(name)(cypherType))
       val df = sparkSession.createDataFrame(relRDD(name, cypherType), relStruct(name, cypherType)).cache()
@@ -158,13 +164,15 @@ trait SparkGraphLoading {
     val schema = context.schema
     val tokens = context.globals.tokens
 
-    val labelFields = schema.labels.map { name =>
+    val labels = if (cypherType.labels.values.exists(_ == true)) cypherType.labels.filter(_._2).keySet else schema.labels
+
+    val labelFields = labels.map { name =>
       val label = HasLabel(node, tokens.labelByName(name))(CTBoolean)
       val slot = ProjectedExpr(label)
       val field = StructField(SparkColumnName.of(slot), BooleanType, nullable = false)
       slot -> field
     }
-    val propertyFields = schema.labels.flatMap { l =>
+    val propertyFields = labels.flatMap { l =>
       schema.nodeKeys(l).map {
         case (key, t) =>
           val property = Property(node, tokens.propertyKeyByName(key))(t)
@@ -209,6 +217,14 @@ trait SparkGraphLoading {
       typeSlot -> typeField, targetSlot -> targetField) ++ propertyFields
   }
 
+  private case class filterNode(nodeDef: CTNode)
+                               (implicit context: LoadingContext) extends (InternalNode => Boolean) {
+
+    val requiredLabels: Set[String] = nodeDef.labels.filter(_._2).keySet
+
+    override def apply(importedNode: InternalNode): Boolean = requiredLabels.forall(importedNode.hasLabel)
+  }
+
   private case class nodeToRow(header: RecordHeader, schema: StructType)
                               (implicit context: LoadingContext) extends (InternalNode => Row) {
     override def apply(importedNode: InternalNode): Row = {
@@ -241,6 +257,12 @@ trait SparkGraphLoading {
 
       Row(values: _*)
     }
+  }
+
+  private case class filterRel(relDef: CTRelationship)
+                              (implicit context: LoadingContext) extends (InternalRelationship => Boolean) {
+
+    override def apply(importedRel: InternalRelationship): Boolean = relDef.types.forall(importedRel.hasType)
   }
 
   private case class relToRow(header: RecordHeader, schema: StructType)
