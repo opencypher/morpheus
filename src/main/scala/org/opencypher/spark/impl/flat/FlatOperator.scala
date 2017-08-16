@@ -16,6 +16,7 @@
 package org.opencypher.spark.impl.flat
 
 import org.opencypher.spark.api.expr.{Expr, Var}
+import org.opencypher.spark.api.ir.block.SortItem
 import org.opencypher.spark.api.ir.pattern.{EveryNode, EveryRelationship}
 import org.opencypher.spark.api.record.{OpaqueField, RecordHeader}
 import org.opencypher.spark.impl.logical.{EmptyGraph, GraphSource, LogicalGraph, NamedLogicalGraph}
@@ -87,8 +88,7 @@ final case class ExpandInto(source: Var, rel: Var, types: EveryRelationship, tar
   override def in: FlatOperator = sourceOp
 }
 
-final case class InitVarExpand(source: Var, edgeList: Var, endNode: Var, in: FlatOperator,
-                               header: RecordHeader)
+final case class InitVarExpand(source: Var, edgeList: Var, endNode: Var, in: FlatOperator, header: RecordHeader)
   extends StackingFlatOperator
 
 final case class BoundedVarExpand(rel: Var, edgeList: Var, target: Var, lower: Int, upper: Int,
@@ -99,6 +99,15 @@ final case class BoundedVarExpand(rel: Var, edgeList: Var, target: Var, lower: I
   override def second = relOp
   override def third  = targetOp
 }
+
+final case class OrderBy(sortItems: Seq[SortItem[Expr]], in: FlatOperator, header: RecordHeader)
+  extends StackingFlatOperator
+
+final case class Skip(expr: Expr, in: FlatOperator, header: RecordHeader)
+  extends StackingFlatOperator
+
+final case class Limit(expr: Expr, in: FlatOperator, header: RecordHeader)
+  extends StackingFlatOperator
 
 final case class Start(outGraph: NamedLogicalGraph, source: GraphSource, fields: Set[Var]) extends FlatLeafOperator {
   override val inGraph = EmptyGraph

@@ -17,6 +17,7 @@ package org.opencypher.spark.impl.logical
 
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.SolvedQueryModel
+import org.opencypher.spark.api.ir.block.SortItem
 import org.opencypher.spark.api.ir.pattern.{EveryNode, EveryRelationship}
 import org.opencypher.spark.api.record.ProjectedSlotContent
 import org.opencypher.spark.api.schema.Schema
@@ -169,6 +170,27 @@ final case class Start(outGraph: NamedLogicalGraph, source: GraphSource, fields:
   override val inGraph = EmptyGraph
 
   override def pretty(depth: Int): String = s"${prefix(depth)} Start()"
+}
+
+final case class OrderBy(sortItems: Seq[SortItem[Expr]], in: LogicalOperator)
+                        (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
+  override def pretty(depth: Int): String =
+    s"""${prefix(depth)} OrderByAndSlice(sortItems = ${sortItems.mkString(", ")})
+       #${in.pretty(depth + 1)}""".stripMargin('#')
+}
+
+final case class Skip(expr: Expr, in: LogicalOperator)
+                     (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
+  override def pretty(depth: Int): String =
+    s"""${prefix(depth)} Skip(expr = $expr})
+       #${in.pretty(depth + 1)}""".stripMargin('#')
+}
+
+final case class Limit(expr: Expr, in: LogicalOperator)
+                      (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
+  override def pretty(depth: Int): String =
+    s"""${prefix(depth)} Limit(expr = $expr})
+       #${in.pretty(depth + 1)}""".stripMargin('#')
 }
 
 sealed trait GraphSource

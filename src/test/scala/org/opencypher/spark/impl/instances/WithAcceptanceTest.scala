@@ -170,4 +170,148 @@ class WithAcceptanceTest extends SparkCypherTestSuite {
     // And
     result.graph shouldMatch given.graph
   }
+
+  test("order by") {
+    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+
+    val result = given.cypher("MATCH (a) WITH a.val as val ORDER BY val RETURN val")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("val" -> 3L),
+      CypherMap("val" -> 4L),
+      CypherMap("val" -> 42L)
+    ))
+
+    // And
+    result.graph shouldMatch given.graph
+  }
+
+  test("order by asc") {
+    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+
+    val result = given.cypher("MATCH (a) WITH a.val as val ORDER BY val ASC RETURN val")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("val" -> 3L),
+      CypherMap("val" -> 4L),
+      CypherMap("val" -> 42L)
+    ))
+
+    // And
+    result.graph shouldMatch given.graph
+  }
+
+  test("order by desc") {
+    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+
+    val result = given.cypher("MATCH (a) WITH a.val as val ORDER BY val DESC RETURN val")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("val" -> 42L),
+      CypherMap("val" -> 4L),
+      CypherMap("val" -> 3L)
+    ))
+
+    // And
+    result.graph shouldMatch given.graph
+  }
+
+  test("skip") {
+    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+
+    val result = given.cypher("MATCH (a) WITH a.val as val SKIP 2 RETURN val")
+
+    // Then
+    result.records.toDF().count() should equal(1)
+
+    // And
+    result.graph shouldMatch given.graph
+  }
+
+  test("order by with skip") {
+    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+
+    val result = given.cypher("MATCH (a) WITH a.val as val ORDER BY val SKIP 1 RETURN val")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("val" -> 4L),
+      CypherMap("val" -> 42L)
+    ))
+
+    // And
+    result.graph shouldMatch given.graph
+  }
+
+  test("order by with (arithmetic) skip") {
+    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+
+    val result = given.cypher("MATCH (a) WITH a.val as val ORDER BY val SKIP 1 + 1 RETURN val")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("val" -> 42L)
+    ))
+
+    // And
+    result.graph shouldMatch given.graph
+  }
+
+  test("limit") {
+    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+
+    val result = given.cypher("MATCH (a) WITH a.val as val LIMIT 1 RETURN val")
+
+    // Then
+    result.records.toDF().count() should equal(1)
+
+    // And
+    result.graph shouldMatch given.graph
+  }
+
+  test("order by with limit") {
+    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+
+    val result = given.cypher("MATCH (a) WITH a.val as val ORDER BY val LIMIT 1 RETURN val")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("val" -> 3L)
+    ))
+
+    // And
+    result.graph shouldMatch given.graph
+  }
+
+  test("order by with (arithmetic) limit") {
+    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+
+    val result = given.cypher("MATCH (a) WITH a.val as val ORDER BY val LIMIT 1 + 1 RETURN val")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("val" -> 3L),
+      CypherMap("val" -> 4L)
+    ))
+
+    // And
+    result.graph shouldMatch given.graph
+  }
+
+  test("order by with skip and limit") {
+    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+
+    val result = given.cypher("MATCH (a) WITH a.val as val ORDER BY val SKIP 1 LIMIT 1 RETURN val")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("val" -> 4L)
+    ))
+
+    // And
+    result.graph shouldMatch given.graph
+  }
 }

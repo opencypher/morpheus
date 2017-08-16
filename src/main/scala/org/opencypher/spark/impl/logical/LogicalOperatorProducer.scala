@@ -16,6 +16,7 @@
 package org.opencypher.spark.impl.logical
 
 import org.opencypher.spark.api.expr._
+import org.opencypher.spark.api.ir.block.SortItem
 import org.opencypher.spark.api.ir.pattern.{EveryNode, EveryRelationship}
 import org.opencypher.spark.api.ir.{Field, SolvedQueryModel}
 import org.opencypher.spark.api.record.{ProjectedExpr, ProjectedField}
@@ -92,5 +93,17 @@ class LogicalOperatorProducer {
   def planStart(schema: Schema, fields: Set[Var]): Start = {
     val irFields = fields.map { v => Field(v.name)(v.cypherType) }
     Start(NamedLogicalGraph("default", schema), DefaultGraphSource, fields)(SolvedQueryModel(irFields, Set.empty))
+  }
+
+  def planOrderBy(sortItems: Seq[SortItem[Expr]], prev: LogicalOperator): OrderBy = {
+    OrderBy(sortItems, prev)(prev.solved)
+  }
+
+  def planSkip(expr: Expr, prev: LogicalOperator): Skip = {
+    Skip(expr, prev)(prev.solved)
+  }
+
+  def planLimit(expr: Expr, prev: LogicalOperator): Limit = {
+    Limit(expr, prev)(prev.solved)
   }
 }

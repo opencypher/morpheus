@@ -16,6 +16,7 @@
 package org.opencypher.spark.impl.physical
 
 import org.opencypher.spark.api.expr._
+import org.opencypher.spark.api.ir.block.SortItem
 import org.opencypher.spark.api.ir.global._
 import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherRecords}
 import org.opencypher.spark.api.types.CTRelationship
@@ -115,6 +116,15 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
 
         val expanded = first.varExpand(second, edgeList, sourceOp.endNode, rel, lower, upper, header)
         expanded.finalizeVarExpand(third, sourceOp.endNode, target, header)
+
+      case flat.OrderBy(sortItems: Seq[SortItem[Expr]], in, header) =>
+        inner(in).orderBy(sortItems, header)
+
+      case flat.Skip(expr, in, header) =>
+        inner(in).skip(expr, header)
+
+      case flat.Limit(expr, in, header) =>
+        inner(in).limit(expr, header)
 
       case x =>
         Raise.notYetImplemented(s"operator $x")

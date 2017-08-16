@@ -50,7 +50,9 @@ final class SparkCypherEngine extends Cypher with Serializable {
     val GlobalsRegistry(tokens, constants) = globals
 
     val converted = extractedLiterals.mapValues(v => CypherValue(v))
-    val allParameters = (queryParameters ++ converted).map { case (k, v) => constants.constantRefByName(k) -> v }
+    val allParameters = (queryParameters ++ converted).collect {
+      case (k, v) if constants.contains(k) => constants.constantRefByName(k) -> v
+    }
 
     val paramsAndTypes = GlobalsExtractor.paramWithTypes(stmt)
 

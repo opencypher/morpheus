@@ -19,6 +19,8 @@ import org.opencypher.spark.api.schema.VerifiedSchema
 import org.opencypher.spark.impl.syntax.register._
 import org.opencypher.spark.impl.util.RefCollection
 
+import scala.util.Try
+
 object GlobalsRegistry {
   val empty = GlobalsRegistry()
 
@@ -54,6 +56,8 @@ final case class ConstantRegistry(constants: RefCollection[Constant] = RefCollec
       case _ => self
     }
   }
+
+  def contains(name: String): Boolean = Try(constantRefByName(name)).isSuccess
 }
 
 object TokenRegistry {

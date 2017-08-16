@@ -15,12 +15,12 @@
  */
 package org.opencypher.spark.impl.ir
 
-import org.opencypher.spark.api.expr.{Expr, HasLabel}
+import org.opencypher.spark.api.expr.{Expr, HasLabel, Property, Var}
 import org.opencypher.spark.api.ir.block._
 import org.opencypher.spark.api.ir.global.GlobalsRegistry
 import org.opencypher.spark.api.ir.pattern._
 import org.opencypher.spark.api.ir.{Field, QueryModel}
-import org.opencypher.spark.api.types.CTNode
+import org.opencypher.spark.api.types.{CTNode, CTString, CTVoid}
 import org.opencypher.spark._
 
 import scala.collection.immutable.Set
@@ -96,6 +96,74 @@ class CypherQueryBuilderTest extends IrTestSuite {
       }
 
       model.requirements should equal(Map(
+        projectRef -> Set(matchRef),
+        matchRef -> Set(loadRef),
+        loadRef -> Set()
+      ))
+    }
+  }
+
+  test("match node order by name and return it") {
+    "MATCH (a:Person) WITH a.name AS name, a.age AS age ORDER BY age RETURN age, name".model.ensureThat { (model, globals) =>
+
+      import globals.tokens._
+
+      val loadRef = model.findExactlyOne {
+        case NoWhereBlock(LoadGraphBlock(binds, DefaultGraph())) =>
+          binds shouldBe empty
+      }
+
+      val matchRef = model.findExactlyOne {
+        case MatchBlock(deps, Pattern(entities, topo), AllGiven(exprs), _) =>
+          deps should equal(Set(loadRef))
+          entities should equal(Map(toField('a, CTNode) -> EveryNode))
+          topo shouldBe empty
+          exprs should equal(Set(HasLabel(toVar('a), labelByName("Person"))()))
+      }
+
+      val projectRef = model.findExactlyOne {
+        case NoWhereBlock(ProjectBlock(deps, ProjectedFields(map), _, _)) if deps.head == matchRef =>
+          deps should equal(Set(matchRef))
+          map should equal(Map(
+            toField('name) -> Property(Var("a")(CTNode), propertyKeyByName("name"))(CTVoid),
+            toField('age) -> Property(Var("a")(CTNode), propertyKeyByName("age"))(CTVoid)
+          ))
+      }
+
+      val project2Ref = model.findExactlyOne {
+        case NoWhereBlock(ProjectBlock(deps, ProjectedFields(map), _, _)) if deps.head == projectRef =>
+        deps should equal(Set(projectRef))
+          map should equal(Map(
+            toField('age) -> toVar('age),
+            toField('name) -> toVar('name)
+          ))
+      }
+
+      val orderByRef = model.findExactlyOne {
+        case NoWhereBlock(OrderAndSliceBlock(deps, orderBy, None, None, _)) =>
+          val ordered = Vector(Asc(toVar('age)))
+          orderBy should equal(ordered)
+          deps should equal(Set(project2Ref))
+      }
+
+      val project3Ref = model.findExactlyOne {
+        case NoWhereBlock(ProjectBlock(deps, ProjectedFields(map), _, _)) if deps.head == orderByRef =>
+          deps should equal(Set(orderByRef))
+          map should equal(Map(
+            toField('age) -> toVar('age),
+            toField('name) -> toVar('name)
+          ))
+      }
+
+      model.result match {
+        case NoWhereBlock(ResultBlock(deps, FieldsInOrder(Field("age"),Field("name")), _, _, _, _)) =>
+        deps should equal(Set(project3Ref))
+      }
+
+      model.requirements should equal(Map(
+        project3Ref -> Set(orderByRef),
+        orderByRef -> Set(project2Ref),
+        project2Ref -> Set(projectRef),
         projectRef -> Set(matchRef),
         matchRef -> Set(loadRef),
         loadRef -> Set()
