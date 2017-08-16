@@ -109,8 +109,10 @@ class Neo4jSparkTest {
     assertEquals(100,graph.vertices.count())
     assertEquals(1000,graph.edges.count())
 
-    val top3: Array[(VertexId, Double)] = PageRank.run(graph,5).vertices.sortBy(v => v._2, ascending = false,5).take(3)
-    assertEquals(0.622D, top3(0)._2, 0.01)
+    val top3: Array[(VertexId, Double)] = PageRank.run(graph, 5).vertices
+      .sortBy(v => v._2, ascending = false, 5)
+      .take(3)
+    assertEquals(1.0D, top3(0)._2, 0.01)
   }
 
   //  @Test def runSimplePatternRelQueryWithPartitionGraphFrame() {
