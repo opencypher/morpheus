@@ -118,8 +118,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
         expanded.finalizeVarExpand(third, sourceOp.endNode, target, header)
 
       case flat.OrderBy(sortItems: Seq[SortItem[Expr]], in, header) =>
-        val prev = inner(in)
-        prev.orderBy(sortItems, header)
+        inner(in).orderBy(sortItems, header)
 
       case flat.Skip(expr, in, header) =>
         inner(in).skip(expr, header)

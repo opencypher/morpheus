@@ -130,13 +130,12 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
 
   private def registerOrderAndSliceBlock[R: _mayFail : _hasContext](orderBy: Option[OrderBy],
                                                                     skip: Option[Skip],
-                                                                    limit: Option[Limit])= {
+                                                                    limit: Option[Limit]) = {
     for {
       context <- get[R, IRBuilderContext]
       sortItems <- orderBy match {
         case Some(ast.OrderBy(sortItems)) =>
-          val vector = sortItems.map(convertSortItem[R]).toVector
-          EffMonad[R].sequence(vector)
+          EffMonad[R].sequence(sortItems.map(convertSortItem[R]).toVector)
         case None => EffMonad[R].sequence(Vector[Eff[R,SortItem[Expr]]]())
       }
       skipExpr <- convertExpr(skip.map(_.expression))
@@ -191,11 +190,10 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
   private def convertExpr[R: _mayFail : _hasContext](e: Option[ast.Expression]): Eff[R, Option[Expr]] =
     for {
       context <- get[R, IRBuilderContext]
+    } yield e match {
+      case Some(expr) => Some(context.convertExpression(expr))
+      case None => None
     }
-      yield e match {
-        case Some(expr) => Some(context.convertExpression(expr))
-        case None => None
-      }
 
   private def convertExpr[R: _mayFail : _hasContext](e: ast.Expression): Eff[R, Expr] =
     for {
@@ -233,14 +231,14 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
       Some(CypherQuery(info, model))
     }
 
-  private def convertSortItem[R: _mayFail : _hasContext](item: ast.SortItem):Eff[R, SortItem[Expr]] = {
+  private def convertSortItem[R: _mayFail : _hasContext](item: ast.SortItem): Eff[R, SortItem[Expr]] = {
     item match {
       case ast.AscSortItem(astExpr) =>
-        for{
+        for {
           expr <- convertExpr(astExpr)
         } yield Asc(expr)
       case ast.DescSortItem(astExpr) =>
-        for{
+        for {
           expr <- convertExpr(astExpr)
         } yield Desc(expr)
     }

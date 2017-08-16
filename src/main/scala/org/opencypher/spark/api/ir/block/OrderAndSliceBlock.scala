@@ -1,4 +1,5 @@
 package org.opencypher.spark.api.ir.block
+
 import org.opencypher.spark.api.ir.pattern.AllGiven
 
 final case class OrderAndSliceBlock[E](after: Set[BlockRef],

@@ -93,15 +93,15 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         planFilter(projPlan, where)
 
       case OrderAndSliceBlock(_, sortItems, skip, limit, _) =>
-        val orderOp = if (sortItems.nonEmpty) planOrderBy(sortItems, plan) else plan
+        val orderOp = if (sortItems.nonEmpty) producer.planOrderBy(sortItems, plan) else plan
 
         val skipOp = skip match {
-          case Some(expr) => planSkip(expr, orderOp)
+          case Some(expr) => producer.planSkip(expr, orderOp)
           case None => orderOp
         }
 
         limit match {
-          case Some(expr) => planLimit(expr, skipOp)
+          case Some(expr) => producer.planLimit(expr, skipOp)
           case None => skipOp
         }
 
@@ -158,16 +158,6 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
     filtersAndProjs
   }
-
-  private def planOrderBy(sortItems: Seq[SortItem[Expr]], in: LogicalOperator) = {
-    producer.planOrderBy(sortItems, in)
-  }
-
-  def planSkip(expr: Expr, operator: LogicalOperator): LogicalOperator =
-    producer.planSkip(expr, operator)
-
-  def planLimit(expr: Expr, operator: LogicalOperator): LogicalOperator =
-    producer.planLimit(expr, operator)
 
   private def planInnerExpr(expr: Expr, in: LogicalOperator)(implicit context: LogicalPlannerContext): LogicalOperator = {
     expr match {
