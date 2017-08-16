@@ -16,8 +16,7 @@
 package org.opencypher.spark.api.schema
 
 import org.opencypher.spark.BaseTestSuite
-import org.opencypher.spark.api.exception.SparkCypherException
-import org.opencypher.spark.api.types.{CTBoolean, CTFloat, CTInteger, CTString}
+import org.opencypher.spark.api.types._
 
 class SchemaTest extends BaseTestSuite {
 
@@ -188,30 +187,29 @@ class SchemaTest extends BaseTestSuite {
       .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString, "baz" -> CTString)
 
     schema1 ++ schema2 should equal(Schema.empty
-      .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString, "baz" -> CTString))
+      .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString, "baz" -> CTString.nullable))
   }
 
-  //TODO instead of raising an error build a relaxed Schema (bar -> String?, baz -> String?)
   test("combining key conflicting schemas") {
     val schema1 = Schema.empty
       .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString)
     val schema2 = Schema.empty
       .withNodePropertyKeys("A")("foo" -> CTString, "baz" -> CTString)
 
-    the [SparkCypherException] thrownBy {
-      schema1 ++ schema2
-    } should have message s"Incompatible schemas: Conflicting property key maps ${schema1.nodeKeyMap} and ${schema2.nodeKeyMap}"
+    schema1 ++ schema2 should equal(Schema.empty
+      .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString.nullable, "baz" -> CTString.nullable)
+    )
   }
 
   test("combining type conflicting schemas") {
     val schema1 = Schema.empty
-      .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString)
+      .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString, "baz" -> CTInteger)
     val schema2 = Schema.empty
-      .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTInteger)
+      .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTInteger, "baz" -> CTFloat)
 
-    the [SparkCypherException] thrownBy {
-      schema1 ++ schema2
-    } should have message s"Incompatible schemas: Conflicting property key maps ${schema1.nodeKeyMap} and ${schema2.nodeKeyMap}"
+    schema1 ++ schema2 should equal(Schema.empty
+      .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTAny, "baz" -> CTNumber)
+    )
   }
 
   test("combining schemas with restricting label implications") {

@@ -331,26 +331,48 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
       "____n:Person",
       "____n:Swedish",
       "____n:Programmer",
+      "____n_dot_languageSTRING",
+      "____n_dot_nameSTRING",
+      "____n_dot_lucky_bar_numberINTEGER"
+    ))
+
+    nodes.details.toDF().collect().toSet should equal (Set(
+      Row(1,   true, true,  false, null,   "Mats",   23),
+      Row(2,   true, false, false, null, "Martin",   42),
+      Row(3,   true, false, false, null,    "Max", 1337),
+      Row(4,   true, false, false, null, "Stefan",    9),
+      Row(100, true, false, true,   "C",  "Alice",   42),
+      Row(200, true, false, true,   "D",    "Bob",   23),
+      Row(300, true, false, true,   "F",    "Eve",   84),
+      Row(400, true, false, true,   "R",   "Carl",   49)
+    ))
+  }
+
+  test("Extract from scans with implied label but missing keys") {
+    val graph = SparkCypherGraph.create(`:Person`, `:Brogrammer`)
+
+    val nodes = graph.nodes("n", CTNode("Person"))
+
+    nodes.details.toDF().columns should equal(Array(
+      "n",
+      "____n:Person",
+      "____n:Swedish",
+      "____n:Brogrammer",
       "____n_dot_nameSTRING",
       "____n_dot_lucky_bar_numberINTEGER",
       "____n_dot_languageSTRING"
     ))
 
-    nodes.details.toDF().collect().toSet should equal (Set(
-      Row(1,   true, true,  false,   "Mats",   23, null),
-      Row(2,   true, false, false, "Martin",   42, null),
-      Row(3,   true, false, false,    "Max", 1337, null),
-      Row(4,   true, false, false, "Stefan",    9, null),
-      Row(100, true, false, true,   "Alice",   42, "C"),
-      Row(200, true, false, true,     "Bob",   23, "D"),
-      Row(300, true, false, true,     "Eve",   84, "F"),
-      Row(400, true, false, true,    "Carl",   49, "R")
+    nodes.details.toDF().collect().toSet should equal(Set(
+      Row(1, true, true, false, "Mats", 23, null),
+      Row(2, true, false, false, "Martin", 42, null),
+      Row(3, true, false, false, "Max", 1337, null),
+      Row(4, true, false, false, "Stefan", 9, null),
+      Row(100, true, false, true, null, null, "Node"),
+      Row(200, true, false, true, null, null, "Coffeescript"),
+      Row(300, true, false, true, null, null, "Javascript"),
+      Row(400, true, false, true, null, null, "Typescript")
     ))
   }
 
-  test("Extract from scans with overlapping labels having conflicting schemas") {
-    the[SparkCypherException] thrownBy {
-      SparkCypherGraph.create(`:Person`, `:Brogrammer`)
-    } should have message s"Incompatible schemas: Conflicting property key maps ${`:Person`.schema.nodeKeyMap} and ${`:Brogrammer`.schema.nodeKeyMap}"
-  }
 }

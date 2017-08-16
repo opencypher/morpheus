@@ -103,7 +103,6 @@ object SparkCypherGraph {
       val selectedRecords = alignEntityVariable(selectedScans, node)
 
       // (3) Update all non-nullable property types to nullable
-      // TODO Check for properties that exist in all scans
       val targetSchema = Schema(tempSchema.labels,
         tempSchema.relationshipTypes,
         PropertyKeyMap.asNullable(tempSchema.nodeKeyMap),
@@ -128,8 +127,6 @@ object SparkCypherGraph {
     }
 
     override def relationships(name: String, relCypherType: CTRelationship) = {
-      // TODO: Handle empty case
-
       // (1) find all scans smaller than or equal to the given cypher type if any
       val selectedScans = relEntityScans.scans(relCypherType)
 
@@ -179,10 +176,12 @@ object SparkCypherGraph {
             case cr: CTRelationship => cr.types.toSeq
           }
         }
-        //TODO speed up using hash lookups?
+
+        val slotMap = scanRecords.details.header.slots.map(slot => slot.content.key.withoutType -> slot).toMap
+
         //TODO don't expand common labels, use CTNode label instead
         val newData = tempHeader.slots.foldLeft(data) { (acc, slot) =>
-          scanRecords.details.header.slots.find(_.content == slot.content) match {
+          slotMap.get(slot.content.key.withoutType) match {
             case None =>
               val columnName = SparkColumnName.of(slot)
               slot.content.key match {
