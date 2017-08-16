@@ -5,7 +5,7 @@ import org.opencypher.spark.api.ir.global.Label
 import org.opencypher.spark.api.ir.pattern.{AllGiven, EveryNode}
 import org.opencypher.spark.impl.DirectCompilationStage
 
-class LogicalRewriter(producer: LogicalOperatorProducer)
+class LogicalOptimizer(producer: LogicalOperatorProducer)
   extends DirectCompilationStage[LogicalOperator, LogicalOperator, LogicalPlannerContext]{
 
   override def process(input: LogicalOperator)(implicit context: LogicalPlannerContext): LogicalOperator = {
@@ -28,10 +28,10 @@ class LogicalRewriter(producer: LogicalOperatorProducer)
             case _ => Set.empty
           }
           res ++ extractLabels(in)
-        case s:StackingLogicalOperator =>
-          Set.empty ++ extractLabels(s.in)
-        case b:BinaryLogicalOperator =>
-          Set.empty ++ extractLabels(b.lhs) ++ extractLabels(b.rhs)
+        case s: StackingLogicalOperator =>
+          extractLabels(s.in)
+        case b: BinaryLogicalOperator =>
+          extractLabels(b.lhs) ++ extractLabels(b.rhs)
         case _ => Set.empty
       }
     }
@@ -46,14 +46,14 @@ class LogicalRewriter(producer: LogicalOperatorProducer)
             rewrite(in))(in.solved)
         case f@Filter(expr, in) =>
           expr match {
-            case _:HasLabel => rewrite(in)
+            case _: HasLabel => rewrite(in)
             case _ => f.clone(rewrite(in))
           }
-        case s:StackingLogicalOperator =>
+        case s: StackingLogicalOperator =>
           s.clone(rewrite(s.in))
-        case b:BinaryLogicalOperator =>
+        case b: BinaryLogicalOperator =>
           b.clone(rewrite(b.lhs), rewrite(b.rhs))
-        case l:LogicalLeafOperator =>
+        case l: LogicalLeafOperator =>
           l
       }
     }
