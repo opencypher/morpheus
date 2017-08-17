@@ -16,7 +16,6 @@
 package org.opencypher.spark.impl
 
 import cats.data.State
-import cats.syntax.flatMap._
 import org.atnos.eff._
 import org.atnos.eff.all._
 import org.atnos.eff.syntax.all._
@@ -36,7 +35,7 @@ package object ir {
 
     def run(context: IRBuilderContext): Either[IRBuilderError, (A, IRBuilderContext)] = {
       val stateRun = program.runState(context)
-      val errorRun = stateRun.runEither[IRBuilderError, NoFx]
+      val errorRun = stateRun.runEither[IRBuilderError]
       errorRun.run
     }
   }

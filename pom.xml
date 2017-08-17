@@ -13,8 +13,8 @@
     <properties>
         <!-- Project settings -->
         <project.build.encoding>UTF-8</project.build.encoding>
-        <project.java.version>1.7</project.java.version>
-        <project.scala.version>2.11.8</project.scala.version>
+        <project.java.version>1.8</project.java.version>
+        <project.scala.version>2.11.11</project.scala.version>
         <project.scala.binary.version>2.11</project.scala.binary.version>
 
         <!-- Used plugins -->
@@ -30,7 +30,8 @@
         <!-- Used dependencies -->
         <dep.ammonite.version>0.7.0</dep.ammonite.version>
         <dep.cats.version>0.9.0</dep.cats.version>
-        <dep.eff.version>2.2.0</dep.eff.version>
+        <dep.circe.version>0.8.0</dep.circe.version>
+        <dep.eff.version>4.5.0</dep.eff.version>
         <dep.gdl.version>0.3.0-SNAPSHOT</dep.gdl.version>
         <dep.graphframes.version>0.4.0-spark2.1-s_2.11</dep.graphframes.version>
         <dep.junit.version>4.12</dep.junit.version>
@@ -38,10 +39,9 @@
         <dep.multiset.version>0.4</dep.multiset.version>
         <dep.neo4j-spark-connector>2.0.0-M2</dep.neo4j-spark-connector>
         <dep.neo4j.version>3.2.0-alpha08</dep.neo4j.version>
-        <dep.scalatest.version>3.0.0</dep.scalatest.version>
+        <dep.scalatest.version>3.0.3</dep.scalatest.version>
         <dep.sourcecode.version>0.1.2</dep.sourcecode.version>
-        <dep.spark.version>2.1.0</dep.spark.version>
-        <dep.circe.version>0.8.0</dep.circe.version>
+        <dep.spark.version>2.2.0</dep.spark.version>
     </properties>
 
     <repositories>
