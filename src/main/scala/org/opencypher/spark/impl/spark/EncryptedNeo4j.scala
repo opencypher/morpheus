@@ -19,6 +19,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SparkSession}
 import org.apache.spark.{Partition, SparkConf, SparkContext, TaskContext}
 import org.neo4j.driver.v1.Config
+import org.neo4j.spark.Neo4j.NameProp
 import org.neo4j.spark.{Neo4j, Neo4jConfig, Neo4jRDD, Partitions}
 
 case class EncryptedNeo4j(session: SparkSession) extends Neo4j(session.sparkContext) {

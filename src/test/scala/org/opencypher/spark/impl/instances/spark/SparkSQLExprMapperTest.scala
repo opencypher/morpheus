@@ -28,7 +28,7 @@ import org.opencypher.spark.{BaseTestSuite, SparkTestSession}
 
 import scala.language.implicitConversions
 
-class SparkSQLExprMapperTest extends BaseTestSuite with SparkTestSession.Fixture {
+class SparkSQLExprMapperTest extends BaseTestSuite with SparkTestSession {
 
   test("can map subtract") {
     val expr = Subtract(Var("a")(), Var("b")())()

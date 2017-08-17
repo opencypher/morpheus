@@ -21,7 +21,6 @@ import org.apache.spark.SparkConf
 import org.apache.spark.rdd.RDD
 import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.sql._
-import org.graphframes.GraphFrame
 import org.neo4j.driver.v1.{AuthTokens, GraphDatabase}
 import org.opencypher.spark.api.value._
 import org.opencypher.spark_legacy.CypherKryoRegistrar
@@ -101,21 +100,21 @@ object RunBenchmark {
     new StdPropertyGraph(cachedNodeSet, cachedRelSet)
   }
 
-  def createGraphFrameGraph(size: Long): GraphFrame = {
-    val (nodeRDD, relRDD) = importAndConvert(size)
-
-    printf("Creating GraphFrame graph ... ")
-    val nodeFrame = sparkSession.createDataFrame(nodeRDD)
-    val idCol = nodeFrame.col("id")
-    val cachedNodeFrame = cacheNow(nodeFrame.repartition(idCol).sortWithinPartitions(idCol))
-
-    val relFrame = sparkSession.createDataFrame(relRDD).toDF("id", "src", "dst", "type")
-    val srcCol = relFrame.col("src")
-    val cachedStartRelFrame = cacheNow(relFrame.repartition(srcCol).sortWithinPartitions(srcCol))
-    println("Finished GraphFrame graph!")
-
-    GraphFrame(cachedNodeFrame, cachedStartRelFrame)
-  }
+//  def createGraphFrameGraph(size: Long): GraphFrame = {
+//    val (nodeRDD, relRDD) = importAndConvert(size)
+//
+//    printf("Creating GraphFrame graph ... ")
+//    val nodeFrame = sparkSession.createDataFrame(nodeRDD)
+//    val idCol = nodeFrame.col("id")
+//    val cachedNodeFrame = cacheNow(nodeFrame.repartition(idCol).sortWithinPartitions(idCol))
+//
+//    val relFrame = sparkSession.createDataFrame(relRDD).toDF("id", "src", "dst", "type")
+//    val srcCol = relFrame.col("src")
+//    val cachedStartRelFrame = cacheNow(relFrame.repartition(srcCol).sortWithinPartitions(srcCol))
+//    println("Finished GraphFrame graph!")
+//
+//    GraphFrame(cachedNodeFrame, cachedStartRelFrame)
+//  }
 
   // TODO: Solve this less ugly
   private var cNodeRDD: RDD[AccessControlNode] = _
@@ -255,7 +254,7 @@ object RunBenchmark {
     lazy val stdGraph = createStdPropertyGraphFromNeo(graphSize)
     lazy val sdfGraph = createSimpleDataFrameGraph(graphSize)
     lazy val neoGraph = createNeo4jViaDriverGraph
-    lazy val graphFrame = createGraphFrameGraph(graphSize)
+//    lazy val graphFrame = createGraphFrameGraph(graphSize)
     lazy val tripletGraph = createTripletGraph(graphSize)
 
     val query = loadQuery()
@@ -264,7 +263,7 @@ object RunBenchmark {
     lazy val rddResult = RDDBenchmarks(query).using(stdGraph)
     lazy val neoResult = Neo4jViaDriverBenchmarks(query).using(neoGraph)
     lazy val cosResult = CypherOnSparkBenchmarks(query).using(stdGraph)
-    lazy val graphFrameResult = GraphFramesBenchmarks(query).using(graphFrame)
+//    lazy val graphFrameResult = GraphFramesBenchmarks(query).using(graphFrame)
     lazy val tripletResult = TripletBenchmarks(query).using(tripletGraph)
 
     lazy val benchmarksAndGraphs = Benchmarks.get() match {
@@ -279,14 +278,14 @@ object RunBenchmark {
         Seq(
           tripletResult,
           frameResult,
-          graphFrameResult,
+//          graphFrameResult,
           neoResult
         )
       case "frames" =>
         Seq(
           tripletResult,
-          frameResult,
-          graphFrameResult
+          frameResult
+//          graphFrameResult
         )
     }
 

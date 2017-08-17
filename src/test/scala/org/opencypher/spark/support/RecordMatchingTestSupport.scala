@@ -25,7 +25,7 @@ import scala.collection.JavaConverters._
 
 trait RecordMatchingTestSupport {
 
-  self: BaseTestSuite with SparkTestSession.Fixture =>
+  self: BaseTestSuite with SparkTestSession =>
 
   implicit class RecordMatcher(records: SparkCypherRecords) {
     def shouldMatch(expectedRecords: SparkCypherRecords): Assertion = {

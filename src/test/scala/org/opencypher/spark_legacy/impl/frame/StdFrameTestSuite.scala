@@ -32,7 +32,7 @@ object StdFrameTestSuite {
   }
 }
 
-abstract class StdFrameTestSuite extends BaseTestSuite with SparkTestSession.Fixture {
+abstract class StdFrameTestSuite extends BaseTestSuite with SparkTestSession {
 
   implicit val factory = PropertyGraphFactory.create
 

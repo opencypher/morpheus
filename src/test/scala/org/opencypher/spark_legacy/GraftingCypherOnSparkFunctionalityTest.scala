@@ -20,7 +20,7 @@ import org.opencypher.spark_legacy.impl._
 import org.opencypher.spark.api.value.CypherList
 import org.opencypher.spark.{BaseTestSuite, SparkTestSession}
 
-class GraftingCypherOnSparkFunctionalityTest extends BaseTestSuite with SparkTestSession.Fixture {
+class GraftingCypherOnSparkFunctionalityTest extends BaseTestSuite with SparkTestSession {
 
   implicit val factory = PropertyGraphFactory.create
 
