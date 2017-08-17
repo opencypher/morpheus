@@ -20,7 +20,7 @@ import org.atnos.eff._
 import org.atnos.eff.all._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Limit, OrderBy, Skip, Statement}
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, ast}
-import org.opencypher.spark.api.expr.{Expr, Var}
+import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir._
 import org.opencypher.spark.api.ir.block.{SortItem, _}
 import org.opencypher.spark.api.ir.pattern.{AllGiven, Pattern}
@@ -75,7 +75,7 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
           refs <- {
             val blockRegistry = context.blocks
             val after = blockRegistry.lastAdded.toSet
-            val block = MatchBlock[Expr](after, pattern, given,optional, context.graphBlock)
+            val block = MatchBlock[Expr](after, pattern, given, optional, context.graphBlock)
 
             implicit val globals = context.globals
             val typedOutputs = block.outputs
@@ -231,6 +231,12 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
       Some(CypherQuery(info, model))
     }
 
+  private def getKnownFields(blockRefs: Set[BlockRef], registry: BlockRegistry[Expr]): Set[Field] = {
+    blockRefs.map(registry.apply).map { block =>
+      block.binds.fields ++ getKnownFields(block.after, registry)
+    }.reduceOption(_ ++ _).getOrElse(Set.empty)
+  }
+
   private def convertSortItem[R: _mayFail : _hasContext](item: ast.SortItem): Eff[R, SortItem[Expr]] = {
     item match {
       case ast.AscSortItem(astExpr) =>
@@ -244,5 +250,3 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
     }
   }
 }
-
-

@@ -17,7 +17,7 @@ package org.opencypher.spark.impl.physical
 
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{ArrayType, BooleanType, LongType}
-import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.{Column, DataFrame, Row}
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.block.{Asc, Desc, SortItem}
 import org.opencypher.spark.api.ir.global._
@@ -215,7 +215,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
       }
     }
 
-    def joinSource(relView: PhysicalResult, header: RecordHeader, joinType: String) = new JoinBuilder {
+    def joinSource(relView: PhysicalResult, header: RecordHeader) = new JoinBuilder {
       override def on(node: Var)(rel: Var): PhysicalResult = {
         val lhsSlot = prev.records.details.header.slotFor(node)
         val rhsSlot = relView.records.details.header.sourceNode(rel)
@@ -223,11 +223,11 @@ class PhysicalResultProducer(context: RuntimeContext) {
         assertIsNode(lhsSlot)
         assertIsNode(rhsSlot)
 
-        prev.mapRecordsWithDetails(join(relView.records, header, lhsSlot -> rhsSlot)(joinType))
+        prev.mapRecordsWithDetails(join(relView.records, header, lhsSlot -> rhsSlot)())
       }
     }
 
-    def joinTarget(nodeView: PhysicalResult, header: RecordHeader, joinType: String) = new JoinBuilder {
+    def joinTarget(nodeView: PhysicalResult, header: RecordHeader) = new JoinBuilder {
       override def on(rel: Var)(node: Var): PhysicalResult = {
         val lhsSlot = prev.records.details.header.targetNode(rel)
         val rhsSlot = nodeView.records.details.header.slotFor(node)
@@ -235,7 +235,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
         assertIsNode(lhsSlot)
         assertIsNode(rhsSlot)
 
-        prev.mapRecordsWithDetails(join(nodeView.records, header, lhsSlot -> rhsSlot)(joinType))
+        prev.mapRecordsWithDetails(join(nodeView.records, header, lhsSlot -> rhsSlot)())
       }
     }
 
@@ -267,38 +267,77 @@ class PhysicalResultProducer(context: RuntimeContext) {
       }
     }
 
-    private def join(rhs: SparkCypherRecords, header: RecordHeader, joinSlots: (RecordSlot, RecordSlot)*)(joinType: String = "inner")
-    : SparkCypherRecords => SparkCypherRecords = {
-      def f(lhs: SparkCypherRecords) = {
-        if (lhs.space == rhs.space) {
-          val lhsData = lhs.details.data
-          val rhsData = rhs.details.data
+    def optional(rhs: PhysicalResult, lhsHeader: RecordHeader, rhsHeader: RecordHeader): PhysicalResult = {
+      val commonFields = rhsHeader.fields.intersect(lhsHeader.fields)
+      val rhsData = rhs.records.details.toDF()
+      val lhsData = prev.records.details.toDF()
 
-          val joinExpr = joinSlots
-            .map { case (l, r) => lhsData.col(context.columnName(l)) === rhsData.col(context.columnName(r)) }
-            .reduce(_ && _)
-          val jointData = lhsData.join(rhsData, joinExpr, joinType)
-          SparkCypherRecords.create(header, jointData)(lhs.space)
-        } else {
-          Raise.graphSpaceMismatch()
-        }
-      }
-      f
+      // Remove all common columns from the right hand side, except the join columns
+      val columnsToRemove = commonFields
+        .flatMap(rhsHeader.childSlots)
+        .map(_.content)
+        .map(context.columnName).toSeq
+
+      val lhsJoinSlots = commonFields.map(lhsHeader.slotFor)
+      val rhsJoinSlots = commonFields.map(rhsHeader.slotFor)
+
+      // Find the join pairs and introduce an alias for the right hand side
+      // This is necessary to be able to deduplicate the join columns later
+      val joinColumnMapping = lhsJoinSlots
+        .map(lhsSlot => {
+          lhsSlot -> rhsJoinSlots.find(_.content == lhsSlot.content).get
+        })
+        .map(pair => {
+          val lhsCol = lhsData.col(context.columnName(pair._1))
+          val rhsColName = context.columnName(pair._2)
+
+          (lhsCol, rhsColName, FreshVariableNamer.generateUniqueName(rhsHeader))
+        }).toSeq
+
+      val reducedRhsData = joinColumnMapping
+        .foldLeft(rhsData)((acc, col) => acc.withColumnRenamed(col._2, col._3))
+        .drop(columnsToRemove: _*)
+
+      val joinCols = joinColumnMapping.map(t => t._1 -> reducedRhsData.col(t._3))
+
+      prev.mapRecordsWithDetails(join(reducedRhsData, rhsHeader, joinCols: _*)("leftouter", deduplicate = true))
     }
 
-    def optional(optionalFields: Set[Var], header: RecordHeader): PhysicalResult = {
-      prev.mapRecordsWithDetails { records =>
-        val data = records.details.toDF()
-        val fieldColumns = optionalFields
-          .map(header.slotFor)
-          .map(context.columnName)
-          .map(data.col)
+    private def join(rhs: SparkCypherRecords, header: RecordHeader, joinSlots: (RecordSlot, RecordSlot)*)
+                    (joinType: String = "inner", deduplicate: Boolean = false)
+                    : SparkCypherRecords => SparkCypherRecords = {
 
-        val allNull = fieldColumns.map(_.isNull).reduce(_ && _)
-        val noneNull = fieldColumns.map(_.isNotNull).reduce(_ && _)
-        val filtered = records.details.toDF().filter(allNull || noneNull)
-        SparkCypherRecords.create(header, filtered)(records.space)
+      val lhsData = prev.records.details.toDF()
+      val rhsData = rhs.details.toDF()
+
+      val joinCols = joinSlots.map(pair =>
+        lhsData.col(context.columnName(pair._1)) -> rhsData.col(context.columnName(pair._2))
+      )
+
+      join(rhsData, header, joinCols: _*)(joinType, deduplicate)
+    }
+
+    private def join(rhsData: DataFrame, header: RecordHeader, joinCols: (Column, Column)*)
+                     (joinType: String, deduplicate: Boolean)
+                     : SparkCypherRecords => SparkCypherRecords = {
+
+      def f(lhs: SparkCypherRecords) = {
+        val lhsData = lhs.details.data
+
+        val joinExpr = joinCols
+          .map { case (l, r) => l === r }
+          .reduce(_ && _)
+
+        val joinedData = lhsData.join(rhsData, joinExpr, joinType)
+
+        val returnData = if(deduplicate) {
+          val colsToDrop = joinCols.map(col => col._2)
+          colsToDrop.foldLeft(joinedData)((acc, col) => acc.drop(col))
+        } else joinedData
+
+        SparkCypherRecords.create(header, returnData)(lhs.space)
       }
+      f
     }
 
     def initVarExpand(source: Var, edgeList: Var, target: Var, header: RecordHeader): PhysicalResult = {

@@ -125,6 +125,14 @@ final case class HasType(rel: Expr, relType: RelType)(val cypherType: CypherType
   override def withoutType: String = s"type(${rel.withoutType}) = '${relType.name}'"
 }
 
+final case class IsNull(expr: Expr)(val cypherType: CypherType = CTWildcard) extends Expr {
+  override def withoutType: String = s"type(${expr.withoutType}) IS NULL"
+}
+
+final case class IsNotNull(expr: Expr)(val cypherType: CypherType = CTWildcard) extends Expr {
+  override def withoutType: String = s"type(${expr.withoutType}) IS NOT NULL"
+}
+
 // Binary expressions
 
 sealed trait BinaryExpr extends Expr {

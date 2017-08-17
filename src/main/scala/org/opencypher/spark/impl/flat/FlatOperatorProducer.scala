@@ -101,14 +101,14 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   // TODO: Specialize per kind of slot content
   // TODO: Remove types parameter and read rel-types from the rel variable
   def expandSource(source: Var, rel: Var, types: EveryRelationship, target: Var,
-                   sourceOp: FlatOperator, targetOp: FlatOperator, optional: Boolean): FlatOperator = {
+                   sourceOp: FlatOperator, targetOp: FlatOperator): FlatOperator = {
     val relHeader =
       if (types.relTypes.elements.isEmpty) RecordHeader.relationshipFromSchema(rel, schema, tokens)
       else RecordHeader.relationshipFromSchema(rel, schema, tokens, types.relTypes.elements.map(_.name))
 
     val expandHeader = sourceOp.header ++ relHeader ++ targetOp.header
 
-    ExpandSource(source, rel, types, target, sourceOp, targetOp, expandHeader, relHeader, optional)
+    ExpandSource(source, rel, types, target, sourceOp, targetOp, expandHeader, relHeader)
   }
 
   def expandInto(source: Var, rel: Var, types: EveryRelationship, target: Var, sourceOp: FlatOperator): FlatOperator = {
@@ -141,8 +141,8 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     BoundedVarExpand(edge, edgeList, target, lower, upper, sourceOp, edgeOp, targetOp, header)
   }
 
-  def planOptional(optionalFields: Set[Var], in: FlatOperator): FlatOperator = {
-    Optional(optionalFields, in, in.header)
+  def planOptional(lhs: FlatOperator, rhs: FlatOperator): FlatOperator = {
+    Optional(lhs, rhs, lhs.header, rhs.header)
   }
 
   def orderBy(sortItems: Seq[SortItem[Expr]], sourceOp: FlatOperator): FlatOperator = {

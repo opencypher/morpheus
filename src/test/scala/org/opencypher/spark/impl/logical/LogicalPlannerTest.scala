@@ -54,7 +54,7 @@ class LogicalPlannerTest extends IrTestSuite {
     val scan1 = NodeScan(nodeA, EveryNode, leafPlan)(emptySqm.withField(nodeA))
     val scan2 = NodeScan(nodeB, EveryNode, leafPlan)(emptySqm.withField(nodeB))
     plan(irWithLeaf(block)) should equalWithoutResult(
-      ExpandSource(nodeA, relR, EveryRelationship, nodeB, scan1, scan2, false)(emptySqm.withFields(nodeA, nodeB, relR))
+      ExpandSource(nodeA, relR, EveryRelationship, nodeB, scan1, scan2)(emptySqm.withFields(nodeA, nodeB, relR))
     )
   }
 
@@ -90,8 +90,7 @@ class LogicalPlannerTest extends IrTestSuite {
                     )(emptySqm),
                     NodeScan(Var("g")(CTNode), EveryNode,
                       Start(NamedLogicalGraph("default", Schema.empty), DefaultGraphSource, Set.empty)(emptySqm)
-                    )(emptySqm),
-                    false
+                    )(emptySqm)
                   )(emptySqm)
                 )(emptySqm)
               )(emptySqm)
@@ -126,8 +125,7 @@ class LogicalPlannerTest extends IrTestSuite {
                     )(emptySqm),
                     NodeScan(Var("g")(CTNode), EveryNode,
                       Start(NamedLogicalGraph("default", schema), DefaultGraphSource, Set.empty)(emptySqm)
-                    )(emptySqm),
-                    false
+                    )(emptySqm)
                   )(emptySqm)
                 )(emptySqm)
               )(emptySqm)

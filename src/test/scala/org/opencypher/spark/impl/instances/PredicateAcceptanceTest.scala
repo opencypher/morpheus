@@ -99,24 +99,6 @@ class PredicateAcceptanceTest extends SparkCypherTestSuite {
     result.graph shouldMatch given.graph
   }
 
-  test("equality with null") {
-    // Given
-    val given = TestGraph("""(A {val1: "Foo", val2: 1}),
-                            |(A {val1: "Bar", val2: NULL})
-                          """.stripMargin)
-
-    // When
-    val result = given.cypher("MATCH (a:A) WHERE a.val2 = null RETURN a.val1")
-
-    // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("a.val1" -> "Bar")
-    ))
-
-    // And
-    result.graph shouldMatch given.graph
-  }
-
   test("less than") {
 
     // Given

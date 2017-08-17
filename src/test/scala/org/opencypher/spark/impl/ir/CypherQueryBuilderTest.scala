@@ -114,7 +114,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
       }
 
       val matchRef = model.findExactlyOne {
-        case MatchBlock(deps, Pattern(entities, topo), AllGiven(exprs), _) =>
+        case MatchBlock(deps, Pattern(entities, topo), AllGiven(exprs),_, _) =>
           deps should equal(Set(loadRef))
           entities should equal(Map(toField('a, CTNode) -> EveryNode))
           topo shouldBe empty

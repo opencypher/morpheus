@@ -129,7 +129,7 @@ class FlatPlannerTest extends BaseTestSuite {
   test("flat plan for expand") {
     val result = flatPlanner.process(
       mkLogical.planSourceExpand(Field("n")(CTNode), Field("r")(CTRelationship), EveryRelationship, Field("m")(CTNode),
-        logicalNodeScan("n"), logicalNodeScan("m"), false
+        logicalNodeScan("n"), logicalNodeScan("m")
       )
     )
     val headerContents = result.header.contents
@@ -140,7 +140,7 @@ class FlatPlannerTest extends BaseTestSuite {
 
     result should equal(
       mkFlat.expandSource(source, rel, EveryRelationship, target,
-        flatNodeScan(source), flatNodeScan(target), false
+        flatNodeScan(source), flatNodeScan(target)
       )
     )
     headerContents should equal(Set(
@@ -171,8 +171,7 @@ class FlatPlannerTest extends BaseTestSuite {
         Field("n")(CTNode),
         Field("r")(CTRelationship("KNOWS")), EveryRelationship(AnyOf(RelType("KNOWS"))),
         Field("m")(CTNode),
-        logicalNodeScan("n"), logicalNodeScan("m"),
-        false
+        logicalNodeScan("n"), logicalNodeScan("m")
       )
     )
     val headerContents = result.header.contents
@@ -183,7 +182,7 @@ class FlatPlannerTest extends BaseTestSuite {
 
     result should equal(
       mkFlat.expandSource(source, rel, EveryRelationship(AnyOf(RelType("KNOWS"))), target,
-        flatNodeScan(source), flatNodeScan(target), false
+        flatNodeScan(source), flatNodeScan(target)
       )
     )
     headerContents should equal(Set(

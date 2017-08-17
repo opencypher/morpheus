@@ -55,6 +55,14 @@ final case class RecordHeader(internalHeader: InternalHeader) {
     })
   }
 
+  def childSlots(node: Var): Set[RecordSlot] = {
+    slots.filter {
+      case RecordSlot(_, OpaqueField(_)) => false
+      case slot if slot.content.owner.orNull == node => true
+      case _ => false
+    }.toSet
+  }
+
   override def toString = {
     val s = slots
     s"RecordHeader with ${s.size} slots: \n\t ${slots.mkString("\n\t")}"
