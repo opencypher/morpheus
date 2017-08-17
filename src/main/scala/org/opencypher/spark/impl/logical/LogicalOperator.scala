@@ -191,20 +191,13 @@ final case class Select(fields: IndexedSeq[Var], in: LogicalOperator)
   override def clone(newIn: LogicalOperator = in): LogicalOperator = copy(in = newIn)(solved)
 }
 
-final case class Start(outGraph: NamedLogicalGraph, source: GraphSource, fields: Set[Var])
-                      (override val solved: SolvedQueryModel[Expr]) extends LogicalLeafOperator {
-  override val inGraph = EmptyGraph
-
-  override def pretty(depth: Int): String = s"${prefix(depth)} Start()"
-
-  override def clone(): Start = copy()(solved)
-}
-
 final case class OrderBy(sortItems: Seq[SortItem[Expr]], in: LogicalOperator)
                         (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
   override def pretty(depth: Int): String =
     s"""${prefix(depth)} OrderByAndSlice(sortItems = ${sortItems.mkString(", ")})
        #${in.pretty(depth + 1)}""".stripMargin('#')
+
+  override def clone(newIn: LogicalOperator): LogicalOperator = copy(in = newIn)(solved)
 }
 
 final case class Skip(expr: Expr, in: LogicalOperator)
@@ -212,6 +205,8 @@ final case class Skip(expr: Expr, in: LogicalOperator)
   override def pretty(depth: Int): String =
     s"""${prefix(depth)} Skip(expr = $expr})
        #${in.pretty(depth + 1)}""".stripMargin('#')
+
+  override def clone(newIn: LogicalOperator): LogicalOperator = copy(in = newIn)(solved)
 }
 
 final case class Limit(expr: Expr, in: LogicalOperator)
@@ -219,6 +214,17 @@ final case class Limit(expr: Expr, in: LogicalOperator)
   override def pretty(depth: Int): String =
     s"""${prefix(depth)} Limit(expr = $expr})
        #${in.pretty(depth + 1)}""".stripMargin('#')
+
+  override def clone(newIn: LogicalOperator): LogicalOperator = copy(in = newIn)(solved)
+}
+
+final case class Start(outGraph: NamedLogicalGraph, source: GraphSource, fields: Set[Var])
+                      (override val solved: SolvedQueryModel[Expr]) extends LogicalLeafOperator {
+  override val inGraph = EmptyGraph
+
+  override def pretty(depth: Int): String = s"${prefix(depth)} Start()"
+
+  override def clone(): Start = copy()(solved)
 }
 
 sealed trait GraphSource
