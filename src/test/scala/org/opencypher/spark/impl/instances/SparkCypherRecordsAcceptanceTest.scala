@@ -187,14 +187,12 @@ class SparkCypherRecordsAcceptanceTest extends BaseTestSuite with SparkTestSessi
 
   implicit class RichRecords(records: SparkCypherRecords) {
     def shouldHaveSize(size: Int) = {
-      import org.opencypher.spark_legacy.impl.util._
-
       val tuples = records.data.collect().toSeq.map { r =>
         val cells = records.header.slots.map { s =>
           r.get(s.index)
         }
 
-        cells.asProduct
+        asProduct(cells)
       }
 
       tuples.size shouldBe size
@@ -206,6 +204,20 @@ class SparkCypherRecordsAcceptanceTest extends BaseTestSuite with SparkTestSessi
 
         def andContain(contents: Any): Unit = andContain(Tuple1(contents))
       }
+    }
+
+    def asProduct(elts: IndexedSeq[Any]): Product = elts.length match {
+      case 0 => throw new IllegalArgumentException("Can't turn empty sequence into a tuple")
+      case 1 => Tuple1(elts(0))
+      case 2 => Tuple2(elts(0), elts(1))
+      case 3 => Tuple3(elts(0), elts(1), elts(2))
+      case 4 => Tuple4(elts(0), elts(1), elts(2), elts(3))
+      case 5 => Tuple5(elts(0), elts(1), elts(2), elts(3), elts(4))
+      case 6 => Tuple6(elts(0), elts(1), elts(2), elts(3), elts(4), elts(5))
+      case 7 => Tuple7(elts(0), elts(1), elts(2), elts(3), elts(4), elts(5), elts(6))
+      case 8 => Tuple8(elts(0), elts(1), elts(2), elts(3), elts(4), elts(5), elts(6), elts(7))
+      case 9 => Tuple9(elts(0), elts(1), elts(2), elts(3), elts(4), elts(5), elts(6), elts(7), elts(8))
+      case _ => throw new UnsupportedOperationException("Implement support for larger products")
     }
   }
 
