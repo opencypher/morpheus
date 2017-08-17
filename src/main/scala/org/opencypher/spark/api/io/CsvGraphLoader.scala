@@ -47,9 +47,8 @@ class CsvGraphLoader(location: String)(implicit graphSpace: SparkGraphSpace, sc:
 
       val records = SparkCypherRecords.create(
         sc.read
-          .option("timestampFormat", "yyyy-MM-dd'T'HH:mm:ss.SSS")
-          .schema(schema.toStructType)
-          .csv(e.toUri.toString)
+        .schema(schema.toStructType)
+        .csv(e.toUri.toString)
       )
 
       NodeScan.on("n" -> schema.idField.name)(builder => {
@@ -73,7 +72,6 @@ class CsvGraphLoader(location: String)(implicit graphSpace: SparkGraphSpace, sc:
 
       val records = SparkCypherRecords.create(
         sc.read
-          .option("timestampFormat", "yyyy-MM-dd'T'HH:mm:ss.SSS")
           .schema(schema.toStructType)
           .csv(e.toUri.toString)
       )
