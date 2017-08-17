@@ -1,4 +1,4 @@
-package org.opencypher.spark
+package org.opencypher.spark.demo
 
 import java.util.Calendar
 
@@ -10,8 +10,7 @@ import org.opencypher.spark.api.ir.global.TokenRegistry
 import org.opencypher.spark.api.spark.{SparkCypherGraph, SparkCypherResult, SparkGraphSpace}
 import org.opencypher.spark.impl.instances.spark.cypher._
 import org.opencypher.spark.impl.syntax.cypher._
-import org.opencypher.spark_legacy.CypherKryoRegistrar
-import org.opencypher.spark_legacy.benchmark.Configuration.{Logging, MasterAddress}
+import Configuration.{Logging, MasterAddress}
 
 object CSVDemo {
 

@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.spark
+package org.opencypher.spark.demo
 
 import ammonite.util.Bind._
 import ammonite.util.Util
-import org.opencypher.spark_legacy.benchmark.RunBenchmark
+import org.opencypher.spark.CypherForApacheSpark
 
 object Shell {
 
   def main(args: Array[String]): Unit = {
-    implicit val session = RunBenchmark.sparkSession
+    implicit val session = CSVDemo.session
     try {
       val welcomeBanner = {
         val ownVersion = CypherForApacheSpark.version.getOrElse("<unknown>")
@@ -52,11 +52,6 @@ object Shell {
       }
       val frontend = if (System.getProperty("os.name").startsWith("Windows")) "JLineWindows" else "JLineUnix"
 
-//      import org.opencypher.spark
-//      import org.opencypher.spark._
-//      import org.opencypher.spark.api._
-//      import org.opencypher.spark.api.implicits._
-//      import org.opencypher.spark.api.types._
       val repl = new ammonite.Main(
         welcomeBanner = Some(welcomeBanner),
         predef =

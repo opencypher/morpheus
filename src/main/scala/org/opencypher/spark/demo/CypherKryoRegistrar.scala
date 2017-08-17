@@ -13,13 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.spark_legacy
+package org.opencypher.spark.demo
 
 import com.esotericsoftware.kryo.Kryo
 import org.apache.spark.serializer.{KryoRegistrator => SparkKryoRegistrar}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
-import org.opencypher.spark_legacy.benchmark.{AccessControlNode, AccessControlRelationship}
 import org.opencypher.spark.api.schema.{ImpliedLabels, LabelCombinations, PropertyKeyMap, Schema}
 import org.opencypher.spark.api.value._
 
@@ -27,7 +26,7 @@ import scala.collection.PrivateCollectionClasses
 import scala.collection.immutable.TreeMap
 import scala.language.existentials
 
-  class CypherKryoRegistrar extends SparkKryoRegistrar {
+class CypherKryoRegistrar extends SparkKryoRegistrar {
 
     private val registeredClasses = Seq(
       classOf[CypherValue],
@@ -69,11 +68,7 @@ import scala.language.existentials
 
       classOf[Array[java.lang.Object]],
       classOf[Array[InternalRow]],
-      classOf[UnsafeRow],
-      classOf[AccessControlNode],
-      classOf[AccessControlRelationship],
-      classOf[Array[AccessControlNode]],
-      classOf[Array[AccessControlRelationship]]
+      classOf[UnsafeRow]
     )
 
     override def registerClasses(kryo: Kryo): Unit = {

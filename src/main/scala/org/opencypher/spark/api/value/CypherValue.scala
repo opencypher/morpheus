@@ -18,11 +18,10 @@ package org.opencypher.spark.api.value
 import org.apache.spark.sql.Encoder
 import org.apache.spark.sql.Encoders._
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
-import org.opencypher.spark_legacy.api._
-import org.opencypher.spark_legacy.impl.verify.Verification
 import org.opencypher.spark.api.types.CypherType._
 import org.opencypher.spark.api.types.CypherType.OrderGroups._
 import org.opencypher.spark.api.types._
+import org.opencypher.spark.impl.exception.Raise
 
 import scala.collection.TraversableOnce
 import scala.language.implicitConversions
@@ -119,9 +118,7 @@ sealed trait CypherValueCompanion[V <: CypherValue] extends Equiv[V] {
 
 // *** ANY
 
-case object CypherValue extends CypherValueCompanion[CypherValue] with Verification {
-
-  import org.opencypher.spark_legacy.impl.error.StdErrorInfo.Implicits._
+case object CypherValue extends CypherValueCompanion[CypherValue] {
 
   import scala.collection.JavaConverters._
 
@@ -239,7 +236,7 @@ case object CypherValue extends CypherValueCompanion[CypherValue] with Verificat
         case (a: CypherMap, b: CypherMap)                    => CypherMap.computeOrderability(a, b)
         case (a: CypherPath, b: CypherPath)                  => CypherPath.computeOrderability(a, b)
         case _ =>
-          supposedlyImpossible("Call to computeOrderability with values of different types")
+          Raise.impossible("Call to computeOrderability with values of different types")
       }
     else
       cmp
@@ -253,7 +250,7 @@ case object CypherValue extends CypherValueCompanion[CypherValue] with Verificat
     case (a: CypherMap, b: CypherMap) => CypherMap.computeComparability(a, b)
     case (a: CypherPath, b: CypherPath) => CypherPath.computeComparability(a, b)
     case _ =>
-      supposedlyImpossible("Call to computeComparability with values of different types")
+      Raise.impossible("Call to computeComparability with values of different types")
   }
 }
 
