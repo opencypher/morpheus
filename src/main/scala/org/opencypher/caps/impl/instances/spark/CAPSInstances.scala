@@ -18,6 +18,6 @@ package org.opencypher.caps.impl.instances.spark
 import org.opencypher.caps.impl.spark.CAPSEngine
 
 trait CAPSInstances {
-  implicit val sparkCypherEngineInstance = new CAPSEngine
+  implicit val capsEngineInstance = new CAPSEngine
 }
 

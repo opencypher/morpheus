@@ -32,7 +32,7 @@ trait SparkGraphSpace extends GraphSpace {
   var tokens: CAPSRecordsTokens
 
   def session: SparkSession
-  val engine = org.opencypher.caps.impl.instances.spark.cypher.sparkCypherEngineInstance
+  val engine = org.opencypher.caps.impl.instances.spark.cypher.capsEngineInstance
 }
 
 object SparkGraphSpace extends SparkGraphLoading with Serializable {
