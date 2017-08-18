@@ -157,7 +157,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
             Raise.notYetImplemented(s"Aggregator $x")
         }
 
-        SparkCypherRecords.create(header, newData)(records.space)
+        CAPSRecords.create(header, newData)(records.space)
       }
 
     def select(fields: IndexedSeq[Var], header: RecordHeader): PhysicalResult =

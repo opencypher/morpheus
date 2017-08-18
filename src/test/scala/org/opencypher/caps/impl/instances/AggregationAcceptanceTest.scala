@@ -15,12 +15,12 @@
  */
 package org.opencypher.caps.impl.instances
 
-import org.opencypher.caps.SparkCypherTestSuite
+import org.opencypher.caps.CAPSTestSuite
 import org.opencypher.caps.api.value.CypherMap
 
 import scala.collection.immutable.Bag
 
-class AggregationAcceptanceTest extends SparkCypherTestSuite {
+class AggregationAcceptanceTest extends CAPSTestSuite {
 
   test("simple count(*)") {
     val graph = TestGraph("({name: 'foo'}), ({name: 'bar'}), (), (), (), ({name: 'baz'})")
