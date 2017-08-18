@@ -1,5 +1,5 @@
-import org.opencypher.spark.api.ir.Field
-import org.opencypher.spark.api.record.RecordHeader
+import org.opencypher.caps.api.ir.Field
+import org.opencypher.caps.api.record.RecordHeader
 
 
 /*
