@@ -18,7 +18,7 @@ object CSVDemo {
   conf.set("spark.serializer", classOf[KryoSerializer].getCanonicalName)
   conf.set("spark.kryo.registrator", classOf[CypherKryoRegistrar].getCanonicalName)
 
-  implicit val session = SparkSession.builder()
+  implicit lazy val session = SparkSession.builder()
     .config(conf)
     .master(MasterAddress.get())
     .appName(s"cypher-for-apache-spark-benchmark-${Calendar.getInstance().getTime}")
