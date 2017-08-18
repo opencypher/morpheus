@@ -73,8 +73,9 @@ final case class Project(expr: Expr, in: FlatOperator, header: RecordHeader) ext
 final case class Alias(expr: Expr, alias: Var, in: FlatOperator, header: RecordHeader)
   extends StackingFlatOperator
 
-final case class Optional(lhs: FlatOperator, rhs: FlatOperator,
-                          lhsHeader: RecordHeader, rhsHeader: RecordHeader) extends BinaryFlatOperator {
+final case class Optional(lhs: FlatOperator, rhs: FlatOperator, lhsHeader: RecordHeader, rhsHeader: RecordHeader)
+  extends BinaryFlatOperator {
+
   override def header: RecordHeader = rhsHeader
 }
 

@@ -43,8 +43,8 @@ class LogicalOperatorProducer {
     ExpandTarget(source, rel, target, sourcePlan, targetPlan)(solved)
   }
 
-  def planSourceExpand(source: Field, rel: Field, types: EveryRelationship, target: Field, sourcePlan: LogicalOperator,
-                       targetPlan: LogicalOperator): ExpandSource = {
+  def planSourceExpand(source: Field, rel: Field, types: EveryRelationship, target: Field,
+                       sourcePlan: LogicalOperator, targetPlan: LogicalOperator): ExpandSource = {
 
     val prevSolved = sourcePlan.solved ++ targetPlan.solved
 

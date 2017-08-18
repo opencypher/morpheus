@@ -156,4 +156,56 @@ class OptionalMatchAcceptanceTest extends SparkCypherTestSuite {
     ))
     result.graph shouldMatch given.graph
   }
+
+  test("optional match with duplicates and cycle") {
+    // Given
+    val given = TestGraph(
+      """
+        |(p1:Person {name: "Alice"}),
+        |(p2:Person {name: "Bob"}),
+        |(p3:Person {name: "Eve"}),
+        |(p4:Person {name: "Paul"}),
+        |(p1)-[:KNOWS]->(p3),
+        |(p2)-[:KNOWS]->(p3),
+        |(p3)-[:KNOWS]->(p4),
+        |(p4)-[:KNOWS {foo: 42L}]->(p1)
+      """.stripMargin)
+
+    // When
+    val result = given.cypher(
+      """
+        |MATCH (a:Person)-[e1:KNOWS]->(b:Person)-[e2:KNOWS]->(c:Person)
+        |OPTIONAL MATCH (c)-[e3:KNOWS]->(a)
+        |RETURN a.name, b.name, c.name, e3.foo
+      """.stripMargin)
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap(
+        "a.name" -> "Alice",
+        "b.name" -> "Eve",
+        "c.name" -> "Paul",
+        "e3.foo" -> 42
+      ),
+      CypherMap(
+        "a.name" -> "Eve",
+        "b.name" -> "Paul",
+        "c.name" -> "Alice",
+        "e3.foo" -> null
+      ),
+      CypherMap(
+        "a.name" -> "Paul",
+        "b.name" -> "Alice",
+        "c.name" -> "Eve",
+        "e3.foo" -> null
+      ),
+      CypherMap(
+        "a.name" -> "Bob",
+        "b.name" -> "Eve",
+        "c.name" -> "Paul",
+        "e3.foo" -> null
+      )
+    ))
+    result.graph shouldMatch given.graph
+  }
 }

@@ -191,10 +191,10 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
       prev.mapRecordsWithDetails { subject =>
         // TODO: filter call manipulates the generated ids => check this with newer spark versions
-        //        val tmpColName = "__SKIPPY_MC_SKIPFACE"
-        //        val tmpDf = subject.details.toDF().withColumn(tmpColName, monotonically_increasing_id())
-        //        val tmpCol = tmpDf.col(tmpColName)
-        //        val newDf = tmpDf.filter(tmpCol >= skip)
+        // val tmpColName = "__SKIPPY_MC_SKIPFACE"
+        // val tmpDf = subject.details.toDF().withColumn(tmpColName, monotonically_increasing_id())
+        // val tmpCol = tmpDf.col(tmpColName)
+        // val newDf = tmpDf.filter(tmpCol >= skip)
 
         val newDf = subject.space.session.createDataFrame(
           subject.details.toDF().rdd.zipWithIndex().filter((pair) => pair._2 >= skip).map(_._1),
@@ -330,7 +330,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
         val joinedData = lhsData.join(rhsData, joinExpr, joinType)
 
-        val returnData = if(deduplicate) {
+        val returnData = if (deduplicate) {
           val colsToDrop = joinCols.map(col => col._2)
           colsToDrop.foldLeft(joinedData)((acc, col) => acc.drop(col))
         } else joinedData

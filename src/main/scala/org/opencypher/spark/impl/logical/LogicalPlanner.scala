@@ -83,15 +83,11 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
   def planNonLeaf(ref: BlockRef, model: QueryModel[Expr], plan: LogicalOperator)(implicit context: LogicalPlannerContext): LogicalOperator = {
     model(ref) match {
-      case MatchBlock(_, pattern, where, false, graph) =>
+      case MatchBlock(_, pattern, where, optional, graph) =>
         // this plans both pattern and filter for convenience -- TODO: split up
         val patternPlan = planPattern(plan, pattern)
-        planFilter(patternPlan, where)
-
-      case MatchBlock(_, pattern, where, true, graph)  =>
-        val patternPlan = planPattern(plan, pattern)
         val filterPlan = planFilter(patternPlan, where)
-        producer.planOptional(plan, filterPlan)
+        if (optional) producer.planOptional(plan, filterPlan) else filterPlan
 
       case ProjectBlock(_, ProjectedFields(exprs), where, graph) =>
         val projPlan = planProjections(plan, exprs)
@@ -189,7 +185,6 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       case Not(e) => planInnerExpr(e, in)
       case IsNull(e) => planInnerExpr(e, in)
       case IsNotNull(e) => planInnerExpr(e, in)
-      case null => in
       case x =>
         Raise.notYetImplemented(s"projection of inner expression $x")
     }
