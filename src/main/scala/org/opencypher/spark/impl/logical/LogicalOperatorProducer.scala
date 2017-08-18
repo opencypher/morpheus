@@ -17,11 +17,13 @@ package org.opencypher.spark.impl.logical
 
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.block.SortItem
+import org.opencypher.spark.api.ir.block.AggField
 import org.opencypher.spark.api.ir.pattern.{EveryNode, EveryRelationship}
 import org.opencypher.spark.api.ir.{Field, SolvedQueryModel}
 import org.opencypher.spark.api.record.{ProjectedExpr, ProjectedField}
 import org.opencypher.spark.api.schema.Schema
 import org.opencypher.spark.api.types._
+import org.opencypher.spark.impl.exception.Raise
 import org.opencypher.spark.impl.util._
 
 class LogicalOperatorProducer {
@@ -77,6 +79,16 @@ class LogicalOperatorProducer {
 
   def planOptional(nonOptionalPlan: LogicalOperator, optionalPlan: LogicalOperator): Optional = {
     Optional(nonOptionalPlan, optionalPlan)(optionalPlan.solved)
+  }
+
+  def aggregate(field: AggField[Expr], group: Set[Field], prev: LogicalOperator): Aggregate = {
+    field.aggregator match {
+      case agg: Aggregator =>
+        Aggregate(field.field, agg, group.map(toVar), prev)(prev.solved.withField(field.field))
+
+      case x =>
+        Raise.impossible(s"aggregating using $x")
+    }
   }
 
   def projectField(field: Field, expr: Expr, prev: LogicalOperator): Project = {

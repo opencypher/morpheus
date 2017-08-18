@@ -106,6 +106,11 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
           case None => skipOp
         }
 
+      case AggregationBlock(_, af@AggField(_, agg: Aggregator), group) =>
+        // plan projection of aggregation argument
+        val prev = agg.inner.map(e => planInnerExpr(e, plan)).getOrElse(plan)
+        producer.aggregate(af, group, prev)
+
       case x =>
         Raise.notYetImplemented(s"logical planning of $x")
     }
@@ -113,17 +118,22 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
   private def planProjections(in: LogicalOperator, exprs: Map[Field, Expr])(implicit context: LogicalPlannerContext) = {
     exprs.foldLeft(in) {
-      case (acc, (f, p: Property)) => producer.projectField(f, p, acc)
-      case (acc, (f, func: FunctionExpr)) => producer.projectField(f, func, acc)
+      case (acc, (f, p: Property)) =>
+        producer.projectField(f, p, acc)
+      case (acc, (f, func: FunctionExpr)) =>
+        producer.projectField(f, func, acc)
         // this is for aliasing
-      case (acc, (f, v: Var)) if f.name != v.name => producer.projectField(f, v, acc)
-      case (acc, (_, _: Var)) => acc
+      case (acc, (f, v: Var)) if f.name != v.name =>
+        producer.projectField(f, v, acc)
+      case (acc, (_, _: Var)) =>
+        acc
       case (acc, (f, be: BinaryExpr)) =>
         val projectLhs = planInnerExpr(be.lhs, acc)
         val projectRhs = planInnerExpr(be.rhs, projectLhs)
         producer.projectField(f, be, projectRhs)
-      case (acc, (f, c: Const)) => producer.projectField(f, c, acc)
-      case (_, x) =>
+      case (acc, (f, c: Const)) =>
+        producer.projectField(f, c, acc)
+      case (_, (_, x)) =>
         Raise.notYetImplemented(s"projection of $x")
     }
   }

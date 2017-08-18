@@ -226,6 +226,22 @@ final case class Labels(expr: Expr)(val cypherType: CypherType = CTWildcard) ext
 final case class Type(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr {  override val name = "type"
 }
 
+// Aggregators
+sealed trait Aggregator extends Expr {
+  def inner: Option[Expr]
+}
+
+final case class CountStar()(val cypherType: CypherType = CTWildcard) extends Aggregator {
+  override val inner = None
+  override def toString = "count(*)"
+}
+
+final case class Count(expr: Expr)(val cypherType: CypherType = CTWildcard) extends Aggregator {
+  override val inner = Some(expr)
+  override def toString = s"count($expr)"
+  override def withoutType: String = s"count(${expr.withoutType})"
+}
+
 // Literal expressions
 
 sealed trait Lit[T] extends Expr {

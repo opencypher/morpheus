@@ -99,8 +99,10 @@ final class ExpressionConverter(val globals: GlobalsRegistry) extends AnyVal {
       Divide(convert(lhs), convert(rhs))(typings(e))
 
     // Functions
-    case funcInv:ast.FunctionInvocation =>
+    case funcInv: ast.FunctionInvocation =>
       funcInv.toCAPSFunction(funcInv.args.map(convert), typings(e))
+    case _: ast.CountStar =>
+      CountStar()(typings(e))
 
     case _ =>
       throw new NotImplementedError(s"Not yet able to convert expression: $e")

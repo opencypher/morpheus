@@ -35,6 +35,14 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
 
   val typer = SchemaTyper(schema)
 
+  test("typing count()") {
+    implicit val context = typeTracker("a" -> CTNode)
+
+    assertExpr.from("count(*)") shouldHaveInferredType CTInteger
+    assertExpr.from("count(a)") shouldHaveInferredType CTInteger
+    assertExpr.from("count(a.name)") shouldHaveInferredType CTInteger
+  }
+
   test("typing property of node without label") {
     implicit val context = typeTracker("a" -> CTNode)
 
