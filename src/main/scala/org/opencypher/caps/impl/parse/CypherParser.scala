@@ -44,7 +44,7 @@ trait CypherParser extends CompilationStage[String, Statement, BaseContext] {
       SemanticAnalysis(warn = false) andThen
       Namespacer andThen
       CNFNormalizer andThen
-      LateAstRewriting andThen sparkCypherRewriting
+      LateAstRewriting andThen CAPSRewriting
 
 }
 

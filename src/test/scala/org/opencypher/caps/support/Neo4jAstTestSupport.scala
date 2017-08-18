@@ -21,7 +21,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.{CNFNormalizer, Nam
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.phases._
 import org.opencypher.caps.BaseTestSuite
-import org.opencypher.caps.impl.parse.{CypherParser, sparkCypherRewriting}
+import org.opencypher.caps.impl.parse.{CypherParser, CAPSRewriting}
 
 import scala.language.implicitConversions
 
@@ -55,7 +55,7 @@ object Neo4jAstTestSupport {
         Namespacer andThen
         CNFNormalizer andThen
         LateAstRewriting andThen
-        sparkCypherRewriting
+        CAPSRewriting
 
     object NonThrowingSemanticAnalysis extends SemanticAnalysis(true) {
       override def process(from: BaseState, context: BaseContext): BaseState = {

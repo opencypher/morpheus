@@ -18,7 +18,7 @@ package org.opencypher.caps.impl.physical
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.ir.block.SortItem
 import org.opencypher.caps.api.ir.global._
-import org.opencypher.caps.api.spark.{SparkCypherGraph, SparkCypherRecords}
+import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.api.types.CTRelationship
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.exception.Raise
@@ -27,11 +27,11 @@ import org.opencypher.caps.impl.logical.DefaultGraphSource
 import org.opencypher.caps.impl.{DirectCompilationStage, flat}
 
 case class PhysicalPlannerContext(
-  defaultGraph: SparkCypherGraph,
-  inputRecords: SparkCypherRecords,
-  tokens: TokenRegistry,
-  constants: ConstantRegistry,
-  parameters: Map[ConstantRef, CypherValue]) {
+                                   defaultGraph: CAPSGraph,
+                                   inputRecords: CAPSRecords,
+                                   tokens: TokenRegistry,
+                                   constants: ConstantRegistry,
+                                   parameters: Map[ConstantRef, CypherValue]) {
 
   val space = defaultGraph.space
   val session = space.session

@@ -16,14 +16,14 @@
 package org.opencypher.caps
 
 import org.junit.runner.RunWith
-import org.opencypher.caps.impl.instances.spark.SparkCypherInstances
+import org.opencypher.caps.impl.instances.spark.CAPSInstances
 import org.opencypher.caps.support.{GraphMatchingTestSupport, RecordMatchingTestSupport}
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-abstract class SparkCypherTestSuite
+abstract class CAPSTestSuite
   extends BaseTestSuite
     with SparkTestSession.Fixture
     with GraphMatchingTestSupport
-    with SparkCypherInstances
+    with CAPSInstances
     with RecordMatchingTestSupport

@@ -16,19 +16,19 @@
 package org.opencypher.caps.api.spark
 
 import org.apache.spark.sql.Row
-import org.opencypher.caps.api.exception.SparkCypherException
+import org.opencypher.caps.api.exception.CAPSException
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.ir.global.{Label, PropertyKey, TokenRegistry}
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTRelationship, CTString, _}
 import org.opencypher.caps.{BaseTestSuite, SparkTestSession}
 
-class SparkCypherRecordsTest extends BaseTestSuite with SparkTestSession.Fixture {
+class CAPSRecordsTest extends BaseTestSuite with SparkTestSession.Fixture {
 
   implicit val space = SparkGraphSpace.empty(session, TokenRegistry.empty)
 
   test("contract and scan nodes") {
-    val given = SparkCypherRecords.create(session.createDataFrame(Seq(
+    val given = CAPSRecords.create(session.createDataFrame(Seq(
       (1, true, "Mats"),
       (2, false, "Martin"),
       (3, false, "Max"),
@@ -58,7 +58,7 @@ class SparkCypherRecordsTest extends BaseTestSuite with SparkTestSession.Fixture
 
   test("contract relationships with a fixed type") {
 
-    val given = SparkCypherRecords.create(session.createDataFrame(Seq(
+    val given = CAPSRecords.create(session.createDataFrame(Seq(
       (10, 1, 2, "red"),
       (11, 2, 3, "blue"),
       (12, 3, 4, "green"),
@@ -86,7 +86,7 @@ class SparkCypherRecordsTest extends BaseTestSuite with SparkTestSession.Fixture
 
   test("contract relationships with a dynamic type") {
     // TODO: Reject records using unknown tokes
-    val given = SparkCypherRecords.create(session.createDataFrame(Seq(
+    val given = CAPSRecords.create(session.createDataFrame(Seq(
       (10, 1, 2, 50),
       (11, 2, 3, 51),
       (12, 3, 4, 52),
@@ -117,8 +117,8 @@ class SparkCypherRecordsTest extends BaseTestSuite with SparkTestSession.Fixture
     val data = session.createDataFrame(Seq((1, "foo"), (2, "bar"))).toDF("int", "string")
     val header = RecordHeader.from(OpaqueField(Var("int")()), OpaqueField(Var("notString")()))
 
-    a [SparkCypherException] shouldBe thrownBy {
-      SparkCypherRecords.create(header, data)
+    a [CAPSException] shouldBe thrownBy {
+      CAPSRecords.create(header, data)
     }
   }
 
@@ -126,7 +126,7 @@ class SparkCypherRecordsTest extends BaseTestSuite with SparkTestSession.Fixture
     val data = session.createDataFrame(Seq((1, "foo"), (2, "bar"))).toDF("int", "string")
     val header = RecordHeader.from(OpaqueField(Var("int")(CTInteger)), OpaqueField(Var("string")(CTString)))
 
-    val records = SparkCypherRecords.create(header, data) // no exception is thrown
+    val records = CAPSRecords.create(header, data) // no exception is thrown
     records.data.select("int").collect() should equal(Array(Row(1), Row(2)))
   }
 }

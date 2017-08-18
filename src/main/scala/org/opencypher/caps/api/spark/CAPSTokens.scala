@@ -16,14 +16,14 @@
 package org.opencypher.caps.api.spark
 
 import org.opencypher.caps.api.ir.global._
-import org.opencypher.caps.impl.record.SparkCypherRecordsTokens
+import org.opencypher.caps.impl.record.CAPSRecordsTokens
 
 // Lightweight wrapper around token registry to expose a simple lookup api for all tokens that may occur in a data frame
-trait SparkCypherTokens {
+trait CAPSTokens {
 
   self: Serializable =>
 
-  type Tokens <: SparkCypherTokens
+  type Tokens <: CAPSTokens
 
   def labels: Set[String]
   def relTypes: Set[String]
@@ -39,6 +39,6 @@ trait SparkCypherTokens {
 }
 
 
-object SparkCypherTokens {
-  val empty = SparkCypherRecordsTokens(TokenRegistry.empty)
+object CAPSTokens {
+  val empty = CAPSRecordsTokens(TokenRegistry.empty)
 }

@@ -15,13 +15,13 @@
  */
 package org.opencypher.caps.impl.instances
 
-import org.opencypher.caps.SparkCypherTestSuite
+import org.opencypher.caps.CAPSTestSuite
 import org.opencypher.caps.api.types.CTInteger
 import org.opencypher.caps.api.value._
 
 import scala.collection.Bag
 
-class BoundedVarExpandAcceptanceTest extends SparkCypherTestSuite {
+class BoundedVarExpandAcceptanceTest extends CAPSTestSuite {
 
   test("bounded to single relationship") {
 

@@ -10,11 +10,11 @@ object RecordsPrinter {
     * Prints the given SparkCypherRecords to stdout
     * @param records the records to be printed.
     */
-  def print(records: SparkCypherRecords): Unit = {
+  def print(records: CAPSRecords): Unit = {
     print(records, Console.out)
   }
 
-  def print(records: SparkCypherRecords, stream: PrintStream): Unit = {
+  def print(records: CAPSRecords, stream: PrintStream): Unit = {
     val fieldContents = records.header.slots.sortBy(_.index).map(_.content)
     val lineWidth = 20 * fieldContents.size + 5
     val --- = "+" + repeat("-", lineWidth) + "+"

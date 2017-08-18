@@ -21,7 +21,7 @@ import org.opencypher.caps.api.record.{OpaqueField, RecordHeader, RecordSlot}
 import org.opencypher.caps.impl.convert.{fromSparkType, toSparkType}
 import org.opencypher.caps.impl.spark.SparkColumnName
 
-object SparkCypherRecordHeader {
+object CAPSRecordHeader {
 
   def fromSparkStructType(structType: StructType): RecordHeader = RecordHeader.from(structType.fields.map {
     field =>

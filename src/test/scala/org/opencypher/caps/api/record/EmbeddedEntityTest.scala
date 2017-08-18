@@ -16,7 +16,7 @@
 package org.opencypher.caps.api.record
 
 import org.opencypher.caps.BaseTestSuite
-import org.opencypher.caps.api.exception.SparkCypherException
+import org.opencypher.caps.api.exception.CAPSException
 
 class EmbeddedEntityTest extends BaseTestSuite {
 
@@ -99,6 +99,6 @@ class EmbeddedEntityTest extends BaseTestSuite {
   }
 
   private def raisesSlotReUse[T](f: => T): Unit = {
-    an[SparkCypherException] should be thrownBy f
+    an[CAPSException] should be thrownBy f
   }
 }

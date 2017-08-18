@@ -16,11 +16,11 @@
 package org.opencypher.caps.impl.record
 
 import org.opencypher.caps.api.ir.global._
-import org.opencypher.caps.api.spark.SparkCypherTokens
+import org.opencypher.caps.api.spark.CAPSTokens
 
-final case class SparkCypherRecordsTokens(registry: TokenRegistry) extends SparkCypherTokens {
+final case class CAPSRecordsTokens(registry: TokenRegistry) extends CAPSTokens {
 
-  override type Tokens = SparkCypherRecordsTokens
+  override type Tokens = CAPSRecordsTokens
 
   override def labels: Set[String] = registry.labels.elts.map(_.name).toSet
   override def relTypes: Set[String] = registry.relTypes.elts.map(_.name).toSet

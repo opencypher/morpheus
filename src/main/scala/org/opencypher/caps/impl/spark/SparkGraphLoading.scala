@@ -24,11 +24,11 @@ import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.ir.global.{GlobalsRegistry, PropertyKey, TokenRegistry}
 import org.opencypher.caps.api.record.{OpaqueField, ProjectedExpr, RecordHeader, SlotContent}
 import org.opencypher.caps.api.schema.{Schema, VerifiedSchema}
-import org.opencypher.caps.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkGraphSpace}
+import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, SparkGraphSpace}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.convert.{fromJavaType, toSparkType}
-import org.opencypher.caps.impl.record.SparkCypherRecordsTokens
+import org.opencypher.caps.impl.record.CAPSRecordsTokens
 import org.opencypher.caps.impl.syntax.header._
 
 trait SparkGraphLoading {
@@ -139,14 +139,14 @@ trait SparkGraphLoading {
     new SparkGraphSpace with Serializable {
       selfSpace =>
 
-      override def base = new SparkCypherGraph with Serializable {
+      override def base = new CAPSGraph with Serializable {
         selfBase =>
 
         override def nodes(name: String, cypherType: CTNode) =
-          SparkCypherRecords.create(nodeHeader(name, cypherType), nodeFrame(name, cypherType))(selfSpace)
+          CAPSRecords.create(nodeHeader(name, cypherType), nodeFrame(name, cypherType))(selfSpace)
 
         override def relationships(name: String, cypherType: CTRelationship) =
-          SparkCypherRecords.create(relHeader(name, cypherType), relFrame(name, cypherType))(selfSpace)
+          CAPSRecords.create(relHeader(name, cypherType), relFrame(name, cypherType))(selfSpace)
 
         override def space: SparkGraphSpace = selfSpace
 
@@ -154,7 +154,7 @@ trait SparkGraphLoading {
       }
 
       override def session = sparkSession
-      override var tokens = SparkCypherRecordsTokens(context.globals.tokens)
+      override var tokens = CAPSRecordsTokens(context.globals.tokens)
     }
   }
 

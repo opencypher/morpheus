@@ -16,14 +16,14 @@
 package org.opencypher.caps.impl.load
 
 import org.apache.spark.sql.types._
-import org.opencypher.caps.SparkCypherTestSuite
+import org.opencypher.caps.CAPSTestSuite
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.spark.{SparkCypherGraph, SparkGraphSpace}
+import org.opencypher.caps.api.spark.{CAPSGraph, SparkGraphSpace}
 import org.opencypher.caps.api.types._
 
-class SparkGraphSpaceTest extends SparkCypherTestSuite {
+class SparkGraphSpaceTest extends CAPSTestSuite {
 
-  implicit class RichGraph(val graph: SparkCypherGraph) {
+  implicit class RichGraph(val graph: CAPSGraph) {
     def nodes() = graph.nodes("n")
     def rels() = graph.relationships("r")
   }

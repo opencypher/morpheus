@@ -23,7 +23,7 @@ import org.opencypher.caps.api.ir.block.{Asc, Desc, SortItem}
 import org.opencypher.caps.api.ir.global._
 import org.opencypher.caps.api.ir.pattern.{AnyGiven, EveryNode, EveryRelationship}
 import org.opencypher.caps.api.record._
-import org.opencypher.caps.api.spark.SparkCypherRecords
+import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTRelationship}
 import org.opencypher.caps.api.value.{CypherInteger, CypherValue}
 import org.opencypher.caps.impl.exception.Raise
@@ -87,7 +87,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
         val newData = filteredRows.select(selectedColumns: _*)
 
-        SparkCypherRecords.create(header, newData)(subject.space)
+        CAPSRecords.create(header, newData)(subject.space)
       }
     }
 
@@ -106,7 +106,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
           Raise.columnNotFound(oldColumnName)
         }
 
-        SparkCypherRecords.create(header, newData)(subject.space)
+        CAPSRecords.create(header, newData)(subject.space)
       }
 
     def project(expr: Expr, header: RecordHeader): PhysicalResult =
@@ -130,7 +130,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
             }
         }
 
-        SparkCypherRecords.create(header, newData)(subject.space)
+        CAPSRecords.create(header, newData)(subject.space)
       }
 
     def aggregate(to: Var, agg: Aggregator, group: Set[Var], header: RecordHeader): PhysicalResult =
@@ -178,7 +178,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
         val columns = groupedSlots.map { s => data.col(context.columnName(s)) }
         val newData = subject.data.select(columns: _*)
 
-        SparkCypherRecords.create(header, newData)(subject.space)
+        CAPSRecords.create(header, newData)(subject.space)
       }
 
     def typeFilter(rel: Var, types: AnyGiven[RelTypeRef], header: RecordHeader): PhysicalResult = {
@@ -201,7 +201,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
       prev.mapRecordsWithDetails { subject =>
         val sortedData = subject.details.toDF().sort(sortExpression: _*)
-        SparkCypherRecords.create(header, sortedData)(subject.space)
+        CAPSRecords.create(header, sortedData)(subject.space)
       }
     }
 
@@ -227,7 +227,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
           subject.details.toDF().rdd.zipWithIndex().filter((pair) => pair._2 >= skip).map(_._1),
           subject.details.toDF().schema
         )
-        SparkCypherRecords.create(header, newDf)(subject.space)
+        CAPSRecords.create(header, newDf)(subject.space)
       }
     }
 
@@ -238,7 +238,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
       }
 
       prev.mapRecordsWithDetails { subject =>
-        SparkCypherRecords.create(header, subject.details.toDF().limit(limit.toInt))(subject.space)
+        CAPSRecords.create(header, subject.details.toDF().limit(limit.toInt))(subject.space)
       }
     }
 
@@ -330,9 +330,9 @@ class PhysicalResultProducer(context: RuntimeContext) {
       prev.mapRecordsWithDetails(join(reducedRhsData, rhsHeader, joinCols: _*)("leftouter", deduplicate = true))
     }
 
-    private def join(rhs: SparkCypherRecords, header: RecordHeader, joinSlots: (RecordSlot, RecordSlot)*)
+    private def join(rhs: CAPSRecords, header: RecordHeader, joinSlots: (RecordSlot, RecordSlot)*)
                     (joinType: String = "inner", deduplicate: Boolean = false)
-                    : SparkCypherRecords => SparkCypherRecords = {
+                    : CAPSRecords => CAPSRecords = {
 
       val lhsData = prev.records.details.toDF()
       val rhsData = rhs.details.toDF()
@@ -345,10 +345,9 @@ class PhysicalResultProducer(context: RuntimeContext) {
     }
 
     private def join(rhsData: DataFrame, header: RecordHeader, joinCols: (Column, Column)*)
-                     (joinType: String, deduplicate: Boolean)
-                     : SparkCypherRecords => SparkCypherRecords = {
+                    (joinType: String, deduplicate: Boolean): CAPSRecords => CAPSRecords = {
 
-      def f(lhs: SparkCypherRecords) = {
+      def f(lhs: CAPSRecords) = {
         val lhsData = lhs.details.data
 
         val joinExpr = joinCols
@@ -362,7 +361,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
           colsToDrop.foldLeft(joinedData)((acc, col) => acc.drop(col))
         } else joinedData
 
-        SparkCypherRecords.create(header, returnData)(lhs.space)
+        CAPSRecords.create(header, returnData)(lhs.space)
       }
       f
     }
@@ -388,7 +387,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
         val initializedData = withEmptyList.select(cols: _*)
 
-        SparkCypherRecords.create(header, initializedData)(subject.space)
+        CAPSRecords.create(header, initializedData)(subject.space)
       }
     }
 
@@ -419,7 +418,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
           case (l, r) => l.union(r)
         }
 
-        SparkCypherRecords.create(lhs.header, union)(lhs.space)
+        CAPSRecords.create(lhs.header, union)(lhs.space)
       }
     }
 
@@ -431,7 +430,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
       val endNodeSlot =  prev.records.details.header.slotFor(endNode)
       val endNodeCol = context.columnName(endNodeSlot)
       joined.mapRecordsWithDetails(records =>
-        SparkCypherRecords.create(header, records.details.toDF().drop(endNodeCol))(records.space)
+        CAPSRecords.create(header, records.details.toDF().drop(endNodeCol))(records.space)
       )
     }
 

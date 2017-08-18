@@ -1,16 +1,16 @@
 package org.opencypher.caps.api.io
 
 import org.apache.spark.sql.Row
-import org.opencypher.caps.SparkCypherTestSuite
+import org.opencypher.caps.CAPSTestSuite
 import org.opencypher.caps.api.ir.global.TokenRegistry
-import org.opencypher.caps.api.spark.{SparkCypherGraph, SparkGraphSpace}
+import org.opencypher.caps.api.spark.{CAPSGraph, SparkGraphSpace}
 
-class CsvGraphLoaderAcceptanceTest extends SparkCypherTestSuite {
+class CsvGraphLoaderAcceptanceTest extends CAPSTestSuite {
   implicit val space = SparkGraphSpace.empty(session, TokenRegistry.empty)
 
   test("load csv graph") {
     val loader = new CsvGraphLoader(getClass.getResource("/csv_graph").toString)
-    val graph: SparkCypherGraph = loader.load
+    val graph: CAPSGraph = loader.load
     graph.nodes("n").details.toDF().collect().toSet should equal(Set(
       Row( 1, true,  true, false, true, "Stephan",   42),
       Row( 2, false, true,  true, true,    "Mats",   23),

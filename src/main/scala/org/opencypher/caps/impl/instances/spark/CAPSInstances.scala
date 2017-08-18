@@ -13,6 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.api.exception
+package org.opencypher.caps.impl.instances.spark
 
-sealed case class SparkCypherException(msg: String) extends RuntimeException(msg)
+import org.opencypher.caps.impl.spark.CAPSEngine
+
+trait CAPSInstances {
+  implicit val sparkCypherEngineInstance = new CAPSEngine
+}
+

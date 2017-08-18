@@ -20,21 +20,21 @@ import org.opencypher.caps.api.classes.Cypher
 import org.opencypher.caps.api.expr.{Expr, Var}
 import org.opencypher.caps.api.ir.Field
 import org.opencypher.caps.api.ir.global.{ConstantRef, ConstantRegistry, GlobalsRegistry, TokenRegistry}
-import org.opencypher.caps.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherResult, SparkGraphSpace}
+import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSResult, SparkGraphSpace}
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
 import org.opencypher.caps.impl.ir.global.GlobalsExtractor
 import org.opencypher.caps.impl.ir.{CypherQueryBuilder, IRBuilderContext}
 import org.opencypher.caps.impl.logical._
 import org.opencypher.caps.impl.parse.CypherParser
-import org.opencypher.caps.impl.physical.{PhysicalPlanner, PhysicalPlannerContext, SparkCypherResultBuilder}
+import org.opencypher.caps.impl.physical.{PhysicalPlanner, PhysicalPlannerContext, CAPSResultBuilder}
 
-final class SparkCypherEngine extends Cypher with Serializable {
+final class CAPSEngine extends Cypher with Serializable {
 
-  override type Graph = SparkCypherGraph
+  override type Graph = CAPSGraph
   override type Space = SparkGraphSpace
-  override type Records = SparkCypherRecords
-  override type Result = SparkCypherResult
+  override type Records = CAPSRecords
+  override type Result = CAPSResult
   override type Data = DataFrame
 
   private val producer = new LogicalOperatorProducer
@@ -70,7 +70,7 @@ final class SparkCypherEngine extends Cypher with Serializable {
     val optimizedLogicalPlan = logicalOptimizer(logicalPlan)(logicalPlannerContext)
     println("Done!")
 
-    plan(graph, SparkCypherRecords.empty()(graph.space), tokens, constants, allParameters, optimizedLogicalPlan)
+    plan(graph, CAPSRecords.empty()(graph.space), tokens, constants, allParameters, optimizedLogicalPlan)
   }
 
   def filter(graph: Graph, in: Records, expr: Expr, queryParameters: Map[String, CypherValue]): Records = {
@@ -98,10 +98,10 @@ final class SparkCypherEngine extends Cypher with Serializable {
     plan(graph, in, queryParameters, select).records
   }
 
-  private def plan(graph: SparkCypherGraph,
-                   records: SparkCypherRecords,
+  private def plan(graph: CAPSGraph,
+                   records: CAPSRecords,
                    queryParameters: Map[String, CypherValue],
-                   logicalPlan: LogicalOperator): SparkCypherResult = {
+                   logicalPlan: LogicalOperator): CAPSResult = {
 
     val globals = GlobalsRegistry(graph.space.tokens.registry)
     val allParameters = queryParameters.map { case (k, v) => globals.constants.constantRefByName(k) -> v }
@@ -109,12 +109,12 @@ final class SparkCypherEngine extends Cypher with Serializable {
     plan(graph, records, globals.tokens, globals.constants, allParameters, logicalPlan)
   }
 
-  private def plan(graph: SparkCypherGraph,
-                   records: SparkCypherRecords,
+  private def plan(graph: CAPSGraph,
+                   records: CAPSRecords,
                    tokens: TokenRegistry,
                    constants: ConstantRegistry,
                    allParameters: Map[ConstantRef, CypherValue],
-                   logicalPlan: LogicalOperator): SparkCypherResult = {
+                   logicalPlan: LogicalOperator): CAPSResult = {
     // TODO: Remove dependency on globals (?) Only needed to enforce everything is known, that could be done
     //       differently
     print("Flat plan ... ")
@@ -129,6 +129,6 @@ final class SparkCypherEngine extends Cypher with Serializable {
     val physicalResult = physicalPlanner(flatPlan)(physicalPlannerContext)
     println("Done!")
 
-    SparkCypherResultBuilder.from(physicalResult)
+    CAPSResultBuilder.from(physicalResult)
   }
 }

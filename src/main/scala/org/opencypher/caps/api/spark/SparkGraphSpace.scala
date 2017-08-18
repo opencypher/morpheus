@@ -18,18 +18,18 @@ package org.opencypher.caps.api.spark
 import org.apache.spark.sql.SparkSession
 import org.opencypher.caps.api.graph.GraphSpace
 import org.opencypher.caps.api.ir.global.TokenRegistry
-import org.opencypher.caps.impl.instances.spark.SparkCypherInstances
-import org.opencypher.caps.impl.record.SparkCypherRecordsTokens
-import org.opencypher.caps.impl.spark.{SparkCypherEngine, SparkGraphLoading}
+import org.opencypher.caps.impl.instances.spark.CAPSInstances
+import org.opencypher.caps.impl.record.CAPSRecordsTokens
+import org.opencypher.caps.impl.spark.{CAPSEngine, SparkGraphLoading}
 
 trait SparkGraphSpace extends GraphSpace {
 
   self =>
 
-  override type Engine = SparkCypherEngine
+  override type Engine = CAPSEngine
 
   // TODO: Remove
-  var tokens: SparkCypherRecordsTokens
+  var tokens: CAPSRecordsTokens
 
   def session: SparkSession
   val engine = org.opencypher.caps.impl.instances.spark.cypher.sparkCypherEngineInstance
@@ -38,7 +38,7 @@ trait SparkGraphSpace extends GraphSpace {
 object SparkGraphSpace extends SparkGraphLoading with Serializable {
   def empty(sparkSession: SparkSession, registry: TokenRegistry) = new SparkGraphSpace {
     override def session: SparkSession = sparkSession
-    override var tokens: SparkCypherRecordsTokens = SparkCypherRecordsTokens(registry)
-    override def base: SparkCypherGraph = SparkCypherGraph.empty(this)
+    override var tokens: CAPSRecordsTokens = CAPSRecordsTokens(registry)
+    override def base: CAPSGraph = CAPSGraph.empty(this)
   }
 }

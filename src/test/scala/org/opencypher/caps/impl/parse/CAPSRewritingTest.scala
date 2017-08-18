@@ -18,13 +18,13 @@ package org.opencypher.caps.impl.parse
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.opencypher.caps.BaseTestSuite
 
-class sparkCypherRewritingTest extends BaseTestSuite with AstConstructionTestSupport {
+class CAPSRewritingTest extends BaseTestSuite with AstConstructionTestSupport {
 
   test("extracts haslabels from ands") {
     val hasLabels = HasLabels(Variable("n") _, Seq(LabelName("name") _))(pos)
     val expr = Ands(Set(hasLabels))(pos)
 
-    val result = sparkCypherRewriting.instance(CypherParser.defaultContext)(expr)
+    val result = CAPSRewriting.instance(CypherParser.defaultContext)(expr)
 
     result should equal(RetypingPredicate(Set(hasLabels), True()(pos))(pos))
   }
@@ -33,7 +33,7 @@ class sparkCypherRewritingTest extends BaseTestSuite with AstConstructionTestSup
     val hasLabels = HasLabels(Variable("n") _, Seq(LabelName("name") _))(pos)
     val expr = Ands(Set(hasLabels, False() _))(pos)
 
-    val result = sparkCypherRewriting.instance(CypherParser.defaultContext)(expr)
+    val result = CAPSRewriting.instance(CypherParser.defaultContext)(expr)
 
     result should equal(RetypingPredicate(Set(hasLabels), False()(pos))(pos))
   }
@@ -42,7 +42,7 @@ class sparkCypherRewritingTest extends BaseTestSuite with AstConstructionTestSup
     val hasLabels = HasLabels(Variable("n") _, Seq(LabelName("name") _))(pos)
     val expr = Ors(Set(Ands(Set(hasLabels, False() _))(pos), True() _))(pos)
 
-    val result = sparkCypherRewriting.instance(CypherParser.defaultContext)(expr)
+    val result = CAPSRewriting.instance(CypherParser.defaultContext)(expr)
 
     result should equal(Ors(Set(RetypingPredicate(Set(hasLabels), False()(pos))(pos), True()(pos)))(pos))
   }
@@ -52,7 +52,7 @@ class sparkCypherRewritingTest extends BaseTestSuite with AstConstructionTestSup
     val hasLabels2 = HasLabels(Variable("m") _, Seq(LabelName("age") _))(pos)
     val expr = Ands(Set(hasLabels1, False() _, hasLabels2, True() _))(pos)
 
-    val result = sparkCypherRewriting.instance(CypherParser.defaultContext)(expr)
+    val result = CAPSRewriting.instance(CypherParser.defaultContext)(expr)
 
     result should equal(RetypingPredicate(Set(hasLabels1, hasLabels2),
       Ands(Set(False() _, True() _)) _)(pos))
@@ -61,7 +61,7 @@ class sparkCypherRewritingTest extends BaseTestSuite with AstConstructionTestSup
   test("doesn't do anything if no haslabels") {
     val expr = Ands(Set(False() _, True() _))(pos)
 
-    val result = sparkCypherRewriting.instance(CypherParser.defaultContext)(expr)
+    val result = CAPSRewriting.instance(CypherParser.defaultContext)(expr)
 
     result should equal(RetypingPredicate(Set.empty, Ands(Set(False() _, True() _)) _)(pos))
   }

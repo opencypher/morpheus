@@ -17,15 +17,15 @@ package org.opencypher.caps.api.spark
 
 import org.opencypher.caps.api.graph.CypherResult
 
-trait SparkCypherResult extends CypherResult {
+trait CAPSResult extends CypherResult {
 
-  override type Result = SparkCypherResult
-  override type Graph = SparkCypherGraph
-  override type Records = SparkCypherRecords
+  override type Result = CAPSResult
+  override type Graph = CAPSGraph
+  override type Records = CAPSRecords
 
-  def recordsWithDetails: SparkCypherRecords = records.details
+  def recordsWithDetails: CAPSRecords = records.details
 
   def showRecords(): Unit = records.show()
 
-  override def namedGraph(name: String): Option[SparkCypherGraph] = result(name).map(_.graph)
+  override def namedGraph(name: String): Option[CAPSGraph] = result(name).map(_.graph)
 }

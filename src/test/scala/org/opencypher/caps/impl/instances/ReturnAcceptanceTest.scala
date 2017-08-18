@@ -1,11 +1,11 @@
 package org.opencypher.caps.impl.instances
 
-import org.opencypher.caps.SparkCypherTestSuite
+import org.opencypher.caps.CAPSTestSuite
 import org.opencypher.caps.api.value.CypherMap
 
 import scala.collection.Bag
 
-class ReturnAcceptanceTest extends SparkCypherTestSuite {
+class ReturnAcceptanceTest extends CAPSTestSuite {
 
   test("return node") {
     val given = TestGraph("({foo:'bar'}),()")

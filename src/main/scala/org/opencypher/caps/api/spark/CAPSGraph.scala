@@ -25,58 +25,58 @@ import org.opencypher.caps.api.schema.{PropertyKeyMap, Schema}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType, DefiniteCypherType}
 import org.opencypher.caps.impl.convert.toSparkType
 import org.opencypher.caps.impl.exception.Raise
-import org.opencypher.caps.impl.record.{InternalHeader, SparkCypherRecordsTokens}
+import org.opencypher.caps.impl.record.{InternalHeader, CAPSRecordsTokens}
 import org.opencypher.caps.impl.spark.SparkColumnName
 
-trait SparkCypherGraph extends CypherGraph with Serializable {
+trait CAPSGraph extends CypherGraph with Serializable {
 
   self =>
 
   final override type Space = SparkGraphSpace
-  final override type Graph = SparkCypherGraph
-  final override type Records = SparkCypherRecords
+  final override type Graph = CAPSGraph
+  final override type Records = CAPSRecords
 }
 
-object SparkCypherGraph {
+object CAPSGraph {
 
-  def empty(implicit space: SparkGraphSpace): SparkCypherGraph =
+  def empty(implicit space: SparkGraphSpace): CAPSGraph =
     new EmptyGraph() {}
 
-  def create(nodes: NodeScan, scans: GraphScan*)(implicit space: SparkGraphSpace): SparkCypherGraph = {
+  def create(nodes: NodeScan, scans: GraphScan*)(implicit space: SparkGraphSpace): CAPSGraph = {
     val allScans = nodes +: scans
 
     val schema = allScans.map(_.schema).reduce(_ ++ _)
 
     // updates the registry associated with the graph space
-    space.tokens = SparkCypherRecordsTokens(TokenRegistry.fromSchema(space.tokens.registry, schema))
+    space.tokens = CAPSRecordsTokens(TokenRegistry.fromSchema(space.tokens.registry, schema))
 
     new ScanGraph(allScans, schema) {}
   }
 
-  sealed abstract class EmptyGraph(implicit val space: SparkGraphSpace) extends SparkCypherGraph {
+  sealed abstract class EmptyGraph(implicit val space: SparkGraphSpace) extends CAPSGraph {
 
     implicit val engine = space.engine
 
     override def schema = Schema.empty
 
     override def nodes(name: String, cypherType: CTNode) =
-      SparkCypherRecords.empty(RecordHeader.from(OpaqueField(Var(name)(cypherType))))
+      CAPSRecords.empty(RecordHeader.from(OpaqueField(Var(name)(cypherType))))
 
     override def relationships(name: String, cypherType: CTRelationship) =
-      SparkCypherRecords.empty(RecordHeader.from(OpaqueField(Var(name)(cypherType))))
+      CAPSRecords.empty(RecordHeader.from(OpaqueField(Var(name)(cypherType))))
   }
 
   // TODO: Header map
   // TODO: CapsContext
 
   sealed abstract class ScanGraph(val scans: Seq[GraphScan], val schema: Schema)
-                                 (implicit val space: SparkGraphSpace) extends SparkCypherGraph {
+                                 (implicit val space: SparkGraphSpace) extends CAPSGraph {
 
     // Q: Caching?
 
     // TODO: Normalize (dh partition away/remove all optional label fields, rel type fields)
 
-    self: SparkCypherGraph =>
+    self: CAPSGraph =>
 
     implicit val engine = space.engine
 
@@ -116,7 +116,7 @@ object SparkCypherGraph {
       val alignedRecords = alignRecords(selectedRecords, tempHeader, targetHeader)
 
       // (5) Union all scan records based on final schema
-      SparkCypherRecords.create(targetHeader, alignedRecords.map(_.details.toDF()).reduce(_ union _))
+      CAPSRecords.create(targetHeader, alignedRecords.map(_.details.toDF()).reduce(_ union _))
     }
 
     private def contentExprs(content: Set[SlotContent]) = {
@@ -151,7 +151,7 @@ object SparkCypherGraph {
 
       // (5) Union all scan records based on final schema
       val data = alignedRecords.map(_.details.toDF()).reduce(_ union _)
-      SparkCypherRecords.create(targetHeader, data)
+      CAPSRecords.create(targetHeader, data)
     }
 
     /**
@@ -163,10 +163,10 @@ object SparkCypherGraph {
       * @param targetHeader final union header (including nullable types)
       * @return updates records
       */
-    private def alignRecords(records: Seq[SparkCypherRecords],
+    private def alignRecords(records: Seq[CAPSRecords],
                              tempHeader: RecordHeader,
                              targetHeader: RecordHeader)
-    : Seq[SparkCypherRecords] = {
+    : Seq[CAPSRecords] = {
 
       records.map { scanRecords =>
         val data = scanRecords.details.toDF()
@@ -200,7 +200,7 @@ object SparkCypherGraph {
         // order dataframe columns according to common header
         val columnNames = targetHeader.slots.map(SparkColumnName.of)
 
-        SparkCypherRecords.create(targetHeader, newData.select(columnNames.head, columnNames.tail: _*))
+        CAPSRecords.create(targetHeader, newData.select(columnNames.head, columnNames.tail: _*))
       }
     }
 
@@ -232,7 +232,7 @@ object SparkCypherGraph {
         val df = scan.records.details.toDF()
         val renamedDF = df.columns.foldLeft(df)((df, col) => df.withColumnRenamed(col, nameMap(col)))
 
-        SparkCypherRecords.create(renamedHeader, renamedDF)
+        CAPSRecords.create(renamedHeader, renamedDF)
       }
     }
 

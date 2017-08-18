@@ -16,29 +16,29 @@
 package org.opencypher.caps.impl.spark
 
 import org.opencypher.caps.api.expr.{Expr, Var}
-import org.opencypher.caps.api.spark.{SparkCypherGraph, SparkCypherRecords}
+import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.api.value.CypherValue
 
 // TODO: Figure out where this should live in relationship to existing instances etc
 object operations {
 
-  implicit final class RichSparkCypherGraph(val graph: SparkCypherGraph) extends AnyVal {
+  implicit final class RichCAPSGraph(val graph: CAPSGraph) extends AnyVal {
 
-    def filter(subject: SparkCypherRecords, expr: Expr, parameters: Map[String, CypherValue] = Map.empty)
-              (implicit engine: SparkCypherEngine)
-    : SparkCypherRecords =
+    def filter(subject: CAPSRecords, expr: Expr, parameters: Map[String, CypherValue] = Map.empty)
+              (implicit engine: CAPSEngine)
+    : CAPSRecords =
       engine.filter(graph, subject, expr, parameters)
 
-    def select(subject: SparkCypherRecords, fields: IndexedSeq[Var], parameters: Map[String, CypherValue] = Map.empty)
-              (implicit engine: SparkCypherEngine): SparkCypherRecords =
+    def select(subject: CAPSRecords, fields: IndexedSeq[Var], parameters: Map[String, CypherValue] = Map.empty)
+              (implicit engine: CAPSEngine): CAPSRecords =
       engine.select(graph, subject, fields, parameters)
 
-    def project(subject: SparkCypherRecords, expr: Expr, parameters: Map[String, CypherValue] = Map.empty)
-               (implicit engine: SparkCypherEngine): SparkCypherRecords =
+    def project(subject: CAPSRecords, expr: Expr, parameters: Map[String, CypherValue] = Map.empty)
+               (implicit engine: CAPSEngine): CAPSRecords =
       engine.project(graph, subject, expr, parameters)
 
-    def alias(subject: SparkCypherRecords, alias: (Expr, Var), parameters: Map[String, CypherValue] = Map.empty)
-             (implicit engine: SparkCypherEngine): SparkCypherRecords =
+    def alias(subject: CAPSRecords, alias: (Expr, Var), parameters: Map[String, CypherValue] = Map.empty)
+             (implicit engine: CAPSEngine): CAPSRecords =
       engine.alias(graph, subject, alias, parameters)
   }
 }

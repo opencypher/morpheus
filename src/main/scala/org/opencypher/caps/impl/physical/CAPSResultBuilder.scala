@@ -15,23 +15,23 @@
  */
 package org.opencypher.caps.impl.physical
 
-import org.opencypher.caps.api.spark.{SparkCypherGraph, SparkCypherRecords, SparkCypherResult}
+import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSResult}
 
-object SparkCypherResultBuilder {
-  def from(internal: PhysicalResult): SparkCypherResult = new SparkCypherResult {
-    override def records: SparkCypherRecords = internal.records
+object CAPSResultBuilder {
+  def from(internal: PhysicalResult): CAPSResult = new CAPSResult {
+    override def records: CAPSRecords = internal.records
 
     // TODO: Track which graph was the 'latest' used one
-    override def graph: SparkCypherGraph = internal.graphs.head._2
+    override def graph: CAPSGraph = internal.graphs.head._2
 
-    override def result(name: String): Option[SparkCypherResult] = internal.graphs.get(name).map { g =>
-      new SparkCypherResult {
-        override def records: SparkCypherRecords =
+    override def result(name: String): Option[CAPSResult] = internal.graphs.get(name).map { g =>
+      new CAPSResult {
+        override def records: CAPSRecords =
           throw new NotImplementedError("Records of stored intermediate result are not tracked!")
 
-        override def graph: SparkCypherGraph = g
+        override def graph: CAPSGraph = g
 
-        override def result(name: String): Option[SparkCypherResult] = None
+        override def result(name: String): Option[CAPSResult] = None
       }
     }
   }

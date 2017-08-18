@@ -16,7 +16,7 @@
 package org.opencypher.caps.impl.instances
 
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.spark.{SparkCypherRecords, SparkGraphSpace}
+import org.opencypher.caps.api.spark.{CAPSRecords, SparkGraphSpace}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.instances.spark.cypher._
 import org.opencypher.caps.impl.syntax.cypher._
@@ -24,7 +24,7 @@ import org.opencypher.caps.{BaseTestSuite, SparkTestSession}
 
 import scala.language.reflectiveCalls
 
-class SparkCypherRecordsAcceptanceTest extends BaseTestSuite with SparkTestSession.Fixture {
+class CAPSRecordsAcceptanceTest extends BaseTestSuite with SparkTestSession.Fixture {
 
   test("label scan and project") {
     // When
@@ -185,7 +185,7 @@ class SparkCypherRecordsAcceptanceTest extends BaseTestSuite with SparkTestSessi
     // TODO: assertions
   }
 
-  implicit class RichRecords(records: SparkCypherRecords) {
+  implicit class RichRecords(records: CAPSRecords) {
     def shouldHaveSize(size: Int) = {
       val tuples = records.data.collect().toSeq.map { r =>
         val cells = records.header.slots.map { s =>

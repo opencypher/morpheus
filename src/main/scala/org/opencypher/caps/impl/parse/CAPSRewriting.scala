@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.StatementRewriter
 import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseContext, Condition}
 
-object sparkCypherRewriting extends StatementRewriter {
+object CAPSRewriting extends StatementRewriter {
   override def instance(context: BaseContext): Rewriter = bottomUp(Rewriter.lift {
     case a@Ands(exprs) =>
       val (left, right) = exprs.partition {

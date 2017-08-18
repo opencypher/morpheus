@@ -15,10 +15,10 @@
  */
 package org.opencypher.caps.impl.physical
 
-import org.opencypher.caps.api.spark.{SparkCypherGraph, SparkCypherRecords}
+import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 
-case class PhysicalResult(records: SparkCypherRecords, graphs: Map[String, SparkCypherGraph]) {
-  def mapRecordsWithDetails(f: SparkCypherRecords => SparkCypherRecords): PhysicalResult =
+case class PhysicalResult(records: CAPSRecords, graphs: Map[String, CAPSGraph]) {
+  def mapRecordsWithDetails(f: CAPSRecords => CAPSRecords): PhysicalResult =
     copy(records = f(records.details))
 }
 

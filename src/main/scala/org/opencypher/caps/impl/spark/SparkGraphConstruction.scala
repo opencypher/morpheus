@@ -17,7 +17,7 @@ package org.opencypher.caps.impl.spark
 
 import org.apache.spark.sql.DataFrame
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.api.spark.{SparkCypherGraph, SparkGraphSpace}
+import org.opencypher.caps.api.spark.{CAPSGraph, SparkGraphSpace}
 
 trait SparkGraphConstruction {
 
@@ -29,7 +29,7 @@ trait SparkGraphConstruction {
 trait SparkGraphBuilder {
   def withNodesDF(df: DataFrame, id: String): SparkNodesMapper
   def withRelationshipsDF(df: DataFrame, ids: (String, String, String)): SparkRelationshipsMapper
-  def graph: SparkCypherGraph
+  def graph: CAPSGraph
 }
 
 trait SparkNodesMapper {
@@ -45,7 +45,7 @@ trait SparkNodesSource extends SparkEntitySource {
 }
 
 trait SparkEntitySource {
-  final def graph: SparkCypherGraph = and.graph
+  final def graph: CAPSGraph = and.graph
   def and: SparkGraphBuilder
   def property(name: String, column: String): SparkNodesMapper
   def property(name: String, column: String, cypherType: CypherType): SparkNodesMapper

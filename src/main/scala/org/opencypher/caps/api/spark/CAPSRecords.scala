@@ -27,24 +27,24 @@ import org.opencypher.caps.api.types.{CTList, CTNode, CTRelationship, CypherType
 import org.opencypher.caps.api.value.{CypherMap, CypherValue}
 import org.opencypher.caps.impl.convert.{fromSparkType, toSparkType}
 import org.opencypher.caps.impl.exception.Raise
-import org.opencypher.caps.impl.record.SparkCypherRecordHeader
+import org.opencypher.caps.impl.record.CAPSRecordHeader
 import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.syntax.header._
 
 import scala.annotation.tailrec
 import scala.reflect.runtime.universe.TypeTag
 
-sealed abstract class SparkCypherRecords(tokens: SparkCypherTokens,
-                                         initialHeader: RecordHeader,
-                                         initialData: DataFrame,
-                                         optDetailedRecords: Option[SparkCypherRecords])
-                                        (implicit val space: SparkGraphSpace)
+sealed abstract class CAPSRecords(tokens: CAPSTokens,
+                                  initialHeader: RecordHeader,
+                                  initialData: DataFrame,
+                                  optDetailedRecords: Option[CAPSRecords])
+                                 (implicit val space: SparkGraphSpace)
   extends CypherRecords with Serializable {
 
   self =>
 
   override type Data = DataFrame
-  override type Records = SparkCypherRecords
+  override type Records = CAPSRecords
 
   override def header = initialHeader
   override def data = initialData
@@ -58,10 +58,10 @@ sealed abstract class SparkCypherRecords(tokens: SparkCypherTokens,
   //noinspection AccessorLikeMethodIsEmptyParen
   def toDF(): Data = data
 
-  def mapDF(f: Data => Data) = SparkCypherRecords.create(f(data))
+  def mapDF(f: Data => Data) = CAPSRecords.create(f(data))
 
   // TODO: Check that this does not change the caching of our data frame
-  def cached = SparkCypherRecords.create(header, data.cache())
+  def cached = CAPSRecords.create(header, data.cache())
 
   override def show() = RecordsPrinter.print(this)
 
@@ -74,7 +74,7 @@ sealed abstract class SparkCypherRecords(tokens: SparkCypherTokens,
       self.data.select(columns: _*)
     }
 
-    SparkCypherRecords.create(cachedHeader, cachedData)
+    CAPSRecords.create(cachedHeader, cachedData)
   }
 
   // only keep slots with v as their owner
@@ -190,7 +190,7 @@ sealed abstract class SparkCypherRecords(tokens: SparkCypherTokens,
   //    }
   //  }
 
-  override def contract[E <: EmbeddedEntity](entity: VerifiedEmbeddedEntity[E]): SparkCypherRecords = {
+  override def contract[E <: EmbeddedEntity](entity: VerifiedEmbeddedEntity[E]): CAPSRecords = {
     val slotExprs = entity.slots
     val newSlots = header.slots.map {
       case slot@RecordSlot(idx, content: FieldSlotContent) =>
@@ -206,10 +206,10 @@ sealed abstract class SparkCypherRecords(tokens: SparkCypherTokens,
     }
     val newHeader = RecordHeader.from(newSlots: _*)
     val renamed = data.toDF(newHeader.internalHeader.columns: _*)
-    SparkCypherRecords.create(newHeader, renamed)
+    CAPSRecords.create(newHeader, renamed)
   }
 
-  def distinct: SparkCypherRecords = SparkCypherRecords.create(self.header, self.data.distinct())
+  def distinct: CAPSRecords = CAPSRecords.create(self.header, self.data.distinct())
 
   def toLocalIterator: java.util.Iterator[CypherMap] = {
     val iterator = data.toLocalIterator()
@@ -248,47 +248,47 @@ sealed abstract class SparkCypherRecords(tokens: SparkCypherTokens,
   }
 }
 
-object SparkCypherRecords {
+object CAPSRecords {
 
   def create[A <: Product : TypeTag](columns: Seq[String], data: Seq[A])(implicit graphSpace: SparkGraphSpace)
-  : SparkCypherRecords =
+  : CAPSRecords =
     create(graphSpace.session.createDataFrame(data).toDF(columns: _*))
 
   def create[A <: Product : TypeTag](data: Seq[A])(implicit graphSpace: SparkGraphSpace)
-  : SparkCypherRecords =
+  : CAPSRecords =
     create(graphSpace.session.createDataFrame(data))
 
   def create(columns: String*)(rows: java.util.List[Row], schema: StructType)(implicit graphSpace: SparkGraphSpace)
-  : SparkCypherRecords =
+  : CAPSRecords =
     create(graphSpace.session.createDataFrame(rows, schema).toDF(columns: _*))
 
-  def create(rows: java.util.List[Row], schema: StructType)(implicit graphSpace: SparkGraphSpace): SparkCypherRecords =
+  def create(rows: java.util.List[Row], schema: StructType)(implicit graphSpace: SparkGraphSpace): CAPSRecords =
     create(graphSpace.session.createDataFrame(rows, schema))
 
   def create(columns: Seq[String], data: java.util.List[_], beanClass: Class[_])(implicit graphSpace: SparkGraphSpace)
-  : SparkCypherRecords =
+  : CAPSRecords =
     create(graphSpace.session.createDataFrame(data, beanClass).toDF(columns: _*))
 
-  def create(data: java.util.List[_], beanClass: Class[_])(implicit graphSpace: SparkGraphSpace): SparkCypherRecords =
+  def create(data: java.util.List[_], beanClass: Class[_])(implicit graphSpace: SparkGraphSpace): CAPSRecords =
     create(graphSpace.session.createDataFrame(data, beanClass))
 
-  def create[A <: Product : TypeTag](rdd: RDD[A])(implicit graphSpace: SparkGraphSpace): SparkCypherRecords =
+  def create[A <: Product : TypeTag](rdd: RDD[A])(implicit graphSpace: SparkGraphSpace): CAPSRecords =
     create(graphSpace.session.createDataFrame(rdd))
 
-  def create(rowRDD: RDD[Row], schema: StructType)(implicit graphSpace: SparkGraphSpace): SparkCypherRecords =
+  def create(rowRDD: RDD[Row], schema: StructType)(implicit graphSpace: SparkGraphSpace): CAPSRecords =
     create(graphSpace.session.createDataFrame(rowRDD, schema))
 
-  def create(rowRDD: JavaRDD[Row], schema: StructType)(implicit graphSpace: SparkGraphSpace): SparkCypherRecords =
+  def create(rowRDD: JavaRDD[Row], schema: StructType)(implicit graphSpace: SparkGraphSpace): CAPSRecords =
     create(graphSpace.session.createDataFrame(rowRDD, schema))
 
-  def create(rdd: RDD[_], beanClass: Class[_])(implicit graphSpace: SparkGraphSpace): SparkCypherRecords =
+  def create(rdd: RDD[_], beanClass: Class[_])(implicit graphSpace: SparkGraphSpace): CAPSRecords =
     create(graphSpace.session.createDataFrame(rdd, beanClass))
 
-  def create(rdd: JavaRDD[_], beanClass: Class[_])(implicit graphSpace: SparkGraphSpace): SparkCypherRecords =
+  def create(rdd: JavaRDD[_], beanClass: Class[_])(implicit graphSpace: SparkGraphSpace): CAPSRecords =
     create(graphSpace.session.createDataFrame(rdd, beanClass))
 
-  def create(initialDataFrame: DataFrame)(implicit graphSpace: SparkGraphSpace): SparkCypherRecords = {
-    val initialHeader = SparkCypherRecordHeader.fromSparkStructType(initialDataFrame.schema)
+  def create(initialDataFrame: DataFrame)(implicit graphSpace: SparkGraphSpace): CAPSRecords = {
+    val initialHeader = CAPSRecordHeader.fromSparkStructType(initialDataFrame.schema)
 
     // rename data to match generated header
     // we trust the order of the generated header
@@ -307,7 +307,7 @@ object SparkCypherRecords {
     * @return a new SparkCypherRecords representing the input.
     */
   def create(initialHeader: RecordHeader, initialData: DataFrame)(implicit graphSpace: SparkGraphSpace)
-  : SparkCypherRecords = {
+  : CAPSRecords = {
     if (initialData.sparkSession == graphSpace.session) {
 
       // Ensure no duplicate columns in initialData
@@ -352,9 +352,9 @@ object SparkCypherRecords {
     }
   }
 
-  private def createInternal(header: RecordHeader, data: DataFrame, optRecordsWithDetails: Option[SparkCypherRecords])
+  private def createInternal(header: RecordHeader, data: DataFrame, optRecordsWithDetails: Option[CAPSRecords])
                             (implicit graphSpace: SparkGraphSpace) =
-    new SparkCypherRecords(graphSpace.tokens, header, data, optRecordsWithDetails) {}
+    new CAPSRecords(graphSpace.tokens, header, data, optRecordsWithDetails) {}
 
   @tailrec
   private def containsEntity(t: CypherType): Boolean = t match {
@@ -365,8 +365,8 @@ object SparkCypherRecords {
   }
 
   def empty(initialHeader: RecordHeader = RecordHeader.empty)(implicit graphSpace: SparkGraphSpace)
-  : SparkCypherRecords = {
-    val initialSparkStructType = SparkCypherRecordHeader.asSparkStructType(initialHeader)
+  : CAPSRecords = {
+    val initialSparkStructType = CAPSRecordHeader.asSparkStructType(initialHeader)
     val initialDataFrame = graphSpace.session.createDataFrame(Collections.emptyList[Row](), initialSparkStructType)
     create(initialHeader, initialDataFrame)
   }

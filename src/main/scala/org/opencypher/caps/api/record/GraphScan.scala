@@ -17,7 +17,7 @@ package org.opencypher.caps.api.record
 
 import org.opencypher.caps.api.expr.{Property, Var}
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.spark.SparkCypherRecords
+import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.spark.SparkColumn
@@ -28,7 +28,7 @@ sealed trait GraphScan extends Serializable {
 
   type EntityCypherType <: CypherType
 
-  def records: SparkCypherRecords
+  def records: CAPSRecords
   def entity = Var(entityName)(entityType)
 
   def entityName: String
@@ -81,7 +81,7 @@ object GraphScanBuilder {
   sealed abstract class RichGraphScanBuilder[E <: EmbeddedEntity, S <: GraphScan] {
     def builder: GraphScanBuilder[E]
 
-    def from(records: SparkCypherRecords) = {
+    def from(records: CAPSRecords) = {
       val verifiedEntity = builder.entity
       val entity = verifiedEntity.v
       val contracted = records.contract(verifiedEntity)
@@ -94,12 +94,12 @@ object GraphScanBuilder {
           val newHeader = RecordHeader.from(newSlots.toSeq: _*)
           val newCols = newHeader.slots.map(SparkColumn.from(contracted.data))
           val newData = contracted.data.select(newCols: _*)
-          SparkCypherRecords.create(newHeader, newData)(records.space)
+          CAPSRecords.create(newHeader, newData)(records.space)
         }
       create(entity, newRecords, schema(entity, newRecords.details.header))
     }
 
-    protected def create(entity: E, records: SparkCypherRecords, schema: Schema): S
+    protected def create(entity: E, records: CAPSRecords, schema: Schema): S
 
     protected def schema(entity: E, header: RecordHeader): Schema
 
@@ -116,9 +116,9 @@ object GraphScanBuilder {
   implicit final class RichNodeScanBuilder(val builder: GraphScanBuilder[EmbeddedNode])
     extends RichGraphScanBuilder[EmbeddedNode, NodeScan] {
 
-    override protected def create(scanEntity: EmbeddedNode, scanRecords: SparkCypherRecords, scanSchema: Schema): NodeScan =
+    override protected def create(scanEntity: EmbeddedNode, scanRecords: CAPSRecords, scanSchema: Schema): NodeScan =
       new NodeScan {
-        override def records: SparkCypherRecords = scanRecords
+        override def records: CAPSRecords = scanRecords
         override def entityType: CTNode = scanEntity.entityType
         override def entityName: String = scanEntity.entitySlot
         override def schema: Schema = scanSchema
@@ -149,9 +149,9 @@ object GraphScanBuilder {
   implicit final class RichRelScanBuilder(val builder: GraphScanBuilder[EmbeddedRelationship])
     extends RichGraphScanBuilder[EmbeddedRelationship, RelationshipScan] {
 
-    override protected def create(scanEntity: EmbeddedRelationship, scanRecords: SparkCypherRecords, scanSchema: Schema): RelationshipScan =
+    override protected def create(scanEntity: EmbeddedRelationship, scanRecords: CAPSRecords, scanSchema: Schema): RelationshipScan =
       new RelationshipScan {
-        override def records: SparkCypherRecords = scanRecords
+        override def records: CAPSRecords = scanRecords
         override def entityType: CTRelationship = scanEntity.entityType
         override def entityName: String = scanEntity.entitySlot
         override def schema: Schema = scanSchema

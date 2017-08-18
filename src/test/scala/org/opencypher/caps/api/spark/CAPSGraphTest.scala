@@ -1,13 +1,13 @@
 package org.opencypher.caps.api.spark
 
 import org.apache.spark.sql.Row
-import org.opencypher.caps.SparkCypherTestSuite
-import org.opencypher.caps.api.exception.SparkCypherException
+import org.opencypher.caps.CAPSTestSuite
+import org.opencypher.caps.api.exception.CAPSException
 import org.opencypher.caps.api.ir.global.TokenRegistry
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 
-class SparkCypherGraphTest extends SparkCypherTestSuite {
+class CAPSGraphTest extends CAPSTestSuite {
 
   implicit val space = SparkGraphSpace.empty(session, TokenRegistry.empty)
 
@@ -19,7 +19,7 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
        .withPropertyKey("name" -> "NAME")
        .withPropertyKey("lucky_number" -> "NUM")
     }
-    .from(SparkCypherRecords.create(
+    .from(CAPSRecords.create(
       Seq("ID", "IS_SWEDE", "NAME", "NUM"),
       Seq(
         (1, true, "Mats", 23),
@@ -36,7 +36,7 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
         .withImpliedLabel("Person")
         .withPropertyKey("language" -> "LANG")
     }
-    .from(SparkCypherRecords.create(
+    .from(CAPSRecords.create(
       Seq("ID", "LANG"),
       Seq(
         (100, "Node"),
@@ -55,7 +55,7 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
         .withPropertyKey("lucky_number" -> "NUM")
         .withPropertyKey("language" -> "LANG")
     }
-      .from(SparkCypherRecords.create(
+      .from(CAPSRecords.create(
         Seq("ID", "NAME", "NUM", "LANG"),
         Seq(
           (100, "Alice", 42, "C"),
@@ -72,7 +72,7 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
         .withPropertyKey("title" -> "NAME")
         .withPropertyKey("year" -> "YEAR")
     }
-      .from(SparkCypherRecords.create(
+      .from(CAPSRecords.create(
         Seq("ID", "NAME", "YEAR"),
         Seq(
           (10, "1984", 1949),
@@ -87,7 +87,7 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
        .build
        .withPropertyKey("since" -> "SINCE")
     }
-    .from(SparkCypherRecords.create(
+    .from(CAPSRecords.create(
       Seq("SRC", "ID", "DST", "SINCE"),
       Seq(
         (1, 1, 2, 2017),
@@ -104,7 +104,7 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
         .build
         .withPropertyKey("recommends" -> "RECOMMENDS")
     }
-    .from(SparkCypherRecords.create(
+    .from(CAPSRecords.create(
       Seq("SRC", "ID", "DST", "RECOMMENDS"),
       Seq(
         (1, 100, 10, true),
@@ -118,14 +118,14 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
       _.from("SRC").to("DST").relType("INFLUENCES")
         .build
     }
-    .from(SparkCypherRecords.create(
+    .from(CAPSRecords.create(
       Seq("SRC", "ID", "DST"),
       Seq(
         (10, 1000, 20))
     ))
 
   test("Construct graph from single node scan") {
-    val graph = SparkCypherGraph.create(`:Person`)
+    val graph = CAPSGraph.create(`:Person`)
     val nodes = graph.nodes("n")
 
     nodes.details.toDF().columns should equal(Array(
@@ -145,7 +145,7 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
   }
 
   test("Construct graph from multiple node scans") {
-    val graph = SparkCypherGraph.create(`:Person`, `:Book`)
+    val graph = CAPSGraph.create(`:Person`, `:Book`)
     val nodes = graph.nodes("n")
 
     nodes.details.toDF().columns should equal(Array(
@@ -172,7 +172,7 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
   }
 
   test("Construct graph from single node and single relationship scan") {
-    val graph = SparkCypherGraph.create(`:Person`, `:KNOWS`)
+    val graph = CAPSGraph.create(`:Person`, `:KNOWS`)
     val rels  = graph.relationships("e")
 
     rels.details.toDF().columns should equal(Array(
@@ -194,7 +194,7 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
   }
 
   test("Extract all node scans") {
-    val graph = SparkCypherGraph.create(`:Person`, `:Book`)
+    val graph = CAPSGraph.create(`:Person`, `:Book`)
 
     val nodes = graph.nodes("n", CTNode())
 
@@ -222,7 +222,7 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
   }
 
   test("Extract node scan subset") {
-    val graph = SparkCypherGraph.create(`:Person`, `:Book`)
+    val graph = CAPSGraph.create(`:Person`, `:Book`)
 
     val nodes = graph.nodes("n", CTNode("Person"))
 
@@ -243,7 +243,7 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
   }
 
   test("Extract all relationship scans") {
-    val graph = SparkCypherGraph.create(`:Person`, `:Book`, `:KNOWS`, `:READS`)
+    val graph = CAPSGraph.create(`:Person`, `:Book`, `:KNOWS`, `:READS`)
 
     val rels  = graph.relationships("e")
 
@@ -273,7 +273,7 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
   }
 
   test("Extract relationship scan subset") {
-    val graph = SparkCypherGraph.create(`:Person`, `:Book`, `:KNOWS`, `:READS`)
+    val graph = CAPSGraph.create(`:Person`, `:Book`, `:KNOWS`, `:READS`)
 
     val rels  = graph.relationships("e", CTRelationship("KNOWS"))
 
@@ -296,7 +296,7 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
   }
 
   test("Extract relationship scan strict subset") {
-    val graph = SparkCypherGraph.create(`:Person`, `:Book`, `:KNOWS`, `:READS`, `:INFLUENCES`)
+    val graph = CAPSGraph.create(`:Person`, `:Book`, `:KNOWS`, `:READS`, `:INFLUENCES`)
 
     val rels  = graph.relationships("e", CTRelationship("KNOWS", "INFLUENCES"))
 
@@ -322,7 +322,7 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
   }
 
   test("Extract from scans with overlapping labels") {
-    val graph = SparkCypherGraph.create(`:Person`, `:Programmer`)
+    val graph = CAPSGraph.create(`:Person`, `:Programmer`)
 
     val nodes = graph.nodes("n", CTNode("Person"))
 
@@ -349,7 +349,7 @@ class SparkCypherGraphTest extends SparkCypherTestSuite {
   }
 
   test("Extract from scans with implied label but missing keys") {
-    val graph = SparkCypherGraph.create(`:Person`, `:Brogrammer`)
+    val graph = CAPSGraph.create(`:Person`, `:Brogrammer`)
 
     val nodes = graph.nodes("n", CTNode("Person"))
 

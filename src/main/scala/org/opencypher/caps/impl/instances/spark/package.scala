@@ -17,5 +17,5 @@ package org.opencypher.caps.impl.instances
 
 package object spark {
   object all extends spark.AllInstances
-  object cypher extends SparkCypherInstances
+  object cypher extends CAPSInstances
 }

@@ -15,12 +15,12 @@
  */
 package org.opencypher.caps.impl.instances
 
-import org.opencypher.caps.SparkCypherTestSuite
+import org.opencypher.caps.CAPSTestSuite
 import org.opencypher.caps.api.value.CypherMap
 
 import scala.collection.immutable.Bag
 
-class FunctionsAcceptanceTest extends SparkCypherTestSuite {
+class FunctionsAcceptanceTest extends CAPSTestSuite {
 
   test("type()") {
     val given = TestGraph("()-[:KNOWS]->()-[:HATES]->()")

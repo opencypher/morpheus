@@ -15,38 +15,38 @@
  */
 package org.opencypher.caps.impl.exception
 
-import org.opencypher.caps.api.exception.SparkCypherException
+import org.opencypher.caps.api.exception.CAPSException
 
 object Raise {
-  def duplicateEmbeddedEntityColumn(name: String) = throw SparkCypherException(
+  def duplicateEmbeddedEntityColumn(name: String) = throw CAPSException(
     "The input column '$name' is used more than once to describe an embedded entity"
   )
 
-  def recordsDataHeaderMismatch() = throw SparkCypherException(
+  def recordsDataHeaderMismatch() = throw CAPSException(
     "Column mismatch between data and header!"
   )
 
-  def duplicateColumnNamesInData() = throw SparkCypherException(
+  def duplicateColumnNamesInData() = throw CAPSException(
     "Cannot use data frames with duplicate column names"
   )
 
-  def invalidDataTypeForColumn(column: String, header: String, typ: String) = throw SparkCypherException(
+  def invalidDataTypeForColumn(column: String, header: String, typ: String) = throw CAPSException(
     s"Invalid data type for column $column. Expected at least $header but got conflicting $typ"
   )
 
-  def graphSpaceMismatch() = throw SparkCypherException(
+  def graphSpaceMismatch() = throw CAPSException(
     "Import of a data frame not created in the same session as the graph space"
   )
 
-  def slotNotAdded(field: String) = throw SparkCypherException(
+  def slotNotAdded(field: String) = throw CAPSException(
     s"Failed to add new slot: $field"
   )
 
-  def slotNotFound(expr: String) = throw SparkCypherException(
+  def slotNotFound(expr: String) = throw CAPSException(
     s"Did not find slot for $expr"
   )
 
-  def multipleSlotsForExpression() = throw SparkCypherException(
+  def multipleSlotsForExpression() = throw CAPSException(
     "Only a single slot per expression currently supported"
   )
 
@@ -54,39 +54,39 @@ object Raise {
     s"Support for $what not yet implemented"
   )
 
-  def columnNotFound(column: String) = throw SparkCypherException(
+  def columnNotFound(column: String) = throw CAPSException(
     s"Wanted to rename column $column, but it was not present!"
   )
 
-  def invalidPattern(pattern: String) = throw SparkCypherException(
+  def invalidPattern(pattern: String) = throw CAPSException(
     s"What kind of a pattern is this??? $pattern"
   )
 
-  def invalidConnection(endPoint: String) = throw SparkCypherException(
+  def invalidConnection(endPoint: String) = throw CAPSException(
     s"A connection must have a known $endPoint!"
   )
 
-  def patternPlanningFailure() = throw SparkCypherException(
+  def patternPlanningFailure() = throw CAPSException(
     "Recursion / solved failure during logical planning: unable to find unsolved connection"
   )
 
-  def logicalPlanningFailure() = throw SparkCypherException(
+  def logicalPlanningFailure() = throw CAPSException(
     "Error during logical planning"
   )
 
-  def impossible(detail: String = "") = throw SparkCypherException(
+  def impossible(detail: String = "") = throw CAPSException(
     s"Something impossible happened! $detail"
   )
 
-  def invalidArgument(expected: String, actual: String) = throw SparkCypherException(
+  def invalidArgument(expected: String, actual: String) = throw CAPSException(
     s"Expected a $expected but got a $actual"
   )
 
-  def typeInferenceFailed(detail: String) = throw SparkCypherException(
+  def typeInferenceFailed(detail: String) = throw CAPSException(
     s"Some error in type inference: $detail"
   )
 
-  def schemaMismatch(detail: String) = throw SparkCypherException(
+  def schemaMismatch(detail: String) = throw CAPSException(
     s"Incompatible schemas: $detail"
   )
 }
