@@ -18,7 +18,7 @@ package org.opencypher.spark.api.record
 import org.opencypher.spark.BaseTestSuite
 import org.opencypher.spark.api.types._
 import org.opencypher.spark.api.expr._
-import org.opencypher.spark.api.ir.global.{Label, LabelRef, PropertyKey, PropertyKeyRef}
+import org.opencypher.spark.api.ir.global._
 import org.opencypher.spark.impl.syntax.header._
 import org.opencypher.spark.impl.util.{Added, Found, Removed, Replaced}
 import org.opencypher.spark.toVar
@@ -199,13 +199,70 @@ class RecordHeaderTest extends BaseTestSuite {
     val (h2, _) = h1.update(addContent(label1))
     val (h3, _) = h2.update(addContent(label2))
     val (h4, _) = h3.update(addContent(prop))
-    val (h5, _) = h3.update(addContent(field2))
+    val (h5, _) = h4.update(addContent(field2))
     val (header, _) = h3.update(addContent(prop2))
 
     header.labels(Var("n")(CTNode)) should equal(
       Seq(
         HasLabel('n, Label("A"))(CTBoolean),
         HasLabel('n, Label("B"))(CTBoolean)
+      )
+    )
+  }
+
+  test("can get all slots for a given node var") {
+    val field1 = OpaqueField('n)
+    val label1 = ProjectedExpr(HasLabel('n, Label("A"))(CTBoolean))
+    val label2 = ProjectedExpr(HasLabel('n, Label("B"))(CTBoolean))
+    val prop = ProjectedExpr(Property('n, PropertyKey("foo"))(CTString))
+    val field2 = OpaqueField('m)
+    val prop2 = ProjectedExpr(Property('m, PropertyKey("bar"))(CTString))
+
+    val (h1, _) = RecordHeader.empty.update(addContent(field1))
+    val (h2, _) = h1.update(addContent(label1))
+    val (h3, _) = h2.update(addContent(label2))
+    val (h4, _) = h3.update(addContent(prop))
+    val (h5, _) = h4.update(addContent(field2))
+    val (header, _) = h5.update(addContent(prop2))
+
+    header.childSlots(Var("n")(CTNode)) should equal(
+      Set(
+        RecordSlot(1, label1),
+        RecordSlot(2, label2),
+        RecordSlot(3, prop)
+      )
+    )
+  }
+
+  test("can get all slots for a given edge var") {
+    val field1 = OpaqueField('e1)
+    val source1 = ProjectedExpr(StartNode('e1)(CTNode))
+    val target1 = ProjectedExpr(EndNode('e1)(CTNode))
+    val type1 = ProjectedExpr(HasType('e1, RelType("KNOWS"))(CTInteger))
+    val prop1 = ProjectedExpr(Property('e1, PropertyKey("foo"))(CTString))
+    val field2 = OpaqueField('e2)
+    val source2 = ProjectedExpr(StartNode('e2)(CTNode))
+    val target2 = ProjectedExpr(EndNode('e2)(CTNode))
+    val type2 = ProjectedExpr(HasType('e2, RelType("KNOWS"))(CTInteger))
+    val prop2 = ProjectedExpr(Property('e2, PropertyKey("bar"))(CTString))
+
+    val (h1, _) = RecordHeader.empty.update(addContent(field1))
+    val (h2, _) = h1.update(addContent(source1))
+    val (h3, _) = h2.update(addContent(target1))
+    val (h4, _) = h3.update(addContent(type1))
+    val (h5, _) = h4.update(addContent(prop1))
+    val (h6, _) = h5.update(addContent(field2))
+    val (h7, _) = h6.update(addContent(source2))
+    val (h8, _) = h7.update(addContent(target2))
+    val (h9, _) = h8.update(addContent(type2))
+    val (header, _) = h9.update(addContent(prop2))
+
+    header.childSlots(Var("e1")(CTRelationship)) should equal(
+      Set(
+        RecordSlot(1, source1),
+        RecordSlot(2, target1),
+        RecordSlot(3, type1),
+        RecordSlot(4, prop1)
       )
     )
   }

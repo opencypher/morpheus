@@ -17,7 +17,7 @@ package org.opencypher.spark.impl.physical
 
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{ArrayType, BooleanType, LongType}
-import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.{Column, DataFrame, Row}
 import org.opencypher.spark.api.expr._
 import org.opencypher.spark.api.ir.block.{Asc, Desc, SortItem}
 import org.opencypher.spark.api.ir.global._
@@ -191,10 +191,10 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
       prev.mapRecordsWithDetails { subject =>
         // TODO: filter call manipulates the generated ids => check this with newer spark versions
-//        val tmpColName = "__SKIPPY_MC_SKIPFACE"
-//        val tmpDf = subject.details.toDF().withColumn(tmpColName, monotonically_increasing_id())
-//        val tmpCol = tmpDf.col(tmpColName)
-//        val newDf = tmpDf.filter(tmpCol >= skip)
+        // val tmpColName = "__SKIPPY_MC_SKIPFACE"
+        // val tmpDf = subject.details.toDF().withColumn(tmpColName, monotonically_increasing_id())
+        // val tmpCol = tmpDf.col(tmpColName)
+        // val newDf = tmpDf.filter(tmpCol >= skip)
 
         val newDf = subject.space.session.createDataFrame(
           subject.details.toDF().rdd.zipWithIndex().filter((pair) => pair._2 >= skip).map(_._1),
@@ -223,7 +223,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
         assertIsNode(lhsSlot)
         assertIsNode(rhsSlot)
 
-        prev.mapRecordsWithDetails(join(relView.records, header, lhsSlot -> rhsSlot))
+        prev.mapRecordsWithDetails(join(relView.records, header, lhsSlot -> rhsSlot)())
       }
     }
 
@@ -235,7 +235,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
         assertIsNode(lhsSlot)
         assertIsNode(rhsSlot)
 
-        prev.mapRecordsWithDetails(join(nodeView.records, header, lhsSlot -> rhsSlot))
+        prev.mapRecordsWithDetails(join(nodeView.records, header, lhsSlot -> rhsSlot)())
       }
     }
 
@@ -247,7 +247,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
         assertIsNode(lhsSlot)
         assertIsNode(rhsSlot)
 
-        prev.mapRecordsWithDetails(join(nodeView.records, header, lhsSlot -> rhsSlot))
+        prev.mapRecordsWithDetails(join(nodeView.records, header, lhsSlot -> rhsSlot)())
       }
     }
 
@@ -263,26 +263,79 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
         prev.mapRecordsWithDetails(join(relView.records, header,
           sourceSlot -> relSourceSlot,
-          targetSlot -> relTargetSlot))
+          targetSlot -> relTargetSlot)())
       }
     }
 
+    def optional(rhs: PhysicalResult, lhsHeader: RecordHeader, rhsHeader: RecordHeader): PhysicalResult = {
+      val commonFields = rhsHeader.fields.intersect(lhsHeader.fields)
+      val rhsData = rhs.records.details.toDF()
+      val lhsData = prev.records.details.toDF()
+
+      // Remove all common columns from the right hand side, except the join columns
+      val columnsToRemove = commonFields
+        .flatMap(rhsHeader.childSlots)
+        .map(_.content)
+        .map(context.columnName).toSeq
+
+      val lhsJoinSlots = commonFields.map(lhsHeader.slotFor)
+      val rhsJoinSlots = commonFields.map(rhsHeader.slotFor)
+
+      // Find the join pairs and introduce an alias for the right hand side
+      // This is necessary to be able to deduplicate the join columns later
+      val joinColumnMapping = lhsJoinSlots
+        .map(lhsSlot => {
+          lhsSlot -> rhsJoinSlots.find(_.content == lhsSlot.content).get
+        })
+        .map(pair => {
+          val lhsCol = lhsData.col(context.columnName(pair._1))
+          val rhsColName = context.columnName(pair._2)
+
+          (lhsCol, rhsColName, FreshVariableNamer.generateUniqueName(rhsHeader))
+        }).toSeq
+
+      val reducedRhsData = joinColumnMapping
+        .foldLeft(rhsData)((acc, col) => acc.withColumnRenamed(col._2, col._3))
+        .drop(columnsToRemove: _*)
+
+      val joinCols = joinColumnMapping.map(t => t._1 -> reducedRhsData.col(t._3))
+
+      prev.mapRecordsWithDetails(join(reducedRhsData, rhsHeader, joinCols: _*)("leftouter", deduplicate = true))
+    }
+
     private def join(rhs: SparkCypherRecords, header: RecordHeader, joinSlots: (RecordSlot, RecordSlot)*)
-    : SparkCypherRecords => SparkCypherRecords = {
+                    (joinType: String = "inner", deduplicate: Boolean = false)
+                    : SparkCypherRecords => SparkCypherRecords = {
+
+      val lhsData = prev.records.details.toDF()
+      val rhsData = rhs.details.toDF()
+
+      val joinCols = joinSlots.map(pair =>
+        lhsData.col(context.columnName(pair._1)) -> rhsData.col(context.columnName(pair._2))
+      )
+
+      join(rhsData, header, joinCols: _*)(joinType, deduplicate)
+    }
+
+    private def join(rhsData: DataFrame, header: RecordHeader, joinCols: (Column, Column)*)
+                     (joinType: String, deduplicate: Boolean)
+                     : SparkCypherRecords => SparkCypherRecords = {
+
       def f(lhs: SparkCypherRecords) = {
-        if (lhs.space == rhs.space) {
-          val lhsData = lhs.details.data
-          val rhsData = rhs.details.data
+        val lhsData = lhs.details.data
 
-          val joinExpr = joinSlots
-            .map { case (l, r) => lhsData.col(context.columnName(l)) === rhsData.col(context.columnName(r)) }
-            .reduce(_ && _)
-          val jointData = lhsData.join(rhsData, joinExpr, "inner")
+        val joinExpr = joinCols
+          .map { case (l, r) => l === r }
+          .reduce(_ && _)
 
-          SparkCypherRecords.create(header, jointData)(lhs.space)
-        } else {
-          Raise.graphSpaceMismatch()
-        }
+        val joinedData = lhsData.join(rhsData, joinExpr, joinType)
+
+        val returnData = if (deduplicate) {
+          val colsToDrop = joinCols.map(col => col._2)
+          colsToDrop.foldLeft(joinedData)((acc, col) => acc.drop(col))
+        } else joinedData
+
+        SparkCypherRecords.create(header, returnData)(lhs.space)
       }
       f
     }

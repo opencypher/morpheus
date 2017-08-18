@@ -182,6 +182,18 @@ object SchemaTyper {
         }
       } yield result
 
+    case IsNull(inner) =>
+      for {
+        innerType <- process[R](inner)
+        result <- recordTypes(inner -> innerType) >> recordAndUpdate(expr -> CTBoolean)
+      } yield result
+
+    case IsNotNull(inner) =>
+      for {
+        innerType <- process[R](inner)
+        result <- recordTypes(inner -> innerType) >> recordAndUpdate(expr -> CTBoolean)
+      } yield result
+
     case _: SignedDecimalIntegerLiteral =>
       recordAndUpdate(expr -> CTInteger)
 

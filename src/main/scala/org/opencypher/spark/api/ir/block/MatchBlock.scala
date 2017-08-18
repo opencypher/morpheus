@@ -21,5 +21,6 @@ final case class MatchBlock[E](
   after: Set[BlockRef],
   binds: Pattern[E],
   where: AllGiven[E] = AllGiven[E](),
+  optional: Boolean,
   graph: BlockRef
 ) extends BasicBlock[Pattern[E], E](BlockType("match"))

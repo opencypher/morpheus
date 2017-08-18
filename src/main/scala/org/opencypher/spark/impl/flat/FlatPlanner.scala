@@ -62,6 +62,9 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
         producer.boundedVarExpand(edgeScan.edge, edgeList, target, lower, upper, initVarExpand,
           edgeScan, process(targetOp))
 
+      case logical.Optional(lhs, rhs) =>
+        producer.planOptional(process(lhs), process(rhs))
+
       case logical.OrderBy(sortListItems, sourceOp) =>
         producer.orderBy(sortListItems, process(sourceOp))
 

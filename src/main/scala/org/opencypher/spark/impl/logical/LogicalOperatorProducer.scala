@@ -43,7 +43,8 @@ class LogicalOperatorProducer {
     ExpandTarget(source, rel, target, sourcePlan, targetPlan)(solved)
   }
 
-  def planSourceExpand(source: Field, rel: Field, types: EveryRelationship, target: Field, sourcePlan: LogicalOperator, targetPlan: LogicalOperator): ExpandSource = {
+  def planSourceExpand(source: Field, rel: Field, types: EveryRelationship, target: Field,
+                       sourcePlan: LogicalOperator, targetPlan: LogicalOperator): ExpandSource = {
 
     val prevSolved = sourcePlan.solved ++ targetPlan.solved
 
@@ -72,6 +73,10 @@ class LogicalOperatorProducer {
 
   def planFilter(expr: Expr, prev: LogicalOperator): Filter = {
     Filter(expr, prev)(prev.solved.withPredicate(expr))
+  }
+
+  def planOptional(nonOptionalPlan: LogicalOperator, optionalPlan: LogicalOperator): Optional = {
+    Optional(nonOptionalPlan, optionalPlan)(optionalPlan.solved)
   }
 
   def projectField(field: Field, expr: Expr, prev: LogicalOperator): Project = {

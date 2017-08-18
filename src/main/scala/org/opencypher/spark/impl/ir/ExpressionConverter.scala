@@ -83,6 +83,10 @@ final class ExpressionConverter(val globals: GlobalsRegistry) extends AnyVal {
       Equals(convert(lhs), convert(elems.head))(typings(e))
     case ast.In(lhs, rhs) =>
       In(convert(lhs), convert(rhs))(typings(e))
+    case ast.IsNull(expr) =>
+      IsNull(convert(expr))(typings(e))
+    case ast.IsNotNull(expr) =>
+      IsNotNull(convert(expr))(typings(e))
 
     // Arithmetics
     case ast.Add(lhs, rhs) =>

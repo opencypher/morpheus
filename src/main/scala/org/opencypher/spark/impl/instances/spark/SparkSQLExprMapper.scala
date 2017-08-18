@@ -84,6 +84,14 @@ object SparkSQLExprMapper {
           case _ => Raise.notYetImplemented(s"Support for expression $e")
         }
 
+      case IsNull(e) =>
+        val col = getColumn(e, header, df)
+        Some(col.isNull)
+
+      case IsNotNull(e) =>
+        val col = getColumn(e, header, df)
+        Some(col.isNotNull)
+
       case Ands(exprs) =>
         val cols = exprs.map(asSparkSQLExpr(header, _, df))
         if (cols.contains(None)) None

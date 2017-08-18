@@ -141,6 +141,10 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     BoundedVarExpand(edge, edgeList, target, lower, upper, sourceOp, edgeOp, targetOp, header)
   }
 
+  def planOptional(lhs: FlatOperator, rhs: FlatOperator): FlatOperator = {
+    Optional(lhs, rhs, lhs.header, rhs.header)
+  }
+
   def orderBy(sortItems: Seq[SortItem[Expr]], sourceOp: FlatOperator): FlatOperator = {
     OrderBy(sortItems, sourceOp, sourceOp.header)
   }

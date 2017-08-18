@@ -83,10 +83,11 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
   def planNonLeaf(ref: BlockRef, model: QueryModel[Expr], plan: LogicalOperator)(implicit context: LogicalPlannerContext): LogicalOperator = {
     model(ref) match {
-      case MatchBlock(_, pattern, where, graph) =>
+      case MatchBlock(_, pattern, where, optional, graph) =>
         // this plans both pattern and filter for convenience -- TODO: split up
         val patternPlan = planPattern(plan, pattern)
-        planFilter(patternPlan, where)
+        val filterPlan = planFilter(patternPlan, where)
+        if (optional) producer.planOptional(plan, filterPlan) else filterPlan
 
       case ProjectBlock(_, ProjectedFields(exprs), where, graph) =>
         val projPlan = planProjections(plan, exprs)
@@ -153,6 +154,12 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       case (acc, not@Not(expr)) =>
         val project = planInnerExpr(expr, acc)
         producer.planFilter(not, project)
+      case (acc, isNull@IsNull(expr)) =>
+        val project = planInnerExpr(expr, acc)
+        producer.planFilter(isNull, acc)
+      case (acc, isNotNull@IsNotNull(expr)) =>
+        val project = planInnerExpr(expr, acc)
+        producer.planFilter(isNotNull, acc)
       case (acc, t: TrueLit) =>
         producer.planFilter(t, acc) // optimise away this one somehow... currently we do that in PhysicalPlanner
       case (acc, v: Var) =>
@@ -174,6 +181,10 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         val project1 = planInnerExpr(be.lhs, in)
         val project2 = planInnerExpr(be.rhs, project1)
         producer.projectExpr(be, project2)
+      case HasLabel(e,_) => planInnerExpr(e, in)
+      case Not(e) => planInnerExpr(e, in)
+      case IsNull(e) => planInnerExpr(e, in)
+      case IsNotNull(e) => planInnerExpr(e, in)
       case x =>
         Raise.notYetImplemented(s"projection of inner expression $x")
     }
@@ -184,19 +195,21 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       case (f, e: EveryNode) if f.cypherType.subTypeOf(CTNode).isTrue => f -> e
     }
 
-    val nodePlans = nodes.map {
-      // TODO: This copies the full subtree underneath each node -- only a LoadGraph is necessary
-      case (f, e) => nodePlan(plan, f, e)
-    }
+    val nodePlans = nodes
+      .filterNot(node => plan.solved.fields.contains(node._1))
+      .map {
+        case (f, e) => nodePlan(producer.planStart(context.defaultGraphSchema, context.inputRecordFields), f, e)
+      }
 
     if (pattern.topology.nonEmpty)
-      planExpansions(nodePlans.toSet, pattern, producer)
+      planExpansions(nodePlans.toSet + plan, pattern, producer)
     else if (nodePlans.size == 1) nodePlans.head
     else Raise.invalidPattern(pattern.toString)
   }
 
   @tailrec
-  private def planExpansions(disconnectedPlans: Set[LogicalOperator], pattern: Pattern[Expr], producer: LogicalOperatorProducer): LogicalOperator = {
+  private def planExpansions(disconnectedPlans: Set[LogicalOperator], pattern: Pattern[Expr],
+                             producer: LogicalOperatorProducer): LogicalOperator = {
     val allSolved = disconnectedPlans.map(_.solved).reduce(_ ++ _)
 
     val (r, c) = pattern.topology.collectFirst {
