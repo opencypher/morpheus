@@ -32,13 +32,33 @@ class AggregationAcceptanceTest extends SparkCypherTestSuite {
     ))
   }
 
-  test("simple count()") {
+  test("simple count(prop)") {
     val graph = TestGraph("({name: 'foo'}), ({name: 'bar'}), (), (), (), ({name: 'baz'})")
 
     val result = graph.cypher("MATCH (n) WITH count(n.name) AS nonNullNames RETURN nonNullNames")
 
     result.records.toMaps should equal(Bag(
       CypherMap("nonNullNames" -> 3)
+    ))
+  }
+
+  test("simple count(node)") {
+    val graph = TestGraph("({name: 'foo'}), ({name: 'bar'}), (), (), (), ({name: 'baz'})")
+
+    val result = graph.cypher("MATCH (n) WITH count(n) AS nodes RETURN nodes")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("nodes" -> 6)
+    ))
+  }
+
+  test("count after expand") {
+    val graph = TestGraph("({name: 'foo'})-->(:B), ({name: 'bar'}), (), ()-->(:B), (), ({name: 'baz'})")
+
+    val result = graph.cypher("MATCH (n)-->(b:B) WITH count(b) AS nodes RETURN nodes")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("nodes" -> 2)
     ))
   }
 
