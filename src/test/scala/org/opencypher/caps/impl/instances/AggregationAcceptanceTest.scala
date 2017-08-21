@@ -23,6 +23,50 @@ import scala.collection.immutable.Bag
 class AggregationAcceptanceTest extends CAPSTestSuite {
 
   //--------------------------------------------------------------------------------------------------------------------
+  // AVG
+  //--------------------------------------------------------------------------------------------------------------------
+
+  test("simple avg(prop) with integers") {
+    val graph = TestGraph("({val:2L}),({val:4L}),({val:6L})")
+
+    val result = graph.cypher("MATCH (n) WITH AVG(n.val) AS res RETURN res")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("res" -> 4)
+    ))
+  }
+
+  test("simple avg(prop) with floats") {
+    val graph = TestGraph("({val:5.0D}),({val:5.0D}),({val:0.5D})")
+
+    val result = graph.cypher("MATCH (n) WITH AVG(n.val) AS res RETURN res")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("res" -> 3.5)
+    ))
+  }
+
+  test("simple avg(prop) with single null value") {
+    val graph = TestGraph("({val:42.0D}),({val:23.0D}),()")
+
+    val result = graph.cypher("MATCH (n) WITH AVG(n.val) AS res RETURN res")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("res" -> 32.5)
+    ))
+  }
+
+  ignore("simple avg(prop) with only null values") {
+    val graph = TestGraph("({val:null}),(),()")
+
+    val result = graph.cypher("MATCH (n) WITH AVG(n.val) AS res RETURN res")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("res" -> null)
+    ))
+  }
+
+  //--------------------------------------------------------------------------------------------------------------------
   // COUNT
   //--------------------------------------------------------------------------------------------------------------------
 
@@ -113,17 +157,101 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   //--------------------------------------------------------------------------------------------------------------------
-  // Combinations
+  // MAX
   //--------------------------------------------------------------------------------------------------------------------
 
+  test("simple max(prop)") {
+    val graph = TestGraph("({val:42L}),({val:23L}),({val:84L})")
+
+    val result = graph.cypher("MATCH (n) WITH MAX(n.val) AS res RETURN res")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("res" -> 84L)
+    ))
+  }
+
+  test("simple max(prop) with single null value") {
+    val graph = TestGraph("({val:42L}),({val:23L}),()")
+
+    val result = graph.cypher("MATCH (n) WITH MAX(n.val) AS res RETURN res")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("res" -> 42L)
+    ))
+  }
+
+  ignore("simple max(prop) with only null values") {
+    val graph = TestGraph("({val:null}),(),()")
+
+    val result = graph.cypher("MATCH (n) WITH MAX(n.val) AS res RETURN res")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("res" -> null)
+    ))
+  }
+  //--------------------------------------------------------------------------------------------------------------------
+  // SUM
+  //--------------------------------------------------------------------------------------------------------------------
+
+  test("simple sum(prop) with integers") {
+    val graph = TestGraph("({val:2L}),({val:4L}),({val:6L})")
+
+    val result = graph.cypher("MATCH (n) WITH SUM(n.val) AS res RETURN res")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("res" -> 12)
+    ))
+  }
+
+  test("simple sum(prop) with floats") {
+    val graph = TestGraph("({val:5.0D}),({val:5.0D}),({val:0.5D})")
+
+    val result = graph.cypher("MATCH (n) WITH SUM(n.val) AS res RETURN res")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("res" -> 10.5)
+    ))
+  }
+
+  test("simple sum(prop) with single null value") {
+    val graph = TestGraph("({val:42.0D}),({val:23.0D}),()")
+
+    val result = graph.cypher("MATCH (n) WITH SUM(n.val) AS res RETURN res")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("res" -> 65.0)
+    ))
+  }
+
+  ignore("simple sum(prop) with only null values") {
+    val graph = TestGraph("({val:null}),(),()")
+
+    val result = graph.cypher("MATCH (n) WITH SUM(n.val) AS res RETURN res")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("res" -> null)
+    ))
+  }
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // Combinations
+  //--------------------------------------------------------------------------------------------------------------------
 
   test("multiple aggregates") {
     val graph = TestGraph("({val:42L}),({val:23L}),({val:84L})")
 
-    val result = graph.cypher("MATCH (n) WITH MIN(n.val) AS min, COUNT(*) AS cnt RETURN min, cnt")
+    val result = graph.cypher(
+      """MATCH (n)
+        |WITH
+        | AVG(n.val) AS avg,
+        | COUNT(*) AS cnt,
+        | MIN(n.val) AS min,
+        | MAX(n.val) AS max,
+        | SUM(n.val) AS sum
+        |RETURN avg, cnt, min, max, sum""".stripMargin)
 
     result.records.toMaps should equal(Bag(
-      CypherMap("min" -> 23L, "cnt" -> 3)
+      CypherMap("avg" -> 49, "cnt" -> 3, "min" -> 23L, "max" -> 84L, "sum" -> 149)
     ))
   }
 }

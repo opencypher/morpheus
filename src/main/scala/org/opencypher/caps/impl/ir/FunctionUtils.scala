@@ -28,8 +28,11 @@ object FunctionUtils {
         case functions.Id => Id(expr.head)(cypherType)
         case functions.Labels => Labels(expr.head)(cypherType)
         case functions.Type => Type(expr.head)(cypherType)
+        case functions.Avg => Avg(expr.head)(cypherType)
         case functions.Count => Count(expr.head)(cypherType)
+        case functions.Max => Max(expr.head)(cypherType)
         case functions.Min => Min(expr.head)(cypherType)
+        case functions.Sum => Sum(expr.head)(cypherType)
         case a:Function => Raise.notYetImplemented(s"parsing ${a.name} function")
       }
     }
