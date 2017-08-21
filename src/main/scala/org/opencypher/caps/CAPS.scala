@@ -21,7 +21,7 @@ import scala.io.Source
 import scala.language.postfixOps
 import scala.util.Try
 
-object CypherForApacheSpark {
+object CAPS {
 
   self =>
 

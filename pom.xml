@@ -28,7 +28,7 @@
         <plugin.scalastyle-maven.version>0.8.0</plugin.scalastyle-maven.version>
 
         <!-- Used dependencies -->
-        <dep.ammonite.version>0.7.0</dep.ammonite.version>
+        <dep.ammonite.version>1.0.1-6-6d2db3a</dep.ammonite.version>
         <dep.cats.version>0.9.0</dep.cats.version>
         <dep.circe.version>0.8.0</dep.circe.version>
         <dep.eff.version>4.5.0</dep.eff.version>
@@ -101,11 +101,19 @@
                 <version>${plugin.scala-maven.version}</version>
                 <executions>
                     <execution>
+                        <id>scala-compile</id>
                         <goals>
-                            <goal>compile</goal>
-                            <goal>testCompile</goal>
                             <goal>add-source</goal>
+                            <goal>compile</goal>
                         </goals>
+                        <phase>process-resources</phase>
+                    </execution>
+                    <execution>
+                        <id>scala-test-compile</id>
+                        <goals>
+                            <goal>testCompile</goal>
+                        </goals>
+                        <phase>test-compile</phase>
                     </execution>
                 </executions>
                 <configuration>
@@ -425,7 +433,7 @@
 
         <dependency>
             <groupId>com.lihaoyi</groupId>
-            <artifactId>ammonite_2.11.8</artifactId>
+            <artifactId>ammonite_2.11.11</artifactId>
             <version>${dep.ammonite.version}</version>
         </dependency>
 

@@ -15,9 +15,9 @@
  */
 package org.opencypher.caps.demo
 
-import ammonite.util.Bind._
-import ammonite.util.Util
-import org.opencypher.caps.CypherForApacheSpark
+import ammonite.repl.FrontEnd
+import ammonite.util.{Bind, Util}
+import org.opencypher.caps.CAPS
 
 object Shell {
 
@@ -25,7 +25,7 @@ object Shell {
     implicit val session = CSVDemo.session
     try {
       val welcomeBanner = {
-        val ownVersion = CypherForApacheSpark.version.getOrElse("<unknown>")
+        val ownVersion = CAPS.version.getOrElse("<unknown>")
         val ammoniteVersion = ammonite.Constants.version
         val scalaVersion = scala.util.Properties.versionNumberString
         val javaVersion = System.getProperty("java.version")
@@ -50,17 +50,27 @@ object Shell {
            """.stripMargin
         )
       }
-      val frontend = if (System.getProperty("os.name").startsWith("Windows")) "JLineWindows" else "JLineUnix"
+      val frontend =
+        if (System.getProperty("os.name").startsWith("Windows"))
+          FrontEnd.JLineWindows
+        else
+          FrontEnd.JLineUnix
 
-      val repl = new ammonite.Main(
+      new ammonite.Main(
         welcomeBanner = Some(welcomeBanner),
-        predef =
-          s"""|repl.frontEnd() = ammonite.frontend.FrontEnd.$frontend
-              |repl.prompt() = \"(:spark)-->(:cypher) \"
-              |import org.opencypher.caps.demo.CSVDemo._
+        predefCode =
+          s"""|import org.opencypher.caps.demo.CSVDemo._
               |""".stripMargin
-      ).instantiateRepl(Seq("session" -> session))
-      repl.run()
+      ).instantiateRepl(Vector(Bind("session", session)), None) match {
+        case Right(repl) =>
+          repl.prompt.bind("(:Cypher)-[:FOR]->(:Apache:Spark) ")
+          repl.frontEnd.bind(frontend)
+          repl.initializePredef()
+          repl.run()
+
+        case Left((failure, paths)) =>
+          throw new RuntimeException(s"${failure.msg} [$paths]")
+      }
     } finally {
       session.stop()
     }
