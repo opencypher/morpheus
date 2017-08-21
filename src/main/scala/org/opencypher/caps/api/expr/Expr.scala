@@ -242,6 +242,12 @@ final case class Count(expr: Expr)(val cypherType: CypherType = CTWildcard) exte
   override def withoutType: String = s"count(${expr.withoutType})"
 }
 
+final case class Min(expr: Expr)(val cypherType: CypherType = CTWildcard) extends Aggregator {
+  override val inner = Some(expr)
+  override def toString = s"min($expr)"
+  override def withoutType: String = s"count(${expr.withoutType})"
+}
+
 // Literal expressions
 
 sealed trait Lit[T] extends Expr {

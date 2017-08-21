@@ -29,6 +29,7 @@ object FunctionUtils {
         case functions.Labels => Labels(expr.head)(cypherType)
         case functions.Type => Type(expr.head)(cypherType)
         case functions.Count => Count(expr.head)(cypherType)
+        case functions.Min => Min(expr.head)(cypherType)
         case a:Function => Raise.notYetImplemented(s"parsing ${a.name} function")
       }
     }

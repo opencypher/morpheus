@@ -107,21 +107,12 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
               case (_, _: Aggregator) => true
             }
 
-            if (agg.size != 1)
-              error(IRBuilderError("More than one top-level aggregation!"))(Vector.empty)
-            else {
-              // First project the group
-              val (ref1, reg1) = registerProjectBlock(context, group)
+            val (ref1, reg1) = registerProjectBlock(context, group)
+            val after = reg1.lastAdded.toSet
+            val aggBlock = AggregationBlock[Expr](after, Aggregations(agg.toSet), group.map(_._1).toSet)
+            val (ref2, reg2) = reg1.register(aggBlock)
 
-              // Second, aggregate with grouping
-              val (aggField, aggExpr: Aggregator) = agg.head
-
-              val after = reg1.lastAdded.toSet
-              val aggBlock = AggregationBlock[Expr](after, AggField(aggField, aggExpr), group.map(_._1).toSet)
-              val (ref2, reg2) = reg1.register(aggBlock)
-
-              put[R, IRBuilderContext](context.copy(blocks = reg2)) >> pure[R, Vector[BlockRef]](Vector(ref1, ref2))
-            }
+            put[R, IRBuilderContext](context.copy(blocks = reg2)) >> pure[R, Vector[BlockRef]](Vector(ref1, ref2))
           }
         } yield refs
 

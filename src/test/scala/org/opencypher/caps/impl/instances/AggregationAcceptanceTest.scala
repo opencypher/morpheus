@@ -22,6 +22,10 @@ import scala.collection.immutable.Bag
 
 class AggregationAcceptanceTest extends CAPSTestSuite {
 
+  //--------------------------------------------------------------------------------------------------------------------
+  // COUNT
+  //--------------------------------------------------------------------------------------------------------------------
+
   test("simple count(*)") {
     val graph = TestGraph("({name: 'foo'}), ({name: 'bar'}), (), (), (), ({name: 'baz'})")
 
@@ -71,6 +75,55 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
       CypherMap("n.name" -> "foo", "amount" -> 2),
       CypherMap("n.name" -> null, "amount" -> 3),
       CypherMap("n.name" -> "baz", "amount" -> 1)
+    ))
+  }
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // MIN
+  //--------------------------------------------------------------------------------------------------------------------
+
+  test("simple min(prop)") {
+    val graph = TestGraph("({val:42L}),({val:23L}),({val:84L})")
+
+    val result = graph.cypher("MATCH (n) WITH MIN(n.val) AS res RETURN res")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("res" -> 23L)
+    ))
+  }
+
+  test("simple min(prop) with single null value") {
+    val graph = TestGraph("({val:42L}),({val:23L}),()")
+
+    val result = graph.cypher("MATCH (n) WITH MIN(n.val) AS res RETURN res")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("res" -> 23L)
+    ))
+  }
+
+  ignore("simple min(prop) with only null values") {
+    val graph = TestGraph("({val:null}),(),()")
+
+    val result = graph.cypher("MATCH (n) WITH MIN(n.val) AS res RETURN res")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("res" -> null)
+    ))
+  }
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // Combinations
+  //--------------------------------------------------------------------------------------------------------------------
+
+
+  test("multiple aggregates") {
+    val graph = TestGraph("({val:42L}),({val:23L}),({val:84L})")
+
+    val result = graph.cypher("MATCH (n) WITH MIN(n.val) AS min, COUNT(*) AS cnt RETURN min, cnt")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("min" -> 23L, "cnt" -> 3)
     ))
   }
 }
