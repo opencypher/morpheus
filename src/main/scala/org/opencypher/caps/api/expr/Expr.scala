@@ -217,18 +217,27 @@ sealed trait FunctionExpr extends Expr {
   override final def withoutType = s"$name(${expr.withoutType})"
 
 }
-final case class Id(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr {  override val name = "id"
+final case class Id(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr {
+  override val name = "id"
 }
 
-final case class Labels(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr {  override val name = "labels"
+final case class Labels(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr {
+  override val name = "labels"
 }
 
-final case class Type(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr {  override val name = "type"
+final case class Type(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr {
+  override val name = "type"
 }
 
 // Aggregators
 sealed trait Aggregator extends Expr {
   def inner: Option[Expr]
+}
+
+final case class Avg(expr: Expr)(val cypherType: CypherType = CTWildcard) extends Aggregator {
+  override val inner = Some(expr)
+  override def toString = s"avg($expr)"
+  override def withoutType: String = s"avg(${expr.withoutType})"
 }
 
 final case class CountStar()(val cypherType: CypherType = CTWildcard) extends Aggregator {
@@ -240,6 +249,24 @@ final case class Count(expr: Expr)(val cypherType: CypherType = CTWildcard) exte
   override val inner = Some(expr)
   override def toString = s"count($expr)"
   override def withoutType: String = s"count(${expr.withoutType})"
+}
+
+final case class Max(expr: Expr)(val cypherType: CypherType = CTWildcard) extends Aggregator {
+  override val inner = Some(expr)
+  override def toString = s"max($expr)"
+  override def withoutType: String = s"max(${expr.withoutType})"
+}
+
+final case class Min(expr: Expr)(val cypherType: CypherType = CTWildcard) extends Aggregator {
+  override val inner = Some(expr)
+  override def toString = s"min($expr)"
+  override def withoutType: String = s"min(${expr.withoutType})"
+}
+
+final case class Sum(expr: Expr)(val cypherType: CypherType = CTWildcard) extends Aggregator {
+  override val inner = Some(expr)
+  override def toString = s"sum($expr)"
+  override def withoutType: String = s"sum(${expr.withoutType})"
 }
 
 // Literal expressions

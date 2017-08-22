@@ -16,13 +16,12 @@
 package org.opencypher.caps.impl.logical
 
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.api.ir.block.{AggField, SortItem}
+import org.opencypher.caps.api.ir.block.{Aggregations, SortItem}
 import org.opencypher.caps.api.ir.pattern.{EveryNode, EveryRelationship}
 import org.opencypher.caps.api.ir.{Field, SolvedQueryModel}
 import org.opencypher.caps.api.record.{ProjectedExpr, ProjectedField}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.util._
 
 class LogicalOperatorProducer {
@@ -80,14 +79,10 @@ class LogicalOperatorProducer {
     Optional(nonOptionalPlan, optionalPlan)(optionalPlan.solved)
   }
 
-  def aggregate(field: AggField[Expr], group: Set[Field], prev: LogicalOperator): Aggregate = {
-    field.aggregator match {
-      case agg: Aggregator =>
-        Aggregate(field.field, agg, group.map(toVar), prev)(prev.solved.withField(field.field))
+  def aggregate(aggregations: Aggregations[Expr], group: Set[Field], prev: LogicalOperator): Aggregate = {
+    val transformed = aggregations.pairs.map { case (field, aggregator: Aggregator) => toVar(field) -> aggregator }
 
-      case x =>
-        Raise.impossible(s"aggregating using $x")
-    }
+    Aggregate(transformed, group.map(toVar), prev)(prev.solved.withFields(aggregations.fields.toSeq: _*))
   }
 
   def projectField(field: Field, expr: Expr, prev: LogicalOperator): Project = {

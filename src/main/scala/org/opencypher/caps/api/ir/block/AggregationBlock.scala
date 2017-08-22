@@ -19,15 +19,15 @@ import org.opencypher.caps.api.ir.Field
 import org.opencypher.caps.api.ir.pattern.AllGiven
 
 final case class AggregationBlock[E](
-  after: Set[BlockRef],
-  binds: AggField[E],
-  group: Set[Field]
-) extends BasicBlock[AggField[E], E](BlockType("aggregation")) {
+    after: Set[BlockRef],
+    binds: Aggregations[E],
+    group: Set[Field]
+) extends BasicBlock[Aggregations[E], E](BlockType("aggregation")) {
 
   override val where: AllGiven[E] = AllGiven[E]() // no filtering in aggregation blocks
   override def graph: BlockRef = after.head // this will be removed
 }
 
-final case class AggField[E](field: Field, aggregator: E) extends Binds[E] {
-  override def fields = Set(field)
+final case class Aggregations[E](pairs: Set[(Field, E)]) extends Binds[E] {
+  override def fields = pairs.map(_._1)
 }

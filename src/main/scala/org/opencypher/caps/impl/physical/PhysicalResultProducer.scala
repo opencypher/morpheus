@@ -26,6 +26,7 @@ import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTRelationship}
 import org.opencypher.caps.api.value.{CypherInteger, CypherValue}
+import org.opencypher.caps.impl.convert.toSparkType
 import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.flat.FreshVariableNamer
 import org.opencypher.caps.impl.instances.spark.SparkSQLExprMapper.asSparkSQLExpr
@@ -133,31 +134,45 @@ class PhysicalResultProducer(context: RuntimeContext) {
         CAPSRecords.create(header, newData)(subject.space)
       }
 
-    def aggregate(to: Var, agg: Aggregator, group: Set[Var], header: RecordHeader): PhysicalResult =
+    def aggregate(aggregations: Set[(Var, Aggregator)], group: Set[Var], header: RecordHeader): PhysicalResult =
       prev.mapRecordsWithDetails { records =>
         val data = records.data
+
+        def withInnerExpr(expr: Expr)(f: Column => Column) = {
+          asSparkSQLExpr(records.header, expr, data) match {
+            case None => Raise.notYetImplemented(s"projecting $expr")
+            case Some(column) => f(column)
+          }
+        }
 
         if (group.nonEmpty)
           Raise.notYetImplemented("grouping")
 
-        val newData = agg match {
-          case _: CountStar =>
-            data.agg(functions.count(functions.lit(0)).as(to.name))
+        val sparkAggFunctions = aggregations.map {
+          case (to, Avg(expr)) =>
+            withInnerExpr(expr)(functions.avg(_).cast(toSparkType(to.cypherType)).as(to.name))
 
-            // TODO: Consider not implicitly projecting the inner expr here, but rewriting it into a variable in logical planning or IR construction
-          case Count(expr) =>
-            asSparkSQLExpr(records.header, expr, data) match {
-              case None =>
-                Raise.notYetImplemented(s"projecting $expr")
-              case Some(column) =>
-                data.agg(functions.count(column).as(to.name))
-            }
+          case (to, CountStar()) =>
+            functions.count(functions.lit(0)).as(to.name)
+
+          // TODO: Consider not implicitly projecting the inner expr here, but rewriting it into a variable in logical planning or IR construction
+          case (to, Count(expr)) =>
+            withInnerExpr(expr)(functions.count(_).as(to.name))
+
+          case (to, Max(expr)) =>
+            withInnerExpr(expr)(functions.max(_).as(to.name))
+
+          case (to, Min(expr)) =>
+            withInnerExpr(expr)(functions.min(_).as(to.name))
+
+          case (to, Sum(expr)) =>
+            withInnerExpr(expr)(functions.sum(_).as(to.name))
 
           case x =>
             Raise.notYetImplemented(s"Aggregator $x")
         }
 
-        CAPSRecords.create(header, newData)(records.space)
+        CAPSRecords.create(header, data.agg(sparkAggFunctions.head, sparkAggFunctions.tail.toSeq: _*))(records.space)
       }
 
     def select(fields: IndexedSeq[Var], header: RecordHeader): PhysicalResult =
