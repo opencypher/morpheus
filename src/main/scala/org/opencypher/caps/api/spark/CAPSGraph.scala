@@ -32,32 +32,38 @@ trait CAPSGraph extends CypherGraph with Serializable {
 
   self =>
 
-  final override type Space = SparkGraphSpace
   final override type Graph = CAPSGraph
   final override type Records = CAPSRecords
+  final override type Session = CAPSSession
+  final override type Result = CAPSResult
+
+  def tokens: CAPSRecordsTokens
 }
 
 object CAPSGraph {
 
-  def empty(implicit space: SparkGraphSpace): CAPSGraph =
-    new EmptyGraph() {}
+  def empty(implicit caps: CAPSSession): CAPSGraph =
+    new EmptyGraph() {
+      override def graph = this
+      override def session = caps
+      override val tokens = CAPSRecordsTokens(TokenRegistry.empty)
+    }
 
-  def create(nodes: NodeScan, scans: GraphScan*)(implicit space: SparkGraphSpace): CAPSGraph = {
+  def create(nodes: NodeScan, scans: GraphScan*)(implicit caps: CAPSSession): CAPSGraph = {
     val allScans = nodes +: scans
-
     val schema = allScans.map(_.schema).reduce(_ ++ _)
 
-    // updates the registry associated with the graph space
-    space.tokens = CAPSRecordsTokens(TokenRegistry.fromSchema(space.tokens.registry, schema))
-
-    new ScanGraph(allScans, schema) {}
+    new ScanGraph(allScans, schema) {
+      override def graph = this
+      override val session = caps
+      override val tokens = CAPSRecordsTokens(TokenRegistry.fromSchema(schema))
+    }
   }
 
-  sealed abstract class EmptyGraph(implicit val space: SparkGraphSpace) extends CAPSGraph {
+  sealed abstract class EmptyGraph(implicit val caps: CAPSSession) extends CAPSGraph {
 
-    implicit val engine = space.engine
-
-    override def schema = Schema.empty
+    override val schema = Schema.empty
+    override val tokens = CAPSRecordsTokens(TokenRegistry.fromSchema(schema))
 
     override def nodes(name: String, cypherType: CTNode) =
       CAPSRecords.empty(RecordHeader.from(OpaqueField(Var(name)(cypherType))))
@@ -66,29 +72,20 @@ object CAPSGraph {
       CAPSRecords.empty(RecordHeader.from(OpaqueField(Var(name)(cypherType))))
   }
 
-  // TODO: Header map
-  // TODO: CapsContext
-
   sealed abstract class ScanGraph(val scans: Seq[GraphScan], val schema: Schema)
-                                 (implicit val space: SparkGraphSpace) extends CAPSGraph {
+                                 (implicit val session: CAPSSession) extends CAPSGraph {
 
-    // Q: Caching?
+    // TODO: Caching?
 
-    // TODO: Normalize (dh partition away/remove all optional label fields, rel type fields)
+    // TODO: Normalize (ie partition away/remove all optional label fields, rel type fields)
+    // TODO: Drop aliases in node scans or here?
 
     self: CAPSGraph =>
-
-    implicit val engine = space.engine
 
     private val nodeEntityScans = NodeEntityScans(scans.collect { case it: NodeScan => it }.toVector)
     private val relEntityScans = RelationshipEntityScans(scans.collect { case it: RelationshipScan => it }.toVector)
 
-    private def globalRegistry: TokenRegistry = space.tokens.registry
-
     override def nodes(name: String, nodeCypherType: CTNode) = {
-
-      // TODO: Drop aliases in node scans or here?
-      // TODO: Handle empty case
 
       // (1) find all scans smaller than or equal to the given cypher type if any
       val selectedScans = nodeEntityScans.scans(nodeCypherType)
@@ -98,7 +95,7 @@ object CAPSGraph {
       val tempSchema = selectedScans
         .map(_.schema)
         .reduce(_ ++ _)
-      val tempHeader = RecordHeader.nodeFromSchema(node, tempSchema, globalRegistry)
+      val tempHeader = RecordHeader.nodeFromSchema(node, tempSchema, tokens.registry)
 
       val selectedRecords = alignEntityVariable(selectedScans, node)
 
@@ -109,8 +106,7 @@ object CAPSGraph {
         tempSchema.relKeyMap,
         tempSchema.impliedLabels,
         tempSchema.labelCombinations)
-
-      val targetHeader = RecordHeader.nodeFromSchema(node, targetSchema, globalRegistry)
+      val targetHeader = RecordHeader.nodeFromSchema(node, targetSchema, tokens.registry)
 
       // (4) Adjust individual scans to same header
       val alignedRecords = alignRecords(selectedRecords, tempHeader, targetHeader)
@@ -134,7 +130,7 @@ object CAPSGraph {
       val rel = Var(name)(relCypherType)
       val tempSchema = selectedScans.map(_.schema).reduce(_ ++ _)
       val selectedRecords = alignEntityVariable(selectedScans, rel)
-      val tempHeader = RecordHeader.relationshipFromSchema(rel, tempSchema, globalRegistry)
+      val tempHeader = RecordHeader.relationshipFromSchema(rel, tempSchema, tokens.registry)
 
       // (3) Update all non-nullable property types to nullable
       val targetSchema = Schema(tempSchema.labels,
@@ -143,8 +139,7 @@ object CAPSGraph {
         PropertyKeyMap.asNullable(tempSchema.relKeyMap),
         tempSchema.impliedLabels,
         tempSchema.labelCombinations)
-
-      val targetHeader = RecordHeader.relationshipFromSchema(rel, targetSchema, globalRegistry)
+      val targetHeader = RecordHeader.relationshipFromSchema(rel, targetSchema, tokens.registry)
 
       // (4) Adjust individual scans to same header
       val alignedRecords = alignRecords(selectedRecords, tempHeader, targetHeader)
@@ -190,7 +185,7 @@ object CAPSGraph {
                 case h: HasType =>
                   acc.withColumn(columnName, lit(labels.contains(h.relType.name)))
                 case t: TypeId =>
-                  acc.withColumn(columnName, lit(globalRegistry.relTypeRefByName(labels.head).id))
+                  acc.withColumn(columnName, lit(tokens.relTypeId(labels.head)))
                 case _ => acc.withColumn(columnName, lit(null).cast(toSparkType(slot.content.cypherType.nullable)))
               }
             case _ => acc

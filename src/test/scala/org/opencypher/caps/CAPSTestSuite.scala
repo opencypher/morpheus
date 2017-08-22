@@ -16,7 +16,6 @@
 package org.opencypher.caps
 
 import org.junit.runner.RunWith
-import org.opencypher.caps.impl.instances.spark.CAPSInstances
 import org.opencypher.caps.support.{GraphMatchingTestSupport, RecordMatchingTestSupport}
 import org.scalatest.junit.JUnitRunner
 
@@ -24,6 +23,6 @@ import org.scalatest.junit.JUnitRunner
 abstract class CAPSTestSuite
   extends BaseTestSuite
     with SparkTestSession.Fixture
+    with CAPSTestSession.Fixture
     with GraphMatchingTestSupport
-    with CAPSInstances
     with RecordMatchingTestSupport

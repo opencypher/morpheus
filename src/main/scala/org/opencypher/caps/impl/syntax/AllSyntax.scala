@@ -16,8 +16,7 @@
 package org.opencypher.caps.impl.syntax
 
 trait AllSyntax
-  extends CypherSyntax
-  with RegisterSyntax
+  extends RegisterSyntax
   with RecordHeaderSyntax
   with util.AllSyntax
   with BlockSyntax

@@ -2,14 +2,10 @@ package org.opencypher.caps.api.spark
 
 import org.apache.spark.sql.Row
 import org.opencypher.caps.CAPSTestSuite
-import org.opencypher.caps.api.exception.CAPSException
-import org.opencypher.caps.api.ir.global.TokenRegistry
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 
 class CAPSGraphTest extends CAPSTestSuite {
-
-  implicit val space = SparkGraphSpace.empty(session, TokenRegistry.empty)
 
   val `:Person` =
     NodeScan.on("p" -> "ID") {

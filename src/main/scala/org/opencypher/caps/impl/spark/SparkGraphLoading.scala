@@ -24,7 +24,7 @@ import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.ir.global.{GlobalsRegistry, PropertyKey, TokenRegistry}
 import org.opencypher.caps.api.record.{OpaqueField, ProjectedExpr, RecordHeader, SlotContent}
 import org.opencypher.caps.api.schema.{Schema, VerifiedSchema}
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, SparkGraphSpace}
+import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.convert.{fromJavaType, toSparkType}
@@ -69,18 +69,18 @@ trait SparkGraphLoading {
   }
 
   def fromNeo4j(nodeQuery: String, relQuery: String)
-               (implicit sc: SparkSession): SparkGraphSpace =
+               (implicit sc: SparkSession): CAPSSession =
     fromNeo4j(nodeQuery, relQuery, "source", "rel", "target", None)
 
   def fromNeo4j(nodeQuery: String, relQuery: String, schema: VerifiedSchema)
-               (implicit sc: SparkSession): SparkGraphSpace =
+               (implicit sc: SparkSession): CAPSSession =
     fromNeo4j(nodeQuery, relQuery, "source", "rel", "target", Some(schema))
 
 
   def fromNeo4j(nodeQuery: String, relQuery: String,
                 sourceNode: String, rel: String, targetNode: String,
                 maybeSchema: Option[VerifiedSchema] = None)
-               (implicit sc: SparkSession): SparkGraphSpace = {
+               (implicit sc: SparkSession): CAPSSession = {
     val (nodes, rels) = loadRDDs(nodeQuery, relQuery)
 
     val verified = maybeSchema.getOrElse(loadSchema(nodes, rels))
@@ -102,7 +102,7 @@ trait SparkGraphLoading {
 
   private def createSpace(nodes: RDD[InternalNode], rels: RDD[InternalRelationship],
                           sourceNode: String = "source", rel: String = "rel", targetNode: String = "target")
-                         (implicit sparkSession: SparkSession, context: LoadingContext): SparkGraphSpace = {
+                         (implicit sparkSession: SparkSession, context: LoadingContext): CAPSSession = {
 
     val nodeFields = (name: String, cypherType: CTNode) => computeNodeFields(name, cypherType)
     val nodeHeader = (name: String, cypherType: CTNode) => nodeFields(name, cypherType).map(_._1).foldLeft(RecordHeader.empty) {
@@ -136,26 +136,7 @@ trait SparkGraphLoading {
       df.repartition(col).sortWithinPartitions(col).cache()
     }
 
-    new SparkGraphSpace with Serializable {
-      selfSpace =>
-
-      override def base = new CAPSGraph with Serializable {
-        selfBase =>
-
-        override def nodes(name: String, cypherType: CTNode) =
-          CAPSRecords.create(nodeHeader(name, cypherType), nodeFrame(name, cypherType))(selfSpace)
-
-        override def relationships(name: String, cypherType: CTRelationship) =
-          CAPSRecords.create(relHeader(name, cypherType), relFrame(name, cypherType))(selfSpace)
-
-        override def space: SparkGraphSpace = selfSpace
-
-        override def schema: Schema = context.schema
-      }
-
-      override def session = sparkSession
-      override var tokens = CAPSRecordsTokens(context.globals.tokens)
-    }
+    CAPSSession.empty(sparkSession)
   }
 
   private def computeNodeFields(name: String, cypherType: CTNode)(implicit context: LoadingContext): Seq[(SlotContent, StructField)] = {

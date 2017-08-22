@@ -88,7 +88,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
         val newData = filteredRows.select(selectedColumns: _*)
 
-        CAPSRecords.create(header, newData)(subject.space)
+        CAPSRecords.create(header, newData)(subject.caps)
       }
     }
 
@@ -107,7 +107,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
           Raise.columnNotFound(oldColumnName)
         }
 
-        CAPSRecords.create(header, newData)(subject.space)
+        CAPSRecords.create(header, newData)(subject.caps)
       }
 
     def project(expr: Expr, header: RecordHeader): PhysicalResult =
@@ -131,7 +131,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
             }
         }
 
-        CAPSRecords.create(header, newData)(subject.space)
+        CAPSRecords.create(header, newData)(subject.caps)
       }
 
     def aggregate(aggregations: Set[(Var, Aggregator)], group: Set[Var], header: RecordHeader): PhysicalResult =
@@ -172,7 +172,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
             Raise.notYetImplemented(s"Aggregator $x")
         }
 
-        CAPSRecords.create(header, data.agg(sparkAggFunctions.head, sparkAggFunctions.tail.toSeq: _*))(records.space)
+        CAPSRecords.create(header, data.agg(sparkAggFunctions.head, sparkAggFunctions.tail.toSeq: _*))(records.caps)
       }
 
     def select(fields: IndexedSeq[Var], header: RecordHeader): PhysicalResult =
@@ -193,7 +193,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
         val columns = groupedSlots.map { s => data.col(context.columnName(s)) }
         val newData = subject.data.select(columns: _*)
 
-        CAPSRecords.create(header, newData)(subject.space)
+        CAPSRecords.create(header, newData)(subject.caps)
       }
 
     def typeFilter(rel: Var, types: AnyGiven[RelTypeRef], header: RecordHeader): PhysicalResult = {
@@ -216,7 +216,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
       prev.mapRecordsWithDetails { subject =>
         val sortedData = subject.details.toDF().sort(sortExpression: _*)
-        CAPSRecords.create(header, sortedData)(subject.space)
+        CAPSRecords.create(header, sortedData)(subject.caps)
       }
     }
 
@@ -238,11 +238,11 @@ class PhysicalResultProducer(context: RuntimeContext) {
         // val tmpCol = tmpDf.col(tmpColName)
         // val newDf = tmpDf.filter(tmpCol >= skip)
 
-        val newDf = subject.space.session.createDataFrame(
+        val newDf = subject.caps.session.createDataFrame(
           subject.details.toDF().rdd.zipWithIndex().filter((pair) => pair._2 >= skip).map(_._1),
           subject.details.toDF().schema
         )
-        CAPSRecords.create(header, newDf)(subject.space)
+        CAPSRecords.create(header, newDf)(subject.caps)
       }
     }
 
@@ -253,7 +253,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
       }
 
       prev.mapRecordsWithDetails { subject =>
-        CAPSRecords.create(header, subject.details.toDF().limit(limit.toInt))(subject.space)
+        CAPSRecords.create(header, subject.details.toDF().limit(limit.toInt))(subject.caps)
       }
     }
 
@@ -376,7 +376,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
           colsToDrop.foldLeft(joinedData)((acc, col) => acc.drop(col))
         } else joinedData
 
-        CAPSRecords.create(header, returnData)(lhs.space)
+        CAPSRecords.create(header, returnData)(lhs.caps)
       }
       f
     }
@@ -402,7 +402,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
         val initializedData = withEmptyList.select(cols: _*)
 
-        CAPSRecords.create(header, initializedData)(subject.space)
+        CAPSRecords.create(header, initializedData)(subject.caps)
       }
     }
 
@@ -433,7 +433,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
           case (l, r) => l.union(r)
         }
 
-        CAPSRecords.create(lhs.header, union)(lhs.space)
+        CAPSRecords.create(lhs.header, union)(lhs.caps)
       }
     }
 
@@ -445,7 +445,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
       val endNodeSlot =  prev.records.details.header.slotFor(endNode)
       val endNodeCol = context.columnName(endNodeSlot)
       joined.mapRecordsWithDetails(records =>
-        CAPSRecords.create(header, records.details.toDF().drop(endNodeCol))(records.space)
+        CAPSRecords.create(header, records.details.toDF().drop(endNodeCol))(records.caps)
       )
     }
 

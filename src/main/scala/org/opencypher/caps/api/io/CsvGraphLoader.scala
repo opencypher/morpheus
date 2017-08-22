@@ -6,7 +6,7 @@ import java.net.URI
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.SparkSession
 import org.opencypher.caps.api.record.{NodeScan, RelationshipScan}
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, SparkGraphSpace}
+import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
 
 /**
   * Loads a graph stored in indexed CSV format from HDFS or the local file system
@@ -26,11 +26,11 @@ import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, SparkGraphSpace}
 
   *
   * @param location Location of the top level folder containing the node and relationship files
-  * @param graphSpace
-  * @param sc
+  * @param caps
   */
-class CsvGraphLoader(location: String)(implicit graphSpace: SparkGraphSpace, sc: SparkSession) {
-  private val fs: FileSystem = FileSystem.get(new URI(location), sc.sparkContext.hadoopConfiguration)
+class CsvGraphLoader(location: String)(implicit caps: CAPSSession) {
+  private val sparkSession = caps.session
+  private val fs: FileSystem = FileSystem.get(new URI(location), sparkSession.sparkContext.hadoopConfiguration)
 
   def load: CAPSGraph = {
     val nodeScans = loadNodes
@@ -46,7 +46,7 @@ class CsvGraphLoader(location: String)(implicit graphSpace: SparkGraphSpace, sc:
       val schema = readSchema(e)(CsvNodeSchema(_))
 
       val records = CAPSRecords.create(
-        sc.read
+        sparkSession.read
           .option("timestampFormat", "yyyy-MM-dd'T'HH:mm:ss.SSS")
           .schema(schema.toStructType)
           .csv(e.toUri.toString)
@@ -72,7 +72,7 @@ class CsvGraphLoader(location: String)(implicit graphSpace: SparkGraphSpace, sc:
       val schema = readSchema(e)(CsvRelSchema(_))
 
       val records = CAPSRecords.create(
-        sc.read
+        sparkSession.read
           .option("timestampFormat", "yyyy-MM-dd'T'HH:mm:ss.SSS")
           .schema(schema.toStructType)
           .csv(e.toUri.toString)

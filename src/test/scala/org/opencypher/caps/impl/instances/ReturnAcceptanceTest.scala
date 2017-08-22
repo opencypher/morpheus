@@ -41,11 +41,11 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
   }
 
   test("return rel with details") {
-    val given = TestGraph("()-[{foo:'bar'}]->()-[]->()")
+    val given = TestGraph("()-[{foo:'bar'}]->()-[]->()").graph
 
     val result = given.cypher("MATCH ()-[r]->() RETURN r")
 
-    val relId = result.recordsWithDetails.space.tokens.registry.relTypeRefByName(DEFAULT_LABEL).id
+    val relId = given.tokens.registry.relTypeRefByName(DEFAULT_LABEL).id
 
     result.recordsWithDetails.toMaps should equal(Bag(
       CypherMap("r" -> 0, "source(r)" -> 0, "target(r)" -> 1, "type(r)" -> relId, "r.foo" -> "bar"),
