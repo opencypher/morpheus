@@ -21,7 +21,7 @@ object CSVDemo {
     .appName(s"cypher-for-apache-spark-benchmark-${Calendar.getInstance().getTime}")
     .getOrCreate()
 
-  implicit val caps = CAPSSession.empty(session)
+  implicit val caps = CAPSSession.create(session)
 
   lazy val graph: CAPSGraph = new CsvGraphLoader(getClass.getResource("/demo/ldbc_1").getFile).load
 
@@ -30,7 +30,7 @@ object CSVDemo {
   def cypher(query: String): CAPSResult = {
     println(s"Now executing query: $query")
 
-    implicit val caps: CAPSSession = CAPSSession.empty(session)
+    implicit val caps: CAPSSession = CAPSSession.create(session)
     val result: CAPSResult = graph.cypher(query)(caps)
 
     result.recordsWithDetails.toDF().cache()

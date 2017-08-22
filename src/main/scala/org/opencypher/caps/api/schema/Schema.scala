@@ -316,7 +316,7 @@ final case class Schema(
   }
 }
 
-sealed trait VerifiedSchema extends Verified[Schema] {
+sealed abstract class VerifiedSchema extends Verified[Schema] with Serializable {
   final override def v = schema
   def schema: Schema
 }

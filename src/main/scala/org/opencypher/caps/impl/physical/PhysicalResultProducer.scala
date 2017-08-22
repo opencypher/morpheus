@@ -231,14 +231,9 @@ class PhysicalResultProducer(context: RuntimeContext) {
         case _ => Raise.impossible()
       }
 
+      // TODO: Replace with data frame based implementation ASAP
       prev.mapRecordsWithDetails { subject =>
-        // TODO: filter call manipulates the generated ids => check this with newer spark versions
-        // val tmpColName = "__SKIPPY_MC_SKIPFACE"
-        // val tmpDf = subject.details.toDF().withColumn(tmpColName, monotonically_increasing_id())
-        // val tmpCol = tmpDf.col(tmpColName)
-        // val newDf = tmpDf.filter(tmpCol >= skip)
-
-        val newDf = subject.caps.session.createDataFrame(
+        val newDf = subject.caps.sparkSession.createDataFrame(
           subject.details.toDF().rdd.zipWithIndex().filter((pair) => pair._2 >= skip).map(_._1),
           subject.details.toDF().schema
         )

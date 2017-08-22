@@ -7,7 +7,7 @@ object CAPSTestSession {
   trait Fixture {
     self: SparkTestSession.Fixture =>
 
-    implicit lazy val caps = CAPSSession.empty(session)
+    implicit lazy val caps = CAPSSession.create(session)
 
     def initialTokens = {
       TokenRegistry.empty

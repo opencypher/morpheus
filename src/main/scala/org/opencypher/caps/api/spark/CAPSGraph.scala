@@ -44,7 +44,7 @@ object CAPSGraph {
 
   def empty(implicit caps: CAPSSession): CAPSGraph =
     new EmptyGraph() {
-      override def graph = this
+      override protected def graph = this
       override def session = caps
       override val tokens = CAPSRecordsTokens(TokenRegistry.empty)
     }
@@ -54,7 +54,7 @@ object CAPSGraph {
     val schema = allScans.map(_.schema).reduce(_ ++ _)
 
     new ScanGraph(allScans, schema) {
-      override def graph = this
+      override protected def graph = this
       override val session = caps
       override val tokens = CAPSRecordsTokens(TokenRegistry.fromSchema(schema))
     }

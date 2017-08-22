@@ -76,8 +76,8 @@ trait GraphMatchingTestSupport {
     lazy val graph: CAPSGraph = new CAPSGraph {
       self =>
 
-      override def graph: CAPSGraph = this
       override def session: CAPSSession = caps
+      override protected def graph: CAPSGraph = this
 
       private def extractFromElement(e: Element) = e.getLabels.asScala.map { label =>
         label -> e.getProperties.asScala.map {

@@ -15,25 +15,25 @@
  */
 package org.opencypher.caps.impl.spark
 
-import org.apache.spark.SparkConf
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.Row
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{Row, SparkSession}
 import org.neo4j.driver.internal.{InternalNode, InternalRelationship}
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.api.ir.global.{GlobalsRegistry, PropertyKey, TokenRegistry}
+import org.opencypher.caps.api.ir.global.{GlobalsRegistry, PropertyKey}
 import org.opencypher.caps.api.record.{OpaqueField, ProjectedExpr, RecordHeader, SlotContent}
 import org.opencypher.caps.api.schema.{Schema, VerifiedSchema}
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.convert.{fromJavaType, toSparkType}
+import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.record.CAPSRecordsTokens
 import org.opencypher.caps.impl.syntax.header._
 
-trait SparkGraphLoading {
+object SparkGraphLoading {
 
-  def loadSchema(nodeQ: String, relQ: String)(implicit sc: SparkSession): VerifiedSchema = {
+  def loadSchema(nodeQ: String, relQ: String)(implicit caps: CAPSSession): VerifiedSchema = {
     val (nodes, rels) = loadRDDs(nodeQ, relQ)
 
     loadSchema(nodes, rels)
@@ -69,234 +69,242 @@ trait SparkGraphLoading {
   }
 
   def fromNeo4j(nodeQuery: String, relQuery: String)
-               (implicit sc: SparkSession): CAPSSession =
+               (implicit caps: CAPSSession): CAPSGraph =
     fromNeo4j(nodeQuery, relQuery, "source", "rel", "target", None)
 
   def fromNeo4j(nodeQuery: String, relQuery: String, schema: VerifiedSchema)
-               (implicit sc: SparkSession): CAPSSession =
+               (implicit caps: CAPSSession): CAPSGraph =
     fromNeo4j(nodeQuery, relQuery, "source", "rel", "target", Some(schema))
 
 
   def fromNeo4j(nodeQuery: String, relQuery: String,
                 sourceNode: String, rel: String, targetNode: String,
                 maybeSchema: Option[VerifiedSchema] = None)
-               (implicit sc: SparkSession): CAPSSession = {
+               (implicit caps: CAPSSession): CAPSGraph = {
     val (nodes, rels) = loadRDDs(nodeQuery, relQuery)
 
     val verified = maybeSchema.getOrElse(loadSchema(nodes, rels))
+    val context = LoadingContext(verified, GlobalsRegistry.fromSchema(verified))
 
-    implicit val context = LoadingContext(verified.schema, GlobalsRegistry(TokenRegistry.fromSchema(verified)))
-
-    createSpace(nodes, rels, sourceNode, rel, targetNode)
+    createGraph(nodes, rels, sourceNode, rel, targetNode)(caps, context)
   }
 
-  private def loadRDDs(nodeQ: String, relQ: String)(implicit session: SparkSession) = {
-    val neo4j = EncryptedNeo4j(session)
+  private def loadRDDs(nodeQ: String, relQ: String)(implicit caps: CAPSSession) = {
+    val sparkSession = caps.sparkSession
+    val neo4j = EncryptedNeo4j(sparkSession)
     val nodes = neo4j.cypher(nodeQ).loadNodeRdds.map(row => row(0).asInstanceOf[InternalNode])
     val rels = neo4j.cypher(relQ).loadRowRdd.map(row => row(0).asInstanceOf[InternalRelationship])
 
     nodes -> rels
   }
 
-  case class LoadingContext(schema: Schema, globals: GlobalsRegistry)
+  case class LoadingContext(verifiedSchema: VerifiedSchema, globals: GlobalsRegistry) {
+    def schema = verifiedSchema.schema
+  }
 
-  private def createSpace(nodes: RDD[InternalNode], rels: RDD[InternalRelationship],
+  private def createGraph(inputNodes: RDD[InternalNode], inputRels: RDD[InternalRelationship],
                           sourceNode: String = "source", rel: String = "rel", targetNode: String = "target")
-                         (implicit sparkSession: SparkSession, context: LoadingContext): CAPSSession = {
+                         (implicit caps: CAPSSession, context: LoadingContext): CAPSGraph =
 
-    val nodeFields = (name: String, cypherType: CTNode) => computeNodeFields(name, cypherType)
-    val nodeHeader = (name: String, cypherType: CTNode) => nodeFields(name, cypherType).map(_._1).foldLeft(RecordHeader.empty) {
-      case (acc, next) => acc.update(addContent(next))._1
-    }
-    val nodeStruct = (name: String, cypherType: CTNode) => StructType(nodeFields(name, cypherType).map(_._2).toArray)
-    val nodeRDD = (name: String, cypherType: CTNode) => nodes
-      .filter(filterNode(cypherType))
-      .map(nodeToRow(nodeHeader(name, cypherType), nodeStruct(name, cypherType)))
+    new CAPSGraph {
 
-    val nodeFrame = (name: String, cypherType: CTNode) => {
-      val slot = nodeHeader(name, cypherType).slotFor(Var(name)(cypherType))
-      val df = sparkSession.createDataFrame(nodeRDD(name, cypherType), nodeStruct(name, cypherType))
-      val col = df.col(df.columns(slot.index))
-      df.repartition(col).sortWithinPartitions(col).cache()
-    }
+      override val schema: Schema = context.schema
+      override val tokens: CAPSRecordsTokens = CAPSRecordsTokens(context.globals.tokens)
 
-    val relFields = (name: String, cypherType: CTRelationship) => computeRelFields(name, cypherType)
-    val relHeader = (name: String, cypherType: CTRelationship) => relFields(name, cypherType).map(_._1).foldLeft(RecordHeader.empty) {
-      case (acc, next) => acc.update(addContent(next))._1
-    }
-    val relStruct = (name: String, cypherType: CTRelationship) => StructType(relFields(name, cypherType).map(_._2).toArray)
-    val relRDD = (name: String, cypherType: CTRelationship) => rels
-      .filter(filterRel(cypherType))
-      .map(relToRow(relHeader(name, cypherType), relStruct(name, cypherType)))
+      override def session: CAPSSession = caps
 
-    val relFrame = (name: String, cypherType: CTRelationship) => {
-      val slot = relHeader(name, cypherType).slotFor(Var(name)(cypherType))
-      val df = sparkSession.createDataFrame(relRDD(name, cypherType), relStruct(name, cypherType)).cache()
-      val col = df.col(df.columns(slot.index))
-      df.repartition(col).sortWithinPartitions(col).cache()
-    }
+      override protected def graph: CAPSGraph = this
 
-    CAPSSession.empty(sparkSession)
-  }
+      private def sparkSession = session.sparkSession
 
-  private def computeNodeFields(name: String, cypherType: CTNode)(implicit context: LoadingContext): Seq[(SlotContent, StructField)] = {
-    val node = Var(name)(cypherType)
+      // TODO: Cache
 
-    val schema = context.schema
-    val tokens = context.globals.tokens
-
-    val labels = if (cypherType.labels.values.exists(_ == true)) cypherType.labels.filter(_._2).keySet else schema.labels
-
-    val labelFields = labels.map { name =>
-      val label = HasLabel(node, tokens.labelByName(name))(CTBoolean)
-      val slot = ProjectedExpr(label)
-      val field = StructField(SparkColumnName.of(slot), BooleanType, nullable = false)
-      slot -> field
-    }
-    val propertyFields = labels.flatMap { l =>
-      schema.nodeKeys(l).map {
-        case (key, t) =>
-          val property = Property(node, tokens.propertyKeyByName(key))(t)
-          val slot = ProjectedExpr(property)
-          val field = StructField(SparkColumnName.of(slot), toSparkType(t), nullable = true)
-          slot -> field
-      }
-    }
-    val nodeSlot = OpaqueField(node)
-    val nodeField = StructField(SparkColumnName.of(nodeSlot), LongType, nullable = false)
-    val slotField = nodeSlot -> nodeField
-    Seq(slotField) ++ labelFields ++ propertyFields
-  }
-
-  private def computeRelFields(name: String, cypherType: CTRelationship)(implicit context: LoadingContext): Seq[(SlotContent, StructField)] = {
-    val rel = Var(name)(cypherType)
-
-    val schema = context.schema
-    val tokens = context.globals.tokens
-
-    val propertyFields = schema.relationshipTypes.flatMap { typ =>
-      schema.relationshipKeys(typ).map {
-        case (key, t) =>
-          val property = Property(rel, tokens.propertyKeyByName(key))(t)
-          val slot = ProjectedExpr(property)
-          val field = StructField(SparkColumnName.of(slot), toSparkType(t), nullable = true)
-          slot -> field
-      }
-    }
-    val typeSlot = ProjectedExpr(TypeId(rel)(CTInteger))
-    val typeField = StructField(SparkColumnName.of(typeSlot), IntegerType, nullable = false)
-
-    val idSlot = OpaqueField(rel)
-    val idField = StructField(SparkColumnName.of(idSlot), LongType, nullable = false)
-
-    val sourceSlot = ProjectedExpr(StartNode(rel)(CTNode))
-    val sourceField = StructField(SparkColumnName.of(sourceSlot), LongType, nullable = false)
-    val targetSlot = ProjectedExpr(EndNode(rel)(CTNode))
-    val targetField = StructField(SparkColumnName.of(targetSlot), LongType, nullable = false)
-
-    Seq(sourceSlot -> sourceField, idSlot -> idField,
-      typeSlot -> typeField, targetSlot -> targetField) ++ propertyFields
-  }
-
-  private case class filterNode(nodeDef: CTNode)
-                               (implicit context: LoadingContext) extends (InternalNode => Boolean) {
-
-    val requiredLabels: Set[String] = nodeDef.labels.filter(_._2).keySet
-
-    override def apply(importedNode: InternalNode): Boolean = requiredLabels.forall(importedNode.hasLabel)
-  }
-
-  private case class nodeToRow(header: RecordHeader, schema: StructType)
-                              (implicit context: LoadingContext) extends (InternalNode => Row) {
-    override def apply(importedNode: InternalNode): Row = {
-      val graphSchema = context.schema
-      val globals = context.globals
-
-      import scala.collection.JavaConverters._
-
-      val props = importedNode.asMap().asScala
-      val labels = importedNode.labels().asScala.toSet
-
-      val keys = labels.map(l => graphSchema.nodeKeys(l)).reduce(_ ++ _)
-
-      val values = header.slots.map { s =>
-        s.content.key match {
-          case Property(_, PropertyKey(keyName)) =>
-            val propValue = keys.get(keyName) match {
-              case Some(t) if t == s.content.cypherType => props.get(keyName).orNull
-              case _ => null
-            }
-            sparkValue(schema(s.index).dataType, propValue)
-          case HasLabel(_, label) =>
-            labels(label.name)
-          case _: Var =>
-            importedNode.id()
-
-          case _ => ??? // nothing else should appear
+      override def nodes(name: String, cypherType: CTNode): CAPSRecords = {
+        val fields = computeNodeFields(name, cypherType)
+        computeRecords(name, cypherType, fields) { (header, struct) =>
+          inputNodes.filter(filterNode(cypherType)).map(nodeToRow(header, struct))
         }
       }
 
-      Row(values: _*)
-    }
-  }
-
-  private case class filterRel(relDef: CTRelationship)
-                              (implicit context: LoadingContext) extends (InternalRelationship => Boolean) {
-
-    override def apply(importedRel: InternalRelationship): Boolean = relDef.types.forall(importedRel.hasType)
-  }
-
-  private case class relToRow(header: RecordHeader, schema: StructType)
-                             (implicit context: LoadingContext) extends (InternalRelationship => Row) {
-    override def apply(importedRel: InternalRelationship): Row = {
-      val graphSchema = context.schema
-      val tokens = context.globals.tokens
-
-      import scala.collection.JavaConverters._
-
-      val relType = importedRel.`type`()
-      val props = importedRel.asMap().asScala
-
-      val keys = graphSchema.relationshipKeys(relType)
-
-      val values = header.slots.map { s =>
-        s.content.key match {
-          case Property(_, PropertyKey(keyName)) =>
-            val propValue = keys.get(keyName) match {
-              case Some(t) if t == s.content.cypherType => props.get(keyName).orNull
-              case _ => null
-            }
-            sparkValue(schema(s.index).dataType, propValue)
-
-          case _: StartNode =>
-            importedRel.startNodeId()
-
-          case _: EndNode =>
-            importedRel.endNodeId()
-
-          case _: TypeId =>
-            tokens.relTypeRefByName(relType).id
-
-          case _: Var =>
-            importedRel.id()
-
-          case x => throw new IllegalArgumentException(s"Header contained unexpected expression: $x")
+      override def relationships(name: String, cypherType: CTRelationship): CAPSRecords = {
+        val fields = computeRelFields(name, cypherType)
+        computeRecords(name, cypherType, fields) { (header, struct) =>
+          inputRels.filter(filterRel(cypherType)).map(relToRow(header, struct))
         }
       }
 
-      Row(values: _*)
+      private def computeRecords(name: String, cypherType: CypherType, fields: Seq[(SlotContent, StructField)])
+                                (computeRdd: (RecordHeader, StructType) => RDD[Row]): CAPSRecords = {
+        val header = computeHeader(fields)
+        val struct = StructType(fields.map(_._2).toArray)
+        val rdd = computeRdd(header, struct)
+        val slot = header.slotFor(Var(name)(cypherType))
+        val rawData = session.sparkSession.createDataFrame(rdd, struct)
+        val col = rawData.col(rawData.columns(slot.index))
+        val recordData = rawData.repartition(col).sortWithinPartitions(col)
+        CAPSRecords.create(header, recordData)
+      }
+
+      private def computeHeader(fields: Seq[(SlotContent, StructField)]) =
+        fields.map(_._1).foldLeft(RecordHeader.empty) {
+          case (acc, next) => acc.update(addContent(next))._1
+        }
+
+      private def computeNodeFields(name: String, cypherType: CTNode)(implicit context: LoadingContext): Seq[(SlotContent, StructField)] = {
+        val node = Var(name)(cypherType)
+
+        val schema = context.schema
+        val tokens = context.globals.tokens
+
+        val labels = if (cypherType.labels.values.exists(_ == true)) cypherType.labels.filter(_._2).keySet else schema.labels
+
+        val labelFields = labels.map { name =>
+          val label = HasLabel(node, tokens.labelByName(name))(CTBoolean)
+          val slot = ProjectedExpr(label)
+          val field = StructField(SparkColumnName.of(slot), BooleanType, nullable = false)
+          slot -> field
+        }
+        val propertyFields = labels.flatMap { l =>
+          schema.nodeKeys(l).map {
+            case (key, t) =>
+              val property = Property(node, tokens.propertyKeyByName(key))(t)
+              val slot = ProjectedExpr(property)
+              val field = StructField(SparkColumnName.of(slot), toSparkType(t), nullable = true)
+              slot -> field
+          }
+        }
+        val nodeSlot = OpaqueField(node)
+        val nodeField = StructField(SparkColumnName.of(nodeSlot), LongType, nullable = false)
+        val slotField = nodeSlot -> nodeField
+        Seq(slotField) ++ labelFields ++ propertyFields
+      }
+
+      private def computeRelFields(name: String, cypherType: CTRelationship)(implicit context: LoadingContext): Seq[(SlotContent, StructField)] = {
+        val rel = Var(name)(cypherType)
+
+        val schema = context.schema
+        val tokens = context.globals.tokens
+
+        val propertyFields = schema.relationshipTypes.flatMap { typ =>
+          schema.relationshipKeys(typ).map {
+            case (key, t) =>
+              val property = Property(rel, tokens.propertyKeyByName(key))(t)
+              val slot = ProjectedExpr(property)
+              val field = StructField(SparkColumnName.of(slot), toSparkType(t), nullable = true)
+              slot -> field
+          }
+        }
+        val typeSlot = ProjectedExpr(TypeId(rel)(CTInteger))
+        val typeField = StructField(SparkColumnName.of(typeSlot), IntegerType, nullable = false)
+
+        val idSlot = OpaqueField(rel)
+        val idField = StructField(SparkColumnName.of(idSlot), LongType, nullable = false)
+
+        val sourceSlot = ProjectedExpr(StartNode(rel)(CTNode))
+        val sourceField = StructField(SparkColumnName.of(sourceSlot), LongType, nullable = false)
+        val targetSlot = ProjectedExpr(EndNode(rel)(CTNode))
+        val targetField = StructField(SparkColumnName.of(targetSlot), LongType, nullable = false)
+
+        Seq(sourceSlot -> sourceField, idSlot -> idField,
+          typeSlot -> typeField, targetSlot -> targetField) ++ propertyFields
+      }
+
+      private case class filterNode(nodeDef: CTNode)
+                                   (implicit context: LoadingContext) extends (InternalNode => Boolean) {
+
+        val requiredLabels: Set[String] = nodeDef.labels.filter(_._2).keySet
+
+        override def apply(importedNode: InternalNode): Boolean = requiredLabels.forall(importedNode.hasLabel)
+      }
+
+      private case class nodeToRow(header: RecordHeader, schema: StructType)
+                                  (implicit context: LoadingContext) extends (InternalNode => Row) {
+        override def apply(importedNode: InternalNode): Row = {
+          val graphSchema = context.schema
+          val globals = context.globals
+
+          import scala.collection.JavaConverters._
+
+          val props = importedNode.asMap().asScala
+          val labels = importedNode.labels().asScala.toSet
+
+          val schemaKeyTypes = labels.map { label => graphSchema.nodeKeys(label) }.reduce(_ ++ _)
+
+          val values = header.slots.map { slot =>
+            slot.content.key match {
+              case Property(_, PropertyKey(keyName)) =>
+                val propValue = schemaKeyTypes.get(keyName) match {
+                  case Some(t) if t == slot.content.cypherType => props.get(keyName).orNull
+                  case _ => null
+                }
+                importedToSparkEncodedCypherValue(schema(slot.index).dataType, propValue)
+              case HasLabel(_, label) =>
+                labels(label.name)
+              case _: Var =>
+                importedNode.id()
+
+              case _ =>
+                Raise.impossible("Nothing else should appear")
+            }
+          }
+
+          Row(values: _*)
+        }
+      }
+
+      private case class filterRel(relDef: CTRelationship)
+                                  (implicit context: LoadingContext) extends (InternalRelationship => Boolean) {
+
+        override def apply(importedRel: InternalRelationship): Boolean = relDef.types.forall(importedRel.hasType)
+      }
+
+      private case class relToRow(header: RecordHeader, schema: StructType)
+                                 (implicit context: LoadingContext) extends (InternalRelationship => Row) {
+        override def apply(importedRel: InternalRelationship): Row = {
+          val graphSchema = context.schema
+          val tokens = context.globals.tokens
+
+          import scala.collection.JavaConverters._
+
+          val relType = importedRel.`type`()
+          val props = importedRel.asMap().asScala
+
+          val schemaKeyTypes = graphSchema.relationshipKeys(relType)
+
+          val values = header.slots.map { slot =>
+            slot.content.key match {
+              case Property(_, PropertyKey(keyName)) =>
+                val propValue = schemaKeyTypes.get(keyName) match {
+                  case Some(t) if t == slot.content.cypherType => props.get(keyName).orNull
+                  case _ => null
+                }
+                importedToSparkEncodedCypherValue(schema(slot.index).dataType, propValue)
+
+              case _: StartNode =>
+                importedRel.startNodeId()
+
+              case _: EndNode =>
+                importedRel.endNodeId()
+
+              case _: TypeId =>
+                tokens.relTypeRefByName(relType).id
+
+              case _: Var =>
+                importedRel.id()
+
+              case x =>
+                Raise.invalidArgument("One of: property lookup, startNode(), endNode(), id(), variable", x.toString)
+            }
+          }
+
+          Row(values: _*)
+        }
+      }
+
+      private def importedToSparkEncodedCypherValue(typ: DataType, value: AnyRef): AnyRef = typ match {
+        case StringType | LongType | BooleanType | DoubleType => value
+        case BinaryType => if (value == null) null else value.toString.getBytes // TODO: Call kryo
+        case _ => CypherValue(value)
+      }
     }
-  }
-
-  private def sparkValue(typ: DataType, value: AnyRef): Any = typ match {
-    case StringType | LongType | BooleanType | DoubleType => value
-    case BinaryType => if (value == null) null else value.toString.getBytes // TODO: Call kryo
-    case _ => CypherValue(value)
-  }
-
-  def configureNeo4jAccess(config: SparkConf)(url: String, user: String = "", pw: String = ""): SparkConf = {
-    if (url.nonEmpty) config.set("spark.neo4j.bolt.url", url)
-    if (user.nonEmpty) config.set("spark.neo4j.bolt.user", user)
-    if (pw.nonEmpty) config.set("spark.neo4j.bolt.password", pw) else config
-  }
 }

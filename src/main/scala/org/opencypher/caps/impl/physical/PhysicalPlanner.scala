@@ -31,8 +31,7 @@ case class PhysicalPlannerContext(
    inputRecords: CAPSRecords,
    tokens: TokenRegistry,
    constants: ConstantRegistry,
-   parameters: Map[ConstantRef, CypherValue]) {
-}
+   parameters: Map[ConstantRef, CypherValue])
 
 class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResult, PhysicalPlannerContext] {
 

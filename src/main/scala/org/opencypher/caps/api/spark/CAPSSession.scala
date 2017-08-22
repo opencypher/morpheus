@@ -27,7 +27,6 @@ import org.opencypher.caps.impl.ir.{CypherQueryBuilder, IRBuilderContext}
 import org.opencypher.caps.impl.logical._
 import org.opencypher.caps.impl.parse.CypherParser
 import org.opencypher.caps.impl.physical.{CAPSResultBuilder, PhysicalPlanner, PhysicalPlannerContext}
-import org.opencypher.caps.impl.spark.SparkGraphLoading
 
 sealed abstract class CAPSSession extends CypherSession with Serializable {
 
@@ -39,7 +38,7 @@ sealed abstract class CAPSSession extends CypherSession with Serializable {
   override type Result = CAPSResult
   override type Data = DataFrame
 
-  def session: SparkSession
+  def sparkSession: SparkSession
 
   private val producer = new LogicalOperatorProducer
   private val logicalPlanner = new LogicalPlanner(producer)
@@ -137,8 +136,8 @@ sealed abstract class CAPSSession extends CypherSession with Serializable {
   }
 }
 
-object CAPSSession extends SparkGraphLoading with Serializable {
-  def empty(sparkSession: SparkSession) = new CAPSSession {
-    override def session: SparkSession = sparkSession
+object CAPSSession extends Serializable {
+  def create(implicit session: SparkSession) = new CAPSSession {
+    override val sparkSession: SparkSession = session
   }
 }
