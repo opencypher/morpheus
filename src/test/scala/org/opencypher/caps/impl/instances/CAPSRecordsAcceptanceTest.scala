@@ -175,7 +175,7 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite {
 
     val usernamesQ = "MATCH (u:User) RETURN u.name"
 
-    val graph = result.namedGraph("someName") match {
+    val graph = result.graphs.get("someName") match {
       case Some(g) => g
       case None => fail("graph 'someName' not found")
     }

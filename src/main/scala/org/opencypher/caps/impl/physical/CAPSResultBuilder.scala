@@ -19,20 +19,11 @@ import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSResult}
 
 object CAPSResultBuilder {
   def from(internal: PhysicalResult): CAPSResult = new CAPSResult {
-    override def records: CAPSRecords = internal.records
 
     // TODO: Track which graph was the 'latest' used one
     override def graph: CAPSGraph = internal.graphs.head._2
 
-    override def result(name: String): Option[CAPSResult] = internal.graphs.get(name).map { g =>
-      new CAPSResult {
-        override def records: CAPSRecords =
-          throw new NotImplementedError("Records of stored intermediate result are not tracked!")
-
-        override def graph: CAPSGraph = g
-
-        override def result(name: String): Option[CAPSResult] = None
-      }
-    }
+    override def records: CAPSRecords = internal.records
+    override def graphs: Map[String, CAPSGraph] = internal.graphs
   }
 }

@@ -24,8 +24,13 @@ trait CypherResult {
   type Records <: CypherRecords
 
   def graph: Graph
-  def records: Records
 
-  def result(name: String): Option[Result]
-  def namedGraph(name: String): Option[Graph]
+  def sourceGraph: Graph = graph
+  def targetGraph: Graph = graph
+
+  def sourceGraphName: String = ???
+  def targetGraphName: String = ???
+
+  def graphs: Map[String, Graph]
+  def records: Records
 }
