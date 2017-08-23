@@ -86,7 +86,7 @@ object SparkGraphLoading {
     val verified = maybeSchema.getOrElse(loadSchema(nodes, rels))
     val context = LoadingContext(verified, GlobalsRegistry.fromSchema(verified))
 
-    createGraph(nodes, rels, sourceNode, rel, targetNode)(caps, context)
+    createGraph(nodes.cache(), rels.cache(), sourceNode, rel, targetNode)(caps, context)
   }
 
   private def loadRDDs(nodeQ: String, relQ: String)(implicit caps: CAPSSession) = {
@@ -102,10 +102,12 @@ object SparkGraphLoading {
     def schema = verifiedSchema.schema
   }
 
+
+  // TODO: Rethink caching. Currently the RDDs are cached before calling this method.
+
   private def createGraph(inputNodes: RDD[InternalNode], inputRels: RDD[InternalRelationship],
                           sourceNode: String = "source", rel: String = "rel", targetNode: String = "target")
                          (implicit caps: CAPSSession, context: LoadingContext): CAPSGraph =
-
     new CAPSGraph {
 
       override val schema: Schema = context.schema
@@ -116,8 +118,6 @@ object SparkGraphLoading {
       override protected def graph: CAPSGraph = this
 
       private def sparkSession = session.sparkSession
-
-      // TODO: Cache
 
       override def nodes(name: String, cypherType: CTNode): CAPSRecords = {
         val fields = computeNodeFields(name, cypherType)
@@ -150,7 +150,8 @@ object SparkGraphLoading {
           case (acc, next) => acc.update(addContent(next))._1
         }
 
-      private def computeNodeFields(name: String, cypherType: CTNode)(implicit context: LoadingContext): Seq[(SlotContent, StructField)] = {
+      private def computeNodeFields(name: String, cypherType: CTNode)
+                                   (implicit context: LoadingContext): Seq[(SlotContent, StructField)] = {
         val node = Var(name)(cypherType)
 
         val schema = context.schema
@@ -179,7 +180,8 @@ object SparkGraphLoading {
         Seq(slotField) ++ labelFields ++ propertyFields
       }
 
-      private def computeRelFields(name: String, cypherType: CTRelationship)(implicit context: LoadingContext): Seq[(SlotContent, StructField)] = {
+      private def computeRelFields(name: String, cypherType: CTRelationship)
+                                  (implicit context: LoadingContext): Seq[(SlotContent, StructField)] = {
         val rel = Var(name)(cypherType)
 
         val schema = context.schema
@@ -208,103 +210,103 @@ object SparkGraphLoading {
         Seq(sourceSlot -> sourceField, idSlot -> idField,
           typeSlot -> typeField, targetSlot -> targetField) ++ propertyFields
       }
-
-      private case class filterNode(nodeDef: CTNode)
-                                   (implicit context: LoadingContext) extends (InternalNode => Boolean) {
-
-        val requiredLabels: Set[String] = nodeDef.labels.filter(_._2).keySet
-
-        override def apply(importedNode: InternalNode): Boolean = requiredLabels.forall(importedNode.hasLabel)
-      }
-
-      private case class nodeToRow(header: RecordHeader, schema: StructType)
-                                  (implicit context: LoadingContext) extends (InternalNode => Row) {
-        override def apply(importedNode: InternalNode): Row = {
-          val graphSchema = context.schema
-          val globals = context.globals
-
-          import scala.collection.JavaConverters._
-
-          val props = importedNode.asMap().asScala
-          val labels = importedNode.labels().asScala.toSet
-
-          val schemaKeyTypes = labels.map { label => graphSchema.nodeKeys(label) }.reduce(_ ++ _)
-
-          val values = header.slots.map { slot =>
-            slot.content.key match {
-              case Property(_, PropertyKey(keyName)) =>
-                val propValue = schemaKeyTypes.get(keyName) match {
-                  case Some(t) if t == slot.content.cypherType => props.get(keyName).orNull
-                  case _ => null
-                }
-                importedToSparkEncodedCypherValue(schema(slot.index).dataType, propValue)
-              case HasLabel(_, label) =>
-                labels(label.name)
-              case _: Var =>
-                importedNode.id()
-
-              case _ =>
-                Raise.impossible("Nothing else should appear")
-            }
-          }
-
-          Row(values: _*)
-        }
-      }
-
-      private case class filterRel(relDef: CTRelationship)
-                                  (implicit context: LoadingContext) extends (InternalRelationship => Boolean) {
-
-        override def apply(importedRel: InternalRelationship): Boolean = relDef.types.forall(importedRel.hasType)
-      }
-
-      private case class relToRow(header: RecordHeader, schema: StructType)
-                                 (implicit context: LoadingContext) extends (InternalRelationship => Row) {
-        override def apply(importedRel: InternalRelationship): Row = {
-          val graphSchema = context.schema
-          val tokens = context.globals.tokens
-
-          import scala.collection.JavaConverters._
-
-          val relType = importedRel.`type`()
-          val props = importedRel.asMap().asScala
-
-          val schemaKeyTypes = graphSchema.relationshipKeys(relType)
-
-          val values = header.slots.map { slot =>
-            slot.content.key match {
-              case Property(_, PropertyKey(keyName)) =>
-                val propValue = schemaKeyTypes.get(keyName) match {
-                  case Some(t) if t == slot.content.cypherType => props.get(keyName).orNull
-                  case _ => null
-                }
-                importedToSparkEncodedCypherValue(schema(slot.index).dataType, propValue)
-
-              case _: StartNode =>
-                importedRel.startNodeId()
-
-              case _: EndNode =>
-                importedRel.endNodeId()
-
-              case _: TypeId =>
-                tokens.relTypeRefByName(relType).id
-
-              case _: Var =>
-                importedRel.id()
-
-              case x =>
-                Raise.invalidArgument("One of: property lookup, startNode(), endNode(), id(), variable", x.toString)
-            }
-          }
-
-          Row(values: _*)
-        }
-      }
-
-      private def importedToSparkEncodedCypherValue(typ: DataType, value: AnyRef): AnyRef = typ match {
-        case StringType | LongType | BooleanType | DoubleType => value
-        case BinaryType => if (value == null) null else value.toString.getBytes // TODO: Call kryo
-        case _ => CypherValue(value)
-      }
     }
+
+  private case class filterNode(nodeDef: CTNode)
+                               (implicit context: LoadingContext) extends (InternalNode => Boolean) {
+
+    val requiredLabels: Set[String] = nodeDef.labels.filter(_._2).keySet
+
+    override def apply(importedNode: InternalNode): Boolean = requiredLabels.forall(importedNode.hasLabel)
+  }
+
+  private case class nodeToRow(header: RecordHeader, schema: StructType)
+                              (implicit context: LoadingContext) extends (InternalNode => Row) {
+    override def apply(importedNode: InternalNode): Row = {
+      val graphSchema = context.schema
+      val globals = context.globals
+
+      import scala.collection.JavaConverters._
+
+      val props = importedNode.asMap().asScala
+      val labels = importedNode.labels().asScala.toSet
+
+      val schemaKeyTypes = labels.map { label => graphSchema.nodeKeys(label) }.reduce(_ ++ _)
+
+      val values = header.slots.map { slot =>
+        slot.content.key match {
+          case Property(_, PropertyKey(keyName)) =>
+            val propValue = schemaKeyTypes.get(keyName) match {
+              case Some(t) if t == slot.content.cypherType => props.get(keyName).orNull
+              case _ => null
+            }
+            importedToSparkEncodedCypherValue(schema(slot.index).dataType, propValue)
+          case HasLabel(_, label) =>
+            labels(label.name)
+          case _: Var =>
+            importedNode.id()
+
+          case _ =>
+            Raise.impossible("Nothing else should appear")
+        }
+      }
+
+      Row(values: _*)
+    }
+  }
+
+  private case class filterRel(relDef: CTRelationship)
+                              (implicit context: LoadingContext) extends (InternalRelationship => Boolean) {
+
+    override def apply(importedRel: InternalRelationship): Boolean = relDef.types.forall(importedRel.hasType)
+  }
+
+  private case class relToRow(header: RecordHeader, schema: StructType)
+                             (implicit context: LoadingContext) extends (InternalRelationship => Row) {
+    override def apply(importedRel: InternalRelationship): Row = {
+      val graphSchema = context.schema
+      val tokens = context.globals.tokens
+
+      import scala.collection.JavaConverters._
+
+      val relType = importedRel.`type`()
+      val props = importedRel.asMap().asScala
+
+      val schemaKeyTypes = graphSchema.relationshipKeys(relType)
+
+      val values = header.slots.map { slot =>
+        slot.content.key match {
+          case Property(_, PropertyKey(keyName)) =>
+            val propValue = schemaKeyTypes.get(keyName) match {
+              case Some(t) if t == slot.content.cypherType => props.get(keyName).orNull
+              case _ => null
+            }
+            importedToSparkEncodedCypherValue(schema(slot.index).dataType, propValue)
+
+          case _: StartNode =>
+            importedRel.startNodeId()
+
+          case _: EndNode =>
+            importedRel.endNodeId()
+
+          case _: TypeId =>
+            tokens.relTypeRefByName(relType).id
+
+          case _: Var =>
+            importedRel.id()
+
+          case x =>
+            Raise.invalidArgument("One of: property lookup, startNode(), endNode(), id(), variable", x.toString)
+        }
+      }
+
+      Row(values: _*)
+    }
+  }
+
+  private def importedToSparkEncodedCypherValue(typ: DataType, value: AnyRef): AnyRef = typ match {
+    case StringType | LongType | BooleanType | DoubleType => value
+    case BinaryType => if (value == null) null else value.toString.getBytes // TODO: Call kryo
+    case _ => CypherValue(value)
+  }
 }
