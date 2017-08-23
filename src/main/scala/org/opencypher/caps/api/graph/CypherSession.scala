@@ -15,22 +15,20 @@
  */
 package org.opencypher.caps.api.graph
 
-import org.opencypher.caps.api.classes.Cypher
 import org.opencypher.caps.api.record.CypherRecords
+import org.opencypher.caps.api.value.CypherValue
 
-trait GraphSpace {
+trait CypherSession {
 
   self =>
 
-  type Engine <: Cypher
+  type Graph <: CypherGraph { type Graph = self.Graph; type Records = self.Records }
+  type Session <: CypherSession { type Session = self.Session; type Graph = self.Graph; type Records = self.Records; type Result = self.Result; type Data = self.Data }
+  type Records <: CypherRecords { type Records = self.Records; type Data = self.Data }
+  type Result <: CypherResult { type Result = self.Result; type Graph = self.Graph; type Records = self.Records }
+  type Data
 
-  val engine: Engine
-
-  type Graph = engine.Graph
-  type Space = engine.Space
-  type Records = engine.Records
-
-  def base: Graph
+  def cypher(graph: Graph, query: String, parameters: Map[String, CypherValue]): Result
 }
 
 

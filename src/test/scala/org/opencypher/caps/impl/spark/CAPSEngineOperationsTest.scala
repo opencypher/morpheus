@@ -17,15 +17,14 @@ package org.opencypher.caps.impl.spark
 
 import org.opencypher.caps.CAPSTestSuite
 import org.opencypher.caps.api.expr.{Expr, Not, Var}
-import org.opencypher.caps.api.ir.global.TokenRegistry
-import org.opencypher.caps.api.spark.{CAPSRecords, SparkGraphSpace}
+import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.api.types.{CTBoolean, CTInteger, CTString}
 
 class CAPSEngineOperationsTest extends CAPSTestSuite {
 
   import operations._
 
-  implicit val space = SparkGraphSpace.empty(session, TokenRegistry.empty)
+  def base = CAPSGraph.empty(caps)
 
   test("filter operation on records") {
 
@@ -38,7 +37,7 @@ class CAPSEngineOperationsTest extends CAPSTestSuite {
         (4, false, "Stefan")
     ))
 
-    val result = space.base.filter(given, Var("IS_SWEDE")(CTBoolean))
+    val result = base.filter(given, Var("IS_SWEDE")(CTBoolean))
 
     result.toDF().count() should equal(1L)
   }
@@ -53,7 +52,7 @@ class CAPSEngineOperationsTest extends CAPSTestSuite {
         (4, false, "Stefan")
     ))
 
-    val result = space.base.select(given, IndexedSeq(Var("ID")(CTInteger), Var("NAME")(CTString)))
+    val result = base.select(given, IndexedSeq(Var("ID")(CTInteger), Var("NAME")(CTString)))
 
     result.details shouldMatch CAPSRecords.create(
       Seq("ID", "NAME"), Seq(
@@ -75,7 +74,7 @@ class CAPSEngineOperationsTest extends CAPSTestSuite {
       ))
 
     val expr: Expr = Not(Var("IS_SWEDE")(CTBoolean))(CTBoolean)
-    val result = space.base.project(given, expr)
+    val result = base.project(given, expr)
 
     result.details shouldMatchOpaquely CAPSRecords.create(
       Seq("ID", "IS_SWEDE", "NAME", "NOT IS_SWEDE"),
@@ -98,7 +97,7 @@ class CAPSEngineOperationsTest extends CAPSTestSuite {
       ))
 
     val exprVar = Not(Var("IS_SWEDE")(CTBoolean))(CTBoolean) -> Var("IS_NOT_SWEDE")(CTBoolean)
-    val result = space.base.alias(given, exprVar)
+    val result = base.alias(given, exprVar)
 
     result.details shouldMatchOpaquely CAPSRecords.create(
       Seq("ID", "IS_SWEDE", "NAME", "IS_NOT_SWEDE"),

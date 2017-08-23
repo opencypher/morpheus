@@ -34,8 +34,8 @@ object Raise {
     s"Invalid data type for column $column. Expected at least $header but got conflicting $typ"
   )
 
-  def graphSpaceMismatch() = throw CAPSException(
-    "Import of a data frame not created in the same session as the graph space"
+  def capsSessionMismatch() = throw CAPSException(
+    "Import of a data frame from a different session"
   )
 
   def slotNotAdded(field: String) = throw CAPSException(

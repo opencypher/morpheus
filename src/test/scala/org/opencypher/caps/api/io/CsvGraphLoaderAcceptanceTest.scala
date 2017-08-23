@@ -2,11 +2,9 @@ package org.opencypher.caps.api.io
 
 import org.apache.spark.sql.Row
 import org.opencypher.caps.CAPSTestSuite
-import org.opencypher.caps.api.ir.global.TokenRegistry
-import org.opencypher.caps.api.spark.{CAPSGraph, SparkGraphSpace}
+import org.opencypher.caps.api.spark.CAPSGraph
 
 class CsvGraphLoaderAcceptanceTest extends CAPSTestSuite {
-  implicit val space = SparkGraphSpace.empty(session, TokenRegistry.empty)
 
   test("load csv graph") {
     val loader = new CsvGraphLoader(getClass.getResource("/csv_graph").toString)
@@ -24,5 +22,4 @@ class CsvGraphLoaderAcceptanceTest extends CAPSTestSuite {
       Row(3, 30, 0, 4, 2015)
     ))
   }
-
 }

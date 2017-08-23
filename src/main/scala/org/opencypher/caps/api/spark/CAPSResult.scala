@@ -26,6 +26,4 @@ trait CAPSResult extends CypherResult {
   def recordsWithDetails: CAPSRecords = records.details
 
   def showRecords(): Unit = records.show()
-
-  override def namedGraph(name: String): Option[CAPSGraph] = result(name).map(_.graph)
 }

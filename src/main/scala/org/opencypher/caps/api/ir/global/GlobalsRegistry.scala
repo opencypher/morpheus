@@ -24,6 +24,7 @@ import scala.util.Try
 object GlobalsRegistry {
   val empty = GlobalsRegistry()
 
+  def fromTokens(tokens: TokenRegistry) = GlobalsRegistry(tokens)
   def fromSchema(verified: VerifiedSchema) = GlobalsRegistry(TokenRegistry.fromSchema(verified))
 }
 

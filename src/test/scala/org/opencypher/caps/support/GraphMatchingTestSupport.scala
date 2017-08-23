@@ -22,13 +22,13 @@ import org.opencypher.caps.api.expr.{HasLabel, Property, Var}
 import org.opencypher.caps.api.ir.global.TokenRegistry
 import org.opencypher.caps.api.record.{FieldSlotContent, RecordHeader}
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSResult, SparkGraphSpace}
+import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSResult, CAPSSession}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.api.value.{CypherMap, CypherValue}
 import org.opencypher.caps.impl.convert.{fromJavaType, toSparkType}
 import org.opencypher.caps.impl.physical.RuntimeContext
 import org.opencypher.caps.impl.record.CAPSRecordsTokens
-import org.opencypher.caps.{BaseTestSuite, SparkTestSession}
+import org.opencypher.caps.{BaseTestSuite, CAPSTestSession, SparkTestSession}
 import org.s1ck.gdl.GDLHandler
 import org.s1ck.gdl.model.Element
 import org.scalatest.Assertion
@@ -39,7 +39,7 @@ import scala.collection.JavaConverters._
 
 trait GraphMatchingTestSupport {
 
-  self: BaseTestSuite with SparkTestSession.Fixture  =>
+  self: BaseTestSuite with SparkTestSession.Fixture with CAPSTestSession.Fixture =>
 
   implicit val bagConfig = Bag.configuration.compact[CypherMap]
   val DEFAULT_LABEL = "DEFAULT"
@@ -60,25 +60,24 @@ trait GraphMatchingTestSupport {
     }
   }
 
-  case class TestGraph(gdl: String)(implicit sparkSession: SparkSession) {
+  case class TestGraph(gdl: String)(implicit caps: CAPSSession) {
 
     private val queryGraph = new GDLHandler.Builder()
       .setDefaultEdgeLabel(DEFAULT_LABEL)
       .setDefaultVertexLabel(DEFAULT_LABEL)
       .buildFromString(gdl)
 
-    def cypher[C <: Cypher { type Graph = CAPSGraph; type Result = CAPSResult }]
-      (query: String)(implicit engine: C)
-    : CAPSResult =
-      engine.cypher(graph, query)
+    def cypher(query: String): CAPSResult =
+      caps.cypher(graph, query, Map.empty)
 
-    def cypher[C <: Cypher { type Graph = CAPSGraph; type Result = CAPSResult }]
-      (query: String, parameters: Map[String, CypherValue])(implicit engine: C)
-    : CAPSResult =
-      engine.cypher(graph, query, parameters)
+    def cypher(query: String, parameters: Map[String, CypherValue]): CAPSResult =
+      caps.cypher(graph, query, parameters)
 
     lazy val graph: CAPSGraph = new CAPSGraph {
       self =>
+
+      override def session: CAPSSession = caps
+      override protected def graph: CAPSGraph = this
 
       private def extractFromElement(e: Element) = e.getLabels.asScala.map { label =>
         label -> e.getProperties.asScala.map {
@@ -99,16 +98,10 @@ trait GraphMatchingTestSupport {
         }
       }
 
-      override val space: SparkGraphSpace = new SparkGraphSpace {
-        override val session: SparkSession = sparkSession
-        override var tokens: CAPSRecordsTokens = CAPSRecordsTokens(TokenRegistry.fromSchema(schema))
-        override val base: CAPSGraph = {
-          self
-        }
-      }
+      override val tokens = CAPSRecordsTokens(TokenRegistry.fromSchema(schema))
 
       override def nodes(name: String, cypherType: CTNode): CAPSRecords = {
-        val header = RecordHeader.nodeFromSchema(Var(name)(cypherType), schema, space.tokens.registry,
+        val header = RecordHeader.nodeFromSchema(Var(name)(cypherType), schema, tokens.registry,
           cypherType.labels.filter(_._2).keySet)
 
         val data = {
@@ -135,18 +128,18 @@ trait GraphMatchingTestSupport {
 
           sparkSession.createDataFrame(nodes, StructType(fields))
         }
-        CAPSRecords.create(header, data)(space)
+        CAPSRecords.create(header, data)
       }
 
       override def relationships(name: String, cypherType: CTRelationship): CAPSRecords = {
 
-        val header = RecordHeader.relationshipFromSchema(Var(name)(cypherType), schema, space.tokens.registry)
+        val header = RecordHeader.relationshipFromSchema(Var(name)(cypherType), schema, tokens.registry)
 
         val data = {
           val rels = queryGraph.getEdges.asScala
             .filter(e => cypherType.types.asJava.isEmpty || cypherType.types.asJava.containsAll(e.getLabels))
             .map { e =>
-              val staticFields = Seq(e.getSourceVertexId, e.getId, space.tokens.registry.relTypeRefByName(e.getLabel).id.toLong, e.getTargetVertexId)
+              val staticFields = Seq(e.getSourceVertexId, e.getId, tokens.relTypeId(e.getLabel).toLong, e.getTargetVertexId)
 
               val propertyFields = header.slots.slice(4, header.slots.size).map(_.content.key).map {
                 case Property(_, k) => e.getProperties.get(k.name)
@@ -162,7 +155,7 @@ trait GraphMatchingTestSupport {
 
           sparkSession.createDataFrame(rels, StructType(fields))
         }
-        CAPSRecords.create(header, data)(space)
+        CAPSRecords.create(header, data)
       }
     }
   }

@@ -22,8 +22,8 @@ import org.opencypher.caps.impl.typer.fromFrontendType
 
 object GlobalsExtractor {
 
-  def apply(expr: ast.ASTNode, tokens: GlobalsRegistry = GlobalsRegistry.empty): GlobalsRegistry = {
-    expr.fold(tokens) {
+  def apply(expr: ast.ASTNode, globals: GlobalsRegistry = GlobalsRegistry.empty): GlobalsRegistry = {
+    expr.fold(globals) {
       case ast.LabelName(name) => _.mapTokens(_.withLabel(Label(name)))
       case ast.RelTypeName(name) => _.mapTokens(_.withRelType(RelType(name)))
       case ast.PropertyKeyName(name) => _.mapTokens(_.withPropertyKey(PropertyKey(name)))

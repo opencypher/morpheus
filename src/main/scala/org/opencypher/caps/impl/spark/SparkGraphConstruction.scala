@@ -17,11 +17,11 @@ package org.opencypher.caps.impl.spark
 
 import org.apache.spark.sql.DataFrame
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.api.spark.{CAPSGraph, SparkGraphSpace}
+import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
 
 trait SparkGraphConstruction {
 
-  self: SparkGraphSpace =>
+  self: CAPSSession =>
 
 //  def fromSpark: SparkGraphBuilder
 }

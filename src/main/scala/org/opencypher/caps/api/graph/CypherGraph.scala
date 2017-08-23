@@ -18,22 +18,30 @@ package org.opencypher.caps.api.graph
 import org.opencypher.caps.api.record.CypherRecords
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
+import org.opencypher.caps.api.value.CypherValue
 
 trait CypherGraph {
 
   self =>
 
-  type Space <: GraphSpace { type Graph = self.Graph }
   type Graph <: CypherGraph { type Records = self.Records }
   type Records <: CypherRecords { type Records = self.Records }
+  type Session <: CypherSession { type Session = self.Session; type Graph = self.Graph; type Records = self.Records; type Result = self.Result }
+  type Result <: CypherResult { type Result = self.Result; type Graph = self.Graph; type Records = self.Records }
 
-  def space: Space
-
+  // TODO: VerifiedSchema
   def schema: Schema
+
+  def session: Session
 
   final def nodes(name: String): Records = nodes(name, CTNode)
   def nodes(name: String, nodeCypherType: CTNode): Records
 
   final def relationships(name: String): Records = relationships(name, CTRelationship)
   def relationships(name: String, relCypherType: CTRelationship): Records
+
+  final def cypher(query: String, parameters: Map[String, CypherValue] = Map.empty)(implicit caps: Session): Result =
+    caps.cypher(graph, query, parameters)
+
+  protected def graph: Graph
 }

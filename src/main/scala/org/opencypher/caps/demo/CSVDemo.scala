@@ -6,11 +6,8 @@ import org.apache.spark.SparkConf
 import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.sql.SparkSession
 import org.opencypher.caps.api.io.CsvGraphLoader
-import org.opencypher.caps.api.ir.global.TokenRegistry
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSResult, SparkGraphSpace}
-import org.opencypher.caps.impl.instances.spark.cypher._
-import org.opencypher.caps.impl.syntax.cypher._
-import Configuration.{Logging, MasterAddress}
+import org.opencypher.caps.api.spark.{CAPSGraph, CAPSResult, CAPSSession}
+import org.opencypher.caps.demo.Configuration.{Logging, MasterAddress}
 
 object CSVDemo {
 
@@ -24,7 +21,7 @@ object CSVDemo {
     .appName(s"cypher-for-apache-spark-benchmark-${Calendar.getInstance().getTime}")
     .getOrCreate()
 
-  implicit val graphSpace = SparkGraphSpace.empty(session, TokenRegistry.empty)
+  implicit val caps = CAPSSession.create(session)
 
   lazy val graph: CAPSGraph = new CsvGraphLoader(getClass.getResource("/demo/ldbc_1").getFile).load
 
@@ -33,7 +30,8 @@ object CSVDemo {
   def cypher(query: String): CAPSResult = {
     println(s"Now executing query: $query")
 
-    val result: CAPSResult = graph.cypher(query)
+    implicit val caps: CAPSSession = CAPSSession.create(session)
+    val result: CAPSResult = graph.cypher(query)(caps)
 
     result.recordsWithDetails.toDF().cache()
 

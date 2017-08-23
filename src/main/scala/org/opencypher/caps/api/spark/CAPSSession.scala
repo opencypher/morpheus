@@ -13,29 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.spark
+package org.opencypher.caps.api.spark
 
-import org.apache.spark.sql.DataFrame
-import org.opencypher.caps.api.classes.Cypher
+import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.opencypher.caps.api.expr.{Expr, Var}
+import org.opencypher.caps.api.graph.CypherSession
 import org.opencypher.caps.api.ir.Field
 import org.opencypher.caps.api.ir.global.{ConstantRef, ConstantRegistry, GlobalsRegistry, TokenRegistry}
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSResult, SparkGraphSpace}
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
 import org.opencypher.caps.impl.ir.global.GlobalsExtractor
 import org.opencypher.caps.impl.ir.{CypherQueryBuilder, IRBuilderContext}
 import org.opencypher.caps.impl.logical._
 import org.opencypher.caps.impl.parse.CypherParser
-import org.opencypher.caps.impl.physical.{PhysicalPlanner, PhysicalPlannerContext, CAPSResultBuilder}
+import org.opencypher.caps.impl.physical.{CAPSResultBuilder, PhysicalPlanner, PhysicalPlannerContext}
 
-final class CAPSEngine extends Cypher with Serializable {
+sealed abstract class CAPSSession extends CypherSession with Serializable {
+
+  self =>
 
   override type Graph = CAPSGraph
-  override type Space = SparkGraphSpace
+  override type Session = CAPSSession
   override type Records = CAPSRecords
   override type Result = CAPSResult
   override type Data = DataFrame
+
+  def sparkSession: SparkSession
 
   private val producer = new LogicalOperatorProducer
   private val logicalPlanner = new LogicalPlanner(producer)
@@ -47,7 +50,7 @@ final class CAPSEngine extends Cypher with Serializable {
   override def cypher(graph: Graph, query: String, queryParameters: Map[String, CypherValue]): Result = {
     val (stmt, extractedLiterals) = parser.process(query)(CypherParser.defaultContext)
 
-    val globals = GlobalsExtractor(stmt, GlobalsRegistry(graph.space.tokens.registry))
+    val globals = GlobalsExtractor(stmt, GlobalsRegistry.fromTokens(graph.tokens.registry))
     val GlobalsRegistry(tokens, constants) = globals
 
     val converted = extractedLiterals.mapValues(v => CypherValue(v))
@@ -70,7 +73,7 @@ final class CAPSEngine extends Cypher with Serializable {
     val optimizedLogicalPlan = logicalOptimizer(logicalPlan)(logicalPlannerContext)
     println("Done!")
 
-    plan(graph, CAPSRecords.empty()(graph.space), tokens, constants, allParameters, optimizedLogicalPlan)
+    plan(graph, CAPSRecords.empty()(self), tokens, constants, allParameters, optimizedLogicalPlan)
   }
 
   def filter(graph: Graph, in: Records, expr: Expr, queryParameters: Map[String, CypherValue]): Records = {
@@ -91,7 +94,7 @@ final class CAPSEngine extends Cypher with Serializable {
     plan(graph, in, queryParameters, project).records
   }
 
-  def alias(graph: Graph, in: Records, alias: (Expr, Var),  queryParameters: Map[String, CypherValue]): Records = {
+  def alias(graph: Graph, in: Records, alias: (Expr, Var), queryParameters: Map[String, CypherValue]): Records = {
     val (expr, v) = alias
     val scan = producer.planStart(graph.schema, in.header.fields)
     val select = producer.projectField(Field(v.name)(v.cypherType), expr, scan)
@@ -103,7 +106,7 @@ final class CAPSEngine extends Cypher with Serializable {
                    queryParameters: Map[String, CypherValue],
                    logicalPlan: LogicalOperator): CAPSResult = {
 
-    val globals = GlobalsRegistry(graph.space.tokens.registry)
+    val globals = GlobalsRegistry.fromTokens(graph.tokens.registry)
     val allParameters = queryParameters.map { case (k, v) => globals.constants.constantRefByName(k) -> v }
 
     plan(graph, records, globals.tokens, globals.constants, allParameters, logicalPlan)
@@ -130,5 +133,11 @@ final class CAPSEngine extends Cypher with Serializable {
     println("Done!")
 
     CAPSResultBuilder.from(physicalResult)
+  }
+}
+
+object CAPSSession extends Serializable {
+  def create(implicit session: SparkSession) = new CAPSSession {
+    override val sparkSession: SparkSession = session
   }
 }
