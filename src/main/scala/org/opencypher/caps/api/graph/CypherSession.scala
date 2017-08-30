@@ -15,6 +15,8 @@
  */
 package org.opencypher.caps.api.graph
 
+import java.net.URI
+
 import org.opencypher.caps.api.record.CypherRecords
 import org.opencypher.caps.api.value.CypherValue
 
@@ -29,6 +31,7 @@ trait CypherSession {
   type Data
 
   def cypher(graph: Graph, query: String, parameters: Map[String, CypherValue]): Result
+  def withGraphAt(uri: URI, alias: String): Graph
 }
 
 

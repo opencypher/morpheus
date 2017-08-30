@@ -79,7 +79,7 @@ object Raise {
   )
 
   def invalidArgument(expected: String, actual: String) = throw CAPSException(
-    s"Expected a $expected but got a $actual"
+    s"Expected $expected but found $actual"
   )
 
   def typeInferenceFailed(detail: String) = throw CAPSException(

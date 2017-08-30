@@ -1,4 +1,4 @@
-package org.opencypher.caps.api.io
+package org.opencypher.caps.api.io.hdfs
 
 import cats.syntax.either._
 import io.circe.Decoder

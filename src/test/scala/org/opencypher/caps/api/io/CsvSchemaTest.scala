@@ -1,6 +1,7 @@
 package org.opencypher.caps.api.io
 
 import org.opencypher.caps.BaseTestSuite
+import org.opencypher.caps.api.io.hdfs.{CsvField, CsvNodeSchema, CsvRelSchema}
 
 class CsvSchemaTest extends BaseTestSuite {
   test("read valid node schema") {

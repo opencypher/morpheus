@@ -2,6 +2,7 @@ package org.opencypher.caps.api.io
 
 import org.apache.spark.sql.Row
 import org.opencypher.caps.CAPSTestSuite
+import org.opencypher.caps.api.io.hdfs.CsvGraphLoader
 import org.opencypher.caps.api.spark.CAPSGraph
 
 class CsvGraphLoaderAcceptanceTest extends CAPSTestSuite {

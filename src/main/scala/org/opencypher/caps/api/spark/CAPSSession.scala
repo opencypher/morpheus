@@ -1,26 +1,31 @@
 /**
- * Copyright (c) 2016-2017 "Neo4j, Inc." [https://neo4j.com]
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+  * Copyright (c) 2016-2017 "Neo4j, Inc." [https://neo4j.com]
+  *
+  * Licensed under the Apache License, Version 2.0 (the "License");
+  * you may not use this file except in compliance with the License.
+  * You may obtain a copy of the License at
+  *
+  *     http://www.apache.org/licenses/LICENSE-2.0
+  *
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
+  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  * See the License for the specific language governing permissions and
+  * limitations under the License.
+  */
 package org.opencypher.caps.api.spark
+
+import java.net.URI
 
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.opencypher.caps.api.expr.{Expr, Var}
 import org.opencypher.caps.api.graph.CypherSession
+import org.opencypher.caps.api.io.neo4j.Neo4jGraphSourceFactory
+import org.opencypher.caps.api.io.{GraphSource, GraphSourceFactory}
 import org.opencypher.caps.api.ir.Field
 import org.opencypher.caps.api.ir.global.{ConstantRef, ConstantRegistry, GlobalsRegistry, TokenRegistry}
 import org.opencypher.caps.api.value.CypherValue
+import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
 import org.opencypher.caps.impl.ir.global.GlobalsExtractor
 import org.opencypher.caps.impl.ir.{CypherQueryBuilder, IRBuilderContext}
@@ -28,7 +33,10 @@ import org.opencypher.caps.impl.logical._
 import org.opencypher.caps.impl.parse.CypherParser
 import org.opencypher.caps.impl.physical.{CAPSResultBuilder, PhysicalPlanner, PhysicalPlannerContext}
 
-sealed abstract class CAPSSession extends CypherSession with Serializable {
+sealed class CAPSSession private(val sparkSession: SparkSession,
+                                 protocolHandlerFactories: Set[GraphSourceFactory],
+                                 protocolHandlers: Map[String, GraphSource])
+  extends CypherSession with Serializable {
 
   self =>
 
@@ -38,14 +46,26 @@ sealed abstract class CAPSSession extends CypherSession with Serializable {
   override type Result = CAPSResult
   override type Data = DataFrame
 
-  def sparkSession: SparkSession
-
   private val producer = new LogicalOperatorProducer
   private val logicalPlanner = new LogicalPlanner(producer)
   private val logicalOptimizer = new LogicalOptimizer(producer)
   private val flatPlanner = new FlatPlanner()
   private val physicalPlanner = new PhysicalPlanner()
   private val parser = CypherParser
+
+  override def withGraphAt(uri: URI, alias: String): CAPSGraph =
+    if (uri.getScheme != null) loadFromURI(uri) else loadFromMountPoint(uri)
+
+  private def loadFromURI(uri: URI): CAPSGraph =
+    protocolHandlerFactories.find(_.protocol == uri.getScheme)
+      .getOrElse(Raise.invalidArgument(protocolHandlerFactories.map(_.protocol).mkString("[", ",", "]"), uri.getScheme))
+      .fromURI(uri)
+      .get
+
+  private def loadFromMountPoint(uri: URI): CAPSGraph =
+    protocolHandlers
+      .getOrElse(uri.getPath, Raise.invalidArgument(protocolHandlers.keySet.mkString("[", ",", "]"), uri.getPath))
+      .get
 
   override def cypher(graph: Graph, query: String, queryParameters: Map[String, CypherValue]): Result = {
     val (stmt, extractedLiterals) = parser.process(query)(CypherParser.defaultContext)
@@ -137,7 +157,23 @@ sealed abstract class CAPSSession extends CypherSession with Serializable {
 }
 
 object CAPSSession extends Serializable {
-  def create(implicit session: SparkSession) = new CAPSSession {
-    override val sparkSession: SparkSession = session
+  def create(implicit session: SparkSession): CAPSSession = Builder(session).get
+
+  case class Builder(session: SparkSession,
+                     private val protocolHandlerFactories: Set[GraphSourceFactory] = Set(Neo4jGraphSourceFactory),
+                     private val protocolHandlers: Map[String, GraphSource] = Map.empty) {
+
+
+    def withGraphSourceFactory(factory: GraphSourceFactory): Builder =
+      copy(session = session, protocolHandlerFactories = protocolHandlerFactories + factory)
+
+
+    def withGraphSource(mountPoint: String, handler: GraphSource): Builder =
+      copy(session = session, protocolHandlers = protocolHandlers + (mountPoint -> handler))
+
+
+    def get = new CAPSSession(session, protocolHandlerFactories, protocolHandlers)
   }
+
+  def builder(sparkSession: SparkSession): Builder = Builder(sparkSession)
 }

@@ -1,8 +1,9 @@
-package org.opencypher.caps.api.io
+package org.opencypher.caps.api.io.hdfs
 
 import java.io.File
 import java.net.URI
 
+import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.opencypher.caps.api.record.{NodeScan, RelationshipScan}
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
@@ -27,9 +28,9 @@ import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
   * @param location Location of the top level folder containing the node and relationship files
   * @param caps
   */
-class CsvGraphLoader(location: String)(implicit caps: CAPSSession) {
+class CsvGraphLoader(location: String, hadoopConfig: Configuration)(implicit caps: CAPSSession) {
   private val sparkSession = caps.sparkSession
-  private val fs: FileSystem = FileSystem.get(new URI(location), sparkSession.sparkContext.hadoopConfiguration)
+  private val fs: FileSystem = FileSystem.get(new URI(location), hadoopConfig)
 
   def load: CAPSGraph = {
     val nodeScans = loadNodes
