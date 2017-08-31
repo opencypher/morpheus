@@ -34,6 +34,7 @@
         <dep.eff.version>4.5.0</dep.eff.version>
         <dep.gdl.version>0.3.0-SNAPSHOT</dep.gdl.version>
         <dep.graphframes.version>0.4.0-spark2.1-s_2.11</dep.graphframes.version>
+        <dep.hadoop.version>2.7.2</dep.hadoop.version>
         <dep.junit.version>4.12</dep.junit.version>
         <dep.mockito.version>1.10.19</dep.mockito.version>
         <dep.multiset.version>0.4</dep.multiset.version>
@@ -500,6 +501,13 @@
                     <artifactId>scala-library</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-minicluster</artifactId>
+            <version>${dep.hadoop.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>

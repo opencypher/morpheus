@@ -20,12 +20,12 @@ import java.net.URI
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.opencypher.caps.api.expr.{Expr, Var}
 import org.opencypher.caps.api.graph.CypherSession
+import org.opencypher.caps.api.io.hdfs.HdfsCsvGraphSourceFactory
 import org.opencypher.caps.api.io.neo4j.Neo4jGraphSourceFactory
-import org.opencypher.caps.api.io.{GraphSource, GraphSourceFactory}
+import org.opencypher.caps.api.io.{GraphSource, GraphSourceFactory, GraphSourceHandler}
 import org.opencypher.caps.api.ir.Field
 import org.opencypher.caps.api.ir.global.{ConstantRef, ConstantRegistry, GlobalsRegistry, TokenRegistry}
 import org.opencypher.caps.api.value.CypherValue
-import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
 import org.opencypher.caps.impl.ir.global.GlobalsExtractor
 import org.opencypher.caps.impl.ir.{CypherQueryBuilder, IRBuilderContext}
@@ -34,11 +34,8 @@ import org.opencypher.caps.impl.parse.CypherParser
 import org.opencypher.caps.impl.physical.{CAPSResultBuilder, PhysicalPlanner, PhysicalPlannerContext}
 
 sealed class CAPSSession private(val sparkSession: SparkSession,
-                                 protocolHandlerFactories: Set[GraphSourceFactory],
-                                 protocolHandlers: Map[String, GraphSource])
+                                 private val graphSourceHandler: GraphSourceHandler)
   extends CypherSession with Serializable {
-
-  self =>
 
   override type Graph = CAPSGraph
   override type Session = CAPSSession
@@ -54,18 +51,7 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
   private val parser = CypherParser
 
   override def withGraphAt(uri: URI, alias: String): CAPSGraph =
-    if (uri.getScheme != null) loadFromURI(uri) else loadFromMountPoint(uri)
-
-  private def loadFromURI(uri: URI): CAPSGraph =
-    protocolHandlerFactories.find(_.protocol == uri.getScheme)
-      .getOrElse(Raise.invalidArgument(protocolHandlerFactories.map(_.protocol).mkString("[", ",", "]"), uri.getScheme))
-      .fromURI(uri)
-      .get
-
-  private def loadFromMountPoint(uri: URI): CAPSGraph =
-    protocolHandlers
-      .getOrElse(uri.getPath, Raise.invalidArgument(protocolHandlers.keySet.mkString("[", ",", "]"), uri.getPath))
-      .get
+    graphSourceHandler.withGraphAt(uri, alias)(this)
 
   override def cypher(graph: Graph, query: String, queryParameters: Map[String, CypherValue]): Result = {
     val (stmt, extractedLiterals) = parser.process(query)(CypherParser.defaultContext)
@@ -93,7 +79,7 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
     val optimizedLogicalPlan = logicalOptimizer(logicalPlan)(logicalPlannerContext)
     println("Done!")
 
-    plan(graph, CAPSRecords.empty()(self), tokens, constants, allParameters, optimizedLogicalPlan)
+    plan(graph, CAPSRecords.empty()(this), tokens, constants, allParameters, optimizedLogicalPlan)
   }
 
   def filter(graph: Graph, in: Records, expr: Expr, queryParameters: Map[String, CypherValue]): Records = {
@@ -160,19 +146,30 @@ object CAPSSession extends Serializable {
   def create(implicit session: SparkSession): CAPSSession = Builder(session).get
 
   case class Builder(session: SparkSession,
-                     private val protocolHandlerFactories: Set[GraphSourceFactory] = Set(Neo4jGraphSourceFactory),
-                     private val protocolHandlers: Map[String, GraphSource] = Map.empty) {
+                     private val graphSourceFactories: Set[GraphSourceFactory] = Set.empty,
+                     private val mountPoints: Map[String, GraphSource] = Map.empty,
+                     private val graphSources: Set[GraphSource] = Set.empty) {
 
 
     def withGraphSourceFactory(factory: GraphSourceFactory): Builder =
-      copy(session = session, protocolHandlerFactories = protocolHandlerFactories + factory)
+      copy(graphSourceFactories = graphSourceFactories + factory)
 
 
     def withGraphSource(mountPoint: String, handler: GraphSource): Builder =
-      copy(session = session, protocolHandlers = protocolHandlers + (mountPoint -> handler))
+      copy(mountPoints = mountPoints + (mountPoint -> handler))
 
+    def withGraphSource(handler: GraphSource): Builder =
+      copy(graphSources = graphSources + handler)
 
-    def get = new CAPSSession(session, protocolHandlerFactories, protocolHandlers)
+    def get: CAPSSession = {
+      // set some defaults
+      val factories = graphSourceFactories +
+        Neo4jGraphSourceFactory +
+        HdfsCsvGraphSourceFactory(session.sparkContext.hadoopConfiguration)
+
+      new CAPSSession(session, GraphSourceHandler(factories, mountPoints, graphSources))
+    }
+
   }
 
   def builder(sparkSession: SparkSession): Builder = Builder(sparkSession)

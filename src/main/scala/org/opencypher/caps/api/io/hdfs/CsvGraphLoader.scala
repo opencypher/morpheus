@@ -5,6 +5,7 @@ import java.net.URI
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.spark.sql.SparkSession
 import org.opencypher.caps.api.record.{NodeScan, RelationshipScan}
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
 
@@ -26,10 +27,11 @@ import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
 
   *
   * @param location Location of the top level folder containing the node and relationship files
-  * @param caps
+  * @param capsSession CAPS Session
   */
-class CsvGraphLoader(location: String, hadoopConfig: Configuration)(implicit caps: CAPSSession) {
-  private val sparkSession = caps.sparkSession
+class CsvGraphLoader(location: String, hadoopConfig: Configuration)(implicit capsSession: CAPSSession) {
+
+  private val sparkSession: SparkSession = capsSession.sparkSession
   private val fs: FileSystem = FileSystem.get(new URI(location), hadoopConfig)
 
   def load: CAPSGraph = {
