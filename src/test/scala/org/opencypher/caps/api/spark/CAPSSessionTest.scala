@@ -1,63 +1,69 @@
 package org.opencypher.caps.api.spark
 
-import java.net.URI
+import java.net.{URI, URLEncoder}
 
-import org.opencypher.caps.CAPSTestSuiteWithHDFS
 import org.opencypher.caps.api.io.hdfs.HdfsCsvGraphSource
-import org.opencypher.caps.api.io.neo4j.Neo4JGraphSource
+import org.opencypher.caps.api.io.neo4j.Neo4jGraphSource
+import org.opencypher.caps.{HDFSTestSession, Neo4jTestSession, SparkTestSession}
+import org.scalatest.{FunSuite, Matchers}
 
-class CAPSSessionTest extends CAPSTestSuiteWithHDFS {
+class CAPSSessionHDFSTest extends FunSuite
+  with SparkTestSession.Fixture
+  with HDFSTestSession.Fixture
+  with Matchers {
 
-  test("HDFS via factory") {
+  test("HDFS via URI") {
     val graph = CAPSSession.builder(session).get.withGraphAt(hdfsURI, "temp")
     graph.nodes("n").details.toDF().collect().toSet should equal(testGraphNodes)
     graph.relationships("rel").details.toDF().collect.toSet should equal(testGraphRels)
   }
 
-  test("HDFS via mount") {
+  test("HDFS via mount point") {
     val capsSession = CAPSSession.builder(session)
-      .withGraphSource("/test/graph", HdfsCsvGraphSource(sparkSession.sparkContext.hadoopConfiguration, hdfsURI.getPath))
+      .withGraphSource("/test/graph", HdfsCsvGraphSource(session.sparkContext.hadoopConfiguration, hdfsURI.getPath))
       .get
 
     val graph = capsSession.withGraphAt(URI.create("/test/graph"), "test")
     graph.nodes("n").details.toDF().collect().toSet should equal(testGraphNodes)
     graph.relationships("rel").details.toDF().collect.toSet should equal(testGraphRels)
   }
+}
 
-  ignore("Neo4j via factory") {
+class CAPSSessionNeo4jTest extends FunSuite
+  with SparkTestSession.Fixture
+  with Neo4jTestSession.Fixture
+  with Matchers {
+
+  test("Neo4j via URI") {
     val capsSession = CAPSSession.builder(session).get
 
-    val result = capsSession
-      .withGraphAt(URI.create("bolt://user:password@localhost:1234?MATCH%20(n)%20RETURN%20n"), "allNodes")
-      .cypher("MATCH (p:Person) RETURN p")
+    val nodeQuery = URLEncoder.encode("MATCH (n) RETURN n", "UTF-8")
+    val relQuery = URLEncoder.encode("MATCH ()-[r]->() RETURN r", "UTF-8")
+    val uri = URI.create(s"$neo4jHost?$nodeQuery;$relQuery")
 
-    result.showRecords()
+    val graph = capsSession.withGraphAt(uri, "tmp")
+    graph.nodes("n").details.toDF().collect().toSet should equal(testGraphNodes)
+    graph.relationships("rel").details.toDF().collect.toSet should equal(testGraphRels)
   }
 
-
-  ignore("Neo4j via mount") {
+  test("Neo4j via mount point") {
     val capsSession = CAPSSession.builder(session)
-      .withGraphSource("/neo4j1", Neo4JGraphSource(URI.create("bolt://my-ip:1234"), "alice", "secret", "MATCH (n) RETURN n"))
-      .withGraphSource("/neo4j2", Neo4JGraphSource(URI.create("bolt://your-ip:1234"), "bob", "secret", "MATCH (n) RETURN n"))
+      .withGraphSource("/neo4j1", Neo4jGraphSource(neo4jConfig, "MATCH (n) RETURN n", "MATCH ()-[r]->() RETURN r"))
       .get
 
-    val result = capsSession
-      .withGraphAt(URI.create("/neo4j1"), "allNodes")
-      .cypher("MATCH (p:Person) RETURN p")
-
-    result.showRecords()
+    val graph = capsSession.withGraphAt(URI.create("/neo4j1"), "tmp")
+    graph.nodes("n").details.toDF().collect().toSet should equal(testGraphNodes)
+    graph.relationships("rel").details.toDF().collect.toSet should equal(testGraphRels)
   }
 
-  ignore("preconfigured Neo4j via url") {
+  test("Neo4j via mounted URI") {
     val capsSession = CAPSSession
       .builder(session)
-      .withGraphSource(Neo4JGraphSource(URI.create("bolt://my.neo4j.com"), "anonymous", "passwd", "MATCH ..."))
+      .withGraphSource(Neo4jGraphSource(neo4jConfig, "MATCH (n) RETURN n", "MATCH ()-[r]->() RETURN r"))
       .get
 
-    val result = capsSession
-      .withGraphAt(URI.create("bolt://my.neo4j.com"), "socnet")
-      .cypher("MATCH (p:Person) RETURN p")
-
-    result.showRecords()
+    val graph = capsSession.withGraphAt(neo4jServer.boltURI(), "tmp")
+    graph.nodes("n").details.toDF().collect().toSet should equal(testGraphNodes)
+    graph.relationships("rel").details.toDF().collect.toSet should equal(testGraphRels)
   }
 }

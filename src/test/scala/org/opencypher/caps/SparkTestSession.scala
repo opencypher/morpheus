@@ -20,28 +20,25 @@ import java.util.UUID
 import org.apache.spark.SparkConf
 import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.sql.SparkSession
-import org.opencypher.caps.demo.Configuration.{Logging, Neo4jAddress, Neo4jPassword, Neo4jUser}
+import org.opencypher.caps.demo.Configuration.Logging
 import org.opencypher.caps.demo.CypherKryoRegistrar
 import org.scalatest.{BeforeAndAfterEach, FunSuite}
 
 object SparkTestSession {
 
-  lazy val default = Factory.create
+  lazy val default: SparkSession = Factory.create
 
   trait Fixture extends BeforeAndAfterEach {
     self: FunSuite =>
 
-    implicit val session = SparkTestSession.default
+    implicit val session: SparkSession = SparkTestSession.default
   }
 
   object Factory {
-    def create = {
+    def create: SparkSession = {
       val conf = new SparkConf(true)
       conf.set("spark.serializer", classOf[KryoSerializer].getCanonicalName)
       conf.set("spark.kryo.registrator", classOf[CypherKryoRegistrar].getCanonicalName)
-      conf.set("spark.neo4j.bolt.password", Neo4jPassword.get())
-      conf.set("spark.neo4j.bolt.user", Neo4jUser.get())
-      conf.set("spark.neo4j.bolt.url", Neo4jAddress.get())
 
       //
       // This may or may not help - depending on the query

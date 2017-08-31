@@ -15,16 +15,25 @@
  */
 package org.opencypher.caps.impl.instances
 
-import org.opencypher.caps.CAPSTestSuite
+import java.net.URI
+
+import org.neo4j.driver.v1.Config
+import org.opencypher.caps.{CAPSTestSuite, Neo4jTestSession}
+import org.opencypher.caps.api.io.neo4j.{EncryptedNeo4jConfig, Neo4jGraphLoader}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSRecords, CAPSSession}
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.spark.SparkGraphLoading
+import org.opencypher.caps.demo.Configuration.{Neo4jAddress, Neo4jPassword, Neo4jUser}
 
-class CAPSRecordsAcceptanceTest extends CAPSTestSuite {
+class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jTestSession.Fixture {
+
+  override val neo4jConfig = new EncryptedNeo4jConfig(URI.create(Neo4jAddress.get()),
+    Neo4jUser.get(),
+    Option(Neo4jPassword.get()),
+    Config.EncryptionLevel.REQUIRED)
 
   private lazy val smallGraph = initSmallSpace()
-  private lazy val fullGraph = SparkGraphLoading.fromNeo4j("MATCH (n) RETURN n", "MATCH ()-[r]->() RETURN r")
+  private lazy val fullGraph = Neo4jGraphLoader.fromNeo4j(neo4jConfig, "MATCH (n) RETURN n", "MATCH ()-[r]->() RETURN r")
 
   test("label scan and project") {
     // When
@@ -226,7 +235,7 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite {
                              nodeQ: String = "MATCH (a)-[:ATTENDED]->(b) UNWIND [a, b] AS n RETURN DISTINCT n",
                              relQ: String = "MATCH ()-[r:ATTENDED]->() RETURN r")
                             (implicit caps: CAPSSession) = {
-    SparkGraphLoading.fromNeo4j(nodeQ, relQ, schema)
+    Neo4jGraphLoader.fromNeo4j(neo4jConfig, nodeQ, relQ, schema)
   }
 
   private lazy val smallSchema = Schema.empty
