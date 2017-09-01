@@ -29,11 +29,11 @@ case class EncryptedNeo4j(config: EncryptedNeo4jConfig, session: SparkSession) e
     if (pattern != null) {
       val queries: Seq[(String, List[String])] = pattern.relQueries
       val rdds: Seq[RDD[Row]] = queries.map(query => {
-        new EncryptedNeo4jRDD(sc, query._1, rels.params, partitions, config)
+        new EncryptedNeo4jRDD(sc, query._1, config, rels.params, partitions)
       })
       rdds.reduce((a, b) => a.union(b)).distinct()
     } else {
-      new EncryptedNeo4jRDD(sc, rels.query, rels.params, partitions, config)
+      new EncryptedNeo4jRDD(sc, rels.query, config, rels.params, partitions)
     }
   }
 
@@ -42,7 +42,7 @@ case class EncryptedNeo4j(config: EncryptedNeo4jConfig, session: SparkSession) e
       loadNodeRdds(pattern.source,nodes.params,partitions)
         .union(loadNodeRdds(pattern.target,nodes.params,partitions)).distinct()
     } else if (!nodes.isEmpty) {
-      new EncryptedNeo4jRDD(sc, nodes.query, nodes.params, partitions, config)
+      new EncryptedNeo4jRDD(sc, nodes.query, config, nodes.params, partitions)
     } else {
       null
     }
@@ -52,15 +52,16 @@ case class EncryptedNeo4j(config: EncryptedNeo4jConfig, session: SparkSession) e
     // todo use count queries
     val queries = pattern.nodeQuery(node)
 
-    new EncryptedNeo4jRDD(sc, queries._1, params, partitions, config)
+    new EncryptedNeo4jRDD(sc, queries._1, config, params, partitions)
   }
 
 }
 
-class EncryptedNeo4jRDD(sc: SparkContext, query: String,
+class EncryptedNeo4jRDD(sc: SparkContext,
+                        query: String,
+                        override val neo4jConfig: EncryptedNeo4jConfig,
                         parameters: Map[String, Any] = Map.empty,
-                        partitions: Partitions = Partitions(),
-                        override val neo4jConfig: EncryptedNeo4jConfig)
+                        partitions: Partitions = Partitions())
   extends Neo4jRDD(sc, query, parameters, partitions)
 
 class EncryptedNeo4jConfig(val uri: URI,
