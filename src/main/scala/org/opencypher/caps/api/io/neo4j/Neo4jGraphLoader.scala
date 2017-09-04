@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.spark
+package org.opencypher.caps.api.io.neo4j
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
@@ -29,12 +29,13 @@ import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.convert.{fromJavaType, toSparkType}
 import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.record.CAPSRecordsTokens
+import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.syntax.header._
 
-object SparkGraphLoading {
+object Neo4jGraphLoader {
 
-  def loadSchema(nodeQ: String, relQ: String)(implicit caps: CAPSSession): VerifiedSchema = {
-    val (nodes, rels) = loadRDDs(nodeQ, relQ)
+  def loadSchema(config: EncryptedNeo4jConfig, nodeQ: String, relQ: String)(implicit caps: CAPSSession): VerifiedSchema = {
+    val (nodes, rels) = loadRDDs(config, nodeQ, relQ)
 
     loadSchema(nodes, rels)
   }
@@ -68,20 +69,20 @@ object SparkGraphLoading {
     completeSchema.verify
   }
 
-  def fromNeo4j(nodeQuery: String, relQuery: String)
+  def fromNeo4j(config: EncryptedNeo4jConfig, nodeQuery: String, relQuery: String)
                (implicit caps: CAPSSession): CAPSGraph =
-    fromNeo4j(nodeQuery, relQuery, "source", "rel", "target", None)
+    fromNeo4j(config, nodeQuery, relQuery, "source", "rel", "target", None)
 
-  def fromNeo4j(nodeQuery: String, relQuery: String, schema: VerifiedSchema)
+  def fromNeo4j(config: EncryptedNeo4jConfig, nodeQuery: String, relQuery: String, schema: VerifiedSchema)
                (implicit caps: CAPSSession): CAPSGraph =
-    fromNeo4j(nodeQuery, relQuery, "source", "rel", "target", Some(schema))
+    fromNeo4j(config, nodeQuery, relQuery, "source", "rel", "target", Some(schema))
 
 
-  def fromNeo4j(nodeQuery: String, relQuery: String,
+  def fromNeo4j(config: EncryptedNeo4jConfig, nodeQuery: String, relQuery: String,
                 sourceNode: String, rel: String, targetNode: String,
                 maybeSchema: Option[VerifiedSchema] = None)
                (implicit caps: CAPSSession): CAPSGraph = {
-    val (nodes, rels) = loadRDDs(nodeQuery, relQuery)
+    val (nodes, rels) = loadRDDs(config, nodeQuery, relQuery)
 
     val verified = maybeSchema.getOrElse(loadSchema(nodes, rels))
     val context = LoadingContext(verified, GlobalsRegistry.fromSchema(verified))
@@ -89,9 +90,9 @@ object SparkGraphLoading {
     createGraph(nodes.cache(), rels.cache(), sourceNode, rel, targetNode)(caps, context)
   }
 
-  private def loadRDDs(nodeQ: String, relQ: String)(implicit caps: CAPSSession) = {
+  private def loadRDDs(config: EncryptedNeo4jConfig, nodeQ: String, relQ: String)(implicit caps: CAPSSession) = {
     val sparkSession = caps.sparkSession
-    val neo4j = EncryptedNeo4j(sparkSession)
+    val neo4j = EncryptedNeo4j(config, sparkSession)
     val nodes = neo4j.cypher(nodeQ).loadNodeRdds.map(row => row(0).asInstanceOf[InternalNode])
     val rels = neo4j.cypher(relQ).loadRowRdd.map(row => row(0).asInstanceOf[InternalRelationship])
 

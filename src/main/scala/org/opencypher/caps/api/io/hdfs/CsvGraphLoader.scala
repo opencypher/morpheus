@@ -1,9 +1,26 @@
-package org.opencypher.caps.api.io
+/**
+ * Copyright (c) 2016-2017 "Neo4j, Inc." [https://neo4j.com]
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.opencypher.caps.api.io.hdfs
 
 import java.io.File
 import java.net.URI
 
+import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.spark.sql.SparkSession
 import org.opencypher.caps.api.record.{NodeScan, RelationshipScan}
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
 
@@ -25,11 +42,12 @@ import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
 
   *
   * @param location Location of the top level folder containing the node and relationship files
-  * @param caps
+  * @param capsSession CAPS Session
   */
-class CsvGraphLoader(location: String)(implicit caps: CAPSSession) {
-  private val sparkSession = caps.sparkSession
-  private val fs: FileSystem = FileSystem.get(new URI(location), sparkSession.sparkContext.hadoopConfiguration)
+class CsvGraphLoader(location: String, hadoopConfig: Configuration)(implicit capsSession: CAPSSession) {
+
+  private val sparkSession: SparkSession = capsSession.sparkSession
+  private val fs: FileSystem = FileSystem.get(new URI(location), hadoopConfig)
 
   def load: CAPSGraph = {
     val nodeScans = loadNodes

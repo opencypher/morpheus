@@ -1,3 +1,18 @@
+/**
+ * Copyright (c) 2016-2017 "Neo4j, Inc." [https://neo4j.com]
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.opencypher.caps.demo
 
 import java.util.Calendar
@@ -5,7 +20,7 @@ import java.util.Calendar
 import org.apache.spark.SparkConf
 import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.sql.SparkSession
-import org.opencypher.caps.api.io.CsvGraphLoader
+import org.opencypher.caps.api.io.hdfs.CsvGraphLoader
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSResult, CAPSSession}
 import org.opencypher.caps.demo.Configuration.{Logging, MasterAddress}
 
@@ -23,7 +38,8 @@ object CSVDemo {
 
   implicit val caps = CAPSSession.create(session)
 
-  lazy val graph: CAPSGraph = new CsvGraphLoader(getClass.getResource("/demo/ldbc_1").getFile).load
+  lazy val graph: CAPSGraph = new CsvGraphLoader(getClass.getResource("/demo/ldbc_1").getFile,
+    caps.sparkSession.sparkContext.hadoopConfiguration).load
 
   session.sparkContext.setLogLevel(Logging.get())
 

@@ -29,16 +29,20 @@
 
         <!-- Used dependencies -->
         <dep.ammonite.version>1.0.1-6-6d2db3a</dep.ammonite.version>
+        <dep.bouncycastle.version>1.57</dep.bouncycastle.version>
         <dep.cats.version>0.9.0</dep.cats.version>
         <dep.circe.version>0.8.0</dep.circe.version>
         <dep.eff.version>4.5.0</dep.eff.version>
         <dep.gdl.version>0.3.0-SNAPSHOT</dep.gdl.version>
         <dep.graphframes.version>0.4.0-spark2.1-s_2.11</dep.graphframes.version>
+        <dep.hadoop.version>2.6.5</dep.hadoop.version>
         <dep.junit.version>4.12</dep.junit.version>
         <dep.mockito.version>1.10.19</dep.mockito.version>
         <dep.multiset.version>0.4</dep.multiset.version>
         <dep.neo4j-spark-connector>2.0.0-M2</dep.neo4j-spark-connector>
         <dep.neo4j.version>3.2.0-alpha08</dep.neo4j.version>
+        <dep.netty.version>4.1.8.Final</dep.netty.version>
+        <dep.neo4j.driver.version>1.4.2</dep.neo4j.driver.version>
         <dep.scalatest.version>3.0.3</dep.scalatest.version>
         <dep.sourcecode.version>0.1.2</dep.sourcecode.version>
         <dep.spark.version>2.2.0</dep.spark.version>
@@ -241,9 +245,22 @@
                 <artifactId>license-maven-plugin</artifactId>
                 <version>${plugin.license-maven.version}</version>
                 <configuration>
-                    <header>license-header</header>
+                    <header>license-header.txt</header>
                     <basedir>src</basedir>
+                    <excludes>
+                        <exclude>test/resources/**</exclude>
+                        <exclude>main/resources/**</exclude>
+                    </excludes>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>check-license-headers</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
@@ -490,6 +507,27 @@
         </dependency>
 
         <dependency>
+            <groupId>org.neo4j.test</groupId>
+            <artifactId>neo4j-harness</artifactId>
+            <version>${dep.neo4j.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bctls-jdk15on</artifactId>
+            <version>${dep.bouncycastle.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+            <version>${dep.netty.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>org.scalatest</groupId>
             <artifactId>scalatest_2.11</artifactId>
             <version>${dep.scalatest.version}</version>
@@ -500,6 +538,13 @@
                     <artifactId>scala-library</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-minicluster</artifactId>
+            <version>${dep.hadoop.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>

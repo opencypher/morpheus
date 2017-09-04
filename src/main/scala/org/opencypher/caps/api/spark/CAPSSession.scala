@@ -15,9 +15,14 @@
  */
 package org.opencypher.caps.api.spark
 
+import java.net.URI
+
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.opencypher.caps.api.expr.{Expr, Var}
 import org.opencypher.caps.api.graph.CypherSession
+import org.opencypher.caps.api.io.hdfs.HdfsCsvGraphSourceFactory
+import org.opencypher.caps.api.io.neo4j.Neo4jGraphSourceFactory
+import org.opencypher.caps.api.io.{GraphSource, GraphSourceFactory, GraphSourceHandler}
 import org.opencypher.caps.api.ir.Field
 import org.opencypher.caps.api.ir.global.{ConstantRef, ConstantRegistry, GlobalsRegistry, TokenRegistry}
 import org.opencypher.caps.api.value.CypherValue
@@ -28,9 +33,9 @@ import org.opencypher.caps.impl.logical._
 import org.opencypher.caps.impl.parse.CypherParser
 import org.opencypher.caps.impl.physical.{CAPSResultBuilder, PhysicalPlanner, PhysicalPlannerContext}
 
-sealed abstract class CAPSSession extends CypherSession with Serializable {
-
-  self =>
+sealed class CAPSSession private(val sparkSession: SparkSession,
+                                 private val graphSourceHandler: GraphSourceHandler)
+  extends CypherSession with Serializable {
 
   override type Graph = CAPSGraph
   override type Session = CAPSSession
@@ -38,14 +43,15 @@ sealed abstract class CAPSSession extends CypherSession with Serializable {
   override type Result = CAPSResult
   override type Data = DataFrame
 
-  def sparkSession: SparkSession
-
   private val producer = new LogicalOperatorProducer
   private val logicalPlanner = new LogicalPlanner(producer)
   private val logicalOptimizer = new LogicalOptimizer(producer)
   private val flatPlanner = new FlatPlanner()
   private val physicalPlanner = new PhysicalPlanner()
   private val parser = CypherParser
+
+  override def withGraphAt(uri: URI, alias: String): CAPSGraph =
+    graphSourceHandler.withGraphAt(uri, alias)(this)
 
   override def cypher(graph: Graph, query: String, queryParameters: Map[String, CypherValue]): Result = {
     val (stmt, extractedLiterals) = parser.process(query)(CypherParser.defaultContext)
@@ -73,7 +79,7 @@ sealed abstract class CAPSSession extends CypherSession with Serializable {
     val optimizedLogicalPlan = logicalOptimizer(logicalPlan)(logicalPlannerContext)
     println("Done!")
 
-    plan(graph, CAPSRecords.empty()(self), tokens, constants, allParameters, optimizedLogicalPlan)
+    plan(graph, CAPSRecords.empty()(this), tokens, constants, allParameters, optimizedLogicalPlan)
   }
 
   def filter(graph: Graph, in: Records, expr: Expr, queryParameters: Map[String, CypherValue]): Records = {
@@ -137,7 +143,32 @@ sealed abstract class CAPSSession extends CypherSession with Serializable {
 }
 
 object CAPSSession extends Serializable {
-  def create(implicit session: SparkSession) = new CAPSSession {
-    override val sparkSession: SparkSession = session
+  def create(implicit session: SparkSession): CAPSSession = Builder(session).get
+
+  case class Builder(session: SparkSession,
+                     private val graphSourceFactories: Set[GraphSourceFactory] = Set.empty,
+                     private val mountPoints: Map[String, GraphSource] = Map.empty,
+                     private val graphSources: Set[GraphSource] = Set.empty) {
+
+    def withGraphSourceFactory(factory: GraphSourceFactory): Builder =
+      copy(graphSourceFactories = graphSourceFactories + factory)
+
+    def withGraphSource(mountPoint: String, handler: GraphSource): Builder =
+      copy(mountPoints = mountPoints + (mountPoint -> handler))
+
+    def withGraphSource(handler: GraphSource): Builder =
+      copy(graphSources = graphSources + handler)
+
+    def get: CAPSSession = {
+      // set some defaults
+      val factories = graphSourceFactories +
+        Neo4jGraphSourceFactory +
+        HdfsCsvGraphSourceFactory(session.sparkContext.hadoopConfiguration)
+
+      new CAPSSession(session, GraphSourceHandler(factories, mountPoints, graphSources))
+    }
+
   }
+
+  def builder(sparkSession: SparkSession): Builder = Builder(sparkSession)
 }
