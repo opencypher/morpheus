@@ -67,4 +67,24 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
       CypherMap("r" -> 1, "source(r)" -> 1, "target(r)" -> 2, "type(r)" -> relId, "r.foo" -> null)
     ))
   }
+
+  test("return distinct nodes") {
+    val given = TestGraph(
+      """({name:'bar'}),
+        |({name:'bar'}),
+        |({name:'baz'}),
+        |({name:'baz'}),
+        |({name:'bar'}),
+        |({name:'foo'}),
+      """.stripMargin)
+
+    val result = given.cypher("MATCH (n) RETURN DISTINCT n.name AS name")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("name" -> "bar"),
+      CypherMap("name" -> "foo"),
+      CypherMap("name" -> "baz")
+    ))
+  }
+
 }
