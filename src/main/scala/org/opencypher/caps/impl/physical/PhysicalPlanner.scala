@@ -77,6 +77,9 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
         case _ => inner(in).filter(expr, header)
       }
 
+      case flat.Distinct(fields, in, header) =>
+        inner(in).distinct(fields, header)
+
       // TODO: This needs to be a ternary operator taking source, rels and target records instead of using the graph
       // MATCH (a)-[r]->(b) => MATCH (a), (b), (a)-[r]->(b)
       case op@flat.ExpandSource(source, rel, types, target, sourceOp, targetOp, header, relHeader) =>

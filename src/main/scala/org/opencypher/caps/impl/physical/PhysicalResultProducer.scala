@@ -92,6 +92,16 @@ class PhysicalResultProducer(context: RuntimeContext) {
       }
     }
 
+    def distinct(fields: Set[Var], header: RecordHeader): PhysicalResult = {
+      prev.mapRecordsWithDetails { subject =>
+        val data: DataFrame = subject.data
+        val columnNames = header.slots.map(slot => data.col(context.columnName(slot)))
+        val relevantColumns = data.select(columnNames: _*)
+        val distinctRows = relevantColumns.distinct()
+        CAPSRecords.create(header, distinctRows)(subject.caps)
+      }
+    }
+
     def alias(expr: Expr, v: Var, header: RecordHeader): PhysicalResult =
       prev.mapRecordsWithDetails { subject =>
         val oldSlot = subject.header.slotsFor(expr).head

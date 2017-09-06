@@ -68,7 +68,10 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   def distinct(fields: Set[Var], in: FlatOperator): Distinct = {
-    Distinct(fields, in, in.header)
+    val (newHeader, _) = RecordHeader.empty.update(
+      addContents(fields.toSeq.map(OpaqueField))
+    )
+    Distinct(fields, in, newHeader)
   }
 
   def nodeScan(node: Var, nodeDef: EveryNode, prev: FlatOperator): NodeScan = {
