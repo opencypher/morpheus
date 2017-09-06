@@ -113,6 +113,11 @@ object Neo4jTestSession {
         |CREATE (parent:Film {title: 'The Parent Trap'})
         |CREATE (camelot:Film {title: 'Camelot'})
         |
+        |// non-standard nodes here, for testing schema handling
+        |CREATE (:Movie {title: 444})
+        |CREATE (:Person {name: 'Fake Foo', birthyear: 1970})
+        |CREATE (:Person {name: 'Fake Bar', birthyear: 1970})
+        |
         |CREATE (rachel)-[:HAS_CHILD]->(vanessa),
         |       (rachel)-[:HAS_CHILD]->(corin),
         |       (michael)-[:HAS_CHILD]->(vanessa),
@@ -148,7 +153,7 @@ object Neo4jTestSession {
         |       (liam)-[:ACTED_IN {charactername: 'Henri Ducard'}]->(batmanbegins)
       """.stripMargin
 
-    val nbrNodes = 21
+    val nbrNodes = 24
     val nbrRels = 28
 
     val schema = Schema.empty
@@ -157,6 +162,7 @@ object Neo4jTestSession {
       .withNodePropertyKeys("Actor")("name" -> CTString, "birthyear" -> CTInteger)
       .withNodePropertyKeys("City")("name" -> CTString)
       .withNodePropertyKeys("Film")("title" -> CTString)
+      .withNodePropertyKeys("Movie")("title" -> CTInteger)
       // TODO: Calculate implied labels in schema construction .withImpliedLabel("Actor", "Person")
       .withRelationshipPropertyKeys("HAS_CHILD")()
       .withRelationshipPropertyKeys("MARRIED")()
