@@ -25,6 +25,8 @@ import org.opencypher.caps.api.spark.{CAPSRecords, CAPSSession}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.demo.Configuration.{Neo4jAddress, Neo4jPassword, Neo4jUser}
 
+import scala.language.reflectiveCalls
+
 class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jTestSession.Fixture {
 
   override val neo4jConfig = new EncryptedNeo4jConfig(URI.create(Neo4jAddress.get()),
