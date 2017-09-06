@@ -18,7 +18,8 @@ package org.opencypher.caps.api.io.neo4j
 import java.net.{URI, URLDecoder}
 
 import org.neo4j.driver.v1.Config
-import org.opencypher.caps.api.io.{GraphSource, GraphSourceFactory}
+import org.opencypher.caps.api.io.neo4j.Neo4jGraphSourceFactory.protocols
+import org.opencypher.caps.api.io.{CreateOrFail, GraphSource, GraphSourceFactory, PersistMode}
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
 import org.opencypher.caps.impl.exception.Raise
 
@@ -27,19 +28,62 @@ case class Neo4jGraphSource(config: EncryptedNeo4jConfig,
                             relQuery: String)
   extends GraphSource {
 
-  override def handles(uri: URI): Boolean =
-    uri.getScheme == Neo4jGraphSourceFactory.protocol && uri.getHost == config.uri.getHost && uri.getPort == config.uri.getPort
+  override def sourceForGraphAt(uri: URI): Boolean =
+    protocols.contains(uri.getScheme) && uri.getHost == config.uri.getHost && uri.getPort == config.uri.getPort
 
-  override def get(implicit capsSession: CAPSSession): CAPSGraph = {
+  override def graph(implicit capsSession: CAPSSession): CAPSGraph = {
     Neo4jGraphLoader.fromNeo4j(config, nodeQuery, relQuery)
   }
+
+  /**
+    * A canonical uri describing the location of this graph source.
+    * The sourceForGraphAt function is guaranteed to return true for this uri.
+    *
+    * @return a uri describing the location of this graph source.
+    */
+  override def canonicalURI: URI = {
+    val uri = config.uri
+    val host = uri.getHost
+    val port = if (uri.getPort == -1) "" else s":${uri.getPort}"
+    val canonicalURIString = s"${uri.getScheme}://$host$port"
+    URI.create(canonicalURIString)
+  }
+
+  /**
+    * Create a new empty graph stored in this graph source.
+    *
+    * @param capsSession the session tied to the graph.
+    * @return the graph stored in this graph source.
+    * @throws RuntimeException if the graph could not be created or there already was a graph
+    */
+  override def create(implicit capsSession: CAPSSession): CAPSGraph =
+    persist(CreateOrFail, CAPSGraph.empty)
+
+  /**
+    * Persists the argument graph to this source.
+    *
+    * @param mode        the persist mode to use.
+    * @param graph       the graph to persist.
+    * @param capsSession the session tied to the graph.
+    * @return the persisted graph
+    */
+  override def persist(mode: PersistMode, graph: CAPSGraph)(implicit capsSession: CAPSSession): CAPSGraph =
+    ???
+
+  /**
+    * Delete the graph stored at this graph source
+    *
+    * @param capsSession the session tied to the graph.
+    */
+  override def delete(implicit capsSession: CAPSSession): Unit =
+    ???
 }
 
 object Neo4jGraphSourceFactory extends GraphSourceFactory {
 
-  override val protocol = "bolt"
+  override val protocols = Set("bolt", "bolt+routing")
 
-  override def fromURI(uri: URI): Neo4jGraphSource = {
+  override def sourceFor(uri: URI): Neo4jGraphSource = {
     val (user, passwd) = getUserInfo(uri)
     val (nodeQuery, relQuery) = getQueries(uri)
 

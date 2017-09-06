@@ -18,38 +18,58 @@ package org.opencypher.caps.api.io
 import java.net.URI
 
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
-import org.opencypher.caps.impl.exception.Raise
 
 trait GraphSource {
 
-  def handles(uri: URI): Boolean
+  /**
+    * Determines whether this is a source for a graph at the argument uri.
+    *
+    * @param uri the location for a potential graph.
+    * @return true if this graph source is located at the argument uri.
+    */
+  def sourceForGraphAt(uri: URI): Boolean
 
-  def get(implicit capsSession: CAPSSession): CAPSGraph
+  /**
+    * A canonical uri describing the location of this graph source.
+    * The sourceForGraphAt function is guaranteed to return true for this uri.
+    *
+    * @return a uri describing the location of this graph source.
+    */
+  def canonicalURI: URI
+
+  /**
+    * Create a new empty graph stored in this graph source.
+    *
+    * @param capsSession the session tied to the graph.
+    * @return the graph stored in this graph source.
+    * @throws RuntimeException if the graph could not be created or there already was a graph
+    */
+  def create(implicit capsSession: CAPSSession): CAPSGraph
+
+  /**
+    * Provides the graph stored in this graph source.
+    *
+    * @param capsSession the session tied to the graph.
+    * @return the graph stored in this graph source.
+    * @throws RuntimeException if loading the graph could not be done.
+    */
+  def graph(implicit capsSession: CAPSSession): CAPSGraph
+
+  /**
+    * Persists the argument graph to this source.
+    *
+    * @param mode the persist mode to use.
+    * @param graph the graph to persist.
+    * @param capsSession the session tied to the graph.
+    * @return the persisted graph
+    */
+  def persist(mode: PersistMode, graph: CAPSGraph)(implicit capsSession: CAPSSession): CAPSGraph
+
+  /**
+    * Delete the graph stored at this graph source
+    *
+    * @param capsSession the session tied to the graph.
+    */
+  def delete(implicit capsSession: CAPSSession): Unit
 }
 
-trait GraphSourceFactory {
-
-  def protocol: String
-
-  def fromURI(uri: URI): GraphSource
-}
-
-case class GraphSourceHandler(graphSourceFactories: Set[GraphSourceFactory],
-                              mountPoints: Map[String, GraphSource],
-                              graphSources: Set[GraphSource]) {
-
-  def withGraphAt(uri: URI, alias: String)(implicit capsSession: CAPSSession): CAPSGraph =
-    if (uri.getScheme != null) loadFromURI(uri) else loadFromMountPoint(uri)
-
-  private def loadFromURI(uri: URI)(implicit capsSession: CAPSSession): CAPSGraph =
-    graphSources.find(_.handles(uri)).getOrElse {
-      graphSourceFactories.find(_.protocol == uri.getScheme)
-        .getOrElse(Raise.invalidArgument(graphSourceFactories.map(_.protocol).mkString("[", ",", "]"), uri.getScheme))
-        .fromURI(uri)
-    }.get
-
-  private def loadFromMountPoint(uri: URI)(implicit capsSession: CAPSSession): CAPSGraph =
-    mountPoints
-      .getOrElse(uri.getPath, Raise.invalidArgument(mountPoints.keySet.mkString("[", ",", "]"), uri.getPath))
-      .get
-}
