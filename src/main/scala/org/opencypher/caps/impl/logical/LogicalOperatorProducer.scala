@@ -75,6 +75,10 @@ class LogicalOperatorProducer {
     Filter(expr, prev)(prev.solved.withPredicate(expr))
   }
 
+  def planDistinct(fields: Set[Field], prev: LogicalOperator): Distinct = {
+    Distinct(fields.map(toVar), prev)(prev.solved)
+  }
+
   def planOptional(nonOptionalPlan: LogicalOperator, optionalPlan: LogicalOperator): Optional = {
     Optional(nonOptionalPlan, optionalPlan)(optionalPlan.solved)
   }

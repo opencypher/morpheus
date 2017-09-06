@@ -65,6 +65,9 @@ final case class EdgeScan(edge: Var, edgeDef: EveryRelationship, in: FlatOperato
 final case class Filter(expr: Expr, in: FlatOperator, header: RecordHeader)
   extends StackingFlatOperator
 
+final case class Distinct(fields: Set[Var], in: FlatOperator, header: RecordHeader)
+  extends StackingFlatOperator
+
 final case class Select(fields: IndexedSeq[Var], in: FlatOperator, header: RecordHeader)
   extends StackingFlatOperator
 

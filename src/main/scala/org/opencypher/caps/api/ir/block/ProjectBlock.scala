@@ -22,7 +22,8 @@ final case class ProjectBlock[E](
   after: Set[BlockRef],
   binds: ProjectedFields[E] = ProjectedFields[E](),
   where: AllGiven[E] = AllGiven[E](),
-  graph: BlockRef
+  graph: BlockRef,
+  distinct: Boolean = false
 ) extends BasicBlock[ProjectedFields[E], E](BlockType("project"))
 
 final case class ProjectedFields[E](items: Map[Field, E] = Map.empty[Field, E]) extends Binds[E] {

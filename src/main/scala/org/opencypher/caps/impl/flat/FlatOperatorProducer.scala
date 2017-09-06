@@ -67,6 +67,10 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     Filter(expr, in, in.header)
   }
 
+  def distinct(fields: Set[Var], in: FlatOperator): Distinct = {
+    Distinct(fields, in, in.header)
+  }
+
   def nodeScan(node: Var, nodeDef: EveryNode, prev: FlatOperator): NodeScan = {
     val header = if (nodeDef.labels.elements.isEmpty) RecordHeader.nodeFromSchema(node, schema, tokens)
     else RecordHeader.nodeFromSchema(node, schema, tokens, nodeDef.labels.elements.map(_.name))
