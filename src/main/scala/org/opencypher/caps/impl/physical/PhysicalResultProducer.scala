@@ -92,7 +92,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
       }
     }
 
-    def distinct(fields: Set[Var], header: RecordHeader): PhysicalResult = {
+    def distinct(header: RecordHeader): PhysicalResult = {
       prev.mapRecordsWithDetails { subject =>
         val data: DataFrame = subject.data
         val columnNames = header.slots.map(slot => data.col(context.columnName(slot)))
