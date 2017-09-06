@@ -68,7 +68,7 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
     ))
   }
 
-  test("return distinct nodes") {
+  test("return distinct properties") {
     val given = TestGraph(
       """({name:'bar'}),
         |({name:'bar'}),
@@ -84,6 +84,26 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
       CypherMap("name" -> "bar"),
       CypherMap("name" -> "foo"),
       CypherMap("name" -> "baz")
+    ))
+  }
+
+  test("return distinct properties for combinations") {
+    val given = TestGraph(
+      """({p1:'a', p2: 'a', p3: '1'}),
+        |({p1:'a', p2: 'a', p3: '2'}),
+        |({p1:'a', p2: 'b', p3: '3'}),
+        |({p1:'b', p2: 'a', p3: '4'}),
+        |({p1:'b', p2: 'b', p3: '5'}),
+
+      """.stripMargin)
+
+    val result = given.cypher("MATCH (n) RETURN DISTINCT n.p1 as p1, n.p2 as p2")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("p1" -> "a", "p2" -> "a"),
+      CypherMap("p1" -> "a", "p2" -> "b"),
+      CypherMap("p1" -> "b", "p2" -> "a"),
+      CypherMap("p1" -> "b", "p2" -> "b")
     ))
   }
 
