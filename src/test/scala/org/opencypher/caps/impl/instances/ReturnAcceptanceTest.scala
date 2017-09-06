@@ -94,7 +94,6 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
         |({p1:'a', p2: 'b', p3: '3'}),
         |({p1:'b', p2: 'a', p3: '4'}),
         |({p1:'b', p2: 'b', p3: '5'}),
-
       """.stripMargin)
 
     val result = given.cypher("MATCH (n) RETURN DISTINCT n.p1 as p1, n.p2 as p2")
