@@ -19,6 +19,8 @@ import org.apache.spark.sql.Row
 import org.neo4j.driver.v1.Config
 import org.neo4j.harness.{ServerControls, TestServerBuilders}
 import org.opencypher.caps.api.io.neo4j.EncryptedNeo4jConfig
+import org.opencypher.caps.api.schema.Schema
+import org.opencypher.caps.api.types.{CTInteger, CTString}
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
 object Neo4jTestSession {
@@ -144,6 +146,23 @@ object Neo4jTestSession {
         |       (dennis)-[:ACTED_IN {charactername: 'Nick Parker'}]->(parent),
         |       (lindsay)-[:ACTED_IN {charactername: 'Halle/Annie'}]->(parent),
         |       (liam)-[:ACTED_IN {charactername: 'Henri Ducard'}]->(batmanbegins)
-      """
+      """.stripMargin
+
+    val nbrNodes = 21
+    val nbrRels = 28
+
+    val schema = Schema.empty
+      .withNodePropertyKeys("Person")("name" -> CTString, "birthyear" -> CTInteger)
+      // TODO: Investigate whether duplicating schema info like this is good
+      .withNodePropertyKeys("Actor")("name" -> CTString, "birthyear" -> CTInteger)
+      .withNodePropertyKeys("City")("name" -> CTString)
+      .withNodePropertyKeys("Film")("title" -> CTString)
+      // TODO: Calculate implied labels in schema construction .withImpliedLabel("Actor", "Person")
+      .withRelationshipPropertyKeys("HAS_CHILD")()
+      .withRelationshipPropertyKeys("MARRIED")()
+      .withRelationshipPropertyKeys("BORN_IN")()
+      .withRelationshipPropertyKeys("DIRECTED")()
+      .withRelationshipPropertyKeys("WROTE_MUSIC_FOR")()
+      .withRelationshipPropertyKeys("ACTED_IN")("charactername" -> CTString)
   }
 }
