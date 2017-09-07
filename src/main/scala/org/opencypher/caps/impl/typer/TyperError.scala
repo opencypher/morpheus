@@ -57,3 +57,11 @@ case class InvalidType(it: Expression, expected: Seq[CypherType], actual: Cypher
 case object TypeTrackerScopeError extends TyperError {
   override def toString = "Tried to pop scope of type tracker, but it was at top level already"
 }
+
+case class InvalidArgument(expr: Expression, argument: Expression) extends TyperError {
+  override def toString = s"$argument is not a valid argument for $expr"
+}
+
+case class WrongNumberOfArguments(expr: Expression, expected: Int, actual: Int) extends TyperError {
+  override def toString = s"Expected $expected argument(s) for $expr, but got $actual"
+}

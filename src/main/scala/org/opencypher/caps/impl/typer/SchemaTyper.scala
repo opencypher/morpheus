@@ -23,6 +23,7 @@ import cats.{Foldable, Monoid}
 import org.atnos.eff._
 import org.atnos.eff.all._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
+import org.neo4j.cypher.internal.frontend.v3_3.ast.functions.Exists
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.CypherType.joinMonoid
 import org.opencypher.caps.api.types._
@@ -215,6 +216,19 @@ object SchemaTyper {
         listTyp <- recordAndUpdate(expr -> CTList(eltType))
       } yield listTyp
 
+    case expr: FunctionInvocation if expr.function == Exists =>
+      expr.arguments match {
+        case Seq(first: Property) =>
+          for {
+            _ <- process[R](first)
+            existsType <- recordAndUpdate(expr -> CTBoolean)
+          } yield existsType
+        case Seq(nonProp) =>
+          error(InvalidArgument(expr, nonProp))
+        case seq =>
+          error(WrongNumberOfArguments(expr, 1, seq.size))
+      }
+
     case expr: FunctionInvocation =>
       FunctionInvocationTyper(expr)
 
@@ -377,8 +391,8 @@ object SchemaTyper {
     override protected def generateSignaturesFor[R : _hasSchema : _keepsErrors : _hasTracker : _logsTypes]
       (expr: FunctionInvocation, args: Seq[(Expression, CypherType)])
     : Eff[R, Set[(Seq[CypherType], CypherType)]] =
-      expr.function match {
-        case f: SimpleTypedFunction =>
+      expr match {
+        case f: ExpressionCallTypeChecking =>
           pure(f.signatures.map { sig =>
             val sigInputTypes = sig.argumentTypes.map(fromFrontendType)
             val sigOutputType = fromFrontendType(sig.outputType)
