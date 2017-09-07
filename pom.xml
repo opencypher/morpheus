@@ -147,7 +147,7 @@
                         <!-- need to pass encoding to scalac manually -->
                         <arg>-encoding</arg>
                         <arg>${project.build.encoding}</arg>
-                        <arg>-target:jvm-1.7</arg>
+                        <arg>-target:jvm-1.8</arg>
                         <arg>-unchecked</arg>
                         <arg>-deprecation</arg>
                         <arg>-feature</arg>
