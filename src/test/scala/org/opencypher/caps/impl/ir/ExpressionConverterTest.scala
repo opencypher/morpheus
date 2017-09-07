@@ -54,6 +54,12 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   private val c = new ExpressionConverter(globals)
 
+  test("exists()") {
+    convert(parseExpr("exists(n.key)")) should equal(
+      Exists(Property('n, PropertyKey("key"))())()
+    )
+  }
+
   test("converting in predicate and literal list") {
     convert(parseExpr("a IN [a, b, c]")) should equal(
       In('a, ListLit('a, 'b, 'c))()
