@@ -391,7 +391,7 @@ object SchemaTyper {
     override protected def generateSignaturesFor[R : _hasSchema : _keepsErrors : _hasTracker : _logsTypes]
       (expr: FunctionInvocation, args: Seq[(Expression, CypherType)])
     : Eff[R, Set[(Seq[CypherType], CypherType)]] =
-      expr match {
+      expr.function match {
         case f: ExpressionCallTypeChecking =>
           pure(f.signatures.map { sig =>
             val sigInputTypes = sig.argumentTypes.map(fromFrontendType)

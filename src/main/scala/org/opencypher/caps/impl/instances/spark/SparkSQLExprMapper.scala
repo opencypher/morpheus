@@ -55,9 +55,9 @@ object SparkSQLExprMapper {
   object asSparkSQLExpr {
 
     /**
-      * Attempts to create a Spark SQL expression from the SparkCypher expression.
+      * Attempts to create a Spark SQL expression from the CAPS expression.
       *
-      * @param header  the header of the SparkCypherRecords in which the expression should be evaluated.
+      * @param header  the header of the CAPSRecords in which the expression should be evaluated.
       * @param expr    the expression to be evaluated.
       * @param df      the dataframe containing the data over which the expression should be evaluated.
       * @param context context with helper functions, such as column names.
@@ -172,6 +172,10 @@ object SparkSQLExprMapper {
         Some((lhsColumn / rhsColumn).cast(toSparkType(div.cypherType)))
 
       // Functions
+      case e: Exists =>
+        val column = getColumn(e.expr, header, df)
+        Some(column.isNotNull)
+
       case id: Id =>
         verifyExpression(header, expr)
 
