@@ -23,7 +23,7 @@ import org.opencypher.caps.api.graph.CypherSession
 import org.opencypher.caps.api.io.hdfs.HdfsCsvGraphSourceFactory
 import org.opencypher.caps.api.io.neo4j.Neo4jGraphSourceFactory
 import org.opencypher.caps.api.io.{GraphSource, GraphSourceFactory}
-import org.opencypher.caps.api.ir.Field
+import org.opencypher.caps.api.ir.IRField
 import org.opencypher.caps.api.ir.global.{ConstantRef, ConstantRegistry, GlobalsRegistry, TokenRegistry}
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
@@ -104,7 +104,7 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
   def alias(graph: Graph, in: Records, alias: (Expr, Var), queryParameters: Map[String, CypherValue]): Records = {
     val (expr, v) = alias
     val scan = producer.planStart(graph.schema, in.header.fields)
-    val select = producer.projectField(Field(v.name)(v.cypherType), expr, scan)
+    val select = producer.projectField(IRField(v.name)(v.cypherType), expr, scan)
     plan(graph, in, queryParameters, select).records
   }
 

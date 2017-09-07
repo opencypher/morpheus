@@ -22,13 +22,13 @@ final case class ProjectBlock[E](
   after: Set[BlockRef],
   binds: ProjectedFields[E] = ProjectedFields[E](),
   where: AllGiven[E] = AllGiven[E](),
-  graph: BlockRef
+  source: BlockRef
 ) extends BasicBlock[ProjectedFields[E], E](BlockType("project"))
 
-final case class ProjectedFields[E](items: Map[Field, E] = Map.empty[Field, E]) extends Binds[E] {
+final case class ProjectedFields[E](items: Map[IRField, E] = Map.empty[IRField, E]) extends Binds[E] {
   override def fields = items.keySet
 }
 
 case object ProjectedFieldsOf {
-  def apply[E](entries: (Field, E)*) = ProjectedFields(entries.toMap)
+  def apply[E](entries: (IRField, E)*) = ProjectedFields(entries.toMap)
 }

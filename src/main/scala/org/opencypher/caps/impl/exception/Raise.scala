@@ -38,6 +38,10 @@ object Raise {
     "Import of a data frame from a different session"
   )
 
+  def schemaMismatch() = throw CAPSException(
+    "Loaded graph with a mismatching schema that differs from the schema loaded during logical planning"
+  )
+
   def slotNotAdded(field: String) = throw CAPSException(
     s"Failed to add new slot: $field"
   )

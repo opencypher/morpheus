@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.api.ir.block
 
-import org.opencypher.caps.api.ir.Field
+import org.opencypher.caps.api.ir.IRField
 import org.opencypher.caps.api.ir.pattern.AllGiven
 
 case class LoadGraphBlock[E](
@@ -24,11 +24,11 @@ case class LoadGraphBlock[E](
 ) extends BasicBlock[GraphDescriptor[E], E](BlockType("load-graph")) {
   override def where: AllGiven[E] = AllGiven[E]()
 
-  override def graph: BlockRef = ???
+  override def source: BlockRef = ???
 }
 
 sealed trait GraphDescriptor[E] extends Binds[E] {
-  override def fields: Set[Field] = Set.empty
+  override def fields: Set[IRField] = Set.empty
 }
 
 final case class DefaultGraph[E]() extends GraphDescriptor[E]

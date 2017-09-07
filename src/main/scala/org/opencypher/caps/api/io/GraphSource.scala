@@ -17,6 +17,7 @@ package org.opencypher.caps.api.io
 
 import java.net.URI
 
+import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
 
 trait GraphSource {
@@ -56,6 +57,15 @@ trait GraphSource {
   def graph(implicit capsSession: CAPSSession): CAPSGraph
 
   /**
+    * Provides only the schema of the graph stored in this graph source or returns None if the schema cannot be
+    * provided without loading/constructing the whole graph.
+    *
+    * @param capsSession the session tied to the graph.
+    * @return the schema of the graph stored in this graph source.
+    */
+  def schema(implicit capsSession: CAPSSession): Option[Schema]
+
+  /**
     * Persists the argument graph to this source.
     *
     * @param mode the persist mode to use.
@@ -72,4 +82,3 @@ trait GraphSource {
     */
   def delete(implicit capsSession: CAPSSession): Unit
 }
-

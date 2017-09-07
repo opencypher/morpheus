@@ -135,12 +135,12 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
     }
   }
 
-  private def registerProjectBlock(context: IRBuilderContext, fieldExprs: Vector[(Field, Expr)], given: AllGiven[Expr] = AllGiven[Expr]()) = {
+  private def registerProjectBlock(context: IRBuilderContext, fieldExprs: Vector[(IRField, Expr)], given: AllGiven[Expr] = AllGiven[Expr]()) = {
     val blockRegistry = context.blocks
     val binds = ProjectedFields(fieldExprs.toMap)
 
     val after = blockRegistry.lastAdded.toSet
-    val projs = ProjectBlock[Expr](after, binds, given, graph = context.graphBlock)
+    val projs = ProjectBlock[Expr](after, binds, given, source = context.graphBlock)
 
     blockRegistry.register(projs)
   }
@@ -172,20 +172,20 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
     } yield refs
   }
 
-  private def convertReturnItem[R: _mayFail : _hasContext](item: ast.ReturnItem): Eff[R, (Field, Expr)] = item match {
+  private def convertReturnItem[R: _mayFail : _hasContext](item: ast.ReturnItem): Eff[R, (IRField, Expr)] = item match {
 
     case ast.AliasedReturnItem(e, v) =>
       for {
         expr <- convertExpr(e)
         context <- get[R, IRBuilderContext]
         field <- {
-          val field = Field(v.name)(expr.cypherType)
-          put[R, IRBuilderContext](context.withFields(Set(field))) >> pure[R, Field](field)
+          val field = IRField(v.name)(expr.cypherType)
+          put[R, IRBuilderContext](context.withFields(Set(field))) >> pure[R, IRField](field)
         }
       } yield field -> expr
 
     case ast.UnaliasedReturnItem(e, t) =>
-      error(IRBuilderError(s"Did not expect unnamed return item"))(Field(t)() -> Var(t)())
+      error(IRBuilderError(s"Did not expect unnamed return item"))(IRField(t)() -> Var(t)())
 
   }
 
@@ -248,7 +248,7 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
       Some(CypherQuery(info, model))
     }
 
-  private def getKnownFields(blockRefs: Set[BlockRef], registry: BlockRegistry[Expr]): Set[Field] = {
+  private def getKnownFields(blockRefs: Set[BlockRef], registry: BlockRegistry[Expr]): Set[IRField] = {
     blockRefs.map(registry.apply).map { block =>
       block.binds.fields ++ getKnownFields(block.after, registry)
     }.reduceOption(_ ++ _).getOrElse(Set.empty)

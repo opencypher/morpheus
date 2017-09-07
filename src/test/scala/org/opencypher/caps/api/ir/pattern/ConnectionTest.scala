@@ -16,13 +16,13 @@
 package org.opencypher.caps.api.ir.pattern
 
 import org.opencypher.caps.BaseTestSuite
-import org.opencypher.caps.api.ir.Field
+import org.opencypher.caps.api.ir.IRField
 
 class ConnectionTest extends BaseTestSuite {
 
-  val field_a = Field("a")()
-  val field_b = Field("b")()
-  val field_c = Field("c")()
+  val field_a = IRField("a")()
+  val field_b = IRField("b")()
+  val field_c = IRField("c")()
 
   test("SimpleConnection.flip") {
     DirectedRelationship(field_a, field_b).flip should equal(DirectedRelationship(field_b, field_a))

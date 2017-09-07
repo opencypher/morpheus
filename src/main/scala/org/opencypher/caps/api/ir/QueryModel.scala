@@ -34,7 +34,7 @@ final case class QueryModel[E](
 
   def apply(ref: BlockRef): Block[E] = blocks(ref)
 
-  def select(fields: Set[Field]) =
+  def select(fields: Set[IRField]) =
     copy(result = result.select(fields))
 
   def dependencies(ref: BlockRef): Set[BlockRef] = apply(ref).after
@@ -79,9 +79,9 @@ object QueryModel {
   }
 
   def base[E](sourceNodeName: String, relName: String, targetNodeName: String, globals: GlobalsRegistry): QueryModel[E] = {
-    val sourceNode = Field(sourceNodeName)(CTNode)
-    val rel = Field(relName)(CTRelationship)
-    val targetNode = Field(targetNodeName)(CTNode)
+    val sourceNode = IRField(sourceNodeName)(CTNode)
+    val rel = IRField(relName)(CTRelationship)
+    val targetNode = IRField(targetNodeName)(CTNode)
 
     assert(sourceNode != targetNode, "don't do that")
 
@@ -101,7 +101,7 @@ object QueryModel {
   }
 
   def nodes[E](nodeName: String, globals: GlobalsRegistry): QueryModel[E] = {
-    val node = Field(nodeName)(CTNode)
+    val node = IRField(nodeName)(CTNode)
 
     val graphBlockRef = BlockRef("graph")
     val graphBlock = LoadGraphBlock[E](Set.empty, DefaultGraph())
@@ -117,7 +117,7 @@ object QueryModel {
   }
 
   def relationships[E](relName: String, globals: GlobalsRegistry): QueryModel[E] = {
-    val rel = Field(relName)(CTRelationship)
+    val rel = IRField(relName)(CTRelationship)
 
     val graphBlockRef = BlockRef("graph")
     val graphBlock = LoadGraphBlock[E](Set.empty, DefaultGraph())
@@ -132,11 +132,11 @@ object QueryModel {
   }
 }
 
-case class SolvedQueryModel[E](fields: Set[Field], predicates: Set[E]) {
+case class SolvedQueryModel[E](fields: Set[IRField], predicates: Set[E]) {
 
   // extension
-  def withField(f: Field): SolvedQueryModel[E] = copy(fields = fields + f)
-  def withFields(fs: Field*): SolvedQueryModel[E] = copy(fields = fields ++ fs)
+  def withField(f: IRField): SolvedQueryModel[E] = copy(fields = fields + f)
+  def withFields(fs: IRField*): SolvedQueryModel[E] = copy(fields = fields ++ fs)
   def withPredicate(pred: E): SolvedQueryModel[E] = copy(predicates = predicates + pred)
 
   def ++(other: SolvedQueryModel[E]): SolvedQueryModel[E] =
@@ -152,7 +152,7 @@ case class SolvedQueryModel[E](fields: Set[Field], predicates: Set[E]) {
     binds && preds
   }
 
-  def solves(f: Field): Boolean = fields(f)
+  def solves(f: IRField): Boolean = fields(f)
   def solves(p: Pattern[E]): Boolean = p.fields.subsetOf(fields)
 }
 

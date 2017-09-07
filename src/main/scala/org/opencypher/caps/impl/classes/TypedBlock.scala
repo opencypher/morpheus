@@ -15,11 +15,11 @@
  */
 package org.opencypher.caps.impl.classes
 
-import org.opencypher.caps.api.ir.Field
+import org.opencypher.caps.api.ir.IRField
 
 trait TypedBlock[Block] {
 
   type BlockExpr
 
-  def outputs(block: Block): Set[Field]
+  def outputs(block: Block): Set[IRField]
 }

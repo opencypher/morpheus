@@ -60,6 +60,24 @@ object CAPSGraph {
     }
   }
 
+  def createLazy(theSchema: Schema)(loadGraph: => CAPSGraph)(implicit caps: CAPSSession) = new CAPSGraph {
+    override protected lazy val graph: CAPSGraph = {
+      val g = loadGraph
+      if (g.schema == theSchema) g else Raise.schemaMismatch()
+    }
+
+    override def tokens: CAPSRecordsTokens = graph.tokens
+    override def session: CAPSSession = caps
+
+    override def schema: Schema = theSchema
+
+    override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords =
+      graph.nodes(name, nodeCypherType)
+
+    override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords =
+      graph.relationships(name, relCypherType)
+  }
+
   sealed abstract class EmptyGraph(implicit val caps: CAPSSession) extends CAPSGraph {
 
     override val schema = Schema.empty

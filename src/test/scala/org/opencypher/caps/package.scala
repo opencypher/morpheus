@@ -16,13 +16,13 @@
 package org.opencypher
 
 import org.opencypher.caps.api.expr.Var
-import org.opencypher.caps.api.ir.Field
+import org.opencypher.caps.api.ir.IRField
 import org.opencypher.caps.api.types.CypherType
 
 import scala.language.implicitConversions
 
 package object caps {
   implicit def toVar(s: Symbol): Var = Var(s.name)()
-  implicit def toField(s: Symbol): Field = Field(s.name)()
-  implicit def toField(t: (Symbol, CypherType)): Field = Field(t._1.name)(t._2)
+  implicit def toField(s: Symbol): IRField = IRField(s.name)()
+  implicit def toField(t: (Symbol, CypherType)): IRField = IRField(t._1.name)(t._2)
 }

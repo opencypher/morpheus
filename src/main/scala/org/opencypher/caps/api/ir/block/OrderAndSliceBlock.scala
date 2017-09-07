@@ -21,7 +21,7 @@ final case class OrderAndSliceBlock[E](after: Set[BlockRef],
                                        orderBy: Seq[SortItem[E]],
                                        skip: Option[E],
                                        limit: Option[E],
-                                       graph: BlockRef)
+                                       source: BlockRef)
 extends BasicBlock[OrderedFields[E], E](BlockType("order-and-slice")) {
   override val binds = OrderedFields[E]()
   override def where: AllGiven[E] = AllGiven(Set())

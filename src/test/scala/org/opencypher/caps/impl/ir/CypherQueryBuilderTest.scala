@@ -19,7 +19,7 @@ import org.opencypher.caps.api.expr.{Expr, HasLabel, Property, Var}
 import org.opencypher.caps.api.ir.block._
 import org.opencypher.caps.api.ir.global.GlobalsRegistry
 import org.opencypher.caps.api.ir.pattern._
-import org.opencypher.caps.api.ir.{Field, QueryModel}
+import org.opencypher.caps.api.ir.{IRField, QueryModel}
 import org.opencypher.caps.api.types.{CTNode, CTString, CTVoid}
 import org.opencypher.caps._
 
@@ -53,7 +53,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
       }
 
       model.result match {
-        case NoWhereBlock(ResultBlock(deps, FieldsInOrder(Field("a")), _, _, _, _)) =>
+        case NoWhereBlock(ResultBlock(deps, FieldsInOrder(IRField("a")), _, _, _, _)) =>
           deps should equal(Set(projectRef))
       }
 
@@ -92,7 +92,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
       }
 
       model.result match {
-        case NoWhereBlock(ResultBlock(_, FieldsInOrder(Field("otherB"), Field("a"), Field("r")), _, _, _, _)) =>
+        case NoWhereBlock(ResultBlock(_, FieldsInOrder(IRField("otherB"), IRField("a"), IRField("r")), _, _, _, _)) =>
       }
 
       model.requirements should equal(Map(
@@ -156,7 +156,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
       }
 
       model.result match {
-        case NoWhereBlock(ResultBlock(deps, FieldsInOrder(Field("age"),Field("name")), _, _, _, _)) =>
+        case NoWhereBlock(ResultBlock(deps, FieldsInOrder(IRField("age"),IRField("name")), _, _, _, _)) =>
         deps should equal(Set(project3Ref))
       }
 

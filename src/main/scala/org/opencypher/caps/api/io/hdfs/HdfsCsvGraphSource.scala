@@ -20,6 +20,7 @@ import java.net.URI
 import org.apache.hadoop.conf.Configuration
 import org.opencypher.caps.api.io.hdfs.HdfsCsvGraphSource.protocols
 import org.opencypher.caps.api.io.{CreateOrFail, GraphSource, GraphSourceFactory, PersistMode}
+import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
 import org.opencypher.caps.impl.exception.Raise
 
@@ -38,32 +39,15 @@ case class HdfsCsvGraphSource(override val canonicalURI: URI, hadoopConfig: Conf
   override def graph(implicit capsSession: CAPSSession): CAPSGraph =
     new CsvGraphLoader(path, hadoopConfig).load
 
-  /**
-    * Create a new empty graph stored in this graph source.
-    *
-    * @param capsSession the session tied to the graph.
-    * @return the graph stored in this graph source.
-    * @throws RuntimeException if the graph could not be created or there already was a graph
-    */
+  // TODO: Make better/cache?
+  override def schema(implicit capsSession: CAPSSession): Option[Schema] = None
+
   override def create(implicit capsSession: CAPSSession): CAPSGraph =
     persist(CreateOrFail, CAPSGraph.empty)
 
-  /**
-    * Persists the argument graph to this source.
-    *
-    * @param mode        the persist mode to use.
-    * @param graph       the graph to persist.
-    * @param capsSession the session tied to the graph.
-    * @return the persisted graph
-    */
   override def persist(mode: PersistMode, graph: CAPSGraph)(implicit capsSession: CAPSSession): CAPSGraph =
     ???
 
-  /**
-    * Delete the graph stored at this graph source
-    *
-    * @param capsSession the session tied to the graph.
-    */
   override def delete(implicit capsSession: CAPSSession): Unit =
     ???
 }

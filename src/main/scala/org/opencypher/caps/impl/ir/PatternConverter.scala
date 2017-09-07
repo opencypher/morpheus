@@ -48,10 +48,10 @@ final class PatternConverter(val tokens: GlobalsRegistry) extends AnyVal {
     case ast.NamedPatternPart(_, part) => convertPart(part)
   }
 
-  private def convertElement(p: ast.PatternElement): Result[Field] = p match {
+  private def convertElement(p: ast.PatternElement): Result[IRField] = p match {
     case ast.NodePattern(Some(v), labels: Seq[LabelName], None) =>
       for {
-        entity <- pure(Field(v.name)(CTNode))
+        entity <- pure(IRField(v.name)(CTNode))
         _ <- modify[Pattern[Expr]](_.withEntity(entity, EveryNode(AllGiven(labels.map(l => Label(l.name)).toSet))))
       } yield entity
 
@@ -59,7 +59,7 @@ final class PatternConverter(val tokens: GlobalsRegistry) extends AnyVal {
       for {
         source <- convertElement(left)
         target <- convertElement(right)
-        rel <- pure(Field(eVar.name)(CTRelationship(types.map(_.name).toSet)))
+        rel <- pure(IRField(eVar.name)(CTRelationship(types.map(_.name).toSet)))
         _ <- modify[Pattern[Expr]] { given =>
           val relTypes =
             if (types.isEmpty) AnyGiven[RelType]()
@@ -89,7 +89,7 @@ final class PatternConverter(val tokens: GlobalsRegistry) extends AnyVal {
       for {
         source <- convertElement(left)
         target <- convertElement(right)
-        rel <- pure(Field(eVar.name)(CTList(CTRelationship(types.map(_.name).toSet))))
+        rel <- pure(IRField(eVar.name)(CTList(CTRelationship(types.map(_.name).toSet))))
         _ <- modify[Pattern[Expr]] { given =>
           val relTypes =
             if (types.isEmpty) AnyGiven[RelType]()
