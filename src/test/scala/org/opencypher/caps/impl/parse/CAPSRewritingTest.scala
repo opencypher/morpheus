@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.parse
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast._
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.opencypher.caps.BaseTestSuite
 
 class CAPSRewritingTest extends BaseTestSuite with AstConstructionTestSupport {

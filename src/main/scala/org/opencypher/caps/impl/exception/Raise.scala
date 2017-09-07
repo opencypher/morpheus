@@ -15,6 +15,7 @@
  */
 package org.opencypher.caps.impl.exception
 
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticErrorDef
 import org.opencypher.caps.api.exception.CAPSException
 
 object Raise {
@@ -92,5 +93,9 @@ object Raise {
 
   def schemaMismatch(detail: String) = throw CAPSException(
     s"Incompatible schemas: $detail"
+  )
+
+  def semanticErrors(errors: Seq[SemanticErrorDef]) = throw CAPSException(
+    s"Errors during semantic checking: ${errors.mkString(", ")}"
   )
 }

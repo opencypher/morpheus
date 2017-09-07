@@ -15,8 +15,8 @@
  */
 package org.opencypher.caps.impl.ir
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, Parameter}
-import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, symbols}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, Parameter}
+import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, symbols}
 import org.opencypher.caps.BaseTestSuite
 import org.opencypher.caps.api.expr.Expr
 import org.opencypher.caps.api.ir._

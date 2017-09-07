@@ -22,7 +22,7 @@ import cats.implicits._
 import cats.{Foldable, Monoid}
 import org.atnos.eff._
 import org.atnos.eff.all._
-import org.neo4j.cypher.internal.frontend.v3_2.ast._
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.CypherType.joinMonoid
 import org.opencypher.caps.api.types._

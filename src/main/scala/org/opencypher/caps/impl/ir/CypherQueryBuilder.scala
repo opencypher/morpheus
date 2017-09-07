@@ -18,8 +18,8 @@ package org.opencypher.caps.impl.ir
 import cats.implicits._
 import org.atnos.eff._
 import org.atnos.eff.all._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{Limit, OrderBy, Skip, Statement}
-import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, ast}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{Limit, OrderBy, Skip, Statement}
+import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, ast}
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.ir._
 import org.opencypher.caps.api.ir.block.{SortItem, _}
@@ -85,7 +85,7 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
           }
         } yield refs
 
-      case ast.With(_, ast.ReturnItems(_, items), orderBy, skip, limit, where) if !items.exists(_.expression.containsAggregate) =>
+      case ast.With(_, ast.ReturnItems(_, items), _, orderBy, skip, limit, where) if !items.exists(_.expression.containsAggregate) =>
         for {
           fieldExprs <- EffMonad[R].sequence(items.map(convertReturnItem[R]).toVector)
           given <- convertWhere(where)
@@ -98,7 +98,7 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
           }
         } yield refs
 
-      case ast.With(_, ast.ReturnItems(_, items), _, _, _, None) =>
+      case ast.With(_, ast.ReturnItems(_, items), _, _, _, _, None) =>
         for {
           fieldExprs <- EffMonad[R].sequence(items.map(convertReturnItem[R]).toVector)
           context <- get[R, IRBuilderContext]
@@ -116,7 +116,7 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
           }
         } yield refs
 
-      case ast.Return(_, ast.ReturnItems(_, items), _, _, _, _) =>
+      case ast.Return(_, ast.ReturnItems(_, items), _, _, _, _, _) =>
         for {
           fieldExprs <- EffMonad[R].sequence(items.map(convertReturnItem[R]).toVector)
           context <- get[R, IRBuilderContext]

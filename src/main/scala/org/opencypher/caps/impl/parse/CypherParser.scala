@@ -15,21 +15,26 @@
  */
 package org.opencypher.caps.impl.parse
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.{CNFNormalizer, Forced, Namespacer}
-import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_2.phases._
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticErrorDef
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{CNFNormalizer, Forced, Namespacer}
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
+import org.neo4j.cypher.internal.frontend.v3_3.phases._
 import org.opencypher.caps.impl.CompilationStage
+import org.opencypher.caps.impl.exception.Raise
 
 object CypherParser extends CypherParser {
-  implicit object defaultContext extends BlankBaseContext
+  implicit object defaultContext extends BlankBaseContext {
+    override def errorHandler: (Seq[SemanticErrorDef]) => Unit =
+      (errors) => if (errors.isEmpty) () else Raise.semanticErrors(errors)
+  }
 }
 
 trait CypherParser extends CompilationStage[String, Statement, BaseContext] {
 
   override type Out = (Statement, Map[String, Any])
 
-  override def extract(output: (Statement, Map[String, Any])) = output._1
+  override def extract(output: (Statement, Map[String, Any])): Statement = output._1
 
   override def process(query: String)(implicit context: BaseContext): (Statement, Map[String, Any]) = {
     val startState = BaseStateImpl(query, None, null)
@@ -39,12 +44,11 @@ trait CypherParser extends CompilationStage[String, Statement, BaseContext] {
     rewritten -> params
   }
 
-  protected val pipeLine =
+  protected val pipeLine: Transformer[BaseContext, BaseState, BaseState] =
     CompilationPhases.parsing(RewriterStepSequencer.newPlain, Forced) andThen
       SemanticAnalysis(warn = false) andThen
       Namespacer andThen
       CNFNormalizer andThen
       LateAstRewriting andThen CAPSRewriting
-
 }
 

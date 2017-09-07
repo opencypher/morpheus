@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.ir
 
-import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, Ref, ast}
+import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, Ref, ast}
 import org.opencypher.caps.api.expr.Expr
 import org.opencypher.caps.api.ir.IRField
 import org.opencypher.caps.api.ir.block.{BlockRef, DefaultGraph, LoadGraphBlock}
