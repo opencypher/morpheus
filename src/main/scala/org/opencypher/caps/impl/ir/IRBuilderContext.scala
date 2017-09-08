@@ -23,7 +23,7 @@ import org.opencypher.caps.api.ir.global.GlobalsRegistry
 import org.opencypher.caps.api.ir.pattern.Pattern
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.exception.Raise
+import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.typer.{SchemaTyper, TypeTracker}
 
 final case class IRBuilderContext(

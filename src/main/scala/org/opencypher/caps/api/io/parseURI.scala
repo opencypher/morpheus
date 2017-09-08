@@ -17,7 +17,7 @@ package org.opencypher.caps.api.io
 
 import java.net.URI
 
-import org.opencypher.caps.api.io.session.SessionGraphSourceFactory
+import org.opencypher.caps.impl.spark.io.session.SessionGraphSourceFactory
 
 // TODO: Test
 case object parseURI extends (String => URI) {

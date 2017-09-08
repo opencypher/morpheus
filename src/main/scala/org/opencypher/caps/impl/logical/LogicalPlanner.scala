@@ -22,7 +22,7 @@ import org.opencypher.caps.api.ir.pattern._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.DirectCompilationStage
-import org.opencypher.caps.impl.exception.Raise
+import org.opencypher.caps.impl.spark.exception.Raise
 
 import scala.annotation.tailrec
 

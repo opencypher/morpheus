@@ -25,7 +25,7 @@ object CAPS {
 
   self =>
 
-  def version = {
+  def version: Option[String] = {
     val clazz = self.getClass
     Try {
       // 1) Try to read from maven descriptor

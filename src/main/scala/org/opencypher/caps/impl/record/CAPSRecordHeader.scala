@@ -18,8 +18,8 @@ package org.opencypher.caps.impl.record
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.opencypher.caps.api.expr.Var
 import org.opencypher.caps.api.record.{OpaqueField, RecordHeader, RecordSlot}
-import org.opencypher.caps.impl.convert.{fromSparkType, toSparkType}
 import org.opencypher.caps.impl.spark.SparkColumnName
+import org.opencypher.caps.impl.spark.convert.{fromSparkType, toSparkType}
 
 object CAPSRecordHeader {
 

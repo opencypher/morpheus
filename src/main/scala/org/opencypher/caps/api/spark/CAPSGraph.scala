@@ -23,10 +23,10 @@ import org.opencypher.caps.api.ir.global.TokenRegistry
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.schema.{PropertyKeyMap, Schema}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType, DefiniteCypherType}
-import org.opencypher.caps.impl.convert.toSparkType
-import org.opencypher.caps.impl.exception.Raise
-import org.opencypher.caps.impl.record.{InternalHeader, CAPSRecordsTokens}
+import org.opencypher.caps.impl.record.{CAPSRecordsTokens, InternalHeader}
 import org.opencypher.caps.impl.spark.SparkColumnName
+import org.opencypher.caps.impl.spark.convert.toSparkType
+import org.opencypher.caps.impl.spark.exception.Raise
 
 trait CAPSGraph extends CypherGraph with Serializable {
 

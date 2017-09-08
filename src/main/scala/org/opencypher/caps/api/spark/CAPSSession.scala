@@ -20,23 +20,24 @@ import java.net.URI
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.opencypher.caps.api.expr.{Expr, Var}
 import org.opencypher.caps.api.graph.CypherSession
-import org.opencypher.caps.api.io.{GraphSource, GraphSourceFactory, parseURI}
-import org.opencypher.caps.api.io.hdfs.HdfsCsvGraphSourceFactory
-import org.opencypher.caps.api.io.neo4j.Neo4jGraphSourceFactory
-import org.opencypher.caps.api.io.session.SessionGraphSourceFactory
+import org.opencypher.caps.api.io.parseURI
+import org.opencypher.caps.api.spark.io.{CAPSGraphSource, CAPSGraphSourceFactory}
+import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvGraphSourceFactory
+import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraphSourceFactory
+import org.opencypher.caps.impl.spark.io.session.SessionGraphSourceFactory
 import org.opencypher.caps.api.ir.IRField
 import org.opencypher.caps.api.ir.global.{ConstantRef, ConstantRegistry, GlobalsRegistry, TokenRegistry}
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
-import org.opencypher.caps.impl.io.GraphSourceHandler
+import org.opencypher.caps.impl.spark.io.CAPSGraphSourceHandler
 import org.opencypher.caps.impl.ir.global.GlobalsExtractor
 import org.opencypher.caps.impl.ir.{IRBuilder, IRBuilderContext}
 import org.opencypher.caps.impl.logical._
 import org.opencypher.caps.impl.parse.CypherParser
-import org.opencypher.caps.impl.physical.{CAPSResultBuilder, PhysicalPlanner, PhysicalPlannerContext}
+import org.opencypher.caps.impl.spark.physical.{CAPSResultBuilder, PhysicalPlanner, PhysicalPlannerContext}
 
 sealed class CAPSSession private(val sparkSession: SparkSession,
-                                 private val graphSourceHandler: GraphSourceHandler)
+                                 private val graphSourceHandler: CAPSGraphSourceHandler)
   extends CypherSession with Serializable {
 
   override type Graph = CAPSGraph
@@ -58,10 +59,10 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
   def graphAt(uri: URI): CAPSGraph =
     graphSourceHandler.graphAt(uri)(this)
 
-  def mountSourceAt(source: GraphSource, pathOrUri: String): Unit =
+  def mountSourceAt(source: CAPSGraphSource, pathOrUri: String): Unit =
     mountSourceAt(source, parseURI(pathOrUri))
 
-  def mountSourceAt(source: GraphSource, uri: URI): Unit =
+  def mountSourceAt(source: CAPSGraphSource, uri: URI): Unit =
     graphSourceHandler.mountSourceAt(source, uri)(this)
 
   def unmountAll(): Unit =
@@ -161,9 +162,9 @@ object CAPSSession extends Serializable {
   def create(implicit session: SparkSession): CAPSSession = Builder(session).build
 
   case class Builder(session: SparkSession,
-                     private val graphSourceFactories: Set[GraphSourceFactory] = Set.empty) {
+                     private val graphSourceFactories: Set[CAPSGraphSourceFactory] = Set.empty) {
 
-    def withGraphSourceFactory(factory: GraphSourceFactory): Builder =
+    def withGraphSourceFactory(factory: CAPSGraphSourceFactory): Builder =
       copy(graphSourceFactories = graphSourceFactories + factory)
 
     def build: CAPSSession = {
@@ -175,7 +176,7 @@ object CAPSSession extends Serializable {
 
       new CAPSSession(
         session,
-        GraphSourceHandler(sessionFactory, additionalFactories)
+        CAPSGraphSourceHandler(sessionFactory, additionalFactories)
       )
     }
   }

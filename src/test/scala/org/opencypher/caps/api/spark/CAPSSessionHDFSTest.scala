@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.api.spark
 
-import org.opencypher.caps.api.io.hdfs.HdfsCsvGraphSource
+import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvGraphSource
 import org.opencypher.caps.{HDFSTestSession, SparkTestSession}
 import org.scalatest.{FunSuite, Matchers}
 

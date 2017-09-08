@@ -17,7 +17,7 @@ package org.opencypher.caps.api.spark
 
 import java.net.{URI, URLEncoder}
 
-import org.opencypher.caps.api.io.neo4j.Neo4jGraphSource
+import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraphSource
 import org.opencypher.caps.{Neo4jTestSession, SparkTestSession}
 import org.scalatest.{FunSuite, Matchers}
 

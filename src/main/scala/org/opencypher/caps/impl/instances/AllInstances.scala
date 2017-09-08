@@ -17,5 +17,5 @@ package org.opencypher.caps.impl.instances
 
 trait AllInstances
   extends util.AllInstances
-  with spark.AllInstances
+  with org.opencypher.caps.impl.spark.AllInstances
   with ir.AllInstances

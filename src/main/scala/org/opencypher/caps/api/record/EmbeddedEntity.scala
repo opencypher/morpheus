@@ -19,7 +19,7 @@ import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.ir.global.{Label, PropertyKey}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.util.{Verifiable, Verified}
-import org.opencypher.caps.impl.exception.Raise.duplicateEmbeddedEntityColumn
+import org.opencypher.caps.impl.spark.exception.Raise.duplicateEmbeddedEntityColumn
 
 import scala.language.implicitConversions
 

@@ -20,7 +20,7 @@ import java.util.Calendar
 import org.apache.spark.SparkConf
 import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.sql.SparkSession
-import org.opencypher.caps.api.io.hdfs.CsvGraphLoader
+import org.opencypher.caps.impl.spark.io.hdfs.CsvGraphLoader
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSResult, CAPSSession}
 import org.opencypher.caps.demo.Configuration.{Logging, MasterAddress}
 

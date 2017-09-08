@@ -22,8 +22,8 @@ import org.opencypher.caps.api.ir.global.Label
 import org.opencypher.caps.api.ir.pattern.{AllGiven, EveryNode, EveryRelationship}
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.logical.{GraphSource, NamedLogicalGraph}
+import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.syntax.header._
 import org.opencypher.caps.impl.util.{Added, FailedToAdd, Found, Replaced}
 import org.opencypher.caps.impl.syntax.expr._

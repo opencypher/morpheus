@@ -21,7 +21,7 @@ import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.opencypher.caps.api.types.CypherType._
 import org.opencypher.caps.api.types.CypherType.OrderGroups._
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.exception.Raise
+import org.opencypher.caps.impl.spark.exception.Raise
 
 import scala.collection.TraversableOnce
 import scala.language.implicitConversions

@@ -27,10 +27,11 @@ import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSResult, CAPSSession}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.api.value.{CypherMap, CypherValue}
-import org.opencypher.caps.impl.convert.{fromJavaType, toSparkType}
-import org.opencypher.caps.impl.io.GraphSourceImpl
-import org.opencypher.caps.impl.physical.RuntimeContext
+import org.opencypher.caps.impl.convert.fromJavaType
+import org.opencypher.caps.impl.spark.io.CAPSGraphSourceImpl
+import org.opencypher.caps.impl.spark.physical.RuntimeContext
 import org.opencypher.caps.impl.record.CAPSRecordsTokens
+import org.opencypher.caps.impl.spark.convert.toSparkType
 import org.opencypher.caps.{BaseTestSuite, CAPSTestSession, SparkTestSession}
 import org.s1ck.gdl.GDLHandler
 import org.s1ck.gdl.model.Element
@@ -171,7 +172,7 @@ trait GraphMatchingTestSupport {
 
   // TODO: Move to RecordMatchingTestSupport
   implicit class RichRecords(records: CAPSRecords) {
-    import org.opencypher.caps.impl.instances.spark.RowUtils._
+    import org.opencypher.caps.impl.spark.RowUtils._
 
     def toMaps: Bag[CypherMap] = {
       val rows = records.toDF().collect().map { r =>
@@ -188,7 +189,7 @@ trait GraphMatchingTestSupport {
   }
 
   private case class TestGraphSource(canonicalURI: URI, testGraph: TestGraph)
-    extends GraphSourceImpl {
+    extends CAPSGraphSourceImpl {
 
     private lazy val capsGraph = testGraph.graph
     override def sourceForGraphAt(uri: URI): Boolean = uri == canonicalURI

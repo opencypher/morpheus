@@ -18,7 +18,7 @@ package org.opencypher.caps
 import org.apache.spark.sql.Row
 import org.neo4j.driver.v1.Config
 import org.neo4j.harness.{ServerControls, TestServerBuilders}
-import org.opencypher.caps.api.io.neo4j.EncryptedNeo4jConfig
+import org.opencypher.caps.impl.spark.io.neo4j.EncryptedNeo4jConfig
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTInteger, CTString}
 import org.scalatest.{BeforeAndAfterAll, FunSuite}

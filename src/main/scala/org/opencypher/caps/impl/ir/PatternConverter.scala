@@ -28,7 +28,7 @@ import org.opencypher.caps.api.expr.Expr
 import org.opencypher.caps.api.ir._
 import org.opencypher.caps.api.ir.global.{GlobalsRegistry, Label, RelType}
 import org.opencypher.caps.api.ir.pattern._
-import org.opencypher.caps.impl.exception.Raise
+import org.opencypher.caps.impl.spark.exception.Raise
 
 import scala.annotation.tailrec
 
