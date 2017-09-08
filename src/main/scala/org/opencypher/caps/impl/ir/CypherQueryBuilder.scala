@@ -116,7 +116,7 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
           }
         } yield refs
 
-      case ast.Return(distinct, ast.ReturnItems(_, items), _, _, _, _) =>
+      case ast.Return(distinct, ast.ReturnItems(_, items), _, _, _, _, _) =>
         for {
           fieldExprs <- EffMonad[R].sequence(items.map(convertReturnItem[R]).toVector)
           context <- get[R, IRBuilderContext]
@@ -135,12 +135,12 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
     }
   }
 
-  private def registerProjectBlock(context: IRBuilderContext, fieldExprs: Vector[(Field, Expr)], given: AllGiven[Expr] = AllGiven[Expr](), distinct: Boolean = false) = {
+  private def registerProjectBlock(context: IRBuilderContext, fieldExprs: Vector[(IRField, Expr)], given: AllGiven[Expr] = AllGiven[Expr](), distinct: Boolean = false) = {
     val blockRegistry = context.blocks
     val binds = ProjectedFields(fieldExprs.toMap)
 
     val after = blockRegistry.lastAdded.toSet
-    val projs = ProjectBlock[Expr](after, binds, given, graph = context.graphBlock, distinct)
+    val projs = ProjectBlock[Expr](after, binds, given, source = context.graphBlock, distinct)
 
     blockRegistry.register(projs)
   }

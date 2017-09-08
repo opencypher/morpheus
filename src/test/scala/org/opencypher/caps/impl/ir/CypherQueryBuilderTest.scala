@@ -15,13 +15,13 @@
  */
 package org.opencypher.caps.impl.ir
 
+import org.opencypher.caps._
 import org.opencypher.caps.api.expr.{Expr, HasLabel, Property, Var}
 import org.opencypher.caps.api.ir.block._
 import org.opencypher.caps.api.ir.global.GlobalsRegistry
 import org.opencypher.caps.api.ir.pattern._
 import org.opencypher.caps.api.ir.{IRField, QueryModel}
-import org.opencypher.caps.api.types.{CTNode, CTString, CTVoid}
-import org.opencypher.caps._
+import org.opencypher.caps.api.types.{CTNode, CTVoid}
 
 import scala.collection.immutable.Set
 
@@ -31,7 +31,6 @@ class CypherQueryBuilderTest extends IrTestSuite {
     "MATCH (a:Person) RETURN a".model.ensureThat { (model, globals) =>
 
       import globals.tokens._
-      import globals.constants._
 
       val loadRef = model.findExactlyOne {
         case NoWhereBlock(LoadGraphBlock(binds, DefaultGraph())) =>
@@ -41,7 +40,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
       val matchRef = model.findExactlyOne {
         case MatchBlock(deps, Pattern(entities, topo), AllGiven(exprs), _, _) =>
           deps should equal(Set(loadRef))
-          entities should equal(Map(toField('a, CTNode) -> EveryNode))
+          entities should equal(Map(toField('a -> CTNode) -> EveryNode))
           topo shouldBe empty
           exprs should equal(Set(HasLabel(toVar('a), labelByName("Person"))()))
       }
@@ -116,7 +115,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
       val matchRef = model.findExactlyOne {
         case MatchBlock(deps, Pattern(entities, topo), AllGiven(exprs),_, _) =>
           deps should equal(Set(loadRef))
-          entities should equal(Map(toField('a, CTNode) -> EveryNode))
+          entities should equal(Map(toField('a -> CTNode) -> EveryNode))
           topo shouldBe empty
           exprs should equal(Set(HasLabel(toVar('a), labelByName("Person"))()))
       }
