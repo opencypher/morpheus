@@ -144,7 +144,8 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
 }
 
 object CAPSSession extends Serializable {
-  def create(implicit session: SparkSession): CAPSSession = Builder(session).get
+
+  def create(implicit session: SparkSession): CAPSSession = Builder(session).build
 
   case class Builder(session: SparkSession,
                      private val graphSourceFactories: Set[GraphSourceFactory] = Set.empty,
@@ -160,10 +161,10 @@ object CAPSSession extends Serializable {
     def withGraphSource(handler: GraphSource): Builder =
       copy(graphSources = graphSources + handler)
 
-    def get: CAPSSession = {
+    def build: CAPSSession = {
       // set some defaults
       val factories = graphSourceFactories +
-        Neo4jGraphSourceFactory +
+        Neo4jGraphSourceFactory() +
         HdfsCsvGraphSourceFactory(session.sparkContext.hadoopConfiguration)
 
       new CAPSSession(session, GraphSourceHandler(factories, mountPoints, graphSources))

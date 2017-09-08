@@ -15,22 +15,21 @@
  */
 package org.opencypher.caps.api.io.neo4j
 
-import java.net.{URI, URLDecoder}
+import java.net.URI
 
-import org.neo4j.driver.v1.Config
-import org.opencypher.caps.api.io.neo4j.Neo4jGraphSourceFactory.protocols
-import org.opencypher.caps.api.io.{CreateOrFail, GraphSource, GraphSourceFactory, PersistMode}
+import org.opencypher.caps.api.io._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
-import org.opencypher.caps.impl.exception.Raise
 
 case class Neo4jGraphSource(config: EncryptedNeo4jConfig,
                             nodeQuery: String,
                             relQuery: String)
   extends GraphSource {
 
+  import org.opencypher.caps.api.io.neo4j.Neo4jGraphSourceFactory.supportedSchemes
+
   override def sourceForGraphAt(uri: URI): Boolean =
-    protocols.contains(uri.getScheme) && uri.getHost == config.uri.getHost && uri.getPort == config.uri.getPort
+    supportedSchemes.contains(uri.getScheme) && uri.getHost == config.uri.getHost && uri.getPort == config.uri.getPort
 
   override def graph(implicit capsSession: CAPSSession): CAPSGraph = {
     Neo4jGraphLoader.fromNeo4j(config, nodeQuery, relQuery)
@@ -56,33 +55,6 @@ case class Neo4jGraphSource(config: EncryptedNeo4jConfig,
     ???
 }
 
-object Neo4jGraphSourceFactory extends GraphSourceFactory {
 
-  override val protocols = Set("bolt", "bolt+routing")
 
-  override def sourceFor(uri: URI): Neo4jGraphSource = {
-    val (user, passwd) = getUserInfo(uri)
-    val (nodeQuery, relQuery) = getQueries(uri)
 
-    Neo4jGraphSource(new EncryptedNeo4jConfig(uri, user, passwd, Config.EncryptionLevel.NONE), nodeQuery, relQuery)
-  }
-
-  private def getUserInfo(uri: URI) = uri.getUserInfo match {
-    case null => "" -> None
-
-    case info =>
-      val tokens = info.split(":")
-      if (tokens.size != 2) Raise.invalidArgument("username:password", "nothing")
-      tokens(0) -> Some(tokens(1))
-  }
-
-  private def getQueries(uri: URI) = uri.getQuery match {
-    case null => Raise.invalidArgument("node and relationship query", "none")
-
-    case queries =>
-      val tokens = queries.split(";")
-      val nodeQuery = tokens.headOption.getOrElse(Raise.invalidArgument("a node query", "none"))
-      val relQuery = tokens.tail.headOption.getOrElse(Raise.invalidArgument("a relationship query", "none"))
-      URLDecoder.decode(nodeQuery, "UTF-8") -> URLDecoder.decode(relQuery, "UTF-8")
-  }
-}

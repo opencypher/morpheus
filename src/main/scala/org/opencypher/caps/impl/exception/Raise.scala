@@ -15,6 +15,8 @@
  */
 package org.opencypher.caps.impl.exception
 
+import java.net.URI
+
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticErrorDef
 import org.opencypher.caps.api.exception.CAPSException
 
@@ -97,5 +99,10 @@ object Raise {
 
   def semanticErrors(errors: Seq[SemanticErrorDef]) = throw CAPSException(
     s"Errors during semantic checking: ${errors.mkString(", ")}"
+  )
+
+  def graphSourceSchemeNotSupported(uri: URI, schemes: Set[String]) = throw CAPSException(
+    s"Cannot create a graph source for $uri due to an unsupported scheme ${uri.getScheme} " +
+    s"(supported schemes: ${schemes.toSeq.sorted.mkString(", ")})"
   )
 }

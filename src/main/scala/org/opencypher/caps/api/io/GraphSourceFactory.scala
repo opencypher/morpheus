@@ -24,7 +24,7 @@ trait GraphSourceFactory {
     *
     * @return that protocol
     */
-  def protocols: Set[String]
+  def schemes: Set[String]
 
   /**
     * Creates a new graph source at the argument uri.
@@ -35,3 +35,4 @@ trait GraphSourceFactory {
     */
   def sourceFor(uri: URI): GraphSource
 }
+

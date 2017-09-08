@@ -27,7 +27,7 @@ class CAPSSessionHDFSTest extends FunSuite
   with Matchers {
 
   test("HDFS via URI") {
-    val graph = CAPSSession.builder(session).get.withGraphAt(hdfsURI)
+    val graph = CAPSSession.builder(session).build.withGraphAt(hdfsURI)
     graph.nodes("n").details.toDF().collect().toSet should equal(testGraphNodes)
     graph.relationships("rel").details.toDF().collect.toSet should equal(testGraphRels)
   }
@@ -35,7 +35,7 @@ class CAPSSessionHDFSTest extends FunSuite
   test("HDFS via mount point") {
     val capsSession = CAPSSession.builder(session)
       .withGraphSource("/test/graph", HdfsCsvGraphSource(hdfsURI, session.sparkContext.hadoopConfiguration, hdfsURI.getPath))
-      .get
+      .build
 
     val graph = capsSession.withGraphAt(URI.create("/test/graph"))
     graph.nodes("n").details.toDF().collect().toSet should equal(testGraphNodes)

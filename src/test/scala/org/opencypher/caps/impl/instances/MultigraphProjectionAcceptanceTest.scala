@@ -43,7 +43,7 @@ class MultigraphProjectionAcceptanceTest extends CAPSTestSuite {
       .builder(session)
       .withGraphSource(testGraph1.uriString, testGraph1)
       .withGraphSource(testGraph2.uriString, testGraph2)
-      .get
+      .build
   }
 
   private case class TestGraphSource(uriString: String, testGraph: TestGraph) extends GraphSource {

@@ -27,7 +27,7 @@ class CAPSSessionNeo4jTest extends FunSuite
   with Matchers {
 
   test("Neo4j via URI") {
-    val capsSession = CAPSSession.builder(session).get
+    val capsSession = CAPSSession.builder(session).build
 
     val nodeQuery = URLEncoder.encode("MATCH (n) RETURN n", "UTF-8")
     val relQuery = URLEncoder.encode("MATCH ()-[r]->() RETURN r", "UTF-8")
@@ -41,7 +41,7 @@ class CAPSSessionNeo4jTest extends FunSuite
   test("Neo4j via mount point") {
     val capsSession = CAPSSession.builder(session)
       .withGraphSource("/neo4j1", Neo4jGraphSource(neo4jConfig, "MATCH (n) RETURN n", "MATCH ()-[r]->() RETURN r"))
-      .get
+      .build
 
     val graph = capsSession.withGraphAt(URI.create("/neo4j1"))
     graph.nodes("n").details.toDF().collect().toSet should equal(testGraphNodes)
@@ -52,7 +52,7 @@ class CAPSSessionNeo4jTest extends FunSuite
     val capsSession = CAPSSession
       .builder(session)
       .withGraphSource(Neo4jGraphSource(neo4jConfig, "MATCH (n) RETURN n", "MATCH ()-[r]->() RETURN r"))
-      .get
+      .build
 
     val graph = capsSession.withGraphAt(neo4jServer.boltURI())
     graph.nodes("n").details.toDF().collect().toSet should equal(testGraphNodes)

@@ -30,8 +30,8 @@ case class GraphSourceHandler(graphSourceFactories: Set[GraphSourceFactory],
 
   private def loadFromURI(uri: URI)(implicit capsSession: CAPSSession): CAPSGraph =
     graphSources.find(_.sourceForGraphAt(uri)).getOrElse {
-      graphSourceFactories.find(_.protocols.contains(uri.getScheme))
-        .getOrElse(Raise.invalidArgument(graphSourceFactories.flatMap(_.protocols).mkString("[", ",", "]"), uri.getScheme))
+      graphSourceFactories.find(_.schemes.contains(uri.getScheme))
+        .getOrElse(Raise.invalidArgument(graphSourceFactories.flatMap(_.schemes).mkString("[", ",", "]"), uri.getScheme))
         .sourceFor(uri)
     }.graph
 
