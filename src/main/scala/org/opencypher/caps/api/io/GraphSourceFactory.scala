@@ -17,7 +17,16 @@ package org.opencypher.caps.api.io
 
 import java.net.URI
 
+import org.opencypher.caps.api.spark.CAPSSession
+
 trait GraphSourceFactory {
+
+  /**
+    * A simple name for the graph source factory
+    *
+    * @return a name that describes this factory
+    */
+  def name: String
 
   /**
     * The protocol for which this factory produces graph sources.
@@ -33,6 +42,6 @@ trait GraphSourceFactory {
     * @return create a new graph source for the given uri
     * @throws RuntimeException if uri is not supported by this graph source factory
     */
-  def sourceFor(uri: URI): GraphSource
+  def sourceFor(uri: URI)(implicit capsSession: CAPSSession): GraphSource
 }
 

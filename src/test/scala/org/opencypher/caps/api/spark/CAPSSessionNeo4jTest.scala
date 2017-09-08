@@ -27,34 +27,22 @@ class CAPSSessionNeo4jTest extends FunSuite
   with Matchers {
 
   test("Neo4j via URI") {
-    val capsSession = CAPSSession.builder(session).build
+    implicit val capsSession: CAPSSession = CAPSSession.builder(session).build
 
     val nodeQuery = URLEncoder.encode("MATCH (n) RETURN n", "UTF-8")
     val relQuery = URLEncoder.encode("MATCH ()-[r]->() RETURN r", "UTF-8")
     val uri = URI.create(s"$neo4jHost?$nodeQuery;$relQuery")
 
-    val graph = capsSession.withGraphAt(uri)
+    val graph = capsSession.graphAt(uri)
     graph.nodes("n").details.toDF().collect().toSet should equal(testGraphNodes)
     graph.relationships("rel").details.toDF().collect.toSet should equal(testGraphRels)
   }
 
   test("Neo4j via mount point") {
-    val capsSession = CAPSSession.builder(session)
-      .withGraphSource("/neo4j1", Neo4jGraphSource(neo4jConfig, "MATCH (n) RETURN n", "MATCH ()-[r]->() RETURN r"))
-      .build
+    implicit val capsSession: CAPSSession = CAPSSession.builder(session).build
+    capsSession.mountSourceAt(Neo4jGraphSource(neo4jConfig, "MATCH (n) RETURN n", "MATCH ()-[r]->() RETURN r"), "/neo4j1")
 
-    val graph = capsSession.withGraphAt(URI.create("/neo4j1"))
-    graph.nodes("n").details.toDF().collect().toSet should equal(testGraphNodes)
-    graph.relationships("rel").details.toDF().collect.toSet should equal(testGraphRels)
-  }
-
-  test("Neo4j via mounted URI") {
-    val capsSession = CAPSSession
-      .builder(session)
-      .withGraphSource(Neo4jGraphSource(neo4jConfig, "MATCH (n) RETURN n", "MATCH ()-[r]->() RETURN r"))
-      .build
-
-    val graph = capsSession.withGraphAt(neo4jServer.boltURI())
+    val graph = capsSession.graphAt("/neo4j1")
     graph.nodes("n").details.toDF().collect().toSet should equal(testGraphNodes)
     graph.relationships("rel").details.toDF().collect.toSet should equal(testGraphRels)
   }

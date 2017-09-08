@@ -15,8 +15,6 @@
  */
 package org.opencypher.caps.api.spark
 
-import java.net.URI
-
 import org.opencypher.caps.api.io.hdfs.HdfsCsvGraphSource
 import org.opencypher.caps.{HDFSTestSession, SparkTestSession}
 import org.scalatest.{FunSuite, Matchers}
@@ -27,17 +25,17 @@ class CAPSSessionHDFSTest extends FunSuite
   with Matchers {
 
   test("HDFS via URI") {
-    val graph = CAPSSession.builder(session).build.withGraphAt(hdfsURI)
+    implicit val capsSession: CAPSSession = CAPSSession.builder(session).build
+    val graph = capsSession.graphAt(hdfsURI)
     graph.nodes("n").details.toDF().collect().toSet should equal(testGraphNodes)
     graph.relationships("rel").details.toDF().collect.toSet should equal(testGraphRels)
   }
 
   test("HDFS via mount point") {
-    val capsSession = CAPSSession.builder(session)
-      .withGraphSource("/test/graph", HdfsCsvGraphSource(hdfsURI, session.sparkContext.hadoopConfiguration, hdfsURI.getPath))
-      .build
+    implicit val capsSession: CAPSSession = CAPSSession.builder(session).build
+    capsSession.mountSourceAt(HdfsCsvGraphSource(hdfsURI, session.sparkContext.hadoopConfiguration, hdfsURI.getPath), "/test/graph")
 
-    val graph = capsSession.withGraphAt(URI.create("/test/graph"))
+    val graph = capsSession.graphAt("/test/graph")
     graph.nodes("n").details.toDF().collect().toSet should equal(testGraphNodes)
     graph.relationships("rel").details.toDF().collect.toSet should equal(testGraphRels)
   }

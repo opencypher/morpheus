@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticErrorDef
 import org.opencypher.caps.api.exception.CAPSException
 
 object Raise {
+
   def duplicateEmbeddedEntityColumn(name: String) = throw CAPSException(
     "The input column '$name' is used more than once to describe an embedded entity"
   )
@@ -101,8 +102,20 @@ object Raise {
     s"Errors during semantic checking: ${errors.mkString(", ")}"
   )
 
+  def graphURIMalformedForUseBy(uri: URI, name: String) = throw CAPSException(
+    s"Graph URI $uri is malformed for use by $name"
+  )
+
   def graphSourceSchemeNotSupported(uri: URI, schemes: Set[String]) = throw CAPSException(
     s"Cannot create a graph source for $uri due to an unsupported scheme ${uri.getScheme} " +
     s"(supported schemes: ${schemes.toSeq.sorted.mkString(", ")})"
+  )
+
+  def graphNotFound(uri: URI) = throw CAPSException(
+    s"Graph not found at $uri"
+  )
+
+  def graphAlreadyExists(uri: URI) = throw CAPSException(
+    s"Cannot create new graph. There already exists a graph at $uri"
   )
 }

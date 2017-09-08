@@ -13,21 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps
+package org.opencypher.caps.impl.io
 
-import org.opencypher.caps.api.ir.global.TokenRegistry
+import org.opencypher.caps.api.io.GraphSource
 import org.opencypher.caps.api.spark.CAPSSession
 
-object CAPSTestSession {
-  trait Fixture {
-    self: SparkTestSession.Fixture =>
+abstract class GraphSourceImpl(implicit override final val session: CAPSSession) extends GraphSource
 
-    implicit lazy val caps: CAPSSession = initCAPSSessionBuilder.build
-
-    def initCAPSSessionBuilder: CAPSSession.Builder = CAPSSession.builder(session)
-
-    def initialTokens: TokenRegistry = {
-      TokenRegistry.empty
-    }
-  }
-}

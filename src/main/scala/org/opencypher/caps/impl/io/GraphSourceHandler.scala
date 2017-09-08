@@ -17,27 +17,31 @@ package org.opencypher.caps.impl.io
 
 import java.net.URI
 
+import org.opencypher.caps.api.io.session.SessionGraphSourceFactory
 import org.opencypher.caps.api.io.{GraphSource, GraphSourceFactory}
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
 import org.opencypher.caps.impl.exception.Raise
 
-case class GraphSourceHandler(graphSourceFactories: Set[GraphSourceFactory],
-                              mountPoints: Map[String, GraphSource],
-                              graphSources: Set[GraphSource]) {
+case class GraphSourceHandler(sessionGraphSourceFactory: SessionGraphSourceFactory,
+                              additionalGraphSourceFactories: Set[GraphSourceFactory]) {
 
-  def withGraphAt(uri: URI)(implicit capsSession: CAPSSession): CAPSGraph =
-    if (Option(uri.getScheme).isDefined) loadFromURI(uri) else loadFromMountPoint(uri)
+  private val factoriesByScheme: Map[String, GraphSourceFactory] = {
+    val allFactories = additionalGraphSourceFactories + sessionGraphSourceFactory
+    val entries = allFactories.flatMap(factory => factory.schemes.map(scheme => scheme -> factory))
+    if (entries.size == entries.map(_._1).size)
+      entries.toMap
+    else
+      Raise.invalidArgument(
+        "At most one graph source factory per URI scheme",
+        s"Factories for schemes: ${allFactories.map(factory => factory.name -> factory.schemes.mkString("[", ", ", "]")).mkString(",")}")
+  }
 
-  private def loadFromURI(uri: URI)(implicit capsSession: CAPSSession): CAPSGraph =
-    graphSources.find(_.sourceForGraphAt(uri)).getOrElse {
-      graphSourceFactories.find(_.schemes.contains(uri.getScheme))
-        .getOrElse(Raise.invalidArgument(graphSourceFactories.flatMap(_.schemes).mkString("[", ",", "]"), uri.getScheme))
-        .sourceFor(uri)
-    }.graph
+  def mountSourceAt(source: GraphSource, uri: URI)(implicit capsSession: CAPSSession): Unit =
+    sessionGraphSourceFactory.mountSourceAt(source, uri)
 
-  private def loadFromMountPoint(uri: URI)(implicit capsSession: CAPSSession): CAPSGraph =
-    mountPoints
-      .getOrElse(uri.getPath, Raise.invalidArgument(mountPoints.keySet.mkString("[", ",", "]"), uri.getPath))
-      .graph
-
+  def graphAt(uri: URI)(implicit capsSession: CAPSSession): CAPSGraph =
+    factoriesByScheme
+      .get(uri.getScheme)
+      .map(_.sourceFor(uri).graph)
+      .getOrElse(Raise.graphNotFound(uri))
 }

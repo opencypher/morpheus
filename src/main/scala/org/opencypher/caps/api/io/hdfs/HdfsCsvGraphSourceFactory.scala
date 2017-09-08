@@ -19,6 +19,7 @@ import java.net.URI
 
 import org.apache.hadoop.conf.Configuration
 import org.opencypher.caps.api.io._
+import org.opencypher.caps.api.spark.CAPSSession
 import org.opencypher.caps.impl.io.GraphSourceFactoryImpl
 
 case object HdfsCsvGraphSourceFactory extends GraphSourceFactoryCompanion("hdfs+csv")
@@ -26,7 +27,7 @@ case object HdfsCsvGraphSourceFactory extends GraphSourceFactoryCompanion("hdfs+
 case class HdfsCsvGraphSourceFactory(hadoopConfiguration: Configuration)
   extends GraphSourceFactoryImpl[HdfsCsvGraphSource](HdfsCsvGraphSourceFactory) {
 
-  override protected def sourceForVerifiedURI(uri: URI): HdfsCsvGraphSource = {
+  override protected def sourceForURIWithSupportedScheme(uri: URI)(implicit capsSession: CAPSSession): HdfsCsvGraphSource = {
     val host = uri.getHost
     val port = if (uri.getPort == -1) "" else s":${uri.getPort}"
     val canonicalURIString = s"hdfs://$host$port"

@@ -23,6 +23,11 @@ import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
 trait GraphSource {
 
   /**
+    * The session tied to this graph source.
+    */
+  val session: CAPSSession
+
+  /**
     * Determines whether this is a source for a graph at the argument uri.
     *
     * @param uri the location for a potential graph.
@@ -41,44 +46,38 @@ trait GraphSource {
   /**
     * Create a new empty graph stored in this graph source.
     *
-    * @param capsSession the session tied to the graph.
     * @return the graph stored in this graph source.
     * @throws RuntimeException if the graph could not be created or there already was a graph
     */
-  def create(implicit capsSession: CAPSSession): CAPSGraph
+  def create: CAPSGraph
 
   /**
     * Provides the graph stored in this graph source.
     *
-    * @param capsSession the session tied to the graph.
     * @return the graph stored in this graph source.
     * @throws RuntimeException if loading the graph could not be done.
     */
-  def graph(implicit capsSession: CAPSSession): CAPSGraph
+  def graph: CAPSGraph
 
   /**
     * Provides only the schema of the graph stored in this graph source or returns None if the schema cannot be
     * provided without loading/constructing the whole graph.
     *
-    * @param capsSession the session tied to the graph.
     * @return the schema of the graph stored in this graph source.
     */
-  def schema(implicit capsSession: CAPSSession): Option[Schema]
+  def schema: Option[Schema]
 
   /**
     * Persists the argument graph to this source.
     *
     * @param mode the persist mode to use.
     * @param graph the graph to persist.
-    * @param capsSession the session tied to the graph.
     * @return the persisted graph
     */
-  def persist(mode: PersistMode, graph: CAPSGraph)(implicit capsSession: CAPSSession): CAPSGraph
+  def persist(mode: PersistMode, graph: CAPSGraph): CAPSGraph
 
   /**
     * Delete the graph stored at this graph source
-    *
-    * @param capsSession the session tied to the graph.
     */
-  def delete(implicit capsSession: CAPSSession): Unit
+  def delete(): Unit
 }

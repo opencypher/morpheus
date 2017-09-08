@@ -20,22 +20,22 @@ import java.net.URI
 import org.opencypher.caps.api.io._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
+import org.opencypher.caps.impl.io.GraphSourceImpl
 
 case class Neo4jGraphSource(config: EncryptedNeo4jConfig,
                             nodeQuery: String,
-                            relQuery: String)
-  extends GraphSource {
+                            relQuery: String)(implicit capsSession: CAPSSession)
+  extends GraphSourceImpl {
 
   import org.opencypher.caps.api.io.neo4j.Neo4jGraphSourceFactory.supportedSchemes
 
   override def sourceForGraphAt(uri: URI): Boolean =
     supportedSchemes.contains(uri.getScheme) && uri.getHost == config.uri.getHost && uri.getPort == config.uri.getPort
 
-  override def graph(implicit capsSession: CAPSSession): CAPSGraph = {
+  override def graph: CAPSGraph =
     Neo4jGraphLoader.fromNeo4j(config, nodeQuery, relQuery)
-  }
 
-  override def schema(implicit capsSession: CAPSSession): Option[Schema] = None
+  override def schema: Option[Schema] = None
 
   override def canonicalURI: URI = {
     val uri = config.uri
@@ -45,13 +45,13 @@ case class Neo4jGraphSource(config: EncryptedNeo4jConfig,
     URI.create(canonicalURIString)
   }
 
-  override def create(implicit capsSession: CAPSSession): CAPSGraph =
+  override def create: CAPSGraph =
     persist(CreateOrFail, CAPSGraph.empty)
 
-  override def persist(mode: PersistMode, graph: CAPSGraph)(implicit capsSession: CAPSSession): CAPSGraph =
+  override def persist(mode: PersistMode, graph: CAPSGraph): CAPSGraph =
     ???
 
-  override def delete(implicit capsSession: CAPSSession): Unit =
+  override def delete(): Unit =
     ???
 }
 

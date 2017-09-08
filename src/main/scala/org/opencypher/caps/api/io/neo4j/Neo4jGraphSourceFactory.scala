@@ -1,9 +1,25 @@
+/**
+ * Copyright (c) 2016-2017 "Neo4j, Inc." [https://neo4j.com]
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.opencypher.caps.api.io.neo4j
 
 import java.net.{URI, URLDecoder}
 
 import org.neo4j.driver.v1.Config
 import org.opencypher.caps.api.io.GraphSourceFactoryCompanion
+import org.opencypher.caps.api.spark.CAPSSession
 import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.io.GraphSourceFactoryImpl
 
@@ -12,7 +28,7 @@ case object Neo4jGraphSourceFactory extends GraphSourceFactoryCompanion("bolt", 
 case class Neo4jGraphSourceFactory()
   extends GraphSourceFactoryImpl[Neo4jGraphSource](Neo4jGraphSourceFactory) {
 
-  override protected def sourceForVerifiedURI(uri: URI): Neo4jGraphSource = {
+  override protected def sourceForURIWithSupportedScheme(uri: URI)(implicit capsSession: CAPSSession): Neo4jGraphSource = {
     val (user, passwd) = getUserInfo(uri)
     val (nodeQuery, relQuery) = getQueries(uri)
 

@@ -13,21 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps
+package org.opencypher.caps.api.io
 
-import org.opencypher.caps.api.ir.global.TokenRegistry
-import org.opencypher.caps.api.spark.CAPSSession
+import java.net.URI
 
-object CAPSTestSession {
-  trait Fixture {
-    self: SparkTestSession.Fixture =>
+import org.opencypher.caps.api.io.session.SessionGraphSourceFactory
 
-    implicit lazy val caps: CAPSSession = initCAPSSessionBuilder.build
+// TODO: Test
+case object parseURI extends (String => URI) {
 
-    def initCAPSSessionBuilder: CAPSSession.Builder = CAPSSession.builder(session)
-
-    def initialTokens: TokenRegistry = {
-      TokenRegistry.empty
-    }
+  def apply(pathOrUri: String): URI = {
+    val trimmed = pathOrUri.trim
+    if (trimmed.startsWith("/"))
+      URI.create(s"${SessionGraphSourceFactory.defaultScheme}:$trimmed")
+    else
+      URI.create(trimmed)
   }
 }

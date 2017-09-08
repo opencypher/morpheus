@@ -15,10 +15,12 @@
  */
 package org.opencypher.caps.support
 
+import java.net.URI
+
+import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{StructField, StructType}
-import org.apache.spark.sql.{Row, SparkSession}
-import org.opencypher.caps.api.classes.Cypher
 import org.opencypher.caps.api.expr.{HasLabel, Property, Var}
+import org.opencypher.caps.api.io.{PersistMode, parseURI}
 import org.opencypher.caps.api.ir.global.TokenRegistry
 import org.opencypher.caps.api.record.{FieldSlotContent, RecordHeader}
 import org.opencypher.caps.api.schema.Schema
@@ -26,6 +28,7 @@ import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSResult, CAPSSe
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.api.value.{CypherMap, CypherValue}
 import org.opencypher.caps.impl.convert.{fromJavaType, toSparkType}
+import org.opencypher.caps.impl.io.GraphSourceImpl
 import org.opencypher.caps.impl.physical.RuntimeContext
 import org.opencypher.caps.impl.record.CAPSRecordsTokens
 import org.opencypher.caps.{BaseTestSuite, CAPSTestSession, SparkTestSession}
@@ -34,8 +37,8 @@ import org.s1ck.gdl.model.Element
 import org.scalatest.Assertion
 
 import scala.collection.Bag
-import scala.collection.immutable._
 import scala.collection.JavaConverters._
+import scala.collection.immutable._
 
 trait GraphMatchingTestSupport {
 
@@ -66,6 +69,12 @@ trait GraphMatchingTestSupport {
       .setDefaultEdgeLabel(DEFAULT_LABEL)
       .setDefaultVertexLabel(DEFAULT_LABEL)
       .buildFromString(gdl)
+
+    def mountAt(pathOrUri: String): Unit =
+      mountAt(parseURI(pathOrUri))
+
+    def mountAt(uri: URI): Unit =
+      caps.mountSourceAt(TestGraphSource(uri, this), uri)
 
     def cypher(query: String): CAPSResult =
       caps.cypher(graph, query, Map.empty)
@@ -176,5 +185,17 @@ trait GraphMatchingTestSupport {
       }
       Bag(rows: _*)
     }
+  }
+
+  private case class TestGraphSource(canonicalURI: URI, testGraph: TestGraph)
+    extends GraphSourceImpl {
+
+    private lazy val capsGraph = testGraph.graph
+    override def sourceForGraphAt(uri: URI): Boolean = uri == canonicalURI
+    override def create: CAPSGraph = ???
+    override def graph: CAPSGraph = capsGraph
+    override def schema: Option[Schema] = None
+    override def persist(mode: PersistMode, graph: CAPSGraph): CAPSGraph = ???
+    override def delete(): Unit = ???
   }
 }
