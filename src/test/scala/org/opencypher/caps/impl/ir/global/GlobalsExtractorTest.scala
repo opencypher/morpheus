@@ -43,7 +43,7 @@ class GlobalsExtractorTest extends BaseTestSuite with Neo4jAstTestSupport {
   }
 
   test("collect tokens") {
-    val (given, _) = parseQuery("MATCH (a:Person)-[r:KNOWS]->(b:Duck) RETURN a.name, r.since, b.quack")
+    val (given, _,_) = parseQuery("MATCH (a:Person)-[r:KNOWS]->(b:Duck) RETURN a.name, r.since, b.quack")
     val actual = GlobalsExtractor(given)
     val expected = GlobalsRegistry(
       TokenRegistry
@@ -60,7 +60,7 @@ class GlobalsExtractorTest extends BaseTestSuite with Neo4jAstTestSupport {
   }
 
   test("collect parameters") {
-    val (given, _) = parseQuery("WITH $param AS p RETURN p, $another")
+    val (given, _, _) = parseQuery("WITH $param AS p RETURN p, $another")
     val actual = GlobalsExtractor(given)
     val expected = GlobalsRegistry(
       TokenRegistry.empty,

@@ -16,7 +16,7 @@
 package org.opencypher.caps.impl.ir
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, Parameter}
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, symbols}
+import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SemanticState, symbols}
 import org.opencypher.caps.BaseTestSuite
 import org.opencypher.caps.api.expr.Expr
 import org.opencypher.caps.api.ir._
@@ -26,7 +26,7 @@ import org.opencypher.caps.api.ir.pattern.{AllGiven, Pattern}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.CypherType
 import org.opencypher.caps.impl.ir.global.GlobalsExtractor
-import org.opencypher.caps.impl.logical.{DefaultGraphSource, Start, NamedLogicalGraph}
+import org.opencypher.caps.impl.logical.{DefaultGraphSource, NamedLogicalGraph, Start}
 import org.opencypher.caps.impl.parse.CypherParser
 
 import scala.language.implicitConversions
@@ -87,15 +87,17 @@ abstract class IrTestSuite extends BaseTestSuite {
   implicit class RichString(queryText: String) {
     def model: QueryModel[Expr] = ir.model
 
+    // TODO: SemCheck
     def ir(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
-      CypherQueryBuilder(stmt)(IRBuilderContext.initial(queryText, GlobalsExtractor(stmt), schema, Map.empty))
+      IRBuilder(stmt)(IRBuilderContext.initial(queryText, GlobalsExtractor(stmt), schema, SemanticState.clean, Map.empty))
     }
 
+    // TODO: SemCheck
     def irWithParams(params: (String, CypherType)*)(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
       val knownTypes: Map[Expression, CypherType] = params.map(p => Parameter(p._1, symbols.CTAny)(InputPosition.NONE) -> p._2).toMap
-      CypherQueryBuilder(stmt)(IRBuilderContext.initial(queryText, GlobalsExtractor(stmt), schema, knownTypes))
+      IRBuilder(stmt)(IRBuilderContext.initial(queryText, GlobalsExtractor(stmt), schema, SemanticState.clean, knownTypes))
     }
   }
 }

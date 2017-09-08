@@ -16,10 +16,10 @@
 package org.opencypher.caps.api.io.hdfs
 
 import org.opencypher.caps.api.spark.CAPSGraph
-import org.opencypher.caps.{CAPSTestSession, HDFSTestSession, SparkTestSession}
-import org.scalatest.{FunSuite, Matchers}
+import org.opencypher.caps.{BaseTestSuite, CAPSTestSession, HDFSTestSession, SparkTestSession}
+import org.scalatest.Matchers
 
-class CsvGraphLoaderAcceptanceTest extends FunSuite
+class CsvGraphLoaderAcceptanceTest extends BaseTestSuite
   with CAPSTestSession.Fixture
   with SparkTestSession.Fixture
   with HDFSTestSession.Fixture

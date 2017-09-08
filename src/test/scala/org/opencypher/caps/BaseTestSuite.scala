@@ -18,10 +18,11 @@ package org.opencypher.caps
 import org.junit.runner.RunWith
 import org.opencypher.caps.api.value.CypherImplicits
 import org.scalatest.junit.JUnitRunner
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.{BeforeAndAfterEach, FunSuite, Matchers}
 
 @RunWith(classOf[JUnitRunner])
 abstract class BaseTestSuite
   extends FunSuite
   with Matchers
   with CypherImplicits
+  with BeforeAndAfterEach

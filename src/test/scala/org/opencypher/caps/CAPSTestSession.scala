@@ -31,6 +31,7 @@ object CAPSTestSession {
       TokenRegistry.empty
     }
 
-    override protected def afterEach(): Unit = caps.unmountAll()
+    override protected def afterEach(): Unit =
+      caps.unmountAll()
   }
 }

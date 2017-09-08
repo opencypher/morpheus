@@ -15,11 +15,11 @@
  */
 package org.opencypher.caps.impl.parse
 
-import org.neo4j.cypher.internal.frontend.v3_3.SemanticErrorDef
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{CNFNormalizer, Forced, Namespacer}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{CNFNormalizer, Namespacer, Never}
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_3.phases._
+import org.neo4j.cypher.internal.frontend.v3_3.{SemanticErrorDef, SemanticFeature, SemanticState}
 import org.opencypher.caps.impl.CompilationStage
 import org.opencypher.caps.impl.exception.Raise
 
@@ -32,21 +32,26 @@ object CypherParser extends CypherParser {
 
 trait CypherParser extends CompilationStage[String, Statement, BaseContext] {
 
-  override type Out = (Statement, Map[String, Any])
+  override type Out = (Statement, Map[String, Any], SemanticState)
 
-  override def extract(output: (Statement, Map[String, Any])): Statement = output._1
+  override def extract(output: (Statement, Map[String, Any], SemanticState)): Statement = output._1
 
-  override def process(query: String)(implicit context: BaseContext): (Statement, Map[String, Any]) = {
+  override def process(query: String)(implicit context: BaseContext): (Statement, Map[String, Any], SemanticState) = {
     val startState = BaseStateImpl(query, None, null)
     val endState = pipeLine.transform(startState, context)
     val params = endState.extractedParams
     val rewritten = endState.statement
-    rewritten -> params
+    (rewritten, params, endState.maybeSemantics.get)
   }
 
   protected val pipeLine: Transformer[BaseContext, BaseState, BaseState] =
-    CompilationPhases.parsing(RewriterStepSequencer.newPlain, Forced) andThen
-      SemanticAnalysis(warn = false) andThen
+    Parsing.adds(BaseContains[Statement]) andThen
+      SyntaxDeprecationWarnings andThen
+      PreparatoryRewriting andThen
+      SemanticAnalysis(warn = true, SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature).adds(BaseContains[SemanticState]) andThen
+      // TODO: Fix ast rewriting to correctly autoparam GraphUrl
+      AstRewriting(RewriterStepSequencer.newPlain, Never) andThen
+      SemanticAnalysis(warn = false, SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature) andThen
       Namespacer andThen
       CNFNormalizer andThen
       LateAstRewriting andThen CAPSRewriting

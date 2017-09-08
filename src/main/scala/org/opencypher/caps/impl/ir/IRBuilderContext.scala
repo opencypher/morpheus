@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.ir
 
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, Ref, ast}
+import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, Ref, SemanticState, ast}
 import org.opencypher.caps.api.expr.Expr
 import org.opencypher.caps.api.ir.IRField
 import org.opencypher.caps.api.ir.block.{BlockRef, DefaultGraph, LoadGraphBlock}
@@ -32,6 +32,7 @@ final case class IRBuilderContext(
   graphBlock: BlockRef,
   blocks: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
   schemas: Map[BlockRef, Schema],
+  semanticState: SemanticState,
   knownTypes: Map[ast.Expression, CypherType] = Map.empty)
 {
   private lazy val typer = SchemaTyper(schemas(graphBlock))
@@ -71,12 +72,12 @@ final case class IRBuilderContext(
 }
 
 object IRBuilderContext {
-  def initial(query: String, globals: GlobalsRegistry, schema: Schema, knownTypes: Map[ast.Expression, CypherType]): IRBuilderContext = {
+  def initial(query: String, globals: GlobalsRegistry, schema: Schema, semState: SemanticState, knownTypes: Map[ast.Expression, CypherType]): IRBuilderContext = {
     val registry = BlockRegistry.empty[Expr]
 
     val block = LoadGraphBlock[Expr](Set.empty, DefaultGraph())
     val (ref, reg) = registry.register(block)
 
-    IRBuilderContext(query, globals, ref, reg, Map(ref -> schema), knownTypes)
+    IRBuilderContext(query, globals, ref, reg, Map(ref -> schema), semState, knownTypes)
   }
 }

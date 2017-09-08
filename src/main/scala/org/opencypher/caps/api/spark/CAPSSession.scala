@@ -30,7 +30,7 @@ import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
 import org.opencypher.caps.impl.io.GraphSourceHandler
 import org.opencypher.caps.impl.ir.global.GlobalsExtractor
-import org.opencypher.caps.impl.ir.{CypherQueryBuilder, IRBuilderContext}
+import org.opencypher.caps.impl.ir.{IRBuilder, IRBuilderContext}
 import org.opencypher.caps.impl.logical._
 import org.opencypher.caps.impl.parse.CypherParser
 import org.opencypher.caps.impl.physical.{CAPSResultBuilder, PhysicalPlanner, PhysicalPlannerContext}
@@ -68,7 +68,7 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
     graphSourceHandler.unmountAll(this)
 
   override def cypher(graph: Graph, query: String, queryParameters: Map[String, CypherValue]): Result = {
-    val (stmt, extractedLiterals) = parser.process(query)(CypherParser.defaultContext)
+    val (stmt, extractedLiterals, semState) = parser.process(query)(CypherParser.defaultContext)
 
     val globals = GlobalsExtractor(stmt, GlobalsRegistry.fromTokens(graph.tokens.registry))
     val GlobalsRegistry(tokens, constants) = globals
@@ -81,7 +81,7 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
     val paramsAndTypes = GlobalsExtractor.paramWithTypes(stmt)
 
     print("IR ... ")
-    val ir = CypherQueryBuilder(stmt)(IRBuilderContext.initial(query, globals, graph.schema, paramsAndTypes))
+    val ir = IRBuilder(stmt)(IRBuilderContext.initial(query, globals, graph.schema, semState, paramsAndTypes))
     println("Done!")
 
     print("Logical plan ... ")

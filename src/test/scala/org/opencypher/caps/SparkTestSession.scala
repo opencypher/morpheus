@@ -22,13 +22,13 @@ import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.sql.SparkSession
 import org.opencypher.caps.demo.Configuration.Logging
 import org.opencypher.caps.demo.CypherKryoRegistrar
-import org.scalatest.{BeforeAndAfterEach, FunSuite}
+import org.scalatest.FunSuite
 
 object SparkTestSession {
 
   lazy val default: SparkSession = Factory.create
 
-  trait Fixture extends BeforeAndAfterEach {
+  trait Fixture {
     self: FunSuite =>
 
     implicit val session: SparkSession = SparkTestSession.default

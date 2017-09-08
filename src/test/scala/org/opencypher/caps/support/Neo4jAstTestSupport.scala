@@ -31,7 +31,7 @@ trait Neo4jAstTestSupport extends AstConstructionTestSupport {
 
   import Neo4jAstTestSupport.CypherParserWithoutSemanticChecking
 
-  def parseQuery(queryText: String): (Statement, Map[String, Any]) =
+  def parseQuery(queryText: String): (Statement, Map[String, Any], SemanticState) =
     CypherParser.process(queryText)(CypherParser.defaultContext)
 
   implicit def parseExpr(exprText: String): ast.Expression = {
