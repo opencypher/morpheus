@@ -22,9 +22,11 @@ object CAPSTestSession {
   trait Fixture {
     self: SparkTestSession.Fixture =>
 
-    implicit lazy val caps = CAPSSession.create(session)
+    implicit lazy val caps = initCAPSSession
 
-    def initialTokens = {
+    def initCAPSSession: CAPSSession = CAPSSession.create(session)
+
+    def initialTokens: TokenRegistry = {
       TokenRegistry.empty
     }
   }
