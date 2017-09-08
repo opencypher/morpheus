@@ -89,9 +89,14 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         val filterPlan = planFilter(patternPlan, where)
         if (optional) producer.planOptional(plan, filterPlan) else filterPlan
 
-      case ProjectBlock(_, ProjectedFields(exprs), where, graph) =>
+      case ProjectBlock(_, ProjectedFields(exprs), where, graph, distinct) =>
         val projPlan = planProjections(plan, exprs)
-        planFilter(projPlan, where)
+        val filtered = planFilter(projPlan, where)
+        if (distinct) {
+          producer.planDistinct(exprs.keySet, filtered)
+        } else {
+          filtered
+        }
 
       case OrderAndSliceBlock(_, sortItems, skip, limit, _) =>
         val orderOp = if (sortItems.nonEmpty) producer.planOrderBy(sortItems, plan) else plan

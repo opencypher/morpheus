@@ -80,6 +80,18 @@ final case class NodeScan(node: Var, nodeDef: EveryNode, in: LogicalOperator)
   override def clone(newIn: LogicalOperator = in): LogicalOperator = copy(in = newIn)(solved)
 
 }
+
+final case class Distinct(fields: Set[Var], in: LogicalOperator)
+                         (override val solved: SolvedQueryModel[Expr])
+  extends StackingLogicalOperator {
+
+  override def pretty(depth: Int): String =
+    s"""${prefix(depth)} Distinct(fields = $fields)
+       #${in.pretty(depth + 1)}""".stripMargin('#')
+
+  override def clone(newIn: LogicalOperator = in): LogicalOperator = copy(in = newIn)(solved)
+}
+
 final case class Filter(expr: Expr, in: LogicalOperator)
                        (override val solved: SolvedQueryModel[Expr])
   extends StackingLogicalOperator {
