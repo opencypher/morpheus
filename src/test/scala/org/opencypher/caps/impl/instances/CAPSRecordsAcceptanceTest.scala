@@ -15,183 +15,110 @@
  */
 package org.opencypher.caps.impl.instances
 
-import java.net.URI
-
-import org.neo4j.driver.v1.Config
+import org.opencypher.caps.api.io.neo4j.Neo4jGraphLoader
+import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.{CAPSTestSuite, Neo4jTestSession}
-import org.opencypher.caps.api.io.neo4j.{EncryptedNeo4jConfig, Neo4jGraphLoader}
-import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.spark.{CAPSRecords, CAPSSession}
-import org.opencypher.caps.api.types._
-import org.opencypher.caps.demo.Configuration.{Neo4jAddress, Neo4jPassword, Neo4jUser}
 
-class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jTestSession.Fixture {
+import scala.language.reflectiveCalls
 
-  override val neo4jConfig = new EncryptedNeo4jConfig(URI.create(Neo4jAddress.get()),
-    Neo4jUser.get(),
-    Option(Neo4jPassword.get()),
-    Config.EncryptionLevel.REQUIRED)
+class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jTestSession.OpenCypherFixture {
 
-  private lazy val smallGraph = initSmallSpace()
-  private lazy val fullGraph = Neo4jGraphLoader.fromNeo4j(neo4jConfig, "MATCH (n) RETURN n", "MATCH ()-[r]->() RETURN r")
+  private lazy val graph: CAPSGraph =
+    Neo4jGraphLoader.fromNeo4j(neo4jConfig)
 
   test("label scan and project") {
     // When
-    val result = smallGraph.cypher("MATCH (a:User) RETURN a.text")
+    val result = graph.cypher("MATCH (a:Person) RETURN a.name")
 
     // Then
-    result.records shouldHaveSize 1806 andContain "Application Developer"
+    result.records shouldHaveSize 15 andContain "Rachel Kempson"
   }
 
   test("expand and project") {
     // When
-    val result = smallGraph.cypher("MATCH (a:User)-[r]->(m:Meetup) RETURN a.country, m.id")
+    val result = graph.cypher("MATCH (a:Actor)-[r]->(m:Film) RETURN a.birthyear, m.title")
 
     // Then
-    result.records shouldHaveSize 4832 andContain "de" -> 168960972
-  }
-
-  test("expand and project on full graph") {
-    // Given
-    val query = "MATCH (g:Graph)-[r:CONTAINED]->(e:Event) RETURN g.key, e.title"
-
-    // When
-    val result = fullGraph.cypher(query)
-
-    // Then
-    val tuple = "GraphDB-Sydney" -> "What's new and fabulous in Neo4j 2.0 with Jim Webber"
-
-    result.records shouldHaveSize 25 andContain tuple
+    result.records shouldHaveSize 8 andContain 1952 -> "Batman Begins"
   }
 
   test("filter rels on property") {
     // Given
-    val query = "MATCH (a:User)-[r:ATTENDED]->() WHERE r.response = 'no' RETURN a, r"
+    val query = "MATCH (a:Actor)-[r:ACTED_IN]->() WHERE r.charactername = 'Guenevere' RETURN a, r"
 
     // When
-    val result = fullGraph.cypher(query)
+    val result = graph.cypher(query)
 
     // Then
-    // TODO: Come up with a way to construct a node in a short test tuple for containment test
-    result.records shouldHaveSize 1173
+    result.records shouldHaveSize 1
   }
 
-  test("expand and project on full graph, three properties") {
+  test("filter nodes on property") {
+    // When
+    val result = graph.cypher("MATCH (p:Person) WHERE p.birthyear = 1970 RETURN p.name")
+
+    // Then
+    result.records shouldHaveSize 3 andContain "Christopher Nolan"
+  }
+
+  test("expand and project, three properties") {
     // Given
-    val query = "MATCH (t:Tweet)-[:MENTIONED]->(l:User) RETURN t.text, l.location, l.followers"
+    val query = "MATCH (a:Actor)-[:ACTED_IN]->(f:Film) RETURN a.name, f.title, a.birthyear"
 
     // When
-    val result = fullGraph.cypher(query)
+    val result = graph.cypher(query)
 
     // Then
     val tuple = (
-      "RT @pronovix: We created a #Drupal integration that makes it possible for non-developers to work with #Neo4j.\n\nhttps://t.co/dERL8Czwkl",
-      "Szeged and Gent",
-      293
+      "Natasha Richardson",
+      "The Parent Trap",
+      1963
     )
-    result.records shouldHaveSize 815 andContain tuple
+    result.records shouldHaveSize 8 andContain tuple
   }
 
   test("handle properties with same key and different type between labels") {
-    // Given
-    val space = initSmallSpace(Schema.empty
-      .withNodePropertyKeys("Channel")("id" -> CTString.nullable)
-      .withNodePropertyKeys("GitHub")("id" -> CTInteger.nullable), "MATCH (n) RETURN n", "RETURN 1 LIMIT 0")
-
     // When
-    val channelResult = space.cypher("MATCH (c:Channel) RETURN c.id")
+    val movieResult = graph.cypher("MATCH (m:Movie) RETURN m.title")
 
     // Then
-    channelResult.records shouldHaveSize 78 andContain "C08JCQDTM"
+    movieResult.records shouldHaveSize 1 andContain 444
 
     // When
-    val githubResult = space.cypher("MATCH (g:GitHub) RETURN g.id")
+    val filmResult = graph.cypher("MATCH (f:Film) RETURN f.title")
 
     // Then
-    githubResult.records shouldHaveSize 365 andContain 80841140
-  }
-
-  test("property filter in small space") {
-    // When
-    val result = smallGraph.cypher("MATCH (t:User) WHERE t.country = 'ca' RETURN t.city")
-
-    // Then
-    result.records shouldHaveSize 38 andContain "Vancouver"
+    filmResult.records shouldHaveSize 5 andContain "Camelot"
   }
 
   test("multiple hops of expand with different reltypes") {
     // Given
-    val query = "MATCH (u1:User)-[p:POSTED]->(t:Tweet)-[m:MENTIONED]->(u2:User) RETURN u1.name, u2.name, t.text"
+    val query = "MATCH (c:City)<-[:BORN_IN]-(a:Actor)-[r:ACTED_IN]->(f:Film) RETURN a.name, c.name, f.title"
 
     // When
-    val records = fullGraph.cypher(query).records
+    val records = graph.cypher(query).records
 
     // Then
     val tuple = (
-      "Brendan Madden",
-      "Tom Sawyer Software",
-      "#tsperspectives 7.6 is 15% faster with #neo4j Bolt support. https://t.co/1xPxB9slrB @TSawyerSoftware #graphviz"
+      "Lindsay Lohan",
+      "New York",
+      "The Parent Trap"
     )
-    records shouldHaveSize 79 andContain tuple
+    records shouldHaveSize 4 andContain tuple
   }
 
-  test("multiple hops of expand with possible reltype conflict") {
+  // TODO: Figure out what invariant this was meant to measure
+  ignore("multiple hops of expand with possible reltype conflict") {
     // Given
     val query = "MATCH (u1:User)-[r1:POSTED]->(t:Tweet)-[r2]->(u2:User) RETURN u1.name, u2.name, t.text"
 
     // When
-    val result = fullGraph.cypher(query)
+    val result = graph.cypher(query)
 
     // Then
     val tuple = ("Brendan Madden", "Tom Sawyer Software",
       "#tsperspectives 7.6 is 15% faster with #neo4j Bolt support. https://t.co/1xPxB9slrB @TSawyerSoftware #graphviz")
     result.records shouldHaveSize 79 andContain tuple
-  }
-
-  // TODO: Reimplement union
-  ignore("union rels") {
-    val query1 = "MATCH (a:User)-[r:ATTENDED]->() WHERE r.response = 'no' RETURN a, r"
-    val graph1 = fullGraph.cypher(query1)
-
-    val query2 = "MATCH (a:User)-[r:ATTENDED]->() WHERE r.response = 'yes' RETURN a, r"
-    val graph2 = fullGraph.cypher(query2)
-
-    //    val result = graph1.graph.union(graph2.graph)
-    //    result.records.data.count() should equal(4711)
-  }
-
-  // TODO: Reimplement intersect
-  ignore("intersect rels") {
-    val query1 = "MATCH (a:User)-[r:ATTENDED]->() WHERE r.response = 'no' RETURN a, r"
-    val graph1 = fullGraph.cypher(query1)
-
-    val query2 = "MATCH (a:User)-[r:ATTENDED]->() WHERE r.response = 'yes' RETURN a, r"
-    val graph2 = fullGraph.cypher(query2)
-
-    //    val result = graph1.graph.intersect(graph2.graph)
-    //    result.records.data.count() should equal(0)
-  }
-
-  // TODO: Implement new syntax to make this work
-  ignore("get a subgraph and query it") {
-    val subgraphQ =
-      """MATCH (u1:User)-[p:POSTED]->(t:Tweet)-[m:MENTIONED]->(u2:User)
-        |WHERE u2.name = 'Neo4j'
-        |RETURN u1, p, t, m, u2
-      """.stripMargin
-
-    val result = fullGraph.cypher(subgraphQ)
-
-    val usernamesQ = "MATCH (u:User) RETURN u.name"
-
-    val graph = result.graphs.get("someName") match {
-      case Some(g) => g
-      case None => fail("graph 'someName' not found")
-    }
-    val records = graph.cypher(usernamesQ).records
-
-    records.show()
-    // TODO: assertions
   }
 
   // TODO: Pull out/move over to GraphMatching
@@ -230,18 +157,4 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jTestSession.Fixt
       case _ => throw new UnsupportedOperationException("Implement support for larger products")
     }
   }
-
-  private def initSmallSpace(schema: Schema = smallSchema,
-                             nodeQ: String = "MATCH (a)-[:ATTENDED]->(b) UNWIND [a, b] AS n RETURN DISTINCT n",
-                             relQ: String = "MATCH ()-[r:ATTENDED]->() RETURN r")
-                            (implicit caps: CAPSSession) = {
-    Neo4jGraphLoader.fromNeo4j(neo4jConfig, nodeQ, relQ, schema)
-  }
-
-  private lazy val smallSchema = Schema.empty
-    .withRelationshipPropertyKeys("ATTENDED")("guests" -> CTInteger, "comments" -> CTString.nullable)
-    .withNodePropertyKeys("User")("id" -> CTInteger.nullable, "text" -> CTString.nullable, "country" -> CTString.nullable, "city" -> CTString.nullable)
-    .withNodePropertyKeys("Meetup")("id" -> CTInteger.nullable, "city" -> CTString.nullable, "country" -> CTString.nullable)
-    .withNodePropertyKeys("Graph")("title" -> CTString.nullable, "updated" -> CTInteger.nullable)
-    .withNodePropertyKeys("Event")("time" -> CTInteger.nullable, "link" -> CTAny.nullable)
 }

@@ -15,113 +15,38 @@
  */
 package org.opencypher.caps.api.io.neo4j
 
-import java.net.URI
-
-import org.apache.spark.sql.types._
-import org.neo4j.driver.v1.Config
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.spark.CAPSGraph
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.demo.Configuration.{Neo4jAddress, Neo4jPassword, Neo4jUser}
 import org.opencypher.caps.{CAPSTestSuite, Neo4jTestSession}
 
-class Neo4jGraphLoaderTest extends CAPSTestSuite with Neo4jTestSession.Fixture {
+class Neo4jGraphLoaderTest extends CAPSTestSuite with Neo4jTestSession.OpenCypherFixture {
 
-  override val neo4jConfig = new EncryptedNeo4jConfig(URI.create(Neo4jAddress.get()),
-    Neo4jUser.get(),
-    Option(Neo4jPassword.get()),
-    Config.EncryptionLevel.REQUIRED)
+  test("import a graph from Neo4j") {
+    val graph = Neo4jGraphLoader.fromNeo4j(neo4jConfig)
 
-  implicit class RichGraph(val graph: CAPSGraph) {
-    def nodes() = graph.nodes("n")
-    def rels() = graph.relationships("r")
+    graph.nodes("n").toDF().count() shouldBe nbrNodes
+    graph.relationships("r").toDF().count() shouldBe nbrRels
+    graph.schema should equal(schema)
   }
 
-  test("import nodes from neo") {
-    val schema = Schema.empty
-      .withNodePropertyKeys("Tweet")("id" -> CTInteger, "text" -> CTString.nullable, "created" -> CTString.nullable)
-    val graph = Neo4jGraphLoader.fromNeo4j(neo4jConfig, "MATCH (n:Tweet) RETURN n LIMIT 100", "RETURN 1 LIMIT 0", schema)
-    val df = graph.nodes().toDF()
+  test("import only some nodes from Neo4j") {
+    val graph = Neo4jGraphLoader.fromNeo4j(neo4jConfig, "MATCH (f:Film) RETURN f", "UNWIND [] AS i RETURN i")
 
-    df.count() shouldBe 100
-    df.schema.fields.map(f => f.dataType -> f.nullable).toSet should equal(Set(
-      LongType -> false
-    ))
+    graph.nodes("n").toDF().count() shouldBe 5
+    graph.relationships("r").toDF().count() shouldBe 0
+    graph.schema should equal(Schema.empty.withNodePropertyKeys("Film")("title" -> CTString))
   }
 
-  test("import nodes from neo with details") {
-    val schema = Schema.empty
-      .withNodePropertyKeys("Tweet")("id" -> CTInteger, "text" -> CTString.nullable, "created" -> CTString.nullable)
-    val graph = Neo4jGraphLoader.fromNeo4j(neo4jConfig, "MATCH (n:Tweet) RETURN n LIMIT 100", "RETURN 1 LIMIT 0", schema)
-    val df = graph.nodes().details.toDF()
+  test("import only some rels (and their endnodes) from Neo4j") {
+    val graph = Neo4jGraphLoader.fromNeo4j(neo4jConfig, "MATCH (s)-[:ACTED_IN]->(t) WITH collect(s) AS sources, collect(t) AS targets WITH sources + targets AS nodes UNWIND nodes AS n RETURN DISTINCT n", "MATCH ()-[a:ACTED_IN]->() RETURN a")
 
-    df.count() shouldBe 100
-    df.schema.fields.map(f => f.dataType -> f.nullable).toSet should equal(Set(
-      LongType -> false,
-      BooleanType -> false,
-      LongType -> true,
-      StringType -> true,
-      StringType -> true
-    ))
-  }
-
-  test("import relationships from neo") {
-    val schema = Schema.empty
-      .withRelationshipPropertyKeys("ATTENDED")("guests" -> CTInteger, "comments" -> CTString.nullable)
-    val space = Neo4jGraphLoader.fromNeo4j(
-      neo4jConfig,
-      "RETURN 1 LIMIT 0",
-      "MATCH ()-[r:ATTENDED]->() RETURN r LIMIT 100", schema)
-    val df = space.rels().toDF()
-
-    df.count() shouldBe 100
-    df.schema.fields.map(f => f.dataType -> f.nullable).toSet should equal(Set(
-      LongType -> false
-    ))
-  }
-
-  test("import relationships from neo with details") {
-    val schema = Schema.empty
-      .withRelationshipPropertyKeys("ATTENDED")("guests" -> CTInteger, "comments" -> CTString.nullable)
-    val graph = Neo4jGraphLoader.fromNeo4j(
-      neo4jConfig,
-      "RETURN 1 LIMIT 0",
-      "MATCH ()-[r:ATTENDED]->() RETURN r LIMIT 100", schema)
-    val df = graph.rels().details.toDF()
-
-    df.count() shouldBe 100
-    df.schema.fields.map(f => f.dataType -> f.nullable).toSet should equal(Set(
-      LongType -> false,
-      IntegerType -> false,
-      LongType -> true,
-      StringType -> true
-    ))
-  }
-
-  test("import a graph from neo") {
-    val schema = Schema.empty
-      .withRelationshipPropertyKeys("ATTENDED")("guests" -> CTInteger, "comments" -> CTString.nullable)
-      .withNodePropertyKeys("User")("id" -> CTInteger.nullable, "text" -> CTString.nullable, "country" -> CTString.nullable, "city" -> CTString.nullable)
-      .withNodePropertyKeys("Meetup")("id" -> CTInteger.nullable, "city" -> CTString.nullable, "country" -> CTString.nullable)
-      .withNodePropertyKeys("Graph")("title" -> CTString.nullable, "updated" -> CTInteger.nullable)
-      .withNodePropertyKeys("Event")("time" -> CTInteger.nullable, "link" -> CTAny.nullable)
-    val graph = Neo4jGraphLoader.fromNeo4j(
-      neo4jConfig,
-      "MATCH (a)-[:ATTENDED]->(b) UNWIND [a, b] AS n RETURN DISTINCT n",
-      "MATCH ()-[r:ATTENDED]->() RETURN r", schema)
-    val rels = graph.rels().toDF()
-    val nodes = graph.nodes().toDF()
-
-    rels.count() shouldBe 4832
-    nodes.count() shouldBe 2901
-  }
-
-  test("read schema from loaded neo graph") {
-    val schema = Neo4jGraphLoader.loadSchema(neo4jConfig, "MATCH (a) RETURN a", "MATCH ()-[r]->() RETURN r").schema
-
-    schema.labels.size shouldBe 32
-    schema.relationshipTypes.size shouldBe 14
-    schema.nodeKeys("User").size shouldBe 37  // number of unique prop keys for all nodes of that label
-    schema.relationshipKeys("ATTENDED").size shouldBe 5
+    graph.nodes("n").toDF().count() shouldBe 12
+    graph.relationships("r").toDF().count() shouldBe 8
+    graph.schema should equal(Schema.empty
+      .withRelationshipPropertyKeys("ACTED_IN")("charactername" -> CTString)
+      .withNodePropertyKeys("Person")("name" -> CTString, "birthyear" -> CTInteger)
+      .withNodePropertyKeys("Actor")("name" -> CTString, "birthyear" -> CTInteger)
+      .withNodePropertyKeys("Film")("title" -> CTString)
+    )
   }
 }
