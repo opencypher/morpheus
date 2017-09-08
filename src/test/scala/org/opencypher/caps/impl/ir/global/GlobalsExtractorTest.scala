@@ -16,8 +16,8 @@
 package org.opencypher.caps.impl.ir.global
 
 import org.opencypher.caps.api.ir.global._
-import org.opencypher.caps.BaseTestSuite
-import org.opencypher.caps.support.Neo4jAstTestSupport
+import org.opencypher.caps.test.BaseTestSuite
+import org.opencypher.caps.test.support.Neo4jAstTestSupport
 
 class GlobalsExtractorTest extends BaseTestSuite with Neo4jAstTestSupport {
 

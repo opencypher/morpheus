@@ -19,8 +19,8 @@ import org.neo4j.cypher.internal.frontend.v3_3.{Ref, ast, symbols}
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.ir.global._
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.BaseTestSuite
-import org.opencypher.caps.support.Neo4jAstTestSupport
+import org.opencypher.caps.test.BaseTestSuite
+import org.opencypher.caps.test.support.Neo4jAstTestSupport
 import org.opencypher.caps.toVar
 
 class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {

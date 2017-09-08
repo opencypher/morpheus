@@ -15,8 +15,8 @@
  */
 package org.opencypher.caps.api.record
 
-import org.opencypher.caps.BaseTestSuite
 import org.opencypher.caps.api.exception.CypherException
+import org.opencypher.caps.test.BaseTestSuite
 
 class EmbeddedEntityTest extends BaseTestSuite {
 

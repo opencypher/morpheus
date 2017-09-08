@@ -17,9 +17,10 @@ package org.opencypher.caps.impl.spark.io.neo4j
 
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.{CAPSTestSuite, Neo4jTestSession}
+import org.opencypher.caps.test.CAPSTestSuite
+import org.opencypher.caps.test.fixture.{Neo4jServerFixture, OpenCypherDataFixture}
 
-class Neo4jGraphLoaderTest extends CAPSTestSuite with Neo4jTestSession.OpenCypherFixture {
+class Neo4jGraphLoaderTest extends CAPSTestSuite with Neo4jServerFixture with OpenCypherDataFixture {
 
   test("import a graph from Neo4j") {
     val graph = Neo4jGraphLoader.fromNeo4j(neo4jConfig)

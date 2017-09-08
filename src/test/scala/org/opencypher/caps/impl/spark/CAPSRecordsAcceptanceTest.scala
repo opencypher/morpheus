@@ -17,11 +17,12 @@ package org.opencypher.caps.impl.spark
 
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraphLoader
-import org.opencypher.caps.{CAPSTestSuite, Neo4jTestSession}
+import org.opencypher.caps.test.CAPSTestSuite
+import org.opencypher.caps.test.fixture.{Neo4jServerFixture, OpenCypherDataFixture}
 
 import scala.language.reflectiveCalls
 
-class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jTestSession.OpenCypherFixture {
+class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture with OpenCypherDataFixture {
 
   private lazy val graph: CAPSGraph =
     Neo4jGraphLoader.fromNeo4j(neo4jConfig)

@@ -16,7 +16,6 @@
 package org.opencypher.caps.impl.spark.physical
 
 import org.mockito.Mockito.verify
-import org.opencypher.caps.CAPSTestSuite
 import org.opencypher.caps.api.expr.Var
 import org.opencypher.caps.api.ir.global.{Label, RelType, TokenRegistry}
 import org.opencypher.caps.api.ir.pattern.{AllOf, AnyOf, EveryNode, EveryRelationship}
@@ -25,6 +24,7 @@ import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.impl.logical.NamedLogicalGraph
+import org.opencypher.caps.test.CAPSTestSuite
 import org.scalatest.mockito.MockitoSugar
 
 class PhysicalResultProducerTest extends CAPSTestSuite with MockitoSugar {

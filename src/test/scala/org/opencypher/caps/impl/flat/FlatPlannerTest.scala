@@ -23,7 +23,8 @@ import org.opencypher.caps.api.record.{FieldSlotContent, OpaqueField, ProjectedE
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.logical.LogicalOperatorProducer
-import org.opencypher.caps.{BaseTestSuite, toField}
+import org.opencypher.caps.test.BaseTestSuite
+import org.opencypher.caps.toField
 
 class FlatPlannerTest extends BaseTestSuite {
 

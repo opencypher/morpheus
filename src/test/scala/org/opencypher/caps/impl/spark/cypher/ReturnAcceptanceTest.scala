@@ -15,8 +15,8 @@
  */
 package org.opencypher.caps.impl.spark.cypher
 
-import org.opencypher.caps.CAPSTestSuite
 import org.opencypher.caps.api.value.CypherMap
+import org.opencypher.caps.test.CAPSTestSuite
 
 import scala.collection.Bag
 

@@ -18,12 +18,14 @@ package org.opencypher.caps.api.spark
 import java.net.{URI, URLEncoder}
 
 import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraphSource
-import org.opencypher.caps.{Neo4jTestSession, SparkTestSession}
-import org.scalatest.{FunSuite, Matchers}
+import org.opencypher.caps.test.BaseTestSuite
+import org.opencypher.caps.test.fixture.{Neo4jServerFixture, SparkSessionFixture, TeamDataFixture}
+import org.scalatest.Matchers
 
-class CAPSSessionNeo4jTest extends FunSuite
-  with SparkTestSession.Fixture
-  with Neo4jTestSession.Fixture
+class CAPSSessionNeo4jTest extends BaseTestSuite
+  with SparkSessionFixture
+  with Neo4jServerFixture
+  with TeamDataFixture
   with Matchers {
 
   test("Neo4j via URI") {
@@ -34,8 +36,8 @@ class CAPSSessionNeo4jTest extends FunSuite
     val uri = URI.create(s"$neo4jHost?$nodeQuery;$relQuery")
 
     val graph = capsSession.graphAt(uri)
-    graph.nodes("n").details.toDF().collect().toSet should equal(testGraphNodes)
-    graph.relationships("rel").details.toDF().collect.toSet should equal(testGraphRels)
+    graph.nodes("n").details.toDF().collect().toSet should equal(teamDataGraphNodes)
+    graph.relationships("rel").details.toDF().collect.toSet should equal(teamDataGraphRels)
   }
 
   test("Neo4j via mount point") {
@@ -43,7 +45,7 @@ class CAPSSessionNeo4jTest extends FunSuite
     capsSession.mountSourceAt(Neo4jGraphSource(neo4jConfig, "MATCH (n) RETURN n", "MATCH ()-[r]->() RETURN r"), "/neo4j1")
 
     val graph = capsSession.graphAt("/neo4j1")
-    graph.nodes("n").details.toDF().collect().toSet should equal(testGraphNodes)
-    graph.relationships("rel").details.toDF().collect.toSet should equal(testGraphRels)
+    graph.nodes("n").details.toDF().collect().toSet should equal(teamDataGraphNodes)
+    graph.relationships("rel").details.toDF().collect.toSet should equal(teamDataGraphRels)
   }
 }

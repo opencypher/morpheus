@@ -15,8 +15,8 @@
  */
 package org.opencypher.caps.api.ir.global
 
-import org.opencypher.caps.BaseTestSuite
 import org.opencypher.caps.impl.util.RefCollection
+import org.opencypher.caps.test.BaseTestSuite
 
 import scala.util.Try
 

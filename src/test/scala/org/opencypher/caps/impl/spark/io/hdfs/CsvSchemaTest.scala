@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.spark.io.hdfs
 
-import org.opencypher.caps.BaseTestSuite
+import org.opencypher.caps.test.BaseTestSuite
 
 class CsvSchemaTest extends BaseTestSuite {
   test("read valid node schema") {

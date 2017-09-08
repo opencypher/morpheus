@@ -21,7 +21,7 @@ import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.ir.global.{Label, PropertyKey}
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTRelationship, CTString, _}
-import org.opencypher.caps.CAPSTestSuite
+import org.opencypher.caps.test.CAPSTestSuite
 
 class CAPSRecordsTest extends CAPSTestSuite {
 

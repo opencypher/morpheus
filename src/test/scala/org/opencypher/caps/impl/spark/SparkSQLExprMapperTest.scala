@@ -24,11 +24,12 @@ import org.opencypher.caps.api.record.{OpaqueField, ProjectedField, RecordHeader
 import org.opencypher.caps.impl.spark.SparkSQLExprMapper.asSparkSQLExpr
 import org.opencypher.caps.impl.spark.physical.RuntimeContext
 import org.opencypher.caps.impl.syntax.header.{addContents, _}
-import org.opencypher.caps.{BaseTestSuite, SparkTestSession}
+import org.opencypher.caps.test.BaseTestSuite
+import org.opencypher.caps.test.fixture.SparkSessionFixture
 
 import scala.language.implicitConversions
 
-class SparkSQLExprMapperTest extends BaseTestSuite with SparkTestSession.Fixture {
+class SparkSQLExprMapperTest extends BaseTestSuite with SparkSessionFixture {
 
   test("can map subtract") {
     val expr = Subtract(Var("a")(), Var("b")())()

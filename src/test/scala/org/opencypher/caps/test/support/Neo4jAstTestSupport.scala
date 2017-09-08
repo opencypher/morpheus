@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.support
+package org.opencypher.caps.test.support
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{CNFNormalizer, Namespacer, Never}
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_3.phases._
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, InputPosition, SemanticCheckResult, SemanticState, ast}
-import org.opencypher.caps.BaseTestSuite
-import org.opencypher.caps.impl.parse.{ExtractPredicatesFromAnds, CypherParser}
+import org.opencypher.caps.impl.parse.{CypherParser, ExtractPredicatesFromAnds}
+import org.opencypher.caps.test.BaseTestSuite
 
 import scala.language.implicitConversions
 

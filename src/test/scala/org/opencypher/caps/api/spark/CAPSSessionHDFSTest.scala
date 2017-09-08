@@ -15,20 +15,23 @@
  */
 package org.opencypher.caps.api.spark
 
-import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvGraphSource
-import org.opencypher.caps.{HDFSTestSession, SparkTestSession}
-import org.scalatest.{FunSuite, Matchers}
+import java.net.URI
 
-class CAPSSessionHDFSTest extends FunSuite
-  with SparkTestSession.Fixture
-  with HDFSTestSession.Fixture
-  with Matchers {
+import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvGraphSource
+import org.opencypher.caps.test.BaseTestSuite
+import org.opencypher.caps.test.fixture.{MiniDFSClusterFixture, SparkSessionFixture}
+
+class CAPSSessionHDFSTest extends BaseTestSuite
+  with SparkSessionFixture
+  with MiniDFSClusterFixture {
+
+  def hdfsURI: URI = URI.create(s"hdfs+csv://${dfsCluster.getNameNode.getHostAndPort}$dfsTestGraphPath")
 
   test("HDFS via URI") {
     implicit val capsSession: CAPSSession = CAPSSession.builder(session).build
     val graph = capsSession.graphAt(hdfsURI)
-    graph.nodes("n").details.toDF().collect().toSet should equal(testGraphNodes)
-    graph.relationships("rel").details.toDF().collect.toSet should equal(testGraphRels)
+    graph.nodes("n").details.toDF().collect().toSet should equal(dfsTestGraphNodes)
+    graph.relationships("rel").details.toDF().collect.toSet should equal(dfsTestGraphRels)
   }
 
   test("HDFS via mount point") {
@@ -36,7 +39,7 @@ class CAPSSessionHDFSTest extends FunSuite
     capsSession.mountSourceAt(HdfsCsvGraphSource(hdfsURI, session.sparkContext.hadoopConfiguration, hdfsURI.getPath), "/test/graph")
 
     val graph = capsSession.graphAt("/test/graph")
-    graph.nodes("n").details.toDF().collect().toSet should equal(testGraphNodes)
-    graph.relationships("rel").details.toDF().collect.toSet should equal(testGraphRels)
+    graph.nodes("n").details.toDF().collect().toSet should equal(dfsTestGraphNodes)
+    graph.relationships("rel").details.toDF().collect.toSet should equal(dfsTestGraphRels)
   }
 }

@@ -16,7 +16,7 @@
 package org.opencypher.caps.impl.parse
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.opencypher.caps.BaseTestSuite
+import org.opencypher.caps.test.BaseTestSuite
 
 class ExtractPredicatesFromAndsTest extends BaseTestSuite with AstConstructionTestSupport {
 

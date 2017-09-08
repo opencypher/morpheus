@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.api.types
 
-import org.opencypher.caps.BaseTestSuite
+import org.opencypher.caps.test.BaseTestSuite
 
 import scala.language.postfixOps
 

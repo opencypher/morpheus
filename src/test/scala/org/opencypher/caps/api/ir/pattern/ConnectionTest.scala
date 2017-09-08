@@ -15,8 +15,8 @@
  */
 package org.opencypher.caps.api.ir.pattern
 
-import org.opencypher.caps.BaseTestSuite
 import org.opencypher.caps.api.ir.IRField
+import org.opencypher.caps.test.BaseTestSuite
 
 class ConnectionTest extends BaseTestSuite {
 

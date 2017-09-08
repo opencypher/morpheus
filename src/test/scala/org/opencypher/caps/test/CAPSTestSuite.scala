@@ -13,16 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps
+package org.opencypher.caps.test
 
 import org.junit.runner.RunWith
-import org.opencypher.caps.api.value.CypherImplicits
+import org.opencypher.caps.test.fixture.{CAPSSessionFixture, SparkSessionFixture}
+import org.opencypher.caps.test.support.{GraphMatchingTestSupport, RecordMatchingTestSupport}
 import org.scalatest.junit.JUnitRunner
-import org.scalatest.{BeforeAndAfterEach, FunSuite, Matchers}
 
 @RunWith(classOf[JUnitRunner])
-abstract class BaseTestSuite
-  extends FunSuite
-  with Matchers
-  with CypherImplicits
-  with BeforeAndAfterEach
+abstract class CAPSTestSuite
+  extends BaseTestSuite
+    with SparkSessionFixture
+    with CAPSSessionFixture
+    with GraphMatchingTestSupport
+    with RecordMatchingTestSupport

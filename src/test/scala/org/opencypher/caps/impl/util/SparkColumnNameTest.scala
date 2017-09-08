@@ -15,8 +15,8 @@
  */
 package org.opencypher.caps.impl.util
 
-import org.opencypher.caps.BaseTestSuite
 import org.opencypher.caps.impl.spark.SparkColumnName
+import org.opencypher.caps.test.BaseTestSuite
 
 class SparkColumnNameTest extends BaseTestSuite {
 
