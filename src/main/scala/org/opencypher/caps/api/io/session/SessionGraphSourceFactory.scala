@@ -43,6 +43,9 @@ case class SessionGraphSourceFactory(mountPoints: mutable.Map[String, GraphSourc
     else
       Raise.graphSourceSchemeNotSupported(uri, schemes)
 
+  def unmountAll(implicit capsSession: CAPSSession): Unit =
+    mountPoints.clear()
+
   override protected def sourceForURIWithSupportedScheme(uri: URI)(implicit capsSession: CAPSSession): GraphSource =
     withValidPath(uri) { (path: String) =>
       mountPoints.get(path) match {

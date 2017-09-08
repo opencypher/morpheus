@@ -17,10 +17,11 @@ package org.opencypher.caps
 
 import org.opencypher.caps.api.ir.global.TokenRegistry
 import org.opencypher.caps.api.spark.CAPSSession
+import org.scalatest.BeforeAndAfterEach
 
 object CAPSTestSession {
   trait Fixture {
-    self: SparkTestSession.Fixture =>
+    self: SparkTestSession.Fixture with BeforeAndAfterEach =>
 
     implicit lazy val caps: CAPSSession = initCAPSSessionBuilder.build
 
@@ -29,5 +30,7 @@ object CAPSTestSession {
     def initialTokens: TokenRegistry = {
       TokenRegistry.empty
     }
+
+    override protected def afterEach(): Unit = caps.unmountAll()
   }
 }

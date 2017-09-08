@@ -24,7 +24,6 @@ import org.opencypher.caps.impl.exception.Raise
 
 case class GraphSourceHandler(sessionGraphSourceFactory: SessionGraphSourceFactory,
                               additionalGraphSourceFactories: Set[GraphSourceFactory]) {
-
   private val factoriesByScheme: Map[String, GraphSourceFactory] = {
     val allFactories = additionalGraphSourceFactories + sessionGraphSourceFactory
     val entries = allFactories.flatMap(factory => factory.schemes.map(scheme => scheme -> factory))
@@ -38,6 +37,9 @@ case class GraphSourceHandler(sessionGraphSourceFactory: SessionGraphSourceFacto
 
   def mountSourceAt(source: GraphSource, uri: URI)(implicit capsSession: CAPSSession): Unit =
     sessionGraphSourceFactory.mountSourceAt(source, uri)
+
+  def unmountAll(implicit capsSession: CAPSSession): Unit =
+    sessionGraphSourceFactory.unmountAll(capsSession)
 
   def graphAt(uri: URI)(implicit capsSession: CAPSSession): CAPSGraph =
     factoriesByScheme

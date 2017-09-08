@@ -64,6 +64,9 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
   def mountSourceAt(source: GraphSource, uri: URI): Unit =
     graphSourceHandler.mountSourceAt(source, uri)(this)
 
+  def unmountAll(): Unit =
+    graphSourceHandler.unmountAll(this)
+
   override def cypher(graph: Graph, query: String, queryParameters: Map[String, CypherValue]): Result = {
     val (stmt, extractedLiterals) = parser.process(query)(CypherParser.defaultContext)
 
