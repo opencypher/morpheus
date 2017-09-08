@@ -18,9 +18,20 @@ package org.opencypher.caps.impl.instances
 import org.opencypher.caps.CAPSTestSuite
 import org.opencypher.caps.api.value.CypherMap
 
-import scala.collection.Bag
+import scala.collection.immutable.Bag
 
 class PredicateAcceptanceTest extends CAPSTestSuite {
+
+  test("exists()") {
+    val given = TestGraph("({id: 1l}), ({id: 2l}), ({other: 'foo'}), ()")
+
+    val result = given.cypher("MATCH (n) WHERE exists(n.id) RETURN n.id")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("n.id" -> 1),
+      CypherMap("n.id" -> 2)
+    ))
+  }
 
   test("in") {
     // Given

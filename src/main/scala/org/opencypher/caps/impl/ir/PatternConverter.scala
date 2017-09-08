@@ -20,9 +20,9 @@ import cats.data.State
 import cats.data.State._
 import cats.instances.list._
 import cats.syntax.flatMap._
-import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection._
-import org.neo4j.cypher.internal.frontend.v3_2.ast
-import org.neo4j.cypher.internal.frontend.v3_2.ast.LabelName
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection._
+import org.neo4j.cypher.internal.frontend.v3_3.ast
+import org.neo4j.cypher.internal.frontend.v3_3.ast.LabelName
 import org.opencypher.caps.api.types.{CTList, CTNode, CTRelationship}
 import org.opencypher.caps.api.expr.Expr
 import org.opencypher.caps.api.ir._
@@ -48,18 +48,18 @@ final class PatternConverter(val tokens: GlobalsRegistry) extends AnyVal {
     case ast.NamedPatternPart(_, part) => convertPart(part)
   }
 
-  private def convertElement(p: ast.PatternElement): Result[Field] = p match {
+  private def convertElement(p: ast.PatternElement): Result[IRField] = p match {
     case ast.NodePattern(Some(v), labels: Seq[LabelName], None) =>
       for {
-        entity <- pure(Field(v.name)(CTNode))
+        entity <- pure(IRField(v.name)(CTNode))
         _ <- modify[Pattern[Expr]](_.withEntity(entity, EveryNode(AllGiven(labels.map(l => Label(l.name)).toSet))))
       } yield entity
 
-    case ast.RelationshipChain(left, ast.RelationshipPattern(Some(eVar), types, None, None, dir), right) =>
+    case ast.RelationshipChain(left, ast.RelationshipPattern(Some(eVar), types, None, None, dir, _), right) =>
       for {
         source <- convertElement(left)
         target <- convertElement(right)
-        rel <- pure(Field(eVar.name)(CTRelationship(types.map(_.name).toSet)))
+        rel <- pure(IRField(eVar.name)(CTRelationship(types.map(_.name).toSet)))
         _ <- modify[Pattern[Expr]] { given =>
           val relTypes =
             if (types.isEmpty) AnyGiven[RelType]()
@@ -85,11 +85,11 @@ final class PatternConverter(val tokens: GlobalsRegistry) extends AnyVal {
         }
       } yield target
 
-    case ast.RelationshipChain(left, ast.RelationshipPattern(Some(eVar), types, Some(Some(range)), None, dir), right) =>
+    case ast.RelationshipChain(left, ast.RelationshipPattern(Some(eVar), types, Some(Some(range)), None, dir, _), right) =>
       for {
         source <- convertElement(left)
         target <- convertElement(right)
-        rel <- pure(Field(eVar.name)(CTList(CTRelationship(types.map(_.name).toSet))))
+        rel <- pure(IRField(eVar.name)(CTList(CTRelationship(types.map(_.name).toSet))))
         _ <- modify[Pattern[Expr]] { given =>
           val relTypes =
             if (types.isEmpty) AnyGiven[RelType]()

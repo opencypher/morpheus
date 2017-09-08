@@ -28,8 +28,8 @@ sealed trait Connection {
   def orientation: Orientation[E]
   def endpoints: E
 
-  def source: Field
-  def target: Field
+  def source: IRField
+  def target: IRField
 
   def flip: SELF[O, E]
 
@@ -96,7 +96,7 @@ final case class DirectedRelationship(endpoints: DifferentEndpoints)
 }
 
 case object DirectedRelationship {
-  def apply(source: Field, target: Field): SingleRelationship = Endpoints(source, target) match {
+  def apply(source: IRField, target: IRField): SingleRelationship = Endpoints(source, target) match {
     case ends: IdenticalEndpoints => CyclicRelationship(ends)
     case ends: DifferentEndpoints => DirectedRelationship(ends)
   }
@@ -116,7 +116,7 @@ final case class UndirectedRelationship(endpoints: DifferentEndpoints)
 }
 
 case object UndirectedRelationship {
-  def apply(source: Field, target: Field): SingleRelationship = Endpoints(source, target) match {
+  def apply(source: IRField, target: IRField): SingleRelationship = Endpoints(source, target) match {
     case ends: IdenticalEndpoints => CyclicRelationship(ends)
     case ends: DifferentEndpoints => UndirectedRelationship(ends)
   }

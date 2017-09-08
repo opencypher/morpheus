@@ -40,7 +40,7 @@
         <dep.mockito.version>1.10.19</dep.mockito.version>
         <dep.multiset.version>0.4</dep.multiset.version>
         <dep.neo4j-spark-connector>2.0.0-M2</dep.neo4j-spark-connector>
-        <dep.neo4j.version>3.2.0-alpha08</dep.neo4j.version>
+        <dep.neo4j.version>3.3.0-SNAPSHOT</dep.neo4j.version>
         <dep.netty.version>4.1.8.Final</dep.netty.version>
         <dep.neo4j.driver.version>1.4.2</dep.neo4j.driver.version>
         <dep.scalatest.version>3.0.3</dep.scalatest.version>
@@ -111,6 +111,12 @@
                             <goal>compile</goal>
                         </goals>
                         <phase>process-resources</phase>
+                        <configuration>
+                            <args>
+                                <arg>–explaintypes</arg>
+                                <arg>–optimise</arg>
+                            </args>
+                        </configuration>
                     </execution>
                     <execution>
                         <id>scala-test-compile</id>
@@ -118,6 +124,18 @@
                             <goal>testCompile</goal>
                         </goals>
                         <phase>test-compile</phase>
+                        <configuration>
+                            <args>
+                                <arg>–explaintypes</arg>
+                            </args>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>scala-doc</id>
+                        <goals>
+                            <goal>doc</goal>
+                        </goals>
+                        <phase>prepare-package</phase>
                     </execution>
                 </executions>
                 <configuration>
@@ -125,31 +143,20 @@
                     <scalaVersion>${project.scala.version}</scalaVersion>
                     <scalaCompatVersion>${project.scala.binary.version}</scalaCompatVersion>
                     <encoding>${project.build.encoding}</encoding>
-                    <args>
+                    <args combine.children="append">
                         <!-- need to pass encoding to scalac manually -->
                         <arg>-encoding</arg>
                         <arg>${project.build.encoding}</arg>
-                        <arg>-target:jvm-1.7</arg>
+                        <arg>-target:jvm-1.8</arg>
                         <arg>-unchecked</arg>
                         <arg>-deprecation</arg>
                         <arg>-feature</arg>
-                        <arg>–explaintypes</arg>
-                        <arg>–optimise</arg>
                         <arg>-Xfuture</arg>
                         <arg>-Ywarn-adapted-args</arg>
                         <arg>-Yopt-warnings:at-inline-failed</arg>
                         <arg>-Yopt:l:project</arg>
-                        <!-- Enable once available in 2.11.9 or 2.12.x -->
-                        <!-- arg>-Ypartial-unification</arg -->
+                        <arg>-Ypartial-unification</arg>
                     </args>
-                    <compilerPlugins>
-                        <!-- Remove once -Ypartial-unification is available in 2.11.9 or 2.12.x -->
-                        <compilerPlugin>
-                            <groupId>com.milessabin</groupId>
-                            <artifactId>si2712fix-plugin_2.11.8</artifactId>
-                            <version>1.2.0</version>
-                        </compilerPlugin>
-                    </compilerPlugins>
                 </configuration>
             </plugin>
 
@@ -178,6 +185,32 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+
+            <!-- scaladoc -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-site-plugin</artifactId>
+                <version>3.0</version>
+                <configuration>
+                    <reportPlugins>
+                        <plugin>
+                            <artifactId>maven-project-info-reports-plugin</artifactId>
+                            <version>2.2</version>
+                        </plugin>
+                        <plugin>
+                            <groupId>net.alchim31.maven</groupId>
+                            <artifactId>scala-maven-plugin</artifactId>
+                            <version>3.3.1</version>
+                            <configuration>
+                                <jvmArgs>
+                                    <jvmArg>-Xms64m</jvmArg>
+                                    <jvmArg>-Xmx1024m</jvmArg>
+                                </jvmArgs>
+                            </configuration>
+                        </plugin>
+                    </reportPlugins>
+                </configuration>
             </plugin>
 
             <!-- add version information to jar -->
@@ -378,7 +411,7 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cypher-frontend-3.2</artifactId>
+            <artifactId>neo4j-cypher-frontend-3.3</artifactId>
             <version>${dep.neo4j.version}</version>
         </dependency>
 
@@ -500,7 +533,7 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cypher-frontend-3.2</artifactId>
+            <artifactId>neo4j-cypher-frontend-3.3</artifactId>
             <version>${dep.neo4j.version}</version>
             <type>test-jar</type>
             <scope>test</scope>

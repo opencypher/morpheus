@@ -13,13 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.classes
+package org.opencypher.caps.api.io
 
-import org.opencypher.caps.api.ir.IRField
-
-trait TypedBlock[Block] {
-
-  type BlockExpr
-
-  def outputs(block: Block): Set[IRField]
-}
+sealed trait PersistMode
+case object Overwrite extends PersistMode
+case object CreateOrFail extends PersistMode

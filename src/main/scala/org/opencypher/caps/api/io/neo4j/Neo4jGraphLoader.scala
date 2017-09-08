@@ -69,6 +69,10 @@ object Neo4jGraphLoader {
     completeSchema.verify
   }
 
+  def fromNeo4j(config: EncryptedNeo4jConfig)
+               (implicit caps: CAPSSession): CAPSGraph =
+    fromNeo4j(config, "MATCH (n) RETURN n", "MATCH ()-[r]->() RETURN r")
+
   def fromNeo4j(config: EncryptedNeo4jConfig, nodeQuery: String, relQuery: String)
                (implicit caps: CAPSSession): CAPSGraph =
     fromNeo4j(config, nodeQuery, relQuery, "source", "rel", "target", None)

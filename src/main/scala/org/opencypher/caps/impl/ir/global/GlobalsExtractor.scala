@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.ir.global
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast
+import org.neo4j.cypher.internal.frontend.v3_3.ast
 import org.opencypher.caps.api.ir.global._
 import org.opencypher.caps.api.types.CypherType
 import org.opencypher.caps.impl.typer.fromFrontendType

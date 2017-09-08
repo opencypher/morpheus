@@ -15,8 +15,8 @@
  */
 package org.opencypher.caps.impl.ir
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast.functions
-import org.neo4j.cypher.internal.frontend.v3_2.{Ref, ast}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.functions
+import org.neo4j.cypher.internal.frontend.v3_3.{Ref, ast}
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.ir.global.GlobalsRegistry
 import org.opencypher.caps.api.types._

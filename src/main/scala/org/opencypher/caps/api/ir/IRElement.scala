@@ -17,9 +17,17 @@ package org.opencypher.caps.api.ir
 
 import org.opencypher.caps.api.types._
 
-final case class Field(name: String)(val cypherType: CypherType = CTWildcard) {
+trait IRElement {
+  def name: String
   def escapedName: String = name.replaceAll("`", "``")
+}
+
+final case class IRField(name: String)(val cypherType: CypherType = CTWildcard) extends IRElement {
   override def toString = s"$name :: $cypherType"
 
   def toTypedTuple: (String, CypherType) = name -> cypherType
+}
+
+final case class IRGraph(name: String) extends IRElement {
+  override def toString: String = name
 }

@@ -15,8 +15,8 @@
  */
 package org.opencypher.caps.impl.ir
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, Parameter}
-import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, symbols}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, Parameter}
+import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, symbols}
 import org.opencypher.caps.BaseTestSuite
 import org.opencypher.caps.api.expr.Expr
 import org.opencypher.caps.api.ir._
@@ -70,7 +70,7 @@ abstract class IrTestSuite extends BaseTestSuite {
       nodes = Set.empty, // TODO: Fill these sets correctly
       relationships = Set.empty,
       where = AllGiven[Expr](),
-      graph = graphBlockRef
+      source = graphBlockRef
     )
     val model = QueryModel(result, GlobalsRegistry.empty, blocks, Map(graphBlockRef -> Schema.empty))
     CypherQuery(QueryInfo("test"), model)
@@ -79,10 +79,10 @@ abstract class IrTestSuite extends BaseTestSuite {
   case class DummyBlock[E](after: Set[BlockRef] = Set.empty) extends BasicBlock[DummyBinds[E], E](BlockType("dummy")) {
     override def binds: DummyBinds[E] = DummyBinds[E]()
     override def where: AllGiven[E] = AllGiven[E]()
-    override val graph = graphBlockRef
+    override val source = graphBlockRef
   }
 
-  case class DummyBinds[E](fields: Set[Field] = Set.empty) extends Binds[E]
+  case class DummyBinds[E](fields: Set[IRField] = Set.empty) extends Binds[E]
 
   implicit class RichString(queryText: String) {
     def model: QueryModel[Expr] = ir.model

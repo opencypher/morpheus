@@ -18,44 +18,57 @@ package org.opencypher.caps.api.io.hdfs
 import java.net.URI
 
 import org.apache.hadoop.conf.Configuration
-import org.opencypher.caps.api.io.{GraphSource, GraphSourceFactory}
+import org.opencypher.caps.api.io.hdfs.HdfsCsvGraphSource.protocols
+import org.opencypher.caps.api.io.{CreateOrFail, GraphSource, GraphSourceFactory, PersistMode}
+import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
 import org.opencypher.caps.impl.exception.Raise
 
-case class HdfsCsvGraphSource(hadoopConfig: Configuration, path: String)
+case class HdfsCsvGraphSource(override val canonicalURI: URI, hadoopConfig: Configuration, path: String)
   extends GraphSource {
 
-  override def handles(uri: URI): Boolean = {
+  override def sourceForGraphAt(uri: URI): Boolean = {
     val hadoopURIString = Option(hadoopConfig.get("fs.defaultFS"))
       .getOrElse(Option(hadoopConfig.get("fs.default.name"))
       .getOrElse(Raise.invalidConnection("Neither fs.defaultFS nor fs.default.name found"))
     )
-
     val hadoopURI = URI.create(hadoopURIString)
-
-    uri.getScheme == HdfsCsvGraphSource.protocol && hadoopURI.getHost == uri.getHost && hadoopURI.getPort == uri.getPort
+    protocols.contains(uri.getScheme) && hadoopURI.getHost == uri.getHost && hadoopURI.getPort == uri.getPort
   }
 
-  override def get(implicit capsSession: CAPSSession): CAPSGraph =
+  override def graph(implicit capsSession: CAPSSession): CAPSGraph =
     new CsvGraphLoader(path, hadoopConfig).load
+
+  // TODO: Make better/cache?
+  override def schema(implicit capsSession: CAPSSession): Option[Schema] = None
+
+  override def create(implicit capsSession: CAPSSession): CAPSGraph =
+    persist(CreateOrFail, CAPSGraph.empty)
+
+  override def persist(mode: PersistMode, graph: CAPSGraph)(implicit capsSession: CAPSSession): CAPSGraph =
+    ???
+
+  override def delete(implicit capsSession: CAPSSession): Unit =
+    ???
 }
 
 object HdfsCsvGraphSource {
-  val protocol = "hdfs+csv"
+  val protocols = Set("hdfs+csv")
 }
 
 case class HdfsCsvGraphSourceFactory(hadoopConfiguration: Configuration)
   extends GraphSourceFactory {
 
-  override val protocol: String = HdfsCsvGraphSource.protocol
+  override val protocols: Set[String] = HdfsCsvGraphSource.protocols
 
-  override def fromURI(uri: URI): GraphSource = {
+  override def sourceFor(uri: URI): HdfsCsvGraphSource = {
     val host = uri.getHost
     val port = if (uri.getPort == -1) "" else s":${uri.getPort}"
-    val defaultName = s"hdfs://$host$port"
+    val canonicalURIString = s"hdfs://$host$port"
+    val canonicalURI = URI.create(canonicalURIString)
 
     val hadoopConf = new Configuration(hadoopConfiguration)
-    hadoopConf.set("fs.default.name", defaultName)
-    HdfsCsvGraphSource(hadoopConf, uri.getPath)
+    hadoopConf.set("fs.default.name", canonicalURIString)
+    HdfsCsvGraphSource(canonicalURI, hadoopConf, uri.getPath)
   }
 }

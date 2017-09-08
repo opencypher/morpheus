@@ -18,14 +18,14 @@ package org.opencypher.caps.impl.logical
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.ir.block.{Aggregations, SortItem}
 import org.opencypher.caps.api.ir.pattern.{EveryNode, EveryRelationship}
-import org.opencypher.caps.api.ir.{Field, SolvedQueryModel}
+import org.opencypher.caps.api.ir.{IRField, SolvedQueryModel}
 import org.opencypher.caps.api.record.{ProjectedExpr, ProjectedField}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.util._
 
 class LogicalOperatorProducer {
-  def planBoundedVarLengthExpand(source: Field, r: Field, types: EveryRelationship, target: Field, lower: Int, upper: Int, sourcePlan: LogicalOperator, targetPlan: LogicalOperator): BoundedVarLengthExpand = {
+  def planBoundedVarLengthExpand(source: IRField, r: IRField, types: EveryRelationship, target: IRField, lower: Int, upper: Int, sourcePlan: LogicalOperator, targetPlan: LogicalOperator): BoundedVarLengthExpand = {
     val prevSolved = sourcePlan.solved ++ targetPlan.solved
 
     val solved = types.relTypes.elements.foldLeft(prevSolved.withField(r)) {
@@ -35,7 +35,7 @@ class LogicalOperatorProducer {
     BoundedVarLengthExpand(source, r, target, lower, upper, sourcePlan, targetPlan)(solved)
   }
 
-  def planTargetExpand(source: Field, rel: Field, target: Field, sourcePlan: LogicalOperator, targetPlan: LogicalOperator): ExpandTarget = {
+  def planTargetExpand(source: IRField, rel: IRField, target: IRField, sourcePlan: LogicalOperator, targetPlan: LogicalOperator): ExpandTarget = {
     val prevSolved = sourcePlan.solved ++ targetPlan.solved
 
     val solved = prevSolved.withField(rel)
@@ -43,7 +43,7 @@ class LogicalOperatorProducer {
     ExpandTarget(source, rel, target, sourcePlan, targetPlan)(solved)
   }
 
-  def planSourceExpand(source: Field, rel: Field, types: EveryRelationship, target: Field,
+  def planSourceExpand(source: IRField, rel: IRField, types: EveryRelationship, target: IRField,
                        sourcePlan: LogicalOperator, targetPlan: LogicalOperator): ExpandSource = {
 
     val prevSolved = sourcePlan.solved ++ targetPlan.solved
@@ -55,7 +55,7 @@ class LogicalOperatorProducer {
     ExpandSource(source, rel, types, target, sourcePlan, targetPlan)(solved)
   }
 
-  def planExpandInto(source: Field, rel: Field, types: EveryRelationship, target: Field, sourcePlan: LogicalOperator): ExpandInto = {
+  def planExpandInto(source: IRField, rel: IRField, types: EveryRelationship, target: IRField, sourcePlan: LogicalOperator): ExpandInto = {
     val solved = types.relTypes.elements.foldLeft(sourcePlan.solved.withField(rel)) {
       case (acc, next) => acc.withPredicate(HasType(rel, next)(CTBoolean))
     }
@@ -63,7 +63,7 @@ class LogicalOperatorProducer {
     ExpandInto(source, rel, types, target, sourcePlan)(solved)
   }
 
-  def planNodeScan(node: Field, everyNode: EveryNode, prev: LogicalOperator): NodeScan = {
+  def planNodeScan(node: IRField, everyNode: EveryNode, prev: LogicalOperator): NodeScan = {
     val solved = everyNode.labels.elements.foldLeft(SolvedQueryModel.empty[Expr].withField(node)) {
       case (acc, label) => acc.withPredicate(HasLabel(node, label)(CTBoolean))
     }
@@ -83,13 +83,13 @@ class LogicalOperatorProducer {
     Optional(nonOptionalPlan, optionalPlan)(optionalPlan.solved)
   }
 
-  def aggregate(aggregations: Aggregations[Expr], group: Set[Field], prev: LogicalOperator): Aggregate = {
+  def aggregate(aggregations: Aggregations[Expr], group: Set[IRField], prev: LogicalOperator): Aggregate = {
     val transformed = aggregations.pairs.map { case (field, aggregator: Aggregator) => toVar(field) -> aggregator }
 
     Aggregate(transformed, group.map(toVar), prev)(prev.solved.withFields(aggregations.fields.toSeq: _*))
   }
 
-  def projectField(field: Field, expr: Expr, prev: LogicalOperator): Project = {
+  def projectField(field: IRField, expr: Expr, prev: LogicalOperator): Project = {
     val projection = ProjectedField(field, expr)
 
     Project(projection, prev)(prev.solved.withField(field))
@@ -106,7 +106,7 @@ class LogicalOperatorProducer {
   }
 
   def planStart(schema: Schema, fields: Set[Var]): Start = {
-    val irFields = fields.map { v => Field(v.name)(v.cypherType) }
+    val irFields = fields.map { v => IRField(v.name)(v.cypherType) }
     Start(NamedLogicalGraph("default", schema), DefaultGraphSource, fields)(SolvedQueryModel(irFields, Set.empty))
   }
 

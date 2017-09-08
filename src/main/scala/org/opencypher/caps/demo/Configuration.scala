@@ -26,17 +26,10 @@ object Configuration {
     }
   }
 
-  object GraphSize extends ConfigOption("cos.graph-size", -1l)(x => Some(java.lang.Long.parseLong(x)))
   object MasterAddress extends ConfigOption("cos.master", "local[*]")(Some(_))
   object Logging extends ConfigOption("cos.logging", "OFF")(Some(_))
-  object Partitions extends ConfigOption("cos.shuffle-partitions", 40)(x => Some(java.lang.Integer.parseInt(x)))
-  object Runs extends ConfigOption("cos.runs", 6)(x => Some(java.lang.Integer.parseInt(x)))
-  object WarmUpRuns extends ConfigOption("cos.warmupRuns", 2)(x => Some(java.lang.Integer.parseInt(x)))
-  object Neo4jAddress extends ConfigOption("cos.neo4j-address", "bolt://ff01adf3.databases.neo4j.io")(Some(_))
-  object Neo4jUser extends ConfigOption("cos.neo4j-user", "openCypher_tests")(Some(_))
-  object Neo4jPassword extends ConfigOption("cos.neo4j-pw", "try-planet-stand-art")(Some(_))
 
-  val conf = Seq(GraphSize, MasterAddress, Logging, Partitions, Runs, WarmUpRuns, Neo4jPassword)
+  val conf = Seq(MasterAddress, Logging)
 
   def print(): Unit = {
     conf.foreach(println)

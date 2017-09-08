@@ -16,7 +16,7 @@
 package org.opencypher.caps.impl.instances.ir.block
 
 import org.opencypher.caps.api.expr.{Expr, HasLabel, HasType, Var}
-import org.opencypher.caps.api.ir.Field
+import org.opencypher.caps.api.ir.IRField
 import org.opencypher.caps.api.ir.block.MatchBlock
 import org.opencypher.caps.api.ir.global.{GlobalsRegistry, Label}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
@@ -24,12 +24,12 @@ import org.opencypher.caps.impl.classes.TypedBlock
 
 trait ExprBlockInstances {
 
-  private implicit class RichField(f: Field) {
+  private implicit class RichIRField(f: IRField) {
     def representsNode(v: Var): Boolean =
       f.name == v.name && f.cypherType.subTypeOf(CTNode).isTrue
     def representsRel(v: Var): Boolean =
       f.name == v.name && f.cypherType.subTypeOf(CTRelationship).isTrue
-    def withLabel(l: Label): Field = {
+    def withLabel(l: Label): IRField = {
       f.copy()(f.cypherType.meet(CTNode(l.name)))
     }
   }
@@ -38,7 +38,7 @@ trait ExprBlockInstances {
 
     override type BlockExpr = Expr
 
-    override def outputs(block: MatchBlock[Expr]): Set[Field] = {
+    override def outputs(block: MatchBlock[Expr]): Set[IRField] = {
       val opaqueTypedFields = block.binds.fields
       val predicates = block.where.elements
 

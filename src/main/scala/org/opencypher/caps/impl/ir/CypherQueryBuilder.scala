@@ -18,8 +18,8 @@ package org.opencypher.caps.impl.ir
 import cats.implicits._
 import org.atnos.eff._
 import org.atnos.eff.all._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{Limit, OrderBy, Skip, Statement}
-import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, ast}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{Limit, OrderBy, Skip, Statement}
+import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, ast}
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.ir._
 import org.opencypher.caps.api.ir.block.{SortItem, _}
@@ -85,7 +85,7 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
           }
         } yield refs
 
-      case ast.With(_, ast.ReturnItems(_, items), orderBy, skip, limit, where) if !items.exists(_.expression.containsAggregate) =>
+      case ast.With(_, ast.ReturnItems(_, items), _, orderBy, skip, limit, where) if !items.exists(_.expression.containsAggregate) =>
         for {
           fieldExprs <- EffMonad[R].sequence(items.map(convertReturnItem[R]).toVector)
           given <- convertWhere(where)
@@ -98,7 +98,7 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
           }
         } yield refs
 
-      case ast.With(_, ast.ReturnItems(_, items), _, _, _, None) =>
+      case ast.With(_, ast.ReturnItems(_, items), _, _, _, _, None) =>
         for {
           fieldExprs <- EffMonad[R].sequence(items.map(convertReturnItem[R]).toVector)
           context <- get[R, IRBuilderContext]
@@ -172,20 +172,20 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
     } yield refs
   }
 
-  private def convertReturnItem[R: _mayFail : _hasContext](item: ast.ReturnItem): Eff[R, (Field, Expr)] = item match {
+  private def convertReturnItem[R: _mayFail : _hasContext](item: ast.ReturnItem): Eff[R, (IRField, Expr)] = item match {
 
     case ast.AliasedReturnItem(e, v) =>
       for {
         expr <- convertExpr(e)
         context <- get[R, IRBuilderContext]
         field <- {
-          val field = Field(v.name)(expr.cypherType)
-          put[R, IRBuilderContext](context.withFields(Set(field))) >> pure[R, Field](field)
+          val field = IRField(v.name)(expr.cypherType)
+          put[R, IRBuilderContext](context.withFields(Set(field))) >> pure[R, IRField](field)
         }
       } yield field -> expr
 
     case ast.UnaliasedReturnItem(e, t) =>
-      error(IRBuilderError(s"Did not expect unnamed return item"))(Field(t)() -> Var(t)())
+      error(IRBuilderError(s"Did not expect unnamed return item"))(IRField(t)() -> Var(t)())
 
   }
 
@@ -248,7 +248,7 @@ object CypherQueryBuilder extends CompilationStage[ast.Statement, CypherQuery[Ex
       Some(CypherQuery(info, model))
     }
 
-  private def getKnownFields(blockRefs: Set[BlockRef], registry: BlockRegistry[Expr]): Set[Field] = {
+  private def getKnownFields(blockRefs: Set[BlockRef], registry: BlockRegistry[Expr]): Set[IRField] = {
     blockRefs.map(registry.apply).map { block =>
       block.binds.fields ++ getKnownFields(block.after, registry)
     }.reduceOption(_ ++ _).getOrElse(Set.empty)

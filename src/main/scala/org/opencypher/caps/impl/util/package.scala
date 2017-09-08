@@ -16,12 +16,12 @@
 package org.opencypher.caps.impl
 
 import org.opencypher.caps.api.expr.Var
-import org.opencypher.caps.api.ir.Field
+import org.opencypher.caps.api.ir.IRField
 
 import scala.language.implicitConversions
 
 package object util {
   type SuccessfulAdditiveUpdateResult[T] = SuccessfulUpdateResult[T] with AdditiveUpdateResult[T]
 
-  implicit def toVar(f: Field): Var = Var(f.name)(f.cypherType)
+  implicit def toVar(f: IRField): Var = Var(f.name)(f.cypherType)
 }

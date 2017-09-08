@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.syntax
 
-import org.opencypher.caps.api.ir.Field
+import org.opencypher.caps.api.ir.IRField
 import org.opencypher.caps.api.ir.block.Block
 import org.opencypher.caps.impl.classes.TypedBlock
 
@@ -28,5 +28,5 @@ trait BlockSyntax {
 }
 
 final class TypedBlockOps[B <: Block[_], E](block: B)(implicit instance: TypedBlock[B] { type BlockExpr = E }) {
-  def outputs: Set[Field] = instance.outputs(block)
+  def outputs: Set[IRField] = instance.outputs(block)
 }

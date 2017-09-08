@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.ir
 
-import org.neo4j.cypher.internal.frontend.v3_2.{Ref, ast, symbols}
+import org.neo4j.cypher.internal.frontend.v3_3.{Ref, ast, symbols}
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.ir.global._
 import org.opencypher.caps.api.types._
@@ -53,6 +53,12 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   import globals.constants._
 
   private val c = new ExpressionConverter(globals)
+
+  test("exists()") {
+    convert(parseExpr("exists(n.key)")) should equal(
+      Exists(Property('n, PropertyKey("key"))())()
+    )
+  }
 
   test("converting in predicate and literal list") {
     convert(parseExpr("a IN [a, b, c]")) should equal(

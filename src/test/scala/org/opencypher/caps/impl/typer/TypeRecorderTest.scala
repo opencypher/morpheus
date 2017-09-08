@@ -15,8 +15,8 @@
  */
 package org.opencypher.caps.impl.typer
 
-import org.neo4j.cypher.internal.frontend.v3_2.Ref
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{AstConstructionTestSupport, True}
+import org.neo4j.cypher.internal.frontend.v3_3.Ref
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{AstConstructionTestSupport, True}
 import org.opencypher.caps.BaseTestSuite
 import org.opencypher.caps.api.types.{CTBoolean, CTString}
 

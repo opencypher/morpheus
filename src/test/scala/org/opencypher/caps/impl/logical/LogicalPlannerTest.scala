@@ -33,10 +33,10 @@ import scala.language.implicitConversions
 
 class LogicalPlannerTest extends IrTestSuite {
 
-  val nodeA = Field("a")(CTNode)
-  val nodeB = Field("b")(CTNode)
-  val nodeG = Field("g")(CTNode)
-  val relR = Field("r")(CTRelationship)
+  val nodeA = IRField("a")(CTNode)
+  val nodeB = IRField("b")(CTNode)
+  val nodeG = IRField("g")(CTNode)
+  val relR = IRField("r")(CTRelationship)
 
   test("convert load graph block") {
     plan(irFor(leafBlock)) should equal(Select(IndexedSeq.empty, leafPlan)(emptySqm))
@@ -75,7 +75,6 @@ class LogicalPlannerTest extends IrTestSuite {
 
     val globals = ir.model.globals
     import globals.tokens
-    import globals.constants
 
     plan(ir, globals) should equal(
       Select(IndexedSeq(Var("a.name")(CTVoid)),
@@ -110,7 +109,6 @@ class LogicalPlannerTest extends IrTestSuite {
 
     val globals = ir.model.globals
     import globals.tokens
-    import globals.constants
 
     plan(ir, globals, schema) should equal(
       Select(IndexedSeq(Var("a.name")(CTFloat)),
@@ -140,8 +138,7 @@ class LogicalPlannerTest extends IrTestSuite {
     val ir = "MATCH (a) WHERE NOT $p1 = $p2 RETURN a.prop".irWithParams("p1" -> CTInteger, "p2" -> CTBoolean)
 
     val globals = ir.model.globals
-    import globals.tokens
-    import globals.constants
+    import globals.{constants, tokens}
 
     plan(ir, globals) should equal(
       Select(IndexedSeq(Var("a.prop")(CTVoid)),

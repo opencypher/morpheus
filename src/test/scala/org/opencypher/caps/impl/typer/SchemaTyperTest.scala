@@ -16,8 +16,8 @@
 package org.opencypher.caps.impl.typer
 
 import cats.data.NonEmptyList
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, Parameter}
-import org.neo4j.cypher.internal.frontend.v3_2.symbols
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, Parameter}
+import org.neo4j.cypher.internal.frontend.v3_3.symbols
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.BaseTestSuite
@@ -34,6 +34,18 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     .withRelationshipPropertyKeys("KNOWS")("since" -> CTInteger, "relative" -> CTBoolean)
 
   val typer = SchemaTyper(schema)
+
+  test("typing exists()") {
+    implicit val context = typeTracker("n" -> CTNode)
+
+    assertExpr.from("exists(n.prop)") shouldHaveInferredType CTBoolean
+    assertExpr.from("exists([n.prop])") shouldFailToInferTypeWithErrors
+      InvalidArgument("exists([n.prop])", "[n.prop]")
+    assertExpr.from("exists()") shouldFailToInferTypeWithErrors
+      WrongNumberOfArguments("exists()", 1, 0)
+    assertExpr.from("exists(n.prop, n.prop)") shouldFailToInferTypeWithErrors
+      WrongNumberOfArguments("exists(n.prop, n.prop)", 1, 2)
+  }
 
   test("typing count()") {
     implicit val context = typeTracker("a" -> CTNode)

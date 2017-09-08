@@ -15,6 +15,7 @@
  */
 package org.opencypher.caps.impl.exception
 
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticErrorDef
 import org.opencypher.caps.api.exception.CAPSException
 
 object Raise {
@@ -36,6 +37,10 @@ object Raise {
 
   def capsSessionMismatch() = throw CAPSException(
     "Import of a data frame from a different session"
+  )
+
+  def schemaMismatch() = throw CAPSException(
+    "Loaded graph with a mismatching schema that differs from the schema loaded during logical planning"
   )
 
   def slotNotAdded(field: String) = throw CAPSException(
@@ -88,5 +93,9 @@ object Raise {
 
   def schemaMismatch(detail: String) = throw CAPSException(
     s"Incompatible schemas: $detail"
+  )
+
+  def semanticErrors(errors: Seq[SemanticErrorDef]) = throw CAPSException(
+    s"Errors during semantic checking: ${errors.mkString(", ")}"
   )
 }

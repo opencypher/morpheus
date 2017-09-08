@@ -13,13 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.classes
+package org.opencypher.caps.api.io
 
-import org.opencypher.caps.api.ir.IRField
+import java.net.URI
 
-trait TypedBlock[Block] {
+trait GraphSourceFactory {
 
-  type BlockExpr
+  /**
+    * The protocol for which this factory produces graph sources.
+    *
+    * @return that protocol
+    */
+  def protocols: Set[String]
 
-  def outputs(block: Block): Set[IRField]
+  /**
+    * Creates a new graph source at the argument uri.
+    *
+    * @param uri at which a new graph source is to be created
+    * @return create a new graph source for the given uri
+    * @throws RuntimeException if uri is not supported by this graph source factory
+    */
+  def sourceFor(uri: URI): GraphSource
 }

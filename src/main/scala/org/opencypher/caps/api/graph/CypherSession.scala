@@ -31,7 +31,7 @@ trait CypherSession {
   type Data
 
   def cypher(graph: Graph, query: String, parameters: Map[String, CypherValue]): Result
-  def withGraphAt(uri: URI, alias: String): Graph
+  def withGraphAt(uri: URI): Graph
 }
 
 

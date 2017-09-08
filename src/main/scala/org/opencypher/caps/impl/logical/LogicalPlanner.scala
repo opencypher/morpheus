@@ -125,7 +125,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     }
   }
 
-  private def planProjections(in: LogicalOperator, exprs: Map[Field, Expr])(implicit context: LogicalPlannerContext) = {
+  private def planProjections(in: LogicalOperator, exprs: Map[IRField, Expr])(implicit context: LogicalPlannerContext) = {
     exprs.foldLeft(in) {
       case (acc, (f, p: Property)) =>
         producer.projectField(f, p, acc)
@@ -173,6 +173,9 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       case (acc, not@Not(expr)) =>
         val project = planInnerExpr(expr, acc)
         producer.planFilter(not, project)
+      case (acc, exists@Exists(expr)) =>
+        val project = planInnerExpr(expr, acc)
+        producer.planFilter(exists, project)
       case (acc, isNull@IsNull(expr)) =>
         val project = planInnerExpr(expr, acc)
         producer.planFilter(isNull, acc)
@@ -255,7 +258,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     else planExpansions((disconnectedPlans - sourcePlan - targetPlan) + expand, pattern, producer)
   }
 
-  private def nodePlan(plan: LogicalOperator, field: Field, everyNode: EveryNode)(implicit context: LogicalPlannerContext) = {
+  private def nodePlan(plan: LogicalOperator, field: IRField, everyNode: EveryNode)(implicit context: LogicalPlannerContext) = {
     producer.planNodeScan(field, everyNode, plan)
   }
 }

@@ -15,9 +15,9 @@
  */
 package org.opencypher.caps.impl.ir
 
-import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, Ref, ast}
+import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, Ref, ast}
 import org.opencypher.caps.api.expr.Expr
-import org.opencypher.caps.api.ir.Field
+import org.opencypher.caps.api.ir.IRField
 import org.opencypher.caps.api.ir.block.{BlockRef, DefaultGraph, LoadGraphBlock}
 import org.opencypher.caps.api.ir.global.GlobalsRegistry
 import org.opencypher.caps.api.ir.pattern.Pattern
@@ -60,7 +60,7 @@ final case class IRBuilderContext(
 
   def withBlocks(reg: BlockRegistry[Expr]): IRBuilderContext = copy(blocks = reg)
 
-  def withFields(fields: Set[Field]): IRBuilderContext = {
+  def withFields(fields: Set[IRField]): IRBuilderContext = {
     val withFieldTypes = fields.foldLeft(knownTypes) {
       case (acc, f) =>
         acc.updated(ast.Variable(f.name)(InputPosition.NONE), f.cypherType)

@@ -22,11 +22,12 @@ import org.opencypher.caps.api.expr.{Expr, Var}
 import org.opencypher.caps.api.graph.CypherSession
 import org.opencypher.caps.api.io.hdfs.HdfsCsvGraphSourceFactory
 import org.opencypher.caps.api.io.neo4j.Neo4jGraphSourceFactory
-import org.opencypher.caps.api.io.{GraphSource, GraphSourceFactory, GraphSourceHandler}
-import org.opencypher.caps.api.ir.Field
+import org.opencypher.caps.api.io.{GraphSource, GraphSourceFactory}
+import org.opencypher.caps.api.ir.IRField
 import org.opencypher.caps.api.ir.global.{ConstantRef, ConstantRegistry, GlobalsRegistry, TokenRegistry}
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
+import org.opencypher.caps.impl.io.GraphSourceHandler
 import org.opencypher.caps.impl.ir.global.GlobalsExtractor
 import org.opencypher.caps.impl.ir.{CypherQueryBuilder, IRBuilderContext}
 import org.opencypher.caps.impl.logical._
@@ -50,8 +51,8 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
   private val physicalPlanner = new PhysicalPlanner()
   private val parser = CypherParser
 
-  override def withGraphAt(uri: URI, alias: String): CAPSGraph =
-    graphSourceHandler.withGraphAt(uri, alias)(this)
+  override def withGraphAt(uri: URI): CAPSGraph =
+    graphSourceHandler.withGraphAt(uri)(this)
 
   override def cypher(graph: Graph, query: String, queryParameters: Map[String, CypherValue]): Result = {
     val (stmt, extractedLiterals) = parser.process(query)(CypherParser.defaultContext)
@@ -103,7 +104,7 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
   def alias(graph: Graph, in: Records, alias: (Expr, Var), queryParameters: Map[String, CypherValue]): Records = {
     val (expr, v) = alias
     val scan = producer.planStart(graph.schema, in.header.fields)
-    val select = producer.projectField(Field(v.name)(v.cypherType), expr, scan)
+    val select = producer.projectField(IRField(v.name)(v.cypherType), expr, scan)
     plan(graph, in, queryParameters, select).records
   }
 
