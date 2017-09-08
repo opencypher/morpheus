@@ -229,6 +229,10 @@ final case class Type(expr: Expr)(val cypherType: CypherType = CTWildcard) exten
   override val name = "type"
 }
 
+final case class Exists(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr {
+  override val name = "exists"
+}
+
 // Aggregators
 sealed trait Aggregator extends Expr {
   def inner: Option[Expr]

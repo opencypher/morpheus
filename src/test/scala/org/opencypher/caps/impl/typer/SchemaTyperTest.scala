@@ -35,6 +35,18 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
 
   val typer = SchemaTyper(schema)
 
+  test("typing exists()") {
+    implicit val context = typeTracker("n" -> CTNode)
+
+    assertExpr.from("exists(n.prop)") shouldHaveInferredType CTBoolean
+    assertExpr.from("exists([n.prop])") shouldFailToInferTypeWithErrors
+      InvalidArgument("exists([n.prop])", "[n.prop]")
+    assertExpr.from("exists()") shouldFailToInferTypeWithErrors
+      WrongNumberOfArguments("exists()", 1, 0)
+    assertExpr.from("exists(n.prop, n.prop)") shouldFailToInferTypeWithErrors
+      WrongNumberOfArguments("exists(n.prop, n.prop)", 1, 2)
+  }
+
   test("typing count()") {
     implicit val context = typeTracker("a" -> CTNode)
 

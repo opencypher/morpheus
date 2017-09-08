@@ -22,6 +22,19 @@ import scala.collection.immutable.Bag
 
 class FunctionsAcceptanceTest extends CAPSTestSuite {
 
+  test("exists()") {
+    val given = TestGraph("({id: 1l}), ({id: 2l}), ({other: 'foo'}), ()")
+
+    val result = given.cypher("MATCH (n) RETURN exists(n.id) AS exists")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("exists" -> true),
+      CypherMap("exists" -> true),
+      CypherMap("exists" -> false),
+      CypherMap("exists" -> false)
+    ))
+  }
+
   test("type()") {
     val given = TestGraph("()-[:KNOWS]->()-[:HATES]->()")
 

@@ -168,6 +168,9 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       case (acc, not@Not(expr)) =>
         val project = planInnerExpr(expr, acc)
         producer.planFilter(not, project)
+      case (acc, exists@Exists(expr)) =>
+        val project = planInnerExpr(expr, acc)
+        producer.planFilter(exists, project)
       case (acc, isNull@IsNull(expr)) =>
         val project = planInnerExpr(expr, acc)
         producer.planFilter(isNull, acc)

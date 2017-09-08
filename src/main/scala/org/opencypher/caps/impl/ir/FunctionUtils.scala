@@ -33,7 +33,8 @@ object FunctionUtils {
         case functions.Max => Max(expr.head)(cypherType)
         case functions.Min => Min(expr.head)(cypherType)
         case functions.Sum => Sum(expr.head)(cypherType)
-        case a:Function => Raise.notYetImplemented(s"parsing ${a.name} function")
+        case functions.Exists => Exists(expr.head)(cypherType)
+        case a: Function => Raise.notYetImplemented(s"converting ${a.name} function")
       }
     }
   }
