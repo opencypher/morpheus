@@ -15,6 +15,8 @@
  */
 package org.opencypher.caps.api.record
 
+import java.io.PrintStream
+
 trait CypherRecords {
 
   type Data
@@ -30,5 +32,6 @@ trait CypherRecords {
 
   def compact: Records
 
-  def show(): Unit
+  def print(): Unit
+  def print(stream: PrintStream): Unit
 }

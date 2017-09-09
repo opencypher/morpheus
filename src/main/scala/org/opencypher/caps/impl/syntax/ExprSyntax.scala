@@ -26,9 +26,6 @@ trait ExprSyntax {
 
 final class ExprOps(val e: Expr) extends AnyVal {
 
-  // TODO: Implement this
-  def nullable: Expr = ???
-
   def dependencies: Set[Var] = computeDependencies(List(e), Set.empty)
 
   // TODO: Test this
@@ -46,6 +43,7 @@ final class ExprOps(val e: Expr) extends AnyVal {
     case (expr: Ors) :: tl => computeDependencies(expr.exprs.toList ++ tl, result)
     case (expr: Lit[_]) :: tl => computeDependencies(tl, result)
     case (expr: Const) :: tl => computeDependencies(tl, result)
+    // TODO: Throw instead of fall-through
     case _ => result
   }
 }

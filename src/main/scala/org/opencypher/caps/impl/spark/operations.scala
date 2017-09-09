@@ -19,7 +19,6 @@ import org.opencypher.caps.api.expr.{Expr, Var}
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
 import org.opencypher.caps.api.value.CypherValue
 
-// TODO: Figure out where this should live in relationship to existing instances etc
 object operations {
 
   implicit final class RichCAPSGraph(val graph: CAPSGraph) extends AnyVal {

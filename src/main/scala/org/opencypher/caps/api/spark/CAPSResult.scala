@@ -25,5 +25,5 @@ trait CAPSResult extends CypherResult {
 
   def recordsWithDetails: CAPSRecords = records.details
 
-  def showRecords(): Unit = records.show()
+  def showRecords(): Unit = records.print()
 }

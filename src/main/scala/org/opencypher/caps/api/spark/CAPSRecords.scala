@@ -15,6 +15,7 @@
  */
 package org.opencypher.caps.api.spark
 
+import java.io.PrintStream
 import java.util.Collections
 
 import org.apache.spark.api.java.JavaRDD
@@ -45,8 +46,8 @@ sealed abstract class CAPSRecords(initialHeader: RecordHeader,
   override type Data = DataFrame
   override type Records = CAPSRecords
 
-  override def header = initialHeader
-  override def data = initialData
+  override def header: RecordHeader = initialHeader
+  override def data: DataFrame = initialData
 
   override val columns: IndexedSeq[String] =
     header.internalHeader.columns
@@ -57,16 +58,18 @@ sealed abstract class CAPSRecords(initialHeader: RecordHeader,
   //noinspection AccessorLikeMethodIsEmptyParen
   def toDF(): Data = data
 
-  def mapDF(f: Data => Data) = CAPSRecords.create(f(data))
+  def mapDF(f: Data => Data): CAPSRecords = CAPSRecords.create(f(data))
 
   // TODO: Check that this does not change the caching of our data frame
-  def cached = CAPSRecords.create(header, data.cache())
+  def cached: CAPSRecords = CAPSRecords.create(header, data.cache())
 
-  override def show() = RecordsPrinter.print(this)
+  override def print(): Unit = RecordsPrinter.print(this)
 
-  def details = optDetailedRecords.getOrElse(this)
+  override def print(stream: PrintStream): Unit = RecordsPrinter.print(this, stream)
 
-  def compact = {
+  def details: CAPSRecords = optDetailedRecords.getOrElse(this)
+
+  def compact: CAPSRecords = {
     val cachedHeader = self.header.update(compactFields)._1
     val cachedData = {
       val columns = cachedHeader.slots.map(c => new Column(SparkColumnName.of(c.content)))
