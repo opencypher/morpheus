@@ -17,8 +17,8 @@ package org.opencypher.caps.impl.spark.physical
 
 import org.mockito.Mockito.verify
 import org.opencypher.caps.api.expr.Var
-import org.opencypher.caps.api.ir.global.{Label, RelType, TokenRegistry}
-import org.opencypher.caps.api.ir.pattern.{AllOf, AnyOf, EveryNode, EveryRelationship}
+import org.opencypher.caps.ir.api.global.{Label, RelType, TokenRegistry}
+import org.opencypher.caps.ir.api.pattern.{AllOf, AnyOf, EveryNode, EveryRelationship}
 import org.opencypher.caps.api.record.RecordHeader
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}

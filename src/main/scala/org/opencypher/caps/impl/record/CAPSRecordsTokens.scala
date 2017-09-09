@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.record
 
-import org.opencypher.caps.api.ir.global._
+import org.opencypher.caps.ir.api.global._
 import org.opencypher.caps.api.spark.CAPSTokens
 
 final case class CAPSRecordsTokens(registry: TokenRegistry) extends CAPSTokens {
@@ -31,6 +31,6 @@ final case class CAPSRecordsTokens(registry: TokenRegistry) extends CAPSTokens {
   override def relTypeName(id: Int): String = registry.relType(RelTypeRef(id)).name
   override def relTypeId(name: String): Int = registry.relTypeRefByName(name).id
 
-  override def withLabel(name: String) = copy(registry = registry.withLabel(Label(name)))
-  override def withRelType(name: String) = copy(registry = registry.withRelType(RelType(name)))
+  override def withLabel(name: String): CAPSRecordsTokens = copy(registry = registry.withLabel(Label(name)))
+  override def withRelType(name: String): CAPSRecordsTokens = copy(registry = registry.withRelType(RelType(name)))
 }

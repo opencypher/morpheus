@@ -16,7 +16,7 @@
 package org.opencypher.caps.api.schema
 
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.api.util.{Verifiable, Verified}
+import org.opencypher.caps.common.{Verifiable, Verified}
 
 import scala.language.implicitConversions
 

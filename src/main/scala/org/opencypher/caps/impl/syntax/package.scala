@@ -15,10 +15,11 @@
  */
 package org.opencypher.caps.impl
 
+import org.opencypher.caps.common.syntax.RegisterSyntax
+
 package object syntax {
   object all extends AllSyntax
   object register extends RegisterSyntax
   object header extends RecordHeaderSyntax
   object expr extends ExprSyntax
-  object block extends BlockSyntax
 }

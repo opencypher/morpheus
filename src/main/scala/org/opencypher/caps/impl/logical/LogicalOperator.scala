@@ -16,9 +16,9 @@
 package org.opencypher.caps.impl.logical
 
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.api.ir.SolvedQueryModel
-import org.opencypher.caps.api.ir.block.SortItem
-import org.opencypher.caps.api.ir.pattern.{EveryNode, EveryRelationship}
+import org.opencypher.caps.ir.api.SolvedQueryModel
+import org.opencypher.caps.ir.api.block.SortItem
+import org.opencypher.caps.ir.api.pattern.{EveryNode, EveryRelationship}
 import org.opencypher.caps.api.record.ProjectedSlotContent
 import org.opencypher.caps.api.schema.Schema
 

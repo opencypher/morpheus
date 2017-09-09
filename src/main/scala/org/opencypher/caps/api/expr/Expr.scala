@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.api.expr
 
-import org.opencypher.caps.api.ir.global._
+import org.opencypher.caps.ir.api.global._
 import org.opencypher.caps.api.types._
 
 import scala.annotation.tailrec

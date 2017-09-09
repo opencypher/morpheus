@@ -16,8 +16,8 @@
 package org.opencypher.caps.impl.spark.physical
 
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.api.ir.block.SortItem
-import org.opencypher.caps.api.ir.global._
+import org.opencypher.caps.ir.api.block.SortItem
+import org.opencypher.caps.ir.api.global._
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.api.types.CTRelationship
 import org.opencypher.caps.api.value.CypherValue

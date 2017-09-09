@@ -19,7 +19,7 @@ import org.apache.spark.sql.functions.udf
 import org.apache.spark.sql.types.{ArrayType, BooleanType, StringType}
 import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.api.ir.global.RelTypeRef
+import org.opencypher.caps.ir.api.global.RelTypeRef
 import org.opencypher.caps.api.record.RecordHeader
 import org.opencypher.caps.api.types.CTNode
 import org.opencypher.caps.impl.spark.Udfs._

@@ -16,14 +16,14 @@
 package org.opencypher.caps.impl.logical
 
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.api.ir._
-import org.opencypher.caps.api.ir.block._
-import org.opencypher.caps.api.ir.global._
-import org.opencypher.caps.api.ir.pattern.{DirectedRelationship, EveryNode, EveryRelationship, Pattern}
+import org.opencypher.caps.ir.api._
+import org.opencypher.caps.ir.api.block._
+import org.opencypher.caps.ir.api.global._
+import org.opencypher.caps.ir.api.pattern.{DirectedRelationship, EveryNode, EveryRelationship, Pattern}
 import org.opencypher.caps.api.record.{ProjectedExpr, ProjectedField}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.ir.IrTestSuite
+import org.opencypher.caps.ir.impl.IrTestSuite
 import org.opencypher.caps.impl.logical
 import org.opencypher.caps.impl.util.toVar
 import org.opencypher.caps.toField

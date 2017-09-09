@@ -19,9 +19,9 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{ArrayType, BooleanType, LongType}
 import org.apache.spark.sql.{Column, DataFrame, Row, functions}
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.api.ir.block.{Asc, Desc, SortItem}
-import org.opencypher.caps.api.ir.global._
-import org.opencypher.caps.api.ir.pattern.{AnyGiven, EveryNode, EveryRelationship}
+import org.opencypher.caps.ir.api.block.{Asc, Desc, SortItem}
+import org.opencypher.caps.ir.api.global._
+import org.opencypher.caps.ir.api.pattern.{AnyGiven, EveryNode, EveryRelationship}
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTRelationship}

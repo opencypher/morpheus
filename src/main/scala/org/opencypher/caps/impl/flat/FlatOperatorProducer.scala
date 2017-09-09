@@ -17,16 +17,15 @@ package org.opencypher.caps.impl.flat
 
 import cats.Monoid
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.api.ir.block.SortItem
-import org.opencypher.caps.api.ir.global.Label
-import org.opencypher.caps.api.ir.pattern.{AllGiven, EveryNode, EveryRelationship}
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.logical.{GraphSource, NamedLogicalGraph}
+import org.opencypher.caps.impl.record.{Added, FailedToAdd, Found, Replaced}
 import org.opencypher.caps.impl.spark.exception.Raise
-import org.opencypher.caps.impl.syntax.header._
-import org.opencypher.caps.impl.util.{Added, FailedToAdd, Found, Replaced}
 import org.opencypher.caps.impl.syntax.expr._
+import org.opencypher.caps.impl.syntax.header._
+import org.opencypher.caps.ir.api.block.SortItem
+import org.opencypher.caps.ir.api.pattern.{EveryNode, EveryRelationship}
 
 class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 

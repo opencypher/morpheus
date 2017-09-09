@@ -19,7 +19,7 @@ import cats.data.NonEmptyVector
 import org.apache.spark.sql.functions.lit
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.graph.CypherGraph
-import org.opencypher.caps.api.ir.global.TokenRegistry
+import org.opencypher.caps.ir.api.global.TokenRegistry
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.schema.{PropertyKeyMap, Schema}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType, DefiniteCypherType}

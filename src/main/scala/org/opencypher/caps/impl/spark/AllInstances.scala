@@ -15,6 +15,6 @@
  */
 package org.opencypher.caps.impl.spark
 
-import org.opencypher.caps.impl.instances.ir.block.ExprBlockInstances
+import org.opencypher.caps.ir.impl.instances.ExprBlockInstances
 
 trait AllInstances extends ExprBlockInstances

@@ -15,18 +15,18 @@
  */
 package org.opencypher.caps.impl.record
 
-import cats.{Eval, Monad}
-import cats.data.{State, StateT}
+import cats.Monad
+import cats.data.State
 import cats.data.State.{get, set}
 import cats.instances.all._
-import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.expr.{Expr, HasLabel, Property, Var}
 import org.opencypher.caps.api.record._
+import org.opencypher.caps.api.types._
+import org.opencypher.caps.common.RefCollection
+import org.opencypher.caps.common.RefCollection.AbstractRegister
 import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.syntax.expr._
 import org.opencypher.caps.impl.syntax.register._
-import org.opencypher.caps.impl.util.RefCollection.AbstractRegister
-import org.opencypher.caps.impl.util._
 
 import scala.annotation.tailrec
 

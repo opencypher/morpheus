@@ -20,7 +20,7 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.types._
 import org.neo4j.driver.internal.{InternalNode, InternalRelationship}
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.api.ir.global.{GlobalsRegistry, PropertyKey}
+import org.opencypher.caps.ir.api.global.{GlobalsRegistry, PropertyKey}
 import org.opencypher.caps.api.record.{OpaqueField, ProjectedExpr, RecordHeader, SlotContent}
 import org.opencypher.caps.api.schema.{Schema, VerifiedSchema}
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}

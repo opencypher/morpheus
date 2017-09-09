@@ -16,8 +16,8 @@
 package org.opencypher.caps.impl.flat
 
 import org.opencypher.caps.api.expr.{Aggregator, Expr, Var}
-import org.opencypher.caps.api.ir.block.SortItem
-import org.opencypher.caps.api.ir.pattern.{EveryNode, EveryRelationship}
+import org.opencypher.caps.ir.api.block.SortItem
+import org.opencypher.caps.ir.api.pattern.{EveryNode, EveryRelationship}
 import org.opencypher.caps.api.record.{OpaqueField, RecordHeader}
 import org.opencypher.caps.impl.logical.{EmptyGraph, GraphSource, LogicalGraph, NamedLogicalGraph}
 

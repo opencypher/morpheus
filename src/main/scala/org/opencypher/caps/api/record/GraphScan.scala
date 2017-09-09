@@ -29,7 +29,7 @@ sealed trait GraphScan extends Serializable {
   type EntityCypherType <: CypherType
 
   def records: CAPSRecords
-  def entity = Var(entityName)(entityType)
+  def entity: Var = Var(entityName)(entityType)
 
   def entityName: String
   def entityType: EntityCypherType

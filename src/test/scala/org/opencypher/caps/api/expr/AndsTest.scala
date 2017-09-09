@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.api.expr
 
-import org.opencypher.caps.api.ir.global.Label
+import org.opencypher.caps.ir.api.global.Label
 import org.opencypher.caps.test.BaseTestSuite
 
 class AndsTest extends BaseTestSuite {

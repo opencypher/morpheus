@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.test.fixture
 
-import org.opencypher.caps.api.ir.global.TokenRegistry
+import org.opencypher.caps.ir.api.global.TokenRegistry
 import org.opencypher.caps.api.spark.CAPSSession
 import org.opencypher.caps.test.BaseTestSuite
 

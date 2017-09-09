@@ -26,7 +26,7 @@ import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.types.{CTList, CTNode, CTRelationship, CypherType}
 import org.opencypher.caps.api.value.{CypherMap, CypherValue}
 import org.opencypher.caps.impl.record.CAPSRecordHeader
-import org.opencypher.caps.impl.spark.SparkColumnName
+import org.opencypher.caps.impl.spark.{RecordsPrinter, SparkColumnName}
 import org.opencypher.caps.impl.spark.convert.{fromSparkType, toSparkType}
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.syntax.header._

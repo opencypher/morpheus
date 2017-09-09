@@ -16,7 +16,7 @@
 package org.opencypher.caps.test
 
 import org.junit.runner.RunWith
-import org.opencypher.caps.api.value.CypherImplicits
+import org.opencypher.caps.api.value.CypherValueImplicits
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FunSuite, Matchers}
 
@@ -24,4 +24,4 @@ import org.scalatest.{FunSuite, Matchers}
 abstract class BaseTestSuite
   extends FunSuite
   with Matchers
-  with CypherImplicits
+  with CypherValueImplicits

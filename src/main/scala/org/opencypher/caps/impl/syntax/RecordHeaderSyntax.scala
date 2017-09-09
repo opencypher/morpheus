@@ -18,8 +18,7 @@ package org.opencypher.caps.impl.syntax
 import cats.data.State
 import cats.data.State.{get, set}
 import org.opencypher.caps.api.record._
-import org.opencypher.caps.impl.record.InternalHeader
-import org.opencypher.caps.impl.util.{AdditiveUpdateResult, RemovingUpdateResult}
+import org.opencypher.caps.impl.record.{AdditiveUpdateResult, InternalHeader, RemovingUpdateResult}
 
 import scala.language.implicitConversions
 

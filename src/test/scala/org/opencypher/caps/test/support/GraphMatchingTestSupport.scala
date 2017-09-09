@@ -20,12 +20,13 @@ import java.net.URI
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.apache.spark.sql.{Row, SparkSession}
 import org.opencypher.caps.api.expr.{HasLabel, Property, Var}
-import org.opencypher.caps.api.io.{PersistMode, parseURI}
-import org.opencypher.caps.api.ir.global.TokenRegistry
+import org.opencypher.caps.api.io.PersistMode
+import org.opencypher.caps.ir.api.global.TokenRegistry
 import org.opencypher.caps.api.record.{FieldSlotContent, RecordHeader}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSResult, CAPSSession}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
+import org.opencypher.caps.api.util.parseURI
 import org.opencypher.caps.api.value.{CypherMap, CypherValue}
 import org.opencypher.caps.impl.convert.fromJavaType
 import org.opencypher.caps.impl.record.CAPSRecordsTokens

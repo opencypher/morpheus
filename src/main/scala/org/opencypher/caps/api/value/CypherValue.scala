@@ -15,12 +15,15 @@
  */
 package org.opencypher.caps.api.value
 
+import java.lang
+
 import org.apache.spark.sql.Encoder
 import org.apache.spark.sql.Encoders._
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.opencypher.caps.api.types.CypherType._
 import org.opencypher.caps.api.types.CypherType.OrderGroups._
-import org.opencypher.caps.api.types._
+import org.opencypher.caps.api.types.{CypherType, _}
+import org.opencypher.caps.common.{False, Maybe, Ternary, True}
 import org.opencypher.caps.impl.spark.exception.Raise
 
 import scala.collection.TraversableOnce
@@ -189,7 +192,7 @@ case object CypherValue extends CypherValueCompanion[CypherValue] {
     implicit def cypherRecordEncoder: ExpressionEncoder[Map[String, CypherValue]] = kryo[Map[String, CypherValue]]
   }
 
-  def companion[V <: CypherValue : CypherValueCompanion] = implicitly[CypherValueCompanion[V]]
+  def companion[V <: CypherValue : CypherValueCompanion]: CypherValueCompanion[V] = implicitly[CypherValueCompanion[V]]
 
   def unapply(value: CypherValue): Option[Any] = contents(value)
 
@@ -268,10 +271,10 @@ case object CypherBoolean extends CypherValueCompanion[CypherBoolean] {
   def apply(value: Boolean): CypherBoolean = if (value) TRUE else FALSE
   def unapply(value: CypherBoolean): Option[Boolean] = if (value == null) None else Some(value.v)
 
-  override def cypherType(value: CypherBoolean) = if (value == null) CTNull else CTBoolean
-  override def contents(value: CypherBoolean) = unapply(value).map(boolean2Boolean)
+  override def cypherType(value: CypherBoolean): CypherType with DefiniteCypherType = if (value == null) CTNull else CTBoolean
+  override def contents(value: CypherBoolean): Option[lang.Boolean] = unapply(value).map(boolean2Boolean)
 
-  def orderGroup(v: CypherBoolean) = if (v == null) VoidOrderGroup else BooleanOrderGroup
+  def orderGroup(v: CypherBoolean): CypherType.OrderGroups.Value = if (v == null) VoidOrderGroup else BooleanOrderGroup
 
   override protected[value] def computeOrderability(l: CypherBoolean, r: CypherBoolean): Int =
     Ordering.Boolean.compare(l.v, r.v)
@@ -295,10 +298,10 @@ case object CypherString extends CypherValueCompanion[CypherString] {
   def apply(value: String): CypherString = if (value == null) cypherNull else new CypherString(value)
   def unapply(value: CypherString): Option[String] = if (value == null) None else Some(value.v)
 
-  override def cypherType(value: CypherString) = if (value == null) CTNull else CTString
-  override def contents(value: CypherString) = unapply(value)
+  override def cypherType(value: CypherString): CypherType with DefiniteCypherType = if (value == null) CTNull else CTString
+  override def contents(value: CypherString): Option[String] = unapply(value)
 
-  def orderGroup(v: CypherString) = if (v == null) VoidOrderGroup else StringOrderGroup
+  def orderGroup(v: CypherString): CypherType.OrderGroups.Value = if (v == null) VoidOrderGroup else StringOrderGroup
 
   override protected[value] def computeOrderability(l: CypherString, r: CypherString): Int =
     Ordering.String.compare(l.v, r.v)
@@ -372,8 +375,8 @@ case object CypherInteger extends CypherNumberCompanion[CypherInteger] {
   def apply(value: Long): CypherInteger = new CypherInteger(value)
   def unapply(value: CypherInteger): Option[Long] = if (value == null) None else Some(value.v)
 
-  override def cypherType(value: CypherInteger) = if (value == null) CTNull else CTInteger
-  override def contents(value: CypherInteger) = unapply(value).map(long2Long)
+  override def cypherType(value: CypherInteger): CypherType with DefiniteCypherType = if (value == null) CTNull else CTInteger
+  override def contents(value: CypherInteger): Option[lang.Long] = unapply(value).map(long2Long)
 
   override protected[value] def computeOrderability(l: CypherInteger, r: CypherInteger): Int =
     Ordering.Long.compare(l.v, r.v)
@@ -398,8 +401,8 @@ case object CypherFloat extends CypherNumberCompanion[CypherFloat] {
   def apply(value: Double): CypherFloat = new CypherFloat(value)
   def unapply(value: CypherFloat): Option[Double] = if (value == null) None else Some(value.v)
 
-  override def cypherType(value: CypherFloat) = if (value == null) CTNull else CTFloat
-  override def contents(value: CypherFloat) = unapply(value).map(double2Double)
+  override def cypherType(value: CypherFloat): CypherType with DefiniteCypherType = if (value == null) CTNull else CTFloat
+  override def contents(value: CypherFloat): Option[lang.Double] = unapply(value).map(double2Double)
 
   override protected[value] def computeOrderability(l: CypherFloat, r: CypherFloat): Int = {
     val lVal = l.v
@@ -433,10 +436,10 @@ case object CypherList extends CypherValueCompanion[CypherList] {
   def apply(value: Seq[CypherValue]): CypherList = new CypherList(value)
   def unapply(value: CypherList): Option[Seq[CypherValue]] = if (value == null) None else Some(value.v)
 
-  override def cypherType(value: CypherList) =
+  override def cypherType(value: CypherList): CypherType with DefiniteCypherType =
     if (value == null) CTNull else CTList(value.cachedElementType)
 
-  override def contents(value: CypherList) =
+  override def contents(value: CypherList): Option[Seq[CypherValue]] =
     unapply(value)
 
 
@@ -651,7 +654,7 @@ case object CypherNode extends CypherEntityCompanion[CypherNode] {
   override def contents(value: CypherNode): Option[(EntityId, NodeData)] =
     if (value == null) None else Some(value.id -> value.data)
 
-  override def cypherType(value: CypherNode) =
+  override def cypherType(value: CypherNode): CypherType with DefiniteCypherType =
     if (value == null) CTNull else CTNode
 
   // Values in the same order group are ordered (sorted) together by orderability
@@ -693,7 +696,7 @@ case object CypherRelationship extends CypherEntityCompanion[CypherRelationship]
   override def contents(value: CypherRelationship): Option[(EntityId, RelationshipData)] =
     if (value == null) None else Some(value.id -> value.data)
 
-  override def cypherType(value: CypherRelationship) =
+  override def cypherType(value: CypherRelationship): CypherType with DefiniteCypherType =
     if (value == null) CTNull else CTRelationship
 
   override def orderGroup(v: CypherRelationship): OrderGroup = RelationshipOrderGroup
