@@ -28,22 +28,28 @@ final class ExprOps(val e: Expr) extends AnyVal {
 
   def dependencies: Set[Var] = computeDependencies(List(e), Set.empty)
 
-  // TODO: Test this
+  // TODO: Test this, possible consolidate into better hierarchy
   @tailrec
-  private def computeDependencies(remaining: List[Expr], result: Set[Var]): Set[Var] = remaining match {
-    case (expr: Var) :: tl => computeDependencies(tl, result + expr)
-    case Equals(l, r) :: tl => computeDependencies(l :: r :: tl, result)
-    case StartNode(expr) :: tl => computeDependencies(expr :: tl, result)
-    case EndNode(expr) :: tl => computeDependencies(expr :: tl, result)
-    case TypeId(expr) :: tl => computeDependencies(expr :: tl, result)
-    case HasLabel(expr, _) :: tl => computeDependencies(expr :: tl, result)
-    case HasType(expr, _) :: tl => computeDependencies(expr :: tl, result)
-    case Property(expr, _) :: tl => computeDependencies(expr :: tl, result)
-    case (expr: Ands) :: tl => computeDependencies(expr.exprs.toList ++ tl, result)
-    case (expr: Ors) :: tl => computeDependencies(expr.exprs.toList ++ tl, result)
-    case (expr: Lit[_]) :: tl => computeDependencies(tl, result)
-    case (expr: Const) :: tl => computeDependencies(tl, result)
-    // TODO: Throw instead of fall-through
-    case _ => result
-  }
+  private def computeDependencies(remaining: List[Expr], result: Set[Var]): Set[Var] =
+    remaining match {
+      case Nil => result
+      case (expr: Var) :: tl => computeDependencies(tl, result + expr)
+      case Equals(l, r) :: tl => computeDependencies(l :: r :: tl, result)
+      case StartNode(expr) :: tl => computeDependencies(expr :: tl, result)
+      case EndNode(expr) :: tl => computeDependencies(expr :: tl, result)
+      case TypeId(expr) :: tl => computeDependencies(expr :: tl, result)
+      case HasLabel(expr, _) :: tl => computeDependencies(expr :: tl, result)
+      case HasType(expr, _) :: tl => computeDependencies(expr :: tl, result)
+      case Property(expr, _) :: tl => computeDependencies(expr :: tl, result)
+      case (expr: Not) :: tl => computeDependencies(expr.expr :: tl, result)
+      case (expr: IsNull) :: tl => computeDependencies(expr.expr :: tl, result)
+      case (expr: IsNotNull) :: tl => computeDependencies(expr.expr :: tl, result)
+      case (expr: Ands) :: tl => computeDependencies(expr.exprs.toList ++ tl, result)
+      case (expr: Ors) :: tl => computeDependencies(expr.exprs.toList ++ tl, result)
+      case (expr: Lit[_]) :: tl => computeDependencies(tl, result)
+      case (expr: Const) :: tl => computeDependencies(tl, result)
+      case (expr: BinaryExpr) :: tl => computeDependencies(expr.lhs :: expr.rhs :: tl, result)
+      case (expr: FunctionExpr) :: tl => computeDependencies(expr.expr :: tl, result)
+      case (expr: Aggregator) :: tl => computeDependencies(expr.inner.map(_ :: tl).getOrElse(tl), result)
+    }
 }

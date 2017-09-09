@@ -90,6 +90,10 @@ object Raise {
     s"Expected $expected but found $actual"
   )
 
+  def unsupportedArgument(actual: String) = throw CAPSException(
+    s"Cannot (yet) handle the given argument $actual"
+  )
+
   def typeInferenceFailed(detail: String) = throw CAPSException(
     s"Some error in type inference: $detail"
   )
