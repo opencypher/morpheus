@@ -19,8 +19,8 @@ import org.opencypher.caps.api.expr.{Property, Var}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType}
-import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.spark.SparkColumn
+import org.opencypher.caps.impl.spark.exception.Raise
 
 sealed trait GraphScan extends Serializable {
 
@@ -29,7 +29,7 @@ sealed trait GraphScan extends Serializable {
   type EntityCypherType <: CypherType
 
   def records: CAPSRecords
-  def entity = Var(entityName)(entityType)
+  def entity: Var = Var(entityName)(entityType)
 
   def entityName: String
   def entityType: EntityCypherType

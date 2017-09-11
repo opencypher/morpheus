@@ -16,7 +16,7 @@
 package org.opencypher
 
 import org.opencypher.caps.api.expr.Var
-import org.opencypher.caps.api.ir.IRField
+import org.opencypher.caps.ir.api.IRField
 import org.opencypher.caps.api.types.CypherType
 
 import scala.language.implicitConversions

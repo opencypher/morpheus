@@ -22,7 +22,7 @@ object Properties {
 
   val empty = new Properties(SortedMap.empty)
 
-  def apply(elts: (String, CypherValue)*) =
+  def apply(elts: (String, CypherValue)*): Properties =
     fromMap(SortedMap(elts: _*))
 
   implicit def fromMap(v: Map[String, CypherValue]): Properties = {
@@ -39,8 +39,8 @@ object Properties {
 
 final class Properties private (val m: SortedMap[String, CypherValue]) extends AnyVal with Serializable {
 
-  def apply(key: String) = m.getOrElse(key, cypherNull)
-  def get(key: String) = m.get(key)
+  def apply(key: String): CypherValue = m.getOrElse(key, cypherNull)
+  def get(key: String): Option[CypherValue] = m.get(key)
 
   def containsNullValue: Boolean = m.values.exists(CypherValue.isIncomparable)
 }

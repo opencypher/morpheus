@@ -15,8 +15,8 @@
  */
 package org.opencypher.caps.impl.flat
 
-import org.opencypher.caps.BaseTestSuite
 import org.opencypher.caps.api.types.CTNode
+import org.opencypher.caps.test.BaseTestSuite
 
 class FreshVariableNamerTest extends BaseTestSuite {
 

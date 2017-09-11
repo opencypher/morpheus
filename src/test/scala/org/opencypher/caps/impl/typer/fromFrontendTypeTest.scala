@@ -16,8 +16,8 @@
 package org.opencypher.caps.impl.typer
 
 import org.neo4j.cypher.internal.frontend.v3_3.{symbols => frontend}
-import org.opencypher.caps.BaseTestSuite
 import org.opencypher.caps.api.types.{CTBoolean, CTFloat, CTInteger, CTNumber}
+import org.opencypher.caps.test.BaseTestSuite
 
 class fromFrontendTypeTest extends BaseTestSuite {
 

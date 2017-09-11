@@ -16,7 +16,7 @@
 package org.opencypher.caps.impl.convert
 
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.exception.Raise
+import org.opencypher.caps.impl.spark.exception.Raise
 
 object fromJavaType extends Serializable {
 

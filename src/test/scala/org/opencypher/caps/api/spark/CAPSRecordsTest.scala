@@ -16,12 +16,12 @@
 package org.opencypher.caps.api.spark
 
 import org.apache.spark.sql.Row
-import org.opencypher.caps.api.exception.CAPSException
+import org.opencypher.caps.api.exception.CypherException
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.api.ir.global.{Label, PropertyKey}
+import org.opencypher.caps.ir.api.global.{Label, PropertyKey}
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTRelationship, CTString, _}
-import org.opencypher.caps.CAPSTestSuite
+import org.opencypher.caps.test.CAPSTestSuite
 
 class CAPSRecordsTest extends CAPSTestSuite {
 
@@ -115,7 +115,7 @@ class CAPSRecordsTest extends CAPSTestSuite {
     val data = session.createDataFrame(Seq((1, "foo"), (2, "bar"))).toDF("int", "string")
     val header = RecordHeader.from(OpaqueField(Var("int")()), OpaqueField(Var("notString")()))
 
-    a [CAPSException] shouldBe thrownBy {
+    a [CypherException] shouldBe thrownBy {
       CAPSRecords.create(header, data)
     }
   }

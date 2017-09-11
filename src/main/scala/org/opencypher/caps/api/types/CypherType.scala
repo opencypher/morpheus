@@ -16,6 +16,7 @@
 package org.opencypher.caps.api.types
 
 import cats.Monoid
+import org.opencypher.caps.common.{False, Maybe, Ternary, True}
 
 import scala.language.postfixOps
 
@@ -24,15 +25,15 @@ object CypherType {
   type OrderGroup = OrderGroups.Value
 
   object OrderGroups extends Enumeration with Serializable {
-    val MapOrderGroup = Value("MAP ORDER GROUP")
-    val NodeOrderGroup = Value("NODE ORDER GROUP")
-    val RelationshipOrderGroup = Value("RELATIONSHIP ORDER GROUP")
-    val PathOrderGroup = Value("PATH ORDER GROUP")
-    val ListOrderGroup = Value("LIST ORDER GROUP")
-    val StringOrderGroup = Value("STRING ORDER GROUP")
-    val BooleanOrderGroup = Value("BOOLEAN ORDER GROUP")
-    val NumberOrderGroup = Value("NUMBER ODER GROUP")
-    val VoidOrderGroup = Value("VOID ODER GROUP")
+    val MapOrderGroup: OrderGroups.Value = Value("MAP ORDER GROUP")
+    val NodeOrderGroup: OrderGroups.Value = Value("NODE ORDER GROUP")
+    val RelationshipOrderGroup: OrderGroups.Value = Value("RELATIONSHIP ORDER GROUP")
+    val PathOrderGroup: OrderGroups.Value = Value("PATH ORDER GROUP")
+    val ListOrderGroup: OrderGroups.Value = Value("LIST ORDER GROUP")
+    val StringOrderGroup: OrderGroups.Value = Value("STRING ORDER GROUP")
+    val BooleanOrderGroup: OrderGroups.Value = Value("BOOLEAN ORDER GROUP")
+    val NumberOrderGroup: OrderGroups.Value = Value("NUMBER ODER GROUP")
+    val VoidOrderGroup: OrderGroups.Value = Value("VOID ODER GROUP")
   }
 
   implicit val typeVectorMonoid = new Monoid[Vector[CypherType]] {

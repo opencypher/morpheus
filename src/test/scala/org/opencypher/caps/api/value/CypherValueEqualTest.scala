@@ -15,8 +15,8 @@
  */
 package org.opencypher.caps.api.value
 
-import org.opencypher.caps.api.types.{Maybe, Ternary, True}
 import org.opencypher.caps.api.value.CypherValue.companion
+import org.opencypher.caps.common.{Maybe, Ternary, True}
 
 class CypherValueEqualTest extends CypherValueTestSuite {
 

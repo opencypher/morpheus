@@ -15,10 +15,10 @@
  */
 package org.opencypher.caps.impl.spark
 
-import org.opencypher.caps.CAPSTestSuite
 import org.opencypher.caps.api.expr.{Expr, Not, Var}
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.api.types.{CTBoolean, CTInteger, CTString}
+import org.opencypher.caps.test.CAPSTestSuite
 
 class CAPSEngineOperationsTest extends CAPSTestSuite {
 

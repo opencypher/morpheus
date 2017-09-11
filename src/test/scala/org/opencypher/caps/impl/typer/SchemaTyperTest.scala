@@ -20,8 +20,8 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, Parameter}
 import org.neo4j.cypher.internal.frontend.v3_3.symbols
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.BaseTestSuite
-import org.opencypher.caps.support.Neo4jAstTestSupport
+import org.opencypher.caps.test.BaseTestSuite
+import org.opencypher.caps.test.support.Neo4jAstTestSupport
 import org.scalatest.mockito.MockitoSugar
 
 import scala.language.reflectiveCalls

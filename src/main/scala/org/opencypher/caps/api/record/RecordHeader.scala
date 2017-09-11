@@ -16,12 +16,12 @@
 package org.opencypher.caps.api.record
 
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.api.ir.global.TokenRegistry
+import org.opencypher.caps.ir.api.global.TokenRegistry
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTBoolean, CTInteger, CTNode, CypherType}
 import org.opencypher.caps.impl.record.InternalHeader
 import org.opencypher.caps.impl.syntax.header.{addContents, _}
-import org.opencypher.caps.impl.syntax.util.traversable._
+import org.opencypher.caps.common.syntax._
 
 final case class RecordHeader(internalHeader: InternalHeader) {
 

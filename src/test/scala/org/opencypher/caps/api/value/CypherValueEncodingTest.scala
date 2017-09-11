@@ -16,9 +16,10 @@
 package org.opencypher.caps.api.value
 
 import org.opencypher.caps.api.value.CypherValue._
-import org.opencypher.caps.{BaseTestSuite, SparkTestSession}
+import org.opencypher.caps.test.BaseTestSuite
+import org.opencypher.caps.test.fixture.SparkSessionFixture
 
-class CypherValueEncodingTest extends BaseTestSuite with SparkTestSession.Fixture {
+class CypherValueEncodingTest extends BaseTestSuite with SparkSessionFixture {
 
   import CypherTestValues._
 

@@ -15,8 +15,8 @@
  */
 package org.opencypher.caps.api.record
 
-import org.opencypher.caps.BaseTestSuite
-import org.opencypher.caps.api.exception.CAPSException
+import org.opencypher.caps.api.exception.CypherException
+import org.opencypher.caps.test.BaseTestSuite
 
 class EmbeddedEntityTest extends BaseTestSuite {
 
@@ -99,6 +99,6 @@ class EmbeddedEntityTest extends BaseTestSuite {
   }
 
   private def raisesSlotReUse[T](f: => T): Unit = {
-    an[CAPSException] should be thrownBy f
+    an[CypherException] should be thrownBy f
   }
 }

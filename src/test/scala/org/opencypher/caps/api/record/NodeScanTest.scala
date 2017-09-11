@@ -15,10 +15,10 @@
  */
 package org.opencypher.caps.api.record
 
-import org.opencypher.caps.CAPSTestSuite
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.api.types.{CTInteger, CTString}
+import org.opencypher.caps.test.CAPSTestSuite
 
 class NodeScanTest extends CAPSTestSuite {
 

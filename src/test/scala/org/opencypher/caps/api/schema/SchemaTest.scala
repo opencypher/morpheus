@@ -15,8 +15,8 @@
  */
 package org.opencypher.caps.api.schema
 
-import org.opencypher.caps.BaseTestSuite
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.test.BaseTestSuite
 
 class SchemaTest extends BaseTestSuite {
 

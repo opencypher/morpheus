@@ -17,28 +17,29 @@ package org.opencypher.caps.api.spark
 
 import java.net.URI
 
-import org.opencypher.caps.api.io.hdfs.HdfsCsvGraphSource
-import org.opencypher.caps.{HDFSTestSession, SparkTestSession}
-import org.scalatest.{FunSuite, Matchers}
+import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvGraphSource
+import org.opencypher.caps.test.BaseTestSuite
+import org.opencypher.caps.test.fixture.{MiniDFSClusterFixture, SparkSessionFixture}
 
-class CAPSSessionHDFSTest extends FunSuite
-  with SparkTestSession.Fixture
-  with HDFSTestSession.Fixture
-  with Matchers {
+class CAPSSessionHDFSTest extends BaseTestSuite
+  with SparkSessionFixture
+  with MiniDFSClusterFixture {
+
+  def hdfsURI: URI = URI.create(s"hdfs+csv://${dfsCluster.getNameNode.getHostAndPort}$dfsTestGraphPath")
 
   test("HDFS via URI") {
-    val graph = CAPSSession.builder(session).get.withGraphAt(hdfsURI)
-    graph.nodes("n").details.toDF().collect().toSet should equal(testGraphNodes)
-    graph.relationships("rel").details.toDF().collect.toSet should equal(testGraphRels)
+    implicit val capsSession: CAPSSession = CAPSSession.builder(session).build
+    val graph = capsSession.graphAt(hdfsURI)
+    graph.nodes("n").details.toDF().collect().toSet should equal(dfsTestGraphNodes)
+    graph.relationships("rel").details.toDF().collect.toSet should equal(dfsTestGraphRels)
   }
 
   test("HDFS via mount point") {
-    val capsSession = CAPSSession.builder(session)
-      .withGraphSource("/test/graph", HdfsCsvGraphSource(hdfsURI, session.sparkContext.hadoopConfiguration, hdfsURI.getPath))
-      .get
+    implicit val capsSession: CAPSSession = CAPSSession.builder(session).build
+    capsSession.mountSourceAt(HdfsCsvGraphSource(hdfsURI, session.sparkContext.hadoopConfiguration, hdfsURI.getPath), "/test/graph")
 
-    val graph = capsSession.withGraphAt(URI.create("/test/graph"))
-    graph.nodes("n").details.toDF().collect().toSet should equal(testGraphNodes)
-    graph.relationships("rel").details.toDF().collect.toSet should equal(testGraphRels)
+    val graph = capsSession.graphAt("/test/graph")
+    graph.nodes("n").details.toDF().collect().toSet should equal(dfsTestGraphNodes)
+    graph.relationships("rel").details.toDF().collect.toSet should equal(dfsTestGraphRels)
   }
 }

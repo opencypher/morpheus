@@ -21,10 +21,10 @@ object EntityData {
 
   trait Creation {
 
-    def newNode =
+    def newNode: NodeData =
       NodeData.empty
 
-    def newLabeledNode(labels: String*) =
+    def newLabeledNode(labels: String*): NodeData =
       newNode.withLabels(labels: _*)
 
     def newUntypedRelationship(nodes: (CypherNode, CypherNode)): RelationshipData =
@@ -55,9 +55,9 @@ final case class NodeData(labels: Array[String],
 
   override def asEntity(id: EntityId) = CypherNode(id, labels, properties)
 
-  def withLabels(newLabels: String*) = copy(labels = newLabels.toArray)
-  def withProperties(newProperties: (String, CypherValue)*) = copy(properties = Properties(newProperties: _*))
-  def withProperties(newProperties: Properties) = copy(properties = newProperties)
+  def withLabels(newLabels: String*): NodeData = copy(labels = newLabels.toArray)
+  def withProperties(newProperties: (String, CypherValue)*): NodeData = copy(properties = Properties(newProperties: _*))
+  def withProperties(newProperties: Properties): NodeData = copy(properties = newProperties)
 }
 
 final case class RelationshipData(startId: EntityId,
@@ -68,9 +68,9 @@ final case class RelationshipData(startId: EntityId,
 
   override def asEntity(id: EntityId) = CypherRelationship(id, startId, endId, relationshipType, properties)
 
-  def withStartId(newStartId: EntityId) = copy(startId = newStartId)
-  def withRelationshipType(newType: String) = copy(relationshipType = newType)
-  def withEndId(newEndId: EntityId) = copy(endId = newEndId)
-  def withProperties(newProperties: (String, CypherValue)*) = copy(properties = Properties(newProperties: _*))
-  def withProperties(newProperties: Properties) = copy(properties = newProperties)
+  def withStartId(newStartId: EntityId): RelationshipData = copy(startId = newStartId)
+  def withRelationshipType(newType: String): RelationshipData = copy(relationshipType = newType)
+  def withEndId(newEndId: EntityId): RelationshipData = copy(endId = newEndId)
+  def withProperties(newProperties: (String, CypherValue)*): RelationshipData = copy(properties = Properties(newProperties: _*))
+  def withProperties(newProperties: Properties): RelationshipData = copy(properties = newProperties)
 }

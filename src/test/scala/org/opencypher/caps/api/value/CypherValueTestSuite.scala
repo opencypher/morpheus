@@ -15,8 +15,8 @@
  */
 package org.opencypher.caps.api.value
 
-import org.opencypher.caps.BaseTestSuite
-import org.opencypher.caps.api.types.{False, Maybe, Ternary, True}
+import org.opencypher.caps.common.{False, Maybe, Ternary, True}
+import org.opencypher.caps.test.BaseTestSuite
 
 import scala.annotation.tailrec
 

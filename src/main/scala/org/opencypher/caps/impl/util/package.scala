@@ -16,7 +16,8 @@
 package org.opencypher.caps.impl
 
 import org.opencypher.caps.api.expr.Var
-import org.opencypher.caps.api.ir.IRField
+import org.opencypher.caps.impl.record.{AdditiveUpdateResult, SuccessfulUpdateResult}
+import org.opencypher.caps.ir.api.IRField
 
 import scala.language.implicitConversions
 

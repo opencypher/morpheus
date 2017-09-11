@@ -15,7 +15,8 @@
  */
 package org.opencypher.caps.api.types
 
-import org.opencypher.caps.BaseTestSuite
+import org.opencypher.caps.common.{False, Maybe, True}
+import org.opencypher.caps.test.BaseTestSuite
 
 class TernaryTest extends BaseTestSuite {
 

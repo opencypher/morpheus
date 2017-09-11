@@ -15,12 +15,12 @@
  */
 package org.opencypher.caps.impl.flat
 
-import org.opencypher.caps.api.ir.global.{ConstantRegistry, RelType, TokenRegistry}
-import org.opencypher.caps.api.ir.pattern.{AnyGiven, AnyOf, EveryRelationship}
+import org.opencypher.caps.ir.api.global.{ConstantRegistry, RelType, TokenRegistry}
+import org.opencypher.caps.ir.api.pattern.{AnyGiven, AnyOf, EveryRelationship}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTList, CTRelationship, CypherType}
-import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.logical.{DefaultGraphSource, LogicalOperator}
+import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.{DirectCompilationStage, logical}
 
 import scala.annotation.tailrec

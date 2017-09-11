@@ -16,5 +16,5 @@
 package org.opencypher.caps.api
 
 package object value {
-  def cypherNull[T <: CypherValue] = null.asInstanceOf[T]
+  def cypherNull[T <: CypherValue]: T = null.asInstanceOf[T]
 }

@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.api.expr
 
-import org.opencypher.caps.api.ir.global._
+import org.opencypher.caps.ir.api.global._
 import org.opencypher.caps.api.types._
 
 import scala.annotation.tailrec
@@ -239,36 +239,36 @@ sealed trait Aggregator extends Expr {
 }
 
 final case class Avg(expr: Expr)(val cypherType: CypherType = CTWildcard) extends Aggregator {
-  override val inner = Some(expr)
+  override val inner: Option[Expr] = Some(expr)
   override def toString = s"avg($expr)"
   override def withoutType: String = s"avg(${expr.withoutType})"
 }
 
 final case class CountStar()(val cypherType: CypherType = CTWildcard) extends Aggregator {
-  override val inner = None
+  override val inner: Option[Expr] = None
   override def toString = "count(*)"
 }
 
 final case class Count(expr: Expr)(val cypherType: CypherType = CTWildcard) extends Aggregator {
-  override val inner = Some(expr)
+  override val inner: Option[Expr] = Some(expr)
   override def toString = s"count($expr)"
   override def withoutType: String = s"count(${expr.withoutType})"
 }
 
 final case class Max(expr: Expr)(val cypherType: CypherType = CTWildcard) extends Aggregator {
-  override val inner = Some(expr)
+  override val inner: Option[Expr] = Some(expr)
   override def toString = s"max($expr)"
   override def withoutType: String = s"max(${expr.withoutType})"
 }
 
 final case class Min(expr: Expr)(val cypherType: CypherType = CTWildcard) extends Aggregator {
-  override val inner = Some(expr)
+  override val inner: Option[Expr] = Some(expr)
   override def toString = s"min($expr)"
   override def withoutType: String = s"min(${expr.withoutType})"
 }
 
 final case class Sum(expr: Expr)(val cypherType: CypherType = CTWildcard) extends Aggregator {
-  override val inner = Some(expr)
+  override val inner: Option[Expr] = Some(expr)
   override def toString = s"sum($expr)"
   override def withoutType: String = s"sum(${expr.withoutType})"
 }

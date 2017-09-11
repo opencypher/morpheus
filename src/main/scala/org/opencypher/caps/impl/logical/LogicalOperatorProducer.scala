@@ -16,9 +16,9 @@
 package org.opencypher.caps.impl.logical
 
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.api.ir.block.{Aggregations, SortItem}
-import org.opencypher.caps.api.ir.pattern.{EveryNode, EveryRelationship}
-import org.opencypher.caps.api.ir.{IRField, SolvedQueryModel}
+import org.opencypher.caps.ir.api.block.{Aggregations, SortItem}
+import org.opencypher.caps.ir.api.pattern.{EveryNode, EveryRelationship}
+import org.opencypher.caps.ir.api.{IRField, SolvedQueryModel}
 import org.opencypher.caps.api.record.{ProjectedExpr, ProjectedField}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._

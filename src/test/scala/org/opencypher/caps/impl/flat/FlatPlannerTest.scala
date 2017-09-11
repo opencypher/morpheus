@@ -16,14 +16,15 @@
 package org.opencypher.caps.impl.flat
 
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.api.ir.IRField
-import org.opencypher.caps.api.ir.global.{GlobalsRegistry, Label, RelType}
-import org.opencypher.caps.api.ir.pattern._
+import org.opencypher.caps.ir.api.IRField
+import org.opencypher.caps.ir.api.global.{GlobalsRegistry, Label, RelType}
+import org.opencypher.caps.ir.api.pattern._
 import org.opencypher.caps.api.record.{FieldSlotContent, OpaqueField, ProjectedExpr, ProjectedField}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.logical.LogicalOperatorProducer
-import org.opencypher.caps.{BaseTestSuite, toField}
+import org.opencypher.caps.test.BaseTestSuite
+import org.opencypher.caps.toField
 
 class FlatPlannerTest extends BaseTestSuite {
 

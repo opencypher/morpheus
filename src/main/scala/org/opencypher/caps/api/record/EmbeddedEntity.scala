@@ -16,10 +16,10 @@
 package org.opencypher.caps.api.record
 
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.api.ir.global.{Label, PropertyKey}
+import org.opencypher.caps.ir.api.global.{Label, PropertyKey}
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.api.util.{Verifiable, Verified}
-import org.opencypher.caps.impl.exception.Raise.duplicateEmbeddedEntityColumn
+import org.opencypher.caps.common.{Verifiable, Verified}
+import org.opencypher.caps.impl.spark.exception.Raise.duplicateEmbeddedEntityColumn
 
 import scala.language.implicitConversions
 
@@ -203,21 +203,22 @@ sealed case class EmbeddedRelationshipBuilder[FROM, VIA, TYP, TO](
   entitySlotAndIdSlot: VIA, fromSlot: FROM, toSlot: TO, relTypeOrSlotName: TYP
 ) {
 
-  def from(newFromSlot: String) = copy(fromSlot = newFromSlot)
+  def from(newFromSlot: String): EmbeddedRelationshipBuilder[String, VIA, TYP, TO] = copy(fromSlot = newFromSlot)
 
-  def as(newEntityAndIdSlot: String) =
+  def as(newEntityAndIdSlot: String): EmbeddedRelationshipBuilder[FROM, (String, String), TYP, TO] =
     copy(entitySlotAndIdSlot = newEntityAndIdSlot -> newEntityAndIdSlot)
 
-  def as(newEntitySlotAndIdSlot: (String, String)) =
+  def as(newEntitySlotAndIdSlot: (String, String)): EmbeddedRelationshipBuilder[FROM, (String, String), TYP, TO] =
     copy(entitySlotAndIdSlot = newEntitySlotAndIdSlot)
 
-  def relType(newRelTypeName: String) =
+  def relType(newRelTypeName: String): EmbeddedRelationshipBuilder[FROM, VIA, Right[Nothing, String], TO] =
     copy(relTypeOrSlotName = Right(newRelTypeName))
 
-  def relTypes(newRelTypeSlot: String, relTypeNames: String*) =
+  def relTypes(newRelTypeSlot: String, relTypeNames: String*)
+  : EmbeddedRelationshipBuilder[FROM, VIA, Left[(String, Set[String]), Nothing], TO] =
     copy(relTypeOrSlotName = Left(newRelTypeSlot -> relTypeNames.toSet))
 
-  def to(newToSlot: String) =
+  def to(newToSlot: String): EmbeddedRelationshipBuilder[FROM, VIA, TYP, String] =
     copy(toSlot = newToSlot)
 }
 

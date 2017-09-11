@@ -16,9 +16,9 @@
 package org.opencypher.caps.api.spark
 
 import org.apache.spark.sql.Row
-import org.opencypher.caps.CAPSTestSuite
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
+import org.opencypher.caps.test.CAPSTestSuite
 
 class CAPSGraphTest extends CAPSTestSuite {
 
