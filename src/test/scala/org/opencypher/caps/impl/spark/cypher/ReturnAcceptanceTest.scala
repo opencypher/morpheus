@@ -68,18 +68,6 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
     ))
   }
 
-  test("return keys") {
-    val given = TestGraph(
-      """({name:'Alice', age:'64', eyes:'brown'})
-      """.stripMargin)
-
-    val result = given.cypher("MATCH (a) WHERE a.name = 'Alice' RETURN keys(a)")
-
-    result.records should equal(
-      CypherList(Seq("name", "age", "eyes"))
-    )
-  }
-
   test("return distinct properties") {
     val given = TestGraph(
       """({name:'bar'}),

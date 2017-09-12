@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.spark.cypher
 
-import org.opencypher.caps.api.value.CypherMap
+import org.opencypher.caps.api.value.{CypherList, CypherMap}
 import org.opencypher.caps.test.CAPSTestSuite
 
 import scala.collection.immutable.Bag
@@ -93,4 +93,21 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
       CypherMap("labels(a)" -> cypherList(IndexedSeq("C","D")))
     ))
   }
+
+  test("keys()") {
+    val given = TestGraph(
+      """({name:'Alice', age:'64', eyes:'brown'})
+      """.stripMargin)
+
+    val result = given.cypher("MATCH (a) WHERE a.name = 'Alice' RETURN keys(a)")
+
+    val keysAsMap = result.records.toMaps
+
+    keysAsMap should equal(Bag(
+      CypherMap("keys(a)" ->
+        // TODO: Order unspecified, should match any order
+        CypherList(Seq("eyes", "age", "name")))
+    ))
+  }
+
 }
