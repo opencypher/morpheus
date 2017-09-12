@@ -19,20 +19,20 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{ArrayType, BooleanType, LongType}
 import org.apache.spark.sql.{Column, DataFrame, Row, functions}
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.ir.api.block.{Asc, Desc, SortItem}
-import org.opencypher.caps.ir.api.global._
-import org.opencypher.caps.ir.api.pattern.{AnyGiven, EveryNode, EveryRelationship}
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTRelationship}
 import org.opencypher.caps.api.value.{CypherInteger, CypherValue}
 import org.opencypher.caps.impl.flat.FreshVariableNamer
-import org.opencypher.caps.impl.spark.SparkSQLExprMapper.asSparkSQLExpr
-import org.opencypher.caps.impl.logical.NamedLogicalGraph
+import org.opencypher.caps.impl.logical.LogicalGraph
 import org.opencypher.caps.impl.spark.SparkColumnName
+import org.opencypher.caps.impl.spark.SparkSQLExprMapper.asSparkSQLExpr
 import org.opencypher.caps.impl.spark.convert.toSparkType
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.syntax.expr._
+import org.opencypher.caps.ir.api.block.{Asc, Desc, SortItem}
+import org.opencypher.caps.ir.api.global._
+import org.opencypher.caps.ir.api.pattern.{AnyGiven, EveryNode, EveryRelationship}
 
 import scala.collection.mutable
 
@@ -51,7 +51,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
   implicit final class RichCypherResult(val prev: PhysicalResult) {
 
-    def nodeScan(inGraph: NamedLogicalGraph, v: Var, labelPredicates: EveryNode, header: RecordHeader)
+    def nodeScan(inGraph: LogicalGraph, v: Var, labelPredicates: EveryNode, header: RecordHeader)
     : PhysicalResult = {
       val graph = prev.graphs(inGraph.name)
 
@@ -61,7 +61,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
       prev.mapRecordsWithDetails(_ => records)
     }
 
-    def relationshipScan(inGraph: NamedLogicalGraph, v: Var, typePredicates: EveryRelationship, header: RecordHeader)
+    def relationshipScan(inGraph: LogicalGraph, v: Var, typePredicates: EveryRelationship, header: RecordHeader)
     : PhysicalResult = {
       val graph = prev.graphs(inGraph.name)
 

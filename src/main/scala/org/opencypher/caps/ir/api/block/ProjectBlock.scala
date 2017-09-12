@@ -15,6 +15,8 @@
  */
 package org.opencypher.caps.ir.api.block
 
+import java.net.URI
+
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.pattern.AllGiven
 
@@ -22,7 +24,7 @@ final case class ProjectBlock[E](
   after: Set[BlockRef],
   binds: ProjectedFields[E] = ProjectedFields[E](),
   where: AllGiven[E] = AllGiven[E](),
-  source: BlockRef,
+  source: Option[URI],
   distinct: Boolean = false
 ) extends BasicBlock[ProjectedFields[E], E](BlockType("project"))
 

@@ -15,6 +15,8 @@
  */
 package org.opencypher.caps.ir.api.block
 
+import java.net.URI
+
 import org.opencypher.caps.ir.api.pattern.{AllGiven, Pattern}
 
 final case class MatchBlock[E](
@@ -22,5 +24,5 @@ final case class MatchBlock[E](
   binds: Pattern[E],
   where: AllGiven[E] = AllGiven[E](),
   optional: Boolean,
-  source: BlockRef
+  source: Option[URI]
 ) extends BasicBlock[Pattern[E], E](BlockType("match"))

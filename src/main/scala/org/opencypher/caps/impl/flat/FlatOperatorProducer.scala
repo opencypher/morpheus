@@ -18,8 +18,9 @@ package org.opencypher.caps.impl.flat
 import cats.Monoid
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.record._
+import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.logical.{GraphSource, NamedLogicalGraph}
+import org.opencypher.caps.impl.logical.LogicalGraph
 import org.opencypher.caps.impl.record.{Added, FailedToAdd, Found, Replaced}
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.syntax.expr._
@@ -30,9 +31,12 @@ import org.opencypher.caps.ir.api.pattern.{EveryNode, EveryRelationship}
 class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
   private val tokens = context.tokens
-  private val schema = context.schema
 
-  private implicit val typeVectorMonoid = new Monoid[Vector[CypherType]] {
+  private implicit val typeVectorMonoid: Monoid[Vector[CypherType]] {
+    def empty: Vector[CypherType]
+
+    def combine(x: Vector[CypherType], y: Vector[CypherType]): Vector[CypherType]
+  } = new Monoid[Vector[CypherType]] {
     override def empty: Vector[CypherType] = Vector.empty
     override def combine(x: Vector[CypherType], y: Vector[CypherType]): Vector[CypherType] = x ++ y
   }
@@ -74,15 +78,15 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   def nodeScan(node: Var, nodeDef: EveryNode, prev: FlatOperator): NodeScan = {
-    val header = if (nodeDef.labels.elements.isEmpty) RecordHeader.nodeFromSchema(node, schema, tokens)
-    else RecordHeader.nodeFromSchema(node, schema, tokens, nodeDef.labels.elements.map(_.name))
+    val header = if (nodeDef.labels.elements.isEmpty) RecordHeader.nodeFromSchema(node, prev.sourceGraph.schema, tokens)
+    else RecordHeader.nodeFromSchema(node, prev.sourceGraph.schema, tokens, nodeDef.labels.elements.map(_.name))
 
     new NodeScan(node, nodeDef, prev, header)
   }
 
   def edgeScan(edge: Var, edgeDef: EveryRelationship, prev: FlatOperator): EdgeScan = {
-    val edgeHeader = if (edgeDef.relTypes.elements.isEmpty) RecordHeader.relationshipFromSchema(edge, schema, tokens)
-    else RecordHeader.relationshipFromSchema(edge, schema, tokens, edgeDef.relTypes.elements.map(_.name))
+    val edgeHeader = if (edgeDef.relTypes.elements.isEmpty) RecordHeader.relationshipFromSchema(edge, prev.sourceGraph.schema, tokens)
+    else RecordHeader.relationshipFromSchema(edge, prev.sourceGraph.schema, tokens, edgeDef.relTypes.elements.map(_.name))
 
     EdgeScan(edge, edgeDef, prev, edgeHeader)
   }
@@ -114,7 +118,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
   // TODO: Specialize per kind of slot content
   // TODO: Remove types parameter and read rel-types from the rel variable
-  def expandSource(source: Var, rel: Var, types: EveryRelationship, target: Var,
+  def expandSource(source: Var, rel: Var, types: EveryRelationship, target: Var, schema: Schema,
                    sourceOp: FlatOperator, targetOp: FlatOperator): FlatOperator = {
     val relHeader =
       if (types.relTypes.elements.isEmpty) RecordHeader.relationshipFromSchema(rel, schema, tokens)
@@ -125,7 +129,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     ExpandSource(source, rel, types, target, sourceOp, targetOp, expandHeader, relHeader)
   }
 
-  def expandInto(source: Var, rel: Var, types: EveryRelationship, target: Var, sourceOp: FlatOperator): FlatOperator = {
+  def expandInto(source: Var, rel: Var, types: EveryRelationship, target: Var, schema: Schema, sourceOp: FlatOperator): FlatOperator = {
     val relHeader =
       if (types.relTypes.elements.isEmpty) RecordHeader.relationshipFromSchema(rel, schema, tokens)
       else RecordHeader.relationshipFromSchema(rel, schema, tokens, types.relTypes.elements.map(_.name))
@@ -135,8 +139,12 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     ExpandInto(source, rel, types, target, sourceOp, expandHeader, relHeader)
   }
 
-  def planStart(logicalGraph: NamedLogicalGraph, source: GraphSource, fields: Set[Var]): Start = {
-    Start(logicalGraph, source, fields)
+  def planSetSourceGraph(graph: LogicalGraph, prev: FlatOperator) = {
+    SetSourceGraph(graph, prev, prev.header)
+  }
+
+  def planStart(graph: LogicalGraph, fields: Set[Var]): Start = {
+    Start(graph, fields)
   }
 
   def initVarExpand(source: Var, edgeList: Var, in: FlatOperator): InitVarExpand = {

@@ -16,10 +16,10 @@
 package org.opencypher.caps.impl.parse
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{CNFNormalizer, Forced, Namespacer}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters._
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_3.phases._
-import org.neo4j.cypher.internal.frontend.v3_3.{SemanticErrorDef, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_3.{SemanticErrorDef, SemanticFeature, SemanticState}
 import org.opencypher.caps.impl.CompilationStage
 import org.opencypher.caps.impl.spark.exception.Raise
 
@@ -48,10 +48,10 @@ trait CypherParser extends CompilationStage[String, Statement, BaseContext] {
     Parsing.adds(BaseContains[Statement]) andThen
       SyntaxDeprecationWarnings andThen
       PreparatoryRewriting andThen
-      SemanticAnalysis(warn = true).adds(BaseContains[SemanticState]) andThen // , SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature).adds(BaseContains[SemanticState]) andThen
-      // TODO: Fix ast rewriting to correctly autoparam GraphUrl
-      AstRewriting(RewriterStepSequencer.newPlain, Forced) andThen
-      SemanticAnalysis(warn = false) andThen // , SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature) andThen
+      SemanticAnalysis(warn = true, SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature).adds(BaseContains[SemanticState]) andThen
+      // TODO: Always extract parameters when we get the beta01
+      AstRewriting(RewriterStepSequencer.newPlain, Never) andThen
+      SemanticAnalysis(warn = false, SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature) andThen
       Namespacer andThen
       CNFNormalizer andThen
       LateAstRewriting andThen ExtractPredicatesFromAnds

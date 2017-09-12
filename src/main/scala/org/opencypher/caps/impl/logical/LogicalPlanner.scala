@@ -15,18 +15,25 @@
  */
 package org.opencypher.caps.impl.logical
 
+import java.net.URI
+
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.ir.api._
-import org.opencypher.caps.ir.api.block._
-import org.opencypher.caps.ir.api.pattern._
 import org.opencypher.caps.api.schema.Schema
+import org.opencypher.caps.api.spark.io.CAPSGraphSource
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.DirectCompilationStage
 import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.ir.api._
+import org.opencypher.caps.ir.api.block._
+import org.opencypher.caps.ir.api.pattern._
 
 import scala.annotation.tailrec
 
-final case class LogicalPlannerContext(defaultGraphSchema: Schema, inputRecordFields: Set[Var])
+final case class LogicalPlannerContext(
+  ambientGraphSchema: Schema,
+  inputRecordFields: Set[Var],
+  resolver: URI => CAPSGraphSource
+)
 
 class LogicalPlanner(producer: LogicalOperatorProducer)
   extends DirectCompilationStage[CypherQuery[Expr], LogicalOperator, LogicalPlannerContext] {
@@ -74,8 +81,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
   def planLeaf(ref: BlockRef, model: QueryModel[Expr])(implicit context: LogicalPlannerContext): LogicalOperator = {
     model(ref) match {
-      case LoadGraphBlock(_, DefaultGraph()) =>
-        producer.planStart(context.defaultGraphSchema, context.inputRecordFields)
+      case LoadGraphBlock(_, AmbientGraph()) =>
+        producer.planStart(AmbientLogicalGraph(context.ambientGraphSchema), context.inputRecordFields)
       case x =>
         Raise.notYetImplemented(s"leaf planning of $x")
     }
@@ -85,7 +92,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     model(ref) match {
       case MatchBlock(_, pattern, where, optional, graph) =>
         // this plans both pattern and filter for convenience -- TODO: split up
-        val patternPlan = planPattern(plan, pattern)
+        val patternPlan = planPattern(plan, pattern, graph)
         val filterPlan = planFilter(patternPlan, where)
         if (optional) producer.planOptional(plan, filterPlan) else filterPlan
 
@@ -111,7 +118,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
           case None => skipOp
         }
 
-      case AggregationBlock(_, a@Aggregations(pairs), group) =>
+      case AggregationBlock(_, a@Aggregations(pairs), group, _) =>
         // plan projection of aggregation argument
         val prev = pairs.foldLeft(plan)((prevPlan, aggField) => {
           aggField match {
@@ -212,21 +219,70 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     }
   }
 
-  private def planPattern(plan: LogicalOperator, pattern: Pattern[Expr])(implicit context: LogicalPlannerContext) = {
+  private def resolveGraph(maybeUri: Option[URI])(implicit context: LogicalPlannerContext): LogicalGraph = maybeUri match {
+    case None =>
+      AmbientLogicalGraph(context.ambientGraphSchema)
+    case Some(uri) =>
+      // TODO: Don't lose the name
+      val name = "we lost the name"
+      context.resolver(uri).schema match {
+        case None =>
+          // This initialises the graph eagerly!!
+          // TODO: We probably want to save the graph reference somewhere
+          val graph = context.resolver(uri).graph
+          ExternalLogicalGraph(name, uri, graph.schema)
+        case Some(schema) =>
+          ExternalLogicalGraph(name, uri, schema)
+      }
+  }
+
+  private def planStart(graph: Option[URI])(implicit context: LogicalPlannerContext): Start = {
+    val logicalGraph: LogicalGraph = resolveGraph(graph)
+
+    producer.planStart(logicalGraph, context.inputRecordFields)
+  }
+
+  private def setSource(maybeUri: Option[URI], prev: LogicalOperator)(implicit context: LogicalPlannerContext): SetSourceGraph = {
+    val logicalGraph = resolveGraph(maybeUri)
+
+    producer.planSetSourceGraph(logicalGraph, prev)
+  }
+
+  private def planPattern(plan: LogicalOperator, pattern: Pattern[Expr], graph: Option[URI])(implicit context: LogicalPlannerContext) = {
+
+    // find all unsolved nodes from the pattern
     val nodes = pattern.entities.collect {
       case (f, e: EveryNode) if f.cypherType.subTypeOf(CTNode).isTrue => f -> e
     }
 
-    val nodePlans = nodes
-      .filterNot(node => plan.solved.fields.contains(node._1))
-      .map {
-        case (f, e) => nodePlan(producer.planStart(context.defaultGraphSchema, context.inputRecordFields), f, e)
+    if (nodes.size == 1) { // simple node scan; just do it
+      val (field, node) = nodes.head
+
+      // we set the source graph because we don't know what the source graph was coming in
+      // TODO: Only works for initial pattern: need support for cartesian products
+      nodePlan(setSource(graph, plan), field, node)
+    } else if (pattern.topology.nonEmpty) { // we need expansions to tie node plans together
+
+      val solved = nodes.filter(node => plan.solved.fields.contains(node._1))
+      val unsolved = nodes -- solved.keySet
+
+      val (firstPlan, remaining) = if (solved.isEmpty) {
+        val (field, node) = nodes.head
+        // TODO: Will need branch in plan for cartesian products
+        nodePlan(plan, field, node) -> nodes.tail
+      } else {
+        plan -> unsolved
       }
 
-    if (pattern.topology.nonEmpty)
-      planExpansions(nodePlans.toSet + plan, pattern, producer)
-    else if (nodePlans.size == 1) nodePlans.head
-    else Raise.invalidPattern(pattern.toString)
+      val nodePlans: Set[LogicalOperator] = remaining.map {
+        case (f, n) =>
+          nodePlan(planStart(graph), f, n)
+      }.toSet
+
+      // tie all plans together using expansions
+      planExpansions(nodePlans + firstPlan, pattern, producer)
+    } else
+      Raise.invalidPattern(pattern.toString)
   }
 
   @tailrec
