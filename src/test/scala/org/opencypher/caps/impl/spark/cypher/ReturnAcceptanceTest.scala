@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.spark.cypher
 
-import org.opencypher.caps.api.value.CypherMap
+import org.opencypher.caps.api.value.{CypherList, CypherMap}
 import org.opencypher.caps.test.CAPSTestSuite
 
 import scala.collection.Bag
@@ -66,6 +66,18 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
       CypherMap("r" -> 0, "source(r)" -> 0, "target(r)" -> 1, "type(r)" -> relId, "r.foo" -> "bar"),
       CypherMap("r" -> 1, "source(r)" -> 1, "target(r)" -> 2, "type(r)" -> relId, "r.foo" -> null)
     ))
+  }
+
+  test("return keys") {
+    val given = TestGraph(
+      """({name:'Alice', age:'64', eyes:'brown'})
+      """.stripMargin)
+
+    val result = given.cypher("MATCH (a) WHERE a.name = 'Alice' RETURN keys(a)")
+
+    result.records should equal(
+      CypherList(Seq("name", "age", "eyes"))
+    )
   }
 
   test("return distinct properties") {
