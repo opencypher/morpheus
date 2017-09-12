@@ -22,6 +22,7 @@ import org.opencypher.caps.api.expr._
 import org.opencypher.caps.ir.api.global.RelTypeRef
 import org.opencypher.caps.api.record.RecordHeader
 import org.opencypher.caps.api.types.CTNode
+import org.opencypher.caps.api.value.CypherList
 import org.opencypher.caps.impl.spark.Udfs._
 import org.opencypher.caps.impl.spark.physical.RuntimeContext
 import org.opencypher.caps.impl.spark.convert.toSparkType
@@ -191,6 +192,15 @@ object SparkSQLExprMapper {
         val labelNames = labelExprs.map(_.label)
         val labelsUDF = udf(getNodeLabels(labelNames), ArrayType(StringType, containsNull = false))
         Some(labelsUDF(functions.array(labelColumns: _*)))
+
+      case keys: Keys =>
+        verifyExpression(header, expr)
+
+        val node = Var(context.columnName(header.slotsFor(keys.expr).head))(CTNode)
+        val keyNames = header.keys(node)
+        val literalSequence = keyNames.map(functions.lit(_))
+        val constantColumn = functions.array(literalSequence: _*)
+        Some(constantColumn)
 
       case Type(inner) =>
         verifyExpression(header, expr)

@@ -16,7 +16,7 @@
 package org.opencypher.caps.api.record
 
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.ir.api.global.TokenRegistry
+import org.opencypher.caps.ir.api.global.{PropertyKey, TokenRegistry}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTBoolean, CTInteger, CTNode, CypherType}
 import org.opencypher.caps.impl.record.InternalHeader
@@ -52,6 +52,13 @@ final case class RecordHeader(internalHeader: InternalHeader) {
     val slotsForNode = slots.filter(_.content.owner.orNull == node)
     slotsForNode.collect({
       case RecordSlot(_, ProjectedExpr(h: HasLabel)) => h
+    })
+  }
+
+  def keys(node: Var): Seq[String] = {
+    val slotsForNode = slots.filter(_.content.owner.orNull == node)
+    slotsForNode.collect({
+      case RecordSlot(_, ProjectedExpr(Property(_, PropertyKey(name)))) => name
     })
   }
 
