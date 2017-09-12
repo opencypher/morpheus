@@ -197,7 +197,7 @@ object SparkSQLExprMapper {
         verifyExpression(header, expr)
 
         val node = Var(context.columnName(header.slotsFor(keys.expr).head))(CTNode)
-        val keyNames = header.keys(node)
+        val keyNames = header.keys(node).sorted
         val literalSequence = keyNames.map(functions.lit(_))
         val constantColumn = functions.array(literalSequence: _*)
         Some(constantColumn)

@@ -105,8 +105,7 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
 
     keysAsMap should equal(Bag(
       CypherMap("keys(a)" ->
-        // TODO: Order unspecified, should match any order
-        CypherList(Seq("eyes", "age", "name")))
+        CypherList(Seq("age", "eyes", "name")))
     ))
   }
 
