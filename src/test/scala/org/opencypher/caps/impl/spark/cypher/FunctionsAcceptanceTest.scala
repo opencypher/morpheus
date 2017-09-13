@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.spark.cypher
 
-import org.opencypher.caps.api.value.CypherMap
+import org.opencypher.caps.api.value.{CypherList, CypherMap}
 import org.opencypher.caps.test.CAPSTestSuite
 
 import scala.collection.immutable.Bag
@@ -23,7 +23,7 @@ import scala.collection.immutable.Bag
 class FunctionsAcceptanceTest extends CAPSTestSuite {
 
   test("exists()") {
-    val given = TestGraph("({id: 1l}), ({id: 2l}), ({other: 'foo'}), ()")
+    val given = TestGraph("({id: 1L}), ({id: 2L}), ({other: 'foo'}), ()")
 
     val result = given.cypher("MATCH (n) RETURN exists(n.id) AS exists")
 
@@ -93,4 +93,40 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
       CypherMap("labels(a)" -> cypherList(IndexedSeq("C","D")))
     ))
   }
+
+  test("keys()") {
+    val given = TestGraph("""({name:'Alice', age:64L, eyes:'brown'})""")
+
+    val result = given.cypher("MATCH (a) WHERE a.name = 'Alice' RETURN keys(a) as k")
+
+    val keysAsMap = result.records.toMaps
+
+    keysAsMap should equal(Bag(
+      CypherMap("k" -> CypherList(Seq("age", "eyes", "name")))
+    ))
+  }
+
+  test("keys() does not return keys of unset properties") {
+    val given = TestGraph(
+      """(:Person {name:'Alice', age:64L, eyes:'brown'}),
+        | (:Person {name:'Bob', eyes:'blue'})""".stripMargin)
+
+    val result = given.cypher("MATCH (a: Person) WHERE a.name = 'Bob' RETURN keys(a) as k")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("k" -> CypherList(Seq("eyes", "name")))
+    ))
+  }
+
+  // TODO: Enable when "Some error in type inference: Don't know how to type MapExpression" is fixed
+  ignore("keys() works with literal maps") {
+    val given = TestGraph("()")
+
+    val result = given.cypher("MATCH () WITH {person: {name: 'Anne', age: 25}} AS p RETURN keys(p) as k")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("k" -> CypherList(Seq("age", "name")))
+    ))
+  }
+
 }

@@ -43,6 +43,14 @@ object Udfs {
       }.toArray
   }
 
+  def getNodeKeys(keyNames: Seq[String]): (Any) => Array[String] = {
+    case a: mutable.WrappedArray[AnyRef] =>
+      a.zip(keyNames).collect {
+        case (v, key) if v != null => key
+      }.toArray.sorted
+    case x => Raise.invalidArgument("an array", x.toString)
+  }
+
   def in[T](elem: Any, list: Any): Boolean = list match {
     case a: mutable.WrappedArray[_] => a.contains(elem)
     case x => Raise.invalidArgument("an array", x.toString)
