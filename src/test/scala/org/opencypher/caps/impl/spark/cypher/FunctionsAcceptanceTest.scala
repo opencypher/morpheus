@@ -99,9 +99,28 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
 
     val result = given.cypher("MATCH () RETURN size(['Alice', 'Bob']) as s")
 
-    println(result.records.toMaps)
     result.records.toMaps should equal(Bag(
       CypherMap("s" -> 2)
+    ))
+  }
+
+  test("size() on literal string") {
+    val given = TestGraph("()")
+
+    val result = given.cypher("MATCH () RETURN size('Alice') as s")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("s" -> 5)
+    ))
+  }
+
+  test("size() on retrieved string") {
+    val given = TestGraph("({name: 'Alice'})")
+
+    val result = given.cypher("MATCH (a) RETURN size(a.name) as s")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("s" -> 5)
     ))
   }
 

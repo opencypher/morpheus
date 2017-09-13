@@ -100,7 +100,12 @@ object SparkSQLExprMapper {
         verifyExpression(header, expr)
 
         val col = getColumn(s.expr, header, df)
-        Some(functions.size(col).cast(LongType))
+        val computedSize = col.expr.dataType match {
+          case _: StringType => udf((s: String) => s.size.toLong, LongType)(col)
+          case _: ArrayType => functions.size(col).cast(LongType)
+          case other => Raise.notYetImplemented(s"size() on type $other")
+        }
+        Some(computedSize)
 
       case Ands(exprs) =>
         val cols = exprs.map(asSparkSQLExpr(header, _, df))
