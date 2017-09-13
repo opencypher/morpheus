@@ -118,4 +118,15 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
     ))
   }
 
+  // TODO: Enable when "Some error in type inference: Don't know how to type MapExpression" is fixed
+  ignore("keys() works with literal maps") {
+    val given = TestGraph("()")
+
+    val result = given.cypher("MATCH () WITH {person: {name: 'Anne', age: 25}} AS p RETURN keys(p) as k")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("k" -> CypherList(Seq("age", "name")))
+    ))
+  }
+
 }
