@@ -16,16 +16,16 @@
 package org.opencypher.caps.impl.spark
 
 import org.apache.spark.sql.functions.udf
-import org.apache.spark.sql.types.{ArrayType, BooleanType, StringType}
+import org.apache.spark.sql.types.{ArrayType, BooleanType, LongType, StringType}
 import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.ir.api.global.RelTypeRef
 import org.opencypher.caps.api.record.RecordHeader
 import org.opencypher.caps.api.types.CTNode
 import org.opencypher.caps.impl.spark.Udfs._
-import org.opencypher.caps.impl.spark.physical.RuntimeContext
 import org.opencypher.caps.impl.spark.convert.toSparkType
 import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.spark.physical.RuntimeContext
+import org.opencypher.caps.ir.api.global.RelTypeRef
 
 object SparkSQLExprMapper {
 
@@ -95,6 +95,12 @@ object SparkSQLExprMapper {
       case IsNotNull(e) =>
         val col = getColumn(e, header, df)
         Some(col.isNotNull)
+
+      case s: Size =>
+        verifyExpression(header, expr)
+
+        val col = getColumn(s.expr, header, df)
+        Some(functions.size(col).cast(LongType))
 
       case Ands(exprs) =>
         val cols = exprs.map(asSparkSQLExpr(header, _, df))

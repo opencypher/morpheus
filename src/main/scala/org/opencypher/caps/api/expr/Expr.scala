@@ -211,27 +211,17 @@ final case class Divide(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWil
 sealed trait FunctionExpr extends Expr {
   def expr: Expr
 
-  def name: String
+  def name: String = this.getClass.getSimpleName.toLowerCase
 
   override final def toString = s"$name($expr)"
   override final def withoutType = s"$name(${expr.withoutType})"
 
 }
-final case class Id(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr {
-  override val name = "id"
-}
-
-final case class Labels(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr {
-  override val name = "labels"
-}
-
-final case class Type(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr {
-  override val name = "type"
-}
-
-final case class Exists(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr {
-  override val name = "exists"
-}
+final case class Id(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr
+final case class Labels(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr
+final case class Type(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr
+final case class Exists(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr
+final case class Size(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr
 
 // Aggregators
 sealed trait Aggregator extends Expr {

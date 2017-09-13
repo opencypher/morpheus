@@ -142,6 +142,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         producer.projectField(f, be, projectRhs)
       case (acc, (f, c: Const)) =>
         producer.projectField(f, c, acc)
+      case (acc, (f, c: Size)) =>
+        producer.projectField(f, c, acc)
       case (_, (_, x)) =>
         Raise.notYetImplemented(s"projection of $x")
     }

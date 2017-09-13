@@ -93,4 +93,40 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
       CypherMap("labels(a)" -> cypherList(IndexedSeq("C","D")))
     ))
   }
+
+  test("size() on literal list") {
+    val given = TestGraph("()")
+
+    val result = given.cypher("MATCH () RETURN size(['Alice', 'Bob']) as s")
+
+    println(result.records.toMaps)
+    result.records.toMaps should equal(Bag(
+      CypherMap("s" -> 2)
+    ))
+  }
+
+  // TODO: Need help: CAPSException: Did not find slot for labels(a :: NODE)
+  test("size() on constructed list") {
+    val given = TestGraph("(:A:B)(:C:D)")
+
+    val result = given.cypher("MATCH (a) RETURN size(labels(a)) as s")
+
+    println(result.records.toMaps)
+    result.records.toMaps should equal(Bag(
+      CypherMap("s" -> 2),
+      CypherMap("s" -> 2)
+    ))
+  }
+
+  test("size() on null") {
+    val given = TestGraph("()")
+
+    val result = given.cypher("MATCH (a: NonExistent) RETURN size(labels(a)) as s")
+
+    println(result.records.toMaps)
+    result.records.toMaps should equal(Bag(
+      CypherMap("s" -> null)
+    ))
+  }
+
 }

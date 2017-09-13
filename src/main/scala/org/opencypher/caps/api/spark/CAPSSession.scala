@@ -94,6 +94,7 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
     val optimizedLogicalPlan = logicalOptimizer(logicalPlan)(logicalPlannerContext)
     println("Done!")
 
+    // TODO: Initialize with a table with no columns and a single row
     plan(graph, CAPSRecords.empty()(this), tokens, constants, allParameters, optimizedLogicalPlan)
   }
 
