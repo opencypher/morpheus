@@ -49,25 +49,23 @@ final case class RecordHeader(internalHeader: InternalHeader) {
   def typeId(rel: Expr): RecordSlot = slotsFor(TypeId(rel)()).headOption.getOrElse(???)
 
   def labels(node: Var): Seq[HasLabel] = {
-    val slotsForNode = slots.filter(_.content.owner.orNull == node)
-    slotsForNode.collect({
+    childSlots(node).collect {
       case RecordSlot(_, ProjectedExpr(h: HasLabel)) => h
-    })
+    }
   }
 
   def properties(node: Var): Seq[Property] = {
-    val slotsForNode = slots.filter(_.content.owner.exists(_ == node))
-    slotsForNode.collect({
+    childSlots(node).collect {
       case RecordSlot(_, ProjectedExpr(p @ Property(_, _))) => p
-    })
+    }
   }
 
-  def childSlots(node: Var): Set[RecordSlot] = {
+  def childSlots(node: Var): Seq[RecordSlot] = {
     slots.filter {
       case RecordSlot(_, OpaqueField(_)) => false
       case slot if slot.content.owner.orNull == node => true
       case _ => false
-    }.toSet
+    }
   }
 
   override def toString = {
