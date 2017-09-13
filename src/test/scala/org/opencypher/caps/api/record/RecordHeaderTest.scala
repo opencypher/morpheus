@@ -226,7 +226,7 @@ class RecordHeaderTest extends BaseTestSuite {
     val (header, _) = h5.update(addContent(prop2))
 
     header.childSlots(Var("n")(CTNode)) should equal(
-      Set(
+      Seq(
         RecordSlot(1, label1),
         RecordSlot(2, label2),
         RecordSlot(3, prop)
@@ -258,7 +258,7 @@ class RecordHeaderTest extends BaseTestSuite {
     val (header, _) = h9.update(addContent(prop2))
 
     header.childSlots(Var("e1")(CTRelationship)) should equal(
-      Set(
+      Seq(
         RecordSlot(1, source1),
         RecordSlot(2, target1),
         RecordSlot(3, type1),

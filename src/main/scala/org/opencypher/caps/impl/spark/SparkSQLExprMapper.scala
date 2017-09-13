@@ -203,6 +203,16 @@ object SparkSQLExprMapper {
         val labelsUDF = udf(getNodeLabels(labelNames), ArrayType(StringType, containsNull = false))
         Some(labelsUDF(functions.array(labelColumns: _*)))
 
+      case keys: Keys =>
+        verifyExpression(header, expr)
+
+        val node = Var(context.columnName(header.slotsFor(keys.expr).head))(CTNode)
+        val propertyExprs = header.properties(node)
+        val propertyColumns = propertyExprs.map(getColumn(_, header, df))
+        val keyNames = propertyExprs.map(_.key.name)
+        val keysUDF = udf(getNodeKeys(keyNames), ArrayType(StringType, containsNull = false))
+        Some(keysUDF(functions.array(propertyColumns: _*)))
+
       case Type(inner) =>
         verifyExpression(header, expr)
 
