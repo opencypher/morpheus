@@ -22,7 +22,6 @@ import org.opencypher.caps.api.expr._
 import org.opencypher.caps.ir.api.global.RelTypeRef
 import org.opencypher.caps.api.record.RecordHeader
 import org.opencypher.caps.api.types.CTNode
-import org.opencypher.caps.api.value.CypherList
 import org.opencypher.caps.impl.spark.Udfs._
 import org.opencypher.caps.impl.spark.physical.RuntimeContext
 import org.opencypher.caps.impl.spark.convert.toSparkType
