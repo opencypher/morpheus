@@ -95,9 +95,7 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
   }
 
   test("keys()") {
-    val given = TestGraph(
-      """({name:'Alice', age:64L, eyes:'brown'})
-      """.stripMargin)
+    val given = TestGraph("""({name:'Alice', age:64L, eyes:'brown'})""")
 
     val result = given.cypher("MATCH (a) WHERE a.name = 'Alice' RETURN keys(a) as k")
 
@@ -110,17 +108,14 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
 
   test("keys() does not return keys of unset properties") {
     val given = TestGraph(
-      """(:Person {name:'Alice', age:64L, eyes:'brown'}), (:Person {name:'Bob', eyes:'blue'})""")
+      """(:Person {name:'Alice', age:64L, eyes:'brown'}),
+        | (:Person {name:'Bob', eyes:'blue'})""".stripMargin)
 
     val result = given.cypher("MATCH (a: Person) WHERE a.name = 'Bob' RETURN keys(a) as k")
 
     result.records.toMaps should equal(Bag(
       CypherMap("k" -> CypherList(Seq("eyes", "name")))
     ))
-  }
-
-  ignore("keys() returns null for null input") {
-    ???
   }
 
 }
