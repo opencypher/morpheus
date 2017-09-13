@@ -55,10 +55,10 @@ final case class RecordHeader(internalHeader: InternalHeader) {
     })
   }
 
-  def keys(node: Var): Seq[String] = {
-    val slotsForNode = slots.filter(_.content.owner.orNull == node)
+  def keys(node: Var): Seq[Property] = {
+    val slotsForNode = slots.filter(_.content.owner.exists(_ == node))
     slotsForNode.collect({
-      case RecordSlot(_, ProjectedExpr(Property(_, PropertyKey(name)))) => name
+      case RecordSlot(_, ProjectedExpr(p @ Property(_, _))) => p
     })
   }
 

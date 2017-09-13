@@ -197,10 +197,11 @@ object SparkSQLExprMapper {
         verifyExpression(header, expr)
 
         val node = Var(context.columnName(header.slotsFor(keys.expr).head))(CTNode)
-        val keyNames = header.keys(node).sorted
-        val literalSequence = keyNames.map(functions.lit(_))
-        val constantColumn = functions.array(literalSequence: _*)
-        Some(constantColumn)
+        val keyExprs = header.keys(node)
+        val keyColumns = keyExprs.map(getColumn(_, header, df))
+        val keyNames = keyExprs.map(_.key.name)
+        val keysUDF = udf(getNodeKeys(keyNames), ArrayType(StringType, containsNull = false))
+        Some(keysUDF(functions.array(keyColumns: _*)))
 
       case Type(inner) =>
         verifyExpression(header, expr)
