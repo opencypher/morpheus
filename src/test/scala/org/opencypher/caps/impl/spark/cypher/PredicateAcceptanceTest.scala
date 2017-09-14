@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.spark.cypher
 
-import org.opencypher.caps.api.value.CypherMap
+import org.opencypher.caps.api.value.{CypherList, CypherMap}
 import org.opencypher.caps.test.CAPSTestSuite
 
 import scala.collection.immutable.Bag
@@ -39,6 +39,23 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
 
     // When
     val result = given.cypher("MATCH (a:A) WHERE a.val IN [-1, 2, 5, 0] RETURN a.val")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("a.val" -> 2)
+    ))
+
+    // And
+    result.graph shouldMatch given.graph
+  }
+
+  // TODO: Fix this
+  ignore("in with parameter") {
+    // Given
+    val given = TestGraph("""(:A {val: 1L}), (:A {val: 2L}), (:A {val: 3L})""")
+
+    // When
+    val result = given.cypher("MATCH (a:A) WHERE a.val IN $list RETURN a.val", Map("list" -> CypherList(Seq(-1, 2, 5, 0))))
 
     // Then
     result.records.toMaps should equal(Bag(

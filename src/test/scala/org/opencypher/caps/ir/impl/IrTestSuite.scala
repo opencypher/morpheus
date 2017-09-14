@@ -25,7 +25,7 @@ import org.opencypher.caps.ir.api.pattern.{AllGiven, Pattern}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.CypherType
 import org.opencypher.caps.ir.impl.global.GlobalsExtractor
-import org.opencypher.caps.impl.logical.{DefaultGraphSource, NamedLogicalGraph, Start}
+import org.opencypher.caps.impl.logical.{ExternalLogicalGraph, Start}
 import org.opencypher.caps.impl.parse.CypherParser
 import org.opencypher.caps.test.BaseTestSuite
 
@@ -33,11 +33,11 @@ import scala.language.implicitConversions
 
 abstract class IrTestSuite extends BaseTestSuite {
   val leafRef = BlockRef("leaf")
-  val leafBlock = LoadGraphBlock[Expr](Set.empty, DefaultGraph())
-  val leafPlan = Start(NamedLogicalGraph("default", Schema.empty), DefaultGraphSource, Set.empty)(SolvedQueryModel.empty)
+  val leafBlock = LoadGraphBlock[Expr](Set.empty, AmbientGraph())
+  val leafPlan = Start(Schema.empty, Set.empty)(SolvedQueryModel.empty)
 
   val graphBlockRef = BlockRef("graph")
-  val graphBlock = LoadGraphBlock[Expr](Set.empty, DefaultGraph())
+  val graphBlock = LoadGraphBlock[Expr](Set.empty, AmbientGraph())
 
   /**
     * Construct a single-block ir; the parameter block has to be a block that could be planned as a leaf.
@@ -57,10 +57,10 @@ abstract class IrTestSuite extends BaseTestSuite {
 
   def project(fields: ProjectedFields[Expr], after: Set[BlockRef] = Set(leafRef),
               given: AllGiven[Expr] = AllGiven[Expr]()) =
-    ProjectBlock(after, fields, given, graphBlockRef)
+    ProjectBlock(after, fields, given, None)
 
   protected def matchBlock(pattern: Pattern[Expr]): Block[Expr] =
-    MatchBlock[Expr](Set(leafRef), pattern, AllGiven[Expr](), false, graphBlockRef)
+    MatchBlock[Expr](Set(leafRef), pattern, AllGiven[Expr](), false, None)
 
   def irFor(rootRef: BlockRef, blocks: Map[BlockRef, Block[Expr]]): CypherQuery[Expr] = {
     val result = ResultBlock[Expr](
@@ -70,7 +70,7 @@ abstract class IrTestSuite extends BaseTestSuite {
       nodes = Set.empty, // TODO: Fill these sets correctly
       relationships = Set.empty,
       where = AllGiven[Expr](),
-      source = graphBlockRef
+      source = None
     )
     val model = QueryModel(result, GlobalsRegistry.empty, blocks, Map(graphBlockRef -> Schema.empty))
     CypherQuery(QueryInfo("test"), model)
@@ -79,7 +79,7 @@ abstract class IrTestSuite extends BaseTestSuite {
   case class DummyBlock[E](after: Set[BlockRef] = Set.empty) extends BasicBlock[DummyBinds[E], E](BlockType("dummy")) {
     override def binds: DummyBinds[E] = DummyBinds[E]()
     override def where: AllGiven[E] = AllGiven[E]()
-    override val source = graphBlockRef
+    override val source = None
   }
 
   case class DummyBinds[E](fields: Set[IRField] = Set.empty) extends Binds[E]

@@ -15,8 +15,10 @@
  */
 package org.opencypher.caps.ir.api.block
 
-import org.opencypher.caps.ir.api.{IRField, IRGraph}
+import java.net.URI
+
 import org.opencypher.caps.ir.api.pattern.AllGiven
+import org.opencypher.caps.ir.api.{IRField, IRGraph}
 
 import scala.language.implicitConversions
 
@@ -29,7 +31,7 @@ trait Block[E] {
   def binds: Binds[E]
   def where: AllGiven[E]
 
-  def source: BlockRef
+  def source: Option[URI]
 }
 
 trait UpdatingBlock[E] {

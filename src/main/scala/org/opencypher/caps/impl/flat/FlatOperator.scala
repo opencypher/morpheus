@@ -16,26 +16,24 @@
 package org.opencypher.caps.impl.flat
 
 import org.opencypher.caps.api.expr.{Aggregator, Expr, Var}
+import org.opencypher.caps.api.record.{OpaqueField, RecordHeader}
+import org.opencypher.caps.impl.logical.LogicalGraph
 import org.opencypher.caps.ir.api.block.SortItem
 import org.opencypher.caps.ir.api.pattern.{EveryNode, EveryRelationship}
-import org.opencypher.caps.api.record.{OpaqueField, RecordHeader}
-import org.opencypher.caps.impl.logical.{EmptyGraph, GraphSource, LogicalGraph, NamedLogicalGraph}
 
 sealed trait FlatOperator {
   def isLeaf = false
 
   def header: RecordHeader
 
-  def inGraph: LogicalGraph
-  def outGraph: NamedLogicalGraph
+  def sourceGraph: LogicalGraph
 }
 
 sealed trait BinaryFlatOperator extends FlatOperator {
   def lhs: FlatOperator
   def rhs: FlatOperator
 
-  override def inGraph = lhs.outGraph
-  override def outGraph = lhs.outGraph
+  override def sourceGraph: LogicalGraph = lhs.sourceGraph
 }
 
 sealed trait TernaryFlatOperator extends FlatOperator {
@@ -43,15 +41,13 @@ sealed trait TernaryFlatOperator extends FlatOperator {
   def second: FlatOperator
   def third:  FlatOperator
 
-  override def inGraph = first.outGraph
-  override def outGraph = first.outGraph
+  override def sourceGraph: LogicalGraph = first.sourceGraph
 }
 
 sealed trait StackingFlatOperator extends FlatOperator {
   def in: FlatOperator
 
-  override def inGraph = in.outGraph
-  override def outGraph = in.outGraph
+  override def sourceGraph: LogicalGraph = in.sourceGraph
 }
 
 sealed trait FlatLeafOperator extends FlatOperator
@@ -89,8 +85,8 @@ final case class ExpandSource(source: Var, rel: Var, types: EveryRelationship, t
                               sourceOp: FlatOperator, targetOp: FlatOperator, header: RecordHeader, relHeader: RecordHeader)
   extends BinaryFlatOperator {
 
-  override def lhs = sourceOp
-  override def rhs = targetOp
+  override def lhs: FlatOperator = sourceOp
+  override def rhs: FlatOperator = targetOp
 }
 
 final case class ExpandInto(source: Var, rel: Var, types: EveryRelationship, target: Var, sourceOp: FlatOperator,
@@ -107,9 +103,9 @@ final case class BoundedVarExpand(rel: Var, edgeList: Var, target: Var, lower: I
                                   sourceOp: InitVarExpand, relOp: FlatOperator, targetOp: FlatOperator, header: RecordHeader)
   extends TernaryFlatOperator {
 
-  override def first  = sourceOp
-  override def second = relOp
-  override def third  = targetOp
+  override def first: FlatOperator = sourceOp
+  override def second: FlatOperator = relOp
+  override def third: FlatOperator = targetOp
 }
 
 final case class OrderBy(sortItems: Seq[SortItem[Expr]], in: FlatOperator, header: RecordHeader)
@@ -121,7 +117,8 @@ final case class Skip(expr: Expr, in: FlatOperator, header: RecordHeader)
 final case class Limit(expr: Expr, in: FlatOperator, header: RecordHeader)
   extends StackingFlatOperator
 
-final case class Start(outGraph: NamedLogicalGraph, source: GraphSource, fields: Set[Var]) extends FlatLeafOperator {
-  override val inGraph = EmptyGraph
-  override val header = RecordHeader.from(fields.map(OpaqueField).toSeq: _*)
+final case class Start(sourceGraph: LogicalGraph, fields: Set[Var]) extends FlatLeafOperator {
+  override val header: RecordHeader = RecordHeader.from(fields.map(OpaqueField).toSeq: _*)
 }
+
+final case class SetSourceGraph(override val sourceGraph: LogicalGraph, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
