@@ -102,7 +102,7 @@ object Raise {
     s"Incompatible schemas: $detail"
   )
 
-  def semanticErrors(errors: Seq[SemanticErrorDef]) = throw CAPSException(
+  def semanticErrors(errors: Seq[SemanticErrorDef]): Unit = if (errors.nonEmpty) throw CAPSException(
     s"Errors during semantic checking: ${errors.mkString(", ")}"
   )
 

@@ -19,14 +19,21 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters._
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_3.phases._
-import org.neo4j.cypher.internal.frontend.v3_3.{SemanticErrorDef, SemanticFeature, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_3.{SemanticError, SemanticErrorDef, SemanticFeature, SemanticState}
 import org.opencypher.caps.impl.CompilationStage
 import org.opencypher.caps.impl.spark.exception.Raise
 
 object CypherParser extends CypherParser {
   implicit object defaultContext extends BlankBaseContext {
     override def errorHandler: (Seq[SemanticErrorDef]) => Unit =
-      (errors) => if (errors.isEmpty) () else Raise.semanticErrors(errors)
+      (errors) => {
+        val filtered = errors.filter {
+          // TODO: Fix in frontend https://github.com/neo4j/neo4j/pull/10056
+          case s: SemanticError if s.msg.matches("No context graphs available") => false
+          case _ => true
+        }
+        Raise.semanticErrors(filtered)
+      }
   }
 }
 
@@ -50,7 +57,7 @@ trait CypherParser extends CompilationStage[String, Statement, BaseContext] {
       PreparatoryRewriting andThen
       SemanticAnalysis(warn = true, SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature).adds(BaseContains[SemanticState]) andThen
       // TODO: Always extract parameters when we get the beta01
-      AstRewriting(RewriterStepSequencer.newPlain, Never) andThen
+      AstRewriting(RewriterStepSequencer.newPlain, IfNoParameter) andThen
       SemanticAnalysis(warn = false, SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature) andThen
       Namespacer andThen
       CNFNormalizer andThen
