@@ -15,6 +15,8 @@
  */
 package org.opencypher.caps.ir.impl
 
+import java.net.URI
+
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, Ref, SemanticState, ast}
 import org.opencypher.caps.api.expr.Expr
 import org.opencypher.caps.api.schema.Schema
@@ -22,7 +24,7 @@ import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.typer.{SchemaTyper, TypeTracker}
 import org.opencypher.caps.ir.api.IRField
-import org.opencypher.caps.ir.api.block.{BlockRef, DefaultGraph, LoadGraphBlock}
+import org.opencypher.caps.ir.api.block.{BlockRef, AmbientGraph, LoadGraphBlock}
 import org.opencypher.caps.ir.api.global.GlobalsRegistry
 import org.opencypher.caps.ir.api.pattern.Pattern
 
@@ -33,6 +35,7 @@ final case class IRBuilderContext(
   blocks: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
   schemas: Map[BlockRef, Schema],
   semanticState: SemanticState,
+  graphs: Map[String, URI],
   knownTypes: Map[ast.Expression, CypherType] = Map.empty)
 {
   private lazy val typer = SchemaTyper(schemas(graphBlock))
@@ -69,15 +72,18 @@ final case class IRBuilderContext(
     copy(knownTypes = withFieldTypes)
   }
 
+  def withGraphAt(name: String, uri: URI): IRBuilderContext =
+    copy(graphs = graphs.updated(name, uri))
+
 }
 
 object IRBuilderContext {
   def initial(query: String, globals: GlobalsRegistry, schema: Schema, semState: SemanticState, knownTypes: Map[ast.Expression, CypherType]): IRBuilderContext = {
     val registry = BlockRegistry.empty[Expr]
 
-    val block = LoadGraphBlock[Expr](Set.empty, DefaultGraph())
+    val block = LoadGraphBlock[Expr](Set.empty, AmbientGraph())
     val (ref, reg) = registry.register(block)
 
-    IRBuilderContext(query, globals, ref, reg, Map(ref -> schema), semState, knownTypes)
+    IRBuilderContext(query, globals, ref, reg, Map(ref -> schema), semState, Map.empty, knownTypes)
   }
 }

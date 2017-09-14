@@ -16,13 +16,12 @@
 package org.opencypher.caps.impl.logical
 
 import org.opencypher.caps.api.expr._
+import org.opencypher.caps.api.record.{ProjectedExpr, ProjectedField}
+import org.opencypher.caps.api.types._
+import org.opencypher.caps.impl.util._
 import org.opencypher.caps.ir.api.block.{Aggregations, SortItem}
 import org.opencypher.caps.ir.api.pattern.{EveryNode, EveryRelationship}
 import org.opencypher.caps.ir.api.{IRField, SolvedQueryModel}
-import org.opencypher.caps.api.record.{ProjectedExpr, ProjectedField}
-import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.util._
 
 class LogicalOperatorProducer {
   def planBoundedVarLengthExpand(source: IRField, r: IRField, types: EveryRelationship, target: IRField, lower: Int, upper: Int, sourcePlan: LogicalOperator, targetPlan: LogicalOperator): BoundedVarLengthExpand = {
@@ -64,7 +63,7 @@ class LogicalOperatorProducer {
   }
 
   def planNodeScan(node: IRField, everyNode: EveryNode, prev: LogicalOperator): NodeScan = {
-    val solved = everyNode.labels.elements.foldLeft(SolvedQueryModel.empty[Expr].withField(node)) {
+    val solved = everyNode.labels.elements.foldLeft(prev.solved.withField(node)) {
       case (acc, label) => acc.withPredicate(HasLabel(node, label)(CTBoolean))
     }
 
@@ -105,9 +104,13 @@ class LogicalOperatorProducer {
     Select(fields, prev)(prev.solved)
   }
 
-  def planStart(schema: Schema, fields: Set[Var]): Start = {
+  def planSetSourceGraph(graph: LogicalGraph, prev: LogicalOperator): SetSourceGraph = {
+    SetSourceGraph(graph, prev)(prev.solved)
+  }
+
+  def planStart(graph: LogicalGraph, fields: Set[Var]): Start = {
     val irFields = fields.map { v => IRField(v.name)(v.cypherType) }
-    Start(NamedLogicalGraph("default", schema), DefaultGraphSource, fields)(SolvedQueryModel(irFields, Set.empty))
+    Start(graph, fields)(SolvedQueryModel(irFields, Set.empty))
   }
 
   def planOrderBy(sortItems: Seq[SortItem[Expr]], prev: LogicalOperator): OrderBy = {

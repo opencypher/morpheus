@@ -13,24 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.ir.api.block
+package org.opencypher.caps.impl
 
-import java.net.URI
+import org.opencypher.caps.api.schema.Schema
 
-import org.opencypher.caps.ir.api.IRField
-import org.opencypher.caps.ir.api.pattern.AllGiven
+import scala.language.implicitConversions
 
-case class LoadGraphBlock[E](
-  after: Set[BlockRef],
-  binds: GraphDescriptor[E]
-) extends BasicBlock[GraphDescriptor[E], E](BlockType("load-graph")) {
-  override def where: AllGiven[E] = AllGiven[E]()
+package object logical {
+  implicit def fromSchema(schema: Schema): AmbientLogicalGraph =
+    AmbientLogicalGraph(schema)
 
-  override def source: Option[URI] = None
 }
-
-sealed trait GraphDescriptor[E] extends Binds[E] {
-  override def fields: Set[IRField] = Set.empty
-}
-
-final case class AmbientGraph[E]() extends GraphDescriptor[E]

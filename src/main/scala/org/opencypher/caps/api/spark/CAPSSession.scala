@@ -53,6 +53,9 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
   private val physicalPlanner = new PhysicalPlanner()
   private val parser = CypherParser
 
+  def sourceAt(uri: URI): CAPSGraphSource =
+    graphSourceHandler.sourceAt(uri)(this)
+
   def graphAt(path: String): CAPSGraph =
     graphAt(parseURI(path))
 
@@ -86,13 +89,15 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
     println("Done!")
 
     print("Logical plan ... ")
-    val logicalPlannerContext = LogicalPlannerContext(graph.schema, Set.empty)
+    val logicalPlannerContext = LogicalPlannerContext(graph.schema, Set.empty, sourceAt)
     val logicalPlan = logicalPlanner(ir)(logicalPlannerContext)
     println("Done!")
 
     print("Optimizing logical plan ... ")
     val optimizedLogicalPlan = logicalOptimizer(logicalPlan)(logicalPlannerContext)
     println("Done!")
+
+//    println(optimizedLogicalPlan.pretty())
 
     plan(graph, CAPSRecords.empty()(this), tokens, constants, allParameters, optimizedLogicalPlan)
   }
@@ -142,7 +147,7 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
     // TODO: Remove dependency on globals (?) Only needed to enforce everything is known, that could be done
     //       differently
     print("Flat plan ... ")
-    val flatPlan = flatPlanner(logicalPlan)(FlatPlannerContext(graph.schema, tokens, constants))
+    val flatPlan = flatPlanner(logicalPlan)(FlatPlannerContext(tokens, constants))
     println("Done!")
 
     // TODO: It may be better to pass tokens around in the physical planner explicitly (via the records)

@@ -15,6 +15,8 @@
  */
 package org.opencypher.caps.impl.logical
 
+import java.net.URI
+
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.ir.api.SolvedQueryModel
 import org.opencypher.caps.ir.api.block.SortItem
@@ -28,8 +30,7 @@ sealed trait LogicalOperator {
   def isLeaf = false
   def solved: SolvedQueryModel[Expr]
 
-  def inGraph: LogicalGraph
-  def outGraph: NamedLogicalGraph
+  def sourceGraph: LogicalGraph
 
   protected def prefix(depth: Int): String = ("· " * depth ) + "|-"
   def pretty(depth: Int = 0): String
@@ -37,19 +38,20 @@ sealed trait LogicalOperator {
 
 sealed trait LogicalGraph {
   def schema: Schema
+  def name: String
 }
 
-case object EmptyGraph extends LogicalGraph {
-  override val schema = Schema.empty
-}
+final case class ExternalLogicalGraph(name: String, uri: URI, schema: Schema) extends LogicalGraph
+final case class AmbientLogicalGraph(schema: Schema) extends LogicalGraph {
+  override val name = "  AMBIENT_GRAPH"
 
-final case class NamedLogicalGraph(name: String, schema: Schema) extends LogicalGraph
+  override def toString: String = name
+}
 
 sealed trait StackingLogicalOperator extends LogicalOperator {
   def in: LogicalOperator
 
-  override def outGraph = in.outGraph
-  override def inGraph = in.outGraph
+  override def sourceGraph: LogicalGraph = in.sourceGraph
 
   def clone(newIn: LogicalOperator = in): LogicalOperator
 }
@@ -58,9 +60,8 @@ sealed trait BinaryLogicalOperator extends LogicalOperator {
   def lhs: LogicalOperator
   def rhs: LogicalOperator
 
-  // Always follow the left-hand side
-  override def outGraph = lhs.outGraph
-  override def inGraph = lhs.outGraph
+  // TODO: We need to watch out for expansions across graphs, eg FROM ... MATCH (a) FROM ... MATCH (a)-->(b)
+  override def sourceGraph: LogicalGraph = lhs.sourceGraph
 
   def clone(newLhs: LogicalOperator = lhs, newRhs: LogicalOperator = rhs): LogicalOperator
 }
@@ -251,14 +252,21 @@ final case class Optional(lhs: LogicalOperator, rhs: LogicalOperator)
     copy(lhs = newLhs, rhs = newRhs)(solved)
 }
 
-final case class Start(outGraph: NamedLogicalGraph, source: GraphSource, fields: Set[Var])
-                      (override val solved: SolvedQueryModel[Expr]) extends LogicalLeafOperator {
-  override val inGraph = EmptyGraph
+final case class SetSourceGraph(override val sourceGraph: LogicalGraph, in: LogicalOperator)
+                               (override val solved: SolvedQueryModel[Expr])
+  extends StackingLogicalOperator {
+  override def clone(newIn: LogicalOperator) = copy(in = newIn)(solved)
 
-  override def pretty(depth: Int): String = s"${prefix(depth)} Start()"
+  override def pretty(depth: Int) =
+    s"""${prefix(depth)} SetSourceGraph(to = $sourceGraph)
+       #${in.pretty(depth + 1)}""".stripMargin('#')
+
+}
+
+final case class Start(sourceGraph: LogicalGraph, fields: Set[Var])
+                      (override val solved: SolvedQueryModel[Expr]) extends LogicalLeafOperator {
+
+  override def pretty(depth: Int): String = s"${prefix(depth)} Start(at = $sourceGraph, with = $fields)"
 
   override def clone(): Start = copy()(solved)
 }
-
-sealed trait GraphSource
-case object DefaultGraphSource extends GraphSource

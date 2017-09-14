@@ -16,18 +16,18 @@
 package org.opencypher.caps.impl.spark.physical
 
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.ir.api.block.SortItem
-import org.opencypher.caps.ir.api.global._
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.api.types.CTRelationship
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.flat.FlatOperator
-import org.opencypher.caps.impl.logical.DefaultGraphSource
+import org.opencypher.caps.impl.logical.{AmbientLogicalGraph, ExternalLogicalGraph}
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.{DirectCompilationStage, flat}
+import org.opencypher.caps.ir.api.block.SortItem
+import org.opencypher.caps.ir.api.global._
 
 case class PhysicalPlannerContext(
-   defaultGraph: CAPSGraph,
+   ambientGraph: CAPSGraph,
    inputRecords: CAPSRecords,
    tokens: TokenRegistry,
    constants: ConstantRegistry,
@@ -50,18 +50,35 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
       case flat.Select(fields, in, header) =>
         inner(in).select(fields, header)
 
-      case flat.Start(outGraph, source, _) => source match {
-        case DefaultGraphSource =>
-          PhysicalResult(context.inputRecords, Map(outGraph.name -> context.defaultGraph))
+      case flat.Start(graph, _) => graph match {
+        case ExternalLogicalGraph(name, uri, _) =>
+          val graph = context.ambientGraph.session.graphAt(uri)
+          PhysicalResult(context.inputRecords, Map(name -> graph))
+
+        case a: AmbientLogicalGraph =>
+          PhysicalResult(context.inputRecords, Map(a.name -> context.ambientGraph))
         case _ =>
-          Raise.notYetImplemented(s"Loading a graph source other than default, tried $source")
+          Raise.impossible(s"Got an unknown type of graph to start from: $graph")
+      }
+
+      case flat.SetSourceGraph(graph, in, header) =>
+        val p = inner(in)
+
+        graph match {
+          case ExternalLogicalGraph(name, uri, _) =>
+            val graph = context.ambientGraph.session.graphAt(uri)
+            p.withGraph(name -> graph)
+          case a: AmbientLogicalGraph =>
+            p.withGraph(a.name -> context.ambientGraph)
+          case _ =>
+            Raise.impossible(s"Got an unknown type of graph to start from: $graph")
       }
 
       case op@flat.NodeScan(v, labels, in, header) =>
-        inner(in).nodeScan(op.inGraph, v, labels, header)
+        inner(in).nodeScan(op.sourceGraph, v, labels, header)
 
       case op@flat.EdgeScan(e, edgeDef, in, header) =>
-        inner(in).relationshipScan(op.inGraph, e, edgeDef, header)
+        inner(in).relationshipScan(op.sourceGraph, e, edgeDef, header)
 
       case flat.Alias(expr, alias, in, header) =>
         inner(in).alias(expr, alias, header)
@@ -87,7 +104,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
         val rhs = inner(targetOp)
 
         val ctRelType = CTRelationship.apply(types.relTypes.elements.map(_.name))
-        val g = lhs.graphs(op.inGraph.name)
+        val g = lhs.graphs(op.sourceGraph.name)
         val relationships = g.relationships(rel.name, ctRelType)
         val relRhs = PhysicalResult(relationships, lhs.graphs).typeFilter(rel, types.relTypes.map(tokens.relTypeRef), relHeader)
 
@@ -99,7 +116,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
 
       case op@flat.ExpandInto(source, rel, types, target, sourceOp, header, relHeader) =>
         val in = inner(sourceOp)
-        val g = in.graphs(op.inGraph.name)
+        val g = in.graphs(op.sourceGraph.name)
 
         val ctRelType = CTRelationship.apply(types.relTypes.elements.map(_.name))
         val relationships = PhysicalResult(g.relationships(rel.name, ctRelType), in.graphs)

@@ -39,7 +39,7 @@ class FlatPlannerTest extends BaseTestSuite {
 
   val globals = GlobalsRegistry.fromSchema(schema)
 
-  implicit val context = FlatPlannerContext(schema, globals.tokens, globals.constants)
+  implicit val context = FlatPlannerContext(globals.tokens, globals.constants)
 
   import globals.tokens._
   import globals.constants._
@@ -49,7 +49,7 @@ class FlatPlannerTest extends BaseTestSuite {
   val flatPlanner = new FlatPlanner
 
   val logicalStartOperator = mkLogical.planStart(schema, Set.empty)
-  val flatStartOperator = mkFlat.planStart(logicalStartOperator.outGraph, logicalStartOperator.source, logicalStartOperator.fields)
+  val flatStartOperator = mkFlat.planStart(schema, logicalStartOperator.fields)
 
   // TODO: Ids missing
   // TODO: Do not name schema provided columns
@@ -140,7 +140,7 @@ class FlatPlannerTest extends BaseTestSuite {
     val target = Var("m")(CTNode)
 
     result should equal(
-      mkFlat.expandSource(source, rel, EveryRelationship, target,
+      mkFlat.expandSource(source, rel, EveryRelationship, target, schema,
         flatNodeScan(source), flatNodeScan(target)
       )
     )
@@ -182,7 +182,7 @@ class FlatPlannerTest extends BaseTestSuite {
     val target = Var("m")(CTNode)
 
     result should equal(
-      mkFlat.expandSource(source, rel, EveryRelationship(AnyOf(RelType("KNOWS"))), target,
+      mkFlat.expandSource(source, rel, EveryRelationship(AnyOf(RelType("KNOWS"))), target, schema,
         flatNodeScan(source), flatNodeScan(target)
       )
     )

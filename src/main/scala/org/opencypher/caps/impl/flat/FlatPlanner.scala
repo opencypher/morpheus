@@ -15,17 +15,16 @@
  */
 package org.opencypher.caps.impl.flat
 
-import org.opencypher.caps.ir.api.global.{ConstantRegistry, RelType, TokenRegistry}
-import org.opencypher.caps.ir.api.pattern.{AnyGiven, AnyOf, EveryRelationship}
-import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTList, CTRelationship, CypherType}
-import org.opencypher.caps.impl.logical.{DefaultGraphSource, LogicalOperator}
+import org.opencypher.caps.impl.logical.LogicalOperator
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.{DirectCompilationStage, logical}
+import org.opencypher.caps.ir.api.global.{ConstantRegistry, RelType, TokenRegistry}
+import org.opencypher.caps.ir.api.pattern.{AnyGiven, EveryRelationship}
 
 import scala.annotation.tailrec
 
-final case class FlatPlannerContext(schema: Schema, tokens: TokenRegistry, constants: ConstantRegistry)
+final case class FlatPlannerContext(tokens: TokenRegistry, constants: ConstantRegistry)
 
 class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, FlatPlannerContext] {
 
@@ -53,18 +52,21 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
         producer.aggregate(aggregations, group, process(in))
 
       case logical.ExpandSource(source, rel, types, target, sourceOp, targetOp) =>
-        producer.expandSource(source, rel, types, target, process(sourceOp), process(targetOp))
+        producer.expandSource(source, rel, types, target, input.sourceGraph.schema, process(sourceOp), process(targetOp))
 
       case logical.ExpandInto(source, rel, types, target, sourceOp) =>
-        producer.expandInto(source, rel, types, target, process(sourceOp))
+        producer.expandInto(source, rel, types, target, input.sourceGraph.schema, process(sourceOp))
 
-      case logical.Start(outGraph, source, fields) =>
-        producer.planStart(outGraph, source, fields)
+      case logical.Start(graph, fields) =>
+        producer.planStart(graph, fields)
+
+      case logical.SetSourceGraph(graph, in) =>
+        producer.planSetSourceGraph(graph, process(in))
 
       case logical.BoundedVarLengthExpand(source, edgeList, target, lower, upper, sourceOp, targetOp) =>
         val initVarExpand = producer.initVarExpand(source, edgeList, process(sourceOp))
         val types: Set[RelType] = relTypeFromList(edgeList.cypherType).map(context.tokens.relTypeByName)
-        val edgeScan = producer.varLengthEdgeScan(edgeList, EveryRelationship(AnyGiven(types)), producer.planStart(initVarExpand.inGraph, DefaultGraphSource, Set.empty))
+        val edgeScan = producer.varLengthEdgeScan(edgeList, EveryRelationship(AnyGiven(types)), producer.planStart(input.sourceGraph, Set.empty))
         producer.boundedVarExpand(edgeScan.edge, edgeList, target, lower, upper, initVarExpand,
           edgeScan, process(targetOp))
 
