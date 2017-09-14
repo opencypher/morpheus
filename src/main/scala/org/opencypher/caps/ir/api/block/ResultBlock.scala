@@ -25,7 +25,7 @@ final case class ResultBlock[E](
   binds: OrderedFields[E],
   nodes: Set[IRField],
   relationships: Set[IRField],
-  source: URI,
+  source: NamedGraph,
   where: AllGiven[E] = AllGiven[E]()
 ) extends BasicBlock[OrderedFields[E], E](BlockType("result")) {
 
@@ -34,7 +34,7 @@ final case class ResultBlock[E](
 }
 
 object ResultBlock {
-  def empty[E](graphURI: URI) = ResultBlock(Set.empty, OrderedFields[E](), Set.empty, Set.empty, graphURI, AllOf[E]())
+  def empty[E](graph: NamedGraph) = ResultBlock(Set.empty, OrderedFields[E](), Set.empty, Set.empty, graph, AllOf[E]())
 }
 
 final case class OrderedFields[E](fieldsOrder: IndexedSeq[IRField] = IndexedSeq.empty) extends Binds[E] {

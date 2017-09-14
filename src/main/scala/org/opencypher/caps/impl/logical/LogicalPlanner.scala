@@ -81,9 +81,9 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
   def planLeaf(ref: BlockRef, model: QueryModel[Expr])(implicit context: LogicalPlannerContext): LogicalOperator = {
     model(ref) match {
-      case LoadGraphBlock(_, AmbientGraph(), source) =>
-        // TODO: transport the name over here
-        producer.planStart(ExternalLogicalGraph("  AMBIENT GRAPH", source, context.ambientGraphSchema), context.inputRecordFields)
+      case SourceBlock(namedGraph) =>
+        val graphSource = context.resolver(namedGraph.uri)
+        producer.planStart(ExternalLogicalGraph(namedGraph.name, namedGraph.uri, graphSource.schema.get), context.inputRecordFields)
       case x =>
         Raise.notYetImplemented(s"leaf planning of $x")
     }
@@ -226,33 +226,31 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     }
   }
 
-  private def resolveGraph(uri: URI)(implicit context: LogicalPlannerContext): LogicalGraph = {
-    // TODO: Don't lose the name
-    val name = "we lost the name"
-    context.resolver(uri).schema match {
+  private def resolveGraph(graph: NamedGraph)(implicit context: LogicalPlannerContext): LogicalGraph = {
+    val graphSource = context.resolver(graph.uri)
+    val schema = graphSource.schema match {
       case None =>
         // This initialises the graph eagerly!!
         // TODO: We probably want to save the graph reference somewhere
-        val graph = context.resolver(uri).graph
-        ExternalLogicalGraph(name, uri, graph.schema)
-      case Some(schema) =>
-        ExternalLogicalGraph(name, uri, schema)
+        graphSource.graph.schema
+      case Some(s) => s
     }
+    ExternalLogicalGraph(graph.name, graph.uri, schema)
   }
 
-  private def planStart(graph: URI)(implicit context: LogicalPlannerContext): Start = {
+  private def planStart(graph: NamedGraph)(implicit context: LogicalPlannerContext): Start = {
     val logicalGraph: LogicalGraph = resolveGraph(graph)
 
     producer.planStart(logicalGraph, context.inputRecordFields)
   }
 
-  private def setSource(uri: URI, prev: LogicalOperator)(implicit context: LogicalPlannerContext): SetSourceGraph = {
-    val logicalGraph = resolveGraph(uri)
+  private def setSource(graph: NamedGraph, prev: LogicalOperator)(implicit context: LogicalPlannerContext): SetSourceGraph = {
+    val logicalGraph = resolveGraph(graph)
 
     producer.planSetSourceGraph(logicalGraph, prev)
   }
 
-  private def planPattern(plan: LogicalOperator, pattern: Pattern[Expr], graph: URI)(implicit context: LogicalPlannerContext) = {
+  private def planPattern(plan: LogicalOperator, pattern: Pattern[Expr], graph: NamedGraph)(implicit context: LogicalPlannerContext) = {
 
     // find all unsolved nodes from the pattern
     val nodes = pattern.entities.collect {

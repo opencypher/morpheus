@@ -36,12 +36,12 @@ import scala.language.implicitConversions
 
 abstract class IrTestSuite extends BaseTestSuite {
   val leafRef = BlockRef("leaf")
-  val testURI: URI = URI.create("test")
-  val leafBlock = LoadGraphBlock[Expr](Set.empty, AmbientGraph(), testURI)
-  val leafPlan = Start(TestGraph(Schema.empty), Set.empty)(SolvedQueryModel.empty)
+  val testGraph: NamedGraph = NamedGraph("test", URI.create("test"))
+  def leafBlock() = SourceBlock[Expr](testGraph)
+  def leafPlan = Start(ExternalLogicalGraph(testGraph.name, testGraph.uri, Schema.empty), Set.empty)(SolvedQueryModel.empty)
 
   val graphBlockRef = BlockRef("graph")
-  val graphBlock = LoadGraphBlock[Expr](Set.empty, AmbientGraph(), testURI)
+  val graphBlock = SourceBlock[Expr](testGraph)
 
   /**
     * Construct a single-block ir; the parameter block has to be a block that could be planned as a leaf.
@@ -61,10 +61,10 @@ abstract class IrTestSuite extends BaseTestSuite {
 
   def project(fields: ProjectedFields[Expr], after: Set[BlockRef] = Set(leafRef),
               given: AllGiven[Expr] = AllGiven[Expr]()) =
-    ProjectBlock(after, fields, given, testURI)
+    ProjectBlock(after, fields, given, testGraph)
 
   protected def matchBlock(pattern: Pattern[Expr]): Block[Expr] =
-    MatchBlock[Expr](Set(leafRef), pattern, AllGiven[Expr](), false, testURI)
+    MatchBlock[Expr](Set(leafRef), pattern, AllGiven[Expr](), false, testGraph)
 
   def irFor(rootRef: BlockRef, blocks: Map[BlockRef, Block[Expr]]): CypherQuery[Expr] = {
     val result = ResultBlock[Expr](
@@ -74,7 +74,7 @@ abstract class IrTestSuite extends BaseTestSuite {
       nodes = Set.empty, // TODO: Fill these sets correctly
       relationships = Set.empty,
       where = AllGiven[Expr](),
-      source = testURI
+      source = testGraph
     )
     val model = QueryModel(result, GlobalsRegistry.empty, blocks, Map(graphBlockRef -> Schema.empty))
     CypherQuery(QueryInfo("test"), model)
@@ -83,7 +83,7 @@ abstract class IrTestSuite extends BaseTestSuite {
   case class DummyBlock[E](after: Set[BlockRef] = Set.empty) extends BasicBlock[DummyBinds[E], E](BlockType("dummy")) {
     override def binds: DummyBinds[E] = DummyBinds[E]()
     override def where: AllGiven[E] = AllGiven[E]()
-    override val source = testURI
+    override val source = testGraph
   }
 
   case class DummyBinds[E](fields: Set[IRField] = Set.empty) extends Binds[E]
@@ -94,14 +94,14 @@ abstract class IrTestSuite extends BaseTestSuite {
     // TODO: SemCheck
     def ir(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
-      IRBuilder(stmt)(IRBuilderContext.initial(queryText, GlobalsExtractor(stmt), schema, SemanticState.clean, testURI, Map.empty))
+      IRBuilder(stmt)(IRBuilderContext.initial(queryText, GlobalsExtractor(stmt), schema, SemanticState.clean, testGraph, Map.empty))
     }
 
     // TODO: SemCheck
     def irWithParams(params: (String, CypherType)*)(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
       val knownTypes: Map[Expression, CypherType] = params.map(p => Parameter(p._1, symbols.CTAny)(InputPosition.NONE) -> p._2).toMap
-      IRBuilder(stmt)(IRBuilderContext.initial(queryText, GlobalsExtractor(stmt), schema, SemanticState.clean, testURI, knownTypes))
+      IRBuilder(stmt)(IRBuilderContext.initial(queryText, GlobalsExtractor(stmt), schema, SemanticState.clean, testGraph, knownTypes))
     }
   }
 }

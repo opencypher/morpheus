@@ -31,8 +31,10 @@ trait Block[E] {
   def binds: Binds[E]
   def where: AllGiven[E]
 
-  def source: URI
+  def source: NamedGraph
 }
+
+case class NamedGraph(name: String, uri: URI)
 
 trait UpdatingBlock[E] {
   self: Block[E] =>
@@ -41,6 +43,12 @@ trait UpdatingBlock[E] {
 }
 
 final case class BlockType(name: String)
+
+object Binds {
+  def empty[E] = new Binds[E] {
+    override def fields: Set[IRField] = Set.empty
+  }
+}
 
 trait Binds[E] {
   def fields: Set[IRField]

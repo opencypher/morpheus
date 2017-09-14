@@ -76,7 +76,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           given <- convertWhere(astWhere)
           context <- get[R, IRBuilderContext]
           refs <- {
-            val uri = getUri(c, context)
+            val uri = getNamedGraph(c, context)
             val blockRegistry = context.blocks
             val after = blockRegistry.lastAdded.toSet
             val block = MatchBlock[Expr](after, pattern, given, optional, uri)
@@ -97,7 +97,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           given <- convertWhere(where)
           context <- get[R, IRBuilderContext]
           refs <- {
-            val uri = getUri(c, context)
+            val uri = getNamedGraph(c, context)
             val (projectRef, projectReg) = registerProjectBlock(context, fieldExprs, given, uri)
             val appendList = (list: Vector[BlockRef]) => pure[R, Vector[BlockRef]](projectRef +: list)
             val orderAndSliceBlock = registerOrderAndSliceBlock(orderBy, skip, limit)
@@ -114,9 +114,9 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
               case (_, _: Aggregator) => true
             }
 
-            val (ref1, reg1) = registerProjectBlock(context, group, source = context.ambientGraphURI)
+            val (ref1, reg1) = registerProjectBlock(context, group, source = context.ambientGraph)
             val after = reg1.lastAdded.toSet
-            val aggBlock = AggregationBlock[Expr](after, Aggregations(agg.toSet), group.map(_._1).toSet, context.ambientGraphURI)
+            val aggBlock = AggregationBlock[Expr](after, Aggregations(agg.toSet), group.map(_._1).toSet, context.ambientGraph)
             val (ref2, reg2) = reg1.register(aggBlock)
 
             put[R, IRBuilderContext](context.copy(blocks = reg2)) >> pure[R, Vector[BlockRef]](Vector(ref1, ref2))
@@ -128,10 +128,10 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           fieldExprs <- EffMonad[R].sequence(items.map(convertReturnItem[R]).toVector)
           context <- get[R, IRBuilderContext]
           refs <- {
-            val (ref, reg) = registerProjectBlock(context, fieldExprs, distinct = distinct, source = context.ambientGraphURI)
+            val (ref, reg) = registerProjectBlock(context, fieldExprs, distinct = distinct, source = context.ambientGraph)
             val rItems = fieldExprs.map(_._1)
             val orderedFields = OrderedFields[Expr](rItems)
-            val returns = ResultBlock[Expr](Set(ref), orderedFields, Set.empty, Set.empty, context.ambientGraphURI)
+            val returns = ResultBlock[Expr](Set(ref), orderedFields, Set.empty, Set.empty, context.ambientGraph)
             val (ref2, reg2) = reg.register(returns)
             put[R, IRBuilderContext](context.copy(blocks = reg2)) >> pure[R, Vector[BlockRef]](Vector(ref, ref2))
           }
@@ -142,13 +142,13 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
     }
   }
 
-  private def getUri(c: Clause, context: IRBuilderContext) = {
+  private def getNamedGraph(c: Clause, context: IRBuilderContext) = {
     context.semanticState.recordedContextGraphs.get(c).map {
       c => context.graphs(c.source)
-    }.getOrElse(context.ambientGraphURI)
+    }.getOrElse(context.ambientGraph)
   }
 
-  private def registerProjectBlock(context: IRBuilderContext, fieldExprs: Vector[(IRField, Expr)], given: AllGiven[Expr] = AllGiven[Expr](), source: URI, distinct: Boolean = false) = {
+  private def registerProjectBlock(context: IRBuilderContext, fieldExprs: Vector[(IRField, Expr)], given: AllGiven[Expr] = AllGiven[Expr](), source: NamedGraph, distinct: Boolean = false) = {
     val blockRegistry = context.blocks
     val binds = ProjectedFields(fieldExprs.toMap)
 
@@ -177,7 +177,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           val blockRegistry = context.blocks
           val after = blockRegistry.lastAdded.toSet
 
-          val orderAndSliceBlock = OrderAndSliceBlock[Expr](after, sortItems, skipExpr, limitExpr, context.ambientGraphURI)
+          val orderAndSliceBlock = OrderAndSliceBlock[Expr](after, sortItems, skipExpr, limitExpr, context.ambientGraph)
           val (ref,reg) = blockRegistry.register(orderAndSliceBlock)
           put[R, IRBuilderContext](context.copy(blocks = reg)) >> pure[R, Vector[BlockRef]](Vector(ref))
         }

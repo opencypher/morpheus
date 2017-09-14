@@ -37,6 +37,7 @@ import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraphSourceFactory
 import org.opencypher.caps.impl.spark.io.session.SessionGraphSourceFactory
 import org.opencypher.caps.impl.spark.physical.{CAPSResultBuilder, PhysicalPlanner, PhysicalPlannerContext}
 import org.opencypher.caps.ir.api.IRField
+import org.opencypher.caps.ir.api.block.NamedGraph
 import org.opencypher.caps.ir.api.global.{ConstantRef, ConstantRegistry, GlobalsRegistry, TokenRegistry}
 import org.opencypher.caps.ir.impl.global.GlobalsExtractor
 import org.opencypher.caps.ir.impl.{IRBuilder, IRBuilderContext}
@@ -85,7 +86,7 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
   override def graph: CAPSGraph = CAPSGraph.empty(this)
 
   override def cypher(graph: Graph, query: String, queryParameters: Map[String, CypherValue]): Result = {
-    val (ambientName, ambientURI) = mountAmbientGraph(graph)
+    val ambientGraph = mountAmbientGraph(graph)
 
     val (stmt, extractedLiterals, semState) = parser.process(query)(CypherParser.defaultContext)
 
@@ -100,7 +101,7 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
     val paramsAndTypes = GlobalsExtractor.paramWithTypes(stmt)
 
     print("IR ... ")
-    val ir = IRBuilder(stmt)(IRBuilderContext.initial(query, globals, graph.schema, semState, ambientURI, paramsAndTypes))
+    val ir = IRBuilder(stmt)(IRBuilderContext.initial(query, globals, graph.schema, semState, ambientGraph, paramsAndTypes))
     println("Done!")
 
     print("Logical plan ... ")
@@ -119,7 +120,7 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
     plan(graph, CAPSRecords.empty()(this), tokens, constants, allParameters, optimizedLogicalPlan)
   }
 
-  private def mountAmbientGraph(ambient: CAPSGraph): (String, URI) = {
+  private def mountAmbientGraph(ambient: CAPSGraph): NamedGraph = {
     val name = UUID.randomUUID().toString
     val uri = URI.create(s"session:///graphs/ambient/$name")
 
@@ -136,13 +137,13 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
 
     graphSourceHandler.mountSourceAt(graphSource, uri)(self)
 
-    name -> uri
+    NamedGraph(name, uri)
   }
 
   private def planStart(graph: Graph, fields: Set[Var]): LogicalOperator = {
-    val (name, uri) = mountAmbientGraph(graph)
+    val ambientGraph = mountAmbientGraph(graph)
 
-    producer.planStart(ExternalLogicalGraph(name, uri, graph.schema), fields)
+    producer.planStart(ExternalLogicalGraph(ambientGraph.name, ambientGraph.uri, graph.schema), fields)
   }
 
   def filter(graph: Graph, in: Records, expr: Expr, queryParameters: Map[String, CypherValue]): Records = {

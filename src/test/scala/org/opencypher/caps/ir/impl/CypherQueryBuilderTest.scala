@@ -33,8 +33,8 @@ class CypherQueryBuilderTest extends IrTestSuite {
       import globals.tokens._
 
       val loadRef = model.findExactlyOne {
-        case NoWhereBlock(LoadGraphBlock(binds, AmbientGraph(), _)) =>
-          binds shouldBe empty
+        case NoWhereBlock(s@SourceBlock(_)) =>
+          s.binds.fields shouldBe empty
       }
 
       val matchRef = model.findExactlyOne {
@@ -68,8 +68,8 @@ class CypherQueryBuilderTest extends IrTestSuite {
     "MATCH (a)-[r]->(b) RETURN b AS otherB, a, r".model.ensureThat { (model, globals) =>
 
       val loadRef = model.findExactlyOne {
-        case NoWhereBlock(LoadGraphBlock(binds, AmbientGraph(), _)) =>
-          binds shouldBe empty
+        case NoWhereBlock(s@SourceBlock(_)) =>
+          s.binds.fields shouldBe empty
       }
 
       val matchRef = model.findExactlyOne {
@@ -108,8 +108,8 @@ class CypherQueryBuilderTest extends IrTestSuite {
       import globals.tokens._
 
       val loadRef = model.findExactlyOne {
-        case NoWhereBlock(LoadGraphBlock(binds, AmbientGraph(), _)) =>
-          binds shouldBe empty
+        case NoWhereBlock(s@SourceBlock(_)) =>
+          s.binds.fields shouldBe empty
       }
 
       val matchRef = model.findExactlyOne {

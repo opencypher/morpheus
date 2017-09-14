@@ -15,17 +15,23 @@
  */
 package org.opencypher.caps.impl.logical
 
+import java.net.URI
+
 import org.opencypher.caps.api.expr._
+import org.opencypher.caps.api.io.{GraphSource, PersistMode}
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block._
 import org.opencypher.caps.ir.api.global._
 import org.opencypher.caps.ir.api.pattern.{DirectedRelationship, EveryNode, EveryRelationship, Pattern}
 import org.opencypher.caps.api.record.{ProjectedExpr, ProjectedField}
 import org.opencypher.caps.api.schema.Schema
+import org.opencypher.caps.api.spark.CAPSGraph
+import org.opencypher.caps.api.spark.io.CAPSGraphSource
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.flat.TestGraph
 import org.opencypher.caps.ir.impl.IrTestSuite
 import org.opencypher.caps.impl.logical
+import org.opencypher.caps.impl.spark.io.CAPSGraphSourceImpl
 import org.opencypher.caps.impl.util.toVar
 import org.opencypher.caps.toField
 import org.scalatest.matchers.{MatchResult, Matcher}
@@ -86,10 +92,10 @@ class LogicalPlannerTest extends IrTestSuite {
                 Filter(HasLabel(Var("a")(CTNode), tokens.labelByName("Administrator"))(CTBoolean),
                   ExpandSource(Var("a")(CTNode), Var("r")(CTRelationship), EveryRelationship, Var("g")(CTNode),
                     NodeScan(Var("a")(CTNode), EveryNode,
-                      Start(TestGraph(Schema.empty), Set.empty)(emptySqm)
+                      Start(ExternalLogicalGraph(testGraph.name, testGraph.uri, Schema.empty), Set.empty)(emptySqm)
                     )(emptySqm),
                     NodeScan(Var("g")(CTNode), EveryNode,
-                      Start(TestGraph(Schema.empty), Set.empty)(emptySqm)
+                      Start(ExternalLogicalGraph(testGraph.name, testGraph.uri, Schema.empty), Set.empty)(emptySqm)
                     )(emptySqm)
                   )(emptySqm)
                 )(emptySqm)
@@ -120,10 +126,10 @@ class LogicalPlannerTest extends IrTestSuite {
                 Filter(HasLabel(Var("a")(CTNode), tokens.labelByName("Administrator"))(CTBoolean),
                   ExpandSource(Var("a")(CTNode), Var("r")(CTRelationship), EveryRelationship, Var("g")(CTNode),
                     NodeScan(Var("a")(CTNode), EveryNode,
-                      Start(TestGraph(schema), Set.empty)(emptySqm)
+                      Start(ExternalLogicalGraph(testGraph.name, testGraph.uri, schema), Set.empty)(emptySqm)
                     )(emptySqm),
                     NodeScan(Var("g")(CTNode), EveryNode,
-                      Start(TestGraph(schema), Set.empty)(emptySqm)
+                      Start(ExternalLogicalGraph(testGraph.name, testGraph.uri, schema), Set.empty)(emptySqm)
                     )(emptySqm)
                   )(emptySqm)
                 )(emptySqm)
@@ -146,8 +152,8 @@ class LogicalPlannerTest extends IrTestSuite {
         Project(ProjectedField(Var("a.prop")(CTVoid), Property(nodeA, tokens.propertyKeyByName("prop"))(CTVoid)),
           Filter(Not(Equals(Const(constants.constantByName("p1"))(CTInteger), Const(constants.constantByName("p2"))(CTBoolean))(CTBoolean))(CTBoolean),
             NodeScan(nodeA, EveryNode,
-              SetSourceGraph(ExternalLogicalGraph("  AMBIENT_GRAPH", testURI, Schema.empty),
-                Start(TestGraph(Schema.empty), Set.empty)(emptySqm)
+              SetSourceGraph(ExternalLogicalGraph(testGraph.name, testGraph.uri, Schema.empty),
+                Start(ExternalLogicalGraph(testGraph.name, testGraph.uri, Schema.empty), Set.empty)(emptySqm)
               )(emptySqm)
             )(emptySqm)
           )(emptySqm)
@@ -159,7 +165,7 @@ class LogicalPlannerTest extends IrTestSuite {
   private val planner = new LogicalPlanner(new LogicalOperatorProducer)
 
   private def plan(ir: CypherQuery[Expr], globalsRegistry: GlobalsRegistry = GlobalsRegistry.empty, schema: Schema = Schema.empty): LogicalOperator =
-    planner.process(ir)(LogicalPlannerContext(schema, Set.empty, null))
+    planner.process(ir)(LogicalPlannerContext(schema, Set.empty, (_) => FakeGraphSource(schema)))
 
   case class equalWithoutResult(plan: LogicalOperator) extends Matcher[LogicalOperator] {
     override def apply(left: LogicalOperator): MatchResult = {
@@ -171,4 +177,16 @@ class LogicalPlannerTest extends IrTestSuite {
       }
     }
   }
+
+  private case class FakeGraphSource(_schema: Schema) extends CAPSGraphSource {
+    override lazy val session: Session = ???
+    override def canonicalURI: URI = ???
+    override def sourceForGraphAt(uri: URI): Boolean = ???
+    override def create: CAPSGraph = ???
+    override def graph: CAPSGraph = ???
+    override def schema: Option[Schema] = Some(_schema)
+    override def persist(mode: PersistMode, graph: CAPSGraph): CAPSGraph = ???
+    override def delete(): Unit = ???
+  }
+
 }
