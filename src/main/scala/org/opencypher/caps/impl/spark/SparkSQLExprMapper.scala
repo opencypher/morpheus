@@ -20,7 +20,7 @@ import org.apache.spark.sql.types.{ArrayType, BooleanType, LongType, StringType}
 import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.record.RecordHeader
-import org.opencypher.caps.api.types.CTNode
+import org.opencypher.caps.api.types.{CTList, CTNode, CTString}
 import org.opencypher.caps.impl.spark.Udfs._
 import org.opencypher.caps.impl.spark.convert.toSparkType
 import org.opencypher.caps.impl.spark.exception.Raise
@@ -100,9 +100,9 @@ object SparkSQLExprMapper {
         verifyExpression(header, expr)
 
         val col = getColumn(s.expr, header, df)
-        val computedSize = col.expr.dataType match {
-          case _: StringType => udf((s: String) => s.size.toLong, LongType)(col)
-          case _: ArrayType => functions.size(col).cast(LongType)
+        val computedSize = s.expr.cypherType match {
+          case CTString => udf((s: String) => s.size.toLong, LongType)(col)
+          case _: CTList => functions.size(col).cast(LongType)
           case other => Raise.notYetImplemented(s"size() on type $other")
         }
         Some(computedSize)
