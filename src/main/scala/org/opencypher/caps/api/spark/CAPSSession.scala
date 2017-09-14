@@ -28,6 +28,7 @@ import org.opencypher.caps.impl.spark.io.session.SessionGraphSourceFactory
 import org.opencypher.caps.ir.api.IRField
 import org.opencypher.caps.ir.api.global.{ConstantRef, ConstantRegistry, GlobalsRegistry, TokenRegistry}
 import org.opencypher.caps.api.value.CypherValue
+import org.opencypher.caps.demo.Configuration.PrintLogicalPlan
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceHandler
 import org.opencypher.caps.ir.impl.global.GlobalsExtractor
@@ -96,6 +97,9 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
     print("Optimizing logical plan ... ")
     val optimizedLogicalPlan = logicalOptimizer(logicalPlan)(logicalPlannerContext)
     println("Done!")
+
+    if (PrintLogicalPlan.get())
+      println(optimizedLogicalPlan.pretty())
 
     // TODO: Initialize with a table with no columns and a single row
     plan(graph, CAPSRecords.empty()(this), tokens, constants, allParameters, optimizedLogicalPlan)

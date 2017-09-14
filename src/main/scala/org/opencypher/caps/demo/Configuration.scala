@@ -18,6 +18,8 @@ package org.opencypher.caps.demo
 object Configuration {
 
   abstract class ConfigOption[T](val name: String, val defaultValue: T)(convert: String => Option[T]) {
+    def set(v: String): Unit = System.setProperty(name, v)
+
     def get(): T = Option(System.getProperty(name)).flatMap(convert).getOrElse(defaultValue)
 
     override def toString: String = {
@@ -28,6 +30,10 @@ object Configuration {
 
   object MasterAddress extends ConfigOption("cos.master", "local[*]")(Some(_))
   object Logging extends ConfigOption("cos.logging", "OFF")(Some(_))
+
+  object PrintLogicalPlan extends ConfigOption("cos.explain", false)(s => if (s == null) Some(false) else Some(true)) {
+    def set(): Unit = set("true")
+  }
 
   val conf = Seq(MasterAddress, Logging)
 
