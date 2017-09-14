@@ -24,7 +24,7 @@ final case class ProjectBlock[E](
   after: Set[BlockRef],
   binds: ProjectedFields[E] = ProjectedFields[E](),
   where: AllGiven[E] = AllGiven[E](),
-  source: Option[URI],
+  source: URI,
   distinct: Boolean = false
 ) extends BasicBlock[ProjectedFields[E], E](BlockType("project"))
 

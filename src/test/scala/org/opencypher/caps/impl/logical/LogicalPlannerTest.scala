@@ -23,6 +23,7 @@ import org.opencypher.caps.ir.api.pattern.{DirectedRelationship, EveryNode, Ever
 import org.opencypher.caps.api.record.{ProjectedExpr, ProjectedField}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.impl.flat.TestGraph
 import org.opencypher.caps.ir.impl.IrTestSuite
 import org.opencypher.caps.impl.logical
 import org.opencypher.caps.impl.util.toVar
@@ -85,10 +86,10 @@ class LogicalPlannerTest extends IrTestSuite {
                 Filter(HasLabel(Var("a")(CTNode), tokens.labelByName("Administrator"))(CTBoolean),
                   ExpandSource(Var("a")(CTNode), Var("r")(CTRelationship), EveryRelationship, Var("g")(CTNode),
                     NodeScan(Var("a")(CTNode), EveryNode,
-                      Start(Schema.empty, Set.empty)(emptySqm)
+                      Start(TestGraph(Schema.empty), Set.empty)(emptySqm)
                     )(emptySqm),
                     NodeScan(Var("g")(CTNode), EveryNode,
-                      Start(Schema.empty, Set.empty)(emptySqm)
+                      Start(TestGraph(Schema.empty), Set.empty)(emptySqm)
                     )(emptySqm)
                   )(emptySqm)
                 )(emptySqm)
@@ -119,10 +120,10 @@ class LogicalPlannerTest extends IrTestSuite {
                 Filter(HasLabel(Var("a")(CTNode), tokens.labelByName("Administrator"))(CTBoolean),
                   ExpandSource(Var("a")(CTNode), Var("r")(CTRelationship), EveryRelationship, Var("g")(CTNode),
                     NodeScan(Var("a")(CTNode), EveryNode,
-                      Start(schema, Set.empty)(emptySqm)
+                      Start(TestGraph(schema), Set.empty)(emptySqm)
                     )(emptySqm),
                     NodeScan(Var("g")(CTNode), EveryNode,
-                      Start(schema, Set.empty)(emptySqm)
+                      Start(TestGraph(schema), Set.empty)(emptySqm)
                     )(emptySqm)
                   )(emptySqm)
                 )(emptySqm)
@@ -145,8 +146,8 @@ class LogicalPlannerTest extends IrTestSuite {
         Project(ProjectedField(Var("a.prop")(CTVoid), Property(nodeA, tokens.propertyKeyByName("prop"))(CTVoid)),
           Filter(Not(Equals(Const(constants.constantByName("p1"))(CTInteger), Const(constants.constantByName("p2"))(CTBoolean))(CTBoolean))(CTBoolean),
             NodeScan(nodeA, EveryNode,
-              SetSourceGraph(AmbientLogicalGraph(Schema.empty),
-                Start(Schema.empty, Set.empty)(emptySqm)
+              SetSourceGraph(ExternalLogicalGraph("  AMBIENT_GRAPH", testURI, Schema.empty),
+                Start(TestGraph(Schema.empty), Set.empty)(emptySqm)
               )(emptySqm)
             )(emptySqm)
           )(emptySqm)

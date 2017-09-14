@@ -22,11 +22,10 @@ import org.opencypher.caps.ir.api.pattern.AllGiven
 
 case class LoadGraphBlock[E](
   after: Set[BlockRef],
-  binds: GraphDescriptor[E]
+  binds: GraphDescriptor[E],
+  source: URI
 ) extends BasicBlock[GraphDescriptor[E], E](BlockType("load-graph")) {
   override def where: AllGiven[E] = AllGiven[E]()
-
-  override def source: Option[URI] = None
 }
 
 sealed trait GraphDescriptor[E] extends Binds[E] {

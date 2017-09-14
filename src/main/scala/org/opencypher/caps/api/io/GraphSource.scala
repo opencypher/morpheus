@@ -85,7 +85,7 @@ trait GraphSource {
     *
     * @return the schema of the graph stored in this graph source.
     */
-  def schema: Option[Schema]
+  def schema: Option[Schema] = None
 
   /**
     * Persists the argument graph to this source.

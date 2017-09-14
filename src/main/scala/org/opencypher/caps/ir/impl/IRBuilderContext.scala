@@ -31,6 +31,7 @@ import org.opencypher.caps.ir.api.pattern.Pattern
 final case class IRBuilderContext(
   queryString: String,
   globals: GlobalsRegistry,
+  ambientGraphURI: URI,
   graphBlock: BlockRef,
   blocks: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
   schemas: Map[BlockRef, Schema],
@@ -38,6 +39,7 @@ final case class IRBuilderContext(
   graphs: Map[String, URI],
   knownTypes: Map[ast.Expression, CypherType] = Map.empty)
 {
+  // TODO: Teach SchemaTyper to work with multiple graphs
   private lazy val typer = SchemaTyper(schemas(graphBlock))
   private lazy val exprConverter = new ExpressionConverter(globals)
   private lazy val patternConverter = new PatternConverter(globals)
@@ -78,12 +80,13 @@ final case class IRBuilderContext(
 }
 
 object IRBuilderContext {
-  def initial(query: String, globals: GlobalsRegistry, schema: Schema, semState: SemanticState, knownTypes: Map[ast.Expression, CypherType]): IRBuilderContext = {
+  def initial(query: String, globals: GlobalsRegistry, schema: Schema, semState: SemanticState, ambientGraphUri: URI, knownTypes: Map[ast.Expression, CypherType]): IRBuilderContext = {
     val registry = BlockRegistry.empty[Expr]
 
-    val block = LoadGraphBlock[Expr](Set.empty, AmbientGraph())
+    // TODO: Maybe remove loadgraph block?
+    val block = LoadGraphBlock[Expr](Set.empty, AmbientGraph(), ambientGraphUri)
     val (ref, reg) = registry.register(block)
 
-    IRBuilderContext(query, globals, ref, reg, Map(ref -> schema), semState, Map.empty, knownTypes)
+    IRBuilderContext(query, globals, ambientGraphUri, ref, reg, Map(ref -> schema), semState, Map.empty, knownTypes)
   }
 }

@@ -24,7 +24,7 @@ final case class AggregationBlock[E](
     after: Set[BlockRef],
     binds: Aggregations[E],
     group: Set[IRField],
-    source: Option[URI]
+    source: URI
 ) extends BasicBlock[Aggregations[E], E](BlockType("aggregation")) {
 
   override val where: AllGiven[E] = AllGiven[E]() // no filtering in aggregation blocks

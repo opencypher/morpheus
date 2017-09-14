@@ -20,7 +20,7 @@ import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.api.types.CTRelationship
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.flat.FlatOperator
-import org.opencypher.caps.impl.logical.{AmbientLogicalGraph, ExternalLogicalGraph}
+import org.opencypher.caps.impl.logical.ExternalLogicalGraph
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.{DirectCompilationStage, flat}
 import org.opencypher.caps.ir.api.block.SortItem
@@ -55,8 +55,6 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
           val graph = context.ambientGraph.session.graphAt(uri)
           PhysicalResult(context.inputRecords, Map(name -> graph))
 
-        case a: AmbientLogicalGraph =>
-          PhysicalResult(context.inputRecords, Map(a.name -> context.ambientGraph))
         case _ =>
           Raise.impossible(s"Got an unknown type of graph to start from: $graph")
       }
@@ -68,8 +66,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
           case ExternalLogicalGraph(name, uri, _) =>
             val graph = context.ambientGraph.session.graphAt(uri)
             p.withGraph(name -> graph)
-          case a: AmbientLogicalGraph =>
-            p.withGraph(a.name -> context.ambientGraph)
+
           case _ =>
             Raise.impossible(s"Got an unknown type of graph to start from: $graph")
       }

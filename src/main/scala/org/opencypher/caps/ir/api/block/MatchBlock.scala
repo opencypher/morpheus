@@ -24,5 +24,5 @@ final case class MatchBlock[E](
   binds: Pattern[E],
   where: AllGiven[E] = AllGiven[E](),
   optional: Boolean,
-  source: Option[URI]
+  source: URI
 ) extends BasicBlock[Pattern[E], E](BlockType("match"))

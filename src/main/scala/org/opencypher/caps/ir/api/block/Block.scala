@@ -31,7 +31,7 @@ trait Block[E] {
   def binds: Binds[E]
   def where: AllGiven[E]
 
-  def source: Option[URI]
+  def source: URI
 }
 
 trait UpdatingBlock[E] {
