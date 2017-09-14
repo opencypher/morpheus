@@ -222,10 +222,7 @@ final case class Labels(expr: Expr)(val cypherType: CypherType = CTWildcard) ext
 final case class Type(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr
 final case class Exists(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr
 final case class Size(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr
-
-final case class Keys(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr {
-  override val name = "keys"
-}
+final case class Keys(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr
 
 // Aggregators
 sealed trait Aggregator extends Expr {
