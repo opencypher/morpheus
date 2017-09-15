@@ -247,6 +247,9 @@
             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>
                 <version>${plugin.maven-resources.version}</version>
+                <configuration>
+                    <encoding>${project.build.encoding}</encoding>
+                </configuration>
                 <executions>
                     <execution>
                         <id>copy-resources</id>
