@@ -15,6 +15,8 @@
  */
 package org.opencypher.caps.test.fixture
 
+import java.net.URI
+
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hdfs.MiniDFSCluster
 import org.apache.spark.sql.Row
@@ -26,7 +28,11 @@ trait MiniDFSClusterFixture extends BaseTestFixture {
 
   protected var dfsCluster: MiniDFSCluster = _
 
-  protected val dfsTestGraphPath = "/csv_graph"
+  protected val dfsTestGraphPath: String
+
+  def hdfsURI: URI = hdfsURI(dfsTestGraphPath)
+
+  def hdfsURI(path: String): URI = URI.create(s"hdfs+csv://${dfsCluster.getNameNode.getHostAndPort}$path")
 
   abstract override def beforeAll(): Unit = {
     super.beforeAll()

@@ -30,7 +30,19 @@ trait CypherSession {
   type Result <: CypherResult { type Result = self.Result; type Graph = self.Graph; type Records = self.Records }
   type Data
 
+  def graph: Graph
+
+  final def cypher(query: String): Result =
+    cypher(graph, query, Map.empty)
+
+  final def cypher(query: String, parameters: Map[String, CypherValue]): Result =
+    cypher(graph, query, parameters)
+
+  final def cypher(graph: Graph, query: String): Result =
+    cypher(graph, query, Map.empty)
+
   def cypher(graph: Graph, query: String, parameters: Map[String, CypherValue]): Result
+
   def graphAt(uri: URI): Graph
 }
 

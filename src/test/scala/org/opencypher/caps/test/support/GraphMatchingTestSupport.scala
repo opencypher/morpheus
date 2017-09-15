@@ -26,7 +26,7 @@ import org.opencypher.caps.api.record.{FieldSlotContent, RecordHeader}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSResult, CAPSSession}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
-import org.opencypher.caps.api.util.parseURI
+import org.opencypher.caps.api.util.parsePathOrURI
 import org.opencypher.caps.api.value.{CypherMap, CypherValue}
 import org.opencypher.caps.impl.convert.fromJavaType
 import org.opencypher.caps.impl.record.CAPSRecordsTokens
@@ -74,7 +74,7 @@ trait GraphMatchingTestSupport {
       .buildFromString(gdl)
 
     def mountAt(pathOrUri: String): Unit =
-      mountAt(parseURI(pathOrUri))
+      mountAt(parsePathOrURI(pathOrUri))
 
     def mountAt(uri: URI): Unit =
       caps.mountSourceAt(TestGraphSource(uri, this), uri)
@@ -143,6 +143,8 @@ trait GraphMatchingTestSupport {
         CAPSRecords.create(header, data)
       }
 
+      override def union(other: CAPSGraph): CAPSGraph = ???
+
       override def relationships(name: String, cypherType: CTRelationship): CAPSRecords = {
 
         val header = RecordHeader.relationshipFromSchema(Var(name)(cypherType), schema, tokens.registry)
@@ -198,7 +200,7 @@ trait GraphMatchingTestSupport {
     override def create: CAPSGraph = ???
     override def graph: CAPSGraph = capsGraph
     override def schema: Option[Schema] = None
-    override def persist(mode: PersistMode, graph: CAPSGraph): CAPSGraph = ???
+    override def persist(graph: CAPSGraph, mode: PersistMode): CAPSGraph = ???
     override def delete(): Unit = ???
   }
 }

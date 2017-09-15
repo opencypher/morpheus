@@ -17,16 +17,16 @@ package org.opencypher.caps.api.util
 
 import java.net.URI
 
-import org.opencypher.caps.impl.spark.io.session.SessionGraphSourceFactory
-
 // TODO: Test
-case object parseURI extends (String => URI) {
+case object parsePathOrURI extends (String => URI) {
 
   def apply(pathOrUri: String): URI = {
     val trimmed = pathOrUri.trim
     if (trimmed.startsWith("/"))
-      URI.create(s"${SessionGraphSourceFactory.defaultScheme}:$trimmed")
+      pathURI(trimmed)
     else
       URI.create(trimmed)
   }
 }
+
+

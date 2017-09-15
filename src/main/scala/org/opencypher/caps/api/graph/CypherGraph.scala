@@ -43,5 +43,7 @@ trait CypherGraph {
   final def cypher(query: String, parameters: Map[String, CypherValue] = Map.empty)(implicit caps: Session): Result =
     caps.cypher(graph, query, parameters)
 
+  def union(other: Graph): Graph
+
   protected def graph: Graph
 }

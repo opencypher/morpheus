@@ -33,11 +33,11 @@ case class SessionGraphSource(path: String)(implicit capsSession: CAPSSession)
   override def sourceForGraphAt(uri: URI): Boolean =
     uri == canonicalURI
 
-  override def create: CAPSGraph = persist(CreateOrFail, CAPSGraph.empty)
+  override def create: CAPSGraph = persist(CAPSGraph.empty, CreateOrFail)
   override def graph: CAPSGraph = currentGraph.getOrElse(Raise.graphNotFound(canonicalURI))
   override def schema: Option[Schema] = None
 
-  override def persist(mode: PersistMode, graph: CAPSGraph): CAPSGraph = mode match {
+  override def persist(graph: CAPSGraph, mode: PersistMode): CAPSGraph = mode match {
     case Overwrite =>
       currentGraph = Some(graph)
       graph

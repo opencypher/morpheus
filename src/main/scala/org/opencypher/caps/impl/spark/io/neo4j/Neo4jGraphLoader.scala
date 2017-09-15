@@ -139,6 +139,9 @@ object Neo4jGraphLoader {
         }
       }
 
+      override def union(other: CAPSGraph): CAPSGraph =
+        Raise.unsupportedArgument("union with neo graph")
+
       private def computeRecords(name: String, cypherType: CypherType, fields: Seq[(SlotContent, StructField)])
                                 (computeRdd: (RecordHeader, StructType) => RDD[Row]): CAPSRecords = {
         val header = computeHeader(fields)

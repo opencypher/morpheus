@@ -46,9 +46,9 @@ case class HdfsCsvGraphSource(override val canonicalURI: URI, hadoopConfig: Conf
   override def schema: Option[Schema] = None
 
   override def create: CAPSGraph =
-    persist(CreateOrFail, CAPSGraph.empty)
+    persist(CAPSGraph.empty, CreateOrFail)
 
-  override def persist(mode: PersistMode, graph: CAPSGraph): CAPSGraph =
+  override def persist(graph: CAPSGraph, mode: PersistMode): CAPSGraph =
     ???
 
   override def delete(): Unit =

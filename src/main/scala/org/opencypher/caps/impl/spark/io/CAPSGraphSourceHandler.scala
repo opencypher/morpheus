@@ -17,10 +17,10 @@ package org.opencypher.caps.impl.spark.io
 
 import java.net.URI
 
-import org.opencypher.caps.impl.spark.io.session.SessionGraphSourceFactory
-import org.opencypher.caps.api.spark.io.{CAPSGraphSource, CAPSGraphSourceFactory}
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
+import org.opencypher.caps.api.spark.io.{CAPSGraphSource, CAPSGraphSourceFactory}
 import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.spark.io.session.SessionGraphSourceFactory
 
 case class CAPSGraphSourceHandler(sessionGraphSourceFactory: SessionGraphSourceFactory,
                                   additionalGraphSourceFactories: Set[CAPSGraphSourceFactory]) {
@@ -40,9 +40,6 @@ case class CAPSGraphSourceHandler(sessionGraphSourceFactory: SessionGraphSourceF
 
   def unmountAll(implicit capsSession: CAPSSession): Unit =
     sessionGraphSourceFactory.unmountAll(capsSession)
-
-  def graphAt(uri: URI)(implicit capsSession: CAPSSession): CAPSGraph =
-    sourceAt(uri).graph
 
   def sourceAt(uri: URI)(implicit capsSession: CAPSSession): CAPSGraphSource =
     factoriesByScheme

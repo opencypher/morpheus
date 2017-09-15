@@ -90,11 +90,11 @@ trait GraphSource {
   /**
     * Persists the argument graph to this source.
     *
-    * @param mode the persist mode to use.
     * @param graph the graph to persist.
+    * @param mode the persist mode to use.
     * @return the persisted graph
     */
-  def persist(mode: PersistMode, graph: Graph): Graph
+  def persist(graph: Graph, mode: PersistMode): Graph
 
   /**
     * Delete the graph stored at this graph source

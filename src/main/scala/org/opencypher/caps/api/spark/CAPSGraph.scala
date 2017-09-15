@@ -76,6 +76,9 @@ object CAPSGraph {
 
     override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords =
       graph.relationships(name, relCypherType)
+
+    override def union(other: CAPSGraph): CAPSGraph =
+      graph.union(other)
   }
 
   sealed abstract class EmptyGraph(implicit val caps: CAPSSession) extends CAPSGraph {
@@ -88,6 +91,8 @@ object CAPSGraph {
 
     override def relationships(name: String, cypherType: CTRelationship) =
       CAPSRecords.empty(RecordHeader.from(OpaqueField(Var(name)(cypherType))))
+
+    override def union(other: CAPSGraph): CAPSGraph = other
   }
 
   sealed abstract class ScanGraph(val scans: Seq[GraphScan], val schema: Schema)
@@ -166,6 +171,8 @@ object CAPSGraph {
       val data = alignedRecords.map(_.details.toDF()).reduce(_ union _)
       CAPSRecords.create(targetHeader, data)
     }
+
+    override def union(other: CAPSGraph): CAPSGraph = ???
 
     /**
       * Aligns the given records to the specified target header by adding and re-ordering columns in the associated

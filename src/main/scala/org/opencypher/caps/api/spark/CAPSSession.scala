@@ -20,22 +20,23 @@ import java.net.URI
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.opencypher.caps.api.expr.{Expr, Var}
 import org.opencypher.caps.api.graph.CypherSession
+import org.opencypher.caps.api.io.{CreateOrFail, PersistMode}
 import org.opencypher.caps.api.spark.io.{CAPSGraphSource, CAPSGraphSourceFactory}
-import org.opencypher.caps.api.util.parseURI
-import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvGraphSourceFactory
-import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraphSourceFactory
-import org.opencypher.caps.impl.spark.io.session.SessionGraphSourceFactory
-import org.opencypher.caps.ir.api.IRField
-import org.opencypher.caps.ir.api.global.{ConstantRef, ConstantRegistry, GlobalsRegistry, TokenRegistry}
+import org.opencypher.caps.api.util.parsePathOrURI
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.demo.Configuration.PrintLogicalPlan
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
-import org.opencypher.caps.impl.spark.io.CAPSGraphSourceHandler
-import org.opencypher.caps.ir.impl.global.GlobalsExtractor
-import org.opencypher.caps.ir.impl.{IRBuilder, IRBuilderContext}
 import org.opencypher.caps.impl.logical._
 import org.opencypher.caps.impl.parse.CypherParser
+import org.opencypher.caps.impl.spark.io.CAPSGraphSourceHandler
+import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvGraphSourceFactory
+import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraphSourceFactory
+import org.opencypher.caps.impl.spark.io.session.SessionGraphSourceFactory
 import org.opencypher.caps.impl.spark.physical.{CAPSResultBuilder, PhysicalPlanner, PhysicalPlannerContext}
+import org.opencypher.caps.ir.api.IRField
+import org.opencypher.caps.ir.api.global.{ConstantRef, ConstantRegistry, GlobalsRegistry, TokenRegistry}
+import org.opencypher.caps.ir.impl.global.GlobalsExtractor
+import org.opencypher.caps.ir.impl.{IRBuilder, IRBuilderContext}
 
 sealed class CAPSSession private(val sparkSession: SparkSession,
                                  private val graphSourceHandler: CAPSGraphSourceHandler)
@@ -58,19 +59,25 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
     graphSourceHandler.sourceAt(uri)(this)
 
   def graphAt(path: String): CAPSGraph =
-    graphAt(parseURI(path))
+    graphAt(parsePathOrURI(path))
 
   def graphAt(uri: URI): CAPSGraph =
-    graphSourceHandler.graphAt(uri)(this)
+    graphSourceHandler.sourceAt(uri)(this).graph
+
+  def persistGraphAt(graph: CAPSGraph, pathOrUri: String, mode: PersistMode = CreateOrFail): CAPSGraph =
+    graphSourceHandler.sourceAt(parsePathOrURI(pathOrUri))(this).persist(graph, mode)
 
   def mountSourceAt(source: CAPSGraphSource, pathOrUri: String): Unit =
-    mountSourceAt(source, parseURI(pathOrUri))
+    mountSourceAt(source, parsePathOrURI(pathOrUri))
 
   def mountSourceAt(source: CAPSGraphSource, uri: URI): Unit =
     graphSourceHandler.mountSourceAt(source, uri)(this)
 
   def unmountAll(): Unit =
     graphSourceHandler.unmountAll(this)
+
+
+  override def graph: CAPSGraph = CAPSGraph.empty(this)
 
   override def cypher(graph: Graph, query: String, queryParameters: Map[String, CypherValue]): Result = {
     val (stmt, extractedLiterals, semState) = parser.process(query)(CypherParser.defaultContext)
