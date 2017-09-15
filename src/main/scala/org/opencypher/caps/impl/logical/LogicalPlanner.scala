@@ -137,7 +137,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       case (acc, (f, p: Property)) =>
         producer.projectField(f, p, acc)
       case (acc, (f, func: FunctionExpr)) =>
-        producer.projectField(f, func, acc)
+        val projectArg = planInnerExpr(func.expr, acc)
+        producer.projectField(f, func, projectArg)
         // this is for aliasing
       case (acc, (f, v: Var)) if f.name != v.name =>
         producer.projectField(f, v, acc)
@@ -148,6 +149,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         val projectRhs = planInnerExpr(be.rhs, projectLhs)
         producer.projectField(f, be, projectRhs)
       case (acc, (f, c: Const)) =>
+        producer.projectField(f, c, acc)
+      case (acc, (f, c: Size)) =>
         producer.projectField(f, c, acc)
       case (_, (_, x)) =>
         Raise.notYetImplemented(s"projection of $x")
@@ -214,6 +217,9 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       case Not(e) => planInnerExpr(e, in)
       case IsNull(e) => planInnerExpr(e, in)
       case IsNotNull(e) => planInnerExpr(e, in)
+      case func: FunctionExpr =>
+        val projectArg = planInnerExpr(func.expr, in)
+        producer.projectExpr(func, projectArg)
       case x =>
         Raise.notYetImplemented(s"projection of inner expression $x")
     }
