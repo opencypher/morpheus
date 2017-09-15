@@ -33,7 +33,7 @@ class GCDemoTest
 
   protected override val dfsTestGraphPath = "/gc_demo"
 
-  ignore("the demo") {
+  test("the demo") {
     implicit val caps: CAPSSession = CAPSSession.create(session)
 
     val SN_US = caps.graphAt(neoURIforRegion("US"))
@@ -104,5 +104,47 @@ class GCDemoTest
     val uri = URI.create(s"$neo4jHost?$nodeQuery;$relQuery")
     uri
   }
-  override def dataFixture = ""
+  override def dataFixture = """
+       CREATE (nyc:City {name: "New York City", region: "US"})
+       CREATE (sfo:City {name: "San Francisco", region: "US"})
+       CREATE (mal:City {name: "Malmö", region: "EU"})
+       CREATE (ber:City {name: "Berlin", region: "EU"})
+
+       CREATE (alice:Person   {name: "Alice", region: "US"}  )-[:LIVES_IN {region: "US"}]->(nyc)
+       CREATE (bob:Person     {name: "Bob", region: "US"}    )-[:LIVES_IN {region: "US"}]->(nyc)
+       CREATE (eve:Person     {name: "Eve", region: "US"}    )-[:LIVES_IN {region: "US"}]->(nyc)
+       CREATE (carol:Person   {name: "Carol", region: "US"}  )-[:LIVES_IN {region: "US"}]->(sfo)
+       CREATE (carl:Person    {name: "Carl", region: "US"}   )-[:LIVES_IN {region: "US"}]->(sfo)
+       CREATE (dave:Person    {name: "Dave", region: "US"}   )-[:LIVES_IN {region: "US"}]->(sfo)
+       CREATE (mallory:Person {name: "Mallory", region: "EU"})-[:LIVES_IN {region: "EU"}]->(mal)
+       CREATE (trudy:Person   {name: "Trudy", region: "EU"}  )-[:LIVES_IN {region: "EU"}]->(mal)
+       CREATE (trent:Person   {name: "Trent", region: "EU"}  )-[:LIVES_IN {region: "EU"}]->(mal)
+       CREATE (oscar:Person   {name: "Oscar", region: "EU"}  )-[:LIVES_IN {region: "EU"}]->(ber)
+       CREATE (victor:Person  {name: "Victor", region: "EU"} )-[:LIVES_IN {region: "EU"}]->(ber)
+       CREATE (peggy:Person   {name: "Peggy", region: "EU"}  )-[:LIVES_IN {region: "EU"}]->(ber)
+
+       CREATE (alice)-[:KNOWS {region: "US"}]->(bob)-[:KNOWS {region: "US"}]->(eve)
+       CREATE (carol)-[:KNOWS {region: "US"}]->(carl)-[:KNOWS {region: "US"}]->(dave)
+       CREATE (mallory)-[:KNOWS {region: "EU"}]->(trudy)-[:KNOWS {region: "EU"}]->(trent)
+       CREATE (oscar)-[:KNOWS {region: "EU"}]->(victor)-[:KNOWS {region: "EU"}]->(peggy)
+
+       CREATE (book_US:Interest  {name: "Book", region: "US"})
+       CREATE (dvd_US:Interest   {name: "DVD", region: "US"})
+       CREATE (video_US:Interest {name: "Video", region: "US"})
+       CREATE (music_US:Interest  {name: "Music", region: "US"})
+
+       CREATE (book_EU:Interest  {name: "Book", region: "EU"})
+       CREATE (dvd_EU:Interest   {name: "DVD", region: "EU"})
+       CREATE (video_EU:Interest {name: "Video", region: "EU"})
+       CREATE (music_EU:Interest  {name: "Music", region: "EU"})
+
+       CREATE (bob)-[:HAS_INTEREST {region: "US"}]->(book_US)
+       CREATE (eve)-[:HAS_INTEREST {region: "US"}]->(dvd_US)
+       CREATE (carl)-[:HAS_INTEREST {region: "US"}]->(video_US)
+       CREATE (dave)-[:HAS_INTEREST {region: "US"}]->(music_US)
+       CREATE (trudy)-[:HAS_INTEREST {region: "EU"}]->(book_EU)
+       CREATE (eve)-[:HAS_INTEREST {region: "EU"}]->(dvd_EU)
+       CREATE (victor)-[:HAS_INTEREST {region: "EU"}]->(video_EU)
+       CREATE (peggy)-[:HAS_INTEREST {region: "EU"}]->(music_EU)
+    """
 }
