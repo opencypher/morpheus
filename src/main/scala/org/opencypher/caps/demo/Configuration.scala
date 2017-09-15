@@ -15,6 +15,8 @@
  */
 package org.opencypher.caps.demo
 
+import scala.util.Try
+
 object Configuration {
 
   abstract class ConfigOption[T](val name: String, val defaultValue: T)(convert: String => Option[T]) {
@@ -31,8 +33,8 @@ object Configuration {
   object MasterAddress extends ConfigOption("cos.master", "local[*]")(Some(_))
   object Logging extends ConfigOption("cos.logging", "OFF")(Some(_))
 
-  object PrintLogicalPlan extends ConfigOption("cos.explain", false)(s => if (s == null) Some(false) else Some(true)) {
-    def set(): Unit = set("true")
+  object PrintLogicalPlan extends ConfigOption("cos.explain", false)(s => Try(s.toBoolean).toOption) {
+    def set(): Unit = set(true.toString)
   }
 
   val conf = Seq(MasterAddress, Logging)
