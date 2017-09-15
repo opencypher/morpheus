@@ -19,7 +19,6 @@ import org.opencypher.caps.api.record.CypherRecords
 
 trait CypherResult {
 
-  type Result <: CypherResult
   type Graph <: CypherGraph
   type Records <: CypherRecords
 
