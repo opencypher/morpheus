@@ -69,7 +69,7 @@ final case class QueryModel[E](
   }
 }
 
-object QueryModel {
+//object QueryModel {
 
 //  def empty[E](globals: GlobalsRegistry, uri: URI) = {
 //     TODO: empty graph?
@@ -130,7 +130,7 @@ object QueryModel {
 //    val resultBlock = ResultBlock[E](Set(ref), FieldsInOrder(rel), Set.empty, Set(rel), None)
 //    QueryModel(resultBlock, globals, blocks, Map(graphBlockRef -> Schema.empty))
 //  }
-}
+//}
 
 case class SolvedQueryModel[E](fields: Set[IRField], predicates: Set[E]) {
 
