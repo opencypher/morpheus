@@ -15,7 +15,6 @@
  */
 package org.opencypher.caps.impl.spark.cypher
 
-import org.opencypher.caps.api.spark.CAPSGraph
 import org.opencypher.caps.api.value.CypherMap
 import org.opencypher.caps.test.CAPSTestSuite
 
@@ -36,7 +35,7 @@ class MultigraphProjectionAcceptanceTest extends CAPSTestSuite {
         |MATCH (n:Person)
         |RETURN n.name AS name""".stripMargin
 
-    val result = fakeParamCall(testGraph1.graph, query)
+    val result = testGraph1.graph.cypher(query)
 
     result.records.toMaps should equal(Bag(
       CypherMap("name" -> "Phil")
@@ -54,7 +53,7 @@ class MultigraphProjectionAcceptanceTest extends CAPSTestSuite {
         |MATCH (n:Person)
         |RETURN n.name AS name""".stripMargin
 
-    val result = fakeParamCall(testGraph1.graph, query)
+    val result = testGraph1.graph.cypher(query)
 
     result.records.toMaps should equal(Bag(
       CypherMap("name" -> "Phil")
@@ -80,15 +79,10 @@ class MultigraphProjectionAcceptanceTest extends CAPSTestSuite {
         |MATCH (c:Car)
         |RETURN n.name AS name, c.type AS car""".stripMargin
 
-    val result = fakeParamCall(testGraph1.graph, query)
+    val result = testGraph1.graph.cypher(query)
 
     result.records.toMaps should equal(Bag(
       CypherMap("name" -> "Phil", "car" -> "Toyota")
     ))
-  }
-
-  private def fakeParamCall(graph: CAPSGraph, query: String) = {
-    val fakeQ = s"WITH $$p AS fakeParameter $query"
-    graph.cypher(fakeQ, Map("p" -> "fakeValue"))
   }
 }
