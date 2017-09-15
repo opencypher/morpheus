@@ -188,6 +188,17 @@ final case class Project(it: ProjectedSlotContent, in: LogicalOperator)
   override def clone(newIn: LogicalOperator = in): LogicalOperator = copy(in = newIn)(solved)
 }
 
+final case class ProjectGraph(graph: LogicalGraph, in: LogicalOperator)
+                             (override val solved: SolvedQueryModel[Expr])
+  extends StackingLogicalOperator {
+
+  override def pretty(depth: Int): String =
+    s"""${prefix(depth)} ProjectGraph(graph = $graph)
+       #${in.pretty(depth + 1)}""".stripMargin('#')
+
+  override def clone(newIn: LogicalOperator = in): LogicalOperator = copy(in = newIn)(solved)
+}
+
 final case class Aggregate(aggregations: Set[(Var, Aggregator)], group: Set[Var], in: LogicalOperator)
                           (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
   override def clone(newIn: LogicalOperator): LogicalOperator = copy(in = newIn)(solved)
@@ -198,7 +209,7 @@ final case class Aggregate(aggregations: Set[(Var, Aggregator)], group: Set[Var]
 
 }
 
-final case class Select(fields: IndexedSeq[Var], in: LogicalOperator)
+final case class Select(fields: IndexedSeq[Var], graphs: Set[String], in: LogicalOperator)
                        (override val solved: SolvedQueryModel[Expr])
   extends StackingLogicalOperator {
 

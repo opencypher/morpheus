@@ -52,7 +52,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
     // always plan a select at the top
     val fields = block.binds.fieldsOrder.map(f => Var(f.name)(f.cypherType))
-    producer.planSelect(fields, plan)
+    val graphNames = block.binds.graphs.map(_.name)
+    producer.planSelect(fields, graphNames, plan)
   }
 
   final def planBlock(ref: BlockRef, model: QueryModel[Expr], plan: Option[LogicalOperator])(implicit context: LogicalPlannerContext): LogicalOperator = {
@@ -97,11 +98,12 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         val filterPlan = planFilter(patternPlan, where)
         if (optional) producer.planOptional(plan, filterPlan) else filterPlan
 
-      case ProjectBlock(_, ProjectedFields(exprs), where, graph, distinct) =>
-        val projPlan = planProjections(plan, exprs)
-        val filtered = planFilter(projPlan, where)
+      case ProjectBlock(_, FieldsAndGraphs(fields, graphs), where, _, distinct) =>
+        val withGraphs = planGraphProjections(plan, graphs)
+        val withFields = planFieldProjections(withGraphs, fields)
+        val filtered = planFilter(withFields, where)
         if (distinct) {
-          producer.planDistinct(exprs.keySet, filtered)
+          producer.planDistinct(fields.keySet, filtered)
         } else {
           filtered
         }
@@ -133,7 +135,15 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     }
   }
 
-  private def planProjections(in: LogicalOperator, exprs: Map[IRField, Expr])(implicit context: LogicalPlannerContext) = {
+  private def planGraphProjections(in: LogicalOperator, graphs: Set[NamedGraph])(implicit context: LogicalPlannerContext): LogicalOperator = {
+    graphs.foldLeft(in) {
+      case (planSoFar, nextGraph) =>
+        val logicalGraph = resolveGraph(nextGraph)
+        ProjectGraph(logicalGraph, planSoFar)(planSoFar.solved.withGraph(nextGraph))
+    }
+  }
+
+  private def planFieldProjections(in: LogicalOperator, exprs: Map[IRField, Expr])(implicit context: LogicalPlannerContext) = {
     exprs.foldLeft(in) {
       case (acc, (f, p: Property)) =>
         producer.projectField(f, p, acc)

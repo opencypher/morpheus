@@ -64,10 +64,12 @@ final case class Filter(expr: Expr, in: FlatOperator, header: RecordHeader)
 final case class Distinct(in: FlatOperator, header: RecordHeader)
   extends StackingFlatOperator
 
-final case class Select(fields: IndexedSeq[Var], in: FlatOperator, header: RecordHeader)
+final case class Select(fields: IndexedSeq[Var], graphs: Set[String], in: FlatOperator, header: RecordHeader)
   extends StackingFlatOperator
 
 final case class Project(expr: Expr, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
+
+final case class ProjectGraph(graph: LogicalGraph, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
 final case class Aggregate(aggregations: Set[(Var, Aggregator)], group: Set[Var], in: FlatOperator, header: RecordHeader)
   extends StackingFlatOperator

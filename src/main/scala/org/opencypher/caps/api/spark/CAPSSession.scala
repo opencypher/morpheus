@@ -36,8 +36,7 @@ import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvGraphSourceFactory
 import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraphSourceFactory
 import org.opencypher.caps.impl.spark.io.session.SessionGraphSourceFactory
 import org.opencypher.caps.impl.spark.physical.{CAPSResultBuilder, PhysicalPlanner, PhysicalPlannerContext}
-import org.opencypher.caps.ir.api.IRField
-import org.opencypher.caps.ir.api.block.NamedGraph
+import org.opencypher.caps.ir.api.{IRField, NamedGraph}
 import org.opencypher.caps.ir.api.global.{ConstantRef, ConstantRegistry, GlobalsRegistry, TokenRegistry}
 import org.opencypher.caps.ir.impl.global.GlobalsExtractor
 import org.opencypher.caps.ir.impl.{IRBuilder, IRBuilderContext}
@@ -154,7 +153,7 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
 
   def select(graph: Graph, in: Records, fields: IndexedSeq[Var], queryParameters: Map[String, CypherValue]): Records = {
     val scan = planStart(graph, in.header.fields)
-    val select = producer.planSelect(fields, scan)
+    val select = producer.planSelect(fields, Set.empty, scan)
     plan(graph, in, queryParameters, select).records
   }
 
@@ -198,7 +197,7 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
     //       instead of just using a single global tokens instance derived from the graph space
     //
     print("Physical plan ... ")
-    val physicalPlannerContext = PhysicalPlannerContext(graph, records, tokens, constants, allParameters)
+    val physicalPlannerContext = PhysicalPlannerContext(graphAt, records, tokens, constants, allParameters)
     val physicalResult = physicalPlanner(flatPlan)(physicalPlannerContext)
     println("Done!")
 

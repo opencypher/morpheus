@@ -15,6 +15,8 @@
  */
 package org.opencypher.caps.ir.api
 
+import java.net.URI
+
 import org.opencypher.caps.api.expr.{Equals, Expr}
 import org.opencypher.caps.api.types.CTBoolean
 import org.opencypher.caps.ir.api.block.{FieldsAndGraphs, ProjectedFieldsOf}
@@ -24,10 +26,12 @@ import org.opencypher.caps.toField
 
 class SolvedQueryModelTest extends IrTestSuite {
 
+  implicit val uri = URI.create("test")
+
   test("add graphs") {
     val s = SolvedQueryModel.empty.withGraph('foo)
 
-    s.graphs should equal(Set(IRGraph("foo")))
+    s.graphs should equal(Set(NamedGraph("foo", uri)))
   }
 
   test("add fields") {

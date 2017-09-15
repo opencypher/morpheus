@@ -132,15 +132,17 @@ final case class QueryModel[E](
 //  }
 //}
 
-case class SolvedQueryModel[E](fields: Set[IRField],
-                               predicates: Set[E] = Set.empty[E],
-                               graphs: Set[IRGraph] = Set.empty[IRGraph]) {
+case class SolvedQueryModel[E](
+  fields: Set[IRField],
+  predicates: Set[E] = Set.empty[E],
+  graphs: Set[NamedGraph] = Set.empty[NamedGraph]
+) {
 
   // extension
   def withField(f: IRField): SolvedQueryModel[E] = copy(fields = fields + f)
   def withFields(fs: IRField*): SolvedQueryModel[E] = copy(fields = fields ++ fs)
   def withPredicate(pred: E): SolvedQueryModel[E] = copy(predicates = predicates + pred)
-  def withGraph(graph: IRGraph): SolvedQueryModel[E] = copy(graphs = graphs + graph)
+  def withGraph(graph: NamedGraph): SolvedQueryModel[E] = copy(graphs = graphs + graph)
 
   def ++(other: SolvedQueryModel[E]): SolvedQueryModel[E] =
     copy(fields ++ other.fields, predicates ++ other.predicates)

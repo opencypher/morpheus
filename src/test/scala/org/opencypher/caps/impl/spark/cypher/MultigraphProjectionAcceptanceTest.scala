@@ -41,7 +41,7 @@ class MultigraphProjectionAcceptanceTest extends CAPSTestSuite {
       CypherMap("name" -> "Phil")
     ))
 
-//    result.graphs shouldBe empty
+    result.graphs shouldBe empty
   }
 
   test("Can select a source graph to match data from (syntactic sugar variant)") {
@@ -59,13 +59,8 @@ class MultigraphProjectionAcceptanceTest extends CAPSTestSuite {
       CypherMap("name" -> "Phil")
     ))
 
-//    result.graphs shouldBe empty
+    result.graphs shouldBe empty
   }
-
-//  test("foo") {
-//    val query = "WITH GRAPH foo" // means name ambient graph 'foo'
-//    val q2 = "MATCH ..." // rewrite to WITH GRAPH generated MATCH ...
-//  }
 
   ignore("matching from different graphs") {
     testGraph1.mountAt("/test/graph1")

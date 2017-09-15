@@ -15,8 +15,7 @@
  */
 package org.opencypher.caps.ir.api.block
 
-import java.net.URI
-
+import org.opencypher.caps.ir.api.NamedGraph
 import org.opencypher.caps.ir.api.pattern.AllGiven
 
 case class SourceBlock[E](

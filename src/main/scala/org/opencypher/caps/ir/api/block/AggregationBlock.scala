@@ -15,10 +15,8 @@
  */
 package org.opencypher.caps.ir.api.block
 
-import java.net.URI
-
-import org.opencypher.caps.ir.api.IRField
 import org.opencypher.caps.ir.api.pattern.AllGiven
+import org.opencypher.caps.ir.api.{IRField, NamedGraph}
 
 final case class AggregationBlock[E](
     after: Set[BlockRef],

@@ -15,6 +15,8 @@
  */
 package org.opencypher.caps.impl.spark.physical
 
+import java.net.URI
+
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.api.types.CTRelationship
@@ -27,7 +29,7 @@ import org.opencypher.caps.ir.api.block.SortItem
 import org.opencypher.caps.ir.api.global._
 
 case class PhysicalPlannerContext(
-   ambientGraph: CAPSGraph,
+   resolver: URI => CAPSGraph,
    inputRecords: CAPSRecords,
    tokens: TokenRegistry,
    constants: ConstantRegistry,
@@ -47,12 +49,12 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
     import producer._
 
     flatPlan match {
-      case flat.Select(fields, in, header) =>
-        inner(in).select(fields, header)
+      case flat.Select(fields, graphs, in, header) =>
+        inner(in).select(fields, header).selectGraphs(graphs)
 
       case flat.Start(graph, _) => graph match {
         case ExternalLogicalGraph(name, uri, _) =>
-          val graph = context.ambientGraph.session.graphAt(uri)
+          val graph = context.resolver(uri)
           PhysicalResult(context.inputRecords, Map(name -> graph))
 
         case _ =>
@@ -64,7 +66,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
 
         graph match {
           case ExternalLogicalGraph(name, uri, _) =>
-            val graph = context.ambientGraph.session.graphAt(uri)
+            val graph = context.resolver(uri)
             p.withGraph(name -> graph)
 
           case _ =>
@@ -82,6 +84,14 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
 
       case flat.Project(expr, in, header) =>
         inner(in).project(expr, header)
+
+      case flat.ProjectGraph(graph, in, header) => graph match {
+        case ExternalLogicalGraph(name, uri, _) =>
+          val capsGraph = context.resolver(uri)
+          inner(in).withGraph(name -> capsGraph)
+        case _ =>
+          Raise.notYetImplemented(s"graphs without uri: $graph")
+      }
 
       case flat.Aggregate(aggregations, group, in , header) =>
         inner(in).aggregate(aggregations, group, header)
@@ -146,7 +156,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
         inner(in).limit(expr, header)
 
       case x =>
-        Raise.notYetImplemented(s"operator $x")
+        Raise.notYetImplemented(s"physical planning of operator $x")
     }
   }
 

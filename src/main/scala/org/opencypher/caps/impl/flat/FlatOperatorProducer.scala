@@ -41,7 +41,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     override def combine(x: Vector[CypherType], y: Vector[CypherType]): Vector[CypherType] = x ++ y
   }
 
-  def select(fields: IndexedSeq[Var], in: FlatOperator): Select = {
+  def select(fields: IndexedSeq[Var], graphs: Set[String], in: FlatOperator): Select = {
     val fieldContents = fields.map { field => in.header.slotsFor(field).head.content }
     val exprContents = in.header.contents.collect {
       case content@ProjectedExpr(expr) if (expr.dependencies -- fields).isEmpty => content
@@ -50,7 +50,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
     val (nextHeader, _) = RecordHeader.empty.update(addContents(finalContents))
 
-    Select(fields, in, nextHeader)
+    Select(fields, graphs, in, nextHeader)
   }
 
   def filter(expr: Expr, in: FlatOperator): Filter = {

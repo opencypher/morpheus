@@ -100,8 +100,8 @@ class LogicalOperatorProducer {
     Project(projection, prev)(prev.solved)
   }
 
-  def planSelect(fields: IndexedSeq[Var], prev: LogicalOperator): Select = {
-    Select(fields, prev)(prev.solved)
+  def planSelect(fields: IndexedSeq[Var], graphs: Set[String] = Set.empty, prev: LogicalOperator): Select = {
+    Select(fields, graphs, prev)(prev.solved)
   }
 
   def planSetSourceGraph(graph: LogicalGraph, prev: LogicalOperator): SetSourceGraph = {
@@ -110,7 +110,7 @@ class LogicalOperatorProducer {
 
   def planStart(graph: LogicalGraph, fields: Set[Var]): Start = {
     val irFields = fields.map { v => IRField(v.name)(v.cypherType) }
-    Start(graph, fields)(SolvedQueryModel(irFields, Set.empty))
+    Start(graph, fields)(SolvedQueryModel[Expr](irFields))
   }
 
   def planOrderBy(sortItems: Seq[SortItem[Expr]], prev: LogicalOperator): OrderBy = {

@@ -70,7 +70,7 @@ abstract class IrTestSuite extends BaseTestSuite {
     val result = ResultBlock[Expr](
       after = Set(rootRef),
       // TODO
-      binds = OrderedFields[Expr](),
+      binds = OrderedFieldsAndGraphs[Expr](),
       nodes = Set.empty, // TODO: Fill these sets correctly
       relationships = Set.empty,
       where = AllGiven[Expr](),

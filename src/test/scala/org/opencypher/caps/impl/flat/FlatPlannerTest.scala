@@ -275,7 +275,7 @@ class FlatPlannerTest extends BaseTestSuite {
   test("Construct selection") {
     val result = flatPlanner.process(
       mkLogical.planSelect(IndexedSeq(Var("foo")(CTString)),
-        mkLogical.projectField(IRField("foo")(CTString), Property(Var("n")(CTNode), propertyKeyByName("name"))(CTString),
+        prev = mkLogical.projectField(IRField("foo")(CTString), Property(Var("n")(CTNode), propertyKeyByName("name"))(CTString),
           logicalNodeScan("n", "Person")
         )
       )
@@ -284,7 +284,7 @@ class FlatPlannerTest extends BaseTestSuite {
 
     result should equal(
       mkFlat.select(
-        IndexedSeq(Var("foo")(CTString)),
+        IndexedSeq(Var("foo")(CTString)), Set.empty,
         mkFlat.project(
           ProjectedField(Var("foo")(CTString), Property(Var("n")(CTNode), propertyKeyByName("name"))(CTString)),
           flatNodeScan(Var("n")(CTNode), "Person")
@@ -299,7 +299,7 @@ class FlatPlannerTest extends BaseTestSuite {
   test("Construct selection with several fields") {
     val result = flatPlanner.process(
       mkLogical.planSelect(IndexedSeq(Var("foo")(CTString), Var("n")(CTNode), Var("baz")(CTInteger.nullable)),
-        mkLogical.projectField(IRField("baz")(CTInteger), Property(Var("n")(CTNode), propertyKeyByName("age"))(CTInteger.nullable),
+        prev = mkLogical.projectField(IRField("baz")(CTInteger), Property(Var("n")(CTNode), propertyKeyByName("age"))(CTInteger.nullable),
           mkLogical.projectField(IRField("foo")(CTString), Property(Var("n")(CTNode), propertyKeyByName("name"))(CTString),
             logicalNodeScan("n", "Person")
           )
@@ -310,7 +310,7 @@ class FlatPlannerTest extends BaseTestSuite {
 
     result should equal(
       mkFlat.select(
-        IndexedSeq(Var("foo")(CTString), Var("n")(CTNode), Var("baz")(CTInteger.nullable)),
+        IndexedSeq(Var("foo")(CTString), Var("n")(CTNode), Var("baz")(CTInteger.nullable)), Set.empty,
         mkFlat.project(
           ProjectedField(Var("baz")(CTInteger.nullable), Property(Var("n")(CTNode), propertyKeyByName("age"))(CTInteger.nullable)),
           mkFlat.project(ProjectedField(Var("foo")(CTString), Property(Var("n")(CTNode), propertyKeyByName("name"))(CTString)),

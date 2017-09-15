@@ -15,37 +15,37 @@
  */
 package org.opencypher.caps.ir.api.block
 
-import java.net.URI
-
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.pattern.{AllGiven, AllOf}
 
 final case class ResultBlock[E](
   after: Set[BlockRef],
-  binds: OrderedFields[E],
+  binds: OrderedFieldsAndGraphs[E],
   nodes: Set[IRField],
   relationships: Set[IRField],
   source: NamedGraph,
   where: AllGiven[E] = AllGiven[E]()
-) extends BasicBlock[OrderedFields[E], E](BlockType("result")) {
+) extends BasicBlock[OrderedFieldsAndGraphs[E], E](BlockType("result")) {
 
   def select(fields: Set[IRField]): ResultBlock[E] =
     copy(binds = binds.select(fields), nodes = nodes intersect fields, relationships = relationships intersect fields )
 }
 
 object ResultBlock {
-  def empty[E](graph: NamedGraph) = ResultBlock(Set.empty, OrderedFields[E](), Set.empty, Set.empty, graph, AllOf[E]())
+  def empty[E](graph: NamedGraph) = ResultBlock(Set.empty, OrderedFieldsAndGraphs[E](), Set.empty, Set.empty, graph, AllOf[E]())
 }
 
-final case class OrderedFields[E](fieldsOrder: IndexedSeq[IRField] = IndexedSeq.empty) extends Binds[E] {
-  override def fields = fieldsOrder.toSet
+final case class OrderedFieldsAndGraphs[E](
+  fieldsOrder: IndexedSeq[IRField] = IndexedSeq.empty,
+  override val graphs: Set[NamedGraph] = Set.empty) extends Binds[E] {
+  override def fields: Set[IRField] = fieldsOrder.toSet
 
-  def select(fields: Set[IRField]): OrderedFields[E] =
+  def select(fields: Set[IRField]): OrderedFieldsAndGraphs[E] =
     copy(fieldsOrder = fieldsOrder.filter(fields.contains))
 }
 
 case object FieldsInOrder {
-  def apply[E](fields: IRField*) = OrderedFields[E](fields.toIndexedSeq)
-  def unapplySeq(arg: OrderedFields[_]): Option[Seq[IRField]] = Some(arg.fieldsOrder)
+  def apply[E](fields: IRField*): OrderedFieldsAndGraphs[E] = OrderedFieldsAndGraphs[E](fields.toIndexedSeq)
+  def unapplySeq(arg: OrderedFieldsAndGraphs[_]): Option[Seq[IRField]] = Some(arg.fieldsOrder)
 }
 

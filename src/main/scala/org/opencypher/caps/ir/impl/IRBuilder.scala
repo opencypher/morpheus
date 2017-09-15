@@ -93,12 +93,12 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
       case ast.With(_, ast.ReturnItems(_, items), GraphReturnItems(_, gItems), orderBy, skip, limit, where) if !items.exists(_.expression.containsAggregate) =>
         for {
           fieldExprs <- EffMonad[R].sequence(items.map(convertReturnItem[R]).toVector)
-          _ <- EffMonad[R].sequence(gItems.map(convertGraphReturnItem[R]).toVector)
+          graphs <- EffMonad[R].sequence(gItems.map(convertGraphReturnItem[R]).toVector)
           given <- convertWhere(where)
           context <- get[R, IRBuilderContext]
           refs <- {
-            val uri = getNamedGraph(c, context)
-            val (projectRef, projectReg) = registerProjectBlock(context, fieldExprs, given, uri)
+            val namedGraph = getNamedGraph(c, context)
+            val (projectRef, projectReg) = registerProjectBlock(context, fieldExprs, graphs, given, namedGraph)
             val appendList = (list: Vector[BlockRef]) => pure[R, Vector[BlockRef]](projectRef +: list)
             val orderAndSliceBlock = registerOrderAndSliceBlock(orderBy, skip, limit)
             put[R,IRBuilderContext](context.copy(blocks = projectReg)) >> orderAndSliceBlock >>= appendList
@@ -130,7 +130,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           refs <- {
             val (ref, reg) = registerProjectBlock(context, fieldExprs, distinct = distinct, source = context.ambientGraph)
             val rItems = fieldExprs.map(_._1)
-            val orderedFields = OrderedFields[Expr](rItems)
+            val orderedFields = OrderedFieldsAndGraphs[Expr](rItems)
             val returns = ResultBlock[Expr](Set(ref), orderedFields, Set.empty, Set.empty, context.ambientGraph)
             val (ref2, reg2) = reg.register(returns)
             put[R, IRBuilderContext](context.copy(blocks = reg2)) >> pure[R, Vector[BlockRef]](Vector(ref, ref2))
@@ -148,9 +148,9 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
     }.getOrElse(context.ambientGraph)
   }
 
-  private def registerProjectBlock(context: IRBuilderContext, fieldExprs: Vector[(IRField, Expr)], given: AllGiven[Expr] = AllGiven[Expr](), source: NamedGraph, distinct: Boolean = false) = {
+  private def registerProjectBlock(context: IRBuilderContext, fieldExprs: Vector[(IRField, Expr)], graphs: Seq[NamedGraph] = Seq.empty, given: AllGiven[Expr] = AllGiven[Expr](), source: NamedGraph, distinct: Boolean = false) = {
     val blockRegistry = context.blocks
-    val binds = FieldsAndGraphs(fieldExprs.toMap)
+    val binds = FieldsAndGraphs(fieldExprs.toMap, graphs.toSet)
 
     val after = blockRegistry.lastAdded.toSet
     val projs = ProjectBlock[Expr](after, binds, given, source, distinct)
@@ -185,7 +185,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
     } yield refs
   }
 
-  private def convertGraphReturnItem[R: _mayFail : _hasContext](item: ast.GraphReturnItem): Eff[R, Unit] = item match {
+  private def convertGraphReturnItem[R: _mayFail : _hasContext](item: ast.GraphReturnItem): Eff[R, NamedGraph] = item match {
     case ast.NewContextGraphs(source: GraphAtAs, _) =>
       for {
         context <- get[R, IRBuilderContext]
@@ -199,9 +199,11 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
               parseURI(literal.value)
           }
 
-          val newContext = context.withGraphAt(graphVar.name, graphURI)
+          val namedGraph = NamedGraph(graphVar.name, graphURI)
 
-          put[R, IRBuilderContext](newContext)
+          val newContext = context.withGraphAt(namedGraph)
+
+          put[R, IRBuilderContext](newContext) >> pure[R, NamedGraph](namedGraph)
         }
       } yield out
 
@@ -211,7 +213,13 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
     case ast.NewTargetGraph(target) =>
       ???
     case ast.ReturnedGraph(inner) =>
-      unit[R]
+      for {
+        context <- get[R, IRBuilderContext]
+        out <- {
+          val g = context.graphs(inner.as.getOrElse(Raise.impossible("graph didn't have a name!")).name)
+          pure[R, NamedGraph](g)
+        }
+      } yield out
   }
 
   private def convertReturnItem[R: _mayFail : _hasContext](item: ast.ReturnItem): Eff[R, (IRField, Expr)] = item match {

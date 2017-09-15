@@ -46,7 +46,7 @@ class LogicalPlannerTest extends IrTestSuite {
   val relR = IRField("r")(CTRelationship)
 
   test("convert load graph block") {
-    plan(irFor(leafBlock)) should equal(Select(IndexedSeq.empty, leafPlan)(emptySqm))
+    plan(irFor(leafBlock)) should equal(Select(IndexedSeq.empty, Set.empty, leafPlan)(emptySqm))
   }
 
   test("convert match block") {
@@ -84,7 +84,7 @@ class LogicalPlannerTest extends IrTestSuite {
     import globals.tokens
 
     plan(ir, globals) should equal(
-      Select(IndexedSeq(Var("a.name")(CTVoid)),
+      Select(IndexedSeq(Var("a.name")(CTVoid)), Set.empty,
         Project(ProjectedField(Var("a.name")(CTVoid), Property(Var("a")(CTNode("Administrator")), tokens.propertyKeyByName("name"))(CTVoid)),
           Filter(Equals(Property(Var("g")(CTNode("Group")), tokens.propertyKeyByName("name"))(CTVoid), Const(Constant("foo"))(CTString))(CTBoolean),
             Project(ProjectedExpr(Property(Var("g")(CTNode("Group")), tokens.propertyKeyByName("name"))(CTVoid)),
@@ -118,7 +118,7 @@ class LogicalPlannerTest extends IrTestSuite {
     import globals.tokens
 
     plan(ir, globals, schema) should equal(
-      Select(IndexedSeq(Var("a.name")(CTFloat)),
+      Select(IndexedSeq(Var("a.name")(CTFloat)), Set.empty,
         Project(ProjectedField(Var("a.name")(CTFloat), Property(Var("a")(CTNode("Administrator")), tokens.propertyKeyByName("name"))(CTFloat)),
           Filter(Equals(Property(Var("g")(CTNode("Group")), tokens.propertyKeyByName("name"))(CTString), Const(Constant("foo"))(CTString))(CTBoolean),
             Project(ProjectedExpr(Property(Var("g")(CTNode("Group")), tokens.propertyKeyByName("name"))(CTString)),
@@ -148,7 +148,7 @@ class LogicalPlannerTest extends IrTestSuite {
     import globals.{constants, tokens}
 
     plan(ir, globals) should equal(
-      Select(IndexedSeq(Var("a.prop")(CTVoid)),
+      Select(IndexedSeq(Var("a.prop")(CTVoid)), Set.empty,
         Project(ProjectedField(Var("a.prop")(CTVoid), Property(nodeA, tokens.propertyKeyByName("prop"))(CTVoid)),
           Filter(Not(Equals(Const(constants.constantByName("p1"))(CTInteger), Const(constants.constantByName("p2"))(CTBoolean))(CTBoolean))(CTBoolean),
             NodeScan(nodeA, EveryNode,
@@ -170,7 +170,7 @@ class LogicalPlannerTest extends IrTestSuite {
   case class equalWithoutResult(plan: LogicalOperator) extends Matcher[LogicalOperator] {
     override def apply(left: LogicalOperator): MatchResult = {
       left match {
-        case logical.Select(_, in) =>
+        case logical.Select(_, _, in) =>
           val matches = in == plan && in.solved == plan.solved
           MatchResult(matches, s"$in did not equal $plan", s"$in was not supposed to equal $plan")
         case _ => MatchResult(matches = false, "Expected a Select plan on top", "Expected a Select plan on top")

@@ -23,8 +23,8 @@ import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.typer.{SchemaTyper, TypeTracker}
-import org.opencypher.caps.ir.api.IRField
-import org.opencypher.caps.ir.api.block.{BlockRef, NamedGraph, SourceBlock}
+import org.opencypher.caps.ir.api.{IRField, NamedGraph}
+import org.opencypher.caps.ir.api.block.{BlockRef, SourceBlock}
 import org.opencypher.caps.ir.api.global.GlobalsRegistry
 import org.opencypher.caps.ir.api.pattern.Pattern
 
@@ -74,8 +74,8 @@ final case class IRBuilderContext(
     copy(knownTypes = withFieldTypes)
   }
 
-  def withGraphAt(name: String, uri: URI): IRBuilderContext =
-    copy(graphs = graphs.updated(name, NamedGraph(name, uri)))
+  def withGraphAt(graph: NamedGraph): IRBuilderContext =
+    copy(graphs = graphs.updated(graph.name, graph))
 
 }
 
