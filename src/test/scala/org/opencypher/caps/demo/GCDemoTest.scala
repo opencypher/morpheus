@@ -31,9 +31,9 @@ class GCDemoTest
     with MiniDFSClusterFixture
 {
 
-  protected override val dfsTestGraphPath = "/gc_demo"
+  protected override val dfsTestGraphPath = "/csv/prod"
 
-  test("the demo") {
+  ignore("the demo") {
     implicit val caps: CAPSSession = CAPSSession.create(session)
 
     val SN_US = caps.graphAt(neoURIforRegion("US"))

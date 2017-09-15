@@ -30,7 +30,7 @@ case class HdfsCsvGraphSourceFactory(hadoopConfiguration: Configuration)
   override protected def sourceForURIWithSupportedScheme(uri: URI)(implicit capsSession: CAPSSession): HdfsCsvGraphSource = {
     val host = uri.getHost
     val port = if (uri.getPort == -1) "" else s":${uri.getPort}"
-    val canonicalURIString = s"hdfs+cvs://$host$port"
+    val canonicalURIString = s"hdfs://$host$port"
     val canonicalURI = URI.create(canonicalURIString)
 
     val hadoopConf = new Configuration(hadoopConfiguration)

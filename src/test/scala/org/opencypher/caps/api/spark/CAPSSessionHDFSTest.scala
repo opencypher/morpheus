@@ -23,7 +23,7 @@ class CAPSSessionHDFSTest extends BaseTestSuite
   with SparkSessionFixture
   with MiniDFSClusterFixture {
 
-  protected override val dfsTestGraphPath = "/csv_graph"
+  protected override val dfsTestGraphPath = "/csv/sn"
 
   test("HDFS via URI") {
     implicit val capsSession: CAPSSession = CAPSSession.builder(session).build
