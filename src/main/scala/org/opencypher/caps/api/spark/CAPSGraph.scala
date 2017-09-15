@@ -172,7 +172,15 @@ object CAPSGraph {
       CAPSRecords.create(targetHeader, data)
     }
 
-    override def union(other: CAPSGraph): CAPSGraph = ???
+    // TODO: Handle entity sharing between multiple scans
+    override def union(other: CAPSGraph): CAPSGraph = other match {
+      case (otherScanGraph: ScanGraph) =>
+        val allScans = scans ++ otherScanGraph.scans
+        val nodeScan = allScans.collectFirst[NodeScan] { case scan: NodeScan => scan }.getOrElse(Raise.impossible())
+        CAPSGraph.create(nodeScan, allScans.filterNot(_ == nodeScan): _*)
+      case _ =>
+        ???
+    }
 
     /**
       * Aligns the given records to the specified target header by adding and re-ordering columns in the associated

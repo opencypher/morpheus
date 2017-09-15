@@ -385,5 +385,4 @@ class CAPSGraphTest extends CAPSTestSuite {
       Row(400, true, false, true, null, null, "Typescript")
     ))
   }
-
 }
