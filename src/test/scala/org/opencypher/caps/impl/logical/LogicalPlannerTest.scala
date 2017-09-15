@@ -68,7 +68,7 @@ class LogicalPlannerTest extends IrTestSuite {
   val emptySqm = SolvedQueryModel.empty[Expr]
 
   test("convert project block") {
-    val fields = ProjectedFields[Expr](Map(toField('a) -> Property('n, PropertyKey("prop"))(CTFloat)))
+    val fields = FieldsAndGraphs[Expr](Map(toField('a) -> Property('n, PropertyKey("prop"))(CTFloat)))
     val block = project(fields)
 
     plan(irWithLeaf(block)) should equalWithoutResult(

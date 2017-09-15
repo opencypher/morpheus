@@ -16,7 +16,7 @@
 package org.opencypher
 
 import org.opencypher.caps.api.expr.Var
-import org.opencypher.caps.ir.api.IRField
+import org.opencypher.caps.ir.api.{IRField, IRGraph}
 import org.opencypher.caps.api.types.CypherType
 
 import scala.language.implicitConversions
@@ -25,4 +25,5 @@ package object caps {
   implicit def toVar(s: Symbol): Var = Var(s.name)()
   implicit def toField(s: Symbol): IRField = IRField(s.name)()
   implicit def toField(t: (Symbol, CypherType)): IRField = IRField(t._1.name)(t._2)
+  implicit def toGraph(s: Symbol): IRGraph = IRGraph(s.name)
 }

@@ -150,7 +150,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
 
   private def registerProjectBlock(context: IRBuilderContext, fieldExprs: Vector[(IRField, Expr)], given: AllGiven[Expr] = AllGiven[Expr](), source: NamedGraph, distinct: Boolean = false) = {
     val blockRegistry = context.blocks
-    val binds = ProjectedFields(fieldExprs.toMap)
+    val binds = FieldsAndGraphs(fieldExprs.toMap)
 
     val after = blockRegistry.lastAdded.toSet
     val projs = ProjectBlock[Expr](after, binds, given, source, distinct)

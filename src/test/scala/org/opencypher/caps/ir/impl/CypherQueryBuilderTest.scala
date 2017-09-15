@@ -46,7 +46,8 @@ class CypherQueryBuilderTest extends IrTestSuite {
       }
 
       val projectRef = model.findExactlyOne {
-        case NoWhereBlock(ProjectBlock(deps, ProjectedFields(map), _, _, _)) =>
+        // TODO: Properly assert on graphs, also below
+        case NoWhereBlock(ProjectBlock(deps, FieldsAndGraphs(map, graphs), _, _, _)) =>
           deps should equal(Set(matchRef))
           map should equal(Map(toField('a) -> toVar('a)))
       }
@@ -81,7 +82,8 @@ class CypherQueryBuilderTest extends IrTestSuite {
       }
 
       val projectRef = model.findExactlyOne {
-        case NoWhereBlock(ProjectBlock(deps, ProjectedFields(map), _, _, _)) =>
+        // TODO: Properly assert on graphs, also below
+        case NoWhereBlock(ProjectBlock(deps, FieldsAndGraphs(map, graphs), _, _, _)) =>
           deps should equal(Set(matchRef))
           map should equal(Map(
             toField('a) -> toVar('a),
@@ -121,7 +123,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
       }
 
       val projectRef = model.findExactlyOne {
-        case NoWhereBlock(ProjectBlock(deps, ProjectedFields(map), _, _, _)) if deps.head == matchRef =>
+        case NoWhereBlock(ProjectBlock(deps, FieldsAndGraphs(map, _), _, _, _)) if deps.head == matchRef =>
           deps should equal(Set(matchRef))
           map should equal(Map(
             toField('name) -> Property(Var("a")(CTNode), propertyKeyByName("name"))(CTVoid),
@@ -130,7 +132,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
       }
 
       val project2Ref = model.findExactlyOne {
-        case NoWhereBlock(ProjectBlock(deps, ProjectedFields(map), _, _, _)) if deps.head == projectRef =>
+        case NoWhereBlock(ProjectBlock(deps, FieldsAndGraphs(map, _), _, _, _)) if deps.head == projectRef =>
         deps should equal(Set(projectRef))
           map should equal(Map(
             toField('age) -> toVar('age),
@@ -146,7 +148,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
       }
 
       val project3Ref = model.findExactlyOne {
-        case NoWhereBlock(ProjectBlock(deps, ProjectedFields(map), _, _, _)) if deps.head == orderByRef =>
+        case NoWhereBlock(ProjectBlock(deps, FieldsAndGraphs(map, _), _, _, _)) if deps.head == orderByRef =>
           deps should equal(Set(orderByRef))
           map should equal(Map(
             toField('age) -> toVar('age),

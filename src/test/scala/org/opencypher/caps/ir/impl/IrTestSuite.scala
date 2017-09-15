@@ -59,7 +59,7 @@ abstract class IrTestSuite extends BaseTestSuite {
     irFor(rootRef, blocks)
   }
 
-  def project(fields: ProjectedFields[Expr], after: Set[BlockRef] = Set(leafRef),
+  def project(fields: FieldsAndGraphs[Expr], after: Set[BlockRef] = Set(leafRef),
               given: AllGiven[Expr] = AllGiven[Expr]()) =
     ProjectBlock(after, fields, given, testGraph)
 

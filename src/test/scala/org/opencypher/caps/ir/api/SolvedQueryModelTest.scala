@@ -15,14 +15,20 @@
  */
 package org.opencypher.caps.ir.api
 
-import org.opencypher.caps.api.expr.{Equals, Expr, Property}
-import org.opencypher.caps.ir.api.block.{ProjectedFields, ProjectedFieldsOf}
-import org.opencypher.caps.ir.api.pattern.{EveryNode, Pattern}
+import org.opencypher.caps.api.expr.{Equals, Expr}
 import org.opencypher.caps.api.types.CTBoolean
+import org.opencypher.caps.ir.api.block.{FieldsAndGraphs, ProjectedFieldsOf}
+import org.opencypher.caps.ir.api.pattern.{EveryNode, Pattern}
 import org.opencypher.caps.ir.impl.IrTestSuite
 import org.opencypher.caps.toField
 
 class SolvedQueryModelTest extends IrTestSuite {
+
+  test("add graphs") {
+    val s = SolvedQueryModel.empty.withGraph('foo)
+
+    s.graphs should equal(Set(IRGraph("foo")))
+  }
 
   test("add fields") {
     val s = SolvedQueryModel.empty.withField('a).withFields('b, 'c)
@@ -40,15 +46,18 @@ class SolvedQueryModelTest extends IrTestSuite {
   test("contains several blocks") {
     val block1 = matchBlock(Pattern.empty.withEntity('a, EveryNode))
     val block2 = matchBlock(Pattern.empty.withEntity('b, EveryNode))
-    val block3 = project(ProjectedFieldsOf[Expr](toField('c) -> Equals('a, 'b)(CTBoolean)))
+    val binds: FieldsAndGraphs[Expr] = FieldsAndGraphs(Map(toField('c) -> Equals('a, 'b)(CTBoolean)), Set('foo))
+    val block3 = project(binds)
     val block4 = project(ProjectedFieldsOf[Expr](toField('d) -> Equals('c, 'b)(CTBoolean)))
+    val block5 = project(FieldsAndGraphs(Map.empty, Set('bar)))
 
-    val s = SolvedQueryModel.empty[Expr].withField('a).withFields('b, 'c)
+    val s = SolvedQueryModel.empty[Expr].withField('a).withFields('b, 'c).withGraph('foo)
 
     s.contains(block1) shouldBe true
     s.contains(block1, block2) shouldBe true
     s.contains(block1, block2, block3) shouldBe true
     s.contains(block1, block2, block3, block4) shouldBe false
+    s.contains(block1, block2, block3, block5) shouldBe false
   }
 
   test("solves") {
