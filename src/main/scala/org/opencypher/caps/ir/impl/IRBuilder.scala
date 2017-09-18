@@ -156,7 +156,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
 
   private def getNamedGraph(c: Clause, context: IRBuilderContext) = {
     context.semanticState.recordedContextGraphs.get(c).map {
-      c => context.graphs(c.source)
+      contextGraphs => context.graphs(contextGraphs.source)
     }.getOrElse(context.ambientGraph)
   }
 
