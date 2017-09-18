@@ -121,26 +121,10 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           }
         } yield refs
 
-        // TODO: Figure out how to share code with the below where GraphReturnItems are present
-      case ast.Return(distinct, ast.ReturnItems(_, items), None, _, _, _, _) =>
+      case ast.Return(distinct, ast.ReturnItems(_, items), graphItems, _, _, _, _) =>
         for {
           fieldExprs <- EffMonad[R].sequence(items.map(convertReturnItem[R]).toVector)
-          context <- get[R, IRBuilderContext]
-          refs <- {
-            val namedGraph = getNamedGraph(c, context)
-            val (ref, reg) = registerProjectBlock(context, fieldExprs, distinct = distinct, source = namedGraph)
-            val rItems = fieldExprs.map(_._1)
-            val orderedFields = OrderedFieldsAndGraphs[Expr](rItems)
-            val returns = ResultBlock[Expr](Set(ref), orderedFields, Set.empty, Set.empty, context.ambientGraph)
-            val (ref2, reg2) = reg.register(returns)
-            put[R, IRBuilderContext](context.copy(blocks = reg2)) >> pure[R, Vector[BlockRef]](Vector(ref, ref2))
-          }
-        } yield refs
-
-      case ast.Return(distinct, ast.ReturnItems(_, items), Some(GraphReturnItems(_, gItems)), _, _, _, _) =>
-        for {
-          fieldExprs <- EffMonad[R].sequence(items.map(convertReturnItem[R]).toVector)
-          graphs <- EffMonad[R].sequence(gItems.map(convertGraphReturnItem[R]).toVector)
+          graphs <- convertGraphReturnItems(graphItems)
           context <- get[R, IRBuilderContext]
           refs <- {
             val namedGraph = getNamedGraph(c, context)
@@ -155,6 +139,18 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
 
       case x =>
         error(IRBuilderError(s"Clause not yet supported: $x"))(Vector.empty[BlockRef])
+    }
+  }
+
+  private def convertGraphReturnItems[R : _hasContext](maybeItems: Option[GraphReturnItems]): Eff[R, Vector[NamedGraph]] = {
+
+    maybeItems match {
+      case None =>
+        pure[R, Vector[NamedGraph]](Vector.empty[NamedGraph])
+      case Some(GraphReturnItems(_, items)) =>
+        for {
+          graphs <- EffMonad[R].sequence(items.map(convertGraphReturnItem[R]).toVector)
+        } yield graphs
     }
   }
 
@@ -201,7 +197,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
     } yield refs
   }
 
-  private def convertGraphReturnItem[R: _mayFail : _hasContext](item: ast.GraphReturnItem): Eff[R, NamedGraph] = item match {
+  private def convertGraphReturnItem[R : _hasContext](item: ast.GraphReturnItem): Eff[R, NamedGraph] = item match {
     case ast.NewContextGraphs(source: GraphAtAs, _) =>
       for {
         context <- get[R, IRBuilderContext]
