@@ -15,11 +15,10 @@
  */
 package org.opencypher.caps.ir.api
 
-import org.opencypher.caps.api.types.{CTNode, CTRelationship}
+import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.ir.api.block._
 import org.opencypher.caps.ir.api.global.GlobalsRegistry
 import org.opencypher.caps.ir.api.pattern._
-import org.opencypher.caps.api.schema.Schema
 
 import scala.annotation.tailrec
 import scala.collection.generic.CanBuildFrom
@@ -27,14 +26,13 @@ import scala.collection.generic.CanBuildFrom
 final case class QueryModel[E](
   result: ResultBlock[E],
   globals: GlobalsRegistry,
-//  bindings: Map[ConstantRef, ConstantBinding],
   blocks: Map[BlockRef, Block[E]],
   schemas: Map[BlockRef, Schema]
 ) {
 
   def apply(ref: BlockRef): Block[E] = blocks(ref)
 
-  def select(fields: Set[IRField]) =
+  def select(fields: Set[IRField]): QueryModel[E] =
     copy(result = result.select(fields))
 
   def dependencies(ref: BlockRef): Set[BlockRef] = apply(ref).after
@@ -68,69 +66,6 @@ final case class QueryModel[E](
     blocks.collect(f)
   }
 }
-
-//object QueryModel {
-
-//  def empty[E](globals: GlobalsRegistry, uri: URI) = {
-//     TODO: empty graph?
-//    val graphBlock = LoadGraphBlock[E](Set.empty, AmbientGraph())
-//    val ref = BlockRef("graph")
-//    QueryModel[E](ResultBlock.empty(ref), globals, Map(ref -> graphBlock), Map(ref -> Schema.empty))
-//  }
-
-//  def base[E](sourceNodeName: String, relName: String, targetNodeName: String, globals: GlobalsRegistry): QueryModel[E] = {
-//    val sourceNode = IRField(sourceNodeName)(CTNode)
-//    val rel = IRField(relName)(CTRelationship)
-//    val targetNode = IRField(targetNodeName)(CTNode)
-//
-//    assert(sourceNode != targetNode, "don't do that")
-//
-//    val graphBlockRef = BlockRef("graph")
-//    val graphBlock = LoadGraphBlock[E](Set.empty, AmbientGraph())
-//
-//    val ref: BlockRef = BlockRef("match")
-//    val matchBlock = MatchBlock[E](Set.empty, Pattern.empty
-//      .withEntity(sourceNode, EveryNode)
-//      .withEntity(rel, EveryRelationship)
-//      .withEntity(targetNode, EveryNode)
-//      .withConnection(rel, DirectedRelationship(sourceNode, targetNode)), AllGiven[E](), optional = false, None)
-//    val blocks: Map[BlockRef, Block[E]] = Map(ref -> matchBlock)
-//
-//    val resultBlock = ResultBlock[E](Set(ref), FieldsInOrder(sourceNode, rel, targetNode), Set(sourceNode, targetNode), Set(rel), None)
-//    QueryModel(resultBlock, globals, blocks, Map(graphBlockRef -> Schema.empty))
-//  }
-
-//  def nodes[E](nodeName: String, globals: GlobalsRegistry): QueryModel[E] = {
-//    val node = IRField(nodeName)(CTNode)
-//
-//    val graphBlockRef = BlockRef("graph")
-//    val graphBlock = LoadGraphBlock[E](Set.empty, AmbientGraph())
-//
-//    val ref: BlockRef = BlockRef("match")
-//    val matchBlock = MatchBlock[E](Set.empty, Pattern.empty
-//      .withEntity(node, EveryNode), AllGiven[E](), optional = false, None)
-//
-//    val blocks: Map[BlockRef, Block[E]] = Map(ref -> matchBlock)
-//
-//    val resultBlock = ResultBlock[E](Set(ref), FieldsInOrder(node), Set(node), Set.empty, None)
-//    QueryModel(resultBlock, globals, blocks, Map(graphBlockRef -> Schema.empty))
-//  }
-
-//  def relationships[E](relName: String, globals: GlobalsRegistry): QueryModel[E] = {
-//    val rel = IRField(relName)(CTRelationship)
-//
-//    val graphBlockRef = BlockRef("graph")
-//    val graphBlock = LoadGraphBlock[E](Set.empty, AmbientGraph())
-//
-//    val ref: BlockRef = BlockRef("match")
-//    val matchBlock = MatchBlock[E](Set.empty, Pattern.empty
-//      .withEntity(rel, EveryRelationship), AllGiven[E](), optional = false, None)
-//    val blocks: Map[BlockRef, Block[E]] = Map(ref -> matchBlock)
-//
-//    val resultBlock = ResultBlock[E](Set(ref), FieldsInOrder(rel), Set.empty, Set(rel), None)
-//    QueryModel(resultBlock, globals, blocks, Map(graphBlockRef -> Schema.empty))
-//  }
-//}
 
 case class SolvedQueryModel[E](
   fields: Set[IRField],
