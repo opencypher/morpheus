@@ -204,7 +204,6 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
         out <- {
           val graphVar = source.as.getOrElse(Raise.impossible("graph not named"))
 
-          // TODO: Bug in frontend, fixed by PR <insert-pr-number-when-done>
           val escapedGraphname = fix(graphVar.name)
 
           val graphURI = source.at.url match {
@@ -237,7 +236,8 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
       } yield out
   }
 
-  // The namespacer in Neo4j frontend incorrectly renames graph variables to avoid shadowing -- this is not fine for returned graphs
+  // TODO: Bug in frontend, fixed by PR https://github.com/neo4j/neo4j/pull/10083
+  // The namespacer in Neo4j frontend incorrectly renames graph variables to avoid shadowing -- not necessary
   private def fix(graphName: String) = {
     if (graphName.startsWith(" "))
       graphName.substring(2, graphName.indexOf("@"))
