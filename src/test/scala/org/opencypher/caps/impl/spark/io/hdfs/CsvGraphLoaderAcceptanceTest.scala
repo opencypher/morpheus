@@ -26,7 +26,7 @@ class CsvGraphLoaderAcceptanceTest extends BaseTestSuite
   with MiniDFSClusterFixture
   with Matchers {
 
-  protected override val dfsTestGraphPath = "/csv"
+  protected override val dfsTestGraphPath = "/csv/sn"
 
   test("load csv graph") {
     val loader = new CsvGraphLoader(hdfsURI.toString, session.sparkContext.hadoopConfiguration)

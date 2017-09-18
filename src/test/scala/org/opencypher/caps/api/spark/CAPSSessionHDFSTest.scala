@@ -15,6 +15,9 @@
  */
 package org.opencypher.caps.api.spark
 
+import java.net.URI
+
+import org.apache.http.client.utils.URIBuilder
 import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvGraphSource
 import org.opencypher.caps.test.BaseTestSuite
 import org.opencypher.caps.test.fixture.{MiniDFSClusterFixture, SparkSessionFixture}
@@ -24,6 +27,8 @@ class CAPSSessionHDFSTest extends BaseTestSuite
   with MiniDFSClusterFixture {
 
   protected override val dfsTestGraphPath = "/csv/sn"
+
+  protected override def hdfsURI: URI = new URIBuilder(super.hdfsURI).setScheme("hdfs+csv").build()
 
   test("HDFS via URI") {
     implicit val capsSession: CAPSSession = CAPSSession.builder(session).build

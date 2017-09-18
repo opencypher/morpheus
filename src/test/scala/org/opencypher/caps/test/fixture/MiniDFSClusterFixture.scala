@@ -30,9 +30,9 @@ trait MiniDFSClusterFixture extends BaseTestFixture {
 
   protected val dfsTestGraphPath: String
 
-  def hdfsURI: URI = hdfsURI(dfsTestGraphPath)
+  protected def hdfsURI: URI = hdfsURI(dfsTestGraphPath)
 
-  def hdfsURI(path: String): URI = URI.create(s"hdfs+csv://${dfsCluster.getNameNode.getHostAndPort}$path")
+  protected def hdfsURI(path: String): URI = URI.create(s"hdfs://${dfsCluster.getNameNode.getHostAndPort}$path")
 
   abstract override def beforeAll(): Unit = {
     super.beforeAll()
@@ -49,7 +49,7 @@ trait MiniDFSClusterFixture extends BaseTestFixture {
   }
 
   /**
-    * Returns the expected nodes for the test graph in /resources/csv_graph
+    * Returns the expected nodes for the test graph in /resources/csv/sn
     *
     * @return expected nodes
     */
@@ -61,7 +61,7 @@ trait MiniDFSClusterFixture extends BaseTestFixture {
   )
 
   /**
-    * Returns the expected rels for the test graph in /resources/csv_graph
+    * Returns the expected rels for the test graph in /resources/csv/sn
     *
     * @return expected rels
     */
