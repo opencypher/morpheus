@@ -22,9 +22,27 @@ import scala.collection.immutable.Bag
 
 class MultigraphProjectionAcceptanceTest extends CAPSTestSuite {
 
-  private def testGraph1 = TestGraph("(:Person {name: 'Mats'})")
-  private def testGraph2 = TestGraph("(:Person {name: 'Phil'})")
-  private def testGraph3 = TestGraph("(:Car {type: 'Toyota'})")
+  private val testGraph1 = TestGraph("(:Person {name: 'Mats'})")
+  private val testGraph2 = TestGraph("(:Person {name: 'Phil'})")
+  private val testGraph3 = TestGraph("(:Car {type: 'Toyota'})")
+
+  test("returning a graph") {
+    testGraph1.mountAt("/test/graph1")
+    testGraph2.mountAt("/test/graph2")
+
+    val query =
+      """FROM GRAPH AT '/test/graph2' AS myGraph
+        |MATCH (n:Person)
+        |RETURN n.name AS name GRAPHS myGraph""".stripMargin
+
+    val result = testGraph1.graph.cypher(query)
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("name" -> "Phil")
+    ))
+
+    result.graphs should equal(Map("myGraph" -> testGraph2.graph))
+  }
 
   test("Can select a source graph to match data from") {
     testGraph1.mountAt("/test/graph1")

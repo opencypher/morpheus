@@ -15,15 +15,13 @@
  */
 package org.opencypher.caps.ir.impl
 
-import java.net.URI
-
 import cats.implicits._
 import org.atnos.eff._
 import org.atnos.eff.all._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.{ContextGraphs, InputPosition, ast}
+import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, ast}
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.api.util.parseURI
+import org.opencypher.caps.api.util.parsePathOrURI
 import org.opencypher.caps.impl.CompilationStage
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.ir.api._
@@ -123,14 +121,32 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           }
         } yield refs
 
+        // TODO: Figure out how to share code with the below where GraphReturnItems are present
       case ast.Return(distinct, ast.ReturnItems(_, items), None, _, _, _, _) =>
         for {
           fieldExprs <- EffMonad[R].sequence(items.map(convertReturnItem[R]).toVector)
           context <- get[R, IRBuilderContext]
           refs <- {
-            val (ref, reg) = registerProjectBlock(context, fieldExprs, distinct = distinct, source = context.ambientGraph)
+            val namedGraph = getNamedGraph(c, context)
+            val (ref, reg) = registerProjectBlock(context, fieldExprs, distinct = distinct, source = namedGraph)
             val rItems = fieldExprs.map(_._1)
             val orderedFields = OrderedFieldsAndGraphs[Expr](rItems)
+            val returns = ResultBlock[Expr](Set(ref), orderedFields, Set.empty, Set.empty, context.ambientGraph)
+            val (ref2, reg2) = reg.register(returns)
+            put[R, IRBuilderContext](context.copy(blocks = reg2)) >> pure[R, Vector[BlockRef]](Vector(ref, ref2))
+          }
+        } yield refs
+
+      case ast.Return(distinct, ast.ReturnItems(_, items), Some(GraphReturnItems(_, gItems)), _, _, _, _) =>
+        for {
+          fieldExprs <- EffMonad[R].sequence(items.map(convertReturnItem[R]).toVector)
+          graphs <- EffMonad[R].sequence(gItems.map(convertGraphReturnItem[R]).toVector)
+          context <- get[R, IRBuilderContext]
+          refs <- {
+            val namedGraph = getNamedGraph(c, context)
+            val (ref, reg) = registerProjectBlock(context, fieldExprs, distinct = distinct, source = namedGraph, graphs = graphs)
+            val rItems = fieldExprs.map(_._1)
+            val orderedFields = OrderedFieldsAndGraphs[Expr](rItems, graphs.toSet)
             val returns = ResultBlock[Expr](Set(ref), orderedFields, Set.empty, Set.empty, context.ambientGraph)
             val (ref2, reg2) = reg.register(returns)
             put[R, IRBuilderContext](context.copy(blocks = reg2)) >> pure[R, Vector[BlockRef]](Vector(ref, ref2))
@@ -192,14 +208,17 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
         out <- {
           val graphVar = source.as.getOrElse(Raise.impossible("graph not named"))
 
+          // TODO: Bug in frontend, fixed by PR <insert-pr-number-when-done>
+          val escapedGraphname = fix(graphVar.name)
+
           val graphURI = source.at.url match {
             case Left(parameter) =>
               Raise.notYetImplemented("graph uris by parameter")
             case Right(literal) =>
-              parseURI(literal.value)
+              parsePathOrURI(literal.value)
           }
 
-          val namedGraph = NamedGraph(graphVar.name, graphURI)
+          val namedGraph = NamedGraph(escapedGraphname, graphURI)
 
           val newContext = context.withGraphAt(namedGraph)
 
@@ -216,10 +235,17 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
       for {
         context <- get[R, IRBuilderContext]
         out <- {
-          val g = context.graphs(inner.as.getOrElse(Raise.impossible("graph didn't have a name!")).name)
+          val g = context.graphs(fix(inner.as.getOrElse(Raise.impossible("graph didn't have a name!")).name))
           pure[R, NamedGraph](g)
         }
       } yield out
+  }
+
+  // The namespacer in Neo4j frontend incorrectly renames graph variables to avoid shadowing -- this is not fine for returned graphs
+  private def fix(graphName: String) = {
+    if (graphName.startsWith(" "))
+      graphName.substring(2, graphName.indexOf("@"))
+    else graphName
   }
 
   private def convertReturnItem[R: _mayFail : _hasContext](item: ast.ReturnItem): Eff[R, (IRField, Expr)] = item match {
@@ -297,12 +323,6 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
 
       Some(CypherQuery(info, model))
     }
-
-  private def getKnownFields(blockRefs: Set[BlockRef], registry: BlockRegistry[Expr]): Set[IRField] = {
-    blockRefs.map(registry.apply).map { block =>
-      block.binds.fields ++ getKnownFields(block.after, registry)
-    }.reduceOption(_ ++ _).getOrElse(Set.empty)
-  }
 
   private def convertSortItem[R: _mayFail : _hasContext](item: ast.SortItem): Eff[R, SortItem[Expr]] = {
     item match {

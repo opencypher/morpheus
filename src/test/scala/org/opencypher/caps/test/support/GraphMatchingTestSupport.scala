@@ -195,10 +195,9 @@ trait GraphMatchingTestSupport {
   private case class TestGraphSource(canonicalURI: URI, testGraph: TestGraph)
     extends CAPSGraphSourceImpl {
 
-    private lazy val capsGraph = testGraph.graph
     override def sourceForGraphAt(uri: URI): Boolean = uri == canonicalURI
     override def create: CAPSGraph = ???
-    override def graph: CAPSGraph = capsGraph
+    override def graph: CAPSGraph = testGraph.graph
     override def schema: Option[Schema] = None
     override def persist(graph: CAPSGraph, mode: PersistMode): CAPSGraph = ???
     override def delete(): Unit = ???

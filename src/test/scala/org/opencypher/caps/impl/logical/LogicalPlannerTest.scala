@@ -185,7 +185,7 @@ class LogicalPlannerTest extends IrTestSuite {
     override def create: CAPSGraph = ???
     override def graph: CAPSGraph = ???
     override def schema: Option[Schema] = Some(_schema)
-    override def persist(mode: PersistMode, graph: CAPSGraph): CAPSGraph = ???
+    override def persist(graph: CAPSGraph, mode: PersistMode): CAPSGraph = ???
     override def delete(): Unit = ???
   }
 
