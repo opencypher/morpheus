@@ -41,7 +41,7 @@ class MultigraphProjectionAcceptanceTest extends CAPSTestSuite {
       CypherMap("name" -> "Phil")
     ))
 
-    result.graphs should equal(Map("myGraph" -> testGraph2.graph))
+    result.graphs shouldMatch testGraph2.graph
   }
 
   test("Can select a source graph to match data from") {
@@ -97,5 +97,6 @@ class MultigraphProjectionAcceptanceTest extends CAPSTestSuite {
     result.records.toMaps should equal(Bag(
       CypherMap("name" -> "Phil", "car" -> "Toyota")
     ))
+    result.graphs shouldBe empty
   }
 }

@@ -56,7 +56,7 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
       CypherMap("id(n)" -> 1))
     )
 
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("id for rel") {
@@ -69,7 +69,7 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
       CypherMap("id(e)" -> 1))
     )
 
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("get single label") {

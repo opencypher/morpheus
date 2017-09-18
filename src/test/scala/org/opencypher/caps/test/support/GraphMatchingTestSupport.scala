@@ -53,13 +53,23 @@ trait GraphMatchingTestSupport {
 
   implicit val context: RuntimeContext = RuntimeContext.empty
 
-  implicit class GraphMatcher(graph: CAPSGraph) {
-    def shouldMatch(expectedGraph: CAPSGraph): Assertion = {
-      val expectedNodeIds = expectedGraph.nodes("n").data.select("n").collect().map(_.getLong(0)).toSet
-      val expectedRelIds = expectedGraph.relationships("r").data.select("r").collect().map(_.getLong(0)).toSet
+  implicit class GraphsMatcher(graphs: Map[String, CAPSGraph]) {
+    def shouldMatch(expectedGraphs: CAPSGraph*): Unit = {
+      withClue("expected and actual must have same size") {
+        graphs.size should equal(expectedGraphs.size)
+      }
 
-      val actualNodeIds = graph.nodes("n").data.select("n").collect().map(_.getLong(0)).toSet
-      val actualRelIds = graph.relationships("r").data.select("r").collect().map(_.getLong(0)).toSet
+      graphs.values.zip(expectedGraphs).foreach {
+        case (actual, expected) => verify(actual, expected)
+      }
+    }
+
+    private def verify(actual: CAPSGraph, expected: CAPSGraph): Assertion = {
+      val expectedNodeIds = expected.nodes("n").data.select("n").collect().map(_.getLong(0)).toSet
+      val expectedRelIds = expected.relationships("r").data.select("r").collect().map(_.getLong(0)).toSet
+
+      val actualNodeIds = actual.nodes("n").data.select("n").collect().map(_.getLong(0)).toSet
+      val actualRelIds = actual.relationships("r").data.select("r").collect().map(_.getLong(0)).toSet
 
       expectedNodeIds should equal(actualNodeIds)
       expectedRelIds should equal(actualRelIds)

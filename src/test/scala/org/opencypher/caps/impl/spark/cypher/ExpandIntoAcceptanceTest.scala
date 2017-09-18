@@ -64,7 +64,7 @@ class ExpandIntoAcceptanceTest extends CAPSTestSuite {
       )
     ))
 
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("test expand into for triangle") {
@@ -97,7 +97,7 @@ class ExpandIntoAcceptanceTest extends CAPSTestSuite {
       )
     ))
 
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("Expand into after var expand") {

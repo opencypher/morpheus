@@ -20,9 +20,6 @@ import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSResult}
 object CAPSResultBuilder {
   def from(internal: PhysicalResult): CAPSResult = new CAPSResult {
 
-    // TODO: Track which graph was the 'latest' used one
-    override def graph: CAPSGraph = internal.graphs.head._2
-
     override def records: CAPSRecords = internal.records
     override def graphs: Map[String, CAPSGraph] = internal.graphs
   }

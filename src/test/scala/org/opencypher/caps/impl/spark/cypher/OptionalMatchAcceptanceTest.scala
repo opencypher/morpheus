@@ -59,7 +59,7 @@ class OptionalMatchAcceptanceTest extends CAPSTestSuite {
         "p3.name" -> "Eve"
       )
     ))
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("optional match with predicates") {
@@ -90,7 +90,7 @@ class OptionalMatchAcceptanceTest extends CAPSTestSuite {
         "p2.name" -> "Bob"
       )
     ))
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("optional match with partial matches") {
@@ -130,7 +130,7 @@ class OptionalMatchAcceptanceTest extends CAPSTestSuite {
         "p3.name" -> null
       )
     ))
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("optional match with duplicates") {
@@ -169,7 +169,7 @@ class OptionalMatchAcceptanceTest extends CAPSTestSuite {
         "c.name" -> null
       )
     ))
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("optional match with duplicates and cycle") {
@@ -221,6 +221,6 @@ class OptionalMatchAcceptanceTest extends CAPSTestSuite {
         "e3.foo" -> null
       )
     ))
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 }

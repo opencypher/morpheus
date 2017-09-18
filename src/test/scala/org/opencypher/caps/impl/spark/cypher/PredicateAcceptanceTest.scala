@@ -46,7 +46,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   // TODO: Fix this
@@ -63,7 +63,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("or") {
@@ -80,7 +80,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("or with and") {
@@ -102,7 +102,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("equality between properties") {
@@ -124,7 +124,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("less than") {
@@ -141,7 +141,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("less than or equal") {
@@ -157,7 +157,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
       CypherMap("n.id" -> 2, "n.val" -> 5)
     ))
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("greater than") {
@@ -173,7 +173,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("greater than or equal") {
@@ -190,6 +190,6 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 }

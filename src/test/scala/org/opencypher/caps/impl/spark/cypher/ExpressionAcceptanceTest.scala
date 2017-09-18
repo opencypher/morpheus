@@ -46,7 +46,7 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("less than") {
@@ -66,7 +66,7 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("less than or equal") {
@@ -84,7 +84,7 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
       CypherMap("n.val <= m.val" -> null)
     ))
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("greater than") {
@@ -103,7 +103,7 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("greater than or equal") {
@@ -122,7 +122,7 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("addition") {
@@ -138,7 +138,7 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
       CypherMap("res" -> null)
     ))
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("subtraction with name") {
@@ -154,7 +154,7 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
       CypherMap("res" -> null)
     ))
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("subtraction without name") {
@@ -169,7 +169,7 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
       CypherMap("m.val - n.val" -> 1)
     ))
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("multiplication with integer") {
@@ -186,7 +186,7 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("multiplication with float") {
@@ -202,7 +202,7 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("multiplication with integer and float") {
@@ -218,7 +218,7 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("division with no remainder") {
@@ -235,7 +235,7 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("division integer and float and null") {
@@ -252,7 +252,7 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   ignore("equality") {
@@ -273,7 +273,7 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
       CypherMap("res" -> null)
     ))
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
 
@@ -291,7 +291,7 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
       CypherMap("p.name" -> "Martin")
     ))
 
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("property expression with relationship") {
@@ -306,7 +306,7 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
       CypherMap("r.since" -> 2017)
     ))
 
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 }
 

@@ -50,7 +50,7 @@ class MatchAcceptanceTest extends CAPSTestSuite {
         "p3.name" -> "Eve"
       )
     ))
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("cyphermorphism and multiple match clauses") {
@@ -86,6 +86,6 @@ class MatchAcceptanceTest extends CAPSTestSuite {
         "p4.name" -> "Bob"
       )
     ))
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 }
