@@ -16,11 +16,13 @@
 package org.opencypher.caps.api.spark
 
 import java.net.URI
+import java.util.UUID
 
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.opencypher.caps.api.expr.{Expr, Var}
 import org.opencypher.caps.api.graph.CypherSession
 import org.opencypher.caps.api.io.{CreateOrFail, PersistMode}
+import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.io.{CAPSGraphSource, CAPSGraphSourceFactory}
 import org.opencypher.caps.api.util.parsePathOrURI
 import org.opencypher.caps.api.value.CypherValue
@@ -28,12 +30,13 @@ import org.opencypher.caps.demo.Configuration.PrintLogicalPlan
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
 import org.opencypher.caps.impl.logical._
 import org.opencypher.caps.impl.parse.CypherParser
+import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceHandler
 import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvGraphSourceFactory
 import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraphSourceFactory
 import org.opencypher.caps.impl.spark.io.session.SessionGraphSourceFactory
 import org.opencypher.caps.impl.spark.physical.{CAPSResultBuilder, PhysicalPlanner, PhysicalPlannerContext}
-import org.opencypher.caps.ir.api.IRField
+import org.opencypher.caps.ir.api.{IRField, NamedGraph}
 import org.opencypher.caps.ir.api.global.{ConstantRef, ConstantRegistry, GlobalsRegistry, TokenRegistry}
 import org.opencypher.caps.ir.impl.global.GlobalsExtractor
 import org.opencypher.caps.ir.impl.{IRBuilder, IRBuilderContext}
@@ -41,6 +44,8 @@ import org.opencypher.caps.ir.impl.{IRBuilder, IRBuilderContext}
 sealed class CAPSSession private(val sparkSession: SparkSession,
                                  private val graphSourceHandler: CAPSGraphSourceHandler)
   extends CypherSession with Serializable {
+
+  self =>
 
   override type Graph = CAPSGraph
   override type Session = CAPSSession
@@ -80,6 +85,8 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
   override def graph: CAPSGraph = CAPSGraph.empty(this)
 
   override def cypher(graph: Graph, query: String, queryParameters: Map[String, CypherValue]): Result = {
+    val ambientGraph = mountAmbientGraph(graph)
+
     val (stmt, extractedLiterals, semState) = parser.process(query)(CypherParser.defaultContext)
 
     val globals = GlobalsExtractor(stmt, GlobalsRegistry.fromTokens(graph.tokens.registry))
@@ -93,7 +100,7 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
     val paramsAndTypes = GlobalsExtractor.paramWithTypes(stmt)
 
     print("IR ... ")
-    val ir = IRBuilder(stmt)(IRBuilderContext.initial(query, globals, graph.schema, semState, paramsAndTypes))
+    val ir = IRBuilder(stmt)(IRBuilderContext.initial(query, globals, graph.schema, semState, ambientGraph, paramsAndTypes))
     println("Done!")
 
     print("Logical plan ... ")
@@ -112,27 +119,53 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
     plan(graph, CAPSRecords.empty()(this), tokens, constants, allParameters, optimizedLogicalPlan)
   }
 
+  private def mountAmbientGraph(ambient: CAPSGraph): NamedGraph = {
+    val name = UUID.randomUUID().toString
+    val uri = URI.create(s"session:///graphs/ambient/$name")
+
+    val graphSource = new CAPSGraphSource {
+      override def schema: Option[Schema] = Some(graph.schema)
+      override def canonicalURI: URI = uri
+      override def delete(): Unit = Raise.impossible("Don't delete the ambient graph")
+      override def graph: CAPSGraph = ambient
+      override def sourceForGraphAt(uri: URI): Boolean = uri == canonicalURI
+      override def create: CAPSGraph = Raise.impossible("Don't create the ambient graph")
+      override def persist(graph: CAPSGraph, mode: PersistMode): CAPSGraph = Raise.impossible("Don't persist the ambient graph")
+      override val session: CAPSSession = self
+    }
+
+    graphSourceHandler.mountSourceAt(graphSource, uri)(self)
+
+    NamedGraph(name, uri)
+  }
+
+  private def planStart(graph: Graph, fields: Set[Var]): LogicalOperator = {
+    val ambientGraph = mountAmbientGraph(graph)
+
+    producer.planStart(ExternalLogicalGraph(ambientGraph.name, ambientGraph.uri, graph.schema), fields)
+  }
+
   def filter(graph: Graph, in: Records, expr: Expr, queryParameters: Map[String, CypherValue]): Records = {
-    val scan = producer.planStart(graph.schema, in.header.fields)
+    val scan = planStart(graph, in.header.fields)
     val filter = producer.planFilter(expr, scan)
     plan(graph, in, queryParameters, filter).records
   }
 
   def select(graph: Graph, in: Records, fields: IndexedSeq[Var], queryParameters: Map[String, CypherValue]): Records = {
-    val scan = producer.planStart(graph.schema, in.header.fields)
-    val select = producer.planSelect(fields, scan)
+    val scan = planStart(graph, in.header.fields)
+    val select = producer.planSelect(fields, Set.empty, scan)
     plan(graph, in, queryParameters, select).records
   }
 
   def project(graph: Graph, in: Records, expr: Expr, queryParameters: Map[String, CypherValue]): Records = {
-    val scan = producer.planStart(graph.schema, in.header.fields)
+    val scan = planStart(graph, in.header.fields)
     val project = producer.projectExpr(expr, scan)
     plan(graph, in, queryParameters, project).records
   }
 
   def alias(graph: Graph, in: Records, alias: (Expr, Var), queryParameters: Map[String, CypherValue]): Records = {
     val (expr, v) = alias
-    val scan = producer.planStart(graph.schema, in.header.fields)
+    val scan = planStart(graph, in.header.fields)
     val select = producer.projectField(IRField(v.name)(v.cypherType), expr, scan)
     plan(graph, in, queryParameters, select).records
   }
@@ -164,7 +197,7 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
     //       instead of just using a single global tokens instance derived from the graph space
     //
     print("Physical plan ... ")
-    val physicalPlannerContext = PhysicalPlannerContext(graph, records, tokens, constants, allParameters)
+    val physicalPlannerContext = PhysicalPlannerContext(graphAt, records, tokens, constants, allParameters)
     val physicalResult = physicalPlanner(flatPlan)(physicalPlannerContext)
     println("Done!")
 

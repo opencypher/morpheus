@@ -40,7 +40,7 @@ class BoundedVarExpandAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("bounded with lower bound") {
@@ -57,7 +57,7 @@ class BoundedVarExpandAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("var expand with default lower and loop") {
@@ -81,7 +81,7 @@ class BoundedVarExpandAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("var expand return list of rel ids") {
@@ -105,7 +105,7 @@ class BoundedVarExpandAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("var expand with rel type") {
@@ -123,7 +123,7 @@ class BoundedVarExpandAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   // Property predicates on var-length patterns get rewritten in AST to WHERE all(_foo IN r | _foo.prop = value)
@@ -143,7 +143,7 @@ class BoundedVarExpandAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("var expand with additional hop") {
@@ -163,6 +163,6 @@ class BoundedVarExpandAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 }

@@ -37,14 +37,14 @@ object Udfs {
   def gt(lhs: Any, rhs: Any): Any = (CypherValue(lhs) > CypherValue(rhs)).orNull
 
   def getNodeLabels(labelNames: Seq[Label]): (Any) => Array[String] = {
-    case a: mutable.WrappedArray[Boolean] =>
+    case a: mutable.WrappedArray[_] =>
       a.zip(labelNames).collect {
         case (true, label) => label.name
       }.toArray
   }
 
   def getNodeKeys(keyNames: Seq[String]): (Any) => Array[String] = {
-    case a: mutable.WrappedArray[AnyRef] =>
+    case a: mutable.WrappedArray[_] =>
       a.zip(keyNames).collect {
         case (v, key) if v != null => key
       }.toArray.sorted

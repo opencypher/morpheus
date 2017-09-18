@@ -19,7 +19,6 @@ import org.opencypher.caps.api.graph.CypherResult
 
 trait CAPSResult extends CypherResult {
 
-  override type Result = CAPSResult
   override type Graph = CAPSGraph
   override type Records = CAPSRecords
 

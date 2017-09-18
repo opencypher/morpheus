@@ -19,14 +19,11 @@ import org.opencypher.caps.api.record.CypherRecords
 
 trait CypherResult {
 
-  type Result <: CypherResult
   type Graph <: CypherGraph
   type Records <: CypherRecords
 
-  def graph: Graph
-
-  def sourceGraph: Graph = graph
-  def targetGraph: Graph = graph
+  def sourceGraph: Graph = ???
+  def targetGraph: Graph = ???
 
   def sourceGraphName: String = ???
   def targetGraphName: String = ???

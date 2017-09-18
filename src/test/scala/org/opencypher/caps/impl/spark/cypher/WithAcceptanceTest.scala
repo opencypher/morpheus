@@ -42,7 +42,7 @@ class WithAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("projecting constants") {
@@ -64,7 +64,7 @@ class WithAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("projecting variables in scope") {
@@ -81,7 +81,7 @@ class WithAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("projecting property expression") {
@@ -98,7 +98,7 @@ class WithAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("projecting property expression with filter") {
@@ -116,7 +116,7 @@ class WithAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("projecting addition expression") {
@@ -133,7 +133,7 @@ class WithAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("aliasing variables") {
@@ -150,7 +150,7 @@ class WithAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("projecting mixed expression") {
@@ -168,7 +168,7 @@ class WithAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("order by") {
@@ -184,7 +184,7 @@ class WithAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("order by asc") {
@@ -200,7 +200,7 @@ class WithAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("order by desc") {
@@ -216,7 +216,7 @@ class WithAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("skip") {
@@ -228,7 +228,7 @@ class WithAcceptanceTest extends CAPSTestSuite {
     result.records.toDF().count() should equal(1)
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("order by with skip") {
@@ -243,7 +243,7 @@ class WithAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("order by with (arithmetic) skip") {
@@ -257,7 +257,7 @@ class WithAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("limit") {
@@ -269,7 +269,7 @@ class WithAcceptanceTest extends CAPSTestSuite {
     result.records.toDF().count() should equal(1)
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("order by with limit") {
@@ -283,7 +283,7 @@ class WithAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("order by with (arithmetic) limit") {
@@ -298,7 +298,7 @@ class WithAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 
   test("order by with skip and limit") {
@@ -312,6 +312,6 @@ class WithAcceptanceTest extends CAPSTestSuite {
     ))
 
     // And
-    result.graph shouldMatch given.graph
+    result.graphs shouldBe empty
   }
 }

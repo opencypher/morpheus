@@ -15,22 +15,13 @@
  */
 package org.opencypher.caps.ir.api.block
 
-import java.net.URI
-
-import org.opencypher.caps.ir.api.IRField
+import org.opencypher.caps.ir.api.NamedGraph
 import org.opencypher.caps.ir.api.pattern.AllGiven
 
-case class LoadGraphBlock[E](
-  after: Set[BlockRef],
-  binds: GraphDescriptor[E]
-) extends BasicBlock[GraphDescriptor[E], E](BlockType("load-graph")) {
+case class SourceBlock[E](
+  source: NamedGraph
+) extends BasicBlock[Binds[E], E](BlockType("source")) {
   override def where: AllGiven[E] = AllGiven[E]()
-
-  override def source: Option[URI] = None
+  override val after: Set[BlockRef] = Set.empty
+  override val binds: Binds[E] = Binds.empty
 }
-
-sealed trait GraphDescriptor[E] extends Binds[E] {
-  override def fields: Set[IRField] = Set.empty
-}
-
-final case class AmbientGraph[E]() extends GraphDescriptor[E]

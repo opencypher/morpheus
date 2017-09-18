@@ -15,23 +15,21 @@
  */
 package org.opencypher.caps.ir.api.block
 
-import java.net.URI
-
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.pattern.AllGiven
 
 final case class ProjectBlock[E](
   after: Set[BlockRef],
-  binds: ProjectedFields[E] = ProjectedFields[E](),
+  binds: FieldsAndGraphs[E] = FieldsAndGraphs[E](),
   where: AllGiven[E] = AllGiven[E](),
-  source: Option[URI],
+  source: NamedGraph,
   distinct: Boolean = false
-) extends BasicBlock[ProjectedFields[E], E](BlockType("project"))
+) extends BasicBlock[FieldsAndGraphs[E], E](BlockType("project"))
 
-final case class ProjectedFields[E](items: Map[IRField, E] = Map.empty[IRField, E]) extends Binds[E] {
-  override def fields = items.keySet
+final case class FieldsAndGraphs[E](items: Map[IRField, E] = Map.empty[IRField, E], override val graphs: Set[NamedGraph] = Set.empty) extends Binds[E] {
+  override def fields: Set[IRField] = items.keySet
 }
 
 case object ProjectedFieldsOf {
-  def apply[E](entries: (IRField, E)*) = ProjectedFields(entries.toMap)
+  def apply[E](entries: (IRField, E)*) = FieldsAndGraphs(entries.toMap)
 }

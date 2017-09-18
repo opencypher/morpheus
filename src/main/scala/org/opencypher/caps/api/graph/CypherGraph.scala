@@ -27,7 +27,7 @@ trait CypherGraph {
   type Graph <: CypherGraph { type Records = self.Records }
   type Records <: CypherRecords { type Records = self.Records }
   type Session <: CypherSession { type Session = self.Session; type Graph = self.Graph; type Records = self.Records; type Result = self.Result }
-  type Result <: CypherResult { type Result = self.Result; type Graph = self.Graph; type Records = self.Records }
+  type Result <: CypherResult { type Graph = self.Graph; type Records = self.Records }
 
   // TODO: VerifiedSchema
   def schema: Schema

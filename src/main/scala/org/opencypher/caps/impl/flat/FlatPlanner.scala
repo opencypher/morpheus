@@ -33,8 +33,8 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
 
     input match {
 
-      case logical.Select(fields, in) =>
-        producer.select(fields, process(in))
+      case logical.Select(fields, graphs, in) =>
+        producer.select(fields, graphs, process(in))
 
       case logical.Filter(expr, in) =>
         producer.filter(expr, process(in))
@@ -47,6 +47,10 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
 
       case logical.Project(it, in) =>
         producer.project(it, process(in))
+
+      case logical.ProjectGraph(graph, in) =>
+        val prev = process(in)
+        ProjectGraph(graph, prev, prev.header)
 
       case logical.Aggregate(aggregations, group, in) =>
         producer.aggregate(aggregations, group, process(in))

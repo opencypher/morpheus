@@ -22,9 +22,15 @@ import org.opencypher.caps.ir.api.pattern._
 import org.opencypher.caps.api.record.{FieldSlotContent, OpaqueField, ProjectedExpr, ProjectedField}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.logical.LogicalOperatorProducer
+import org.opencypher.caps.impl.logical.{LogicalGraph, LogicalOperatorProducer}
 import org.opencypher.caps.test.BaseTestSuite
 import org.opencypher.caps.toField
+
+import scala.language.implicitConversions
+
+case class TestGraph(schema: Schema) extends LogicalGraph {
+  override val name = "TestGraph"
+}
 
 class FlatPlannerTest extends BaseTestSuite {
 
@@ -48,8 +54,8 @@ class FlatPlannerTest extends BaseTestSuite {
   val mkFlat = new FlatOperatorProducer()
   val flatPlanner = new FlatPlanner
 
-  val logicalStartOperator = mkLogical.planStart(schema, Set.empty)
-  val flatStartOperator = mkFlat.planStart(schema, logicalStartOperator.fields)
+  val logicalStartOperator = mkLogical.planStart(TestGraph(schema), Set.empty)
+  val flatStartOperator = mkFlat.planStart(TestGraph(schema), logicalStartOperator.fields)
 
   // TODO: Ids missing
   // TODO: Do not name schema provided columns
@@ -269,7 +275,7 @@ class FlatPlannerTest extends BaseTestSuite {
   test("Construct selection") {
     val result = flatPlanner.process(
       mkLogical.planSelect(IndexedSeq(Var("foo")(CTString)),
-        mkLogical.projectField(IRField("foo")(CTString), Property(Var("n")(CTNode), propertyKeyByName("name"))(CTString),
+        prev = mkLogical.projectField(IRField("foo")(CTString), Property(Var("n")(CTNode), propertyKeyByName("name"))(CTString),
           logicalNodeScan("n", "Person")
         )
       )
@@ -278,7 +284,7 @@ class FlatPlannerTest extends BaseTestSuite {
 
     result should equal(
       mkFlat.select(
-        IndexedSeq(Var("foo")(CTString)),
+        IndexedSeq(Var("foo")(CTString)), Set.empty,
         mkFlat.project(
           ProjectedField(Var("foo")(CTString), Property(Var("n")(CTNode), propertyKeyByName("name"))(CTString)),
           flatNodeScan(Var("n")(CTNode), "Person")
@@ -293,7 +299,7 @@ class FlatPlannerTest extends BaseTestSuite {
   test("Construct selection with several fields") {
     val result = flatPlanner.process(
       mkLogical.planSelect(IndexedSeq(Var("foo")(CTString), Var("n")(CTNode), Var("baz")(CTInteger.nullable)),
-        mkLogical.projectField(IRField("baz")(CTInteger), Property(Var("n")(CTNode), propertyKeyByName("age"))(CTInteger.nullable),
+        prev = mkLogical.projectField(IRField("baz")(CTInteger), Property(Var("n")(CTNode), propertyKeyByName("age"))(CTInteger.nullable),
           mkLogical.projectField(IRField("foo")(CTString), Property(Var("n")(CTNode), propertyKeyByName("name"))(CTString),
             logicalNodeScan("n", "Person")
           )
@@ -304,7 +310,7 @@ class FlatPlannerTest extends BaseTestSuite {
 
     result should equal(
       mkFlat.select(
-        IndexedSeq(Var("foo")(CTString), Var("n")(CTNode), Var("baz")(CTInteger.nullable)),
+        IndexedSeq(Var("foo")(CTString), Var("n")(CTNode), Var("baz")(CTInteger.nullable)), Set.empty,
         mkFlat.project(
           ProjectedField(Var("baz")(CTInteger.nullable), Property(Var("n")(CTNode), propertyKeyByName("age"))(CTInteger.nullable)),
           mkFlat.project(ProjectedField(Var("foo")(CTString), Property(Var("n")(CTNode), propertyKeyByName("name"))(CTString)),

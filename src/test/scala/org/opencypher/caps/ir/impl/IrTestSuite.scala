@@ -15,6 +15,8 @@
  */
 package org.opencypher.caps.ir.impl
 
+import java.net.URI
+
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, Parameter}
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SemanticState, symbols}
 import org.opencypher.caps.api.expr.Expr
@@ -24,6 +26,7 @@ import org.opencypher.caps.ir.api.global.GlobalsRegistry
 import org.opencypher.caps.ir.api.pattern.{AllGiven, Pattern}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.CypherType
+import org.opencypher.caps.impl.flat.TestGraph
 import org.opencypher.caps.ir.impl.global.GlobalsExtractor
 import org.opencypher.caps.impl.logical.{ExternalLogicalGraph, Start}
 import org.opencypher.caps.impl.parse.CypherParser
@@ -33,11 +36,12 @@ import scala.language.implicitConversions
 
 abstract class IrTestSuite extends BaseTestSuite {
   val leafRef = BlockRef("leaf")
-  val leafBlock = LoadGraphBlock[Expr](Set.empty, AmbientGraph())
-  val leafPlan = Start(Schema.empty, Set.empty)(SolvedQueryModel.empty)
+  val testGraph: NamedGraph = NamedGraph("test", URI.create("test"))
+  def leafBlock() = SourceBlock[Expr](testGraph)
+  def leafPlan = Start(ExternalLogicalGraph(testGraph.name, testGraph.uri, Schema.empty), Set.empty)(SolvedQueryModel.empty)
 
   val graphBlockRef = BlockRef("graph")
-  val graphBlock = LoadGraphBlock[Expr](Set.empty, AmbientGraph())
+  val graphBlock = SourceBlock[Expr](testGraph)
 
   /**
     * Construct a single-block ir; the parameter block has to be a block that could be planned as a leaf.
@@ -55,22 +59,22 @@ abstract class IrTestSuite extends BaseTestSuite {
     irFor(rootRef, blocks)
   }
 
-  def project(fields: ProjectedFields[Expr], after: Set[BlockRef] = Set(leafRef),
+  def project(fields: FieldsAndGraphs[Expr], after: Set[BlockRef] = Set(leafRef),
               given: AllGiven[Expr] = AllGiven[Expr]()) =
-    ProjectBlock(after, fields, given, None)
+    ProjectBlock(after, fields, given, testGraph)
 
   protected def matchBlock(pattern: Pattern[Expr]): Block[Expr] =
-    MatchBlock[Expr](Set(leafRef), pattern, AllGiven[Expr](), false, None)
+    MatchBlock[Expr](Set(leafRef), pattern, AllGiven[Expr](), false, testGraph)
 
   def irFor(rootRef: BlockRef, blocks: Map[BlockRef, Block[Expr]]): CypherQuery[Expr] = {
     val result = ResultBlock[Expr](
       after = Set(rootRef),
       // TODO
-      binds = OrderedFields[Expr](),
+      binds = OrderedFieldsAndGraphs[Expr](),
       nodes = Set.empty, // TODO: Fill these sets correctly
       relationships = Set.empty,
       where = AllGiven[Expr](),
-      source = None
+      source = testGraph
     )
     val model = QueryModel(result, GlobalsRegistry.empty, blocks, Map(graphBlockRef -> Schema.empty))
     CypherQuery(QueryInfo("test"), model)
@@ -79,7 +83,7 @@ abstract class IrTestSuite extends BaseTestSuite {
   case class DummyBlock[E](after: Set[BlockRef] = Set.empty) extends BasicBlock[DummyBinds[E], E](BlockType("dummy")) {
     override def binds: DummyBinds[E] = DummyBinds[E]()
     override def where: AllGiven[E] = AllGiven[E]()
-    override val source = None
+    override val source = testGraph
   }
 
   case class DummyBinds[E](fields: Set[IRField] = Set.empty) extends Binds[E]
@@ -90,14 +94,14 @@ abstract class IrTestSuite extends BaseTestSuite {
     // TODO: SemCheck
     def ir(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
-      IRBuilder(stmt)(IRBuilderContext.initial(queryText, GlobalsExtractor(stmt), schema, SemanticState.clean, Map.empty))
+      IRBuilder(stmt)(IRBuilderContext.initial(queryText, GlobalsExtractor(stmt), schema, SemanticState.clean, testGraph, Map.empty))
     }
 
     // TODO: SemCheck
     def irWithParams(params: (String, CypherType)*)(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
       val knownTypes: Map[Expression, CypherType] = params.map(p => Parameter(p._1, symbols.CTAny)(InputPosition.NONE) -> p._2).toMap
-      IRBuilder(stmt)(IRBuilderContext.initial(queryText, GlobalsExtractor(stmt), schema, SemanticState.clean, knownTypes))
+      IRBuilder(stmt)(IRBuilderContext.initial(queryText, GlobalsExtractor(stmt), schema, SemanticState.clean, testGraph, knownTypes))
     }
   }
 }

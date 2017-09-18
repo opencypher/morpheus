@@ -27,7 +27,7 @@ trait CypherSession {
   type Graph <: CypherGraph { type Graph = self.Graph; type Records = self.Records }
   type Session <: CypherSession { type Session = self.Session; type Graph = self.Graph; type Records = self.Records; type Result = self.Result; type Data = self.Data }
   type Records <: CypherRecords { type Records = self.Records; type Data = self.Data }
-  type Result <: CypherResult { type Result = self.Result; type Graph = self.Graph; type Records = self.Records }
+  type Result <: CypherResult { type Graph = self.Graph; type Records = self.Records }
   type Data
 
   def graph: Graph

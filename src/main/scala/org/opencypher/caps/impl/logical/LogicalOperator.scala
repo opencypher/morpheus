@@ -36,17 +36,12 @@ sealed trait LogicalOperator {
   def pretty(depth: Int = 0): String
 }
 
-sealed trait LogicalGraph {
+trait LogicalGraph {
   def schema: Schema
   def name: String
 }
 
 final case class ExternalLogicalGraph(name: String, uri: URI, schema: Schema) extends LogicalGraph
-final case class AmbientLogicalGraph(schema: Schema) extends LogicalGraph {
-  override val name = "  AMBIENT_GRAPH"
-
-  override def toString: String = name
-}
 
 sealed trait StackingLogicalOperator extends LogicalOperator {
   def in: LogicalOperator
@@ -193,6 +188,17 @@ final case class Project(it: ProjectedSlotContent, in: LogicalOperator)
   override def clone(newIn: LogicalOperator = in): LogicalOperator = copy(in = newIn)(solved)
 }
 
+final case class ProjectGraph(graph: LogicalGraph, in: LogicalOperator)
+                             (override val solved: SolvedQueryModel[Expr])
+  extends StackingLogicalOperator {
+
+  override def pretty(depth: Int): String =
+    s"""${prefix(depth)} ProjectGraph(graph = $graph)
+       #${in.pretty(depth + 1)}""".stripMargin('#')
+
+  override def clone(newIn: LogicalOperator = in): LogicalOperator = copy(in = newIn)(solved)
+}
+
 final case class Aggregate(aggregations: Set[(Var, Aggregator)], group: Set[Var], in: LogicalOperator)
                           (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
   override def clone(newIn: LogicalOperator): LogicalOperator = copy(in = newIn)(solved)
@@ -203,7 +209,7 @@ final case class Aggregate(aggregations: Set[(Var, Aggregator)], group: Set[Var]
 
 }
 
-final case class Select(fields: IndexedSeq[Var], in: LogicalOperator)
+final case class Select(fields: IndexedSeq[Var], graphs: Set[String], in: LogicalOperator)
                        (override val solved: SolvedQueryModel[Expr])
   extends StackingLogicalOperator {
 
