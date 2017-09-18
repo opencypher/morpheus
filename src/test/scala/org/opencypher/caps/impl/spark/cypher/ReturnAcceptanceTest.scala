@@ -22,6 +22,14 @@ import scala.collection.Bag
 
 class ReturnAcceptanceTest extends CAPSTestSuite {
 
+  test("single return query") {
+    val given = TestGraph("")
+
+    val result  = given.cypher("RETURN 1")
+
+    result.records shouldMatch CypherMap("1" -> 1)
+  }
+
   test("return node") {
     val given = TestGraph("({foo:'bar'}),()")
 
