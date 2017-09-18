@@ -516,14 +516,14 @@ case object udfUtils {
 
   def arrayAppend(array: Any, next: Any): Any = {
     array match {
-      case a:mutable.WrappedArray[Long] =>
+      case a: mutable.WrappedArray[_] =>
         a :+ next
     }
   }
 
   def contains(array: Any, elem: Any): Any = {
     array match {
-      case a:mutable.WrappedArray[Long] =>
+      case a: mutable.WrappedArray[_] =>
         a.contains(elem)
     }
   }

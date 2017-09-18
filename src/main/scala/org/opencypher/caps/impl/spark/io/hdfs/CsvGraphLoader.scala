@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.spark.io.hdfs
 
-import java.io.File
+import java.io.{BufferedReader, File, InputStreamReader}
 import java.net.URI
 
 import org.apache.hadoop.conf.Configuration
@@ -117,7 +117,7 @@ class CsvGraphLoader(location: String, hadoopConfig: Configuration)(implicit cap
 
   private def readSchema[T <: CsvSchema](path: Path)(parser: String => T): T = {
     val schemaPath = path.suffix(".SCHEMA")
-    val stream = fs.open(schemaPath)
+    val stream = new BufferedReader(new InputStreamReader(fs.open(schemaPath)))
     def readLines = Stream.cons(stream.readLine(), Stream.continually(stream.readLine))
     parser(readLines.takeWhile(_ != null).mkString)
   }
