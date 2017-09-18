@@ -115,8 +115,7 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
     if (PrintLogicalPlan.get())
       println(optimizedLogicalPlan.pretty())
 
-    // TODO: Initialize with a table with no columns and a single row
-    plan(graph, CAPSRecords.empty()(this), tokens, constants, allParameters, optimizedLogicalPlan)
+    plan(graph, CAPSRecords.unit()(this), tokens, constants, allParameters, optimizedLogicalPlan)
   }
 
   private def mountAmbientGraph(ambient: CAPSGraph): NamedGraph = {
