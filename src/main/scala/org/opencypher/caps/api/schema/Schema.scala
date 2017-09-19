@@ -73,6 +73,11 @@ final case class PropertyKeyMap(m: Map[String, Map[String, CypherType]])(val con
     copy(joined)(conflicts ++ other.conflicts)
   }
 
+  def filter(f: (String, Map[String, CypherType]) => Boolean): PropertyKeyMap = {
+    def tuplify[T](a: T): Tuple1[T] = Tuple1(a)
+    PropertyKeyMap(m.filter(e => f(tuplify(e))))(conflicts)
+  }
+
   private def joinMaps[A, B](left: Map[A, B], right: Map[A, B])
                             (joinF: (B, B) => B, mapF: B => B = (x: B) => x): Map[A, B] = {
     val uniqueLeft = left.keySet -- right.keySet
@@ -104,6 +109,14 @@ case class ImpliedLabels(m: Map[String, Set[String]]) {
       .toSet
   }
 
+  def filterByLabels(labels: Set[String]): ImpliedLabels = {
+    val filteredImplications = m.collect {
+      case (k,v) if labels.contains(k) => k -> v.intersect(labels)
+    }
+
+    ImpliedLabels(filteredImplications)
+  }
+
   private def implicationsFor(source: String) = m.getOrElse(source, Set.empty) + source
 }
 
@@ -115,6 +128,9 @@ case class LabelCombinations(combos: Set[Set[String]]) {
     val (lhs, rhs) = combos.partition(labels => coExistingLabels.exists(labels(_)))
     copy(combos = rhs + (lhs.flatten ++ coExistingLabels))
   }
+
+  def filterByLabels(labels: Set[String]): LabelCombinations =
+    LabelCombinations(combos.map( _ intersect labels).filter(_.nonEmpty))
 
   def ++(other: LabelCombinations) = copy(combos ++ other.combos)
 }
