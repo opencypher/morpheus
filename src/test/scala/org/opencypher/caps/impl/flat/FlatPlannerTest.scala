@@ -16,13 +16,13 @@
 package org.opencypher.caps.impl.flat
 
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.ir.api.IRField
-import org.opencypher.caps.ir.api.global.{GlobalsRegistry, Label, RelType}
-import org.opencypher.caps.ir.api.pattern._
 import org.opencypher.caps.api.record.{FieldSlotContent, OpaqueField, ProjectedExpr, ProjectedField}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.logical.{LogicalGraph, LogicalOperatorProducer}
+import org.opencypher.caps.ir.api.IRField
+import org.opencypher.caps.ir.api.global.{GlobalsRegistry, Label, RelType}
+import org.opencypher.caps.ir.api.pattern._
 import org.opencypher.caps.test.BaseTestSuite
 import org.opencypher.caps.toField
 
@@ -44,11 +44,9 @@ class FlatPlannerTest extends BaseTestSuite {
   schema.verify
 
   val globals = GlobalsRegistry.fromSchema(schema)
-
-  implicit val context = FlatPlannerContext(globals.tokens, globals.constants)
-
   import globals.tokens._
-  import globals.constants._
+
+  implicit val flatContext = FlatPlannerContext(globals.tokens, globals.constants)
 
   val mkLogical = new LogicalOperatorProducer
   val mkFlat = new FlatOperatorProducer()

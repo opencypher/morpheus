@@ -18,17 +18,26 @@ package org.opencypher.caps.test.support
 import org.opencypher.caps.api.expr.Var
 import org.opencypher.caps.api.record.{FieldSlotContent, OpaqueField, ProjectedExpr, RecordHeader}
 import org.opencypher.caps.api.spark.CAPSRecords
+import org.opencypher.caps.api.value.CypherMap
 import org.opencypher.caps.test.BaseTestSuite
 import org.opencypher.caps.test.fixture.SparkSessionFixture
 import org.scalatest.Assertion
 
+import scala.collection.Bag
 import scala.collection.JavaConverters._
+import scala.collection.immutable.HashedBagConfiguration
 
 trait RecordMatchingTestSupport {
 
   self: BaseTestSuite with SparkSessionFixture =>
 
+  implicit val bagConfig: HashedBagConfiguration[CypherMap] = Bag.configuration.compact[CypherMap]
+
   implicit class RecordMatcher(records: CAPSRecords) {
+    def shouldMatch(expected: CypherMap*) = {
+      records.toMaps should equal(Bag(expected: _*))
+    }
+
     def shouldMatch(expectedRecords: CAPSRecords): Assertion = {
       records.header should equal(expectedRecords.header)
 
@@ -49,6 +58,23 @@ trait RecordMatchingTestSupport {
       val newHeader = RecordHeader.from(newSlots: _*)
       val newData = records.data.toDF(newHeader.internalHeader.columns: _*)
       CAPSRecords.create(newHeader, newData)(records.caps)
+    }
+  }
+
+  implicit class RichRecords(records: CAPSRecords) {
+    import org.opencypher.caps.impl.spark.RowUtils._
+
+    def toMaps: Bag[CypherMap] = {
+      val rows = records.toDF().collect().map { r =>
+        val properties = records.header.slots.map { s =>
+          s.content match {
+            case f: FieldSlotContent => f.field.name -> r.getCypherValue(f.key, records.header)
+            case x => x.key.withoutType -> r.getCypherValue(x.key, records.header)
+          }
+        }.toMap
+        CypherMap(properties)
+      }
+      Bag(rows: _*)
     }
   }
 }

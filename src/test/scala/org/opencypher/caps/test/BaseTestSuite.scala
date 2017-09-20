@@ -17,6 +17,7 @@ package org.opencypher.caps.test
 
 import org.junit.runner.RunWith
 import org.opencypher.caps.api.value.CypherValueImplicits
+import org.opencypher.caps.impl.spark.physical.RuntimeContext
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FunSuite, Matchers}
 
@@ -24,4 +25,7 @@ import org.scalatest.{FunSuite, Matchers}
 abstract class BaseTestSuite
   extends FunSuite
   with Matchers
-  with CypherValueImplicits
+  with CypherValueImplicits {
+
+  implicit val context: RuntimeContext = RuntimeContext.empty
+}
