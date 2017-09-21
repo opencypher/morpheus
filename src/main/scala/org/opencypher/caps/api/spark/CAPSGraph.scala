@@ -60,6 +60,12 @@ object CAPSGraph {
     }
   }
 
+  def create(records: CAPSRecords, schema: Schema, tokens: CAPSRecordsTokens)
+            (implicit caps: CAPSSession): CAPSGraph = {
+
+    new PatternGraph(records, schema, tokens)
+  }
+
   def createLazy(theSchema: Schema)(loadGraph: => CAPSGraph)(implicit caps: CAPSSession) = new CAPSGraph {
     override protected lazy val graph: CAPSGraph = {
       val g = loadGraph

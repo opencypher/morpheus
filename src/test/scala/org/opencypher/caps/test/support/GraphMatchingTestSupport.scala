@@ -104,12 +104,19 @@ trait GraphMatchingTestSupport {
       override val schema: Schema = {
         val labelAndProps = queryGraph.getVertices.asScala.flatMap(extractFromElement)
         val typesAndProps = queryGraph.getEdges.asScala.flatMap(extractFromElement)
+        val vertexLabelCombinations = queryGraph.getVertices.asScala.map{ vertex =>
+          vertex.getLabels.asScala
+        }.toSet
 
         val schemaWithLabels = labelAndProps.foldLeft(Schema.empty) {
           case (acc, (label, props)) => acc.withNodePropertyKeys(label)(props.toSeq: _*)
         }
 
-        typesAndProps.foldLeft(schemaWithLabels) {
+        val schemaWithLabelCombinations = vertexLabelCombinations.foldLeft(schemaWithLabels) {(acc, labels) =>
+          acc.withLabelCombination(labels: _*)
+        }
+
+        typesAndProps.foldLeft(schemaWithLabelCombinations) {
           case (acc, (t, props)) => acc.withRelationshipPropertyKeys(t)(props.toSeq: _*)
         }
       }

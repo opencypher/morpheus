@@ -73,9 +73,8 @@ final case class PropertyKeyMap(m: Map[String, Map[String, CypherType]])(val con
     copy(joined)(conflicts ++ other.conflicts)
   }
 
-  def filter(f: (String, Map[String, CypherType]) => Boolean): PropertyKeyMap = {
-    def tuplify[T](a: T): Tuple1[T] = Tuple1(a)
-    PropertyKeyMap(m.filter(e => f(tuplify(e))))(conflicts)
+  def filterByLabels(labels: Set[String]): PropertyKeyMap = {
+    PropertyKeyMap(m.filterKeys(labels.contains))(conflicts)
   }
 
   private def joinMaps[A, B](left: Map[A, B], right: Map[A, B])

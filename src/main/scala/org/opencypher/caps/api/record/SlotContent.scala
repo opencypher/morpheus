@@ -15,10 +15,20 @@
  */
 package org.opencypher.caps.api.record
 
+import org.apache.spark.sql.types.StructField
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.impl.spark.SparkColumnName
+import org.opencypher.caps.impl.spark.convert.toSparkType
+import org.opencypher.caps.impl.spark.exception.Raise
 
-final case class RecordSlot(index: Int, content: SlotContent)
+final case class RecordSlot(index: Int, content: SlotContent) {
+  def structField: StructField = {
+    val name = SparkColumnName.of(this)
+    val sparkType = toSparkType(content.cypherType)
+    StructField(name, sparkType)
+  }
+}
 
 object RecordSlot {
   def from(pair: (Int, SlotContent)) = RecordSlot(pair._1, pair._2)
@@ -33,6 +43,8 @@ sealed trait SlotContent {
 
   final def cypherType: CypherType = key.cypherType
   def support: Traversable[Expr]
+
+  def withOwner(newOwner: Var): SlotContent
 }
 
 sealed trait ProjectedSlotContent extends SlotContent {
@@ -61,16 +73,29 @@ final case class ProjectedExpr(expr: Expr) extends ProjectedSlotContent {
   override def alias = None
 
   override def support = Seq(expr)
+
+  override def withOwner(newOwner: Var): SlotContent = key match {
+    case h: HasLabel => ProjectedExpr(HasLabel(newOwner, h.label)(h.cypherType))
+    case t: HasType => ProjectedExpr(HasType(newOwner, t.relType)(t.cypherType))
+    case p: Property => ProjectedExpr(Property(newOwner, p.key)(p.cypherType))
+    case s: StartNode => ProjectedExpr(StartNode(newOwner)(s.cypherType))
+    case e: EndNode => ProjectedExpr(EndNode(newOwner)(e.cypherType))
+    case _ => Raise.impossible()
+  }
 }
 
 final case class OpaqueField(field: Var) extends FieldSlotContent {
   override def owner = Some(field)
 
   override def support = Seq(field)
+
+  override def withOwner(newOwner: Var): SlotContent = OpaqueField(Var(newOwner.name)(cypherType))
 }
 
 final case class ProjectedField(field: Var, expr: Expr)
   extends ProjectedSlotContent with FieldSlotContent {
 
   override def support = Seq(field, expr)
+
+  override def withOwner(newOwner: Var): SlotContent = this
 }
