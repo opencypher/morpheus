@@ -305,7 +305,7 @@ final class CypherBoolean(private[CypherBoolean] val v: Boolean) extends CypherV
     case _                    => false
   }
 
-  override def toString: String = if (v) "TRUE" else "FALSE"
+  override def toString: String = if (v) "true" else "false"
 }
 
 

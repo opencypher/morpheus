@@ -37,11 +37,11 @@ class RecordsPrinterTest extends CAPSTestSuite {
 
     // Then
     getString should equal(
-      """+------------------------+
-        !| (no columns)           |
-        !+------------------------+
-        !| (no rows)              |
-        !+------------------------+
+      """+----------------------+
+        !| (no columns)         |
+        !+----------------------+
+        !| (no rows)            |
+        !+----------------------+
         !""".stripMargin('!')
     )
   }
@@ -55,11 +55,55 @@ class RecordsPrinterTest extends CAPSTestSuite {
 
     // Then
     getString should equal(
-      """+------------------------+
-        !| foo                    |
-        !+------------------------+
-        !| (no rows)              |
-        !+------------------------+
+      """+----------------------+
+        !| foo                  |
+        !+----------------------+
+        !| (no rows)            |
+        !+----------------------+
+        !""".stripMargin('!')
+    )
+  }
+
+  test("single column, three rows") {
+    // Given
+    val records = CAPSRecords.create(Seq(Row1("myString"), Row1("foo"), Row1(null)))
+
+    // When
+    print(records)
+
+    // Then
+    getString should equal(
+      """+----------------------+
+        !| foo                  |
+        !+----------------------+
+        !| 'myString'           |
+        !| 'foo'                |
+        !| null                 |
+        !+----------------------+
+        !""".stripMargin('!')
+    )
+  }
+
+  test("three columns, three rows") {
+    // Given
+    val records = CAPSRecords.create(Seq(
+      Row3("myString", 4, false),
+      Row3("foo", 99999999, true),
+      Row3(null, -1, true)
+    ))
+
+    // When
+    print(records)
+
+    // Then
+    getString should equal(
+      """+--------------------------------------------------------------------+
+        !| foo                  | v                    | veryLongColumnNameWi |
+        !+--------------------------------------------------------------------+
+        !| 'myString'           | 4                    | false                |
+        !| 'foo'                | 99999999             | true                 |
+        !| null                 | -1                   | true                 |
+        !+--------------------------------------------------------------------+
         !""".stripMargin('!')
     )
   }
@@ -69,6 +113,9 @@ class RecordsPrinterTest extends CAPSTestSuite {
   override def beforeEach(): Unit = {
     baos = new ByteArrayOutputStream()
   }
+
+  private case class Row1(foo: String)
+  private case class Row3(foo: String, v: Int, veryLongColumnNameWithBoolean: Boolean)
 
   private def headerOf(fields: Symbol*): RecordHeader = {
     val value1 = fields.map(f => OpaqueField(Var(f.name)(CTNode)))

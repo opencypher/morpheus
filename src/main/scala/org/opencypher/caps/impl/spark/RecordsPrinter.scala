@@ -16,6 +16,7 @@
 package org.opencypher.caps.impl.spark
 
 import java.io.PrintStream
+import java.util.Objects
 
 import org.opencypher.caps.api.spark.CAPSRecords
 
@@ -36,7 +37,7 @@ object RecordsPrinter {
     val fieldContents = records.header.slots.sortBy(_.index).map(_.content)
     val factor = if (fieldContents.size > 1) fieldContents.size else 1
 
-    val lineWidth = COLUMN_WIDTH * factor + 2 * MARGIN
+    val lineWidth = (COLUMN_WIDTH + MARGIN) * factor + factor - 1
     val --- = "+" + repeat("-", lineWidth) + "+"
 
     stream.println(---)
@@ -56,6 +57,7 @@ object RecordsPrinter {
     if (fieldContents.isEmpty || values.isEmpty) {
       stream.print(sep)
       stream.print(fitToColumn("(no rows)"))
+      stream.println(" |")
     } else values.foreach { map =>
       fieldContents.foreach { content =>
         map.get(SparkColumnName.of(content)) match {
@@ -65,12 +67,13 @@ object RecordsPrinter {
             sep = " | "
           case Some(v) =>
             stream.print(sep)
-            stream.print(fitToColumn(v.toString))
+            stream.print(fitToColumn(Objects.toString(v)))
             sep = " | "
         }
       }
+      stream.println(" |")
+      sep = "| "
     }
-    stream.println(" |")
     stream.println(---)
     stream.flush()
   }
@@ -79,7 +82,7 @@ object RecordsPrinter {
   private def fitToColumn(s: String) = {
     val spaces = (1 until COLUMN_WIDTH).map(_ => " ").reduce(_ + _)
     val cell = s + spaces
-    cell.take(COLUMN_WIDTH + MARGIN)
+    cell.take(COLUMN_WIDTH)
   }
 
 }
