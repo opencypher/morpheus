@@ -163,7 +163,7 @@ class PatternGraphTest extends CAPSTestSuite {
     ))
   }
 
-  test("Construct graph from multiple node scans") {
+  test("Node scan over a node type from column with multiple node types") {
     val inputGraph = TestGraph(`:Person` + `:Book`).graph
     val inputNodes = inputGraph.nodes("n")
 
@@ -174,22 +174,15 @@ class PatternGraphTest extends CAPSTestSuite {
       "n",
       "____n:Person",
       "____n:Swedish",
-      "____n:Book",
       "____n_dot_nameSTRING",
-      "____n_dot_luckyNumberINTEGER",
-      "____n_dot_yearINTEGER",
-      "____n_dot_titleSTRING"
+      "____n_dot_luckyNumberINTEGER"
     ))
 
     outputNodes.details.toDF().collect().toSet should equal(Set(
-      Row(0,  true,  true,  false,   "Mats",   23, null,                   null),
-      Row(1,  true,  false, false, "Martin",   42, null,                   null),
-      Row(2,  true,  false, false,    "Max", 1337, null,                   null),
-      Row(3,  true,  false, false, "Stefan",    9, null,                   null),
-      Row(4, false,  false,  true,     null, null, 1949,                 "1984"),
-      Row(5, false,  false,  true,     null, null, 1999,        "Cryptonomicon"),
-      Row(6, false,  false,  true,     null, null, 1990, "The Eye of the World"),
-      Row(7, false,  false,  true,     null, null, 2013,           "The Circle")
+      Row(0,  true,  true,   "Mats",   23),
+      Row(1,  true,  false, "Martin",   42),
+      Row(2,  true,  false,    "Max", 1337),
+      Row(3,  true,  false, "Stefan",    9)
     ))
   }
 

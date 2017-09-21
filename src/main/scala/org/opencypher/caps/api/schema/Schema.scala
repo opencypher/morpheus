@@ -129,7 +129,7 @@ case class LabelCombinations(combos: Set[Set[String]]) {
   }
 
   def filterByLabels(labels: Set[String]): LabelCombinations =
-    LabelCombinations(combos.map( _ intersect labels).filter(_.nonEmpty))
+    LabelCombinations(combos.filter(c => c.intersect(labels).nonEmpty))
 
   def ++(other: LabelCombinations) = copy(combos ++ other.combos)
 }

@@ -21,7 +21,14 @@ class PatternGraph(private val baseTable: CAPSRecords, val schema: Schema, val t
     val node = Var(name)(nodeCypherType)
 
     // TODO: Fix that no labels means all labels
-    val nodeLabels: Set[String] = if (nodeCypherType.labels.isEmpty) schema.labels else nodeCypherType.labels.filter(_._2).keySet
+    val nodeLabels: Set[String] = if (nodeCypherType.labels.isEmpty) {
+      val allLabels = schema.labels
+      allLabels
+    } else {
+      val explicitLabels = nodeCypherType.labels.filter(_._2).keySet
+      val possibleLabels = schema.labelCombinations.filterByLabels(explicitLabels)
+      possibleLabels.combos.flatten
+    }
 
     val nodeSchema = schema.copy(
       labels = nodeLabels,
@@ -35,7 +42,7 @@ class PatternGraph(private val baseTable: CAPSRecords, val schema: Schema, val t
     val nodeHeader: RecordHeader = RecordHeader.nodeFromSchema(node, nodeSchema, tokens.registry)
 
     val nodeSlots = baseTable.details.header.slots.collect {
-      case slot@RecordSlot(_, OpaqueField(v)) if v.cypherType.subTypeOf(nodeCypherType).isTrue => slot -> v
+      case slot@RecordSlot(_, OpaqueField(v)) if v.cypherType.superTypeOf(nodeCypherType).isTrue => slot -> v
     }
 
     val slotsWithChildren: Map[Var, Seq[RecordSlot]] =
@@ -48,7 +55,8 @@ class PatternGraph(private val baseTable: CAPSRecords, val schema: Schema, val t
 
     implicit val rowEncoder = rowEncoderFor(nodeHeader)
 
-    val nodeDf = baseTable.details.toDF().flatMap(RowNodeExpansion(nodeHeader, nodeColumnsLookupTables))
+    val nodeDf = baseTable.details.toDF().flatMap(
+      RowNodeExpansion(nodeHeader, node, slotsWithChildren, nodeColumnsLookupTables))
 
     CAPSRecords.create(nodeHeader, nodeDf)
   }
@@ -58,8 +66,6 @@ class PatternGraph(private val baseTable: CAPSRecords, val schema: Schema, val t
     val schema = StructType(nodeHeader.slots.map(_.structField))
     RowEncoder(schema)
   }
-
-
 
   def scanTableToBaseTableNameLookup(scanTableVar: Var, slotContents: Seq[SlotContent]): Map[String,String] = {
     slotContents.map { baseTableSlotContent =>
