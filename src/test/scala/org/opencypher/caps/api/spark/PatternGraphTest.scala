@@ -1,7 +1,7 @@
 package org.opencypher.caps.api.spark
 
 import org.apache.spark.sql.Row
-import org.opencypher.caps.api.record.{NodeScan, RecordHeader, RelationshipScan}
+import org.opencypher.caps.api.record.RecordHeader
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.test.CAPSTestSuite
 
@@ -64,7 +64,7 @@ class PatternGraphTest extends CAPSTestSuite {
       |(b1)-[:INFLUENCES]->(b2),
     """.stripMargin
 
-  test("Construct pattern graph from single node CAPSRecords") {
+  test("Node scan from single node CAPSRecords") {
     val inputGraph = TestGraph(`:Person`).graph
     val inputNodes = inputGraph.nodes("n")
 
@@ -87,7 +87,7 @@ class PatternGraphTest extends CAPSTestSuite {
     ))
   }
 
-  test("Construct graph from multiple node scans") {
+  test("Node scan from mixed node CapsRecords") {
     val inputGraph = TestGraph(`:Person` + `:Book`).graph
     val inputNodes = inputGraph.nodes("n")
 
@@ -117,28 +117,10 @@ class PatternGraphTest extends CAPSTestSuite {
     ))
   }
 
-  test("Construct graph from multiple connected nodes") {
-    val inputGraph = TestGraph(`:Person` + `:Book` + `:READS`).graph
-
-    val books = inputGraph.nodes("b", CTNode("Book"))
-    val booksDf = books.details.toDF().as("b")
-    val reads = inputGraph.relationships("r", CTRelationship("READS"))
-    val readsDf = reads.details.toDF().as("r")
-    val persons = inputGraph.nodes("p", CTNode("Person"))
-    val personsDf = persons.details.toDF().as("p")
-
-    val joinedDf = personsDf
-      .join(readsDf, personsDf.col("p") === readsDf.col("____source(r)"))
-      .join(booksDf, readsDf.col("____target(r)") === booksDf.col("b"))
-
-    val slots = persons.details.header.slots ++ reads.details.header.slots ++ books.details.header.slots
-    val joinHeader = RecordHeader.from(slots.map(_.content): _*)
-
-    val baseRecords = CAPSRecords.create(joinHeader, joinedDf)
-
+  test("Node scan from multiple connected nodes") {
+    val (inputGraph,baseRecords) = setupPersonReadsBooksTable
     val patternGraph = CAPSGraph.create(baseRecords, inputGraph.schema, inputGraph.tokens)
     val outputNodes = patternGraph.nodes("n")
-    outputNodes.details.toDF().show()
 
     outputNodes.details.toDF().columns should equal(Array(
       "n",
@@ -163,7 +145,30 @@ class PatternGraphTest extends CAPSTestSuite {
     ))
   }
 
-  test("Node scan over a node type from column with multiple node types") {
+  test("Specific node scan from multiple connected nodes") {
+    val (inputGraph,baseRecords) = setupPersonReadsBooksTable
+    val patternGraph = CAPSGraph.create(baseRecords, inputGraph.schema, inputGraph.tokens)
+
+    val outputNodes = patternGraph.nodes("n", CTNode("Person"))
+
+    outputNodes.details.toDF().columns should equal(Array(
+      "n",
+      "____n:Person",
+      "____n:Swedish",
+      "____n_dot_nameSTRING",
+      "____n_dot_luckyNumberINTEGER"
+    ))
+
+    outputNodes.details.toDF().collect().toSet should equal(Set(
+      Row(0,  true,   true,   "Mats",   23),
+      Row(1,  true,  false, "Martin",   42),
+      Row(2,  true,  false,    "Max", 1337),
+      Row(3,  true,  false, "Stefan",    9)
+    ))
+  }
+
+
+  test("Specific node scan from mixed node CapsRecords") {
     val inputGraph = TestGraph(`:Person` + `:Book`).graph
     val inputNodes = inputGraph.nodes("n")
 
@@ -184,6 +189,20 @@ class PatternGraphTest extends CAPSTestSuite {
       Row(2,  true,  false,    "Max", 1337),
       Row(3,  true,  false, "Stefan",    9)
     ))
+  }
+
+  test("Node scan for missing label") {
+    val inputGraph = TestGraph(`:Book`).graph
+    val inputNodes = inputGraph.nodes("n")
+
+    val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema, inputGraph.tokens)
+    val outputNodes = patternGraph.nodes("n", CTNode("Person"))
+
+    outputNodes.details.toDF().columns should equal(Array(
+      "n"
+    ))
+
+    outputNodes.details.toDF().collect().toSet should equal(Set.empty)
   }
 
 //
@@ -390,4 +409,24 @@ class PatternGraphTest extends CAPSTestSuite {
 //      Row(400, true, false, true, null, null, "Typescript")
 //    ))
 //  }
+
+  private def setupPersonReadsBooksTable = {
+    val inputGraph = TestGraph(`:Person` + `:Book` + `:READS`).graph
+
+    val books = inputGraph.nodes("b", CTNode("Book"))
+    val booksDf = books.details.toDF().as("b")
+    val reads = inputGraph.relationships("r", CTRelationship("READS"))
+    val readsDf = reads.details.toDF().as("r")
+    val persons = inputGraph.nodes("p", CTNode("Person"))
+    val personsDf = persons.details.toDF().as("p")
+
+    val joinedDf = personsDf
+      .join(readsDf, personsDf.col("p") === readsDf.col("____source(r)"))
+      .join(booksDf, readsDf.col("____target(r)") === booksDf.col("b"))
+
+    val slots = persons.details.header.slots ++ reads.details.header.slots ++ books.details.header.slots
+    val joinHeader = RecordHeader.from(slots.map(_.content): _*)
+
+    inputGraph -> CAPSRecords.create(joinHeader, joinedDf)
+  }
 }

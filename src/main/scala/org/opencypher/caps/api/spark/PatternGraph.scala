@@ -20,12 +20,13 @@ class PatternGraph(private val baseTable: CAPSRecords, val schema: Schema, val t
   override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
     val node = Var(name)(nodeCypherType)
 
+    val explicitLabels = nodeCypherType.labels.filter(_._2).keySet
+
     // TODO: Fix that no labels means all labels
     val nodeLabels: Set[String] = if (nodeCypherType.labels.isEmpty) {
       val allLabels = schema.labels
       allLabels
     } else {
-      val explicitLabels = nodeCypherType.labels.filter(_._2).keySet
       val possibleLabels = schema.labelCombinations.filterByLabels(explicitLabels)
       possibleLabels.combos.flatten
     }
@@ -41,12 +42,22 @@ class PatternGraph(private val baseTable: CAPSRecords, val schema: Schema, val t
 
     val nodeHeader: RecordHeader = RecordHeader.nodeFromSchema(node, nodeSchema, tokens.registry)
 
-    val nodeSlots = baseTable.details.header.slots.collect {
-      case slot@RecordSlot(_, OpaqueField(v)) if v.cypherType.superTypeOf(nodeCypherType).isTrue => slot -> v
+    val sourceHeader = baseTable.details.header
+
+    val candidateNodes = sourceHeader.slots.collect {
+      case RecordSlot(_, OpaqueField(v)) => v
+    }.filter { v =>
+      def isNode = v.cypherType.subTypeOf(CTNode).isTrue
+      def hasAllRequiredLabels = {
+        val labels = sourceHeader.labels(v).map(_.label.name).toSet
+        explicitLabels.subsetOf(labels)
+      }
+      isNode && hasAllRequiredLabels
     }
 
-    val slotsWithChildren: Map[Var, Seq[RecordSlot]] =
-      nodeSlots.map(slot => slot._2 -> (baseTable.details.header.childSlots(slot._2) :+ slot._1)).toMap
+    val slotsWithChildren: Map[Var, Seq[RecordSlot]] = candidateNodes.map { candidate =>
+      candidate -> (sourceHeader.childSlots(candidate) :+ sourceHeader.slotFor(candidate))
+    }.toMap
 
     val nodeColumnsLookupTables = slotsWithChildren.map {
       case (nodeVar, slotsForNode) =>
