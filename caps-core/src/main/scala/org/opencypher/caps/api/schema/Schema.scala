@@ -112,6 +112,8 @@ final case class Schema(
   def withRelationshipPropertyKeys(typ: String)(keys: (String, CypherType)*): Schema =
     copy(relationshipTypes = relationshipTypes + typ, relKeyMap = relKeyMap.withKeys(typ, keys))
 
+  def isEmpty: Boolean = this == Schema.empty
+
   def ++(other: Schema): Schema = {
     val newLabels = labels ++ other.labels
     val newRelTypes = relationshipTypes ++ other.relationshipTypes
