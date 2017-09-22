@@ -20,6 +20,7 @@ import org.opencypher.caps.common.{Verifiable, Verified}
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.ir.api.IRField
 
+import scala.language.implicitConversions
 
 object Schema {
   val empty: Schema = Schema(
@@ -30,125 +31,6 @@ object Schema {
     impliedLabels = ImpliedLabels(Map.empty),
     labelCombinations = LabelCombinations(Set.empty)
   )
-}
-
-object PropertyKeyMap {
-
-  val empty = PropertyKeyMap(Map.empty)()
-
-  /**
-    * Sets all cypher types of properties that are not common across all labels to nullable.
-    *
-    * @param map property key map
-    * @return updated property key map
-    */
-  def asNullable(map: PropertyKeyMap): PropertyKeyMap = {
-    val overlap = map.m.map(_._2.keySet).reduce(_ intersect _)
-
-    PropertyKeyMap(map.m.map {
-      pair => pair._1 -> pair._2.map(p2 => p2._1 -> (if (overlap.contains(p2._1)) p2._2 else p2._2.nullable))
-    })(map.conflicts)
-  }
-}
-
-final case class PropertyKeyMap(m: Map[String, Map[String, CypherType]])(val conflicts: Set[String] = Set.empty) {
-
-  def keysFor(classifier: String): Map[String, CypherType] = m.getOrElse(classifier, Map.empty)
-
-  def withKeys(classifier: String, keys: Seq[(String, CypherType)]): PropertyKeyMap = {
-    val oldKeys = m.getOrElse(classifier, Map.empty)
-    val newKeys = keys.toMap
-    val newConflicts = oldKeys.collect {
-      case (k, t) =>
-        newKeys.get(k) match {
-          case Some(otherT) if t != otherT =>
-            Some(s"Conflicting schema for '$classifier'! Key '$k' has type $t but also has type ${newKeys(k)}")
-          case _ =>
-            None
-        }
-    }.flatten.toSet
-    copy(m.updated(classifier, oldKeys ++ newKeys))(conflicts = conflicts ++ newConflicts)
-  }
-
-  def keys = m.values.flatMap(_.keySet).toSet
-
-  def ++(other: PropertyKeyMap) = {
-    val joined = joinMaps(m, other.m)((leftAttr, rightAttr) => joinMaps(leftAttr, rightAttr)(_ join _, _.nullable))
-    copy(joined)(conflicts ++ other.conflicts)
-  }
-
-  def filterByClassifier(classifiers: Set[String]): PropertyKeyMap = {
-    PropertyKeyMap(m.filterKeys(classifiers.contains))(conflicts)
-  }
-
-  private def joinMaps[A, B](left: Map[A, B], right: Map[A, B])
-                            (joinF: (B, B) => B, mapF: B => B = (x: B) => x): Map[A, B] = {
-    val uniqueLeft = left.keySet -- right.keySet
-    val withUniqueLeft = uniqueLeft.foldLeft(Map[A, B]())((map, key) => map.updated(key, mapF(left(key))))
-
-    val uniqueRight = right.keySet -- left.keySet
-    val withUniqueRight = uniqueRight.foldLeft(withUniqueLeft)((map, key) => map.updated(key, mapF(right(key))))
-
-    val common = left.keySet.intersect(right.keySet)
-    common.foldLeft(withUniqueRight) {(map, key) => map.updated(key, joinF(left(key), right(key)))}
-  }
-}
-
-object ImpliedLabels {
-  val empty: ImpliedLabels = ImpliedLabels(Map.empty)
-}
-
-case class ImpliedLabels(m: Map[String, Set[String]]) {
-
-  def transitiveImplicationsFor(known: Set[String]): Set[String] = {
-    val next = known.flatMap(implicationsFor)
-    if (next == known) known else transitiveImplicationsFor(next)
-  }
-
-  def withImplication(source: String, target: String): ImpliedLabels = {
-    val implied = implicationsFor(source)
-    if (implied(target)) this else copy(m = m.updated(source, implied + target))
-  }
-
-  def toPairs: Set[(String, String)] = {
-    m.toArray
-      .flatMap(pair => pair._2.map(elem => (pair._1, elem)))
-      .toSet
-  }
-
-  def filterByLabels(labels: Set[String]): ImpliedLabels = {
-    val filteredImplications = m.collect {
-      case (k, v) if labels.contains(k) => k -> v.intersect(labels)
-    }
-
-    ImpliedLabels(filteredImplications)
-  }
-
-  private def implicationsFor(source: String) = m.getOrElse(source, Set.empty) + source
-}
-
-object LabelCombinations {
-  val empty: LabelCombinations = LabelCombinations(Set.empty)
-}
-
-case class LabelCombinations(combos: Set[Set[String]]) {
-
-  assert(combos.forall(_.size > 1))
-
-  def combinationsFor(label: String): Set[String] = combos.find(_(label)).getOrElse(Set.empty)
-
-  def withCombinations(coExistingLabels: String*): LabelCombinations = {
-    val (lhs, rhs) = combos.partition(labels => coExistingLabels.exists(labels(_)))
-    copy(combos = rhs + (lhs.flatten ++ coExistingLabels))
-  }
-
-  /**
-    * Returns all combinations that have an overlap with 'labels'
-    */
-  def filterByLabels(labels: Set[String]): LabelCombinations =
-    LabelCombinations(combos.filter(c => c.intersect(labels).nonEmpty))
-
-  def ++(other: LabelCombinations) = copy(combos ++ other.combos)
 }
 
 final case class Schema(
@@ -201,9 +83,9 @@ final case class Schema(
    */
   def nodeKeys(label: String): Map[String, CypherType] = nodeKeyMap.keysFor(label)
 
-  def keys = nodeKeyMap.keys ++ relKeyMap.keys
+  def keys: Set[String] = nodeKeyMap.keys ++ relKeyMap.keys
 
-  lazy val conflictSet = nodeKeyMap.conflicts ++ relKeyMap.conflicts
+  lazy val conflictSet: Set[String] = nodeKeyMap.conflicts ++ relKeyMap.conflicts
 
   /**
    * Returns the property schema for a given relationship type
@@ -230,7 +112,7 @@ final case class Schema(
   def withRelationshipPropertyKeys(typ: String)(keys: (String, CypherType)*): Schema =
     copy(relationshipTypes = relationshipTypes + typ, relKeyMap = relKeyMap.withKeys(typ, keys))
 
-  def ++(other: Schema) = {
+  def ++(other: Schema): Schema = {
     val newLabels = labels ++ other.labels
     val newRelTypes = relationshipTypes ++ other.relationshipTypes
     val newNodeKeyMap = nodeKeyMap ++ other.nodeKeyMap
@@ -374,11 +256,11 @@ final case class Schema(
     }
 
     new VerifiedSchema {
-      override def schema = self
+      override def schema: Schema = self
     }
   }
 
-  override def toString = {
+  override def toString: String = {
     val builder = new StringBuilder
 
     builder.append("Node labels:\n")
@@ -412,6 +294,6 @@ final case class Schema(
 }
 
 sealed abstract class VerifiedSchema extends Verified[Schema] with Serializable {
-  final override def v = schema
+  final override def v: Schema = schema
   def schema: Schema
 }
