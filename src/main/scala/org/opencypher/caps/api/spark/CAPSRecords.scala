@@ -259,4 +259,11 @@ object CAPSRecords {
     val initialDataFrame = caps.sparkSession.createDataFrame(Collections.emptyList[Row](), initialSparkStructType)
     create(initialHeader, initialDataFrame)
   }
+
+  def unit()(implicit caps: CAPSSession): CAPSRecords = {
+    val initialDataFrame = caps.sparkSession.createDataFrame(Seq(EmptyRow()))
+    create(RecordHeader.empty, initialDataFrame)
+  }
+
+  private case class EmptyRow()
 }

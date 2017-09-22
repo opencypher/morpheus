@@ -21,37 +21,32 @@ import org.apache.spark.sql.types.{StructField, StructType}
 import org.apache.spark.sql.{Row, SparkSession}
 import org.opencypher.caps.api.expr.{HasLabel, Property, Var}
 import org.opencypher.caps.api.io.PersistMode
-import org.opencypher.caps.ir.api.global.TokenRegistry
-import org.opencypher.caps.api.record.{FieldSlotContent, RecordHeader}
+import org.opencypher.caps.api.record.RecordHeader
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSResult, CAPSSession}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.api.util.parsePathOrURI
-import org.opencypher.caps.api.value.{CypherMap, CypherValue}
+import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.convert.fromJavaType
 import org.opencypher.caps.impl.record.CAPSRecordsTokens
 import org.opencypher.caps.impl.spark.convert.toSparkType
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceImpl
-import org.opencypher.caps.impl.spark.physical.RuntimeContext
+import org.opencypher.caps.ir.api.global.TokenRegistry
 import org.opencypher.caps.test.BaseTestSuite
 import org.opencypher.caps.test.fixture.{CAPSSessionFixture, SparkSessionFixture}
 import org.s1ck.gdl.GDLHandler
 import org.s1ck.gdl.model.Element
 import org.scalatest.Assertion
 
-import scala.collection.Bag
 import scala.collection.JavaConverters._
-import scala.collection.immutable.{HashedBagConfiguration, Map, Seq}
+import scala.collection.immutable.{Map, Seq}
 
 trait GraphMatchingTestSupport {
 
   self: BaseTestSuite with SparkSessionFixture with CAPSSessionFixture =>
 
-  implicit val bagConfig: HashedBagConfiguration[CypherMap] = Bag.configuration.compact[CypherMap]
   val DEFAULT_LABEL = "DEFAULT"
   val sparkSession: SparkSession = session
-
-  implicit val context: RuntimeContext = RuntimeContext.empty
 
   implicit class GraphsMatcher(graphs: Map[String, CAPSGraph]) {
     def shouldMatch(expectedGraphs: CAPSGraph*): Unit = {
@@ -67,7 +62,6 @@ trait GraphMatchingTestSupport {
     private def verify(actual: CAPSGraph, expected: CAPSGraph): Assertion = {
       val expectedNodeIds = expected.nodes("n").data.select("n").collect().map(_.getLong(0)).toSet
       val expectedRelIds = expected.relationships("r").data.select("r").collect().map(_.getLong(0)).toSet
-
       val actualNodeIds = actual.nodes("n").data.select("n").collect().map(_.getLong(0)).toSet
       val actualRelIds = actual.relationships("r").data.select("r").collect().map(_.getLong(0)).toSet
 
@@ -181,24 +175,6 @@ trait GraphMatchingTestSupport {
         }
         CAPSRecords.create(header, data)
       }
-    }
-  }
-
-  // TODO: Move to RecordMatchingTestSupport
-  implicit class RichRecords(records: CAPSRecords) {
-    import org.opencypher.caps.impl.spark.RowUtils._
-
-    def toMaps: Bag[CypherMap] = {
-      val rows = records.toDF().collect().map { r =>
-        val properties = records.header.slots.map { s =>
-          s.content match {
-            case f: FieldSlotContent => f.field.name -> r.getCypherValue(f.key, records.header)
-            case x => x.key.withoutType -> r.getCypherValue(x.key, records.header)
-          }
-        }.toMap
-        CypherMap(properties)
-      }
-      Bag(rows: _*)
     }
   }
 

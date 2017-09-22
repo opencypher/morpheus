@@ -48,18 +48,18 @@ trait GraphSource {
   val session: Session
 
   /**
-    * Determines whether this is a source for a graph at the argument uri.
+    * Determines whether this is a source for the graph at the argument URI.
     *
     * @param uri the location for a potential graph.
-    * @return true if this graph source is located at the argument uri.
+    * @return true if the graph at this graph source is located at the argument URI, otherwise false.
     */
   def sourceForGraphAt(uri: URI): Boolean
 
   /**
-    * A canonical uri describing the location of this graph source.
-    * The sourceForGraphAt function is guaranteed to return true for this uri.
+    * A canonical URI describing the location of this graph source.
+    * The sourceForGraphAt function is guaranteed to return true for this URI.
     *
-    * @return a uri describing the location of this graph source.
+    * @return a URI describing the location of this graph source.
     */
   def canonicalURI: URI
 
@@ -97,7 +97,8 @@ trait GraphSource {
   def persist(graph: Graph, mode: PersistMode): Graph
 
   /**
-    * Delete the graph stored at this graph source
+    * Delete the graph stored at this graph source.
+    * If no graph was located at this source, this operation is a no-op.
     */
   def delete(): Unit
 }
