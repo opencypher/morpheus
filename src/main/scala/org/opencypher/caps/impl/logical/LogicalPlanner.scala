@@ -15,8 +15,6 @@
  */
 package org.opencypher.caps.impl.logical
 
-import java.net.URI
-
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.io.CAPSGraphSource
@@ -32,7 +30,7 @@ import scala.annotation.tailrec
 final case class LogicalPlannerContext(
   ambientGraphSchema: Schema,
   inputRecordFields: Set[Var],
-  resolver: URI => CAPSGraphSource
+  resolver: String => CAPSGraphSource
 )
 
 class LogicalPlanner(producer: LogicalOperatorProducer)
@@ -82,9 +80,9 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
   def planLeaf(ref: BlockRef, model: QueryModel[Expr])(implicit context: LogicalPlannerContext): LogicalOperator = {
     model(ref) match {
-      case SourceBlock(namedGraph) =>
-        val graphSource = context.resolver(namedGraph.uri)
-        producer.planStart(ExternalLogicalGraph(namedGraph.name, namedGraph.uri, graphSource.schema.get), context.inputRecordFields)
+      case SourceBlock(irGraph) =>
+        val graphSource = context.resolver(irGraph.name)
+        producer.planStart(ExternalLogicalGraph(irGraph.name, graphSource.canonicalURI, graphSource.schema.get), context.inputRecordFields)
       case x =>
         Raise.notYetImplemented(s"leaf planning of $x")
     }
@@ -135,7 +133,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     }
   }
 
-  private def planGraphProjections(in: LogicalOperator, graphs: Set[NamedGraph])(implicit context: LogicalPlannerContext): LogicalOperator = {
+  private def planGraphProjections(in: LogicalOperator, graphs: Set[IRGraph])(implicit context: LogicalPlannerContext): LogicalOperator = {
     graphs.foldLeft(in) {
       case (planSoFar, nextGraph) =>
         val logicalGraph = resolveGraph(nextGraph)
@@ -234,8 +232,9 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     }
   }
 
-  private def resolveGraph(graph: NamedGraph)(implicit context: LogicalPlannerContext): LogicalGraph = {
-    val graphSource = context.resolver(graph.uri)
+  // TODO: Add support for pattern graphs that don't have a URI.
+  private def resolveGraph(graph: IRGraph)(implicit context: LogicalPlannerContext): LogicalGraph = {
+    val graphSource = context.resolver(graph.name)
     val schema = graphSource.schema match {
       case None =>
         // This initialises the graph eagerly!!
@@ -243,22 +242,22 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         graphSource.graph.schema
       case Some(s) => s
     }
-    ExternalLogicalGraph(graph.name, graph.uri, schema)
+    ExternalLogicalGraph(graph.name, graphSource.canonicalURI, schema)
   }
 
-  private def planStart(graph: NamedGraph)(implicit context: LogicalPlannerContext): Start = {
+  private def planStart(graph: IRGraph)(implicit context: LogicalPlannerContext): Start = {
     val logicalGraph: LogicalGraph = resolveGraph(graph)
 
     producer.planStart(logicalGraph, context.inputRecordFields)
   }
 
-  private def setSource(graph: NamedGraph, prev: LogicalOperator)(implicit context: LogicalPlannerContext): SetSourceGraph = {
+  private def setSource(graph: IRGraph, prev: LogicalOperator)(implicit context: LogicalPlannerContext): SetSourceGraph = {
     val logicalGraph = resolveGraph(graph)
 
     producer.planSetSourceGraph(logicalGraph, prev)
   }
 
-  private def planPattern(plan: LogicalOperator, pattern: Pattern[Expr], graph: NamedGraph)(implicit context: LogicalPlannerContext) = {
+  private def planPattern(plan: LogicalOperator, pattern: Pattern[Expr], graph: IRGraph)(implicit context: LogicalPlannerContext) = {
 
     // find all unsolved nodes from the pattern
     val nodes = pattern.entities.collect {

@@ -74,10 +74,10 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           given <- convertWhere(astWhere)
           context <- get[R, IRBuilderContext]
           refs <- {
-            val uri = getNamedGraph(c, context)
+            val irGraph = getIRGraph(c, context)
             val blockRegistry = context.blocks
             val after = blockRegistry.lastAdded.toSet
-            val block = MatchBlock[Expr](after, pattern, given, optional, uri)
+            val block = MatchBlock[Expr](after, pattern, given, optional, irGraph)
 
             implicit val globals: GlobalsRegistry = context.globals
             val typedOutputs = typedMatchBlock.outputs(block)
@@ -95,8 +95,8 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           given <- convertWhere(where)
           context <- get[R, IRBuilderContext]
           refs <- {
-            val namedGraph = getNamedGraph(c, context)
-            val (projectRef, projectReg) = registerProjectBlock(context, fieldExprs, graphs, given, namedGraph)
+            val irGraph = getIRGraph(c, context)
+            val (projectRef, projectReg) = registerProjectBlock(context, fieldExprs, graphs, given, irGraph)
             val appendList = (list: Vector[BlockRef]) => pure[R, Vector[BlockRef]](projectRef +: list)
             val orderAndSliceBlock = registerOrderAndSliceBlock(orderBy, skip, limit)
             put[R,IRBuilderContext](context.copy(blocks = projectReg)) >> orderAndSliceBlock >>= appendList
@@ -127,7 +127,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           graphs <- convertGraphReturnItems(graphItems)
           context <- get[R, IRBuilderContext]
           refs <- {
-            val namedGraph = getNamedGraph(c, context)
+            val namedGraph = getIRGraph(c, context)
             val (ref, reg) = registerProjectBlock(context, fieldExprs, distinct = distinct, source = namedGraph, graphs = graphs)
             val rItems = fieldExprs.map(_._1)
             val orderedFields = OrderedFieldsAndGraphs[Expr](rItems, graphs.toSet)
@@ -142,11 +142,11 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
     }
   }
 
-  private def convertGraphReturnItems[R : _hasContext](maybeItems: Option[GraphReturnItems]): Eff[R, Vector[NamedGraph]] = {
+  private def convertGraphReturnItems[R : _hasContext](maybeItems: Option[GraphReturnItems]): Eff[R, Vector[IRGraph]] = {
 
     maybeItems match {
       case None =>
-        pure[R, Vector[NamedGraph]](Vector.empty[NamedGraph])
+        pure[R, Vector[IRGraph]](Vector.empty[IRGraph])
       case Some(GraphReturnItems(_, items)) =>
         for {
           graphs <- EffMonad[R].sequence(items.map(convertGraphReturnItem[R]).toVector)
@@ -154,13 +154,19 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
     }
   }
 
-  private def getNamedGraph(c: Clause, context: IRBuilderContext) = {
+  private def getIRGraph(c: Clause, context: IRBuilderContext): IRGraph = {
     context.semanticState.recordedContextGraphs.get(c).map {
-      c => context.graphs(c.source)
+      c => NamedGraph(c.source)
     }.getOrElse(context.ambientGraph)
   }
 
-  private def registerProjectBlock(context: IRBuilderContext, fieldExprs: Vector[(IRField, Expr)], graphs: Seq[NamedGraph] = Seq.empty, given: AllGiven[Expr] = AllGiven[Expr](), source: NamedGraph, distinct: Boolean = false) = {
+  private def registerProjectBlock(
+    context: IRBuilderContext,
+    fieldExprs: Vector[(IRField, Expr)],
+    graphs: Seq[IRGraph] = Seq.empty,
+    given: AllGiven[Expr] = AllGiven[Expr](),
+    source: IRGraph,
+    distinct: Boolean = false) = {
     val blockRegistry = context.blocks
     val binds = FieldsAndGraphs(fieldExprs.toMap, graphs.toSet)
 
@@ -197,7 +203,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
     } yield refs
   }
 
-  private def convertGraphReturnItem[R : _hasContext](item: ast.GraphReturnItem): Eff[R, NamedGraph] = item match {
+  private def convertGraphReturnItem[R : _hasContext](item: ast.GraphReturnItem): Eff[R, IRGraph] = item match {
     case ast.NewContextGraphs(source: GraphAtAs, _) =>
       for {
         context <- get[R, IRBuilderContext]
@@ -213,11 +219,9 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
               parsePathOrURI(literal.value)
           }
 
-          val namedGraph = NamedGraph(escapedGraphname, graphURI)
+          val newContext = context.withGraphAt(escapedGraphname, graphURI)
 
-          val newContext = context.withGraphAt(namedGraph)
-
-          put[R, IRBuilderContext](newContext) >> pure[R, NamedGraph](namedGraph)
+          put[R, IRBuilderContext](newContext) >> pure[R, NamedGraph](NamedGraph(escapedGraphname))
         }
       } yield out
 
@@ -230,8 +234,13 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
       for {
         context <- get[R, IRBuilderContext]
         out <- {
-          val g = context.graphs(fix(inner.as.getOrElse(Raise.impossible("graph didn't have a name!")).name))
-          pure[R, NamedGraph](g)
+          val graphName = fix(inner.as.getOrElse(Raise.impossible("graph didn't have a name!")).name)
+          val maybeURI = context.graphs.get(graphName)
+          val graph = maybeURI match {
+            case Some(uri) => ExternalGraph(graphName, uri)
+            case None => NamedGraph(graphName)
+          }
+          pure[R, IRGraph](graph)
         }
       } yield out
   }
@@ -261,7 +270,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
 
   }
 
-  private def convertPattern[R: _mayFail : _hasContext](p: ast.Pattern): Eff[R, Pattern[Expr]] = {
+  private def convertPattern[R: _hasContext](p: ast.Pattern): Eff[R, Pattern[Expr]] = {
     for {
       context <- get[R, IRBuilderContext]
       result <- {
@@ -314,7 +323,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
         case (_ref, r: ResultBlock[Expr]) => _ref -> r
       }.get
 
-      val model = QueryModel(r, context.globals, blocks.reg.toMap - ref, context.schemas)
+      val model = QueryModel(r, context.globals, blocks.reg.toMap - ref, context.schemas, context.graphs)
       val info = QueryInfo(context.queryString)
 
       Some(CypherQuery(info, model))

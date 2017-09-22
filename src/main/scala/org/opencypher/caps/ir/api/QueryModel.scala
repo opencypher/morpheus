@@ -15,6 +15,8 @@
  */
 package org.opencypher.caps.ir.api
 
+import java.net.URI
+
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.ir.api.block._
 import org.opencypher.caps.ir.api.global.GlobalsRegistry
@@ -27,7 +29,8 @@ final case class QueryModel[E](
   result: ResultBlock[E],
   globals: GlobalsRegistry,
   blocks: Map[BlockRef, Block[E]],
-  schemas: Map[BlockRef, Schema]
+  schemas: Map[BlockRef, Schema],
+  graphs: Map[String, URI]
 ) {
 
   def apply(ref: BlockRef): Block[E] = blocks(ref)
@@ -70,14 +73,14 @@ final case class QueryModel[E](
 case class SolvedQueryModel[E](
   fields: Set[IRField],
   predicates: Set[E] = Set.empty[E],
-  graphs: Set[NamedGraph] = Set.empty[NamedGraph]
+  graphs: Set[IRGraph] = Set.empty[IRGraph]
 ) {
 
   // extension
   def withField(f: IRField): SolvedQueryModel[E] = copy(fields = fields + f)
   def withFields(fs: IRField*): SolvedQueryModel[E] = copy(fields = fields ++ fs)
   def withPredicate(pred: E): SolvedQueryModel[E] = copy(predicates = predicates + pred)
-  def withGraph(graph: NamedGraph): SolvedQueryModel[E] = copy(graphs = graphs + graph)
+  def withGraph(graph: IRGraph): SolvedQueryModel[E] = copy(graphs = graphs + graph)
 
   def ++(other: SolvedQueryModel[E]): SolvedQueryModel[E] =
     copy(fields ++ other.fields, predicates ++ other.predicates)

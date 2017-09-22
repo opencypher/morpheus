@@ -4,3 +4,4 @@ spark-warehouse/
 target/
 dependency-reduced-pom.xml
 version.txt
+build/test/

@@ -36,7 +36,7 @@ import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvGraphSourceFactory
 import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraphSourceFactory
 import org.opencypher.caps.impl.spark.io.session.SessionGraphSourceFactory
 import org.opencypher.caps.impl.spark.physical.{CAPSResultBuilder, PhysicalPlanner, PhysicalPlannerContext}
-import org.opencypher.caps.ir.api.{IRField, NamedGraph}
+import org.opencypher.caps.ir.api.{CypherQuery, ExternalGraph, IRField, NamedGraph}
 import org.opencypher.caps.ir.api.global.{ConstantRef, ConstantRegistry, GlobalsRegistry, TokenRegistry}
 import org.opencypher.caps.ir.impl.global.GlobalsExtractor
 import org.opencypher.caps.ir.impl.{IRBuilder, IRBuilderContext}
@@ -104,7 +104,7 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
     println("Done!")
 
     print("Logical plan ... ")
-    val logicalPlannerContext = LogicalPlannerContext(graph.schema, Set.empty, sourceAt)
+    val logicalPlannerContext = LogicalPlannerContext(graph.schema, Set.empty, ir.model.graphs.andThen(sourceAt))
     val logicalPlan = logicalPlanner(ir)(logicalPlannerContext)
     println("Done!")
 
@@ -119,7 +119,7 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
     plan(graph, CAPSRecords.empty()(this), tokens, constants, allParameters, optimizedLogicalPlan)
   }
 
-  private def mountAmbientGraph(ambient: CAPSGraph): NamedGraph = {
+  private def mountAmbientGraph(ambient: CAPSGraph): ExternalGraph = {
     val name = UUID.randomUUID().toString
     val uri = URI.create(s"session:///graphs/ambient/$name")
 
@@ -136,7 +136,7 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
 
     graphSourceHandler.mountSourceAt(graphSource, uri)(self)
 
-    NamedGraph(name, uri)
+    ExternalGraph(name, uri)
   }
 
   private def planStart(graph: Graph, fields: Set[Var]): LogicalOperator = {

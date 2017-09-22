@@ -23,7 +23,7 @@ final case class ResultBlock[E](
   binds: OrderedFieldsAndGraphs[E],
   nodes: Set[IRField],
   relationships: Set[IRField],
-  source: NamedGraph,
+  source: IRGraph,
   where: AllGiven[E] = AllGiven[E]()
 ) extends BasicBlock[OrderedFieldsAndGraphs[E], E](BlockType("result")) {
 
@@ -32,12 +32,12 @@ final case class ResultBlock[E](
 }
 
 object ResultBlock {
-  def empty[E](graph: NamedGraph) = ResultBlock(Set.empty, OrderedFieldsAndGraphs[E](), Set.empty, Set.empty, graph, AllOf[E]())
+  def empty[E](graph: IRGraph) = ResultBlock(Set.empty, OrderedFieldsAndGraphs[E](), Set.empty, Set.empty, graph, AllOf[E]())
 }
 
 final case class OrderedFieldsAndGraphs[E](
   fieldsOrder: IndexedSeq[IRField] = IndexedSeq.empty,
-  override val graphs: Set[NamedGraph] = Set.empty) extends Binds[E] {
+  override val graphs: Set[IRGraph] = Set.empty) extends Binds[E] {
   override def fields: Set[IRField] = fieldsOrder.toSet
 
   def select(fields: Set[IRField]): OrderedFieldsAndGraphs[E] =

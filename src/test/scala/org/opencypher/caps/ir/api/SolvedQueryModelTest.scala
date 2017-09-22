@@ -31,7 +31,7 @@ class SolvedQueryModelTest extends IrTestSuite {
   test("add graphs") {
     val s = SolvedQueryModel.empty.withGraph('foo)
 
-    s.graphs should equal(Set(NamedGraph("foo", uri)))
+    s.graphs should equal(Set(ExternalGraph("foo", uri)))
   }
 
   test("add fields") {
