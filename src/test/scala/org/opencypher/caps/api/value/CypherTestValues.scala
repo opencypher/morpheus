@@ -188,13 +188,19 @@ object CypherTestValues {
   }
 
   implicit final class CypherValueGroups[V <: CypherValue](elts: ValueGroups[V]) {
+
     def materialValueGroups: ValueGroups[V] = elts.map(_.filter(_ != cypherNull)).filter(_.nonEmpty)
     def nullableValueGroups: ValueGroups[V] = elts.map(_.filter(_ == cypherNull)).filter(_.nonEmpty)
-    def scalaValueGroups(implicit companion: CypherValueCompanion[V]): Seq[Seq[Any]] = elts.map(_.scalaValues.map(_.orNull))
-    def indexed = elts.zipWithIndex.flatMap { case ((group), index) => group.map { v => index -> v } }
+
+    def scalaValueGroups: Seq[Seq[Any]] =
+      elts.map { group => CypherValues[CypherValue](group).scalaValues.map(_.orNull) }
+
+    def indexed: Seq[(Int, V)] =
+      elts.zipWithIndex.flatMap { case ((group), index) => group.map { v => index -> v } }
   }
 
   implicit final class CypherValues[V <: CypherValue](elts: Values[V]) {
-    def scalaValues(implicit companion: CypherValueCompanion[V]): Seq[Option[Any]] = elts.map(companion.contents)
+    def scalaValues(implicit companion: CypherValueCompanion[V]): Seq[Option[companion.Contents]] =
+        elts.map { value => companion.contents(value) }
   }
 }

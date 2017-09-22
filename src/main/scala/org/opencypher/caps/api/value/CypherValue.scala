@@ -761,7 +761,7 @@ case object CypherRelationship extends CypherEntityCompanion[CypherRelationship]
     if (value == null)
       None
     else
-      Some(RelationshipContents(value.id, value.startId, value.relationshipType, value.endId, value.properties))
+      Some(RelationshipContents(value.id, value.startId, value.endId, value.relationshipType, value.properties))
 
   override def cypherType(value: CypherRelationship): CypherType with DefiniteCypherType =
     if (value == null) CTNull else CTRelationship

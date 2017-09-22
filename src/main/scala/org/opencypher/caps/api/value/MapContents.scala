@@ -37,8 +37,8 @@ final case class NodeContents(id: EntityId, labels: Array[String], properties: P
 
 final case class RelationshipContents(id: EntityId,
                                       startId: EntityId,
-                                      relationshipType: String,
                                       endId: EntityId,
+                                      relationshipType: String,
                                       properties: Properties)
   extends EntityContents {
 

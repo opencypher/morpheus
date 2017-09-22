@@ -36,10 +36,10 @@ class CypherValueConversionTest extends CypherValueTestSuite {
 
   test("RELATIONSHIP conversion") {
     val originalValues = RELATIONSHIP_valueGroups.flatten
-    val scalaValues: Seq[(EntityId, RelationshipData)] = originalValues.map(CypherRelationship.contents).map(_.orNull)
+    val scalaValues: Seq[RelationshipContents] = originalValues.map(CypherRelationship.contents).map(_.orNull)
     val newValues = scalaValues.map {
-      case null                             => null
-      case ((id: EntityId, data: RelationshipData)) => CypherRelationship(id, data.startId, data.endId, data.relationshipType, data.properties)
+      case null     => null
+      case contents => CypherRelationship(contents.id, contents.startId, contents.endId, contents.relationshipType, contents.properties)
     }
 
     newValues should equal(originalValues)
@@ -51,10 +51,10 @@ class CypherValueConversionTest extends CypherValueTestSuite {
 
   test("NODE conversion") {
     val originalValues = NODE_valueGroups.flatten
-    val scalaValues: Seq[(EntityId, NodeData)] = originalValues.map(CypherNode.contents).map(_.orNull)
+    val scalaValues: Seq[NodeContents] = originalValues.map(CypherNode.contents).map(_.orNull)
     val newValues = scalaValues.map {
-      case null                             => null
-      case ((id: EntityId, data: NodeData)) => CypherNode(id, data.labels, data.properties)
+      case null     => null
+      case contents => CypherNode(contents.id, contents.data.labels, contents.data.properties)
     }
 
     newValues should equal(originalValues)
@@ -66,16 +66,16 @@ class CypherValueConversionTest extends CypherValueTestSuite {
 
   test("MAP conversion") {
     val originalValues = MAP_valueGroups.flatten
-    val scalaValues = originalValues.map(CypherMap.contents).map(_.asInstanceOf[Option[Any]]).map(_.orNull)
+    val scalaValues = originalValues.map(CypherMap.contents).map(_.orNull)
     val newValues = scalaValues.map {
-      case null           => null
-      case p: Properties  => CypherMap(p)
+      case null     => null
+      case contents => CypherMap(contents.properties)
     }
 
     newValues should equal(originalValues)
 
     originalValues.foreach { v =>
-      CypherMap.isIncomparable(v) should equal (v == null || CypherMap.unapply(v).map(_.m).exists(_.values.exists(_ == null)))
+      CypherMap.isIncomparable(v) should equal (v == null || CypherMap.unapply(v).map(_.properties.m).exists(_.values.exists(_ == null)))
     }
   }
 
@@ -111,10 +111,10 @@ class CypherValueConversionTest extends CypherValueTestSuite {
 
   test("BOOLEAN conversion") {
     val originalValues = BOOLEAN_valueGroups.flatten
-    val scalaValues = originalValues.map(CypherBoolean.contents).map(_.orNull)
+    val scalaValues = originalValues.map(CypherBoolean.contents)
     val newValues = scalaValues.map {
-      case null                 => null
-      case b: java.lang.Boolean => CypherBoolean(b)
+      case None    => null
+      case Some(b) => CypherBoolean(b)
     }
 
     newValues should equal(originalValues)
@@ -178,9 +178,9 @@ class CypherValueConversionTest extends CypherValueTestSuite {
       case b: java.lang.Boolean => CypherBoolean(b)
       case s: java.lang.String => CypherString(s)
       case l: java.lang.Long => CypherInteger(l)
-      case p: Properties => CypherMap(p)
-      case (id: EntityId, data: NodeData) => CypherNode(id, data.labels, data.properties)
-      case (id: EntityId, data: RelationshipData) => CypherRelationship(id, data)
+      case r: RegularMap => CypherMap(r.properties)
+      case n: NodeContents => CypherNode(n.id, n.labels, n.properties)
+      case r: RelationshipContents => CypherRelationship(r.id, r.startId, r.endId, r.relationshipType, r.properties)
       case d: java.lang.Double => CypherFloat(d)
       case l: Seq[_] if isPathLike(l) => CypherPath(l.asInstanceOf[Seq[CypherEntityValue]]: _*)
       case l: Seq[_] => CypherList(l.asInstanceOf[Seq[CypherValue]])
