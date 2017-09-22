@@ -231,7 +231,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
     }
 
     def skip(expr: Expr, header: RecordHeader): PhysicalResult = {
-      val skip = expr match {
+      val skip: Long = expr match {
         case IntegerLit(v) => v
         case Const(constant) =>
           context.parameters(context.constants.constantRef(constant)) match {
