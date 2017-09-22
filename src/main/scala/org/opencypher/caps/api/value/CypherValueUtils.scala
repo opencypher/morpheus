@@ -16,7 +16,7 @@
 package org.opencypher.caps.api.value
 
 object CypherValueUtils {
-  implicit class RichCypherValue(value: CypherValue) {
+  implicit final class RichCypherValue(val value: CypherValue) extends AnyVal {
 
     def <(rhs: CypherValue): Option[Boolean] = {
       CypherValue.comparability(value, rhs).map(_ < 0)

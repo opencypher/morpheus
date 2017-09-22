@@ -147,6 +147,10 @@ case object CypherValue extends CypherValueCompanion[CypherValue] {
     case v: java.util.List[_] => CypherList(v.asScala.map(apply))
     case v: Array[_] => CypherList(v.map(apply))
     case v: Vector[_] => CypherList(v.map(apply))
+    case v: NodeContents => CypherNode(v)
+    case v: RelationshipContents => CypherRelationship(v)
+    case v: MapContents => CypherMap(v)
+    case v: Properties => CypherMap(RegularMap(v))
     case null => null
     case x => throw new IllegalArgumentException(s"Unexpected property value: $x")
   }
@@ -157,9 +161,9 @@ case object CypherValue extends CypherValueCompanion[CypherValue] {
 
     implicit def cypherBoolean(v: Boolean): CypherBoolean = CypherBoolean(v)
     implicit def cypherString(v: String): CypherString = CypherString(v)
-    implicit def cypherInteger(v: Int): CypherInteger = CypherInteger(v)
+    implicit def cypherInteger(v: Int): CypherInteger = CypherInteger(v.toLong)
     implicit def cypherInteger(v: Long): CypherInteger = CypherInteger(v)
-    implicit def cypherFloat(v: Float): CypherFloat =  CypherFloat(v)
+    implicit def cypherFloat(v: Float): CypherFloat =  CypherFloat(v.toDouble)
     implicit def cypherFloat(v: Double): CypherFloat = CypherFloat(v)
 
     implicit def cypherTernary(v: Ternary): CypherValue =
@@ -344,6 +348,8 @@ final class CypherString(private[CypherString] val v: String) extends CypherValu
 // *** NUMBER
 
 sealed trait CypherNumberCompanion[V <: CypherNumber] extends CypherValueCompanion[V] {
+
+  override type Contents <: Number
 
   final def orderGroup(v: V): CypherType.OrderGroups.Value =
     if (v == null) VoidOrderGroup else NumberOrderGroup
@@ -536,8 +542,7 @@ final class CypherList(private[CypherList] val v: Seq[CypherValue])
 
 sealed trait CypherMapCompanion[V <: CypherMap] extends CypherValueCompanion[V] {
 
-  // TODO: Rework this to handle nodes better
-  override type Contents = Any
+  override type Contents <: MapContents
 
   def property(value: V)(name: String): CypherValue =
     if (value == null) null else value.properties(name)
@@ -551,27 +556,32 @@ sealed trait CypherMapCompanion[V <: CypherMap] extends CypherValueCompanion[V] 
 
 case object CypherMap extends CypherMapCompanion[CypherMap] {
 
+  override type Contents = MapContents
+
   object empty extends CypherMap(Properties.empty)
 
   def apply(elts: (String, CypherValue)*): CypherMap =
     if (elts.isEmpty) apply(Properties.empty) else new CypherMap(Properties(elts: _*))
 
   def apply(value: Contents): CypherMap =
+    apply(value.properties)
+
+  def apply(value: Properties): CypherMap =
     if (value == Properties.empty) empty else new CypherMap(value.asInstanceOf[Properties])
 
   def unapply(value: CypherMap): Option[Contents] =
-    if (value == null) None else Some(value.properties)
+    if (value == null) None else Some(RegularMap(value.properties))
 
-  override def cypherType(value: CypherMap) =
+  override def cypherType(value: CypherMap): CypherType =
     if (value == null) CTNull else value match {
       case entity: CypherEntityValue => CypherEntityCompanion.cypherType(entity)
       case _ => CTMap
     }
 
-  override def contents(value: CypherMap): Option[Any] =
+  override def contents(value: CypherMap): Option[Contents] =
     if (value == null) None else value match {
       case entity: CypherEntityValue => CypherEntityCompanion.contents(entity)
-      case _ => properties(value)
+      case _ => properties(value).map(RegularMap)
     }
 
   // Values in the same order group are ordered (sorted) together by orderability
@@ -636,7 +646,9 @@ sealed class CypherMap(protected[value] val properties: Properties)
 
 case object CypherEntityCompanion extends CypherEntityCompanion[CypherEntityValue] {
 
-  override def contents(value: CypherEntityValue): Option[(EntityId, EntityData)] = {
+  override type Contents = EntityContents
+
+  override def contents(value: CypherEntityValue): Option[Contents] = {
     if (value == null) None
     else value match {
       case node: CypherNode => CypherNode.contents(node)
@@ -661,9 +673,9 @@ case object CypherEntityCompanion extends CypherEntityCompanion[CypherEntityValu
 
 sealed trait CypherEntityCompanion[V <: CypherEntityValue] extends CypherMapCompanion[V] {
 
-  override def isIncomparable(v: V): Boolean = isNull(v)
+  override type Contents <: EntityContents
 
-  override def contents(value: V): Option[(EntityId, EntityData)]
+  override def isIncomparable(v: V): Boolean = isNull(v)
 
   def id(v: V): Option[EntityId] = if (v == null) None else Some(v.id)
 
@@ -682,14 +694,23 @@ sealed abstract class CypherEntityValue(override protected[value] val properties
 
 case object CypherNode extends CypherEntityCompanion[CypherNode] {
 
+  override type Contents = NodeContents
+
+  def apply(contents: NodeContents): CypherNode =
+    apply(contents.id, contents.labels, contents.properties)
+
+  def apply(id: EntityId, data: NodeData): CypherNode =
+    apply(id, data.labels, data.properties)
+
   def apply(id: EntityId, labels: Array[String], properties: Properties): CypherNode =
     new CypherNode(id, labels, properties)
 
-  def unapply(value: CypherNode): Option[(EntityId, Array[String], Properties)] =
-    if (value == null) None else Some((value.id, value.labels, value.properties))
+  def unapply(value: CypherNode): Option[Contents] =
+    contents(value)
 
-  override def contents(value: CypherNode): Option[(EntityId, NodeData)] =
-    if (value == null) None else Some(value.id -> value.data)
+  override def contents(value: CypherNode): Option[Contents] =
+    if (value == null) None else Some(NodeContents(value.id, value.labels, value.properties))
+
 
   override def cypherType(value: CypherNode): CypherType with DefiniteCypherType =
     if (value == null) CTNull else CTNode
@@ -721,17 +742,26 @@ sealed class CypherNode(protected[value] val id: EntityId,
 
 case object CypherRelationship extends CypherEntityCompanion[CypherRelationship] {
 
-  def apply(id: EntityId, data: RelationshipData) =
+  override type Contents = RelationshipContents
+
+  def apply(contents: RelationshipContents): CypherRelationship =
+    apply(contents.id, contents.startId, contents.endId, contents.relationshipType, contents.properties)
+
+  def apply(id: EntityId, data: RelationshipData): CypherRelationship =
     new CypherRelationship(id, data.startId, data.endId, data.relationshipType, data.properties)
 
-  def apply(id: EntityId, startId: EntityId, endId: EntityId, relType: String, properties: Properties): CypherRelationship =
+  def apply(id: EntityId, startId: EntityId, endId: EntityId, relType: String, properties: Properties)
+  : CypherRelationship =
     new CypherRelationship(id, startId, endId, relType, properties)
 
-  def unapply(value: CypherRelationship): Option[(EntityId, EntityId, EntityId, String, Properties)] =
-    if (value == null) None else Some((value.id, value.startId, value.endId, value.relationshipType, value.properties))
+  def unapply(value: CypherRelationship): Option[RelationshipContents] =
+    contents(value)
 
-  override def contents(value: CypherRelationship): Option[(EntityId, RelationshipData)] =
-    if (value == null) None else Some(value.id -> value.data)
+  override def contents(value: CypherRelationship): Option[RelationshipContents] =
+    if (value == null)
+      None
+    else
+      Some(RelationshipContents(value.id, value.startId, value.relationshipType, value.endId, value.properties))
 
   override def cypherType(value: CypherRelationship): CypherType with DefiniteCypherType =
     if (value == null) CTNull else CTRelationship
@@ -762,7 +792,7 @@ sealed class CypherRelationship(protected[value] val id: EntityId,
     case _                         => false
   }
 
-  override protected[value] def data = RelationshipData(startId, relationshipType, endId, properties.m)
+  override protected[value] def data = RelationshipData(startId, endId, relationshipType, properties.m)
 
   override def toString = s"($startId)-[$id:$relationshipType ${super.toString}]->($endId)"
 }
