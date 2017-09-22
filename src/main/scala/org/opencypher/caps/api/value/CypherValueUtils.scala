@@ -15,23 +15,47 @@
  */
 package org.opencypher.caps.api.value
 
+import org.opencypher.caps.api.types.CypherType
+import org.opencypher.caps.common.Ternary
+
 object CypherValueUtils {
-  implicit final class RichCypherValue(val value: CypherValue) extends AnyVal {
+  implicit final class RichCypherValue[V <: CypherValue](val value: V) extends AnyVal {
 
-    def <(rhs: CypherValue): Option[Boolean] = {
-      CypherValue.comparability(value, rhs).map(_ < 0)
+    def contents(implicit companion: CypherValueCompanion[V]): Option[companion.Contents] =
+      companion.contents(value)
+
+    def cypherType(implicit companion: CypherValueCompanion[V]): CypherType =
+      companion.cypherType(value)
+
+    def equalTo(other: V)(implicit companion: CypherValueCompanion[V]): Ternary =
+      companion.equal(value, other)
+
+    def equivTo(other: V)(implicit companion: CypherValueCompanion[V]): Boolean =
+      companion.equiv(value, other)
+
+    def isNull(implicit companion: CypherValueCompanion[V]): Boolean =
+      companion.isNull(value)
+
+    def orderability(implicit companion: CypherValueCompanion[V]): companion.orderability.type =
+      companion.orderability
+
+    def reverseOrderability(implicit companion: CypherValueCompanion[V]): companion.orderability.type =
+      companion.orderability
+
+    def <(rhs: V)(implicit companion: CypherValueCompanion[V]): Option[Boolean] = {
+      companion.comparability(value, rhs).map(_ < 0)
     }
 
-    def <=(rhs: CypherValue): Option[Boolean] = {
-      CypherValue.comparability(value, rhs).map(_ <= 0)
+    def <=(rhs: V)(implicit companion: CypherValueCompanion[V]): Option[Boolean] = {
+      companion.comparability(value, rhs).map(_ <= 0)
     }
 
-    def >(rhs: CypherValue): Option[Boolean] = {
-      CypherValue.comparability(value, rhs).map(_ > 0)
+    def >(rhs: V)(implicit companion: CypherValueCompanion[V]): Option[Boolean] = {
+      companion.comparability(value, rhs).map(_ > 0)
     }
 
-    def >=(rhs: CypherValue): Option[Boolean] = {
-      CypherValue.comparability(value, rhs).map(_ >= 0)
+    def >=(rhs: V)(implicit companion: CypherValueCompanion[V]): Option[Boolean] = {
+      companion.comparability(value, rhs).map(_ >= 0)
     }
   }
 }
