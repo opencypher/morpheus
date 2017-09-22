@@ -325,7 +325,8 @@ final class CypherString(private[CypherString] val v: String) extends CypherValu
 sealed trait CypherNumberCompanion[V <: CypherNumber] extends CypherValueCompanion[V] {
   def contents(v: V): Option[Number]
 
-  def orderGroup(v: V) = if (v == null) VoidOrderGroup else NumberOrderGroup
+  final def orderGroup(v: V): CypherType.OrderGroups.Value =
+    if (v == null) VoidOrderGroup else NumberOrderGroup
 }
 
 case object CypherNumber extends CypherNumberCompanion[CypherNumber] {
@@ -382,7 +383,7 @@ case object CypherInteger extends CypherNumberCompanion[CypherInteger] {
     Ordering.Long.compare(l.v, r.v)
 }
 
-final class CypherInteger(private val v: Long) extends CypherNumber with Serializable {
+final class CypherInteger(private[CypherInteger] val v: Long) extends CypherNumber with Serializable {
   override def hashCode(): Int = v.hashCode()
 
   override def equals(obj: scala.Any): Boolean = obj match {
