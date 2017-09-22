@@ -22,6 +22,7 @@ import org.opencypher.caps.api.types.{CTBoolean, CTString, CTNode, CypherType}
 import org.opencypher.caps.impl.record.InternalHeader
 import org.opencypher.caps.impl.syntax.header.{addContents, _}
 import org.opencypher.caps.common.syntax._
+import org.opencypher.caps.impl.spark.exception.Raise
 
 final case class RecordHeader(internalHeader: InternalHeader) {
 
@@ -113,8 +114,17 @@ object RecordHeader {
     val optionalNullableKeys = optionalKeys.map { case (k, v) => k -> v.nullable }
     val allKeys: Seq[(String, Vector[CypherType])] = (impliedKeys ++ optionalNullableKeys).toSeq.map { case (k, v) => k -> Vector(v) }
     val keyGroups: Map[String, Vector[CypherType]] = allKeys.groups[String, Vector[CypherType]]
+    val headerLabels = impliedLabels ++ possibleLabels
+    def verifyLabelsInTokenRegistry: Unit = {
+      headerLabels.foreach { label =>
+        if (tokens.labels.findByKey(label).isEmpty) {
+          Raise.schemaMismatch(s"Label `$label` not found in token registry.")
+        }
+      }
+    }
 
-    val labelHeaderContents = (impliedLabels ++ possibleLabels).map {
+    verifyLabelsInTokenRegistry
+    val labelHeaderContents = headerLabels.map {
       labelName => ProjectedExpr(HasLabel(node, tokens.labelByName(labelName))(CTBoolean))
     }.toSeq
 

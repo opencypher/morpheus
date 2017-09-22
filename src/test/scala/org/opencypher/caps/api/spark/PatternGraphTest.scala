@@ -196,13 +196,10 @@ class PatternGraphTest extends CAPSTestSuite {
     val inputNodes = inputGraph.nodes("n")
 
     val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema, inputGraph.tokens)
-    val outputNodes = patternGraph.nodes("n", CTNode("Person"))
-
-    outputNodes.details.toDF().columns should equal(Array(
-      "n"
-    ))
-
-    outputNodes.details.toDF().collect().toSet should equal(Set.empty)
+    val thrown = intercept[Exception] {
+      val outputNodes = patternGraph.nodes("n", CTNode("Person"))
+    }
+    assert(thrown.getMessage === "Incompatible schemas: Label `Person` not found in token registry.")
   }
 
 //
