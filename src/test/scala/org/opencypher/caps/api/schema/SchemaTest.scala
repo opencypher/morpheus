@@ -230,4 +230,21 @@ class SchemaTest extends BaseTestSuite {
       .withLabelCombination("C","D")
     )
   }
+
+  test("isEmpty") {
+    Schema.empty.isEmpty shouldBe true
+    (Schema.empty ++ Schema.empty).isEmpty shouldBe true
+    val empty = Schema(
+      Set.empty, Set.empty,
+      PropertyKeyMap.empty, PropertyKeyMap.empty,
+      ImpliedLabels(Map.empty), LabelCombinations(Set.empty)
+    )
+    empty.isEmpty shouldBe true
+    (empty ++ Schema.empty).isEmpty shouldBe true
+
+    Schema.empty.withNodePropertyKeys("label")().isEmpty shouldBe false
+    Schema.empty.withRelationshipPropertyKeys("type")("name" -> CTFloat).isEmpty shouldBe false
+    Schema.empty.withImpliedLabel("Foo" -> "Bar").isEmpty shouldBe false
+    Schema.empty.withLabelCombination("Foo", "Bar", "Baz").isEmpty shouldBe false
+  }
 }
