@@ -15,8 +15,10 @@
  */
 package org.opencypher.caps.api.schema
 
+import org.opencypher.caps.api.expr.Var
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.common.{Verifiable, Verified}
+import org.opencypher.caps.impl.spark.exception.Raise
 
 import scala.language.implicitConversions
 
@@ -228,6 +230,39 @@ final case class Schema(
       newRelKeyMap,
       newImpliedLabels,
       newLabelCombinations)
+  }
+
+  /**
+    * Returns the sub-schema for {{{node}}}
+    * @param node Specifies the node for which the schema is extracted
+    * @return sub-schema for node
+    */
+  def forNode(node: Var): Schema = {
+    val nodeCypherType = node.cypherType match {
+      case t@CTNode(_) => t
+      case o => Raise.invalidArgument("CTNode", o.name)
+    }
+
+    val requiredLabels = {
+      val explicitLabels = nodeCypherType.labels
+      val impliedLabels = this.impliedLabels.transitiveImplicationsFor(explicitLabels)
+      explicitLabels union impliedLabels
+    }
+
+    val possibleLabels: Set[String] = if (nodeCypherType.labels.isEmpty) {
+      this.labels
+    } else {
+      requiredLabels union this.labelCombinations.filterByLabels(requiredLabels).combos.flatten
+    }
+
+    copy(
+      labels = possibleLabels,
+      Set.empty,
+      nodeKeyMap = this.nodeKeyMap.filterByLabels(possibleLabels),
+      relKeyMap = PropertyKeyMap.empty,
+      impliedLabels = this.impliedLabels.filterByLabels(possibleLabels),
+      labelCombinations = this.labelCombinations.filterByLabels(possibleLabels)
+    )
   }
 
   /**

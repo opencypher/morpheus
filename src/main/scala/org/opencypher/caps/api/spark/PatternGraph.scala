@@ -1,75 +1,41 @@
 package org.opencypher.caps.api.spark
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{Dataset, Row}
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.schema.{PropertyKeyMap, Schema}
-import org.opencypher.caps.api.spark.CAPSGraph.ScanGraph
-import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType}
+import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.impl.record.CAPSRecordsTokens
 import org.opencypher.caps.impl.spark.SparkColumnName
-import org.opencypher.caps.impl.spark.exception.Raise
-import org.opencypher.caps.ir.api.global.TokenRegistry
-import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
-import org.opencypher.caps.impl.spark.convert.toSparkType
 
 
 class PatternGraph(private val baseTable: CAPSRecords, val schema: Schema, val tokens: CAPSRecordsTokens)
                   (implicit val session: CAPSSession) extends CAPSGraph {
 
   override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
-    val node = Var(name)(nodeCypherType)
-
-    val explicitLabels = nodeCypherType.labels.filter(_._2).keySet
-
-    // TODO: Fix that no labels means all labels
-    val nodeLabels: Set[String] = if (nodeCypherType.labels.isEmpty) {
-      val allLabels = schema.labels
-      allLabels
-    } else {
-      val possibleLabels = schema.labelCombinations.filterByLabels(explicitLabels)
-      possibleLabels.combos.flatten
-    }
-
-    val nodeSchema = schema.copy(
-      labels = nodeLabels,
-      Set.empty,
-      nodeKeyMap = schema.nodeKeyMap.filterByLabels(nodeLabels),
-      relKeyMap = PropertyKeyMap.empty,
-      impliedLabels = schema.impliedLabels.filterByLabels(nodeLabels),
-      labelCombinations = schema.labelCombinations.filterByLabels(nodeLabels)
-    )
-
-    val nodeHeader: RecordHeader = RecordHeader.nodeFromSchema(node, nodeSchema, tokens.registry)
-
     val sourceHeader = baseTable.details.header
 
-    val candidateNodes = sourceHeader.slots.collect {
-      case RecordSlot(_, OpaqueField(v)) => v
-    }.filter { v =>
-      def isNode = v.cypherType.subTypeOf(CTNode).isTrue
-      def hasAllRequiredLabels = {
-        val labels = sourceHeader.labels(v).map(_.label.name).toSet
-        explicitLabels.subsetOf(labels)
-      }
-      isNode && hasAllRequiredLabels
-    }
+    val targetNode = Var(name)(nodeCypherType)
+    val targetNodeSchema = schema.forNode(targetNode)
+    val targetNodeHeader = RecordHeader.nodeFromSchema(targetNode, targetNodeSchema, tokens.registry)
 
-    val slotsWithChildren: Map[Var, Seq[RecordSlot]] = candidateNodes.map { candidate =>
+    val extractionNodes = sourceHeader.nodesForType(nodeCypherType)
+    val extractionSlots = extractionNodes.map { candidate =>
       candidate -> (sourceHeader.childSlots(candidate) :+ sourceHeader.slotFor(candidate))
     }.toMap
 
-    val nodeColumnsLookupTables = slotsWithChildren.map {
+    val nodeColumnsLookupTables = extractionSlots.map {
       case (nodeVar, slotsForNode) =>
-        nodeVar -> scanTableToBaseTableNameLookup(node, slotsForNode.map(_.content))
+        nodeVar -> createScanToBaseTableLookup(targetNode, slotsForNode.map(_.content))
     }
 
-    implicit val rowEncoder = rowEncoderFor(nodeHeader)
+    implicit val rowEncoder = rowEncoderFor(targetNodeHeader)
 
     val nodeDf = baseTable.details.toDF().flatMap(
-      RowNodeExpansion(nodeHeader, node, slotsWithChildren, nodeColumnsLookupTables))
+      RowNodeExpansion(targetNodeHeader, targetNode, extractionSlots, nodeColumnsLookupTables))
 
-    CAPSRecords.create(nodeHeader, nodeDf)
+    CAPSRecords.create(targetNodeHeader, nodeDf)
   }
 
 
@@ -78,7 +44,7 @@ class PatternGraph(private val baseTable: CAPSRecords, val schema: Schema, val t
     RowEncoder(schema)
   }
 
-  def scanTableToBaseTableNameLookup(scanTableVar: Var, slotContents: Seq[SlotContent]): Map[String,String] = {
+  private def createScanToBaseTableLookup(scanTableVar: Var, slotContents: Seq[SlotContent]): Map[String,String] = {
     slotContents.map { baseTableSlotContent =>
       SparkColumnName.of(baseTableSlotContent.withOwner(scanTableVar)) -> SparkColumnName.of(baseTableSlotContent)
     }.toMap

@@ -15,10 +15,8 @@ case class RowNodeExpansion(targetHeader: RecordHeader,
   extends (Row => Seq[Row]) {
 
   private val targetLabels = targetNode.cypherType match {
-    case CTNode(labelMap) =>
-      labelMap.collect {
-        case (l, true) => l
-      }.toSet
+    case CTNode(labels) => labels
+    case _ => Set.empty[String]
   }
 
   private val rowSchema = StructType(targetHeader.slots.map(_.structField))

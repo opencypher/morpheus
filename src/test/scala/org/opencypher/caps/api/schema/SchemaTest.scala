@@ -15,6 +15,7 @@
  */
 package org.opencypher.caps.api.schema
 
+import org.opencypher.caps.api.expr.Var
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.test.BaseTestSuite
 
@@ -228,6 +229,31 @@ class SchemaTest extends BaseTestSuite {
       .withLabelCombination("A","E")
       .withLabelCombination("B","F")
       .withLabelCombination("C","D")
+    )
+  }
+
+  test("extract node schema") {
+    val schema = Schema.empty
+      .withNodePropertyKeys("Person")("name" -> CTString)
+      .withNodePropertyKeys("Employee")("name" -> CTString, "salary" -> CTInteger)
+      .withNodePropertyKeys("Dog")("name" -> CTFloat)
+      .withNodePropertyKeys("Pet")("notName" -> CTBoolean)
+      .withLabelCombination("Person", "Employee")
+      .withImpliedLabel("Dog", "Pet")
+      .withRelationshipPropertyKeys("OWNER")("since" -> CTInteger)
+
+    schema.forNode(Var("p")(CTNode("Person"))) should equal(
+      Schema.empty
+      .withNodePropertyKeys("Person")("name" -> CTString)
+      .withNodePropertyKeys("Employee")("name" -> CTString, "salary" -> CTInteger)
+      .withLabelCombination("Person", "Employee")
+    )
+
+    schema.forNode(Var("d")(CTNode("Dog"))) should equal(
+      Schema.empty
+        .withNodePropertyKeys("Dog")("name" -> CTFloat)
+        .withNodePropertyKeys("Pet")("notName" -> CTBoolean)
+        .withImpliedLabel("Dog", "Pet")
     )
   }
 }

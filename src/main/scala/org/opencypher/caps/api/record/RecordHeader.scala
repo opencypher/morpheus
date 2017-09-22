@@ -74,7 +74,20 @@ final case class RecordHeader(internalHeader: InternalHeader) {
     }.toMap
   }
 
-  override def toString: String = {
+  def nodesForType(nodeType: CTNode): Seq[Var] = {
+    slots.collect {
+      case RecordSlot(_, OpaqueField(v)) => v
+    }.filter { v =>
+      def isNode = v.cypherType.subTypeOf(CTNode).isTrue
+      def hasAllRequiredLabels = {
+        val labels = this.labels(v).map(_.label.name).toSet
+        nodeType.labels.subsetOf(labels)
+      }
+      isNode && hasAllRequiredLabels
+    }
+  }
+
+  override def toString = {
     val s = slots
     s"RecordHeader with ${s.size} slots: \n\t ${slots.mkString("\n\t")}"
   }
