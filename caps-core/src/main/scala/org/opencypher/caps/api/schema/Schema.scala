@@ -262,37 +262,59 @@ final case class Schema(
     }
   }
 
-  override def toString: String = {
-    val builder = new StringBuilder
+  override def toString: String =
+    if (isEmpty) "empty schema"
+    else {
+      import scala.compat.Platform.EOL
 
-    builder.append("Node labels:\n")
-    labels.foreach { label =>
-      builder.append(s":$label\n")
-      nodeKeys(label).foreach {
-        case (key, typ) => builder.append(s"\t$key: $typ\n")
+      val builder = new StringBuilder
+
+      if (labels.nonEmpty) {
+        builder.append(s"Node labels {$EOL")
+        labels.foreach { label =>
+          builder.append(s"\t:$label$EOL")
+          nodeKeys(label).foreach {
+            case (key, typ) => builder.append(s"\t\t$key: $typ$EOL")
+          }
+        }
+        builder.append(s"}$EOL")
+      } else {
+        builder.append(s"no labels$EOL")
       }
-    }
 
-    builder.append("Implied labels:\n")
-    impliedLabels.m.foreach { pair =>
-      builder.append(s":${pair._1} -> ${pair._2}\n")
-    }
-
-    builder.append("Label combinations:\n")
-    this.labelCombinations.combos.foreach { set =>
-      builder.append(s"$set\n")
-    }
-
-    builder.append("Rel types:\n")
-    relationshipTypes.foreach { relType =>
-      builder.append(s":$relType\n")
-      relationshipKeys(relType).foreach {
-        case (key, typ) => builder.append(s"\t$key: $typ\n")
+      if (impliedLabels.m.nonEmpty) {
+        builder.append(s"Implied labels:$EOL")
+        impliedLabels.m.foreach { pair =>
+          builder.append(s":${pair._1} -> ${pair._2}$EOL")
+        }
+      } else {
+        builder.append(s"no label implications$EOL")
       }
-    }
 
-    builder.toString
-  }
+      if (labelCombinations.combos.nonEmpty) {
+        builder.append(s"Label combinations:$EOL")
+        labelCombinations.combos.foreach { set =>
+          builder.append(s"$set$EOL")
+        }
+      } else {
+        builder.append(s"no label combinations$EOL")
+      }
+
+      if (relationshipTypes.nonEmpty) {
+        builder.append(s"Rel types {$EOL")
+        relationshipTypes.foreach { relType =>
+          builder.append(s"\t:$relType$EOL")
+          relationshipKeys(relType).foreach {
+            case (key, typ) => builder.append(s"\t\t$key: $typ$EOL")
+          }
+        }
+        builder.append(s"}$EOL")
+      } else {
+        builder.append(s"no relationship types$EOL")
+      }
+
+      builder.toString
+    }
 }
 
 sealed abstract class VerifiedSchema extends Verified[Schema] with Serializable {
