@@ -54,8 +54,10 @@ sealed trait CypherValueCompanion[V <: CypherValue] extends Equiv[V] {
 
   final def isNull(v: V): Boolean = v == null
 
+  final def format(v: V): String = if (isNull(v)) "null" else v.toString
+
   // true if this value is null or contains a null from the viewpoint of what's considered by comparability
-  def isIncomparable(v: V): Boolean
+  def comparesNulls(v: V): Boolean
 
   // Values in the same order group are ordered (sorted) together by orderability
   def orderGroup(v: V): OrderGroup
@@ -67,9 +69,9 @@ sealed trait CypherValueCompanion[V <: CypherValue] extends Equiv[V] {
   // Cypher equality
   def equal(l: V, r: V): Ternary = {
     if (l eq r) {
-      if (isIncomparable(l)) Maybe else True
+      if (comparesNulls(l)) Maybe else True
     } else {
-      if (isIncomparable(l) || isIncomparable(r))
+      if (comparesNulls(l) || comparesNulls(r))
         Maybe
       else {
         val xGroup = orderGroup(l)
@@ -96,20 +98,24 @@ sealed trait CypherValueCompanion[V <: CypherValue] extends Equiv[V] {
   }
 
   // Cypher comparability
-  def comparability(x: V, y: V): Option[Int] = {
+  def comparability(x: V, y: V): Comparison = {
     // This is not a partial order (it is not reflexive!)
     if (x eq y) {
-      if (isIncomparable(x)) None else Some(0)
+      if (comparesNulls(x)) ArgumentComparesNulls else SuccesfulComparison(0)
     } else {
-      if (isIncomparable(x) || isIncomparable(y))
-        None
+      if (isNull(x) || isNull(y))
+        ArgumentComparesNulls
       else {
         val xGroup = orderGroup(x)
         val yGroup = orderGroup(y)
-        if (xGroup == yGroup)
-          Some(computeComparability(x, y))
+        if (xGroup == yGroup) {
+          if (comparesNulls(x) || comparesNulls(y))
+            ArgumentComparesNulls
+          else
+            SuccesfulComparison(computeComparability(x, y))
+        }
         else
-          None
+          IncompatibleArguments
       }
     }
   }
@@ -123,7 +129,7 @@ sealed trait CypherValueCompanion[V <: CypherValue] extends Equiv[V] {
 }
 
 sealed trait CypherScalarValueCompanion[V <: CypherValue] extends CypherValueCompanion[V] {
-  override def isIncomparable(v: V): Boolean = isNull(v)
+  override def comparesNulls(v: V): Boolean = isNull(v)
 }
 
 // *** ANY
@@ -151,7 +157,7 @@ case object CypherValue extends CypherValueCompanion[CypherValue] {
     case v: java.util.List[_] if v.isEmpty => CypherList.empty
     case v: java.util.List[_] => CypherList(v.asScala.map(apply))
     case v: Array[_] => CypherList(v.map(apply))
-    case v: Vector[_] => CypherList(v.map(apply))
+    case v: Seq[_] => CypherList(v.map(apply))
     case v: NodeContents => CypherNode(v)
     case v: RelationshipContents => CypherRelationship(v)
     case v: MapContents => CypherMap(v)
@@ -269,14 +275,14 @@ case object CypherValue extends CypherValueCompanion[CypherValue] {
       Raise.impossible("Call to computeComparability with values of different types")
   }
 
-  override def isIncomparable(v: CypherValue): Boolean = v match {
+  override def comparesNulls(v: CypherValue): Boolean = v match {
     case null                     => true
-    case v: CypherBoolean         => CypherBoolean.isIncomparable(v)
-    case v: CypherString          => CypherString.isIncomparable(v)
-    case v: CypherNumber          => CypherNumber.isIncomparable(v)
-    case v: CypherList            => CypherList.isIncomparable(v)
-    case v: CypherMap             => CypherMap.isIncomparable(v)
-    case v: CypherPath            => CypherPath.isIncomparable(v)
+    case v: CypherBoolean         => CypherBoolean.comparesNulls(v)
+    case v: CypherString          => CypherString.comparesNulls(v)
+    case v: CypherNumber          => CypherNumber.comparesNulls(v)
+    case v: CypherList            => CypherList.comparesNulls(v)
+    case v: CypherMap             => CypherMap.comparesNulls(v)
+    case v: CypherPath            => CypherPath.comparesNulls(v)
   }
 }
 
@@ -498,7 +504,7 @@ case object CypherList extends CypherValueCompanion[CypherList] {
   override def contents(value: CypherList): Option[Contents] =
     unapply(value)
 
-  override def isIncomparable(v: CypherList): Boolean =
+  override def comparesNulls(v: CypherList): Boolean =
     isNull(v) || v.cachedContainsNull
 
   override protected[value] def computeOrderability(l: CypherList, r: CypherList): Int =
@@ -519,7 +525,7 @@ final class CypherList(private[CypherList] val v: Seq[CypherValue])
 
   @transient
   private[CypherList] lazy val cachedContainsNull: Boolean =
-    v.exists(CypherValue.isIncomparable)
+    v.exists(CypherValue.comparesNulls)
 
   @transient
   private[CypherList] lazy val cachedElementType: CypherType =
@@ -584,8 +590,8 @@ case object CypherMap extends CypherMapCompanion[CypherMap] {
   def unapply(value: CypherMap): Option[Contents] =
     if (value == null) None else Some(RegularMap(value.properties))
 
-  override def isIncomparable(v: CypherMap): Boolean = isNull(v) || (v match {
-    case entity: CypherEntityValue => CypherEntityCompanion.isIncomparable(entity)
+  override def comparesNulls(v: CypherMap): Boolean = isNull(v) || (v match {
+    case entity: CypherEntityValue => CypherEntityCompanion.comparesNulls(entity)
     case _ => v.cachedIsComparable
   })
 
@@ -624,7 +630,7 @@ sealed class CypherMap(protected[value] val properties: Properties)
 
   @transient
   protected[value] lazy val cachedIsComparable: Boolean =
-    properties.m.values.exists(CypherValue.isIncomparable)
+    properties.m.values.exists(CypherValue.comparesNulls)
 
   override def hashCode(): Int = properties.hashCode()
 
@@ -693,7 +699,7 @@ sealed trait CypherEntityCompanion[V <: CypherEntityValue] extends CypherMapComp
   override type Contents <: EntityContents
 
   // Entities are compared by id, therefore nulls in properties are not considered
-  override def isIncomparable(v: V): Boolean = isNull(v)
+  override def comparesNulls(v: V): Boolean = isNull(v)
 
   def id(v: V): Option[EntityId] = if (v == null) None else Some(v.id)
 
@@ -841,7 +847,7 @@ case object CypherPath extends CypherValueCompanion[CypherPath] {
   private val pathOrdering = Ordering.Iterable(CypherEntityCompanion.orderability)
 
   // A path containing null entities is malformed and therefore not considered here
-  override def isIncomparable(v: CypherPath): Boolean = isNull(v)
+  override def comparesNulls(v: CypherPath): Boolean = isNull(v)
 }
 
 sealed class CypherPath(protected[value] val elements: Seq[CypherEntityValue])

@@ -17,9 +17,13 @@ package org.opencypher.caps.api.value
 
 import org.opencypher.caps.api.types.CypherType
 import org.opencypher.caps.common.Ternary
+import org.opencypher.caps.impl.spark.exception.Raise
 
 object CypherValueUtils {
   implicit final class RichCypherValue[V <: CypherValue](val value: V) extends AnyVal {
+
+    def formatted(implicit companion: CypherValueCompanion[V]): String =
+      companion.format(value)
 
     def contents(implicit companion: CypherValueCompanion[V]): Option[companion.Contents] =
       companion.contents(value)
@@ -42,20 +46,29 @@ object CypherValueUtils {
     def reverseOrderability(implicit companion: CypherValueCompanion[V]): companion.orderability.type =
       companion.orderability
 
-    def <(rhs: V)(implicit companion: CypherValueCompanion[V]): Option[Boolean] = {
-      companion.comparability(value, rhs).map(_ < 0)
-    }
+    def <(other: V)(implicit companion: CypherValueCompanion[V]): Ternary =
+      companion
+        .comparability(value, other)
+        .map(_ < 0)
+        .getOrElse(Raise.incomparableArguments(value.formatted, other.formatted))
 
-    def <=(rhs: V)(implicit companion: CypherValueCompanion[V]): Option[Boolean] = {
-      companion.comparability(value, rhs).map(_ <= 0)
-    }
+    def <=(other: V)(implicit companion: CypherValueCompanion[V]): Ternary =
+      companion
+        .comparability(value, other)
+        .map(_ <= 0)
+        .getOrElse(Raise.incomparableArguments(value.formatted, other.formatted))
 
-    def >(rhs: V)(implicit companion: CypherValueCompanion[V]): Option[Boolean] = {
-      companion.comparability(value, rhs).map(_ > 0)
-    }
+    def >(other: V)(implicit companion: CypherValueCompanion[V]): Ternary =
+      companion
+        .comparability(value, other)
+        .map(_ > 0)
+        .getOrElse(Raise.incomparableArguments(value.formatted, other.formatted))
 
-    def >=(rhs: V)(implicit companion: CypherValueCompanion[V]): Option[Boolean] = {
-      companion.comparability(value, rhs).map(_ >= 0)
-    }
+
+    def >=(other: V)(implicit companion: CypherValueCompanion[V]): Ternary =      companion
+      .comparability(value, other)
+      .map(_ >= 0)
+      .getOrElse(Raise.incomparableArguments(value.formatted, other.formatted))
+
   }
 }

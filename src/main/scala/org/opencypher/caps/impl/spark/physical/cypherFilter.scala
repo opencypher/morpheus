@@ -18,33 +18,43 @@ package org.opencypher.caps.impl.spark.physical
 import org.apache.spark.sql.Row
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.record.RecordHeader
-import org.opencypher.caps.impl.spark.RowUtils._
 import org.opencypher.caps.api.value.CypherValueUtils._
+import org.opencypher.caps.impl.spark.RowUtils._
 import org.opencypher.caps.impl.spark.exception.Raise
 
 /*
  * Used when the predicate depends on values not stored inside the dataframe.
  */
 case class cypherFilter(header: RecordHeader, expr: Expr)
-                       (implicit context: RuntimeContext) extends (Row => Option[Boolean]) {
-  def apply(row: Row): Option[Boolean] = expr match {
-    case Equals(p: Property, c: Const) =>
-      // TODO: Make this ternary
-      Some(row.getCypherValue(p, header) == row.getCypherValue(c, header))
+                       (implicit context: RuntimeContext) extends (Row => Boolean) {
+  def apply(row: Row): Boolean =
+    expr match {
+      case Equals(lhs, rhs) =>
+        val lhsValue = row.getCypherValue(lhs, header)
+        val rhsValue = row.getCypherValue(rhs, header)
+        lhsValue.equalTo(rhsValue).isTrue
 
-    case LessThan(lhs, rhs) =>
-      row.getCypherValue(lhs, header) < row.getCypherValue(rhs, header)
+      case LessThan(lhs, rhs) =>
+        val lhsValue = row.getCypherValue(lhs, header)
+        val rhsValue = row.getCypherValue(rhs, header)
+        (lhsValue < rhsValue).orNull
 
-    case LessThanOrEqual(lhs, rhs) =>
-      row.getCypherValue(lhs, header) <= row.getCypherValue(rhs, header)
+      case LessThanOrEqual(lhs, rhs) =>
+        val lhsValue = row.getCypherValue(lhs, header)
+        val rhsValue = row.getCypherValue(rhs, header)
+        (lhsValue <= rhsValue).orNull
 
-    case GreaterThan(lhs, rhs) =>
-      row.getCypherValue(lhs, header) > row.getCypherValue(rhs, header)
+      case GreaterThan(lhs, rhs) =>
+        val lhsValue = row.getCypherValue(lhs, header)
+        val rhsValue = row.getCypherValue(rhs, header)
+        (lhsValue > rhsValue).orNull
 
-    case GreaterThanOrEqual(lhs, rhs) =>
-      row.getCypherValue(lhs, header) >= row.getCypherValue(rhs, header)
+      case GreaterThanOrEqual(lhs, rhs) =>
+        val lhsValue = row.getCypherValue(lhs, header)
+        val rhsValue = row.getCypherValue(rhs, header)
+        (lhsValue >= rhsValue).orNull
 
-    case x =>
-      Raise.notYetImplemented(s"Predicate $x")
-  }
+      case x =>
+        Raise.notYetImplemented(s"Predicate $x")
+    }
 }

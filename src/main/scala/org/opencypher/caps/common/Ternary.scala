@@ -35,6 +35,9 @@ sealed trait Ternary {
   def or(other: Ternary): Ternary
 
   def negated: Ternary
+
+  final def orNull: java.lang.Boolean = if (isDefinite) isTrue else null
+  def toOption: Option[Boolean]
 }
 
 sealed private[caps] trait DefiniteTernary extends Ternary {
@@ -43,75 +46,81 @@ sealed private[caps] trait DefiniteTernary extends Ternary {
 }
 
 case object True extends DefiniteTernary {
-  def isTrue = true
-  def isFalse = false
+  override def isTrue = true
+  override def isFalse = false
 
-  def maybeTrue = true
-  def maybeFalse = false
+  override def maybeTrue = true
+  override def maybeFalse = false
 
-  def and(other: Ternary): Ternary = other match {
+  override def and(other: Ternary): Ternary = other match {
     case True => True
     case False => False
     case Maybe => Maybe
   }
 
-  def or(other: Ternary): Ternary = other match {
+  override def or(other: Ternary): Ternary = other match {
     case True => True
     case False => True
     case Maybe => True
   }
 
-  def negated = False
+  override def negated: False.type = False
+
+  override val toOption: Some[Boolean] = Some(true)
 
   override def toString = "definitely true"
 }
 
 case object False extends DefiniteTernary {
-  def isTrue = false
-  def isFalse = true
+  override def isTrue = false
+  override def isFalse = true
 
-  def maybeTrue = false
-  def maybeFalse = true
+  override def maybeTrue = false
+  override def maybeFalse = true
 
-  def and(other: Ternary): Ternary = other match {
+  override def and(other: Ternary): Ternary = other match {
     case True => False
     case False => False
     case Maybe => False
   }
 
-  def or(other: Ternary): Ternary = other match {
+  override def or(other: Ternary): Ternary = other match {
     case True => True
     case False => False
     case Maybe => Maybe
   }
 
-  def negated = True
+  override def negated: True.type = True
+
+  override val toOption: Some[Boolean] = Some(false)
 
   override def toString = "definitely false"
 }
 
 case object Maybe extends Ternary {
-  def isTrue = false
-  def isFalse = false
-  def isDefinite = false
-  def isUnknown = true
+  override def isTrue = false
+  override def isFalse = false
+  override def isDefinite = false
+  override def isUnknown = true
 
-  def maybeTrue = true
-  def maybeFalse = true
+  override def maybeTrue = true
+  override def maybeFalse = true
 
-  def and(other: Ternary): Ternary = other match {
+  override def and(other: Ternary): Ternary = other match {
     case True => Maybe
     case False => False
     case Maybe => Maybe
   }
 
-  def or(other: Ternary): Ternary = other match {
+  override def or(other: Ternary): Ternary = other match {
     case True => True
     case False => Maybe
     case Maybe => Maybe
   }
 
-  def negated = Maybe
+  override def negated: Maybe.type = Maybe
+
+  override def toOption: None.type = None
 
   override def toString = "maybe"
 }

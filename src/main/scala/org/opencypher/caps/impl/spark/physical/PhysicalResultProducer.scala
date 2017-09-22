@@ -17,7 +17,7 @@ package org.opencypher.caps.impl.spark.physical
 
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{ArrayType, BooleanType, LongType}
-import org.apache.spark.sql.{Column, DataFrame, Row, functions}
+import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.spark.CAPSRecords
@@ -78,7 +78,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
             subject.data.where(sqlExpr)
           case None =>
             val predicate = cypherFilter(header, expr)
-            subject.data.filter(liftTernary(predicate))
+            subject.data.filter(predicate)
         }
 
         val selectedColumns = header.slots.map { c =>
@@ -498,14 +498,6 @@ class PhysicalResultProducer(context: RuntimeContext) {
         case x => throw new IllegalArgumentException(s"Expected $slot to contain a node, but was $x")
       }
     }
-  }
-
-  private def liftTernary(f: Row => Option[Boolean]): (Row => Boolean) = {
-    (r: Row) =>
-      f(r) match {
-        case None => false
-        case Some(x) => x
-      }
   }
 }
 
