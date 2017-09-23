@@ -24,7 +24,7 @@ class CypherValueConversionTest extends CypherValueTestSuite {
     val scalaValues = originalValues.map(CypherPath.contents).map(_.orNull)
     val newValues = scalaValues.map {
       case null             => null
-      case elements: Seq[_] => CypherPath(elements.asInstanceOf[Seq[CypherEntityValue]]: _*)
+      case elements: Seq[_] => CypherPath(elements.asInstanceOf[Seq[CypherEntityValue]])
     }
 
     newValues should equal(originalValues)
@@ -183,7 +183,7 @@ class CypherValueConversionTest extends CypherValueTestSuite {
       case n: NodeContents => CypherNode(n.id, n.labels, n.properties)
       case r: RelationshipContents => CypherRelationship(r.id, r.startId, r.endId, r.relationshipType, r.properties)
       case d: java.lang.Double => CypherFloat(d)
-      case l: Seq[_] if isPathLike(l) => CypherPath(l.asInstanceOf[Seq[CypherEntityValue]]: _*)
+      case l: Seq[_] if isPathLike(l) => CypherPath(l.asInstanceOf[Seq[CypherEntityValue]])
       case l: Seq[_] => CypherList(l.asInstanceOf[Seq[CypherValue]])
     }
 

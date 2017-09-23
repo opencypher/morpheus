@@ -13,19 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.test
+package org.opencypher.caps.api.spark
 
-import org.junit.runner.RunWith
-import org.opencypher.caps.impl.spark.physical.RuntimeContext
-import org.scalatest.junit.JUnitRunner
-import org.scalatest.{FunSuite, Matchers}
+package object instances
+  extends AllInstances
 
-@RunWith(classOf[JUnitRunner])
-abstract class BaseTestSuite
-  extends FunSuite
-  with Matchers
-  with org.opencypher.caps.api.spark.instances.AllInstances
-  with org.opencypher.caps.api.spark.syntax.AllSyntax
-{
-  implicit val context: RuntimeContext = RuntimeContext.empty
-}

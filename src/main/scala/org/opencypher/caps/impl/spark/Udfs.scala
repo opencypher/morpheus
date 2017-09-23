@@ -17,7 +17,8 @@ package org.opencypher.caps.impl.spark
 
 import org.opencypher.caps.ir.api.global.Label
 import org.opencypher.caps.api.value.CypherValue
-import org.opencypher.caps.api.value.CypherValueUtils._
+import org.opencypher.caps.api.value.instances._
+import org.opencypher.caps.api.value.syntax._
 import org.opencypher.caps.impl.convert.toJavaType
 import org.opencypher.caps.impl.spark.exception.Raise
 

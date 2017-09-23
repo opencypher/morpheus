@@ -26,7 +26,7 @@ class CypherValueStructureTest extends CypherValueTestSuite {
     val reconstructedValueGroups = scalaValueGroups.map {
       values => values.map {
         case elements: Seq[_] =>
-           CypherPath(elements.asInstanceOf[Seq[CypherEntityValue]]: _*)
+           CypherPath(elements.asInstanceOf[Seq[CypherEntityValue]])
 
         case null =>
           cypherNull[CypherPath]
@@ -361,7 +361,7 @@ class CypherValueStructureTest extends CypherValueTestSuite {
           CypherMap(contents.properties)
 
         case elements: Seq[_] if isPathLike(elements) =>
-          CypherPath(elements.asInstanceOf[Seq[CypherEntityValue]]: _*)
+          CypherPath(elements.asInstanceOf[Seq[CypherEntityValue]])
 
         case l: Seq[_] =>
           CypherList(l.asInstanceOf[Seq[CypherValue]])

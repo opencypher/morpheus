@@ -18,6 +18,8 @@ package org.opencypher.caps.api.value
 import scala.collection.immutable.SortedMap
 import scala.language.implicitConversions
 
+import syntax.cypherNull
+
 object Properties {
 
   val empty = new Properties(SortedMap.empty)
@@ -39,7 +41,9 @@ object Properties {
 
 final class Properties private (val m: SortedMap[String, CypherValue]) extends AnyVal with Serializable {
 
-  def apply(key: String): CypherValue = m.getOrElse(key, cypherNull)
+  def isEmpty: Boolean = m.isEmpty
+
+  def apply(key: String): CypherValue = m.getOrElse(key, cypherNull[CypherValue])
   def get(key: String): Option[CypherValue] = m.get(key)
 
   def containsNullValue: Boolean = m.values.exists(CypherValue.comparesNulls)

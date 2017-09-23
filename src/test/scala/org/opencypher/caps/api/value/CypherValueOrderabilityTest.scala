@@ -15,8 +15,6 @@
  */
 package org.opencypher.caps.api.value
 
-import org.opencypher.caps.api.value.CypherValue.companion
-
 import scala.annotation.tailrec
 import scala.util.Random
 
@@ -91,19 +89,19 @@ class CypherValueOrderabilityTest extends CypherValueTestSuite {
   }
 
   private def verifyOrderabilityReflexivity[V <: CypherValue : CypherValueCompanion](values: ValueGroups[V]): Unit = {
-    values.flatten.foreach { v =>
-      orderability[V].compare(v, v) should be(0)
-      if (! companion[V].isNull(v)) {
-        (orderability[V].compare(v, cypherNull) < 0) should be(true)
-        (orderability[V].compare(cypherNull, v) > 0) should be(true)
+    values.flatten.foreach { (v: V) =>
+      CypherValueCompanion[V].order.compare(v, v) should be(0)
+      if (! v.isNull) {
+        (CypherValueCompanion[V].order.compare(v, cypherNull[V]) < 0) should be(true)
+        (CypherValueCompanion[V].order.compare(cypherNull[V], v) > 0) should be(true)
       }
     }
 
-    (orderability[V].compare(cypherNull, cypherNull) == 0) should be(true)
+    (CypherValueCompanion[V].order.compare(cypherNull[V], cypherNull[V]) == 0) should be(true)
 
     values.indexed.zip(values.indexed).foreach { entry =>
       val ((leftIndex, leftValue), (rightIndex, rightValue)) = entry
-      val cmp = orderability[V].compare(leftValue, rightValue)
+      val cmp = CypherValueCompanion[V].order.compare(leftValue, rightValue)
       val isEqual = cmp == 0
       val isSameValue = leftIndex == rightIndex
       isEqual should be(isSameValue)
@@ -111,7 +109,7 @@ class CypherValueOrderabilityTest extends CypherValueTestSuite {
   }
 
   private def verifyOrderabilityTransitivity[V <: CypherValue : CypherValueCompanion](values: ValueGroups[V]): Unit = {
-//    var count = 0
+    var count = 0
     val flatValues = values.indexed
     flatValues.foreach { a =>
       flatValues.foreach { b =>
@@ -120,9 +118,9 @@ class CypherValueOrderabilityTest extends CypherValueTestSuite {
           val (i2, v2) = b
           val (i3, v3) = c
 
-          val cmp1 = companion[V].orderability(v1, v2)
-          val cmp2 = companion[V].orderability(v2, v3)
-          val cmp3 = companion[V].orderability(v1, v3)
+          val cmp1 = CypherValueCompanion[V].order(v1, v2)
+          val cmp2 = CypherValueCompanion[V].order(v2, v3)
+          val cmp3 = CypherValueCompanion[V].order(v1, v3)
 
 //          println(s"$count $a << $cmp1 >> $b << $cmp2 >> $c : $cmp3")
 //          count += 1
@@ -165,9 +163,9 @@ class CypherValueOrderabilityTest extends CypherValueTestSuite {
   private def verifyOrderabilityOrder[V <: CypherValue : CypherValueCompanion](expected: ValueGroups[V]): Unit = {
     1.to(1000).foreach { _ =>
       val shuffled = Random.shuffle[Seq[V], Seq](expected)
-      val sorted = shuffled.sortBy(values => Random.shuffle(values).head)(orderability)
+      val sorted = shuffled.sortBy(values => Random.shuffle(values).head)(CypherValueCompanion[V].order)
 
-      assertSameGroupsInSameOrder(sorted, expected)(orderability)
+      assertSameGroupsInSameOrder(sorted, expected)(CypherValueCompanion[V].order)
     }
   }
 
@@ -194,6 +192,4 @@ class CypherValueOrderabilityTest extends CypherValueTestSuite {
       case _ =>
         fail("Value groups have differing length")
     }
-
-  private def orderability[V <: CypherValue : CypherValueCompanion]: Ordering[V] = companion[V].orderability
 }

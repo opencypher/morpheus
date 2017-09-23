@@ -13,24 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.api.value
+package org.opencypher.caps.api.spark.encoders
 
-import org.opencypher.caps.common.{Maybe, Ternary}
+import org.apache.spark.sql.Encoders._
+import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
+import org.opencypher.caps.api.value.{CypherNode, CypherRelationship}
 
-sealed trait Comparison extends Any {
-  def map(f: Int => Boolean): Option[Ternary]
+trait CypherValueEncoders extends LowPriorityCypherValueEncoders {
+  implicit def cypherNodeEncoder: ExpressionEncoder[CypherNode] = kryo[CypherNode]
+  implicit def cypherRelationshipEncoder: ExpressionEncoder[CypherRelationship] = kryo[CypherRelationship]
 }
 
-sealed trait Incomparable extends Comparison
-
-final case class SuccesfulComparison(cmp: Int) extends AnyVal with Comparison {
-  override def map(f: Int => Boolean): Option[Ternary] = Some(Ternary(f(cmp)))
-}
-
-case object IncompatibleArguments extends Incomparable {
-  override def map(f: Int => Boolean): Option[Ternary] = None
-}
-
-case object ArgumentComparesNulls extends Incomparable {
-  override def map(f: Int => Boolean): Option[Ternary] = Some(Maybe)
-}

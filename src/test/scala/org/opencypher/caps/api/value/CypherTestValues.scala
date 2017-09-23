@@ -15,6 +15,9 @@
  */
 package org.opencypher.caps.api.value
 
+import instances._
+import syntax._
+
 object CypherTestValues {
 
   // This object provides various seqs of cypher values sorted by orderability for use in tests.
@@ -30,21 +33,21 @@ object CypherTestValues {
 
   implicit val PATH_valueGroups: ValueGroups[CypherPath] = Seq(
     Seq(
-      CypherPath(CypherNode(1l, Array("Label"), Properties.empty)),
-      CypherPath(CypherNode(1l, Array("NotSignificant"), Properties.empty)),
-      CypherPath(CypherNode(1l, Array("NotSignificant"), Properties("alsoNotSig" -> CypherBoolean(true))))
+      CypherPath(Seq(CypherNode(1l, Array("Label"), Properties.empty))),
+      CypherPath(Seq(CypherNode(1l, Array("NotSignificant"), Properties.empty))),
+      CypherPath(Seq(CypherNode(1l, Array("NotSignificant"), Properties("alsoNotSig" -> CypherBoolean(true)))))
     ),
-    Seq(CypherPath(CypherNode(1l, Array("Label"), Properties.empty),
+    Seq(CypherPath(Seq(CypherNode(1l, Array("Label"), Properties.empty),
                    CypherRelationship(100l, 1l, 2l, "KNOWS", Properties.empty),
-                   CypherNode(2l, Seq.empty, Properties.empty)),
-        CypherPath(CypherNode(1l, Seq("Label"), Properties.empty),
-                   CypherRelationship(100l, 1l, 2l, "FORGETS", Properties.empty),
                    CypherNode(2l, Seq.empty, Properties.empty))),
-    Seq(CypherPath(CypherNode(1l, Seq("Label"), Properties.empty),
+        CypherPath(Seq(CypherNode(1l, Seq("Label"), Properties.empty),
+                   CypherRelationship(100l, 1l, 2l, "FORGETS", Properties.empty),
+                   CypherNode(2l, Seq.empty, Properties.empty)))),
+    Seq(CypherPath(Seq(CypherNode(1l, Seq("Label"), Properties.empty),
                    CypherRelationship(100l, 1l, 2l, "KNOWS", Properties("aRelProp" -> CypherFloat(667.5))),
                    CypherNode(2l, Seq.empty, Properties.empty),
                    CypherRelationship(100l, 1l, 2l, "KNOWS", Properties.empty),
-                   CypherNode(2l, Seq("One", "Two", "Three"), Properties.empty))),
+                   CypherNode(2l, Seq("One", "Two", "Three"), Properties.empty)))),
     Seq(cypherNull[CypherPath])
   )
 
@@ -189,8 +192,8 @@ object CypherTestValues {
 
   implicit final class CypherValueGroups[V <: CypherValue](elts: ValueGroups[V]) {
 
-    def materialValueGroups: ValueGroups[V] = elts.map(_.filter(_ != cypherNull)).filter(_.nonEmpty)
-    def nullableValueGroups: ValueGroups[V] = elts.map(_.filter(_ == cypherNull)).filter(_.nonEmpty)
+    def materialValueGroups: ValueGroups[V] = elts.map(_.filter(_ != cypherNull[V])).filter(_.nonEmpty)
+    def nullableValueGroups: ValueGroups[V] = elts.map(_.filter(_ == cypherNull[V])).filter(_.nonEmpty)
 
     def scalaValueGroups: Seq[Seq[Any]] =
       elts.map { group => CypherValues[CypherValue](group).scalaValues.map(_.orNull) }

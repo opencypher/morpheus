@@ -13,8 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.api
+package org.opencypher.caps.api.spark
 
-package object value {
-  def cypherNull[T <: CypherValue]: T = null.asInstanceOf[T]
-}
+package object encoders extends CypherValueEncoders

@@ -15,8 +15,6 @@
  */
 package org.opencypher.caps.api.value
 
-import org.opencypher.caps.api.value.CypherValue.companion
-
 class CypherValueEquivTest extends CypherValueTestSuite {
 
   import CypherTestValues._
@@ -68,13 +66,13 @@ class CypherValueEquivTest extends CypherValueTestSuite {
   private def verifyEquiv[V <: CypherValue : CypherValueCompanion](valueGroups: ValueGroups[V]): Unit = {
     valueGroups.flatten.foreach { v =>
       equiv(v, v) should be(true)
-      if (! companion[V].isNull(v)) {
-        equiv(v, cypherNull) should be(false)
-        equiv(cypherNull, v) should be(false)
+      if (! v.isNull) {
+        (v `equivTo` cypherNull[V]) should be(false)
+        (cypherNull[V] `equivTo` v) should be(false)
       }
     }
 
-    equiv[V](cypherNull, cypherNull) should be(true)
+    (cypherNull[V] `equivTo` cypherNull[V]) should be(true)
 
     val indexedValueGroups =
       valueGroups
@@ -93,8 +91,8 @@ class CypherValueEquivTest extends CypherValueTestSuite {
   }
 
   private def equiv[V <: CypherValue : CypherValueCompanion](v1: V, v2: V): Boolean = {
-    val b1 = companion[V].equiv(v1, v2)
-    val b2 = companion[V].equiv(v2, v1)
+    val b1 = CypherValueCompanion[V].equiv(v1, v2)
+    val b2 = CypherValueCompanion[V].equiv(v2, v1)
 
 //    println(s"$v1 $v2 $b1 $b2")
 

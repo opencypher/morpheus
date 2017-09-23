@@ -15,19 +15,22 @@
  */
 package org.opencypher.caps.api.value
 
-import org.opencypher.caps.common.{False, Maybe, Ternary, True}
-import org.opencypher.caps.test.BaseTestSuite
+import org.opencypher.caps.common.{Maybe, Ternary}
 
-import scala.annotation.tailrec
-
-class CypherValueTestSuite extends BaseTestSuite {
-
-  @tailrec
-  final def isPathLike(l: Seq[Any], nextIsNode: Ternary = Maybe): Boolean = l match {
-    case Seq(_: CypherNode, tail@_*) if nextIsNode.maybeTrue => isPathLike(tail, False)
-    case Seq(_: CypherRelationship, tail@_*) if nextIsNode.maybeFalse => isPathLike(tail, True)
-    case Seq() => nextIsNode.isDefinite
-    case _ => false
-  }
+sealed trait CypherComparison extends Any {
+  def map(f: Int => Boolean): Option[Ternary]
 }
 
+sealed trait Incomparable extends CypherComparison
+
+final case class SuccesfulComparison(cmp: Int) extends AnyVal with CypherComparison {
+  override def map(f: Int => Boolean): Option[Ternary] = Some(Ternary(f(cmp)))
+}
+
+case object IncompatibleArguments extends Incomparable {
+  override def map(f: Int => Boolean): Option[Ternary] = None
+}
+
+case object ArgumentComparesNulls extends Incomparable {
+  override def map(f: Int => Boolean): Option[Ternary] = Some(Maybe)
+}

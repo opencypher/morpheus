@@ -13,19 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.test
+package org.opencypher.caps.api.value.instances
 
-import org.junit.runner.RunWith
-import org.opencypher.caps.impl.spark.physical.RuntimeContext
-import org.scalatest.junit.JUnitRunner
-import org.scalatest.{FunSuite, Matchers}
+import org.opencypher.caps.api.value.CypherValue
 
-@RunWith(classOf[JUnitRunner])
-abstract class BaseTestSuite
-  extends FunSuite
-  with Matchers
-  with org.opencypher.caps.api.spark.instances.AllInstances
-  with org.opencypher.caps.api.spark.syntax.AllSyntax
-{
-  implicit val context: RuntimeContext = RuntimeContext.empty
+import scala.language.implicitConversions
+
+trait LowPriorityCypherValueConverters {
+  implicit def mapOfCypherValues[T](v: Map[String, T])(implicit ev: T => CypherValue)
+  : Map[String, CypherValue] =
+    v.mapValues(ev)
+
+  implicit def entryToCypherValue[T](v: (String, T))(implicit ev: T => CypherValue)
+  : (String, CypherValue) =
+    v._1 -> v._2
 }

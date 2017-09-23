@@ -13,9 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.api
+package org.opencypher.caps.api.spark.syntax
 
-import org.opencypher.caps.api.value.CypherValueImplicits
-
-package object implicits
-  extends CypherValueImplicits
+trait AllSyntax
+  extends org.opencypher.caps.api.value.syntax.AllSyntax

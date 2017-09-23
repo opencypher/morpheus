@@ -18,7 +18,8 @@ package org.opencypher.caps.impl.spark.physical
 import org.apache.spark.sql.Row
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.record.RecordHeader
-import org.opencypher.caps.api.value.CypherValueUtils._
+import org.opencypher.caps.api.value.instances._
+import org.opencypher.caps.api.value.syntax._
 import org.opencypher.caps.impl.spark.RowUtils._
 import org.opencypher.caps.impl.spark.exception.Raise
 

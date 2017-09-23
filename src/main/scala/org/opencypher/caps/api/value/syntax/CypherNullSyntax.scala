@@ -13,19 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.test
+package org.opencypher.caps.api.value.syntax
 
-import org.junit.runner.RunWith
-import org.opencypher.caps.impl.spark.physical.RuntimeContext
-import org.scalatest.junit.JUnitRunner
-import org.scalatest.{FunSuite, Matchers}
+import org.opencypher.caps.api.value.CypherValue
 
-@RunWith(classOf[JUnitRunner])
-abstract class BaseTestSuite
-  extends FunSuite
-  with Matchers
-  with org.opencypher.caps.api.spark.instances.AllInstances
-  with org.opencypher.caps.api.spark.syntax.AllSyntax
-{
-  implicit val context: RuntimeContext = RuntimeContext.empty
+trait CypherNullSyntax {
+  def cypherNull[V <: CypherValue]: V = null.asInstanceOf[V]
 }
