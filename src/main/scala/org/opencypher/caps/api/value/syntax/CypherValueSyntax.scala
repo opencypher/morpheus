@@ -16,7 +16,7 @@
 package org.opencypher.caps.api.value.syntax
 
 import org.opencypher.caps.api.types.CypherType
-import org.opencypher.caps.api.value.{CypherValue, CypherValueCompanion}
+import org.opencypher.caps.api.value._
 import org.opencypher.caps.common.Ternary
 import org.opencypher.caps.impl.spark.exception.Raise
 
@@ -24,8 +24,40 @@ import scala.language.implicitConversions
 
 trait CypherValueSyntax {
 
+  implicit def cypherMapOps[V <: CypherMap](value: V): CypherMapOps[V] =
+    new CypherMapOps[V](value)
+
+  implicit def cypherEntityOps[V <: CypherEntityValue](value: V): CypherEntityOps[V] =
+    new CypherEntityOps[V](value)
+
+  implicit def cypherNodeOps[V <: CypherNode](value: V): CypherNodeOps[V] =
+    new CypherNodeOps[V](value)
+
+  implicit def cypherRelOps[V <: CypherRelationship](value: V): CypherRelOps[V] =
+    new CypherRelOps[V](value)
+
   implicit def cypherValueOps[V <: CypherValue](value: V): CypherValueOps[V] =
     new CypherValueOps[V](value)
+}
+
+final class CypherMapOps[V <: CypherMap](val value: V) extends AnyVal with Serializable {
+  def properties(implicit companion: CypherMapCompanion[V]): Option[Properties] =
+    companion.properties(value)
+}
+
+final class CypherEntityOps[V <: CypherEntityValue](val value: V) extends AnyVal with Serializable {
+  def id(implicit companion: CypherEntityCompanion[V]): Option[EntityId] =
+    companion.id(value)
+}
+
+final class CypherNodeOps[V <: CypherNode](val value: V) extends AnyVal with Serializable {
+  def labels: Option[Seq[String]] = CypherNode.labels(value)
+}
+
+final class CypherRelOps[V <: CypherRelationship](val value: V) extends AnyVal with Serializable {
+  def startId: Option[EntityId] = CypherRelationship.startId(value)
+  def endId: Option[EntityId] = CypherRelationship.endId(value)
+  def relationshipType: Option[String] = CypherRelationship.relationshipType(value)
 }
 
 final class CypherValueOps[V <: CypherValue](val value: V) extends AnyVal with Serializable {
