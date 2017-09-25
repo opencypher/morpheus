@@ -103,14 +103,83 @@ final case class Schema(
   def withLabelCombination(as: String*): Schema =
     copy(labels = labels ++ as, labelCombinations = labelCombinations.withCombinations(as: _*))
 
-  def withNodePropertyKeys(label: String)(keys: (String, CypherType)*): Schema =
-    copy(labels = labels + label, nodeKeyMap = nodeKeyMap.withKeys(label, keys))
+  /**
+    * Adds information about a label and its associated properties to the schema.
+    * The arguments provided to this method are interpreted as describing a whole piece of information,
+    * meaning that for a specific instance of the label, the given properties were present in their exact
+    * given shape. For example, consider
+    *
+    * {{{
+    *   val s = schema.withNodePropertyKeys("Foo")("p" -> CTString, "q" -> CTInteger)
+    *   val t = s.withNodePropertyKeys("Foo")("p" -> CTString)
+    * }}}
+    *
+    * The resulting schema (assigned to `t`) will indicate that the type of `q` is CTInteger.nullable,
+    * as the schema understands that it is possible to map `:Foo` to both sets of properties, and it
+    * calculates the join of the property types, respectively.
+    *
+    * @param label the label to add to the schema
+    * @param keys the properties (name and type) to associate with the label
+    * @return a copy of the Schema with the provided new data
+    */
+  def withNodePropertyKeys(label: String)(keys: (String, CypherType)*): Schema = {
+    if (labels contains label) {
+      val updatedTypes = computePropertyTypes(nodeKeyMap.keysFor(label), keys.toMap)
+
+      copy(nodeKeyMap = nodeKeyMap.withKeys(label, updatedTypes))
+    } else {
+      copy(labels = labels + label, nodeKeyMap = nodeKeyMap.withKeys(label, keys))
+    }
+  }
+
+  /**
+    * Adds information about a relationship type and its associated properties to the schema.
+    * The arguments provided to this method are interpreted as describing a whole piece of information,
+    * meaning that for a specific instance of the relationship type, the given properties were present
+    * in their exact given shape. For example, consider
+    *
+    * {{{
+    *   val s = schema.withRelationshipPropertyKeys("FOO")("p" -> CTString, "q" -> CTInteger)
+    *   val t = s.withRelationshipPropertyKeys("FOO")("p" -> CTString)
+    * }}}
+    *
+    * The resulting schema (assigned to `t`) will indicate that the type of `q` is CTInteger.nullable,
+    * as the schema understands that it is possible to map `:FOO` to both sets of properties, and it
+    * calculates the join of the property types, respectively.
+    *
+    * @param typ the relationship type to add to the schema
+    * @param keys the properties (name and type) to associate with the relationship type
+    * @return a copy of the Schema with the provided new data
+    */
+  def withRelationshipPropertyKeys(typ: String)(keys: (String, CypherType)*): Schema = {
+    if (relationshipTypes contains typ) {
+      val updatedTypes = computePropertyTypes(relKeyMap.keysFor(typ), keys.toMap)
+
+      copy(relKeyMap = relKeyMap.withKeys(typ, updatedTypes))
+    } else {
+      copy(relationshipTypes = relationshipTypes + typ, relKeyMap = relKeyMap.withKeys(typ, keys))
+    }
+  }
 
   def withRelationshipType(relType: String): Schema =
     copy(relationshipTypes = relationshipTypes + relType)
 
-  def withRelationshipPropertyKeys(typ: String)(keys: (String, CypherType)*): Schema =
-    copy(relationshipTypes = relationshipTypes + typ, relKeyMap = relKeyMap.withKeys(typ, keys))
+  private def computePropertyTypes(existing: Map[String, CypherType], input: Map[String, CypherType]) = {
+    // Map over input keys to calculate join of type with existing type
+    val keysWithJoinedTypes = input.map {
+      case (key, propType) =>
+        // if the key did not previously exist it's optional (nullable)
+        key -> propType.join(existing.getOrElse(key, CTNull))
+    }
+
+    // Map over the rest of the existing keys to mark them all nullable
+    val propertiesMarkedOptional = existing.filterKeys(k => !input.contains(k)).foldLeft(keysWithJoinedTypes) {
+      case (map, (key, propTyp)) =>
+        map.updated(key, propTyp.nullable)
+    }
+
+    propertiesMarkedOptional.toSeq
+  }
 
   def isEmpty: Boolean = this == Schema.empty
 

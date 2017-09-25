@@ -34,6 +34,8 @@ import org.opencypher.caps.impl.spark.io.neo4j.external.{Neo4j, Neo4jConfig}
 import org.opencypher.caps.impl.syntax.header._
 import org.opencypher.caps.ir.api.{Label, PropertyKey}
 
+import scala.collection.JavaConverters._
+
 object Neo4jGraphLoader {
 
   def loadSchema(config: Neo4jConfig, nodeQ: String, relQ: String)(implicit caps: CAPSSession): VerifiedSchema = {
@@ -43,31 +45,38 @@ object Neo4jGraphLoader {
   }
 
   private def loadSchema(nodes: RDD[InternalNode], rels: RDD[InternalRelationship]): VerifiedSchema = {
-    import scala.collection.JavaConverters._
 
     val nodeSchema = nodes.aggregate(Schema.empty)({
-      case (acc, next) => next.labels().asScala.foldLeft(acc) {
-        case (acc2, l) =>
-          // for nodes without properties
-          val withLabel = acc2.withNodePropertyKeys(l)()
-          next.asMap().asScala.foldLeft(withLabel) {
-            case (acc3, (k, v)) =>
-              acc3.withNodePropertyKeys(l)(k -> fromJavaType(v))
-          }
-      }
+      case (schema, node) =>
+        val labels =
+          if (node.labels().isEmpty)
+            Seq("") // we use the empty string (an invalid label) to encode nodes without labels
+          else
+            node.labels().asScala
+
+        labels.foldLeft(schema) {
+          case (_schema, label) =>
+            addProperties(node.asMap(), _schema.withNodePropertyKeys(label))
+        }
     }, _ ++ _)
 
     val completeSchema = rels.aggregate(nodeSchema)({
-      case (acc, next) =>
-        // for rels without properties
-        val withType = acc.withRelationshipPropertyKeys(next.`type`())()
-        next.asMap().asScala.foldLeft(withType) {
-          case (acc3, (k, v)) =>
-            acc3.withRelationshipPropertyKeys(next.`type`())(k -> fromJavaType(v))
-        }
+      case (schema, next) =>
+        addProperties(next.asMap(), schema.withRelationshipPropertyKeys(next.`type`()))
     },  _ ++ _)
 
     completeSchema.verify
+  }
+
+  private def addProperties(properties: java.util.Map[String, AnyRef], addProperties: (Seq[(String, CypherType)] => Schema)) = {
+    if (properties.isEmpty) {
+      addProperties(Seq.empty)
+    } else {
+      val foo = properties.asScala.map {
+        case (k, v) => k -> fromJavaType(v)
+      }
+      addProperties(foo.toSeq)
+    }
   }
 
   def fromNeo4j(config: Neo4jConfig)
