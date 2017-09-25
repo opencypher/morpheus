@@ -43,7 +43,8 @@ final case class PropertyKeyMap(m: Map[String, Map[String, CypherType]])(val con
     val newConflicts = oldKeys.collect {
       case (k, t) =>
         newKeys.get(k) match {
-          case Some(otherT) if t != otherT =>
+          // type changing to nullable version is fine
+          case Some(otherT) if t.nullable != otherT.nullable =>
             Some(s"Conflicting schema for '$classifier'! Key '$k' has type $t but also has type ${newKeys(k)}")
           case _ =>
             None
