@@ -8,30 +8,30 @@ import org.opencypher.caps.api.types.CTNode
 import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.exception.Raise
 
-case class RowNodeExpansion(
+case class RowExpansion(
   targetHeader: RecordHeader,
-  targetNode: Var,
-  nodesWithChildren: Map[Var, Seq[RecordSlot]],
-  nodeColumnLookupTables: Map[Var, Map[String, String]]
+  targetVar: Var,
+  entitiesWithChildren: Map[Var, Seq[RecordSlot]],
+  propertyColumnLookupTables: Map[Var, Map[String, String]]
 ) extends (Row => Seq[Row]) {
 
-  private val targetLabels = targetNode.cypherType match {
+  private val targetLabels = targetVar.cypherType match {
     case CTNode(labels) => labels
     case _ => Set.empty[String]
   }
 
   private val rowSchema = StructType(targetHeader.slots.map(_.structField))
 
-  private val labelIndexLookupTable = nodesWithChildren.map { case (node, slots) =>
+  private val labelIndexLookupTable = entitiesWithChildren.map { case (node, slots) =>
     val labelIndicesForNode = slots.collect {
       case RecordSlot(_, p@ProjectedExpr(HasLabel(_, l))) if targetLabels.contains(l.name) =>
-        rowSchema.fieldIndex(SparkColumnName.of(p.withOwner(targetNode)))
+        rowSchema.fieldIndex(SparkColumnName.of(p.withOwner(targetVar)))
     }
     node -> labelIndicesForNode
   }
 
   def apply(row: Row): Seq[Row] = {
-    val adaptedRows = nodeColumnLookupTables.flatMap { case (nodeVar, nodeLookupTable) =>
+    val adaptedRows = propertyColumnLookupTables.flatMap { case (nodeVar, nodeLookupTable) =>
       val adaptedRow = adaptRowToNewHeader(row, nodeLookupTable)
       if (labelIndexLookupTable(nodeVar).forall(adaptedRow.getBoolean)) Some(adaptedRow)
       else None

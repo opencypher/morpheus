@@ -241,10 +241,13 @@ class PatternGraphTest extends CAPSTestSuite {
     ))
   }
 
-  ignore("Supports .cypher") {
+  test("Supports .cypher") {
     val patternGraph = initPersonReadsBookGraph
 
-    patternGraph.cypher("MATCH (p:Person {name: 'Mats'})-[:READS {recommends: true}]->(b:Book) RETURN b.title").records.toMaps should equal(Bag(CypherMap("b.title" -> "1984")))
+    patternGraph.cypher("""MATCH (p:Person {name: 'Mats'})-[:READS {recommends: true}]->(b:Book)
+                          |RETURN b.title""".stripMargin).records.toMaps should equal(Bag(
+      CypherMap("b.title" -> "1984")
+    ))
   }
 
 //

@@ -30,13 +30,32 @@ class PatternGraph(private val baseTable: CAPSRecords, val schema: Schema, val t
     }
 
     val nodeDf = baseTable.details.toDF().flatMap(
-      RowNodeExpansion(targetNodeHeader, targetNode, extractionSlots, nodeColumnsLookupTables))(rowEncoderFor(targetNodeHeader))
+      RowExpansion(targetNodeHeader, targetNode, extractionSlots, nodeColumnsLookupTables))(rowEncoderFor(targetNodeHeader))
 
     CAPSRecords.create(targetNodeHeader, nodeDf)
   }
 
   override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
-    ???
+    val sourceHeader = baseTable.details.header
+
+    val targetRel = Var(name)(relCypherType)
+    val targetRelSchema = schema.forRelationship(targetRel)
+    val targetRelHeader = RecordHeader.relationshipFromSchema(targetRel, targetRelSchema, tokens.registry)
+
+    val extractionRels: Seq[Var] = sourceHeader.relationshipsForType(relCypherType)
+    val extractionSlots = extractionRels.map { candidate =>
+      candidate -> (sourceHeader.childSlots(candidate) :+ sourceHeader.slotFor(candidate))
+    }.toMap
+
+    val relColumnsLookupTables = extractionSlots.map {
+      case (nodeVar, slotsForRel) =>
+        nodeVar -> createScanToBaseTableLookup(targetRel, slotsForRel.map(_.content))
+    }
+
+    val relDf = baseTable.details.toDF().flatMap(
+      RowExpansion(targetRelHeader, targetRel, extractionSlots, relColumnsLookupTables))(rowEncoderFor(targetRelHeader))
+
+    CAPSRecords.create(targetRelHeader, relDf)
   }
 
   private def rowEncoderFor(nodeHeader: RecordHeader): ExpressionEncoder[Row] = {

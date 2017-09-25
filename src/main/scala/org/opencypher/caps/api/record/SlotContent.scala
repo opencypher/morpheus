@@ -76,7 +76,7 @@ final case class ProjectedExpr(expr: Expr) extends ProjectedSlotContent {
 
   override def withOwner(newOwner: Var): SlotContent = key match {
     case h: HasLabel => ProjectedExpr(HasLabel(newOwner, h.label)(h.cypherType))
-    case t: HasType => ProjectedExpr(HasType(newOwner, t.relType)(t.cypherType))
+    case t: OfType => ProjectedExpr(OfType(newOwner)(t.cypherType))
     case p: Property => ProjectedExpr(Property(newOwner, p.key)(p.cypherType))
     case s: StartNode => ProjectedExpr(StartNode(newOwner)(s.cypherType))
     case e: EndNode => ProjectedExpr(EndNode(newOwner)(e.cypherType))
