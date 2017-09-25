@@ -12,50 +12,38 @@ import org.opencypher.caps.impl.spark.SparkColumnName
 class PatternGraph(private val baseTable: CAPSRecords, val schema: Schema, val tokens: CAPSRecordsTokens)
                   (implicit val session: CAPSSession) extends CAPSGraph {
 
+  private val header = baseTable.details.header
+
   override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
-    val sourceHeader = baseTable.details.header
-
     val targetNode = Var(name)(nodeCypherType)
-    val targetNodeSchema = schema.forNode(nodeCypherType)
-    val targetNodeHeader = RecordHeader.nodeFromSchema(targetNode, targetNodeSchema, tokens.registry)
+    val targetNodeHeader = RecordHeader.nodeFromSchema(targetNode, schema.forNode(nodeCypherType), tokens.registry)
+    val extractionNodes: Seq[Var] = header.nodesForType(nodeCypherType)
 
-    val extractionNodes = sourceHeader.nodesForType(nodeCypherType)
-    val extractionSlots = extractionNodes.map { candidate =>
-      candidate -> (sourceHeader.childSlots(candidate) :+ sourceHeader.slotFor(candidate))
-    }.toMap
-
-    val nodeColumnsLookupTables = extractionSlots.map {
-      case (nodeVar, slotsForNode) =>
-        nodeVar -> createScanToBaseTableLookup(targetNode, slotsForNode.map(_.content))
-    }
-
-    val nodeDf = baseTable.details.toDF().flatMap(
-      RowExpansion(targetNodeHeader, targetNode, extractionSlots, nodeColumnsLookupTables))(rowEncoderFor(targetNodeHeader))
-
-    CAPSRecords.create(targetNodeHeader, nodeDf)
+    extractRecordsFor(targetNode, targetNodeHeader, extractionNodes)
   }
 
   override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
-    val sourceHeader = baseTable.details.header
-
     val targetRel = Var(name)(relCypherType)
-    val targetRelSchema = schema.forRelationship(relCypherType)
-    val targetRelHeader = RecordHeader.relationshipFromSchema(targetRel, targetRelSchema, tokens.registry)
+    val targetRelHeader = RecordHeader.relationshipFromSchema(targetRel, schema.forRelationship(relCypherType), tokens.registry)
+    val extractionRels = header.relationshipsForType(relCypherType)
 
-    val extractionRels: Seq[Var] = sourceHeader.relationshipsForType(relCypherType)
-    val extractionSlots = extractionRels.map { candidate =>
-      candidate -> (sourceHeader.childSlots(candidate) :+ sourceHeader.slotFor(candidate))
+    extractRecordsFor(targetRel, targetRelHeader, extractionRels)
+  }
+
+  private def extractRecordsFor(targetVar: Var, targetHeader: RecordHeader, extractionVars: Seq[Var]): CAPSRecords = {
+    val extractionSlots = extractionVars.map { candidate =>
+      candidate -> (header.childSlots(candidate) :+ header.slotFor(candidate))
     }.toMap
 
     val relColumnsLookupTables = extractionSlots.map {
-      case (nodeVar, slotsForRel) =>
-        nodeVar -> createScanToBaseTableLookup(targetRel, slotsForRel.map(_.content))
+      case (relVar, slotsForRel) =>
+        relVar -> createScanToBaseTableLookup(targetVar, slotsForRel.map(_.content))
     }
 
     val relDf = baseTable.details.toDF().flatMap(
-      RowExpansion(targetRelHeader, targetRel, extractionSlots, relColumnsLookupTables))(rowEncoderFor(targetRelHeader))
+      RowExpansion(targetHeader, targetVar, extractionSlots, relColumnsLookupTables))(rowEncoderFor(targetHeader))
 
-    CAPSRecords.create(targetRelHeader, relDf)
+    CAPSRecords.create(targetHeader, relDf)
   }
 
   private def rowEncoderFor(nodeHeader: RecordHeader): ExpressionEncoder[Row] = {
