@@ -325,4 +325,22 @@ class RecordHeaderTest extends BaseTestSuite {
     header.nodesForType(CTNode("Person", "Foo")) should equal(Seq(n))
     header.nodesForType(CTNode("Nop")) should equal(Seq.empty)
   }
+
+  test("relsForType") {
+    val p: Var = 'p -> CTRelationship("KNOWS")
+    val r: Var = 'r -> CTRelationship
+    val q: Var = 'q -> CTRelationship("LOVES", "HATES")
+    val fields = Seq(
+      OpaqueField(p),
+      OpaqueField(r),
+      OpaqueField(q),
+      OpaqueField('n -> CTNode("Foo"))
+    )
+    val (header, _) = RecordHeader.empty.update(addContents(fields))
+
+    header.relationshipsForType(CTRelationship) should equal(List(p, r, q))
+    header.relationshipsForType(CTRelationship("KNOWS")) should equal(List(p, r))
+    header.relationshipsForType(CTRelationship("LOVES")) should equal(List(r, q))
+    header.relationshipsForType(CTRelationship("LOVES", "HATES")) should equal(List(r, q))
+  }
 }

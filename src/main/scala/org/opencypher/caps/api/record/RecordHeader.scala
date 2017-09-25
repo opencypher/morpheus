@@ -16,13 +16,12 @@
 package org.opencypher.caps.api.record
 
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.ir.api.global.TokenRegistry
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.types.{CTBoolean, CTString, CTNode, CypherType}
+import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTString, CypherType, _}
+import org.opencypher.caps.common.syntax._
 import org.opencypher.caps.impl.record.InternalHeader
 import org.opencypher.caps.impl.syntax.header.{addContents, _}
-import org.opencypher.caps.common.syntax._
-import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.ir.api.global.TokenRegistry
 
 final case class RecordHeader(internalHeader: InternalHeader) {
 
@@ -83,6 +82,21 @@ final case class RecordHeader(internalHeader: InternalHeader) {
         case CTNode(labels) =>
           val allPossibleLabels = this.labels(v).map(_.label.name).toSet ++ labels
           nodeType.labels.subsetOf(allPossibleLabels)
+        case _ => false
+      }
+    }
+  }
+
+  def relationshipsForType(relType: CTRelationship): Seq[Var] = {
+    val targetTypes = relType.types
+
+    slots.collect {
+      case RecordSlot(_, OpaqueField(v)) => v
+    }.filter { v =>
+      v.cypherType match {
+        case t: CTRelationship if targetTypes.isEmpty || t.types.isEmpty => true
+        case CTRelationship(types) =>
+          types.exists(targetTypes.contains)
         case _ => false
       }
     }
