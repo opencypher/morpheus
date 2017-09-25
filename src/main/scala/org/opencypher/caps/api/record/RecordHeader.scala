@@ -115,15 +115,6 @@ object RecordHeader {
     val allKeys: Seq[(String, Vector[CypherType])] = (impliedKeys ++ optionalNullableKeys).toSeq.map { case (k, v) => k -> Vector(v) }
     val keyGroups: Map[String, Vector[CypherType]] = allKeys.groups[String, Vector[CypherType]]
     val headerLabels = impliedLabels ++ possibleLabels
-    def verifyLabelsInTokenRegistry: Unit = {
-      headerLabels.foreach { label =>
-        if (tokens.labels.findByKey(label).isEmpty) {
-          Raise.schemaMismatch(s"Label `$label` not found in token registry.")
-        }
-      }
-    }
-
-    verifyLabelsInTokenRegistry
     val labelHeaderContents = headerLabels.map {
       labelName => ProjectedExpr(HasLabel(node, tokens.labelByName(labelName))(CTBoolean))
     }.toSeq

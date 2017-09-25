@@ -3,7 +3,10 @@ package org.opencypher.caps.api.spark
 import org.apache.spark.sql.Row
 import org.opencypher.caps.api.record.RecordHeader
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
+import org.opencypher.caps.api.value.CypherMap
 import org.opencypher.caps.test.CAPSTestSuite
+
+import scala.collection.Bag
 
 class PatternGraphTest extends CAPSTestSuite {
 
@@ -31,7 +34,6 @@ class PatternGraphTest extends CAPSTestSuite {
       |(pp3:Person:Programmer {name: "Eve",luckyNumber: 84,language: "F"}),
       |(pp4:Person:Programmer {name: "Carl",luckyNumber: 49,language: "R"}),
     """.stripMargin
-
 
   val `:Book` =
     """
@@ -118,8 +120,7 @@ class PatternGraphTest extends CAPSTestSuite {
   }
 
   test("Node scan from multiple connected nodes") {
-    val (inputGraph,baseRecords) = setupPersonReadsBooksTable
-    val patternGraph = CAPSGraph.create(baseRecords, inputGraph.schema, inputGraph.tokens)
+    val patternGraph = initPersonReadsBookGraph
     val outputNodes = patternGraph.nodes("n")
 
     outputNodes.details.toDF().columns should equal(Array(
@@ -146,8 +147,7 @@ class PatternGraphTest extends CAPSTestSuite {
   }
 
   test("Specific node scan from multiple connected nodes") {
-    val (inputGraph,baseRecords) = setupPersonReadsBooksTable
-    val patternGraph = CAPSGraph.create(baseRecords, inputGraph.schema, inputGraph.tokens)
+    val patternGraph = initPersonReadsBookGraph
 
     val outputNodes = patternGraph.nodes("n", CTNode("Person"))
 
@@ -166,7 +166,6 @@ class PatternGraphTest extends CAPSTestSuite {
       Row(3,  true,  false, "Stefan",    9)
     ))
   }
-
 
   test("Specific node scan from mixed node CapsRecords") {
     val inputGraph = TestGraph(`:Person` + `:Book`).graph
@@ -195,11 +194,21 @@ class PatternGraphTest extends CAPSTestSuite {
     val inputGraph = TestGraph(`:Book`).graph
     val inputNodes = inputGraph.nodes("n")
 
-    val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema, inputGraph.tokens)
-    val thrown = intercept[Exception] {
-      val outputNodes = patternGraph.nodes("n", CTNode("Person"))
-    }
-    assert(thrown.getMessage === "Incompatible schemas: Label `Person` not found in token registry.")
+    val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema, inputGraph.tokens.withLabel("Person"))
+
+    patternGraph.nodes("n", CTNode("Person")).details.toDF().collect().toSet shouldBe empty
+  }
+
+  test("Supports .cypher node scans") {
+    val patternGraph = initPersonReadsBookGraph
+
+    patternGraph.cypher("MATCH (p:Person {name: 'Mats'}) RETURN p.luckyNumber").records.toMaps should equal(Bag(CypherMap("p.luckyNumber" -> 23)))
+  }
+
+  ignore("Supports .cypher") {
+    val patternGraph = initPersonReadsBookGraph
+
+    patternGraph.cypher("MATCH (p:Person {name: 'Mats'})-[:READS {recommends: true}]->(b:Book) RETURN b.title").records.toMaps should equal(Bag(CypherMap("b.title" -> "1984")))
   }
 
 //
@@ -407,7 +416,7 @@ class PatternGraphTest extends CAPSTestSuite {
 //    ))
 //  }
 
-  private def setupPersonReadsBooksTable = {
+  private def initPersonReadsBookGraph: CAPSGraph = {
     val inputGraph = TestGraph(`:Person` + `:Book` + `:READS`).graph
 
     val books = inputGraph.nodes("b", CTNode("Book"))
@@ -424,6 +433,6 @@ class PatternGraphTest extends CAPSTestSuite {
     val slots = persons.details.header.slots ++ reads.details.header.slots ++ books.details.header.slots
     val joinHeader = RecordHeader.from(slots.map(_.content): _*)
 
-    inputGraph -> CAPSRecords.create(joinHeader, joinedDf)
+    CAPSGraph.create(CAPSRecords.create(joinHeader, joinedDf), inputGraph.schema, inputGraph.tokens)
   }
 }
