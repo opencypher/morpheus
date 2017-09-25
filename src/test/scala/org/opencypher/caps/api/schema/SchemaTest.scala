@@ -256,4 +256,34 @@ class SchemaTest extends BaseTestSuite {
         .withImpliedLabel("Dog", "Pet")
     )
   }
+
+  test("forRelationship") {
+    val schema = Schema.empty
+      .withNodePropertyKeys("Person")("name" -> CTString)
+      .withRelationshipPropertyKeys("KNOWS")("name" -> CTString)
+      .withRelationshipPropertyKeys("LOVES")("deeply" -> CTBoolean, "salary" -> CTInteger)
+      .withRelationshipPropertyKeys("NEEDS")("rating" -> CTFloat)
+      .withLabelCombination("Person", "Employee")
+      .withImpliedLabel("Dog", "Pet")
+      .withRelationshipPropertyKeys("OWNER")("since" -> CTInteger)
+
+    schema.forRelationship(Var("r")(CTRelationship("KNOWS"))) should equal(
+      Schema.empty
+        .withRelationshipPropertyKeys("KNOWS")("name" -> CTString)
+    )
+
+    schema.forRelationship(Var("r")(CTRelationship)) should equal(
+      Schema.empty
+        .withRelationshipPropertyKeys("KNOWS")("name" -> CTString)
+        .withRelationshipPropertyKeys("LOVES")("deeply" -> CTBoolean, "salary" -> CTInteger)
+        .withRelationshipPropertyKeys("NEEDS")("rating" -> CTFloat)
+        .withRelationshipPropertyKeys("OWNER")("since" -> CTInteger)
+    )
+
+    schema.forRelationship(Var("r")(CTRelationship("KNOWS", "LOVES"))) should equal(
+      Schema.empty
+        .withRelationshipPropertyKeys("KNOWS")("name" -> CTString)
+        .withRelationshipPropertyKeys("LOVES")("deeply" -> CTBoolean, "salary" -> CTInteger)
+    )
+  }
 }

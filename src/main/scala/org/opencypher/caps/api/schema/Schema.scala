@@ -75,8 +75,8 @@ final case class PropertyKeyMap(m: Map[String, Map[String, CypherType]])(val con
     copy(joined)(conflicts ++ other.conflicts)
   }
 
-  def filterByLabels(labels: Set[String]): PropertyKeyMap = {
-    PropertyKeyMap(m.filterKeys(labels.contains))(conflicts)
+  def filterByClassifier(classifiers: Set[String]): PropertyKeyMap = {
+    PropertyKeyMap(m.filterKeys(classifiers.contains))(conflicts)
   }
 
   private def joinMaps[A, B](left: Map[A, B], right: Map[A, B])
@@ -90,6 +90,10 @@ final case class PropertyKeyMap(m: Map[String, Map[String, CypherType]])(val con
     val common = left.keySet.intersect(right.keySet)
     common.foldLeft(withUniqueRight) {(map, key) => map.updated(key, joinF(left(key), right(key)))}
   }
+}
+
+object ImpliedLabels {
+  val empty: ImpliedLabels = ImpliedLabels(Map.empty)
 }
 
 case class ImpliedLabels(m: Map[String, Set[String]]) {
@@ -119,6 +123,10 @@ case class ImpliedLabels(m: Map[String, Set[String]]) {
   }
 
   private def implicationsFor(source: String) = m.getOrElse(source, Set.empty) + source
+}
+
+object LabelCombinations {
+  val empty: LabelCombinations = LabelCombinations(Set.empty)
 }
 
 case class LabelCombinations(combos: Set[Set[String]]) {
@@ -239,7 +247,7 @@ final case class Schema(
     */
   def forNode(node: Var): Schema = {
     val nodeCypherType = node.cypherType match {
-      case t@CTNode(_) => t
+      case t: CTNode => t
       case o => Raise.invalidArgument("CTNode", o.name)
     }
 
@@ -258,10 +266,32 @@ final case class Schema(
     copy(
       labels = possibleLabels,
       Set.empty,
-      nodeKeyMap = this.nodeKeyMap.filterByLabels(possibleLabels),
+      nodeKeyMap = this.nodeKeyMap.filterByClassifier(possibleLabels),
       relKeyMap = PropertyKeyMap.empty,
       impliedLabels = this.impliedLabels.filterByLabels(possibleLabels),
       labelCombinations = this.labelCombinations.filterByLabels(possibleLabels)
+    )
+  }
+
+  def forRelationship(rel: Var): Schema = {
+    val relCypherType = rel.cypherType match {
+      case t: CTRelationship => t
+      case o => Raise.invalidArgument("CTRelationship", o.name)
+    }
+
+    val givenRelTypes = if (relCypherType.types.isEmpty) {
+      relationshipTypes
+    } else {
+      relCypherType.types
+    }
+
+    copy(
+      labels = Set.empty,
+      relationshipTypes = givenRelTypes,
+      nodeKeyMap = PropertyKeyMap.empty,
+      relKeyMap = this.relKeyMap.filterByClassifier(givenRelTypes),
+      impliedLabels = ImpliedLabels.empty,
+      labelCombinations = LabelCombinations.empty
     )
   }
 
