@@ -1,10 +1,17 @@
 package org.opencypher.caps.api.spark
 
 import org.apache.spark.sql.Row
-import org.opencypher.caps.api.record.RecordHeader
-import org.opencypher.caps.api.types.{CTNode, CTRelationship}
+import org.opencypher.caps.api.expr.{HasLabel, Var}
+import org.opencypher.caps.api.record.{OpaqueField, ProjectedExpr, RecordHeader}
+import org.opencypher.caps.api.schema.Schema
+import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTRelationship}
 import org.opencypher.caps.api.value.CypherMap
+import org.opencypher.caps.impl.record.CAPSRecordHeader
+import org.opencypher.caps.impl.syntax.header.addContents
+import org.opencypher.caps.ir.api.global.Label
 import org.opencypher.caps.test.CAPSTestSuite
+import org.opencypher.caps.impl.syntax.header._
+import scala.collection.JavaConverters._
 
 import scala.collection.Bag
 
@@ -70,7 +77,7 @@ class PatternGraphTest extends CAPSTestSuite {
     val inputGraph = TestGraph(`:Person`).graph
     val inputNodes = inputGraph.nodes("n")
 
-    val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema, inputGraph.tokens)
+    val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema)
     val outputNodes = patternGraph.nodes("n")
 
     outputNodes.details.toDF().columns should equal(Array(
@@ -93,7 +100,7 @@ class PatternGraphTest extends CAPSTestSuite {
     val inputGraph = TestGraph(`:Person` + `:Book`).graph
     val inputNodes = inputGraph.nodes("n")
 
-    val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema, inputGraph.tokens)
+    val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema)
     val outputNodes = patternGraph.nodes("n")
 
     outputNodes.details.toDF().columns should equal(Array(
@@ -171,7 +178,7 @@ class PatternGraphTest extends CAPSTestSuite {
     val inputGraph = TestGraph(`:Person` + `:Book`).graph
     val inputNodes = inputGraph.nodes("n")
 
-    val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema, inputGraph.tokens)
+    val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema)
     val outputNodes = patternGraph.nodes("n", CTNode("Person"))
 
     outputNodes.details.toDF().columns should equal(Array(
@@ -190,11 +197,12 @@ class PatternGraphTest extends CAPSTestSuite {
     ))
   }
 
-  test("Node scan for missing label") {
+  // TODO: Deal with non-existing tokens gracefully
+  ignore("Node scan for missing label") {
     val inputGraph = TestGraph(`:Book`).graph
     val inputNodes = inputGraph.nodes("n")
 
-    val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema, inputGraph.tokens.withLabel("Person"))
+    val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema)
 
     patternGraph.nodes("n", CTNode("Person")).details.toDF().collect().toSet shouldBe empty
   }
@@ -203,6 +211,34 @@ class PatternGraphTest extends CAPSTestSuite {
     val patternGraph = initPersonReadsBookGraph
 
     patternGraph.cypher("MATCH (p:Person {name: 'Mats'}) RETURN p.luckyNumber").records.toMaps should equal(Bag(CypherMap("p.luckyNumber" -> 23)))
+  }
+
+  test("Supports node scans from ad-hoc table") {
+    val n: Var = 'n -> CTNode
+    val fields = Seq(
+      OpaqueField('p -> CTNode("Person")),
+      OpaqueField(n),
+      ProjectedExpr(HasLabel(n, Label("Person"))(CTBoolean)),
+      OpaqueField('q -> CTNode("Foo"))
+    )
+    val (header, _) = RecordHeader.empty.update(addContents(fields))
+
+    val df = session.createDataFrame(List(
+      Row(0l, 1l, true, 2l),
+      Row(10l, 11l, false, 12l)
+    ).asJava, CAPSRecordHeader.asSparkStructType(header))
+
+    val schema = Schema.empty
+      .withNodePropertyKeys("Person")()
+      .withNodePropertyKeys("Foo")()
+
+    val patternGraph = CAPSGraph.create(CAPSRecords.create(header, df), schema)
+
+    patternGraph.nodes("n", CTNode("Person")).toMaps should equal(Bag(
+      CypherMap("n" -> 0),
+      CypherMap("n" -> 1),
+      CypherMap("n" -> 10)
+    ))
   }
 
   ignore("Supports .cypher") {
@@ -433,6 +469,6 @@ class PatternGraphTest extends CAPSTestSuite {
     val slots = persons.details.header.slots ++ reads.details.header.slots ++ books.details.header.slots
     val joinHeader = RecordHeader.from(slots.map(_.content): _*)
 
-    CAPSGraph.create(CAPSRecords.create(joinHeader, joinedDf), inputGraph.schema, inputGraph.tokens)
+    CAPSGraph.create(CAPSRecords.create(joinHeader, joinedDf), inputGraph.schema)
   }
 }

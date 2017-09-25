@@ -60,10 +60,10 @@ object CAPSGraph {
     }
   }
 
-  def create(records: CAPSRecords, schema: Schema, tokens: CAPSRecordsTokens)
+  def create(records: CAPSRecords, schema: Schema)
             (implicit caps: CAPSSession): CAPSGraph = {
 
-    new PatternGraph(records, schema, tokens)
+    new PatternGraph(records, schema, CAPSRecordsTokens(TokenRegistry.fromSchema(schema)))
   }
 
   def createLazy(theSchema: Schema)(loadGraph: => CAPSGraph)(implicit caps: CAPSSession) = new CAPSGraph {

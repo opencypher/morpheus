@@ -301,4 +301,28 @@ class RecordHeaderTest extends BaseTestSuite {
     header.propertySlots('m).mapValues(_.content) should equal(Map.empty)
     header.propertySlots('r).mapValues(_.content) should equal(Map(propFoo2.expr -> propFoo2, propBar2.expr -> propBar2))
   }
+
+  test("nodesForType") {
+    val p: Var = 'p -> CTNode("Person")
+    val n: Var = 'n -> CTNode
+    val q: Var = 'q -> CTNode("Foo")
+    val fields = Seq(
+      OpaqueField(p),
+      ProjectedExpr(HasLabel(p, Label("Fireman"))()),
+      OpaqueField(n),
+      ProjectedExpr(HasLabel(n, Label("Person"))()),
+      ProjectedExpr(HasLabel(n, Label("Fireman"))()),
+      ProjectedExpr(HasLabel(n, Label("Foo"))()),
+      OpaqueField(q),
+      OpaqueField('r -> CTRelationship("KNOWS"))
+    )
+    val (header, _) = RecordHeader.empty.update(addContents(fields))
+
+    header.nodesForType(CTNode) should equal(Seq(p, n, q))
+    header.nodesForType(CTNode("Person")) should equal(Seq(p, n))
+    header.nodesForType(CTNode("Fireman")) should equal(Seq(p, n))
+    header.nodesForType(CTNode("Foo")) should equal(Seq(n, q))
+    header.nodesForType(CTNode("Person", "Foo")) should equal(Seq(n))
+    header.nodesForType(CTNode("Nop")) should equal(Seq.empty)
+  }
 }

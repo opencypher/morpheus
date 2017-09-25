@@ -8,11 +8,12 @@ import org.opencypher.caps.api.types.CTNode
 import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.exception.Raise
 
-case class RowNodeExpansion(targetHeader: RecordHeader,
+case class RowNodeExpansion(
+  targetHeader: RecordHeader,
   targetNode: Var,
   nodesWithChildren: Map[Var, Seq[RecordSlot]],
-  nodeColumnLookupTables: Map[Var, Map[String, String]])
-  extends (Row => Seq[Row]) {
+  nodeColumnLookupTables: Map[Var, Map[String, String]]
+) extends (Row => Seq[Row]) {
 
   private val targetLabels = targetNode.cypherType match {
     case CTNode(labels) => labels
