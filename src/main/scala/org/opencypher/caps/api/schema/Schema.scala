@@ -241,23 +241,19 @@ final case class Schema(
   }
 
   /**
-    * Returns the sub-schema for {{{node}}}
-    * @param node Specifies the node for which the schema is extracted
-    * @return sub-schema for node
+    * Returns the sub-schema for {{{nodeType}}}
+    *
+    * @param nodeType Specifies the type for which the schema is extracted
+    * @return sub-schema for {{{nodeType}}}
     */
-  def forNode(node: Var): Schema = {
-    val nodeCypherType = node.cypherType match {
-      case t: CTNode => t
-      case o => Raise.invalidArgument("CTNode", o.name)
-    }
-
+  def forNode(nodeType: CTNode): Schema = {
     val requiredLabels = {
-      val explicitLabels = nodeCypherType.labels
+      val explicitLabels = nodeType.labels
       val impliedLabels = this.impliedLabels.transitiveImplicationsFor(explicitLabels)
       explicitLabels union impliedLabels
     }
 
-    val possibleLabels: Set[String] = if (nodeCypherType.labels.isEmpty) {
+    val possibleLabels = if (nodeType.labels.isEmpty) {
       this.labels
     } else {
       requiredLabels union this.labelCombinations.filterByLabels(requiredLabels).combos.flatten
@@ -273,16 +269,17 @@ final case class Schema(
     )
   }
 
-  def forRelationship(rel: Var): Schema = {
-    val relCypherType = rel.cypherType match {
-      case t: CTRelationship => t
-      case o => Raise.invalidArgument("CTRelationship", o.name)
-    }
-
-    val givenRelTypes = if (relCypherType.types.isEmpty) {
+  /**
+    * Returns the sub-schema for {{{relType}}}
+    *
+    * @param relType Specifies the type for which the schema is extracted
+    * @return sub-schema for {{{relType}}}
+    */
+  def forRelationship(relType: CTRelationship): Schema = {
+    val givenRelTypes = if (relType.types.isEmpty) {
       relationshipTypes
     } else {
-      relCypherType.types
+      relType.types
     }
 
     copy(

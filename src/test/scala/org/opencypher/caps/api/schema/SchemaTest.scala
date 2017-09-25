@@ -242,14 +242,14 @@ class SchemaTest extends BaseTestSuite {
       .withImpliedLabel("Dog", "Pet")
       .withRelationshipPropertyKeys("OWNER")("since" -> CTInteger)
 
-    schema.forNode(Var("p")(CTNode("Person"))) should equal(
+    schema.forNode(CTNode("Person")) should equal(
       Schema.empty
       .withNodePropertyKeys("Person")("name" -> CTString)
       .withNodePropertyKeys("Employee")("name" -> CTString, "salary" -> CTInteger)
       .withLabelCombination("Person", "Employee")
     )
 
-    schema.forNode(Var("d")(CTNode("Dog"))) should equal(
+    schema.forNode(CTNode("Dog")) should equal(
       Schema.empty
         .withNodePropertyKeys("Dog")("name" -> CTFloat)
         .withNodePropertyKeys("Pet")("notName" -> CTBoolean)
@@ -267,12 +267,12 @@ class SchemaTest extends BaseTestSuite {
       .withImpliedLabel("Dog", "Pet")
       .withRelationshipPropertyKeys("OWNER")("since" -> CTInteger)
 
-    schema.forRelationship(Var("r")(CTRelationship("KNOWS"))) should equal(
+    schema.forRelationship(CTRelationship("KNOWS")) should equal(
       Schema.empty
         .withRelationshipPropertyKeys("KNOWS")("name" -> CTString)
     )
 
-    schema.forRelationship(Var("r")(CTRelationship)) should equal(
+    schema.forRelationship(CTRelationship) should equal(
       Schema.empty
         .withRelationshipPropertyKeys("KNOWS")("name" -> CTString)
         .withRelationshipPropertyKeys("LOVES")("deeply" -> CTBoolean, "salary" -> CTInteger)
@@ -280,7 +280,7 @@ class SchemaTest extends BaseTestSuite {
         .withRelationshipPropertyKeys("OWNER")("since" -> CTInteger)
     )
 
-    schema.forRelationship(Var("r")(CTRelationship("KNOWS", "LOVES"))) should equal(
+    schema.forRelationship(CTRelationship("KNOWS", "LOVES")) should equal(
       Schema.empty
         .withRelationshipPropertyKeys("KNOWS")("name" -> CTString)
         .withRelationshipPropertyKeys("LOVES")("deeply" -> CTBoolean, "salary" -> CTInteger)

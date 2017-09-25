@@ -16,7 +16,7 @@ class PatternGraph(private val baseTable: CAPSRecords, val schema: Schema, val t
     val sourceHeader = baseTable.details.header
 
     val targetNode = Var(name)(nodeCypherType)
-    val targetNodeSchema = schema.forNode(targetNode)
+    val targetNodeSchema = schema.forNode(nodeCypherType)
     val targetNodeHeader = RecordHeader.nodeFromSchema(targetNode, targetNodeSchema, tokens.registry)
 
     val extractionNodes = sourceHeader.nodesForType(nodeCypherType)
@@ -39,7 +39,7 @@ class PatternGraph(private val baseTable: CAPSRecords, val schema: Schema, val t
     val sourceHeader = baseTable.details.header
 
     val targetRel = Var(name)(relCypherType)
-    val targetRelSchema = schema.forRelationship(targetRel)
+    val targetRelSchema = schema.forRelationship(relCypherType)
     val targetRelHeader = RecordHeader.relationshipFromSchema(targetRel, targetRelSchema, tokens.registry)
 
     val extractionRels: Seq[Var] = sourceHeader.relationshipsForType(relCypherType)
