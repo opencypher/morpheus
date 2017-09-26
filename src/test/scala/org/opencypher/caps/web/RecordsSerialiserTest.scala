@@ -23,6 +23,7 @@ import org.opencypher.caps.impl.syntax.header.{addContents, _}
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.web.RecordsSerialiser.toJsonString
 
+//noinspection NameBooleanParameters
 class RecordsSerialiserTest extends CAPSTestSuite {
 
   test("unit table") {
@@ -119,6 +120,76 @@ class RecordsSerialiserTest extends CAPSTestSuite {
         |    }
         |  ]
         |}""".stripMargin
+    )
+  }
+
+//  test("lists") {
+//
+//  }
+//
+//  test("maps") {
+//
+//  }
+//
+//  test("nodes") {
+//
+//  }
+//
+//  test("relationships") {
+//
+//  }
+
+  test("from cypher") {
+    // Given
+    val graph = TestGraph("(:A {a: 1l, b: true})-[:T {t: 3.14}]->(:B {b: 's'}), (:X:Y:Z)")
+
+    val records = graph.cypher("MATCH (n) RETURN n").recordsWithDetails
+
+    // Then
+    toJsonString(records) should equal(
+      s"""|{
+          |  "columns" : [
+          |    "n"
+          |  ],
+          |  "rows" : [
+          |    {
+          |      "n" : {
+          |        "id" : "0",
+          |        "labels" : [
+          |          "A"
+          |        ],
+          |        "properties" : {
+          |          "b" : "true",
+          |          "a" : "1"
+          |        }
+          |      }
+          |    },
+          |    {
+          |      "n" : {
+          |        "id" : "1",
+          |        "labels" : [
+          |          "B"
+          |        ],
+          |        "properties" : {
+          |          "b" : "'s'"
+          |        }
+          |      }
+          |    },
+          |    {
+          |      "n" : {
+          |        "id" : "2",
+          |        "labels" : [
+          |          "Z",
+          |          "Y",
+          |          "X"
+          |        ],
+          |        "properties" : {
+          |          ${""}
+          |        }
+          |      }
+          |    }
+          |  ]
+          |}""".stripMargin
     )
   }
 

@@ -135,6 +135,12 @@ sealed abstract class CAPSRecords(initialHeader: RecordHeader,
       override def hasNext: Boolean = iterator.hasNext
     }
   }
+
+  def map[T](f: Row => T): Iterator[T] = {
+    import scala.collection.JavaConverters._
+
+    data.toLocalIterator().asScala.map(f)
+  }
 }
 
 object CAPSRecords {

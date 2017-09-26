@@ -60,15 +60,27 @@ final case class RecordHeader(internalHeader: InternalHeader) {
     }
   }
 
-  def childSlots(node: Var): Seq[RecordSlot] = {
+  def childSlots(entity: Var): Seq[RecordSlot] = {
     slots.filter {
       case RecordSlot(_, OpaqueField(_)) => false
-      case slot if slot.content.owner.orNull == node => true
+      case slot if slot.content.owner.contains(entity) => true
       case _ => false
     }
   }
 
-  override def toString = {
+  def labelSlots(node: Var): Map[HasLabel, RecordSlot] = {
+    slots.collect {
+      case s@RecordSlot(_, ProjectedExpr(h: HasLabel)) if h.node == node => h -> s
+    }.toMap
+  }
+
+  def propertySlots(entity: Var): Map[Property, RecordSlot] = {
+    slots.collect {
+      case s@RecordSlot(_, ProjectedExpr(p: Property)) if p.m == entity => p -> s
+    }.toMap
+  }
+
+  override def toString: String = {
     val s = slots
     s"RecordHeader with ${s.size} slots: \n\t ${slots.mkString("\n\t")}"
   }
