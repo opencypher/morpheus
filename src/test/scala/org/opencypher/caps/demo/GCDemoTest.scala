@@ -44,7 +44,7 @@ class GCDemoTest
     val CITYFRIENDS_US = SN_US.cypher(
       """MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b)
         |WHERE city.name = "New York City" OR city.name = "San Francisco"
-        |RETURN GRAPH result OF (a)-[:ACQUAINTED]->(b)
+        |RETURN GRAPH result OF (a)-[r:ACQUAINTED]->(b)
       """.stripMargin)
 
     // Using DML

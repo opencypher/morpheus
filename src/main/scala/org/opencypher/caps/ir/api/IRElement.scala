@@ -18,6 +18,7 @@ package org.opencypher.caps.ir.api
 import java.net.URI
 
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.ir.api.pattern.Pattern
 
 trait IRElement {
   def name: String
@@ -30,4 +31,10 @@ final case class IRField(name: String)(val cypherType: CypherType = CTWildcard) 
   def toTypedTuple: (String, CypherType) = name -> cypherType
 }
 
-final case class NamedGraph(name: String, uri: URI)
+trait IRGraph extends IRElement
+
+final case class NamedGraph(name: String) extends IRGraph
+
+final case class ExternalGraph(name: String, uri: URI) extends IRGraph
+
+final case class PatternGraph[E](name: String, pattern: Pattern[E]) extends IRGraph

@@ -16,13 +16,13 @@
 package org.opencypher.caps.ir.api.block
 
 import org.opencypher.caps.ir.api.pattern.AllGiven
-import org.opencypher.caps.ir.api.{IRField, NamedGraph}
+import org.opencypher.caps.ir.api.{IRField, IRGraph, NamedGraph}
 
 final case class AggregationBlock[E](
     after: Set[BlockRef],
     binds: Aggregations[E],
     group: Set[IRField],
-    source: NamedGraph
+    source: IRGraph
 ) extends BasicBlock[Aggregations[E], E](BlockType("aggregation")) {
 
   override val where: AllGiven[E] = AllGiven[E]() // no filtering in aggregation blocks

@@ -16,7 +16,7 @@
 package org.opencypher.caps.ir.api.block
 
 import org.opencypher.caps.ir.api.pattern.AllGiven
-import org.opencypher.caps.ir.api.{IRField, NamedGraph}
+import org.opencypher.caps.ir.api.{IRField, IRGraph, NamedGraph}
 
 import scala.language.implicitConversions
 
@@ -29,7 +29,7 @@ trait Block[E] {
   def binds: Binds[E]
   def where: AllGiven[E]
 
-  def source: NamedGraph
+  def source: IRGraph
 }
 
 trait UpdatingBlock[E] {
@@ -48,7 +48,7 @@ object Binds {
 
 trait Binds[E] {
   def fields: Set[IRField]
-  def graphs: Set[NamedGraph] = Set.empty
+  def graphs: Set[IRGraph] = Set.empty
 }
 
 object BlockWhere {

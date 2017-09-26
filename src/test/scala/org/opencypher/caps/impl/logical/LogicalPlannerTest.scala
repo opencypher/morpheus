@@ -180,7 +180,7 @@ class LogicalPlannerTest extends IrTestSuite {
 
   private case class FakeGraphSource(_schema: Schema) extends CAPSGraphSource {
     override lazy val session: Session = ???
-    override def canonicalURI: URI = ???
+    override def canonicalURI: URI = URI.create("test")
     override def sourceForGraphAt(uri: URI): Boolean = ???
     override def create: CAPSGraph = ???
     override def graph: CAPSGraph = ???

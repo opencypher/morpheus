@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.ir.api.block
 
-import org.opencypher.caps.ir.api.NamedGraph
+import org.opencypher.caps.ir.api.{IRGraph, NamedGraph}
 import org.opencypher.caps.ir.api.pattern.{AllGiven, Pattern}
 
 final case class MatchBlock[E](
@@ -23,5 +23,5 @@ final case class MatchBlock[E](
   binds: Pattern[E],
   where: AllGiven[E] = AllGiven[E](),
   optional: Boolean,
-  source: NamedGraph
+  source: IRGraph
 ) extends BasicBlock[Pattern[E], E](BlockType("match"))

@@ -36,7 +36,7 @@ import scala.language.implicitConversions
 
 abstract class IrTestSuite extends BaseTestSuite {
   val leafRef = BlockRef("leaf")
-  val testGraph: NamedGraph = NamedGraph("test", URI.create("test"))
+  val testGraph = ExternalGraph("test", URI.create("test"))
   def leafBlock() = SourceBlock[Expr](testGraph)
   def leafPlan = Start(ExternalLogicalGraph(testGraph.name, testGraph.uri, Schema.empty), Set.empty)(SolvedQueryModel.empty)
 
@@ -76,7 +76,7 @@ abstract class IrTestSuite extends BaseTestSuite {
       where = AllGiven[Expr](),
       source = testGraph
     )
-    val model = QueryModel(result, GlobalsRegistry.empty, blocks, Map(graphBlockRef -> Schema.empty))
+    val model = QueryModel(result, GlobalsRegistry.empty, blocks, Map(graphBlockRef -> Schema.empty), Map.empty)
     CypherQuery(QueryInfo("test"), model)
   }
 
