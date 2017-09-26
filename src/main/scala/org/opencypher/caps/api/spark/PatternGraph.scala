@@ -16,7 +16,8 @@ class PatternGraph(private val baseTable: CAPSRecords, val schema: Schema, val t
 
   override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
     val targetNode = Var(name)(nodeCypherType)
-    val targetNodeHeader = RecordHeader.nodeFromSchema(targetNode, schema.forNode(nodeCypherType), tokens.registry)
+    val nodeSchema = schema.forNode(nodeCypherType)
+    val targetNodeHeader = RecordHeader.nodeFromSchema(targetNode, nodeSchema, tokens.registry)
     val extractionNodes: Seq[Var] = header.nodesForType(nodeCypherType)
 
     extractRecordsFor(targetNode, targetNodeHeader, extractionNodes)

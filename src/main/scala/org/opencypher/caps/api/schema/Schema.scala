@@ -138,6 +138,9 @@ case class LabelCombinations(combos: Set[Set[String]]) {
     copy(combos = rhs + (lhs.flatten ++ coExistingLabels))
   }
 
+  /**
+    * Returns all combinations that have an overlap with 'labels'
+    */
   def filterByLabels(labels: Set[String]): LabelCombinations =
     LabelCombinations(combos.filter(c => c.intersect(labels).nonEmpty))
 
