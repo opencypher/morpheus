@@ -52,18 +52,8 @@ case object True extends DefiniteTernary {
   override def maybeTrue = true
   override def maybeFalse = false
 
-  override def and(other: Ternary): Ternary = other match {
-    case True => True
-    case False => False
-    case Maybe => Maybe
-  }
-
-  override def or(other: Ternary): Ternary = other match {
-    case True => True
-    case False => True
-    case Maybe => True
-  }
-
+  override def and(other: Ternary): Ternary = other
+  override def or(other: Ternary): Ternary = True
   override def negated: False.type = False
 
   override val toOption: Some[Boolean] = Some(true)
@@ -78,18 +68,8 @@ case object False extends DefiniteTernary {
   override def maybeTrue = false
   override def maybeFalse = true
 
-  override def and(other: Ternary): Ternary = other match {
-    case True => False
-    case False => False
-    case Maybe => False
-  }
-
-  override def or(other: Ternary): Ternary = other match {
-    case True => True
-    case False => False
-    case Maybe => Maybe
-  }
-
+  override def and(other: Ternary): Ternary = False
+  override def or(other: Ternary): Ternary = other
   override def negated: True.type = True
 
   override val toOption: Some[Boolean] = Some(false)
@@ -107,15 +87,13 @@ case object Maybe extends Ternary {
   override def maybeFalse = true
 
   override def and(other: Ternary): Ternary = other match {
-    case True => Maybe
     case False => False
-    case Maybe => Maybe
+    case _ => Maybe
   }
 
   override def or(other: Ternary): Ternary = other match {
     case True => True
-    case False => Maybe
-    case Maybe => Maybe
+    case _ => Maybe
   }
 
   override def negated: Maybe.type = Maybe

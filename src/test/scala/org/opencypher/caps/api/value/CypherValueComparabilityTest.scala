@@ -100,10 +100,10 @@ class CypherValueComparabilityTest extends CypherValueTestSuite {
     val r = CypherValueCompanion[V].compare(b, a)
 
     (l, r) match {
-      case (SuccesfulComparison(0), SuccesfulComparison(0)) =>
+      case (SuccessfulComparison(0), SuccessfulComparison(0)) =>
         Some(0)
 
-      case (SuccesfulComparison(x), SuccesfulComparison(y)) =>
+      case (SuccessfulComparison(x), SuccessfulComparison(y)) =>
         ((x < 0 && y > 0) || (x > 0 && y < 0)) should equal(true)
         Some(x)
 

@@ -67,12 +67,12 @@ class CypherValueEquivTest extends CypherValueTestSuite {
     valueGroups.flatten.foreach { v =>
       equiv(v, v) should be(true)
       if (! v.isNull) {
-        (v `equivTo` cypherNull[V]) should be(false)
-        (cypherNull[V] `equivTo` v) should be(false)
+        (v equivTo cypherNull[V]) should be(false)
+        (cypherNull[V] equivTo v) should be(false)
       }
     }
 
-    (cypherNull[V] `equivTo` cypherNull[V]) should be(true)
+    (cypherNull[V] equivTo cypherNull[V]) should be(true)
 
     val indexedValueGroups =
       valueGroups

@@ -33,7 +33,7 @@ case class cypherFilter(header: RecordHeader, expr: Expr)
       case Equals(lhs, rhs) =>
         val lhsValue = row.getCypherValue(lhs, header)
         val rhsValue = row.getCypherValue(rhs, header)
-        lhsValue.equalTo(rhsValue).isTrue
+        (lhsValue equalTo rhsValue).isTrue
 
       case LessThan(lhs, rhs) =>
         val lhsValue = row.getCypherValue(lhs, header)

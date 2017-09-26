@@ -80,7 +80,7 @@ final class CypherValueOps[V <: CypherValue](val value: V) extends AnyVal with S
     companion.isNull(value)
 
   def comparesNulls(implicit companion: CypherValueCompanion[V]): Boolean =
-    companion.comparesNulls(value)
+    companion.isOrContainsNull(value)
 
   def <(other: V)(implicit companion: CypherValueCompanion[V]): Ternary =
     companion

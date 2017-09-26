@@ -23,7 +23,7 @@ sealed trait CypherComparison extends Any {
 
 sealed trait Incomparable extends CypherComparison
 
-final case class SuccesfulComparison(cmp: Int) extends AnyVal with CypherComparison {
+final case class SuccessfulComparison(cmp: Int) extends AnyVal with CypherComparison {
   override def map(f: Int => Boolean): Option[Ternary] = Some(Ternary(f(cmp)))
 }
 
