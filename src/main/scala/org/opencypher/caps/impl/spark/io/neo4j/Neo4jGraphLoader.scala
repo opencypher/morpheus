@@ -166,7 +166,7 @@ object Neo4jGraphLoader {
         val schema = context.schema
         val tokens = context.globals.tokens
 
-        val labels = if (cypherType.labels.values.exists(_ == true)) cypherType.labels.filter(_._2).keySet else schema.labels
+        val labels = if (cypherType.labels.isEmpty) schema.labels else cypherType.labels
 
         val labelFields = labels.map { name =>
           val label = HasLabel(node, tokens.labelByName(name))(CTBoolean)
@@ -224,7 +224,7 @@ object Neo4jGraphLoader {
   private case class filterNode(nodeDef: CTNode)
                                (implicit context: LoadingContext) extends (InternalNode => Boolean) {
 
-    val requiredLabels: Set[String] = nodeDef.labels.filter(_._2).keySet
+    val requiredLabels: Set[String] = nodeDef.labels
 
     override def apply(importedNode: InternalNode): Boolean = requiredLabels.forall(importedNode.hasLabel)
   }

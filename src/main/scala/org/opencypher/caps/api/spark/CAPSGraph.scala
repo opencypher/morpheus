@@ -200,7 +200,7 @@ object CAPSGraph {
         val data = scanRecords.details.toDF()
         val labels = scanRecords.header.slotFor(scanRecords.header.fields.head).content match {
           case o: OpaqueField => o.field.cypherType match {
-            case cn: CTNode => cn.labels.filter(p => p._2).keys.toSeq
+            case cn: CTNode => cn.labels.toSeq
             case cr: CTRelationship => cr.types.toSeq
           }
         }

@@ -41,7 +41,7 @@ class CAPSRecordsTest extends CAPSTestSuite {
 
 
     val result = given.contract(embeddedNode)
-    val entityVar = Var("n")(CTNode(Map("Person" -> true)))
+    val entityVar = Var("n")(CTNode("Person"))
 
     result.details.header.slots.map(_.content).toVector should equal(Vector(
       OpaqueField(entityVar),

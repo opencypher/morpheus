@@ -117,12 +117,11 @@ trait GraphMatchingTestSupport {
       override val tokens = CAPSRecordsTokens(TokenRegistry.fromSchema(schema))
 
       override def nodes(name: String, cypherType: CTNode): CAPSRecords = {
-        val header = RecordHeader.nodeFromSchema(Var(name)(cypherType), schema, tokens.registry,
-          cypherType.labels.filter(_._2).keySet)
+        val header = RecordHeader.nodeFromSchema(Var(name)(cypherType), schema, tokens.registry, cypherType.labels)
 
         val data = {
           val nodes = queryGraph.getVertices.asScala
-            .filter(v => v.getLabels.containsAll(cypherType.labels.filter(_._2).keySet.asJava))
+            .filter(v => v.getLabels.containsAll(cypherType.labels.asJava))
             .map { v =>
               val exprs = header.slots.map(_.content.key)
               val labelFields = exprs.collect {

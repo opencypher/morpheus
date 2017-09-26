@@ -73,7 +73,7 @@ final case class EmbeddedNode(
   override type Self = EmbeddedNode
   override type EntityCypherType = CTNode
 
-  override val entityType = CTNode(labelsFromSlotOrImplied.collect { case (label, None) => label -> true })
+  override val entityType = CTNode(labelsFromSlotOrImplied.collect { case (label, None) => label }.toSet)
   override val entityVar = Var(entitySlot)(entityType)
 
   override def verify: VerifiedSelf = new VerifiedEmbeddedEntity[EmbeddedNode] {

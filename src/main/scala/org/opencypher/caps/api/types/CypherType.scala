@@ -154,31 +154,24 @@ case object CTMap extends MaterialDefiniteCypherType with MaterialDefiniteCypher
   }
 }
 
-object CTNode extends CTNode(Map.empty) with Serializable {
+object CTNode extends CTNode(Set.empty) with Serializable {
   def apply(labels: String*): CTNode =
-    if (labels.isEmpty) this else CTNode(labels.map(l => l -> true).toMap)
+    if (labels.isEmpty) this else CTNode(labels.toSet)
 }
 
-// TODO replace Map with Set
-sealed case class CTNode(labels: Map[String, Boolean]) extends MaterialDefiniteCypherType {
+sealed case class CTNode(labels: Set[String]) extends MaterialDefiniteCypherType {
 
   self =>
 
-  final override def name =
-    if (labels.isEmpty) "NODE" else s"${
-      labels.map {
-        case (l, true) => s"$l"
-        case (l, false) => s"-$l"
-      }.mkString(":", ":", "")
-    } NODE"
+  final override def name: String =
+    if (labels.isEmpty) "NODE" else s"${labels.mkString(":", ":", "")} NODE"
 
-  final override def nullable =
+  final override def nullable: CTNodeOrNull =
     if (labels.isEmpty) CTNodeOrNull else CTNodeOrNull(labels)
 
-  final override def superTypeOf(other: CypherType) = other match {
-    case CTNode(_) if labels.isEmpty => True
-    case CTNode(otherLabels) if otherLabels.isEmpty => False
-    case CTNode(otherLabels) => superLabelsOf(otherLabels)
+  final override def superTypeOf(other: CypherType): Ternary = other match {
+    case CTNode(otherLabels) if labels subsetOf otherLabels => True
+    case CTNode(otherLabels) => False
     case CTWildcard => Maybe
     case CTVoid => True
     case _ => False
@@ -186,7 +179,7 @@ sealed case class CTNode(labels: Map[String, Boolean]) extends MaterialDefiniteC
 
   final override def joinMaterially(other: MaterialCypherType): MaterialCypherType = other match {
     case CTMap => CTMap
-    case CTNode(otherLabels) => unionLabels(otherLabels)
+    case CTNode(otherLabels) => CTNode(labels intersect otherLabels)
     case _: CTRelationship => CTMap
     case CTVoid => self
     case CTWildcard => CTWildcard
@@ -194,93 +187,17 @@ sealed case class CTNode(labels: Map[String, Boolean]) extends MaterialDefiniteC
   }
 
   final override def meetMaterially(other: MaterialCypherType): MaterialCypherType = other match {
-    case CTNode(otherLabels) => intersectLabels(otherLabels)
+    case CTNode(otherLabels) => CTNode(labels union otherLabels)
     case _ => super.meetMaterially(other)
   }
-
-  // returns if any node that matches otherLabels is also a node that matches labels
-  private def superLabelsOf(otherLabels: Map[String, Boolean]): Ternary = {
-    val pieces = labels.keySet.union(otherLabels.keySet).map { key =>
-      (labels.get(key), otherLabels.get(key)) match {
-
-        // TRUE :Person >= :Person
-        // TRUE :-Person >= :-Person
-        case (Some(x), Some(y)) if x == y => True
-
-        // FALSE :-Person >= :Person
-        // FALSE :Person >= :-Person
-        case (Some(_), Some(_)) => False
-
-        // TRUE ?Person >= :Person
-        // TRUE ?Person >= :-Person
-        case (None, Some(_)) => True
-
-        // MAYBE :Person >= ?Person
-        // MAYBE :-Person >= ?Person
-        case (Some(_), None) => Maybe
-
-        // TRUE ?Person >= ?Person
-        case (None, None) => True
-      }
-    }
-    pieces.foldLeft[Ternary](True)(_ and _)
-  }
-
-  private def intersectLabels(otherLabels: Map[String, Boolean]): MaterialCypherType = {
-    labels.keySet.union(otherLabels.keySet).foldLeft[Option[Map[String, Boolean]]](Some(Map.empty)) {
-
-      // Empty => Empty
-      case (None, _) => None
-
-      case (acc@Some(m), key) =>
-        (labels.get(key), otherLabels.get(key)) match {
-
-          // :Person /\ :Person => :Person
-          // :-Person /\ :-Person => :Person
-          case (Some(x), Some(y)) if x == y => Some(m.updated(key, x))
-
-          // :Person /\ :-Person => Empty
-          // :-Person /\ :Person => Empty
-          case (Some(_), Some(_)) => None
-
-          // :[x]Person /\ ?Person => :[x]Person
-          case (Some(x), None) => Some(m.updated(key, x))
-
-          // :?Person /\ [x]Person => :[x]Person
-          case (None, Some(y)) => Some(m.updated(key, y))
-
-          // ?Person /\ ?Person => ?Person
-          case _ => acc
-        }
-    }.map(CTNode.apply).getOrElse(CTVoid)
-  }
-
-  private def unionLabels(otherLabels: Map[String, Boolean]): MaterialCypherType = {
-    val newLabels = labels.keySet.union(otherLabels.keySet).foldLeft[Map[String, Boolean]](Map.empty) {
-      case (m, key) =>
-        (labels.get(key), otherLabels.get(key)) match {
-          // :Person \/ :Person => :Person
-          // :-Person \/ :-Person => :Person
-          case (Some(x), Some(y)) if x == y => m.updated(key, x)
-
-          // :Person \/ :-Person => ?Person
-          // :-Person \/ :Person => ?Person
-          // :[x]Person \/ ?Person => ?Person
-          // :?Person \/ [x]Person => ?Person
-          // ?Person \/ ?Person => ?Person
-          case _ => m
-        }
-    }
-    CTNode(newLabels)
-  }
 }
 
-object CTNodeOrNull extends CTNodeOrNull(Map.empty) with Serializable {
+object CTNodeOrNull extends CTNodeOrNull(Set.empty) with Serializable {
   def apply(labels: String*): CTNodeOrNull =
-    if (labels.isEmpty) this else CTNodeOrNull(labels.map(l => l -> true).toMap)
+    if (labels.isEmpty) this else CTNodeOrNull(labels.toSet)
 }
 
-sealed case class CTNodeOrNull(labels: Map[String, Boolean]) extends NullableDefiniteCypherType {
+sealed case class CTNodeOrNull(labels: Set[String]) extends NullableDefiniteCypherType {
   final override def name = s"$material?"
 
   final override def material =

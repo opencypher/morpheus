@@ -79,7 +79,6 @@ class CypherTypesTest extends BaseTestSuite {
       CTNode -> ("NODE" -> "NODE?"),
       CTNode("Person") -> (":Person NODE" -> ":Person NODE?"),
       CTNode("Person", "Employee") -> (":Person:Employee NODE" -> ":Person:Employee NODE?"),
-      CTNode(Map("Person" -> true, "Car" -> false)) -> (":Person:-Car NODE" -> ":Person:-Car NODE?"),
       CTRelationship -> ("RELATIONSHIP" -> "RELATIONSHIP?"),
       CTRelationship("KNOWS") -> (":KNOWS RELATIONSHIP" -> ":KNOWS RELATIONSHIP?"),
       CTRelationship("KNOWS", "LOVES") -> (":KNOWS|LOVES RELATIONSHIP" -> ":KNOWS|LOVES RELATIONSHIP?"),
@@ -127,15 +126,13 @@ class CypherTypesTest extends BaseTestSuite {
     CTNode().subTypeOf(CTNode("Person")) shouldBe False
     CTNode("Person").superTypeOf(CTNode("Person")) shouldBe True
     CTNode("Person").superTypeOf(CTNode("Person", "Employee")) shouldBe True
-    CTNode("Person", "Employee").superTypeOf(CTNode("Employee")) shouldBe Maybe
-    CTNode("Person").superTypeOf(CTNode("Foo")) shouldBe Maybe
-    CTNode().superTypeOf(CTNode(Map("Person" -> false))) shouldBe True
-    CTNode("Person").superTypeOf(CTNode(Map("Person" -> false))) shouldBe False
-    CTNode(Map("Car" -> false)).superTypeOf(CTNode("Car")) shouldBe False
-    CTNode(Map("Car" -> false)).superTypeOf(CTNode(Map("Person" -> false))) shouldBe Maybe
-    CTNode(Map("Car" -> false, "Person" -> true)).superTypeOf(CTNode(Map("Car" -> false))) shouldBe Maybe
-    CTNode(Map("Car" -> false)).superTypeOf(CTNode(Map("Car" -> false, "Person" -> true))) shouldBe True
-    CTNode(Map("Car" -> false, "Person" -> true)).superTypeOf(CTNode(Map("Car" -> false, "Person" -> true))) shouldBe True
+    // One could argue this to be Maybe as in some graphs that assertion could be true instead.
+    // We take the more rigid stance here that the type system
+    // always considers "all possible (conceivable) nodes"
+    // because the alternative is very unintuitive
+    CTNode("Person", "Employee").superTypeOf(CTNode("Employee")) shouldBe False
+    CTNode("Person").superTypeOf(CTNode("Foo")) shouldBe False
+    CTNode("Person").superTypeOf(CTNode) shouldBe False
   }
 
   test("NODE? type") {
@@ -143,8 +140,8 @@ class CypherTypesTest extends BaseTestSuite {
     CTNodeOrNull().superTypeOf(CTNodeOrNull("Person")) shouldBe True
     CTNodeOrNull("Person").superTypeOf(CTNodeOrNull("Person")) shouldBe True
     CTNodeOrNull("Person").superTypeOf(CTNodeOrNull("Person", "Employee")) shouldBe True
-    CTNodeOrNull("Person", "Employee").superTypeOf(CTNodeOrNull("Employee")) shouldBe Maybe
-    CTNodeOrNull("Person").superTypeOf(CTNodeOrNull("Foo")) shouldBe Maybe
+    CTNodeOrNull("Person", "Employee").superTypeOf(CTNodeOrNull("Employee")) shouldBe False
+    CTNodeOrNull("Person").superTypeOf(CTNodeOrNull("Foo")) shouldBe False
     CTNodeOrNull("Foo").superTypeOf(CTNull) shouldBe True
   }
 
@@ -228,10 +225,7 @@ class CypherTypesTest extends BaseTestSuite {
     CTWildcard join CTAny shouldBe CTAny
     CTVoid join CTAny shouldBe CTAny
 
-    CTNode(Map("Car" -> false)) join CTNode shouldBe CTNode
-    CTNode(Map("Car" -> false)) join CTNode(Map("Person" -> false)) shouldBe CTNode
-    CTNode(Map("Car" -> false, "Person" -> true)) join CTNode(Map("Person" -> false)) shouldBe CTNode
-    CTNode(Map("Car" -> false, "Person" -> false)) join CTNode(Map("Person" -> false)) shouldBe CTNode(Map("Person" -> false))
+    CTNode("Car") join CTNode shouldBe CTNode
     CTNode join CTNode("Person") shouldBe CTNode
   }
 
@@ -280,10 +274,6 @@ class CypherTypesTest extends BaseTestSuite {
     CTInteger meet CTVoid shouldBe CTVoid
     CTWildcard meet CTVoid shouldBe CTVoid
 
-    CTNode(Map("Car" -> false)) meet CTNode shouldBe CTNode(Map("Car" -> false))
-    CTNode(Map("Car" -> false)) meet CTNode(Map("Person" -> false)) shouldBe CTNode(Map("Car" -> false, "Person" -> false))
-    CTNode(Map("Car" -> false, "Person" -> true)) meet CTNode(Map("Person" -> false)) shouldBe CTVoid
-    CTNode(Map("Car" -> false, "Person" -> false)) meet CTNode(Map("Person" -> false)) shouldBe CTNode(Map("Car" -> false, "Person" -> false))
     CTNode meet CTNode("Person") shouldBe CTNode("Person")
   }
 

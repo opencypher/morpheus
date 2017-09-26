@@ -85,7 +85,7 @@ object SchemaTyper {
                 case (acc, next) => acc.join(next.getOrElse(name, CTVoid))
               }
             else {
-              val keys = labels.collect { case (k, true) => k }.map(schema.nodeKeys).reduce(_ ++ _)
+              val keys = labels.map(schema.nodeKeys).reduce(_ ++ _)
               keys.getOrElse(name, CTVoid)
             }
             recordType(v -> varTyp) >> recordAndUpdate(expr -> propType)
@@ -108,7 +108,7 @@ object SchemaTyper {
         nodeType <- process[R](node)
         result <- nodeType.material match {
           case CTNode(nodeLabels) =>
-            val detailed = nodeLabels ++ labels.map(_.name -> true).toMap
+            val detailed = nodeLabels ++ labels.map(_.name).toSet
             recordType[R](node -> nodeType) >>
               updateTyping[R](node -> CTNode(detailed)) >>
               recordAndUpdate[R](expr -> CTBoolean)
