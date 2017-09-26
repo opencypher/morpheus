@@ -256,7 +256,7 @@ class PatternGraphTest extends CAPSTestSuite {
     ))
   }
 
-  test("Supports node scans when variables have the property") {
+  test("Supports node scans when different variables have the same property keys") {
     val p = 'p -> CTNode("Person")
     val e = 'e -> CTNode("Employee")
     val fields = Seq(
