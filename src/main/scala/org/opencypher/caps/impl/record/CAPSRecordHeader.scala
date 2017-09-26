@@ -29,7 +29,7 @@ object CAPSRecordHeader {
   }: _*)
 
   def asSparkStructType(header: RecordHeader): StructType = {
-    val fields = header.slots.map(slot => structField(slot, header.mandatory(slot)))
+    val fields = header.slots.map(slot => structField(slot, !header.mandatory(slot)))
     StructType(fields)
   }
 
