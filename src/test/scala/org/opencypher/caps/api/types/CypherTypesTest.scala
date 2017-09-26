@@ -126,10 +126,6 @@ class CypherTypesTest extends BaseTestSuite {
     CTNode().subTypeOf(CTNode("Person")) shouldBe False
     CTNode("Person").superTypeOf(CTNode("Person")) shouldBe True
     CTNode("Person").superTypeOf(CTNode("Person", "Employee")) shouldBe True
-    // One could argue this to be Maybe as in some graphs that assertion could be true instead.
-    // We take the more rigid stance here that the type system
-    // always considers "all possible (conceivable) nodes"
-    // because the alternative is very unintuitive
     CTNode("Person", "Employee").superTypeOf(CTNode("Employee")) shouldBe False
     CTNode("Person").superTypeOf(CTNode("Foo")) shouldBe False
     CTNode("Person").superTypeOf(CTNode) shouldBe False

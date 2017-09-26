@@ -36,7 +36,7 @@ object CypherType {
     val VoidOrderGroup: OrderGroups.Value = Value("VOID ODER GROUP")
   }
 
-  implicit val typeVectorMonoid = new Monoid[Vector[CypherType]] {
+  implicit val typeVectorMonoid: Monoid[Vector[CypherType]] = new Monoid[Vector[CypherType]] {
     override def empty: Vector[CypherType] = Vector.empty
     override def combine(x: Vector[CypherType], y: Vector[CypherType]): Vector[CypherType] = x ++ y
   }
@@ -74,7 +74,7 @@ case object CTNumber extends MaterialDefiniteCypherType with MaterialDefiniteCyp
 
   override def name = "NUMBER"
 
-  override def superTypeOf(other: CypherType) = other match {
+  override def superTypeOf(other: CypherType): Ternary = other match {
     case CTNumber => True
     case CTInteger => True
     case CTFloat => True
@@ -135,7 +135,7 @@ case object CTMap extends MaterialDefiniteCypherType with MaterialDefiniteCypher
 
   override def name = "MAP"
 
-  override def superTypeOf(other: CypherType) = other match {
+  override def superTypeOf(other: CypherType): Ternary = other match {
     case CTMap => True
     case _: CTNode => True
     case _: CTRelationship => True
@@ -170,8 +170,7 @@ sealed case class CTNode(labels: Set[String]) extends MaterialDefiniteCypherType
     if (labels.isEmpty) CTNodeOrNull else CTNodeOrNull(labels)
 
   final override def superTypeOf(other: CypherType): Ternary = other match {
-    case CTNode(otherLabels) if labels subsetOf otherLabels => True
-    case CTNode(otherLabels) => False
+    case CTNode(otherLabels) => Ternary(labels subsetOf otherLabels)
     case CTWildcard => Maybe
     case CTVoid => True
     case _ => False
@@ -200,7 +199,7 @@ object CTNodeOrNull extends CTNodeOrNull(Set.empty) with Serializable {
 sealed case class CTNodeOrNull(labels: Set[String]) extends NullableDefiniteCypherType {
   final override def name = s"$material?"
 
-  final override def material =
+  final override def material: CTNode =
     if (labels.isEmpty) CTNode else CTNode(labels)
 }
 
@@ -213,13 +212,13 @@ sealed case class CTRelationship(types: Set[String]) extends MaterialDefiniteCyp
 
   self =>
 
-  final override def name =
+  final override def name: String =
     if (types.isEmpty) "RELATIONSHIP" else s"${types.map(t => s"$t").mkString(":", "|", "")} RELATIONSHIP"
 
-  final override def nullable =
+  final override def nullable: CTRelationshipOrNull =
     if (types.isEmpty) CTRelationshipOrNull else CTRelationshipOrNull(types)
 
-  final override def superTypeOf(other: CypherType) = other match {
+  final override def superTypeOf(other: CypherType): Ternary = other match {
     case CTRelationship(_) if types.isEmpty => True
     case CTRelationship(otherTypes) if otherTypes.isEmpty => False
     case CTRelationship(otherTypes) => otherTypes subsetOf types
@@ -260,7 +259,7 @@ object CTRelationshipOrNull extends CTRelationshipOrNull(Set.empty) with Seriali
 sealed case class CTRelationshipOrNull(types: Set[String]) extends NullableDefiniteCypherType {
   final override def name = s"$material?"
 
-  final override def material =
+  final override def material: CTRelationship =
     if (types.isEmpty) CTRelationship else CTRelationship(types)
 }
 
@@ -277,9 +276,9 @@ final case class CTList(elementType: CypherType) extends MaterialDefiniteCypherT
   override def nullable =
     CTListOrNull(elementType)
 
-  override def containsNullable = elementType.containsNullable
+  override def containsNullable: Boolean = elementType.containsNullable
 
-  override def containsWildcard = elementType.containsWildcard
+  override def containsWildcard: Boolean = elementType.containsWildcard
 
   override def wildcardErasedSuperType =
     CTList(elementType.wildcardErasedSuperType)
@@ -287,7 +286,7 @@ final case class CTList(elementType: CypherType) extends MaterialDefiniteCypherT
   override def wildcardErasedSubType =
     CTList(elementType.wildcardErasedSubType)
 
-  override def superTypeOf(other: CypherType) = other match {
+  override def superTypeOf(other: CypherType): Ternary = other match {
     case CTList(otherEltType) => elementType superTypeOf otherEltType
     case CTWildcard => Maybe
     case CTVoid => True
@@ -313,7 +312,7 @@ final case class CTListOrNull(eltType: CypherType) extends NullableDefiniteCyphe
   override def material =
     CTList(eltType)
 
-  override def containsWildcard = eltType.containsWildcard
+  override def containsWildcard: Boolean = eltType.containsWildcard
 
   override def wildcardErasedSuperType =
     CTListOrNull(eltType.wildcardErasedSuperType)
@@ -328,11 +327,11 @@ case object CTVoid extends MaterialDefiniteCypherType {
 
   override def name = "VOID"
 
-  override def nullable = CTNull
+  override def nullable: CTNull.type = CTNull
 
   override def isInhabited: Ternary = False
 
-  override def superTypeOf(other: CypherType) = other match {
+  override def superTypeOf(other: CypherType): Ternary = other match {
     case _ if self == other => True
     case CTWildcard => Maybe
     case CTVoid => True
@@ -347,7 +346,7 @@ case object CTVoid extends MaterialDefiniteCypherType {
 case object CTNull extends NullableDefiniteCypherType {
   override def name = "NULL"
 
-  override def material = CTVoid
+  override def material: CTVoid.type = CTVoid
 }
 
 case object CTWildcard extends MaterialCypherType with WildcardCypherType {
@@ -355,16 +354,16 @@ case object CTWildcard extends MaterialCypherType with WildcardCypherType {
 
   override def name = "?"
 
-  override def material = self
+  override def material: CTWildcard.type = self
 
   override def isInhabited: Ternary = Maybe
 
-  override def sameTypeAs(other: CypherType) =
+  override def sameTypeAs(other: CypherType): Ternary =
     if (other.isMaterial) Maybe else False
 
-  override def wildcardErasedSuperType = CTAny
+  override def wildcardErasedSuperType: CTAny.type = CTAny
 
-  override def wildcardErasedSubType = CTVoid
+  override def wildcardErasedSubType: CTVoid.type = CTVoid
 
   override def joinMaterially(other: MaterialCypherType): MaterialCypherType = other match {
     case CTAny => CTAny
@@ -386,20 +385,19 @@ case object CTWildcard extends MaterialCypherType with WildcardCypherType {
 
     override def name = "??"
 
-    override def nullable = self
+    override def nullable: CTWildcard.nullable.type  = self
 
-    override def material = CTWildcard
+    override def material: CTWildcard.type = CTWildcard
 
-    override def wildcardErasedSuperType = CTAny.nullable
+    override def wildcardErasedSuperType: NullableDefiniteCypherType = CTAny.nullable
 
-    override def wildcardErasedSubType = CTNull
+    override def wildcardErasedSubType: CTNull.type = CTNull
 
-    override def sameTypeAs(other: CypherType) =
+    override def sameTypeAs(other: CypherType): Ternary =
       if (other.isNullable) Maybe else False
 
-    override def superTypeOf(other: CypherType) = Maybe
+    override def superTypeOf(other: CypherType): Ternary = Maybe
   }
-
 }
 
 
@@ -440,14 +438,14 @@ sealed trait CypherType extends Serializable {
   def material: MaterialCypherType
 
   // returns this type with the same 'nullability' (i.e. either material or nullable) as typ
-  final def asNullableAs(typ: CypherType) =
+  final def asNullableAs(typ: CypherType): CypherType =
     if (typ.isNullable) nullable else material
 
   // true, if this type or any of its type parameters include null
-  def containsNullable = isNullable
+  def containsNullable: Boolean = isNullable
 
   // true, if this type or any of its type parameters is a wildcard
-  def containsWildcard = isWildcard
+  def containsWildcard: Boolean = isWildcard
 
   // smallest super type of this type that does not contain a wildcard
   def wildcardErasedSuperType: CypherType with DefiniteCypherType
@@ -467,7 +465,7 @@ sealed trait CypherType extends Serializable {
     if (self.isNullable && other.isNullable) met.nullable else met
   }
 
-  final def alwaysSameTypeAs(other: CypherType) = superTypeOf(other).isTrue
+  final def alwaysSameTypeAs(other: CypherType): Boolean = superTypeOf(other).isTrue
 
   final def couldBeSameTypeAs(other: CypherType): Boolean = {
     self.superTypeOf(other).maybeTrue || self.subTypeOf(other).maybeTrue
@@ -475,15 +473,21 @@ sealed trait CypherType extends Serializable {
 
   def sameTypeAs(other: CypherType): Ternary =
     if (other.isWildcard)
-    // wildcard types override sameTypeAs
+      // wildcard types override sameTypeAs
       other sameTypeAs self
     else
-    // we rely on final case class equality for different instances of the same type
+      // we rely on final case class equality for different instances of the same type
       self == other
 
   final def subTypeOf(other: CypherType): Ternary =
     other superTypeOf self
 
+  /**
+    * A type U is a super type of a type V iff it holds
+    * that any value of type V is also a value of type U
+    *
+    * @return true if this type is a super type of other
+    */
   def superTypeOf(other: CypherType): Ternary
 }
 
@@ -517,7 +521,7 @@ sealed trait NullableCypherType extends CypherType {
 
   override def wildcardErasedSubType: NullableCypherType with DefiniteCypherType
 
-  override def superTypeOf(other: CypherType) =
+  override def superTypeOf(other: CypherType): Ternary =
     material superTypeOf other.material
 }
 
@@ -554,35 +558,35 @@ private[caps] object MaterialDefiniteCypherType {
   sealed private[caps] trait DefaultOrNull {
     self: MaterialDefiniteCypherType =>
 
-    override val nullable = self match {
+    override val nullable: NullableDefiniteCypherType = self match {
       case CTString => CTStringOrNull // workaround]
       case CTInteger => CTIntegerOrNull
     // TODO: This causes some nullable types to be non-equal ?!
       case x => new NullableDefiniteCypherType {
-        override def material = self
+        override def material: DefaultOrNull with MaterialDefiniteCypherType = self
 
-        override def name = self + "?"
+        override def name: String = self + "?"
       }
     }
   }
 }
 
 case object CTIntegerOrNull extends NullableDefiniteCypherType {
-  override def name = CTInteger + "?"
+  override def name: String = CTInteger + "?"
 
-  override def material = CTInteger
+  override def material: CTInteger.type = CTInteger
 }
 
 case object CTStringOrNull extends NullableDefiniteCypherType {
-  override def name = CTString + "?"
+  override def name: String = CTString + "?"
 
-  override def material = CTString
+  override def material: CTString.type = CTString
 }
 
 sealed private[caps] trait MaterialDefiniteCypherType extends MaterialCypherType with DefiniteCypherType {
   self =>
 
-  override def material = self
+  override def material: MaterialDefiniteCypherType = self
 
   override def wildcardErasedSuperType: MaterialCypherType with DefiniteCypherType = self
 
@@ -592,7 +596,7 @@ sealed private[caps] trait MaterialDefiniteCypherType extends MaterialCypherType
 sealed private[caps] trait NullableDefiniteCypherType extends NullableCypherType with DefiniteCypherType {
   self =>
 
-  override def nullable = self
+  override def nullable: NullableDefiniteCypherType = self
 
   override def wildcardErasedSuperType: NullableCypherType with DefiniteCypherType = material.wildcardErasedSuperType.nullable
 
@@ -604,7 +608,7 @@ sealed private[caps] trait MaterialDefiniteCypherLeafType
 
   self =>
 
-  override def superTypeOf(other: CypherType) = other match {
+  override def superTypeOf(other: CypherType): Ternary = other match {
     case _ if self == other => True
     case CTWildcard => Maybe
     case CTVoid => True
