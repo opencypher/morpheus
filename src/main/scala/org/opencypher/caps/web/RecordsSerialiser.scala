@@ -23,6 +23,7 @@ import org.opencypher.caps.api.record.RecordHeader
 import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.api.value.CypherValue
+import org.opencypher.caps.impl.record.CAPSRecordsTokens
 import org.opencypher.caps.impl.spark.SparkColumnName
 
 /**
@@ -43,11 +44,24 @@ import org.opencypher.caps.impl.spark.SparkColumnName
   *
   * {{{
   *   "n" : {
-  *     "id" : "0",         // id of the node, as a string
+  *     "id" : 0,           // id is an integer
   *     "labels" : [        // labels is an array of strings
   *       "A",
   *       "B"
   *     ],
+  *     "properties" : {    // properties is an object
+  *       "key" : "value",  // key-value is a tuple
+  *       "foo" : "bar"
+  *     }
+  *   }
+  * }}}
+  *
+  * The format of relationships is as follows:
+  *
+  * {{{
+  *   "n" : {
+  *     "id" : 0,           // id is an integer
+  *     "type" : "T"        // relationship type is a string
   *     "properties" : {    // properties is an object
   *       "key" : "value",  // key-value is a tuple
   *       "foo" : "bar"
@@ -61,7 +75,7 @@ object RecordsSerialiser {
     override final def apply(records: CAPSRecords): Json = {
       val rows = records.map { row =>
         val unit = records.compact.header.fields.map { field =>
-          field.name -> constructValue(row, field, records.header)
+          field.name -> constructValue(row, field, records.header, records.tokens)
         }
         Json.obj(unit.toSeq: _*)
       }
@@ -73,15 +87,15 @@ object RecordsSerialiser {
     }
   }
 
-  private def constructValue(row: Row, field: Var, header: RecordHeader): Json = {
+  private def constructValue(row: Row, field: Var, header: RecordHeader, tokens: CAPSRecordsTokens): Json = {
     field.cypherType match {
       case _: CTNode =>
         val (id, labels, properties) = explodeNode(row, field, header)
         formatNode(id, labels, properties)
 
       case _: CTRelationship =>
-        val (id, labels, properties) = explodeNode(row, field, header)
-        formatNode(id, labels, properties)
+        val (id, typ, properties) = explodeRel(row, field, header, tokens)
+        formatRel(id, typ, properties)
 
       case _ =>
         val raw = row.getAs(SparkColumnName.of(header.slotFor(field)))
@@ -107,12 +121,35 @@ object RecordsSerialiser {
     (id, labels, properties)
   }
 
+  private def explodeRel(row: Row, field: Var, header: RecordHeader, tokens: CAPSRecordsTokens): (Long, String, Map[String, String]) = {
+    val id = row.getAs[Long](SparkColumnName.of(header.slotFor(field)))
+    val typ = tokens.relTypeName(row.getAs[Long](SparkColumnName.of(header.typeId(field))).toInt)
+    val properties = header.propertySlots(field).mapValues { s =>
+      CypherValue(row.getAs[Any](SparkColumnName.of(s)))
+    }.collect {
+      case (p, v) if !CypherValue.isNull(v) =>
+        p.key.name -> v.toString
+    }
+
+    (id, typ, properties)
+  }
+
   private def formatNode(id: Long, labels: Seq[String], properties: Map[String, String]) = {
     Json.obj(
-      "id" -> Json.fromString(id.toString),
+      "id" -> Json.fromLong(id),
       "labels" -> Json.arr(
         labels.map(Json.fromString): _*
       ),
+      "properties" -> Json.obj(
+        properties.mapValues(Json.fromString).toSeq: _*
+      )
+    )
+  }
+
+  private def formatRel(id: Long, typ: String, properties: Map[String, String]) = {
+    Json.obj(
+      "id" -> Json.fromLong(id),
+      "type" -> Json.fromString(typ),
       "properties" -> Json.obj(
         properties.mapValues(Json.fromString).toSeq: _*
       )

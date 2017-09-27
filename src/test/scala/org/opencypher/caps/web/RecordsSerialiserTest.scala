@@ -139,22 +139,23 @@ class RecordsSerialiserTest extends CAPSTestSuite {
 //
 //  }
 
-  test("from cypher") {
+  test("nodes and rels from cypher") {
     // Given
-    val graph = TestGraph("(:A {a: 1l, b: true})-[:T {t: 3.14}]->(:B {b: 's'}), (:X:Y:Z)")
+    val graph = TestGraph("(a:A {a: 1l, b: true})-[:T {t: 3.14d}]->(:B {b: 's'})-[:T]->(:X:Y:Z)-[:CIRCLE]->(a)")
 
-    val records = graph.cypher("MATCH (n) RETURN n").recordsWithDetails
+    val records = graph.cypher("MATCH (n)-[r]->() RETURN n, r").recordsWithDetails
 
     // Then
     toJsonString(records) should equal(
       s"""|{
           |  "columns" : [
-          |    "n"
+          |    "n",
+          |    "r"
           |  ],
           |  "rows" : [
           |    {
           |      "n" : {
-          |        "id" : "0",
+          |        "id" : 0,
           |        "labels" : [
           |          "A"
           |        ],
@@ -162,27 +163,48 @@ class RecordsSerialiserTest extends CAPSTestSuite {
           |          "b" : "true",
           |          "a" : "1"
           |        }
+          |      },
+          |      "r" : {
+          |        "id" : 0,
+          |        "type" : "T",
+          |        "properties" : {
+          |          "t" : "3.14"
+          |        }
           |      }
           |    },
           |    {
           |      "n" : {
-          |        "id" : "1",
+          |        "id" : 1,
           |        "labels" : [
           |          "B"
           |        ],
           |        "properties" : {
           |          "b" : "'s'"
           |        }
+          |      },
+          |      "r" : {
+          |        "id" : 1,
+          |        "type" : "T",
+          |        "properties" : {
+          |          ${""}
+          |        }
           |      }
           |    },
           |    {
           |      "n" : {
-          |        "id" : "2",
+          |        "id" : 2,
           |        "labels" : [
           |          "Z",
           |          "Y",
           |          "X"
           |        ],
+          |        "properties" : {
+          |          ${""}
+          |        }
+          |      },
+          |      "r" : {
+          |        "id" : 2,
+          |        "type" : "CIRCLE",
           |        "properties" : {
           |          ${""}
           |        }

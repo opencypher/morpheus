@@ -465,7 +465,7 @@ final class CypherFloat(private[CypherFloat] val v: Double) extends CypherNumber
     case _                   => false
   }
 
-  override def toString: String = s"$v :: FLOAT"
+  override def toString: String = s"$v"
 }
 
 // *** LIST
