@@ -23,6 +23,7 @@ import org.opencypher.caps.impl.syntax.header.{addContents, _}
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.web.RecordsSerialiser.toJsonString
 
+// TODO: Lists, maps
 //noinspection NameBooleanParameters
 class RecordsSerialiserTest extends CAPSTestSuite {
 
@@ -122,22 +123,6 @@ class RecordsSerialiserTest extends CAPSTestSuite {
         |}""".stripMargin
     )
   }
-
-//  test("lists") {
-//
-//  }
-//
-//  test("maps") {
-//
-//  }
-//
-//  test("nodes") {
-//
-//  }
-//
-//  test("relationships") {
-//
-//  }
 
   test("nodes and rels from cypher") {
     // Given

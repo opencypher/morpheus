@@ -97,9 +97,12 @@ object RecordsSerialiser {
         val (id, typ, properties) = explodeRel(row, field, header, tokens)
         formatRel(id, typ, properties)
 
+        // TODO: Lists, maps
+
       case _ =>
-        val raw = row.getAs(SparkColumnName.of(header.slotFor(field)))
-        Json.fromString(CypherValue(raw).toString)
+        val raw = row.getAs[Any](SparkColumnName.of(header.slotFor(field)))
+        if (raw == null) Json.fromString("null")
+        else Json.fromString(CypherValue(raw).toString)
     }
   }
 
