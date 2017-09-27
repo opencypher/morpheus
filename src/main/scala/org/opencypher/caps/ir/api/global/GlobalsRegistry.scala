@@ -91,6 +91,16 @@ final case class TokenRegistry(
 
   self =>
 
+  def ++(other: TokenRegistry) = {
+    val newLabels = labels ++ other.labels
+    val newRelTypes = relTypes ++ other.relTypes
+    val newPropertyKeys = propertyKeys ++ other.propertyKeys
+
+    copy(newLabels,
+      newRelTypes,
+      newPropertyKeys)
+  }
+
   def labelByName(name: String): Label = label(labelRefByName(name))
   def label(ref: LabelRef): Label = labels.lookup(ref).get
 

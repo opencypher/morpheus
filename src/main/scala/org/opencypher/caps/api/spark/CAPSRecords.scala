@@ -80,6 +80,24 @@ sealed abstract class CAPSRecords(
     CAPSRecords.create(cachedHeader, cachedData)
   }
 
+  def align(targetHeader: RecordHeader, tokens: CAPSTokens): CAPSRecords = {
+    val targetSlots = targetHeader.slots
+    val columnSelectors = targetSlots //
+
+
+    val slots = this.details.header.contents
+    val data = this.details.toDF()
+
+    // to-keep: intersect
+    // new: extend missing with null columns
+    ???
+  }
+
+  def unionAll(other: CAPSRecords): CAPSRecords = {
+    val unionData = details.data.union(other.details.data)
+    CAPSRecords.create(unionData)
+  }
+
   override def contract[E <: EmbeddedEntity](entity: VerifiedEmbeddedEntity[E]): CAPSRecords = {
     val slotExprs = entity.slots
     val newSlots = header.slots.map {

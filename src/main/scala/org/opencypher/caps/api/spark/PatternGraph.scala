@@ -74,7 +74,7 @@ class PatternGraph(private val baseTable: CAPSRecords, val schema: Schema, val t
     }.toMap
   }
 
-  override def union(other: CAPSGraph): CAPSGraph = ???
+  override def union(other: CAPSGraph): CAPSGraph = UnionGraph(this, other)
 
   override protected def graph: CAPSGraph = this
 }
