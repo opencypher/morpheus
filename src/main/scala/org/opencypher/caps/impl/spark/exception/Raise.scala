@@ -86,10 +86,6 @@ object Raise {
     s"Something impossible happened! $detail"
   )
 
-  def incomparableArguments(lhs: String, rhs: String) = throw CAPSException(
-    s"Cannot compare $lhs and $rhs (incomparable arguments)"
-  )
-
   def invalidArgument(expected: String, actual: String) = throw CAPSException(
     s"Expected $expected but found $actual"
   )

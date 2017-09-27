@@ -18,7 +18,6 @@ package org.opencypher.caps.api.value.syntax
 import org.opencypher.caps.api.types.CypherType
 import org.opencypher.caps.api.value._
 import org.opencypher.caps.common.Ternary
-import org.opencypher.caps.impl.spark.exception.Raise
 
 import scala.language.implicitConversions
 
@@ -62,8 +61,6 @@ final class CypherRelOps[V <: CypherRelationship](val value: V) extends AnyVal w
 
 final class CypherValueOps[V <: CypherValue](val value: V) extends AnyVal with Serializable {
 
-  import cats.syntax.show._
-
   def contents(implicit companion: CypherValueCompanion[V]): Option[companion.Contents] =
     companion.contents(value)
 
@@ -83,25 +80,14 @@ final class CypherValueOps[V <: CypherValue](val value: V) extends AnyVal with S
     companion.isOrContainsNull(value)
 
   def <(other: V)(implicit companion: CypherValueCompanion[V]): Ternary =
-    companion
-      .compare(value, other)
-      .map(_ < 0)
-      .getOrElse(Raise.incomparableArguments(value.show, other.show))
+    Ternary(companion.compare(value, other).map(_ < 0))
 
   def <=(other: V)(implicit companion: CypherValueCompanion[V]): Ternary =
-    companion
-      .compare(value, other)
-      .map(_ <= 0)
-      .getOrElse(Raise.incomparableArguments(value.show, other.show))
+    Ternary(companion.compare(value, other).map(_ <= 0))
 
   def >(other: V)(implicit companion: CypherValueCompanion[V]): Ternary =
-    companion
-      .compare(value, other)
-      .map(_ > 0)
-      .getOrElse(Raise.incomparableArguments(value.show, other.show))
+    Ternary(companion.compare(value, other).map(_ > 0))
 
-  def >=(other: V)(implicit companion: CypherValueCompanion[V]): Ternary = companion
-    .compare(value, other)
-    .map(_ >= 0)
-    .getOrElse(Raise.incomparableArguments(value.show, other.show))
+  def >=(other: V)(implicit companion: CypherValueCompanion[V]): Ternary =
+    Ternary(companion.compare(value, other).map(_ >= 0))
 }

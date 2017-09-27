@@ -95,22 +95,19 @@ class CypherValueComparabilityTest extends CypherValueTestSuite {
     }
   }
 
-  private def tryCompare[V <: CypherValue : CypherValueCompanion](a: V, b: V): Option[Int] = {
-    val l = CypherValueCompanion[V].compare(a, b)
-    val r = CypherValueCompanion[V].compare(b, a)
+  private def tryCompare[V <: CypherValue](l: V, r: V)(implicit companion: CypherValueCompanion[V]): Option[Int] = {
+    val a = companion.compare(l, r)
+    val b = companion.compare(r, l)
 
-    (l, r) match {
-      case (SuccessfulComparison(0), SuccessfulComparison(0)) =>
+    (a, b) match {
+      case (Some(0), Some(0)) =>
         Some(0)
 
-      case (SuccessfulComparison(x), SuccessfulComparison(y)) =>
+      case (Some(x), Some(y)) =>
         ((x < 0 && y > 0) || (x > 0 && y < 0)) should equal(true)
         Some(x)
 
-      case (IncompatibleArguments, IncompatibleArguments) =>
-        None
-
-      case (ArgumentComparesNulls, ArgumentComparesNulls) =>
+      case (None, None) =>
         None
 
       case _ =>

@@ -123,24 +123,20 @@ sealed trait CypherValueCompanion[V <: CypherValue] extends Equiv[V] with Show[V
   /**
     * @return the result of comparing the given values (under "Cypher comparability")
     */
-  def compare(x: V, y: V): CypherComparison = {
+  def compare(l: V, r: V): Option[Int] = {
     // This is not a partial order (it is not reflexive!)
-    if (x eq y) {
-      if (isOrContainsNull(x)) ArgumentComparesNulls else SuccessfulComparison(0)
+    if (l eq r) {
+      if (isOrContainsNull(l)) None else Some(0)
     } else {
-      if (isNull(x) || isNull(y))
-        ArgumentComparesNulls
+      if (isOrContainsNull(l) || isOrContainsNull(r))
+        None
       else {
-        val xGroup = orderGroup(x)
-        val yGroup = orderGroup(y)
-        if (xGroup == yGroup) {
-          if (isOrContainsNull(x) || isOrContainsNull(y))
-            ArgumentComparesNulls
-          else
-            SuccessfulComparison(computeCompare(x, y))
-        }
+        val xGroup = orderGroup(l)
+        val yGroup = orderGroup(r)
+        if (xGroup == yGroup)
+          Some(computeCompare(l, r))
         else
-          IncompatibleArguments
+          None
       }
     }
   }
