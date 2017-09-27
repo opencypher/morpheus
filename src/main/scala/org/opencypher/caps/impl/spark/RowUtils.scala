@@ -20,9 +20,9 @@ import org.opencypher.caps.api.expr.{Const, Expr}
 import org.opencypher.caps.api.record.RecordHeader
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value._
-import org.opencypher.caps.api.value.CypherValue.Conversion._
-import org.opencypher.caps.impl.spark.physical.RuntimeContext
+import org.opencypher.caps.api.value.instances._
 import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.spark.physical.RuntimeContext
 
 object RowUtils {
 

@@ -31,13 +31,13 @@ object EntityData {
       newUntypedRelationship(nodes._1, nodes._2)
 
     def newUntypedRelationship(startNode: CypherNode, endNode: CypherNode): RelationshipData =
-      RelationshipData(startNode.id, "", endNode.id)
+      RelationshipData(startNode.id, endNode.id, "")
 
     def newRelationship(triple: ((CypherNode, String), CypherNode)): RelationshipData =
       newRelationship(triple._1._1, triple._1._2, triple._2)
 
     def newRelationship(startNode: CypherNode, relType: String, endNode: CypherNode): RelationshipData =
-      RelationshipData(startNode.id, relType, endNode.id)
+      RelationshipData(startNode.id, endNode.id, relType)
   }
 }
 
@@ -46,31 +46,35 @@ sealed trait EntityData {
 }
 
 object NodeData {
-  val empty = NodeData(labels = Array.empty, properties = Properties.empty)
+  val empty = NodeData(labels = Seq.empty, properties = Properties.empty)
 }
 
-final case class NodeData(labels: Array[String],
+final case class NodeData(labels: Seq[String],
                           properties: Properties)
   extends EntityData {
 
   override def asEntity(id: EntityId) = CypherNode(id, labels, properties)
 
-  def withLabels(newLabels: String*): NodeData = copy(labels = newLabels.toArray)
+  def withLabels(newLabels: String*): NodeData = copy(labels = newLabels.toSeq)
   def withProperties(newProperties: (String, CypherValue)*): NodeData = copy(properties = Properties(newProperties: _*))
   def withProperties(newProperties: Properties): NodeData = copy(properties = newProperties)
 }
 
 final case class RelationshipData(startId: EntityId,
-                                  relationshipType: String,
                                   endId: EntityId,
+                                  relationshipType: String,
                                   properties: Properties = Properties.empty)
   extends EntityData {
 
   override def asEntity(id: EntityId) = CypherRelationship(id, startId, endId, relationshipType, properties)
 
   def withStartId(newStartId: EntityId): RelationshipData = copy(startId = newStartId)
-  def withRelationshipType(newType: String): RelationshipData = copy(relationshipType = newType)
   def withEndId(newEndId: EntityId): RelationshipData = copy(endId = newEndId)
-  def withProperties(newProperties: (String, CypherValue)*): RelationshipData = copy(properties = Properties(newProperties: _*))
+
+  def withRelationshipType(newType: String): RelationshipData = copy(relationshipType = newType)
+
+  def withProperties(newProperties: (String, CypherValue)*): RelationshipData =
+    copy(properties = Properties(newProperties: _*))
+
   def withProperties(newProperties: Properties): RelationshipData = copy(properties = newProperties)
 }

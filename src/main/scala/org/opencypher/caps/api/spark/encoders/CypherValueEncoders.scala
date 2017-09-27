@@ -13,9 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.api.value
+package org.opencypher.caps.api.spark.encoders
 
-trait CypherValueImplicits
-  extends CypherValue.Encoders
-    with CypherValue.Conversion
-    with EntityData.Creation
+import org.apache.spark.sql.Encoders._
+import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
+import org.opencypher.caps.api.value.{CypherNode, CypherRelationship}
+
+trait CypherValueEncoders extends LowPriorityCypherValueEncoders {
+  implicit def cypherNodeEncoder: ExpressionEncoder[CypherNode] = kryo[CypherNode]
+  implicit def cypherRelationshipEncoder: ExpressionEncoder[CypherRelationship] = kryo[CypherRelationship]
+}
+

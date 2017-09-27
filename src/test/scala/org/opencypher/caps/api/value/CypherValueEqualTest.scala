@@ -15,12 +15,13 @@
  */
 package org.opencypher.caps.api.value
 
-import org.opencypher.caps.api.value.CypherValue.companion
 import org.opencypher.caps.common.{Maybe, Ternary, True}
 
 class CypherValueEqualTest extends CypherValueTestSuite {
 
   import CypherTestValues._
+  import instances._
+  import syntax._
 
   test("PATH equal") {
     verifyEqual(PATH_valueGroups)
@@ -65,15 +66,15 @@ class CypherValueEqualTest extends CypherValueTestSuite {
   def verifyEqual[V <: CypherValue : CypherValueCompanion](valueGroups: ValueGroups[V]): Unit = {
     val values = valueGroups.flatten
 
-    values.foreach { v => equal[V](v, v) should be(if (companion[V].isIncomparable(v)) Maybe else True) }
-    values.foreach { v => equal[V](cypherNull, v) should be(Maybe) }
-    values.foreach { v => equal[V](v, cypherNull) should be(Maybe) }
+    values.foreach { v => equal[V](v, v) should be(if (v.comparesNulls) Maybe else True) }
+    values.foreach { v => (cypherNull[V] `equalTo` v) should be(Maybe) }
+    values.foreach { v => (v `equalTo` cypherNull[V]) should be(Maybe) }
 
-    equal[V](cypherNull, cypherNull) should be(Maybe)
+    (cypherNull[V] `equalTo` cypherNull[V]) should be(Maybe)
 
     values.foreach { v1 =>
       values.foreach { v2 =>
-        if (companion[V].isIncomparable(v1) || companion[V].isIncomparable(v2))
+        if (v1.comparesNulls || v2.comparesNulls)
           equal[V](v1, v2) should be(Maybe)
         else {
           equal[V](v1, v2) should be(Ternary(v1 == v2))
@@ -83,8 +84,8 @@ class CypherValueEqualTest extends CypherValueTestSuite {
   }
 
   private def equal[V <: CypherValue : CypherValueCompanion](v1: V, v2: V): Ternary = {
-    val cmp1 = companion[V].equal(v1, v2)
-    val cmp2 = companion[V].equal(v2, v1)
+    val cmp1 = CypherValueCompanion[V].equal(v1, v2)
+    val cmp2 = CypherValueCompanion[V].equal(v2, v1)
 
     cmp1 should equal(cmp2)
 

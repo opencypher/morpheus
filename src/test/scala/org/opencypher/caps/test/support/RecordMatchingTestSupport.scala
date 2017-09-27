@@ -34,7 +34,7 @@ trait RecordMatchingTestSupport {
   implicit val bagConfig: HashedBagConfiguration[CypherMap] = Bag.configuration.compact[CypherMap]
 
   implicit class RecordMatcher(records: CAPSRecords) {
-    def shouldMatch(expected: CypherMap*) = {
+    def shouldMatch(expected: CypherMap*): Assertion = {
       records.toMaps should equal(Bag(expected: _*))
     }
 

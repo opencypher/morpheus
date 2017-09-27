@@ -26,7 +26,7 @@ class CypherValueStructureTest extends CypherValueTestSuite {
     val reconstructedValueGroups = scalaValueGroups.map {
       values => values.map {
         case elements: Seq[_] =>
-           CypherPath(elements.asInstanceOf[Seq[CypherEntityValue]]: _*)
+           CypherPath(elements.asInstanceOf[Seq[CypherEntityValue]])
 
         case null =>
           cypherNull[CypherPath]
@@ -56,8 +56,10 @@ class CypherValueStructureTest extends CypherValueTestSuite {
 
     val reconstructedValueGroups = scalaValueGroups.map {
       values => values.map {
-        case (id: EntityId, data: RelationshipData) =>
-           CypherRelationship(id, data.startId, data.endId, data.relationshipType, data.properties)
+        case contents: RelationshipContents =>
+          val id = contents.id
+          val data = contents.data
+          CypherRelationship(id, data.startId, data.endId, data.relationshipType, data.properties)
 
         case null =>
           cypherNull[CypherRelationship]
@@ -74,7 +76,7 @@ class CypherValueStructureTest extends CypherValueTestSuite {
     val cypherValueGroups = RELATIONSHIP_valueGroups.materialValueGroups
 
     val expected = cypherValueGroups.scalaValueGroups
-    val actual = cypherValueGroups.map { values => values.map { r: CypherRelationship => r.id -> r.data } }
+    val actual = cypherValueGroups.map { values => values.map { r: CypherRelationship => RelationshipContents(r.id, r.startId, r.endId, r.relationshipType, r.properties) } }
 
     actual should equal(expected)
 
@@ -87,8 +89,10 @@ class CypherValueStructureTest extends CypherValueTestSuite {
 
     val reconstructedValueGroups = scalaValueGroups.map {
       values => values.map {
-        case (id: EntityId, data: NodeData) =>
-           CypherNode(id, data.labels, data.properties)
+        case contents: NodeContents =>
+          val id = contents.id
+          val data = contents.data
+          CypherNode(id, data.labels, data.properties)
 
         case null =>
           cypherNull[CypherNode]
@@ -105,7 +109,7 @@ class CypherValueStructureTest extends CypherValueTestSuite {
     val cypherValueGroups = NODE_valueGroups.materialValueGroups
 
     val expected = cypherValueGroups.scalaValueGroups
-    val actual = cypherValueGroups.map { values => values.map { n: CypherNode => n.id -> n.data } }
+    val actual = cypherValueGroups.map { values => values.map { n: CypherNode => NodeContents(n.id, n.labels, n.properties) } }
 
     actual should equal(expected)
 
@@ -118,8 +122,8 @@ class CypherValueStructureTest extends CypherValueTestSuite {
 
     val reconstructedValueGroups = scalaValueGroups.map {
       values => values.map {
-        case p: Properties =>
-          CypherMap(p)
+        case contents: MapContents =>
+          CypherMap(contents.properties)
 
         case null =>
           cypherNull[CypherMap]
@@ -343,17 +347,21 @@ class CypherValueStructureTest extends CypherValueTestSuite {
 
     val reconstructedValueGroups = scalaValueGroups.map {
       values => values.map {
-        case (id: EntityId, data: NodeData) =>
+        case contents: NodeContents =>
+          val id = contents.id
+          val data = contents.data
           CypherNode(id, data.labels, data.properties)
 
-        case (id: EntityId, data: RelationshipData) =>
+        case contents: RelationshipContents =>
+          val id = contents.id
+          val data = contents.data
           CypherRelationship(id, data)
 
-        case p: Properties =>
-          CypherMap(p)
+        case contents: MapContents =>
+          CypherMap(contents.properties)
 
         case elements: Seq[_] if isPathLike(elements) =>
-          CypherPath(elements.asInstanceOf[Seq[CypherEntityValue]]: _*)
+          CypherPath(elements.asInstanceOf[Seq[CypherEntityValue]])
 
         case l: Seq[_] =>
           CypherList(l.asInstanceOf[Seq[CypherValue]])

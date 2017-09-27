@@ -13,25 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.api.value
+package org.opencypher.caps.api.value.syntax
 
-object CypherValueUtils {
-  implicit class RichCypherValue(value: CypherValue) {
-
-    def <(rhs: CypherValue): Option[Boolean] = {
-      CypherValue.comparability(value, rhs).map(_ < 0)
-    }
-
-    def <=(rhs: CypherValue): Option[Boolean] = {
-      CypherValue.comparability(value, rhs).map(_ <= 0)
-    }
-
-    def >(rhs: CypherValue): Option[Boolean] = {
-      CypherValue.comparability(value, rhs).map(_ > 0)
-    }
-
-    def >=(rhs: CypherValue): Option[Boolean] = {
-      CypherValue.comparability(value, rhs).map(_ >= 0)
-    }
-  }
-}
+trait AllSyntax extends CypherValueSyntax with CypherNullSyntax

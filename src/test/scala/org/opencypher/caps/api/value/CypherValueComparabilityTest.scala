@@ -15,8 +15,6 @@
  */
 package org.opencypher.caps.api.value
 
-import org.opencypher.caps.api.value.CypherValue.companion
-
 class CypherValueComparabilityTest extends CypherValueTestSuite {
 
   import CypherTestValues._
@@ -67,7 +65,7 @@ class CypherValueComparabilityTest extends CypherValueTestSuite {
 
   private def verifyComparability[V <: CypherValue : CypherValueCompanion](valueGroups: ValueGroups[V]): Unit = {
     valueGroups.flatten.foreach { v =>
-      tryCompare(v, v) should be(if (companion[V].isIncomparable(v)) None else Some(0))
+      tryCompare(v, v) should be(if (v.comparesNulls) None else Some(0))
     }
 
     val indexedValueGroups =
@@ -84,24 +82,24 @@ class CypherValueComparabilityTest extends CypherValueTestSuite {
         // direction 1: knowing we have the same value
         val isSameValue = leftIndex == rightIndex
         if (isSameValue)
-          cmp should equal(if (companion[V].isIncomparable(leftValue) || companion[V].isIncomparable(rightValue)) None else Some(0))
+          cmp should equal(if (leftValue.comparesNulls || rightValue.comparesNulls) None else Some(0))
         else
           cmp should not equal Some(0)
 
         // direction 2: knowing the values are comparable
         if (cmp.nonEmpty && cmp.get <= 0) {
           (leftIndex <= rightIndex) should be(true)
-          (companion[V].orderability(leftValue, rightValue) <= 0) should be(true)
+          (CypherValueCompanion[V].order(leftValue, rightValue) <= 0) should be(true)
         }
       }
     }
   }
 
-  private def tryCompare[V <: CypherValue : CypherValueCompanion](a: V, b: V): Option[Int] = {
-    val l = companion[V].comparability(a, b)
-    val r = companion[V].comparability(b, a)
+  private def tryCompare[V <: CypherValue](l: V, r: V)(implicit companion: CypherValueCompanion[V]): Option[Int] = {
+    val a = companion.compare(l, r)
+    val b = companion.compare(r, l)
 
-    (l, r) match {
+    (a, b) match {
       case (Some(0), Some(0)) =>
         Some(0)
 
