@@ -83,6 +83,23 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
     result.graphs shouldBe empty
   }
 
+  test("or on labels") {
+    // Given
+    val given = TestGraph("""(:A {val: 1L}), (:B {val: 2L}), (:C {val: 3L})""")
+
+    // When
+    val result = given.cypher("MATCH (a) WHERE a:A OR a:B RETURN a.val")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("a.val" -> 1),
+      CypherMap("a.val" -> 2)
+    ))
+
+    // And
+    result.graphs shouldBe empty
+  }
+
   test("or with and") {
     // Given
     val given = TestGraph("""(:A {val: 1L, name: 'a'}),
