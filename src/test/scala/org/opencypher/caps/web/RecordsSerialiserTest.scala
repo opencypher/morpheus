@@ -145,12 +145,14 @@ class RecordsSerialiserTest extends CAPSTestSuite {
           |          "A"
           |        ],
           |        "properties" : {
-          |          "b" : "true",
-          |          "a" : "1"
+          |          "a" : "1",
+          |          "b" : "true"
           |        }
           |      },
           |      "r" : {
           |        "id" : 0,
+          |        "source" : 0,
+          |        "target" : 1,
           |        "type" : "T",
           |        "properties" : {
           |          "t" : "3.14"
@@ -169,6 +171,8 @@ class RecordsSerialiserTest extends CAPSTestSuite {
           |      },
           |      "r" : {
           |        "id" : 1,
+          |        "source" : 1,
+          |        "target" : 2,
           |        "type" : "T",
           |        "properties" : {
           |          ${""}
@@ -189,6 +193,8 @@ class RecordsSerialiserTest extends CAPSTestSuite {
           |      },
           |      "r" : {
           |        "id" : 2,
+          |        "source" : 2,
+          |        "target" : 0,
           |        "type" : "CIRCLE",
           |        "properties" : {
           |          ${""}

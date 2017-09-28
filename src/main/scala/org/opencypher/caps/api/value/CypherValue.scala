@@ -636,6 +636,8 @@ sealed class CypherMap(protected[value] val properties: Properties)
 
   def get(key: String): Option[CypherValue] = properties.get(key)
 
+  def keys: Set[String] = properties.m.keySet
+
   @transient
   protected[value] lazy val cachedIsOrContainsNulls: Boolean =
     properties.m.values.exists(CypherValue.isOrContainsNull)
