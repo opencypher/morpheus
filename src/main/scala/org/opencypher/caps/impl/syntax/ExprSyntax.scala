@@ -37,7 +37,6 @@ final class ExprOps(val e: Expr) extends AnyVal {
       case Equals(l, r) :: tl => computeDependencies(l :: r :: tl, result)
       case StartNode(expr) :: tl => computeDependencies(expr :: tl, result)
       case EndNode(expr) :: tl => computeDependencies(expr :: tl, result)
-      case TypeId(expr) :: tl => computeDependencies(expr :: tl, result)
       case HasLabel(expr, _) :: tl => computeDependencies(expr :: tl, result)
       case HasType(expr, _) :: tl => computeDependencies(expr :: tl, result)
       case OfType(expr) :: tl => computeDependencies(expr :: tl, result)

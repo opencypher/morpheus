@@ -217,8 +217,6 @@ object CAPSGraph {
                   acc.withColumn(columnName, lit(labels.contains(h.label.name)))
                 case h: HasType =>
                   acc.withColumn(columnName, lit(labels.contains(h.relType.name)))
-                case t: TypeId =>
-                  acc.withColumn(columnName, lit(tokens.relTypeId(labels.head)))
                 case t: OfType =>
                   acc.withColumn(columnName, lit(labels.head))
                 case _ => acc.withColumn(columnName, lit(null).cast(toSparkType(slot.content.cypherType.nullable)))

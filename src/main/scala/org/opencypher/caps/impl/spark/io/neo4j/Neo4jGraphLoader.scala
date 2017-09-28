@@ -298,9 +298,6 @@ object Neo4jGraphLoader {
           case _: EndNode =>
             importedRel.endNodeId()
 
-          case _: TypeId =>
-            tokens.relTypeRefByName(relType).id
-
           case _: OfType =>
             relType
 

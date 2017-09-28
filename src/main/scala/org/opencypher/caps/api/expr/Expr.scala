@@ -184,9 +184,6 @@ final case class Property(m: Expr, key: PropertyKey)(val cypherType: CypherType 
     case _ => false
   }
 }
-final case class TypeId(rel: Expr)(val cypherType: CypherType = CTWildcard) extends Expr {
-  override def withoutType = s"type(${rel.withoutType})"
-}
 
 // Arithmetic expressions
 
