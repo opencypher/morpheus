@@ -132,16 +132,16 @@ class CAPSGraphOperationsTest extends CAPSTestSuite {
     val rels = result.relationships("r").details.toDF().collect.toSet
     rels should equal(
       Set(
-        Row(/* ____source(r) */ 1L, /* r */ 1L, /* ____type(r) */ 0, /* ____target(r) */ 2L, /* ____r_dot_sinceINTEGER */ 2017L, /* ____r_dot_recommendsBOOLEAN */ null),
-        Row(/* ____source(r) */ 1L, /* r */ 2L, /* ____type(r) */ 0, /* ____target(r) */ 3L, /* ____r_dot_sinceINTEGER */ 2016L, /* ____r_dot_recommendsBOOLEAN */ null),
-        Row(/* ____source(r) */ 1L, /* r */ 3L, /* ____type(r) */ 0, /* ____target(r) */ 4L, /* ____r_dot_sinceINTEGER */ 2015L, /* ____r_dot_recommendsBOOLEAN */ null),
-        Row(/* ____source(r) */ 2L, /* r */ 4L, /* ____type(r) */ 0, /* ____target(r) */ 3L, /* ____r_dot_sinceINTEGER */ 2016L, /* ____r_dot_recommendsBOOLEAN */ null),
-        Row(/* ____source(r) */ 2L, /* r */ 5L, /* ____type(r) */ 0, /* ____target(r) */ 4L, /* ____r_dot_sinceINTEGER */ 2013L, /* ____r_dot_recommendsBOOLEAN */ null),
-        Row(/* ____source(r) */ 3L, /* r */ 6L, /* ____type(r) */ 0, /* ____target(r) */ 4L, /* ____r_dot_sinceINTEGER */ 2016L, /* ____r_dot_recommendsBOOLEAN */ null),
-        Row(/* ____source(r) */ 100L, /* r */ 100L, /* ____type(r) */ 1, /* ____target(r) */ 10L, /* ____r_dot_sinceINTEGER */ null, /* ____r_dot_recommendsBOOLEAN */ true),
-        Row(/* ____source(r) */ 200L, /* r */ 200L, /* ____type(r) */ 1, /* ____target(r) */ 40L, /* ____r_dot_sinceINTEGER */ null, /* ____r_dot_recommendsBOOLEAN */ true),
-        Row(/* ____source(r) */ 300L, /* r */ 300L, /* ____type(r) */ 1, /* ____target(r) */ 30L, /* ____r_dot_sinceINTEGER */ null, /* ____r_dot_recommendsBOOLEAN */ true),
-        Row(/* ____source(r) */ 400L, /* r */ 400L, /* ____type(r) */ 1, /* ____target(r) */ 20L, /* ____r_dot_sinceINTEGER */ null, /* ____r_dot_recommendsBOOLEAN */ false)
+        Row(/* ____source(r) */ 1L, /* r */ 1L, /* ____type(r) */ "KNOWS", /* ____target(r) */ 2L, /* ____r_dot_sinceINTEGER */ 2017L, /* ____r_dot_recommendsBOOLEAN */ null),
+        Row(/* ____source(r) */ 1L, /* r */ 2L, /* ____type(r) */ "KNOWS", /* ____target(r) */ 3L, /* ____r_dot_sinceINTEGER */ 2016L, /* ____r_dot_recommendsBOOLEAN */ null),
+        Row(/* ____source(r) */ 1L, /* r */ 3L, /* ____type(r) */ "KNOWS", /* ____target(r) */ 4L, /* ____r_dot_sinceINTEGER */ 2015L, /* ____r_dot_recommendsBOOLEAN */ null),
+        Row(/* ____source(r) */ 2L, /* r */ 4L, /* ____type(r) */ "KNOWS", /* ____target(r) */ 3L, /* ____r_dot_sinceINTEGER */ 2016L, /* ____r_dot_recommendsBOOLEAN */ null),
+        Row(/* ____source(r) */ 2L, /* r */ 5L, /* ____type(r) */ "KNOWS", /* ____target(r) */ 4L, /* ____r_dot_sinceINTEGER */ 2013L, /* ____r_dot_recommendsBOOLEAN */ null),
+        Row(/* ____source(r) */ 3L, /* r */ 6L, /* ____type(r) */ "KNOWS", /* ____target(r) */ 4L, /* ____r_dot_sinceINTEGER */ 2016L, /* ____r_dot_recommendsBOOLEAN */ null),
+        Row(/* ____source(r) */ 100L, /* r */ 100L, /* ____type(r) */ "READS", /* ____target(r) */ 10L, /* ____r_dot_sinceINTEGER */ null, /* ____r_dot_recommendsBOOLEAN */ true),
+        Row(/* ____source(r) */ 200L, /* r */ 200L, /* ____type(r) */ "READS", /* ____target(r) */ 40L, /* ____r_dot_sinceINTEGER */ null, /* ____r_dot_recommendsBOOLEAN */ true),
+        Row(/* ____source(r) */ 300L, /* r */ 300L, /* ____type(r) */ "READS", /* ____target(r) */ 30L, /* ____r_dot_sinceINTEGER */ null, /* ____r_dot_recommendsBOOLEAN */ true),
+        Row(/* ____source(r) */ 400L, /* r */ 400L, /* ____type(r) */ "READS", /* ____target(r) */ 20L, /* ____r_dot_sinceINTEGER */ null, /* ____r_dot_recommendsBOOLEAN */ false)
       )
     )
   }

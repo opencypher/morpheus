@@ -85,10 +85,10 @@ class CAPSRecordsTest extends CAPSTestSuite {
   test("contract relationships with a dynamic type") {
     // TODO: Reject records using unknown tokes
     val given = CAPSRecords.create(session.createDataFrame(Seq(
-      (10, 1, 2, 50),
-      (11, 2, 3, 51),
-      (12, 3, 4, 52),
-      (13, 4, 1, 53)
+      (10, 1, 2, "RED"),
+      (11, 2, 3, "BLUE"),
+      (12, 3, 4, "GREEN"),
+      (13, 4, 1, "YELLOW")
     )).toDF("ID", "FROM", "TO", "COLOR"))
 
     val embeddedRel =
@@ -103,7 +103,7 @@ class CAPSRecordsTest extends CAPSTestSuite {
       OpaqueField(entityVar),
       ProjectedExpr(StartNode(entityVar)(CTNode)),
       ProjectedExpr(EndNode(entityVar)(CTNode)),
-      ProjectedExpr(TypeId(entityVar)(CTRelationship("RED", "BLUE", "GREEN", "YELLOW")))
+      ProjectedExpr(OfType(entityVar)(CTRelationship("RED", "BLUE", "GREEN", "YELLOW")))
     ))
 
     val scan = GraphScan(embeddedRel).from(given)

@@ -203,7 +203,7 @@ case class RowToCypherMap(header: RecordHeader, tokens: CAPSRecordsTokens) exten
     val id = row.getAs[Long](SparkColumnName.of(header.slotFor(field)))
     val source = row.getAs[Long](SparkColumnName.of(header.sourceNodeSlot(field)))
     val target = row.getAs[Long](SparkColumnName.of(header.targetNodeSlot(field)))
-    val typ = tokens.relTypeName(row.getAs[Long](SparkColumnName.of(header.typeSlot(field))).toInt)
+    val typ = row.getAs[String](SparkColumnName.of(header.typeSlot(field)))
     val properties = header.propertySlots(field).mapValues { s =>
       CypherValue(row.getAs[Any](SparkColumnName.of(s)))
     }.collect {
