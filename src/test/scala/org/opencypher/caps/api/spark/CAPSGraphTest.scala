@@ -195,12 +195,12 @@ class CAPSGraphTest extends CAPSTestSuite {
     ))
 
     rels.details.toDF().collect().toSet should equal(Set(
-      Row(1, 1, 0, 2, 2017),
-      Row(1, 2, 0, 3, 2016),
-      Row(1, 3, 0, 4, 2015),
-      Row(2, 4, 0, 3, 2016),
-      Row(2, 5, 0, 4, 2013),
-      Row(3, 6, 0, 4, 2016)
+      Row(1, 1, "KNOWS", 2, 2017),
+      Row(1, 2, "KNOWS", 3, 2016),
+      Row(1, 3, "KNOWS", 4, 2015),
+      Row(2, 4, "KNOWS", 3, 2016),
+      Row(2, 5, "KNOWS", 4, 2013),
+      Row(3, 6, "KNOWS", 4, 2016)
     ))
   }
 
@@ -269,17 +269,17 @@ class CAPSGraphTest extends CAPSTestSuite {
 
     rels.details.toDF().collect().toSet should equal(Set(
       // :KNOWS
-      Row(1, 1, 0, 2, 2017, null),
-      Row(1, 2, 0, 3, 2016, null),
-      Row(1, 3, 0, 4, 2015, null),
-      Row(2, 4, 0, 3, 2016, null),
-      Row(2, 5, 0, 4, 2013, null),
-      Row(3, 6, 0, 4, 2016, null),
+      Row(1, 1, "KNOWS", 2, 2017, null),
+      Row(1, 2, "KNOWS", 3, 2016, null),
+      Row(1, 3, "KNOWS", 4, 2015, null),
+      Row(2, 4, "KNOWS", 3, 2016, null),
+      Row(2, 5, "KNOWS", 4, 2013, null),
+      Row(3, 6, "KNOWS", 4, 2016, null),
       // :READS
-      Row(1, 100, 1, 10, null, true),
-      Row(2, 200, 1, 40, null, true),
-      Row(3, 300, 1, 30, null, true),
-      Row(4, 400, 1, 20, null, false)
+      Row(1, 100, "READS", 10, null, true),
+      Row(2, 200, "READS", 40, null, true),
+      Row(3, 300, "READS", 30, null, true),
+      Row(4, 400, "READS", 20, null, false)
     ))
   }
 
@@ -297,12 +297,12 @@ class CAPSGraphTest extends CAPSTestSuite {
     ))
 
     rels.details.toDF().collect().toSet should equal(Set(
-      Row(1, 1, 0, 2, 2017),
-      Row(1, 2, 0, 3, 2016),
-      Row(1, 3, 0, 4, 2015),
-      Row(2, 4, 0, 3, 2016),
-      Row(2, 5, 0, 4, 2013),
-      Row(3, 6, 0, 4, 2016)
+      Row(1, 1, "KNOWS", 2, 2017),
+      Row(1, 2, "KNOWS", 3, 2016),
+      Row(1, 3, "KNOWS", 4, 2015),
+      Row(2, 4, "KNOWS", 3, 2016),
+      Row(2, 5, "KNOWS", 4, 2013),
+      Row(3, 6, "KNOWS", 4, 2016)
     ))
   }
 
@@ -321,14 +321,14 @@ class CAPSGraphTest extends CAPSTestSuite {
 
     rels.details.toDF().collect().toSet should equal(Set(
       // :KNOWS
-      Row(1, 1, 0, 2, 2017),
-      Row(1, 2, 0, 3, 2016),
-      Row(1, 3, 0, 4, 2015),
-      Row(2, 4, 0, 3, 2016),
-      Row(2, 5, 0, 4, 2013),
-      Row(3, 6, 0, 4, 2016),
+      Row(1, 1, "KNOWS", 2, 2017),
+      Row(1, 2, "KNOWS", 3, 2016),
+      Row(1, 3, "KNOWS", 4, 2015),
+      Row(2, 4, "KNOWS", 3, 2016),
+      Row(2, 5, "KNOWS", 4, 2013),
+      Row(3, 6, "KNOWS", 4, 2016),
       // :INFLUENCES
-      Row(10, 1000, 2, 20, null)
+      Row(10, 1000, "INFLUENCES", 20, null)
     ))
   }
 
