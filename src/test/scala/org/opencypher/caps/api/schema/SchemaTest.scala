@@ -135,15 +135,15 @@ class SchemaTest extends BaseTestSuite {
     }
   }
 
-  test("chaining calls should work") {
+  test("chaining calls should amend types") {
     val schema = Schema.empty
       .withNodePropertyKeys("Foo")("name" -> CTString)
-      .withNodePropertyKeys("Foo")("age" -> CTInteger)
+      .withNodePropertyKeys("Foo")("name" -> CTString, "age" -> CTInteger)
       .withRelationshipPropertyKeys("BAR")("p1" -> CTBoolean)
       .withRelationshipPropertyKeys("BAR")("p2" -> CTFloat)
 
-    schema.nodeKeys("Foo") should equal(Map("name" -> CTString, "age" -> CTInteger))
-    schema.relationshipKeys("BAR") should equal(Map("p1" -> CTBoolean, "p2" -> CTFloat))
+    schema.nodeKeys("Foo") should equal(Map("name" -> CTString, "age" -> CTInteger.nullable))
+    schema.relationshipKeys("BAR") should equal(Map("p1" -> CTBoolean.nullable, "p2" -> CTFloat.nullable))
   }
 
   test("should not allow updates to conflict with existing types") {
@@ -229,5 +229,22 @@ class SchemaTest extends BaseTestSuite {
       .withLabelCombination("B","F")
       .withLabelCombination("C","D")
     )
+  }
+
+  test("isEmpty") {
+    Schema.empty.isEmpty shouldBe true
+    (Schema.empty ++ Schema.empty).isEmpty shouldBe true
+    val empty = Schema(
+      Set.empty, Set.empty,
+      PropertyKeyMap.empty, PropertyKeyMap.empty,
+      ImpliedLabels(Map.empty), LabelCombinations(Set.empty)
+    )
+    empty.isEmpty shouldBe true
+    (empty ++ Schema.empty).isEmpty shouldBe true
+
+    Schema.empty.withNodePropertyKeys("label")().isEmpty shouldBe false
+    Schema.empty.withRelationshipPropertyKeys("type")("name" -> CTFloat).isEmpty shouldBe false
+    Schema.empty.withImpliedLabel("Foo" -> "Bar").isEmpty shouldBe false
+    Schema.empty.withLabelCombination("Foo", "Bar", "Baz").isEmpty shouldBe false
   }
 }

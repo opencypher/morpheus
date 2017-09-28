@@ -571,13 +571,13 @@ private[caps] object MaterialDefiniteCypherType {
   }
 }
 
-case object CTIntegerOrNull extends NullableDefiniteCypherType {
+private case object CTIntegerOrNull extends NullableDefiniteCypherType {
   override def name: String = CTInteger + "?"
 
   override def material: CTInteger.type = CTInteger
 }
 
-case object CTStringOrNull extends NullableDefiniteCypherType {
+private case object CTStringOrNull extends NullableDefiniteCypherType {
   override def name: String = CTString + "?"
 
   override def material: CTString.type = CTString

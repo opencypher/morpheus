@@ -33,7 +33,7 @@ class ConvertersTest extends BaseTestSuite {
       StringType -> CTString,
       BooleanType -> CTBoolean,
       ArrayType(LongType, containsNull = false) -> CTList(CTInteger),
-      ArrayType(StringType, containsNull = true) -> CTList(CTStringOrNull),
+      ArrayType(StringType, containsNull = true) -> CTList(CTString.nullable),
       BinaryType -> CTAny
     )
 
@@ -51,7 +51,7 @@ class ConvertersTest extends BaseTestSuite {
       CTString -> StringType,
       CTBoolean -> BooleanType,
       CTList(CTInteger) -> ArrayType(LongType, containsNull = false),
-      CTList(CTStringOrNull) -> ArrayType(StringType, containsNull = true),
+      CTList(CTString.nullable) -> ArrayType(StringType, containsNull = true),
       CTAny -> BinaryType,
       CTNode -> LongType,
       CTNode("Foo") -> LongType,
