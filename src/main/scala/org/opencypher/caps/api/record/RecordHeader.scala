@@ -48,17 +48,9 @@ final case class RecordHeader(internalHeader: InternalHeader) {
   def targetNode(rel: Var): RecordSlot = slotsFor(EndNode(rel)()).headOption.getOrElse(???)
   def typeId(rel: Expr): RecordSlot = slotsFor(TypeId(rel)()).headOption.getOrElse(???)
 
-  def labels(node: Var): Seq[HasLabel] = {
-    childSlots(node).collect {
-      case RecordSlot(_, ProjectedExpr(h: HasLabel)) => h
-    }
-  }
+  def labels(node: Var): Seq[HasLabel] = labelSlots(node).keys.toSeq
 
-  def properties(node: Var): Seq[Property] = {
-    childSlots(node).collect {
-      case RecordSlot(_, ProjectedExpr(p @ Property(_, _))) => p
-    }
-  }
+  def properties(node: Var): Seq[Property] = propertySlots(node).keys.toSeq
 
   def childSlots(entity: Var): Seq[RecordSlot] = {
     slots.filter {
