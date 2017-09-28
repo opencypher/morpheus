@@ -143,7 +143,7 @@ trait GraphMatchingTestSupport {
 
           sparkSession.createDataFrame(nodes, StructType(fields))
         }
-        CAPSRecords.create(header, data, tokens)
+        CAPSRecords.create(header, data)
       }
 
       override def union(other: CAPSGraph): CAPSGraph = ???
@@ -156,7 +156,7 @@ trait GraphMatchingTestSupport {
           val rels = queryGraph.getEdges.asScala
             .filter(e => cypherType.types.asJava.isEmpty || cypherType.types.asJava.containsAll(e.getLabels))
             .map { e =>
-              val staticFields = Seq(e.getSourceVertexId, e.getId, tokens.relTypeId(e.getLabel).toLong, e.getTargetVertexId)
+              val staticFields = Seq(e.getSourceVertexId, e.getId, e.getLabel, e.getTargetVertexId)
 
               val propertyFields = header.slots.slice(4, header.slots.size).map(_.content.key).map {
                 case Property(_, k) => e.getProperties.get(k.name)
@@ -172,7 +172,7 @@ trait GraphMatchingTestSupport {
 
           sparkSession.createDataFrame(rels, StructType(fields))
         }
-        CAPSRecords.create(header, data, tokens)
+        CAPSRecords.create(header, data)
       }
     }
   }

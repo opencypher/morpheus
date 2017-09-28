@@ -77,7 +77,7 @@ class EmbeddedEntityTest extends BaseTestSuite {
     )
 
     given should equal(actual)
-    show(given) should equal("Seq((AGE,r.age :: ?), (YEARS,r.age :: ?), (dst,target(r :: :ADMIRES|IGNORES RELATIONSHIP)), (name,r.name :: ?), (r,r :: :ADMIRES|IGNORES RELATIONSHIP), (src,source(r :: :ADMIRES|IGNORES RELATIONSHIP)), (typ,type(r) :: INTEGER))")
+    show(given) should equal("Seq((AGE,r.age :: ?), (YEARS,r.age :: ?), (dst,target(r :: :ADMIRES|IGNORES RELATIONSHIP)), (name,r.name :: ?), (r,r :: :ADMIRES|IGNORES RELATIONSHIP), (src,source(r :: :ADMIRES|IGNORES RELATIONSHIP)), (typ,type(r) :: STRING))")
   }
 
   test("Refuses to use the same slot multiple times when constructing nodes") {

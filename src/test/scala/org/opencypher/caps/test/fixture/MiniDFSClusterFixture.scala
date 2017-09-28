@@ -66,8 +66,8 @@ trait MiniDFSClusterFixture extends BaseTestFixture {
     * @return expected rels
     */
   def dfsTestGraphRels: Set[Row] = Set(
-    Row(1, 10, 0, 2, 2016),
-    Row(2, 20, 0, 3, 2017),
-    Row(3, 30, 0, 4, 2015)
+    Row(1, 10, "KNOWS", 2, 2016),
+    Row(2, 20, "KNOWS", 3, 2017),
+    Row(3, 30, "KNOWS", 4, 2015)
   )
 }

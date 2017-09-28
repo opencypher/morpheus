@@ -133,6 +133,10 @@ final case class IsNotNull(expr: Expr)(val cypherType: CypherType = CTWildcard) 
   override def withoutType: String = s"type(${expr.withoutType}) IS NOT NULL"
 }
 
+final case class OfType(rel: Expr)(val cypherType: CypherType = CTWildcard) extends Expr {
+  override def withoutType: String = s"type(${rel.withoutType})"
+}
+
 // Binary expressions
 
 sealed trait BinaryExpr extends Expr {
@@ -179,9 +183,6 @@ final case class Property(m: Expr, key: PropertyKey)(val cypherType: CypherType 
     case other: Property => m == other.m && key == other.key && cypherType == other.cypherType
     case _ => false
   }
-}
-final case class TypeId(rel: Expr)(val cypherType: CypherType = CTWildcard) extends Expr {
-  override def withoutType = s"type(${rel.withoutType})"
 }
 
 // Arithmetic expressions

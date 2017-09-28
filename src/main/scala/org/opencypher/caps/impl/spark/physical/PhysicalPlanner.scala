@@ -113,7 +113,8 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
         val ctRelType = CTRelationship.apply(types.relTypes.elements.map(_.name))
         val g = lhs.graphs(op.sourceGraph.name)
         val relationships = g.relationships(rel.name, ctRelType)
-        val relRhs = PhysicalResult(relationships, lhs.graphs).typeFilter(rel, types.relTypes.map(tokens.relTypeRef), relHeader)
+        val relRhs = PhysicalResult(relationships, lhs.graphs)
+          .typeFilter(rel, types.relTypes, relHeader)
 
         val relAndTargetHeader = relRhs.records.details.header ++ rhs.records.details.header
         val relAndTarget = relRhs.joinTarget(rhs, relAndTargetHeader).on(rel)(target)
@@ -127,7 +128,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
 
         val ctRelType = CTRelationship.apply(types.relTypes.elements.map(_.name))
         val relationships = PhysicalResult(g.relationships(rel.name, ctRelType), in.graphs)
-          .typeFilter(rel, types.relTypes.map(tokens.relTypeRef), relHeader)
+          .typeFilter(rel, types.relTypes, relHeader)
         // in join rels on source == rel.source and target == rels.target
         in.joinInto(relationships, header).on(source, target)(rel)
 

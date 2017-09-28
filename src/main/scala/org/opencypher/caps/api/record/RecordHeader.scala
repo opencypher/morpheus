@@ -18,7 +18,7 @@ package org.opencypher.caps.api.record
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.ir.api.global.TokenRegistry
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.types.{CTBoolean, CTInteger, CTNode, CypherType}
+import org.opencypher.caps.api.types.{CTBoolean, CTString, CTNode, CypherType}
 import org.opencypher.caps.impl.record.InternalHeader
 import org.opencypher.caps.impl.syntax.header.{addContents, _}
 import org.opencypher.caps.common.syntax._
@@ -44,9 +44,9 @@ final case class RecordHeader(internalHeader: InternalHeader) {
   def mandatory(slot: RecordSlot): Boolean =
     internalHeader.mandatory(slot)
 
-  def sourceNode(rel: Var): RecordSlot = slotsFor(StartNode(rel)()).headOption.getOrElse(???)
-  def targetNode(rel: Var): RecordSlot = slotsFor(EndNode(rel)()).headOption.getOrElse(???)
-  def typeId(rel: Expr): RecordSlot = slotsFor(TypeId(rel)()).headOption.getOrElse(???)
+  def sourceNodeSlot(rel: Var): RecordSlot = slotsFor(StartNode(rel)()).headOption.getOrElse(???)
+  def targetNodeSlot(rel: Var): RecordSlot = slotsFor(EndNode(rel)()).headOption.getOrElse(???)
+  def typeSlot(rel: Expr): RecordSlot = slotsFor(OfType(rel)()).headOption.getOrElse(???)
 
   def labels(node: Var): Seq[HasLabel] = labelSlots(node).keys.toSeq
 
@@ -130,10 +130,10 @@ object RecordHeader {
     }
 
     val startNode = ProjectedExpr(StartNode(rel)(CTNode))
-    val typeIdContent = ProjectedExpr(TypeId(rel)(CTInteger))
+    val typeString = ProjectedExpr(OfType(rel)(CTString))
     val endNode = ProjectedExpr(EndNode(rel)(CTNode))
 
-    val relHeaderContents = Seq(startNode, OpaqueField(rel), typeIdContent, endNode) ++ relKeyHeaderContents
+    val relHeaderContents = Seq(startNode, OpaqueField(rel), typeString, endNode) ++ relKeyHeaderContents
     // this header is necessary on its own to get the type filtering right
     val (relHeader, _) = RecordHeader.empty.update(addContents(relHeaderContents))
 

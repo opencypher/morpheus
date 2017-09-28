@@ -205,8 +205,8 @@ object Neo4jGraphLoader {
               slot -> field
           }
         }
-        val typeSlot = ProjectedExpr(TypeId(rel)(CTInteger))
-        val typeField = StructField(SparkColumnName.of(typeSlot), IntegerType, nullable = false)
+        val typeSlot = ProjectedExpr(OfType(rel)(CTString))
+        val typeField = StructField(SparkColumnName.of(typeSlot), StringType, nullable = false)
 
         val idSlot = OpaqueField(rel)
         val idField = StructField(SparkColumnName.of(idSlot), LongType, nullable = false)
@@ -298,8 +298,8 @@ object Neo4jGraphLoader {
           case _: EndNode =>
             importedRel.endNodeId()
 
-          case _: TypeId =>
-            tokens.relTypeRefByName(relType).id
+          case _: OfType =>
+            relType
 
           case _: Var =>
             importedRel.id()

@@ -42,8 +42,8 @@ trait TeamDataFixture extends TestDataFixture {
   )
 
   def teamDataGraphRels: Set[Row] = Set(
-    Row(0, 0, 0, 1, 2016),
-    Row(1, 1, 0, 2, 2016),
-    Row(2, 2, 0, 3, 2016)
+    Row(0, 0, "KNOWS", 1, 2016),
+    Row(1, 1, "KNOWS", 2, 2016),
+    Row(2, 2, "KNOWS", 3, 2016)
   )
 }

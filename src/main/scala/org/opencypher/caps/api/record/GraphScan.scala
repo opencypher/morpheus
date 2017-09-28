@@ -94,7 +94,7 @@ object GraphScanBuilder {
           val newHeader = RecordHeader.from(newSlots.toSeq: _*)
           val newCols = newHeader.slots.map(SparkColumn.from(contracted.data))
           val newData = contracted.data.select(newCols: _*)
-          CAPSRecords.create(newHeader, newData, records.tokens)(records.caps)
+          CAPSRecords.create(newHeader, newData)(records.caps)
         }
       create(entity, newRecords, schema(entity, newRecords.details.header))
     }
