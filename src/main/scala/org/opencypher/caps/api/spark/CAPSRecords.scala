@@ -106,9 +106,9 @@ sealed abstract class CAPSRecords(
     CAPSRecords.create(targetHeader, alignedData)
   }
 
-  def unionAll(other: CAPSRecords): CAPSRecords = {
+  def unionAll(header: RecordHeader, other: CAPSRecords): CAPSRecords = {
     val unionData = details.data.union(other.details.data)
-    CAPSRecords.create(unionData)
+    CAPSRecords.create(header, unionData)
   }
 
   override def contract[E <: EmbeddedEntity](entity: VerifiedEmbeddedEntity[E]): CAPSRecords = {

@@ -37,7 +37,7 @@ case class UnionGraph(graphs: CAPSGraph*)
     val nodeScans: Seq[CAPSRecords] = graphs.map(_.nodes(name, nodeCypherType))
     val alignedScans = nodeScans.map(_.align(targetHeader, tokens))
     // TODO: Only distinct on id column
-    alignedScans.reduceOption(_ unionAll _).map(_.distinct).getOrElse(CAPSRecords.empty(targetHeader))
+    alignedScans.reduceOption(_ unionAll(targetHeader, _)).map(_.distinct).getOrElse(CAPSRecords.empty(targetHeader))
   }
 
   override def relationships(name: String, relCypherType: CTRelationship) = {
@@ -46,7 +46,7 @@ case class UnionGraph(graphs: CAPSGraph*)
     val relScans: Seq[CAPSRecords] = graphs.map(_.relationships(name, relCypherType))
     val alignedScans = relScans.map(_.align(targetHeader, tokens))
     // TODO: Only distinct on id column
-    alignedScans.reduceOption(_ unionAll _).map(_.distinct).getOrElse(CAPSRecords.empty(targetHeader))
+    alignedScans.reduceOption(_ unionAll(targetHeader, _)).map(_.distinct).getOrElse(CAPSRecords.empty(targetHeader))
   }
 
   // TODO: Flatten
