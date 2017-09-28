@@ -305,7 +305,7 @@ final class CypherBoolean(private[CypherBoolean] val v: Boolean) extends CypherV
     case _                    => false
   }
 
-  override def toString: String = if (v) "TRUE" else "FALSE"
+  override def toString: String = if (v) "true" else "false"
 }
 
 
@@ -465,7 +465,7 @@ final class CypherFloat(private[CypherFloat] val v: Double) extends CypherNumber
     case _                   => false
   }
 
-  override def toString: String = s"$v :: FLOAT"
+  override def toString: String = s"$v"
 }
 
 // *** LIST
@@ -635,6 +635,8 @@ sealed class CypherMap(protected[value] val properties: Properties)
   extends CypherValue with Serializable {
 
   def get(key: String): Option[CypherValue] = properties.get(key)
+
+  def keys: Set[String] = properties.m.keySet
 
   @transient
   protected[value] lazy val cachedIsOrContainsNulls: Boolean =

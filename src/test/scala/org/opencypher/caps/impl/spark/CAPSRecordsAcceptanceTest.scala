@@ -20,12 +20,31 @@ import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraphLoader
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.fixture.{Neo4jServerFixture, OpenCypherDataFixture}
 
+import scala.collection.mutable
 import scala.language.reflectiveCalls
 
 class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture with OpenCypherDataFixture {
 
   private lazy val graph: CAPSGraph =
     Neo4jGraphLoader.fromNeo4j(neo4jConfig)
+
+  test("convert to CypherMaps") {
+    // When
+    val result = graph.cypher("MATCH (a:Person) WHERE a.birthyear < 1930 RETURN a, a.name")
+
+    // Then
+    val strings = mutable.Set[String]()
+    result.recordsWithDetails.toCypherMaps.collect().foreach { m =>
+      strings.add(m.toString)
+    }
+
+    // We do string comparisons here because CypherNode.equals() does not check labels/properties
+    strings should equal(mutable.Set(
+      "{a: (#0:Person {birthyear: 1910, name: 'Rachel Kempson'}), a.name: 'Rachel Kempson'}",
+      "{a: (#1:Person {birthyear: 1908, name: 'Michael Redgrave'}), a.name: 'Michael Redgrave'}",
+      "{a: (#10:Person {birthyear: 1873, name: 'Roy Redgrave'}), a.name: 'Roy Redgrave'}"
+    ))
+  }
 
   test("label scan and project") {
     // When

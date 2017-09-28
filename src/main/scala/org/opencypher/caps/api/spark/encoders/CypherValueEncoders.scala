@@ -17,10 +17,11 @@ package org.opencypher.caps.api.spark.encoders
 
 import org.apache.spark.sql.Encoders._
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
-import org.opencypher.caps.api.value.{CypherNode, CypherRelationship}
+import org.opencypher.caps.api.value.{CypherMap, CypherNode, CypherRelationship}
 
 trait CypherValueEncoders extends LowPriorityCypherValueEncoders {
   implicit def cypherNodeEncoder: ExpressionEncoder[CypherNode] = kryo[CypherNode]
   implicit def cypherRelationshipEncoder: ExpressionEncoder[CypherRelationship] = kryo[CypherRelationship]
+  implicit def cypherMapEncoder: ExpressionEncoder[CypherMap] = kryo[CypherMap]
 }
 

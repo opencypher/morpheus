@@ -16,10 +16,14 @@
 package org.opencypher.caps.impl.spark
 
 import java.io.PrintStream
+import java.util.Objects
 
 import org.opencypher.caps.api.spark.CAPSRecords
 
 object RecordsPrinter {
+
+  val COLUMN_WIDTH = 20
+  val MARGIN = 2
 
   /**
     * Prints the given SparkCypherRecords to stdout
@@ -31,39 +35,54 @@ object RecordsPrinter {
 
   def print(records: CAPSRecords, stream: PrintStream): Unit = {
     val fieldContents = records.header.slots.sortBy(_.index).map(_.content)
-    val lineWidth = 20 * fieldContents.size + 5
+    val factor = if (fieldContents.size > 1) fieldContents.size else 1
+
+    val lineWidth = (COLUMN_WIDTH + MARGIN) * factor + factor - 1
     val --- = "+" + repeat("-", lineWidth) + "+"
 
     stream.println(---)
     var sep = "| "
-    fieldContents.foreach { contents =>
+    if (fieldContents.isEmpty) {
       stream.print(sep)
-      stream.print(fitTo20(contents.key.withoutType))
+      stream.print(fitToColumn("(no columns)"))
+    } else fieldContents.foreach { contents =>
+      stream.print(sep)
+      stream.print(fitToColumn(contents.key.withoutType))
       sep = " | "
     }
     stream.println(" |")
     stream.println(---)
-    records.toScalaIterator.foreach { map =>
-      sep = "| "
+    val values = records.toScalaIterator
+    sep = "| "
+    if (fieldContents.isEmpty || values.isEmpty) {
+      stream.print(sep)
+      stream.print(fitToColumn("(no rows)"))
+      stream.println(" |")
+    } else values.foreach { map =>
       fieldContents.foreach { content =>
         map.get(SparkColumnName.of(content)) match {
           case None =>
             stream.print(sep)
-            stream.print(fitTo20("null"))
+            stream.print(fitToColumn("null"))
             sep = " | "
           case Some(v) =>
             stream.print(sep)
-            stream.print(fitTo20(v.toString))
+            stream.print(fitToColumn(Objects.toString(v)))
             sep = " | "
         }
       }
       stream.println(" |")
+      sep = "| "
     }
     stream.println(---)
     stream.flush()
   }
 
   private def repeat(x: String, size: Int): String = (1 to size).map((_) => x).mkString
-  private def fitTo20(s: String) = (s + "                    ").take(20)
+  private def fitToColumn(s: String) = {
+    val spaces = (1 until COLUMN_WIDTH).map(_ => " ").reduce(_ + _)
+    val cell = s + spaces
+    cell.take(COLUMN_WIDTH)
+  }
 
 }

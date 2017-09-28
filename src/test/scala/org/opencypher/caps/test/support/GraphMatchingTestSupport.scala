@@ -143,7 +143,7 @@ trait GraphMatchingTestSupport {
 
           sparkSession.createDataFrame(nodes, StructType(fields))
         }
-        CAPSRecords.create(header, data)
+        CAPSRecords.create(header, data, tokens)
       }
 
       override def union(other: CAPSGraph): CAPSGraph = ???
@@ -172,7 +172,7 @@ trait GraphMatchingTestSupport {
 
           sparkSession.createDataFrame(rels, StructType(fields))
         }
-        CAPSRecords.create(header, data)
+        CAPSRecords.create(header, data, tokens)
       }
     }
   }

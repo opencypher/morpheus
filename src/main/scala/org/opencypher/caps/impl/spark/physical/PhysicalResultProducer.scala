@@ -25,6 +25,7 @@ import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTRelationship}
 import org.opencypher.caps.api.value.{CypherInteger, CypherValue}
 import org.opencypher.caps.impl.flat.FreshVariableNamer
 import org.opencypher.caps.impl.logical.LogicalGraph
+import org.opencypher.caps.impl.record.CAPSRecordsTokens
 import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.SparkSQLExprMapper.asSparkSQLExpr
 import org.opencypher.caps.impl.spark.convert.toSparkType
@@ -88,7 +89,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
         val newData = filteredRows.select(selectedColumns: _*)
 
-        CAPSRecords.create(header, newData)(subject.caps)
+        CAPSRecords.create(header, newData, CAPSRecordsTokens(context.tokens))(subject.caps)
       }
     }
 
@@ -98,7 +99,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
         val columnNames = header.slots.map(slot => data.col(context.columnName(slot)))
         val relevantColumns = data.select(columnNames: _*)
         val distinctRows = relevantColumns.distinct()
-        CAPSRecords.create(header, distinctRows)(subject.caps)
+        CAPSRecords.create(header, distinctRows, CAPSRecordsTokens(context.tokens))(subject.caps)
       }
     }
 
@@ -117,7 +118,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
           Raise.columnNotFound(oldColumnName)
         }
 
-        CAPSRecords.create(header, newData)(subject.caps)
+        CAPSRecords.create(header, newData, CAPSRecordsTokens(context.tokens))(subject.caps)
       }
 
     def project(expr: Expr, header: RecordHeader): PhysicalResult =
@@ -141,7 +142,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
             }
         }
 
-        CAPSRecords.create(header, newData)(subject.caps)
+        CAPSRecords.create(header, newData, CAPSRecordsTokens(context.tokens))(subject.caps)
       }
 
     def aggregate(aggregations: Set[(Var, Aggregator)], group: Set[Var], header: RecordHeader): PhysicalResult =
@@ -182,7 +183,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
             Raise.notYetImplemented(s"Aggregator $x")
         }
 
-        CAPSRecords.create(header, data.agg(sparkAggFunctions.head, sparkAggFunctions.tail.toSeq: _*))(records.caps)
+        CAPSRecords.create(header, data.agg(sparkAggFunctions.head, sparkAggFunctions.tail.toSeq: _*), CAPSRecordsTokens(context.tokens))(records.caps)
       }
 
     def select(fields: IndexedSeq[Var], header: RecordHeader): PhysicalResult =
@@ -203,7 +204,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
         val columns = groupedSlots.map { s => data.col(context.columnName(s)) }
         val newData = subject.data.select(columns: _*)
 
-        CAPSRecords.create(header, newData)(subject.caps)
+        CAPSRecords.create(header, newData, CAPSRecordsTokens(context.tokens))(subject.caps)
       }
 
     def typeFilter(rel: Var, types: AnyGiven[RelTypeRef], header: RecordHeader): PhysicalResult = {
@@ -226,7 +227,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
       prev.mapRecordsWithDetails { subject =>
         val sortedData = subject.details.toDF().sort(sortExpression: _*)
-        CAPSRecords.create(header, sortedData)(subject.caps)
+        CAPSRecords.create(header, sortedData, CAPSRecordsTokens(context.tokens))(subject.caps)
       }
     }
 
@@ -247,7 +248,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
           subject.details.toDF().rdd.zipWithIndex().filter((pair) => pair._2 >= skip).map(_._1),
           subject.details.toDF().schema
         )
-        CAPSRecords.create(header, newDf)(subject.caps)
+        CAPSRecords.create(header, newDf, CAPSRecordsTokens(context.tokens))(subject.caps)
       }
     }
 
@@ -258,7 +259,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
       }
 
       prev.mapRecordsWithDetails { subject =>
-        CAPSRecords.create(header, subject.details.toDF().limit(limit.toInt))(subject.caps)
+        CAPSRecords.create(header, subject.details.toDF().limit(limit.toInt), CAPSRecordsTokens(context.tokens))(subject.caps)
       }
     }
 
@@ -381,7 +382,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
           colsToDrop.foldLeft(joinedData)((acc, col) => acc.drop(col))
         } else joinedData
 
-        CAPSRecords.create(header, returnData)(lhs.caps)
+        CAPSRecords.create(header, returnData, CAPSRecordsTokens(context.tokens))(lhs.caps)
       }
       f
     }
@@ -407,7 +408,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
         val initializedData = withEmptyList.select(cols: _*)
 
-        CAPSRecords.create(header, initializedData)(subject.caps)
+        CAPSRecords.create(header, initializedData, CAPSRecordsTokens(context.tokens))(subject.caps)
       }
     }
 
@@ -438,7 +439,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
           case (l, r) => l.union(r)
         }
 
-        CAPSRecords.create(lhs.header, union)(lhs.caps)
+        CAPSRecords.create(lhs.header, union, CAPSRecordsTokens(context.tokens))(lhs.caps)
       }
     }
 
@@ -450,7 +451,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
       val endNodeSlot =  prev.records.details.header.slotFor(endNode)
       val endNodeCol = context.columnName(endNodeSlot)
       joined.mapRecordsWithDetails(records =>
-        CAPSRecords.create(header, records.details.toDF().drop(endNodeCol))(records.caps)
+        CAPSRecords.create(header, records.details.toDF().drop(endNodeCol), CAPSRecordsTokens(context.tokens))(records.caps)
       )
     }
 

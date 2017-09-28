@@ -18,6 +18,10 @@ package org.opencypher.caps.impl.record
 import org.opencypher.caps.ir.api.global._
 import org.opencypher.caps.api.spark.CAPSTokens
 
+object CAPSRecordsTokens {
+  val empty = CAPSRecordsTokens(TokenRegistry.empty)
+}
+
 final case class CAPSRecordsTokens(registry: TokenRegistry) extends CAPSTokens {
 
   override type Tokens = CAPSRecordsTokens
