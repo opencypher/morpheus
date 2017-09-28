@@ -71,12 +71,14 @@ final case class RecordHeader(internalHeader: InternalHeader) {
   def labelSlots(node: Var): Map[HasLabel, RecordSlot] = {
     slots.collect {
       case s@RecordSlot(_, ProjectedExpr(h: HasLabel)) if h.node == node => h -> s
+      case s@RecordSlot(_, ProjectedField(_, h: HasLabel)) if h.node == node => h -> s
     }.toMap
   }
 
   def propertySlots(entity: Var): Map[Property, RecordSlot] = {
     slots.collect {
       case s@RecordSlot(_, ProjectedExpr(p: Property)) if p.m == entity => p -> s
+      case s@RecordSlot(_, ProjectedField(_, p: Property)) if p.m == entity => p -> s
     }.toMap
   }
 

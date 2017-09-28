@@ -271,7 +271,7 @@ class RecordHeaderTest extends BaseTestSuite {
     val field1 = OpaqueField('n)
     val field2 = OpaqueField('m)
     val label1 = ProjectedExpr(HasLabel('n, Label("A"))(CTBoolean))
-    val label2 = ProjectedExpr(HasLabel('n, Label("B"))(CTBoolean))
+    val label2 = ProjectedField('foo, HasLabel('n, Label("B"))(CTBoolean))
     val label3 = ProjectedExpr(HasLabel('m, Label("B"))(CTBoolean))
     val prop = ProjectedExpr(Property('n, PropertyKey("foo"))(CTString))
 
@@ -288,7 +288,7 @@ class RecordHeaderTest extends BaseTestSuite {
     val rel = OpaqueField('r)
     val label = ProjectedExpr(HasLabel('n, Label("A"))(CTBoolean))
     val propFoo1 = ProjectedExpr(Property('n, PropertyKey("foo"))(CTString))
-    val propBar1 = ProjectedExpr(Property('n, PropertyKey("bar"))(CTString))
+    val propBar1 = ProjectedField('foo, Property('n, PropertyKey("bar"))(CTString))
     val propBaz = ProjectedExpr(Property('n, PropertyKey("baz"))(CTString))
     val propFoo2 = ProjectedExpr(Property('r, PropertyKey("foo"))(CTString))
     val propBar2 = ProjectedExpr(Property('r, PropertyKey("bar"))(CTString))
