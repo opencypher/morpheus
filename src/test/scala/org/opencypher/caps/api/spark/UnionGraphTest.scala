@@ -88,10 +88,10 @@ class UnionGraphTest extends CAPSTestSuite {
     """.stripMargin
 
   test("Node scan from single node CAPSRecords") {
-    val inputGraph = UnionGraph(TestGraph(`:Person`).graph)
+    val inputGraph = TestGraph(`:Person`).graph
     val inputNodes = inputGraph.nodes("n")
 
-    val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema)
+    val patternGraph = UnionGraph(CAPSGraph.create(inputNodes, inputGraph.schema))
     val outputNodes = patternGraph.nodes("n")
 
     outputNodes.details.toDF().columns should equal(Array(
@@ -110,33 +110,33 @@ class UnionGraphTest extends CAPSTestSuite {
     ))
   }
 
-//  test("Node scan from multiple connected nodes") {
-//    val patternGraph = initPersonReadsBookGraph
-//    val outputNodes = patternGraph.nodes("n")
-//
-//    outputNodes.details.toDF().columns should equal(Array(
-//      "n",
-//      "____n:Person",
-//      "____n:Swedish",
-//      "____n:Book",
-//      "____n_dot_nameSTRING",
-//      "____n_dot_luckyNumberINTEGER",
-//      "____n_dot_yearINTEGER",
-//      "____n_dot_titleSTRING"
-//    ))
-//
-//    outputNodes.details.toDF().collect().toSet should equal(Set(
-//      Row(0,  true,  true,  false,   "Mats",   23, null,                   null),
-//      Row(1,  true,  false, false, "Martin",   42, null,                   null),
-//      Row(2,  true,  false, false,    "Max", 1337, null,                   null),
-//      Row(3,  true,  false, false, "Stefan",    9, null,                   null),
-//      Row(4, false,  false,  true,     null, null, 1949,                 "1984"),
-//      Row(5, false,  false,  true,     null, null, 1999,        "Cryptonomicon"),
-//      Row(6, false,  false,  true,     null, null, 1990, "The Eye of the World"),
-//      Row(7, false,  false,  true,     null, null, 2013,           "The Circle")
-//    ))
-//  }
-//
+  test("Node scan from multiple single node CAPSRecords") {
+    val unionGraph = UnionGraph(TestGraph(`:Book`).graph, TestGraph(`:Person`).graph)
+    val outputNodes = unionGraph.nodes("n")
+
+    outputNodes.details.toDF().columns should equal(Array(
+      "n",
+      "____n:Person",
+      "____n:Swedish",
+      "____n:Book",
+      "____n_dot_nameSTRING",
+      "____n_dot_luckyNumberINTEGER",
+      "____n_dot_yearINTEGER",
+      "____n_dot_titleSTRING"
+    ))
+
+    outputNodes.details.toDF().collect().toSet should equal(Set(
+      Row(0,  true,  true,  false,   "Mats",   23, null,                   null),
+      Row(1,  true,  false, false, "Martin",   42, null,                   null),
+      Row(2,  true,  false, false,    "Max", 1337, null,                   null),
+      Row(3,  true,  false, false, "Stefan",    9, null,                   null),
+      Row(4, false,  false,  true,     null, null, 1949,                 "1984"),
+      Row(5, false,  false,  true,     null, null, 1999,        "Cryptonomicon"),
+      Row(6, false,  false,  true,     null, null, 1990, "The Eye of the World"),
+      Row(7, false,  false,  true,     null, null, 2013,           "The Circle")
+    ))
+  }
+
 //  test("Node scan from mixed node CapsRecords") {
 //    val inputGraph = UnionGraph(TestGraph(`:Person`)).union(UnionGraph(TestGraph(`:Book`)).graph)
 //    val inputNodes = inputGraph.nodes("n")
@@ -543,22 +543,9 @@ class UnionGraphTest extends CAPSTestSuite {
 //  }
 
   private def initPersonReadsBookGraph: CAPSGraph = {
-    val inputGraph = TestGraph(`:Person` + `:Book` + `:READS`).graph
-
-    val books = inputGraph.nodes("b", CTNode("Book"))
-    val booksDf = books.details.toDF().as("b")
-    val reads = inputGraph.relationships("r", CTRelationship("READS"))
-    val readsDf = reads.details.toDF().as("r")
-    val persons = inputGraph.nodes("p", CTNode("Person"))
-    val personsDf = persons.details.toDF().as("p")
-
-    val joinedDf = personsDf
-      .join(readsDf, personsDf.col("p") === readsDf.col("____source(r)"))
-      .join(booksDf, readsDf.col("____target(r)") === booksDf.col("b"))
-
-    val slots = persons.details.header.slots ++ reads.details.header.slots ++ books.details.header.slots
-    val joinHeader = RecordHeader.from(slots.map(_.content): _*)
-
-    CAPSGraph.create(CAPSRecords.create(joinHeader, joinedDf), inputGraph.schema)
+    UnionGraph(
+      TestGraph(`:READS`).graph,
+      UnionGraph(TestGraph(`:Book`).graph,
+        UnionGraph(TestGraph(`:Person`).graph)))
   }
 }

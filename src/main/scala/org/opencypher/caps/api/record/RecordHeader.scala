@@ -15,6 +15,9 @@
  */
 package org.opencypher.caps.api.record
 
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
+import org.apache.spark.sql.types.StructType
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTString, CypherType, _}
@@ -100,6 +103,11 @@ final case class RecordHeader(internalHeader: InternalHeader) {
         case _ => false
       }
     }
+  }
+
+  def rowEncoder: ExpressionEncoder[Row] = {
+    val schema = StructType(internalHeader.slots.map(_.structField))
+    RowEncoder(schema)
   }
 
   override def toString: String = {

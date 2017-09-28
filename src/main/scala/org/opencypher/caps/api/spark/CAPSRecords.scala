@@ -81,16 +81,29 @@ sealed abstract class CAPSRecords(
   }
 
   def align(targetHeader: RecordHeader, tokens: CAPSTokens): CAPSRecords = {
-    val targetSlots = targetHeader.slots
-    val columnSelectors = targetSlots //
 
+    val dataColumnNameToIndex: Map[String, Int] = this.details.header.slots.map { dataSlot =>
+      val dataColumnName = SparkColumnName.of(dataSlot)
+      val dataColumnIndex = dataSlot.index
+      dataColumnName -> dataColumnIndex
+    }.toMap
 
-    val slots = this.details.header.contents
-    val data = this.details.toDF()
+    val slotDataSelectors: Seq[Row => Any] = targetHeader.slots.map { targetSlot =>
+      val columnName = SparkColumnName.of(targetSlot)
+      val maybeDataIndex = dataColumnNameToIndex.get(columnName)
+      val slotDataSelector: Row => Any = maybeDataIndex match {
+        case None => (_) => null
+        case Some(index) => _.get(index)
+      }
+      slotDataSelector
+    }
 
-    // to-keep: intersect
-    // new: extend missing with null columns
-    ???
+    val alignedData = this.details.toDF().map { (row: Row) =>
+      val alignedRow = slotDataSelectors.map(slotSelector => slotSelector(row))
+      Row.fromSeq(alignedRow)
+    }(targetHeader.rowEncoder)
+
+    CAPSRecords.create(targetHeader, alignedData)
   }
 
   def unionAll(other: CAPSRecords): CAPSRecords = {
@@ -117,7 +130,9 @@ sealed abstract class CAPSRecords(
     CAPSRecords.create(newHeader, renamed)
   }
 
-  def distinct: CAPSRecords = CAPSRecords.create(self.header, self.data.distinct())
+  def distinct: CAPSRecords = {
+    CAPSRecords.create(self.header, self.details.data.distinct())
+  }
 
   def toLocalIterator: java.util.Iterator[CypherMap] = {
     val iterator = data.toLocalIterator()
@@ -299,9 +314,15 @@ object CAPSRecords {
       if (initialDataColumns.size != initialDataColumns.distinct.size)
         Raise.duplicateColumnNamesInData()
 
-      // Verify correct column names
-      if (initialData.columns.toSet != initialHeader.internalHeader.columns.toSet)
-        Raise.recordsDataHeaderMismatch()
+      // Verify that all header column names exist in the data
+      val headerColumnNames = initialHeader.internalHeader.columns.toSet
+      val dataColumnNames = initialData.columns.toSet
+      if (!headerColumnNames.subsetOf(dataColumnNames)) {
+        Raise.recordsDataHeaderMismatch(
+          s"with columns ${initialHeader.internalHeader.columns.toSet.mkString}",
+          s"with columns ${initialData.columns.toSet.mkString}"
+        )
+      }
 
       // Verify column types
       initialHeader.slots.foreach { slot =>

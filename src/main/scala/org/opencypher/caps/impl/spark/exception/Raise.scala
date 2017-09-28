@@ -26,8 +26,8 @@ object Raise {
     "The input column '$name' is used more than once to describe an embedded entity"
   )
 
-  def recordsDataHeaderMismatch() = throw CAPSException(
-    "Column mismatch between data and header!"
+  def recordsDataHeaderMismatch(header: String, data: String) = throw CAPSException(
+    s"Column mismatch between header ${header} and data $data"
   )
 
   def duplicateColumnNamesInData() = throw CAPSException(
