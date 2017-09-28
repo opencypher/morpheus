@@ -207,10 +207,10 @@ class PhysicalResultProducer(context: RuntimeContext) {
         CAPSRecords.create(header, newData, CAPSRecordsTokens(context.tokens))(subject.caps)
       }
 
-    def typeFilter(rel: Var, types: AnyGiven[RelTypeRef], header: RecordHeader): PhysicalResult = {
+    def typeFilter(rel: Var, types: AnyGiven[RelType], header: RecordHeader): PhysicalResult = {
       if (types.elements.isEmpty) prev
       else {
-        val typeExprs: Set[Expr] = types.elements.map { ref => HasType(rel, context.tokens.relType(ref))(CTBoolean) }
+        val typeExprs: Set[Expr] = types.elements.map { ref => HasType(rel, ref)(CTBoolean) }
         prev.filter(Ors(typeExprs), header)
       }
     }
@@ -266,7 +266,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
     def joinSource(relView: PhysicalResult, header: RecordHeader) = new JoinBuilder {
       override def on(node: Var)(rel: Var): PhysicalResult = {
         val lhsSlot = prev.records.details.header.slotFor(node)
-        val rhsSlot = relView.records.details.header.sourceNode(rel)
+        val rhsSlot = relView.records.details.header.sourceNodeSlot(rel)
 
         assertIsNode(lhsSlot)
         assertIsNode(rhsSlot)
@@ -277,7 +277,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
     def joinTarget(nodeView: PhysicalResult, header: RecordHeader) = new JoinBuilder {
       override def on(rel: Var)(node: Var): PhysicalResult = {
-        val lhsSlot = prev.records.details.header.targetNode(rel)
+        val lhsSlot = prev.records.details.header.targetNodeSlot(rel)
         val rhsSlot = nodeView.records.details.header.slotFor(node)
 
         assertIsNode(lhsSlot)
@@ -303,8 +303,8 @@ class PhysicalResultProducer(context: RuntimeContext) {
       override def on(sourceKey: Var, targetKey: Var)(rel: Var): PhysicalResult = {
         val sourceSlot = prev.records.header.slotFor(sourceKey)
         val targetSlot = prev.records.header.slotFor(targetKey)
-        val relSourceSlot = relView.records.details.header.sourceNode(rel)
-        val relTargetSlot = relView.records.details.header.targetNode(rel)
+        val relSourceSlot = relView.records.details.header.sourceNodeSlot(rel)
+        val relTargetSlot = relView.records.details.header.targetNodeSlot(rel)
 
         assertIsNode(sourceSlot)
         assertIsNode(targetSlot)
@@ -414,7 +414,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
     def varExpand(rels: PhysicalResult, edgeList: Var, endNode: Var, rel: Var,
                   lower: Int, upper: Int, header: RecordHeader): PhysicalResult = {
-      val startSlot = rels.records.details.header.sourceNode(rel)
+      val startSlot = rels.records.details.header.sourceNodeSlot(rel)
       val endNodeSlot = prev.records.details.header.slotFor(endNode)
 
       prev.mapRecordsWithDetails { lhs =>

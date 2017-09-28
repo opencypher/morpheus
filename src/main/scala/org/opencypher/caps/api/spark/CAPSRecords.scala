@@ -201,9 +201,9 @@ case class RowToCypherMap(header: RecordHeader, tokens: CAPSRecordsTokens) exten
 
   private def collectRel(row: Row, field: Var): (Long, Long, Long, String, Map[String, CypherValue]) = {
     val id = row.getAs[Long](SparkColumnName.of(header.slotFor(field)))
-    val source = row.getAs[Long](SparkColumnName.of(header.sourceNode(field)))
-    val target = row.getAs[Long](SparkColumnName.of(header.targetNode(field)))
-    val typ = tokens.relTypeName(row.getAs[Long](SparkColumnName.of(header.typeId(field))).toInt)
+    val source = row.getAs[Long](SparkColumnName.of(header.sourceNodeSlot(field)))
+    val target = row.getAs[Long](SparkColumnName.of(header.targetNodeSlot(field)))
+    val typ = tokens.relTypeName(row.getAs[Long](SparkColumnName.of(header.typeSlot(field))).toInt)
     val properties = header.propertySlots(field).mapValues { s =>
       CypherValue(row.getAs[Any](SparkColumnName.of(s)))
     }.collect {

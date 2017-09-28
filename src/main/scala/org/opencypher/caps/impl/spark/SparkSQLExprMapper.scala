@@ -141,9 +141,8 @@ object SparkSQLExprMapper {
         Some(inPred)
 
       case HasType(rel, relType) =>
-        val relTypeId = context.tokens.relTypeRef(relType).id
-        val col = getColumn(TypeId(rel)(), header, df)
-        Some(col === relTypeId)
+        val col = getColumn(OfType(rel)(), header, df)
+        Some(col === relType.name)
 
       case h: HasLabel =>
         Some(getColumn(h, header, df)) // it's a boolean column
@@ -218,11 +217,9 @@ object SparkSQLExprMapper {
 
         inner match {
           case v: Var =>
-            val typeIdSlot = header.typeId(v)
-            val typeIdCol = df.col(context.columnName(typeIdSlot))
-            val map = (i: Long) => context.tokens.relType(RelTypeRef(i.toInt)).name
-            val typeUdf = udf(map, StringType)
-            Some(typeUdf(typeIdCol))
+            val typeSlot = header.typeSlot(v)
+            val typeCol = df.col(context.columnName(typeSlot))
+            Some(typeCol)
 
           case _ =>
             Raise.notYetImplemented("type() of non-variables")

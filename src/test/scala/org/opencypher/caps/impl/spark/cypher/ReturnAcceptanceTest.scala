@@ -76,11 +76,9 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
 
     val result = given.cypher("MATCH ()-[r]->() RETURN r")
 
-    val relId = given.tokens.registry.relTypeRefByName(DEFAULT_LABEL).id
-
     result.recordsWithDetails.toMaps should equal(Bag(
-      CypherMap("r" -> 0, "source(r)" -> 0, "target(r)" -> 1, "type(r)" -> relId, "r.foo" -> "bar"),
-      CypherMap("r" -> 1, "source(r)" -> 1, "target(r)" -> 2, "type(r)" -> relId, "r.foo" -> null)
+      CypherMap("r" -> 0, "source(r)" -> 0, "target(r)" -> 1, "type(r)" -> DEFAULT_LABEL, "r.foo" -> "bar"),
+      CypherMap("r" -> 1, "source(r)" -> 1, "target(r)" -> 2, "type(r)" -> DEFAULT_LABEL, "r.foo" -> null)
     ))
   }
 

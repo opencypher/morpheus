@@ -46,6 +46,7 @@ sealed trait ProjectedSlotContent extends SlotContent {
     case StartNode(v: Var) => Some(v)
     case EndNode(v: Var) => Some(v)
     case TypeId(v: Var) => Some(v)
+    case OfType(v: Var) => Some(v)
     case _ => None
   }
 }
