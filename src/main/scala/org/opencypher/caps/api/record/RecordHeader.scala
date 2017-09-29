@@ -106,7 +106,7 @@ final case class RecordHeader(internalHeader: InternalHeader) {
   }
 
   def rowEncoder: ExpressionEncoder[Row] = {
-    val schema = StructType(internalHeader.slots.map(_.structField))
+    val schema = StructType(internalHeader.slots.map(_.asStructField))
     RowEncoder(schema)
   }
 

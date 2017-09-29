@@ -35,7 +35,7 @@ case class RowExpansion(
     case _ => Set.empty[String]
   }
 
-  private val rowSchema = StructType(targetHeader.slots.map(_.structField))
+  private val rowSchema = StructType(targetHeader.slots.map(_.asStructField))
 
   private val labelIndexLookupTable = entitiesWithChildren.map { case (node, slots) =>
     val labelIndicesForNode = slots.collect {

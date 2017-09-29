@@ -41,6 +41,19 @@ sealed trait GraphScan extends Serializable {
 }
 
 object GraphScan extends GraphScanCompanion[EmbeddedEntity] {
+
+  /**
+    * Align the argument `CAPSRecords` to the target header and rename the stored entity to `v`.
+    *
+    * It is required that the `CAPSRecords` instance is a scan, meaning that it must contain exactly a single entity
+    * (node or relationship) and its parts (flattened). The stored entity is renamed by this function to the argument
+    * variable `v`.
+    *
+    * @param records the scan to align
+    * @param v the variable that the aligned scan should contain
+    * @param targetHeader the header to align with
+    * @return a new instance of `CAPSRecords` aligned with the argument header
+    */
   def align(records: CAPSRecords, v: Var, targetHeader: RecordHeader)
            (implicit session: CAPSSession): CAPSRecords = {
     val oldEntity = records.header.fields.headOption.getOrElse(Raise.impossible("GraphScan table did not contain any fields"))

@@ -43,7 +43,7 @@ class ConvertersTest extends BaseTestSuite {
 
   test("does not support detailed number types") {
     val unsupported = Set(FloatType, IntegerType, ShortType, ByteType)
-    
+
     unsupported.foreach { t =>
       a [CAPSException] shouldBe thrownBy {
         fromSparkType(t, nullable = false)
