@@ -301,4 +301,46 @@ class RecordHeaderTest extends BaseTestSuite {
     header.propertySlots('m).mapValues(_.content) should equal(Map.empty)
     header.propertySlots('r).mapValues(_.content) should equal(Map(propFoo2.expr -> propFoo2, propBar2.expr -> propBar2))
   }
+
+  test("nodesForType") {
+    val p: Var = 'p -> CTNode("Person")
+    val n: Var = 'n -> CTNode
+    val q: Var = 'q -> CTNode("Foo")
+    val fields = Seq(
+      OpaqueField(p),
+      ProjectedExpr(HasLabel(p, Label("Fireman"))()),
+      OpaqueField(n),
+      ProjectedExpr(HasLabel(n, Label("Person"))()),
+      ProjectedExpr(HasLabel(n, Label("Fireman"))()),
+      ProjectedExpr(HasLabel(n, Label("Foo"))()),
+      OpaqueField(q),
+      OpaqueField('r -> CTRelationship("KNOWS"))
+    )
+    val (header, _) = RecordHeader.empty.update(addContents(fields))
+
+    header.nodesForType(CTNode) should equal(Seq(p, n, q))
+    header.nodesForType(CTNode("Person")) should equal(Seq(p, n))
+    header.nodesForType(CTNode("Fireman")) should equal(Seq(p, n))
+    header.nodesForType(CTNode("Foo")) should equal(Seq(n, q))
+    header.nodesForType(CTNode("Person", "Foo")) should equal(Seq(n))
+    header.nodesForType(CTNode("Nop")) should equal(Seq.empty)
+  }
+
+  test("relsForType") {
+    val p: Var = 'p -> CTRelationship("KNOWS")
+    val r: Var = 'r -> CTRelationship
+    val q: Var = 'q -> CTRelationship("LOVES", "HATES")
+    val fields = Seq(
+      OpaqueField(p),
+      OpaqueField(r),
+      OpaqueField(q),
+      OpaqueField('n -> CTNode("Foo"))
+    )
+    val (header, _) = RecordHeader.empty.update(addContents(fields))
+
+    header.relationshipsForType(CTRelationship) should equal(List(p, r, q))
+    header.relationshipsForType(CTRelationship("KNOWS")) should equal(List(p, r))
+    header.relationshipsForType(CTRelationship("LOVES")) should equal(List(r, q))
+    header.relationshipsForType(CTRelationship("LOVES", "HATES")) should equal(List(r, q))
+  }
 }

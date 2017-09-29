@@ -15,13 +15,16 @@
  */
 package org.opencypher.caps.api.record
 
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
+import org.apache.spark.sql.types.StructType
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.ir.api.global.TokenRegistry
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.types.{CTBoolean, CTString, CTNode, CypherType}
+import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTString, CypherType, _}
+import org.opencypher.caps.common.syntax._
 import org.opencypher.caps.impl.record.InternalHeader
 import org.opencypher.caps.impl.syntax.header.{addContents, _}
-import org.opencypher.caps.common.syntax._
+import org.opencypher.caps.ir.api.global.TokenRegistry
 
 final case class RecordHeader(internalHeader: InternalHeader) {
 
@@ -74,6 +77,39 @@ final case class RecordHeader(internalHeader: InternalHeader) {
     }.toMap
   }
 
+  def nodesForType(nodeType: CTNode): Seq[Var] = {
+    slots.collect {
+      case RecordSlot(_, OpaqueField(v)) => v
+    }.filter { v =>
+      v.cypherType match {
+        case CTNode(labels) =>
+          val allPossibleLabels = this.labels(v).map(_.label.name).toSet ++ labels
+          nodeType.labels.subsetOf(allPossibleLabels)
+        case _ => false
+      }
+    }
+  }
+
+  def relationshipsForType(relType: CTRelationship): Seq[Var] = {
+    val targetTypes = relType.types
+
+    slots.collect {
+      case RecordSlot(_, OpaqueField(v)) => v
+    }.filter { v =>
+      v.cypherType match {
+        case t: CTRelationship if targetTypes.isEmpty || t.types.isEmpty => true
+        case CTRelationship(types) =>
+          types.exists(targetTypes.contains)
+        case _ => false
+      }
+    }
+  }
+
+  def rowEncoder: ExpressionEncoder[Row] = {
+    val schema = StructType(internalHeader.slots.map(_.asStructField))
+    RowEncoder(schema)
+  }
+
   override def toString: String = {
     val s = slots
     s"RecordHeader with ${s.size} slots: \n\t ${slots.mkString("\n\t")}"
@@ -100,8 +136,8 @@ object RecordHeader {
     val optionalNullableKeys = optionalKeys.map { case (k, v) => k -> v.nullable }
     val allKeys: Seq[(String, Vector[CypherType])] = (impliedKeys ++ optionalNullableKeys).toSeq.map { case (k, v) => k -> Vector(v) }
     val keyGroups: Map[String, Vector[CypherType]] = allKeys.groups[String, Vector[CypherType]]
-
-    val labelHeaderContents = (impliedLabels ++ possibleLabels).map {
+    val headerLabels = impliedLabels ++ possibleLabels
+    val labelHeaderContents = headerLabels.map {
       labelName => ProjectedExpr(HasLabel(node, tokens.labelByName(labelName))(CTBoolean))
     }.toSeq
 

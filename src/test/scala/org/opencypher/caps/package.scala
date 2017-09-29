@@ -25,6 +25,7 @@ import scala.language.implicitConversions
 
 package object caps {
   implicit def toVar(s: Symbol): Var = Var(s.name)()
+  implicit def toVar(t: (Symbol, CypherType)): Var = Var(t._1.name)(t._2)
   implicit def toField(s: Symbol): IRField = IRField(s.name)()
   implicit def toField(t: (Symbol, CypherType)): IRField = IRField(t._1.name)(t._2)
   implicit def toGraph(s: Symbol)(implicit uri: URI): ExternalGraph = ExternalGraph(s.name, uri)

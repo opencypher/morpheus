@@ -48,9 +48,9 @@ object RowUtils {
       case CTInteger => (in) => cypherInteger(in.asInstanceOf[Long])
       case CTString => (in) => cypherString(in.asInstanceOf[String])
       case CTFloat => (in) => cypherFloat(in.asInstanceOf[Double])
-      case CTNode => (in) => cypherInteger(in.asInstanceOf[Long])
+      case _: CTNode => (in) => cypherInteger(in.asInstanceOf[Long])
       // TODO: This supports var-expand where we only track rel ids, but it's not right
-      case CTRelationship => (in) => cypherInteger(in.asInstanceOf[Long])
+      case _: CTRelationship => (in) => cypherInteger(in.asInstanceOf[Long])
       case l: CTList => (in) => {
         val converted = in.asInstanceOf[Seq[_]].map(typeToValue(l.elementType))
 

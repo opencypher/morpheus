@@ -37,4 +37,7 @@ final case class CAPSRecordsTokens(registry: TokenRegistry) extends CAPSTokens {
 
   override def withLabel(name: String): CAPSRecordsTokens = copy(registry = registry.withLabel(Label(name)))
   override def withRelType(name: String): CAPSRecordsTokens = copy(registry = registry.withRelType(RelType(name)))
+
+  def ++(other: CAPSRecordsTokens): CAPSRecordsTokens = copy(registry ++ other.registry)
+
 }

@@ -33,10 +33,10 @@ class CAPSGraphTest extends CAPSTestSuite {
     .from(CAPSRecords.create(
       Seq("ID", "IS_SWEDE", "NAME", "NUM"),
       Seq(
-        (1, true, "Mats", 23),
-        (2, false, "Martin", 42),
-        (3, false, "Max", 1337),
-        (4, false, "Stefan", 9))
+        (1L, true, "Mats", 23L),
+        (2L, false, "Martin", 42L),
+        (3L, false, "Max", 1337L),
+        (4L, false, "Stefan", 9L))
     ))
 
   // required to test conflicting input data
@@ -50,10 +50,10 @@ class CAPSGraphTest extends CAPSTestSuite {
     .from(CAPSRecords.create(
       Seq("ID", "LANG"),
       Seq(
-        (100, "Node"),
-        (200, "Coffeescript"),
-        (300, "Javascript"),
-        (400, "Typescript")
+        (100L, "Node"),
+        (200L, "Coffeescript"),
+        (300L, "Javascript"),
+        (400L, "Typescript")
       )
     ))
 
@@ -69,10 +69,10 @@ class CAPSGraphTest extends CAPSTestSuite {
       .from(CAPSRecords.create(
         Seq("ID", "NAME", "NUM", "LANG"),
         Seq(
-          (100, "Alice", 42, "C"),
-          (200,   "Bob", 23, "D"),
-          (300,   "Eve", 84, "F"),
-          (400,  "Carl", 49, "R")
+          (100L, "Alice", 42L, "C"),
+          (200L,   "Bob", 23L, "D"),
+          (300L,   "Eve", 84L, "F"),
+          (400L,  "Carl", 49L, "R")
         )
       ))
 
@@ -86,10 +86,10 @@ class CAPSGraphTest extends CAPSTestSuite {
       .from(CAPSRecords.create(
         Seq("ID", "NAME", "YEAR"),
         Seq(
-          (10, "1984", 1949),
-          (20, "Cryptonomicon", 1999),
-          (30, "The Eye of the World", 1990),
-          (40, "The Circle", 2013))
+          (10L, "1984", 1949L),
+          (20L, "Cryptonomicon", 1999L),
+          (30L, "The Eye of the World", 1990L),
+          (40L, "The Circle", 2013L))
       ))
 
   val `:KNOWS` =
@@ -101,12 +101,12 @@ class CAPSGraphTest extends CAPSTestSuite {
     .from(CAPSRecords.create(
       Seq("SRC", "ID", "DST", "SINCE"),
       Seq(
-        (1, 1, 2, 2017),
-        (1, 2, 3, 2016),
-        (1, 3, 4, 2015),
-        (2, 4, 3, 2016),
-        (2, 5, 4, 2013),
-        (3, 6, 4, 2016))
+        (1L, 1L, 2L, 2017L),
+        (1L, 2L, 3L, 2016L),
+        (1L, 3L, 4L, 2015L),
+        (2L, 4L, 3L, 2016L),
+        (2L, 5L, 4L, 2013L),
+        (3L, 6L, 4L, 2016L))
     ))
 
   val `:READS` =
@@ -118,10 +118,10 @@ class CAPSGraphTest extends CAPSTestSuite {
     .from(CAPSRecords.create(
       Seq("SRC", "ID", "DST", "RECOMMENDS"),
       Seq(
-        (1, 100, 10, true),
-        (2, 200, 40, true),
-        (3, 300, 30, true),
-        (4, 400, 20, false))
+        (1L, 100L, 10L, true),
+        (2L, 200L, 40L, true),
+        (3L, 300L, 30L, true),
+        (4L, 400L, 20L, false))
     ))
 
   val `:INFLUENCES` =
@@ -132,7 +132,7 @@ class CAPSGraphTest extends CAPSTestSuite {
     .from(CAPSRecords.create(
       Seq("SRC", "ID", "DST"),
       Seq(
-        (10, 1000, 20))
+        (10L, 1000L, 20L))
     ))
 
   test("Construct graph from single node scan") {
@@ -148,10 +148,10 @@ class CAPSGraphTest extends CAPSTestSuite {
     ))
 
     nodes.details.toDF().collect().toSet should equal (Set(
-      Row(1, true, true,    "Mats",   23),
-      Row(2, true, false, "Martin",   42),
-      Row(3, true, false,    "Max", 1337),
-      Row(4, true, false, "Stefan",    9)
+      Row(1L, true, true,    "Mats",   23L),
+      Row(2L, true, false, "Martin",   42L),
+      Row(3L, true, false,    "Max", 1337L),
+      Row(4L, true, false, "Stefan",    9L)
     ))
   }
 
@@ -171,14 +171,14 @@ class CAPSGraphTest extends CAPSTestSuite {
     ))
 
     nodes.details.toDF().collect().toSet should equal(Set(
-      Row( 1,  true,  true,  false,   "Mats",   23,                   null, null),
-      Row( 2,  true,  false, false, "Martin",   42,                   null, null),
-      Row( 3,  true,  false, false,    "Max", 1337,                   null, null),
-      Row( 4,  true,  false, false, "Stefan",    9,                   null, null),
-      Row(10, false,  false,  true,     null, null,                 "1984", 1949),
-      Row(20, false,  false,  true,     null, null,        "Cryptonomicon", 1999),
-      Row(30, false,  false,  true,     null, null, "The Eye of the World", 1990),
-      Row(40, false,  false,  true,     null, null,           "The Circle", 2013)
+      Row( 1L,  true,  true,  false,   "Mats",   23L,                   null, null),
+      Row( 2L,  true,  false, false, "Martin",   42L,                   null, null),
+      Row( 3L,  true,  false, false,    "Max", 1337L,                   null, null),
+      Row( 4L,  true,  false, false, "Stefan",    9L,                   null, null),
+      Row(10L, false,  false,  true,     null, null,                 "1984", 1949L),
+      Row(20L, false,  false,  true,     null, null,        "Cryptonomicon", 1999L),
+      Row(30L, false,  false,  true,     null, null, "The Eye of the World", 1990L),
+      Row(40L, false,  false,  true,     null, null,           "The Circle", 2013L)
     ))
   }
 
@@ -195,12 +195,12 @@ class CAPSGraphTest extends CAPSTestSuite {
     ))
 
     rels.details.toDF().collect().toSet should equal(Set(
-      Row(1, 1, "KNOWS", 2, 2017),
-      Row(1, 2, "KNOWS", 3, 2016),
-      Row(1, 3, "KNOWS", 4, 2015),
-      Row(2, 4, "KNOWS", 3, 2016),
-      Row(2, 5, "KNOWS", 4, 2013),
-      Row(3, 6, "KNOWS", 4, 2016)
+      Row(1L, 1L, "KNOWS", 2L, 2017L),
+      Row(1L, 2L, "KNOWS", 3L, 2016L),
+      Row(1L, 3L, "KNOWS", 4L, 2015L),
+      Row(2L, 4L, "KNOWS", 3L, 2016L),
+      Row(2L, 5L, "KNOWS", 4L, 2013L),
+      Row(3L, 6L, "KNOWS", 4L, 2016L)
     ))
   }
 
@@ -221,14 +221,14 @@ class CAPSGraphTest extends CAPSTestSuite {
     ))
 
     nodes.details.toDF().collect().toSet should equal(Set(
-      Row( 1,  true,  true,  false,   "Mats",   23,                   null, null),
-      Row( 2,  true,  false, false, "Martin",   42,                   null, null),
-      Row( 3,  true,  false, false,    "Max", 1337,                   null, null),
-      Row( 4,  true,  false, false, "Stefan",    9,                   null, null),
-      Row(10, false,  false,  true,     null, null,                 "1984", 1949),
-      Row(20, false,  false,  true,     null, null,        "Cryptonomicon", 1999),
-      Row(30, false,  false,  true,     null, null, "The Eye of the World", 1990),
-      Row(40, false,  false,  true,     null, null,           "The Circle", 2013)
+      Row( 1L,  true,  true,  false,   "Mats",   23L,                   null, null),
+      Row( 2L,  true,  false, false, "Martin",   42L,                   null, null),
+      Row( 3L,  true,  false, false,    "Max", 1337L,                   null, null),
+      Row( 4L,  true,  false, false, "Stefan",    9L,                   null, null),
+      Row(10L, false,  false,  true,     null, null,                 "1984", 1949L),
+      Row(20L, false,  false,  true,     null, null,        "Cryptonomicon", 1999L),
+      Row(30L, false,  false,  true,     null, null, "The Eye of the World", 1990L),
+      Row(40L, false,  false,  true,     null, null,           "The Circle", 2013L)
     ))
   }
 
@@ -246,10 +246,10 @@ class CAPSGraphTest extends CAPSTestSuite {
     ))
 
     nodes.details.toDF().collect().toSet should equal (Set(
-      Row(1, true, true,    "Mats",   23),
-      Row(2, true, false, "Martin",   42),
-      Row(3, true, false,    "Max", 1337),
-      Row(4, true, false, "Stefan",    9)
+      Row(1L, true, true,    "Mats",   23L),
+      Row(2L, true, false, "Martin",   42L),
+      Row(3L, true, false,    "Max", 1337L),
+      Row(4L, true, false, "Stefan",    9L)
     ))
   }
 
@@ -269,17 +269,17 @@ class CAPSGraphTest extends CAPSTestSuite {
 
     rels.details.toDF().collect().toSet should equal(Set(
       // :KNOWS
-      Row(1, 1, "KNOWS", 2, 2017, null),
-      Row(1, 2, "KNOWS", 3, 2016, null),
-      Row(1, 3, "KNOWS", 4, 2015, null),
-      Row(2, 4, "KNOWS", 3, 2016, null),
-      Row(2, 5, "KNOWS", 4, 2013, null),
-      Row(3, 6, "KNOWS", 4, 2016, null),
+      Row(1L, 1L, "KNOWS", 2L, 2017L, null),
+      Row(1L, 2L, "KNOWS", 3L, 2016L, null),
+      Row(1L, 3L, "KNOWS", 4L, 2015L, null),
+      Row(2L, 4L, "KNOWS", 3L, 2016L, null),
+      Row(2L, 5L, "KNOWS", 4L, 2013L, null),
+      Row(3L, 6L, "KNOWS", 4L, 2016L, null),
       // :READS
-      Row(1, 100, "READS", 10, null, true),
-      Row(2, 200, "READS", 40, null, true),
-      Row(3, 300, "READS", 30, null, true),
-      Row(4, 400, "READS", 20, null, false)
+      Row(1L, 100L, "READS", 10L, null, true),
+      Row(2L, 200L, "READS", 40L, null, true),
+      Row(3L, 300L, "READS", 30L, null, true),
+      Row(4L, 400L, "READS", 20L, null, false)
     ))
   }
 
@@ -297,12 +297,12 @@ class CAPSGraphTest extends CAPSTestSuite {
     ))
 
     rels.details.toDF().collect().toSet should equal(Set(
-      Row(1, 1, "KNOWS", 2, 2017),
-      Row(1, 2, "KNOWS", 3, 2016),
-      Row(1, 3, "KNOWS", 4, 2015),
-      Row(2, 4, "KNOWS", 3, 2016),
-      Row(2, 5, "KNOWS", 4, 2013),
-      Row(3, 6, "KNOWS", 4, 2016)
+      Row(1L, 1L, "KNOWS", 2L, 2017L),
+      Row(1L, 2L, "KNOWS", 3L, 2016L),
+      Row(1L, 3L, "KNOWS", 4L, 2015L),
+      Row(2L, 4L, "KNOWS", 3L, 2016L),
+      Row(2L, 5L, "KNOWS", 4L, 2013L),
+      Row(3L, 6L, "KNOWS", 4L, 2016L)
     ))
   }
 
@@ -321,14 +321,14 @@ class CAPSGraphTest extends CAPSTestSuite {
 
     rels.details.toDF().collect().toSet should equal(Set(
       // :KNOWS
-      Row(1, 1, "KNOWS", 2, 2017),
-      Row(1, 2, "KNOWS", 3, 2016),
-      Row(1, 3, "KNOWS", 4, 2015),
-      Row(2, 4, "KNOWS", 3, 2016),
-      Row(2, 5, "KNOWS", 4, 2013),
-      Row(3, 6, "KNOWS", 4, 2016),
+      Row(1L, 1L, "KNOWS", 2L, 2017L),
+      Row(1L, 2L, "KNOWS", 3L, 2016L),
+      Row(1L, 3L, "KNOWS", 4L, 2015L),
+      Row(2L, 4L, "KNOWS", 3L, 2016L),
+      Row(2L, 5L, "KNOWS", 4L, 2013L),
+      Row(3L, 6L, "KNOWS", 4L, 2016L),
       // :INFLUENCES
-      Row(10, 1000, "INFLUENCES", 20, null)
+      Row(10L, 1000L, "INFLUENCES", 20L, null)
     ))
   }
 
@@ -348,14 +348,14 @@ class CAPSGraphTest extends CAPSTestSuite {
     ))
 
     nodes.details.toDF().collect().toSet should equal (Set(
-      Row(1,   true, true,  false, null,   "Mats",   23),
-      Row(2,   true, false, false, null, "Martin",   42),
-      Row(3,   true, false, false, null,    "Max", 1337),
-      Row(4,   true, false, false, null, "Stefan",    9),
-      Row(100, true, false, true,   "C",  "Alice",   42),
-      Row(200, true, false, true,   "D",    "Bob",   23),
-      Row(300, true, false, true,   "F",    "Eve",   84),
-      Row(400, true, false, true,   "R",   "Carl",   49)
+      Row(1L,   true, true,  false, null,   "Mats",   23L),
+      Row(2L,   true, false, false, null, "Martin",   42L),
+      Row(3L,   true, false, false, null,    "Max", 1337L),
+      Row(4L,   true, false, false, null, "Stefan",    9L),
+      Row(100L, true, false, true,   "C",  "Alice",   42L),
+      Row(200L, true, false, true,   "D",    "Bob",   23L),
+      Row(300L, true, false, true,   "F",    "Eve",   84L),
+      Row(400L, true, false, true,   "R",   "Carl",   49L)
     ))
   }
 
@@ -375,14 +375,14 @@ class CAPSGraphTest extends CAPSTestSuite {
     ))
 
     nodes.details.toDF().collect().toSet should equal(Set(
-      Row(1, true, true, false, "Mats", 23, null),
-      Row(2, true, false, false, "Martin", 42, null),
-      Row(3, true, false, false, "Max", 1337, null),
-      Row(4, true, false, false, "Stefan", 9, null),
-      Row(100, true, false, true, null, null, "Node"),
-      Row(200, true, false, true, null, null, "Coffeescript"),
-      Row(300, true, false, true, null, null, "Javascript"),
-      Row(400, true, false, true, null, null, "Typescript")
+      Row(1L, true, true, false, "Mats", 23L, null),
+      Row(2L, true, false, false, "Martin", 42L, null),
+      Row(3L, true, false, false, "Max", 1337L, null),
+      Row(4L, true, false, false, "Stefan", 9L, null),
+      Row(100L, true, false, true, null, null, "Node"),
+      Row(200L, true, false, true, null, null, "Coffeescript"),
+      Row(300L, true, false, true, null, null, "Javascript"),
+      Row(400L, true, false, true, null, null, "Typescript")
     ))
   }
 }

@@ -17,7 +17,11 @@ package org.opencypher.caps.common
 
 import org.opencypher.caps.common.classes.Register
 
-final case class RefCollection[D](elts: Vector[D]) extends AnyVal
+final case class RefCollection[D](elts: Vector[D]) extends AnyVal {
+  def ++(other: RefCollection[D]): RefCollection[D] = {
+    RefCollection(elts ++ other.elts)
+  }
+}
 
 object RefCollection {
   def empty[D] = RefCollection(Vector.empty[D])

@@ -27,10 +27,10 @@ class CAPSRecordsTest extends CAPSTestSuite {
 
   test("contract and scan nodes") {
     val given = CAPSRecords.create(session.createDataFrame(Seq(
-      (1, true, "Mats"),
-      (2, false, "Martin"),
-      (3, false, "Max"),
-      (4, false, "Stefan")
+      (1L, true, "Mats"),
+      (2L, false, "Martin"),
+      (3L, false, "Max"),
+      (4L, false, "Stefan")
     )).toDF("ID", "IS_SWEDE", "NAME"))
 
     val embeddedNode = EmbeddedNode("n" -> "ID").build
@@ -57,10 +57,10 @@ class CAPSRecordsTest extends CAPSTestSuite {
   test("contract relationships with a fixed type") {
 
     val given = CAPSRecords.create(session.createDataFrame(Seq(
-      (10, 1, 2, "red"),
-      (11, 2, 3, "blue"),
-      (12, 3, 4, "green"),
-      (13, 4, 1, "yellow")
+      (10L, 1L, 2L, "red"),
+      (11L, 2L, 3L, "blue"),
+      (12L, 3L, 4L, "green"),
+      (13L, 4L, 1L, "yellow")
     )).toDF("ID", "FROM", "TO", "COLOR"))
 
     val embeddedRel = EmbeddedRelationship("r" -> "ID").from("FROM").to("TO").relType("NEXT").build
@@ -85,10 +85,10 @@ class CAPSRecordsTest extends CAPSTestSuite {
   test("contract relationships with a dynamic type") {
     // TODO: Reject records using unknown tokes
     val given = CAPSRecords.create(session.createDataFrame(Seq(
-      (10, 1, 2, "RED"),
-      (11, 2, 3, "BLUE"),
-      (12, 3, 4, "GREEN"),
-      (13, 4, 1, "YELLOW")
+      (10L, 1L, 2L, "RED"),
+      (11L, 2L, 3L, "BLUE"),
+      (12L, 3L, 4L, "GREEN"),
+      (13L, 4L, 1L, "YELLOW")
     )).toDF("ID", "FROM", "TO", "COLOR"))
 
     val embeddedRel =
@@ -121,7 +121,9 @@ class CAPSRecordsTest extends CAPSTestSuite {
   }
 
   test("can construct records with matching data/header") {
-    val data = session.createDataFrame(Seq((1, "foo"), (2, "bar"))).toDF("int", "string")
+    val data = session.createDataFrame(Seq(
+      (1L, "foo"),
+      (2L, "bar"))).toDF("int", "string")
     val header = RecordHeader.from(OpaqueField(Var("int")(CTInteger)), OpaqueField(Var("string")(CTString)))
 
     val records = CAPSRecords.create(header, data) // no exception is thrown

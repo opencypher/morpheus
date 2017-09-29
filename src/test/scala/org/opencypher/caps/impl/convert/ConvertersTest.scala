@@ -16,6 +16,7 @@
 package org.opencypher.caps.impl.convert
 
 import org.apache.spark.sql.types._
+import org.opencypher.caps.api.spark.exception.CAPSException
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.spark.convert.{fromSparkType, toSparkType}
 import org.opencypher.caps.test.BaseTestSuite
@@ -25,11 +26,7 @@ class ConvertersTest extends BaseTestSuite {
   test("converts from spark types to cypher types") {
     val mappings = Seq(
       LongType -> CTInteger,
-      IntegerType -> CTInteger,
-      ShortType -> CTInteger,
-      ByteType -> CTInteger,
       DoubleType -> CTFloat,
-      FloatType -> CTFloat,
       StringType -> CTString,
       BooleanType -> CTBoolean,
       ArrayType(LongType, containsNull = false) -> CTList(CTInteger),
@@ -41,6 +38,16 @@ class ConvertersTest extends BaseTestSuite {
       case (spark, cypher) =>
         fromSparkType(spark, nullable = false) should equal(cypher)
         fromSparkType(spark, nullable = true) should equal(cypher.nullable)
+    }
+  }
+
+  test("does not support detailed number types") {
+    val unsupported = Set(FloatType, IntegerType, ShortType, ByteType)
+
+    unsupported.foreach { t =>
+      a [CAPSException] shouldBe thrownBy {
+        fromSparkType(t, nullable = false)
+      }
     }
   }
 

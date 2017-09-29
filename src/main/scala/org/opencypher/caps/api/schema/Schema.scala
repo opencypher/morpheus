@@ -15,8 +15,10 @@
  */
 package org.opencypher.caps.api.schema
 
+import org.opencypher.caps.api.expr.Var
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.common.{Verifiable, Verified}
+import org.opencypher.caps.impl.spark.exception.Raise
 
 import scala.language.implicitConversions
 
@@ -73,6 +75,10 @@ final case class PropertyKeyMap(m: Map[String, Map[String, CypherType]])(val con
     copy(joined)(conflicts ++ other.conflicts)
   }
 
+  def filterByClassifier(classifiers: Set[String]): PropertyKeyMap = {
+    PropertyKeyMap(m.filterKeys(classifiers.contains))(conflicts)
+  }
+
   private def joinMaps[A, B](left: Map[A, B], right: Map[A, B])
                             (joinF: (B, B) => B, mapF: B => B = (x: B) => x): Map[A, B] = {
     val uniqueLeft = left.keySet -- right.keySet
@@ -84,6 +90,10 @@ final case class PropertyKeyMap(m: Map[String, Map[String, CypherType]])(val con
     val common = left.keySet.intersect(right.keySet)
     common.foldLeft(withUniqueRight) {(map, key) => map.updated(key, joinF(left(key), right(key)))}
   }
+}
+
+object ImpliedLabels {
+  val empty: ImpliedLabels = ImpliedLabels(Map.empty)
 }
 
 case class ImpliedLabels(m: Map[String, Set[String]]) {
@@ -104,7 +114,19 @@ case class ImpliedLabels(m: Map[String, Set[String]]) {
       .toSet
   }
 
+  def filterByLabels(labels: Set[String]): ImpliedLabels = {
+    val filteredImplications = m.collect {
+      case (k,v) if labels.contains(k) => k -> v.intersect(labels)
+    }
+
+    ImpliedLabels(filteredImplications)
+  }
+
   private def implicationsFor(source: String) = m.getOrElse(source, Set.empty) + source
+}
+
+object LabelCombinations {
+  val empty: LabelCombinations = LabelCombinations(Set.empty)
 }
 
 case class LabelCombinations(combos: Set[Set[String]]) {
@@ -115,6 +137,12 @@ case class LabelCombinations(combos: Set[Set[String]]) {
     val (lhs, rhs) = combos.partition(labels => coExistingLabels.exists(labels(_)))
     copy(combos = rhs + (lhs.flatten ++ coExistingLabels))
   }
+
+  /**
+    * Returns all combinations that have an overlap with 'labels'
+    */
+  def filterByLabels(labels: Set[String]): LabelCombinations =
+    LabelCombinations(combos.filter(c => c.intersect(labels).nonEmpty))
 
   def ++(other: LabelCombinations) = copy(combos ++ other.combos)
 }
@@ -213,6 +241,58 @@ final case class Schema(
       newRelKeyMap,
       newImpliedLabels,
       newLabelCombinations)
+  }
+
+  /**
+    * Returns the sub-schema for {{{nodeType}}}
+    *
+    * @param nodeType Specifies the type for which the schema is extracted
+    * @return sub-schema for {{{nodeType}}}
+    */
+  def forNode(nodeType: CTNode): Schema = {
+    val requiredLabels = {
+      val explicitLabels = nodeType.labels
+      val impliedLabels = this.impliedLabels.transitiveImplicationsFor(explicitLabels)
+      explicitLabels union impliedLabels
+    }
+
+    val possibleLabels = if (nodeType.labels.isEmpty) {
+      this.labels
+    } else {
+      requiredLabels union this.labelCombinations.filterByLabels(requiredLabels).combos.flatten
+    }
+
+    copy(
+      labels = possibleLabels,
+      Set.empty,
+      nodeKeyMap = this.nodeKeyMap.filterByClassifier(possibleLabels),
+      relKeyMap = PropertyKeyMap.empty,
+      impliedLabels = this.impliedLabels.filterByLabels(possibleLabels),
+      labelCombinations = this.labelCombinations.filterByLabels(possibleLabels)
+    )
+  }
+
+  /**
+    * Returns the sub-schema for {{{relType}}}
+    *
+    * @param relType Specifies the type for which the schema is extracted
+    * @return sub-schema for {{{relType}}}
+    */
+  def forRelationship(relType: CTRelationship): Schema = {
+    val givenRelTypes = if (relType.types.isEmpty) {
+      relationshipTypes
+    } else {
+      relType.types
+    }
+
+    copy(
+      labels = Set.empty,
+      relationshipTypes = givenRelTypes,
+      nodeKeyMap = PropertyKeyMap.empty,
+      relKeyMap = this.relKeyMap.filterByClassifier(givenRelTypes),
+      impliedLabels = ImpliedLabels.empty,
+      labelCombinations = LabelCombinations.empty
+    )
   }
 
   /**

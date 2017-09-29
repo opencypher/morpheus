@@ -54,10 +54,10 @@ trait MiniDFSClusterFixture extends BaseTestFixture {
     * @return expected nodes
     */
   def dfsTestGraphNodes: Set[Row] = Set(
-    Row(1, true,  true, false, true,  "Stefan",   42),
-    Row(2, false, true,  true, true,    "Mats",   23),
-    Row(3, true,  true, false, true,  "Martin", 1337),
-    Row(4, true,  true, false, true,     "Max",    8)
+    Row(1L, true,  true, false, true,  "Stefan",   42L),
+    Row(2L, false, true,  true, true,    "Mats",   23L),
+    Row(3L, true,  true, false, true,  "Martin", 1337L),
+    Row(4L, true,  true, false, true,     "Max",    8L)
   )
 
   /**
@@ -66,8 +66,8 @@ trait MiniDFSClusterFixture extends BaseTestFixture {
     * @return expected rels
     */
   def dfsTestGraphRels: Set[Row] = Set(
-    Row(1, 10, "KNOWS", 2, 2016),
-    Row(2, 20, "KNOWS", 3, 2017),
-    Row(3, 30, "KNOWS", 4, 2015)
+    Row(1L, 10L, "KNOWS", 2L, 2016L),
+    Row(2L, 20L, "KNOWS", 3L, 2017L),
+    Row(3L, 30L, "KNOWS", 4L, 2015L)
   )
 }

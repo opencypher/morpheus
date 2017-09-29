@@ -15,6 +15,7 @@
  */
 package org.opencypher.caps.api.schema
 
+import org.opencypher.caps.api.expr.Var
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.test.BaseTestSuite
 
@@ -228,6 +229,61 @@ class SchemaTest extends BaseTestSuite {
       .withLabelCombination("A","E")
       .withLabelCombination("B","F")
       .withLabelCombination("C","D")
+    )
+  }
+
+  test("extract node schema") {
+    val schema = Schema.empty
+      .withNodePropertyKeys("Person")("name" -> CTString)
+      .withNodePropertyKeys("Employee")("name" -> CTString, "salary" -> CTInteger)
+      .withNodePropertyKeys("Dog")("name" -> CTFloat)
+      .withNodePropertyKeys("Pet")("notName" -> CTBoolean)
+      .withLabelCombination("Person", "Employee")
+      .withImpliedLabel("Dog", "Pet")
+      .withRelationshipPropertyKeys("OWNER")("since" -> CTInteger)
+
+    schema.forNode(CTNode("Person")) should equal(
+      Schema.empty
+      .withNodePropertyKeys("Person")("name" -> CTString)
+      .withNodePropertyKeys("Employee")("name" -> CTString, "salary" -> CTInteger)
+      .withLabelCombination("Person", "Employee")
+    )
+
+    schema.forNode(CTNode("Dog")) should equal(
+      Schema.empty
+        .withNodePropertyKeys("Dog")("name" -> CTFloat)
+        .withNodePropertyKeys("Pet")("notName" -> CTBoolean)
+        .withImpliedLabel("Dog", "Pet")
+    )
+  }
+
+  test("forRelationship") {
+    val schema = Schema.empty
+      .withNodePropertyKeys("Person")("name" -> CTString)
+      .withRelationshipPropertyKeys("KNOWS")("name" -> CTString)
+      .withRelationshipPropertyKeys("LOVES")("deeply" -> CTBoolean, "salary" -> CTInteger)
+      .withRelationshipPropertyKeys("NEEDS")("rating" -> CTFloat)
+      .withLabelCombination("Person", "Employee")
+      .withImpliedLabel("Dog", "Pet")
+      .withRelationshipPropertyKeys("OWNER")("since" -> CTInteger)
+
+    schema.forRelationship(CTRelationship("KNOWS")) should equal(
+      Schema.empty
+        .withRelationshipPropertyKeys("KNOWS")("name" -> CTString)
+    )
+
+    schema.forRelationship(CTRelationship) should equal(
+      Schema.empty
+        .withRelationshipPropertyKeys("KNOWS")("name" -> CTString)
+        .withRelationshipPropertyKeys("LOVES")("deeply" -> CTBoolean, "salary" -> CTInteger)
+        .withRelationshipPropertyKeys("NEEDS")("rating" -> CTFloat)
+        .withRelationshipPropertyKeys("OWNER")("since" -> CTInteger)
+    )
+
+    schema.forRelationship(CTRelationship("KNOWS", "LOVES")) should equal(
+      Schema.empty
+        .withRelationshipPropertyKeys("KNOWS")("name" -> CTString)
+        .withRelationshipPropertyKeys("LOVES")("deeply" -> CTBoolean, "salary" -> CTInteger)
     )
   }
 }

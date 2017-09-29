@@ -15,12 +15,15 @@
  */
 package org.opencypher.caps.api.record
 
-import org.opencypher.caps.api.expr.{Property, Var}
+import org.apache.spark.sql.Row
+import org.opencypher.caps.api.expr.{HasLabel, OfType, Property, Var}
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.spark.CAPSRecords
+import org.opencypher.caps.api.spark.{CAPSRecords, CAPSSession}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType}
-import org.opencypher.caps.impl.spark.SparkColumn
+import org.opencypher.caps.impl.record.CAPSRecordsTokens
+import org.opencypher.caps.impl.spark.{SparkColumn, SparkColumnName}
 import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.ir.api.global.Label
 
 sealed trait GraphScan extends Serializable {
 
@@ -37,7 +40,60 @@ sealed trait GraphScan extends Serializable {
   def schema: Schema
 }
 
-object GraphScan extends GraphScanCompanion[EmbeddedEntity]
+object GraphScan extends GraphScanCompanion[EmbeddedEntity] {
+
+  /**
+    * Align the argument `CAPSRecords` to the target header and rename the stored entity to `v`.
+    *
+    * It is required that the `CAPSRecords` instance is a scan, meaning that it must contain exactly a single entity
+    * (node or relationship) and its parts (flattened). The stored entity is renamed by this function to the argument
+    * variable `v`.
+    *
+    * @param records the scan to align
+    * @param v the variable that the aligned scan should contain
+    * @param targetHeader the header to align with
+    * @return a new instance of `CAPSRecords` aligned with the argument header
+    */
+  def align(records: CAPSRecords, v: Var, targetHeader: RecordHeader)
+           (implicit session: CAPSSession): CAPSRecords = {
+    val oldEntity = records.header.fields.headOption.getOrElse(Raise.impossible("GraphScan table did not contain any fields"))
+    val entityLabels: Set[String] = oldEntity.cypherType match {
+      case CTNode(labels) => labels
+      case CTRelationship(typ) => typ
+    }
+
+    val slots = records.details.header.slots
+    val renamedSlots = slots.map(_.withOwner(v))
+
+    val dataColumnNameToIndex: Map[String, Int] = renamedSlots.map { dataSlot =>
+      val dataColumnName = SparkColumnName.of(dataSlot)
+      val dataColumnIndex = dataSlot.index
+      dataColumnName -> dataColumnIndex
+    }.toMap
+
+    val slotDataSelectors: Seq[Row => Any] = targetHeader.slots.map { targetSlot =>
+      val columnName = SparkColumnName.of(targetSlot)
+      val defaultValue = targetSlot.content.key match {
+        case HasLabel(_, l: Label) => entityLabels(l.name)
+        case _: OfType if entityLabels.size == 1 => entityLabels.head
+        case _ => null
+      }
+      val maybeDataIndex = dataColumnNameToIndex.get(columnName)
+      val slotDataSelector: Row => Any = maybeDataIndex match {
+        case None => (_) => defaultValue
+        case Some(index) => _.get(index)
+      }
+      slotDataSelector
+    }
+
+    val alignedData = records.details.toDF().map { (row: Row) =>
+      val alignedRow = slotDataSelectors.map(_ (row))
+      Row.fromSeq(alignedRow)
+    }(targetHeader.rowEncoder)
+
+    CAPSRecords.create(targetHeader, alignedData)
+  }
+}
 
 sealed trait GraphScanCompanion[E <: EmbeddedEntity] {
   def apply[X <: E](verifiedEntity: VerifiedEmbeddedEntity[X]): GraphScanBuilder[X] = GraphScanBuilder(verifiedEntity)

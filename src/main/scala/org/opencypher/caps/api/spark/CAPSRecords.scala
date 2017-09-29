@@ -27,9 +27,9 @@ import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.{CypherMap, CypherNode, CypherRelationship, CypherValue}
 import org.opencypher.caps.impl.record.CAPSRecordHeader
+import org.opencypher.caps.impl.spark.{RecordsPrinter, SparkColumnName}
 import org.opencypher.caps.impl.spark.convert.{fromSparkType, toSparkType}
 import org.opencypher.caps.impl.spark.exception.Raise
-import org.opencypher.caps.impl.spark.{RecordsPrinter, SparkColumnName}
 import org.opencypher.caps.impl.syntax.header._
 
 import scala.annotation.tailrec
@@ -80,6 +80,11 @@ sealed abstract class CAPSRecords(
     CAPSRecords.create(cachedHeader, cachedData)
   }
 
+  def unionAll(header: RecordHeader, other: CAPSRecords): CAPSRecords = {
+    val unionData = details.data.union(other.details.data)
+    CAPSRecords.create(header, unionData)
+  }
+
   override def contract[E <: EmbeddedEntity](entity: VerifiedEmbeddedEntity[E]): CAPSRecords = {
     val slotExprs = entity.slots
     val newSlots = header.slots.map {
@@ -99,7 +104,9 @@ sealed abstract class CAPSRecords(
     CAPSRecords.create(newHeader, renamed)
   }
 
-  def distinct: CAPSRecords = CAPSRecords.create(self.header, self.data.distinct())
+  def distinct: CAPSRecords = {
+    CAPSRecords.create(self.header, self.details.data.distinct())
+  }
 
   def toLocalIterator: java.util.Iterator[CypherMap] = {
     val iterator = data.toLocalIterator()
@@ -281,9 +288,15 @@ object CAPSRecords {
       if (initialDataColumns.size != initialDataColumns.distinct.size)
         Raise.duplicateColumnNamesInData()
 
-      // Verify correct column names
-      if (initialData.columns.toSet != initialHeader.internalHeader.columns.toSet)
-        Raise.recordsDataHeaderMismatch()
+      // Verify that all header column names exist in the data
+      val headerColumnNames = initialHeader.internalHeader.columns.toSet
+      val dataColumnNames = initialData.columns.toSet
+      if (!headerColumnNames.subsetOf(dataColumnNames)) {
+        Raise.recordsDataHeaderMismatch(
+          s"with columns ${initialHeader.internalHeader.columns.toSet.mkString}",
+          s"with columns ${initialData.columns.toSet.mkString}"
+        )
+      }
 
       // Verify column types
       initialHeader.slots.foreach { slot =>
