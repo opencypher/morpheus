@@ -17,7 +17,7 @@ package org.opencypher.caps.api.spark
 
 import org.apache.spark.sql.Row
 import org.opencypher.caps.api.expr.{HasLabel, Property, Var}
-import org.opencypher.caps.api.record.{OpaqueField, ProjectedExpr, RecordHeader}
+import org.opencypher.caps.api.record.{OpaqueField, ProjectedExpr, ProjectedField, RecordHeader}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTRelationship, CTString}
 import org.opencypher.caps.api.value.CypherMap
@@ -265,7 +265,7 @@ class PatternGraphTest extends CAPSTestSuite {
       OpaqueField(e),
       ProjectedExpr(HasLabel(e, Label("Employee"))(CTBoolean)),
       ProjectedExpr(Property(p, PropertyKey("name"))(CTString)),
-      ProjectedExpr(Property(e, PropertyKey("name"))(CTString))
+      ProjectedField('foo -> CTString, Property(e, PropertyKey("name"))(CTString))
     )
     val (header, _) = RecordHeader.empty.update(addContents(fields))
 

@@ -76,7 +76,7 @@ final case class ProjectedExpr(expr: Expr) extends ProjectedSlotContent {
 
   override def support = Seq(expr)
 
-  override def withOwner(newOwner: Var): SlotContent = key match {
+  override def withOwner(newOwner: Var): ProjectedExpr = key match {
     case h: HasLabel => ProjectedExpr(HasLabel(newOwner, h.label)(h.cypherType))
     case t: OfType => ProjectedExpr(OfType(newOwner)(t.cypherType))
     case p: Property => ProjectedExpr(Property(newOwner, p.key)(p.cypherType))
@@ -99,5 +99,13 @@ final case class ProjectedField(field: Var, expr: Expr)
 
   override def support = Seq(field, expr)
 
-  override def withOwner(newOwner: Var): SlotContent = this
+  // TODO: Consider whether withOwner on ProjectedField should return ProjectedExpr
+  override def withOwner(newOwner: Var): ProjectedExpr = expr match {
+    case h: HasLabel => ProjectedExpr(HasLabel(newOwner, h.label)(h.cypherType))
+    case t: OfType => ProjectedExpr(OfType(newOwner)(t.cypherType))
+    case p: Property => ProjectedExpr(Property(newOwner, p.key)(p.cypherType))
+    case s: StartNode => ProjectedExpr(StartNode(newOwner)(s.cypherType))
+    case e: EndNode => ProjectedExpr(EndNode(newOwner)(e.cypherType))
+    case _ => Raise.impossible()
+  }
 }
