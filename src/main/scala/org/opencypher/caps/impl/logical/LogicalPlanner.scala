@@ -258,11 +258,19 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
   }
 
   private def planPattern(plan: LogicalOperator, pattern: Pattern[Expr], graph: IRGraph)(implicit context: LogicalPlannerContext) = {
-    val components = pattern.components
+    val components = pattern.components.toSeq
     if (components.size == 1)
       planConnectedPattern(plan, components.head, graph)
-    else
-      Raise.invalidPattern("Cant do this yet")
+    else {
+      val bases = plan +: components.map(_ => Start(plan.sourceGraph, Set.empty)(SolvedQueryModel.empty)).tail
+      val plans = bases.zip(components).map { case (base, component) => planConnectedPattern(base, component, graph) }
+      val result = plans.reduceOption { (l, r) => planCartesian(l, r) }
+      result.getOrElse(Raise.invalidOrUnsupportedPattern("empty pattern"))
+    }
+  }
+
+  private def planCartesian(l: LogicalOperator, r: LogicalOperator)(implicit context: LogicalPlannerContext): LogicalOperator = {
+    ???
   }
 
   private def planConnectedPattern(plan: LogicalOperator, pattern: Pattern[Expr], graph: IRGraph)(implicit context: LogicalPlannerContext) = {
@@ -299,7 +307,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       // tie all plans together using expansions
       planExpansions(nodePlans + firstPlan, pattern, producer)
     } else
-      Raise.invalidPattern(pattern.toString)
+      Raise.invalidOrUnsupportedPattern(pattern.toString)
   }
 
   @tailrec

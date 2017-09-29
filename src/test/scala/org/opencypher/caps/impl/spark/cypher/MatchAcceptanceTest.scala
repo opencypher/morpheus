@@ -89,7 +89,7 @@ class MatchAcceptanceTest extends CAPSTestSuite {
     result.graphs shouldBe empty
   }
 
-  ignore("disconnected components") {
+  test("disconnected components") {
     // Given
     val given = TestGraph(
       """
