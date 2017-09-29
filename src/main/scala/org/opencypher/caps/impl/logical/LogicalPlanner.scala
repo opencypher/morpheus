@@ -258,6 +258,14 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
   }
 
   private def planPattern(plan: LogicalOperator, pattern: Pattern[Expr], graph: IRGraph)(implicit context: LogicalPlannerContext) = {
+    val components = pattern.components
+    if (components.size == 1)
+      planConnectedPattern(plan, components.head, graph)
+    else
+      Raise.invalidPattern("Cant do this yet")
+  }
+
+  private def planConnectedPattern(plan: LogicalOperator, pattern: Pattern[Expr], graph: IRGraph)(implicit context: LogicalPlannerContext) = {
 
     // find all unsolved nodes from the pattern
     val nodes = pattern.entities.collect {
