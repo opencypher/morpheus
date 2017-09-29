@@ -51,28 +51,28 @@ class PatternGraphTest extends CAPSTestSuite {
 
   val `:Programmer` =
     """
-      |(pp1:Person:Programmer {name: "Alice",luckyNumber: 42,language: "C"}),
-      |(pp2:Person:Programmer {name: "Bob",luckyNumber: 23,language: "D"}),
-      |(pp3:Person:Programmer {name: "Eve",luckyNumber: 84,language: "F"}),
-      |(pp4:Person:Programmer {name: "Carl",luckyNumber: 49,language: "R"}),
+      |(pp1:Person:Programmer {name: "Alice",luckyNumber: 42L,language: "C"}),
+      |(pp2:Person:Programmer {name: "Bob",luckyNumber: 23L,language: "D"}),
+      |(pp3:Person:Programmer {name: "Eve",luckyNumber: 84L,language: "F"}),
+      |(pp4:Person:Programmer {name: "Carl",luckyNumber: 49L,language: "R"}),
     """.stripMargin
 
   val `:Book` =
     """
-      |(b1:Book {title: "1984", year: 1949l}),
-      |(b2:Book {title: "Cryptonomicon", year: 1999l}),
-      |(b3:Book {title: "The Eye of the World", year: 1990l}),
-      |(b4:Book {title: "The Circle", year: 2013l}),
+      |(b1:Book {title: "1984", year: 1949L}),
+      |(b2:Book {title: "Cryptonomicon", year: 1999L}),
+      |(b3:Book {title: "The Eye of the World", year: 1990L}),
+      |(b4:Book {title: "The Circle", year: 2013L}),
     """.stripMargin
 
   val `:KNOWS` =
     """
-      |(p1)-[:KNOWS {since: 2017l}]->(p2),
-      |(p1)-[:KNOWS {since: 2016l}]->(p3),
-      |(p1)-[:KNOWS {since: 2015l}]->(p4),
-      |(p2)-[:KNOWS {since: 2016l}]->(p3),
-      |(p2)-[:KNOWS {since: 2013l}]->(p4),
-      |(p3)-[:KNOWS {since: 2016l}]->(p4),
+      |(p1)-[:KNOWS {since: 2017L}]->(p2),
+      |(p1)-[:KNOWS {since: 2016L}]->(p3),
+      |(p1)-[:KNOWS {since: 2015L}]->(p4),
+      |(p2)-[:KNOWS {since: 2016L}]->(p3),
+      |(p2)-[:KNOWS {since: 2013L}]->(p4),
+      |(p3)-[:KNOWS {since: 2016L}]->(p4),
     """.stripMargin
 
   val `:READS` =
@@ -104,10 +104,10 @@ class PatternGraphTest extends CAPSTestSuite {
     ))
 
     outputNodes.details.toDF().collect().toSet should equal (Set(
-      Row(0, true, true,    "Mats",   23),
-      Row(1, true, false, "Martin",   42),
-      Row(2, true, false,    "Max", 1337),
-      Row(3, true, false, "Stefan",    9)
+      Row(0L, true, true,    "Mats",   23L),
+      Row(1L, true, false, "Martin",   42L),
+      Row(2L, true, false,    "Max", 1337L),
+      Row(3L, true, false, "Stefan",    9L)
     ))
   }
 
@@ -130,14 +130,14 @@ class PatternGraphTest extends CAPSTestSuite {
     ))
 
     outputNodes.details.toDF().collect().toSet should equal(Set(
-      Row(0,  true,  true,  false,   "Mats",   23, null,                   null),
-      Row(1,  true,  false, false, "Martin",   42, null,                   null),
-      Row(2,  true,  false, false,    "Max", 1337, null,                   null),
-      Row(3,  true,  false, false, "Stefan",    9, null,                   null),
-      Row(4, false,  false,  true,     null, null, 1949,                 "1984"),
-      Row(5, false,  false,  true,     null, null, 1999,        "Cryptonomicon"),
-      Row(6, false,  false,  true,     null, null, 1990, "The Eye of the World"),
-      Row(7, false,  false,  true,     null, null, 2013,           "The Circle")
+      Row(0L,  true,  true,  false,   "Mats",   23L, null,                   null),
+      Row(1L,  true,  false, false, "Martin",   42L, null,                   null),
+      Row(2L,  true,  false, false,    "Max", 1337L, null,                   null),
+      Row(3L,  true,  false, false, "Stefan",    9L, null,                   null),
+      Row(4L, false,  false,  true,     null, null, 1949L,                 "1984"),
+      Row(5L, false,  false,  true,     null, null, 1999L,        "Cryptonomicon"),
+      Row(6L, false,  false,  true,     null, null, 1990L, "The Eye of the World"),
+      Row(7L, false,  false,  true,     null, null, 2013L,           "The Circle")
     ))
   }
 
@@ -157,14 +157,14 @@ class PatternGraphTest extends CAPSTestSuite {
     ))
 
     outputNodes.details.toDF().collect().toSet should equal(Set(
-      Row(0,  true,  true,  false,   "Mats",   23, null,                   null),
-      Row(1,  true,  false, false, "Martin",   42, null,                   null),
-      Row(2,  true,  false, false,    "Max", 1337, null,                   null),
-      Row(3,  true,  false, false, "Stefan",    9, null,                   null),
-      Row(4, false,  false,  true,     null, null, 1949,                 "1984"),
-      Row(5, false,  false,  true,     null, null, 1999,        "Cryptonomicon"),
-      Row(6, false,  false,  true,     null, null, 1990, "The Eye of the World"),
-      Row(7, false,  false,  true,     null, null, 2013,           "The Circle")
+      Row(0L,  true,  true,  false,   "Mats",   23L, null,                   null),
+      Row(1L,  true,  false, false, "Martin",   42L, null,                   null),
+      Row(2L,  true,  false, false,    "Max", 1337L, null,                   null),
+      Row(3L,  true,  false, false, "Stefan",    9L, null,                   null),
+      Row(4L, false,  false,  true,     null, null, 1949L,                 "1984"),
+      Row(5L, false,  false,  true,     null, null, 1999L,        "Cryptonomicon"),
+      Row(6L, false,  false,  true,     null, null, 1990L, "The Eye of the World"),
+      Row(7L, false,  false,  true,     null, null, 2013L,           "The Circle")
     ))
   }
 
@@ -182,10 +182,10 @@ class PatternGraphTest extends CAPSTestSuite {
     ))
 
     outputNodes.details.toDF().collect().toSet should equal(Set(
-      Row(0,  true,   true,   "Mats",   23),
-      Row(1,  true,  false, "Martin",   42),
-      Row(2,  true,  false,    "Max", 1337),
-      Row(3,  true,  false, "Stefan",    9)
+      Row(0L,  true,   true,   "Mats",   23L),
+      Row(1L,  true,  false, "Martin",   42L),
+      Row(2L,  true,  false,    "Max", 1337L),
+      Row(3L,  true,  false, "Stefan",    9L)
     ))
   }
 
@@ -205,10 +205,10 @@ class PatternGraphTest extends CAPSTestSuite {
     ))
 
     outputNodes.details.toDF().collect().toSet should equal(Set(
-      Row(0,  true,  true,   "Mats",   23),
-      Row(1,  true,  false, "Martin",   42),
-      Row(2,  true,  false,    "Max", 1337),
-      Row(3,  true,  false, "Stefan",    9)
+      Row(0L,  true,  true,   "Mats",    23L),
+      Row(1L,  true,  false, "Martin",   42L),
+      Row(2L,  true,  false,    "Max", 1337L),
+      Row(3L,  true,  false, "Stefan",    9L)
     ))
   }
 
@@ -239,8 +239,8 @@ class PatternGraphTest extends CAPSTestSuite {
     val (header, _) = RecordHeader.empty.update(addContents(fields))
 
     val df = session.createDataFrame(List(
-      Row(0l, 1l, true, 2l),
-      Row(10l, 11l, false, 12l)
+      Row( 0L,  1L, true,   2L),
+      Row(10L, 11L, false, 12L)
     ).asJava, CAPSRecordHeader.asSparkStructType(header))
 
     val schema = Schema.empty
@@ -250,9 +250,9 @@ class PatternGraphTest extends CAPSTestSuite {
     val patternGraph = CAPSGraph.create(CAPSRecords.create(header, df), schema)
 
     patternGraph.nodes("n", CTNode("Person")).toMaps should equal(Bag(
-      CypherMap("n" -> 0),
-      CypherMap("n" -> 1),
-      CypherMap("n" -> 10)
+      CypherMap("n" ->  0L),
+      CypherMap("n" ->  1L),
+      CypherMap("n" -> 10L)
     ))
   }
 
@@ -271,7 +271,7 @@ class PatternGraphTest extends CAPSTestSuite {
 
     val sparkHeader = CAPSRecordHeader.asSparkStructType(header)
     val df = session.createDataFrame(List(
-      Row(0L, true, 1L, true, "PersonPeter", "EmployeePeter"),
+      Row( 0L, true, 1L, true, "PersonPeter", "EmployeePeter"),
       Row(10L, true, 11L, true, "PersonSusanna", "EmployeeSusanna")
     ).asJava, sparkHeader)
 
@@ -282,8 +282,8 @@ class PatternGraphTest extends CAPSTestSuite {
     val patternGraph = CAPSGraph.create(CAPSRecords.create(header, df), schema)
 
     patternGraph.nodes("n", CTNode).details.toMaps should equal(Bag(
-      CypherMap("n" -> 0L, "n.name" -> "PersonPeter", "n:Person" -> true, "n:Employee" -> false),
-      CypherMap("n" -> 1L, "n.name" -> "EmployeePeter", "n:Person" -> false, "n:Employee" -> true),
+      CypherMap("n" ->  0L, "n.name" -> "PersonPeter", "n:Person" -> true, "n:Employee" -> false),
+      CypherMap("n" ->  1L, "n.name" -> "EmployeePeter", "n:Person" -> false, "n:Employee" -> true),
       CypherMap("n" -> 10L, "n.name" -> "PersonSusanna", "n:Person" -> true, "n:Employee" -> false),
       CypherMap("n" -> 11L, "n.name" -> "EmployeeSusanna", "n:Person" -> false, "n:Employee" -> true)
     ))

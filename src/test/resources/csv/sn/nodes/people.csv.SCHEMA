@@ -26,7 +26,7 @@
     {
       "name": "luckyNumber",
       "column": 2,
-      "valueType": "INTEGER"
+      "valueType": "LONG"
     }
   ]
 }

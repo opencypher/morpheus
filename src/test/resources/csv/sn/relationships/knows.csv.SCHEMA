@@ -19,7 +19,7 @@
     {
       "name": "since",
       "column": 3,
-      "valueType": "INTEGER"
+      "valueType": "LONG"
     }
   ]
 }

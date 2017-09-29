@@ -14,7 +14,7 @@
     {
       "name": "rank",
       "column": 2,
-      "valueType": "INTEGER"
+      "valueType": "LONG"
     },
     {
       "name": "category",

@@ -33,7 +33,7 @@ class NodeScanTest extends CAPSTestSuite {
     }.from(CAPSRecords.create(
       Seq("ID", "IS_C", "FOO", "BAR"),
       Seq(
-        (1, true, "Mats", 23)
+        (1L, true, "Mats", 23L)
       )
     ))
 

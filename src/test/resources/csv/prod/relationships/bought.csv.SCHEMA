@@ -19,17 +19,17 @@
     {
       "name": "rating",
       "column": 3,
-      "valueType": "INTEGER"
+      "valueType": "LONG"
     },
     {
       "name": "helpful",
       "column": 4,
-      "valueType": "INTEGER"
+      "valueType": "LONG"
     },
     {
       "name": "votes",
       "column": 5,
-      "valueType": "INTEGER"
+      "valueType": "LONG"
     }
   ]
 }

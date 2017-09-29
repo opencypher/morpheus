@@ -31,10 +31,10 @@ class CAPSEngineOperationsTest extends CAPSTestSuite {
     val given = CAPSRecords.create(
       Seq("ID", "IS_SWEDE", "NAME"),
       Seq(
-        (1, true, "Mats"),
-        (2, false, "Martin"),
-        (3, false, "Max"),
-        (4, false, "Stefan")
+        (1L, true, "Mats"),
+        (2L, false, "Martin"),
+        (3L, false, "Max"),
+        (4L, false, "Stefan")
     ))
 
     val result = base.filter(given, Var("IS_SWEDE")(CTBoolean))
@@ -46,20 +46,20 @@ class CAPSEngineOperationsTest extends CAPSTestSuite {
     val given = CAPSRecords.create(
       Seq("ID", "IS_SWEDE", "NAME"),
       Seq(
-        (1, true, "Mats"),
-        (2, false, "Martin"),
-        (3, false, "Max"),
-        (4, false, "Stefan")
+        (1L, true, "Mats"),
+        (2L, false, "Martin"),
+        (3L, false, "Max"),
+        (4L, false, "Stefan")
     ))
 
     val result = base.select(given, IndexedSeq(Var("ID")(CTInteger), Var("NAME")(CTString)))
 
     result.details shouldMatch CAPSRecords.create(
       Seq("ID", "NAME"), Seq(
-        (1, "Mats"),
-        (2, "Martin"),
-        (3, "Max"),
-        (4, "Stefan")
+        (1L, "Mats"),
+        (2L, "Martin"),
+        (3L, "Max"),
+        (4L, "Stefan")
     ))
   }
 
@@ -67,10 +67,10 @@ class CAPSEngineOperationsTest extends CAPSTestSuite {
     val given = CAPSRecords.create(
       Seq("ID", "IS_SWEDE", "NAME"),
       Seq(
-        (1, true, "Mats"),
-        (2, false, "Martin"),
-        (3, false, "Max"),
-        (4, false, "Stefan")
+        (1L, true, "Mats"),
+        (2L, false, "Martin"),
+        (3L, false, "Max"),
+        (4L, false, "Stefan")
       ))
 
     val expr: Expr = Not(Var("IS_SWEDE")(CTBoolean))(CTBoolean)
@@ -79,10 +79,10 @@ class CAPSEngineOperationsTest extends CAPSTestSuite {
     result.details shouldMatchOpaquely CAPSRecords.create(
       Seq("ID", "IS_SWEDE", "NAME", "NOT IS_SWEDE"),
       Seq(
-        (1, true, "Mats", false),
-        (2, false, "Martin", true),
-        (3, false, "Max", true),
-        (4, false, "Stefan", true)
+        (1L, true, "Mats", false),
+        (2L, false, "Martin", true),
+        (3L, false, "Max", true),
+        (4L, false, "Stefan", true)
       ))
   }
 
@@ -90,10 +90,10 @@ class CAPSEngineOperationsTest extends CAPSTestSuite {
     val given = CAPSRecords.create(
       Seq("ID", "IS_SWEDE", "NAME"),
       Seq(
-        (1, true, "Mats"),
-        (2, false, "Martin"),
-        (3, false, "Max"),
-        (4, false, "Stefan")
+        (1L, true, "Mats"),
+        (2L, false, "Martin"),
+        (3L, false, "Max"),
+        (4L, false, "Stefan")
       ))
 
     val exprVar = Not(Var("IS_SWEDE")(CTBoolean))(CTBoolean) -> Var("IS_NOT_SWEDE")(CTBoolean)
@@ -102,10 +102,10 @@ class CAPSEngineOperationsTest extends CAPSTestSuite {
     result.details shouldMatchOpaquely CAPSRecords.create(
       Seq("ID", "IS_SWEDE", "NAME", "IS_NOT_SWEDE"),
       Seq(
-        (1, true, "Mats", false),
-        (2, false, "Martin", true),
-        (3, false, "Max", true),
-        (4, false, "Stefan", true)
+        (1L, true, "Mats", false),
+        (2L, false, "Martin", true),
+        (3L, false, "Max", true),
+        (4L, false, "Stefan", true)
       ))
   }
 }

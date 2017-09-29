@@ -87,9 +87,9 @@ class RecordsPrinterTest extends CAPSTestSuite {
   test("three columns, three rows") {
     // Given
     val records = CAPSRecords.create(Seq(
-      Row3("myString", 4, false),
-      Row3("foo", 99999999, true),
-      Row3(null, -1, true)
+      Row3("myString", 4L, false),
+      Row3("foo", 99999999L, true),
+      Row3(null, -1L, true)
     ))
 
     // When
@@ -115,7 +115,7 @@ class RecordsPrinterTest extends CAPSTestSuite {
   }
 
   private case class Row1(foo: String)
-  private case class Row3(foo: String, v: Int, veryLongColumnNameWithBoolean: Boolean)
+  private case class Row3(foo: String, v: Long, veryLongColumnNameWithBoolean: Boolean)
 
   private def headerOf(fields: Symbol*): RecordHeader = {
     val value1 = fields.map(f => OpaqueField(Var(f.name)(CTNode)))
