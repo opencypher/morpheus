@@ -23,6 +23,7 @@ import org.opencypher.caps.impl.spark.convert.toSparkType
 import org.opencypher.caps.impl.spark.exception.Raise
 
 final case class RecordSlot(index: Int, content: SlotContent) {
+  def withOwner(v: Var): RecordSlot = copy(content = content.withOwner(v))
   def structField: StructField = {
     val name = SparkColumnName.of(this)
     val sparkType = toSparkType(content.cypherType)

@@ -27,9 +27,9 @@ import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.{CypherMap, CypherNode, CypherRelationship, CypherValue}
 import org.opencypher.caps.impl.record.CAPSRecordHeader
+import org.opencypher.caps.impl.spark.{RecordsPrinter, SparkColumnName}
 import org.opencypher.caps.impl.spark.convert.{fromSparkType, toSparkType}
 import org.opencypher.caps.impl.spark.exception.Raise
-import org.opencypher.caps.impl.spark.{RecordsPrinter, SparkColumnName}
 import org.opencypher.caps.impl.syntax.header._
 
 import scala.annotation.tailrec
@@ -78,32 +78,6 @@ sealed abstract class CAPSRecords(
     }
 
     CAPSRecords.create(cachedHeader, cachedData)
-  }
-
-  def align(targetHeader: RecordHeader, tokens: CAPSTokens): CAPSRecords = {
-
-    val dataColumnNameToIndex: Map[String, Int] = this.details.header.slots.map { dataSlot =>
-      val dataColumnName = SparkColumnName.of(dataSlot)
-      val dataColumnIndex = dataSlot.index
-      dataColumnName -> dataColumnIndex
-    }.toMap
-
-    val slotDataSelectors: Seq[Row => Any] = targetHeader.slots.map { targetSlot =>
-      val columnName = SparkColumnName.of(targetSlot)
-      val maybeDataIndex = dataColumnNameToIndex.get(columnName)
-      val slotDataSelector: Row => Any = maybeDataIndex match {
-        case None => (_) => null
-        case Some(index) => _.get(index)
-      }
-      slotDataSelector
-    }
-
-    val alignedData = this.details.toDF().map { (row: Row) =>
-      val alignedRow = slotDataSelectors.map(slotSelector => slotSelector(row))
-      Row.fromSeq(alignedRow)
-    }(targetHeader.rowEncoder)
-
-    CAPSRecords.create(targetHeader, alignedData)
   }
 
   def unionAll(header: RecordHeader, other: CAPSRecords): CAPSRecords = {
