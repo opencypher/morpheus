@@ -66,8 +66,8 @@ object Raise {
     s"Wanted to rename column $column, but it was not present!"
   )
 
-  def invalidPattern(pattern: String) = throw CAPSException(
-    s"What kind of a pattern is this??? $pattern"
+  def invalidOrUnsupportedPattern(pattern: String) = throw CAPSException(
+    s"Unsupported or invalid pattern. Can't plan $pattern"
   )
 
   def invalidConnection(endPoint: String) = throw CAPSException(
