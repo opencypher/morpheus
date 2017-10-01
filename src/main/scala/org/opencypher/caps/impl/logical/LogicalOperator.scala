@@ -247,9 +247,21 @@ final case class Limit(expr: Expr, in: LogicalOperator)
   override def clone(newIn: LogicalOperator): LogicalOperator = copy(in = newIn)(solved)
 }
 
+final case class CartesianProduct(lhs: LogicalOperator, rhs: LogicalOperator)(override val solved: SolvedQueryModel[Expr])
+  extends BinaryLogicalOperator {
+
+  override def pretty(depth: Int): String =
+    s"""${prefix(depth)} CartesianProduct()
+       #${rhs.pretty(depth + 1)}""".stripMargin('#')
+
+  override def clone(newLhs: LogicalOperator, newRhs: LogicalOperator): LogicalOperator =
+    copy(lhs = newLhs, rhs = newRhs)(solved)
+}
+
 final case class Optional(lhs: LogicalOperator, rhs: LogicalOperator)
                          (override val solved: SolvedQueryModel[Expr])
   extends BinaryLogicalOperator {
+
   override def pretty(depth: Int): String =
     s"""${prefix(depth)} Optional()
        #${rhs.pretty(depth + 1)}""".stripMargin('#')
@@ -261,9 +273,9 @@ final case class Optional(lhs: LogicalOperator, rhs: LogicalOperator)
 final case class SetSourceGraph(override val sourceGraph: LogicalGraph, in: LogicalOperator)
                                (override val solved: SolvedQueryModel[Expr])
   extends StackingLogicalOperator {
-  override def clone(newIn: LogicalOperator) = copy(in = newIn)(solved)
+  override def clone(newIn: LogicalOperator): SetSourceGraph = copy(in = newIn)(solved)
 
-  override def pretty(depth: Int) =
+  override def pretty(depth: Int): String =
     s"""${prefix(depth)} SetSourceGraph(to = $sourceGraph)
        #${in.pretty(depth + 1)}""".stripMargin('#')
 

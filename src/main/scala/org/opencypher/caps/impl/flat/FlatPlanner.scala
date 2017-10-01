@@ -33,6 +33,9 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
 
     input match {
 
+      case logical.CartesianProduct(lhs, rhs) =>
+        producer.cartesianProduct(process(lhs), process(rhs))
+
       case logical.Select(fields, graphs, in) =>
         producer.select(fields, graphs, process(in))
 

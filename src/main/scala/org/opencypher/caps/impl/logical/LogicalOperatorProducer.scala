@@ -23,7 +23,14 @@ import org.opencypher.caps.ir.api.block.{Aggregations, SortItem}
 import org.opencypher.caps.ir.api.pattern.{EveryNode, EveryRelationship}
 import org.opencypher.caps.ir.api.{IRField, SolvedQueryModel}
 
+// TODO: Homogenize naming
+// TODO: Align names with other producers
 class LogicalOperatorProducer {
+
+  def planCartesianProduct(lhs: LogicalOperator, rhs: LogicalOperator): CartesianProduct = {
+    CartesianProduct(lhs, rhs)(lhs.solved ++ rhs.solved)
+  }
+
   def planBoundedVarLengthExpand(source: IRField, r: IRField, types: EveryRelationship, target: IRField, lower: Int, upper: Int, sourcePlan: LogicalOperator, targetPlan: LogicalOperator): BoundedVarLengthExpand = {
     val prevSolved = sourcePlan.solved ++ targetPlan.solved
 

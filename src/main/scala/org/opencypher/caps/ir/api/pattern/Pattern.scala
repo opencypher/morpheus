@@ -19,6 +19,8 @@ import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block.Binds
 
+import scala.annotation.tailrec
+
 case object Pattern {
   def empty[E]: Pattern[E] = Pattern[E](entities = Map.empty, topology = Map.empty)
   def node[E](entry: (IRField, EveryEntity)): Pattern[E] = Pattern[E](entities = Map(entry), topology = Map.empty)
@@ -85,6 +87,7 @@ final case class Pattern[E](entities: Map[IRField, EveryEntity], topology: Map[I
     computeComponents(input, components, fields.size, fields)
   }
 
+  @tailrec
   private def computeComponents(
     input: Seq[(IRField, EveryEntity, Connection)],
     components: Map[Int, Pattern[E]],

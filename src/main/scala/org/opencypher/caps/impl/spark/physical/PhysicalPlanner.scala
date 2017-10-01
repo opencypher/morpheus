@@ -43,12 +43,13 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
 
   def inner(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext): PhysicalResult = {
 
-    import context.tokens
-
     val producer = new PhysicalResultProducer(RuntimeContext(context.parameters, context.tokens, context.constants))
     import producer._
 
     flatPlan match {
+      case flat.CartesianProduct(lhs, rhs, header) =>
+        inner(lhs).cartesianProduct(inner(rhs), header)
+
       case flat.Select(fields, graphs, in, header) =>
         inner(in).select(fields, header).selectGraphs(graphs)
 
