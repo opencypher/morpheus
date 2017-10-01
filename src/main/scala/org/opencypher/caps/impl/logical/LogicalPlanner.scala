@@ -262,15 +262,12 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     if (components.size == 1)
       planConnectedPattern(plan, components.head, graph)
     else {
+      // TODO: Find a way to feed the same input into all arms of the cartesian product without recomputing it
       val bases = plan +: components.map(_ => Start(plan.sourceGraph, Set.empty)(SolvedQueryModel.empty)).tail
       val plans = bases.zip(components).map { case (base, component) => planConnectedPattern(base, component, graph) }
-      val result = plans.reduceOption { (l, r) => planCartesian(l, r) }
+      val result = plans.reduceOption { (l, r) => producer.planCartesianProduct(l, r) }
       result.getOrElse(Raise.invalidOrUnsupportedPattern("empty pattern"))
     }
-  }
-
-  private def planCartesian(l: LogicalOperator, r: LogicalOperator)(implicit context: LogicalPlannerContext): LogicalOperator = {
-    ???
   }
 
   private def planConnectedPattern(plan: LogicalOperator, pattern: Pattern[Expr], graph: IRGraph)(implicit context: LogicalPlannerContext) = {

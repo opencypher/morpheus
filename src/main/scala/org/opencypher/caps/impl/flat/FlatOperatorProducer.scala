@@ -41,6 +41,11 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     override def combine(x: Vector[CypherType], y: Vector[CypherType]): Vector[CypherType] = x ++ y
   }
 
+  def cartesianProduct(lhs: FlatOperator, rhs: FlatOperator): CartesianProduct = {
+    val header = lhs.header ++ rhs.header
+    CartesianProduct(lhs, rhs, header)
+  }
+
   def select(fields: IndexedSeq[Var], graphs: Set[String], in: FlatOperator): Select = {
     val fieldContents = fields.map { field => in.header.slotsFor(field).head.content }
     val exprContents = in.header.contents.collect {
