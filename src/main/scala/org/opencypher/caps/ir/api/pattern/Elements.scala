@@ -15,12 +15,18 @@
  */
 package org.opencypher.caps.ir.api.pattern
 
+// TODO: AnyVal
 trait Elements[T] {
+  def filter(f: T => Boolean): Elements[T]
+  def filterNot(f: T => Boolean): Elements[T]
+  def map[X](f: T => X): Elements[X]
   def elements: Set[T]
 }
 
 final case class AnyGiven[T](elements: Set[T] = Set.empty[T]) extends Elements[T] {
-  def map[X](f: T => X) = AnyGiven(elements.map(f))
+  override def filter(f: T => Boolean): AnyGiven[T] = AnyGiven(elements.filter(f))
+  override def filterNot(f: T => Boolean): AnyGiven[T] = AnyGiven(elements.filterNot(f))
+  override def map[X](f: T => X): AnyGiven[X] = AnyGiven(elements.map(f))
 }
 
 case object AnyOf {
@@ -28,7 +34,9 @@ case object AnyOf {
 }
 
 final case class AllGiven[T](elements: Set[T] = Set.empty[T]) extends Elements[T] {
-  def map[X](f: T => X) = AnyGiven(elements.map(f))
+  override def filter(f: T => Boolean): AllGiven[T] = AllGiven(elements.filter(f))
+  override def filterNot(f: T => Boolean): AllGiven[T] = AllGiven(elements.filterNot(f))
+  override def map[X](f: T => X) = AllGiven(elements.map(f))
 }
 
 case object AllOf {

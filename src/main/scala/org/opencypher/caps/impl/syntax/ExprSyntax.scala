@@ -26,6 +26,9 @@ trait ExprSyntax {
 
 final class ExprOps(val e: Expr) extends AnyVal {
 
+  def evaluable(given: Set[Var]): Boolean =
+    (dependencies -- given).isEmpty
+
   def dependencies: Set[Var] = computeDependencies(List(e), Set.empty)
 
   // TODO: Test this, possible consolidate into better hierarchy

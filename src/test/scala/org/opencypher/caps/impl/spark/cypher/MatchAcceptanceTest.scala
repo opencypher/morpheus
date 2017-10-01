@@ -102,6 +102,31 @@ class MatchAcceptanceTest extends CAPSTestSuite {
     // When
     val result = given.cypher(
       """
+        |MATCH (a:Narcissist), (b:Narcissist)
+        |RETURN a.name AS one, b.name AS two
+      """.stripMargin)
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("one" -> "Alice", "two" -> "Alice"),
+      CypherMap("one" -> "Alice", "two" -> "Bob"),
+      CypherMap("one" -> "Bob", "two" -> "Bob"),
+      CypherMap("one" -> "Bob", "two" -> "Alice")
+    ))
+  }
+
+  test("joined components") {
+    // Given
+    val given = TestGraph(
+      """
+        |(p1:Narcissist {name: "Alice"}),
+        |(p2:Narcissist {name: "Bob"}),
+        |(p1)-[:LOVES]->(p1),
+        |(p2)-[:LOVES]->(p2)
+      """.stripMargin)
+
+    // When
+    val result = given.cypher(
+      """
         |MATCH (a:Narcissist), (b:Narcissist) WHERE a.name = b.name
         |RETURN a.name AS one, b.name AS two
       """.stripMargin)
