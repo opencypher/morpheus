@@ -116,7 +116,7 @@ case class ImpliedLabels(m: Map[String, Set[String]]) {
 
   def filterByLabels(labels: Set[String]): ImpliedLabels = {
     val filteredImplications = m.collect {
-      case (k,v) if labels.contains(k) => k -> v.intersect(labels)
+      case (k, v) if labels.contains(k) => k -> v.intersect(labels)
     }
 
     ImpliedLabels(filteredImplications)
@@ -244,10 +244,10 @@ final case class Schema(
   }
 
   /**
-    * Returns the sub-schema for {{{nodeType}}}
+    * Returns the sub-schema for `nodeType`
     *
     * @param nodeType Specifies the type for which the schema is extracted
-    * @return sub-schema for {{{nodeType}}}
+    * @return sub-schema for `nodeType`
     */
   def forNode(nodeType: CTNode): Schema = {
     val requiredLabels = {
@@ -273,10 +273,10 @@ final case class Schema(
   }
 
   /**
-    * Returns the sub-schema for {{{relType}}}
+    * Returns the sub-schema for `relType`
     *
     * @param relType Specifies the type for which the schema is extracted
-    * @return sub-schema for {{{relType}}}
+    * @return sub-schema for `relType`
     */
   def forRelationship(relType: CTRelationship): Schema = {
     val givenRelTypes = if (relType.types.isEmpty) {
