@@ -200,6 +200,31 @@ class PatternGraphTest extends CAPSTestSuite {
     ))
   }
 
+  test("Returns only distinct results") {
+    val p = 'p -> CTNode("Person")
+    val fields = Seq(
+      OpaqueField(p),
+      ProjectedExpr(HasLabel(p, Label("Person"))(CTBoolean)),
+      ProjectedExpr(Property(p, PropertyKey("name"))(CTString))
+    )
+    val (header, _) = RecordHeader.empty.update(addContents(fields))
+
+    val sparkHeader = CAPSRecordHeader.asSparkStructType(header)
+    val df = session.createDataFrame(List(
+      Row(0L, true, "PersonPeter"),
+      Row(0L, true, "PersonPeter")
+    ).asJava, sparkHeader)
+
+    val schema = Schema.empty
+      .withNodePropertyKeys("Person")("name" -> CTString)
+
+    val patternGraph = CAPSGraph.create(CAPSRecords.create(header, df), schema)
+
+    patternGraph.nodes("n", CTNode).details.toMaps should equal(Bag(
+      CypherMap("n" ->  0L, "n.name" -> "PersonPeter", "n:Person" -> true)
+    ))
+  }
+
   test("Supports node scans when different variables have the same property keys") {
     val p = 'p -> CTNode("Person")
     val e = 'e -> CTNode("Employee")
@@ -270,222 +295,6 @@ class PatternGraphTest extends CAPSTestSuite {
       CypherMap("n" -> 12L, "n.name" -> "HybridSusanna", "n:Person" -> true, "n:Employee" -> true)
     ))
   }
-
-  //TODO: Distinct
-
-//  test("Supports .cypher") {
-//    val patternGraph = initPersonReadsBookGraph
-//
-//    patternGraph.cypher("""MATCH (p:Person {name: 'Mats'})-[:READS {recommends: true}]->(b:Book)
-//                          |RETURN b.title""".stripMargin).records.toMaps should equal(Bag(
-//      CypherMap("b.title" -> "1984")
-//    ))
-//  }
-
-//
-//  test("Construct graph from single node and single relationship scan") {
-//    val graph = CAPSGraph.create(`:Person`, `:KNOWS`)
-//    val rels  = graph.relationships("e")
-//
-//    rels.details.toDF().columns should equal(Array(
-//      "____source(e)",
-//      "e",
-//      "____type(e)",
-//      "____target(e)",
-//      "____e_dot_sinceINTEGER"
-//    ))
-//
-//    rels.details.toDF().collect().toSet should equal(Set(
-//      Row(1, 1, 0, 2, 2017),
-//      Row(1, 2, 0, 3, 2016),
-//      Row(1, 3, 0, 4, 2015),
-//      Row(2, 4, 0, 3, 2016),
-//      Row(2, 5, 0, 4, 2013),
-//      Row(3, 6, 0, 4, 2016)
-//    ))
-//  }
-//
-//  test("Extract all node scans") {
-//    val graph = CAPSGraph.create(`:Person`, `:Book`)
-//
-//    val nodes = graph.nodes("n", CTNode())
-//
-//    nodes.details.toDF().columns should equal(Array(
-//      "n",
-//      "____n:Person",
-//      "____n:Swedish",
-//      "____n:Book",
-//      "____n_dot_nameSTRING",
-//      "____n_dot_lucky_bar_numberINTEGER",
-//      "____n_dot_titleSTRING",
-//      "____n_dot_yearINTEGER"
-//    ))
-//
-//    nodes.details.toDF().collect().toSet should equal(Set(
-//      Row( 1,  true,  true,  false,   "Mats",   23,                   null, null),
-//      Row( 2,  true,  false, false, "Martin",   42,                   null, null),
-//      Row( 3,  true,  false, false,    "Max", 1337,                   null, null),
-//      Row( 4,  true,  false, false, "Stefan",    9,                   null, null),
-//      Row(10, false,  false,  true,     null, null,                 "1984", 1949),
-//      Row(20, false,  false,  true,     null, null,        "Cryptonomicon", 1999),
-//      Row(30, false,  false,  true,     null, null, "The Eye of the World", 1990),
-//      Row(40, false,  false,  true,     null, null,           "The Circle", 2013)
-//    ))
-//  }
-//
-//  test("Extract node scan subset") {
-//    val graph = CAPSGraph.create(`:Person`, `:Book`)
-//
-//    val nodes = graph.nodes("n", CTNode("Person"))
-//
-//    nodes.details.toDF().columns should equal(Array(
-//      "n",
-//      "____n:Person",
-//      "____n:Swedish",
-//      "____n_dot_nameSTRING",
-//      "____n_dot_lucky_bar_numberINTEGER"
-//    ))
-//
-//    nodes.details.toDF().collect().toSet should equal (Set(
-//      Row(1, true, true,    "Mats",   23),
-//      Row(2, true, false, "Martin",   42),
-//      Row(3, true, false,    "Max", 1337),
-//      Row(4, true, false, "Stefan",    9)
-//    ))
-//  }
-//
-//  test("Extract all relationship scans") {
-//    val graph = CAPSGraph.create(`:Person`, `:Book`, `:KNOWS`, `:READS`)
-//
-//    val rels  = graph.relationships("e")
-//
-//    rels.details.toDF().columns should equal(Array(
-//      "____source(e)",
-//      "e",
-//      "____type(e)",
-//      "____target(e)",
-//      "____e_dot_sinceINTEGER",
-//      "____e_dot_recommendsBOOLEAN"
-//    ))
-//
-//    rels.details.toDF().collect().toSet should equal(Set(
-//      // :KNOWS
-//      Row(1, 1, 0, 2, 2017, null),
-//      Row(1, 2, 0, 3, 2016, null),
-//      Row(1, 3, 0, 4, 2015, null),
-//      Row(2, 4, 0, 3, 2016, null),
-//      Row(2, 5, 0, 4, 2013, null),
-//      Row(3, 6, 0, 4, 2016, null),
-//      // :READS
-//      Row(1, 100, 1, 10, null, true),
-//      Row(2, 200, 1, 40, null, true),
-//      Row(3, 300, 1, 30, null, true),
-//      Row(4, 400, 1, 20, null, false)
-//    ))
-//  }
-//
-//  test("Extract relationship scan subset") {
-//    val graph = CAPSGraph.create(`:Person`, `:Book`, `:KNOWS`, `:READS`)
-//
-//    val rels  = graph.relationships("e", CTRelationship("KNOWS"))
-//
-//    rels.details.toDF().columns should equal(Array(
-//      "____source(e)",
-//      "e",
-//      "____type(e)",
-//      "____target(e)",
-//      "____e_dot_sinceINTEGER"
-//    ))
-//
-//    rels.details.toDF().collect().toSet should equal(Set(
-//      Row(1, 1, 0, 2, 2017),
-//      Row(1, 2, 0, 3, 2016),
-//      Row(1, 3, 0, 4, 2015),
-//      Row(2, 4, 0, 3, 2016),
-//      Row(2, 5, 0, 4, 2013),
-//      Row(3, 6, 0, 4, 2016)
-//    ))
-//  }
-//
-//  test("Extract relationship scan strict subset") {
-//    val graph = CAPSGraph.create(`:Person`, `:Book`, `:KNOWS`, `:READS`, `:INFLUENCES`)
-//
-//    val rels  = graph.relationships("e", CTRelationship("KNOWS", "INFLUENCES"))
-//
-//    rels.details.toDF().columns should equal(Array(
-//      "____source(e)",
-//      "e",
-//      "____type(e)",
-//      "____target(e)",
-//      "____e_dot_sinceINTEGER"
-//    ))
-//
-//    rels.details.toDF().collect().toSet should equal(Set(
-//      // :KNOWS
-//      Row(1, 1, 0, 2, 2017),
-//      Row(1, 2, 0, 3, 2016),
-//      Row(1, 3, 0, 4, 2015),
-//      Row(2, 4, 0, 3, 2016),
-//      Row(2, 5, 0, 4, 2013),
-//      Row(3, 6, 0, 4, 2016),
-//      // :INFLUENCES
-//      Row(10, 1000, 2, 20, null)
-//    ))
-//  }
-//
-//  test("Extract from scans with overlapping labels") {
-//    val graph = CAPSGraph.create(`:Person`, `:Programmer`)
-//
-//    val nodes = graph.nodes("n", CTNode("Person"))
-//
-//    nodes.details.toDF().columns should equal(Array(
-//      "n",
-//      "____n:Person",
-//      "____n:Swedish",
-//      "____n:Programmer",
-//      "____n_dot_languageSTRING",
-//      "____n_dot_nameSTRING",
-//      "____n_dot_lucky_bar_numberINTEGER"
-//    ))
-//
-//    nodes.details.toDF().collect().toSet should equal (Set(
-//      Row(1,   true, true,  false, null,   "Mats",   23),
-//      Row(2,   true, false, false, null, "Martin",   42),
-//      Row(3,   true, false, false, null,    "Max", 1337),
-//      Row(4,   true, false, false, null, "Stefan",    9),
-//      Row(100, true, false, true,   "C",  "Alice",   42),
-//      Row(200, true, false, true,   "D",    "Bob",   23),
-//      Row(300, true, false, true,   "F",    "Eve",   84),
-//      Row(400, true, false, true,   "R",   "Carl",   49)
-//    ))
-//  }
-//
-//  test("Extract from scans with implied label but missing keys") {
-//    val graph = CAPSGraph.create(`:Person`, `:Brogrammer`)
-//
-//    val nodes = graph.nodes("n", CTNode("Person"))
-//
-//    nodes.details.toDF().columns should equal(Array(
-//      "n",
-//      "____n:Person",
-//      "____n:Swedish",
-//      "____n:Brogrammer",
-//      "____n_dot_nameSTRING",
-//      "____n_dot_lucky_bar_numberINTEGER",
-//      "____n_dot_languageSTRING"
-//    ))
-//
-//    nodes.details.toDF().collect().toSet should equal(Set(
-//      Row(1, true, true, false, "Mats", 23, null),
-//      Row(2, true, false, false, "Martin", 42, null),
-//      Row(3, true, false, false, "Max", 1337, null),
-//      Row(4, true, false, false, "Stefan", 9, null),
-//      Row(100, true, false, true, null, null, "Node"),
-//      Row(200, true, false, true, null, null, "Coffeescript"),
-//      Row(300, true, false, true, null, null, "Javascript"),
-//      Row(400, true, false, true, null, null, "Typescript")
-//    ))
-//  }
 
   private def initPersonReadsBookGraph: CAPSGraph = {
     val inputGraph = TestGraph(`:Person` + `:Book` + `:READS`).graph
