@@ -31,7 +31,7 @@ abstract class CsvSchema {
 case class CsvField(name: String, column: Int, valueType: String) {
   def getType: DataType = valueType.toLowerCase match {
     case "string" => StringType
-    case "integer" => IntegerType
+    case "integer" => LongType
     case "long" => LongType
     case "boolean" => BooleanType
     case x => throw new RuntimeException(s"Unknown type $x")
