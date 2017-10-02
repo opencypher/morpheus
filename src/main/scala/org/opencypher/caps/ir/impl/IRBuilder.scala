@@ -74,7 +74,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           given <- convertWhere(astWhere)
           context <- get[R, IRBuilderContext]
           refs <- {
-            val irGraph = getIRGraph(c, context)
+            val irGraph = getIRSourceGraph(c, context)
             val blockRegistry = context.blocks
             val after = blockRegistry.lastAdded.toSet
             val block = MatchBlock[Expr](after, pattern, given, optional, irGraph)
@@ -95,7 +95,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           given <- convertWhere(where)
           context <- get[R, IRBuilderContext]
           refs <- {
-            val irGraph = getIRGraph(c, context)
+            val irGraph = getIRSourceGraph(c, context)
             val (projectRef, projectReg) = registerProjectBlock(context, fieldExprs, graphs, given, irGraph)
             val appendList = (list: Vector[BlockRef]) => pure[R, Vector[BlockRef]](projectRef +: list)
             val orderAndSliceBlock = registerOrderAndSliceBlock(orderBy, skip, limit)
@@ -127,10 +127,24 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           graphs <- convertGraphReturnItems(graphItems)
           context <- get[R, IRBuilderContext]
           refs <- {
-            val namedGraph = getIRGraph(c, context)
+            val namedGraph = getIRSourceGraph(c, context)
             val (ref, reg) = registerProjectBlock(context, fieldExprs, distinct = distinct, source = namedGraph, graphs = graphs)
             val rItems = fieldExprs.map(_._1)
             val orderedFields = OrderedFieldsAndGraphs[Expr](rItems, graphs.toSet)
+            val returns = ResultBlock[Expr](Set(ref), orderedFields, Set.empty, Set.empty, context.ambientGraph)
+            val (ref2, reg2) = reg.register(returns)
+            put[R, IRBuilderContext](context.copy(blocks = reg2)) >> pure[R, Vector[BlockRef]](Vector(ref, ref2))
+          }
+        } yield refs
+
+      case ast.Return(distinct, ast.DiscardCardinality(), graphItems, _, _, _, _) =>
+        for {
+          graphs <- convertGraphReturnItems(graphItems)
+          context <- get[R, IRBuilderContext]
+          refs <- {
+            val namedGraph = getIRSourceGraph(c, context)
+            val (ref, reg) = registerProjectBlock(context, Vector.empty, distinct = distinct, source = namedGraph, graphs = graphs)
+            val orderedFields = OrderedFieldsAndGraphs[Expr](Vector.empty, graphs.map(_.toNamedGraph).toSet)
             val returns = ResultBlock[Expr](Set(ref), orderedFields, Set.empty, Set.empty, context.ambientGraph)
             val (ref2, reg2) = reg.register(returns)
             put[R, IRBuilderContext](context.copy(blocks = reg2)) >> pure[R, Vector[BlockRef]](Vector(ref, ref2))
@@ -154,7 +168,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
     }
   }
 
-  private def getIRGraph(c: Clause, context: IRBuilderContext): IRGraph = {
+  private def getIRSourceGraph(c: Clause, context: IRBuilderContext): IRGraph = {
     context.semanticState.recordedContextGraphs.get(c).map {
       g => NamedGraph(g.source)
     }.getOrElse(context.ambientGraph)
@@ -204,45 +218,48 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
   }
 
   private def convertGraphReturnItem[R : _hasContext](item: ast.GraphReturnItem): Eff[R, IRGraph] = item match {
-    case ast.NewContextGraphs(source: GraphAtAs, _) =>
-      for {
-        context <- get[R, IRBuilderContext]
-        out <- {
-          val graphVar = source.as.getOrElse(Raise.impossible("graph not named"))
+    case ast.NewContextGraphs(source: GraphAtAs, target) if target.isEmpty || target.contains(source) =>
+      convertSingleGraphAs[R](source)
 
-          val escapedGraphname = fix(graphVar.name)
+    case ast.ReturnedGraph(graph) =>
+      convertSingleGraphAs[R](graph)
 
-          val graphURI = source.at.url match {
-            case Left(parameter) =>
-              Raise.notYetImplemented("graph uris by parameter")
-            case Right(literal) =>
-              parsePathOrURI(literal.value)
+    case _ =>
+      Raise.notYetImplemented("Setting a different target graph")
+  }
+
+  private def convertSingleGraphAs[R : _hasContext](graph: ast.SingleGraphAs): Eff[R, IRGraph] = {
+    graph.as match {
+      case Some(ast.Variable(graphName)) =>
+        for {
+          context <- get[R, IRBuilderContext]
+          result <- graph match {
+
+            case ast.GraphOfAs(astPattern, _, _) =>
+              for {
+                pattern <- convertPattern(astPattern)
+              } yield PatternGraph(graphName, pattern)
+
+            case ast.GraphAtAs(url, _, _) =>
+              val graphURI = url.url match {
+                case Left(_) => Raise.notYetImplemented("graph uris by parameter")
+                case Right(ast.StringLiteral(literal)) => parsePathOrURI(literal)
+              }
+              val newContext = context.withGraphAt(graphName, graphURI)
+              put[R, IRBuilderContext](newContext) >> pure[R, IRGraph](ExternalGraph(graphName, graphURI))
+
+            case ast.GraphAs(ref, alias, _) if alias.isEmpty || alias.contains(ref) =>
+              pure[R, IRGraph](NamedGraph(graphName))
+
+            case _ =>
+              Raise.notYetImplemented("graph aliasing")
           }
-
-          val newContext = context.withGraphAt(escapedGraphname, graphURI)
-
-          put[R, IRBuilderContext](newContext) >> pure[R, NamedGraph](NamedGraph(escapedGraphname))
         }
-      } yield out
+        yield result
 
-
-    case ast.NewContextGraphs(source, _) =>
-      Raise.notYetImplemented("graphs without AT")
-    case ast.NewTargetGraph(target) =>
-      ???
-    case ast.ReturnedGraph(inner) =>
-      for {
-        context <- get[R, IRBuilderContext]
-        out <- {
-          val graphName = fix(inner.as.getOrElse(Raise.impossible("graph didn't have a name!")).name)
-          val maybeURI = context.graphs.get(graphName)
-          val graph = maybeURI match {
-            case Some(uri) => ExternalGraph(graphName, uri)
-            case None => NamedGraph(graphName)
-          }
-          pure[R, IRGraph](graph)
-        }
-      } yield out
+      case None =>
+        Raise.impossible("graph didn't have a name!")
+    }
   }
 
   // TODO: Bug in frontend, fixed by PR https://github.com/neo4j/neo4j/pull/10083

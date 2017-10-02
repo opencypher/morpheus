@@ -15,13 +15,13 @@
  */
 package org.opencypher.caps.ir.impl
 
-import org.opencypher.caps._
+import org.opencypher.caps.{toField, _}
 import org.opencypher.caps.api.expr.{Expr, HasLabel, Property, Var}
 import org.opencypher.caps.ir.api.block._
 import org.opencypher.caps.ir.api.global.GlobalsRegistry
 import org.opencypher.caps.ir.api.pattern._
-import org.opencypher.caps.ir.api.{IRField, QueryModel}
-import org.opencypher.caps.api.types.{CTNode, CTVoid}
+import org.opencypher.caps.ir.api.{IRField, NamedGraph, PatternGraph, QueryModel}
+import org.opencypher.caps.api.types.{CTNode, CTRelationship, CTVoid}
 
 import scala.collection.immutable.Set
 
@@ -165,6 +165,56 @@ class CypherQueryBuilderTest extends IrTestSuite {
         project3Ref -> Set(orderByRef),
         orderByRef -> Set(project2Ref),
         project2Ref -> Set(projectRef),
+        projectRef -> Set(matchRef),
+        matchRef -> Set(loadRef),
+        loadRef -> Set()
+      ))
+    }
+  }
+
+  test("return graph of") {
+    "MATCH (a), (b) RETURN GRAPH moo OF (a)-[r:TEST]->(b)".model.ensureThat { (model, globals) =>
+
+      import globals.tokens._
+
+      val loadRef = model.findExactlyOne {
+        case NoWhereBlock(s@SourceBlock(_)) =>
+          s.binds.fields shouldBe empty
+      }
+
+      val nodeA = toField('a -> CTNode)
+      val nodeB = toField('b -> CTNode)
+      val rel = toField('r -> CTRelationship)
+
+      val matchRef = model.findExactlyOne {
+        case MatchBlock(deps, Pattern(entities, topo), AllGiven(exprs), _, _) =>
+          entities should equal(Map(
+            nodeA -> EveryNode,
+            nodeB -> EveryNode
+        ))
+        topo should equal(Map())
+        exprs shouldBe empty
+      }
+
+      val projectRef = model.findExactlyOne {
+        // TODO: Properly assert on graphs, also below
+        case NoWhereBlock(ProjectBlock(deps, FieldsAndGraphs(map, graphs), _, _, _)) =>
+          map shouldBe empty
+          graphs shouldBe Set(PatternGraph(
+            "moo",
+            Pattern(
+              Map(nodeA -> EveryNode, nodeB -> EveryNode, rel -> EveryRelationship(AnyOf(relTypeByName("TEST")))),
+              Map(rel -> DirectedRelationship(nodeA, nodeB)))))
+      }
+
+      model.result match {
+        case NoWhereBlock(ResultBlock(deps, items, _, _, _, _)) =>
+          deps should equal(Set(projectRef))
+          items.fields shouldBe empty
+          items.graphs should equal(Set(NamedGraph("moo")))
+      }
+
+      model.requirements should equal(Map(
         projectRef -> Set(matchRef),
         matchRef -> Set(loadRef),
         loadRef -> Set()
