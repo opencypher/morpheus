@@ -24,6 +24,8 @@ import org.atnos.eff._
 import org.atnos.eff.all._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.functions.Exists
+import org.neo4j.cypher.internal.frontend.v3_3.ast.functions.Min
+import org.neo4j.cypher.internal.frontend.v3_3.ast.functions.Max
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.CypherType.joinMonoid
 import org.opencypher.caps.api.types._
@@ -398,6 +400,12 @@ object SchemaTyper {
             val sigOutputType = fromFrontendType(sig.outputType)
             sigInputTypes -> sigOutputType
           }.toSet)
+
+        case Min | Max =>
+          pure[R, Set[(Seq[CypherType], CypherType)]](Set(
+            Seq(CTInteger) -> CTInteger,
+            Seq(CTFloat) -> CTFloat
+          ))
 
         case _ =>
           wrong[R, TyperError](UnsupportedExpr(expr)) >> pure(Set.empty)

@@ -262,14 +262,6 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
     }
   }
 
-  // TODO: Bug in frontend, fixed by PR https://github.com/neo4j/neo4j/pull/10083
-  // The namespacer in Neo4j frontend incorrectly renames graph variables to avoid shadowing -- not necessary
-  private def fix(graphName: String) = {
-    if (graphName.startsWith(" "))
-      graphName.substring(2, graphName.indexOf("@"))
-    else graphName
-  }
-
   private def convertReturnItem[R: _mayFail : _hasContext](item: ast.ReturnItem): Eff[R, (IRField, Expr)] = item match {
 
     case ast.AliasedReturnItem(e, v) =>
@@ -284,7 +276,6 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
 
     case ast.UnaliasedReturnItem(e, t) =>
       error(IRBuilderError(s"Did not expect unnamed return item"))(IRField(t)() -> Var(t)())
-
   }
 
   private def convertPattern[R: _hasContext](p: ast.Pattern): Eff[R, Pattern[Expr]] = {
