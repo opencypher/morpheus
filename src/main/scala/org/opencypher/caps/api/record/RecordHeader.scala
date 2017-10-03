@@ -142,8 +142,8 @@ object RecordHeader {
     }.toSeq
 
     // TODO: This should consider multiple types per property
-    val keyHeaderContents = keyGroups.toSeq.flatMap {
-      case (k, types) => types.map { t => ProjectedExpr(Property(node, tokens.propertyKeyByName(k))(t)) }
+    val keyHeaderContents = keyGroups.toSeq.map {
+      case (k, types) => ProjectedExpr(Property(node, tokens.propertyKeyByName(k))(types.reduce(_ join _)))
     }
 
     // TODO: Add is null column(?)
