@@ -19,14 +19,17 @@ import java.io.{ByteArrayOutputStream, PrintStream}
 import java.nio.charset.StandardCharsets.UTF_8
 
 import org.opencypher.caps.api.expr.Var
-import org.opencypher.caps.api.record.{CypherRecords, OpaqueField, RecordHeader}
+import org.opencypher.caps.api.record.{OpaqueField, RecordHeader}
 import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.api.types.CTNode
-import org.opencypher.caps.test.CAPSTestSuite
+import org.opencypher.caps.api.util.PrintOptions
 import org.opencypher.caps.impl.syntax.header._
+import org.opencypher.caps.test.CAPSTestSuite
 
 
 class RecordsPrinterTest extends CAPSTestSuite {
+
+  implicit val options: PrintOptions = PrintOptions.out
 
   test("unit table") {
     // Given
@@ -126,6 +129,6 @@ class RecordsPrinterTest extends CAPSTestSuite {
   private def getString =
     new String(baos.toByteArray, UTF_8)
 
-  private def print(r: CAPSRecords) =
-    RecordsPrinter.printTo(r, new PrintStream(baos, true, UTF_8.name()), CypherRecords.DEFAULT_COLUMN_WIDTH)
+  private def print(r: CAPSRecords)(implicit options: PrintOptions): Unit =
+    RecordsPrinter.print(r)(options.stream(new PrintStream(baos, true, UTF_8.name())))
 }

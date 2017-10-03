@@ -25,6 +25,7 @@ import org.apache.spark.sql.types.StructType
 import org.opencypher.caps.api.expr.{Property, Var}
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.api.util.PrintOptions
 import org.opencypher.caps.api.value.CypherMap
 import org.opencypher.caps.impl.record.CAPSRecordHeader
 import org.opencypher.caps.impl.spark.convert.{fromSparkType, rowToCypherMap, toSparkType}
@@ -63,11 +64,8 @@ sealed abstract class CAPSRecords(
   // TODO: Check that this does not change the caching of our data frame
   def cached: CAPSRecords = CAPSRecords.create(header, data.cache())
 
-  override def print(columnWidth: Int = CypherRecords.DEFAULT_COLUMN_WIDTH): Unit =
-    RecordsPrinter.print(this, columnWidth)
-
-  override def printTo(stream: PrintStream, columnWidth: Int = CypherRecords.DEFAULT_COLUMN_WIDTH): Unit =
-    RecordsPrinter.printTo(this, stream, columnWidth)
+  override def print(implicit options: PrintOptions): Unit =
+    RecordsPrinter.print(this)
 
   def details: CAPSRecords = optDetailedRecords.getOrElse(this)
 
