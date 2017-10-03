@@ -15,18 +15,14 @@
  */
 package org.opencypher.caps.api.record
 
-trait CypherRecords extends CypherPrintable {
+import java.io.PrintStream
 
-  type Data
-  type Records <: CypherRecords
+import org.opencypher.caps.api.util.PrintOptions
 
-  def header: RecordHeader
-  def data: Data
+trait CypherPrintable {
 
-  def fields: Set[String]
-  def fieldsInOrder: Seq[String]
+  final def printTo(stream: PrintStream)(implicit options: PrintOptions): Unit =
+    print(options.stream(stream))
 
-  def contract[E <: EmbeddedEntity](entity: VerifiedEmbeddedEntity[E]): Records
-
-  def compact: Records
+  def print(implicit options: PrintOptions): Unit
 }

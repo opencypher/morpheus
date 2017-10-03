@@ -15,9 +15,9 @@
  */
 package org.opencypher.caps.api.graph
 
-import org.opencypher.caps.api.record.CypherRecords
+import org.opencypher.caps.api.record.{CypherPrintable, CypherRecords}
 
-trait CypherResult {
+trait CypherResult extends CypherPrintable {
 
   type Graph <: CypherGraph
   type Records <: CypherRecords

@@ -16,6 +16,7 @@
 package org.opencypher.caps.api.spark
 
 import org.opencypher.caps.api.graph.CypherResult
+import org.opencypher.caps.api.util.PrintOptions
 
 trait CAPSResult extends CypherResult {
 
@@ -24,5 +25,7 @@ trait CAPSResult extends CypherResult {
 
   def recordsWithDetails: CAPSRecords = records.details
 
-  def showRecords(): Unit = records.print()
+  override def print(implicit options: PrintOptions): Unit =
+    records.print
 }
+
