@@ -31,9 +31,13 @@ final case class IRField(name: String)(val cypherType: CypherType = CTWildcard) 
   def toTypedTuple: (String, CypherType) = name -> cypherType
 }
 
-trait IRGraph extends IRElement
+trait IRGraph extends IRElement {
+  def toNamedGraph: NamedGraph = NamedGraph(name)
+}
 
-final case class NamedGraph(name: String) extends IRGraph
+final case class NamedGraph(name: String) extends IRGraph {
+  override def toNamedGraph: NamedGraph = this
+}
 
 final case class ExternalGraph(name: String, uri: URI) extends IRGraph
 
