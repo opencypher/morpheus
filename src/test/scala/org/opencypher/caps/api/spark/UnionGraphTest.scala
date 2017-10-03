@@ -73,7 +73,7 @@ class UnionGraphTest extends CAPSTestSuite {
   }
 
   // TODO: Fix TODO in nodeFromSchema
-  ignore("Returns only distinct results") {
+  test("Returns only distinct results") {
     val inputGraph = TestGraph(`:Person`).graph
     val inputNodes = inputGraph.nodes("n")
     val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema)
@@ -87,10 +87,10 @@ class UnionGraphTest extends CAPSTestSuite {
         .from(CAPSRecords.create(
           Seq("ID", "IS_SWEDE", "NAME", "NUM"),
           Seq(
-            (1L, true, "Mats", 23L),
-            (2L, false, "Martin", 42L),
-            (3L, false, "Max", 1337L),
-            (4L, false, "Stefan", 9L))
+            (0L, true, "Mats", 23L),
+            (1L, false, "Martin", 42L),
+            (2L, false, "Max", 1337L),
+            (3L, false, "Stefan", 9L))
         ))
     val scanGraph = CAPSGraph.create(nodeScan)
 
