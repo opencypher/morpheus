@@ -20,8 +20,6 @@ import io.circe.{Encoder, Json}
 import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.api.value._
 
-import scala.collection.JavaConverters._
-
 /**
   * Serialises CAPSRecords to a JSON string. The format is as follows:
   *
@@ -71,15 +69,16 @@ object RecordsSerialiser {
 
   implicit val recordsEncoder: Encoder[CAPSRecords] = new Encoder[CAPSRecords] {
     override final def apply(records: CAPSRecords): Json = {
-      val rows = records.toCypherMaps.toLocalIterator().asScala.map { map =>
+      val rows = records.toLocalScalaIterator.map { map =>
         val unit = map.keys.map { key =>
           key -> constructValue(map.get(key))
         }
         Json.obj(unit.toSeq: _*)
       }
 
+      // TODO: Should we really expose spark column names here?
       Json.obj(
-        "columns" -> Json.arr(records.compact.columns.map(Json.fromString): _*),
+        "columns" -> Json.arr(records.sparkColumns.map(Json.fromString): _*),
         "rows" -> Json.arr(rows.toSeq: _*)
       )
     }

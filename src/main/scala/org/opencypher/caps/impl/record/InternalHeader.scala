@@ -51,6 +51,7 @@ final case class InternalHeader protected[caps](
     }
 
   def slots: IndexedSeq[RecordSlot] = cachedSlots
+
   def fields: Set[Var] = cachedFields
 
   def slotsByName(name: String): Seq[RecordSlot] = {

@@ -51,7 +51,7 @@ object RecordsPrinter {
     }
     stream.println(" |")
     stream.println(---)
-    val values = records.toScalaIterator
+    val values = records.toLocalScalaIterator
     sep = "| "
     if (fieldContents.isEmpty || values.isEmpty) {
       stream.print(sep)

@@ -34,7 +34,9 @@ final case class RecordHeader(internalHeader: InternalHeader) {
   def indexOf(content: SlotContent): Option[Int] = slots.find(_.content == content).map(_.index)
   def slots: IndexedSeq[RecordSlot] = internalHeader.slots
   def contents: Set[SlotContent] = slots.map(_.content).toSet
+
   def fields: Set[Var] = internalHeader.fields
+  def fieldsInOrder: Seq[Var] = slots.flatMap(_.content.alias)
 
   def slotsFor(expr: Expr): Seq[RecordSlot] =
     internalHeader.slotsFor(expr)

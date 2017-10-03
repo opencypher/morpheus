@@ -29,8 +29,8 @@ trait CypherRecords {
   def header: RecordHeader
   def data: Data
 
-  def columns: IndexedSeq[String]
-  def column(slot: RecordSlot): String
+  def fields: Set[String]
+  def fieldsInOrder: Seq[String]
 
   def contract[E <: EmbeddedEntity](entity: VerifiedEmbeddedEntity[E]): Records
 
