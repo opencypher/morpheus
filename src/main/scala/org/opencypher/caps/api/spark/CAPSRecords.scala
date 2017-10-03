@@ -64,9 +64,11 @@ sealed abstract class CAPSRecords(
   // TODO: Check that this does not change the caching of our data frame
   def cached: CAPSRecords = CAPSRecords.create(header, data.cache())
 
-  override def print(): Unit = RecordsPrinter.print(this)
+  override def print(columnWidth: Int = CypherRecords.DEFAULT_COLUMN_WIDTH): Unit =
+    RecordsPrinter.print(this, columnWidth)
 
-  override def print(stream: PrintStream): Unit = RecordsPrinter.print(this, stream)
+  override def printTo(stream: PrintStream, columnWidth: Int = CypherRecords.DEFAULT_COLUMN_WIDTH): Unit =
+    RecordsPrinter.printTo(this, stream, columnWidth)
 
   def details: CAPSRecords = optDetailedRecords.getOrElse(this)
 

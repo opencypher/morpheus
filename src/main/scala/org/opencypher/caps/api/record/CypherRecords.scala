@@ -17,6 +17,10 @@ package org.opencypher.caps.api.record
 
 import java.io.PrintStream
 
+object CypherRecords {
+  val DEFAULT_COLUMN_WIDTH = 20
+}
+
 trait CypherRecords {
 
   type Data
@@ -32,6 +36,6 @@ trait CypherRecords {
 
   def compact: Records
 
-  def print(): Unit
-  def print(stream: PrintStream): Unit
+  def print(columnWidth: Int = CypherRecords.DEFAULT_COLUMN_WIDTH): Unit
+  def printTo(stream: PrintStream, columnWidth: Int = CypherRecords.DEFAULT_COLUMN_WIDTH): Unit
 }
