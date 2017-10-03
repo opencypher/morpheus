@@ -15,10 +15,8 @@
  */
 package org.opencypher.caps.api.schema
 
-import org.opencypher.caps.api.expr.Var
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.common.{Verifiable, Verified}
-import org.opencypher.caps.impl.spark.exception.Raise
 
 import scala.language.implicitConversions
 
@@ -219,6 +217,9 @@ final case class Schema(
 
   def withNodePropertyKeys(label: String)(keys: (String, CypherType)*): Schema =
     copy(labels = labels + label, nodeKeyMap = nodeKeyMap.withKeys(label, keys))
+
+  def withRelationshipType(relType: String): Schema =
+    copy(relationshipTypes = relationshipTypes + relType)
 
   def withRelationshipPropertyKeys(typ: String)(keys: (String, CypherType)*): Schema =
     copy(relationshipTypes = relationshipTypes + typ, relKeyMap = relKeyMap.withKeys(typ, keys))

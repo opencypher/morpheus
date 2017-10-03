@@ -22,7 +22,7 @@ import org.opencypher.caps.api.value.EntityId._
 import org.opencypher.caps.api.value.{CypherMap, CypherRelationship, RelationshipData}
 import org.opencypher.caps.test.CAPSTestSuite
 
-class ScanGraphTest extends CAPSTestSuite {
+class CAPSScanGraphTest extends CAPSTestSuite {
 
   val `:Person` =
     NodeScan.on("p" -> "ID") {

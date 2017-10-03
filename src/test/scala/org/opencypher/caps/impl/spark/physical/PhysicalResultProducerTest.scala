@@ -25,7 +25,7 @@ import org.opencypher.caps.api.record.RecordHeader
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
-import org.opencypher.caps.impl.logical.ExternalLogicalGraph
+import org.opencypher.caps.impl.logical.LogicalExternalGraph
 import org.opencypher.caps.test.CAPSTestSuite
 import org.scalatest.mockito.MockitoSugar
 
@@ -39,7 +39,7 @@ class PhysicalResultProducerTest extends CAPSTestSuite with MockitoSugar {
   test("node scan") {
     val graph = mock[CAPSGraph]
     val records = CAPSRecords.empty()
-    val namedLogicalGraph = ExternalLogicalGraph("foo", URI.create("/graph/test"), Schema.empty)
+    val namedLogicalGraph = LogicalExternalGraph("foo", URI.create("/graph/test"), Schema.empty)
 
     val prev = PhysicalResult(records, Map("foo" -> graph))
     val v = Var("n")(CTNode)
@@ -53,7 +53,7 @@ class PhysicalResultProducerTest extends CAPSTestSuite with MockitoSugar {
   test("relationship scan") {
     val graph = mock[CAPSGraph]
     val records = CAPSRecords.empty()
-    val namedLogicalGraph = ExternalLogicalGraph("foo", URI.create("/graph/test"), Schema.empty)
+    val namedLogicalGraph = LogicalExternalGraph("foo", URI.create("/graph/test"), Schema.empty)
 
     val prev = PhysicalResult(records, Map("foo" -> graph))
     val v = Var("e")(CTRelationship)

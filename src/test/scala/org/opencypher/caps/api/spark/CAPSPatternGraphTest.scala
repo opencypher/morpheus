@@ -29,7 +29,7 @@ import org.opencypher.caps.test.CAPSTestSuite
 import scala.collection.Bag
 import scala.collection.JavaConverters._
 
-class PatternGraphTest extends CAPSTestSuite {
+class CAPSPatternGraphTest extends CAPSTestSuite {
   import CAPSGraphTestData._
 
   test("Node scan from single node CAPSRecords") {

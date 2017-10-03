@@ -20,7 +20,7 @@ import java.net.URI
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.ir.api.SolvedQueryModel
 import org.opencypher.caps.ir.api.block.SortItem
-import org.opencypher.caps.ir.api.pattern.{EveryNode, EveryRelationship}
+import org.opencypher.caps.ir.api.pattern.{EveryNode, EveryRelationship, Pattern}
 import org.opencypher.caps.api.record.ProjectedSlotContent
 import org.opencypher.caps.api.schema.Schema
 
@@ -42,9 +42,12 @@ trait LogicalGraph {
   def name: String
 }
 
-final case class ExternalLogicalGraph(name: String, uri: URI, schema: Schema) extends LogicalGraph {
+final case class LogicalExternalGraph(name: String, uri: URI, schema: Schema) extends LogicalGraph {
+  override def toString: String = s"GRAPH $name AT $uri"
+}
 
-  override def toString: String = s"$name@$uri"
+final case class LogicalPatternGraph(name: String, pattern: Pattern[Expr], schema: Schema) extends LogicalGraph {
+  override def toString: String = s"GRAPH $name OF $pattern"
 }
 
 sealed trait StackingLogicalOperator extends LogicalOperator {
@@ -98,6 +101,7 @@ final case class Filter(expr: Expr, in: LogicalOperator)
                        (override val solved: SolvedQueryModel[Expr])
   extends StackingLogicalOperator {
 
+  // TODO: Add more precise type information based on predicates (?)
   override val fields: Set[Var] = in.fields
 
   override def pretty(depth: Int): String =

@@ -51,11 +51,18 @@ class GCDemoTest
     val CITYFRIENDS_EU = SN_EU.cypher(
       """MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b)
         |WHERE city.name = "Malmö" OR city.name = "Berlin"
-        |CREATE GRAPH result
-        |INTO GRAPH result
-        |CREATE (a)-[:ACQUAINTED]->(b)
-        |RETURN result
+        |RETURN GRAPH result OF (a)-[r:ACQUAINTED]->(b)
       """.stripMargin)
+
+//    Using DML
+//    val CITYFRIENDS_EU = SN_EU.cypher(
+//      """MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b)
+//        |WHERE city.name = "Malmö" OR city.name = "Berlin"
+//        |CREATE GRAPH result
+//        |INTO GRAPH result
+//        |CREATE (a)-[:ACQUAINTED]->(b)
+//        |RETURN result
+//      """.stripMargin)
 
     val ALL_CITYFRIENDS = CITYFRIENDS_EU.graphs("result") union CITYFRIENDS_US.graphs("result")
 

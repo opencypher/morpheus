@@ -19,14 +19,14 @@ import org.apache.spark.sql.Row
 import org.opencypher.caps.api.record.NodeScan
 import org.opencypher.caps.test.CAPSTestSuite
 
-class UnionGraphTest extends CAPSTestSuite {
+class CAPSUnionGraphTest extends CAPSTestSuite {
   import CAPSGraphTestData._
 
   test("Node scan from single node CAPSRecords") {
     val inputGraph = TestGraph(`:Person`).graph
     val inputNodes = inputGraph.nodes("n")
 
-    val patternGraph = UnionGraph(CAPSGraph.create(inputNodes, inputGraph.schema))
+    val patternGraph = CAPSUnionGraph(CAPSGraph.create(inputNodes, inputGraph.schema))
     val outputNodes = patternGraph.nodes("n")
 
     outputNodes.details.toDF().columns should equal(Array(
@@ -46,7 +46,7 @@ class UnionGraphTest extends CAPSTestSuite {
   }
 
   test("Node scan from multiple single node CAPSRecords") {
-    val unionGraph = UnionGraph(TestGraph(`:Person`).graph, TestGraph(`:Book`).graph)
+    val unionGraph = CAPSUnionGraph(TestGraph(`:Person`).graph, TestGraph(`:Book`).graph)
     val outputNodes = unionGraph.nodes("n")
 
     outputNodes.details.toDF().columns should equal(Array(
@@ -94,7 +94,7 @@ class UnionGraphTest extends CAPSTestSuite {
         ))
     val scanGraph = CAPSGraph.create(nodeScan)
 
-    val unionGraph = UnionGraph(patternGraph, scanGraph)
+    val unionGraph = CAPSUnionGraph(patternGraph, scanGraph)
     val outputNodes = unionGraph.nodes("n")
 
     outputNodes.details.toDF().columns should equal(Array(
@@ -114,9 +114,9 @@ class UnionGraphTest extends CAPSTestSuite {
   }
 
   private def initPersonReadsBookGraph: CAPSGraph = {
-    UnionGraph(
+    CAPSUnionGraph(
       TestGraph(`:READS`).graph,
-      UnionGraph(TestGraph(`:Book`).graph,
-        UnionGraph(TestGraph(`:Person`).graph)))
+      CAPSUnionGraph(TestGraph(`:Book`).graph,
+        CAPSUnionGraph(TestGraph(`:Person`).graph)))
   }
 }

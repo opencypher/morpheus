@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.api.spark
+package org.opencypher.caps.impl.spark
 
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.StructType
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.record.{ProjectedExpr, RecordHeader, RecordSlot}
 import org.opencypher.caps.api.types.CTNode
-import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.exception.Raise
 
 case class RowExpansion(

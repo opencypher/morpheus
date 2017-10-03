@@ -20,8 +20,8 @@ import org.opencypher.caps.api.record.{GraphScan, RecordHeader}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 
-case class UnionGraph(graphs: CAPSGraph*)
-  (implicit val session: CAPSSession) extends CAPSGraph {
+case class CAPSUnionGraph(graphs: CAPSGraph*)
+                         (implicit val session: CAPSSession) extends CAPSGraph {
 
   override protected def graph: CAPSGraph = this
 
@@ -50,6 +50,6 @@ case class UnionGraph(graphs: CAPSGraph*)
   }
 
   // TODO: Flatten
-  override def union(other: CAPSGraph) = UnionGraph(this, other)
+  override def union(other: CAPSGraph) = CAPSUnionGraph(this, other)
 
 }

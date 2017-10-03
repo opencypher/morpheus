@@ -178,7 +178,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
 
   private def getIRSourceGraph(c: Clause, context: IRBuilderContext): IRGraph = {
     context.semanticState.recordedContextGraphs.get(c).map {
-      g => NamedGraph(g.source)
+      g => IRNamedGraph(g.source)
     }.getOrElse(context.ambientGraph)
   }
 
@@ -246,7 +246,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
             case ast.GraphOfAs(astPattern, _, _) =>
               for {
                 pattern <- convertPattern(astPattern)
-              } yield PatternGraph(graphName, pattern)
+              } yield IRPatternGraph(graphName, pattern)
 
             case ast.GraphAtAs(url, _, _) =>
               val graphURI = url.url match {
@@ -254,10 +254,10 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
                 case Right(ast.StringLiteral(literal)) => parsePathOrURI(literal)
               }
               val newContext = context.withGraphAt(graphName, graphURI)
-              put[R, IRBuilderContext](newContext) >> pure[R, IRGraph](ExternalGraph(graphName, graphURI))
+              put[R, IRBuilderContext](newContext) >> pure[R, IRGraph](IRExternalGraph(graphName, graphURI))
 
             case ast.GraphAs(ref, alias, _) if alias.isEmpty || alias.contains(ref) =>
-              pure[R, IRGraph](NamedGraph(graphName))
+              pure[R, IRGraph](IRNamedGraph(graphName))
 
             case _ =>
               Raise.notYetImplemented("graph aliasing")

@@ -23,21 +23,21 @@ import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.typer.{SchemaTyper, TypeTracker}
-import org.opencypher.caps.ir.api.{ExternalGraph, IRField, NamedGraph}
+import org.opencypher.caps.ir.api.{IRExternalGraph, IRField, IRNamedGraph}
 import org.opencypher.caps.ir.api.block.{BlockRef, SourceBlock}
 import org.opencypher.caps.ir.api.global.GlobalsRegistry
 import org.opencypher.caps.ir.api.pattern.Pattern
 
 final case class IRBuilderContext(
-  queryString: String,
-  globals: GlobalsRegistry,
-  ambientGraph: ExternalGraph,
-  graphBlock: BlockRef,
-  blocks: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
-  schemas: Map[BlockRef, Schema],
-  semanticState: SemanticState,
-  graphs: Map[String, URI],
-  knownTypes: Map[ast.Expression, CypherType] = Map.empty)
+                                   queryString: String,
+                                   globals: GlobalsRegistry,
+                                   ambientGraph: IRExternalGraph,
+                                   graphBlock: BlockRef,
+                                   blocks: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
+                                   schemas: Map[BlockRef, Schema],
+                                   semanticState: SemanticState,
+                                   graphs: Map[String, URI],
+                                   knownTypes: Map[ast.Expression, CypherType] = Map.empty)
 {
   // TODO: Teach SchemaTyper to work with multiple graphs
   private lazy val typer = SchemaTyper(schemas(graphBlock))
@@ -80,7 +80,7 @@ final case class IRBuilderContext(
 }
 
 object IRBuilderContext {
-  def initial(query: String, globals: GlobalsRegistry, schema: Schema, semState: SemanticState, ambientGraph: ExternalGraph, knownTypes: Map[ast.Expression, CypherType]): IRBuilderContext = {
+  def initial(query: String, globals: GlobalsRegistry, schema: Schema, semState: SemanticState, ambientGraph: IRExternalGraph, knownTypes: Map[ast.Expression, CypherType]): IRBuilderContext = {
     val registry = BlockRegistry.empty[Expr]
     val block = SourceBlock[Expr](ambientGraph)
     val (ref, reg) = registry.register(block)

@@ -141,4 +141,22 @@ class MatchAcceptanceTest extends CAPSTestSuite {
     // TODO: Move to plan based testing
     result.explain.plan.pretty() should include("ValueJoin(predicates = [a.name :: STRING = b.name :: STRING]")
   }
+
+  ignore("Broken start of demo query") {
+    // Given
+    val given = TestGraph(
+      """
+        |(a:Person {name: "Philip"}),
+        |(b:Person {name: "Stefan"}),
+        |(c:City {name: "The Pan-European Sprawl"}),
+        |(a)-[:KNOWS]->(b),
+        |(a)-[:LIVES_IN]->(c),
+        |(b)-[:LIVES_IN]->(c)
+      """.stripMargin)
+
+    // Change last b to x: et voila, it works
+    val result = given.cypher(
+      "MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b) RETURN *"
+    )
+  }
 }

@@ -22,7 +22,7 @@ import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.api.types.CTRelationship
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.flat.FlatOperator
-import org.opencypher.caps.impl.logical.ExternalLogicalGraph
+import org.opencypher.caps.impl.logical.{LogicalExternalGraph, LogicalPatternGraph}
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.{DirectCompilationStage, flat}
 import org.opencypher.caps.ir.api.block.SortItem
@@ -54,7 +54,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
         inner(in).select(fields, header).selectGraphs(graphs)
 
       case flat.Start(graph, _) => graph match {
-        case ExternalLogicalGraph(name, uri, _) =>
+        case LogicalExternalGraph(name, uri, _) =>
           val graph = context.resolver(uri)
           PhysicalResult(context.inputRecords, Map(name -> graph))
 
@@ -66,7 +66,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
         val p = inner(in)
 
         graph match {
-          case ExternalLogicalGraph(name, uri, _) =>
+          case LogicalExternalGraph(name, uri, _) =>
             val graph = context.resolver(uri)
             p.withGraph(name -> graph)
 
@@ -87,11 +87,15 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
         inner(in).project(expr, header)
 
       case flat.ProjectGraph(graph, in, header) => graph match {
-        case ExternalLogicalGraph(name, uri, _) =>
+        case LogicalExternalGraph(name, uri, _) =>
           val capsGraph = context.resolver(uri)
           inner(in).withGraph(name -> capsGraph)
-        case _ =>
-          Raise.notYetImplemented(s"graphs without uri: $graph")
+        case LogicalPatternGraph(name, pattern, schema) =>
+          // TODO: Plan sharing
+          val input = inner(in)
+          val records = input.records
+          val patternGraph = CAPSGraph.create(records, schema)(records.caps)
+          input.withGraph(name -> patternGraph)
       }
 
       case flat.Aggregate(aggregations, group, in , header) =>

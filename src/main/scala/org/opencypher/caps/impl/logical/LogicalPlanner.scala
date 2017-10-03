@@ -83,7 +83,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     model(ref) match {
       case SourceBlock(irGraph) =>
         val graphSource = context.resolver(irGraph.name)
-        producer.planStart(ExternalLogicalGraph(irGraph.name, graphSource.canonicalURI, graphSource.schema.get), context.inputRecordFields)
+        producer.planStart(LogicalExternalGraph(irGraph.name, graphSource.canonicalURI, graphSource.schema.get), context.inputRecordFields)
       case x =>
         Raise.notYetImplemented(s"leaf planning of $x")
     }
@@ -136,7 +136,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
   private def planGraphProjections(in: LogicalOperator, graphs: Set[IRGraph])(implicit context: LogicalPlannerContext): LogicalOperator = {
     graphs.foldLeft(in) {
       case (planSoFar, nextGraph) =>
-        val logicalGraph = resolveGraph(nextGraph)
+        val logicalGraph = resolveGraph(nextGraph, in.sourceGraph.schema, in.fields)
         ProjectGraph(logicalGraph, planSoFar)(planSoFar.solved.withGraph(nextGraph))
     }
   }
@@ -235,26 +235,40 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
   }
 
   // TODO: Add support for pattern graphs that don't have a URI.
-  private def resolveGraph(graph: IRGraph)(implicit context: LogicalPlannerContext): LogicalGraph = {
-    val graphSource = context.resolver(graph.name)
-    val schema = graphSource.schema match {
-      case None =>
-        // This initialises the graph eagerly!!
-        // TODO: We probably want to save the graph reference somewhere
-        graphSource.graph.schema
-      case Some(s) => s
+  private def resolveGraph(graph: IRGraph, sourceSchema: Schema, fieldsInScope: Set[Var])(implicit context: LogicalPlannerContext): LogicalGraph = {
+    graph match {
+      // TODO: IRGraph[Expr]
+      case IRPatternGraph(name, pattern) =>
+        val patternEntities = pattern.entities.keySet
+        val entitiesInScope = fieldsInScope.map { (v: Var) => IRField(v.name)(v.cypherType) }
+        val boundEntities = patternEntities intersect entitiesInScope
+
+        // TODO: Created entities
+        val patternGraphSchema = pattern.forEntities(sourceSchema)(boundEntities)
+
+        LogicalPatternGraph(name, pattern.asInstanceOf[Pattern[Expr]], patternGraphSchema)
+
+      case _ =>
+        val graphSource = context.resolver(graph.name)
+        val schema = graphSource.schema match {
+          case None =>
+            // This initialises the graph eagerly!!
+            // TODO: We probably want to save the graph reference somewhere
+            graphSource.graph.schema
+          case Some(s) => s
+        }
+        LogicalExternalGraph(graph.name, graphSource.canonicalURI, schema)
     }
-    ExternalLogicalGraph(graph.name, graphSource.canonicalURI, schema)
   }
 
   private def planStart(graph: IRGraph)(implicit context: LogicalPlannerContext): Start = {
-    val logicalGraph: LogicalGraph = resolveGraph(graph)
+    val logicalGraph: LogicalGraph = resolveGraph(graph, Schema.empty, Set.empty)
 
     producer.planStart(logicalGraph, context.inputRecordFields)
   }
 
   private def setSource(graph: IRGraph, prev: LogicalOperator)(implicit context: LogicalPlannerContext): SetSourceGraph = {
-    val logicalGraph = resolveGraph(graph)
+    val logicalGraph = resolveGraph(graph, prev.sourceGraph.schema, prev.fields)
 
     producer.planSetSourceGraph(logicalGraph, prev)
   }
