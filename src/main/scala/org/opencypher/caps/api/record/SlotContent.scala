@@ -82,7 +82,7 @@ final case class ProjectedExpr(expr: Expr) extends ProjectedSlotContent {
     case p: Property => ProjectedExpr(Property(newOwner, p.key)(p.cypherType))
     case s: StartNode => ProjectedExpr(StartNode(newOwner)(s.cypherType))
     case e: EndNode => ProjectedExpr(EndNode(newOwner)(e.cypherType))
-    case _ => Raise.impossible()
+    case _ => this
   }
 }
 
@@ -91,7 +91,7 @@ final case class OpaqueField(field: Var) extends FieldSlotContent {
 
   override def support = Seq(field)
 
-  override def withOwner(newOwner: Var): SlotContent = OpaqueField(Var(newOwner.name)(cypherType))
+  override def withOwner(newOwner: Var): SlotContent = copy(Var(newOwner.name)(cypherType))
 }
 
 final case class ProjectedField(field: Var, expr: Expr)

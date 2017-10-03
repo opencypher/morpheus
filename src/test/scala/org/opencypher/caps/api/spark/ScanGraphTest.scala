@@ -20,7 +20,7 @@ import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.test.CAPSTestSuite
 
-class CAPSGraphTest extends CAPSTestSuite {
+class ScanGraphTest extends CAPSTestSuite {
 
   val `:Person` =
     NodeScan.on("p" -> "ID") {

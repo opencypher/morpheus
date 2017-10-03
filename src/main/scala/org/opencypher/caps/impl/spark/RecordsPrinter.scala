@@ -22,32 +22,31 @@ import org.opencypher.caps.api.spark.CAPSRecords
 
 object RecordsPrinter {
 
-  val COLUMN_WIDTH = 20
   val MARGIN = 2
 
   /**
     * Prints the given SparkCypherRecords to stdout
     * @param records the records to be printed.
     */
-  def print(records: CAPSRecords): Unit = {
-    print(records, Console.out)
+  def print(records: CAPSRecords, columnWidth: Int): Unit = {
+    printTo(records, Console.out, columnWidth)
   }
 
-  def print(records: CAPSRecords, stream: PrintStream): Unit = {
+  def printTo(records: CAPSRecords, stream: PrintStream, columnWidth: Int): Unit = {
     val fieldContents = records.header.slots.sortBy(_.index).map(_.content)
     val factor = if (fieldContents.size > 1) fieldContents.size else 1
 
-    val lineWidth = (COLUMN_WIDTH + MARGIN) * factor + factor - 1
+    val lineWidth = (columnWidth + MARGIN) * factor + factor - 1
     val --- = "+" + repeat("-", lineWidth) + "+"
 
     stream.println(---)
     var sep = "| "
     if (fieldContents.isEmpty) {
       stream.print(sep)
-      stream.print(fitToColumn("(no columns)"))
+      stream.print(fitToColumn("(no columns)", columnWidth))
     } else fieldContents.foreach { contents =>
       stream.print(sep)
-      stream.print(fitToColumn(contents.key.withoutType))
+      stream.print(fitToColumn(contents.key.withoutType, columnWidth))
       sep = " | "
     }
     stream.println(" |")
@@ -56,18 +55,18 @@ object RecordsPrinter {
     sep = "| "
     if (fieldContents.isEmpty || values.isEmpty) {
       stream.print(sep)
-      stream.print(fitToColumn("(no rows)"))
+      stream.print(fitToColumn("(no rows)", columnWidth))
       stream.println(" |")
     } else values.foreach { map =>
       fieldContents.foreach { content =>
         map.get(SparkColumnName.of(content)) match {
           case None =>
             stream.print(sep)
-            stream.print(fitToColumn("null"))
+            stream.print(fitToColumn("null", columnWidth))
             sep = " | "
           case Some(v) =>
             stream.print(sep)
-            stream.print(fitToColumn(Objects.toString(v)))
+            stream.print(fitToColumn(Objects.toString(v), columnWidth))
             sep = " | "
         }
       }
@@ -79,10 +78,10 @@ object RecordsPrinter {
   }
 
   private def repeat(x: String, size: Int): String = (1 to size).map((_) => x).mkString
-  private def fitToColumn(s: String) = {
-    val spaces = (1 until COLUMN_WIDTH).map(_ => " ").reduce(_ + _)
+  private def fitToColumn(s: String, columnWidth: Int) = {
+    val spaces = (1 until columnWidth).map(_ => " ").reduce(_ + _)
     val cell = s + spaces
-    cell.take(COLUMN_WIDTH)
+    cell.take(columnWidth)
   }
 
 }

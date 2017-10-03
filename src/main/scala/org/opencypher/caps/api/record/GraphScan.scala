@@ -164,7 +164,7 @@ object GraphScanBuilder {
       entity.propertiesFromSlots.keys
         .map(key => key -> headerKeys
           .collectFirst { case p: Property if p.m == entity.entityVar && p.key.name == key => p.cypherType }
-          .getOrElse(Raise.impossible())
+          .getOrElse(Raise.slotNotFound(s"variable ${entity.entityVar} with key $key when searching in $headerKeys"))
         ).toSeq
     }
   }

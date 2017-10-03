@@ -54,10 +54,11 @@ class PatternGraph(private val baseTable: CAPSRecords, val schema: Schema, val t
         relVar -> createScanToBaseTableLookup(targetVar, slotsForRel.map(_.content))
     }
 
-    val relDf = baseTable.details.toDF().flatMap(
+    val extractedDf = baseTable.details.toDF().flatMap(
       RowExpansion(targetHeader, targetVar, extractionSlots, relColumnsLookupTables))(targetHeader.rowEncoder)
+    val distinctData = extractedDf.distinct()
 
-    CAPSRecords.create(targetHeader, relDf)
+    CAPSRecords.create(targetHeader, distinctData)
   }
 
   private def createScanToBaseTableLookup(scanTableVar: Var, slotContents: Seq[SlotContent]): Map[String,String] = {
