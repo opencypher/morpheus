@@ -28,6 +28,7 @@ import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block.{SortItem, _}
 import org.opencypher.caps.ir.api.global.GlobalsRegistry
 import org.opencypher.caps.ir.api.pattern.{AllGiven, Pattern}
+import org.opencypher.caps.ir.impl.IRBuilder.getIRSourceGraph
 import org.opencypher.caps.ir.impl.instances._
 
 object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBuilderContext] {
@@ -121,21 +122,28 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           }
         } yield refs
 
-      case ast.Return(distinct, ast.ReturnItems(_, items), graphItems, _, _, _, _) =>
+      case ast.Return(distinct, ast.ReturnItems(_, items), graphItems, orderBy, skip, limit, _) =>
         for {
           fieldExprs <- EffMonad[R].sequence(items.map(convertReturnItem[R]).toVector)
           graphs <- convertGraphReturnItems(graphItems)
           context <- get[R, IRBuilderContext]
           refs <- {
-            val namedGraph = getIRSourceGraph(c, context)
-            val (ref, reg) = registerProjectBlock(context, fieldExprs, distinct = distinct, source = namedGraph, graphs = graphs)
+            val irGraph = getIRSourceGraph(c, context)
+            val (projectRef, projectReg) = registerProjectBlock(context, fieldExprs, distinct = distinct, source = irGraph, graphs = graphs)
+            val appendList = (list: Vector[BlockRef]) => pure[R, Vector[BlockRef]](projectRef +: list)
+            val orderAndSliceBlock = registerOrderAndSliceBlock(orderBy, skip, limit)
+            put[R, IRBuilderContext](context.copy(blocks = projectReg)) >> orderAndSliceBlock >>= appendList
+          }
+          context2 <- get[R, IRBuilderContext]
+          refs2 <- {
             val rItems = fieldExprs.map(_._1)
             val orderedFields = OrderedFieldsAndGraphs[Expr](rItems, graphs.toSet)
-            val returns = ResultBlock[Expr](Set(ref), orderedFields, Set.empty, Set.empty, context.ambientGraph)
-            val (ref2, reg2) = reg.register(returns)
-            put[R, IRBuilderContext](context.copy(blocks = reg2)) >> pure[R, Vector[BlockRef]](Vector(ref, ref2))
+            val result = ResultBlock[Expr](Set(refs.last), orderedFields, Set.empty, Set.empty, context.ambientGraph)
+            val (resultRef, resultReg) = context2.blocks.register(result)
+            put[R, IRBuilderContext](context.copy(blocks = resultReg)) >> pure[R, Vector[BlockRef]](refs :+ resultRef)
           }
-        } yield refs
+        } yield refs2
+
 
       case ast.Return(distinct, ast.DiscardCardinality(), graphItems, _, _, _, _) =>
         for {
@@ -180,7 +188,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
     graphs: Seq[IRGraph] = Seq.empty,
     given: AllGiven[Expr] = AllGiven[Expr](),
     source: IRGraph,
-    distinct: Boolean = false) = {
+    distinct: Boolean = false): (BlockRef, BlockRegistry[Expr]) = {
     val blockRegistry = context.blocks
     val binds = FieldsAndGraphs(fieldExprs.toMap, graphs.toSet)
 
@@ -276,6 +284,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
 
     case ast.UnaliasedReturnItem(e, t) =>
       error(IRBuilderError(s"Did not expect unnamed return item"))(IRField(t)() -> Var(t)())
+
   }
 
   private def convertPattern[R: _hasContext](p: ast.Pattern): Eff[R, Pattern[Expr]] = {

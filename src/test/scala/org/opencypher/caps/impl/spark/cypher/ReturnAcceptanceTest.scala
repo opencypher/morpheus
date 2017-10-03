@@ -120,4 +120,148 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
     ))
   }
 
+  test("order by") {
+    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+
+    val result = given.cypher("MATCH (a) RETURN a.val AS val ORDER BY val")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("val" -> 3L),
+      CypherMap("val" -> 4L),
+      CypherMap("val" -> 42L)
+    ))
+
+    // And
+    result.graphs shouldBe empty
+  }
+
+  test("order by asc") {
+    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+
+    val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val ASC")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("val" -> 3L),
+      CypherMap("val" -> 4L),
+      CypherMap("val" -> 42L)
+    ))
+
+    // And
+    result.graphs shouldBe empty
+  }
+
+  test("order by desc") {
+    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+
+    val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val DESC")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("val" -> 42L),
+      CypherMap("val" -> 4L),
+      CypherMap("val" -> 3L)
+    ))
+
+    // And
+    result.graphs shouldBe empty
+  }
+
+  test("skip") {
+    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+
+    val result = given.cypher("MATCH (a) RETURN a.val as val SKIP 2")
+
+    // Then
+    result.records.toDF().count() should equal(1)
+
+    // And
+    result.graphs shouldBe empty
+  }
+
+  test("order by with skip") {
+    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+
+    val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val SKIP 1")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("val" -> 4L),
+      CypherMap("val" -> 42L)
+    ))
+
+    // And
+    result.graphs shouldBe empty
+  }
+
+  test("order by with (arithmetic) skip") {
+    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+
+    val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val SKIP 1 + 1")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("val" -> 42L)
+    ))
+
+    // And
+    result.graphs shouldBe empty
+  }
+
+  test("limit") {
+    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+
+    val result = given.cypher("MATCH (a) RETURN a.val as val LIMIT 1")
+
+    // Then
+    result.records.toDF().count() should equal(1)
+
+    // And
+    result.graphs shouldBe empty
+  }
+
+  test("order by with limit") {
+    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+
+    val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val LIMIT 1")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("val" -> 3L)
+    ))
+
+    // And
+    result.graphs shouldBe empty
+  }
+
+  test("order by with (arithmetic) limit") {
+    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+
+    val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val LIMIT 1 + 1")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("val" -> 3L),
+      CypherMap("val" -> 4L)
+    ))
+
+    // And
+    result.graphs shouldBe empty
+  }
+
+  test("order by with skip and limit") {
+    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+
+    val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val SKIP 1 LIMIT 1")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("val" -> 4L)
+    ))
+
+    // And
+    result.graphs shouldBe empty
+  }
+
 }

@@ -41,7 +41,10 @@ trait LogicalGraph {
   def name: String
 }
 
-final case class ExternalLogicalGraph(name: String, uri: URI, schema: Schema) extends LogicalGraph
+final case class ExternalLogicalGraph(name: String, uri: URI, schema: Schema) extends LogicalGraph {
+
+  override def toString: String = s"$name@$uri"
+}
 
 sealed trait StackingLogicalOperator extends LogicalOperator {
   def in: LogicalOperator
