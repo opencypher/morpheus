@@ -185,6 +185,15 @@ class PhysicalResultProducer(context: RuntimeContext) {
         CAPSRecords.create(header, data.agg(sparkAggFunctions.head, sparkAggFunctions.tail.toSeq: _*))(records.caps)
       }
 
+    def cartesianProduct(rhs: PhysicalResult, header: RecordHeader): PhysicalResult =
+      prev.mapRecordsWithDetails { subject =>
+        val data = subject.data
+        val otherData = rhs.records.details.data
+        val newData = data.crossJoin(otherData)
+        // TODO: How to deal w RHS graphs? Should we assert that they are the same?
+        CAPSRecords.create(header, newData)(subject.caps)
+      }
+
     def select(fields: IndexedSeq[Var], header: RecordHeader): PhysicalResult =
       prev.mapRecordsWithDetails { subject =>
         val fieldIndices = fields.zipWithIndex.toMap

@@ -21,6 +21,7 @@ import org.opencypher.caps.api.spark.io.CAPSGraphSource
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.DirectCompilationStage
 import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.syntax.expr._
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block._
 import org.opencypher.caps.ir.api.pattern._
@@ -92,9 +93,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     model(ref) match {
       case MatchBlock(_, pattern, where, optional, graph) =>
         // this plans both pattern and filter for convenience -- TODO: split up
-        val patternPlan = planPattern(plan, pattern, graph)
-        val filterPlan = planFilter(patternPlan, where)
-        if (optional) producer.planOptional(plan, filterPlan) else filterPlan
+        val patternPlan = planMatchPattern(plan, pattern, where, graph)
+        if (optional) producer.planOptional(plan, patternPlan) else patternPlan
 
       case ProjectBlock(_, FieldsAndGraphs(fields, graphs), where, _, distinct) =>
         val withGraphs = planGraphProjections(plan, graphs)
@@ -164,7 +164,9 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     }
   }
 
-  private def planFilter(in: LogicalOperator, where: AllGiven[Expr])(implicit context: LogicalPlannerContext) = {
+  // TODO: Should we check (or silently drop) predicates that are not eligible for planning here? (check dependencies)
+  private def planFilter(in: LogicalOperator, where: AllGiven[Expr])(implicit context: LogicalPlannerContext)
+  : LogicalOperator = {
     val filtersAndProjs = where.elements.foldLeft(in) {
       case (acc, ors: Ors) =>
         val withInnerExprs = ors.exprs.foldLeft(acc) {
@@ -257,7 +259,34 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     producer.planSetSourceGraph(logicalGraph, prev)
   }
 
-  private def planPattern(plan: LogicalOperator, pattern: Pattern[Expr], graph: IRGraph)(implicit context: LogicalPlannerContext) = {
+  private def planMatchPattern(plan: LogicalOperator, pattern: Pattern[Expr], where: AllGiven[Expr], graph: IRGraph)(implicit context: LogicalPlannerContext) = {
+    val components = pattern.components.toSeq
+    if (components.size == 1) {
+      val patternPlan = planComponentPattern(plan, components.head, graph)
+      val filteredPlan = planFilter(patternPlan, where)
+      filteredPlan
+    } else {
+      // TODO: Find a way to feed the same input into all arms of the cartesian product without recomputing it
+      val bases = plan +: components.map(_ => Start(plan.sourceGraph, Set.empty)(SolvedQueryModel.empty)).tail
+      val plans = bases.zip(components).map {
+        case (base, component) =>
+          val componentPlan = planComponentPattern(base, component, graph)
+          val predicates = where.filter(_.evaluable(componentPlan.fields)).filterNot(componentPlan.solved.predicates)
+          val filteredPlan = planFilter(componentPlan, predicates)
+          filteredPlan
+      }
+      val result = plans.reduceOption { (lhs, rhs) =>
+        val combinedPlan = producer.planCartesianProduct(lhs, rhs)
+        val predicates = where.filter(_.evaluable(combinedPlan.fields)).filterNot(combinedPlan.solved.predicates)
+        val filteredPlan = planFilter(combinedPlan, predicates)
+        filteredPlan
+      }
+      result.getOrElse(Raise.invalidOrUnsupportedPattern("empty pattern"))
+    }
+  }
+
+  private def planComponentPattern(plan: LogicalOperator, pattern: Pattern[Expr], graph: IRGraph)
+                                  (implicit context: LogicalPlannerContext): LogicalOperator = {
 
     // find all unsolved nodes from the pattern
     val nodes = pattern.entities.collect {
@@ -291,7 +320,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       // tie all plans together using expansions
       planExpansions(nodePlans + firstPlan, pattern, producer)
     } else
-      Raise.invalidPattern(pattern.toString)
+      Raise.invalidOrUnsupportedPattern(pattern.toString)
   }
 
   @tailrec
