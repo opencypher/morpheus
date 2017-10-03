@@ -62,7 +62,8 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     result.records shouldHaveSize 8 andContain 1952 -> "Batman Begins"
   }
 
-  test("filter rels on property") {
+  // TODO: Support union types
+  ignore("filter rels on property") {
     // Given
     val query = "MATCH (a:Actor)-[r:ACTED_IN]->() WHERE r.charactername = 'Guenevere' RETURN a, r"
 
