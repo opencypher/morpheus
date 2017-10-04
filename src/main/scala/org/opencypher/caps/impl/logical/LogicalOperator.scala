@@ -184,7 +184,7 @@ final case class ValueJoin(lhs: LogicalOperator, rhs: LogicalOperator, predicate
   override val fields: Set[Var] = lhs.fields ++ rhs.fields
 
   override def pretty(depth: Int): String =
-    s"""${prefix(depth)} ValueJoin(predicates = ${predicates.mkString("[", ", ", "]")}
+    s"""${prefix(depth)} ValueJoin(predicates = ${predicates.mkString("[", ", ", "]")})
        #${lhs.pretty(depth + 1)}
        #${rhs.pretty(depth + 1)}""".stripMargin('#')
 }
