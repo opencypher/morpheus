@@ -18,6 +18,8 @@ package org.opencypher.caps.api.spark
 import org.apache.spark.sql.Row
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
+import org.opencypher.caps.api.value.EntityId._
+import org.opencypher.caps.api.value.{CypherMap, CypherRelationship, RelationshipData}
 import org.opencypher.caps.test.CAPSTestSuite
 
 class ScanGraphTest extends CAPSTestSuite {
@@ -134,6 +136,46 @@ class ScanGraphTest extends CAPSTestSuite {
       Seq(
         (10L, 1000L, 20L))
     ))
+
+  test("dont lose schema information when mapping") {
+    val nodes = NodeScan.on("n" -> "id") {
+      _.build
+    }.from(CAPSRecords.create(
+      Seq("id"),
+      Seq(
+        Tuple1(10L),
+        Tuple1(11L),
+        Tuple1(12L),
+        Tuple1(20L),
+        Tuple1(21L),
+        Tuple1(22L),
+        Tuple1(25L),
+        Tuple1(50L),
+        Tuple1(51L)
+      )
+    ))
+
+    val rs = RelationshipScan.on("i" -> "ID") {
+        _.from("SRC").to("DST").relType("FOO")
+          .build
+      }
+        .from(CAPSRecords.create(
+          Seq("SRC", "ID", "DST"),
+          Seq(
+            (10L, 1000L, 20L),
+            (50L, 500L, 25L)
+          )
+        ))
+
+    val graph = CAPSGraph.create(nodes, rs)
+
+    val results = graph.relationships("r").details.toCypherMaps
+
+    results.collect().toSet should equal(Set(
+      CypherMap("r" -> CypherRelationship(1000L, RelationshipData(10L, 20L, "FOO"))),
+      CypherMap("r" -> CypherRelationship(500L, RelationshipData(50L, 25L, "FOO")))
+    ))
+  }
 
   test("Construct graph from single node scan") {
     val graph = CAPSGraph.create(`:Person`)

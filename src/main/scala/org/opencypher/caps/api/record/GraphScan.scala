@@ -16,13 +16,13 @@
 package org.opencypher.caps.api.record
 
 import org.apache.spark.sql.Row
+import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
 import org.opencypher.caps.api.expr.{HasLabel, OfType, Property, Var}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSRecords, CAPSSession}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType}
-import org.opencypher.caps.impl.record.CAPSRecordsTokens
-import org.opencypher.caps.impl.spark.{SparkColumn, SparkColumnName}
 import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.spark.{SparkColumn, SparkColumnName}
 import org.opencypher.caps.ir.api.global.Label
 
 sealed trait GraphScan extends Serializable {
@@ -88,7 +88,7 @@ object GraphScan extends GraphScanCompanion[EmbeddedEntity] {
 
     val alignedData = records.details.toDF().map { (row: Row) =>
       val alignedRow = slotDataSelectors.map(_ (row))
-      Row.fromSeq(alignedRow)
+      new GenericRowWithSchema(alignedRow.toArray, targetHeader.asSparkSchema).asInstanceOf[Row]
     }(targetHeader.rowEncoder)
 
     CAPSRecords.create(targetHeader, alignedData)

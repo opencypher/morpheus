@@ -204,8 +204,8 @@ object CAPSRecords {
       val dataColumnNames = initialData.columns.toSet
       if (!headerColumnNames.subsetOf(dataColumnNames)) {
         Raise.recordsDataHeaderMismatch(
-          s"with columns ${initialHeader.internalHeader.columns.toSet.mkString}",
-          s"with columns ${initialData.columns.toSet.mkString}"
+          s"with columns ${initialHeader.internalHeader.columns.toSet.mkString(", ")}",
+          s"with columns ${initialData.columns.toSet.mkString(", ")}"
         )
       }
 
