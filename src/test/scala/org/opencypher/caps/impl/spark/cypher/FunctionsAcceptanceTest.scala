@@ -196,4 +196,25 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
     ))
   }
 
+  test("startNode()") {
+    val given = TestGraph("()-[:FOO {val: 'a'}]->(),()-[:FOO {val: 'b'}]->()")
+
+    val result = given.cypher("MATCH ()-[r:FOO]->() RETURN r.val, startNode(r)")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("r.val" -> "a", "startNode(r)" -> 0),
+      CypherMap("r.val" -> "b", "startNode(r)" -> 2)
+    ))
+  }
+
+  test("endNode()") {
+    val given = TestGraph("()-[:FOO {val: 'a'}]->(),()-[:FOO {val: 'b'}]->()")
+
+    val result = given.cypher("MATCH ()-[r:FOO]->() RETURN r.val, endNode(r)")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("r.val" -> "a", "endNode(r)" -> 1),
+      CypherMap("r.val" -> "b", "endNode(r)" -> 3)
+    ))
+  }
 }

@@ -36,6 +36,8 @@ object FunctionUtils {
         case functions.Exists => Exists(expr.head)(cypherType)
         case functions.Size => Size(expr.head)(cypherType)
         case functions.Keys => Keys(expr.head)(cypherType)
+        case functions.StartNode => StartNodeFunction(expr.head)(cypherType)
+        case functions.EndNode => EndNodeFunction(expr.head)(cypherType)
         case a: Function => Raise.notYetImplemented(s"converting ${a.name} function")
       }
     }

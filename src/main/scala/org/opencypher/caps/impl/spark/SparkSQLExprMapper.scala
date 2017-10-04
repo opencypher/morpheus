@@ -225,6 +225,16 @@ object SparkSQLExprMapper {
             Raise.notYetImplemented("type() of non-variables")
         }
 
+      case StartNodeFunction(e) =>
+        verifyExpression(header, expr)
+        val rel = Var(context.columnName(header.slotsFor(e).head))(CTNode)
+        Some(getColumn(header.sourceNodeSlot(rel).content.key, header, df))
+
+      case EndNodeFunction(e) =>
+        verifyExpression(header, expr)
+        val rel = Var(context.columnName(header.slotsFor(e).head))(CTNode)
+        Some(getColumn(header.targetNodeSlot(rel).content.key, header, df))
+
       case _ =>
         None
     }
