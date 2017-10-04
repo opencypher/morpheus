@@ -165,4 +165,28 @@ class BoundedVarExpandAcceptanceTest extends CAPSTestSuite {
     // And
     result.graphs shouldBe empty
   }
+
+  test("var expand with expand into") {
+    // Given
+    val given = TestGraph(
+      """
+        |(a:Person {name: "Philip"}),
+        |(b:Person {name: "Stefan"}),
+        |(c:City {name: "Berlondon"}),
+        |(a)-[:KNOWS]->(b),
+        |(a)-[:LIVES_IN]->(c),
+        |(b)-[:LIVES_IN]->(c)
+      """.stripMargin)
+
+    // Change last b to x: et voila, it works
+    val result = given.cypher(
+      "MATCH (a:Person)-[:LIVES_IN]->(c:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b) RETURN a.name, b.name, c.name"
+    )
+
+    // Then
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("a.name" -> "Philip", "b.name" -> "Stefan", "c.name" -> "Berlondon")
+    ))
+  }
 }

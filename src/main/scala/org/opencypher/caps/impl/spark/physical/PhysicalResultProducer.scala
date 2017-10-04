@@ -451,14 +451,28 @@ class PhysicalResultProducer(context: RuntimeContext) {
       }
     }
 
-    def finalizeVarExpand(target: PhysicalResult, endNode: Var, targetNode: Var, header: RecordHeader)
+    def finalizeVarExpand(target: PhysicalResult, endNode: Var, targetNode: Var, header: RecordHeader, isExpandInto: Boolean)
     : PhysicalResult = {
-      val joinHeader = prev.records.details.header ++ target.records.details.header
-      val joined = prev.joinNode(target, joinHeader).on(endNode)(targetNode)
-
       val endNodeSlot =  prev.records.details.header.slotFor(endNode)
       val endNodeCol = context.columnName(endNodeSlot)
-      joined.mapRecordsWithDetails(records =>
+
+      val targetNodeSlot = target.records.details.header.slotFor(targetNode)
+      val targetNodeCol = context.columnName(targetNodeSlot)
+
+      // If the expansion ends in an already solved plan, the final join can be replaced by a filter.
+      val result: PhysicalResult = if (isExpandInto) {
+        prev.mapRecordsWithDetails { records =>
+          val data = records.toDF()
+          CAPSRecords.create(
+            header,
+            data.filter(data.col(targetNodeCol) === data.col(endNodeCol)))(records.caps)
+        }
+      } else {
+        val joinHeader = prev.records.details.header ++ target.records.details.header
+        prev.joinNode(target, joinHeader).on(endNode)(targetNode)
+      }
+
+      result.mapRecordsWithDetails(records =>
         CAPSRecords.create(header, records.details.toDF().drop(endNodeCol))(records.caps)
       )
     }

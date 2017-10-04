@@ -105,7 +105,8 @@ final case class InitVarExpand(source: Var, edgeList: Var, endNode: Var, in: Fla
   extends StackingFlatOperator
 
 final case class BoundedVarExpand(rel: Var, edgeList: Var, target: Var, lower: Int, upper: Int,
-                                  sourceOp: InitVarExpand, relOp: FlatOperator, targetOp: FlatOperator, header: RecordHeader)
+                                  sourceOp: InitVarExpand, relOp: FlatOperator, targetOp: FlatOperator,
+                                  header: RecordHeader, isExpandInto: Boolean)
   extends TernaryFlatOperator {
 
   override def first: FlatOperator = sourceOp

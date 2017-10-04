@@ -225,7 +225,7 @@ class FlatPlannerTest extends BaseTestSuite {
 
     val edgeScan = flatVarLengthEdgeScan(initVarExpand.edgeList)
     val flatOp = mkFlat.boundedVarExpand(edgeScan.edge, edgeList, target, 1, 1,
-      initVarExpand, edgeScan, flatNodeScan(target))
+      initVarExpand, edgeScan, flatNodeScan(target), isExpandInto = false)
 
     result should equal(flatOp)
 

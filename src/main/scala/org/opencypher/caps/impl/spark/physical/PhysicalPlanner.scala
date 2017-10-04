@@ -137,13 +137,13 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
         val prev = inner(in)
         prev.initVarExpand(source, edgeList, endNode, header)
 
-      case flat.BoundedVarExpand(rel, edgeList, target, lower, upper, sourceOp, relOp, targetOp, header) =>
+      case flat.BoundedVarExpand(rel, edgeList, target, lower, upper, sourceOp, relOp, targetOp, header, isExpandInto) =>
         val first  = inner(sourceOp)
         val second = inner(relOp)
         val third  = inner(targetOp)
 
         val expanded = first.varExpand(second, edgeList, sourceOp.endNode, rel, lower, upper, header)
-        expanded.finalizeVarExpand(third, sourceOp.endNode, target, header)
+        expanded.finalizeVarExpand(third, sourceOp.endNode, target, header, isExpandInto)
 
       case flat.Optional(lhs, rhs, lhsHeader, rhsHeader) =>
         inner(lhs).optional(inner(rhs), lhsHeader, rhsHeader)
