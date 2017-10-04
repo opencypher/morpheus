@@ -138,9 +138,7 @@ class MatchAcceptanceTest extends CAPSTestSuite {
       CypherMap("one" -> "Bob", "two" -> "Bob")
     ))
 
-    result.explain.print
-
     // TODO: Move to plan based testing
-    result.explain.toString should include("ValueJoin(predicates = [a.name :: STRING = b.name :: STRING]")
+    result.explain.plan.pretty() should include("ValueJoin(predicates = [a.name :: STRING = b.name :: STRING]")
   }
 }
