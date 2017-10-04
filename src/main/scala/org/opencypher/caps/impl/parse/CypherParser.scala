@@ -30,6 +30,7 @@ object CypherParser extends CypherParser {
         val filtered = errors.filter {
           // TODO: Fix in frontend https://github.com/neo4j/neo4j/pull/10056
           case s: SemanticError if s.msg.matches("No context graphs available") => false
+          case s: SemanticError if s.msg.matches("Variable .* already declared") => false
           case _ => true
         }
         Raise.semanticErrors(filtered)

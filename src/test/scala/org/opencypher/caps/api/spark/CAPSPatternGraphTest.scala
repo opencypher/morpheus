@@ -20,7 +20,7 @@ import org.opencypher.caps.api.expr.{HasLabel, Property, Var}
 import org.opencypher.caps.api.record.{OpaqueField, ProjectedExpr, ProjectedField, RecordHeader}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTRelationship, CTString}
-import org.opencypher.caps.api.value.CypherMap
+import org.opencypher.caps.api.value.{CypherMap, CypherNode, CypherString}
 import org.opencypher.caps.impl.record.CAPSRecordHeader
 import org.opencypher.caps.impl.syntax.header.{addContents, _}
 import org.opencypher.caps.ir.api.global.{Label, PropertyKey}
@@ -31,6 +31,35 @@ import scala.collection.JavaConverters._
 
 class CAPSPatternGraphTest extends CAPSTestSuite {
   import CAPSGraphTestData._
+
+  test("project pattern graph") {
+    val inputGraph = TestGraph(`:Person`).graph
+
+    val person = inputGraph.cypher(
+      """MATCH (a:Swedish)
+        |RETURN GRAPH result OF (a)
+      """.stripMargin)
+
+    person.graphs("result").cypher("MATCH (n) RETURN n.name").recordsWithDetails.toLocalScalaIterator.toSet should equal(Set(
+      CypherMap("n.name" -> CypherString("Mats"))
+    ))
+  }
+
+  test("project pattern graph with relationship") {
+    val inputGraph = TestGraph(`:Person` + `:KNOWS`).graph
+
+    val person = inputGraph.cypher(
+      """MATCH (a:Person:Swedish)-[r]->(b)
+        |RETURN GRAPH result OF (a)-[r]->(b)
+      """.stripMargin)
+
+    person.graphs("result").cypher("MATCH (n) RETURN n.name").recordsWithDetails.toLocalScalaIterator.toSet should equal(Set(
+      CypherMap("n.name" -> CypherString("Mats")),
+      CypherMap("n.name" -> CypherString("Stefan")),
+      CypherMap("n.name" -> CypherString("Martin")),
+      CypherMap("n.name" -> CypherString("Max"))
+    ))
+  }
 
   test("Node scan from single node CAPSRecords") {
     val inputGraph = TestGraph(`:Person`).graph
