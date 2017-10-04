@@ -236,17 +236,45 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
   // TODO: Add support for pattern graphs that don't have a URI.
   private def resolveGraph(graph: IRGraph, sourceSchema: Schema, fieldsInScope: Set[Var])(implicit context: LogicalPlannerContext): LogicalGraph = {
+
+    import org.opencypher.caps.impl.util._
+
     graph match {
       // TODO: IRGraph[Expr]
       case IRPatternGraph(name, pattern) =>
+        // TODO: Consider type in IRField, too? Or should we not use IRFields in patterns (i.e. drop types)?
+        def entitySchema(schema: Schema)(entity: EveryEntity): Schema = entity match {
+          case EveryNode(AllGiven(labels)) => schema.forNode(CTNode(labels.map(_.name)))
+          case EveryRelationship(AnyGiven(relTypes)) => schema.forRelationship(CTRelationship(relTypes.map(_.name)))
+        }
+
+        def forEntities(schema: Schema)(entities: Iterable[EveryEntity]): Schema = {
+          entities
+            .map(entitySchema(schema))
+            .foldLeft(Schema.empty)(_ ++ _)
+        }
+
+        val patternGraphSchema = forEntities(sourceSchema)(pattern.entities.values)
+
         val patternEntities = pattern.entities.keySet
         val entitiesInScope = fieldsInScope.map { (v: Var) => IRField(v.name)(v.cypherType) }
         val boundEntities = patternEntities intersect entitiesInScope
+        val entitiesToCreate = patternEntities -- boundEntities
 
-        // TODO: Created entities
-        val patternGraphSchema = pattern.forEntities(sourceSchema)(boundEntities)
+        val entities: Set[ConstructedEntity] = entitiesToCreate.map { e =>
+          val connection = pattern.topology(e)
 
-        LogicalPatternGraph(name, pattern.asInstanceOf[Pattern[Expr]], patternGraphSchema)
+          pattern.entities(e) match {
+            case EveryRelationship(relTypes) if relTypes.elements.size == 1 =>
+              ConstructedRelationship(e, connection.source, connection.target, relTypes.elements.head.name)
+            case EveryNode(_) =>
+              Raise.notYetImplemented("creation of nodes in GRAPH OF")
+            case _ =>
+              Raise.impossible(s"could not construct entity from $e")
+          }
+        }
+
+        LogicalPatternGraph(name, patternGraphSchema, GraphOfPattern(entities, boundEntities))
 
       case _ =>
         val graphSource = context.resolver(graph.name)

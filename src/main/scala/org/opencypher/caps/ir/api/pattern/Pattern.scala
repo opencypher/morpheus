@@ -137,18 +137,5 @@ final case class Pattern[E](entities: Map[IRField, EveryEntity], topology: Map[I
       components.values.toSet
   }
 
-  def forEntities(schema: Schema)(selectedEntities: Set[IRField]): Schema = {
-    entities
-      .filterKeys(selectedEntities)
-      .toSeq
-      .map(entitySchema(schema))
-      .foldLeft(Schema.empty)(_ ++ _)
-  }
-
-  // TODO: Consider type in IRField, too? Or should we not use IRFields in patterns (i.e. drop types)?
-  private def entitySchema(schema: Schema)(entity: (IRField, EveryEntity)): Schema = entity._2 match {
-    case EveryNode(AllGiven(labels)) => schema.forNode(CTNode(labels.map(_.name)))
-    case EveryRelationship(AnyGiven(relTypes)) => schema.forRelationship(CTRelationship(relTypes.map(_.name)))
-  }
 }
 

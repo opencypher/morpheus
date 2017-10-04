@@ -17,12 +17,16 @@ package org.opencypher.caps.impl.spark.physical
 
 import java.net.URI
 
+import org.apache.spark.sql.functions.monotonically_increasing_id
+import org.apache.spark.sql.{Column, DataFrame, Dataset, functions}
 import org.opencypher.caps.api.expr._
+import org.opencypher.caps.api.record.{OpaqueField, ProjectedExpr, RecordHeader}
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
-import org.opencypher.caps.api.types.CTRelationship
+import org.opencypher.caps.api.types.{CTInteger, CTRelationship, CTString}
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.flat.FlatOperator
-import org.opencypher.caps.impl.logical.{LogicalExternalGraph, LogicalPatternGraph}
+import org.opencypher.caps.impl.logical.{ConstructedRelationship, GraphOfPattern, LogicalExternalGraph, LogicalPatternGraph}
+import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.{DirectCompilationStage, flat}
 import org.opencypher.caps.ir.api.block.SortItem
@@ -86,15 +90,71 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
       case flat.Project(expr, in, header) =>
         inner(in).project(expr, header)
 
-      case flat.ProjectGraph(graph, in, header) => graph match {
+      case flat.ProjectGraph(graph, in, _) => graph match {
         case LogicalExternalGraph(name, uri, _) =>
           val capsGraph = context.resolver(uri)
           inner(in).withGraph(name -> capsGraph)
-        case LogicalPatternGraph(name, pattern, schema) =>
+        case LogicalPatternGraph(name, targetSchema, GraphOfPattern(toCreate, toRetain)) =>
           // TODO: Plan sharing
           val input = inner(in)
-          val records = input.records
-          val patternGraph = CAPSGraph.create(records, schema)(records.caps)
+          val PhysicalResult(retainedInput, _) = input.select(toRetain)
+          val retainedHeader = retainedInput.details.header
+          val retainedData = retainedInput.details.data
+          implicit val session = retainedInput.details.caps
+
+          // TODO: Add node creation, then refactor creation code to be more reusable/general/elegant
+          val baseTable: CAPSRecords = if (toCreate.isEmpty) {
+            retainedInput
+          } else {
+            // we need to create the missing entities
+            val (extendedHeader, extendedDataset): (RecordHeader, DataFrame) = toCreate.
+              foldLeft(retainedHeader -> retainedData) {
+              case ((headerSoFar, dataSoFar), ConstructedRelationship(rel, source, target, typ)) =>
+                // need four new columns: source, target, id, type
+                val sourceExpr = ProjectedExpr(StartNode(rel)(CTInteger))
+                val targetExpr = ProjectedExpr(EndNode(rel)(CTInteger))
+                val relExpr = OpaqueField(rel)
+                val typeExpr = ProjectedExpr(OfType(rel)(CTString))
+
+                // source and target are present: just copy
+                val sourceCol = {
+                  val slot = retainedHeader.slotFor(source)
+                  val col = retainedInput.data.col(SparkColumnName.of(slot))
+                  col.as(SparkColumnName.of(sourceExpr))
+                }
+                val targetCol = {
+                  val slot = retainedHeader.slotFor(target)
+                  val col = retainedInput.data.col(SparkColumnName.of(slot))
+                  col.as(SparkColumnName.of(targetExpr))
+                }
+                // id needs to be generated
+                val idCol = {
+                  val relIdOffset = 100000000000L
+                  val firstIdCol = functions.lit(relIdOffset)
+                  val col = monotonically_increasing_id() + firstIdCol
+                  col.as(SparkColumnName.of(relExpr))
+                }
+                // type is an input
+                val typCol = {
+                  val col = org.apache.spark.sql.functions.lit(typ)
+                  col.as(SparkColumnName.of(typeExpr))
+                }
+
+                import org.opencypher.caps.impl.syntax.header._
+
+                headerSoFar.update(addContents(Seq(sourceExpr, targetExpr, relExpr, typeExpr)))._1 ->
+                  (dataSoFar.
+                    withColumn(SparkColumnName.of(sourceExpr), sourceCol).
+                    withColumn(SparkColumnName.of(targetExpr), targetCol).
+                    withColumn(SparkColumnName.of(relExpr), idCol).
+                    withColumn(SparkColumnName.of(typeExpr), typCol))
+              case _ =>
+                Raise.notYetImplemented("creation of anything but relationships")
+            }
+            CAPSRecords.create(extendedHeader, extendedDataset)
+          }
+
+          val patternGraph = CAPSGraph.create(baseTable, targetSchema)
           input.withGraph(name -> patternGraph)
       }
 

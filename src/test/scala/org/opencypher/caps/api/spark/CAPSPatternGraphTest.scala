@@ -20,7 +20,7 @@ import org.opencypher.caps.api.expr.{HasLabel, Property, Var}
 import org.opencypher.caps.api.record.{OpaqueField, ProjectedExpr, ProjectedField, RecordHeader}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTRelationship, CTString}
-import org.opencypher.caps.api.value.{CypherMap, CypherNode, CypherString}
+import org.opencypher.caps.api.value.{CypherMap, CypherString}
 import org.opencypher.caps.impl.record.CAPSRecordHeader
 import org.opencypher.caps.impl.syntax.header.{addContents, _}
 import org.opencypher.caps.ir.api.global.{Label, PropertyKey}
@@ -60,6 +60,27 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
       CypherMap("n.name" -> CypherString("Max"))
     ))
   }
+
+  // TODO: Generate names for GRAPH OF pattern parts in frontend
+  test("project pattern graph with created relationship") {
+    val inputGraph = TestGraph(`:Person` + `:KNOWS`).graph
+
+    val person = inputGraph.cypher(
+      """MATCH (a:Person:Swedish)-[r]->(b)
+        |RETURN GRAPH result OF (a)-[foo:SWEDISH_KNOWS]->(b)
+      """.stripMargin)
+
+    person.graphs("result").cypher("MATCH ()-[:SWEDISH_KNOWS]->(n) RETURN n.name").
+      recordsWithDetails.toLocalScalaIterator.toSet should equal(Set(
+      CypherMap("n.name" -> CypherString("Stefan")),
+      CypherMap("n.name" -> CypherString("Martin")),
+      CypherMap("n.name" -> CypherString("Max"))
+    ))
+  }
+
+  //TODO: Test creating a label
+  //TODO: Test creating literal property value
+  //TODO: Test creating computed property value
 
   test("Node scan from single node CAPSRecords") {
     val inputGraph = TestGraph(`:Person`).graph

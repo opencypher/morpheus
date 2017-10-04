@@ -51,6 +51,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
   implicit final class RichCypherResult(val prev: PhysicalResult) {
 
+    // TODO: Propagate this header -- don't just drop it
     def nodeScan(inGraph: LogicalGraph, v: Var, labelPredicates: EveryNode, header: RecordHeader)
     : PhysicalResult = {
       val graph = prev.graphs(inGraph.name)
@@ -214,6 +215,12 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
         CAPSRecords.create(header, newData)(subject.caps)
       }
+
+    def select(fields: Set[Var]): PhysicalResult = prev.mapRecordsWithDetails { (subject: CAPSRecords) =>
+      val targetHeader = subject.header.select(fields)
+      val PhysicalResult(selectedRecords, _) = select(fields.toIndexedSeq, targetHeader)
+      selectedRecords
+    }
 
     def typeFilter(rel: Var, types: AnyGiven[RelType], header: RecordHeader): PhysicalResult = {
       if (types.elements.isEmpty) prev

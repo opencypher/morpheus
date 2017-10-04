@@ -25,4 +25,6 @@ package object util {
   type SuccessfulAdditiveUpdateResult[T] = SuccessfulUpdateResult[T] with AdditiveUpdateResult[T]
 
   implicit def toVar(f: IRField): Var = Var(f.name)(f.cypherType)
+
+  implicit def toVars(fields: Set[IRField]): Set[Var] = fields.map(toVar)
 }

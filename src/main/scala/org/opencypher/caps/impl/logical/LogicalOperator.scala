@@ -46,9 +46,18 @@ final case class LogicalExternalGraph(name: String, uri: URI, schema: Schema) ex
   override def toString: String = s"GRAPH $name AT $uri"
 }
 
-final case class LogicalPatternGraph(name: String, pattern: Pattern[Expr], schema: Schema) extends LogicalGraph {
+final case class LogicalPatternGraph(name: String, schema: Schema, pattern: GraphOfPattern) extends LogicalGraph {
   override def toString: String = s"GRAPH $name OF $pattern"
 }
+
+final case class GraphOfPattern(toCreate: Set[ConstructedEntity], toRetain: Set[Var])
+
+trait ConstructedEntity {
+  def v: Var
+}
+
+//case class ConstructedNode(v: Var) extends ConstructedEntity
+case class ConstructedRelationship(v: Var, source: Var, target: Var, typ: String) extends ConstructedEntity
 
 sealed trait StackingLogicalOperator extends LogicalOperator {
   def in: LogicalOperator
@@ -125,7 +134,7 @@ final case class ExpandSource(source: Var, rel: Var, types: EveryRelationship, t
                              (override val solved: SolvedQueryModel[Expr])
   extends ExpandOperator {
 
-  override val fields: Set[Var] = lhs.fields ++ rhs.fields
+  override val fields: Set[Var] = lhs.fields ++ rhs.fields + rel
 
   override def lhs: LogicalOperator = sourceOp
   override def rhs: LogicalOperator = targetOp
