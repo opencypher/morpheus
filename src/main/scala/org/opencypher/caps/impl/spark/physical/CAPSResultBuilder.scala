@@ -15,12 +15,16 @@
  */
 package org.opencypher.caps.impl.spark.physical
 
+import org.opencypher.caps.api.graph.CypherPlanInfo
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSResult}
+import org.opencypher.caps.impl.logical.LogicalOperator
 
 object CAPSResultBuilder {
-  def from(internal: PhysicalResult): CAPSResult = new CAPSResult {
+  def from(internal: PhysicalResult, plan: LogicalOperator): CAPSResult = new CAPSResult {
 
     override def records: CAPSRecords = internal.records
     override def graphs: Map[String, CAPSGraph] = internal.graphs
+
+    override def explain: CypherPlanInfo = CypherPlanInfo(plan)
   }
 }

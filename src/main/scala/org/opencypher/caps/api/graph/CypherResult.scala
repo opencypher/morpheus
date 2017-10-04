@@ -16,6 +16,8 @@
 package org.opencypher.caps.api.graph
 
 import org.opencypher.caps.api.record.{CypherPrintable, CypherRecords}
+import org.opencypher.caps.api.util.PrintOptions
+import org.opencypher.caps.impl.logical.LogicalOperator
 
 trait CypherResult extends CypherPrintable {
 
@@ -30,4 +32,14 @@ trait CypherResult extends CypherPrintable {
 
   def graphs: Map[String, Graph]
   def records: Records
+
+  def explain: CypherPlanInfo
+}
+
+
+final case class CypherPlanInfo(plan: LogicalOperator) extends CypherPrintable {
+  override def toString: String = plan.pretty()
+
+  override def print(implicit options: PrintOptions): Unit =
+    options.stream.print(plan)
 }
