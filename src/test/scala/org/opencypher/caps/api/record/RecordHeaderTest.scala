@@ -27,6 +27,25 @@ import scala.language.implicitConversions
 
 class RecordHeaderTest extends BaseTestSuite {
 
+  test("select") {
+    val nSlots = Set(
+      OpaqueField('n),
+      ProjectedExpr(Property('n, PropertyKey("prop"))()),
+      ProjectedExpr(HasLabel('n, Label("Foo"))())
+    )
+    val pSlots = Set(
+      OpaqueField('p),
+      ProjectedExpr(Property('p, PropertyKey("prop"))())
+    )
+
+    val h1 = RecordHeader.empty.update(addContents((nSlots ++ pSlots).toSeq))._1
+
+    h1.select(Set('n)).slots.map(_.content).toSet should equal(nSlots)
+    h1.select(Set('p)).slots.map(_.content).toSet should equal(pSlots)
+    h1.select(Set('r)).slots.map(_.content).toSet should equal(Set.empty)
+    h1.select(Set('n, 'p, 'r)).slots.map(_.content).toSet should equal(nSlots ++ pSlots)
+  }
+
   test("Can add projected expressions") {
     val content = ProjectedExpr(TrueLit())
     val (result, Added(slot)) = RecordHeader.empty.update(addContent(content))
