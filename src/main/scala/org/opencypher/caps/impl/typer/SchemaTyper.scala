@@ -93,8 +93,14 @@ object SchemaTyper {
             recordType(v -> varTyp) >> recordAndUpdate(expr -> propType)
 
           case CTRelationship(types) =>
-            val keys = types.map(schema.relationshipKeys).reduceOption(_ ++ _)
-            val propType = keys.getOrElse(Map.empty).getOrElse(name, CTVoid)
+            val propType = if(types.isEmpty) {
+              schema.relationshipTypes.map(schema.relationshipKeys).foldLeft[CypherType](CTVoid) {
+                case (acc, next) => acc.join(next.getOrElse(name, CTVoid))
+              }
+            } else {
+              val keys = types.map(schema.relationshipKeys).reduceOption(_ ++ _)
+              keys.getOrElse(Map.empty).getOrElse(name, CTVoid)
+            }
             recordType(v -> varTyp) >> recordAndUpdate(expr -> propType)
 
           case CTMap =>
