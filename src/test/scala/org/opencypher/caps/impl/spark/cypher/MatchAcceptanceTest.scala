@@ -106,6 +106,7 @@ class MatchAcceptanceTest extends CAPSTestSuite {
         |RETURN a.name AS one, b.name AS two
       """.stripMargin)
 
+    // Then
     result.records.toMaps should equal(Bag(
       CypherMap("one" -> "Alice", "two" -> "Alice"),
       CypherMap("one" -> "Alice", "two" -> "Bob"),
@@ -131,9 +132,15 @@ class MatchAcceptanceTest extends CAPSTestSuite {
         |RETURN a.name AS one, b.name AS two
       """.stripMargin)
 
+    // Then
     result.records.toMaps should equal(Bag(
       CypherMap("one" -> "Alice", "two" -> "Alice"),
       CypherMap("one" -> "Bob", "two" -> "Bob")
     ))
+
+    result.explain.print
+
+    // TODO: Move to plan based testing
+    result.explain.toString should include("ValueJoin(predicates = [a.name :: STRING = b.name :: STRING]")
   }
 }

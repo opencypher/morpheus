@@ -174,6 +174,21 @@ final case class BoundedVarLengthExpand(source: Var, rel: Var, target: Var,
     copy(sourceOp = newLhs, targetOp = newRhs)(solved)
 }
 
+final case class ValueJoin(lhs: LogicalOperator, rhs: LogicalOperator, predicates: Set[org.opencypher.caps.api.expr.Equals])
+                          (override val solved: SolvedQueryModel[Expr])
+  extends BinaryLogicalOperator {
+
+  override def clone(newLhs: LogicalOperator, newRhs: LogicalOperator): ValueJoin =
+    copy(newLhs, newRhs)(solved)
+
+  override val fields: Set[Var] = lhs.fields ++ rhs.fields
+
+  override def pretty(depth: Int): String =
+    s"""${prefix(depth)} ValueJoin(predicates = ${predicates.mkString("[", ", ", "]")}
+       #${lhs.pretty(depth + 1)}
+       #${rhs.pretty(depth + 1)}""".stripMargin('#')
+}
+
 final case class ExpandInto(source: Var, rel: Var, types: EveryRelationship, target: Var, sourceOp: LogicalOperator)
                            (override val solved: SolvedQueryModel[Expr])
   extends ExpandOperator {

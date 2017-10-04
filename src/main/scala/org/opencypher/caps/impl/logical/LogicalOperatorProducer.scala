@@ -31,6 +31,10 @@ class LogicalOperatorProducer {
     CartesianProduct(lhs, rhs)(lhs.solved ++ rhs.solved)
   }
 
+  def planValueJoin(lhs: LogicalOperator, rhs: LogicalOperator, predicates: Set[org.opencypher.caps.api.expr.Equals]): ValueJoin = {
+    ValueJoin(lhs, rhs, predicates)(predicates.foldLeft(lhs.solved ++ rhs.solved) { case (solved, predicate) => solved.withPredicate(predicate) })
+  }
+
   def planBoundedVarLengthExpand(source: IRField, r: IRField, types: EveryRelationship, target: IRField, lower: Int, upper: Int, sourcePlan: LogicalOperator, targetPlan: LogicalOperator): BoundedVarLengthExpand = {
     val prevSolved = sourcePlan.solved ++ targetPlan.solved
 

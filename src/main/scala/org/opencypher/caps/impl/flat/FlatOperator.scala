@@ -86,6 +86,9 @@ final case class Optional(lhs: FlatOperator, rhs: FlatOperator, lhsHeader: Recor
   override def header: RecordHeader = rhsHeader
 }
 
+final case class ValueJoin(lhs: FlatOperator, rhs: FlatOperator, predicates: Set[org.opencypher.caps.api.expr.Equals], header: RecordHeader)
+  extends BinaryFlatOperator
+
 final case class ExpandSource(source: Var, rel: Var, types: EveryRelationship, target: Var,
                               sourceOp: FlatOperator, targetOp: FlatOperator, header: RecordHeader, relHeader: RecordHeader)
   extends BinaryFlatOperator {

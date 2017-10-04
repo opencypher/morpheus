@@ -144,6 +144,10 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     ExpandInto(source, rel, types, target, sourceOp, expandHeader, relHeader)
   }
 
+  def valueJoin(lhs: FlatOperator, rhs: FlatOperator, predicates: Set[org.opencypher.caps.api.expr.Equals]): FlatOperator = {
+    ValueJoin(lhs, rhs, predicates, lhs.header ++ rhs.header)
+  }
+
   def planSetSourceGraph(graph: LogicalGraph, prev: FlatOperator) = {
     SetSourceGraph(graph, prev, prev.header)
   }
