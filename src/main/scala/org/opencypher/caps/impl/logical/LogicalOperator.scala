@@ -52,7 +52,7 @@ final case class LogicalPatternGraph(name: String, schema: Schema, pattern: Grap
 
 final case class GraphOfPattern(toCreate: Set[ConstructedEntity], toRetain: Set[Var])
 
-trait ConstructedEntity {
+sealed trait ConstructedEntity {
   def v: Var
 }
 

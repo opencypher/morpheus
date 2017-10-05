@@ -262,13 +262,12 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         val entitiesToCreate = patternEntities -- boundEntities
 
         val entities: Set[ConstructedEntity] = entitiesToCreate.map { e =>
-          val connection = pattern.topology(e)
-
           pattern.entities(e) match {
             case EveryRelationship(relTypes) if relTypes.elements.size == 1 =>
+              val connection = pattern.topology(e)
               ConstructedRelationship(e, connection.source, connection.target, relTypes.elements.head.name)
             case EveryNode(_) =>
-              Raise.notYetImplemented("creation of nodes in GRAPH OF")
+              ConstructedNode(e)
             case _ =>
               Raise.impossible(s"could not construct entity from $e")
           }

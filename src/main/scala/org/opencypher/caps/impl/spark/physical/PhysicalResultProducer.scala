@@ -152,31 +152,50 @@ class PhysicalResultProducer(context: RuntimeContext) {
       val LogicalPatternGraph(name, targetSchema, GraphOfPattern(toCreate, toRetain)) = graph
       val PhysicalResult(retainedInput, _) = prev.select(toRetain)
 
-      val baseTable: CAPSRecords = if (toCreate.isEmpty) {
-        retainedInput
-      } else {
-        val columnsToAdd = createEntities(toCreate, retainedInput.details)
+      val baseTable =
+        if (toCreate.isEmpty) retainedInput
+        else createEntities(toCreate, retainedInput.details)
 
-        val newData = columnsToAdd.foldLeft(retainedInput.details.data) {
-          case (acc, (expr, col)) =>
-            acc.withColumn(context.columnName(expr), col)
-        }
-
-        val newHeader = retainedInput.details.header.update(
-          addContents(columnsToAdd.map(_._1).toSeq)
-        )._1
-
-        CAPSRecords.create(newHeader, newData)
-      }
       val patternGraph = CAPSGraph.create(baseTable, targetSchema)
       prev.withGraph(name -> patternGraph)
     }
 
-    private def createEntities(toCreate: Set[ConstructedEntity], records: CAPSRecords): Set[(SlotContent, Column)] = toCreate.flatMap {
-      case r: ConstructedRelationship =>
-        constructRel(r, records)
-      case _ =>
-        Raise.notYetImplemented("creation of anything but relationships")
+    private def createEntities(toCreate: Set[ConstructedEntity], records: CAPSRecords): CAPSRecords = {
+      val nodes = toCreate.collect { case c: ConstructedNode => c }
+      val rels = toCreate.collect { case r: ConstructedRelationship => r }
+
+      val nodesToCreate = nodes.flatMap(constructNode(_, records))
+      val recordsWithNodes = addEntitiesToRecords(nodesToCreate, records)
+
+      val relsToCreate = rels.flatMap(constructRel(_, recordsWithNodes))
+      addEntitiesToRecords(relsToCreate, recordsWithNodes)
+    }
+
+    private def addEntitiesToRecords(columnsToAdd: Set[(SlotContent, Column)], records: CAPSRecords) = {
+      val newData = columnsToAdd.foldLeft(records.data) {
+        case (acc, (expr, col)) =>
+          acc.withColumn(context.columnName(expr), col)
+      }
+
+      val newHeader = records.header.update(
+        addContents(columnsToAdd.map(_._1).toSeq)
+      )._1
+
+      CAPSRecords.create(newHeader, newData)
+    }
+
+    private def constructNode(node: ConstructedNode, records: CAPSRecords): (Set[(SlotContent, Column)]) = {
+      Set(OpaqueField(node.v) -> generateId)
+    }
+
+    private def generateId: Column = {
+      // id needs to be generated
+      // Limits the system to 500 mn partitions
+      // The first half of the id space is protected
+      // TODO: guarantee that all imported entities have ids in the protected range
+      val relIdOffset = 500L << 33
+      val firstIdCol = functions.lit(relIdOffset)
+      monotonically_increasing_id() + firstIdCol
     }
 
     private def constructRel(toConstruct: ConstructedRelationship, records: CAPSRecords): (Set[(SlotContent, Column)]) = {
@@ -197,15 +216,8 @@ class PhysicalResultProducer(context: RuntimeContext) {
       }
 
       // id needs to be generated
-      val relTuple = {
-        // Limits the system to 500 mn partitions
-        // The first half of the id space is protected
-        // TODO: guarantee that all imported entities have ids in the protected range
-        val relIdOffset = 500L << 33
-        val firstIdCol = functions.lit(relIdOffset)
-        val col = monotonically_increasing_id() + firstIdCol
-        OpaqueField(rel) -> col
-      }
+      val relTuple = OpaqueField(rel) -> generateId
+
       // type is an input
       val typeTuple = {
         val col = org.apache.spark.sql.functions.lit(typ)
