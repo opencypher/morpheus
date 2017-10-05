@@ -21,6 +21,7 @@ import org.opencypher.caps.api.expr._
 import org.opencypher.caps.ir.api.global.{Label, PropertyKey}
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTRelationship, CTString, _}
+import org.opencypher.caps.api.value.{CypherMap, CypherNode, Properties}
 import org.opencypher.caps.test.CAPSTestSuite
 
 class CAPSRecordsTest extends CAPSTestSuite {
@@ -128,5 +129,18 @@ class CAPSRecordsTest extends CAPSTestSuite {
 
     val records = CAPSRecords.create(header, data) // no exception is thrown
     records.data.select("int").collect() should equal(Array(Row(1), Row(2)))
+  }
+
+  test("toCypherMaps delegates to details") {
+    val g = TestGraph("(:Foo {p: 1L})")
+
+    val result = g.cypher("MATCH (n) WITH 5 - n.p + 1 AS b, n RETURN n, b")
+
+    result.records.toCypherMaps.collect().map(_.toString) should equal(Array(
+      CypherMap(
+        "n" -> CypherNode(0L, Seq("Foo"), Properties("p" -> 1)),
+        "b" -> 5
+      ).toString
+    ))
   }
 }

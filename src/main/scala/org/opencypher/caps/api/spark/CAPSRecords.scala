@@ -135,7 +135,7 @@ sealed abstract class CAPSRecords(
   def toCypherMaps: Dataset[CypherMap] = {
     import encoders._
 
-    data.map(rowToCypherMap(header))
+    details.data.map(rowToCypherMap(details.header))
   }
 }
 

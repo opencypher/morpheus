@@ -169,7 +169,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
 
     val graph = CAPSGraph.create(nodes, rs)
 
-    val results = graph.relationships("r").details.toCypherMaps
+    val results = graph.relationships("r").toCypherMaps
 
     results.collect().toSet should equal(Set(
       CypherMap("r" -> CypherRelationship(1000L, RelationshipData(10L, 20L, "FOO"))),
