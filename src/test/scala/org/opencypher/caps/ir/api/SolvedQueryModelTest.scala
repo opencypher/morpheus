@@ -31,7 +31,7 @@ class SolvedQueryModelTest extends IrTestSuite {
   test("add graphs") {
     val s = SolvedQueryModel.empty.withGraph('foo)
 
-    s.graphs should equal(Set(IRExternalGraph("foo", uri)))
+    s.graphs should equal(Set(IRNamedGraph("foo")))
   }
 
   test("add fields") {
@@ -68,9 +68,9 @@ class SolvedQueryModelTest extends IrTestSuite {
     val s = SolvedQueryModel.empty[Expr].withField('a).withFields('b, 'c)
     val p = Pattern.empty[Expr].withEntity('a, EveryNode).withEntity('b, EveryNode).withEntity('c, EveryNode)
 
-    s.solves('a) shouldBe true
-    s.solves('b) shouldBe true
-    s.solves('x) shouldBe false
+    s.solves(toField('a)) shouldBe true
+    s.solves(toField('b)) shouldBe true
+    s.solves(toField('x)) shouldBe false
     s.solves(p) shouldBe true
     s.solves(p.withEntity('x, EveryNode)) shouldBe false
   }

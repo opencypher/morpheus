@@ -134,10 +134,12 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
   }
 
   private def planGraphProjections(in: LogicalOperator, graphs: Set[IRGraph])(implicit context: LogicalPlannerContext): LogicalOperator = {
-    graphs.foldLeft(in) {
+    val graphsToProject = graphs.filterNot(in.solved.solves)
+
+    graphsToProject.foldLeft(in) {
       case (planSoFar, nextGraph) =>
         val logicalGraph = resolveGraph(nextGraph, in.sourceGraph.schema, in.fields)
-        ProjectGraph(logicalGraph, planSoFar)(planSoFar.solved.withGraph(nextGraph))
+        ProjectGraph(logicalGraph, planSoFar)(planSoFar.solved.withGraph(nextGraph.toNamedGraph))
     }
   }
 

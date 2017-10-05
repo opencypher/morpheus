@@ -162,6 +162,25 @@ class LogicalPlannerTest extends IrTestSuite {
     )
   }
 
+  test("do not project graphs multiple times") {
+    val query = """
+       |FROM GRAPH foo AT 'hdfs+csv://localhost/foo'
+       |FROM GRAPH bar AT 'hdfs+csv://localhost/bar'
+       |RETURN GRAPHS *
+      """.stripMargin
+
+    val ir = query.ir
+
+    val globals = ir.model.globals
+
+    val startOp: LogicalOperator = Start(LogicalExternalGraph("test", URI.create("test"), Schema.empty),Set.empty)(emptySqm)
+    val projectFoo: LogicalOperator = ProjectGraph(LogicalExternalGraph("foo", URI.create("test"), Schema.empty), startOp)(emptySqm)
+    val projectBar: LogicalOperator = ProjectGraph(LogicalExternalGraph("bar", URI.create("test"), Schema.empty), projectFoo)(emptySqm)
+    val select = Select(IndexedSeq.empty, Set("bar", "foo"), projectBar)(emptySqm)
+
+    plan(ir, globals) should equal(select)
+  }
+
   private val planner = new LogicalPlanner(new LogicalOperatorProducer)
 
   private def plan(ir: CypherQuery[Expr], globalsRegistry: GlobalsRegistry = GlobalsRegistry.empty, schema: Schema = Schema.empty): LogicalOperator =
