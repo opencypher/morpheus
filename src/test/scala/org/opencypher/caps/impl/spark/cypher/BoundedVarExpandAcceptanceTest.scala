@@ -178,9 +178,11 @@ class BoundedVarExpandAcceptanceTest extends CAPSTestSuite {
         |(b)-[:LIVES_IN]->(c)
       """.stripMargin)
 
-    // Change last b to x: et voila, it works
     val result = given.cypher(
-      "MATCH (a:Person)-[:LIVES_IN]->(c:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b) RETURN a.name, b.name, c.name"
+      """
+      |MATCH (a:Person)-[:LIVES_IN]->(c:City)<-[:LIVES_IN]-(b:Person),
+      |(a)-[:KNOWS*1..2]->(b) RETURN a.name, b.name, c.name
+      """.stripMargin
     )
 
     // Then
