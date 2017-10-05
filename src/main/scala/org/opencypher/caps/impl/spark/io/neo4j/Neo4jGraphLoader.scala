@@ -117,7 +117,6 @@ object Neo4jGraphLoader {
     new CAPSGraph {
 
       override val schema: Schema = context.schema
-      override val tokens: CAPSRecordsTokens = CAPSRecordsTokens(context.globals.tokens)
 
       override def session: CAPSSession = caps
 

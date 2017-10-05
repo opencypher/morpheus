@@ -89,7 +89,7 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
 
     val (stmt, extractedLiterals, semState) = parser.process(query)(CypherParser.defaultContext)
 
-    val globals = GlobalsExtractor(stmt, GlobalsRegistry.fromTokens(graph.tokens.registry))
+    val globals = GlobalsExtractor(stmt, GlobalsRegistry.empty)
     val GlobalsRegistry(tokens, constants) = globals
 
     val converted = extractedLiterals.mapValues(v => CypherValue(v))
@@ -174,7 +174,7 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
                    queryParameters: Map[String, CypherValue],
                    logicalPlan: LogicalOperator): CAPSResult = {
 
-    val globals = GlobalsRegistry.fromTokens(graph.tokens.registry)
+    val globals = GlobalsRegistry.empty
     val allParameters = queryParameters.map { case (k, v) => globals.constants.constantRefByName(k) -> v }
 
     plan(graph, records, globals.tokens, globals.constants, allParameters, logicalPlan)

@@ -26,12 +26,10 @@ case class CAPSUnionGraph(graphs: CAPSGraph*)
   override protected def graph: CAPSGraph = this
 
   private lazy val individualSchemas = graphs.map(_.schema)
-  private lazy val individualTokens = graphs.map(_.tokens)
 
-  override lazy val schema = individualSchemas.reduceOption(_ ++ _).getOrElse(Schema.empty)
-  override lazy val tokens = individualTokens.reduceOption(_ ++ _).getOrElse(CAPSTokens.empty)
+  override lazy val schema: Schema = individualSchemas.reduceOption(_ ++ _).getOrElse(Schema.empty)
 
-  override def nodes(name: String, nodeCypherType: CTNode) = {
+  override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
     val node = Var(name)(nodeCypherType)
     val targetHeader = RecordHeader.nodeFromSchema(node, schema)
     val nodeScans: Seq[CAPSRecords] = graphs
@@ -42,7 +40,7 @@ case class CAPSUnionGraph(graphs: CAPSGraph*)
     alignedScans.reduceOption(_ unionAll(targetHeader, _)).map(_.distinct).getOrElse(CAPSRecords.empty(targetHeader))
   }
 
-  override def relationships(name: String, relCypherType: CTRelationship) = {
+  override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
     val rel = Var(name)(relCypherType)
     val targetHeader = RecordHeader.relationshipFromSchema(rel, schema)
     val relScans: Seq[CAPSRecords] = graphs

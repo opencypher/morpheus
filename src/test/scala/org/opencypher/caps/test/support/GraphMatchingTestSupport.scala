@@ -121,8 +121,6 @@ trait GraphMatchingTestSupport {
         }
       }
 
-      override val tokens = CAPSRecordsTokens(TokenRegistry.fromSchema(schema))
-
       override def nodes(name: String, cypherType: CTNode): CAPSRecords = {
         val header = RecordHeader.nodeFromSchema(Var(name)(cypherType), schema, cypherType.labels)
 

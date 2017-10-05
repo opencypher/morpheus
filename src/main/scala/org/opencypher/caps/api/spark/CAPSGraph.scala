@@ -20,9 +20,7 @@ import org.opencypher.caps.api.graph.CypherGraph
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
-import org.opencypher.caps.impl.record.CAPSRecordsTokens
 import org.opencypher.caps.impl.spark.exception.Raise
-import org.opencypher.caps.ir.api.global.TokenRegistry
 
 trait CAPSGraph extends CypherGraph with Serializable {
 
@@ -32,8 +30,6 @@ trait CAPSGraph extends CypherGraph with Serializable {
   final override type Records = CAPSRecords
   final override type Session = CAPSSession
   final override type Result = CAPSResult
-
-  def tokens: CAPSRecordsTokens
 }
 
 object CAPSGraph {
@@ -41,32 +37,38 @@ object CAPSGraph {
   def empty(implicit caps: CAPSSession): CAPSGraph =
     new EmptyGraph() {
       override protected def graph = this
-
-      override def session = caps
-
-      override val tokens = CAPSRecordsTokens(TokenRegistry.empty)
+      override def session: CAPSSession = caps
     }
 
   def create(nodes: NodeScan, scans: GraphScan*)(implicit caps: CAPSSession): CAPSGraph = {
     val allScans = nodes +: scans
     val schema = allScans.map(_.schema).reduce(_ ++ _)
-    val tokens = CAPSRecordsTokens(TokenRegistry.fromSchema(schema))
-    new CAPSScanGraph(allScans, schema, tokens)
+    new CAPSScanGraph(allScans, schema)
   }
 
   def create(records: CAPSRecords, schema: Schema)
     (implicit caps: CAPSSession): CAPSGraph = {
 
-    new CAPSPatternGraph(records, schema, CAPSRecordsTokens(TokenRegistry.fromSchema(schema)))
+    new CAPSPatternGraph(records, schema)
   }
 
-  def createLazy(theSchema: Schema)(loadGraph: => CAPSGraph)(implicit caps: CAPSSession) = new CAPSGraph {
+  def createLazy(theSchema: Schema)(loadGraph: => CAPSGraph)(implicit caps: CAPSSession): CAPSGraph {
+    def relationships(name: String, relCypherType: CTRelationship): CAPSRecords
+
+    def nodes(name: String, nodeCypherType: CTNode): CAPSRecords
+
+    def union(other: CAPSGraph): CAPSGraph
+
+    def session: CAPSSession
+
+    val graph: CAPSGraph
+
+    def schema: Schema
+  } = new CAPSGraph {
     override protected lazy val graph: CAPSGraph = {
       val g = loadGraph
       if (g.schema == theSchema) g else Raise.schemaMismatch()
     }
-
-    override def tokens: CAPSRecordsTokens = graph.tokens
 
     override def session: CAPSSession = caps
 
@@ -84,13 +86,12 @@ object CAPSGraph {
 
   sealed abstract class EmptyGraph(implicit val caps: CAPSSession) extends CAPSGraph {
 
-    override val schema = Schema.empty
-    override val tokens = CAPSRecordsTokens(TokenRegistry.fromSchema(schema))
+    override val schema: Schema = Schema.empty
 
-    override def nodes(name: String, cypherType: CTNode) =
+    override def nodes(name: String, cypherType: CTNode): CAPSRecords =
       CAPSRecords.empty(RecordHeader.from(OpaqueField(Var(name)(cypherType))))
 
-    override def relationships(name: String, cypherType: CTRelationship) =
+    override def relationships(name: String, cypherType: CTRelationship): CAPSRecords =
       CAPSRecords.empty(RecordHeader.from(OpaqueField(Var(name)(cypherType))))
 
     override def union(other: CAPSGraph): CAPSGraph = other

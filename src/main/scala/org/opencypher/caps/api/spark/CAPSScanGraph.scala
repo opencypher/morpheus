@@ -23,7 +23,7 @@ import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType, Defini
 import org.opencypher.caps.impl.record.CAPSRecordsTokens
 import org.opencypher.caps.impl.spark.exception.Raise
 
-class CAPSScanGraph(val scans: Seq[GraphScan], val schema: Schema, override val tokens: CAPSRecordsTokens)
+class CAPSScanGraph(val scans: Seq[GraphScan], val schema: Schema)
                    (implicit val session: CAPSSession) extends CAPSGraph {
 
   // TODO: Caching?
