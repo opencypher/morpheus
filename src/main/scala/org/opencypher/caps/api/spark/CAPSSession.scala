@@ -100,7 +100,7 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
     val paramsAndTypes = GlobalsExtractor.paramWithTypes(stmt)
 
     print("IR ... ")
-    val ir = IRBuilder(stmt)(IRBuilderContext.initial(query, globals, graph.schema, semState, ambientGraph, paramsAndTypes))
+    val ir = IRBuilder(stmt)(IRBuilderContext.initial(query, globals, semState, ambientGraph, paramsAndTypes, sourceAt))
     println("Done!")
 
     print("Logical plan ... ")
@@ -135,7 +135,7 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
 
     graphSourceHandler.mountSourceAt(graphSource, uri)(self)
 
-    IRExternalGraph(name, uri)
+    IRExternalGraph(name, ambient.schema, uri)
   }
 
   private def planStart(graph: Graph, fields: Set[Var]): LogicalOperator = {

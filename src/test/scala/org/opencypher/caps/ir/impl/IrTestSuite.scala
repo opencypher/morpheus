@@ -26,7 +26,6 @@ import org.opencypher.caps.ir.api.global.GlobalsRegistry
 import org.opencypher.caps.ir.api.pattern.{AllGiven, Pattern}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.CypherType
-import org.opencypher.caps.impl.flat.TestGraph
 import org.opencypher.caps.ir.impl.global.GlobalsExtractor
 import org.opencypher.caps.impl.logical.{LogicalExternalGraph, Start}
 import org.opencypher.caps.impl.parse.CypherParser
@@ -36,7 +35,7 @@ import scala.language.implicitConversions
 
 abstract class IrTestSuite extends BaseTestSuite {
   val leafRef = BlockRef("leaf")
-  val testGraph = IRExternalGraph("test", URI.create("test"))
+  val testGraph = IRExternalGraph("test", Schema.empty, URI.create("test"))
   def leafBlock() = SourceBlock[Expr](testGraph)
   def leafPlan = Start(LogicalExternalGraph(testGraph.name, testGraph.uri, Schema.empty), Set.empty)(SolvedQueryModel.empty)
 
@@ -76,7 +75,7 @@ abstract class IrTestSuite extends BaseTestSuite {
       where = AllGiven[Expr](),
       source = testGraph
     )
-    val model = QueryModel(result, GlobalsRegistry.empty, blocks, Map(graphBlockRef -> Schema.empty), Map.empty)
+    val model = QueryModel(result, GlobalsRegistry.empty, blocks, Map.empty)
     CypherQuery(QueryInfo("test"), model)
   }
 
@@ -94,14 +93,14 @@ abstract class IrTestSuite extends BaseTestSuite {
     // TODO: SemCheck
     def ir(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
-      IRBuilder(stmt)(IRBuilderContext.initial(queryText, GlobalsExtractor(stmt), schema, SemanticState.clean, testGraph, Map.empty))
+      IRBuilder(stmt)(IRBuilderContext.initial(queryText, GlobalsExtractor(stmt), SemanticState.clean, testGraph, Map.empty, ???))
     }
 
     // TODO: SemCheck
     def irWithParams(params: (String, CypherType)*)(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
       val knownTypes: Map[Expression, CypherType] = params.map(p => Parameter(p._1, symbols.CTAny)(InputPosition.NONE) -> p._2).toMap
-      IRBuilder(stmt)(IRBuilderContext.initial(queryText, GlobalsExtractor(stmt), schema, SemanticState.clean, testGraph, knownTypes))
+      IRBuilder(stmt)(IRBuilderContext.initial(queryText, GlobalsExtractor(stmt), SemanticState.clean, testGraph, knownTypes, ???))
     }
   }
 }

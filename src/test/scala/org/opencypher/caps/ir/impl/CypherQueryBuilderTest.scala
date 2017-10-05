@@ -17,6 +17,7 @@ package org.opencypher.caps.ir.impl
 
 import org.opencypher.caps.{toField, _}
 import org.opencypher.caps.api.expr.{Expr, HasLabel, Property, Var}
+import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.ir.api.block._
 import org.opencypher.caps.ir.api.global.GlobalsRegistry
 import org.opencypher.caps.ir.api.pattern._
@@ -202,6 +203,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
           map shouldBe empty
           graphs shouldBe Set(IRPatternGraph(
             "moo",
+            Schema.empty,
             Pattern(
               Map(nodeA -> EveryNode, nodeB -> EveryNode, rel -> EveryRelationship(AnyOf(relTypeByName("TEST")))),
               Map(rel -> DirectedRelationship(nodeA, nodeB)))))
@@ -211,7 +213,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
         case NoWhereBlock(ResultBlock(deps, items, _, _, _, _)) =>
           deps should equal(Set(projectRef))
           items.fields shouldBe empty
-          items.graphs should equal(Set(IRNamedGraph("moo")))
+          items.graphs should equal(Set(IRNamedGraph("moo", Schema.empty)))
       }
 
       model.requirements should equal(Map(

@@ -17,7 +17,6 @@ package org.opencypher.caps.ir.api
 
 import java.net.URI
 
-import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.ir.api.block._
 import org.opencypher.caps.ir.api.global.GlobalsRegistry
 import org.opencypher.caps.ir.api.pattern._
@@ -29,7 +28,6 @@ final case class QueryModel[E](
   result: ResultBlock[E],
   globals: GlobalsRegistry,
   blocks: Map[BlockRef, Block[E]],
-  schemas: Map[BlockRef, Schema],
   graphs: Map[String, URI]
 ) {
 

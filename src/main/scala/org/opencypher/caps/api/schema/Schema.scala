@@ -17,6 +17,7 @@ package org.opencypher.caps.api.schema
 
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.common.{Verifiable, Verified}
+import org.opencypher.caps.ir.api.pattern._
 
 import scala.language.implicitConversions
 
@@ -29,6 +30,17 @@ object Schema {
     impliedLabels = ImpliedLabels(Map.empty),
     labelCombinations = LabelCombinations(Set.empty)
   )
+
+  def forEntities(schema: Schema, entities: Iterable[EveryEntity]): Schema = {
+    entities
+      .map(entitySchema(schema))
+      .foldLeft(Schema.empty)(_ ++ _)
+  }
+
+  private def entitySchema(schema: Schema)(entity: EveryEntity): Schema = entity match {
+    case EveryNode(AllGiven(labels)) => schema.forNode(CTNode(labels.map(_.name)))
+    case EveryRelationship(AnyGiven(relTypes)) => schema.forRelationship(CTRelationship(relTypes.map(_.name)))
+  }
 }
 
 object PropertyKeyMap {
