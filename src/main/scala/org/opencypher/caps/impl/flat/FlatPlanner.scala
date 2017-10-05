@@ -75,7 +75,7 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
         val types: Set[RelType] = relTypeFromList(edgeList.cypherType).map(context.tokens.relTypeByName)
         val edgeScan = producer.varLengthEdgeScan(edgeList, EveryRelationship(AnyGiven(types)), producer.planStart(input.sourceGraph, Set.empty))
         producer.boundedVarExpand(edgeScan.edge, edgeList, target, lower, upper, initVarExpand,
-          edgeScan, process(targetOp))
+          edgeScan, process(targetOp), isExpandInto = sourceOp == targetOp)
 
       case logical.Optional(lhs, rhs) =>
         producer.planOptional(process(lhs), process(rhs))
