@@ -323,6 +323,28 @@ class PhysicalResultProducer(context: RuntimeContext) {
       }
     }
 
+    def valueJoin(rhs: PhysicalResult, predicates: Set[org.opencypher.caps.api.expr.Equals], header: RecordHeader)
+    : PhysicalResult = {
+      val leftHeader = prev.records.details.header
+      val rightHeader = rhs.records.details.header
+      val slots = predicates.map { p => leftHeader.slotsFor(p.lhs).head -> rightHeader.slotsFor(p.rhs).head }.toSeq
+      prev.mapRecordsWithDetails(join(rhs.records.details, header, slots: _*)())
+    }
+
+    private def join(rhs: CAPSRecords, header: RecordHeader, joinSlots: (RecordSlot, RecordSlot)*)
+             (joinType: String = "inner", deduplicate: Boolean = false)
+    : CAPSRecords => CAPSRecords = {
+
+      val lhsData = prev.records.details.toDF()
+      val rhsData = rhs.details.toDF()
+
+      val joinCols = joinSlots.map(pair =>
+        lhsData.col(context.columnName(pair._1)) -> rhsData.col(context.columnName(pair._2))
+      )
+
+      join(rhsData, header, joinCols: _*)(joinType, deduplicate)
+    }
+
     def optional(rhs: PhysicalResult, lhsHeader: RecordHeader, rhsHeader: RecordHeader): PhysicalResult = {
       val commonFields = rhsHeader.fields.intersect(lhsHeader.fields)
       val rhsData = rhs.records.details.toDF()
@@ -357,20 +379,6 @@ class PhysicalResultProducer(context: RuntimeContext) {
       val joinCols = joinColumnMapping.map(t => t._1 -> reducedRhsData.col(t._3))
 
       prev.mapRecordsWithDetails(join(reducedRhsData, rhsHeader, joinCols: _*)("leftouter", deduplicate = true))
-    }
-
-    private def join(rhs: CAPSRecords, header: RecordHeader, joinSlots: (RecordSlot, RecordSlot)*)
-                    (joinType: String = "inner", deduplicate: Boolean = false)
-                    : CAPSRecords => CAPSRecords = {
-
-      val lhsData = prev.records.details.toDF()
-      val rhsData = rhs.details.toDF()
-
-      val joinCols = joinSlots.map(pair =>
-        lhsData.col(context.columnName(pair._1)) -> rhsData.col(context.columnName(pair._2))
-      )
-
-      join(rhsData, header, joinCols: _*)(joinType, deduplicate)
     }
 
     private def join(rhsData: DataFrame, header: RecordHeader, joinCols: (Column, Column)*)

@@ -30,4 +30,8 @@ trait CypherResult extends CypherPrintable {
 
   def graphs: Map[String, Graph]
   def records: Records
+
+  def explain: CypherResultPlan
 }
+
+

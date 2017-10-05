@@ -36,8 +36,8 @@ import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvGraphSourceFactory
 import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraphSourceFactory
 import org.opencypher.caps.impl.spark.io.session.SessionGraphSourceFactory
 import org.opencypher.caps.impl.spark.physical.{CAPSResultBuilder, PhysicalPlanner, PhysicalPlannerContext}
-import org.opencypher.caps.ir.api.{CypherQuery, ExternalGraph, IRField, NamedGraph}
 import org.opencypher.caps.ir.api.global.{ConstantRef, ConstantRegistry, GlobalsRegistry, TokenRegistry}
+import org.opencypher.caps.ir.api.{ExternalGraph, IRField}
 import org.opencypher.caps.ir.impl.global.GlobalsExtractor
 import org.opencypher.caps.ir.impl.{IRBuilder, IRBuilderContext}
 
@@ -200,7 +200,7 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
     val physicalResult = physicalPlanner(flatPlan)(physicalPlannerContext)
     println("Done!")
 
-    CAPSResultBuilder.from(physicalResult)
+    CAPSResultBuilder.from(physicalResult, logicalPlan)
   }
 }
 

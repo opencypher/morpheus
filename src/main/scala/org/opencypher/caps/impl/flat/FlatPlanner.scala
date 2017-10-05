@@ -64,6 +64,9 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
       case logical.ExpandInto(source, rel, types, target, sourceOp) =>
         producer.expandInto(source, rel, types, target, input.sourceGraph.schema, process(sourceOp))
 
+      case logical.ValueJoin(lhs, rhs, predicates) =>
+        producer.valueJoin(process(lhs), process(rhs), predicates)
+
       case logical.Start(graph, fields) =>
         producer.planStart(graph, fields)
 

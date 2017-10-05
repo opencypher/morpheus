@@ -13,18 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.spark.physical
+package org.opencypher.caps.api.graph
 
-import org.opencypher.caps.api.graph.CypherResultPlan
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSResult}
+import org.opencypher.caps.api.record.CypherPrintable
+import org.opencypher.caps.api.util.PrintOptions
 import org.opencypher.caps.impl.logical.LogicalOperator
 
-object CAPSResultBuilder {
-  def from(internal: PhysicalResult, plan: LogicalOperator): CAPSResult = new CAPSResult {
-
-    override def records: CAPSRecords = internal.records
-    override def graphs: Map[String, CAPSGraph] = internal.graphs
-
-    override def explain: CypherResultPlan = CypherResultPlan(plan)
-  }
+final case class CypherResultPlan(plan: LogicalOperator) extends CypherPrintable {
+  override def print(implicit options: PrintOptions): Unit =
+    options.stream.print(plan.pretty())
 }

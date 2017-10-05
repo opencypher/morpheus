@@ -276,10 +276,20 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
           filteredPlan
       }
       val result = plans.reduceOption { (lhs, rhs) =>
-        val combinedPlan = producer.planCartesianProduct(lhs, rhs)
-        val predicates = where.filter(_.evaluable(combinedPlan.fields)).filterNot(combinedPlan.solved.predicates)
-        val filteredPlan = planFilter(combinedPlan, predicates)
-        filteredPlan
+        val fieldsInScope = lhs.fields ++ rhs.fields
+        val solvedPredicates = lhs.solved.predicates ++ rhs.solved.predicates
+        val predicates = where.filter(_.evaluable(fieldsInScope)).filterNot(solvedPredicates)
+        val (joinPredicates, otherPredicates) = predicates.flatPartition { case expr: org.opencypher.caps.api.expr.Equals => expr }
+        if (joinPredicates.isEmpty) {
+          val combinedPlan = producer.planCartesianProduct(lhs, rhs)
+          val filteredPlan = planFilter(combinedPlan, predicates)
+          filteredPlan
+        } else {
+          val (leftIn, rightIn) = joinPredicates.elements.foldLeft((lhs, rhs)) {
+            case ((l, r), predicate) => producer.projectExpr(predicate.lhs, l) -> producer.projectExpr(predicate.rhs, r)
+          }
+          producer.planValueJoin(leftIn, rightIn, joinPredicates.elements)
+        }
       }
       result.getOrElse(Raise.invalidOrUnsupportedPattern("empty pattern"))
     }

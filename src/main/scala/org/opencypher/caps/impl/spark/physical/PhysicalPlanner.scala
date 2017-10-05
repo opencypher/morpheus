@@ -102,6 +102,9 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
         case _ => inner(in).filter(expr, header)
       }
 
+      case flat.ValueJoin(lhs, rhs, predicates, header) =>
+        inner(lhs).valueJoin(inner(rhs), predicates, header)
+
       case flat.Distinct(in, header) =>
         inner(in).distinct(header)
 
