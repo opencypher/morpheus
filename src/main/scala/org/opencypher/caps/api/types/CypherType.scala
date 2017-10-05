@@ -559,28 +559,67 @@ private[caps] object MaterialDefiniteCypherType {
     self: MaterialDefiniteCypherType =>
 
     override val nullable: NullableDefiniteCypherType = self match {
-      case CTString => CTStringOrNull // workaround]
+        // TODO: figure out why the previous anonymous class impl here sometimes didn't work
+        // it didn't return the singleton on .material, and in some cases was not
+        // equal to another instance of itself
+      case CTString => CTStringOrNull
       case CTInteger => CTIntegerOrNull
-    // TODO: This causes some nullable types to be non-equal ?!
-      case x => new NullableDefiniteCypherType {
-        override def material: DefaultOrNull with MaterialDefiniteCypherType = self
-
-        override def name: String = self + "?"
-      }
+      case CTBoolean => CTBooleanOrNull
+      case CTAny => CTAnyOrNull
+      case CTNumber => CTNumberOrNull
+      case CTFloat => CTFloatOrNull
+      case CTMap => CTMapOrNull
+      case CTPath => CTPathOrNull
     }
   }
 }
 
-case object CTIntegerOrNull extends NullableDefiniteCypherType {
+private[caps] case object CTIntegerOrNull extends NullableDefiniteCypherType {
   override def name: String = CTInteger + "?"
 
   override def material: CTInteger.type = CTInteger
 }
 
-case object CTStringOrNull extends NullableDefiniteCypherType {
+private[caps] case object CTStringOrNull extends NullableDefiniteCypherType {
   override def name: String = CTString + "?"
 
   override def material: CTString.type = CTString
+}
+
+private[caps] case object CTBooleanOrNull extends NullableDefiniteCypherType {
+  override def name: String = CTBoolean + "?"
+
+  override def material: CTBoolean.type = CTBoolean
+}
+
+private[caps] case object CTAnyOrNull extends NullableDefiniteCypherType {
+  override def name: String = CTAny + "?"
+
+  override def material: CTAny.type = CTAny
+}
+
+private[caps] case object CTNumberOrNull extends NullableDefiniteCypherType {
+  override def name: String = CTNumber + "?"
+
+  override def material: CTNumber.type = CTNumber
+}
+
+private[caps] case object CTFloatOrNull extends NullableDefiniteCypherType {
+  override def name: String = CTFloat + "?"
+
+  override def material: CTFloat.type = CTFloat
+}
+
+private[caps] case object CTMapOrNull extends NullableDefiniteCypherType {
+  override def name: String = CTMap + "?"
+
+  override def material: CTMap.type = CTMap
+}
+
+private[caps] case object CTPathOrNull extends NullableDefiniteCypherType {
+  override def name: String = CTPath + "?"
+
+  override def material: CTPath.type = CTPath
 }
 
 sealed private[caps] trait MaterialDefiniteCypherType extends MaterialCypherType with DefiniteCypherType {
