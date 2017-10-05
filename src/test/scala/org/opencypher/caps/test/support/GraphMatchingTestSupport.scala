@@ -124,7 +124,7 @@ trait GraphMatchingTestSupport {
       override val tokens = CAPSRecordsTokens(TokenRegistry.fromSchema(schema))
 
       override def nodes(name: String, cypherType: CTNode): CAPSRecords = {
-        val header = RecordHeader.nodeFromSchema(Var(name)(cypherType), schema, tokens.registry, cypherType.labels)
+        val header = RecordHeader.nodeFromSchema(Var(name)(cypherType), schema, cypherType.labels)
 
         val data = {
           val nodes = queryGraph.getVertices.asScala
@@ -157,7 +157,7 @@ trait GraphMatchingTestSupport {
 
       override def relationships(name: String, cypherType: CTRelationship): CAPSRecords = {
 
-        val header = RecordHeader.relationshipFromSchema(Var(name)(cypherType), schema, tokens.registry)
+        val header = RecordHeader.relationshipFromSchema(Var(name)(cypherType), schema)
 
         val data = {
           val rels = queryGraph.getEdges.asScala

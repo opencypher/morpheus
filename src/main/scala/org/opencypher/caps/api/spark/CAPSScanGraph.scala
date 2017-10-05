@@ -42,7 +42,7 @@ class CAPSScanGraph(val scans: Seq[GraphScan], val schema: Schema, override val 
     val node = Var(name)(nodeCypherType)
     val selectedScans = nodeEntityScans.scans(nodeCypherType)
     val schema = selectedScans.map(_.schema).foldLeft(Schema.empty)(_ ++ _)
-    val targetNodeHeader = RecordHeader.nodeFromSchema(node, schema, tokens.registry)
+    val targetNodeHeader = RecordHeader.nodeFromSchema(node, schema)
 
     val scanRecords: Seq[CAPSRecords] = selectedScans.map(_.records)
     val alignedRecords = scanRecords.map(GraphScan.align(_, node, targetNodeHeader))
@@ -53,7 +53,7 @@ class CAPSScanGraph(val scans: Seq[GraphScan], val schema: Schema, override val 
     val rel = Var(name)(relCypherType)
     val selectedScans = relEntityScans.scans(relCypherType)
     val schema = selectedScans.map(_.schema).foldLeft(Schema.empty)(_ ++ _)
-    val targetRelHeader = RecordHeader.relationshipFromSchema(rel, schema, tokens.registry)
+    val targetRelHeader = RecordHeader.relationshipFromSchema(rel, schema)
 
     val scanRecords = selectedScans.map(_.records)
     val alignedRecords = scanRecords.map(GraphScan.align(_, rel, targetRelHeader))
