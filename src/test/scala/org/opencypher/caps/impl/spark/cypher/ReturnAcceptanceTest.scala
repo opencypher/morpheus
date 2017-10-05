@@ -82,6 +82,17 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
     ))
   }
 
+  test("return relationship property from relationship without specific type") {
+    val given = TestGraph("()-[{foo:'bar'}]->()-[]->()").graph
+
+    val result = given.cypher("MATCH ()-[r]->() RETURN r.foo")
+
+    result.recordsWithDetails.toMaps should equal(Bag(
+      CypherMap("r.foo" -> "bar"),
+      CypherMap("r.foo" -> null)
+    ))
+  }
+
   test("return distinct properties") {
     val given = TestGraph(
       """({name:'bar'}),
