@@ -27,6 +27,8 @@ class CAPSPatternGraph(private val baseTable: CAPSRecords, val schema: Schema, v
 
   private val header = baseTable.details.header
 
+  def show() = baseTable.details.data.show()
+
   override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
     val targetNode = Var(name)(nodeCypherType)
     val nodeSchema = schema.forNode(nodeCypherType)

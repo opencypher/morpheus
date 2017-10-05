@@ -23,6 +23,7 @@ import org.opencypher.caps.ir.api.block.SortItem
 import org.opencypher.caps.ir.api.pattern.{EveryNode, EveryRelationship, Pattern}
 import org.opencypher.caps.api.record.ProjectedSlotContent
 import org.opencypher.caps.api.schema.Schema
+import org.opencypher.caps.ir.api.global.Label
 
 import scala.language.implicitConversions
 
@@ -56,7 +57,7 @@ sealed trait ConstructedEntity {
   def v: Var
 }
 
-case class ConstructedNode(v: Var) extends ConstructedEntity
+case class ConstructedNode(v: Var, labels: Set[Label]) extends ConstructedEntity
 case class ConstructedRelationship(v: Var, source: Var, target: Var, typ: String) extends ConstructedEntity
 
 sealed trait StackingLogicalOperator extends LogicalOperator {

@@ -20,7 +20,7 @@ import org.opencypher.caps.api.expr.{HasLabel, Property, Var}
 import org.opencypher.caps.api.record.{OpaqueField, ProjectedExpr, ProjectedField, RecordHeader}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTRelationship, CTString}
-import org.opencypher.caps.api.value.{CypherMap, CypherNode, CypherString, NodeData}
+import org.opencypher.caps.api.value._
 import org.opencypher.caps.impl.record.CAPSRecordHeader
 import org.opencypher.caps.impl.syntax.header.{addContents, _}
 import org.opencypher.caps.ir.api.global.{Label, PropertyKey}
@@ -94,7 +94,31 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
     ))
   }
 
-  //TODO: Test creating a label
+  test("project pattern graph with created node with labels") {
+    val inputGraph = TestGraph(`:Person` + `:KNOWS`).graph
+
+    val person = inputGraph.cypher(
+      """MATCH (a:Person:Swedish)-[r]->(b)
+        |RETURN GRAPH result OF (a)-[foo:SWEDISH_KNOWS]->(bar:Foo)
+      """.stripMargin)
+
+    val graph = person.graphs("result")
+
+    graph.cypher("MATCH ()-[:SWEDISH_KNOWS]->(n) RETURN n").
+      recordsWithDetails.toCypherMaps.collect().map(_.toString).toSet should equal(Set(
+      CypherMap("n" -> CypherNode(4294967296000L, NodeData(Seq("Foo"), Properties.empty))),
+      CypherMap("n" -> CypherNode(4294967296001L, NodeData(Seq("Foo"), Properties.empty))),
+      CypherMap("n" -> CypherNode(4294967296002L, NodeData(Seq("Foo"), Properties.empty)))
+    ).map(_.toString))
+
+    graph.nodes("n").toCypherMaps.collect().map(_.toString).toSet should equal(Set(
+      CypherMap("n" -> CypherNode(0L, NodeData(Seq("Person", "Swedish"), Properties("name" -> "Mats", "luckyNumber" -> 23)))),
+      CypherMap("n" -> CypherNode(4294967296000L, NodeData(Seq("Foo"), Properties.empty))),
+      CypherMap("n" -> CypherNode(4294967296001L, NodeData(Seq("Foo"), Properties.empty))),
+      CypherMap("n" -> CypherNode(4294967296002L, NodeData(Seq("Foo"), Properties.empty)))
+    ).map(_.toString))
+  }
+
   //TODO: Test creating literal property value
   //TODO: Test creating computed property value
 

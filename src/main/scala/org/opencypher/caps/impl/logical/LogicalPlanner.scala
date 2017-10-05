@@ -266,8 +266,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
             case EveryRelationship(relTypes) if relTypes.elements.size == 1 =>
               val connection = pattern.topology(e)
               ConstructedRelationship(e, connection.source, connection.target, relTypes.elements.head.name)
-            case EveryNode(_) =>
-              ConstructedNode(e)
+            case EveryNode(labels) =>
+              ConstructedNode(e, labels.elements)
             case _ =>
               Raise.impossible(s"could not construct entity from $e")
           }

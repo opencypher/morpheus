@@ -181,11 +181,16 @@ class PhysicalResultProducer(context: RuntimeContext) {
         addContents(columnsToAdd.map(_._1).toSeq)
       )._1
 
-      CAPSRecords.create(newHeader, newData)
+      CAPSRecords.create(newHeader, newData).details
     }
 
     private def constructNode(node: ConstructedNode, records: CAPSRecords): (Set[(SlotContent, Column)]) = {
-      Set(OpaqueField(node.v) -> generateId)
+      val col = org.apache.spark.sql.functions.lit(true)
+      val labelTuples: Set[(SlotContent, Column)] = node.labels.map { label =>
+        ProjectedExpr(HasLabel(node.v, label)(CTBoolean)) -> col
+      }
+
+      labelTuples + (OpaqueField(node.v) -> generateId)
     }
 
     private def generateId: Column = {
