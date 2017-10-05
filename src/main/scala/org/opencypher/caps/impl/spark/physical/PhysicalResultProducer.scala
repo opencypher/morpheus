@@ -24,12 +24,13 @@ import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.{CypherInteger, CypherValue}
 import org.opencypher.caps.impl.flat.FreshVariableNamer
-import org.opencypher.caps.impl.logical.{ConstructedRelationship, GraphOfPattern, LogicalGraph, LogicalPatternGraph}
+import org.opencypher.caps.impl.logical._
 import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.SparkSQLExprMapper.asSparkSQLExpr
 import org.opencypher.caps.impl.spark.convert.toSparkType
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.syntax.expr._
+import org.opencypher.caps.impl.syntax.header._
 import org.opencypher.caps.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.caps.ir.api.global._
 import org.opencypher.caps.ir.api.pattern.{AnyGiven, EveryNode, EveryRelationship}
@@ -148,70 +149,70 @@ class PhysicalResultProducer(context: RuntimeContext) {
       }
 
     def projectGraph(graph: LogicalPatternGraph): PhysicalResult = {
-
       val LogicalPatternGraph(name, targetSchema, GraphOfPattern(toCreate, toRetain)) = graph
-
       val PhysicalResult(retainedInput, _) = prev.select(toRetain)
-      val retainedHeader = retainedInput.details.header
-      val retainedData = retainedInput.details.data
 
-      // TODO: Add node creation, then refactor creation code to be more reusable/general/elegant
       val baseTable: CAPSRecords = if (toCreate.isEmpty) {
         retainedInput
       } else {
-        // we need to create the missing entities
-        val (extendedHeader, extendedDataset): (RecordHeader, DataFrame) = toCreate.
-          foldLeft(retainedHeader -> retainedData) {
-            case ((headerSoFar, dataSoFar), ConstructedRelationship(rel, source, target, typ)) =>
-              // need four new columns: source, target, id, type
-              val sourceExpr = ProjectedExpr(StartNode(rel)(CTInteger))
-              val targetExpr = ProjectedExpr(EndNode(rel)(CTInteger))
-              val relExpr = OpaqueField(rel)
-              val typeExpr = ProjectedExpr(OfType(rel)(CTString))
+        val columnsToAdd = createEntities(toCreate, retainedInput.details)
 
-              // source and target are present: just copy
-              val sourceCol = {
-                val slot = retainedHeader.slotFor(source)
-                val col = retainedInput.data.col(SparkColumnName.of(slot))
-                col.as(SparkColumnName.of(sourceExpr))
-              }
-              val targetCol = {
-                val slot = retainedHeader.slotFor(target)
-                val col = retainedInput.data.col(SparkColumnName.of(slot))
-                col.as(SparkColumnName.of(targetExpr))
-              }
-              // id needs to be generated
-              val idCol = {
-                // Limits the system to 500 mn partitions
-                // The first half of the id space is protected
-                // TODO: guarantee that all imported entities have ids in the protected range
-                val relIdOffset = 500L << 33
-                val firstIdCol = functions.lit(relIdOffset)
-                val col = monotonically_increasing_id() + firstIdCol
-                col.as(SparkColumnName.of(relExpr))
-              }
-              // type is an input
-              val typCol = {
-                val col = org.apache.spark.sql.functions.lit(typ)
-                col.as(SparkColumnName.of(typeExpr))
-              }
+        val newData = columnsToAdd.foldLeft(retainedInput.details.data) {
+          case (acc, (expr, col)) =>
+            acc.withColumn(context.columnName(expr), col)
+        }
 
-              import org.opencypher.caps.impl.syntax.header._
+        val newHeader = retainedInput.details.header.update(
+          addContents(columnsToAdd.map(_._1).toSeq)
+        )._1
 
-              headerSoFar.update(addContents(Seq(sourceExpr, targetExpr, relExpr, typeExpr)))._1 ->
-                dataSoFar.
-                  withColumn(SparkColumnName.of(sourceExpr), sourceCol).
-                  withColumn(SparkColumnName.of(targetExpr), targetCol).
-                  withColumn(SparkColumnName.of(relExpr), idCol).
-                  withColumn(SparkColumnName.of(typeExpr), typCol)
-            case _ =>
-              Raise.notYetImplemented("creation of anything but relationships")
-          }
-        CAPSRecords.create(extendedHeader, extendedDataset)
+        CAPSRecords.create(newHeader, newData)
       }
-
       val patternGraph = CAPSGraph.create(baseTable, targetSchema)
       prev.withGraph(name -> patternGraph)
+    }
+
+    private def createEntities(toCreate: Set[ConstructedEntity], records: CAPSRecords): Set[(SlotContent, Column)] = toCreate.flatMap {
+      case r: ConstructedRelationship =>
+        constructRel(r, records)
+      case _ =>
+        Raise.notYetImplemented("creation of anything but relationships")
+    }
+
+    private def constructRel(toConstruct: ConstructedRelationship, records: CAPSRecords): (Set[(SlotContent, Column)]) = {
+      val ConstructedRelationship(rel, source, target, typ) = toConstruct
+      val header = records.header
+      val inData = records.data
+
+      // source and target are present: just copy
+      val sourceTuple = {
+        val slot = header.slotFor(source)
+        val col = inData.col(context.columnName(slot))
+        ProjectedExpr(StartNode(rel)(CTInteger)) -> col
+      }
+      val targetTuple = {
+        val slot = header.slotFor(target)
+        val col = inData.col(context.columnName(slot))
+        ProjectedExpr(EndNode(rel)(CTInteger)) -> col
+      }
+
+      // id needs to be generated
+      val relTuple = {
+        // Limits the system to 500 mn partitions
+        // The first half of the id space is protected
+        // TODO: guarantee that all imported entities have ids in the protected range
+        val relIdOffset = 500L << 33
+        val firstIdCol = functions.lit(relIdOffset)
+        val col = monotonically_increasing_id() + firstIdCol
+        OpaqueField(rel) -> col
+      }
+      // type is an input
+      val typeTuple = {
+        val col = org.apache.spark.sql.functions.lit(typ)
+        ProjectedExpr(OfType(rel)(CTString)) -> col
+      }
+
+      Set(sourceTuple, targetTuple, relTuple, typeTuple)
     }
 
     def aggregate(aggregations: Set[(Var, Aggregator)], group: Set[Var], header: RecordHeader): PhysicalResult =

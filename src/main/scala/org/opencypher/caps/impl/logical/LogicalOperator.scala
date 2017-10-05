@@ -56,7 +56,7 @@ trait ConstructedEntity {
   def v: Var
 }
 
-//case class ConstructedNode(v: Var) extends ConstructedEntity
+case class ConstructedNode(v: Var) extends ConstructedEntity
 case class ConstructedRelationship(v: Var, source: Var, target: Var, typ: String) extends ConstructedEntity
 
 sealed trait StackingLogicalOperator extends LogicalOperator {
