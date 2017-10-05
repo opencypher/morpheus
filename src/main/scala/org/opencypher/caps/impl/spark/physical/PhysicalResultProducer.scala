@@ -20,11 +20,11 @@ import org.apache.spark.sql.types.{ArrayType, BooleanType, LongType}
 import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.record._
-import org.opencypher.caps.api.spark.CAPSRecords
-import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTRelationship}
+import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
+import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.{CypherInteger, CypherValue}
 import org.opencypher.caps.impl.flat.FreshVariableNamer
-import org.opencypher.caps.impl.logical.LogicalGraph
+import org.opencypher.caps.impl.logical.{ConstructedRelationship, GraphOfPattern, LogicalGraph, LogicalPatternGraph}
 import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.SparkSQLExprMapper.asSparkSQLExpr
 import org.opencypher.caps.impl.spark.convert.toSparkType
@@ -50,6 +50,8 @@ class PhysicalResultProducer(context: RuntimeContext) {
   implicit val c = context
 
   implicit final class RichCypherResult(val prev: PhysicalResult) {
+
+    implicit val session = prev.records.caps
 
     // TODO: Propagate this header -- don't just drop it
     def nodeScan(inGraph: LogicalGraph, v: Var, labelPredicates: EveryNode, header: RecordHeader)
@@ -89,7 +91,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
         val newData = filteredRows.select(selectedColumns: _*)
 
-        CAPSRecords.create(header, newData)(subject.caps)
+        CAPSRecords.create(header, newData)
       }
     }
 
@@ -99,7 +101,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
         val columnNames = header.slots.map(slot => data.col(context.columnName(slot)))
         val relevantColumns = data.select(columnNames: _*)
         val distinctRows = relevantColumns.distinct()
-        CAPSRecords.create(header, distinctRows)(subject.caps)
+        CAPSRecords.create(header, distinctRows)
       }
     }
 
@@ -118,7 +120,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
           Raise.columnNotFound(oldColumnName)
         }
 
-        CAPSRecords.create(header, newData)(subject.caps)
+        CAPSRecords.create(header, newData)
       }
 
     def project(expr: Expr, header: RecordHeader): PhysicalResult =
@@ -142,8 +144,75 @@ class PhysicalResultProducer(context: RuntimeContext) {
             }
         }
 
-        CAPSRecords.create(header, newData)(subject.caps)
+        CAPSRecords.create(header, newData)
       }
+
+    def projectGraph(graph: LogicalPatternGraph): PhysicalResult = {
+
+      val LogicalPatternGraph(name, targetSchema, GraphOfPattern(toCreate, toRetain)) = graph
+
+      val PhysicalResult(retainedInput, _) = prev.select(toRetain)
+      val retainedHeader = retainedInput.details.header
+      val retainedData = retainedInput.details.data
+
+      // TODO: Add node creation, then refactor creation code to be more reusable/general/elegant
+      val baseTable: CAPSRecords = if (toCreate.isEmpty) {
+        retainedInput
+      } else {
+        // we need to create the missing entities
+        val (extendedHeader, extendedDataset): (RecordHeader, DataFrame) = toCreate.
+          foldLeft(retainedHeader -> retainedData) {
+            case ((headerSoFar, dataSoFar), ConstructedRelationship(rel, source, target, typ)) =>
+              // need four new columns: source, target, id, type
+              val sourceExpr = ProjectedExpr(StartNode(rel)(CTInteger))
+              val targetExpr = ProjectedExpr(EndNode(rel)(CTInteger))
+              val relExpr = OpaqueField(rel)
+              val typeExpr = ProjectedExpr(OfType(rel)(CTString))
+
+              // source and target are present: just copy
+              val sourceCol = {
+                val slot = retainedHeader.slotFor(source)
+                val col = retainedInput.data.col(SparkColumnName.of(slot))
+                col.as(SparkColumnName.of(sourceExpr))
+              }
+              val targetCol = {
+                val slot = retainedHeader.slotFor(target)
+                val col = retainedInput.data.col(SparkColumnName.of(slot))
+                col.as(SparkColumnName.of(targetExpr))
+              }
+              // id needs to be generated
+              val idCol = {
+                // Limits the system to 500 mn partitions
+                // The first half of the id space is protected
+                // TODO: guarantee that all imported entities have ids in the protected range
+                val relIdOffset = 500L << 33
+                val firstIdCol = functions.lit(relIdOffset)
+                val col = monotonically_increasing_id() + firstIdCol
+                col.as(SparkColumnName.of(relExpr))
+              }
+              // type is an input
+              val typCol = {
+                val col = org.apache.spark.sql.functions.lit(typ)
+                col.as(SparkColumnName.of(typeExpr))
+              }
+
+              import org.opencypher.caps.impl.syntax.header._
+
+              headerSoFar.update(addContents(Seq(sourceExpr, targetExpr, relExpr, typeExpr)))._1 ->
+                dataSoFar.
+                  withColumn(SparkColumnName.of(sourceExpr), sourceCol).
+                  withColumn(SparkColumnName.of(targetExpr), targetCol).
+                  withColumn(SparkColumnName.of(relExpr), idCol).
+                  withColumn(SparkColumnName.of(typeExpr), typCol)
+            case _ =>
+              Raise.notYetImplemented("creation of anything but relationships")
+          }
+        CAPSRecords.create(extendedHeader, extendedDataset)
+      }
+
+      val patternGraph = CAPSGraph.create(baseTable, targetSchema)
+      prev.withGraph(name -> patternGraph)
+    }
 
     def aggregate(aggregations: Set[(Var, Aggregator)], group: Set[Var], header: RecordHeader): PhysicalResult =
       prev.mapRecordsWithDetails { records =>
