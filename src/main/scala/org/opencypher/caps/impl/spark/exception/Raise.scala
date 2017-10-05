@@ -27,7 +27,7 @@ object Raise {
   )
 
   def recordsDataHeaderMismatch(header: String, data: String) = throw CAPSException(
-    s"Column mismatch between header ${header} and data $data"
+    s"Column mismatch between header $header and data $data"
   )
 
   def duplicateColumnNamesInData() = throw CAPSException(

@@ -22,7 +22,7 @@ import org.opencypher.caps.api.value.EntityId._
 import org.opencypher.caps.api.value.{CypherMap, CypherRelationship, RelationshipData}
 import org.opencypher.caps.test.CAPSTestSuite
 
-class ScanGraphTest extends CAPSTestSuite {
+class CAPSScanGraphTest extends CAPSTestSuite {
 
   val `:Person` =
     NodeScan.on("p" -> "ID") {
@@ -169,7 +169,7 @@ class ScanGraphTest extends CAPSTestSuite {
 
     val graph = CAPSGraph.create(nodes, rs)
 
-    val results = graph.relationships("r").details.toCypherMaps
+    val results = graph.relationships("r").toCypherMaps
 
     results.collect().toSet should equal(Set(
       CypherMap("r" -> CypherRelationship(1000L, RelationshipData(10L, 20L, "FOO"))),

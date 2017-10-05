@@ -16,6 +16,8 @@
 package org.opencypher.caps.ir.api.pattern
 
 import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.api.schema.Schema
+import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block.Binds
 
@@ -134,5 +136,6 @@ final case class Pattern[E](entities: Map[IRField, EveryEntity], topology: Map[I
     case Seq() =>
       components.values.toSet
   }
+
 }
 

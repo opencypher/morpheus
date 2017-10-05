@@ -92,10 +92,10 @@ class LogicalPlannerTest extends IrTestSuite {
                 Filter(HasLabel(Var("a")(CTNode), tokens.labelByName("Administrator"))(CTBoolean),
                   ExpandSource(Var("a")(CTNode), Var("r")(CTRelationship), EveryRelationship, Var("g")(CTNode),
                     NodeScan(Var("a")(CTNode), EveryNode,
-                      Start(ExternalLogicalGraph(testGraph.name, testGraph.uri, Schema.empty), Set.empty)(emptySqm)
+                      Start(LogicalExternalGraph(testGraph.name, testGraph.uri, Schema.empty), Set.empty)(emptySqm)
                     )(emptySqm),
                     NodeScan(Var("g")(CTNode), EveryNode,
-                      Start(ExternalLogicalGraph(testGraph.name, testGraph.uri, Schema.empty), Set.empty)(emptySqm)
+                      Start(LogicalExternalGraph(testGraph.name, testGraph.uri, Schema.empty), Set.empty)(emptySqm)
                     )(emptySqm)
                   )(emptySqm)
                 )(emptySqm)
@@ -126,10 +126,10 @@ class LogicalPlannerTest extends IrTestSuite {
                 Filter(HasLabel(Var("a")(CTNode), tokens.labelByName("Administrator"))(CTBoolean),
                   ExpandSource(Var("a")(CTNode), Var("r")(CTRelationship), EveryRelationship, Var("g")(CTNode),
                     NodeScan(Var("a")(CTNode), EveryNode,
-                      Start(ExternalLogicalGraph(testGraph.name, testGraph.uri, schema), Set.empty)(emptySqm)
+                      Start(LogicalExternalGraph(testGraph.name, testGraph.uri, schema), Set.empty)(emptySqm)
                     )(emptySqm),
                     NodeScan(Var("g")(CTNode), EveryNode,
-                      Start(ExternalLogicalGraph(testGraph.name, testGraph.uri, schema), Set.empty)(emptySqm)
+                      Start(LogicalExternalGraph(testGraph.name, testGraph.uri, schema), Set.empty)(emptySqm)
                     )(emptySqm)
                   )(emptySqm)
                 )(emptySqm)
@@ -152,8 +152,8 @@ class LogicalPlannerTest extends IrTestSuite {
         Project(ProjectedField(Var("a.prop")(CTVoid), Property(nodeA, tokens.propertyKeyByName("prop"))(CTVoid)),
           Filter(Not(Equals(Const(constants.constantByName("p1"))(CTInteger), Const(constants.constantByName("p2"))(CTBoolean))(CTBoolean))(CTBoolean),
             NodeScan(nodeA, EveryNode,
-              SetSourceGraph(ExternalLogicalGraph(testGraph.name, testGraph.uri, Schema.empty),
-                Start(ExternalLogicalGraph(testGraph.name, testGraph.uri, Schema.empty), Set.empty)(emptySqm)
+              SetSourceGraph(LogicalExternalGraph(testGraph.name, testGraph.uri, Schema.empty),
+                Start(LogicalExternalGraph(testGraph.name, testGraph.uri, Schema.empty), Set.empty)(emptySqm)
               )(emptySqm)
             )(emptySqm)
           )(emptySqm)

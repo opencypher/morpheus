@@ -69,6 +69,13 @@ sealed abstract class CAPSRecords(
 
   def details: CAPSRecords = optDetailedRecords.getOrElse(this)
 
+  def select(fields: Set[Var]): CAPSRecords = {
+    val selectedHeader = header.select(fields)
+    val selectedColumnNames = selectedHeader.contents.map(SparkColumnName.of).toSeq
+    val selectedColumns = data.select(selectedColumnNames.head, selectedColumnNames.tail: _*)
+    CAPSRecords.create(selectedHeader, selectedColumns)
+  }
+
   def compact: CAPSRecords = {
     val cachedHeader = self.header.update(compactFields)._1
     val cachedData = {
@@ -128,7 +135,7 @@ sealed abstract class CAPSRecords(
   def toCypherMaps: Dataset[CypherMap] = {
     import encoders._
 
-    data.map(rowToCypherMap(header))
+    details.data.map(rowToCypherMap(details.header))
   }
 }
 
@@ -204,8 +211,8 @@ object CAPSRecords {
       val dataColumnNames = initialData.columns.toSet
       if (!headerColumnNames.subsetOf(dataColumnNames)) {
         Raise.recordsDataHeaderMismatch(
-          s"with columns ${initialHeader.internalHeader.columns.toSet.mkString(", ")}",
-          s"with columns ${initialData.columns.toSet.mkString(", ")}"
+          s"with columns ${initialHeader.internalHeader.columns.sorted.mkString("\n", ", ", "\n")}",
+          s"with columns ${initialData.columns.sorted.mkString("\n", ", ", "\n")}"
         )
       }
 

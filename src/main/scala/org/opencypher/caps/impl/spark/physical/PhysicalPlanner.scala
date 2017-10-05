@@ -17,12 +17,16 @@ package org.opencypher.caps.impl.spark.physical
 
 import java.net.URI
 
+import org.apache.spark.sql.functions.monotonically_increasing_id
+import org.apache.spark.sql.{Column, DataFrame, Dataset, functions}
 import org.opencypher.caps.api.expr._
+import org.opencypher.caps.api.record.{OpaqueField, ProjectedExpr, RecordHeader}
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
-import org.opencypher.caps.api.types.CTRelationship
+import org.opencypher.caps.api.types.{CTInteger, CTRelationship, CTString}
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.flat.FlatOperator
-import org.opencypher.caps.impl.logical.ExternalLogicalGraph
+import org.opencypher.caps.impl.logical.{ConstructedRelationship, GraphOfPattern, LogicalExternalGraph, LogicalPatternGraph}
+import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.{DirectCompilationStage, flat}
 import org.opencypher.caps.ir.api.block.SortItem
@@ -54,7 +58,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
         inner(in).select(fields, header).selectGraphs(graphs)
 
       case flat.Start(graph, _) => graph match {
-        case ExternalLogicalGraph(name, uri, _) =>
+        case LogicalExternalGraph(name, uri, _) =>
           val graph = context.resolver(uri)
           PhysicalResult(context.inputRecords, Map(name -> graph))
 
@@ -66,7 +70,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
         val p = inner(in)
 
         graph match {
-          case ExternalLogicalGraph(name, uri, _) =>
+          case LogicalExternalGraph(name, uri, _) =>
             val graph = context.resolver(uri)
             p.withGraph(name -> graph)
 
@@ -86,12 +90,12 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
       case flat.Project(expr, in, header) =>
         inner(in).project(expr, header)
 
-      case flat.ProjectGraph(graph, in, header) => graph match {
-        case ExternalLogicalGraph(name, uri, _) =>
+      case flat.ProjectGraph(graph, in, _) => graph match {
+        case LogicalExternalGraph(name, uri, _) =>
           val capsGraph = context.resolver(uri)
           inner(in).withGraph(name -> capsGraph)
-        case _ =>
-          Raise.notYetImplemented(s"graphs without uri: $graph")
+        case graph: LogicalPatternGraph =>
+          inner(in).projectGraph(graph)
       }
 
       case flat.Aggregate(aggregations, group, in , header) =>

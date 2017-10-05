@@ -20,16 +20,17 @@ import org.apache.spark.sql.types.{ArrayType, BooleanType, LongType}
 import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.record._
-import org.opencypher.caps.api.spark.CAPSRecords
-import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTRelationship}
+import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
+import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.{CypherInteger, CypherValue}
 import org.opencypher.caps.impl.flat.FreshVariableNamer
-import org.opencypher.caps.impl.logical.LogicalGraph
+import org.opencypher.caps.impl.logical._
 import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.SparkSQLExprMapper.asSparkSQLExpr
 import org.opencypher.caps.impl.spark.convert.toSparkType
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.syntax.expr._
+import org.opencypher.caps.impl.syntax.header._
 import org.opencypher.caps.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.caps.ir.api.global._
 import org.opencypher.caps.ir.api.pattern.{AnyGiven, EveryNode, EveryRelationship}
@@ -51,6 +52,9 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
   implicit final class RichCypherResult(val prev: PhysicalResult) {
 
+    implicit val session = prev.records.caps
+
+    // TODO: Propagate this header -- don't just drop it
     def nodeScan(inGraph: LogicalGraph, v: Var, labelPredicates: EveryNode, header: RecordHeader)
     : PhysicalResult = {
       val graph = prev.graphs(inGraph.name)
@@ -88,7 +92,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
         val newData = filteredRows.select(selectedColumns: _*)
 
-        CAPSRecords.create(header, newData)(subject.caps)
+        CAPSRecords.create(header, newData)
       }
     }
 
@@ -98,7 +102,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
         val columnNames = header.slots.map(slot => data.col(context.columnName(slot)))
         val relevantColumns = data.select(columnNames: _*)
         val distinctRows = relevantColumns.distinct()
-        CAPSRecords.create(header, distinctRows)(subject.caps)
+        CAPSRecords.create(header, distinctRows)
       }
     }
 
@@ -117,7 +121,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
           Raise.columnNotFound(oldColumnName)
         }
 
-        CAPSRecords.create(header, newData)(subject.caps)
+        CAPSRecords.create(header, newData)
       }
 
     def project(expr: Expr, header: RecordHeader): PhysicalResult =
@@ -141,8 +145,92 @@ class PhysicalResultProducer(context: RuntimeContext) {
             }
         }
 
-        CAPSRecords.create(header, newData)(subject.caps)
+        CAPSRecords.create(header, newData)
       }
+
+    def projectGraph(graph: LogicalPatternGraph): PhysicalResult = {
+      val LogicalPatternGraph(name, targetSchema, GraphOfPattern(toCreate, toRetain)) = graph
+      val PhysicalResult(retainedInput, _) = prev.select(toRetain)
+
+      val baseTable =
+        if (toCreate.isEmpty) retainedInput
+        else createEntities(toCreate, retainedInput.details)
+
+      val patternGraph = CAPSGraph.create(baseTable, targetSchema)
+      prev.withGraph(name -> patternGraph)
+    }
+
+    private def createEntities(toCreate: Set[ConstructedEntity], records: CAPSRecords): CAPSRecords = {
+      val nodes = toCreate.collect { case c: ConstructedNode => c }
+      val rels = toCreate.collect { case r: ConstructedRelationship => r }
+
+      val nodesToCreate = nodes.flatMap(constructNode(_, records))
+      val recordsWithNodes = addEntitiesToRecords(nodesToCreate, records)
+
+      val relsToCreate = rels.flatMap(constructRel(_, recordsWithNodes))
+      addEntitiesToRecords(relsToCreate, recordsWithNodes)
+    }
+
+    private def addEntitiesToRecords(columnsToAdd: Set[(SlotContent, Column)], records: CAPSRecords) = {
+      val newData = columnsToAdd.foldLeft(records.data) {
+        case (acc, (expr, col)) =>
+          acc.withColumn(context.columnName(expr), col)
+      }
+
+      val newHeader = records.header.update(
+        addContents(columnsToAdd.map(_._1).toSeq)
+      )._1
+
+      CAPSRecords.create(newHeader, newData).details
+    }
+
+    private def constructNode(node: ConstructedNode, records: CAPSRecords): (Set[(SlotContent, Column)]) = {
+      val col = org.apache.spark.sql.functions.lit(true)
+      val labelTuples: Set[(SlotContent, Column)] = node.labels.map { label =>
+        ProjectedExpr(HasLabel(node.v, label)(CTBoolean)) -> col
+      }
+
+      labelTuples + (OpaqueField(node.v) -> generateId)
+    }
+
+    private def generateId: Column = {
+      // id needs to be generated
+      // Limits the system to 500 mn partitions
+      // The first half of the id space is protected
+      // TODO: guarantee that all imported entities have ids in the protected range
+      val relIdOffset = 500L << 33
+      val firstIdCol = functions.lit(relIdOffset)
+      monotonically_increasing_id() + firstIdCol
+    }
+
+    private def constructRel(toConstruct: ConstructedRelationship, records: CAPSRecords): (Set[(SlotContent, Column)]) = {
+      val ConstructedRelationship(rel, source, target, typ) = toConstruct
+      val header = records.header
+      val inData = records.data
+
+      // source and target are present: just copy
+      val sourceTuple = {
+        val slot = header.slotFor(source)
+        val col = inData.col(context.columnName(slot))
+        ProjectedExpr(StartNode(rel)(CTInteger)) -> col
+      }
+      val targetTuple = {
+        val slot = header.slotFor(target)
+        val col = inData.col(context.columnName(slot))
+        ProjectedExpr(EndNode(rel)(CTInteger)) -> col
+      }
+
+      // id needs to be generated
+      val relTuple = OpaqueField(rel) -> generateId
+
+      // type is an input
+      val typeTuple = {
+        val col = org.apache.spark.sql.functions.lit(typ)
+        ProjectedExpr(OfType(rel)(CTString)) -> col
+      }
+
+      Set(sourceTuple, targetTuple, relTuple, typeTuple)
+    }
 
     def aggregate(aggregations: Set[(Var, Aggregator)], group: Set[Var], header: RecordHeader): PhysicalResult =
       prev.mapRecordsWithDetails { records =>
@@ -214,6 +302,12 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
         CAPSRecords.create(header, newData)(subject.caps)
       }
+
+    def select(fields: Set[Var]): PhysicalResult = prev.mapRecordsWithDetails { (subject: CAPSRecords) =>
+      val targetHeader = subject.header.select(fields)
+      val PhysicalResult(selectedRecords, _) = select(fields.toIndexedSeq, targetHeader)
+      selectedRecords
+    }
 
     def typeFilter(rel: Var, types: AnyGiven[RelType], header: RecordHeader): PhysicalResult = {
       if (types.elements.isEmpty) prev

@@ -20,7 +20,7 @@ import org.opencypher.caps.api.expr.{Expr, HasLabel, Property, Var}
 import org.opencypher.caps.ir.api.block._
 import org.opencypher.caps.ir.api.global.GlobalsRegistry
 import org.opencypher.caps.ir.api.pattern._
-import org.opencypher.caps.ir.api.{IRField, NamedGraph, PatternGraph, QueryModel}
+import org.opencypher.caps.ir.api.{IRField, IRNamedGraph, IRPatternGraph, QueryModel}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CTVoid}
 
 import scala.collection.immutable.Set
@@ -200,7 +200,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
         // TODO: Properly assert on graphs, also below
         case NoWhereBlock(ProjectBlock(deps, FieldsAndGraphs(map, graphs), _, _, _)) =>
           map shouldBe empty
-          graphs shouldBe Set(PatternGraph(
+          graphs shouldBe Set(IRPatternGraph(
             "moo",
             Pattern(
               Map(nodeA -> EveryNode, nodeB -> EveryNode, rel -> EveryRelationship(AnyOf(relTypeByName("TEST")))),
@@ -211,7 +211,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
         case NoWhereBlock(ResultBlock(deps, items, _, _, _, _)) =>
           deps should equal(Set(projectRef))
           items.fields shouldBe empty
-          items.graphs should equal(Set(NamedGraph("moo")))
+          items.graphs should equal(Set(IRNamedGraph("moo")))
       }
 
       model.requirements should equal(Map(

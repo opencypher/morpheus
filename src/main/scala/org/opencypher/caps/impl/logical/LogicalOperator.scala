@@ -20,9 +20,10 @@ import java.net.URI
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.ir.api.SolvedQueryModel
 import org.opencypher.caps.ir.api.block.SortItem
-import org.opencypher.caps.ir.api.pattern.{EveryNode, EveryRelationship}
+import org.opencypher.caps.ir.api.pattern.{EveryNode, EveryRelationship, Pattern}
 import org.opencypher.caps.api.record.ProjectedSlotContent
 import org.opencypher.caps.api.schema.Schema
+import org.opencypher.caps.ir.api.global.Label
 
 import scala.language.implicitConversions
 
@@ -42,10 +43,22 @@ trait LogicalGraph {
   def name: String
 }
 
-final case class ExternalLogicalGraph(name: String, uri: URI, schema: Schema) extends LogicalGraph {
-
-  override def toString: String = s"$name@$uri"
+final case class LogicalExternalGraph(name: String, uri: URI, schema: Schema) extends LogicalGraph {
+  override def toString: String = s"GRAPH $name AT $uri"
 }
+
+final case class LogicalPatternGraph(name: String, schema: Schema, pattern: GraphOfPattern) extends LogicalGraph {
+  override def toString: String = s"GRAPH $name OF $pattern"
+}
+
+final case class GraphOfPattern(toCreate: Set[ConstructedEntity], toRetain: Set[Var])
+
+sealed trait ConstructedEntity {
+  def v: Var
+}
+
+case class ConstructedNode(v: Var, labels: Set[Label]) extends ConstructedEntity
+case class ConstructedRelationship(v: Var, source: Var, target: Var, typ: String) extends ConstructedEntity
 
 sealed trait StackingLogicalOperator extends LogicalOperator {
   def in: LogicalOperator
@@ -98,6 +111,7 @@ final case class Filter(expr: Expr, in: LogicalOperator)
                        (override val solved: SolvedQueryModel[Expr])
   extends StackingLogicalOperator {
 
+  // TODO: Add more precise type information based on predicates (?)
   override val fields: Set[Var] = in.fields
 
   override def pretty(depth: Int): String =
@@ -121,7 +135,7 @@ final case class ExpandSource(source: Var, rel: Var, types: EveryRelationship, t
                              (override val solved: SolvedQueryModel[Expr])
   extends ExpandOperator {
 
-  override val fields: Set[Var] = lhs.fields ++ rhs.fields
+  override val fields: Set[Var] = lhs.fields ++ rhs.fields + rel
 
   override def lhs: LogicalOperator = sourceOp
   override def rhs: LogicalOperator = targetOp

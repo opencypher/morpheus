@@ -28,7 +28,7 @@ import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.CypherType
 import org.opencypher.caps.impl.flat.TestGraph
 import org.opencypher.caps.ir.impl.global.GlobalsExtractor
-import org.opencypher.caps.impl.logical.{ExternalLogicalGraph, Start}
+import org.opencypher.caps.impl.logical.{LogicalExternalGraph, Start}
 import org.opencypher.caps.impl.parse.CypherParser
 import org.opencypher.caps.test.BaseTestSuite
 
@@ -36,9 +36,9 @@ import scala.language.implicitConversions
 
 abstract class IrTestSuite extends BaseTestSuite {
   val leafRef = BlockRef("leaf")
-  val testGraph = ExternalGraph("test", URI.create("test"))
+  val testGraph = IRExternalGraph("test", URI.create("test"))
   def leafBlock() = SourceBlock[Expr](testGraph)
-  def leafPlan = Start(ExternalLogicalGraph(testGraph.name, testGraph.uri, Schema.empty), Set.empty)(SolvedQueryModel.empty)
+  def leafPlan = Start(LogicalExternalGraph(testGraph.name, testGraph.uri, Schema.empty), Set.empty)(SolvedQueryModel.empty)
 
   val graphBlockRef = BlockRef("graph")
   val graphBlock = SourceBlock[Expr](testGraph)

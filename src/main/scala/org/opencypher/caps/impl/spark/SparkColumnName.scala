@@ -16,7 +16,7 @@
 package org.opencypher.caps.impl.spark
 
 import org.apache.spark.sql.{Column, DataFrame}
-import org.opencypher.caps.api.expr.{Expr, Property}
+import org.opencypher.caps.api.expr.{Expr, Property, Var}
 import org.opencypher.caps.api.record.{FieldSlotContent, ProjectedExpr, RecordSlot, SlotContent}
 
 import scala.collection.mutable
@@ -40,8 +40,13 @@ object SparkColumnName {
   }
 
   def of(expr: Expr): String = {
-    val columnNameBuilder = new NameBuilder() += None += expr.withoutType
-    columnNameBuilder.result()
+    expr match {
+      case Var(name) =>
+        name
+      case _ =>
+        val columnNameBuilder = new NameBuilder() += None += expr.withoutType
+        columnNameBuilder.result()
+    }
   }
 
   def from(parts: Option[String]*): String =

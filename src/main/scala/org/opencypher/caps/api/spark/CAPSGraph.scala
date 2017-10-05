@@ -51,13 +51,13 @@ object CAPSGraph {
     val allScans = nodes +: scans
     val schema = allScans.map(_.schema).reduce(_ ++ _)
     val tokens = CAPSRecordsTokens(TokenRegistry.fromSchema(schema))
-    new ScanGraph(allScans, schema, tokens)
+    new CAPSScanGraph(allScans, schema, tokens)
   }
 
   def create(records: CAPSRecords, schema: Schema)
     (implicit caps: CAPSSession): CAPSGraph = {
 
-    new PatternGraph(records, schema, CAPSRecordsTokens(TokenRegistry.fromSchema(schema)))
+    new CAPSPatternGraph(records, schema, CAPSRecordsTokens(TokenRegistry.fromSchema(schema)))
   }
 
   def createLazy(theSchema: Schema)(loadGraph: => CAPSGraph)(implicit caps: CAPSSession) = new CAPSGraph {

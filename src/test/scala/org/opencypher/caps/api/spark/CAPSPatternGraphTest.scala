@@ -20,7 +20,7 @@ import org.opencypher.caps.api.expr.{HasLabel, Property, Var}
 import org.opencypher.caps.api.record.{OpaqueField, ProjectedExpr, ProjectedField, RecordHeader}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTRelationship, CTString}
-import org.opencypher.caps.api.value.CypherMap
+import org.opencypher.caps.api.value._
 import org.opencypher.caps.impl.record.CAPSRecordHeader
 import org.opencypher.caps.impl.syntax.header.{addContents, _}
 import org.opencypher.caps.ir.api.global.{Label, PropertyKey}
@@ -29,8 +29,98 @@ import org.opencypher.caps.test.CAPSTestSuite
 import scala.collection.Bag
 import scala.collection.JavaConverters._
 
-class PatternGraphTest extends CAPSTestSuite {
+class CAPSPatternGraphTest extends CAPSTestSuite {
   import CAPSGraphTestData._
+
+  test("project pattern graph") {
+    val inputGraph = TestGraph(`:Person`).graph
+
+    val person = inputGraph.cypher(
+      """MATCH (a:Swedish)
+        |RETURN GRAPH result OF (a)
+      """.stripMargin)
+
+    person.graphs("result").cypher("MATCH (n) RETURN n.name").recordsWithDetails.toLocalScalaIterator.toSet should equal(Set(
+      CypherMap("n.name" -> CypherString("Mats"))
+    ))
+  }
+
+  test("project pattern graph with relationship") {
+    val inputGraph = TestGraph(`:Person` + `:KNOWS`).graph
+
+    val person = inputGraph.cypher(
+      """MATCH (a:Person:Swedish)-[r]->(b)
+        |RETURN GRAPH result OF (a)-[r]->(b)
+      """.stripMargin)
+
+    person.graphs("result").cypher("MATCH (n) RETURN n.name").recordsWithDetails.toLocalScalaIterator.toSet should equal(Set(
+      CypherMap("n.name" -> CypherString("Mats")),
+      CypherMap("n.name" -> CypherString("Stefan")),
+      CypherMap("n.name" -> CypherString("Martin")),
+      CypherMap("n.name" -> CypherString("Max"))
+    ))
+  }
+
+  // TODO: Generate names for GRAPH OF pattern parts in frontend
+  test("project pattern graph with created relationship") {
+    val inputGraph = TestGraph(`:Person` + `:KNOWS`).graph
+
+    val person = inputGraph.cypher(
+      """MATCH (a:Person:Swedish)-[r]->(b)
+        |RETURN GRAPH result OF (a)-[foo:SWEDISH_KNOWS]->(b)
+      """.stripMargin)
+
+    person.graphs("result").cypher("MATCH ()-[:SWEDISH_KNOWS]->(n) RETURN n.name").
+      recordsWithDetails.toLocalScalaIterator.toSet should equal(Set(
+      CypherMap("n.name" -> CypherString("Stefan")),
+      CypherMap("n.name" -> CypherString("Martin")),
+      CypherMap("n.name" -> CypherString("Max"))
+    ))
+  }
+
+  test("project pattern graph with created node") {
+    val inputGraph = TestGraph(`:Person` + `:KNOWS`).graph
+
+    val person = inputGraph.cypher(
+      """MATCH (a:Person:Swedish)-[r]->(b)
+        |RETURN GRAPH result OF (a)-[foo:SWEDISH_KNOWS]->(bar)
+      """.stripMargin)
+
+    person.graphs("result").cypher("MATCH ()-[:SWEDISH_KNOWS]->(n) RETURN n").
+      recordsWithDetails.toLocalScalaIterator.toSet should equal(Set(
+      CypherMap("n" -> CypherNode(4294967296000L, NodeData.empty)),
+      CypherMap("n" -> CypherNode(4294967296001L, NodeData.empty)),
+      CypherMap("n" -> CypherNode(4294967296002L, NodeData.empty))
+    ))
+  }
+
+  test("project pattern graph with created node with labels") {
+    val inputGraph = TestGraph(`:Person` + `:KNOWS`).graph
+
+    val person = inputGraph.cypher(
+      """MATCH (a:Person:Swedish)-[r]->(b)
+        |RETURN GRAPH result OF (a)-[foo:SWEDISH_KNOWS]->(bar:Foo)
+      """.stripMargin)
+
+    val graph = person.graphs("result")
+
+    graph.cypher("MATCH ()-[:SWEDISH_KNOWS]->(n) RETURN n").
+      recordsWithDetails.toCypherMaps.collect().map(_.toString).toSet should equal(Set(
+      CypherMap("n" -> CypherNode(4294967296000L, NodeData(Seq("Foo"), Properties.empty))),
+      CypherMap("n" -> CypherNode(4294967296001L, NodeData(Seq("Foo"), Properties.empty))),
+      CypherMap("n" -> CypherNode(4294967296002L, NodeData(Seq("Foo"), Properties.empty)))
+    ).map(_.toString))
+
+    graph.nodes("n").toCypherMaps.collect().map(_.toString).toSet should equal(Set(
+      CypherMap("n" -> CypherNode(0L, NodeData(Seq("Person", "Swedish"), Properties("name" -> "Mats", "luckyNumber" -> 23)))),
+      CypherMap("n" -> CypherNode(4294967296000L, NodeData(Seq("Foo"), Properties.empty))),
+      CypherMap("n" -> CypherNode(4294967296001L, NodeData(Seq("Foo"), Properties.empty))),
+      CypherMap("n" -> CypherNode(4294967296002L, NodeData(Seq("Foo"), Properties.empty)))
+    ).map(_.toString))
+  }
+
+  //TODO: Test creating literal property value
+  //TODO: Test creating computed property value
 
   test("Node scan from single node CAPSRecords") {
     val inputGraph = TestGraph(`:Person`).graph

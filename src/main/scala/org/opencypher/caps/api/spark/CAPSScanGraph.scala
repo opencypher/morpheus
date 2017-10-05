@@ -23,8 +23,8 @@ import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType, Defini
 import org.opencypher.caps.impl.record.CAPSRecordsTokens
 import org.opencypher.caps.impl.spark.exception.Raise
 
-class ScanGraph(val scans: Seq[GraphScan], val schema: Schema, override val tokens: CAPSRecordsTokens)
-  (implicit val session: CAPSSession) extends CAPSGraph {
+class CAPSScanGraph(val scans: Seq[GraphScan], val schema: Schema, override val tokens: CAPSRecordsTokens)
+                   (implicit val session: CAPSSession) extends CAPSGraph {
 
   // TODO: Caching?
 
@@ -61,11 +61,11 @@ class ScanGraph(val scans: Seq[GraphScan], val schema: Schema, override val toke
   }
 
   override def union(other: CAPSGraph): CAPSGraph = other match {
-    case (otherScanGraph: ScanGraph) =>
+    case (otherScanGraph: CAPSScanGraph) =>
       val allScans = scans ++ otherScanGraph.scans
       val nodeScan = allScans.collectFirst[NodeScan] { case scan: NodeScan => scan }.getOrElse(Raise.impossible())
       CAPSGraph.create(nodeScan, allScans.filterNot(_ == nodeScan): _*)
-    case _ => UnionGraph(this, other)
+    case _ => CAPSUnionGraph(this, other)
   }
 
   private case class NodeEntityScans(override val entityScans: Vector[NodeScan]) extends EntityScans {

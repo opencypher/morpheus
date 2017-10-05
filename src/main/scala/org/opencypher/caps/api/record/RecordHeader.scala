@@ -57,6 +57,18 @@ final case class RecordHeader(internalHeader: InternalHeader) {
 
   def properties(node: Var): Seq[Property] = propertySlots(node).keys.toSeq
 
+  def select(fields: Set[Var]): RecordHeader = {
+    fields.foldLeft(RecordHeader.empty) {
+      case (acc, next) =>
+        val contents = childSlots(next).map(_.content)
+        if (contents.nonEmpty) {
+          acc.update(addContents(OpaqueField(next) +: contents))._1
+        } else {
+          acc
+        }
+    }
+  }
+
   def childSlots(entity: Var): Seq[RecordSlot] = {
     slots.filter {
       case RecordSlot(_, OpaqueField(_)) => false

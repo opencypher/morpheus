@@ -20,12 +20,14 @@ import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.impl.record.CAPSRecordsTokens
-import org.opencypher.caps.impl.spark.SparkColumnName
+import org.opencypher.caps.impl.spark.{RowExpansion, SparkColumnName}
 
-class PatternGraph(private val baseTable: CAPSRecords, val schema: Schema, val tokens: CAPSRecordsTokens)
-                  (implicit val session: CAPSSession) extends CAPSGraph {
+class CAPSPatternGraph(private val baseTable: CAPSRecords, val schema: Schema, val tokens: CAPSRecordsTokens)
+                      (implicit val session: CAPSSession) extends CAPSGraph {
 
   private val header = baseTable.details.header
+
+  def show() = baseTable.details.data.show()
 
   override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
     val targetNode = Var(name)(nodeCypherType)
@@ -67,7 +69,7 @@ class PatternGraph(private val baseTable: CAPSRecords, val schema: Schema, val t
     }.toMap
   }
 
-  override def union(other: CAPSGraph): CAPSGraph = UnionGraph(this, other)
+  override def union(other: CAPSGraph): CAPSGraph = CAPSUnionGraph(this, other)
 
   override protected def graph: CAPSGraph = this
 }
