@@ -43,10 +43,10 @@ class FlatPlannerTest extends BaseTestSuite {
 
   schema.verify
 
-  val globals = GlobalsRegistry.fromSchema(schema)
+  val globals: GlobalsRegistry = GlobalsRegistry.fromSchema(schema)
   import globals.tokens._
 
-  implicit val flatContext = FlatPlannerContext(globals.tokens, globals.constants)
+  implicit val flatContext: FlatPlannerContext = FlatPlannerContext(globals.constants)
 
   val mkLogical = new LogicalOperatorProducer
   val mkFlat = new FlatOperatorProducer()

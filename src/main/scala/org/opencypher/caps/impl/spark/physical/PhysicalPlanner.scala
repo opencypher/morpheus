@@ -17,16 +17,12 @@ package org.opencypher.caps.impl.spark.physical
 
 import java.net.URI
 
-import org.apache.spark.sql.functions.monotonically_increasing_id
-import org.apache.spark.sql.{Column, DataFrame, Dataset, functions}
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.api.record.{OpaqueField, ProjectedExpr, RecordHeader}
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
-import org.opencypher.caps.api.types.{CTInteger, CTRelationship, CTString}
+import org.opencypher.caps.api.types.CTRelationship
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.flat.FlatOperator
-import org.opencypher.caps.impl.logical.{ConstructedRelationship, GraphOfPattern, LogicalExternalGraph, LogicalPatternGraph}
-import org.opencypher.caps.impl.spark.SparkColumnName
+import org.opencypher.caps.impl.logical.{LogicalExternalGraph, LogicalPatternGraph}
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.{DirectCompilationStage, flat}
 import org.opencypher.caps.ir.api.block.SortItem
@@ -35,7 +31,6 @@ import org.opencypher.caps.ir.api.global._
 case class PhysicalPlannerContext(
    resolver: URI => CAPSGraph,
    inputRecords: CAPSRecords,
-   tokens: TokenRegistry,
    constants: ConstantRegistry,
    parameters: Map[ConstantRef, CypherValue])
 
@@ -47,7 +42,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
 
   def inner(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext): PhysicalResult = {
 
-    val producer = new PhysicalResultProducer(RuntimeContext(context.parameters, context.tokens, context.constants))
+    val producer = new PhysicalResultProducer(RuntimeContext(context.parameters, context.constants))
     import producer._
 
     flatPlan match {

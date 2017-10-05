@@ -21,6 +21,7 @@ import org.opencypher.caps.impl.syntax.register._
 
 import scala.util.Try
 
+// TODO: Get rid of this
 object GlobalsRegistry {
   val empty = GlobalsRegistry()
 

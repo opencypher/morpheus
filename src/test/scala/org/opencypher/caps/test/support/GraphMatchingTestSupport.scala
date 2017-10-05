@@ -28,10 +28,8 @@ import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.api.util.parsePathOrURI
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.convert.fromJavaType
-import org.opencypher.caps.impl.record.CAPSRecordsTokens
 import org.opencypher.caps.impl.spark.convert.toSparkType
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceImpl
-import org.opencypher.caps.ir.api.global.TokenRegistry
 import org.opencypher.caps.test.BaseTestSuite
 import org.opencypher.caps.test.fixture.{CAPSSessionFixture, SparkSessionFixture}
 import org.s1ck.gdl.GDLHandler

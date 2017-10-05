@@ -18,21 +18,19 @@ package org.opencypher.caps.impl.logical
 import java.net.URI
 
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.api.io.{GraphSource, PersistMode}
-import org.opencypher.caps.ir.api._
-import org.opencypher.caps.ir.api.block._
-import org.opencypher.caps.ir.api.global._
-import org.opencypher.caps.ir.api.pattern.{DirectedRelationship, EveryNode, EveryRelationship, Pattern}
+import org.opencypher.caps.api.io.PersistMode
 import org.opencypher.caps.api.record.{ProjectedExpr, ProjectedField}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.CAPSGraph
 import org.opencypher.caps.api.spark.io.CAPSGraphSource
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.flat.TestGraph
-import org.opencypher.caps.ir.impl.IrTestSuite
 import org.opencypher.caps.impl.logical
-import org.opencypher.caps.impl.spark.io.CAPSGraphSourceImpl
 import org.opencypher.caps.impl.util.toVar
+import org.opencypher.caps.ir.api._
+import org.opencypher.caps.ir.api.block._
+import org.opencypher.caps.ir.api.global._
+import org.opencypher.caps.ir.api.pattern.{DirectedRelationship, EveryNode, EveryRelationship, Pattern}
+import org.opencypher.caps.ir.impl.IrTestSuite
 import org.opencypher.caps.toField
 import org.scalatest.matchers.{MatchResult, Matcher}
 
@@ -207,5 +205,4 @@ class LogicalPlannerTest extends IrTestSuite {
     override def persist(graph: CAPSGraph, mode: PersistMode): CAPSGraph = ???
     override def delete(): Unit = ???
   }
-
 }
