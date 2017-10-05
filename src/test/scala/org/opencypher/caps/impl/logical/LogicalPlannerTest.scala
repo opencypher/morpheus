@@ -173,7 +173,7 @@ class LogicalPlannerTest extends IrTestSuite {
 
     val globals = ir.model.globals
 
-    val startOp: LogicalOperator = Start(LogicalExternalGraph("test", URI.create("test"), Schema.empty),Set.empty)(emptySqm)
+    val startOp: LogicalOperator = Start(LogicalExternalGraph("test", URI.create("test"), Schema.empty), Set.empty)(emptySqm)
     val projectFoo: LogicalOperator = ProjectGraph(LogicalExternalGraph("foo", URI.create("test"), Schema.empty), startOp)(emptySqm)
     val projectBar: LogicalOperator = ProjectGraph(LogicalExternalGraph("bar", URI.create("test"), Schema.empty), projectFoo)(emptySqm)
     val select = Select(IndexedSeq.empty, Set("bar", "foo"), projectBar)(emptySqm)
