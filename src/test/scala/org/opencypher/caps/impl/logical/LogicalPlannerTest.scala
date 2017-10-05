@@ -108,7 +108,7 @@ class LogicalPlannerTest extends IrTestSuite {
   }
 
   test("plan query with type information") {
-    implicit val schema = Schema.empty
+    implicit val schema: Schema = Schema.empty
       .withNodePropertyKeys("Group")("name" -> CTString)
       .withNodePropertyKeys("Administrator")("name" -> CTFloat)
 

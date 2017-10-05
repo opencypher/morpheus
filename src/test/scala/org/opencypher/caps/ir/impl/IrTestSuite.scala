@@ -25,19 +25,21 @@ import org.opencypher.caps.ir.api.block._
 import org.opencypher.caps.ir.api.global.GlobalsRegistry
 import org.opencypher.caps.ir.api.pattern.{AllGiven, Pattern}
 import org.opencypher.caps.api.schema.Schema
+import org.opencypher.caps.api.spark.io.CAPSGraphSource
 import org.opencypher.caps.api.types.CypherType
 import org.opencypher.caps.ir.impl.global.GlobalsExtractor
 import org.opencypher.caps.impl.logical.{LogicalExternalGraph, Start}
 import org.opencypher.caps.impl.parse.CypherParser
 import org.opencypher.caps.test.BaseTestSuite
+import org.scalatest.mockito.MockitoSugar
 
 import scala.language.implicitConversions
 
-abstract class IrTestSuite extends BaseTestSuite {
+abstract class IrTestSuite extends BaseTestSuite  with MockitoSugar {
   val leafRef = BlockRef("leaf")
-  val testGraph = IRExternalGraph("test", Schema.empty, URI.create("test"))
+  def testGraph()(implicit schema: Schema = Schema.empty) = IRExternalGraph("test", schema, URI.create("test"))
   def leafBlock() = SourceBlock[Expr](testGraph)
-  def leafPlan = Start(LogicalExternalGraph(testGraph.name, testGraph.uri, Schema.empty), Set.empty)(SolvedQueryModel.empty)
+  def leafPlan = Start(LogicalExternalGraph(testGraph.name, testGraph.uri, testGraph.schema), Set.empty)(SolvedQueryModel.empty)
 
   val graphBlockRef = BlockRef("graph")
   val graphBlock = SourceBlock[Expr](testGraph)
@@ -90,17 +92,19 @@ abstract class IrTestSuite extends BaseTestSuite {
   implicit class RichString(queryText: String) {
     def model: QueryModel[Expr] = ir.model
 
+
+
     // TODO: SemCheck
     def ir(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
-      IRBuilder(stmt)(IRBuilderContext.initial(queryText, GlobalsExtractor(stmt), SemanticState.clean, testGraph, Map.empty, ???))
+      IRBuilder(stmt)(IRBuilderContext.initial(queryText, GlobalsExtractor(stmt), SemanticState.clean, testGraph, Map.empty, _ => mock[CAPSGraphSource]))
     }
 
     // TODO: SemCheck
     def irWithParams(params: (String, CypherType)*)(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
       val knownTypes: Map[Expression, CypherType] = params.map(p => Parameter(p._1, symbols.CTAny)(InputPosition.NONE) -> p._2).toMap
-      IRBuilder(stmt)(IRBuilderContext.initial(queryText, GlobalsExtractor(stmt), SemanticState.clean, testGraph, knownTypes, ???))
+      IRBuilder(stmt)(IRBuilderContext.initial(queryText, GlobalsExtractor(stmt), SemanticState.clean, testGraph, knownTypes, _ => mock[CAPSGraphSource]))
     }
   }
 }
