@@ -15,11 +15,9 @@
  */
 package org.opencypher
 
-import java.net.URI
-
 import org.opencypher.caps.api.expr.Var
-import org.opencypher.caps.ir.api.{IRExternalGraph, IRField}
 import org.opencypher.caps.api.types.CypherType
+import org.opencypher.caps.ir.api.{IRField, IRNamedGraph}
 
 import scala.language.implicitConversions
 
@@ -28,5 +26,5 @@ package object caps {
   implicit def toVar(t: (Symbol, CypherType)): Var = Var(t._1.name)(t._2)
   implicit def toField(s: Symbol): IRField = IRField(s.name)()
   implicit def toField(t: (Symbol, CypherType)): IRField = IRField(t._1.name)(t._2)
-  implicit def toGraph(s: Symbol)(implicit uri: URI): IRExternalGraph = IRExternalGraph(s.name, uri)
+  implicit def toGraph(s: Symbol): IRNamedGraph = IRNamedGraph(s.name)
 }
