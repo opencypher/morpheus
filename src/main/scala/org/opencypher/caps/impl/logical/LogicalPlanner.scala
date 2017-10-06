@@ -244,7 +244,6 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     graph match {
       // TODO: IRGraph[Expr]
       case IRPatternGraph(name, schema, pattern) =>
-        // TODO: Consider type in IRField, too? Or should we not use IRFields in patterns (i.e. drop types)?
         val patternEntities = pattern.entities.keySet
         val entitiesInScope = fieldsInScope.map { (v: Var) => IRField(v.name)(v.cypherType) }
         val boundEntities = patternEntities intersect entitiesInScope

@@ -253,7 +253,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
               for {
                 pattern <- convertPattern(astPattern)
               } yield IRPatternGraph(graphName,
-                Schema.forEntities(context.currentGraph.schema, pattern.entities.values),
+                context.currentGraph.schema.forEntities(pattern.entities.values),
                 pattern)
 
             case ast.GraphAtAs(url, _, _) =>

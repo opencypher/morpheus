@@ -40,7 +40,6 @@ final case class IRBuilderContext(
                                    resolver: URI => CAPSGraphSource,
                                    knownTypes: Map[ast.Expression, CypherType] = Map.empty)
 {
-  // TODO: Teach SchemaTyper to work with multiple graphs
   private def typer = SchemaTyper(currentGraph.schema)
   private lazy val exprConverter = new ExpressionConverter(globals)
   private lazy val patternConverter = new PatternConverter(globals)
@@ -66,11 +65,12 @@ final case class IRBuilderContext(
   }
 
   def schemaFor(graphName: String): Schema = {
-    resolver(graphs(graphName)).schema match {
+    val source = resolver(graphs(graphName))
+    source.schema match {
       case None =>
         // This initialises the graph eagerly!!
         // TODO: We probably want to save the graph reference somewhere
-        resolver(graphs(graphName)).graph.schema
+        source.graph.schema
       case Some(s) => s
     }
   }
