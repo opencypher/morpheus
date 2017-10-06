@@ -20,7 +20,7 @@ import org.opencypher.caps.api.record.NodeScan
 import org.opencypher.caps.test.CAPSTestSuite
 
 class CAPSUnionGraphTest extends CAPSTestSuite {
-  import CAPSGraphTestData._
+  import CAPSGraphGDLTestData._
 
   test("Node scan from single node CAPSRecords") {
     val inputGraph = TestGraph(`:Person`).graph

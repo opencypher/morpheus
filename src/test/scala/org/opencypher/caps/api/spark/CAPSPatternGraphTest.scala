@@ -30,7 +30,7 @@ import scala.collection.Bag
 import scala.collection.JavaConverters._
 
 class CAPSPatternGraphTest extends CAPSTestSuite {
-  import CAPSGraphTestData._
+  import CAPSGraphGDLTestData._
 
   test("project pattern graph") {
     val inputGraph = TestGraph(`:Person`).graph
