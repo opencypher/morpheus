@@ -17,8 +17,9 @@ package org.opencypher.caps.demo
 
 import java.net.{URI, URLEncoder}
 
+import org.apache.spark.sql.Row
 import org.neo4j.driver.v1.Session
-import org.opencypher.caps.api.spark.CAPSSession
+import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
 import org.opencypher.caps.test.BaseTestSuite
 import org.opencypher.caps.test.fixture.{MiniDFSClusterFixture, Neo4jServerFixture, SparkSessionFixture}
 
@@ -31,11 +32,10 @@ class GCDemoTest
     with MiniDFSClusterFixture
 {
 
+  implicit val caps: CAPSSession = CAPSSession.create(session)
   protected override val dfsTestGraphPath = "/csv/prod"
 
   ignore("the demo") {
-    implicit val caps: CAPSSession = CAPSSession.create(session)
-
     val SN_US = caps.graphAt(neoURIforRegion("US"))
     val SN_EU = caps.graphAt(neoURIforRegion("EU"))
     val PRODUCTS = caps.graphAt(hdfsURI)
@@ -46,25 +46,16 @@ class GCDemoTest
         |WHERE city.name = "New York City" OR city.name = "San Francisco"
         |RETURN GRAPH result OF (a)-[r:ACQUAINTED]->(b)
       """.stripMargin)
+    verifyCityFriendsUS(CITYFRIENDS_US.graphs("result"))
 
-    // Using DML
     val CITYFRIENDS_EU = SN_EU.cypher(
       """MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b)
         |WHERE city.name = "Malmö" OR city.name = "Berlin"
         |RETURN GRAPH result OF (a)-[r:ACQUAINTED]->(b)
       """.stripMargin)
 
-//    Using DML
-//    val CITYFRIENDS_EU = SN_EU.cypher(
-//      """MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b)
-//        |WHERE city.name = "Malmö" OR city.name = "Berlin"
-//        |CREATE GRAPH result
-//        |INTO GRAPH result
-//        |CREATE (a)-[:ACQUAINTED]->(b)
-//        |RETURN result
-//      """.stripMargin)
-
     val ALL_CITYFRIENDS = CITYFRIENDS_EU.graphs("result") union CITYFRIENDS_US.graphs("result")
+    verifyFriendsUnion(ALL_CITYFRIENDS)
 
     caps.persistGraphAt(ALL_CITYFRIENDS, "/friends")
 
@@ -111,6 +102,64 @@ class GCDemoTest
     val uri = URI.create(s"$neo4jHost?$nodeQuery;$relQuery")
     uri
   }
+
+  def verifyCityFriendsUS(g: CAPSGraph) = {
+    g.nodes("n").details.toDF().collect().toSet should equal (Set(
+      Row(4L,false,true,false,"Alice","US"),
+      Row(5L,false,true,false,"Bob","US"),
+      Row(6L,false,true,false,"Eve","US"),
+      Row(7L,false,true,false,"Carol","US"),
+      Row(8L,false,true,false,"Carl","US"),
+      Row(9L,false,true,false,"Dave","US")
+    ))
+
+    val relsWithoutRelId = g.relationships("r").details.toDF().drop("r")
+
+    relsWithoutRelId.collect().toSet should equal (Set(
+      Row(4L, "ACQUAINTED", 6L),
+      Row(7L, "ACQUAINTED", 8L),
+      Row(5L, "ACQUAINTED", 6L),
+      Row(4L, "ACQUAINTED", 5L),
+      Row(8L, "ACQUAINTED", 9L),
+      Row(7L, "ACQUAINTED", 9L)
+    ))
+  }
+
+  def verifyFriendsUnion(g: CAPSGraph) = {
+    g.nodes("n").details.toDF().collect().toSet should equal (Set(
+      Row(4L,false,true,false,"Alice","US"),
+      Row(5L,false,true,false,"Bob","US"),
+      Row(6L,false,true,false,"Eve","US"),
+      Row(7L,false,true,false,"Carol","US"),
+      Row(8L,false,true,false,"Carl","US"),
+      Row(9L,false,true,false,"Dave","US"),
+      Row(10L,false,true,false,"Mallory","EU"),
+      Row(11L,false,true,false,"Trudy","EU"),
+      Row(12L,false,true,false,"Trent","EU"),
+      Row(13L,false,true,false,"Oscar","EU"),
+      Row(14L,false,true,false,"Victor","EU"),
+      Row(15L,false,true,false,"Peggy","EU")
+    ))
+
+    val relsWithoutRelId = g.relationships("r").details.toDF().drop("r")
+
+    relsWithoutRelId.collect().toSet should equal (Set(
+      Row(4L, "ACQUAINTED", 6L),
+      Row(7L, "ACQUAINTED", 8L),
+      Row(5L, "ACQUAINTED", 6L),
+      Row(4L, "ACQUAINTED", 5L),
+      Row(8L, "ACQUAINTED", 9L),
+      Row(7L, "ACQUAINTED", 9L),
+      Row(8L, "ACQUAINTED", 9L),
+      Row(10L, "ACQUAINTED", 11L),
+      Row(10L, "ACQUAINTED", 12L),
+      Row(11L, "ACQUAINTED", 12L),
+      Row(13L, "ACQUAINTED", 14L),
+      Row(13L, "ACQUAINTED", 15L),
+      Row(14L, "ACQUAINTED", 15L)
+    ))
+  }
+
   override def dataFixture = """
        CREATE (nyc:City {name: "New York City", region: "US"})
        CREATE (sfo:City {name: "San Francisco", region: "US"})
