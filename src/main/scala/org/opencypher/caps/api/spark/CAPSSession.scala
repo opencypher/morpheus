@@ -90,7 +90,7 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
     val (stmt, extractedLiterals, semState) = parser.process(query)(CypherParser.defaultContext)
 
     val globals = GlobalsExtractor(stmt, GlobalsRegistry.empty)
-    val GlobalsRegistry(tokens, constants) = globals
+    val GlobalsRegistry(constants) = globals
 
     val converted = extractedLiterals.mapValues(v => CypherValue(v))
     val allParameters = (queryParameters ++ converted).collect {

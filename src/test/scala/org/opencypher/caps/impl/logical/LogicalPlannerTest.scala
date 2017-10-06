@@ -78,8 +78,6 @@ class LogicalPlannerTest extends IrTestSuite {
   test("plan query") {
     val ir = "MATCH (a:Administrator)-[r]->(g:Group) WHERE g.name = $foo RETURN a.name".irWithParams("foo" -> CTString)
 
-    val globals = ir.model.globals
-
     plan(ir) should equal(
       Select(IndexedSeq(Var("a.name")(CTVoid)), Set.empty,
         Project(ProjectedField(Var("a.name")(CTVoid), Property(Var("a")(CTNode("Administrator")), PropertyKey("name"))(CTVoid)),
@@ -111,8 +109,6 @@ class LogicalPlannerTest extends IrTestSuite {
 
     val ir = "MATCH (a:Administrator)-[r]->(g:Group) WHERE g.name = $foo RETURN a.name".irWithParams("foo" -> CTString)
 
-    val globals = ir.model.globals
-
     plan(ir, schema) should equal(
       Select(IndexedSeq(Var("a.name")(CTFloat)), Set.empty,
         Project(ProjectedField(Var("a.name")(CTFloat), Property(Var("a")(CTNode("Administrator")), PropertyKey("name"))(CTFloat)),
@@ -140,8 +136,6 @@ class LogicalPlannerTest extends IrTestSuite {
   test("plan query with negation") {
     val ir = "MATCH (a) WHERE NOT $p1 = $p2 RETURN a.prop".irWithParams("p1" -> CTInteger, "p2" -> CTBoolean)
 
-    val globals = ir.model.globals
-
     plan(ir) should equal(
       Select(IndexedSeq(Var("a.prop")(CTVoid)), Set.empty,
         Project(ProjectedField(Var("a.prop")(CTVoid), Property(nodeA, PropertyKey("prop"))(CTVoid)),
@@ -165,8 +159,6 @@ class LogicalPlannerTest extends IrTestSuite {
       """.stripMargin
 
     val ir = query.ir
-
-    val globals = ir.model.globals
 
     val startOp: LogicalOperator = Start(LogicalExternalGraph("test", URI.create("test"), Schema.empty), Set.empty)(emptySqm)
     val projectFoo: LogicalOperator = ProjectGraph(LogicalExternalGraph("foo", URI.create("test"), Schema.empty), startOp)(emptySqm)

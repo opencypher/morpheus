@@ -24,17 +24,13 @@ import scala.util.Try
 // TODO: Get rid of this
 object GlobalsRegistry {
   val empty = GlobalsRegistry()
-
-  def fromTokens(tokens: TokenRegistry) = GlobalsRegistry(tokens)
-  def fromSchema(verified: VerifiedSchema) = GlobalsRegistry(TokenRegistry.fromSchema(verified))
 }
 
 final case class GlobalsRegistry(
-  tokens: TokenRegistry = TokenRegistry.empty,
   constants: ConstantRegistry = ConstantRegistry.empty
 ) {
-  def mapTokens(f: TokenRegistry => TokenRegistry) = copy(tokens = f(tokens))
-  def mapConstants(f: ConstantRegistry => ConstantRegistry) = copy(constants = f(constants))
+
+  def mapConstants(f: ConstantRegistry => ConstantRegistry): GlobalsRegistry = copy(constants = f(constants))
 }
 
 object ConstantRegistry {
