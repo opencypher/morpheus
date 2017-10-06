@@ -243,21 +243,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
     graph match {
       // TODO: IRGraph[Expr]
-      case IRPatternGraph(name, pattern) =>
+      case IRPatternGraph(name, schema, pattern) =>
         // TODO: Consider type in IRField, too? Or should we not use IRFields in patterns (i.e. drop types)?
-        def entitySchema(schema: Schema)(entity: EveryEntity): Schema = entity match {
-          case EveryNode(AllGiven(labels)) => schema.forNode(CTNode(labels.map(_.name)))
-          case EveryRelationship(AnyGiven(relTypes)) => schema.forRelationship(CTRelationship(relTypes.map(_.name)))
-        }
-
-        def forEntities(schema: Schema)(entities: Iterable[EveryEntity]): Schema = {
-          entities
-            .map(entitySchema(schema))
-            .foldLeft(Schema.empty)(_ ++ _)
-        }
-
-        val patternGraphSchema = forEntities(sourceSchema)(pattern.entities.values)
-
         val patternEntities = pattern.entities.keySet
         val entitiesInScope = fieldsInScope.map { (v: Var) => IRField(v.name)(v.cypherType) }
         val boundEntities = patternEntities intersect entitiesInScope
@@ -275,7 +262,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
           }
         }
 
-        LogicalPatternGraph(name, patternGraphSchema, GraphOfPattern(entities, boundEntities))
+        LogicalPatternGraph(name, schema, GraphOfPattern(entities, boundEntities))
 
       case _ =>
         val graphSource = context.resolver(graph.name)

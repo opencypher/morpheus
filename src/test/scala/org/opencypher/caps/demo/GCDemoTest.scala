@@ -73,7 +73,7 @@ class GCDemoTest
          |MATCH (p:Person)
          |FROM GRAPH products AT '$hdfsURI'
          |MATCH (c:Customer) WHERE c.name = p.name
-         |RETURN GRAPH result OF (c)-[:IS]->(p)
+         |RETURN GRAPH result OF (c)-[x:IS]->(p)
       """.stripMargin)
 
     val RECO = ALL_CITYFRIENDS union PRODUCTS union LINKS.graphs("result")

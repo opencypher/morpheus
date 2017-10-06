@@ -17,6 +17,7 @@ package org.opencypher.caps.ir.impl
 
 import org.opencypher.caps.{toField, _}
 import org.opencypher.caps.api.expr.{Expr, HasLabel, Property, Var}
+import org.opencypher.caps.api.schema.{ImpliedLabels, LabelCombinations, PropertyKeyMap, Schema}
 import org.opencypher.caps.ir.api.block._
 import org.opencypher.caps.ir.api.global.GlobalsRegistry
 import org.opencypher.caps.ir.api.pattern._
@@ -175,6 +176,8 @@ class CypherQueryBuilderTest extends IrTestSuite {
   test("return graph of") {
     "MATCH (a), (b) RETURN GRAPH moo OF (a)-[r:TEST]->(b)".model.ensureThat { (model, globals) =>
 
+      val expectedSchema = Schema.empty.withRelationshipType("TEST")
+
       import globals.tokens._
 
       val loadRef = model.findExactlyOne {
@@ -196,12 +199,15 @@ class CypherQueryBuilderTest extends IrTestSuite {
         exprs shouldBe empty
       }
 
+
       val projectRef = model.findExactlyOne {
         // TODO: Properly assert on graphs, also below
         case NoWhereBlock(ProjectBlock(deps, FieldsAndGraphs(map, graphs), _, _, _)) =>
           map shouldBe empty
+
           graphs shouldBe Set(IRPatternGraph(
             "moo",
+            expectedSchema,
             Pattern(
               Map(nodeA -> EveryNode, nodeB -> EveryNode, rel -> EveryRelationship(AnyOf(relTypeByName("TEST")))),
               Map(rel -> DirectedRelationship(nodeA, nodeB)))))
@@ -211,7 +217,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
         case NoWhereBlock(ResultBlock(deps, items, _, _, _, _)) =>
           deps should equal(Set(projectRef))
           items.fields shouldBe empty
-          items.graphs should equal(Set(IRNamedGraph("moo")))
+          items.graphs should equal(Set(IRNamedGraph("moo", expectedSchema)))
       }
 
       model.requirements should equal(Map(

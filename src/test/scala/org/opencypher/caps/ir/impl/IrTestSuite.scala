@@ -17,31 +17,38 @@ package org.opencypher.caps.ir.impl
 
 import java.net.URI
 
+import org.mockito.Mockito._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, Parameter}
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SemanticState, symbols}
 import org.opencypher.caps.api.expr.Expr
+import org.opencypher.caps.api.schema.Schema
+import org.opencypher.caps.api.spark.io.CAPSGraphSource
+import org.opencypher.caps.api.types.CypherType
+import org.opencypher.caps.impl.logical.{LogicalExternalGraph, Start}
+import org.opencypher.caps.impl.parse.CypherParser
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block._
 import org.opencypher.caps.ir.api.global.GlobalsRegistry
 import org.opencypher.caps.ir.api.pattern.{AllGiven, Pattern}
-import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.types.CypherType
-import org.opencypher.caps.impl.flat.TestGraph
 import org.opencypher.caps.ir.impl.global.GlobalsExtractor
-import org.opencypher.caps.impl.logical.{LogicalExternalGraph, Start}
-import org.opencypher.caps.impl.parse.CypherParser
 import org.opencypher.caps.test.BaseTestSuite
+import org.scalatest.mockito.MockitoSugar
 
 import scala.language.implicitConversions
 
-abstract class IrTestSuite extends BaseTestSuite {
+abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
   val leafRef = BlockRef("leaf")
-  val testGraph = IRExternalGraph("test", URI.create("test"))
-  def leafBlock() = SourceBlock[Expr](testGraph)
-  def leafPlan = Start(LogicalExternalGraph(testGraph.name, testGraph.uri, Schema.empty), Set.empty)(SolvedQueryModel.empty)
 
-  val graphBlockRef = BlockRef("graph")
-  val graphBlock = SourceBlock[Expr](testGraph)
+  def testGraph()(implicit schema: Schema = Schema.empty) = IRExternalGraph("test", schema, URI.create("test"))
+
+  val testGraphSource: CAPSGraphSource = mock[CAPSGraphSource]
+  when(testGraphSource.schema).thenReturn(Some(testGraph.schema))
+
+  def leafBlock(): SourceBlock[Expr] = SourceBlock[Expr](testGraph)
+  def leafPlan: Start = Start(LogicalExternalGraph(testGraph.name, testGraph.uri, testGraph.schema), Set.empty)(SolvedQueryModel.empty)
+
+  val graphBlockRef: BlockRef = BlockRef("graph")
+  val graphBlock: SourceBlock[Expr] = SourceBlock[Expr](testGraph)
 
   /**
     * Construct a single-block ir; the parameter block has to be a block that could be planned as a leaf.
@@ -76,7 +83,7 @@ abstract class IrTestSuite extends BaseTestSuite {
       where = AllGiven[Expr](),
       source = testGraph
     )
-    val model = QueryModel(result, GlobalsRegistry.empty, blocks, Map(graphBlockRef -> Schema.empty), Map.empty)
+    val model = QueryModel(result, GlobalsRegistry.empty, blocks, Map.empty)
     CypherQuery(QueryInfo("test"), model)
   }
 
@@ -91,17 +98,19 @@ abstract class IrTestSuite extends BaseTestSuite {
   implicit class RichString(queryText: String) {
     def model: QueryModel[Expr] = ir.model
 
+
+
     // TODO: SemCheck
     def ir(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
-      IRBuilder(stmt)(IRBuilderContext.initial(queryText, GlobalsExtractor(stmt), schema, SemanticState.clean, testGraph, Map.empty))
+      IRBuilder(stmt)(IRBuilderContext.initial(queryText, GlobalsExtractor(stmt), SemanticState.clean, testGraph, Map.empty, _ => testGraphSource))
     }
 
     // TODO: SemCheck
     def irWithParams(params: (String, CypherType)*)(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
       val knownTypes: Map[Expression, CypherType] = params.map(p => Parameter(p._1, symbols.CTAny)(InputPosition.NONE) -> p._2).toMap
-      IRBuilder(stmt)(IRBuilderContext.initial(queryText, GlobalsExtractor(stmt), schema, SemanticState.clean, testGraph, knownTypes))
+      IRBuilder(stmt)(IRBuilderContext.initial(queryText, GlobalsExtractor(stmt), SemanticState.clean, testGraph, knownTypes, _ => testGraphSource))
     }
   }
 }

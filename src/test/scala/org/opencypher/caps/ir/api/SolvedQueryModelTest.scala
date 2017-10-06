@@ -18,6 +18,7 @@ package org.opencypher.caps.ir.api
 import java.net.URI
 
 import org.opencypher.caps.api.expr.{Equals, Expr}
+import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.CTBoolean
 import org.opencypher.caps.ir.api.block.{FieldsAndGraphs, ProjectedFieldsOf}
 import org.opencypher.caps.ir.api.pattern.{EveryNode, Pattern}
@@ -31,7 +32,7 @@ class SolvedQueryModelTest extends IrTestSuite {
   test("add graphs") {
     val s = SolvedQueryModel.empty.withGraph('foo)
 
-    s.graphs should equal(Set(IRNamedGraph("foo")))
+    s.graphs should equal(Set(IRNamedGraph("foo", Schema.empty)))
   }
 
   test("add fields") {
