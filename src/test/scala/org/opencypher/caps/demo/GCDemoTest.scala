@@ -62,20 +62,22 @@ class GCDemoTest
     val LINKS = caps.cypher(
       s"""FROM GRAPH friends AT '/friends'
          |MATCH (p:Person)
+         |WITH p.name AS personName
          |FROM GRAPH products AT '$hdfsURI'
-         |MATCH (c:Customer) WHERE c.name = p.name
+         |MATCH (c:Customer) WHERE c.name = personName
          |RETURN GRAPH result OF (c)-[x:IS]->(p)
       """.stripMargin)
 
     val RECO = ALL_CITYFRIENDS union PRODUCTS union LINKS.graphs("result")
 
-    val result =RECO.cypher(
+    val result = RECO.cypher(
       """MATCH (a:Person)-[:ACQUAINTED]-(b:Person)-[:HAS_INTEREST]->(i:Interest),
         |      (a)<-[:IS]-(x:Customer)-[r:BOUGHT]->(p:Product {category: i.name})
-        |WHERE r.rating >= 4 AND r.helpful/r.votes > 0.6
-        |RETURN DISTINCT p.title AS product, b.name AS name ORDER BY p.rank LIMIT 100
+        |WHERE r.rating >= 4 AND r.helpful / r.votes > 0.6
+        |WITH * ORDER BY p.rank
+        |RETURN DISTINCT p.title AS product, b.name AS name
+        |LIMIT 100
       """.stripMargin)
-
 
     // Write back to Neo
     withBoltSession { session =>
