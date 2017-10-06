@@ -111,7 +111,7 @@ sealed abstract class CAPSRecords(
   }
 
   def distinct: CAPSRecords = {
-    CAPSRecords.create(self.header, self.details.data.distinct())
+    CAPSRecords.create(details.header, self.details.data.distinct())
   }
 
   def toLocalScalaIterator: Iterator[CypherMap] = {
