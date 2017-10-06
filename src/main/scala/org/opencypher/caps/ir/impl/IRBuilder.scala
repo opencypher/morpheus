@@ -70,7 +70,10 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
     for {
       context <- get[R, IRBuilderContext]
       graph <- {
-        val currentGraph = context.semanticState.recordedContextGraphs.get(c).map {
+        val currentGraph = context.semanticState.recordedContextGraphs.find {
+          case (clause, _) =>
+            c.position == clause.position
+        }.map(_._2).map {
           g => IRNamedGraph(g.source, context.schemaFor(g.source))
         }.getOrElse(context.ambientGraph)
         put[R, IRBuilderContext](context.withGraph(currentGraph)) >> pure[R, IRGraph](currentGraph)
