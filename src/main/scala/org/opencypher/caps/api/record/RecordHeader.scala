@@ -24,7 +24,7 @@ import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTString, CypherType, _
 import org.opencypher.caps.common.syntax._
 import org.opencypher.caps.impl.record.InternalHeader
 import org.opencypher.caps.impl.syntax.header.{addContents, _}
-import org.opencypher.caps.ir.api.global.TokenRegistry
+import org.opencypher.caps.ir.api.global.{Label, PropertyKey, TokenRegistry}
 
 final case class RecordHeader(internalHeader: InternalHeader) {
 
@@ -153,12 +153,12 @@ object RecordHeader {
     val keyGroups: Map[String, Vector[CypherType]] = allKeys.groups[String, Vector[CypherType]]
     val headerLabels = impliedLabels ++ possibleLabels
     val labelHeaderContents = headerLabels.map {
-      labelName => ProjectedExpr(HasLabel(node, tokens.labelByName(labelName))(CTBoolean))
+      labelName => ProjectedExpr(HasLabel(node, Label(labelName))(CTBoolean))
     }.toSeq
 
     // TODO: This should consider multiple types per property
     val keyHeaderContents = keyGroups.toSeq.map {
-      case (k, types) => ProjectedExpr(Property(node, tokens.propertyKeyByName(k))(types.reduce(_ join _)))
+      case (k, types) => ProjectedExpr(Property(node, PropertyKey(k))(types.reduce(_ join _)))
     }
 
     // TODO: Add is null column(?)
@@ -177,7 +177,7 @@ object RecordHeader {
     val relKeyHeaderProperties = relTypes.flatMap(t => schema.relationshipKeys(t).toSeq)
 
     val relKeyHeaderContents = relKeyHeaderProperties.map {
-      case ((k, t)) => ProjectedExpr(Property(rel, tokens.propertyKeyByName(k))(t))
+      case ((k, t)) => ProjectedExpr(Property(rel, PropertyKey(k))(t))
     }
 
     val startNode = ProjectedExpr(StartNode(rel)(CTNode))
