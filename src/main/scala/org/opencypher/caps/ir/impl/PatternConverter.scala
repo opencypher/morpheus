@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast
 import org.neo4j.cypher.internal.frontend.v3_3.ast.LabelName
 import org.opencypher.caps.api.types.{CTList, CTNode, CTRelationship}
 import org.opencypher.caps.api.expr.Expr
+import org.opencypher.caps.impl.parse.CypherParser
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.global.{GlobalsRegistry, Label, RelType}
 import org.opencypher.caps.ir.api.pattern._
@@ -51,7 +52,7 @@ final class PatternConverter(val tokens: GlobalsRegistry) extends AnyVal {
   private def convertElement(p: ast.PatternElement): Result[IRField] = p match {
     case ast.NodePattern(Some(v), labels: Seq[LabelName], None) =>
       for {
-        entity <- pure(IRField(v.name)(CTNode))
+        entity <- pure(IRField(CypherParser.fixFrontendNamespaceBug(v.name))(CTNode))
         _ <- modify[Pattern[Expr]](_.withEntity(entity, EveryNode(AllGiven(labels.map(l => Label(l.name)).toSet))))
       } yield entity
 
@@ -59,7 +60,7 @@ final class PatternConverter(val tokens: GlobalsRegistry) extends AnyVal {
       for {
         source <- convertElement(left)
         target <- convertElement(right)
-        rel <- pure(IRField(eVar.name)(CTRelationship(types.map(_.name).toSet)))
+        rel <- pure(IRField(CypherParser.fixFrontendNamespaceBug(eVar.name))(CTRelationship(types.map(_.name).toSet)))
         _ <- modify[Pattern[Expr]] { given =>
           val relTypes =
             if (types.isEmpty) AnyGiven[RelType]()
