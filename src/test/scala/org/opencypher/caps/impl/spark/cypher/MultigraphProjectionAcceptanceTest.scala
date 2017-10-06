@@ -80,7 +80,7 @@ class MultigraphProjectionAcceptanceTest extends CAPSTestSuite {
     result.graphs shouldBe empty
   }
 
-  ignore("matching from different graphs") {
+  test("matching from different graphs") {
     testGraph1.mountAt("/test/graph1")
     testGraph2.mountAt("/test/graph2")
     testGraph3.mountAt("/test/graph3")
@@ -88,9 +88,10 @@ class MultigraphProjectionAcceptanceTest extends CAPSTestSuite {
     val query =
       """FROM GRAPH myGraph AT '/test/graph2'
         |MATCH (n:Person)
+        |WITH n.name AS name
         |FROM GRAPH another AT '/test/graph3'
         |MATCH (c:Car)
-        |RETURN n.name AS name, c.type AS car""".stripMargin
+        |RETURN name, c.type AS car""".stripMargin
 
     val result = testGraph1.graph.cypher(query)
 
