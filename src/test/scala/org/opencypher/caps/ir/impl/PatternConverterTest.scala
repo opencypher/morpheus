@@ -108,7 +108,7 @@ class PatternConverterTest extends IrTestSuite {
     )
   }
 
-  val converter = new PatternConverter(GlobalsRegistry.empty)
+  val converter = new PatternConverter(ConstantRegistry.empty)
 
   def convert(p: ast.Pattern) = converter.convert(p)
 

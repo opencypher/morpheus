@@ -23,17 +23,17 @@ import cats.syntax.flatMap._
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection._
 import org.neo4j.cypher.internal.frontend.v3_3.ast
 import org.neo4j.cypher.internal.frontend.v3_3.ast.LabelName
-import org.opencypher.caps.api.types.{CTList, CTNode, CTRelationship}
 import org.opencypher.caps.api.expr.Expr
+import org.opencypher.caps.api.types.{CTList, CTNode, CTRelationship}
 import org.opencypher.caps.impl.parse.CypherParser
-import org.opencypher.caps.ir.api._
-import org.opencypher.caps.ir.api.global.{GlobalsRegistry, Label, RelType}
-import org.opencypher.caps.ir.api.pattern._
 import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.ir.api._
+import org.opencypher.caps.ir.api.global.{ConstantRegistry, Label, RelType}
+import org.opencypher.caps.ir.api.pattern._
 
 import scala.annotation.tailrec
 
-final class PatternConverter(val tokens: GlobalsRegistry) extends AnyVal {
+final class PatternConverter(val constants: ConstantRegistry) extends AnyVal {
 
   type Result[A] = State[Pattern[Expr], A]
 

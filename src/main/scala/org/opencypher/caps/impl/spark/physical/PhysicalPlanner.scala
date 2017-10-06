@@ -164,7 +164,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
     }
   }
 
-  private def relTypes(r: Var, tokens: TokenRegistry): Set[String] = r.cypherType match {
+  private def relTypes(r: Var): Set[String] = r.cypherType match {
     case t: CTRelationship => t.types
     case _ => Set.empty
   }

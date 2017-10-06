@@ -19,7 +19,7 @@ import org.opencypher.caps.ir.api.global._
 import org.opencypher.caps.test.BaseTestSuite
 import org.opencypher.caps.test.support.Neo4jAstTestSupport
 
-class GlobalsExtractorTest extends BaseTestSuite with Neo4jAstTestSupport {
+class ConstantsExtractorTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   test("extracts constants") {
     extracting("$param") shouldRegisterConstant "param"
@@ -28,29 +28,27 @@ class GlobalsExtractorTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   test("collect tokens") {
     val (given, _,_) = parseQuery("MATCH (a:Person)-[r:KNOWS]->(b:Duck) RETURN a.name, r.since, b.quack")
-    val actual = GlobalsExtractor(given)
-    val expected = GlobalsRegistry.empty
+    val actual = ConstantsExtractor(given)
+    val expected = ConstantRegistry.empty
 
     actual should equal(expected)
   }
 
   test("collect parameters") {
     val (given, _, _) = parseQuery("WITH $param AS p RETURN p, $another")
-    val actual = GlobalsExtractor(given)
-    val expected = GlobalsRegistry(
-      ConstantRegistry.empty.withConstant(Constant("param")).withConstant(Constant("another"))
-    )
+    val actual = ConstantsExtractor(given)
+    val expected = ConstantRegistry.empty.withConstant(Constant("param")).withConstant(Constant("another"))
 
     actual should equal(expected)
   }
 
-  private def extracting(expr: String): GlobalsMatcher = {
+  private def extracting(expr: String): ConstantsMatcher = {
     val ast = parseExpr(expr)
-    GlobalsMatcher(GlobalsExtractor(ast))
+    ConstantsMatcher(ConstantsExtractor(ast))
   }
 
-  private case class GlobalsMatcher(registry: GlobalsRegistry) {
-    def shouldRegisterConstant(name: String) = registry.constants.constantRefByName(name)
-    def shouldRegisterConstants(names: String*) = names.foreach(registry.constants.constantRefByName)
+  private case class ConstantsMatcher(registry: ConstantRegistry) {
+    def shouldRegisterConstant(name: String) = registry.constantRefByName(name)
+    def shouldRegisterConstants(names: String*) = names.foreach(registry.constantRefByName)
   }
 }

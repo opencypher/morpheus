@@ -40,8 +40,6 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
   override def process(ir: CypherQuery[Expr])(implicit context: LogicalPlannerContext): LogicalOperator = {
     val model = ir.model
 
-    implicit val tokenDefs = model.globals
-
     planModel(model.result, model)
   }
 

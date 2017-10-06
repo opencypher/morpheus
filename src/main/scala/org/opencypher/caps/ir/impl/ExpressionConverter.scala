@@ -20,14 +20,12 @@ import org.neo4j.cypher.internal.frontend.v3_3.{Ref, ast}
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.parse.{CypherParser, RetypingPredicate}
-import org.opencypher.caps.ir.api.global.{GlobalsRegistry, Label, PropertyKey, RelType}
+import org.opencypher.caps.ir.api.global.{Label, PropertyKey, RelType, _}
 import org.opencypher.caps.ir.impl.FunctionUtils._
 
 import scala.language.implicitConversions
 
-final class ExpressionConverter(val globals: GlobalsRegistry) extends AnyVal {
-
-  import globals.constants
+object ExpressionConverter {
 
   implicit def toRef(e: ast.Expression): Ref[ast.Expression] = Ref(e)
 
@@ -35,7 +33,7 @@ final class ExpressionConverter(val globals: GlobalsRegistry) extends AnyVal {
     case ast.Variable(name) =>
       Var(CypherParser.fixFrontendNamespaceBug(name))(typings(e))
     case ast.Parameter(name, _) =>
-      Const(constants.constantByName(name))(typings(e))
+      Const(Constant(name))(typings(e))
 
     // Literals
     case astExpr: ast.IntegerLiteral =>

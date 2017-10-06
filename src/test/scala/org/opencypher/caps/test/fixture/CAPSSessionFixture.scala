@@ -15,7 +15,6 @@
  */
 package org.opencypher.caps.test.fixture
 
-import org.opencypher.caps.ir.api.global.TokenRegistry
 import org.opencypher.caps.api.spark.CAPSSession
 import org.opencypher.caps.test.BaseTestSuite
 
@@ -25,10 +24,6 @@ trait CAPSSessionFixture extends BaseTestFixture {
   implicit lazy val caps: CAPSSession = initCAPSSessionBuilder.build
 
   def initCAPSSessionBuilder: CAPSSession.Builder = CAPSSession.builder(session)
-
-  def initialTokens: TokenRegistry = {
-    TokenRegistry.empty
-  }
 
   abstract override protected def afterEach(): Unit =
     caps.unmountAll()

@@ -19,19 +19,17 @@ import java.net.URI
 
 import org.mockito.Mockito.verify
 import org.opencypher.caps.api.expr.Var
-import org.opencypher.caps.ir.api.global.{Label, RelType, TokenRegistry}
-import org.opencypher.caps.ir.api.pattern.{AllOf, AnyOf, EveryNode, EveryRelationship}
 import org.opencypher.caps.api.record.RecordHeader
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.impl.logical.LogicalExternalGraph
+import org.opencypher.caps.ir.api.global.{Label, RelType}
+import org.opencypher.caps.ir.api.pattern.{AllOf, AnyOf, EveryNode, EveryRelationship}
 import org.opencypher.caps.test.CAPSTestSuite
 import org.scalatest.mockito.MockitoSugar
 
 class PhysicalResultProducerTest extends CAPSTestSuite with MockitoSugar {
-
-  override def initialTokens = TokenRegistry.fromSchema(Schema.empty)
 
   val producer = new PhysicalResultProducer(context)
   import producer._

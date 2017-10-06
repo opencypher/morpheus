@@ -21,10 +21,9 @@ import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.logical.{LogicalGraph, LogicalOperatorProducer}
 import org.opencypher.caps.ir.api.IRField
-import org.opencypher.caps.ir.api.global.{GlobalsRegistry, Label, PropertyKey, RelType}
+import org.opencypher.caps.ir.api.global.{ConstantRegistry, Label, PropertyKey, RelType}
 import org.opencypher.caps.ir.api.pattern._
 import org.opencypher.caps.test.BaseTestSuite
-import org.opencypher.caps.toField
 
 import scala.language.implicitConversions
 
@@ -43,9 +42,9 @@ class FlatPlannerTest extends BaseTestSuite {
 
   schema.verify
 
-  val globals: GlobalsRegistry = GlobalsRegistry.empty
+  val constants: ConstantRegistry = ConstantRegistry.empty
 
-  implicit val flatContext: FlatPlannerContext = FlatPlannerContext(globals.constants)
+  implicit val flatContext: FlatPlannerContext = FlatPlannerContext(constants)
 
   val mkLogical = new LogicalOperatorProducer
   val mkFlat = new FlatOperatorProducer()

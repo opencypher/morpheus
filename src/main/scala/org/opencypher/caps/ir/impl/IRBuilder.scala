@@ -27,7 +27,7 @@ import org.opencypher.caps.impl.CompilationStage
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block.{SortItem, _}
-import org.opencypher.caps.ir.api.global.GlobalsRegistry
+import org.opencypher.caps.ir.api.global.ConstantRegistry
 import org.opencypher.caps.ir.api.pattern.{AllGiven, Pattern}
 import org.opencypher.caps.ir.impl.instances._
 
@@ -95,7 +95,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
             val after = blockRegistry.lastAdded.toSet
             val block = MatchBlock[Expr](after, pattern, given, optional, irGraph)
 
-            implicit val globals: GlobalsRegistry = context.globals
+            implicit val constants: ConstantRegistry = context.constants
             val typedOutputs = typedMatchBlock.outputs(block)
 
             val (ref, reg) = blockRegistry.register(block)
@@ -352,7 +352,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
         case (_ref, r: ResultBlock[Expr]) => _ref -> r
       }.get
 
-      val model = QueryModel(r, context.globals, blocks.reg.toMap - ref, context.graphs)
+      val model = QueryModel(r, context.constants, blocks.reg.toMap - ref, context.graphs)
       val info = QueryInfo(context.queryString)
 
       Some(CypherQuery(info, model))

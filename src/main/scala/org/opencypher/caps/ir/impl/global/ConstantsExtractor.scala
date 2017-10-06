@@ -13,32 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.api.spark
+package org.opencypher.caps.ir.impl.global
 
+import org.neo4j.cypher.internal.frontend.v3_3.ast
 import org.opencypher.caps.ir.api.global._
-import org.opencypher.caps.impl.record.CAPSRecordsTokens
+import org.opencypher.caps.api.types.CypherType
+import org.opencypher.caps.impl.typer.fromFrontendType
 
-// Lightweight wrapper around token registry to expose a simple lookup api for all tokens that may occur in a data frame
-trait CAPSTokens {
+object ConstantsExtractor {
 
-  self: Serializable =>
+  def apply(expr: ast.ASTNode, constants: ConstantRegistry = ConstantRegistry.empty): ConstantRegistry = {
+    expr.fold(constants) {
+      case ast.Parameter(name, _) => _.withConstant(Constant(name))
+    }
+  }
 
-  type Tokens <: CAPSTokens
-
-  def labels: Set[String]
-  def relTypes: Set[String]
-
-  def labelName(id: Int): String
-  def labelId(name: String): Int
-
-  def relTypeName(id: Int): String
-  def relTypeId(name: String): Int
-
-  def withLabel(name: String): Tokens
-  def withRelType(name: String): Tokens
-}
-
-
-object CAPSTokens {
-  val empty = CAPSRecordsTokens(TokenRegistry.empty)
+  def paramWithTypes(expr: ast.ASTNode): Map[ast.Expression, CypherType] = {
+    expr.fold(Map.empty[ast.Expression, CypherType]) {
+      case p: ast.Parameter => _.updated(p, fromFrontendType(p.parameterType))
+    }
+  }
 }

@@ -25,24 +25,12 @@ import org.opencypher.caps.toVar
 
 class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
-  private val globals = GlobalsRegistry(
-    ConstantRegistry
-    .empty
-    .withConstant(Constant("p"))
-    .withConstant(Constant("p1"))
-    .withConstant(Constant("p2"))
-  )
-
   private def testTypes(ref: Ref[ast.Expression]): CypherType = ref.value match {
     case ast.Variable("r") => CTRelationship
     case ast.Variable("n") => CTNode
     case ast.Variable("m") => CTNode
     case _ => CTWildcard
   }
-
-  import globals.constants._
-
-  private val c = new ExpressionConverter(globals)
 
   test("exists()") {
     convert(parseExpr("exists(n.key)")) should equal(
@@ -188,8 +176,8 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     convert(given) should equal(Ands(
       HasLabel('n, Label("Foo"))(),
       HasLabel('m, Label("Bar"))(),
-      Const(constantByName("p1"))(),
-      Const(constantByName("p2"))())
+      Const(Constant("p1"))(),
+      Const(Constant("p2"))())
     )
   }
 
@@ -199,5 +187,5 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     )
   }
 
-  private def convert(e: ast.Expression): Expr = c.convert(e)(testTypes)
+  private def convert(e: ast.Expression): Expr = ExpressionConverter.convert(e)(testTypes)
 }

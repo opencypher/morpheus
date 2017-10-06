@@ -36,9 +36,9 @@ import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvGraphSourceFactory
 import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraphSourceFactory
 import org.opencypher.caps.impl.spark.io.session.SessionGraphSourceFactory
 import org.opencypher.caps.impl.spark.physical.{CAPSResultBuilder, PhysicalPlanner, PhysicalPlannerContext}
-import org.opencypher.caps.ir.api.global.{ConstantRef, ConstantRegistry, GlobalsRegistry}
+import org.opencypher.caps.ir.api.global.{ConstantRef, ConstantRegistry}
 import org.opencypher.caps.ir.api.{IRExternalGraph, IRField}
-import org.opencypher.caps.ir.impl.global.GlobalsExtractor
+import org.opencypher.caps.ir.impl.global.ConstantsExtractor
 import org.opencypher.caps.ir.impl.{IRBuilder, IRBuilderContext}
 
 sealed class CAPSSession private(val sparkSession: SparkSession,
@@ -89,18 +89,17 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
 
     val (stmt, extractedLiterals, semState) = parser.process(query)(CypherParser.defaultContext)
 
-    val globals = GlobalsExtractor(stmt, GlobalsRegistry.empty)
-    val GlobalsRegistry(constants) = globals
+    val constants = ConstantsExtractor(stmt, ConstantRegistry.empty)
 
     val converted = extractedLiterals.mapValues(v => CypherValue(v))
     val allParameters = (queryParameters ++ converted).collect {
       case (k, v) if constants.contains(k) => constants.constantRefByName(k) -> v
     }
 
-    val paramsAndTypes = GlobalsExtractor.paramWithTypes(stmt)
+    val paramsAndTypes = ConstantsExtractor.paramWithTypes(stmt)
 
     print("IR ... ")
-    val ir = IRBuilder(stmt)(IRBuilderContext.initial(query, globals, semState, ambientGraph, paramsAndTypes, sourceAt))
+    val ir = IRBuilder(stmt)(IRBuilderContext.initial(query, constants, semState, ambientGraph, paramsAndTypes, sourceAt))
     println("Done!")
 
     print("Logical plan ... ")
@@ -174,10 +173,10 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
                    queryParameters: Map[String, CypherValue],
                    logicalPlan: LogicalOperator): CAPSResult = {
 
-    val globals = GlobalsRegistry.empty
-    val allParameters = queryParameters.map { case (k, v) => globals.constants.constantRefByName(k) -> v }
+    val constants = ConstantRegistry.empty
+    val allParameters = queryParameters.map { case (k, v) => constants.constantRefByName(k) -> v }
 
-    plan(graph, records, globals.constants, allParameters, logicalPlan)
+    plan(graph, records, constants, allParameters, logicalPlan)
   }
 
   private def plan(graph: CAPSGraph,

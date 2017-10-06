@@ -24,25 +24,25 @@ import org.opencypher.caps.api.spark.io.CAPSGraphSource
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.typer.{SchemaTyper, TypeTracker}
-import org.opencypher.caps.ir.api.{IRExternalGraph, IRField, IRGraph}
 import org.opencypher.caps.ir.api.block.SourceBlock
-import org.opencypher.caps.ir.api.global.GlobalsRegistry
+import org.opencypher.caps.ir.api.global.ConstantRegistry
 import org.opencypher.caps.ir.api.pattern.Pattern
+import org.opencypher.caps.ir.api.{IRExternalGraph, IRField, IRGraph}
 
 final case class IRBuilderContext(
-                                   queryString: String,
-                                   globals: GlobalsRegistry,
-                                   ambientGraph: IRExternalGraph,
-                                   blocks: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
-                                   semanticState: SemanticState,
-                                   graphs: Map[String, URI],
-                                   currentGraph: IRGraph,
-                                   resolver: URI => CAPSGraphSource,
-                                   knownTypes: Map[ast.Expression, CypherType] = Map.empty)
+  queryString: String,
+  constants: ConstantRegistry,
+  ambientGraph: IRExternalGraph,
+  blocks: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
+  semanticState: SemanticState,
+  graphs: Map[String, URI],
+  currentGraph: IRGraph,
+  resolver: URI => CAPSGraphSource,
+  knownTypes: Map[ast.Expression, CypherType] = Map.empty)
 {
   private def typer = SchemaTyper(currentGraph.schema)
-  private lazy val exprConverter = new ExpressionConverter(globals)
-  private lazy val patternConverter = new PatternConverter(globals)
+  private lazy val exprConverter = ExpressionConverter
+  private lazy val patternConverter = new PatternConverter(constants)
 
   // TODO: Fuse monads
   def infer(expr: ast.Expression): Map[Ref[ast.Expression], CypherType] = {
@@ -94,7 +94,7 @@ final case class IRBuilderContext(
 
 object IRBuilderContext {
   def initial(query: String,
-              globals: GlobalsRegistry,
+              constants: ConstantRegistry,
               semState: SemanticState,
               ambientGraph: IRExternalGraph,
               knownTypes: Map[ast.Expression, CypherType],
@@ -103,7 +103,7 @@ object IRBuilderContext {
     val block = SourceBlock[Expr](ambientGraph)
     val (_, reg) = registry.register(block)
 
-    IRBuilderContext(query, globals, ambientGraph, reg, semState,
+    IRBuilderContext(query, constants, ambientGraph, reg, semState,
       Map(ambientGraph.name -> ambientGraph.uri), ambientGraph, resolver, knownTypes)
   }
 }
