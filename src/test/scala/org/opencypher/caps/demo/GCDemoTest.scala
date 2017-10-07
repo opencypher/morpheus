@@ -23,7 +23,8 @@ import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
 import org.opencypher.caps.test.BaseTestSuite
 import org.opencypher.caps.test.fixture.{MiniDFSClusterFixture, Neo4jServerFixture, SparkSessionFixture}
 
-import scala.collection.JavaConversions._
+import scala.collection.Bag
+import scala.collection.immutable.HashedBagConfiguration
 
 class GCDemoTest
   extends BaseTestSuite
@@ -34,6 +35,9 @@ class GCDemoTest
 
   implicit val caps: CAPSSession = CAPSSession.create(session)
   protected override val dfsTestGraphPath = "/csv/prod"
+
+  // needed for bag builder initialization
+  implicit val m: HashedBagConfiguration[Row] = Bag.configuration.compact[Row]
 
   ignore("the demo") {
     val SN_US = caps.graphAt(neoURIforRegion("US"))
@@ -64,27 +68,31 @@ class GCDemoTest
          |MATCH (p:Person)
          |WITH p.name AS personName
          |FROM GRAPH products AT '$hdfsURI'
-         |MATCH (c:Customer) WHERE c.name = personName
+         |MATCH (c:Customer)
+         |WITH c.name as customerName, personName
+         |WHERE customerName = personName
          |RETURN GRAPH result OF (c)-[x:IS]->(p)
       """.stripMargin)
 
-    val RECO = ALL_CITYFRIENDS union PRODUCTS union LINKS.graphs("result")
+    val RECO = ALL_CITYFRIENDS union PRODUCTS union LINKS.graphs("result") union SN_EU union SN_US
 
     val result = RECO.cypher(
       """MATCH (a:Person)-[:ACQUAINTED]-(b:Person)-[:HAS_INTEREST]->(i:Interest),
         |      (a)<-[:IS]-(x:Customer)-[r:BOUGHT]->(p:Product {category: i.name})
-        |WHERE r.rating >= 4 AND r.helpful / r.votes > 0.6
+        |WHERE r.rating >= 4 //AND r.helpful / r.votes > 0.6
         |WITH * ORDER BY p.rank
         |RETURN DISTINCT p.title AS product, b.name AS name
         |LIMIT 100
       """.stripMargin)
 
+    result.records.print
+
     // Write back to Neo
-    withBoltSession { session =>
-      result.records.data.toLocalIterator().toIterator.foreach { row =>
-        session.run(s"MATCH (p:Person {name: ${row.getString(1)}) SET p.should_buy = ${row.getString(0)}")
-      }
-    }
+//    withBoltSession { session =>
+//      result.records.data.toLocalIterator().toIterator.foreach { row =>
+//        session.run(s"MATCH (p:Person {name: ${row.getString(1)}) SET p.should_buy = ${row.getString(0)}")
+//      }
+//    }
   }
 
   private def withBoltSession[T](f: Session => T): T = {
@@ -106,7 +114,7 @@ class GCDemoTest
   }
 
   def verifyCityFriendsUS(g: CAPSGraph) = {
-    g.nodes("n").details.toDF().collect().toSet should equal (Set(
+    Bag(g.nodes("n").details.toDF().collect(): _*) should equal (Bag(
       Row(4L,false,true,false,"Alice","US"),
       Row(5L,false,true,false,"Bob","US"),
       Row(6L,false,true,false,"Eve","US"),
@@ -116,8 +124,7 @@ class GCDemoTest
     ))
 
     val relsWithoutRelId = g.relationships("r").details.toDF().drop("r")
-
-    relsWithoutRelId.collect().toSet should equal (Set(
+    Bag(relsWithoutRelId.collect(): _*) should equal (Bag(
       Row(4L, "ACQUAINTED", 6L),
       Row(7L, "ACQUAINTED", 8L),
       Row(5L, "ACQUAINTED", 6L),
@@ -128,7 +135,7 @@ class GCDemoTest
   }
 
   def verifyFriendsUnion(g: CAPSGraph) = {
-    g.nodes("n").details.toDF().collect().toSet should equal (Set(
+    Bag(g.nodes("n").details.toDF().collect(): _*) should equal (Bag(
       Row(4L,false,true,false,"Alice","US"),
       Row(5L,false,true,false,"Bob","US"),
       Row(6L,false,true,false,"Eve","US"),
@@ -144,15 +151,13 @@ class GCDemoTest
     ))
 
     val relsWithoutRelId = g.relationships("r").details.toDF().drop("r")
-
-    relsWithoutRelId.collect().toSet should equal (Set(
+    Bag(relsWithoutRelId.collect(): _*) should equal (Bag(
       Row(4L, "ACQUAINTED", 6L),
       Row(7L, "ACQUAINTED", 8L),
       Row(5L, "ACQUAINTED", 6L),
       Row(4L, "ACQUAINTED", 5L),
       Row(8L, "ACQUAINTED", 9L),
       Row(7L, "ACQUAINTED", 9L),
-      Row(8L, "ACQUAINTED", 9L),
       Row(10L, "ACQUAINTED", 11L),
       Row(10L, "ACQUAINTED", 12L),
       Row(11L, "ACQUAINTED", 12L),
