@@ -274,5 +274,4 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
     // And
     result.graphs shouldBe empty
   }
-
 }
