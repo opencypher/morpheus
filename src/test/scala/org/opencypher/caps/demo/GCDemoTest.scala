@@ -18,8 +18,9 @@ package org.opencypher.caps.demo
 import java.net.{URI, URLEncoder}
 
 import org.apache.spark.sql.Row
-import org.neo4j.driver.v1.Session
+import org.neo4j.driver.v1.{AuthTokens, Session}
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
+import org.opencypher.caps.api.value.CypherMap
 import org.opencypher.caps.test.BaseTestSuite
 import org.opencypher.caps.test.fixture.{MiniDFSClusterFixture, Neo4jServerFixture, SparkSessionFixture}
 
@@ -87,16 +88,37 @@ class GCDemoTest
 
     result.records.print
 
-    // Write back to Neo
-//    withBoltSession { session =>
-//      result.records.data.toLocalIterator().toIterator.foreach { row =>
-//        session.run(s"MATCH (p:Person {name: ${row.getString(1)}) SET p.should_buy = ${row.getString(0)}")
-//      }
-//    }
+    //Write back to Neo
+    withBoltSession { session =>
+      // maybe iterate over rows instead of CypherMaps is faster
+      result.records.toLocalScalaIterator.foreach { cypherMap =>
+        session.run(s"MATCH (p:Person {name: ${cypherMap.get("name").get}}) SET p.should_buy = ${cypherMap.get("product").get}")
+      }
+    }
+  }
+
+  test("write back to Neo") {
+    val SN_US = caps.graphAt(neoURIforRegion("US"))
+    val result = SN_US.cypher("""MATCH (n:Person {name: "Alice"}) RETURN n.name AS name""")
+    withBoltSession { session =>
+      result.records.toLocalScalaIterator.foreach { cypherMap =>
+        session.run(s"MATCH (p:Person {name: ${cypherMap.get("name").get}}) SET p.should_buy = 'a book'")
+      }
+    }
+
+    val resultGraph = caps.graphAt(neoURIforRegion("US"))
+    val res = resultGraph.cypher("MATCH (n:Person {name: 'Alice'}) RETURN n.should_buy as rec")
+
+    res.recordsWithDetails.toLocalScalaIterator.toSet should equal(Set(
+      CypherMap("rec" -> "a book")
+    ))
   }
 
   private def withBoltSession[T](f: Session => T): T = {
-    val driver = org.neo4j.driver.v1.GraphDatabase.driver(neo4jHost)
+    //AuthTokens.basic(config.user, pwd), boltConfig()
+    val driver = org.neo4j.driver.v1.GraphDatabase
+      .driver(neo4jHost, AuthTokens.basic(neo4jConfig.user,neo4jConfig.password.get), neo4jConfig.boltConfig())
+
     val session = driver.session()
     try {
       f(session)
