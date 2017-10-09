@@ -20,8 +20,12 @@ import java.util.Collections
 import org.apache.spark.api.java.JavaRDD
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
+<<<<<<< HEAD
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.StorageLevel
+=======
+import org.apache.spark.sql.types._
+>>>>>>> Cast field types when creating a GraphScan from a DataFrame
 import org.opencypher.caps.api.expr.{Property, Var}
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.types._
@@ -35,6 +39,7 @@ import org.opencypher.caps.impl.syntax.header._
 
 import scala.annotation.tailrec
 import scala.reflect.runtime.universe.TypeTag
+import scala.util.Try
 
 sealed abstract class CAPSRecords(
   override val header: RecordHeader,
@@ -200,11 +205,36 @@ object CAPSRecords {
     create(caps.sparkSession.createDataFrame(rdd, beanClass))
 
   def create(initialDataFrame: DataFrame)(implicit caps: CAPSSession): CAPSRecords = {
-    val initialHeader = CAPSRecordHeader.fromSparkStructType(initialDataFrame.schema)
+    def isSupportedSparkType(field: StructField) = Try(fromSparkType(field.dataType, field.nullable)).toOption.isDefined
+
+    val toCast = initialDataFrame.schema.fields.filterNot(isSupportedSparkType)
+    val dfWithCompatibleTypes: DataFrame = if (toCast.isEmpty) {
+      initialDataFrame
+    } else {
+      toCast.foldLeft(initialDataFrame) { case (df, field) =>
+        val castType = field.dataType match {
+          case ByteType => LongType
+          case ShortType => LongType
+          case IntegerType => LongType
+          case FloatType => DoubleType
+          case other => Raise.unsupportedArgument(
+            s"Cannot convert or cast type $other of field $field to a Spark type supported by Cypher")
+        }
+        val tmpColName = s"${field.name}___Tmp"
+        val converted = df.
+          withColumn(tmpColName, df(field.name).cast(castType)).
+          drop(field.name).
+          withColumnRenamed(tmpColName, field.name)
+
+        converted
+      }
+    }
+
+    val initialHeader = CAPSRecordHeader.fromSparkStructType(dfWithCompatibleTypes.schema)
 
     // rename data to match generated header
     // we trust the order of the generated header
-    val renamed = initialDataFrame.toDF(initialHeader.internalHeader.columns: _*)
+    val renamed = dfWithCompatibleTypes.toDF(initialHeader.internalHeader.columns: _*)
 
     create(initialHeader, renamed)
   }
