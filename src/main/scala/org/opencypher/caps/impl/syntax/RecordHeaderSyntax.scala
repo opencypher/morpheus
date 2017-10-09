@@ -35,7 +35,7 @@ trait RecordHeaderSyntax {
   def addContent(content: SlotContent): State[RecordHeader, AdditiveUpdateResult[RecordSlot]] =
     exec(InternalHeader.addContent(content))
 
-  def compactFields: State[RecordHeader, Vector[RemovingUpdateResult[RecordSlot]]] =
+  def compactFields(implicit details: RetainedDetails): State[RecordHeader, Vector[RemovingUpdateResult[RecordSlot]]] =
     exec(InternalHeader.compactFields)
 
 //  def selectFields(predicate: RecordSlot => Boolean)

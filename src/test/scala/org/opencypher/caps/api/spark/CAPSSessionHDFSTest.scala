@@ -33,8 +33,8 @@ class CAPSSessionHDFSTest extends BaseTestSuite
   test("HDFS via URI") {
     implicit val capsSession: CAPSSession = CAPSSession.builder(session).build
     val graph = capsSession.graphAt(hdfsURI)
-    graph.nodes("n").details.toDF().collect().toSet should equal(dfsTestGraphNodes)
-    graph.relationships("rel").details.toDF().collect.toSet should equal(dfsTestGraphRels)
+    graph.nodes("n").toDF().collect().toSet should equal(dfsTestGraphNodes)
+    graph.relationships("rel").toDF().collect.toSet should equal(dfsTestGraphRels)
   }
 
   test("HDFS via mount point") {
@@ -42,7 +42,7 @@ class CAPSSessionHDFSTest extends BaseTestSuite
     capsSession.mountSourceAt(HdfsCsvGraphSource(hdfsURI, session.sparkContext.hadoopConfiguration, hdfsURI.getPath), "/test/graph")
 
     val graph = capsSession.graphAt("/test/graph")
-    graph.nodes("n").details.toDF().collect().toSet should equal(dfsTestGraphNodes)
-    graph.relationships("rel").details.toDF().collect.toSet should equal(dfsTestGraphRels)
+    graph.nodes("n").toDF().collect().toSet should equal(dfsTestGraphNodes)
+    graph.relationships("rel").toDF().collect.toSet should equal(dfsTestGraphRels)
   }
 }

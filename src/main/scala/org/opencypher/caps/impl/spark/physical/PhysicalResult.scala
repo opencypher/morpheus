@@ -19,7 +19,7 @@ import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 
 case class PhysicalResult(records: CAPSRecords, graphs: Map[String, CAPSGraph]) {
   def mapRecordsWithDetails(f: CAPSRecords => CAPSRecords): PhysicalResult =
-    copy(records = f(records.details))
+    copy(records = f(records))
   def withGraph(t: (String, CAPSGraph)): PhysicalResult =
     copy(graphs = graphs.updated(t._1, t._2))
   def selectGraphs(selected: Set[String]): PhysicalResult =

@@ -29,7 +29,7 @@ class CAPSUnionGraphTest extends CAPSTestSuite {
     val patternGraph = CAPSUnionGraph(CAPSGraph.create(inputNodes, inputGraph.schema))
     val outputNodes = patternGraph.nodes("n")
 
-    outputNodes.details.toDF().columns should equal(Array(
+    outputNodes.toDF().columns should equal(Array(
       "n",
       "____n:Person",
       "____n:Swedish",
@@ -37,7 +37,7 @@ class CAPSUnionGraphTest extends CAPSTestSuite {
       "____n_dot_luckyNumberINTEGER"
     ))
 
-    outputNodes.details.toDF().collect().toSet should equal (Set(
+    outputNodes.toDF().collect().toSet should equal (Set(
       Row(0, true, true,    "Mats",   23),
       Row(1, true, false, "Martin",   42),
       Row(2, true, false,    "Max", 1337),
@@ -49,7 +49,7 @@ class CAPSUnionGraphTest extends CAPSTestSuite {
     val unionGraph = CAPSUnionGraph(TestGraph(`:Person`).graph, TestGraph(`:Book`).graph)
     val outputNodes = unionGraph.nodes("n")
 
-    outputNodes.details.toDF().columns should equal(Array(
+    outputNodes.toDF().columns should equal(Array(
       "n",
       "____n:Person",
       "____n:Swedish",
@@ -60,7 +60,7 @@ class CAPSUnionGraphTest extends CAPSTestSuite {
       "____n_dot_titleSTRING"
     ))
 
-    outputNodes.details.toDF().collect().toSet should equal(Set(
+    outputNodes.toDF().collect().toSet should equal(Set(
       Row(0, true,  true,  false,   "Mats",   23, null,                   null),
       Row(1, true,  false, false, "Martin",   42, null,                   null),
       Row(2, true,  false, false,    "Max", 1337, null,                   null),
@@ -97,7 +97,7 @@ class CAPSUnionGraphTest extends CAPSTestSuite {
     val unionGraph = CAPSUnionGraph(patternGraph, scanGraph)
     val outputNodes = unionGraph.nodes("n")
 
-    outputNodes.details.toDF().columns should equal(Array(
+    outputNodes.toDF().columns should equal(Array(
       "n",
       "____n:Person",
       "____n:Swedish",
@@ -105,7 +105,7 @@ class CAPSUnionGraphTest extends CAPSTestSuite {
       "____n_dot_luckyNumberINTEGER"
     ))
 
-    outputNodes.details.toDF().collect().toSet should equal(Set(
+    outputNodes.toDF().collect().toSet should equal(Set(
       Row(0, true, true, "Mats", 23),
       Row(1, true, false, "Martin", 42),
       Row(2, true, false, "Max", 1337),

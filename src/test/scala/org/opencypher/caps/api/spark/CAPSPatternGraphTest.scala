@@ -40,7 +40,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
         |RETURN GRAPH result OF (a)
       """.stripMargin)
 
-    person.graphs("result").cypher("MATCH (n) RETURN n.name").recordsWithDetails.toLocalScalaIterator.toSet should equal(Set(
+    person.graphs("result").cypher("MATCH (n) RETURN n.name").records.toLocalScalaIterator.toSet should equal(Set(
       CypherMap("n.name" -> CypherString("Mats"))
     ))
   }
@@ -53,7 +53,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
         |RETURN GRAPH result OF (a)-[r]->(b)
       """.stripMargin)
 
-    person.graphs("result").cypher("MATCH (n) RETURN n.name").recordsWithDetails.toLocalScalaIterator.toSet should equal(Set(
+    person.graphs("result").cypher("MATCH (n) RETURN n.name").records.toLocalScalaIterator.toSet should equal(Set(
       CypherMap("n.name" -> CypherString("Mats")),
       CypherMap("n.name" -> CypherString("Stefan")),
       CypherMap("n.name" -> CypherString("Martin")),
@@ -71,7 +71,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
       """.stripMargin)
 
     person.graphs("result").cypher("MATCH ()-[:SWEDISH_KNOWS]->(n) RETURN n.name").
-      recordsWithDetails.toLocalScalaIterator.toSet should equal(Set(
+      records.toLocalScalaIterator.toSet should equal(Set(
       CypherMap("n.name" -> CypherString("Stefan")),
       CypherMap("n.name" -> CypherString("Martin")),
       CypherMap("n.name" -> CypherString("Max"))
@@ -87,7 +87,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
       """.stripMargin)
 
     person.graphs("result").cypher("MATCH (b)-[:KNOWS_A]->(n) WITH COUNT(n) as cnt RETURN cnt").
-      recordsWithDetails.toLocalScalaIterator.toSet should equal(Set(
+      records.toLocalScalaIterator.toSet should equal(Set(
       CypherMap("cnt" -> 3)
     ))
   }
@@ -103,7 +103,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
     val graph = person.graphs("result")
 
     graph.cypher("MATCH (n:Swede) RETURN labels(n)").
-      recordsWithDetails.toCypherMaps.collect().toSet should equal(Set(
+      records.toCypherMaps.collect().toSet should equal(Set(
       CypherMap("labels(n)" -> Array("Swede")),
       CypherMap("labels(n)" -> Array("Swede")),
       CypherMap("labels(n)" -> Array("Swede"))
@@ -120,7 +120,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
     val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema)
     val outputNodes = patternGraph.nodes("n")
 
-    outputNodes.details.toDF().columns should equal(Array(
+    outputNodes.toDF().columns should equal(Array(
       "n",
       "____n:Person",
       "____n:Swedish",
@@ -128,7 +128,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
       "____n_dot_luckyNumberINTEGER"
     ))
 
-    outputNodes.details.toDF().collect().toSet should equal (Set(
+    outputNodes.toDF().collect().toSet should equal (Set(
       Row(0L, true, true,    "Mats",   23L),
       Row(1L, true, false, "Martin",   42L),
       Row(2L, true, false,    "Max", 1337L),
@@ -143,7 +143,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
     val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema)
     val outputNodes = patternGraph.nodes("n")
 
-    outputNodes.details.toDF().columns should equal(Array(
+    outputNodes.toDF().columns should equal(Array(
       "n",
       "____n:Person",
       "____n:Swedish",
@@ -154,7 +154,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
       "____n_dot_titleSTRING"
     ))
 
-    outputNodes.details.toDF().collect().toSet should equal(Set(
+    outputNodes.toDF().collect().toSet should equal(Set(
       Row(0L,  true,  true,  false,   "Mats",   23L, null,                   null),
       Row(1L,  true,  false, false, "Martin",   42L, null,                   null),
       Row(2L,  true,  false, false,    "Max", 1337L, null,                   null),
@@ -170,7 +170,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
     val patternGraph = initPersonReadsBookGraph
     val outputNodes = patternGraph.nodes("n")
 
-    outputNodes.details.toDF().columns should equal(Array(
+    outputNodes.toDF().columns should equal(Array(
       "n",
       "____n:Person",
       "____n:Swedish",
@@ -181,7 +181,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
       "____n_dot_titleSTRING"
     ))
 
-    outputNodes.details.toDF().collect().toSet should equal(Set(
+    outputNodes.toDF().collect().toSet should equal(Set(
       Row(0L,  true,  true,  false,   "Mats",   23L, null,                   null),
       Row(1L,  true,  false, false, "Martin",   42L, null,                   null),
       Row(2L,  true,  false, false,    "Max", 1337L, null,                   null),
@@ -198,7 +198,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
 
     val outputNodes = patternGraph.nodes("n", CTNode("Person"))
 
-    outputNodes.details.toDF().columns should equal(Array(
+    outputNodes.toDF().columns should equal(Array(
       "n",
       "____n:Person",
       "____n:Swedish",
@@ -206,7 +206,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
       "____n_dot_luckyNumberINTEGER"
     ))
 
-    outputNodes.details.toDF().collect().toSet should equal(Set(
+    outputNodes.toDF().collect().toSet should equal(Set(
       Row(0L,  true,   true,   "Mats",   23L),
       Row(1L,  true,  false, "Martin",   42L),
       Row(2L,  true,  false,    "Max", 1337L),
@@ -221,7 +221,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
     val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema)
     val outputNodes = patternGraph.nodes("n", CTNode("Person"))
 
-    outputNodes.details.toDF().columns should equal(Array(
+    outputNodes.toDF().columns should equal(Array(
       "n",
       "____n:Person",
       "____n:Swedish",
@@ -229,7 +229,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
       "____n_dot_luckyNumberINTEGER"
     ))
 
-    outputNodes.details.toDF().collect().toSet should equal(Set(
+    outputNodes.toDF().collect().toSet should equal(Set(
       Row(0L,  true,  true,   "Mats",    23L),
       Row(1L,  true,  false, "Martin",   42L),
       Row(2L,  true,  false,    "Max", 1337L),
@@ -244,7 +244,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
 
     val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema)
 
-    patternGraph.nodes("n", CTNode("Person")).details.toDF().collect().toSet shouldBe empty
+    patternGraph.nodes("n", CTNode("Person")).toDF().collect().toSet shouldBe empty
   }
 
   test("Supports .cypher node scans") {
@@ -274,7 +274,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
 
     val patternGraph = CAPSGraph.create(CAPSRecords.create(header, df), schema)
 
-    patternGraph.nodes("n", CTNode("Person")).toMaps should equal(Bag(
+    patternGraph.nodes("n", CTNode("Person")).compact.toMaps should equal(Bag(
       CypherMap("n" ->  0L),
       CypherMap("n" ->  1L),
       CypherMap("n" -> 10L)
@@ -301,7 +301,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
 
     val patternGraph = CAPSGraph.create(CAPSRecords.create(header, df), schema)
 
-    patternGraph.nodes("n", CTNode).details.toMaps should equal(Bag(
+    patternGraph.nodes("n", CTNode).toMaps should equal(Bag(
       CypherMap("n" ->  0L, "n.name" -> "PersonPeter", "n:Person" -> true)
     ))
   }
@@ -331,7 +331,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
 
     val patternGraph = CAPSGraph.create(CAPSRecords.create(header, df), schema)
 
-    patternGraph.nodes("n", CTNode).details.toMaps should equal(Bag(
+    patternGraph.nodes("n", CTNode).toMaps should equal(Bag(
       CypherMap("n" ->  0L, "n.name" -> "PersonPeter", "n:Person" -> true, "n:Employee" -> false),
       CypherMap("n" ->  1L, "n.name" -> "EmployeePeter", "n:Person" -> false, "n:Employee" -> true),
       CypherMap("n" -> 10L, "n.name" -> "PersonSusanna", "n:Person" -> true, "n:Employee" -> false),
@@ -367,7 +367,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
 
     val patternGraph = CAPSGraph.create(CAPSRecords.create(header, df), schema)
 
-    patternGraph.nodes("n", CTNode).details.toMaps should equal(Bag(
+    patternGraph.nodes("n", CTNode).toMaps should equal(Bag(
       CypherMap("n" -> 0L, "n.name" -> "PersonPeter", "n:Person" -> true, "n:Employee" -> false),
       CypherMap("n" -> 1L, "n.name" -> "EmployeePeter", "n:Person" -> false, "n:Employee" -> true),
       CypherMap("n" -> 2L, "n.name" -> "HybridPeter", "n:Person" -> true, "n:Employee" -> true),
@@ -421,17 +421,17 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
     val inputGraph = TestGraph(`:Person` + `:Book` + `:READS`).graph
 
     val books = inputGraph.nodes("b", CTNode("Book"))
-    val booksDf = books.details.toDF().as("b")
+    val booksDf = books.toDF().as("b")
     val reads = inputGraph.relationships("r", CTRelationship("READS"))
-    val readsDf = reads.details.toDF().as("r")
+    val readsDf = reads.toDF().as("r")
     val persons = inputGraph.nodes("p", CTNode("Person"))
-    val personsDf = persons.details.toDF().as("p")
+    val personsDf = persons.toDF().as("p")
 
     val joinedDf = personsDf
       .join(readsDf, personsDf.col("p") === readsDf.col("____source(r)"))
       .join(booksDf, readsDf.col("____target(r)") === booksDf.col("b"))
 
-    val slots = persons.details.header.slots ++ reads.details.header.slots ++ books.details.header.slots
+    val slots = persons.header.slots ++ reads.header.slots ++ books.header.slots
     val joinHeader = RecordHeader.from(slots.map(_.content): _*)
 
     CAPSGraph.create(CAPSRecords.create(joinHeader, joinedDf), inputGraph.schema)

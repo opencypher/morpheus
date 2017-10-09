@@ -49,7 +49,7 @@ object CSVDemo {
     implicit val caps: CAPSSession = CAPSSession.create(session)
     val result: CAPSResult = graph.cypher(query)(caps)
 
-    result.recordsWithDetails.toDF().cache()
+    result.records.toDF().cache()
 
     val start = System.currentTimeMillis()
     println(s"Returned ${result.records.toDF().count()} row(s) in ${System.currentTimeMillis() - start} ms")

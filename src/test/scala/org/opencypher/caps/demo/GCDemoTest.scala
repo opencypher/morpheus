@@ -135,7 +135,7 @@ class GCDemoTest
   }
 
   def verifyCityFriendsUS(g: CAPSGraph) = {
-    Bag(g.nodes("n").details.toDF().collect(): _*) should equal (Bag(
+    Bag(g.nodes("n").toDF().collect(): _*) should equal (Bag(
       Row(4L,false,true,false,"Alice","US"),
       Row(5L,false,true,false,"Bob","US"),
       Row(6L,false,true,false,"Eve","US"),
@@ -144,7 +144,7 @@ class GCDemoTest
       Row(9L,false,true,false,"Dave","US")
     ))
 
-    val relsWithoutRelId = g.relationships("r").details.toDF().drop("r")
+    val relsWithoutRelId = g.relationships("r").toDF().drop("r")
     Bag(relsWithoutRelId.collect(): _*) should equal (Bag(
       Row(4L, "ACQUAINTED", 6L),
       Row(7L, "ACQUAINTED", 8L),
@@ -156,7 +156,7 @@ class GCDemoTest
   }
 
   def verifyFriendsUnion(g: CAPSGraph) = {
-    Bag(g.nodes("n").details.toDF().collect(): _*) should equal (Bag(
+    Bag(g.nodes("n").toDF().collect(): _*) should equal (Bag(
       Row(4L,false,true,false,"Alice","US"),
       Row(5L,false,true,false,"Bob","US"),
       Row(6L,false,true,false,"Eve","US"),
@@ -171,7 +171,7 @@ class GCDemoTest
       Row(15L,false,true,false,"Peggy","EU")
     ))
 
-    val relsWithoutRelId = g.relationships("r").details.toDF().drop("r")
+    val relsWithoutRelId = g.relationships("r").toDF().drop("r")
     Bag(relsWithoutRelId.collect(): _*) should equal (Bag(
       Row(4L, "ACQUAINTED", 6L),
       Row(7L, "ACQUAINTED", 8L),

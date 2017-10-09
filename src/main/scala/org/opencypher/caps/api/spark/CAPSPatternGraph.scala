@@ -24,9 +24,9 @@ import org.opencypher.caps.impl.spark.{RowExpansion, SparkColumnName}
 class CAPSPatternGraph(private[spark] val baseTable: CAPSRecords, val schema: Schema, val tokens: CAPSRecordsTokens)
                       (implicit val session: CAPSSession) extends CAPSGraph {
 
-  private val header = baseTable.details.header
+  private val header = baseTable.header
 
-  def show() = baseTable.details.data.show()
+  def show() = baseTable.data.show()
 
   override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
     val targetNode = Var(name)(nodeCypherType)
@@ -55,7 +55,7 @@ class CAPSPatternGraph(private[spark] val baseTable: CAPSRecords, val schema: Sc
         relVar -> createScanToBaseTableLookup(targetVar, slotsForRel.map(_.content))
     }
 
-    val extractedDf = baseTable.details.toDF().flatMap(
+    val extractedDf = baseTable.toDF().flatMap(
       RowExpansion(targetHeader, targetVar, extractionSlots, relColumnsLookupTables))(targetHeader.rowEncoder)
     val distinctData = extractedDf.distinct()
 

@@ -111,7 +111,7 @@ class CAPSGraphOperationsTest extends CAPSTestSuite {
 
     val result = graph1 union graph2
 
-    val nodes = result.nodes("n").details.toDF().collect.toSet
+    val nodes = result.nodes("n").toDF().collect.toSet
     nodes should equal(
       Set(
         Row(/* n */ 1L, /* ____n:Person */ true, /* ____n:Swedish */ true, /* ____n:Programmer */ false, /* ____n:Book */ false, /* ____n_dot_lucky_bar_numberINTEGER */ 23L, /* ____n_dot_nameSTRING */ "Mats", /* ____n_dot_yearINTEGER */ null, /* ____n_dot_languageSTRING */ null, /* ____n_dot_titleSTRING */ null),
@@ -129,7 +129,7 @@ class CAPSGraphOperationsTest extends CAPSTestSuite {
       )
     )
 
-    val rels = result.relationships("r").details.toDF().collect.toSet
+    val rels = result.relationships("r").toDF().collect.toSet
     rels should equal(
       Set(
         Row(/* ____source(r) */ 1L, /* r */ 1L, /* ____type(r) */ "KNOWS", /* ____target(r) */ 2L, /* ____r_dot_sinceINTEGER */ 2017L, /* ____r_dot_recommendsBOOLEAN */ null),

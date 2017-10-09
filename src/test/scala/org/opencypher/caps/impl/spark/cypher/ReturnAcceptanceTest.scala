@@ -38,45 +38,45 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
     result.records shouldMatch CypherMap("foo" -> 1, "str" -> "")
   }
 
-  test("return node") {
-    val given = TestGraph("({foo:'bar'}),()")
+  test("return compact node") {
+    val given = TestGraph("(:Person {foo:'bar'}),()")
 
     val result = given.cypher("MATCH (n) RETURN n")
 
-    result.records.toMaps should equal(Bag(
+    result.records.compact.toMaps should equal(Bag(
       CypherMap("n" -> 0),
       CypherMap("n" -> 1))
     )
   }
 
-  test("return node with details") {
+  test("return full node") {
     val given = TestGraph("({foo:'bar'}),()")
 
     val result = given.cypher("MATCH (n) RETURN n")
 
-    result.recordsWithDetails.toMaps should equal(Bag(
+    result.records.toMaps should equal(Bag(
       CypherMap("n" -> 0, s"n:$DEFAULT_LABEL" -> true, "n.foo" -> "bar"),
       CypherMap("n" -> 1, s"n:$DEFAULT_LABEL" -> true, "n.foo" -> null))
     )
   }
 
-  test("return rel") {
+  test("return compact rel") {
     val given = TestGraph("()-[{foo:'bar'}]->()-[]->()")
 
     val result = given.cypher("MATCH ()-[r]->() RETURN r")
 
-    result.records.toMaps should equal(Bag(
+    result.records.compact.toMaps should equal(Bag(
       CypherMap("r" -> 0),
       CypherMap("r" -> 1)
     ))
   }
 
-  test("return rel with details") {
+  test("return full rel") {
     val given = TestGraph("()-[{foo:'bar'}]->()-[]->()").graph
 
     val result = given.cypher("MATCH ()-[r]->() RETURN r")
 
-    result.recordsWithDetails.toMaps should equal(Bag(
+    result.records.toMaps should equal(Bag(
       CypherMap("r" -> 0, "source(r)" -> 0, "target(r)" -> 1, "type(r)" -> DEFAULT_LABEL, "r.foo" -> "bar"),
       CypherMap("r" -> 1, "source(r)" -> 1, "target(r)" -> 2, "type(r)" -> DEFAULT_LABEL, "r.foo" -> null)
     ))
@@ -87,7 +87,7 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
 
     val result = given.cypher("MATCH ()-[r]->() RETURN r.foo")
 
-    result.recordsWithDetails.toMaps should equal(Bag(
+    result.records.toMaps should equal(Bag(
       CypherMap("r.foo" -> "bar"),
       CypherMap("r.foo" -> null)
     ))

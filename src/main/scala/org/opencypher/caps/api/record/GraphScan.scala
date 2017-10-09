@@ -62,7 +62,7 @@ object GraphScan extends GraphScanCompanion[EmbeddedEntity] {
       case CTRelationship(typ) => typ
     }
 
-    val slots = records.details.header.slots
+    val slots = records.header.slots
     val renamedSlots = slots.map(_.withOwner(v))
 
     val dataColumnNameToIndex: Map[String, Int] = renamedSlots.map { dataSlot =>
@@ -86,7 +86,7 @@ object GraphScan extends GraphScanCompanion[EmbeddedEntity] {
       slotDataSelector
     }
 
-    val alignedData = records.details.toDF().map { (row: Row) =>
+    val alignedData = records.toDF().map { (row: Row) =>
       val alignedRow = slotDataSelectors.map(_ (row))
       new GenericRowWithSchema(alignedRow.toArray, targetHeader.asSparkSchema).asInstanceOf[Row]
     }(targetHeader.rowEncoder)
@@ -152,7 +152,7 @@ object GraphScanBuilder {
           val newData = contracted.data.select(newCols: _*)
           CAPSRecords.create(newHeader, newData)(records.caps)
         }
-      create(entity, newRecords, schema(entity, newRecords.details.header))
+      create(entity, newRecords, schema(entity, newRecords.header))
     }
 
     protected def create(entity: E, records: CAPSRecords, schema: Schema): S
