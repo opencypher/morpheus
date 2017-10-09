@@ -21,17 +21,20 @@ import org.opencypher.caps.impl.spark.exception.Raise
 
 object fromSparkType extends Serializable {
 
-  def apply(dt: DataType, nullable: Boolean): CypherType = {
+  def apply(dt: DataType, nullable: Boolean): Option[CypherType] = {
     val result = dt match {
-      case StringType => CTString
-      case LongType => CTInteger
-      case BooleanType => CTBoolean
-      case BinaryType => CTAny
-      case DoubleType => CTFloat
-      case ArrayType(elemType, containsNull) => CTList(fromSparkType(elemType, containsNull))
-      case x => Raise.invalidArgument("A supported Spark type", x.toString)
+      case StringType => Some(CTString)
+      case LongType => Some(CTInteger)
+      case BooleanType => Some(CTBoolean)
+      case BinaryType => Some(CTAny)
+      case DoubleType => Some(CTFloat)
+      case ArrayType(elemType, containsNull) =>
+        val maybeElementType = fromSparkType(elemType, containsNull)
+        maybeElementType.map(CTList(_))
+      case x => None
     }
 
-    if (nullable) result.nullable else result.material
+    if (nullable) result.map(_.nullable) else result.map(_.material)
   }
+
 }

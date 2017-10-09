@@ -205,7 +205,7 @@ object CAPSRecords {
     create(caps.sparkSession.createDataFrame(rdd, beanClass))
 
   def create(initialDataFrame: DataFrame)(implicit caps: CAPSSession): CAPSRecords = {
-    def hasSupportedSparkType(field: StructField) = Try(fromSparkType(field.dataType, field.nullable)).toOption.isDefined
+    def hasSupportedSparkType(field: StructField) = fromSparkType(field.dataType, field.nullable).isDefined
 
     val toCast = initialDataFrame.schema.fields.filterNot(hasSupportedSparkType)
     val dfWithCompatibleTypes: DataFrame = if (toCast.isEmpty) {
@@ -271,7 +271,8 @@ object CAPSRecords {
       initialHeader.slots.foreach { slot =>
         val dfSchema = initialData.schema
         val field = dfSchema(SparkColumnName.of(slot))
-        val cypherType = fromSparkType(field.dataType, field.nullable)
+        val cypherType = fromSparkType(field.dataType, field.nullable).getOrElse(
+          Raise.invalidArgument("A supported Spark type", field.dataType.toString))
         val headerType = slot.content.cypherType
 
         // if the type in the data doesn't correspond to the type in the header we fail
