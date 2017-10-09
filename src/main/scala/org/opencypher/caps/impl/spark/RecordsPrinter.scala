@@ -48,13 +48,10 @@ object RecordsPrinter {
     stream.println(---)
     val values = records.toLocalScalaIterator
     sep = "| "
-    if (fieldContents.isEmpty || values.isEmpty) {
-      stream.print(sep)
-      stream.print(fitToColumn("(no rows)"))
-      stream.println(" |")
-    } else values.foreach { map =>
+    var count = 0
+    values.foreach { map =>
       fieldContents.foreach { field =>
-        map.get(field.name) match {
+        map.get(SparkColumnName.of(field)) match {
           case None =>
             stream.print(sep)
             stream.print(fitToColumn("null"))
@@ -67,6 +64,16 @@ object RecordsPrinter {
       }
       stream.println(" |")
       sep = "| "
+      count += 1
+    }
+    if (count == 0) {
+      stream.print(sep)
+      stream.print(fitToColumn("(no rows)"))
+      stream.println(" |")
+    } else {
+      stream.print(sep)
+      stream.print(fitToColumn(s"($count rows)"))
+      stream.println(" |")
     }
     stream.println(---)
     stream.flush()
