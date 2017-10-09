@@ -244,7 +244,6 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     graph match {
       // TODO: IRGraph[Expr]
       case IRPatternGraph(name, schema, pattern) =>
-        // TODO: Consider type in IRField, too? Or should we not use IRFields in patterns (i.e. drop types)?
         val patternEntities = pattern.entities.keySet
         val entitiesInScope = fieldsInScope.map { (v: Var) => IRField(v.name)(v.cypherType) }
         val boundEntities = patternEntities intersect entitiesInScope
@@ -336,9 +335,13 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     if (nodes.size == 1) { // simple node scan; just do it
       val (field, node) = nodes.head
 
-      // we set the source graph because we don't know what the source graph was coming in
-      // TODO: Only works for initial pattern: need support for cartesian products
-      nodePlan(setSource(graph, plan), field, node)
+      // if we have already planned a node: cartesian product
+      if (plan.solved.fields.exists(_.cypherType.subTypeOf(CTNode).isTrue)) {
+        producer.planCartesianProduct(plan, nodePlan(setSource(graph, planStart(graph)), field, node))
+      } else { // first node scan
+        // we set the source graph because we don't know what the source graph was coming in
+        nodePlan(setSource(graph, plan), field, node)
+      }
     } else if (pattern.topology.nonEmpty) { // we need expansions to tie node plans together
 
       val solved = nodes.filter(node => plan.solved.fields.contains(node._1))

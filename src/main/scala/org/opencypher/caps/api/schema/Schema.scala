@@ -30,17 +30,6 @@ object Schema {
     impliedLabels = ImpliedLabels(Map.empty),
     labelCombinations = LabelCombinations(Set.empty)
   )
-
-  def forEntities(schema: Schema, entities: Iterable[EveryEntity]): Schema = {
-    entities
-      .map(entitySchema(schema))
-      .foldLeft(Schema.empty)(_ ++ _)
-  }
-
-  private def entitySchema(schema: Schema)(entity: EveryEntity): Schema = entity match {
-    case EveryNode(AllGiven(labels)) => schema.forNode(CTNode(labels.map(_.name)))
-    case EveryRelationship(AnyGiven(relTypes)) => schema.forRelationship(CTRelationship(relTypes.map(_.name)))
-  }
 }
 
 object PropertyKeyMap {
@@ -254,6 +243,19 @@ final case class Schema(
       newRelKeyMap,
       newImpliedLabels,
       newLabelCombinations)
+  }
+
+  def forEntities(entities: Iterable[EveryEntity]): Schema = {
+    entities
+      .map(entitySchema)
+      .foldLeft(Schema.empty)(_ ++ _)
+  }
+
+  private def entitySchema(entity: EveryEntity): Schema = entity match {
+    case EveryNode(AllGiven(_labels)) =>
+      forNode(CTNode(_labels.map(_.name)))
+    case EveryRelationship(AnyGiven(relTypes)) =>
+      forRelationship(CTRelationship(relTypes.map(_.name)))
   }
 
   /**

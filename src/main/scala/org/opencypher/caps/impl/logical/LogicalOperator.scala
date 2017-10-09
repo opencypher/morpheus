@@ -72,8 +72,11 @@ sealed trait BinaryLogicalOperator extends LogicalOperator {
   def lhs: LogicalOperator
   def rhs: LogicalOperator
 
-  // TODO: We need to watch out for expansions across graphs, eg FROM ... MATCH (a) FROM ... MATCH (a)-->(b)
-  override def sourceGraph: LogicalGraph = lhs.sourceGraph
+  /**
+   * Always pick the source graph from the right-hand side, because it works for in-pattern expansions
+   * and changing of source graphs. This relies on the planner always planning _later_ operators on the rhs.
+   */
+  override def sourceGraph: LogicalGraph = rhs.sourceGraph
 
   def clone(newLhs: LogicalOperator = lhs, newRhs: LogicalOperator = rhs): LogicalOperator
 }
@@ -317,6 +320,7 @@ final case class CartesianProduct(lhs: LogicalOperator, rhs: LogicalOperator)(ov
 
   override def pretty(depth: Int): String =
     s"""${prefix(depth)} CartesianProduct()
+       #${lhs.pretty(depth + 1)}
        #${rhs.pretty(depth + 1)}""".stripMargin('#')
 
   override def clone(newLhs: LogicalOperator, newRhs: LogicalOperator): LogicalOperator =

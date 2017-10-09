@@ -36,6 +36,14 @@ object CypherParser extends CypherParser {
         Raise.semanticErrors(filtered)
       }
   }
+
+  // TODO: Fix the bug that makes these variables appear
+  // It's in the Namespacer rewriter in the frontend
+  def fixFrontendNamespaceBug(name: String): String = {
+    if (name.startsWith(" ") && name.contains("@")) {
+      name.substring(2, name.indexOf("@"))
+    } else name
+  }
 }
 
 trait CypherParser extends CompilationStage[String, Statement, BaseContext] {

@@ -34,7 +34,9 @@ case class CAPSUnionGraph(graphs: CAPSGraph*)
   override def nodes(name: String, nodeCypherType: CTNode) = {
     val node = Var(name)(nodeCypherType)
     val targetHeader = RecordHeader.nodeFromSchema(node, schema, tokens.registry)
-    val nodeScans: Seq[CAPSRecords] = graphs.map(_.nodes(name, nodeCypherType))
+    val nodeScans: Seq[CAPSRecords] = graphs
+      .filter(nodeCypherType.labels.isEmpty || _.schema.labels.intersect(nodeCypherType.labels).nonEmpty)
+      .map(_.nodes(name, nodeCypherType))
     val alignedScans = nodeScans.map(GraphScan.align(_, node, targetHeader))
     // TODO: Only distinct on id column
     alignedScans.reduceOption(_ unionAll(targetHeader, _)).map(_.distinct).getOrElse(CAPSRecords.empty(targetHeader))
@@ -43,7 +45,9 @@ case class CAPSUnionGraph(graphs: CAPSGraph*)
   override def relationships(name: String, relCypherType: CTRelationship) = {
     val rel = Var(name)(relCypherType)
     val targetHeader = RecordHeader.relationshipFromSchema(rel, schema, tokens.registry)
-    val relScans: Seq[CAPSRecords] = graphs.map(_.relationships(name, relCypherType))
+    val relScans: Seq[CAPSRecords] = graphs
+      .filter(relCypherType.types.isEmpty || _.schema.relationshipTypes.intersect(relCypherType.types).nonEmpty)
+      .map(_.relationships(name, relCypherType))
     val alignedScans = relScans.map(GraphScan.align(_, rel, targetHeader))
     // TODO: Only distinct on id column
     alignedScans.reduceOption(_ unionAll(targetHeader, _)).map(_.distinct).getOrElse(CAPSRecords.empty(targetHeader))

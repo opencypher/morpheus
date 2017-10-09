@@ -15,8 +15,9 @@
  */
 package org.opencypher.caps.impl.typer
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, Variable}
 import org.opencypher.caps.api.types.CypherType
+import org.opencypher.caps.impl.parse.CypherParser
 
 import scala.annotation.tailrec
 
@@ -30,8 +31,23 @@ case class TypeTracker(maps: List[Map[Expression, CypherType]]) {
   @tailrec
   private def get(e: Expression, maps: List[Map[Expression, CypherType]]): Option[CypherType] = maps.headOption match {
     case None => None
-    case Some(map) if map.contains(e) => map.get(e)
+      // TODO: Revert this code once the frontend bug is fixed
+    case Some(map) if map.exists {
+      findWithFixedName(e)
+    } => map.find {
+      findWithFixedName(e)
+    }.map(_._2)
     case Some(_) => get(e, maps.tail)
+  }
+
+  private def findWithFixedName(e: Expression): PartialFunction[(Expression, CypherType), Boolean] = {
+    case (Variable(name), _) => e match {
+      case Variable(unFixed) =>
+        name == CypherParser.fixFrontendNamespaceBug(unFixed)
+      case _ =>
+        false
+    }
+    case ((elem, _)) => e == elem
   }
 
   def updated(e: Expression, t: CypherType): TypeTracker = copy(maps = head.updated(e, t) +: tail)

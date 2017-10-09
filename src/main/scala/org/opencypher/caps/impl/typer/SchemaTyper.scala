@@ -171,12 +171,14 @@ object SchemaTyper {
         lhsType <- process[R](cmp.lhs)
         rhsType <- process[R](cmp.rhs)
         result <- {
-          val resultType = (lhsType, rhsType) match {
+          val materialResultType = (lhsType.material, rhsType.material) match {
             case (CTInteger, CTFloat) => CTBoolean
             case (CTFloat, CTInteger) => CTBoolean
             case (x, y) if !x.couldBeSameTypeAs(y) => CTVoid
             case _ => CTBoolean
           }
+          val resultType = materialResultType
+            .asNullableAs(lhsType).asNullableAs(rhsType)
           recordTypes(cmp.lhs -> lhsType, cmp.rhs -> rhsType) >> recordAndUpdate(expr -> resultType)
         }
       } yield result
