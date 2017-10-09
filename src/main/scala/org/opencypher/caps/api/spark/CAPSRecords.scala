@@ -205,9 +205,9 @@ object CAPSRecords {
     create(caps.sparkSession.createDataFrame(rdd, beanClass))
 
   def create(initialDataFrame: DataFrame)(implicit caps: CAPSSession): CAPSRecords = {
-    def isSupportedSparkType(field: StructField) = Try(fromSparkType(field.dataType, field.nullable)).toOption.isDefined
+    def hasSupportedSparkType(field: StructField) = Try(fromSparkType(field.dataType, field.nullable)).toOption.isDefined
 
-    val toCast = initialDataFrame.schema.fields.filterNot(isSupportedSparkType)
+    val toCast = initialDataFrame.schema.fields.filterNot(hasSupportedSparkType)
     val dfWithCompatibleTypes: DataFrame = if (toCast.isEmpty) {
       initialDataFrame
     } else {
