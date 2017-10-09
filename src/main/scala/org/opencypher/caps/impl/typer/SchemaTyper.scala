@@ -23,9 +23,7 @@ import cats.{Foldable, Monoid}
 import org.atnos.eff._
 import org.atnos.eff.all._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.functions.Exists
-import org.neo4j.cypher.internal.frontend.v3_3.ast.functions.Min
-import org.neo4j.cypher.internal.frontend.v3_3.ast.functions.Max
+import org.neo4j.cypher.internal.frontend.v3_3.ast.functions.{Exists, Max, Min}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.CypherType.joinMonoid
 import org.opencypher.caps.api.types._
@@ -70,9 +68,15 @@ object SchemaTyper {
 
   def process[R: _hasSchema : _keepsErrors : _hasTracker : _logsTypes](expr: Expression): Eff[R, CypherType] = expr match {
 
-    case _: Variable | _: Parameter =>
+    case _: Variable =>
       for {
         t <- typeOf[R](expr)
+        _ <- recordType[R](expr -> t)
+      } yield t
+
+    case Parameter(name, _) =>
+      for {
+        t <- parameterType[R](name)
         _ <- recordType[R](expr -> t)
       } yield t
 

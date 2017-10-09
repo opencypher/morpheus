@@ -19,6 +19,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.{Ref, ast, symbols}
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.ir.api.global._
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.caps.test.BaseTestSuite
 import org.opencypher.caps.test.support.Neo4jAstTestSupport
 import org.opencypher.caps.toVar
@@ -145,7 +146,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   test("can convert parameters") {
     val given = ast.Parameter("p", symbols.CTString) _
-    convert(given) should equal(Const(Constant("p"))(CTWildcard))
+    convert(given) should equal(Param("p")(CTWildcard))
   }
 
   test("can convert has-labels") {
@@ -176,8 +177,8 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     convert(given) should equal(Ands(
       HasLabel('n, Label("Foo"))(),
       HasLabel('m, Label("Bar"))(),
-      Const(Constant("p1"))(),
-      Const(Constant("p2"))())
+      Param("p1")(),
+      Param("p2")())
     )
   }
 

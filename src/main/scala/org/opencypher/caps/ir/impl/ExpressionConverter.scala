@@ -20,7 +20,8 @@ import org.neo4j.cypher.internal.frontend.v3_3.{Ref, ast}
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.parse.{CypherParser, RetypingPredicate}
-import org.opencypher.caps.ir.api.global.{Label, PropertyKey, RelType, _}
+import org.opencypher.caps.ir.api.{Label, PropertyKey, RelType}
+import org.opencypher.caps.ir.api.global.{PropertyKey, RelType}
 import org.opencypher.caps.ir.impl.FunctionUtils._
 
 import scala.language.implicitConversions
@@ -33,7 +34,7 @@ object ExpressionConverter {
     case ast.Variable(name) =>
       Var(CypherParser.fixFrontendNamespaceBug(name))(typings(e))
     case ast.Parameter(name, _) =>
-      Const(Constant(name))(typings(e))
+      Param(name)(typings(e))
 
     // Literals
     case astExpr: ast.IntegerLiteral =>

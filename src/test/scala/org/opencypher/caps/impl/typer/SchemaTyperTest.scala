@@ -246,13 +246,13 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
   }
 
   test("typing of parameters (1)") {
-    implicit val tracker = TypeTracker.empty.updated(Parameter("param", symbols.CTAny)(pos), CTNode("Person"))
+    implicit val tracker = TypeTracker.empty.withParameters(Map("param" -> CTNode("Person")))
 
     assertExpr.from("$param") shouldHaveInferredType CTNode("Person")
   }
 
   test("typing of parameters (2)") {
-    implicit val tracker = TypeTracker.empty.updated(Parameter("param", symbols.CTAny)(pos), CTAny)
+    implicit val tracker = TypeTracker.empty.withParameters(Map("param" -> CTAny))
 
     assertExpr.from("$param") shouldHaveInferredType CTAny
   }
@@ -285,8 +285,8 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
 
     implicit val context = TypeTracker.empty.updated(Parameter("param", symbols.CTAny)(pos), CTInteger)
 
-    assertExpr.from("[3.14, -1, 5000][$param]") shouldHaveInferredType CTNumber
-    assertExpr.from("[[], 1, true][$param]") shouldHaveInferredType CTAny
+    assertExpr.from("[3.14, -1, 5000][$param]")(TypeTracker.empty.withParameters(Map("param" -> CTInteger))) shouldHaveInferredType CTNumber
+    assertExpr.from("[[], 1, true][$param]")(TypeTracker.empty.withParameters(Map("param" -> CTInteger))) shouldHaveInferredType CTAny
   }
 
   test("infer type of node property lookup") {

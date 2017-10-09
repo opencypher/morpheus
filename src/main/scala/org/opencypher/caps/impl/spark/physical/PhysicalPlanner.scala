@@ -31,8 +31,7 @@ import org.opencypher.caps.ir.api.global._
 case class PhysicalPlannerContext(
    resolver: URI => CAPSGraph,
    inputRecords: CAPSRecords,
-   constants: ConstantRegistry,
-   parameters: Map[ConstantRef, CypherValue])
+   parameters: Map[String, CypherValue])
 
 class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResult, PhysicalPlannerContext] {
 
@@ -42,7 +41,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
 
   def inner(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext): PhysicalResult = {
 
-    val producer = new PhysicalResultProducer(RuntimeContext(context.parameters, context.constants))
+    val producer = new PhysicalResultProducer(RuntimeContext(context.parameters))
     import producer._
 
     flatPlan match {

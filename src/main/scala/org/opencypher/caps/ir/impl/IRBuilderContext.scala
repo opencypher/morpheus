@@ -22,31 +22,32 @@ import org.opencypher.caps.api.expr.Expr
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.io.CAPSGraphSource
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.typer.{SchemaTyper, TypeTracker}
 import org.opencypher.caps.ir.api.block.SourceBlock
-import org.opencypher.caps.ir.api.global.ConstantRegistry
 import org.opencypher.caps.ir.api.pattern.Pattern
 import org.opencypher.caps.ir.api.{IRExternalGraph, IRField, IRGraph}
 
 final case class IRBuilderContext(
   queryString: String,
-  constants: ConstantRegistry,
+  parameters: Map[String, CypherValue],
   ambientGraph: IRExternalGraph,
   blocks: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
   semanticState: SemanticState,
   graphs: Map[String, URI],
   currentGraph: IRGraph,
   resolver: URI => CAPSGraphSource,
+  // TODO: Remove this
   knownTypes: Map[ast.Expression, CypherType] = Map.empty)
 {
   private def typer = SchemaTyper(currentGraph.schema)
   private lazy val exprConverter = ExpressionConverter
-  private lazy val patternConverter = new PatternConverter(constants)
+  private lazy val patternConverter = new PatternConverter(parameters)
 
   // TODO: Fuse monads
   def infer(expr: ast.Expression): Map[Ref[ast.Expression], CypherType] = {
-    typer.infer(expr, TypeTracker(List(knownTypes))) match {
+    typer.infer(expr, TypeTracker(List(knownTypes), parameters.mapValues(CypherValue.cypherType))) match {
       case Right(result) =>
         result.recorder.toMap
 
@@ -93,17 +94,24 @@ final case class IRBuilderContext(
 }
 
 object IRBuilderContext {
+
   def initial(query: String,
-              constants: ConstantRegistry,
+              parameters: Map[String, CypherValue],
               semState: SemanticState,
               ambientGraph: IRExternalGraph,
-              knownTypes: Map[ast.Expression, CypherType],
               resolver: URI => CAPSGraphSource): IRBuilderContext = {
     val registry = BlockRegistry.empty[Expr]
     val block = SourceBlock[Expr](ambientGraph)
     val (_, reg) = registry.register(block)
 
-    IRBuilderContext(query, constants, ambientGraph, reg, semState,
-      Map(ambientGraph.name -> ambientGraph.uri), ambientGraph, resolver, knownTypes)
+    IRBuilderContext(
+      query,
+      parameters,
+      ambientGraph,
+      reg,
+      semState,
+      Map(ambientGraph.name -> ambientGraph.uri),
+      ambientGraph,
+      resolver)
   }
 }

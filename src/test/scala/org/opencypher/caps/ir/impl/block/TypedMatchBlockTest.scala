@@ -17,8 +17,8 @@ package org.opencypher.caps.ir.impl.block
 
 import org.opencypher.caps.api.expr.Expr
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
+import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.ir.api.block.MatchBlock
-import org.opencypher.caps.ir.api.global.ConstantRegistry
 import org.opencypher.caps.ir.impl.IrTestSuite
 import org.opencypher.caps.ir.impl.instances._
 
@@ -53,14 +53,14 @@ class TypedMatchBlockTest extends IrTestSuite {
     ))
   }
 
-  private def matchBlock(singleMatchQuery: String): (MatchBlock[Expr], ConstantRegistry) = {
+  private def matchBlock(singleMatchQuery: String): (MatchBlock[Expr], Map[String, CypherValue]) = {
     val model = singleMatchQuery.ir.model
     val projectBlockRef = model.result.after.head
     val matchBlockRef = model.blocks(projectBlockRef).after.head
 
     model.blocks(matchBlockRef) match {
       case block: MatchBlock[Expr] =>
-        block -> model.constants
+        block -> model.parameters
 
       case x => throw new MatchError(s"Supposed to be a match block, was: $x")
     }

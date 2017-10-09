@@ -41,8 +41,8 @@ object SparkSQLExprMapper {
   private def getColumn(expr: Expr, header: RecordHeader, dataFrame: DataFrame)
                        (implicit context: RuntimeContext): Column = {
     expr match {
-      case c: Const =>
-        udf(const(context.parameters(context.constants.constantRef(c.constant))), toSparkType(c.cypherType))()
+      case p@Param(name) =>
+        udf(const(context.parameters(name)), toSparkType(p.cypherType))()
       case _ =>
         verifyExpression(header, expr)
         val slot = header.slotsFor(expr).head
@@ -69,7 +69,7 @@ object SparkSQLExprMapper {
         val col = getColumn(expr, header, df)
         Some(col)
 
-      case _: Const =>
+      case _: Param =>
         Some(getColumn(expr, header, df))
 
       case _: Property =>

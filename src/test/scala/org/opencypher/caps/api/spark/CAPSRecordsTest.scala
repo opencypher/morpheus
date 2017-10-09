@@ -18,10 +18,11 @@ package org.opencypher.caps.api.spark
 import org.apache.spark.sql.Row
 import org.opencypher.caps.api.exception.CypherException
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.ir.api.global.{Label, PropertyKey}
+import org.opencypher.caps.ir.api.global.PropertyKey
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTRelationship, CTString, _}
 import org.opencypher.caps.api.value.{CypherMap, CypherNode, Properties}
+import org.opencypher.caps.ir.api.{Label, PropertyKey}
 import org.opencypher.caps.test.CAPSTestSuite
 
 class CAPSRecordsTest extends CAPSTestSuite {

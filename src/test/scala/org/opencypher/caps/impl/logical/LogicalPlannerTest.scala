@@ -24,6 +24,7 @@ import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.CAPSGraph
 import org.opencypher.caps.api.spark.io.CAPSGraphSource
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.api.value.{CypherBoolean, CypherInteger, CypherString}
 import org.opencypher.caps.impl.logical
 import org.opencypher.caps.impl.util.toVar
 import org.opencypher.caps.ir.api._
@@ -76,12 +77,12 @@ class LogicalPlannerTest extends IrTestSuite {
   }
 
   test("plan query") {
-    val ir = "MATCH (a:Administrator)-[r]->(g:Group) WHERE g.name = $foo RETURN a.name".irWithParams("foo" -> CTString)
+    val ir = "MATCH (a:Administrator)-[r]->(g:Group) WHERE g.name = $foo RETURN a.name".irWithParams("foo" -> CypherString("test"))
 
     plan(ir) should equal(
       Select(IndexedSeq(Var("a.name")(CTVoid)), Set.empty,
         Project(ProjectedField(Var("a.name")(CTVoid), Property(Var("a")(CTNode("Administrator")), PropertyKey("name"))(CTVoid)),
-          Filter(Equals(Property(Var("g")(CTNode("Group")), PropertyKey("name"))(CTVoid), Const(Constant("foo"))(CTString))(CTBoolean),
+          Filter(Equals(Property(Var("g")(CTNode("Group")), PropertyKey("name"))(CTVoid), Param("foo")(CTString))(CTBoolean),
             Project(ProjectedExpr(Property(Var("g")(CTNode("Group")), PropertyKey("name"))(CTVoid)),
               Filter(HasLabel(Var("g")(CTNode), Label("Group"))(CTBoolean),
                 Filter(HasLabel(Var("a")(CTNode), Label("Administrator"))(CTBoolean),
@@ -107,12 +108,12 @@ class LogicalPlannerTest extends IrTestSuite {
       .withNodePropertyKeys("Group")("name" -> CTString)
       .withNodePropertyKeys("Administrator")("name" -> CTFloat)
 
-    val ir = "MATCH (a:Administrator)-[r]->(g:Group) WHERE g.name = $foo RETURN a.name".irWithParams("foo" -> CTString)
+    val ir = "MATCH (a:Administrator)-[r]->(g:Group) WHERE g.name = $foo RETURN a.name".irWithParams("foo" -> CypherString("test"))
 
     plan(ir, schema) should equal(
       Select(IndexedSeq(Var("a.name")(CTFloat)), Set.empty,
         Project(ProjectedField(Var("a.name")(CTFloat), Property(Var("a")(CTNode("Administrator")), PropertyKey("name"))(CTFloat)),
-          Filter(Equals(Property(Var("g")(CTNode("Group")), PropertyKey("name"))(CTString), Const(Constant("foo"))(CTString))(CTBoolean),
+          Filter(Equals(Property(Var("g")(CTNode("Group")), PropertyKey("name"))(CTString), Param("foo")(CTString))(CTBoolean),
             Project(ProjectedExpr(Property(Var("g")(CTNode("Group")), PropertyKey("name"))(CTString)),
               Filter(HasLabel(Var("g")(CTNode), Label("Group"))(CTBoolean),
                 Filter(HasLabel(Var("a")(CTNode), Label("Administrator"))(CTBoolean),
@@ -134,12 +135,12 @@ class LogicalPlannerTest extends IrTestSuite {
   }
 
   test("plan query with negation") {
-    val ir = "MATCH (a) WHERE NOT $p1 = $p2 RETURN a.prop".irWithParams("p1" -> CTInteger, "p2" -> CTBoolean)
+    val ir = "MATCH (a) WHERE NOT $p1 = $p2 RETURN a.prop".irWithParams("p1" -> CypherInteger(1L), "p2" -> CypherBoolean(true))
 
     plan(ir) should equal(
       Select(IndexedSeq(Var("a.prop")(CTVoid)), Set.empty,
         Project(ProjectedField(Var("a.prop")(CTVoid), Property(nodeA, PropertyKey("prop"))(CTVoid)),
-          Filter(Not(Equals(Const(Constant("p1"))(CTInteger), Const(Constant("p2"))(CTBoolean))(CTBoolean))(CTBoolean),
+          Filter(Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean))(CTBoolean))(CTBoolean),
             NodeScan(nodeA, EveryNode,
               SetSourceGraph(LogicalExternalGraph(testGraph.name, testGraph.uri, Schema.empty),
                 Start(LogicalExternalGraph(testGraph.name, testGraph.uri, Schema.empty), Set.empty)(emptySqm)

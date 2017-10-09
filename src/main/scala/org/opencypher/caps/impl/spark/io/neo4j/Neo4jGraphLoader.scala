@@ -30,7 +30,8 @@ import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.convert.toSparkType
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.syntax.header._
-import org.opencypher.caps.ir.api.global.{ConstantRegistry, Label, PropertyKey}
+import org.opencypher.caps.ir.api.{Label, PropertyKey}
+import org.opencypher.caps.ir.api.global.PropertyKey
 
 object Neo4jGraphLoader {
 
@@ -89,7 +90,7 @@ object Neo4jGraphLoader {
     val (nodes, rels) = loadRDDs(config, nodeQuery, relQuery)
 
     val verified = maybeSchema.getOrElse(loadSchema(nodes, rels))
-    val context = LoadingContext(verified, ConstantRegistry.empty)
+    val context = LoadingContext(verified)
 
     createGraph(nodes.cache(), rels.cache(), sourceNode, rel, targetNode)(caps, context)
   }
@@ -103,8 +104,8 @@ object Neo4jGraphLoader {
     nodes -> rels
   }
 
-  case class LoadingContext(verifiedSchema: VerifiedSchema, constants: ConstantRegistry) {
-    def schema = verifiedSchema.schema
+  case class LoadingContext(verifiedSchema: VerifiedSchema) {
+    def schema: Schema = verifiedSchema.schema
   }
 
 
@@ -229,7 +230,6 @@ object Neo4jGraphLoader {
                               (implicit context: LoadingContext) extends (InternalNode => Row) {
     override def apply(importedNode: InternalNode): Row = {
       val graphSchema = context.schema
-      val constants = context.constants
 
       import scala.collection.JavaConverters._
 

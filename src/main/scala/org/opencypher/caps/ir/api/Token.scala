@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.ir.api.pattern
+package org.opencypher.caps.ir.api
 
-import org.opencypher.caps.ir.api.{Label, RelType}
-import org.opencypher.caps.ir.api.global.RelType
+sealed trait Token extends Any {
+  def name: String
+}
 
-sealed trait EveryEntity
-sealed case class EveryNode(labels: AllGiven[Label]) extends EveryEntity
-object EveryNode extends EveryNode(AllGiven[Label]())
+final case class Label(name: String) extends AnyVal with Token
+final case class PropertyKey(name: String) extends AnyVal with Token
+final case class RelType(name: String) extends AnyVal with Token
 
-sealed case class EveryRelationship(relTypes: AnyGiven[RelType]) extends EveryEntity
-object EveryRelationship extends EveryRelationship(AnyGiven[RelType]())
+
 

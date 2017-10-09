@@ -16,15 +16,16 @@
 package org.opencypher.caps.impl.flat
 
 import org.opencypher.caps.api.types.{CTList, CTRelationship, CypherType}
+import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.logical.LogicalOperator
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.{DirectCompilationStage, logical}
-import org.opencypher.caps.ir.api.global.{ConstantRegistry, RelType}
+import org.opencypher.caps.ir.api.RelType
 import org.opencypher.caps.ir.api.pattern.{AnyGiven, EveryRelationship}
 
 import scala.annotation.tailrec
 
-final case class FlatPlannerContext(constants: ConstantRegistry)
+final case class FlatPlannerContext(parameters: Map[String, CypherValue])
 
 class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, FlatPlannerContext] {
 

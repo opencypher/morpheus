@@ -18,19 +18,16 @@ package org.opencypher.caps.ir.impl
 import java.net.URI
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, Parameter}
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SemanticState, symbols}
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticState
 import org.opencypher.caps.api.expr.Expr
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.io.CAPSGraphSource
-import org.opencypher.caps.api.types.CypherType
+import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.logical.{LogicalExternalGraph, Start}
 import org.opencypher.caps.impl.parse.CypherParser
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block._
-import org.opencypher.caps.ir.api.global.ConstantRegistry
 import org.opencypher.caps.ir.api.pattern.{AllGiven, Pattern}
-import org.opencypher.caps.ir.impl.global.ConstantsExtractor
 import org.opencypher.caps.test.BaseTestSuite
 import org.scalatest.mockito.MockitoSugar
 
@@ -83,7 +80,7 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
       where = AllGiven[Expr](),
       source = testGraph
     )
-    val model = QueryModel(result, ConstantRegistry.empty, blocks, Map.empty)
+    val model = QueryModel(result, Map.empty, blocks, Map.empty)
     CypherQuery(QueryInfo("test"), model)
   }
 
@@ -103,14 +100,14 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
     // TODO: SemCheck
     def ir(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
-      IRBuilder(stmt)(IRBuilderContext.initial(queryText, ConstantsExtractor(stmt), SemanticState.clean, testGraph, Map.empty, _ => testGraphSource))
+      val parameters = Map.empty[String, CypherValue]
+      IRBuilder(stmt)(IRBuilderContext.initial(queryText, parameters, SemanticState.clean, testGraph, _ => testGraphSource))
     }
 
     // TODO: SemCheck
-    def irWithParams(params: (String, CypherType)*)(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
+    def irWithParams(params: (String, CypherValue)*)(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
-      val knownTypes: Map[Expression, CypherType] = params.map(p => Parameter(p._1, symbols.CTAny)(InputPosition.NONE) -> p._2).toMap
-      IRBuilder(stmt)(IRBuilderContext.initial(queryText, ConstantsExtractor(stmt), SemanticState.clean, testGraph, knownTypes, _ => testGraphSource))
+      IRBuilder(stmt)(IRBuilderContext.initial(queryText, params.toMap, SemanticState.clean, testGraph, _ => testGraphSource))
     }
   }
 }

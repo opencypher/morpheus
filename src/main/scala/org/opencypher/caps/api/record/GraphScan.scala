@@ -23,7 +23,7 @@ import org.opencypher.caps.api.spark.{CAPSRecords, CAPSSession}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.spark.{SparkColumn, SparkColumnName}
-import org.opencypher.caps.ir.api.global.Label
+import org.opencypher.caps.ir.api.Label
 
 sealed trait GraphScan extends Serializable {
 

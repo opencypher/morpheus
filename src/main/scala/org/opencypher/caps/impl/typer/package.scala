@@ -17,7 +17,6 @@ package org.opencypher.caps.impl
 
 import cats.Show
 import cats.data._
-import cats.syntax.all._
 import org.atnos.eff._
 import org.atnos.eff.all._
 import org.atnos.eff.syntax.all._
@@ -68,7 +67,16 @@ package object typer {
     }
   }
 
-  def typeOf[R: _hasTracker : _keepsErrors](it: Expression): Eff[R, CypherType] =
+  def parameterType[R : _hasTracker : _keepsErrors](it: String): Eff[R, CypherType] =
+    for {
+      tracker <- get[R, TypeTracker]
+      cypherType <- tracker.getParameter(it) match {
+        case None => error(UnTypedParameter(it)) >> pure[R, CypherType](CTWildcard)
+        case Some(t) => pure[R, CypherType](t)
+      }
+    } yield cypherType
+
+  def typeOf[R : _hasTracker : _keepsErrors](it: Expression): Eff[R, CypherType] =
     for {
       tracker <- get[R, TypeTracker]
       cypherType <- tracker.get(it) match {

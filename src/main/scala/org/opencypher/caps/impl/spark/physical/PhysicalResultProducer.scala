@@ -31,6 +31,7 @@ import org.opencypher.caps.impl.spark.convert.toSparkType
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.syntax.expr._
 import org.opencypher.caps.impl.syntax.header._
+import org.opencypher.caps.ir.api.RelType
 import org.opencypher.caps.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.caps.ir.api.global._
 import org.opencypher.caps.ir.api.pattern.{AnyGiven, EveryNode, EveryRelationship}
@@ -38,10 +39,10 @@ import org.opencypher.caps.ir.api.pattern.{AnyGiven, EveryNode, EveryRelationshi
 import scala.collection.mutable
 
 object RuntimeContext {
-  val empty = RuntimeContext(Map.empty, ConstantRegistry.empty)
+  val empty = RuntimeContext(Map.empty)
 }
 
-case class RuntimeContext(parameters: Map[ConstantRef, CypherValue], constants: ConstantRegistry) {
+case class RuntimeContext(parameters: Map[String, CypherValue]) {
   def columnName(slot: RecordSlot): String = SparkColumnName.of(slot)
   def columnName(content: SlotContent): String = SparkColumnName.of(content)
 }
@@ -336,8 +337,8 @@ class PhysicalResultProducer(context: RuntimeContext) {
     def skip(expr: Expr, header: RecordHeader): PhysicalResult = {
       val skip: Long = expr match {
         case IntegerLit(v) => v
-        case Const(constant) =>
-          context.parameters(context.constants.constantRef(constant)) match {
+        case Param(name) =>
+          context.parameters(name) match {
             case CypherInteger(v) => v
             case _ => Raise.impossible()
           }

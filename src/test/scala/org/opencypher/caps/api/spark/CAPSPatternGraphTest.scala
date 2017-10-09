@@ -23,7 +23,8 @@ import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTRelationship, CTStrin
 import org.opencypher.caps.api.value._
 import org.opencypher.caps.impl.record.CAPSRecordHeader
 import org.opencypher.caps.impl.syntax.header.{addContents, _}
-import org.opencypher.caps.ir.api.global.{Label, PropertyKey}
+import org.opencypher.caps.ir.api.{Label, PropertyKey}
+import org.opencypher.caps.ir.api.global.PropertyKey
 import org.opencypher.caps.test.CAPSTestSuite
 
 import scala.collection.Bag
