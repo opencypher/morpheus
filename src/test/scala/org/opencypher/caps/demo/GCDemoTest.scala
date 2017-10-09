@@ -42,13 +42,12 @@ class GCDemoTest
   // needed for bag builder initialization
   implicit val m: HashedBagConfiguration[Row] = Bag.configuration.compact[Row]
 
-
   test("the demo") {
     val t0 = System.currentTimeMillis()
-    val storageLevel = StorageLevel.NONE
-    val SN_US = caps.graphAt(neoURIforRegion("US"))
-    val SN_EU = caps.graphAt(neoURIforRegion("EU"))
-    val PRODUCTS = caps.graphAt(hdfsURI).persist(storageLevel)
+    val storageLevel = StorageLevel.MEMORY_ONLY_SER
+    lazy val SN_US = caps.graphAt(neoURIforRegion("US"))
+    lazy val SN_EU = caps.graphAt(neoURIforRegion("EU"))
+    lazy val PRODUCTS = caps.graphAt(hdfsURI).persist(storageLevel)
 
     // Using GRAPH OF
     val CITYFRIENDS_US = SN_US.cypher(
@@ -100,6 +99,9 @@ class GCDemoTest
         session.run(s"MATCH (p:Person {name: ${cypherMap.get("name").get}}) SET p.should_buy = ${cypherMap.get("product").get}")
       }
     }
+
+    val tx = System.currentTimeMillis()
+    System.out.println(s"${tx-t0} ms")
   }
 
   test("write back to Neo") {

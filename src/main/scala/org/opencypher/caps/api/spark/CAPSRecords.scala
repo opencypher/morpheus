@@ -134,13 +134,15 @@ sealed abstract class CAPSRecords(
   }
 
   def toLocalIterator: java.util.Iterator[CypherMap] = {
-    val iter = data.toLocalIterator()
-    val convert = rowToCypherMap(header)
-    new java.util.Iterator[CypherMap] {
-      override def next() = convert(iter.next())
-      override def hasNext = iter.hasNext
-    }
+    toCypherMaps.toLocalIterator()
   }
+
+  def foreachPartition(f: Iterator[CypherMap] => Unit): Unit = {
+    toCypherMaps.foreachPartition(f)
+  }
+
+  def collect(): Array[CypherMap] =
+    toCypherMaps.collect()
 
   /**
     * Converts all values stored in this table to instances of the corresponding CypherValue class.

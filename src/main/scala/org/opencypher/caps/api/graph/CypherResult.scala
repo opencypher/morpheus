@@ -28,6 +28,8 @@ trait CypherResult extends CypherPrintable {
   def sourceGraphName: String = ???
   def targetGraphName: String = ???
 
+  def singleGraph: Option[Graph] = if (graphs.size == 1) Some(graphs.head._2) else None
+
   def graphs: Map[String, Graph]
   def records: Records
 

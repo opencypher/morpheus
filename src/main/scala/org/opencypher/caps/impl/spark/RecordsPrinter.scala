@@ -46,36 +46,39 @@ object RecordsPrinter {
     }
     stream.println(" |")
     stream.println(---)
-    val values = records.toLocalScalaIterator
+
     sep = "| "
     var count = 0
-    values.foreach { map =>
-      fieldContents.foreach { field =>
-        map.get(SparkColumnName.of(field)) match {
-          case None =>
-            stream.print(sep)
-            stream.print(fitToColumn("null"))
-            sep = " | "
-          case Some(v) =>
-            stream.print(sep)
-            stream.print(fitToColumn(Objects.toString(v)))
-            sep = " | "
+    records.toLocalScalaIterator.foreach { map =>
+      if (fieldContents.isEmpty) {
+        stream.print(sep)
+        stream.print(fitToColumn("(empty row)"))
+      } else {
+        fieldContents.foreach { field =>
+          map.get(SparkColumnName.of(field)) match {
+            case None =>
+              stream.print(sep)
+              stream.print(fitToColumn("null"))
+              sep = " | "
+            case Some(v) =>
+              stream.print(sep)
+              stream.print(fitToColumn(Objects.toString(v)))
+              sep = " | "
+          }
         }
       }
       stream.println(" |")
       sep = "| "
       count += 1
     }
+
     if (count == 0) {
-      stream.print(sep)
-      stream.print(fitToColumn("(no rows)"))
-      stream.println(" |")
+      stream.println("(no rows)")
     } else {
-      stream.print(sep)
-      stream.print(fitToColumn(s"($count rows)"))
-      stream.println(" |")
+      stream.println(---)
+      stream.println(s"($count rows)")
     }
-    stream.println(---)
+
     stream.flush()
   }
 
