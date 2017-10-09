@@ -17,6 +17,7 @@ package org.opencypher.caps.api.record
 
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
+import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.expr.{HasLabel, OfType, Property, Var}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSRecords, CAPSSession}
@@ -33,6 +34,12 @@ sealed trait GraphScan extends Serializable {
 
   def records: CAPSRecords
   def entity: Var = Var(entityName)(entityType)
+
+  def cache(): GraphScan
+  def persist(): GraphScan
+  def persist(storageLevel: StorageLevel): GraphScan
+  def unpersist(): GraphScan
+  def unpersist(blocking: Boolean): GraphScan
 
   def entityName: String
   def entityType: EntityCypherType
@@ -178,6 +185,12 @@ object GraphScanBuilder {
         override def entityType: CTNode = scanEntity.entityType
         override def entityName: String = scanEntity.entitySlot
         override def schema: Schema = scanSchema
+
+        override def cache(): NodeScan = create(scanEntity, scanRecords.cache(), scanSchema)
+        override def persist(): NodeScan = create(scanEntity, scanRecords.persist(), scanSchema)
+        override def persist(storageLevel: StorageLevel): NodeScan = create(scanEntity, scanRecords.persist(storageLevel), scanSchema)
+        override def unpersist(): NodeScan = create(scanEntity, scanRecords.unpersist(), scanSchema)
+        override def unpersist(blocking: Boolean): NodeScan = create(scanEntity, scanRecords.unpersist(blocking), scanSchema)
       }
 
     override protected def schema(entity: EmbeddedNode, header: RecordHeader): Schema = {
@@ -211,6 +224,12 @@ object GraphScanBuilder {
         override def entityType: CTRelationship = scanEntity.entityType
         override def entityName: String = scanEntity.entitySlot
         override def schema: Schema = scanSchema
+
+        override def cache(): RelationshipScan = create(scanEntity, scanRecords.cache(), scanSchema)
+        override def persist(): RelationshipScan = create(scanEntity, scanRecords.persist(), scanSchema)
+        override def persist(storageLevel: StorageLevel): RelationshipScan = create(scanEntity, scanRecords.persist(storageLevel), scanSchema)
+        override def unpersist(): RelationshipScan = create(scanEntity, scanRecords.unpersist(), scanSchema)
+        override def unpersist(blocking: Boolean): RelationshipScan = create(scanEntity, scanRecords.unpersist(blocking), scanSchema)
       }
 
     override protected def schema(entity: EmbeddedRelationship, header: RecordHeader): Schema = {

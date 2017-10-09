@@ -18,6 +18,7 @@ package org.opencypher.caps.impl.spark.io.neo4j
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types._
+import org.apache.spark.storage.StorageLevel
 import org.neo4j.driver.internal.{InternalNode, InternalRelationship}
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.record.{OpaqueField, ProjectedExpr, RecordHeader, SlotContent}
@@ -91,7 +92,7 @@ object Neo4jGraphLoader {
     val verified = maybeSchema.getOrElse(loadSchema(nodes, rels))
     val context = LoadingContext(verified)
 
-    createGraph(nodes.cache(), rels.cache(), sourceNode, rel, targetNode)(caps, context)
+    createGraph(nodes, rels, sourceNode, rel, targetNode)(caps, context)
   }
 
   private def loadRDDs(config: EncryptedNeo4jConfig, nodeQ: String, relQ: String)(implicit caps: CAPSSession) = {
@@ -116,6 +117,20 @@ object Neo4jGraphLoader {
     new CAPSGraph {
 
       override val schema: Schema = context.schema
+
+      override def cache(): CAPSGraph = map(_.cache(), _.cache())
+
+      override def persist(): CAPSGraph = map(_.persist(), _.persist())
+
+      override def persist(storageLevel: StorageLevel): CAPSGraph = map(_.persist(storageLevel), _.persist(storageLevel))
+
+      override def unpersist(): CAPSGraph = map(_.unpersist(), _.unpersist())
+
+      override def unpersist(blocking: Boolean): CAPSGraph = map(_.unpersist(blocking), _.unpersist(blocking))
+
+      private def map(f: RDD[InternalNode] => RDD[InternalNode], g: RDD[InternalRelationship] => RDD[InternalRelationship]) =
+        // We need to construct new RDDs since otherwise providing a different storage level may fail
+        createGraph(f(inputNodes.filter(_ => true)), g(inputRels.filter(_ => true)), sourceNode, rel, targetNode)
 
       override def session: CAPSSession = caps
 

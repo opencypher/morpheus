@@ -16,6 +16,7 @@
 package org.opencypher.caps.api.spark
 
 import cats.data.NonEmptyVector
+import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.schema.Schema
@@ -36,6 +37,19 @@ class CAPSScanGraph(val scans: Seq[GraphScan], val schema: Schema)
 
   private val nodeEntityScans = NodeEntityScans(scans.collect { case it: NodeScan => it }.toVector)
   private val relEntityScans = RelationshipEntityScans(scans.collect { case it: RelationshipScan => it }.toVector)
+  
+  override def cache(): CAPSScanGraph = map(_.cache())
+
+  override def persist(): CAPSScanGraph = map(_.persist())
+
+  override def persist(storageLevel: StorageLevel): CAPSScanGraph = map(_.persist(storageLevel))
+
+  override def unpersist(): CAPSScanGraph = map(_.unpersist())
+
+  override def unpersist(blocking: Boolean): CAPSScanGraph = map(_.unpersist(blocking))
+
+  private def map(f: GraphScan => GraphScan): CAPSScanGraph =
+    new CAPSScanGraph(scans.map(f), schema, tokens)
 
   override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
     val node = Var(name)(nodeCypherType)

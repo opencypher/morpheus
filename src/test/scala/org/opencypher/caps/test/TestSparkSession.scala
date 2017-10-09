@@ -44,6 +44,7 @@ object TestSparkSession {
     val conf = new SparkConf(true)
     conf.set("spark.serializer", classOf[KryoSerializer].getCanonicalName)
     conf.set("spark.kryo.registrator", classOf[CypherKryoRegistrar].getCanonicalName)
+    conf.set("spark.sql.codegen.wholeStage", "false")
 
     //
     // This may or may not help - depending on the query

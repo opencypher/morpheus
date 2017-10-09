@@ -21,6 +21,7 @@ import org.apache.spark.api.java.JavaRDD
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.expr.{Property, Var}
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.types._
@@ -56,8 +57,23 @@ sealed abstract class CAPSRecords(
 
   def mapDF(f: Data => Data): CAPSRecords = CAPSRecords.create(f(data))
 
-  // TODO: Check that this does not change the caching of our data frame
-  def cached: CAPSRecords = CAPSRecords.create(header, data.cache())
+  def cache(): CAPSRecords =
+    CAPSRecords.create(header, data.cache())
+
+  def persist(): CAPSRecords =
+    CAPSRecords.create(header, data.persist())
+
+  def persist(storageLevel: StorageLevel): CAPSRecords =
+    CAPSRecords.create(header, data.persist(storageLevel))
+
+  def unpersist(): CAPSRecords =
+    CAPSRecords.create(header, data.unpersist())
+
+  def unpersist(blocking: Boolean): CAPSRecords =
+    CAPSRecords.create(header, data.unpersist(blocking))
+
+  //  def repartition(numPartitions: Int): CAPSRecords =
+  //    CAPSRecords.create(header, data.repartition(numPartitions))
 
   override def print(implicit options: PrintOptions): Unit =
     RecordsPrinter.print(this)
@@ -93,11 +109,11 @@ sealed abstract class CAPSRecords(
     val newSlots = header.slots.map {
       case slot@RecordSlot(idx, content: FieldSlotContent) =>
         slotExprs.get(content.field.name).map {
-          case expr: Var      => OpaqueField(expr)
+          case expr: Var => OpaqueField(expr)
           case expr: Property => ProjectedExpr(expr.copy()(content.cypherType))
-          case expr           => ProjectedExpr(expr)
+          case expr => ProjectedExpr(expr)
         }
-        .getOrElse(slot.content)
+          .getOrElse(slot.content)
 
       case slot =>
         slot.content
@@ -117,8 +133,14 @@ sealed abstract class CAPSRecords(
     toLocalIterator.asScala
   }
 
-  def toLocalIterator: java.util.Iterator[CypherMap] =
-    toCypherMaps.toLocalIterator()
+  def toLocalIterator: java.util.Iterator[CypherMap] = {
+    val iter = data.toLocalIterator()
+    val convert = rowToCypherMap(header)
+    new java.util.Iterator[CypherMap] {
+      override def next() = convert(iter.next())
+      override def hasNext = iter.hasNext
+    }
+  }
 
   /**
     * Converts all values stored in this table to instances of the corresponding CypherValue class.
