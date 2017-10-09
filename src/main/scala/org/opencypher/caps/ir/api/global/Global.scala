@@ -23,27 +23,6 @@ sealed trait Global extends Any {
 
 object Global {
 
-  implicit val labelRegister: AbstractRegister[LabelRef, String, Label] =
-    new AbstractRegister[LabelRef, String, Label] {
-      override protected def id(ref: LabelRef): Int = ref.id
-      override protected def ref(id: Int): LabelRef = LabelRef(id)
-      override def key(defn: Label): String = defn.name
-    }
-
-  implicit val relTypeRegister: AbstractRegister[RelTypeRef, String, RelType] =
-    new AbstractRegister[RelTypeRef, String, RelType] {
-      override protected def id(ref: RelTypeRef): Int = ref.id
-      override protected def ref(id: Int): RelTypeRef = RelTypeRef(id)
-      override def key(defn: RelType): String = defn.name
-    }
-
-  implicit val pkRegister: AbstractRegister[PropertyKeyRef, String, PropertyKey] =
-    new AbstractRegister[PropertyKeyRef, String, PropertyKey] {
-      override protected def id(ref: PropertyKeyRef): Int = ref.id
-      override protected def ref(id: Int): PropertyKeyRef = PropertyKeyRef(id)
-      override def key(defn: PropertyKey): String = defn.name
-    }
-
   implicit val constRegister: AbstractRegister[ConstantRef, String, Constant] =
     new AbstractRegister[ConstantRef, String, Constant] {
       override protected def id(ref: ConstantRef): Int = ref.id
@@ -57,13 +36,8 @@ sealed trait GlobalRef[D <: Global] extends Any {
 }
 
 final case class Label(name: String) extends AnyVal with Global
-final case class LabelRef(id: Int) extends AnyVal with GlobalRef[Label]
-
 final case class PropertyKey(name: String) extends AnyVal with Global
-final case class PropertyKeyRef(id: Int) extends AnyVal with GlobalRef[PropertyKey]
-
 final case class RelType(name: String) extends AnyVal with Global
-final case class RelTypeRef(id: Int) extends AnyVal with GlobalRef[RelType]
 
 final case class Constant(name: String) extends AnyVal with Global
 final case class ConstantRef(id: Int) extends AnyVal with GlobalRef[Constant]
