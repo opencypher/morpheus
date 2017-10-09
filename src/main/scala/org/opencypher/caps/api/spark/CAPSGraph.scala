@@ -52,27 +52,17 @@ object CAPSGraph {
     new CAPSPatternGraph(records, schema)
   }
 
-  def createLazy(theSchema: Schema)(loadGraph: => CAPSGraph)(implicit caps: CAPSSession): CAPSGraph {
-    def relationships(name: String, relCypherType: CTRelationship): CAPSRecords
+  def createLazy(theSchema: Schema, loadGraph: => CAPSGraph)(implicit caps: CAPSSession): CAPSGraph =
+    new LazyGraph(theSchema, loadGraph) {}
 
-    def nodes(name: String, nodeCypherType: CTNode): CAPSRecords
-
-    def union(other: CAPSGraph): CAPSGraph
-
-    def session: CAPSSession
-
-    val graph: CAPSGraph
-
-    def schema: Schema
-  } = new CAPSGraph {
+  sealed abstract class LazyGraph(override val schema: Schema, loadGraph: => CAPSGraph)(implicit caps: CAPSSession)
+    extends CAPSGraph {
     override protected lazy val graph: CAPSGraph = {
       val g = loadGraph
-      if (g.schema == theSchema) g else Raise.schemaMismatch()
+      if (g.schema == schema) g else Raise.schemaMismatch()
     }
 
     override def session: CAPSSession = caps
-
-    override def schema: Schema = theSchema
 
     override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords =
       graph.nodes(name, nodeCypherType)

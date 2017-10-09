@@ -20,7 +20,6 @@ import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType, DefiniteCypherType}
-import org.opencypher.caps.impl.record.CAPSRecordsTokens
 import org.opencypher.caps.impl.spark.exception.Raise
 
 class CAPSScanGraph(val scans: Seq[GraphScan], val schema: Schema)
@@ -33,12 +32,12 @@ class CAPSScanGraph(val scans: Seq[GraphScan], val schema: Schema)
 
   self: CAPSGraph =>
 
-  override protected def graph = this
+  override protected def graph: CAPSScanGraph = this
 
   private val nodeEntityScans = NodeEntityScans(scans.collect { case it: NodeScan => it }.toVector)
   private val relEntityScans = RelationshipEntityScans(scans.collect { case it: RelationshipScan => it }.toVector)
 
-  override def nodes(name: String, nodeCypherType: CTNode) = {
+  override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
     val node = Var(name)(nodeCypherType)
     val selectedScans = nodeEntityScans.scans(nodeCypherType)
     val schema = selectedScans.map(_.schema).foldLeft(Schema.empty)(_ ++ _)
@@ -49,7 +48,7 @@ class CAPSScanGraph(val scans: Seq[GraphScan], val schema: Schema)
     alignedRecords.reduceOption(_ unionAll(targetNodeHeader, _)).getOrElse(CAPSRecords.empty(targetNodeHeader))
   }
 
-  override def relationships(name: String, relCypherType: CTRelationship) = {
+  override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
     val rel = Var(name)(relCypherType)
     val selectedScans = relEntityScans.scans(relCypherType)
     val schema = selectedScans.map(_.schema).foldLeft(Schema.empty)(_ ++ _)

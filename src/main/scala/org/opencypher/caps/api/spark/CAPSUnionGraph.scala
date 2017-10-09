@@ -27,7 +27,7 @@ case class CAPSUnionGraph(graphs: CAPSGraph*)
 
   private lazy val individualSchemas = graphs.map(_.schema)
 
-  override lazy val schema: Schema = individualSchemas.reduceOption(_ ++ _).getOrElse(Schema.empty)
+  override lazy val schema: Schema = individualSchemas.foldLeft(Schema.empty)(_ ++ _)
 
   override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
     val node = Var(name)(nodeCypherType)
