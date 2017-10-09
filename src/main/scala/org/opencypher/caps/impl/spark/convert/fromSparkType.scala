@@ -31,7 +31,7 @@ object fromSparkType extends Serializable {
       case ArrayType(elemType, containsNull) =>
         val maybeElementType = fromSparkType(elemType, containsNull)
         maybeElementType.map(CTList(_))
-      case x => None
+      case _ => None
     }
 
     if (nullable) result.map(_.nullable) else result.map(_.material)
