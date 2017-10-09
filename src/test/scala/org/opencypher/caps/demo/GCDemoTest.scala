@@ -79,7 +79,7 @@ class GCDemoTest
     val result = RECO.cypher(
       """MATCH (a:Person)-[:ACQUAINTED]-(b:Person)-[:HAS_INTEREST]->(i:Interest),
         |      (a)<-[:IS]-(x:Customer)-[r:BOUGHT]->(p:Product {category: i.name})
-        |WHERE r.rating >= 4 //AND r.helpful / r.votes > 0.6
+        |WHERE r.rating >= 4 AND (r.helpful * 1.0) / r.votes > 0.6
         |WITH * ORDER BY p.rank
         |RETURN DISTINCT p.title AS product, b.name AS name
         |LIMIT 100
