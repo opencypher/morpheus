@@ -16,11 +16,10 @@
 package org.opencypher.caps.ir.impl.instances
 
 import org.opencypher.caps.api.expr.{Expr, HasLabel, HasType, Var}
-import org.opencypher.caps.ir.api.IRField
-import org.opencypher.caps.ir.api.block.MatchBlock
-import org.opencypher.caps.ir.api.global.{GlobalsRegistry, Label}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.common.classes.TypedBlock
+import org.opencypher.caps.ir.api.{IRField, Label}
+import org.opencypher.caps.ir.api.block.MatchBlock
 
 trait ExprBlockInstances {
 
@@ -34,7 +33,7 @@ trait ExprBlockInstances {
     }
   }
 
-  implicit def typedMatchBlock(implicit globals: GlobalsRegistry): TypedBlock[MatchBlock[Expr]] =
+  implicit def typedMatchBlock: TypedBlock[MatchBlock[Expr]] =
     new TypedBlock[MatchBlock[Expr]] {
 
       override type BlockExpr = Expr

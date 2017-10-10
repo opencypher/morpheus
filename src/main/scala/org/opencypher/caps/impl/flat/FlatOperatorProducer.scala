@@ -30,8 +30,6 @@ import org.opencypher.caps.ir.api.pattern.{EveryNode, EveryRelationship}
 
 class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
-  private val tokens = context.tokens
-
   private implicit val typeVectorMonoid: Monoid[Vector[CypherType]] {
     def empty: Vector[CypherType]
 
@@ -87,15 +85,15 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     * That means that it will discard any incoming fields from the ancestor header (assumes it is empty)
     */
   def nodeScan(node: Var, nodeDef: EveryNode, prev: FlatOperator): NodeScan = {
-    val header = if (nodeDef.labels.elements.isEmpty) RecordHeader.nodeFromSchema(node, prev.sourceGraph.schema, tokens)
-    else RecordHeader.nodeFromSchema(node, prev.sourceGraph.schema, tokens, nodeDef.labels.elements.map(_.name))
+    val header = if (nodeDef.labels.elements.isEmpty) RecordHeader.nodeFromSchema(node, prev.sourceGraph.schema)
+    else RecordHeader.nodeFromSchema(node, prev.sourceGraph.schema, nodeDef.labels.elements.map(_.name))
 
     new NodeScan(node, nodeDef, prev, header)
   }
 
   def edgeScan(edge: Var, edgeDef: EveryRelationship, prev: FlatOperator): EdgeScan = {
-    val edgeHeader = if (edgeDef.relTypes.elements.isEmpty) RecordHeader.relationshipFromSchema(edge, prev.sourceGraph.schema, tokens)
-    else RecordHeader.relationshipFromSchema(edge, prev.sourceGraph.schema, tokens, edgeDef.relTypes.elements.map(_.name))
+    val edgeHeader = if (edgeDef.relTypes.elements.isEmpty) RecordHeader.relationshipFromSchema(edge, prev.sourceGraph.schema)
+    else RecordHeader.relationshipFromSchema(edge, prev.sourceGraph.schema, edgeDef.relTypes.elements.map(_.name))
 
     EdgeScan(edge, edgeDef, prev, edgeHeader)
   }
@@ -130,8 +128,8 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   def expandSource(source: Var, rel: Var, types: EveryRelationship, target: Var, schema: Schema,
                    sourceOp: FlatOperator, targetOp: FlatOperator): FlatOperator = {
     val relHeader =
-      if (types.relTypes.elements.isEmpty) RecordHeader.relationshipFromSchema(rel, schema, tokens)
-      else RecordHeader.relationshipFromSchema(rel, schema, tokens, types.relTypes.elements.map(_.name))
+      if (types.relTypes.elements.isEmpty) RecordHeader.relationshipFromSchema(rel, schema)
+      else RecordHeader.relationshipFromSchema(rel, schema, types.relTypes.elements.map(_.name))
 
     val expandHeader = sourceOp.header ++ relHeader ++ targetOp.header
 
@@ -140,8 +138,8 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
   def expandInto(source: Var, rel: Var, types: EveryRelationship, target: Var, schema: Schema, sourceOp: FlatOperator): FlatOperator = {
     val relHeader =
-      if (types.relTypes.elements.isEmpty) RecordHeader.relationshipFromSchema(rel, schema, tokens)
-      else RecordHeader.relationshipFromSchema(rel, schema, tokens, types.relTypes.elements.map(_.name))
+      if (types.relTypes.elements.isEmpty) RecordHeader.relationshipFromSchema(rel, schema)
+      else RecordHeader.relationshipFromSchema(rel, schema, types.relTypes.elements.map(_.name))
 
     val expandHeader = sourceOp.header ++ relHeader
 

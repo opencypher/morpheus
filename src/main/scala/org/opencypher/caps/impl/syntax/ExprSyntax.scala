@@ -50,7 +50,7 @@ final class ExprOps(val e: Expr) extends AnyVal {
       case (expr: Ands) :: tl => computeDependencies(expr.exprs.toList ++ tl, result)
       case (expr: Ors) :: tl => computeDependencies(expr.exprs.toList ++ tl, result)
       case (expr: Lit[_]) :: tl => computeDependencies(tl, result)
-      case (expr: Const) :: tl => computeDependencies(tl, result)
+      case (expr: Param) :: tl => computeDependencies(tl, result)
       case (expr: BinaryExpr) :: tl => computeDependencies(expr.lhs :: expr.rhs :: tl, result)
       case (expr: FunctionExpr) :: tl => computeDependencies(expr.expr :: tl, result)
       case (expr: Aggregator) :: tl => computeDependencies(expr.inner.map(_ :: tl).getOrElse(tl), result)

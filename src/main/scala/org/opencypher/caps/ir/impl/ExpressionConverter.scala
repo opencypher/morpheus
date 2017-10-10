@@ -18,17 +18,14 @@ package org.opencypher.caps.ir.impl
 import org.neo4j.cypher.internal.frontend.v3_3.ast.functions
 import org.neo4j.cypher.internal.frontend.v3_3.{Ref, ast}
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.ir.api.global.GlobalsRegistry
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.parse.{CypherParser, RetypingPredicate}
+import org.opencypher.caps.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.caps.ir.impl.FunctionUtils._
 
 import scala.language.implicitConversions
 
-final class ExpressionConverter(val globals: GlobalsRegistry) extends AnyVal {
-
-  import globals.constants
-  import globals.tokens
+object ExpressionConverter {
 
   implicit def toRef(e: ast.Expression): Ref[ast.Expression] = Ref(e)
 
@@ -36,7 +33,7 @@ final class ExpressionConverter(val globals: GlobalsRegistry) extends AnyVal {
     case ast.Variable(name) =>
       Var(CypherParser.fixFrontendNamespaceBug(name))(typings(e))
     case ast.Parameter(name, _) =>
-      Const(constants.constantByName(name))(typings(e))
+      Param(name)(typings(e))
 
     // Literals
     case astExpr: ast.IntegerLiteral =>
@@ -50,7 +47,7 @@ final class ExpressionConverter(val globals: GlobalsRegistry) extends AnyVal {
     case ast.ListLiteral(exprs) =>
       ListLit(exprs.map(convert).toIndexedSeq)(typings(e))
 
-    case ast.Property(m, ast.PropertyKeyName(name)) => Property(convert(m), tokens.propertyKeyByName(name))(typings(e))
+    case ast.Property(m, ast.PropertyKeyName(name)) => Property(convert(m), PropertyKey(name))(typings(e))
 
     // Predicates
     case ast.Ands(exprs) =>
@@ -58,13 +55,13 @@ final class ExpressionConverter(val globals: GlobalsRegistry) extends AnyVal {
     case ast.Ors(exprs) =>
       new Ors(exprs.map(convert))(typings(e))
     case ast.HasLabels(node, labels) =>
-      val exprs = labels.map { (l: ast.LabelName) => HasLabel(convert(node), tokens.labelByName(l.name))(typings(e)) }
+      val exprs = labels.map { (l: ast.LabelName) => HasLabel(convert(node), Label(l.name))(typings(e)) }
       if (exprs.size == 1) exprs.head else new Ands(exprs.toSet)(typings(e))
     case ast.Not(expr) =>
       Not(convert(expr))(typings(e))
       // TODO: Does this belong here still?
     case ast.Equals(f: ast.FunctionInvocation, s: ast.StringLiteral) if f.function == functions.Type =>
-      HasType(convert(f.args.head), tokens.relTypeByName(s.value))(CTBoolean)
+      HasType(convert(f.args.head), RelType(s.value))(CTBoolean)
     case ast.Equals(lhs, rhs) =>
       Equals(convert(lhs), convert(rhs))(typings(e))
     case ast.LessThan(lhs, rhs) =>

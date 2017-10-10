@@ -16,9 +16,9 @@
 package org.opencypher.caps.impl.logical
 
 import org.opencypher.caps.api.expr.{HasLabel, Var}
-import org.opencypher.caps.ir.api.global.Label
 import org.opencypher.caps.ir.api.pattern.{AllGiven, EveryNode}
 import org.opencypher.caps.impl.DirectCompilationStage
+import org.opencypher.caps.ir.api.Label
 
 class LogicalOptimizer(producer: LogicalOperatorProducer)
   extends DirectCompilationStage[LogicalOperator, LogicalOperator, LogicalPlannerContext]{

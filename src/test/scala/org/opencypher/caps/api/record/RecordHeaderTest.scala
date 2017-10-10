@@ -15,13 +15,13 @@
  */
 package org.opencypher.caps.api.record
 
-import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.expr._
+import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.record.{Added, Found, Replaced}
-import org.opencypher.caps.ir.api.global._
 import org.opencypher.caps.impl.syntax.header._
-import org.opencypher.caps.test.BaseTestSuite
 import org.opencypher.caps.impl.util.toVar
+import org.opencypher.caps.ir.api.{Label, PropertyKey, RelType}
+import org.opencypher.caps.test.BaseTestSuite
 
 import scala.language.implicitConversions
 

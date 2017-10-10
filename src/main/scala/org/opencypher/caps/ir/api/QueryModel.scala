@@ -17,8 +17,8 @@ package org.opencypher.caps.ir.api
 
 import java.net.URI
 
+import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.ir.api.block._
-import org.opencypher.caps.ir.api.global.GlobalsRegistry
 import org.opencypher.caps.ir.api.pattern._
 
 import scala.annotation.tailrec
@@ -26,7 +26,7 @@ import scala.collection.generic.CanBuildFrom
 
 final case class QueryModel[E](
   result: ResultBlock[E],
-  globals: GlobalsRegistry,
+  parameters: Map[String, CypherValue],
   blocks: Map[BlockRef, Block[E]],
   graphs: Map[String, URI]
 ) {

@@ -20,7 +20,7 @@ import org.apache.spark.sql.types.{ArrayType, BooleanType, LongType}
 import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.record._
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
+import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.{CypherInteger, CypherValue}
 import org.opencypher.caps.impl.flat.FreshVariableNamer
@@ -31,28 +31,28 @@ import org.opencypher.caps.impl.spark.convert.toSparkType
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.syntax.expr._
 import org.opencypher.caps.impl.syntax.header._
+import org.opencypher.caps.ir.api.RelType
 import org.opencypher.caps.ir.api.block.{Asc, Desc, SortItem}
-import org.opencypher.caps.ir.api.global._
 import org.opencypher.caps.ir.api.pattern.{AnyGiven, EveryNode, EveryRelationship}
 
 import scala.collection.mutable
 
 object RuntimeContext {
-  val empty = RuntimeContext(Map.empty, TokenRegistry.empty, ConstantRegistry.empty)
+  val empty = RuntimeContext(Map.empty)
 }
 
-case class RuntimeContext(parameters: Map[ConstantRef, CypherValue], tokens: TokenRegistry, constants: ConstantRegistry) {
+case class RuntimeContext(parameters: Map[String, CypherValue]) {
   def columnName(slot: RecordSlot): String = SparkColumnName.of(slot)
   def columnName(content: SlotContent): String = SparkColumnName.of(content)
 }
 
 class PhysicalResultProducer(context: RuntimeContext) {
 
-  implicit val c = context
+  private implicit val currentContext: RuntimeContext = context
 
   implicit final class RichCypherResult(val prev: PhysicalResult) {
 
-    implicit val session = prev.records.caps
+    implicit val session: CAPSSession = prev.records.caps
 
     // TODO: Propagate this header -- don't just drop it
     def nodeScan(inGraph: LogicalGraph, v: Var, labelPredicates: EveryNode, header: RecordHeader)
@@ -337,8 +337,8 @@ class PhysicalResultProducer(context: RuntimeContext) {
     def skip(expr: Expr, header: RecordHeader): PhysicalResult = {
       val skip: Long = expr match {
         case IntegerLit(v) => v
-        case Const(constant) =>
-          context.parameters(context.constants.constantRef(constant)) match {
+        case Param(name) =>
+          context.parameters(name) match {
             case CypherInteger(v) => v
             case _ => Raise.impossible()
           }

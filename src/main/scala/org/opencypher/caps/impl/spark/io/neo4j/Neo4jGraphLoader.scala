@@ -20,18 +20,17 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.types._
 import org.neo4j.driver.internal.{InternalNode, InternalRelationship}
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.ir.api.global.{GlobalsRegistry, PropertyKey}
 import org.opencypher.caps.api.record.{OpaqueField, ProjectedExpr, RecordHeader, SlotContent}
 import org.opencypher.caps.api.schema.{Schema, VerifiedSchema}
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.convert.fromJavaType
-import org.opencypher.caps.impl.record.CAPSRecordsTokens
 import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.convert.toSparkType
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.syntax.header._
+import org.opencypher.caps.ir.api.{Label, PropertyKey}
 
 object Neo4jGraphLoader {
 
@@ -90,7 +89,7 @@ object Neo4jGraphLoader {
     val (nodes, rels) = loadRDDs(config, nodeQuery, relQuery)
 
     val verified = maybeSchema.getOrElse(loadSchema(nodes, rels))
-    val context = LoadingContext(verified, GlobalsRegistry.fromSchema(verified))
+    val context = LoadingContext(verified)
 
     createGraph(nodes.cache(), rels.cache(), sourceNode, rel, targetNode)(caps, context)
   }
@@ -104,8 +103,8 @@ object Neo4jGraphLoader {
     nodes -> rels
   }
 
-  case class LoadingContext(verifiedSchema: VerifiedSchema, globals: GlobalsRegistry) {
-    def schema = verifiedSchema.schema
+  case class LoadingContext(verifiedSchema: VerifiedSchema) {
+    def schema: Schema = verifiedSchema.schema
   }
 
 
@@ -117,7 +116,6 @@ object Neo4jGraphLoader {
     new CAPSGraph {
 
       override val schema: Schema = context.schema
-      override val tokens: CAPSRecordsTokens = CAPSRecordsTokens(context.globals.tokens)
 
       override def session: CAPSSession = caps
 
@@ -164,12 +162,11 @@ object Neo4jGraphLoader {
         val node = Var(name)(cypherType)
 
         val schema = context.schema
-        val tokens = context.globals.tokens
 
         val labels = if (cypherType.labels.isEmpty) schema.labels else cypherType.labels
 
         val labelFields = labels.map { name =>
-          val label = HasLabel(node, tokens.labelByName(name))(CTBoolean)
+          val label = HasLabel(node, Label(name))(CTBoolean)
           val slot = ProjectedExpr(label)
           val field = StructField(SparkColumnName.of(slot), BooleanType, nullable = false)
           slot -> field
@@ -177,7 +174,7 @@ object Neo4jGraphLoader {
         val propertyFields = labels.flatMap { l =>
           schema.nodeKeys(l).map {
             case (key, t) =>
-              val property = Property(node, tokens.propertyKeyByName(key))(t)
+              val property = Property(node, PropertyKey(key))(t)
               val slot = ProjectedExpr(property)
               val field = StructField(SparkColumnName.of(slot), toSparkType(t), nullable = true)
               slot -> field
@@ -194,12 +191,11 @@ object Neo4jGraphLoader {
         val rel = Var(name)(cypherType)
 
         val schema = context.schema
-        val tokens = context.globals.tokens
 
         val propertyFields = schema.relationshipTypes.flatMap { typ =>
           schema.relationshipKeys(typ).map {
             case (key, t) =>
-              val property = Property(rel, tokens.propertyKeyByName(key))(t)
+              val property = Property(rel, PropertyKey(key))(t)
               val slot = ProjectedExpr(property)
               val field = StructField(SparkColumnName.of(slot), toSparkType(t), nullable = true)
               slot -> field
@@ -233,7 +229,6 @@ object Neo4jGraphLoader {
                               (implicit context: LoadingContext) extends (InternalNode => Row) {
     override def apply(importedNode: InternalNode): Row = {
       val graphSchema = context.schema
-      val globals = context.globals
 
       import scala.collection.JavaConverters._
 
@@ -274,7 +269,6 @@ object Neo4jGraphLoader {
                              (implicit context: LoadingContext) extends (InternalRelationship => Row) {
     override def apply(importedRel: InternalRelationship): Row = {
       val graphSchema = context.schema
-      val tokens = context.globals.tokens
 
       import scala.collection.JavaConverters._
 

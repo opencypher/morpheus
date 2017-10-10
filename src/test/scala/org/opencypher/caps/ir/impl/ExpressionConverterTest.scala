@@ -17,30 +17,13 @@ package org.opencypher.caps.ir.impl
 
 import org.neo4j.cypher.internal.frontend.v3_3.{Ref, ast, symbols}
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.ir.api.global._
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.caps.test.BaseTestSuite
 import org.opencypher.caps.test.support.Neo4jAstTestSupport
 import org.opencypher.caps.toVar
 
 class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
-
-  private val globals = GlobalsRegistry(
-    TokenRegistry
-    .empty
-    .withPropertyKey(PropertyKey("key"))
-    .withLabel(Label("Person"))
-    .withLabel(Label("Duck"))
-    .withLabel(Label("Foo"))
-    .withLabel(Label("Bar"))
-    .withPropertyKey(PropertyKey("name"))
-    .withRelType(RelType("REL_TYPE")),
-    ConstantRegistry
-    .empty
-    .withConstant(Constant("p"))
-    .withConstant(Constant("p1"))
-    .withConstant(Constant("p2"))
-  )
 
   private def testTypes(ref: Ref[ast.Expression]): CypherType = ref.value match {
     case ast.Variable("r") => CTRelationship
@@ -48,11 +31,6 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     case ast.Variable("m") => CTNode
     case _ => CTWildcard
   }
-
-  import globals.tokens._
-  import globals.constants._
-
-  private val c = new ExpressionConverter(globals)
 
   test("exists()") {
     convert(parseExpr("exists(n.key)")) should equal(
@@ -167,39 +145,39 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   test("can convert parameters") {
     val given = ast.Parameter("p", symbols.CTString) _
-    convert(given) should equal(Const(Constant("p"))(CTWildcard))
+    convert(given) should equal(Param("p")(CTWildcard))
   }
 
   test("can convert has-labels") {
     val given = convert(ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _, ast.LabelName("Duck") _)) _)
-    given should equal(Ands(HasLabel('x, labelByName("Person"))(CTBoolean), HasLabel('x, Label("Duck"))(CTBoolean)))
+    given should equal(Ands(HasLabel('x, Label("Person"))(CTBoolean), HasLabel('x, Label("Duck"))(CTBoolean)))
   }
 
   test("can convert single has-labels") {
     val given = ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _)) _
-    convert(given) should equal(HasLabel('x, labelByName("Person"))(CTBoolean))
+    convert(given) should equal(HasLabel('x, Label("Person"))(CTBoolean))
   }
 
   test("can convert conjunctions") {
     val given = ast.Ands(Set(ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _)) _, ast.Equals(prop("x", "name"), ast.StringLiteral("Mats") _) _)) _
 
-    convert(given) should equal(Ands(HasLabel('x, labelByName("Person"))(CTBoolean), Equals(Property('x, PropertyKey("name"))(), StringLit("Mats")())(CTBoolean)))
+    convert(given) should equal(Ands(HasLabel('x, Label("Person"))(CTBoolean), Equals(Property('x, PropertyKey("name"))(), StringLit("Mats")())(CTBoolean)))
   }
 
   test("can convert negation") {
     val given = ast.Not(ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _)) _) _
 
-    convert(given) should equal(Not(HasLabel('x, labelByName("Person"))(CTBoolean))(CTBoolean))
+    convert(given) should equal(Not(HasLabel('x, Label("Person"))(CTBoolean))(CTBoolean))
   }
 
   test("can convert retyping predicate") {
     val given = parseExpr("$p1 AND n:Foo AND $p2 AND m:Bar")
 
     convert(given) should equal(Ands(
-      HasLabel('n, labelByName("Foo"))(),
-      HasLabel('m, labelByName("Bar"))(),
-      Const(constantByName("p1"))(),
-      Const(constantByName("p2"))())
+      HasLabel('n, Label("Foo"))(),
+      HasLabel('m, Label("Bar"))(),
+      Param("p1")(),
+      Param("p2")())
     )
   }
 
@@ -209,5 +187,5 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     )
   }
 
-  private def convert(e: ast.Expression): Expr = c.convert(e)(testTypes)
+  private def convert(e: ast.Expression): Expr = ExpressionConverter.convert(e)(testTypes)
 }

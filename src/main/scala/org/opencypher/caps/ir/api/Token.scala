@@ -13,19 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.test.fixture
+package org.opencypher.caps.ir.api
 
-import org.opencypher.caps.api.spark.CAPSSession
-import org.opencypher.caps.test.BaseTestSuite
-
-trait CAPSSessionFixture extends BaseTestFixture {
-  self: SparkSessionFixture with BaseTestSuite =>
-
-  implicit lazy val caps: CAPSSession = initCAPSSessionBuilder.build
-
-  def initCAPSSessionBuilder: CAPSSession.Builder = CAPSSession.builder(session)
-
-  abstract override protected def afterEach(): Unit =
-    caps.unmountAll()
-    super.afterEach()
+sealed trait Token extends Any {
+  def name: String
 }
+
+final case class Label(name: String) extends AnyVal with Token
+final case class PropertyKey(name: String) extends AnyVal with Token
+final case class RelType(name: String) extends AnyVal with Token
+
+
+

@@ -16,7 +16,7 @@
 package org.opencypher.caps.impl.spark
 
 import org.apache.spark.sql.Row
-import org.opencypher.caps.api.expr.{Const, Expr}
+import org.opencypher.caps.api.expr.{Param, Expr}
 import org.opencypher.caps.api.record.RecordHeader
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value._
@@ -29,7 +29,7 @@ object RowUtils {
   implicit class CypherRow(r: Row) {
     def getCypherValue(expr: Expr, header: RecordHeader)(implicit context: RuntimeContext): CypherValue = {
       expr match {
-        case c: Const => context.parameters(context.constants.constantRef(c.constant))
+        case Param(name) => context.parameters(name)
         case _ =>
           header.slotsFor(expr).headOption match {
             case None => Raise.slotNotFound(expr.toString)

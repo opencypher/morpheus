@@ -24,7 +24,7 @@ import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTString, CypherType, _
 import org.opencypher.caps.common.syntax._
 import org.opencypher.caps.impl.record.InternalHeader
 import org.opencypher.caps.impl.syntax.header.{addContents, _}
-import org.opencypher.caps.ir.api.global.{Label, PropertyKey, TokenRegistry}
+import org.opencypher.caps.ir.api.{Label, PropertyKey}
 
 final case class RecordHeader(internalHeader: InternalHeader) {
 
@@ -140,10 +140,10 @@ object RecordHeader {
     RecordHeader(contents.foldLeft(InternalHeader.empty) { case (header, slot) => header + slot })
 
   // TODO: Probably move this to an implicit class RichSchema?
-  def nodeFromSchema(node: Var, schema: Schema, tokens: TokenRegistry): RecordHeader =
-    nodeFromSchema(node, schema, tokens, schema.labels)
+  def nodeFromSchema(node: Var, schema: Schema): RecordHeader =
+    nodeFromSchema(node, schema, schema.labels)
 
-  def nodeFromSchema(node: Var, schema: Schema, tokens: TokenRegistry, labels: Set[String]): RecordHeader = {
+  def nodeFromSchema(node: Var, schema: Schema, labels: Set[String]): RecordHeader = {
     val impliedLabels = schema.impliedLabels.transitiveImplicationsFor(if (labels.nonEmpty) labels else schema.labels)
     val impliedKeys = impliedLabels.flatMap(label => schema.nodeKeyMap.keysFor(label).toSet)
     val possibleLabels = impliedLabels.flatMap(label => schema.labelCombinations.combinationsFor(label))
@@ -170,10 +170,10 @@ object RecordHeader {
     header
   }
 
-  def relationshipFromSchema(rel: Var, schema: Schema, tokens: TokenRegistry): RecordHeader =
-    relationshipFromSchema(rel, schema, tokens, schema.relationshipTypes)
+  def relationshipFromSchema(rel: Var, schema: Schema): RecordHeader =
+    relationshipFromSchema(rel, schema, schema.relationshipTypes)
 
-  def relationshipFromSchema(rel: Var, schema: Schema, tokens: TokenRegistry, relTypes: Set[String]): RecordHeader = {
+  def relationshipFromSchema(rel: Var, schema: Schema, relTypes: Set[String]): RecordHeader = {
     val relKeyHeaderProperties = relTypes.flatMap(t => schema.relationshipKeys(t).toSeq)
 
     val relKeyHeaderContents = relKeyHeaderProperties.map {

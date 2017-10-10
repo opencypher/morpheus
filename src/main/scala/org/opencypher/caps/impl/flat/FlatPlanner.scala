@@ -16,15 +16,16 @@
 package org.opencypher.caps.impl.flat
 
 import org.opencypher.caps.api.types.{CTList, CTRelationship, CypherType}
+import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.logical.LogicalOperator
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.{DirectCompilationStage, logical}
-import org.opencypher.caps.ir.api.global.{ConstantRegistry, RelType, TokenRegistry}
+import org.opencypher.caps.ir.api.RelType
 import org.opencypher.caps.ir.api.pattern.{AnyGiven, EveryRelationship}
 
 import scala.annotation.tailrec
 
-final case class FlatPlannerContext(tokens: TokenRegistry, constants: ConstantRegistry)
+final case class FlatPlannerContext(parameters: Map[String, CypherValue])
 
 class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, FlatPlannerContext] {
 
@@ -75,7 +76,7 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
 
       case logical.BoundedVarLengthExpand(source, edgeList, target, lower, upper, sourceOp, targetOp) =>
         val initVarExpand = producer.initVarExpand(source, edgeList, process(sourceOp))
-        val types: Set[RelType] = relTypeFromList(edgeList.cypherType).map(context.tokens.relTypeByName)
+        val types: Set[RelType] = relTypeFromList(edgeList.cypherType).map(RelType)
         val edgeScan = producer.varLengthEdgeScan(edgeList, EveryRelationship(AnyGiven(types)), producer.planStart(input.sourceGraph, Set.empty))
         producer.boundedVarExpand(edgeScan.edge, edgeList, target, lower, upper, initVarExpand,
           edgeScan, process(targetOp), isExpandInto = sourceOp == targetOp)

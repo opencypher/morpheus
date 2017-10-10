@@ -15,14 +15,14 @@
  */
 package org.opencypher.caps.ir.impl
 
-import org.opencypher.caps.{toField, _}
 import org.opencypher.caps.api.expr.{Expr, HasLabel, Property, Var}
-import org.opencypher.caps.api.schema.{ImpliedLabels, LabelCombinations, PropertyKeyMap, Schema}
-import org.opencypher.caps.ir.api.block._
-import org.opencypher.caps.ir.api.global.GlobalsRegistry
-import org.opencypher.caps.ir.api.pattern._
-import org.opencypher.caps.ir.api.{IRField, IRNamedGraph, IRPatternGraph, QueryModel}
+import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CTVoid}
+import org.opencypher.caps.api.value.CypherValue
+import org.opencypher.caps.ir.api._
+import org.opencypher.caps.ir.api.block._
+import org.opencypher.caps.ir.api.pattern._
+import org.opencypher.caps.{toField, _}
 
 import scala.collection.immutable.Set
 
@@ -30,8 +30,6 @@ class CypherQueryBuilderTest extends IrTestSuite {
 
   test("match node and return it") {
     "MATCH (a:Person) RETURN a".model.ensureThat { (model, globals) =>
-
-      import globals.tokens._
 
       val loadRef = model.findExactlyOne {
         case NoWhereBlock(s@SourceBlock(_)) =>
@@ -43,7 +41,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
           deps should equal(Set(loadRef))
           entities should equal(Map(toField('a -> CTNode) -> EveryNode))
           topo shouldBe empty
-          exprs should equal(Set(HasLabel(toVar('a), labelByName("Person"))()))
+          exprs should equal(Set(HasLabel(toVar('a), Label("Person"))()))
       }
 
       val projectRef = model.findExactlyOne {
@@ -108,8 +106,6 @@ class CypherQueryBuilderTest extends IrTestSuite {
   test("match node order by name and return it") {
     "MATCH (a:Person) WITH a.name AS name, a.age AS age ORDER BY age RETURN age, name".model.ensureThat { (model, globals) =>
 
-      import globals.tokens._
-
       val loadRef = model.findExactlyOne {
         case NoWhereBlock(s@SourceBlock(_)) =>
           s.binds.fields shouldBe empty
@@ -120,15 +116,15 @@ class CypherQueryBuilderTest extends IrTestSuite {
           deps should equal(Set(loadRef))
           entities should equal(Map(toField('a -> CTNode) -> EveryNode))
           topo shouldBe empty
-          exprs should equal(Set(HasLabel(toVar('a), labelByName("Person"))()))
+          exprs should equal(Set(HasLabel(toVar('a), Label("Person"))()))
       }
 
       val projectRef = model.findExactlyOne {
         case NoWhereBlock(ProjectBlock(deps, FieldsAndGraphs(map, _), _, _, _)) if deps.head == matchRef =>
           deps should equal(Set(matchRef))
           map should equal(Map(
-            toField('name) -> Property(Var("a")(CTNode), propertyKeyByName("name"))(CTVoid),
-            toField('age) -> Property(Var("a")(CTNode), propertyKeyByName("age"))(CTVoid)
+            toField('name) -> Property(Var("a")(CTNode), PropertyKey("name"))(CTVoid),
+            toField('age) -> Property(Var("a")(CTNode), PropertyKey("age"))(CTVoid)
           ))
       }
 
@@ -178,8 +174,6 @@ class CypherQueryBuilderTest extends IrTestSuite {
 
       val expectedSchema = Schema.empty.withRelationshipType("TEST")
 
-      import globals.tokens._
-
       val loadRef = model.findExactlyOne {
         case NoWhereBlock(s@SourceBlock(_)) =>
           s.binds.fields shouldBe empty
@@ -209,7 +203,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
             "moo",
             expectedSchema,
             Pattern(
-              Map(nodeA -> EveryNode, nodeB -> EveryNode, rel -> EveryRelationship(AnyOf(relTypeByName("TEST")))),
+              Map(nodeA -> EveryNode, nodeB -> EveryNode, rel -> EveryRelationship(AnyOf(RelType("TEST")))),
               Map(rel -> DirectedRelationship(nodeA, nodeB)))))
       }
 
@@ -230,7 +224,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
 
   implicit class RichModel(model: QueryModel[Expr]) {
 
-    def ensureThat(f: (QueryModel[Expr], GlobalsRegistry) => Unit) = f(model, model.globals)
+    def ensureThat(f: (QueryModel[Expr], Map[String, CypherValue]) => Unit) = f(model, model.parameters)
 
     def requirements = {
       val deps = model.result.after

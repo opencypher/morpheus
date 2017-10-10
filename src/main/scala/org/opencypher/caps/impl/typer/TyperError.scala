@@ -29,6 +29,10 @@ case class UnTypedExpr(it: Expression) extends TyperError {
   override def toString = s"Expected a type for ${it.show} but found none"
 }
 
+case class UnTypedParameter(it: String) extends TyperError {
+  override def toString = s"Expected a type for $$${it} but found none"
+}
+
 case class NoSuitableSignatureForExpr(it: Expression, argTypes: Seq[CypherType]) extends TyperError {
   override def toString = s"No signature for ${it.show} matched input types ${argTypes.mkString("{ ", ", ", " }")}"
 }

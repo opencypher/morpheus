@@ -36,9 +36,7 @@ import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvGraphSourceFactory
 import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraphSourceFactory
 import org.opencypher.caps.impl.spark.io.session.SessionGraphSourceFactory
 import org.opencypher.caps.impl.spark.physical.{CAPSResultBuilder, PhysicalPlanner, PhysicalPlannerContext}
-import org.opencypher.caps.ir.api.global.{ConstantRef, ConstantRegistry, GlobalsRegistry, TokenRegistry}
 import org.opencypher.caps.ir.api.{IRExternalGraph, IRField}
-import org.opencypher.caps.ir.impl.global.GlobalsExtractor
 import org.opencypher.caps.ir.impl.{IRBuilder, IRBuilderContext}
 
 sealed class CAPSSession private(val sparkSession: SparkSession,
@@ -89,18 +87,11 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
 
     val (stmt, extractedLiterals, semState) = parser.process(query)(CypherParser.defaultContext)
 
-    val globals = GlobalsExtractor(stmt, GlobalsRegistry.fromTokens(graph.tokens.registry))
-    val GlobalsRegistry(tokens, constants) = globals
-
-    val converted = extractedLiterals.mapValues(v => CypherValue(v))
-    val allParameters = (queryParameters ++ converted).collect {
-      case (k, v) if constants.contains(k) => constants.constantRefByName(k) -> v
-    }
-
-    val paramsAndTypes = GlobalsExtractor.paramWithTypes(stmt)
+    val extractedParameters = extractedLiterals.mapValues(v => CypherValue(v))
+    val allParameters = queryParameters ++ extractedParameters
 
     print("IR ... ")
-    val ir = IRBuilder(stmt)(IRBuilderContext.initial(query, globals, semState, ambientGraph, paramsAndTypes, sourceAt))
+    val ir = IRBuilder(stmt)(IRBuilderContext.initial(query, allParameters, semState, ambientGraph, sourceAt))
     println("Done!")
 
     print("Logical plan ... ")
@@ -115,7 +106,7 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
     if (PrintLogicalPlan.get())
       println(optimizedLogicalPlan.pretty())
 
-    plan(graph, CAPSRecords.unit()(this), tokens, constants, allParameters, optimizedLogicalPlan)
+    plan(graph, CAPSRecords.unit()(this), allParameters, optimizedLogicalPlan)
   }
 
   private def mountAmbientGraph(ambient: CAPSGraph): IRExternalGraph = {
@@ -171,32 +162,19 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
 
   private def plan(graph: CAPSGraph,
                    records: CAPSRecords,
-                   queryParameters: Map[String, CypherValue],
-                   logicalPlan: LogicalOperator): CAPSResult = {
-
-    val globals = GlobalsRegistry.fromTokens(graph.tokens.registry)
-    val allParameters = queryParameters.map { case (k, v) => globals.constants.constantRefByName(k) -> v }
-
-    plan(graph, records, globals.tokens, globals.constants, allParameters, logicalPlan)
-  }
-
-  private def plan(graph: CAPSGraph,
-                   records: CAPSRecords,
-                   tokens: TokenRegistry,
-                   constants: ConstantRegistry,
-                   allParameters: Map[ConstantRef, CypherValue],
+                   parameters: Map[String, CypherValue],
                    logicalPlan: LogicalOperator): CAPSResult = {
     // TODO: Remove dependency on globals (?) Only needed to enforce everything is known, that could be done
     //       differently
     print("Flat plan ... ")
-    val flatPlan = flatPlanner(logicalPlan)(FlatPlannerContext(tokens, constants))
+    val flatPlan = flatPlanner(logicalPlan)(FlatPlannerContext(parameters))
     println("Done!")
 
     // TODO: It may be better to pass tokens around in the physical planner explicitly (via the records)
     //       instead of just using a single global tokens instance derived from the graph space
     //
     print("Physical plan ... ")
-    val physicalPlannerContext = PhysicalPlannerContext(graphAt, records, tokens, constants, allParameters)
+    val physicalPlannerContext = PhysicalPlannerContext(graphAt, records, parameters)
     val physicalResult = physicalPlanner(flatPlan)(physicalPlannerContext)
     println("Done!")
 

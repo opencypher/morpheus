@@ -21,13 +21,11 @@ import org.atnos.eff.all._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, ast}
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.util.parsePathOrURI
 import org.opencypher.caps.impl.CompilationStage
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block.{SortItem, _}
-import org.opencypher.caps.ir.api.global.GlobalsRegistry
 import org.opencypher.caps.ir.api.pattern.{AllGiven, Pattern}
 import org.opencypher.caps.ir.impl.instances._
 
@@ -95,9 +93,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
             val after = blockRegistry.lastAdded.toSet
             val block = MatchBlock[Expr](after, pattern, given, optional, irGraph)
 
-            implicit val globals: GlobalsRegistry = context.globals
             val typedOutputs = typedMatchBlock.outputs(block)
-
             val (ref, reg) = blockRegistry.register(block)
             val updatedContext = context.withBlocks(reg).withFields(typedOutputs)
             put[R, IRBuilderContext](updatedContext) >> pure[R, Vector[BlockRef]](Vector(ref))
@@ -352,7 +348,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
         case (_ref, r: ResultBlock[Expr]) => _ref -> r
       }.get
 
-      val model = QueryModel(r, context.globals, blocks.reg.toMap - ref, context.graphs)
+      val model = QueryModel(r, context.parameters, blocks.reg.toMap - ref, context.graphs)
       val info = QueryInfo(context.queryString)
 
       Some(CypherQuery(info, model))
