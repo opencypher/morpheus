@@ -211,9 +211,7 @@ object CAPSRecords {
     } else {
       toCast.foldLeft(initialDataFrame) { case (df, field) =>
         val castType = field.dataType match {
-          case ByteType => LongType
-          case ShortType => LongType
-          case IntegerType => LongType
+          case ByteType | ShortType | IntegerType => LongType
           case FloatType => DoubleType
           case other => Raise.unsupportedArgument(
             s"Cannot convert or cast type $other of field $field to a Spark type supported by Cypher")
