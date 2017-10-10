@@ -276,8 +276,6 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
     result.graphs shouldBe empty
   }
 
-
-
   test("property expression") {
     // Given
     val given = TestGraph("""(:Person {name: "Mats"})-->(:Person {name: "Martin"})""")

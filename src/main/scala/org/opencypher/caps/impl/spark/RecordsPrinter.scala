@@ -27,7 +27,7 @@ object RecordsPrinter {
     * @param records the records to be printed.
     */
   def print(records: CAPSRecords)(implicit options: PrintOptions): Unit = {
-    val fieldContents = records.header.slots.sortBy(_.index).map(_.content)
+    val fieldContents = records.header.fieldsInOrder
     val factor = if (fieldContents.size > 1) fieldContents.size else 1
 
     val lineWidth = (options.columnWidth + options.margin) * factor + factor - 1
@@ -39,9 +39,9 @@ object RecordsPrinter {
     if (fieldContents.isEmpty) {
       stream.print(sep)
       stream.print(fitToColumn("(no columns)"))
-    } else fieldContents.foreach { contents =>
+    } else fieldContents.foreach { field =>
       stream.print(sep)
-      stream.print(fitToColumn(contents.key.withoutType))
+      stream.print(fitToColumn(field.name))
       sep = " | "
     }
     stream.println(" |")
@@ -53,8 +53,8 @@ object RecordsPrinter {
       stream.print(fitToColumn("(no rows)"))
       stream.println(" |")
     } else values.foreach { map =>
-      fieldContents.foreach { content =>
-        map.get(SparkColumnName.of(content)) match {
+      fieldContents.foreach { field =>
+        map.get(field.name) match {
           case None =>
             stream.print(sep)
             stream.print(fitToColumn("null"))

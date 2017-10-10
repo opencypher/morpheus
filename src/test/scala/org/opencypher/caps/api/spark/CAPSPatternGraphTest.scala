@@ -83,14 +83,12 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
 
     val person = inputGraph.cypher(
       """MATCH (a:Person:Swedish)-[r]->(b)
-        |RETURN GRAPH result OF (a)-[foo:SWEDISH_KNOWS]->(bar)
+        |RETURN GRAPH result OF (a)-[r]->(b)-[bar:KNOWS_A]->(baz)
       """.stripMargin)
 
-    person.graphs("result").cypher("MATCH ()-[:SWEDISH_KNOWS]->(n) RETURN n").
+    person.graphs("result").cypher("MATCH (b)-[:KNOWS_A]->(n) WITH COUNT(n) as cnt RETURN cnt").
       recordsWithDetails.toLocalScalaIterator.toSet should equal(Set(
-      CypherMap("n" -> CypherNode(4294967296000L, NodeData.empty)),
-      CypherMap("n" -> CypherNode(4294967296001L, NodeData.empty)),
-      CypherMap("n" -> CypherNode(4294967296002L, NodeData.empty))
+      CypherMap("cnt" -> 3)
     ))
   }
 
@@ -99,24 +97,17 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
 
     val person = inputGraph.cypher(
       """MATCH (a:Person:Swedish)-[r]->(b)
-        |RETURN GRAPH result OF (a)-[foo:SWEDISH_KNOWS]->(bar:Foo)
+        |RETURN GRAPH result OF (a)-[r]->(b)-[bar:KNOWS_A]->(baz:Swede)
       """.stripMargin)
 
     val graph = person.graphs("result")
 
-    graph.cypher("MATCH ()-[:SWEDISH_KNOWS]->(n) RETURN n").
-      recordsWithDetails.toCypherMaps.collect().map(_.toString).toSet should equal(Set(
-      CypherMap("n" -> CypherNode(4294967296000L, NodeData(Seq("Foo"), Properties.empty))),
-      CypherMap("n" -> CypherNode(4294967296001L, NodeData(Seq("Foo"), Properties.empty))),
-      CypherMap("n" -> CypherNode(4294967296002L, NodeData(Seq("Foo"), Properties.empty)))
-    ).map(_.toString))
-
-    graph.nodes("n").toCypherMaps.collect().map(_.toString).toSet should equal(Set(
-      CypherMap("n" -> CypherNode(0L, NodeData(Seq("Person", "Swedish"), Properties("name" -> "Mats", "luckyNumber" -> 23)))),
-      CypherMap("n" -> CypherNode(4294967296000L, NodeData(Seq("Foo"), Properties.empty))),
-      CypherMap("n" -> CypherNode(4294967296001L, NodeData(Seq("Foo"), Properties.empty))),
-      CypherMap("n" -> CypherNode(4294967296002L, NodeData(Seq("Foo"), Properties.empty)))
-    ).map(_.toString))
+    graph.cypher("MATCH (n:Swede) RETURN labels(n)").
+      recordsWithDetails.toCypherMaps.collect().toSet should equal(Set(
+      CypherMap("labels(n)" -> Array("Swede")),
+      CypherMap("labels(n)" -> Array("Swede")),
+      CypherMap("labels(n)" -> Array("Swede"))
+    ))
   }
 
   //TODO: Test creating literal property value
@@ -384,6 +375,46 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
       CypherMap("n" -> 11L, "n.name" -> null, "n:Person" -> false, "n:Employee" -> true),
       CypherMap("n" -> 12L, "n.name" -> "HybridSusanna", "n:Person" -> true, "n:Employee" -> true)
     ))
+  }
+
+  test("Reduce cardinality of the pattern graph base table") {
+    val given = TestGraph(
+      """
+        |(a: Person),
+        |(b: Person),
+        |(a)-[:HAS_INTEREST]->(i1:Interest {val: 1L}),
+        |(a)-[:HAS_INTEREST]->(i2:Interest {val: 2L}),
+        |(a)-[:HAS_INTEREST]->(i3:Interest {val: 3L}),
+        |(a)-[:KNOWS]->(b)
+      """.stripMargin)
+
+    val when = given.cypher(
+      """
+        |MATCH (i:Interest)<-[h:HAS_INTEREST]-(a:Person)-[k:KNOWS]->(b:Person)
+        |RETURN GRAPH result OF (a)-[k]->(b)
+      """.stripMargin)
+
+    when.graphs("result").asInstanceOf[CAPSPatternGraph].baseTable.data.count() should equal(1)
+  }
+
+  test("deduplicating identical instances of the same graph of pattern") {
+    val given = TestGraph(
+      """
+        |(a: Person),
+        |(b: Person),
+        |(a)-[:HAS_INTEREST]->(i1:Interest {val: 1L}),
+        |(a)-[:HAS_INTEREST]->(i2:Interest {val: 2L}),
+        |(a)-[:HAS_INTEREST]->(i3:Interest {val: 3L}),
+        |(a)-[:KNOWS]->(b)
+      """.stripMargin)
+
+    val when = given.cypher(
+      """
+        |MATCH (i:Interest)<-[h:HAS_INTEREST]-(a:Person)-[k:KNOWS]->(b:Person)
+        |RETURN GRAPH result OF (a)-[f:FOO]->(b)
+      """.stripMargin)
+
+    when.graphs("result").relationships("f").data.count() should equal(1)
   }
 
   private def initPersonReadsBookGraph: CAPSGraph = {

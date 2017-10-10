@@ -111,6 +111,29 @@ class RecordsPrinterTest extends CAPSTestSuite {
     )
   }
 
+  test("return property values without alias") {
+    val given = TestGraph(
+      """
+        |(a:Person {name: "Alice"})-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person {name: "Bob"})
+      """.stripMargin)
+
+    val when = given.cypher(
+      """MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person)
+        |RETURN a.name, b.name
+      """.stripMargin)
+
+    print(when.recordsWithDetails)
+
+    getString should equal(
+      """+---------------------------------------------+
+        !| a.name               | b.name               |
+        !+---------------------------------------------+
+        !| 'Bob'                | 'Alice'              |
+        !| 'Alice'              | 'Bob'                |
+        !+---------------------------------------------+
+        !""".stripMargin('!'))
+  }
+
   var baos: ByteArrayOutputStream = _
 
   override def beforeEach(): Unit = {
