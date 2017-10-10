@@ -30,7 +30,6 @@ trait JsonSerialiser {
         Json.obj(unit.toSeq: _*)
       }
 
-      // TODO: Should we really expose spark column names here?
       Json.obj(
         "columns" -> Json.arr(records.sparkColumns.map(Json.fromString): _*),
         "rows" -> Json.arr(rows.toSeq: _*)
@@ -48,13 +47,7 @@ trait JsonSerialiser {
         constructValue(map.get("rel"))
       }.toSeq
 
-      // TODO: Should we really expose spark column names here?
-      Json.obj(
-        "nodes" -> Json.arr(nodes: _*),
-        "edges" -> Json.arr(rels: _*),
-        "labels" -> Json.arr(graph.schema.labels.map(Json.fromString).toSeq: _*),
-        "types" -> Json.arr(graph.schema.relationshipTypes.map(Json.fromString).toSeq: _*)
-      )
+      formatGraph(graph, nodes, rels)
     }
   }
 
@@ -105,6 +98,15 @@ trait JsonSerialiser {
       "properties" -> Json.obj(
         properties.mapValues(Json.fromString).toSeq: _*
       )
+    )
+  }
+
+  protected def formatGraph(graph: CAPSGraph, nodes: Seq[Json], rels: Seq[Json]): Json = {
+    Json.obj(
+      "nodes" -> Json.arr(nodes: _*),
+      "edges" -> Json.arr(rels: _*),
+      "labels" -> Json.arr(graph.schema.labels.map(Json.fromString).toSeq: _*),
+      "types" -> Json.arr(graph.schema.relationshipTypes.map(Json.fromString).toSeq: _*)
     )
   }
 

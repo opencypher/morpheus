@@ -109,7 +109,7 @@ object ZeppelinSupport {
       *     "directed": true
       *   }
       * }}}
-      * @param name
+      * @param name the graphs name
       */
     def asZeppelinGraph(name: String): Unit = {
       val graph = result.graphs(name)
@@ -122,29 +122,8 @@ object ZeppelinSupport {
     }
   }
 
-
   object ZeppelinJsonSerialiser extends JsonSerialiser {
-    override implicit val graphEncoder: Encoder[CAPSGraph] = new Encoder[CAPSGraph] {
-      override final def apply(graph: CAPSGraph): Json = {
-        val nodes = graph.nodes("n").toLocalScalaIterator.map { map =>
-          constructValue(map.get("n"))
-        }.toSeq
-
-        val rels = graph.relationships("rel").toLocalScalaIterator.map { map =>
-          constructValue(map.get("rel"))
-        }.toSeq
-
-        Json.obj(
-          "nodes" -> Json.arr(nodes: _*),
-          "edges" -> Json.arr(rels: _*),
-          "labels" -> Json.obj(graph.schema.labels.map(l => l -> Json.fromString(randomColor)).toSeq: _*),
-          "directed" -> Json.True,
-          "types" -> Json.arr(graph.schema.relationshipTypes.map(Json.fromString).toSeq: _*)
-        )
-      }
-    }
-
-    override protected def formatNode(id: Long, labels: Seq[String], properties: Map[String, String]) = {
+    override protected def formatNode(id: Long, labels: Seq[String], properties: Map[String, String]): Json = {
       Json.obj(
         "id" -> Json.fromLong(id),
         "label" -> Json.fromString(labels.headOption.getOrElse("")),
@@ -157,7 +136,8 @@ object ZeppelinSupport {
       )
     }
 
-    override protected def formatRel(id: Long, source: Long, target: Long, typ: String, properties: Map[String, String]) = {
+    override protected def formatRel(id: Long, source: Long, target: Long,
+                                     typ: String, properties: Map[String, String]): Json = {
       Json.obj(
         "id" -> Json.fromLong(id),
         "source" -> Json.fromLong(source),
@@ -166,6 +146,16 @@ object ZeppelinSupport {
         "data" -> Json.obj(
           properties.mapValues(Json.fromString).toSeq: _*
         )
+      )
+    }
+
+    override protected def formatGraph(graph: CAPSGraph, nodes: Seq[Json], rels: Seq[Json]): Json = {
+      Json.obj(
+        "nodes" -> Json.arr(nodes: _*),
+        "edges" -> Json.arr(rels: _*),
+        "labels" -> Json.obj(graph.schema.labels.map(l => l -> Json.fromString(randomColor)).toSeq: _*),
+        "directed" -> Json.True,
+        "types" -> Json.arr(graph.schema.relationshipTypes.map(Json.fromString).toSeq: _*)
       )
     }
 
