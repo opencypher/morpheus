@@ -19,7 +19,7 @@ import cats.Monad
 import cats.data.State
 import cats.data.State.{get, set}
 import cats.instances.all._
-import org.opencypher.caps.api.expr.{Expr, HasLabel, Property, Var}
+import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.common.RefCollection
@@ -88,11 +88,15 @@ object InternalHeader {
 
   val empty = new InternalHeader(RefCollection.empty, Map.empty, Set.empty)
 
-  def apply(contents: SlotContent*) =
+  def apply(contents: SlotContent*): InternalHeader =
     from(contents)
 
-  def from(contents: TraversableOnce[SlotContent]) =
+  def from(contents: TraversableOnce[SlotContent]): InternalHeader =
     contents.foldLeft(empty) { case (header, slot) => header + slot }
+
+  def setContents(contents: Seq[SlotContent]): State[InternalHeader, Vector[AdditiveUpdateResult[RecordSlot]]] = {
+    set[InternalHeader](InternalHeader.empty).flatMap { _ => addContents(contents) }
+  }
 
   def addContents(contents: Seq[SlotContent]): State[InternalHeader, Vector[AdditiveUpdateResult[RecordSlot]]] =
     execAll(contents.map(addContent).toVector)
@@ -207,9 +211,17 @@ object InternalHeader {
   private def addExprSlots(m: Map[Expr, Vector[Int]], key: Expr, value: Int): Map[Expr, Vector[Int]] =
     if (m.getOrElse(key, Vector.empty).contains(value)) m else m.updated(key, m.getOrElse(key, Vector.empty) :+ value)
 
-  def compactFields : State[InternalHeader, Vector[RemovingUpdateResult[RecordSlot]]] =
+  def compactFields(implicit details: RetainedDetails)
+  : State[InternalHeader, Vector[RemovingUpdateResult[RecordSlot]]] =
     selectFields {
-      case RecordSlot(_, content: ProjectedExpr) => content.owner.nonEmpty
+      case RecordSlot(_, content: ProjectedExpr) if content.alias.nonEmpty => true
+      case RecordSlot(_, content: ProjectedExpr) =>
+        content.expr match {
+          case _: HasLabel => details.nodeLabels
+          case _: HasType => true
+          case _: Property => details.properties
+          case _ => false
+        }
       case _ => true
     }
 
@@ -221,19 +233,20 @@ object InternalHeader {
       execAll(removals)
     }
 
-  private def removeContent(removedSlot: RecordSlot)
+  private def removeContent(originalSlot: RecordSlot)
   : State[InternalHeader, RemovingUpdateResult[RecordSlot]] = {
     get[InternalHeader].flatMap { header =>
-      header.slotContents.find(removedSlot.content) match {
-        case Some(ref) if ref == removedSlot.index =>
+      val removedContent = originalSlot.content
+      header.slotContents.find(removedContent) match {
+        case Some(ref) =>
+          val removedSlot = RecordSlot(ref, removedContent)
           val (remainingSlots, removedSlots) = removeDependencies(List(List(removedSlot)), header.slots.toSet)
           val remainingSlotsInOrder = remainingSlots.toSeq.sortBy(_.index)
-          addContents(remainingSlotsInOrder.map(_.content)).map { _ =>
-            Removed(removedSlot, removedSlots - removedSlot)
-          }
+          val newContents = remainingSlotsInOrder.map(_.content)
+          setContents(newContents).map { _ => Removed(removedSlot, removedSlots - removedSlot) }
 
         case _ =>
-          pureState(NotFound(removedSlot))
+          pureState(NotFound(originalSlot))
       }
     }
   }

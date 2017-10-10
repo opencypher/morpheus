@@ -19,6 +19,7 @@ import java.net.URI
 
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.apache.spark.sql.{Row, SparkSession}
+import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.expr.{HasLabel, Property, Var}
 import org.opencypher.caps.api.io.PersistMode
 import org.opencypher.caps.api.record.RecordHeader
@@ -87,11 +88,23 @@ trait GraphMatchingTestSupport {
     def cypher(query: String, parameters: Map[String, CypherValue]): CAPSResult =
       caps.cypher(graph, query, parameters)
 
+    // TODO: Use lazy caps graph
     lazy val graph: CAPSGraph = new CAPSGraph {
       self =>
 
       override def session: CAPSSession = caps
       override protected def graph: CAPSGraph = this
+
+
+      override def cache() = this
+
+      override def persist() = this
+
+      override def persist(storageLevel: StorageLevel) = this
+
+      override def unpersist() = this
+
+      override def unpersist(blocking: Boolean) = this
 
       private def extractFromElement(e: Element) = e.getLabels.asScala.map { label =>
         label -> e.getProperties.asScala.map {

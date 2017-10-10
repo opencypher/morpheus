@@ -42,17 +42,16 @@ object TestSparkSession {
 
   lazy val instance: SparkSession = {
     val conf = new SparkConf(true)
+
+    conf.set("spark.sql.codegen.wholeStage", "true")
+
+    // conf.set("spark.rdd.compress", "true")
+
     conf.set("spark.serializer", classOf[KryoSerializer].getCanonicalName)
     conf.set("spark.kryo.registrator", classOf[CypherKryoRegistrar].getCanonicalName)
-
-    //
-    // This may or may not help - depending on the query
-    // conf.set("spark.kryo.referenceTracking","false")
-
-    //
-    // Enable to see if we cover enough
-    // conf.set("spark.kryo.registrationRequired", "true")
-
+    conf.set("spark.kryo.unsafe", "true")
+    conf.set("spark.kryo.referenceTracking","false")
+    conf.set("spark.kryo.registrationRequired", "true")
     //
     // If this is slow, you might be hitting: http://bugs.java.com/view_bug.do?bug_id=8077102
     //

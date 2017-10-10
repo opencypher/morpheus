@@ -15,6 +15,7 @@
  */
 package org.opencypher.caps.api.spark
 
+import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.graph.CypherGraph
 import org.opencypher.caps.api.record._
@@ -30,14 +31,31 @@ trait CAPSGraph extends CypherGraph with Serializable {
   final override type Records = CAPSRecords
   final override type Session = CAPSSession
   final override type Result = CAPSResult
+
+  def cache(): CAPSGraph
+
+  def persist(): CAPSGraph
+
+  def persist(storageLevel: StorageLevel): CAPSGraph
+
+  def unpersist(): CAPSGraph
+
+  def unpersist(blocking: Boolean): CAPSGraph
 }
 
 object CAPSGraph {
 
   def empty(implicit caps: CAPSSession): CAPSGraph =
     new EmptyGraph() {
-      override protected def graph = this
+      override protected def graph: CAPSGraph = this
+
       override def session: CAPSSession = caps
+
+      override def cache(): CAPSGraph = this
+      override def persist(): CAPSGraph = this
+      override def persist(storageLevel: StorageLevel): CAPSGraph = this
+      override def unpersist(): CAPSGraph = this
+      override def unpersist(blocking: Boolean): CAPSGraph = this
     }
 
   def create(nodes: NodeScan, scans: GraphScan*)(implicit caps: CAPSSession): CAPSGraph = {
@@ -72,6 +90,12 @@ object CAPSGraph {
 
     override def union(other: CAPSGraph): CAPSGraph =
       graph.union(other)
+
+    override def cache(): CAPSGraph = graph.cache(); this
+    override def persist(): CAPSGraph = graph.persist(); this
+    override def persist(storageLevel: StorageLevel): CAPSGraph = graph.persist(storageLevel); this
+    override def unpersist(): CAPSGraph = graph.unpersist(); this
+    override def unpersist(blocking: Boolean): CAPSGraph = graph.unpersist(blocking); this
   }
 
   sealed abstract class EmptyGraph(implicit val caps: CAPSSession) extends CAPSGraph {

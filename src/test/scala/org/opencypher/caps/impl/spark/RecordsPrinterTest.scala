@@ -39,12 +39,14 @@ class RecordsPrinterTest extends CAPSTestSuite {
     print(records)
 
     // Then
-    getString should equal(
+    val result = getString
+    result should equal(
       """+----------------------+
         !| (no columns)         |
         !+----------------------+
-        !| (no rows)            |
+        !| (empty row)          |
         !+----------------------+
+        !(1 rows)
         !""".stripMargin('!')
     )
   }
@@ -61,8 +63,7 @@ class RecordsPrinterTest extends CAPSTestSuite {
       """+----------------------+
         !| foo                  |
         !+----------------------+
-        !| (no rows)            |
-        !+----------------------+
+        !(no rows)
         !""".stripMargin('!')
     )
   }
@@ -75,7 +76,8 @@ class RecordsPrinterTest extends CAPSTestSuite {
     print(records)
 
     // Then
-    getString should equal(
+    val result = getString
+    result should equal(
       """+----------------------+
         !| foo                  |
         !+----------------------+
@@ -83,6 +85,7 @@ class RecordsPrinterTest extends CAPSTestSuite {
         !| 'foo'                |
         !| null                 |
         !+----------------------+
+        !(3 rows)
         !""".stripMargin('!')
     )
   }
@@ -107,6 +110,7 @@ class RecordsPrinterTest extends CAPSTestSuite {
         !| 'foo'                | 99999999             | true                 |
         !| null                 | -1                   | true                 |
         !+--------------------------------------------------------------------+
+        !(3 rows)
         !""".stripMargin('!')
     )
   }
@@ -122,7 +126,7 @@ class RecordsPrinterTest extends CAPSTestSuite {
         |RETURN a.name, b.name
       """.stripMargin)
 
-    print(when.recordsWithDetails)
+    print(when.records)
 
     getString should equal(
       """+---------------------------------------------+
@@ -131,6 +135,7 @@ class RecordsPrinterTest extends CAPSTestSuite {
         !| 'Bob'                | 'Alice'              |
         !| 'Alice'              | 'Bob'                |
         !+---------------------------------------------+
+        !(2 rows)
         !""".stripMargin('!'))
   }
 

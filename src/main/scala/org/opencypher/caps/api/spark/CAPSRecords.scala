@@ -15,13 +15,13 @@
  */
 package org.opencypher.caps.api.spark
 
-import java.io.PrintStream
 import java.util.Collections
 
 import org.apache.spark.api.java.JavaRDD
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.expr.{Property, Var}
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.types._
@@ -37,9 +37,8 @@ import scala.annotation.tailrec
 import scala.reflect.runtime.universe.TypeTag
 
 sealed abstract class CAPSRecords(
-  initialHeader: RecordHeader,
-  initialData: DataFrame,
-  optDetailedRecords: Option[CAPSRecords]
+  override val header: RecordHeader,
+  override val data: DataFrame
 )(implicit val caps: CAPSSession)
   extends CypherRecords with Serializable {
 
@@ -47,9 +46,6 @@ sealed abstract class CAPSRecords(
 
   override type Data = DataFrame
   override type Records = CAPSRecords
-
-  override def header: RecordHeader = initialHeader
-  override def data: DataFrame = initialData
 
   override val fields: Set[String] = header.fields.map(_.name)
   override val fieldsInOrder: Seq[String] = header.fieldsInOrder.map(_.name)
@@ -61,13 +57,26 @@ sealed abstract class CAPSRecords(
 
   def mapDF(f: Data => Data): CAPSRecords = CAPSRecords.create(f(data))
 
-  // TODO: Check that this does not change the caching of our data frame
-  def cached: CAPSRecords = CAPSRecords.create(header, data.cache())
+  def cache(): CAPSRecords =
+    CAPSRecords.create(header, data.cache())
+
+  def persist(): CAPSRecords =
+    CAPSRecords.create(header, data.persist())
+
+  def persist(storageLevel: StorageLevel): CAPSRecords =
+    CAPSRecords.create(header, data.persist(storageLevel))
+
+  def unpersist(): CAPSRecords =
+    CAPSRecords.create(header, data.unpersist())
+
+  def unpersist(blocking: Boolean): CAPSRecords =
+    CAPSRecords.create(header, data.unpersist(blocking))
+
+  //  def repartition(numPartitions: Int): CAPSRecords =
+  //    CAPSRecords.create(header, data.repartition(numPartitions))
 
   override def print(implicit options: PrintOptions): Unit =
     RecordsPrinter.print(this)
-
-  def details: CAPSRecords = optDetailedRecords.getOrElse(this)
 
   def select(fields: Set[Var]): CAPSRecords = {
     val selectedHeader = header.select(fields)
@@ -76,18 +85,22 @@ sealed abstract class CAPSRecords(
     CAPSRecords.create(selectedHeader, selectedColumns)
   }
 
-  def compact: CAPSRecords = {
+  def compact(implicit details: RetainedDetails): CAPSRecords = {
     val cachedHeader = self.header.update(compactFields)._1
-    val cachedData = {
-      val columns = cachedHeader.slots.map(c => new Column(SparkColumnName.of(c.content)))
-      self.data.select(columns: _*)
-    }
+    if (header == cachedHeader) {
+      this
+    } else {
+      val cachedData = {
+        val columns = cachedHeader.slots.map(c => new Column(SparkColumnName.of(c.content)))
+        self.data.select(columns: _*)
+      }
 
-    CAPSRecords.create(cachedHeader, cachedData)
+      CAPSRecords.create(cachedHeader, cachedData)
+    }
   }
 
   def unionAll(header: RecordHeader, other: CAPSRecords): CAPSRecords = {
-    val unionData = details.data.union(other.details.data)
+    val unionData = data.union(other.data)
     CAPSRecords.create(header, unionData)
   }
 
@@ -96,11 +109,11 @@ sealed abstract class CAPSRecords(
     val newSlots = header.slots.map {
       case slot@RecordSlot(idx, content: FieldSlotContent) =>
         slotExprs.get(content.field.name).map {
-          case expr: Var      => OpaqueField(expr)
+          case expr: Var => OpaqueField(expr)
           case expr: Property => ProjectedExpr(expr.copy()(content.cypherType))
-          case expr           => ProjectedExpr(expr)
+          case expr => ProjectedExpr(expr)
         }
-        .getOrElse(slot.content)
+          .getOrElse(slot.content)
 
       case slot =>
         slot.content
@@ -111,7 +124,7 @@ sealed abstract class CAPSRecords(
   }
 
   def distinct: CAPSRecords = {
-    CAPSRecords.create(details.header, self.details.data.distinct())
+    CAPSRecords.create(header, data.distinct())
   }
 
   def toLocalScalaIterator: Iterator[CypherMap] = {
@@ -120,8 +133,16 @@ sealed abstract class CAPSRecords(
     toLocalIterator.asScala
   }
 
-  def toLocalIterator: java.util.Iterator[CypherMap] =
+  def toLocalIterator: java.util.Iterator[CypherMap] = {
     toCypherMaps.toLocalIterator()
+  }
+
+  def foreachPartition(f: Iterator[CypherMap] => Unit): Unit = {
+    toCypherMaps.foreachPartition(f)
+  }
+
+  def collect(): Array[CypherMap] =
+    toCypherMaps.collect()
 
   /**
     * Converts all values stored in this table to instances of the corresponding CypherValue class.
@@ -135,7 +156,7 @@ sealed abstract class CAPSRecords(
   def toCypherMaps: Dataset[CypherMap] = {
     import encoders._
 
-    details.data.map(rowToCypherMap(details.header))
+    data.map(rowToCypherMap(header))
   }
 }
 
@@ -229,29 +250,15 @@ object CAPSRecords {
         if (toSparkType(headerType) != toSparkType(cypherType) && !containsEntity(headerType))
           Raise.invalidDataTypeForColumn(field.name, headerType.toString, cypherType.toString)
       }
-
-      val internalRecords = createInternal(initialHeader, initialData, None)
-      val isSanitized = initialHeader.slots.map(_.content).collectFirst { case _: ProjectedExpr => true }.isEmpty
-      if (isSanitized) {
-        internalRecords
-      } else {
-        val fieldContents = initialHeader.contents.collect { case content: FieldSlotContent => content }.toSeq
-        val (sanitizedHeader, _) = RecordHeader.empty.update(addContents(fieldContents))
-        val remainingColumnNames = sanitizedHeader.slots.map { s => SparkColumnName.of(s.content) }.toSet
-        val existingColumns = initialData.columns
-        val sanitizedColumns = existingColumns.filter(remainingColumnNames).map(initialData.col)
-        val sanitizedData = initialData.select(sanitizedColumns: _*)
-        createInternal(sanitizedHeader, sanitizedData, Some(internalRecords))
-      }
+      createInternal(initialHeader, initialData)
     }
     else {
       Raise.capsSessionMismatch()
     }
   }
 
-  private def createInternal(header: RecordHeader, data: DataFrame, optRecordsWithDetails: Option[CAPSRecords])
-                            (implicit caps: CAPSSession) =
-    new CAPSRecords(header, data, optRecordsWithDetails) {}
+  private def createInternal(header: RecordHeader, data: DataFrame)(implicit caps: CAPSSession) =
+    new CAPSRecords(header, data) {}
 
   @tailrec
   private def containsEntity(t: CypherType): Boolean = t match {

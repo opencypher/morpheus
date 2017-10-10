@@ -17,6 +17,7 @@ package org.opencypher.caps.api.record
 
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
+import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.expr.{HasLabel, OfType, Property, Var}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSRecords, CAPSSession}
@@ -33,6 +34,12 @@ sealed trait GraphScan extends Serializable {
 
   def records: CAPSRecords
   def entity: Var = Var(entityName)(entityType)
+
+  def cache(): GraphScan
+  def persist(): GraphScan
+  def persist(storageLevel: StorageLevel): GraphScan
+  def unpersist(): GraphScan
+  def unpersist(blocking: Boolean): GraphScan
 
   def entityName: String
   def entityType: EntityCypherType
@@ -62,7 +69,7 @@ object GraphScan extends GraphScanCompanion[EmbeddedEntity] {
       case CTRelationship(typ) => typ
     }
 
-    val slots = records.details.header.slots
+    val slots = records.header.slots
     val renamedSlots = slots.map(_.withOwner(v))
 
     val dataColumnNameToIndex: Map[String, Int] = renamedSlots.map { dataSlot =>
@@ -86,7 +93,7 @@ object GraphScan extends GraphScanCompanion[EmbeddedEntity] {
       slotDataSelector
     }
 
-    val alignedData = records.details.toDF().map { (row: Row) =>
+    val alignedData = records.toDF().map { (row: Row) =>
       val alignedRow = slotDataSelectors.map(_ (row))
       new GenericRowWithSchema(alignedRow.toArray, targetHeader.asSparkSchema).asInstanceOf[Row]
     }(targetHeader.rowEncoder)
@@ -152,7 +159,7 @@ object GraphScanBuilder {
           val newData = contracted.data.select(newCols: _*)
           CAPSRecords.create(newHeader, newData)(records.caps)
         }
-      create(entity, newRecords, schema(entity, newRecords.details.header))
+      create(entity, newRecords, schema(entity, newRecords.header))
     }
 
     protected def create(entity: E, records: CAPSRecords, schema: Schema): S
@@ -178,6 +185,12 @@ object GraphScanBuilder {
         override def entityType: CTNode = scanEntity.entityType
         override def entityName: String = scanEntity.entitySlot
         override def schema: Schema = scanSchema
+
+        override def cache(): NodeScan = create(scanEntity, scanRecords.cache(), scanSchema)
+        override def persist(): NodeScan = create(scanEntity, scanRecords.persist(), scanSchema)
+        override def persist(storageLevel: StorageLevel): NodeScan = create(scanEntity, scanRecords.persist(storageLevel), scanSchema)
+        override def unpersist(): NodeScan = create(scanEntity, scanRecords.unpersist(), scanSchema)
+        override def unpersist(blocking: Boolean): NodeScan = create(scanEntity, scanRecords.unpersist(blocking), scanSchema)
       }
 
     override protected def schema(entity: EmbeddedNode, header: RecordHeader): Schema = {
@@ -211,6 +224,12 @@ object GraphScanBuilder {
         override def entityType: CTRelationship = scanEntity.entityType
         override def entityName: String = scanEntity.entitySlot
         override def schema: Schema = scanSchema
+
+        override def cache(): RelationshipScan = create(scanEntity, scanRecords.cache(), scanSchema)
+        override def persist(): RelationshipScan = create(scanEntity, scanRecords.persist(), scanSchema)
+        override def persist(storageLevel: StorageLevel): RelationshipScan = create(scanEntity, scanRecords.persist(storageLevel), scanSchema)
+        override def unpersist(): RelationshipScan = create(scanEntity, scanRecords.unpersist(), scanSchema)
+        override def unpersist(blocking: Boolean): RelationshipScan = create(scanEntity, scanRecords.unpersist(blocking), scanSchema)
       }
 
     override protected def schema(entity: EmbeddedRelationship, header: RecordHeader): Schema = {

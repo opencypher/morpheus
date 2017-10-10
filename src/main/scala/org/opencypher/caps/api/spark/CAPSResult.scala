@@ -23,8 +23,6 @@ trait CAPSResult extends CypherResult {
   override type Graph = CAPSGraph
   override type Records = CAPSRecords
 
-  def recordsWithDetails: CAPSRecords = records.details
-
   override def print(implicit options: PrintOptions): Unit =
     records.print
 }

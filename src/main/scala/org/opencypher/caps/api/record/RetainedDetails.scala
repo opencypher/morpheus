@@ -13,14 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package scala.collection
+package org.opencypher.caps.api.record
 
-import scala.collection.immutable.RedBlackTree.{BlackTree, RedTree, Tree}
+object RetainedDetails {
+  implicit val default: RetainedDetails =
+    RetainedDetails(nodeLabels = false, properties = false)
 
-// TODO: Find a way to get red of this
-object PrivateCollectionClasses {
+  def current(implicit options: RetainedDetails): RetainedDetails =
+    options
+}
 
-  val registeredClasses = Seq(classOf[BlackTree[String, AnyRef]],
-    classOf[RedTree[String, AnyRef]],
-    classOf[Tree[String, AnyRef]])
+final case class RetainedDetails(nodeLabels: Boolean, properties: Boolean) {
+  def withLabels: RetainedDetails = copy(nodeLabels = true)
+  def withProperties: RetainedDetails = copy(properties = true)
 }

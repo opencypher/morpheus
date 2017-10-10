@@ -28,5 +28,5 @@ trait CypherRecords extends CypherPrintable {
 
   def contract[E <: EmbeddedEntity](entity: VerifiedEmbeddedEntity[E]): Records
 
-  def compact: Records
+  def compact(implicit details: RetainedDetails): Records
 }

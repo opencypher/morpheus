@@ -44,7 +44,7 @@ class CAPSRecordsTest extends CAPSTestSuite {
     val result = given.contract(embeddedNode)
     val entityVar = Var("n")(CTNode("Person"))
 
-    result.details.header.slots.map(_.content).toVector should equal(Vector(
+    result.header.slots.map(_.content).toVector should equal(Vector(
       OpaqueField(entityVar),
       ProjectedExpr(HasLabel(entityVar, Label("Swedish"))(CTBoolean)),
       ProjectedExpr(Property(entityVar, PropertyKey("name"))(CTString.nullable))
@@ -71,7 +71,7 @@ class CAPSRecordsTest extends CAPSTestSuite {
 
     val entityVar = Var("r")(CTRelationship("NEXT"))
 
-    result.details.header.slots.map(_.content).toVector should equal(Vector(
+    result.header.slots.map(_.content).toVector should equal(Vector(
       OpaqueField(entityVar),
       ProjectedExpr(StartNode(entityVar)(CTNode)),
       ProjectedExpr(EndNode(entityVar)(CTNode)),
@@ -100,7 +100,7 @@ class CAPSRecordsTest extends CAPSTestSuite {
     val entityVar = Var("r")(CTRelationship("RED", "BLUE", "GREEN", "YELLOW"))
 
     // TODO: Use schema for determining more precise node types
-    result.details.header.slots.map(_.content).toVector should equal(Vector(
+    result.header.slots.map(_.content).toVector should equal(Vector(
       OpaqueField(entityVar),
       ProjectedExpr(StartNode(entityVar)(CTNode)),
       ProjectedExpr(EndNode(entityVar)(CTNode)),

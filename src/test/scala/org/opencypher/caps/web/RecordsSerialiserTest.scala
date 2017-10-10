@@ -129,7 +129,7 @@ class RecordsSerialiserTest extends CAPSTestSuite {
     // Given
     val graph = TestGraph("(a:A {a: 1l, b: true})-[:T {t: 3.14d}]->(:B {b: 's'})-[:T]->(:X:Y:Z)-[:CIRCLE]->(a)")
 
-    val records = graph.cypher("MATCH (n)-[r]->() RETURN n, r").recordsWithDetails
+    val records = graph.cypher("MATCH (n)-[r]->() RETURN n, r").records
 
     // Then
     toJsonString(records) should equal(

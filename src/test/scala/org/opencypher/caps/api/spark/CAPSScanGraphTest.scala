@@ -181,7 +181,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
     val graph = CAPSGraph.create(`:Person`)
     val nodes = graph.nodes("n")
 
-    nodes.details.toDF().columns should equal(Array(
+    nodes.toDF().columns should equal(Array(
       "n",
       "____n:Person",
       "____n:Swedish",
@@ -189,7 +189,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
       "____n_dot_lucky_bar_numberINTEGER"
     ))
 
-    nodes.details.toDF().collect().toSet should equal (Set(
+    nodes.toDF().collect().toSet should equal (Set(
       Row(1L, true, true,    "Mats",   23L),
       Row(2L, true, false, "Martin",   42L),
       Row(3L, true, false,    "Max", 1337L),
@@ -201,7 +201,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
     val graph = CAPSGraph.create(`:Person`, `:Book`)
     val nodes = graph.nodes("n")
 
-    nodes.details.toDF().columns should equal(Array(
+    nodes.toDF().columns should equal(Array(
       "n",
       "____n:Person",
       "____n:Swedish",
@@ -212,7 +212,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
       "____n_dot_yearINTEGER"
     ))
 
-    nodes.details.toDF().collect().toSet should equal(Set(
+    nodes.toDF().collect().toSet should equal(Set(
       Row( 1L,  true,  true,  false,   "Mats",   23L,                   null, null),
       Row( 2L,  true,  false, false, "Martin",   42L,                   null, null),
       Row( 3L,  true,  false, false,    "Max", 1337L,                   null, null),
@@ -228,7 +228,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
     val graph = CAPSGraph.create(`:Person`, `:KNOWS`)
     val rels  = graph.relationships("e")
 
-    rels.details.toDF().columns should equal(Array(
+    rels.toDF().columns should equal(Array(
       "____source(e)",
       "e",
       "____type(e)",
@@ -236,7 +236,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
       "____e_dot_sinceINTEGER"
     ))
 
-    rels.details.toDF().collect().toSet should equal(Set(
+    rels.toDF().collect().toSet should equal(Set(
       Row(1L, 1L, "KNOWS", 2L, 2017L),
       Row(1L, 2L, "KNOWS", 3L, 2016L),
       Row(1L, 3L, "KNOWS", 4L, 2015L),
@@ -251,7 +251,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
 
     val nodes = graph.nodes("n", CTNode())
 
-    nodes.details.toDF().columns should equal(Array(
+    nodes.toDF().columns should equal(Array(
       "n",
       "____n:Person",
       "____n:Swedish",
@@ -262,7 +262,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
       "____n_dot_yearINTEGER"
     ))
 
-    nodes.details.toDF().collect().toSet should equal(Set(
+    nodes.toDF().collect().toSet should equal(Set(
       Row( 1L,  true,  true,  false,   "Mats",   23L,                   null, null),
       Row( 2L,  true,  false, false, "Martin",   42L,                   null, null),
       Row( 3L,  true,  false, false,    "Max", 1337L,                   null, null),
@@ -279,7 +279,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
 
     val nodes = graph.nodes("n", CTNode("Person"))
 
-    nodes.details.toDF().columns should equal(Array(
+    nodes.toDF().columns should equal(Array(
       "n",
       "____n:Person",
       "____n:Swedish",
@@ -287,7 +287,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
       "____n_dot_lucky_bar_numberINTEGER"
     ))
 
-    nodes.details.toDF().collect().toSet should equal (Set(
+    nodes.toDF().collect().toSet should equal (Set(
       Row(1L, true, true,    "Mats",   23L),
       Row(2L, true, false, "Martin",   42L),
       Row(3L, true, false,    "Max", 1337L),
@@ -300,7 +300,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
 
     val rels  = graph.relationships("e")
 
-    rels.details.toDF().columns should equal(Array(
+    rels.toDF().columns should equal(Array(
       "____source(e)",
       "e",
       "____type(e)",
@@ -309,7 +309,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
       "____e_dot_recommendsBOOLEAN"
     ))
 
-    rels.details.toDF().collect().toSet should equal(Set(
+    rels.toDF().collect().toSet should equal(Set(
       // :KNOWS
       Row(1L, 1L, "KNOWS", 2L, 2017L, null),
       Row(1L, 2L, "KNOWS", 3L, 2016L, null),
@@ -330,7 +330,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
 
     val rels  = graph.relationships("e", CTRelationship("KNOWS"))
 
-    rels.details.toDF().columns should equal(Array(
+    rels.toDF().columns should equal(Array(
       "____source(e)",
       "e",
       "____type(e)",
@@ -338,7 +338,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
       "____e_dot_sinceINTEGER"
     ))
 
-    rels.details.toDF().collect().toSet should equal(Set(
+    rels.toDF().collect().toSet should equal(Set(
       Row(1L, 1L, "KNOWS", 2L, 2017L),
       Row(1L, 2L, "KNOWS", 3L, 2016L),
       Row(1L, 3L, "KNOWS", 4L, 2015L),
@@ -353,7 +353,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
 
     val rels  = graph.relationships("e", CTRelationship("KNOWS", "INFLUENCES"))
 
-    rels.details.toDF().columns should equal(Array(
+    rels.toDF().columns should equal(Array(
       "____source(e)",
       "e",
       "____type(e)",
@@ -361,7 +361,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
       "____e_dot_sinceINTEGER"
     ))
 
-    rels.details.toDF().collect().toSet should equal(Set(
+    rels.toDF().collect().toSet should equal(Set(
       // :KNOWS
       Row(1L, 1L, "KNOWS", 2L, 2017L),
       Row(1L, 2L, "KNOWS", 3L, 2016L),
@@ -379,7 +379,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
 
     val nodes = graph.nodes("n", CTNode("Person"))
 
-    nodes.details.toDF().columns should equal(Array(
+    nodes.toDF().columns should equal(Array(
       "n",
       "____n:Person",
       "____n:Swedish",
@@ -389,7 +389,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
       "____n_dot_lucky_bar_numberINTEGER"
     ))
 
-    nodes.details.toDF().collect().toSet should equal (Set(
+    nodes.toDF().collect().toSet should equal (Set(
       Row(1L,   true, true,  false, null,   "Mats",   23L),
       Row(2L,   true, false, false, null, "Martin",   42L),
       Row(3L,   true, false, false, null,    "Max", 1337L),
@@ -406,7 +406,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
 
     val nodes = graph.nodes("n", CTNode("Person"))
 
-    nodes.details.toDF().columns should equal(Array(
+    nodes.toDF().columns should equal(Array(
       "n",
       "____n:Person",
       "____n:Swedish",
@@ -416,7 +416,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
       "____n_dot_languageSTRING"
     ))
 
-    nodes.details.toDF().collect().toSet should equal(Set(
+    nodes.toDF().collect().toSet should equal(Set(
       Row(1L, true, true, false, "Mats", 23L, null),
       Row(2L, true, false, false, "Martin", 42L, null),
       Row(3L, true, false, false, "Max", 1337L, null),
