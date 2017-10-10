@@ -36,6 +36,7 @@ import org.opencypher.caps.impl.spark.convert.{fromSparkType, rowToCypherMap, to
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.spark.{RecordsPrinter, SparkColumnName}
 import org.opencypher.caps.impl.syntax.header._
+import org.opencypher.caps.impl.util.ColumnMappableDf
 
 import scala.annotation.tailrec
 import scala.reflect.runtime.universe.TypeTag
@@ -206,24 +207,14 @@ object CAPSRecords {
 
   def create(initialDataFrame: DataFrame)(implicit caps: CAPSSession): CAPSRecords = {
     val toCast = initialDataFrame.schema.fields.filter(f => fromSparkType(f.dataType, f.nullable).isEmpty)
-    val dfWithCompatibleTypes: DataFrame = if (toCast.isEmpty) {
-      initialDataFrame
-    } else {
-      toCast.foldLeft(initialDataFrame) { case (df, field) =>
+    val dfWithCompatibleTypes: DataFrame = toCast.foldLeft(initialDataFrame) { case (df, field) =>
         val castType = field.dataType match {
           case ByteType | ShortType | IntegerType => LongType
           case FloatType => DoubleType
           case other => Raise.unsupportedArgument(
             s"Cannot convert or cast type $other of field $field to a Spark type supported by Cypher")
         }
-        val tmpColName = s"${field.name}___Tmp"
-        val converted = df.
-          withColumn(tmpColName, df(field.name).cast(castType)).
-          drop(field.name).
-          withColumnRenamed(tmpColName, field.name)
-
-        converted
-      }
+        df.mapColumn(field.name)(_.cast(castType))
     }
 
     val initialHeader = CAPSRecordHeader.fromSparkStructType(dfWithCompatibleTypes.schema)

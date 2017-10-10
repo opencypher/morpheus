@@ -17,6 +17,7 @@ package org.opencypher.caps.api.spark
 
 import java.net.URI
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicLong
 
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.opencypher.caps.api.expr.{Expr, Var}
@@ -57,6 +58,11 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
   private val flatPlanner = new FlatPlanner()
   private val physicalPlanner = new PhysicalPlanner()
   private val parser = CypherParser
+  private val temporaryColumnId = new AtomicLong()
+
+  def temporaryColumnName(): String = {
+    s"___Tmp${temporaryColumnId.incrementAndGet()}"
+  }
 
   def sourceAt(uri: URI): CAPSGraphSource =
     graphSourceHandler.sourceAt(uri)(this)
