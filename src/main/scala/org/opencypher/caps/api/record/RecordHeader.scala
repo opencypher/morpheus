@@ -23,6 +23,7 @@ import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTString, CypherType, _}
 import org.opencypher.caps.common.syntax._
 import org.opencypher.caps.impl.record.InternalHeader
+import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.syntax.header.{addContents, _}
 import org.opencypher.caps.ir.api.{Label, PropertyKey}
 
@@ -140,8 +141,13 @@ object RecordHeader {
     RecordHeader(contents.foldLeft(InternalHeader.empty) { case (header, slot) => header + slot })
 
   // TODO: Probably move this to an implicit class RichSchema?
-  def nodeFromSchema(node: Var, schema: Schema): RecordHeader =
-    nodeFromSchema(node, schema, schema.labels)
+  def nodeFromSchema(node: Var, schema: Schema): RecordHeader = {
+    val labels: Set[String] = node.cypherType match {
+      case CTNode(l) => l
+      case other => Raise.invalidArgument("CTNode", other.toString)
+    }
+    nodeFromSchema(node, schema, labels)
+  }
 
   def nodeFromSchema(node: Var, schema: Schema, labels: Set[String]): RecordHeader = {
     val impliedLabels = schema.impliedLabels.transitiveImplicationsFor(if (labels.nonEmpty) labels else schema.labels)
