@@ -77,7 +77,7 @@ class NodeScanTest extends CAPSTestSuite {
       .withNodePropertyKeys("B")("foo" -> CTInteger, "bar" -> CTFloat)
     )
 
-    nodeScan.records.details.toDF().collect().toSet should equal(Set(
+    nodeScan.records.toDF().collect().toSet should equal(Set(
       Row(true, 1L, 10L, (23.1f).toDouble)
     ))
   }

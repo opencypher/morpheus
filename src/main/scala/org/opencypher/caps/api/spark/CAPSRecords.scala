@@ -20,12 +20,8 @@ import java.util.Collections
 import org.apache.spark.api.java.JavaRDD
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-<<<<<<< HEAD
-import org.apache.spark.sql.types.StructType
-import org.apache.spark.storage.StorageLevel
-=======
 import org.apache.spark.sql.types._
->>>>>>> Cast field types when creating a GraphScan from a DataFrame
+import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.expr.{Property, Var}
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.types._
@@ -40,7 +36,6 @@ import org.opencypher.caps.impl.util.ColumnMappableDf
 
 import scala.annotation.tailrec
 import scala.reflect.runtime.universe.TypeTag
-import scala.util.Try
 
 sealed abstract class CAPSRecords(
   override val header: RecordHeader,
