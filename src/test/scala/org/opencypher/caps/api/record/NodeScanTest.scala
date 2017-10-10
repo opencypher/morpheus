@@ -15,9 +15,11 @@
  */
 package org.opencypher.caps.api.record
 
+import org.apache.spark.sql.Row
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.spark.CAPSRecords
-import org.opencypher.caps.api.types.{CTInteger, CTString}
+import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
+import org.opencypher.caps.api.types.{CTFloat, CTInteger, CTString}
+import org.opencypher.caps.api.value.CypherMap
 import org.opencypher.caps.test.CAPSTestSuite
 
 class NodeScanTest extends CAPSTestSuite {
@@ -48,4 +50,59 @@ class NodeScanTest extends CAPSTestSuite {
       .withNodePropertyKeys("B")("foo" -> CTString.nullable, "bar" -> CTInteger)
     )
   }
+
+  test("test type casts when creating a GraphScan from a DataFrame") {
+    val nodeScan = NodeScan.on("p" -> "ID") {
+      _.build
+        .withImpliedLabel("A")
+        .withImpliedLabel("B")
+        .withOptionalLabel("C" -> "IS_C")
+        .withPropertyKey("foo" -> "FOO")
+        .withPropertyKey("bar" -> "BAR")
+    }.from(CAPSRecords.create(
+      Seq("ID", "IS_C", "FOO", "BAR"),
+      Seq(
+        (1, true, 10.toShort, 23.1f)
+      )
+    ))
+
+    nodeScan.schema should equal(Schema.empty
+      .withImpliedLabel("A", "B")
+      .withImpliedLabel("B", "A")
+      .withImpliedLabel("C", "A")
+      .withImpliedLabel("C", "B")
+      .withLabelCombination("A", "C")
+      .withLabelCombination("B", "C")
+      .withNodePropertyKeys("A")("foo" -> CTInteger, "bar" -> CTFloat)
+      .withNodePropertyKeys("B")("foo" -> CTInteger, "bar" -> CTFloat)
+    )
+
+    nodeScan.records.toDF().collect().toSet should equal(Set(
+      Row(true, 1L, 10L, (23.1f).toDouble)
+    ))
+  }
+
+  test("test ScanGraph can handle shuffled columns due to cast") {
+    val nodeScan = NodeScan.on("p" -> "ID") {
+      _.build
+        .withImpliedLabel("A")
+        .withImpliedLabel("B")
+        .withOptionalLabel("C" -> "IS_C")
+        .withPropertyKey("foo" -> "FOO")
+        .withPropertyKey("bar" -> "BAR")
+    }.from(CAPSRecords.create(
+      Seq("ID", "IS_C", "FOO", "BAR"),
+      Seq(
+        (1, true, 10.toShort, 23.1f)
+      )
+    ))
+
+    val graph = CAPSGraph.create(nodeScan)
+    graph.nodes("n").toLocalScalaIterator.toSet {
+      CypherMap("n" -> "1")
+    }
+
+
+  }
+
 }

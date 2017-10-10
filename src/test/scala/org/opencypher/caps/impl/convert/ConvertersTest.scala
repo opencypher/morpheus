@@ -36,8 +36,8 @@ class ConvertersTest extends BaseTestSuite {
 
     mappings.foreach {
       case (spark, cypher) =>
-        fromSparkType(spark, nullable = false) should equal(cypher)
-        fromSparkType(spark, nullable = true) should equal(cypher.nullable)
+        fromSparkType(spark, nullable = false) should equal(Some(cypher))
+        fromSparkType(spark, nullable = true) should equal(Some(cypher.nullable))
     }
   }
 
@@ -45,9 +45,7 @@ class ConvertersTest extends BaseTestSuite {
     val unsupported = Set(FloatType, IntegerType, ShortType, ByteType)
 
     unsupported.foreach { t =>
-      a [CAPSException] shouldBe thrownBy {
-        fromSparkType(t, nullable = false)
-      }
+       fromSparkType(t, nullable = false) should equal(None)
     }
   }
 

@@ -20,7 +20,7 @@ import java.util.Collections
 import org.apache.spark.api.java.JavaRDD
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.expr.{Property, Var}
 import org.opencypher.caps.api.record._
@@ -32,6 +32,7 @@ import org.opencypher.caps.impl.spark.convert.{fromSparkType, rowToCypherMap, to
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.spark.{RecordsPrinter, SparkColumnName}
 import org.opencypher.caps.impl.syntax.header._
+import org.opencypher.caps.impl.util.ColumnMappableDf
 
 import scala.annotation.tailrec
 import scala.reflect.runtime.universe.TypeTag
@@ -200,11 +201,22 @@ object CAPSRecords {
     create(caps.sparkSession.createDataFrame(rdd, beanClass))
 
   def create(initialDataFrame: DataFrame)(implicit caps: CAPSSession): CAPSRecords = {
-    val initialHeader = CAPSRecordHeader.fromSparkStructType(initialDataFrame.schema)
+    val toCast = initialDataFrame.schema.fields.filter(f => fromSparkType(f.dataType, f.nullable).isEmpty)
+    val dfWithCompatibleTypes: DataFrame = toCast.foldLeft(initialDataFrame) { case (df, field) =>
+        val castType = field.dataType match {
+          case ByteType | ShortType | IntegerType => LongType
+          case FloatType => DoubleType
+          case other => Raise.unsupportedArgument(
+            s"Cannot convert or cast type $other of field $field to a Spark type supported by Cypher")
+        }
+        df.mapColumn(field.name)(_.cast(castType))
+    }
+
+    val initialHeader = CAPSRecordHeader.fromSparkStructType(dfWithCompatibleTypes.schema)
 
     // rename data to match generated header
     // we trust the order of the generated header
-    val renamed = initialDataFrame.toDF(initialHeader.internalHeader.columns: _*)
+    val renamed = dfWithCompatibleTypes.toDF(initialHeader.internalHeader.columns: _*)
 
     create(initialHeader, renamed)
   }
@@ -241,7 +253,8 @@ object CAPSRecords {
       initialHeader.slots.foreach { slot =>
         val dfSchema = initialData.schema
         val field = dfSchema(SparkColumnName.of(slot))
-        val cypherType = fromSparkType(field.dataType, field.nullable)
+        val cypherType = fromSparkType(field.dataType, field.nullable).getOrElse(
+          Raise.invalidArgument("A supported Spark type", field.dataType.toString))
         val headerType = slot.content.cypherType
 
         // if the type in the data doesn't correspond to the type in the header we fail
