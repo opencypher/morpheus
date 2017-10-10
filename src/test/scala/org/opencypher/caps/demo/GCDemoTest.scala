@@ -115,7 +115,6 @@ class GCDemoTest
   }
 
   private def withBoltSession[T](f: Session => T): T = {
-    //AuthTokens.basic(config.user, pwd), boltConfig()
     val driver = org.neo4j.driver.v1.GraphDatabase
       .driver(neo4jHost, AuthTokens.basic(neo4jConfig.user,neo4jConfig.password.get), neo4jConfig.boltConfig())
 
