@@ -17,7 +17,6 @@ package org.opencypher.caps.ir.impl
 
 import org.neo4j.cypher.internal.frontend.v3_3.{Ref, ast, symbols}
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.ir.api.global._
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.caps.test.BaseTestSuite

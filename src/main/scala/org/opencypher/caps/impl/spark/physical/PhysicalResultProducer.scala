@@ -33,7 +33,6 @@ import org.opencypher.caps.impl.syntax.expr._
 import org.opencypher.caps.impl.syntax.header._
 import org.opencypher.caps.ir.api.RelType
 import org.opencypher.caps.ir.api.block.{Asc, Desc, SortItem}
-import org.opencypher.caps.ir.api.global._
 import org.opencypher.caps.ir.api.pattern.{AnyGiven, EveryNode, EveryRelationship}
 
 import scala.collection.mutable

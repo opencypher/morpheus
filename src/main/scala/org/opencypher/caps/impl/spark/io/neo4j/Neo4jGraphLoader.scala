@@ -31,7 +31,6 @@ import org.opencypher.caps.impl.spark.convert.toSparkType
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.syntax.header._
 import org.opencypher.caps.ir.api.{Label, PropertyKey}
-import org.opencypher.caps.ir.api.global.PropertyKey
 
 object Neo4jGraphLoader {
 

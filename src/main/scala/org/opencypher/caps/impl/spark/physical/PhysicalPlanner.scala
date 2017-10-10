@@ -26,7 +26,6 @@ import org.opencypher.caps.impl.logical.{LogicalExternalGraph, LogicalPatternGra
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.{DirectCompilationStage, flat}
 import org.opencypher.caps.ir.api.block.SortItem
-import org.opencypher.caps.ir.api.global._
 
 case class PhysicalPlannerContext(
    resolver: URI => CAPSGraph,

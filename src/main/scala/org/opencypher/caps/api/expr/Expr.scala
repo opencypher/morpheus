@@ -17,7 +17,6 @@ package org.opencypher.caps.api.expr
 
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.ir.api.{Label, PropertyKey, RelType}
-import org.opencypher.caps.ir.api.global.{PropertyKey, RelType}
 
 import scala.annotation.tailrec
 

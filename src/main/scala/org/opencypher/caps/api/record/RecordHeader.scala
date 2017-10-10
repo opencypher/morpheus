@@ -25,7 +25,6 @@ import org.opencypher.caps.common.syntax._
 import org.opencypher.caps.impl.record.InternalHeader
 import org.opencypher.caps.impl.syntax.header.{addContents, _}
 import org.opencypher.caps.ir.api.{Label, PropertyKey}
-import org.opencypher.caps.ir.api.global.PropertyKey
 
 final case class RecordHeader(internalHeader: InternalHeader) {
 

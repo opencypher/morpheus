@@ -16,7 +16,6 @@
 package org.opencypher.caps.ir.api.pattern
 
 import org.opencypher.caps.ir.api.{Label, RelType}
-import org.opencypher.caps.ir.api.global.RelType
 
 sealed trait EveryEntity
 sealed case class EveryNode(labels: AllGiven[Label]) extends EveryEntity

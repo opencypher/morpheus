@@ -24,9 +24,8 @@ import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.impl.logical.LogicalExternalGraph
-import org.opencypher.caps.ir.api.{Label, RelType}
-import org.opencypher.caps.ir.api.global.RelType
 import org.opencypher.caps.ir.api.pattern.{AllOf, AnyOf, EveryNode, EveryRelationship}
+import org.opencypher.caps.ir.api.{Label, RelType}
 import org.opencypher.caps.test.CAPSTestSuite
 import org.scalatest.mockito.MockitoSugar
 

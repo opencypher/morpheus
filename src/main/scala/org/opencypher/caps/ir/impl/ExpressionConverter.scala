@@ -21,7 +21,6 @@ import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.parse.{CypherParser, RetypingPredicate}
 import org.opencypher.caps.ir.api.{Label, PropertyKey, RelType}
-import org.opencypher.caps.ir.api.global.{PropertyKey, RelType}
 import org.opencypher.caps.ir.impl.FunctionUtils._
 
 import scala.language.implicitConversions

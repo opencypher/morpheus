@@ -17,9 +17,8 @@ package org.opencypher.caps.ir.impl
 
 import org.neo4j.cypher.internal.frontend.v3_3.parser.{Expressions, Patterns}
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SyntaxException, ast}
-import org.opencypher.caps.ir.api.{Label, RelType}
-import org.opencypher.caps.ir.api.global._
 import org.opencypher.caps.ir.api.pattern._
+import org.opencypher.caps.ir.api.{Label, RelType}
 import org.parboiled.scala.{EOI, Parser, Rule1}
 
 import scala.language.implicitConversions

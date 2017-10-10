@@ -20,9 +20,8 @@ import org.opencypher.caps.api.record.{FieldSlotContent, OpaqueField, ProjectedE
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.logical.{LogicalGraph, LogicalOperatorProducer}
-import org.opencypher.caps.ir.api.{IRField, Label, PropertyKey, RelType}
-import org.opencypher.caps.ir.api.global.{PropertyKey, RelType}
 import org.opencypher.caps.ir.api.pattern._
+import org.opencypher.caps.ir.api.{IRField, Label, PropertyKey, RelType}
 import org.opencypher.caps.test.BaseTestSuite
 
 import scala.language.implicitConversions

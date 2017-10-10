@@ -29,7 +29,6 @@ import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.parse.CypherParser
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.ir.api._
-import org.opencypher.caps.ir.api.global.RelType
 import org.opencypher.caps.ir.api.pattern._
 
 import scala.annotation.tailrec

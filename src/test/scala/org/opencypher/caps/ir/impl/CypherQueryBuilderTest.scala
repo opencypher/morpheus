@@ -19,10 +19,9 @@ import org.opencypher.caps.api.expr.{Expr, HasLabel, Property, Var}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CTVoid}
 import org.opencypher.caps.api.value.CypherValue
-import org.opencypher.caps.ir.api.block._
-import org.opencypher.caps.ir.api.global.{PropertyKey, RelType}
-import org.opencypher.caps.ir.api.pattern._
 import org.opencypher.caps.ir.api._
+import org.opencypher.caps.ir.api.block._
+import org.opencypher.caps.ir.api.pattern._
 import org.opencypher.caps.{toField, _}
 
 import scala.collection.immutable.Set

@@ -29,7 +29,6 @@ import org.opencypher.caps.impl.logical
 import org.opencypher.caps.impl.util.toVar
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block._
-import org.opencypher.caps.ir.api.global._
 import org.opencypher.caps.ir.api.pattern.{DirectedRelationship, EveryNode, EveryRelationship, Pattern}
 import org.opencypher.caps.ir.impl.IrTestSuite
 import org.opencypher.caps.toField
