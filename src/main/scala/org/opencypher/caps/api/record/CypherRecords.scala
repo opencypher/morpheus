@@ -30,7 +30,3 @@ trait CypherRecords extends CypherPrintable {
 
   def compact(implicit details: RetainedDetails): Records
 }
-
-
-
-

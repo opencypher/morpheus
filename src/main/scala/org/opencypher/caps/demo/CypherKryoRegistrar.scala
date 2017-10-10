@@ -15,7 +15,6 @@
  */
 package org.opencypher.caps.demo
 
-import apple.laf.JRSUIConstants.BooleanValue
 import com.esotericsoftware.kryo.Kryo
 import org.apache.spark.serializer.{KryoRegistrator => SparkKryoRegistrar}
 import org.apache.spark.sql.catalyst.InternalRow

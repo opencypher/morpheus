@@ -37,7 +37,7 @@ class CAPSScanGraph(val scans: Seq[GraphScan], val schema: Schema)
 
   private val nodeEntityScans = NodeEntityScans(scans.collect { case it: NodeScan => it }.toVector)
   private val relEntityScans = RelationshipEntityScans(scans.collect { case it: RelationshipScan => it }.toVector)
-  
+
   override def cache(): CAPSScanGraph = map(_.cache())
 
   override def persist(): CAPSScanGraph = map(_.persist())
@@ -49,7 +49,7 @@ class CAPSScanGraph(val scans: Seq[GraphScan], val schema: Schema)
   override def unpersist(blocking: Boolean): CAPSScanGraph = map(_.unpersist(blocking))
 
   private def map(f: GraphScan => GraphScan): CAPSScanGraph =
-    new CAPSScanGraph(scans.map(f), schema, tokens)
+    new CAPSScanGraph(scans.map(f), schema)
 
   override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
     val node = Var(name)(nodeCypherType)

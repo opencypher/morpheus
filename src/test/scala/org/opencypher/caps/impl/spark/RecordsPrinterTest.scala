@@ -126,7 +126,7 @@ class RecordsPrinterTest extends CAPSTestSuite {
         |RETURN a.name, b.name
       """.stripMargin)
 
-    print(when.recordsWithDetails)
+    print(when.records)
 
     getString should equal(
       """+---------------------------------------------+
@@ -135,6 +135,7 @@ class RecordsPrinterTest extends CAPSTestSuite {
         !| 'Bob'                | 'Alice'              |
         !| 'Alice'              | 'Bob'                |
         !+---------------------------------------------+
+        !(2 rows)
         !""".stripMargin('!'))
   }
 

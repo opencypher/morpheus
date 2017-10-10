@@ -33,9 +33,13 @@ trait CAPSGraph extends CypherGraph with Serializable {
   final override type Result = CAPSResult
 
   def cache(): CAPSGraph
+
   def persist(): CAPSGraph
+
   def persist(storageLevel: StorageLevel): CAPSGraph
+
   def unpersist(): CAPSGraph
+
   def unpersist(blocking: Boolean): CAPSGraph
 }
 
