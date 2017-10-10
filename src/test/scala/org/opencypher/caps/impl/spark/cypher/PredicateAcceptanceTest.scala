@@ -209,4 +209,21 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
     // And
     result.graphs shouldBe empty
   }
+
+  test("float conversion for integer division") {
+    // Given
+    val given = TestGraph("""(:Node {id: 1L, val: 4L}), (:Node {id: 2L, val: 5L}), (:Node {id: 3L, val: 5L})""")
+
+    // When
+    val result = given.cypher("MATCH (n:Node) WHERE (n.val * 1.0) / n.id >= 2.5 RETURN n.id")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("n.id" -> 1),
+      CypherMap("n.id" -> 2)
+    ))
+
+    // And
+    result.graphs shouldBe empty
+  }
 }

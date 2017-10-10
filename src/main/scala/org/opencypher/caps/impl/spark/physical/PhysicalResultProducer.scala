@@ -151,10 +151,11 @@ class PhysicalResultProducer(context: RuntimeContext) {
     def projectGraph(graph: LogicalPatternGraph): PhysicalResult = {
       val LogicalPatternGraph(name, targetSchema, GraphOfPattern(toCreate, toRetain)) = graph
       val PhysicalResult(retainedInput, _) = prev.select(toRetain)
+      val distinctInput = retainedInput.distinct
 
       val baseTable =
-        if (toCreate.isEmpty) retainedInput
-        else createEntities(toCreate, retainedInput.details)
+        if (toCreate.isEmpty) distinctInput
+        else createEntities(toCreate, distinctInput.details)
 
       val patternGraph = CAPSGraph.create(baseTable, targetSchema)
       prev.withGraph(name -> patternGraph)
