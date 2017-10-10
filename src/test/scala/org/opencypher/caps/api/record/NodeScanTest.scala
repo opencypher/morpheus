@@ -15,6 +15,7 @@
  */
 package org.opencypher.caps.api.record
 
+import org.apache.spark.sql.Row
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.api.types.{CTFloat, CTInteger, CTString}
@@ -64,15 +65,19 @@ class NodeScanTest extends CAPSTestSuite {
       )
     ))
 
-    nodeScan.schema should equal (Schema.empty
-      .withImpliedLabel("A","B")
-      .withImpliedLabel("B","A")
-      .withImpliedLabel("C","A")
-      .withImpliedLabel("C","B")
-      .withLabelCombination("A","C")
-      .withLabelCombination("B","C")
+    nodeScan.schema should equal(Schema.empty
+      .withImpliedLabel("A", "B")
+      .withImpliedLabel("B", "A")
+      .withImpliedLabel("C", "A")
+      .withImpliedLabel("C", "B")
+      .withLabelCombination("A", "C")
+      .withLabelCombination("B", "C")
       .withNodePropertyKeys("A")("foo" -> CTInteger, "bar" -> CTFloat)
       .withNodePropertyKeys("B")("foo" -> CTInteger, "bar" -> CTFloat)
     )
+
+    nodeScan.records.details.toDF().collect().toSet should equal(Set(
+      Row(true, 1L, 10L, (23.1f).toDouble)
+    ))
   }
 }
