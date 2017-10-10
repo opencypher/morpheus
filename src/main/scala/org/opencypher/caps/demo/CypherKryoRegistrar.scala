@@ -50,6 +50,18 @@ class CypherKryoRegistrar extends SparkKryoRegistrar {
       CypherList.empty.getClass,
       classOf[Properties],
 
+      classOf[Array[CypherValue]],
+      classOf[Array[CypherInteger]],
+      classOf[Array[CypherFloat]],
+      classOf[Array[CypherNumber]],
+      classOf[Array[CypherString]],
+      classOf[Array[CypherBoolean]],
+      classOf[Array[CypherMap]],
+      classOf[Array[CypherNode]],
+      classOf[Array[CypherRelationship]],
+      classOf[Array[CypherPath]],
+      classOf[Array[CypherList]],
+
       classOf[Schema],
       classOf[ImpliedLabels],
       classOf[LabelCombinations],
@@ -76,11 +88,10 @@ class CypherKryoRegistrar extends SparkKryoRegistrar {
       CTMapOrNull.getClass,
       CTMap.getClass,
       CTMapOrNull.getClass,
+      CTPath.getClass,
+      CTPathOrNull.getClass,
       CTList.getClass,
       CTListOrNull.getClass,
-
-      classOf[Array[CypherNode]],
-      classOf[Array[CypherRelationship]],
 
       classOf[scala.collection.mutable.WrappedArray.ofRef[AnyRef]],
       classOf[Class[AnyRef]],
