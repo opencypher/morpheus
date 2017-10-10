@@ -1,30 +1,43 @@
-# Cypher for Apache Spark
+# CAPS: Cypher for Apache Spark
 
 This project is an extension to [Apache Spark™](https://spark.apache.org), adding property graph querying support via the industry's most widely used property graph query language, Cypher.
 
-## Current status
+## What it can do for whom
 
-The project is in an alpha stage, which means that no guarantees are given as to the stability of APIs, semantics, correctness of results, or functionality.
-The project is in rapid development, and will be published as a [Spark package](https://spark-packages.org).
+- Neo4j Developer: Multiple graph support (TODO: WIKI for feature)
+- Spark Developer: Process graphs in Spark (TODO: WIKI How does it relate to GraphX and GraphFrames?)
+- Data Scientist: User friendly graph language for querying and integrating data sources (Cypher for analytics? WIKI)
+- Data Integration Specialist: TBD
 
-## Roadmap
+## Current status: Alpha
 
-The overall goals for this project is to support the following high-level features:
+The project is currently in an alpha stage, which means that the code and the functionality are still changing. We haven't yet tested the system with large data sources and in many scenarios. We invite you to try it and welcome any feedback.
 
-- Cypher 3.2
-- Multiple graphs Cypher
-- Query compositionality
+## Features
+
+CAPS supports a subset of Cypher (TODO: WIKI supported features) and is the first implementation of multiple graphs and graph query compositionality (TODO: Wiki openCypher and Cypher improvement proposal).
+
+CAPS currently supports importing graphs from both Neo4j and from CSV+HDFS (TODO: Clarify and maybe link to WIki page that explains how to import data).
+
+We are planning to support:
 - Integration with existing Spark libraries via the DataFrame API
-- Pluggable data source interface
+- Importing graphs from external sources and offer a pluggable data source interface
+- Making it easy to use as a [Spark package](https://spark-packages.org)
 
-Given the immutable nature of Spark DataFrames, support for Cypher will initially focus on the read-only parts of the language.
+## Getting started with CAPS
+//TODO: Steps needed to run the demo with toy data
+//TODO: Link to a wiki article that demonstrates a more realistic use case with HDFS data source
+
+## How to contribute
+
+We'd love to find out about any issues you encounter. We welcome code contributions -- please open an [issue](https://github.com/neo-technology/cypher-for-apache-spark/issues) first to ensure there is no duplication of effort. //TODO: Determine CLA and process
+
+## License
+
+The project is licensed under the Apache Software License, 2.0.
 
 ## Copyright
 
 © Copyright 2016-2017 Neo4j, Inc.
 
 Apache Spark™, Spark, and Apache are registered trademarks of the [Apache Software Foundation](https://www.apache.org/).
-
-## License
-
-The project is licensed under the Apache Software License, 2.0.
