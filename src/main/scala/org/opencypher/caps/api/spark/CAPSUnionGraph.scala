@@ -65,6 +65,10 @@ final case class CAPSUnionGraph(graphs: CAPSGraph*)
     alignedScans.reduceOption(_ unionAll(targetHeader, _)).map(_.distinct).getOrElse(CAPSRecords.empty(targetHeader))
   }
 
-  // TODO: Flatten
-  override def union(other: CAPSGraph) = CAPSUnionGraph(this, other)
+  override def union(other: CAPSGraph): CAPSUnionGraph = other match {
+    case other: CAPSUnionGraph =>
+      CAPSUnionGraph(graphs ++ other.graphs: _*)
+    case _ =>
+      CAPSUnionGraph(graphs :+ other: _*)
+  }
 }
