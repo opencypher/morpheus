@@ -36,6 +36,7 @@ We are planning to support:
 <!-- TODO: Steps needed to run the demo with toy data -->
 <!-- TODO: Example in Notebook (Zeppelin?) -->
 <!-- TODO: WIKI article that demonstrates a more realistic use case with HDFS data source -->
+<!-- TODO: Post link to Cyper Chapter in Neo4j Developer Manual-->
 
 ## How to contribute
 
