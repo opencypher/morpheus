@@ -27,7 +27,7 @@ CAPS currently supports importing graphs from both Neo4j and from CSV+HDFS.
 We are planning to support:
 - Integration with existing Spark libraries via the DataFrame API
 - Importing graphs from external sources and offer a pluggable data source interface
-- Making it easy to use as a [Spark package](https://spark-packages.org)
+- Making it easy to use as a Spark package
 
 ## Getting started with CAPS
 
