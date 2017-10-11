@@ -1,17 +1,19 @@
 # CAPS: Cypher for Apache Spark
 
 CAPS is an extension to [Apache Spark™](https://spark.apache.org), adding property graph querying support via Cypher, the industry's most widely used property graph query language.
-### Integrate multiple data sources and use the CAPS *multiple graph support* to query across them. Run *analytical graph queries* on your Spark cluster.
+It allows for the integration of multiple data sources and supports *multiple graphs* querying.
+It enables you to use your Spark cluster to run *analytical graph queries*.
+Queries can also return graphs to create *processing pipelines* .
 
 ## Intended audience
 
-- **Developer**: Queries can also return graphs to create *processing pipelines* and CAPS allows to conveniently *export result graphs*.
+- **Developer**: CAPS allows to conveniently *export result graphs*.
 <!-- TODO: WIKI for CAPS/Cypher features -->
 <!-- TODO: WIKI Cypher for analytics? -->
 - **Data Scientist**: Extract the data items of interest into new result graphs for further processing. From there conveniently export the graphs for further processing or use Cypher and *[Neo4j graph algorithms](https://neo4j.com/blog/efficient-graph-algorithms-neo4j/)* to derive further insights from your data.
 <!-- TODO: WIKI How does it relate to GraphX and GraphFrames --> 
 - **Data Analyst**: <!--  This example shows how to aggregate detailed sales data within a graph — in effect, performing a ‘roll-up’ — in order to obtain a high-level summarized view of the data, stored and returned in another graph, as well as returning an even higher-level view as an executive report. The summarized graph may be used to draw further high-level reports, but may also be used to undertake ‘drill-down’ actions by probing into the graph to extract more detailed information.-->
-- **Big Data IT Specialist**:  Queries can also return graphs to create *processing pipelines* and CAPS allows to conveniently *export result graphs*.
+- **Big Data IT Specialist**: CAPS allows to conveniently *export result graphs*.
 <!-- TODO: WIKI BDI -->
 
 ## Current status: Alpha
