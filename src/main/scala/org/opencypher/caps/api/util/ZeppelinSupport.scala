@@ -44,10 +44,10 @@ object ZeppelinSupport {
       * }}}
       */
     def asZeppelinTable(): Unit = {
-      val fields = result.recordsWithDetails.fieldsInOrder
+      val fields = result.records.fieldsInOrder
 
       val header = fields.mkString("\t")
-      val rows = result.recordsWithDetails.toLocalScalaIterator.map { data =>
+      val rows = result.records.toLocalScalaIterator.map { data =>
         fields.map(field => data.get(field).get).mkString("\t")
       }.mkString("\n")
 
