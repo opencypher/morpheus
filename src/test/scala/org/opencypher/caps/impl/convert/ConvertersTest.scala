@@ -42,7 +42,7 @@ class ConvertersTest extends BaseTestSuite {
   }
 
   test("does not support detailed number types") {
-    val unsupported = Set(FloatType, IntegerType, ShortType, ByteType)
+    val unsupported = Set(FloatType, ShortType, ByteType)
 
     unsupported.foreach { t =>
        fromSparkType(t, nullable = false) should equal(None)

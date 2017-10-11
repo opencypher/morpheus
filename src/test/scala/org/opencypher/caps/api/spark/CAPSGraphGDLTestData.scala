@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.api.spark
 
-object CAPSGraphTestData {
+object CAPSGraphGDLTestData {
   val `:Person` =
     """
       |(p1:Person:Swedish {name: "Mats", luckyNumber: 23L}),
