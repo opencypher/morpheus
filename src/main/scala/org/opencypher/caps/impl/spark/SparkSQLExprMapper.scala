@@ -20,7 +20,8 @@ import org.apache.spark.sql.types.{ArrayType, BooleanType, LongType, StringType}
 import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.record.RecordHeader
-import org.opencypher.caps.api.types.{CTList, CTNode, CTString}
+import org.opencypher.caps.api.types.{CTAny, CTList, CTNode, CTString}
+import org.opencypher.caps.impl.convert.toJavaType
 import org.opencypher.caps.impl.spark.Udfs._
 import org.opencypher.caps.impl.spark.convert.toSparkType
 import org.opencypher.caps.impl.spark.exception.Raise
@@ -41,8 +42,10 @@ object SparkSQLExprMapper {
   private def getColumn(expr: Expr, header: RecordHeader, dataFrame: DataFrame)
                        (implicit context: RuntimeContext): Column = {
     expr match {
-      case p@Param(name) =>
+      case p@Param(name) if p.cypherType.subTypeOf(CTList(CTAny)).maybeTrue =>
         udf(const(context.parameters(name)), toSparkType(p.cypherType))()
+      case Param(name) =>
+        functions.lit(toJavaType(context.parameters(name)))
       case _ =>
         verifyExpression(header, expr)
         val slot = header.slotsFor(expr).head
@@ -100,7 +103,8 @@ object SparkSQLExprMapper {
 
         val col = getColumn(s.expr, header, df)
         val computedSize = s.expr.cypherType match {
-          case CTString => udf((s: String) => s.size.toLong, LongType)(col)
+            // TODO replace with lit?
+          case CTString => udf((s: String) => s.length.toLong, LongType)(col)
           case _: CTList => functions.size(col).cast(LongType)
           case other => Raise.notYetImplemented(s"size() on type $other")
         }
@@ -133,7 +137,9 @@ object SparkSQLExprMapper {
         val lhsColumn = getColumn(lhs, header, df)
         val rhsColumn = getColumn(rhs, header, df)
 
-        // optionally, we could flatten the list to a number of columns and use Column#isin(Any*)
+        // if we were able to store the list as a Spark array, we could do
+        // new Column(ArrayContains(lhsColumn.expr, rhsColumn.expr))
+        // and avoid UDF
 
         val inPred = udf(Udfs.in _, BooleanType)(lhsColumn, rhsColumn)
 
