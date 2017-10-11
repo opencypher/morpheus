@@ -40,8 +40,16 @@ trait CypherGraph {
   final def relationships(name: String): Records = relationships(name, CTRelationship)
   def relationships(name: String, relCypherType: CTRelationship): Records
 
-  final def cypher(query: String, parameters: Map[String, CypherValue] = Map.empty)(implicit caps: Session): Result =
-    caps.cypher(graph, query, parameters)
+  /**
+    * Executes a Cypher query in the session that manages this graph, using this graph as the ambient graph.
+    *
+    * @param query      the Cypher query to execute.
+    * @param parameters the parameters used by the Cypher query.
+    * @return           the result of the query.
+    * @see              [[CypherSession.cypher()]]
+    */
+  final def cypher(query: String, parameters: Map[String, CypherValue] = Map.empty): Result =
+    session.cypher(graph, query, parameters)
 
   def union(other: Graph): Graph
 
