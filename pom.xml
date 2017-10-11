@@ -132,6 +132,11 @@
                             <goal>doc</goal>
                         </goals>
                         <phase>prepare-package</phase>
+                        <configuration>
+                            <args>
+                                <arg>-no-link-warnings</arg>
+                            </args>
+                        </configuration>
                     </execution>
                 </executions>
                 <configuration>

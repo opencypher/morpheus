@@ -47,7 +47,7 @@ object CSVDemo {
     println(s"Now executing query: $query")
 
     implicit val caps: CAPSSession = CAPSSession.create(session)
-    val result: CAPSResult = graph.cypher(query)(caps)
+    val result: CAPSResult = graph.cypher(query)
 
     result.records.toDF().cache()
 

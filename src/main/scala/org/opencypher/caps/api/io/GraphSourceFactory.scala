@@ -34,6 +34,9 @@ import java.net.URI
 
 import org.opencypher.caps.api.graph.{CypherGraph, CypherSession}
 
+/**
+  * Factory for creating GraphSource instances for a given set of schemes.
+  */
 trait GraphSourceFactory {
 
   self =>
@@ -43,25 +46,25 @@ trait GraphSourceFactory {
   type Source <: GraphSource { type Session = self.Session; type Graph = self.Graph }
 
   /**
-    * A simple name for the graph source factory
+    * A simple name for the graph source factory,
     *
-    * @return a name that describes this factory
+    * @return a name that describes this factory.
     */
   def name: String
 
   /**
-    * The protocol for which this factory produces graph sources.
+    * The scheme for which this factory produces graph sources.
     *
-    * @return that protocol
+    * @return that scheme.
     */
   def schemes: Set[String]
 
   /**
     * Creates a new graph source at the argument uri.
     *
-    * @param uri at which a new graph source is to be created
-    * @return create a new graph source for the given uri
-    * @throws RuntimeException if uri is not supported by this graph source factory
+    * @param uri at which a new graph source is to be created.
+    * @return create a new graph source for the given uri.
+    * @throws java.lang.RuntimeException if the uri is not supported by this graph source factory.
     */
   def sourceFor(uri: URI)(implicit session: Session): Source
 }

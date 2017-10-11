@@ -35,6 +35,9 @@ import java.net.URI
 import org.opencypher.caps.api.graph.{CypherGraph, CypherSession}
 import org.opencypher.caps.api.schema.Schema
 
+/**
+  * Describes a location for a Cypher graph.
+  */
 trait GraphSource {
 
   self =>
@@ -67,7 +70,7 @@ trait GraphSource {
     * Create a new empty graph stored in this graph source.
     *
     * @return the graph stored in this graph source.
-    * @throws RuntimeException if the graph could not be created or there already was a graph
+    * @throws java.lang.RuntimeException if the graph could not be created or there already was a graph.
     */
   def create: Graph
 
@@ -75,7 +78,7 @@ trait GraphSource {
     * Provides the graph stored in this graph source.
     *
     * @return the graph stored in this graph source.
-    * @throws RuntimeException if loading the graph could not be done.
+    * @throws java.lang.RuntimeException if loading the graph could not be done.
     */
   def graph: Graph
 
@@ -91,8 +94,8 @@ trait GraphSource {
     * Persists the argument graph to this source.
     *
     * @param graph the graph to persist.
-    * @param mode the persist mode to use.
-    * @return the persisted graph
+    * @param mode  the persist mode to use.
+    * @return the persisted graph.
     */
   def persist(graph: Graph, mode: PersistMode): Graph
 

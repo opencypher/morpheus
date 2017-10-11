@@ -91,11 +91,14 @@ object CAPSGraph {
     override def union(other: CAPSGraph): CAPSGraph =
       graph.union(other)
 
-    override def cache(): CAPSGraph = graph.cache(); this
-    override def persist(): CAPSGraph = graph.persist(); this
-    override def persist(storageLevel: StorageLevel): CAPSGraph = graph.persist(storageLevel); this
-    override def unpersist(): CAPSGraph = graph.unpersist(); this
-    override def unpersist(blocking: Boolean): CAPSGraph = graph.unpersist(blocking); this
+    override def cache(): CAPSGraph = { graph.cache(); this }
+    override def persist(): CAPSGraph = { graph.persist(); this }
+    override def persist(storageLevel: StorageLevel): CAPSGraph = {
+      graph.persist(storageLevel)
+      this
+    }
+    override def unpersist(): CAPSGraph = { graph.unpersist(); this }
+    override def unpersist(blocking: Boolean): CAPSGraph = { graph.unpersist(blocking); this }
   }
 
   sealed abstract class EmptyGraph(implicit val caps: CAPSSession) extends CAPSGraph {

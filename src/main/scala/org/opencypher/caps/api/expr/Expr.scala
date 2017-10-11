@@ -20,6 +20,11 @@ import org.opencypher.caps.ir.api.{Label, PropertyKey, RelType}
 
 import scala.annotation.tailrec
 
+/**
+  * Describes a Cypher expression.
+  *
+  * @see [[http://neo4j.com/docs/developer-manual/current/cypher/syntax/expressions/ Cypher Expressions in the Neo4j Manual]]
+  */
 sealed trait Expr {
   def cypherType: CypherType
 

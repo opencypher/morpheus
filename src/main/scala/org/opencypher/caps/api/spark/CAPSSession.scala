@@ -85,8 +85,7 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
   def unmountAll(): Unit =
     graphSourceHandler.unmountAll(this)
 
-
-  override def graph: CAPSGraph = CAPSGraph.empty(this)
+  override def emptyGraph: CAPSGraph = CAPSGraph.empty(this)
 
   override def cypher(graph: Graph, query: String, queryParameters: Map[String, CypherValue]): Result = {
     val ambientGraph = mountAmbientGraph(graph)
