@@ -1,19 +1,22 @@
 # CAPS: Cypher for Apache Spark
 
 CAPS extends [Apache Spark™](https://spark.apache.org) with Cypher, the industry's most widely used graph query language.
-It allows for the integration of multiple data sources and supports **multiple graph** querying.
+It allows for the **integration** of many **data sources** and supports **multiple graph** querying.
 It enables you to use your Spark cluster to run **analytical graph queries**.
 Queries can also return graphs to create **processing pipelines**.
 
 ## Intended audience
 
-- **Developer**: CAPS allows to conveniently *export result graphs*.
+CAPS allows you to develop complex processing pipelines orchestrated by a powerful and expressive high-level language.
+Beyond developers and big data integration specialist, CAPS is also of practical use for:
+
+<!--- **Developer**: CAPS allows to conveniently *export result graphs*.-->
 <!-- TODO: WIKI for CAPS/Cypher features -->
 <!-- TODO: WIKI Cypher for analytics? -->
-- **Data Scientist**: Extract the data items of interest into new result graphs for further processing. From there conveniently export the graphs for further processing or use Cypher and *[Neo4j graph algorithms](https://neo4j.com/blog/efficient-graph-algorithms-neo4j/)* to derive further insights from your data.
+- **Data Scientists**: Extract the data items of interest into new result graphs for further processing. From there conveniently export the graphs for further processing or use Cypher and *[Neo4j graph algorithms](https://neo4j.com/blog/efficient-graph-algorithms-neo4j/)* to derive further insights from your data.
 <!-- TODO: WIKI How does it relate to GraphX and GraphFrames --> 
-- **Data Analyst**: <!--  This example shows how to aggregate detailed sales data within a graph — in effect, performing a ‘roll-up’ — in order to obtain a high-level summarized view of the data, stored and returned in another graph, as well as returning an even higher-level view as an executive report. The summarized graph may be used to draw further high-level reports, but may also be used to undertake ‘drill-down’ actions by probing into the graph to extract more detailed information.-->
-- **Big Data IT Specialist**: CAPS allows to conveniently *export result graphs*.
+- **Data Analysts**: <!--  This example shows how to aggregate detailed sales data within a graph — in effect, performing a ‘roll-up’ — in order to obtain a high-level summarized view of the data, stored and returned in another graph, as well as returning an even higher-level view as an executive report. The summarized graph may be used to draw further high-level reports, but may also be used to undertake ‘drill-down’ actions by probing into the graph to extract more detailed information.-->
+<!---- **Big Data IT Specialist**: CAPS allows to conveniently *export result graphs*.-->
 <!-- TODO: WIKI BDI -->
 
 ## Current status: Alpha
