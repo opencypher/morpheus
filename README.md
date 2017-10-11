@@ -25,7 +25,7 @@ CAPS currently supports importing graphs from both Neo4j and from CSV+HDFS.
 
 We are planning to:
 - Support more Cypher features
-- Make CAPS easier to use by offering it as a Spark package or inside of a notebook
+- Make CAPS easier to use by offering it as a Spark package and by integrating it into a notebook
 - Integrate with existing Spark libraries via the DataFrame API
 - Support importing graphs from more external sources
 - Offer a pluggable data source interface
@@ -44,7 +44,7 @@ We'd love to find out about any issues you encounter. We welcome code contributi
 
 ## License
 
-The project is licensed under the Apache Software License 2.0.
+The project is licensed under the Apache Software License, Version 2.0
 
 ## Copyright
 
