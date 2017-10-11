@@ -30,13 +30,18 @@ trait CypherSession {
   type Result <: CypherResult { type Graph = self.Graph; type Records = self.Records }
   type Data
 
-  def graph: Graph
+  /**
+    * An immutable empty graph.
+    *
+    * @return an immutable empty graph.
+    */
+  def emptyGraph: Graph
 
   final def cypher(query: String): Result =
-    cypher(graph, query, Map.empty)
+    cypher(emptyGraph, query, Map.empty)
 
   final def cypher(query: String, parameters: Map[String, CypherValue]): Result =
-    cypher(graph, query, parameters)
+    cypher(emptyGraph, query, parameters)
 
   final def cypher(graph: Graph, query: String): Result =
     cypher(graph, query, Map.empty)
