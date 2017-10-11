@@ -27,16 +27,45 @@ import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.syntax.header.{addContents, _}
 import org.opencypher.caps.ir.api.{Label, PropertyKey}
 
+/**
+  * A header for a CypherRecords.
+  *
+  * The header consists of a number of slots, each of which represents a Cypher expression.
+  * The slots that represent variables (which is a kind of expression) are called <i>fields</i>.
+  */
 final case class RecordHeader(internalHeader: InternalHeader) {
 
+  /**
+    * Computes the concatenation of this header and another header.
+    *
+    * @param other the header with which to concatenate.
+    * @return the concatenation of this and the argument header.
+    */
   def ++(other: RecordHeader): RecordHeader =
     copy(internalHeader ++ other.internalHeader)
 
   def indexOf(content: SlotContent): Option[Int] = slots.find(_.content == content).map(_.index)
+
+  /**
+    * The ordered sequence of slots stored in this header.
+    *
+    * @return the slots in this header.
+    */
   def slots: IndexedSeq[RecordSlot] = internalHeader.slots
   def contents: Set[SlotContent] = slots.map(_.content).toSet
 
+  /**
+    * The set of fields contained in this header.
+    *
+    * @return the fields in this header.
+    */
   def fields: Set[Var] = internalHeader.fields
+
+  /**
+    * The fields contained in this header, in the order they were defined.
+    *
+    * @return the ordered fields in this header.
+    */
   def fieldsInOrder: Seq[Var] = slots.flatMap(_.content.alias)
 
   def slotsFor(expr: Expr): Seq[RecordSlot] =

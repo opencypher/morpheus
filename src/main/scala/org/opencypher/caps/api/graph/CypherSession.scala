@@ -20,6 +20,10 @@ import java.net.URI
 import org.opencypher.caps.api.record.CypherRecords
 import org.opencypher.caps.api.value.CypherValue
 
+/**
+  * The session that manages graphs and adds Cypher query capabilities to them.
+  * Sessions serve as containers for configuration and provide graph loading via URIs.
+  */
 trait CypherSession {
 
   self =>
@@ -46,8 +50,25 @@ trait CypherSession {
   final def cypher(graph: Graph, query: String): Result =
     cypher(graph, query, Map.empty)
 
+  /**
+    * Executes a Cypher query in this session, using the argument graph as the ambient graph.
+    *
+    * The ambient graph is the graph that is used for graph matching and updating,
+    * unless another graph is explicitly selected by the query.
+    *
+    * @param graph      the ambient graph for this query.
+    * @param query      the Cypher query to execute.
+    * @param parameters the parameters used by the Cypher query.
+    * @return the result of the query.
+    */
   def cypher(graph: Graph, query: String, parameters: Map[String, CypherValue]): Result
 
+  /**
+    * Retrieves the graph from the argument URI, if it exists.
+    *
+    * @param uri the uri locating the graph.
+    * @return the graph located at the uri.
+    */
   def graphAt(uri: URI): Graph
 }
 
