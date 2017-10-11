@@ -23,10 +23,12 @@ CAPS supports a subset of Cypher <!-- TODO: WIKI supported features --> and is t
 
 CAPS currently supports importing graphs from both Neo4j and from CSV+HDFS.
 
-We are planning to support:
-- Integration with existing Spark libraries via the DataFrame API
-- Importing graphs from more external sources and offer a pluggable data source interface
-- Making it easy to use as a Spark package
+We are planning to:
+- Make CAPS easy to use as a Spark package
+- Support more Cypher features
+- Integrate with existing Spark libraries via the DataFrame API
+- Support importing graphs from more external sources
+- Offer a pluggable data source interface
 
 ## Getting started with CAPS
 
