@@ -1,9 +1,9 @@
 # CAPS: Cypher for Apache Spark
 
-CAPS is an extension to [Apache Spark™](https://spark.apache.org), adding property graph querying support via Cypher, the industry's most widely used property graph query language.
-It allows for the integration of multiple data sources and supports *multiple graphs* querying.
-It enables you to use your Spark cluster to run *analytical graph queries*.
-Queries can also return graphs to create *processing pipelines* .
+CAPS extends [Apache Spark™](https://spark.apache.org) with Cypher, the industry's most widely used graph query language.
+It allows for the integration of multiple data sources and supports **multiple graph** querying.
+It enables you to use your Spark cluster to run **analytical graph queries**.
+Queries can also return graphs to create **processing pipelines**.
 
 ## Intended audience
 
