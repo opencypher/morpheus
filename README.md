@@ -1,25 +1,24 @@
 # CAPS: Cypher for Apache Spark
 
-This project is an extension to [Apache Spark™](https://spark.apache.org), adding property graph querying support via the industry's most widely used property graph query language, Cypher.
+CAPS is an extension to [Apache Spark™](https://spark.apache.org), adding property graph querying support via Cypher, the industry's most widely used property graph query language.
+### Integrate multiple data sources and use the CAPS *multiple graph support* to query across them. Run *analytical graph queries* on your Spark cluster.
 
-## What CAPS can do for whom
+## Intended audience
 
-> Integrate multiple data sources and use the CAPS **multiple graph support** to query across them. Run **analytical graph queries** on your Spark cluster.
-
-- **Developer**: Queries can also return graphs to create **processing pipelines** and CAPS allows to conveniently **export result graphs**.
+- **Developer**: Queries can also return graphs to create *processing pipelines* and CAPS allows to conveniently *export result graphs*.
 <!-- TODO: WIKI for CAPS/Cypher features -->
 <!-- TODO: WIKI Cypher for analytics? -->
-- **Data Scientist**: Extract the data items of interest into new result graphs for further processing. From there conveniently export the graphs for further processing or use Cypher and **[Neo4j graph algorithms](https://neo4j.com/blog/efficient-graph-algorithms-neo4j/)** to derive further insights from your data.
+- **Data Scientist**: Extract the data items of interest into new result graphs for further processing. From there conveniently export the graphs for further processing or use Cypher and *[Neo4j graph algorithms](https://neo4j.com/blog/efficient-graph-algorithms-neo4j/)* to derive further insights from your data.
 <!-- TODO: WIKI How does it relate to GraphX and GraphFrames --> 
-- Data Analyst: <!--  This example shows how to aggregate detailed sales data within a graph — in effect, performing a ‘roll-up’ — in order to obtain a high-level summarized view of the data, stored and returned in another graph, as well as returning an even higher-level view as an executive report. The summarized graph may be used to draw further high-level reports, but may also be used to undertake ‘drill-down’ actions by probing into the graph to extract more detailed information.-->
-- Big Data IT Specialist:  Queries can also return graphs to create **processing pipelines** and CAPS allows to conveniently **export result graphs**.
+- **Data Analyst**: <!--  This example shows how to aggregate detailed sales data within a graph — in effect, performing a ‘roll-up’ — in order to obtain a high-level summarized view of the data, stored and returned in another graph, as well as returning an even higher-level view as an executive report. The summarized graph may be used to draw further high-level reports, but may also be used to undertake ‘drill-down’ actions by probing into the graph to extract more detailed information.-->
+- **Big Data IT Specialist**:  Queries can also return graphs to create *processing pipelines* and CAPS allows to conveniently *export result graphs*.
 <!-- TODO: WIKI BDI -->
 
 ## Current status: Alpha
 
 The project is currently in an alpha stage, which means that the code and the functionality are still changing. We haven't yet tested the system with large data sources and in many scenarios. We invite you to try it and welcome any feedback.
 
-## CAPS Features
+## CAPS Features & Roadmap
 
 CAPS supports a subset of Cypher <!-- TODO: WIKI supported features --> and is the first implementation of multiple graphs and graph query compositionality <!-- TODO: WIKI openCypher and Cypher improvement proposal -->.
 
