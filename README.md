@@ -21,8 +21,8 @@ The project is currently in an alpha stage, which means that the code and the fu
 
 ## CAPS Features
 
-CAPS is built on top of the DataFrames API and uses Spark features such as the Catalyst optimizer.
-These underlying representations are accessible and allow for interoperation with other Spark libraries.
+CAPS is built on top of the Spark DataFrames API and uses features such as the Catalyst optimizer.
+The Spark representations are accessible and can be converted to representations that integrate with other Spark libraries.
 
 CAPS supports a subset of Cypher <!-- TODO: WIKI supported features --> and is the first implementation of [multiple graphs](https://github.com/boggle/openCypher/blob/CIP2017-06-18-multiple-graphs/cip/1.accepted/CIP2017-06-18-multiple-graphs.adoc) and graph query compositionality.
 
