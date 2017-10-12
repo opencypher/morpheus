@@ -33,6 +33,7 @@ import org.opencypher.caps.impl.logical._
 import org.opencypher.caps.impl.parse.CypherParser
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceHandler
+import org.opencypher.caps.impl.spark.io.file.FileCsvGraphSourceFactory
 import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvGraphSourceFactory
 import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraphSourceFactory
 import org.opencypher.caps.impl.spark.io.session.SessionGraphSourceFactory
@@ -202,7 +203,8 @@ object CAPSSession extends Serializable {
       // add some default factories
       val additionalFactories = graphSourceFactories +
         Neo4jGraphSourceFactory() +
-        HdfsCsvGraphSourceFactory(session.sparkContext.hadoopConfiguration)
+        HdfsCsvGraphSourceFactory(session.sparkContext.hadoopConfiguration) +
+        FileCsvGraphSourceFactory()
 
       new CAPSSession(
         session,
