@@ -20,7 +20,7 @@ import java.net.{URI, URLEncoder}
 import org.apache.spark.sql.Row
 import org.apache.spark.storage.StorageLevel
 import org.neo4j.driver.v1.{AuthTokens, Session}
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
+import org.opencypher.caps.api.spark.{CAPSGraph, CAPSResult, CAPSSession}
 import org.opencypher.caps.api.value.CypherMap
 import org.opencypher.caps.test.BaseTestSuite
 import org.opencypher.caps.test.fixture.{MiniDFSClusterFixture, Neo4jServerFixture, SparkSessionFixture}
@@ -71,10 +71,10 @@ class GCDemoTest
     val LINKS = caps.cypher(
       s"""FROM GRAPH friends AT '/friends'
          |MATCH (p:Person)
-         |WITH p.name AS personName
+         |WITH p.name AS personName, p
          |FROM GRAPH products AT '$hdfsURI'
          |MATCH (c:Customer)
-         |WITH c.name as customerName, personName
+         |WITH c.name as customerName, personName, c, p
          |WHERE customerName = personName
          |RETURN GRAPH result OF (c)-[x:IS]->(p)
       """.stripMargin).graphs("result").persist(storageLevel)
@@ -90,7 +90,7 @@ class GCDemoTest
         |LIMIT 100
       """.stripMargin)
 
-    result.records.print
+    verifyRecoResult(result)
 
     //Write back to Neo
     withBoltSession { session =>
@@ -147,6 +147,20 @@ class GCDemoTest
     val relQuery = URLEncoder.encode(s"MATCH ()-[r {region: '$region'}]->() RETURN r", "UTF-8")
     val uri = URI.create(s"$neo4jHost?$nodeQuery;$relQuery")
     uri
+  }
+
+  def verifyRecoResult(r: CAPSResult) = {
+    r.records.cache()
+
+    r.records.toCypherMaps.collect().toSet should equal(Set(
+      CypherMap("name" -> "Eve", "product" -> "Terminator 2"),
+      CypherMap("name" -> "Carl", "product" -> "Jurassic Park"),
+      CypherMap("name" -> "Bob", "product" -> "1984"),
+      CypherMap("name" -> "Trudy", "product" -> "Cryptonomicon"),
+      CypherMap("name" -> "Dave", "product" -> "Shakira")
+    ))
+
+    r.print
   }
 
   def verifyCityFriendsUS(g: CAPSGraph): Assertion = {
