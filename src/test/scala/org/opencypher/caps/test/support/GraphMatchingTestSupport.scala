@@ -200,7 +200,7 @@ trait GraphMatchingTestSupport {
     override def create: CAPSGraph = ???
     override def graph: CAPSGraph = testGraph.graph
     override def schema: Option[Schema] = None
-    override def persist(graph: CAPSGraph, mode: PersistMode): CAPSGraph = ???
+    override def store(graph: CAPSGraph, mode: PersistMode): CAPSGraph = ???
     override def delete(): Unit = ???
   }
 }

@@ -66,7 +66,7 @@ class GCDemoTest
     val ALL_CITYFRIENDS = (CITYFRIENDS_EU.graphs("result") union CITYFRIENDS_US.graphs("result")).persist(storageLevel)
     check( verifyFriendsUnion(ALL_CITYFRIENDS) )
 
-    caps.persistGraphAt(ALL_CITYFRIENDS, "/friends")
+    caps.storeGraphAt(ALL_CITYFRIENDS, "/friends")
 
     val LINKS = caps.cypher(
       s"""FROM GRAPH friends AT '/friends'

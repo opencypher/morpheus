@@ -73,8 +73,8 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
   def graphAt(uri: URI): CAPSGraph =
     graphSourceHandler.sourceAt(uri)(this).graph
 
-  def persistGraphAt(graph: CAPSGraph, pathOrUri: String, mode: PersistMode = CreateOrFail): CAPSGraph =
-    graphSourceHandler.sourceAt(parsePathOrURI(pathOrUri))(this).persist(graph, mode)
+  def storeGraphAt(graph: CAPSGraph, pathOrUri: String, mode: PersistMode = CreateOrFail): CAPSGraph =
+    graphSourceHandler.sourceAt(parsePathOrURI(pathOrUri))(this).store(graph, mode)
 
   def mountSourceAt(source: CAPSGraphSource, pathOrUri: String): Unit =
     mountSourceAt(source, parsePathOrURI(pathOrUri))
@@ -125,7 +125,7 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
       override def graph: CAPSGraph = ambient
       override def sourceForGraphAt(uri: URI): Boolean = uri == canonicalURI
       override def create: CAPSGraph = Raise.impossible("Don't create the ambient graph")
-      override def persist(graph: CAPSGraph, mode: PersistMode): CAPSGraph = Raise.impossible("Don't persist the ambient graph")
+      override def store(graph: CAPSGraph, mode: PersistMode): CAPSGraph = Raise.impossible("Don't persist the ambient graph")
       override val session: CAPSSession = self
     }
 

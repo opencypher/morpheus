@@ -46,9 +46,9 @@ case class Neo4jGraphSource(config: EncryptedNeo4jConfig,
   }
 
   override def create: CAPSGraph =
-    persist(CAPSGraph.empty, CreateOrFail)
+    store(CAPSGraph.empty, CreateOrFail)
 
-  override def persist(graph: CAPSGraph, mode: PersistMode): CAPSGraph =
+  override def store(graph: CAPSGraph, mode: PersistMode): CAPSGraph =
     ???
 
   override def delete(): Unit =
