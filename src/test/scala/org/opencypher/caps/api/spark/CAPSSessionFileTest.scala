@@ -26,9 +26,11 @@ import org.opencypher.caps.test.fixture.SparkSessionFixture
 class CAPSSessionFileTest extends BaseTestSuite
   with SparkSessionFixture {
 
-  private val testGraphPath = getClass.getResource("/csv/sn").toString
+  private val testGraphPath = getClass.getResource("/csv/sn").getPath
 
-  private def fileURI: URI = new URIBuilder(testGraphPath).setScheme("file").build()
+  private def fileURI: URI = new URI(s"file://$testGraphPath")
+
+  println(fileURI)
 
   test("File via URI") {
     implicit val capsSession: CAPSSession = CAPSSession.builder(session).build

@@ -17,6 +17,7 @@ package org.opencypher.caps.impl.spark.io.file
 
 import java.net.URI
 
+import org.apache.hadoop.conf.Configuration
 import org.opencypher.caps.api.io.{CreateOrFail, PersistMode}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
@@ -30,8 +31,11 @@ case class FileCsvGraphSource(override val canonicalURI: URI)(implicit capsSessi
     FileCsvGraphSourceFactory.supportedSchemes.contains(uri.getScheme)
   }
 
-  override def graph: CAPSGraph =
+  override def graph: CAPSGraph = {
+    val hadoopConf = new Configuration()
+    hadoopConf.set("fs.default.name", "localhost")
     new CsvGraphLoader(canonicalURI.getPath, capsSession.sparkSession.sparkContext.hadoopConfiguration).load
+  }
 
   // TODO: Make better/cache?
   override def schema: Option[Schema] = None

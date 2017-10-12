@@ -47,7 +47,12 @@ import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
 class CsvGraphLoader(location: String, hadoopConfig: Configuration)(implicit capsSession: CAPSSession) {
 
   private val sparkSession: SparkSession = capsSession.sparkSession
-  private val fs: FileSystem = FileSystem.get(new URI(location), hadoopConfig)
+  private val fs: FileSystem = {
+    if (location.toLowerCase.startsWith("file"))
+      FileSystem.getLocal(hadoopConfig)
+    else
+      FileSystem.get(new URI(location), hadoopConfig)
+  }
 
   def load: CAPSGraph = {
     val nodeScans = loadNodes
