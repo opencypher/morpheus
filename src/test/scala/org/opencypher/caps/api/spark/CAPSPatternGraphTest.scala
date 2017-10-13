@@ -16,10 +16,10 @@
 package org.opencypher.caps.api.spark
 
 import org.apache.spark.sql.Row
-import org.opencypher.caps.api.expr.{HasLabel, Property, Var}
+import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.record.{OpaqueField, ProjectedExpr, ProjectedField, RecordHeader}
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTRelationship, CTString}
+import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value._
 import org.opencypher.caps.impl.record.CAPSRecordHeader
 import org.opencypher.caps.impl.syntax.header.{addContents, _}
@@ -237,8 +237,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
     ))
   }
 
-  // TODO: Deal with non-existing tokens gracefully
-  ignore("Node scan for missing label") {
+  test("Node scan for missing label") {
     val inputGraph = TestGraph(`:Book`).graph
     val inputNodes = inputGraph.nodes("n")
 
@@ -279,6 +278,54 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
       CypherMap("n" ->  1L),
       CypherMap("n" -> 10L)
     ))
+  }
+
+  ignore("Supports node scans from ad-hoc table 2") {
+    val p: Var = 'p -> CTNode
+    val c: Var = 'c -> CTNode
+    val x: Var = 'x -> CTRelationship("IN")
+    val fields = Seq(
+        OpaqueField(c),
+        ProjectedExpr(HasLabel(c, Label("Customer"))(CTBoolean)),
+        ProjectedField('cName -> CTString.nullable, Property(c, PropertyKey("name"))(CTString.nullable)),
+        OpaqueField(p),
+        ProjectedExpr(HasLabel(p, Label("Person"))(CTBoolean)),
+        ProjectedField('pName -> CTString.nullable, Property(p, PropertyKey("name"))(CTString)),
+        ProjectedExpr(Property(p, PropertyKey("region"))(CTString)),
+        ProjectedExpr(StartNode(x)(CTInteger)),
+        ProjectedExpr(EndNode(x)(CTInteger)),
+        OpaqueField(x),
+        ProjectedExpr(OfType(x)(CTString))
+    )
+    val (header, _) = RecordHeader.empty.update(addContents(fields))
+
+    val df = session.createDataFrame(List(
+      Row(2001L, true, "Alice", 4L, true, "Alice", "US", 2001L, 4L, 4982162063360L, "IS"),
+      Row(2002L, true, "Bob", 5L, true, "Bob", "US", 2002L, 5L, 4939212390400L, "IS"),
+      Row(2008L, true, "Trudy", 11L, true, "Trudy", "EU", 2008L, 11L, 4947802324992L, "IS"),
+      Row(2005L, true, "Carl", 8L, true, "Carl", "US", 2005L, 8L, 4698694221824L, "IS"),
+      Row(2010L, true, "Oscar", 13L, true, "Oscar", "EU", 2010L, 13L, 5162550689792L, "IS"),
+      Row(2011L, true, "Victor", 14L, true, "Victor", "EU", 2011L, 14L, 5076651343872L, "IS"),
+      Row(2012L, true, "Peggy", 15L, true, "Peggy", "EU", 2012L, 15L, 5677946765312L, "IS"),
+      Row(2006L, true, "Dave", 9L, true, "Dave", "US", 2006L, 9L, 5506148073472L, "IS"),
+      Row(2009L, true, "Trent", 12L, true, "Trent", "EU", 2009L, 12L, 4466765987840L, "IS"),
+      Row(2007L, true, "Mallory", 10L, true, "Mallory", "EU", 2007L, 10L, 5849745457152L, "IS"),
+      Row(2003L, true, "Eve", 6L, true, "Eve", "US", 2003L, 6L, 5480378269696L, "IS"),
+      Row(2004L, true, "Carol", 7L, true, "Carol", "US", 2004L, 7L, 5626407157760L, "IS")
+    ).asJava, CAPSRecordHeader.asSparkStructType(header))
+
+    val schema = Schema.empty
+      .withNodePropertyKeys("Person")("name" -> CTString, "region" -> CTString)
+      .withNodePropertyKeys("Customer")("name" -> CTString.nullable)
+      .withRelationshipType("IN")
+
+    val patternGraph = CAPSGraph.create(CAPSRecords.create(header, df), schema)
+
+//    patternGraph.nodes("n").toCypherMaps.collect().toSet should equal(Set(
+//      CypherMap("n" ->  0L),
+//      CypherMap("n" ->  1L),
+//      CypherMap("n" -> 10L)
+//    ))
   }
 
   test("Returns only distinct results") {

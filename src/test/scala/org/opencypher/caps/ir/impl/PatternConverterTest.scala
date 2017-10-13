@@ -15,10 +15,12 @@
  */
 package org.opencypher.caps.ir.impl
 
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition.NONE
 import org.neo4j.cypher.internal.frontend.v3_3.parser.{Expressions, Patterns}
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SyntaxException, ast}
+import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.caps.ir.api.pattern._
-import org.opencypher.caps.ir.api.{Label, RelType}
+import org.opencypher.caps.ir.api.{IRField, Label, RelType}
 import org.parboiled.scala.{EOI, Parser, Rule1}
 
 import scala.language.implicitConversions
@@ -108,9 +110,37 @@ class PatternConverterTest extends IrTestSuite {
     )
   }
 
+  test("reads type from knownTypes") {
+    val pattern = parse("(x)-[r]->(y:Person)-[newR:IN]->(z)")
+
+    val knownTypes: Map[ast.Expression, CypherType] = Map(
+      ast.Variable("x")(NONE) -> CTNode("Person"),
+      ast.Variable("z")(NONE) -> CTNode("Customer"),
+      ast.Variable("r")(NONE) -> CTRelationship("FOO")
+    )
+
+    val x: IRField = 'x -> CTNode("Person")
+    val y: IRField = 'y -> CTNode("Person")
+    val z: IRField = 'z -> CTNode("Customer")
+    val r: IRField = 'r -> CTRelationship("FOO")
+    val newR: IRField = 'newR -> CTRelationship("IN")
+
+    convert(pattern, knownTypes) should equal(
+      Pattern.empty
+        .withEntity(x, EveryNode)
+        .withEntity(y, EveryNode(AllOf(Label("Person"))))
+        .withEntity(z, EveryNode)
+        .withEntity(r, EveryRelationship)
+        .withEntity(newR, EveryRelationship(AnyOf(RelType("IN"))))
+        .withConnection(r, DirectedRelationship(x, y))
+        .withConnection(newR, DirectedRelationship(y, z))
+    )
+  }
+
   val converter = new PatternConverter(Map.empty)
 
-  def convert(p: ast.Pattern) = converter.convert(p)
+  def convert(p: ast.Pattern, knownTypes: Map[ast.Expression, CypherType] = Map.empty) =
+    converter.convert(p, knownTypes)
 
   def parse(exprText: String): ast.Pattern = PatternParser.parse(exprText, None)
 

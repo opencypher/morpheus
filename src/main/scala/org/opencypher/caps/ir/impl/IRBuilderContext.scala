@@ -36,7 +36,7 @@ final case class IRBuilderContext(
   blocks: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
   semanticState: SemanticState,
   graphs: Map[String, URI],
-  currentGraph: IRGraph,
+  graphList: List[IRGraph],
   resolver: URI => CAPSGraphSource,
   // TODO: Remove this
   knownTypes: Map[ast.Expression, CypherType] = Map.empty)
@@ -57,7 +57,7 @@ final case class IRBuilderContext(
   }
 
   def convertPattern(p: ast.Pattern): Pattern[Expr] =
-    patternConverter.convert(p)
+    patternConverter.convert(p, knownTypes)
 
   def convertExpression(e: ast.Expression): Expr = {
     val inferred = infer(e)
@@ -90,16 +90,20 @@ final case class IRBuilderContext(
     copy(graphs = graphs.updated(name, uri))
 
   def withGraph(graph: IRGraph): IRBuilderContext =
-    copy(currentGraph = graph)
+    copy(graphList = graph :: graphList)
+
+  def currentGraph: IRGraph = graphList.head
 }
 
 object IRBuilderContext {
 
-  def initial(query: String,
-              parameters: Map[String, CypherValue],
-              semState: SemanticState,
-              ambientGraph: IRExternalGraph,
-              resolver: URI => CAPSGraphSource): IRBuilderContext = {
+  def initial(
+    query: String,
+    parameters: Map[String, CypherValue],
+    semState: SemanticState,
+    ambientGraph: IRExternalGraph,
+    resolver: URI => CAPSGraphSource
+  ): IRBuilderContext = {
     val registry = BlockRegistry.empty[Expr]
     val block = SourceBlock[Expr](ambientGraph)
     val (_, reg) = registry.register(block)
@@ -111,7 +115,7 @@ object IRBuilderContext {
       reg,
       semState,
       Map(ambientGraph.name -> ambientGraph.uri),
-      ambientGraph,
+      List(ambientGraph),
       resolver)
   }
 }

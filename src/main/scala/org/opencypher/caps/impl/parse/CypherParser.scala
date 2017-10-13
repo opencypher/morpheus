@@ -28,21 +28,13 @@ object CypherParser extends CypherParser {
     override def errorHandler: (Seq[SemanticErrorDef]) => Unit =
       (errors) => {
         val filtered = errors.filter {
-          // TODO: Fix in frontend https://github.com/neo4j/neo4j/pull/10056
-          case s: SemanticError if s.msg.matches("No context graphs available") => false
+          // TODO: Fix by updating frontend dependency
+          // Related to using bound variables in GRAPH OF
           case s: SemanticError if s.msg.matches("Variable .* already declared") => false
           case _ => true
         }
         Raise.semanticErrors(filtered)
       }
-  }
-
-  // TODO: Fix the bug that makes these variables appear
-  // It's in the Namespacer rewriter in the frontend
-  def fixFrontendNamespaceBug(name: String): String = {
-    if (name.startsWith(" ") && name.contains("@")) {
-      name.substring(2, name.indexOf("@"))
-    } else name
   }
 }
 

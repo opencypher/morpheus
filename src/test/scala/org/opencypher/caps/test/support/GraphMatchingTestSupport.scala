@@ -124,7 +124,10 @@ trait GraphMatchingTestSupport {
         }
 
         val schemaWithLabelCombinations = vertexLabelCombinations.foldLeft(schemaWithLabels) { (acc, labels) =>
-          acc.withLabelCombination(labels: _*)
+          if (labels.size > 1)
+            acc.withLabelCombination(labels: _*)
+          else
+            acc
         }
 
         typesAndProps.foldLeft(schemaWithLabelCombinations) {

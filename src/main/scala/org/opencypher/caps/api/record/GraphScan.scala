@@ -206,7 +206,9 @@ object GraphScanBuilder {
 
       val combinations = entity.labelsFromSlotOrImplied.keys.toSeq
 
-      val schemaWithOptionalLabels = schemaWithImpliedLabels.withLabelCombination(combinations: _*)
+      val schemaWithOptionalLabels = if (combinations.size > 1)
+        schemaWithImpliedLabels.withLabelCombination(combinations: _*)
+      else schemaWithImpliedLabels
 
       val propertyKeys = getPropertyKeys(entity, header)
       impliedLabels.foldLeft(schemaWithOptionalLabels)((schema, label) =>
