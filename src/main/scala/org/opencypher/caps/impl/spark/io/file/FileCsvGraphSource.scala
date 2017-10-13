@@ -41,9 +41,9 @@ case class FileCsvGraphSource(override val canonicalURI: URI)(implicit capsSessi
   override def schema: Option[Schema] = None
 
   override def create: CAPSGraph =
-    persist(CAPSGraph.empty, CreateOrFail)
+    store(CAPSGraph.empty, CreateOrFail)
 
-  override def persist(graph: CAPSGraph, mode: PersistMode): CAPSGraph =
+  override def store(graph: CAPSGraph, mode: PersistMode): CAPSGraph =
     ???
 
   override def delete(): Unit =

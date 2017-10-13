@@ -28,7 +28,7 @@ class CAPSSessionFileTest extends BaseTestSuite
 
   private val testGraphPath = getClass.getResource("/csv/sn").getPath
 
-  private def fileURI: URI = new URI(s"file://$testGraphPath")
+  private def fileURI: URI = new URI(s"file+csv://$testGraphPath")
 
   println(fileURI)
 
