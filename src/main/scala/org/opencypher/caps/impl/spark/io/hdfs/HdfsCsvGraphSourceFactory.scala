@@ -22,7 +22,7 @@ import org.opencypher.caps.api.spark.io._
 import org.opencypher.caps.api.spark.CAPSSession
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceFactoryImpl
 
-case object HdfsCsvGraphSourceFactory extends CAPSGraphSourceFactoryCompanion("hdfs+csv", "hdfs")
+case object HdfsCsvGraphSourceFactory extends CAPSGraphSourceFactoryCompanion("hdfs+csv")
 
 case class HdfsCsvGraphSourceFactory(hadoopConfiguration: Configuration)
   extends CAPSGraphSourceFactoryImpl[HdfsCsvGraphSource](HdfsCsvGraphSourceFactory) {
