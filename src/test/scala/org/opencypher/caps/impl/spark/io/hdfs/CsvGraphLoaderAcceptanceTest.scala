@@ -31,7 +31,7 @@ class CsvGraphLoaderAcceptanceTest extends BaseTestSuite
   protected override val dfsTestGraphPath = "/csv/sn"
 
   test("load csv graph") {
-    val loader = new CsvGraphLoader(hdfsURI.toString, session.sparkContext.hadoopConfiguration)
+    val loader = CsvGraphLoader(hdfsURI.toString, session.sparkContext.hadoopConfiguration)
 
     val graph: CAPSGraph = loader.load
     graph.nodes("n").toDF().collect().toSet should equal(dfsTestGraphNodes)
@@ -41,7 +41,7 @@ class CsvGraphLoaderAcceptanceTest extends BaseTestSuite
 
   test("load csv graph from local file") {
     val fileURI: URI = new URI(s"file://${getClass.getResource("/csv/sn").getPath}")
-    val loader = new CsvGraphLoader(fileURI.toString, session.sparkContext.hadoopConfiguration)
+    val loader = CsvGraphLoader(fileURI.toString, session.sparkContext.hadoopConfiguration)
 
     val graph: CAPSGraph = loader.load
     graph.nodes("n").toDF().collect().toSet should equal(dfsTestGraphNodes)

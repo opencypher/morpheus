@@ -34,7 +34,7 @@ case class FileCsvGraphSource(override val canonicalURI: URI)(implicit capsSessi
   override def graph: CAPSGraph = {
     val hadoopConf = new Configuration()
     hadoopConf.set("fs.default.name", "localhost")
-    new CsvGraphLoader(canonicalURI.getPath, capsSession.sparkSession.sparkContext.hadoopConfiguration).load
+    CsvGraphLoader(canonicalURI.getPath, capsSession.sparkSession.sparkContext.hadoopConfiguration).load
   }
 
   // TODO: Make better/cache?

@@ -39,8 +39,7 @@ case class HdfsCsvGraphSource(override val canonicalURI: URI, hadoopConfig: Conf
     supportedSchemes.contains(uri.getScheme) && hadoopURI.getHost == uri.getHost && hadoopURI.getPort == uri.getPort
   }
 
-  override def graph: CAPSGraph =
-    new CsvGraphLoader(path, hadoopConfig).load
+  override def graph: CAPSGraph = CsvGraphLoader(path, hadoopConfig).load
 
   // TODO: Make better/cache?
   override def schema: Option[Schema] = None

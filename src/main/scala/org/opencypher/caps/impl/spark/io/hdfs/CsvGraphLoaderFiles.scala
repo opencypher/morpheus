@@ -24,6 +24,42 @@ import org.apache.spark.sql.SparkSession
 import org.opencypher.caps.api.record.{NodeScan, RelationshipScan}
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
 
+trait CsvGraphLoaderFiles {
+  def location: String
+  def listDataFiles(directory: String): Array[Path]
+  def readSchemaFile(path: Path): String
+}
+
+object CsvGraphLoader {
+
+  def apply(location: String, hadoopConfig: Configuration)(implicit caps: CAPSSession): CsvGraphLoader = {
+    val fs = FileSystem.get(new URI(location), hadoopConfig)
+    new CsvGraphLoader(new HadoopCsvGraphLoaderFiles(location)(fs))
+  }
+}
+
+final class HadoopCsvGraphLoaderFiles(override val location: String)(fs: FileSystem)
+  extends CsvGraphLoaderFiles {
+
+  override def listDataFiles(directory: String): Array[Path] = {
+    fs.listStatus(new Path(s"$location${File.separator}$directory"))
+      .filter(p => p.getPath.toString.endsWith(".csv") | p.getPath.toString.endsWith(".CSV"))
+      .map(_.getPath)
+  }
+
+  override def readSchemaFile(path: Path): String = {
+    val schemaPaths = List(path.suffix(".schema"), path.suffix(".SCHEMA"))
+    val optSchemaPath = schemaPaths.find(fs.exists)
+    val schemaPath = optSchemaPath.getOrElse(throw new IllegalArgumentException(s"Could not find schema file at $path"))
+    val stream = new BufferedReader(new InputStreamReader(fs.open(schemaPath)))
+    def readLines = Stream.cons(stream.readLine(), Stream.continually(stream.readLine))
+    readLines.takeWhile(_ != null).mkString
+  }
+}
+
+//final class LocalCsvGraphLoaderFiles extends CsvGraphLoaderFiles {
+//}
+
 /**
   * Loads a graph stored in indexed CSV format from HDFS or the local file system
   * The CSV files must be stored following this schema:
@@ -44,15 +80,11 @@ import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
   * @param location Location of the top level folder containing the node and relationship files
   * @param capsSession CAPS Session
   */
-class CsvGraphLoader(location: String, hadoopConfig: Configuration)(implicit capsSession: CAPSSession) {
+class CsvGraphLoader(files: CsvGraphLoaderFiles)(implicit capsSession: CAPSSession) {
 
   private val sparkSession: SparkSession = capsSession.sparkSession
-  private val fs: FileSystem = {
-    if (location.toLowerCase.startsWith("file"))
-      FileSystem.getLocal(hadoopConfig)
-    else
-      FileSystem.get(new URI(location), hadoopConfig)
-  }
+//  private val fs: FileSystem = {
+//  }
 
   def load: CAPSGraph = {
     val nodeScans = loadNodes
@@ -61,11 +93,10 @@ class CsvGraphLoader(location: String, hadoopConfig: Configuration)(implicit cap
   }
 
   private def loadNodes: Array[NodeScan] = {
-    val nodeLocation = s"$location${File.separator}nodes"
-    val csvFiles = listCsvFiles(nodeLocation)
+    val csvFiles = listCsvFiles("nodes")
 
     csvFiles.map(e => {
-      val schema = readSchema(e)(CsvNodeSchema(_))
+      val schema = parseSchema(e)(CsvNodeSchema(_))
 
       val records = CAPSRecords.create(
         sparkSession.read
@@ -87,11 +118,10 @@ class CsvGraphLoader(location: String, hadoopConfig: Configuration)(implicit cap
   }
 
   private def loadRels: Array[RelationshipScan] = {
-    val relLocation = s"$location${File.separator}relationships"
-    val csvFiles = listCsvFiles(relLocation)
+    val csvFiles = listCsvFiles("relationships")
 
     csvFiles.map(e => {
-      val schema = readSchema(e)(CsvRelSchema(_))
+      val schema = parseSchema(e)(CsvRelSchema(_))
 
       val records = CAPSRecords.create(
         sparkSession.read
@@ -114,16 +144,11 @@ class CsvGraphLoader(location: String, hadoopConfig: Configuration)(implicit cap
     })
   }
 
-  private def listCsvFiles(directory: String): Array[Path] = {
-    fs.listStatus(new Path(directory))
-      .filterNot(_.getPath.toString.endsWith(".SCHEMA"))
-      .map(_.getPath)
-  }
+  private def listCsvFiles(directory: String): Array[Path] =
+    files.listDataFiles(directory)
 
-  private def readSchema[T <: CsvSchema](path: Path)(parser: String => T): T = {
-    val schemaPath = path.suffix(".SCHEMA")
-    val stream = new BufferedReader(new InputStreamReader(fs.open(schemaPath)))
-    def readLines = Stream.cons(stream.readLine(), Stream.continually(stream.readLine))
-    parser(readLines.takeWhile(_ != null).mkString)
+  private def parseSchema[T <: CsvSchema](path: Path)(parser: String => T): T = {
+    val text = files.readSchemaFile(path)
+    parser(text)
   }
 }

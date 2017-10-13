@@ -38,8 +38,10 @@ object CSVDemo {
 
   implicit val caps = CAPSSession.create(session)
 
-  lazy val graph: CAPSGraph = new CsvGraphLoader(getClass.getResource("/demo/ldbc_1").getFile,
-    caps.sparkSession.sparkContext.hadoopConfiguration).load
+  lazy val graph: CAPSGraph = CsvGraphLoader(
+    getClass.getResource("/demo/ldbc_1").getFile,
+    caps.sparkSession.sparkContext.hadoopConfiguration
+  ).load
 
   session.sparkContext.setLogLevel(Logging.get())
 
