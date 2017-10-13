@@ -91,13 +91,13 @@ trait GraphSource {
   def schema: Option[Schema] = None
 
   /**
-    * Persists the argument graph to this source.
+    * Stores the argument graph to this source.
     *
     * @param graph the graph to persist.
     * @param mode  the persist mode to use.
     * @return the persisted graph.
     */
-  def persist(graph: Graph, mode: PersistMode): Graph
+  def store(graph: Graph, mode: PersistMode): Graph
 
   /**
     * Delete the graph stored at this graph source.

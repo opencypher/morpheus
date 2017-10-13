@@ -22,11 +22,10 @@ import cats.instances.list._
 import cats.syntax.flatMap._
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection._
 import org.neo4j.cypher.internal.frontend.v3_3.ast
-import org.neo4j.cypher.internal.frontend.v3_3.ast.LabelName
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, LabelName}
 import org.opencypher.caps.api.expr.Expr
-import org.opencypher.caps.api.types.{CTList, CTNode, CTRelationship}
+import org.opencypher.caps.api.types.{CTList, CTNode, CTRelationship, CypherType}
 import org.opencypher.caps.api.value.CypherValue
-import org.opencypher.caps.impl.parse.CypherParser
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.pattern._
@@ -37,30 +36,30 @@ final class PatternConverter(val parameters: Map[String, CypherValue]) extends A
 
   type Result[A] = State[Pattern[Expr], A]
 
-  def convert(p: ast.Pattern, pattern: Pattern[Expr] = Pattern.empty): Pattern[Expr] =
-    convertPattern(p).runS(pattern).value
+  def convert(p: ast.Pattern, knownTypes: Map[Expression, CypherType], pattern: Pattern[Expr] = Pattern.empty): Pattern[Expr] =
+    convertPattern(p, knownTypes).runS(pattern).value
 
-  private def convertPattern(p: ast.Pattern): Result[Unit] =
-    Foldable[List].sequence_[Result, Unit](p.patternParts.toList.map(convertPart))
+  private def convertPattern(p: ast.Pattern, knownTypes: Map[Expression, CypherType]): Result[Unit] =
+    Foldable[List].sequence_[Result, Unit](p.patternParts.toList.map(convertPart(knownTypes)))
 
   @tailrec
-  private def convertPart(p: ast.PatternPart): Result[Unit] = p match {
-    case _: ast.AnonymousPatternPart => stomp(convertElement(p.element))
-    case ast.NamedPatternPart(_, part) => convertPart(part)
+  private def convertPart(knownTypes: Map[Expression, CypherType])(p: ast.PatternPart): Result[Unit] = p match {
+    case _: ast.AnonymousPatternPart => stomp(convertElement(p.element, knownTypes))
+    case ast.NamedPatternPart(_, part) => convertPart(knownTypes)(part)
   }
 
-  private def convertElement(p: ast.PatternElement): Result[IRField] = p match {
+  private def convertElement(p: ast.PatternElement, knownTypes: Map[Expression, CypherType]): Result[IRField] = p match {
     case ast.NodePattern(Some(v), labels: Seq[LabelName], None) =>
       for {
-        entity <- pure(IRField(CypherParser.fixFrontendNamespaceBug(v.name))(CTNode))
+        entity <- pure(IRField(v.name)(knownTypes.getOrElse(v, CTNode(labels.map(_.name).toSet))))
         _ <- modify[Pattern[Expr]](_.withEntity(entity, EveryNode(AllGiven(labels.map(l => Label(l.name)).toSet))))
       } yield entity
 
     case ast.RelationshipChain(left, ast.RelationshipPattern(Some(eVar), types, None, None, dir, _), right) =>
       for {
-        source <- convertElement(left)
-        target <- convertElement(right)
-        rel <- pure(IRField(CypherParser.fixFrontendNamespaceBug(eVar.name))(CTRelationship(types.map(_.name).toSet)))
+        source <- convertElement(left, knownTypes)
+        target <- convertElement(right, knownTypes)
+        rel <- pure(IRField(eVar.name)(knownTypes.getOrElse(eVar, CTRelationship(types.map(_.name).toSet))))
         _ <- modify[Pattern[Expr]] { given =>
           val relTypes =
             if (types.isEmpty) AnyGiven[RelType]()
@@ -88,8 +87,8 @@ final class PatternConverter(val parameters: Map[String, CypherValue]) extends A
 
     case ast.RelationshipChain(left, ast.RelationshipPattern(Some(eVar), types, Some(Some(range)), None, dir, _), right) =>
       for {
-        source <- convertElement(left)
-        target <- convertElement(right)
+        source <- convertElement(left, knownTypes)
+        target <- convertElement(right, knownTypes)
         rel <- pure(IRField(eVar.name)(CTList(CTRelationship(types.map(_.name).toSet))))
         _ <- modify[Pattern[Expr]] { given =>
           val relTypes =

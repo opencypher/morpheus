@@ -31,7 +31,7 @@ object ExpressionConverter {
 
   def convert(e: ast.Expression)(implicit typings: (Ref[ast.Expression]) => CypherType): Expr = e match {
     case ast.Variable(name) =>
-      Var(CypherParser.fixFrontendNamespaceBug(name))(typings(e))
+      Var(name)(typings(e))
     case ast.Parameter(name, _) =>
       Param(name)(typings(e))
 
