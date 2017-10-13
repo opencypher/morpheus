@@ -56,7 +56,7 @@ class LogicalPlannerTest extends IrTestSuite {
 
     val block = matchBlock(pattern)
 
-    val scan1 = NodeScan(nodeA, EveryNode, leafPlan)(emptySqm.withField(nodeA))
+    val scan1 = NodeScan(nodeA, EveryNode, SetSourceGraph(leafPlan.sourceGraph, leafPlan)(emptySqm.withField(nodeA)))(emptySqm.withField(nodeA))
     val scan2 = NodeScan(nodeB, EveryNode, leafPlan)(emptySqm.withField(nodeB))
     plan(irWithLeaf(block)) should equalWithoutResult(
       ExpandSource(nodeA, relR, EveryRelationship, nodeB, scan1, scan2)(emptySqm.withFields(nodeA, nodeB, relR))
@@ -87,7 +87,9 @@ class LogicalPlannerTest extends IrTestSuite {
                 Filter(HasLabel(Var("a")(CTNode), Label("Administrator"))(CTBoolean),
                   ExpandSource(Var("a")(CTNode), Var("r")(CTRelationship), EveryRelationship, Var("g")(CTNode),
                     NodeScan(Var("a")(CTNode), EveryNode,
-                      Start(LogicalExternalGraph(testGraph.name, testGraph.uri, Schema.empty), Set.empty)(emptySqm)
+                      SetSourceGraph(LogicalExternalGraph(testGraph.name, testGraph.uri, Schema.empty),
+                        Start(LogicalExternalGraph(testGraph.name, testGraph.uri, Schema.empty), Set.empty)(emptySqm)
+                      )(emptySqm)
                     )(emptySqm),
                     NodeScan(Var("g")(CTNode), EveryNode,
                       Start(LogicalExternalGraph(testGraph.name, testGraph.uri, Schema.empty), Set.empty)(emptySqm)
@@ -118,7 +120,9 @@ class LogicalPlannerTest extends IrTestSuite {
                 Filter(HasLabel(Var("a")(CTNode), Label("Administrator"))(CTBoolean),
                   ExpandSource(Var("a")(CTNode), Var("r")(CTRelationship), EveryRelationship, Var("g")(CTNode),
                     NodeScan(Var("a")(CTNode), EveryNode,
-                      Start(LogicalExternalGraph(testGraph.name, testGraph.uri, schema), Set.empty)(emptySqm)
+                      SetSourceGraph(LogicalExternalGraph(testGraph.name, testGraph.uri, schema),
+                        Start(LogicalExternalGraph(testGraph.name, testGraph.uri, schema), Set.empty)(emptySqm)
+                      )(emptySqm)
                     )(emptySqm),
                     NodeScan(Var("g")(CTNode), EveryNode,
                       Start(LogicalExternalGraph(testGraph.name, testGraph.uri, schema), Set.empty)(emptySqm)

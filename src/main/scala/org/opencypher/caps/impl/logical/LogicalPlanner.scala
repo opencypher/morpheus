@@ -280,7 +280,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     producer.planStart(logicalGraph, context.inputRecordFields)
   }
 
-  private def setSource(graph: IRGraph, prev: LogicalOperator)(implicit context: LogicalPlannerContext): SetSourceGraph = {
+  private def planSetSourceGraph(graph: IRGraph, prev: LogicalOperator)(implicit context: LogicalPlannerContext): SetSourceGraph = {
     val logicalGraph = resolveGraph(graph, prev.sourceGraph.schema, prev.fields)
 
     producer.planSetSourceGraph(logicalGraph, prev)
@@ -335,10 +335,10 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
       // if we have already planned a node: cartesian product
       if (plan.solved.fields.exists(_.cypherType.subTypeOf(CTNode).isTrue)) {
-        producer.planCartesianProduct(plan, nodePlan(setSource(graph, planStart(graph)), field, node))
+        producer.planCartesianProduct(plan, nodePlan(planSetSourceGraph(graph, planStart(graph)), field, node))
       } else { // first node scan
         // we set the source graph because we don't know what the source graph was coming in
-        nodePlan(setSource(graph, plan), field, node)
+        nodePlan(planSetSourceGraph(graph, plan), field, node)
       }
     } else if (pattern.topology.nonEmpty) { // we need expansions to tie node plans together
 
@@ -348,7 +348,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       val (firstPlan, remaining) = if (solved.isEmpty) {
         val (field, node) = nodes.head
         // TODO: Will need branch in plan for cartesian products
-        nodePlan(plan, field, node) -> nodes.tail
+        nodePlan(planSetSourceGraph(graph, plan), field, node) -> nodes.tail
       } else {
         plan -> unsolved
       }

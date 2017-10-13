@@ -33,11 +33,6 @@ case class HdfsCsvGraphSourceFactory(hadoopConfiguration: Configuration)
       .setScheme("hdfs")
       .build()
 
-//    val host = uri.getHost
-//    val port = if (uri.getPort == -1) "" else s":${uri.getPort}"
-//    val canonicalURIString = s"hdfs+csv://$host$port${uri.getPath}"
-//    val canonicalURI = URI.create(canonicalURIString)
-
     val hadoopConf = new Configuration(hadoopConfiguration)
     hadoopConf.set("fs.default.name", internalURI.toString)
     HdfsCsvGraphSource(uri, hadoopConf, uri.getPath)
