@@ -18,6 +18,7 @@ package org.opencypher.caps.impl.spark.io.hdfs
 import java.net.URI
 
 import org.apache.hadoop.conf.Configuration
+import org.apache.http.client.utils.URIBuilder
 import org.opencypher.caps.api.spark.io._
 import org.opencypher.caps.api.spark.CAPSSession
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceFactoryImpl
@@ -28,13 +29,17 @@ case class HdfsCsvGraphSourceFactory(hadoopConfiguration: Configuration)
   extends CAPSGraphSourceFactoryImpl[HdfsCsvGraphSource](HdfsCsvGraphSourceFactory) {
 
   override protected def sourceForURIWithSupportedScheme(uri: URI)(implicit capsSession: CAPSSession): HdfsCsvGraphSource = {
-    val host = uri.getHost
-    val port = if (uri.getPort == -1) "" else s":${uri.getPort}"
-    val canonicalURIString = s"hdfs://$host$port${uri.getPath}"
-    val canonicalURI = URI.create(canonicalURIString)
+    val internalURI: URI = new URIBuilder(uri)
+      .setScheme("hdfs")
+      .build()
+
+//    val host = uri.getHost
+//    val port = if (uri.getPort == -1) "" else s":${uri.getPort}"
+//    val canonicalURIString = s"hdfs+csv://$host$port${uri.getPath}"
+//    val canonicalURI = URI.create(canonicalURIString)
 
     val hadoopConf = new Configuration(hadoopConfiguration)
-    hadoopConf.set("fs.default.name", canonicalURIString)
-    HdfsCsvGraphSource(canonicalURI, hadoopConf, uri.getPath)
+    hadoopConf.set("fs.default.name", internalURI.toString)
+    HdfsCsvGraphSource(uri, hadoopConf, uri.getPath)
   }
 }
