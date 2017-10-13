@@ -251,9 +251,12 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
             case ast.GraphOfAs(astPattern, _, _) =>
               for {
                 pattern <- convertPattern(astPattern)
-              } yield IRPatternGraph(graphName,
-                context.currentGraph.schema.forEntities(pattern.entities.values),
-                pattern)
+              } yield {
+                val entities = pattern.entities.keySet
+                val schemaUnion = context.graphList.map(_.schema).reduce(_ ++ _)
+                val patternGraphSchema = schemaUnion.forEntities(entities)
+                IRPatternGraph(graphName, patternGraphSchema, pattern)
+              }
 
             case ast.GraphAtAs(url, _, _) =>
               val graphURI = url.url match {

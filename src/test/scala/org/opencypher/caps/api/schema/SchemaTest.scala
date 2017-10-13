@@ -17,9 +17,27 @@ package org.opencypher.caps.api.schema
 
 import org.opencypher.caps.api.expr.Var
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.ir.api.IRField
+import org.opencypher.caps.ir.api.pattern.EveryNode
 import org.opencypher.caps.test.BaseTestSuite
 
 class SchemaTest extends BaseTestSuite {
+
+  test("for entities") {
+    val schema = Schema.empty
+      .withNodePropertyKeys("Person")("name" -> CTString)
+      .withNodePropertyKeys("City")("name" -> CTString, "region" -> CTBoolean)
+      .withRelationshipPropertyKeys("KNOWS")("since" -> CTFloat.nullable)
+      .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
+
+    schema.forEntities(Set(
+      IRField("n")(CTNode("Person")),
+      IRField("r")(CTRelationship("BAR"))
+    )) should equal(Schema.empty
+      .withNodePropertyKeys("Person")("name" -> CTString)
+      .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
+    )
+  }
 
   test("should provide all labels") {
     Schema.empty.withNodePropertyKeys("Person")().labels should equal(Set("Person"))

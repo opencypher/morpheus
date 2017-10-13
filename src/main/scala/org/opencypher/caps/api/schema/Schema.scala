@@ -249,17 +249,19 @@ final case class Schema(
       newLabelCombinations)
   }
 
-  def forEntities(entities: Iterable[EveryEntity]): Schema = {
+  def forEntities(entities: Set[IRField]): Schema = {
     entities
       .map(entitySchema)
       .foldLeft(Schema.empty)(_ ++ _)
   }
 
-  private def entitySchema(entity: EveryEntity): Schema = entity match {
-    case EveryNode(AllGiven(_labels)) =>
-      forNode(CTNode(_labels.map(_.name)))
-    case EveryRelationship(AnyGiven(relTypes)) =>
-      forRelationship(CTRelationship(relTypes.map(_.name)))
+  private def entitySchema(entity: IRField): Schema = entity.cypherType match {
+    case n: CTNode =>
+      forNode(n)
+    case r: CTRelationship =>
+      forRelationship(r)
+    case x =>
+      Raise.invalidArgument("an entity type", x.toString)
   }
 
   /**

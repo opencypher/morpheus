@@ -28,6 +28,7 @@ case object Pattern {
   def node[E](entry: (IRField, EveryEntity)): Pattern[E] = Pattern[E](entities = Map(entry), topology = Map.empty)
 }
 
+// TODO: Can we remove EveryEntity here?
 final case class Pattern[E](entities: Map[IRField, EveryEntity], topology: Map[IRField, Connection]) extends Binds[E] {
 
   lazy val nodes: Map[IRField, EveryNode] = entities.collect { case (k, v: EveryNode) => k -> v }
