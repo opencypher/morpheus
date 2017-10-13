@@ -17,6 +17,8 @@ package org.opencypher.caps.impl.spark.io.hdfs
 
 import java.io.{BufferedReader, File, InputStreamReader}
 import java.net.URI
+import java.nio.file.{Files, Paths}
+import java.util.stream.Collectors
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
@@ -24,31 +26,26 @@ import org.apache.spark.sql.SparkSession
 import org.opencypher.caps.api.record.{NodeScan, RelationshipScan}
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
 
-trait CsvGraphLoaderFiles {
+trait CsvGraphLoaderFileHandler {
   def location: String
-  def listDataFiles(directory: String): Array[Path]
-  def readSchemaFile(path: Path): String
+  def listDataFiles(directory: String): Array[URI]
+  def readSchemaFile(path: URI): String
 }
 
-object CsvGraphLoader {
+final class HadoopFileHandler(override val location: String, private val hadoopConfig: Configuration)
+  extends CsvGraphLoaderFileHandler {
 
-  def apply(location: String, hadoopConfig: Configuration)(implicit caps: CAPSSession): CsvGraphLoader = {
-    val fs = FileSystem.get(new URI(location), hadoopConfig)
-    new CsvGraphLoader(new HadoopCsvGraphLoaderFiles(location)(fs))
-  }
-}
+  private val fs: FileSystem = FileSystem.get(new URI(location), hadoopConfig)
 
-final class HadoopCsvGraphLoaderFiles(override val location: String)(fs: FileSystem)
-  extends CsvGraphLoaderFiles {
-
-  override def listDataFiles(directory: String): Array[Path] = {
+  override def listDataFiles(directory: String): Array[URI] = {
     fs.listStatus(new Path(s"$location${File.separator}$directory"))
       .filter(p => p.getPath.toString.endsWith(".csv") | p.getPath.toString.endsWith(".CSV"))
-      .map(_.getPath)
+      .map(_.getPath.toUri)
   }
 
-  override def readSchemaFile(path: Path): String = {
-    val schemaPaths = List(path.suffix(".schema"), path.suffix(".SCHEMA"))
+  override def readSchemaFile(path: URI): String = {
+    val hdfsPath = new Path(path)
+    val schemaPaths = Seq(hdfsPath.suffix(".schema"), hdfsPath.suffix(".SCHEMA"))
     val optSchemaPath = schemaPaths.find(fs.exists)
     val schemaPath = optSchemaPath.getOrElse(throw new IllegalArgumentException(s"Could not find schema file at $path"))
     val stream = new BufferedReader(new InputStreamReader(fs.open(schemaPath)))
@@ -57,8 +54,27 @@ final class HadoopCsvGraphLoaderFiles(override val location: String)(fs: FileSys
   }
 }
 
-//final class LocalCsvGraphLoaderFiles extends CsvGraphLoaderFiles {
-//}
+final class LocalFileHandler(override val location: String) extends CsvGraphLoaderFileHandler {
+  import scala.collection.JavaConverters._
+
+  override def listDataFiles(directory: String): Array[URI] = {
+    Files.list(Paths.get(s"$location${File.separator}$directory"))
+      .collect(Collectors.toList()).asScala
+      .filter(p => p.toString.endsWith(".csv") | p.toString.endsWith(".CSV")).toArray
+      .map(_.toUri)
+  }
+
+  override def readSchemaFile(csvPath: URI): String = {
+    val schemaPaths = Seq(
+      new URI(s"${csvPath.toString}.schema"),
+      new URI(s"${csvPath.toString}.SCHEMA")
+    )
+
+    val optSchemaPath = schemaPaths.find(p => new File(p).exists())
+    val schemaPath = optSchemaPath.getOrElse(throw new IllegalArgumentException(s"Could not find schema file at $csvPath"))
+    new String(Files.readAllBytes(Paths.get(schemaPath)))
+  }
+}
 
 /**
   * Loads a graph stored in indexed CSV format from HDFS or the local file system
@@ -76,15 +92,12 @@ final class HadoopCsvGraphLoaderFiles(override val location: String)(fs: FileSys
   *   - for every relationship csv file create a schema file called FILE_NAME.csv.SCHEMA
   *   - for information about the structure of the relationship schema file see [[CsvRelSchema]]
 
-  *
-  * @param location Location of the top level folder containing the node and relationship files
+  * @param fileHandler CsvGraphLoaderFileHandler file handler for hdfs or local file system
   * @param capsSession CAPS Session
   */
-class CsvGraphLoader(files: CsvGraphLoaderFiles)(implicit capsSession: CAPSSession) {
+class CsvGraphLoader(fileHandler: CsvGraphLoaderFileHandler)(implicit capsSession: CAPSSession) {
 
   private val sparkSession: SparkSession = capsSession.sparkSession
-//  private val fs: FileSystem = {
-//  }
 
   def load: CAPSGraph = {
     val nodeScans = loadNodes
@@ -102,7 +115,7 @@ class CsvGraphLoader(files: CsvGraphLoaderFiles)(implicit capsSession: CAPSSessi
         sparkSession.read
           .option("timestampFormat", "yyyy-MM-dd'T'HH:mm:ss.SSS")
           .schema(schema.toStructType)
-          .csv(e.toUri.toString)
+          .csv(e.toString)
       )
 
       NodeScan.on("n" -> schema.idField.name)(builder => {
@@ -120,14 +133,15 @@ class CsvGraphLoader(files: CsvGraphLoaderFiles)(implicit capsSession: CAPSSessi
   private def loadRels: Array[RelationshipScan] = {
     val csvFiles = listCsvFiles("relationships")
 
-    csvFiles.map(e => {
-      val schema = parseSchema(e)(CsvRelSchema(_))
+    csvFiles.map(relationShipFile => {
+
+      val schema = parseSchema(relationShipFile)(CsvRelSchema(_))
 
       val records = CAPSRecords.create(
         sparkSession.read
           .option("timestampFormat", "yyyy-MM-dd'T'HH:mm:ss.SSS")
           .schema(schema.toStructType)
-          .csv(e.toUri.toString)
+          .csv(relationShipFile.toString)
       )
 
       RelationshipScan.on("r" -> schema.idField.name)(builder => {
@@ -144,11 +158,21 @@ class CsvGraphLoader(files: CsvGraphLoaderFiles)(implicit capsSession: CAPSSessi
     })
   }
 
-  private def listCsvFiles(directory: String): Array[Path] =
-    files.listDataFiles(directory)
+  private def listCsvFiles(directory: String): Array[URI] =
+    fileHandler.listDataFiles(directory)
 
-  private def parseSchema[T <: CsvSchema](path: Path)(parser: String => T): T = {
-    val text = files.readSchemaFile(path)
+  private def parseSchema[T <: CsvSchema](path: URI)(parser: String => T): T = {
+    val text = fileHandler.readSchemaFile(path)
     parser(text)
+  }
+}
+
+object CsvGraphLoader {
+  def apply(location: String, hadoopConfig: Configuration)(implicit caps: CAPSSession): CsvGraphLoader = {
+    new CsvGraphLoader(new HadoopFileHandler(location, hadoopConfig))
+  }
+
+  def apply(location: String)(implicit caps: CAPSSession): CsvGraphLoader = {
+    new CsvGraphLoader(new LocalFileHandler(location))
   }
 }
