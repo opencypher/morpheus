@@ -17,6 +17,7 @@ package org.opencypher.caps.demo
 
 import java.net.{URI, URLEncoder}
 
+import org.apache.http.client.utils.URIBuilder
 import org.apache.spark.sql.Row
 import org.apache.spark.storage.StorageLevel
 import org.neo4j.driver.v1.{AuthTokens, Session}
@@ -37,12 +38,14 @@ class GCDemoTest
 {
 
   implicit val caps: CAPSSession = CAPSSession.create(session)
+
+  protected override def hdfsURI: URI = new URIBuilder(super.hdfsURI).setScheme("hdfs+csv").build()
   protected override val dfsTestGraphPath = "/csv/prod"
 
   // needed for bag builder initialization
   implicit val m: HashedBagConfiguration[Row] = Bag.configuration.compact[Row]
 
-  test("the demo") {
+  ignore("the demo") {
     val t0 = System.currentTimeMillis()
     val storageLevel = StorageLevel.MEMORY_ONLY_SER
     lazy val SN_US = caps.graphAt(neoURIforRegion("US"))
