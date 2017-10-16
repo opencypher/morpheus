@@ -21,12 +21,14 @@ import org.opencypher.caps.api.spark.io._
 import org.opencypher.caps.api.spark.CAPSSession
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceFactoryImpl
 import org.opencypher.caps.impl.spark.exception.Raise
-
-import scala.collection.mutable
+import scala.collection.concurrent.Map
+import java.util.concurrent.ConcurrentHashMap
+import scala.collection.JavaConversions._
 
 case object SessionGraphSourceFactory extends CAPSGraphSourceFactoryCompanion("session")
 
-case class SessionGraphSourceFactory(mountPoints: mutable.Map[String, CAPSGraphSource] = mutable.Map.empty)
+case class SessionGraphSourceFactory(
+  mountPoints: collection.concurrent.Map[String, CAPSGraphSource] = new ConcurrentHashMap[String, CAPSGraphSource]())
   extends CAPSGraphSourceFactoryImpl[CAPSGraphSource](SessionGraphSourceFactory) {
 
   def mountSourceAt(existingSource: CAPSGraphSource, uri: URI)(implicit capsSession: CAPSSession): Unit =
