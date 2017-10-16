@@ -30,8 +30,6 @@ class CAPSSessionFileTest extends BaseTestSuite
 
   private def fileURI: URI = new URI(s"file+csv://$testGraphPath")
 
-  println(fileURI)
-
   test("File via URI") {
     implicit val capsSession: CAPSSession = CAPSSession.builder(session).build
     val graph = capsSession.graphAt(fileURI)

@@ -21,6 +21,7 @@ import org.apache.hadoop.conf.Configuration
 import org.opencypher.caps.api.io.{CreateOrFail, PersistMode}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
+import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceImpl
 import org.opencypher.caps.impl.spark.io.hdfs.CsvGraphLoader
 
@@ -44,8 +45,8 @@ case class FileCsvGraphSource(override val canonicalURI: URI)(implicit capsSessi
     store(CAPSGraph.empty, CreateOrFail)
 
   override def store(graph: CAPSGraph, mode: PersistMode): CAPSGraph =
-    ???
+    Raise.notYetImplemented("persisting graphs to local file system")
 
   override def delete(): Unit =
-    ???
+    Raise.notYetImplemented("deleting graphs from local file system")
 }
