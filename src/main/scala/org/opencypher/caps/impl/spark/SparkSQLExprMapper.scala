@@ -103,7 +103,6 @@ object SparkSQLExprMapper {
 
         val col = getColumn(s.expr, header, df)
         val computedSize = s.expr.cypherType match {
-            // TODO replace with lit?
           case CTString => udf((s: String) => s.length.toLong, LongType)(col)
           case _: CTList => functions.size(col).cast(LongType)
           case other => Raise.notYetImplemented(s"size() on type $other")
