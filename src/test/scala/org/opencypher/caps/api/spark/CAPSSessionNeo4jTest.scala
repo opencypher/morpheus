@@ -42,7 +42,7 @@ class CAPSSessionNeo4jTest extends BaseTestSuite
 
   test("Neo4j via mount point") {
     implicit val capsSession: CAPSSession = CAPSSession.builder(session).build
-    capsSession.mountSourceAt(Neo4jGraphSource(neo4jConfig, "MATCH (n) RETURN n", "MATCH ()-[r]->() RETURN r"), "/neo4j1")
+    capsSession.mountSourceAt(Neo4jGraphSource(neo4jConfig, Some("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r")), "/neo4j1")
 
     val graph = capsSession.graphAt("/neo4j1")
     graph.nodes("n").toDF().collect().toSet should equal(teamDataGraphNodes)
