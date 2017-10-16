@@ -26,9 +26,17 @@ class SessionGraphSourceFactoryTest extends BaseTestSuite {
   test("mounting graphs should be thread-safe") {
     val f = SessionGraphSourceFactory()
     (0 until 1000).par.foreach { i =>
-      f.mountSourceAt(mock(classOf[CAPSGraphSource]), URI.create(s"session:/$i"))(null)
+      if (i % 2 == 0) {
+        f.mountSourceAt(mock(classOf[CAPSGraphSource]), URI.create(s"session:/${i}"))(null)
+      } else {
+        f.mountPoints.get(URI.create(s"session:/${i + 1}").getPath)
+      }
     }
-    f.mountPoints.size should equal(1000)
+    f.mountPoints.size should equal(500)
+    (0 until 1000 by 2).forall { i =>
+       val instance = f.mountPoints.get(URI.create(s"session:/${i}").getPath)
+      instance != null
+    } should equal(true)
   }
 
 }
