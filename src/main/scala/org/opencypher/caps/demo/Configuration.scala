@@ -37,6 +37,10 @@ object Configuration {
     def set(): Unit = set(true.toString)
   }
 
+  object PrintQueryExecutionStages extends ConfigOption("cos.stages", false)(s => Try(s.toBoolean).toOption) {
+    def set(): Unit = set(true.toString)
+  }
+
   val conf = Seq(MasterAddress, Logging)
 
   def print(): Unit = {
