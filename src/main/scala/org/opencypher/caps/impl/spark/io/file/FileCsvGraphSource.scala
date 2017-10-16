@@ -33,8 +33,6 @@ case class FileCsvGraphSource(override val canonicalURI: URI)(implicit capsSessi
   }
 
   override def graph: CAPSGraph = {
-    val hadoopConf = new Configuration()
-    hadoopConf.set("fs.default.name", "localhost")
     CsvGraphLoader(canonicalURI.getPath).load
   }
 
