@@ -25,5 +25,7 @@ trait CAPSResult extends CypherResult {
 
   override def print(implicit options: PrintOptions): Unit =
     records.print
+
+  override def toString = this.getClass.getSimpleName
 }
 
