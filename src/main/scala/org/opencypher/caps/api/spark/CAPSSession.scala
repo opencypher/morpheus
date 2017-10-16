@@ -96,18 +96,18 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
     val extractedParameters = extractedLiterals.mapValues(v => CypherValue(v))
     val allParameters = queryParameters ++ extractedParameters
 
-    logStageprogress("IR ...", false)
+    logStageProgress("IR ...", false)
     val ir = IRBuilder(stmt)(IRBuilderContext.initial(query, allParameters, semState, ambientGraph, sourceAt))
-    logStageprogress("Done!")
+    logStageProgress("Done!")
 
-    logStageprogress("Logical plan ...", false)
+    logStageProgress("Logical plan ...", false)
     val logicalPlannerContext = LogicalPlannerContext(graph.schema, Set.empty, ir.model.graphs.andThen(sourceAt))
     val logicalPlan = logicalPlanner(ir)(logicalPlannerContext)
-    logStageprogress("Done!")
+    logStageProgress("Done!")
 
-    logStageprogress("Optimizing logical plan ...", false)
+    logStageProgress("Optimizing logical plan ...", false)
     val optimizedLogicalPlan = logicalOptimizer(logicalPlan)(logicalPlannerContext)
-    logStageprogress("Done!")
+    logStageProgress("Done!")
 
     if (PrintLogicalPlan.get())
       println(optimizedLogicalPlan.pretty())
@@ -115,7 +115,7 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
     plan(graph, CAPSRecords.unit()(this), allParameters, optimizedLogicalPlan)
   }
 
-  private def logStageprogress(s: String, newLine: Boolean = true): Unit = {
+  private def logStageProgress(s: String, newLine: Boolean = true): Unit = {
     if (PrintQueryExecutionStages.get()) {
       if (newLine) {
         println(s)
@@ -183,17 +183,17 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
                    logicalPlan: LogicalOperator): CAPSResult = {
     // TODO: Remove dependency on globals (?) Only needed to enforce everything is known, that could be done
     //       differently
-    logStageprogress("Flat plan ... ", false)
+    logStageProgress("Flat plan ... ", false)
     val flatPlan = flatPlanner(logicalPlan)(FlatPlannerContext(parameters))
-    logStageprogress("Done!")
+    logStageProgress("Done!")
 
     // TODO: It may be better to pass tokens around in the physical planner explicitly (via the records)
     //       instead of just using a single global tokens instance derived from the graph space
     //
-    logStageprogress("Physical plan ... ", false)
+    logStageProgress("Physical plan ... ", false)
     val physicalPlannerContext = PhysicalPlannerContext(graphAt, records, parameters)
     val physicalResult = physicalPlanner(flatPlan)(physicalPlannerContext)
-    logStageprogress("Done!")
+    logStageProgress("Done!")
 
     CAPSResultBuilder.from(physicalResult, logicalPlan)
   }
