@@ -34,7 +34,7 @@ class SessionGraphSourceFactoryTest extends BaseTestSuite {
     }
     f.mountPoints.size should equal(500)
     (0 until 1000 by 2).forall { i =>
-       val instance = f.mountPoints.get(URI.create(s"session:/${i}").getPath)
+      val instance = f.mountPoints.get(URI.create(s"session:/${i}").getPath)
       instance != null
     } should equal(true)
   }
