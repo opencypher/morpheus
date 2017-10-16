@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.spark.io.hdfs
+package org.opencypher.caps.impl.spark.io.file
 
 import java.net.URI
 
@@ -21,25 +21,22 @@ import org.apache.hadoop.conf.Configuration
 import org.opencypher.caps.api.io.{CreateOrFail, PersistMode}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
-import org.opencypher.caps.impl.spark.io.CAPSGraphSourceImpl
 import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.spark.io.CAPSGraphSourceImpl
+import org.opencypher.caps.impl.spark.io.hdfs.CsvGraphLoader
 
-case class HdfsCsvGraphSource(override val canonicalURI: URI, hadoopConfig: Configuration, path: String)
-                             (implicit capsSession: CAPSSession)
+case class FileCsvGraphSource(override val canonicalURI: URI)(implicit capsSession: CAPSSession)
   extends CAPSGraphSourceImpl {
 
-  import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvGraphSourceFactory.supportedSchemes
-
   override def sourceForGraphAt(uri: URI): Boolean = {
-    val hadoopURIString = Option(hadoopConfig.get("fs.defaultFS"))
-      .getOrElse(Option(hadoopConfig.get("fs.default.name"))
-      .getOrElse(Raise.invalidConnection("Neither fs.defaultFS nor fs.default.name found"))
-    )
-    val hadoopURI = URI.create(hadoopURIString)
-    supportedSchemes.contains(uri.getScheme) && hadoopURI.getHost == uri.getHost && hadoopURI.getPort == uri.getPort
+    FileCsvGraphSourceFactory.supportedSchemes.contains(uri.getScheme)
   }
 
-  override def graph: CAPSGraph = CsvGraphLoader(path, hadoopConfig).load
+  override def graph: CAPSGraph = {
+    val hadoopConf = new Configuration()
+    hadoopConf.set("fs.default.name", "localhost")
+    CsvGraphLoader(canonicalURI.getPath).load
+  }
 
   // TODO: Make better/cache?
   override def schema: Option[Schema] = None
@@ -48,8 +45,8 @@ case class HdfsCsvGraphSource(override val canonicalURI: URI, hadoopConfig: Conf
     store(CAPSGraph.empty, CreateOrFail)
 
   override def store(graph: CAPSGraph, mode: PersistMode): CAPSGraph =
-    ???
+    Raise.notYetImplemented("persisting graphs to local file system")
 
   override def delete(): Unit =
-    ???
+    Raise.notYetImplemented("deleting graphs from local file system")
 }
