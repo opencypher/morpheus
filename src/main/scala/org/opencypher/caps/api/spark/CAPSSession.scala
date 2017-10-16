@@ -186,6 +186,16 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
 
     CAPSResultBuilder.from(physicalResult, logicalPlan)
   }
+
+  override def toString: String = {
+    val mountPoints = graphSourceHandler.sessionGraphSourceFactory.mountPoints.keys
+
+    val mountPointsString = if (mountPoints.nonEmpty)
+      s"mountPoints: ${mountPoints.mkString(", ")}"
+    else "No graphs mounted"
+
+    s"${this.getClass.getSimpleName}($mountPointsString)"
+  }
 }
 
 object CAPSSession extends Serializable {
