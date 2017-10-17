@@ -5,6 +5,9 @@ It allows for the **integration** of many **data sources** and supports **multip
 It enables you to use your Spark cluster to run **analytical graph queries**.
 Queries can also return graphs to create **processing pipelines**.
 
+Below you see a screenshot of running a Cypher query with CAPS running in a [Zeppelin notebook](https://github.com/neo-technology/cypher-for-apache-spark/wiki/Use-CAPS-in-a-Zeppelin-notebook):
+![CAPS Zeppelin Screenshot](doc/images/zeppelin_screenshot.png)
+
 ## Intended audience
 
 CAPS allows you to develop complex processing pipelines orchestrated by a powerful and expressive high-level language.
@@ -107,9 +110,12 @@ The above program prints:
     (2 rows)
 ```
 
+
+#### Next steps
+
+- How to use CAPS in [Apache Zeppelin](https://github.com/neo-technology/cypher-for-apache-spark/wiki/Use-CAPS-in-a-Zeppelin-notebook)
 <!-- TODO: Multiple graphs example -->
 <!-- TODO: Steps needed to run the demo with toy data -->
-<!-- TODO: Example in Notebook (Zeppelin?) -->
 <!-- TODO: WIKI article that demonstrates a more realistic use case with HDFS data source -->
 <!-- TODO: WIKI link to page that explains how to import data -->
 
