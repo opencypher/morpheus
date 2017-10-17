@@ -36,9 +36,78 @@ CAPS is under rapid development and we are planning to:
 - Make it easier to use by offering it as a Spark package and by integrating it into a notebook
 - Provide additional integration APIs for interacting with existing Spark libraries such as GraphX
 
-## Getting started with CAPS
+## Get started with CAPS
+CAPS is currently easiest to use with Scala. Below we explain how you can import a simple graph and run a Cypher query on it.
 
+#### Add the CAPS dependency to your project
+In order to use CAPS add the following dependency to Maven:
 <!-- TODO: Publish to Maven Central -->
+```
+<dependency>
+  <groupId>org.opencypher.caps</groupId>
+  <artifactId>caps_2.11</artifactId>
+  <version>0.1.0-NIGHTLY</version>
+</dependency>
+```
+
+#### Hello CAPS
+The following example shows how to convert a friendship graph represented as Scala case classes to a `CAPSGraph` representation.
+The `CAPSGraph` representation is constructed from node and relationship scans.
+Both nodes and relationships are represented by a unique ID of type `Long` and relationships connect two such node IDs.
+The scan construction describes to CAPSGraph how this graph structure is read from a `DataFrame`.  
+
+Once the graph is constructed the `CAPSGraph` instance supports Cypher queries with its `cypher` method.
+
+```scala
+import org.apache.spark.sql.SparkSession
+import org.opencypher.caps.api.record.{NodeScan, RelationshipScan}
+import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
+
+object Example extends App {
+  // Configure sessions
+  val sparkSession = SparkSession.builder().master("local[*]").appName(s"caps-example").getOrCreate()
+  sparkSession.sparkContext.setLogLevel("ERROR")
+  implicit val capsSession = CAPSSession.create(sparkSession)
+
+  // Initial data model
+  case class Person(id: Long, name: String)
+  case class Friendship(id: Long, from: Long, to: Long)
+
+  // Data mapped to DataFrames
+  val personList = List(Person(0, "Alice"), Person(1, "Bob"))
+  val friendshipList= List(Friendship(0, 0, 1), Friendship(1, 1, 0))
+  val personDf = sparkSession.createDataFrame(personList)
+  val friendshipDf = sparkSession.createDataFrame(friendshipList)
+
+  // Turn DataFrame into Node/Relationship scans
+  val personScan = NodeScan.on("id") { builder =>
+    builder.build.withImpliedLabel("Person").withPropertyKey("name")
+  }.fromDf(personDf)
+  val friendshipScan = RelationshipScan.on("id") {  builder =>
+    builder.from("from").to("to").relType("FRIENDS").build
+  }.fromDf(friendshipDf)
+
+  // Create CAPSGraph from scans
+  val graph = CAPSGraph.create(personScan, friendshipScan)
+
+  // Query graph with Cypher
+  val result = graph.cypher("MATCH (a:Person)-[:FRIENDS]->(b) RETURN a.name")
+  result.records.print
+}
+```
+
+The above program prints:
+```
+    +----------------------+
+    | a.name               |
+    +----------------------+
+    | 'Alice'              |
+    | 'Bob'                |
+    +----------------------+
+    (2 rows)
+```
+
+<!-- TODO: Multiple graphs example -->
 <!-- TODO: Steps needed to run the demo with toy data -->
 <!-- TODO: Example in Notebook (Zeppelin?) -->
 <!-- TODO: WIKI article that demonstrates a more realistic use case with HDFS data source -->

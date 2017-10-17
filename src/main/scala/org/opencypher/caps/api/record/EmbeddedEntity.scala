@@ -45,6 +45,10 @@ sealed trait EmbeddedEntity extends Verifiable {
 
   def withPropertyKey(propertyNameAndSlot: (String, String)): Self
 
+  def withPropertyKey(property: String): Self = {
+    withPropertyKey((property -> property))
+  }
+
   protected def computeSlots: Map[String, Expr] = {
     val keyMap = propertiesFromSlots
       .collect { case (key, slots) => slots.map { slot => slot -> Property(entityVar, PropertyKey(key))(CTWildcard) } }
