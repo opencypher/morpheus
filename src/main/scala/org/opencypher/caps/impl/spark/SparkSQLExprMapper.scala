@@ -16,7 +16,7 @@
 package org.opencypher.caps.impl.spark
 
 import org.apache.spark.sql.functions.udf
-import org.apache.spark.sql.types.{ArrayType, BooleanType, LongType, StringType}
+import org.apache.spark.sql.types.{ArrayType, BooleanType, DoubleType, LongType, StringType}
 import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.record.RecordHeader
@@ -238,6 +238,10 @@ object SparkSQLExprMapper {
         verifyExpression(header, expr)
         val rel = Var(context.columnName(header.slotsFor(e).head))(CTNode)
         Some(getColumn(header.targetNodeSlot(rel).content.key, header, df))
+
+      case ToFloat(e) =>
+        verifyExpression(header, expr)
+        Some(getColumn(e, header, df).cast(DoubleType))
 
       case _ =>
         None

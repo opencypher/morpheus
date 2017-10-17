@@ -27,7 +27,7 @@ import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.io.{CAPSGraphSource, CAPSGraphSourceFactory}
 import org.opencypher.caps.api.util.parsePathOrURI
 import org.opencypher.caps.api.value.CypherValue
-import org.opencypher.caps.demo.Configuration.PrintLogicalPlan
+import org.opencypher.caps.demo.Configuration.{PrintLogicalPlan, PrintQueryExecutionStages}
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
 import org.opencypher.caps.impl.logical._
 import org.opencypher.caps.impl.parse.CypherParser
@@ -96,23 +96,34 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
     val extractedParameters = extractedLiterals.mapValues(v => CypherValue(v))
     val allParameters = queryParameters ++ extractedParameters
 
-    print("IR ... ")
+    logStageProgress("IR ...", false)
     val ir = IRBuilder(stmt)(IRBuilderContext.initial(query, allParameters, semState, ambientGraph, sourceAt))
-    println("Done!")
+    logStageProgress("Done!")
 
-    print("Logical plan ... ")
+    logStageProgress("Logical plan ...", false)
     val logicalPlannerContext = LogicalPlannerContext(graph.schema, Set.empty, ir.model.graphs.andThen(sourceAt))
     val logicalPlan = logicalPlanner(ir)(logicalPlannerContext)
-    println("Done!")
+    logStageProgress("Done!")
 
-    print("Optimizing logical plan ... ")
+    logStageProgress("Optimizing logical plan ...", false)
     val optimizedLogicalPlan = logicalOptimizer(logicalPlan)(logicalPlannerContext)
-    println("Done!")
+    logStageProgress("Done!")
 
     if (PrintLogicalPlan.get())
       println(optimizedLogicalPlan.pretty())
 
     plan(graph, CAPSRecords.unit()(this), allParameters, optimizedLogicalPlan)
+  }
+
+  private def logStageProgress(s: String, newLine: Boolean = true): Unit = {
+    if (PrintQueryExecutionStages.get()) {
+      if (newLine) {
+        println(s)
+      } else {
+        val padded = s.padTo(30, " ").mkString("")
+        print(padded)
+      }
+    }
   }
 
   private def mountAmbientGraph(ambient: CAPSGraph): IRExternalGraph = {
@@ -172,19 +183,29 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
                    logicalPlan: LogicalOperator): CAPSResult = {
     // TODO: Remove dependency on globals (?) Only needed to enforce everything is known, that could be done
     //       differently
-    print("Flat plan ... ")
+    logStageProgress("Flat plan ... ", false)
     val flatPlan = flatPlanner(logicalPlan)(FlatPlannerContext(parameters))
-    println("Done!")
+    logStageProgress("Done!")
 
     // TODO: It may be better to pass tokens around in the physical planner explicitly (via the records)
     //       instead of just using a single global tokens instance derived from the graph space
     //
-    print("Physical plan ... ")
+    logStageProgress("Physical plan ... ", false)
     val physicalPlannerContext = PhysicalPlannerContext(graphAt, records, parameters)
     val physicalResult = physicalPlanner(flatPlan)(physicalPlannerContext)
-    println("Done!")
+    logStageProgress("Done!")
 
     CAPSResultBuilder.from(physicalResult, logicalPlan)
+  }
+
+  override def toString: String = {
+    val mountPoints = graphSourceHandler.sessionGraphSourceFactory.mountPoints.keys
+
+    val mountPointsString = if (mountPoints.nonEmpty)
+      s"mountPoints: ${mountPoints.mkString(", ")}"
+    else "No graphs mounted"
+
+    s"${this.getClass.getSimpleName}($mountPointsString)"
   }
 }
 

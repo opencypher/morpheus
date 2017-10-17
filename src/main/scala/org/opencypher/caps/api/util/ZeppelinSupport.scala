@@ -122,6 +122,70 @@ object ZeppelinSupport {
     }
   }
 
+
+  implicit class GraphVisualizer(graph: CAPSGraph) {
+    /**
+      * Prints the specified graph in Zeppelins %network format
+      *
+      * {{{
+      *   g.cypher("""
+      *     MATCH (p:Person)-[k:KNOWS]->(f)
+      *     RETURN GRAPH friends of (p)-[k]->(f)
+      *   """).asZeppelinTable("friends")
+      * }}}
+      *
+      * will print the following data
+      *
+      * {{{
+      *   $network
+      *   {
+      *     "nodes" : [
+      *       {
+      *         "id": 1,
+      *         "label": "Person",
+      *         "labels": ["Person"],
+      *         "data": {
+      *           "name": "Alice",
+      *           "age": 20
+      *         }
+      *       },
+      *       {
+      *         "id": 2,
+      *         "label": "Person",
+      *         "labels": ["Person"],
+      *         "data": {
+      *           "name": "Bob",
+      *           "age": 42
+      *         }
+      *       }
+      *     ],
+      *     "edges" : [
+      *       {
+      *         "id": 3,
+      *         "source": 1,
+      *         "target": 2,
+      *         "label": "KNOWS",
+      *         "data": {
+      *           "since": 2000
+      *         }
+      *       }
+      *     ],
+      *     "labels": {"Person": "#abababa"},
+      *     "types": [ "KNOWS"],
+      *     "directed": true
+      *   }
+      * }}}
+      */
+    def asZeppelinGraph(): Unit = {
+      val graphJson = ZeppelinJsonSerialiser.toJsonString(graph)
+      print(
+        s"""
+           |%network
+           |$graphJson
+        """.stripMargin)
+    }
+  }
+
   object ZeppelinJsonSerialiser extends JsonSerialiser {
     override protected def formatNode(id: Long, labels: Seq[String], properties: Map[String, String]): Json = {
       Json.obj(

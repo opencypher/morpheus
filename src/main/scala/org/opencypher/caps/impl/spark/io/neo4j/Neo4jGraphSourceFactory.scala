@@ -30,9 +30,8 @@ case class Neo4jGraphSourceFactory()
 
   override protected def sourceForURIWithSupportedScheme(uri: URI)(implicit capsSession: CAPSSession): Neo4jGraphSource = {
     val (user, passwd) = getUserInfo(uri)
-    val (nodeQuery, relQuery) = getQueries(uri)
-
-    Neo4jGraphSource(new EncryptedNeo4jConfig(uri, user, passwd, Config.EncryptionLevel.NONE), nodeQuery, relQuery)
+    val neo4jConfig = new EncryptedNeo4jConfig(uri, user, passwd, Config.EncryptionLevel.NONE)
+    Neo4jGraphSource(neo4jConfig, getQueries(uri))
   }
 
   private def getUserInfo(uri: URI) = uri.getUserInfo match {
@@ -45,12 +44,12 @@ case class Neo4jGraphSourceFactory()
   }
 
   private def getQueries(uri: URI) = uri.getQuery match {
-    case null => Raise.invalidArgument("node and relationship query", "none")
+    case null => None
 
     case queries =>
       val tokens = queries.split(";")
       val nodeQuery = tokens.headOption.getOrElse(Raise.invalidArgument("a node query", "none"))
       val relQuery = tokens.tail.headOption.getOrElse(Raise.invalidArgument("a relationship query", "none"))
-      URLDecoder.decode(nodeQuery, "UTF-8") -> URLDecoder.decode(relQuery, "UTF-8")
+      Some(URLDecoder.decode(nodeQuery, "UTF-8") -> URLDecoder.decode(relQuery, "UTF-8"))
   }
 }

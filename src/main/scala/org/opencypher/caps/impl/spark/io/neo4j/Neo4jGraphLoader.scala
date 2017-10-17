@@ -230,6 +230,8 @@ object Neo4jGraphLoader {
         Seq(sourceSlot -> sourceField, idSlot -> idField,
           typeSlot -> typeField, targetSlot -> targetField) ++ propertyFields
       }
+
+      override def toString = "Neo4jGraph"
     }
 
   private case class filterNode(nodeDef: CTNode)

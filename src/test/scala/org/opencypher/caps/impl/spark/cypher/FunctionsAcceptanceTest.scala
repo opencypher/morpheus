@@ -217,4 +217,34 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
       CypherMap("r.val" -> "b", "endNode(r)" -> 3)
     ))
   }
+
+  test("toFloat from integers") {
+    val given = TestGraph("(a {val: 1l})")
+
+    val result = given.cypher("MATCH (a) RETURN toFloat(a.val) as myFloat")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("myFloat" -> 1.0)
+    ))
+  }
+
+  test("toFloat from float") {
+    val given = TestGraph("(a {val: 1.0d})")
+
+    val result = given.cypher("MATCH (a) RETURN toFloat(a.val) as myFloat")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("myFloat" -> 1.0)
+    ))
+  }
+
+  test("toFloat from string") {
+    val given = TestGraph("(a {val: '42'})")
+
+    val result = given.cypher("MATCH (a) RETURN toFloat(a.val) as myFloat")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("myFloat" -> 42.0)
+    ))
+  }
 }

@@ -41,6 +41,8 @@ trait CAPSGraph extends CypherGraph with Serializable {
   def unpersist(): CAPSGraph
 
   def unpersist(blocking: Boolean): CAPSGraph
+
+  override def toString = s"${getClass.getSimpleName}"
 }
 
 object CAPSGraph {

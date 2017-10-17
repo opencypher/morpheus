@@ -23,8 +23,8 @@ import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceImpl
 
 case class Neo4jGraphSource(config: EncryptedNeo4jConfig,
-                            nodeQuery: String,
-                            relQuery: String)(implicit capsSession: CAPSSession)
+                            queries: Option[(String, String)])
+                           (implicit capsSession: CAPSSession)
   extends CAPSGraphSourceImpl {
 
   import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraphSourceFactory.supportedSchemes
@@ -33,7 +33,10 @@ case class Neo4jGraphSource(config: EncryptedNeo4jConfig,
     supportedSchemes.contains(uri.getScheme) && uri.getHost == config.uri.getHost && uri.getPort == config.uri.getPort
 
   override def graph: CAPSGraph =
-    Neo4jGraphLoader.fromNeo4j(config, nodeQuery, relQuery)
+    queries match{
+      case Some((nodeQuery, relQuery)) => Neo4jGraphLoader.fromNeo4j(config, nodeQuery, relQuery)
+      case None => Neo4jGraphLoader.fromNeo4j(config)
+    }
 
   override def schema: Option[Schema] = None
 
