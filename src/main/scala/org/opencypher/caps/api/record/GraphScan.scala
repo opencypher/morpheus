@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.api.record
 
-import org.apache.spark.sql.Row
+import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.expr.{HasLabel, OfType, Property, Var}
@@ -160,6 +160,11 @@ object GraphScanBuilder {
           CAPSRecords.create(newHeader, newData)(records.caps)
         }
       create(entity, newRecords, schema(entity, newRecords.header))
+    }
+
+    def fromDf(df: DataFrame)(implicit caps: CAPSSession) = {
+      val record = CAPSRecords.create(df)
+      from(record)
     }
 
     protected def create(entity: E, records: CAPSRecords, schema: Schema): S

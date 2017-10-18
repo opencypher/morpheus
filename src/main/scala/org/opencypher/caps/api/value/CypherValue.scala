@@ -638,6 +638,8 @@ sealed class CypherMap(protected[value] val properties: Properties)
 
   def keys: Set[String] = properties.m.keySet
 
+  def values: Iterable[CypherValue] = properties.m.values
+
   @transient
   protected[value] lazy val cachedIsOrContainsNulls: Boolean =
     properties.m.values.exists(CypherValue.isOrContainsNull)
