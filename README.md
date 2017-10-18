@@ -54,10 +54,13 @@ In order to use CAPS add the following dependency to Maven:
 ```
 
 #### Hello CAPS
-The following example shows how to convert a friendship graph represented as Scala case classes to a `CAPSGraph` representation.
+
+A [property graph](https://github.com/opencypher/openCypher/blob/master/docs/property-graph-model.adoc) comprises labelled nodes and typed relationships, with a relationship either connecting two nodes, or forming a self-loop on a single node. 
+Both nodes and relationships are uniquely identified by an ID of type `Long`, and contain a set of properties. 
+
+The following example shows how to convert a friendship graph represented as Scala case classes to a `CAPSGraph` representation. 
 The `CAPSGraph` representation is constructed from node and relationship scans.
-Both nodes and relationships are represented by a unique ID of type `Long` and relationships connect two such node IDs.
-The scan construction describes to CAPSGraph how this graph structure is read from a `DataFrame`.  
+The scan construction describes to `CAPSGraph` how this graph structure is read from a `DataFrame`.  
 
 Once the graph is constructed the `CAPSGraph` instance supports Cypher queries with its `cypher` method.
 
