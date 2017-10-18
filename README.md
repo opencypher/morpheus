@@ -77,11 +77,11 @@ object Example extends App {
 
   // Initial data model
   case class Person(id: Long, name: String)
-  case class Friendship(id: Long, from: Long, to: Long)
+  case class Friendship(id: Long, from: Long, to: Long, since: String)
 
   // Data mapped to DataFrames
-  val personList = List(Person(0, "Alice"), Person(1, "Bob"))
-  val friendshipList= List(Friendship(0, 0, 1), Friendship(1, 1, 0))
+  val personList = List(Person(0, "Alice"), Person(1, "Bob"), Person(2, "Carol"))
+    val friendshipList= List(Friendship(0, 0, 1, "23/01/1987"), Friendship(1, 1, 2, "12/12/2009"))
   val personDf = sparkSession.createDataFrame(personList)
   val friendshipDf = sparkSession.createDataFrame(friendshipList)
 
@@ -90,26 +90,26 @@ object Example extends App {
     builder.build.withImpliedLabel("Person").withPropertyKey("name")
   }.fromDf(personDf)
   val friendshipScan = RelationshipScan.on("id") {  builder =>
-    builder.from("from").to("to").relType("FRIENDS").build
+    builder.from("from").to("to").relType("FRIENDS").build.withPropertyKey("since")
   }.fromDf(friendshipDf)
 
   // Create CAPSGraph from scans
   val graph = CAPSGraph.create(personScan, friendshipScan)
 
   // Query graph with Cypher
-  val result = graph.cypher("MATCH (a:Person)-[:FRIENDS]->(b) RETURN a.name")
+  val result = graph.cypher("MATCH (a:Person)-[r:FRIENDS]->(b) RETURN a.name, b.name, r.since AS friendsSinceDate")
   result.records.print
 }
 ```
 
 The above program prints:
 ```
-    +----------------------+
-    | a.name               |
-    +----------------------+
-    | 'Alice'              |
-    | 'Bob'                |
-    +----------------------+
+    +--------------------------------------------------------------------+
+    | a.name               | b.name               | friendsSinceDate     |
+    +--------------------------------------------------------------------+
+    | 'Alice'              | 'Bob'                | '23/01/1987'         |
+    | 'Bob'                | 'Carol'              | '12/12/2009'         |
+    +--------------------------------------------------------------------+
     (2 rows)
 ```
 
