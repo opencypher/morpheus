@@ -55,7 +55,7 @@ In order to use CAPS add the following dependency to Maven:
 
 #### Hello CAPS
 
-A [property graph](https://github.com/opencypher/openCypher/blob/master/docs/property-graph-model.adoc) comprises labelled nodes and typed relationships, with a relationship either connecting two nodes, or forming a self-loop on a single node. 
+Cypher is based on the [property graph](https://github.com/opencypher/openCypher/blob/master/docs/property-graph-model.adoc) model, comprising labelled nodes and typed relationships, with a relationship either connecting two nodes, or forming a self-loop on a single node. 
 Both nodes and relationships are uniquely identified by an ID of type `Long`, and contain a set of properties. 
 
 The following example shows how to convert a friendship graph represented as Scala case classes to a `CAPSGraph` representation. 
