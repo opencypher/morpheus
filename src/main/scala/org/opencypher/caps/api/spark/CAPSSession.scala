@@ -19,6 +19,8 @@ import java.net.URI
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
 
+import org.apache.spark.SparkConf
+import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.opencypher.caps.api.expr.{Expr, Var}
 import org.opencypher.caps.api.graph.CypherSession
@@ -27,7 +29,8 @@ import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.io.{CAPSGraphSource, CAPSGraphSourceFactory}
 import org.opencypher.caps.api.util.parsePathOrURI
 import org.opencypher.caps.api.value.CypherValue
-import org.opencypher.caps.demo.Configuration.{PrintLogicalPlan, PrintQueryExecutionStages}
+import org.opencypher.caps.demo.Configuration.{Logging, PrintLogicalPlan, PrintQueryExecutionStages}
+import org.opencypher.caps.demo.CypherKryoRegistrar
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
 import org.opencypher.caps.impl.logical._
 import org.opencypher.caps.impl.parse.CypherParser
@@ -210,6 +213,29 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
 }
 
 object CAPSSession extends Serializable {
+
+  /**
+    * Creates a new CAPSSession that wraps a local Spark session with CAPS default parameters.
+    */
+  def local(): CAPSSession = {
+    val conf = new SparkConf(true)
+    conf.set("spark.serializer", classOf[KryoSerializer].getCanonicalName)
+    conf.set("spark.kryo.registrator", classOf[CypherKryoRegistrar].getCanonicalName)
+    conf.set("spark.sql.codegen.wholeStage", "true")
+    conf.set("spark.kryo.unsafe", "true")
+    conf.set("spark.kryo.referenceTracking", "false")
+    conf.set("spark.kryo.registrationRequired", "true")
+
+    val session = SparkSession
+      .builder()
+      .config(conf)
+      .master("local[*]")
+      .appName(s"caps-local-${UUID.randomUUID()}")
+      .getOrCreate()
+    session.sparkContext.setLogLevel("error")
+
+    create(session)
+  }
 
   def create(implicit session: SparkSession): CAPSSession = Builder(session).build
 

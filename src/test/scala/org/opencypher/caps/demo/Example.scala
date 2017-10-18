@@ -20,10 +20,8 @@ import org.opencypher.caps.api.record.{NodeScan, RelationshipScan}
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
 
 object Example extends App {
-  // Configure sessions
-  val sparkSession = SparkSession.builder().master("local[*]").appName(s"caps-example").getOrCreate()
-  sparkSession.sparkContext.setLogLevel("ERROR")
-  implicit val capsSession = CAPSSession.create(sparkSession)
+  // Create session
+  implicit val caps = CAPSSession.local()
 
   // Initial data model
   case class Person(id: Long, name: String)
@@ -32,8 +30,8 @@ object Example extends App {
   // Data mapped to DataFrames
   val personList = List(Person(0, "Alice"), Person(1, "Bob"))
   val friendshipList= List(Friendship(0, 0, 1), Friendship(1, 1, 0))
-  val personDf = sparkSession.createDataFrame(personList)
-  val friendshipDf = sparkSession.createDataFrame(friendshipList)
+  val personDf = caps.sparkSession.createDataFrame(personList)
+  val friendshipDf = caps.sparkSession.createDataFrame(friendshipList)
 
   // Turn DataFrame into Node/Relationship scans
   val personScan = NodeScan.on("id") { builder =>

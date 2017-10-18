@@ -23,6 +23,7 @@ trait CAPSSessionFixture extends BaseTestFixture {
 
   implicit lazy val caps: CAPSSession = initCAPSSessionBuilder.build
 
+  // TODO: Consider using CAPSSession.local
   def initCAPSSessionBuilder: CAPSSession.Builder = CAPSSession.builder(session)
 
   abstract override protected def afterEach(): Unit =
