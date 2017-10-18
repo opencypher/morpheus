@@ -19,7 +19,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.inSequence
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{BaseContext, BaseState, Phase}
 
-case object CAPSPreparatoryRewriting extends Phase[BaseContext, BaseState, BaseState] {
+case object CAPSRewriting extends Phase[BaseContext, BaseState, BaseState] {
 
   override def process(from: BaseState, context: BaseContext): BaseState = {
 

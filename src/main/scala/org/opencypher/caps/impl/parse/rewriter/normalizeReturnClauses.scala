@@ -32,7 +32,7 @@ case class normalizeReturnClauses(mkException: (String, InputPosition) => Cypher
                 case Some(alias) => alias
                 case None        => Variable(i.name)(i.expression.position.bumped())
               }
-              (AliasedReturnItem(i.expression, returnColumn)(i.position), AliasedReturnItem(returnColumn.copyId, returnColumn)(i.position))
+              (AliasedReturnItem(i.expression, returnColumn)(i.position), UnaliasedReturnItem(returnColumn, returnColumn.name)(i.position))
           }.unzip
 
       val introducedVariables = if (ri.includeExisting) aliasProjection.map(_.variable.name).toSet else Set.empty[String]
