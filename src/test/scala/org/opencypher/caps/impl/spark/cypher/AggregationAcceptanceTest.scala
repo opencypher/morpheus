@@ -46,7 +46,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
     ))
   }
 
-  ignore("avg(prop) with integers in RETURN without alias") {
+  test("avg(prop) with integers in RETURN without alias") {
     val graph = TestGraph("({val:2L}),({val:4L}),({val:6L})")
 
     val result = graph.cypher("MATCH (n) RETURN AVG(n.val)")
@@ -160,7 +160,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
     ))
   }
 
-  ignore("count(*) in return without alias") {
+  test("count(*) in return without alias") {
     val graph = TestGraph("({name: 'foo'}), ({name: 'bar'}), (), (), (), ({name: 'baz'})")
 
     val result = graph.cypher("MATCH (n) RETURN count(*)")
@@ -256,7 +256,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
     ))
   }
 
-  ignore("min(prop) with single null value in RETURN without alias") {
+  test("min(prop) with single null value in RETURN without alias") {
     val graph = TestGraph("({val:42L}),({val:23L}),()")
 
     val result = graph.cypher("MATCH (n) RETURN MIN(n.val)")
@@ -330,7 +330,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
     ))
   }
 
-  ignore("max(prop) with single null value in RETURN without alias") {
+  test("max(prop) with single null value in RETURN without alias") {
     val graph = TestGraph("({val:42L}),({val:23L}),()")
 
     val result = graph.cypher("MATCH (n) RETURN MAX(n.val)")
@@ -400,6 +400,16 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     result.records.toMaps should equal(Bag(
       CypherMap("res" -> 10.5)
+    ))
+  }
+
+  test("sum(prop) with floats in RETURN without alias") {
+    val graph = TestGraph("({val:5.0D}),({val:5.0D}),({val:0.5D})")
+
+    val result = graph.cypher("MATCH (n) RETURN SUM(n.val)")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("SUM(n.val)" -> 10.5)
     ))
   }
 

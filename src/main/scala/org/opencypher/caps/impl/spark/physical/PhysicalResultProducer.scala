@@ -248,27 +248,31 @@ class PhysicalResultProducer(context: RuntimeContext) {
           Raise.notYetImplemented("grouping")
 
         val sparkAggFunctions = aggregations.map {
-          case (to, Avg(expr)) =>
-            withInnerExpr(expr)(functions.avg(_).cast(toSparkType(to.cypherType)).as(to.name))
+          case (to, inner) =>
+            val columnName = SparkColumnName.from(Some(to.name))
+            inner match {
+              case Avg(expr) =>
+                withInnerExpr(expr)(functions.avg(_).cast(toSparkType(to.cypherType)).as(columnName))
 
-          case (to, CountStar()) =>
-            functions.count(functions.lit(0)).as(to.name)
+              case CountStar() =>
+                functions.count(functions.lit(0)).as(columnName)
 
-          // TODO: Consider not implicitly projecting the inner expr here, but rewriting it into a variable in logical planning or IR construction
-          case (to, Count(expr)) =>
-            withInnerExpr(expr)(functions.count(_).as(to.name))
+              // TODO: Consider not implicitly projecting the inner expr here, but rewriting it into a variable in logical planning or IR construction
+              case Count(expr) =>
+                withInnerExpr(expr)(functions.count(_).as(columnName))
 
-          case (to, Max(expr)) =>
-            withInnerExpr(expr)(functions.max(_).as(to.name))
+              case Max(expr) =>
+                withInnerExpr(expr)(functions.max(_).as(columnName))
 
-          case (to, Min(expr)) =>
-            withInnerExpr(expr)(functions.min(_).as(to.name))
+              case Min(expr) =>
+                withInnerExpr(expr)(functions.min(_).as(columnName))
 
-          case (to, Sum(expr)) =>
-            withInnerExpr(expr)(functions.sum(_).as(to.name))
+              case Sum(expr) =>
+                withInnerExpr(expr)(functions.sum(_).as(columnName))
 
-          case x =>
-            Raise.notYetImplemented(s"Aggregator $x")
+              case x =>
+                Raise.notYetImplemented(s"Aggregator $x")
+            }
         }
 
         CAPSRecords.create(header, data.agg(sparkAggFunctions.head, sparkAggFunctions.tail.toSeq: _*))(records.caps)
