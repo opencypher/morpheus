@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_3.phases._
 import org.neo4j.cypher.internal.frontend.v3_3.{SemanticError, SemanticErrorDef, SemanticFeature, SemanticState}
 import org.opencypher.caps.impl.CompilationStage
+import org.opencypher.caps.impl.parse.rewriter.CAPSRewriting
 import org.opencypher.caps.impl.spark.exception.Raise
 
 object CypherParser extends CypherParser {
@@ -62,6 +63,8 @@ trait CypherParser extends CompilationStage[String, Statement, BaseContext] {
       SemanticAnalysis(warn = false, SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature) andThen
       Namespacer andThen
       CNFNormalizer andThen
-      LateAstRewriting andThen ExtractPredicatesFromAnds
+      LateAstRewriting andThen
+      ExtractPredicatesFromAnds andThen
+      CAPSRewriting
 }
 

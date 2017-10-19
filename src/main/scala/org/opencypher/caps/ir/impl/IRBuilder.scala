@@ -293,9 +293,18 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
         }
       } yield field -> expr
 
-    case ast.UnaliasedReturnItem(e, t) =>
-      error(IRBuilderError(s"Did not expect unnamed return item"))(IRField(t)() -> Var(t)())
+    case ast.UnaliasedReturnItem(e, name) =>
+      for {
+        expr <- convertExpr(e)
+        context <- get[R, IRBuilderContext]
+        field <- {
+          val field = IRField(name)(expr.cypherType)
+          put[R, IRBuilderContext](context.withFields(Set(field))) >> pure[R, IRField](field)
+        }
+      } yield field -> expr
 
+    case _ =>
+      Raise.invalidArgument(s"${AliasedReturnItem.getClass} or ${UnaliasedReturnItem.getClass}", s"${item.getClass}")
   }
 
   private def convertPattern[R: _hasContext](p: ast.Pattern): Eff[R, Pattern[Expr]] = {
