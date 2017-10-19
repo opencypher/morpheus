@@ -17,7 +17,7 @@ package org.opencypher.caps.impl.spark.physical
 
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{ArrayType, BooleanType, LongType}
-import org.apache.spark.sql.{Column, DataFrame, functions}
+import org.apache.spark.sql.{Column, DataFrame, RelationalGroupedDataset, functions}
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
@@ -235,17 +235,21 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
     def aggregate(aggregations: Set[(Var, Aggregator)], group: Set[Var], header: RecordHeader): PhysicalResult =
       prev.mapRecordsWithDetails { records =>
-        val data = records.data
+        val inData = records.data
 
         def withInnerExpr(expr: Expr)(f: Column => Column) = {
-          asSparkSQLExpr(records.header, expr, data) match {
+          asSparkSQLExpr(records.header, expr, inData) match {
             case None => Raise.notYetImplemented(s"projecting $expr")
             case Some(column) => f(column)
           }
         }
 
-        if (group.nonEmpty)
-          Raise.notYetImplemented("grouping")
+        val data: Either[RelationalGroupedDataset,DataFrame] = if (group.nonEmpty) {
+          val columns = group.map { expr =>
+            withInnerExpr(expr)(column => column)
+          }
+          Left(inData.groupBy(columns.toSeq: _*))
+        } else Right(inData)
 
         val sparkAggFunctions = aggregations.map {
           case (to, inner) =>
@@ -275,7 +279,12 @@ class PhysicalResultProducer(context: RuntimeContext) {
             }
         }
 
-        CAPSRecords.create(header, data.agg(sparkAggFunctions.head, sparkAggFunctions.tail.toSeq: _*))(records.caps)
+        val aggregated = data match {
+          case Right(d) => d.agg(sparkAggFunctions.head, sparkAggFunctions.tail.toSeq: _*)
+          case Left(d) => d.agg(sparkAggFunctions.head, sparkAggFunctions.tail.toSeq: _*)
+        }
+
+        CAPSRecords.create(header, aggregated)(records.caps)
       }
 
     def cartesianProduct(rhs: PhysicalResult, header: RecordHeader): PhysicalResult =

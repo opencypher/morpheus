@@ -122,6 +122,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           refs <- {
             val (agg, group) = fieldExprs.partition {
               case (_, _: Aggregator) => true
+              case _ => false
             }
 
             val (ref1, reg1) = registerProjectBlock(context, group, source = context.ambientGraph)
