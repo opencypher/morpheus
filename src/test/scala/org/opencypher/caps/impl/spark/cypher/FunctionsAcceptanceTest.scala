@@ -142,7 +142,6 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
 
     val result = given.cypher("MATCH (a) RETURN size(labels(a)) as s")
 
-    println(result.records.toMaps)
     result.records.toMaps should equal(Bag(
       CypherMap("s" -> 2),
       CypherMap("s" -> 2),
@@ -156,7 +155,6 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
 
     val result = given.cypher("MATCH (a) RETURN size(a.prop) as s")
 
-    println(result.records.toMaps)
     result.records.toMaps should equal(Bag(
       CypherMap("s" -> null)))
   }

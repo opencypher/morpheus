@@ -293,9 +293,9 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
         }
       } yield field -> expr
 
-    case ast.UnaliasedReturnItem(v@ast.Variable(name), _) =>
+    case ast.UnaliasedReturnItem(e, name) =>
       for {
-        expr <- convertExpr(v)
+        expr <- convertExpr(e)
         context <- get[R, IRBuilderContext]
         field <- {
           val field = IRField(name)(expr.cypherType)

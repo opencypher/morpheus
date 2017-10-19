@@ -17,6 +17,7 @@ package org.opencypher.caps.impl.parse.rewriter
 
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, InputPosition, Rewriter, bottomUp}
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.FreshIdNameGenerator
 
 case class normalizeReturnClauses(mkException: (String, InputPosition) => CypherException) extends Rewriter {
 
@@ -26,17 +27,31 @@ case class normalizeReturnClauses(mkException: (String, InputPosition) => Cypher
     case clause @ Return(distinct, ri@ReturnItems(_, items), gri, None, skip, limit, _) =>
 
       val (aliasProjection, finalProjection) = items.map {
+        // avoid aliasing of primitive expressions (i.e. variables and properties)
         case item@AliasedReturnItem(Variable(_), Variable(_)) =>
           val returnItem = UnaliasedReturnItem(item.variable, item.variable.name)(item.position)
           (returnItem, returnItem)
-        case item@UnaliasedReturnItem(Variable(_), _) => (item, item)
 
+        case item@AliasedReturnItem(Property(_, _), _) =>
+          val returnItem = UnaliasedReturnItem(item.expression, item.variable.name)(item.position)
+          (returnItem, returnItem)
+
+        case item@UnaliasedReturnItem(Variable(_), _) =>
+          (item, item)
+
+        case item@UnaliasedReturnItem(Property(_, _), _) =>
+          (item, item)
+
+        // alias remaining return items
         case item =>
           val returnColumn = item.alias match {
             case Some(alias) => alias
             case None => Variable(item.name)(item.expression.position.bumped())
           }
-          (AliasedReturnItem(item.expression, returnColumn)(item.position), UnaliasedReturnItem(returnColumn, returnColumn.name)(item.position))
+
+          val newVariable = Variable(FreshIdNameGenerator.name(item.expression.position))(item.expression.position)
+
+          (AliasedReturnItem(item.expression, newVariable)(item.position), AliasedReturnItem(newVariable.copyId, returnColumn)(item.position))
       }.unzip
 
       val introducedVariables = if (ri.includeExisting) aliasProjection.collect {
