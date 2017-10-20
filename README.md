@@ -5,7 +5,7 @@ It allows for the **integration** of many **data sources** and supports **multip
 It enables you to use your Spark cluster to run **analytical graph queries**.
 Queries can also return graphs to create **processing pipelines**.
 
-Below you see a screenshot of running a Cypher query with CAPS running in a [Zeppelin notebook](https://github.com/neo-technology/cypher-for-apache-spark/wiki/Use-CAPS-in-a-Zeppelin-notebook):
+Below you see a screenshot of running a Cypher query with CAPS running in a [Zeppelin notebook](https://github.com/opencypher/cypher-for-apache-spark/wiki/Use-CAPS-in-a-Zeppelin-notebook):
 ![CAPS Zeppelin Screenshot](doc/images/zeppelin_screenshot.png)
 
 ## Intended audience
@@ -29,7 +29,7 @@ The Spark representations are accessible and can be converted to representations
 
 CAPS supports a subset of Cypher <!-- TODO: WIKI supported features --> and is the first implementation of [multiple graphs](https://github.com/boggle/openCypher/blob/CIP2017-06-18-multiple-graphs/cip/1.accepted/CIP2017-06-18-multiple-graphs.adoc) and graph query compositionality.
 
-CAPS currently supports importing graphs from both Neo4j and from custom [CSV format](https://github.com/neo-technology/cypher-for-apache-spark/tree/master/src/test/resources/csv/sn) in HDFS.
+CAPS currently supports importing graphs from both Neo4j and from custom [CSV format](https://github.com/opencypher/cypher-for-apache-spark/tree/master/src/test/resources/csv/sn) in HDFS.
 CAPS has a data source API that allows you to plug in custom data importers for external sources.
 
 ## CAPS Roadmap
@@ -63,7 +63,7 @@ In order to use CAPS add the following dependency to Maven:
 ```
 -->
 
-#### Hello CAPS
+### Hello CAPS
 
 Cypher is based on the [property graph](https://github.com/opencypher/openCypher/blob/master/docs/property-graph-model.adoc) model, comprising labelled nodes and typed relationships, with a relationship either connecting two nodes, or forming a self-loop on a single node. 
 Both nodes and relationships are uniquely identified by an ID of type `Long`, and contain a set of properties. 
@@ -126,7 +126,8 @@ The above program prints:
 
 #### Next steps
 
-- How to use CAPS in [Apache Zeppelin](https://github.com/neo-technology/cypher-for-apache-spark/wiki/Use-CAPS-in-a-Zeppelin-notebook)
+- How to use CAPS in [Apache Zeppelin](https://github.com/opencypher/cypher-for-apache-spark/wiki/Use-CAPS-in-a-Zeppelin-notebook)
+- Look at and contribute to the [Wiki](https://github.com/opencypher/cypher-for-apache-spark/wiki)
 <!-- TODO: Multiple graphs example -->
 <!-- TODO: Steps needed to run the demo with toy data -->
 <!-- TODO: WIKI article that demonstrates a more realistic use case with HDFS data source -->
@@ -134,7 +135,7 @@ The above program prints:
 
 ## How to contribute
 
-We'd love to find out about any issues you encounter. We welcome code contributions -- please open an [issue](https://github.com/neo-technology/cypher-for-apache-spark/issues) first to ensure there is no duplication of effort. <!-- TODO: Determine CLA and process -->
+We'd love to find out about any issues you encounter. We welcome code contributions -- please open an [issue](https://github.com/opencypher/cypher-for-apache-spark/issues) first to ensure there is no duplication of effort. <!-- TODO: Determine CLA and process -->
 
 ## License
 
