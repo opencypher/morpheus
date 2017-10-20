@@ -200,15 +200,28 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
     ))
   }
 
-  ignore("count() with grouping") {
+  test("count() with grouping") {
     val graph = TestGraph("({name: 'foo'}), ({name: 'foo'}), (), (), (), ({name: 'baz'})")
 
-    val result = graph.cypher("MATCH (n) WITH n.name, count(*) AS amount RETURN n.name, amount")
+    val result = graph.cypher("MATCH (n) WITH n.name as name, count(*) AS amount RETURN name, amount")
 
     result.records.toMaps should equal(Bag(
-      CypherMap("n.name" -> "foo", "amount" -> 2),
-      CypherMap("n.name" -> null, "amount" -> 3),
-      CypherMap("n.name" -> "baz", "amount" -> 1)
+      CypherMap("name" -> "foo", "amount" -> 2),
+      CypherMap("name" -> null, "amount" -> 3),
+      CypherMap("name" -> "baz", "amount" -> 1)
+    ))
+  }
+
+  test("count() with grouping on multiple keys") {
+    val graph = TestGraph("({name: 'foo', age: 42L}), ({name: 'foo', age: 42L}), ({name: 'foo', age: 23L}), (), (), ({name: 'baz', age: 23L})")
+
+    val result = graph.cypher("MATCH (n) WITH n.name AS name, n.age AS age, count(*) AS amount RETURN name, age, amount")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("name" -> "foo", "age" -> 23, "amount" -> 1),
+      CypherMap("name" -> "foo", "age" -> 42, "amount" -> 2),
+      CypherMap("name" -> "baz", "age" -> 23, "amount" -> 1),
+      CypherMap("name" -> null, "age" -> null, "amount" -> 2)
     ))
   }
 
@@ -490,6 +503,26 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     result.records.toMaps should equal(Bag(
       CypherMap("avg" -> 49, "cnt" -> 3, "min" -> 23L, "max" -> 84L, "sum" -> 149)
+    ))
+  }
+
+  test("multiple aggregates with grouping") {
+    val graph = TestGraph("({key: 'a', val:42L}),({key: 'a',val:23L}),({key: 'b', val:84L})")
+
+    val result = graph.cypher(
+      """MATCH (n)
+        |WITH
+        | n.key AS key,
+        | AVG(n.val) AS avg,
+        | COUNT(*) AS cnt,
+        | MIN(n.val) AS min,
+        | MAX(n.val) AS max,
+        | SUM(n.val) AS sum
+        |RETURN key, avg, cnt, min, max, sum""".stripMargin)
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("key" -> "a", "avg" -> 32, "cnt" -> 2, "min" -> 23L, "max" -> 42L, "sum" -> 65),
+      CypherMap("key" -> "b", "avg" -> 84, "cnt" -> 1, "min" -> 84, "max" -> 84, "sum" -> 84)
     ))
   }
 }
