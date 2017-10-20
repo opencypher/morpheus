@@ -37,7 +37,7 @@ CAPS has a data source API that allows you to plug in custom data importers for 
 CAPS is under rapid development and we are planning to:
 - Support more Cypher features
 - Make it easier to use by offering it as a Spark package and by integrating it into a notebook
-- Provide additional integration APIs for interacting with existing Spark libraries such as GraphX
+- Provide additional integration APIs for interacting with existing Spark libraries such as SparkSQL and MLlib
 
 ## Get started with CAPS
 CAPS is currently easiest to use with Scala. Below we explain how you can import a simple graph and run a Cypher query on it.
