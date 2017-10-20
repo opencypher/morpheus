@@ -65,7 +65,8 @@ class NormalizeReturnClausesTest extends FunSuite {
         |RETURN n.prop AS foo
       """.stripMargin,
       """MATCH (n)
-        |RETURN n.prop AS foo
+        |WITH n.prop AS `foo`
+        |RETURN `foo` AS `foo`
       """.stripMargin)
   }
 

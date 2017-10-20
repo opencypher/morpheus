@@ -23,7 +23,7 @@ import scala.collection.Bag
 class ReturnAcceptanceTest extends CAPSTestSuite {
 
   test("single return query") {
-    val given = TestGraph("")
+    val given = TestGraph("[]")
 
     val result  = given.cypher("RETURN 1")
 

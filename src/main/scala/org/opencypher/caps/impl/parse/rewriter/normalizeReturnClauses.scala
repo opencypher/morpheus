@@ -33,8 +33,7 @@ case class normalizeReturnClauses(mkException: (String, InputPosition) => Cypher
           (returnItem, returnItem)
 
         case item@AliasedReturnItem(Property(_, _), _) =>
-          val returnItem = UnaliasedReturnItem(item.expression, item.variable.name)(item.position)
-          (returnItem, returnItem)
+          (item, AliasedReturnItem(item.variable, item.variable)(item.position))
 
         case item@UnaliasedReturnItem(Variable(_), _) =>
           (item, item)
