@@ -42,9 +42,18 @@ CAPS is under rapid development and we are planning to:
 ## Get started with CAPS
 CAPS is currently easiest to use with Scala. Below we explain how you can import a simple graph and run a Cypher query on it.
 
+### Building CAPS
+
+CAPS is built using Maven
+
+```
+mvn clean install
+```
+
+<!--
 #### Add the CAPS dependency to your project
 In order to use CAPS add the following dependency to Maven:
-<!-- TODO: Publish to Maven Central -->
+<!-- TODO: Publish to Maven Central -- >
 ```
 <dependency>
   <groupId>org.opencypher.caps</groupId>
@@ -52,6 +61,7 @@ In order to use CAPS add the following dependency to Maven:
   <version>0.1.0-NIGHTLY</version>
 </dependency>
 ```
+-->
 
 #### Hello CAPS
 
