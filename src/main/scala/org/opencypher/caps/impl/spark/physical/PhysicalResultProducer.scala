@@ -244,9 +244,9 @@ class PhysicalResultProducer(context: RuntimeContext) {
           }
         }
 
-        val data: Either[RelationalGroupedDataset,DataFrame] = if (group.nonEmpty) {
+        val data: Either[RelationalGroupedDataset, DataFrame] = if (group.nonEmpty) {
           val columns = group.map { expr =>
-            withInnerExpr(expr)(column => column)
+            withInnerExpr(expr)(identity)
           }
           Left(inData.groupBy(columns.toSeq: _*))
         } else Right(inData)
@@ -279,10 +279,10 @@ class PhysicalResultProducer(context: RuntimeContext) {
             }
         }
 
-        val aggregated = data match {
-          case Right(d) => d.agg(sparkAggFunctions.head, sparkAggFunctions.tail.toSeq: _*)
-          case Left(d) => d.agg(sparkAggFunctions.head, sparkAggFunctions.tail.toSeq: _*)
-        }
+        val aggregated = data.fold(
+          _.agg(sparkAggFunctions.head, sparkAggFunctions.tail.toSeq: _*),
+          _.agg(sparkAggFunctions.head, sparkAggFunctions.tail.toSeq: _*)
+        )
 
         CAPSRecords.create(header, aggregated)(records.caps)
       }
