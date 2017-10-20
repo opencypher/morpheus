@@ -200,7 +200,19 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
     ))
   }
 
-  test("count() with grouping") {
+  test("count() with grouping in RETURN clause") {
+    val graph = TestGraph("({name: 'foo'}), ({name: 'foo'}), (), (), (), ({name: 'baz'})")
+
+    val result = graph.cypher("MATCH (n) RETURN n.name as name, count(*) AS amount")
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("name" -> "foo", "amount" -> 2),
+      CypherMap("name" -> null, "amount" -> 3),
+      CypherMap("name" -> "baz", "amount" -> 1)
+    ))
+  }
+
+  test("count() with grouping in WITH clause") {
     val graph = TestGraph("({name: 'foo'}), ({name: 'foo'}), (), (), (), ({name: 'baz'})")
 
     val result = graph.cypher("MATCH (n) WITH n.name as name, count(*) AS amount RETURN name, amount")
@@ -506,7 +518,26 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
     ))
   }
 
-  test("multiple aggregates with grouping") {
+  test("multiple aggregates with grouping in RETURN clause") {
+    val graph = TestGraph("({key: 'a', val:42L}),({key: 'a',val:23L}),({key: 'b', val:84L})")
+
+    val result = graph.cypher(
+      """MATCH (n)
+        |RETURN
+        | n.key AS key,
+        | AVG(n.val) AS avg,
+        | COUNT(*) AS cnt,
+        | MIN(n.val) AS min,
+        | MAX(n.val) AS max,
+        | SUM(n.val) AS sum""".stripMargin)
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("key" -> "a", "avg" -> 32, "cnt" -> 2, "min" -> 23L, "max" -> 42L, "sum" -> 65),
+      CypherMap("key" -> "b", "avg" -> 84, "cnt" -> 1, "min" -> 84, "max" -> 84, "sum" -> 84)
+    ))
+  }
+
+  test("multiple aggregates with grouping in WITH clause") {
     val graph = TestGraph("({key: 'a', val:42L}),({key: 'a',val:23L}),({key: 'b', val:84L})")
 
     val result = graph.cypher(
