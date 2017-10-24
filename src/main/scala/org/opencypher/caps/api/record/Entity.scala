@@ -27,14 +27,14 @@ sealed trait Entity extends Product {
 
 /**
   * If a node has no label annotation, then the class name is used as its label.
-  * If a label annotation such as @Labels("Person", "Mammal") is present,
+  * If a ```Labels``` annotation, for example ```@Labels("Person", "Mammal")```, is present,
   * then the labels from that annotation are used instead.
   */
 trait Node extends Entity
 
 /**
   * If a relationship has no type annotation, then the class name in all caps is used as its type.
-  * If a type annotation such as @Type("FRIEND_OF") is present,
+  * If a ```Type``` annotation, for example ```@Type("FRIEND_OF")``` is present,
   * then the type from that annotation is used instead.
   */
 trait Relationship extends Entity {
