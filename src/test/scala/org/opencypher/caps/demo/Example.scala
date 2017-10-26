@@ -34,6 +34,13 @@ object Example extends App {
   val graph = CAPSGraph.create(persons, friendships)
 
   // Query graph with Cypher
-  val result = graph.cypher("MATCH (a:Person)-[r:FRIEND]->(b) RETURN a.name, b.name, r.since AS friendsSince")
-  result.records.print
+  val results = graph.cypher(
+    """| MATCH (a:Person)-[r:FRIEND]->(b)
+       | RETURN a.name AS friend, b.name AS befriended, r.since AS since""".stripMargin
+  )
+
+  case class Retrieved(friend: String, befriended: String, since: String)
+
+  // Print result rows mapped to a case class
+  results.as[Retrieved].foreach(println)
 }
