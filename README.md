@@ -107,8 +107,8 @@ object Example extends App {
 
 The above program prints:
 ```
-Retrieved(Alice,Bob,23/01/1987)
-Retrieved(Bob,Carol,12/12/2009)
+ResultSchema(Alice,Bob,23/01/1987)
+ResultSchema(Bob,Carol,12/12/2009)
 ```
 
 
