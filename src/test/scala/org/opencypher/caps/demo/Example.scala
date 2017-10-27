@@ -36,11 +36,11 @@ object Example extends App {
   // Query graph with Cypher
   val results = graph.cypher(
     """| MATCH (a:Person)-[r:FRIEND]->(b)
-       | RETURN a.name AS friend, b.name AS befriended, r.since AS since""".stripMargin
+       | RETURN a.name AS person, b.name AS friendsWith, r.since AS since""".stripMargin
   )
 
-  case class Retrieved(friend: String, befriended: String, since: String)
+  case class ResultSchema(person: String, friendsWith: String, since: String)
 
   // Print result rows mapped to a case class
-  results.as[Retrieved].foreach(println)
+  results.as[ResultSchema].foreach(println)
 }
