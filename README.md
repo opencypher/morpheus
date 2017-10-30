@@ -103,6 +103,7 @@ object Example extends App {
 
   // Print result rows mapped to a case class
   results.as[ResultSchema].foreach(println)
+}
 ```
 
 The above program prints:
