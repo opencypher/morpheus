@@ -84,7 +84,6 @@ class CAPSRecordsTest extends CAPSTestSuite {
   }
 
   test("contract relationships with a dynamic type") {
-    // TODO: Reject records using unknown tokes
     val given = CAPSRecords.create(session.createDataFrame(Seq(
       (10L, 1L, 2L, "RED"),
       (11L, 2L, 3L, "BLUE"),
@@ -99,7 +98,6 @@ class CAPSRecordsTest extends CAPSTestSuite {
 
     val entityVar = Var("r")(CTRelationship("RED", "BLUE", "GREEN", "YELLOW"))
 
-    // TODO: Use schema for determining more precise node types
     result.header.slots.map(_.content).toVector should equal(Vector(
       OpaqueField(entityVar),
       ProjectedExpr(StartNode(entityVar)(CTNode)),

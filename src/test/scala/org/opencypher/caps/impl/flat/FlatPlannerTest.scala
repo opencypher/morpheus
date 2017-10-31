@@ -50,9 +50,6 @@ class FlatPlannerTest extends BaseTestSuite {
   val logicalStartOperator = mkLogical.planStart(TestGraph(schema), Set.empty)
   val flatStartOperator = mkFlat.planStart(TestGraph(schema), logicalStartOperator.fields)
 
-  // TODO: Ids missing
-  // TODO: Do not name schema provided columns
-
   test("projecting a new expression") {
     val expr = Subtract('a, 'b)()
     val result = flatPlanner.process(mkLogical.projectField('c, expr, logicalStartOperator))

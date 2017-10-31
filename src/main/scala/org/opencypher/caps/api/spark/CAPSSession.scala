@@ -184,15 +184,10 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
                    records: CAPSRecords,
                    parameters: Map[String, CypherValue],
                    logicalPlan: LogicalOperator): CAPSResult = {
-    // TODO: Remove dependency on globals (?) Only needed to enforce everything is known, that could be done
-    //       differently
     logStageProgress("Flat plan ... ", false)
     val flatPlan = flatPlanner(logicalPlan)(FlatPlannerContext(parameters))
     logStageProgress("Done!")
 
-    // TODO: It may be better to pass tokens around in the physical planner explicitly (via the records)
-    //       instead of just using a single global tokens instance derived from the graph space
-    //
     logStageProgress("Physical plan ... ", false)
     val physicalPlannerContext = PhysicalPlannerContext(graphAt, records, parameters)
     val physicalResult = physicalPlanner(flatPlan)(physicalPlannerContext)

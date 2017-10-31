@@ -355,13 +355,6 @@ final case class Schema(
   }
 
   override def verify: VerifiedSchema = {
-    // TODO:
-    //
-    // We envision this to change in two ways
-    // (1) Only enforce correct types for a property key between implied labels
-    // (2) Use union types (and generally support them) for combined labels
-    //
-
     if (conflictSet.nonEmpty) {
       throw new IllegalStateException(s"Schema invalid: $self")
     }
