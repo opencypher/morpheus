@@ -75,7 +75,7 @@
     <build>
         <resources>
             <resource>
-                <directory>caps-core/src/main/resources</directory>
+                <directory>${basedir}/src/main/resources</directory>
                 <includes>
                     <include>**/version.txt</include>
                     <include>**/demo/**</include>
@@ -84,7 +84,7 @@
         </resources>
         <testResources>
             <testResource>
-                <directory>caps-core/src/test/resources</directory>
+                <directory>${basedir}/src/test/resources</directory>
                 <filtering>true</filtering>
             </testResource>
         </testResources>
