@@ -94,20 +94,22 @@ object Example extends App {
   val graph = CAPSGraph.create(persons, friendships)
 
   // Query graph with Cypher
-  val result = graph.cypher("MATCH (a:Person)-[r:FRIEND]->(b) RETURN a.name, b.name, r.since AS friendsSince")
-  result.records.print
+  val results = graph.cypher(
+    """| MATCH (a:Person)-[r:FRIEND]->(b)
+       | RETURN a.name AS person, b.name AS friendsWith, r.since AS since""".stripMargin
+  )
+
+  case class ResultSchema(person: String, friendsWith: String, since: String)
+
+  // Print result rows mapped to a case class
+  results.as[ResultSchema].foreach(println)
 }
 ```
 
 The above program prints:
 ```
-    +----------------------------------------------------------------+
-    | a.name               | b.name               | friendsSince     |
-    +----------------------------------------------------------------+
-    | 'Alice'              | 'Bob'                | '23/01/1987'     |
-    | 'Bob'                | 'Carol'              | '12/12/2009'     |
-    +----------------------------------------------------------------+
-    (2 rows)
+ResultSchema(Alice,Bob,23/01/1987)
+ResultSchema(Bob,Carol,12/12/2009)
 ```
 
 
