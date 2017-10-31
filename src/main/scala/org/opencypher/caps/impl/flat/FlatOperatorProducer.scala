@@ -111,7 +111,6 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     Aggregate(aggregations, group, in, newHeader)
   }
 
-  // TODO: Specialize per kind of slot content
   def project(it: ProjectedSlotContent, in: FlatOperator): FlatOperator = {
     val (newHeader, result) = in.header.update(addContent(it))
 
@@ -123,7 +122,6 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     }
   }
 
-  // TODO: Specialize per kind of slot content
   // TODO: Remove types parameter and read rel-types from the rel variable
   def expandSource(source: Var, rel: Var, types: EveryRelationship, target: Var, schema: Schema,
                    sourceOp: FlatOperator, targetOp: FlatOperator): FlatOperator = {

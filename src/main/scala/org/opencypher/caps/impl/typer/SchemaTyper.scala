@@ -31,22 +31,6 @@ import org.opencypher.caps.impl.parse.RetypingPredicate
 
 import scala.util.Try
 
-/*
-  TODO:
-
-  * [X] Property Lookup
-  * [X] Some basic literals
-  * [X] List literals
-  * [X] Function application, esp. considering overloading
-  * [ ] Some operators: +, [], unary minus, AND
-  * [ ] Stuff which messes with scope
-  *
-  * [ ] Dealing with same expression in multiple scopes
-  * [ ] Make sure to always infer all implied labels
-  * [ ] Actually using the schema to get list of slots
-  *
-  * [ ] Change type system to support union types (?)
- */
 final case class SchemaTyper(schema: Schema) {
 
   def infer(expr: Expression, tracker: TypeTracker = TypeTracker.empty)
@@ -261,7 +245,6 @@ object SchemaTyper {
     case div: Divide =>
       processArithmeticExpressions(div)
 
-    // TODO: This would be better handled by having a type of heterogenous lists instead
     case indexing@ContainerIndex(list@ListLiteral(exprs), index: SignedDecimalIntegerLiteral)
       if Try(parseInt(index.stringVal)).nonEmpty =>
       for {

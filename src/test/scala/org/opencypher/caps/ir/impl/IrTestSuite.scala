@@ -73,9 +73,8 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
   def irFor(rootRef: BlockRef, blocks: Map[BlockRef, Block[Expr]]): CypherQuery[Expr] = {
     val result = ResultBlock[Expr](
       after = Set(rootRef),
-      // TODO
       binds = OrderedFieldsAndGraphs[Expr](),
-      nodes = Set.empty, // TODO: Fill these sets correctly
+      nodes = Set.empty,
       relationships = Set.empty,
       where = AllGiven[Expr](),
       source = testGraph
@@ -95,16 +94,12 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
   implicit class RichString(queryText: String) {
     def model: QueryModel[Expr] = ir.model
 
-
-
-    // TODO: SemCheck
     def ir(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
       val parameters = Map.empty[String, CypherValue]
       IRBuilder(stmt)(IRBuilderContext.initial(queryText, parameters, SemanticState.clean, testGraph, _ => testGraphSource))
     }
 
-    // TODO: SemCheck
     def irWithParams(params: (String, CypherValue)*)(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
       IRBuilder(stmt)(IRBuilderContext.initial(queryText, params.toMap, SemanticState.clean, testGraph, _ => testGraphSource))

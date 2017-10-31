@@ -72,7 +72,6 @@ class CAPSUnionGraphTest extends CAPSTestSuite {
     ))
   }
 
-  // TODO: Fix TODO in nodeFromSchema
   test("Returns only distinct results") {
     val inputGraph = TestGraph(`:Person`).graph
     val inputNodes = inputGraph.nodes("n")

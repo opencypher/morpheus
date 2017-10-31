@@ -339,7 +339,6 @@ final class CypherString(private[CypherString] val v: String) extends CypherValu
     case _                   => false
   }
 
-  // TODO: Improve
   override def toString: String = s"'${v.replaceAllLiterally("'", "\'")}'"
 }
 
