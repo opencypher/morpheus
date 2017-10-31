@@ -191,12 +191,9 @@ object RecordHeader {
       labelName => ProjectedExpr(HasLabel(node, Label(labelName))(CTBoolean))
     }.toSeq
 
-    // TODO: This should consider multiple types per property
     val keyHeaderContents = keyGroups.toSeq.map {
       case (k, types) => ProjectedExpr(Property(node, PropertyKey(k))(types.reduce(_ join _)))
     }
-
-    // TODO: Add is null column(?)
 
     // TODO: Check results for errors
     val (header, _) = RecordHeader.empty

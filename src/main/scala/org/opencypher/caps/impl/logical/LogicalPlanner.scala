@@ -180,7 +180,6 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       case (acc, be: BinaryExpr) =>
         val project1 = planInnerExpr(be.lhs, acc)
         val project2 = planInnerExpr(be.rhs, project1)
-        // TODO: Come up with a strategy on whether to project filters or not -- or when/how?
         val projectParent = producer.projectExpr(be, project2)
         producer.planFilter(be, projectParent)
       case (acc, h@HasLabel(_: Var, _)) =>
@@ -234,7 +233,6 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     }
   }
 
-  // TODO: Add support for pattern graphs that don't have a URI.
   private def resolveGraph(graph: IRGraph, sourceSchema: Schema, fieldsInScope: Set[Var])(implicit context: LogicalPlannerContext): LogicalGraph = {
 
     import org.opencypher.caps.impl.util._

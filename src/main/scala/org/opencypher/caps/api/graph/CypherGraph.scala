@@ -43,7 +43,6 @@ trait CypherGraph {
     type Records = self.Records; type Result = self.Result
   }
 
-  // TODO: VerifiedSchema
   /**
     * The schema that describes this graph.
     *
@@ -89,7 +88,6 @@ trait CypherGraph {
   final def cypher(query: String, parameters: Map[String, CypherValue] = Map.empty): Result =
     session.cypher(graph, query, parameters)
 
-  // TODO: Add @throws declaration for session mismatch
   /**
     * Constructs the union of this graph and the argument graph.
     * The argument graph has to be managed by the same session as this graph.

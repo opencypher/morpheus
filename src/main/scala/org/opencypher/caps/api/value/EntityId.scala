@@ -26,7 +26,6 @@ case object EntityId {
   implicit def apply(v: Long): EntityId = new EntityId(v)
 }
 
-// TODO: Prohibit invalid ids
 final class EntityId(val v: Long) extends AnyVal with Serializable {
   self =>
 

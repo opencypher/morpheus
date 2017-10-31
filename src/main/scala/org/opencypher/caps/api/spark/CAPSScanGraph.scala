@@ -26,10 +26,7 @@ import org.opencypher.caps.impl.spark.exception.Raise
 class CAPSScanGraph(val scans: Seq[GraphScan], val schema: Schema)
                    (implicit val session: CAPSSession) extends CAPSGraph {
 
-  // TODO: Caching?
-
-  // TODO: Normalize (ie partition away/remove all optional label fields, rel type fields)
-  // TODO: Drop aliases in node scans or here?
+  // TODO: Normalize (remove redundant columns for implied Schema information, clear aliases?)
 
   self: CAPSGraph =>
 
