@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/opencypher/cypher-for-apache-spark.svg?branch=master)](https://travis-ci.org/opencypher/cypher-for-apache-spark)
 # CAPS: Cypher for Apache Spark
 
 CAPS extends [Apache Spark™](https://spark.apache.org) with [Cypher](https://neo4j.com/docs/developer-manual/current/cypher/), the industry's most widely used [property graph](https://github.com/opencypher/openCypher/blob/master/docs/property-graph-model.adoc) query language defined and maintained by the [openCypher](http://www.opencypher.org) project.
