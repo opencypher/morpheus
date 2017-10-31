@@ -44,7 +44,7 @@ object CAPS {
       value[String](Source.fromFile("target/classes/version.txt", "UTF-8").mkString)
     } orElse Try {
       // 5) We're likely running in some development setup; attempt to read from other guessed location of version.txt
-      value[String](Source.fromFile("version.txt", "UTF-8").mkString)
+      value[String](Source.fromFile("main/resources/version.txt", "UTF-8").mkString)
     } orElse Try {
       // 6) Nothing worked? Hopefully someone set us a property to report
       value(System.getProperty("project.version"))
