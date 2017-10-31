@@ -15,35 +15,25 @@
  */
 package org.opencypher.caps.demo
 
-import org.opencypher.caps.api.record.{NodeScan, RelationshipScan}
+import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
 
+case class Person(id: Long, name: String) extends Node
+
+case class Friend(id: Long, source: Long, target: Long, since: String) extends Relationship
+
 object Example extends App {
-  // Create session
+  // Node and relationship data
+  val persons = List(Person(0, "Alice"), Person(1, "Bob"), Person(2, "Carol"))
+  val friendships = List(Friend(0, 0, 1, "23/01/1987"), Friend(1, 1, 2, "12/12/2009"))
+
+  // Create CAPS session
   implicit val caps = CAPSSession.local()
 
-  // Initial data model
-  case class Person(id: Long, name: String)
-  case class Friendship(id: Long, from: Long, to: Long, since: String)
-
-  // Data mapped to DataFrames
-  val personList = List(Person(0, "Alice"), Person(1, "Bob"), Person(2, "Carol"))
-  val friendshipList= List(Friendship(0, 0, 1, "23/01/1987"), Friendship(1, 1, 2, "12/12/2009"))
-  val personDf = caps.sparkSession.createDataFrame(personList)
-  val friendshipDf = caps.sparkSession.createDataFrame(friendshipList)
-
-  // Turn DataFrame into Node/Relationship scans
-  val personScan = NodeScan.on("id") { builder =>
-    builder.build.withImpliedLabel("Person").withPropertyKey("name")
-  }.fromDf(personDf)
-  val friendshipScan = RelationshipScan.on("id") {  builder =>
-    builder.from("from").to("to").relType("FRIENDS").build.withPropertyKey("since")
-  }.fromDf(friendshipDf)
-
-  // Create CAPSGraph from scans
-  val graph = CAPSGraph.create(personScan, friendshipScan)
+  // Create graph from nodes and relationships
+  val graph = CAPSGraph.create(persons, friendships)
 
   // Query graph with Cypher
-  val result = graph.cypher("MATCH (a:Person)-[r:FRIENDS]->(b) RETURN a.name, b.name, r.since AS friendsSinceDate")
+  val result = graph.cypher("MATCH (a:Person)-[r:FRIEND]->(b) RETURN a.name, b.name, r.since AS friendsSince")
   result.records.print
 }

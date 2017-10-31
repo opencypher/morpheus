@@ -17,12 +17,32 @@ package org.opencypher.caps.api.record
 
 import org.apache.spark.sql.Row
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
+import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
 import org.opencypher.caps.api.types.{CTFloat, CTInteger, CTString}
 import org.opencypher.caps.api.value.CypherMap
+import org.opencypher.caps.demo.{Friend, Person}
 import org.opencypher.caps.test.CAPSTestSuite
 
 class NodeScanTest extends CAPSTestSuite {
+
+  test("schema from scala classes") {
+    val persons = List(Person(0, "Alice"), Person(1, "Bob"), Person(2, "Carol"))
+    val personScanScala = GraphScan.nodesToScan(List(Person(0, "Alice")))
+    val personsDf = sparkSession.createDataFrame(persons)
+    val personScan = NodeScan.on("id") { builder =>
+      builder.build.withImpliedLabel("Person").withPropertyKey("name")
+    }.fromDf(personsDf)
+    personScanScala.schema should equal(personScan.schema)
+
+
+    val friends = List(Friend(0, 0, 1, "23/01/1987"), Friend(1, 1, 2, "12/12/2009"))
+    val friendScanScala = GraphScan.relationshipsToScan(friends)
+    val friendsDf = sparkSession.createDataFrame(friends)
+    val friendScan = RelationshipScan.on("id") { builder =>
+      builder.from("from").to("to").relType("FRIEND").build.withPropertyKey("since")
+    }.fromDf(friendsDf)
+    friendScanScala.schema should equal(friendScan.schema)
+  }
 
   test("test schema creation") {
     val nodeScan = NodeScan.on("p" -> "ID") {

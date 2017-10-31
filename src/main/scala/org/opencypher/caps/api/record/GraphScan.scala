@@ -25,6 +25,9 @@ import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.spark.{SparkColumn, SparkColumnName}
 import org.opencypher.caps.ir.api.Label
+import org.opencypher.caps.api.util.Annotation
+
+import scala.reflect.runtime.universe.TypeTag
 
 sealed trait GraphScan extends Serializable {
 
@@ -48,6 +51,15 @@ sealed trait GraphScan extends Serializable {
 }
 
 object GraphScan extends GraphScanCompanion[EmbeddedEntity] {
+  implicit def nodesToScan[E <: Node : TypeTag](
+    nodes: Seq[E])(implicit caps: CAPSSession): NodeScan = {
+    NodeScan(nodes)
+  }
+
+  implicit def relationshipsToScan[E <: Relationship : TypeTag](
+    relationship: Seq[E])(implicit caps: CAPSSession): RelationshipScan = {
+    RelationshipScan(relationship)
+  }
 
   /**
     * Align the argument `CAPSRecords` to the target header and rename the stored entity to `v`.
@@ -112,6 +124,27 @@ sealed trait NodeScan extends GraphScan {
 }
 
 object NodeScan extends GraphScanCompanion[EmbeddedNode] {
+  private val nodeIdColumnName = "id"
+
+  private def properties(nodeColumnNames: Seq[String]): Seq[String] = {
+    nodeColumnNames.filter(_ != nodeIdColumnName)
+  }
+
+  def apply[E <: Node : TypeTag](nodes: Seq[E])(implicit caps: CAPSSession): NodeScan = {
+    val nodeLabels: Seq[String] = Annotation.labels[E]
+    val nodeRecords = CAPSRecords.create(nodes)
+    val nodeProperties = properties(nodeRecords.sparkColumns)
+
+    NodeScan.on(nodeIdColumnName) { builder =>
+      val withLabels = nodeLabels.foldLeft(builder.build) { case (schema, label) =>
+        schema.withImpliedLabel(label)
+      }
+      nodeProperties.foldLeft(withLabels) { case (schema, nodeProperty) =>
+        schema.withPropertyKey(nodeProperty)
+      }
+    }.from(nodeRecords)
+  }
+
   def on(entityAndIdSlot: String)(f: EmbeddedNodeBuilder[(String, String)] => EmbeddedNode)
   : GraphScanBuilder[EmbeddedNode] =
     NodeScan(f(EmbeddedNode(entityAndIdSlot)).verify)
@@ -127,6 +160,31 @@ sealed trait RelationshipScan extends GraphScan {
 }
 
 object RelationshipScan extends GraphScanCompanion[EmbeddedRelationship] {
+  private val relationshipIdColumnName = "id"
+  private val relationshipSourceColumnName = "source"
+  private val relationshipTargetColumnName = "target"
+  private val nonPropertyAttributes = Set(
+    relationshipIdColumnName, relationshipSourceColumnName, relationshipTargetColumnName)
+
+  private def properties(relationshipRecords: CAPSRecords): Seq[String] = {
+    val columnNames = relationshipRecords.sparkColumns
+    columnNames.filter(!nonPropertyAttributes.contains(_))
+  }
+
+  def apply[E <: Relationship : TypeTag](relationships: Seq[E])(implicit caps: CAPSSession): RelationshipScan = {
+    val relationshipType: String = Annotation.relType[E]
+    val relationshipRecords = CAPSRecords.create(relationships)
+    val relationshipProperties = properties(relationshipRecords)
+
+    RelationshipScan.on(relationshipIdColumnName) { builder =>
+      relationshipProperties.foldLeft(
+        builder.from(relationshipSourceColumnName).to(relationshipTargetColumnName).relType(relationshipType).build
+      ) { case (schema, property) =>
+        schema.withPropertyKey(property)
+      }
+    }.from(relationshipRecords)
+  }
+
   def on(entityAndIdSlot: String)
         (f: EmbeddedRelationshipBuilder[Unit, (String, String), Unit, Unit] => EmbeddedRelationship)
   : GraphScanBuilder[EmbeddedRelationship] =
