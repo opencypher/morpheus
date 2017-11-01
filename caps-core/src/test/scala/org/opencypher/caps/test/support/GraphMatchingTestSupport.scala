@@ -44,7 +44,7 @@ trait GraphMatchingTestSupport {
 
   self: BaseTestSuite with SparkSessionFixture with CAPSSessionFixture =>
 
-  val DEFAULT_LABEL = "DEFAULT"
+  val DEFAULT_LABEL              = "DEFAULT"
   val sparkSession: SparkSession = session
 
   implicit class GraphsMatcher(graphs: Map[String, CAPSGraph]) {
@@ -60,9 +60,11 @@ trait GraphMatchingTestSupport {
 
     private def verify(actual: CAPSGraph, expected: CAPSGraph): Assertion = {
       val expectedNodeIds = expected.nodes("n").data.select("n").collect().map(_.getLong(0)).toSet
-      val expectedRelIds = expected.relationships("r").data.select("r").collect().map(_.getLong(0)).toSet
+      val expectedRelIds =
+        expected.relationships("r").data.select("r").collect().map(_.getLong(0)).toSet
       val actualNodeIds = actual.nodes("n").data.select("n").collect().map(_.getLong(0)).toSet
-      val actualRelIds = actual.relationships("r").data.select("r").collect().map(_.getLong(0)).toSet
+      val actualRelIds =
+        actual.relationships("r").data.select("r").collect().map(_.getLong(0)).toSet
 
       expectedNodeIds should equal(actualNodeIds)
       expectedRelIds should equal(actualRelIds)
@@ -92,9 +94,8 @@ trait GraphMatchingTestSupport {
     lazy val graph: CAPSGraph = new CAPSGraph {
       self =>
 
-      override def session: CAPSSession = caps
+      override def session: CAPSSession       = caps
       override protected def graph: CAPSGraph = this
-
 
       override def cache() = this
 
@@ -123,11 +124,12 @@ trait GraphMatchingTestSupport {
           case (acc, (label, props)) => acc.withNodePropertyKeys(label)(props.toSeq: _*)
         }
 
-        val schemaWithLabelCombinations = vertexLabelCombinations.foldLeft(schemaWithLabels) { (acc, labels) =>
-          if (labels.size > 1)
-            acc.withLabelCombination(labels: _*)
-          else
-            acc
+        val schemaWithLabelCombinations = vertexLabelCombinations.foldLeft(schemaWithLabels) {
+          (acc, labels) =>
+            if (labels.size > 1)
+              acc.withLabelCombination(labels: _*)
+            else
+              acc
         }
 
         typesAndProps.foldLeft(schemaWithLabelCombinations) {
@@ -147,14 +149,16 @@ trait GraphMatchingTestSupport {
                 case HasLabel(_, label) => v.getLabels.contains(label.name)
               }
               val propertyFields = exprs.collect {
-                case p@Property(_, k) =>
+                case p @ Property(_, k) =>
                   val pValue = v.getProperties.get(k.name)
                   if (fromJavaType(pValue) == p.cypherType) pValue
                   else null
               }
 
               Row(v.getId +: (labelFields ++ propertyFields): _*)
-            }.toList.asJava
+            }
+            .toList
+            .asJava
 
           val fields = header.slots.map { s =>
             StructField(context.columnName(s), toSparkType(s.content.cypherType))
@@ -173,17 +177,21 @@ trait GraphMatchingTestSupport {
 
         val data = {
           val rels = queryGraph.getEdges.asScala
-            .filter(e => cypherType.types.asJava.isEmpty || cypherType.types.asJava.containsAll(e.getLabels))
+            .filter(e =>
+              cypherType.types.asJava.isEmpty || cypherType.types.asJava.containsAll(e.getLabels))
             .map { e =>
               val staticFields = Seq(e.getSourceVertexId, e.getId, e.getLabel, e.getTargetVertexId)
 
               val propertyFields = header.slots.slice(4, header.slots.size).map(_.content.key).map {
                 case Property(_, k) => e.getProperties.get(k.name)
-                case _ => throw new IllegalArgumentException("Only properties expected in the header")
+                case _ =>
+                  throw new IllegalArgumentException("Only properties expected in the header")
               }
 
               Row(staticFields ++ propertyFields: _*)
-          }.toList.asJava
+            }
+            .toList
+            .asJava
 
           val fields = header.slots.map { s =>
             StructField(context.columnName(s), toSparkType(s.content.cypherType))
@@ -197,13 +205,13 @@ trait GraphMatchingTestSupport {
   }
 
   private case class TestGraphSource(canonicalURI: URI, testGraph: TestGraph)
-    extends CAPSGraphSourceImpl {
+      extends CAPSGraphSourceImpl {
 
-    override def sourceForGraphAt(uri: URI): Boolean = uri == canonicalURI
-    override def create: CAPSGraph = ???
-    override def graph: CAPSGraph = testGraph.graph
-    override def schema: Option[Schema] = None
+    override def sourceForGraphAt(uri: URI): Boolean                   = uri == canonicalURI
+    override def create: CAPSGraph                                     = ???
+    override def graph: CAPSGraph                                      = testGraph.graph
+    override def schema: Option[Schema]                                = None
     override def store(graph: CAPSGraph, mode: PersistMode): CAPSGraph = ???
-    override def delete(): Unit = ???
+    override def delete(): Unit                                        = ???
   }
 }

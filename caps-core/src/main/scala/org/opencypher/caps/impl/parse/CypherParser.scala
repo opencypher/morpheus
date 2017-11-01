@@ -19,7 +19,12 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters._
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_3.phases._
-import org.neo4j.cypher.internal.frontend.v3_3.{SemanticError, SemanticErrorDef, SemanticFeature, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_3.{
+  SemanticError,
+  SemanticErrorDef,
+  SemanticFeature,
+  SemanticState
+}
 import org.opencypher.caps.impl.CompilationStage
 import org.opencypher.caps.impl.parse.rewriter.CAPSRewriting
 import org.opencypher.caps.impl.spark.exception.Raise
@@ -32,7 +37,7 @@ object CypherParser extends CypherParser {
           // TODO: Fix by updating frontend dependency
           // Related to using bound variables in GRAPH OF
           case s: SemanticError if s.msg.matches("Variable .* already declared") => false
-          case _ => true
+          case _                                                                 => true
         }
         Raise.semanticErrors(filtered)
       }
@@ -45,11 +50,12 @@ trait CypherParser extends CompilationStage[String, Statement, BaseContext] {
 
   override def extract(output: (Statement, Map[String, Any], SemanticState)): Statement = output._1
 
-  override def process(query: String)(implicit context: BaseContext): (Statement, Map[String, Any], SemanticState) = {
+  override def process(query: String)(
+      implicit context: BaseContext): (Statement, Map[String, Any], SemanticState) = {
     val startState = BaseStateImpl(query, None, null)
-    val endState = pipeLine.transform(startState, context)
-    val params = endState.extractedParams
-    val rewritten = endState.statement
+    val endState   = pipeLine.transform(startState, context)
+    val params     = endState.extractedParams
+    val rewritten  = endState.statement
     (rewritten, params, endState.maybeSemantics.get)
   }
 
@@ -57,13 +63,17 @@ trait CypherParser extends CompilationStage[String, Statement, BaseContext] {
     Parsing.adds(BaseContains[Statement]) andThen
       SyntaxDeprecationWarnings andThen
       PreparatoryRewriting andThen
-      SemanticAnalysis(warn = true, SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature).adds(BaseContains[SemanticState]) andThen
+      SemanticAnalysis(
+        warn = true,
+        SemanticFeature.MultipleGraphs,
+        SemanticFeature.WithInitialQuerySignature).adds(BaseContains[SemanticState]) andThen
       AstRewriting(RewriterStepSequencer.newPlain, Forced) andThen
-      SemanticAnalysis(warn = false, SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature) andThen
+      SemanticAnalysis(warn = false,
+                       SemanticFeature.MultipleGraphs,
+                       SemanticFeature.WithInitialQuerySignature) andThen
       Namespacer andThen
       CNFNormalizer andThen
       LateAstRewriting andThen
       ExtractPredicatesFromAnds andThen
       CAPSRewriting
 }
-

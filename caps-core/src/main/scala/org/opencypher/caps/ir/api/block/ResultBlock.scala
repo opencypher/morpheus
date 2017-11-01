@@ -19,25 +19,28 @@ import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.pattern.{AllGiven, AllOf}
 
 final case class ResultBlock[E](
-  after: Set[BlockRef],
-  binds: OrderedFieldsAndGraphs[E],
-  nodes: Set[IRField],
-  relationships: Set[IRField],
-  source: IRGraph,
-  where: AllGiven[E] = AllGiven[E]()
+    after: Set[BlockRef],
+    binds: OrderedFieldsAndGraphs[E],
+    nodes: Set[IRField],
+    relationships: Set[IRField],
+    source: IRGraph,
+    where: AllGiven[E] = AllGiven[E]()
 ) extends BasicBlock[OrderedFieldsAndGraphs[E], E](BlockType("result")) {
 
   def select(fields: Set[IRField]): ResultBlock[E] =
-    copy(binds = binds.select(fields), nodes = nodes intersect fields, relationships = relationships intersect fields )
+    copy(binds = binds.select(fields),
+         nodes = nodes intersect fields,
+         relationships = relationships intersect fields)
 }
 
 object ResultBlock {
-  def empty[E](graph: IRGraph) = ResultBlock(Set.empty, OrderedFieldsAndGraphs[E](), Set.empty, Set.empty, graph, AllOf[E]())
+  def empty[E](graph: IRGraph) =
+    ResultBlock(Set.empty, OrderedFieldsAndGraphs[E](), Set.empty, Set.empty, graph, AllOf[E]())
 }
 
-final case class OrderedFieldsAndGraphs[E](
-  fieldsOrder: IndexedSeq[IRField] = IndexedSeq.empty,
-  override val graphs: Set[IRGraph] = Set.empty) extends Binds[E] {
+final case class OrderedFieldsAndGraphs[E](fieldsOrder: IndexedSeq[IRField] = IndexedSeq.empty,
+                                           override val graphs: Set[IRGraph] = Set.empty)
+    extends Binds[E] {
   override def fields: Set[IRField] = fieldsOrder.toSet
 
   def select(fields: Set[IRField]): OrderedFieldsAndGraphs[E] =
@@ -45,7 +48,7 @@ final case class OrderedFieldsAndGraphs[E](
 }
 
 case object FieldsInOrder {
-  def apply[E](fields: IRField*): OrderedFieldsAndGraphs[E] = OrderedFieldsAndGraphs[E](fields.toIndexedSeq)
+  def apply[E](fields: IRField*): OrderedFieldsAndGraphs[E] =
+    OrderedFieldsAndGraphs[E](fields.toIndexedSeq)
   def unapplySeq(arg: OrderedFieldsAndGraphs[_]): Option[Seq[IRField]] = Some(arg.fieldsOrder)
 }
-

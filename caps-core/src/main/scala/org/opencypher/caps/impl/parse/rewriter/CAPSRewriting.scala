@@ -23,16 +23,20 @@ case object CAPSRewriting extends Phase[BaseContext, BaseState, BaseState] {
 
   override def process(from: BaseState, context: BaseContext): BaseState = {
 
-    val rewrittenStatement = from.statement().endoRewrite(inSequence(
-      normalizeReturnClauses(context.exceptionCreator)
-    ))
+    val rewrittenStatement = from
+      .statement()
+      .endoRewrite(
+        inSequence(
+          normalizeReturnClauses(context.exceptionCreator)
+        ))
 
     from.withStatement(rewrittenStatement)
   }
 
   override val phase = AST_REWRITE
 
-  override val description = "rewrite the AST into a shape that semantic analysis can be performed on"
+  override val description =
+    "rewrite the AST into a shape that semantic analysis can be performed on"
 
   override def postConditions = Set.empty
 }

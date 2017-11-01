@@ -16,5 +16,5 @@
 package org.opencypher.caps.api.spark.io
 
 class CAPSGraphSourceFactoryCompanion(val defaultScheme: String, additionalSchemes: String*) {
-  val supportedSchemes: Set[String]= additionalSchemes.toSet + defaultScheme
+  val supportedSchemes: Set[String] = additionalSchemes.toSet + defaultScheme
 }

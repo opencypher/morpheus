@@ -32,20 +32,28 @@ trait JsonSerialiser {
 
       Json.obj(
         "columns" -> Json.arr(records.sparkColumns.map(Json.fromString): _*),
-        "rows" -> Json.arr(rows.toSeq: _*)
+        "rows"    -> Json.arr(rows.toSeq: _*)
       )
     }
   }
 
   implicit val graphEncoder: Encoder[CAPSGraph] = new Encoder[CAPSGraph] {
     override final def apply(graph: CAPSGraph): Json = {
-      val nodes = graph.nodes("n").toLocalScalaIterator.map { map =>
-        constructValue(map.get("n"))
-      }.toSeq
+      val nodes = graph
+        .nodes("n")
+        .toLocalScalaIterator
+        .map { map =>
+          constructValue(map.get("n"))
+        }
+        .toSeq
 
-      val rels = graph.relationships("rel").toLocalScalaIterator.map { map =>
-        constructValue(map.get("rel"))
-      }.toSeq
+      val rels = graph
+        .relationships("rel")
+        .toLocalScalaIterator
+        .map { map =>
+          constructValue(map.get("rel"))
+        }
+        .toSeq
 
       formatGraph(graph, nodes, rels)
     }
@@ -89,12 +97,16 @@ trait JsonSerialiser {
     )
   }
 
-  protected def formatRel(id: Long, source: Long, target: Long, typ: String, properties: Map[String, String]) = {
+  protected def formatRel(id: Long,
+                          source: Long,
+                          target: Long,
+                          typ: String,
+                          properties: Map[String, String]) = {
     Json.obj(
-      "id" -> Json.fromLong(id),
+      "id"     -> Json.fromLong(id),
       "source" -> Json.fromLong(source),
       "target" -> Json.fromLong(target),
-      "type" -> Json.fromString(typ),
+      "type"   -> Json.fromString(typ),
       "properties" -> Json.obj(
         properties.mapValues(Json.fromString).toSeq: _*
       )
@@ -103,15 +115,15 @@ trait JsonSerialiser {
 
   protected def formatGraph(graph: CAPSGraph, nodes: Seq[Json], rels: Seq[Json]): Json = {
     Json.obj(
-      "nodes" -> Json.arr(nodes: _*),
-      "edges" -> Json.arr(rels: _*),
+      "nodes"  -> Json.arr(nodes: _*),
+      "edges"  -> Json.arr(rels: _*),
       "labels" -> Json.arr(graph.schema.labels.map(Json.fromString).toSeq: _*),
-      "types" -> Json.arr(graph.schema.relationshipTypes.map(Json.fromString).toSeq: _*)
+      "types"  -> Json.arr(graph.schema.relationshipTypes.map(Json.fromString).toSeq: _*)
     )
   }
 
   def toJsonString(records: CAPSRecords): String = records.asJson.spaces2
-  def toJsonString(graph: CAPSGraph): String = graph.asJson.spaces2
+  def toJsonString(graph: CAPSGraph): String     = graph.asJson.spaces2
 }
 
 /**

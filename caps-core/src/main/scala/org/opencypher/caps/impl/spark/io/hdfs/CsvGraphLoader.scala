@@ -32,8 +32,9 @@ trait CsvGraphLoaderFileHandler {
   def readSchemaFile(path: URI): String
 }
 
-final class HadoopFileHandler(override val location: String, private val hadoopConfig: Configuration)
-  extends CsvGraphLoaderFileHandler {
+final class HadoopFileHandler(override val location: String,
+                              private val hadoopConfig: Configuration)
+    extends CsvGraphLoaderFileHandler {
 
   private val fs: FileSystem = FileSystem.get(new URI(location), hadoopConfig)
 
@@ -44,11 +45,12 @@ final class HadoopFileHandler(override val location: String, private val hadoopC
   }
 
   override def readSchemaFile(path: URI): String = {
-    val hdfsPath = new Path(path)
-    val schemaPaths = Seq(hdfsPath.suffix(".schema"), hdfsPath.suffix(".SCHEMA"))
+    val hdfsPath      = new Path(path)
+    val schemaPaths   = Seq(hdfsPath.suffix(".schema"), hdfsPath.suffix(".SCHEMA"))
     val optSchemaPath = schemaPaths.find(fs.exists)
-    val schemaPath = optSchemaPath.getOrElse(throw new IllegalArgumentException(s"Could not find schema file at $path"))
-    val stream = new BufferedReader(new InputStreamReader(fs.open(schemaPath)))
+    val schemaPath = optSchemaPath.getOrElse(
+      throw new IllegalArgumentException(s"Could not find schema file at $path"))
+    val stream    = new BufferedReader(new InputStreamReader(fs.open(schemaPath)))
     def readLines = Stream.cons(stream.readLine(), Stream.continually(stream.readLine))
     readLines.takeWhile(_ != null).mkString
   }
@@ -58,9 +60,12 @@ final class LocalFileHandler(override val location: String) extends CsvGraphLoad
   import scala.collection.JavaConverters._
 
   override def listDataFiles(directory: String): Array[URI] = {
-    Files.list(Paths.get(s"$location${File.separator}$directory"))
-      .collect(Collectors.toList()).asScala
-      .filter(p => p.toString.endsWith(".csv") | p.toString.endsWith(".CSV")).toArray
+    Files
+      .list(Paths.get(s"$location${File.separator}$directory"))
+      .collect(Collectors.toList())
+      .asScala
+      .filter(p => p.toString.endsWith(".csv") | p.toString.endsWith(".CSV"))
+      .toArray
       .map(_.toUri)
   }
 
@@ -71,7 +76,8 @@ final class LocalFileHandler(override val location: String) extends CsvGraphLoad
     )
 
     val optSchemaPath = schemaPaths.find(p => new File(p).exists())
-    val schemaPath = optSchemaPath.getOrElse(throw new IllegalArgumentException(s"Could not find schema file at $csvPath"))
+    val schemaPath = optSchemaPath.getOrElse(
+      throw new IllegalArgumentException(s"Could not find schema file at $csvPath"))
     new String(Files.readAllBytes(Paths.get(schemaPath)))
   }
 }
@@ -101,7 +107,7 @@ class CsvGraphLoader(fileHandler: CsvGraphLoaderFileHandler)(implicit capsSessio
 
   def load: CAPSGraph = {
     val nodeScans = loadNodes
-    val relScans = loadRels
+    val relScans  = loadRels
     CAPSGraph.create(nodeScans.head, nodeScans.tail ++ relScans: _*)
   }
 
@@ -118,15 +124,18 @@ class CsvGraphLoader(fileHandler: CsvGraphLoaderFileHandler)(implicit capsSessio
           .csv(e.toString)
       )
 
-      NodeScan.on("n" -> schema.idField.name)(builder => {
-        val withImpliedLabels = schema.implicitLabels.foldLeft(builder.build)(_ withImpliedLabel _)
-        val withOptionalLabels = schema.optionalLabels.foldLeft(withImpliedLabels)((a, b) => {
-          a.withOptionalLabel(b.name -> b.name)
+      NodeScan
+        .on("n" -> schema.idField.name)(builder => {
+          val withImpliedLabels =
+            schema.implicitLabels.foldLeft(builder.build)(_ withImpliedLabel _)
+          val withOptionalLabels = schema.optionalLabels.foldLeft(withImpliedLabels)((a, b) => {
+            a.withOptionalLabel(b.name -> b.name)
+          })
+          schema.propertyFields.foldLeft(withOptionalLabels)((builder, field) => {
+            builder.withPropertyKey(field.name -> field.name)
+          })
         })
-        schema.propertyFields.foldLeft(withOptionalLabels)((builder, field) => {
-          builder.withPropertyKey(field.name -> field.name)
-        })
-      }).from(records)
+        .from(records)
     })
   }
 
@@ -144,17 +153,19 @@ class CsvGraphLoader(fileHandler: CsvGraphLoaderFileHandler)(implicit capsSessio
           .csv(relationShipFile.toString)
       )
 
-      RelationshipScan.on("r" -> schema.idField.name)(builder => {
-        val baseBuilder = builder
-          .from(schema.startIdField.name)
-          .to(schema.endIdField.name)
-          .relType(schema.relType)
+      RelationshipScan
+        .on("r" -> schema.idField.name)(builder => {
+          val baseBuilder = builder
+            .from(schema.startIdField.name)
+            .to(schema.endIdField.name)
+            .relType(schema.relType)
             .build
 
-        schema.propertyFields.foldLeft(baseBuilder)((builder, field) => {
-          builder.withPropertyKey(field.name -> field.name)
+          schema.propertyFields.foldLeft(baseBuilder)((builder, field) => {
+            builder.withPropertyKey(field.name -> field.name)
+          })
         })
-      }).from(records)
+        .from(records)
     })
   }
 
@@ -168,7 +179,8 @@ class CsvGraphLoader(fileHandler: CsvGraphLoaderFileHandler)(implicit capsSessio
 }
 
 object CsvGraphLoader {
-  def apply(location: String, hadoopConfig: Configuration)(implicit caps: CAPSSession): CsvGraphLoader = {
+  def apply(location: String, hadoopConfig: Configuration)(
+      implicit caps: CAPSSession): CsvGraphLoader = {
     new CsvGraphLoader(new HadoopFileHandler(location, hadoopConfig))
   }
 

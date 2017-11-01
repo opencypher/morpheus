@@ -34,7 +34,8 @@ sealed trait Connection {
   def flip: SELF[O, E]
 
   override def hashCode(): Int = orientation.hash(endpoints, seed)
-  override def equals(obj: scala.Any): Boolean = super.equals(obj) || (obj != null && equalsIfNotEq(obj))
+  override def equals(obj: scala.Any): Boolean =
+    super.equals(obj) || (obj != null && equalsIfNotEq(obj))
 
   protected def seed: Int
   protected def equalsIfNotEq(obj: scala.Any): Boolean
@@ -83,52 +84,58 @@ sealed trait SingleRelationship extends Connection {
 }
 
 final case class DirectedRelationship(endpoints: DifferentEndpoints)
-  extends SingleRelationship with DirectedConnection {
+    extends SingleRelationship
+    with DirectedConnection {
 
   override type SELF[XO, XE] = DirectedRelationship { type O = XO; type E = XE }
 
   protected def equalsIfNotEq(obj: scala.Any): Boolean = obj match {
     case other: DirectedRelationship => orientation.eqv(endpoints, other.endpoints)
-    case _ => false
+    case _                           => false
   }
 
   override def flip: DirectedRelationship = copy(endpoints.flip)
 }
 
 case object DirectedRelationship {
-  def apply(source: IRField, target: IRField): SingleRelationship = Endpoints(source, target) match {
-    case ends: IdenticalEndpoints => CyclicRelationship(ends)
-    case ends: DifferentEndpoints => DirectedRelationship(ends)
-  }
+  def apply(source: IRField, target: IRField): SingleRelationship =
+    Endpoints(source, target) match {
+      case ends: IdenticalEndpoints => CyclicRelationship(ends)
+      case ends: DifferentEndpoints => DirectedRelationship(ends)
+    }
 }
 
 final case class UndirectedRelationship(endpoints: DifferentEndpoints)
-  extends SingleRelationship with UndirectedConnection {
+    extends SingleRelationship
+    with UndirectedConnection {
 
   override type SELF[XO, XE] = UndirectedRelationship { type O = XO; type E = XE }
 
   protected def equalsIfNotEq(obj: scala.Any): Boolean = obj match {
     case other: UndirectedRelationship => orientation.eqv(endpoints, other.endpoints)
-    case _ => false
+    case _                             => false
   }
 
   override def flip: UndirectedRelationship = copy(endpoints.flip)
 }
 
 case object UndirectedRelationship {
-  def apply(source: IRField, target: IRField): SingleRelationship = Endpoints(source, target) match {
-    case ends: IdenticalEndpoints => CyclicRelationship(ends)
-    case ends: DifferentEndpoints => UndirectedRelationship(ends)
-  }
+  def apply(source: IRField, target: IRField): SingleRelationship =
+    Endpoints(source, target) match {
+      case ends: IdenticalEndpoints => CyclicRelationship(ends)
+      case ends: DifferentEndpoints => UndirectedRelationship(ends)
+    }
 }
 
-final case class CyclicRelationship(endpoints: IdenticalEndpoints) extends SingleRelationship with CyclicConnection {
+final case class CyclicRelationship(endpoints: IdenticalEndpoints)
+    extends SingleRelationship
+    with CyclicConnection {
 
   override type SELF[XO, XE] = CyclicRelationship { type O = XO; type E = XE }
 
   protected def equalsIfNotEq(obj: scala.Any): Boolean = obj match {
     case other: CyclicRelationship => orientation.eqv(endpoints, other.endpoints)
-    case _ => false
+    case _                         => false
   }
 
   override def flip: CyclicRelationship = this
@@ -146,13 +153,17 @@ sealed trait VarLengthRelationship extends Connection {
   def upper: Option[Int]
 }
 
-final case class DirectedVarLengthRelationship(endpoints: DifferentEndpoints, lower: Int, upper: Option[Int]) extends VarLengthRelationship with DirectedConnection {
+final case class DirectedVarLengthRelationship(endpoints: DifferentEndpoints,
+                                               lower: Int,
+                                               upper: Option[Int])
+    extends VarLengthRelationship
+    with DirectedConnection {
   override type SELF[XO, XE] = DirectedVarLengthRelationship { type O = XO; type E = XE }
 
   override def flip: DirectedVarLengthRelationship = copy(endpoints.flip)
 
   override protected def equalsIfNotEq(obj: Any): Boolean = obj match {
     case other: DirectedVarLengthRelationship => orientation.eqv(endpoints, other.endpoints)
-    case _ => false
+    case _                                    => false
   }
 }

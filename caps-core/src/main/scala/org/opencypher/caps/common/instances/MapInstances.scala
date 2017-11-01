@@ -21,7 +21,7 @@ import org.opencypher.caps.common.syntax._
 trait MapInstances {
   implicit def mapValueMonoid[K, V](implicit monoid: Monoid[V]): Monoid[Map[K, V]] =
     new Monoid[Map[K, V]] {
-      override def empty: Map[K, V] = Map.empty[K, V]
+      override def empty: Map[K, V]                               = Map.empty[K, V]
       override def combine(x: Map[K, V], y: Map[K, V]): Map[K, V] = (x ++ y).groups[K, V]
     }
 }

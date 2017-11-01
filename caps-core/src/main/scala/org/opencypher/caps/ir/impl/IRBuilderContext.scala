@@ -29,20 +29,18 @@ import org.opencypher.caps.ir.api.block.SourceBlock
 import org.opencypher.caps.ir.api.pattern.Pattern
 import org.opencypher.caps.ir.api.{IRExternalGraph, IRField, IRGraph}
 
-final case class IRBuilderContext(
-  queryString: String,
-  parameters: Map[String, CypherValue],
-  ambientGraph: IRExternalGraph,
-  blocks: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
-  semanticState: SemanticState,
-  graphs: Map[String, URI],
-  graphList: List[IRGraph],
-  resolver: URI => CAPSGraphSource,
-  // TODO: Remove this
-  knownTypes: Map[ast.Expression, CypherType] = Map.empty)
-{
-  private def typer = SchemaTyper(currentGraph.schema)
-  private lazy val exprConverter = ExpressionConverter
+final case class IRBuilderContext(queryString: String,
+                                  parameters: Map[String, CypherValue],
+                                  ambientGraph: IRExternalGraph,
+                                  blocks: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
+                                  semanticState: SemanticState,
+                                  graphs: Map[String, URI],
+                                  graphList: List[IRGraph],
+                                  resolver: URI => CAPSGraphSource,
+                                  // TODO: Remove this
+                                  knownTypes: Map[ast.Expression, CypherType] = Map.empty) {
+  private def typer                 = SchemaTyper(currentGraph.schema)
+  private lazy val exprConverter    = ExpressionConverter
   private lazy val patternConverter = new PatternConverter(parameters)
 
   // TODO: Fuse monads
@@ -61,7 +59,7 @@ final case class IRBuilderContext(
 
   def convertExpression(e: ast.Expression): Expr = {
     val inferred = infer(e)
-    val convert = exprConverter.convert(e)(inferred)
+    val convert  = exprConverter.convert(e)(inferred)
     convert
   }
 
@@ -98,24 +96,23 @@ final case class IRBuilderContext(
 object IRBuilderContext {
 
   def initial(
-    query: String,
-    parameters: Map[String, CypherValue],
-    semState: SemanticState,
-    ambientGraph: IRExternalGraph,
-    resolver: URI => CAPSGraphSource
+      query: String,
+      parameters: Map[String, CypherValue],
+      semState: SemanticState,
+      ambientGraph: IRExternalGraph,
+      resolver: URI => CAPSGraphSource
   ): IRBuilderContext = {
     val registry = BlockRegistry.empty[Expr]
-    val block = SourceBlock[Expr](ambientGraph)
+    val block    = SourceBlock[Expr](ambientGraph)
     val (_, reg) = registry.register(block)
 
-    IRBuilderContext(
-      query,
-      parameters,
-      ambientGraph,
-      reg,
-      semState,
-      Map(ambientGraph.name -> ambientGraph.uri),
-      List(ambientGraph),
-      resolver)
+    IRBuilderContext(query,
+                     parameters,
+                     ambientGraph,
+                     reg,
+                     semState,
+                     Map(ambientGraph.name -> ambientGraph.uri),
+                     List(ambientGraph),
+                     resolver)
   }
 }

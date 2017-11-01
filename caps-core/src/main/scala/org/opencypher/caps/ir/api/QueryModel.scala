@@ -25,10 +25,10 @@ import scala.annotation.tailrec
 import scala.collection.generic.CanBuildFrom
 
 final case class QueryModel[E](
-  result: ResultBlock[E],
-  parameters: Map[String, CypherValue],
-  blocks: Map[BlockRef, Block[E]],
-  graphs: Map[String, URI]
+    result: ResultBlock[E],
+    parameters: Map[String, CypherValue],
+    blocks: Map[BlockRef, Block[E]],
+    graphs: Map[String, URI]
 ) {
 
   def apply(ref: BlockRef): Block[E] = blocks(ref)
@@ -42,12 +42,13 @@ final case class QueryModel[E](
     allDependencies(dependencies(ref).toList, List.empty, Set(ref)) - ref
 
   @tailrec
-  private def allDependencies(current: List[BlockRef], remaining: List[Set[BlockRef]], deps: Set[BlockRef])
-  : Set[BlockRef] = {
+  private def allDependencies(current: List[BlockRef],
+                              remaining: List[Set[BlockRef]],
+                              deps: Set[BlockRef]): Set[BlockRef] = {
     if (current.isEmpty) {
       remaining match {
         case hd :: tl => allDependencies(hd.toList, tl, deps)
-        case _ => deps
+        case _        => deps
       }
     } else {
       current match {
@@ -63,40 +64,41 @@ final case class QueryModel[E](
     }
   }
 
-  def collect[T, That](f: PartialFunction[(BlockRef, Block[E]), T])(implicit bf: CanBuildFrom[Map[BlockRef, Block[E]], T, That]): That = {
+  def collect[T, That](f: PartialFunction[(BlockRef, Block[E]), T])(
+      implicit bf: CanBuildFrom[Map[BlockRef, Block[E]], T, That]): That = {
     blocks.collect(f)
   }
 }
 
 case class SolvedQueryModel[E](
-  fields: Set[IRField],
-  predicates: Set[E] = Set.empty[E],
-  graphs: Set[IRNamedGraph] = Set.empty[IRNamedGraph]
+    fields: Set[IRField],
+    predicates: Set[E] = Set.empty[E],
+    graphs: Set[IRNamedGraph] = Set.empty[IRNamedGraph]
 ) {
 
   // extension
-  def withField(f: IRField): SolvedQueryModel[E] = copy(fields = fields + f)
-  def withFields(fs: IRField*): SolvedQueryModel[E] = copy(fields = fields ++ fs)
-  def withPredicate(pred: E): SolvedQueryModel[E] = copy(predicates = predicates + pred)
+  def withField(f: IRField): SolvedQueryModel[E]          = copy(fields = fields + f)
+  def withFields(fs: IRField*): SolvedQueryModel[E]       = copy(fields = fields ++ fs)
+  def withPredicate(pred: E): SolvedQueryModel[E]         = copy(predicates = predicates + pred)
   def withGraph(graph: IRNamedGraph): SolvedQueryModel[E] = copy(graphs = graphs + graph)
 
   def ++(other: SolvedQueryModel[E]): SolvedQueryModel[E] =
     copy(fields ++ other.fields, predicates ++ other.predicates)
 
   // containment
-  def contains(blocks: Block[E]*): Boolean = contains(blocks.toSet)
+  def contains(blocks: Block[E]*): Boolean     = contains(blocks.toSet)
   def contains(blocks: Set[Block[E]]): Boolean = blocks.forall(contains)
   def contains(block: Block[E]): Boolean = {
     val bindsFields = block.binds.fields subsetOf fields
     val bindsGraphs = block.binds.graphs.map(_.toNamedGraph) subsetOf graphs
-    val preds = block.where.elements subsetOf predicates
+    val preds       = block.where.elements subsetOf predicates
 
     bindsFields && bindsGraphs && preds
   }
 
-  def solves(f: IRField): Boolean = fields(f)
+  def solves(f: IRField): Boolean    = fields(f)
   def solves(p: Pattern[E]): Boolean = p.fields.subsetOf(fields)
-  def solves(p: IRGraph): Boolean = graphs.contains(p.toNamedGraph)
+  def solves(p: IRGraph): Boolean    = graphs.contains(p.toNamedGraph)
 }
 
 object SolvedQueryModel {

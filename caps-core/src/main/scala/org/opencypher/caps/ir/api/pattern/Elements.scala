@@ -31,7 +31,7 @@ trait Elements[T] {
 
 final case class AnyGiven[T](elements: Set[T] = Set.empty[T]) extends Elements[T] {
   override def headOption: Option[T] = elements.headOption
-  override def tail: AnyGiven[T] = AnyGiven(elements.tail)
+  override def tail: AnyGiven[T]     = AnyGiven(elements.tail)
 
   def flatPartition[U](f: PartialFunction[T, U]): (AnyGiven[U], AnyGiven[T]) = {
     val (selected, remaining) = elements.partition(f.isDefinedAt)
@@ -42,9 +42,9 @@ final case class AnyGiven[T](elements: Set[T] = Set.empty[T]) extends Elements[T
     val (left, right) = elements.partition(f)
     AnyGiven(left) -> AnyGiven(right)
   }
-  override def filter(f: T => Boolean): AnyGiven[T] = AnyGiven(elements.filter(f))
+  override def filter(f: T => Boolean): AnyGiven[T]    = AnyGiven(elements.filter(f))
   override def filterNot(f: T => Boolean): AnyGiven[T] = AnyGiven(elements.filterNot(f))
-  override def map[X](f: T => X): AnyGiven[X] = AnyGiven(elements.map(f))
+  override def map[X](f: T => X): AnyGiven[X]          = AnyGiven(elements.map(f))
 }
 
 case object AnyOf {
@@ -53,7 +53,7 @@ case object AnyOf {
 
 final case class AllGiven[T](elements: Set[T] = Set.empty[T]) extends Elements[T] {
   override def headOption: Option[T] = elements.headOption
-  override def tail: AnyGiven[T] = AnyGiven(elements.tail)
+  override def tail: AnyGiven[T]     = AnyGiven(elements.tail)
 
   def flatPartition[U](f: PartialFunction[T, U]): (AllGiven[U], AllGiven[T]) = {
     val (selected, remaining) = elements.partition(f.isDefinedAt)
@@ -64,9 +64,9 @@ final case class AllGiven[T](elements: Set[T] = Set.empty[T]) extends Elements[T
     val (left, right) = elements.partition(f)
     AllGiven(left) -> AllGiven(right)
   }
-  override def filter(f: T => Boolean): AllGiven[T] = AllGiven(elements.filter(f))
+  override def filter(f: T => Boolean): AllGiven[T]    = AllGiven(elements.filter(f))
   override def filterNot(f: T => Boolean): AllGiven[T] = AllGiven(elements.filterNot(f))
-  override def map[X](f: T => X) = AllGiven(elements.map(f))
+  override def map[X](f: T => X)                       = AllGiven(elements.map(f))
 }
 
 case object AllOf {

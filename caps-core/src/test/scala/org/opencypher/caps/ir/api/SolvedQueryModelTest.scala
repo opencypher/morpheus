@@ -42,7 +42,8 @@ class SolvedQueryModelTest extends IrTestSuite {
   }
 
   test("contains a block") {
-    val block = matchBlock(Pattern.empty.withEntity('a, EveryNode).withEntity('b, EveryNode).withEntity('c, EveryNode))
+    val block = matchBlock(
+      Pattern.empty.withEntity('a, EveryNode).withEntity('b, EveryNode).withEntity('c, EveryNode))
     val s = SolvedQueryModel.empty[Expr].withField('a).withFields('b, 'c)
 
     s.contains(block) shouldBe true
@@ -51,7 +52,8 @@ class SolvedQueryModelTest extends IrTestSuite {
   test("contains several blocks") {
     val block1 = matchBlock(Pattern.empty.withEntity('a, EveryNode))
     val block2 = matchBlock(Pattern.empty.withEntity('b, EveryNode))
-    val binds: FieldsAndGraphs[Expr] = FieldsAndGraphs(Map(toField('c) -> Equals('a, 'b)(CTBoolean)), Set('foo))
+    val binds: FieldsAndGraphs[Expr] =
+      FieldsAndGraphs(Map(toField('c) -> Equals('a, 'b)(CTBoolean)), Set('foo))
     val block3 = project(binds)
     val block4 = project(ProjectedFieldsOf[Expr](toField('d) -> Equals('c, 'b)(CTBoolean)))
     val block5 = project(FieldsAndGraphs(Map.empty, Set('bar)))
@@ -67,7 +69,11 @@ class SolvedQueryModelTest extends IrTestSuite {
 
   test("solves") {
     val s = SolvedQueryModel.empty[Expr].withField('a).withFields('b, 'c)
-    val p = Pattern.empty[Expr].withEntity('a, EveryNode).withEntity('b, EveryNode).withEntity('c, EveryNode)
+    val p = Pattern
+      .empty[Expr]
+      .withEntity('a, EveryNode)
+      .withEntity('b, EveryNode)
+      .withEntity('c, EveryNode)
 
     s.solves(toField('a)) shouldBe true
     s.solves(toField('b)) shouldBe true

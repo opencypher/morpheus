@@ -21,12 +21,12 @@ class CypherValueStructureTest extends CypherValueTestSuite {
 
   test("Construct PATH values") {
     val originalValueGroups = PATH_valueGroups
-    val scalaValueGroups = originalValueGroups.scalaValueGroups
+    val scalaValueGroups    = originalValueGroups.scalaValueGroups
 
-    val reconstructedValueGroups = scalaValueGroups.map {
-      values => values.map {
+    val reconstructedValueGroups = scalaValueGroups.map { values =>
+      values.map {
         case elements: Seq[_] =>
-           CypherPath(elements.asInstanceOf[Seq[CypherEntityValue]])
+          CypherPath(elements.asInstanceOf[Seq[CypherEntityValue]])
 
         case null =>
           cypherNull[CypherPath]
@@ -43,7 +43,9 @@ class CypherValueStructureTest extends CypherValueTestSuite {
     val cypherValueGroups = PATH_valueGroups.materialValueGroups
 
     val expected = cypherValueGroups.scalaValueGroups
-    val actual = cypherValueGroups.map { values => values.map { case CypherPath(elements) => elements } }
+    val actual = cypherValueGroups.map { values =>
+      values.map { case CypherPath(elements) => elements }
+    }
 
     actual should equal(expected)
 
@@ -52,12 +54,12 @@ class CypherValueStructureTest extends CypherValueTestSuite {
 
   test("Construct RELATIONSHIP values") {
     val originalValueGroups = RELATIONSHIP_valueGroups
-    val scalaValueGroups = originalValueGroups.scalaValueGroups
+    val scalaValueGroups    = originalValueGroups.scalaValueGroups
 
-    val reconstructedValueGroups = scalaValueGroups.map {
-      values => values.map {
+    val reconstructedValueGroups = scalaValueGroups.map { values =>
+      values.map {
         case contents: RelationshipContents =>
-          val id = contents.id
+          val id   = contents.id
           val data = contents.data
           CypherRelationship(id, data.startId, data.endId, data.relationshipType, data.properties)
 
@@ -76,7 +78,11 @@ class CypherValueStructureTest extends CypherValueTestSuite {
     val cypherValueGroups = RELATIONSHIP_valueGroups.materialValueGroups
 
     val expected = cypherValueGroups.scalaValueGroups
-    val actual = cypherValueGroups.map { values => values.map { r: CypherRelationship => RelationshipContents(r.id, r.startId, r.endId, r.relationshipType, r.properties) } }
+    val actual = cypherValueGroups.map { values =>
+      values.map { r: CypherRelationship =>
+        RelationshipContents(r.id, r.startId, r.endId, r.relationshipType, r.properties)
+      }
+    }
 
     actual should equal(expected)
 
@@ -85,12 +91,12 @@ class CypherValueStructureTest extends CypherValueTestSuite {
 
   test("Construct NODE values") {
     val originalValueGroups = NODE_valueGroups
-    val scalaValueGroups = originalValueGroups.scalaValueGroups
+    val scalaValueGroups    = originalValueGroups.scalaValueGroups
 
-    val reconstructedValueGroups = scalaValueGroups.map {
-      values => values.map {
+    val reconstructedValueGroups = scalaValueGroups.map { values =>
+      values.map {
         case contents: NodeContents =>
-          val id = contents.id
+          val id   = contents.id
           val data = contents.data
           CypherNode(id, data.labels, data.properties)
 
@@ -109,7 +115,11 @@ class CypherValueStructureTest extends CypherValueTestSuite {
     val cypherValueGroups = NODE_valueGroups.materialValueGroups
 
     val expected = cypherValueGroups.scalaValueGroups
-    val actual = cypherValueGroups.map { values => values.map { n: CypherNode => NodeContents(n.id, n.labels, n.properties) } }
+    val actual = cypherValueGroups.map { values =>
+      values.map { n: CypherNode =>
+        NodeContents(n.id, n.labels, n.properties)
+      }
+    }
 
     actual should equal(expected)
 
@@ -118,10 +128,10 @@ class CypherValueStructureTest extends CypherValueTestSuite {
 
   test("Construct MAP values") {
     val originalValueGroups = MAP_valueGroups
-    val scalaValueGroups = originalValueGroups.scalaValueGroups
+    val scalaValueGroups    = originalValueGroups.scalaValueGroups
 
-    val reconstructedValueGroups = scalaValueGroups.map {
-      values => values.map {
+    val reconstructedValueGroups = scalaValueGroups.map { values =>
+      values.map {
         case contents: MapContents =>
           CypherMap(contents.properties)
 
@@ -140,7 +150,9 @@ class CypherValueStructureTest extends CypherValueTestSuite {
     val cypherValueGroups = MAP_valueGroups.materialValueGroups
 
     val expected = cypherValueGroups.scalaValueGroups
-    val actual = cypherValueGroups.map { values => values.map { case CypherMap(m) => m } }
+    val actual = cypherValueGroups.map { values =>
+      values.map { case CypherMap(m) => m }
+    }
 
     actual should equal(expected)
 
@@ -149,10 +161,10 @@ class CypherValueStructureTest extends CypherValueTestSuite {
 
   test("Construct LIST values") {
     val originalValueGroups = LIST_valueGroups
-    val scalaValueGroups = originalValueGroups.scalaValueGroups
+    val scalaValueGroups    = originalValueGroups.scalaValueGroups
 
-    val reconstructedValueGroups = scalaValueGroups.map {
-      values => values.map {
+    val reconstructedValueGroups = scalaValueGroups.map { values =>
+      values.map {
         case l: Seq[_] =>
           CypherList(l.asInstanceOf[Seq[CypherValue]])
 
@@ -171,7 +183,9 @@ class CypherValueStructureTest extends CypherValueTestSuite {
     val cypherValueGroups = LIST_valueGroups.materialValueGroups
 
     val expected = cypherValueGroups.scalaValueGroups
-    val actual = cypherValueGroups.map { values => values.map { case CypherList(v) => v } }
+    val actual = cypherValueGroups.map { values =>
+      values.map { case CypherList(v) => v }
+    }
 
     actual should equal(expected)
 
@@ -180,10 +194,10 @@ class CypherValueStructureTest extends CypherValueTestSuite {
 
   test("Construct STRING values") {
     val originalValueGroups = STRING_valueGroups
-    val scalaValueGroups = originalValueGroups.scalaValueGroups
+    val scalaValueGroups    = originalValueGroups.scalaValueGroups
 
-    val reconstructedValueGroups = scalaValueGroups.map {
-      values => values.map {
+    val reconstructedValueGroups = scalaValueGroups.map { values =>
+      values.map {
         case s: String =>
           CypherString(s)
 
@@ -202,7 +216,9 @@ class CypherValueStructureTest extends CypherValueTestSuite {
     val cypherValueGroups = STRING_valueGroups.materialValueGroups
 
     val expected = cypherValueGroups.scalaValueGroups
-    val actual = cypherValueGroups.map { values => values.map { case CypherString(v) => v } }
+    val actual = cypherValueGroups.map { values =>
+      values.map { case CypherString(v) => v }
+    }
 
     actual should equal(expected)
 
@@ -211,10 +227,10 @@ class CypherValueStructureTest extends CypherValueTestSuite {
 
   test("Construct BOOLEAN values") {
     val originalValueGroups = BOOLEAN_valueGroups
-    val scalaValueGroups = originalValueGroups.scalaValueGroups
+    val scalaValueGroups    = originalValueGroups.scalaValueGroups
 
-    val reconstructedValueGroups = scalaValueGroups.map {
-      values => values.map {
+    val reconstructedValueGroups = scalaValueGroups.map { values =>
+      values.map {
         case b: Boolean =>
           CypherBoolean(b)
 
@@ -233,7 +249,9 @@ class CypherValueStructureTest extends CypherValueTestSuite {
     val cypherValueGroups = BOOLEAN_valueGroups.materialValueGroups
 
     val expected = cypherValueGroups.scalaValueGroups
-    val actual = cypherValueGroups.map { values => values.map { case CypherBoolean(v) => v } }
+    val actual = cypherValueGroups.map { values =>
+      values.map { case CypherBoolean(v) => v }
+    }
 
     actual should equal(expected)
 
@@ -242,10 +260,10 @@ class CypherValueStructureTest extends CypherValueTestSuite {
 
   test("Construct INTEGER values") {
     val originalValueGroups = INTEGER_valueGroups
-    val scalaValueGroups = originalValueGroups.scalaValueGroups
+    val scalaValueGroups    = originalValueGroups.scalaValueGroups
 
-    val reconstructedValueGroups = scalaValueGroups.map {
-      values => values.map {
+    val reconstructedValueGroups = scalaValueGroups.map { values =>
+      values.map {
         case l: Long =>
           CypherInteger(l)
 
@@ -264,7 +282,9 @@ class CypherValueStructureTest extends CypherValueTestSuite {
     val cypherValueGroups = INTEGER_valueGroups.materialValueGroups
 
     val expected = cypherValueGroups.scalaValueGroups
-    val actual = cypherValueGroups.map { values => values.map { case CypherInteger(v) => v } }
+    val actual = cypherValueGroups.map { values =>
+      values.map { case CypherInteger(v) => v }
+    }
 
     actual should equal(expected)
 
@@ -273,10 +293,10 @@ class CypherValueStructureTest extends CypherValueTestSuite {
 
   test("Construct FLOAT values") {
     val originalValueGroups = FLOAT_valueGroups
-    val scalaValueGroups = originalValueGroups.scalaValueGroups
+    val scalaValueGroups    = originalValueGroups.scalaValueGroups
 
-    val reconstructedValueGroups = scalaValueGroups.map {
-      values => values.map {
+    val reconstructedValueGroups = scalaValueGroups.map { values =>
+      values.map {
         case d: Double =>
           CypherFloat(d)
 
@@ -291,16 +311,19 @@ class CypherValueStructureTest extends CypherValueTestSuite {
     reconstructedValueGroups should equal(originalValueGroups)
   }
 
-  def withoutNaNs(values: Seq[Seq[Any]]) = values.map(_.filter {
-    case d: Double => !d.isNaN
-    case _         => true
-  })
+  def withoutNaNs(values: Seq[Seq[Any]]) =
+    values.map(_.filter {
+      case d: Double => !d.isNaN
+      case _         => true
+    })
 
   test("Deconstruct FLOAT values") {
     val cypherValueGroups = FLOAT_valueGroups.materialValueGroups
 
     val expected = cypherValueGroups.scalaValueGroups
-    val actual = cypherValueGroups.map { values => values.map { case CypherFloat(v) => v } }
+    val actual = cypherValueGroups.map { values =>
+      values.map { case CypherFloat(v) => v }
+    }
 
     withoutNaNs(actual) should equal(withoutNaNs(expected))
 
@@ -309,10 +332,10 @@ class CypherValueStructureTest extends CypherValueTestSuite {
 
   test("Construct NUMBER values") {
     val originalValueGroups = NUMBER_valueGroups
-    val scalaValueGroups = originalValueGroups.scalaValueGroups
+    val scalaValueGroups    = originalValueGroups.scalaValueGroups
 
-    val reconstructedValueGroups = scalaValueGroups.map {
-      values => values.map {
+    val reconstructedValueGroups = scalaValueGroups.map { values =>
+      values.map {
         case l: Long =>
           CypherInteger(l)
 
@@ -334,7 +357,9 @@ class CypherValueStructureTest extends CypherValueTestSuite {
     val cypherValueGroups = NUMBER_valueGroups.materialValueGroups
 
     val expected = cypherValueGroups.scalaValueGroups
-    val actual = cypherValueGroups.map { values => values.map { case CypherNumber(v) => v } }
+    val actual = cypherValueGroups.map { values =>
+      values.map { case CypherNumber(v) => v }
+    }
 
     withoutNaNs(actual) should equal(withoutNaNs(expected))
 
@@ -343,17 +368,17 @@ class CypherValueStructureTest extends CypherValueTestSuite {
 
   test("Construct ANY values") {
     val originalValueGroups = ANY_valueGroups
-    val scalaValueGroups = originalValueGroups.scalaValueGroups
+    val scalaValueGroups    = originalValueGroups.scalaValueGroups
 
-    val reconstructedValueGroups = scalaValueGroups.map {
-      values => values.map {
+    val reconstructedValueGroups = scalaValueGroups.map { values =>
+      values.map {
         case contents: NodeContents =>
-          val id = contents.id
+          val id   = contents.id
           val data = contents.data
           CypherNode(id, data.labels, data.properties)
 
         case contents: RelationshipContents =>
-          val id = contents.id
+          val id   = contents.id
           val data = contents.data
           CypherRelationship(id, data)
 
@@ -393,7 +418,9 @@ class CypherValueStructureTest extends CypherValueTestSuite {
     val cypherValueGroups = ANY_valueGroups.materialValueGroups
 
     val expected = cypherValueGroups.scalaValueGroups
-    val actual = cypherValueGroups.map { values => values.map { case CypherValue(v) => v } }
+    val actual = cypherValueGroups.map { values =>
+      values.map { case CypherValue(v) => v }
+    }
 
     withoutNaNs(actual) should equal(withoutNaNs(expected))
 

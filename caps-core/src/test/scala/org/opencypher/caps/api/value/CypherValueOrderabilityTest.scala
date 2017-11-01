@@ -88,10 +88,11 @@ class CypherValueOrderabilityTest extends CypherValueTestSuite {
     verifyOrderabilityOrder(ANY_valueGroups)
   }
 
-  private def verifyOrderabilityReflexivity[V <: CypherValue : CypherValueCompanion](values: ValueGroups[V]): Unit = {
+  private def verifyOrderabilityReflexivity[V <: CypherValue: CypherValueCompanion](
+      values: ValueGroups[V]): Unit = {
     values.flatten.foreach { (v: V) =>
       CypherValueCompanion[V].order.compare(v, v) should be(0)
-      if (! v.isNull) {
+      if (!v.isNull) {
         (CypherValueCompanion[V].order.compare(v, cypherNull[V]) < 0) should be(true)
         (CypherValueCompanion[V].order.compare(cypherNull[V], v) > 0) should be(true)
       }
@@ -101,15 +102,16 @@ class CypherValueOrderabilityTest extends CypherValueTestSuite {
 
     values.indexed.zip(values.indexed).foreach { entry =>
       val ((leftIndex, leftValue), (rightIndex, rightValue)) = entry
-      val cmp = CypherValueCompanion[V].order.compare(leftValue, rightValue)
-      val isEqual = cmp == 0
-      val isSameValue = leftIndex == rightIndex
+      val cmp                                                = CypherValueCompanion[V].order.compare(leftValue, rightValue)
+      val isEqual                                            = cmp == 0
+      val isSameValue                                        = leftIndex == rightIndex
       isEqual should be(isSameValue)
     }
   }
 
-  private def verifyOrderabilityTransitivity[V <: CypherValue : CypherValueCompanion](values: ValueGroups[V]): Unit = {
-    var count = 0
+  private def verifyOrderabilityTransitivity[V <: CypherValue: CypherValueCompanion](
+      values: ValueGroups[V]): Unit = {
+    var count      = 0
     val flatValues = values.indexed
     flatValues.foreach { a =>
       flatValues.foreach { b =>
@@ -155,39 +157,57 @@ class CypherValueOrderabilityTest extends CypherValueTestSuite {
   }
 
   private def assertInIndexOrder(cmp: Int)(leftIndex: Int, rightIndex: Int) = {
-    if (cmp < 0) (leftIndex < rightIndex)  should be(true)
-    if (cmp == 0) (leftIndex == rightIndex)should be(true)
+    if (cmp < 0) (leftIndex < rightIndex) should be(true)
+    if (cmp == 0) (leftIndex == rightIndex) should be(true)
     if (cmp > 0) (leftIndex > rightIndex) should be(true)
   }
 
-  private def verifyOrderabilityOrder[V <: CypherValue : CypherValueCompanion](expected: ValueGroups[V]): Unit = {
+  private def verifyOrderabilityOrder[V <: CypherValue: CypherValueCompanion](
+      expected: ValueGroups[V]): Unit = {
     1.to(1000).foreach { _ =>
       val shuffled = Random.shuffle[Seq[V], Seq](expected)
-      val sorted = shuffled.sortBy(values => Random.shuffle(values).head)(CypherValueCompanion[V].order)
+      val sorted =
+        shuffled.sortBy(values => Random.shuffle(values).head)(CypherValueCompanion[V].order)
 
       assertSameGroupsInSameOrder(sorted, expected)(CypherValueCompanion[V].order)
     }
   }
 
   @tailrec
-  private def assertSameGroupsInSameOrder[V <: CypherValue](lhs: ValueGroups[V], rhs: ValueGroups[V])
-                                                           (implicit order: Ordering[V]): Unit =
+  private def assertSameGroupsInSameOrder[V <: CypherValue](
+      lhs: ValueGroups[V],
+      rhs: ValueGroups[V])(implicit order: Ordering[V]): Unit =
     (lhs, rhs) match {
 
-      case (Seq(lefts, lhsTail@_*), Seq(rights, rhsTail@_*)) =>
-
+      case (Seq(lefts, lhsTail @ _*), Seq(rights, rhsTail @ _*)) =>
         // each group only contains values that are indistinguishable under the order
-        lefts.foreach { (l1: V) => lefts.foreach { (l2: V) => order.compare(l1, l2) should equal(0) } }
-        rights.foreach { (r1: V) => rights.foreach { (r2: V) => order.compare(r1, r2) should equal(0) } }
+        lefts.foreach { (l1: V) =>
+          lefts.foreach { (l2: V) =>
+            order.compare(l1, l2) should equal(0)
+          }
+        }
+        rights.foreach { (r1: V) =>
+          rights.foreach { (r2: V) =>
+            order.compare(r1, r2) should equal(0)
+          }
+        }
 
         // each value in the left group comes before any value in the right group according to the order
-        lefts.foreach { (l: V) => rights.foreach { (r: V) => order.compare(l, r) < 0 } }
-        lefts.foreach { (l: V) => rights.foreach { (r: V) => order.compare(r, l) > 0 } }
+        lefts.foreach { (l: V) =>
+          rights.foreach { (r: V) =>
+            order.compare(l, r) < 0
+          }
+        }
+        lefts.foreach { (l: V) =>
+          rights.foreach { (r: V) =>
+            order.compare(r, l) > 0
+          }
+        }
 
         assertSameGroupsInSameOrder(lhsTail, rhsTail)
 
       case (Seq(), Seq()) =>
-        // Yay! We win
+      // Yay! We win
 
       case _ =>
         fail("Value groups have differing length")

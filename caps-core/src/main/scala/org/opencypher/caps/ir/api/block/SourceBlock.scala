@@ -19,9 +19,9 @@ import org.opencypher.caps.ir.api.{IRGraph, IRNamedGraph}
 import org.opencypher.caps.ir.api.pattern.AllGiven
 
 case class SourceBlock[E](
-  source: IRGraph
+    source: IRGraph
 ) extends BasicBlock[Binds[E], E](BlockType("source")) {
-  override def where: AllGiven[E] = AllGiven[E]()
+  override def where: AllGiven[E]   = AllGiven[E]()
   override val after: Set[BlockRef] = Set.empty
-  override val binds: Binds[E] = Binds.empty
+  override val binds: Binds[E]      = Binds.empty
 }

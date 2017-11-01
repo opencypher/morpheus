@@ -30,11 +30,11 @@ abstract class CsvSchema {
 
 case class CsvField(name: String, column: Int, valueType: String) {
   def getType: DataType = valueType.toLowerCase match {
-    case "string" => StringType
+    case "string"  => StringType
     case "integer" => LongType
-    case "long" => LongType
+    case "long"    => LongType
     case "boolean" => BooleanType
-    case x => throw new RuntimeException(s"Unknown type $x")
+    case x         => throw new RuntimeException(s"Unknown type $x")
   }
 
   def toStructField: StructField = StructField(name, getType, nullable = true)
@@ -44,7 +44,7 @@ case class CsvNodeSchema(idField: CsvField,
                          implicitLabels: List[String],
                          optionalLabels: List[CsvField],
                          propertyFields: List[CsvField])
-                         extends CsvSchema {
+    extends CsvSchema {
 
   def toStructType: StructType = {
     StructType(
@@ -92,7 +92,7 @@ case class CsvNodeSchema(idField: CsvField,
   */
 object CsvNodeSchema {
   implicit val decodeNodeCsvSchema: Decoder[CsvNodeSchema] = for {
-    idField <- Decoder.instance(_.get[CsvField]("idField"))
+    idField        <- Decoder.instance(_.get[CsvField]("idField"))
     implicitLabels <- Decoder.instance(_.get[List[String]]("implicitLabels"))
     optionalLabels <- Decoder.instance(_.getOrElse[List[CsvField]]("optionalLabels")(List()))
     propertyFields <- Decoder.instance(_.getOrElse[List[CsvField]]("propertyFields")(List()))
@@ -108,12 +108,12 @@ case class CsvRelSchema(idField: CsvField,
                         endIdField: CsvField,
                         relType: String,
                         propertyFields: List[CsvField])
-                        extends CsvSchema {
+    extends CsvSchema {
 
   def toStructType: StructType = {
     StructType(
       (List(idField, startIdField, endIdField) ++ propertyFields)
-          .sortBy(_.column)
+        .sortBy(_.column)
         .map(_.toStructField)
     )
   }
@@ -149,10 +149,10 @@ case class CsvRelSchema(idField: CsvField,
   */
 object CsvRelSchema {
   implicit val decodeRelCsvSchema: Decoder[CsvRelSchema] = for {
-    id <- Decoder.instance(_.get[CsvField]("idField"))
-    startIdField <- Decoder.instance(_.get[CsvField]("startIdField"))
-    endIdField <- Decoder.instance(_.get[CsvField]("endIdField"))
-    relType <- Decoder.instance(_.get[String]("relationshipType"))
+    id             <- Decoder.instance(_.get[CsvField]("idField"))
+    startIdField   <- Decoder.instance(_.get[CsvField]("startIdField"))
+    endIdField     <- Decoder.instance(_.get[CsvField]("endIdField"))
+    relType        <- Decoder.instance(_.get[String]("relationshipType"))
     propertyFields <- Decoder.instance(_.getOrElse[List[CsvField]]("propertyFields")(List()))
   } yield new CsvRelSchema(id, startIdField, endIdField, relType, propertyFields)
 

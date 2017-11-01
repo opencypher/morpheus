@@ -29,13 +29,15 @@ trait RecordHeaderSyntax {
 
   type HeaderState[X] = State[RecordHeader, X]
 
-  def addContents(contents: Seq[SlotContent]): State[RecordHeader, Vector[AdditiveUpdateResult[RecordSlot]]] =
+  def addContents(
+      contents: Seq[SlotContent]): State[RecordHeader, Vector[AdditiveUpdateResult[RecordSlot]]] =
     exec(InternalHeader.addContents(contents))
 
   def addContent(content: SlotContent): State[RecordHeader, AdditiveUpdateResult[RecordSlot]] =
     exec(InternalHeader.addContent(content))
 
-  def compactFields(implicit details: RetainedDetails): State[RecordHeader, Vector[RemovingUpdateResult[RecordSlot]]] =
+  def compactFields(implicit details: RetainedDetails)
+    : State[RecordHeader, Vector[RemovingUpdateResult[RecordSlot]]] =
     exec(InternalHeader.compactFields)
 
 //  def selectFields(predicate: RecordSlot => Boolean)
@@ -48,8 +50,10 @@ trait RecordHeaderSyntax {
 
   private def exec[O](inner: State[InternalHeader, O]): State[RecordHeader, O] =
     get[RecordHeader]
-    .map(header => inner.run(header.internalHeader).value)
-    .flatMap { case (newInternalHeader, value) => set(RecordHeader(newInternalHeader)).map(_ => value) }
+      .map(header => inner.run(header.internalHeader).value)
+      .flatMap {
+        case (newInternalHeader, value) => set(RecordHeader(newInternalHeader)).map(_ => value)
+      }
 }
 
 final class RecordHeaderOps(header: RecordHeader) {

@@ -26,11 +26,12 @@ import org.opencypher.caps.impl.spark.exception.Raise
 case object Neo4jGraphSourceFactory extends CAPSGraphSourceFactoryCompanion("bolt", "bolt+routing")
 
 case class Neo4jGraphSourceFactory()
-  extends CAPSGraphSourceFactoryImpl[Neo4jGraphSource](Neo4jGraphSourceFactory) {
+    extends CAPSGraphSourceFactoryImpl[Neo4jGraphSource](Neo4jGraphSourceFactory) {
 
-  override protected def sourceForURIWithSupportedScheme(uri: URI)(implicit capsSession: CAPSSession): Neo4jGraphSource = {
+  override protected def sourceForURIWithSupportedScheme(uri: URI)(
+      implicit capsSession: CAPSSession): Neo4jGraphSource = {
     val (user, passwd) = getUserInfo(uri)
-    val neo4jConfig = new EncryptedNeo4jConfig(uri, user, passwd, Config.EncryptionLevel.NONE)
+    val neo4jConfig    = new EncryptedNeo4jConfig(uri, user, passwd, Config.EncryptionLevel.NONE)
     Neo4jGraphSource(neo4jConfig, getQueries(uri))
   }
 
@@ -47,9 +48,10 @@ case class Neo4jGraphSourceFactory()
     case null => None
 
     case queries =>
-      val tokens = queries.split(";")
+      val tokens    = queries.split(";")
       val nodeQuery = tokens.headOption.getOrElse(Raise.invalidArgument("a node query", "none"))
-      val relQuery = tokens.tail.headOption.getOrElse(Raise.invalidArgument("a relationship query", "none"))
+      val relQuery =
+        tokens.tail.headOption.getOrElse(Raise.invalidArgument("a relationship query", "none"))
       Some(URLDecoder.decode(nodeQuery, "UTF-8") -> URLDecoder.decode(relQuery, "UTF-8"))
   }
 }

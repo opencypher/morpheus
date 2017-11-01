@@ -23,8 +23,8 @@ import org.opencypher.caps.test.BaseTestSuite
 class TypeRecorderTest extends BaseTestSuite with AstConstructionTestSupport {
 
   test("can convert to map") {
-    val expr1 = True()(pos)
-    val expr2 = True()(pos)
+    val expr1    = True()(pos)
+    val expr2    = True()(pos)
     val recorder = TypeRecorder(List(Ref(expr1) -> CTBoolean, Ref(expr2) -> CTString))
 
     recorder.toMap should equal(Map(Ref(expr1) -> CTBoolean, Ref(expr2) -> CTString))

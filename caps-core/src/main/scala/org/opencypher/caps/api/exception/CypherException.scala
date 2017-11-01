@@ -16,4 +16,3 @@
 package org.opencypher.caps.api.exception
 
 abstract class CypherException(msg: String) extends RuntimeException(msg) with Serializable
-

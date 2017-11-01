@@ -20,7 +20,6 @@ import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
 
 trait CAPSGraphSourceFactory extends GraphSourceFactory {
   override final type Session = CAPSSession
-  override final type Graph = CAPSGraph
+  override final type Graph   = CAPSGraph
   override type Source <: CAPSGraphSource
 }
-

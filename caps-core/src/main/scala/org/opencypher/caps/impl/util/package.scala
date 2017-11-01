@@ -34,10 +34,9 @@ package object util {
   implicit class ColumnMappableDf(df: DataFrame) {
     def mapColumn(columnName: String)(f: Column => Column)(implicit caps: CAPSSession): DataFrame = {
       val tmpColName = caps.temporaryColumnName()
-      df.
-        withColumn(tmpColName, f(df(columnName))).
-        drop(columnName).
-        withColumnRenamed(tmpColName, columnName)
+      df.withColumn(tmpColName, f(df(columnName)))
+        .drop(columnName)
+        .withColumnRenamed(tmpColName, columnName)
     }
   }
 

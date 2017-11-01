@@ -19,9 +19,6 @@ sealed trait Token extends Any {
   def name: String
 }
 
-final case class Label(name: String) extends AnyVal with Token
+final case class Label(name: String)       extends AnyVal with Token
 final case class PropertyKey(name: String) extends AnyVal with Token
-final case class RelType(name: String) extends AnyVal with Token
-
-
-
+final case class RelType(name: String)     extends AnyVal with Token

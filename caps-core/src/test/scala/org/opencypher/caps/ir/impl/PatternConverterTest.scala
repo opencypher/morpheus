@@ -119,10 +119,10 @@ class PatternConverterTest extends IrTestSuite {
       ast.Variable("r")(NONE) -> CTRelationship("FOO")
     )
 
-    val x: IRField = 'x -> CTNode("Person")
-    val y: IRField = 'y -> CTNode("Person")
-    val z: IRField = 'z -> CTNode("Customer")
-    val r: IRField = 'r -> CTRelationship("FOO")
+    val x: IRField    = 'x    -> CTNode("Person")
+    val y: IRField    = 'y    -> CTNode("Person")
+    val z: IRField    = 'z    -> CTNode("Customer")
+    val r: IRField    = 'r    -> CTRelationship("FOO")
     val newR: IRField = 'newR -> CTRelationship("IN")
 
     convert(pattern, knownTypes) should equal(

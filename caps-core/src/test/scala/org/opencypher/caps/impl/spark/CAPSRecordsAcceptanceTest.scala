@@ -22,7 +22,10 @@ import org.opencypher.caps.test.fixture.{Neo4jServerFixture, OpenCypherDataFixtu
 
 import scala.language.reflectiveCalls
 
-class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture with OpenCypherDataFixture {
+class CAPSRecordsAcceptanceTest
+    extends CAPSTestSuite
+    with Neo4jServerFixture
+    with OpenCypherDataFixture {
 
   private lazy val graph: CAPSGraph =
     Neo4jGraphLoader.fromNeo4j(neo4jConfig)
@@ -35,11 +38,12 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     val strings = result.records.toLocalScalaIterator.map(_.toString).toSet
 
     // We do string comparisons here because CypherNode.equals() does not check labels/properties
-    strings should equal(Set(
-      "{a: (#0:Person {birthyear: 1910, name: 'Rachel Kempson'}), a.name: 'Rachel Kempson'}",
-      "{a: (#1:Person {birthyear: 1908, name: 'Michael Redgrave'}), a.name: 'Michael Redgrave'}",
-      "{a: (#10:Person {birthyear: 1873, name: 'Roy Redgrave'}), a.name: 'Roy Redgrave'}"
-    ))
+    strings should equal(
+      Set(
+        "{a: (#0:Person {birthyear: 1910, name: 'Rachel Kempson'}), a.name: 'Rachel Kempson'}",
+        "{a: (#1:Person {birthyear: 1908, name: 'Michael Redgrave'}), a.name: 'Michael Redgrave'}",
+        "{a: (#10:Person {birthyear: 1873, name: 'Roy Redgrave'}), a.name: 'Roy Redgrave'}"
+      ))
   }
 
   test("label scan and project") {
@@ -110,7 +114,8 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
 
   test("multiple hops of expand with different reltypes") {
     // Given
-    val query = "MATCH (c:City)<-[:BORN_IN]-(a:Actor)-[r:ACTED_IN]->(f:Film) RETURN a.name, c.name, f.title"
+    val query =
+      "MATCH (c:City)<-[:BORN_IN]-(a:Actor)-[r:ACTED_IN]->(f:Film) RETURN a.name, c.name, f.title"
 
     // When
     val records = graph.cypher(query).records
@@ -127,14 +132,17 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
   // TODO: Figure out what invariant this was meant to measure
   ignore("multiple hops of expand with possible reltype conflict") {
     // Given
-    val query = "MATCH (u1:User)-[r1:POSTED]->(t:Tweet)-[r2]->(u2:User) RETURN u1.name, u2.name, t.text"
+    val query =
+      "MATCH (u1:User)-[r1:POSTED]->(t:Tweet)-[r2]->(u2:User) RETURN u1.name, u2.name, t.text"
 
     // When
     val result = graph.cypher(query)
 
     // Then
-    val tuple = ("Brendan Madden", "Tom Sawyer Software",
-      "#tsperspectives 7.6 is 15% faster with #neo4j Bolt support. https://t.co/1xPxB9slrB @TSawyerSoftware #graphviz")
+    val tuple =
+      ("Brendan Madden",
+       "Tom Sawyer Software",
+       "#tsperspectives 7.6 is 15% faster with #neo4j Bolt support. https://t.co/1xPxB9slrB @TSawyerSoftware #graphviz")
     result.records shouldHaveSize 79 andContain tuple
   }
 
@@ -170,7 +178,8 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
       case 6 => Tuple6(elts(0), elts(1), elts(2), elts(3), elts(4), elts(5))
       case 7 => Tuple7(elts(0), elts(1), elts(2), elts(3), elts(4), elts(5), elts(6))
       case 8 => Tuple8(elts(0), elts(1), elts(2), elts(3), elts(4), elts(5), elts(6), elts(7))
-      case 9 => Tuple9(elts(0), elts(1), elts(2), elts(3), elts(4), elts(5), elts(6), elts(7), elts(8))
+      case 9 =>
+        Tuple9(elts(0), elts(1), elts(2), elts(3), elts(4), elts(5), elts(6), elts(7), elts(8))
       case _ => throw new UnsupportedOperationException("Implement support for larger products")
     }
   }

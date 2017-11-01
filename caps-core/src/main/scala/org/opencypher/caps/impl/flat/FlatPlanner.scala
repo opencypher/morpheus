@@ -27,7 +27,8 @@ import scala.annotation.tailrec
 
 final case class FlatPlannerContext(parameters: Map[String, CypherValue])
 
-class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, FlatPlannerContext] {
+class FlatPlanner
+    extends DirectCompilationStage[LogicalOperator, FlatOperator, FlatPlannerContext] {
 
   override def process(input: LogicalOperator)(implicit context: FlatPlannerContext): FlatOperator = {
     val producer = new FlatOperatorProducer()
@@ -60,7 +61,13 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
         producer.aggregate(aggregations, group, process(in))
 
       case logical.ExpandSource(source, rel, types, target, sourceOp, targetOp) =>
-        producer.expandSource(source, rel, types, target, input.sourceGraph.schema, process(sourceOp), process(targetOp))
+        producer.expandSource(source,
+                              rel,
+                              types,
+                              target,
+                              input.sourceGraph.schema,
+                              process(sourceOp),
+                              process(targetOp))
 
       case logical.ExpandInto(source, rel, types, target, sourceOp) =>
         producer.expandInto(source, rel, types, target, input.sourceGraph.schema, process(sourceOp))
@@ -74,12 +81,27 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
       case logical.SetSourceGraph(graph, in) =>
         producer.planSetSourceGraph(graph, process(in))
 
-      case logical.BoundedVarLengthExpand(source, edgeList, target, lower, upper, sourceOp, targetOp) =>
-        val initVarExpand = producer.initVarExpand(source, edgeList, process(sourceOp))
+      case logical.BoundedVarLengthExpand(source,
+                                          edgeList,
+                                          target,
+                                          lower,
+                                          upper,
+                                          sourceOp,
+                                          targetOp) =>
+        val initVarExpand       = producer.initVarExpand(source, edgeList, process(sourceOp))
         val types: Set[RelType] = relTypeFromList(edgeList.cypherType).map(RelType)
-        val edgeScan = producer.varLengthEdgeScan(edgeList, EveryRelationship(AnyGiven(types)), producer.planStart(input.sourceGraph, Set.empty))
-        producer.boundedVarExpand(edgeScan.edge, edgeList, target, lower, upper, initVarExpand,
-          edgeScan, process(targetOp), isExpandInto = sourceOp == targetOp)
+        val edgeScan = producer.varLengthEdgeScan(edgeList,
+                                                  EveryRelationship(AnyGiven(types)),
+                                                  producer.planStart(input.sourceGraph, Set.empty))
+        producer.boundedVarExpand(edgeScan.edge,
+                                  edgeList,
+                                  target,
+                                  lower,
+                                  upper,
+                                  initVarExpand,
+                                  edgeScan,
+                                  process(targetOp),
+                                  isExpandInto = sourceOp == targetOp)
 
       case logical.Optional(lhs, rhs) =>
         producer.planOptional(process(lhs), process(rhs))
@@ -100,8 +122,8 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
 
   @tailrec
   private def relTypeFromList(t: CypherType): Set[String] = t match {
-    case l: CTList => relTypeFromList(l.elementType)
+    case l: CTList         => relTypeFromList(l.elementType)
     case r: CTRelationship => r.types
-    case _ => Raise.impossible()
+    case _                 => Raise.impossible()
   }
 }

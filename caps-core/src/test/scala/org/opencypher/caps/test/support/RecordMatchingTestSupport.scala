@@ -41,7 +41,7 @@ trait RecordMatchingTestSupport {
     def shouldMatch(expectedRecords: CAPSRecords): Assertion = {
       records.header should equal(expectedRecords.header)
 
-      val actualData = records.toLocalIterator.asScala.toSet
+      val actualData   = records.toLocalIterator.asScala.toSet
       val expectedData = expectedRecords.toLocalIterator.asScala.toSet
       actualData should equal(expectedData)
     }
@@ -53,10 +53,10 @@ trait RecordMatchingTestSupport {
     private def projected(records: CAPSRecords): CAPSRecords = {
       val newSlots = records.header.slots.map(_.content).map {
         case slot: FieldSlotContent => OpaqueField(slot.field)
-        case slot: ProjectedExpr => OpaqueField(Var(slot.expr.withoutType)(slot.cypherType))
+        case slot: ProjectedExpr    => OpaqueField(Var(slot.expr.withoutType)(slot.cypherType))
       }
       val newHeader = RecordHeader.from(newSlots: _*)
-      val newData = records.data.toDF(newHeader.internalHeader.columns: _*)
+      val newData   = records.data.toDF(newHeader.internalHeader.columns: _*)
       CAPSRecords.create(newHeader, newData)(records.caps)
     }
   }
@@ -68,8 +68,8 @@ trait RecordMatchingTestSupport {
       val rows = records.toDF().collect().map { r =>
         val properties = records.header.slots.map { s =>
           s.content match {
-            case f: FieldSlotContent => f.field.name -> r.getCypherValue(f.key, records.header)
-            case x => x.key.withoutType -> r.getCypherValue(x.key, records.header)
+            case f: FieldSlotContent => f.field.name      -> r.getCypherValue(f.key, records.header)
+            case x                   => x.key.withoutType -> r.getCypherValue(x.key, records.header)
           }
         }.toMap
         CypherMap(properties)

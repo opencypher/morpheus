@@ -43,7 +43,9 @@ object RefCollection {
     }
 
     override def find(collection: RefCollection[D], defn: Def): Option[Ref] =
-      findByKey(collection, key(defn)).filter { ref => collection.elts(id(ref)) == defn }
+      findByKey(collection, key(defn)).filter { ref =>
+        collection.elts(id(ref)) == defn
+      }
 
     override def findByKey(collection: RefCollection[D], k: Key): Option[Ref] = {
       val idx = collection.elts.indexWhere(defn => key(defn) == k)
@@ -51,7 +53,9 @@ object RefCollection {
     }
 
     // left if key(defn) is already inserted at different ref, right otherwise
-    override def update(collection: RefCollection[D], ref: R, defn: D): Either[Ref, RefCollection[Def]] = {
+    override def update(collection: RefCollection[D],
+                        ref: R,
+                        defn: D): Either[Ref, RefCollection[Def]] = {
       val defnKey = key(defn)
       findByKey(collection, defnKey)
         .filter(altRef => id(altRef) != id(ref))
@@ -60,17 +64,23 @@ object RefCollection {
     }
 
     // left if key(defn) is already inserted with a different defn, right otherwise
-    override def insert(collection: RefCollection[D], defn: Def): Either[Ref, (Option[RefCollection[Def]], Ref)] = {
+    override def insert(collection: RefCollection[D],
+                        defn: Def): Either[Ref, (Option[RefCollection[Def]], Ref)] = {
       val defnKey = key(defn)
       findByKey(collection, defnKey)
-        .map { ref => if (collection.elts(id(ref)) == defn) Right(None -> ref) else Left(ref) }
-        .getOrElse { Right(Some(RefCollection(collection.elts :+ defn)) -> ref(collection.elts.size)) }
+        .map { ref =>
+          if (collection.elts(id(ref)) == defn) Right(None -> ref) else Left(ref)
+        }
+        .getOrElse {
+          Right(Some(RefCollection(collection.elts :+ defn)) -> ref(collection.elts.size))
+        }
     }
 
     protected def id(ref: Ref): Int
     protected def ref(id: Int): Ref
 
-    private def inCollection(collection: RefCollection[D], idx: Int) = idx >= 0 && idx <= collection.elts.size
+    private def inCollection(collection: RefCollection[D], idx: Int) =
+      idx >= 0 && idx <= collection.elts.size
 
     override def remove(collection: RefCollection[D], ref: R): Option[RefCollection[D]] =
       lookup(collection, ref).map { defn =>

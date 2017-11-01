@@ -24,10 +24,10 @@ import scala.reflect.runtime.universe.TypeTag
 
 trait CAPSResult extends CypherResult {
 
-  override type Graph = CAPSGraph
+  override type Graph   = CAPSGraph
   override type Records = CAPSRecords
 
-  def as[E <: Product : TypeTag]: Iterator[E] = {
+  def as[E <: Product: TypeTag]: Iterator[E] = {
     implicit val encoder = ExpressionEncoder[E]
     records.data.as[E].toLocalIterator()
   }

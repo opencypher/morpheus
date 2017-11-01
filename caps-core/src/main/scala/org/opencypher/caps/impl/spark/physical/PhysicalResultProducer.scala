@@ -42,7 +42,7 @@ object RuntimeContext {
 }
 
 case class RuntimeContext(parameters: Map[String, CypherValue]) {
-  def columnName(slot: RecordSlot): String = SparkColumnName.of(slot)
+  def columnName(slot: RecordSlot): String     = SparkColumnName.of(slot)
   def columnName(content: SlotContent): String = SparkColumnName.of(content)
 }
 
@@ -55,21 +55,27 @@ class PhysicalResultProducer(context: RuntimeContext) {
     implicit val session: CAPSSession = prev.records.caps
 
     // TODO: Propagate this header -- don't just drop it
-    def nodeScan(inGraph: LogicalGraph, v: Var, labelPredicates: EveryNode, header: RecordHeader)
-    : PhysicalResult = {
+    def nodeScan(inGraph: LogicalGraph,
+                 v: Var,
+                 labelPredicates: EveryNode,
+                 header: RecordHeader): PhysicalResult = {
       val graph = prev.graphs(inGraph.name)
 
-      val records = graph.nodes(v.name, CTNode(labelPredicates.labels.elements.map(_.name).toSeq: _*))
+      val records =
+        graph.nodes(v.name, CTNode(labelPredicates.labels.elements.map(_.name).toSeq: _*))
 
       // TODO: Should not discard prev records here
       prev.mapRecordsWithDetails(_ => records)
     }
 
-    def relationshipScan(inGraph: LogicalGraph, v: Var, typePredicates: EveryRelationship, header: RecordHeader)
-    : PhysicalResult = {
+    def relationshipScan(inGraph: LogicalGraph,
+                         v: Var,
+                         typePredicates: EveryRelationship,
+                         header: RecordHeader): PhysicalResult = {
       val graph = prev.graphs(inGraph.name)
 
-      val records = graph.relationships(v.name, CTRelationship(typePredicates.relTypes.elements.map(_.name)))
+      val records =
+        graph.relationships(v.name, CTRelationship(typePredicates.relTypes.elements.map(_.name)))
 
       // TODO: Should not discard prev records here
       prev.mapRecordsWithDetails(_ => records)
@@ -99,9 +105,9 @@ class PhysicalResultProducer(context: RuntimeContext) {
     def distinct(header: RecordHeader): PhysicalResult = {
       prev.mapRecordsWithDetails { subject =>
         val data: DataFrame = subject.data
-        val columnNames = header.slots.map(slot => data.col(context.columnName(slot)))
+        val columnNames     = header.slots.map(slot => data.col(context.columnName(slot)))
         val relevantColumns = data.select(columnNames: _*)
-        val distinctRows = relevantColumns.distinct()
+        val distinctRows    = relevantColumns.distinct()
         CAPSRecords.create(header, distinctRows)
       }
     }
@@ -131,13 +137,13 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
           case Some(sparkSqlExpr) =>
             val headerNames = header.slotsFor(expr).map(context.columnName)
-            val dataNames = subject.data.columns.toSeq
+            val dataNames   = subject.data.columns.toSeq
 
             // TODO: Can optimise for var AS var2 case -- avoid duplicating data
             headerNames.diff(dataNames) match {
               case Seq(one) =>
                 // align the name of the column to what the header expects
-                val newCol = sparkSqlExpr.as(one)
+                val newCol          = sparkSqlExpr.as(one)
                 val columnsToSelect = subject.data.columns.map(subject.data.col) :+ newCol
 
                 subject.data.select(columnsToSelect: _*)
@@ -150,8 +156,8 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
     def projectGraph(graph: LogicalPatternGraph): PhysicalResult = {
       val LogicalPatternGraph(name, targetSchema, GraphOfPattern(toCreate, toRetain)) = graph
-      val PhysicalResult(retainedInput, _) = prev.select(toRetain)
-      val distinctInput = retainedInput.distinct
+      val PhysicalResult(retainedInput, _)                                            = prev.select(toRetain)
+      val distinctInput                                                               = retainedInput.distinct
 
       val baseTable =
         if (toCreate.isEmpty) distinctInput
@@ -161,31 +167,36 @@ class PhysicalResultProducer(context: RuntimeContext) {
       prev.withGraph(name -> patternGraph)
     }
 
-    private def createEntities(toCreate: Set[ConstructedEntity], records: CAPSRecords): CAPSRecords = {
-      val nodes = toCreate.collect { case c: ConstructedNode => c }
-      val rels = toCreate.collect { case r: ConstructedRelationship => r }
+    private def createEntities(toCreate: Set[ConstructedEntity],
+                               records: CAPSRecords): CAPSRecords = {
+      val nodes = toCreate.collect { case c: ConstructedNode         => c }
+      val rels  = toCreate.collect { case r: ConstructedRelationship => r }
 
-      val nodesToCreate = nodes.flatMap(constructNode(_, records))
+      val nodesToCreate    = nodes.flatMap(constructNode(_, records))
       val recordsWithNodes = addEntitiesToRecords(nodesToCreate, records)
 
       val relsToCreate = rels.flatMap(constructRel(_, recordsWithNodes))
       addEntitiesToRecords(relsToCreate, recordsWithNodes)
     }
 
-    private def addEntitiesToRecords(columnsToAdd: Set[(SlotContent, Column)], records: CAPSRecords): CAPSRecords = {
+    private def addEntitiesToRecords(columnsToAdd: Set[(SlotContent, Column)],
+                                     records: CAPSRecords): CAPSRecords = {
       val newData = columnsToAdd.foldLeft(records.data) {
         case (acc, (expr, col)) =>
           acc.withColumn(context.columnName(expr), col)
       }
 
-      val newHeader = records.header.update(
-        addContents(columnsToAdd.map(_._1).toSeq)
-      )._1
+      val newHeader = records.header
+        .update(
+          addContents(columnsToAdd.map(_._1).toSeq)
+        )
+        ._1
 
       CAPSRecords.create(newHeader, newData)
     }
 
-    private def constructNode(node: ConstructedNode, records: CAPSRecords): (Set[(SlotContent, Column)]) = {
+    private def constructNode(node: ConstructedNode,
+                              records: CAPSRecords): (Set[(SlotContent, Column)]) = {
       val col = org.apache.spark.sql.functions.lit(true)
       val labelTuples: Set[(SlotContent, Column)] = node.labels.map { label =>
         ProjectedExpr(HasLabel(node.v, label)(CTBoolean)) -> col
@@ -200,24 +211,25 @@ class PhysicalResultProducer(context: RuntimeContext) {
       // The first half of the id space is protected
       // TODO: guarantee that all imported entities have ids in the protected range
       val relIdOffset = 500L << 33
-      val firstIdCol = functions.lit(relIdOffset)
+      val firstIdCol  = functions.lit(relIdOffset)
       monotonically_increasing_id() + firstIdCol
     }
 
-    private def constructRel(toConstruct: ConstructedRelationship, records: CAPSRecords): (Set[(SlotContent, Column)]) = {
+    private def constructRel(toConstruct: ConstructedRelationship,
+                             records: CAPSRecords): (Set[(SlotContent, Column)]) = {
       val ConstructedRelationship(rel, source, target, typ) = toConstruct
-      val header = records.header
-      val inData = records.data
+      val header                                            = records.header
+      val inData                                            = records.data
 
       // source and target are present: just copy
       val sourceTuple = {
         val slot = header.slotFor(source)
-        val col = inData.col(context.columnName(slot))
+        val col  = inData.col(context.columnName(slot))
         ProjectedExpr(StartNode(rel)(CTInteger)) -> col
       }
       val targetTuple = {
         val slot = header.slotFor(target)
-        val col = inData.col(context.columnName(slot))
+        val col  = inData.col(context.columnName(slot))
         ProjectedExpr(EndNode(rel)(CTInteger)) -> col
       }
 
@@ -233,13 +245,15 @@ class PhysicalResultProducer(context: RuntimeContext) {
       Set(sourceTuple, targetTuple, relTuple, typeTuple)
     }
 
-    def aggregate(aggregations: Set[(Var, Aggregator)], group: Set[Var], header: RecordHeader): PhysicalResult =
+    def aggregate(aggregations: Set[(Var, Aggregator)],
+                  group: Set[Var],
+                  header: RecordHeader): PhysicalResult =
       prev.mapRecordsWithDetails { records =>
         val inData = records.data
 
         def withInnerExpr(expr: Expr)(f: Column => Column) = {
           asSparkSQLExpr(records.header, expr, inData) match {
-            case None => Raise.notYetImplemented(s"projecting $expr")
+            case None         => Raise.notYetImplemented(s"projecting $expr")
             case Some(column) => f(column)
           }
         }
@@ -256,7 +270,8 @@ class PhysicalResultProducer(context: RuntimeContext) {
             val columnName = SparkColumnName.from(Some(to.name))
             inner match {
               case Avg(expr) =>
-                withInnerExpr(expr)(functions.avg(_).cast(toSparkType(to.cypherType)).as(columnName))
+                withInnerExpr(expr)(
+                  functions.avg(_).cast(toSparkType(to.cypherType)).as(columnName))
 
               case CountStar() =>
                 functions.count(functions.lit(0)).as(columnName)
@@ -289,9 +304,9 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
     def cartesianProduct(rhs: PhysicalResult, header: RecordHeader): PhysicalResult =
       prev.mapRecordsWithDetails { subject =>
-        val data = subject.data
+        val data      = subject.data
         val otherData = rhs.records.data
-        val newData = data.crossJoin(otherData)
+        val newData   = data.crossJoin(otherData)
         // TODO: How to deal w RHS graphs? Should we assert that they are the same?
         CAPSRecords.create(header, newData)(subject.caps)
       }
@@ -304,29 +319,37 @@ class PhysicalResultProducer(context: RuntimeContext) {
           _.content match {
             case content: FieldSlotContent =>
               fieldIndices.getOrElse(content.field, Int.MaxValue)
-            case content@ProjectedExpr(expr) =>
+            case content @ ProjectedExpr(expr) =>
               val deps = expr.dependencies
-              deps.headOption.filter(_ => deps.size == 1).flatMap(fieldIndices.get).getOrElse(Int.MaxValue)
+              deps.headOption
+                .filter(_ => deps.size == 1)
+                .flatMap(fieldIndices.get)
+                .getOrElse(Int.MaxValue)
           }
         }
 
         val data = subject.data
-        val columns = groupedSlots.map { s => data.col(context.columnName(s)) }
+        val columns = groupedSlots.map { s =>
+          data.col(context.columnName(s))
+        }
         val newData = subject.data.select(columns: _*)
 
         CAPSRecords.create(header, newData)(subject.caps)
       }
 
-    def select(fields: Set[Var]): PhysicalResult = prev.mapRecordsWithDetails { (subject: CAPSRecords) =>
-      val targetHeader = subject.header.select(fields)
-      val PhysicalResult(selectedRecords, _) = select(fields.toIndexedSeq, targetHeader)
-      selectedRecords
+    def select(fields: Set[Var]): PhysicalResult = prev.mapRecordsWithDetails {
+      (subject: CAPSRecords) =>
+        val targetHeader                       = subject.header.select(fields)
+        val PhysicalResult(selectedRecords, _) = select(fields.toIndexedSeq, targetHeader)
+        selectedRecords
     }
 
     def typeFilter(rel: Var, types: AnyGiven[RelType], header: RecordHeader): PhysicalResult = {
       if (types.elements.isEmpty) prev
       else {
-        val typeExprs: Set[Expr] = types.elements.map { ref => HasType(rel, ref)(CTBoolean) }
+        val typeExprs: Set[Expr] = types.elements.map { ref =>
+          HasType(rel, ref)(CTBoolean)
+        }
         prev.filter(Ors(typeExprs), header)
       }
     }
@@ -336,9 +359,9 @@ class PhysicalResultProducer(context: RuntimeContext) {
       val getColumnName = (expr: Var) => context.columnName(prev.records.header.slotFor(expr))
 
       val sortExpression = sortItems.map {
-        case Asc(expr: Var) => asc(getColumnName(expr))
+        case Asc(expr: Var)  => asc(getColumnName(expr))
         case Desc(expr: Var) => desc(getColumnName(expr))
-        case _ => Raise.impossible()
+        case _               => Raise.impossible()
       }
 
       prev.mapRecordsWithDetails { subject =>
@@ -353,7 +376,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
         case Param(name) =>
           context.parameters(name) match {
             case CypherInteger(v) => v
-            case _ => Raise.impossible()
+            case _                => Raise.impossible()
           }
         case _ => Raise.impossible()
       }
@@ -371,7 +394,7 @@ class PhysicalResultProducer(context: RuntimeContext) {
     def limit(expr: Expr, header: RecordHeader): PhysicalResult = {
       val limit = expr match {
         case IntegerLit(v) => v
-        case _ => Raise.impossible()
+        case _             => Raise.impossible()
       }
 
       prev.mapRecordsWithDetails { subject =>
@@ -417,52 +440,56 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
     def joinInto(relView: PhysicalResult, header: RecordHeader) = new JoinIntoBuilder {
       override def on(sourceKey: Var, targetKey: Var)(rel: Var): PhysicalResult = {
-        val sourceSlot = prev.records.header.slotFor(sourceKey)
-        val targetSlot = prev.records.header.slotFor(targetKey)
+        val sourceSlot    = prev.records.header.slotFor(sourceKey)
+        val targetSlot    = prev.records.header.slotFor(targetKey)
         val relSourceSlot = relView.records.header.sourceNodeSlot(rel)
         val relTargetSlot = relView.records.header.targetNodeSlot(rel)
 
         assertIsNode(sourceSlot)
         assertIsNode(targetSlot)
 
-        prev.mapRecordsWithDetails(join(relView.records, header,
-          sourceSlot -> relSourceSlot,
-          targetSlot -> relTargetSlot)())
+        prev.mapRecordsWithDetails(
+          join(relView.records, header, sourceSlot -> relSourceSlot, targetSlot -> relTargetSlot)())
       }
     }
 
-    def valueJoin(rhs: PhysicalResult, predicates: Set[org.opencypher.caps.api.expr.Equals], header: RecordHeader)
-    : PhysicalResult = {
-      val leftHeader = prev.records.header
+    def valueJoin(rhs: PhysicalResult,
+                  predicates: Set[org.opencypher.caps.api.expr.Equals],
+                  header: RecordHeader): PhysicalResult = {
+      val leftHeader  = prev.records.header
       val rightHeader = rhs.records.header
-      val slots = predicates.map { p => leftHeader.slotsFor(p.lhs).head -> rightHeader.slotsFor(p.rhs).head }.toSeq
+      val slots = predicates.map { p =>
+        leftHeader.slotsFor(p.lhs).head -> rightHeader.slotsFor(p.rhs).head
+      }.toSeq
       prev.mapRecordsWithDetails(join(rhs.records, header, slots: _*)())
     }
 
-    private def join(rhs: CAPSRecords, header: RecordHeader, joinSlots: (RecordSlot, RecordSlot)*)
-             (joinType: String = "inner", deduplicate: Boolean = false)
-    : CAPSRecords => CAPSRecords = {
+    private def join(rhs: CAPSRecords, header: RecordHeader, joinSlots: (RecordSlot, RecordSlot)*)(
+        joinType: String = "inner",
+        deduplicate: Boolean = false): CAPSRecords => CAPSRecords = {
 
       val lhsData = prev.records.toDF()
       val rhsData = rhs.toDF()
 
       val joinCols = joinSlots.map(pair =>
-        lhsData.col(context.columnName(pair._1)) -> rhsData.col(context.columnName(pair._2))
-      )
+        lhsData.col(context.columnName(pair._1)) -> rhsData.col(context.columnName(pair._2)))
 
       join(rhsData, header, joinCols: _*)(joinType, deduplicate)
     }
 
-    def optional(rhs: PhysicalResult, lhsHeader: RecordHeader, rhsHeader: RecordHeader): PhysicalResult = {
+    def optional(rhs: PhysicalResult,
+                 lhsHeader: RecordHeader,
+                 rhsHeader: RecordHeader): PhysicalResult = {
       val commonFields = rhsHeader.fields.intersect(lhsHeader.fields)
-      val rhsData = rhs.records.toDF()
-      val lhsData = prev.records.toDF()
+      val rhsData      = rhs.records.toDF()
+      val lhsData      = prev.records.toDF()
 
       // Remove all common columns from the right hand side, except the join columns
       val columnsToRemove = commonFields
         .flatMap(rhsHeader.childSlots)
         .map(_.content)
-        .map(context.columnName).toSeq
+        .map(context.columnName)
+        .toSeq
 
       val lhsJoinSlots = commonFields.map(lhsHeader.slotFor)
       val rhsJoinSlots = commonFields.map(rhsHeader.slotFor)
@@ -474,11 +501,12 @@ class PhysicalResultProducer(context: RuntimeContext) {
           lhsSlot -> rhsJoinSlots.find(_.content == lhsSlot.content).get
         })
         .map(pair => {
-          val lhsCol = lhsData.col(context.columnName(pair._1))
+          val lhsCol     = lhsData.col(context.columnName(pair._1))
           val rhsColName = context.columnName(pair._2)
 
           (lhsCol, rhsColName, FreshVariableNamer.generateUniqueName(rhsHeader))
-        }).toSeq
+        })
+        .toSeq
 
       val reducedRhsData = joinColumnMapping
         .foldLeft(rhsData)((acc, col) => acc.withColumnRenamed(col._2, col._3))
@@ -486,11 +514,13 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
       val joinCols = joinColumnMapping.map(t => t._1 -> reducedRhsData.col(t._3))
 
-      prev.mapRecordsWithDetails(join(reducedRhsData, rhsHeader, joinCols: _*)("leftouter", deduplicate = true))
+      prev.mapRecordsWithDetails(
+        join(reducedRhsData, rhsHeader, joinCols: _*)("leftouter", deduplicate = true))
     }
 
-    private def join(rhsData: DataFrame, header: RecordHeader, joinCols: (Column, Column)*)
-                    (joinType: String, deduplicate: Boolean): CAPSRecords => CAPSRecords = {
+    private def join(rhsData: DataFrame, header: RecordHeader, joinCols: (Column, Column)*)(
+        joinType: String,
+        deduplicate: Boolean): CAPSRecords => CAPSRecords = {
 
       def f(lhs: CAPSRecords) = {
         val lhsData = lhs.data
@@ -511,20 +541,23 @@ class PhysicalResultProducer(context: RuntimeContext) {
       f
     }
 
-    def initVarExpand(source: Var, edgeList: Var, target: Var, header: RecordHeader): PhysicalResult = {
-      val sourceSlot = header.slotFor(source)
+    def initVarExpand(source: Var,
+                      edgeList: Var,
+                      target: Var,
+                      header: RecordHeader): PhysicalResult = {
+      val sourceSlot   = header.slotFor(source)
       val edgeListSlot = header.slotFor(edgeList)
-      val targetSlot = header.slotFor(target)
+      val targetSlot   = header.slotFor(target)
 
       assertIsNode(targetSlot)
 
       prev.mapRecordsWithDetails { subject =>
         val inputData = subject.data
-        val keep = inputData.columns.map(inputData.col)
+        val keep      = inputData.columns.map(inputData.col)
 
         val edgeListColName = context.columnName(edgeListSlot)
-        val edgeListColumn = udf(udfUtils.initArray _, ArrayType(LongType))()
-        val withEmptyList = inputData.withColumn(edgeListColName, edgeListColumn)
+        val edgeListColumn  = udf(udfUtils.initArray _, ArrayType(LongType))()
+        val withEmptyList   = inputData.withColumn(edgeListColName, edgeListColumn)
 
         val cols = keep ++ Seq(
           withEmptyList.col(edgeListColName),
@@ -536,9 +569,14 @@ class PhysicalResultProducer(context: RuntimeContext) {
       }
     }
 
-    def varExpand(rels: PhysicalResult, edgeList: Var, endNode: Var, rel: Var,
-                  lower: Int, upper: Int, header: RecordHeader): PhysicalResult = {
-      val startSlot = rels.records.header.sourceNodeSlot(rel)
+    def varExpand(rels: PhysicalResult,
+                  edgeList: Var,
+                  endNode: Var,
+                  rel: Var,
+                  lower: Int,
+                  upper: Int,
+                  header: RecordHeader): PhysicalResult = {
+      val startSlot   = rels.records.header.sourceNodeSlot(rel)
       val endNodeSlot = prev.records.header.slotFor(endNode)
 
       prev.mapRecordsWithDetails { lhs =>
@@ -556,7 +594,12 @@ class PhysicalResultProducer(context: RuntimeContext) {
 
         (1 to upper).foreach { i =>
           // TODO: Check whether we can abort iteration if result has no cardinality (eg count > 0?)
-          steps(i) = iterate(steps(i - 1), relsData)(endNodeSlot, rel, startSlot, listTempColName, edgeListColName, keep)
+          steps(i) = iterate(steps(i - 1), relsData)(endNodeSlot,
+                                                     rel,
+                                                     startSlot,
+                                                     listTempColName,
+                                                     edgeListColName,
+                                                     keep)
         }
 
         val union = steps.filterKeys(_ >= lower).values.reduce[DataFrame] {
@@ -567,21 +610,23 @@ class PhysicalResultProducer(context: RuntimeContext) {
       }
     }
 
-    def finalizeVarExpand(target: PhysicalResult, endNode: Var, targetNode: Var, header: RecordHeader, isExpandInto: Boolean)
-    : PhysicalResult = {
-      val endNodeSlot =  prev.records.header.slotFor(endNode)
-      val endNodeCol = context.columnName(endNodeSlot)
+    def finalizeVarExpand(target: PhysicalResult,
+                          endNode: Var,
+                          targetNode: Var,
+                          header: RecordHeader,
+                          isExpandInto: Boolean): PhysicalResult = {
+      val endNodeSlot = prev.records.header.slotFor(endNode)
+      val endNodeCol  = context.columnName(endNodeSlot)
 
       val targetNodeSlot = target.records.header.slotFor(targetNode)
-      val targetNodeCol = context.columnName(targetNodeSlot)
+      val targetNodeCol  = context.columnName(targetNodeSlot)
 
       // If the expansion ends in an already solved plan, the final join can be replaced by a filter.
       val result: PhysicalResult = if (isExpandInto) {
         prev.mapRecordsWithDetails { records =>
           val data = records.toDF()
-          CAPSRecords.create(
-            header,
-            data.filter(data.col(targetNodeCol) === data.col(endNodeCol)))(records.caps)
+          CAPSRecords.create(header, data.filter(data.col(targetNodeCol) === data.col(endNodeCol)))(
+            records.caps)
         }
       } else {
         val joinHeader = prev.records.header ++ target.records.header
@@ -589,32 +634,35 @@ class PhysicalResultProducer(context: RuntimeContext) {
       }
 
       result.mapRecordsWithDetails(records =>
-        CAPSRecords.create(header, records.toDF().drop(endNodeCol))(records.caps)
-      )
+        CAPSRecords.create(header, records.toDF().drop(endNodeCol))(records.caps))
     }
 
-    private def iterate(lhs: DataFrame, rels: DataFrame)
-                       (endNode: RecordSlot, rel: Var, relStartNode: RecordSlot,
-                        listTempColName: String, edgeListColName: String, keep: Array[String]): DataFrame = {
+    private def iterate(lhs: DataFrame, rels: DataFrame)(endNode: RecordSlot,
+                                                         rel: Var,
+                                                         relStartNode: RecordSlot,
+                                                         listTempColName: String,
+                                                         edgeListColName: String,
+                                                         keep: Array[String]): DataFrame = {
 
-      val relIdColumn = rels.col(context.columnName(OpaqueField(rel)))
-      val startColumn = rels.col(context.columnName(relStartNode))
+      val relIdColumn      = rels.col(context.columnName(OpaqueField(rel)))
+      val startColumn      = rels.col(context.columnName(relStartNode))
       val expandColumnName = context.columnName(endNode)
-      val expandColumn = lhs.col(expandColumnName)
+      val expandColumn     = lhs.col(expandColumnName)
 
       val joined = lhs.join(rels, expandColumn === startColumn, "inner")
 
-      val appendUdf = udf(udfUtils.arrayAppend _, ArrayType(LongType))
-      val extendedArray = appendUdf(lhs.col(edgeListColName), relIdColumn)
+      val appendUdf         = udf(udfUtils.arrayAppend _, ArrayType(LongType))
+      val extendedArray     = appendUdf(lhs.col(edgeListColName), relIdColumn)
       val withExtendedArray = joined.withColumn(listTempColName, extendedArray)
-      val arrayContains = udf(udfUtils.contains _, BooleanType)(withExtendedArray.col(edgeListColName), relIdColumn)
+      val arrayContains =
+        udf(udfUtils.contains _, BooleanType)(withExtendedArray.col(edgeListColName), relIdColumn)
       val filtered = withExtendedArray.filter(!arrayContains)
 
       // TODO: Try and get rid of the Var rel here
       val endNodeIdColNameOfJoinedRel = context.columnName(ProjectedExpr(EndNode(rel)(CTNode)))
 
-      val columns = keep ++ Seq(listTempColName, endNodeIdColNameOfJoinedRel)
-      val withoutRelProperties = filtered.select(columns.head, columns.tail: _*)  // drops joined columns from relationship table
+      val columns              = keep ++ Seq(listTempColName, endNodeIdColNameOfJoinedRel)
+      val withoutRelProperties = filtered.select(columns.head, columns.tail: _*) // drops joined columns from relationship table
 
       withoutRelProperties
         .drop(expandColumn)
@@ -634,7 +682,8 @@ class PhysicalResultProducer(context: RuntimeContext) {
     private def assertIsNode(slot: RecordSlot): Unit = {
       slot.content.cypherType match {
         case CTNode(_) =>
-        case x => throw new IllegalArgumentException(s"Expected $slot to contain a node, but was $x")
+        case x =>
+          throw new IllegalArgumentException(s"Expected $slot to contain a node, but was $x")
       }
     }
   }
@@ -659,4 +708,3 @@ case object udfUtils {
     }
   }
 }
-

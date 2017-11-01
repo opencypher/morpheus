@@ -29,7 +29,8 @@ object CAPS {
     val clazz = self.getClass
     Try {
       // 1) Try to read from maven descriptor
-      val inputStream = clazz.getResourceAsStream("/META-INF/maven/org.opencypher/cypher-for-apache-spark/pom.properties")
+      val inputStream = clazz.getResourceAsStream(
+        "/META-INF/maven/org.opencypher/cypher-for-apache-spark/pom.properties")
       val properties = new Properties()
       properties.load(inputStream)
       value(properties.getProperty("version"))

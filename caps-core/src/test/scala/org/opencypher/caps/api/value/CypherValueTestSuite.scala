@@ -24,10 +24,9 @@ class CypherValueTestSuite extends BaseTestSuite {
 
   @tailrec
   final def isPathLike(l: Seq[Any], nextIsNode: Ternary = Maybe): Boolean = l match {
-    case Seq(_: CypherNode, tail@_*) if nextIsNode.maybeTrue => isPathLike(tail, False)
-    case Seq(_: CypherRelationship, tail@_*) if nextIsNode.maybeFalse => isPathLike(tail, True)
-    case Seq() => nextIsNode.isDefinite
-    case _ => false
+    case Seq(_: CypherNode, tail @ _*) if nextIsNode.maybeTrue          => isPathLike(tail, False)
+    case Seq(_: CypherRelationship, tail @ _*) if nextIsNode.maybeFalse => isPathLike(tail, True)
+    case Seq()                                                          => nextIsNode.isDefinite
+    case _                                                              => false
   }
 }
-

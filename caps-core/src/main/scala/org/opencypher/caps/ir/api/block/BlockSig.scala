@@ -24,5 +24,6 @@ final case class BlockSig(inputs: Set[IRField], outputs: Set[IRField])
 case object BlockSig {
   val empty = BlockSig(Set.empty, Set.empty)
 
-  implicit def signature(pairs: (Set[IRField], Set[IRField])): BlockSig = BlockSig(pairs._1, pairs._2)
+  implicit def signature(pairs: (Set[IRField], Set[IRField])): BlockSig =
+    BlockSig(pairs._1, pairs._2)
 }

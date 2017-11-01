@@ -22,32 +22,32 @@ import scala.reflect.runtime.universe._
 import scala.tools.reflect.ToolBox
 
 private[caps] object Annotation {
-  def labels[E <: Node : TypeTag]: Seq[String] = {
+  def labels[E <: Node: TypeTag]: Seq[String] = {
     get[Labels, E] match {
       case Some(ls) => ls.labels
-      case None => Seq(runtimeClass[E].getSimpleName)
+      case None     => Seq(runtimeClass[E].getSimpleName)
     }
   }
 
-  def relType[E <: Relationship : TypeTag]: String = {
+  def relType[E <: Relationship: TypeTag]: String = {
     get[Type, E] match {
       case Some(Type(tpe)) => tpe
-      case None => runtimeClass[E].getSimpleName.toUpperCase
+      case None            => runtimeClass[E].getSimpleName.toUpperCase
     }
   }
 
-  def get[A <: StaticAnnotation : TypeTag, E: TypeTag]: Option[A] = {
+  def get[A <: StaticAnnotation: TypeTag, E: TypeTag]: Option[A] = {
     val maybeAnnotation = staticClass[E].annotations.find(_.tree.tpe =:= typeOf[A])
     maybeAnnotation.map { annotation =>
-      val tb = typeTag[E].mirror.mkToolBox()
+      val tb       = typeTag[E].mirror.mkToolBox()
       val instance = tb.eval(tb.untypecheck(annotation.tree)).asInstanceOf[A]
       instance
     }
   }
 
   private def runtimeClass[E: TypeTag]: Class[E] = {
-    val tag = typeTag[E]
-    val mirror = tag.mirror
+    val tag          = typeTag[E]
+    val mirror       = tag.mirror
     val runtimeClass = mirror.runtimeClass(tag.tpe.typeSymbol.asClass)
     runtimeClass.asInstanceOf[Class[E]]
   }

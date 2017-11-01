@@ -36,15 +36,18 @@ import scala.language.implicitConversions
 abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
   val leafRef = BlockRef("leaf")
 
-  def testGraph()(implicit schema: Schema = Schema.empty) = IRExternalGraph("test", schema, URI.create("test"))
+  def testGraph()(implicit schema: Schema = Schema.empty) =
+    IRExternalGraph("test", schema, URI.create("test"))
 
   val testGraphSource: CAPSGraphSource = mock[CAPSGraphSource]
   when(testGraphSource.schema).thenReturn(Some(testGraph.schema))
 
   def leafBlock(): SourceBlock[Expr] = SourceBlock[Expr](testGraph)
-  def leafPlan: Start = Start(LogicalExternalGraph(testGraph.name, testGraph.uri, testGraph.schema), Set.empty)(SolvedQueryModel.empty)
+  def leafPlan: Start =
+    Start(LogicalExternalGraph(testGraph.name, testGraph.uri, testGraph.schema), Set.empty)(
+      SolvedQueryModel.empty)
 
-  val graphBlockRef: BlockRef = BlockRef("graph")
+  val graphBlockRef: BlockRef       = BlockRef("graph")
   val graphBlock: SourceBlock[Expr] = SourceBlock[Expr](testGraph)
 
   /**
@@ -59,11 +62,12 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
     */
   def irWithLeaf(nonLeaf: Block[Expr]): CypherQuery[Expr] = {
     val rootRef = BlockRef("root")
-    val blocks = Map(rootRef -> nonLeaf, BlockRef("nonLeaf") -> nonLeaf, leafRef -> leafBlock)
+    val blocks  = Map(rootRef -> nonLeaf, BlockRef("nonLeaf") -> nonLeaf, leafRef -> leafBlock)
     irFor(rootRef, blocks)
   }
 
-  def project(fields: FieldsAndGraphs[Expr], after: Set[BlockRef] = Set(leafRef),
+  def project(fields: FieldsAndGraphs[Expr],
+              after: Set[BlockRef] = Set(leafRef),
               given: AllGiven[Expr] = AllGiven[Expr]()) =
     ProjectBlock(after, fields, given, testGraph)
 
@@ -83,10 +87,11 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
     CypherQuery(QueryInfo("test"), model)
   }
 
-  case class DummyBlock[E](after: Set[BlockRef] = Set.empty) extends BasicBlock[DummyBinds[E], E](BlockType("dummy")) {
+  case class DummyBlock[E](after: Set[BlockRef] = Set.empty)
+      extends BasicBlock[DummyBinds[E], E](BlockType("dummy")) {
     override def binds: DummyBinds[E] = DummyBinds[E]()
-    override def where: AllGiven[E] = AllGiven[E]()
-    override val source = testGraph
+    override def where: AllGiven[E]   = AllGiven[E]()
+    override val source               = testGraph
   }
 
   case class DummyBinds[E](fields: Set[IRField] = Set.empty) extends Binds[E]
@@ -95,14 +100,19 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
     def model: QueryModel[Expr] = ir.model
 
     def ir(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
-      val stmt = CypherParser(queryText)(CypherParser.defaultContext)
+      val stmt       = CypherParser(queryText)(CypherParser.defaultContext)
       val parameters = Map.empty[String, CypherValue]
-      IRBuilder(stmt)(IRBuilderContext.initial(queryText, parameters, SemanticState.clean, testGraph, _ => testGraphSource))
+      IRBuilder(stmt)(
+        IRBuilderContext
+          .initial(queryText, parameters, SemanticState.clean, testGraph, _ => testGraphSource))
     }
 
-    def irWithParams(params: (String, CypherValue)*)(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
+    def irWithParams(params: (String, CypherValue)*)(
+        implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
-      IRBuilder(stmt)(IRBuilderContext.initial(queryText, params.toMap, SemanticState.clean, testGraph, _ => testGraphSource))
+      IRBuilder(stmt)(
+        IRBuilderContext
+          .initial(queryText, params.toMap, SemanticState.clean, testGraph, _ => testGraphSource))
     }
   }
 }

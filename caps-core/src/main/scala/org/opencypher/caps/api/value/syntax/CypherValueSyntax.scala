@@ -54,8 +54,8 @@ final class CypherNodeOps[V <: CypherNode](val value: V) extends AnyVal with Ser
 }
 
 final class CypherRelOps[V <: CypherRelationship](val value: V) extends AnyVal with Serializable {
-  def startId: Option[EntityId] = CypherRelationship.startId(value)
-  def endId: Option[EntityId] = CypherRelationship.endId(value)
+  def startId: Option[EntityId]        = CypherRelationship.startId(value)
+  def endId: Option[EntityId]          = CypherRelationship.endId(value)
   def relationshipType: Option[String] = CypherRelationship.relationshipType(value)
 }
 

@@ -63,7 +63,11 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
   }
 
   test("typing add") {
-    implicit val context = typeTracker("a" -> CTInteger, "b" -> CTFloat, "c" -> CTNumber, "d" -> CTAny.nullable, "e" -> CTBoolean)
+    implicit val context = typeTracker("a" -> CTInteger,
+                                       "b" -> CTFloat,
+                                       "c" -> CTNumber,
+                                       "d" -> CTAny.nullable,
+                                       "e" -> CTBoolean)
 
     assertExpr.from("a + a") shouldHaveInferredType CTInteger
     assertExpr.from("b + b") shouldHaveInferredType CTFloat
@@ -97,7 +101,11 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
   }
 
   test("typing subtract") {
-    implicit val context = typeTracker("a" -> CTInteger, "b" -> CTFloat, "c" -> CTNumber, "d" -> CTAny.nullable, "e" -> CTString)
+    implicit val context = typeTracker("a" -> CTInteger,
+                                       "b" -> CTFloat,
+                                       "c" -> CTNumber,
+                                       "d" -> CTAny.nullable,
+                                       "e" -> CTString)
 
     assertExpr.from("a - a") shouldHaveInferredType CTInteger
     assertExpr.from("b - b") shouldHaveInferredType CTFloat
@@ -114,7 +122,11 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
   }
 
   test("typing multiply") {
-    implicit val context = typeTracker("a" -> CTInteger, "b" -> CTFloat, "c" -> CTNumber, "d" -> CTAny.nullable, "e" -> CTString)
+    implicit val context = typeTracker("a" -> CTInteger,
+                                       "b" -> CTFloat,
+                                       "c" -> CTNumber,
+                                       "d" -> CTAny.nullable,
+                                       "e" -> CTString)
 
     assertExpr.from("a * a") shouldHaveInferredType CTInteger
     assertExpr.from("b * b") shouldHaveInferredType CTFloat
@@ -131,7 +143,11 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
   }
 
   test("typing divide") {
-    implicit val context = typeTracker("a" -> CTInteger, "b" -> CTFloat, "c" -> CTNumber, "d" -> CTAny.nullable, "e" -> CTString)
+    implicit val context = typeTracker("a" -> CTInteger,
+                                       "b" -> CTFloat,
+                                       "c" -> CTNumber,
+                                       "d" -> CTAny.nullable,
+                                       "e" -> CTString)
 
     assertExpr.from("a / a") shouldHaveInferredType CTInteger
     assertExpr.from("b / b") shouldHaveInferredType CTFloat
@@ -164,7 +180,9 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     assertExpr.from("(b AND true) OR (b AND c)") shouldHaveInferredType CTBoolean
 
     Seq("b AND int", "int OR b", "b AND int AND c").foreach { s =>
-      assertExpr(parseExpr(s)) shouldFailToInferTypeWithErrors InvalidType(varFor("int"), CTBoolean, CTInteger)
+      assertExpr(parseExpr(s)) shouldFailToInferTypeWithErrors InvalidType(varFor("int"),
+                                                                           CTBoolean,
+                                                                           CTInteger)
     }
   }
 
@@ -172,7 +190,9 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     implicit val tracker = typeTracker("b" -> CTBoolean, "n" -> CTNode())
 
     assertExpr.from("b AND n:Person AND b AND n:Foo") shouldHaveInferredType CTBoolean
-    assertExpr.from("b AND n:Person AND b AND n:Foo") shouldMake varFor("n") haveType CTNode("Person", "Foo")
+    assertExpr.from("b AND n:Person AND b AND n:Foo") shouldMake varFor("n") haveType CTNode(
+      "Person",
+      "Foo")
     assertExpr.from("n.prop AND n:Person") shouldMake varFor("n") haveType CTNode("Person")
     assertExpr.from("n.name AND n:Person") shouldMake prop("n", "name") haveType CTString
   }
@@ -283,10 +303,13 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
 
     assertExpr.from("[1, 2][1]") shouldHaveInferredType CTInteger
 
-    implicit val context = TypeTracker.empty.updated(Parameter("param", symbols.CTAny)(pos), CTInteger)
+    implicit val context =
+      TypeTracker.empty.updated(Parameter("param", symbols.CTAny)(pos), CTInteger)
 
-    assertExpr.from("[3.14, -1, 5000][$param]")(TypeTracker.empty.withParameters(Map("param" -> CTInteger))) shouldHaveInferredType CTNumber
-    assertExpr.from("[[], 1, true][$param]")(TypeTracker.empty.withParameters(Map("param" -> CTInteger))) shouldHaveInferredType CTAny
+    assertExpr.from("[3.14, -1, 5000][$param]")(
+      TypeTracker.empty.withParameters(Map("param" -> CTInteger))) shouldHaveInferredType CTNumber
+    assertExpr.from("[[], 1, true][$param]")(
+      TypeTracker.empty.withParameters(Map("param" -> CTInteger))) shouldHaveInferredType CTAny
   }
 
   test("infer type of node property lookup") {
@@ -330,7 +353,8 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
       assertExpr(parseExpr(exprText))
   }
 
-  private case class assertExpr(expr: Expression)(implicit val tracker: TypeTracker = TypeTracker.empty) {
+  private case class assertExpr(expr: Expression)(implicit val tracker: TypeTracker =
+                                                    TypeTracker.empty) {
 
     def shouldMake(inner: Expression) = new {
       val inferredTypes = typer.inferOrThrow(expr, tracker).tracker
@@ -347,7 +371,8 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     def shouldFailToInferTypeWithErrors(expectedHd: TyperError, expectedTail: TyperError*) = {
       typer.infer(expr, tracker) match {
         case Left(actual) =>
-          actual.toList.toSet should equal(NonEmptyList.of(expectedHd, expectedTail: _*).toList.toSet)
+          actual.toList.toSet should equal(
+            NonEmptyList.of(expectedHd, expectedTail: _*).toList.toSet)
         case _ =>
           fail("Expected to get typing errors, but succeeded")
       }

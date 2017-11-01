@@ -46,33 +46,40 @@ object PropertyKeyMap {
   def asNullable(map: PropertyKeyMap): PropertyKeyMap = {
     val overlap = map.m.map(_._2.keySet).reduce(_ intersect _)
 
-    PropertyKeyMap(map.m.map {
-      pair => pair._1 -> pair._2.map(p2 => p2._1 -> (if (overlap.contains(p2._1)) p2._2 else p2._2.nullable))
+    PropertyKeyMap(map.m.map { pair =>
+      pair._1 -> pair._2.map(p2 =>
+        p2._1 -> (if (overlap.contains(p2._1)) p2._2 else p2._2.nullable))
     })()
   }
 }
 
-final case class PropertyKeyMap(m: Map[String, Map[String, CypherType]])(val conflicts: Set[String] = Set.empty) {
+final case class PropertyKeyMap(m: Map[String, Map[String, CypherType]])(
+    val conflicts: Set[String] = Set.empty) {
   def keysFor(classifier: String): Map[String, CypherType] = m.getOrElse(classifier, Map.empty)
   def withKeys(classifier: String, keys: Seq[(String, CypherType)]): PropertyKeyMap = {
     val oldKeys = m.getOrElse(classifier, Map.empty)
     val newKeys = keys.toMap
-    val newConflicts = oldKeys.collect {
-      case (k, t) =>
-        newKeys.get(k) match {
-          case Some(otherT) if t != otherT =>
-            Some(s"Conflicting schema for '$classifier'! Key '$k' has type $t but also has type ${newKeys(k)}")
-          case _ =>
-            None
-        }
-    }.flatten.toSet
+    val newConflicts = oldKeys
+      .collect {
+        case (k, t) =>
+          newKeys.get(k) match {
+            case Some(otherT) if t != otherT =>
+              Some(
+                s"Conflicting schema for '$classifier'! Key '$k' has type $t but also has type ${newKeys(k)}")
+            case _ =>
+              None
+          }
+      }
+      .flatten
+      .toSet
     copy(m.updated(classifier, oldKeys ++ newKeys))(conflicts = conflicts ++ newConflicts)
   }
 
   def keys = m.values.flatMap(_.keySet).toSet
 
   def ++(other: PropertyKeyMap) = {
-    val joined = joinMaps(m, other.m)((leftAttr, rightAttr) => joinMaps(leftAttr, rightAttr)(_ join _, _.nullable))
+    val joined = joinMaps(m, other.m)((leftAttr, rightAttr) =>
+      joinMaps(leftAttr, rightAttr)(_ join _, _.nullable))
     copy(joined)(conflicts ++ other.conflicts)
   }
 
@@ -80,16 +87,21 @@ final case class PropertyKeyMap(m: Map[String, Map[String, CypherType]])(val con
     PropertyKeyMap(m.filterKeys(classifiers.contains))(conflicts)
   }
 
-  private def joinMaps[A, B](left: Map[A, B], right: Map[A, B])
-                            (joinF: (B, B) => B, mapF: B => B = (x: B) => x): Map[A, B] = {
+  private def joinMaps[A, B](left: Map[A, B], right: Map[A, B])(
+      joinF: (B, B) => B,
+      mapF: B => B = (x: B) => x): Map[A, B] = {
     val uniqueLeft = left.keySet -- right.keySet
-    val withUniqueLeft = uniqueLeft.foldLeft(Map[A, B]())((map, key) => map.updated(key, mapF(left(key))))
+    val withUniqueLeft =
+      uniqueLeft.foldLeft(Map[A, B]())((map, key) => map.updated(key, mapF(left(key))))
 
     val uniqueRight = right.keySet -- left.keySet
-    val withUniqueRight = uniqueRight.foldLeft(withUniqueLeft)((map, key) => map.updated(key, mapF(right(key))))
+    val withUniqueRight =
+      uniqueRight.foldLeft(withUniqueLeft)((map, key) => map.updated(key, mapF(right(key))))
 
     val common = left.keySet.intersect(right.keySet)
-    common.foldLeft(withUniqueRight) {(map, key) => map.updated(key, joinF(left(key), right(key)))}
+    common.foldLeft(withUniqueRight) { (map, key) =>
+      map.updated(key, joinF(left(key), right(key)))
+    }
   }
 }
 
@@ -151,53 +163,54 @@ case class LabelCombinations(combos: Set[Set[String]]) {
 }
 
 final case class Schema(
-  /**
-   * All labels present in this graph
-   */
-  labels: Set[String],
-  /**
-   * All relationship types present in this graph
-   */
-  relationshipTypes: Set[String],
-  /**
-    * Property keys associated with a node label
-    */
-  nodeKeyMap: PropertyKeyMap,
-  /**
-    * Property keys associated with a relationship type
-    */
-  relKeyMap: PropertyKeyMap,
-  /**
-    * Implied labels for each existing label
-    */
-  impliedLabels: ImpliedLabels,
-  /**
-    * Groups of labels where each group contains possible label combinations.
-    */
-  labelCombinations: LabelCombinations) extends Verifiable {
+                        /**
+                          * All labels present in this graph
+                          */
+                        labels: Set[String],
+                        /**
+                          * All relationship types present in this graph
+                          */
+                        relationshipTypes: Set[String],
+                        /**
+                          * Property keys associated with a node label
+                          */
+                        nodeKeyMap: PropertyKeyMap,
+                        /**
+                          * Property keys associated with a relationship type
+                          */
+                        relKeyMap: PropertyKeyMap,
+                        /**
+                          * Implied labels for each existing label
+                          */
+                        impliedLabels: ImpliedLabels,
+                        /**
+                          * Groups of labels where each group contains possible label combinations.
+                          */
+                        labelCombinations: LabelCombinations)
+    extends Verifiable {
 
   self: Schema =>
 
-  override type Self = Schema
+  override type Self         = Schema
   override type VerifiedSelf = VerifiedSchema
 
   /**
-   * Given a set of labels that a node definitely has, returns all labels the node _must_ have.
-   */
+    * Given a set of labels that a node definitely has, returns all labels the node _must_ have.
+    */
   def impliedLabels(knownLabels: Set[String]): Set[String] =
     impliedLabels.transitiveImplicationsFor(knownLabels.intersect(labels))
 
   /**
-   * Given a set of labels that a node definitely has, returns all the labels that the node could possibly have.
-   */
+    * Given a set of labels that a node definitely has, returns all the labels that the node could possibly have.
+    */
   def labelCombination(knownLabels: Set[String]): Set[String] =
     knownLabels.flatMap(labelCombinations.combinationsFor)
 
   /**
-   * Given a label that a node definitely has, returns its property schema.
+    * Given a label that a node definitely has, returns its property schema.
     *
     * TODO: consider implied labels here?
-   */
+    */
   def nodeKeys(label: String): Map[String, CypherType] = nodeKeyMap.keysFor(label)
 
   def keys = nodeKeyMap.keys ++ relKeyMap.keys
@@ -205,15 +218,15 @@ final case class Schema(
   lazy val conflictSet = nodeKeyMap.conflicts ++ relKeyMap.conflicts
 
   /**
-   * Returns the property schema for a given relationship type
-   */
+    * Returns the property schema for a given relationship type
+    */
   def relationshipKeys(typ: String): Map[String, CypherType] = relKeyMap.keysFor(typ)
 
   def withImpliedLabel(pair: (String, String)): Schema = withImpliedLabel(pair._1, pair._2)
 
   def withImpliedLabel(existingLabel: String, impliedLabel: String): Schema =
     copy(labels = labels + existingLabel + impliedLabel,
-      impliedLabels = impliedLabels.withImplication(existingLabel, impliedLabel))
+         impliedLabels = impliedLabels.withImplication(existingLabel, impliedLabel))
 
   def withLabelCombination(pair: (String, String)): Schema = withLabelCombination(pair._1, pair._2)
 
@@ -230,23 +243,24 @@ final case class Schema(
     copy(relationshipTypes = relationshipTypes + typ, relKeyMap = relKeyMap.withKeys(typ, keys))
 
   def ++(other: Schema) = {
-    val newLabels = labels ++ other.labels
-    val newRelTypes = relationshipTypes ++ other.relationshipTypes
-    val newNodeKeyMap = nodeKeyMap ++ other.nodeKeyMap
-    val newRelKeyMap = relKeyMap ++ other.relKeyMap
+    val newLabels        = labels ++ other.labels
+    val newRelTypes      = relationshipTypes ++ other.relationshipTypes
+    val newNodeKeyMap    = nodeKeyMap ++ other.nodeKeyMap
+    val newRelKeyMap     = relKeyMap ++ other.relKeyMap
     val newImpliedLabels = inferImpliedLabels(other)
 
     // new optional labels are previous optional labels and all revoked implied labels
-    val combinedOptionalLabels = this.labelCombinations ++ other.labelCombinations
+    val combinedOptionalLabels   = this.labelCombinations ++ other.labelCombinations
     val newLabelCombinationPairs = this.impliedLabels.toPairs ++ other.impliedLabels.toPairs -- newImpliedLabels.toPairs
-    val newLabelCombinations = newLabelCombinationPairs.foldLeft(combinedOptionalLabels)((o,p) => o.withCombinations(p._1, p._2))
+    val newLabelCombinations = newLabelCombinationPairs.foldLeft(combinedOptionalLabels)((o, p) =>
+      o.withCombinations(p._1, p._2))
 
     copy(newLabels,
-      newRelTypes,
-      newNodeKeyMap,
-      newRelKeyMap,
-      newImpliedLabels,
-      newLabelCombinations)
+         newRelTypes,
+         newNodeKeyMap,
+         newRelKeyMap,
+         newImpliedLabels,
+         newLabelCombinations)
   }
 
   def forEntities(entities: Set[IRField]): Schema = {
@@ -273,7 +287,7 @@ final case class Schema(
   def forNode(nodeType: CTNode): Schema = {
     val requiredLabels = {
       val explicitLabels = nodeType.labels
-      val impliedLabels = this.impliedLabels.transitiveImplicationsFor(explicitLabels)
+      val impliedLabels  = this.impliedLabels.transitiveImplicationsFor(explicitLabels)
       explicitLabels union impliedLabels
     }
 
@@ -340,7 +354,7 @@ final case class Schema(
     * @return implied labels inferred from the given implied labels
     */
   private def inferImpliedLabels(other: Schema) = {
-    val leftImpliedPairs = this.impliedLabels.toPairs
+    val leftImpliedPairs  = this.impliedLabels.toPairs
     val rightImpliedPairs = other.impliedLabels.toPairs
 
     val intersectPairs = leftImpliedPairs intersect rightImpliedPairs
@@ -349,9 +363,10 @@ final case class Schema(
     val exclusivePairsRight = (rightImpliedPairs -- intersectPairs)
       .filterNot(pair => this.labels.contains(pair._1))
 
-    ImpliedLabels((exclusivePairsLeft ++ exclusivePairsRight ++ intersectPairs)
-      .groupBy(_._1)
-      .map(pair => pair._1 -> pair._2.map(_._2)))
+    ImpliedLabels(
+      (exclusivePairsLeft ++ exclusivePairsRight ++ intersectPairs)
+        .groupBy(_._1)
+        .map(pair => pair._1 -> pair._2.map(_._2)))
   }
 
   override def verify: VerifiedSchema = {
@@ -360,16 +375,15 @@ final case class Schema(
     }
 
     val coOccurringLabels =
-      for (
-        label <- labels;
-        other <- impliedLabels(Set(label)) ++ labelCombination(Set(label))
-      ) yield label -> other
+      for (label <- labels;
+           other <- impliedLabels(Set(label)) ++ labelCombination(Set(label))) yield label -> other
 
     for ((label, other) <- coOccurringLabels) {
       val xKeys = nodeKeys(label)
       val yKeys = nodeKeys(other)
       if (xKeys.keySet.intersect(yKeys.keySet).exists(key => xKeys(key) != yKeys(key)))
-        throw new IllegalArgumentException(s"Failed to verify schema for labels :$label and :$other")
+        throw new IllegalArgumentException(
+          s"Failed to verify schema for labels :$label and :$other")
     }
 
     new VerifiedSchema {

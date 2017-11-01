@@ -52,7 +52,7 @@ final case class RecordHeader(internalHeader: InternalHeader) {
     * @return the slots in this header.
     */
   def slots: IndexedSeq[RecordSlot] = internalHeader.slots
-  def contents: Set[SlotContent] = slots.map(_.content).toSet
+  def contents: Set[SlotContent]    = slots.map(_.content).toSet
 
   /**
     * The set of fields contained in this header.
@@ -81,7 +81,7 @@ final case class RecordHeader(internalHeader: InternalHeader) {
 
   def sourceNodeSlot(rel: Var): RecordSlot = slotsFor(StartNode(rel)()).headOption.getOrElse(???)
   def targetNodeSlot(rel: Var): RecordSlot = slotsFor(EndNode(rel)()).headOption.getOrElse(???)
-  def typeSlot(rel: Expr): RecordSlot = slotsFor(OfType(rel)()).headOption.getOrElse(???)
+  def typeSlot(rel: Expr): RecordSlot      = slotsFor(OfType(rel)()).headOption.getOrElse(???)
 
   def labels(node: Var): Seq[HasLabel] = labelSlots(node).keys.toSeq
 
@@ -101,52 +101,56 @@ final case class RecordHeader(internalHeader: InternalHeader) {
 
   def childSlots(entity: Var): Seq[RecordSlot] = {
     slots.filter {
-      case RecordSlot(_, OpaqueField(_)) => false
+      case RecordSlot(_, OpaqueField(_))               => false
       case slot if slot.content.owner.contains(entity) => true
-      case _ => false
+      case _                                           => false
     }
   }
 
   def labelSlots(node: Var): Map[HasLabel, RecordSlot] = {
     slots.collect {
-      case s@RecordSlot(_, ProjectedExpr(h: HasLabel)) if h.node == node => h -> s
-      case s@RecordSlot(_, ProjectedField(_, h: HasLabel)) if h.node == node => h -> s
+      case s @ RecordSlot(_, ProjectedExpr(h: HasLabel)) if h.node == node     => h -> s
+      case s @ RecordSlot(_, ProjectedField(_, h: HasLabel)) if h.node == node => h -> s
     }.toMap
   }
 
   def propertySlots(entity: Var): Map[Property, RecordSlot] = {
     slots.collect {
-      case s@RecordSlot(_, ProjectedExpr(p: Property)) if p.m == entity => p -> s
-      case s@RecordSlot(_, ProjectedField(_, p: Property)) if p.m == entity => p -> s
+      case s @ RecordSlot(_, ProjectedExpr(p: Property)) if p.m == entity     => p -> s
+      case s @ RecordSlot(_, ProjectedField(_, p: Property)) if p.m == entity => p -> s
     }.toMap
   }
 
   def nodesForType(nodeType: CTNode): Seq[Var] = {
-    slots.collect {
-      case RecordSlot(_, OpaqueField(v)) => v
-    }.filter { v =>
-      v.cypherType match {
-        case CTNode(labels) =>
-          val allPossibleLabels = this.labels(v).map(_.label.name).toSet ++ labels
-          nodeType.labels.subsetOf(allPossibleLabels)
-        case _ => false
+    slots
+      .collect {
+        case RecordSlot(_, OpaqueField(v)) => v
       }
-    }
+      .filter { v =>
+        v.cypherType match {
+          case CTNode(labels) =>
+            val allPossibleLabels = this.labels(v).map(_.label.name).toSet ++ labels
+            nodeType.labels.subsetOf(allPossibleLabels)
+          case _ => false
+        }
+      }
   }
 
   def relationshipsForType(relType: CTRelationship): Seq[Var] = {
     val targetTypes = relType.types
 
-    slots.collect {
-      case RecordSlot(_, OpaqueField(v)) => v
-    }.filter { v =>
-      v.cypherType match {
-        case t: CTRelationship if targetTypes.isEmpty || t.types.isEmpty => true
-        case CTRelationship(types) =>
-          types.exists(targetTypes.contains)
-        case _ => false
+    slots
+      .collect {
+        case RecordSlot(_, OpaqueField(v)) => v
       }
-    }
+      .filter { v =>
+        v.cypherType match {
+          case t: CTRelationship if targetTypes.isEmpty || t.types.isEmpty => true
+          case CTRelationship(types) =>
+            types.exists(targetTypes.contains)
+          case _ => false
+        }
+      }
   }
 
   def asSparkSchema: StructType =
@@ -173,22 +177,25 @@ object RecordHeader {
   def nodeFromSchema(node: Var, schema: Schema): RecordHeader = {
     val labels: Set[String] = node.cypherType match {
       case CTNode(l) => l
-      case other => Raise.invalidArgument("CTNode", other.toString)
+      case other     => Raise.invalidArgument("CTNode", other.toString)
     }
     nodeFromSchema(node, schema, labels)
   }
 
   def nodeFromSchema(node: Var, schema: Schema, labels: Set[String]): RecordHeader = {
-    val impliedLabels = schema.impliedLabels.transitiveImplicationsFor(if (labels.nonEmpty) labels else schema.labels)
+    val impliedLabels =
+      schema.impliedLabels.transitiveImplicationsFor(if (labels.nonEmpty) labels else schema.labels)
     val impliedKeys = impliedLabels.flatMap(label => schema.nodeKeyMap.keysFor(label).toSet)
-    val possibleLabels = impliedLabels.flatMap(label => schema.labelCombinations.combinationsFor(label))
-    val optionalKeys = possibleLabels.flatMap(label => schema.nodeKeyMap.keysFor(label).toSet) -- impliedKeys
+    val possibleLabels =
+      impliedLabels.flatMap(label => schema.labelCombinations.combinationsFor(label))
+    val optionalKeys         = possibleLabels.flatMap(label => schema.nodeKeyMap.keysFor(label).toSet) -- impliedKeys
     val optionalNullableKeys = optionalKeys.map { case (k, v) => k -> v.nullable }
-    val allKeys: Seq[(String, Vector[CypherType])] = (impliedKeys ++ optionalNullableKeys).toSeq.map { case (k, v) => k -> Vector(v) }
+    val allKeys: Seq[(String, Vector[CypherType])] =
+      (impliedKeys ++ optionalNullableKeys).toSeq.map { case (k, v) => k -> Vector(v) }
     val keyGroups: Map[String, Vector[CypherType]] = allKeys.groups[String, Vector[CypherType]]
-    val headerLabels = impliedLabels ++ possibleLabels
-    val labelHeaderContents = headerLabels.map {
-      labelName => ProjectedExpr(HasLabel(node, Label(labelName))(CTBoolean))
+    val headerLabels                               = impliedLabels ++ possibleLabels
+    val labelHeaderContents = headerLabels.map { labelName =>
+      ProjectedExpr(HasLabel(node, Label(labelName))(CTBoolean))
     }.toSeq
 
     val keyHeaderContents = keyGroups.toSeq.map {
@@ -212,9 +219,9 @@ object RecordHeader {
       case ((k, t)) => ProjectedExpr(Property(rel, PropertyKey(k))(t))
     }
 
-    val startNode = ProjectedExpr(StartNode(rel)(CTNode))
+    val startNode  = ProjectedExpr(StartNode(rel)(CTNode))
     val typeString = ProjectedExpr(OfType(rel)(CTString))
-    val endNode = ProjectedExpr(EndNode(rel)(CTNode))
+    val endNode    = ProjectedExpr(EndNode(rel)(CTNode))
 
     val relHeaderContents = Seq(startNode, OpaqueField(rel), typeString, endNode) ++ relKeyHeaderContents
     // this header is necessary on its own to get the type filtering right

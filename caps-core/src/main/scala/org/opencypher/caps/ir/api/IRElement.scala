@@ -44,4 +44,5 @@ final case class IRNamedGraph(name: String, schema: Schema) extends IRGraph {
 
 final case class IRExternalGraph(name: String, schema: Schema, uri: URI) extends IRGraph
 
-final case class IRPatternGraph[E](name: String, schema: Schema, pattern: Pattern[E]) extends IRGraph
+final case class IRPatternGraph[E](name: String, schema: Schema, pattern: Pattern[E])
+    extends IRGraph

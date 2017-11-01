@@ -35,7 +35,7 @@ final class TraversableOps[E](val elts: Traversable[E]) {
         val (k, v) = f(elt)
         m.get(k) match {
           case Some(values) => m.updated(k, values |+| v)
-          case None => m.updated(k, v)
+          case None         => m.updated(k, v)
         }
     }
   }

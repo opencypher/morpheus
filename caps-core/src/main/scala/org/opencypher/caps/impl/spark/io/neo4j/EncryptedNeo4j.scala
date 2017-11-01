@@ -23,9 +23,10 @@ import org.apache.spark.sql.{Row, SparkSession}
 import org.neo4j.driver.v1.Config
 import org.neo4j.spark.{Neo4j, Neo4jConfig, Neo4jRDD, Partitions}
 
-case class EncryptedNeo4j(config: EncryptedNeo4jConfig, session: SparkSession) extends Neo4j(session.sparkContext) {
+case class EncryptedNeo4j(config: EncryptedNeo4jConfig, session: SparkSession)
+    extends Neo4j(session.sparkContext) {
 
-  override def loadRelRdd : RDD[Row] = {
+  override def loadRelRdd: RDD[Row] = {
     if (pattern != null) {
       val queries: Seq[(String, List[String])] = pattern.relQueries
       val rdds: Seq[RDD[Row]] = queries.map(query => {
@@ -37,10 +38,11 @@ case class EncryptedNeo4j(config: EncryptedNeo4jConfig, session: SparkSession) e
     }
   }
 
-  override def loadNodeRdds : RDD[Row] = {
+  override def loadNodeRdds: RDD[Row] = {
     if (pattern != null) {
-      loadNodeRdds(pattern.source,nodes.params,partitions)
-        .union(loadNodeRdds(pattern.target,nodes.params,partitions)).distinct()
+      loadNodeRdds(pattern.source, nodes.params, partitions)
+        .union(loadNodeRdds(pattern.target, nodes.params, partitions))
+        .distinct()
     } else if (!nodes.isEmpty) {
       new EncryptedNeo4jRDD(sc, nodes.query, config, nodes.params, partitions)
     } else {
@@ -48,7 +50,7 @@ case class EncryptedNeo4j(config: EncryptedNeo4jConfig, session: SparkSession) e
     }
   }
 
-  private def loadNodeRdds(node: NameProp, params: Map[String, Any], partitions : Partitions) = {
+  private def loadNodeRdds(node: NameProp, params: Map[String, Any], partitions: Partitions) = {
     // todo use count queries
     val queries = pattern.nodeQuery(node)
 
@@ -62,13 +64,14 @@ class EncryptedNeo4jRDD(sc: SparkContext,
                         override val neo4jConfig: EncryptedNeo4jConfig,
                         parameters: Map[String, Any] = Map.empty,
                         partitions: Partitions = Partitions())
-  extends Neo4jRDD(sc, query, parameters, partitions)
+    extends Neo4jRDD(sc, query, parameters, partitions)
 
-class EncryptedNeo4jConfig(val uri: URI,
-                           user: String = "",
-                           password: Option[String] = None,
-                           encryptionLevel: Config.EncryptionLevel = Config.EncryptionLevel.REQUIRED)
-  extends Neo4jConfig(uri.toString, user, password) {
+class EncryptedNeo4jConfig(
+    val uri: URI,
+    user: String = "",
+    password: Option[String] = None,
+    encryptionLevel: Config.EncryptionLevel = Config.EncryptionLevel.REQUIRED)
+    extends Neo4jConfig(uri.toString, user, password) {
 
   override def boltConfig(): Config = Config.build.withEncryptionLevel(encryptionLevel).toConfig
 }

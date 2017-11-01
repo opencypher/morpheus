@@ -29,7 +29,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     case ast.Variable("r") => CTRelationship
     case ast.Variable("n") => CTNode
     case ast.Variable("m") => CTNode
-    case _ => CTWildcard
+    case _                 => CTWildcard
   }
 
   test("exists()") {
@@ -149,8 +149,10 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   }
 
   test("can convert has-labels") {
-    val given = convert(ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _, ast.LabelName("Duck") _)) _)
-    given should equal(Ands(HasLabel('x, Label("Person"))(CTBoolean), HasLabel('x, Label("Duck"))(CTBoolean)))
+    val given =
+      convert(ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _, ast.LabelName("Duck") _)) _)
+    given should equal(
+      Ands(HasLabel('x, Label("Person"))(CTBoolean), HasLabel('x, Label("Duck"))(CTBoolean)))
   }
 
   test("can convert single has-labels") {
@@ -159,9 +161,13 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   }
 
   test("can convert conjunctions") {
-    val given = ast.Ands(Set(ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _)) _, ast.Equals(prop("x", "name"), ast.StringLiteral("Mats") _) _)) _
+    val given = ast.Ands(
+      Set(ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _)) _,
+          ast.Equals(prop("x", "name"), ast.StringLiteral("Mats") _) _)) _
 
-    convert(given) should equal(Ands(HasLabel('x, Label("Person"))(CTBoolean), Equals(Property('x, PropertyKey("name"))(), StringLit("Mats")())(CTBoolean)))
+    convert(given) should equal(
+      Ands(HasLabel('x, Label("Person"))(CTBoolean),
+           Equals(Property('x, PropertyKey("name"))(), StringLit("Mats")())(CTBoolean)))
   }
 
   test("can convert negation") {
@@ -173,12 +179,11 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   test("can convert retyping predicate") {
     val given = parseExpr("$p1 AND n:Foo AND $p2 AND m:Bar")
 
-    convert(given) should equal(Ands(
-      HasLabel('n, Label("Foo"))(),
-      HasLabel('m, Label("Bar"))(),
-      Param("p1")(),
-      Param("p2")())
-    )
+    convert(given) should equal(
+      Ands(HasLabel('n, Label("Foo"))(),
+           HasLabel('m, Label("Bar"))(),
+           Param("p1")(),
+           Param("p2")()))
   }
 
   test("can convert id function") {

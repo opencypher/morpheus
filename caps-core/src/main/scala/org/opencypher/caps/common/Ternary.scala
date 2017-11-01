@@ -18,7 +18,7 @@ package org.opencypher.caps.common
 import scala.language.implicitConversions
 
 object Ternary {
-  implicit def apply(v: Boolean): Ternary = if (v) True else False
+  implicit def apply(v: Boolean): Ternary         = if (v) True else False
   implicit def apply(v: Option[Boolean]): Ternary = v.map(Ternary(_)).getOrElse(Maybe)
 }
 
@@ -46,15 +46,15 @@ sealed private[caps] trait DefiniteTernary extends Ternary {
 }
 
 case object True extends DefiniteTernary {
-  override def isTrue = true
+  override def isTrue  = true
   override def isFalse = false
 
-  override def maybeTrue = true
+  override def maybeTrue  = true
   override def maybeFalse = false
 
   override def and(other: Ternary): Ternary = other
-  override def or(other: Ternary): Ternary = True
-  override def negated: False.type = False
+  override def or(other: Ternary): Ternary  = True
+  override def negated: False.type          = False
 
   override val toOption: Some[Boolean] = Some(true)
 
@@ -62,15 +62,15 @@ case object True extends DefiniteTernary {
 }
 
 case object False extends DefiniteTernary {
-  override def isTrue = false
+  override def isTrue  = false
   override def isFalse = true
 
-  override def maybeTrue = false
+  override def maybeTrue  = false
   override def maybeFalse = true
 
   override def and(other: Ternary): Ternary = False
-  override def or(other: Ternary): Ternary = other
-  override def negated: True.type = True
+  override def or(other: Ternary): Ternary  = other
+  override def negated: True.type           = True
 
   override val toOption: Some[Boolean] = Some(false)
 
@@ -78,22 +78,22 @@ case object False extends DefiniteTernary {
 }
 
 case object Maybe extends Ternary {
-  override def isTrue = false
-  override def isFalse = false
+  override def isTrue     = false
+  override def isFalse    = false
   override def isDefinite = false
-  override def isUnknown = true
+  override def isUnknown  = true
 
-  override def maybeTrue = true
+  override def maybeTrue  = true
   override def maybeFalse = true
 
   override def and(other: Ternary): Ternary = other match {
     case False => False
-    case _ => Maybe
+    case _     => Maybe
   }
 
   override def or(other: Ternary): Ternary = other match {
     case True => True
-    case _ => Maybe
+    case _    => Maybe
   }
 
   override def negated: Maybe.type = Maybe

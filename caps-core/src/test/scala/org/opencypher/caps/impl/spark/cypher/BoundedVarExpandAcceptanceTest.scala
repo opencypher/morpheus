@@ -25,19 +25,21 @@ class BoundedVarExpandAcceptanceTest extends CAPSTestSuite {
   test("bounded to single relationship") {
 
     // Given
-    val given = TestGraph("""(:Node {val: "source"})-->(:Node {val: "mid1"})-->(:Node {val: "end"})""")
+    val given =
+      TestGraph("""(:Node {val: "source"})-->(:Node {val: "mid1"})-->(:Node {val: "end"})""")
 
     // When
     val result = given.cypher("MATCH (n:Node)-[r*0..1]->(m:Node) RETURN m.val")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("m.val" -> "source"),
-      CypherMap("m.val" -> "mid1"),
-      CypherMap("m.val" -> "mid1"),
-      CypherMap("m.val" -> "end"),
-      CypherMap("m.val" -> "end")
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("m.val" -> "source"),
+        CypherMap("m.val" -> "mid1"),
+        CypherMap("m.val" -> "mid1"),
+        CypherMap("m.val" -> "end"),
+        CypherMap("m.val" -> "end")
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -46,15 +48,17 @@ class BoundedVarExpandAcceptanceTest extends CAPSTestSuite {
   test("bounded with lower bound") {
 
     // Given
-    val given = TestGraph("""(:Node {val: "source"})-->(:Node {val: "mid1"})-->(:Node {val: "end"})""")
+    val given =
+      TestGraph("""(:Node {val: "source"})-->(:Node {val: "mid1"})-->(:Node {val: "end"})""")
 
     // When
     val result = given.cypher("MATCH (t:Node)-[r*2..3]->(y:Node) RETURN y.val")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("y.val" -> "end")
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("y.val" -> "end")
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -68,17 +72,18 @@ class BoundedVarExpandAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (a:Node)-[r*..6]->(b:Node) RETURN b.v")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("b.v" -> "a"),
-      CypherMap("b.v" -> "a"),
-      CypherMap("b.v" -> "a"),
-      CypherMap("b.v" -> "b"),
-      CypherMap("b.v" -> "b"),
-      CypherMap("b.v" -> "b"),
-      CypherMap("b.v" -> "c"),
-      CypherMap("b.v" -> "c"),
-      CypherMap("b.v" -> "c")
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("b.v" -> "a"),
+        CypherMap("b.v" -> "a"),
+        CypherMap("b.v" -> "a"),
+        CypherMap("b.v" -> "b"),
+        CypherMap("b.v" -> "b"),
+        CypherMap("b.v" -> "b"),
+        CypherMap("b.v" -> "c"),
+        CypherMap("b.v" -> "c"),
+        CypherMap("b.v" -> "c")
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -92,17 +97,18 @@ class BoundedVarExpandAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (a:Node)-[r*..6]->(b:Node) RETURN r")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("r" -> CypherList(Seq(0))),
-      CypherMap("r" -> CypherList(Seq(0, 1))),
-      CypherMap("r" -> CypherList(Seq(0, 1, 2))),
-      CypherMap("r" -> CypherList(Seq(1))),
-      CypherMap("r" -> CypherList(Seq(1, 2))),
-      CypherMap("r" -> CypherList(Seq(1, 2, 0))),
-      CypherMap("r" -> CypherList(Seq(2))),
-      CypherMap("r" -> CypherList(Seq(2, 0))),
-      CypherMap("r" -> CypherList(Seq(2, 0, 1)))
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("r" -> CypherList(Seq(0))),
+        CypherMap("r" -> CypherList(Seq(0, 1))),
+        CypherMap("r" -> CypherList(Seq(0, 1, 2))),
+        CypherMap("r" -> CypherList(Seq(1))),
+        CypherMap("r" -> CypherList(Seq(1, 2))),
+        CypherMap("r" -> CypherList(Seq(1, 2, 0))),
+        CypherMap("r" -> CypherList(Seq(2))),
+        CypherMap("r" -> CypherList(Seq(2, 0))),
+        CypherMap("r" -> CypherList(Seq(2, 0, 1)))
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -110,17 +116,19 @@ class BoundedVarExpandAcceptanceTest extends CAPSTestSuite {
 
   test("var expand with rel type") {
     // Given
-    val given = TestGraph("""(a:Node {v: "a"})-[:LOVES]->(:Node {v: "b"})-[:KNOWS]->(:Node {v: "c"})-[:HATES]->(a)""")
+    val given = TestGraph(
+      """(a:Node {v: "a"})-[:LOVES]->(:Node {v: "b"})-[:KNOWS]->(:Node {v: "c"})-[:HATES]->(a)""")
 
     // When
     val result = given.cypher("MATCH (a:Node)-[r:LOVES|KNOWS*..6]->(b:Node) RETURN b.v")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("b.v" -> "b"),
-      CypherMap("b.v" -> "c"),
-      CypherMap("b.v" -> "c")
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("b.v" -> "b"),
+        CypherMap("b.v" -> "c"),
+        CypherMap("b.v" -> "c")
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -130,17 +138,19 @@ class BoundedVarExpandAcceptanceTest extends CAPSTestSuite {
   // We could do that better by pre-filtering candidate relationships prior to the iterate step
   ignore("var expand with property filter") {
     // Given
-    val given = TestGraph("""(a:Node {v: "a"})-[{v: 1L}]->(:Node {v: "b"})-[{v: 2L}]->(:Node {v: "c"})-[{v: 2L}]->(a)""")
+    val given = TestGraph(
+      """(a:Node {v: "a"})-[{v: 1L}]->(:Node {v: "b"})-[{v: 2L}]->(:Node {v: "c"})-[{v: 2L}]->(a)""")
 
     // When
     val result = given.cypher("MATCH (a:Node)-[r*..6 {v: 2}]->(b:Node) RETURN b.v")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("b.v" -> "c"),
-      CypherMap("b.v" -> "a"),
-      CypherMap("b.v" -> "a")
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("b.v" -> "c"),
+        CypherMap("b.v" -> "a"),
+        CypherMap("b.v" -> "a")
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -154,13 +164,15 @@ class BoundedVarExpandAcceptanceTest extends CAPSTestSuite {
       """.stripMargin)
 
     // When
-    val result = given.cypher("MATCH (a:Node)-[r:KNOWS*..6]->(b:Node)-[:HATES]->(c:Node) RETURN c.v")
+    val result =
+      given.cypher("MATCH (a:Node)-[r:KNOWS*..6]->(b:Node)-[:HATES]->(c:Node) RETURN c.v")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("c.v" -> "d"),
-      CypherMap("c.v" -> "d")
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("c.v" -> "d"),
+        CypherMap("c.v" -> "d")
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -168,8 +180,7 @@ class BoundedVarExpandAcceptanceTest extends CAPSTestSuite {
 
   test("var expand with expand into") {
     // Given
-    val given = TestGraph(
-      """
+    val given = TestGraph("""
         |(a:Person {name: "Philip"}),
         |(b:Person {name: "Stefan"}),
         |(c:City {name: "Berlondon"}),
@@ -187,8 +198,9 @@ class BoundedVarExpandAcceptanceTest extends CAPSTestSuite {
 
     // Then
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("a.name" -> "Philip", "b.name" -> "Stefan", "c.name" -> "Berlondon")
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("a.name" -> "Philip", "b.name" -> "Stefan", "c.name" -> "Berlondon")
+      ))
   }
 }

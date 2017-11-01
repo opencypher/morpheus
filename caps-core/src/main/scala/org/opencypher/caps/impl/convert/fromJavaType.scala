@@ -21,15 +21,15 @@ import org.opencypher.caps.impl.spark.exception.Raise
 object fromJavaType extends Serializable {
 
   def apply(v: AnyRef): CypherType = v match {
-    case null => CTVoid
-    case _: String => CTString
-    case _: java.lang.Byte => CTInteger
-    case _: java.lang.Short => CTInteger
+    case null                 => CTVoid
+    case _: String            => CTString
+    case _: java.lang.Byte    => CTInteger
+    case _: java.lang.Short   => CTInteger
     case _: java.lang.Integer => CTInteger
-    case _: java.lang.Long => CTInteger
-    case _: java.lang.Float => CTFloat
-    case _: java.lang.Double => CTFloat
+    case _: java.lang.Long    => CTInteger
+    case _: java.lang.Float   => CTFloat
+    case _: java.lang.Double  => CTFloat
     case _: java.lang.Boolean => CTBoolean
-    case x => Raise.invalidArgument("instance of a CypherValue", s"${x.getClass}")
+    case x                    => Raise.invalidArgument("instance of a CypherValue", s"${x.getClass}")
   }
 }

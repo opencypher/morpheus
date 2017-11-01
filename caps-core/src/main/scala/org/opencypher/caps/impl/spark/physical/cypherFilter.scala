@@ -26,8 +26,8 @@ import org.opencypher.caps.impl.spark.exception.Raise
 /*
  * Used when the predicate depends on values not stored inside the dataframe.
  */
-case class cypherFilter(header: RecordHeader, expr: Expr)
-                       (implicit context: RuntimeContext) extends (Row => Boolean) {
+case class cypherFilter(header: RecordHeader, expr: Expr)(implicit context: RuntimeContext)
+    extends (Row => Boolean) {
   def apply(row: Row): Boolean =
     expr match {
       case Equals(lhs, rhs) =>

@@ -26,7 +26,7 @@ final case class RecordSlot(index: Int, content: SlotContent) {
   def withOwner(v: Var): RecordSlot = copy(content = content.withOwner(v))
 
   def asStructField: StructField = {
-    val name = SparkColumnName.of(this)
+    val name      = SparkColumnName.of(this)
     val sparkType = toSparkType(content.cypherType)
     StructField(name, sparkType)
   }
@@ -56,33 +56,33 @@ sealed trait ProjectedSlotContent extends SlotContent {
   override def owner = expr match {
     case Property(v: Var, _) => Some(v)
     case HasLabel(v: Var, _) => Some(v)
-    case HasType(v: Var, _) => Some(v)
-    case StartNode(v: Var) => Some(v)
-    case EndNode(v: Var) => Some(v)
-    case OfType(v: Var) => Some(v)
-    case _ => None
+    case HasType(v: Var, _)  => Some(v)
+    case StartNode(v: Var)   => Some(v)
+    case EndNode(v: Var)     => Some(v)
+    case OfType(v: Var)      => Some(v)
+    case _                   => None
   }
 }
 
 sealed trait FieldSlotContent extends SlotContent {
-  override def alias = Some(field)
+  override def alias    = Some(field)
   override def key: Var = field
   def field: Var
 }
 
 final case class ProjectedExpr(expr: Expr) extends ProjectedSlotContent {
-  override def key = expr
+  override def key   = expr
   override def alias = None
 
   override def support = Seq(expr)
 
   override def withOwner(newOwner: Var): ProjectedExpr = key match {
-    case h: HasLabel => ProjectedExpr(HasLabel(newOwner, h.label)(h.cypherType))
-    case t: OfType => ProjectedExpr(OfType(newOwner)(t.cypherType))
-    case p: Property => ProjectedExpr(Property(newOwner, p.key)(p.cypherType))
+    case h: HasLabel  => ProjectedExpr(HasLabel(newOwner, h.label)(h.cypherType))
+    case t: OfType    => ProjectedExpr(OfType(newOwner)(t.cypherType))
+    case p: Property  => ProjectedExpr(Property(newOwner, p.key)(p.cypherType))
     case s: StartNode => ProjectedExpr(StartNode(newOwner)(s.cypherType))
-    case e: EndNode => ProjectedExpr(EndNode(newOwner)(e.cypherType))
-    case _ => this
+    case e: EndNode   => ProjectedExpr(EndNode(newOwner)(e.cypherType))
+    case _            => this
   }
 }
 
@@ -95,17 +95,18 @@ final case class OpaqueField(field: Var) extends FieldSlotContent {
 }
 
 final case class ProjectedField(field: Var, expr: Expr)
-  extends ProjectedSlotContent with FieldSlotContent {
+    extends ProjectedSlotContent
+    with FieldSlotContent {
 
   override def support = Seq(field, expr)
 
   // TODO: Consider whether withOwner on ProjectedField should return ProjectedExpr
   override def withOwner(newOwner: Var): ProjectedExpr = expr match {
-    case h: HasLabel => ProjectedExpr(HasLabel(newOwner, h.label)(h.cypherType))
-    case t: OfType => ProjectedExpr(OfType(newOwner)(t.cypherType))
-    case p: Property => ProjectedExpr(Property(newOwner, p.key)(p.cypherType))
+    case h: HasLabel  => ProjectedExpr(HasLabel(newOwner, h.label)(h.cypherType))
+    case t: OfType    => ProjectedExpr(OfType(newOwner)(t.cypherType))
+    case p: Property  => ProjectedExpr(Property(newOwner, p.key)(p.cypherType))
     case s: StartNode => ProjectedExpr(StartNode(newOwner)(s.cypherType))
-    case e: EndNode => ProjectedExpr(EndNode(newOwner)(e.cypherType))
-    case _ => Raise.impossible()
+    case e: EndNode   => ProjectedExpr(EndNode(newOwner)(e.cypherType))
+    case _            => Raise.impossible()
   }
 }

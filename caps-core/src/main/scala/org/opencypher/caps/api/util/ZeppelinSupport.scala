@@ -47,12 +47,13 @@ object ZeppelinSupport {
       val fields = result.records.fieldsInOrder
 
       val header = fields.mkString("\t")
-      val rows = result.records.toLocalScalaIterator.map { data =>
-        fields.map(field => data.get(field).get).mkString("\t")
-      }.mkString("\n")
+      val rows = result.records.toLocalScalaIterator
+        .map { data =>
+          fields.map(field => data.get(field).get).mkString("\t")
+        }
+        .mkString("\n")
 
-      print(
-        s"""
+      print(s"""
           |%table
           |$header
           |$rows""".stripMargin)
@@ -112,18 +113,17 @@ object ZeppelinSupport {
       * @param name the graphs name
       */
     def asZeppelinGraph(name: String): Unit = {
-      val graph = result.graphs(name)
+      val graph     = result.graphs(name)
       val graphJson = ZeppelinJsonSerialiser.toJsonString(graph)
-      print(
-        s"""
+      print(s"""
            |%network
            |$graphJson
         """.stripMargin)
     }
   }
 
-
   implicit class GraphVisualizer(graph: CAPSGraph) {
+
     /**
       * Prints the specified graph in Zeppelins %network format
       *
@@ -178,8 +178,7 @@ object ZeppelinSupport {
       */
     def asZeppelinGraph(): Unit = {
       val graphJson = ZeppelinJsonSerialiser.toJsonString(graph)
-      print(
-        s"""
+      print(s"""
            |%network
            |$graphJson
         """.stripMargin)
@@ -187,9 +186,11 @@ object ZeppelinSupport {
   }
 
   object ZeppelinJsonSerialiser extends JsonSerialiser {
-    override protected def formatNode(id: Long, labels: Seq[String], properties: Map[String, String]): Json = {
+    override protected def formatNode(id: Long,
+                                      labels: Seq[String],
+                                      properties: Map[String, String]): Json = {
       Json.obj(
-        "id" -> Json.fromLong(id),
+        "id"    -> Json.fromLong(id),
         "label" -> Json.fromString(labels.headOption.getOrElse("")),
         "labels" -> Json.arr(
           labels.map(Json.fromString): _*
@@ -200,13 +201,16 @@ object ZeppelinSupport {
       )
     }
 
-    override protected def formatRel(id: Long, source: Long, target: Long,
-                                     typ: String, properties: Map[String, String]): Json = {
+    override protected def formatRel(id: Long,
+                                     source: Long,
+                                     target: Long,
+                                     typ: String,
+                                     properties: Map[String, String]): Json = {
       Json.obj(
-        "id" -> Json.fromLong(id),
+        "id"     -> Json.fromLong(id),
         "source" -> Json.fromLong(source),
         "target" -> Json.fromLong(target),
-        "label" -> Json.fromString(typ),
+        "label"  -> Json.fromString(typ),
         "data" -> Json.obj(
           properties.mapValues(Json.fromString).toSeq: _*
         )
@@ -217,17 +221,18 @@ object ZeppelinSupport {
       Json.obj(
         "nodes" -> Json.arr(nodes: _*),
         "edges" -> Json.arr(rels: _*),
-        "labels" -> Json.obj(graph.schema.labels.map(l => l -> Json.fromString(randomColor)).toSeq: _*),
+        "labels" -> Json.obj(
+          graph.schema.labels.map(l => l -> Json.fromString(randomColor)).toSeq: _*),
         "directed" -> Json.True,
-        "types" -> Json.arr(graph.schema.relationshipTypes.map(Json.fromString).toSeq: _*)
+        "types"    -> Json.arr(graph.schema.relationshipTypes.map(Json.fromString).toSeq: _*)
       )
     }
 
     private def randomColor: String = {
       val rand = new Random()
-      val r = rand.nextInt(255)
-      val g = rand.nextInt(255)
-      val b = rand.nextInt(255)
+      val r    = rand.nextInt(255)
+      val g    = rand.nextInt(255)
+      val b    = rand.nextInt(255)
       s"#${r.toHexString}${g.toHexString}${b.toHexString}"
     }
   }

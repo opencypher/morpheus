@@ -32,7 +32,8 @@ trait MiniDFSClusterFixture extends BaseTestFixture {
 
   protected def hdfsURI: URI = hdfsURI(dfsTestGraphPath)
 
-  protected def hdfsURI(path: String): URI = URI.create(s"hdfs://${dfsCluster.getNameNode.getHostAndPort}$path")
+  protected def hdfsURI(path: String): URI =
+    URI.create(s"hdfs://${dfsCluster.getNameNode.getHostAndPort}$path")
 
   abstract override def beforeAll(): Unit = {
     super.beforeAll()
@@ -54,10 +55,10 @@ trait MiniDFSClusterFixture extends BaseTestFixture {
     * @return expected nodes
     */
   def dfsTestGraphNodes: Set[Row] = Set(
-    Row(1L, true,  true, false, true,  "Stefan",   42L),
-    Row(2L, false, true,  true, true,    "Mats",   23L),
-    Row(3L, true,  true, false, true,  "Martin", 1337L),
-    Row(4L, true,  true, false, true,     "Max",    8L)
+    Row(1L, true, true, false, true, "Stefan", 42L),
+    Row(2L, false, true, true, true, "Mats", 23L),
+    Row(3L, true, true, false, true, "Martin", 1337L),
+    Row(4L, true, true, false, true, "Max", 8L)
   )
 
   /**

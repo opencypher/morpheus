@@ -22,11 +22,14 @@ import org.opencypher.caps.ir.api.block.Block
 import scala.language.implicitConversions
 
 trait BlockSyntax {
-  implicit def typedBlockOps[B <: Block[_], E](block: B)(implicit instance: TypedBlock[B] { type BlockExpr = E })
-  : TypedBlockOps[B, E] =
+  implicit def typedBlockOps[B <: Block[_], E](block: B)(implicit instance: TypedBlock[B] {
+    type BlockExpr = E
+  }): TypedBlockOps[B, E] =
     new TypedBlockOps[B, E](block)
 }
 
-final class TypedBlockOps[B <: Block[_], E](block: B)(implicit instance: TypedBlock[B] { type BlockExpr = E }) {
+final class TypedBlockOps[B <: Block[_], E](block: B)(implicit instance: TypedBlock[B] {
+  type BlockExpr = E
+}) {
   def outputs: Set[IRField] = instance.outputs(block)
 }

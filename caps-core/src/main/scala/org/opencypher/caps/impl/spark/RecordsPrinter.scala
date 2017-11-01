@@ -28,22 +28,23 @@ object RecordsPrinter {
     */
   def print(records: CAPSRecords)(implicit options: PrintOptions): Unit = {
     val fieldContents = records.header.fieldsInOrder
-    val factor = if (fieldContents.size > 1) fieldContents.size else 1
+    val factor        = if (fieldContents.size > 1) fieldContents.size else 1
 
     val lineWidth = (options.columnWidth + options.margin) * factor + factor - 1
-    val stream = options.stream
-    val --- = "+" + repeat("-", lineWidth) + "+"
+    val stream    = options.stream
+    val ---       = "+" + repeat("-", lineWidth) + "+"
 
     stream.println(---)
     var sep = "| "
     if (fieldContents.isEmpty) {
       stream.print(sep)
       stream.print(fitToColumn("(no columns)"))
-    } else fieldContents.foreach { field =>
-      stream.print(sep)
-      stream.print(fitToColumn(field.name))
-      sep = " | "
-    }
+    } else
+      fieldContents.foreach { field =>
+        stream.print(sep)
+        stream.print(fitToColumn(field.name))
+        sep = " | "
+      }
     stream.println(" |")
     stream.println(---)
 
@@ -85,7 +86,7 @@ object RecordsPrinter {
   private def repeat(x: String, size: Int): String = (1 to size).map((_) => x).mkString
   private def fitToColumn(s: String)(implicit options: PrintOptions) = {
     val spaces = (1 until options.columnWidth).map(_ => " ").reduce(_ + _)
-    val cell = s + spaces
+    val cell   = s + spaces
     cell.take(options.columnWidth)
   }
 }

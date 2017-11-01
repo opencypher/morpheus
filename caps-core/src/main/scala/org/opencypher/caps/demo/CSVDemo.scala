@@ -30,7 +30,8 @@ object CSVDemo {
   conf.set("spark.serializer", classOf[KryoSerializer].getCanonicalName)
   conf.set("spark.kryo.registrator", classOf[CypherKryoRegistrar].getCanonicalName)
 
-  implicit lazy val session = SparkSession.builder()
+  implicit lazy val session = SparkSession
+    .builder()
     .config(conf)
     .master(MasterAddress.get())
     .appName(s"cypher-for-apache-spark-benchmark-${Calendar.getInstance().getTime}")
@@ -49,12 +50,13 @@ object CSVDemo {
     println(s"Now executing query: $query")
 
     implicit val caps: CAPSSession = CAPSSession.create(session)
-    val result: CAPSResult = graph.cypher(query)
+    val result: CAPSResult         = graph.cypher(query)
 
     result.records.toDF().cache()
 
     val start = System.currentTimeMillis()
-    println(s"Returned ${result.records.toDF().count()} row(s) in ${System.currentTimeMillis() - start} ms")
+    println(
+      s"Returned ${result.records.toDF().count()} row(s) in ${System.currentTimeMillis() - start} ms")
 
     result
   }

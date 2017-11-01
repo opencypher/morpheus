@@ -23,8 +23,7 @@ import org.opencypher.caps.impl.spark.io.file.FileCsvGraphSource
 import org.opencypher.caps.test.BaseTestSuite
 import org.opencypher.caps.test.fixture.SparkSessionFixture
 
-class CAPSSessionFileTest extends BaseTestSuite
-  with SparkSessionFixture {
+class CAPSSessionFileTest extends BaseTestSuite with SparkSessionFixture {
 
   private val testGraphPath = getClass.getResource("/csv/sn").getPath
 
@@ -32,7 +31,7 @@ class CAPSSessionFileTest extends BaseTestSuite
 
   test("File via URI") {
     implicit val capsSession: CAPSSession = CAPSSession.builder(session).build
-    val graph = capsSession.graphAt(fileURI)
+    val graph                             = capsSession.graphAt(fileURI)
     graph.nodes("n").toDF().collect().toSet should equal(testGraphNodes)
     graph.relationships("rel").toDF().collect.toSet should equal(testGraphRels)
   }
@@ -52,10 +51,10 @@ class CAPSSessionFileTest extends BaseTestSuite
     * @return expected nodes
     */
   def testGraphNodes: Set[Row] = Set(
-    Row(1L, true,  true, false, true,  "Stefan",   42L),
-    Row(2L, false, true,  true, true,    "Mats",   23L),
-    Row(3L, true,  true, false, true,  "Martin", 1337L),
-    Row(4L, true,  true, false, true,     "Max",    8L)
+    Row(1L, true, true, false, true, "Stefan", 42L),
+    Row(2L, false, true, true, true, "Mats", 23L),
+    Row(3L, true, true, false, true, "Martin", 1337L),
+    Row(4L, true, true, false, true, "Max", 8L)
   )
 
   /**

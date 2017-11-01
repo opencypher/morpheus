@@ -63,26 +63,32 @@ class CypherValueComparabilityTest extends CypherValueTestSuite {
     verifyComparability(ANY_valueGroups)
   }
 
-  private def verifyComparability[V <: CypherValue : CypherValueCompanion](valueGroups: ValueGroups[V]): Unit = {
+  private def verifyComparability[V <: CypherValue: CypherValueCompanion](
+      valueGroups: ValueGroups[V]): Unit = {
     valueGroups.flatten.foreach { v =>
       tryCompare(v, v) should be(if (v.comparesNulls) None else Some(0))
     }
 
     val indexedValueGroups =
-      valueGroups
-        .zipWithIndex
-        .flatMap { case ((group), index) => group.map { v => index -> v } }
+      valueGroups.zipWithIndex
+        .flatMap {
+          case ((group), index) =>
+            group.map { v =>
+              index -> v
+            }
+        }
 
     indexedValueGroups.foreach { left =>
       val ((leftIndex, leftValue)) = left
       indexedValueGroups.foreach { right =>
         val ((rightIndex, rightValue)) = right
-        val cmp = tryCompare(leftValue, rightValue)
+        val cmp                        = tryCompare(leftValue, rightValue)
 
         // direction 1: knowing we have the same value
         val isSameValue = leftIndex == rightIndex
         if (isSameValue)
-          cmp should equal(if (leftValue.comparesNulls || rightValue.comparesNulls) None else Some(0))
+          cmp should equal(
+            if (leftValue.comparesNulls || rightValue.comparesNulls) None else Some(0))
         else
           cmp should not equal Some(0)
 
@@ -95,7 +101,8 @@ class CypherValueComparabilityTest extends CypherValueTestSuite {
     }
   }
 
-  private def tryCompare[V <: CypherValue](l: V, r: V)(implicit companion: CypherValueCompanion[V]): Option[Int] = {
+  private def tryCompare[V <: CypherValue](l: V, r: V)(
+      implicit companion: CypherValueCompanion[V]): Option[Int] = {
     val a = companion.compare(l, r)
     val b = companion.compare(r, l)
 

@@ -39,11 +39,13 @@ object Properties {
   }
 }
 
-final class Properties private (val m: SortedMap[String, CypherValue]) extends AnyVal with Serializable {
+final class Properties private (val m: SortedMap[String, CypherValue])
+    extends AnyVal
+    with Serializable {
 
   def isEmpty: Boolean = m.isEmpty
 
-  def apply(key: String): CypherValue = m.getOrElse(key, cypherNull[CypherValue])
+  def apply(key: String): CypherValue       = m.getOrElse(key, cypherNull[CypherValue])
   def get(key: String): Option[CypherValue] = m.get(key)
 
   def containsNullValue: Boolean = m.values.exists(CypherValue.isOrContainsNull)

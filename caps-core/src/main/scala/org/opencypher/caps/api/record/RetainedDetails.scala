@@ -24,6 +24,6 @@ object RetainedDetails {
 }
 
 final case class RetainedDetails(nodeLabels: Boolean, properties: Boolean) {
-  def withLabels: RetainedDetails = copy(nodeLabels = true)
+  def withLabels: RetainedDetails     = copy(nodeLabels = true)
   def withProperties: RetainedDetails = copy(properties = true)
 }

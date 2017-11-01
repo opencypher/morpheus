@@ -23,8 +23,9 @@ import org.opencypher.caps.api.value.CypherValue
 import scala.language.implicitConversions
 
 trait LowPriorityCypherValueEncoders {
-  implicit def asExpressionEncoder[T](v: Encoder[T]): ExpressionEncoder[T] = v.asInstanceOf[ExpressionEncoder[T]]
+  implicit def asExpressionEncoder[T](v: Encoder[T]): ExpressionEncoder[T] =
+    v.asInstanceOf[ExpressionEncoder[T]]
   implicit def cypherValueEncoder: ExpressionEncoder[CypherValue] = kryo[CypherValue]
-  implicit def cypherRecordEncoder: ExpressionEncoder[Map[String, CypherValue]] = kryo[Map[String, CypherValue]]
+  implicit def cypherRecordEncoder: ExpressionEncoder[Map[String, CypherValue]] =
+    kryo[Map[String, CypherValue]]
 }
-

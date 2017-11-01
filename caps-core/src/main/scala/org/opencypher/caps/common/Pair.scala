@@ -45,11 +45,11 @@ sealed trait Pair[T] extends Traversable[T] {
 
 final case class OrderedPair[T](fst: T, snd: T) extends Pair[T] {
 
-  override def isOrdered = true
+  override def isOrdered   = true
   override def isUnordered = false
 
   override def toOrdered: OrderedPair[T] = this
-  override def toUnordered = UnorderedPair(fst, snd)
+  override def toUnordered               = UnorderedPair(fst, snd)
 
   override def hashCode(): Int = MurmurHash3.orderedHash(this, Pair.hashSeed)
 
@@ -58,22 +58,25 @@ final case class OrderedPair[T](fst: T, snd: T) extends Pair[T] {
 
 final case class UnorderedPair[T](fst: T, snd: T) extends Pair[T] {
 
-  override def isOrdered = false
+  override def isOrdered   = false
   override def isUnordered = true
 
-  override def toOrdered = OrderedPair(fst, snd)
+  override def toOrdered                     = OrderedPair(fst, snd)
   override def toUnordered: UnorderedPair[T] = this
 
   override def hashCode(): Int = MurmurHash3.unorderedHash(this, Pair.hashSeed)
 
-  override def equals(obj: scala.Any): Boolean = if (super.equals(obj)) true else obj match {
-    case other: UnorderedPair[_] =>
-      val otherFst = other.fst
-      val otherSnd = other.snd
-      (fst == otherFst && snd == otherSnd) || (snd == otherFst && fst == otherSnd)
-    case _ =>
-      false
-  }
+  override def equals(obj: scala.Any): Boolean =
+    if (super.equals(obj)) true
+    else
+      obj match {
+        case other: UnorderedPair[_] =>
+          val otherFst = other.fst
+          val otherSnd = other.snd
+          (fst == otherFst && snd == otherSnd) || (snd == otherFst && fst == otherSnd)
+        case _ =>
+          false
+      }
 
   override def flip: UnorderedPair[T] = this
 }

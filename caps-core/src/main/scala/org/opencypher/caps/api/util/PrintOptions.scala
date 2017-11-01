@@ -19,20 +19,20 @@ import java.io.PrintStream
 
 object PrintOptions {
   private val DEFAULT_COLUMN_WIDTH = 20
-  private val DEFAULT_MARGIN = 2
+  private val DEFAULT_MARGIN       = 2
 
   implicit lazy val out: PrintOptions =
     PrintOptions(stream = Console.out, columnWidth = DEFAULT_COLUMN_WIDTH, margin = DEFAULT_MARGIN)
 
   lazy val err: PrintOptions =
-    PrintOptions(stream = Console.err, columnWidth = DEFAULT_COLUMN_WIDTH, margin =  DEFAULT_MARGIN)
+    PrintOptions(stream = Console.err, columnWidth = DEFAULT_COLUMN_WIDTH, margin = DEFAULT_MARGIN)
 
   def current(implicit options: PrintOptions): PrintOptions =
     options
 }
 
 final case class PrintOptions(stream: PrintStream, columnWidth: Int, margin: Int) {
-  def stream(newStream: PrintStream): PrintOptions = copy(stream = newStream)
+  def stream(newStream: PrintStream): PrintOptions   = copy(stream = newStream)
   def columnWidth(newColumnWidth: Int): PrintOptions = copy(columnWidth = newColumnWidth)
-  def margin(newMargin: Int): PrintOptions = copy(margin = newMargin)
+  def margin(newMargin: Int): PrintOptions           = copy(margin = newMargin)
 }
