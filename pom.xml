@@ -118,6 +118,7 @@
                             <args>
                                 <arg>–explaintypes</arg>
                                 <arg>–optimise</arg>
+                                <arg>-Xfatal-warnings</arg>
                             </args>
                         </configuration>
                     </execution>
@@ -130,6 +131,7 @@
                         <configuration>
                             <args>
                                 <arg>–explaintypes</arg>
+                                <arg>-Xfatal-warnings</arg>
                             </args>
                         </configuration>
                     </execution>
