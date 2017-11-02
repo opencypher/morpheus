@@ -109,9 +109,6 @@ object Neo4jGraphLoader {
     def schema: Schema = verifiedSchema.schema
   }
 
-
-  // TODO: Rethink caching. Currently the RDDs are cached before calling this method.
-
   private def createGraph(inputNodes: RDD[InternalNode], inputRels: RDD[InternalRelationship],
                           sourceNode: String = "source", rel: String = "rel", targetNode: String = "target")
                          (implicit caps: CAPSSession, context: LoadingContext): CAPSGraph =
@@ -327,7 +324,6 @@ object Neo4jGraphLoader {
 
   private def importedToSparkEncodedCypherValue(typ: DataType, value: AnyRef): AnyRef = typ match {
     case StringType | LongType | BooleanType | DoubleType => value
-    case BinaryType => if (value == null) null else value.toString.getBytes // TODO: Call kryo
     case _ => CypherValue(value)
   }
 }

@@ -40,9 +40,14 @@ class Neo4jTest extends BaseTestSuite
     assertEquals(10, result.loadRowRdd.count())
   }
 
-  test("run Cypher Query") {
+  test("run Cypher Node Query") {
     val result = neo4j.cypher("MATCH (n:Person) RETURN id(n)")
     assertEquals(100, result.loadRowRdd.count())
+  }
+
+  test("run Cypher Rel Query") {
+    val result = neo4j.cypher("MATCH ()-[r:KNOWS]->() RETURN id(r)")
+    assertEquals(1000, result.loadRowRdd.count())
   }
 
   test("run Cypher Query With Partition") {
@@ -50,7 +55,7 @@ class Neo4jTest extends BaseTestSuite
     assertEquals(100, result.loadRowRdd.count())
   }
 
-  test("runCypherRelQueryWithPartition") {
+  test("run Cypher Rel Query WithPartition") {
     val result = neo4j.cypher("MATCH (n:Person)-[r:KNOWS]->(m:Person) RETURN id(n) as src,id(m) as dst,type(r) as value SKIP {_skip} LIMIT {_limit}").partitions(7).batch(200)
     assertEquals(1000, result.loadRowRdd.count())
   }
