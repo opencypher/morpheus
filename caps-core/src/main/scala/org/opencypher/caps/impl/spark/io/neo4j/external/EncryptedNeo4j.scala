@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.spark.io.neo4j
+package org.opencypher.caps.impl.spark.io.neo4j.external
 
 import java.net.URI
 
@@ -21,7 +21,7 @@ import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SparkSession}
 import org.neo4j.driver.v1.Config
-import org.neo4j.spark.{Neo4j, Neo4jConfig, Neo4jRDD, Partitions}
+import org.opencypher.caps.impl.spark.io.neo4j.external.Neo4j.NameProp
 
 case class EncryptedNeo4j(config: EncryptedNeo4jConfig, session: SparkSession) extends Neo4j(session.sparkContext) {
 

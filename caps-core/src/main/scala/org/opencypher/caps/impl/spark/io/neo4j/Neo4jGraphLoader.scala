@@ -30,6 +30,7 @@ import org.opencypher.caps.impl.convert.fromJavaType
 import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.convert.toSparkType
 import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.spark.io.neo4j.external.{EncryptedNeo4j, EncryptedNeo4jConfig}
 import org.opencypher.caps.impl.syntax.header._
 import org.opencypher.caps.ir.api.{Label, PropertyKey}
 
@@ -45,6 +46,7 @@ object Neo4jGraphLoader {
     import scala.collection.JavaConverters._
 
     val nodeSchema = nodes.aggregate(Schema.empty)({
+      // TODO: what about nodes without labels?
       case (acc, next) => next.labels().asScala.foldLeft(acc) {
         case (acc2, l) =>
           // for nodes without properties
@@ -106,6 +108,9 @@ object Neo4jGraphLoader {
   case class LoadingContext(verifiedSchema: VerifiedSchema) {
     def schema: Schema = verifiedSchema.schema
   }
+
+
+  // TODO: Rethink caching. Currently the RDDs are cached before calling this method.
 
   private def createGraph(inputNodes: RDD[InternalNode], inputRels: RDD[InternalRelationship],
                           sourceNode: String = "source", rel: String = "rel", targetNode: String = "target")
@@ -322,6 +327,7 @@ object Neo4jGraphLoader {
 
   private def importedToSparkEncodedCypherValue(typ: DataType, value: AnyRef): AnyRef = typ match {
     case StringType | LongType | BooleanType | DoubleType => value
+    case BinaryType => if (value == null) null else value.toString.getBytes // TODO: Call kryo
     case _ => CypherValue(value)
   }
 }

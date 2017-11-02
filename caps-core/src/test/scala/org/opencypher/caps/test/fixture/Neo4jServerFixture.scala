@@ -17,7 +17,7 @@ package org.opencypher.caps.test.fixture
 
 import org.neo4j.driver.v1.Config
 import org.neo4j.harness.{ServerControls, TestServerBuilders}
-import org.opencypher.caps.impl.spark.io.neo4j.EncryptedNeo4jConfig
+import org.opencypher.caps.impl.spark.io.neo4j.external.EncryptedNeo4jConfig
 import org.opencypher.caps.test.BaseTestSuite
 
 trait Neo4jServerFixture extends BaseTestFixture {
