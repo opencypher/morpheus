@@ -291,6 +291,9 @@
                 <configuration>
                     <header>${project.rootdir}/license-header.txt</header>
                     <basedir>${basedir}/src</basedir>
+                    <mapping>
+                        <scala>SLASHSTAR_STYLE</scala>
+                    </mapping>
                     <excludes>
                         <exclude>test/resources/**</exclude>
                         <exclude>main/resources/**</exclude>
