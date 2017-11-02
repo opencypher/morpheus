@@ -33,7 +33,7 @@ class Neo4jTest extends BaseTestSuite
       CREATE (p1)-[:KNOWS]->(p2)
       """
 
-  lazy private val neo4j = EncryptedNeo4j(neo4jConfig, session)
+  lazy private val neo4j = Neo4j(neo4jConfig, session)
 
   test("run Cypher Query With Params") {
     val result = neo4j.cypher("MATCH (n:Person) WHERE n.id <= {maxId} RETURN id(n)").param("maxId", 10)

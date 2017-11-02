@@ -17,7 +17,7 @@ package org.opencypher.caps.test.fixture
 
 import org.neo4j.driver.v1.Config
 import org.neo4j.harness.{ServerControls, TestServerBuilders}
-import org.opencypher.caps.impl.spark.io.neo4j.external.EncryptedNeo4jConfig
+import org.opencypher.caps.impl.spark.io.neo4j.external.Neo4jConfig
 import org.opencypher.caps.test.BaseTestSuite
 
 trait Neo4jServerFixture extends BaseTestFixture {
@@ -25,7 +25,7 @@ trait Neo4jServerFixture extends BaseTestFixture {
 
   var neo4jServer: ServerControls = _
 
-  def neo4jConfig = new EncryptedNeo4jConfig(neo4jServer.boltURI(),
+  def neo4jConfig = new Neo4jConfig(neo4jServer.boltURI(),
     user = "anonymous",
     password = Some("password"),
     encryptionLevel = Config.EncryptionLevel.NONE)

@@ -23,7 +23,7 @@ import org.opencypher.caps.api.spark.io.CAPSGraphSourceFactoryCompanion
 import org.opencypher.caps.api.spark.CAPSSession
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceFactoryImpl
 import org.opencypher.caps.impl.spark.exception.Raise
-import org.opencypher.caps.impl.spark.io.neo4j.external.EncryptedNeo4jConfig
+import org.opencypher.caps.impl.spark.io.neo4j.external.Neo4jConfig
 
 case object Neo4jGraphSourceFactory extends CAPSGraphSourceFactoryCompanion("bolt", "bolt+routing")
 
@@ -39,7 +39,7 @@ case class Neo4jGraphSourceFactory()
       .setPort(uri.getPort)
       .build()
 
-    val neo4jConfig = new EncryptedNeo4jConfig(boltUri, user, passwd, Config.EncryptionLevel.NONE)
+    val neo4jConfig = new Neo4jConfig(boltUri, user, passwd, Config.EncryptionLevel.NONE)
     Neo4jGraphSource(neo4jConfig, getQueries(uri))
   }
 

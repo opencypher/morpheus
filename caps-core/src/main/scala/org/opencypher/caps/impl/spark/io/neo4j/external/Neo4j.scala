@@ -1,18 +1,18 @@
 /**
- * Copyright (c) 2016-2017 "Neo4j, Inc." [https://neo4j.com]
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+  * Copyright (c) 2016-2017 "Neo4j, Inc." [https://neo4j.com]
+  *
+  * Licensed under the Apache License, Version 2.0 (the "License");
+  * you may not use this file except in compliance with the License.
+  * You may obtain a copy of the License at
+  *
+  * http://www.apache.org/licenses/LICENSE-2.0
+  *
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
+  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  * See the License for the specific language governing permissions and
+  * limitations under the License.
+  */
 /**
   * Copyright (c) 2016-2017 "Neo4j, Inc." [https://neo4j.com]
   *
@@ -33,7 +33,7 @@ package org.opencypher.caps.impl.spark.io.neo4j.external
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{Row, SQLContext}
+import org.apache.spark.sql.{Row, SparkSession}
 import org.apache.spark.{Partition, SparkContext, TaskContext}
 import org.neo4j.driver.v1.{Driver, Session, StatementResult}
 import org.opencypher.caps.impl.spark.io.neo4j.external.Neo4j.{LoadDsl, NameProp, PartitionsDsl, Pattern, QueriesDsl, Query}
@@ -45,11 +45,7 @@ import scala.reflect.ClassTag
 object Neo4j {
 
   val UNDEFINED: Long = Long.MaxValue
-
-  implicit def apply(sc: SparkContext): Neo4j = {
-    new Neo4j(sc)
-  }
-
+  
   trait QueriesDsl {
     def cypher(cypher: String, params: Map[String, Any]): Neo4j
 
@@ -135,7 +131,6 @@ object Neo4j {
 
     def isEmpty = query == null
   }
-
 }
 
 case class Partitions(partitions: Long = 1, batchSize: Long = Neo4j.UNDEFINED, rows: Long = Neo4j.UNDEFINED, rowSource: Option[() => Long] = None) {
@@ -159,10 +154,9 @@ case class Partitions(partitions: Long = 1, batchSize: Long = Neo4j.UNDEFINED, r
   }
 }
 
-class Neo4j(val sc: SparkContext) extends QueriesDsl with PartitionsDsl with LoadDsl {
+case class Neo4j(config: Neo4jConfig, session: SparkSession) extends QueriesDsl with PartitionsDsl with LoadDsl {
 
   // todo
-  private def sqlContext: SQLContext = new SQLContext(sc)
 
   var pattern: Pattern = null
   var nodes: Query = Query(null)
@@ -190,22 +184,22 @@ class Neo4j(val sc: SparkContext) extends QueriesDsl with PartitionsDsl with Loa
     this
   }
 
-  override def nodes(cypher: String, params: Map[String, Any]) = this.cypher(cypher, params)
+  override def nodes(cypher: String, params: Map[String, Any]): Neo4j = this.cypher(cypher, params)
 
-  override def rels(cypher: String, params: Map[String, Any] = Map.empty) = {
+  override def rels(cypher: String, params: Map[String, Any] = Map.empty): Neo4j = {
     this.rels = Query(cypher, params)
     this
   }
 
   // --- configure partitions
 
-  override def rows(rows: Long) = {
+  override def rows(rows: Long): Neo4j = {
     assert(rows > 0)
     this.partitions = partitions.copy(rows = rows)
     this
   }
 
-  override def batch(batch: Long) = {
+  override def batch(batch: Long): Neo4j = {
     assert(batch > 0)
     this.partitions = partitions.copy(batchSize = batch)
     this
@@ -221,46 +215,39 @@ class Neo4j(val sc: SparkContext) extends QueriesDsl with PartitionsDsl with Loa
 
   // -- output
 
-  def loadRelRdd: RDD[Row] = {
+  override def loadRelRdd: RDD[Row] = {
     if (pattern != null) {
       val queries: Seq[(String, List[String])] = pattern.relQueries
       val rdds: Seq[RDD[Row]] = queries.map(query => {
-        //        val maxCountQuery: () => Long = () => { query._2.map(countQuery => new Neo4jRDD(sc, countQuery).first().getLong(0)).max }
-        new Neo4jRDD(sc, query._1, rels.params, partitions) // .copy(rowSource = Option(maxCountQuery)))
+        new Neo4jRDD(session.sparkContext, query._1, config, rels.params, partitions)
       })
       rdds.reduce((a, b) => a.union(b)).distinct()
-    } else if (!rels.isEmpty) {
-      new Neo4jRDD(sc, rels.query, rels.params, partitions)
     } else {
-      throw new RuntimeException("No relationship query provided either as pattern or with rels()")
+      new Neo4jRDD(session.sparkContext, rels.query, config, rels.params, partitions)
     }
   }
 
-  private def loadNodeRdds(node: NameProp, params: Map[String, Any], partitions: Partitions) = {
-    // todo use count queries
-    val queries = pattern.nodeQuery(node)
-
-    new Neo4jRDD(sc, queries._1, params, partitions)
-  }
-
-
-  def loadNodeRdds: RDD[Row] = {
+  override def loadNodeRdds: RDD[Row] = {
     if (pattern != null) {
       loadNodeRdds(pattern.source, nodes.params, partitions)
         .union(loadNodeRdds(pattern.target, nodes.params, partitions)).distinct()
     } else if (!nodes.isEmpty) {
-      new Neo4jRDD(sc, nodes.query, nodes.params, partitions)
-    } else if (!rels.isEmpty) {
-      new Neo4jRDD(sc, rels.query, rels.params, partitions)
+      new Neo4jRDD(session.sparkContext, nodes.query, config, nodes.params, partitions)
     } else {
-      throw new RuntimeException("No relationship query provided either as pattern or with cypher() or nodes()")
+      null
     }
+  }
+
+  private def loadNodeRdds(node: NameProp, params: Map[String, Any], partitions: Partitions): Neo4jRDD = {
+    // todo use count queries
+    val queries = pattern.nodeQuery(node)
+
+    new Neo4jRDD(session.sparkContext, queries._1, config, params, partitions)
   }
 
   override def loadRowRdd: RDD[Row] = loadNodeRdds
 
   override def loadRdd[T: ClassTag]: RDD[T] = loadRowRdd.map(_.getAs[T](0))
-
 }
 
 object Executor {
@@ -294,7 +281,7 @@ object Executor {
 
   def execute(config: Neo4jConfig, query: String, parameters: Map[String, Any]): CypherResult = {
 
-    def close(driver: Driver, session: Session) = {
+    def close(driver: Driver, session: Session): Unit = {
       try {
         if (session.isOpen) {
           session.close()
@@ -347,25 +334,3 @@ object Executor {
     }
   }
 }
-
-class Neo4jRDD(@transient sc: SparkContext, val query: String, val parameters: Map[String, Any] = Map.empty, partitions: Partitions = Partitions())
-  extends RDD[Row](sc, Nil) {
-
-  val neo4jConfig = Neo4jConfig(sc.getConf)
-
-  override def compute(partition: Partition, context: TaskContext): Iterator[Row] = {
-
-    val neo4jPartition: Neo4jPartition = partition.asInstanceOf[Neo4jPartition]
-
-    Executor.execute(neo4jConfig, query, parameters ++ neo4jPartition.window).sparkRows
-  }
-
-  override protected def getPartitions: Array[Partition] = {
-    val p = partitions.effective()
-    Range(0, p.partitions.toInt).map(idx => new Neo4jPartition(idx, p.skip(idx), p.limit(idx))).toArray
-  }
-
-  override def toString(): String = s"Neo4jRDD partitions $partitions $query using $parameters"
-}
-
-

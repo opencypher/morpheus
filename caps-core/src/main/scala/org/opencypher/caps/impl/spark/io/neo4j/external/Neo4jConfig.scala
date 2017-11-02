@@ -15,16 +15,21 @@
  */
 package org.opencypher.caps.impl.spark.io.neo4j.external
 
+import java.net.URI
+
 import org.apache.spark.SparkConf
 import org.neo4j.driver.v1.{AuthTokens, Config, Driver, GraphDatabase}
 
-case class Neo4jConfig(url: String, user: String = "neo4j", password: Option[String] = None) {
+case class Neo4jConfig(uri: URI,
+                       user: String = "",
+                       password: Option[String] = None,
+                       encryptionLevel: Config.EncryptionLevel = Config.EncryptionLevel.REQUIRED) {
 
-  def boltConfig(): Config = Config.build.withoutEncryption().toConfig
+  def boltConfig(): Config = Config.build.withEncryptionLevel(encryptionLevel).toConfig
 
   def driver(config: Neo4jConfig) : Driver = config.password match {
-    case Some(pwd) => GraphDatabase.driver(config.url, AuthTokens.basic(config.user, pwd), boltConfig())
-    case _ => GraphDatabase.driver(config.url, boltConfig())
+    case Some(pwd) => GraphDatabase.driver(config.uri, AuthTokens.basic(config.user, pwd), boltConfig())
+    case _ => GraphDatabase.driver(config.uri, boltConfig())
   }
 
   def driver() : Driver = driver(this)
@@ -39,6 +44,6 @@ object Neo4jConfig {
     val url = sparkConf.get(prefix + "url", "bolt://localhost")
     val user = sparkConf.get(prefix + "user", "neo4j")
     val password: Option[String] = sparkConf.getOption(prefix + "password")
-    Neo4jConfig(url, user, password)
+    Neo4jConfig(URI.create(url), user, password)
   }
 }

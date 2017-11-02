@@ -21,9 +21,9 @@ import org.opencypher.caps.api.io.{CreateOrFail, PersistMode}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceImpl
-import org.opencypher.caps.impl.spark.io.neo4j.external.EncryptedNeo4jConfig
+import org.opencypher.caps.impl.spark.io.neo4j.external.Neo4jConfig
 
-case class Neo4jGraphSource(config: EncryptedNeo4jConfig,
+case class Neo4jGraphSource(config: Neo4jConfig,
                             queries: Option[(String, String)])
                            (implicit capsSession: CAPSSession)
   extends CAPSGraphSourceImpl {
