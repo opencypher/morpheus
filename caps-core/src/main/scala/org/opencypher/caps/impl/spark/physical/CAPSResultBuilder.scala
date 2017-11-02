@@ -20,10 +20,12 @@ import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSResult}
 import org.opencypher.caps.impl.logical.LogicalOperator
 
 object CAPSResultBuilder {
-  def from(internal: PhysicalResult, plan: LogicalOperator): CAPSResult = new CAPSResult {
+  def from(physical: PhysicalOperator, plan: LogicalOperator)(context: RuntimeContext): CAPSResult = new CAPSResult {
 
-    override def records: CAPSRecords = internal.records
-    override def graphs: Map[String, CAPSGraph] = internal.graphs
+    lazy val result: PhysicalResult = physical.execute(context)
+
+    override def records: CAPSRecords = result.records
+    override def graphs: Map[String, CAPSGraph] = result.graphs
 
     override def explain: CypherResultPlan = CypherResultPlan(plan)
   }

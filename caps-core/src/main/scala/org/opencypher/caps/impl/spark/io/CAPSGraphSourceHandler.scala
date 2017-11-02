@@ -46,4 +46,9 @@ case class CAPSGraphSourceHandler(sessionGraphSourceFactory: SessionGraphSourceF
       .get(uri.getScheme)
       .map(_.sourceFor(uri))
       .getOrElse(Raise.graphNotFound(uri))
+
+  def optSourceAt(uri: URI)(implicit capsSession: CAPSSession): Option[CAPSGraphSource] =
+    factoriesByScheme
+      .get(uri.getScheme)
+      .map(_.sourceFor(uri))
 }

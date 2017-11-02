@@ -29,6 +29,7 @@ import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.api.util.parsePathOrURI
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.convert.fromJavaType
+import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.convert.toSparkType
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceImpl
 import org.opencypher.caps.test.BaseTestSuite
@@ -157,7 +158,7 @@ trait GraphMatchingTestSupport {
             }.toList.asJava
 
           val fields = header.slots.map { s =>
-            StructField(context.columnName(s), toSparkType(s.content.cypherType))
+            StructField(SparkColumnName.of(s), toSparkType(s.content.cypherType))
           }
 
           sparkSession.createDataFrame(nodes, StructType(fields))
@@ -186,7 +187,7 @@ trait GraphMatchingTestSupport {
           }.toList.asJava
 
           val fields = header.slots.map { s =>
-            StructField(context.columnName(s), toSparkType(s.content.cypherType))
+            StructField(SparkColumnName.of(s), toSparkType(s.content.cypherType))
           }
 
           sparkSession.createDataFrame(rels, StructType(fields))

@@ -92,6 +92,16 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
     ))
   }
 
+  test("relationship scan for specific type") {
+    val inputGraph = TestGraph(`:KNOWS` + `:READS`).graph
+    val inputRels = inputGraph.relationships("r")
+
+    val patternGraph = CAPSGraph.create(inputRels, inputGraph.schema)
+    val outputRels = patternGraph.relationships("r", CTRelationship("KNOWS"))
+
+    outputRels.data.count() shouldBe 6
+  }
+
   test("project pattern graph with created node with labels") {
     val inputGraph = TestGraph(`:Person` + `:KNOWS`).graph
 
