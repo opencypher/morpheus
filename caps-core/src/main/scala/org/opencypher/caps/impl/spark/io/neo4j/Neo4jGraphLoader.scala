@@ -46,7 +46,6 @@ object Neo4jGraphLoader {
     import scala.collection.JavaConverters._
 
     val nodeSchema = nodes.aggregate(Schema.empty)({
-      // TODO: what about nodes without labels?
       case (acc, next) => next.labels().asScala.foldLeft(acc) {
         case (acc2, l) =>
           // for nodes without properties
