@@ -19,7 +19,6 @@ import org.opencypher.caps.api.expr.{Aggregator, Expr, Var}
 import org.opencypher.caps.api.record.{OpaqueField, RecordHeader}
 import org.opencypher.caps.impl.logical.LogicalGraph
 import org.opencypher.caps.ir.api.block.SortItem
-import org.opencypher.caps.ir.api.pattern.EveryRelationship
 
 sealed trait FlatOperator {
   def isLeaf = false
@@ -55,7 +54,7 @@ sealed trait FlatLeafOperator extends FlatOperator
 final case class NodeScan(node: Var, in: FlatOperator, header: RecordHeader)
   extends StackingFlatOperator
 
-final case class EdgeScan(edge: Var, edgeDef: EveryRelationship, in: FlatOperator, header: RecordHeader)
+final case class EdgeScan(edge: Var, in: FlatOperator, header: RecordHeader)
   extends StackingFlatOperator
 
 final case class Filter(expr: Expr, in: FlatOperator, header: RecordHeader)

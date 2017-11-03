@@ -66,11 +66,8 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOpera
       case op@flat.NodeScan(v, in, header) =>
         Scan(op.sourceGraph, v, process(in))
 
-      case op@flat.EdgeScan(e, edgeDef, in, header) =>
-        // TODO: propagate to earlier stage
-        val vType = CTRelationship(edgeDef.relTypes.elements.map(_.name).toSeq: _*)
-
-        Scan(op.sourceGraph, Var(e.name)(vType), process(in))
+      case op@flat.EdgeScan(e, in, header) =>
+        Scan(op.sourceGraph, e, process(in))
 
       case flat.Alias(expr, alias, in, header) =>
         Alias(expr, alias, header, process(in))

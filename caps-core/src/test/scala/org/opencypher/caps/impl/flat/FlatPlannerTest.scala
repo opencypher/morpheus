@@ -321,9 +321,6 @@ class FlatPlannerTest extends BaseTestSuite {
   private def flatNodeScan(node: String, labelNames: String*): NodeScan =
     flatNodeScan(Var(node)(CTNode(labelNames.toSet)))
 
-  private def flatVarLengthEdgeScan(edgeList: Var, edgeTypes: String*) = {
-    val types = edgeTypes.map(RelType)
-
-    mkFlat.varLengthEdgeScan(edgeList, EveryRelationship(AnyOf(types: _*)), flatStartOperator)
-  }
+  private def flatVarLengthEdgeScan(edgeList: Var) =
+    mkFlat.varLengthEdgeScan(edgeList, flatStartOperator)
 }

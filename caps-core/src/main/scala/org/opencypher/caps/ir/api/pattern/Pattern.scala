@@ -15,26 +15,25 @@
  */
 package org.opencypher.caps.ir.api.pattern
 
+import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.caps.impl.spark.exception.Raise
-import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block.Binds
 
 import scala.annotation.tailrec
 
 case object Pattern {
-  def empty[E]: Pattern[E] = Pattern[E](entities = Map.empty, topology = Map.empty)
-  def node[E](entry: (IRField, EveryEntity)): Pattern[E] = Pattern[E](entities = Map(entry), topology = Map.empty)
+  def empty[E]: Pattern[E] = Pattern[E](fields = Set.empty, topology = Map.empty)
+  def node[E](node: IRField): Pattern[E] = Pattern[E](fields = Set(node), topology = Map.empty)
 }
 
-// TODO: Can we remove EveryEntity here?
-final case class Pattern[E](entities: Map[IRField, EveryEntity], topology: Map[IRField, Connection]) extends Binds[E] {
+final case class Pattern[E](fields: Set[IRField], topology: Map[IRField, Connection]) extends Binds[E] {
 
-  lazy val nodes: Map[IRField, EveryNode] = entities.collect { case (k, v: EveryNode) => k -> v }
-  lazy val rels: Map[IRField, EveryRelationship] = entities.collect { case (k, v: EveryRelationship) => k -> v }
+  lazy val nodes: Set[IRField] = getEntity(CTNode)
+  lazy val rels: Set[IRField] = getEntity(CTRelationship)
 
-  override def fields: Set[IRField] = entities.keySet
+  private def getEntity(t: CypherType) =
+    fields.collect { case e if e.cypherType.subTypeOf(t).maybeTrue => e }
 
   /**
     * Fuse patterns but fail if they disagree in the definitions of entities or connections
@@ -42,12 +41,10 @@ final case class Pattern[E](entities: Map[IRField, EveryEntity], topology: Map[I
     * @return A pattern that contains all entities and connections of their input
     */
   def ++(other: Pattern[E]): Pattern[E] = {
-    val entityFields = entities.keySet ++ other.entities.keySet
-    val newEntities = entityFields.foldLeft(Map.empty[IRField, EveryEntity]) { case (m, f) =>
-      val candidates = entities.get(f).toSet ++ other.entities.get(f).toSet
-      if (candidates.size == 1) m.updated(f, candidates.head)
-      else Raise.invalidArgument("disjoint patterns", s"conflicting entities $f")
-    }
+    val thisMap = fields.map(f => f.name -> f.cypherType).toMap
+    val otherMap = other.fields.map(f => f.name -> f.cypherType).toMap
+
+    verifyFieldTypes(thisMap, otherMap)
 
     val topologyFields = topology.keySet ++ other.topology.keySet
     val newTopology = topologyFields.foldLeft(Map.empty[IRField, Connection]) { case (m, f) =>
@@ -56,7 +53,18 @@ final case class Pattern[E](entities: Map[IRField, EveryEntity], topology: Map[I
       else Raise.invalidArgument("disjoint patterns", s"conflicting connections $f")
     }
 
-    Pattern(newEntities, newTopology)
+    Pattern(fields ++ other.fields, newTopology)
+  }
+
+  private def verifyFieldTypes(map1: Map[String, CypherType], map2: Map[String, CypherType]): Unit = {
+    (map1.keySet ++ map2.keySet).foreach { f =>
+      map1.get(f) -> map2.get(f) match {
+        case (Some(t1), Some(t2)) =>
+          if (t1 != t2)
+            Raise.invalidArgument("disjoint patterns", s"conflicting entities $f")
+        case _ =>
+      }
+    }
   }
 
   def connectionsFor(node: IRField): Map[IRField, Connection] = {
@@ -65,51 +73,40 @@ final case class Pattern[E](entities: Map[IRField, EveryEntity], topology: Map[I
     }
   }
 
-  def withoutConnection(rel: IRField): Pattern[E] = {
-    val c = topology(rel)
-    copy(entities = entities - c.source - c.target - rel,
-      topology = topology - rel)
-  }
-
-  def solvedNode(key: IRField): Pattern[E] = {
-    copy(entities = entities - key)
-  }
-
   def isEmpty: Boolean = this == Pattern.empty
 
   def withConnection(key: IRField, connection: Connection): Pattern[E] =
     if (topology.get(key).contains(connection)) this else copy(topology = topology.updated(key, connection))
 
-  def withEntity(key: IRField, value: EveryEntity): Pattern[E] =
-    if (entities.get(key).contains(value)) this else copy(entities = entities.updated(key, value))
+  def withEntity(field: IRField): Pattern[E] =
+    if (fields(field)) this else copy(fields = fields + field)
 
   def components: Set[Pattern[E]] = {
-    val fields = entities.keySet.foldLeft(Map.empty[IRField, Int]) { case (m, f) => m.updated(f, m.size) }
-    val components = nodes.foldLeft(Map.empty[Int, Pattern[E]]) { case (m, entry@(f, _)) => m.updated(fields(f), Pattern.node(entry)) }
-    val input = topology.toSeq.flatMap { case (f, c) => entities.get(f).map { e => (f, e, c) } }
-    computeComponents(input, components, fields.size, fields)
+    val _fields = fields.foldLeft(Map.empty[IRField, Int]) { case (m, f) => m.updated(f, m.size) }
+    val components = nodes.foldLeft(Map.empty[Int, Pattern[E]]) { case (m, f) => m.updated(_fields(f), Pattern.node(f)) }
+    computeComponents(topology.toSeq, components, _fields.size, _fields)
   }
 
   @tailrec
   private def computeComponents(
-    input: Seq[(IRField, EveryEntity, Connection)],
+    input: Seq[(IRField, Connection)],
     components: Map[Int, Pattern[E]],
     count: Int,
-    fields: Map[IRField, Int]
+    fieldToComponentIndex: Map[IRField, Int]
   ): Set[Pattern[E]] = input match {
-    case Seq((field, entity, connection), tail@_*) =>
+    case Seq((field, connection), tail@_*) =>
       val endpoints = connection.endpoints.toSet
-      val links = endpoints.flatMap(fields.get).toSet
+      val links = endpoints.flatMap(fieldToComponentIndex.get).toSet
 
       if (links.isEmpty) {
         // Connection forms a new connected component on its own
         val newCount = count + 1
         val newPattern = Pattern[E](
-          entities = endpoints.flatMap(field => entities.get(field).map(field -> _)).toMap,
+          fields = fields intersect endpoints,
           topology = Map(field -> connection)
-        ).withEntity(field, entity)
+        ).withEntity(field)
         val newComponents = components.updated(count, newPattern)
-        val newFields = endpoints.foldLeft(fields) { case (m, endpoint) => m.updated(endpoint, count) }
+        val newFields = endpoints.foldLeft(fieldToComponentIndex) { case (m, endpoint) => m.updated(endpoint, count) }
         computeComponents(tail, newComponents, newCount, newFields)
       } else if (links.size == 1) {
         // Connection should be added to a single, existing component
@@ -117,20 +114,20 @@ final case class Pattern[E](entities: Map[IRField, EveryEntity], topology: Map[I
         val oldPattern = components(link) // This is not supposed to fail
         val newPattern = oldPattern
           .withConnection(field, connection)
-          .withEntity(field, entity)
+          .withEntity(field)
         val newComponents = components.updated(link, newPattern)
-        computeComponents(tail, newComponents, count, fields)
+        computeComponents(tail, newComponents, count, fieldToComponentIndex)
       } else {
         // Connection bridges two connected components
         val fusedPattern = links.flatMap(components.get).reduce(_ ++ _)
         val newPattern = fusedPattern
           .withConnection(field, connection)
-          .withEntity(field, entity)
+          .withEntity(field)
         val newCount = count + 1
         val newComponents = links
           .foldLeft(components) { case (m, l) => m - l }
           .updated(newCount, newPattern)
-        val newFields = fields.mapValues(l => if (links(l)) newCount else l)
+        val newFields = fieldToComponentIndex.mapValues(l => if (links(l)) newCount else l)
         computeComponents(tail, newComponents, newCount, newFields)
       }
 

@@ -26,7 +26,8 @@ import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.syntax.expr._
 import org.opencypher.caps.impl.syntax.header._
 import org.opencypher.caps.ir.api.block.SortItem
-import org.opencypher.caps.ir.api.pattern.EveryRelationship
+
+import scala.annotation.tailrec
 
 class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
@@ -90,16 +91,23 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     new NodeScan(node, prev, header)
   }
 
-  def edgeScan(edge: Var, edgeDef: EveryRelationship, prev: FlatOperator): EdgeScan = {
-    val edgeHeader = if (edgeDef.relTypes.elements.isEmpty) RecordHeader.relationshipFromSchema(edge, prev.sourceGraph.schema)
-    else RecordHeader.relationshipFromSchema(edge, prev.sourceGraph.schema, edgeDef.relTypes.elements.map(_.name))
+  def edgeScan(edge: Var, prev: FlatOperator): EdgeScan = {
+    val edgeHeader = RecordHeader.relationshipFromSchema(edge, prev.sourceGraph.schema)
 
-    EdgeScan(edge, edgeDef, prev, edgeHeader)
+    EdgeScan(edge, prev, edgeHeader)
   }
 
-  def varLengthEdgeScan(edgeList: Var, edgeDef: EveryRelationship, prev: FlatOperator): EdgeScan = {
-    val edge = FreshVariableNamer(edgeList.name + "extended", CTRelationship)
-    edgeScan(edge, edgeDef, prev)
+  @tailrec
+  private def relTypeFromList(t: CypherType): Set[String] = t match {
+    case l: CTList => relTypeFromList(l.elementType)
+    case r: CTRelationship => r.types
+    case _ => Raise.impossible()
+  }
+
+  def varLengthEdgeScan(edgeList: Var, prev: FlatOperator): EdgeScan = {
+    val types = relTypeFromList(edgeList.cypherType)
+    val edge = FreshVariableNamer(edgeList.name + "extended", CTRelationship(types))
+    edgeScan(edge, prev)
   }
 
   def aggregate(aggregations: Set[(Var, Aggregator)], group: Set[Var], in: FlatOperator): Aggregate = {

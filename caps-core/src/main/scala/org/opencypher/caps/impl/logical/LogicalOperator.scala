@@ -18,11 +18,10 @@ package org.opencypher.caps.impl.logical
 import java.net.URI
 
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.ir.api.{Label, SolvedQueryModel}
-import org.opencypher.caps.ir.api.block.SortItem
-import org.opencypher.caps.ir.api.pattern.{EveryNode, EveryRelationship, Pattern}
 import org.opencypher.caps.api.record.ProjectedSlotContent
 import org.opencypher.caps.api.schema.Schema
+import org.opencypher.caps.ir.api.block.SortItem
+import org.opencypher.caps.ir.api.{Label, SolvedQueryModel}
 
 import scala.language.implicitConversions
 

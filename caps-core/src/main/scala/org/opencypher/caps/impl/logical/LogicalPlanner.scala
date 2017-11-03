@@ -241,18 +241,18 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     graph match {
       // TODO: IRGraph[Expr]
       case IRPatternGraph(name, schema, pattern) =>
-        val patternEntities = pattern.entities.keySet
+        val patternEntities = pattern.fields
         val entitiesInScope = fieldsInScope.map { (v: Var) => IRField(v.name)(v.cypherType) }
         val boundEntities = patternEntities intersect entitiesInScope
         val entitiesToCreate = patternEntities -- boundEntities
 
         val entities: Set[ConstructedEntity] = entitiesToCreate.map { e =>
-          pattern.entities(e) match {
-            case EveryRelationship(relTypes) if relTypes.elements.size == 1 =>
+          e.cypherType match {
+            case CTRelationship(relTypes) if relTypes.size == 1 =>
               val connection = pattern.topology(e)
-              ConstructedRelationship(e, connection.source, connection.target, relTypes.elements.head.name)
-            case EveryNode(labels) =>
-              ConstructedNode(e, labels.elements)
+              ConstructedRelationship(e, connection.source, connection.target, relTypes.head)
+            case CTNode(labels) =>
+              ConstructedNode(e, labels.map(Label))
             case _ =>
               Raise.impossible(s"could not construct entity from $e")
           }
@@ -325,9 +325,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
                                   (implicit context: LogicalPlannerContext): LogicalOperator = {
 
     // find all unsolved nodes from the pattern
-    val nodes = pattern.entities.collect {
-      case (f, _) if f.cypherType.subTypeOf(CTNode).isTrue => f
-    }
+    val nodes = pattern.fields.filter(_.cypherType.subTypeOf(CTNode).isTrue)
 
     if (nodes.size == 1) { // simple node scan; just do it
       val field = nodes.head
@@ -341,8 +339,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       }
     } else if (pattern.topology.nonEmpty) { // we need expansions to tie node plans together
 
-      val solved = nodes.filter(node => plan.solved.fields.contains(node))
-      val unsolved = nodes.toSet -- solved
+      val solved = nodes.intersect(plan.solved.fields)
+      val unsolved = nodes -- solved
 
       val (firstPlan, remaining) = if (solved.isEmpty) {
         val field = nodes.head
@@ -369,9 +367,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
     val (r, c) = pattern.topology.collectFirst {
       case (rel, conn: Connection) if !allSolved.solves(rel) =>
-        val rType = CTRelationship(pattern.rels(rel).relTypes.elements.map(_.name))
-        val fieldWithRelType = IRField(rel.name)(rType)
-        fieldWithRelType -> conn
+        rel -> conn
     }.getOrElse(Raise.patternPlanningFailure())
 
     val sourcePlan = disconnectedPlans.collectFirst {

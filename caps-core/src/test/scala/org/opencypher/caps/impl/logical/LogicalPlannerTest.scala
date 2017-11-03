@@ -29,7 +29,7 @@ import org.opencypher.caps.impl.logical
 import org.opencypher.caps.impl.util.toVar
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block._
-import org.opencypher.caps.ir.api.pattern.{DirectedRelationship, EveryNode, EveryRelationship, Pattern}
+import org.opencypher.caps.ir.api.pattern.{DirectedRelationship, Pattern}
 import org.opencypher.caps.ir.impl.IrTestSuite
 import org.opencypher.caps.toField
 import org.scalatest.matchers.{MatchResult, Matcher}
@@ -49,9 +49,9 @@ class LogicalPlannerTest extends IrTestSuite {
 
   test("convert match block") {
     val pattern = Pattern.empty[Expr]
-      .withEntity(nodeA, EveryNode)
-      .withEntity(nodeB, EveryNode)
-      .withEntity(relR, EveryRelationship)
+      .withEntity(nodeA)
+      .withEntity(nodeB)
+      .withEntity(relR)
       .withConnection(relR, DirectedRelationship(nodeA, nodeB))
 
     val block = matchBlock(pattern)

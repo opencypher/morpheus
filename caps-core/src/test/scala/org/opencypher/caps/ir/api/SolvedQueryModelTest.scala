@@ -19,9 +19,9 @@ import java.net.URI
 
 import org.opencypher.caps.api.expr.{Equals, Expr}
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.types.CTBoolean
+import org.opencypher.caps.api.types.{CTBoolean, CTNode}
 import org.opencypher.caps.ir.api.block.{FieldsAndGraphs, ProjectedFieldsOf}
-import org.opencypher.caps.ir.api.pattern.{EveryNode, Pattern}
+import org.opencypher.caps.ir.api.pattern.Pattern
 import org.opencypher.caps.ir.impl.IrTestSuite
 import org.opencypher.caps.toField
 
@@ -42,15 +42,15 @@ class SolvedQueryModelTest extends IrTestSuite {
   }
 
   test("contains a block") {
-    val block = matchBlock(Pattern.empty.withEntity('a, EveryNode).withEntity('b, EveryNode).withEntity('c, EveryNode))
+    val block = matchBlock(Pattern.empty.withEntity('a).withEntity('b).withEntity('c))
     val s = SolvedQueryModel.empty[Expr].withField('a).withFields('b, 'c)
 
     s.contains(block) shouldBe true
   }
 
   test("contains several blocks") {
-    val block1 = matchBlock(Pattern.empty.withEntity('a, EveryNode))
-    val block2 = matchBlock(Pattern.empty.withEntity('b, EveryNode))
+    val block1 = matchBlock(Pattern.empty.withEntity('a -> CTNode))
+    val block2 = matchBlock(Pattern.empty.withEntity('b -> CTNode))
     val binds: FieldsAndGraphs[Expr] = FieldsAndGraphs(Map(toField('c) -> Equals('a, 'b)(CTBoolean)), Set('foo))
     val block3 = project(binds)
     val block4 = project(ProjectedFieldsOf[Expr](toField('d) -> Equals('c, 'b)(CTBoolean)))
@@ -67,13 +67,13 @@ class SolvedQueryModelTest extends IrTestSuite {
 
   test("solves") {
     val s = SolvedQueryModel.empty[Expr].withField('a).withFields('b, 'c)
-    val p = Pattern.empty[Expr].withEntity('a, EveryNode).withEntity('b, EveryNode).withEntity('c, EveryNode)
+    val p = Pattern.empty[Expr].withEntity('a -> CTNode).withEntity('b -> CTNode).withEntity('c -> CTNode)
 
     s.solves(toField('a)) shouldBe true
     s.solves(toField('b)) shouldBe true
     s.solves(toField('x)) shouldBe false
     s.solves(p) shouldBe true
-    s.solves(p.withEntity('x, EveryNode)) shouldBe false
+    s.solves(p.withEntity('x -> CTNode)) shouldBe false
   }
 
 }
