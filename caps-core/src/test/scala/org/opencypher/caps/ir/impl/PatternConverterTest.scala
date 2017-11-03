@@ -18,9 +18,10 @@ package org.opencypher.caps.ir.impl
 import org.neo4j.cypher.internal.frontend.v3_3.InputPosition.NONE
 import org.neo4j.cypher.internal.frontend.v3_3.parser.{Expressions, Patterns}
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SyntaxException, ast}
+import org.opencypher.caps.api.expr.Expr
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType}
+import org.opencypher.caps.ir.api.IRField
 import org.opencypher.caps.ir.api.pattern._
-import org.opencypher.caps.ir.api.{IRField, Label, RelType}
 import org.parboiled.scala.{EOI, Parser, Rule1}
 
 import scala.language.implicitConversions
@@ -31,7 +32,7 @@ class PatternConverterTest extends IrTestSuite {
     val pattern = parse("(x)")
 
     convert(pattern) should equal(
-      Pattern.empty.withEntity('x, EveryNode)
+      Pattern.empty.withEntity('x -> CTNode)
     )
   }
 
@@ -40,9 +41,9 @@ class PatternConverterTest extends IrTestSuite {
 
     convert(pattern) should equal(
       Pattern.empty
-        .withEntity('x, EveryNode)
-        .withEntity('b, EveryNode)
-        .withEntity('r, EveryRelationship)
+        .withEntity('x -> CTNode)
+        .withEntity('b -> CTNode)
+        .withEntity('r -> CTRelationship)
         .withConnection('r, DirectedRelationship('x, 'b))
     )
   }
@@ -52,11 +53,11 @@ class PatternConverterTest extends IrTestSuite {
 
     convert(pattern) should equal(
       Pattern.empty
-        .withEntity('x, EveryNode)
-        .withEntity('y, EveryNode)
-        .withEntity('z, EveryNode)
-        .withEntity('r1, EveryRelationship)
-        .withEntity('r2, EveryRelationship)
+        .withEntity('x -> CTNode)
+        .withEntity('y -> CTNode)
+        .withEntity('z -> CTNode)
+        .withEntity('r1 -> CTRelationship)
+        .withEntity('r2 -> CTRelationship)
         .withConnection('r1, DirectedRelationship('x, 'y))
         .withConnection('r2, DirectedRelationship('y, 'z))
     )
@@ -67,11 +68,11 @@ class PatternConverterTest extends IrTestSuite {
 
     convert(pattern) should equal(
       Pattern.empty
-        .withEntity('x, EveryNode)
-        .withEntity('y, EveryNode)
-        .withEntity('z, EveryNode)
-        .withEntity('foo, EveryNode)
-        .withEntity('r, EveryRelationship)
+        .withEntity('x -> CTNode)
+        .withEntity('y -> CTNode)
+        .withEntity('z -> CTNode)
+        .withEntity('foo -> CTNode)
+        .withEntity('r -> CTRelationship)
         .withConnection('r, DirectedRelationship('y, 'z))
     )
   }
@@ -81,9 +82,9 @@ class PatternConverterTest extends IrTestSuite {
 
     convert(pattern) should equal(
       Pattern.empty
-        .withEntity('x, EveryNode)
-        .withEntity('y, EveryNode)
-        .withEntity('r, EveryRelationship)
+        .withEntity('x -> CTNode)
+        .withEntity('y -> CTNode)
+        .withEntity('r -> CTRelationship)
         .withConnection('r, UndirectedRelationship('y, 'x))
     )
   }
@@ -93,8 +94,8 @@ class PatternConverterTest extends IrTestSuite {
 
     convert(pattern) should equal(
       Pattern.empty
-        .withEntity('x, EveryNode(AllOf(Label("Person"))))
-        .withEntity('y, EveryNode(AllOf(Label("Person"), Label("Dog"))))
+        .withEntity('x -> CTNode("Person"))
+        .withEntity('y -> CTNode("Person", "Dog"))
     )
   }
 
@@ -103,9 +104,9 @@ class PatternConverterTest extends IrTestSuite {
 
     convert(pattern) should equal(
       Pattern.empty
-        .withEntity('x, EveryNode)
-        .withEntity('y, EveryNode)
-        .withEntity('r, EveryRelationship(AnyOf(RelType("KNOWS"), RelType("LOVES"))))
+        .withEntity('x -> CTNode)
+        .withEntity('y -> CTNode)
+        .withEntity('r -> CTRelationship("KNOWS", "LOVES"))
         .withConnection('r, DirectedRelationship('x, 'y))
     )
   }
@@ -127,11 +128,11 @@ class PatternConverterTest extends IrTestSuite {
 
     convert(pattern, knownTypes) should equal(
       Pattern.empty
-        .withEntity(x, EveryNode)
-        .withEntity(y, EveryNode(AllOf(Label("Person"))))
-        .withEntity(z, EveryNode)
-        .withEntity(r, EveryRelationship)
-        .withEntity(newR, EveryRelationship(AnyOf(RelType("IN"))))
+        .withEntity(x)
+        .withEntity(y)
+        .withEntity(z)
+        .withEntity(r)
+        .withEntity(newR)
         .withConnection(r, DirectedRelationship(x, y))
         .withConnection(newR, DirectedRelationship(y, z))
     )
@@ -139,7 +140,7 @@ class PatternConverterTest extends IrTestSuite {
 
   val converter = new PatternConverter(Map.empty)
 
-  def convert(p: ast.Pattern, knownTypes: Map[ast.Expression, CypherType] = Map.empty) =
+  def convert(p: ast.Pattern, knownTypes: Map[ast.Expression, CypherType] = Map.empty): Pattern[Expr] =
     converter.convert(p, knownTypes)
 
   def parse(exprText: String): ast.Pattern = PatternParser.parse(exprText, None)

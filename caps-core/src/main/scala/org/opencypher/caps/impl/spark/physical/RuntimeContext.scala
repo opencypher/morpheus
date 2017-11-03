@@ -15,18 +15,39 @@
  */
 package org.opencypher.caps.impl.spark.physical
 
-import org.opencypher.caps.api.graph.CypherResultPlan
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSResult}
-import org.opencypher.caps.impl.logical.LogicalOperator
+import java.net.URI
 
-object CAPSResultBuilder {
-  def from(physical: PhysicalOperator, plan: LogicalOperator)(context: RuntimeContext): CAPSResult = new CAPSResult {
+import org.opencypher.caps.api.spark.CAPSGraph
+import org.opencypher.caps.api.value.CypherValue
 
-    lazy val result: PhysicalResult = physical.execute(context)
+import scala.collection.mutable
 
-    override def records: CAPSRecords = result.records
-    override def graphs: Map[String, CAPSGraph] = result.graphs
+object RuntimeContext {
+  val empty = RuntimeContext(Map.empty, _ => None)
+}
 
-    override def explain: CypherResultPlan = CypherResultPlan(plan)
+case class RuntimeContext(
+  parameters: Map[String, CypherValue],
+  resolve: URI => Option[CAPSGraph]
+)
+
+case object udfUtils {
+  def initArray(): Any = {
+    Array[Long]()
+  }
+
+  def arrayAppend(array: Any, next: Any): Any = {
+    array match {
+      case a: mutable.WrappedArray[_] =>
+        a :+ next
+    }
+  }
+
+  def contains(array: Any, elem: Any): Any = {
+    array match {
+      case a: mutable.WrappedArray[_] =>
+        a.contains(elem)
+    }
   }
 }
+

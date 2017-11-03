@@ -69,9 +69,9 @@ class FlatPlannerTest extends BaseTestSuite {
     val result = flatPlanner.process(logicalNodeScan("n", "Person"))
     val headerContents = result.header.contents
 
-    val nodeVar = Var("n")(CTNode)
+    val nodeVar = Var("n")(CTNode("Person"))
 
-    result should equal(flatNodeScan(nodeVar, "Person"))
+    result should equal(flatNodeScan(nodeVar))
     headerContents should equal(Set(
       OpaqueField(nodeVar),
       ProjectedExpr(HasLabel(nodeVar, Label("Person"))(CTBoolean)),
@@ -125,7 +125,7 @@ class FlatPlannerTest extends BaseTestSuite {
 
   test("flat plan for expand") {
     val result = flatPlanner.process(
-      mkLogical.planSourceExpand(IRField("n")(CTNode), IRField("r")(CTRelationship), EveryRelationship, IRField("m")(CTNode),
+      mkLogical.planSourceExpand(IRField("n")(CTNode), IRField("r")(CTRelationship), IRField("m")(CTNode),
         logicalNodeScan("n"), logicalNodeScan("m")
       )
     )
@@ -136,7 +136,7 @@ class FlatPlannerTest extends BaseTestSuite {
     val target = Var("m")(CTNode)
 
     result should equal(
-      mkFlat.expandSource(source, rel, EveryRelationship, target, schema,
+      mkFlat.expandSource(source, rel, target, schema,
         flatNodeScan(source), flatNodeScan(target)
       )
     )
@@ -166,7 +166,7 @@ class FlatPlannerTest extends BaseTestSuite {
     val result = flatPlanner.process(
       mkLogical.planSourceExpand(
         IRField("n")(CTNode),
-        IRField("r")(CTRelationship("KNOWS")), EveryRelationship(AnyOf(RelType("KNOWS"))),
+        IRField("r")(CTRelationship("KNOWS")),
         IRField("m")(CTNode),
         logicalNodeScan("n"), logicalNodeScan("m")
       )
@@ -178,7 +178,7 @@ class FlatPlannerTest extends BaseTestSuite {
     val target = Var("m")(CTNode)
 
     result should equal(
-      mkFlat.expandSource(source, rel, EveryRelationship(AnyOf(RelType("KNOWS"))), target, schema,
+      mkFlat.expandSource(source, rel, target, schema,
         flatNodeScan(source), flatNodeScan(target)
       )
     )
@@ -206,7 +206,7 @@ class FlatPlannerTest extends BaseTestSuite {
   test("flat plan for init var expand") {
     val sourceScan = logicalNodeScan("n")
     val targetScan = logicalNodeScan("m")
-    val logicalPlan = mkLogical.planBoundedVarLengthExpand('n -> CTNode, 'r -> CTList(CTRelationship), EveryRelationship, 'm -> CTNode, 1, 1, sourceScan, targetScan)
+    val logicalPlan = mkLogical.planBoundedVarLengthExpand('n -> CTNode, 'r -> CTList(CTRelationship), 'm -> CTNode, 1, 1, sourceScan, targetScan)
     val result = flatPlanner.process(logicalPlan)
 
     val source = Var("n")(CTNode)
@@ -251,7 +251,7 @@ class FlatPlannerTest extends BaseTestSuite {
     result should equal(
       mkFlat.filter(
         HasLabel(nodeVar, Label("Person"))(CTBoolean),
-        flatNodeScan(nodeVar)
+        flatNodeScan(nodeVar.name)
       )
     )
     headerContents should equal(Set(
@@ -277,7 +277,7 @@ class FlatPlannerTest extends BaseTestSuite {
         IndexedSeq(Var("foo")(CTString)), Set.empty,
         mkFlat.project(
           ProjectedField(Var("foo")(CTString), Property(Var("n")(CTNode), PropertyKey("name"))(CTString)),
-          flatNodeScan(Var("n")(CTNode), "Person")
+          flatNodeScan("n", "Person")
         )
       )
     )
@@ -304,7 +304,7 @@ class FlatPlannerTest extends BaseTestSuite {
         mkFlat.project(
           ProjectedField(Var("baz")(CTInteger.nullable), Property(Var("n")(CTNode), PropertyKey("age"))(CTInteger.nullable)),
           mkFlat.project(ProjectedField(Var("foo")(CTString), Property(Var("n")(CTNode), PropertyKey("name"))(CTString)),
-            flatNodeScan(Var("n")(CTNode), "Person")
+            flatNodeScan("n", "Person")
           )
         )
       )
@@ -312,21 +312,15 @@ class FlatPlannerTest extends BaseTestSuite {
     orderedContents should equal(IndexedSeq(Var("foo")(CTString), Var("n")(CTNode), Var("baz")(CTInteger)))
   }
 
-  private def logicalNodeScan(nodeField: String, labelNames: String*) = {
-    val labels = labelNames.map(Label)
+  private def logicalNodeScan(nodeField: String, labelNames: String*) =
+    mkLogical.planNodeScan(IRField(nodeField)(CTNode(labelNames.toSet)), logicalStartOperator)
 
-    mkLogical.planNodeScan(IRField(nodeField)(CTNode), EveryNode(AllOf(labels: _*)), logicalStartOperator)
-  }
+  private def flatNodeScan(node: Var): NodeScan =
+    mkFlat.nodeScan(node, flatStartOperator)
 
-  private def flatNodeScan(node: Var, labelNames: String*) = {
-    val labels = labelNames.map(Label)
+  private def flatNodeScan(node: String, labelNames: String*): NodeScan =
+    flatNodeScan(Var(node)(CTNode(labelNames.toSet)))
 
-    mkFlat.nodeScan(node, EveryNode(AllOf(labels: _*)), flatStartOperator)
-  }
-
-  private def flatVarLengthEdgeScan(edgeList: Var, edgeTypes: String*) = {
-    val types = edgeTypes.map(RelType)
-
-    mkFlat.varLengthEdgeScan(edgeList, EveryRelationship(AnyOf(types: _*)), flatStartOperator)
-  }
+  private def flatVarLengthEdgeScan(edgeList: Var) =
+    mkFlat.varLengthEdgeScan(edgeList, flatStartOperator)
 }

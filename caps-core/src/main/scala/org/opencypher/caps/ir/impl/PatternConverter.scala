@@ -52,7 +52,7 @@ final class PatternConverter(val parameters: Map[String, CypherValue]) extends A
     case ast.NodePattern(Some(v), labels: Seq[LabelName], None) =>
       for {
         entity <- pure(IRField(v.name)(knownTypes.getOrElse(v, CTNode(labels.map(_.name).toSet))))
-        _ <- modify[Pattern[Expr]](_.withEntity(entity, EveryNode(AllGiven(labels.map(l => Label(l.name)).toSet))))
+        _ <- modify[Pattern[Expr]](_.withEntity(entity))
       } yield entity
 
     case ast.RelationshipChain(left, ast.RelationshipPattern(Some(eVar), types, None, None, dir, _), right) =>
@@ -61,10 +61,7 @@ final class PatternConverter(val parameters: Map[String, CypherValue]) extends A
         target <- convertElement(right, knownTypes)
         rel <- pure(IRField(eVar.name)(knownTypes.getOrElse(eVar, CTRelationship(types.map(_.name).toSet))))
         _ <- modify[Pattern[Expr]] { given =>
-          val relTypes =
-            if (types.isEmpty) AnyGiven[RelType]()
-            else AnyGiven[RelType](types.map(t => RelType(t.name)).toSet)
-          val registered = given.withEntity(rel, EveryRelationship(relTypes))
+          val registered = given.withEntity(rel)
 
           Endpoints.apply(source, target) match {
             case ends: IdenticalEndpoints =>
@@ -91,10 +88,7 @@ final class PatternConverter(val parameters: Map[String, CypherValue]) extends A
         target <- convertElement(right, knownTypes)
         rel <- pure(IRField(eVar.name)(CTList(CTRelationship(types.map(_.name).toSet))))
         _ <- modify[Pattern[Expr]] { given =>
-          val relTypes =
-            if (types.isEmpty) AnyGiven[RelType]()
-            else AnyGiven[RelType](types.map(t => RelType(t.name)).toSet)
-          val registered = given.withEntity(rel, EveryRelationship(relTypes))
+          val registered = given.withEntity(rel)
 
           val lower = range.lower.map(_.value.intValue()).getOrElse(1)
           val upper = range.upper.map(_.value.intValue()).getOrElse(Raise.notYetImplemented("unbounded variable length"))

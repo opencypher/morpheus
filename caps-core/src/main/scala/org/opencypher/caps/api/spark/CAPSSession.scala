@@ -29,7 +29,7 @@ import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.io.{CAPSGraphSource, CAPSGraphSourceFactory}
 import org.opencypher.caps.api.util.parsePathOrURI
 import org.opencypher.caps.api.value.CypherValue
-import org.opencypher.caps.demo.Configuration.{Logging, PrintLogicalPlan, PrintQueryExecutionStages}
+import org.opencypher.caps.demo.Configuration.{PrintLogicalPlan, PrintPhysicalPlan, PrintQueryExecutionStages}
 import org.opencypher.caps.demo.CypherKryoRegistrar
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
 import org.opencypher.caps.impl.logical._
@@ -40,7 +40,7 @@ import org.opencypher.caps.impl.spark.io.file.FileCsvGraphSourceFactory
 import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvGraphSourceFactory
 import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraphSourceFactory
 import org.opencypher.caps.impl.spark.io.session.SessionGraphSourceFactory
-import org.opencypher.caps.impl.spark.physical.{CAPSResultBuilder, PhysicalPlanner, PhysicalPlannerContext}
+import org.opencypher.caps.impl.spark.physical.{CAPSResultBuilder, PhysicalPlanner, PhysicalPlannerContext, RuntimeContext}
 import org.opencypher.caps.ir.api.{IRExternalGraph, IRField}
 import org.opencypher.caps.ir.impl.{IRBuilder, IRBuilderContext}
 
@@ -76,6 +76,9 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
 
   def graphAt(uri: URI): CAPSGraph =
     graphSourceHandler.sourceAt(uri)(this).graph
+
+  def optGraphAt(uri: URI): Option[CAPSGraph] =
+    graphSourceHandler.optSourceAt(uri)(this).map(_.graph)
 
   def storeGraphAt(graph: CAPSGraph, pathOrUri: String, mode: PersistMode = CreateOrFail): CAPSGraph =
     graphSourceHandler.sourceAt(parsePathOrURI(pathOrUri))(this).store(graph, mode)
@@ -190,10 +193,13 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
 
     logStageProgress("Physical plan ... ", false)
     val physicalPlannerContext = PhysicalPlannerContext(graphAt, records, parameters)
-    val physicalResult = physicalPlanner(flatPlan)(physicalPlannerContext)
+    val physicalPlan = physicalPlanner(flatPlan)(physicalPlannerContext)
     logStageProgress("Done!")
 
-    CAPSResultBuilder.from(physicalResult, logicalPlan)
+    if (PrintPhysicalPlan.get())
+      println(physicalPlan.pretty())
+
+    CAPSResultBuilder.from(physicalPlan, logicalPlan)(RuntimeContext(physicalPlannerContext.parameters, optGraphAt))
   }
 
   override def toString: String = {

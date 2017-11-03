@@ -18,11 +18,10 @@ package org.opencypher.caps.impl.logical
 import java.net.URI
 
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.ir.api.{Label, SolvedQueryModel}
-import org.opencypher.caps.ir.api.block.SortItem
-import org.opencypher.caps.ir.api.pattern.{EveryNode, EveryRelationship, Pattern}
 import org.opencypher.caps.api.record.ProjectedSlotContent
 import org.opencypher.caps.api.schema.Schema
+import org.opencypher.caps.ir.api.block.SortItem
+import org.opencypher.caps.ir.api.{Label, SolvedQueryModel}
 
 import scala.language.implicitConversions
 
@@ -84,14 +83,14 @@ sealed trait LogicalLeafOperator extends LogicalOperator {
   override def isLeaf = true
 }
 
-final case class NodeScan(node: Var, nodeDef: EveryNode, in: LogicalOperator)
+final case class NodeScan(node: Var, in: LogicalOperator)
                          (override val solved: SolvedQueryModel[Expr])
   extends StackingLogicalOperator {
 
   override val fields: Set[Var] = in.fields + node
 
   override def pretty(depth: Int): String =
-    s"""${prefix(depth)} NodeScan(node = $node, nodeDef: $nodeDef)
+    s"""${prefix(depth)} NodeScan(node = $node)
        #${in.pretty(depth + 1)}""".stripMargin('#')
 
   override def clone(newIn: LogicalOperator = in): LogicalOperator = copy(in = newIn)(solved)
@@ -132,7 +131,7 @@ sealed trait ExpandOperator extends BinaryLogicalOperator {
   def targetOp: LogicalOperator
 }
 
-final case class ExpandSource(source: Var, rel: Var, types: EveryRelationship, target: Var,
+final case class ExpandSource(source: Var, rel: Var, target: Var,
                               sourceOp: LogicalOperator, targetOp: LogicalOperator)
                              (override val solved: SolvedQueryModel[Expr])
   extends ExpandOperator {
@@ -205,7 +204,7 @@ final case class ValueJoin(lhs: LogicalOperator, rhs: LogicalOperator, predicate
        #${rhs.pretty(depth + 1)}""".stripMargin('#')
 }
 
-final case class ExpandInto(source: Var, rel: Var, types: EveryRelationship, target: Var, sourceOp: LogicalOperator)
+final case class ExpandInto(source: Var, rel: Var, target: Var, sourceOp: LogicalOperator)
                            (override val solved: SolvedQueryModel[Expr])
   extends ExpandOperator {
 

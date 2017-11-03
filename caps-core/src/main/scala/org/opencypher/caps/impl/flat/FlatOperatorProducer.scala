@@ -26,7 +26,8 @@ import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.syntax.expr._
 import org.opencypher.caps.impl.syntax.header._
 import org.opencypher.caps.ir.api.block.SortItem
-import org.opencypher.caps.ir.api.pattern.{EveryNode, EveryRelationship}
+
+import scala.annotation.tailrec
 
 class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
@@ -84,23 +85,29 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     * This acts like a leaf operator even though it has an ancestor in the tree.
     * That means that it will discard any incoming fields from the ancestor header (assumes it is empty)
     */
-  def nodeScan(node: Var, nodeDef: EveryNode, prev: FlatOperator): NodeScan = {
-    val header = if (nodeDef.labels.elements.isEmpty) RecordHeader.nodeFromSchema(node, prev.sourceGraph.schema)
-    else RecordHeader.nodeFromSchema(node, prev.sourceGraph.schema, nodeDef.labels.elements.map(_.name))
+  def nodeScan(node: Var, prev: FlatOperator): NodeScan = {
+    val header = RecordHeader.nodeFromSchema(node, prev.sourceGraph.schema)
 
-    new NodeScan(node, nodeDef, prev, header)
+    new NodeScan(node, prev, header)
   }
 
-  def edgeScan(edge: Var, edgeDef: EveryRelationship, prev: FlatOperator): EdgeScan = {
-    val edgeHeader = if (edgeDef.relTypes.elements.isEmpty) RecordHeader.relationshipFromSchema(edge, prev.sourceGraph.schema)
-    else RecordHeader.relationshipFromSchema(edge, prev.sourceGraph.schema, edgeDef.relTypes.elements.map(_.name))
+  def edgeScan(edge: Var, prev: FlatOperator): EdgeScan = {
+    val edgeHeader = RecordHeader.relationshipFromSchema(edge, prev.sourceGraph.schema)
 
-    EdgeScan(edge, edgeDef, prev, edgeHeader)
+    EdgeScan(edge, prev, edgeHeader)
   }
 
-  def varLengthEdgeScan(edgeList: Var, edgeDef: EveryRelationship, prev: FlatOperator): EdgeScan = {
-    val edge = FreshVariableNamer(edgeList.name + "extended", CTRelationship)
-    edgeScan(edge, edgeDef, prev)
+  @tailrec
+  private def relTypeFromList(t: CypherType): Set[String] = t match {
+    case l: CTList => relTypeFromList(l.elementType)
+    case r: CTRelationship => r.types
+    case _ => Raise.impossible()
+  }
+
+  def varLengthEdgeScan(edgeList: Var, prev: FlatOperator): EdgeScan = {
+    val types = relTypeFromList(edgeList.cypherType)
+    val edge = FreshVariableNamer(edgeList.name + "extended", CTRelationship(types))
+    edgeScan(edge, prev)
   }
 
   def aggregate(aggregations: Set[(Var, Aggregator)], group: Set[Var], in: FlatOperator): Aggregate = {
@@ -122,26 +129,21 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     }
   }
 
-  // TODO: Remove types parameter and read rel-types from the rel variable
-  def expandSource(source: Var, rel: Var, types: EveryRelationship, target: Var, schema: Schema,
+  def expandSource(source: Var, rel: Var, target: Var, schema: Schema,
                    sourceOp: FlatOperator, targetOp: FlatOperator): FlatOperator = {
-    val relHeader =
-      if (types.relTypes.elements.isEmpty) RecordHeader.relationshipFromSchema(rel, schema)
-      else RecordHeader.relationshipFromSchema(rel, schema, types.relTypes.elements.map(_.name))
+    val relHeader = RecordHeader.relationshipFromSchema(rel, schema)
 
     val expandHeader = sourceOp.header ++ relHeader ++ targetOp.header
 
-    ExpandSource(source, rel, types, target, sourceOp, targetOp, expandHeader, relHeader)
+    ExpandSource(source, rel, target, sourceOp, targetOp, expandHeader, relHeader)
   }
 
-  def expandInto(source: Var, rel: Var, types: EveryRelationship, target: Var, schema: Schema, sourceOp: FlatOperator): FlatOperator = {
-    val relHeader =
-      if (types.relTypes.elements.isEmpty) RecordHeader.relationshipFromSchema(rel, schema)
-      else RecordHeader.relationshipFromSchema(rel, schema, types.relTypes.elements.map(_.name))
+  def expandInto(source: Var, rel: Var, target: Var, schema: Schema, sourceOp: FlatOperator): FlatOperator = {
+    val relHeader = RecordHeader.relationshipFromSchema(rel, schema)
 
     val expandHeader = sourceOp.header ++ relHeader
 
-    ExpandInto(source, rel, types, target, sourceOp, expandHeader, relHeader)
+    ExpandInto(source, rel, target, sourceOp, expandHeader, relHeader)
   }
 
   def valueJoin(lhs: FlatOperator, rhs: FlatOperator, predicates: Set[org.opencypher.caps.api.expr.Equals]): FlatOperator = {

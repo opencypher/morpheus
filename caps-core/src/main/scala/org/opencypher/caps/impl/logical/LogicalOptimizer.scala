@@ -16,7 +16,7 @@
 package org.opencypher.caps.impl.logical
 
 import org.opencypher.caps.api.expr.{HasLabel, Var}
-import org.opencypher.caps.ir.api.pattern.{AllGiven, EveryNode}
+import org.opencypher.caps.api.types.{CTBoolean, CTNode}
 import org.opencypher.caps.impl.DirectCompilationStage
 import org.opencypher.caps.ir.api.Label
 
@@ -55,10 +55,11 @@ class LogicalOptimizer(producer: LogicalOperatorProducer)
 
     def rewrite(root: LogicalOperator): LogicalOperator = {
       root match {
-        case NodeScan(node, nodeDef, in) =>
-          NodeScan(node,
-            EveryNode(AllGiven[Label](labelMap.getOrElse(node, nodeDef.labels.elements))),
-            rewrite(in))(in.solved)
+        case NodeScan(node, in) =>
+          val labels = labelMap.getOrElse(node, Set.empty)
+          val nodeVar = Var(node.name)(CTNode(labels.map(_.name)))
+          val solved = in.solved.withPredicates(labels.map(l => HasLabel(nodeVar, l)(CTBoolean)).toSeq: _*)
+          NodeScan(nodeVar, rewrite(in))(solved)
         case f@Filter(expr, in) =>
           expr match {
             case _: HasLabel => rewrite(in)

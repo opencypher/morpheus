@@ -241,18 +241,18 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     graph match {
       // TODO: IRGraph[Expr]
       case IRPatternGraph(name, schema, pattern) =>
-        val patternEntities = pattern.entities.keySet
+        val patternEntities = pattern.fields
         val entitiesInScope = fieldsInScope.map { (v: Var) => IRField(v.name)(v.cypherType) }
         val boundEntities = patternEntities intersect entitiesInScope
         val entitiesToCreate = patternEntities -- boundEntities
 
         val entities: Set[ConstructedEntity] = entitiesToCreate.map { e =>
-          pattern.entities(e) match {
-            case EveryRelationship(relTypes) if relTypes.elements.size == 1 =>
+          e.cypherType match {
+            case CTRelationship(relTypes) if relTypes.size == 1 =>
               val connection = pattern.topology(e)
-              ConstructedRelationship(e, connection.source, connection.target, relTypes.elements.head.name)
-            case EveryNode(labels) =>
-              ConstructedNode(e, labels.elements)
+              ConstructedRelationship(e, connection.source, connection.target, relTypes.head)
+            case CTNode(labels) =>
+              ConstructedNode(e, labels.map(Label))
             case _ =>
               Raise.impossible(s"could not construct entity from $e")
           }
@@ -325,36 +325,33 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
                                   (implicit context: LogicalPlannerContext): LogicalOperator = {
 
     // find all unsolved nodes from the pattern
-    val nodes = pattern.entities.collect {
-      case (f, e: EveryNode) if f.cypherType.subTypeOf(CTNode).isTrue => f -> e
-    }
+    val nodes = pattern.fields.filter(_.cypherType.subTypeOf(CTNode).isTrue)
 
     if (nodes.size == 1) { // simple node scan; just do it
-      val (field, node) = nodes.head
+      val field = nodes.head
 
       // if we have already planned a node: cartesian product
       if (plan.solved.fields.exists(_.cypherType.subTypeOf(CTNode).isTrue)) {
-        producer.planCartesianProduct(plan, nodePlan(planSetSourceGraph(graph, planStart(graph)), field, node))
+        producer.planCartesianProduct(plan, nodePlan(planSetSourceGraph(graph, planStart(graph)), field))
       } else { // first node scan
         // we set the source graph because we don't know what the source graph was coming in
-        nodePlan(planSetSourceGraph(graph, plan), field, node)
+        nodePlan(planSetSourceGraph(graph, plan), field)
       }
     } else if (pattern.topology.nonEmpty) { // we need expansions to tie node plans together
 
-      val solved = nodes.filter(node => plan.solved.fields.contains(node._1))
-      val unsolved = nodes -- solved.keySet
+      val solved = nodes.intersect(plan.solved.fields)
+      val unsolved = nodes -- solved
 
       val (firstPlan, remaining) = if (solved.isEmpty) {
-        val (field, node) = nodes.head
+        val field = nodes.head
         // TODO: Will need branch in plan for cartesian products
-        nodePlan(planSetSourceGraph(graph, plan), field, node) -> nodes.tail
+        nodePlan(planSetSourceGraph(graph, plan), field) -> nodes.tail
       } else {
         plan -> unsolved
       }
 
       val nodePlans: Set[LogicalOperator] = remaining.map {
-        case (f, n) =>
-          nodePlan(planStart(graph), f, n)
+          nodePlan(planStart(graph), _)
       }.toSet
 
       // tie all plans together using expansions
@@ -369,7 +366,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     val allSolved = disconnectedPlans.map(_.solved).reduce(_ ++ _)
 
     val (r, c) = pattern.topology.collectFirst {
-      case (rel, conn: Connection) if !allSolved.solves(rel) => rel -> conn
+      case (rel, conn: Connection) if !allSolved.solves(rel) =>
+        rel -> conn
     }.getOrElse(Raise.patternPlanningFailure())
 
     val sourcePlan = disconnectedPlans.collectFirst {
@@ -381,18 +379,18 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
     val expand = c match {
       case v: VarLengthRelationship if v.upper.nonEmpty =>
-        producer.planBoundedVarLengthExpand(c.source, r, pattern.rels(r), c.target, v.lower, v.upper.get, sourcePlan, targetPlan)
+        producer.planBoundedVarLengthExpand(c.source, r, c.target, v.lower, v.upper.get, sourcePlan, targetPlan)
       case _ if sourcePlan == targetPlan =>
-        producer.planExpandInto(c.source, r, pattern.rels(r), c.target, sourcePlan)
+        producer.planExpandInto(c.source, r, c.target, sourcePlan)
       case _ =>
-        producer.planSourceExpand(c.source, r, pattern.rels(r), c.target, sourcePlan, targetPlan)
+        producer.planSourceExpand(c.source, r, c.target, sourcePlan, targetPlan)
     }
 
     if (expand.solved.solves(pattern)) expand
     else planExpansions((disconnectedPlans - sourcePlan - targetPlan) + expand, pattern, producer)
   }
 
-  private def nodePlan(plan: LogicalOperator, field: IRField, everyNode: EveryNode)(implicit context: LogicalPlannerContext) = {
-    producer.planNodeScan(field, everyNode, plan)
+  private def nodePlan(plan: LogicalOperator, field: IRField)(implicit context: LogicalPlannerContext) = {
+    producer.planNodeScan(field, plan)
   }
 }

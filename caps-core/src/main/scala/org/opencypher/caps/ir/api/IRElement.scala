@@ -26,6 +26,13 @@ trait IRElement {
   def escapedName: String = name.replaceAll("`", "``")
 }
 
+object IRField {
+  def relTypes(field: IRField): Set[String] = field.cypherType match {
+    case CTRelationship(types) => types
+    case _ => Set.empty
+  }
+}
+
 final case class IRField(name: String)(val cypherType: CypherType = CTWildcard) extends IRElement {
   override def toString = s"$name :: $cypherType"
 

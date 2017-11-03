@@ -37,9 +37,9 @@ class CypherQueryBuilderTest extends IrTestSuite {
       }
 
       val matchRef = model.findExactlyOne {
-        case MatchBlock(deps, Pattern(entities, topo), AllGiven(exprs), _, _) =>
+        case MatchBlock(deps, Pattern(fields, topo), AllGiven(exprs), _, _) =>
           deps should equal(Set(loadRef))
-          entities should equal(Map(toField('a -> CTNode) -> EveryNode))
+          fields should equal(Set(toField('a -> CTNode)))
           topo shouldBe empty
           exprs should equal(Set(HasLabel(toVar('a), Label("Person"))()))
       }
@@ -73,9 +73,9 @@ class CypherQueryBuilderTest extends IrTestSuite {
       }
 
       val matchRef = model.findExactlyOne {
-        case NoWhereBlock(MatchBlock(deps, Pattern(entities, topo), _, _, _)) =>
+        case NoWhereBlock(MatchBlock(deps, Pattern(fields, topo), _, _, _)) =>
           deps should equal(Set(loadRef))
-          entities should equal(Map(toField('a) -> EveryNode, toField('b) -> EveryNode, toField('r) -> EveryRelationship))
+          fields should equal(Set[IRField]('a -> CTNode, 'b -> CTNode, 'r -> CTRelationship))
           val map = Map(toField('r) -> DirectedRelationship('a, 'b))
           topo should equal(map)
       }
@@ -112,9 +112,9 @@ class CypherQueryBuilderTest extends IrTestSuite {
       }
 
       val matchRef = model.findExactlyOne {
-        case MatchBlock(deps, Pattern(entities, topo), AllGiven(exprs),_, _) =>
+        case MatchBlock(deps, Pattern(fields, topo), AllGiven(exprs),_, _) =>
           deps should equal(Set(loadRef))
-          entities should equal(Map(toField('a -> CTNode) -> EveryNode))
+          fields should equal(Set(toField('a -> CTNode)))
           topo shouldBe empty
           exprs should equal(Set(HasLabel(toVar('a), Label("Person"))()))
       }
@@ -181,16 +181,13 @@ class CypherQueryBuilderTest extends IrTestSuite {
 
       val nodeA = toField('a -> CTNode)
       val nodeB = toField('b -> CTNode)
-      val rel = toField('r -> CTRelationship)
+      val rel = toField('r -> CTRelationship("TEST"))
 
       val matchRef = model.findExactlyOne {
-        case MatchBlock(deps, Pattern(entities, topo), AllGiven(exprs), _, _) =>
-          entities should equal(Map(
-            nodeA -> EveryNode,
-            nodeB -> EveryNode
-        ))
-        topo should equal(Map())
-        exprs shouldBe empty
+        case MatchBlock(deps, Pattern(fields, topo), AllGiven(exprs), _, _) =>
+          fields should equal(Set(nodeA, nodeB))
+          topo should equal(Map())
+          exprs shouldBe empty
       }
 
 
@@ -203,7 +200,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
             "moo",
             expectedSchema,
             Pattern(
-              Map(nodeA -> EveryNode, nodeB -> EveryNode, rel -> EveryRelationship(AnyOf(RelType("TEST")))),
+              Set(nodeA, nodeB, rel),
               Map(rel -> DirectedRelationship(nodeA, nodeB)))))
       }
 

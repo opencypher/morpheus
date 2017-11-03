@@ -253,7 +253,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
               for {
                 pattern <- convertPattern(astPattern)
               } yield {
-                val entities = pattern.entities.keySet
+                val entities = pattern.fields
                 val schemaUnion = context.graphList.map(_.schema).reduce(_ ++ _)
                 val patternGraphSchema = schemaUnion.forEntities(entities)
                 IRPatternGraph(graphName, patternGraphSchema, pattern)

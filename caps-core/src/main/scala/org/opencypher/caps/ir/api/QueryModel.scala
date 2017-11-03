@@ -78,6 +78,7 @@ case class SolvedQueryModel[E](
   def withField(f: IRField): SolvedQueryModel[E] = copy(fields = fields + f)
   def withFields(fs: IRField*): SolvedQueryModel[E] = copy(fields = fields ++ fs)
   def withPredicate(pred: E): SolvedQueryModel[E] = copy(predicates = predicates + pred)
+  def withPredicates(preds: E*): SolvedQueryModel[E] = copy(predicates = predicates ++ preds)
   def withGraph(graph: IRNamedGraph): SolvedQueryModel[E] = copy(graphs = graphs + graph)
 
   def ++(other: SolvedQueryModel[E]): SolvedQueryModel[E] =

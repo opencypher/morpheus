@@ -19,7 +19,6 @@ import org.opencypher.caps.api.expr.{Aggregator, Expr, Var}
 import org.opencypher.caps.api.record.{OpaqueField, RecordHeader}
 import org.opencypher.caps.impl.logical.LogicalGraph
 import org.opencypher.caps.ir.api.block.SortItem
-import org.opencypher.caps.ir.api.pattern.{EveryNode, EveryRelationship}
 
 sealed trait FlatOperator {
   def isLeaf = false
@@ -52,10 +51,10 @@ sealed trait StackingFlatOperator extends FlatOperator {
 
 sealed trait FlatLeafOperator extends FlatOperator
 
-final case class NodeScan(node: Var, nodeDef: EveryNode, in: FlatOperator, header: RecordHeader)
+final case class NodeScan(node: Var, in: FlatOperator, header: RecordHeader)
   extends StackingFlatOperator
 
-final case class EdgeScan(edge: Var, edgeDef: EveryRelationship, in: FlatOperator, header: RecordHeader)
+final case class EdgeScan(edge: Var, in: FlatOperator, header: RecordHeader)
   extends StackingFlatOperator
 
 final case class Filter(expr: Expr, in: FlatOperator, header: RecordHeader)
@@ -89,7 +88,7 @@ final case class Optional(lhs: FlatOperator, rhs: FlatOperator, lhsHeader: Recor
 final case class ValueJoin(lhs: FlatOperator, rhs: FlatOperator, predicates: Set[org.opencypher.caps.api.expr.Equals], header: RecordHeader)
   extends BinaryFlatOperator
 
-final case class ExpandSource(source: Var, rel: Var, types: EveryRelationship, target: Var,
+final case class ExpandSource(source: Var, rel: Var, target: Var,
                               sourceOp: FlatOperator, targetOp: FlatOperator, header: RecordHeader, relHeader: RecordHeader)
   extends BinaryFlatOperator {
 
@@ -97,7 +96,7 @@ final case class ExpandSource(source: Var, rel: Var, types: EveryRelationship, t
   override def rhs: FlatOperator = targetOp
 }
 
-final case class ExpandInto(source: Var, rel: Var, types: EveryRelationship, target: Var, sourceOp: FlatOperator,
+final case class ExpandInto(source: Var, rel: Var, target: Var, sourceOp: FlatOperator,
                             header: RecordHeader, relHeader: RecordHeader)
   extends StackingFlatOperator {
 

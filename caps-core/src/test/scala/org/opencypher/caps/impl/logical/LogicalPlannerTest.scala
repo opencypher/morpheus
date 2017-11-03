@@ -29,7 +29,7 @@ import org.opencypher.caps.impl.logical
 import org.opencypher.caps.impl.util.toVar
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block._
-import org.opencypher.caps.ir.api.pattern.{DirectedRelationship, EveryNode, EveryRelationship, Pattern}
+import org.opencypher.caps.ir.api.pattern.{DirectedRelationship, Pattern}
 import org.opencypher.caps.ir.impl.IrTestSuite
 import org.opencypher.caps.toField
 import org.scalatest.matchers.{MatchResult, Matcher}
@@ -49,17 +49,17 @@ class LogicalPlannerTest extends IrTestSuite {
 
   test("convert match block") {
     val pattern = Pattern.empty[Expr]
-      .withEntity(nodeA, EveryNode)
-      .withEntity(nodeB, EveryNode)
-      .withEntity(relR, EveryRelationship)
+      .withEntity(nodeA)
+      .withEntity(nodeB)
+      .withEntity(relR)
       .withConnection(relR, DirectedRelationship(nodeA, nodeB))
 
     val block = matchBlock(pattern)
 
-    val scan1 = NodeScan(nodeA, EveryNode, SetSourceGraph(leafPlan.sourceGraph, leafPlan)(emptySqm.withField(nodeA)))(emptySqm.withField(nodeA))
-    val scan2 = NodeScan(nodeB, EveryNode, leafPlan)(emptySqm.withField(nodeB))
+    val scan1 = NodeScan(nodeA, SetSourceGraph(leafPlan.sourceGraph, leafPlan)(emptySqm.withField(nodeA)))(emptySqm.withField(nodeA))
+    val scan2 = NodeScan(nodeB, leafPlan)(emptySqm.withField(nodeB))
     plan(irWithLeaf(block)) should equalWithoutResult(
-      ExpandSource(nodeA, relR, EveryRelationship, nodeB, scan1, scan2)(emptySqm.withFields(nodeA, nodeB, relR))
+      ExpandSource(nodeA, relR, nodeB, scan1, scan2)(emptySqm.withFields(nodeA, nodeB, relR))
     )
   }
 
@@ -85,13 +85,13 @@ class LogicalPlannerTest extends IrTestSuite {
             Project(ProjectedExpr(Property(Var("g")(CTNode("Group")), PropertyKey("name"))(CTVoid)),
               Filter(HasLabel(Var("g")(CTNode), Label("Group"))(CTBoolean),
                 Filter(HasLabel(Var("a")(CTNode), Label("Administrator"))(CTBoolean),
-                  ExpandSource(Var("a")(CTNode), Var("r")(CTRelationship), EveryRelationship, Var("g")(CTNode),
-                    NodeScan(Var("a")(CTNode), EveryNode,
+                  ExpandSource(Var("a")(CTNode), Var("r")(CTRelationship), Var("g")(CTNode),
+                    NodeScan(Var("a")(CTNode),
                       SetSourceGraph(LogicalExternalGraph(testGraph.name, testGraph.uri, Schema.empty),
                         Start(LogicalExternalGraph(testGraph.name, testGraph.uri, Schema.empty), Set.empty)(emptySqm)
                       )(emptySqm)
                     )(emptySqm),
-                    NodeScan(Var("g")(CTNode), EveryNode,
+                    NodeScan(Var("g")(CTNode),
                       Start(LogicalExternalGraph(testGraph.name, testGraph.uri, Schema.empty), Set.empty)(emptySqm)
                     )(emptySqm)
                   )(emptySqm)
@@ -118,13 +118,13 @@ class LogicalPlannerTest extends IrTestSuite {
             Project(ProjectedExpr(Property(Var("g")(CTNode("Group")), PropertyKey("name"))(CTString)),
               Filter(HasLabel(Var("g")(CTNode), Label("Group"))(CTBoolean),
                 Filter(HasLabel(Var("a")(CTNode), Label("Administrator"))(CTBoolean),
-                  ExpandSource(Var("a")(CTNode), Var("r")(CTRelationship), EveryRelationship, Var("g")(CTNode),
-                    NodeScan(Var("a")(CTNode), EveryNode,
+                  ExpandSource(Var("a")(CTNode), Var("r")(CTRelationship), Var("g")(CTNode),
+                    NodeScan(Var("a")(CTNode),
                       SetSourceGraph(LogicalExternalGraph(testGraph.name, testGraph.uri, schema),
                         Start(LogicalExternalGraph(testGraph.name, testGraph.uri, schema), Set.empty)(emptySqm)
                       )(emptySqm)
                     )(emptySqm),
-                    NodeScan(Var("g")(CTNode), EveryNode,
+                    NodeScan(Var("g")(CTNode),
                       Start(LogicalExternalGraph(testGraph.name, testGraph.uri, schema), Set.empty)(emptySqm)
                     )(emptySqm)
                   )(emptySqm)
@@ -144,7 +144,7 @@ class LogicalPlannerTest extends IrTestSuite {
       Select(IndexedSeq(Var("a.prop")(CTVoid)), Set.empty,
         Project(ProjectedField(Var("a.prop")(CTVoid), Property(nodeA, PropertyKey("prop"))(CTVoid)),
           Filter(Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean))(CTBoolean))(CTBoolean),
-            NodeScan(nodeA, EveryNode,
+            NodeScan(nodeA,
               SetSourceGraph(LogicalExternalGraph(testGraph.name, testGraph.uri, Schema.empty),
                 Start(LogicalExternalGraph(testGraph.name, testGraph.uri, Schema.empty), Set.empty)(emptySqm)
               )(emptySqm)

@@ -25,7 +25,8 @@ import org.opencypher.caps.impl.convert.toJavaType
 import org.opencypher.caps.impl.spark.Udfs._
 import org.opencypher.caps.impl.spark.convert.toSparkType
 import org.opencypher.caps.impl.spark.exception.Raise
-import org.opencypher.caps.impl.spark.physical.RuntimeContext
+import org.opencypher.caps.impl.spark.physical.PhysicalOperator.columnName
+import org.opencypher.caps.impl.spark.physical.{PhysicalOperator, RuntimeContext}
 
 object SparkSQLExprMapper {
 
@@ -50,7 +51,7 @@ object SparkSQLExprMapper {
         verifyExpression(header, expr)
         val slot = header.slotsFor(expr).head
 
-        dataFrame.col(context.columnName(slot))
+        dataFrame.col(columnName(slot))
     }
   }
 
@@ -199,7 +200,7 @@ object SparkSQLExprMapper {
       case labels: Labels =>
         verifyExpression(header, expr)
 
-        val node = Var(context.columnName(header.slotsFor(labels.expr).head))(CTNode)
+        val node = Var(columnName(header.slotsFor(labels.expr).head))(CTNode)
         val labelExprs = header.labels(node)
         val labelColumns = labelExprs.map(getColumn(_, header, df))
         val labelNames = labelExprs.map(_.label)
@@ -209,7 +210,7 @@ object SparkSQLExprMapper {
       case keys: Keys =>
         verifyExpression(header, expr)
 
-        val node = Var(context.columnName(header.slotsFor(keys.expr).head))(CTNode)
+        val node = Var(columnName(header.slotsFor(keys.expr).head))(CTNode)
         val propertyExprs = header.properties(node)
         val propertyColumns = propertyExprs.map(getColumn(_, header, df))
         val keyNames = propertyExprs.map(_.key.name)
@@ -222,7 +223,7 @@ object SparkSQLExprMapper {
         inner match {
           case v: Var =>
             val typeSlot = header.typeSlot(v)
-            val typeCol = df.col(context.columnName(typeSlot))
+            val typeCol = df.col(columnName(typeSlot))
             Some(typeCol)
 
           case _ =>
@@ -231,12 +232,12 @@ object SparkSQLExprMapper {
 
       case StartNodeFunction(e) =>
         verifyExpression(header, expr)
-        val rel = Var(context.columnName(header.slotsFor(e).head))(CTNode)
+        val rel = Var(columnName(header.slotsFor(e).head))(CTNode)
         Some(getColumn(header.sourceNodeSlot(rel).content.key, header, df))
 
       case EndNodeFunction(e) =>
         verifyExpression(header, expr)
-        val rel = Var(context.columnName(header.slotsFor(e).head))(CTNode)
+        val rel = Var(columnName(header.slotsFor(e).head))(CTNode)
         Some(getColumn(header.targetNodeSlot(rel).content.key, header, df))
 
       case ToFloat(e) =>

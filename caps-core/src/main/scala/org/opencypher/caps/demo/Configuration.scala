@@ -30,14 +30,22 @@ object Configuration {
     }
   }
 
-  object MasterAddress extends ConfigOption("cos.master", "local[*]")(Some(_))
-  object Logging extends ConfigOption("cos.logging", "OFF")(Some(_))
+  object MasterAddress extends ConfigOption("caps.master", "local[*]")(Some(_))
+  object Logging extends ConfigOption("caps.logging", "OFF")(Some(_))
 
-  object PrintLogicalPlan extends ConfigOption("cos.explain", false)(s => Try(s.toBoolean).toOption) {
+  object PrintLogicalPlan extends ConfigOption("caps.explain", false)(s => Try(s.toBoolean).toOption) {
     def set(): Unit = set(true.toString)
   }
 
-  object PrintQueryExecutionStages extends ConfigOption("cos.stages", false)(s => Try(s.toBoolean).toOption) {
+  object PrintPhysicalPlan extends ConfigOption("caps.explainPhysical", false)(s => Try(s.toBoolean).toOption) {
+    def set(): Unit = set(true.toString)
+  }
+
+  object DebugPhysicalResult extends ConfigOption("caps.debugPhysical", false)(s => Try(s.toBoolean).toOption) {
+    def set(): Unit = set(true.toString)
+  }
+
+  object PrintQueryExecutionStages extends ConfigOption("caps.stages", false)(s => Try(s.toBoolean).toOption) {
     def set(): Unit = set(true.toString)
   }
 
