@@ -524,7 +524,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
 
-  ignore("simple collect(prop) with only null values in WITH") {
+  test("simple collect(prop) with only null values in WITH") {
     val graph = TestGraph("({val:NULL}),(),()")
 
     val result = graph.cypher("MATCH (n) WITH Collect(n.val) AS res RETURN res")
@@ -534,7 +534,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
     ))
   }
 
-  ignore("simple collect(prop) with only null values in RETURN") {
+  test("simple collect(prop) with only null values in RETURN") {
     val graph = TestGraph("({val:NULL}),(),()")
 
     val result = graph.cypher("MATCH (n) RETURN COLLECT(n.val) AS res")
