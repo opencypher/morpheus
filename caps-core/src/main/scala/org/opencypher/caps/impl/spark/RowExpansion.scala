@@ -61,6 +61,8 @@ case class RowExpansion(
           val hasAllRequiredLabels = indices.forall(adaptedRow.getBoolean)
           if (hasAllRequiredLabels) Some(adaptedRow)
           else None
+        case CTRelationship(types) if types.isEmpty =>
+          Some(adaptedRow)
         case CTRelationship(types) =>
           val index = typeIndexLookupTable(entity)
           val relType = adaptedRow.getString(index)
