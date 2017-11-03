@@ -42,8 +42,8 @@ trait GraphSourceFactory {
   self =>
 
   type Session <: CypherSession { type Session = self.Session; type Graph = self.Graph }
-  type Graph <: CypherGraph { type Session = self.Session; type Graph = self.Graph }
-  type Source <: GraphSource { type Session = self.Session; type Graph = self.Graph }
+  type Graph <: CypherGraph { type Session     = self.Session; type Graph = self.Graph }
+  type Source <: GraphSource { type Session    = self.Session; type Graph = self.Graph }
 
   /**
     * A simple name for the graph source factory,

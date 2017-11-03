@@ -18,15 +18,15 @@ package org.opencypher.caps.api.value.instances
 import org.opencypher.caps.api.value._
 
 trait CypherValueCompanionInstances {
-  implicit def cypherValueCompanion: CypherValue.type = CypherValue
-  implicit def cypherBooleanCompanion: CypherBoolean.type = CypherBoolean
-  implicit def cypherStringCompanion: CypherString.type = CypherString
-  implicit def cypherFloatCompanion: CypherFloat.type = CypherFloat
-  implicit def cypherIntegerCompanion: CypherInteger.type = CypherInteger
-  implicit def cypherNumberCompanion: CypherNumber.type = CypherNumber
-  implicit def cypherListCompanion: CypherList.type = CypherList
-  implicit def cypherMapCompanion: CypherMap.type = CypherMap
-  implicit def cypherNodeCompanion: CypherNode.type = CypherNode
+  implicit def cypherValueCompanion: CypherValue.type               = CypherValue
+  implicit def cypherBooleanCompanion: CypherBoolean.type           = CypherBoolean
+  implicit def cypherStringCompanion: CypherString.type             = CypherString
+  implicit def cypherFloatCompanion: CypherFloat.type               = CypherFloat
+  implicit def cypherIntegerCompanion: CypherInteger.type           = CypherInteger
+  implicit def cypherNumberCompanion: CypherNumber.type             = CypherNumber
+  implicit def cypherListCompanion: CypherList.type                 = CypherList
+  implicit def cypherMapCompanion: CypherMap.type                   = CypherMap
+  implicit def cypherNodeCompanion: CypherNode.type                 = CypherNode
   implicit def cypherRelationshipCompanion: CypherRelationship.type = CypherRelationship
-  implicit def cypherPathCompanion: CypherPath.type = CypherPath
+  implicit def cypherPathCompanion: CypherPath.type                 = CypherPath
 }

@@ -28,7 +28,7 @@ trait GraphSource {
   self =>
 
   type Session <: CypherSession { type Session = self.Session; type Graph = self.Graph }
-  type Graph <: CypherGraph { type Session = self.Session; type Graph = self.Graph }
+  type Graph <: CypherGraph { type Session     = self.Session; type Graph = self.Graph }
 
   /**
     * The session tied to this graph source.

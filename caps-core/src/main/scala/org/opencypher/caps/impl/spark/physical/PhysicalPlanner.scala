@@ -27,12 +27,12 @@ import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.{DirectCompilationStage, flat}
 import org.opencypher.caps.ir.api.block.SortItem
 
-case class PhysicalPlannerContext(
-   resolver: URI => CAPSGraph,
-   inputRecords: CAPSRecords,
-   parameters: Map[String, CypherValue])
+case class PhysicalPlannerContext(resolver: URI => CAPSGraph,
+                                  inputRecords: CAPSRecords,
+                                  parameters: Map[String, CypherValue])
 
-class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResult, PhysicalPlannerContext] {
+class PhysicalPlanner
+    extends DirectCompilationStage[FlatOperator, PhysicalResult, PhysicalPlannerContext] {
 
   def process(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext): PhysicalResult = {
     inner(flatPlan)
@@ -50,14 +50,15 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
       case flat.Select(fields, graphs, in, header) =>
         inner(in).select(fields, header).selectGraphs(graphs)
 
-      case flat.Start(graph, _) => graph match {
-        case LogicalExternalGraph(name, uri, _) =>
-          val graph = context.resolver(uri)
-          PhysicalResult(context.inputRecords, Map(name -> graph))
+      case flat.Start(graph, _) =>
+        graph match {
+          case LogicalExternalGraph(name, uri, _) =>
+            val graph = context.resolver(uri)
+            PhysicalResult(context.inputRecords, Map(name -> graph))
 
-        case _ =>
-          Raise.impossible(s"Got an unknown type of graph to start from: $graph")
-      }
+          case _ =>
+            Raise.impossible(s"Got an unknown type of graph to start from: $graph")
+        }
 
       case flat.SetSourceGraph(graph, in, header) =>
         val p = inner(in)
@@ -69,12 +70,12 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
 
           case _ =>
             Raise.impossible(s"Got an unknown type of graph to start from: $graph")
-      }
+        }
 
-      case op@flat.NodeScan(v, labels, in, header) =>
+      case op @ flat.NodeScan(v, labels, in, header) =>
         inner(in).nodeScan(op.sourceGraph, v, labels, header)
 
-      case op@flat.EdgeScan(e, edgeDef, in, header) =>
+      case op @ flat.EdgeScan(e, edgeDef, in, header) =>
         inner(in).relationshipScan(op.sourceGraph, e, edgeDef, header)
 
       case flat.Alias(expr, alias, in, header) =>
@@ -83,21 +84,23 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
       case flat.Project(expr, in, header) =>
         inner(in).project(expr, header)
 
-      case flat.ProjectGraph(graph, in, _) => graph match {
-        case LogicalExternalGraph(name, uri, _) =>
-          val capsGraph = context.resolver(uri)
-          inner(in).withGraph(name -> capsGraph)
-        case graph: LogicalPatternGraph =>
-          inner(in).projectGraph(graph)
-      }
+      case flat.ProjectGraph(graph, in, _) =>
+        graph match {
+          case LogicalExternalGraph(name, uri, _) =>
+            val capsGraph = context.resolver(uri)
+            inner(in).withGraph(name -> capsGraph)
+          case graph: LogicalPatternGraph =>
+            inner(in).projectGraph(graph)
+        }
 
-      case flat.Aggregate(aggregations, group, in , header) =>
+      case flat.Aggregate(aggregations, group, in, header) =>
         inner(in).aggregate(aggregations, group, header)
 
-      case flat.Filter(expr, in, header) => expr match {
-        case TrueLit() => inner(in) // optimise away filter
-        case _ => inner(in).filter(expr, header)
-      }
+      case flat.Filter(expr, in, header) =>
+        expr match {
+          case TrueLit() => inner(in) // optimise away filter
+          case _         => inner(in).filter(expr, header)
+        }
 
       case flat.ValueJoin(lhs, rhs, predicates, header) =>
         inner(lhs).valueJoin(inner(rhs), predicates, header)
@@ -107,25 +110,32 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
 
       // TODO: This needs to be a ternary operator taking source, rels and target records instead of using the graph
       // MATCH (a)-[r]->(b) => MATCH (a), (b), (a)-[r]->(b)
-      case op@flat.ExpandSource(source, rel, types, target, sourceOp, targetOp, header, relHeader) =>
+      case op @ flat.ExpandSource(source,
+                                  rel,
+                                  types,
+                                  target,
+                                  sourceOp,
+                                  targetOp,
+                                  header,
+                                  relHeader) =>
         val lhs = inner(sourceOp)
         val rhs = inner(targetOp)
 
-        val ctRelType = CTRelationship.apply(types.relTypes.elements.map(_.name))
-        val g = lhs.graphs(op.sourceGraph.name)
+        val ctRelType     = CTRelationship.apply(types.relTypes.elements.map(_.name))
+        val g             = lhs.graphs(op.sourceGraph.name)
         val relationships = g.relationships(rel.name, ctRelType)
         val relRhs = PhysicalResult(relationships, lhs.graphs)
           .typeFilter(rel, types.relTypes, relHeader)
 
         val relAndTargetHeader = relRhs.records.header ++ rhs.records.header
-        val relAndTarget = relRhs.joinTarget(rhs, relAndTargetHeader).on(rel)(target)
-        val expanded = lhs.joinSource(relAndTarget, header).on(source)(rel)
+        val relAndTarget       = relRhs.joinTarget(rhs, relAndTargetHeader).on(rel)(target)
+        val expanded           = lhs.joinSource(relAndTarget, header).on(source)(rel)
 
         expanded
 
-      case op@flat.ExpandInto(source, rel, types, target, sourceOp, header, relHeader) =>
+      case op @ flat.ExpandInto(source, rel, types, target, sourceOp, header, relHeader) =>
         val in = inner(sourceOp)
-        val g = in.graphs(op.sourceGraph.name)
+        val g  = in.graphs(op.sourceGraph.name)
 
         val ctRelType = CTRelationship.apply(types.relTypes.elements.map(_.name))
         val relationships = PhysicalResult(g.relationships(rel.name, ctRelType), in.graphs)
@@ -137,12 +147,22 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
         val prev = inner(in)
         prev.initVarExpand(source, edgeList, endNode, header)
 
-      case flat.BoundedVarExpand(rel, edgeList, target, lower, upper, sourceOp, relOp, targetOp, header, isExpandInto) =>
+      case flat.BoundedVarExpand(rel,
+                                 edgeList,
+                                 target,
+                                 lower,
+                                 upper,
+                                 sourceOp,
+                                 relOp,
+                                 targetOp,
+                                 header,
+                                 isExpandInto) =>
         val first  = inner(sourceOp)
         val second = inner(relOp)
         val third  = inner(targetOp)
 
-        val expanded = first.varExpand(second, edgeList, sourceOp.endNode, rel, lower, upper, header)
+        val expanded =
+          first.varExpand(second, edgeList, sourceOp.endNode, rel, lower, upper, header)
         expanded.finalizeVarExpand(third, sourceOp.endNode, target, header, isExpandInto)
 
       case flat.Optional(lhs, rhs, lhsHeader, rhsHeader) =>
@@ -164,6 +184,6 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalResul
 
   private def relTypes(r: Var): Set[String] = r.cypherType match {
     case t: CTRelationship => t.types
-    case _ => Set.empty
+    case _                 => Set.empty
   }
 }

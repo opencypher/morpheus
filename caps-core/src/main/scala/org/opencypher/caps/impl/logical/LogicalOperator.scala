@@ -33,7 +33,7 @@ sealed trait LogicalOperator {
   val fields: Set[Var]
   def sourceGraph: LogicalGraph
 
-  protected def prefix(depth: Int): String = ("· " * depth ) + "|-"
+  protected def prefix(depth: Int): String = ("? " * depth) + "|-"
   def pretty(depth: Int = 0): String
 }
 
@@ -46,7 +46,8 @@ final case class LogicalExternalGraph(name: String, uri: URI, schema: Schema) ex
   override def toString: String = s"GRAPH $name AT $uri"
 }
 
-final case class LogicalPatternGraph(name: String, schema: Schema, pattern: GraphOfPattern) extends LogicalGraph {
+final case class LogicalPatternGraph(name: String, schema: Schema, pattern: GraphOfPattern)
+    extends LogicalGraph {
   override def toString: String = s"GRAPH $name OF $pattern"
 }
 
@@ -57,7 +58,8 @@ sealed trait ConstructedEntity {
 }
 
 case class ConstructedNode(v: Var, labels: Set[Label]) extends ConstructedEntity
-case class ConstructedRelationship(v: Var, source: Var, target: Var, typ: String) extends ConstructedEntity
+case class ConstructedRelationship(v: Var, source: Var, target: Var, typ: String)
+    extends ConstructedEntity
 
 sealed trait StackingLogicalOperator extends LogicalOperator {
   def in: LogicalOperator
@@ -72,9 +74,9 @@ sealed trait BinaryLogicalOperator extends LogicalOperator {
   def rhs: LogicalOperator
 
   /**
-   * Always pick the source graph from the right-hand side, because it works for in-pattern expansions
-   * and changing of source graphs. This relies on the planner always planning _later_ operators on the rhs.
-   */
+    * Always pick the source graph from the right-hand side, because it works for in-pattern expansions
+    * and changing of source graphs. This relies on the planner always planning _later_ operators on the rhs.
+    */
   override def sourceGraph: LogicalGraph = rhs.sourceGraph
 
   def clone(newLhs: LogicalOperator = lhs, newRhs: LogicalOperator = rhs): LogicalOperator
@@ -84,9 +86,9 @@ sealed trait LogicalLeafOperator extends LogicalOperator {
   override def isLeaf = true
 }
 
-final case class NodeScan(node: Var, nodeDef: EveryNode, in: LogicalOperator)
-                         (override val solved: SolvedQueryModel[Expr])
-  extends StackingLogicalOperator {
+final case class NodeScan(node: Var, nodeDef: EveryNode, in: LogicalOperator)(
+    override val solved: SolvedQueryModel[Expr])
+    extends StackingLogicalOperator {
 
   override val fields: Set[Var] = in.fields + node
 
@@ -98,9 +100,9 @@ final case class NodeScan(node: Var, nodeDef: EveryNode, in: LogicalOperator)
 
 }
 
-final case class Distinct(fields: Set[Var], in: LogicalOperator)
-                         (override val solved: SolvedQueryModel[Expr])
-  extends StackingLogicalOperator {
+final case class Distinct(fields: Set[Var], in: LogicalOperator)(
+    override val solved: SolvedQueryModel[Expr])
+    extends StackingLogicalOperator {
 
   override def pretty(depth: Int): String =
     s"""${prefix(depth)} Distinct(fields = $fields)
@@ -109,9 +111,9 @@ final case class Distinct(fields: Set[Var], in: LogicalOperator)
   override def clone(newIn: LogicalOperator = in): LogicalOperator = copy(in = newIn)(solved)
 }
 
-final case class Filter(expr: Expr, in: LogicalOperator)
-                       (override val solved: SolvedQueryModel[Expr])
-  extends StackingLogicalOperator {
+final case class Filter(expr: Expr, in: LogicalOperator)(
+    override val solved: SolvedQueryModel[Expr])
+    extends StackingLogicalOperator {
 
   // TODO: Add more precise type information based on predicates (?)
   override val fields: Set[Var] = in.fields
@@ -132,10 +134,14 @@ sealed trait ExpandOperator extends BinaryLogicalOperator {
   def targetOp: LogicalOperator
 }
 
-final case class ExpandSource(source: Var, rel: Var, types: EveryRelationship, target: Var,
-                              sourceOp: LogicalOperator, targetOp: LogicalOperator)
-                             (override val solved: SolvedQueryModel[Expr])
-  extends ExpandOperator {
+final case class ExpandSource(
+    source: Var,
+    rel: Var,
+    types: EveryRelationship,
+    target: Var,
+    sourceOp: LogicalOperator,
+    targetOp: LogicalOperator)(override val solved: SolvedQueryModel[Expr])
+    extends ExpandOperator {
 
   override val fields: Set[Var] = lhs.fields ++ rhs.fields + rel
 
@@ -147,14 +153,18 @@ final case class ExpandSource(source: Var, rel: Var, types: EveryRelationship, t
        #${sourceOp.pretty(depth + 1)}
        #${targetOp.pretty(depth + 1)}""".stripMargin('#')
 
-  override def clone(newLhs: LogicalOperator = lhs, newRhs: LogicalOperator = rhs): LogicalOperator =
+  override def clone(newLhs: LogicalOperator = lhs,
+                     newRhs: LogicalOperator = rhs): LogicalOperator =
     copy(sourceOp = newLhs, targetOp = newRhs)(solved)
 }
 
-final case class ExpandTarget(source: Var, rel: Var, target: Var,
-                              sourceOp: LogicalOperator, targetOp: LogicalOperator)
-                             (override val solved: SolvedQueryModel[Expr])
-  extends ExpandOperator {
+final case class ExpandTarget(
+    source: Var,
+    rel: Var,
+    target: Var,
+    sourceOp: LogicalOperator,
+    targetOp: LogicalOperator)(override val solved: SolvedQueryModel[Expr])
+    extends ExpandOperator {
 
   override val fields: Set[Var] = lhs.fields ++ rhs.fields
 
@@ -166,15 +176,20 @@ final case class ExpandTarget(source: Var, rel: Var, target: Var,
        #${sourceOp.pretty(depth + 1)}
        #${targetOp.pretty(depth + 1)}""".stripMargin('#')
 
-  override def clone(newLhs: LogicalOperator = lhs, newRhs: LogicalOperator= rhs): LogicalOperator =
+  override def clone(newLhs: LogicalOperator = lhs,
+                     newRhs: LogicalOperator = rhs): LogicalOperator =
     copy(sourceOp = newLhs, targetOp = newRhs)(solved)
 }
 
-final case class BoundedVarLengthExpand(source: Var, rel: Var, target: Var,
-                                        lower: Int, upper: Int,
-                                        sourceOp: LogicalOperator, targetOp: LogicalOperator)
-                                       (override val solved: SolvedQueryModel[Expr])
-  extends ExpandOperator {
+final case class BoundedVarLengthExpand(
+    source: Var,
+    rel: Var,
+    target: Var,
+    lower: Int,
+    upper: Int,
+    sourceOp: LogicalOperator,
+    targetOp: LogicalOperator)(override val solved: SolvedQueryModel[Expr])
+    extends ExpandOperator {
 
   override val fields: Set[Var] = lhs.fields ++ rhs.fields
 
@@ -186,13 +201,16 @@ final case class BoundedVarLengthExpand(source: Var, rel: Var, target: Var,
        #${sourceOp.pretty(depth + 1)}
        #${targetOp.pretty(depth + 1)}""".stripMargin('#')
 
-  override def clone(newLhs: LogicalOperator = lhs, newRhs: LogicalOperator = rhs): LogicalOperator =
+  override def clone(newLhs: LogicalOperator = lhs,
+                     newRhs: LogicalOperator = rhs): LogicalOperator =
     copy(sourceOp = newLhs, targetOp = newRhs)(solved)
 }
 
-final case class ValueJoin(lhs: LogicalOperator, rhs: LogicalOperator, predicates: Set[org.opencypher.caps.api.expr.Equals])
-                          (override val solved: SolvedQueryModel[Expr])
-  extends BinaryLogicalOperator {
+final case class ValueJoin(lhs: LogicalOperator,
+                           rhs: LogicalOperator,
+                           predicates: Set[org.opencypher.caps.api.expr.Equals])(
+    override val solved: SolvedQueryModel[Expr])
+    extends BinaryLogicalOperator {
 
   override def clone(newLhs: LogicalOperator, newRhs: LogicalOperator): ValueJoin =
     copy(newLhs, newRhs)(solved)
@@ -205,9 +223,12 @@ final case class ValueJoin(lhs: LogicalOperator, rhs: LogicalOperator, predicate
        #${rhs.pretty(depth + 1)}""".stripMargin('#')
 }
 
-final case class ExpandInto(source: Var, rel: Var, types: EveryRelationship, target: Var, sourceOp: LogicalOperator)
-                           (override val solved: SolvedQueryModel[Expr])
-  extends ExpandOperator {
+final case class ExpandInto(source: Var,
+                            rel: Var,
+                            types: EveryRelationship,
+                            target: Var,
+                            sourceOp: LogicalOperator)(override val solved: SolvedQueryModel[Expr])
+    extends ExpandOperator {
 
   override val fields: Set[Var] = lhs.fields ++ rhs.fields
 
@@ -220,13 +241,14 @@ final case class ExpandInto(source: Var, rel: Var, types: EveryRelationship, tar
     s"""${prefix(depth)} ExpandInto(source = $source, rel = $rel)
        #${sourceOp.pretty(depth + 1)}""".stripMargin('#')
 
-  override def clone(newLhs: LogicalOperator = lhs, newRhs: LogicalOperator = rhs): LogicalOperator =
+  override def clone(newLhs: LogicalOperator = lhs,
+                     newRhs: LogicalOperator = rhs): LogicalOperator =
     copy(sourceOp = newLhs)(solved)
 }
 
-final case class Project(it: ProjectedSlotContent, in: LogicalOperator)
-                        (override val solved: SolvedQueryModel[Expr])
-  extends StackingLogicalOperator {
+final case class Project(it: ProjectedSlotContent, in: LogicalOperator)(
+    override val solved: SolvedQueryModel[Expr])
+    extends StackingLogicalOperator {
 
   override val fields: Set[Var] = it.alias.map(in.fields + _).getOrElse(in.fields)
 
@@ -237,9 +259,9 @@ final case class Project(it: ProjectedSlotContent, in: LogicalOperator)
   override def clone(newIn: LogicalOperator = in): LogicalOperator = copy(in = newIn)(solved)
 }
 
-final case class ProjectGraph(graph: LogicalGraph, in: LogicalOperator)
-                             (override val solved: SolvedQueryModel[Expr])
-  extends StackingLogicalOperator {
+final case class ProjectGraph(graph: LogicalGraph, in: LogicalOperator)(
+    override val solved: SolvedQueryModel[Expr])
+    extends StackingLogicalOperator {
 
   override val fields: Set[Var] = in.fields
 
@@ -250,22 +272,26 @@ final case class ProjectGraph(graph: LogicalGraph, in: LogicalOperator)
   override def clone(newIn: LogicalOperator = in): LogicalOperator = copy(in = newIn)(solved)
 }
 
-final case class Aggregate(aggregations: Set[(Var, Aggregator)], group: Set[Var], in: LogicalOperator)
-                          (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
+final case class Aggregate(aggregations: Set[(Var, Aggregator)],
+                           group: Set[Var],
+                           in: LogicalOperator)(override val solved: SolvedQueryModel[Expr])
+    extends StackingLogicalOperator {
 
   override val fields: Set[Var] = in.fields ++ aggregations.map(_._1) ++ group
 
   override def clone(newIn: LogicalOperator): LogicalOperator = copy(in = newIn)(solved)
 
   override def pretty(depth: Int): String =
-    s"""${prefix(depth)} Aggregate(aggregations = ${aggregations.map(p => s"${p._2} AS ${p._1}").mkString(", ")})
+    s"""${prefix(depth)} Aggregate(aggregations = ${aggregations
+         .map(p => s"${p._2} AS ${p._1}")
+         .mkString(", ")})
        #${in.pretty(depth + 1)}""".stripMargin('#')
 
 }
 
-final case class Select(orderedFields: IndexedSeq[Var], graphs: Set[String], in: LogicalOperator)
-                       (override val solved: SolvedQueryModel[Expr])
-  extends StackingLogicalOperator {
+final case class Select(orderedFields: IndexedSeq[Var], graphs: Set[String], in: LogicalOperator)(
+    override val solved: SolvedQueryModel[Expr])
+    extends StackingLogicalOperator {
 
   override val fields: Set[Var] = orderedFields.toSet
 
@@ -276,8 +302,9 @@ final case class Select(orderedFields: IndexedSeq[Var], graphs: Set[String], in:
   override def clone(newIn: LogicalOperator = in): LogicalOperator = copy(in = newIn)(solved)
 }
 
-final case class OrderBy(sortItems: Seq[SortItem[Expr]], in: LogicalOperator)
-                        (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
+final case class OrderBy(sortItems: Seq[SortItem[Expr]], in: LogicalOperator)(
+    override val solved: SolvedQueryModel[Expr])
+    extends StackingLogicalOperator {
 
   override val fields: Set[Var] = in.fields
 
@@ -288,8 +315,8 @@ final case class OrderBy(sortItems: Seq[SortItem[Expr]], in: LogicalOperator)
   override def clone(newIn: LogicalOperator): LogicalOperator = copy(in = newIn)(solved)
 }
 
-final case class Skip(expr: Expr, in: LogicalOperator)
-                     (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
+final case class Skip(expr: Expr, in: LogicalOperator)(override val solved: SolvedQueryModel[Expr])
+    extends StackingLogicalOperator {
 
   override val fields: Set[Var] = in.fields
 
@@ -300,8 +327,8 @@ final case class Skip(expr: Expr, in: LogicalOperator)
   override def clone(newIn: LogicalOperator): LogicalOperator = copy(in = newIn)(solved)
 }
 
-final case class Limit(expr: Expr, in: LogicalOperator)
-                      (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
+final case class Limit(expr: Expr, in: LogicalOperator)(override val solved: SolvedQueryModel[Expr])
+    extends StackingLogicalOperator {
 
   override val fields: Set[Var] = in.fields
 
@@ -312,8 +339,9 @@ final case class Limit(expr: Expr, in: LogicalOperator)
   override def clone(newIn: LogicalOperator): LogicalOperator = copy(in = newIn)(solved)
 }
 
-final case class CartesianProduct(lhs: LogicalOperator, rhs: LogicalOperator)(override val solved: SolvedQueryModel[Expr])
-  extends BinaryLogicalOperator {
+final case class CartesianProduct(lhs: LogicalOperator, rhs: LogicalOperator)(
+    override val solved: SolvedQueryModel[Expr])
+    extends BinaryLogicalOperator {
 
   override val fields: Set[Var] = lhs.fields ++ rhs.fields
 
@@ -326,9 +354,9 @@ final case class CartesianProduct(lhs: LogicalOperator, rhs: LogicalOperator)(ov
     copy(lhs = newLhs, rhs = newRhs)(solved)
 }
 
-final case class Optional(lhs: LogicalOperator, rhs: LogicalOperator)
-                         (override val solved: SolvedQueryModel[Expr])
-  extends BinaryLogicalOperator {
+final case class Optional(lhs: LogicalOperator, rhs: LogicalOperator)(
+    override val solved: SolvedQueryModel[Expr])
+    extends BinaryLogicalOperator {
 
   override val fields: Set[Var] = lhs.fields ++ rhs.fields
 
@@ -340,9 +368,9 @@ final case class Optional(lhs: LogicalOperator, rhs: LogicalOperator)
     copy(lhs = newLhs, rhs = newRhs)(solved)
 }
 
-final case class SetSourceGraph(override val sourceGraph: LogicalGraph, in: LogicalOperator)
-                               (override val solved: SolvedQueryModel[Expr])
-  extends StackingLogicalOperator {
+final case class SetSourceGraph(override val sourceGraph: LogicalGraph, in: LogicalOperator)(
+    override val solved: SolvedQueryModel[Expr])
+    extends StackingLogicalOperator {
 
   override val fields: Set[Var] = in.fields
 
@@ -354,10 +382,12 @@ final case class SetSourceGraph(override val sourceGraph: LogicalGraph, in: Logi
 
 }
 
-final case class Start(sourceGraph: LogicalGraph, fields: Set[Var])
-                      (override val solved: SolvedQueryModel[Expr]) extends LogicalLeafOperator {
+final case class Start(sourceGraph: LogicalGraph, fields: Set[Var])(
+    override val solved: SolvedQueryModel[Expr])
+    extends LogicalLeafOperator {
 
-  override def pretty(depth: Int): String = s"${prefix(depth)} Start(at = $sourceGraph, with = $fields)"
+  override def pretty(depth: Int): String =
+    s"${prefix(depth)} Start(at = $sourceGraph, with = $fields)"
 
   override def clone(): Start = copy()(solved)
 }

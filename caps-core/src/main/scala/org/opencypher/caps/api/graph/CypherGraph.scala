@@ -35,11 +35,11 @@ trait CypherGraph {
 
   self =>
 
-  type Graph <: CypherGraph { type Records = self.Records }
+  type Graph <: CypherGraph { type Records     = self.Records }
   type Records <: CypherRecords { type Records = self.Records }
-  type Result <: CypherResult { type Graph = self.Graph; type Records = self.Records }
+  type Result <: CypherResult { type Graph     = self.Graph; type Records = self.Records }
   type Session <: CypherSession {
-    type Session = self.Session; type Graph = self.Graph;
+    type Session = self.Session; type Graph  = self.Graph;
     type Records = self.Records; type Result = self.Result
   }
 

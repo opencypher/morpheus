@@ -26,9 +26,10 @@ import org.opencypher.caps.impl.spark.io.CAPSGraphSourceFactoryImpl
 case object HdfsCsvGraphSourceFactory extends CAPSGraphSourceFactoryCompanion("hdfs+csv")
 
 case class HdfsCsvGraphSourceFactory(hadoopConfiguration: Configuration)
-  extends CAPSGraphSourceFactoryImpl[HdfsCsvGraphSource](HdfsCsvGraphSourceFactory) {
+    extends CAPSGraphSourceFactoryImpl[HdfsCsvGraphSource](HdfsCsvGraphSourceFactory) {
 
-  override protected def sourceForURIWithSupportedScheme(uri: URI)(implicit capsSession: CAPSSession): HdfsCsvGraphSource = {
+  override protected def sourceForURIWithSupportedScheme(uri: URI)(
+      implicit capsSession: CAPSSession): HdfsCsvGraphSource = {
     val internalURI: URI = new URIBuilder(uri)
       .setScheme("hdfs")
       .build()

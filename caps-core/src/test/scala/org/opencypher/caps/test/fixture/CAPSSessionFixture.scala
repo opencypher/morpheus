@@ -25,5 +25,5 @@ trait CAPSSessionFixture extends BaseTestFixture {
 
   abstract override protected def afterEach(): Unit =
     caps.unmountAll()
-    super.afterEach()
+  super.afterEach()
 }

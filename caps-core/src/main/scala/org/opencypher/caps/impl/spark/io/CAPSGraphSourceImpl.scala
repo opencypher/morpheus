@@ -18,5 +18,5 @@ package org.opencypher.caps.impl.spark.io
 import org.opencypher.caps.api.spark.io.CAPSGraphSource
 import org.opencypher.caps.api.spark.CAPSSession
 
-abstract class CAPSGraphSourceImpl(implicit override final val session: CAPSSession) extends CAPSGraphSource
-
+abstract class CAPSGraphSourceImpl(implicit override final val session: CAPSSession)
+    extends CAPSGraphSource

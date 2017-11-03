@@ -24,7 +24,7 @@ case class Friend(id: Long, source: Long, target: Long, since: String) extends R
 
 object Example extends App {
   // Node and relationship data
-  val persons = List(Person(0, "Alice"), Person(1, "Bob"), Person(2, "Carol"))
+  val persons     = List(Person(0, "Alice"), Person(1, "Bob"), Person(2, "Carol"))
   val friendships = List(Friend(0, 0, 1, "23/01/1987"), Friend(1, 1, 2, "12/12/2009"))
 
   // Create CAPS session

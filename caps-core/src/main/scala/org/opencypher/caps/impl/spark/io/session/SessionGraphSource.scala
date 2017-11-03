@@ -24,7 +24,7 @@ import org.opencypher.caps.impl.spark.io.CAPSGraphSourceImpl
 import org.opencypher.caps.impl.spark.exception.Raise
 
 case class SessionGraphSource(path: String)(implicit capsSession: CAPSSession)
-  extends CAPSGraphSourceImpl {
+    extends CAPSGraphSourceImpl {
 
   private var currentGraph: Option[CAPSGraph] = None
 
@@ -33,8 +33,8 @@ case class SessionGraphSource(path: String)(implicit capsSession: CAPSSession)
   override def sourceForGraphAt(uri: URI): Boolean =
     uri == canonicalURI
 
-  override def create: CAPSGraph = store(CAPSGraph.empty, CreateOrFail)
-  override def graph: CAPSGraph = currentGraph.getOrElse(Raise.graphNotFound(canonicalURI))
+  override def create: CAPSGraph      = store(CAPSGraph.empty, CreateOrFail)
+  override def graph: CAPSGraph       = currentGraph.getOrElse(Raise.graphNotFound(canonicalURI))
   override def schema: Option[Schema] = None
 
   override def store(graph: CAPSGraph, mode: PersistMode): CAPSGraph = mode match {

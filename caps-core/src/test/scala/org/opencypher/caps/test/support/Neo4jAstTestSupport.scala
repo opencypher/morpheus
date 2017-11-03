@@ -19,7 +19,13 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{CNFNormalizer, Namespacer, Never}
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_3.phases._
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, InputPosition, SemanticCheckResult, SemanticState, ast}
+import org.neo4j.cypher.internal.frontend.v3_3.{
+  CypherException,
+  InputPosition,
+  SemanticCheckResult,
+  SemanticState,
+  ast
+}
 import org.opencypher.caps.impl.parse.{CypherParser, ExtractPredicatesFromAnds}
 import org.opencypher.caps.test.BaseTestSuite
 
@@ -35,7 +41,9 @@ trait Neo4jAstTestSupport extends AstConstructionTestSupport {
     CypherParserWithoutSemanticChecking.process(queryText)(CypherParser.defaultContext)
 
   implicit def parseExpr(exprText: String): ast.Expression = {
-    CypherParserWithoutSemanticChecking.process(s"RETURN $exprText")(CypherParser.defaultContext)._1 match {
+    CypherParserWithoutSemanticChecking
+      .process(s"RETURN $exprText")(CypherParser.defaultContext)
+      ._1 match {
       case Query(_, SingleQuery(Return(_, ReturnItems(_, items), _, _, _, _, _) :: Nil)) =>
         items.head.expression
       case _ => throw new IllegalArgumentException(s"This is not an expression, is it: $exprText")
@@ -65,7 +73,8 @@ object Neo4jAstTestSupport {
     }
 
     object NonThrowingChecker {
-      def check(statement: Statement, mkException: (String, InputPosition) => CypherException): SemanticState = {
+      def check(statement: Statement,
+                mkException: (String, InputPosition) => CypherException): SemanticState = {
         val SemanticCheckResult(semanticState, _) = statement.semanticCheck(SemanticState.clean)
         semanticState
       }

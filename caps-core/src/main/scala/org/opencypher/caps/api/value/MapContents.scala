@@ -29,7 +29,7 @@ sealed trait EntityContents extends MapContents {
 }
 
 final case class NodeContents(id: EntityId, labels: Seq[String], properties: Properties)
-  extends EntityContents {
+    extends EntityContents {
 
   override type Data = NodeData
   override def data = NodeData(labels, properties)
@@ -40,7 +40,7 @@ final case class RelationshipContents(id: EntityId,
                                       endId: EntityId,
                                       relationshipType: String,
                                       properties: Properties)
-  extends EntityContents {
+    extends EntityContents {
 
   override type Data = RelationshipData
   override def data = RelationshipData(startId, endId, relationshipType, properties)

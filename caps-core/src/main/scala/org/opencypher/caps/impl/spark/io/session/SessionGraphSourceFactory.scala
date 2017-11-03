@@ -28,10 +28,12 @@ import scala.collection.JavaConversions._
 case object SessionGraphSourceFactory extends CAPSGraphSourceFactoryCompanion("session")
 
 case class SessionGraphSourceFactory(
-  mountPoints: collection.concurrent.Map[String, CAPSGraphSource] = new ConcurrentHashMap[String, CAPSGraphSource]())
-  extends CAPSGraphSourceFactoryImpl[CAPSGraphSource](SessionGraphSourceFactory) {
+    mountPoints: collection.concurrent.Map[String, CAPSGraphSource] =
+      new ConcurrentHashMap[String, CAPSGraphSource]())
+    extends CAPSGraphSourceFactoryImpl[CAPSGraphSource](SessionGraphSourceFactory) {
 
-  def mountSourceAt(existingSource: CAPSGraphSource, uri: URI)(implicit capsSession: CAPSSession): Unit =
+  def mountSourceAt(existingSource: CAPSGraphSource, uri: URI)(
+      implicit capsSession: CAPSSession): Unit =
     if (schemes.contains(uri.getScheme))
       withValidPath(uri) { (path: String) =>
         mountPoints.get(path) match {
@@ -41,14 +43,14 @@ case class SessionGraphSourceFactory(
           case _ =>
             mountPoints.put(path, existingSource)
         }
-      }
-    else
+      } else
       Raise.graphSourceSchemeNotSupported(uri, schemes)
 
   def unmountAll(implicit capsSession: CAPSSession): Unit =
     mountPoints.clear()
 
-  override protected def sourceForURIWithSupportedScheme(uri: URI)(implicit capsSession: CAPSSession): CAPSGraphSource =
+  override protected def sourceForURIWithSupportedScheme(uri: URI)(
+      implicit capsSession: CAPSSession): CAPSGraphSource =
     withValidPath(uri) { (path: String) =>
       mountPoints.get(path) match {
         case Some(source) =>
@@ -64,17 +66,15 @@ case class SessionGraphSourceFactory(
   private def withValidPath[T](uri: URI)(f: String => T): T = {
     val path = uri.getPath
     if (uri.getUserInfo != null ||
-      uri.getHost != null ||
-      uri.getPort != -1 ||
-      uri.getQuery != null ||
-      uri.getAuthority != null ||
-      uri.getFragment != null ||
-      path == null ||
-      !path.startsWith("/"))
+        uri.getHost != null ||
+        uri.getPort != -1 ||
+        uri.getQuery != null ||
+        uri.getAuthority != null ||
+        uri.getFragment != null ||
+        path == null ||
+        !path.startsWith("/"))
       Raise.graphURIMalformedForUseBy(uri, "session graph source factory")
     else
       f(path)
   }
 }
-
-

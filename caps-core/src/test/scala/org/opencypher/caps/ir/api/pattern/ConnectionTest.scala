@@ -36,7 +36,8 @@ class ConnectionTest extends BaseTestSuite {
   }
 
   test("UndirectedConnection.flip") {
-    UndirectedRelationship(field_a, field_b).flip should equal(UndirectedRelationship(field_b, field_a))
+    UndirectedRelationship(field_a, field_b).flip should equal(
+      UndirectedRelationship(field_b, field_a))
   }
 
   test("UndirectedConnection.equals") {

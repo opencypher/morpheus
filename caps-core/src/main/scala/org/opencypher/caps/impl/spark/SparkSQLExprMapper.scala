@@ -39,10 +39,10 @@ object SparkSQLExprMapper {
     }
   }
 
-  private def getColumn(expr: Expr, header: RecordHeader, dataFrame: DataFrame)
-                       (implicit context: RuntimeContext): Column = {
+  private def getColumn(expr: Expr, header: RecordHeader, dataFrame: DataFrame)(
+      implicit context: RuntimeContext): Column = {
     expr match {
-      case p@Param(name) if p.cypherType.subTypeOf(CTList(CTAny)).maybeTrue =>
+      case p @ Param(name) if p.cypherType.subTypeOf(CTList(CTAny)).maybeTrue =>
         udf(const(context.parameters(name)), toSparkType(p.cypherType))()
       case Param(name) =>
         functions.lit(toJavaType(context.parameters(name)))
@@ -65,8 +65,8 @@ object SparkSQLExprMapper {
       * @param context context with helper functions, such as column names.
       * @return Some Spark SQL expression if the input was mappable, otherwise None.
       */
-    def apply(header: RecordHeader, expr: Expr, df: DataFrame)
-             (implicit context: RuntimeContext): Option[Column] = expr match {
+    def apply(header: RecordHeader, expr: Expr, df: DataFrame)(
+        implicit context: RuntimeContext): Option[Column] = expr match {
 
       case _: Var =>
         val col = getColumn(expr, header, df)
@@ -87,7 +87,7 @@ object SparkSQLExprMapper {
       case Not(e) =>
         apply(header, e, df) match {
           case Some(res) => Some(!res)
-          case _ => Raise.notYetImplemented(s"Support for expression $e")
+          case _         => Raise.notYetImplemented(s"Support for expression $e")
         }
 
       case IsNull(e) =>
@@ -103,9 +103,9 @@ object SparkSQLExprMapper {
 
         val col = getColumn(s.expr, header, df)
         val computedSize = s.expr.cypherType match {
-          case CTString => udf((s: String) => s.length.toLong, LongType)(col)
+          case CTString  => udf((s: String) => s.length.toLong, LongType)(col)
           case _: CTList => functions.size(col).cast(LongType)
-          case other => Raise.notYetImplemented(s"size() on type $other")
+          case other     => Raise.notYetImplemented(s"size() on type $other")
         }
         Some(computedSize)
 
@@ -116,7 +116,7 @@ object SparkSQLExprMapper {
           cols.reduce[Option[Column]] {
             // TODO: Does this work with Cypher's ternary logic?
             case (Some(l: Column), Some(r: Column)) => Some(l && r)
-            case _ => Raise.impossible()
+            case _                                  => Raise.impossible()
           }
         }
 
@@ -126,7 +126,7 @@ object SparkSQLExprMapper {
         else {
           cols.reduce[Option[Column]] {
             case (Some(l: Column), Some(r: Column)) => Some(l || r)
-            case _ => Raise.impossible()
+            case _                                  => Raise.impossible()
           }
         }
 
@@ -151,10 +151,10 @@ object SparkSQLExprMapper {
       case h: HasLabel =>
         Some(getColumn(h, header, df)) // it's a boolean column
 
-      case inEq: LessThan => Some(inequality(lt, header, inEq, df))
-      case inEq: LessThanOrEqual => Some(inequality(lteq, header, inEq, df))
+      case inEq: LessThan           => Some(inequality(lt, header, inEq, df))
+      case inEq: LessThanOrEqual    => Some(inequality(lteq, header, inEq, df))
       case inEq: GreaterThanOrEqual => Some(inequality(gteq, header, inEq, df))
-      case inEq: GreaterThan => Some(inequality(gt, header, inEq, df))
+      case inEq: GreaterThan        => Some(inequality(gt, header, inEq, df))
 
       // Arithmetics
       case add: Add =>
@@ -199,21 +199,21 @@ object SparkSQLExprMapper {
       case labels: Labels =>
         verifyExpression(header, expr)
 
-        val node = Var(context.columnName(header.slotsFor(labels.expr).head))(CTNode)
-        val labelExprs = header.labels(node)
+        val node         = Var(context.columnName(header.slotsFor(labels.expr).head))(CTNode)
+        val labelExprs   = header.labels(node)
         val labelColumns = labelExprs.map(getColumn(_, header, df))
-        val labelNames = labelExprs.map(_.label)
-        val labelsUDF = udf(getNodeLabels(labelNames), ArrayType(StringType, containsNull = false))
+        val labelNames   = labelExprs.map(_.label)
+        val labelsUDF    = udf(getNodeLabels(labelNames), ArrayType(StringType, containsNull = false))
         Some(labelsUDF(functions.array(labelColumns: _*)))
 
       case keys: Keys =>
         verifyExpression(header, expr)
 
-        val node = Var(context.columnName(header.slotsFor(keys.expr).head))(CTNode)
-        val propertyExprs = header.properties(node)
+        val node            = Var(context.columnName(header.slotsFor(keys.expr).head))(CTNode)
+        val propertyExprs   = header.properties(node)
         val propertyColumns = propertyExprs.map(getColumn(_, header, df))
-        val keyNames = propertyExprs.map(_.key.name)
-        val keysUDF = udf(getNodeKeys(keyNames), ArrayType(StringType, containsNull = false))
+        val keyNames        = propertyExprs.map(_.key.name)
+        val keysUDF         = udf(getNodeKeys(keyNames), ArrayType(StringType, containsNull = false))
         Some(keysUDF(functions.array(propertyColumns: _*)))
 
       case Type(inner) =>
@@ -222,7 +222,7 @@ object SparkSQLExprMapper {
         inner match {
           case v: Var =>
             val typeSlot = header.typeSlot(v)
-            val typeCol = df.col(context.columnName(typeSlot))
+            val typeCol  = df.col(context.columnName(typeSlot))
             Some(typeCol)
 
           case _ =>
@@ -247,8 +247,10 @@ object SparkSQLExprMapper {
         None
     }
 
-    private def inequality(f: (Any, Any) => Any, header: RecordHeader, expr: BinaryExpr, df: DataFrame)
-                          (implicit context: RuntimeContext): Column = {
+    private def inequality(f: (Any, Any) => Any,
+                           header: RecordHeader,
+                           expr: BinaryExpr,
+                           df: DataFrame)(implicit context: RuntimeContext): Column = {
       verifyExpression(header, expr)
 
       val lhsColumn = getColumn(expr.lhs, header, df)

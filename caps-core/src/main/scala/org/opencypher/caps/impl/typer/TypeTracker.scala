@@ -25,7 +25,8 @@ object TypeTracker {
   val empty = TypeTracker(List.empty)
 }
 
-case class TypeTracker(maps: List[Map[Expression, CypherType]], parameters: Map[String, CypherType] = Map.empty) {
+case class TypeTracker(maps: List[Map[Expression, CypherType]],
+                       parameters: Map[String, CypherType] = Map.empty) {
 
   def withParameters(newParameters: Map[String, CypherType]): TypeTracker =
     copy(parameters = newParameters)
@@ -35,16 +36,17 @@ case class TypeTracker(maps: List[Map[Expression, CypherType]], parameters: Map[
   def getParameter(e: String): Option[CypherType] = parameters.get(e)
 
   @tailrec
-  private def get(e: Expression, maps: List[Map[Expression, CypherType]]): Option[CypherType] = maps.headOption match {
-    case None => None
-    case Some(map) if map.contains(e) => map.get(e)
-    case Some(_) => get(e, maps.tail)
-  }
+  private def get(e: Expression, maps: List[Map[Expression, CypherType]]): Option[CypherType] =
+    maps.headOption match {
+      case None                         => None
+      case Some(map) if map.contains(e) => map.get(e)
+      case Some(_)                      => get(e, maps.tail)
+    }
 
-  def updated(e: Expression, t: CypherType): TypeTracker = copy(maps = head.updated(e, t) +: tail)
+  def updated(e: Expression, t: CypherType): TypeTracker    = copy(maps = head.updated(e, t) +: tail)
   def updated(entry: (Expression, CypherType)): TypeTracker = updated(entry._1, entry._2)
-  def pushScope(): TypeTracker = copy(maps = Map.empty[Expression, CypherType] +: maps)
-  def popScope(): Option[TypeTracker] = if (maps.isEmpty) None else Some(copy(maps = maps.tail))
+  def pushScope(): TypeTracker                              = copy(maps = Map.empty[Expression, CypherType] +: maps)
+  def popScope(): Option[TypeTracker]                       = if (maps.isEmpty) None else Some(copy(maps = maps.tail))
 
   private def head: Map[Expression, CypherType] =
     maps.headOption.getOrElse(Map.empty[Expression, CypherType])

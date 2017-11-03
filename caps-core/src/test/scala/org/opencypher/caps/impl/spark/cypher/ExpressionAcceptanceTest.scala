@@ -36,14 +36,15 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (a:A)-->(b:B) RETURN a.val = b.p AS eq")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("eq" -> false),
-      CypherMap("eq" -> false),
-      CypherMap("eq" -> true),
-      CypherMap("eq" -> null),
-      CypherMap("eq" -> null),
-      CypherMap("eq" -> null)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("eq" -> false),
+        CypherMap("eq" -> false),
+        CypherMap("eq" -> true),
+        CypherMap("eq" -> null),
+        CypherMap("eq" -> null),
+        CypherMap("eq" -> null)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -58,12 +59,13 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (n)-->(m) RETURN n.val < m.val")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("n.val < m.val" -> true),
-      CypherMap("n.val < m.val" -> false),
-      CypherMap("n.val < m.val" -> false),
-      CypherMap("n.val < m.val" -> null)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("n.val < m.val" -> true),
+        CypherMap("n.val < m.val" -> false),
+        CypherMap("n.val < m.val" -> false),
+        CypherMap("n.val < m.val" -> null)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -77,12 +79,13 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (n)-->(m) RETURN n.val <= m.val")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("n.val <= m.val" -> true),
-      CypherMap("n.val <= m.val" -> true),
-      CypherMap("n.val <= m.val" -> false),
-      CypherMap("n.val <= m.val" -> null)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("n.val <= m.val" -> true),
+        CypherMap("n.val <= m.val" -> true),
+        CypherMap("n.val <= m.val" -> false),
+        CypherMap("n.val <= m.val" -> null)
+      ))
     // And
     result.graphs shouldBe empty
   }
@@ -95,12 +98,13 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (n)-->(m) RETURN n.val > m.val AS gt")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("gt" -> false),
-      CypherMap("gt" -> false),
-      CypherMap("gt" -> true),
-      CypherMap("gt" -> null)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("gt" -> false),
+        CypherMap("gt" -> false),
+        CypherMap("gt" -> true),
+        CypherMap("gt" -> null)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -114,12 +118,13 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (n)-->(m) RETURN n.val >= m.val")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("n.val >= m.val" -> false),
-      CypherMap("n.val >= m.val" -> true),
-      CypherMap("n.val >= m.val" -> true),
-      CypherMap("n.val >= m.val" -> null)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("n.val >= m.val" -> false),
+        CypherMap("n.val >= m.val" -> true),
+        CypherMap("n.val >= m.val" -> true),
+        CypherMap("n.val >= m.val" -> null)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -133,10 +138,11 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (n)-->(m) RETURN m.other + m.val + n.val AS res")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> 12),
-      CypherMap("res" -> null)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> 12),
+        CypherMap("res" -> null)
+      ))
     // And
     result.graphs shouldBe empty
   }
@@ -149,10 +155,11 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (n)-->(m) RETURN m.val - n.val - m.other AS res")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> -2),
-      CypherMap("res" -> null)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> -2),
+        CypherMap("res" -> null)
+      ))
     // And
     result.graphs shouldBe empty
   }
@@ -165,9 +172,10 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN m.val - n.val")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("m.val - n.val" -> 1)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("m.val - n.val" -> 1)
+      ))
     // And
     result.graphs shouldBe empty
   }
@@ -180,10 +188,11 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN n.val * m.val")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("n.val * m.val" -> 18),
-      CypherMap("n.val * m.val" -> 6)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("n.val * m.val" -> 18),
+        CypherMap("n.val * m.val" -> 6)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -197,9 +206,10 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN n.val * m.val")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("n.val * m.val" -> 11.25)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("n.val * m.val" -> 11.25)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -213,9 +223,10 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN n.val * m.val2")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("n.val * m.val2" -> 22.5)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("n.val * m.val2" -> 22.5)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -229,10 +240,11 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN n.val / m.val")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("n.val / m.val" -> 3),
-      CypherMap("n.val / m.val" -> 1)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("n.val / m.val" -> 3),
+        CypherMap("n.val / m.val" -> 1)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -246,10 +258,11 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN n.val / m.val2")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("n.val / m.val2" -> 2.0),
-      CypherMap("n.val / m.val2" -> null)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("n.val / m.val2" -> 2.0),
+        CypherMap("n.val / m.val2" -> null)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -257,8 +270,7 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
 
   ignore("equality") {
     // Given
-    val given = TestGraph(
-      """(:Node {val: 4L})-->(:Node {val: 5L}),
+    val given = TestGraph("""(:Node {val: 4L})-->(:Node {val: 5L}),
         |(:Node {val: 4L})-->(:Node {val: 4L}),
         |(:Node)-->(:Node {val: 5L})
       """.stripMargin)
@@ -267,11 +279,12 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN m.val = n.val AS res")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> false),
-      CypherMap("res" -> true),
-      CypherMap("res" -> null)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> false),
+        CypherMap("res" -> true),
+        CypherMap("res" -> null)
+      ))
     // And
     result.graphs shouldBe empty
   }
@@ -284,27 +297,29 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (p:Person) RETURN p.name")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("p.name" -> "Mats"),
-      CypherMap("p.name" -> "Martin")
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("p.name" -> "Mats"),
+        CypherMap("p.name" -> "Martin")
+      ))
 
     result.graphs shouldBe empty
   }
 
   test("property expression with relationship") {
     // Given
-    val given = TestGraph("""(:Person {name: "Mats"})-[:KNOWS {since: 2017l}]->(:Person {name: "Martin"})""")
+    val given =
+      TestGraph("""(:Person {name: "Mats"})-[:KNOWS {since: 2017l}]->(:Person {name: "Martin"})""")
 
     // When
     val result = given.cypher("MATCH (a:Person)-[r:KNOWS]->(b:Person) RETURN r.since")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("r.since" -> 2017)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("r.since" -> 2017)
+      ))
 
     result.graphs shouldBe empty
   }
 }
-

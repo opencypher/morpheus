@@ -120,4 +120,3 @@ trait OpenCypherDataFixture extends TestDataFixture {
     .withRelationshipPropertyKeys("WROTE_MUSIC_FOR")()
     .withRelationshipPropertyKeys("ACTED_IN")("charactername" -> CTString)
 }
-

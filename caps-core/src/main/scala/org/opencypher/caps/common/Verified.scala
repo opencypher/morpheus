@@ -30,6 +30,8 @@ trait Verified[+V] {
 }
 
 object Verified {
-  implicit def lift[IN, OUT <: Verified[IN]](input: Verifiable { type Self = IN; type VerifiedSelf = OUT }): OUT =
+  implicit def lift[IN, OUT <: Verified[IN]](input: Verifiable {
+    type Self = IN; type VerifiedSelf = OUT
+  }): OUT =
     input.verify
 }

@@ -57,5 +57,3 @@ trait CypherResult extends CypherPrintable {
 
   def explain: CypherResultPlan
 }
-
-

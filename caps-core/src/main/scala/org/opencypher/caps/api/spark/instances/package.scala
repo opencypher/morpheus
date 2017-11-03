@@ -15,6 +15,4 @@
  */
 package org.opencypher.caps.api.spark
 
-package object instances
-  extends AllInstances
-
+package object instances extends AllInstances

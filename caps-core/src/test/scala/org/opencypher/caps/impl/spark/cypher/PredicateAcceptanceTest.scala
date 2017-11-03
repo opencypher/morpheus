@@ -27,10 +27,11 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
 
     val result = given.cypher("MATCH (n) WHERE exists(n.id) RETURN n.id")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("n.id" -> 1),
-      CypherMap("n.id" -> 2)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("n.id" -> 1),
+        CypherMap("n.id" -> 2)
+      ))
   }
 
   test("in") {
@@ -41,9 +42,10 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (a:A) WHERE a.val IN [-1, 2, 5, 0] RETURN a.val")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("a.val" -> 2)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("a.val" -> 2)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -55,12 +57,14 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
     val given = TestGraph("""(:A {val: 1L}), (:A {val: 2L}), (:A {val: 3L})""")
 
     // When
-    val result = given.cypher("MATCH (a:A) WHERE a.val IN $list RETURN a.val", Map("list" -> CypherList(Seq(-1, 2, 5, 0))))
+    val result = given.cypher("MATCH (a:A) WHERE a.val IN $list RETURN a.val",
+                              Map("list" -> CypherList(Seq(-1, 2, 5, 0))))
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("a.val" -> 2)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("a.val" -> 2)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -74,10 +78,11 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (a:A) WHERE a.val = 1 OR a.val = 2 RETURN a.val")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("a.val" -> 1),
-      CypherMap("a.val" -> 2)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("a.val" -> 1),
+        CypherMap("a.val" -> 2)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -91,10 +96,11 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (a) WHERE a:A OR a:B RETURN a.val")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("a.val" -> 1),
-      CypherMap("a.val" -> 2)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("a.val" -> 1),
+        CypherMap("a.val" -> 2)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -110,13 +116,15 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
                           """.stripMargin)
 
     // When
-    val result = given.cypher("MATCH (a:A) WHERE a.val = 1 OR (a.val >= 4 AND a.name = 'e') RETURN a.val, a.name")
+    val result = given.cypher(
+      "MATCH (a:A) WHERE a.val = 1 OR (a.val >= 4 AND a.name = 'e') RETURN a.val, a.name")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("a.val" -> 1, "a.name" -> "a"),
-      CypherMap("a.val" -> 5, "a.name" -> "e")
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("a.val" -> 1, "a.name" -> "a"),
+        CypherMap("a.val" -> 5, "a.name" -> "e")
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -136,9 +144,10 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (a:A)-->(b:B) WHERE a.val = b.p RETURN b.p")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("b.p" -> 100)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("b.p" -> 100)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -153,9 +162,10 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (n:Node)-->(m:Node) WHERE n.val < m.val RETURN n.val")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("n.val" -> 4)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("n.val" -> 4)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -163,16 +173,18 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
 
   test("less than or equal") {
     // Given
-    val given = TestGraph("""(:Node {id: 1L, val: 4L})-->(:Node {id: 2L, val: 5L})-->(:Node {id: 3L, val: 5L})""")
+    val given = TestGraph(
+      """(:Node {id: 1L, val: 4L})-->(:Node {id: 2L, val: 5L})-->(:Node {id: 3L, val: 5L})""")
 
     // When
     val result = given.cypher("MATCH (n:Node)-->(m:Node) WHERE n.val <= m.val RETURN n.id, n.val")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("n.id" -> 1, "n.val" -> 4),
-      CypherMap("n.id" -> 2, "n.val" -> 5)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("n.id" -> 1, "n.val" -> 4),
+        CypherMap("n.id" -> 2, "n.val" -> 5)
+      ))
     // And
     result.graphs shouldBe empty
   }
@@ -185,9 +197,10 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (n:Node)<--(m:Node) WHERE n.val > m.val RETURN n.val")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("n.val" -> 5)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("n.val" -> 5)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -195,16 +208,18 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
 
   test("greater than or equal") {
     // Given
-    val given = TestGraph("""(:Node {id: 1L, val: 4L})-->(:Node {id: 2L, val: 5L})-->(:Node {id: 3L, val: 5L})""")
+    val given = TestGraph(
+      """(:Node {id: 1L, val: 4L})-->(:Node {id: 2L, val: 5L})-->(:Node {id: 3L, val: 5L})""")
 
     // When
     val result = given.cypher("MATCH (n:Node)<--(m:Node) WHERE n.val >= m.val RETURN n.id, n.val")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("n.id" -> 2, "n.val" -> 5),
-      CypherMap("n.id" -> 3, "n.val" -> 5)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("n.id" -> 2, "n.val" -> 5),
+        CypherMap("n.id" -> 3, "n.val" -> 5)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -212,16 +227,18 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
 
   test("float conversion for integer division") {
     // Given
-    val given = TestGraph("""(:Node {id: 1L, val: 4L}), (:Node {id: 2L, val: 5L}), (:Node {id: 3L, val: 5L})""")
+    val given = TestGraph(
+      """(:Node {id: 1L, val: 4L}), (:Node {id: 2L, val: 5L}), (:Node {id: 3L, val: 5L})""")
 
     // When
     val result = given.cypher("MATCH (n:Node) WHERE (n.val * 1.0) / n.id >= 2.5 RETURN n.id")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("n.id" -> 1),
-      CypherMap("n.id" -> 2)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("n.id" -> 1),
+        CypherMap("n.id" -> 2)
+      ))
 
     // And
     result.graphs shouldBe empty

@@ -28,5 +28,3 @@ case object parsePathOrURI extends (String => URI) {
       URI.create(trimmed)
   }
 }
-
-

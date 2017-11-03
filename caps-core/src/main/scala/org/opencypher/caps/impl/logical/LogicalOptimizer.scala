@@ -21,9 +21,10 @@ import org.opencypher.caps.impl.DirectCompilationStage
 import org.opencypher.caps.ir.api.Label
 
 class LogicalOptimizer(producer: LogicalOperatorProducer)
-  extends DirectCompilationStage[LogicalOperator, LogicalOperator, LogicalPlannerContext]{
+    extends DirectCompilationStage[LogicalOperator, LogicalOperator, LogicalPlannerContext] {
 
-  override def process(input: LogicalOperator)(implicit context: LogicalPlannerContext): LogicalOperator = {
+  override def process(input: LogicalOperator)(
+      implicit context: LogicalPlannerContext): LogicalOperator = {
     moveLabelPredicatesToNodeScans(input)
   }
 
@@ -40,7 +41,7 @@ class LogicalOptimizer(producer: LogicalOperatorProducer)
         case Filter(expr, in) =>
           val res = expr match {
             case HasLabel(v: Var, label) => Set(v -> label)
-            case _ => Set.empty
+            case _                       => Set.empty
           }
           res ++ extractLabels(in)
         case s: StackingLogicalOperator =>
@@ -57,12 +58,12 @@ class LogicalOptimizer(producer: LogicalOperatorProducer)
       root match {
         case NodeScan(node, nodeDef, in) =>
           NodeScan(node,
-            EveryNode(AllGiven[Label](labelMap.getOrElse(node, nodeDef.labels.elements))),
-            rewrite(in))(in.solved)
-        case f@Filter(expr, in) =>
+                   EveryNode(AllGiven[Label](labelMap.getOrElse(node, nodeDef.labels.elements))),
+                   rewrite(in))(in.solved)
+        case f @ Filter(expr, in) =>
           expr match {
             case _: HasLabel => rewrite(in)
-            case _ => f.clone(rewrite(in))
+            case _           => f.clone(rewrite(in))
           }
         case s: StackingLogicalOperator =>
           s.clone(rewrite(s.in))

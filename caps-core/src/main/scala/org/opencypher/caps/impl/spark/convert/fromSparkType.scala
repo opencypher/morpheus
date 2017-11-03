@@ -23,11 +23,11 @@ object fromSparkType extends Serializable {
 
   def apply(dt: DataType, nullable: Boolean): Option[CypherType] = {
     val result = dt match {
-      case StringType => Some(CTString)
-      case LongType => Some(CTInteger)
+      case StringType  => Some(CTString)
+      case LongType    => Some(CTInteger)
       case BooleanType => Some(CTBoolean)
-      case BinaryType => Some(CTAny)
-      case DoubleType => Some(CTFloat)
+      case BinaryType  => Some(CTAny)
+      case DoubleType  => Some(CTFloat)
       case ArrayType(elemType, containsNull) =>
         val maybeElementType = fromSparkType(elemType, containsNull)
         maybeElementType.map(CTList(_))

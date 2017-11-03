@@ -22,7 +22,7 @@ import org.opencypher.caps.impl.logical.LogicalOperator
 object CAPSResultBuilder {
   def from(internal: PhysicalResult, plan: LogicalOperator): CAPSResult = new CAPSResult {
 
-    override def records: CAPSRecords = internal.records
+    override def records: CAPSRecords           = internal.records
     override def graphs: Map[String, CAPSGraph] = internal.graphs
 
     override def explain: CypherResultPlan = CypherResultPlan(plan)

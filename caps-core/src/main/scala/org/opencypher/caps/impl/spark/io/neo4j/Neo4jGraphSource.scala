@@ -22,10 +22,9 @@ import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceImpl
 
-case class Neo4jGraphSource(config: EncryptedNeo4jConfig,
-                            queries: Option[(String, String)])
-                           (implicit capsSession: CAPSSession)
-  extends CAPSGraphSourceImpl {
+case class Neo4jGraphSource(config: EncryptedNeo4jConfig, queries: Option[(String, String)])(
+    implicit capsSession: CAPSSession)
+    extends CAPSGraphSourceImpl {
 
   import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraphSourceFactory.supportedSchemes
 
@@ -33,17 +32,17 @@ case class Neo4jGraphSource(config: EncryptedNeo4jConfig,
     supportedSchemes.contains(uri.getScheme) && uri.getHost == config.uri.getHost && uri.getPort == config.uri.getPort
 
   override def graph: CAPSGraph =
-    queries match{
+    queries match {
       case Some((nodeQuery, relQuery)) => Neo4jGraphLoader.fromNeo4j(config, nodeQuery, relQuery)
-      case None => Neo4jGraphLoader.fromNeo4j(config)
+      case None                        => Neo4jGraphLoader.fromNeo4j(config)
     }
 
   override def schema: Option[Schema] = None
 
   override def canonicalURI: URI = {
-    val uri = config.uri
-    val host = uri.getHost
-    val port = if (uri.getPort == -1) "" else s":${uri.getPort}"
+    val uri                = config.uri
+    val host               = uri.getHost
+    val port               = if (uri.getPort == -1) "" else s":${uri.getPort}"
     val canonicalURIString = s"${uri.getScheme}://$host$port"
     URI.create(canonicalURIString)
   }
@@ -57,7 +56,3 @@ case class Neo4jGraphSource(config: EncryptedNeo4jConfig,
   override def delete(): Unit =
     ???
 }
-
-
-
-

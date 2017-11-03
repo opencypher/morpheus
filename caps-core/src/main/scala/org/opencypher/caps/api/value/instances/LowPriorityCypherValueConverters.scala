@@ -20,11 +20,11 @@ import org.opencypher.caps.api.value.CypherValue
 import scala.language.implicitConversions
 
 trait LowPriorityCypherValueConverters {
-  implicit def mapOfCypherValues[T](v: Map[String, T])(implicit ev: T => CypherValue)
-  : Map[String, CypherValue] =
+  implicit def mapOfCypherValues[T](v: Map[String, T])(
+      implicit ev: T => CypherValue): Map[String, CypherValue] =
     v.mapValues(ev)
 
-  implicit def entryToCypherValue[T](v: (String, T))(implicit ev: T => CypherValue)
-  : (String, CypherValue) =
+  implicit def entryToCypherValue[T](v: (String, T))(
+      implicit ev: T => CypherValue): (String, CypherValue) =
     v._1 -> v._2
 }

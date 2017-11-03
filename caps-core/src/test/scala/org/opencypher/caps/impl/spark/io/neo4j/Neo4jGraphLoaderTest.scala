@@ -20,7 +20,10 @@ import org.opencypher.caps.api.types._
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.fixture.{Neo4jServerFixture, OpenCypherDataFixture}
 
-class Neo4jGraphLoaderTest extends CAPSTestSuite with Neo4jServerFixture with OpenCypherDataFixture {
+class Neo4jGraphLoaderTest
+    extends CAPSTestSuite
+    with Neo4jServerFixture
+    with OpenCypherDataFixture {
 
   test("import a graph from Neo4j") {
     val graph = Neo4jGraphLoader.fromNeo4j(neo4jConfig)
@@ -31,7 +34,8 @@ class Neo4jGraphLoaderTest extends CAPSTestSuite with Neo4jServerFixture with Op
   }
 
   test("import only some nodes from Neo4j") {
-    val graph = Neo4jGraphLoader.fromNeo4j(neo4jConfig, "MATCH (f:Film) RETURN f", "UNWIND [] AS i RETURN i")
+    val graph =
+      Neo4jGraphLoader.fromNeo4j(neo4jConfig, "MATCH (f:Film) RETURN f", "UNWIND [] AS i RETURN i")
 
     graph.nodes("n").toDF().count() shouldBe 5
     graph.relationships("r").toDF().count() shouldBe 0
@@ -39,15 +43,19 @@ class Neo4jGraphLoaderTest extends CAPSTestSuite with Neo4jServerFixture with Op
   }
 
   test("import only some rels (and their endnodes) from Neo4j") {
-    val graph = Neo4jGraphLoader.fromNeo4j(neo4jConfig, "MATCH (s)-[:ACTED_IN]->(t) WITH collect(s) AS sources, collect(t) AS targets WITH sources + targets AS nodes UNWIND nodes AS n RETURN DISTINCT n", "MATCH ()-[a:ACTED_IN]->() RETURN a")
+    val graph = Neo4jGraphLoader.fromNeo4j(
+      neo4jConfig,
+      "MATCH (s)-[:ACTED_IN]->(t) WITH collect(s) AS sources, collect(t) AS targets WITH sources + targets AS nodes UNWIND nodes AS n RETURN DISTINCT n",
+      "MATCH ()-[a:ACTED_IN]->() RETURN a"
+    )
 
     graph.nodes("n").toDF().count() shouldBe 12
     graph.relationships("r").toDF().count() shouldBe 8
-    graph.schema should equal(Schema.empty
-      .withRelationshipPropertyKeys("ACTED_IN")("charactername" -> CTString)
-      .withNodePropertyKeys("Person")("name" -> CTString, "birthyear" -> CTInteger)
-      .withNodePropertyKeys("Actor")("name" -> CTString, "birthyear" -> CTInteger)
-      .withNodePropertyKeys("Film")("title" -> CTString)
-    )
+    graph.schema should equal(
+      Schema.empty
+        .withRelationshipPropertyKeys("ACTED_IN")("charactername" -> CTString)
+        .withNodePropertyKeys("Person")("name" -> CTString, "birthyear" -> CTInteger)
+        .withNodePropertyKeys("Actor")("name" -> CTString, "birthyear" -> CTInteger)
+        .withNodePropertyKeys("Film")("title" -> CTString))
   }
 }

@@ -31,6 +31,7 @@
         <plugin.maven-shade.version>2.4.3</plugin.maven-shade.version>
         <plugin.scala-maven.version>3.2.1</plugin.scala-maven.version>
         <plugin.scalastyle-maven.version>0.8.0</plugin.scalastyle-maven.version>
+        <plugin.scalafmt.version>0.5_1.3.0</plugin.scalafmt.version>
 
         <!-- Used dependencies -->
         <dep.ammonite.version>1.0.1-6-6d2db3a</dep.ammonite.version>
@@ -73,6 +74,8 @@
     <packaging>pom</packaging>
 
     <build>
+        <sourceDirectory>${basedir}/src/main/scala</sourceDirectory>
+        <testSourceDirectory>${basedir}/src/test/scala</testSourceDirectory>
         <resources>
             <resource>
                 <directory>${basedir}/src/main/resources</directory>
@@ -195,6 +198,25 @@
                 </executions>
             </plugin>
 
+            <!-- scalafmt -->
+            <plugin>
+                <groupId>org.antipathy</groupId>
+                <artifactId>mvn-scalafmt</artifactId>
+                <version>${plugin.scalafmt.version}</version>
+                <configuration>
+                    <parameters>-i -f .</parameters>
+                    <configLocation>${project.rootdir}/.scalafmt.conf</configLocation>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>format</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
             <!-- scaladoc -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -290,6 +312,9 @@
                 <version>${plugin.license-maven.version}</version>
                 <configuration>
                     <header>${project.rootdir}/license-header.txt</header>
+                    <mapping>
+                        <scala>SLASHSTAR_STYLE</scala>
+                    </mapping>
                     <basedir>${basedir}/src</basedir>
                     <mapping>
                         <scala>SLASHSTAR_STYLE</scala>

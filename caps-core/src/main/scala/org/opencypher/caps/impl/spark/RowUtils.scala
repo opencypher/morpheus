@@ -27,7 +27,8 @@ import org.opencypher.caps.impl.spark.physical.RuntimeContext
 object RowUtils {
 
   implicit class CypherRow(r: Row) {
-    def getCypherValue(expr: Expr, header: RecordHeader)(implicit context: RuntimeContext): CypherValue = {
+    def getCypherValue(expr: Expr, header: RecordHeader)(
+        implicit context: RuntimeContext): CypherValue = {
       expr match {
         case Param(name) => context.parameters(name)
         case _ =>
@@ -44,18 +45,32 @@ object RowUtils {
     }
 
     def typeToValue(t: CypherType): Any => CypherValue = t match {
-      case CTBoolean => (in) => cypherBoolean(in.asInstanceOf[Boolean])
-      case CTInteger => (in) => cypherInteger(in.asInstanceOf[Long])
-      case CTString => (in) => cypherString(in.asInstanceOf[String])
-      case CTFloat => (in) => cypherFloat(in.asInstanceOf[Double])
-      case _: CTNode => (in) => cypherInteger(in.asInstanceOf[Long])
+      case CTBoolean =>
+        (in) =>
+          cypherBoolean(in.asInstanceOf[Boolean])
+      case CTInteger =>
+        (in) =>
+          cypherInteger(in.asInstanceOf[Long])
+      case CTString =>
+        (in) =>
+          cypherString(in.asInstanceOf[String])
+      case CTFloat =>
+        (in) =>
+          cypherFloat(in.asInstanceOf[Double])
+      case _: CTNode =>
+        (in) =>
+          cypherInteger(in.asInstanceOf[Long])
       // TODO: This supports var-expand where we only track rel ids, but it's not right
-      case _: CTRelationship => (in) => cypherInteger(in.asInstanceOf[Long])
-      case l: CTList => (in) => {
-        val converted = in.asInstanceOf[Seq[_]].map(typeToValue(l.elementType))
+      case _: CTRelationship =>
+        (in) =>
+          cypherInteger(in.asInstanceOf[Long])
+      case l: CTList =>
+        (in) =>
+          {
+            val converted = in.asInstanceOf[Seq[_]].map(typeToValue(l.elementType))
 
-        cypherList(converted.toIndexedSeq)
-      }
+            cypherList(converted.toIndexedSeq)
+          }
       case _ => Raise.notYetImplemented(s"converting value of type $t")
     }
   }

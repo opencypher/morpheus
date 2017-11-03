@@ -35,12 +35,12 @@ class PhysicalResultProducerTest extends CAPSTestSuite with MockitoSugar {
   import producer._
 
   test("node scan") {
-    val graph = mock[CAPSGraph]
-    val records = CAPSRecords.empty()
+    val graph             = mock[CAPSGraph]
+    val records           = CAPSRecords.empty()
     val namedLogicalGraph = LogicalExternalGraph("foo", URI.create("/graph/test"), Schema.empty)
 
     val prev = PhysicalResult(records, Map("foo" -> graph))
-    val v = Var("n")(CTNode)
+    val v    = Var("n")(CTNode)
 
     val elements = EveryNode(AllOf(Label("Person"), Label("Employee")))
 
@@ -49,12 +49,12 @@ class PhysicalResultProducerTest extends CAPSTestSuite with MockitoSugar {
   }
 
   test("relationship scan") {
-    val graph = mock[CAPSGraph]
-    val records = CAPSRecords.empty()
+    val graph             = mock[CAPSGraph]
+    val records           = CAPSRecords.empty()
     val namedLogicalGraph = LogicalExternalGraph("foo", URI.create("/graph/test"), Schema.empty)
 
     val prev = PhysicalResult(records, Map("foo" -> graph))
-    val v = Var("e")(CTRelationship)
+    val v    = Var("e")(CTRelationship)
 
     val elements = EveryRelationship(AnyOf(RelType("KNOWS")))
 

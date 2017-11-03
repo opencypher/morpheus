@@ -26,7 +26,7 @@ import org.opencypher.caps.impl.spark.io.CAPSGraphSourceImpl
 import org.opencypher.caps.impl.spark.io.hdfs.CsvGraphLoader
 
 case class FileCsvGraphSource(override val canonicalURI: URI)(implicit capsSession: CAPSSession)
-  extends CAPSGraphSourceImpl {
+    extends CAPSGraphSourceImpl {
 
   override def sourceForGraphAt(uri: URI): Boolean = {
     FileCsvGraphSourceFactory.supportedSchemes.contains(uri.getScheme)

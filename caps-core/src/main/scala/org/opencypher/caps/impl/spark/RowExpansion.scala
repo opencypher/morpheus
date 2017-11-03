@@ -23,32 +23,34 @@ import org.opencypher.caps.api.types.CTNode
 import org.opencypher.caps.impl.spark.exception.Raise
 
 case class RowExpansion(
-  targetHeader: RecordHeader,
-  targetVar: Var,
-  entitiesWithChildren: Map[Var, Seq[RecordSlot]],
-  propertyColumnLookupTables: Map[Var, Map[String, String]]
+    targetHeader: RecordHeader,
+    targetVar: Var,
+    entitiesWithChildren: Map[Var, Seq[RecordSlot]],
+    propertyColumnLookupTables: Map[Var, Map[String, String]]
 ) extends (Row => Seq[Row]) {
 
   private val targetLabels = targetVar.cypherType match {
     case CTNode(labels) => labels
-    case _ => Set.empty[String]
+    case _              => Set.empty[String]
   }
 
   private val rowSchema = StructType(targetHeader.slots.map(_.asStructField))
 
-  private val labelIndexLookupTable = entitiesWithChildren.map { case (node, slots) =>
-    val labelIndicesForNode = slots.collect {
-      case RecordSlot(_, p@ProjectedExpr(HasLabel(_, l))) if targetLabels.contains(l.name) =>
-        rowSchema.fieldIndex(SparkColumnName.of(p.withOwner(targetVar)))
-    }
-    node -> labelIndicesForNode
+  private val labelIndexLookupTable = entitiesWithChildren.map {
+    case (node, slots) =>
+      val labelIndicesForNode = slots.collect {
+        case RecordSlot(_, p @ ProjectedExpr(HasLabel(_, l))) if targetLabels.contains(l.name) =>
+          rowSchema.fieldIndex(SparkColumnName.of(p.withOwner(targetVar)))
+      }
+      node -> labelIndicesForNode
   }
 
   def apply(row: Row): Seq[Row] = {
-    val adaptedRows = propertyColumnLookupTables.flatMap { case (nodeVar, nodeLookupTable) =>
-      val adaptedRow = adaptRowToNewHeader(row, nodeLookupTable)
-      if (labelIndexLookupTable(nodeVar).forall(adaptedRow.getBoolean)) Some(adaptedRow)
-      else None
+    val adaptedRows = propertyColumnLookupTables.flatMap {
+      case (nodeVar, nodeLookupTable) =>
+        val adaptedRow = adaptRowToNewHeader(row, nodeLookupTable)
+        if (labelIndexLookupTable(nodeVar).forall(adaptedRow.getBoolean)) Some(adaptedRow)
+        else None
     }
     adaptedRows.toSeq
   }
@@ -64,7 +66,7 @@ case class RowExpansion(
           val value = targetSlot.content match {
             case ProjectedExpr(HasLabel(_, _)) => false
             case ProjectedExpr(Property(_, _)) => null
-            case _ => Raise.impossible()
+            case _                             => Raise.impossible()
           }
           newRowAcc :+ value
       }

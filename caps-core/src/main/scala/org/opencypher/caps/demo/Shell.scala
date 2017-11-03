@@ -25,11 +25,11 @@ object Shell {
     implicit val session = CSVDemo.session
     try {
       val welcomeBanner = {
-        val ownVersion = CAPS.version.getOrElse("<unknown>")
+        val ownVersion      = CAPS.version.getOrElse("<unknown>")
         val ammoniteVersion = ammonite.Constants.version
-        val scalaVersion = scala.util.Properties.versionNumberString
-        val javaVersion = System.getProperty("java.version")
-        val sparkVersion = session.version
+        val scalaVersion    = scala.util.Properties.versionNumberString
+        val javaVersion     = System.getProperty("java.version")
+        val sparkVersion    = session.version
         Util.normalizeNewlines(
           """  _____          __             ___
             = / ___/_ _____  / /  ___ ____  / _/__  ____
@@ -41,7 +41,7 @@ object Shell {
             =/_/ |_/ .__/\_,_/\__/_//_/\__/ /___/ .__/\_,_/_/ /_/\_\
             =     /_/                          /_/
             =""".stripMargin('=') +
-          s"""|
+            s"""|
               |Version $ownVersion
               |(Apache Spark $sparkVersion, Scala $scalaVersion, Java $javaVersion, Ammonite $ammoniteVersion)
               |
@@ -58,8 +58,7 @@ object Shell {
 
       new ammonite.Main(
         welcomeBanner = Some(welcomeBanner),
-        predefCode =
-          s"""|import org.opencypher.caps.demo.CSVDemo._
+        predefCode = s"""|import org.opencypher.caps.demo.CSVDemo._
               |""".stripMargin
       ).instantiateRepl(Vector(Bind("session", session)), None) match {
         case Right(repl) =>

@@ -17,6 +17,4 @@ package org.opencypher.caps.impl.syntax
 
 import org.opencypher.caps.common.syntax.RegisterSyntax
 
-trait AllSyntax
-  extends RegisterSyntax
-  with RecordHeaderSyntax
+trait AllSyntax extends RegisterSyntax with RecordHeaderSyntax

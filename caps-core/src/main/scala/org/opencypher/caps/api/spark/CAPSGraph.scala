@@ -27,10 +27,10 @@ trait CAPSGraph extends CypherGraph with Serializable {
 
   self =>
 
-  final override type Graph = CAPSGraph
+  final override type Graph   = CAPSGraph
   final override type Records = CAPSRecords
   final override type Session = CAPSSession
-  final override type Result = CAPSResult
+  final override type Result  = CAPSResult
 
   def cache(): CAPSGraph
 
@@ -53,30 +53,31 @@ object CAPSGraph {
 
       override def session: CAPSSession = caps
 
-      override def cache(): CAPSGraph = this
-      override def persist(): CAPSGraph = this
+      override def cache(): CAPSGraph                             = this
+      override def persist(): CAPSGraph                           = this
       override def persist(storageLevel: StorageLevel): CAPSGraph = this
-      override def unpersist(): CAPSGraph = this
-      override def unpersist(blocking: Boolean): CAPSGraph = this
+      override def unpersist(): CAPSGraph                         = this
+      override def unpersist(blocking: Boolean): CAPSGraph        = this
     }
 
   def create(nodes: NodeScan, scans: GraphScan*)(implicit caps: CAPSSession): CAPSGraph = {
     val allScans = nodes +: scans
-    val schema = allScans.map(_.schema).reduce(_ ++ _)
+    val schema   = allScans.map(_.schema).reduce(_ ++ _)
     new CAPSScanGraph(allScans, schema)
   }
 
-  def create(records: CAPSRecords, schema: Schema)
-    (implicit caps: CAPSSession): CAPSGraph = {
+  def create(records: CAPSRecords, schema: Schema)(implicit caps: CAPSSession): CAPSGraph = {
 
     new CAPSPatternGraph(records, schema)
   }
 
-  def createLazy(theSchema: Schema, loadGraph: => CAPSGraph)(implicit caps: CAPSSession): CAPSGraph =
+  def createLazy(theSchema: Schema, loadGraph: => CAPSGraph)(
+      implicit caps: CAPSSession): CAPSGraph =
     new LazyGraph(theSchema, loadGraph) {}
 
-  sealed abstract class LazyGraph(override val schema: Schema, loadGraph: => CAPSGraph)(implicit caps: CAPSSession)
-    extends CAPSGraph {
+  sealed abstract class LazyGraph(override val schema: Schema, loadGraph: => CAPSGraph)(
+      implicit caps: CAPSSession)
+      extends CAPSGraph {
     override protected lazy val graph: CAPSGraph = {
       val g = loadGraph
       if (g.schema == schema) g else Raise.schemaMismatch()
@@ -93,13 +94,13 @@ object CAPSGraph {
     override def union(other: CAPSGraph): CAPSGraph =
       graph.union(other)
 
-    override def cache(): CAPSGraph = { graph.cache(); this }
+    override def cache(): CAPSGraph   = { graph.cache(); this }
     override def persist(): CAPSGraph = { graph.persist(); this }
     override def persist(storageLevel: StorageLevel): CAPSGraph = {
       graph.persist(storageLevel)
       this
     }
-    override def unpersist(): CAPSGraph = { graph.unpersist(); this }
+    override def unpersist(): CAPSGraph                  = { graph.unpersist(); this }
     override def unpersist(blocking: Boolean): CAPSGraph = { graph.unpersist(blocking); this }
   }
 

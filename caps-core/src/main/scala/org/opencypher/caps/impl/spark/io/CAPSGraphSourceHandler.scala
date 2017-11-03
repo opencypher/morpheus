@@ -26,13 +26,16 @@ case class CAPSGraphSourceHandler(sessionGraphSourceFactory: SessionGraphSourceF
                                   additionalGraphSourceFactories: Set[CAPSGraphSourceFactory]) {
   private val factoriesByScheme: Map[String, CAPSGraphSourceFactory] = {
     val allFactories = additionalGraphSourceFactories + sessionGraphSourceFactory
-    val entries = allFactories.flatMap(factory => factory.schemes.map(scheme => scheme -> factory))
+    val entries      = allFactories.flatMap(factory => factory.schemes.map(scheme => scheme -> factory))
     if (entries.size == entries.map(_._1).size)
       entries.toMap
     else
       Raise.invalidArgument(
         "At most one graph source factory per URI scheme",
-        s"Factories for schemes: ${allFactories.map(factory => factory.name -> factory.schemes.mkString("[", ", ", "]")).mkString(",")}")
+        s"Factories for schemes: ${allFactories
+          .map(factory => factory.name -> factory.schemes.mkString("[", ", ", "]"))
+          .mkString(",")}"
+      )
   }
 
   def mountSourceAt(source: CAPSGraphSource, uri: URI)(implicit capsSession: CAPSSession): Unit =
