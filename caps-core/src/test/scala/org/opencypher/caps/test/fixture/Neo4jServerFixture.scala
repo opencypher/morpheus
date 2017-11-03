@@ -25,10 +25,10 @@ trait Neo4jServerFixture extends BaseTestFixture {
 
   var neo4jServer: ServerControls = _
 
-  def neo4jConfig = new Neo4jConfig(neo4jServer.boltURI(),
+  def neo4jConfig = Neo4jConfig(neo4jServer.boltURI(),
     user = "anonymous",
     password = Some("password"),
-    encryptionLevel = Config.EncryptionLevel.NONE)
+    encrypted = false)
 
   def neo4jHost: String = {
     val scheme = neo4jServer.boltURI().getScheme

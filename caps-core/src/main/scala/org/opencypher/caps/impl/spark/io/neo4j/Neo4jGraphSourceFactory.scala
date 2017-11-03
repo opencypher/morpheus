@@ -39,7 +39,7 @@ case class Neo4jGraphSourceFactory()
       .setPort(uri.getPort)
       .build()
 
-    val neo4jConfig = new Neo4jConfig(boltUri, user, passwd, Config.EncryptionLevel.NONE)
+    val neo4jConfig = Neo4jConfig(boltUri, user, passwd, encrypted = false)
     Neo4jGraphSource(neo4jConfig, getQueries(uri))
   }
 
