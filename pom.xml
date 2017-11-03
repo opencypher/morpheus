@@ -10,12 +10,17 @@
 
     <name>Cypher for Apache Spark</name>
 
+    <modules>
+        <module>caps-core</module>
+    </modules>
+
     <properties>
         <!-- Project settings -->
         <project.build.encoding>UTF-8</project.build.encoding>
         <project.java.version>1.8</project.java.version>
         <project.scala.version>2.11.11</project.scala.version>
         <project.scala.binary.version>2.11</project.scala.binary.version>
+        <project.rootdir>${project.basedir}</project.rootdir>
 
         <!-- Used plugins -->
         <plugin.exec-maven.version>1.4.0</plugin.exec-maven.version>
@@ -29,16 +34,20 @@
 
         <!-- Used dependencies -->
         <dep.ammonite.version>1.0.1-6-6d2db3a</dep.ammonite.version>
+        <dep.bouncycastle.version>1.57</dep.bouncycastle.version>
         <dep.cats.version>0.9.0</dep.cats.version>
         <dep.circe.version>0.8.0</dep.circe.version>
         <dep.eff.version>4.5.0</dep.eff.version>
-        <dep.gdl.version>0.3.0-SNAPSHOT</dep.gdl.version>
+        <dep.gdl.version>0.3</dep.gdl.version>
         <dep.graphframes.version>0.4.0-spark2.1-s_2.11</dep.graphframes.version>
+        <dep.hadoop.version>2.7.0</dep.hadoop.version>
         <dep.junit.version>4.12</dep.junit.version>
         <dep.mockito.version>1.10.19</dep.mockito.version>
         <dep.multiset.version>0.4</dep.multiset.version>
         <dep.neo4j-spark-connector>2.0.0-M2</dep.neo4j-spark-connector>
-        <dep.neo4j.version>3.2.0-alpha08</dep.neo4j.version>
+        <dep.neo4j.version>3.3.0-rc1</dep.neo4j.version>
+        <dep.netty.version>4.1.8.Final</dep.netty.version>
+        <dep.neo4j.driver.version>1.4.2</dep.neo4j.driver.version>
         <dep.scalatest.version>3.0.3</dep.scalatest.version>
         <dep.sourcecode.version>0.1.2</dep.sourcecode.version>
         <dep.spark.version>2.2.0</dep.spark.version>
@@ -51,24 +60,22 @@
             <url>http://dl.bintray.com/spark-packages/maven</url>
         </repository>
 
-        <!-- necessary for GDL dependency in tests -->
         <repository>
-            <id>dbleipzig</id>
-            <name>Database Group Leipzig University</name>
-            <url>https://wdiserv1.informatik.uni-leipzig.de:443/archiva/repository/dbleipzig/</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
+            <id>Neo4j snapshots</id>
+            <name>Neo4j snapshots repository</name>
+            <url>https://m2.neo4j.org/content/repositories/snapshots</url>
             <snapshots>
                 <enabled>true</enabled>
             </snapshots>
         </repository>
     </repositories>
 
+    <packaging>pom</packaging>
+
     <build>
         <resources>
             <resource>
-                <directory>src/main/resources</directory>
+                <directory>${basedir}/src/main/resources</directory>
                 <includes>
                     <include>**/version.txt</include>
                     <include>**/demo/**</include>
@@ -77,7 +84,7 @@
         </resources>
         <testResources>
             <testResource>
-                <directory>${project.basedir}/src/test/resources</directory>
+                <directory>${basedir}/src/test/resources</directory>
                 <filtering>true</filtering>
             </testResource>
         </testResources>
@@ -107,6 +114,13 @@
                             <goal>compile</goal>
                         </goals>
                         <phase>process-resources</phase>
+                        <configuration>
+                            <args>
+                                <arg>–explaintypes</arg>
+                                <arg>–optimise</arg>
+                                <arg>-Xfatal-warnings</arg>
+                            </args>
+                        </configuration>
                     </execution>
                     <execution>
                         <id>scala-test-compile</id>
@@ -114,6 +128,24 @@
                             <goal>testCompile</goal>
                         </goals>
                         <phase>test-compile</phase>
+                        <configuration>
+                            <args>
+                                <arg>–explaintypes</arg>
+                                <arg>-Xfatal-warnings</arg>
+                            </args>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>scala-doc</id>
+                        <goals>
+                            <goal>doc</goal>
+                        </goals>
+                        <phase>prepare-package</phase>
+                        <configuration>
+                            <args>
+                                <arg>-no-link-warnings</arg>
+                            </args>
+                        </configuration>
                     </execution>
                 </executions>
                 <configuration>
@@ -121,31 +153,20 @@
                     <scalaVersion>${project.scala.version}</scalaVersion>
                     <scalaCompatVersion>${project.scala.binary.version}</scalaCompatVersion>
                     <encoding>${project.build.encoding}</encoding>
-                    <args>
+                    <args combine.children="append">
                         <!-- need to pass encoding to scalac manually -->
                         <arg>-encoding</arg>
                         <arg>${project.build.encoding}</arg>
-                        <arg>-target:jvm-1.7</arg>
+                        <arg>-target:jvm-1.8</arg>
                         <arg>-unchecked</arg>
                         <arg>-deprecation</arg>
                         <arg>-feature</arg>
-                        <arg>–explaintypes</arg>
-                        <arg>–optimise</arg>
                         <arg>-Xfuture</arg>
                         <arg>-Ywarn-adapted-args</arg>
                         <arg>-Yopt-warnings:at-inline-failed</arg>
                         <arg>-Yopt:l:project</arg>
-                        <!-- Enable once available in 2.11.9 or 2.12.x -->
-                        <!-- arg>-Ypartial-unification</arg -->
+                        <arg>-Ypartial-unification</arg>
                     </args>
-                    <compilerPlugins>
-                        <!-- Remove once -Ypartial-unification is available in 2.11.9 or 2.12.x -->
-                        <compilerPlugin>
-                            <groupId>com.milessabin</groupId>
-                            <artifactId>si2712fix-plugin_2.11.8</artifactId>
-                            <version>1.2.0</version>
-                        </compilerPlugin>
-                    </compilerPlugins>
                 </configuration>
             </plugin>
 
@@ -162,7 +183,7 @@
                     <inputEncoding>${project.build.encoding}</inputEncoding>
                     <sourceDirectory>${basedir}/src/main/scala</sourceDirectory>
                     <testSourceDirectory>${basedir}/src/test/scala</testSourceDirectory>
-                    <configLocation>${project.basedir}/etc/scalastyle_config.xml</configLocation>
+                    <configLocation>${project.rootdir}/etc/scalastyle_config.xml</configLocation>
                     <outputFile>${basedir}/target/scalastyle-output.xml</outputFile>
                     <outputEncoding>${project.build.encoding}</outputEncoding>
                 </configuration>
@@ -174,6 +195,32 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+
+            <!-- scaladoc -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-site-plugin</artifactId>
+                <version>3.0</version>
+                <configuration>
+                    <reportPlugins>
+                        <plugin>
+                            <artifactId>maven-project-info-reports-plugin</artifactId>
+                            <version>2.2</version>
+                        </plugin>
+                        <plugin>
+                            <groupId>net.alchim31.maven</groupId>
+                            <artifactId>scala-maven-plugin</artifactId>
+                            <version>3.3.1</version>
+                            <configuration>
+                                <jvmArgs>
+                                    <jvmArg>-Xms64m</jvmArg>
+                                    <jvmArg>-Xmx1024m</jvmArg>
+                                </jvmArgs>
+                            </configuration>
+                        </plugin>
+                    </reportPlugins>
+                </configuration>
             </plugin>
 
             <!-- add version information to jar -->
@@ -201,6 +248,9 @@
             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>
                 <version>${plugin.maven-resources.version}</version>
+                <configuration>
+                    <encoding>${project.build.encoding}</encoding>
+                </configuration>
                 <executions>
                     <execution>
                         <id>copy-resources</id>
@@ -241,9 +291,25 @@
                 <artifactId>license-maven-plugin</artifactId>
                 <version>${plugin.license-maven.version}</version>
                 <configuration>
-                    <header>license-header</header>
-                    <basedir>src</basedir>
+                    <header>${project.rootdir}/license-header.txt</header>
+                    <basedir>${basedir}/src</basedir>
+                    <mapping>
+                        <scala>SLASHSTAR_STYLE</scala>
+                    </mapping>
+                    <excludes>
+                        <exclude>test/resources/**</exclude>
+                        <exclude>main/resources/**</exclude>
+                    </excludes>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>check-license-headers</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
@@ -361,7 +427,7 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cypher-frontend-3.2</artifactId>
+            <artifactId>neo4j-cypher-frontend-3.3</artifactId>
             <version>${dep.neo4j.version}</version>
         </dependency>
 
@@ -444,7 +510,7 @@
         </dependency>
 
         <dependency>
-            <groupId>org.s1ck</groupId>
+            <groupId>com.github.s1ck</groupId>
             <artifactId>gdl</artifactId>
             <version>${dep.gdl.version}</version>
         </dependency>
@@ -483,9 +549,30 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cypher-frontend-3.2</artifactId>
+            <artifactId>neo4j-cypher-frontend-3.3</artifactId>
             <version>${dep.neo4j.version}</version>
             <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.neo4j.test</groupId>
+            <artifactId>neo4j-harness</artifactId>
+            <version>${dep.neo4j.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bctls-jdk15on</artifactId>
+            <version>${dep.bouncycastle.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+            <version>${dep.netty.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -500,6 +587,13 @@
                     <artifactId>scala-library</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-minicluster</artifactId>
+            <version>${dep.hadoop.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>

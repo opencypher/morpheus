@@ -1,7 +1,3 @@
-import org.opencypher.caps.api.ir.Field
-import org.opencypher.caps.api.record.RecordHeader
-
-
 /*
 
 
@@ -13,7 +9,7 @@ import org.opencypher.caps.api.record.RecordHeader
 
   Logical     Var Signature        Graph Schema
 
-  IR is DAG   Field Signature      Graph Schema
+  IR is DAG   Field Signature      Graph Item
 
 
 
