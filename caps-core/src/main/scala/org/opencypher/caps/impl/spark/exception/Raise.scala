@@ -86,7 +86,7 @@ object Raise {
     s"Something impossible happened! $detail"
   )
 
-  def invalidArgument(expected: String, actual: String) = throw CAPSException(
+  def invalidArgument(expected: String, actual: Any) = throw CAPSException(
     s"Expected $expected but found $actual"
   )
 

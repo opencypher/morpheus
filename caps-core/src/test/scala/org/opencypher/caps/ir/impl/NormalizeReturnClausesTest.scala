@@ -114,7 +114,7 @@ class NormalizeReturnClausesTest extends FunSuite {
       """.stripMargin)
   }
 
-  private def assertRewrite(originalQuery: String, expectedQuery: String) {
+  private def assertRewrite(originalQuery: String, expectedQuery: String): Unit = {
     val original = parseForRewriting(originalQuery)
     val expected = parseForRewriting(expectedQuery)
     SemanticChecker.check(original)

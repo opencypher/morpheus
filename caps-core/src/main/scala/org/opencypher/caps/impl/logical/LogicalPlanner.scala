@@ -119,11 +119,12 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
       case AggregationBlock(_, a@Aggregations(pairs), group, _) =>
         // plan projection of aggregation argument
-        val prev = pairs.foldLeft(plan)((prevPlan, aggField) => {
-          aggField match {
-            case (_, agg: Aggregator) => agg.inner.map(e => planInnerExpr(e, prevPlan)).getOrElse(prevPlan)
+        val prev = pairs.foldLeft(plan) { case (prevPlan, (_, agg)) =>
+          agg match {
+            case a: Aggregator => a.inner.map(e => planInnerExpr(e, prevPlan)).getOrElse(prevPlan)
+            case _ => Raise.invalidArgument("an aggregator", agg)
           }
-        })
+        }
         producer.aggregate(a, group, prev)
 
       case x =>

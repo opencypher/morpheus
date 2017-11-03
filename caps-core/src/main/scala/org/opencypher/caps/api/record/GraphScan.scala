@@ -15,18 +15,19 @@
  */
 package org.opencypher.caps.api.record
 
-import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
+import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.expr.{HasLabel, OfType, Property, Var}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSRecords, CAPSSession}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType}
+import org.opencypher.caps.api.util.Annotation
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.spark.{SparkColumn, SparkColumnName}
 import org.opencypher.caps.ir.api.Label
-import org.opencypher.caps.api.util.Annotation
 
+import scala.language.implicitConversions
 import scala.reflect.runtime.universe.TypeTag
 
 sealed trait GraphScan extends Serializable {
@@ -79,6 +80,7 @@ object GraphScan extends GraphScanCompanion[EmbeddedEntity] {
     val entityLabels: Set[String] = oldEntity.cypherType match {
       case CTNode(labels) => labels
       case CTRelationship(typ) => typ
+      case _ => Raise.impossible("GraphScan table entities should either be nodes or relationships")
     }
 
     val slots = records.header.slots
