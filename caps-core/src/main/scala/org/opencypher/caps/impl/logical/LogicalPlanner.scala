@@ -368,7 +368,10 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     val allSolved = disconnectedPlans.map(_.solved).reduce(_ ++ _)
 
     val (r, c) = pattern.topology.collectFirst {
-      case (rel, conn: Connection) if !allSolved.solves(rel) => rel -> conn
+      case (rel, conn: Connection) if !allSolved.solves(rel) =>
+        val rType = CTRelationship(pattern.rels(rel).relTypes.elements.map(_.name))
+        val fieldWithRelType = IRField(rel.name)(rType)
+        fieldWithRelType -> conn
     }.getOrElse(Raise.patternPlanningFailure())
 
     val sourcePlan = disconnectedPlans.collectFirst {
@@ -380,11 +383,11 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
     val expand = c match {
       case v: VarLengthRelationship if v.upper.nonEmpty =>
-        producer.planBoundedVarLengthExpand(c.source, r, pattern.rels(r), c.target, v.lower, v.upper.get, sourcePlan, targetPlan)
+        producer.planBoundedVarLengthExpand(c.source, r, c.target, v.lower, v.upper.get, sourcePlan, targetPlan)
       case _ if sourcePlan == targetPlan =>
-        producer.planExpandInto(c.source, r, pattern.rels(r), c.target, sourcePlan)
+        producer.planExpandInto(c.source, r, c.target, sourcePlan)
       case _ =>
-        producer.planSourceExpand(c.source, r, pattern.rels(r), c.target, sourcePlan, targetPlan)
+        producer.planSourceExpand(c.source, r, c.target, sourcePlan, targetPlan)
     }
 
     if (expand.solved.solves(pattern)) expand

@@ -59,7 +59,7 @@ class LogicalPlannerTest extends IrTestSuite {
     val scan1 = NodeScan(nodeA, SetSourceGraph(leafPlan.sourceGraph, leafPlan)(emptySqm.withField(nodeA)))(emptySqm.withField(nodeA))
     val scan2 = NodeScan(nodeB, leafPlan)(emptySqm.withField(nodeB))
     plan(irWithLeaf(block)) should equalWithoutResult(
-      ExpandSource(nodeA, relR, EveryRelationship, nodeB, scan1, scan2)(emptySqm.withFields(nodeA, nodeB, relR))
+      ExpandSource(nodeA, relR, nodeB, scan1, scan2)(emptySqm.withFields(nodeA, nodeB, relR))
     )
   }
 
@@ -85,7 +85,7 @@ class LogicalPlannerTest extends IrTestSuite {
             Project(ProjectedExpr(Property(Var("g")(CTNode("Group")), PropertyKey("name"))(CTVoid)),
               Filter(HasLabel(Var("g")(CTNode), Label("Group"))(CTBoolean),
                 Filter(HasLabel(Var("a")(CTNode), Label("Administrator"))(CTBoolean),
-                  ExpandSource(Var("a")(CTNode), Var("r")(CTRelationship), EveryRelationship, Var("g")(CTNode),
+                  ExpandSource(Var("a")(CTNode), Var("r")(CTRelationship), Var("g")(CTNode),
                     NodeScan(Var("a")(CTNode),
                       SetSourceGraph(LogicalExternalGraph(testGraph.name, testGraph.uri, Schema.empty),
                         Start(LogicalExternalGraph(testGraph.name, testGraph.uri, Schema.empty), Set.empty)(emptySqm)
@@ -118,7 +118,7 @@ class LogicalPlannerTest extends IrTestSuite {
             Project(ProjectedExpr(Property(Var("g")(CTNode("Group")), PropertyKey("name"))(CTString)),
               Filter(HasLabel(Var("g")(CTNode), Label("Group"))(CTBoolean),
                 Filter(HasLabel(Var("a")(CTNode), Label("Administrator"))(CTBoolean),
-                  ExpandSource(Var("a")(CTNode), Var("r")(CTRelationship), EveryRelationship, Var("g")(CTNode),
+                  ExpandSource(Var("a")(CTNode), Var("r")(CTRelationship), Var("g")(CTNode),
                     NodeScan(Var("a")(CTNode),
                       SetSourceGraph(LogicalExternalGraph(testGraph.name, testGraph.uri, schema),
                         Start(LogicalExternalGraph(testGraph.name, testGraph.uri, schema), Set.empty)(emptySqm)

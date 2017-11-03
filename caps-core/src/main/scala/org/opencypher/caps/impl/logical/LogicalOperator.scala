@@ -132,7 +132,7 @@ sealed trait ExpandOperator extends BinaryLogicalOperator {
   def targetOp: LogicalOperator
 }
 
-final case class ExpandSource(source: Var, rel: Var, types: EveryRelationship, target: Var,
+final case class ExpandSource(source: Var, rel: Var, target: Var,
                               sourceOp: LogicalOperator, targetOp: LogicalOperator)
                              (override val solved: SolvedQueryModel[Expr])
   extends ExpandOperator {
@@ -205,7 +205,7 @@ final case class ValueJoin(lhs: LogicalOperator, rhs: LogicalOperator, predicate
        #${rhs.pretty(depth + 1)}""".stripMargin('#')
 }
 
-final case class ExpandInto(source: Var, rel: Var, types: EveryRelationship, target: Var, sourceOp: LogicalOperator)
+final case class ExpandInto(source: Var, rel: Var, target: Var, sourceOp: LogicalOperator)
                            (override val solved: SolvedQueryModel[Expr])
   extends ExpandOperator {
 

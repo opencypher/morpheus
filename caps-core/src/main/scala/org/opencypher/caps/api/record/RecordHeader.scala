@@ -202,8 +202,18 @@ object RecordHeader {
     header
   }
 
-  def relationshipFromSchema(rel: Var, schema: Schema): RecordHeader =
-    relationshipFromSchema(rel, schema, schema.relationshipTypes)
+  def relationshipFromSchema(rel: Var, schema: Schema): RecordHeader = {
+    val types: Set[String] = rel.cypherType match {
+      case CTRelationship(_types) if _types.isEmpty =>
+        schema.relationshipTypes
+      case CTRelationship(_types) =>
+        _types
+      case other =>
+        Raise.invalidArgument("CTRelationship", other.toString)
+    }
+
+    relationshipFromSchema(rel, schema, types)
+  }
 
   def relationshipFromSchema(rel: Var, schema: Schema, relTypes: Set[String]): RecordHeader = {
     val relKeyHeaderProperties = relTypes.flatMap(t => schema.relationshipKeys(t).toSeq)

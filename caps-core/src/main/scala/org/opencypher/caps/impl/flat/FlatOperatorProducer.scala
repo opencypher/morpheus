@@ -26,7 +26,7 @@ import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.syntax.expr._
 import org.opencypher.caps.impl.syntax.header._
 import org.opencypher.caps.ir.api.block.SortItem
-import org.opencypher.caps.ir.api.pattern.{EveryNode, EveryRelationship}
+import org.opencypher.caps.ir.api.pattern.EveryRelationship
 
 class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
@@ -121,26 +121,21 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     }
   }
 
-  // TODO: Remove types parameter and read rel-types from the rel variable
-  def expandSource(source: Var, rel: Var, types: EveryRelationship, target: Var, schema: Schema,
+  def expandSource(source: Var, rel: Var, target: Var, schema: Schema,
                    sourceOp: FlatOperator, targetOp: FlatOperator): FlatOperator = {
-    val relHeader =
-      if (types.relTypes.elements.isEmpty) RecordHeader.relationshipFromSchema(rel, schema)
-      else RecordHeader.relationshipFromSchema(rel, schema, types.relTypes.elements.map(_.name))
+    val relHeader = RecordHeader.relationshipFromSchema(rel, schema)
 
     val expandHeader = sourceOp.header ++ relHeader ++ targetOp.header
 
-    ExpandSource(source, rel, types, target, sourceOp, targetOp, expandHeader, relHeader)
+    ExpandSource(source, rel, target, sourceOp, targetOp, expandHeader, relHeader)
   }
 
-  def expandInto(source: Var, rel: Var, types: EveryRelationship, target: Var, schema: Schema, sourceOp: FlatOperator): FlatOperator = {
-    val relHeader =
-      if (types.relTypes.elements.isEmpty) RecordHeader.relationshipFromSchema(rel, schema)
-      else RecordHeader.relationshipFromSchema(rel, schema, types.relTypes.elements.map(_.name))
+  def expandInto(source: Var, rel: Var, target: Var, schema: Schema, sourceOp: FlatOperator): FlatOperator = {
+    val relHeader = RecordHeader.relationshipFromSchema(rel, schema)
 
     val expandHeader = sourceOp.header ++ relHeader
 
-    ExpandInto(source, rel, types, target, sourceOp, expandHeader, relHeader)
+    ExpandInto(source, rel, target, sourceOp, expandHeader, relHeader)
   }
 
   def valueJoin(lhs: FlatOperator, rhs: FlatOperator, predicates: Set[org.opencypher.caps.api.expr.Equals]): FlatOperator = {

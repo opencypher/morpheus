@@ -125,7 +125,7 @@ class FlatPlannerTest extends BaseTestSuite {
 
   test("flat plan for expand") {
     val result = flatPlanner.process(
-      mkLogical.planSourceExpand(IRField("n")(CTNode), IRField("r")(CTRelationship), EveryRelationship, IRField("m")(CTNode),
+      mkLogical.planSourceExpand(IRField("n")(CTNode), IRField("r")(CTRelationship), IRField("m")(CTNode),
         logicalNodeScan("n"), logicalNodeScan("m")
       )
     )
@@ -136,7 +136,7 @@ class FlatPlannerTest extends BaseTestSuite {
     val target = Var("m")(CTNode)
 
     result should equal(
-      mkFlat.expandSource(source, rel, EveryRelationship, target, schema,
+      mkFlat.expandSource(source, rel, target, schema,
         flatNodeScan(source), flatNodeScan(target)
       )
     )
@@ -166,7 +166,7 @@ class FlatPlannerTest extends BaseTestSuite {
     val result = flatPlanner.process(
       mkLogical.planSourceExpand(
         IRField("n")(CTNode),
-        IRField("r")(CTRelationship("KNOWS")), EveryRelationship(AnyOf(RelType("KNOWS"))),
+        IRField("r")(CTRelationship("KNOWS")),
         IRField("m")(CTNode),
         logicalNodeScan("n"), logicalNodeScan("m")
       )
@@ -178,7 +178,7 @@ class FlatPlannerTest extends BaseTestSuite {
     val target = Var("m")(CTNode)
 
     result should equal(
-      mkFlat.expandSource(source, rel, EveryRelationship(AnyOf(RelType("KNOWS"))), target, schema,
+      mkFlat.expandSource(source, rel, target, schema,
         flatNodeScan(source), flatNodeScan(target)
       )
     )
@@ -206,7 +206,7 @@ class FlatPlannerTest extends BaseTestSuite {
   test("flat plan for init var expand") {
     val sourceScan = logicalNodeScan("n")
     val targetScan = logicalNodeScan("m")
-    val logicalPlan = mkLogical.planBoundedVarLengthExpand('n -> CTNode, 'r -> CTList(CTRelationship), EveryRelationship, 'm -> CTNode, 1, 1, sourceScan, targetScan)
+    val logicalPlan = mkLogical.planBoundedVarLengthExpand('n -> CTNode, 'r -> CTList(CTRelationship), 'm -> CTNode, 1, 1, sourceScan, targetScan)
     val result = flatPlanner.process(logicalPlan)
 
     val source = Var("n")(CTNode)

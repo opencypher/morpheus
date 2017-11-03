@@ -19,7 +19,7 @@ import org.opencypher.caps.api.expr.{Aggregator, Expr, Var}
 import org.opencypher.caps.api.record.{OpaqueField, RecordHeader}
 import org.opencypher.caps.impl.logical.LogicalGraph
 import org.opencypher.caps.ir.api.block.SortItem
-import org.opencypher.caps.ir.api.pattern.{EveryNode, EveryRelationship}
+import org.opencypher.caps.ir.api.pattern.EveryRelationship
 
 sealed trait FlatOperator {
   def isLeaf = false
@@ -89,7 +89,7 @@ final case class Optional(lhs: FlatOperator, rhs: FlatOperator, lhsHeader: Recor
 final case class ValueJoin(lhs: FlatOperator, rhs: FlatOperator, predicates: Set[org.opencypher.caps.api.expr.Equals], header: RecordHeader)
   extends BinaryFlatOperator
 
-final case class ExpandSource(source: Var, rel: Var, types: EveryRelationship, target: Var,
+final case class ExpandSource(source: Var, rel: Var, target: Var,
                               sourceOp: FlatOperator, targetOp: FlatOperator, header: RecordHeader, relHeader: RecordHeader)
   extends BinaryFlatOperator {
 
@@ -97,7 +97,7 @@ final case class ExpandSource(source: Var, rel: Var, types: EveryRelationship, t
   override def rhs: FlatOperator = targetOp
 }
 
-final case class ExpandInto(source: Var, rel: Var, types: EveryRelationship, target: Var, sourceOp: FlatOperator,
+final case class ExpandInto(source: Var, rel: Var, target: Var, sourceOp: FlatOperator,
                             header: RecordHeader, relHeader: RecordHeader)
   extends StackingFlatOperator {
 

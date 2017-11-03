@@ -103,30 +103,25 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOpera
       case flat.Distinct(in, header) =>
         Distinct(header, process(in))
 
-      // TODO: This needs to be a ternary operator taking source, rels and target records instead of using the graph
-      // MATCH (a)-[r]->(b) => MATCH (a), (b), (a)-[r]->(b)
-      case op@flat.ExpandSource(source, rel, types, target, sourceOp, targetOp, header, relHeader) =>
+      // TODO: This needs to be a ternary operator taking source, rels and target records instead of just source and target and planning rels only at the physical layer
+      case op@flat.ExpandSource(source, rel, target, sourceOp, targetOp, header, relHeader) =>
         val first = process(sourceOp)
         val third = process(targetOp)
 
-        val ctRelType = CTRelationship.apply(types.relTypes.elements.map(_.name))
-        val relWithType = Var(rel.name)(ctRelType)
         val externalGraph = sourceOp.sourceGraph match {
           case e: LogicalExternalGraph => e
           case _ => Raise.invalidArgument("an external graph", sourceOp.sourceGraph.toString)
         }
-        val second = Scan(op.sourceGraph, relWithType, StartFrom(CAPSRecords.unit(), externalGraph))
+        val second = Scan(op.sourceGraph, rel, StartFrom(CAPSRecords.unit(), externalGraph))
 
-        ExpandSource(source, relWithType, target, header, first, second, third)
+        ExpandSource(source, rel, target, header, first, second, third)
 
-      case op@flat.ExpandInto(source, rel, types, target, sourceOp, header, relHeader) =>
+      case op@flat.ExpandInto(source, rel, target, sourceOp, header, relHeader) =>
         val in = process(sourceOp)
 
-        val ctRelType = CTRelationship.apply(types.relTypes.elements.map(_.name))
-        val relWithType = Var(rel.name)(ctRelType)
-        val rels = Scan(op.sourceGraph, relWithType, in)
+        val rels = Scan(op.sourceGraph, rel, in)
 
-        ExpandInto(source, relWithType, target, header, in, rels)
+        ExpandInto(source, rel, target, header, in, rels)
 
       case flat.InitVarExpand(source, edgeList, endNode, in, header) =>
         InitVarExpand(source, edgeList, endNode, header, process(in))

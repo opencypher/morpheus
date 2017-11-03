@@ -18,10 +18,10 @@ package org.opencypher.caps.impl.logical
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.record.{ProjectedExpr, ProjectedField}
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.util._
 import org.opencypher.caps.ir.api.block.{Aggregations, SortItem}
-import org.opencypher.caps.ir.api.pattern.{EveryNode, EveryRelationship}
-import org.opencypher.caps.ir.api.{IRField, SolvedQueryModel}
+import org.opencypher.caps.ir.api.{IRField, RelType, SolvedQueryModel}
 
 // TODO: Homogenize naming
 // TODO: Align names with other producers
@@ -35,14 +35,10 @@ class LogicalOperatorProducer {
     ValueJoin(lhs, rhs, predicates)(predicates.foldLeft(lhs.solved ++ rhs.solved) { case (solved, predicate) => solved.withPredicate(predicate) })
   }
 
-  def planBoundedVarLengthExpand(source: IRField, r: IRField, types: EveryRelationship, target: IRField, lower: Int, upper: Int, sourcePlan: LogicalOperator, targetPlan: LogicalOperator): BoundedVarLengthExpand = {
+  def planBoundedVarLengthExpand(source: IRField, r: IRField, target: IRField, lower: Int, upper: Int, sourcePlan: LogicalOperator, targetPlan: LogicalOperator): BoundedVarLengthExpand = {
     val prevSolved = sourcePlan.solved ++ targetPlan.solved
 
-    val solved = types.relTypes.elements.foldLeft(prevSolved.withField(r)) {
-      case (acc, next) => acc.withPredicate(HasType(r, next)(CTBoolean))
-    }
-
-    BoundedVarLengthExpand(source, r, target, lower, upper, sourcePlan, targetPlan)(solved)
+    BoundedVarLengthExpand(source, r, target, lower, upper, sourcePlan, targetPlan)(prevSolved.solveRelationship(r))
   }
 
   def planTargetExpand(source: IRField, rel: IRField, target: IRField, sourcePlan: LogicalOperator, targetPlan: LogicalOperator): ExpandTarget = {
@@ -53,24 +49,16 @@ class LogicalOperatorProducer {
     ExpandTarget(source, rel, target, sourcePlan, targetPlan)(solved)
   }
 
-  def planSourceExpand(source: IRField, rel: IRField, types: EveryRelationship, target: IRField,
+  def planSourceExpand(source: IRField, rel: IRField, target: IRField,
                        sourcePlan: LogicalOperator, targetPlan: LogicalOperator): ExpandSource = {
 
     val prevSolved = sourcePlan.solved ++ targetPlan.solved
 
-    val solved = types.relTypes.elements.foldLeft(prevSolved.withField(rel)) {
-      case (acc, next) => acc.withPredicate(HasType(rel, next)(CTBoolean))
-    }
-
-    ExpandSource(source, rel, types, target, sourcePlan, targetPlan)(solved)
+    ExpandSource(source, rel, target, sourcePlan, targetPlan)(prevSolved.solveRelationship(rel))
   }
 
-  def planExpandInto(source: IRField, rel: IRField, types: EveryRelationship, target: IRField, sourcePlan: LogicalOperator): ExpandInto = {
-    val solved = types.relTypes.elements.foldLeft(sourcePlan.solved.withField(rel)) {
-      case (acc, next) => acc.withPredicate(HasType(rel, next)(CTBoolean))
-    }
-
-    ExpandInto(source, rel, types, target, sourcePlan)(solved)
+  def planExpandInto(source: IRField, rel: IRField, target: IRField, sourcePlan: LogicalOperator): ExpandInto = {
+    ExpandInto(source, rel, target, sourcePlan)(sourcePlan.solved.solveRelationship(rel))
   }
 
   def planNodeScan(node: IRField, prev: LogicalOperator): NodeScan = {
@@ -130,5 +118,22 @@ class LogicalOperatorProducer {
 
   def planLimit(expr: Expr, prev: LogicalOperator): Limit = {
     Limit(expr, prev)(prev.solved)
+  }
+
+  implicit class RichQueryModel(solved: SolvedQueryModel[Expr]) {
+    def solveRelationship(r: IRField): SolvedQueryModel[Expr] = {
+      r.cypherType match {
+        case CTRelationship(types) if types.isEmpty =>
+          solved.withField(r)
+        case CTRelationship(types) =>
+          val predicate = if (types.size == 1)
+            HasType(r, RelType(types.head))(CTBoolean)
+          else
+            Ors(types.map(t => HasType(r, RelType(t))(CTBoolean)).toSeq: _*)
+          solved.withField(r).withPredicate(predicate)
+        case _ =>
+          Raise.invalidArgument("a relationship variable", r)
+      }
+    }
   }
 }
