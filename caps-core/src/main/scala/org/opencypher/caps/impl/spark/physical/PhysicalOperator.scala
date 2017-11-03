@@ -434,6 +434,9 @@ final case class Aggregate(aggregations: Set[(Var, Aggregator)], group: Set[Var]
             case Sum(expr) =>
               withInnerExpr(expr)(functions.sum(_).as(columnName))
 
+            case Collect(expr) =>
+              withInnerExpr(expr)(functions.collect_list(_).as(columnName))
+
             case x =>
               Raise.notYetImplemented(s"Aggregator $x")
           }
