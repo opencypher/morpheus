@@ -20,8 +20,8 @@ import org.neo4j.cypher.internal.frontend.v3_3.parser.{Expressions, Patterns}
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SyntaxException, ast}
 import org.opencypher.caps.api.expr.Expr
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType}
+import org.opencypher.caps.ir.api.IRField
 import org.opencypher.caps.ir.api.pattern._
-import org.opencypher.caps.ir.api.{IRField, Label, RelType}
 import org.parboiled.scala.{EOI, Parser, Rule1}
 
 import scala.language.implicitConversions
@@ -106,7 +106,7 @@ class PatternConverterTest extends IrTestSuite {
       Pattern.empty
         .withEntity('x -> CTNode)
         .withEntity('y -> CTNode)
-        .withEntity('r, CTRelationship("KNOWS", "LOVES"))
+        .withEntity('r -> CTRelationship("KNOWS", "LOVES"))
         .withConnection('r, DirectedRelationship('x, 'y))
     )
   }
