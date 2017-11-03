@@ -326,35 +326,34 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
     // find all unsolved nodes from the pattern
     val nodes = pattern.entities.collect {
-      case (f, e: EveryNode) if f.cypherType.subTypeOf(CTNode).isTrue => f -> e
+      case (f, _) if f.cypherType.subTypeOf(CTNode).isTrue => f
     }
 
     if (nodes.size == 1) { // simple node scan; just do it
-      val (field, node) = nodes.head
+      val field = nodes.head
 
       // if we have already planned a node: cartesian product
       if (plan.solved.fields.exists(_.cypherType.subTypeOf(CTNode).isTrue)) {
-        producer.planCartesianProduct(plan, nodePlan(planSetSourceGraph(graph, planStart(graph)), field, node))
+        producer.planCartesianProduct(plan, nodePlan(planSetSourceGraph(graph, planStart(graph)), field))
       } else { // first node scan
         // we set the source graph because we don't know what the source graph was coming in
-        nodePlan(planSetSourceGraph(graph, plan), field, node)
+        nodePlan(planSetSourceGraph(graph, plan), field)
       }
     } else if (pattern.topology.nonEmpty) { // we need expansions to tie node plans together
 
-      val solved = nodes.filter(node => plan.solved.fields.contains(node._1))
-      val unsolved = nodes -- solved.keySet
+      val solved = nodes.filter(node => plan.solved.fields.contains(node))
+      val unsolved = nodes.toSet -- solved
 
       val (firstPlan, remaining) = if (solved.isEmpty) {
-        val (field, node) = nodes.head
+        val field = nodes.head
         // TODO: Will need branch in plan for cartesian products
-        nodePlan(planSetSourceGraph(graph, plan), field, node) -> nodes.tail
+        nodePlan(planSetSourceGraph(graph, plan), field) -> nodes.tail
       } else {
         plan -> unsolved
       }
 
       val nodePlans: Set[LogicalOperator] = remaining.map {
-        case (f, n) =>
-          nodePlan(planStart(graph), f, n)
+          nodePlan(planStart(graph), _)
       }.toSet
 
       // tie all plans together using expansions
@@ -392,7 +391,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     else planExpansions((disconnectedPlans - sourcePlan - targetPlan) + expand, pattern, producer)
   }
 
-  private def nodePlan(plan: LogicalOperator, field: IRField, everyNode: EveryNode)(implicit context: LogicalPlannerContext) = {
-    producer.planNodeScan(field, everyNode, plan)
+  private def nodePlan(plan: LogicalOperator, field: IRField)(implicit context: LogicalPlannerContext) = {
+    producer.planNodeScan(field, plan)
   }
 }

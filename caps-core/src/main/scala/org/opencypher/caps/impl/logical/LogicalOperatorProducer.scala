@@ -73,12 +73,8 @@ class LogicalOperatorProducer {
     ExpandInto(source, rel, types, target, sourcePlan)(solved)
   }
 
-  def planNodeScan(node: IRField, everyNode: EveryNode, prev: LogicalOperator): NodeScan = {
-    val solved = everyNode.labels.elements.foldLeft(prev.solved.withField(node)) {
-      case (acc, label) => acc.withPredicate(HasLabel(node, label)(CTBoolean))
-    }
-
-    NodeScan(node, everyNode, prev)(solved)
+  def planNodeScan(node: IRField, prev: LogicalOperator): NodeScan = {
+    NodeScan(node, prev)(prev.solved.withField(node))
   }
 
   def planFilter(expr: Expr, prev: LogicalOperator): Filter = {

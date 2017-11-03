@@ -63,11 +63,8 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOpera
             Raise.impossible(s"Got an unknown type of graph to start from: $graph")
       }
 
-      case op@flat.NodeScan(v, labels, in, header) =>
-        // TODO: propagate to earlier stage
-        val vType = CTNode(labels.labels.elements.map(_.name).toSeq: _*)
-
-        Scan(op.sourceGraph, Var(v.name)(vType), process(in))
+      case op@flat.NodeScan(v, in, header) =>
+        Scan(op.sourceGraph, v, process(in))
 
       case op@flat.EdgeScan(e, edgeDef, in, header) =>
         // TODO: propagate to earlier stage

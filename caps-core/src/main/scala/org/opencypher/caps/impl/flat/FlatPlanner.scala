@@ -46,8 +46,8 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
       case logical.Distinct(fields, in) =>
         producer.distinct(fields, process(in))
 
-      case logical.NodeScan(node, nodeDef, in) =>
-        producer.nodeScan(node, nodeDef, process(in))
+      case logical.NodeScan(node, in) =>
+        producer.nodeScan(node, process(in))
 
       case logical.Project(it, in) =>
         producer.project(it, process(in))

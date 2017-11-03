@@ -84,11 +84,10 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     * This acts like a leaf operator even though it has an ancestor in the tree.
     * That means that it will discard any incoming fields from the ancestor header (assumes it is empty)
     */
-  def nodeScan(node: Var, nodeDef: EveryNode, prev: FlatOperator): NodeScan = {
-    val header = if (nodeDef.labels.elements.isEmpty) RecordHeader.nodeFromSchema(node, prev.sourceGraph.schema)
-    else RecordHeader.nodeFromSchema(node, prev.sourceGraph.schema, nodeDef.labels.elements.map(_.name))
+  def nodeScan(node: Var, prev: FlatOperator): NodeScan = {
+    val header = RecordHeader.nodeFromSchema(node, prev.sourceGraph.schema)
 
-    new NodeScan(node, nodeDef, prev, header)
+    new NodeScan(node, prev, header)
   }
 
   def edgeScan(edge: Var, edgeDef: EveryRelationship, prev: FlatOperator): EdgeScan = {

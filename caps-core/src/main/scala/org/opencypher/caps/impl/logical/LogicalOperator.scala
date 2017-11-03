@@ -84,14 +84,14 @@ sealed trait LogicalLeafOperator extends LogicalOperator {
   override def isLeaf = true
 }
 
-final case class NodeScan(node: Var, nodeDef: EveryNode, in: LogicalOperator)
+final case class NodeScan(node: Var, in: LogicalOperator)
                          (override val solved: SolvedQueryModel[Expr])
   extends StackingLogicalOperator {
 
   override val fields: Set[Var] = in.fields + node
 
   override def pretty(depth: Int): String =
-    s"""${prefix(depth)} NodeScan(node = $node, nodeDef: $nodeDef)
+    s"""${prefix(depth)} NodeScan(node = $node)
        #${in.pretty(depth + 1)}""".stripMargin('#')
 
   override def clone(newIn: LogicalOperator = in): LogicalOperator = copy(in = newIn)(solved)

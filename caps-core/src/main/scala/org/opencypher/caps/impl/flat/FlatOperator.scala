@@ -52,7 +52,7 @@ sealed trait StackingFlatOperator extends FlatOperator {
 
 sealed trait FlatLeafOperator extends FlatOperator
 
-final case class NodeScan(node: Var, nodeDef: EveryNode, in: FlatOperator, header: RecordHeader)
+final case class NodeScan(node: Var, in: FlatOperator, header: RecordHeader)
   extends StackingFlatOperator
 
 final case class EdgeScan(edge: Var, edgeDef: EveryRelationship, in: FlatOperator, header: RecordHeader)
