@@ -51,11 +51,16 @@ object RowUtils {
       case _: CTNode => (in) => cypherInteger(in.asInstanceOf[Long])
       // TODO: This supports var-expand where we only track rel ids, but it's not right
       case _: CTRelationship => (in) => cypherInteger(in.asInstanceOf[Long])
+      case CTNull => null
       case l: CTList => (in) => {
         val converted = in.asInstanceOf[Seq[_]].map(typeToValue(l.elementType))
-
         cypherList(converted.toIndexedSeq)
       }
+      case r: NullableDefiniteCypherType => (in) =>
+        Option(in) match {
+          case Some(v) => typeToValue(r.material)(v)
+          case None => null
+        }
       case _ => Raise.notYetImplemented(s"converting value of type $t")
     }
   }

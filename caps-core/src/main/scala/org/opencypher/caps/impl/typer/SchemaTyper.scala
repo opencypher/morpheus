@@ -23,7 +23,7 @@ import cats.{Foldable, Monoid}
 import org.atnos.eff._
 import org.atnos.eff.all._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.functions.{Exists, Max, Min}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.functions.{Collect, Exists, Max, Min}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.CypherType.joinMonoid
 import org.opencypher.caps.api.types._
@@ -226,6 +226,19 @@ object SchemaTyper {
         case seq =>
           error(WrongNumberOfArguments(expr, 1, seq.size))
       }
+
+    case expr: FunctionInvocation if expr.function == Collect =>
+      for {
+        argExprs <- pure(expr.arguments)
+        argTypes <- EffMonad.traverse(argExprs.toList)(process[R])
+        computedType <- argTypes.reduceLeftOption(_ join _) match {
+          case Some(innerType) =>
+            pure[R, CypherType](CTList(innerType.nullable).nullable)
+          case None =>
+            error(NoSuitableSignatureForExpr(expr, argTypes))
+        }
+        result <- recordAndUpdate(expr -> computedType)
+      } yield result
 
     case expr: FunctionInvocation =>
       FunctionInvocationTyper(expr)
