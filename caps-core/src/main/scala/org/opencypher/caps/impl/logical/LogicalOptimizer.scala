@@ -90,7 +90,7 @@ class LogicalOptimizer(producer: LogicalOperatorProducer)
 
     def rewrite(root: LogicalOperator): LogicalOperator = {
       root match {
-        case NodeScan(node, in) =>
+        case n@NodeScan(node, in) =>
           val labels = labelMap.getOrElse(node, Set.empty)
           val labelNames = labels.map(_.name)
 
@@ -98,7 +98,7 @@ class LogicalOptimizer(producer: LogicalOperatorProducer)
           val solved = in.solved.withPredicates(labels.map(l => HasLabel(nodeVar, l)(CTBoolean)).toSeq: _*)
 
           labelNames.size match {
-            case 0 => NodeScan(nodeVar, rewrite(in))(solved) // TODO: Exclude case, no rewrite required
+            case 0 => n // No filter pushed in, return unchanged NodeScan
             case 1 =>
               if (in.sourceGraph.schema.labels.contains(labelNames.head)) {
                 NodeScan(nodeVar, rewrite(in))(solved)
