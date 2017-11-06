@@ -23,7 +23,7 @@ object toSparkType extends Serializable {
 
   def apply(ct: CypherType): DataType =
     ct match {
-      case CTNull => NullType
+      case CTNull | CTVoid => NullType
       case _ => ct.material match {
         case CTString => StringType
         case CTInteger => LongType
@@ -39,4 +39,3 @@ object toSparkType extends Serializable {
     }
 
 }
-
