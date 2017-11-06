@@ -39,6 +39,7 @@ object FunctionUtils {
         case functions.StartNode => StartNodeFunction(expr.head)(cypherType)
         case functions.EndNode => EndNodeFunction(expr.head)(cypherType)
         case functions.ToFloat => ToFloat(expr.head)(cypherType)
+        case functions.Collect => Collect(expr.head)(cypherType)
         case a: Function => Raise.notYetImplemented(s"converting ${a.name} function")
       }
     }

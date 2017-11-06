@@ -53,8 +53,11 @@ object RowUtils {
       case _: CTRelationship => (in) => cypherInteger(in.asInstanceOf[Long])
       case l: CTList => (in) => {
         val converted = in.asInstanceOf[Seq[_]].map(typeToValue(l.elementType))
-
         cypherList(converted.toIndexedSeq)
+      }
+      case r: NullableDefiniteCypherType => {
+        case null => null
+        case v => typeToValue(r.material)(v)
       }
       case _ => Raise.notYetImplemented(s"converting value of type $t")
     }

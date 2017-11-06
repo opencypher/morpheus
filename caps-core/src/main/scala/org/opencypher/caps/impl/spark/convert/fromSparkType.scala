@@ -17,7 +17,6 @@ package org.opencypher.caps.impl.spark.convert
 
 import org.apache.spark.sql.types._
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.spark.exception.Raise
 
 object fromSparkType extends Serializable {
 
@@ -31,6 +30,7 @@ object fromSparkType extends Serializable {
       case ArrayType(elemType, containsNull) =>
         val maybeElementType = fromSparkType(elemType, containsNull)
         maybeElementType.map(CTList(_))
+      case NullType => Some(CTNull)
       case _ => None
     }
 
