@@ -115,8 +115,12 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
     val optimizedLogicalPlan = logicalOptimizer(logicalPlan)(logicalPlannerContext)
     logStageProgress("Done!")
 
-    if (PrintLogicalPlan.get())
+    if (PrintLogicalPlan.get()) {
+      println("Logical plan:")
+      println(logicalPlan.pretty())
+      println("Optimized logical plan:")
       println(optimizedLogicalPlan.pretty())
+    }
 
     plan(graph, CAPSRecords.unit()(this), allParameters, optimizedLogicalPlan)
   }
@@ -196,8 +200,10 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
     val physicalPlan = physicalPlanner(flatPlan)(physicalPlannerContext)
     logStageProgress("Done!")
 
-    if (PrintPhysicalPlan.get())
+    if (PrintPhysicalPlan.get()) {
+      println("Physical plan:")
       println(physicalPlan.pretty())
+    }
 
     CAPSResultBuilder.from(physicalPlan, logicalPlan)(RuntimeContext(physicalPlannerContext.parameters, optGraphAt))
   }

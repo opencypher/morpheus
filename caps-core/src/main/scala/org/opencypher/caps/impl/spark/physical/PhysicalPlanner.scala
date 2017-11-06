@@ -46,6 +46,9 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOpera
         val selected = SelectFields(fields, Some(header), process(in))
         SelectGraphs(graphs, selected)
 
+      case flat.EmptyRecords(in, header) =>
+        EmptyRecords(header, process(in))
+
       case flat.Start(graph, _) => graph match {
         case g: LogicalExternalGraph =>
           Start(g, context.inputRecords)

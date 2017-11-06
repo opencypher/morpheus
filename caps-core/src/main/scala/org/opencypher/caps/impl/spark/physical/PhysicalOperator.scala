@@ -774,6 +774,13 @@ final case class StartFrom(records: CAPSRecords, graph: LogicalExternalGraph) ex
   }
 }
 
+final case class EmptyRecords(header: RecordHeader, in: PhysicalOperator)(implicit caps: CAPSSession)
+  extends StackingPhysicalOperator {
+  override def run(implicit context: RuntimeContext) = {
+    prev.mapRecordsWithDetails(_ => CAPSRecords.empty(header))
+  }
+}
+
 final case class Start(graph: LogicalExternalGraph, records: CAPSRecords) extends PhysicalLeafOperator {
   override def run(implicit context: RuntimeContext): PhysicalResult = {
     PhysicalResult(records, Map(graph.name -> resolve(graph.uri)))

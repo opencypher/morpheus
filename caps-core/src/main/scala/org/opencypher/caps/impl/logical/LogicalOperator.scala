@@ -353,6 +353,16 @@ final case class SetSourceGraph(override val sourceGraph: LogicalGraph, in: Logi
 
 }
 
+final case class EmptyRecords(fields: Set[Var], in: LogicalOperator)
+  (override val solved: SolvedQueryModel[Expr]) extends StackingLogicalOperator {
+
+  override def pretty(depth: Int): String =
+    s"""${prefix(depth)} EmptyRecords(fields = $fields)
+       #${in.pretty(depth + 1)}""".stripMargin('#')
+
+  override def clone(newIn: LogicalOperator): EmptyRecords = copy(in = newIn)(solved)
+}
+
 final case class Start(sourceGraph: LogicalGraph, fields: Set[Var])
                       (override val solved: SolvedQueryModel[Expr]) extends LogicalLeafOperator {
 

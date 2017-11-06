@@ -16,7 +16,7 @@
 package org.opencypher.caps.impl.logical
 
 import org.opencypher.caps.api.expr.{HasLabel, Var}
-import org.opencypher.caps.api.types.{CTBoolean, CTNode}
+import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTVoid}
 import org.opencypher.caps.impl.DirectCompilationStage
 import org.opencypher.caps.ir.api.Label
 
@@ -24,8 +24,43 @@ class LogicalOptimizer(producer: LogicalOperatorProducer)
   extends DirectCompilationStage[LogicalOperator, LogicalOperator, LogicalPlannerContext]{
 
   override def process(input: LogicalOperator)(implicit context: LogicalPlannerContext): LogicalOperator = {
-    moveLabelPredicatesToNodeScans(input)
+    discardSelectVoid(moveLabelPredicatesToNodeScans(input))
   }
+
+  /**
+    * This rewriter discards a select when one of the selected variables has non-nullable type VOID.
+    *
+    * @param input logical plan
+    * @return rewritten plan
+    */
+  private def discardSelectVoid(input: LogicalOperator): LogicalOperator = {
+    input match {
+        case s: Select if s.fields.map(_.cypherType).exists(t => t == CTVoid && t.isMaterial) =>
+          EmptyRecords(s.fields, discardStackedRecordOperations(s.in))(s.solved)
+        case b: BinaryLogicalOperator =>
+          b.clone(discardSelectVoid(b.lhs), discardSelectVoid(b.rhs))
+        case s: StackingLogicalOperator =>
+          s.clone(discardSelectVoid(s.in))
+        case l: LogicalLeafOperator =>
+          l
+      }
+
+  }
+
+  private def discardStackedRecordOperations(input: LogicalOperator): LogicalOperator = {
+    input match {
+      case s: SetSourceGraph => s.clone(discardStackedRecordOperations(s.in))
+      case p: ProjectGraph => p.clone(discardStackedRecordOperations(p.in))
+      case b: BinaryLogicalOperator =>
+        b.clone(discardSelectVoid(b.lhs), discardSelectVoid(b.rhs))
+      case s: StackingLogicalOperator =>
+        discardStackedRecordOperations(s.in)
+      case l: LogicalLeafOperator =>
+        l
+    }
+
+  }
+
 
   /**
     * This rewriter removes node label filters from the plan and pushes the predicate down to the NodeScan operations.
@@ -57,9 +92,28 @@ class LogicalOptimizer(producer: LogicalOperatorProducer)
       root match {
         case NodeScan(node, in) =>
           val labels = labelMap.getOrElse(node, Set.empty)
-          val nodeVar = Var(node.name)(CTNode(labels.map(_.name)))
+          val labelNames = labels.map(_.name)
+
+          val nodeVar = Var(node.name)(CTNode(labelNames))
           val solved = in.solved.withPredicates(labels.map(l => HasLabel(nodeVar, l)(CTBoolean)).toSeq: _*)
-          NodeScan(nodeVar, rewrite(in))(solved)
+
+          labelNames.size match {
+            case 0 => NodeScan(nodeVar, rewrite(in))(solved) // TODO: Exclude case, no rewrite required
+            case 1 =>
+              if (in.sourceGraph.schema.labels.contains(labelNames.head)) {
+                NodeScan(nodeVar, rewrite(in))(solved)
+              } else {
+                EmptyRecords(Set(nodeVar), discardStackedRecordOperations(in))(solved)
+              }
+            case _ =>
+              val combinationsInGraph = in.sourceGraph.schema.labelCombinations.combos
+              if (combinationsInGraph.exists(labelNames.subsetOf(_))) {
+                NodeScan(nodeVar, rewrite(in))(solved)
+              } else {
+                EmptyRecords(Set(nodeVar), discardStackedRecordOperations(in))(solved)
+              }
+          }
+
         case f@Filter(expr, in) =>
           expr match {
             case _: HasLabel => rewrite(in)
