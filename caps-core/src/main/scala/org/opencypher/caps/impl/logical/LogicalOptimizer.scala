@@ -18,115 +18,123 @@ package org.opencypher.caps.impl.logical
 import org.opencypher.caps.api.expr.{HasLabel, Var}
 import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTVoid}
 import org.opencypher.caps.impl.DirectCompilationStage
+import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.ir.api.Label
 
 class LogicalOptimizer(producer: LogicalOperatorProducer)
-  extends DirectCompilationStage[LogicalOperator, LogicalOperator, LogicalPlannerContext]{
+  extends DirectCompilationStage[LogicalOperator, LogicalOperator, LogicalPlannerContext] {
 
   override def process(input: LogicalOperator)(implicit context: LogicalPlannerContext): LogicalOperator = {
-    discardSelectVoid(moveLabelPredicatesToNodeScans(input))
+    val labelMap = ExtractLabels(input).groupBy(_._1).mapValues(_.map(_._2.name))
+    val pushedLabels = PushLabelFiltersIntoScans(labelMap)(input)
+    val discardScan = DiscardNodeScanForInexistentLabel(pushedLabels)
+    val discardSelectVoid = DiscardSelectVoid(discardScan)
+    discardSelectVoid
   }
 
-  /**
-    * This rewriter discards a select when one of the selected variables has non-nullable type VOID.
-    *
-    * @param input logical plan
-    * @return rewritten plan
-    */
-  private def discardSelectVoid(input: LogicalOperator): LogicalOperator = {
-    input match {
-        case s: Select if s.fields.map(_.cypherType).exists(t => t == CTVoid && t.isMaterial) =>
-          EmptyRecords(s.fields, discardStackedRecordOperations(s.in))(s.solved)
-        case b: BinaryLogicalOperator =>
-          b.clone(discardSelectVoid(b.lhs), discardSelectVoid(b.rhs))
-        case s: StackingLogicalOperator =>
-          s.clone(discardSelectVoid(s.in))
-        case l: LogicalLeafOperator =>
-          l
-      }
+}
 
-  }
+trait LogicalRewriter extends Function1[LogicalOperator, LogicalOperator] {
+  def apply(root: LogicalOperator): LogicalOperator
 
-  private def discardStackedRecordOperations(input: LogicalOperator): LogicalOperator = {
-    input match {
-      case s: SetSourceGraph => s.clone(discardStackedRecordOperations(s.in))
-      case p: ProjectGraph => p.clone(discardStackedRecordOperations(p.in))
+  def rewriteChildren(child: LogicalOperator, r: LogicalRewriter = this): LogicalOperator = {
+    child match {
       case b: BinaryLogicalOperator =>
-        b.clone(discardSelectVoid(b.lhs), discardSelectVoid(b.rhs))
+        b.clone(r(b.lhs), r(b.rhs))
       case s: StackingLogicalOperator =>
-        discardStackedRecordOperations(s.in)
+        s.clone(r(s.in))
       case l: LogicalLeafOperator =>
         l
     }
-
   }
+}
 
+trait LogicalAggregator[A] extends Function1[LogicalOperator, A] {
+  def apply(root: LogicalOperator): A
+}
 
-  /**
-    * This rewriter removes node label filters from the plan and pushes the predicate down to the NodeScan operations.
-    *
-    * @param input logical plan
-    * @return rewritten plan
-    */
-  private def moveLabelPredicatesToNodeScans(input: LogicalOperator): LogicalOperator = {
-
-    def extractLabels(op: LogicalOperator): Set[(Var, Label)] = {
-      op match {
-        case Filter(expr, in) =>
-          val res = expr match {
-            case HasLabel(v: Var, label) => Set(v -> label)
-            case _ => Set.empty
-          }
-          res ++ extractLabels(in)
-        case s: StackingLogicalOperator =>
-          extractLabels(s.in)
-        case b: BinaryLogicalOperator =>
-          extractLabels(b.lhs) ++ extractLabels(b.rhs)
-        case _ => Set.empty
-      }
+object ExtractLabels extends LogicalAggregator[Set[(Var, Label)]] {
+  def apply(root: LogicalOperator): Set[(Var, Label)] = {
+    root match {
+      case Filter(expr, in) =>
+        val res = expr match {
+          case HasLabel(v: Var, label) => Set(v -> label)
+          case _ => Set.empty
+        }
+        res ++ ExtractLabels(in)
+      case s: StackingLogicalOperator =>
+        ExtractLabels(s.in)
+      case b: BinaryLogicalOperator =>
+        ExtractLabels(b.lhs) ++ ExtractLabels(b.rhs)
+      case _ => Set.empty
     }
+  }
+}
 
-    val labelMap = extractLabels(input).groupBy(_._1).mapValues(_.map(_._2))
-
-    def rewrite(root: LogicalOperator): LogicalOperator = {
-      root match {
-        case n@NodeScan(node, in) =>
-          val labels = labelMap.getOrElse(node, Set.empty)
-          val labelNames = labels.map(_.name)
-
-          val nodeVar = Var(node.name)(CTNode(labelNames))
-          val solved = in.solved.withPredicates(labels.map(l => HasLabel(nodeVar, l)(CTBoolean)).toSeq: _*)
-
-          labelNames.size match {
-            case 0 => n // No filter pushed in, return unchanged NodeScan
-            case 1 =>
-              if (in.sourceGraph.schema.labels.contains(labelNames.head)) {
-                NodeScan(nodeVar, rewrite(in))(solved)
-              } else {
-                EmptyRecords(Set(nodeVar), discardStackedRecordOperations(in))(solved)
-              }
-            case _ =>
-              val combinationsInGraph = in.sourceGraph.schema.labelCombinations.combos
-              if (combinationsInGraph.exists(labelNames.subsetOf(_))) {
-                NodeScan(nodeVar, rewrite(in))(solved)
-              } else {
-                EmptyRecords(Set(nodeVar), discardStackedRecordOperations(in))(solved)
-              }
-          }
-
-        case f@Filter(expr, in) =>
-          expr match {
-            case _: HasLabel => rewrite(in)
-            case _ => f.clone(rewrite(in))
-          }
-        case s: StackingLogicalOperator =>
-          s.clone(rewrite(s.in))
-        case b: BinaryLogicalOperator =>
-          b.clone(rewrite(b.lhs), rewrite(b.rhs))
-        case l: LogicalLeafOperator =>
-          l
-      }
+case object DiscardSelectVoid extends LogicalRewriter {
+  override def apply(root: LogicalOperator): LogicalOperator = {
+    root match {
+      case s: Select if s.fields.map(_.cypherType).exists(t => t == CTVoid && t.isMaterial) =>
+        EmptyRecords(s.fields, DiscardStackedRecordOperations(s.in))(s.solved)
+      case other => rewriteChildren(other)
     }
-    rewrite(input)
+  }
+}
+
+case object DiscardStackedRecordOperations extends LogicalRewriter {
+  override def apply(root: LogicalOperator): LogicalOperator = {
+    root match {
+      case s: SetSourceGraph => s.clone(DiscardStackedRecordOperations(s.in))
+      case p: ProjectGraph => p.clone(DiscardStackedRecordOperations(p.in))
+      case s: StackingLogicalOperator => DiscardStackedRecordOperations(s.in)
+      case other => rewriteChildren(other)
+    }
+  }
+}
+
+case class PushLabelFiltersIntoScans(labelMap: Map[Var, Set[String]]) extends LogicalRewriter {
+  override def apply(root: LogicalOperator): LogicalOperator = {
+    root match {
+      case n@NodeScan(node, in) =>
+        val labels = labelMap.getOrElse(node, Set.empty)
+        val nodeVar = Var(node.name)(CTNode(labels))
+        val solved = in.solved.withPredicates(labels.map(l => HasLabel(nodeVar, Label(l))(CTBoolean)).toSeq: _*)
+        NodeScan(nodeVar, this (in))(solved)
+      case f@Filter(expr, in) =>
+        expr match {
+          case _: HasLabel => this (in)
+          case _ => f.clone(this (in))
+        }
+      case other => rewriteChildren(other)
+    }
+  }
+}
+
+case object DiscardNodeScanForInexistentLabel extends LogicalRewriter {
+  override def apply(root: LogicalOperator): LogicalOperator = {
+    root match {
+      case s@NodeScan(v, in) =>
+        v.cypherType match {
+          case CTNode(labels) =>
+            labels.size match {
+              case 0 => s
+              case 1 =>
+                if (in.sourceGraph.schema.labels.contains(labels.head)) {
+                  s
+                } else {
+                  EmptyRecords(Set(v), DiscardStackedRecordOperations(in))(s.solved)
+                }
+              case _ =>
+                val combinationsInGraph = in.sourceGraph.schema.labelCombinations.combos
+                if (combinationsInGraph.exists(labels.subsetOf(_))) {
+                  NodeScan(v, in)(s.solved)
+                } else {
+                  EmptyRecords(Set(v), DiscardStackedRecordOperations(in))(s.solved)
+                }
+            }
+          case _ => Raise.impossible(s"NodeScan on non-node ${v.cypherType}")
+        }
+      case other => rewriteChildren(other)
+    }
   }
 }
