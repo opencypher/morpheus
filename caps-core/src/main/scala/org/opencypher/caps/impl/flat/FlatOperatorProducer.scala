@@ -154,6 +154,11 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     SetSourceGraph(graph, prev, prev.header)
   }
 
+  def planEmptyRecords(fields: Set[Var], prev: FlatOperator): EmptyRecords = {
+    val header = RecordHeader.from(fields.map(OpaqueField).toSeq: _*)
+    EmptyRecords(prev, header)
+  }
+
   def planStart(graph: LogicalGraph, fields: Set[Var]): Start = {
     Start(graph, fields)
   }

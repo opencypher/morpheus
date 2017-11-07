@@ -22,6 +22,42 @@ import scala.collection.Bag
 
 class MatchAcceptanceTest extends CAPSTestSuite {
 
+  test("match unknown label") {
+    // Given
+    val given = TestGraph(
+      """
+        |(p:Person {firstName: "Alice", lastName: "Foo"})
+      """.stripMargin)
+
+    // When
+    val result = given.cypher(
+      """
+        |MATCH (a:Animal)
+        |RETURN a
+      """.stripMargin)
+
+    // Then
+    result.records.toMaps should equal(Bag())
+  }
+
+  test("match property on unknown label") {
+    // Given
+    val given = TestGraph(
+      """
+        |(p:Person {firstName: "Alice", lastName: "Foo"})
+      """.stripMargin)
+
+    // When
+    val result = given.cypher(
+      """
+        |MATCH (a:Animal)
+        |RETURN a.name
+      """.stripMargin)
+
+    // Then
+    result.records.toMaps should equal(Bag())
+  }
+
   test("multiple match clauses") {
     // Given
     val given = TestGraph(

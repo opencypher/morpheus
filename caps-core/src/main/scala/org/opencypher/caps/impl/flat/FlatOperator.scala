@@ -125,6 +125,8 @@ final case class Skip(expr: Expr, in: FlatOperator, header: RecordHeader)
 final case class Limit(expr: Expr, in: FlatOperator, header: RecordHeader)
   extends StackingFlatOperator
 
+final case class EmptyRecords(in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
+
 final case class Start(sourceGraph: LogicalGraph, fields: Set[Var]) extends FlatLeafOperator {
   override val header: RecordHeader = RecordHeader.from(fields.map(OpaqueField).toSeq: _*)
 }

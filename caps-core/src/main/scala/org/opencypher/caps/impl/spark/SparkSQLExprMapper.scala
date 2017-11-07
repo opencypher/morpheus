@@ -51,7 +51,14 @@ object SparkSQLExprMapper {
         verifyExpression(header, expr)
         val slot = header.slotsFor(expr).head
 
-        dataFrame.col(columnName(slot))
+        val columns = dataFrame.columns.toSet
+        val colName = columnName(slot)
+
+        if (columns.contains(colName)) {
+          dataFrame.col(colName)
+        } else {
+          functions.lit(null)
+        }
     }
   }
 
