@@ -205,7 +205,8 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
       println(physicalPlan.pretty())
     }
 
-    CAPSResultBuilder.from(physicalPlan, logicalPlan)(RuntimeContext(physicalPlannerContext.parameters, optGraphAt))
+    val context = RuntimeContext(physicalPlannerContext.parameters, optGraphAt, scala.collection.mutable.Map.empty)
+    CAPSResultBuilder.from(physicalPlan, logicalPlan)(context)
   }
 
   override def toString: String = {

@@ -91,8 +91,14 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     model(ref) match {
       case MatchBlock(_, pattern, where, optional, graph) =>
         // this plans both pattern and filter for convenience -- TODO: split up
-        val patternPlan = planMatchPattern(plan, pattern, where, graph)
-        if (optional) producer.planOptional(plan, patternPlan) else patternPlan
+        if (optional) {
+          val producerPlan = producer.planCacheStore(plan)
+          val consumerPlan = producer.planCacheRead(producerPlan.cacheKey)
+          val patternPlan = planMatchPattern(consumerPlan, pattern, where, graph)
+          producer.planOptional(producerPlan, patternPlan)
+        } else {
+          planMatchPattern(plan, pattern, where, graph)
+        }
 
       case ProjectBlock(_, FieldsAndGraphs(fields, graphs), where, _, distinct) =>
         val withGraphs = planGraphProjections(plan, graphs)

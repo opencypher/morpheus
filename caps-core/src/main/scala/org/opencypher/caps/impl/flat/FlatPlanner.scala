@@ -20,7 +20,9 @@ import org.opencypher.caps.impl.logical.LogicalOperator
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.{DirectCompilationStage, logical}
 
-final case class FlatPlannerContext(parameters: Map[String, CypherValue])
+final case class FlatPlannerContext(parameters: Map[String, CypherValue]) {
+  val cache: scala.collection.mutable.Map[String, FlatOperator] = scala.collection.mutable.Map.empty
+}
 
 class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, FlatPlannerContext] {
 
@@ -89,6 +91,12 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
 
       case logical.Limit(expr, sourceOp) =>
         producer.limit(expr, process(sourceOp))
+
+      case c@logical.CacheStore(sourceOp) =>
+        producer.cacheStore(c.cacheKey, process(sourceOp))
+
+      case logical.CacheRead(cacheKey, _) =>
+        producer.cacheRead(cacheKey)
 
       case x =>
         Raise.notYetImplemented(s"Flat planning not done yet for $x")

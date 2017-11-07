@@ -122,4 +122,8 @@ object Raise {
   def graphAlreadyExists(uri: URI) = throw CAPSException(
     s"Cannot create new graph. There already exists a graph at $uri"
   )
+
+  def cacheMismatch(cacheKey: String) = throw CAPSException(
+    s"No element for cache key $cacheKey"
+  )
 }

@@ -145,6 +145,12 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOpera
       case flat.Limit(expr, in, header) =>
         Limit(expr, header, process(in))
 
+      case c@flat.CacheStore(cacheKey, in) =>
+        CacheStore(cacheKey, c.header, process(in))
+
+      case flat.CacheRead(cacheKey, _) =>
+        CacheRead(cacheKey)
+
       case x =>
         Raise.notYetImplemented(s"physical planning of operator $x")
     }

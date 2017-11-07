@@ -568,6 +568,23 @@ final case class Limit(expr: Expr, header: RecordHeader, in: PhysicalOperator)
   }
 }
 
+final case class CacheStore(cacheKey: String, header: RecordHeader, in: PhysicalOperator)
+  extends StackingPhysicalOperator {
+
+  override def run(implicit context: RuntimeContext): PhysicalResult = {
+    context.cache(cacheKey) = prev
+    prev
+  }
+}
+
+final case class CacheRead(cacheKey: String)
+  extends PhysicalLeafOperator {
+
+  override def run(implicit context: RuntimeContext): PhysicalResult = {
+    context.cache.getOrElse(cacheKey, Raise.cacheMismatch(cacheKey))
+  }
+}
+
 final case class CartesianProduct(header: RecordHeader, lhs: PhysicalOperator, rhs: PhysicalOperator)
   extends BinaryPhysicalOperator {
 

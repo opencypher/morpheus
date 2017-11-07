@@ -195,4 +195,15 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   def limit(expr: Expr, sourceOp: FlatOperator): FlatOperator = {
     Limit(expr, sourceOp, sourceOp.header)
   }
+
+  def cacheStore(cacheKey: String, sourceOp: FlatOperator): FlatOperator = {
+    val op = CacheStore(cacheKey, sourceOp)
+    context.cache(op.cacheKey) = op
+    op
+  }
+
+  def cacheRead(cacheKey: String): FlatOperator = {
+    val cached = context.cache.getOrElse(cacheKey, Raise.cacheMismatch(cacheKey))
+    CacheRead(cacheKey, cached)
+  }
 }
