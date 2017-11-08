@@ -572,8 +572,9 @@ final case class CacheStore(cacheKey: String, header: RecordHeader, in: Physical
   extends StackingPhysicalOperator {
 
   override def run(implicit context: RuntimeContext): PhysicalResult = {
-    context.cache(cacheKey) = prev
-    prev
+    val cached = prev.cache()
+    context.cache(cacheKey) = cached
+    cached
   }
 }
 
