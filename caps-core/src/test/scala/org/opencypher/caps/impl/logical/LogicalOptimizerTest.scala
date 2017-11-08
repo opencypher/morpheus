@@ -32,23 +32,6 @@ class LogicalOptimizerTest extends IrTestSuite {
 
   def plannerContext(schema: Schema) = LogicalPlannerContext(schema, Set.empty, (_) => testGraphSource)
 
-  test("rewrite select void to empty records") {
-    val query = """
-               | MATCH (a:Animal)
-               | RETURN a.name""".stripMargin
-    val plan = logicalPlan(query, schema)
-    val logicalOptimizer = new LogicalOptimizer(producer)
-    val optimizedLogicalPlan = logicalOptimizer(plan)(plannerContext(schema))
-
-    optimizedLogicalPlan should equal(
-      EmptyRecords(Set(Var("a.name")(CTVoid)),
-          SetSourceGraph(logicalGraph,
-            Start(logicalGraph, Set())(emptySqm)
-          )(emptySqm)
-      )(emptySqm)
-    )
-  }
-
   test("rewrite missing label scan to empty records") {
     val query = """
                   | MATCH (a:Animal)

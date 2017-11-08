@@ -65,29 +65,40 @@ object SchemaTyper {
       } yield t
 
     case Property(v, PropertyKeyName(name)) =>
+      // Map Void type to Null after joining, as properties can be null
+      def voidToNull(tpe: CypherType): CypherType = if (tpe == CTVoid) {
+        CTNull
+      } else {
+        tpe
+      }
+
       for {
         varTyp <- process[R](v)
         schema <- ask[R, Schema]
         result <- varTyp.material match {
           case CTNode(labels) =>
-            val propType = if (labels.isEmpty)
-              schema.labels.map(schema.nodeKeys).foldLeft[CypherType](CTVoid) {
-                case (acc, next) => acc.join(next.getOrElse(name, CTVoid))
+            val propType = voidToNull {
+              if (labels.isEmpty)
+                schema.labels.map(schema.nodeKeys).foldLeft[CypherType](CTVoid) {
+                  case (acc, next) => acc.join(next.getOrElse(name, CTVoid))
+                }
+              else {
+                val keys = labels.map(schema.nodeKeys).reduce(_ ++ _)
+                keys.getOrElse(name, CTVoid)
               }
-            else {
-              val keys = labels.map(schema.nodeKeys).reduce(_ ++ _)
-              keys.getOrElse(name, CTVoid)
             }
             recordType(v -> varTyp) >> recordAndUpdate(expr -> propType)
 
           case CTRelationship(types) =>
-            val propType = if (types.isEmpty) {
-              schema.relationshipTypes.map(schema.relationshipKeys).foldLeft[CypherType](CTVoid) {
-                case (acc, next) => acc.join(next.getOrElse(name, CTVoid))
+            val propType = voidToNull {
+              if (types.isEmpty) {
+                schema.relationshipTypes.map(schema.relationshipKeys).foldLeft[CypherType](CTVoid) {
+                  case (acc, next) => acc.join(next.getOrElse(name, CTVoid))
+                }
+              } else {
+                val keys = types.map(schema.relationshipKeys).reduceOption(_ ++ _)
+                keys.getOrElse(Map.empty).getOrElse(name, CTVoid)
               }
-            } else {
-              val keys = types.map(schema.relationshipKeys).reduceOption(_ ++ _)
-              keys.getOrElse(Map.empty).getOrElse(name, CTVoid)
             }
             recordType(v -> varTyp) >> recordAndUpdate(expr -> propType)
 

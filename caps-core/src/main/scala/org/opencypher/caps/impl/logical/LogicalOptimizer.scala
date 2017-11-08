@@ -16,7 +16,7 @@
 package org.opencypher.caps.impl.logical
 
 import org.opencypher.caps.api.expr.{HasLabel, Var}
-import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTVoid}
+import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTNull}
 import org.opencypher.caps.impl.DirectCompilationStage
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.ir.api.Label
@@ -28,8 +28,7 @@ class LogicalOptimizer(producer: LogicalOperatorProducer)
     val labelMap = ExtractLabels(input).groupBy(_._1).mapValues(_.map(_._2.name))
     val pushedLabels = PushLabelFiltersIntoScans(labelMap)(input)
     val discardScan = DiscardNodeScanForInexistentLabel(pushedLabels)
-    val discardSelectVoid = DiscardSelectVoid(discardScan)
-    discardSelectVoid
+    discardScan
   }
 
 }
@@ -67,16 +66,6 @@ object ExtractLabels extends LogicalAggregator[Set[(Var, Label)]] {
       case b: BinaryLogicalOperator =>
         ExtractLabels(b.lhs) ++ ExtractLabels(b.rhs)
       case _ => Set.empty
-    }
-  }
-}
-
-case object DiscardSelectVoid extends LogicalRewriter {
-  override def apply(root: LogicalOperator): LogicalOperator = {
-    root match {
-      case s: Select if s.fields.map(_.cypherType).exists(t => t == CTVoid && t.isMaterial) =>
-        EmptyRecords(s.fields, DiscardStackedRecordOperations(s.in))(s.solved)
-      case other => rewriteChildren(other)
     }
   }
 }
