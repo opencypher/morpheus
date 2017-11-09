@@ -18,8 +18,8 @@
         <!-- Project settings -->
         <project.build.encoding>UTF-8</project.build.encoding>
         <project.java.version>1.8</project.java.version>
-        <project.scala.version>2.11.11</project.scala.version>
         <project.scala.binary.version>2.11</project.scala.binary.version>
+        <project.scala.version>${project.scala.binary.version}.12</project.scala.version>
         <project.rootdir>${project.basedir}</project.rootdir>
 
         <!-- Used plugins -->
@@ -377,7 +377,7 @@
                                         </filter>
 
                                         <filter>
-                                            <artifact>com.lihaoyi:ammonite-ops_2.11</artifact>
+                                            <artifact>com.lihaoyi:ammonite-ops_${project.scala.binary.version}</artifact>
                                             <excludes>
                                                 <exclude>ammonite/Constants.class</exclude>
                                                 <exclude>ammonite/Constants$.class</exclude>
@@ -385,7 +385,7 @@
                                         </filter>
 
                                         <filter>
-                                            <artifact>com.lihaoyi:ammonite-terminal_2.11</artifact>
+                                            <artifact>com.lihaoyi:ammonite-terminal_${project.scala.binary.version}</artifact>
                                             <excludes>
                                                 <exclude>ammonite/Constants.class</exclude>
                                                 <exclude>ammonite/Constants$.class</exclude>
@@ -451,13 +451,13 @@
 
         <dependency>
             <groupId>org.typelevel</groupId>
-            <artifactId>cats_2.11</artifactId>
+            <artifactId>cats_${project.scala.binary.version}</artifactId>
             <version>${dep.cats.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.atnos</groupId>
-            <artifactId>eff_2.11</artifactId>
+            <artifactId>eff_${project.scala.binary.version}</artifactId>
             <version>${dep.eff.version}</version>
         </dependency>
 
@@ -465,19 +465,19 @@
 
         <dependency>
             <groupId>org.apache.spark</groupId>
-            <artifactId>spark-core_2.11</artifactId>
+            <artifactId>spark-core_${project.scala.binary.version}</artifactId>
             <version>${dep.spark.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.spark</groupId>
-            <artifactId>spark-sql_2.11</artifactId>
+            <artifactId>spark-sql_${project.scala.binary.version}</artifactId>
             <version>${dep.spark.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.spark</groupId>
-            <artifactId>spark-catalyst_2.11</artifactId>
+            <artifactId>spark-catalyst_${project.scala.binary.version}</artifactId>
             <version>${dep.spark.version}</version>
         </dependency>
 
@@ -485,13 +485,13 @@
 
         <dependency>
             <groupId>com.lihaoyi</groupId>
-            <artifactId>ammonite_2.11.11</artifactId>
+            <artifactId>ammonite_${project.scala.binary.version}.11</artifactId>
             <version>${dep.ammonite.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.lihaoyi</groupId>
-            <artifactId>ammonite-ops_2.11</artifactId>
+            <artifactId>ammonite-ops_${project.scala.binary.version}</artifactId>
             <version>${dep.ammonite.version}</version>
         </dependency>
 
@@ -503,31 +503,31 @@
 
         <dependency>
             <groupId>io.github.nicolasstucki</groupId>
-            <artifactId>multisets_2.11</artifactId>
+            <artifactId>multisets_${project.scala.binary.version}</artifactId>
             <version>${dep.multiset.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.lihaoyi</groupId>
-            <artifactId>sourcecode_2.11</artifactId>
+            <artifactId>sourcecode_${project.scala.binary.version}</artifactId>
             <version>${dep.sourcecode.version}</version>
         </dependency>
 
         <dependency>
             <groupId>io.circe</groupId>
-            <artifactId>circe-core_2.11</artifactId>
+            <artifactId>circe-core_${project.scala.binary.version}</artifactId>
             <version>${dep.circe.version}</version>
         </dependency>
 
         <dependency>
             <groupId>io.circe</groupId>
-            <artifactId>circe-generic_2.11</artifactId>
+            <artifactId>circe-generic_${project.scala.binary.version}</artifactId>
             <version>${dep.circe.version}</version>
         </dependency>
 
         <dependency>
             <groupId>io.circe</groupId>
-            <artifactId>circe-parser_2.11</artifactId>
+            <artifactId>circe-parser_${project.scala.binary.version}</artifactId>
             <version>${dep.circe.version}</version>
         </dependency>
 
@@ -564,7 +564,7 @@
 
         <dependency>
             <groupId>org.scalatest</groupId>
-            <artifactId>scalatest_2.11</artifactId>
+            <artifactId>scalatest_${project.scala.binary.version}</artifactId>
             <version>${dep.scalatest.version}</version>
             <scope>test</scope>
             <exclusions>
