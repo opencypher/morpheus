@@ -17,7 +17,7 @@ package org.opencypher.caps.ir.impl
 
 import org.opencypher.caps.api.expr.{Expr, HasLabel, Property, Var}
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.types.{CTNode, CTRelationship, CTVoid}
+import org.opencypher.caps.api.types.{CTNode, CTRelationship, CTNull}
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block._
@@ -123,8 +123,8 @@ class CypherQueryBuilderTest extends IrTestSuite {
         case NoWhereBlock(ProjectBlock(deps, FieldsAndGraphs(map, _), _, _, _)) if deps.head == matchRef =>
           deps should equal(Set(matchRef))
           map should equal(Map(
-            toField('name) -> Property(Var("a")(CTNode), PropertyKey("name"))(CTVoid),
-            toField('age) -> Property(Var("a")(CTNode), PropertyKey("age"))(CTVoid)
+            toField('name) -> Property(Var("a")(CTNode), PropertyKey("name"))(CTNull),
+            toField('age) -> Property(Var("a")(CTNode), PropertyKey("age"))(CTNull)
           ))
       }
 

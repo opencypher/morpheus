@@ -79,10 +79,10 @@ class LogicalPlannerTest extends IrTestSuite {
     val ir = "MATCH (a:Administrator)-[r]->(g:Group) WHERE g.name = $foo RETURN a.name".irWithParams("foo" -> CypherString("test"))
 
     plan(ir) should equal(
-      Select(IndexedSeq(Var("a.name")(CTVoid)), Set.empty,
-        Project(ProjectedField(Var("a.name")(CTVoid), Property(Var("a")(CTNode("Administrator")), PropertyKey("name"))(CTVoid)),
-          Filter(Equals(Property(Var("g")(CTNode("Group")), PropertyKey("name"))(CTVoid), Param("foo")(CTString))(CTBoolean),
-            Project(ProjectedExpr(Property(Var("g")(CTNode("Group")), PropertyKey("name"))(CTVoid)),
+      Select(IndexedSeq(Var("a.name")(CTNull)), Set.empty,
+        Project(ProjectedField(Var("a.name")(CTNull), Property(Var("a")(CTNode("Administrator")), PropertyKey("name"))(CTNull)),
+          Filter(Equals(Property(Var("g")(CTNode("Group")), PropertyKey("name"))(CTNull), Param("foo")(CTString))(CTBoolean),
+            Project(ProjectedExpr(Property(Var("g")(CTNode("Group")), PropertyKey("name"))(CTNull)),
               Filter(HasLabel(Var("g")(CTNode), Label("Group"))(CTBoolean),
                 Filter(HasLabel(Var("a")(CTNode), Label("Administrator"))(CTBoolean),
                   ExpandSource(Var("a")(CTNode), Var("r")(CTRelationship), Var("g")(CTNode),
@@ -141,8 +141,8 @@ class LogicalPlannerTest extends IrTestSuite {
     val ir = "MATCH (a) WHERE NOT $p1 = $p2 RETURN a.prop".irWithParams("p1" -> CypherInteger(1L), "p2" -> CypherBoolean(true))
 
     plan(ir) should equal(
-      Select(IndexedSeq(Var("a.prop")(CTVoid)), Set.empty,
-        Project(ProjectedField(Var("a.prop")(CTVoid), Property(nodeA, PropertyKey("prop"))(CTVoid)),
+      Select(IndexedSeq(Var("a.prop")(CTNull)), Set.empty,
+        Project(ProjectedField(Var("a.prop")(CTNull), Property(nodeA, PropertyKey("prop"))(CTNull)),
           Filter(Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean))(CTBoolean))(CTBoolean),
             NodeScan(nodeA,
               SetSourceGraph(LogicalExternalGraph(testGraph.name, testGraph.uri, Schema.empty),

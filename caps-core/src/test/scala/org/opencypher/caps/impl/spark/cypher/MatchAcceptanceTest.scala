@@ -58,6 +58,27 @@ class MatchAcceptanceTest extends CAPSTestSuite {
     result.records.toMaps should equal(Bag())
   }
 
+  test("match return value of non-existing property as null") {
+    // Given
+    val given = TestGraph(
+      """
+        |(p:Person {firstName: "Alice", lastName: "Foo"})
+      """.stripMargin)
+
+    // When
+    val result = given.cypher(
+      """
+        |MATCH (a:Person)
+        |RETURN a.firstName, a.age
+      """.stripMargin)
+
+    // Then
+    result.records.toMaps should equal(Bag(CypherMap(
+      "a.age" -> null,
+      "a.firstName" -> "Alice")
+    ))
+  }
+
   test("multiple match clauses") {
     // Given
     val given = TestGraph(
