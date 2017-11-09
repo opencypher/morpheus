@@ -23,10 +23,12 @@ import org.opencypher.caps.impl.util._
 import org.opencypher.caps.ir.api.block.{Aggregations, SortItem}
 import org.opencypher.caps.ir.api.{IRField, RelType, SolvedQueryModel}
 
+import scala.collection.mutable
+
 // TODO: Homogenize naming
 // TODO: Align names with other producers
 class LogicalOperatorProducer {
-  val cache: scala.collection.mutable.Map[String, LogicalOperator] = scala.collection.mutable.Map.empty
+  val cache: mutable.Map[String, LogicalOperator] = scala.collection.mutable.Map.empty
 
   def planCartesianProduct(lhs: LogicalOperator, rhs: LogicalOperator): CartesianProduct = {
     CartesianProduct(lhs, rhs)(lhs.solved ++ rhs.solved)

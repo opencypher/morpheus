@@ -29,7 +29,7 @@ object RuntimeContext {
 case class RuntimeContext(
   parameters: Map[String, CypherValue],
   resolve: URI => Option[CAPSGraph],
-  cache: scala.collection.mutable.Map[String, PhysicalResult]
+  cache: scala.collection.mutable.Map[PhysicalOperator, PhysicalResult]
 )
 
 case object udfUtils {
