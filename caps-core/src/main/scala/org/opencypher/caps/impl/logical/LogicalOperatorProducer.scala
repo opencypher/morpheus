@@ -23,9 +23,12 @@ import org.opencypher.caps.impl.util._
 import org.opencypher.caps.ir.api.block.{Aggregations, SortItem}
 import org.opencypher.caps.ir.api.{IRField, RelType, SolvedQueryModel}
 
+import scala.collection.mutable
+
 // TODO: Homogenize naming
 // TODO: Align names with other producers
 class LogicalOperatorProducer {
+  val cache: mutable.Map[String, LogicalOperator] = scala.collection.mutable.Map.empty
 
   def planCartesianProduct(lhs: LogicalOperator, rhs: LogicalOperator): CartesianProduct = {
     CartesianProduct(lhs, rhs)(lhs.solved ++ rhs.solved)
@@ -118,6 +121,17 @@ class LogicalOperatorProducer {
 
   def planLimit(expr: Expr, prev: LogicalOperator): Limit = {
     Limit(expr, prev)(prev.solved)
+  }
+
+  def planCacheStore(prev: LogicalOperator): CacheStore = {
+    val op = CacheStore(prev, prev.solved)
+    cache(op.cacheKey) = prev
+    op
+  }
+
+  def planCacheRead(cacheKey: String): CacheRead = {
+    val cachedPlan = cache.getOrElse(cacheKey, Raise.cacheMismatch(cacheKey))
+    CacheRead(cacheKey, cachedPlan)
   }
 
   implicit class RichQueryModel(solved: SolvedQueryModel[Expr]) {

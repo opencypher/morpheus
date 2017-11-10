@@ -41,21 +41,29 @@ import org.opencypher.caps.ir.api.block.{Asc, Desc, SortItem}
 import scala.collection.mutable
 
 trait PhysicalOperator {
-
+  self =>
   // does the actual work
   protected def run(implicit context: RuntimeContext): PhysicalResult
 
   final def execute(implicit context: RuntimeContext): PhysicalResult = {
+    val result = context.cache.get(self) match {
+      case None =>
+        val output = run
+        if (self.isInstanceOf[Scan]) { context.cache(self) = output }
+        output
+      case Some(output) =>
+        println(s"Cache Hit $self -> $output")
+        output
+    }
+
     if (DebugPhysicalResult.get()) {
-      val r = run
       println(s"${getClass.getSimpleName}($describeParameters)")
       println("output table:")
-      r.records.data.show()
-      println(r.graphs.keySet.mkString("Output graphs: ", ", ", ""))
-      r
-    } else {
-      run
+      result.records.data.show()
+      println(result.graphs.keySet.mkString("Output graphs: ", ", ", ""))
     }
+
+    result
   }
 
   protected def resolve(uri: URI)(implicit context: RuntimeContext): CAPSGraph = {
@@ -565,6 +573,24 @@ final case class Limit(expr: Expr, header: RecordHeader, in: PhysicalOperator)
     prev.mapRecordsWithDetails { records =>
       CAPSRecords.create(header, records.toDF().limit(limit.toInt))(records.caps)
     }
+  }
+}
+
+final case class CacheStore(cacheKey: String, header: RecordHeader, in: PhysicalOperator)
+  extends StackingPhysicalOperator {
+
+  override def run(implicit context: RuntimeContext): PhysicalResult = {
+    //val cached = prev.cache()
+    //context.cache(cacheKey) = cached
+    prev //cached
+  }
+}
+
+final case class CacheRead(cacheKey: String)
+  extends PhysicalLeafOperator {
+
+  override def run(implicit context: RuntimeContext): PhysicalResult = {
+    ??? //context.cache.getOrElse(cacheKey, Raise.cacheMismatch(cacheKey))
   }
 }
 

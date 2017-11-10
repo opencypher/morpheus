@@ -125,10 +125,19 @@ final case class Skip(expr: Expr, in: FlatOperator, header: RecordHeader)
 final case class Limit(expr: Expr, in: FlatOperator, header: RecordHeader)
   extends StackingFlatOperator
 
+final case class CacheStore(cacheKey: String, in: FlatOperator) extends StackingFlatOperator {
+  override def header: RecordHeader = in.header
+}
+
 final case class EmptyRecords(in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
 final case class Start(sourceGraph: LogicalGraph, fields: Set[Var]) extends FlatLeafOperator {
   override val header: RecordHeader = RecordHeader.from(fields.map(OpaqueField).toSeq: _*)
+}
+
+final case class CacheRead(cacheKey: String, cached: FlatOperator) extends FlatLeafOperator {
+  override val sourceGraph: LogicalGraph = cached.sourceGraph
+  override val header: RecordHeader = cached.header
 }
 
 final case class SetSourceGraph(override val sourceGraph: LogicalGraph, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator

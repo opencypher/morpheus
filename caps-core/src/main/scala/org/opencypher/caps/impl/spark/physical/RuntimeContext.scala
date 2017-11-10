@@ -23,12 +23,13 @@ import org.opencypher.caps.api.value.CypherValue
 import scala.collection.mutable
 
 object RuntimeContext {
-  val empty = RuntimeContext(Map.empty, _ => None)
+  val empty = RuntimeContext(Map.empty, _ => None, scala.collection.mutable.Map.empty)
 }
 
 case class RuntimeContext(
   parameters: Map[String, CypherValue],
-  resolve: URI => Option[CAPSGraph]
+  resolve: URI => Option[CAPSGraph],
+  cache: scala.collection.mutable.Map[PhysicalOperator, PhysicalResult]
 )
 
 case object udfUtils {

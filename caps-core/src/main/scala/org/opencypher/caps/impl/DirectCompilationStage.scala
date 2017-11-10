@@ -15,7 +15,33 @@
  */
 package org.opencypher.caps.impl
 
+import scala.collection.mutable
+
 trait DirectCompilationStage[-A, B, C] extends CompilationStage[A, B, C] {
   final override type Out = B
   final override def extract(output: Out): B = output
 }
+
+//abstract class CachingDirectCompilationStage[A, B, C <: CachingContext[A, B]] extends DirectCompilationStage[A, B, C] {
+//  final override def process(input: A)(implicit context: C): B = {
+//    context.cache.get(input) match {
+//      case None =>
+//        val output = cachingProcess(input)
+//        context.cache(input) = output
+//        output
+//
+//      case Some(output) =>
+//        println(s"Cache Hit $input -> $output")
+//        output
+//    }
+//  }
+//
+//  def onCacheHit(input: A, output: B): Unit = {}
+//
+//  def cachingProcess(input: A)(implicit context: C): B
+//}
+//
+//abstract class CachingContext[I, O] {
+//  val cache: mutable.Map[I, O] = mutable.Map.empty
+//}
+

@@ -28,5 +28,7 @@ case class PhysicalResult(records: CAPSRecords, graphs: Map[String, CAPSGraph]) 
     copy(graphs = graphs.updated(t._1, t._2))
   def selectGraphs(selected: Set[String]): PhysicalResult =
     copy(graphs = graphs.filterKeys(selected))
+  def cache(): PhysicalResult =
+    copy(records = records.cache())
 }
 

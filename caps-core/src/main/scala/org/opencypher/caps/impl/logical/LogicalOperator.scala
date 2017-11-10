@@ -16,6 +16,7 @@
 package org.opencypher.caps.impl.logical
 
 import java.net.URI
+import java.util.UUID
 
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.record.ProjectedSlotContent
@@ -311,6 +312,33 @@ final case class Limit(expr: Expr, in: LogicalOperator)
   override def clone(newIn: LogicalOperator): LogicalOperator = copy(in = newIn)(solved)
 }
 
+final case class CacheStore(in: LogicalOperator)(val cacheKey: String, override val solved: SolvedQueryModel[Expr])
+  extends StackingLogicalOperator {
+
+  override val fields: Set[Var] = in.fields
+
+  override def pretty(depth: Int): String =
+    s"""${prefix(depth)} Cache(key = $cacheKey})
+       #${in.pretty(depth + 1)}""".stripMargin('#')
+
+  override def clone(newIn: LogicalOperator): LogicalOperator = copy(in = newIn)(cacheKey, solved)
+}
+
+object CacheStore {
+  def apply(in: LogicalOperator, solved: SolvedQueryModel[Expr]): CacheStore = {
+    new CacheStore(in)(UUID.randomUUID().toString, solved)
+  }
+}
+
+final case class CacheRead(cacheKey: String, cached: LogicalOperator) extends LogicalLeafOperator {
+
+  override val solved: SolvedQueryModel[Expr] = cached.solved
+  override val fields: Set[Var] = cached.fields
+  override def sourceGraph: LogicalGraph = cached.sourceGraph
+
+  override def pretty(depth: Int): String = s"${prefix(depth)} CacheRead(key = $cacheKey})"
+}
+
 final case class CartesianProduct(lhs: LogicalOperator, rhs: LogicalOperator)(override val solved: SolvedQueryModel[Expr])
   extends BinaryLogicalOperator {
 
@@ -333,6 +361,7 @@ final case class Optional(lhs: LogicalOperator, rhs: LogicalOperator)
 
   override def pretty(depth: Int): String =
     s"""${prefix(depth)} Optional()
+       #${lhs.pretty(depth + 1)}
        #${rhs.pretty(depth + 1)}""".stripMargin('#')
 
   override def clone(newLhs: LogicalOperator, newRhs: LogicalOperator): LogicalOperator =
