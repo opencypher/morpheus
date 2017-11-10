@@ -28,6 +28,7 @@ import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.CypherType.joinMonoid
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.parse.RetypingPredicate
+import org.opencypher.caps.impl.spark.exception.Raise
 
 import scala.util.Try
 
@@ -460,8 +461,7 @@ object SchemaTyper {
           case (CTList(CTInteger), CTInteger) => left
           case (CTList(CTFloat), CTInteger) => CTList(CTNumber)
           case (CTList(CTVoid), _) => CTList(right)
-          // TODO: Throw type error instead
-          case _ => CTVoid
+          case _ => Raise.typeInferenceFailed(s"Could not infer common type of $left and $right")
         }
       }
   }

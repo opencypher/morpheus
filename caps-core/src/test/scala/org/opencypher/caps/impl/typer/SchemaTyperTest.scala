@@ -19,6 +19,7 @@ import cats.data.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, Parameter}
 import org.neo4j.cypher.internal.frontend.v3_3.symbols
 import org.opencypher.caps.api.schema.Schema
+import org.opencypher.caps.api.spark.exception.CAPSException
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.test.BaseTestSuite
 import org.opencypher.caps.test.support.Neo4jAstTestSupport
@@ -94,6 +95,10 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
 
     assertExpr.from("[] + 1") shouldHaveInferredType CTList(CTInteger)
     assertExpr.from("[3.14] + 1") shouldHaveInferredType CTList(CTNumber)
+
+    the [CAPSException] thrownBy {
+      typer.inferOrThrow(parseExpr("['foo'] + null"), TypeTracker.empty)
+    } should have message "Some error in type inference: Could not infer common type of LIST OF STRING and NULL"
   }
 
   test("typing subtract") {
