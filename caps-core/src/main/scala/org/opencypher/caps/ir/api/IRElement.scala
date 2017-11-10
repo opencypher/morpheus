@@ -29,7 +29,7 @@ trait IRElement {
 object IRField {
   def relTypes(field: IRField): Set[String] = field.cypherType match {
     case CTRelationship(types) => types
-    case _ => Set.empty
+    case _                     => Set.empty
   }
 }
 

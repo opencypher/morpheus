@@ -22,10 +22,9 @@ import org.scalatest.{FunSuite, Matchers}
 
 @RunWith(classOf[JUnitRunner])
 abstract class BaseTestSuite
-  extends FunSuite
-  with Matchers
-  with org.opencypher.caps.api.spark.instances.AllInstances
-  with org.opencypher.caps.api.spark.syntax.AllSyntax
-{
+    extends FunSuite
+    with Matchers
+    with org.opencypher.caps.api.spark.instances.AllInstances
+    with org.opencypher.caps.api.spark.syntax.AllSyntax {
   implicit val context: RuntimeContext = RuntimeContext.empty
 }

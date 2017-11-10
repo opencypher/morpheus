@@ -21,21 +21,23 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.StatementRewriter
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{BaseContext, Condition}
 
 object ExtractPredicatesFromAnds extends StatementRewriter {
-  override def instance(context: BaseContext): Rewriter = bottomUp(Rewriter.lift {
-    case a@Ands(exprs) =>
-      val (left, right) = exprs.partition {
-        case _: HasLabels => true
-        case _ => false
-      }
-      val singleRight: Expression = right.headOption match {
-        case None => True()(a.position)
-        case Some(expr) => right.tail.headOption match {
-          case None => expr
-          case _ => Ands(right)(a.position)
+  override def instance(context: BaseContext): Rewriter =
+    bottomUp(Rewriter.lift {
+      case a @ Ands(exprs) =>
+        val (left, right) = exprs.partition {
+          case _: HasLabels => true
+          case _            => false
         }
-      }
-      RetypingPredicate(left, singleRight)(a.position)
-  })
+        val singleRight: Expression = right.headOption match {
+          case None => True()(a.position)
+          case Some(expr) =>
+            right.tail.headOption match {
+              case None => expr
+              case _    => Ands(right)(a.position)
+            }
+        }
+        RetypingPredicate(left, singleRight)(a.position)
+    })
 
   override def description: String = "split ands"
 

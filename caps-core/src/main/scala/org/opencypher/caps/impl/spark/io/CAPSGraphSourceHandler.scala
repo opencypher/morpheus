@@ -22,8 +22,9 @@ import org.opencypher.caps.api.spark.io.{CAPSGraphSource, CAPSGraphSourceFactory
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.spark.io.session.SessionGraphSourceFactory
 
-case class CAPSGraphSourceHandler(sessionGraphSourceFactory: SessionGraphSourceFactory,
-                                  additionalGraphSourceFactories: Set[CAPSGraphSourceFactory]) {
+case class CAPSGraphSourceHandler(
+    sessionGraphSourceFactory: SessionGraphSourceFactory,
+    additionalGraphSourceFactories: Set[CAPSGraphSourceFactory]) {
   private val factoriesByScheme: Map[String, CAPSGraphSourceFactory] = {
     val allFactories = additionalGraphSourceFactories + sessionGraphSourceFactory
     val entries = allFactories.flatMap(factory => factory.schemes.map(scheme => scheme -> factory))
@@ -32,7 +33,8 @@ case class CAPSGraphSourceHandler(sessionGraphSourceFactory: SessionGraphSourceF
     else
       Raise.invalidArgument(
         "At most one graph source factory per URI scheme",
-        s"Factories for schemes: ${allFactories.map(factory => factory.name -> factory.schemes.mkString("[", ", ", "]")).mkString(",")}")
+        s"Factories for schemes: ${allFactories.map(factory => factory.name -> factory.schemes.mkString("[", ", ", "]")).mkString(",")}"
+      )
   }
 
   def mountSourceAt(source: CAPSGraphSource, uri: URI)(implicit capsSession: CAPSSession): Unit =

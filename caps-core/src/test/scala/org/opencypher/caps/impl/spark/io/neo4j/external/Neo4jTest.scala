@@ -19,9 +19,7 @@ import org.junit.Assert.assertEquals
 import org.opencypher.caps.test.BaseTestSuite
 import org.opencypher.caps.test.fixture.{Neo4jServerFixture, SparkSessionFixture}
 
-class Neo4jTest extends BaseTestSuite
-  with SparkSessionFixture
-  with Neo4jServerFixture {
+class Neo4jTest extends BaseTestSuite with SparkSessionFixture with Neo4jServerFixture {
 
   override def dataFixture: String =
     """
@@ -56,7 +54,11 @@ class Neo4jTest extends BaseTestSuite
   }
 
   test("run Cypher Rel Query WithPartition") {
-    val result = neo4j.cypher("MATCH (n:Person)-[r:KNOWS]->(m:Person) RETURN id(n) as src,id(m) as dst,type(r) as value SKIP {_skip} LIMIT {_limit}").partitions(7).batch(200)
+    val result = neo4j
+      .cypher(
+        "MATCH (n:Person)-[r:KNOWS]->(m:Person) RETURN id(n) as src,id(m) as dst,type(r) as value SKIP {_skip} LIMIT {_limit}")
+      .partitions(7)
+      .batch(200)
     assertEquals(1000, result.loadRowRdd.count())
   }
 }

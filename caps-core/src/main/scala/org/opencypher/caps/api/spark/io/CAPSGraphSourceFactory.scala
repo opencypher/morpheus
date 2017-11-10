@@ -23,4 +23,3 @@ trait CAPSGraphSourceFactory extends GraphSourceFactory {
   override final type Graph = CAPSGraph
   override type Source <: CAPSGraphSource
 }
-

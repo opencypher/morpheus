@@ -101,23 +101,23 @@ final case class RecordHeader(internalHeader: InternalHeader) {
 
   def childSlots(entity: Var): Seq[RecordSlot] = {
     slots.filter {
-      case RecordSlot(_, OpaqueField(_)) => false
+      case RecordSlot(_, OpaqueField(_))               => false
       case slot if slot.content.owner.contains(entity) => true
-      case _ => false
+      case _                                           => false
     }
   }
 
   def labelSlots(node: Var): Map[HasLabel, RecordSlot] = {
     slots.collect {
-      case s@RecordSlot(_, ProjectedExpr(h: HasLabel)) if h.node == node => h -> s
-      case s@RecordSlot(_, ProjectedField(_, h: HasLabel)) if h.node == node => h -> s
+      case s @ RecordSlot(_, ProjectedExpr(h: HasLabel)) if h.node == node     => h -> s
+      case s @ RecordSlot(_, ProjectedField(_, h: HasLabel)) if h.node == node => h -> s
     }.toMap
   }
 
   def propertySlots(entity: Var): Map[Property, RecordSlot] = {
     slots.collect {
-      case s@RecordSlot(_, ProjectedExpr(p: Property)) if p.m == entity => p -> s
-      case s@RecordSlot(_, ProjectedField(_, p: Property)) if p.m == entity => p -> s
+      case s @ RecordSlot(_, ProjectedExpr(p: Property)) if p.m == entity     => p -> s
+      case s @ RecordSlot(_, ProjectedField(_, p: Property)) if p.m == entity => p -> s
     }.toMap
   }
 
@@ -173,7 +173,7 @@ object RecordHeader {
   def nodeFromSchema(node: Var, schema: Schema): RecordHeader = {
     val labels: Set[String] = node.cypherType match {
       case CTNode(l) => l
-      case other => Raise.invalidArgument("CTNode", other.toString)
+      case other     => Raise.invalidArgument("CTNode", other.toString)
     }
     nodeFromSchema(node, schema, labels)
   }
@@ -184,11 +184,13 @@ object RecordHeader {
     val possibleLabels = impliedLabels.flatMap(label => schema.labelCombinations.combinationsFor(label))
     val optionalKeys = possibleLabels.flatMap(label => schema.nodeKeyMap.keysFor(label).toSet) -- impliedKeys
     val optionalNullableKeys = optionalKeys.map { case (k, v) => k -> v.nullable }
-    val allKeys: Seq[(String, Vector[CypherType])] = (impliedKeys ++ optionalNullableKeys).toSeq.map { case (k, v) => k -> Vector(v) }
+    val allKeys: Seq[(String, Vector[CypherType])] = (impliedKeys ++ optionalNullableKeys).toSeq.map {
+      case (k, v) => k -> Vector(v)
+    }
     val keyGroups: Map[String, Vector[CypherType]] = allKeys.groups[String, Vector[CypherType]]
     val headerLabels = impliedLabels ++ possibleLabels
-    val labelHeaderContents = headerLabels.map {
-      labelName => ProjectedExpr(HasLabel(node, Label(labelName))(CTBoolean))
+    val labelHeaderContents = headerLabels.map { labelName =>
+      ProjectedExpr(HasLabel(node, Label(labelName))(CTBoolean))
     }.toSeq
 
     val keyHeaderContents = keyGroups.toSeq.map {

@@ -63,15 +63,18 @@ class CypherValueComparabilityTest extends CypherValueTestSuite {
     verifyComparability(ANY_valueGroups)
   }
 
-  private def verifyComparability[V <: CypherValue : CypherValueCompanion](valueGroups: ValueGroups[V]): Unit = {
+  private def verifyComparability[V <: CypherValue: CypherValueCompanion](valueGroups: ValueGroups[V]): Unit = {
     valueGroups.flatten.foreach { v =>
       tryCompare(v, v) should be(if (v.comparesNulls) None else Some(0))
     }
 
     val indexedValueGroups =
-      valueGroups
-        .zipWithIndex
-        .flatMap { case ((group), index) => group.map { v => index -> v } }
+      valueGroups.zipWithIndex.flatMap {
+        case ((group), index) =>
+          group.map { v =>
+            index -> v
+          }
+      }
 
     indexedValueGroups.foreach { left =>
       val ((leftIndex, leftValue)) = left

@@ -63,7 +63,8 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
   }
 
   test("typing add") {
-    implicit val context = typeTracker("a" -> CTInteger, "b" -> CTFloat, "c" -> CTNumber, "d" -> CTAny.nullable, "e" -> CTBoolean)
+    implicit val context =
+      typeTracker("a" -> CTInteger, "b" -> CTFloat, "c" -> CTNumber, "d" -> CTAny.nullable, "e" -> CTBoolean)
 
     assertExpr.from("a + a") shouldHaveInferredType CTInteger
     assertExpr.from("b + b") shouldHaveInferredType CTFloat
@@ -97,7 +98,8 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
   }
 
   test("typing subtract") {
-    implicit val context = typeTracker("a" -> CTInteger, "b" -> CTFloat, "c" -> CTNumber, "d" -> CTAny.nullable, "e" -> CTString)
+    implicit val context =
+      typeTracker("a" -> CTInteger, "b" -> CTFloat, "c" -> CTNumber, "d" -> CTAny.nullable, "e" -> CTString)
 
     assertExpr.from("a - a") shouldHaveInferredType CTInteger
     assertExpr.from("b - b") shouldHaveInferredType CTFloat
@@ -114,7 +116,8 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
   }
 
   test("typing multiply") {
-    implicit val context = typeTracker("a" -> CTInteger, "b" -> CTFloat, "c" -> CTNumber, "d" -> CTAny.nullable, "e" -> CTString)
+    implicit val context =
+      typeTracker("a" -> CTInteger, "b" -> CTFloat, "c" -> CTNumber, "d" -> CTAny.nullable, "e" -> CTString)
 
     assertExpr.from("a * a") shouldHaveInferredType CTInteger
     assertExpr.from("b * b") shouldHaveInferredType CTFloat
@@ -131,7 +134,8 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
   }
 
   test("typing divide") {
-    implicit val context = typeTracker("a" -> CTInteger, "b" -> CTFloat, "c" -> CTNumber, "d" -> CTAny.nullable, "e" -> CTString)
+    implicit val context =
+      typeTracker("a" -> CTInteger, "b" -> CTFloat, "c" -> CTNumber, "d" -> CTAny.nullable, "e" -> CTString)
 
     assertExpr.from("a / a") shouldHaveInferredType CTInteger
     assertExpr.from("b / b") shouldHaveInferredType CTFloat

@@ -42,7 +42,8 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
   when(testGraphSource.schema).thenReturn(Some(testGraph.schema))
 
   def leafBlock(): SourceBlock[Expr] = SourceBlock[Expr](testGraph)
-  def leafPlan: Start = Start(LogicalExternalGraph(testGraph.name, testGraph.uri, testGraph.schema), Set.empty)(SolvedQueryModel.empty)
+  def leafPlan: Start =
+    Start(LogicalExternalGraph(testGraph.name, testGraph.uri, testGraph.schema), Set.empty)(SolvedQueryModel.empty)
 
   val graphBlockRef: BlockRef = BlockRef("graph")
   val graphBlock: SourceBlock[Expr] = SourceBlock[Expr](testGraph)
@@ -63,8 +64,10 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
     irFor(rootRef, blocks)
   }
 
-  def project(fields: FieldsAndGraphs[Expr], after: Set[BlockRef] = Set(leafRef),
-              given: AllGiven[Expr] = AllGiven[Expr]()) =
+  def project(
+      fields: FieldsAndGraphs[Expr],
+      after: Set[BlockRef] = Set(leafRef),
+      given: AllGiven[Expr] = AllGiven[Expr]()) =
     ProjectBlock(after, fields, given, testGraph)
 
   protected def matchBlock(pattern: Pattern[Expr]): Block[Expr] =
@@ -97,12 +100,14 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
     def ir(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
       val parameters = Map.empty[String, CypherValue]
-      IRBuilder(stmt)(IRBuilderContext.initial(queryText, parameters, SemanticState.clean, testGraph, _ => testGraphSource))
+      IRBuilder(stmt)(
+        IRBuilderContext.initial(queryText, parameters, SemanticState.clean, testGraph, _ => testGraphSource))
     }
 
     def irWithParams(params: (String, CypherValue)*)(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
-      IRBuilder(stmt)(IRBuilderContext.initial(queryText, params.toMap, SemanticState.clean, testGraph, _ => testGraphSource))
+      IRBuilder(stmt)(
+        IRBuilderContext.initial(queryText, params.toMap, SemanticState.clean, testGraph, _ => testGraphSource))
     }
   }
 }

@@ -41,12 +41,12 @@ class LogicalOptimizerTest extends IrTestSuite {
     val optimizedLogicalPlan = logicalOptimizer(plan)(plannerContext(schema))
 
     optimizedLogicalPlan should equal(
-      Select(Vector(Var("a")(CTNode)), Set(),
-        EmptyRecords(Set(Var("a")(CTNode)),
-          SetSourceGraph(logicalGraph,
-            Start(logicalGraph, Set())(emptySqm)
-          )(emptySqm)
-        )(emptySqm)
+      Select(
+        Vector(Var("a")(CTNode)),
+        Set(),
+        EmptyRecords(
+          Set(Var("a")(CTNode)),
+          SetSourceGraph(logicalGraph, Start(logicalGraph, Set())(emptySqm))(emptySqm))(emptySqm)
       )(emptySqm)
     )
   }
@@ -61,12 +61,12 @@ class LogicalOptimizerTest extends IrTestSuite {
     val optimizedLogicalPlan = logicalOptimizer(plan)(plannerContext(schema))
 
     optimizedLogicalPlan should equal(
-      Select(Vector(Var("a")(CTNode)), Set(),
-        EmptyRecords(Set(Var("a")(CTNode)),
-          SetSourceGraph(logicalGraph,
-            Start(logicalGraph, Set())(emptySqm)
-          )(emptySqm)
-        )(emptySqm)
+      Select(
+        Vector(Var("a")(CTNode)),
+        Set(),
+        EmptyRecords(
+          Set(Var("a")(CTNode)),
+          SetSourceGraph(logicalGraph, Start(logicalGraph, Set())(emptySqm))(emptySqm))(emptySqm)
       )(emptySqm)
     )
   }

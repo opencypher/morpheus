@@ -25,7 +25,7 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
   test("single return query") {
     val given = TestGraph("[]")
 
-    val result  = given.cypher("RETURN 1")
+    val result = given.cypher("RETURN 1")
 
     result.records shouldMatch CypherMap("1" -> 1)
   }
@@ -33,7 +33,7 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
   test("single return query with several columns") {
     val given = TestGraph("(), ()")
 
-    val result  = given.cypher("RETURN 1 AS foo, '' AS str")
+    val result = given.cypher("RETURN 1 AS foo, '' AS str")
 
     result.records shouldMatch CypherMap("foo" -> 1, "str" -> "")
   }
@@ -43,10 +43,7 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
 
     val result = given.cypher("MATCH (n) RETURN n")
 
-    result.records.compact.toMaps should equal(Bag(
-      CypherMap("n" -> 0),
-      CypherMap("n" -> 1))
-    )
+    result.records.compact.toMaps should equal(Bag(CypherMap("n" -> 0), CypherMap("n" -> 1)))
   }
 
   test("return full node") {
@@ -54,10 +51,10 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
 
     val result = given.cypher("MATCH (n) RETURN n")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("n" -> 0, s"n:$DEFAULT_LABEL" -> true, "n.foo" -> "bar"),
-      CypherMap("n" -> 1, s"n:$DEFAULT_LABEL" -> true, "n.foo" -> null))
-    )
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("n" -> 0, s"n:$DEFAULT_LABEL" -> true, "n.foo" -> "bar"),
+        CypherMap("n" -> 1, s"n:$DEFAULT_LABEL" -> true, "n.foo" -> null)))
   }
 
   test("return compact rel") {
@@ -65,10 +62,11 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
 
     val result = given.cypher("MATCH ()-[r]->() RETURN r")
 
-    result.records.compact.toMaps should equal(Bag(
-      CypherMap("r" -> 0),
-      CypherMap("r" -> 1)
-    ))
+    result.records.compact.toMaps should equal(
+      Bag(
+        CypherMap("r" -> 0),
+        CypherMap("r" -> 1)
+      ))
   }
 
   test("return full rel") {
@@ -76,10 +74,11 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
 
     val result = given.cypher("MATCH ()-[r]->() RETURN r")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("r" -> 0, "source(r)" -> 0, "target(r)" -> 1, "type(r)" -> DEFAULT_LABEL, "r.foo" -> "bar"),
-      CypherMap("r" -> 1, "source(r)" -> 1, "target(r)" -> 2, "type(r)" -> DEFAULT_LABEL, "r.foo" -> null)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("r" -> 0, "source(r)" -> 0, "target(r)" -> 1, "type(r)" -> DEFAULT_LABEL, "r.foo" -> "bar"),
+        CypherMap("r" -> 1, "source(r)" -> 1, "target(r)" -> 2, "type(r)" -> DEFAULT_LABEL, "r.foo" -> null)
+      ))
   }
 
   test("return relationship property from relationship without specific type") {
@@ -87,15 +86,15 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
 
     val result = given.cypher("MATCH ()-[r]->() RETURN r.foo")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("r.foo" -> "bar"),
-      CypherMap("r.foo" -> null)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("r.foo" -> "bar"),
+        CypherMap("r.foo" -> null)
+      ))
   }
 
   test("return distinct properties") {
-    val given = TestGraph(
-      """({name:'bar'}),
+    val given = TestGraph("""({name:'bar'}),
         |({name:'bar'}),
         |({name:'baz'}),
         |({name:'baz'}),
@@ -105,16 +104,16 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
 
     val result = given.cypher("MATCH (n) RETURN DISTINCT n.name AS name")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("name" -> "bar"),
-      CypherMap("name" -> "foo"),
-      CypherMap("name" -> "baz")
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("name" -> "bar"),
+        CypherMap("name" -> "foo"),
+        CypherMap("name" -> "baz")
+      ))
   }
 
   test("return distinct properties for combinations") {
-    val given = TestGraph(
-      """({p1:'a', p2: 'a', p3: '1'}),
+    val given = TestGraph("""({p1:'a', p2: 'a', p3: '1'}),
         |({p1:'a', p2: 'a', p3: '2'}),
         |({p1:'a', p2: 'b', p3: '3'}),
         |({p1:'b', p2: 'a', p3: '4'}),
@@ -123,12 +122,13 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
 
     val result = given.cypher("MATCH (n) RETURN DISTINCT n.p1 as p1, n.p2 as p2")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("p1" -> "a", "p2" -> "a"),
-      CypherMap("p1" -> "a", "p2" -> "b"),
-      CypherMap("p1" -> "b", "p2" -> "a"),
-      CypherMap("p1" -> "b", "p2" -> "b")
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("p1" -> "a", "p2" -> "a"),
+        CypherMap("p1" -> "a", "p2" -> "b"),
+        CypherMap("p1" -> "b", "p2" -> "a"),
+        CypherMap("p1" -> "b", "p2" -> "b")
+      ))
   }
 
   test("order by") {
@@ -137,11 +137,12 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (a) RETURN a.val AS val ORDER BY val")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("val" -> 3L),
-      CypherMap("val" -> 4L),
-      CypherMap("val" -> 42L)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("val" -> 3L),
+        CypherMap("val" -> 4L),
+        CypherMap("val" -> 42L)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -153,11 +154,12 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val ASC")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("val" -> 3L),
-      CypherMap("val" -> 4L),
-      CypherMap("val" -> 42L)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("val" -> 3L),
+        CypherMap("val" -> 4L),
+        CypherMap("val" -> 42L)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -169,11 +171,12 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val DESC")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("val" -> 42L),
-      CypherMap("val" -> 4L),
-      CypherMap("val" -> 3L)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("val" -> 42L),
+        CypherMap("val" -> 4L),
+        CypherMap("val" -> 3L)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -197,10 +200,11 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val SKIP 1")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("val" -> 4L),
-      CypherMap("val" -> 42L)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("val" -> 4L),
+        CypherMap("val" -> 42L)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -212,9 +216,10 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val SKIP 1 + 1")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("val" -> 42L)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("val" -> 42L)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -238,9 +243,10 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val LIMIT 1")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("val" -> 3L)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("val" -> 3L)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -252,10 +258,11 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val LIMIT 1 + 1")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("val" -> 3L),
-      CypherMap("val" -> 4L)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("val" -> 3L),
+        CypherMap("val" -> 4L)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -267,9 +274,10 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val SKIP 1 LIMIT 1")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("val" -> 4L)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("val" -> 4L)
+      ))
 
     // And
     result.graphs shouldBe empty

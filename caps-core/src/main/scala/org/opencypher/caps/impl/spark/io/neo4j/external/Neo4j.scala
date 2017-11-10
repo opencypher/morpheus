@@ -64,10 +64,11 @@ object Neo4j {
   }
 }
 
-case class Partitions(partitions: Long = 1,
-                      batchSize: Long = Neo4j.UNDEFINED,
-                      rows: Long = Neo4j.UNDEFINED,
-                      rowSource: Option[() => Long] = None) {
+case class Partitions(
+    partitions: Long = 1,
+    batchSize: Long = Neo4j.UNDEFINED,
+    rows: Long = Neo4j.UNDEFINED,
+    rowSource: Option[() => Long] = None) {
 
   def upper(v1: Long, v2: Long): Long = v1 / v2 + Math.signum(v1 % v2).asInstanceOf[Long]
 

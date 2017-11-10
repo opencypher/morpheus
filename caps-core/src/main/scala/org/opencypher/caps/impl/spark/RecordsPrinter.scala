@@ -39,11 +39,12 @@ object RecordsPrinter {
     if (fieldContents.isEmpty) {
       stream.print(sep)
       stream.print(fitToColumn("(no columns)"))
-    } else fieldContents.foreach { field =>
-      stream.print(sep)
-      stream.print(fitToColumn(field.name))
-      sep = " | "
-    }
+    } else
+      fieldContents.foreach { field =>
+        stream.print(sep)
+        stream.print(fitToColumn(field.name))
+        sep = " | "
+      }
     stream.println(" |")
     stream.println(---)
 

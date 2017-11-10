@@ -16,5 +16,5 @@
 package org.opencypher.caps.api.spark.instances
 
 trait AllInstances
-  extends org.opencypher.caps.api.value.instances.AllInstances
-  with org.opencypher.caps.api.spark.encoders.CypherValueEncoders
+    extends org.opencypher.caps.api.value.instances.AllInstances
+    with org.opencypher.caps.api.spark.encoders.CypherValueEncoders

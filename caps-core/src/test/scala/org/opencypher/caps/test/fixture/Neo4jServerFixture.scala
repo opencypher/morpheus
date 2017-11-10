@@ -25,10 +25,8 @@ trait Neo4jServerFixture extends BaseTestFixture {
 
   var neo4jServer: ServerControls = _
 
-  def neo4jConfig = Neo4jConfig(neo4jServer.boltURI(),
-    user = "anonymous",
-    password = Some("password"),
-    encrypted = false)
+  def neo4jConfig =
+    Neo4jConfig(neo4jServer.boltURI(), user = "anonymous", password = Some("password"), encrypted = false)
 
   def neo4jHost: String = {
     val scheme = neo4jServer.boltURI().getScheme
@@ -43,7 +41,8 @@ trait Neo4jServerFixture extends BaseTestFixture {
 
   abstract override def beforeAll(): Unit = {
     super.beforeAll()
-    neo4jServer = TestServerBuilders.newInProcessBuilder()
+    neo4jServer = TestServerBuilders
+      .newInProcessBuilder()
       .withConfig("dbms.security.auth_enabled", "true")
       .withFixture(userFixture)
       .withFixture(dataFixture)

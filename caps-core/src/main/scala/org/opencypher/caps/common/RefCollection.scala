@@ -43,7 +43,9 @@ object RefCollection {
     }
 
     override def find(collection: RefCollection[D], defn: Def): Option[Ref] =
-      findByKey(collection, key(defn)).filter { ref => collection.elts(id(ref)) == defn }
+      findByKey(collection, key(defn)).filter { ref =>
+        collection.elts(id(ref)) == defn
+      }
 
     override def findByKey(collection: RefCollection[D], k: Key): Option[Ref] = {
       val idx = collection.elts.indexWhere(defn => key(defn) == k)
@@ -62,9 +64,9 @@ object RefCollection {
     // left if key(defn) is already inserted with a different defn, right otherwise
     override def insert(collection: RefCollection[D], defn: Def): Either[Ref, (Option[RefCollection[Def]], Ref)] = {
       val defnKey = key(defn)
-      findByKey(collection, defnKey)
-        .map { ref => if (collection.elts(id(ref)) == defn) Right(None -> ref) else Left(ref) }
-        .getOrElse { Right(Some(RefCollection(collection.elts :+ defn)) -> ref(collection.elts.size)) }
+      findByKey(collection, defnKey).map { ref =>
+        if (collection.elts(id(ref)) == defn) Right(None -> ref) else Left(ref)
+      }.getOrElse { Right(Some(RefCollection(collection.elts :+ defn)) -> ref(collection.elts.size)) }
     }
 
     protected def id(ref: Ref): Int

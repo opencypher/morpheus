@@ -45,48 +45,56 @@ object Neo4jGraphLoader {
   private def loadSchema(nodes: RDD[InternalNode], rels: RDD[InternalRelationship]): VerifiedSchema = {
     import scala.collection.JavaConverters._
 
-    val nodeSchema = nodes.aggregate(Schema.empty)({
-      case (acc, next) => next.labels().asScala.foldLeft(acc) {
-        case (acc2, l) =>
-          // for nodes without properties
-          val withLabel = acc2.withNodePropertyKeys(l)()
-          next.asMap().asScala.foldLeft(withLabel) {
-            case (acc3, (k, v)) =>
-              acc3.withNodePropertyKeys(l)(k -> fromJavaType(v))
+    val nodeSchema = nodes.aggregate(Schema.empty)(
+      {
+        case (acc, next) =>
+          next.labels().asScala.foldLeft(acc) {
+            case (acc2, l) =>
+              // for nodes without properties
+              val withLabel = acc2.withNodePropertyKeys(l)()
+              next.asMap().asScala.foldLeft(withLabel) {
+                case (acc3, (k, v)) =>
+                  acc3.withNodePropertyKeys(l)(k -> fromJavaType(v))
+              }
           }
-      }
-    }, _ ++ _)
+      },
+      _ ++ _
+    )
 
-    val completeSchema = rels.aggregate(nodeSchema)({
-      case (acc, next) =>
-        // for rels without properties
-        val withType = acc.withRelationshipPropertyKeys(next.`type`())()
-        next.asMap().asScala.foldLeft(withType) {
-          case (acc3, (k, v)) =>
-            acc3.withRelationshipPropertyKeys(next.`type`())(k -> fromJavaType(v))
-        }
-    },  _ ++ _)
+    val completeSchema = rels.aggregate(nodeSchema)(
+      {
+        case (acc, next) =>
+          // for rels without properties
+          val withType = acc.withRelationshipPropertyKeys(next.`type`())()
+          next.asMap().asScala.foldLeft(withType) {
+            case (acc3, (k, v)) =>
+              acc3.withRelationshipPropertyKeys(next.`type`())(k -> fromJavaType(v))
+          }
+      },
+      _ ++ _
+    )
 
     completeSchema.verify
   }
 
-  def fromNeo4j(config: Neo4jConfig)
-               (implicit caps: CAPSSession): CAPSGraph =
+  def fromNeo4j(config: Neo4jConfig)(implicit caps: CAPSSession): CAPSGraph =
     fromNeo4j(config, "MATCH (n) RETURN n", "MATCH ()-[r]->() RETURN r")
 
-  def fromNeo4j(config: Neo4jConfig, nodeQuery: String, relQuery: String)
-               (implicit caps: CAPSSession): CAPSGraph =
+  def fromNeo4j(config: Neo4jConfig, nodeQuery: String, relQuery: String)(implicit caps: CAPSSession): CAPSGraph =
     fromNeo4j(config, nodeQuery, relQuery, "source", "rel", "target", None)
 
-  def fromNeo4j(config: Neo4jConfig, nodeQuery: String, relQuery: String, schema: VerifiedSchema)
-               (implicit caps: CAPSSession): CAPSGraph =
+  def fromNeo4j(config: Neo4jConfig, nodeQuery: String, relQuery: String, schema: VerifiedSchema)(
+      implicit caps: CAPSSession): CAPSGraph =
     fromNeo4j(config, nodeQuery, relQuery, "source", "rel", "target", Some(schema))
 
-
-  def fromNeo4j(config: Neo4jConfig, nodeQuery: String, relQuery: String,
-                sourceNode: String, rel: String, targetNode: String,
-                maybeSchema: Option[VerifiedSchema] = None)
-               (implicit caps: CAPSSession): CAPSGraph = {
+  def fromNeo4j(
+      config: Neo4jConfig,
+      nodeQuery: String,
+      relQuery: String,
+      sourceNode: String,
+      rel: String,
+      targetNode: String,
+      maybeSchema: Option[VerifiedSchema] = None)(implicit caps: CAPSSession): CAPSGraph = {
     val (nodes, rels) = loadRDDs(config, nodeQuery, relQuery)
 
     val verified = maybeSchema.getOrElse(loadSchema(nodes, rels))
@@ -108,9 +116,12 @@ object Neo4jGraphLoader {
     def schema: Schema = verifiedSchema.schema
   }
 
-  private def createGraph(inputNodes: RDD[InternalNode], inputRels: RDD[InternalRelationship],
-                          sourceNode: String = "source", rel: String = "rel", targetNode: String = "target")
-                         (implicit caps: CAPSSession, context: LoadingContext): CAPSGraph =
+  private def createGraph(
+      inputNodes: RDD[InternalNode],
+      inputRels: RDD[InternalRelationship],
+      sourceNode: String = "source",
+      rel: String = "rel",
+      targetNode: String = "target")(implicit caps: CAPSSession, context: LoadingContext): CAPSGraph =
     new CAPSGraph {
 
       override val schema: Schema = context.schema
@@ -119,13 +130,16 @@ object Neo4jGraphLoader {
 
       override def persist(): CAPSGraph = map(_.persist(), _.persist())
 
-      override def persist(storageLevel: StorageLevel): CAPSGraph = map(_.persist(storageLevel), _.persist(storageLevel))
+      override def persist(storageLevel: StorageLevel): CAPSGraph =
+        map(_.persist(storageLevel), _.persist(storageLevel))
 
       override def unpersist(): CAPSGraph = map(_.unpersist(), _.unpersist())
 
       override def unpersist(blocking: Boolean): CAPSGraph = map(_.unpersist(blocking), _.unpersist(blocking))
 
-      private def map(f: RDD[InternalNode] => RDD[InternalNode], g: RDD[InternalRelationship] => RDD[InternalRelationship]) =
+      private def map(
+          f: RDD[InternalNode] => RDD[InternalNode],
+          g: RDD[InternalRelationship] => RDD[InternalRelationship]) =
         // We need to construct new RDDs since otherwise providing a different storage level may fail
         createGraph(f(inputNodes.filter(_ => true)), g(inputRels.filter(_ => true)), sourceNode, rel, targetNode)
 
@@ -152,8 +166,8 @@ object Neo4jGraphLoader {
       override def union(other: CAPSGraph): CAPSGraph =
         Raise.unsupportedArgument("union with neo graph")
 
-      private def computeRecords(name: String, cypherType: CypherType, fields: Seq[(SlotContent, StructField)])
-                                (computeRdd: (RecordHeader, StructType) => RDD[Row]): CAPSRecords = {
+      private def computeRecords(name: String, cypherType: CypherType, fields: Seq[(SlotContent, StructField)])(
+          computeRdd: (RecordHeader, StructType) => RDD[Row]): CAPSRecords = {
         val header = computeHeader(fields)
         val struct = StructType(fields.map(_._2).toArray)
         val rdd = computeRdd(header, struct)
@@ -169,8 +183,8 @@ object Neo4jGraphLoader {
           case (acc, next) => acc.update(addContent(next))._1
         }
 
-      private def computeNodeFields(name: String, cypherType: CTNode)
-                                   (implicit context: LoadingContext): Seq[(SlotContent, StructField)] = {
+      private def computeNodeFields(name: String, cypherType: CTNode)(
+          implicit context: LoadingContext): Seq[(SlotContent, StructField)] = {
         val node = Var(name)(cypherType)
 
         val schema = context.schema
@@ -198,8 +212,8 @@ object Neo4jGraphLoader {
         Seq(slotField) ++ labelFields ++ propertyFields
       }
 
-      private def computeRelFields(name: String, cypherType: CTRelationship)
-                                  (implicit context: LoadingContext): Seq[(SlotContent, StructField)] = {
+      private def computeRelFields(name: String, cypherType: CTRelationship)(
+          implicit context: LoadingContext): Seq[(SlotContent, StructField)] = {
         val rel = Var(name)(cypherType)
 
         val schema = context.schema
@@ -224,23 +238,21 @@ object Neo4jGraphLoader {
         val targetSlot = ProjectedExpr(EndNode(rel)(CTNode))
         val targetField = StructField(SparkColumnName.of(targetSlot), LongType, nullable = false)
 
-        Seq(sourceSlot -> sourceField, idSlot -> idField,
-          typeSlot -> typeField, targetSlot -> targetField) ++ propertyFields
+        Seq(sourceSlot -> sourceField, idSlot -> idField, typeSlot -> typeField, targetSlot -> targetField) ++ propertyFields
       }
 
       override def toString = "Neo4jGraph"
     }
 
-  private case class filterNode(nodeDef: CTNode)
-                               (implicit context: LoadingContext) extends (InternalNode => Boolean) {
+  private case class filterNode(nodeDef: CTNode)(implicit context: LoadingContext) extends (InternalNode => Boolean) {
 
     val requiredLabels: Set[String] = nodeDef.labels
 
     override def apply(importedNode: InternalNode): Boolean = requiredLabels.forall(importedNode.hasLabel)
   }
 
-  private case class nodeToRow(header: RecordHeader, schema: StructType)
-                              (implicit context: LoadingContext) extends (InternalNode => Row) {
+  private case class nodeToRow(header: RecordHeader, schema: StructType)(implicit context: LoadingContext)
+      extends (InternalNode => Row) {
     override def apply(importedNode: InternalNode): Row = {
       val graphSchema = context.schema
 
@@ -249,14 +261,16 @@ object Neo4jGraphLoader {
       val props = importedNode.asMap().asScala
       val labels = importedNode.labels().asScala.toSet
 
-      val schemaKeyTypes = labels.map { label => graphSchema.nodeKeys(label) }.reduce(_ ++ _)
+      val schemaKeyTypes = labels.map { label =>
+        graphSchema.nodeKeys(label)
+      }.reduce(_ ++ _)
 
       val values = header.slots.map { slot =>
         slot.content.key match {
           case Property(_, PropertyKey(keyName)) =>
             val propValue = schemaKeyTypes.get(keyName) match {
               case Some(t) if t == slot.content.cypherType => props.get(keyName).orNull
-              case _ => null
+              case _                                       => null
             }
             importedToSparkEncodedCypherValue(schema(slot.index).dataType, propValue)
           case HasLabel(_, label) =>
@@ -273,14 +287,14 @@ object Neo4jGraphLoader {
     }
   }
 
-  private case class filterRel(relDef: CTRelationship)
-                              (implicit context: LoadingContext) extends (InternalRelationship => Boolean) {
+  private case class filterRel(relDef: CTRelationship)(implicit context: LoadingContext)
+      extends (InternalRelationship => Boolean) {
 
     override def apply(importedRel: InternalRelationship): Boolean = relDef.types.forall(importedRel.hasType)
   }
 
-  private case class relToRow(header: RecordHeader, schema: StructType)
-                             (implicit context: LoadingContext) extends (InternalRelationship => Row) {
+  private case class relToRow(header: RecordHeader, schema: StructType)(implicit context: LoadingContext)
+      extends (InternalRelationship => Row) {
     override def apply(importedRel: InternalRelationship): Row = {
       val graphSchema = context.schema
 
@@ -296,7 +310,7 @@ object Neo4jGraphLoader {
           case Property(_, PropertyKey(keyName)) =>
             val propValue = schemaKeyTypes.get(keyName) match {
               case Some(t) if t == slot.content.cypherType => props.get(keyName).orNull
-              case _ => null
+              case _                                       => null
             }
             importedToSparkEncodedCypherValue(schema(slot.index).dataType, propValue)
 
@@ -323,6 +337,6 @@ object Neo4jGraphLoader {
 
   private def importedToSparkEncodedCypherValue(typ: DataType, value: AnyRef): AnyRef = typ match {
     case StringType | LongType | BooleanType | DoubleType => value
-    case _ => CypherValue(value)
+    case _                                                => CypherValue(value)
   }
 }

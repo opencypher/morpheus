@@ -26,7 +26,6 @@ import org.opencypher.caps.api.util.PrintOptions
 import org.opencypher.caps.impl.syntax.header._
 import org.opencypher.caps.test.CAPSTestSuite
 
-
 class RecordsPrinterTest extends CAPSTestSuite {
 
   implicit val options: PrintOptions = PrintOptions.out
@@ -92,11 +91,12 @@ class RecordsPrinterTest extends CAPSTestSuite {
 
   test("three columns, three rows") {
     // Given
-    val records = CAPSRecords.create(Seq(
-      Row3("myString", 4L, false),
-      Row3("foo", 99999999L, true),
-      Row3(null, -1L, true)
-    ))
+    val records = CAPSRecords.create(
+      Seq(
+        Row3("myString", 4L, false),
+        Row3("foo", 99999999L, true),
+        Row3(null, -1L, true)
+      ))
 
     // When
     print(records)
@@ -116,20 +116,17 @@ class RecordsPrinterTest extends CAPSTestSuite {
   }
 
   test("return property values without alias") {
-    val given = TestGraph(
-      """
+    val given = TestGraph("""
         |(a:Person {name: "Alice"})-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person {name: "Bob"})
       """.stripMargin)
 
-    val when = given.cypher(
-      """MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person)
+    val when = given.cypher("""MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person)
         |RETURN a.name, b.name
       """.stripMargin)
 
     print(when.records)
 
-    getString should equal(
-      """+---------------------------------------------+
+    getString should equal("""+---------------------------------------------+
         !| a.name               | b.name               |
         !+---------------------------------------------+
         !| 'Bob'                | 'Alice'              |

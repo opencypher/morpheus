@@ -36,9 +36,9 @@ case class TypeTracker(maps: List[Map[Expression, CypherType]], parameters: Map[
 
   @tailrec
   private def get(e: Expression, maps: List[Map[Expression, CypherType]]): Option[CypherType] = maps.headOption match {
-    case None => None
+    case None                         => None
     case Some(map) if map.contains(e) => map.get(e)
-    case Some(_) => get(e, maps.tail)
+    case Some(_)                      => get(e, maps.tail)
   }
 
   def updated(e: Expression, t: CypherType): TypeTracker = copy(maps = head.updated(e, t) +: tail)

@@ -58,15 +58,17 @@ class CsvSchemaTest extends BaseTestSuite {
     val csvSchema = CsvNodeSchema(schema)
 
     csvSchema.idField should equal(CsvField("id", 0, "LONG"))
-    csvSchema.implicitLabels should equal(List("Person","Employee"))
-    csvSchema.optionalLabels should equal(List(
-      CsvField("Swede", 1, "BOOLEAN"),
-      CsvField("German", 2, "BOOLEAN")
-    ))
-    csvSchema.propertyFields should equal(List(
-      CsvField("name", 3, "STRING"),
-      CsvField("luckyNumber", 4, "INTEGER")
-    ))
+    csvSchema.implicitLabels should equal(List("Person", "Employee"))
+    csvSchema.optionalLabels should equal(
+      List(
+        CsvField("Swede", 1, "BOOLEAN"),
+        CsvField("German", 2, "BOOLEAN")
+      ))
+    csvSchema.propertyFields should equal(
+      List(
+        CsvField("name", 3, "STRING"),
+        CsvField("luckyNumber", 4, "INTEGER")
+      ))
   }
 
   test("read node schema without optional labels") {
@@ -97,12 +99,13 @@ class CsvSchemaTest extends BaseTestSuite {
     val csvSchema = CsvNodeSchema(schema)
 
     csvSchema.idField should equal(CsvField("id", 0, "LONG"))
-    csvSchema.implicitLabels should equal(List("Person","Employee"))
+    csvSchema.implicitLabels should equal(List("Person", "Employee"))
     csvSchema.optionalLabels should equal(List())
-    csvSchema.propertyFields should equal(List(
-      CsvField("name", 3, "STRING"),
-      CsvField("luckyNumber", 4, "INTEGER")
-    ))
+    csvSchema.propertyFields should equal(
+      List(
+        CsvField("name", 3, "STRING"),
+        CsvField("luckyNumber", 4, "INTEGER")
+      ))
   }
 
   test("read valid relationship schema") {
@@ -141,9 +144,10 @@ class CsvSchemaTest extends BaseTestSuite {
     csvSchema.startIdField should equal(CsvField("startId", 1, "LONG"))
     csvSchema.endIdField should equal(CsvField("endId", 2, "LONG"))
     csvSchema.relType should equal("KNOWS")
-    csvSchema.propertyFields should equal(List(
-      CsvField("since", 3, "INTEGER")
-    ))
+    csvSchema.propertyFields should equal(
+      List(
+        CsvField("since", 3, "INTEGER")
+      ))
   }
 
   test("read rel schema without fields") {

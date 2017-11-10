@@ -22,7 +22,7 @@ import org.opencypher.caps.api.spark.CAPSSession
 import org.opencypher.caps.impl.spark.exception.Raise
 
 abstract class CAPSGraphSourceFactoryImpl[S <: CAPSGraphSource](val companion: CAPSGraphSourceFactoryCompanion)
-  extends CAPSGraphSourceFactory {
+    extends CAPSGraphSourceFactory {
 
   override final type Source = S
 

@@ -155,21 +155,26 @@ class RecordHeaderTest extends BaseTestSuite {
     lhs ++ rhs should equal(lhs)
 
     rhs = rhs.update(addContent(OpaqueField(Var("m")(CTRelationship))))._1
-    (lhs ++ rhs).slots.map(_.content) should equal(Seq(
-      ProjectedExpr(Var("n")(CTNode)), OpaqueField(Var("m")(CTRelationship))
-    ))
+    (lhs ++ rhs).slots.map(_.content) should equal(
+      Seq(
+        ProjectedExpr(Var("n")(CTNode)),
+        OpaqueField(Var("m")(CTRelationship))
+      ))
   }
 
   test("concatenating headers with similar properties") {
-    val (lhs, _) = RecordHeader.empty.update(addContent(ProjectedExpr(Property(Var("n")(), PropertyKey("name"))(CTInteger))))
-    val (rhs, _) = RecordHeader.empty.update(addContent(ProjectedExpr(Property(Var("n")(), PropertyKey("name"))(CTString))))
+    val (lhs, _) =
+      RecordHeader.empty.update(addContent(ProjectedExpr(Property(Var("n")(), PropertyKey("name"))(CTInteger))))
+    val (rhs, _) =
+      RecordHeader.empty.update(addContent(ProjectedExpr(Property(Var("n")(), PropertyKey("name"))(CTString))))
 
     val concatenated = lhs ++ rhs
 
-    concatenated.slots should equal(IndexedSeq(
-      RecordSlot(0, ProjectedExpr(Property(Var("n")(), PropertyKey("name"))(CTInteger))),
-      RecordSlot(1, ProjectedExpr(Property(Var("n")(), PropertyKey("name"))(CTString)))
-    ))
+    concatenated.slots should equal(
+      IndexedSeq(
+        RecordSlot(0, ProjectedExpr(Property(Var("n")(), PropertyKey("name"))(CTInteger))),
+        RecordSlot(1, ProjectedExpr(Property(Var("n")(), PropertyKey("name"))(CTString)))
+      ))
   }
 
   test("can get labels") {
@@ -278,13 +283,25 @@ class RecordHeaderTest extends BaseTestSuite {
     val propFoo2 = ProjectedExpr(Property('r, PropertyKey("foo"))(CTString))
     val propBar2 = ProjectedExpr(Property('r, PropertyKey("bar"))(CTString))
 
-    val (header, _) = RecordHeader.empty.update(addContents(Seq(
-      node1, node2, rel, label, propFoo1, propFoo2, propBar1, propBar2, propBaz
-    )))
+    val (header, _) = RecordHeader.empty.update(
+      addContents(
+        Seq(
+          node1,
+          node2,
+          rel,
+          label,
+          propFoo1,
+          propFoo2,
+          propBar1,
+          propBar2,
+          propBaz
+        )))
 
-    header.propertySlots('n).mapValues(_.content) should equal(Map(propFoo1.expr -> propFoo1, propBar1.expr -> propBar1, propBaz.expr -> propBaz))
+    header.propertySlots('n).mapValues(_.content) should equal(
+      Map(propFoo1.expr -> propFoo1, propBar1.expr -> propBar1, propBaz.expr -> propBaz))
     header.propertySlots('m).mapValues(_.content) should equal(Map.empty)
-    header.propertySlots('r).mapValues(_.content) should equal(Map(propFoo2.expr -> propFoo2, propBar2.expr -> propBar2))
+    header.propertySlots('r).mapValues(_.content) should equal(
+      Map(propFoo2.expr -> propFoo2, propBar2.expr -> propBar2))
   }
 
   test("nodesForType") {

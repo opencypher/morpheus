@@ -39,13 +39,21 @@ trait JsonSerialiser {
 
   implicit val graphEncoder: Encoder[CAPSGraph] = new Encoder[CAPSGraph] {
     override final def apply(graph: CAPSGraph): Json = {
-      val nodes = graph.nodes("n").toLocalScalaIterator.map { map =>
-        constructValue(map.get("n"))
-      }.toSeq
+      val nodes = graph
+        .nodes("n")
+        .toLocalScalaIterator
+        .map { map =>
+          constructValue(map.get("n"))
+        }
+        .toSeq
 
-      val rels = graph.relationships("rel").toLocalScalaIterator.map { map =>
-        constructValue(map.get("rel"))
-      }.toSeq
+      val rels = graph
+        .relationships("rel")
+        .toLocalScalaIterator
+        .map { map =>
+          constructValue(map.get("rel"))
+        }
+        .toSeq
 
       formatGraph(graph, nodes, rels)
     }

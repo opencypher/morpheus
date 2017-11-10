@@ -53,7 +53,7 @@ trait RecordMatchingTestSupport {
     private def projected(records: CAPSRecords): CAPSRecords = {
       val newSlots = records.header.slots.map(_.content).map {
         case slot: FieldSlotContent => OpaqueField(slot.field)
-        case slot: ProjectedExpr => OpaqueField(Var(slot.expr.withoutType)(slot.cypherType))
+        case slot: ProjectedExpr    => OpaqueField(Var(slot.expr.withoutType)(slot.cypherType))
       }
       val newHeader = RecordHeader.from(newSlots: _*)
       val newData = records.data.toDF(newHeader.internalHeader.columns: _*)
@@ -69,7 +69,7 @@ trait RecordMatchingTestSupport {
         val properties = records.header.slots.map { s =>
           s.content match {
             case f: FieldSlotContent => f.field.name -> r.getCypherValue(f.key, records.header)
-            case x => x.key.withoutType -> r.getCypherValue(x.key, records.header)
+            case x                   => x.key.withoutType -> r.getCypherValue(x.key, records.header)
           }
         }.toMap
         CypherMap(properties)

@@ -96,7 +96,6 @@ trait GraphMatchingTestSupport {
       override def session: CAPSSession = caps
       override protected def graph: CAPSGraph = this
 
-
       override def cache() = this
 
       override def persist() = this
@@ -148,14 +147,16 @@ trait GraphMatchingTestSupport {
                 case HasLabel(_, label) => v.getLabels.contains(label.name)
               }
               val propertyFields = exprs.collect {
-                case p@Property(_, k) =>
+                case p @ Property(_, k) =>
                   val pValue = v.getProperties.get(k.name)
                   if (fromJavaType(pValue) == p.cypherType) pValue
                   else null
               }
 
               Row(v.getId +: (labelFields ++ propertyFields): _*)
-            }.toList.asJava
+            }
+            .toList
+            .asJava
 
           val fields = header.slots.map { s =>
             StructField(SparkColumnName.of(s), toSparkType(s.content.cypherType))
@@ -180,11 +181,13 @@ trait GraphMatchingTestSupport {
 
               val propertyFields = header.slots.slice(4, header.slots.size).map(_.content.key).map {
                 case Property(_, k) => e.getProperties.get(k.name)
-                case _ => throw new IllegalArgumentException("Only properties expected in the header")
+                case _              => throw new IllegalArgumentException("Only properties expected in the header")
               }
 
               Row(staticFields ++ propertyFields: _*)
-          }.toList.asJava
+            }
+            .toList
+            .asJava
 
           val fields = header.slots.map { s =>
             StructField(SparkColumnName.of(s), toSparkType(s.content.cypherType))
@@ -197,8 +200,7 @@ trait GraphMatchingTestSupport {
     }
   }
 
-  private case class TestGraphSource(canonicalURI: URI, testGraph: TestGraph)
-    extends CAPSGraphSourceImpl {
+  private case class TestGraphSource(canonicalURI: URI, testGraph: TestGraph) extends CAPSGraphSourceImpl {
 
     override def sourceForGraphAt(uri: URI): Boolean = uri == canonicalURI
     override def create: CAPSGraph = ???

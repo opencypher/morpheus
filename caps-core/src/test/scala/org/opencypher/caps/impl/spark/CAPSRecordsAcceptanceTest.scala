@@ -35,11 +35,12 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     val strings = result.records.toLocalScalaIterator.map(_.toString).toSet
 
     // We do string comparisons here because CypherNode.equals() does not check labels/properties
-    strings should equal(Set(
-      "{a: (#0:Person {birthyear: 1910, name: 'Rachel Kempson'}), a.name: 'Rachel Kempson'}",
-      "{a: (#1:Person {birthyear: 1908, name: 'Michael Redgrave'}), a.name: 'Michael Redgrave'}",
-      "{a: (#10:Person {birthyear: 1873, name: 'Roy Redgrave'}), a.name: 'Roy Redgrave'}"
-    ))
+    strings should equal(
+      Set(
+        "{a: (#0:Person {birthyear: 1910, name: 'Rachel Kempson'}), a.name: 'Rachel Kempson'}",
+        "{a: (#1:Person {birthyear: 1908, name: 'Michael Redgrave'}), a.name: 'Michael Redgrave'}",
+        "{a: (#10:Person {birthyear: 1873, name: 'Roy Redgrave'}), a.name: 'Roy Redgrave'}"
+      ))
   }
 
   test("label scan and project") {
@@ -133,7 +134,9 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     val result = graph.cypher(query)
 
     // Then
-    val tuple = ("Brendan Madden", "Tom Sawyer Software",
+    val tuple = (
+      "Brendan Madden",
+      "Tom Sawyer Software",
       "#tsperspectives 7.6 is 15% faster with #neo4j Bolt support. https://t.co/1xPxB9slrB @TSawyerSoftware #graphviz")
     result.records shouldHaveSize 79 andContain tuple
   }

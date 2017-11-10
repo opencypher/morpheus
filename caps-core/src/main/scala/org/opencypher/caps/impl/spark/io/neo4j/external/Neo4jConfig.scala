@@ -19,26 +19,23 @@ import java.net.URI
 
 import org.neo4j.driver.v1.{AuthTokens, Config, Driver, GraphDatabase}
 
-case class Neo4jConfig(uri: URI,
-                       user: String = "",
-                       password: Option[String] = None,
-                       encrypted: Boolean = true) {
+case class Neo4jConfig(uri: URI, user: String = "", password: Option[String] = None, encrypted: Boolean = true) {
 
   def boltConfig(): Config = {
     val builder = Config.build
 
-    if(encrypted)
+    if (encrypted)
       builder.withEncryption().toConfig
     else
       builder.withoutEncryption().toConfig
   }
 
-  def driver(config: Neo4jConfig) : Driver = config.password match {
+  def driver(config: Neo4jConfig): Driver = config.password match {
     case Some(pwd) => GraphDatabase.driver(config.uri, AuthTokens.basic(config.user, pwd), boltConfig())
-    case _ => GraphDatabase.driver(config.uri, boltConfig())
+    case _         => GraphDatabase.driver(config.uri, boltConfig())
   }
 
-  def driver() : Driver = driver(this)
+  def driver(): Driver = driver(this)
 
   def driver(url: String): Driver = GraphDatabase.driver(url, boltConfig())
 }

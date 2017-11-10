@@ -35,7 +35,7 @@ class CAPSEngineOperationsTest extends CAPSTestSuite {
         (2L, false, "Martin"),
         (3L, false, "Max"),
         (4L, false, "Stefan")
-    ))
+      ))
 
     val result = base.filter(given, Var("IS_SWEDE")(CTBoolean))
 
@@ -50,17 +50,18 @@ class CAPSEngineOperationsTest extends CAPSTestSuite {
         (2L, false, "Martin"),
         (3L, false, "Max"),
         (4L, false, "Stefan")
-    ))
+      ))
 
     val result = base.select(given, IndexedSeq(Var("ID")(CTInteger), Var("NAME")(CTString)))
 
     result shouldMatch CAPSRecords.create(
-      Seq("ID", "NAME"), Seq(
+      Seq("ID", "NAME"),
+      Seq(
         (1L, "Mats"),
         (2L, "Martin"),
         (3L, "Max"),
         (4L, "Stefan")
-    ))
+      ))
   }
 
   test("project operation on records") {

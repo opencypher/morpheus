@@ -63,10 +63,10 @@ class CypherValueEquivTest extends CypherValueTestSuite {
     verifyEquiv(ANY_valueGroups)
   }
 
-  private def verifyEquiv[V <: CypherValue : CypherValueCompanion](valueGroups: ValueGroups[V]): Unit = {
+  private def verifyEquiv[V <: CypherValue: CypherValueCompanion](valueGroups: ValueGroups[V]): Unit = {
     valueGroups.flatten.foreach { v =>
       equiv(v, v) should be(true)
-      if (! v.isNull) {
+      if (!v.isNull) {
         (v equivTo cypherNull[V]) should be(false)
         (cypherNull[V] equivTo v) should be(false)
       }
@@ -75,22 +75,25 @@ class CypherValueEquivTest extends CypherValueTestSuite {
     (cypherNull[V] equivTo cypherNull[V]) should be(true)
 
     val indexedValueGroups =
-      valueGroups
-        .zipWithIndex
-        .flatMap { case ((group), index) => group.map { v => index -> v } }
+      valueGroups.zipWithIndex.flatMap {
+        case ((group), index) =>
+          group.map { v =>
+            index -> v
+          }
+      }
 
     indexedValueGroups.foreach { left =>
       val ((leftIndex, leftValue)) = left
-       indexedValueGroups.foreach { right =>
-         val ((rightIndex, rightValue)) = right
-         val areEquivalent = equiv(leftValue, rightValue)
-         val areSame = leftIndex == rightIndex
-         areEquivalent should equal(areSame)
-       }
+      indexedValueGroups.foreach { right =>
+        val ((rightIndex, rightValue)) = right
+        val areEquivalent = equiv(leftValue, rightValue)
+        val areSame = leftIndex == rightIndex
+        areEquivalent should equal(areSame)
+      }
     }
   }
 
-  private def equiv[V <: CypherValue : CypherValueCompanion](v1: V, v2: V): Boolean = {
+  private def equiv[V <: CypherValue: CypherValueCompanion](v1: V, v2: V): Boolean = {
     val b1 = CypherValueCompanion[V].equiv(v1, v2)
     val b2 = CypherValueCompanion[V].equiv(v2, v1)
 

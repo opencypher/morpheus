@@ -29,4 +29,3 @@ case class PhysicalResult(records: CAPSRecords, graphs: Map[String, CAPSGraph]) 
   def selectGraphs(selected: Set[String]): PhysicalResult =
     copy(graphs = graphs.filterKeys(selected))
 }
-

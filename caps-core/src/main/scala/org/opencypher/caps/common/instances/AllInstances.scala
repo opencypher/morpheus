@@ -15,5 +15,4 @@
  */
 package org.opencypher.caps.common.instances
 
-trait AllInstances
-  extends MapInstances
+trait AllInstances extends MapInstances

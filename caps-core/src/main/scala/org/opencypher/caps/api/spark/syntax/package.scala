@@ -15,5 +15,4 @@
  */
 package org.opencypher.caps.api.spark
 
-package object syntax
-  extends AllSyntax
+package object syntax extends AllSyntax

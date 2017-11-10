@@ -21,8 +21,7 @@ import org.opencypher.caps.common.Ternary
 
 import scala.language.implicitConversions
 
-trait CypherValueConverters
-  extends LowPriorityCypherValueConverters {
+trait CypherValueConverters extends LowPriorityCypherValueConverters {
 
   implicit def cypherBoolean(v: Boolean): CypherBoolean = CypherBoolean.create(v)
   implicit def cypherString(v: String): CypherString = CypherString.create(v)
@@ -30,7 +29,7 @@ trait CypherValueConverters
   implicit def cypherInteger(v: Short): CypherInteger = CypherInteger.create(v.toLong)
   implicit def cypherInteger(v: Int): CypherInteger = CypherInteger.create(v.toLong)
   implicit def cypherInteger(v: Long): CypherInteger = CypherInteger.create(v)
-  implicit def cypherFloat(v: Float): CypherFloat =  CypherFloat.create(v.toDouble)
+  implicit def cypherFloat(v: Float): CypherFloat = CypherFloat.create(v.toDouble)
   implicit def cypherFloat(v: Double): CypherFloat = CypherFloat.create(v)
 
   implicit def cypherTernary(v: Ternary): CypherValue =

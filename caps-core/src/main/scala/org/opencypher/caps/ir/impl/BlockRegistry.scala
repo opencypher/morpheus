@@ -29,9 +29,10 @@ case class BlockRegistry[E](reg: Seq[(BlockRef, Block[E])])(private val counter:
     ref -> copy(reg = reg :+ ref -> blockDef)(counter + 1)
   }
 
-  def apply(ref: BlockRef): Block[E] = reg.find {
-    case (_ref, b) => ref == _ref
-  }.getOrElse(throw new NoSuchElementException(s"Didn't find block with reference $ref"))._2
+  def apply(ref: BlockRef): Block[E] =
+    reg.find {
+      case (_ref, b) => ref == _ref
+    }.getOrElse(throw new NoSuchElementException(s"Didn't find block with reference $ref"))._2
 
   def lastAdded: Option[BlockRef] = reg.lastOption.map(_._1)
 

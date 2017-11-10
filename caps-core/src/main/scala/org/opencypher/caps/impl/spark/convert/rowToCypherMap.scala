@@ -51,18 +51,25 @@ final case class rowToCypherMap(header: RecordHeader) extends (Row => CypherMap)
 
   private def collectNode(row: Row, field: Var): (Long, Seq[String], Map[String, CypherValue]) = {
     val id = row.getAs[Long](SparkColumnName.of(header.slotFor(field)))
-    val labels = header.labelSlots(field).mapValues { s =>
-      row.getAs[Boolean](SparkColumnName.of(s))
-    }.collect {
-      case (h, b) if b =>
-        h.label.name
-    }.toSeq
-    val properties = header.propertySlots(field).mapValues { s =>
-      CypherValue(row.getAs[Any](SparkColumnName.of(s)))
-    }.collect {
-      case (p, v) if !CypherValue.isNull(v) =>
-        p.key.name -> v
-    }
+    val labels = header
+      .labelSlots(field)
+      .mapValues { s =>
+        row.getAs[Boolean](SparkColumnName.of(s))
+      }
+      .collect {
+        case (h, b) if b =>
+          h.label.name
+      }
+      .toSeq
+    val properties = header
+      .propertySlots(field)
+      .mapValues { s =>
+        CypherValue(row.getAs[Any](SparkColumnName.of(s)))
+      }
+      .collect {
+        case (p, v) if !CypherValue.isNull(v) =>
+          p.key.name -> v
+      }
 
     (id, labels, properties)
   }
@@ -72,12 +79,15 @@ final case class rowToCypherMap(header: RecordHeader) extends (Row => CypherMap)
     val source = row.getAs[Long](SparkColumnName.of(header.sourceNodeSlot(field)))
     val target = row.getAs[Long](SparkColumnName.of(header.targetNodeSlot(field)))
     val typ = row.getAs[String](SparkColumnName.of(header.typeSlot(field)))
-    val properties = header.propertySlots(field).mapValues { s =>
-      CypherValue(row.getAs[Any](SparkColumnName.of(s)))
-    }.collect {
-      case (p, v) if !CypherValue.isNull(v) =>
-        p.key.name -> v
-    }
+    val properties = header
+      .propertySlots(field)
+      .mapValues { s =>
+        CypherValue(row.getAs[Any](SparkColumnName.of(s)))
+      }
+      .collect {
+        case (p, v) if !CypherValue.isNull(v) =>
+          p.key.name -> v
+      }
 
     (id, source, target, typ, properties)
   }

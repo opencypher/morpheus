@@ -27,7 +27,7 @@ class AndsTest extends BaseTestSuite {
   }
 
   test("empty ands not allowed") {
-    a [IllegalStateException] should be thrownBy {
+    a[IllegalStateException] should be thrownBy {
       Ands()
     }
   }

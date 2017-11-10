@@ -27,4 +27,3 @@ trait LowPriorityCypherValueEncoders {
   implicit def cypherValueEncoder: ExpressionEncoder[CypherValue] = kryo[CypherValue]
   implicit def cypherRecordEncoder: ExpressionEncoder[Map[String, CypherValue]] = kryo[Map[String, CypherValue]]
 }
-

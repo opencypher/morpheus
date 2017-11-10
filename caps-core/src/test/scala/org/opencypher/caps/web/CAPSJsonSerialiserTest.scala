@@ -28,80 +28,84 @@ import org.opencypher.caps.web.CAPSJsonSerialiser.toJsonString
 class CAPSJsonSerialiserTest extends CAPSTestSuite {
 
   val `:Person` =
-    NodeScan.on("p" -> "ID") {
-      _.build
-        .withImpliedLabel("Person")
-        .withOptionalLabel("Swedish" -> "IS_SWEDE")
-        .withPropertyKey("name" -> "NAME")
-        .withPropertyKey("lucky_number" -> "NUM")
-    }
-      .from(CAPSRecords.create(
-        Seq("ID", "IS_SWEDE", "NAME", "NUM"),
-        Seq(
-          (1L, true, "Mats", 23L),
-          (2L, false, "Martin", 42L),
-          (3L, false, "Max", 1337L),
-          (4L, false, "Stefan", 9L))
-      ))
+    NodeScan
+      .on("p" -> "ID") {
+        _.build
+          .withImpliedLabel("Person")
+          .withOptionalLabel("Swedish" -> "IS_SWEDE")
+          .withPropertyKey("name" -> "NAME")
+          .withPropertyKey("lucky_number" -> "NUM")
+      }
+      .from(
+        CAPSRecords.create(
+          Seq("ID", "IS_SWEDE", "NAME", "NUM"),
+          Seq((1L, true, "Mats", 23L), (2L, false, "Martin", 42L), (3L, false, "Max", 1337L), (4L, false, "Stefan", 9L))
+        ))
 
   val `:Book` =
-    NodeScan.on("b" -> "ID") {
-      _.build
-        .withImpliedLabel("Book")
-        .withPropertyKey("title" -> "NAME")
-        .withPropertyKey("year" -> "YEAR")
-    }
-      .from(CAPSRecords.create(
-        Seq("ID", "NAME", "YEAR"),
-        Seq(
-          (10L, "1984", 1949L),
-          (20L, "Cryptonomicon", 1999L),
-          (30L, "The Eye of the World", 1990L),
-          (40L, "The Circle", 2013L))
-      ))
+    NodeScan
+      .on("b" -> "ID") {
+        _.build
+          .withImpliedLabel("Book")
+          .withPropertyKey("title" -> "NAME")
+          .withPropertyKey("year" -> "YEAR")
+      }
+      .from(
+        CAPSRecords.create(
+          Seq("ID", "NAME", "YEAR"),
+          Seq(
+            (10L, "1984", 1949L),
+            (20L, "Cryptonomicon", 1999L),
+            (30L, "The Eye of the World", 1990L),
+            (40L, "The Circle", 2013L))
+        ))
 
   val `:KNOWS` =
-    RelationshipScan.on("k" -> "ID") {
-      _.from("SRC").to("DST").relType("KNOWS")
-        .build
-        .withPropertyKey("since" -> "SINCE")
-    }
-      .from(CAPSRecords.create(
-        Seq("SRC", "ID", "DST", "SINCE"),
-        Seq(
-          (1L, 1L, 2L, 2017L),
-          (1L, 2L, 3L, 2016L),
-          (1L, 3L, 4L, 2015L),
-          (2L, 4L, 3L, 2016L),
-          (2L, 5L, 4L, 2013L),
-          (3L, 6L, 4L, 2016L))
-      ))
+    RelationshipScan
+      .on("k" -> "ID") {
+        _.from("SRC")
+          .to("DST")
+          .relType("KNOWS")
+          .build
+          .withPropertyKey("since" -> "SINCE")
+      }
+      .from(
+        CAPSRecords.create(
+          Seq("SRC", "ID", "DST", "SINCE"),
+          Seq(
+            (1L, 1L, 2L, 2017L),
+            (1L, 2L, 3L, 2016L),
+            (1L, 3L, 4L, 2015L),
+            (2L, 4L, 3L, 2016L),
+            (2L, 5L, 4L, 2013L),
+            (3L, 6L, 4L, 2016L))
+        ))
 
   val `:READS` =
-    RelationshipScan.on("r" -> "ID") {
-      _.from("SRC").to("DST").relType("READS")
-        .build
-        .withPropertyKey("recommends" -> "RECOMMENDS")
-    }
-      .from(CAPSRecords.create(
-        Seq("SRC", "ID", "DST", "RECOMMENDS"),
-        Seq(
-          (1L, 100L, 10L, true),
-          (2L, 200L, 40L, true),
-          (3L, 300L, 30L, true),
-          (4L, 400L, 20L, false))
-      ))
+    RelationshipScan
+      .on("r" -> "ID") {
+        _.from("SRC")
+          .to("DST")
+          .relType("READS")
+          .build
+          .withPropertyKey("recommends" -> "RECOMMENDS")
+      }
+      .from(
+        CAPSRecords.create(
+          Seq("SRC", "ID", "DST", "RECOMMENDS"),
+          Seq((1L, 100L, 10L, true), (2L, 200L, 40L, true), (3L, 300L, 30L, true), (4L, 400L, 20L, false))
+        ))
 
   val `:INFLUENCES` =
-    RelationshipScan.on("i" -> "ID") {
-      _.from("SRC").to("DST").relType("INFLUENCES")
-        .build
-    }
-      .from(CAPSRecords.create(
-        Seq("SRC", "ID", "DST"),
-        Seq(
-          (10L, 1000L, 20L))
-      ))
+    RelationshipScan
+      .on("i" -> "ID") {
+        _.from("SRC").to("DST").relType("INFLUENCES").build
+      }
+      .from(
+        CAPSRecords.create(
+          Seq("SRC", "ID", "DST"),
+          Seq((10L, 1000L, 20L))
+        ))
 
   test("unit table") {
     // Given
@@ -165,11 +169,12 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
 
   test("three columns, three rows") {
     // Given
-    val records = CAPSRecords.create(Seq(
-      Row3("myString", 4L, false),
-      Row3("foo", 99999999L, true),
-      Row3(null, -1L, true)
-    ))
+    val records = CAPSRecords.create(
+      Seq(
+        Row3("myString", 4L, false),
+        Row3("foo", 99999999L, true),
+        Row3(null, -1L, true)
+      ))
 
     // Then
     toJsonString(records) should equal(
@@ -202,8 +207,7 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
 
   test("graph serialization") {
     val graph = CAPSGraph.create(`:Person`, `:Book`, `:READS`, `:KNOWS`, `:INFLUENCES`)
-    toJsonString(graph) should equal(
-      s"""{
+    toJsonString(graph) should equal(s"""{
           |  "nodes" : [
           |    {
           |      "id" : 1,
@@ -400,7 +404,6 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
           |  ]
           |}""".stripMargin)
   }
-
 
   private case class Row1(foo: String)
   private case class Row3(foo: String, v: Long, veryLongColumnNameWithBoolean: Boolean)

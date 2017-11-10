@@ -31,9 +31,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) WITH AVG(n.val) AS res RETURN res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> 4)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> 4)
+      ))
   }
 
   test("avg(prop) with integers in RETURN") {
@@ -41,9 +42,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) RETURN AVG(n.val) AS res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> 4)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> 4)
+      ))
   }
 
   test("avg(prop) with integers in RETURN without alias") {
@@ -51,9 +53,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) RETURN AVG(n.val)")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("AVG(n.val)" -> 4)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("AVG(n.val)" -> 4)
+      ))
   }
 
   test("avg(prop) with floats in WITH") {
@@ -61,9 +64,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) WITH AVG(n.val) AS res RETURN res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> 3.5)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> 3.5)
+      ))
   }
 
   test("avg(prop) with floats in RETURN") {
@@ -71,9 +75,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) RETURN AVG(n.val) AS res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> 3.5)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> 3.5)
+      ))
   }
 
   test("avg(prop) with single null value in WITH") {
@@ -81,9 +86,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) WITH AVG(n.val) AS res RETURN res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> 32.5)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> 32.5)
+      ))
   }
 
   test("avg(prop) with single null value in RETURN") {
@@ -91,9 +97,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) RETURN AVG(n.val) AS res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> 32.5)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> 32.5)
+      ))
   }
 
   ignore("avg(prop) with only null values in WITH") {
@@ -101,9 +108,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) WITH AVG(n.val) AS res RETURN res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> null)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> null)
+      ))
   }
 
   ignore("avg(prop) with only null values in RETURN") {
@@ -111,9 +119,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) RETURN AVG(n.val) AS res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> null)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> null)
+      ))
   }
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -125,9 +134,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) WITH count(*) AS nbrRows RETURN nbrRows")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("nbrRows" -> 6)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("nbrRows" -> 6)
+      ))
   }
 
   test("count(*) in RETURN") {
@@ -135,9 +145,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) RETURN count(*) AS nbrRows")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("nbrRows" -> 6)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("nbrRows" -> 6)
+      ))
   }
 
   test("count(n) in RETURN") {
@@ -145,9 +156,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) RETURN count(n) AS nbrRows")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("nbrRows" -> 6)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("nbrRows" -> 6)
+      ))
   }
 
   test("count(n) in RETURN without alias") {
@@ -155,9 +167,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) RETURN count(n)")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("count(n)" -> 6)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("count(n)" -> 6)
+      ))
   }
 
   test("count(*) in return without alias") {
@@ -165,9 +178,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) RETURN count(*)")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("count(*)" -> 6)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("count(*)" -> 6)
+      ))
   }
 
   test("simple count(prop)") {
@@ -175,9 +189,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) WITH count(n.name) AS nonNullNames RETURN nonNullNames")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("nonNullNames" -> 3)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("nonNullNames" -> 3)
+      ))
   }
 
   test("simple count(node)") {
@@ -185,9 +200,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) WITH count(n) AS nodes RETURN nodes")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("nodes" -> 6)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("nodes" -> 6)
+      ))
   }
 
   test("count after expand") {
@@ -195,9 +211,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n)-->(b:B) WITH count(b) AS nodes RETURN nodes")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("nodes" -> 2)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("nodes" -> 2)
+      ))
   }
 
   test("count() with grouping in RETURN clause") {
@@ -205,11 +222,12 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) RETURN n.name as name, count(*) AS amount")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("name" -> "foo", "amount" -> 2),
-      CypherMap("name" -> null, "amount" -> 3),
-      CypherMap("name" -> "baz", "amount" -> 1)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("name" -> "foo", "amount" -> 2),
+        CypherMap("name" -> null, "amount" -> 3),
+        CypherMap("name" -> "baz", "amount" -> 1)
+      ))
   }
 
   test("count() with grouping in WITH clause") {
@@ -217,24 +235,28 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) WITH n.name as name, count(*) AS amount RETURN name, amount")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("name" -> "foo", "amount" -> 2),
-      CypherMap("name" -> null, "amount" -> 3),
-      CypherMap("name" -> "baz", "amount" -> 1)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("name" -> "foo", "amount" -> 2),
+        CypherMap("name" -> null, "amount" -> 3),
+        CypherMap("name" -> "baz", "amount" -> 1)
+      ))
   }
 
   test("count() with grouping on multiple keys") {
-    val graph = TestGraph("({name: 'foo', age: 42L}), ({name: 'foo', age: 42L}), ({name: 'foo', age: 23L}), (), (), ({name: 'baz', age: 23L})")
+    val graph = TestGraph(
+      "({name: 'foo', age: 42L}), ({name: 'foo', age: 42L}), ({name: 'foo', age: 23L}), (), (), ({name: 'baz', age: 23L})")
 
-    val result = graph.cypher("MATCH (n) WITH n.name AS name, n.age AS age, count(*) AS amount RETURN name, age, amount")
+    val result =
+      graph.cypher("MATCH (n) WITH n.name AS name, n.age AS age, count(*) AS amount RETURN name, age, amount")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("name" -> "foo", "age" -> 23, "amount" -> 1),
-      CypherMap("name" -> "foo", "age" -> 42, "amount" -> 2),
-      CypherMap("name" -> "baz", "age" -> 23, "amount" -> 1),
-      CypherMap("name" -> null, "age" -> null, "amount" -> 2)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("name" -> "foo", "age" -> 23, "amount" -> 1),
+        CypherMap("name" -> "foo", "age" -> 42, "amount" -> 2),
+        CypherMap("name" -> "baz", "age" -> 23, "amount" -> 1),
+        CypherMap("name" -> null, "age" -> null, "amount" -> 2)
+      ))
   }
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -246,9 +268,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) WITH MIN(n.val) AS res RETURN res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> 23L)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> 23L)
+      ))
   }
 
   test("min(prop) in RETURN") {
@@ -256,9 +279,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) RETURN MIN(n.val) AS res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> 23L)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> 23L)
+      ))
   }
 
   test("min(prop) with single null value in WITH") {
@@ -266,9 +290,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) WITH MIN(n.val) AS res RETURN res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> 23L)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> 23L)
+      ))
   }
 
   test("min(prop) with single null value in RETURN") {
@@ -276,9 +301,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) RETURN MIN(n.val) AS res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> 23L)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> 23L)
+      ))
   }
 
   test("min(prop) with single null value in RETURN without alias") {
@@ -286,9 +312,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) RETURN MIN(n.val)")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("MIN(n.val)" -> 23L)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("MIN(n.val)" -> 23L)
+      ))
   }
 
   ignore("min(prop) with only null values in WITH") {
@@ -296,9 +323,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) WITH MIN(n.val) AS res RETURN res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> null)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> null)
+      ))
   }
 
   ignore("min(prop) with only null values in RETURN") {
@@ -306,9 +334,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) RETURN MIN(n.val) AS res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> null)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> null)
+      ))
   }
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -320,9 +349,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) WITH MAX(n.val) AS res RETURN res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> 84L)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> 84L)
+      ))
   }
 
   test("max(prop) in RETURN") {
@@ -330,9 +360,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) RETURN MAX(n.val) AS res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> 84L)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> 84L)
+      ))
   }
 
   test("max(prop) with single null value in WITH") {
@@ -340,9 +371,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) WITH MAX(n.val) AS res RETURN res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> 42L)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> 42L)
+      ))
   }
 
   test("max(prop) with single null value in RETURN") {
@@ -350,9 +382,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) RETURN MAX(n.val) AS res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> 42L)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> 42L)
+      ))
   }
 
   test("max(prop) with single null value in RETURN without alias") {
@@ -360,9 +393,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) RETURN MAX(n.val)")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("MAX(n.val)" -> 42L)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("MAX(n.val)" -> 42L)
+      ))
   }
 
   ignore("simple max(prop) with only null values in WITH") {
@@ -370,9 +404,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) WITH MAX(n.val) AS res RETURN res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> null)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> null)
+      ))
   }
 
   ignore("simple max(prop) with only null values in RETURN") {
@@ -380,9 +415,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) RETURN MAX(n.val) AS res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> null)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> null)
+      ))
   }
   //--------------------------------------------------------------------------------------------------------------------
   // SUM
@@ -393,9 +429,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) WITH SUM(n.val) AS res RETURN res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> 12)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> 12)
+      ))
   }
 
   test("sum(prop) with integers in RETURN") {
@@ -403,9 +440,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) RETURN SUM(n.val) AS res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> 12)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> 12)
+      ))
   }
 
   test("sum(prop) with floats in WITH") {
@@ -413,9 +451,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) WITH SUM(n.val) AS res RETURN res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> 10.5)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> 10.5)
+      ))
   }
 
   test("sum(prop) with floats in RETURN") {
@@ -423,9 +462,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) RETURN SUM(n.val) AS res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> 10.5)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> 10.5)
+      ))
   }
 
   test("sum(prop) with floats in RETURN without alias") {
@@ -433,9 +473,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) RETURN SUM(n.val)")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("SUM(n.val)" -> 10.5)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("SUM(n.val)" -> 10.5)
+      ))
   }
 
   test("simple sum(prop) with single null value in WITH") {
@@ -443,9 +484,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) WITH SUM(n.val) AS res RETURN res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> 65.0)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> 65.0)
+      ))
   }
 
   test("simple sum(prop) with single null value in RETURN") {
@@ -453,9 +495,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) RETURN SUM(n.val) AS res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> 65.0)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> 65.0)
+      ))
   }
 
   ignore("simple sum(prop) with only null values in WITH") {
@@ -463,9 +506,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) WITH SUM(n.val) AS res RETURN res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> null)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> null)
+      ))
   }
 
   ignore("simple sum(prop) with only null values in RETURN") {
@@ -473,9 +517,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) RETURN SUM(n.val) AS res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> null)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> null)
+      ))
   }
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -487,9 +532,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) WITH COLLECT(n.val) AS res RETURN res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> Seq(2, 4, 6))
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> Seq(2, 4, 6))
+      ))
   }
 
   test("collect(prop) with integers in RETURN") {
@@ -497,20 +543,21 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) RETURN COLLECT(n.val) AS res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> Seq(2, 4, 6))
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> Seq(2, 4, 6))
+      ))
   }
-
 
   test("simple collect(prop) with single null value in WITH") {
     val graph = TestGraph("({val:42.0D}),({val:23.0D}),()")
 
     val result = graph.cypher("MATCH (n) WITH COLLECT(n.val) AS res RETURN res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> Seq(42.0, 23.0))
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> Seq(42.0, 23.0))
+      ))
   }
 
   test("simple collect(prop) with single null value in RETURN") {
@@ -518,20 +565,21 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) RETURN COLLECT(n.val) AS res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> Seq(42.0, 23.0))
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> Seq(42.0, 23.0))
+      ))
   }
-
 
   test("simple collect(prop) with only null values in WITH") {
     val graph = TestGraph("({val:NULL}),(),()")
 
     val result = graph.cypher("MATCH (n) WITH Collect(n.val) AS res RETURN res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> Seq.empty)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> Seq.empty)
+      ))
   }
 
   test("simple collect(prop) with only null values in RETURN") {
@@ -539,9 +587,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
     val result = graph.cypher("MATCH (n) RETURN COLLECT(n.val) AS res")
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("res" -> Seq.empty)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("res" -> Seq.empty)
+      ))
   }
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -551,8 +600,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   test("multiple aggregates in WITH") {
     val graph = TestGraph("({val:42L}),({val:23L}),({val:84L})")
 
-    val result = graph.cypher(
-      """MATCH (n)
+    val result = graph.cypher("""MATCH (n)
         |WITH
         | AVG(n.val) AS avg,
         | COUNT(*) AS cnt,
@@ -562,16 +610,16 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
         | COLLECT(n.val) AS col
         |RETURN avg, cnt, min, max, sum, col""".stripMargin)
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("avg" -> 49, "cnt" -> 3, "min" -> 23L, "max" -> 84L, "sum" -> 149, "col" -> Seq(42, 23, 84))
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("avg" -> 49, "cnt" -> 3, "min" -> 23L, "max" -> 84L, "sum" -> 149, "col" -> Seq(42, 23, 84))
+      ))
   }
 
   test("multiple aggregates in RETURN") {
     val graph = TestGraph("({val:42L}),({val:23L}),({val:84L})")
 
-    val result = graph.cypher(
-      """MATCH (n)
+    val result = graph.cypher("""MATCH (n)
         |RETURN
         | AVG(n.val) AS avg,
         | COUNT(*) AS cnt,
@@ -580,16 +628,16 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
         | SUM(n.val) AS sum,
         | COLLECT(n.val) AS col""".stripMargin)
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("avg" -> 49, "cnt" -> 3, "min" -> 23L, "max" -> 84L, "sum" -> 149, "col" -> Seq(42, 23, 84))
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("avg" -> 49, "cnt" -> 3, "min" -> 23L, "max" -> 84L, "sum" -> 149, "col" -> Seq(42, 23, 84))
+      ))
   }
 
   test("multiple aggregates with grouping in RETURN clause") {
     val graph = TestGraph("({key: 'a', val:42L}),({key: 'a',val:23L}),({key: 'b', val:84L})")
 
-    val result = graph.cypher(
-      """MATCH (n)
+    val result = graph.cypher("""MATCH (n)
         |RETURN
         | n.key AS key,
         | AVG(n.val) AS avg,
@@ -599,17 +647,17 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
         | SUM(n.val) AS sum,
         | COLLECT(n.val) as col""".stripMargin)
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("key" -> "a", "avg" -> 32, "cnt" -> 2, "min" -> 23L, "max" -> 42L, "sum" -> 65, "col" -> Seq(42, 23)),
-      CypherMap("key" -> "b", "avg" -> 84, "cnt" -> 1, "min" -> 84, "max" -> 84, "sum" -> 84, "col" -> Seq(84))
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("key" -> "a", "avg" -> 32, "cnt" -> 2, "min" -> 23L, "max" -> 42L, "sum" -> 65, "col" -> Seq(42, 23)),
+        CypherMap("key" -> "b", "avg" -> 84, "cnt" -> 1, "min" -> 84, "max" -> 84, "sum" -> 84, "col" -> Seq(84))
+      ))
   }
 
   test("multiple aggregates with grouping in WITH clause") {
     val graph = TestGraph("({key: 'a', val:42L}),({key: 'a',val:23L}),({key: 'b', val:84L})")
 
-    val result = graph.cypher(
-      """MATCH (n)
+    val result = graph.cypher("""MATCH (n)
         |WITH
         | n.key AS key,
         | AVG(n.val) AS avg,
@@ -620,9 +668,10 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
         | COLLECT(n.val) as col
         |RETURN key, avg, cnt, min, max, sum, col""".stripMargin)
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("key" -> "a", "avg" -> 32, "cnt" -> 2, "min" -> 23L, "max" -> 42L, "sum" -> 65, "col" -> Seq(42, 23)),
-      CypherMap("key" -> "b", "avg" -> 84, "cnt" -> 1, "min" -> 84, "max" -> 84, "sum" -> 84, "col" -> Seq(84))
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("key" -> "a", "avg" -> 32, "cnt" -> 2, "min" -> 23L, "max" -> 42L, "sum" -> 65, "col" -> Seq(42, 23)),
+        CypherMap("key" -> "b", "avg" -> 84, "cnt" -> 1, "min" -> 84, "max" -> 84, "sum" -> 84, "col" -> Seq(84))
+      ))
   }
 }

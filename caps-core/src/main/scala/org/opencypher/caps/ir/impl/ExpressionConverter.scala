@@ -55,11 +55,13 @@ object ExpressionConverter {
     case ast.Ors(exprs) =>
       new Ors(exprs.map(convert))(typings(e))
     case ast.HasLabels(node, labels) =>
-      val exprs = labels.map { (l: ast.LabelName) => HasLabel(convert(node), Label(l.name))(typings(e)) }
+      val exprs = labels.map { (l: ast.LabelName) =>
+        HasLabel(convert(node), Label(l.name))(typings(e))
+      }
       if (exprs.size == 1) exprs.head else new Ands(exprs.toSet)(typings(e))
     case ast.Not(expr) =>
       Not(convert(expr))(typings(e))
-      // TODO: Does this belong here still?
+    // TODO: Does this belong here still?
     case ast.Equals(f: ast.FunctionInvocation, s: ast.StringLiteral) if f.function == functions.Type =>
       HasType(convert(f.args.head), RelType(s.value))(CTBoolean)
     case ast.Equals(lhs, rhs) =>

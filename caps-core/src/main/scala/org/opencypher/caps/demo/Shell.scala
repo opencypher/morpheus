@@ -41,7 +41,7 @@ object Shell {
             =/_/ |_/ .__/\_,_/\__/_//_/\__/ /___/ .__/\_,_/_/ /_/\_\
             =     /_/                          /_/
             =""".stripMargin('=') +
-          s"""|
+            s"""|
               |Version $ownVersion
               |(Apache Spark $sparkVersion, Scala $scalaVersion, Java $javaVersion, Ammonite $ammoniteVersion)
               |
@@ -58,8 +58,7 @@ object Shell {
 
       new ammonite.Main(
         welcomeBanner = Some(welcomeBanner),
-        predefCode =
-          s"""|import org.opencypher.caps.demo.CSVDemo._
+        predefCode = s"""|import org.opencypher.caps.demo.CSVDemo._
               |""".stripMargin
       ).instantiateRepl(Vector(Bind("session", session)), None) match {
         case Right(repl) =>

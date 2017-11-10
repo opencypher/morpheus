@@ -41,6 +41,6 @@ package object impl {
     }
   }
 
-  def error[R: _mayFail : _hasContext, A](err: IRBuilderError)(v: A): Eff[R, A] =
+  def error[R: _mayFail: _hasContext, A](err: IRBuilderError)(v: A): Eff[R, A] =
     left[R, IRBuilderError, BlockRegistry[Expr]](err) >> pure(v)
 }

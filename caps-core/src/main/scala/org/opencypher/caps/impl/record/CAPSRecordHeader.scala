@@ -24,12 +24,12 @@ import org.opencypher.caps.impl.spark.exception.Raise
 
 object CAPSRecordHeader {
 
-  def fromSparkStructType(structType: StructType): RecordHeader = RecordHeader.from(structType.fields.map {
-    field =>
-      OpaqueField(Var(field.name)(fromSparkType(field.dataType, field.nullable).getOrElse(
-        Raise.invalidArgument("A supported Spark type", field.dataType.toString))
-      ))
-  }: _*)
+  def fromSparkStructType(structType: StructType): RecordHeader =
+    RecordHeader.from(structType.fields.map { field =>
+      OpaqueField(
+        Var(field.name)(fromSparkType(field.dataType, field.nullable)
+          .getOrElse(Raise.invalidArgument("A supported Spark type", field.dataType.toString))))
+    }: _*)
 
   def asSparkStructType(header: RecordHeader): StructType = {
     val fields = header.slots.map(slot => structField(slot, !header.mandatory(slot)))

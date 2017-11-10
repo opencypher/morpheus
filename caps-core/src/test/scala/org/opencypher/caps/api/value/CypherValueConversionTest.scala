@@ -38,8 +38,14 @@ class CypherValueConversionTest extends CypherValueTestSuite {
     val originalValues = RELATIONSHIP_valueGroups.flatten
     val scalaValues: Seq[RelationshipContents] = originalValues.map(CypherRelationship.contents).map(_.orNull)
     val newValues = scalaValues.map {
-      case null     => null
-      case contents => CypherRelationship(contents.id, contents.startId, contents.endId, contents.relationshipType, contents.properties)
+      case null => null
+      case contents =>
+        CypherRelationship(
+          contents.id,
+          contents.startId,
+          contents.endId,
+          contents.relationshipType,
+          contents.properties)
     }
 
     newValues should equal(originalValues)
@@ -75,7 +81,8 @@ class CypherValueConversionTest extends CypherValueTestSuite {
     newValues should equal(originalValues)
 
     originalValues.foreach { v =>
-      CypherMap.isOrContainsNull(v) should equal (v == null || CypherMap.unapply(v).map(_.properties.m).exists(_.values.exists(_ == null)))
+      CypherMap.isOrContainsNull(v) should equal(
+        v == null || CypherMap.unapply(v).map(_.properties.m).exists(_.values.exists(_ == null)))
     }
   }
 
@@ -83,14 +90,14 @@ class CypherValueConversionTest extends CypherValueTestSuite {
     val originalValues = LIST_valueGroups.flatten
     val scalaValues = originalValues.map(CypherList.contents).map(_.orNull)
     val newValues = scalaValues.map {
-      case null                 => null
-      case l: Seq[CypherValue]  => CypherList(l)
+      case null                => null
+      case l: Seq[CypherValue] => CypherList(l)
     }
 
     newValues should equal(originalValues)
 
     originalValues.foreach { v =>
-      CypherList.isOrContainsNull(v) should equal (v == null || CypherList.unapply(v).exists(_.exists(_ == null)))
+      CypherList.isOrContainsNull(v) should equal(v == null || CypherList.unapply(v).exists(_.exists(_ == null)))
     }
   }
 
@@ -105,7 +112,7 @@ class CypherValueConversionTest extends CypherValueTestSuite {
     newValues should equal(originalValues)
 
     originalValues.foreach { v =>
-      CypherString.isOrContainsNull(v) should equal (v == null)
+      CypherString.isOrContainsNull(v) should equal(v == null)
     }
   }
 
@@ -120,7 +127,7 @@ class CypherValueConversionTest extends CypherValueTestSuite {
     newValues should equal(originalValues)
 
     originalValues.foreach { v =>
-      CypherBoolean.isOrContainsNull(v) should equal (v == null)
+      CypherBoolean.isOrContainsNull(v) should equal(v == null)
     }
   }
 
@@ -135,7 +142,7 @@ class CypherValueConversionTest extends CypherValueTestSuite {
     newValues should equal(originalValues)
 
     originalValues.foreach { v =>
-      CypherInteger.isOrContainsNull(v) should equal (v == null)
+      CypherInteger.isOrContainsNull(v) should equal(v == null)
     }
   }
 
@@ -150,7 +157,7 @@ class CypherValueConversionTest extends CypherValueTestSuite {
     newValues should equal(originalValues)
 
     originalValues.foreach { v =>
-      CypherFloat.isOrContainsNull(v) should equal (v == null)
+      CypherFloat.isOrContainsNull(v) should equal(v == null)
     }
   }
 
@@ -166,7 +173,7 @@ class CypherValueConversionTest extends CypherValueTestSuite {
     newValues should equal(originalValues)
 
     originalValues.foreach { v =>
-      CypherNumber.isOrContainsNull(v) should equal (v == null)
+      CypherNumber.isOrContainsNull(v) should equal(v == null)
     }
   }
 
@@ -175,16 +182,16 @@ class CypherValueConversionTest extends CypherValueTestSuite {
     val scalaValues = originalValues.map(CypherValue.contents).map(_.orNull)
     val wut = originalValues.map(x => x -> CypherValue.contents(x))
     val newValues = scalaValues.map {
-      case null => null
-      case b: java.lang.Boolean => CypherBoolean(b)
-      case s: java.lang.String => CypherString(s)
-      case l: java.lang.Long => CypherInteger(l)
-      case r: RegularMap => CypherMap(r.properties)
-      case n: NodeContents => CypherNode(n.id, n.labels, n.properties)
-      case r: RelationshipContents => CypherRelationship(r.id, r.startId, r.endId, r.relationshipType, r.properties)
-      case d: java.lang.Double => CypherFloat(d)
+      case null                       => null
+      case b: java.lang.Boolean       => CypherBoolean(b)
+      case s: java.lang.String        => CypherString(s)
+      case l: java.lang.Long          => CypherInteger(l)
+      case r: RegularMap              => CypherMap(r.properties)
+      case n: NodeContents            => CypherNode(n.id, n.labels, n.properties)
+      case r: RelationshipContents    => CypherRelationship(r.id, r.startId, r.endId, r.relationshipType, r.properties)
+      case d: java.lang.Double        => CypherFloat(d)
       case l: Seq[_] if isPathLike(l) => CypherPath(l.asInstanceOf[Seq[CypherEntityValue]])
-      case l: Seq[_] => CypherList(l.asInstanceOf[Seq[CypherValue]])
+      case l: Seq[_]                  => CypherList(l.asInstanceOf[Seq[CypherValue]])
     }
 
     newValues should equal(originalValues)

@@ -59,5 +59,3 @@ object NoWhereBlock {
   def unapply[E](block: Block[E]): Option[Block[E]] =
     if (block.where.elements.isEmpty) Some(block) else None
 }
-
-

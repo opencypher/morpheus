@@ -37,9 +37,10 @@ class MultigraphProjectionAcceptanceTest extends CAPSTestSuite {
 
     val result = testGraph1.graph.cypher(query)
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("name" -> "Phil")
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("name" -> "Phil")
+      ))
 
     result.graphs shouldMatch testGraph2.graph
   }
@@ -55,9 +56,10 @@ class MultigraphProjectionAcceptanceTest extends CAPSTestSuite {
 
     val result = testGraph1.graph.cypher(query)
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("name" -> "Phil")
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("name" -> "Phil")
+      ))
 
     result.graphs shouldBe empty
   }
@@ -73,9 +75,10 @@ class MultigraphProjectionAcceptanceTest extends CAPSTestSuite {
 
     val result = testGraph1.graph.cypher(query)
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("name" -> "Phil")
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("name" -> "Phil")
+      ))
 
     result.graphs shouldBe empty
   }
@@ -95,9 +98,10 @@ class MultigraphProjectionAcceptanceTest extends CAPSTestSuite {
 
     val result = testGraph1.graph.cypher(query)
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("name" -> "Phil", "car" -> "Toyota")
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("name" -> "Phil", "car" -> "Toyota")
+      ))
     result.graphs shouldBe empty
   }
 }

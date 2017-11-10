@@ -26,7 +26,7 @@ abstract class BlankBaseContext extends BaseContext {
   override def exceptionCreator: (String, InputPosition) => CypherException = (_, _) => null
 
   override def monitors: Monitors = new Monitors {
-    override def newMonitor[T <: AnyRef : ClassTag](tags: String*): T = {
+    override def newMonitor[T <: AnyRef: ClassTag](tags: String*): T = {
       new AstRewritingMonitor {
         override def abortedRewriting(obj: AnyRef): Unit = ()
         override def abortedRewritingDueToLargeDNF(obj: AnyRef): Unit = ()
