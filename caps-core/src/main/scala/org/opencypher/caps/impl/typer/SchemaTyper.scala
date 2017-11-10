@@ -449,6 +449,7 @@ object SchemaTyper {
           case _ => None
         }
       }) match {
+        case Some(CTVoid) => wrong[R, TyperError](UnsupportedExpr(expr)) >> pure(Set(Seq(left, right) -> CTVoid))
         case Some(t) => pure(Set(Seq(left, right) -> t.asNullableAs(left join right)))
         case None => pure(Set.empty)
       }
@@ -461,10 +462,8 @@ object SchemaTyper {
           case (CTList(CTInteger), CTInteger) => left
           case (CTList(CTFloat), CTInteger) => CTList(CTNumber)
           case (CTList(CTVoid), _) => CTList(right)
-          case _ => Raise.typeInferenceFailed(s"Could not infer common type of $left and $right")
+          case _ => CTVoid
         }
       }
   }
 }
-
-
