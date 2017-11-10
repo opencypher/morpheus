@@ -105,6 +105,7 @@ object SparkColumnName {
     private def isValidIdentPart(ch: Char) =
       Character.isLetterOrDigit(ch)
 
+    // format: OFF
     private def escapeChar(ch: Char) = ch match {
       case ' ' => "_space_"
       case '_' => "_bar_"
@@ -148,5 +149,6 @@ object SparkColumnName {
       case '\b' => "_backspace_"
       case _ => s"_u${Integer.toHexString(ch.toInt)}_"
     }
+    // format: ON
   }
 }
