@@ -73,8 +73,8 @@ trait GraphMatchingTestSupport {
   case class TestGraph(gdl: String)(implicit caps: CAPSSession) {
 
     private val queryGraph = new GDLHandler.Builder()
-      .setDefaultEdgeLabel(DEFAULT_LABEL)
-      .setDefaultVertexLabel(DEFAULT_LABEL)
+      .disableDefaultVertexLabel()
+      .disableDefaultEdgeLabel()
       .buildFromString(gdl)
 
     def mountAt(pathOrUri: String): Unit =

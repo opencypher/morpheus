@@ -36,13 +36,14 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
   }
 
   test("type()") {
-    val given = TestGraph("()-[:KNOWS]->()-[:HATES]->()")
+    val given = TestGraph("()-[:KNOWS]->()-[:HATES]->()-->()")
 
     val result = given.cypher("MATCH ()-[r]->() RETURN type(r)")
 
     result.records.toMaps should equal(Bag(
       CypherMap("type(r)" -> "KNOWS"),
-      CypherMap("type(r)" -> "HATES")
+      CypherMap("type(r)" -> "HATES"),
+      CypherMap("type(r)" -> null)
     ))
   }
 
@@ -94,8 +95,7 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
     ))
   }
 
-  ignore("unlabeled nodes") {
-    // TODO: Support unlabeled nodes in GDL
+  test("unlabeled nodes") {
     val given = TestGraph("(:A), (:C:D), ()")
 
     val result = given.cypher("MATCH (a) RETURN labels(a)")
