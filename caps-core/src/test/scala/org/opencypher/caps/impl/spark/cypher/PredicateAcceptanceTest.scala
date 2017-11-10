@@ -50,8 +50,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
     result.graphs shouldBe empty
   }
 
-  // TODO: Fix this
-  ignore("in with parameter") {
+  test("in with parameter") {
     // Given
     val given = TestGraph("""(:A {val: 1L}), (:A {val: 2L}), (:A {val: 3L})""")
 
