@@ -52,12 +52,6 @@
     </properties>
 
     <repositories>
-        <!-- list of other repositories -->
-        <repository>
-            <id>SparkPackagesRepo</id>
-            <url>http://dl.bintray.com/spark-packages/maven</url>
-        </repository>
-
         <repository>
             <id>Neo4j snapshots</id>
             <name>Neo4j snapshots repository</name>
@@ -313,6 +307,27 @@
     </build>
 
     <profiles>
+        <profile>
+            <id>databricks</id>
+            <properties>
+                <dep.spark.version>2.2.0</dep.spark.version>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>cloudera</id>
+            <repositories>
+                <repository>
+                    <id>cloudera</id>
+                    <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
+                </repository>
+            </repositories>
+
+            <properties>
+                <dep.spark.version>2.2.0.cloudera1</dep.spark.version>
+            </properties>
+        </profile>
+
         <profile>
             <id>skipShade</id>
             <activation>
