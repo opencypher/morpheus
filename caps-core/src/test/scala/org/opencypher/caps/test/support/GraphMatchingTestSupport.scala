@@ -31,6 +31,7 @@ import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.convert.fromJavaType
 import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.convert.toSparkType
+import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceImpl
 import org.opencypher.caps.test.BaseTestSuite
 import org.opencypher.caps.test.fixture.{CAPSSessionFixture, SparkSessionFixture}
@@ -72,10 +73,41 @@ trait GraphMatchingTestSupport {
 
   case class TestGraph(gdl: String)(implicit caps: CAPSSession) {
 
+    outer =>
+
     private val queryGraph = new GDLHandler.Builder()
       .setDefaultEdgeLabel(DEFAULT_LABEL)
       .setDefaultVertexLabel(DEFAULT_LABEL)
       .buildFromString(gdl)
+
+    private val schema: Schema = {
+      def extractFromElement(e: Element) = e.getLabels.asScala.map { label =>
+        label -> e.getProperties.asScala.map {
+          case (name, prop) => name -> fromJavaType(prop)
+        }
+      }
+
+      val labelAndProps = queryGraph.getVertices.asScala.flatMap(extractFromElement)
+      val typesAndProps = queryGraph.getEdges.asScala.flatMap(extractFromElement)
+      val vertexLabelCombinations = queryGraph.getVertices.asScala.map { vertex =>
+        vertex.getLabels.asScala
+      }.toSet
+
+      val schemaWithLabels = labelAndProps.foldLeft(Schema.empty) {
+        case (acc, (label, props)) => acc.withNodePropertyKeys(label)(props.toSeq: _*)
+      }
+
+      val schemaWithLabelCombinations = vertexLabelCombinations.foldLeft(schemaWithLabels) { (acc, labels) =>
+        if (labels.size > 1)
+          acc.withLabelCombination(labels: _*)
+        else
+          acc
+      }
+
+      typesAndProps.foldLeft(schemaWithLabelCombinations) {
+        case (acc, (t, props)) => acc.withRelationshipPropertyKeys(t)(props.toSeq: _*)
+      }
+    }
 
     def mountAt(pathOrUri: String): Unit =
       mountAt(parsePathOrURI(pathOrUri))
@@ -89,52 +121,24 @@ trait GraphMatchingTestSupport {
     def cypher(query: String, parameters: Map[String, CypherValue]): CAPSResult =
       caps.cypher(graph, query, parameters)
 
-    // TODO: Use lazy caps graph
-    lazy val graph: CAPSGraph = new CAPSGraph {
+    val graph: CAPSGraph = CAPSGraph.createLazy(schema, new CAPSGraph {
       self =>
 
       override def session: CAPSSession = caps
+
       override protected def graph: CAPSGraph = this
 
+      override def cache(): CAPSGraph = this
 
-      override def cache() = this
+      override def persist(): CAPSGraph = this
 
-      override def persist() = this
+      override def persist(storageLevel: StorageLevel): CAPSGraph = this
 
-      override def persist(storageLevel: StorageLevel) = this
+      override def unpersist(): CAPSGraph = this
 
-      override def unpersist() = this
+      override def unpersist(blocking: Boolean): CAPSGraph = this
 
-      override def unpersist(blocking: Boolean) = this
-
-      private def extractFromElement(e: Element) = e.getLabels.asScala.map { label =>
-        label -> e.getProperties.asScala.map {
-          case (name, prop) => name -> fromJavaType(prop)
-        }
-      }
-
-      override val schema: Schema = {
-        val labelAndProps = queryGraph.getVertices.asScala.flatMap(extractFromElement)
-        val typesAndProps = queryGraph.getEdges.asScala.flatMap(extractFromElement)
-        val vertexLabelCombinations = queryGraph.getVertices.asScala.map { vertex =>
-          vertex.getLabels.asScala
-        }.toSet
-
-        val schemaWithLabels = labelAndProps.foldLeft(Schema.empty) {
-          case (acc, (label, props)) => acc.withNodePropertyKeys(label)(props.toSeq: _*)
-        }
-
-        val schemaWithLabelCombinations = vertexLabelCombinations.foldLeft(schemaWithLabels) { (acc, labels) =>
-          if (labels.size > 1)
-            acc.withLabelCombination(labels: _*)
-          else
-            acc
-        }
-
-        typesAndProps.foldLeft(schemaWithLabelCombinations) {
-          case (acc, (t, props)) => acc.withRelationshipPropertyKeys(t)(props.toSeq: _*)
-        }
-      }
+      override val schema: Schema = outer.schema
 
       override def nodes(name: String, cypherType: CTNode): CAPSRecords = {
         val header = RecordHeader.nodeFromSchema(Var(name)(cypherType), schema, cypherType.labels)
@@ -166,8 +170,6 @@ trait GraphMatchingTestSupport {
         CAPSRecords.create(header, data)
       }
 
-      override def union(other: CAPSGraph): CAPSGraph = ???
-
       override def relationships(name: String, cypherType: CTRelationship): CAPSRecords = {
 
         val header = RecordHeader.relationshipFromSchema(Var(name)(cypherType), schema)
@@ -194,7 +196,9 @@ trait GraphMatchingTestSupport {
         }
         CAPSRecords.create(header, data)
       }
-    }
+
+      override def union(other: CAPSGraph): CAPSGraph = Raise.unsupportedArgument("union with test graph")
+    })
   }
 
   private case class TestGraphSource(canonicalURI: URI, testGraph: TestGraph)
