@@ -40,13 +40,15 @@ import org.opencypher.caps.impl.spark.io.file.FileCsvGraphSourceFactory
 import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvGraphSourceFactory
 import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraphSourceFactory
 import org.opencypher.caps.impl.spark.io.session.SessionGraphSourceFactory
-import org.opencypher.caps.impl.spark.physical.{CAPSResultBuilder, PhysicalPlanner, PhysicalPlannerContext, RuntimeContext}
+import org.opencypher.caps.impl.spark.physical._
 import org.opencypher.caps.ir.api.{IRExternalGraph, IRField}
 import org.opencypher.caps.ir.impl.{IRBuilder, IRBuilderContext}
 
-sealed class CAPSSession private(val sparkSession: SparkSession,
-                                 private val graphSourceHandler: CAPSGraphSourceHandler)
-  extends CypherSession with Serializable {
+sealed class CAPSSession private (
+    val sparkSession: SparkSession,
+    private val graphSourceHandler: CAPSGraphSourceHandler)
+    extends CypherSession
+    with Serializable {
 
   self =>
 
@@ -147,7 +149,8 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
       override def graph: CAPSGraph = ambient
       override def sourceForGraphAt(uri: URI): Boolean = uri == canonicalURI
       override def create: CAPSGraph = Raise.impossible("Don't create the ambient graph")
-      override def store(graph: CAPSGraph, mode: PersistMode): CAPSGraph = Raise.impossible("Don't persist the ambient graph")
+      override def store(graph: CAPSGraph, mode: PersistMode): CAPSGraph =
+        Raise.impossible("Don't persist the ambient graph")
       override val session: CAPSSession = self
     }
 
@@ -187,10 +190,11 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
     plan(graph, in, queryParameters, select).records
   }
 
-  private def plan(graph: CAPSGraph,
-                   records: CAPSRecords,
-                   parameters: Map[String, CypherValue],
-                   logicalPlan: LogicalOperator): CAPSResult = {
+  private def plan(
+      graph: CAPSGraph,
+      records: CAPSRecords,
+      parameters: Map[String, CypherValue],
+      logicalPlan: LogicalOperator): CAPSResult = {
     logStageProgress("Flat plan ... ", false)
     val flatPlan = flatPlanner(logicalPlan)(FlatPlannerContext(parameters))
     logStageProgress("Done!")
@@ -211,9 +215,10 @@ sealed class CAPSSession private(val sparkSession: SparkSession,
   override def toString: String = {
     val mountPoints = graphSourceHandler.sessionGraphSourceFactory.mountPoints.keys
 
-    val mountPointsString = if (mountPoints.nonEmpty)
-      s"mountPoints: ${mountPoints.mkString(", ")}"
-    else "No graphs mounted"
+    val mountPointsString =
+      if (mountPoints.nonEmpty)
+        s"mountPoints: ${mountPoints.mkString(", ")}"
+      else "No graphs mounted"
 
     s"${this.getClass.getSimpleName}($mountPointsString)"
   }
@@ -246,8 +251,7 @@ object CAPSSession extends Serializable {
 
   def create(implicit session: SparkSession): CAPSSession = Builder(session).build
 
-  case class Builder(session: SparkSession,
-                     private val graphSourceFactories: Set[CAPSGraphSourceFactory] = Set.empty) {
+  case class Builder(session: SparkSession, private val graphSourceFactories: Set[CAPSGraphSourceFactory] = Set.empty) {
 
     def withGraphSourceFactory(factory: CAPSGraphSourceFactory): Builder =
       copy(graphSourceFactories = graphSourceFactories + factory)

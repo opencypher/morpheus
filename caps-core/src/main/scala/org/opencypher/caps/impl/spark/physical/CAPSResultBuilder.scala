@@ -17,16 +17,24 @@ package org.opencypher.caps.impl.spark.physical
 
 import org.opencypher.caps.api.graph.CypherResultPlan
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSResult}
+import org.opencypher.caps.impl.common.Tree
 import org.opencypher.caps.impl.logical.LogicalOperator
 
 object CAPSResultBuilder {
-  def from(physical: PhysicalOperator, plan: LogicalOperator)(context: RuntimeContext): CAPSResult = new CAPSResult {
+  def from(physical: Tree[PhysicalOperator], plan: LogicalOperator)(implicit context: RuntimeContext): CAPSResult =
+    new CAPSResult {
+      val execute = Execute()
+      lazy val result: PhysicalResult = execute(physical)
 
-    lazy val result: PhysicalResult = physical.execute(context)
+      override def records: CAPSRecords = result.records
+      override def graphs: Map[String, CAPSGraph] = result.graphs
 
-    override def records: CAPSRecords = result.records
-    override def graphs: Map[String, CAPSGraph] = result.graphs
+      override def explain: CypherResultPlan = CypherResultPlan(plan)
+    }
+}
 
-    override def explain: CypherResultPlan = CypherResultPlan(plan)
+case class Execute()(implicit context: RuntimeContext) extends Tree.Aggregate[PhysicalOperator, PhysicalResult] {
+  override def apply(operator: PhysicalOperator, inputs: Seq[PhysicalResult]) = {
+    operator.execute(inputs: _*)
   }
 }

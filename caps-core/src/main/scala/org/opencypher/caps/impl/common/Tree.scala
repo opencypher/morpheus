@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.common
 
-case class Tree[+T](value: T, children: Seq[Tree[T]] = Seq.empty) extends Traversable[T] {
+final case class Tree[+T](value: T, children: Seq[Tree[T]] = Seq.empty) extends Traversable[T] {
 
   def arity: Int = children.length
 

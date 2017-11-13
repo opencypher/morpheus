@@ -19,8 +19,9 @@ import java.net.URI
 
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
-import org.opencypher.caps.api.types.{CTNode, CTRelationship}
+import org.opencypher.caps.api.types.CTRelationship
 import org.opencypher.caps.api.value.CypherValue
+import org.opencypher.caps.impl.common.Tree
 import org.opencypher.caps.impl.flat.FlatOperator
 import org.opencypher.caps.impl.logical.{GraphOfPattern, LogicalExternalGraph, LogicalPatternGraph}
 import org.opencypher.caps.impl.spark.exception.Raise
@@ -28,122 +29,137 @@ import org.opencypher.caps.impl.{DirectCompilationStage, flat}
 import org.opencypher.caps.ir.api.block.SortItem
 
 case class PhysicalPlannerContext(
-   resolver: URI => CAPSGraph,
-   inputRecords: CAPSRecords,
-   parameters: Map[String, CypherValue])
+    resolver: URI => CAPSGraph,
+    inputRecords: CAPSRecords,
+    parameters: Map[String, CypherValue])
 
-class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOperator, PhysicalPlannerContext] {
+class PhysicalPlanner extends DirectCompilationStage[FlatOperator, Tree[PhysicalOperator], PhysicalPlannerContext] {
 
-  def process(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext): PhysicalOperator = {
+  def process(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext): Tree[PhysicalOperator] = {
 
     implicit val caps = context.inputRecords.caps
 
     flatPlan match {
       case flat.CartesianProduct(lhs, rhs, header) =>
-        CartesianProduct(header, process(lhs), process(rhs))
+        Tree(CartesianProduct(header), Seq(process(lhs), process(rhs)))
 
       case flat.Select(fields, graphs, in, header) =>
-        val selected = SelectFields(fields, Some(header), process(in))
-        SelectGraphs(graphs, selected)
+        val selected = Tree(SelectFields(fields, Some(header)), Seq(process(in)))
+        Tree(SelectGraphs(graphs), Seq(selected))
 
       case flat.EmptyRecords(in, header) =>
-        EmptyRecords(header, process(in))
+        Tree(EmptyRecords(header), Seq(process(in)))
 
-      case flat.Start(graph, _) => graph match {
-        case g: LogicalExternalGraph =>
-          Start(g, context.inputRecords)
+      case flat.Start(graph, _) =>
+        graph match {
+          case g: LogicalExternalGraph =>
+            Tree(Start(context.inputRecords, g))
 
-        case _ =>
-          Raise.impossible(s"Got an unknown type of graph to start from: $graph")
-      }
+          case _ =>
+            Raise.impossible(s"Got an unknown type of graph to start from: $graph")
+        }
 
       case flat.SetSourceGraph(graph, in, header) =>
         graph match {
           case g: LogicalExternalGraph =>
-            SetSourceGraph(g, process(in))
+            Tree(SetSourceGraph(g), Seq(process(in)))
 
           case _ =>
             Raise.impossible(s"Got an unknown type of graph to start from: $graph")
-      }
+        }
 
-      case op@flat.NodeScan(v, in, header) =>
-        Scan(op.sourceGraph, v, process(in))
+      case op @ flat.NodeScan(v, in, header) =>
+        Tree(Scan(op.sourceGraph, v), Seq(process(in)))
 
-      case op@flat.EdgeScan(e, in, header) =>
-        Scan(op.sourceGraph, e, process(in))
+      case op @ flat.EdgeScan(e, in, header) =>
+        Tree(Scan(op.sourceGraph, e), Seq(process(in)))
 
       case flat.Alias(expr, alias, in, header) =>
-        Alias(expr, alias, header, process(in))
+        Tree(Alias(expr, alias, header), Seq(process(in)))
 
       case flat.Project(expr, in, header) =>
-        Project(expr, header, process(in))
+        Tree(Project(expr, header), Seq(process(in)))
 
-      case flat.ProjectGraph(graph, in, _) => graph match {
-        case LogicalExternalGraph(name, uri, _) =>
-          ProjectExternalGraph(name, uri, process(in))
-        case LogicalPatternGraph(name, targetSchema, GraphOfPattern(toCreate, toRetain)) =>
-          val select = SelectFields(toRetain.toIndexedSeq, None, process(in))
-          val distinct = SimpleDistinct(select)
-          ProjectPatternGraph(toCreate, name, targetSchema, distinct)
-      }
+      case flat.ProjectGraph(graph, in, _) =>
+        graph match {
+          case LogicalExternalGraph(name, uri, _) =>
+            Tree(ProjectExternalGraph(name, uri), Seq(process(in)))
+          case LogicalPatternGraph(name, targetSchema, GraphOfPattern(toCreate, toRetain)) =>
+            val select = Tree(SelectFields(toRetain.toIndexedSeq, None), Seq(process(in)))
+            val distinct = Tree(SimpleDistinct, Seq(select))
+            Tree(ProjectPatternGraph(toCreate, name, targetSchema), Seq(distinct))
+        }
 
       case flat.Aggregate(aggregations, group, in, header) =>
-        Aggregate(aggregations, group, header, process(in))
+        Tree(Aggregate(aggregations, group, header), Seq(process(in)))
 
-      case flat.Filter(expr, in, header) => expr match {
-        case TrueLit() =>
-          process(in) // optimise away filter
-        case _ =>
-          Filter(expr, header, process(in))
-      }
+      case flat.Filter(expr, in, header) =>
+        expr match {
+          case TrueLit() =>
+            process(in) // optimise away filter
+          case _ =>
+            Tree(Filter(expr, header), Seq(process(in)))
+        }
 
       case flat.ValueJoin(lhs, rhs, predicates, header) =>
-        ValueJoin(predicates, header, process(lhs), process(rhs))
+        Tree(ValueJoin(predicates, header), Seq(process(lhs), process(rhs)))
 
       case flat.Distinct(in, header) =>
-        Distinct(header, process(in))
+        Tree(Distinct(header), Seq(process(in)))
 
       // TODO: This needs to be a ternary operator taking source, rels and target records instead of just source and target and planning rels only at the physical layer
-      case op@flat.ExpandSource(source, rel, target, sourceOp, targetOp, header, relHeader) =>
+      case op @ flat.ExpandSource(source, rel, target, sourceOp, targetOp, header, relHeader) =>
         val first = process(sourceOp)
         val third = process(targetOp)
 
         val externalGraph = sourceOp.sourceGraph match {
           case e: LogicalExternalGraph => e
-          case _ => Raise.invalidArgument("an external graph", sourceOp.sourceGraph.toString)
+          case _                       => Raise.invalidArgument("an external graph", sourceOp.sourceGraph.toString)
         }
-        val second = Scan(op.sourceGraph, rel, StartFrom(CAPSRecords.unit(), externalGraph))
+        val second = Tree(Scan(op.sourceGraph, rel), Seq(Tree(StartFrom(CAPSRecords.unit(), externalGraph))))
 
-        ExpandSource(source, rel, target, header, first, second, third)
+        Tree(ExpandSource(source, rel, target, header), Seq(first, second, third))
 
-      case op@flat.ExpandInto(source, rel, target, sourceOp, header, relHeader) =>
+      case op @ flat.ExpandInto(source, rel, target, sourceOp, header, relHeader) =>
         val in = process(sourceOp)
 
-        val rels = Scan(op.sourceGraph, rel, in)
+        val rels = Tree(Scan(op.sourceGraph, rel), Seq(in))
 
-        ExpandInto(source, rel, target, header, in, rels)
+        Tree(ExpandInto(source, rel, target, header), Seq(in, rels))
 
       case flat.InitVarExpand(source, edgeList, endNode, in, header) =>
-        InitVarExpand(source, edgeList, endNode, header, process(in))
+        Tree(InitVarExpand(source, edgeList, endNode, header), Seq(process(in)))
 
-      case flat.BoundedVarExpand(rel, edgeList, target, lower, upper, sourceOp, relOp, targetOp, header, isExpandInto) =>
-        val first  = process(sourceOp)
+      case flat.BoundedVarExpand(
+          rel,
+          edgeList,
+          target,
+          lower,
+          upper,
+          sourceOp,
+          relOp,
+          targetOp,
+          header,
+          isExpandInto) =>
+        val first = process(sourceOp)
         val second = process(relOp)
-        val third  = process(targetOp)
+        val third = process(targetOp)
 
-        BoundedVarExpand(rel, edgeList, target, sourceOp.endNode, lower, upper, header, first, second, third, isExpandInto)
+        Tree(
+          BoundedVarExpand(rel, edgeList, target, sourceOp.endNode, lower, upper, header, isExpandInto),
+          Seq(first, second, third))
 
       case flat.Optional(lhs, rhs, lhsHeader, rhsHeader) =>
-        Optional(lhsHeader, rhsHeader, process(lhs), process(rhs))
+        Tree(Optional(lhsHeader, rhsHeader), Seq(process(lhs), process(rhs)))
 
       case flat.OrderBy(sortItems: Seq[SortItem[Expr]], in, header) =>
-        OrderBy(sortItems, header, process(in))
+        Tree(OrderBy(sortItems, header), Seq(process(in)))
 
       case flat.Skip(expr, in, header) =>
-        Skip(expr, header, process(in))
+        Tree(Skip(expr, header), Seq(process(in)))
 
       case flat.Limit(expr, in, header) =>
-        Limit(expr, header, process(in))
+        Tree(Limit(expr, header), Seq(process(in)))
 
       case x =>
         Raise.notYetImplemented(s"physical planning of operator $x")
@@ -152,6 +168,6 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOpera
 
   private def relTypes(r: Var): Set[String] = r.cypherType match {
     case t: CTRelationship => t.types
-    case _ => Set.empty
+    case _                 => Set.empty
   }
 }
