@@ -15,6 +15,4 @@
  */
 package org.opencypher.caps.api.value.instances
 
-trait AllInstances
-  extends CypherValueCompanionInstances
-  with CypherValueConverters
+trait AllInstances extends CypherValueCompanionInstances with CypherValueConverters

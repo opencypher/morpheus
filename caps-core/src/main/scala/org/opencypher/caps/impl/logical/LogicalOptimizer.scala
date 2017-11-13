@@ -22,7 +22,7 @@ import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.ir.api.Label
 
 class LogicalOptimizer(producer: LogicalOperatorProducer)
-  extends DirectCompilationStage[LogicalOperator, LogicalOperator, LogicalPlannerContext] {
+    extends DirectCompilationStage[LogicalOperator, LogicalOperator, LogicalPlannerContext] {
 
   override def process(input: LogicalOperator)(implicit context: LogicalPlannerContext): LogicalOperator = {
     val labelMap = ExtractLabels(input).groupBy(_._1).mapValues(_.map(_._2.name))
@@ -58,7 +58,7 @@ object ExtractLabels extends LogicalAggregator[Set[(Var, Label)]] {
       case Filter(expr, in) =>
         val res = expr match {
           case HasLabel(v: Var, label) => Set(v -> label)
-          case _ => Set.empty
+          case _                       => Set.empty
         }
         res ++ ExtractLabels(in)
       case s: StackingLogicalOperator =>
@@ -73,10 +73,10 @@ object ExtractLabels extends LogicalAggregator[Set[(Var, Label)]] {
 case object DiscardStackedRecordOperations extends LogicalRewriter {
   override def apply(root: LogicalOperator): LogicalOperator = {
     root match {
-      case s: SetSourceGraph => s.clone(DiscardStackedRecordOperations(s.in))
-      case p: ProjectGraph => p.clone(DiscardStackedRecordOperations(p.in))
+      case s: SetSourceGraph          => s.clone(DiscardStackedRecordOperations(s.in))
+      case p: ProjectGraph            => p.clone(DiscardStackedRecordOperations(p.in))
       case s: StackingLogicalOperator => DiscardStackedRecordOperations(s.in)
-      case other => rewriteChildren(other)
+      case other                      => rewriteChildren(other)
     }
   }
 }
@@ -84,15 +84,15 @@ case object DiscardStackedRecordOperations extends LogicalRewriter {
 case class PushLabelFiltersIntoScans(labelMap: Map[Var, Set[String]]) extends LogicalRewriter {
   override def apply(root: LogicalOperator): LogicalOperator = {
     root match {
-      case n@NodeScan(node, in) =>
+      case n @ NodeScan(node, in) =>
         val labels = labelMap.getOrElse(node, Set.empty)
         val nodeVar = Var(node.name)(CTNode(labels))
         val solved = in.solved.withPredicates(labels.map(l => HasLabel(nodeVar, Label(l))(CTBoolean)).toSeq: _*)
-        NodeScan(nodeVar, this (in))(solved)
-      case f@Filter(expr, in) =>
+        NodeScan(nodeVar, this(in))(solved)
+      case f @ Filter(expr, in) =>
         expr match {
-          case _: HasLabel => this (in)
-          case _ => f.clone(this (in))
+          case _: HasLabel => this(in)
+          case _           => f.clone(this(in))
         }
       case other => rewriteChildren(other)
     }
@@ -102,7 +102,7 @@ case class PushLabelFiltersIntoScans(labelMap: Map[Var, Set[String]]) extends Lo
 case object DiscardNodeScanForInexistentLabel extends LogicalRewriter {
   override def apply(root: LogicalOperator): LogicalOperator = {
     root match {
-      case s@NodeScan(v, in) =>
+      case s @ NodeScan(v, in) =>
         v.cypherType match {
           case CTNode(labels) =>
             labels.size match {

@@ -42,7 +42,7 @@ sealed trait Ternary {
 
 sealed private[caps] trait DefiniteTernary extends Ternary {
   def isDefinite: Boolean = true
-  def isUnknown: Boolean  = false
+  def isUnknown: Boolean = false
 }
 
 case object True extends DefiniteTernary {
@@ -88,12 +88,12 @@ case object Maybe extends Ternary {
 
   override def and(other: Ternary): Ternary = other match {
     case False => False
-    case _ => Maybe
+    case _     => Maybe
   }
 
   override def or(other: Ternary): Ternary = other match {
     case True => True
-    case _ => Maybe
+    case _    => Maybe
   }
 
   override def negated: Maybe.type = Maybe

@@ -15,5 +15,4 @@
  */
 package org.opencypher.caps.api.spark.syntax
 
-trait AllSyntax
-  extends org.opencypher.caps.api.value.syntax.AllSyntax
+trait AllSyntax extends org.opencypher.caps.api.value.syntax.AllSyntax

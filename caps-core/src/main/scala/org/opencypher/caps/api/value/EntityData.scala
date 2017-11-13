@@ -49,9 +49,7 @@ object NodeData {
   val empty = NodeData(labels = Seq.empty, properties = Properties.empty)
 }
 
-final case class NodeData(labels: Seq[String],
-                          properties: Properties)
-  extends EntityData {
+final case class NodeData(labels: Seq[String], properties: Properties) extends EntityData {
 
   override def asEntity(id: EntityId) = CypherNode(id, labels, properties)
 
@@ -60,11 +58,12 @@ final case class NodeData(labels: Seq[String],
   def withProperties(newProperties: Properties): NodeData = copy(properties = newProperties)
 }
 
-final case class RelationshipData(startId: EntityId,
-                                  endId: EntityId,
-                                  relationshipType: String,
-                                  properties: Properties = Properties.empty)
-  extends EntityData {
+final case class RelationshipData(
+    startId: EntityId,
+    endId: EntityId,
+    relationshipType: String,
+    properties: Properties = Properties.empty)
+    extends EntityData {
 
   override def asEntity(id: EntityId) = CypherRelationship(id, startId, endId, relationshipType, properties)
 

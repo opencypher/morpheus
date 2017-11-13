@@ -32,7 +32,7 @@ object CypherParser extends CypherParser {
           // TODO: Fix by updating frontend dependency
           // Related to using bound variables in GRAPH OF
           case s: SemanticError if s.msg.matches("Variable .* already declared") => false
-          case _ => true
+          case _                                                                 => true
         }
         Raise.semanticErrors(filtered)
       }
@@ -57,7 +57,8 @@ trait CypherParser extends CompilationStage[String, Statement, BaseContext] {
     Parsing.adds(BaseContains[Statement]) andThen
       SyntaxDeprecationWarnings andThen
       PreparatoryRewriting andThen
-      SemanticAnalysis(warn = true, SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature).adds(BaseContains[SemanticState]) andThen
+      SemanticAnalysis(warn = true, SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature)
+        .adds(BaseContains[SemanticState]) andThen
       AstRewriting(RewriterStepSequencer.newPlain, Forced) andThen
       SemanticAnalysis(warn = false, SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature) andThen
       Namespacer andThen
@@ -66,4 +67,3 @@ trait CypherParser extends CompilationStage[String, Statement, BaseContext] {
       ExtractPredicatesFromAnds andThen
       CAPSRewriting
 }
-

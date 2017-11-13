@@ -34,9 +34,10 @@ class SparkSQLExprMapperTest extends BaseTestSuite with SparkSessionFixture {
   test("can map subtract") {
     val expr = Subtract(Var("a")(), Var("b")())()
 
-    convert(expr, _header.update(addContent(ProjectedField('foo, expr)))) should equal(Some(
-      df.col("a") - df.col("b")
-    ))
+    convert(expr, _header.update(addContent(ProjectedField('foo, expr)))) should equal(
+      Some(
+        df.col("a") - df.col("b")
+      ))
   }
 
   private def convert(expr: Expr, header: RecordHeader = _header): Option[Column] = {
@@ -44,7 +45,8 @@ class SparkSQLExprMapperTest extends BaseTestSuite with SparkSessionFixture {
   }
 
   val _header: RecordHeader = RecordHeader.empty.update(addContents(Seq(OpaqueField('a), OpaqueField('b))))
-  val df: DataFrame = session.createDataFrame(Collections.emptyList[Row](),
+  val df: DataFrame = session.createDataFrame(
+    Collections.emptyList[Row](),
     StructType(Seq(StructField("a", IntegerType), StructField("b", IntegerType))))
 
   implicit def extractRecordHeaderFromResult[T](tuple: (RecordHeader, T)): RecordHeader = tuple._1

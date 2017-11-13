@@ -21,8 +21,7 @@ import org.opencypher.caps.api.record.{GraphScan, RecordHeader}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 
-final case class CAPSUnionGraph(graphs: CAPSGraph*)
-                               (implicit val session: CAPSSession) extends CAPSGraph {
+final case class CAPSUnionGraph(graphs: CAPSGraph*)(implicit val session: CAPSSession) extends CAPSGraph {
 
   override protected def graph: CAPSGraph = this
 
@@ -51,7 +50,7 @@ final case class CAPSUnionGraph(graphs: CAPSGraph*)
       .map(_.nodes(name, nodeCypherType))
     val alignedScans = nodeScans.map(GraphScan.align(_, node, targetHeader))
     // TODO: Only distinct on id column
-    alignedScans.reduceOption(_ unionAll(targetHeader, _)).map(_.distinct).getOrElse(CAPSRecords.empty(targetHeader))
+    alignedScans.reduceOption(_ unionAll (targetHeader, _)).map(_.distinct).getOrElse(CAPSRecords.empty(targetHeader))
   }
 
   override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
@@ -62,7 +61,7 @@ final case class CAPSUnionGraph(graphs: CAPSGraph*)
       .map(_.relationships(name, relCypherType))
     val alignedScans = relScans.map(GraphScan.align(_, rel, targetHeader))
     // TODO: Only distinct on id column
-    alignedScans.reduceOption(_ unionAll(targetHeader, _)).map(_.distinct).getOrElse(CAPSRecords.empty(targetHeader))
+    alignedScans.reduceOption(_ unionAll (targetHeader, _)).map(_.distinct).getOrElse(CAPSRecords.empty(targetHeader))
   }
 
   override def union(other: CAPSGraph): CAPSUnionGraph = other match {

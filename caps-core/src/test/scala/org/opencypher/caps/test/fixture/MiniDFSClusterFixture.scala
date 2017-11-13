@@ -38,9 +38,8 @@ trait MiniDFSClusterFixture extends BaseTestFixture {
     super.beforeAll()
     dfsCluster = new MiniDFSCluster.Builder(session.sparkContext.hadoopConfiguration).build()
     dfsCluster.waitClusterUp()
-    dfsCluster.getFileSystem.copyFromLocalFile(
-      new Path(getClass.getResource(dfsTestGraphPath).toString),
-      new Path(dfsTestGraphPath))
+    dfsCluster.getFileSystem
+      .copyFromLocalFile(new Path(getClass.getResource(dfsTestGraphPath).toString), new Path(dfsTestGraphPath))
   }
 
   abstract override def afterAll: Unit = {
@@ -54,10 +53,10 @@ trait MiniDFSClusterFixture extends BaseTestFixture {
     * @return expected nodes
     */
   def dfsTestGraphNodes: Set[Row] = Set(
-    Row(1L, true,  true, false, true,  "Stefan",   42L),
-    Row(2L, false, true,  true, true,    "Mats",   23L),
-    Row(3L, true,  true, false, true,  "Martin", 1337L),
-    Row(4L, true,  true, false, true,     "Max",    8L)
+    Row(1L, true, true, false, true, "Stefan", 42L),
+    Row(2L, false, true, true, true, "Mats", 23L),
+    Row(3L, true, true, false, true, "Martin", 1337L),
+    Row(4L, true, true, false, true, "Max", 8L)
   )
 
   /**

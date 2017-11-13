@@ -67,7 +67,8 @@ class NormalizeReturnClausesTest extends FunSuite {
       """MATCH (n)
         |WITH n.prop AS `foo`
         |RETURN `foo` AS `foo`
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("introduce WITH clause for unaliased non-primitive expressions") {
@@ -78,7 +79,8 @@ class NormalizeReturnClausesTest extends FunSuite {
       """MATCH (n)
         |WITH count(n.val) AS `  FRESHID17`
         |RETURN `  FRESHID17` AS `count(n.val)`
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("introduce WITH clause for aliased non-primitive expressions") {
@@ -89,7 +91,8 @@ class NormalizeReturnClausesTest extends FunSuite {
       """MATCH (n)
         |WITH count(n.val) AS `  FRESHID17`
         |RETURN `  FRESHID17` AS foo
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("introduce WITH clause for unaliased primitive and non-primitive expressions") {
@@ -100,7 +103,8 @@ class NormalizeReturnClausesTest extends FunSuite {
       """MATCH (n)
         |WITH n, n.val, count(n.val) AS `  FRESHID27`
         |RETURN n, n.val, `  FRESHID27` AS `count(n.val)`
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("introduce WITH clause for unaliased, primitive and aliased, non-primitive expressions") {
@@ -111,7 +115,8 @@ class NormalizeReturnClausesTest extends FunSuite {
       """MATCH (n)
         |WITH n, n.val, count(n.val) AS `  FRESHID27`
         |RETURN n, n.val, `  FRESHID27` AS foo
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   private def assertRewrite(originalQuery: String, expectedQuery: String): Unit = {

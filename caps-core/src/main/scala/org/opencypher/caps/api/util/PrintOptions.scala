@@ -25,7 +25,7 @@ object PrintOptions {
     PrintOptions(stream = Console.out, columnWidth = DEFAULT_COLUMN_WIDTH, margin = DEFAULT_MARGIN)
 
   lazy val err: PrintOptions =
-    PrintOptions(stream = Console.err, columnWidth = DEFAULT_COLUMN_WIDTH, margin =  DEFAULT_MARGIN)
+    PrintOptions(stream = Console.err, columnWidth = DEFAULT_COLUMN_WIDTH, margin = DEFAULT_MARGIN)
 
   def current(implicit options: PrintOptions): PrintOptions =
     options

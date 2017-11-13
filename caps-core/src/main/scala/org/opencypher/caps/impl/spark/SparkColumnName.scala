@@ -32,8 +32,8 @@ object SparkColumnName {
   def of(slot: SlotContent): String = {
     val builder = slot match {
       case fieldContent: FieldSlotContent => new NameBuilder() += fieldContent.field.name
-      case ProjectedExpr(p: Property) => new NameBuilder() += None += p.withoutType + p.cypherType.material.name
-      case ProjectedExpr(expr) => new NameBuilder() += None += expr.withoutType
+      case ProjectedExpr(p: Property)     => new NameBuilder() += None += p.withoutType + p.cypherType.material.name
+      case ProjectedExpr(expr)            => new NameBuilder() += None += expr.withoutType
     }
 
     builder.result()
@@ -58,7 +58,7 @@ object SparkColumnName {
     builder.sizeHint(sizeHint)
 
     override def +=(part: Option[String]): this.type = part match {
-      case None => builder.append("__"); this
+      case None       => builder.append("__"); this
       case Some(text) => this += text
     }
 
@@ -148,5 +148,6 @@ object SparkColumnName {
       case '\b' => "_backspace_"
       case _ => s"_u${Integer.toHexString(ch.toInt)}_"
     }
+
   }
 }

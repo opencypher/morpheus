@@ -27,8 +27,8 @@ object RuntimeContext {
 }
 
 case class RuntimeContext(
-  parameters: Map[String, CypherValue],
-  resolve: URI => Option[CAPSGraph]
+    parameters: Map[String, CypherValue],
+    resolve: URI => Option[CAPSGraph]
 )
 
 case object udfUtils {
@@ -50,4 +50,3 @@ case object udfUtils {
     }
   }
 }
-

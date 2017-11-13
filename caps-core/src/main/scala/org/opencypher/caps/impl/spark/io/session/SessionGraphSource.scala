@@ -23,8 +23,7 @@ import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceImpl
 import org.opencypher.caps.impl.spark.exception.Raise
 
-case class SessionGraphSource(path: String)(implicit capsSession: CAPSSession)
-  extends CAPSGraphSourceImpl {
+case class SessionGraphSource(path: String)(implicit capsSession: CAPSSession) extends CAPSGraphSourceImpl {
 
   private var currentGraph: Option[CAPSGraph] = None
 

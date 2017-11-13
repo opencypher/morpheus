@@ -62,7 +62,7 @@ trait PhysicalOperator {
     context.resolve(uri).getOrElse(Raise.graphNotFound(uri))
   }
 
-  protected def prefix(depth: Int): String = ("· " * depth ) + "|-"
+  protected def prefix(depth: Int): String = ("? " * depth) + "|-"
   def pretty(depth: Int = 0): String
   protected def describeParameters: String = ""
 }
@@ -90,7 +90,8 @@ sealed trait BinaryPhysicalOperator extends PhysicalOperator {
   protected def left(implicit context: RuntimeContext): PhysicalResult = lhs.execute
   protected def right(implicit context: RuntimeContext): PhysicalResult = rhs.execute
 
-  protected def constructResult(binaryOp: (CAPSRecords, CAPSRecords) => CAPSRecords)(implicit context: RuntimeContext): PhysicalResult = {
+  protected def constructResult(binaryOp: (CAPSRecords, CAPSRecords) => CAPSRecords)(
+      implicit context: RuntimeContext): PhysicalResult = {
     val resultRecords = binaryOp(left.records, right.records)
     val graphs = left.graphs ++ right.graphs
     PhysicalResult(resultRecords, graphs)
@@ -104,11 +105,12 @@ sealed trait BinaryPhysicalOperator extends PhysicalOperator {
 }
 
 sealed trait TernaryPhysicalOperator extends PhysicalOperator {
-  def first:  PhysicalOperator
+  def first: PhysicalOperator
   def second: PhysicalOperator
-  def third:  PhysicalOperator
+  def third: PhysicalOperator
 
-  protected def constructResult(ternaryOp: (CAPSRecords, CAPSRecords, CAPSRecords) => CAPSRecords)(implicit context: RuntimeContext): PhysicalResult = {
+  protected def constructResult(ternaryOp: (CAPSRecords, CAPSRecords, CAPSRecords) => CAPSRecords)(
+      implicit context: RuntimeContext): PhysicalResult = {
     val firstR = first.execute
     val secondR = second.execute
     val thirdR = third.execute
@@ -125,8 +127,7 @@ sealed trait TernaryPhysicalOperator extends PhysicalOperator {
   }
 }
 
-final case class Scan(inGraph: LogicalGraph, v: Var, in: PhysicalOperator)
-  extends StackingPhysicalOperator {
+final case class Scan(inGraph: LogicalGraph, v: Var, in: PhysicalOperator) extends StackingPhysicalOperator {
 
   override def run(implicit context: RuntimeContext): PhysicalResult = {
     val graphs = prev.graphs
@@ -151,7 +152,7 @@ final case class Scan(inGraph: LogicalGraph, v: Var, in: PhysicalOperator)
 }
 
 final case class Alias(expr: Expr, alias: Var, header: RecordHeader, in: PhysicalOperator)
-  extends StackingPhysicalOperator {
+    extends StackingPhysicalOperator {
 
   override def run(implicit context: RuntimeContext): PhysicalResult = {
     prev.mapRecordsWithDetails { records =>
@@ -201,8 +202,7 @@ final case class Project(expr: Expr, header: RecordHeader, in: PhysicalOperator)
   }
 }
 
-final case class Filter(expr: Expr, header: RecordHeader, in: PhysicalOperator)
-  extends StackingPhysicalOperator {
+final case class Filter(expr: Expr, header: RecordHeader, in: PhysicalOperator) extends StackingPhysicalOperator {
 
   override def run(implicit context: RuntimeContext): PhysicalResult = {
     prev.mapRecordsWithDetails { records =>
@@ -226,15 +226,19 @@ final case class Filter(expr: Expr, header: RecordHeader, in: PhysicalOperator)
   }
 }
 
-final case class ProjectExternalGraph(name: String, uri: URI, in: PhysicalOperator)
-  extends StackingPhysicalOperator {
+final case class ProjectExternalGraph(name: String, uri: URI, in: PhysicalOperator) extends StackingPhysicalOperator {
 
   override def run(implicit context: RuntimeContext): PhysicalResult = {
     prev.withGraph(name -> resolve(uri))
   }
 }
 
-final case class ProjectPatternGraph(toCreate: Set[ConstructedEntity], name: String, schema: Schema, in: PhysicalOperator) extends StackingPhysicalOperator {
+final case class ProjectPatternGraph(
+    toCreate: Set[ConstructedEntity],
+    name: String,
+    schema: Schema,
+    in: PhysicalOperator)
+    extends StackingPhysicalOperator {
 
   override protected def describeParameters: String = s"${toCreate.mkString("creates = {", ", ", "}")}"
 
@@ -250,7 +254,7 @@ final case class ProjectPatternGraph(toCreate: Set[ConstructedEntity], name: Str
   }
 
   private def createEntities(toCreate: Set[ConstructedEntity], records: CAPSRecords): CAPSRecords = {
-    val nodes = toCreate.collect { case c: ConstructedNode => c }
+    val nodes = toCreate.collect { case c: ConstructedNode        => c }
     val rels = toCreate.collect { case r: ConstructedRelationship => r }
 
     val nodesToCreate = nodes.flatMap(constructNode(_, records))
@@ -260,7 +264,6 @@ final case class ProjectPatternGraph(toCreate: Set[ConstructedEntity], name: Str
     addEntitiesToRecords(relsToCreate, recordsWithNodes)
   }
 
-
   private def addEntitiesToRecords(columnsToAdd: Set[(SlotContent, Column)], records: CAPSRecords): CAPSRecords = {
     val newData = columnsToAdd.foldLeft(records.data) {
       case (acc, (expr, col)) =>
@@ -268,9 +271,11 @@ final case class ProjectPatternGraph(toCreate: Set[ConstructedEntity], name: Str
     }
 
     // TODO: Move header construction to FlatPlanner
-    val newHeader = records.header.update(
-      addContents(columnsToAdd.map(_._1).toSeq)
-    )._1
+    val newHeader = records.header
+      .update(
+        addContents(columnsToAdd.map(_._1).toSeq)
+      )
+      ._1
 
     CAPSRecords.create(newHeader, newData)(records.caps)
   }
@@ -325,7 +330,7 @@ final case class ProjectPatternGraph(toCreate: Set[ConstructedEntity], name: Str
 }
 
 final case class SelectFields(fields: IndexedSeq[Var], header: Option[RecordHeader], in: PhysicalOperator)
-  extends StackingPhysicalOperator {
+    extends StackingPhysicalOperator {
 
   override protected def describeParameters: String = s"${fields.mkString("fields = {", ", ", "}")}"
 
@@ -339,14 +344,16 @@ final case class SelectFields(fields: IndexedSeq[Var], header: Option[RecordHead
         _.content match {
           case content: FieldSlotContent =>
             fieldIndices.getOrElse(content.field, Int.MaxValue)
-          case content@ProjectedExpr(expr) =>
+          case content @ ProjectedExpr(expr) =>
             val deps = expr.dependencies
             deps.headOption.filter(_ => deps.size == 1).flatMap(fieldIndices.get).getOrElse(Int.MaxValue)
         }
       }
 
       val data = records.data
-      val columns = groupedSlots.map { s => data.col(columnName(s)) }
+      val columns = groupedSlots.map { s =>
+        data.col(columnName(s))
+      }
       val newData = records.data.select(columns: _*)
 
       CAPSRecords.create(_header, newData)(records.caps)
@@ -354,16 +361,14 @@ final case class SelectFields(fields: IndexedSeq[Var], header: Option[RecordHead
   }
 }
 
-final case class SelectGraphs(graphs: Set[String], in: PhysicalOperator)
-  extends StackingPhysicalOperator {
+final case class SelectGraphs(graphs: Set[String], in: PhysicalOperator) extends StackingPhysicalOperator {
 
   override def run(implicit context: RuntimeContext): PhysicalResult = {
     prev.selectGraphs(graphs)
   }
 }
 
-final case class Distinct(header: RecordHeader, in: PhysicalOperator)
-  extends StackingPhysicalOperator {
+final case class Distinct(header: RecordHeader, in: PhysicalOperator) extends StackingPhysicalOperator {
 
   override def run(implicit context: RuntimeContext): PhysicalResult = {
     prev.mapRecordsWithDetails { records =>
@@ -376,8 +381,7 @@ final case class Distinct(header: RecordHeader, in: PhysicalOperator)
   }
 }
 
-final case class SimpleDistinct(in: PhysicalOperator)
-  extends StackingPhysicalOperator {
+final case class SimpleDistinct(in: PhysicalOperator) extends StackingPhysicalOperator {
 
   override def run(implicit context: RuntimeContext): PhysicalResult = {
     prev.mapRecordsWithDetails { records =>
@@ -386,12 +390,17 @@ final case class SimpleDistinct(in: PhysicalOperator)
   }
 }
 
-final case class Aggregate(aggregations: Set[(Var, Aggregator)], group: Set[Var], header: RecordHeader, in: PhysicalOperator)
-  extends StackingPhysicalOperator {
+final case class Aggregate(
+    aggregations: Set[(Var, Aggregator)],
+    group: Set[Var],
+    header: RecordHeader,
+    in: PhysicalOperator)
+    extends StackingPhysicalOperator {
 
-  override protected def describeParameters: String = s"${aggregations.map {
-    case (v, agg) => s"$agg AS $v"
-  } .mkString("agg = {", ", ", "}")}"
+  override protected def describeParameters: String =
+    s"${aggregations.map {
+      case (v, agg) => s"$agg AS $v"
+    }.mkString("agg = {", ", ", "}")}"
 
   override def run(implicit context: RuntimeContext): PhysicalResult = {
     prev.mapRecordsWithDetails { records =>
@@ -399,7 +408,7 @@ final case class Aggregate(aggregations: Set[(Var, Aggregator)], group: Set[Var]
 
       def withInnerExpr(expr: Expr)(f: Column => Column) = {
         asSparkSQLExpr(records.header, expr, inData) match {
-          case None => Raise.notYetImplemented(s"projecting $expr")
+          case None         => Raise.notYetImplemented(s"projecting $expr")
           case Some(column) => f(column)
         }
       }
@@ -452,8 +461,12 @@ final case class Aggregate(aggregations: Set[(Var, Aggregator)], group: Set[Var]
   }
 }
 
-final case class ValueJoin(predicates: Set[org.opencypher.caps.api.expr.Equals], header: RecordHeader, lhs: PhysicalOperator, rhs: PhysicalOperator)
-  extends BinaryPhysicalOperator {
+final case class ValueJoin(
+    predicates: Set[org.opencypher.caps.api.expr.Equals],
+    header: RecordHeader,
+    lhs: PhysicalOperator,
+    rhs: PhysicalOperator)
+    extends BinaryPhysicalOperator {
 
   override def run(implicit context: RuntimeContext): PhysicalResult = {
     val leftHeader = left.records.header
@@ -465,8 +478,12 @@ final case class ValueJoin(predicates: Set[org.opencypher.caps.api.expr.Equals],
   }
 }
 
-final case class Optional(lhsHeader: RecordHeader, rhsHeader: RecordHeader, lhs: PhysicalOperator, rhs: PhysicalOperator)
-  extends BinaryPhysicalOperator {
+final case class Optional(
+    lhsHeader: RecordHeader,
+    rhsHeader: RecordHeader,
+    lhs: PhysicalOperator,
+    rhs: PhysicalOperator)
+    extends BinaryPhysicalOperator {
 
   private def optional(leftRecords: CAPSRecords, rightRecords: CAPSRecords): CAPSRecords = {
     val lhsData = leftRecords.toDF()
@@ -477,7 +494,8 @@ final case class Optional(lhsHeader: RecordHeader, rhsHeader: RecordHeader, lhs:
     val columnsToRemove = commonFields
       .flatMap(rhsHeader.childSlots)
       .map(_.content)
-      .map(columnName).toSeq
+      .map(columnName)
+      .toSeq
 
     val lhsJoinSlots = commonFields.map(lhsHeader.slotFor)
     val rhsJoinSlots = commonFields.map(rhsHeader.slotFor)
@@ -493,7 +511,8 @@ final case class Optional(lhsHeader: RecordHeader, rhsHeader: RecordHeader, lhs:
         val rhsColName = columnName(pair._2)
 
         (lhsCol, rhsColName, FreshVariableNamer.generateUniqueName(rhsHeader))
-      }).toSeq
+      })
+      .toSeq
 
     val reducedRhsData = joinColumnMapping
       .foldLeft(rhsData)((acc, col) => acc.withColumnRenamed(col._2, col._3))
@@ -510,15 +529,15 @@ final case class Optional(lhsHeader: RecordHeader, rhsHeader: RecordHeader, lhs:
 }
 
 final case class OrderBy(sortItems: Seq[SortItem[Expr]], header: RecordHeader, in: PhysicalOperator)
-  extends StackingPhysicalOperator {
+    extends StackingPhysicalOperator {
 
   override def run(implicit context: RuntimeContext): PhysicalResult = {
     val getColumnName = (expr: Var) => columnName(prev.records.header.slotFor(expr))
 
     val sortExpression = sortItems.map {
-      case Asc(expr: Var) => asc(getColumnName(expr))
+      case Asc(expr: Var)  => asc(getColumnName(expr))
       case Desc(expr: Var) => desc(getColumnName(expr))
-      case _ => Raise.impossible()
+      case _               => Raise.impossible()
     }
 
     prev.mapRecordsWithDetails { records =>
@@ -528,8 +547,7 @@ final case class OrderBy(sortItems: Seq[SortItem[Expr]], header: RecordHeader, i
   }
 }
 
-final case class Skip(expr: Expr, header: RecordHeader, in: PhysicalOperator)
-  extends StackingPhysicalOperator {
+final case class Skip(expr: Expr, header: RecordHeader, in: PhysicalOperator) extends StackingPhysicalOperator {
 
   override def run(implicit context: RuntimeContext): PhysicalResult = {
     val skip: Long = expr match {
@@ -537,7 +555,7 @@ final case class Skip(expr: Expr, header: RecordHeader, in: PhysicalOperator)
       case Param(name) =>
         context.parameters(name) match {
           case CypherInteger(v) => v
-          case _ => Raise.impossible()
+          case _                => Raise.impossible()
         }
       case _ => Raise.impossible()
     }
@@ -553,13 +571,12 @@ final case class Skip(expr: Expr, header: RecordHeader, in: PhysicalOperator)
   }
 }
 
-final case class Limit(expr: Expr, header: RecordHeader, in: PhysicalOperator)
-  extends StackingPhysicalOperator {
+final case class Limit(expr: Expr, header: RecordHeader, in: PhysicalOperator) extends StackingPhysicalOperator {
 
   override def run(implicit context: RuntimeContext): PhysicalResult = {
     val limit = expr match {
       case IntegerLit(v) => v
-      case _ => Raise.impossible()
+      case _             => Raise.impossible()
     }
 
     prev.mapRecordsWithDetails { records =>
@@ -569,7 +586,7 @@ final case class Limit(expr: Expr, header: RecordHeader, in: PhysicalOperator)
 }
 
 final case class CartesianProduct(header: RecordHeader, lhs: PhysicalOperator, rhs: PhysicalOperator)
-  extends BinaryPhysicalOperator {
+    extends BinaryPhysicalOperator {
 
   private def cartesian(lhsRecords: CAPSRecords, rhsRecords: CAPSRecords): CAPSRecords = {
     val data = lhsRecords.data
@@ -584,8 +601,15 @@ final case class CartesianProduct(header: RecordHeader, lhs: PhysicalOperator, r
 }
 
 // This maps a Cypher pattern such as (s)-[r]->(t), where s is solved by first, r is solved by second and t is solved by third
-final case class ExpandSource(source: Var, rel: Var, target: Var, header: RecordHeader, first: PhysicalOperator, second: PhysicalOperator, third: PhysicalOperator)
-  extends TernaryPhysicalOperator {
+final case class ExpandSource(
+    source: Var,
+    rel: Var,
+    target: Var,
+    header: RecordHeader,
+    first: PhysicalOperator,
+    second: PhysicalOperator,
+    third: PhysicalOperator)
+    extends TernaryPhysicalOperator {
 
   private def expand(firstRecords: CAPSRecords, secondRecords: CAPSRecords, thirdRecords: CAPSRecords): CAPSRecords = {
     val sourceSlot = firstRecords.header.slotFor(source)
@@ -611,10 +635,13 @@ final case class ExpandSource(source: Var, rel: Var, target: Var, header: Record
 
 // This maps a Cypher pattern such as (s)-[r]->(t), where s and t are both solved by lhs, and r is solved by rhs
 final case class ExpandInto(
-  source: Var, rel: Var, target: Var,
-  header: RecordHeader, lhs: PhysicalOperator, rhs: PhysicalOperator
-)
-  extends BinaryPhysicalOperator {
+    source: Var,
+    rel: Var,
+    target: Var,
+    header: RecordHeader,
+    lhs: PhysicalOperator,
+    rhs: PhysicalOperator
+) extends BinaryPhysicalOperator {
 
   private def expandInto(lhsRecords: CAPSRecords, rhsRecords: CAPSRecords): CAPSRecords = {
     val sourceSlot = lhsRecords.header.slotFor(source)
@@ -637,7 +664,7 @@ final case class ExpandInto(
 
 // Initialises the table in preparation for variable length expand.
 final case class InitVarExpand(source: Var, edgeList: Var, target: Var, header: RecordHeader, in: PhysicalOperator)
-  extends StackingPhysicalOperator {
+    extends StackingPhysicalOperator {
 
   override def run(implicit context: RuntimeContext): PhysicalResult = {
     val sourceSlot = header.slotFor(source)
@@ -669,11 +696,18 @@ final case class InitVarExpand(source: Var, edgeList: Var, target: Var, header: 
 // this performs m joins with second to step all steps, then drops n of these steps
 // edgeList is what is bound to r; a list of relationships (currently just the ids)
 final case class BoundedVarExpand(
-  rel: Var, edgeList: Var, target: Var, initialEndNode: Var,
-  lower: Int, upper: Int, header: RecordHeader,
-  first: PhysicalOperator, second: PhysicalOperator, third: PhysicalOperator,
-  isExpandInto: Boolean)
-  extends TernaryPhysicalOperator {
+    rel: Var,
+    edgeList: Var,
+    target: Var,
+    initialEndNode: Var,
+    lower: Int,
+    upper: Int,
+    header: RecordHeader,
+    first: PhysicalOperator,
+    second: PhysicalOperator,
+    third: PhysicalOperator,
+    isExpandInto: Boolean)
+    extends TernaryPhysicalOperator {
 
   private def varExpand(firstRecords: CAPSRecords, secondRecords: CAPSRecords, thirdRecords: CAPSRecords): CAPSRecords = {
     val expanded = expand(firstRecords, secondRecords)
@@ -681,9 +715,13 @@ final case class BoundedVarExpand(
     finalize(expanded, thirdRecords)
   }
 
-  private def iterate(lhs: DataFrame, rels: DataFrame)
-    (endNode: RecordSlot, rel: Var, relStartNode: RecordSlot,
-      listTempColName: String, edgeListColName: String, keep: Array[String]): DataFrame = {
+  private def iterate(lhs: DataFrame, rels: DataFrame)(
+      endNode: RecordSlot,
+      rel: Var,
+      relStartNode: RecordSlot,
+      listTempColName: String,
+      edgeListColName: String,
+      keep: Array[String]): DataFrame = {
 
     val relIdColumn = rels.col(columnName(OpaqueField(rel)))
     val startColumn = rels.col(columnName(relStartNode))
@@ -702,7 +740,7 @@ final case class BoundedVarExpand(
     val endNodeIdColNameOfJoinedRel = columnName(ProjectedExpr(EndNode(rel)(CTNode)))
 
     val columns = keep ++ Seq(listTempColName, endNodeIdColNameOfJoinedRel)
-    val withoutRelProperties = filtered.select(columns.head, columns.tail: _*)  // drops joined columns from relationship table
+    val withoutRelProperties = filtered.select(columns.head, columns.tail: _*) // drops joined columns from relationship table
 
     withoutRelProperties
       .drop(expandColumn)
@@ -720,9 +758,8 @@ final case class BoundedVarExpand(
 
     // If the expansion ends in an already solved plan, the final join can be replaced by a filter.
     val result = if (isExpandInto) {
-        val data = expanded.toDF()
-        CAPSRecords.create(header,
-          data.filter(data.col(targetNodeCol) === data.col(endNodeCol)))(expanded.caps)
+      val data = expanded.toDF()
+      CAPSRecords.create(header, data.filter(data.col(targetNodeCol) === data.col(endNodeCol)))(expanded.caps)
     } else {
       val joinHeader = expanded.header ++ targets.header
 
@@ -775,7 +812,7 @@ final case class StartFrom(records: CAPSRecords, graph: LogicalExternalGraph) ex
 }
 
 final case class EmptyRecords(header: RecordHeader, in: PhysicalOperator)(implicit caps: CAPSSession)
-  extends StackingPhysicalOperator {
+    extends StackingPhysicalOperator {
   override def run(implicit context: RuntimeContext) = {
     prev.mapRecordsWithDetails(_ => CAPSRecords.empty(header))
   }
@@ -798,28 +835,25 @@ object PhysicalOperator {
   def columnName(slot: RecordSlot): String = SparkColumnName.of(slot)
   def columnName(content: SlotContent): String = SparkColumnName.of(content)
 
-
-  def joinRecords(header: RecordHeader, joinSlots: Seq[(RecordSlot, RecordSlot)],
-                  joinType: String = "inner", deduplicate: Boolean = false)
-                  (lhs: CAPSRecords, rhs: CAPSRecords): CAPSRecords = {
+  def joinRecords(
+      header: RecordHeader,
+      joinSlots: Seq[(RecordSlot, RecordSlot)],
+      joinType: String = "inner",
+      deduplicate: Boolean = false)(lhs: CAPSRecords, rhs: CAPSRecords): CAPSRecords = {
 
     val lhsData = lhs.toDF()
     val rhsData = rhs.toDF()
 
-    val joinCols = joinSlots.map(pair =>
-      lhsData.col(columnName(pair._1)) -> rhsData.col(columnName(pair._2))
-    )
+    val joinCols = joinSlots.map(pair => lhsData.col(columnName(pair._1)) -> rhsData.col(columnName(pair._2)))
 
     joinDFs(lhsData, rhsData, header, joinCols)(joinType, deduplicate)(lhs.caps)
   }
 
-  def joinDFs(lhsData: DataFrame, rhsData: DataFrame,
-              header: RecordHeader, joinCols: Seq[(Column, Column)])
-             (joinType: String, deduplicate: Boolean)
-             (implicit caps: CAPSSession): CAPSRecords = {
+  def joinDFs(lhsData: DataFrame, rhsData: DataFrame, header: RecordHeader, joinCols: Seq[(Column, Column)])(
+      joinType: String,
+      deduplicate: Boolean)(implicit caps: CAPSSession): CAPSRecords = {
 
-    val joinExpr = joinCols
-      .map { case (l, r) => l === r }
+    val joinExpr = joinCols.map { case (l, r) => l === r }
       .reduce(_ && _)
 
     val joinedData = lhsData.join(rhsData, joinExpr, joinType)
@@ -835,7 +869,7 @@ object PhysicalOperator {
   def assertIsNode(slot: RecordSlot): Unit = {
     slot.content.cypherType match {
       case CTNode(_) =>
-      case x => throw new IllegalArgumentException(s"Expected $slot to contain a node, but was $x")
+      case x         => throw new IllegalArgumentException(s"Expected $slot to contain a node, but was $x")
     }
   }
 

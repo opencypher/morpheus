@@ -48,8 +48,8 @@ trait RecordHeaderSyntax {
 
   private def exec[O](inner: State[InternalHeader, O]): State[RecordHeader, O] =
     get[RecordHeader]
-    .map(header => inner.run(header.internalHeader).value)
-    .flatMap { case (newInternalHeader, value) => set(RecordHeader(newInternalHeader)).map(_ => value) }
+      .map(header => inner.run(header.internalHeader).value)
+      .flatMap { case (newInternalHeader, value) => set(RecordHeader(newInternalHeader)).map(_ => value) }
 }
 
 final class RecordHeaderOps(header: RecordHeader) {

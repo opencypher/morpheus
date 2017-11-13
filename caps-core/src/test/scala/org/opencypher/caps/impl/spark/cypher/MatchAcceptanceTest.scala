@@ -24,14 +24,12 @@ class MatchAcceptanceTest extends CAPSTestSuite {
 
   test("match unknown label") {
     // Given
-    val given = TestGraph(
-      """
+    val given = TestGraph("""
         |(p:Person {firstName: "Alice", lastName: "Foo"})
       """.stripMargin)
 
     // When
-    val result = given.cypher(
-      """
+    val result = given.cypher("""
         |MATCH (a:Animal)
         |RETURN a
       """.stripMargin)
@@ -42,14 +40,12 @@ class MatchAcceptanceTest extends CAPSTestSuite {
 
   test("match property on unknown label") {
     // Given
-    val given = TestGraph(
-      """
+    val given = TestGraph("""
         |(p:Person {firstName: "Alice", lastName: "Foo"})
       """.stripMargin)
 
     // When
-    val result = given.cypher(
-      """
+    val result = given.cypher("""
         |MATCH (a:Animal)
         |RETURN a.name
       """.stripMargin)
@@ -60,29 +56,23 @@ class MatchAcceptanceTest extends CAPSTestSuite {
 
   test("match return value of non-existing property as null") {
     // Given
-    val given = TestGraph(
-      """
+    val given = TestGraph("""
         |(p:Person {firstName: "Alice", lastName: "Foo"})
       """.stripMargin)
 
     // When
-    val result = given.cypher(
-      """
+    val result = given.cypher("""
         |MATCH (a:Person)
         |RETURN a.firstName, a.age
       """.stripMargin)
 
     // Then
-    result.records.toMaps should equal(Bag(CypherMap(
-      "a.age" -> null,
-      "a.firstName" -> "Alice")
-    ))
+    result.records.toMaps should equal(Bag(CypherMap("a.age" -> null, "a.firstName" -> "Alice")))
   }
 
   test("multiple match clauses") {
     // Given
-    val given = TestGraph(
-      """
+    val given = TestGraph("""
         |(p1:Person {name: "Alice"}),
         |(p2:Person {name: "Bob"}),
         |(p3:Person {name: "Eve"}),
@@ -91,8 +81,7 @@ class MatchAcceptanceTest extends CAPSTestSuite {
       """.stripMargin)
 
     // When
-    val result = given.cypher(
-      """
+    val result = given.cypher("""
         |MATCH (p1:Person)
         |MATCH (p1:Person)-[e1]->(p2:Person)
         |MATCH (p2)-[e2]->(p3:Person)
@@ -100,20 +89,20 @@ class MatchAcceptanceTest extends CAPSTestSuite {
       """.stripMargin)
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap(
-        "p1.name" -> "Alice",
-        "p2.name" -> "Bob",
-        "p3.name" -> "Eve"
-      )
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap(
+          "p1.name" -> "Alice",
+          "p2.name" -> "Bob",
+          "p3.name" -> "Eve"
+        )
+      ))
     result.graphs shouldBe empty
   }
 
   test("cyphermorphism and multiple match clauses") {
     // Given
-    val given = TestGraph(
-      """
+    val given = TestGraph("""
         |(p1:Person {name: "Alice"}),
         |(p2:Person {name: "Bob"}),
         |(p1)-[:KNOWS]->(p2),
@@ -121,35 +110,34 @@ class MatchAcceptanceTest extends CAPSTestSuite {
       """.stripMargin)
 
     // When
-    val result = given.cypher(
-      """
+    val result = given.cypher("""
         |MATCH (p1:Person)-[e1:KNOWS]->(p2:Person)-[e2:KNOWS]->(p3:Person)
         |MATCH (p3)-[e3:KNOWS]->(p4:Person)
         |RETURN p1.name, p2.name, p3.name, p4.name
       """.stripMargin)
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap(
-        "p1.name" -> "Bob",
-        "p2.name" -> "Alice",
-        "p3.name" -> "Bob",
-        "p4.name" -> "Alice"
-      ),
-      CypherMap(
-        "p1.name" -> "Alice",
-        "p2.name" -> "Bob",
-        "p3.name" -> "Alice",
-        "p4.name" -> "Bob"
-      )
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap(
+          "p1.name" -> "Bob",
+          "p2.name" -> "Alice",
+          "p3.name" -> "Bob",
+          "p4.name" -> "Alice"
+        ),
+        CypherMap(
+          "p1.name" -> "Alice",
+          "p2.name" -> "Bob",
+          "p3.name" -> "Alice",
+          "p4.name" -> "Bob"
+        )
+      ))
     result.graphs shouldBe empty
   }
 
   test("disconnected components") {
     // Given
-    val given = TestGraph(
-      """
+    val given = TestGraph("""
         |(p1:Narcissist {name: "Alice"}),
         |(p2:Narcissist {name: "Bob"}),
         |(p1)-[:LOVES]->(p1),
@@ -157,25 +145,24 @@ class MatchAcceptanceTest extends CAPSTestSuite {
       """.stripMargin)
 
     // When
-    val result = given.cypher(
-      """
+    val result = given.cypher("""
         |MATCH (a:Narcissist), (b:Narcissist)
         |RETURN a.name AS one, b.name AS two
       """.stripMargin)
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("one" -> "Alice", "two" -> "Alice"),
-      CypherMap("one" -> "Alice", "two" -> "Bob"),
-      CypherMap("one" -> "Bob", "two" -> "Bob"),
-      CypherMap("one" -> "Bob", "two" -> "Alice")
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("one" -> "Alice", "two" -> "Alice"),
+        CypherMap("one" -> "Alice", "two" -> "Bob"),
+        CypherMap("one" -> "Bob", "two" -> "Bob"),
+        CypherMap("one" -> "Bob", "two" -> "Alice")
+      ))
   }
 
   test("joined components") {
     // Given
-    val given = TestGraph(
-      """
+    val given = TestGraph("""
         |(p1:Narcissist {name: "Alice"}),
         |(p2:Narcissist {name: "Bob"}),
         |(p1)-[:LOVES]->(p1),
@@ -183,17 +170,17 @@ class MatchAcceptanceTest extends CAPSTestSuite {
       """.stripMargin)
 
     // When
-    val result = given.cypher(
-      """
+    val result = given.cypher("""
         |MATCH (a:Narcissist), (b:Narcissist) WHERE a.name = b.name
         |RETURN a.name AS one, b.name AS two
       """.stripMargin)
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("one" -> "Alice", "two" -> "Alice"),
-      CypherMap("one" -> "Bob", "two" -> "Bob")
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("one" -> "Alice", "two" -> "Alice"),
+        CypherMap("one" -> "Bob", "two" -> "Bob")
+      ))
 
     // TODO: Move to plan based testing
     result.explain.plan.pretty() should include("ValueJoin(predicates = [a.name :: STRING = b.name :: STRING]")
@@ -201,8 +188,7 @@ class MatchAcceptanceTest extends CAPSTestSuite {
 
   ignore("Broken start of demo query") {
     // Given
-    val given = TestGraph(
-      """
+    val given = TestGraph("""
         |(a:Person {name: "Philip"}),
         |(b:Person {name: "Stefan"}),
         |(c:City {name: "The Pan-European Sprawl"}),

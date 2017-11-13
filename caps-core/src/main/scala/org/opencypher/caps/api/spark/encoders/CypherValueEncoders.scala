@@ -24,4 +24,3 @@ trait CypherValueEncoders extends LowPriorityCypherValueEncoders {
   implicit def cypherRelationshipEncoder: ExpressionEncoder[CypherRelationship] = kryo[CypherRelationship]
   implicit def cypherMapEncoder: ExpressionEncoder[CypherMap] = kryo[CypherMap]
 }
-

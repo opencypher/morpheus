@@ -23,55 +23,58 @@ import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.impl.spark.exception.Raise
 
 case class RowExpansion(
-  targetHeader: RecordHeader,
-  targetVar: Var,
-  entitiesWithChildren: Map[Var, Seq[RecordSlot]],
-  propertyColumnLookupTables: Map[Var, Map[String, String]]
+    targetHeader: RecordHeader,
+    targetVar: Var,
+    entitiesWithChildren: Map[Var, Seq[RecordSlot]],
+    propertyColumnLookupTables: Map[Var, Map[String, String]]
 ) extends (Row => Seq[Row]) {
 
   private lazy val targetLabels = targetVar.cypherType match {
     case CTNode(labels) => labels
-    case _ => Set.empty[String]
+    case _              => Set.empty[String]
   }
 
   private val rowSchema = StructType(targetHeader.slots.map(_.asStructField))
 
-  private lazy val labelIndexLookupTable = entitiesWithChildren.map { case (node, slots) =>
-    val labelIndicesForNode = slots.collect {
-      case RecordSlot(_, p@ProjectedExpr(HasLabel(_, l))) if targetLabels.contains(l.name) =>
-        rowSchema.fieldIndex(SparkColumnName.of(p.withOwner(targetVar)))
-    }
-    node -> labelIndicesForNode
+  private lazy val labelIndexLookupTable = entitiesWithChildren.map {
+    case (node, slots) =>
+      val labelIndicesForNode = slots.collect {
+        case RecordSlot(_, p @ ProjectedExpr(HasLabel(_, l))) if targetLabels.contains(l.name) =>
+          rowSchema.fieldIndex(SparkColumnName.of(p.withOwner(targetVar)))
+      }
+      node -> labelIndicesForNode
   }
 
-  private lazy val typeIndexLookupTable = entitiesWithChildren.map { case (rel, slots) =>
-    val typeIndexForRel = slots.collectFirst {
-      case RecordSlot(_, p@ProjectedExpr(OfType(r))) if r == rel =>
-        rowSchema.fieldIndex(SparkColumnName.of(p.withOwner(targetVar)))
-    }.getOrElse(Raise.impossible("relationship didn't have a type column!"))
-    rel -> typeIndexForRel
+  private lazy val typeIndexLookupTable = entitiesWithChildren.map {
+    case (rel, slots) =>
+      val typeIndexForRel = slots.collectFirst {
+        case RecordSlot(_, p @ ProjectedExpr(OfType(r))) if r == rel =>
+          rowSchema.fieldIndex(SparkColumnName.of(p.withOwner(targetVar)))
+      }.getOrElse(Raise.impossible("relationship didn't have a type column!"))
+      rel -> typeIndexForRel
   }
 
   def apply(row: Row): Seq[Row] = {
-    val adaptedRows = propertyColumnLookupTables.flatMap { case (entity, nodeLookupTable) =>
-      val adaptedRow = adaptRowToNewHeader(row, nodeLookupTable)
-      targetVar.cypherType match {
-        case _: CTNode =>
-          val indices = labelIndexLookupTable(entity)
-          val hasAllRequiredLabels = indices.forall(adaptedRow.getBoolean)
-          if (hasAllRequiredLabels) Some(adaptedRow)
-          else None
-        case CTRelationship(types) if types.isEmpty =>
-          Some(adaptedRow)
-        case CTRelationship(types) =>
-          val index = typeIndexLookupTable(entity)
-          val relType = adaptedRow.getString(index)
-          val hasMatchingType = types.contains(relType)
-          if (hasMatchingType) Some(adaptedRow)
-          else None
-        case _ =>
-          Raise.invalidArgument("an entity variable", entity)
-      }
+    val adaptedRows = propertyColumnLookupTables.flatMap {
+      case (entity, nodeLookupTable) =>
+        val adaptedRow = adaptRowToNewHeader(row, nodeLookupTable)
+        targetVar.cypherType match {
+          case _: CTNode =>
+            val indices = labelIndexLookupTable(entity)
+            val hasAllRequiredLabels = indices.forall(adaptedRow.getBoolean)
+            if (hasAllRequiredLabels) Some(adaptedRow)
+            else None
+          case CTRelationship(types) if types.isEmpty =>
+            Some(adaptedRow)
+          case CTRelationship(types) =>
+            val index = typeIndexLookupTable(entity)
+            val relType = adaptedRow.getString(index)
+            val hasMatchingType = types.contains(relType)
+            if (hasMatchingType) Some(adaptedRow)
+            else None
+          case _ =>
+            Raise.invalidArgument("an entity variable", entity)
+        }
     }
     adaptedRows.toSeq
   }
@@ -87,7 +90,7 @@ case class RowExpansion(
           val value = targetSlot.content match {
             case ProjectedExpr(HasLabel(_, _)) => false
             case ProjectedExpr(Property(_, _)) => null
-            case _ => Raise.impossible()
+            case _                             => Raise.impossible()
           }
           newRowAcc :+ value
       }

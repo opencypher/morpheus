@@ -44,20 +44,34 @@ object RowUtils {
     }
 
     def typeToValue(t: CypherType): Any => CypherValue = t match {
-      case CTBoolean => (in) => cypherBoolean(in.asInstanceOf[Boolean])
-      case CTInteger => (in) => cypherInteger(in.asInstanceOf[Long])
-      case CTString => (in) => cypherString(in.asInstanceOf[String])
-      case CTFloat => (in) => cypherFloat(in.asInstanceOf[Double])
-      case _: CTNode => (in) => cypherInteger(in.asInstanceOf[Long])
+      case CTBoolean =>
+        (in) =>
+          cypherBoolean(in.asInstanceOf[Boolean])
+      case CTInteger =>
+        (in) =>
+          cypherInteger(in.asInstanceOf[Long])
+      case CTString =>
+        (in) =>
+          cypherString(in.asInstanceOf[String])
+      case CTFloat =>
+        (in) =>
+          cypherFloat(in.asInstanceOf[Double])
+      case _: CTNode =>
+        (in) =>
+          cypherInteger(in.asInstanceOf[Long])
       // TODO: This supports var-expand where we only track rel ids, but it's not right
-      case _: CTRelationship => (in) => cypherInteger(in.asInstanceOf[Long])
-      case l: CTList => (in) => {
-        val converted = in.asInstanceOf[Seq[_]].map(typeToValue(l.elementType))
-        cypherList(converted.toIndexedSeq)
-      }
+      case _: CTRelationship =>
+        (in) =>
+          cypherInteger(in.asInstanceOf[Long])
+      case l: CTList =>
+        (in) =>
+          {
+            val converted = in.asInstanceOf[Seq[_]].map(typeToValue(l.elementType))
+            cypherList(converted.toIndexedSeq)
+          }
       case r: NullableDefiniteCypherType => {
         case null => null
-        case v => typeToValue(r.material)(v)
+        case v    => typeToValue(r.material)(v)
       }
       case _ => Raise.notYetImplemented(s"converting value of type $t")
     }

@@ -54,8 +54,7 @@ class ExtractPredicatesFromAndsTest extends BaseTestSuite with AstConstructionTe
 
     val result = ExtractPredicatesFromAnds.instance(CypherParser.defaultContext)(expr)
 
-    result should equal(RetypingPredicate(Set(hasLabels1, hasLabels2),
-      Ands(Set(False() _, True() _)) _)(pos))
+    result should equal(RetypingPredicate(Set(hasLabels1, hasLabels2), Ands(Set(False() _, True() _)) _)(pos))
   }
 
   test("doesn't do anything if no haslabels") {

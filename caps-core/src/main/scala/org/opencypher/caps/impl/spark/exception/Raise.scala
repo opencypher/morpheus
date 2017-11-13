@@ -102,9 +102,11 @@ object Raise {
     s"Incompatible schemas: $detail"
   )
 
-  def semanticErrors(errors: Seq[SemanticErrorDef]): Unit = if (errors.nonEmpty) throw CAPSException(
-    s"Errors during semantic checking: ${errors.mkString(", ")}"
-  )
+  def semanticErrors(errors: Seq[SemanticErrorDef]): Unit =
+    if (errors.nonEmpty)
+      throw CAPSException(
+        s"Errors during semantic checking: ${errors.mkString(", ")}"
+      )
 
   def graphURIMalformedForUseBy(uri: URI, name: String) = throw CAPSException(
     s"Graph URI $uri is malformed for use by $name"
@@ -112,7 +114,7 @@ object Raise {
 
   def graphSourceSchemeNotSupported(uri: URI, schemes: Set[String]) = throw CAPSException(
     s"Cannot create a graph source for $uri due to an unsupported scheme ${uri.getScheme} " +
-    s"(supported schemes: ${schemes.toSeq.sorted.mkString(", ")})"
+      s"(supported schemes: ${schemes.toSeq.sorted.mkString(", ")})"
   )
 
   def graphNotFound(uri: URI) = throw CAPSException(

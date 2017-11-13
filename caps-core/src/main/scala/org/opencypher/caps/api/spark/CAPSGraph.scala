@@ -66,8 +66,7 @@ object CAPSGraph {
     new CAPSScanGraph(allScans, schema)
   }
 
-  def create(records: CAPSRecords, schema: Schema)
-    (implicit caps: CAPSSession): CAPSGraph = {
+  def create(records: CAPSRecords, schema: Schema)(implicit caps: CAPSSession): CAPSGraph = {
 
     new CAPSPatternGraph(records, schema)
   }
@@ -76,7 +75,7 @@ object CAPSGraph {
     new LazyGraph(theSchema, loadGraph) {}
 
   sealed abstract class LazyGraph(override val schema: Schema, loadGraph: => CAPSGraph)(implicit caps: CAPSSession)
-    extends CAPSGraph {
+      extends CAPSGraph {
     override protected lazy val graph: CAPSGraph = {
       val g = loadGraph
       if (g.schema == schema) g else Raise.schemaMismatch()

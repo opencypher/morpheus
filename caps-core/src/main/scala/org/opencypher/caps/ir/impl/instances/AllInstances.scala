@@ -15,5 +15,4 @@
  */
 package org.opencypher.caps.ir.impl.instances
 
-trait AllInstances
-  extends ExprBlockInstances
+trait AllInstances extends ExprBlockInstances

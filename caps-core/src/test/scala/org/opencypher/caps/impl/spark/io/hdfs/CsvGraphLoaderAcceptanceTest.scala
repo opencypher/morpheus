@@ -22,11 +22,12 @@ import org.opencypher.caps.test.BaseTestSuite
 import org.opencypher.caps.test.fixture.{CAPSSessionFixture, MiniDFSClusterFixture, SparkSessionFixture}
 import org.scalatest.Matchers
 
-class CsvGraphLoaderAcceptanceTest extends BaseTestSuite
-  with SparkSessionFixture
-  with CAPSSessionFixture
-  with MiniDFSClusterFixture
-  with Matchers {
+class CsvGraphLoaderAcceptanceTest
+    extends BaseTestSuite
+    with SparkSessionFixture
+    with CAPSSessionFixture
+    with MiniDFSClusterFixture
+    with Matchers {
 
   protected override val dfsTestGraphPath = "/csv/sn"
 
@@ -37,7 +38,6 @@ class CsvGraphLoaderAcceptanceTest extends BaseTestSuite
     graph.nodes("n").toDF().collect().toSet should equal(dfsTestGraphNodes)
     graph.relationships("rel").toDF().collect.toSet should equal(dfsTestGraphRels)
   }
-
 
   test("load csv graph from local file") {
     val fileURI: URI = new URI(s"file://${getClass.getResource("/csv/sn").getPath}")

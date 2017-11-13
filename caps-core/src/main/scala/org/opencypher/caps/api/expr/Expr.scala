@@ -79,9 +79,9 @@ sealed abstract class FlatteningOpExpr(_exprs: Set[Expr]) extends Expr with Seri
     else {
       val expr = exprs.head
       val remaining = exprs.tail
-      companion.unapply(expr) match  {
+      companion.unapply(expr) match {
         case Some(moreExprs) => flatExpr(moreExprs ++ remaining, result)
-        case None => flatExpr(remaining, result + expr)
+        case None            => flatExpr(remaining, result + expr)
       }
     }
 }
@@ -91,7 +91,7 @@ object Ands extends FlatteningOpExprCompanion[Ands] {
   override def apply(exprs: Set[Expr]): Ands = new Ands(exprs)(CTBoolean)
   override def unapply(expr: Any): Option[Set[Expr]] = expr match {
     case ands: Ands => Some(ands.exprs)
-    case _ => None
+    case _          => None
   }
 }
 
@@ -107,7 +107,7 @@ object Ors extends FlatteningOpExprCompanion[Ors] {
   override def apply(exprs: Set[Expr]): Ors = new Ors(exprs)()
   override def unapply(expr: Any): Option[Set[Expr]] = expr match {
     case ors: Ors => Some(ors.exprs)
-    case _ => None
+    case _        => None
   }
 }
 
@@ -175,8 +175,7 @@ final case class GreaterThanOrEqual(lhs: Expr, rhs: Expr)(val cypherType: Cypher
   override val op = ">="
 }
 
-final case class In(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard)
-  extends BinaryExpr {
+final case class In(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends BinaryExpr {
   override val op = "IN"
 }
 
@@ -184,9 +183,9 @@ final case class Property(m: Expr, key: PropertyKey)(val cypherType: CypherType 
   override def withoutType: String = s"${m.withoutType}.${key.name}"
 
   override def equals(obj: scala.Any) = obj match {
-    case null => false
+    case null            => false
     case other: Property => m == other.m && key == other.key && cypherType == other.cypherType
-    case _ => false
+    case _               => false
   }
 }
 

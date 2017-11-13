@@ -24,8 +24,7 @@ class ExpandIntoAcceptanceTest extends CAPSTestSuite {
 
   test("test expand into for dangling edge") {
     // Given
-    val given = TestGraph(
-      """
+    val given = TestGraph("""
         |(p1:Person {name: "Alice"}),
         |(p2:Person {name: "Bob"}),
         |(p3:Person {name: "Eve"}),
@@ -39,8 +38,7 @@ class ExpandIntoAcceptanceTest extends CAPSTestSuite {
       """.stripMargin)
 
     // When
-    val result = given.cypher(
-      """
+    val result = given.cypher("""
         |MATCH (p1:Person)-[e1:KNOWS]->(p2:Person),
         |(p2)-[e2:KNOWS]->(p3:Person),
         |(p1)-[e3:KNOWS]->(p3),
@@ -49,28 +47,28 @@ class ExpandIntoAcceptanceTest extends CAPSTestSuite {
       """.stripMargin)
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap(
-        "p1.name" -> "Alice",
-        "p2.name" -> "Bob",
-        "p3.name" -> "Eve",
-        "p4.name" -> "Carl"
-      ),
-      CypherMap(
-        "p1.name" -> "Alice",
-        "p2.name" -> "Bob",
-        "p3.name" -> "Eve",
-        "p4.name" -> "Richard"
-      )
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap(
+          "p1.name" -> "Alice",
+          "p2.name" -> "Bob",
+          "p3.name" -> "Eve",
+          "p4.name" -> "Carl"
+        ),
+        CypherMap(
+          "p1.name" -> "Alice",
+          "p2.name" -> "Bob",
+          "p3.name" -> "Eve",
+          "p4.name" -> "Richard"
+        )
+      ))
 
     result.graphs shouldBe empty
   }
 
   test("test expand into for triangle") {
     // Given
-    val given = TestGraph(
-      """
+    val given = TestGraph("""
         |(p1:Person {name: "Alice"}),
         |(p2:Person {name: "Bob"}),
         |(p3:Person {name: "Eve"}),
@@ -80,8 +78,7 @@ class ExpandIntoAcceptanceTest extends CAPSTestSuite {
       """.stripMargin)
 
     // When
-    val result = given.cypher(
-      """
+    val result = given.cypher("""
         |MATCH (p1:Person)-[e1:KNOWS]->(p2:Person),
         |(p2)-[e2:KNOWS]->(p3:Person),
         |(p1)-[e3:KNOWS]->(p3)
@@ -89,21 +86,21 @@ class ExpandIntoAcceptanceTest extends CAPSTestSuite {
       """.stripMargin)
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap(
-        "p1.name" -> "Alice",
-        "p2.name" -> "Bob",
-        "p3.name" -> "Eve"
-      )
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap(
+          "p1.name" -> "Alice",
+          "p2.name" -> "Bob",
+          "p3.name" -> "Eve"
+        )
+      ))
 
     result.graphs shouldBe empty
   }
 
   test("Expand into after var expand") {
     // Given
-    val given = TestGraph(
-      """
+    val given = TestGraph("""
         |(p1:Person {name: "Alice"}),
         |(p2:Person {name: "Bob"}),
         |(comment:Comment),
@@ -128,12 +125,13 @@ class ExpandIntoAcceptanceTest extends CAPSTestSuite {
     )
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap(
-        "p1.name" -> "Alice",
-        "p2.name" -> "Bob",
-        "post.content" -> "foobar"
-      )
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap(
+          "p1.name" -> "Alice",
+          "p2.name" -> "Bob",
+          "post.content" -> "foobar"
+        )
+      ))
   }
 }

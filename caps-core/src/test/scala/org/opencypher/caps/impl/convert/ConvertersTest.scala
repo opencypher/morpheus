@@ -45,7 +45,7 @@ class ConvertersTest extends BaseTestSuite {
     val unsupported = Set(FloatType, ShortType, ByteType)
 
     unsupported.foreach { t =>
-       fromSparkType(t, nullable = false) should equal(None)
+      fromSparkType(t, nullable = false) should equal(None)
     }
   }
 

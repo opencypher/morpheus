@@ -50,9 +50,9 @@ trait Register[Collection] {
 object Register {
   @inline
   final def apply[C, R, K, D](implicit register: Register[C] { type Ref = R; type Key = K; type Def = D })
-  : Register[C] {
-    type Ref = R
-    type Key = K
-    type Def = D
-  } = register
+    : Register[C] {
+      type Ref = R
+      type Key = K
+      type Def = D
+    } = register
 }

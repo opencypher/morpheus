@@ -43,22 +43,25 @@ trait ExprBlockInstances {
         val predicates = block.where.elements
 
         predicates.foldLeft(opaqueTypedFields) {
-          case (fields, predicate) => predicate match {
-            case HasLabel(node: Var, label) => fields.map {
-              case f if f representsNode node =>
-                f.withLabel(label)
-              case f => f
-            }
+          case (fields, predicate) =>
+            predicate match {
+              case HasLabel(node: Var, label) =>
+                fields.map {
+                  case f if f representsNode node =>
+                    f.withLabel(label)
+                  case f => f
+                }
               // The below predicate is never present currently
               // Possibly it will be if we introduce a rewrite
               // Rel types are currently detailed already in pattern conversion
-            case HasType(rel: Var, relType) => fields.map {
-              case f if f representsRel rel =>
-                throw new NotImplementedError("No support for annotating relationships in IR yet")
-              case f => f
+              case HasType(rel: Var, relType) =>
+                fields.map {
+                  case f if f representsRel rel =>
+                    throw new NotImplementedError("No support for annotating relationships in IR yet")
+                  case f => f
+                }
+              case _ => fields
             }
-            case _ => fields
-          }
         }
       }
     }

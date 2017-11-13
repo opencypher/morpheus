@@ -16,9 +16,6 @@
 package org.opencypher.caps.ir.api
 
 final case class CypherQuery[E](
-  info: QueryInfo,
-  model: QueryModel[E]
+    info: QueryInfo,
+    model: QueryModel[E]
 )
-
-
-

@@ -39,22 +39,27 @@ object Udfs {
 
   def getNodeLabels(labelNames: Seq[Label]): (Any) => Array[String] = {
     case a: mutable.WrappedArray[_] =>
-      a.zip(labelNames).collect {
-        case (true, label) => label.name
-      }.toArray
+      a.zip(labelNames)
+        .collect {
+          case (true, label) => label.name
+        }
+        .toArray
   }
 
   def getNodeKeys(keyNames: Seq[String]): (Any) => Array[String] = {
     case a: mutable.WrappedArray[_] =>
-      a.zip(keyNames).collect {
-        case (v, key) if v != null => key
-      }.toArray.sorted
+      a.zip(keyNames)
+        .collect {
+          case (v, key) if v != null => key
+        }
+        .toArray
+        .sorted
     case x => Raise.invalidArgument("an array", x.toString)
   }
 
   def in[T](elem: Any, list: Any): Boolean = list match {
     case a: mutable.WrappedArray[_] => a.contains(elem)
-    case x => Raise.invalidArgument("an array", x.toString)
+    case x                          => Raise.invalidArgument("an array", x.toString)
   }
 
 }

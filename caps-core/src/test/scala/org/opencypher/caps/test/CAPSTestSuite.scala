@@ -22,7 +22,7 @@ import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
 abstract class CAPSTestSuite
-  extends BaseTestSuite
+    extends BaseTestSuite
     with SparkSessionFixture
     with CAPSSessionFixture
     with GraphMatchingTestSupport

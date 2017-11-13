@@ -50,9 +50,12 @@ sealed trait EmbeddedEntity extends Verifiable {
   }
 
   protected def computeSlots: Map[String, Expr] = {
-    val keyMap = propertiesFromSlots
-      .collect { case (key, slots) => slots.map { slot => slot -> Property(entityVar, PropertyKey(key))(CTWildcard) } }
-      .flatten
+    val keyMap = propertiesFromSlots.collect {
+      case (key, slots) =>
+        slots.map { slot =>
+          slot -> Property(entityVar, PropertyKey(key))(CTWildcard)
+        }
+    }.flatten
       .foldLeft(Map.empty[String, Expr]) {
         case (m, (slot, expr)) => if (m.contains(slot)) duplicateEmbeddedEntityColumn(slot) else m.updated(slot, expr)
       }
@@ -66,10 +69,10 @@ sealed trait VerifiedEmbeddedEntity[V <: EmbeddedEntity] extends Verified[V] {
 }
 
 final case class EmbeddedNode(
-  entitySlot: String,
-  idSlot: String,
-  labelsFromSlotOrImplied: Map[String, Option[String]] = Map.empty,
-  propertiesFromSlots: Map[String, Set[String]] = Map.empty
+    entitySlot: String,
+    idSlot: String,
+    labelsFromSlotOrImplied: Map[String, Option[String]] = Map.empty,
+    propertiesFromSlots: Map[String, Set[String]] = Map.empty
 ) extends EmbeddedEntity {
 
   self =>
@@ -106,12 +109,11 @@ final case class EmbeddedNode(
   }
 
   override protected def computeSlots: Map[String, Expr] =
-    labelsFromSlotOrImplied
-      .toSeq
-      .collect { case (label, Some(slot)) => slot -> HasLabel(entityVar, Label(label))(CTBoolean) }
-      .foldLeft(super.computeSlots) {
-        case (m, (slot, expr)) => if (m.contains(slot)) duplicateEmbeddedEntityColumn(slot) else m.updated(slot, expr)
-      }
+    labelsFromSlotOrImplied.toSeq.collect {
+      case (label, Some(slot)) => slot -> HasLabel(entityVar, Label(label))(CTBoolean)
+    }.foldLeft(super.computeSlots) {
+      case (m, (slot, expr)) => if (m.contains(slot)) duplicateEmbeddedEntityColumn(slot) else m.updated(slot, expr)
+    }
 }
 
 object EmbeddedNode extends EmbeddedNodeBuilder(()) {
@@ -143,13 +145,13 @@ object EmbeddedNodeBuilder {
 }
 
 final case class EmbeddedRelationship(
-  entitySlot: String,
-  idSlot: String,
-  fromSlot: String,
-  relTypeSlotOrName: Either[(String, Set[String]), String],
-  toSlot: String,
-  propertiesFromSlots: Map[String, Set[String]] = Map.empty
-) extends EmbeddedEntity{
+    entitySlot: String,
+    idSlot: String,
+    fromSlot: String,
+    relTypeSlotOrName: Either[(String, Set[String]), String],
+    toSlot: String,
+    propertiesFromSlots: Map[String, Set[String]] = Map.empty
+) extends EmbeddedEntity {
 
   self =>
 
@@ -166,7 +168,7 @@ final case class EmbeddedRelationship(
 
   def relTypeNames: Set[String] = relTypeSlotOrName match {
     case Left((_, names)) => names
-    case Right(name) => Set(name)
+    case Right(name)      => Set(name)
   }
 
   override def withProperties(propertyAndSlotNames: Set[String]): EmbeddedRelationship =
@@ -182,14 +184,14 @@ final case class EmbeddedRelationship(
     val slots = Seq(
       fromSlot -> StartNode(entityVar)(CTInteger),
       toSlot -> EndNode(entityVar)(CTInteger)
-    )
-    .foldLeft(super.computeSlots) { case (acc, (slot, expr)) =>
-      if (acc.contains(slot)) duplicateEmbeddedEntityColumn(slot) else acc.updated(slot, expr)
+    ).foldLeft(super.computeSlots) {
+      case (acc, (slot, expr)) =>
+        if (acc.contains(slot)) duplicateEmbeddedEntityColumn(slot) else acc.updated(slot, expr)
     }
     relTypeSlotOrName match {
       case Left((slot, _)) if slots.contains(slot) => duplicateEmbeddedEntityColumn(slot)
-      case Left((slot, _)) => slots.updated(slot, OfType(entityVar)(CTString))
-      case Right(_) => slots
+      case Left((slot, _))                         => slots.updated(slot, OfType(entityVar)(CTString))
+      case Right(_)                                => slots
     }
   }
 }
@@ -204,7 +206,10 @@ object EmbeddedRelationship extends EmbeddedRelationshipBuilder((), (), (), ()) 
 }
 
 sealed case class EmbeddedRelationshipBuilder[FROM, VIA, TYP, TO](
-  entitySlotAndIdSlot: VIA, fromSlot: FROM, toSlot: TO, relTypeOrSlotName: TYP
+    entitySlotAndIdSlot: VIA,
+    fromSlot: FROM,
+    toSlot: TO,
+    relTypeOrSlotName: TYP
 ) {
 
   def from(newFromSlot: String): EmbeddedRelationshipBuilder[String, VIA, TYP, TO] = copy(fromSlot = newFromSlot)
@@ -218,8 +223,9 @@ sealed case class EmbeddedRelationshipBuilder[FROM, VIA, TYP, TO](
   def relType(newRelTypeName: String): EmbeddedRelationshipBuilder[FROM, VIA, Right[Nothing, String], TO] =
     copy(relTypeOrSlotName = Right(newRelTypeName))
 
-  def relTypes(newRelTypeSlot: String, relTypeNames: String*)
-  : EmbeddedRelationshipBuilder[FROM, VIA, Left[(String, Set[String]), Nothing], TO] =
+  def relTypes(
+      newRelTypeSlot: String,
+      relTypeNames: String*): EmbeddedRelationshipBuilder[FROM, VIA, Left[(String, Set[String]), Nothing], TO] =
     copy(relTypeOrSlotName = Left(newRelTypeSlot -> relTypeNames.toSet))
 
   def to(newToSlot: String): EmbeddedRelationshipBuilder[FROM, VIA, TYP, String] =
@@ -229,7 +235,7 @@ sealed case class EmbeddedRelationshipBuilder[FROM, VIA, TYP, TO](
 object EmbeddedRelationshipBuilder {
 
   implicit final class RichBuilder[TYP <: Either[(String, Set[String]), String]](
-    val builder: EmbeddedRelationshipBuilder[String, (String, String), TYP, String]
+      val builder: EmbeddedRelationshipBuilder[String, (String, String), TYP, String]
   ) extends AnyVal {
     def build: EmbeddedRelationship =
       EmbeddedRelationship(

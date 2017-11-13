@@ -22,7 +22,8 @@ import org.opencypher.caps.toField
 class PatternTest extends IrTestSuite {
 
   test("add connection") {
-    Pattern.empty[Expr]
+    Pattern
+      .empty[Expr]
       .withConnection('r, DirectedRelationship('a, 'b)) should equal(
       Pattern(Set.empty, Map(toField('r) -> DirectedRelationship('a, 'b)))
     )

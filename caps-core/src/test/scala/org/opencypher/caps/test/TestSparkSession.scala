@@ -50,7 +50,7 @@ object TestSparkSession {
     conf.set("spark.serializer", classOf[KryoSerializer].getCanonicalName)
     conf.set("spark.kryo.registrator", classOf[CypherKryoRegistrar].getCanonicalName)
     conf.set("spark.kryo.unsafe", "true")
-    conf.set("spark.kryo.referenceTracking","false")
+    conf.set("spark.kryo.referenceTracking", "false")
     conf.set("spark.kryo.registrationRequired", "true")
     //
     // If this is slow, you might be hitting: http://bugs.java.com/view_bug.do?bug_id=8077102
@@ -66,6 +66,3 @@ object TestSparkSession {
     session
   }
 }
-
-
-

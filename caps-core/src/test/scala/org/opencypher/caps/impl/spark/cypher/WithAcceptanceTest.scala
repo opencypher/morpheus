@@ -27,8 +27,7 @@ class WithAcceptanceTest extends CAPSTestSuite {
     val given = TestGraph("""(:Node {val: 1l}), (:Node {val: 2L})""")
 
     // When
-    val result = given.cypher(
-      """MATCH (n:Node)
+    val result = given.cypher("""MATCH (n:Node)
         |WITH n.val AS foo
         |WITH foo + 2 AS bar
         |WITH bar + 2 AS foo
@@ -36,10 +35,11 @@ class WithAcceptanceTest extends CAPSTestSuite {
       """.stripMargin)
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("foo" -> 5),
-      CypherMap("foo" -> 6)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("foo" -> 5),
+        CypherMap("foo" -> 6)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -50,18 +50,18 @@ class WithAcceptanceTest extends CAPSTestSuite {
     val given = TestGraph("""(), ()""")
 
     // When
-    val result = given.cypher(
-      """MATCH ()
+    val result = given.cypher("""MATCH ()
         |WITH 3 AS foo
         |WITH foo + 2 AS bar
         |RETURN bar
       """.stripMargin)
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("bar" -> 5),
-      CypherMap("bar" -> 5)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("bar" -> 5),
+        CypherMap("bar" -> 5)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -76,9 +76,10 @@ class WithAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (n:Node)-->(m:Node) WITH n, m RETURN n.val")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("n.val" -> 4)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("n.val" -> 4)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -93,9 +94,10 @@ class WithAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (n:Node)-->(m:Node) WITH n.val AS n_val RETURN n_val")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("n_val" -> 4)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("n_val" -> 4)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -110,10 +112,11 @@ class WithAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (n:Node) WITH n.val AS n_val WHERE n_val <= 4 RETURN n_val")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("n_val" -> 3),
-      CypherMap("n_val" -> 4)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("n_val" -> 3),
+        CypherMap("n_val" -> 4)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -128,9 +131,10 @@ class WithAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (n:Node)-->(m:Node) WITH n.val + m.val AS sum_n_m_val RETURN sum_n_m_val")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("sum_n_m_val" -> 9)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("sum_n_m_val" -> 9)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -145,9 +149,10 @@ class WithAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (n:Node)-[r]->(m:Node) WITH n.val + m.val AS sum WITH sum AS sum2 RETURN sum2")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("sum2" -> 9)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("sum2" -> 9)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -159,13 +164,15 @@ class WithAcceptanceTest extends CAPSTestSuite {
     val given = TestGraph("""(:Node {val: 4L})-->(:Node {val: 5L})-->(:Node)""")
 
     // When
-    val result = given.cypher("MATCH (n:Node)-[r]->(m:Node) WITH n.val AS n_val, n.val + m.val AS sum_n_m_val RETURN sum_n_m_val, n_val")
+    val result = given.cypher(
+      "MATCH (n:Node)-[r]->(m:Node) WITH n.val AS n_val, n.val + m.val AS sum_n_m_val RETURN sum_n_m_val, n_val")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("sum_n_m_val" -> 9, "n_val" -> 4),
-      CypherMap("sum_n_m_val" -> null, "n_val" -> 5)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("sum_n_m_val" -> 9, "n_val" -> 4),
+        CypherMap("sum_n_m_val" -> null, "n_val" -> 5)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -177,11 +184,12 @@ class WithAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (a) WITH a.val as val ORDER BY val RETURN val")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("val" -> 3L),
-      CypherMap("val" -> 4L),
-      CypherMap("val" -> 42L)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("val" -> 3L),
+        CypherMap("val" -> 4L),
+        CypherMap("val" -> 42L)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -193,11 +201,12 @@ class WithAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (a) WITH a.val as val ORDER BY val ASC RETURN val")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("val" -> 3L),
-      CypherMap("val" -> 4L),
-      CypherMap("val" -> 42L)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("val" -> 3L),
+        CypherMap("val" -> 4L),
+        CypherMap("val" -> 42L)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -209,11 +218,12 @@ class WithAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (a) WITH a.val as val ORDER BY val DESC RETURN val")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("val" -> 42L),
-      CypherMap("val" -> 4L),
-      CypherMap("val" -> 3L)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("val" -> 42L),
+        CypherMap("val" -> 4L),
+        CypherMap("val" -> 3L)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -237,10 +247,11 @@ class WithAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (a) WITH a.val as val ORDER BY val SKIP 1 RETURN val")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("val" -> 4L),
-      CypherMap("val" -> 42L)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("val" -> 4L),
+        CypherMap("val" -> 42L)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -252,9 +263,10 @@ class WithAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (a) WITH a.val as val ORDER BY val SKIP 1 + 1 RETURN val")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("val" -> 42L)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("val" -> 42L)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -278,9 +290,10 @@ class WithAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (a) WITH a.val as val ORDER BY val LIMIT 1 RETURN val")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("val" -> 3L)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("val" -> 3L)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -292,10 +305,11 @@ class WithAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (a) WITH a.val as val ORDER BY val LIMIT 1 + 1 RETURN val")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("val" -> 3L),
-      CypherMap("val" -> 4L)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("val" -> 3L),
+        CypherMap("val" -> 4L)
+      ))
 
     // And
     result.graphs shouldBe empty
@@ -307,9 +321,10 @@ class WithAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (a) WITH a.val as val ORDER BY val SKIP 1 LIMIT 1 RETURN val")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("val" -> 4L)
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("val" -> 4L)
+      ))
 
     // And
     result.graphs shouldBe empty
