@@ -15,10 +15,12 @@
  */
 package org.opencypher.caps.impl.common
 
-abstract class TreeNode[T <: TreeNode[T]](val children: Seq[T] = Seq.empty) extends Traversable[T]{
+abstract class TreeNode[T <: TreeNode[T]]() extends Product {
   self: T =>
 
   def withNewChildren(newChildren: Seq[T]): T
+
+  def children: Seq[T] = Seq.empty
 
   def map[O <: TreeNode[O]](f: T => O) = {
     f(self).withNewChildren(children.map(f))
@@ -35,18 +37,42 @@ abstract class TreeNode[T <: TreeNode[T]](val children: Seq[T] = Seq.empty) exte
   protected def prefix(depth: Int): String = ("· " * depth) + "|-"
 
   def pretty(depth: Int = 0): String = {
-    s"${prefix(depth)}($self)\n${children.map(_.pretty(depth + 1)).mkString("")}"
+
+    val childrenString = children.foldLeft("") {
+      case (agg, s) => agg + s.pretty(depth + 1)
+    }
+
+    s"${prefix(depth)}($self)\n$childrenString"
   }
 
-  override def foldLeft[O](initial: O)(f: (O, T) => O): O = {
+  def foldLeft[O](initial: O)(f: (O, T) => O): O = {
     children.foldLeft(f(initial, this)) { case (agg, nextChild) =>
       nextChild.foldLeft(agg)(f)
     }
   }
 
-  override def foreach[O](f: T => O): Unit = {
+  def foreach[O](f: T => O): Unit = {
     f(this)
     children.foreach(_.foreach(f))
   }
+  
+  def transformUp(rule: TreeNode.RewriteRule[T]): T = {
+    val updatedSelf = withNewChildren(children.map(_.transformUp(rule)))
+    if (rule.isDefinedAt(updatedSelf)) rule(updatedSelf) else updatedSelf
+  }
 
+  override def toString: String = this.getClass.getSimpleName
 }
+
+object TreeNode {
+
+  case class RewriteRule[T <: TreeNode[_]](rule: PartialFunction[T, T])
+    extends PartialFunction[T, T] {
+
+    def apply(t: T): T = rule.apply(t)
+
+    def isDefinedAt(t: T): Boolean = rule.isDefinedAt(t)
+  }
+}
+
+
