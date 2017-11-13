@@ -94,6 +94,9 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
 
     assertExpr.from("[] + 1") shouldHaveInferredType CTList(CTInteger)
     assertExpr.from("[3.14] + 1") shouldHaveInferredType CTList(CTNumber)
+
+    assertExpr.from("['foo'] + null") shouldFailToInferTypeWithErrors
+      UnsupportedExpr(parseExpr("['foo'] + null"))
   }
 
   test("typing subtract") {
