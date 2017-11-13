@@ -43,7 +43,7 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
     result.records.toMaps should equal(Bag(
       CypherMap("type(r)" -> "KNOWS"),
       CypherMap("type(r)" -> "HATES"),
-      CypherMap("type(r)" -> null)
+      CypherMap("type(r)" -> DEFAULT_LABEL)
     ))
   }
 
@@ -146,7 +146,7 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
       CypherMap("s" -> 2),
       CypherMap("s" -> 2),
       CypherMap("s" -> 1),
-      CypherMap("s" -> 1) // TODO: GDL does not support nodes without label -- has default here
+      CypherMap("s" -> 0)
     ))
   }
 

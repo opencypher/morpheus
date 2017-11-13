@@ -45,7 +45,7 @@ trait GraphMatchingTestSupport {
 
   self: BaseTestSuite with SparkSessionFixture with CAPSSessionFixture =>
 
-  val DEFAULT_LABEL = "DEFAULT"
+  val DEFAULT_LABEL = ""
   val sparkSession: SparkSession = session
 
   implicit class GraphsMatcher(graphs: Map[String, CAPSGraph]) {
@@ -73,8 +73,8 @@ trait GraphMatchingTestSupport {
   case class TestGraph(gdl: String)(implicit caps: CAPSSession) {
 
     private val queryGraph = new GDLHandler.Builder()
-      .disableDefaultVertexLabel()
-      .disableDefaultEdgeLabel()
+      .setDefaultVertexLabel(DEFAULT_LABEL)
+      .setDefaultEdgeLabel(DEFAULT_LABEL)
       .buildFromString(gdl)
 
     def mountAt(pathOrUri: String): Unit =

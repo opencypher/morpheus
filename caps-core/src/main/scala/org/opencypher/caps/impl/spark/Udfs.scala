@@ -40,7 +40,7 @@ object Udfs {
   def getNodeLabels(labelNames: Seq[Label]): (Any) => Array[String] = {
     case a: mutable.WrappedArray[_] =>
       a.zip(labelNames).collect {
-        case (true, label) => label.name
+        case (true, label) if !label.name.isEmpty => label.name
       }.toArray
   }
 
