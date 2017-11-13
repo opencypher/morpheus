@@ -34,14 +34,6 @@ class TreeTest extends FunSuite with Matchers {
     treeSum should equal(5)
   }
 
-  test("rewrite") {
-    val rewritten = InsertNopBeforeNumber(calculation)
-    rewritten should equal(
-      Tree(Add, Seq(
-        Tree(Nop, Seq(Tree(Number(3)))),
-        Tree(Add, Seq(Tree(Nop, Seq(Tree(Number(5)))), Tree(Nop, Seq(Tree(Number(4)))))))))
-  }
-
   test("leaf") {
     calculation.isLeaf should equal(false)
     Tree(1).isLeaf should equal(true)
@@ -77,24 +69,41 @@ class TreeTest extends FunSuite with Matchers {
     c should equal(5)
   }
 
+  test("transform up") {
+    val aggregateAdds = Tree.Rewrite[Expr] {
+      case Tree(Add, Seq(Tree(Number(n1), _), Tree(Number(n2), _))) => Tree(Number(n1 + n2))
+    }
 
-  case object Calculate extends Tree.Aggregate[Expr, Int] {
-    override def apply(operator: Expr, inputs: Seq[Int]) = operator.eval(inputs: _*)
+    val addNoops = Tree.Rewrite[Expr] {
+      case t @ Tree(_ : Number, _) => Tree(Noop, Seq(t))
+    }
+
+    val replaceAddSub = Tree.Rewrite[Expr] {
+      case Tree(expr, Seq(sub @ Tree(Sub, _), others @ _*)) => {
+        val subval = sub.aggregate(Calculate)
+        Tree(expr, Seq(Tree(Number(subval))) ++ others)
+      }
+    }
+
+    calculation.transformUp(aggregateAdds) should equal(Tree(Number(12)))
+    calculation.transformUp(addNoops) should equal(
+      Tree(Add, Seq(
+        Tree(Noop, Seq(
+          Tree(Number(3))
+        )),
+        Tree(Add, Seq(
+          Tree(Noop, Seq(
+            Tree(Number(5))
+          )),
+          Tree(Noop, Seq(
+            Tree(Number(4))
+          ))
+        ))
+      ))
+    )
   }
 
-  case object Nop extends Expr {
-    override def eval(in: Int*) = in(0)
-  }
-
-  object InsertNopBeforeNumber extends Tree.ReplaceChildren[Expr] {
-    override def shouldUpdate(parent: Tree[Expr]) = parent.value != Nop
-
-    override def shouldReplace(childNode: Tree[Expr]) = childNode.value.isInstanceOf[Number]
-
-    override def replace(childNode: Tree[Expr]) = Tree(Nop, Seq(childNode))
-  }
-
-  trait Expr {
+  trait Expr extends Product with Serializable {
     def eval(in: Int*): Int
   }
 
@@ -102,8 +111,21 @@ class TreeTest extends FunSuite with Matchers {
     def eval(in: Int*): Int = in.sum
   }
 
+  case object Sub extends Expr {
+    def eval(in: Int*): Int = {
+      in(0) - in(1)
+    }
+  }
+
   case class Number(v: Int) extends Expr {
     override def eval(in: Int*) = v
   }
 
+  case object Noop extends Expr {
+    override def eval(in: Int*) = in(0)
+  }
+
+  case object Calculate extends Tree.Aggregate[Expr, Int] {
+    override def apply(operator: Expr, inputs: Seq[Int]) = operator.eval(inputs: _*)
+  }
 }

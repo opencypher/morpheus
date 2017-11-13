@@ -15,7 +15,9 @@
  */
 package org.opencypher.caps.impl.common
 
-final case class Tree[+T](value: T, children: Seq[Tree[T]] = Seq.empty) extends Traversable[T] {
+import scala.annotation.unchecked.uncheckedVariance
+
+case class Tree[+T](value: T, children: Seq[Tree[T]] = Seq.empty) extends Traversable[T] {
 
   def arity: Int = children.length
 
@@ -29,6 +31,13 @@ final case class Tree[+T](value: T, children: Seq[Tree[T]] = Seq.empty) extends 
 
   def aggregate[O](f: (T, Seq[O]) => O): O = {
     f(value, children.map(_.aggregate(f)))
+  }
+
+
+  def transformUp(rule: Tree.Rewrite[T @uncheckedVariance]): Tree[T] = {
+    val rewrittenChildren = children.map(_.transformUp(rule))
+    val updatedSelf = Tree(value, rewrittenChildren)
+    if (rule.isDefinedAt(updatedSelf)) rule(updatedSelf) else updatedSelf
   }
 
   def map[O](f: T => O): Tree[O] = {
@@ -50,6 +59,10 @@ final case class Tree[+T](value: T, children: Seq[Tree[T]] = Seq.empty) extends 
     children.foreach(_.foreach(f))
   }
 
+  override def toString() = {
+    val seqVal = if (children.isEmpty) "" else s", Seq(${children.mkString(", ")})"
+    s"${this.getClass.getSimpleName}($value$seqVal)"
+  }
 }
 
 object Tree {
@@ -60,26 +73,8 @@ object Tree {
     def apply(t: Tree[I]): O = t.aggregate(this)
   }
 
-  trait Rewrite[T] extends (Tree[T] => Tree[T])
-
-  trait ReplaceChildren[T] extends Rewrite[T] {
-    def apply(n: Tree[T]): Tree[T] = {
-      val updatedChildren = if (!shouldUpdate(n)) {
-        n.children
-      } else {
-        n.children.map { c =>
-          if (!shouldReplace(c)) c
-          else replace(c)
-        }
-      }
-      n.copy(children = updatedChildren.map(this (_)))
-    }
-
-    def shouldUpdate(parent: Tree[T]): Boolean = true
-
-    def shouldReplace(childNode: Tree[T]): Boolean = true
-
-    def replace(childNode: Tree[T]): Tree[T]
+  case class Rewrite[T](rule: PartialFunction[Tree[T ],Tree[T]]) extends PartialFunction[Tree[T],Tree[T]] {
+    def apply(t: Tree[T]): Tree[T] = rule.apply(t)
+    def isDefinedAt(t: Tree[T]) = rule.isDefinedAt(t)
   }
-
 }
