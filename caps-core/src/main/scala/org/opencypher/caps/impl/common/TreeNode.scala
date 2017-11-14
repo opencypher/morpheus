@@ -53,11 +53,7 @@ abstract class TreeNode[T <: TreeNode[T]] extends Product with Traversable[T] {
 
   def transformDown(rule: TreeNode.RewriteRule[T]): T = {
     val afterSelf = if (rule.isDefinedAt(self)) rule(self) else self
-    if (self.children.nonEmpty) {
-      afterSelf.withNewChildren(self.children.map(_.transformDown(rule)))
-    } else {
-      afterSelf
-    }
+    afterSelf.withNewChildren(afterSelf.children.map(_.transformDown(rule)))
   }
 
   protected def prefix(depth: Int): String = ("· " * depth) + "|-"
@@ -83,6 +79,7 @@ object TreeNode {
 
     def isDefinedAt(t: T): Boolean = rule.isDefinedAt(t)
   }
+
 }
 
 
