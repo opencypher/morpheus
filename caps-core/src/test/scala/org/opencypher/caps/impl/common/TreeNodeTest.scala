@@ -56,9 +56,12 @@ class TreeNodeTest extends FunSuite with Matchers {
 
   test("rewrite") {
     val addNoops: TreeNode.RewriteRule[Expr] = TreeNode.RewriteRule {
+      case n:Noop => n
       case n:Number => Noop(n)
     }
     println(calculation.transformUp(addNoops).pretty())
+
+    println(calculation.transformDown(addNoops).pretty())
   }
 //
 //  test("map and foldLeft") {
