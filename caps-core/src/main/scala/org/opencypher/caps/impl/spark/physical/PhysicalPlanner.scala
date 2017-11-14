@@ -21,7 +21,6 @@ import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.api.types.CTRelationship
 import org.opencypher.caps.api.value.CypherValue
-import org.opencypher.caps.impl.common.Tree
 import org.opencypher.caps.impl.flat.FlatOperator
 import org.opencypher.caps.impl.logical.{GraphOfPattern, LogicalExternalGraph, LogicalPatternGraph}
 import org.opencypher.caps.impl.spark.exception.Raise
@@ -34,27 +33,27 @@ case class PhysicalPlannerContext(
     inputRecords: CAPSRecords,
     parameters: Map[String, CypherValue])
 
-class PhysicalPlanner extends DirectCompilationStage[FlatOperator, Tree[PhysicalOperator], PhysicalPlannerContext] {
+class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOperator, PhysicalPlannerContext] {
 
-  def process(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext): Tree[PhysicalOperator] = {
+  def process(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext): PhysicalOperator = {
 
     implicit val caps = context.inputRecords.caps
 
     flatPlan match {
       case flat.CartesianProduct(lhs, rhs, header) =>
-        Tree(CartesianProduct(header), Seq(process(lhs), process(rhs)))
+        CartesianProduct(process(lhs), process(rhs), header)
 
       case flat.Select(fields, graphs, in, header) =>
-        val selected = Tree(SelectFields(fields, Some(header)), Seq(process(in)))
-        Tree(SelectGraphs(graphs), Seq(selected))
+        val selected = SelectFields(process(in), fields, Some(header))
+        SelectGraphs(selected, graphs)
 
       case flat.EmptyRecords(in, header) =>
-        Tree(EmptyRecords(header), Seq(process(in)))
+        EmptyRecords(process(in), header)
 
       case flat.Start(graph, _) =>
         graph match {
           case g: LogicalExternalGraph =>
-            Tree(Start(context.inputRecords, g))
+            Start(context.inputRecords, g)
 
           case _ =>
             Raise.impossible(s"Got an unknown type of graph to start from: $graph")
@@ -63,50 +62,50 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, Tree[Physical
       case flat.SetSourceGraph(graph, in, header) =>
         graph match {
           case g: LogicalExternalGraph =>
-            Tree(SetSourceGraph(g), Seq(process(in)))
+            SetSourceGraph(process(in), g)
 
           case _ =>
             Raise.impossible(s"Got an unknown type of graph to start from: $graph")
         }
 
-      case op @ flat.NodeScan(v, in, header) =>
-        Tree(Scan(op.sourceGraph, v), Seq(process(in)))
+      case op @ flat.NodeScan(v, in, _) =>
+        Scan(process(in), op.sourceGraph, v)
 
-      case op @ flat.EdgeScan(e, in, header) =>
-        Tree(Scan(op.sourceGraph, e), Seq(process(in)))
+      case op @ flat.EdgeScan(e, in, _) =>
+        Scan(process(in), op.sourceGraph, e)
 
       case flat.Alias(expr, alias, in, header) =>
-        Tree(Alias(expr, alias, header), Seq(process(in)))
+        Alias(process(in), expr, alias, header)
 
       case flat.Project(expr, in, header) =>
-        Tree(Project(expr, header), Seq(process(in)))
+        Project(process(in), expr, header)
 
       case flat.ProjectGraph(graph, in, _) =>
         graph match {
           case LogicalExternalGraph(name, uri, _) =>
-            Tree(ProjectExternalGraph(name, uri), Seq(process(in)))
+            ProjectExternalGraph(process(in), name, uri)
           case LogicalPatternGraph(name, targetSchema, GraphOfPattern(toCreate, toRetain)) =>
-            val select = Tree(SelectFields(toRetain.toIndexedSeq, None), Seq(process(in)))
-            val distinct = Tree(SimpleDistinct, Seq(select))
-            Tree(ProjectPatternGraph(toCreate, name, targetSchema), Seq(distinct))
+            val select = SelectFields(process(in), toRetain.toIndexedSeq, None)
+            val distinct = SimpleDistinct(select)
+            ProjectPatternGraph(distinct, toCreate, name, targetSchema)
         }
 
       case flat.Aggregate(aggregations, group, in, header) =>
-        Tree(Aggregate(aggregations, group, header), Seq(process(in)))
+        Aggregate(process(in), aggregations, group, header)
 
       case flat.Filter(expr, in, header) =>
         expr match {
           case TrueLit() =>
             process(in) // optimise away filter
           case _ =>
-            Tree(Filter(expr, header), Seq(process(in)))
+            Filter(process(in), expr, header)
         }
 
       case flat.ValueJoin(lhs, rhs, predicates, header) =>
-        Tree(ValueJoin(predicates, header), Seq(process(lhs), process(rhs)))
+        ValueJoin(process(lhs), process(rhs), predicates, header)
 
       case flat.Distinct(in, header) =>
-        Tree(Distinct(header), Seq(process(in)))
+        Distinct(process(in), header)
 
       // TODO: This needs to be a ternary operator taking source, rels and target records instead of just source and target and planning rels only at the physical layer
       case op @ flat.ExpandSource(source, rel, target, sourceOp, targetOp, header, relHeader) =>
@@ -117,19 +116,21 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, Tree[Physical
           case e: LogicalExternalGraph => e
           case _                       => Raise.invalidArgument("an external graph", sourceOp.sourceGraph.toString)
         }
-        val second = Tree(Scan(op.sourceGraph, rel), Seq(Tree(StartFrom(CAPSRecords.unit(), externalGraph))))
 
-        Tree(ExpandSource(source, rel, target, header), Seq(first, second, third))
+        val startFrom = StartFrom(CAPSRecords.unit(), externalGraph)
+        val second = Scan(startFrom, op.sourceGraph, rel)
+
+        ExpandSource(first, second, third, source, rel, target, header)
 
       case op @ flat.ExpandInto(source, rel, target, sourceOp, header, relHeader) =>
         val in = process(sourceOp)
 
-        val rels = Tree(Scan(op.sourceGraph, rel), Seq(in))
+        val rels = Scan(in, op.sourceGraph, rel)
 
-        Tree(ExpandInto(source, rel, target, header), Seq(in, rels))
+        ExpandInto(in, rels, source, rel, target, header)
 
       case flat.InitVarExpand(source, edgeList, endNode, in, header) =>
-        Tree(InitVarExpand(source, edgeList, endNode, header), Seq(process(in)))
+        InitVarExpand(process(in), source, edgeList, endNode, header)
 
       case flat.BoundedVarExpand(
           rel,
@@ -146,21 +147,21 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, Tree[Physical
         val second = process(relOp)
         val third = process(targetOp)
 
-        Tree(
-          BoundedVarExpand(rel, edgeList, target, sourceOp.endNode, lower, upper, header, isExpandInto),
-          Seq(first, second, third))
+        BoundedVarExpand(first, second, third,
+          rel, edgeList, target, sourceOp.endNode, lower, upper, header, isExpandInto)
+
 
       case flat.Optional(lhs, rhs, lhsHeader, rhsHeader) =>
-        Tree(Optional(lhsHeader, rhsHeader), Seq(process(lhs), process(rhs)))
+        Optional(process(lhs), process(rhs), lhsHeader, rhsHeader)
 
       case flat.OrderBy(sortItems: Seq[SortItem[Expr]], in, header) =>
-        Tree(OrderBy(sortItems, header), Seq(process(in)))
+        OrderBy(process(in), sortItems, header)
 
       case flat.Skip(expr, in, header) =>
-        Tree(Skip(expr, header), Seq(process(in)))
+        Skip(process(in), expr, header)
 
       case flat.Limit(expr, in, header) =>
-        Tree(Limit(expr, header), Seq(process(in)))
+        Limit(process(in), expr, header)
 
       case x =>
         Raise.notYetImplemented(s"physical planning of operator $x")

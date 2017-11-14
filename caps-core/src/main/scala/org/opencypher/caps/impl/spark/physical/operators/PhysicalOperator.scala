@@ -21,12 +21,14 @@ import org.apache.spark.sql.{Column, DataFrame}
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.impl.common.TreeNode
 import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
 
-private[spark] trait PhysicalOperator {
-  def execute(inputs: PhysicalResult*)(implicit context: RuntimeContext): PhysicalResult
+private[spark] abstract class PhysicalOperator extends TreeNode[PhysicalOperator] {
+
+  def execute(implicit context: RuntimeContext): PhysicalResult
 
   protected def resolve(uri: URI)(implicit context: RuntimeContext): CAPSGraph = {
     context.resolve(uri).getOrElse(Raise.graphNotFound(uri))

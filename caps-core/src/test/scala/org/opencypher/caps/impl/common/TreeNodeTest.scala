@@ -110,7 +110,7 @@ class TreeNodeTest extends FunSuite with Matchers {
 //    )
 //  }
 
-  abstract class Expr extends TreeNode[Expr] { }
+  abstract class Expr extends TreeNode[Expr]
 
   case class Add(left: Expr, right: Expr) extends Expr {
 

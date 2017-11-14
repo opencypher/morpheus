@@ -22,19 +22,27 @@ import org.opencypher.caps.impl.flat.FreshVariableNamer
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.{assertIsNode, columnName, joinDFs, joinRecords}
 import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
 
-sealed trait BinaryPhysicalOperator extends PhysicalOperator {
-  override def execute(inputs: PhysicalResult*)(implicit context: RuntimeContext): PhysicalResult = {
-    require(inputs.length == 2)
-    executeBinary(inputs(0), inputs(1))
-  }
+sealed abstract class BinaryPhysicalOperator extends PhysicalOperator {
+
+  def left: PhysicalOperator
+
+  def right: PhysicalOperator
+
+  override def children = Seq(left, right)
+
+  override def execute(implicit context: RuntimeContext): PhysicalResult = executeBinary(left.execute, right.execute)
 
   def executeBinary(left: PhysicalResult, right: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult
 }
 
-final case class ValueJoin(predicates: Set[org.opencypher.caps.api.expr.Equals], header: RecordHeader)
+final case class ValueJoin(left: PhysicalOperator,
+                           right: PhysicalOperator,
+                           predicates: Set[org.opencypher.caps.api.expr.Equals],
+                           header: RecordHeader)
     extends BinaryPhysicalOperator {
 
-  override def executeBinary(left: PhysicalResult, right: PhysicalResult)(implicit context: RuntimeContext) = {
+  override def executeBinary(left: PhysicalResult, right: PhysicalResult)
+                                      (implicit context: RuntimeContext): PhysicalResult = {
     val leftHeader = left.records.header
     val rightHeader = right.records.header
     val slots = predicates.map { p =>
@@ -43,11 +51,18 @@ final case class ValueJoin(predicates: Set[org.opencypher.caps.api.expr.Equals],
 
     PhysicalResult(joinRecords(header, slots)(left.records, right.records), left.graphs ++ right.graphs)
   }
+
+  override def withNewChildren(newChildren: Seq[PhysicalOperator]): PhysicalOperator =
+    copy(left = newChildren.head, right = newChildren(1))
 }
 
-final case class Optional(lhsHeader: RecordHeader, rhsHeader: RecordHeader) extends BinaryPhysicalOperator {
+final case class Optional(left: PhysicalOperator,
+                          right: PhysicalOperator,
+                          lhsHeader: RecordHeader,
+                          rhsHeader: RecordHeader) extends BinaryPhysicalOperator {
 
-  override def executeBinary(left: PhysicalResult, right: PhysicalResult)(implicit context: RuntimeContext) = {
+  override def executeBinary(left: PhysicalResult, right: PhysicalResult)
+                            (implicit context: RuntimeContext): PhysicalResult = {
     val lhsData = left.records.toDF()
     val rhsData = right.records.toDF()
     val commonFields = rhsHeader.fields.intersect(lhsHeader.fields)
@@ -88,12 +103,20 @@ final case class Optional(lhsHeader: RecordHeader, rhsHeader: RecordHeader) exte
     PhysicalResult(joinedRecords, left.graphs ++ right.graphs)
   }
 
+  override def withNewChildren(newChildren: Seq[PhysicalOperator]): PhysicalOperator =
+    copy(left = newChildren.head, right = newChildren(1))
 }
 
 // This maps a Cypher pattern such as (s)-[r]->(t), where s and t are both solved by lhs, and r is solved by rhs
-final case class ExpandInto(source: Var, rel: Var, target: Var, header: RecordHeader) extends BinaryPhysicalOperator {
+final case class ExpandInto(left: PhysicalOperator,
+                            right: PhysicalOperator,
+                            source: Var,
+                            rel: Var,
+                            target: Var,
+                            header: RecordHeader) extends BinaryPhysicalOperator {
 
-  override def executeBinary(left: PhysicalResult, right: PhysicalResult)(implicit context: RuntimeContext) = {
+  override def executeBinary(left: PhysicalResult, right: PhysicalResult)
+                                      (implicit context: RuntimeContext): PhysicalResult = {
     val sourceSlot = left.records.header.slotFor(source)
     val targetSlot = left.records.header.slotFor(target)
     val relSourceSlot = right.records.header.sourceNodeSlot(rel)
@@ -108,11 +131,17 @@ final case class ExpandInto(source: Var, rel: Var, target: Var, header: RecordHe
       joinRecords(header, Seq(sourceSlot -> relSourceSlot, targetSlot -> relTargetSlot))(left.records, right.records)
     PhysicalResult(joinedRecords, left.graphs ++ right.graphs)
   }
+
+  override def withNewChildren(newChildren: Seq[PhysicalOperator]): PhysicalOperator =
+    copy(left = newChildren.head, right = newChildren(1))
 }
 
-case class CartesianProduct(header: RecordHeader) extends BinaryPhysicalOperator {
-  override def executeBinary(left: PhysicalResult, right: PhysicalResult)(
-      implicit context: RuntimeContext): PhysicalResult = {
+final case class CartesianProduct(left: PhysicalOperator,
+                                  right: PhysicalOperator,
+                                  header: RecordHeader) extends BinaryPhysicalOperator {
+
+  override def executeBinary(left: PhysicalResult, right: PhysicalResult)
+                                      (implicit context: RuntimeContext): PhysicalResult = {
     val data = left.records.data
     val otherData = right.records.data
     val newData = data.crossJoin(otherData)
@@ -121,4 +150,6 @@ case class CartesianProduct(header: RecordHeader) extends BinaryPhysicalOperator
     PhysicalResult(records, graphs)
   }
 
+  override def withNewChildren(newChildren: Seq[PhysicalOperator]): PhysicalOperator =
+    copy(left = newChildren.head, right = newChildren(1))
 }

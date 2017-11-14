@@ -19,23 +19,23 @@ import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.impl.logical.LogicalExternalGraph
 import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
 
-sealed trait LeafPhysicalOperator extends PhysicalOperator {
-  override def execute(inputs: PhysicalResult*)(implicit context: RuntimeContext): PhysicalResult = {
-    require(inputs.isEmpty)
-    executeLeaf()
-  }
+sealed abstract class LeafPhysicalOperator extends PhysicalOperator {
+
+  override def execute(implicit context: RuntimeContext): PhysicalResult = executeLeaf()
 
   def executeLeaf()(implicit context: RuntimeContext): PhysicalResult
+
+  override def withNewChildren(newChildren: Seq[PhysicalOperator]): LeafPhysicalOperator = this
 }
 
 final case class Start(records: CAPSRecords, graph: LogicalExternalGraph) extends LeafPhysicalOperator {
-  override def executeLeaf()(implicit context: RuntimeContext): PhysicalResult = {
+
+  override def executeLeaf()(implicit context: RuntimeContext): PhysicalResult =
     PhysicalResult(records, Map(graph.name -> resolve(graph.uri)))
-  }
 }
 
 final case class StartFrom(records: CAPSRecords, graph: LogicalExternalGraph) extends LeafPhysicalOperator {
-  override def executeLeaf()(implicit context: RuntimeContext) = {
+
+  override def executeLeaf()(implicit context: RuntimeContext): PhysicalResult =
     PhysicalResult(records, Map(graph.name -> resolve(graph.uri)))
-  }
 }
