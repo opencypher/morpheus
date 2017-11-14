@@ -16,6 +16,7 @@
 package org.opencypher.caps.impl.spark.physical.operators
 
 import java.net.URI
+import java.util.concurrent.atomic.AtomicInteger
 
 import org.apache.spark.sql.{Column, DataFrame}
 import org.opencypher.caps.api.record._
@@ -26,13 +27,26 @@ import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
 
+object IDs {
+  val operatorId = new AtomicInteger
+}
+
 private[spark] abstract class PhysicalOperator extends TreeNode[PhysicalOperator] {
+  val id = IDs.operatorId.incrementAndGet()
 
   def execute(implicit context: RuntimeContext): PhysicalResult
 
   protected def resolve(uri: URI)(implicit context: RuntimeContext): CAPSGraph = {
     context.resolve(uri).getOrElse(Raise.graphNotFound(uri))
   }
+
+  override def toString = s"${super.toString}(id = $id)"
+
+  override def withNewChildren(newChildren: Seq[PhysicalOperator]): PhysicalOperator = {
+    if (newChildren == children) this else internalCopy(newChildren)
+  }
+
+  protected def internalCopy(newChildren: Seq[PhysicalOperator]): PhysicalOperator
 }
 
 object PhysicalOperator {

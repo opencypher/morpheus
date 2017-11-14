@@ -52,7 +52,7 @@ final case class ValueJoin(left: PhysicalOperator,
     PhysicalResult(joinRecords(header, slots)(left.records, right.records), left.graphs ++ right.graphs)
   }
 
-  override def withNewChildren(newChildren: Seq[PhysicalOperator]): PhysicalOperator =
+  override def internalCopy(newChildren: Seq[PhysicalOperator]): PhysicalOperator =
     copy(left = newChildren.head, right = newChildren(1))
 }
 
@@ -103,7 +103,7 @@ final case class Optional(left: PhysicalOperator,
     PhysicalResult(joinedRecords, left.graphs ++ right.graphs)
   }
 
-  override def withNewChildren(newChildren: Seq[PhysicalOperator]): PhysicalOperator =
+  override def internalCopy(newChildren: Seq[PhysicalOperator]): PhysicalOperator =
     copy(left = newChildren.head, right = newChildren(1))
 }
 
@@ -132,7 +132,7 @@ final case class ExpandInto(left: PhysicalOperator,
     PhysicalResult(joinedRecords, left.graphs ++ right.graphs)
   }
 
-  override def withNewChildren(newChildren: Seq[PhysicalOperator]): PhysicalOperator =
+  override def internalCopy(newChildren: Seq[PhysicalOperator]): PhysicalOperator =
     copy(left = newChildren.head, right = newChildren(1))
 }
 
@@ -150,6 +150,6 @@ final case class CartesianProduct(left: PhysicalOperator,
     PhysicalResult(records, graphs)
   }
 
-  override def withNewChildren(newChildren: Seq[PhysicalOperator]): PhysicalOperator =
+  override def internalCopy(newChildren: Seq[PhysicalOperator]): PhysicalOperator =
     copy(left = newChildren.head, right = newChildren(1))
 }

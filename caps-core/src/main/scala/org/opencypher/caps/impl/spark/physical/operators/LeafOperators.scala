@@ -25,7 +25,7 @@ sealed abstract class LeafPhysicalOperator extends PhysicalOperator {
 
   def executeLeaf()(implicit context: RuntimeContext): PhysicalResult
 
-  override def withNewChildren(newChildren: Seq[PhysicalOperator]): LeafPhysicalOperator = this
+  override def internalCopy(newChildren: Seq[PhysicalOperator]): LeafPhysicalOperator = this
 }
 
 final case class Start(records: CAPSRecords, graph: LogicalExternalGraph) extends LeafPhysicalOperator {

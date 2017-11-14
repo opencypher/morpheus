@@ -71,7 +71,7 @@ final case class ExpandSource(first: PhysicalOperator,
     PhysicalResult(joinedRecords, first.graphs ++ second.graphs ++ third.graphs)
   }
 
-  override def withNewChildren(newChildren: Seq[PhysicalOperator]): ExpandSource =
+  override def internalCopy(newChildren: Seq[PhysicalOperator]): ExpandSource =
     copy(first = newChildren.head, second = newChildren(1), third = newChildren(2))
 }
 
@@ -185,6 +185,6 @@ final case class BoundedVarExpand(first: PhysicalOperator,
     CAPSRecords.create(firstRecords.header, union)(firstRecords.caps)
   }
 
-  override def withNewChildren(newChildren: Seq[PhysicalOperator]): BoundedVarExpand =
+  override def internalCopy(newChildren: Seq[PhysicalOperator]): BoundedVarExpand =
     copy(first = newChildren.head, second = newChildren(1), third = newChildren(2))
 }

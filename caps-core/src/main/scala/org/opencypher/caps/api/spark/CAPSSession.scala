@@ -63,6 +63,7 @@ sealed class CAPSSession private (
   private val logicalOptimizer = new LogicalOptimizer(producer)
   private val flatPlanner = new FlatPlanner()
   private val physicalPlanner = new PhysicalPlanner()
+  private val physicalOptimizer = new PhysicalOptimizer()
   private val parser = CypherParser
   private val temporaryColumnId = new AtomicLong()
 
@@ -209,7 +210,17 @@ sealed class CAPSSession private (
       println(physicalPlan.pretty())
     }
 
-    CAPSResultBuilder.from(physicalPlan, logicalPlan)(RuntimeContext(physicalPlannerContext.parameters, optGraphAt))
+    logStageProgress("Optimizing physical plan ... ", false)
+    val optimizedPhysicalPlan = physicalOptimizer(physicalPlan)(PhysicalOptimizerContext())
+    logStageProgress("Done!")
+
+    if (PrintPhysicalPlan.get()) {
+      println("Optimized physical plan:")
+      println(optimizedPhysicalPlan.pretty())
+    }
+
+    CAPSResultBuilder.from(optimizedPhysicalPlan, logicalPlan)(RuntimeContext(
+      physicalPlannerContext.parameters, optGraphAt, collection.mutable.Map.empty))
   }
 
   override def toString: String = {

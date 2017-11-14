@@ -50,22 +50,16 @@ sealed abstract class UnaryPhysicalOperator extends PhysicalOperator {
 
 final case class Cache(in: PhysicalOperator) extends UnaryPhysicalOperator {
 
-  // TODO: Remove mutable state by using lazy val and overriding execute
-  var cached: Option[PhysicalResult] = None
-
   override def executeUnary(prev: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult = {
-    cached match {
-      case None =>
-        val cachedRecord = prev.records.cache()
-        val cachedResult = PhysicalResult(cachedRecord, prev.graphs)
-        cached = Some(cachedResult)
-        cachedResult
-      case Some(r) => r
-    }
-
+    context.cache.getOrElse(this, {
+      val records = prev.records.cache()
+      val result = PhysicalResult(records, prev.graphs)
+      context.cache(this) = result
+      result
+    })
   }
 
-  override def withNewChildren(newChildren: Seq[PhysicalOperator]): Cache = copy(in = newChildren.head)
+  override def internalCopy(newChildren: Seq[PhysicalOperator]): Cache = copy(in = newChildren.head)
 }
 
 final case class Scan(in: PhysicalOperator,
@@ -87,7 +81,8 @@ final case class Scan(in: PhysicalOperator,
     PhysicalResult(records, graphs)
   }
 
-  override def withNewChildren(newChildren: Seq[PhysicalOperator]): Scan = copy(in = newChildren.head)
+  override def internalCopy(newChildren: Seq[PhysicalOperator]): Scan =
+    copy(in = newChildren.head)
 }
 
 final case class Alias(in: PhysicalOperator,
@@ -114,7 +109,7 @@ final case class Alias(in: PhysicalOperator,
     }
   }
 
-  override def withNewChildren(newChildren: Seq[PhysicalOperator]): Alias = copy(in = newChildren.head)
+  override def internalCopy(newChildren: Seq[PhysicalOperator]): Alias = copy(in = newChildren.head)
 }
 
 final case class Project(in: PhysicalOperator,
@@ -147,7 +142,7 @@ final case class Project(in: PhysicalOperator,
     }
   }
 
-  override def withNewChildren(newChildren: Seq[PhysicalOperator]): Project = copy(in = newChildren.head)
+  override def internalCopy(newChildren: Seq[PhysicalOperator]): Project = copy(in = newChildren.head)
 }
 
 final case class Filter(in: PhysicalOperator,
@@ -176,7 +171,7 @@ final case class Filter(in: PhysicalOperator,
     }
   }
 
-  override def withNewChildren(newChildren: Seq[PhysicalOperator]): Filter = copy(in = newChildren.head)
+  override def internalCopy(newChildren: Seq[PhysicalOperator]): Filter = copy(in = newChildren.head)
 }
 
 final case class ProjectExternalGraph(in: PhysicalOperator, name: String, uri: URI) extends UnaryPhysicalOperator {
@@ -184,7 +179,7 @@ final case class ProjectExternalGraph(in: PhysicalOperator, name: String, uri: U
   override def executeUnary(prev: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult =
     prev.withGraph(name -> resolve(uri))
 
-  override def withNewChildren(newChildren: Seq[PhysicalOperator]): ProjectExternalGraph = copy(in = newChildren.head)
+  override def internalCopy(newChildren: Seq[PhysicalOperator]): ProjectExternalGraph = copy(in = newChildren.head)
 }
 
 final case class ProjectPatternGraph(in: PhysicalOperator,
@@ -278,7 +273,7 @@ final case class ProjectPatternGraph(in: PhysicalOperator,
     Set(sourceTuple, targetTuple, relTuple, typeTuple)
   }
 
-  override def withNewChildren(newChildren: Seq[PhysicalOperator]): ProjectPatternGraph = copy(in = newChildren.head)
+  override def internalCopy(newChildren: Seq[PhysicalOperator]): ProjectPatternGraph = copy(in = newChildren.head)
 }
 
 final case class SelectFields(in: PhysicalOperator,
@@ -314,7 +309,7 @@ final case class SelectFields(in: PhysicalOperator,
     }
   }
 
-  override def withNewChildren(newChildren: Seq[PhysicalOperator]): SelectFields = copy(in = newChildren.head)
+  override def internalCopy(newChildren: Seq[PhysicalOperator]): SelectFields = copy(in = newChildren.head)
 }
 
 final case class SelectGraphs(in: PhysicalOperator,
@@ -323,7 +318,7 @@ final case class SelectGraphs(in: PhysicalOperator,
   override def executeUnary(prev: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult =
     prev.selectGraphs(graphs)
 
-  override def withNewChildren(newChildren: Seq[PhysicalOperator]): SelectGraphs = copy(in = newChildren.head)
+  override def internalCopy(newChildren: Seq[PhysicalOperator]): SelectGraphs = copy(in = newChildren.head)
 }
 
 final case class Distinct(in: PhysicalOperator,
@@ -339,7 +334,7 @@ final case class Distinct(in: PhysicalOperator,
     }
   }
 
-  override def withNewChildren(newChildren: Seq[PhysicalOperator]): Distinct = copy(in = newChildren.head)
+  override def internalCopy(newChildren: Seq[PhysicalOperator]): Distinct = copy(in = newChildren.head)
 }
 
 final case class SimpleDistinct(in: PhysicalOperator) extends UnaryPhysicalOperator {
@@ -350,7 +345,7 @@ final case class SimpleDistinct(in: PhysicalOperator) extends UnaryPhysicalOpera
     }
   }
 
-  override def withNewChildren(newChildren: Seq[PhysicalOperator]): SimpleDistinct = copy(in = newChildren.head)
+  override def internalCopy(newChildren: Seq[PhysicalOperator]): SimpleDistinct = copy(in = newChildren.head)
 }
 
 final case class Aggregate(in: PhysicalOperator,
@@ -421,7 +416,7 @@ final case class Aggregate(in: PhysicalOperator,
     }
   }
 
-  override def withNewChildren(newChildren: Seq[PhysicalOperator]): Aggregate = copy(in = newChildren.head)
+  override def internalCopy(newChildren: Seq[PhysicalOperator]): Aggregate = copy(in = newChildren.head)
 }
 
 final case class OrderBy(in: PhysicalOperator,
@@ -443,7 +438,7 @@ final case class OrderBy(in: PhysicalOperator,
     }
   }
 
-  override def withNewChildren(newChildren: Seq[PhysicalOperator]): OrderBy = copy(in = newChildren.head)
+  override def internalCopy(newChildren: Seq[PhysicalOperator]): OrderBy = copy(in = newChildren.head)
 }
 
 final case class Skip(in: PhysicalOperator,
@@ -476,7 +471,7 @@ final case class Skip(in: PhysicalOperator,
     }
   }
 
-  override def withNewChildren(newChildren: Seq[PhysicalOperator]): Skip = copy(in = newChildren.head)
+  override def internalCopy(newChildren: Seq[PhysicalOperator]): Skip = copy(in = newChildren.head)
 }
 
 final case class Limit(in: PhysicalOperator,
@@ -494,7 +489,7 @@ final case class Limit(in: PhysicalOperator,
     }
   }
 
-  override def withNewChildren(newChildren: Seq[PhysicalOperator]): Limit = copy(in = newChildren.head)
+  override def internalCopy(newChildren: Seq[PhysicalOperator]): Limit = copy(in = newChildren.head)
 }
 
 // Initialises the table in preparation for variable length expand.
@@ -529,7 +524,7 @@ final case class InitVarExpand(in: PhysicalOperator,
     }
   }
 
-  override def withNewChildren(newChildren: Seq[PhysicalOperator]): InitVarExpand = copy(in = newChildren.head)
+  override def internalCopy(newChildren: Seq[PhysicalOperator]): InitVarExpand = copy(in = newChildren.head)
 }
 
 final case class EmptyRecords(in: PhysicalOperator, header: RecordHeader)
@@ -538,7 +533,7 @@ final case class EmptyRecords(in: PhysicalOperator, header: RecordHeader)
   override def executeUnary(prev: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult =
     prev.mapRecordsWithDetails(_ => CAPSRecords.empty(header))
 
-  override def withNewChildren(newChildren: Seq[PhysicalOperator]): EmptyRecords = copy(in = newChildren.head)
+  override def internalCopy(newChildren: Seq[PhysicalOperator]): EmptyRecords = copy(in = newChildren.head)
 }
 
 final case class SetSourceGraph(in: PhysicalOperator, graph: LogicalExternalGraph) extends UnaryPhysicalOperator {
@@ -546,5 +541,5 @@ final case class SetSourceGraph(in: PhysicalOperator, graph: LogicalExternalGrap
   override def executeUnary(prev: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult =
     prev.withGraph(graph.name -> resolve(graph.uri))
 
-  override def withNewChildren(newChildren: Seq[PhysicalOperator]): SetSourceGraph = copy(in = newChildren.head)
+  override def internalCopy(newChildren: Seq[PhysicalOperator]): SetSourceGraph = copy(in = newChildren.head)
 }

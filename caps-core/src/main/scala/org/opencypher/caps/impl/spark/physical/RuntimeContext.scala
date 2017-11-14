@@ -19,16 +19,18 @@ import java.net.URI
 
 import org.opencypher.caps.api.spark.CAPSGraph
 import org.opencypher.caps.api.value.CypherValue
+import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator
 
 import scala.collection.mutable
 
 object RuntimeContext {
-  val empty = RuntimeContext(Map.empty, _ => None)
+  val empty = RuntimeContext(Map.empty, _ => None, mutable.Map.empty)
 }
 
 case class RuntimeContext(
   parameters: Map[String, CypherValue],
-  resolve: URI => Option[CAPSGraph]
+  resolve: URI => Option[CAPSGraph],
+  cache: collection.mutable.Map[PhysicalOperator, PhysicalResult]
 )
 
 case object udfUtils {
