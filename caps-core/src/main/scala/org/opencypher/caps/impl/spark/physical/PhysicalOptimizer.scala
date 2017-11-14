@@ -2,21 +2,32 @@ package org.opencypher.caps.impl.spark.physical
 
 import org.opencypher.caps.impl.DirectCompilationStage
 import org.opencypher.caps.impl.common.TreeNode
-import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator
+import org.opencypher.caps.impl.spark.physical.operators.{Cache, PhysicalOperator}
 
 class PhysicalOptimizer
   extends DirectCompilationStage[PhysicalOperator, PhysicalOperator, RuntimeContext] {
 
   override def process(input: PhysicalOperator)(implicit context: RuntimeContext): PhysicalOperator = {
-    val opCounts = identifyDuplicates(input)
-    opCounts.keys.foldLeft(input) {
-      case (rewritten, current) => insertCacheOps(current)(rewritten)
+    val opCounts: Map[PhysicalOperator, Int] = identifyDuplicates(input)
+    val opsByHeight = opCounts.keys.toSeq.sortBy(-_.height)
+    val (opsToCache, _) = opsByHeight.foldLeft((Set.empty[PhysicalOperator], opCounts)) {
+      case ((currentOpsToCache: Set[PhysicalOperator], currentCounts: Map[PhysicalOperator, Int]), currentOp: PhysicalOperator) =>
+        val currentOpCount = currentCounts(currentOp)
+        if (currentOpCount > 1) {
+          (currentOpsToCache + currentOp, currentCounts.map { case (op, count) =>
+            (op, if (currentOp.contains(op)) count - 1 else count)
+          })
+        } else {
+          (currentOpsToCache, currentCounts)
+        }
     }
 
-    // build replacement map
+    val cacheMap: Map[PhysicalOperator, PhysicalOperator] = opsToCache.map(op => op -> Cache(op)).toMap
+
+    input.transformUp(insertCacheOps(cacheMap))
   }
 
-  def insertCacheOp(replacements: Map[PhysicalOperator, PhysicalOperator]): TreeNode.RewriteRule[PhysicalOperator] =
+  def insertCacheOps(replacements: Map[PhysicalOperator, PhysicalOperator]): TreeNode.RewriteRule[PhysicalOperator] =
     TreeNode.RewriteRule {
       case op if replacements.contains(op) => replacements(op)
     }
@@ -27,7 +38,4 @@ class PhysicalOptimizer
     }.filter(_._2 > 1)
   }
 
-  def insertCacheOps(target: PhysicalOperator)(op: PhysicalOperator): PhysicalOperator = {
-    ???
-  }
 }

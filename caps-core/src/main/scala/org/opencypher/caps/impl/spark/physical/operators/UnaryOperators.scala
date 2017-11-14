@@ -48,6 +48,26 @@ sealed abstract class UnaryPhysicalOperator extends PhysicalOperator {
   def executeUnary(prev: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult
 }
 
+final case class Cache(in: PhysicalOperator) extends UnaryPhysicalOperator {
+
+  // TODO: Remove mutable state by using lazy val and overriding execute
+  var cached: Option[PhysicalResult] = None
+
+  override def executeUnary(prev: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult = {
+    cached match {
+      case None =>
+        val cachedRecord = prev.records.cache()
+        val cachedResult = PhysicalResult(cachedRecord, prev.graphs)
+        cached = Some(cachedResult)
+        cachedResult
+      case Some(r) => r
+    }
+
+  }
+
+  override def withNewChildren(newChildren: Seq[PhysicalOperator]): Cache = copy(in = newChildren.head)
+}
+
 final case class Scan(in: PhysicalOperator,
                       inGraph: LogicalGraph,
                       v: Var) extends UnaryPhysicalOperator {

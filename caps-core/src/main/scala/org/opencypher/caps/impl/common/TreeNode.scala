@@ -46,6 +46,10 @@ abstract class TreeNode[T <: TreeNode[T]] extends Product with Traversable[T] {
     children.foreach(_.foreach(f))
   }
 
+  def contains(n: T): Boolean = {
+    if (self == n) true else children.exists(_.contains(n))
+  }
+
   def transformUp(rule: TreeNode.RewriteRule[T]): T = {
     val afterChildren = withNewChildren(children.map(_.transformUp(rule)))
     if (rule.isDefinedAt(afterChildren)) rule(afterChildren) else afterChildren
