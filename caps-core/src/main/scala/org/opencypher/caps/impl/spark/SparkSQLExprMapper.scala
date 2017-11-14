@@ -16,7 +16,7 @@
 package org.opencypher.caps.impl.spark
 
 import org.apache.spark.sql.functions.udf
-import org.apache.spark.sql.types.{ArrayType, BooleanType, DoubleType, LongType, StringType}
+import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.record.RecordHeader
@@ -25,8 +25,8 @@ import org.opencypher.caps.impl.convert.toJavaType
 import org.opencypher.caps.impl.spark.Udfs._
 import org.opencypher.caps.impl.spark.convert.toSparkType
 import org.opencypher.caps.impl.spark.exception.Raise
-import org.opencypher.caps.impl.spark.physical.PhysicalOperator.columnName
-import org.opencypher.caps.impl.spark.physical.{PhysicalOperator, RuntimeContext}
+import org.opencypher.caps.impl.spark.physical.RuntimeContext
+import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.columnName
 
 object SparkSQLExprMapper {
 

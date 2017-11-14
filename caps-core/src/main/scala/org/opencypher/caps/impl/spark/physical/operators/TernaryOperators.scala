@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.spark.physical
+package org.opencypher.caps.impl.spark.physical.operators
 
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.functions.udf
@@ -23,7 +23,8 @@ import org.opencypher.caps.api.record.{OpaqueField, ProjectedExpr, RecordHeader,
 import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.api.types.CTNode
 import org.opencypher.caps.impl.flat.FreshVariableNamer
-import org.opencypher.caps.impl.spark.physical.PhysicalOperator.{assertIsNode, columnName, joinRecords}
+import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.{assertIsNode, columnName, joinRecords}
+import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext, udfUtils}
 
 sealed trait TernaryPhysicalOperator extends PhysicalOperator {
   override def execute(inputs: PhysicalResult*)(implicit context: RuntimeContext): PhysicalResult = {

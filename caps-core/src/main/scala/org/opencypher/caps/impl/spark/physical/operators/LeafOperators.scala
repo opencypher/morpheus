@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.spark.physical
+package org.opencypher.caps.impl.spark.physical.operators
 
 import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.impl.logical.LogicalExternalGraph
+import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
 
 sealed trait LeafPhysicalOperator extends PhysicalOperator {
   override def execute(inputs: PhysicalResult*)(implicit context: RuntimeContext): PhysicalResult = {
-    require(inputs.length == 0)
+    require(inputs.isEmpty)
     executeLeaf()
   }
 

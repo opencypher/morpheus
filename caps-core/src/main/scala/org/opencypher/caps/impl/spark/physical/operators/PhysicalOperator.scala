@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.spark.physical
+package org.opencypher.caps.impl.spark.physical.operators
 
 import java.net.URI
 
@@ -23,6 +23,7 @@ import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
 
 private[spark] trait PhysicalOperator {
   def execute(inputs: PhysicalResult*)(implicit context: RuntimeContext): PhysicalResult

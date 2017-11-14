@@ -25,6 +25,7 @@ import org.opencypher.caps.impl.common.Tree
 import org.opencypher.caps.impl.flat.FlatOperator
 import org.opencypher.caps.impl.logical.{GraphOfPattern, LogicalExternalGraph, LogicalPatternGraph}
 import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.spark.physical.operators._
 import org.opencypher.caps.impl.{DirectCompilationStage, flat}
 import org.opencypher.caps.ir.api.block.SortItem
 

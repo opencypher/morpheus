@@ -19,6 +19,7 @@ import org.opencypher.caps.api.graph.CypherResultPlan
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSResult}
 import org.opencypher.caps.impl.common.Tree
 import org.opencypher.caps.impl.logical.LogicalOperator
+import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator
 
 object CAPSResultBuilder {
   def from(physical: Tree[PhysicalOperator], plan: LogicalOperator)(implicit context: RuntimeContext): CAPSResult =

@@ -15,16 +15,13 @@
  */
 package org.opencypher.caps.impl.common
 
-abstract class TreeNode[T <: TreeNode[T]]() extends Product {
+abstract class TreeNode[T <: TreeNode[T]] extends Product with Traversable[T] {
+
   self: T =>
 
   def withNewChildren(newChildren: Seq[T]): T
 
   def children: Seq[T] = Seq.empty
-
-  def map[O <: TreeNode[O]](f: T => O) = {
-    f(self).withNewChildren(children.map(f))
-  }
 
   def arity: Int = children.length
 
@@ -33,6 +30,26 @@ abstract class TreeNode[T <: TreeNode[T]]() extends Product {
   def isInner: Boolean = height > 1
 
   lazy val height: Int = if (children.isEmpty) 1 else children.map(_.height).max + 1
+
+  def map[O <: TreeNode[O]](f: T => O): O = {
+    f(self).withNewChildren(children.map(f))
+  }
+
+  override def foldLeft[O](initial: O)(f: (O, T) => O): O = {
+    children.foldLeft(f(initial, this)) { case (agg, nextChild) =>
+      nextChild.foldLeft(agg)(f)
+    }
+  }
+
+  override def foreach[O](f: T => O): Unit = {
+    f(this)
+    children.foreach(_.foreach(f))
+  }
+
+  def transformUp(rule: TreeNode.RewriteRule[T]): T = {
+    val updatedSelf = withNewChildren(children.map(_.transformUp(rule)))
+    if (rule.isDefinedAt(updatedSelf)) rule(updatedSelf) else updatedSelf
+  }
 
   protected def prefix(depth: Int): String = ("· " * depth) + "|-"
 
@@ -43,22 +60,6 @@ abstract class TreeNode[T <: TreeNode[T]]() extends Product {
     }
 
     s"${prefix(depth)}($self)\n$childrenString"
-  }
-
-  def foldLeft[O](initial: O)(f: (O, T) => O): O = {
-    children.foldLeft(f(initial, this)) { case (agg, nextChild) =>
-      nextChild.foldLeft(agg)(f)
-    }
-  }
-
-  def foreach[O](f: T => O): Unit = {
-    f(this)
-    children.foreach(_.foreach(f))
-  }
-  
-  def transformUp(rule: TreeNode.RewriteRule[T]): T = {
-    val updatedSelf = withNewChildren(children.map(_.transformUp(rule)))
-    if (rule.isDefinedAt(updatedSelf)) rule(updatedSelf) else updatedSelf
   }
 
   override def toString: String = this.getClass.getSimpleName
