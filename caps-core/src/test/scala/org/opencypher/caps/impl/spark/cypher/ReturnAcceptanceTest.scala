@@ -16,6 +16,7 @@
 package org.opencypher.caps.impl.spark.cypher
 
 import org.opencypher.caps.api.value.CypherMap
+import org.opencypher.caps.demo.Configuration.DefaultType
 import org.opencypher.caps.test.CAPSTestSuite
 
 import scala.collection.Bag
@@ -55,8 +56,8 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH (n) RETURN n")
 
     result.records.toMaps should equal(Bag(
-      CypherMap("n" -> 0, s"n:$DEFAULT_LABEL" -> true, "n.foo" -> "bar"),
-      CypherMap("n" -> 1, s"n:$DEFAULT_LABEL" -> true, "n.foo" -> null))
+      CypherMap("n" -> 0, "n.foo" -> "bar"),
+      CypherMap("n" -> 1, "n.foo" -> null))
     )
   }
 
@@ -77,8 +78,8 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
     val result = given.cypher("MATCH ()-[r]->() RETURN r")
 
     result.records.toMaps should equal(Bag(
-      CypherMap("r" -> 0, "source(r)" -> 0, "target(r)" -> 1, "type(r)" -> DEFAULT_LABEL, "r.foo" -> "bar"),
-      CypherMap("r" -> 1, "source(r)" -> 1, "target(r)" -> 2, "type(r)" -> DEFAULT_LABEL, "r.foo" -> null)
+      CypherMap("r" -> 0, "source(r)" -> 0, "target(r)" -> 1, "type(r)" -> DefaultType.get(), "r.foo" -> "bar"),
+      CypherMap("r" -> 1, "source(r)" -> 1, "target(r)" -> 2, "type(r)" -> DefaultType.get(), "r.foo" -> null)
     ))
   }
 

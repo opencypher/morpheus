@@ -16,6 +16,7 @@
 package org.opencypher.caps.impl.spark.cypher
 
 import org.opencypher.caps.api.value.{CypherList, CypherMap}
+import org.opencypher.caps.demo.Configuration.DefaultType
 import org.opencypher.caps.test.CAPSTestSuite
 
 import scala.collection.immutable.Bag
@@ -43,7 +44,7 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
     result.records.toMaps should equal(Bag(
       CypherMap("type(r)" -> "KNOWS"),
       CypherMap("type(r)" -> "HATES"),
-      CypherMap("type(r)" -> DEFAULT_LABEL)
+      CypherMap("type(r)" -> DefaultType.get())
     ))
   }
 
