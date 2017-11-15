@@ -66,12 +66,12 @@ object CaseClassTreeNode {
   import scala.reflect.runtime.universe._
 
   protected def copyMethod[T <: TreeNode[T]](className: String, instance: CaseClassTreeNode[T]): MethodMirror = {
-    cachedCopyMethods.getOrElse(simpleName, {
+    cachedCopyMethods.getOrElse(className, {
       val instanceMirror = mirror.reflect(instance)
       val tpe = instanceMirror.symbol.asType.toType
       val copyMethodSymbol = tpe.decl(TermName("copy")).asMethod
       val copyMethod = instanceMirror.reflectMethod(copyMethodSymbol)
-      cachedCopyMethods.put(simpleName, copyMethod)
+      cachedCopyMethods.put(className, copyMethod)
       copyMethod
     })
   }
