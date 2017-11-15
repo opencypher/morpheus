@@ -58,20 +58,30 @@ sealed abstract class CAPSRecords(
 
   def mapDF(f: Data => Data): CAPSRecords = CAPSRecords.create(f(data))
 
-  def cache(): CAPSRecords =
-    CAPSRecords.create(header, data.cache())
+  def cache(): CAPSRecords = {
+    data.cache()
+    this
+  }
 
-  def persist(): CAPSRecords =
-    CAPSRecords.create(header, data.persist())
+  def persist(): CAPSRecords = {
+    data.persist()
+    this
+  }
 
-  def persist(storageLevel: StorageLevel): CAPSRecords =
-    CAPSRecords.create(header, data.persist(storageLevel))
+  def persist(storageLevel: StorageLevel): CAPSRecords = {
+    data.persist(storageLevel)
+    this
+  }
 
-  def unpersist(): CAPSRecords =
-    CAPSRecords.create(header, data.unpersist())
+  def unpersist(): CAPSRecords = {
+    data.unpersist()
+    this
+  }
 
-  def unpersist(blocking: Boolean): CAPSRecords =
-    CAPSRecords.create(header, data.unpersist(blocking))
+  def unpersist(blocking: Boolean): CAPSRecords = {
+    data.unpersist(blocking)
+    this
+  }
 
   //  def repartition(numPartitions: Int): CAPSRecords =
   //    CAPSRecords.create(header, data.repartition(numPartitions))

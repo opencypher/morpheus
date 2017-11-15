@@ -37,7 +37,7 @@ import org.opencypher.caps.impl.syntax.expr._
 import org.opencypher.caps.impl.syntax.header.{addContents, _}
 import org.opencypher.caps.ir.api.block.{Asc, Desc, SortItem}
 
-sealed abstract class UnaryPhysicalOperator extends PhysicalOperator {
+private[spark] abstract class UnaryPhysicalOperator extends PhysicalOperator {
 
   def in: PhysicalOperator
 
@@ -51,11 +51,10 @@ sealed abstract class UnaryPhysicalOperator extends PhysicalOperator {
 final case class Cache(in: PhysicalOperator) extends UnaryPhysicalOperator {
 
   override def executeUnary(prev: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult = {
-    context.cache.getOrElse(this, {
-      val records = prev.records.cache()
-      val result = PhysicalResult(records, prev.graphs)
-      context.cache(this) = result
-      result
+    context.cache.getOrElse(in, {
+      prev.records.cache()
+      context.cache(in) = prev
+      prev
     })
   }
 

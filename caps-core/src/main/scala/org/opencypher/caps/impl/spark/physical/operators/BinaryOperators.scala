@@ -22,7 +22,7 @@ import org.opencypher.caps.impl.flat.FreshVariableNamer
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.{assertIsNode, columnName, joinDFs, joinRecords}
 import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
 
-sealed abstract class BinaryPhysicalOperator extends PhysicalOperator {
+private[spark] abstract class BinaryPhysicalOperator extends PhysicalOperator {
 
   def left: PhysicalOperator
 

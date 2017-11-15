@@ -26,7 +26,7 @@ import org.opencypher.caps.impl.flat.FreshVariableNamer
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.{assertIsNode, columnName, joinRecords}
 import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext, udfUtils}
 
-sealed abstract class TernaryPhysicalOperator extends PhysicalOperator {
+private[spark] abstract class TernaryPhysicalOperator extends PhysicalOperator {
 
   def first: PhysicalOperator
 

@@ -19,7 +19,7 @@ import org.opencypher.caps.api.spark.{CAPSRecords, CAPSSession}
 import org.opencypher.caps.impl.logical.LogicalExternalGraph
 import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
 
-sealed abstract class LeafPhysicalOperator extends PhysicalOperator {
+private[spark] abstract class LeafPhysicalOperator extends PhysicalOperator {
 
   override def execute(implicit context: RuntimeContext): PhysicalResult = executeLeaf()
 
