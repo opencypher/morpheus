@@ -95,7 +95,9 @@ abstract class TreeNode[T <: TreeNode[T]] extends Product with Traversable[T] {
 
   def argFilter: Any => Boolean = _ => true
 
-  override def toString(): String = s"${getClass.getSimpleName}()"
+  override def toString(): String = productPrefix
+
+  override def productPrefix: String = getClass.getSimpleName
 }
 
 object TreeNode {

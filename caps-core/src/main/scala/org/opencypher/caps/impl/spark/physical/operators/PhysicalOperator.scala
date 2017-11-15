@@ -21,30 +21,24 @@ import org.apache.spark.sql.{Column, DataFrame}
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.common.TreeNode
+import org.opencypher.caps.impl.common.{CaseClassTreeNode, TreeNode}
 import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
 
-private[spark] abstract class PhysicalOperator extends TreeNode[PhysicalOperator] {
+private[spark] abstract class PhysicalOperator extends CaseClassTreeNode[PhysicalOperator] {
   def execute(implicit context: RuntimeContext): PhysicalResult
 
   protected def resolve(uri: URI)(implicit context: RuntimeContext): CAPSGraph = {
     context.resolve(uri).getOrElse(Raise.graphNotFound(uri))
   }
 
-  override def toString() = s"${super.toString()}($argString)"
-
-  override def withNewChildren(newChildren: Seq[PhysicalOperator]): PhysicalOperator = {
-    if (newChildren == children) this else internalCopy(newChildren)
-  }
+  override def toString() = s"${super.toString()}{($argString)}"
 
   override def argFilter: Any => Boolean = {
     case _:RecordHeader => false
     case other => super.argFilter(other)
   }
-
-  protected def internalCopy(newChildren: Seq[PhysicalOperator]): PhysicalOperator
 }
 
 object PhysicalOperator {

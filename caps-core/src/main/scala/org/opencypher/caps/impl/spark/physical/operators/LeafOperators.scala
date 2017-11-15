@@ -24,8 +24,6 @@ private[spark] abstract class LeafPhysicalOperator extends PhysicalOperator {
   override def execute(implicit context: RuntimeContext): PhysicalResult = executeLeaf()
 
   def executeLeaf()(implicit context: RuntimeContext): PhysicalResult
-
-  override def internalCopy(newChildren: Seq[PhysicalOperator]): LeafPhysicalOperator = this
 }
 
 final case class Start(records: CAPSRecords, graph: LogicalExternalGraph) extends LeafPhysicalOperator {

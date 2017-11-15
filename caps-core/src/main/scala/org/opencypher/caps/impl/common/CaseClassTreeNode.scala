@@ -32,49 +32,42 @@ import scala.reflect.ClassTag
 abstract class CaseClassTreeNode[T <: TreeNode[T] : ClassTag] extends TreeNode[T] {
   self: T =>
 
-  override lazy val children: Seq[T] = {
-    caseClassConstructorParams.collect { case t: T => t }
-  }
+  override lazy val children: Seq[T] = productIterator.toSeq.collect { case t: T => t }
 
   override def withNewChildren(newChildren: Seq[T]): T = {
     if (children == newChildren) {
       self
     } else {
       val substitutions = children.toList.zip(newChildren)
-      val updatedConstructorParams = substitute(caseClassConstructorParams, substitutions).toArray
+      val updatedConstructorParams = substitute(productIterator, substitutions).toArray
       copyMethod(updatedConstructorParams: _*).asInstanceOf[T]
     }
   }
 
-  private lazy val instanceMirror = mirror.reflect(self)
-  private lazy val tpe = instanceMirror.symbol.asType.toType
-
   private lazy val copyMethod = {
+    val instanceMirror = mirror.reflect(self)
+    val tpe = instanceMirror.symbol.asType.toType
     val copyMethodSymbol = tpe.decl(TermName("copy")).asMethod
     instanceMirror.reflectMethod(copyMethodSymbol)
   }
 
-  private lazy val caseClassConstructorParams = {
-    val terms = tpe.members.collect { case t: Symbol if t.isTerm => t.asTerm }
-    val caseClassGetters = terms.filter(t => t.isCaseAccessor && t.isGetter)
-    caseClassGetters.map(instanceMirror.reflectField(_).get).toList.reverse
-  }
-
-  private def substitute(sequence: List[Any], substitutions: List[(Any, Any)]): List[Any] = {
-    sequence match {
-      case Nil => Nil
-      case h :: t =>
-        substitutions match {
-          case Nil => sequence
-          case (oldV, newV) :: rem =>
-            if (h == oldV) {
-              newV :: substitute(t, rem)
-            } else {
-              h :: substitute(t, substitutions)
-            }
-        }
+  private def substitute(sequence: Iterator[Any], substitutions: List[(Any, Any)]): List[Any] = {
+    if (sequence.isEmpty) {
+      List.empty
+    } else {
+      val next = sequence.next
+      substitutions match {
+        case Nil => next :: sequence.toList
+        case (oldV, newV) :: rem =>
+          if (next == oldV) {
+            newV :: substitute(sequence, rem)
+          } else {
+            next :: substitute(sequence, substitutions)
+          }
+      }
     }
   }
+
 }
 
 /**

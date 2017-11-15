@@ -114,23 +114,8 @@ class TreeNodeTest extends FunSuite with Matchers {
 //    )
 //  }
 
-  abstract class Expr extends TreeNode[Expr]
-
-  case class Add(left: Expr, right: Expr) extends Expr {
-
-    override val children: Seq[Expr] = Seq(left, right)
-
-    override def withNewChildren(newChildren: Seq[Expr]): Expr = copy(left = newChildren(0), right = newChildren(1))
-  }
-
-  case class Number(v: Int) extends Expr {
-    override def withNewChildren(newChildren: Seq[Expr]): Expr = this
-  }
-
-  case class Noop(in: Expr) extends Expr {
-
-    override val children: Seq[Expr] = Seq(in)
-
-    override def withNewChildren(newChildren: Seq[Expr]): Expr = copy(in = newChildren.head)
-  }
+  abstract class Expr extends CaseClassTreeNode[Expr]
+  case class Add(left: Expr, right: Expr) extends Expr
+  case class Number(v: Int) extends Expr
+  case class Noop(in: Expr) extends Expr
 }

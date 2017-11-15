@@ -34,8 +34,6 @@ private[spark] abstract class TernaryPhysicalOperator extends PhysicalOperator {
 
   def third: PhysicalOperator
 
-  override def children: Seq[PhysicalOperator] = Seq(first, second, third)
-
   override def execute(implicit context: RuntimeContext): PhysicalResult =
     executeTernary(first.execute, second.execute, third.execute)
 
@@ -73,8 +71,6 @@ final case class ExpandSource(first: PhysicalOperator,
 
 //  override def equals(obj: scala.Any): Boolean = super.equals(obj)
 
-  override def internalCopy(newChildren: Seq[PhysicalOperator]): ExpandSource =
-    copy(first = newChildren.head, second = newChildren(1), third = newChildren(2))
 }
 
 // Expands a pattern like (s)-[r*n..m]->(t) where s is solved by first, r is solved by second and t is solved by third
@@ -187,6 +183,4 @@ final case class BoundedVarExpand(first: PhysicalOperator,
     CAPSRecords.create(firstRecords.header, union)(firstRecords.caps)
   }
 
-  override def internalCopy(newChildren: Seq[PhysicalOperator]): BoundedVarExpand =
-    copy(first = newChildren.head, second = newChildren(1), third = newChildren(2))
 }

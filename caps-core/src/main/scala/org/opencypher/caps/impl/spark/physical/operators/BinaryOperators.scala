@@ -28,8 +28,6 @@ private[spark] abstract class BinaryPhysicalOperator extends PhysicalOperator {
 
   def right: PhysicalOperator
 
-  override def children = Seq(left, right)
-
   override def execute(implicit context: RuntimeContext): PhysicalResult = executeBinary(left.execute, right.execute)
 
   def executeBinary(left: PhysicalResult, right: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult
@@ -52,8 +50,6 @@ final case class ValueJoin(left: PhysicalOperator,
     PhysicalResult(joinRecords(header, slots)(left.records, right.records), left.graphs ++ right.graphs)
   }
 
-  override def internalCopy(newChildren: Seq[PhysicalOperator]): PhysicalOperator =
-    copy(left = newChildren.head, right = newChildren(1))
 }
 
 final case class Optional(left: PhysicalOperator,
@@ -103,8 +99,6 @@ final case class Optional(left: PhysicalOperator,
     PhysicalResult(joinedRecords, left.graphs ++ right.graphs)
   }
 
-  override def internalCopy(newChildren: Seq[PhysicalOperator]): PhysicalOperator =
-    copy(left = newChildren.head, right = newChildren(1))
 }
 
 // This maps a Cypher pattern such as (s)-[r]->(t), where s and t are both solved by lhs, and r is solved by rhs
@@ -132,8 +126,6 @@ final case class ExpandInto(left: PhysicalOperator,
     PhysicalResult(joinedRecords, left.graphs ++ right.graphs)
   }
 
-  override def internalCopy(newChildren: Seq[PhysicalOperator]): PhysicalOperator =
-    copy(left = newChildren.head, right = newChildren(1))
 }
 
 final case class CartesianProduct(left: PhysicalOperator,
@@ -150,6 +142,4 @@ final case class CartesianProduct(left: PhysicalOperator,
     PhysicalResult(records, graphs)
   }
 
-  override def internalCopy(newChildren: Seq[PhysicalOperator]): PhysicalOperator =
-    copy(left = newChildren.head, right = newChildren(1))
 }
