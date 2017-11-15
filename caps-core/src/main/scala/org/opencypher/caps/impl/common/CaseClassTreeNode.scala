@@ -51,7 +51,7 @@ abstract class CaseClassTreeNode[T <: TreeNode[T] : ClassTag] extends TreeNode[T
   /**
     * Cache class name as product prefix for fast retrieval of the copy method.
     */
-  override lazy final val productPrefix: String = getClass.getSimpleName
+  override lazy final val productPrefix: String = getClass.getName
 
 }
 
@@ -65,7 +65,7 @@ object CaseClassTreeNode {
   import scala.reflect.runtime.universe
   import scala.reflect.runtime.universe._
 
-  protected def copyMethod[T <: TreeNode[T]](simpleName: String, instance: CaseClassTreeNode[T]): MethodMirror = {
+  protected def copyMethod[T <: TreeNode[T]](className: String, instance: CaseClassTreeNode[T]): MethodMirror = {
     cachedCopyMethods.getOrElse(simpleName, {
       val instanceMirror = mirror.reflect(instance)
       val tpe = instanceMirror.symbol.asType.toType
