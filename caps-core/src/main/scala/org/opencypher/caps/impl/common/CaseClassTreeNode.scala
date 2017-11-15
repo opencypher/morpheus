@@ -38,8 +38,15 @@ abstract class CaseClassTreeNode[T <: TreeNode[T] : ClassTag] extends TreeNode[T
     if (children == newChildren) {
       self
     } else {
+      require(children.length == newChildren.length)
       val substitutions = children.toList.zip(newChildren)
-      val updatedConstructorParams = substitute(productIterator, substitutions).toArray
+      val (updatedConstructorParams, _) = productIterator.foldLeft((Vector.empty[Any], substitutions)) {
+        case ((result, remainingSubs), next) =>
+          remainingSubs match {
+            case (oldC, newC) :: tail if next == oldC =>  (result :+ newC, tail)
+            case _ => (result :+ next, remainingSubs)
+          }
+      }
       copyMethod(updatedConstructorParams: _*).asInstanceOf[T]
     }
   }
@@ -49,23 +56,6 @@ abstract class CaseClassTreeNode[T <: TreeNode[T] : ClassTag] extends TreeNode[T
     val tpe = instanceMirror.symbol.asType.toType
     val copyMethodSymbol = tpe.decl(TermName("copy")).asMethod
     instanceMirror.reflectMethod(copyMethodSymbol)
-  }
-
-  private def substitute(sequence: Iterator[Any], substitutions: List[(Any, Any)]): List[Any] = {
-    if (sequence.isEmpty) {
-      List.empty
-    } else {
-      val next = sequence.next
-      substitutions match {
-        case Nil => next :: sequence.toList
-        case (oldV, newV) :: rem =>
-          if (next == oldV) {
-            newV :: substitute(sequence, rem)
-          } else {
-            next :: substitute(sequence, substitutions)
-          }
-      }
-    }
   }
 
 }
