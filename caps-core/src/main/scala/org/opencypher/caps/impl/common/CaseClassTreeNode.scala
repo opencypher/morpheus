@@ -15,10 +15,6 @@
  */
 package org.opencypher.caps.impl.common
 
-import scala.reflect.runtime.universe
-import scala.reflect.runtime.universe._
-import CaseClassTreeNode.mirror
-
 import scala.reflect.ClassTag
 
 /**
@@ -47,22 +43,41 @@ abstract class CaseClassTreeNode[T <: TreeNode[T] : ClassTag] extends TreeNode[T
             case _ => (result :+ next, remainingSubs)
           }
       }
+      val copyMethod = CaseClassTreeNode.copyMethod(productPrefix, self)
       copyMethod(updatedConstructorParams: _*).asInstanceOf[T]
     }
   }
 
-  private lazy val copyMethod = {
-    val instanceMirror = mirror.reflect(self)
-    val tpe = instanceMirror.symbol.asType.toType
-    val copyMethodSymbol = tpe.decl(TermName("copy")).asMethod
-    instanceMirror.reflectMethod(copyMethodSymbol)
-  }
+  /**
+    * Cache class name as product prefix for fast retrieval of the copy method.
+    */
+  override lazy final val productPrefix: String = getClass.getSimpleName
 
 }
 
 /**
-  * Provides the shared runtime mirror for ```CaseClassTreeNode```.
+  * Provides the shared runtime mirror for ```CaseClassTreeNode``` and caches an instance of the copy method per
+  * case class tree node.
   */
 object CaseClassTreeNode {
+  import java.util.concurrent.ConcurrentHashMap
+
+  import collection.JavaConverters._
+  import scala.reflect.runtime.universe
+  import scala.reflect.runtime.universe._
+
+  protected def copyMethod[T <: TreeNode[T]](simpleName: String, instance: CaseClassTreeNode[T]): MethodMirror = {
+    cachedCopyMethods.getOrElse(simpleName, {
+      val instanceMirror = mirror.reflect(instance)
+      val tpe = instanceMirror.symbol.asType.toType
+      val copyMethodSymbol = tpe.decl(TermName("copy")).asMethod
+      val copyMethod = instanceMirror.reflectMethod(copyMethodSymbol)
+      cachedCopyMethods.put(simpleName, copyMethod)
+      copyMethod
+    })
+  }
+
+  private val cachedCopyMethods = new ConcurrentHashMap[String, universe.MethodMirror].asScala
+
   protected val mirror = universe.runtimeMirror(getClass.getClassLoader)
 }
