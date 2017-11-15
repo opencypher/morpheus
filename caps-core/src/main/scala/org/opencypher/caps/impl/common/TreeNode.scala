@@ -71,7 +71,26 @@ abstract class TreeNode[T <: TreeNode[T]] extends Product with Traversable[T] {
     s"${prefix(depth)}($self)\n$childrenString"
   }
 
-  override def toString: String = this.getClass.getSimpleName
+  def argString: String = productIterator.filter(argFilter).flatMap {
+    case tn: TreeNode[_] if children.contains(tn)       => Nil
+    case Some(tn: TreeNode[_]) if children.contains(tn) => Nil
+    case Some(tn: TreeNode[_])                          => tn.argString :: Nil
+    case tn: TreeNode[_]                                => tn.argString :: Nil
+    case iter: Iterable[_] if iter.isEmpty              => Nil
+    case seq: Seq[_]                                    => seq.mkString("[", ", ", "]") :: Nil
+    case set: Set[_]                                    => set.toSeq.mkString("{", ", ", "}") :: Nil
+    case array: Array[_] if array.isEmpty               => Nil
+    case array: Array[_]                                => array.mkString("[", ", ", "]") :: Nil
+    case null                                           => Nil
+    case None                                           => Nil
+    case Some(null)                                     => Nil
+    case Some(any)                                      => any :: Nil
+    case other                                          => other :: Nil
+  }.mkString(", ")
+
+  def argFilter: Any => Boolean = _ => true
+
+  override def toString(): String = s"${getClass.getSimpleName}()"
 }
 
 object TreeNode {
@@ -83,7 +102,4 @@ object TreeNode {
 
     def isDefinedAt(t: T): Boolean = rule.isDefinedAt(t)
   }
-
 }
-
-

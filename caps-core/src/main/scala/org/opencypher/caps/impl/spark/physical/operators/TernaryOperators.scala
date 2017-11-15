@@ -71,6 +71,8 @@ final case class ExpandSource(first: PhysicalOperator,
     PhysicalResult(joinedRecords, first.graphs ++ second.graphs ++ third.graphs)
   }
 
+//  override def equals(obj: scala.Any): Boolean = super.equals(obj)
+
   override def internalCopy(newChildren: Seq[PhysicalOperator]): ExpandSource =
     copy(first = newChildren.head, second = newChildren(1), third = newChildren(2))
 }

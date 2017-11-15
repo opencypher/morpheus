@@ -117,7 +117,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOpera
           case _                       => Raise.invalidArgument("an external graph", sourceOp.sourceGraph.toString)
         }
 
-        val startFrom = StartFrom(CAPSRecords.unit(), externalGraph)
+        val startFrom = StartFromUnit(externalGraph)
         val second = Scan(startFrom, op.sourceGraph, rel)
 
         ExpandSource(first, second, third, source, rel, target, header)

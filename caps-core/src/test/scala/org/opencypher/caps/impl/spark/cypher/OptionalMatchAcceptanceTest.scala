@@ -16,6 +16,7 @@
 package org.opencypher.caps.impl.spark.cypher
 
 import org.opencypher.caps.api.value.CypherMap
+import org.opencypher.caps.demo.Configuration.PrintPhysicalPlan
 import org.opencypher.caps.test.CAPSTestSuite
 
 import scala.collection.Bag
@@ -134,6 +135,9 @@ class OptionalMatchAcceptanceTest extends CAPSTestSuite {
   }
 
   test("optional match with duplicates") {
+
+    PrintPhysicalPlan.set()
+
     // Given
     val given = TestGraph(
       """
