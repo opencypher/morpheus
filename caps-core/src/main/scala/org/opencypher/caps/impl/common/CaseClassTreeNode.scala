@@ -56,8 +56,7 @@ abstract class CaseClassTreeNode[T <: TreeNode[T] : ClassTag] extends TreeNode[T
 }
 
 /**
-  * Provides the shared runtime mirror for ```CaseClassTreeNode``` and caches an instance of the copy method per
-  * case class tree node.
+  * Caches an instance of the copy method per case class type.
   */
 object CaseClassTreeNode {
   import java.util.concurrent.ConcurrentHashMap
