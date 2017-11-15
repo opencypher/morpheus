@@ -15,6 +15,8 @@
  */
 package org.opencypher.caps.impl.common
 
+import scala.util.hashing.MurmurHash3
+
 abstract class TreeNode[T <: TreeNode[T]] extends Product with Traversable[T] {
 
   self: T =>
@@ -22,6 +24,9 @@ abstract class TreeNode[T <: TreeNode[T]] extends Product with Traversable[T] {
   def withNewChildren(newChildren: Seq[T]): T
 
   def children: Seq[T] = Seq.empty
+
+  // Optimization: Cache hash code, speeds up repeated computations over high trees.
+  override lazy val hashCode = MurmurHash3.productHash(this)
 
   def arity: Int = children.length
 
