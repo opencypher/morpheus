@@ -56,47 +56,52 @@ trait JsonSerialiser {
       case Some(n: CypherNode) =>
         CypherNode.contents(n) match {
           case Some(NodeContents(id, labels, properties)) =>
-            formatNode(id.v, labels, properties.m.mapValues(_.toString))
+            formatNode(id.v, labels, properties.m.mapValues(p => constructValue(Some(p))))
           case None =>
-            Json.fromString("null")
+            Json.Null
         }
 
       case Some(r: CypherRelationship) =>
         CypherRelationship.contents(r) match {
           case Some(RelationshipContents(id, source, target, typ, properties)) =>
-            formatRel(id.v, source.v, target.v, typ, properties.m.mapValues(_.toString))
+            formatRel(id.v, source.v, target.v, typ, properties.m.mapValues(p => constructValue(Some(p))))
           case None =>
-            Json.fromString("null")
+            Json.Null
         }
 
-      case Some(v: CypherValue) if !CypherValue.isNull(v) =>
-        Json.fromString(v.toString)
+      case Some(CypherInteger(i)) => Json.fromLong(i)
+      case Some(CypherFloat(f)) => Json.fromDouble(f).getOrElse(Json.fromString(f.toString))
+      case Some(CypherBoolean(b)) => Json.fromBoolean(b)
+      case Some(CypherString(s)) => Json.fromString(s)
+      case Some(CypherList(contents)) => Json.arr(contents.map(v => constructValue(Some(v))): _*)
+      case Some(CypherMap(contents)) => Json.obj(contents.properties.m.mapValues(p => constructValue(Some(p))).toSeq: _*)
 
       case _ =>
-        Json.fromString("null")
+        Json.Null
     }
   }
 
-  protected def formatNode(id: Long, labels: Seq[String], properties: Map[String, String]) = {
+
+  protected def formatNode(id: Long, labels: Seq[String], properties: Map[String, Json]) = {
     Json.obj(
       "id" -> Json.fromLong(id),
       "labels" -> Json.arr(
         labels.map(Json.fromString): _*
       ),
       "properties" -> Json.obj(
-        properties.mapValues(Json.fromString).toSeq: _*
+        properties.toSeq: _*
       )
     )
   }
 
-  protected def formatRel(id: Long, source: Long, target: Long, typ: String, properties: Map[String, String]) = {
+  protected def formatRel(id: Long, source: Long, target: Long, typ: String, properties: Map[String, Json]) = {
     Json.obj(
       "id" -> Json.fromLong(id),
       "source" -> Json.fromLong(source),
       "target" -> Json.fromLong(target),
       "type" -> Json.fromString(typ),
       "properties" -> Json.obj(
-        properties.mapValues(Json.fromString).toSeq: _*
+        properties.toSeq: _*
       )
     )
   }
@@ -151,7 +156,7 @@ trait JsonSerialiser {
   *     ],
   *     "properties" : {    // properties is an object
   *       "key" : "value",  // key-value is a tuple
-  *       "foo" : "bar"
+  *       "foo" : bar
   *     }
   *   }
   * }}}
@@ -166,7 +171,7 @@ trait JsonSerialiser {
   *     "type" : "T"        // relationship type is a string
   *     "properties" : {    // properties is an object
   *       "key" : "value",  // key-value is a tuple
-  *       "foo" : "bar"
+  *       "foo" : bar
   *     }
   *   }
   * }}}
