@@ -65,78 +65,24 @@ class PhysicalOptimizerTest extends CAPSTestSuite {
         Cache(
           CartesianProduct(
             Scan(
-              Cache(
-                Start(emptyRecords, emptyGraph)
-              ),
-              emptyGraph, Var("C")(CTNode)
+              Start(emptyRecords, emptyGraph), emptyGraph, Var("C")(CTNode)
             ),
             Scan(
-              Cache(
-                Start(emptyRecords, emptyGraph)
-              ),
-              emptyGraph, Var("B")(CTNode)
+              Start(emptyRecords, emptyGraph), emptyGraph, Var("B")(CTNode)
             ), RecordHeader.empty
           )
         ),
         Cache(
           CartesianProduct(
             Scan(
-              Cache(
-                Start(emptyRecords, emptyGraph)
-              ),
-              emptyGraph, Var("C")(CTNode)
+              Start(emptyRecords, emptyGraph), emptyGraph, Var("C")(CTNode)
             ),
             Scan(
-              Cache(
-                Start(emptyRecords, emptyGraph)
-              ),
-              emptyGraph, Var("B")(CTNode)
+              Start(emptyRecords, emptyGraph), emptyGraph, Var("B")(CTNode)
             ), RecordHeader.empty
           )
         ), RecordHeader.empty
       )
     )
-  }
-
-  test("check expand equality") {
-    val expandSource0 = ExpandSource(
-      Scan(
-        Start(emptyRecords, emptyGraph),
-        emptyGraph, Var("A")(CTNode)
-      ),
-      Scan(
-        Start(emptyRecords, emptyGraph),
-        emptyGraph, Var("E")(CTNode)
-      ),
-      Scan(
-        Start(emptyRecords, emptyGraph),
-        emptyGraph, Var("B")(CTNode)
-      ),
-      Var("A")(CTNode),
-      Var("E")(CTRelationship),
-      Var("B")(CTNode),
-      RecordHeader.empty
-    )
-
-    val expandSource1 = ExpandSource(
-      Scan(
-        Start(emptyRecords, emptyGraph),
-        emptyGraph, Var("A")(CTNode)
-      ),
-      Scan(
-        Start(emptyRecords, emptyGraph),
-        emptyGraph, Var("E")(CTNode)
-      ),
-      Scan(
-        Start(emptyRecords, emptyGraph),
-        emptyGraph, Var("B")(CTNode)
-      ),
-      Var("A")(CTNode),
-      Var("E")(CTRelationship),
-      Var("B")(CTNode),
-      RecordHeader.empty
-    )
-
-    println(expandSource0 == expandSource1)
   }
 }

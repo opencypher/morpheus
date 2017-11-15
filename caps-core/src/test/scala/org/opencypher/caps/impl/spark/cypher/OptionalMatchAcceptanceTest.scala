@@ -135,9 +135,6 @@ class OptionalMatchAcceptanceTest extends CAPSTestSuite {
   }
 
   test("optional match with duplicates") {
-
-    PrintPhysicalPlan.set()
-
     // Given
     val given = TestGraph(
       """
