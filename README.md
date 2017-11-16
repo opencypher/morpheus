@@ -30,7 +30,7 @@ The Spark representations are accessible and can be converted to representations
 
 CAPS supports a subset of Cypher <!-- TODO: WIKI supported features --> and is the first implementation of [multiple graphs](https://github.com/boggle/openCypher/blob/CIP2017-06-18-multiple-graphs/cip/1.accepted/CIP2017-06-18-multiple-graphs.adoc) and graph query compositionality.
 
-CAPS currently supports importing graphs from both Neo4j and from custom [CSV format](https://github.com/opencypher/cypher-for-apache-spark/tree/master/src/test/resources/csv/sn) in HDFS.
+CAPS currently supports importing graphs from both Neo4j and from custom [CSV format](https://github.com/opencypher/cypher-for-apache-spark/tree/master/caps-core/src/main/resources/demo/ldbc_1) in HDFS.
 CAPS has a data source API that allows you to plug in custom data importers for external sources.
 
 ## CAPS Roadmap
