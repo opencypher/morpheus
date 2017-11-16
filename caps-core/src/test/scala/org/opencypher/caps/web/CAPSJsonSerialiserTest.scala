@@ -23,7 +23,6 @@ import org.opencypher.caps.impl.syntax.header.{addContents, _}
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.web.CAPSJsonSerialiser.toJsonString
 
-// TODO: Lists, maps
 //noinspection NameBooleanParameters
 class CAPSJsonSerialiserTest extends CAPSTestSuite {
 
@@ -150,13 +149,13 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
         |  ],
         |  "rows" : [
         |    {
-        |      "foo" : "'myString'"
+        |      "foo" : "myString"
         |    },
         |    {
-        |      "foo" : "'foo'"
+        |      "foo" : "foo"
         |    },
         |    {
-        |      "foo" : "null"
+        |      "foo" : null
         |    }
         |  ]
         |}""".stripMargin
@@ -181,19 +180,113 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
         |  ],
         |  "rows" : [
         |    {
-        |      "foo" : "'myString'",
-        |      "v" : "4",
-        |      "veryLongColumnNameWithBoolean" : "false"
+        |      "foo" : "myString",
+        |      "v" : 4,
+        |      "veryLongColumnNameWithBoolean" : false
         |    },
         |    {
-        |      "foo" : "'foo'",
-        |      "v" : "99999999",
-        |      "veryLongColumnNameWithBoolean" : "true"
+        |      "foo" : "foo",
+        |      "v" : 99999999,
+        |      "veryLongColumnNameWithBoolean" : true
         |    },
         |    {
-        |      "foo" : "null",
-        |      "v" : "-1",
-        |      "veryLongColumnNameWithBoolean" : "true"
+        |      "foo" : null,
+        |      "v" : -1,
+        |      "veryLongColumnNameWithBoolean" : true
+        |    }
+        |  ]
+        |}""".stripMargin
+    )
+  }
+
+  test("serialize lists") {
+    // Given
+    val records = CAPSRecords.create(Seq(
+      ListRow(Seq("foo","bar","baz"), Seq(42,23,8), Seq(true, false, false)),
+      ListRow(null, Seq.empty, Seq.empty)
+    ))
+
+    // Then
+    toJsonString(records) should equal(
+      """{
+        |  "columns" : [
+        |    "strings",
+        |    "integers",
+        |    "booleans"
+        |  ],
+        |  "rows" : [
+        |    {
+        |      "booleans" : [
+        |        true,
+        |        false,
+        |        false
+        |      ],
+        |      "integers" : [
+        |        42,
+        |        23,
+        |        8
+        |      ],
+        |      "strings" : [
+        |        "foo",
+        |        "bar",
+        |        "baz"
+        |      ]
+        |    },
+        |    {
+        |      "booleans" : [
+        |      ],
+        |      "integers" : [
+        |      ],
+        |      "strings" : null
+        |    }
+        |  ]
+        |}""".stripMargin
+    )
+  }
+
+  ignore("serialize maps") {
+    // Given
+    val records = CAPSRecords.create(Seq(
+      MapRow(
+        Map("foo" -> "Alice", "bar" -> "Bob", "baz" -> "Carols"),
+        Map("foo" -> 42, "bar" -> 23, "baz" -> 8),
+        Map("foo" -> true, "bar" -> false, "baz" -> false)
+      ),
+      MapRow(null, Map.empty, Map.empty)
+    ))
+
+    // Then
+    toJsonString(records) should equal(
+      """{
+        |  "columns" : [
+        |    "strings",
+        |    "integers",
+        |    "booleans"
+        |  ],
+        |  "rows" : [
+        |    {
+        |      "booleans" : [
+        |        true,
+        |        false,
+        |        false
+        |      ],
+        |      "integers" : [
+        |        42,
+        |        23,
+        |        8
+        |      ],
+        |      "strings" : [
+        |        "foo",
+        |        "bar",
+        |        "baz"
+        |      ]
+        |    },
+        |    {
+        |      "booleans" : [
+        |      ],
+        |      "integers" : [
+        |      ],
+        |      "strings" : null
         |    }
         |  ]
         |}""".stripMargin
@@ -212,8 +305,8 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
           |        "Swedish"
           |      ],
           |      "properties" : {
-          |        "lucky_number" : "23",
-          |        "name" : "'Mats'"
+          |        "lucky_number" : 23,
+          |        "name" : "Mats"
           |      }
           |    },
           |    {
@@ -222,8 +315,8 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
           |        "Person"
           |      ],
           |      "properties" : {
-          |        "lucky_number" : "42",
-          |        "name" : "'Martin'"
+          |        "lucky_number" : 42,
+          |        "name" : "Martin"
           |      }
           |    },
           |    {
@@ -232,8 +325,8 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
           |        "Person"
           |      ],
           |      "properties" : {
-          |        "lucky_number" : "1337",
-          |        "name" : "'Max'"
+          |        "lucky_number" : 1337,
+          |        "name" : "Max"
           |      }
           |    },
           |    {
@@ -242,8 +335,8 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
           |        "Person"
           |      ],
           |      "properties" : {
-          |        "lucky_number" : "9",
-          |        "name" : "'Stefan'"
+          |        "lucky_number" : 9,
+          |        "name" : "Stefan"
           |      }
           |    },
           |    {
@@ -252,8 +345,8 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
           |        "Book"
           |      ],
           |      "properties" : {
-          |        "title" : "'1984'",
-          |        "year" : "1949"
+          |        "title" : "1984",
+          |        "year" : 1949
           |      }
           |    },
           |    {
@@ -262,8 +355,8 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
           |        "Book"
           |      ],
           |      "properties" : {
-          |        "title" : "'Cryptonomicon'",
-          |        "year" : "1999"
+          |        "title" : "Cryptonomicon",
+          |        "year" : 1999
           |      }
           |    },
           |    {
@@ -272,8 +365,8 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
           |        "Book"
           |      ],
           |      "properties" : {
-          |        "title" : "'The Eye of the World'",
-          |        "year" : "1990"
+          |        "title" : "The Eye of the World",
+          |        "year" : 1990
           |      }
           |    },
           |    {
@@ -282,8 +375,8 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
           |        "Book"
           |      ],
           |      "properties" : {
-          |        "title" : "'The Circle'",
-          |        "year" : "2013"
+          |        "title" : "The Circle",
+          |        "year" : 2013
           |      }
           |    }
           |  ],
@@ -294,7 +387,7 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
           |      "target" : 10,
           |      "type" : "READS",
           |      "properties" : {
-          |        "recommends" : "true"
+          |        "recommends" : true
           |      }
           |    },
           |    {
@@ -303,7 +396,7 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
           |      "target" : 40,
           |      "type" : "READS",
           |      "properties" : {
-          |        "recommends" : "true"
+          |        "recommends" : true
           |      }
           |    },
           |    {
@@ -312,7 +405,7 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
           |      "target" : 30,
           |      "type" : "READS",
           |      "properties" : {
-          |        "recommends" : "true"
+          |        "recommends" : true
           |      }
           |    },
           |    {
@@ -321,7 +414,7 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
           |      "target" : 20,
           |      "type" : "READS",
           |      "properties" : {
-          |        "recommends" : "false"
+          |        "recommends" : false
           |      }
           |    },
           |    {
@@ -330,7 +423,7 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
           |      "target" : 2,
           |      "type" : "KNOWS",
           |      "properties" : {
-          |        "since" : "2017"
+          |        "since" : 2017
           |      }
           |    },
           |    {
@@ -339,7 +432,7 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
           |      "target" : 3,
           |      "type" : "KNOWS",
           |      "properties" : {
-          |        "since" : "2016"
+          |        "since" : 2016
           |      }
           |    },
           |    {
@@ -348,7 +441,7 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
           |      "target" : 4,
           |      "type" : "KNOWS",
           |      "properties" : {
-          |        "since" : "2015"
+          |        "since" : 2015
           |      }
           |    },
           |    {
@@ -357,7 +450,7 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
           |      "target" : 3,
           |      "type" : "KNOWS",
           |      "properties" : {
-          |        "since" : "2016"
+          |        "since" : 2016
           |      }
           |    },
           |    {
@@ -366,7 +459,7 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
           |      "target" : 4,
           |      "type" : "KNOWS",
           |      "properties" : {
-          |        "since" : "2013"
+          |        "since" : 2013
           |      }
           |    },
           |    {
@@ -375,7 +468,7 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
           |      "target" : 4,
           |      "type" : "KNOWS",
           |      "properties" : {
-          |        "since" : "2016"
+          |        "since" : 2016
           |      }
           |    },
           |    {
@@ -404,6 +497,8 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
 
   private case class Row1(foo: String)
   private case class Row3(foo: String, v: Long, veryLongColumnNameWithBoolean: Boolean)
+  private case class ListRow(strings: Seq[String], integers: Seq[Long], booleans: Seq[Boolean])
+  private case class MapRow(strings: Map[String, String], integers: Map[String, Long], booleans: Map[String, Boolean])
 
   private def headerOf(fields: Symbol*): RecordHeader = {
     val value1 = fields.map(f => OpaqueField(Var(f.name)(CTNode)))
