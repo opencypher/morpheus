@@ -26,7 +26,7 @@ abstract class TreeNode[T <: TreeNode[T]] extends Product with Traversable[T] {
   def children: Seq[T] = Seq.empty
 
   // Optimization: Cache hash code, speeds up repeated computations over high trees.
-  override lazy val hashCode = MurmurHash3.productHash(this)
+  override lazy val hashCode: Int = MurmurHash3.productHash(this)
 
   def arity: Int = children.length
 
@@ -51,51 +51,82 @@ abstract class TreeNode[T <: TreeNode[T]] extends Product with Traversable[T] {
     children.foreach(_.foreach(f))
   }
 
-  def containsTree(n: T): Boolean = {
-    if (self == n) true else children.exists(_.containsTree(n))
+  /**
+    * Checks if the given tree is contained within that tree or is the tree itself.
+    *
+    * @param other other tree
+    * @return true, iff `other` is contained in that tree
+    */
+  def containsTree(other: T): Boolean = {
+    if (self == other) true else children.exists(_.containsTree(other))
   }
 
+  /**
+    * Applies the given [[org.opencypher.caps.impl.common.TreeNode.RewriteRule]] starting from the
+    * leafs of that tree.
+    *
+    * @param rule rewrite rule
+    * @return rewritten tree
+    */
   def transformUp(rule: TreeNode.RewriteRule[T]): T = {
     val afterChildren = withNewChildren(children.map(_.transformUp(rule)))
     if (rule.isDefinedAt(afterChildren)) rule(afterChildren) else afterChildren
   }
 
+  /**
+    * Applies the given [[org.opencypher.caps.impl.common.TreeNode.RewriteRule]] starting from the
+    * root of that tree.
+    *
+    * @note Note that the applied rule must not insert new parent nodes.
+    *
+    * @param rule rewrite rule
+    * @return rewritten tree
+    */
   def transformDown(rule: TreeNode.RewriteRule[T]): T = {
     val afterSelf = if (rule.isDefinedAt(self)) rule(self) else self
     afterSelf.withNewChildren(afterSelf.children.map(_.transformDown(rule)))
   }
 
-  protected def prefix(depth: Int): String = ("· " * depth) + "|-"
-
+  /**
+    * Prints the tree node and its children recursively in a tree-style layout.
+    *
+    * @param depth indentation depth used by the recursive call
+    * @return tree-style representation of that node and all (grand-)children
+    */
   def pretty(depth: Int = 0): String = {
 
-    val childrenString = children.foldLeft("") {
-      case (agg, s) => agg + s.pretty(depth + 1)
+    def prefix(depth: Int): String = ("· " * depth) + "|-"
+
+    val childrenString = children.foldLeft(new StringBuilder()) {
+      case (agg, s) => agg.append(s.pretty(depth + 1))
     }
 
     s"${prefix(depth)}($self)\n$childrenString"
   }
 
-  def argString: String = productIterator.filter(argFilter).flatMap {
-    case tn: TreeNode[_] if children.contains(tn)       => Nil
-    case Some(tn: TreeNode[_]) if children.contains(tn) => Nil
-    case Some(tn: TreeNode[_])                          => tn.argString :: Nil
-    case tn: TreeNode[_]                                => tn.argString :: Nil
-    case iter: Iterable[_] if iter.isEmpty              => Nil
-    case seq: Seq[_]                                    => seq.mkString("[", ", ", "]") :: Nil
-    case set: Set[_]                                    => set.toSeq.mkString("{", ", ", "}") :: Nil
-    case array: Array[_] if array.isEmpty               => Nil
-    case array: Array[_]                                => array.mkString("[", ", ", "]") :: Nil
-    case null                                           => Nil
-    case None                                           => Nil
-    case Some(null)                                     => Nil
-    case Some(any)                                      => any :: Nil
-    case other                                          => other :: Nil
-  }.mkString(", ")
+  /**
+    * Concatenates all arguments of that tree node excluding the children.
+    *
+    * @return argument string
+    */
+  def argString: String = productIterator
+    .filter(argFilter)
+    .map {
+      case tn: TreeNode[_] => tn.argString
+      case other           => other
+    }.mkString(", ")
 
-  def argFilter: Any => Boolean = _ => true
+  /**
+    * Filters class arguments that must not be printed. Can be overridden by concrete tree nodes.
+    *
+    * @return filter for class arguments
+    */
+  def argFilter: Any => Boolean = {
+    case tn: TreeNode[_] if children.contains(tn) => false
+    case _ => true
+  }
 
-  override def toString(): String = productPrefix
+  override def toString(): String = getClass.getSimpleName
 }
 
 object TreeNode {

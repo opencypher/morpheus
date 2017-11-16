@@ -33,7 +33,7 @@ private[spark] abstract class PhysicalOperator extends CaseClassTreeNode[Physica
     context.resolve(uri).getOrElse(Raise.graphNotFound(uri))
   }
 
-  override def toString() = s"${super.toString()}{($argString)}"
+  override def toString() = s"${super.toString()}($argString)"
 
   override def argFilter: Any => Boolean = {
     case _:RecordHeader => false
