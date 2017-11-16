@@ -28,6 +28,7 @@ import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSResult, CAPSSe
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.api.util.parsePathOrURI
 import org.opencypher.caps.api.value.CypherValue
+import org.opencypher.caps.demo.Configuration.{DefaultLabel, DefaultType}
 import org.opencypher.caps.impl.convert.fromJavaType
 import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.convert.toSparkType
@@ -46,7 +47,6 @@ trait GraphMatchingTestSupport {
 
   self: BaseTestSuite with SparkSessionFixture with CAPSSessionFixture =>
 
-  val DEFAULT_LABEL = "DEFAULT"
   val sparkSession: SparkSession = session
 
   implicit class GraphsMatcher(graphs: Map[String, CAPSGraph]) {
@@ -76,8 +76,8 @@ trait GraphMatchingTestSupport {
     outer =>
 
     private val queryGraph = new GDLHandler.Builder()
-      .setDefaultEdgeLabel(DEFAULT_LABEL)
-      .setDefaultVertexLabel(DEFAULT_LABEL)
+      .setDefaultVertexLabel(DefaultLabel.get())
+      .setDefaultEdgeLabel(DefaultType.get())
       .buildFromString(gdl)
 
     private val schema: Schema = {

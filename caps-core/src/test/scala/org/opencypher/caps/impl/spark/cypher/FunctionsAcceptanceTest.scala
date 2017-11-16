@@ -16,6 +16,7 @@
 package org.opencypher.caps.impl.spark.cypher
 
 import org.opencypher.caps.api.value.{CypherList, CypherMap}
+import org.opencypher.caps.demo.Configuration.DefaultType
 import org.opencypher.caps.test.CAPSTestSuite
 
 import scala.collection.immutable.Bag
@@ -36,13 +37,14 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
   }
 
   test("type()") {
-    val given = TestGraph("()-[:KNOWS]->()-[:HATES]->()")
+    val given = TestGraph("()-[:KNOWS]->()-[:HATES]->()-->()")
 
     val result = given.cypher("MATCH ()-[r]->() RETURN type(r)")
 
     result.records.toMaps should equal(Bag(
       CypherMap("type(r)" -> "KNOWS"),
-      CypherMap("type(r)" -> "HATES")
+      CypherMap("type(r)" -> "HATES"),
+      CypherMap("type(r)" -> DefaultType.get())
     ))
   }
 
@@ -94,8 +96,7 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
     ))
   }
 
-  ignore("unlabeled nodes") {
-    // TODO: Support unlabeled nodes in GDL
+  test("unlabeled nodes") {
     val given = TestGraph("(:A), (:C:D), ()")
 
     val result = given.cypher("MATCH (a) RETURN labels(a)")
@@ -146,7 +147,7 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
       CypherMap("s" -> 2),
       CypherMap("s" -> 2),
       CypherMap("s" -> 1),
-      CypherMap("s" -> 1) // TODO: GDL does not support nodes without label -- has default here
+      CypherMap("s" -> 0)
     ))
   }
 

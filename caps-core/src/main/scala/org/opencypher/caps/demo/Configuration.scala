@@ -49,6 +49,10 @@ object Configuration {
     def set(): Unit = set(true.toString)
   }
 
+  object DefaultLabel extends ConfigOption("caps.defaultLabel", "")(Some(_))
+
+  object DefaultType extends ConfigOption("caps.defaultType", "")(Some(_))
+
   val conf = Seq(MasterAddress, Logging)
 
   def print(): Unit = {
