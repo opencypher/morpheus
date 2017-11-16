@@ -19,9 +19,10 @@ import java.net.URI
 
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.impl.common.ModifiedProduct
 import org.opencypher.caps.ir.api.pattern._
 
-trait IRElement {
+trait IRElement extends Product {
   def name: String
   def escapedName: String = name.replaceAll("`", "``")
 }
@@ -29,14 +30,23 @@ trait IRElement {
 object IRField {
   def relTypes(field: IRField): Set[String] = field.cypherType match {
     case CTRelationship(types) => types
-    case _ => Set.empty
+    case _                     => Set.empty
   }
 }
 
-final case class IRField(name: String)(val cypherType: CypherType = CTWildcard) extends IRElement {
+final case class IRField(name: String, cypherType: CypherType = CTWildcard) extends ModifiedProduct with IRElement {
   override def toString = s"$name :: $cypherType"
 
   def toTypedTuple: (String, CypherType) = name -> cypherType
+
+  // Exclude cypherType product parameter from equals and hashCode
+  override protected def includedInComparisons(p: Any): Boolean = {
+    p match {
+      case _: CypherType => false
+      case _ => true
+    }
+  }
+
 }
 
 trait IRGraph extends IRElement {

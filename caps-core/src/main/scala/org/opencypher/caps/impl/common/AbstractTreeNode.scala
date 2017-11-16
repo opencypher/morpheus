@@ -15,57 +15,64 @@
  */
 package org.opencypher.caps.impl.common
 
+import org.opencypher.caps.impl.spark.exception.Raise
+
 import scala.reflect.ClassTag
 
 /**
   * Class that implements the ```children``` and ```withNewChildren``` methods using reflection when implementing
-  * ```TreeNode``` with a case class.
+  * ```TreeNode``` with a case class or case object.
   *
   * Requirements: All child nodes need to be individual constructor parameters and their order
   * in children is their oder in the constructor. Every constructor parameter of type ```T``` is
   * assumed to be a child node.
   */
-abstract class CaseClassTreeNode[T <: TreeNode[T] : ClassTag] extends TreeNode[T] {
+abstract class AbstractTreeNode[T <: TreeNode[T] : ClassTag] extends TreeNode[T] {
   self: T =>
 
-  override lazy val children: Seq[T] = productIterator.toSeq.collect { case t: T => t }
+  override lazy val children: Seq[T] = productIterator.toVector.collect { case t: T => t }
 
   override def withNewChildren(newChildren: Seq[T]): T = {
-    if (children == newChildren) {
+    val newAsVector = newChildren.toVector
+    if (children == newAsVector) {
       self
     } else {
-      require(children.length == newChildren.length)
-      val substitutions = children.toList.zip(newChildren)
+      require(children.length == newAsVector.length,
+        s"invalid children for $productPrefix: ${newAsVector.mkString(", ")}")
+      val substitutions = children.toList.zip(newAsVector)
       val (updatedConstructorParams, _) = productIterator.foldLeft((Vector.empty[Any], substitutions)) {
         case ((result, remainingSubs), next) =>
           remainingSubs match {
-            case (oldC, newC) :: tail if next == oldC =>  (result :+ newC, tail)
+            case (oldC, newC) :: tail if next == oldC => (result :+ newC, tail)
             case _ => (result :+ next, remainingSubs)
           }
       }
-      val copyMethod = CaseClassTreeNode.copyMethod(productPrefix, self)
-      copyMethod(updatedConstructorParams: _*).asInstanceOf[T]
+      val copyMethod = AbstractTreeNode.copyMethod(getClass.getName, self)
+      try {
+        copyMethod(updatedConstructorParams: _*).asInstanceOf[T]
+      } catch {
+        case e: Exception =>
+          Raise.invalidArgument(s"valid constructor arguments for $productPrefix", s"${updatedConstructorParams.mkString(", ")}\n" +
+            s"Original exception: $e\n" +
+            s"Copy method: $copyMethod")
+      }
     }
   }
-
-  /**
-    * Cache class name as product prefix for fast retrieval of the copy method.
-    */
-  override lazy final val productPrefix: String = getClass.getName
 
 }
 
 /**
   * Caches an instance of the copy method per case class type.
   */
-object CaseClassTreeNode {
+object AbstractTreeNode {
+
   import java.util.concurrent.ConcurrentHashMap
 
   import collection.JavaConverters._
   import scala.reflect.runtime.universe
   import scala.reflect.runtime.universe._
 
-  protected def copyMethod[T <: TreeNode[T]](className: String, instance: CaseClassTreeNode[T]): MethodMirror = {
+  protected def copyMethod[T <: TreeNode[T]](className: String, instance: AbstractTreeNode[T]): MethodMirror = {
     cachedCopyMethods.getOrElse(className, {
       val instanceMirror = mirror.reflect(instance)
       val tpe = instanceMirror.symbol.asType.toType

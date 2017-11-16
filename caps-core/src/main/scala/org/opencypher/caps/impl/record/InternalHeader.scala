@@ -24,6 +24,7 @@ import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.common.RefCollection
 import org.opencypher.caps.common.RefCollection.AbstractRegister
+import org.opencypher.caps.impl.common.AsCode
 import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.syntax.expr._
 import org.opencypher.caps.impl.syntax.register._
@@ -57,15 +58,16 @@ final case class InternalHeader protected[caps](
   def slotsByName(name: String): Seq[RecordSlot] = {
     val filtered = exprSlots.filterKeys {
       case inner: Var => inner.name == name
-      case Property(v: Var, _) => v.name == name
-      case HasLabel(v: Var, _) => v.name == name
+      case Property(v: Var, _, _) => v.name == name
+      case HasLabel(v: Var, _, _) => v.name == name
       case _ => false
     }
     filtered.values.headOption.getOrElse(Vector.empty).flatMap(ref => slotContents.lookup(ref).map(RecordSlot(ref, _)))
   }
 
-  def slotsFor(expr: Expr): Seq[RecordSlot] =
+  def slotsFor(expr: Expr): Seq[RecordSlot] = {
     exprSlots.getOrElse(expr, Vector.empty).flatMap(ref => slotContents.lookup(ref).map(RecordSlot(ref, _)))
+  }
 
   def +(addedContent: SlotContent): InternalHeader =
     addContent(addedContent).runS(self).value

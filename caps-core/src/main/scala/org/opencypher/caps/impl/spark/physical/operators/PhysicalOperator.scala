@@ -21,12 +21,12 @@ import org.apache.spark.sql.{Column, DataFrame}
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.common.{CaseClassTreeNode, TreeNode}
+import org.opencypher.caps.impl.common.AbstractTreeNode
 import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
 
-private[spark] abstract class PhysicalOperator extends CaseClassTreeNode[PhysicalOperator] {
+private[spark] abstract class PhysicalOperator extends AbstractTreeNode[PhysicalOperator] {
   def execute(implicit context: RuntimeContext): PhysicalResult
 
   protected def resolve(uri: URI)(implicit context: RuntimeContext): CAPSGraph = {
@@ -36,7 +36,7 @@ private[spark] abstract class PhysicalOperator extends CaseClassTreeNode[Physica
   override def toString() = s"${super.toString()}($argString)"
 
   override def argFilter: Any => Boolean = {
-    case _:RecordHeader => false
+    case _: RecordHeader => false
     case other => super.argFilter(other)
   }
 }
@@ -47,10 +47,10 @@ object PhysicalOperator {
   def columnName(content: SlotContent): String = SparkColumnName.of(content)
 
   def joinRecords(
-      header: RecordHeader,
-      joinSlots: Seq[(RecordSlot, RecordSlot)],
-      joinType: String = "inner",
-      deduplicate: Boolean = false)(lhs: CAPSRecords, rhs: CAPSRecords): CAPSRecords = {
+    header: RecordHeader,
+    joinSlots: Seq[(RecordSlot, RecordSlot)],
+    joinType: String = "inner",
+    deduplicate: Boolean = false)(lhs: CAPSRecords, rhs: CAPSRecords): CAPSRecords = {
 
     val lhsData = lhs.toDF()
     val rhsData = rhs.toDF()
@@ -61,8 +61,8 @@ object PhysicalOperator {
   }
 
   def joinDFs(lhsData: DataFrame, rhsData: DataFrame, header: RecordHeader, joinCols: Seq[(Column, Column)])(
-      joinType: String,
-      deduplicate: Boolean)(implicit caps: CAPSSession): CAPSRecords = {
+    joinType: String,
+    deduplicate: Boolean)(implicit caps: CAPSSession): CAPSRecords = {
 
     val joinExpr = joinCols.map { case (l, r) => l === r }
       .reduce(_ && _)

@@ -69,8 +69,6 @@ final case class ExpandSource(first: PhysicalOperator,
     PhysicalResult(joinedRecords, first.graphs ++ second.graphs ++ third.graphs)
   }
 
-//  override def equals(obj: scala.Any): Boolean = super.equals(obj)
-
 }
 
 // Expands a pattern like (s)-[r*n..m]->(t) where s is solved by first, r is solved by second and t is solved by third
@@ -117,7 +115,7 @@ final case class BoundedVarExpand(first: PhysicalOperator,
     val filtered = withExtendedArray.filter(!arrayContains)
 
     // TODO: Try and get rid of the Var rel here
-    val endNodeIdColNameOfJoinedRel = columnName(ProjectedExpr(EndNode(rel)(CTNode)))
+    val endNodeIdColNameOfJoinedRel = columnName(ProjectedExpr(EndNode(rel, CTNode)))
 
     val columns = keep ++ Seq(listTempColName, endNodeIdColNameOfJoinedRel)
     val withoutRelProperties = filtered.select(columns.head, columns.tail: _*) // drops joined columns from relationship table

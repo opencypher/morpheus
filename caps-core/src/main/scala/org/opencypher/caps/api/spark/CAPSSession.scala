@@ -187,7 +187,7 @@ sealed class CAPSSession private (
   def alias(graph: Graph, in: Records, alias: (Expr, Var), queryParameters: Map[String, CypherValue]): Records = {
     val (expr, v) = alias
     val scan = planStart(graph, in.header.fields)
-    val select = producer.projectField(IRField(v.name)(v.cypherType), expr, scan)
+    val select = producer.projectField(IRField(v.name, v.cypherType), expr, scan)
     plan(graph, in, queryParameters, select).records
   }
 

@@ -49,7 +49,7 @@ class CAPSScanGraph(val scans: Seq[GraphScan], val schema: Schema)
     new CAPSScanGraph(scans.map(f), schema)
 
   override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
-    val node = Var(name)(nodeCypherType)
+    val node = Var(name, nodeCypherType)
     val selectedScans = nodeEntityScans.scans(nodeCypherType)
     val schema = selectedScans.map(_.schema).foldLeft(Schema.empty)(_ ++ _)
     val targetNodeHeader = RecordHeader.nodeFromSchema(node, schema)
@@ -60,7 +60,7 @@ class CAPSScanGraph(val scans: Seq[GraphScan], val schema: Schema)
   }
 
   override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
-    val rel = Var(name)(relCypherType)
+    val rel = Var(name, relCypherType)
     val selectedScans = relEntityScans.scans(relCypherType)
     val schema = selectedScans.map(_.schema).foldLeft(Schema.empty)(_ ++ _)
     val targetRelHeader = RecordHeader.relationshipFromSchema(rel, schema)

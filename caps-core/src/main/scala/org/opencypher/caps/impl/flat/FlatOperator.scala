@@ -17,12 +17,11 @@ package org.opencypher.caps.impl.flat
 
 import org.opencypher.caps.api.expr.{Aggregator, Expr, Var}
 import org.opencypher.caps.api.record.{OpaqueField, RecordHeader}
+import org.opencypher.caps.impl.common.AbstractTreeNode
 import org.opencypher.caps.impl.logical.LogicalGraph
 import org.opencypher.caps.ir.api.block.SortItem
 
-sealed trait FlatOperator {
-  def isLeaf = false
-
+sealed abstract class FlatOperator extends AbstractTreeNode[FlatOperator] {
   def header: RecordHeader
 
   def sourceGraph: LogicalGraph

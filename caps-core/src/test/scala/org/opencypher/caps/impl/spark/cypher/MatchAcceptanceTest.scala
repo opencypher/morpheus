@@ -16,11 +16,30 @@
 package org.opencypher.caps.impl.spark.cypher
 
 import org.opencypher.caps.api.value.CypherMap
+import org.opencypher.caps.demo.Configuration.PrintLogicalPlan
 import org.opencypher.caps.test.CAPSTestSuite
 
 import scala.collection.Bag
 
 class MatchAcceptanceTest extends CAPSTestSuite {
+
+  test("match a trivial query") {
+    // Given
+    val given = TestGraph(
+      """
+        |(p:Person {firstName: "Alice", lastName: "Foo"})
+      """.stripMargin)
+
+    // When
+    val result = given.cypher(
+      """
+        |MATCH (a:Person)
+        |RETURN a.firstName
+      """.stripMargin)
+
+    // Then
+    result.records.toMaps should equal(Bag(CypherMap("a.firstName" -> "Alice")))
+  }
 
   test("match unknown label") {
     // Given
@@ -196,7 +215,7 @@ class MatchAcceptanceTest extends CAPSTestSuite {
     ))
 
     // TODO: Move to plan based testing
-    result.explain.plan.pretty() should include("ValueJoin(predicates = [a.name :: STRING = b.name :: STRING]")
+    result.explain.plan.pretty() should include("ValueJoin")
   }
 
   ignore("Broken start of demo query") {

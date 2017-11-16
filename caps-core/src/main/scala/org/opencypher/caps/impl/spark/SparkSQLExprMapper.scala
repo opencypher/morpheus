@@ -43,9 +43,9 @@ object SparkSQLExprMapper {
   private def getColumn(expr: Expr, header: RecordHeader, dataFrame: DataFrame)
                        (implicit context: RuntimeContext): Column = {
     expr match {
-      case p@Param(name) if p.cypherType.subTypeOf(CTList(CTAny)).maybeTrue =>
+      case p@Param(name, _) if p.cypherType.subTypeOf(CTList(CTAny)).maybeTrue =>
         udf(const(context.parameters(name)), toSparkType(p.cypherType))()
-      case Param(name) =>
+      case Param(name, _) =>
         functions.lit(toJavaType(context.parameters(name)))
       case _ =>
         verifyExpression(header, expr)
@@ -87,22 +87,22 @@ object SparkSQLExprMapper {
         Some(getColumn(expr, header, df))
 
       // predicates
-      case Equals(e1, e2) =>
+      case Equals(e1, e2, _) =>
         val lCol = getColumn(e1, header, df)
         val rCol = getColumn(e2, header, df)
         Some(lCol === rCol)
 
-      case Not(e) =>
+      case Not(e, _) =>
         apply(header, e, df) match {
           case Some(res) => Some(!res)
           case _ => Raise.notYetImplemented(s"Support for expression $e")
         }
 
-      case IsNull(e) =>
+      case IsNull(e, _) =>
         val col = getColumn(e, header, df)
         Some(col.isNull)
 
-      case IsNotNull(e) =>
+      case IsNotNull(e, _) =>
         val col = getColumn(e, header, df)
         Some(col.isNotNull)
 
@@ -138,7 +138,7 @@ object SparkSQLExprMapper {
           }
         }
 
-      case In(lhs, rhs) =>
+      case In(lhs, rhs, _) =>
         verifyExpression(header, expr)
 
         val lhsColumn = getColumn(lhs, header, df)
@@ -152,8 +152,8 @@ object SparkSQLExprMapper {
 
         Some(inPred)
 
-      case HasType(rel, relType) =>
-        val col = getColumn(OfType(rel)(), header, df)
+      case HasType(rel, relType, _) =>
+        val col = getColumn(OfType(rel), header, df)
         Some(col === relType.name)
 
       case h: HasLabel =>
@@ -207,7 +207,7 @@ object SparkSQLExprMapper {
       case labels: Labels =>
         verifyExpression(header, expr)
 
-        val node = Var(columnName(header.slotsFor(labels.expr).head))(CTNode)
+        val node = Var(columnName(header.slotsFor(labels.expr).head), CTNode)
         val labelExprs = header.labels(node)
         val labelColumns = labelExprs.map(getColumn(_, header, df))
         val labelNames = labelExprs.map(_.label)
@@ -217,14 +217,14 @@ object SparkSQLExprMapper {
       case keys: Keys =>
         verifyExpression(header, expr)
 
-        val node = Var(columnName(header.slotsFor(keys.expr).head))(CTNode)
+        val node = Var(columnName(header.slotsFor(keys.expr).head), CTNode)
         val propertyExprs = header.properties(node)
         val propertyColumns = propertyExprs.map(getColumn(_, header, df))
         val keyNames = propertyExprs.map(_.key.name)
         val keysUDF = udf(getNodeKeys(keyNames), ArrayType(StringType, containsNull = false))
         Some(keysUDF(functions.array(propertyColumns: _*)))
 
-      case Type(inner) =>
+      case Type(inner, _) =>
         verifyExpression(header, expr)
 
         inner match {
@@ -237,17 +237,17 @@ object SparkSQLExprMapper {
             Raise.notYetImplemented("type() of non-variables")
         }
 
-      case StartNodeFunction(e) =>
+      case StartNodeFunction(e, _) =>
         verifyExpression(header, expr)
-        val rel = Var(columnName(header.slotsFor(e).head))(CTNode)
+        val rel = Var(columnName(header.slotsFor(e).head), CTNode)
         Some(getColumn(header.sourceNodeSlot(rel).content.key, header, df))
 
-      case EndNodeFunction(e) =>
+      case EndNodeFunction(e, _) =>
         verifyExpression(header, expr)
-        val rel = Var(columnName(header.slotsFor(e).head))(CTNode)
+        val rel = Var(columnName(header.slotsFor(e).head), CTNode)
         Some(getColumn(header.targetNodeSlot(rel).content.key, header, df))
 
-      case ToFloat(e) =>
+      case ToFloat(e, _) =>
         verifyExpression(header, expr)
         Some(getColumn(e, header, df).cast(DoubleType))
 

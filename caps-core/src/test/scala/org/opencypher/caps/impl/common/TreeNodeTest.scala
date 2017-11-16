@@ -114,7 +114,7 @@ class TreeNodeTest extends FunSuite with Matchers {
 //    )
 //  }
 
-  abstract class Expr extends CaseClassTreeNode[Expr]
+  abstract class Expr extends AbstractTreeNode[Expr]
   case class Add(left: Expr, right: Expr) extends Expr
   case class Number(v: Int) extends Expr
   case class Noop(in: Expr) extends Expr

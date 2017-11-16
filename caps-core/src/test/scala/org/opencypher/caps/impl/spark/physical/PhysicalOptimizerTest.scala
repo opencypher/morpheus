@@ -35,22 +35,22 @@ class PhysicalOptimizerTest extends CAPSTestSuite {
       CartesianProduct(
         Scan(
           Start(emptyRecords, emptyGraph),
-          emptyGraph, Var("C")(CTNode)
+          emptyGraph, Var("C", CTNode)
         ),
         Scan(
           Start(emptyRecords, emptyGraph),
-          emptyGraph, Var("B")(CTNode)
+          emptyGraph, Var("B", CTNode)
         ),
         RecordHeader.empty
       ),
       CartesianProduct(
         Scan(
           Start(emptyRecords, emptyGraph),
-          emptyGraph, Var("C")(CTNode)
+          emptyGraph, Var("C", CTNode)
         ),
         Scan(
           Start(emptyRecords, emptyGraph),
-          emptyGraph, Var("B")(CTNode)
+          emptyGraph, Var("B", CTNode)
         ),
         RecordHeader.empty
       ),
@@ -65,20 +65,20 @@ class PhysicalOptimizerTest extends CAPSTestSuite {
         Cache(
           CartesianProduct(
             Scan(
-              Start(emptyRecords, emptyGraph), emptyGraph, Var("C")(CTNode)
+              Start(emptyRecords, emptyGraph), emptyGraph, Var("C", CTNode)
             ),
             Scan(
-              Start(emptyRecords, emptyGraph), emptyGraph, Var("B")(CTNode)
+              Start(emptyRecords, emptyGraph), emptyGraph, Var("B", CTNode)
             ), RecordHeader.empty
           )
         ),
         Cache(
           CartesianProduct(
             Scan(
-              Start(emptyRecords, emptyGraph), emptyGraph, Var("C")(CTNode)
+              Start(emptyRecords, emptyGraph), emptyGraph, Var("C", CTNode)
             ),
             Scan(
-              Start(emptyRecords, emptyGraph), emptyGraph, Var("B")(CTNode)
+              Start(emptyRecords, emptyGraph), emptyGraph, Var("B", CTNode)
             ), RecordHeader.empty
           )
         ), RecordHeader.empty

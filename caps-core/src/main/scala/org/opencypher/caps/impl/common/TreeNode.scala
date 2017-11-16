@@ -100,8 +100,7 @@ abstract class TreeNode[T <: TreeNode[T]] extends Product with Traversable[T] {
     val childrenString = children.foldLeft(new StringBuilder()) {
       case (agg, s) => agg.append(s.pretty(depth + 1))
     }
-
-    s"${prefix(depth)}($self)\n$childrenString"
+    s"${prefix(depth)}$self($argString)\n$childrenString"
   }
 
   /**
@@ -113,7 +112,7 @@ abstract class TreeNode[T <: TreeNode[T]] extends Product with Traversable[T] {
     .filter(argFilter)
     .map {
       case tn: TreeNode[_] => tn.argString
-      case other           => other
+      case other           => AsCode(other)
     }.mkString(", ")
 
   /**
