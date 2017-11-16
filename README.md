@@ -30,7 +30,7 @@ The Spark representations are accessible and can be converted to representations
 
 CAPS supports a subset of Cypher <!-- TODO: WIKI supported features --> and is the first implementation of [multiple graphs](https://github.com/boggle/openCypher/blob/CIP2017-06-18-multiple-graphs/cip/1.accepted/CIP2017-06-18-multiple-graphs.adoc) and graph query compositionality.
 
-CAPS currently supports importing graphs from both Neo4j and from custom [CSV format](https://github.com/opencypher/cypher-for-apache-spark/tree/master/src/test/resources/csv/sn) in HDFS.
+CAPS currently supports importing graphs from both Neo4j and from custom [CSV format](https://github.com/opencypher/cypher-for-apache-spark/tree/master/caps-core/src/test/resources/csv/sn) in HDFS.
 CAPS has a data source API that allows you to plug in custom data importers for external sources.
 
 ## CAPS Roadmap
@@ -63,6 +63,14 @@ In order to use CAPS add the following dependency to Maven:
 </dependency>
 ```
 -->
+
+### Generating API documentation (in progress)
+
+```
+mvn scala:doc
+```
+
+Documentation will be generated and placed under `caps-core/target/site/scaladocs/index.html`
 
 ### Hello CAPS
 
@@ -113,6 +121,14 @@ ResultSchema(Alice,Bob,23/01/1987)
 ResultSchema(Bob,Carol,12/12/2009)
 ```
 
+Remember to add `fork in run := true` in your `build.sbt` for scala projects; this is not CAPS
+specific, but a quirk of spark execution that will help 
+[prevent problems](https://stackoverflow.com/questions/44298847/why-do-we-need-to-add-fork-in-run-true-when-running-spark-sbt-application)
+
+### Loading CSV Data
+
+See the documentation in `org.opencypher.caps.impl.spark.io.hdfs.CsvGraphLoader`, which specifies how to structure the
+CSV and the schema mappings that describe the graph structure for the underlying data.
 
 #### Next steps
 

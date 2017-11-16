@@ -5,3 +5,9 @@ target/
 dependency-reduced-pom.xml
 version.txt
 build/test/
+
+# IDE cruft
+.settings
+caps-core/.project
+caps-core/.classpath
+.project
