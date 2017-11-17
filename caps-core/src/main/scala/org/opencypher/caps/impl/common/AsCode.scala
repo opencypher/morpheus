@@ -15,14 +15,20 @@
  */
 package org.opencypher.caps.impl.common
 
-import org.opencypher.caps.impl.spark.exception.Raise
-
-import scala.reflect.ClassTag
+import org.opencypher.caps.api.expr.Var
+import org.opencypher.caps.api.types.CypherType
 
 /**
-  * Adds quotes to strings so outputs can be pasted as object definitions.
+  * Returns a string that can be pasted as an object definition for standard case classes,
+  * some other products, collections and objects.
   */
-object AsCode extends (Any => String) {
+object AsCode {
+
+  implicit class ImplicitAsCode(a: Any) {
+    def asCode(implicit specialMappings: PartialFunction[Any, String] = Map.empty): String = {
+      anyAsCode(a)(specialMappings)
+    }
+  }
 
   def apply(a: Any): String = {
     anyAsCode(a)(Map.empty[Any, String])
@@ -32,7 +38,7 @@ object AsCode extends (Any => String) {
     anyAsCode(a)(specialMappings)
   }
 
-  private def anyAsCode(a: Any)(implicit specialMappings: Map[Any, String] = Map.empty): String = {
+  private def anyAsCode(a: Any)(implicit specialMappings: PartialFunction[Any, String] = Map.empty): String = {
     if (specialMappings.isDefinedAt(a)) specialMappings(a)
     else {
       a match {
@@ -46,16 +52,15 @@ object AsCode extends (Any => String) {
           if (!other.isInstanceOf[AnyRef]) {
             other.toString // for primitives
           } else {
-            s"${other.getClass.getSimpleName}"
-//            Raise.notYetImplemented(
-//              s"constructor code for value $other of class ${other.getClass.getSimpleName}"
-//            )
+            // Other objects are represented with their class name in lower case
+            s"${other.getClass.getSimpleName.toLowerCase}"
           }
       }
     }
   }
 
-  private def traversableAsCode(t: Traversable[_])(implicit specialMappings: Map[Any, String] = Map.empty): String = {
+  private def traversableAsCode(t: Traversable[_])(
+      implicit specialMappings: PartialFunction[Any, String] = Map.empty): String = {
     if (specialMappings.isDefinedAt(t)) specialMappings(t)
     else {
       val elementString = t.map(anyAsCode(_)).mkString(", ")
@@ -74,13 +79,18 @@ object AsCode extends (Any => String) {
     }
   }
 
-  private def productAsCode(p: Product)(implicit specialMappings: Map[Any, String] = Map.empty): String = {
+  private def productAsCode(p: Product)(implicit specialMappings: PartialFunction[Any, String] = Map.empty): String = {
     if (specialMappings.isDefinedAt(p)) specialMappings(p)
     else {
       if (p.productIterator.isEmpty) {
-        p.toString
+        if (p.isInstanceOf[CypherType]) { // Special case for cypher type
+          val name = p.getClass.getSimpleName
+          if (name.endsWith("$")) name.dropRight(1) else name
+        } else {
+          p.toString
+        }
       } else {
-        s"${p.getClass.getSimpleName}(${p.productIterator.map(anyAsCode(_)).mkString(", ")})"
+        s"${p.getClass.getSimpleName}(${p.productIterator.map(anyAsCode(_)(specialMappings)).mkString(", ")})"
       }
     }
   }
