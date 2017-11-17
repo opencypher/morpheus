@@ -95,7 +95,6 @@ abstract class TreeNode[T <: TreeNode[T]] extends Product with Traversable[T] {
     * root of that tree.
     *
     * @note Note that the applied rule must not insert new parent nodes.
-    *
     * @param rule rewrite rule
     * @return rewritten tree
     */
@@ -129,8 +128,8 @@ abstract class TreeNode[T <: TreeNode[T]] extends Product with Traversable[T] {
     productIterator
       .filter(argFilter)
       .map {
-        case tn: TreeNode[_] => tn.argString
-        case other           => AsCode(other)
+        case tn: T => tn.argString
+        case other => AsCode(other)
       }
       .mkString(", ")
 
@@ -140,9 +139,11 @@ abstract class TreeNode[T <: TreeNode[T]] extends Product with Traversable[T] {
     * @return filter for class arguments
     */
   def argFilter: Any => Boolean = {
-    case tn: TreeNode[_] if children.contains(tn) => false
-    case _                                        => true
+    case tn: T if containsChild(tn) => false
+    case _                          => true
   }
+
+  override def toString = s"${getClass.getSimpleName}${if (argString.isEmpty) "" else s"($argString)"}"
 }
 
 object TreeNode {
@@ -153,4 +154,5 @@ object TreeNode {
 
     def isDefinedAt(t: T): Boolean = rule.isDefinedAt(t)
   }
+
 }
