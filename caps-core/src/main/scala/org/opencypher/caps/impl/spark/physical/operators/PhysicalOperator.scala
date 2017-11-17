@@ -37,7 +37,7 @@ private[spark] abstract class PhysicalOperator extends AbstractTreeNode[Physical
 
   override def argFilter: Any => Boolean = {
     case _: RecordHeader => false
-    case other => super.argFilter(other)
+    case other           => super.argFilter(other)
   }
 }
 
@@ -47,10 +47,10 @@ object PhysicalOperator {
   def columnName(content: SlotContent): String = SparkColumnName.of(content)
 
   def joinRecords(
-    header: RecordHeader,
-    joinSlots: Seq[(RecordSlot, RecordSlot)],
-    joinType: String = "inner",
-    deduplicate: Boolean = false)(lhs: CAPSRecords, rhs: CAPSRecords): CAPSRecords = {
+      header: RecordHeader,
+      joinSlots: Seq[(RecordSlot, RecordSlot)],
+      joinType: String = "inner",
+      deduplicate: Boolean = false)(lhs: CAPSRecords, rhs: CAPSRecords): CAPSRecords = {
 
     val lhsData = lhs.toDF()
     val rhsData = rhs.toDF()
@@ -61,8 +61,8 @@ object PhysicalOperator {
   }
 
   def joinDFs(lhsData: DataFrame, rhsData: DataFrame, header: RecordHeader, joinCols: Seq[(Column, Column)])(
-    joinType: String,
-    deduplicate: Boolean)(implicit caps: CAPSSession): CAPSRecords = {
+      joinType: String,
+      deduplicate: Boolean)(implicit caps: CAPSSession): CAPSRecords = {
 
     val joinExpr = joinCols.map { case (l, r) => l === r }
       .reduce(_ && _)

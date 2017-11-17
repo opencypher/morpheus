@@ -37,21 +37,23 @@ private[spark] abstract class TernaryPhysicalOperator extends PhysicalOperator {
   override def execute(implicit context: RuntimeContext): PhysicalResult =
     executeTernary(first.execute, second.execute, third.execute)
 
-  def executeTernary(first: PhysicalResult, second: PhysicalResult, third: PhysicalResult)
-                    (implicit context: RuntimeContext): PhysicalResult
+  def executeTernary(first: PhysicalResult, second: PhysicalResult, third: PhysicalResult)(
+      implicit context: RuntimeContext): PhysicalResult
 }
 
 // This maps a Cypher pattern such as (s)-[r]->(t), where s is solved by first, r is solved by second and t is solved by third
-final case class ExpandSource(first: PhysicalOperator,
-                              second: PhysicalOperator,
-                              third: PhysicalOperator,
-                              source: Var,
-                              rel: Var,
-                              target: Var,
-                              header: RecordHeader) extends TernaryPhysicalOperator {
+final case class ExpandSource(
+    first: PhysicalOperator,
+    second: PhysicalOperator,
+    third: PhysicalOperator,
+    source: Var,
+    rel: Var,
+    target: Var,
+    header: RecordHeader)
+    extends TernaryPhysicalOperator {
 
-  override def executeTernary(first: PhysicalResult, second: PhysicalResult, third: PhysicalResult)
-                             (implicit context: RuntimeContext): PhysicalResult = {
+  override def executeTernary(first: PhysicalResult, second: PhysicalResult, third: PhysicalResult)(
+      implicit context: RuntimeContext): PhysicalResult = {
     val sourceSlot = first.records.header.slotFor(source)
     val sourceSlotInRel = second.records.header.sourceNodeSlot(rel)
     assertIsNode(sourceSlot)
@@ -74,20 +76,22 @@ final case class ExpandSource(first: PhysicalOperator,
 // Expands a pattern like (s)-[r*n..m]->(t) where s is solved by first, r is solved by second and t is solved by third
 // this performs m joins with second to step all steps, then drops n of these steps
 // edgeList is what is bound to r; a list of relationships (currently just the ids)
-final case class BoundedVarExpand(first: PhysicalOperator,
-                                  second: PhysicalOperator,
-                                  third: PhysicalOperator,
-                                  rel: Var,
-                                  edgeList: Var,
-                                  target: Var,
-                                  initialEndNode: Var,
-                                  lower: Int,
-                                  upper: Int,
-                                  header: RecordHeader,
-                                  isExpandInto: Boolean) extends TernaryPhysicalOperator {
+final case class BoundedVarExpand(
+    first: PhysicalOperator,
+    second: PhysicalOperator,
+    third: PhysicalOperator,
+    rel: Var,
+    edgeList: Var,
+    target: Var,
+    initialEndNode: Var,
+    lower: Int,
+    upper: Int,
+    header: RecordHeader,
+    isExpandInto: Boolean)
+    extends TernaryPhysicalOperator {
 
-  override def executeTernary(first: PhysicalResult, second: PhysicalResult, third: PhysicalResult)
-                             (implicit context: RuntimeContext): PhysicalResult = {
+  override def executeTernary(first: PhysicalResult, second: PhysicalResult, third: PhysicalResult)(
+      implicit context: RuntimeContext): PhysicalResult = {
     val expanded = expand(first.records, second.records)
 
     PhysicalResult(finalize(expanded, third.records), first.graphs ++ second.graphs ++ third.graphs)

@@ -46,9 +46,11 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   def select(fields: IndexedSeq[Var], graphs: Set[String], in: FlatOperator): Select = {
-    val fieldContents = fields.map { field => in.header.slotsFor(field).head.content }
+    val fieldContents = fields.map { field =>
+      in.header.slotsFor(field).head.content
+    }
     val exprContents = in.header.contents.collect {
-      case content@ProjectedExpr(expr) if (expr.dependencies -- fields).isEmpty => content
+      case content @ ProjectedExpr(expr) if (expr.dependencies -- fields).isEmpty => content
     }
     val finalContents = fieldContents ++ exprContents
 
@@ -99,9 +101,9 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
   @tailrec
   private def relTypeFromList(t: CypherType): Set[String] = t match {
-    case l: CTList => relTypeFromList(l.elementType)
+    case l: CTList         => relTypeFromList(l.elementType)
     case r: CTRelationship => r.types
-    case _ => Raise.impossible()
+    case _                 => Raise.impossible()
   }
 
   def varLengthEdgeScan(edgeList: Var, prev: FlatOperator): EdgeScan = {
@@ -122,15 +124,20 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     val (newHeader, result) = in.header.update(addContent(it))
 
     result match {
-      case _: Found[_] => in
-      case _: Replaced[_] => Alias(it.expr, it.alias.get, in, newHeader)
-      case _: Added[_] => Project(it.expr, in, newHeader)
+      case _: Found[_]       => in
+      case _: Replaced[_]    => Alias(it.expr, it.alias.get, in, newHeader)
+      case _: Added[_]       => Project(it.expr, in, newHeader)
       case f: FailedToAdd[_] => Raise.slotNotAdded(f.toString)
     }
   }
 
-  def expandSource(source: Var, rel: Var, target: Var, schema: Schema,
-                   sourceOp: FlatOperator, targetOp: FlatOperator): FlatOperator = {
+  def expandSource(
+      source: Var,
+      rel: Var,
+      target: Var,
+      schema: Schema,
+      sourceOp: FlatOperator,
+      targetOp: FlatOperator): FlatOperator = {
     val relHeader = RecordHeader.relationshipFromSchema(rel, schema)
 
     val expandHeader = sourceOp.header ++ relHeader ++ targetOp.header
@@ -146,7 +153,10 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     ExpandInto(source, rel, target, sourceOp, expandHeader, relHeader)
   }
 
-  def valueJoin(lhs: FlatOperator, rhs: FlatOperator, predicates: Set[org.opencypher.caps.api.expr.Equals]): FlatOperator = {
+  def valueJoin(
+      lhs: FlatOperator,
+      rhs: FlatOperator,
+      predicates: Set[org.opencypher.caps.api.expr.Equals]): FlatOperator = {
     ValueJoin(lhs, rhs, predicates, lhs.header ++ rhs.header)
   }
 
@@ -170,9 +180,16 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     InitVarExpand(source, edgeList, endNodeId, in, header)
   }
 
-  def boundedVarExpand(edge: Var, edgeList: Var, target: Var, lower: Int, upper: Int,
-                       sourceOp: InitVarExpand, edgeOp: FlatOperator, targetOp: FlatOperator,
-                       isExpandInto: Boolean) : FlatOperator = {
+  def boundedVarExpand(
+      edge: Var,
+      edgeList: Var,
+      target: Var,
+      lower: Int,
+      upper: Int,
+      sourceOp: InitVarExpand,
+      edgeOp: FlatOperator,
+      targetOp: FlatOperator,
+      isExpandInto: Boolean): FlatOperator = {
 
     val (initHeader, _) = sourceOp.in.header.update(addContent(OpaqueField(edgeList)))
     val header = initHeader ++ targetOp.header
