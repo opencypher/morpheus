@@ -15,9 +15,10 @@
  */
 package org.opencypher.caps.impl.common
 
+import scala.reflect.ClassTag
 import scala.util.hashing.MurmurHash3
 
-abstract class TreeNode[T <: TreeNode[T]] extends Product with Traversable[T] {
+abstract class TreeNode[T <: TreeNode[T]: ClassTag] extends Product with Traversable[T] {
 
   self: T =>
 
