@@ -15,9 +15,9 @@
  */
 package org.opencypher.caps.impl.logical
 
-import org.opencypher.caps.api.expr.{Expr, Var}
+import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.types._
+import org.opencypher.caps.api.types.{CTNode, _}
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.impl.IrTestSuite
 
@@ -30,9 +30,18 @@ class LogicalOptimizerTest extends IrTestSuite {
   val logicalGraph = LogicalExternalGraph(testGraph.name, null, Schema.empty)
   val schema = Schema.empty
 
+//  //Helper to create nicer expected results with `asCode`
+//  implicit val specialMappings = Map[Any, String](
+//    schema -> "schema",
+//    emptySqm -> "emptySqm",
+//    logicalGraph -> "logicalGraph",
+//    emptySqm -> "emptySqm",
+//    (CTNode: CTNode) -> "CTNode"
+//  )
+
   def plannerContext(schema: Schema) = LogicalPlannerContext(schema, Set.empty, (_) => testGraphSource)
 
-  ignore("rewrite missing label scan to empty records") {
+  test("rewrite missing label scan to empty records") {
     val query = """
                   | MATCH (a:Animal)
                   | RETURN a""".stripMargin
@@ -40,18 +49,21 @@ class LogicalOptimizerTest extends IrTestSuite {
     val logicalOptimizer = new LogicalOptimizer(producer)
     val optimizedLogicalPlan = logicalOptimizer(plan)(plannerContext(schema))
 
-    optimizedLogicalPlan should equal(
-      Select(Vector(Var("a", CTNode)), Set(),
-        EmptyRecords(Set(Var("a", CTNode)),
-          SetSourceGraph(logicalGraph,
-            Start(logicalGraph, Set(), emptySqm)
-          , emptySqm)
-        , emptySqm)
-      , emptySqm)
+    val expected = Select(
+      Vector(Var("a", CTNode(Set("Animal")))),
+      Set(),
+      EmptyRecords(
+        Set(Var("a", CTNode(Set("Animal")))),
+        SetSourceGraph(logicalGraph, Start(logicalGraph, Set(), emptySqm), emptySqm),
+        SolvedQueryModel(Set(), Set(HasLabel(Var("a", CTNode(Set("Animal"))), Label("Animal"), CTBoolean)), Set())
+      ),
+      SolvedQueryModel(Set(IRField("a", CTNode)), Set(HasLabel(Var("a", CTNode), Label("Animal"), CTBoolean)), Set())
     )
+
+    optimizedLogicalPlan should structurallyEqual(expected)
   }
 
-  ignore("rewrite missing label combination") {
+  test("rewrite missing label combination") {
     val query = """
                   | MATCH (a:Animal:Astronaut)
                   | RETURN a""".stripMargin
@@ -60,15 +72,30 @@ class LogicalOptimizerTest extends IrTestSuite {
     val logicalOptimizer = new LogicalOptimizer(producer)
     val optimizedLogicalPlan = logicalOptimizer(plan)(plannerContext(schema))
 
-    optimizedLogicalPlan should equal(
-      Select(Vector(Var("a", CTNode)), Set(),
-        EmptyRecords(Set(Var("a", CTNode)),
-          SetSourceGraph(logicalGraph,
-            Start(logicalGraph, Set(), emptySqm)
-          , emptySqm)
-        , emptySqm)
-      , emptySqm)
+    val expected = Select(
+      Vector(Var("a", CTNode(Set("Animal", "Astronaut")))),
+      Set(),
+      EmptyRecords(
+        Set(Var("a", CTNode(Set("Astronaut", "Animal")))),
+        SetSourceGraph(logicalGraph, Start(logicalGraph, Set(), emptySqm), emptySqm),
+        SolvedQueryModel(
+          Set(),
+          Set(
+            HasLabel(Var("a", CTNode(Set("Astronaut", "Animal"))), Label("Astronaut"), CTBoolean),
+            HasLabel(Var("a", CTNode(Set("Astronaut", "Animal"))), Label("Animal"), CTBoolean)
+          ),
+          Set()
+        )
+      ),
+      SolvedQueryModel(
+        Set(IRField("a", CTNode)),
+        Set(
+          HasLabel(Var("a", CTNode), Label("Animal"), CTBoolean),
+          HasLabel(Var("a", CTNode), Label("Astronaut"), CTBoolean)),
+        Set())
     )
+
+    optimizedLogicalPlan should structurallyEqual(expected)
   }
 
   private def logicalPlan(query: String, schema: Schema): LogicalOperator = {
