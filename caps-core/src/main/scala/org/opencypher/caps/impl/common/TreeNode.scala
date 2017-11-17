@@ -143,8 +143,6 @@ abstract class TreeNode[T <: TreeNode[T]] extends Product with Traversable[T] {
     case tn: TreeNode[_] if children.contains(tn) => false
     case _                                        => true
   }
-
-  override def toString(): String = getClass.getSimpleName
 }
 
 object TreeNode {
