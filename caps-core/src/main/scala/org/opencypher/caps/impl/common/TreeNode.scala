@@ -25,8 +25,14 @@ abstract class TreeNode[T <: TreeNode[T]] extends Product with Traversable[T] {
 
   def children: Seq[T] = Seq.empty
 
+  /**
+    * Explicit accessor to the set of children. This allows for an implementation to cache this,
+    * which can speed up rewrites.
+    */
+  def childrenAsSet: Set[T] = children.toSet
+
   // Optimization: Cache hash code, speeds up repeated computations over high trees.
-  override lazy val hashCode: Int = MurmurHash3.productHash(this)
+  override lazy val hashCode: Int = MurmurHash3.productHash(self)
 
   def arity: Int = children.length
 
@@ -41,8 +47,9 @@ abstract class TreeNode[T <: TreeNode[T]] extends Product with Traversable[T] {
   }
 
   override def foldLeft[O](initial: O)(f: (O, T) => O): O = {
-    children.foldLeft(f(initial, this)) { case (agg, nextChild) =>
-      nextChild.foldLeft(agg)(f)
+    children.foldLeft(f(initial, this)) {
+      case (agg, nextChild) =>
+        nextChild.foldLeft(agg)(f)
     }
   }
 
@@ -59,6 +66,16 @@ abstract class TreeNode[T <: TreeNode[T]] extends Product with Traversable[T] {
     */
   def containsTree(other: T): Boolean = {
     if (self == other) true else children.exists(_.containsTree(other))
+  }
+
+  /**
+    * Checks if `other` is a direct child of this tree.
+    *
+    * @param other other tree
+    * @return true, iff `other` is a direct child of this tree
+    */
+  def containsChild(other: T): Boolean = {
+    childrenAsSet.contains(other)
   }
 
   /**
@@ -108,12 +125,14 @@ abstract class TreeNode[T <: TreeNode[T]] extends Product with Traversable[T] {
     *
     * @return argument string
     */
-  def argString: String = productIterator
-    .filter(argFilter)
-    .map {
-      case tn: TreeNode[_] => tn.argString
-      case other           => AsCode(other)
-    }.mkString(", ")
+  def argString: String =
+    productIterator
+      .filter(argFilter)
+      .map {
+        case tn: TreeNode[_] => tn.argString
+        case other           => AsCode(other)
+      }
+      .mkString(", ")
 
   /**
     * Filters class arguments that must not be printed. Can be overridden by concrete tree nodes.
@@ -122,7 +141,7 @@ abstract class TreeNode[T <: TreeNode[T]] extends Product with Traversable[T] {
     */
   def argFilter: Any => Boolean = {
     case tn: TreeNode[_] if children.contains(tn) => false
-    case _ => true
+    case _                                        => true
   }
 
   override def toString(): String = getClass.getSimpleName
@@ -130,8 +149,7 @@ abstract class TreeNode[T <: TreeNode[T]] extends Product with Traversable[T] {
 
 object TreeNode {
 
-  case class RewriteRule[T <: TreeNode[_]](rule: PartialFunction[T, T])
-    extends PartialFunction[T, T] {
+  case class RewriteRule[T <: TreeNode[_]](rule: PartialFunction[T, T]) extends PartialFunction[T, T] {
 
     def apply(t: T): T = rule.apply(t)
 

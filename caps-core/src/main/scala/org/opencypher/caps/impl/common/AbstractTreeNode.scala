@@ -20,17 +20,22 @@ import org.opencypher.caps.impl.spark.exception.Raise
 import scala.reflect.ClassTag
 
 /**
-  * Class that implements the ```children``` and ```withNewChildren``` methods using reflection when implementing
-  * ```TreeNode``` with a case class or case object.
+  * Class that implements the `children` and `withNewChildren` methods using reflection when implementing
+  * `TreeNode` with a case class or case object.
   *
   * Requirements: All child nodes need to be individual constructor parameters and their order
-  * in children is their oder in the constructor. Every constructor parameter of type ```T``` is
+  * in children is their oder in the constructor. Every constructor parameter of type `T` is
   * assumed to be a child node.
   */
 abstract class AbstractTreeNode[T <: TreeNode[T] : ClassTag] extends TreeNode[T] {
   self: T =>
 
   override lazy val children: Seq[T] = productIterator.toVector.collect { case t: T => t }
+
+  /**
+    * Cache children as a set for faster rewrites.
+    */
+  override lazy val childrenAsSet = children.toSet
 
   override def withNewChildren(newChildren: Seq[T]): T = {
     val newAsVector = newChildren.toVector
@@ -52,9 +57,10 @@ abstract class AbstractTreeNode[T <: TreeNode[T] : ClassTag] extends TreeNode[T]
         copyMethod(updatedConstructorParams: _*).asInstanceOf[T]
       } catch {
         case e: Exception =>
-          Raise.invalidArgument(s"valid constructor arguments for $productPrefix", s"${updatedConstructorParams.mkString(", ")}\n" +
-            s"Original exception: $e\n" +
-            s"Copy method: $copyMethod")
+          Raise.invalidArgument(s"valid constructor arguments for $productPrefix",
+            s"""|${updatedConstructorParams.mkString(", ")}
+                |Original exception: $e
+                |Copy method: $copyMethod""".stripMargin)
       }
     }
   }
