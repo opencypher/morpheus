@@ -18,7 +18,7 @@ package org.opencypher.caps.impl.common
 import scala.util.hashing.MurmurHash3
 
 /**
-  * Allows to exclude constructor parameters from inclusion in the ```hashCode``` and ```equals```
+  * Allows to exclude constructor parameters from inclusion in the `hashCode` and `equals`
   * methods of a product.
   */
 abstract class ModifiedProduct extends Product {
