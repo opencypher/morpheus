@@ -25,12 +25,11 @@ import org.opencypher.caps.api.spark.CAPSGraph
 import org.opencypher.caps.api.spark.io.CAPSGraphSource
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.{CypherBoolean, CypherInteger, CypherString}
-import org.opencypher.caps.impl.common.AsCode
 import org.opencypher.caps.impl.logical
 import org.opencypher.caps.impl.util.toVar
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block._
-import org.opencypher.caps.ir.api.pattern.{DirectedRelationship, Pattern}
+import org.opencypher.caps.ir.api.pattern.{AllGiven, DirectedRelationship, Pattern}
 import org.opencypher.caps.ir.impl.IrTestSuite
 import org.opencypher.caps.toField
 import org.scalatest.matchers._
@@ -43,12 +42,31 @@ class LogicalPlannerTest extends IrTestSuite {
   val nodeB = IRField("b", CTNode)
   val nodeG = IRField("g", CTNode)
   val relR = IRField("r", CTRelationship)
+  val uri = URI.create("test")
 
-  ignore("convert load graph block") {
-    plan(irFor(leafBlock)) should equal(Select(IndexedSeq.empty, Set.empty, leafPlan, emptySqm))
+  val emptySqm = SolvedQueryModel.empty[Expr]
+
+  // Helper to create nicer expected results with `asCode`
+//  implicit val specialMappings = Map[Any, String](
+//    Schema.empty -> "Schema.empty",
+//    CTNode -> "CTNode",
+//    CTRelationship -> "CTRelationship",
+//    emptySqm -> "emptySqm",
+//    nodeA -> "nodeA",
+//    relR -> "relR",
+//    nodeB -> "nodeB",
+//    (nodeA: IRField) -> "nodeA",
+//    (relR: IRField) -> "relR",
+//    (nodeB: IRField) -> "nodeB"
+//  )
+
+  test("convert load graph block") {
+    val result = plan(irFor(leafBlock))
+    val expected = Select(IndexedSeq.empty, Set.empty, leafPlan, emptySqm)
+    result should structurallyEqual(expected)
   }
 
-  ignore("convert match block") {
+  test("convert match block") {
     val pattern = Pattern
       .empty[Expr]
       .withEntity(nodeA)
@@ -62,117 +80,109 @@ class LogicalPlannerTest extends IrTestSuite {
     val scan2 = NodeScan(nodeB, leafPlan, emptySqm.withField(nodeB))
     val ir = irWithLeaf(block)
     val result = plan(ir)
-    val expected = ExpandSource(nodeA, relR, nodeB, scan1, scan2, emptySqm.withFields(nodeA, nodeB, relR))
-    result should equalWithoutResult(
-      expected
-    )
+
+    val expected = ExpandSource(nodeA, relR, nodeB, scan1, scan2, SolvedQueryModel(Set(nodeA, nodeB, relR)))
+
+    result should equalWithoutResult(expected)
   }
 
-  val emptySqm = SolvedQueryModel.empty[Expr]
-
-  ignore("convert project block") {
+  test("convert project block") {
     val fields = FieldsAndGraphs[Expr](Map(toField('a) -> Property('n, PropertyKey("prop"), CTFloat)))
     val block = project(fields)
 
-    plan(irWithLeaf(block)) should equalWithoutResult(
-      Project(
-        ProjectedField('a, Property('n, PropertyKey("prop"), CTFloat)), // n is a dangling reference here
-        leafPlan,
-        emptySqm.withFields('a))
-    )
+    val result = plan(irWithLeaf(block))
+
+    val expected = Project(
+      ProjectedField('a, Property('n, PropertyKey("prop"), CTFloat)), // n is a dangling reference here
+      leafPlan,
+      emptySqm.withFields('a))
+    result should equalWithoutResult(expected)
   }
 
-  ignore("plan query") {
+  test("plan query") {
     val ir = "MATCH (a:Administrator)-[r]->(g:Group) WHERE g.name = $foo RETURN a.name".irWithParams(
       "foo" -> CypherString("test"))
     val result = plan(ir)
 
-    val expected =
-      Select(
-        Vector(Var("a.name")),
-        Set(),
+    val expected = Project(
+      ProjectedField(
+        Var("a.name", CTNull),
+        Property(Var("a", CTNode(Set("Administrator"))), PropertyKey("name"), CTNull)),
+      Filter(
+        Equals(
+          Property(Var("g", CTNode(Set("Group"))), PropertyKey("name"), CTNull),
+          Param("foo", CTString),
+          CTBoolean),
         Project(
-          ProjectedField(Var("a.name"), Property(Var("a"), PropertyKey("name"))),
+          ProjectedExpr(Property(Var("g", CTNode(Set("Group"))), PropertyKey("name"), CTNull)),
           Filter(
-            Equals(Property(Var("g"), PropertyKey("name")), Param("foo")),
-            Project(
-              ProjectedExpr(Property(Var("g"), PropertyKey("name"))),
-              Filter(
-                HasLabel(Var("g"), Label("Group")),
-                Filter(
-                  HasLabel(Var("a"), Label("Administrator")),
-                  ExpandSource(
-                    Var("a"),
-                    Var("r"),
-                    Var("g"),
-                    NodeScan(
-                      Var("a"),
-                      SetSourceGraph(
-                        LogicalExternalGraph("test", null, Schema.empty),
-                        Start(
-                          LogicalExternalGraph("test", null, Schema.empty),
-                          Set(),
-                          SolvedQueryModel(Set(), Set(), Set())),
-                        SolvedQueryModel(Set(), Set(), Set())
-                      ),
-                      SolvedQueryModel(Set(IRField("a")), Set(), Set())
-                    ),
-                    NodeScan(
-                      Var("g"),
-                      Start(
-                        LogicalExternalGraph("test", null, Schema.empty),
-                        Set(),
-                        SolvedQueryModel(Set(), Set(), Set())),
-                      SolvedQueryModel(Set(IRField("g")), Set(), Set())
-                    ),
-                    SolvedQueryModel(Set(IRField("a"), IRField("g"), IRField("r")), Set(), Set())
-                  ),
-                  SolvedQueryModel(
-                    Set(IRField("a"), IRField("g"), IRField("r")),
-                    Set(HasLabel(Var("a"), Label("Administrator"))),
-                    Set())
+            HasLabel(Var("g", CTNode), Label("Group"), CTBoolean),
+            Filter(
+              HasLabel(Var("a", CTNode), Label("Administrator"), CTBoolean),
+              ExpandSource(
+                Var("a", CTNode),
+                Var("r", CTRelationship),
+                Var("g", CTNode),
+                NodeScan(
+                  Var("a", CTNode),
+                  SetSourceGraph(
+                    LogicalExternalGraph("test", uri, Schema.empty),
+                    Start(LogicalExternalGraph("test", uri, Schema.empty), Set(), emptySqm),
+                    emptySqm),
+                  SolvedQueryModel(Set(nodeA), Set(), Set())
                 ),
-                SolvedQueryModel(
-                  Set(IRField("a"), IRField("g"), IRField("r")),
-                  Set(HasLabel(Var("a"), Label("Administrator")), HasLabel(Var("g"), Label("Group"))),
-                  Set())
+                NodeScan(
+                  Var("g", CTNode),
+                  Start(LogicalExternalGraph("test", uri, Schema.empty), Set(), emptySqm),
+                  SolvedQueryModel(Set(IRField("g", CTNode)), Set(), Set())),
+                SolvedQueryModel(Set(nodeA, IRField("g", CTNode), relR))
               ),
               SolvedQueryModel(
-                Set(IRField("a"), IRField("g"), IRField("r")),
-                Set(HasLabel(Var("a"), Label("Administrator")), HasLabel(Var("g"), Label("Group"))),
-                Set())
+                Set(nodeA, IRField("g", CTNode), relR),
+                Set(HasLabel(Var("a", CTNode), Label("Administrator"), CTBoolean)))
             ),
             SolvedQueryModel(
-              Set(IRField("a"), IRField("g"), IRField("r")),
+              Set(nodeA, IRField("g", CTNode), relR),
               Set(
-                HasLabel(Var("a"), Label("Administrator")),
-                HasLabel(Var("g"), Label("Group")),
-                Equals(Property(Var("g"), PropertyKey("name")), Param("foo"))),
-              Set()
+                HasLabel(Var("a", CTNode), Label("Administrator"), CTBoolean),
+                HasLabel(Var("g", CTNode), Label("Group"), CTBoolean))
             )
           ),
           SolvedQueryModel(
-            Set(IRField("a"), IRField("g"), IRField("r"), IRField("a.name")),
+            Set(nodeA, IRField("g", CTNode), relR),
             Set(
-              HasLabel(Var("a"), Label("Administrator")),
-              HasLabel(Var("g"), Label("Group")),
-              Equals(Property(Var("g"), PropertyKey("name")), Param("foo"))),
-            Set()
+              HasLabel(Var("a", CTNode), Label("Administrator"), CTBoolean),
+              HasLabel(Var("g", CTNode), Label("Group"), CTBoolean))
           )
         ),
         SolvedQueryModel(
-          Set(IRField("a"), IRField("g"), IRField("r"), IRField("a.name")),
+          Set(nodeA, IRField("g", CTNode), relR),
           Set(
-            HasLabel(Var("a"), Label("Administrator")),
-            HasLabel(Var("g"), Label("Group")),
-            Equals(Property(Var("g"), PropertyKey("name")), Param("foo"))),
-          Set()
+            HasLabel(Var("a", CTNode), Label("Administrator"), CTBoolean),
+            HasLabel(Var("g", CTNode), Label("Group"), CTBoolean),
+            Equals(
+              Property(Var("g", CTNode(Set("Group"))), PropertyKey("name"), CTNull),
+              Param("foo", CTString),
+              CTBoolean)
+          )
+        )
+      ),
+      SolvedQueryModel(
+        Set(nodeA, IRField("g", CTNode), relR, IRField("a.name", CTNull)),
+        Set(
+          HasLabel(Var("a", CTNode), Label("Administrator"), CTBoolean),
+          HasLabel(Var("g", CTNode), Label("Group"), CTBoolean),
+          Equals(
+            Property(Var("g", CTNode(Set("Group"))), PropertyKey("name"), CTNull),
+            Param("foo", CTString),
+            CTBoolean)
         )
       )
-    result should structurallyEqual(expected)
+    )
+    result should equalWithoutResult(expected)
   }
 
-  ignore("plan query with type information") {
+  test("plan query with type information") {
     implicit val schema: Schema = Schema.empty
       .withNodePropertyKeys("Group")("name" -> CTString)
       .withNodePropertyKeys("Administrator")("name" -> CTFloat)
@@ -181,92 +191,174 @@ class LogicalPlannerTest extends IrTestSuite {
       "foo" -> CypherString("test"))
 
     val result = plan(ir, schema)
-    implicit val specialMappings = Map(Schema.empty -> "Schema.empty")
-    val s: String = AsCode(result)
-    println(s)
 
-//    result should equal(
-//      Select(
-//        IndexedSeq(Var("a.name", CTFloat)),
-//        Set.empty,
-//        Project(
-//          ProjectedField(
-//            Var("a.name", CTFloat),
-//            Property(Var("a", CTNode("Administrator")), PropertyKey("name"), CTFloat)),
-//          Filter(
-//            Equals(Property(Var("g", CTNode("Group")), PropertyKey("name"), CTString), Param("foo", CTString))(
-//              CTBoolean),
-//            Project(
-//              ProjectedExpr(Property(Var("g", CTNode("Group")), PropertyKey("name"), CTString)),
-//              Filter(
-//                HasLabel(Var("g", CTNode), Label("Group"), CTBoolean),
-//                Filter(
-//                  HasLabel(Var("a", CTNode), Label("Administrator"), CTBoolean),
-//                  ExpandSource(
-//                    Var("a", CTNode),
-//                    Var("r", CTRelationship),
-//                    Var("g", CTNode),
-//                    NodeScan(
-//                      Var("a", CTNode),
-//                      SetSourceGraph(
-//                        LogicalExternalGraph(testGraph.name, testGraph.uri, schema),
-//                        Start(LogicalExternalGraph(testGraph.name, testGraph.uri, schema), Set.empty, emptySqm),
-//                        emptySqm
-//                      ),
-//                      emptySqm
-//                    ),
-//                    NodeScan(
-//                      Var("g", CTNode),
-//                      Start(LogicalExternalGraph(testGraph.name, testGraph.uri, schema), Set.empty, emptySqm),
-//                      emptySqm),
-//                    emptySqm
-//                  ),
-//                  emptySqm
-//                ),
-//                emptySqm
-//              ),
-//              emptySqm
-//            ),
-//            emptySqm
-//          ),
-//          emptySqm
-//        ),
-//        emptySqm
-//      )
-//    )
+    val expected = Project(
+      ProjectedField(
+        Var("a.name", CTFloat),
+        Property(Var("a", CTNode(Set("Administrator"))), PropertyKey("name"), CTFloat)),
+      Filter(
+        Equals(
+          Property(Var("g", CTNode(Set("Group"))), PropertyKey("name"), CTString),
+          Param("foo", CTString),
+          CTBoolean),
+        Project(
+          ProjectedExpr(Property(Var("g", CTNode(Set("Group"))), PropertyKey("name"), CTString)),
+          Filter(
+            HasLabel(Var("g", CTNode), Label("Group"), CTBoolean),
+            Filter(
+              HasLabel(Var("a", CTNode), Label("Administrator"), CTBoolean),
+              ExpandSource(
+                Var("a", CTNode),
+                Var("r", CTRelationship),
+                Var("g", CTNode),
+                NodeScan(
+                  Var("a", CTNode),
+                  SetSourceGraph(
+                    LogicalExternalGraph(
+                      "test",
+                      uri,
+                      Schema(
+                        Set("Group", "Administrator"),
+                        Set(),
+                        PropertyKeyMap(
+                          Map(
+                            Tuple2("Group", Map(Tuple2("name", CTString))),
+                            Tuple2("Administrator", Map(Tuple2("name", CTFloat)))),
+                          Set()),
+                        PropertyKeyMap(Map(), Set()),
+                        ImpliedLabels(Map()),
+                        LabelCombinations(Set())
+                      )
+                    ),
+                    Start(
+                      LogicalExternalGraph(
+                        "test",
+                        uri,
+                        Schema(
+                          Set("Group", "Administrator"),
+                          Set(),
+                          PropertyKeyMap(
+                            Map(
+                              Tuple2("Group", Map(Tuple2("name", CTString))),
+                              Tuple2("Administrator", Map(Tuple2("name", CTFloat)))),
+                            Set()),
+                          PropertyKeyMap(Map(), Set()),
+                          ImpliedLabels(Map()),
+                          LabelCombinations(Set())
+                        )
+                      ),
+                      Set(),
+                      emptySqm
+                    ),
+                    emptySqm
+                  ),
+                  SolvedQueryModel(Set(nodeA), Set(), Set())
+                ),
+                NodeScan(
+                  Var("g", CTNode),
+                  Start(
+                    LogicalExternalGraph(
+                      "test",
+                      uri,
+                      Schema(
+                        Set("Group", "Administrator"),
+                        Set(),
+                        PropertyKeyMap(
+                          Map(
+                            Tuple2("Group", Map(Tuple2("name", CTString))),
+                            Tuple2("Administrator", Map(Tuple2("name", CTFloat)))),
+                          Set()),
+                        PropertyKeyMap(Map(), Set()),
+                        ImpliedLabels(Map()),
+                        LabelCombinations(Set())
+                      )
+                    ),
+                    Set(),
+                    emptySqm
+                  ),
+                  SolvedQueryModel(Set(IRField("g", CTNode)), Set(), Set())
+                ),
+                SolvedQueryModel(Set(nodeA, IRField("g", CTNode), relR), Set(), Set())
+              ),
+              SolvedQueryModel(
+                Set(nodeA, IRField("g", CTNode), relR),
+                Set(HasLabel(Var("a", CTNode), Label("Administrator"), CTBoolean)))
+            ),
+            SolvedQueryModel(
+              Set(nodeA, IRField("g", CTNode), relR),
+              Set(
+                HasLabel(Var("a", CTNode), Label("Administrator"), CTBoolean),
+                HasLabel(Var("g", CTNode), Label("Group"), CTBoolean))
+            )
+          ),
+          SolvedQueryModel(
+            Set(nodeA, IRField("g", CTNode), relR),
+            Set(
+              HasLabel(Var("a", CTNode), Label("Administrator"), CTBoolean),
+              HasLabel(Var("g", CTNode), Label("Group"), CTBoolean))
+          )
+        ),
+        SolvedQueryModel(
+          Set(nodeA, IRField("g", CTNode), relR),
+          Set(
+            HasLabel(Var("a", CTNode), Label("Administrator"), CTBoolean),
+            HasLabel(Var("g", CTNode), Label("Group"), CTBoolean),
+            Equals(
+              Property(Var("g", CTNode(Set("Group"))), PropertyKey("name"), CTString),
+              Param("foo", CTString),
+              CTBoolean)
+          )
+        )
+      ),
+      SolvedQueryModel(
+        Set(nodeA, IRField("g", CTNode), relR, IRField("a.name", CTFloat)),
+        Set(
+          HasLabel(Var("a", CTNode), Label("Administrator"), CTBoolean),
+          HasLabel(Var("g", CTNode), Label("Group"), CTBoolean),
+          Equals(
+            Property(Var("g", CTNode(Set("Group"))), PropertyKey("name"), CTString),
+            Param("foo", CTString),
+            CTBoolean)
+        )
+      )
+    )
+
+    result should equalWithoutResult(expected)
   }
 
-  ignore("plan query with negation") {
+  test("plan query with negation") {
     val ir =
       "MATCH (a) WHERE NOT $p1 = $p2 RETURN a.prop".irWithParams("p1" -> CypherInteger(1L), "p2" -> CypherBoolean(true))
 
-    plan(ir) should equal(
-      Select(
-        IndexedSeq(Var("a.prop", CTNull)),
-        Set.empty,
-        Project(
-          ProjectedField(Var("a.prop", CTNull), Property(nodeA, PropertyKey("prop"), CTNull)),
-          Filter(
-            Not(Equals(Param("p1", CTInteger), Param("p2", CTBoolean), CTBoolean), CTBoolean),
-            NodeScan(
-              nodeA,
-              SetSourceGraph(
-                LogicalExternalGraph(testGraph.name, testGraph.uri, Schema.empty),
-                Start(LogicalExternalGraph(testGraph.name, testGraph.uri, Schema.empty), Set.empty, emptySqm),
-                emptySqm
-              ),
-              emptySqm
-            ),
-            emptySqm
-          ),
-          emptySqm
+    val result = plan(ir)
+
+    val expected = Project(
+      ProjectedField(Var("a.prop", CTNull), Property(Var("a", CTNode), PropertyKey("prop"), CTNull)),
+      Filter(
+        Not(Equals(Param("p1", CTInteger), Param("p2", CTBoolean), CTBoolean), CTBoolean),
+        NodeScan(
+          Var("a", CTNode),
+          SetSourceGraph(
+            LogicalExternalGraph("test", uri, Schema.empty),
+            Start(LogicalExternalGraph("test", uri, Schema.empty), Set(), emptySqm),
+            emptySqm),
+          SolvedQueryModel(Set(nodeA), Set(), Set())
         ),
-        emptySqm
-      )
+        SolvedQueryModel(
+          Set(nodeA),
+          Set(Not(Equals(Param("p1", CTInteger), Param("p2", CTBoolean), CTBoolean), CTBoolean)),
+          Set())
+      ),
+      SolvedQueryModel(
+        Set(nodeA, IRField("a.prop", CTNull)),
+        Set(Not(Equals(Param("p1", CTInteger), Param("p2", CTBoolean), CTBoolean), CTBoolean)),
+        Set())
     )
+
+    result should equalWithoutResult(expected)
   }
 
-  ignore("do not project graphs multiple times") {
+  test("do not project graphs multiple times") {
     val query =
       """
         |FROM GRAPH foo AT 'hdfs+csv://localhost/foo'
@@ -276,15 +368,24 @@ class LogicalPlannerTest extends IrTestSuite {
 
     val ir = query.ir
 
-    val startOp: LogicalOperator =
-      Start(LogicalExternalGraph("test", URI.create("test"), Schema.empty), Set.empty, emptySqm)
-    val projectFoo: LogicalOperator =
-      ProjectGraph(LogicalExternalGraph("foo", URI.create("test"), Schema.empty), startOp, emptySqm)
-    val projectBar: LogicalOperator =
-      ProjectGraph(LogicalExternalGraph("bar", URI.create("test"), Schema.empty), projectFoo, emptySqm)
-    val select = Select(IndexedSeq.empty, Set("bar", "foo"), projectBar, emptySqm)
+    val result = plan(ir)
 
-    plan(ir) should equal(select)
+    val expected = Select(
+      Vector(),
+      Set("bar", "foo"),
+      ProjectGraph(
+        LogicalExternalGraph("bar", uri, Schema.empty),
+        ProjectGraph(
+          LogicalExternalGraph("foo", uri, Schema.empty),
+          Start(LogicalExternalGraph("test", uri, Schema.empty), Set(), emptySqm),
+          SolvedQueryModel(Set(), Set(), Set(IRNamedGraph("foo", Schema.empty)))
+        ),
+        SolvedQueryModel(Set(), Set(), Set(IRNamedGraph("foo", Schema.empty), IRNamedGraph("bar", Schema.empty)))
+      ),
+      SolvedQueryModel(Set(), Set(), Set(IRNamedGraph("foo", Schema.empty), IRNamedGraph("bar", Schema.empty)))
+    )
+
+    result should structurallyEqual(expected)
   }
 
   private val planner = new LogicalPlanner(new LogicalOperatorProducer)
@@ -292,13 +393,22 @@ class LogicalPlannerTest extends IrTestSuite {
   private def plan(ir: CypherQuery[Expr], schema: Schema = Schema.empty) =
     planner.process(ir)(LogicalPlannerContext(schema, Set.empty, (_) => FakeGraphSource(schema)))
 
+  // Returns a successful or the first failed match if there is one.
+  private def combine(m: MatchResult*): MatchResult = {
+    m.foldLeft(MatchResult(true, "", "")) {
+      case (aggr, next) =>
+        if (aggr.matches) next else aggr
+    }
+  }
+
   case class equalWithoutResult(plan: LogicalOperator) extends Matcher[LogicalOperator] {
     override def apply(left: LogicalOperator): MatchResult = {
       left match {
         case logical.Select(_, _, in, _) =>
-          val matches = in == plan && in.solved == plan.solved
-          MatchResult(matches, s"$in did not equal $plan", s"$in was not supposed to equal $plan")
-        case _ => MatchResult(matches = false, "Expected a Select plan on top", "Expected a Select plan on top")
+          val planMatch = structurallyEqual(in)(plan)
+          val solvedMatch = structurallyEqual(in.solved)(plan.solved)
+          combine(planMatch, solvedMatch)
+        case _ => MatchResult(matches = false, "Expected a Select plan on top", "")
       }
     }
   }
@@ -306,7 +416,7 @@ class LogicalPlannerTest extends IrTestSuite {
   private case class FakeGraphSource(_schema: Schema) extends CAPSGraphSource {
     override lazy val session: Session = ???
 
-    override def canonicalURI: URI = null
+    override def canonicalURI: URI = uri
 
     override def sourceForGraphAt(uri: URI): Boolean = ???
 
