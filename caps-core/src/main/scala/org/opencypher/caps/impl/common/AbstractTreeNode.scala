@@ -47,7 +47,7 @@ abstract class AbstractTreeNode[T <: TreeNode[T] : ClassTag] extends TreeNode[T]
             case _ => (result :+ next, remainingSubs)
           }
       }
-      val copyMethod = AbstractTreeNode.copyMethod(getClass.getName, self)
+      val copyMethod = AbstractTreeNode.copyMethod(self)
       try {
         copyMethod(updatedConstructorParams: _*).asInstanceOf[T]
       } catch {
@@ -72,7 +72,8 @@ object AbstractTreeNode {
   import scala.reflect.runtime.universe
   import scala.reflect.runtime.universe._
 
-  protected def copyMethod[T <: TreeNode[T]](className: String, instance: AbstractTreeNode[T]): MethodMirror = {
+  protected def copyMethod[T <: TreeNode[T]](instance: AbstractTreeNode[T]): MethodMirror = {
+    val className = instance.getClass.getName
     cachedCopyMethods.getOrElse(className, {
       val instanceMirror = mirror.reflect(instance)
       val tpe = instanceMirror.symbol.asType.toType
