@@ -16,6 +16,8 @@
 package org.opencypher.caps.impl.common
 
 import org.scalatest.{FunSuite, Matchers}
+import org.opencypher.caps.impl.common.AsCode._
+import org.opencypher.caps.impl.logical.structurallyEqual
 
 class TreeNodeTest extends FunSuite with Matchers {
 
@@ -23,17 +25,10 @@ class TreeNodeTest extends FunSuite with Matchers {
 
   val leaf = Number(1)
 
-//  test("aggregate") {
-//    Calculate(calculation) should equal(12)
-//  }
-//
-//  test("map and aggregate") {
-//    val numberTree = calculation.map((_: Expr) => 1)
-//    numberTree should equal(Tree(1, Seq(Tree(1), Tree(1, Seq(Tree(1), Tree(1))))))
-//    val treeSum = numberTree.aggregate { (i: Int, is: Seq[Int]) => i + is.sum }
-//    treeSum should equal(5)
-//  }
-//
+  test("aggregate") {
+    calculation.eval should equal(12)
+  }
+
   test("leaf") {
     calculation.isLeaf should equal(false)
     leaf.isLeaf should equal(true)
@@ -56,66 +51,35 @@ class TreeNodeTest extends FunSuite with Matchers {
 
   test("rewrite") {
     val addNoops: TreeNode.RewriteRule[Expr] = TreeNode.RewriteRule {
-      case Add(n1: Number, n2: Number)  => Add(Noop(n1), Noop(n2))
-      case Add(n1: Number, n2)  => Add(Noop(n1), n2)
-      case Add(n1, n2: Number)  => Add(n1, Noop(n2))
+      case Add(n1: Number, n2: Number) => Add(Noop(n1), Noop(n2))
+      case Add(n1: Number, n2)         => Add(Noop(n1), n2)
+      case Add(n1, n2: Number)         => Add(n1, Noop(n2))
     }
-    println(calculation.transformUp(addNoops).pretty())
 
-    println(calculation.transformDown(addNoops).pretty())
+    val expected = Add(Noop(Number(5)), Add(Noop(Number(4)), Noop(Number(3))))
+    println(calculation.asCode)
+
+    val down = calculation.transformDown(addNoops)
+    down should equal(expected)
+
+    val up = calculation.transformUp(addNoops)
+    up should structurallyEqual(expected)
   }
-//
-//  test("map and foldLeft") {
-//    val sum = numberTree.foldLeft(0){ case (s, n) => s + n }
-//    sum should equal(5)
-//  }
-//
-//  test("toSeq") {
-//    numberTree.toSeq.toSet should equal(Set(1))
-//  }
-//
-//  test("foreach") {
-//    var c = 0
-//    numberTree.foreach(_ => c += 1)
-//    c should equal(5)
-//  }
-//
-//  test("transform up") {
-//    val aggregateAdds = Tree.Rewrite[Expr] {
-//      case Tree(Add, Seq(Tree(Number(n1), _), Tree(Number(n2), _))) => Tree(Number(n1 + n2))
-//    }
-//
-//    val addNoops = Tree.Rewrite[Expr] {
-//      case t @ Tree(_ : Number, _) => Tree(Noop, Seq(t))
-//    }
-//
-//    val replaceAddSub = Tree.Rewrite[Expr] {
-//      case Tree(expr, Seq(sub @ Tree(Sub, _), others @ _*)) => {
-//        val subval = sub.aggregate(Calculate)
-//        Tree(expr, Seq(Tree(Number(subval))) ++ others)
-//      }
-//    }
-//
-//    calculation.transformUp(aggregateAdds) should equal(Tree(Number(12)))
-//    calculation.transformUp(addNoops) should equal(
-//      Tree(Add, Seq(
-//        Tree(Noop, Seq(
-//          Tree(Number(3))
-//        )),
-//        Tree(Add, Seq(
-//          Tree(Noop, Seq(
-//            Tree(Number(5))
-//          )),
-//          Tree(Noop, Seq(
-//            Tree(Number(4))
-//          ))
-//        ))
-//      ))
-//    )
-//  }
 
-  abstract class Expr extends AbstractTreeNode[Expr]
-  case class Add(left: Expr, right: Expr) extends Expr
-  case class Number(v: Int) extends Expr
-  case class Noop(in: Expr) extends Expr
+  abstract class Expr extends AbstractTreeNode[Expr] {
+    def eval: Int
+  }
+
+  case class Add(left: Expr, right: Expr) extends Expr {
+    def eval = left.eval + right.eval
+  }
+
+  case class Number(v: Int) extends Expr {
+    def eval = v
+  }
+
+  case class Noop(in: Expr) extends Expr {
+    def eval = in.eval
+  }
+
 }
