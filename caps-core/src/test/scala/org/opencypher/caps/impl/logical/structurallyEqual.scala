@@ -15,6 +15,7 @@
  */
 package org.opencypher.caps.impl.logical
 
+import org.opencypher.caps.impl.common.AsCode._
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 case class structurallyEqual(right: Any) extends Matcher[Any] {
@@ -24,16 +25,16 @@ case class structurallyEqual(right: Any) extends Matcher[Any] {
 
   private def structurallyEqualAny(left: Any, right: Any): MatchResult = {
     if (left == right) {
-      success(left, right)
+      success
     } else {
       notEqual(left, right)
       if (left.getClass != right.getClass) {
-        failure(s"${left.getClass.getSimpleName} did not equal ${right.getClass.getSimpleName}")
+        failure(s"${left.asCode} did not equal ${right.asCode}")
       } else {
         left match {
-          case p: Product   => structurallyEqualProduct(p, right.asInstanceOf[Product])
-          case t: Seq[_]    => structurallyEqualTraversable(t, t.asInstanceOf[Seq[_]])
-          case _            => failure(s"$left did not equal $right")
+          case p: Product => structurallyEqualProduct(p, right.asInstanceOf[Product])
+          case t: Seq[_]  => structurallyEqualTraversable(t, t.asInstanceOf[Seq[_]])
+          case _          => failure(s"${left.asCode} did not equal ${right.asCode}")
         }
       }
     }
@@ -41,42 +42,45 @@ case class structurallyEqual(right: Any) extends Matcher[Any] {
 
   private def structurallyEqualTraversable(left: Traversable[_], right: Traversable[_]): MatchResult = {
     if (left == right) {
-      success(left, right)
+      success
     } else {
       notEqual(left, right)
       if (left.getClass != right.getClass) {
-        failure(s"${left.getClass.getSimpleName} did not equal ${right.getClass.getSimpleName}")
+        failure(s"${left.asCode} did not equal ${right.asCode}")
       } else {
-        combine(
-          left.toSeq
-            .zip(right.toSeq)
-            .map {
-              case (l, r) =>
-                structurallyEqualAny(l, r)
-            }: _*)
+        addTrace(
+          combine(
+            left.toSeq
+              .zip(right.toSeq)
+              .map {
+                case (l, r) =>
+                  structurallyEqualAny(l, r)
+              }: _*),
+          left.asCode)
       }
     }
   }
 
   private def structurallyEqualProduct(left: Product, right: Product): MatchResult = {
     if (left == right) {
-      success(left, right)
+      success
     } else {
       notEqual(left, right)
       if (!left.productPrefix.equals(right.productPrefix)) {
-        failure(s"${left.productPrefix} does not equal ${right.productPrefix}")
+        failure(s"${left.asCode} does not equal ${right.asCode}")
       } else {
         if (left.productIterator.size != right.productIterator.size) {
-          failure(s"Inside of ${left.productPrefix} ${left.productIterator
-            .mkString(", ")} does not equal ${left.productIterator.mkString(", ")}}")
+          failure(s"Product of ${left.asCode} does not equal ${right.asCode}}")
         } else {
-          combine(
-            left.productIterator.toSeq
-              .zip(right.productIterator.toSeq)
-              .map {
-                case (l, r) =>
-                  structurallyEqualAny(l, r)
-              }: _*)
+          addTrace(
+            combine(
+              left.productIterator.toSeq
+                .zip(right.productIterator.toSeq)
+                .map {
+                  case (l, r) =>
+                    structurallyEqualAny(l, r)
+                }: _*),
+            left.asCode)
         }
       }
     }
@@ -85,14 +89,22 @@ case class structurallyEqual(right: Any) extends Matcher[Any] {
   def failure(msg: String) = MatchResult(false, msg, "")
 
   def notEqual(l: Any, r: Any): Unit = {
-    //println(s"${AsCode(l)} did NOT equal ${AsCode(r)}")
+//    println(s"${AsCode(l)} did NOT equal ${AsCode(r)}")
   }
 
-  def success(l: Any, r: Any) = MatchResult(true, "", "")
+  def addTrace(m: MatchResult, traceInfo: String): MatchResult = {
+    if (m.matches) {
+      m
+    } else {
+      MatchResult(false, m.rawFailureMessage + s"\nTRACE: $traceInfo", m.rawNegatedFailureMessage)
+    }
+  }
+
+  val success = MatchResult(true, "", "")
 
   // Returns a successful or the first failed match if there is one.
   def combine(m: MatchResult*): MatchResult = {
-    m.foldLeft(MatchResult(true, "", "")) {
+    m.foldLeft(success) {
       case (aggr, next) =>
         if (aggr.matches) next else aggr
     }
