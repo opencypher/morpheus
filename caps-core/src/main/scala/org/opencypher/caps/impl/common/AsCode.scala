@@ -15,7 +15,6 @@
  */
 package org.opencypher.caps.impl.common
 
-import org.opencypher.caps.api.expr.Var
 import org.opencypher.caps.api.types.CypherType
 
 /**
@@ -48,13 +47,13 @@ object AsCode {
         case t: Seq[_]    => traversableAsCode(t)
         case t: Set[_]    => traversableAsCode(t)
         case t: Map[_, _] => traversableAsCode(t)
-        case other =>
-          if (!other.isInstanceOf[AnyRef]) {
-            other.toString // for primitives
-          } else {
-            // Other objects are represented with their class name in lower case
-            s"${other.getClass.getSimpleName.toLowerCase}"
-          }
+        case b: Boolean   => b.toString
+        case i: Int       => i.toString
+        case l: Long      => l.toString
+        case f: Float     => f.toString
+        case d: Double    => d.toString
+        // Other objects are represented with their class name in lower case
+        case other => s"${other.getClass.getSimpleName.toLowerCase}"
       }
     }
   }
