@@ -19,12 +19,7 @@ import org.opencypher.caps.api.expr.Var
 import org.opencypher.caps.api.record.RecordHeader
 import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.impl.flat.FreshVariableNamer
-import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.{
-  assertIsNode,
-  columnName,
-  joinDFs,
-  joinRecords
-}
+import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.{assertIsNode, columnName, joinDFs, joinRecords}
 import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
 
 private[spark] abstract class BinaryPhysicalOperator extends PhysicalOperator {

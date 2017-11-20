@@ -17,13 +17,17 @@ package org.opencypher.caps.impl.logical
 
 import org.opencypher.caps.impl.common.AsCode._
 import org.scalatest.matchers.{MatchResult, Matcher}
+import org.opencypher.caps.impl.logical.MatchHelper._
 
-case class structurallyEqual(right: Any) extends Matcher[Any] {
+/**
+  * A substitute for the ScalaTest matcher that crashes when checking if some of our larger trees are equal.
+  */
+case class equalWithTracing(right: Any) extends Matcher[Any] {
   override def apply(left: Any): MatchResult = {
-    structurallyEqualAny(left, right)
+    equalAny(left, right)
   }
 
-  private def structurallyEqualAny(left: Any, right: Any): MatchResult = {
+  private def equalAny(left: Any, right: Any): MatchResult = {
     if (left == right) {
       success
     } else {
@@ -32,15 +36,15 @@ case class structurallyEqual(right: Any) extends Matcher[Any] {
         failure(s"${left.asCode} did not equal ${right.asCode}")
       } else {
         left match {
-          case p: Product => structurallyEqualProduct(p, right.asInstanceOf[Product])
-          case t: Seq[_]  => structurallyEqualTraversable(t, t.asInstanceOf[Seq[_]])
+          case p: Product => equalProduct(p, right.asInstanceOf[Product])
+          case t: Seq[_]  => equalTraversable(t, t.asInstanceOf[Seq[_]])
           case _          => failure(s"${left.asCode} did not equal ${right.asCode}")
         }
       }
     }
   }
 
-  private def structurallyEqualTraversable(left: Traversable[_], right: Traversable[_]): MatchResult = {
+  private def equalTraversable(left: Traversable[_], right: Traversable[_]): MatchResult = {
     if (left == right) {
       success
     } else {
@@ -54,14 +58,14 @@ case class structurallyEqual(right: Any) extends Matcher[Any] {
               .zip(right.toSeq)
               .map {
                 case (l, r) =>
-                  structurallyEqualAny(l, r)
+                  equalAny(l, r)
               }: _*),
           left.asCode)
       }
     }
   }
 
-  private def structurallyEqualProduct(left: Product, right: Product): MatchResult = {
+  private def equalProduct(left: Product, right: Product): MatchResult = {
     if (left == right) {
       success
     } else {
@@ -78,7 +82,7 @@ case class structurallyEqual(right: Any) extends Matcher[Any] {
                 .zip(right.productIterator.toSeq)
                 .map {
                   case (l, r) =>
-                    structurallyEqualAny(l, r)
+                    equalAny(l, r)
                 }: _*),
             left.asCode)
         }
@@ -92,13 +96,9 @@ case class structurallyEqual(right: Any) extends Matcher[Any] {
 //    println(s"${AsCode(l)} did NOT equal ${AsCode(r)}")
   }
 
-  def addTrace(m: MatchResult, traceInfo: String): MatchResult = {
-    if (m.matches) {
-      m
-    } else {
-      MatchResult(false, m.rawFailureMessage + s"\nTRACE: $traceInfo", m.rawNegatedFailureMessage)
-    }
-  }
+}
+
+object MatchHelper {
 
   val success = MatchResult(true, "", "")
 
@@ -107,6 +107,14 @@ case class structurallyEqual(right: Any) extends Matcher[Any] {
     m.foldLeft(success) {
       case (aggr, next) =>
         if (aggr.matches) next else aggr
+    }
+  }
+
+  def addTrace(m: MatchResult, traceInfo: String): MatchResult = {
+    if (m.matches) {
+      m
+    } else {
+      MatchResult(false, m.rawFailureMessage + s"\nTRACE: $traceInfo", m.rawNegatedFailureMessage)
     }
   }
 

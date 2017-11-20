@@ -32,7 +32,7 @@ class PhysicalOptimizer
     def apply(input: PhysicalOperator): PhysicalOperator = {
       val replacements = calculateReplacementMap(input)
         .filterKeys {
-          case _:Start | _:StartFromUnit => false
+          case _: Start | _: StartFromUnit => false
           case _ => true
         }
 

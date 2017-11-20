@@ -24,7 +24,7 @@ import scala.reflect.ClassTag
   * `TreeNode` with a case class or case object.
   *
   * Requirements: All child nodes need to be individual constructor parameters and their order
-  * in children is their oder in the constructor. Every constructor parameter of type `T` is
+  * in children is their order in the constructor. Every constructor parameter of type `T` is
   * assumed to be a child node.
   */
 abstract class AbstractTreeNode[T <: TreeNode[T] : ClassTag] extends TreeNode[T] {

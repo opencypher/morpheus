@@ -22,7 +22,7 @@ import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.common.ModifiedProduct
 import org.opencypher.caps.ir.api.pattern._
 
-trait IRElement extends Product {
+trait IRElement {
   def name: String
   def escapedName: String = name.replaceAll("`", "``")
 }

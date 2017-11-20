@@ -17,7 +17,7 @@ package org.opencypher.caps.impl.common
 
 import org.scalatest.{FunSuite, Matchers}
 import org.opencypher.caps.impl.common.AsCode._
-import org.opencypher.caps.impl.logical.structurallyEqual
+import org.opencypher.caps.impl.logical.equalWithTracing
 
 class TreeNodeTest extends FunSuite with Matchers {
 
@@ -50,35 +50,33 @@ class TreeNodeTest extends FunSuite with Matchers {
   }
 
   test("rewrite") {
-    val addNoops: TreeNode.RewriteRule[Expr] = TreeNode.RewriteRule {
+    val addNoops: TreeNode.RewriteRule[CalcExpr] = TreeNode.RewriteRule {
       case Add(n1: Number, n2: Number) => Add(Noop(n1), Noop(n2))
       case Add(n1: Number, n2)         => Add(Noop(n1), n2)
       case Add(n1, n2: Number)         => Add(n1, Noop(n2))
     }
 
     val expected = Add(Noop(Number(5)), Add(Noop(Number(4)), Noop(Number(3))))
-    println(calculation.asCode)
-
     val down = calculation.transformDown(addNoops)
     down should equal(expected)
 
     val up = calculation.transformUp(addNoops)
-    up should structurallyEqual(expected)
+    up should equal(expected)
   }
 
-  abstract class Expr extends AbstractTreeNode[Expr] {
+  abstract class CalcExpr extends AbstractTreeNode[CalcExpr] {
     def eval: Int
   }
 
-  case class Add(left: Expr, right: Expr) extends Expr {
+  case class Add(left: CalcExpr, right: CalcExpr) extends CalcExpr {
     def eval = left.eval + right.eval
   }
 
-  case class Number(v: Int) extends Expr {
+  case class Number(v: Int) extends CalcExpr {
     def eval = v
   }
 
-  case class Noop(in: Expr) extends Expr {
+  case class Noop(in: CalcExpr) extends CalcExpr {
     def eval = in.eval
   }
 

@@ -24,7 +24,6 @@ import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.common.RefCollection
 import org.opencypher.caps.common.RefCollection.AbstractRegister
-import org.opencypher.caps.impl.common.AsCode
 import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.syntax.expr._
 import org.opencypher.caps.impl.syntax.register._

@@ -57,12 +57,7 @@ final case class PropertyKeyMap(m: Map[String, Map[String, CypherType]], conflic
   extends ModifiedProduct {
 
   // Exclude conflicts product parameter from equals and hashCode
-  override protected def includedInComparisons(p: Any): Boolean = {
-    p match {
-      case _: Set[_] => false
-      case _ => true
-    }
-  }
+  override protected def includedInComparisons(p: Any): Boolean = !p.isInstanceOf[Set[_]]
 
   def keysFor(classifier: String): Map[String, CypherType] = m.getOrElse(classifier, Map.empty)
 

@@ -32,28 +32,26 @@ class PhysicalOperatorTest extends CAPSTestSuite {
   }
 
   test("cache operator with single input") {
-    val runtimeContext: RuntimeContext = RuntimeContext.empty
-
     val expectedResult = PhysicalResult(CAPSRecords.create(testContents), Map.empty)
 
     val toCache = DummyOp(expectedResult)
 
     val cache = Cache(toCache)
-    cache.execute(runtimeContext)
+    cache.execute
 
-    val cacheContent = runtimeContext.cache(toCache)
+    val cacheContent = context.cache(toCache)
     cacheContent should equal(expectedResult)
     cacheContent.records.data.storageLevel should equal(StorageLevel.MEMORY_AND_DISK)
   }
 
   test("cache operator with cache reuse") {
-    val runtimeContext: RuntimeContext = RuntimeContext.empty
-
     val expectedResult = PhysicalResult(CAPSRecords.create(testContents), Map.empty)
 
     val toCache0 = DummyOp(expectedResult)
     val toCache1 = DummyOp(expectedResult)
 
-    Cache(toCache0).execute(runtimeContext) should equal(Cache(toCache1).execute(runtimeContext))
+    val r1 = Cache(toCache0).execute
+    val r2 = Cache(toCache1).execute
+     r1 should equal(r2)
   }
 }

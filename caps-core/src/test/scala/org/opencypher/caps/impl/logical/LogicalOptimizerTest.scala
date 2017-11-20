@@ -60,7 +60,7 @@ class LogicalOptimizerTest extends IrTestSuite {
       SolvedQueryModel(Set(IRField("a", CTNode)), Set(HasLabel(Var("a", CTNode), Label("Animal"), CTBoolean)), Set())
     )
 
-    optimizedLogicalPlan should structurallyEqual(expected)
+    optimizedLogicalPlan should equalWithTracing(expected)
   }
 
   test("rewrite missing label combination") {
@@ -95,7 +95,7 @@ class LogicalOptimizerTest extends IrTestSuite {
         Set())
     )
 
-    optimizedLogicalPlan should structurallyEqual(expected)
+    optimizedLogicalPlan should equalWithTracing(expected)
   }
 
   private def logicalPlan(query: String, schema: Schema): LogicalOperator = {

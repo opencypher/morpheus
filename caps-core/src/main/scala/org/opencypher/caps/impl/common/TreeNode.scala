@@ -60,7 +60,7 @@ abstract class TreeNode[T <: TreeNode[T]: ClassTag] extends Product with Travers
   }
 
   /**
-    * Checks if the given tree is contained within that tree or is the tree itself.
+    * Checks if the parameter tree is contained within this tree. A tree always contains itself.
     *
     * @param other other tree
     * @return true, iff `other` is contained in that tree
@@ -81,7 +81,7 @@ abstract class TreeNode[T <: TreeNode[T]: ClassTag] extends Product with Travers
 
   /**
     * Applies the given [[org.opencypher.caps.impl.common.TreeNode.RewriteRule]] starting from the
-    * leafs of that tree.
+    * leafs of this tree.
     *
     * @param rule rewrite rule
     * @return rewritten tree
@@ -93,7 +93,7 @@ abstract class TreeNode[T <: TreeNode[T]: ClassTag] extends Product with Travers
 
   /**
     * Applies the given [[org.opencypher.caps.impl.common.TreeNode.RewriteRule]] starting from the
-    * root of that tree.
+    * root of this tree.
     *
     * @note Note that the applied rule must not insert new parent nodes.
     * @param rule rewrite rule
@@ -121,7 +121,7 @@ abstract class TreeNode[T <: TreeNode[T]: ClassTag] extends Product with Travers
   }
 
   /**
-    * Concatenates all arguments of that tree node excluding the children.
+    * Concatenates all arguments of this tree node excluding the children.
     *
     * @return argument string
     */
@@ -130,12 +130,12 @@ abstract class TreeNode[T <: TreeNode[T]: ClassTag] extends Product with Travers
       .filter(argFilter)
       .map {
         case tn: T => tn.argString
-        case other => AsCode(other)
+        case other => other.toString
       }
       .mkString(", ")
 
   /**
-    * Filters class arguments that must not be printed. Can be overridden by concrete tree nodes.
+    * Filters class arguments that should not be printed.
     *
     * @return filter for class arguments
     */

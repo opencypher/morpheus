@@ -46,7 +46,7 @@ class LogicalPlannerTest extends IrTestSuite {
 
   val emptySqm = SolvedQueryModel.empty[Expr]
 
-  // Helper to create nicer expected results with `asCode`
+//  // Helper to create nicer expected results with `asCode`
 //  implicit val specialMappings = Map[Any, String](
 //    Schema.empty -> "Schema.empty",
 //    CTNode -> "CTNode",
@@ -63,7 +63,7 @@ class LogicalPlannerTest extends IrTestSuite {
   test("convert load graph block") {
     val result = plan(irFor(leafBlock))
     val expected = Select(IndexedSeq.empty, Set.empty, leafPlan, emptySqm)
-    result should structurallyEqual(expected)
+    result should equalWithTracing(expected)
   }
 
   test("convert match block") {
@@ -217,35 +217,13 @@ class LogicalPlannerTest extends IrTestSuite {
                     LogicalExternalGraph(
                       "test",
                       uri,
-                      Schema(
-                        Set("Group", "Administrator"),
-                        Set(),
-                        PropertyKeyMap(
-                          Map(
-                            Tuple2("Group", Map(Tuple2("name", CTString))),
-                            Tuple2("Administrator", Map(Tuple2("name", CTFloat)))),
-                          Set()),
-                        PropertyKeyMap(Map(), Set()),
-                        ImpliedLabels(Map()),
-                        LabelCombinations(Set())
-                      )
+                      schema
                     ),
                     Start(
                       LogicalExternalGraph(
                         "test",
                         uri,
-                        Schema(
-                          Set("Group", "Administrator"),
-                          Set(),
-                          PropertyKeyMap(
-                            Map(
-                              Tuple2("Group", Map(Tuple2("name", CTString))),
-                              Tuple2("Administrator", Map(Tuple2("name", CTFloat)))),
-                            Set()),
-                          PropertyKeyMap(Map(), Set()),
-                          ImpliedLabels(Map()),
-                          LabelCombinations(Set())
-                        )
+                        schema
                       ),
                       Set(),
                       emptySqm
@@ -260,18 +238,7 @@ class LogicalPlannerTest extends IrTestSuite {
                     LogicalExternalGraph(
                       "test",
                       uri,
-                      Schema(
-                        Set("Group", "Administrator"),
-                        Set(),
-                        PropertyKeyMap(
-                          Map(
-                            Tuple2("Group", Map(Tuple2("name", CTString))),
-                            Tuple2("Administrator", Map(Tuple2("name", CTFloat)))),
-                          Set()),
-                        PropertyKeyMap(Map(), Set()),
-                        ImpliedLabels(Map()),
-                        LabelCombinations(Set())
-                      )
+                      schema
                     ),
                     Set(),
                     emptySqm
@@ -385,7 +352,7 @@ class LogicalPlannerTest extends IrTestSuite {
       SolvedQueryModel(Set(), Set(), Set(IRNamedGraph("foo", Schema.empty), IRNamedGraph("bar", Schema.empty)))
     )
 
-    result should structurallyEqual(expected)
+    result should equalWithTracing(expected)
   }
 
   private val planner = new LogicalPlanner(new LogicalOperatorProducer)
@@ -393,21 +360,13 @@ class LogicalPlannerTest extends IrTestSuite {
   private def plan(ir: CypherQuery[Expr], schema: Schema = Schema.empty) =
     planner.process(ir)(LogicalPlannerContext(schema, Set.empty, (_) => FakeGraphSource(schema)))
 
-  // Returns a successful or the first failed match if there is one.
-  private def combine(m: MatchResult*): MatchResult = {
-    m.foldLeft(MatchResult(true, "", "")) {
-      case (aggr, next) =>
-        if (aggr.matches) next else aggr
-    }
-  }
-
   case class equalWithoutResult(plan: LogicalOperator) extends Matcher[LogicalOperator] {
     override def apply(left: LogicalOperator): MatchResult = {
       left match {
         case logical.Select(_, _, in, _) =>
-          val planMatch = structurallyEqual(in)(plan)
-          val solvedMatch = structurallyEqual(in.solved)(plan.solved)
-          combine(planMatch, solvedMatch)
+          val planMatch = equalWithTracing(in)(plan)
+          val solvedMatch = equalWithTracing(in.solved)(plan.solved)
+          MatchHelper.combine(planMatch, solvedMatch)
         case _ => MatchResult(matches = false, "Expected a Select plan on top", "")
       }
     }

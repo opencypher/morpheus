@@ -20,7 +20,7 @@ import java.net.URI
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.record.ProjectedSlotContent
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.impl.common.{AbstractTreeNode, AsCode}
+import org.opencypher.caps.impl.common.AbstractTreeNode
 import org.opencypher.caps.ir.api.block.SortItem
 import org.opencypher.caps.ir.api.{Label, SolvedQueryModel}
 
