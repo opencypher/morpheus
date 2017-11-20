@@ -30,10 +30,12 @@ final case class Start(records: CAPSRecords, graph: LogicalExternalGraph) extend
 
   override def executeLeaf()(implicit context: RuntimeContext): PhysicalResult =
     PhysicalResult(records, Map(graph.name -> resolve(graph.uri)))
+
 }
 
-final case class StartFromUnit(graph: LogicalExternalGraph)(implicit caps: CAPSSession) extends LeafPhysicalOperator {
+final case class StartFromUnit(graph: LogicalExternalGraph, unitRecord: CAPSRecords) extends LeafPhysicalOperator {
 
   override def executeLeaf()(implicit context: RuntimeContext): PhysicalResult =
-    PhysicalResult(CAPSRecords.unit(), Map(graph.name -> resolve(graph.uri)))
+    PhysicalResult(unitRecord, Map(graph.name -> resolve(graph.uri)))
+
 }
