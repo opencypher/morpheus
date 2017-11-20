@@ -39,8 +39,6 @@ abstract class TreeNode[T <: TreeNode[T]: ClassTag] extends Product with Travers
 
   def isLeaf: Boolean = height == 1
 
-  def isInner: Boolean = height > 1
-
   lazy val height: Int = if (children.isEmpty) 1 else children.map(_.height).max + 1
 
   def map[O <: TreeNode[O]](f: T => O): O = {
