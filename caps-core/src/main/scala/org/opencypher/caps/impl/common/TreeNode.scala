@@ -78,26 +78,26 @@ abstract class TreeNode[T <: TreeNode[T]: ClassTag] extends Product with Travers
   }
 
   /**
-    * Applies the given [[org.opencypher.caps.impl.common.TreeNode.RewriteRule]] starting from the
+    * Applies the given partial function starting from the
     * leafs of this tree.
     *
     * @param rule rewrite rule
     * @return rewritten tree
     */
-  def transformUp(rule: TreeNode.RewriteRule[T]): T = {
+  def transformUp(rule: PartialFunction[T, T]): T = {
     val afterChildren = withNewChildren(children.map(_.transformUp(rule)))
     if (rule.isDefinedAt(afterChildren)) rule(afterChildren) else afterChildren
   }
 
   /**
-    * Applies the given [[org.opencypher.caps.impl.common.TreeNode.RewriteRule]] starting from the
+    * Applies the given partial function starting from the
     * root of this tree.
     *
     * @note Note that the applied rule must not insert new parent nodes.
     * @param rule rewrite rule
     * @return rewritten tree
     */
-  def transformDown(rule: TreeNode.RewriteRule[T]): T = {
+  def transformDown(rule: PartialFunction[T, T]): T = {
     val afterSelf = if (rule.isDefinedAt(self)) rule(self) else self
     afterSelf.withNewChildren(afterSelf.children.map(_.transformDown(rule)))
   }
@@ -143,15 +143,4 @@ abstract class TreeNode[T <: TreeNode[T]: ClassTag] extends Product with Travers
   }
 
   override def toString = s"${getClass.getSimpleName}${if (argString.isEmpty) "" else s"($argString)"}"
-}
-
-object TreeNode {
-
-  case class RewriteRule[T <: TreeNode[_]](rule: PartialFunction[T, T]) extends PartialFunction[T, T] {
-
-    def apply(t: T): T = rule.apply(t)
-
-    def isDefinedAt(t: T): Boolean = rule.isDefinedAt(t)
-  }
-
 }

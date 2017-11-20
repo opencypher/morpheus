@@ -37,7 +37,7 @@ class PhysicalOptimizer
         }
 
       val nodesToReplace = replacements.keySet
-      val rule = TreeNode.RewriteRule[PhysicalOperator] {
+      val rule: PartialFunction[PhysicalOperator, PhysicalOperator] = {
         case cache : Cache => cache
         case parent if (parent.childrenAsSet intersect nodesToReplace).nonEmpty =>
           val newChildren = parent.children.map(c => replacements.getOrElse(c, c))

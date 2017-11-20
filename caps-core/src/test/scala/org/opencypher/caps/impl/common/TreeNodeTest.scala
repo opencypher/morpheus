@@ -16,8 +16,6 @@
 package org.opencypher.caps.impl.common
 
 import org.scalatest.{FunSuite, Matchers}
-import org.opencypher.caps.impl.common.AsCode._
-import org.opencypher.caps.impl.logical.equalWithTracing
 
 class TreeNodeTest extends FunSuite with Matchers {
 
@@ -45,7 +43,7 @@ class TreeNodeTest extends FunSuite with Matchers {
   }
 
   test("rewrite") {
-    val addNoops: TreeNode.RewriteRule[CalcExpr] = TreeNode.RewriteRule {
+    val addNoops: PartialFunction[CalcExpr, CalcExpr] = {
       case Add(n1: Number, n2: Number) => Add(Noop(n1), Noop(n2))
       case Add(n1: Number, n2)         => Add(Noop(n1), n2)
       case Add(n1, n2: Number)         => Add(n1, Noop(n2))
