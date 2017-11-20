@@ -34,11 +34,6 @@ class TreeNodeTest extends FunSuite with Matchers {
     leaf.isLeaf should equal(true)
   }
 
-  test("inner") {
-    calculation.isInner should equal(true)
-    leaf.isInner should equal(false)
-  }
-
   test("arity") {
     calculation.arity should equal(2)
     leaf.arity should equal(0)
