@@ -17,9 +17,9 @@ package org.opencypher.caps.api.graph
 
 import org.opencypher.caps.api.record.CypherPrintable
 import org.opencypher.caps.api.util.PrintOptions
-import org.opencypher.caps.impl.logical.LogicalOperator
+import org.opencypher.caps.impl.common.TreeNode
 
-final case class CypherResultPlan(plan: LogicalOperator) extends CypherPrintable {
+final case class CypherResultPlan[T <: TreeNode[T]](plan: T) extends CypherPrintable {
   override def print(implicit options: PrintOptions): Unit =
     options.stream.print(plan.pretty())
 }

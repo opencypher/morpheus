@@ -215,7 +215,7 @@ class MatchAcceptanceTest extends CAPSTestSuite {
     ))
 
     // TODO: Move to plan based testing
-    result.explain.plan.pretty() should include("ValueJoin")
+    result.explain.logical.plan.pretty() should include("ValueJoin")
   }
 
   ignore("Broken start of demo query") {

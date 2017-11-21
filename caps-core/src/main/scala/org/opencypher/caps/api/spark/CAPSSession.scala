@@ -219,7 +219,7 @@ sealed class CAPSSession private (
       println(optimizedPhysicalPlan.pretty())
     }
 
-    CAPSResultBuilder.from(optimizedPhysicalPlan, logicalPlan)(RuntimeContext(
+    CAPSResultBuilder.from(logicalPlan, flatPlan, optimizedPhysicalPlan)(RuntimeContext(
       physicalPlannerContext.parameters, optGraphAt, collection.mutable.Map.empty))
   }
 
