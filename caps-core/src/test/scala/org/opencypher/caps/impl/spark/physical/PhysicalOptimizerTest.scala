@@ -155,7 +155,32 @@ class PhysicalOptimizerTest extends CAPSTestSuite {
     )
 
     // Then
-    result.explain.physical.print
+    val cacheOps = result.explain.physical.plan.collect { case c: Cache => c }
+    cacheOps.size shouldBe 2
+  }
+
+  test("test caching optional match with duplicates") {
+    // Given
+    val given = TestGraph(
+      """
+        |(p1:Person {name: "Alice"}),
+        |(p2:Person {name: "Bob"}),
+        |(p3:Person {name: "Eve"}),
+        |(p4:Person {name: "Paul"}),
+        |(p1)-[:KNOWS]->(p3),
+        |(p2)-[:KNOWS]->(p3),
+        |(p3)-[:KNOWS]->(p4),
+      """.stripMargin)
+
+    // When
+    val result = given.cypher(
+      """
+        |MATCH (a:Person)-[e1:KNOWS]->(b:Person)
+        |OPTIONAL MATCH (b)-[e2:KNOWS]->(c:Person)
+        |RETURN b.name, c.name
+      """.stripMargin)
+
+    // Then
     val cacheOps = result.explain.physical.plan.collect { case c: Cache => c }
     cacheOps.size shouldBe 2
   }

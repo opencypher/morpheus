@@ -16,6 +16,7 @@
 package org.opencypher.caps.impl.spark.physical.operators
 
 import org.opencypher.caps.api.spark.{CAPSRecords, CAPSSession}
+import org.opencypher.caps.impl.common.ModifiedProduct
 import org.opencypher.caps.impl.logical.LogicalExternalGraph
 import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
 
@@ -33,9 +34,10 @@ final case class Start(records: CAPSRecords, graph: LogicalExternalGraph) extend
 
 }
 
-final case class StartFromUnit(graph: LogicalExternalGraph, unitRecord: CAPSRecords) extends LeafPhysicalOperator {
+final case class StartFromUnit(graph: LogicalExternalGraph)(implicit caps: CAPSSession)
+  extends LeafPhysicalOperator {
 
   override def executeLeaf()(implicit context: RuntimeContext): PhysicalResult =
-    PhysicalResult(unitRecord, Map(graph.name -> resolve(graph.uri)))
+    PhysicalResult(CAPSRecords.unit(), Map(graph.name -> resolve(graph.uri)))
 
 }
