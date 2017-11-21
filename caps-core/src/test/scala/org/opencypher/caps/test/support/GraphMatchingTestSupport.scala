@@ -141,7 +141,7 @@ trait GraphMatchingTestSupport {
       override val schema: Schema = outer.schema
 
       override def nodes(name: String, cypherType: CTNode): CAPSRecords = {
-        val header = RecordHeader.nodeFromSchema(Var(name)(cypherType), schema, cypherType.labels)
+        val header = RecordHeader.nodeFromSchema(Var(name, cypherType), schema, cypherType.labels)
 
         val data = {
           val nodes = queryGraph.getVertices.asScala
@@ -149,10 +149,10 @@ trait GraphMatchingTestSupport {
             .map { v =>
               val exprs = header.slots.map(_.content.key)
               val labelFields = exprs.collect {
-                case HasLabel(_, label) => v.getLabels.contains(label.name)
+                case HasLabel(_, label, _) => v.getLabels.contains(label.name)
               }
               val propertyFields = exprs.collect {
-                case p@Property(_, k) =>
+                case p@Property(_, k, _) =>
                   val pValue = v.getProperties.get(k.name)
                   if (fromJavaType(pValue) == p.cypherType) pValue
                   else null
@@ -172,7 +172,7 @@ trait GraphMatchingTestSupport {
 
       override def relationships(name: String, cypherType: CTRelationship): CAPSRecords = {
 
-        val header = RecordHeader.relationshipFromSchema(Var(name)(cypherType), schema)
+        val header = RecordHeader.relationshipFromSchema(Var(name, cypherType), schema)
 
         val data = {
           val rels = queryGraph.getEdges.asScala
@@ -181,7 +181,7 @@ trait GraphMatchingTestSupport {
               val staticFields = Seq(e.getSourceVertexId, e.getId, e.getLabel, e.getTargetVertexId)
 
               val propertyFields = header.slots.slice(4, header.slots.size).map(_.content.key).map {
-                case Property(_, k) => e.getProperties.get(k.name)
+                case Property(_, k, _) => e.getProperties.get(k.name)
                 case _ => throw new IllegalArgumentException("Only properties expected in the header")
               }
 

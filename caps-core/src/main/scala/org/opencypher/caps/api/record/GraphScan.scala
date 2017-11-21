@@ -37,7 +37,7 @@ sealed trait GraphScan extends Serializable {
   type EntityCypherType <: CypherType
 
   def records: CAPSRecords
-  def entity: Var = Var(entityName)(entityType)
+  def entity: Var = Var(entityName, entityType)
 
   def cache(): GraphScan
   def persist(): GraphScan
@@ -95,7 +95,7 @@ object GraphScan extends GraphScanCompanion[EmbeddedEntity] {
     val slotDataSelectors: Seq[Row => Any] = targetHeader.slots.map { targetSlot =>
       val columnName = SparkColumnName.of(targetSlot)
       val defaultValue = targetSlot.content.key match {
-        case HasLabel(_, l: Label) => entityLabels(l.name)
+        case HasLabel(_, l: Label, _) => entityLabels(l.name)
         case _: OfType if entityLabels.size == 1 => entityLabels.head
         case _ => null
       }

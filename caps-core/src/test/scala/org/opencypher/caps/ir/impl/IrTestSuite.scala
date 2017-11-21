@@ -42,7 +42,7 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
   when(testGraphSource.schema).thenReturn(Some(testGraph.schema))
 
   def leafBlock(): SourceBlock[Expr] = SourceBlock[Expr](testGraph)
-  def leafPlan: Start = Start(LogicalExternalGraph(testGraph.name, testGraph.uri, testGraph.schema), Set.empty)(SolvedQueryModel.empty)
+  def leafPlan: Start = Start(LogicalExternalGraph(testGraph.name, testGraph.uri, testGraph.schema), Set.empty, SolvedQueryModel.empty)
 
   val graphBlockRef: BlockRef = BlockRef("graph")
   val graphBlock: SourceBlock[Expr] = SourceBlock[Expr](testGraph)

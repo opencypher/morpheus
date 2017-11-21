@@ -51,9 +51,9 @@ class SolvedQueryModelTest extends IrTestSuite {
   test("contains several blocks") {
     val block1 = matchBlock(Pattern.empty.withEntity('a -> CTNode))
     val block2 = matchBlock(Pattern.empty.withEntity('b -> CTNode))
-    val binds: FieldsAndGraphs[Expr] = FieldsAndGraphs(Map(toField('c) -> Equals('a, 'b)(CTBoolean)), Set('foo))
+    val binds: FieldsAndGraphs[Expr] = FieldsAndGraphs(Map(toField('c) -> Equals('a, 'b, CTBoolean)), Set('foo))
     val block3 = project(binds)
-    val block4 = project(ProjectedFieldsOf[Expr](toField('d) -> Equals('c, 'b)(CTBoolean)))
+    val block4 = project(ProjectedFieldsOf[Expr](toField('d) -> Equals('c, 'b, CTBoolean)))
     val block5 = project(FieldsAndGraphs(Map.empty, Set('bar)))
 
     val s = SolvedQueryModel.empty[Expr].withField('a).withFields('b, 'c).withGraph('foo)

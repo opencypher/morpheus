@@ -26,7 +26,7 @@ object CAPSRecordHeader {
 
   def fromSparkStructType(structType: StructType): RecordHeader = RecordHeader.from(structType.fields.map {
     field =>
-      OpaqueField(Var(field.name)(fromSparkType(field.dataType, field.nullable).getOrElse(
+      OpaqueField(Var(field.name, fromSparkType(field.dataType, field.nullable).getOrElse(
         Raise.invalidArgument("A supported Spark type", field.dataType.toString))
       ))
   }: _*)

@@ -29,7 +29,7 @@ object RowUtils {
   implicit class CypherRow(r: Row) {
     def getCypherValue(expr: Expr, header: RecordHeader)(implicit context: RuntimeContext): CypherValue = {
       expr match {
-        case Param(name) => context.parameters(name)
+        case Param(name, _) => context.parameters(name)
         case _ =>
           header.slotsFor(expr).headOption match {
             case None => Raise.slotNotFound(expr.toString)

@@ -16,6 +16,8 @@
 package org.opencypher.caps.api.graph
 
 import org.opencypher.caps.api.record.{CypherPrintable, CypherRecords}
+import org.opencypher.caps.api.util.PrintOptions
+import org.opencypher.caps.impl.common.TreeNode
 
 /**
   * Describes the result of executing a Cypher query.
@@ -27,12 +29,12 @@ trait CypherResult extends CypherPrintable {
   type Graph <: CypherGraph
   type Records <: CypherRecords
 
-//  def cypher(...): CypherResult
-//  def sourceGraph: Graph = ???
-//  def targetGraph: Graph = ???
-//
-//  def sourceGraphName: String = ???
-//  def targetGraphName: String = ???
+  //  def cypher(...): CypherResult
+  //  def sourceGraph: Graph = ???
+  //  def targetGraph: Graph = ???
+  //
+  //  def sourceGraphName: String = ???
+  //  def targetGraphName: String = ???
 
   /**
     * Retrieves the single graph returned by the query, if it returned exactly one graph.
@@ -55,7 +57,18 @@ trait CypherResult extends CypherPrintable {
     */
   def records: Records
 
-  def explain: CypherResultPlan
+  type LogicalPlan <: TreeNode[LogicalPlan]
+  type FlatPlan <: TreeNode[FlatPlan]
+  type PhysicalPlan <: TreeNode[PhysicalPlan]
+
+  def explain: Plan[LogicalPlan, FlatPlan, PhysicalPlan]
+
 }
 
-
+case class Plan[L <: TreeNode[L], F <: TreeNode[F], P <: TreeNode[P]](
+    logical: CypherResultPlan[L],
+    private[caps] val flat: CypherResultPlan[F],
+    private[caps] val physical: CypherResultPlan[P])
+    extends CypherPrintable {
+  override def print(implicit options: PrintOptions): Unit = logical.print
+}

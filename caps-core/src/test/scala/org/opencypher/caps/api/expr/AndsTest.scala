@@ -21,9 +21,9 @@ import org.opencypher.caps.test.BaseTestSuite
 class AndsTest extends BaseTestSuite {
 
   test("unnests inner ands") {
-    val args: Set[Expr] = Set(Ands(TrueLit()), HasLabel(Var("x")(), Label("X"))(), Ands(Ands(Ands(FalseLit()))))
+    val args: Set[Expr] = Set(Ands(TrueLit()), HasLabel(Var("x"), Label("X")), Ands(Ands(Ands(FalseLit()))))
 
-    Ands(args) should equal(Ands(TrueLit(), HasLabel(Var("x")(), Label("X"))(), FalseLit()))
+    Ands(args) should equal(Ands(TrueLit(), HasLabel(Var("x"), Label("X")), FalseLit()))
   }
 
   test("empty ands not allowed") {

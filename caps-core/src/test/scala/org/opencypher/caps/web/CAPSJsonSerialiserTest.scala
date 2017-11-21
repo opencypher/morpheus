@@ -501,7 +501,7 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
   private case class MapRow(strings: Map[String, String], integers: Map[String, Long], booleans: Map[String, Boolean])
 
   private def headerOf(fields: Symbol*): RecordHeader = {
-    val value1 = fields.map(f => OpaqueField(Var(f.name)(CTNode)))
+    val value1 = fields.map(f => OpaqueField(Var(f.name, CTNode)))
     val (header, _) = RecordHeader.empty.update(addContents(value1))
     header
   }

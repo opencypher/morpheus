@@ -36,5 +36,5 @@ object FreshVariableNamer {
     else name
   }
 
-  def apply(seed: String, t: CypherType): Var = Var(s"$PREFIX$seed")(t)
+  def apply(seed: String, t: CypherType): Var = Var(s"$PREFIX$seed", t)
 }

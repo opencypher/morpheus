@@ -15,26 +15,25 @@
  */
 package org.opencypher.caps.impl.spark.physical
 
-import org.opencypher.caps.api.graph.CypherResultPlan
+import org.opencypher.caps.api.graph.{CypherResultPlan, Plan}
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSResult}
-import org.opencypher.caps.impl.common.Tree
+import org.opencypher.caps.impl.flat.FlatOperator
 import org.opencypher.caps.impl.logical.LogicalOperator
+import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator
 
 object CAPSResultBuilder {
-  def from(physical: Tree[PhysicalOperator], plan: LogicalOperator)(implicit context: RuntimeContext): CAPSResult =
+  def from(logical: LogicalOperator, flat: FlatOperator, physical: PhysicalOperator)(
+      implicit context: RuntimeContext): CAPSResult = {
     new CAPSResult {
-      val execute = Execute()
-      lazy val result: PhysicalResult = execute(physical)
+      lazy val result: PhysicalResult = physical.execute
 
       override def records: CAPSRecords = result.records
+
       override def graphs: Map[String, CAPSGraph] = result.graphs
 
-      override def explain: CypherResultPlan = CypherResultPlan(plan)
+      override def explain = {
+        Plan(CypherResultPlan(logical), CypherResultPlan(flat), CypherResultPlan(physical))
+      }
     }
-}
-
-case class Execute()(implicit context: RuntimeContext) extends Tree.Aggregate[PhysicalOperator, PhysicalResult] {
-  override def apply(operator: PhysicalOperator, inputs: Seq[PhysicalResult]) = {
-    operator.execute(inputs: _*)
   }
 }

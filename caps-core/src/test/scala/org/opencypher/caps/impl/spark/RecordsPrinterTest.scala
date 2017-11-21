@@ -149,7 +149,7 @@ class RecordsPrinterTest extends CAPSTestSuite {
   private case class Row3(foo: String, v: Long, veryLongColumnNameWithBoolean: Boolean)
 
   private def headerOf(fields: Symbol*): RecordHeader = {
-    val value1 = fields.map(f => OpaqueField(Var(f.name)(CTNode)))
+    val value1 = fields.map(f => OpaqueField(Var(f.name, CTNode)))
     val (header, _) = RecordHeader.empty.update(addContents(value1))
     header
   }

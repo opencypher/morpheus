@@ -32,90 +32,90 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     case _ => CTWildcard
   }
 
-  test("exists()") {
+  test("exists") {
     convert(parseExpr("exists(n.key)")) should equal(
-      Exists(Property('n, PropertyKey("key"))())()
+      Exists(Property('n, PropertyKey("key")))
     )
   }
 
   test("converting in predicate and literal list") {
     convert(parseExpr("a IN [a, b, c]")) should equal(
-      In('a, ListLit('a, 'b, 'c))()
+      In('a, ListLit('a, 'b, 'c))
     )
   }
 
   test("converting or predicate") {
     convert(parseExpr("n = a OR n > b")) should equal(
-      Ors(Equals('n, 'a)(), GreaterThan('n, 'b)())
+      Ors(Equals('n, 'a), GreaterThan('n, 'b))
     )
   }
 
-  test("can convert type()") {
+  test("can convert type") {
     convert(parseExpr("type(a)")) should equal(
-      Type(Var("a")())()
+      Type(Var("a"))
     )
   }
 
-  test("convert count()") {
+  test("convert count") {
     convert(parseExpr("count(a)")) should equal(
-      Count(Var("a")())()
+      Count(Var("a"))
     )
     convert(parseExpr("count(*)")) should equal(
-      CountStar()()
+      CountStar()
     )
   }
 
   test("can convert less than") {
     convert(parseExpr("a < b")) should equal(
-      LessThan(Var("a")(), Var("b")())()
+      LessThan(Var("a"), Var("b"))
     )
   }
 
   test("can convert less than or equal") {
     convert(parseExpr("a <= b")) should equal(
-      LessThanOrEqual(Var("a")(), Var("b")())()
+      LessThanOrEqual(Var("a"), Var("b"))
     )
   }
 
   test("can convert greater than") {
     convert(parseExpr("a > b")) should equal(
-      GreaterThan(Var("a")(), Var("b")())()
+      GreaterThan(Var("a"), Var("b"))
     )
   }
 
   test("can convert greater than or equal") {
     convert(parseExpr("a >= b")) should equal(
-      GreaterThanOrEqual(Var("a")(), Var("b")())()
+      GreaterThanOrEqual(Var("a"), Var("b"))
     )
   }
 
   test("can convert add") {
     convert("a + b") should equal(
-      Add(Var("a")(), Var("b")())()
+      Add(Var("a"), Var("b"))
     )
   }
 
   test("can convert subtract") {
     convert("a - b") should equal(
-      Subtract(Var("a")(), Var("b")())()
+      Subtract(Var("a"), Var("b"))
     )
   }
 
   test("can convert multiply") {
     convert("a * b") should equal(
-      Multiply(Var("a")(), Var("b")())()
+      Multiply(Var("a"), Var("b"))
     )
   }
 
   test("can convert divide") {
     convert("a / b") should equal(
-      Divide(Var("a")(), Var("b")())()
+      Divide(Var("a"), Var("b"))
     )
   }
 
-  test("can convert type() function calls used as predicates") {
+  test("can convert type function calls used as predicates") {
     convert(parseExpr("type(r) = 'REL_TYPE'")) should equal(
-      HasType(Var("r")(CTRelationship), RelType("REL_TYPE"))(CTBoolean)
+      HasType(Var("r", CTRelationship), RelType("REL_TYPE"), CTBoolean)
     )
   }
 
@@ -124,66 +124,66 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   }
 
   test("can convert literals") {
-    convert(literalInt(1)) should equal(IntegerLit(1L)())
-    convert(ast.StringLiteral("Hello") _) should equal(StringLit("Hello")())
+    convert(literalInt(1)) should equal(IntegerLit(1L))
+    convert(ast.StringLiteral("Hello") _) should equal(StringLit("Hello"))
     convert(parseExpr("false")) should equal(FalseLit())
     convert(parseExpr("true")) should equal(TrueLit())
   }
 
   test("can convert property access") {
-    convert(prop("n", "key")) should equal(Property('n, PropertyKey("key"))(CTWildcard))
+    convert(prop("n", "key")) should equal(Property('n, PropertyKey("key"), CTWildcard))
   }
 
   test("can convert equals") {
-    convert(ast.Equals(varFor("a"), varFor("b")) _) should equal(Equals('a, 'b)(CTBoolean))
+    convert(ast.Equals(varFor("a"), varFor("b")) _) should equal(Equals('a, 'b, CTBoolean))
   }
 
   test("can convert IN for single-element lists") {
     val in = ast.In(varFor("x"), ast.ListLiteral(Seq(ast.StringLiteral("foo") _)) _) _
-    convert(in) should equal(Equals('x, StringLit("foo")())())
+    convert(in) should equal(Equals('x, StringLit("foo")))
   }
 
   test("can convert parameters") {
     val given = ast.Parameter("p", symbols.CTString) _
-    convert(given) should equal(Param("p")(CTWildcard))
+    convert(given) should equal(Param("p", CTWildcard))
   }
 
   test("can convert has-labels") {
     val given = convert(ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _, ast.LabelName("Duck") _)) _)
-    given should equal(Ands(HasLabel('x, Label("Person"))(CTBoolean), HasLabel('x, Label("Duck"))(CTBoolean)))
+    given should equal(Ands(HasLabel('x, Label("Person"), CTBoolean), HasLabel('x, Label("Duck"), CTBoolean)))
   }
 
   test("can convert single has-labels") {
     val given = ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _)) _
-    convert(given) should equal(HasLabel('x, Label("Person"))(CTBoolean))
+    convert(given) should equal(HasLabel('x, Label("Person"), CTBoolean))
   }
 
   test("can convert conjunctions") {
     val given = ast.Ands(Set(ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _)) _, ast.Equals(prop("x", "name"), ast.StringLiteral("Mats") _) _)) _
 
-    convert(given) should equal(Ands(HasLabel('x, Label("Person"))(CTBoolean), Equals(Property('x, PropertyKey("name"))(), StringLit("Mats")())(CTBoolean)))
+    convert(given) should equal(Ands(HasLabel('x, Label("Person"), CTBoolean), Equals(Property('x, PropertyKey("name")), StringLit("Mats"), CTBoolean)))
   }
 
   test("can convert negation") {
     val given = ast.Not(ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _)) _) _
 
-    convert(given) should equal(Not(HasLabel('x, Label("Person"))(CTBoolean))(CTBoolean))
+    convert(given) should equal(Not(HasLabel('x, Label("Person"), CTBoolean), CTBoolean))
   }
 
   test("can convert retyping predicate") {
     val given = parseExpr("$p1 AND n:Foo AND $p2 AND m:Bar")
 
     convert(given) should equal(Ands(
-      HasLabel('n, Label("Foo"))(),
-      HasLabel('m, Label("Bar"))(),
-      Param("p1")(),
-      Param("p2")())
+      HasLabel('n, Label("Foo")),
+      HasLabel('m, Label("Bar")),
+      Param("p1"),
+      Param("p2"))
     )
   }
 
   test("can convert id function") {
     convert("id(a)") should equal(
-      Id(Var("a")())()
+      Id(Var("a"))
     )
   }
 

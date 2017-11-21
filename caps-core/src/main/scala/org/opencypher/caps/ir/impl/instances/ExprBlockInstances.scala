@@ -29,7 +29,7 @@ trait ExprBlockInstances {
     def representsRel(v: Var): Boolean =
       f.name == v.name && f.cypherType.subTypeOf(CTRelationship).isTrue
     def withLabel(l: Label): IRField = {
-      f.copy()(f.cypherType.meet(CTNode(l.name)))
+      f.copy(cypherType = f.cypherType.meet(CTNode(l.name)))
     }
   }
 
@@ -44,7 +44,7 @@ trait ExprBlockInstances {
 
         predicates.foldLeft(opaqueTypedFields) {
           case (fields, predicate) => predicate match {
-            case HasLabel(node: Var, label) => fields.map {
+            case HasLabel(node: Var, label, _) => fields.map {
               case f if f representsNode node =>
                 f.withLabel(label)
               case f => f
@@ -52,7 +52,7 @@ trait ExprBlockInstances {
               // The below predicate is never present currently
               // Possibly it will be if we introduce a rewrite
               // Rel types are currently detailed already in pattern conversion
-            case HasType(rel: Var, relType) => fields.map {
+            case HasType(rel: Var, relType, _) => fields.map {
               case f if f representsRel rel =>
                 throw new NotImplementedError("No support for annotating relationships in IR yet")
               case f => f

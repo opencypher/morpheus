@@ -63,6 +63,7 @@ sealed class CAPSSession private (
   private val logicalOptimizer = new LogicalOptimizer(producer)
   private val flatPlanner = new FlatPlanner()
   private val physicalPlanner = new PhysicalPlanner()
+  private val physicalOptimizer = new PhysicalOptimizer()
   private val parser = CypherParser
   private val temporaryColumnId = new AtomicLong()
 
@@ -186,7 +187,7 @@ sealed class CAPSSession private (
   def alias(graph: Graph, in: Records, alias: (Expr, Var), queryParameters: Map[String, CypherValue]): Records = {
     val (expr, v) = alias
     val scan = planStart(graph, in.header.fields)
-    val select = producer.projectField(IRField(v.name)(v.cypherType), expr, scan)
+    val select = producer.projectField(IRField(v.name, v.cypherType), expr, scan)
     plan(graph, in, queryParameters, select).records
   }
 
@@ -209,7 +210,17 @@ sealed class CAPSSession private (
       println(physicalPlan.pretty())
     }
 
-    CAPSResultBuilder.from(physicalPlan, logicalPlan)(RuntimeContext(physicalPlannerContext.parameters, optGraphAt))
+    logStageProgress("Optimizing physical plan ... ", false)
+    val optimizedPhysicalPlan = physicalOptimizer(physicalPlan)(PhysicalOptimizerContext())
+    logStageProgress("Done!")
+
+    if (PrintPhysicalPlan.get()) {
+      println("Optimized physical plan:")
+      println(optimizedPhysicalPlan.pretty())
+    }
+
+    CAPSResultBuilder.from(logicalPlan, flatPlan, optimizedPhysicalPlan)(RuntimeContext(
+      physicalPlannerContext.parameters, optGraphAt, collection.mutable.Map.empty))
   }
 
   override def toString: String = {

@@ -17,6 +17,7 @@ package org.opencypher.caps.api.schema
 
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.common.{Verifiable, Verified}
+import org.opencypher.caps.impl.common.ModifiedProduct
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.ir.api.IRField
 import org.opencypher.caps.ir.api.pattern._
@@ -35,7 +36,7 @@ object Schema {
 }
 
 object PropertyKeyMap {
-  val empty = PropertyKeyMap(Map.empty)()
+  val empty = PropertyKeyMap(Map.empty)
 
   /**
     * Sets all cypher types of properties that are not common across all labels to nullable.
@@ -48,12 +49,18 @@ object PropertyKeyMap {
 
     PropertyKeyMap(map.m.map {
       pair => pair._1 -> pair._2.map(p2 => p2._1 -> (if (overlap.contains(p2._1)) p2._2 else p2._2.nullable))
-    })()
+    })
   }
 }
 
-final case class PropertyKeyMap(m: Map[String, Map[String, CypherType]])(val conflicts: Set[String] = Set.empty) {
+final case class PropertyKeyMap(m: Map[String, Map[String, CypherType]], conflicts: Set[String] = Set.empty)
+  extends ModifiedProduct {
+
+  // Exclude conflicts product parameter from equals and hashCode
+  override protected def excludeFromComparisons(p: Any): Boolean = p.isInstanceOf[Set[_]]
+
   def keysFor(classifier: String): Map[String, CypherType] = m.getOrElse(classifier, Map.empty)
+
   def withKeys(classifier: String, keys: Seq[(String, CypherType)]): PropertyKeyMap = {
     val oldKeys = m.getOrElse(classifier, Map.empty)
     val newKeys = keys.toMap
@@ -66,18 +73,18 @@ final case class PropertyKeyMap(m: Map[String, Map[String, CypherType]])(val con
             None
         }
     }.flatten.toSet
-    copy(m.updated(classifier, oldKeys ++ newKeys))(conflicts = conflicts ++ newConflicts)
+    copy(m.updated(classifier, oldKeys ++ newKeys), conflicts = conflicts ++ newConflicts)
   }
 
   def keys = m.values.flatMap(_.keySet).toSet
 
   def ++(other: PropertyKeyMap) = {
     val joined = joinMaps(m, other.m)((leftAttr, rightAttr) => joinMaps(leftAttr, rightAttr)(_ join _, _.nullable))
-    copy(joined)(conflicts ++ other.conflicts)
+    copy(joined, conflicts ++ other.conflicts)
   }
 
   def filterByClassifier(classifiers: Set[String]): PropertyKeyMap = {
-    PropertyKeyMap(m.filterKeys(classifiers.contains))(conflicts)
+    PropertyKeyMap(m.filterKeys(classifiers.contains), conflicts)
   }
 
   private def joinMaps[A, B](left: Map[A, B], right: Map[A, B])

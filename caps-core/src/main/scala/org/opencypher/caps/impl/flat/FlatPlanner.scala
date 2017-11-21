@@ -29,65 +29,73 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
 
     input match {
 
-      case logical.CartesianProduct(lhs, rhs) =>
+      case logical.CartesianProduct(lhs, rhs, _) =>
         producer.cartesianProduct(process(lhs), process(rhs))
 
-      case logical.Select(fields, graphs, in) =>
+      case logical.Select(fields, graphs, in, _) =>
         producer.select(fields, graphs, process(in))
 
-      case logical.Filter(expr, in) =>
+      case logical.Filter(expr, in, _) =>
         producer.filter(expr, process(in))
 
-      case logical.Distinct(fields, in) =>
+      case logical.Distinct(fields, in, _) =>
         producer.distinct(fields, process(in))
 
-      case logical.NodeScan(node, in) =>
+      case logical.NodeScan(node, in, _) =>
         producer.nodeScan(node, process(in))
 
-      case logical.Project(it, in) =>
+      case logical.Project(it, in, _) =>
         producer.project(it, process(in))
 
-      case logical.ProjectGraph(graph, in) =>
+      case logical.ProjectGraph(graph, in, _) =>
         val prev = process(in)
         ProjectGraph(graph, prev, prev.header)
 
-      case logical.Aggregate(aggregations, group, in) =>
+      case logical.Aggregate(aggregations, group, in, _) =>
         producer.aggregate(aggregations, group, process(in))
 
-      case logical.ExpandSource(source, rel, target, sourceOp, targetOp) =>
+      case logical.ExpandSource(source, rel, target, sourceOp, targetOp, _) =>
         producer.expandSource(source, rel, target, input.sourceGraph.schema, process(sourceOp), process(targetOp))
 
-      case logical.ExpandInto(source, rel, target, sourceOp) =>
+      case logical.ExpandInto(source, rel, target, sourceOp, _) =>
         producer.expandInto(source, rel, target, input.sourceGraph.schema, process(sourceOp))
 
-      case logical.ValueJoin(lhs, rhs, predicates) =>
+      case logical.ValueJoin(lhs, rhs, predicates, _) =>
         producer.valueJoin(process(lhs), process(rhs), predicates)
 
-      case logical.EmptyRecords(fields, in) =>
+      case logical.EmptyRecords(fields, in, _) =>
         producer.planEmptyRecords(fields, process(in))
 
-      case logical.Start(graph, fields) =>
+      case logical.Start(graph, fields, _) =>
         producer.planStart(graph, fields)
 
-      case logical.SetSourceGraph(graph, in) =>
+      case logical.SetSourceGraph(graph, in, _) =>
         producer.planSetSourceGraph(graph, process(in))
 
-      case logical.BoundedVarLengthExpand(source, edgeList, target, lower, upper, sourceOp, targetOp) =>
+      case logical.BoundedVarLengthExpand(source, edgeList, target, lower, upper, sourceOp, targetOp, _) =>
         val initVarExpand = producer.initVarExpand(source, edgeList, process(sourceOp))
         val edgeScan = producer.varLengthEdgeScan(edgeList, producer.planStart(input.sourceGraph, Set.empty))
-        producer.boundedVarExpand(edgeScan.edge, edgeList, target, lower, upper, initVarExpand,
-          edgeScan, process(targetOp), isExpandInto = sourceOp == targetOp)
+        producer.boundedVarExpand(
+          edgeScan.edge,
+          edgeList,
+          target,
+          lower,
+          upper,
+          initVarExpand,
+          edgeScan,
+          process(targetOp),
+          isExpandInto = sourceOp == targetOp)
 
-      case logical.Optional(lhs, rhs) =>
+      case logical.Optional(lhs, rhs, _) =>
         producer.planOptional(process(lhs), process(rhs))
 
-      case logical.OrderBy(sortListItems, sourceOp) =>
+      case logical.OrderBy(sortListItems, sourceOp, _) =>
         producer.orderBy(sortListItems, process(sourceOp))
 
-      case logical.Skip(expr, sourceOp) =>
+      case logical.Skip(expr, sourceOp, _) =>
         producer.skip(expr, process(sourceOp))
 
-      case logical.Limit(expr, sourceOp) =>
+      case logical.Limit(expr, sourceOp, _) =>
         producer.limit(expr, process(sourceOp))
 
       case x =>

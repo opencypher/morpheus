@@ -13,28 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.spark.physical
+package org.opencypher.caps.impl.spark.physical.operators
 
-import org.opencypher.caps.api.spark.CAPSRecords
+import org.opencypher.caps.api.spark.{CAPSRecords, CAPSSession}
+import org.opencypher.caps.impl.common.ModifiedProduct
 import org.opencypher.caps.impl.logical.LogicalExternalGraph
+import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
 
-sealed trait LeafPhysicalOperator extends PhysicalOperator {
-  override def execute(inputs: PhysicalResult*)(implicit context: RuntimeContext): PhysicalResult = {
-    require(inputs.length == 0)
-    executeLeaf()
-  }
+private[spark] abstract class LeafPhysicalOperator extends PhysicalOperator {
+
+  override def execute(implicit context: RuntimeContext): PhysicalResult = executeLeaf()
 
   def executeLeaf()(implicit context: RuntimeContext): PhysicalResult
 }
 
 final case class Start(records: CAPSRecords, graph: LogicalExternalGraph) extends LeafPhysicalOperator {
-  override def executeLeaf()(implicit context: RuntimeContext): PhysicalResult = {
+
+  override def executeLeaf()(implicit context: RuntimeContext): PhysicalResult =
     PhysicalResult(records, Map(graph.name -> resolve(graph.uri)))
-  }
+
 }
 
-final case class StartFrom(records: CAPSRecords, graph: LogicalExternalGraph) extends LeafPhysicalOperator {
-  override def executeLeaf()(implicit context: RuntimeContext) = {
-    PhysicalResult(records, Map(graph.name -> resolve(graph.uri)))
-  }
+final case class StartFromUnit(graph: LogicalExternalGraph)(implicit caps: CAPSSession)
+  extends LeafPhysicalOperator {
+
+  override def executeLeaf()(implicit context: RuntimeContext): PhysicalResult =
+    PhysicalResult(CAPSRecords.unit(), Map(graph.name -> resolve(graph.uri)))
+
 }
