@@ -21,7 +21,7 @@ import org.opencypher.caps.api.expr.Var
 import org.opencypher.caps.api.record.RecordHeader
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.CAPSRecords
-import org.opencypher.caps.api.types.{CTNode, CTRelationship}
+import org.opencypher.caps.api.types.CTNode
 import org.opencypher.caps.impl.logical.LogicalExternalGraph
 import org.opencypher.caps.impl.spark.physical.operators._
 import org.opencypher.caps.test.CAPSTestSuite
@@ -35,22 +35,26 @@ class PhysicalOptimizerTest extends CAPSTestSuite {
       CartesianProduct(
         Scan(
           Start(emptyRecords, emptyGraph),
-          emptyGraph, Var("C", CTNode)
+          emptyGraph,
+          Var("C", CTNode)
         ),
         Scan(
           Start(emptyRecords, emptyGraph),
-          emptyGraph, Var("B", CTNode)
+          emptyGraph,
+          Var("B", CTNode)
         ),
         RecordHeader.empty
       ),
       CartesianProduct(
         Scan(
           Start(emptyRecords, emptyGraph),
-          emptyGraph, Var("C", CTNode)
+          emptyGraph,
+          Var("C", CTNode)
         ),
         Scan(
           Start(emptyRecords, emptyGraph),
-          emptyGraph, Var("B", CTNode)
+          emptyGraph,
+          Var("B", CTNode)
         ),
         RecordHeader.empty
       ),
@@ -65,24 +69,95 @@ class PhysicalOptimizerTest extends CAPSTestSuite {
         Cache(
           CartesianProduct(
             Scan(
-              Start(emptyRecords, emptyGraph), emptyGraph, Var("C", CTNode)
+              Start(emptyRecords, emptyGraph),
+              emptyGraph,
+              Var("C", CTNode)
             ),
             Scan(
-              Start(emptyRecords, emptyGraph), emptyGraph, Var("B", CTNode)
-            ), RecordHeader.empty
+              Start(emptyRecords, emptyGraph),
+              emptyGraph,
+              Var("B", CTNode)
+            ),
+            RecordHeader.empty
           )
         ),
         Cache(
           CartesianProduct(
             Scan(
-              Start(emptyRecords, emptyGraph), emptyGraph, Var("C", CTNode)
+              Start(emptyRecords, emptyGraph),
+              emptyGraph,
+              Var("C", CTNode)
             ),
             Scan(
-              Start(emptyRecords, emptyGraph), emptyGraph, Var("B", CTNode)
-            ), RecordHeader.empty
+              Start(emptyRecords, emptyGraph),
+              emptyGraph,
+              Var("B", CTNode)
+            ),
+            RecordHeader.empty
           )
-        ), RecordHeader.empty
+        ),
+        RecordHeader.empty
       )
     )
   }
+
+  test("test caches expand into for triangle") {
+    // Given
+    val given = TestGraph(
+      """
+        |(p1:Person {name: "Alice"}),
+        |(p2:Person {name: "Bob"}),
+        |(p3:Person {name: "Eve"}),
+        |(p1)-[:KNOWS]->(p2),
+        |(p2)-[:KNOWS]->(p3),
+        |(p1)-[:KNOWS]->(p3),
+      """.stripMargin)
+
+    // When
+    val result = given.cypher(
+      """
+        |MATCH (p1:Person)-[e1:KNOWS]->(p2:Person),
+        |(p2)-[e2:KNOWS]->(p3:Person),
+        |(p1)-[e3:KNOWS]->(p3)
+        |RETURN p1.name, p2.name, p3.name
+      """.stripMargin)
+
+    // Then
+    val cacheOps = result.explain.physical.plan.collect { case c: Cache => c }
+    cacheOps.size shouldBe 2
+  }
+
+  test("test caching expand into after var expand") {
+    // Given
+    val given = TestGraph(
+      """
+        |(p1:Person {name: "Alice"}),
+        |(p2:Person {name: "Bob"}),
+        |(comment:Comment),
+        |(post1:Post {content: "asdf"}),
+        |(post2:Post {content: "foobar"}),
+        |(p1)-[:KNOWS]->(p2),
+        |(p2)<-[:HASCREATOR]-(comment),
+        |(comment)-[:REPLYOF]->(post1)-[:REPLYOF]->(post2),
+        |(post2)-[:HASCREATOR]->(p1)
+      """.stripMargin)
+
+    // When
+    val result = given.cypher(
+      """
+        |MATCH (p1:Person)-[e1:KNOWS]->(p2:Person),
+        |      (p2)<-[e2:HASCREATOR]-(comment:Comment),
+        |      (comment)-[e3:REPLYOF*1..10]->(post:Post),
+        |      (p1)<-[:HASCREATOR]-(post)
+        |WHERE p1.name = "Alice"
+        |RETURN p1.name, p2.name, post.content
+      """.stripMargin
+    )
+
+    // Then
+    result.explain.physical.print
+    val cacheOps = result.explain.physical.plan.collect { case c: Cache => c }
+    cacheOps.size shouldBe 2
+  }
+
 }
