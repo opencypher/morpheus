@@ -37,14 +37,13 @@ class PhysicalOptimizer
         }
 
       val nodesToReplace = replacements.keySet
-      val rule: PartialFunction[PhysicalOperator, PhysicalOperator] = {
+
+      input.transformDown {
         case cache : Cache => cache
         case parent if (parent.childrenAsSet intersect nodesToReplace).nonEmpty =>
           val newChildren = parent.children.map(c => replacements.getOrElse(c, c))
           parent.withNewChildren(newChildren)
       }
-
-      input.transformDown(rule)
     }
 
     private def calculateReplacementMap(input: PhysicalOperator): Map[PhysicalOperator, PhysicalOperator] = {
