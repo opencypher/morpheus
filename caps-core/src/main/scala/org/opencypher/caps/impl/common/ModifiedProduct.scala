@@ -21,11 +21,11 @@ import scala.util.hashing.MurmurHash3
   * Allows to exclude constructor parameters from inclusion in the `hashCode` and `equals`
   * methods of a product.
   */
-abstract class ModifiedProduct extends Product {
+trait ModifiedProduct extends Product {
 
-  protected def includedInComparisons(p: Any): Boolean
+  protected def excludeFromComparisons(p: Any): Boolean
 
-  protected def includedParameters = productIterator.filter(includedInComparisons)
+  protected def includedParameters = productIterator.filter(!excludeFromComparisons(_))
 
   override def hashCode(): Int = {
     MurmurHash3.orderedHash(includedParameters, MurmurHash3.stringHash(productPrefix))

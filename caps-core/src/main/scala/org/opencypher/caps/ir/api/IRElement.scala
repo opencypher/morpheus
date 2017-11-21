@@ -39,7 +39,7 @@ final case class IRField(name: String, cypherType: CypherType = CTWildcard) exte
 
   def toTypedTuple: (String, CypherType) = name -> cypherType
 
-  override protected def includedInComparisons(p: Any): Boolean = !p.isInstanceOf[CypherType]
+  override protected def excludeFromComparisons(p: Any): Boolean = p.isInstanceOf[CypherType]
 
 }
 

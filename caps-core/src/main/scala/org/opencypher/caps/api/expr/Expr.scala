@@ -30,7 +30,7 @@ import scala.util.hashing.MurmurHash3
 sealed trait Expr extends ModifiedProduct {
   self =>
 
-  override protected def includedInComparisons(p: Any): Boolean = !p.isInstanceOf[CypherType]
+  override protected def excludeFromComparisons(p: Any): Boolean = p.isInstanceOf[CypherType]
 
   def cypherType: CypherType
 
