@@ -115,7 +115,7 @@ abstract class TreeNode[T <: TreeNode[T]: ClassTag] extends Product with Travers
     val childrenString = children.foldLeft(new StringBuilder()) {
       case (agg, s) => agg.append(s.pretty(depth + 1))
     }
-    s"${prefix(depth)}$self($argString)\n$childrenString"
+    s"${prefix(depth)}$self\n$childrenString"
   }
 
   /**
@@ -124,23 +124,16 @@ abstract class TreeNode[T <: TreeNode[T]: ClassTag] extends Product with Travers
     * @return argument string
     */
   def argString: String =
-    productIterator
-      .filter(argFilter)
-      .map {
-        case tn: T => tn.argString
-        case other => other.toString
-      }
-      .mkString(", ")
+    args.flatMap {
+      case tn: T if containsChild(tn) => None // Don't print children
+      case other => other.toString
+    }.mkString(", ")
 
   /**
-    * Filters class arguments that should not be printed.
-    *
-    * @return filter for class arguments
+    * Arguments that should be printed. Can return `productIterator` to opt into printing all
+    * arguments.
     */
-  def argFilter: Any => Boolean = {
-    case tn: T if containsChild(tn) => false
-    case _                          => true
-  }
+  def args: Iterator[Any] = Iterator.empty
 
   override def toString = s"${getClass.getSimpleName}${if (argString.isEmpty) "" else s"($argString)"}"
 }

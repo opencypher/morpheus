@@ -26,19 +26,13 @@ import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
 
-private[spark] abstract class PhysicalOperator extends AbstractTreeNode[PhysicalOperator] {
+private[caps] abstract class PhysicalOperator extends AbstractTreeNode[PhysicalOperator] {
   def execute(implicit context: RuntimeContext): PhysicalResult
 
   protected def resolve(uri: URI)(implicit context: RuntimeContext): CAPSGraph = {
     context.resolve(uri).getOrElse(Raise.graphNotFound(uri))
   }
 
-  override def toString() = s"${super.toString()}($argString)"
-
-  override def argFilter: Any => Boolean = {
-    case _: RecordHeader => false
-    case other           => super.argFilter(other)
-  }
 }
 
 object PhysicalOperator {
