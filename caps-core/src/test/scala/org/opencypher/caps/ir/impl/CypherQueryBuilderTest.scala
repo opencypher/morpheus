@@ -41,7 +41,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
           deps should equal(Set(loadRef))
           fields should equal(Set(toField('a -> CTNode)))
           topo shouldBe empty
-          exprs should equal(Set(HasLabel(toVar('a), Label("Person"))))
+          exprs should equal(Set(HasLabel(toVar('a), Label("Person"))()))
       }
 
       val projectRef = model.findExactlyOne {
@@ -52,7 +52,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
       }
 
       model.result match {
-        case NoWhereBlock(ResultBlock(deps, FieldsInOrder(IRField("a", _)), _, _, _, _)) =>
+        case NoWhereBlock(ResultBlock(deps, FieldsInOrder(IRField("a")), _, _, _, _)) =>
           deps should equal(Set(projectRef))
       }
 
@@ -92,7 +92,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
       }
 
       model.result match {
-        case NoWhereBlock(ResultBlock(_, FieldsInOrder(IRField("otherB", _), IRField("a", _), IRField("r", _)), _, _, _, _)) =>
+        case NoWhereBlock(ResultBlock(_, FieldsInOrder(IRField("otherB"), IRField("a"), IRField("r")), _, _, _, _)) =>
       }
 
       model.requirements should equal(Map(
@@ -116,15 +116,15 @@ class CypherQueryBuilderTest extends IrTestSuite {
           deps should equal(Set(loadRef))
           fields should equal(Set(toField('a -> CTNode)))
           topo shouldBe empty
-          exprs should equal(Set(HasLabel(toVar('a), Label("Person"))))
+          exprs should equal(Set(HasLabel(toVar('a), Label("Person"))()))
       }
 
       val projectRef = model.findExactlyOne {
         case NoWhereBlock(ProjectBlock(deps, FieldsAndGraphs(map, _), _, _, _)) if deps.head == matchRef =>
           deps should equal(Set(matchRef))
           map should equal(Map(
-            toField('name) -> Property(Var("a", CTNode), PropertyKey("name"), CTNull),
-            toField('age) -> Property(Var("a", CTNode), PropertyKey("age"), CTNull)
+            toField('name) -> Property(Var("a")(CTNode), PropertyKey("name"))(CTNull),
+            toField('age) -> Property(Var("a")(CTNode), PropertyKey("age"))(CTNull)
           ))
       }
 
@@ -154,7 +154,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
       }
 
       model.result match {
-        case NoWhereBlock(ResultBlock(deps, FieldsInOrder(IRField("age", _),IRField("name", _)), _, _, _, _)) =>
+        case NoWhereBlock(ResultBlock(deps, FieldsInOrder(IRField("age"),IRField("name")), _, _, _, _)) =>
         deps should equal(Set(project3Ref))
       }
 

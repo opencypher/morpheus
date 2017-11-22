@@ -42,12 +42,12 @@ class CAPSRecordsTest extends CAPSTestSuite {
 
 
     val result = given.contract(embeddedNode)
-    val entityVar = Var("n", CTNode("Person"))
+    val entityVar = Var("n")(CTNode("Person"))
 
     result.header.slots.map(_.content).toVector should equal(Vector(
       OpaqueField(entityVar),
-      ProjectedExpr(HasLabel(entityVar, Label("Swedish"), CTBoolean)),
-      ProjectedExpr(Property(entityVar, PropertyKey("name"), CTString.nullable))
+      ProjectedExpr(HasLabel(entityVar, Label("Swedish"))(CTBoolean)),
+      ProjectedExpr(Property(entityVar, PropertyKey("name"))(CTString.nullable))
     ))
 
     val scan = GraphScan(embeddedNode).from(given)
@@ -69,13 +69,13 @@ class CAPSRecordsTest extends CAPSTestSuite {
       .verify
     val result = given.contract(embeddedRel)
 
-    val entityVar = Var("r", CTRelationship("NEXT"))
+    val entityVar = Var("r")(CTRelationship("NEXT"))
 
     result.header.slots.map(_.content).toVector should equal(Vector(
       OpaqueField(entityVar),
-      ProjectedExpr(StartNode(entityVar, CTNode)),
-      ProjectedExpr(EndNode(entityVar, CTNode)),
-      ProjectedExpr(Property(entityVar, PropertyKey("color"), CTString.nullable))
+      ProjectedExpr(StartNode(entityVar)(CTNode)),
+      ProjectedExpr(EndNode(entityVar)(CTNode)),
+      ProjectedExpr(Property(entityVar, PropertyKey("color"))(CTString.nullable))
     ))
 
     val scan = GraphScan(embeddedRel).from(given)
@@ -96,13 +96,13 @@ class CAPSRecordsTest extends CAPSTestSuite {
 
     val result = given.contract(embeddedRel)
 
-    val entityVar = Var("r", CTRelationship("RED", "BLUE", "GREEN", "YELLOW"))
+    val entityVar = Var("r")(CTRelationship("RED", "BLUE", "GREEN", "YELLOW"))
 
     result.header.slots.map(_.content).toVector should equal(Vector(
       OpaqueField(entityVar),
-      ProjectedExpr(StartNode(entityVar, CTNode)),
-      ProjectedExpr(EndNode(entityVar, CTNode)),
-      ProjectedExpr(OfType(entityVar, CTRelationship("RED", "BLUE", "GREEN", "YELLOW")))
+      ProjectedExpr(StartNode(entityVar)(CTNode)),
+      ProjectedExpr(EndNode(entityVar)(CTNode)),
+      ProjectedExpr(OfType(entityVar)(CTRelationship("RED", "BLUE", "GREEN", "YELLOW")))
     ))
 
     val scan = GraphScan(embeddedRel).from(given)
@@ -112,7 +112,7 @@ class CAPSRecordsTest extends CAPSTestSuite {
 
   test("can not construct records with data/header column name conflict") {
     val data = session.createDataFrame(Seq((1, "foo"), (2, "bar"))).toDF("int", "string")
-    val header = RecordHeader.from(OpaqueField(Var("int")), OpaqueField(Var("notString")))
+    val header = RecordHeader.from(OpaqueField(Var("int")()), OpaqueField(Var("notString")()))
 
     a [CypherException] shouldBe thrownBy {
       CAPSRecords.create(header, data)
@@ -123,7 +123,7 @@ class CAPSRecordsTest extends CAPSTestSuite {
     val data = session.createDataFrame(Seq(
       (1L, "foo"),
       (2L, "bar"))).toDF("int", "string")
-    val header = RecordHeader.from(OpaqueField(Var("int", CTInteger)), OpaqueField(Var("string", CTString)))
+    val header = RecordHeader.from(OpaqueField(Var("int")(CTInteger)), OpaqueField(Var("string")(CTString)))
 
     val records = CAPSRecords.create(header, data) // no exception is thrown
     records.data.select("int").collect() should equal(Array(Row(1), Row(2)))

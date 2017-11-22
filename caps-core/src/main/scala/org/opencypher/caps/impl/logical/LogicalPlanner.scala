@@ -48,7 +48,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     val plan = planBlock(first, model, None)
 
     // always plan a select at the top
-    val fields = block.binds.fieldsOrder.map(f => Var(f.name, f.cypherType))
+    val fields = block.binds.fieldsOrder.map(f => Var(f.name)(f.cypherType))
     val graphNames = block.binds.graphs.map(_.name)
     producer.planSelect(fields, graphNames, plan)
   }
@@ -183,22 +183,22 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         val project2 = planInnerExpr(be.rhs, project1)
         val projectParent = producer.projectExpr(be, project2)
         producer.planFilter(be, projectParent)
-      case (acc, h@HasLabel(_: Var, _, _)) =>
+      case (acc, h@HasLabel(_: Var, _)) =>
         producer.planFilter(h, acc)
-      case (acc, not@Not(Equals(lhs, rhs, _), _)) =>
+      case (acc, not@Not(Equals(lhs, rhs))) =>
         val p1 = planInnerExpr(lhs, acc)
         val p2 = planInnerExpr(rhs, p1)
         producer.planFilter(not, p2)
-      case (acc, not@Not(expr, _)) =>
+      case (acc, not@Not(expr)) =>
         val project = planInnerExpr(expr, acc)
         producer.planFilter(not, project)
-      case (acc, exists@Exists(expr, _)) =>
+      case (acc, exists@Exists(expr)) =>
         val project = planInnerExpr(expr, acc)
         producer.planFilter(exists, project)
-      case (acc, isNull@IsNull(expr, _)) =>
+      case (acc, isNull@IsNull(expr)) =>
         val project = planInnerExpr(expr, acc)
         producer.planFilter(isNull, acc)
-      case (acc, isNotNull@IsNotNull(expr, _)) =>
+      case (acc, isNotNull@IsNotNull(expr)) =>
         val project = planInnerExpr(expr, acc)
         producer.planFilter(isNotNull, acc)
       case (acc, t: TrueLit) =>
@@ -222,10 +222,10 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         val project1 = planInnerExpr(be.lhs, in)
         val project2 = planInnerExpr(be.rhs, project1)
         producer.projectExpr(be, project2)
-      case HasLabel(e,_, _) => planInnerExpr(e, in)
-      case Not(e, _) => planInnerExpr(e, in)
-      case IsNull(e, _) => planInnerExpr(e, in)
-      case IsNotNull(e, _) => planInnerExpr(e, in)
+      case HasLabel(e,_) => planInnerExpr(e, in)
+      case Not(e) => planInnerExpr(e, in)
+      case IsNull(e) => planInnerExpr(e, in)
+      case IsNotNull(e) => planInnerExpr(e, in)
       case func: FunctionExpr =>
         val projectArg = planInnerExpr(func.expr, in)
         producer.projectExpr(func, projectArg)
@@ -242,7 +242,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       // TODO: IRGraph[Expr]
       case IRPatternGraph(name, schema, pattern) =>
         val patternEntities = pattern.fields
-        val entitiesInScope = fieldsInScope.map { (v: Var) => IRField(v.name, v.cypherType) }
+        val entitiesInScope = fieldsInScope.map { (v: Var) => IRField(v.name)(v.cypherType) }
         val boundEntities = patternEntities intersect entitiesInScope
         val entitiesToCreate = patternEntities -- boundEntities
 

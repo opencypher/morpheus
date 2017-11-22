@@ -21,26 +21,26 @@ import org.scalatest.{FunSuite, Matchers}
 class IRFieldTest extends FunSuite with Matchers {
 
   test("IRField ignores cypher type in equality") {
-    val a = IRField("a", CTNode)
-    val b = IRField("a", CTRelationship)
+    val a = IRField("a")(CTNode)
+    val b = IRField("a")(CTRelationship)
     a should equal(b)
   }
 
   test("same IRFields with different cypher types have the same hash code") {
-    val n = IRField("a", CTNode("a"))
-    val r = IRField("a", CTRelationship("b"))
+    val n = IRField("a")(CTNode("a"))
+    val r = IRField("a")(CTRelationship("b"))
     n.hashCode should equal(r.hashCode)
   }
 
   test("different IRFields are not equal") {
-    val a = IRField("a")
-    val b = IRField("b")
+    val a = IRField("a")()
+    val b = IRField("b")()
     a should not equal(b)
   }
 
   test("different IRFields have different hash codes") {
-    val a = IRField("a")
-    val b = IRField("b")
+    val a = IRField("a")()
+    val b = IRField("b")()
     a.hashCode should not equal(b.hashCode)
   }
 

@@ -30,27 +30,27 @@ case class cypherFilter(header: RecordHeader, expr: Expr)
                        (implicit context: RuntimeContext) extends (Row => Boolean) {
   def apply(row: Row): Boolean =
     expr match {
-      case Equals(lhs, rhs, _) =>
+      case Equals(lhs, rhs) =>
         val lhsValue = row.getCypherValue(lhs, header)
         val rhsValue = row.getCypherValue(rhs, header)
         (lhsValue equalTo rhsValue).isTrue
 
-      case LessThan(lhs, rhs, _) =>
+      case LessThan(lhs, rhs) =>
         val lhsValue = row.getCypherValue(lhs, header)
         val rhsValue = row.getCypherValue(rhs, header)
         (lhsValue < rhsValue).orNull
 
-      case LessThanOrEqual(lhs, rhs, _) =>
+      case LessThanOrEqual(lhs, rhs) =>
         val lhsValue = row.getCypherValue(lhs, header)
         val rhsValue = row.getCypherValue(rhs, header)
         (lhsValue <= rhsValue).orNull
 
-      case GreaterThan(lhs, rhs, _) =>
+      case GreaterThan(lhs, rhs) =>
         val lhsValue = row.getCypherValue(lhs, header)
         val rhsValue = row.getCypherValue(rhs, header)
         (lhsValue > rhsValue).orNull
 
-      case GreaterThanOrEqual(lhs, rhs, _) =>
+      case GreaterThanOrEqual(lhs, rhs) =>
         val lhsValue = row.getCypherValue(lhs, header)
         val rhsValue = row.getCypherValue(rhs, header)
         (lhsValue >= rhsValue).orNull

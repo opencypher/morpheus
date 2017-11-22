@@ -108,10 +108,10 @@ object CAPSGraph {
     override val schema: Schema = Schema.empty
 
     override def nodes(name: String, cypherType: CTNode): CAPSRecords =
-      CAPSRecords.empty(RecordHeader.from(OpaqueField(Var(name, cypherType))))
+      CAPSRecords.empty(RecordHeader.from(OpaqueField(Var(name)(cypherType))))
 
     override def relationships(name: String, cypherType: CTRelationship): CAPSRecords =
-      CAPSRecords.empty(RecordHeader.from(OpaqueField(Var(name, cypherType))))
+      CAPSRecords.empty(RecordHeader.from(OpaqueField(Var(name)(cypherType))))
 
     override def union(other: CAPSGraph): CAPSGraph = other
   }

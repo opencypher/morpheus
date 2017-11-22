@@ -121,7 +121,7 @@ sealed abstract class CAPSRecords(
       case slot@RecordSlot(idx, content: FieldSlotContent) =>
         slotExprs.get(content.field.name).map {
           case expr: Var => OpaqueField(expr)
-          case expr: Property => ProjectedExpr(expr.copy(cypherType = content.cypherType))
+          case expr: Property => ProjectedExpr(expr.copy()(cypherType = content.cypherType))
           case expr => ProjectedExpr(expr)
         }
           .getOrElse(slot.content)

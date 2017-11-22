@@ -41,8 +41,7 @@ object SparkColumnName {
 
   def of(expr: Expr): String = {
     expr match {
-      case Var(name, _) =>
-        name
+      case Var(name) => name
       case _ =>
         val columnNameBuilder = new NameBuilder() += None += expr.withoutType
         columnNameBuilder.result()

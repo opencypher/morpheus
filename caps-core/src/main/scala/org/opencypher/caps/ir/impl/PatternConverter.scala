@@ -51,7 +51,7 @@ final class PatternConverter(val parameters: Map[String, CypherValue]) extends A
   private def convertElement(p: ast.PatternElement, knownTypes: Map[Expression, CypherType]): Result[IRField] = p match {
     case ast.NodePattern(Some(v), labels: Seq[LabelName], None) =>
       for {
-        entity <- pure(IRField(v.name, knownTypes.getOrElse(v, CTNode(labels.map(_.name).toSet))))
+        entity <- pure(IRField(v.name)(knownTypes.getOrElse(v, CTNode(labels.map(_.name).toSet))))
         _ <- modify[Pattern[Expr]](_.withEntity(entity))
       } yield entity
 
@@ -59,7 +59,7 @@ final class PatternConverter(val parameters: Map[String, CypherValue]) extends A
       for {
         source <- convertElement(left, knownTypes)
         target <- convertElement(right, knownTypes)
-        rel <- pure(IRField(eVar.name, knownTypes.getOrElse(eVar, CTRelationship(types.map(_.name).toSet))))
+        rel <- pure(IRField(eVar.name)(knownTypes.getOrElse(eVar, CTRelationship(types.map(_.name).toSet))))
         _ <- modify[Pattern[Expr]] { given =>
           val registered = given.withEntity(rel)
 
@@ -86,7 +86,7 @@ final class PatternConverter(val parameters: Map[String, CypherValue]) extends A
       for {
         source <- convertElement(left, knownTypes)
         target <- convertElement(right, knownTypes)
-        rel <- pure(IRField(eVar.name, CTList(CTRelationship(types.map(_.name).toSet))))
+        rel <- pure(IRField(eVar.name)(CTList(CTRelationship(types.map(_.name).toSet))))
         _ <- modify[Pattern[Expr]] { given =>
           val registered = given.withEntity(rel)
 

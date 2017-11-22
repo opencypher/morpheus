@@ -44,7 +44,7 @@ final case class CAPSUnionGraph(graphs: CAPSGraph*)
     CAPSUnionGraph(graphs.map(f): _*)(session)
 
   override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
-    val node = Var(name, nodeCypherType)
+    val node = Var(name)(nodeCypherType)
     val targetHeader = RecordHeader.nodeFromSchema(node, schema)
     val nodeScans: Seq[CAPSRecords] = graphs
       .filter(nodeCypherType.labels.isEmpty || _.schema.labels.intersect(nodeCypherType.labels).nonEmpty)
@@ -55,7 +55,7 @@ final case class CAPSUnionGraph(graphs: CAPSGraph*)
   }
 
   override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
-    val rel = Var(name, relCypherType)
+    val rel = Var(name)(relCypherType)
     val targetHeader = RecordHeader.relationshipFromSchema(rel, schema)
     val relScans: Seq[CAPSRecords] = graphs
       .filter(relCypherType.types.isEmpty || _.schema.relationshipTypes.intersect(relCypherType.types).nonEmpty)

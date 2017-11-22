@@ -36,12 +36,12 @@ class PhysicalOptimizerTest extends CAPSTestSuite {
         Scan(
           Start(emptyRecords, emptyGraph),
           emptyGraph,
-          Var("C", CTNode)
+          Var("C")(CTNode)
         ),
         Scan(
           Start(emptyRecords, emptyGraph),
           emptyGraph,
-          Var("B", CTNode)
+          Var("B")(CTNode)
         ),
         RecordHeader.empty
       ),
@@ -49,12 +49,12 @@ class PhysicalOptimizerTest extends CAPSTestSuite {
         Scan(
           Start(emptyRecords, emptyGraph),
           emptyGraph,
-          Var("C", CTNode)
+          Var("C")(CTNode)
         ),
         Scan(
           Start(emptyRecords, emptyGraph),
           emptyGraph,
-          Var("B", CTNode)
+          Var("B")(CTNode)
         ),
         RecordHeader.empty
       ),
@@ -71,12 +71,12 @@ class PhysicalOptimizerTest extends CAPSTestSuite {
             Scan(
               Start(emptyRecords, emptyGraph),
               emptyGraph,
-              Var("C", CTNode)
+              Var("C")(CTNode)
             ),
             Scan(
               Start(emptyRecords, emptyGraph),
               emptyGraph,
-              Var("B", CTNode)
+              Var("B")(CTNode)
             ),
             RecordHeader.empty
           )
@@ -86,12 +86,12 @@ class PhysicalOptimizerTest extends CAPSTestSuite {
             Scan(
               Start(emptyRecords, emptyGraph),
               emptyGraph,
-              Var("C", CTNode)
+              Var("C")(CTNode)
             ),
             Scan(
               Start(emptyRecords, emptyGraph),
               emptyGraph,
-              Var("B", CTNode)
+              Var("B")(CTNode)
             ),
             RecordHeader.empty
           )

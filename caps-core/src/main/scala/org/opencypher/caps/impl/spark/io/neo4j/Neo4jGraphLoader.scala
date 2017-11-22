@@ -157,7 +157,7 @@ object Neo4jGraphLoader {
         val header = computeHeader(fields)
         val struct = StructType(fields.map(_._2).toArray)
         val rdd = computeRdd(header, struct)
-        val slot = header.slotFor(Var(name, cypherType))
+        val slot = header.slotFor(Var(name)(cypherType))
         val rawData = session.sparkSession.createDataFrame(rdd, struct)
         val col = rawData.col(rawData.columns(slot.index))
         val recordData = rawData.repartition(col).sortWithinPartitions(col)
@@ -171,14 +171,14 @@ object Neo4jGraphLoader {
 
       private def computeNodeFields(name: String, cypherType: CTNode)
                                    (implicit context: LoadingContext): Seq[(SlotContent, StructField)] = {
-        val node = Var(name, cypherType)
+        val node = Var(name)(cypherType)
 
         val schema = context.schema
 
         val labels = if (cypherType.labels.isEmpty) schema.labels else cypherType.labels
 
         val labelFields = labels.map { name =>
-          val label = HasLabel(node, Label(name), CTBoolean)
+          val label = HasLabel(node, Label(name))(CTBoolean)
           val slot = ProjectedExpr(label)
           val field = StructField(SparkColumnName.of(slot), BooleanType, nullable = false)
           slot -> field
@@ -186,7 +186,7 @@ object Neo4jGraphLoader {
         val propertyFields = labels.flatMap { l =>
           schema.nodeKeys(l).map {
             case (key, t) =>
-              val property = Property(node, PropertyKey(key), t)
+              val property = Property(node, PropertyKey(key))(t)
               val slot = ProjectedExpr(property)
               val field = StructField(SparkColumnName.of(slot), toSparkType(t), nullable = true)
               slot -> field
@@ -200,28 +200,28 @@ object Neo4jGraphLoader {
 
       private def computeRelFields(name: String, cypherType: CTRelationship)
                                   (implicit context: LoadingContext): Seq[(SlotContent, StructField)] = {
-        val rel = Var(name, cypherType)
+        val rel = Var(name)(cypherType)
 
         val schema = context.schema
 
         val propertyFields = schema.relationshipTypes.flatMap { typ =>
           schema.relationshipKeys(typ).map {
             case (key, t) =>
-              val property = Property(rel, PropertyKey(key), t)
+              val property = Property(rel, PropertyKey(key))(t)
               val slot = ProjectedExpr(property)
               val field = StructField(SparkColumnName.of(slot), toSparkType(t), nullable = true)
               slot -> field
           }
         }
-        val typeSlot = ProjectedExpr(OfType(rel, CTString))
+        val typeSlot = ProjectedExpr(OfType(rel)(CTString))
         val typeField = StructField(SparkColumnName.of(typeSlot), StringType, nullable = false)
 
         val idSlot = OpaqueField(rel)
         val idField = StructField(SparkColumnName.of(idSlot), LongType, nullable = false)
 
-        val sourceSlot = ProjectedExpr(StartNode(rel, CTNode))
+        val sourceSlot = ProjectedExpr(StartNode(rel)(CTNode))
         val sourceField = StructField(SparkColumnName.of(sourceSlot), LongType, nullable = false)
-        val targetSlot = ProjectedExpr(EndNode(rel, CTNode))
+        val targetSlot = ProjectedExpr(EndNode(rel)(CTNode))
         val targetField = StructField(SparkColumnName.of(targetSlot), LongType, nullable = false)
 
         Seq(sourceSlot -> sourceField, idSlot -> idField,
@@ -253,13 +253,13 @@ object Neo4jGraphLoader {
 
       val values = header.slots.map { slot =>
         slot.content.key match {
-          case Property(_, PropertyKey(keyName), _) =>
+          case Property(_, PropertyKey(keyName)) =>
             val propValue = schemaKeyTypes.get(keyName) match {
               case Some(t) if t == slot.content.cypherType => props.get(keyName).orNull
               case _ => null
             }
             importedToSparkEncodedCypherValue(schema(slot.index).dataType, propValue)
-          case HasLabel(_, label, _) =>
+          case HasLabel(_, label) =>
             labels(label.name)
           case _: Var =>
             importedNode.id()
@@ -293,7 +293,7 @@ object Neo4jGraphLoader {
 
       val values = header.slots.map { slot =>
         slot.content.key match {
-          case Property(_, PropertyKey(keyName), _) =>
+          case Property(_, PropertyKey(keyName)) =>
             val propValue = schemaKeyTypes.get(keyName) match {
               case Some(t) if t == slot.content.cypherType => props.get(keyName).orNull
               case _ => null

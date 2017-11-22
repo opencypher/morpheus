@@ -212,7 +212,7 @@ final case class ProjectPatternGraph(
   private def constructNode(node: ConstructedNode, records: CAPSRecords): (Set[(SlotContent, Column)]) = {
     val col = org.apache.spark.sql.functions.lit(true)
     val labelTuples: Set[(SlotContent, Column)] = node.labels.map { label =>
-      ProjectedExpr(HasLabel(node.v, label, CTBoolean)) -> col
+      ProjectedExpr(HasLabel(node.v, label)(CTBoolean)) -> col
     }
 
     labelTuples + (OpaqueField(node.v) -> generateId)
@@ -237,12 +237,12 @@ final case class ProjectPatternGraph(
     val sourceTuple = {
       val slot = header.slotFor(source)
       val col = inData.col(columnName(slot))
-      ProjectedExpr(StartNode(rel, CTInteger)) -> col
+      ProjectedExpr(StartNode(rel)(CTInteger)) -> col
     }
     val targetTuple = {
       val slot = header.slotFor(target)
       val col = inData.col(columnName(slot))
-      ProjectedExpr(EndNode(rel, CTInteger)) -> col
+      ProjectedExpr(EndNode(rel)(CTInteger)) -> col
     }
 
     // id needs to be generated
@@ -251,7 +251,7 @@ final case class ProjectPatternGraph(
     // type is an input
     val typeTuple = {
       val col = org.apache.spark.sql.functions.lit(typ)
-      ProjectedExpr(OfType(rel, CTString)) -> col
+      ProjectedExpr(OfType(rel)(CTString)) -> col
     }
 
     Set(sourceTuple, targetTuple, relTuple, typeTuple)
@@ -354,7 +354,7 @@ final case class Aggregate(
         case (to, inner) =>
           val columnName = SparkColumnName.from(Some(to.name))
           inner match {
-            case Avg(expr, _) =>
+            case Avg(expr) =>
               withInnerExpr(expr)(
                 functions
                   .avg(_)
@@ -365,19 +365,19 @@ final case class Aggregate(
               functions.count(functions.lit(0)).as(columnName)
 
             // TODO: Consider not implicitly projecting the inner expr here, but rewriting it into a variable in logical planning or IR construction
-            case Count(expr, _) =>
+            case Count(expr) =>
               withInnerExpr(expr)(functions.count(_).as(columnName))
 
-            case Max(expr, _) =>
+            case Max(expr) =>
               withInnerExpr(expr)(functions.max(_).as(columnName))
 
-            case Min(expr, _) =>
+            case Min(expr) =>
               withInnerExpr(expr)(functions.min(_).as(columnName))
 
-            case Sum(expr, _) =>
+            case Sum(expr) =>
               withInnerExpr(expr)(functions.sum(_).as(columnName))
 
-            case Collect(expr, _) =>
+            case Collect(expr) =>
               withInnerExpr(expr)(functions.collect_list(_).as(columnName))
 
             case x =>
@@ -420,8 +420,8 @@ final case class Skip(in: PhysicalOperator, expr: Expr, header: RecordHeader) ex
 
   override def executeUnary(prev: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult = {
     val skip: Long = expr match {
-      case IntegerLit(v, _) => v
-      case Param(name, _) =>
+      case IntegerLit(v) => v
+      case Param(name) =>
         context.parameters(name) match {
           case CypherInteger(v) => v
           case _                => Raise.impossible()
@@ -450,7 +450,7 @@ final case class Limit(in: PhysicalOperator, expr: Expr, header: RecordHeader) e
 
   override def executeUnary(prev: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult = {
     val limit = expr match {
-      case IntegerLit(v, _) => v
+      case IntegerLit(v) => v
       case _                => Raise.impossible()
     }
 

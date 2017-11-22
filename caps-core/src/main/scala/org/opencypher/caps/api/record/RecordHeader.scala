@@ -80,9 +80,9 @@ final case class RecordHeader(internalHeader: InternalHeader) {
   def mandatory(slot: RecordSlot): Boolean =
     internalHeader.mandatory(slot)
 
-  def sourceNodeSlot(rel: Var): RecordSlot = slotsFor(StartNode(rel)).headOption.getOrElse(???)
-  def targetNodeSlot(rel: Var): RecordSlot = slotsFor(EndNode(rel)).headOption.getOrElse(???)
-  def typeSlot(rel: Expr): RecordSlot = slotsFor(OfType(rel)).headOption.getOrElse(???)
+  def sourceNodeSlot(rel: Var): RecordSlot = slotsFor(StartNode(rel)()).headOption.getOrElse(???)
+  def targetNodeSlot(rel: Var): RecordSlot = slotsFor(EndNode(rel)()).headOption.getOrElse(???)
+  def typeSlot(rel: Expr): RecordSlot = slotsFor(OfType(rel)()).headOption.getOrElse(???)
 
   def labels(node: Var): Seq[HasLabel] = labelSlots(node).keys.toSeq
 
@@ -189,11 +189,11 @@ object RecordHeader {
     val keyGroups: Map[String, Vector[CypherType]] = allKeys.groups[String, Vector[CypherType]]
     val headerLabels = impliedLabels ++ possibleLabels - DefaultLabel.get()
     val labelHeaderContents = headerLabels.map {
-      labelName => ProjectedExpr(HasLabel(node, Label(labelName), CTBoolean))
+      labelName => ProjectedExpr(HasLabel(node, Label(labelName))(CTBoolean))
     }.toSeq
 
     val keyHeaderContents = keyGroups.toSeq.map {
-      case (k, types) => ProjectedExpr(Property(node, PropertyKey(k), types.reduce(_ join _)))
+      case (k, types) => ProjectedExpr(Property(node, PropertyKey(k))(types.reduce(_ join _)))
     }
 
     // TODO: Check results for errors
@@ -220,12 +220,12 @@ object RecordHeader {
     val relKeyHeaderProperties = relTypes.flatMap(t => schema.relationshipKeys(t).toSeq)
 
     val relKeyHeaderContents = relKeyHeaderProperties.map {
-      case ((k, t)) => ProjectedExpr(Property(rel, PropertyKey(k), t))
+      case ((k, t)) => ProjectedExpr(Property(rel, PropertyKey(k))(t))
     }
 
-    val startNode = ProjectedExpr(StartNode(rel, CTNode))
-    val typeString = ProjectedExpr(OfType(rel, CTString))
-    val endNode = ProjectedExpr(EndNode(rel, CTNode))
+    val startNode = ProjectedExpr(StartNode(rel)(CTNode))
+    val typeString = ProjectedExpr(OfType(rel)(CTString))
+    val endNode = ProjectedExpr(EndNode(rel)(CTNode))
 
     val relHeaderContents = Seq(startNode, OpaqueField(rel), typeString, endNode) ++ relKeyHeaderContents
     // this header is necessary on its own to get the type filtering right

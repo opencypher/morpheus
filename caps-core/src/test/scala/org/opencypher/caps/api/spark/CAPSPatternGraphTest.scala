@@ -287,7 +287,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
     val fields = Seq(
       OpaqueField('p -> CTNode("Person")),
       OpaqueField(n),
-      ProjectedExpr(HasLabel(n, Label("Person"), CTBoolean)),
+      ProjectedExpr(HasLabel(n, Label("Person"))(CTBoolean)),
       OpaqueField('q -> CTNode("Foo"))
     )
     val (header, _) = RecordHeader.empty.update(addContents(fields))
@@ -316,16 +316,16 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
     val x: Var = 'x -> CTRelationship("IN")
     val fields = Seq(
         OpaqueField(c),
-        ProjectedExpr(HasLabel(c, Label("Customer"), CTBoolean)),
-        ProjectedField('cName -> CTString.nullable, Property(c, PropertyKey("name"), CTString.nullable)),
+        ProjectedExpr(HasLabel(c, Label("Customer"))(CTBoolean)),
+        ProjectedField('cName -> CTString.nullable, Property(c, PropertyKey("name"))(CTString.nullable)),
         OpaqueField(p),
-        ProjectedExpr(HasLabel(p, Label("Person"), CTBoolean)),
-        ProjectedField('pName -> CTString.nullable, Property(p, PropertyKey("name"), CTString)),
-        ProjectedExpr(Property(p, PropertyKey("region"), CTString)),
-        ProjectedExpr(StartNode(x, CTInteger)),
-        ProjectedExpr(EndNode(x, CTInteger)),
+        ProjectedExpr(HasLabel(p, Label("Person"))(CTBoolean)),
+        ProjectedField('pName -> CTString.nullable, Property(p, PropertyKey("name"))(CTString)),
+        ProjectedExpr(Property(p, PropertyKey("region"))(CTString)),
+        ProjectedExpr(StartNode(x)(CTInteger)),
+        ProjectedExpr(EndNode(x)(CTInteger)),
         OpaqueField(x),
-        ProjectedExpr(OfType(x, CTString))
+        ProjectedExpr(OfType(x)(CTString))
     )
     val (header, _) = RecordHeader.empty.update(addContents(fields))
 
@@ -362,8 +362,8 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
     val p = 'p -> CTNode("Person")
     val fields = Seq(
       OpaqueField(p),
-      ProjectedExpr(HasLabel(p, Label("Person"), CTBoolean)),
-      ProjectedExpr(Property(p, PropertyKey("name"), CTString))
+      ProjectedExpr(HasLabel(p, Label("Person"))(CTBoolean)),
+      ProjectedExpr(Property(p, PropertyKey("name"))(CTString))
     )
     val (header, _) = RecordHeader.empty.update(addContents(fields))
 
@@ -388,11 +388,11 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
     val e = 'e -> CTNode("Employee")
     val fields = Seq(
       OpaqueField(p),
-      ProjectedExpr(HasLabel(p, Label("Person"), CTBoolean)),
+      ProjectedExpr(HasLabel(p, Label("Person"))(CTBoolean)),
       OpaqueField(e),
-      ProjectedExpr(HasLabel(e, Label("Employee"), CTBoolean)),
-      ProjectedExpr(Property(p, PropertyKey("name"), CTString)),
-      ProjectedField('foo -> CTString, Property(e, PropertyKey("name"), CTString))
+      ProjectedExpr(HasLabel(e, Label("Employee"))(CTBoolean)),
+      ProjectedExpr(Property(p, PropertyKey("name"))(CTString)),
+      ProjectedField('foo -> CTString, Property(e, PropertyKey("name"))(CTString))
     )
     val (header, _) = RecordHeader.empty.update(addContents(fields))
 
@@ -425,9 +425,9 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
       OpaqueField(p),
       OpaqueField(e),
       OpaqueField(pe),
-      ProjectedExpr(Property(p, PropertyKey("name"), CTString)),
-      ProjectedExpr(Property(e, PropertyKey("name"), CTString.nullable)),
-      ProjectedExpr(Property(pe, PropertyKey("name"), CTString))
+      ProjectedExpr(Property(p, PropertyKey("name"))(CTString)),
+      ProjectedExpr(Property(e, PropertyKey("name"))(CTString.nullable)),
+      ProjectedExpr(Property(pe, PropertyKey("name"))(CTString))
     )
     val (header, _) = RecordHeader.empty.update(addContents(fields))
 
