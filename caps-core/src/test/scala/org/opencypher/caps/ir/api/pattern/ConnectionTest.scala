@@ -20,9 +20,9 @@ import org.opencypher.caps.test.BaseTestSuite
 
 class ConnectionTest extends BaseTestSuite {
 
-  val field_a = IRField("a")
-  val field_b = IRField("b")
-  val field_c = IRField("c")
+  val field_a = IRField("a")()
+  val field_b = IRField("b")()
+  val field_c = IRField("c")()
 
   test("SimpleConnection.flip") {
     DirectedRelationship(field_a, field_b).flip should equal(DirectedRelationship(field_b, field_a))

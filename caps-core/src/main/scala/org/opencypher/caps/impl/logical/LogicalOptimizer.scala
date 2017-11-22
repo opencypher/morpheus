@@ -57,7 +57,7 @@ object ExtractLabels extends LogicalAggregator[Set[(Var, Label)]] {
     root match {
       case Filter(expr, in, _) =>
         val res = expr match {
-          case HasLabel(v: Var, label, _) => Set(v -> label)
+          case HasLabel(v: Var, label) => Set(v -> label)
           case _ => Set.empty
         }
         res ++ ExtractLabels(in)
@@ -86,8 +86,8 @@ case class PushLabelFiltersIntoScans(labelMap: Map[Var, Set[String]]) extends Lo
     root match {
       case n@NodeScan(node, in, _) =>
         val labels = labelMap.getOrElse(node, Set.empty)
-        val nodeVar = Var(node.name, CTNode(labels))
-        val solved = in.solved.withPredicates(labels.map(l => HasLabel(nodeVar, Label(l), CTBoolean)).toSeq: _*)
+        val nodeVar = Var(node.name)(CTNode(labels))
+        val solved = in.solved.withPredicates(labels.map(l => HasLabel(nodeVar, Label(l))(CTBoolean)).toSeq: _*)
         NodeScan(nodeVar, this (in), solved)
       case f@Filter(expr, in, _) =>
         expr match {

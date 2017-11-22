@@ -17,13 +17,16 @@ package org.opencypher.caps.api.expr
 
 import org.opencypher.caps.ir.api.Label
 import org.opencypher.caps.test.BaseTestSuite
+import org.opencypher.caps.api.expr.ExprHelper._
+import org.opencypher.caps.api.types.CypherType
 
 class AndsTest extends BaseTestSuite {
 
   test("unnests inner ands") {
-    val args: Set[Expr] = Set(Ands(TrueLit()), HasLabel(Var("x"), Label("X")), Ands(Ands(Ands(FalseLit()))))
+    val x = Var("x")()
+    val args: Set[Expr] = Set(Ands(TrueLit()), HasLabel(x, Label("X"))(), Ands(Ands(Ands(FalseLit()))))
 
-    Ands(args) should equal(Ands(TrueLit(), HasLabel(Var("x"), Label("X")), FalseLit()))
+    Ands(args) should equal(Ands(TrueLit(), HasLabel(x, Label("X"))(), FalseLit()))
   }
 
   test("empty ands not allowed") {

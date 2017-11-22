@@ -21,34 +21,34 @@ import org.scalatest.{FunSuite, Matchers}
 class ExprTest extends FunSuite with Matchers {
 
   test("expressions ignore cypher type in equality") {
-    val n = Var("a", CTNode)
-    val r = Var("a", CTRelationship)
+    val n = Var("a")(CTNode)
+    val r = Var("a")(CTRelationship)
     n should equal(r)
 
-    val a = StartNode(Var("rel", CTRelationship), CTWildcard)
-    val b = StartNode(Var("rel", CTRelationship), CTNode)
+    val a = StartNode(Var("rel")(CTRelationship))(CTWildcard)
+    val b = StartNode(Var("rel")(CTRelationship))(CTNode)
     a should equal(b)
   }
 
   test("same expressions with different cypher types have the same hash code") {
-    val n = Var("a", CTNode("a"))
-    val r = Var("a", CTRelationship("b"))
+    val n = Var("a")(CTNode("a"))
+    val r = Var("a")(CTRelationship("b"))
     n.hashCode should equal(r.hashCode)
 
-    val a = StartNode(Var("rel", CTRelationship), CTWildcard)
-    val b = StartNode(Var("rel", CTRelationship), CTNode)
+    val a = StartNode(Var("rel")(CTRelationship))(CTWildcard)
+    val b = StartNode(Var("rel")(CTRelationship))(CTNode)
     a.hashCode should equal(b.hashCode)
   }
 
   test("different expressions are not equal") {
-    val p = Param("a")
-    val v = Var("a")
+    val p = Param("a")()
+    val v = Var("a")()
     p should not equal(v)
   }
 
   test("different expressions have different hash codes") {
-    val p = Param("a")
-    val v = Var("b")
+    val p = Param("a")()
+    val v = Var("b")()
     p.hashCode should not equal(v.hashCode)
   }
 

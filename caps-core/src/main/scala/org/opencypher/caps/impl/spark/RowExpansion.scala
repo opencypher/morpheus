@@ -38,7 +38,7 @@ case class RowExpansion(
 
   private lazy val labelIndexLookupTable = entitiesWithChildren.map { case (node, slots) =>
     val labelIndicesForNode = slots.collect {
-      case RecordSlot(_, p@ProjectedExpr(HasLabel(_, l, _))) if targetLabels.contains(l.name) =>
+      case RecordSlot(_, p@ProjectedExpr(HasLabel(_, l))) if targetLabels.contains(l.name) =>
         rowSchema.fieldIndex(SparkColumnName.of(p.withOwner(targetVar)))
     }
     node -> labelIndicesForNode
@@ -46,7 +46,7 @@ case class RowExpansion(
 
   private lazy val typeIndexLookupTable = entitiesWithChildren.map { case (rel, slots) =>
     val typeIndexForRel = slots.collectFirst {
-      case RecordSlot(_, p@ProjectedExpr(OfType(r, _))) if r == rel =>
+      case RecordSlot(_, p@ProjectedExpr(OfType(r))) if r == rel =>
         rowSchema.fieldIndex(SparkColumnName.of(p.withOwner(targetVar)))
     }.getOrElse(Raise.impossible("relationship didn't have a type column!"))
     rel -> typeIndexForRel
@@ -85,8 +85,8 @@ case class RowExpansion(
           newRowAcc :+ row.get(index)
         case None =>
           val value = targetSlot.content match {
-            case ProjectedExpr(HasLabel(_, _, _)) => false
-            case ProjectedExpr(Property(_, _, _)) => null
+            case ProjectedExpr(HasLabel(_, _)) => false
+            case ProjectedExpr(Property(_, _)) => null
             case _ => Raise.impossible()
           }
           newRowAcc :+ value

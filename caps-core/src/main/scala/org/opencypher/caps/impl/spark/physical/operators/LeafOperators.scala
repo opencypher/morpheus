@@ -16,7 +16,6 @@
 package org.opencypher.caps.impl.spark.physical.operators
 
 import org.opencypher.caps.api.spark.{CAPSRecords, CAPSSession}
-import org.opencypher.caps.impl.common.ModifiedProduct
 import org.opencypher.caps.impl.logical.LogicalExternalGraph
 import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
 

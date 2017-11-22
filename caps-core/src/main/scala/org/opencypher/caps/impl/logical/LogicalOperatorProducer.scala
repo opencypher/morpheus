@@ -104,7 +104,7 @@ class LogicalOperatorProducer {
   }
 
   def planStart(graph: LogicalGraph, fields: Set[Var]): Start = {
-    val irFields = fields.map { v => IRField(v.name, v.cypherType) }
+    val irFields = fields.map { v => IRField(v.name)(v.cypherType) }
     Start(graph, fields, SolvedQueryModel[Expr](irFields))
   }
 
@@ -127,9 +127,9 @@ class LogicalOperatorProducer {
           solved.withField(r)
         case CTRelationship(types) =>
           val predicate = if (types.size == 1)
-            HasType(r, RelType(types.head), CTBoolean)
+            HasType(r, RelType(types.head))(CTBoolean)
           else
-            Ors(types.map(t => HasType(r, RelType(t), CTBoolean)).toSeq: _*)
+            Ors(types.map(t => HasType(r, RelType(t))(CTBoolean)).toSeq: _*)
           solved.withField(r).withPredicate(predicate)
         case _ =>
           Raise.invalidArgument("a relationship variable", r)

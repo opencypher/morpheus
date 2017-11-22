@@ -21,26 +21,26 @@ import org.scalatest.{FunSuite, Matchers}
 class PropertyKeyMapTest extends FunSuite with Matchers {
 
   test("property key maps ignore conflict set in equality") {
-    val a = PropertyKeyMap(Map.empty, Set("a"))
-    val b = PropertyKeyMap(Map.empty, Set("b"))
+    val a = PropertyKeyMap(Map.empty)(Set("a"))
+    val b = PropertyKeyMap(Map.empty)(Set("b"))
     a should equal(b)
   }
 
   test("same property key maps with different conflict sets have the same hash code") {
-    val a = PropertyKeyMap(Map.empty, Set("a"))
-    val b = PropertyKeyMap(Map.empty, Set("b"))
+    val a = PropertyKeyMap(Map.empty)(Set("a"))
+    val b = PropertyKeyMap(Map.empty)(Set("b"))
     a.hashCode should equal(b.hashCode)
   }
 
   test("different property key maps are not equal") {
-    val a = PropertyKeyMap(Map("a" -> Map("a" -> CTNode)), Set("a"))
-    val b = PropertyKeyMap(Map("a" -> Map("a" -> CTRelationship)), Set("b"))
+    val a = PropertyKeyMap(Map("a" -> Map("a" -> CTNode)))(Set("a"))
+    val b = PropertyKeyMap(Map("a" -> Map("a" -> CTRelationship)))(Set("b"))
     a should not equal(b)
   }
 
   test("different property key maps have different hash codes") {
-    val a = PropertyKeyMap(Map("a" -> Map("a" -> CTNode("a"))))
-    val b = PropertyKeyMap(Map("a" -> Map("a" -> CTRelationship("b"))))
+    val a = PropertyKeyMap(Map("a" -> Map("a" -> CTNode("a"))))()
+    val b = PropertyKeyMap(Map("a" -> Map("a" -> CTRelationship("b"))))()
     a.hashCode should not equal (b.hashCode)
   }
 

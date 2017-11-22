@@ -119,7 +119,7 @@ final case class BoundedVarExpand(
     val filtered = withExtendedArray.filter(!arrayContains)
 
     // TODO: Try and get rid of the Var rel here
-    val endNodeIdColNameOfJoinedRel = columnName(ProjectedExpr(EndNode(rel, CTNode)))
+    val endNodeIdColNameOfJoinedRel = columnName(ProjectedExpr(EndNode(rel)(CTNode)))
 
     val columns = keep ++ Seq(listTempColName, endNodeIdColNameOfJoinedRel)
     val withoutRelProperties = filtered.select(columns.head, columns.tail: _*) // drops joined columns from relationship table

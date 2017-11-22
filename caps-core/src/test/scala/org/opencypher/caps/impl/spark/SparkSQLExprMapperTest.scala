@@ -32,7 +32,7 @@ import scala.language.implicitConversions
 class SparkSQLExprMapperTest extends BaseTestSuite with SparkSessionFixture {
 
   test("can map subtract") {
-    val expr = Subtract(Var("a"), Var("b"))
+    val expr = Subtract(Var("a")(), Var("b")())()
 
     convert(expr, _header.update(addContent(ProjectedField('foo, expr)))) should equal(Some(
       df.col("a") - df.col("b")

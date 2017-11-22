@@ -29,8 +29,8 @@ class SchemaTest extends BaseTestSuite {
       .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
 
     schema.forEntities(Set(
-      IRField("n", CTNode("Person")),
-      IRField("r", CTRelationship("BAR"))
+      IRField("n")(CTNode("Person")),
+      IRField("r")(CTRelationship("BAR"))
     )) should equal(Schema.empty
       .withNodePropertyKeys("Person")("name" -> CTString)
       .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)

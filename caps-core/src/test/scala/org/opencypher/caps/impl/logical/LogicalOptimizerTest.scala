@@ -50,14 +50,14 @@ class LogicalOptimizerTest extends IrTestSuite {
     val optimizedLogicalPlan = logicalOptimizer(plan)(plannerContext(schema))
 
     val expected = Select(
-      Vector(Var("a", CTNode(Set("Animal")))),
+      Vector(Var("a")(CTNode(Set("Animal")))),
       Set(),
       EmptyRecords(
-        Set(Var("a", CTNode(Set("Animal")))),
+        Set(Var("a")(CTNode(Set("Animal")))),
         SetSourceGraph(logicalGraph, Start(logicalGraph, Set(), emptySqm), emptySqm),
-        SolvedQueryModel(Set(), Set(HasLabel(Var("a", CTNode(Set("Animal"))), Label("Animal"), CTBoolean)), Set())
+        SolvedQueryModel(Set(), Set(HasLabel(Var("a")(CTNode(Set("Animal"))), Label("Animal"))(CTBoolean)), Set())
       ),
-      SolvedQueryModel(Set(IRField("a", CTNode)), Set(HasLabel(Var("a", CTNode), Label("Animal"), CTBoolean)), Set())
+      SolvedQueryModel(Set(IRField("a")(CTNode)), Set(HasLabel(Var("a")(CTNode), Label("Animal"))(CTBoolean)), Set())
     )
 
     optimizedLogicalPlan should equalWithTracing(expected)
@@ -73,25 +73,25 @@ class LogicalOptimizerTest extends IrTestSuite {
     val optimizedLogicalPlan = logicalOptimizer(plan)(plannerContext(schema))
 
     val expected = Select(
-      Vector(Var("a", CTNode(Set("Animal", "Astronaut")))),
+      Vector(Var("a")(CTNode(Set("Animal", "Astronaut")))),
       Set(),
       EmptyRecords(
-        Set(Var("a", CTNode(Set("Astronaut", "Animal")))),
+        Set(Var("a")(CTNode(Set("Astronaut", "Animal")))),
         SetSourceGraph(logicalGraph, Start(logicalGraph, Set(), emptySqm), emptySqm),
         SolvedQueryModel(
           Set(),
           Set(
-            HasLabel(Var("a", CTNode(Set("Astronaut", "Animal"))), Label("Astronaut"), CTBoolean),
-            HasLabel(Var("a", CTNode(Set("Astronaut", "Animal"))), Label("Animal"), CTBoolean)
+            HasLabel(Var("a")(CTNode(Set("Astronaut", "Animal"))), Label("Astronaut"))(CTBoolean),
+            HasLabel(Var("a")(CTNode(Set("Astronaut", "Animal"))), Label("Animal"))(CTBoolean)
           ),
           Set()
         )
       ),
       SolvedQueryModel(
-        Set(IRField("a", CTNode)),
+        Set(IRField("a")(CTNode)),
         Set(
-          HasLabel(Var("a", CTNode), Label("Animal"), CTBoolean),
-          HasLabel(Var("a", CTNode), Label("Astronaut"), CTBoolean)),
+          HasLabel(Var("a")(CTNode), Label("Animal"))(CTBoolean),
+          HasLabel(Var("a")(CTNode), Label("Astronaut"))(CTBoolean)),
         Set())
     )
 

@@ -57,8 +57,8 @@ final case class InternalHeader protected[caps](
   def slotsByName(name: String): Seq[RecordSlot] = {
     val filtered = exprSlots.filterKeys {
       case inner: Var => inner.name == name
-      case Property(v: Var, _, _) => v.name == name
-      case HasLabel(v: Var, _, _) => v.name == name
+      case Property(v: Var, _) => v.name == name
+      case HasLabel(v: Var, _) => v.name == name
       case _ => false
     }
     filtered.values.headOption.getOrElse(Vector.empty).flatMap(ref => slotContents.lookup(ref).map(RecordSlot(ref, _)))

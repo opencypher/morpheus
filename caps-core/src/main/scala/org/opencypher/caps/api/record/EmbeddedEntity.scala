@@ -51,7 +51,7 @@ sealed trait EmbeddedEntity extends Verifiable {
 
   protected def computeSlots: Map[String, Expr] = {
     val keyMap = propertiesFromSlots
-      .collect { case (key, slots) => slots.map { slot => slot -> Property(entityVar, PropertyKey(key), CTWildcard) } }
+      .collect { case (key, slots) => slots.map { slot => slot -> Property(entityVar, PropertyKey(key))() } }
       .flatten
       .foldLeft(Map.empty[String, Expr]) {
         case (m, (slot, expr)) => if (m.contains(slot)) duplicateEmbeddedEntityColumn(slot) else m.updated(slot, expr)
@@ -78,7 +78,7 @@ final case class EmbeddedNode(
   override type EntityCypherType = CTNode
 
   override val entityType = CTNode(labelsFromSlotOrImplied.collect { case (label, None) => label }.toSet)
-  override val entityVar = Var(entitySlot, entityType)
+  override val entityVar = Var(entitySlot)(entityType)
 
   override def verify: VerifiedSelf = new VerifiedEmbeddedEntity[EmbeddedNode] {
     override val v: EmbeddedNode = self
@@ -108,7 +108,7 @@ final case class EmbeddedNode(
   override protected def computeSlots: Map[String, Expr] =
     labelsFromSlotOrImplied
       .toSeq
-      .collect { case (label, Some(slot)) => slot -> HasLabel(entityVar, Label(label), CTBoolean) }
+      .collect { case (label, Some(slot)) => slot -> HasLabel(entityVar, Label(label))(CTBoolean) }
       .foldLeft(super.computeSlots) {
         case (m, (slot, expr)) => if (m.contains(slot)) duplicateEmbeddedEntityColumn(slot) else m.updated(slot, expr)
       }
@@ -157,7 +157,7 @@ final case class EmbeddedRelationship(
   override type EntityCypherType = CTRelationship
 
   override val entityType = CTRelationship(relTypeNames)
-  override val entityVar = Var(entitySlot, entityType)
+  override val entityVar = Var(entitySlot)(entityType)
 
   override def verify: VerifiedSelf = new VerifiedEmbeddedEntity[EmbeddedRelationship] {
     override val v: EmbeddedRelationship = self
@@ -180,15 +180,15 @@ final case class EmbeddedRelationship(
 
   override protected def computeSlots: Map[String, Expr] = {
     val slots = Seq(
-      fromSlot -> StartNode(entityVar, CTInteger),
-      toSlot -> EndNode(entityVar, CTInteger)
+      fromSlot -> StartNode(entityVar)(CTInteger),
+      toSlot -> EndNode(entityVar)(CTInteger)
     )
     .foldLeft(super.computeSlots) { case (acc, (slot, expr)) =>
       if (acc.contains(slot)) duplicateEmbeddedEntityColumn(slot) else acc.updated(slot, expr)
     }
     relTypeSlotOrName match {
       case Left((slot, _)) if slots.contains(slot) => duplicateEmbeddedEntityColumn(slot)
-      case Left((slot, _)) => slots.updated(slot, OfType(entityVar, CTString))
+      case Left((slot, _)) => slots.updated(slot, OfType(entityVar)(CTString))
       case Right(_) => slots
     }
   }

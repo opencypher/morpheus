@@ -289,7 +289,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
         expr <- convertExpr(e)
         context <- get[R, IRBuilderContext]
         field <- {
-          val field = IRField(v.name, expr.cypherType)
+          val field = IRField(v.name)(expr.cypherType)
           put[R, IRBuilderContext](context.withFields(Set(field))) >> pure[R, IRField](field)
         }
       } yield field -> expr
@@ -299,7 +299,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
         expr <- convertExpr(e)
         context <- get[R, IRBuilderContext]
         field <- {
-          val field = IRField(name, expr.cypherType)
+          val field = IRField(name)(expr.cypherType)
           put[R, IRBuilderContext](context.withFields(Set(field))) >> pure[R, IRField](field)
         }
       } yield field -> expr
