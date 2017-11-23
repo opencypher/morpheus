@@ -17,6 +17,7 @@ package org.opencypher.caps.test
 
 import org.junit.runner.RunWith
 import org.opencypher.caps.impl.spark.physical.RuntimeContext
+import org.opencypher.caps.test.support.DebugOutputSupport
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FunSuite, Matchers}
 
@@ -24,8 +25,11 @@ import org.scalatest.{FunSuite, Matchers}
 abstract class BaseTestSuite
   extends FunSuite
   with Matchers
+  with DebugOutputSupport
   with org.opencypher.caps.api.spark.instances.AllInstances
   with org.opencypher.caps.api.spark.syntax.AllSyntax
 {
   implicit val context: RuntimeContext = RuntimeContext.empty
+
+
 }

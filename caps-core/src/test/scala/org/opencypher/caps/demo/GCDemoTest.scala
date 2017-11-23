@@ -27,6 +27,7 @@ import org.opencypher.caps.api.types.{CTInteger, CTString}
 import org.opencypher.caps.api.value.CypherMap
 import org.opencypher.caps.test.BaseTestSuite
 import org.opencypher.caps.test.fixture.{MiniDFSClusterFixture, Neo4jServerFixture, SparkSessionFixture}
+import org.opencypher.caps.test.support.DebugOutputSupport
 import org.scalatest.Assertion
 
 import scala.collection.Bag
@@ -43,9 +44,6 @@ class GCDemoTest
 
   protected override def hdfsURI: URI = new URIBuilder(super.hdfsURI).setScheme("hdfs+csv").build()
   protected override val dfsTestGraphPath = "/csv/prod"
-
-  // needed for bag builder initialization
-  implicit val m: HashedBagConfiguration[Row] = Bag.configuration.compact[Row]
 
   ignore("the demo") {
     val t0 = System.currentTimeMillis()
@@ -323,24 +321,6 @@ class GCDemoTest
       Row(13L, "KNOWS", 14L, "EU", null, null, null),
       Row(14L, "ACQUAINTED", 15L, null, null, null, null)
     ))
-  }
-
-
-  implicit class Foo(bag: Bag[Row]) {
-    def debug(): String = {
-      val rowStrings = bag.map { row =>
-        val rowAsString = row.toSeq.map {
-          case null => "null"
-          case s: String => s""""$s""""
-          case l: Long => s"""${l}L"""
-          case other => other.toString
-        }
-
-        rowAsString.mkString("Row(", ", ", ")")
-      }
-
-      rowStrings.mkString("Bag(", ",\n", ")")
-    }
   }
 
   def verifyLinks(graph: CAPSGraph) = {

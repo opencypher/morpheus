@@ -36,7 +36,7 @@ object RecordSlot {
   def from(pair: (Int, SlotContent)) = RecordSlot(pair._1, pair._2)
 }
 
-sealed trait SlotContent {
+sealed trait SlotContent extends Ordered[SlotContent] {
 
   def key: Expr
 
@@ -47,6 +47,8 @@ sealed trait SlotContent {
   def support: Traversable[Expr]
 
   def withOwner(newOwner: Var): SlotContent
+
+  override def compare(that: SlotContent): Int = hashCode() - that.hashCode()
 }
 
 sealed trait ProjectedSlotContent extends SlotContent {

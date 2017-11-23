@@ -21,6 +21,7 @@ import org.opencypher.caps.api.record.{OpaqueField, ProjectedExpr, ProjectedFiel
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value._
+import org.opencypher.caps.demo.Configuration.PrintLogicalPlan
 import org.opencypher.caps.impl.record.CAPSRecordHeader
 import org.opencypher.caps.impl.syntax.header.{addContents, _}
 import org.opencypher.caps.ir.api.{Label, PropertyKey}
@@ -173,7 +174,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
     val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema)
     val outputNodes = patternGraph.nodes("n")
 
-    outputNodes.toDF().columns should equal(Array(
+    outputNodes.toDF().columns.toSet should equal(Set(
       "n",
       "____n:Person",
       "____n:Swedish",
@@ -184,15 +185,15 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
       "____n_dot_titleSTRING"
     ))
 
-    outputNodes.toDF().collect().toSet should equal(Set(
-      Row(0L,  true,  true,  false,   "Mats",   23L, null,                   null),
-      Row(1L,  true,  false, false, "Martin",   42L, null,                   null),
-      Row(2L,  true,  false, false,    "Max", 1337L, null,                   null),
-      Row(3L,  true,  false, false, "Stefan",    9L, null,                   null),
-      Row(4L, false,  false,  true,     null, null, 1949L,                 "1984"),
-      Row(5L, false,  false,  true,     null, null, 1999L,        "Cryptonomicon"),
-      Row(6L, false,  false,  true,     null, null, 1990L, "The Eye of the World"),
-      Row(7L, false,  false,  true,     null, null, 2013L,           "The Circle")
+    Bag(outputNodes.toDF().collect(): _*) should equal(Bag(
+      Row(0L, false, true, true, 23L, "Mats", null, null),
+      Row(1L, false, true, false, 42L, "Martin", null, null),
+      Row(2L, false, true, false, 1337L, "Max", null, null),
+      Row(3L, false, true, false, 9L, "Stefan", null, null),
+      Row(4L, true, false, false, null, null, "1984", 1949L),
+      Row(5L, true, false, false, null, null, "Cryptonomicon", 1999L),
+      Row(6L, true, false, false, null, null, "The Eye of the World", 1990L),
+      Row(7L, true, false, false, null, null, "The Circle", 2013L)
     ))
   }
 
@@ -440,7 +441,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
     val schema = Schema.empty
       .withNodePropertyKeys("Person")("name" -> CTString)
       .withNodePropertyKeys("Employee")("name" -> CTString.nullable)
-      .withLabelCombination("Person" -> "Employee")
+      .withNodePropertyKeys("Employee", "Person")("name" -> CTString)
 
     val patternGraph = CAPSGraph.create(CAPSRecords.create(header, df), schema)
 

@@ -180,25 +180,40 @@ object RecordHeader {
   }
 
   def nodeFromSchema(node: Var, schema: Schema, labels: Set[String]): RecordHeader = {
-    val impliedLabels = schema.impliedLabels.transitiveImplicationsFor(if (labels.nonEmpty) labels else schema.labels)
-    val impliedKeys = impliedLabels.flatMap(label => schema.nodeKeyMap.keysFor(label).toSet)
-    val possibleLabels = impliedLabels.flatMap(label => schema.labelCombinations.combinationsFor(label))
-    val optionalKeys = possibleLabels.flatMap(label => schema.nodeKeyMap.keysFor(label).toSet) -- impliedKeys
-    val optionalNullableKeys = optionalKeys.map { case (k, v) => k -> v.nullable }
-    val allKeys: Seq[(String, Vector[CypherType])] = (impliedKeys ++ optionalNullableKeys).toSeq.map { case (k, v) => k -> Vector(v) }
-    val keyGroups: Map[String, Vector[CypherType]] = allKeys.groups[String, Vector[CypherType]]
-    val headerLabels = impliedLabels ++ possibleLabels - DefaultLabel.get()
-    val labelHeaderContents = headerLabels.map {
-      labelName => ProjectedExpr(HasLabel(node, Label(labelName))(CTBoolean))
-    }.toSeq
 
-    val keyHeaderContents = keyGroups.toSeq.map {
-      case (k, types) => ProjectedExpr(Property(node, PropertyKey(k))(types.reduce(_ join _)))
+    val labelCombos = if (labels.isEmpty) {
+      // all nodes scan
+      schema.allLabelCombinations
+    } else {
+      // label scan
+      val impliedLabels = schema.impliedLabels.transitiveImplicationsFor(labels)
+      schema.combinationsFor(impliedLabels)
     }
 
-    // TODO: Check results for errors
+    val allKeys = labelCombos.toSeq.flatMap(schema.nodeKeys)
+    val stringToTuples = allKeys.groupBy(_._1)
+    val propertyKeys = stringToTuples.mapValues { seq =>
+      if (seq.size == labelCombos.size && seq.forall(seq.head == _)) {
+        seq.head._2
+      } else {
+        seq.head._2.nullable
+      }
+    }
+
+    // TODO: if a label is implied, do we need to create a column or can we answer that by just looking at the schema?
+    // Create one column for each label existing in the schema
+    val labelExprs = labelCombos.flatten.toSeq.sorted.map { label =>
+      ProjectedExpr(HasLabel(node, Label(label))(CTBoolean))
+    }
+
+    val propertyExprs = propertyKeys.toSeq.sortBy(_._1).map {
+      case (k, t) => ProjectedExpr(Property(node, PropertyKey(k))(t))
+    }
+
+    val projectedExprs = labelExprs ++ propertyExprs
+
     val (header, _) = RecordHeader.empty
-      .update(addContents(OpaqueField(node) +: (labelHeaderContents ++ keyHeaderContents)))
+      .update(addContents(OpaqueField(node) +: projectedExprs))
 
     header
   }
@@ -217,7 +232,12 @@ object RecordHeader {
   }
 
   def relationshipFromSchema(rel: Var, schema: Schema, relTypes: Set[String]): RecordHeader = {
-    val relKeyHeaderProperties = relTypes.flatMap(t => schema.relationshipKeys(t).toSeq)
+    val relKeyHeaderProperties = relTypes
+      .flatMap(t => schema.relationshipKeys(t).toSeq)
+      .groupBy(_._1)
+      .mapValues(keys => keys.map(_._2).reduce(_ join _))
+      .toSeq
+      .sortBy(_._1)
 
     val relKeyHeaderContents = relKeyHeaderProperties.map {
       case ((k, t)) => ProjectedExpr(Property(rel, PropertyKey(k))(t))

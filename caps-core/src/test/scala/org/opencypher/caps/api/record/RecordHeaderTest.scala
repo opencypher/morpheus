@@ -16,6 +16,8 @@
 package org.opencypher.caps.api.record
 
 import org.opencypher.caps.api.expr._
+import org.opencypher.caps.api.schema.Schema
+import org.opencypher.caps.api.schema.Schema.NoLabel
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.record.{Added, Found, Replaced}
 import org.opencypher.caps.impl.syntax.header._
@@ -328,5 +330,131 @@ class RecordHeaderTest extends BaseTestSuite {
     header.relationshipsForType(CTRelationship("KNOWS")) should equal(List(p, r))
     header.relationshipsForType(CTRelationship("LOVES")) should equal(List(r, q))
     header.relationshipsForType(CTRelationship("LOVES", "HATES")) should equal(List(r, q))
+  }
+
+  test("node from schema") {
+    val schema = Schema.empty
+      .withNodePropertyKeys(NoLabel, Map("prop" -> CTString))
+      .withNodePropertyKeys("A")("a" -> CTString.nullable)
+      .withNodePropertyKeys("B")("b" -> CTInteger, "extra" -> CTBoolean, "c" -> CTFloat)
+      .withNodePropertyKeys("A", "B")("a" -> CTString, "b" -> CTInteger.nullable, "c" -> CTFloat)
+      .withNodePropertyKeys("C")()
+
+    val n = Var("n")(CTNode)
+    val a = Var("a")(CTNode("A"))
+    val b = Var("b")(CTNode("B"))
+    val c = Var("c")(CTNode("C"))
+    val ab = Var("ab")(CTNode("A", "B"))
+
+    val nHeader = RecordHeader.nodeFromSchema(n, schema)
+    val aHeader = RecordHeader.nodeFromSchema(a, schema)
+    val bHeader = RecordHeader.nodeFromSchema(b, schema)
+    val cHeader = RecordHeader.nodeFromSchema(c, schema)
+    val abHeader = RecordHeader.nodeFromSchema(ab, schema)
+
+    nHeader should equal(RecordHeader.empty.update(addContents(Seq(
+      OpaqueField(n),
+      ProjectedExpr(HasLabel(n, Label("A"))(CTBoolean)),
+      ProjectedExpr(HasLabel(n, Label("B"))(CTBoolean)),
+      ProjectedExpr(HasLabel(n, Label("C"))(CTBoolean)),
+      ProjectedExpr(Property(n, PropertyKey("a"))(CTString.nullable)),
+      ProjectedExpr(Property(n, PropertyKey("b"))(CTInteger.nullable)),
+      ProjectedExpr(Property(n, PropertyKey("c"))(CTFloat.nullable)),
+      ProjectedExpr(Property(n, PropertyKey("extra"))(CTBoolean.nullable)),
+      ProjectedExpr(Property(n, PropertyKey("prop"))(CTString.nullable))
+    )))._1)
+
+    aHeader should equal(RecordHeader.empty.update(addContents(Seq(
+      OpaqueField(a),
+      ProjectedExpr(HasLabel(a, Label("A"))(CTBoolean)),
+      ProjectedExpr(HasLabel(a, Label("B"))(CTBoolean)),
+      ProjectedExpr(Property(a, PropertyKey("a"))(CTString.nullable)),
+      ProjectedExpr(Property(a, PropertyKey("b"))(CTInteger.nullable)),
+      ProjectedExpr(Property(a, PropertyKey("c"))(CTFloat.nullable))
+    )))._1)
+
+    bHeader should equal(RecordHeader.empty.update(addContents(Seq(
+      OpaqueField(b),
+      ProjectedExpr(HasLabel(b, Label("A"))(CTBoolean)),
+      ProjectedExpr(HasLabel(b, Label("B"))(CTBoolean)),
+      ProjectedExpr(Property(b, PropertyKey("a"))(CTString.nullable)),
+      ProjectedExpr(Property(b, PropertyKey("b"))(CTInteger.nullable)),
+      ProjectedExpr(Property(b, PropertyKey("c"))(CTFloat)),
+      ProjectedExpr(Property(b, PropertyKey("extra"))(CTBoolean.nullable))
+    )))._1)
+
+    cHeader should equal(RecordHeader.empty.update(addContents(Seq(
+      OpaqueField(c),
+      ProjectedExpr(HasLabel(c, Label("C"))(CTBoolean))
+    )))._1)
+
+    abHeader should equal(RecordHeader.empty.update(addContents(Seq(
+      OpaqueField(ab),
+      ProjectedExpr(HasLabel(ab, Label("A"))(CTBoolean)),
+      ProjectedExpr(HasLabel(ab, Label("B"))(CTBoolean)),
+      ProjectedExpr(Property(ab, PropertyKey("a"))(CTString)),
+      ProjectedExpr(Property(ab, PropertyKey("b"))(CTInteger.nullable)),
+      ProjectedExpr(Property(ab, PropertyKey("c"))(CTFloat))
+    )))._1)
+  }
+
+  test("node from schema with implication") {
+    val schema = Schema.empty
+      .withNodePropertyKeys(NoLabel, Map("prop" -> CTString))
+      .withNodePropertyKeys("A")("a" -> CTString.nullable)
+      .withNodePropertyKeys("A", "X")("a" -> CTString.nullable, "x" -> CTFloat)
+      .withNodePropertyKeys("B")("b" -> CTInteger, "extra" -> CTBoolean)
+      .withNodePropertyKeys("A", "B", "X")("a" -> CTString, "b" -> CTInteger.nullable, "x" -> CTFloat)
+
+    val x = Var("x")(CTNode("X"))
+
+    val xHeader = RecordHeader.nodeFromSchema(x, schema)
+
+    xHeader should equal(RecordHeader.empty.update(addContents(Seq(
+      OpaqueField(x),
+      ProjectedExpr(HasLabel(x, Label("A"))(CTBoolean)),
+      ProjectedExpr(HasLabel(x, Label("B"))(CTBoolean)),
+      ProjectedExpr(HasLabel(x, Label("X"))(CTBoolean)),
+      ProjectedExpr(Property(x, PropertyKey("a"))(CTString.nullable)),
+      ProjectedExpr(Property(x, PropertyKey("b"))(CTInteger.nullable)),
+      ProjectedExpr(Property(x, PropertyKey("x"))(CTFloat))
+    )))._1)
+  }
+
+  test("relationship from schema") {
+    val schema = Schema.empty
+      .withRelationshipPropertyKeys("A")("a" -> CTString, "b" -> CTInteger.nullable)
+
+    val e = Var("e")(CTRelationship("A"))
+
+    val eHeader = RecordHeader.relationshipFromSchema(e, schema)
+
+    eHeader should equal(RecordHeader.empty.update(addContents(Seq(
+      ProjectedExpr(StartNode(e)(CTNode)),
+      OpaqueField(e),
+      ProjectedExpr(OfType(e)(CTString)),
+      ProjectedExpr(EndNode(e)(CTNode)),
+      ProjectedExpr(Property(e, PropertyKey("a"))(CTString)),
+      ProjectedExpr(Property(e, PropertyKey("b"))(CTInteger.nullable))
+    )))._1)
+  }
+
+  test("relationship from schema with given relationship types") {
+    val schema = Schema.empty
+      .withRelationshipPropertyKeys("A")("a" -> CTString, "b" -> CTInteger.nullable)
+      .withRelationshipPropertyKeys("B")("a" -> CTString, "b" -> CTInteger)
+
+    val e = Var("e")(CTRelationship("A"))
+
+    val eHeader = RecordHeader.relationshipFromSchema(e, schema, Set("A", "B"))
+
+    eHeader should equal(RecordHeader.empty.update(addContents(Seq(
+      ProjectedExpr(StartNode(e)(CTNode)),
+      OpaqueField(e),
+      ProjectedExpr(OfType(e)(CTString)),
+      ProjectedExpr(EndNode(e)(CTNode)),
+      ProjectedExpr(Property(e, PropertyKey("a"))(CTString)),
+      ProjectedExpr(Property(e, PropertyKey("b"))(CTInteger.nullable))
+    )))._1)
   }
 }

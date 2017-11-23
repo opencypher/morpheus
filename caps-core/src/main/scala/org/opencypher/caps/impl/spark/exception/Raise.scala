@@ -22,6 +22,14 @@ import org.opencypher.caps.api.spark.exception.CAPSException
 
 object Raise {
 
+  def invalidSchema(label: String, key: Any, t1: Any, t2: Any) = throw CAPSException(
+    s"The schema had a conflict on key '$key': $t1 and $t2 (for label $label)"
+  )
+
+  def invalidSchemaAddition(key: Any, t1: Any, t2: Any) = throw CAPSException(
+    s"Attempt to overwrite key '$key': had $t1 and got $t2"
+  )
+
   def duplicateEmbeddedEntityColumn(name: String) = throw CAPSException(
     "The input column '$name' is used more than once to describe an embedded entity"
   )

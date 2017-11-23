@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2016-2017 "Neo4j, Inc." [https://neo4j.com]
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,9 +21,8 @@ object LabelCombinations {
 
 case class LabelCombinations(combos: Set[Set[String]]) {
 
-  assert(combos.forall(_.size > 1))
-
-  def combinationsFor(label: String): Set[String] = combos.find(_(label)).getOrElse(Set.empty)
+  def combinationsFor(labels: Set[String]): Set[Set[String]] =
+    combos.filter(labels.subsetOf)
 
   def withCombinations(coExistingLabels: String*): LabelCombinations = {
     val (lhs, rhs) = combos.partition(labels => coExistingLabels.exists(labels(_)))

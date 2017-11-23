@@ -58,7 +58,7 @@ final case class Cache(in: PhysicalOperator) extends UnaryPhysicalOperator {
 
 }
 
-final case class Scan(in: PhysicalOperator, inGraph: LogicalGraph, v: Var) extends UnaryPhysicalOperator {
+final case class Scan(in: PhysicalOperator, inGraph: LogicalGraph, v: Var, header: RecordHeader) extends UnaryPhysicalOperator {
 
   // TODO: Move to Graph interface?
   override def executeUnary(prev: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult = {
@@ -72,9 +72,9 @@ final case class Scan(in: PhysicalOperator, inGraph: LogicalGraph, v: Var) exten
       case x =>
         Raise.invalidArgument("an entity type", x.toString)
     }
+    assert(header == records.header)
     PhysicalResult(records, graphs)
   }
-
 }
 
 final case class Alias(in: PhysicalOperator, expr: Expr, alias: Var, header: RecordHeader)
@@ -98,7 +98,6 @@ final case class Alias(in: PhysicalOperator, expr: Expr, alias: Var, header: Rec
       CAPSRecords.create(header, newData)(records.caps)
     }
   }
-
 }
 
 final case class Project(in: PhysicalOperator, expr: Expr, header: RecordHeader) extends UnaryPhysicalOperator {
@@ -128,7 +127,6 @@ final case class Project(in: PhysicalOperator, expr: Expr, header: RecordHeader)
       CAPSRecords.create(header, newData)(records.caps)
     }
   }
-
 }
 
 final case class Filter(in: PhysicalOperator, expr: Expr, header: RecordHeader) extends UnaryPhysicalOperator {
@@ -154,7 +152,6 @@ final case class Filter(in: PhysicalOperator, expr: Expr, header: RecordHeader) 
       CAPSRecords.create(header, newData)(records.caps)
     }
   }
-
 }
 
 final case class ProjectExternalGraph(in: PhysicalOperator, name: String, uri: URI) extends UnaryPhysicalOperator {
@@ -256,7 +253,6 @@ final case class ProjectPatternGraph(
 
     Set(sourceTuple, targetTuple, relTuple, typeTuple)
   }
-
 }
 
 final case class SelectFields(in: PhysicalOperator, fields: IndexedSeq[Var], header: Option[RecordHeader])
@@ -290,7 +286,6 @@ final case class SelectFields(in: PhysicalOperator, fields: IndexedSeq[Var], hea
       CAPSRecords.create(_header, newData)(records.caps)
     }
   }
-
 }
 
 final case class SelectGraphs(in: PhysicalOperator, graphs: Set[String]) extends UnaryPhysicalOperator {
@@ -311,7 +306,6 @@ final case class Distinct(in: PhysicalOperator, header: RecordHeader) extends Un
       CAPSRecords.create(header, distinctRows)(records.caps)
     }
   }
-
 }
 
 final case class SimpleDistinct(in: PhysicalOperator) extends UnaryPhysicalOperator {
@@ -321,7 +315,6 @@ final case class SimpleDistinct(in: PhysicalOperator) extends UnaryPhysicalOpera
       CAPSRecords.create(prev.records.header, records.data.distinct())(records.caps)
     }
   }
-
 }
 
 final case class Aggregate(
@@ -393,7 +386,6 @@ final case class Aggregate(
       CAPSRecords.create(header, aggregated)(records.caps)
     }
   }
-
 }
 
 final case class OrderBy(in: PhysicalOperator, sortItems: Seq[SortItem[Expr]], header: RecordHeader)
@@ -413,7 +405,6 @@ final case class OrderBy(in: PhysicalOperator, sortItems: Seq[SortItem[Expr]], h
       CAPSRecords.create(header, sortedData)(records.caps)
     }
   }
-
 }
 
 final case class Skip(in: PhysicalOperator, expr: Expr, header: RecordHeader) extends UnaryPhysicalOperator {
@@ -443,7 +434,6 @@ final case class Skip(in: PhysicalOperator, expr: Expr, header: RecordHeader) ex
       CAPSRecords.create(header, newDf)(records.caps)
     }
   }
-
 }
 
 final case class Limit(in: PhysicalOperator, expr: Expr, header: RecordHeader) extends UnaryPhysicalOperator {
@@ -458,7 +448,6 @@ final case class Limit(in: PhysicalOperator, expr: Expr, header: RecordHeader) e
       CAPSRecords.create(header, records.toDF().limit(limit.toInt))(records.caps)
     }
   }
-
 }
 
 // Initialises the table in preparation for variable length expand.
@@ -489,7 +478,6 @@ final case class InitVarExpand(in: PhysicalOperator, source: Var, edgeList: Var,
       CAPSRecords.create(header, initializedData)(records.caps)
     }
   }
-
 }
 
 final case class EmptyRecords(in: PhysicalOperator, header: RecordHeader)(implicit caps: CAPSSession)

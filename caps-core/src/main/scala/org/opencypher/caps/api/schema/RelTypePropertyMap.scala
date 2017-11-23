@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2016-2017 "Neo4j, Inc." [https://neo4j.com]
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,10 +15,11 @@
  */
 package org.opencypher.caps.api.schema
 
+import org.opencypher.caps.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.caps.api.types.CypherType
 
-object PropertyKeyMap {
-  val empty: PropertyKeyMap = PropertyKeyMap(Map.empty)()
+object RelTypePropertyMap {
+  val empty: RelTypePropertyMap = RelTypePropertyMap(Map.empty)
 
   /**
     * Sets all cypher types of properties that are not common across all labels to nullable.
@@ -26,42 +27,32 @@ object PropertyKeyMap {
     * @param map property key map
     * @return updated property key map
     */
-  def asNullable(map: PropertyKeyMap): PropertyKeyMap = {
-    val overlap = map.m.map(_._2.keySet).reduce(_ intersect _)
+  def asNullable(map: RelTypePropertyMap): RelTypePropertyMap = {
+    val overlap = map.map.map(_._2.keySet).reduce(_ intersect _)
 
-    PropertyKeyMap(map.m.map {
+    RelTypePropertyMap(map.map.map {
       pair => pair._1 -> pair._2.map(p2 => p2._1 -> (if (overlap.contains(p2._1)) p2._2 else p2._2.nullable))
-    })()
+    })
   }
 }
 
-final case class PropertyKeyMap(m: Map[String, Map[String, CypherType]])(val conflicts: Set[String] = Set.empty) {
-  def keysFor(classifier: String): Map[String, CypherType] = m.getOrElse(classifier, Map.empty)
-  def withKeys(classifier: String, keys: Seq[(String, CypherType)]): PropertyKeyMap = {
-    val oldKeys = m.getOrElse(classifier, Map.empty)
+final case class RelTypePropertyMap(map: Map[String, PropertyKeys]) {
+  def keysFor(classifier: String): PropertyKeys = map.getOrElse(classifier, Map.empty)
+  def withKeys(classifier: String, keys: Seq[(String, CypherType)]): RelTypePropertyMap = {
+    val oldKeys = map.getOrElse(classifier, Map.empty)
     val newKeys = keys.toMap
-    val newConflicts = oldKeys.collect {
-      case (k, t) =>
-        newKeys.get(k) match {
-          // type changing to nullable version is fine
-          case Some(otherT) if t.nullable != otherT.nullable =>
-            Some(s"Conflicting schema for '$classifier'! Key '$k' has type $t but also has type ${newKeys(k)}")
-          case _ =>
-            None
-        }
-    }.flatten.toSet
-    copy(m.updated(classifier, oldKeys ++ newKeys))(conflicts = conflicts ++ newConflicts)
+    copy(map.updated(classifier, oldKeys ++ newKeys))
   }
 
-  def keys: Set[String] = m.values.flatMap(_.keySet).toSet
+  def keys: Set[String] = map.values.flatMap(_.keySet).toSet
 
-  def ++(other: PropertyKeyMap): PropertyKeyMap = {
-    val joined = joinMaps(m, other.m)((leftAttr, rightAttr) => joinMaps(leftAttr, rightAttr)(_ join _, _.nullable))
-    copy(joined)(conflicts ++ other.conflicts)
+  def ++(other: RelTypePropertyMap): RelTypePropertyMap = {
+    val joined = joinMaps(map, other.map)((leftAttr, rightAttr) => joinMaps(leftAttr, rightAttr)(_ join _, _.nullable))
+    copy(joined)
   }
 
-  def filterByClassifier(classifiers: Set[String]): PropertyKeyMap = {
-    PropertyKeyMap(m.filterKeys(classifiers.contains))(conflicts)
+  def filterByClassifier(classifiers: Set[String]): RelTypePropertyMap = {
+    RelTypePropertyMap(map.filterKeys(classifiers.contains))
   }
 
   private def joinMaps[A, B](left: Map[A, B], right: Map[A, B])

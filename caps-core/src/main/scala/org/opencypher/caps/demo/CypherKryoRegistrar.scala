@@ -24,7 +24,7 @@ import org.apache.spark.sql.types._
 import org.neo4j.driver.internal._
 import org.neo4j.driver.internal.value._
 import org.neo4j.driver.v1.Value
-import org.opencypher.caps.api.schema.{ImpliedLabels, LabelCombinations, PropertyKeyMap, Schema}
+import org.opencypher.caps.api.schema._
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value._
 
@@ -64,7 +64,8 @@ class CypherKryoRegistrar extends SparkKryoRegistrar {
       classOf[Schema],
       classOf[ImpliedLabels],
       classOf[LabelCombinations],
-      classOf[PropertyKeyMap],
+      classOf[RelTypePropertyMap],
+      classOf[LabelPropertyMap],
 
       classOf[CypherType],
       CTWildcard.getClass,
