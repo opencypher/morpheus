@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.api.util
 
-import io.circe.{Encoder, Json}
+import io.circe.Json
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSResult}
 import org.opencypher.caps.web.JsonSerialiser
 

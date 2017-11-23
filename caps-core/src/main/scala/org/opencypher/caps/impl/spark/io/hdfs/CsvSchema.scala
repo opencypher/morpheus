@@ -15,7 +15,6 @@
  */
 package org.opencypher.caps.impl.spark.io.hdfs
 
-import cats.syntax.either._
 import io.circe.Decoder
 import org.apache.spark.sql.types._
 import io.circe.generic.auto._

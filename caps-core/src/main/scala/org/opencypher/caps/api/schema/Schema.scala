@@ -19,9 +19,7 @@ import org.opencypher.caps.api.types._
 import org.opencypher.caps.common.{Verifiable, Verified}
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.ir.api.IRField
-import org.opencypher.caps.ir.api.pattern._
 
-import scala.language.implicitConversions
 
 object Schema {
   val empty: Schema = Schema(

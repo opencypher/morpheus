@@ -20,7 +20,6 @@ import org.atnos.eff._
 import org.atnos.eff.all._
 import org.atnos.eff.syntax.all._
 import org.opencypher.caps.api.expr.Expr
-import org.opencypher.caps.ir.impl.BlockRegistry
 
 package object impl {
 

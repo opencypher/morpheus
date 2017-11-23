@@ -20,7 +20,6 @@ import org.apache.spark.sql.{Row, SparkSession}
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.spark.io.neo4j.external.Neo4j._
 
-import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
 object Neo4j {

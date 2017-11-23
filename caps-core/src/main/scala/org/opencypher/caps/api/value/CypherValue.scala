@@ -28,7 +28,6 @@ import org.opencypher.caps.impl.spark.exception.Raise
 
 import scala.collection.JavaConverters._
 import scala.collection.TraversableOnce
-import scala.language.implicitConversions
 
 object CypherValueCompanion {
   def apply[V <: CypherValue](implicit companion: CypherValueCompanion[V]): CypherValueCompanion[V] = companion

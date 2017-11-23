@@ -17,7 +17,6 @@ package org.opencypher.caps.impl.spark.io.file
 
 import java.net.URI
 
-import org.apache.hadoop.conf.Configuration
 import org.opencypher.caps.api.io.{CreateOrFail, PersistMode}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}

@@ -18,7 +18,6 @@ package org.opencypher.caps.impl.spark.io.neo4j
 import java.net.{URI, URLDecoder}
 
 import org.apache.http.client.utils.URIBuilder
-import org.neo4j.driver.v1.Config
 import org.opencypher.caps.api.spark.io.CAPSGraphSourceFactoryCompanion
 import org.opencypher.caps.api.spark.CAPSSession
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceFactoryImpl

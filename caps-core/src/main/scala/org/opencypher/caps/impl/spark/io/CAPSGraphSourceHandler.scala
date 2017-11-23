@@ -17,7 +17,7 @@ package org.opencypher.caps.impl.spark.io
 
 import java.net.URI
 
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
+import org.opencypher.caps.api.spark.CAPSSession
 import org.opencypher.caps.api.spark.io.{CAPSGraphSource, CAPSGraphSourceFactory}
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.spark.io.session.SessionGraphSourceFactory

@@ -17,7 +17,7 @@ package org.opencypher.caps.common.syntax
 
 import org.opencypher.caps.common.classes.Register
 
-import scala.language.{implicitConversions, reflectiveCalls}
+import scala.language.implicitConversions
 
 trait RegisterSyntax {
   def key[D, K](defn: D)(implicit register: Register[_] { type Def = D; type Key = K }): register.Key =

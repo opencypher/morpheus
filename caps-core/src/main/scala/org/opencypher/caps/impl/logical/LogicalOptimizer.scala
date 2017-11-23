@@ -16,7 +16,7 @@
 package org.opencypher.caps.impl.logical
 
 import org.opencypher.caps.api.expr.{HasLabel, Var}
-import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTNull}
+import org.opencypher.caps.api.types.{CTBoolean, CTNode}
 import org.opencypher.caps.impl.DirectCompilationStage
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.ir.api.Label
