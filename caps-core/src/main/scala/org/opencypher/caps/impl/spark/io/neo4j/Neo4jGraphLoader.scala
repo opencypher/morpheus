@@ -22,6 +22,7 @@ import org.apache.spark.storage.StorageLevel
 import org.neo4j.driver.internal.{InternalNode, InternalRelationship}
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.record.{OpaqueField, ProjectedExpr, RecordHeader, SlotContent}
+import org.opencypher.caps.api.schema.Schema.AllLabels
 import org.opencypher.caps.api.schema.{Schema, VerifiedSchema}
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
 import org.opencypher.caps.api.types._
@@ -193,7 +194,7 @@ object Neo4jGraphLoader {
           slot -> field
         }
         val propertyFields = labels.flatMap { l =>
-          schema.nodeKeys(l).map {
+          schema.nodeKeys(l).toSeq.sortBy(_._1).map {
             case (key, t) =>
               val property = Property(node, PropertyKey(key))(t)
               val slot = ProjectedExpr(property)
@@ -201,6 +202,7 @@ object Neo4jGraphLoader {
               slot -> field
           }
         }
+
         val nodeSlot = OpaqueField(node)
         val nodeField = StructField(SparkColumnName.of(nodeSlot), LongType, nullable = false)
         val slotField = nodeSlot -> nodeField

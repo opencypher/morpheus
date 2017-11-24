@@ -198,7 +198,7 @@ class GCDemoTest
       .withRelationshipPropertyKeys("KNOWS")("region" -> CTString)
     )
 
-    Bag(graph.nodes("n").toDF().collect(): _*) should equal (Bag(
+    graph.nodes("n").toDF().collect().toBag should equal (Bag(
       Row(2009L, false, false, true, false, false, "Trent", null, null, null, null),
       Row(1L, true, false, false, false, false, "San Francisco", null, "US", null, null),
       Row(10L, false, false, false, false, true, "Carol", null, "US", null, null),
@@ -256,7 +256,7 @@ class GCDemoTest
       Row(22L, false, true, false, false, false, "Video", null, "US", null, null)
     ))
 
-    Bag(graph.relationships("r").toDF().drop("r").collect(): _*) should equal (Bag(
+    graph.relationships("r").toDF().drop("r").collect().toBag should equal (Bag(
       Row(18L, "KNOWS", 16L, "EU", null, null, null),
       Row(18L, "ACQUAINTED", 16L, null, null, null, null),
       Row(13L, "ACQUAINTED", 15L, null, null, null, null),
@@ -332,14 +332,7 @@ class GCDemoTest
       .withRelationshipType("IN")
     )
 
-//    val baseTable = graph.asInstanceOf[CAPSPatternGraph].baseTable
-//    baseTable.data.foreach(println(_))
-
-//    println(baseTable.header)
-
-    //    data.printSchema()
-
-    Bag(graph.nodes("n").toDF().collect(): _*) should equal (Bag(
+    graph.nodes("n").toDF().collect().toBag should equal (Bag(
       Row(7L, true, false, "Alice", "US"),
       Row(2001L, false, true, "Alice", null),
       Row(8L, true, false, "Bob", "US"),
@@ -367,7 +360,7 @@ class GCDemoTest
     ))
 
     val relsWithoutRelId = graph.relationships("r").toDF().drop("r")
-    Bag(relsWithoutRelId.collect(): _*) should equal (Bag(
+    relsWithoutRelId.collect().toBag should equal (Bag(
       Row(2009L, "IS", 15L),
       Row(2011L, "IS", 17L),
       Row(2001L, "IS", 7L),
@@ -391,7 +384,7 @@ class GCDemoTest
       .withRelationshipType("ACQUAINTED")
     )
 
-    Bag(g.nodes("n").toDF().collect(): _*) should equal (Bag(
+    g.nodes("n").toDF().collect().toBag should equal (Bag(
       Row(7L, true, "Alice", "US"),
       Row(8L, true, "Bob", "US"),
       Row(9L, true, "Eve", "US"),
@@ -401,7 +394,7 @@ class GCDemoTest
     ))
 
     val relsWithoutRelId = g.relationships("r").toDF().drop("r")
-    Bag(relsWithoutRelId.collect(): _*) should equal (Bag(
+    relsWithoutRelId.collect().toBag should equal (Bag(
       Row(7L, "ACQUAINTED", 8L),
       Row(7L, "ACQUAINTED", 9L),
       Row(8L, "ACQUAINTED", 9L),
@@ -419,7 +412,7 @@ class GCDemoTest
       .withRelationshipType("ACQUAINTED")
     )
 
-    Bag(g.nodes("n").toDF().collect(): _*) should equal (Bag(
+    g.nodes("n").toDF().collect().toBag should equal (Bag(
       Row(13L, true, "Mallory", "EU"),
       Row(14L, true, "Trudy", "EU"),
       Row(15L, true, "Trent", "EU"),
@@ -429,7 +422,7 @@ class GCDemoTest
     ))
 
     val relsWithoutRelId = g.relationships("r").toDF().drop("r")
-    Bag(relsWithoutRelId.collect(): _*) should equal (Bag(
+    relsWithoutRelId.collect().toBag should equal (Bag(
       Row(13L, "ACQUAINTED", 14L),
       Row(13L, "ACQUAINTED", 15L),
       Row(14L, "ACQUAINTED", 15L),

@@ -38,15 +38,15 @@ trait TeamDataFixture extends TestDataFixture with DebugOutputSupport {
   override def nbrRels = 3
 
   def teamDataGraphNodes: Bag[Row] = Bag(
-    Row(0, true, true, false, "Stefan", 42  ),
-    Row(1, true, false, true,   "Mats", 23  ),
-    Row(3, true, true, false,    "Max", 8   ),
-    Row(2, true, true, false, "Martin", 1337)
+    Row(0L, true, true, false, 42L, "Stefan"),
+    Row(1L, true, false, true, 23L, "Mats"),
+    Row(2L, true, true, false, 1337L, "Martin"),
+    Row(3L, true, true, false, 8L, "Max")
   )
 
   def teamDataGraphRels: Bag[Row] = Bag(
-    Row(0, 0, "KNOWS", 1, 2016),
-    Row(1, 1, "KNOWS", 2, 2016),
-    Row(2, 2, "KNOWS", 3, 2016)
+    Row(0L, 0L, "KNOWS", 1L, 2016L),
+    Row(1L, 1L, "KNOWS", 2L, 2016L),
+    Row(2L, 2L, "KNOWS", 3L, 2016L)
   )
 }

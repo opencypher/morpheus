@@ -36,6 +36,7 @@ class CAPSSessionNeo4jTest extends BaseTestSuite
     val uri = URI.create(s"$neo4jHost?$nodeQuery;$relQuery")
 
     val graph = capsSession.graphAt(uri)
+
     graph.nodes("n").toDF().collect().toBag should equal(teamDataGraphNodes)
     graph.relationships("rel").toDF().collect.toBag should equal(teamDataGraphRels)
   }
