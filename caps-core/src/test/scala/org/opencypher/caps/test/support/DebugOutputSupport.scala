@@ -23,6 +23,14 @@ trait DebugOutputSupport {
     }
   }
 
+  implicit class IterableToBagConverter(val elements: Iterable[Row]) {
+    def toBag: Bag[Row] = Bag(elements.toSeq: _*)
+  }
+
+  implicit class ArrayToBagConverter(val elements: Array[Row]) {
+    def toBag: Bag[Row] = Bag(elements.toSeq: _*)
+  }
+
   // needed for bag builder initialization
   implicit val m: HashedBagConfiguration[Row] = Bag.configuration.compact[Row]
 }
