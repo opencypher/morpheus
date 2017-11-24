@@ -213,7 +213,8 @@ object Neo4jGraphLoader {
 
         val schema = context.schema
 
-        val propertyFields = schema.relationshipTypes.flatMap { typ =>
+        val relevantTypes = if (cypherType.types.isEmpty) schema.relationshipTypes else cypherType.types
+        val propertyFields = relevantTypes.flatMap { typ =>
           schema.relationshipKeys(typ).map {
             case (key, t) =>
               val property = Property(rel, PropertyKey(key))(t)

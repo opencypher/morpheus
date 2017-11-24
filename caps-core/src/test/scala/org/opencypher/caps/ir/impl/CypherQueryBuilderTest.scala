@@ -172,7 +172,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
   test("return graph of") {
     "MATCH (a), (b) RETURN GRAPH moo OF (a)-[r:TEST]->(b)".model.ensureThat { (model, globals) =>
 
-      val expectedSchema = Schema.empty.withRelationshipType("TEST")
+      val expectedSchema = Schema.empty.withRelationshipPropertyKeys("TEST")()
 
       val loadRef = model.findExactlyOne {
         case NoWhereBlock(s@SourceBlock(_)) =>

@@ -16,8 +16,11 @@
 package org.opencypher.caps.test.fixture
 
 import org.apache.spark.sql.Row
+import org.opencypher.caps.test.support.DebugOutputSupport
 
-trait TeamDataFixture extends TestDataFixture {
+import scala.collection.Bag
+
+trait TeamDataFixture extends TestDataFixture with DebugOutputSupport {
 
   override val dataFixture =
     """
@@ -34,14 +37,14 @@ trait TeamDataFixture extends TestDataFixture {
 
   override def nbrRels = 3
 
-  def teamDataGraphNodes: Set[Row] = Set(
-    Row(0, true, true, false, 42, "Stefan"),
-    Row(1, true, false, true, 23, "Mats"),
-    Row(3, true, true, false, 8, "Max"),
-    Row(2, true, true, false, 1337, "Martin")
+  def teamDataGraphNodes: Bag[Row] = Bag(
+    Row(0, true, true, false, "Stefan", 42  ),
+    Row(1, true, false, true,   "Mats", 23  ),
+    Row(3, true, true, false,    "Max", 8   ),
+    Row(2, true, true, false, "Martin", 1337)
   )
 
-  def teamDataGraphRels: Set[Row] = Set(
+  def teamDataGraphRels: Bag[Row] = Bag(
     Row(0, 0, "KNOWS", 1, 2016),
     Row(1, 1, "KNOWS", 2, 2016),
     Row(2, 2, "KNOWS", 3, 2016)

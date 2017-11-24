@@ -141,6 +141,7 @@ class CypherKryoRegistrar extends SparkKryoRegistrar {
       Class.forName("scala.collection.immutable.RedBlackTree$RedTree"),
       Class.forName("scala.collection.immutable.Map$EmptyMap$"),
       Class.forName("scala.collection.immutable.Set$EmptySet$"),
+      Class.forName("scala.collection.immutable.MapLike$ImmutableDefaultKeySet"),
 
       classOf[InternalRecord],
       classOf[InternalPath],

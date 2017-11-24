@@ -163,7 +163,7 @@ final case class Schema(
         .foldLeft(CTVoid: CypherType) {
           case (inferred, next) => inferred.join(next.getOrElse(key, CTNull))
         } match {
-        case CTNull => None
+        case CTNull | CTVoid => None
         case tpe => Some(tpe)
       }
   }
@@ -329,7 +329,7 @@ final case class Schema(
 
     val newLabelPropertyMap = this.labelPropertyMap.filterForLabels(possibleLabels)
     val updatedLabelPropertyMap = possibleLabels.foldLeft(newLabelPropertyMap) {
-      case (agg, label) if agg.map.contains(Set(label)) => agg
+      case (agg, label) if agg.map.keys.exists(_.contains(label)) => agg
       case (agg, label) => agg.register(label)()
     }
 
