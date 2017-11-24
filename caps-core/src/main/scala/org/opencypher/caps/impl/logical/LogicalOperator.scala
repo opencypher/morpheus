@@ -24,7 +24,6 @@ import org.opencypher.caps.impl.common.AbstractTreeNode
 import org.opencypher.caps.ir.api.block.SortItem
 import org.opencypher.caps.ir.api.{Label, SolvedQueryModel}
 
-import scala.language.implicitConversions
 
 sealed trait LogicalOperator extends AbstractTreeNode[LogicalOperator] {
   def solved: SolvedQueryModel[Expr]

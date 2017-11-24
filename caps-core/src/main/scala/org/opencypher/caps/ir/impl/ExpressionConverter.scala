@@ -19,7 +19,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.functions
 import org.neo4j.cypher.internal.frontend.v3_3.{Ref, ast}
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.parse.{CypherParser, RetypingPredicate}
+import org.opencypher.caps.impl.parse.RetypingPredicate
 import org.opencypher.caps.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.caps.ir.impl.FunctionUtils._
 

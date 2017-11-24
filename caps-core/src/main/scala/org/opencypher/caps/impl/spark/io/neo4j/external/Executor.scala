@@ -23,7 +23,6 @@ import org.neo4j.driver.v1.types.{Type, TypeSystem}
 import org.neo4j.driver.v1.{Driver, Session, StatementResult}
 
 import scala.collection.JavaConverters._
-import scala.language.implicitConversions
 
 private object Executor {
 

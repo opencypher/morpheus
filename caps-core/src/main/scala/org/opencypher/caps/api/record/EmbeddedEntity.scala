@@ -21,7 +21,6 @@ import org.opencypher.caps.common.{Verifiable, Verified}
 import org.opencypher.caps.impl.spark.exception.Raise.duplicateEmbeddedEntityColumn
 import org.opencypher.caps.ir.api.{Label, PropertyKey}
 
-import scala.language.implicitConversions
 
 sealed trait EmbeddedEntity extends Verifiable {
 

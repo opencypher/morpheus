@@ -16,7 +16,7 @@
 package org.opencypher.caps.ir.api.block
 
 import org.opencypher.caps.ir.api.pattern.AllGiven
-import org.opencypher.caps.ir.api.{IRField, IRGraph, IRNamedGraph}
+import org.opencypher.caps.ir.api.{IRField, IRGraph}
 
 final case class AggregationBlock[E](
     after: Set[BlockRef],

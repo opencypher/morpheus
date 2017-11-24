@@ -16,7 +16,6 @@
 package org.opencypher.caps.impl.spark.physical
 
 import org.opencypher.caps.impl.DirectCompilationStage
-import org.opencypher.caps.impl.common.TreeNode
 import org.opencypher.caps.impl.spark.physical.operators.{Cache, PhysicalOperator, Start, StartFromUnit}
 
 case class PhysicalOptimizerContext()

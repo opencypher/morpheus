@@ -28,7 +28,6 @@ import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.CypherType.joinMonoid
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.parse.RetypingPredicate
-import org.opencypher.caps.impl.spark.exception.Raise
 
 import scala.util.Try
 

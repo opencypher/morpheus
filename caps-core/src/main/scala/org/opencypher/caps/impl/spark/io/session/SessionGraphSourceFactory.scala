@@ -21,7 +21,6 @@ import org.opencypher.caps.api.spark.io._
 import org.opencypher.caps.api.spark.CAPSSession
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceFactoryImpl
 import org.opencypher.caps.impl.spark.exception.Raise
-import scala.collection.concurrent.Map
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.JavaConversions._
 

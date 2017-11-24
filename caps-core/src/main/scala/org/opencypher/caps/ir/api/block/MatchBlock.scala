@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.ir.api.block
 
-import org.opencypher.caps.ir.api.{IRGraph, IRNamedGraph}
+import org.opencypher.caps.ir.api.IRGraph
 import org.opencypher.caps.ir.api.pattern.{AllGiven, Pattern}
 
 final case class MatchBlock[E](
