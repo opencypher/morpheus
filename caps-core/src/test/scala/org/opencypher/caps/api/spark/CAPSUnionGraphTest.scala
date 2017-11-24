@@ -19,6 +19,8 @@ import org.apache.spark.sql.Row
 import org.opencypher.caps.api.record.NodeScan
 import org.opencypher.caps.test.CAPSTestSuite
 
+import scala.collection.Bag
+
 class CAPSUnionGraphTest extends CAPSTestSuite {
   import CAPSGraphGDLTestData._
 
@@ -33,16 +35,16 @@ class CAPSUnionGraphTest extends CAPSTestSuite {
       "n",
       "____n:Person",
       "____n:Swedish",
-      "____n_dot_nameSTRING",
-      "____n_dot_luckyNumberINTEGER"
+      "____n_dot_luckyNumberINTEGER",
+      "____n_dot_nameSTRING"
     ))
 
-    outputNodes.toDF().collect().toSet should equal (Set(
-      Row(0, true, true,    "Mats",   23),
-      Row(1, true, false, "Martin",   42),
-      Row(2, true, false,    "Max", 1337),
-      Row(3, true, false, "Stefan",    9)
-    ))
+    outputNodes.toDF().collect().toBag should equal (Bag(
+      Row(0L, true, true, 23L, "Mats"),
+      Row(1L, true, false, 42L, "Martin"),
+      Row(2L, true, false, 1337L, "Max"),
+      Row(3L, true, false, 9L, "Stefan"))
+    )
   }
 
   test("Node scan from multiple single node CAPSRecords") {
@@ -51,25 +53,24 @@ class CAPSUnionGraphTest extends CAPSTestSuite {
 
     outputNodes.toDF().columns should equal(Array(
       "n",
+      "____n:Book",
       "____n:Person",
       "____n:Swedish",
-      "____n:Book",
-      "____n_dot_nameSTRING",
       "____n_dot_luckyNumberINTEGER",
-      "____n_dot_yearINTEGER",
-      "____n_dot_titleSTRING"
+      "____n_dot_nameSTRING",
+      "____n_dot_titleSTRING",
+      "____n_dot_yearINTEGER"
     ))
 
-    outputNodes.toDF().collect().toSet should equal(Set(
-      Row(0, true,  true,  false,   "Mats",   23, null,                   null),
-      Row(1, true,  false, false, "Martin",   42, null,                   null),
-      Row(2, true,  false, false,    "Max", 1337, null,                   null),
-      Row(3, true,  false, false, "Stefan",    9, null,                   null),
-      Row(0, false, false, true,      null, null, 1949,                 "1984"),
-      Row(1, false, false, true,      null, null, 1999,        "Cryptonomicon"),
-      Row(2, false, false, true,      null, null, 1990, "The Eye of the World"),
-      Row(3, false, false, true,      null, null, 2013,           "The Circle")
-    ))
+    outputNodes.toDF().collect().toBag should equal(Bag(
+      Row(0L, false, true, true, 23L, "Mats", null, null),
+      Row(1L, false, true, false, 42L, "Martin", null, null),
+      Row(2L, false, true, false, 1337L, "Max", null, null),
+      Row(3L, false, true, false, 9L, "Stefan", null, null),
+      Row(0L, true, false, false, null, null, "1984", 1949L),
+      Row(1L, true, false, false, null, null, "Cryptonomicon", 1999L),
+      Row(2L, true, false, false, null, null, "The Eye of the World", 1990L),
+      Row(3L, true, false, false, null, null, "The Circle", 2013L)))
   }
 
   test("Returns only distinct results") {
@@ -100,16 +101,16 @@ class CAPSUnionGraphTest extends CAPSTestSuite {
       "n",
       "____n:Person",
       "____n:Swedish",
-      "____n_dot_nameSTRING",
-      "____n_dot_luckyNumberINTEGER"
+      "____n_dot_luckyNumberINTEGER",
+      "____n_dot_nameSTRING"
     ))
 
-    outputNodes.toDF().collect().toSet should equal(Set(
-      Row(0, true, true, "Mats", 23),
-      Row(1, true, false, "Martin", 42),
-      Row(2, true, false, "Max", 1337),
-      Row(3, true, false, "Stefan", 9)
-    ))
+    outputNodes.toDF().collect().toBag should equal(Bag(
+      Row(0L, true, true, 23L, "Mats"),
+      Row(2L, true, false, 1337L, "Max"),
+      Row(1L, true, false, 42L, "Martin"),
+      Row(3L, true, false, 9L, "Stefan"))
+    )
   }
 
   private def initPersonReadsBookGraph: CAPSGraph = {

@@ -17,11 +17,12 @@ package org.opencypher.caps.api.spark
 
 import java.net.URI
 
-import org.apache.http.client.utils.URIBuilder
 import org.apache.spark.sql.Row
 import org.opencypher.caps.impl.spark.io.file.FileCsvGraphSource
 import org.opencypher.caps.test.BaseTestSuite
 import org.opencypher.caps.test.fixture.SparkSessionFixture
+
+import scala.collection.Bag
 
 class CAPSSessionFileTest extends BaseTestSuite
   with SparkSessionFixture {
@@ -33,17 +34,16 @@ class CAPSSessionFileTest extends BaseTestSuite
   test("File via URI") {
     implicit val capsSession: CAPSSession = CAPSSession.builder(session).build
     val graph = capsSession.graphAt(fileURI)
-    graph.nodes("n").toDF().collect().toSet should equal(testGraphNodes)
-    graph.relationships("rel").toDF().collect.toSet should equal(testGraphRels)
+    graph.nodes("n").toDF().collect().toBag should equal(testGraphNodes)
+    graph.relationships("rel").toDF().collect.toBag should equal(testGraphRels)
   }
 
   test("File via mount point") {
     implicit val capsSession: CAPSSession = CAPSSession.builder(session).build
     capsSession.mountSourceAt(FileCsvGraphSource(fileURI), "/test/graph")
-
     val graph = capsSession.graphAt("/test/graph")
-    graph.nodes("n").toDF().collect().toSet should equal(testGraphNodes)
-    graph.relationships("rel").toDF().collect.toSet should equal(testGraphRels)
+    graph.nodes("n").toDF().collect().toBag should equal(testGraphNodes)
+    graph.relationships("rel").toDF().collect.toBag should equal(testGraphRels)
   }
 
   /**
@@ -51,11 +51,11 @@ class CAPSSessionFileTest extends BaseTestSuite
     *
     * @return expected nodes
     */
-  def testGraphNodes: Set[Row] = Set(
-    Row(1L, true,  true, false, true,  "Stefan",   42L),
-    Row(2L, false, true,  true, true,    "Mats",   23L),
-    Row(3L, true,  true, false, true,  "Martin", 1337L),
-    Row(4L, true,  true, false, true,     "Max",    8L)
+  def testGraphNodes: Bag[Row] = Bag(
+    Row(1L, true, true, true, false, 42L, "Stefan"),
+    Row(2L, true, false, true, true, 23L, "Mats"),
+    Row(3L, true, true, true, false, 1337L, "Martin"),
+    Row(4L, true, true, true, false, 8L, "Max")
   )
 
   /**
@@ -63,7 +63,7 @@ class CAPSSessionFileTest extends BaseTestSuite
     *
     * @return expected rels
     */
-  def testGraphRels: Set[Row] = Set(
+  def testGraphRels: Bag[Row] = Bag(
     Row(1L, 10L, "KNOWS", 2L, 2016L),
     Row(2L, 20L, "KNOWS", 3L, 2017L),
     Row(3L, 30L, "KNOWS", 4L, 2015L)

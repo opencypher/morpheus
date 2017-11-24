@@ -93,7 +93,7 @@ class FlatPlannerTest extends BaseTestSuite {
       ProjectedExpr(HasLabel(nodeVar, Label("Employee"))(CTBoolean)),
       ProjectedExpr(Property(nodeVar, PropertyKey("name"))(CTString)),
       ProjectedExpr(Property(nodeVar, PropertyKey("age"))(CTInteger.nullable)),
-      ProjectedExpr(Property(nodeVar, PropertyKey("salary"))(CTFloat))
+      ProjectedExpr(Property(nodeVar, PropertyKey("salary"))(CTFloat.nullable))
     ))
   }
 
@@ -119,7 +119,7 @@ class FlatPlannerTest extends BaseTestSuite {
       ProjectedExpr(HasLabel(nodeVar, Label("Employee"))(CTBoolean)),
       ProjectedExpr(Property(nodeVar, PropertyKey("name"))(CTString)),
       ProjectedExpr(Property(nodeVar, PropertyKey("age"))(CTInteger.nullable)),
-      ProjectedExpr(Property(nodeVar, PropertyKey("salary"))(CTFloat))
+      ProjectedExpr(Property(nodeVar, PropertyKey("salary"))(CTFloat.nullable))
     ))
   }
 
@@ -146,7 +146,7 @@ class FlatPlannerTest extends BaseTestSuite {
       ProjectedExpr(HasLabel(source, Label("Employee"))(CTBoolean)),
       ProjectedExpr(Property(source, PropertyKey("name"))(CTString)),
       ProjectedExpr(Property(source, PropertyKey("age"))(CTInteger.nullable)),
-      ProjectedExpr(Property(source, PropertyKey("salary"))(CTFloat)),
+      ProjectedExpr(Property(source, PropertyKey("salary"))(CTFloat.nullable)),
       ProjectedExpr(StartNode(rel)(CTInteger)),
       OpaqueField(rel),
       ProjectedExpr(OfType(rel)(CTString)),
@@ -158,7 +158,7 @@ class FlatPlannerTest extends BaseTestSuite {
       ProjectedExpr(HasLabel(target, Label("Employee"))(CTBoolean)),
       ProjectedExpr(Property(target, PropertyKey("name"))(CTString)),
       ProjectedExpr(Property(target, PropertyKey("age"))(CTInteger.nullable)),
-      ProjectedExpr(Property(target, PropertyKey("salary"))(CTFloat))
+      ProjectedExpr(Property(target, PropertyKey("salary"))(CTFloat.nullable))
     ))
   }
 
@@ -188,7 +188,7 @@ class FlatPlannerTest extends BaseTestSuite {
       ProjectedExpr(HasLabel(source, Label("Employee"))(CTBoolean)),
       ProjectedExpr(Property(source, PropertyKey("name"))(CTString)),
       ProjectedExpr(Property(source, PropertyKey("age"))(CTInteger.nullable)),
-      ProjectedExpr(Property(source, PropertyKey("salary"))(CTFloat)),
+      ProjectedExpr(Property(source, PropertyKey("salary"))(CTFloat.nullable)),
       ProjectedExpr(StartNode(rel)(CTInteger)),
       OpaqueField(rel),
       ProjectedExpr(OfType(rel)(CTString)),
@@ -199,7 +199,7 @@ class FlatPlannerTest extends BaseTestSuite {
       ProjectedExpr(HasLabel(target, Label("Employee"))(CTBoolean)),
       ProjectedExpr(Property(target, PropertyKey("name"))(CTString)),
       ProjectedExpr(Property(target, PropertyKey("age"))(CTInteger.nullable)),
-      ProjectedExpr(Property(target, PropertyKey("salary"))(CTFloat))
+      ProjectedExpr(Property(target, PropertyKey("salary"))(CTFloat.nullable))
     ))
   }
 
@@ -227,14 +227,14 @@ class FlatPlannerTest extends BaseTestSuite {
       ProjectedExpr(HasLabel(source, Label("Employee"))(CTBoolean)),
       ProjectedExpr(Property(source, PropertyKey("name"))(CTString)),
       ProjectedExpr(Property(source, PropertyKey("age"))(CTInteger.nullable)),
-      ProjectedExpr(Property(source, PropertyKey("salary"))(CTFloat)),
+      ProjectedExpr(Property(source, PropertyKey("salary"))(CTFloat.nullable)),
       OpaqueField(edgeList),
       OpaqueField(target),
       ProjectedExpr(HasLabel(target, Label("Person"))(CTBoolean)),
       ProjectedExpr(HasLabel(target, Label("Employee"))(CTBoolean)),
       ProjectedExpr(Property(target, PropertyKey("name"))(CTString)),
       ProjectedExpr(Property(target, PropertyKey("age"))(CTInteger.nullable)),
-      ProjectedExpr(Property(target, PropertyKey("salary"))(CTFloat))
+      ProjectedExpr(Property(target, PropertyKey("salary"))(CTFloat.nullable))
     ))
   }
 
