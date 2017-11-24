@@ -259,12 +259,16 @@ object GraphScanBuilder {
       }
 
     override protected def schema(entity: EmbeddedNode, header: RecordHeader): Schema = {
-      val impliedLabels = entity.labelsFromSlotOrImplied.keys
+      val impliedLabels = entity.labelsFromSlotOrImplied.filterNot(_._2.isDefined).keySet
+      val optionalLabels = entity.labelsFromSlotOrImplied.keySet -- impliedLabels
 
       val propertyKeys = getPropertyKeys(entity, header)
-      impliedLabels.foldLeft(Schema.empty)((schema, label) =>
-        schema.withNodePropertyKeys(label)(propertyKeys: _*)
-      )
+
+      optionalLabels
+        .subsets
+        .map(_.union(impliedLabels))
+        .map(combo => Schema.empty.withNodePropertyKeys(combo.toSeq: _*)(propertyKeys: _*))
+        .reduce(_ ++ _)
     }
   }
 

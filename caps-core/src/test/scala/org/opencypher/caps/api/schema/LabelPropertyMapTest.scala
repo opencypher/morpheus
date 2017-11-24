@@ -44,15 +44,15 @@ class LabelPropertyMapTest extends BaseTestSuite {
       .register("B", "A")("foo" -> CTInteger)
       .register("C")("bar" -> CTInteger)
 
-    map.forLabels("A") should equal(LabelPropertyMap.empty
+    map.filterForLabels("A") should equal(LabelPropertyMap.empty
       .register("A")("name" -> CTString)
       .register("A", "B")("foo" -> CTInteger)
     )
-    map.forLabels("C") should equal(LabelPropertyMap.empty
+    map.filterForLabels("C") should equal(LabelPropertyMap.empty
       .register("C")("bar" -> CTInteger)
     )
-    map.forLabels("X") should equal(LabelPropertyMap.empty)
-    map.forLabels("A", "B", "C") should equal(map)
+    map.filterForLabels("X") should equal(LabelPropertyMap.empty)
+    map.filterForLabels("A", "B", "C") should equal(map)
   }
 
 }

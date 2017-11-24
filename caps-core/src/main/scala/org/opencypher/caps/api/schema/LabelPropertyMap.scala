@@ -71,10 +71,14 @@ final case class LabelPropertyMap(map: Map[Set[String], PropertyKeys]) {
   def ++(other: LabelPropertyMap): LabelPropertyMap =
     LabelPropertyMap(map ++ other.map)
 
-  def forLabels(labels: Set[String]): LabelPropertyMap = {
-    val existing = LabelPropertyMap(map.filterKeys(_.exists(labels.contains)))
-    if (existing.map.contains(labels)) existing else LabelPropertyMap(Map(labels -> PropertyKeys.empty))
-  }
+  /**
+    * Returns a LabelPropertyMap that contains all label combinations which include one or more of the specified labels.
+    *
+    * @param knownLabels labels for which the properties should be extracted
+    * @return extracted label property map
+    */
+  def filterForLabels(knownLabels: Set[String]): LabelPropertyMap =
+    LabelPropertyMap(map.filterKeys(_.exists(knownLabels.contains)))
 
   // utility signatures
 
@@ -87,8 +91,8 @@ final case class LabelPropertyMap(map: Map[Set[String], PropertyKeys]) {
   def properties(label: String*): PropertyKeys =
     properties(Set(label: _*))
 
-  def forLabels(labels: String*): LabelPropertyMap =
-    forLabels(labels.toSet)
+  def filterForLabels(labels: String*): LabelPropertyMap =
+    filterForLabels(labels.toSet)
 
   def labelCombinations: Set[Set[String]] = map.keySet
 

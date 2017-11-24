@@ -327,10 +327,16 @@ final case class Schema(
       requiredLabels union this.labelCombinations.filterByLabels(requiredLabels).combos.flatten
     }
 
+    val newLabelPropertyMap = this.labelPropertyMap.filterForLabels(possibleLabels)
+    val updatedLabelPropertyMap = possibleLabels.foldLeft(newLabelPropertyMap) {
+      case (agg, label) if agg.map.contains(Set(label)) => agg
+      case (agg, label) => agg.register(label)()
+    }
+
     copy(
       labels = possibleLabels,
       Set.empty,
-      labelPropertyMap = labelPropertyMap.forLabels(possibleLabels),
+      labelPropertyMap = updatedLabelPropertyMap,
       relKeyMap = RelTypePropertyMap.empty
     )
   }

@@ -25,10 +25,10 @@ import org.atnos.eff.all._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.functions.{Collect, Exists, Max, Min}
 import org.opencypher.caps.api.schema.Schema
+import org.opencypher.caps.api.schema.Schema.AllLabels
 import org.opencypher.caps.api.types.CypherType.joinMonoid
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.parse.RetypingPredicate
-import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.ir.api.pattern.{AllGiven, AnyGiven}
 
 import scala.util.Try
@@ -72,7 +72,7 @@ object SchemaTyper {
         schema <- ask[R, Schema]
         result <- varTyp.material match {
           case CTNode(labels) =>
-            val relevantLabels = if (labels.isEmpty) AnyGiven(schema.labels) else AllGiven(labels)
+            val relevantLabels = if (labels.isEmpty) AnyGiven(AllLabels) else AllGiven(labels)
             val propType = schema.nodeKeyType(relevantLabels, name).getOrElse(CTNull)
             recordType(v -> varTyp) >> recordAndUpdate(expr -> propType)
 
