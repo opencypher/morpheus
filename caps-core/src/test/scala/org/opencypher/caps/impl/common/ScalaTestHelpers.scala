@@ -13,14 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.logical
+package org.opencypher.caps.impl.common
 
 import org.opencypher.caps.impl.common.AsCode._
+import org.opencypher.caps.impl.common.MatchHelper._
 import org.scalatest.matchers.{MatchResult, Matcher}
-import org.opencypher.caps.impl.logical.MatchHelper._
 
 /**
-  * A substitute for the ScalaTest matcher that crashes when checking if some of our larger trees are equal.
+  * A substitute for the ScalaTest `theSameInstanceAs` matcher that crashes on some of our trees.
+  */
+case class referenceEqual(right: AnyRef) extends Matcher[AnyRef] {
+  override def apply(left: AnyRef): MatchResult = {
+    MatchResult(if (left == null) right == null else left.eq(right), s"$left was not the same instance as $right", "")
+  }
+}
+
+/**
+  * A substitute for the ScalaTest `equal` matcher that crashes on some of our trees.
   */
 case class equalWithTracing(right: Any) extends Matcher[Any] {
   override def apply(left: Any): MatchResult = {
@@ -93,7 +102,7 @@ case class equalWithTracing(right: Any) extends Matcher[Any] {
   def failure(msg: String) = MatchResult(false, msg, "")
 
   def notEqual(l: Any, r: Any): Unit = {
-//    println(s"${AsCode(l)} did NOT equal ${AsCode(r)}")
+    //    println(s"${AsCode(l)} did NOT equal ${AsCode(r)}")
   }
 
 }

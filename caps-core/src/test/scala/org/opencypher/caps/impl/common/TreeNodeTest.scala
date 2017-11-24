@@ -44,12 +44,12 @@ class TreeNodeTest extends FunSuite with Matchers {
 
   test("rewrite") {
     val addNoops: PartialFunction[CalcExpr, CalcExpr] = {
-      case Add(n1: Number, n2: Number) => Add(Noop(n1), Noop(n2))
-      case Add(n1: Number, n2) => Add(Noop(n1), n2)
-      case Add(n1, n2: Number) => Add(n1, Noop(n2))
+      case Add(n1: Number, n2: Number) => Add(NoOp(n1), NoOp(n2))
+      case Add(n1: Number, n2)         => Add(NoOp(n1), n2)
+      case Add(n1, n2: Number)         => Add(n1, NoOp(n2))
     }
 
-    val expected = Add(Noop(Number(5)), Add(Noop(Number(4)), Noop(Number(3))))
+    val expected = Add(NoOp(Number(5)), Add(NoOp(Number(4)), NoOp(Number(3))))
     val down = calculation.transformDown(addNoops)
     down should equal(expected)
 
@@ -76,6 +76,10 @@ class TreeNodeTest extends FunSuite with Matchers {
 """)
   }
 
+  test("copy with the same children returns the same instance") {
+    calculation.withNewChildren(Seq(calculation.left, calculation.right)) should referenceEqual(calculation)
+  }
+
   abstract class CalcExpr extends AbstractTreeNode[CalcExpr] {
     def eval: Int
   }
@@ -88,7 +92,7 @@ class TreeNodeTest extends FunSuite with Matchers {
     def eval = v
   }
 
-  case class Noop(in: CalcExpr) extends CalcExpr {
+  case class NoOp(in: CalcExpr) extends CalcExpr {
     def eval = in.eval
   }
 
