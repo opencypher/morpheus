@@ -24,6 +24,7 @@ import org.opencypher.caps.ir.api.IRField
 import org.opencypher.caps.ir.api.pattern.{AllGiven, AnyGiven, Elements}
 
 import scala.language.implicitConversions
+import scala.language.existentials // fix compiler warning
 
 object Schema {
   val empty: Schema = Schema(
