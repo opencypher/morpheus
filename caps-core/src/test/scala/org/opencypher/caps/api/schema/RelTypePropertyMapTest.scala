@@ -18,41 +18,42 @@ package org.opencypher.caps.api.schema
 import org.opencypher.caps.api.types.{CTAny, CTBoolean, CTInteger, CTString}
 import org.opencypher.caps.test.BaseTestSuite
 
-class LabelPropertyMapTest extends BaseTestSuite {
+class RelTypePropertyMapTest extends BaseTestSuite {
 
   test("++") {
-    val map1 = LabelPropertyMap.empty
+    val map1 = RelTypePropertyMap.empty
       .register("A")("name" -> CTString, "age" -> CTInteger, "gender" -> CTString)
       .register("B")("p" -> CTBoolean)
 
-    val map2 = LabelPropertyMap.empty
+    val map2 = RelTypePropertyMap.empty
       .register("A")("name" -> CTString, "gender" -> CTBoolean)
       .register("C")("name" -> CTString)
 
     map1 ++ map2 should equal(
-      LabelPropertyMap.empty
+      RelTypePropertyMap.empty
         .register("A")("name" -> CTString, "age" -> CTInteger, "gender" -> CTAny)
         .register("B")("p" -> CTBoolean)
         .register("C")("name" -> CTString)
     )
   }
 
-  test("for labels") {
-    val map = LabelPropertyMap.empty
+  test("properties") {
+    val map = RelTypePropertyMap.empty
       .register("A")("name" -> CTString)
       .register("B")("foo" -> CTInteger)
-      .register("B", "A")("foo" -> CTInteger)
-      .register("C")("bar" -> CTInteger)
 
-    map.filterForLabels("A") should equal(LabelPropertyMap.empty
-      .register("A")("name" -> CTString)
-      .register("A", "B")("foo" -> CTInteger)
-    )
-    map.filterForLabels("C") should equal(LabelPropertyMap.empty
-      .register("C")("bar" -> CTInteger)
-    )
-    map.filterForLabels("X") should equal(LabelPropertyMap.empty)
-    map.filterForLabels("A", "B", "C") should equal(map)
+    map.properties("A") should equal(Map("name" -> CTString))
+    map.properties("B") should equal(Map("foo" -> CTInteger))
+    map.properties("C") should equal(Map.empty)
   }
 
+  test("filter for rel types") {
+    val map = RelTypePropertyMap.empty
+      .register("A")("name" -> CTString)
+      .register("B")("foo" -> CTInteger)
+
+    map.filterForRelTypes(Set("A", "B")) should equal(RelTypePropertyMap.empty
+      .register("A")("name" -> CTString)
+      .register("B")("foo" -> CTInteger))
+  }
 }

@@ -17,6 +17,7 @@ package org.opencypher.caps.api.schema
 
 import org.opencypher.caps.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.caps.api.types.CypherType
+import org.opencypher.caps.impl.util.MapUtils.merge
 
 object RelTypePropertyMap {
   val empty: RelTypePropertyMap = RelTypePropertyMap(Map.empty)
@@ -37,33 +38,26 @@ object RelTypePropertyMap {
 }
 
 final case class RelTypePropertyMap(map: Map[String, PropertyKeys]) {
-  def keysFor(classifier: String): PropertyKeys = map.getOrElse(classifier, Map.empty)
-  def withKeys(classifier: String, keys: Seq[(String, CypherType)]): RelTypePropertyMap = {
-    val oldKeys = map.getOrElse(classifier, Map.empty)
+
+  def register(relType: String, keys: => Seq[(String, CypherType)]): RelTypePropertyMap = {
+    val oldKeys = map.getOrElse(relType, Map.empty)
     val newKeys = keys.toMap
-    copy(map.updated(classifier, oldKeys ++ newKeys))
+    copy(map.updated(relType, oldKeys ++ newKeys))
   }
 
-  def keys: Set[String] = map.values.flatMap(_.keySet).toSet
+  def properties(relKey: String): PropertyKeys = map.getOrElse(relKey, Map.empty)
 
-  def ++(other: RelTypePropertyMap): RelTypePropertyMap = {
-    val joined = joinMaps(map, other.map)((leftAttr, rightAttr) => joinMaps(leftAttr, rightAttr)(_ join _, _.nullable))
-    copy(joined)
+  def filterForRelTypes(relType: Set[String]): RelTypePropertyMap = {
+    RelTypePropertyMap(map.filterKeys(relType.contains))
   }
 
-  def filterByClassifier(classifiers: Set[String]): RelTypePropertyMap = {
-    RelTypePropertyMap(map.filterKeys(classifiers.contains))
-  }
+  def ++(other: RelTypePropertyMap): RelTypePropertyMap =
+    copy(map = merge(map, other.map)
+      ((aValue, bValue) => merge(aValue, bValue)
+        ((aType, bType) => if (aType == bType) aType else aType.join(bType))))
 
-  private def joinMaps[A, B](left: Map[A, B], right: Map[A, B])
-    (joinF: (B, B) => B, mapF: B => B = (x: B) => x): Map[A, B] = {
-    val uniqueLeft = left.keySet -- right.keySet
-    val withUniqueLeft = uniqueLeft.foldLeft(Map[A, B]())((map, key) => map.updated(key, mapF(left(key))))
+  // utility signatures
 
-    val uniqueRight = right.keySet -- left.keySet
-    val withUniqueRight = uniqueRight.foldLeft(withUniqueLeft)((map, key) => map.updated(key, mapF(right(key))))
-
-    val common = left.keySet.intersect(right.keySet)
-    common.foldLeft(withUniqueRight) {(map, key) => map.updated(key, joinF(left(key), right(key)))}
-  }
+  def register(relType: String)(keys: (String, CypherType)*): RelTypePropertyMap =
+    register(relType, keys.toSeq)
 }

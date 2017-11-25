@@ -32,12 +32,12 @@ package org.opencypher.caps.api.schema
 
 import org.opencypher.caps.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.caps.api.types.CypherType
+import org.opencypher.caps.impl.util.MapUtils._
 
 object PropertyKeys {
   type PropertyKeys = Map[String, CypherType]
 
   def empty = Map.empty[String, CypherType]
-
 }
 
 object LabelPropertyMap {
@@ -50,26 +50,36 @@ object LabelPropertyMap {
   */
 final case class LabelPropertyMap(map: Map[Set[String], PropertyKeys]) {
 
-  /*
-    * TODO: Doc this one
-    * @param labels
-    * @param properties
-    * @return
-    */
-  def register(labels: Set[String], properties: PropertyKeys): LabelPropertyMap = {
-    copy(map.updated(labels, properties))
-  }
-
-  /* // TODO: doc this one
+  /**
+    * Adds the specified labels and associated properties to the LabelPropertyMap.
     *
-    * @param labels
-    * @return
+    * @param labels set of labels
+    * @param properties properties for the given set of labels
+    * @return updated LabelPropertyMap
+    */
+  def register(labels: Set[String], properties: PropertyKeys): LabelPropertyMap =
+    copy(map.updated(labels, properties))
+
+  /**
+    * Returns the properties that are associated with the given set of labels.
+    *
+    * @param labels set of labels
+    * @return associated properties
     */
   def properties(labels: Set[String]): PropertyKeys =
     map.getOrElse(labels, PropertyKeys.empty)
 
+  /**
+    * Merges this LabelPropertyMap with the given map. Properties for label sets that exist in both maps are being
+    * merged, diverging types are being joined.
+    *
+    * @param other LabelPropertyMap to merge
+    * @return merged LabelPropertyMap
+    */
   def ++(other: LabelPropertyMap): LabelPropertyMap =
-    LabelPropertyMap(map ++ other.map)
+    copy(map = merge(map, other.map)
+      ((aValue, bValue) => merge(aValue, bValue)
+        ((aType, bType) => if (aType == bType) aType else aType.join(bType))))
 
   /**
     * Returns a LabelPropertyMap that contains all label combinations which include one or more of the specified labels.

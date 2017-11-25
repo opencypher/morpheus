@@ -184,7 +184,7 @@ final case class Schema(
   /**
    * Returns the property schema for a given relationship type
    */
-  def relationshipKeys(typ: String): Map[String, CypherType] = relKeyMap.keysFor(typ)
+  def relationshipKeys(typ: String): Map[String, CypherType] = relKeyMap.properties(typ)
 
   /**
     * Adds information about a label and its associated properties to the schema.
@@ -239,11 +239,11 @@ final case class Schema(
     */
   def withRelationshipPropertyKeys(typ: String)(keys: (String, CypherType)*): Schema = {
     if (relationshipTypes contains typ) {
-      val updatedTypes = computePropertyTypes(relKeyMap.keysFor(typ), keys.toMap)
+      val updatedTypes = computePropertyTypes(relKeyMap.properties(typ), keys.toMap)
 
-      copy(relKeyMap = relKeyMap.withKeys(typ, updatedTypes.toSeq))
+      copy(relKeyMap = relKeyMap.register(typ, updatedTypes.toSeq))
     } else {
-      copy(relationshipTypes = relationshipTypes + typ, relKeyMap = relKeyMap.withKeys(typ, keys))
+      copy(relationshipTypes = relationshipTypes + typ, relKeyMap = relKeyMap.register(typ, keys))
     }
   }
 
@@ -355,7 +355,7 @@ final case class Schema(
       relType.types
     }
 
-    val updatedRelKeyMap = this.relKeyMap.filterByClassifier(givenRelTypes)
+    val updatedRelKeyMap = this.relKeyMap.filterForRelTypes(givenRelTypes)
     val updatedMap = givenRelTypes.foldLeft(updatedRelKeyMap.map) {
       case (map, givenRelType) => if (!map.contains(givenRelType)) map.updated(givenRelType, PropertyKeys.empty) else map
     }
