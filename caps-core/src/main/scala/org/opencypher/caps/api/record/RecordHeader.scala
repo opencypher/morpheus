@@ -231,14 +231,17 @@ object RecordHeader {
   }
 
   def relationshipFromSchema(rel: Var, schema: Schema, relTypes: Set[String]): RecordHeader = {
-    val relKeyHeaderProperties = relTypes
+    val relKeyHeaderProperties = relTypes.toSeq
       .flatMap(t => schema.relationshipKeys(t).toSeq)
-      .groupBy(_._1)
-      .mapValues(keys => keys.map(_._2).reduce(_ join _))
-      .toSeq
-      .sortBy(_._1)
+      .groupBy(_._1).mapValues { keys =>
+        if (keys.size == relTypes.size && keys.forall(keys.head == _)) {
+          keys.head._2
+        } else {
+          keys.head._2.nullable
+        }
+      }
 
-    val relKeyHeaderContents = relKeyHeaderProperties.map {
+    val relKeyHeaderContents = relKeyHeaderProperties.toSeq.sortBy(_._1).map {
       case ((k, t)) => ProjectedExpr(Property(rel, PropertyKey(k))(t))
     }
 
@@ -247,7 +250,6 @@ object RecordHeader {
     val endNode = ProjectedExpr(EndNode(rel)(CTNode))
 
     val relHeaderContents = Seq(startNode, OpaqueField(rel), typeString, endNode) ++ relKeyHeaderContents
-    // this header is necessary on its own to get the type filtering right
     val (relHeader, _) = RecordHeader.empty.update(addContents(relHeaderContents))
 
     relHeader
