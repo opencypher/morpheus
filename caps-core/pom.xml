@@ -11,12 +11,88 @@
   </parent>
 
   <artifactId>caps-core</artifactId>
-  <version>1.0-SNAPSHOT</version>
 
   <name>Cypher for Apache Spark - Core</name>
 
   <properties>
     <project.rootdir>${project.parent.basedir}</project.rootdir>
   </properties>
+
+  <dependencies>
+    <!-- Neo4j -->
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-frontend-3.3</artifactId>
+      <version>${dep.neo4j.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j.driver</groupId>
+      <artifactId>neo4j-java-driver</artifactId>
+      <version>${dep.neo4j.driver.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.typelevel</groupId>
+      <artifactId>cats_${project.scala.binary.version}</artifactId>
+      <version>${dep.cats.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.atnos</groupId>
+      <artifactId>eff_${project.scala.binary.version}</artifactId>
+      <version>${dep.eff.version}</version>
+    </dependency>
+
+    <!-- Spark -->
+    <dependency>
+      <groupId>org.apache.spark</groupId>
+      <artifactId>spark-core_${project.scala.binary.version}</artifactId>
+      <version>${dep.spark.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.spark</groupId>
+      <artifactId>spark-sql_${project.scala.binary.version}</artifactId>
+      <version>${dep.spark.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.spark</groupId>
+      <artifactId>spark-catalyst_${project.scala.binary.version}</artifactId>
+      <version>${dep.spark.version}</version>
+    </dependency>
+
+    <!-- Utils -->
+    <dependency>
+      <groupId>com.lihaoyi</groupId>
+      <artifactId>ammonite_${project.scala.binary.version}.11</artifactId>
+      <version>${dep.ammonite.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.lihaoyi</groupId>
+      <artifactId>ammonite-ops_${project.scala.binary.version}</artifactId>
+      <version>${dep.ammonite.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>io.circe</groupId>
+      <artifactId>circe-core_${project.scala.binary.version}</artifactId>
+      <version>${dep.circe.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>io.circe</groupId>
+      <artifactId>circe-generic_${project.scala.binary.version}</artifactId>
+      <version>${dep.circe.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>io.circe</groupId>
+      <artifactId>circe-parser_${project.scala.binary.version}</artifactId>
+      <version>${dep.circe.version}</version>
+    </dependency>
+  </dependencies>
 
 </project>
