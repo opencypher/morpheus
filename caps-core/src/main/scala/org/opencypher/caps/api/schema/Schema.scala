@@ -415,8 +415,10 @@ final case class Schema(
 
       if (impliedLabels.m.exists(_._2.nonEmpty)) {
         builder.append(s"Implied labels:$EOL")
-        impliedLabels.m.foreach { pair =>
-          builder.append(s":${pair._1} -> ${pair._2}$EOL")
+        impliedLabels.m.foreach {
+          case (label, implications) if implications.nonEmpty =>
+            builder.append(s":$label -> ${implications.mkString(":", ":", "")}$EOL")
+          case _ =>
         }
       } else {
         builder.append(s"no label implications$EOL")

@@ -30,6 +30,7 @@ import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.convert.fromJavaType
 import org.opencypher.caps.impl.record.CAPSRecordHeader
+import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.exception.Raise
 import org.opencypher.caps.impl.spark.io.neo4j.external.{Neo4j, Neo4jConfig}
 import org.opencypher.caps.ir.api.PropertyKey
@@ -182,24 +183,17 @@ object Neo4jGraphLoader {
   private case class nodeToRow(header: RecordHeader, schema: StructType)
                               (implicit context: LoadingContext) extends (InternalNode => Row) {
     override def apply(importedNode: InternalNode): Row = {
-      val graphSchema = context.schema
-
       import scala.collection.JavaConverters._
 
       val props = importedNode.asMap().asScala
       val labels = importedNode.labels().asScala.toSet
 
-      val schemaKeyTypes = graphSchema.nodeKeys(labels)
-
       val values = header.slots.map { slot =>
         slot.content.key match {
           case Property(_, PropertyKey(keyName)) =>
-            val propValue = schemaKeyTypes.get(keyName) match {
-                // TODO: Can we remove this check? What does it protect against?
-              case Some(t) if t == slot.content.cypherType => props.get(keyName).orNull
-              case _ => null
-            }
-            importedToSparkEncodedCypherValue(schema(slot.index).dataType, propValue)
+            val propValue = props.get(keyName).orNull
+            val dataType = schema(SparkColumnName.of(slot)).dataType
+            importedToSparkEncodedCypherValue(dataType, propValue)
           case HasLabel(_, label) =>
             labels(label.name)
           case _: Var =>
@@ -214,32 +208,27 @@ object Neo4jGraphLoader {
     }
   }
 
-  private case class filterRel(relDef: CTRelationship)
+  private case class filterRel(relType: CTRelationship)
                               (implicit context: LoadingContext) extends (InternalRelationship => Boolean) {
 
-    override def apply(importedRel: InternalRelationship): Boolean = relDef.types.forall(importedRel.hasType)
+    override def apply(importedRel: InternalRelationship): Boolean =
+      relType.types.isEmpty || relType.types.exists(importedRel.hasType)
   }
 
   private case class relToRow(header: RecordHeader, schema: StructType)
                              (implicit context: LoadingContext) extends (InternalRelationship => Row) {
     override def apply(importedRel: InternalRelationship): Row = {
-      val graphSchema = context.schema
-
       import scala.collection.JavaConverters._
 
       val relType = importedRel.`type`()
       val props = importedRel.asMap().asScala
 
-      val schemaKeyTypes = graphSchema.relationshipKeys(relType)
-
       val values = header.slots.map { slot =>
         slot.content.key match {
           case Property(_, PropertyKey(keyName)) =>
-            val propValue = schemaKeyTypes.get(keyName) match {
-              case Some(t) if t == slot.content.cypherType => props.get(keyName).orNull
-              case _ => null
-            }
-            importedToSparkEncodedCypherValue(schema(slot.index).dataType, propValue)
+            val propValue = props.get(keyName).orNull
+            val dataType = schema(SparkColumnName.of(slot)).dataType
+            importedToSparkEncodedCypherValue(dataType, propValue)
 
           case _: StartNode =>
             importedRel.startNodeId()
