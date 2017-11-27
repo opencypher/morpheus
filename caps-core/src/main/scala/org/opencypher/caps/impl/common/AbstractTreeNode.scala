@@ -27,7 +27,7 @@ import scala.reflect.ClassTag
   * in children is their order in the constructor. Every constructor parameter of type `T` is
   * assumed to be a child node.
   */
-abstract class AbstractTreeNode[T <: TreeNode[T] : ClassTag] extends TreeNode[T] {
+abstract class AbstractTreeNode[T <: TreeNode[T]: ClassTag] extends TreeNode[T] {
   self: T =>
 
   override lazy val children: Seq[T] = productIterator.toVector.collect { case t: T => t }
@@ -42,14 +42,15 @@ abstract class AbstractTreeNode[T <: TreeNode[T] : ClassTag] extends TreeNode[T]
     if (children == newAsVector) {
       self
     } else {
-      require(children.length == newAsVector.length,
+      require(
+        children.length == newAsVector.length,
         s"invalid children for $productPrefix: ${newAsVector.mkString(", ")}")
       val substitutions = children.toList.zip(newAsVector)
       val (updatedConstructorParams, _) = productIterator.foldLeft((Vector.empty[Any], substitutions)) {
         case ((result, remainingSubs), next) =>
           remainingSubs match {
             case (oldC, newC) :: tail if next == oldC => (result :+ newC, tail)
-            case _ => (result :+ next, remainingSubs)
+            case _                                    => (result :+ next, remainingSubs)
           }
       }
       val copyMethod = AbstractTreeNode.copyMethod(self)
@@ -57,10 +58,12 @@ abstract class AbstractTreeNode[T <: TreeNode[T] : ClassTag] extends TreeNode[T]
         copyMethod(updatedConstructorParams: _*).asInstanceOf[T]
       } catch {
         case e: Exception =>
-          Raise.invalidArgument(s"valid constructor arguments for $productPrefix",
+          Raise.invalidArgument(
+            s"valid constructor arguments for $productPrefix",
             s"""|${updatedConstructorParams.mkString(", ")}
                 |Original exception: $e
-                |Copy method: $copyMethod""".stripMargin)
+                |Copy method: $copyMethod""".stripMargin
+          )
       }
     }
   }
@@ -68,29 +71,33 @@ abstract class AbstractTreeNode[T <: TreeNode[T] : ClassTag] extends TreeNode[T]
 }
 
 /**
-  * Caches an instance of the copy method per case class type.
+  * Caches an instance of the copy method per case class type and thread.
   */
 object AbstractTreeNode {
 
-  import java.util.concurrent.ConcurrentHashMap
-
-  import collection.JavaConverters._
   import scala.reflect.runtime.universe
   import scala.reflect.runtime.universe._
 
-  protected def copyMethod[T <: TreeNode[T]](instance: AbstractTreeNode[T]): MethodMirror = {
-    val className = instance.getClass.getName
-    cachedCopyMethods.getOrElse(className, {
-      val instanceMirror = mirror.reflect(instance)
-      val tpe = instanceMirror.symbol.asType.toType
-      val copyMethodSymbol = tpe.decl(TermName("copy")).asMethod
-      val copyMethod = instanceMirror.reflectMethod(copyMethodSymbol)
-      cachedCopyMethods.put(className, copyMethod)
-      copyMethod
-    })
+  private lazy val cachedCopyMethods = new ThreadLocal[Map[Class[_], MethodMirror]]() {
+    override def initialValue = Map.empty[Class[_], MethodMirror]
   }
 
-  private val cachedCopyMethods = new ConcurrentHashMap[String, universe.MethodMirror].asScala
+  private lazy val mirror = universe.runtimeMirror(getClass.getClassLoader)
 
-  protected val mirror = universe.runtimeMirror(getClass.getClassLoader)
+  protected def copyMethod[T <: TreeNode[T]](instance: AbstractTreeNode[T]): MethodMirror = {
+    val instanceClass = instance.getClass
+    val cacheMap = cachedCopyMethods.get()
+    cacheMap.getOrElse(
+      instanceClass, {
+        val instanceMirror = mirror.reflect(instance)
+        val tpe = instanceMirror.symbol.asType.toType
+        val copyMethodSymbol = tpe.decl(TermName("copy")).asMethod
+        val copyMethod = instanceMirror.reflectMethod(copyMethodSymbol)
+        val updatedCacheMap = cacheMap.updated(instanceClass, copyMethod)
+        cachedCopyMethods.set(updatedCacheMap)
+        copyMethod
+      }
+    )
+  }
+
 }

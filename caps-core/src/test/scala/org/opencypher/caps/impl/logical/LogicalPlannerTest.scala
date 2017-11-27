@@ -20,16 +20,17 @@ import java.net.URI
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.io.PersistMode
 import org.opencypher.caps.api.record.{ProjectedExpr, ProjectedField}
-import org.opencypher.caps.api.schema.{ImpliedLabels, LabelCombinations, PropertyKeyMap, Schema}
+import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.CAPSGraph
 import org.opencypher.caps.api.spark.io.CAPSGraphSource
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.{CypherBoolean, CypherInteger, CypherString}
+import org.opencypher.caps.impl.common.{MatchHelper, equalWithTracing}
 import org.opencypher.caps.impl.logical
 import org.opencypher.caps.impl.util.toVar
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block._
-import org.opencypher.caps.ir.api.pattern.{AllGiven, DirectedRelationship, Pattern}
+import org.opencypher.caps.ir.api.pattern.{DirectedRelationship, Pattern}
 import org.opencypher.caps.ir.impl.IrTestSuite
 import org.opencypher.caps.toField
 import org.scalatest.matchers._
@@ -109,9 +110,8 @@ class LogicalPlannerTest extends IrTestSuite {
         Var("a.name")(CTNull),
         Property(Var("a")(CTNode(Set("Administrator"))), PropertyKey("name"))(CTNull)),
       Filter(
-        Equals(
-          Property(Var("g")(CTNode(Set("Group"))), PropertyKey("name"))(CTNull),
-          Param("foo")(CTString))(CTBoolean),
+        Equals(Property(Var("g")(CTNode(Set("Group"))), PropertyKey("name"))(CTNull), Param("foo")(CTString))(
+          CTBoolean),
         Project(
           ProjectedExpr(Property(Var("g")(CTNode(Set("Group"))), PropertyKey("name"))(CTNull)),
           Filter(
@@ -159,9 +159,8 @@ class LogicalPlannerTest extends IrTestSuite {
           Set(
             HasLabel(Var("a")(CTNode), Label("Administrator"))(CTBoolean),
             HasLabel(Var("g")(CTNode), Label("Group"))(CTBoolean),
-            Equals(
-              Property(Var("g")(CTNode(Set("Group"))), PropertyKey("name"))(CTNull),
-              Param("foo")(CTString))(CTBoolean)
+            Equals(Property(Var("g")(CTNode(Set("Group"))), PropertyKey("name"))(CTNull), Param("foo")(CTString))(
+              CTBoolean)
           )
         )
       ),
@@ -170,9 +169,8 @@ class LogicalPlannerTest extends IrTestSuite {
         Set(
           HasLabel(Var("a")(CTNode), Label("Administrator"))(CTBoolean),
           HasLabel(Var("g")(CTNode), Label("Group"))(CTBoolean),
-          Equals(
-            Property(Var("g")(CTNode(Set("Group"))), PropertyKey("name"))(CTNull),
-            Param("foo")(CTString))(CTBoolean)
+          Equals(Property(Var("g")(CTNode(Set("Group"))), PropertyKey("name"))(CTNull), Param("foo")(CTString))(
+            CTBoolean)
         )
       )
     )
@@ -194,9 +192,8 @@ class LogicalPlannerTest extends IrTestSuite {
         Var("a.name")(CTFloat),
         Property(Var("a")(CTNode(Set("Administrator"))), PropertyKey("name"))(CTFloat)),
       Filter(
-        Equals(
-          Property(Var("g")(CTNode(Set("Group"))), PropertyKey("name"))(CTString),
-          Param("foo")(CTString))(CTBoolean),
+        Equals(Property(Var("g")(CTNode(Set("Group"))), PropertyKey("name"))(CTString), Param("foo")(CTString))(
+          CTBoolean),
         Project(
           ProjectedExpr(Property(Var("g")(CTNode(Set("Group"))), PropertyKey("name"))(CTString)),
           Filter(
@@ -266,9 +263,8 @@ class LogicalPlannerTest extends IrTestSuite {
           Set(
             HasLabel(Var("a")(CTNode), Label("Administrator"))(CTBoolean),
             HasLabel(Var("g")(CTNode), Label("Group"))(CTBoolean),
-            Equals(
-              Property(Var("g")(CTNode(Set("Group"))), PropertyKey("name"))(CTString),
-              Param("foo")(CTString))(CTBoolean)
+            Equals(Property(Var("g")(CTNode(Set("Group"))), PropertyKey("name"))(CTString), Param("foo")(CTString))(
+              CTBoolean)
           )
         )
       ),
@@ -277,9 +273,8 @@ class LogicalPlannerTest extends IrTestSuite {
         Set(
           HasLabel(Var("a")(CTNode), Label("Administrator"))(CTBoolean),
           HasLabel(Var("g")(CTNode), Label("Group"))(CTBoolean),
-          Equals(
-            Property(Var("g")(CTNode(Set("Group"))), PropertyKey("name"))(CTString),
-            Param("foo")(CTString))(CTBoolean)
+          Equals(Property(Var("g")(CTNode(Set("Group"))), PropertyKey("name"))(CTString), Param("foo")(CTString))(
+            CTBoolean)
         )
       )
     )

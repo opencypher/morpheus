@@ -108,7 +108,7 @@ abstract class TreeNode[T <: TreeNode[T]: ClassTag] extends Product with Travers
     * @param depth indentation depth used by the recursive call
     * @return tree-style representation of that node and all (grand-)children
     */
-  def pretty(depth: Int = 0): String = {
+  def pretty(implicit depth: Int = 0): String = {
 
     def prefix(depth: Int): String = ("· " * depth) + "|-"
 
@@ -119,21 +119,19 @@ abstract class TreeNode[T <: TreeNode[T]: ClassTag] extends Product with Travers
   }
 
   /**
-    * Concatenates all arguments of this tree node excluding the children.
+    * Turns all arguments in `args` into a string that describes the arguments.
     *
     * @return argument string
     */
-  def argString: String =
-    args.flatMap {
-      case tn: T if containsChild(tn) => None // Don't print children
-      case other => other.toString
-    }.mkString(", ")
+  def argString: String = args.mkString(", ")
 
   /**
-    * Arguments that should be printed. Can return `productIterator` to opt into printing all
-    * arguments.
+    * Arguments that should be printed. The default implementation excludes children.
     */
-  def args: Iterator[Any] = Iterator.empty
+  def args: Iterator[Any] = productIterator.flatMap {
+    case tn: T if containsChild(tn) => None // Don't print children
+    case other                      => Some(other.toString)
+  }
 
   override def toString = s"${getClass.getSimpleName}${if (argString.isEmpty) "" else s"($argString)"}"
 }
