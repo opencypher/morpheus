@@ -83,19 +83,7 @@ final case class Schema(
     * Implied labels for each existing label
     */
   lazy val impliedLabels: ImpliedLabels = {
-    val implications = labelPropertyMap.labelCombinations.foldLeft(Map.empty[String, Set[String]]) {
-      case (map, labelCombos) =>
-        labelCombos.foldLeft(map) {
-          case (innerMap, label) =>
-            val otherLabels = labelCombos - label
-            innerMap.get(label) match {
-              case Some(set) =>
-                innerMap.updated(label, set intersect otherLabels)
-              case None =>
-                innerMap.updated(label, otherLabels)
-            }
-        }
-    }
+    val implications = foldAndProduce(Map.empty[String, Set[String]])(_ intersect _ - _, _ - _)
 
     ImpliedLabels(implications)
   }
@@ -373,60 +361,13 @@ final case class Schema(
     )
   }
 
-  /**
-    * Computes the resulting implied labels from the current and the given schema.
-    *
-    * Example:
-    *
-    * this.labels = {A, B, C}
-    * this.impliedLabels:
-    * A -> B
-    * B -> C
-    *
-    * other.labels = {B, C, D}
-    * other.impliedLabels
-    * B -> C
-    * C -> D
-    *
-    * (1) compute intersection between this.impliedLabels and other.impliedLabels
-    * (2) compute implied labels exclusive for left and right side
-    * (3) from exclusive labels remove those pairs where the first item is not contained in the other one's label set
-    * (4) union intersecting pairs with filtered pairs from both sides
-    *
-    * @param other other schema
-    * @return implied labels inferred from the given implied labels
-    */
-  private def inferImpliedLabels(other: Schema) = {
-    val leftImpliedPairs = this.impliedLabels.toPairs
-    val rightImpliedPairs = other.impliedLabels.toPairs
-
-    val intersectPairs = leftImpliedPairs intersect rightImpliedPairs
-    val exclusivePairsLeft = (leftImpliedPairs -- intersectPairs)
-      .filterNot(pair => other.labels.contains(pair._1))
-    val exclusivePairsRight = (rightImpliedPairs -- intersectPairs)
-      .filterNot(pair => this.labels.contains(pair._1))
-
-    ImpliedLabels((exclusivePairsLeft ++ exclusivePairsRight ++ intersectPairs)
-      .groupBy(_._1)
-      .map(pair => pair._1 -> pair._2.map(_._2)))
-  }
-
   // Verification makes sure that we will always know the exact type of a property when given at least one label
   // Another, more restrictive verification would be to guarantee that even without a label
   override def verify: VerifiedSchema = {
-    // TODO: share code with above in implications
-    val combosByLabel = labelPropertyMap.labelCombinations.foldLeft(Map.empty[String, Set[Set[String]]]) {
-      case (map, labelCombos) =>
-        labelCombos.foldLeft(map) {
-          case (innerMap, label) =>
-            innerMap.get(label) match {
-              case Some(set) =>
-                innerMap.updated(label, set + labelCombos)
-              case None =>
-                innerMap.updated(label, Set(labelCombos))
-            }
-        }
-    }
+    val combosByLabel = foldAndProduce(Map.empty[String, Set[Set[String]]])({
+        (set, combos, _) => set + combos
+      }, (combos, _) => Set(combos)
+    )
 
     combosByLabel.foreach {
       case (label, combos) =>
@@ -496,6 +437,21 @@ final case class Schema(
 
       builder.toString
     }
+
+  private def foldAndProduce[A](zero: Map[String, A])(bound: (A, Set[String], String) => A, fresh: (Set[String], String) => A) = {
+    labelPropertyMap.labelCombinations.foldLeft(zero) {
+      case (map, labelCombos) =>
+        labelCombos.foldLeft(map) {
+          case (innerMap, label) =>
+            innerMap.get(label) match {
+              case Some(a) =>
+                innerMap.updated(label, bound(a, labelCombos, label))
+              case None =>
+                innerMap.updated(label, fresh(labelCombos, label))
+            }
+        }
+    }
+  }
 }
 
 sealed abstract class VerifiedSchema extends Verified[Schema] with Serializable {
