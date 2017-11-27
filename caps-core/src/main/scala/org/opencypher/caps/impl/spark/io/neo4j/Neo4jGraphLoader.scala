@@ -22,8 +22,9 @@ import org.apache.spark.storage.StorageLevel
 import org.neo4j.driver.internal.{InternalNode, InternalRelationship}
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.record.{OpaqueField, ProjectedExpr, RecordHeader, SlotContent}
-import org.opencypher.caps.api.schema.Schema.AllLabels
-import org.opencypher.caps.api.schema.{Schema, VerifiedSchema}
+import org.opencypher.caps.api.schema.PropertyKeys.PropertyKeys
+import org.opencypher.caps.api.schema.Schema.NoLabel
+import org.opencypher.caps.api.schema.{PropertyKeys, Schema, VerifiedSchema}
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue
@@ -50,33 +51,29 @@ object Neo4jGraphLoader {
     val nodeSchema = nodes.aggregate(Schema.empty)({
       case (schema, node) =>
         val labels =
-          if (node.labels().isEmpty)
-            Seq("") // we use the empty string (an invalid label) to encode nodes without labels
+          if (node.labels().isEmpty)  // could remove this unless we rely on `NoLabel`
+            NoLabel
           else
-            node.labels().asScala
+            node.labels().asScala.toSet
 
-        labels.foldLeft(schema) {
-          case (_schema, label) =>
-            addProperties(node.asMap(), _schema.withNodePropertyKeys(label))
-        }
+        schema.withNodePropertyKeys(labels, convertProperties(node.asMap()))
     }, _ ++ _)
 
     val completeSchema = rels.aggregate(nodeSchema)({
       case (schema, next) =>
-        addProperties(next.asMap(), schema.withRelationshipPropertyKeys(next.`type`()))
+        schema.withRelationshipPropertyKeys(next.`type`(), convertProperties(next.asMap()))
     },  _ ++ _)
 
     completeSchema.verify
   }
 
-  private def addProperties(properties: java.util.Map[String, AnyRef], addProperties: (Seq[(String, CypherType)] => Schema)) = {
+  private def convertProperties(properties: java.util.Map[String, AnyRef]): PropertyKeys = {
     if (properties.isEmpty) {
-      addProperties(Seq.empty)
+      PropertyKeys.empty
     } else {
-      val foo = properties.asScala.map {
+      properties.asScala.map {
         case (k, v) => k -> fromJavaType(v)
-      }
-      addProperties(foo.toSeq)
+      }.toMap
     }
   }
 

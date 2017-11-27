@@ -35,10 +35,11 @@ class Neo4jSchemaLoaderTest extends CAPSTestSuite with Neo4jServerFixture {
 
     graph.schema should equal(
       Schema.empty
-        .withNodePropertyKeys("Person")("name" -> CTString, "age" -> CTInteger.nullable, "salary" -> CTInteger.nullable, "team" -> CTString.nullable)
-        .withNodePropertyKeys("Employee")("name" -> CTString, "salary" -> CTInteger, "team" -> CTString.nullable)
-        .withNodePropertyKeys("Driver")("name" -> CTString.nullable, "fast" -> CTBoolean.nullable)
-        .withNodePropertyKeys("")("pi" -> CTFloat.nullable)
+        .withNodePropertyKeys("Person")("name" -> CTString, "age" -> CTInteger.nullable)
+        .withNodePropertyKeys("Person", "Employee")("name" -> CTString, "salary" -> CTInteger, "team" -> CTString.nullable)
+        .withNodePropertyKeys("Person", "Driver")("name" -> CTString)
+        .withNodePropertyKeys("Driver")("fast" -> CTBoolean)
+        .withNodePropertyKeys(Schema.NoLabel, Map("pi" -> CTFloat.nullable))
     )
   }
 
@@ -57,16 +58,17 @@ class Neo4jSchemaLoaderTest extends CAPSTestSuite with Neo4jServerFixture {
 
     graph.schema should equal(
       Schema.empty
-        .withNodePropertyKeys("Person")("name" -> CTString, "age" -> CTInteger.nullable, "salary" -> CTInteger.nullable, "team" -> CTString.nullable)
-        .withNodePropertyKeys("Employee")("name" -> CTString, "salary" -> CTInteger, "team" -> CTString.nullable)
-        .withNodePropertyKeys("Driver")("name" -> CTString.nullable, "fast" -> CTBoolean.nullable)
-        .withNodePropertyKeys("")("pi" -> CTFloat.nullable)
+        .withNodePropertyKeys("Person")("name" -> CTString, "age" -> CTInteger.nullable)
+        .withNodePropertyKeys("Person", "Employee")("name" -> CTString, "salary" -> CTInteger, "team" -> CTString.nullable)
+        .withNodePropertyKeys("Person", "Driver")("name" -> CTString)
+        .withNodePropertyKeys("Driver")("fast" -> CTBoolean)
+        .withNodePropertyKeys(Schema.NoLabel, Map("pi" -> CTFloat.nullable))
         .withRelationshipPropertyKeys("EMPTY")()
         .withRelationshipPropertyKeys("KNOWS")("since" -> CTInteger, "because" -> CTString.nullable)
     )
   }
 
-  override def dataFixture =
+  override def dataFixture: String =
     """CREATE (me:Person {name: 'me'}),
       |       (you:Person {name: 'you', age: 9}),
       |       (:Person:Employee {name: 'x', salary: 123}),

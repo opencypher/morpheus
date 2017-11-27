@@ -34,7 +34,7 @@ object Schema {
     relKeyMap = RelTypePropertyMap.empty
   )
 
-  object NoLabel extends Set[String] {
+  object NoLabel extends Set[String] with Serializable {
     override def contains(elem: String): Boolean = false
 
     override def +(elem: String): Set[String] = this
@@ -237,15 +237,18 @@ final case class Schema(
     * @param keys the properties (name and type) to associate with the relationship type
     * @return a copy of the Schema with the provided new data
     */
-  def withRelationshipPropertyKeys(typ: String)(keys: (String, CypherType)*): Schema = {
+  def withRelationshipPropertyKeys(typ: String, keys: PropertyKeys): Schema = {
     if (relationshipTypes contains typ) {
-      val updatedTypes = computePropertyTypes(relKeyMap.properties(typ), keys.toMap)
+      val updatedTypes = computePropertyTypes(relKeyMap.properties(typ), keys)
 
       copy(relKeyMap = relKeyMap.register(typ, updatedTypes.toSeq))
     } else {
       copy(relationshipTypes = relationshipTypes + typ, relKeyMap = relKeyMap.register(typ, keys))
     }
   }
+
+  def withRelationshipPropertyKeys(typ: String)(keys: (String, CypherType)*): Schema =
+    withRelationshipPropertyKeys(typ, keys.toMap)
 
   def withRelationshipType(relType: String): Schema =
     copy(relationshipTypes = relationshipTypes + relType)

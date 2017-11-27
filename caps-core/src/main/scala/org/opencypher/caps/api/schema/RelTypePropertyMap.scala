@@ -39,10 +39,9 @@ object RelTypePropertyMap {
 
 final case class RelTypePropertyMap(map: Map[String, PropertyKeys]) {
 
-  def register(relType: String, keys: => Seq[(String, CypherType)]): RelTypePropertyMap = {
+  def register(relType: String, keys: PropertyKeys): RelTypePropertyMap = {
     val oldKeys = map.getOrElse(relType, Map.empty)
-    val newKeys = keys.toMap
-    copy(map.updated(relType, oldKeys ++ newKeys))
+    copy(map.updated(relType, oldKeys ++ keys))
   }
 
   def properties(relKey: String): PropertyKeys = map.getOrElse(relKey, Map.empty)
@@ -59,5 +58,8 @@ final case class RelTypePropertyMap(map: Map[String, PropertyKeys]) {
   // utility signatures
 
   def register(relType: String)(keys: (String, CypherType)*): RelTypePropertyMap =
-    register(relType, keys.toSeq)
+    register(relType, keys.toMap)
+
+  def register(relType: String, keys: => Seq[(String, CypherType)]): RelTypePropertyMap =
+    register(relType, keys.toMap)
 }
