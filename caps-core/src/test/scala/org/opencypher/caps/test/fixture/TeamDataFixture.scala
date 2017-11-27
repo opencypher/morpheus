@@ -33,18 +33,18 @@ trait TeamDataFixture extends TestDataFixture with DebugOutputSupport {
        CREATE (c)-[:KNOWS {since: 2016}]->(d)
     """
 
-  override def nbrNodes = 4
+  override val nbrNodes = 4
 
   override def nbrRels = 3
 
-  def teamDataGraphNodes: Bag[Row] = Bag(
+  lazy val teamDataGraphNodes: Bag[Row] = Bag(
     Row(0L, true, true, false, 42L, "Stefan"),
-    Row(1L, true, false, true, 23L, "Mats"),
+    Row(1L, false, true, true, 23L, "Mats"),
     Row(2L, true, true, false, 1337L, "Martin"),
     Row(3L, true, true, false, 8L, "Max")
   )
 
-  def teamDataGraphRels: Bag[Row] = Bag(
+  lazy val teamDataGraphRels: Bag[Row] = Bag(
     Row(0L, 0L, "KNOWS", 1L, 2016L),
     Row(1L, 1L, "KNOWS", 2L, 2016L),
     Row(2L, 2L, "KNOWS", 3L, 2016L)
