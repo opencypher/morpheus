@@ -20,7 +20,7 @@ import org.opencypher.caps.api.expr._
 import scala.annotation.tailrec
 import scala.language.implicitConversions
 
-trait ExprSyntax {
+object ExprSyntax {
   implicit def exprOps(e: Expr): ExprOps = new ExprOps(e)
 }
 

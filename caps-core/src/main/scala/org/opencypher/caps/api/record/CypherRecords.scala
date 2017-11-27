@@ -15,12 +15,19 @@
  */
 package org.opencypher.caps.api.record
 
+import org.opencypher.caps.api.expr.Var
+
+trait CypherRecordHeader {
+  def fields: Set[Var]
+  def fieldsInOrder: Seq[Var]
+}
+
 /**
   * Represents a table of records containing Cypher values.
   * Each column (or slot) in this table represents an evaluated Cypher expression.
   *
   * Slots that have been bound to a variable name are called <i>fields</i>.
-  * @see [[RecordHeader]]
+  * @see [[CypherRecordHeader]]
   */
 trait CypherRecords extends CypherPrintable {
 
@@ -32,7 +39,7 @@ trait CypherRecords extends CypherPrintable {
     *
     * @return the header for this table.
     */
-  def header: RecordHeader
+  def header: CypherRecordHeader
 
   /**
     * The data structure that actually holds all tabular data.
@@ -41,21 +48,21 @@ trait CypherRecords extends CypherPrintable {
     */
   def data: Data
 
-  /**
-    * The explicitly named fields in this table.
-    *
-    * @return the set of fields in this table.
-    * @see [[RecordHeader.fields]]
-    */
-  def fields: Set[String]
-
-  /**
-    * The explicitly named fields of this table, in the order they were defined.
-    *
-    * @return the sequence of fields of this table, in the order they were defined.
-    * @see [[RecordHeader.fieldsInOrder]]
-    */
-  def fieldsInOrder: Seq[String]
+//  /**
+//    * The explicitly named fields in this table.
+//    *
+//    * @return the set of fields in this table.
+//    * @see [[CypherRecordHeader.fields]]
+//    */
+//  def fields: Set[String]
+//
+//  /**
+//    * The explicitly named fields of this table, in the order they were defined.
+//    *
+//    * @return the sequence of fields of this table, in the order they were defined.
+//    * @see [[CypherRecordHeader.fieldsInOrder]]
+//    */
+//  def fieldsInOrder: Seq[String]
 
   def contract[E <: EmbeddedEntity](entity: VerifiedEmbeddedEntity[E]): Records
 

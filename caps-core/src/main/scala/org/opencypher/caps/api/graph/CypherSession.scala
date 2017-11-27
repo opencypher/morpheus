@@ -72,4 +72,8 @@ trait CypherSession {
   def graphAt(uri: URI): Graph
 }
 
+object CypherSession {
+  val sessionGraphSchema = "session"
+}
+
 

@@ -15,30 +15,15 @@
  */
 package org.opencypher.caps.impl
 
-import org.apache.spark.sql.DataFrame
 import org.opencypher.caps.api.expr.Var
-import org.opencypher.caps.api.spark.CAPSSession
-import org.opencypher.caps.impl.record.{AdditiveUpdateResult, SuccessfulUpdateResult}
 import org.opencypher.caps.ir.api.IRField
-import org.apache.spark.sql.Column
 
 import scala.language.implicitConversions
 
 package object util {
-  type SuccessfulAdditiveUpdateResult[T] = SuccessfulUpdateResult[T] with AdditiveUpdateResult[T]
+//  type SuccessfulAdditiveUpdateResult[T] = SuccessfulUpdateResult[T] with AdditiveUpdateResult[T]
 
   implicit def toVar(f: IRField): Var = Var(f.name)(f.cypherType)
 
   implicit def toVars(fields: Set[IRField]): Set[Var] = fields.map(toVar)
-
-  implicit class ColumnMappableDf(df: DataFrame) {
-    def mapColumn(columnName: String)(f: Column => Column)(implicit caps: CAPSSession): DataFrame = {
-      val tmpColName = caps.temporaryColumnName()
-      df.
-        withColumn(tmpColName, f(df(columnName))).
-        drop(columnName).
-        withColumnRenamed(tmpColName, columnName)
-    }
-  }
-
 }

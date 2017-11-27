@@ -16,12 +16,12 @@
 package org.opencypher.caps.impl.logical
 
 import org.opencypher.caps.api.expr._
+import org.opencypher.caps.api.io.GraphSource
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.spark.io.CAPSGraphSource
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.DirectCompilationStage
 import org.opencypher.caps.impl.spark.exception.Raise
-import org.opencypher.caps.impl.syntax.expr._
+import org.opencypher.caps.impl.syntax.ExprSyntax._
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block._
 import org.opencypher.caps.ir.api.pattern._
@@ -31,7 +31,7 @@ import scala.annotation.tailrec
 final case class LogicalPlannerContext(
   ambientGraphSchema: Schema,
   inputRecordFields: Set[Var],
-  resolver: String => CAPSGraphSource
+  resolver: String => GraphSource
 )
 
 class LogicalPlanner(producer: LogicalOperatorProducer)

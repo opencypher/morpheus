@@ -17,7 +17,6 @@ package org.opencypher.caps.api.util
 
 import java.net.URI
 
-// TODO: Test
 case object parsePathOrURI extends (String => URI) {
 
   def apply(pathOrUri: String): URI = {
@@ -28,5 +27,3 @@ case object parsePathOrURI extends (String => URI) {
       URI.create(trimmed)
   }
 }
-
-

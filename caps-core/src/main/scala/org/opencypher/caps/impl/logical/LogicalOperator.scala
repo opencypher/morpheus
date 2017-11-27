@@ -18,7 +18,6 @@ package org.opencypher.caps.impl.logical
 import java.net.URI
 
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.api.record.ProjectedSlotContent
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.impl.common.AbstractTreeNode
 import org.opencypher.caps.ir.api.block.SortItem
@@ -159,10 +158,10 @@ final case class ExpandInto(source: Var, rel: Var, target: Var, in: LogicalOpera
   def rhs: LogicalOperator = in
 }
 
-final case class Project(it: ProjectedSlotContent, in: LogicalOperator, solved: SolvedQueryModel[Expr])
+final case class Project(expr: Expr, field: Option[Var], in: LogicalOperator, solved: SolvedQueryModel[Expr])
     extends StackingLogicalOperator {
 
-  override val fields: Set[Var] = it.alias.map(in.fields + _).getOrElse(in.fields)
+  override val fields: Set[Var] = in.fields ++ field
 }
 
 final case class ProjectGraph(graph: LogicalGraph, in: LogicalOperator, solved: SolvedQueryModel[Expr])

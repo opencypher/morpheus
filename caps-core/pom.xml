@@ -44,24 +44,24 @@
       <version>${dep.eff.version}</version>
     </dependency>
 
-    <!-- Spark -->
-    <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-core_${project.scala.binary.version}</artifactId>
-      <version>${dep.spark.version}</version>
-    </dependency>
+    <!--&lt;!&ndash; Spark &ndash;&gt;-->
+    <!--<dependency>-->
+      <!--<groupId>org.apache.spark</groupId>-->
+      <!--<artifactId>spark-core_${project.scala.binary.version}</artifactId>-->
+      <!--<version>${dep.spark.version}</version>-->
+    <!--</dependency>-->
 
-    <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-sql_${project.scala.binary.version}</artifactId>
-      <version>${dep.spark.version}</version>
-    </dependency>
+    <!--<dependency>-->
+      <!--<groupId>org.apache.spark</groupId>-->
+      <!--<artifactId>spark-sql_${project.scala.binary.version}</artifactId>-->
+      <!--<version>${dep.spark.version}</version>-->
+    <!--</dependency>-->
 
-    <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-catalyst_${project.scala.binary.version}</artifactId>
-      <version>${dep.spark.version}</version>
-    </dependency>
+    <!--<dependency>-->
+      <!--<groupId>org.apache.spark</groupId>-->
+      <!--<artifactId>spark-catalyst_${project.scala.binary.version}</artifactId>-->
+      <!--<version>${dep.spark.version}</version>-->
+    <!--</dependency>-->
 
     <!-- Utils -->
     <dependency>

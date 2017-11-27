@@ -12,6 +12,7 @@
 
     <modules>
         <module>caps-core</module>
+        <module>caps-spark</module>
     </modules>
 
     <properties>
