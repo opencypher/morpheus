@@ -191,8 +191,7 @@ object RecordHeader {
     }
 
     val allKeys = labelCombos.toSeq.flatMap(schema.nodeKeys)
-    val stringToTuples = allKeys.groupBy(_._1)
-    val propertyKeys = stringToTuples.mapValues { seq =>
+    val propertyKeys = allKeys.groupBy(_._1).mapValues { seq =>
       if (seq.size == labelCombos.size && seq.forall(seq.head == _)) {
         seq.head._2
       } else {
@@ -200,8 +199,8 @@ object RecordHeader {
       }
     }
 
-    // TODO: if a label is implied, do we need to create a column or can we answer that by just looking at the schema?
-    // Create one column for each label existing in the schema
+    // create a label column for each possible label
+    // optimisation enabled: will not add columns for implied or impossible labels
     val labelExprs = labelCombos.flatten.toSeq.sorted.map { label =>
       ProjectedExpr(HasLabel(node, Label(label))(CTBoolean))
     }
