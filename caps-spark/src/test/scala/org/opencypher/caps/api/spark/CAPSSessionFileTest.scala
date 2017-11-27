@@ -18,6 +18,7 @@ package org.opencypher.caps.api.spark
 import java.net.URI
 
 import org.apache.spark.sql.Row
+import org.opencypher.caps.impl.spark.io.file.FileCsvGraphSource
 import org.opencypher.caps.test.CAPSTestSuite
 
 import scala.collection.Bag
@@ -35,6 +36,7 @@ class CAPSSessionFileTest extends CAPSTestSuite {
   }
 
   test("File via mount point") {
+    caps.mountSourceAt(FileCsvGraphSource(fileURI), "/test/graph")
     val graph = caps.graphAt("/test/graph")
     graph.nodes("n").toDF().collect().toBag should equal(testGraphNodes)
     graph.relationships("rel").toDF().collect.toBag should equal(testGraphRels)
