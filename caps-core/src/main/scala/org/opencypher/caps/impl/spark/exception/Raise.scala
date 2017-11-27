@@ -22,6 +22,10 @@ import org.opencypher.caps.api.spark.exception.CAPSException
 
 object Raise {
 
+  def invalidEmptyLabel() = throw CAPSException(
+    "A label can not be empty"
+  )
+
   def invalidSchema(label: String, key: Any, t1: Any, t2: Any) = throw CAPSException(
     s"The schema had a conflict on key '$key': $t1 and $t2 (for label $label)"
   )

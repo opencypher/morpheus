@@ -82,10 +82,6 @@ class SchemaTest extends BaseTestSuite {
   }
 
   test("should get chained implications correct") {
-//    val schema = Schema.empty.withImpliedLabel("Employee", "Person")
-//      .withImpliedLabel("Person", "Human")
-//      .withImpliedLabel("Person", "Someone")
-
     val schema = Schema.empty
       .withNodePropertyKeys("Employee", "Person", "Someone", "Human")()
       .withNodePropertyKeys("Person", "Someone", "Human")()
@@ -118,7 +114,6 @@ class SchemaTest extends BaseTestSuite {
   }
 
   test("should get simple combinations correct") {
-
     val schema = Schema.empty
       .withNodePropertyKeys("Person", "Employee")()
       .withNodePropertyKeys("Dog", "Pet")()
@@ -422,5 +417,10 @@ class SchemaTest extends BaseTestSuite {
 
     Schema.empty.withNodePropertyKeys("label")().isEmpty shouldBe false
     Schema.empty.withRelationshipPropertyKeys("type")("name" -> CTFloat).isEmpty shouldBe false
+  }
+
+  test("can not use empty labels") {
+    the[CAPSException] thrownBy Schema.empty.withNodePropertyKeys("")() should have message
+      "A label can not be empty"
   }
 }

@@ -206,6 +206,8 @@ final case class Schema(
     * @return a copy of the Schema with the provided new data
     */
   def withNodePropertyKeys(nodeLabels: Set[String], keys: PropertyKeys): Schema = {
+    if (nodeLabels.exists(_.isEmpty))
+      Raise.invalidEmptyLabel()
     val propertyKeys = if (labelPropertyMap.labelCombinations(nodeLabels)) {
       computePropertyTypes(labelPropertyMap.properties(nodeLabels), keys)
     } else {
