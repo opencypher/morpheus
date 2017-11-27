@@ -255,7 +255,7 @@ final case class Schema(
   def withRelationshipType(relType: String): Schema =
     copy(relationshipTypes = relationshipTypes + relType)
 
-  private def computePropertyTypes(existing: PropertyKeys, input: PropertyKeys): PropertyKeys= {
+  private def computePropertyTypes(existing: PropertyKeys, input: PropertyKeys): PropertyKeys = {
     // Map over input keys to calculate join of type with existing type
     val keysWithJoinedTypes = input.map {
       case (key, propType) =>
