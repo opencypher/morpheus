@@ -20,6 +20,7 @@ import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
+import org.opencypher.caps.impl.record.CAPSRecordHeader._
 import org.opencypher.caps.impl.spark.{RowExpansion, SparkColumnName}
 
 class CAPSPatternGraph(private[spark] val baseTable: CAPSRecords, val schema: Schema)

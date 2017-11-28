@@ -19,6 +19,7 @@ import org.opencypher.caps.api.expr.Var
 import org.opencypher.caps.api.record.{FieldSlotContent, OpaqueField, ProjectedExpr, RecordHeader}
 import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.api.value.CypherMap
+import org.opencypher.caps.impl.record.CAPSRecordHeader._
 import org.opencypher.caps.test.CAPSTestSuite
 import org.scalatest.Assertion
 

@@ -15,6 +15,8 @@
  */
 package org.opencypher.caps.impl.record
 
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.opencypher.caps.api.expr.Var
 import org.opencypher.caps.api.record.{OpaqueField, RecordHeader, RecordSlot}
@@ -41,4 +43,30 @@ object CAPSRecordHeader {
     val dataType = toSparkType(slot.content.cypherType)
     StructField(name, dataType, nullable)
   }
+
+  implicit class CAPSRecordHeader(header: RecordHeader) {
+    def asSparkSchema: StructType =
+      StructType(header.internalHeader.slots.map(_.asStructField))
+
+    def rowEncoder: ExpressionEncoder[Row] =
+      RowEncoder(asSparkSchema)
+  }
+
+  implicit class CAPSInternalHeader(internalHeader: InternalHeader) {
+    def columns = internalHeader.slots.map(computeColumnName).toVector
+
+    def column(slot: RecordSlot) = columns(slot.index)
+
+    private def computeColumnName(slot: RecordSlot): String = SparkColumnName.of(slot)
+  }
+
+  implicit class CAPSRecordSlot(slot: RecordSlot) {
+    def asStructField: StructField = {
+      val name = SparkColumnName.of(slot)
+      val sparkType = toSparkType(slot.content.cypherType)
+      StructField(name, sparkType)
+    }
+  }
 }
+
+
