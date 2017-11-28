@@ -347,8 +347,10 @@ class SchemaTest extends BaseTestSuite {
       .withNodePropertyKeys(NoLabel, Map("a" -> CTString))
 
     schema.nodeKeyType(AllOf("A"), "a") should equal(Some(CTInteger))
-    schema.nodeKeyType(AllGiven(NoLabel), "a") should equal(Some(CTString))
-    schema.nodeKeyType(AllGiven(NoLabel), "b") should equal(None)
+    schema.nodeKeyType(AllGiven(NoLabel), "a") should equal(Some(CTAny))
+    schema.nodeKeyType(AllGiven(NoLabel), "b") should equal(Some(CTString.nullable))
+    schema.nodeKeyType(AllOf("B"), "b") should equal(None)
+    schema.nodeKeyType(AllOf("A"), "x") should equal(None)
   }
 
   test("get node key type with any given semantics") {

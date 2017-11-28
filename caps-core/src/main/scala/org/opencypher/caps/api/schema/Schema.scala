@@ -141,8 +141,38 @@ final case class Schema(
       }
   }
 
+  /**
+    * Computes property keys for the set of label combinations.
+    *
+    * @param labelCombinations label combinations to consider.
+    * @return typed property keys, with joined or nullable types for conflicts.
+    */
+  def keysFor(labelCombinations: Set[Set[String]]): PropertyKeys = {
+    val allKeys = labelCombinations.toSeq.flatMap(nodeKeys)
+    val propertyKeys = allKeys.groupBy(_._1).mapValues { seq =>
+      if (seq.size == labelCombinations.size && seq.forall(seq.head == _)) {
+        seq.head._2
+      } else if (seq.size < labelCombinations.size) {
+        seq.map(_._2).foldLeft(CTNull: CypherType)(_ join _)
+      } else {
+        seq.map(_._2).reduce(_ join _)
+      }
+    }
+
+    propertyKeys
+  }
+
+  /**
+    * Computes the type (if any) for a property given a predicate of labels.
+    *
+    * @param labels the labels predicate; either a lower bound of expected labels, or a disjunction of possible labels
+    * @param key the property key
+    * @return the Cypher type, if any, mapped to the key for nodes that pass the predicate
+    */
   def nodeKeyType(labels: Elements[String], key: String): Option[CypherType] = labels match {
-    case AllGiven(elements) => nodeKeys(elements).get(key)
+    case AllGiven(elements) =>
+      val combos = combinationsFor(elements)
+      keysFor(combos).get(key)
     case AnyGiven(elements) =>
       val relevantCombos = if (elements eq AllLabels) allLabelCombinations
       else if (elements eq NoLabel) Set(NoLabel)

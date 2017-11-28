@@ -190,27 +190,18 @@ object RecordHeader {
       schema.combinationsFor(impliedLabels)
     }
 
-    val allKeys = labelCombos.toSeq.flatMap(schema.nodeKeys)
-    val propertyKeys = allKeys.groupBy(_._1).mapValues { seq =>
-      if (seq.size == labelCombos.size && seq.forall(seq.head == _)) {
-        seq.head._2
-      } else {
-        seq.head._2.nullable
-      }
-    }
-
     // create a label column for each possible label
     // optimisation enabled: will not add columns for implied or impossible labels
     val labelExprs = labelCombos.flatten.toSeq.sorted.map { label =>
       ProjectedExpr(HasLabel(node, Label(label))(CTBoolean))
     }
 
+    val propertyKeys = schema.keysFor(labelCombos)
     val propertyExprs = propertyKeys.toSeq.sortBy(_._1).map {
       case (k, t) => ProjectedExpr(Property(node, PropertyKey(k))(t))
     }
 
     val projectedExprs = labelExprs ++ propertyExprs
-
     val (header, _) = RecordHeader.empty
       .update(addContents(OpaqueField(node) +: projectedExprs))
 

@@ -36,6 +36,8 @@ trait DebugOutputSupport {
 
       rowStrings.mkString("Bag(", ",\n", ")")
     }
+
+    def printRows(): Unit = println(debug())
   }
 
   implicit class IterableToBagConverter(val elements: Iterable[Row]) {
