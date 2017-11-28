@@ -15,12 +15,11 @@
  */
 package org.opencypher.caps.impl.flat
 
-import org.opencypher.caps.api.types.CTNode
-import org.opencypher.caps.test.BaseTestSuite
+import org.opencypher.caps.api.expr.Var
+import org.opencypher.caps.api.types.CypherType
 
-class FreshVariableNamerTest extends BaseTestSuite {
+object FreshVariableNamer {
+  val PREFIX = "  "
 
-  test("generates prefixed name") {
-    FreshVariableNamer("Foobar", CTNode).name should equal("  Foobar")
-  }
+  def apply(seed: String, t: CypherType): Var = Var(s"$PREFIX$seed")(t)
 }

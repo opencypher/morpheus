@@ -13,19 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.flat
+package org.opencypher.caps.impl.spark
 
-import org.opencypher.caps.api.expr.Var
 import org.opencypher.caps.api.record.RecordHeader
-import org.opencypher.caps.api.types.CypherType
-import org.opencypher.caps.impl.spark.SparkColumnName
 
 import scala.annotation.tailrec
 import scala.util.Random
 
-object FreshVariableNamer {
+object ColumnNameGenerator {
   val NAME_SIZE = 5
-  val PREFIX = "  "
 
   @tailrec
   def generateUniqueName(header: RecordHeader): String = {
@@ -35,6 +31,4 @@ object FreshVariableNamer {
     if (header.slots.map(SparkColumnName.of).contains(name)) generateUniqueName(header)
     else name
   }
-
-  def apply(seed: String, t: CypherType): Var = Var(s"$PREFIX$seed")(t)
 }

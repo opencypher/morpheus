@@ -19,6 +19,7 @@ import org.opencypher.caps.api.expr.Var
 import org.opencypher.caps.api.record.RecordHeader
 import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.impl.flat.FreshVariableNamer
+import org.opencypher.caps.impl.spark.ColumnNameGenerator
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.{assertIsNode, columnName, joinDFs, joinRecords}
 import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
 
@@ -86,7 +87,7 @@ final case class Optional(
         val lhsCol = lhsData.col(columnName(pair._1))
         val rhsColName = columnName(pair._2)
 
-        (lhsCol, rhsColName, FreshVariableNamer.generateUniqueName(rhsHeader))
+        (lhsCol, rhsColName, ColumnNameGenerator.generateUniqueName(rhsHeader))
       })
       .toSeq
 

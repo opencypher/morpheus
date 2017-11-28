@@ -23,6 +23,7 @@ import org.opencypher.caps.api.record.{OpaqueField, ProjectedExpr, RecordHeader,
 import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.api.types.CTNode
 import org.opencypher.caps.impl.flat.FreshVariableNamer
+import org.opencypher.caps.impl.spark.ColumnNameGenerator
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.{assertIsNode, columnName, joinRecords}
 import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext, udfUtils}
 
@@ -169,7 +170,7 @@ final case class BoundedVarExpand(
     val keep = initData.columns
 
     val listTempColName =
-      FreshVariableNamer.generateUniqueName(firstRecords.header)
+      ColumnNameGenerator.generateUniqueName(firstRecords.header)
 
     val startSlot = secondRecords.header.sourceNodeSlot(rel)
     val endNodeSlot = firstRecords.header.slotFor(initialEndNode)
