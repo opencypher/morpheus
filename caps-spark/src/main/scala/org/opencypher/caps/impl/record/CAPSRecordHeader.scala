@@ -68,5 +68,3 @@ object CAPSRecordHeader {
     }
   }
 }
-
-

@@ -23,7 +23,6 @@ import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.impl.record.CAPSRecordHeader._
 import org.opencypher.caps.impl.exception.Raise
 
-
 case class RowExpansion(
   targetHeader: RecordHeader,
   targetVar: Var,

@@ -49,9 +49,6 @@ sealed abstract class CAPSRecords(
   override type Data = DataFrame
   override type Records = CAPSRecords
 
-//  override val fields: Set[String] = header.fields.map(_.name)
-//  override val fieldsInOrder: Seq[String] = header.fieldsInOrder.map(_.name)
-
   def sparkColumns: IndexedSeq[String] = header.internalHeader.columns
 
   //noinspection AccessorLikeMethodIsEmptyParen

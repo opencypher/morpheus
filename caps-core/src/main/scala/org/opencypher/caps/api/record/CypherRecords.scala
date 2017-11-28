@@ -48,22 +48,6 @@ trait CypherRecords extends CypherPrintable {
     */
   def data: Data
 
-//  /**
-//    * The explicitly named fields in this table.
-//    *
-//    * @return the set of fields in this table.
-//    * @see [[CypherRecordHeader.fields]]
-//    */
-//  def fields: Set[String]
-//
-//  /**
-//    * The explicitly named fields of this table, in the order they were defined.
-//    *
-//    * @return the sequence of fields of this table, in the order they were defined.
-//    * @see [[CypherRecordHeader.fieldsInOrder]]
-//    */
-//  def fieldsInOrder: Seq[String]
-
   def contract[E <: EmbeddedEntity](entity: VerifiedEmbeddedEntity[E]): Records
 
   /**
