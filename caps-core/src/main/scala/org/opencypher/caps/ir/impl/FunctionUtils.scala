@@ -18,7 +18,7 @@ package org.opencypher.caps.ir.impl
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{FunctionInvocation, _}
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.types.CypherType
-import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.exception.Raise
 
 object FunctionUtils {
 

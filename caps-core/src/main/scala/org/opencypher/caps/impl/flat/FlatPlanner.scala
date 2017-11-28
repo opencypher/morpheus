@@ -15,9 +15,10 @@
  */
 package org.opencypher.caps.impl.flat
 
+import org.opencypher.caps.api.record.{ProjectedExpr, ProjectedField}
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.logical.LogicalOperator
-import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.{DirectCompilationStage, logical}
 
 final case class FlatPlannerContext(parameters: Map[String, CypherValue])
@@ -44,8 +45,11 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
       case logical.NodeScan(node, in, _) =>
         producer.nodeScan(node, process(in))
 
-      case logical.Project(it, in, _) =>
-        producer.project(it, process(in))
+      case logical.Project(expr, None, in, _) =>
+        producer.project(ProjectedExpr(expr), process(in))
+
+      case logical.Project(expr, Some(field), in, _) =>
+        producer.project(ProjectedField(field, expr), process(in))
 
       case logical.ProjectGraph(graph, in, _) =>
         val prev = process(in)

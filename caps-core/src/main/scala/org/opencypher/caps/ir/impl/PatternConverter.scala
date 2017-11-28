@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, LabelName}
 import org.opencypher.caps.api.expr.Expr
 import org.opencypher.caps.api.types.{CTList, CTNode, CTRelationship, CypherType}
 import org.opencypher.caps.api.value.CypherValue
-import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.pattern._
 

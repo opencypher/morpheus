@@ -24,7 +24,7 @@ import org.opencypher.caps.api.types.{CypherType, _}
 import org.opencypher.caps.api.value.instances.{cypherList, cypherMap, _}
 import org.opencypher.caps.api.value.syntax.cypherNull
 import org.opencypher.caps.common.{False, Maybe, Ternary, True}
-import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.exception.Raise
 
 import scala.collection.JavaConverters._
 import scala.collection.TraversableOnce

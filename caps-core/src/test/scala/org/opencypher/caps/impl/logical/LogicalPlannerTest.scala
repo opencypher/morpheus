@@ -18,11 +18,8 @@ package org.opencypher.caps.impl.logical
 import java.net.URI
 
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.api.io.PersistMode
-import org.opencypher.caps.api.record.{ProjectedExpr, ProjectedField}
+import org.opencypher.caps.api.io.{GraphSource, PersistMode}
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.spark.CAPSGraph
-import org.opencypher.caps.api.spark.io.CAPSGraphSource
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.{CypherBoolean, CypherInteger, CypherString}
 import org.opencypher.caps.impl.common.{MatchHelper, equalWithTracing}
@@ -94,7 +91,8 @@ class LogicalPlannerTest extends IrTestSuite {
     val result = plan(irWithLeaf(block))
 
     val expected = Project(
-      ProjectedField('a, Property('n, PropertyKey("prop"))(CTFloat)), // n is a dangling reference here
+      Property('n, PropertyKey("prop"))(CTFloat),  // n is a dangling reference here
+      Some('a),
       leafPlan,
       emptySqm.withFields('a))
     result should equalWithoutResult(expected)
@@ -106,14 +104,14 @@ class LogicalPlannerTest extends IrTestSuite {
     val result = plan(ir)
 
     val expected = Project(
-      ProjectedField(
-        Var("a.name")(CTNull),
-        Property(Var("a")(CTNode(Set("Administrator"))), PropertyKey("name"))(CTNull)),
+      Property(Var("a")(CTNode(Set("Administrator"))), PropertyKey("name"))(CTNull),
+      Some(Var("a.name")(CTNull)),
       Filter(
         Equals(Property(Var("g")(CTNode(Set("Group"))), PropertyKey("name"))(CTNull), Param("foo")(CTString))(
           CTBoolean),
         Project(
-          ProjectedExpr(Property(Var("g")(CTNode(Set("Group"))), PropertyKey("name"))(CTNull)),
+          Property(Var("g")(CTNode(Set("Group"))), PropertyKey("name"))(CTNull),
+          None,
           Filter(
             HasLabel(Var("g")(CTNode), Label("Group"))(CTBoolean),
             Filter(
@@ -188,14 +186,14 @@ class LogicalPlannerTest extends IrTestSuite {
     val result = plan(ir, schema)
 
     val expected = Project(
-      ProjectedField(
-        Var("a.name")(CTFloat),
-        Property(Var("a")(CTNode(Set("Administrator"))), PropertyKey("name"))(CTFloat)),
+      Property(Var("a")(CTNode(Set("Administrator"))), PropertyKey("name"))(CTFloat),
+      Some(Var("a.name")(CTFloat)),
       Filter(
         Equals(Property(Var("g")(CTNode(Set("Group"))), PropertyKey("name"))(CTString), Param("foo")(CTString))(
           CTBoolean),
         Project(
-          ProjectedExpr(Property(Var("g")(CTNode(Set("Group"))), PropertyKey("name"))(CTString)),
+          Property(Var("g")(CTNode(Set("Group"))), PropertyKey("name"))(CTString),
+          None,
           Filter(
             HasLabel(Var("g")(CTNode), Label("Group"))(CTBoolean),
             Filter(
@@ -289,7 +287,8 @@ class LogicalPlannerTest extends IrTestSuite {
     val result = plan(ir)
 
     val expected = Project(
-      ProjectedField(Var("a.prop")(CTNull), Property(Var("a")(CTNode), PropertyKey("prop"))(CTNull)),
+      Property(Var("a")(CTNode), PropertyKey("prop"))(CTNull),
+      Some(Var("a.prop")(CTNull)),
       Filter(
         Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean))(CTBoolean))(CTBoolean),
         NodeScan(
@@ -347,7 +346,7 @@ class LogicalPlannerTest extends IrTestSuite {
   private val planner = new LogicalPlanner(new LogicalOperatorProducer)
 
   private def plan(ir: CypherQuery[Expr], schema: Schema = Schema.empty) =
-    planner.process(ir)(LogicalPlannerContext(schema, Set.empty, (_) => FakeGraphSource(schema)))
+    planner.process(ir)(LogicalPlannerContext(schema, Set.empty, (_) => graphSource(schema)))
 
   case class equalWithoutResult(plan: LogicalOperator) extends Matcher[LogicalOperator] {
     override def apply(left: LogicalOperator): MatchResult = {
@@ -361,22 +360,13 @@ class LogicalPlannerTest extends IrTestSuite {
     }
   }
 
-  private case class FakeGraphSource(_schema: Schema) extends CAPSGraphSource {
-    override lazy val session: Session = ???
+  def graphSource(schema: Schema): GraphSource = {
+    import org.mockito.Mockito.when
 
-    override def canonicalURI: URI = uri
+    val graphSource = mock[GraphSource]
+    when(graphSource.schema).thenReturn(Some(schema))
+    when(graphSource.canonicalURI).thenReturn(uri)
 
-    override def sourceForGraphAt(uri: URI): Boolean = ???
-
-    override def create: CAPSGraph = ???
-
-    override def graph: CAPSGraph = ???
-
-    override def schema: Option[Schema] = Some(_schema)
-
-    override def store(graph: CAPSGraph, mode: PersistMode): CAPSGraph = ???
-
-    override def delete(): Unit = ???
+    graphSource
   }
-
 }

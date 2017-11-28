@@ -24,9 +24,8 @@ import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.common.RefCollection
 import org.opencypher.caps.common.RefCollection.AbstractRegister
-import org.opencypher.caps.impl.spark.SparkColumnName
-import org.opencypher.caps.impl.syntax.expr._
-import org.opencypher.caps.impl.syntax.register._
+import org.opencypher.caps.common.syntax.RegisterSyntax._
+import org.opencypher.caps.impl.syntax.ExprSyntax._
 
 import scala.annotation.tailrec
 
@@ -43,7 +42,6 @@ final case class InternalHeader protected[caps](
   import InternalHeader.{addContent, recordSlotRegister}
 
   private lazy val cachedSlots = slotContents.contents.map(RecordSlot.from).toIndexedSeq
-  private lazy val cachedColumns = slots.map(computeColumnName).toVector
 
   def ++(other: InternalHeader): InternalHeader =
     other.slotContents.elts.foldLeft(this) {
@@ -71,16 +69,13 @@ final case class InternalHeader protected[caps](
   def +(addedContent: SlotContent): InternalHeader =
     addContent(addedContent).runS(self).value
 
-  def columns = cachedColumns
 
-  def column(slot: RecordSlot) = cachedColumns(slot.index)
 
   def mandatory(slot: RecordSlot) = slot.content match {
     case _: FieldSlotContent => slot.content.cypherType.isMaterial
     case p@ProjectedExpr(expr) => p.cypherType.isMaterial && slotsFor(expr).size <=1
   }
 
-  private def computeColumnName(slot: RecordSlot): String = SparkColumnName.of(slot)
 }
 
 object InternalHeader {

@@ -22,6 +22,8 @@ import org.opencypher.caps.impl.record.{AdditiveUpdateResult, InternalHeader, Re
 
 import scala.language.implicitConversions
 
+object RecordHeaderSyntax extends RecordHeaderSyntax
+
 trait RecordHeaderSyntax {
 
   implicit def sparkRecordHeaderSyntax(header: RecordHeader): RecordHeaderOps =

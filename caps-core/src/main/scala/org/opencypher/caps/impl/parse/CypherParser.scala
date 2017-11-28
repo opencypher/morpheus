@@ -22,7 +22,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.phases._
 import org.neo4j.cypher.internal.frontend.v3_3.{SemanticError, SemanticErrorDef, SemanticFeature, SemanticState}
 import org.opencypher.caps.impl.CompilationStage
 import org.opencypher.caps.impl.parse.rewriter.CAPSRewriting
-import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.exception.Raise
 
 object CypherParser extends CypherParser {
   implicit object defaultContext extends BlankBaseContext {

@@ -15,21 +15,12 @@
  */
 package org.opencypher.caps.api.record
 
-import org.apache.spark.sql.types.StructField
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.spark.SparkColumnName
-import org.opencypher.caps.impl.spark.convert.toSparkType
-import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.exception.Raise
 
 final case class RecordSlot(index: Int, content: SlotContent) {
   def withOwner(v: Var): RecordSlot = copy(content = content.withOwner(v))
-
-  def asStructField: StructField = {
-    val name = SparkColumnName.of(this)
-    val sparkType = toSparkType(content.cypherType)
-    StructField(name, sparkType)
-  }
 }
 
 object RecordSlot {

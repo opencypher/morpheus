@@ -20,8 +20,8 @@ import java.net.URI
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticState
 import org.opencypher.caps.api.expr.Expr
+import org.opencypher.caps.api.io.GraphSource
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.spark.io.CAPSGraphSource
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.logical.{LogicalExternalGraph, Start}
 import org.opencypher.caps.impl.parse.CypherParser
@@ -38,7 +38,7 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
 
   def testGraph()(implicit schema: Schema = Schema.empty) = IRExternalGraph("test", schema, URI.create("test"))
 
-  val testGraphSource: CAPSGraphSource = mock[CAPSGraphSource]
+  val testGraphSource: GraphSource = mock[GraphSource]
   when(testGraphSource.schema).thenReturn(Some(testGraph.schema))
 
   def leafBlock(): SourceBlock[Expr] = SourceBlock[Expr](testGraph)

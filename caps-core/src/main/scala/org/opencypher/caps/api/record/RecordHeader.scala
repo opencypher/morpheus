@@ -15,17 +15,12 @@
  */
 package org.opencypher.caps.api.record
 
-import org.apache.spark.sql.Row
-import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
-import org.apache.spark.sql.types.StructType
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTString, CypherType, _}
-import org.opencypher.caps.common.syntax._
-import org.opencypher.caps.demo.Configuration.DefaultLabel
+import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTString, _}
 import org.opencypher.caps.impl.record.InternalHeader
-import org.opencypher.caps.impl.spark.exception.Raise
-import org.opencypher.caps.impl.syntax.header.{addContents, _}
+import org.opencypher.caps.impl.exception.Raise
+import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.ir.api.{Label, PropertyKey}
 
 /**
@@ -34,7 +29,7 @@ import org.opencypher.caps.ir.api.{Label, PropertyKey}
   * The header consists of a number of slots, each of which represents a Cypher expression.
   * The slots that represent variables (which is a kind of expression) are called <i>fields</i>.
   */
-final case class RecordHeader(internalHeader: InternalHeader) {
+final case class RecordHeader(internalHeader: InternalHeader) extends CypherRecordHeader {
 
   /**
     * Computes the concatenation of this header and another header.
@@ -150,12 +145,6 @@ final case class RecordHeader(internalHeader: InternalHeader) {
     }
   }
 
-  def asSparkSchema: StructType =
-    StructType(internalHeader.slots.map(_.asStructField))
-
-  def rowEncoder: ExpressionEncoder[Row] =
-    RowEncoder(asSparkSchema)
-
   override def toString: String = {
     val s = slots
     s"RecordHeader with ${s.size} slots: \n\t ${slots.mkString("\n\t")}"
@@ -225,12 +214,12 @@ object RecordHeader {
     val relKeyHeaderProperties = relTypes.toSeq
       .flatMap(t => schema.relationshipKeys(t).toSeq)
       .groupBy(_._1).mapValues { keys =>
-        if (keys.size == relTypes.size && keys.forall(keys.head == _)) {
-          keys.head._2
-        } else {
-          keys.head._2.nullable
-        }
+      if (keys.size == relTypes.size && keys.forall(keys.head == _)) {
+        keys.head._2
+      } else {
+        keys.head._2.nullable
       }
+    }
 
     val relKeyHeaderContents = relKeyHeaderProperties.toSeq.sortBy(_._1).map {
       case ((k, t)) => ProjectedExpr(Property(rel, PropertyKey(k))(t))

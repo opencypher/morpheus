@@ -16,9 +16,8 @@
 package org.opencypher.caps.impl.logical
 
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.api.record.{ProjectedExpr, ProjectedField}
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.util._
 import org.opencypher.caps.ir.api.block.{Aggregations, SortItem}
 import org.opencypher.caps.ir.api.{IRField, RelType, SolvedQueryModel}
@@ -84,15 +83,11 @@ class LogicalOperatorProducer {
   }
 
   def projectField(field: IRField, expr: Expr, prev: LogicalOperator): Project = {
-    val projection = ProjectedField(field, expr)
-
-    Project(projection, prev, prev.solved.withField(field))
+    Project(expr, Some(field), prev, prev.solved.withField(field))
   }
 
   def projectExpr(expr: Expr, prev: LogicalOperator): Project = {
-    val projection = ProjectedExpr(expr)
-
-    Project(projection, prev, prev.solved)
+    Project(expr, None, prev, prev.solved)
   }
 
   def planSelect(fields: IndexedSeq[Var], graphs: Set[String] = Set.empty, prev: LogicalOperator): Select = {

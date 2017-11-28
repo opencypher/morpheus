@@ -19,7 +19,6 @@ import org.opencypher.caps.api.types.CTNode
 import org.opencypher.caps.test.BaseTestSuite
 
 class FreshVariableNamerTest extends BaseTestSuite {
-
   test("generates prefixed name") {
     FreshVariableNamer("Foobar", CTNode).name should equal("  Foobar")
   }
