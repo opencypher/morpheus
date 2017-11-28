@@ -76,35 +76,30 @@ trait GraphMatchingTestSupport {
     outer =>
 
     private val queryGraph = new GDLHandler.Builder()
-      .setDefaultVertexLabel(DefaultLabel.get())
+      .disableDefaultVertexLabel()
       .setDefaultEdgeLabel(DefaultType.get())
       .buildFromString(gdl)
 
     private val schema: Schema = {
-      def extractFromElement(e: Element) = e.getLabels.asScala.map { label =>
-        label -> e.getProperties.asScala.map {
+      def extractFromNode(e: Element) = {
+        e.getLabels.asScala.toSet -> e.getProperties.asScala.map {
           case (name, prop) => name -> fromJavaType(prop)
-        }
+        }.toMap
+      }
+      def extractFromRel(e: Element) = {
+        e.getLabel -> e.getProperties.asScala.map {
+          case (name, prop) => name -> fromJavaType(prop)
+        }.toMap
       }
 
-      val labelAndProps = queryGraph.getVertices.asScala.flatMap(extractFromElement)
-      val typesAndProps = queryGraph.getEdges.asScala.flatMap(extractFromElement)
-      val vertexLabelCombinations = queryGraph.getVertices.asScala.map { vertex =>
-        vertex.getLabels.asScala
-      }.toSet
+      val labelAndProps = queryGraph.getVertices.asScala.map(extractFromNode)
+      val typesAndProps = queryGraph.getEdges.asScala.map(extractFromRel)
 
       val schemaWithLabels = labelAndProps.foldLeft(Schema.empty) {
-        case (acc, (label, props)) => acc.withNodePropertyKeys(label)(props.toSeq: _*)
+        case (acc, (labels, props)) => acc.withNodePropertyKeys(labels, props)
       }
 
-      val schemaWithLabelCombinations = vertexLabelCombinations.foldLeft(schemaWithLabels) { (acc, labels) =>
-        if (labels.size > 1)
-          acc.withLabelCombination(labels: _*)
-        else
-          acc
-      }
-
-      typesAndProps.foldLeft(schemaWithLabelCombinations) {
+      typesAndProps.foldLeft(schemaWithLabels) {
         case (acc, (t, props)) => acc.withRelationshipPropertyKeys(t)(props.toSeq: _*)
       }
     }
@@ -154,7 +149,7 @@ trait GraphMatchingTestSupport {
               val propertyFields = exprs.collect {
                 case p@Property(_, k) =>
                   val pValue = v.getProperties.get(k.name)
-                  if (fromJavaType(pValue) == p.cypherType) pValue
+                  if (fromJavaType(pValue).material == p.cypherType.material) pValue
                   else null
               }
 

@@ -56,7 +56,7 @@ class MatchAcceptanceTest extends CAPSTestSuite {
       """.stripMargin)
 
     // Then
-    result.records.toMaps should equal(Bag())
+    result.records.toMaps shouldBe empty
   }
 
   test("match property on unknown label") {
@@ -74,7 +74,7 @@ class MatchAcceptanceTest extends CAPSTestSuite {
       """.stripMargin)
 
     // Then
-    result.records.toMaps should equal(Bag())
+    result.records.toMaps shouldBe empty
   }
 
   test("match return value of non-existing property as null") {

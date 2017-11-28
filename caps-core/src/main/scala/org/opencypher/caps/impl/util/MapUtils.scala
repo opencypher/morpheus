@@ -13,23 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.test
+package org.opencypher.caps.impl.util
 
-import org.junit.runner.RunWith
-import org.opencypher.caps.impl.spark.physical.RuntimeContext
-import org.opencypher.caps.test.support.DebugOutputSupport
-import org.scalatest.junit.JUnitRunner
-import org.scalatest.{FunSuite, Matchers}
+trait MapUtils {
 
-@RunWith(classOf[JUnitRunner])
-abstract class BaseTestSuite
-  extends FunSuite
-  with Matchers
-  with DebugOutputSupport
-  with org.opencypher.caps.api.spark.instances.AllInstances
-  with org.opencypher.caps.api.spark.syntax.AllSyntax
-{
-  implicit val context: RuntimeContext = RuntimeContext.empty
-
-
+  def merge[A, B](a: Map[A, B], b: Map[A, B])(mergeValues: (B, B) => B): Map[A, B] =
+    (a.keySet ++ b.keySet)
+      .map(k => (k, a.get(k), b.get(k)))
+      .collect {
+        case (k, Some(v1), Some(v2)) => k -> mergeValues(v1, v2)
+        case (k, Some(v1), _) => k -> v1
+        case (k, _, Some(v2)) => k -> v2
+      }.toMap
 }
+
+object MapUtils extends MapUtils

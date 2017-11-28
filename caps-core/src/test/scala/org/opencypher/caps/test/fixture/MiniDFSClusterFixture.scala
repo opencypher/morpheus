@@ -22,6 +22,8 @@ import org.apache.hadoop.hdfs.MiniDFSCluster
 import org.apache.spark.sql.Row
 import org.opencypher.caps.test.BaseTestSuite
 
+import scala.collection.Bag
+
 trait MiniDFSClusterFixture extends BaseTestFixture {
 
   self: SparkSessionFixture with BaseTestSuite =>
@@ -53,11 +55,11 @@ trait MiniDFSClusterFixture extends BaseTestFixture {
     *
     * @return expected nodes
     */
-  def dfsTestGraphNodes: Set[Row] = Set(
-    Row(1L, true,  true, false, true,  "Stefan",   42L),
-    Row(2L, false, true,  true, true,    "Mats",   23L),
-    Row(3L, true,  true, false, true,  "Martin", 1337L),
-    Row(4L, true,  true, false, true,     "Max",    8L)
+  def dfsTestGraphNodes: Bag[Row] = Bag(
+    Row(1L, true,  true, true, false,   42L, "Stefan"),
+    Row(2L, true, false, true,  true,   23L,   "Mats"),
+    Row(3L, true,  true, true, false, 1337L, "Martin"),
+    Row(4L, true,  true, true, false,    8L,    "Max")
   )
 
   /**
@@ -65,7 +67,7 @@ trait MiniDFSClusterFixture extends BaseTestFixture {
     *
     * @return expected rels
     */
-  def dfsTestGraphRels: Set[Row] = Set(
+  def dfsTestGraphRels: Bag[Row] = Bag(
     Row(1L, 10L, "KNOWS", 2L, 2016L),
     Row(2L, 20L, "KNOWS", 3L, 2017L),
     Row(3L, 30L, "KNOWS", 4L, 2015L)

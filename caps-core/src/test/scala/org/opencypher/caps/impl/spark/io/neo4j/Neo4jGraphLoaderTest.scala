@@ -25,29 +25,28 @@ class Neo4jGraphLoaderTest extends CAPSTestSuite with Neo4jServerFixture with Op
   test("import a graph from Neo4j") {
     val graph = Neo4jGraphLoader.fromNeo4j(neo4jConfig)
 
+    graph.schema should equal(schema)
     graph.nodes("n").toDF().count() shouldBe nbrNodes
     graph.relationships("r").toDF().count() shouldBe nbrRels
-    graph.schema should equal(schema)
   }
 
   test("import only some nodes from Neo4j") {
     val graph = Neo4jGraphLoader.fromNeo4j(neo4jConfig, "MATCH (f:Film) RETURN f", "UNWIND [] AS i RETURN i")
 
+    graph.schema should equal(Schema.empty.withNodePropertyKeys("Film")("title" -> CTString))
     graph.nodes("n").toDF().count() shouldBe 5
     graph.relationships("r").toDF().count() shouldBe 0
-    graph.schema should equal(Schema.empty.withNodePropertyKeys("Film")("title" -> CTString))
   }
 
   test("import only some rels (and their endnodes) from Neo4j") {
     val graph = Neo4jGraphLoader.fromNeo4j(neo4jConfig, "MATCH (s)-[:ACTED_IN]->(t) WITH collect(s) AS sources, collect(t) AS targets WITH sources + targets AS nodes UNWIND nodes AS n RETURN DISTINCT n", "MATCH ()-[a:ACTED_IN]->() RETURN a")
 
+    graph.schema should equal(Schema.empty
+      .withNodePropertyKeys("Person", "Actor")("name" -> CTString, "birthyear" -> CTInteger)
+      .withNodePropertyKeys("Film")("title" -> CTString)
+      .withRelationshipPropertyKeys("ACTED_IN")("charactername" -> CTString)
+    )
     graph.nodes("n").toDF().count() shouldBe 12
     graph.relationships("r").toDF().count() shouldBe 8
-    graph.schema should equal(Schema.empty
-      .withRelationshipPropertyKeys("ACTED_IN")("charactername" -> CTString)
-      .withNodePropertyKeys("Person")("name" -> CTString, "birthyear" -> CTInteger)
-      .withNodePropertyKeys("Actor")("name" -> CTString, "birthyear" -> CTInteger)
-      .withNodePropertyKeys("Film")("title" -> CTString)
-    )
   }
 }

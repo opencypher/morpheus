@@ -19,6 +19,8 @@ import org.apache.spark.sql.Row
 import org.opencypher.caps.api.record.{NodeScan, RelationshipScan}
 import org.opencypher.caps.test.CAPSTestSuite
 
+import scala.collection.Bag
+
 class CAPSGraphOperationsTest extends CAPSTestSuite {
 
   val `:Person` =
@@ -111,37 +113,37 @@ class CAPSGraphOperationsTest extends CAPSTestSuite {
 
     val result = graph1 union graph2
 
-    val nodes = result.nodes("n").toDF().collect.toSet
+    val nodes = result.nodes("n").toDF().collect.toBag
     nodes should equal(
-      Set(
-        Row(/* n */ 1L, /* ____n:Person */ true, /* ____n:Swedish */ true, /* ____n:Programmer */ false, /* ____n:Book */ false, /* ____n_dot_lucky_bar_numberINTEGER */ 23L, /* ____n_dot_nameSTRING */ "Mats", /* ____n_dot_yearINTEGER */ null, /* ____n_dot_languageSTRING */ null, /* ____n_dot_titleSTRING */ null),
-        Row(/* n */ 2L, /* ____n:Person */ true, /* ____n:Swedish */ false, /* ____n:Programmer */ false, /* ____n:Book */ false, /* ____n_dot_lucky_bar_numberINTEGER */ 42L, /* ____n_dot_nameSTRING */ "Martin", /* ____n_dot_yearINTEGER */ null, /* ____n_dot_languageSTRING */ null, /* ____n_dot_titleSTRING */ null),
-        Row(/* n */ 3L, /* ____n:Person */ true, /* ____n:Swedish */ false, /* ____n:Programmer */ false, /* ____n:Book */ false, /* ____n_dot_lucky_bar_numberINTEGER */ 1337L, /* ____n_dot_nameSTRING */ "Max", /* ____n_dot_yearINTEGER */ null, /* ____n_dot_languageSTRING */ null, /* ____n_dot_titleSTRING */ null),
-        Row(/* n */ 4L, /* ____n:Person */ true, /* ____n:Swedish */ false, /* ____n:Programmer */ false, /* ____n:Book */ false, /* ____n_dot_lucky_bar_numberINTEGER */ 9L, /* ____n_dot_nameSTRING */ "Stefan", /* ____n_dot_yearINTEGER */ null, /* ____n_dot_languageSTRING */ null, /* ____n_dot_titleSTRING */ null),
-        Row(/* n */ 10L, /* ____n:Person */ false, /* ____n:Swedish */ false, /* ____n:Programmer */ false, /* ____n:Book */ true, /* ____n_dot_lucky_bar_numberINTEGER */ null, /* ____n_dot_nameSTRING */ null, /* ____n_dot_yearINTEGER */ 1949L, /* ____n_dot_languageSTRING */ null, /* ____n_dot_titleSTRING */ "1984"),
-        Row(/* n */ 20L, /* ____n:Person */ false, /* ____n:Swedish */ false, /* ____n:Programmer */ false, /* ____n:Book */ true, /* ____n_dot_lucky_bar_numberINTEGER */ null, /* ____n_dot_nameSTRING */ null, /* ____n_dot_yearINTEGER */ 1999L, /* ____n_dot_languageSTRING */ null, /* ____n_dot_titleSTRING */ "Cryptonomicon"),
-        Row(/* n */ 30L, /* ____n:Person */ false, /* ____n:Swedish */ false, /* ____n:Programmer */ false, /* ____n:Book */ true, /* ____n_dot_lucky_bar_numberINTEGER */ null, /* ____n_dot_nameSTRING */ null, /* ____n_dot_yearINTEGER */ 1990L, /* ____n_dot_languageSTRING */ null, /* ____n_dot_titleSTRING */ "The Eye of the World"),
-        Row(/* n */ 40L, /* ____n:Person */ false, /* ____n:Swedish */ false, /* ____n:Programmer */ false, /* ____n:Book */ true, /* ____n_dot_lucky_bar_numberINTEGER */ null, /* ____n_dot_nameSTRING */ null, /* ____n_dot_yearINTEGER */ 2013L, /* ____n_dot_languageSTRING */ null, /* ____n_dot_titleSTRING */ "The Circle"),
-        Row(/* n */ 100L, /* ____n:Person */ true, /* ____n:Swedish */ false, /* ____n:Programmer */ true, /* ____n:Book */ false, /* ____n_dot_lucky_bar_numberINTEGER */ 42L, /* ____n_dot_nameSTRING */ "Alice", /* ____n_dot_yearINTEGER */ null, /* ____n_dot_languageSTRING */ "C", /* ____n_dot_titleSTRING */ null),
-        Row(/* n */ 200L, /* ____n:Person */ true, /* ____n:Swedish */ false, /* ____n:Programmer */ true, /* ____n:Book */ false, /* ____n_dot_lucky_bar_numberINTEGER */ 23L, /* ____n_dot_nameSTRING */ "Bob", /* ____n_dot_yearINTEGER */ null, /* ____n_dot_languageSTRING */ "D", /* ____n_dot_titleSTRING */ null),
-        Row(/* n */ 300L, /* ____n:Person */ true, /* ____n:Swedish */ false, /* ____n:Programmer */ true, /* ____n:Book */ false, /* ____n_dot_lucky_bar_numberINTEGER */ 84L, /* ____n_dot_nameSTRING */ "Eve", /* ____n_dot_yearINTEGER */ null, /* ____n_dot_languageSTRING */ "F", /* ____n_dot_titleSTRING */ null),
-        Row(/* n */ 400L, /* ____n:Person */ true, /* ____n:Swedish */ false, /* ____n:Programmer */ true, /* ____n:Book */ false, /* ____n_dot_lucky_bar_numberINTEGER */ 49L, /* ____n_dot_nameSTRING */ "Carl", /* ____n_dot_yearINTEGER */ null, /* ____n_dot_languageSTRING */ "R", /* ____n_dot_titleSTRING */ null)
+      Bag(
+        Row(1L, false, true, false, true, null, 23L, "Mats", null, null),
+        Row(2L, false, true, false, false, null, 42L, "Martin", null, null),
+        Row(3L, false, true, false, false, null, 1337L, "Max", null, null),
+        Row(4L, false, true, false, false, null, 9L, "Stefan", null, null),
+        Row(10L, true, false, false, false, null, null, null, "1984", 1949L),
+        Row(20L, true, false, false, false, null, null, null, "Cryptonomicon", 1999L),
+        Row(30L, true, false, false, false, null, null, null, "The Eye of the World", 1990L),
+        Row(40L, true, false, false, false, null, null, null, "The Circle", 2013L),
+        Row(100L, false, true, true, false, "C", 42L, "Alice", null, null),
+        Row(200L, false, true, true, false, "D", 23L, "Bob", null, null),
+        Row(300L, false, true, true, false, "F", 84L, "Eve", null, null),
+        Row(400L, false, true, true, false, "R", 49L, "Carl", null, null)
       )
     )
 
-    val rels = result.relationships("r").toDF().collect.toSet
+    val rels = result.relationships("r").toDF().collect.toBag
     rels should equal(
-      Set(
-        Row(/* ____source(r) */ 1L, /* r */ 1L, /* ____type(r) */ "KNOWS", /* ____target(r) */ 2L, /* ____r_dot_sinceINTEGER */ 2017L, /* ____r_dot_recommendsBOOLEAN */ null),
-        Row(/* ____source(r) */ 1L, /* r */ 2L, /* ____type(r) */ "KNOWS", /* ____target(r) */ 3L, /* ____r_dot_sinceINTEGER */ 2016L, /* ____r_dot_recommendsBOOLEAN */ null),
-        Row(/* ____source(r) */ 1L, /* r */ 3L, /* ____type(r) */ "KNOWS", /* ____target(r) */ 4L, /* ____r_dot_sinceINTEGER */ 2015L, /* ____r_dot_recommendsBOOLEAN */ null),
-        Row(/* ____source(r) */ 2L, /* r */ 4L, /* ____type(r) */ "KNOWS", /* ____target(r) */ 3L, /* ____r_dot_sinceINTEGER */ 2016L, /* ____r_dot_recommendsBOOLEAN */ null),
-        Row(/* ____source(r) */ 2L, /* r */ 5L, /* ____type(r) */ "KNOWS", /* ____target(r) */ 4L, /* ____r_dot_sinceINTEGER */ 2013L, /* ____r_dot_recommendsBOOLEAN */ null),
-        Row(/* ____source(r) */ 3L, /* r */ 6L, /* ____type(r) */ "KNOWS", /* ____target(r) */ 4L, /* ____r_dot_sinceINTEGER */ 2016L, /* ____r_dot_recommendsBOOLEAN */ null),
-        Row(/* ____source(r) */ 100L, /* r */ 100L, /* ____type(r) */ "READS", /* ____target(r) */ 10L, /* ____r_dot_sinceINTEGER */ null, /* ____r_dot_recommendsBOOLEAN */ true),
-        Row(/* ____source(r) */ 200L, /* r */ 200L, /* ____type(r) */ "READS", /* ____target(r) */ 40L, /* ____r_dot_sinceINTEGER */ null, /* ____r_dot_recommendsBOOLEAN */ true),
-        Row(/* ____source(r) */ 300L, /* r */ 300L, /* ____type(r) */ "READS", /* ____target(r) */ 30L, /* ____r_dot_sinceINTEGER */ null, /* ____r_dot_recommendsBOOLEAN */ true),
-        Row(/* ____source(r) */ 400L, /* r */ 400L, /* ____type(r) */ "READS", /* ____target(r) */ 20L, /* ____r_dot_sinceINTEGER */ null, /* ____r_dot_recommendsBOOLEAN */ false)
+      Bag(
+        Row(1L, 1L, "KNOWS", 2L, null, 2017L),
+        Row(1L, 2L, "KNOWS", 3L, null, 2016L),
+        Row(1L, 3L, "KNOWS", 4L, null, 2015L),
+        Row(2L, 4L, "KNOWS", 3L, null, 2016L),
+        Row(2L, 5L, "KNOWS", 4L, null, 2013L),
+        Row(3L, 6L, "KNOWS", 4L, null, 2016L),
+        Row(100L, 100L, "READS", 10L, true, null),
+        Row(200L, 200L, "READS", 40L, true, null),
+        Row(300L, 300L, "READS", 30L, true, null),
+        Row(400L, 400L, "READS", 20L, false, null)
       )
     )
   }

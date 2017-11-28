@@ -68,11 +68,11 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOpera
             Raise.impossible(s"Got an unknown type of graph to start from: $graph")
         }
 
-      case op @ flat.NodeScan(v, in, _) =>
-        Scan(process(in), op.sourceGraph, v)
+      case op @ flat.NodeScan(v, in, header) =>
+        Scan(process(in), op.sourceGraph, v, header)
 
-      case op @ flat.EdgeScan(e, in, _) =>
-        Scan(process(in), op.sourceGraph, e)
+      case op @ flat.EdgeScan(e, in, header) =>
+        Scan(process(in), op.sourceGraph, e, header)
 
       case flat.Alias(expr, alias, in, header) =>
         Alias(process(in), expr, alias, header)
@@ -118,14 +118,14 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOpera
         }
 
         val startFrom = StartFromUnit(externalGraph)
-        val second = Scan(startFrom, op.sourceGraph, rel)
+        val second = Scan(startFrom, op.sourceGraph, rel, relHeader)
 
         ExpandSource(first, second, third, source, rel, target, header)
 
       case op @ flat.ExpandInto(source, rel, target, sourceOp, header, relHeader) =>
         val in = process(sourceOp)
 
-        val rels = Scan(in, op.sourceGraph, rel)
+        val rels = Scan(in, op.sourceGraph, rel, relHeader)
 
         ExpandInto(in, rels, source, rel, target, header)
 

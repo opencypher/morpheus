@@ -15,11 +15,13 @@
  */
 package org.opencypher.caps.impl.spark
 
+import org.apache.spark.sql.Row
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraphLoader
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.fixture.{Neo4jServerFixture, OpenCypherDataFixture}
 
+import scala.collection.Bag
 import scala.language.reflectiveCalls
 
 class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture with OpenCypherDataFixture {
@@ -36,9 +38,9 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
 
     // We do string comparisons here because CypherNode.equals() does not check labels/properties
     strings should equal(Set(
-      "{a: (#0:Person {birthyear: 1910, name: 'Rachel Kempson'}), a.name: 'Rachel Kempson'}",
-      "{a: (#1:Person {birthyear: 1908, name: 'Michael Redgrave'}), a.name: 'Michael Redgrave'}",
-      "{a: (#10:Person {birthyear: 1873, name: 'Roy Redgrave'}), a.name: 'Roy Redgrave'}"
+      "{a: (#0:Actor:Person {birthyear: 1910, name: 'Rachel Kempson'}), a.name: 'Rachel Kempson'}",
+      "{a: (#1:Actor:Person {birthyear: 1908, name: 'Michael Redgrave'}), a.name: 'Michael Redgrave'}",
+      "{a: (#10:Actor:Person {birthyear: 1873, name: 'Roy Redgrave'}), a.name: 'Roy Redgrave'}"
     ))
   }
 
@@ -58,8 +60,7 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     result.records shouldHaveSize 8 andContain 1952 -> "Batman Begins"
   }
 
-  // TODO: Support union types
-  ignore("filter rels on property") {
+  test("filter rels on property") {
     // Given
     val query = "MATCH (a:Actor)-[r:ACTED_IN]->() WHERE r.charactername = 'Guenevere' RETURN a, r"
 
@@ -67,7 +68,9 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     val result = graph.cypher(query)
 
     // Then
-    result.records shouldHaveSize 1
+    result.records.toDF().collect().toBag should equal(Bag(
+      Row(2L, "Vanessa Redgrave", 1937L, true, true, 21L, 2L, "ACTED_IN", 20L, "Guenevere")
+    ))
   }
 
   test("filter nodes on property") {
@@ -94,7 +97,9 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     result.records shouldHaveSize 8 andContain tuple
   }
 
-  test("handle properties with same key and different type between labels") {
+  // Removed the data node that enabled this test
+  // TODO: Rewrite this test elsewhere to capture invariant
+  ignore("handle properties with same key and different type between labels") {
     // When
     val movieResult = graph.cypher("MATCH (m:Movie) RETURN m.title")
 
@@ -115,13 +120,12 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     // When
     val records = graph.cypher(query).records
 
-    // Then
-    val tuple = (
-      "Lindsay Lohan",
-      "New York",
-      "The Parent Trap"
+    records.toDF().collect().toBag should equal(Bag(
+      Row("Natasha Richardson", "London", "The Parent Trap"),
+      Row("Dennis Quaid", "Houston", "The Parent Trap"),
+      Row("Lindsay Lohan", "New York", "The Parent Trap"),
+      Row("Vanessa Redgrave", "London", "Camelot"))
     )
-    records shouldHaveSize 4 andContain tuple
   }
 
   // TODO: Figure out what invariant this was meant to measure
@@ -138,7 +142,7 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     result.records shouldHaveSize 79 andContain tuple
   }
 
-  // TODO: Pull out/move over to GraphMatching
+  // TODO: Replace with Bag testing
   implicit class OtherRichRecords(records: CAPSRecords) {
     def shouldHaveSize(size: Int) = {
       val tuples = records.data.collect().toSeq.map { r =>

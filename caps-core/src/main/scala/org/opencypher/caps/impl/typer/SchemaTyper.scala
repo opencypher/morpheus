@@ -25,9 +25,11 @@ import org.atnos.eff.all._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.functions.{Collect, Exists, Max, Min}
 import org.opencypher.caps.api.schema.Schema
+import org.opencypher.caps.api.schema.Schema.AllLabels
 import org.opencypher.caps.api.types.CypherType.joinMonoid
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.parse.RetypingPredicate
+import org.opencypher.caps.ir.api.pattern.{AllGiven, AnyGiven}
 
 import scala.util.Try
 
@@ -65,41 +67,17 @@ object SchemaTyper {
       } yield t
 
     case Property(v, PropertyKeyName(name)) =>
-      // Map Void type to Null after joining, as properties can be null
-      def voidToNull(tpe: CypherType): CypherType = if (tpe == CTVoid) {
-        CTNull
-      } else {
-        tpe
-      }
-
       for {
         varTyp <- process[R](v)
         schema <- ask[R, Schema]
         result <- varTyp.material match {
           case CTNode(labels) =>
-            val propType = voidToNull {
-              if (labels.isEmpty)
-                schema.labels.map(schema.nodeKeys).foldLeft[CypherType](CTVoid) {
-                  case (acc, next) => acc.join(next.getOrElse(name, CTVoid))
-                }
-              else {
-                val keys = labels.map(schema.nodeKeys).reduce(_ ++ _)
-                keys.getOrElse(name, CTVoid)
-              }
-            }
+            val relevantLabels = if (labels.isEmpty) AnyGiven(AllLabels) else AllGiven(labels)
+            val propType = schema.nodeKeyType(relevantLabels, name).getOrElse(CTNull)
             recordType(v -> varTyp) >> recordAndUpdate(expr -> propType)
 
           case CTRelationship(types) =>
-            val propType = voidToNull {
-              if (types.isEmpty) {
-                schema.relationshipTypes.map(schema.relationshipKeys).foldLeft[CypherType](CTVoid) {
-                  case (acc, next) => acc.join(next.getOrElse(name, CTVoid))
-                }
-              } else {
-                val keys = types.map(schema.relationshipKeys).reduceOption(_ ++ _)
-                keys.getOrElse(Map.empty).getOrElse(name, CTVoid)
-              }
-            }
+            val propType = schema.relationshipKeyType(types, name).getOrElse(CTNull)
             recordType(v -> varTyp) >> recordAndUpdate(expr -> propType)
 
           case CTMap =>
@@ -394,9 +372,9 @@ object SchemaTyper {
         eligible <- pure(signatures.flatMap { sig =>
           val (sigInputTypes, sigOutputType) = sig
 
-          val compatibleArity = sigInputTypes.size == args.size
-          val sigArgTypes = sigInputTypes.zip(args.map(_._2))
-          val compatibleTypes = sigArgTypes.forall(((_: CypherType) couldBeSameTypeAs (_: CypherType)).tupled)
+          def compatibleArity = sigInputTypes.size == args.size
+          def sigArgTypes = sigInputTypes.zip(args.map(_._2))
+          def compatibleTypes = sigArgTypes.forall(((_: CypherType) couldBeSameTypeAs (_: CypherType)).tupled)
 
           if (compatibleArity && compatibleTypes) Some(sigInputTypes -> sigOutputType) else None
         })
@@ -415,7 +393,7 @@ object SchemaTyper {
       expr.function match {
         case f: ExpressionCallTypeChecking =>
           pure(f.signatures.map { sig =>
-            val sigInputTypes = sig.argumentTypes.map(fromFrontendType)
+            val sigInputTypes = sig.argumentTypes.map(fromFrontendType).map(_.nullable)
             val sigOutputType = fromFrontendType(sig.outputType)
             sigInputTypes -> sigOutputType
           }.toSet)

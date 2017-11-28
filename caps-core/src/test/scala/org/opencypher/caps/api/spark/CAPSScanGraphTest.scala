@@ -22,6 +22,9 @@ import org.opencypher.caps.api.value.EntityId._
 import org.opencypher.caps.api.value.{CypherMap, CypherRelationship, RelationshipData}
 import org.opencypher.caps.test.CAPSTestSuite
 
+import scala.collection.Bag
+import scala.collection.immutable.HashedBagConfiguration
+
 class CAPSScanGraphTest extends CAPSTestSuite {
 
   val `:Person` =
@@ -185,16 +188,15 @@ class CAPSScanGraphTest extends CAPSTestSuite {
       "n",
       "____n:Person",
       "____n:Swedish",
-      "____n_dot_nameSTRING",
-      "____n_dot_lucky_bar_numberINTEGER"
+      "____n_dot_lucky_bar_numberINTEGER",
+      "____n_dot_nameSTRING"
     ))
 
-    nodes.toDF().collect().toSet should equal (Set(
-      Row(1L, true, true,    "Mats",   23L),
-      Row(2L, true, false, "Martin",   42L),
-      Row(3L, true, false,    "Max", 1337L),
-      Row(4L, true, false, "Stefan",    9L)
-    ))
+    Bag(nodes.toDF().collect(): _*) should equal (Bag(
+      Row(1L, true, true, 23L, "Mats"),
+      Row(2L, true, false, 42L, "Martin"),
+      Row(3L, true, false, 1337L, "Max"),
+      Row(4L, true, false, 9L, "Stefan")))
   }
 
   test("Construct graph from multiple node scans") {
@@ -203,25 +205,24 @@ class CAPSScanGraphTest extends CAPSTestSuite {
 
     nodes.toDF().columns should equal(Array(
       "n",
+      "____n:Book",
       "____n:Person",
       "____n:Swedish",
-      "____n:Book",
-      "____n_dot_nameSTRING",
       "____n_dot_lucky_bar_numberINTEGER",
+      "____n_dot_nameSTRING",
       "____n_dot_titleSTRING",
       "____n_dot_yearINTEGER"
     ))
 
-    nodes.toDF().collect().toSet should equal(Set(
-      Row( 1L,  true,  true,  false,   "Mats",   23L,                   null, null),
-      Row( 2L,  true,  false, false, "Martin",   42L,                   null, null),
-      Row( 3L,  true,  false, false,    "Max", 1337L,                   null, null),
-      Row( 4L,  true,  false, false, "Stefan",    9L,                   null, null),
-      Row(10L, false,  false,  true,     null, null,                 "1984", 1949L),
-      Row(20L, false,  false,  true,     null, null,        "Cryptonomicon", 1999L),
-      Row(30L, false,  false,  true,     null, null, "The Eye of the World", 1990L),
-      Row(40L, false,  false,  true,     null, null,           "The Circle", 2013L)
-    ))
+    Bag(nodes.toDF().collect(): _*) should equal(Bag(
+      Row(1L, false, true, true, 23L, "Mats", null, null),
+      Row(2L, false, true, false, 42L, "Martin", null, null),
+      Row(3L, false, true, false, 1337L, "Max", null, null),
+      Row(4L, false, true, false, 9L, "Stefan", null, null),
+      Row(10L, true, false, false, null, null, "1984", 1949L),
+      Row(20L, true, false, false, null, null, "Cryptonomicon", 1999L),
+      Row(30L, true, false, false, null, null, "The Eye of the World", 1990L),
+      Row(40L, true, false, false, null, null, "The Circle", 2013L)))
   }
 
   test("Construct graph from single node and single relationship scan") {
@@ -253,25 +254,24 @@ class CAPSScanGraphTest extends CAPSTestSuite {
 
     nodes.toDF().columns should equal(Array(
       "n",
+      "____n:Book",
       "____n:Person",
       "____n:Swedish",
-      "____n:Book",
-      "____n_dot_nameSTRING",
       "____n_dot_lucky_bar_numberINTEGER",
+      "____n_dot_nameSTRING",
       "____n_dot_titleSTRING",
       "____n_dot_yearINTEGER"
     ))
 
-    nodes.toDF().collect().toSet should equal(Set(
-      Row( 1L,  true,  true,  false,   "Mats",   23L,                   null, null),
-      Row( 2L,  true,  false, false, "Martin",   42L,                   null, null),
-      Row( 3L,  true,  false, false,    "Max", 1337L,                   null, null),
-      Row( 4L,  true,  false, false, "Stefan",    9L,                   null, null),
-      Row(10L, false,  false,  true,     null, null,                 "1984", 1949L),
-      Row(20L, false,  false,  true,     null, null,        "Cryptonomicon", 1999L),
-      Row(30L, false,  false,  true,     null, null, "The Eye of the World", 1990L),
-      Row(40L, false,  false,  true,     null, null,           "The Circle", 2013L)
-    ))
+    Bag(nodes.toDF().collect(): _*) should equal(Bag(
+      Row(1L, false, true, true, 23L, "Mats", null, null),
+      Row(2L, false, true, false, 42L, "Martin", null, null),
+      Row(3L, false, true, false, 1337L, "Max", null, null),
+      Row(4L, false, true, false, 9L, "Stefan", null, null),
+      Row(10L, true, false, false, null, null, "1984", 1949L),
+      Row(20L, true, false, false, null, null, "Cryptonomicon", 1999L),
+      Row(30L, true, false, false, null, null, "The Eye of the World", 1990L),
+      Row(40L, true, false, false, null, null, "The Circle", 2013L)))
   }
 
   test("Extract node scan subset") {
@@ -283,16 +283,15 @@ class CAPSScanGraphTest extends CAPSTestSuite {
       "n",
       "____n:Person",
       "____n:Swedish",
-      "____n_dot_nameSTRING",
-      "____n_dot_lucky_bar_numberINTEGER"
+      "____n_dot_lucky_bar_numberINTEGER",
+      "____n_dot_nameSTRING"
     ))
 
-    nodes.toDF().collect().toSet should equal (Set(
-      Row(1L, true, true,    "Mats",   23L),
-      Row(2L, true, false, "Martin",   42L),
-      Row(3L, true, false,    "Max", 1337L),
-      Row(4L, true, false, "Stefan",    9L)
-    ))
+    Bag(nodes.toDF().collect(): _*) should equal (Bag(
+      Row(1L, true, true, 23L, "Mats"),
+      Row(2L, true, false, 42L, "Martin"),
+      Row(3L, true, false, 1337L, "Max"),
+      Row(4L, true, false, 9L, "Stefan")))
   }
 
   test("Extract all relationship scans") {
@@ -305,24 +304,21 @@ class CAPSScanGraphTest extends CAPSTestSuite {
       "e",
       "____type(e)",
       "____target(e)",
-      "____e_dot_sinceINTEGER",
-      "____e_dot_recommendsBOOLEAN"
+      "____e_dot_recommendsBOOLEAN",
+      "____e_dot_sinceINTEGER"
     ))
 
-    rels.toDF().collect().toSet should equal(Set(
-      // :KNOWS
-      Row(1L, 1L, "KNOWS", 2L, 2017L, null),
-      Row(1L, 2L, "KNOWS", 3L, 2016L, null),
-      Row(1L, 3L, "KNOWS", 4L, 2015L, null),
-      Row(2L, 4L, "KNOWS", 3L, 2016L, null),
-      Row(2L, 5L, "KNOWS", 4L, 2013L, null),
-      Row(3L, 6L, "KNOWS", 4L, 2016L, null),
-      // :READS
-      Row(1L, 100L, "READS", 10L, null, true),
-      Row(2L, 200L, "READS", 40L, null, true),
-      Row(3L, 300L, "READS", 30L, null, true),
-      Row(4L, 400L, "READS", 20L, null, false)
-    ))
+    Bag(rels.toDF().collect(): _*) should equal(Bag(
+      Row(1L, 1L, "KNOWS", 2L, null, 2017L),
+      Row(1L, 2L, "KNOWS", 3L, null, 2016L),
+      Row(1L, 3L, "KNOWS", 4L, null, 2015L),
+      Row(2L, 4L, "KNOWS", 3L, null, 2016L),
+      Row(2L, 5L, "KNOWS", 4L, null, 2013L),
+      Row(3L, 6L, "KNOWS", 4L, null, 2016L),
+      Row(1L, 100L, "READS", 10L, true, null),
+      Row(2L, 200L, "READS", 40L, true, null),
+      Row(3L, 300L, "READS", 30L, true, null),
+      Row(4L, 400L, "READS", 20L, false, null)))
   }
 
   test("Extract relationship scan subset") {
@@ -382,23 +378,22 @@ class CAPSScanGraphTest extends CAPSTestSuite {
     nodes.toDF().columns should equal(Array(
       "n",
       "____n:Person",
-      "____n:Swedish",
       "____n:Programmer",
+      "____n:Swedish",
       "____n_dot_languageSTRING",
-      "____n_dot_nameSTRING",
-      "____n_dot_lucky_bar_numberINTEGER"
+      "____n_dot_lucky_bar_numberINTEGER",
+      "____n_dot_nameSTRING"
     ))
 
-    nodes.toDF().collect().toSet should equal (Set(
-      Row(1L,   true, true,  false, null,   "Mats",   23L),
-      Row(2L,   true, false, false, null, "Martin",   42L),
-      Row(3L,   true, false, false, null,    "Max", 1337L),
-      Row(4L,   true, false, false, null, "Stefan",    9L),
-      Row(100L, true, false, true,   "C",  "Alice",   42L),
-      Row(200L, true, false, true,   "D",    "Bob",   23L),
-      Row(300L, true, false, true,   "F",    "Eve",   84L),
-      Row(400L, true, false, true,   "R",   "Carl",   49L)
-    ))
+    Bag(nodes.toDF().collect(): _*) should equal (Bag(
+      Row(1L, true, false, true, null, 23L, "Mats"),
+      Row(2L, true, false, false, null, 42L, "Martin"),
+      Row(3L, true, false, false, null, 1337L, "Max"),
+      Row(4L, true, false, false, null, 9L, "Stefan"),
+      Row(100L, true, true, false, "C", 42L, "Alice"),
+      Row(200L, true, true, false, "D", 23L, "Bob"),
+      Row(300L, true, true, false, "F", 84L, "Eve"),
+      Row(400L, true, true, false, "R", 49L, "Carl")))
   }
 
   test("Extract from scans with implied label but missing keys") {
@@ -408,23 +403,22 @@ class CAPSScanGraphTest extends CAPSTestSuite {
 
     nodes.toDF().columns should equal(Array(
       "n",
+      "____n:Brogrammer",
       "____n:Person",
       "____n:Swedish",
-      "____n:Brogrammer",
-      "____n_dot_nameSTRING",
+      "____n_dot_languageSTRING",
       "____n_dot_lucky_bar_numberINTEGER",
-      "____n_dot_languageSTRING"
+      "____n_dot_nameSTRING"
     ))
 
-    nodes.toDF().collect().toSet should equal(Set(
-      Row(1L, true, true, false, "Mats", 23L, null),
-      Row(2L, true, false, false, "Martin", 42L, null),
-      Row(3L, true, false, false, "Max", 1337L, null),
-      Row(4L, true, false, false, "Stefan", 9L, null),
-      Row(100L, true, false, true, null, null, "Node"),
-      Row(200L, true, false, true, null, null, "Coffeescript"),
-      Row(300L, true, false, true, null, null, "Javascript"),
-      Row(400L, true, false, true, null, null, "Typescript")
-    ))
+    Bag(nodes.toDF().collect(): _*) should equal(Bag(
+      Row(1L, false, true, true, null, 23L, "Mats"),
+      Row(2L, false, true, false, null, 42L, "Martin"),
+      Row(3L, false, true, false, null, 1337L, "Max"),
+      Row(4L, false, true, false, null, 9L, "Stefan"),
+      Row(100L, true, true, false, "Node", null, null),
+      Row(200L, true, true, false, "Coffeescript", null, null),
+      Row(300L, true, true, false, "Javascript", null, null),
+      Row(400L, true, true, false, "Typescript", null, null)))
   }
 }

@@ -36,8 +36,9 @@ class CAPSSessionNeo4jTest extends BaseTestSuite
     val uri = URI.create(s"$neo4jHost?$nodeQuery;$relQuery")
 
     val graph = capsSession.graphAt(uri)
-    graph.nodes("n").toDF().collect().toSet should equal(teamDataGraphNodes)
-    graph.relationships("rel").toDF().collect.toSet should equal(teamDataGraphRels)
+
+    graph.nodes("n").toDF().collect().toBag should equal(teamDataGraphNodes)
+    graph.relationships("rel").toDF().collect.toBag should equal(teamDataGraphRels)
   }
 
   test("Neo4j via mount point") {
@@ -45,7 +46,7 @@ class CAPSSessionNeo4jTest extends BaseTestSuite
     capsSession.mountSourceAt(Neo4jGraphSource(neo4jConfig, Some("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r")), "/neo4j1")
 
     val graph = capsSession.graphAt("/neo4j1")
-    graph.nodes("n").toDF().collect().toSet should equal(teamDataGraphNodes)
-    graph.relationships("rel").toDF().collect.toSet should equal(teamDataGraphRels)
+    graph.nodes("n").toDF().collect().toBag should equal(teamDataGraphNodes)
+    graph.relationships("rel").toDF().collect.toBag should equal(teamDataGraphRels)
   }
 }

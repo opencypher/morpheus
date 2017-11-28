@@ -15,8 +15,11 @@
  */
 package org.opencypher.caps.api.schema
 
+import org.opencypher.caps.api.schema.Schema.{AllLabels, NoLabel}
+import org.opencypher.caps.api.spark.exception.CAPSException
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.ir.api.IRField
+import org.opencypher.caps.ir.api.pattern.{AllGiven, AllOf, AnyGiven, AnyOf}
 import org.opencypher.caps.test.BaseTestSuite
 
 class SchemaTest extends BaseTestSuite {
@@ -62,18 +65,28 @@ class SchemaTest extends BaseTestSuite {
   }
 
   test("should get simple implication correct") {
-    val schema = Schema.empty.withImpliedLabel("Employee", "Person")
+    val schema = Schema.empty
+      .withNodePropertyKeys("Foo", "Bar")("prop" -> CTBoolean)
+      .withNodePropertyKeys("Person", "Employee")("name" -> CTString, "nbr" -> CTInteger)
+      .withNodePropertyKeys("Person")("name" -> CTString)
+      .withNodePropertyKeys("Person", "Dog")("name" -> CTString, "reg" -> CTFloat)
+      .withNodePropertyKeys("Dog")("reg" -> CTFloat)
 
-    schema.impliedLabels(Set("Person")) shouldBe Set("Person")
-    schema.impliedLabels(Set("Employee")) shouldBe Set("Person", "Employee")
-    schema.impliedLabels(Set("Employee", "Person")) shouldBe Set("Person", "Employee")
-    schema.labels should equal(Set("Person", "Employee"))
+    schema.impliedLabels("Person") shouldBe Set("Person")
+    schema.impliedLabels("Employee") shouldBe Set("Person", "Employee")
+    schema.impliedLabels("Employee", "Person") shouldBe Set("Person", "Employee")
+    schema.impliedLabels("Foo") shouldBe Set("Foo", "Bar")
+    schema.impliedLabels("Bar") shouldBe Set("Foo", "Bar")
+    schema.impliedLabels("Dog") shouldBe Set("Dog")
+    schema.labels should equal(Set("Person", "Employee", "Foo", "Bar", "Dog"))
   }
 
   test("should get chained implications correct") {
-    val schema = Schema.empty.withImpliedLabel("Employee", "Person")
-      .withImpliedLabel("Person", "Human")
-      .withImpliedLabel("Person", "Someone")
+    val schema = Schema.empty
+      .withNodePropertyKeys("Employee", "Person", "Someone", "Human")()
+      .withNodePropertyKeys("Person", "Someone", "Human")()
+      .withNodePropertyKeys("Human")()
+      .withNodePropertyKeys("Someone")()
 
     schema.impliedLabels(Set("Unknown")) shouldBe empty
     schema.impliedLabels(Set("Unknown", "Person")) shouldBe Set("Person", "Human", "Someone")
@@ -88,23 +101,28 @@ class SchemaTest extends BaseTestSuite {
   }
 
   test("should get chained combinations correct") {
-    val schema = Schema.empty.withLabelCombination("Person", "Employee").withLabelCombination("Person", "Director")
+    val schema = Schema.empty
+      .withNodePropertyKeys("Person", "Employee")()
+      .withNodePropertyKeys("Person", "Director")()
+      .withNodePropertyKeys("Employee", "Director")()
 
-    schema.labelCombination(Set("Employee")) should equal(Set("Person", "Employee", "Director"))
-    schema.labelCombination(Set("Director")) should equal(Set("Person", "Employee", "Director"))
-    schema.labelCombination(Set("Person")) should equal(Set("Person", "Employee", "Director"))
-    schema.labelCombination(Set("Person", "Employee")) should equal(Set("Person", "Employee", "Director"))
+    schema.combinationsFor(Set("Employee")) should equal(Set(Set("Person", "Employee"), Set("Employee", "Director")))
+    schema.combinationsFor(Set("Director")) should equal(Set(Set("Person", "Director"), Set("Employee", "Director")))
+    schema.combinationsFor(Set("Person")) should equal(Set(Set("Person", "Employee"), Set("Person", "Director")))
+    schema.combinationsFor(Set("Person", "Employee")) should equal(Set(Set("Person", "Employee")))
     schema.labels should equal(Set("Person", "Employee", "Director"))
   }
 
   test("should get simple combinations correct") {
-    val schema = Schema.empty.withLabelCombination("Person", "Employee").withLabelCombination("Dog", "Pet")
+    val schema = Schema.empty
+      .withNodePropertyKeys("Person", "Employee")()
+      .withNodePropertyKeys("Dog", "Pet")()
 
-    schema.labelCombination(Set("NotEmployee")) should equal(Set())
-    schema.labelCombination(Set("Employee")) should equal(Set("Person", "Employee"))
-    schema.labelCombination(Set("Person")) should equal(Set("Person", "Employee"))
-    schema.labelCombination(Set("Dog")) should equal(Set("Dog", "Pet"))
-    schema.labelCombination(Set("Pet", "Employee")) should equal(Set("Person", "Employee", "Dog", "Pet"))
+    schema.combinationsFor(Set("NotEmployee")) should equal(Set())
+    schema.combinationsFor(Set("Employee")) should equal(Set(Set("Person", "Employee")))
+    schema.combinationsFor(Set("Person")) should equal(Set(Set("Person", "Employee")))
+    schema.combinationsFor(Set("Dog")) should equal(Set(Set("Dog", "Pet")))
+    schema.combinationsFor(Set("Pet", "Employee")) should equal(Set())
     schema.labels should equal(Set("Person", "Employee", "Dog", "Pet"))
   }
 
@@ -118,8 +136,6 @@ class SchemaTest extends BaseTestSuite {
       .withNodePropertyKeys("Employee")("name" -> CTString, "salary" -> CTInteger)
       .withNodePropertyKeys("Dog")("name" -> CTFloat)
       .withNodePropertyKeys("Pet")("notName" -> CTBoolean)
-      .withLabelCombination("Person", "Employee")
-      .withImpliedLabel("Dog", "Pet")
 
     schema.verify.schema should equal(schema)
   }
@@ -127,40 +143,35 @@ class SchemaTest extends BaseTestSuite {
   test("verifying schema with conflict on implied labels") {
     val schema = Schema.empty
       .withNodePropertyKeys("Person")("name" -> CTString)
-      .withNodePropertyKeys("Employee")("name" -> CTString, "salary" -> CTInteger)
-      .withNodePropertyKeys("Dog")("name" -> CTFloat)
+      .withNodePropertyKeys("Employee", "Person")("name" -> CTString, "salary" -> CTInteger)
+      .withNodePropertyKeys("Dog", "Pet")("name" -> CTFloat)
       .withNodePropertyKeys("Pet")("name" -> CTBoolean)
-      .withLabelCombination("Person", "Employee")
-      .withImpliedLabel("Dog", "Pet")
 
-    an [IllegalArgumentException] shouldBe thrownBy {
-      schema.verify
-    }
+    the [CAPSException] thrownBy schema.verify should have message
+      "The schema had a conflict on key 'name': FLOAT and BOOLEAN (for label Pet)"
   }
 
   test("verifying schema with conflict on combined labels") {
     val schema = Schema.empty
       .withNodePropertyKeys("Person")("name" -> CTString)
+      .withNodePropertyKeys("Employee", "Person")("name" -> CTInteger, "salary" -> CTInteger)
       .withNodePropertyKeys("Employee")("name" -> CTInteger, "salary" -> CTInteger)
-      .withNodePropertyKeys("Dog")("name" -> CTFloat)
+      .withNodePropertyKeys("Dog", "Pet")("name" -> CTFloat)
       .withNodePropertyKeys("Pet")("notName" -> CTBoolean)
-      .withLabelCombination("Person", "Employee")
-      .withImpliedLabel("Dog", "Pet")
 
-    an [IllegalArgumentException] shouldBe thrownBy {
-      schema.verify
-    }
+    the [CAPSException] thrownBy schema.verify should have message
+      "The schema had a conflict on key 'name': STRING and INTEGER (for label Person)"
   }
 
-  test("chaining calls should work") {
+  test("chaining calls should amend types") {
     val schema = Schema.empty
       .withNodePropertyKeys("Foo")("name" -> CTString)
-      .withNodePropertyKeys("Foo")("age" -> CTInteger)
+      .withNodePropertyKeys("Foo")("name" -> CTString, "age" -> CTInteger)
       .withRelationshipPropertyKeys("BAR")("p1" -> CTBoolean)
       .withRelationshipPropertyKeys("BAR")("p2" -> CTFloat)
 
-    schema.nodeKeys("Foo") should equal(Map("name" -> CTString, "age" -> CTInteger))
-    schema.relationshipKeys("BAR") should equal(Map("p1" -> CTBoolean, "p2" -> CTFloat))
+    schema.nodeKeys("Foo") should equal(Map("name" -> CTString, "age" -> CTInteger.nullable))
+    schema.relationshipKeys("BAR") should equal(Map("p1" -> CTBoolean.nullable, "p2" -> CTFloat.nullable))
   }
 
   test("should not allow updates to conflict with existing types") {
@@ -169,35 +180,29 @@ class SchemaTest extends BaseTestSuite {
     schema.withNodePropertyKeys("Foo")("name" -> CTString).verify    // same type: fine
     schema.withNodePropertyKeys("Foo2")("name" -> CTInteger).verify  // different label: fine
     schema.withNodePropertyKeys("Foo")("name2" -> CTInteger).verify  // different key: fine
-    an [IllegalStateException] shouldBe thrownBy {
+    the [CAPSException] thrownBy {
       schema.withNodePropertyKeys("Foo")("name" -> CTInteger).verify // not fine
-    }
+    } should have message "Attempt to overwrite key 'name': had STRING and got INTEGER"
   }
 
-  test("combining non-conflicting schemas") {
+  test("combining schemas, separate keys") {
     val schema1 = Schema.empty.withNodePropertyKeys("A")("foo" -> CTString)
     val schema2 = Schema.empty.withNodePropertyKeys("B")("bar" -> CTString)
-    val schema3 = Schema.empty.withNodePropertyKeys("C")("baz" -> CTString)
+    val schema3 = Schema.empty
+      .withNodePropertyKeys("C")("baz" -> CTString)
+      .withNodePropertyKeys("A", "C")("baz" -> CTString)
+      .withNodePropertyKeys("A", "C", "X")("baz" -> CTString)
 
     schema1 ++ schema2 ++ schema3 should equal(Schema.empty
       .withNodePropertyKeys("A")("foo" -> CTString)
       .withNodePropertyKeys("B")("bar" -> CTString)
-      .withNodePropertyKeys("C")("baz" -> CTString))
+      .withNodePropertyKeys("C")("baz" -> CTString)
+      .withNodePropertyKeys("A", "C")("baz" -> CTString)
+      .withNodePropertyKeys("A", "C", "X")("baz" -> CTString)
+    )
   }
 
-  test("combining non-conflicting schemas with implied labels") {
-    val schema1 = Schema.empty.withImpliedLabel("A", "B")
-      .withNodePropertyKeys("A")("foo" -> CTString)
-      .withNodePropertyKeys("B")("bar" -> CTString)
-    val schema2 = Schema.empty.withNodePropertyKeys("B")("bar" -> CTString)
-
-    schema1 ++ schema2 should equal(Schema.empty
-      .withImpliedLabel("A", "B")
-      .withNodePropertyKeys("A")("foo" -> CTString)
-      .withNodePropertyKeys("B")("bar" -> CTString))
-   }
-
-  test("combining key non-conflicting schemas") {
+  test("combining schemas, key subset") {
     val schema1 = Schema.empty
       .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString)
     val schema2 = Schema.empty
@@ -207,7 +212,7 @@ class SchemaTest extends BaseTestSuite {
       .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString, "baz" -> CTString.nullable))
   }
 
-  test("combining key conflicting schemas") {
+  test("combining schemas, partial key overlap") {
     val schema1 = Schema.empty
       .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString)
     val schema2 = Schema.empty
@@ -218,69 +223,89 @@ class SchemaTest extends BaseTestSuite {
     )
   }
 
-  test("combining type conflicting schemas") {
+  test("combining type conflicting schemas should work across nullability") {
     val schema1 = Schema.empty
-      .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString, "baz" -> CTInteger)
+      .withNodePropertyKeys("A")("foo" -> CTString.nullable, "bar" -> CTString)
     val schema2 = Schema.empty
-      .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTInteger, "baz" -> CTFloat)
+      .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString.nullable)
 
     schema1 ++ schema2 should equal(Schema.empty
-      .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTAny, "baz" -> CTNumber)
+      .withNodePropertyKeys("A")("foo" -> CTString.nullable, "bar" -> CTString.nullable)
     )
+  }
+
+  test("combining type conflicting schemas should fail, ANY") {
+    val schema1 = Schema.empty
+      .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString)
+    val schema2 = Schema.empty
+      .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTInteger)
+
+    the [CAPSException] thrownBy (schema1 ++ schema2) should have message
+      "Attempt to overwrite key 'bar': had STRING and got INTEGER"
+  }
+
+  // TODO: Do we want to support this particular join between property keys? (Number)
+  test("combining type conflicting schemas should fail, NUMBER") {
+    val schema1 = Schema.empty
+      .withNodePropertyKeys("A")("foo" -> CTString, "baz" -> CTInteger)
+    val schema2 = Schema.empty
+      .withNodePropertyKeys("A")("foo" -> CTString, "baz" -> CTFloat)
+
+    the [CAPSException] thrownBy (schema1 ++ schema2) should have message
+      "Attempt to overwrite key 'baz': had INTEGER and got FLOAT"
   }
 
   test("combining schemas with restricting label implications") {
     val schema1 = Schema.empty
-      .withImpliedLabel("A", "B")
-      .withImpliedLabel("B", "C")
-      .withLabelCombination("A","E")
+      .withNodePropertyKeys("A", "B", "C")()
+      .withNodePropertyKeys("B", "C")()
+      .withNodePropertyKeys("A", "E", "B", "C")()
     val schema2 = Schema.empty
-      .withImpliedLabel("B", "C")
-      .withImpliedLabel("C", "D")
-      .withLabelCombination("B","F")
+      .withNodePropertyKeys("B", "C", "D")()
+      .withNodePropertyKeys("C", "D")()
+      .withNodePropertyKeys("B", "F", "C", "D")()
 
     schema1 ++ schema2 should equal(Schema.empty
-      .withImpliedLabel("A", "B")
-      .withImpliedLabel("B", "C")
-      .withLabelCombination("A","E")
-      .withLabelCombination("B","F")
-      .withLabelCombination("C","D")
+      .withNodePropertyKeys("A", "B", "C")()
+      .withNodePropertyKeys("B", "C")()
+      .withNodePropertyKeys("A", "E", "B", "C")()
+      .withNodePropertyKeys("B", "C", "D")()
+      .withNodePropertyKeys("C", "D")()
+      .withNodePropertyKeys("B", "F", "C", "D")()
     )
   }
 
   test("extract node schema") {
     val schema = Schema.empty
       .withNodePropertyKeys("Person")("name" -> CTString)
-      .withNodePropertyKeys("Employee")("name" -> CTString, "salary" -> CTInteger)
-      .withNodePropertyKeys("Dog")("name" -> CTFloat)
+      .withNodePropertyKeys("Employee", "Person")("name" -> CTString, "salary" -> CTInteger)
+      .withNodePropertyKeys("Dog", "Pet")("name" -> CTFloat)
       .withNodePropertyKeys("Pet")("notName" -> CTBoolean)
-      .withLabelCombination("Person", "Employee")
-      .withImpliedLabel("Dog", "Pet")
       .withRelationshipPropertyKeys("OWNER")("since" -> CTInteger)
 
     schema.forNode(CTNode("Person")) should equal(
       Schema.empty
       .withNodePropertyKeys("Person")("name" -> CTString)
-      .withNodePropertyKeys("Employee")("name" -> CTString, "salary" -> CTInteger)
-      .withLabelCombination("Person", "Employee")
+      .withNodePropertyKeys("Employee", "Person")("name" -> CTString, "salary" -> CTInteger)
     )
 
     schema.forNode(CTNode("Dog")) should equal(
       Schema.empty
-        .withNodePropertyKeys("Dog")("name" -> CTFloat)
+        .withNodePropertyKeys("Dog", "Pet")("name" -> CTFloat)
         .withNodePropertyKeys("Pet")("notName" -> CTBoolean)
-        .withImpliedLabel("Dog", "Pet")
     )
   }
 
   test("forRelationship") {
     val schema = Schema.empty
       .withNodePropertyKeys("Person")("name" -> CTString)
+      .withNodePropertyKeys("Person", "Employee")("name" -> CTString)
+      .withNodePropertyKeys("Employee")("name" -> CTString)
       .withRelationshipPropertyKeys("KNOWS")("name" -> CTString)
       .withRelationshipPropertyKeys("LOVES")("deeply" -> CTBoolean, "salary" -> CTInteger)
       .withRelationshipPropertyKeys("NEEDS")("rating" -> CTFloat)
-      .withLabelCombination("Person", "Employee")
-      .withImpliedLabel("Dog", "Pet")
+      .withNodePropertyKeys("Dog", "Pet")()
+      .withNodePropertyKeys("Pet")()
       .withRelationshipPropertyKeys("OWNER")("since" -> CTInteger)
 
     schema.forRelationship(CTRelationship("KNOWS")) should equal(
@@ -301,5 +326,103 @@ class SchemaTest extends BaseTestSuite {
         .withRelationshipPropertyKeys("KNOWS")("name" -> CTString)
         .withRelationshipPropertyKeys("LOVES")("deeply" -> CTBoolean, "salary" -> CTInteger)
     )
+  }
+
+  test("handles empty label set") {
+    val schema = Schema.empty
+      .withNodePropertyKeys(NoLabel, Map("name" -> CTString))
+      .withNodePropertyKeys("A")("name" -> CTInteger)
+
+    schema.nodeKeys() should equal(Map("name" -> CTString))
+    schema.nodeKeys(NoLabel) should equal(Map("name" -> CTString))
+  }
+
+  test("get node key type with all given semantics") {
+    val schema = Schema.empty
+        .withNodePropertyKeys(Set("A"), Map(
+          "a" -> CTInteger,
+          "b" -> CTString,
+          "c" -> CTFloat,
+          "d" -> CTFloat.nullable))
+      .withNodePropertyKeys(NoLabel, Map("a" -> CTString))
+
+    schema.nodeKeyType(AllOf("A"), "a") should equal(Some(CTInteger))
+    schema.nodeKeyType(AllGiven(NoLabel), "a") should equal(Some(CTAny))
+    schema.nodeKeyType(AllGiven(NoLabel), "b") should equal(Some(CTString.nullable))
+    schema.nodeKeyType(AllOf("B"), "b") should equal(None)
+    schema.nodeKeyType(AllOf("A"), "x") should equal(None)
+  }
+
+  test("get node key type with any given semantics") {
+    val schema = Schema.empty
+      .withNodePropertyKeys(Set("A", "B"), Map(
+        "a" -> CTInteger,
+        "b" -> CTString,
+        "c" -> CTFloat,
+        "d" -> CTFloat.nullable))
+      .withNodePropertyKeys(NoLabel, Map("a" -> CTString))
+
+    schema.nodeKeyType(AnyOf("A"), "a") should equal(Some(CTInteger))
+    schema.nodeKeyType(AnyGiven(NoLabel), "a") should equal(Some(CTString))
+    schema.nodeKeyType(AnyOf("A"), "b") should equal(Some(CTString))
+    schema.nodeKeyType(AnyGiven(AllLabels), "a") should equal(Some(CTAny))
+  }
+
+  test("get rel key type") {
+    val schema = Schema.empty
+      .withRelationshipPropertyKeys("A")(
+        "a" -> CTInteger,
+        "b" -> CTString,
+        "c" -> CTFloat,
+        "d" -> CTFloat.nullable)
+      .withRelationshipPropertyKeys("B")(
+        "a" -> CTFloat,
+        "b" -> CTString.nullable,
+        "c" -> CTString
+      )
+      .withRelationshipType("C")
+
+    schema.relationshipKeyType(Set("A"), "a") should equal(Some(CTInteger))
+    schema.relationshipKeyType(Set("A", "B"), "a") should equal(Some(CTNumber))
+    schema.relationshipKeyType(Set("A", "B"), "b") should equal(Some(CTString.nullable))
+    schema.relationshipKeyType(Set("A", "B", "C"), "c") should equal(Some(CTAny.nullable))
+    schema.relationshipKeyType(Set("A"), "e") should equal(None)
+
+    schema.relationshipKeyType(Set.empty, "a") should equal(Some(CTNumber.nullable))
+  }
+
+  test("get all keys") {
+    val schema = Schema.empty
+      .withNodePropertyKeys(NoLabel, Map("a" -> CTString, "c" -> CTString, "d" -> CTString.nullable, "f" -> CTString))
+      .withNodePropertyKeys("A")("b" -> CTInteger, "c" -> CTString, "e" -> CTString, "f" -> CTInteger)
+      .withNodePropertyKeys("B")("b" -> CTFloat, "c" -> CTString, "e" -> CTInteger, "f" -> CTBoolean)
+
+    schema.allNodeKeys should equal(Map(
+      "a" -> CTString.nullable,
+      "b" -> CTNumber.nullable,
+      "c" -> CTString,
+      "d" -> CTString.nullable,
+      "e" -> CTAny.nullable,
+      "f" -> CTAny)
+    )
+  }
+
+  test("isEmpty") {
+    Schema.empty.isEmpty shouldBe true
+    (Schema.empty ++ Schema.empty).isEmpty shouldBe true
+    val empty = Schema(
+      Set.empty, Set.empty,
+      LabelPropertyMap.empty, RelTypePropertyMap.empty
+    )
+    empty.isEmpty shouldBe true
+    (empty ++ Schema.empty).isEmpty shouldBe true
+
+    Schema.empty.withNodePropertyKeys("label")().isEmpty shouldBe false
+    Schema.empty.withRelationshipPropertyKeys("type")("name" -> CTFloat).isEmpty shouldBe false
+  }
+
+  test("can not use empty labels") {
+    the[CAPSException] thrownBy Schema.empty.withNodePropertyKeys("")() should have message
+      "A label can not be empty"
   }
 }

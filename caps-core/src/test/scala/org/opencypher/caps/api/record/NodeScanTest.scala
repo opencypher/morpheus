@@ -60,14 +60,8 @@ class NodeScanTest extends CAPSTestSuite {
     ))
 
     nodeScan.schema should equal (Schema.empty
-      .withImpliedLabel("A","B")
-      .withImpliedLabel("B","A")
-      .withImpliedLabel("C","A")
-      .withImpliedLabel("C","B")
-      .withLabelCombination("A","C")
-      .withLabelCombination("B","C")
-      .withNodePropertyKeys("A")("foo" -> CTString.nullable, "bar" -> CTInteger)
-      .withNodePropertyKeys("B")("foo" -> CTString.nullable, "bar" -> CTInteger)
+      .withNodePropertyKeys("A","B")("foo" -> CTString.nullable, "bar" -> CTInteger)
+      .withNodePropertyKeys("A","B","C")("foo" -> CTString.nullable, "bar" -> CTInteger)
     )
   }
 
@@ -87,14 +81,8 @@ class NodeScanTest extends CAPSTestSuite {
     ))
 
     nodeScan.schema should equal(Schema.empty
-      .withImpliedLabel("A", "B")
-      .withImpliedLabel("B", "A")
-      .withImpliedLabel("C", "A")
-      .withImpliedLabel("C", "B")
-      .withLabelCombination("A", "C")
-      .withLabelCombination("B", "C")
-      .withNodePropertyKeys("A")("foo" -> CTInteger, "bar" -> CTFloat)
-      .withNodePropertyKeys("B")("foo" -> CTInteger, "bar" -> CTFloat)
+      .withNodePropertyKeys("A","B")("foo" -> CTInteger, "bar" -> CTFloat)
+      .withNodePropertyKeys("A","B", "C")("foo" -> CTInteger, "bar" -> CTFloat)
     )
 
     nodeScan.records.toDF().collect().toSet should equal(Set(

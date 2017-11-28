@@ -34,17 +34,17 @@ class CsvGraphLoaderAcceptanceTest extends BaseTestSuite
     val loader = CsvGraphLoader(hdfsURI.toString, session.sparkContext.hadoopConfiguration)
 
     val graph: CAPSGraph = loader.load
-    graph.nodes("n").toDF().collect().toSet should equal(dfsTestGraphNodes)
-    graph.relationships("rel").toDF().collect.toSet should equal(dfsTestGraphRels)
-  }
 
+    graph.nodes("n").toDF().collect().toBag should equal(dfsTestGraphNodes)
+    graph.relationships("rel").toDF().collect.toBag should equal(dfsTestGraphRels)
+  }
 
   test("load csv graph from local file") {
     val fileURI: URI = new URI(s"file://${getClass.getResource("/csv/sn").getPath}")
     val loader = CsvGraphLoader(fileURI.toString, session.sparkContext.hadoopConfiguration)
 
     val graph: CAPSGraph = loader.load
-    graph.nodes("n").toDF().collect().toSet should equal(dfsTestGraphNodes)
-    graph.relationships("rel").toDF().collect.toSet should equal(dfsTestGraphRels)
+    graph.nodes("n").toDF().collect().toBag should equal(dfsTestGraphNodes)
+    graph.relationships("rel").toDF().collect.toBag should equal(dfsTestGraphRels)
   }
 }

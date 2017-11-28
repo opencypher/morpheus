@@ -62,7 +62,7 @@ trait OpenCypherDataFixture extends TestDataFixture {
       |CREATE (camelot:Film {title: 'Camelot'})
       |
       |// non-standard nodes here, for testing schema handling
-      |CREATE (:Movie {title: 444})
+      |//CREATE (:Movie {title: 444}) not supported for unlabeled scans
       |CREATE (:Person {name: 'Fake Foo', birthyear: 1970})
       |CREATE (:Person {name: 'Fake Bar', birthyear: 1970})
       |
@@ -101,18 +101,16 @@ trait OpenCypherDataFixture extends TestDataFixture {
       |       (liam)-[:ACTED_IN {charactername: 'Henri Ducard'}]->(batmanbegins)
     """.stripMargin
 
-  val nbrNodes = 24
+  val nbrNodes = 23
 
   val nbrRels = 28
 
   val schema: Schema = Schema.empty
     .withNodePropertyKeys("Person")("name" -> CTString, "birthyear" -> CTInteger)
-    // TODO: Investigate whether duplicating schema info like this is good
-    .withNodePropertyKeys("Actor")("name" -> CTString, "birthyear" -> CTInteger)
+    .withNodePropertyKeys("Person", "Actor")("name" -> CTString, "birthyear" -> CTInteger)
     .withNodePropertyKeys("City")("name" -> CTString)
     .withNodePropertyKeys("Film")("title" -> CTString)
-    .withNodePropertyKeys("Movie")("title" -> CTInteger)
-    // TODO: Calculate implied labels in schema construction .withImpliedLabel("Actor", "Person")
+//    .withNodePropertyKeys("Movie")("title" -> CTInteger)
     .withRelationshipPropertyKeys("HAS_CHILD")()
     .withRelationshipPropertyKeys("MARRIED")()
     .withRelationshipPropertyKeys("BORN_IN")()
