@@ -424,10 +424,13 @@ class RecordHeaderTest extends BaseTestSuite {
   test("relationship from schema") {
     val schema = Schema.empty
       .withRelationshipPropertyKeys("A")("a" -> CTString, "b" -> CTInteger.nullable)
+      .withRelationshipPropertyKeys("B")("a" -> CTString, "c" -> CTFloat)
 
     val e = Var("e")(CTRelationship("A"))
+    val r = Var("r")(CTRelationship)
 
     val eHeader = RecordHeader.relationshipFromSchema(e, schema)
+    val rHeader = RecordHeader.relationshipFromSchema(r, schema)
 
     eHeader should equal(RecordHeader.empty.update(addContents(Seq(
       ProjectedExpr(StartNode(e)(CTNode)),
@@ -437,6 +440,16 @@ class RecordHeaderTest extends BaseTestSuite {
       ProjectedExpr(Property(e, PropertyKey("a"))(CTString)),
       ProjectedExpr(Property(e, PropertyKey("b"))(CTInteger.nullable))
     )))._1)
+
+    rHeader should equal(RecordHeader.empty.update(addContents(Seq(
+      ProjectedExpr(StartNode(r)(CTNode)),
+      OpaqueField(r),
+      ProjectedExpr(OfType(r)(CTString)),
+      ProjectedExpr(EndNode(r)(CTNode)),
+      ProjectedExpr(Property(r, PropertyKey("a"))(CTString)),
+      ProjectedExpr(Property(r, PropertyKey("b"))(CTInteger.nullable)),
+      ProjectedExpr(Property(r, PropertyKey("c"))(CTFloat.nullable))
+    )))._1)
   }
 
   test("relationship from schema with given relationship types") {
@@ -444,9 +457,9 @@ class RecordHeaderTest extends BaseTestSuite {
       .withRelationshipPropertyKeys("A")("a" -> CTString, "b" -> CTInteger.nullable)
       .withRelationshipPropertyKeys("B")("a" -> CTString, "b" -> CTInteger)
 
-    val e = Var("e")(CTRelationship("A"))
+    val e = Var("e")(CTRelationship("A", "B"))
 
-    val eHeader = RecordHeader.relationshipFromSchema(e, schema, Set("A", "B"))
+    val eHeader = RecordHeader.relationshipFromSchema(e, schema)
 
     eHeader should equal(RecordHeader.empty.update(addContents(Seq(
       ProjectedExpr(StartNode(e)(CTNode)),

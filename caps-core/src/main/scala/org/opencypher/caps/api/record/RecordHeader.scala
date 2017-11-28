@@ -179,28 +179,18 @@ object RecordHeader {
       schema.combinationsFor(impliedLabels)
     }
 
-    val allKeys = labelCombos.toSeq.flatMap(schema.nodeKeys)
-    val stringToTuples = allKeys.groupBy(_._1)
-    val propertyKeys = stringToTuples.mapValues { seq =>
-      if (seq.size == labelCombos.size && seq.forall(seq.head == _)) {
-        seq.head._2
-      } else {
-        seq.head._2.nullable
-      }
-    }
-
-    // TODO: if a label is implied, do we need to create a column or can we answer that by just looking at the schema?
-    // Create one column for each label existing in the schema
+    // create a label column for each possible label
+    // optimisation enabled: will not add columns for implied or impossible labels
     val labelExprs = labelCombos.flatten.toSeq.sorted.map { label =>
       ProjectedExpr(HasLabel(node, Label(label))(CTBoolean))
     }
 
+    val propertyKeys = schema.keysFor(labelCombos)
     val propertyExprs = propertyKeys.toSeq.sortBy(_._1).map {
       case (k, t) => ProjectedExpr(Property(node, PropertyKey(k))(t))
     }
 
     val projectedExprs = labelExprs ++ propertyExprs
-
     val (header, _) = RecordHeader.empty
       .update(addContents(OpaqueField(node) +: projectedExprs))
 
@@ -221,14 +211,17 @@ object RecordHeader {
   }
 
   def relationshipFromSchema(rel: Var, schema: Schema, relTypes: Set[String]): RecordHeader = {
-    val relKeyHeaderProperties = relTypes
+    val relKeyHeaderProperties = relTypes.toSeq
       .flatMap(t => schema.relationshipKeys(t).toSeq)
-      .groupBy(_._1)
-      .mapValues(keys => keys.map(_._2).reduce(_ join _))
-      .toSeq
-      .sortBy(_._1)
+      .groupBy(_._1).mapValues { keys =>
+      if (keys.size == relTypes.size && keys.forall(keys.head == _)) {
+        keys.head._2
+      } else {
+        keys.head._2.nullable
+      }
+    }
 
-    val relKeyHeaderContents = relKeyHeaderProperties.map {
+    val relKeyHeaderContents = relKeyHeaderProperties.toSeq.sortBy(_._1).map {
       case ((k, t)) => ProjectedExpr(Property(rel, PropertyKey(k))(t))
     }
 
@@ -237,7 +230,6 @@ object RecordHeader {
     val endNode = ProjectedExpr(EndNode(rel)(CTNode))
 
     val relHeaderContents = Seq(startNode, OpaqueField(rel), typeString, endNode) ++ relKeyHeaderContents
-    // this header is necessary on its own to get the type filtering right
     val (relHeader, _) = RecordHeader.empty.update(addContents(relHeaderContents))
 
     relHeader
