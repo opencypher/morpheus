@@ -34,7 +34,7 @@ import org.opencypher.caps.demo.CypherKryoRegistrar
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
 import org.opencypher.caps.impl.logical._
 import org.opencypher.caps.impl.parse.CypherParser
-import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceHandler
 import org.opencypher.caps.impl.spark.io.file.FileCsvGraphSourceFactory
 import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvGraphSourceFactory

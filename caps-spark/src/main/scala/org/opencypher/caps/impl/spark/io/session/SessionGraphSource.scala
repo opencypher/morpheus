@@ -21,7 +21,7 @@ import org.opencypher.caps.api.io.{CreateOrFail, Overwrite, PersistMode}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceImpl
-import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.exception.Raise
 
 case class SessionGraphSource(path: String)(implicit capsSession: CAPSSession)
   extends CAPSGraphSourceImpl {

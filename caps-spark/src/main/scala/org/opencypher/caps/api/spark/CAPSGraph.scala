@@ -21,7 +21,7 @@ import org.opencypher.caps.api.graph.CypherGraph
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
-import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.exception.Raise
 
 trait CAPSGraph extends CypherGraph with Serializable {
 

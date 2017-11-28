@@ -20,7 +20,7 @@ import java.net.URI
 import org.opencypher.caps.api.spark.io._
 import org.opencypher.caps.api.spark.CAPSSession
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceFactoryImpl
-import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.exception.Raise
 import java.util.concurrent.ConcurrentHashMap
 
 import org.opencypher.caps.api.graph.CypherSession

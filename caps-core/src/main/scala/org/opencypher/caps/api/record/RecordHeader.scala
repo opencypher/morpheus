@@ -19,7 +19,7 @@ import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTString, _}
 import org.opencypher.caps.impl.record.InternalHeader
-import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.ir.api.{Label, PropertyKey}
 

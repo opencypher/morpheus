@@ -15,8 +15,8 @@
  */
 package org.opencypher.caps.api.schema
 
+import org.opencypher.caps.api.exception.CAPSException
 import org.opencypher.caps.api.schema.Schema.{AllLabels, NoLabel}
-import org.opencypher.caps.api.spark.exception.CAPSException
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.ir.api.IRField
 import org.opencypher.caps.ir.api.pattern.{AllGiven, AllOf, AnyGiven, AnyOf}

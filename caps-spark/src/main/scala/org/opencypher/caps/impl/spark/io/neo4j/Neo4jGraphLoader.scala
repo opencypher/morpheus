@@ -31,7 +31,7 @@ import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.convert.fromJavaType
 import org.opencypher.caps.impl.record.CAPSRecordHeader
 import org.opencypher.caps.impl.spark.SparkColumnName
-import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.spark.io.neo4j.external.{Neo4j, Neo4jConfig}
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.ir.api.PropertyKey

@@ -32,7 +32,7 @@ import org.opencypher.caps.demo.Configuration.{DefaultLabel, DefaultType}
 import org.opencypher.caps.impl.convert.fromJavaType
 import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.convert.toSparkType
-import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceImpl
 import org.opencypher.caps.test.BaseTestSuite
 import org.opencypher.caps.test.fixture.{CAPSSessionFixture, SparkSessionFixture}

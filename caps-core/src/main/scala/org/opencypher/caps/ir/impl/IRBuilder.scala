@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, ast}
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.util.parsePathOrURI
 import org.opencypher.caps.impl.CompilationStage
-import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block.{SortItem, _}
 import org.opencypher.caps.ir.api.pattern.{AllGiven, Pattern}

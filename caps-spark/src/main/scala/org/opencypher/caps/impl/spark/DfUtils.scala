@@ -22,7 +22,7 @@ import org.opencypher.caps.api.spark.CAPSSession
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value._
 import org.opencypher.caps.api.value.instances._
-import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.spark.physical.RuntimeContext
 
 object DfUtils {

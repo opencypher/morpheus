@@ -20,7 +20,7 @@ import org.opencypher.caps.api.io.GraphSource
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.DirectCompilationStage
-import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.syntax.ExprSyntax._
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block._

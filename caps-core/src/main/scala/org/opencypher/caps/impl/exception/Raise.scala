@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.spark.exception
+package org.opencypher.caps.impl.exception
 
 import java.net.URI
 
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticErrorDef
-import org.opencypher.caps.api.spark.exception.CAPSException
+import org.opencypher.caps.api.exception.CAPSException
 
 object Raise {
 

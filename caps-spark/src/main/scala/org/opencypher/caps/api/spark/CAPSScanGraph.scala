@@ -21,7 +21,7 @@ import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType, DefiniteCypherType}
-import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.exception.Raise
 
 class CAPSScanGraph(val scans: Seq[GraphScan], val schema: Schema)
                    (implicit val session: CAPSSession) extends CAPSGraph {

@@ -17,7 +17,7 @@ package org.opencypher.caps.api.record
 
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.exception.Raise
 
 final case class RecordSlot(index: Int, content: SlotContent) {
   def withOwner(v: Var): RecordSlot = copy(content = content.withOwner(v))

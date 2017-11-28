@@ -19,7 +19,7 @@ import java.net.URI
 
 import org.opencypher.caps.api.spark.io.{CAPSGraphSource, CAPSGraphSourceFactory, CAPSGraphSourceFactoryCompanion}
 import org.opencypher.caps.api.spark.CAPSSession
-import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.exception.Raise
 
 abstract class CAPSGraphSourceFactoryImpl[S <: CAPSGraphSource](val companion: CAPSGraphSourceFactoryCompanion)
   extends CAPSGraphSourceFactory {

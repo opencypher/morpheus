@@ -21,7 +21,7 @@ import org.opencypher.caps.api.record.RecordHeader
 import org.opencypher.caps.api.value.instances._
 import org.opencypher.caps.api.value.syntax._
 import org.opencypher.caps.impl.spark.DfUtils._
-import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.exception.Raise
 
 /*
  * Used when the predicate depends on values not stored inside the dataframe.

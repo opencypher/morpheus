@@ -24,7 +24,7 @@ import org.opencypher.caps.api.types.{CTAny, CTList, CTNode, CTString}
 import org.opencypher.caps.impl.convert.toJavaType
 import org.opencypher.caps.impl.spark.Udfs._
 import org.opencypher.caps.impl.spark.convert.toSparkType
-import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.spark.physical.RuntimeContext
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.columnName
 

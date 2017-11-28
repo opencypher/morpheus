@@ -22,7 +22,7 @@ import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.logical.LogicalGraph
 import org.opencypher.caps.impl.record.{Added, FailedToAdd, Found, Replaced}
-import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.syntax.ExprSyntax._
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.ir.api.block.SortItem

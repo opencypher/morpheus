@@ -13,8 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.api.spark.exception
-
-import org.opencypher.caps.api.exception.CypherException
+package org.opencypher.caps.api.exception
 
 final case class CAPSException(msg: String) extends CypherException(msg)

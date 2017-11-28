@@ -23,7 +23,7 @@ import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.common.AbstractTreeNode
 import org.opencypher.caps.impl.spark.SparkColumnName
-import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
 
 private[caps] abstract class PhysicalOperator extends AbstractTreeNode[PhysicalOperator] {

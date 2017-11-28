@@ -31,7 +31,7 @@ import org.opencypher.caps.impl.record.CAPSRecordHeader
 import org.opencypher.caps.impl.record.CAPSRecordHeader._
 import org.opencypher.caps.impl.spark.DfUtils._
 import org.opencypher.caps.impl.spark.convert.{fromSparkType, rowToCypherMap, toSparkType}
-import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.spark.{RecordsPrinter, SparkColumnName}
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 

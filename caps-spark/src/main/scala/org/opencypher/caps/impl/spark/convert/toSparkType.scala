@@ -17,7 +17,7 @@ package org.opencypher.caps.impl.spark.convert
 
 import org.apache.spark.sql.types._
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.exception.Raise
 
 object toSparkType extends Serializable {
 

@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.common
 
-import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.exception.Raise
 
 import scala.reflect.ClassTag
 

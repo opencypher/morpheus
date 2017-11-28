@@ -21,7 +21,7 @@ import org.apache.http.client.utils.URIBuilder
 import org.opencypher.caps.api.spark.io.CAPSGraphSourceFactoryCompanion
 import org.opencypher.caps.api.spark.CAPSSession
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceFactoryImpl
-import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.spark.io.neo4j.external.Neo4jConfig
 
 case object Neo4jGraphSourceFactory extends CAPSGraphSourceFactoryCompanion("bolt", "bolt+routing")

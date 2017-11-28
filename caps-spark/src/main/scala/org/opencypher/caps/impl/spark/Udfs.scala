@@ -19,7 +19,7 @@ import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.api.value.instances._
 import org.opencypher.caps.api.value.syntax._
 import org.opencypher.caps.impl.convert.toJavaType
-import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.ir.api.Label
 
 import scala.collection.mutable

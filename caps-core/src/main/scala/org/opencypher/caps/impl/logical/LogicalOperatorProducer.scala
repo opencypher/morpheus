@@ -17,7 +17,7 @@ package org.opencypher.caps.impl.logical
 
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.util._
 import org.opencypher.caps.ir.api.block.{Aggregations, SortItem}
 import org.opencypher.caps.ir.api.{IRField, RelType, SolvedQueryModel}

@@ -22,7 +22,7 @@ import org.opencypher.caps.api.expr.Var
 import org.opencypher.caps.api.record.{OpaqueField, RecordHeader, RecordSlot}
 import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.convert.{fromSparkType, toSparkType}
-import org.opencypher.caps.impl.spark.exception.Raise
+import org.opencypher.caps.impl.exception.Raise
 
 object CAPSRecordHeader {
 
