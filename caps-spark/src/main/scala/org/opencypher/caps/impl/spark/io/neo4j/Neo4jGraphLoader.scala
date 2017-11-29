@@ -36,24 +36,21 @@ object Neo4jGraphLoader {
 
   private def loadSchema(nodes: RDD[InternalNode], rels: RDD[InternalRelationship]): VerifiedSchema = {
 
-    val nodeSchema = nodes.aggregate(Schema.empty)(
-      {
-        case (schema, node) =>
-          val labels =
-            if (node.labels().isEmpty) // could remove this unless we rely on `NoLabel`
-              NoLabel
-            else
-              node.labels().asScala.toSet
+    def computeNodeSchema(schema: Schema, node: InternalNode): Schema = {
+      val labels =
+        if (node.labels().isEmpty) // could remove this unless we rely on `NoLabel`
+          NoLabel
+        else
+          node.labels().asScala.toSet
 
-          schema.withNodePropertyKeys(labels, convertProperties(node.asMap()))
-      },
-      _ ++ _
-    )
+      schema.withNodePropertyKeys(labels, convertProperties(node.asMap()))
+    }
 
-    val completeSchema = rels.aggregate(nodeSchema)({
-      case (schema, next) =>
-        schema.withRelationshipPropertyKeys(next.`type`(), convertProperties(next.asMap()))
-    }, _ ++ _)
+    def computeRelSchema(schema: Schema, relationship: InternalRelationship): Schema =
+      schema.withRelationshipPropertyKeys(relationship.`type`(), convertProperties(relationship.asMap()))
+
+    val nodeSchema = nodes.aggregate(Schema.empty)(computeNodeSchema, _ ++ _)
+    val completeSchema = rels.aggregate(nodeSchema)(computeRelSchema, _ ++ _)
 
     completeSchema.verify
   }

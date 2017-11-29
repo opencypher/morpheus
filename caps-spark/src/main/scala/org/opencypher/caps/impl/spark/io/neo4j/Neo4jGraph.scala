@@ -119,13 +119,16 @@ object Neo4jGraph {
             val propValue = props.get(keyName).orNull
             val dataType = schema(SparkColumnName.of(slot)).dataType
             importedToSparkEncodedCypherValue(dataType, propValue)
+
           case HasLabel(_, label) =>
             labels(label.name)
+
           case _: Var =>
             importedNode.id()
 
-          case _ =>
-            Raise.impossible("Nothing else should appear")
+          case x =>
+            Raise.invalidArgument("a node member expression (property, label, node variable)", x.toString)
+
         }
       }
 
@@ -166,7 +169,9 @@ object Neo4jGraph {
             importedRel.id()
 
           case x =>
-            Raise.invalidArgument("One of: property lookup, startNode(), endNode(), id(), variable", x.toString)
+            Raise.invalidArgument(
+              "a relationship member expression (property, start node, end node, type, relationship variable)",
+              x.toString)
         }
       }
 
