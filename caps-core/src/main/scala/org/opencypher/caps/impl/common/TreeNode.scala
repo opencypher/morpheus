@@ -22,34 +22,20 @@ abstract class TreeNode[T <: TreeNode[T]: ClassTag] extends Product with Travers
 
   self: T =>
 
-  def withNewChildren(newChildren: Seq[T]): T
+  def withNewChildren(newChildren: Array[T]): T
 
-  def children: Seq[T] = Seq.empty
+  def children: Array[T] = Array.empty
 
-  /**
-    * Explicit accessor to the set of children. This allows for an implementation to cache this,
-    * which can speed up rewrites.
-    */
-  def childrenAsSet: Set[T] = children.toSet
-
-  // Optimization: Cache hash code, speeds up repeated computations over high trees.
-  override lazy val hashCode: Int = MurmurHash3.productHash(self)
+  override def hashCode: Int = MurmurHash3.productHash(self)
 
   def arity: Int = children.length
 
   def isLeaf: Boolean = height == 1
 
-  lazy val height: Int = if (children.isEmpty) 1 else children.map(_.height).max + 1
+  def height: Int = if (children.isEmpty) 1 else children.map(_.height).max + 1
 
-  def map[O <: TreeNode[O]](f: T => O): O = {
+  def map[O <: TreeNode[O]: ClassTag](f: T => O): O = {
     f(self).withNewChildren(children.map(f))
-  }
-
-  override def foldLeft[O](initial: O)(f: (O, T) => O): O = {
-    children.foldLeft(f(initial, this)) {
-      case (agg, nextChild) =>
-        nextChild.foldLeft(agg)(f)
-    }
   }
 
   override def foreach[O](f: T => O): Unit = {
@@ -74,7 +60,7 @@ abstract class TreeNode[T <: TreeNode[T]: ClassTag] extends Product with Travers
     * @return true, iff `other` is a direct child of this tree
     */
   def containsChild(other: T): Boolean = {
-    childrenAsSet.contains(other)
+    children.contains(other)
   }
 
   /**

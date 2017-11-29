@@ -57,6 +57,24 @@ class TreeNodeTest extends FunSuite with Matchers {
     up should equal(expected)
   }
 
+  test("support relatively high trees without stack overflow") {
+    val highTree = (1 to 1000).foldLeft(Number(1): CalcExpr) {
+      case (t, n) => Add(t, Number(n))
+    }
+    val simplified = highTree.transformUp {
+      case Add(Number(n1), Number(n2)) => Number(n1 + n2)
+    }
+    simplified should equal(Number(500501))
+
+    val addNoOpsBeforeLeftAdd: PartialFunction[CalcExpr, CalcExpr] = {
+      case Add(a: Add, b) => Add(NoOp(a), b)
+    }
+    val noOpTree = highTree.transformDown {
+      addNoOpsBeforeLeftAdd
+    }
+    noOpTree.height should equal(2000)
+  }
+
   test("arg string") {
     Number(12).argString should equal("12")
     Add(Number(1), Number(2)).argString should equal("")
@@ -77,7 +95,7 @@ class TreeNodeTest extends FunSuite with Matchers {
   }
 
   test("copy with the same children returns the same instance") {
-    calculation.withNewChildren(Seq(calculation.left, calculation.right)) should referenceEqual(calculation)
+    calculation.withNewChildren(Array(calculation.left, calculation.right)) should referenceEqual(calculation)
   }
 
   abstract class CalcExpr extends AbstractTreeNode[CalcExpr] {

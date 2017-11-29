@@ -39,9 +39,9 @@ trait LogicalRewriter extends (LogicalOperator => LogicalOperator) {
   def rewriteChildren(child: LogicalOperator, r: LogicalRewriter = this): LogicalOperator = {
     child match {
       case b: BinaryLogicalOperator =>
-        b.withNewChildren(Seq(r(b.lhs), r(b.rhs)))
+        b.withNewChildren(Array(r(b.lhs), r(b.rhs)))
       case s: StackingLogicalOperator =>
-        s.withNewChildren(Seq(r(s.in)))
+        s.withNewChildren(Array(r(s.in)))
       case l: LogicalLeafOperator =>
         l
     }
@@ -73,8 +73,8 @@ object ExtractLabels extends LogicalAggregator[Set[(Var, Label)]] {
 case object DiscardStackedRecordOperations extends LogicalRewriter {
   override def apply(root: LogicalOperator): LogicalOperator = {
     root match {
-      case s: SetSourceGraph => s.withNewChildren(Seq(DiscardStackedRecordOperations(s.in)))
-      case p: ProjectGraph => p.withNewChildren(Seq(DiscardStackedRecordOperations(p.in)))
+      case s: SetSourceGraph => s.withNewChildren(Array(DiscardStackedRecordOperations(s.in)))
+      case p: ProjectGraph => p.withNewChildren(Array(DiscardStackedRecordOperations(p.in)))
       case s: StackingLogicalOperator => DiscardStackedRecordOperations(s.in)
       case other => rewriteChildren(other)
     }
@@ -92,7 +92,7 @@ case class PushLabelFiltersIntoScans(labelMap: Map[Var, Set[String]]) extends Lo
       case f@Filter(expr, in, _) =>
         expr match {
           case _: HasLabel => this (in)
-          case _ => f.withNewChildren(Seq(this(in)))
+          case _ => f.withNewChildren(Array(this(in)))
         }
       case other => rewriteChildren(other)
     }
