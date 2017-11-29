@@ -31,7 +31,7 @@ import scala.reflect.ClassTag
   * Scala collections, both for improved performance as well as to save stack frames, which allows to operate on
   * trees that are several thousand nodes high.
   */
-abstract class AbstractTreeNode[T <: TreeNode[T]: ClassTag] extends TreeNode[T] {
+abstract class AbstractTreeNode[T <: AbstractTreeNode[T]: ClassTag] extends TreeNode[T] {
   self: T =>
 
   override final val children: Array[T] = {
@@ -183,12 +183,13 @@ abstract class AbstractTreeNode[T <: TreeNode[T]: ClassTag] extends TreeNode[T] 
       children.length == newChildren.length,
       s"invalid children for $productPrefix: ${newChildren.mkString(", ")}")
     val parameterArrayLength = productArity
+    val childrenLength = children.length
     val parameterArray = new Array[Any](parameterArrayLength)
     var productIndex = 0
     var childrenIndex = 0
     while (productIndex < parameterArrayLength) {
       val currentProductElement = productElement(productIndex)
-      if (currentProductElement == children(childrenIndex)) {
+      if (childrenIndex < childrenLength && currentProductElement == children(childrenIndex)) {
         parameterArray(productIndex) = newChildren(childrenIndex)
         childrenIndex += 1
       } else {
