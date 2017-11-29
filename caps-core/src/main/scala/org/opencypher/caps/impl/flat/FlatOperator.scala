@@ -27,14 +27,14 @@ sealed abstract class FlatOperator extends AbstractTreeNode[FlatOperator] {
   def sourceGraph: LogicalGraph
 }
 
-sealed trait BinaryFlatOperator extends FlatOperator {
+sealed abstract class BinaryFlatOperator extends FlatOperator {
   def lhs: FlatOperator
   def rhs: FlatOperator
 
   override def sourceGraph: LogicalGraph = lhs.sourceGraph
 }
 
-sealed trait TernaryFlatOperator extends FlatOperator {
+sealed abstract class TernaryFlatOperator extends FlatOperator {
   def first: FlatOperator
   def second: FlatOperator
   def third: FlatOperator
@@ -42,13 +42,13 @@ sealed trait TernaryFlatOperator extends FlatOperator {
   override def sourceGraph: LogicalGraph = first.sourceGraph
 }
 
-sealed trait StackingFlatOperator extends FlatOperator {
+sealed abstract class StackingFlatOperator extends FlatOperator {
   def in: FlatOperator
 
   override def sourceGraph: LogicalGraph = in.sourceGraph
 }
 
-sealed trait FlatLeafOperator extends FlatOperator
+sealed abstract class FlatLeafOperator extends FlatOperator
 
 final case class NodeScan(node: Var, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
