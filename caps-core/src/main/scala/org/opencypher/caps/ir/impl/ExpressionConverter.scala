@@ -26,7 +26,7 @@ import org.opencypher.caps.ir.impl.FunctionUtils._
 
 import scala.language.implicitConversions
 
-final case class ExpressionConverter(patternConverter: PatternConverter = new PatternConverter(Map.empty)) {
+final class ExpressionConverter(patternConverter: PatternConverter = new PatternConverter(Map.empty)) {
 
   implicit def toRef(e: ast.Expression): Ref[ast.Expression] = Ref(e)
 

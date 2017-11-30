@@ -15,29 +15,28 @@
  */
 package org.opencypher.caps.impl.spark.physical.operators
 
-import org.apache.spark.sql.functions
+import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.caps.api.expr.Var
 import org.opencypher.caps.api.record.RecordHeader
 import org.opencypher.caps.api.spark.CAPSRecords
-import org.opencypher.caps.impl.flat.FreshVariableNamer
 import org.opencypher.caps.impl.spark.{ColumnNameGenerator, SparkColumnName}
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.{assertIsNode, columnName, joinDFs, joinRecords}
 import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
 
 private[spark] abstract class BinaryPhysicalOperator extends PhysicalOperator {
 
-  def left: PhysicalOperator
+  def lhs: PhysicalOperator
 
-  def right: PhysicalOperator
+  def rhs: PhysicalOperator
 
-  override def execute(implicit context: RuntimeContext): PhysicalResult = executeBinary(left.execute, right.execute)
+  override def execute(implicit context: RuntimeContext): PhysicalResult = executeBinary(lhs.execute, rhs.execute)
 
   def executeBinary(left: PhysicalResult, right: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult
 }
 
 final case class ValueJoin(
-    left: PhysicalOperator,
-    right: PhysicalOperator,
+    lhs: PhysicalOperator,
+    rhs: PhysicalOperator,
     predicates: Set[org.opencypher.caps.api.expr.Equals],
     header: RecordHeader)
     extends BinaryPhysicalOperator {
@@ -54,82 +53,25 @@ final case class ValueJoin(
   }
 
 }
+abstract class PatternJoin extends BinaryPhysicalOperator {
 
-final case class Optional(
-    left: PhysicalOperator,
-    right: PhysicalOperator,
-    lhsHeader: RecordHeader,
-    rhsHeader: RecordHeader)
-    extends BinaryPhysicalOperator {
+  override def executeBinary(left: PhysicalResult, right: PhysicalResult)
+                            (implicit context: RuntimeContext): PhysicalResult = {
+    val leftData = left.records.toDF()
+    val rightData = right.records.toDF()
+    val leftHeader = left.records.header
+    val rightHeader = right.records.header
 
-  override def executeBinary(left: PhysicalResult, right: PhysicalResult)(
-      implicit context: RuntimeContext): PhysicalResult = {
-    val lhsData = left.records.toDF()
-    val rhsData = right.records.toDF()
-    val commonFields = rhsHeader.fields.intersect(lhsHeader.fields)
-
-    // Remove all common columns from the right hand side, except the join columns
+    // find all common columns, except the join columns
+    val commonFields = leftHeader.fields.intersect(rightHeader.fields)
     val columnsToRemove = commonFields
-      .flatMap(rhsHeader.childSlots)
-      .map(_.content)
-      .map(columnName)
-      .toSeq
-
-    val lhsJoinSlots = commonFields.map(lhsHeader.slotFor)
-    val rhsJoinSlots = commonFields.map(rhsHeader.slotFor)
-
-    // Find the join pairs and introduce an alias for the right hand side
-    // This is necessary to be able to deduplicate the join columns later
-    val joinColumnMapping = lhsJoinSlots
-      .map(lhsSlot => {
-        lhsSlot -> rhsJoinSlots.find(_.content == lhsSlot.content).get
-      })
-      .map(pair => {
-        val lhsCol = lhsData.col(columnName(pair._1))
-        val rhsColName = columnName(pair._2)
-
-        (lhsCol, rhsColName, ColumnNameGenerator.generateUniqueName(rhsHeader))
-      })
-      .toSeq
-
-    val reducedRhsData = joinColumnMapping
-      .foldLeft(rhsData)((acc, col) => acc.withColumnRenamed(col._2, col._3))
-      .drop(columnsToRemove: _*)
-
-    val joinCols = joinColumnMapping.map(t => t._1 -> reducedRhsData.col(t._3))
-
-    val joinedRecords =
-      joinDFs(lhsData, reducedRhsData, rhsHeader, joinCols)("leftouter", deduplicate = true)(left.records.caps)
-
-    PhysicalResult(joinedRecords, left.graphs ++ right.graphs)
-  }
-
-}
-
-final case class PatternPredicate(
-    left: PhysicalOperator,
-    right: PhysicalOperator,
-    predicateField: Var,
-    header: RecordHeader)
-    extends BinaryPhysicalOperator {
-
-  override def executeBinary(left: PhysicalResult, right: PhysicalResult)(implicit context: RuntimeContext) = {
-    val lhsData = left.records.toDF()
-    val rhsData = right.records.toDF()
-    val lhsHeader = left.records.header
-    val rhsHeader = right.records.header
-
-    val commonFields = lhsHeader.fields.intersect(rhsHeader.fields)
-
-    // Remove all common columns from the right hand side, except the join columns
-    val columnsToRemove = commonFields
-        .flatMap(rhsHeader.childSlots)
+        .flatMap(rightHeader.childSlots)
         .map(_.content)
         .map(columnName)
         .toSeq
 
-    val lhsJoinSlots = commonFields.map(lhsHeader.slotFor)
-    val rhsJoinSlots = commonFields.map(rhsHeader.slotFor)
+    val lhsJoinSlots = commonFields.map(leftHeader.slotFor)
+    val rhsJoinSlots = commonFields.map(rightHeader.slotFor)
 
     // Find the join pairs and introduce an alias for the right hand side
     // This is necessary to be able to deduplicate the join columns later
@@ -138,41 +80,103 @@ final case class PatternPredicate(
           lhsSlot -> rhsJoinSlots.find(_.content == lhsSlot.content).get
         })
         .map(pair => {
-          val lhsCol = lhsData.col(columnName(pair._1))
+          val lhsCol = leftData.col(columnName(pair._1))
           val rhsColName = columnName(pair._2)
 
-          (lhsCol, rhsColName, ColumnNameGenerator.generateUniqueName(rhsHeader))
+          (lhsCol, rhsColName, ColumnNameGenerator.generateUniqueName(rightHeader))
         })
         .toSeq
 
+    // Rename join columns on the right hand side and drop common non-join columns
     val reducedRhsData = joinColumnMapping
-        .foldLeft(rhsData)((acc, col) => acc.withColumnRenamed(col._2, col._3))
+        .foldLeft(rightData)((acc, col) => acc.withColumnRenamed(col._2, col._3))
         .drop(columnsToRemove: _*)
-        .dropDuplicates(joinColumnMapping.map(_._3))
+
+    executeInternal(left, right, rightHeader, joinColumnMapping, reducedRhsData)
+  }
+
+  def executeInternal(
+      left: PhysicalResult,
+      right: PhysicalResult,
+      rhsHeader: RecordHeader,
+      joinColumnMapping: Seq[(Column, String, String)],
+      reducedRhsData: DataFrame): PhysicalResult
+}
+
+final case class Optional(lhs: PhysicalOperator, rhs: PhysicalOperator, header: RecordHeader)
+    extends PatternJoin {
+
+  override def executeInternal(
+      left: PhysicalResult,
+      right: PhysicalResult,
+      rhsHeader: RecordHeader,
+      joinColumnMapping: Seq[(Column, String, String)],
+      reducedRhsData: DataFrame): PhysicalResult = {
 
     val joinCols = joinColumnMapping.map(t => t._1 -> reducedRhsData.col(t._3))
 
     val joinedRecords =
-      joinDFs(lhsData, reducedRhsData, rhsHeader, joinCols)("leftouter", deduplicate = true)(left.records.caps)
+      joinDFs(left.records.data, reducedRhsData, header, joinCols)("leftouter", deduplicate = true)(left.records.caps)
 
-    val nonRhsJoinColumns = reducedRhsData.columns.toSet -- joinColumnMapping.map(_._3)
-    val nonRhsJoinColumn = reducedRhsData.col(nonRhsJoinColumns.head)
+    PhysicalResult(joinedRecords, left.graphs ++ right.graphs)
+  }
+}
 
+/**
+  * This operator performs a left outer join between the mandatory path and the pattern path. If, for a given mandatory
+  * match, there is a non-null partner, we set a predicate column to true, otherwise false. Only the mandatory match
+  * data and the predicate column are kept in the result.
+  *
+  * @param lhs mandatory match data
+  * @param rhs expanded pattern predicate data
+  * @param predicateField field that will store the predicate value
+  * @param header result header (lhs header + predicateField)
+  */
+final case class PatternPredicate(
+    lhs: PhysicalOperator,
+    rhs: PhysicalOperator,
+    predicateField: Var,
+    header: RecordHeader)
+    extends PatternJoin {
+
+  override def executeInternal(
+      left: PhysicalResult,
+      right: PhysicalResult,
+      rhsHeader: RecordHeader,
+      joinColumnMapping: Seq[(Column, String, String)],
+      reducedRhsData: DataFrame): PhysicalResult = {
+
+    // Compute distinct rows based on join columns
+    val distinctRightData = reducedRhsData.dropDuplicates(joinColumnMapping.map(_._3))
+
+    val joinCols = joinColumnMapping.map(t => t._1 -> distinctRightData.col(t._3))
+
+    val joinedRecords =
+      joinDFs(left.records.data, distinctRightData, rhsHeader, joinCols)("leftouter", deduplicate = true)(left.records.caps)
+
+    val rightNonJoinColumns = distinctRightData.columns.toSet -- joinColumnMapping.map(_._3)
+
+    // We only need to check one non-join column for its value to decide if the pattern exists
+    assert(rightNonJoinColumns.nonEmpty)
+    val rightNonJoinColumn = distinctRightData.col(rightNonJoinColumns.head)
+
+    // If the non-join column contains no value we set the predicate field to false, otherwise true.
+    // After that we drop all right columns and only keep the predicate field.
+    // The predicate field is later checked by a filter operator.
     val updatedJoinedRecords = joinedRecords.data
-        .withColumn(
-          SparkColumnName.of(header.slotFor(predicateField)),
-          functions.when(functions.isnull(nonRhsJoinColumn), false).otherwise(true))
-        .drop(nonRhsJoinColumns.toSeq ++ joinColumnMapping.map(_._3): _*)
+      .withColumn(
+        SparkColumnName.of(header.slotFor(predicateField)),
+        functions.when(functions.isnull(rightNonJoinColumn), false).otherwise(true))
+      .drop(rightNonJoinColumns.toSeq ++ joinColumnMapping.map(_._3): _*)
 
-    // 4 remove rhs fields
     PhysicalResult(CAPSRecords.create(header, updatedJoinedRecords)(left.records.caps), left.graphs ++ right.graphs)
   }
 }
 
 // This maps a Cypher pattern such as (s)-[r]->(t), where s and t are both solved by lhs, and r is solved by rhs
 final case class ExpandInto(
-    left: PhysicalOperator,
-    right: PhysicalOperator,
+    lhs: PhysicalOperator,
+    rhs: PhysicalOperator,
     source: Var,
     rel: Var,
     target: Var,
@@ -198,7 +202,7 @@ final case class ExpandInto(
 
 }
 
-final case class CartesianProduct(left: PhysicalOperator, right: PhysicalOperator, header: RecordHeader)
+final case class CartesianProduct(lhs: PhysicalOperator, rhs: PhysicalOperator, header: RecordHeader)
     extends BinaryPhysicalOperator {
 
   override def executeBinary(left: PhysicalResult, right: PhysicalResult)(

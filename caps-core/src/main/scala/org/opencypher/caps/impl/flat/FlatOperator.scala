@@ -79,10 +79,7 @@ final case class CartesianProduct(lhs: FlatOperator, rhs: FlatOperator, header: 
 final case class Optional(
     lhs: FlatOperator,
     rhs: FlatOperator,
-    lhsHeader: RecordHeader,
-    rhsHeader: RecordHeader) extends BinaryFlatOperator {
-
-  override def header: RecordHeader = rhsHeader
+    header: RecordHeader) extends BinaryFlatOperator {
 }
 
 final case class PatternPredicate(

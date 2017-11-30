@@ -198,7 +198,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   def planOptional(lhs: FlatOperator, rhs: FlatOperator): FlatOperator = {
-    Optional(lhs, rhs, lhs.header, rhs.header)
+    Optional(lhs, rhs, rhs.header)
   }
 
   def planPatternPredicate(pattenExpr: PatternExpr, lhs: FlatOperator, rhs: FlatOperator): FlatOperator = {

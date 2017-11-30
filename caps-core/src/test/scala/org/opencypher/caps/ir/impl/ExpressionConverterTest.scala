@@ -18,7 +18,9 @@ package org.opencypher.caps.ir.impl
 import org.neo4j.cypher.internal.frontend.v3_3.{Ref, ast, symbols}
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.ir.api.{Label, PropertyKey, RelType}
+import org.opencypher.caps.impl.flat.FreshVariableNamer
+import org.opencypher.caps.ir.api.pattern.{DirectedRelationship, Endpoints, Pattern}
+import org.opencypher.caps.ir.api.{IRField, Label, PropertyKey, RelType}
 import org.opencypher.caps.test.BaseTestSuite
 import org.opencypher.caps.test.support.Neo4jAstTestSupport
 import org.opencypher.caps.toVar
@@ -184,6 +186,26 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   test("can convert id function") {
     convert("id(a)") should equal(
       Id(Var("a")())()
+    )
+  }
+
+  test("can convert pattern expression") {
+    val given = parseExpr("(a)-[:KNOWS]->(b)")
+
+    convert(given) should equal(
+      PatternExpr(
+        FreshVariableNamer(7, CTBoolean),
+        Pattern(
+          Set(
+            IRField("a")(CTNode),
+            IRField("b")(CTNode),
+            IRField("  FRESH_VAR10")(CTRelationship("KNOWS"))
+          ),
+          Map(
+            IRField("  FRESH_VAR10")(CTRelationship("KNOWS")) -> DirectedRelationship(IRField("a")(CTNode), IRField("b")(CTNode))
+          )
+        )
+      )()
     )
   }
 
