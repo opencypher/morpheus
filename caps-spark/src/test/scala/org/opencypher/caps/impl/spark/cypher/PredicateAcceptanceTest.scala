@@ -286,7 +286,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
     ))
   }
 
-  ignore("simple pattern predicate with node label predicate") {
+  test("simple pattern predicate with node label predicate") {
     // Given
     val given = TestGraph(
       """
@@ -296,6 +296,23 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
 
     // When
     val result = given.cypher("MATCH (a)-->(b) WHERE (a)-->(:A)-->(b) RETURN a.id, b.id")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("a.id" -> 1L, "b.id" -> 2L)
+    ))
+  }
+
+  test("simple pattern predicate with relationship type predicate") {
+    // Given
+    val given = TestGraph(
+      """
+        |(v{id:1L})-[:A]->()-->({id:2L})<--(v),
+        |(w{id:3L})-[:B]->()-->({id:4L})<--(w)
+      """.stripMargin)
+
+    // When
+    val result = given.cypher("MATCH (a)-->(b) WHERE (a)-[:A]-()-->(b) RETURN a.id, b.id")
 
     // Then
     result.records.toMaps should equal(Bag(
