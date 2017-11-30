@@ -60,7 +60,7 @@ sealed class CAPSSession private (
 
   private val producer = new LogicalOperatorProducer
   private val logicalPlanner = new LogicalPlanner(producer)
-  private val logicalOptimizer = new LogicalOptimizer(producer)
+  private val logicalOptimizer = LogicalOptimizer
   private val flatPlanner = new FlatPlanner()
   private val physicalPlanner = new PhysicalPlanner()
   private val physicalOptimizer = new PhysicalOptimizer()
@@ -219,8 +219,8 @@ sealed class CAPSSession private (
       println(optimizedPhysicalPlan.pretty())
     }
 
-    CAPSResultBuilder.from(logicalPlan, flatPlan, optimizedPhysicalPlan)(RuntimeContext(
-      physicalPlannerContext.parameters, optGraphAt, collection.mutable.Map.empty))
+    CAPSResultBuilder.from(logicalPlan, flatPlan, optimizedPhysicalPlan)(
+      RuntimeContext(physicalPlannerContext.parameters, optGraphAt, collection.mutable.Map.empty))
   }
 
   override def toString: String = {
