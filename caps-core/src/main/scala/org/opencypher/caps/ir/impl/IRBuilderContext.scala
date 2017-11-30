@@ -42,8 +42,8 @@ final case class IRBuilderContext(
   knownTypes: Map[ast.Expression, CypherType] = Map.empty)
 {
   private def typer = SchemaTyper(currentGraph.schema)
-  private lazy val exprConverter = ExpressionConverter
   private lazy val patternConverter = new PatternConverter(parameters)
+  private lazy val exprConverter = new ExpressionConverter(patternConverter)
 
   // TODO: Fuse monads
   def infer(expr: ast.Expression): Map[Ref[ast.Expression], CypherType] = {

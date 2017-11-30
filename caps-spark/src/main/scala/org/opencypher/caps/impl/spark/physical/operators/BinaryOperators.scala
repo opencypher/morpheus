@@ -15,11 +15,12 @@
  */
 package org.opencypher.caps.impl.spark.physical.operators
 
+import org.apache.spark.sql.functions
 import org.opencypher.caps.api.expr.Var
 import org.opencypher.caps.api.record.RecordHeader
 import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.impl.flat.FreshVariableNamer
-import org.opencypher.caps.impl.spark.ColumnNameGenerator
+import org.opencypher.caps.impl.spark.{ColumnNameGenerator, SparkColumnName}
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.{assertIsNode, columnName, joinDFs, joinRecords}
 import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
 
@@ -103,6 +104,69 @@ final case class Optional(
     PhysicalResult(joinedRecords, left.graphs ++ right.graphs)
   }
 
+}
+
+final case class PatternPredicate(
+    left: PhysicalOperator,
+    right: PhysicalOperator,
+    predicateField: Var,
+    header: RecordHeader)
+    extends BinaryPhysicalOperator {
+
+  override def executeBinary(left: PhysicalResult, right: PhysicalResult)(implicit context: RuntimeContext) = {
+    val lhsData = left.records.toDF()
+    val rhsData = right.records.toDF()
+    val lhsHeader = left.records.header
+    val rhsHeader = right.records.header
+
+    val commonFields = lhsHeader.fields.intersect(rhsHeader.fields)
+
+    // Remove all common columns from the right hand side, except the join columns
+    val columnsToRemove = commonFields
+        .flatMap(rhsHeader.childSlots)
+        .map(_.content)
+        .map(columnName)
+        .toSeq
+
+    val lhsJoinSlots = commonFields.map(lhsHeader.slotFor)
+    val rhsJoinSlots = commonFields.map(rhsHeader.slotFor)
+
+    // Find the join pairs and introduce an alias for the right hand side
+    // This is necessary to be able to deduplicate the join columns later
+    val joinColumnMapping = lhsJoinSlots
+        .map(lhsSlot => {
+          lhsSlot -> rhsJoinSlots.find(_.content == lhsSlot.content).get
+        })
+        .map(pair => {
+          val lhsCol = lhsData.col(columnName(pair._1))
+          val rhsColName = columnName(pair._2)
+
+          (lhsCol, rhsColName, ColumnNameGenerator.generateUniqueName(rhsHeader))
+        })
+        .toSeq
+
+    val reducedRhsData = joinColumnMapping
+        .foldLeft(rhsData)((acc, col) => acc.withColumnRenamed(col._2, col._3))
+        .drop(columnsToRemove: _*)
+        .dropDuplicates(joinColumnMapping.map(_._3))
+
+    val joinCols = joinColumnMapping.map(t => t._1 -> reducedRhsData.col(t._3))
+
+    val joinedRecords =
+      joinDFs(lhsData, reducedRhsData, rhsHeader, joinCols)("leftouter", deduplicate = true)(left.records.caps)
+
+    val nonRhsJoinColumns = reducedRhsData.columns.toSet -- joinColumnMapping.map(_._3)
+    val nonRhsJoinColumn = reducedRhsData.col(nonRhsJoinColumns.head)
+
+    val updatedJoinedRecords = joinedRecords.data
+        .withColumn(
+          SparkColumnName.of(header.slotFor(predicateField)),
+          functions.when(functions.isnull(nonRhsJoinColumn), false).otherwise(true))
+        .drop(nonRhsJoinColumns.toSeq ++ joinColumnMapping.map(_._3): _*)
+
+    // 4 remove rhs fields
+    PhysicalResult(CAPSRecords.create(header, updatedJoinedRecords)(left.records.caps), left.graphs ++ right.graphs)
+  }
 }
 
 // This maps a Cypher pattern such as (s)-[r]->(t), where s and t are both solved by lhs, and r is solved by rhs

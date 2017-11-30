@@ -97,7 +97,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       case ProjectBlock(_, FieldsAndGraphs(fields, graphs), where, _, distinct) =>
         val withGraphs = planGraphProjections(plan, graphs)
         val withFields = planFieldProjections(withGraphs, fields)
-        val filtered = planFilter(withFields, where)
+        val filtered = planFilter(withFields, where, None)
         if (distinct) {
           producer.planDistinct(fields.keySet, filtered)
         } else {
@@ -166,7 +166,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
   }
 
   // TODO: Should we check (or silently drop) predicates that are not eligible for planning here? (check dependencies)
-  private def planFilter(in: LogicalOperator, where: AllGiven[Expr])(implicit context: LogicalPlannerContext)
+  private def planFilter(in: LogicalOperator, where: AllGiven[Expr], graph: Option[IRGraph])(implicit context: LogicalPlannerContext)
   : LogicalOperator = {
     val filtersAndProjs = where.elements.foldLeft(in) {
       case (acc, ors: Ors) =>
@@ -205,6 +205,13 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         producer.planFilter(t, acc) // optimise away this one somehow... currently we do that in PhysicalPlanner
       case (acc, v: Var) =>
         producer.planFilter(v, acc)
+      case (acc, pe: PatternExpr) =>
+        val patternPlan = graph match {
+          case Some(g)  => planComponentPattern(acc, pe.pattern, g)
+          case None     => Raise.notYetImplemented("pattern predicates without MATCH block")
+        }
+        val withPredicate = producer.planPatternPredicate(pe, acc, patternPlan)
+        producer.planFilter(pe, withPredicate)
       case (_, x) =>
         Raise.notYetImplemented(s"logical planning of predicate $x")
     }
@@ -289,7 +296,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     val components = pattern.components.toSeq
     if (components.size == 1) {
       val patternPlan = planComponentPattern(plan, components.head, graph)
-      val filteredPlan = planFilter(patternPlan, where)
+      val filteredPlan = planFilter(patternPlan, where, Some(graph))
       filteredPlan
     } else {
       // TODO: Find a way to feed the same input into all arms of the cartesian product without recomputing it
@@ -298,7 +305,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         case (base, component) =>
           val componentPlan = planComponentPattern(base, component, graph)
           val predicates = where.filter(_.evaluable(componentPlan.fields)).filterNot(componentPlan.solved.predicates)
-          val filteredPlan = planFilter(componentPlan, predicates)
+          val filteredPlan = planFilter(componentPlan, predicates, Some(graph))
           filteredPlan
       }
       val result = plans.reduceOption { (lhs, rhs) =>
@@ -308,7 +315,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         val (joinPredicates, otherPredicates) = predicates.flatPartition { case expr: org.opencypher.caps.api.expr.Equals => expr }
         if (joinPredicates.isEmpty) {
           val combinedPlan = producer.planCartesianProduct(lhs, rhs)
-          val filteredPlan = planFilter(combinedPlan, predicates)
+          val filteredPlan = planFilter(combinedPlan, predicates, Some(graph))
           filteredPlan
         } else {
           val (leftIn, rightIn) = joinPredicates.elements.foldLeft((lhs, rhs)) {

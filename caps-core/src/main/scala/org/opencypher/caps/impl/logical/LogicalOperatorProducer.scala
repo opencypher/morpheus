@@ -18,9 +18,12 @@ package org.opencypher.caps.impl.logical
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.exception.Raise
+import org.opencypher.caps.impl.flat.FreshVariableNamer
 import org.opencypher.caps.impl.util._
 import org.opencypher.caps.ir.api.block.{Aggregations, SortItem}
 import org.opencypher.caps.ir.api.{IRField, RelType, SolvedQueryModel}
+
+import scala.util.Random
 
 // TODO: Homogenize naming
 // TODO: Align names with other producers
@@ -74,6 +77,13 @@ class LogicalOperatorProducer {
 
   def planOptional(nonOptionalPlan: LogicalOperator, optionalPlan: LogicalOperator): Optional = {
     Optional(nonOptionalPlan, optionalPlan, optionalPlan.solved)
+  }
+
+  def planPatternPredicate(
+      patternExpr: PatternExpr,
+      matchPlan: LogicalOperator,
+      patternPlan: LogicalOperator): PatternPredicate = {
+    PatternPredicate(patternExpr, matchPlan, patternPlan, matchPlan.solved)
   }
 
   def aggregate(aggregations: Aggregations[Expr], group: Set[IRField], prev: LogicalOperator): Aggregate = {

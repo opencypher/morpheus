@@ -76,11 +76,20 @@ final case class Alias(expr: Expr, alias: Var, in: FlatOperator, header: RecordH
 
 final case class CartesianProduct(lhs: FlatOperator, rhs: FlatOperator, header: RecordHeader) extends BinaryFlatOperator
 
-final case class Optional(lhs: FlatOperator, rhs: FlatOperator, lhsHeader: RecordHeader, rhsHeader: RecordHeader)
-    extends BinaryFlatOperator {
+final case class Optional(
+    lhs: FlatOperator,
+    rhs: FlatOperator,
+    lhsHeader: RecordHeader,
+    rhsHeader: RecordHeader) extends BinaryFlatOperator {
 
   override def header: RecordHeader = rhsHeader
 }
+
+final case class PatternPredicate(
+    predicateField: Var,
+    lhs: FlatOperator,
+    rhs: FlatOperator,
+    header: RecordHeader) extends BinaryFlatOperator
 
 final case class ValueJoin(
     lhs: FlatOperator,
