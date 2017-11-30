@@ -23,8 +23,7 @@ import org.opencypher.caps.impl.common.AbstractTreeNode
 import org.opencypher.caps.ir.api.block.SortItem
 import org.opencypher.caps.ir.api.{Label, SolvedQueryModel}
 
-
-sealed trait LogicalOperator extends AbstractTreeNode[LogicalOperator] {
+sealed abstract class LogicalOperator extends AbstractTreeNode[LogicalOperator] {
   def solved: SolvedQueryModel[Expr]
 
   val fields: Set[Var]
@@ -52,13 +51,13 @@ case class ConstructedNode(v: Var, labels: Set[Label]) extends ConstructedEntity
 
 case class ConstructedRelationship(v: Var, source: Var, target: Var, typ: String) extends ConstructedEntity
 
-sealed trait StackingLogicalOperator extends LogicalOperator {
+sealed abstract class StackingLogicalOperator extends LogicalOperator {
   def in: LogicalOperator
 
   override def sourceGraph: LogicalGraph = in.sourceGraph
 }
 
-sealed trait BinaryLogicalOperator extends LogicalOperator {
+sealed abstract class BinaryLogicalOperator extends LogicalOperator {
   def lhs: LogicalOperator
 
   def rhs: LogicalOperator
@@ -70,7 +69,7 @@ sealed trait BinaryLogicalOperator extends LogicalOperator {
   override def sourceGraph: LogicalGraph = rhs.sourceGraph
 }
 
-sealed trait LogicalLeafOperator extends LogicalOperator
+sealed abstract class LogicalLeafOperator extends LogicalOperator
 
 final case class NodeScan(node: Var, in: LogicalOperator, solved: SolvedQueryModel[Expr])
     extends StackingLogicalOperator {
