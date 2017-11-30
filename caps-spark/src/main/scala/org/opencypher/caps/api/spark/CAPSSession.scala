@@ -110,7 +110,7 @@ sealed class CAPSSession private (
     logStageProgress("Done!")
 
     logStageProgress("Logical plan ...", false)
-    val logicalPlannerContext = LogicalPlannerContext(graph.schema, Set.empty, ir.model.graphs.andThen(sourceAt))
+    val logicalPlannerContext = LogicalPlannerContext(graph.schema, Set.empty, ir.model.graphs.andThen(sourceAt), ambientGraph)
     val logicalPlan = logicalPlanner(ir)(logicalPlannerContext)
     logStageProgress("Done!")
 

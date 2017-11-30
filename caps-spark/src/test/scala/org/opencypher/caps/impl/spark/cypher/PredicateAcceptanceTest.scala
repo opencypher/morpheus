@@ -16,7 +16,6 @@
 package org.opencypher.caps.impl.spark.cypher
 
 import org.opencypher.caps.api.value.{CypherList, CypherMap}
-import org.opencypher.caps.demo.Configuration.{DebugPhysicalResult, PrintPhysicalPlan}
 import org.opencypher.caps.test.CAPSTestSuite
 
 import scala.collection.immutable.Bag
@@ -253,8 +252,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
     ))
   }
 
-
-  test("simple pattern predicate with node predicate") {
+  ignore("simple pattern predicate with node predicate") {
     // Given
     val given = TestGraph(
       """
@@ -271,7 +269,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
     ))
   }
 
-  test("simple pattern predicate with relationship predicate") {
+  ignore("simple pattern predicate with relationship predicate") {
     // Given
     val given = TestGraph(
       """
@@ -281,6 +279,23 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
 
     // When
     val result = given.cypher("MATCH (a)-->(b) WHERE (a)-[{val: 'foo'}]-()-->(b) RETURN a.id, b.id")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("a.id" -> 1L, "b.id" -> 2L)
+    ))
+  }
+
+  ignore("simple pattern predicate with node label predicate") {
+    // Given
+    val given = TestGraph(
+      """
+        |(v{id:1L})-[{val: 'foo'}]->(:A)-->({id:2L})<--(v),
+        |(w{id:3L})-[{val: 'bar'}]->(:B)-->({id:4L})<--(w)
+      """.stripMargin)
+
+    // When
+    val result = given.cypher("MATCH (a)-->(b) WHERE (a)-->(:A)-->(b) RETURN a.id, b.id")
 
     // Then
     result.records.toMaps should equal(Bag(
@@ -302,7 +317,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
     ))
   }
 
-  test("pattern predicate with derived node predicate") {
+  ignore("pattern predicate with derived node predicate") {
     // Given
     val given = TestGraph("({id:1L})-->({id:3L}), ({id:2L})-->({id:3L})")
 

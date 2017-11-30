@@ -79,8 +79,7 @@ final case class CartesianProduct(lhs: FlatOperator, rhs: FlatOperator, header: 
 final case class Optional(
     lhs: FlatOperator,
     rhs: FlatOperator,
-    header: RecordHeader) extends BinaryFlatOperator {
-}
+    header: RecordHeader) extends BinaryFlatOperator
 
 final case class PatternPredicate(
     predicateField: Var,

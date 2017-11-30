@@ -31,8 +31,11 @@ import scala.annotation.tailrec
 final case class LogicalPlannerContext(
   ambientGraphSchema: Schema,
   inputRecordFields: Set[Var],
-  resolver: String => GraphSource
-)
+  resolver: String => GraphSource,
+  sourceGraph: IRGraph
+) {
+  def withSourceGraph(graph: IRGraph): LogicalPlannerContext = copy(sourceGraph = graph)
+}
 
 class LogicalPlanner(producer: LogicalOperatorProducer)
   extends DirectCompilationStage[CypherQuery[Expr], LogicalOperator, LogicalPlannerContext] {
@@ -91,13 +94,13 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     model(ref) match {
       case MatchBlock(_, pattern, where, optional, graph) =>
         // this plans both pattern and filter for convenience -- TODO: split up
-        val patternPlan = planMatchPattern(plan, pattern, where, graph)
+        val patternPlan = planMatchPattern(plan, pattern, where, graph)(context.withSourceGraph(graph))
         if (optional) producer.planOptional(plan, patternPlan) else patternPlan
 
       case ProjectBlock(_, FieldsAndGraphs(fields, graphs), where, _, distinct) =>
         val withGraphs = planGraphProjections(plan, graphs)
         val withFields = planFieldProjections(withGraphs, fields)
-        val filtered = planFilter(withFields, where, None)
+        val filtered = planFilter(withFields, where)
         if (distinct) {
           producer.planDistinct(fields.keySet, filtered)
         } else {
@@ -166,7 +169,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
   }
 
   // TODO: Should we check (or silently drop) predicates that are not eligible for planning here? (check dependencies)
-  private def planFilter(in: LogicalOperator, where: AllGiven[Expr], graph: Option[IRGraph])(implicit context: LogicalPlannerContext)
+  private def planFilter(in: LogicalOperator, where: AllGiven[Expr])(implicit context: LogicalPlannerContext)
   : LogicalOperator = {
     val filtersAndProjs = where.elements.foldLeft(in) {
       case (acc, ors: Ors) =>
@@ -206,10 +209,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       case (acc, v: Var) =>
         producer.planFilter(v, acc)
       case (acc, pe: PatternExpr) =>
-        val patternPlan = graph match {
-          case Some(g)  => planComponentPattern(acc, pe.pattern, g)
-          case None     => Raise.notYetImplemented("pattern predicates without MATCH block")
-        }
+        val patternPlan = planComponentPattern(acc, pe.pattern, context.sourceGraph)
         val withPredicate = producer.planPatternPredicate(pe, acc, patternPlan)
         producer.planFilter(pe, withPredicate)
       case (_, x) =>
@@ -236,6 +236,9 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       case func: FunctionExpr =>
         val projectArg = planInnerExpr(func.expr, in)
         producer.projectExpr(func, projectArg)
+      case pe : PatternExpr =>
+        val patternPlan = planComponentPattern(in, pe.pattern, context.sourceGraph)
+        producer.planPatternPredicate(pe, in, patternPlan)
       case x =>
         Raise.notYetImplemented(s"projection of inner expression $x")
     }
@@ -296,7 +299,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     val components = pattern.components.toSeq
     if (components.size == 1) {
       val patternPlan = planComponentPattern(plan, components.head, graph)
-      val filteredPlan = planFilter(patternPlan, where, Some(graph))
+      val filteredPlan = planFilter(patternPlan, where)
       filteredPlan
     } else {
       // TODO: Find a way to feed the same input into all arms of the cartesian product without recomputing it
@@ -305,7 +308,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         case (base, component) =>
           val componentPlan = planComponentPattern(base, component, graph)
           val predicates = where.filter(_.evaluable(componentPlan.fields)).filterNot(componentPlan.solved.predicates)
-          val filteredPlan = planFilter(componentPlan, predicates, Some(graph))
+          val filteredPlan = planFilter(componentPlan, predicates)
           filteredPlan
       }
       val result = plans.reduceOption { (lhs, rhs) =>
@@ -315,7 +318,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         val (joinPredicates, otherPredicates) = predicates.flatPartition { case expr: org.opencypher.caps.api.expr.Equals => expr }
         if (joinPredicates.isEmpty) {
           val combinedPlan = producer.planCartesianProduct(lhs, rhs)
-          val filteredPlan = planFilter(combinedPlan, predicates, Some(graph))
+          val filteredPlan = planFilter(combinedPlan, predicates)
           filteredPlan
         } else {
           val (leftIn, rightIn) = joinPredicates.elements.foldLeft((lhs, rhs)) {
