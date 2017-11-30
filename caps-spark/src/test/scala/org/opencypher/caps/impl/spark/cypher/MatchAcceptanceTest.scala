@@ -16,7 +16,7 @@
 package org.opencypher.caps.impl.spark.cypher
 
 import org.opencypher.caps.api.value.CypherMap
-import org.opencypher.caps.demo.Configuration.PrintLogicalPlan
+import org.opencypher.caps.demo.Configuration.{PrintLogicalPlan, PrintPhysicalPlan}
 import org.opencypher.caps.test.CAPSTestSuite
 
 import scala.collection.Bag
