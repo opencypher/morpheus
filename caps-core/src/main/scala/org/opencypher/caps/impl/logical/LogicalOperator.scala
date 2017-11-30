@@ -19,6 +19,7 @@ import java.net.URI
 
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.schema.Schema
+import org.opencypher.caps.api.types.CTNode
 import org.opencypher.caps.impl.common.AbstractTreeNode
 import org.opencypher.caps.ir.api.block.SortItem
 import org.opencypher.caps.ir.api.{Label, SolvedQueryModel}
@@ -73,6 +74,9 @@ sealed abstract class LogicalLeafOperator extends LogicalOperator
 
 final case class NodeScan(node: Var, in: LogicalOperator, solved: SolvedQueryModel[Expr])
     extends StackingLogicalOperator {
+  require(node.cypherType.isInstanceOf[CTNode], "A variable for a node scan needs to have type CTNode")
+
+  def labels: Set[String] = node.cypherType.asInstanceOf[CTNode].labels
 
   override val fields: Set[Var] = in.fields + node
 }
