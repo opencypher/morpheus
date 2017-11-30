@@ -99,11 +99,16 @@ final class PatternConverter(val parameters: Map[String, CypherValue]) extends A
         }
       } yield target
 
-    case ast.RelationshipChain(left, ast.RelationshipPattern(Some(eVar), types, Some(Some(range)), None, dir, _), right) =>
+    case rc @ ast.RelationshipChain(left, ast.RelationshipPattern(eOpt, types, Some(Some(range)), None, dir, _), right) =>
+      val typeSet = types.map(_.name).toSet
+      val rel = eOpt match {
+        case Some(v) => Var(v.name)(knownTypes.getOrElse(v, CTRelationship(typeSet)))
+        case None    => FreshVariableNamer(rc.position.offset, CTRelationship(typeSet))
+      }
       for {
         source <- convertElement(left, knownTypes)
         target <- convertElement(right, knownTypes)
-        rel <- pure(IRField(eVar.name)(CTList(CTRelationship(types.map(_.name).toSet))))
+        rel <- pure(IRField(rel.name)(CTList(rel.cypherType)))
         _ <- modify[Pattern[Expr]] { given =>
           val registered = given.withEntity(rel)
 

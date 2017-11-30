@@ -227,7 +227,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
     result.graphs shouldBe empty
   }
 
-  test("simple pattern predicate") {
+  test("basic pattern predicate") {
     // Given
     val given = TestGraph("(v {id:1L})-->({id:2L})-->({id:3L})<--(v)")
 
@@ -240,16 +240,78 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
     ))
   }
 
-  test("simple pattern predicate with node predicate") {
+  test("pattern predicate with var-length-expand") {
     // Given
-    val given = TestGraph("(v {id:1L})-->({id:2L, name: 'foo'})-->({id:3L})<--(v)")
+    val given = TestGraph("(v {id:1L})-->({id:2L})-->({id:3L})<--(v)")
 
     // When
-    val result = given.cypher("MATCH (a)-->(b) WHERE (a)-->({name: 'foo'})-->(b) RETURN a.id, b.id")
+    val result = given.cypher("MATCH (a)-->(b) WHERE (a)-[*1..3]->()-->(b) RETURN a.id, b.id")
 
     // Then
     result.records.toMaps should equal(Bag(
       CypherMap("a.id" -> 1L, "b.id" -> 3L)
+    ))
+  }
+
+
+  test("simple pattern predicate with node predicate") {
+    // Given
+    val given = TestGraph(
+      """
+        |({id:1L})-->({name: 'foo'})
+        |({id:3L})-->({name: 'bar'})
+      """.stripMargin)
+
+    // When
+    val result = given.cypher("MATCH (a) WHERE (a)-->({name: 'foo'}) RETURN a.id")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("a.id" -> 1L)
+    ))
+  }
+
+  test("simple pattern predicate with relationship predicate") {
+    // Given
+    val given = TestGraph(
+      """
+        |(v{id:1L})-[{val: 'foo'}]->()-->({id:2L})<--(v),
+        |(w{id:3L})-[{val: 'bar'}]->()-->({id:4L})<--(w)
+      """.stripMargin)
+
+    // When
+    val result = given.cypher("MATCH (a)-->(b) WHERE (a)-[{val: 'foo'}]-()-->(b) RETURN a.id, b.id")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("a.id" -> 1L, "b.id" -> 2L)
+    ))
+  }
+
+  test("inverse pattern predicate") {
+    // Given
+    val given = TestGraph("(v {id:1L})-->({id:2L})-->({id:3L})<--(v)")
+
+    // When
+    val result = given.cypher("MATCH (a)-->(b) WHERE NOT (a)-->()-->(b) RETURN a.id, b.id")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("a.id" -> 1L, "b.id" -> 2L),
+      CypherMap("a.id" -> 2L, "b.id" -> 3L)
+    ))
+  }
+
+  test("pattern predicate with derived node predicate") {
+    // Given
+    val given = TestGraph("({id:1L})-->({id:3L}), ({id:2L})-->({id:3L})")
+
+    // When
+    val result = given.cypher("MATCH (a) WHERE (a)-->({val: a.val + 2}) RETURN a.id")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("a.id" -> 1L)
     ))
   }
 }
