@@ -15,6 +15,7 @@
  */
 package org.opencypher.caps.impl.common
 
+import org.opencypher.caps.api.exception.CAPSException
 import org.scalatest.{FunSuite, Matchers}
 
 class TreeNodeTest extends FunSuite with Matchers {
@@ -40,6 +41,62 @@ class TreeNodeTest extends FunSuite with Matchers {
   test("height") {
     calculation.height should equal(3)
     leaf.height should equal(1)
+  }
+
+  test("lists of children") {
+    val addList1 = AddList(List(1), Number(1), 2, List(Number(2)), List[Object]("a", "b"))
+    addList1.eval should equal(3)
+    val addList2 = AddList(List(1), Number(1), 2, List(Number(2), Number(3)), List[Object]("a", "b"))
+    addList2.eval should equal(6)
+    val addList3 =
+      AddList(List(1), Number(0), 2, List(Number(2)), List[Object]("a", "b"))
+        .withNewChildren(Array(1, 2, 3, 4, 5, 6, 7).map(Number(_)))
+    addList3 should equalWithTracing(
+      AddList(List(1), Number(1), 2, List(2, 3, 4, 5, 6, 7).map(Number(_)), List[Object]("a", "b")))
+    addList3.eval should equal(28)
+  }
+
+  test("unsupported uses of lists of children") {
+    // Test errors when violating list requirements
+
+    // - a list of children cannot be empty
+    the[IllegalArgumentException] thrownBy {
+      val fail = AddList(List(1), Number(1), 2, List.empty[Number], List[Object]("a", "b"))
+      fail.children.toSet should equal(Set(Number(1)))
+      fail.withNewChildren(Array(Number(1), Number(2)))
+    } should have message "requirement failed: invalid number of children " +
+      "or used an empty list of children in the original node."
+
+    the[IllegalArgumentException] thrownBy {
+      val fail = AddList(List(1), Number(1), 2, List(Number(2)), List[Object]("a", "b"))
+      fail.children.toSet should equal(Set(Number(1), Number(2)))
+      fail.withNewChildren(Array(Number(1)))
+    } should have message "requirement failed: a list of children cannot be empty."
+
+    // - if any children are contained in a list at all, then all list elements need to be children
+    the[CAPSException] thrownBy {
+      case class Unsupported(elems: List[Object]) extends AbstractTreeNode[Unsupported]
+      val fail = Unsupported(List(Unsupported(List.empty), "2"))
+    } should have message "Expected a list that contains either no children or only children but found a mixed list " +
+      "that contains a child as the head element, but also one with a non-child type: " +
+      "java.lang.String cannot be cast to org.opencypher.caps.impl.common.AbstractTreeNode"
+
+    // - there can be at most one list of children
+    the[IllegalArgumentException] thrownBy {
+      abstract class UnsupportedTree extends AbstractTreeNode[UnsupportedTree]
+      case object UnsupportedLeaf extends UnsupportedTree
+      case class UnsupportedNode(elems1: List[UnsupportedTree], elems2: List[UnsupportedTree]) extends UnsupportedTree
+      UnsupportedNode(List(UnsupportedLeaf), List(UnsupportedLeaf))
+    } should have message "requirement failed: there can be at most one list of children in the constructor."
+
+    // - there can be no normal child constructor parameters after the list of children
+    the[IllegalArgumentException] thrownBy {
+      abstract class UnsupportedTree2 extends AbstractTreeNode[UnsupportedTree2]
+      case object UnsupportedLeaf2 extends UnsupportedTree2
+      case class UnsupportedNode2(elems: List[UnsupportedTree2], elem: UnsupportedTree2) extends UnsupportedTree2
+      UnsupportedNode2(List(UnsupportedLeaf2), UnsupportedLeaf2)
+    } should have message "requirement failed: there can be no normal child constructor parameters " +
+      "after a list of children."
   }
 
   test("rewrite") {
@@ -100,6 +157,11 @@ class TreeNodeTest extends FunSuite with Matchers {
 
   abstract class CalcExpr extends AbstractTreeNode[CalcExpr] {
     def eval: Int
+  }
+
+  case class AddList(dummy1: List[Int], first: CalcExpr, dummy2: Int, remaining: List[CalcExpr], dummy3: List[Object])
+      extends CalcExpr {
+    def eval = first.eval + remaining.map(_.eval).sum
   }
 
   case class Add(left: CalcExpr, right: CalcExpr) extends CalcExpr {

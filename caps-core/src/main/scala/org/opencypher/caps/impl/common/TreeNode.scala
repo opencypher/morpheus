@@ -114,9 +114,18 @@ abstract class TreeNode[T <: TreeNode[T]: ClassTag] extends Product with Travers
   /**
     * Arguments that should be printed. The default implementation excludes children.
     */
-  def args: Iterator[Any] = productIterator.flatMap {
-    case tn: T if containsChild(tn) => None // Don't print children
-    case other                      => Some(other)
+  def args: Iterator[Any] = {
+    def generalCase(arg: Any) = Some(arg.toString)
+    productIterator.flatMap {
+      case c: T if containsChild(c)     => None // Don't print children
+      case i: Iterable[_] if i.nonEmpty =>
+        // Need explicit pattern match for T, as `isInstanceOf` in `if` results in a warning.
+        i.head match {
+          case _: T => None // Don't print children
+          case _    => generalCase(i)
+        }
+      case other => generalCase(other)
+    }
   }
 
   override def toString = s"${getClass.getSimpleName}${if (argString.isEmpty) "" else s"($argString)"}"
