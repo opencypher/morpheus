@@ -16,6 +16,7 @@
 package org.opencypher.caps.impl.spark.cypher
 
 import org.opencypher.caps.api.value.{CypherList, CypherMap}
+import org.opencypher.caps.demo.Configuration.PrintLogicalPlan
 import org.opencypher.caps.test.CAPSTestSuite
 
 import scala.collection.immutable.Bag
@@ -331,6 +332,28 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
     result.records.toMaps should equal(Bag(
       CypherMap("a.id" -> 1L, "b.id" -> 2L),
       CypherMap("a.id" -> 2L, "b.id" -> 3L)
+    ))
+  }
+
+  test("nested pattern predicate") {
+    val given = TestGraph(
+      """
+        |({id: 1L, age: 21L}),
+        |({id: 2L, age: 18L, foo: true}),
+        |({id: 3L, age: 18L, foo: true})-[:KNOWS]->(:Foo),
+        |({id: 4L, age: 18L, foo: false})-[:KNOWS]->(:Foo)
+      """.stripMargin)
+
+    val result = given.cypher(
+      """
+        |MATCH (a)
+        |WHERE a.age > 20 OR ( (a)-[:KNOWS]->(:Foo) AND a.foo = true )
+        |RETURN a.id
+      """.stripMargin)
+
+    result.records.toMaps should equal(Bag(
+      CypherMap("a.id" -> 1),
+      CypherMap("a.id" -> 3)
     ))
   }
 

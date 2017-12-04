@@ -16,8 +16,8 @@
 package org.opencypher.caps.impl.spark.physical.operators
 
 import org.apache.spark.sql.{Column, DataFrame, functions}
-import org.opencypher.caps.api.expr.Var
-import org.opencypher.caps.api.record.RecordHeader
+import org.opencypher.caps.api.expr.{Expr, Var}
+import org.opencypher.caps.api.record.{OpaqueField, RecordHeader, RecordSlot, SlotContent}
 import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.impl.spark.{ColumnNameGenerator, SparkColumnName}
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.{assertIsNode, columnName, joinDFs, joinRecords}
@@ -62,16 +62,28 @@ abstract class PatternJoin extends BinaryPhysicalOperator {
     val leftHeader = left.records.header
     val rightHeader = right.records.header
 
-    // find all common columns, except the join columns
-    val commonFields = leftHeader.fields.intersect(rightHeader.fields)
-    val columnsToRemove = commonFields
+    val commonFields = leftHeader.slots.intersect(rightHeader.slots)
+
+    val (joinSlots, otherCommonSlots) = commonFields.partition {
+      case RecordSlot(_, _: OpaqueField) => true
+      case RecordSlot(_, _) => false
+    }
+
+    val joinFields = joinSlots
+        .map(_.content)
+        .collect { case OpaqueField(v) => v }
+
+    val otherCommonFields = otherCommonSlots
+        .map(_.content)
+
+    val columnsToRemove = joinFields
         .flatMap(rightHeader.childSlots)
         .map(_.content)
+        .union(otherCommonFields)
         .map(columnName)
-        .toSeq
 
-    val lhsJoinSlots = commonFields.map(leftHeader.slotFor)
-    val rhsJoinSlots = commonFields.map(rightHeader.slotFor)
+    val lhsJoinSlots = joinFields.map(leftHeader.slotFor)
+    val rhsJoinSlots = joinFields.map(rightHeader.slotFor)
 
     // Find the join pairs and introduce an alias for the right hand side
     // This is necessary to be able to deduplicate the join columns later
