@@ -88,6 +88,9 @@ object SchemaTyper {
         }
       } yield result
 
+    case _: PatternExpression =>
+      recordAndUpdate[R](expr -> CTBoolean)
+
     case HasLabels(node, labels) =>
       for {
         nodeType <- process[R](node)

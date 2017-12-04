@@ -18,6 +18,7 @@ package org.opencypher.caps.impl.logical
 import org.opencypher.caps.api.expr.{HasLabel, Var}
 import org.opencypher.caps.api.types.{CTBoolean, CTNode}
 import org.opencypher.caps.impl.DirectCompilationStage
+import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.ir.api.Label
 
 object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalOperator, LogicalPlannerContext] {
@@ -41,9 +42,9 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
   }
 
   def pushLabelsIntoScans(labelMap: Map[Var, Set[String]]): PartialFunction[LogicalOperator, LogicalOperator] = {
-    case NodeScan(v @ Var(name), in, solved) =>
+    case ns @ NodeScan(v @ Var(name), in, solved) =>
       val updatedLabels = labelMap(v)
-      val updatedVar = Var(name)(CTNode(updatedLabels))
+      val updatedVar = Var(name)(CTNode(ns.labels ++ updatedLabels))
       val updatedSolved = in.solved.withPredicates(updatedLabels.map(l => HasLabel(v, Label(l))(CTBoolean)).toSeq: _*)
       NodeScan(updatedVar, in, updatedSolved)
     case Filter(_: HasLabel, in, _) => in

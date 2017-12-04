@@ -15,17 +15,18 @@
  */
 package org.opencypher.caps.ir.impl
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.functions
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{PatternExpression, functions}
 import org.neo4j.cypher.internal.frontend.v3_3.{Ref, ast}
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.impl.flat.FreshVariableNamer
 import org.opencypher.caps.impl.parse.RetypingPredicate
 import org.opencypher.caps.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.caps.ir.impl.FunctionUtils._
 
 import scala.language.implicitConversions
 
-object ExpressionConverter {
+final class ExpressionConverter(patternConverter: PatternConverter) {
 
   implicit def toRef(e: ast.Expression): Ref[ast.Expression] = Ref(e)
 
@@ -99,6 +100,12 @@ object ExpressionConverter {
       funcInv.toCAPSFunction(funcInv.args.map(convert), typings(e))
     case _: ast.CountStar =>
       CountStar(typings(e))
+
+    // Pattern Predicates
+    case pe @ PatternExpression(relsPattern) =>
+      PatternExpr(
+        FreshVariableNamer(pe.position.offset, CTBoolean),
+        patternConverter.convertRelsPattern(relsPattern, Map.empty))(typings(e))
 
     case _ =>
       throw new NotImplementedError(s"Not yet able to convert expression: $e")

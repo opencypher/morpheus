@@ -31,8 +31,11 @@ import scala.annotation.tailrec
 final case class LogicalPlannerContext(
   ambientGraphSchema: Schema,
   inputRecordFields: Set[Var],
-  resolver: String => GraphSource
-)
+  resolver: String => GraphSource,
+  sourceGraph: IRGraph
+) {
+  def withSourceGraph(graph: IRGraph): LogicalPlannerContext = copy(sourceGraph = graph)
+}
 
 class LogicalPlanner(producer: LogicalOperatorProducer)
   extends DirectCompilationStage[CypherQuery[Expr], LogicalOperator, LogicalPlannerContext] {
@@ -91,7 +94,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     model(ref) match {
       case MatchBlock(_, pattern, where, optional, graph) =>
         // this plans both pattern and filter for convenience -- TODO: split up
-        val patternPlan = planMatchPattern(plan, pattern, where, graph)
+        val patternPlan = planMatchPattern(plan, pattern, where, graph)(context.withSourceGraph(graph))
         if (optional) producer.planOptional(plan, patternPlan) else patternPlan
 
       case ProjectBlock(_, FieldsAndGraphs(fields, graphs), where, _, distinct) =>
@@ -205,6 +208,10 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         producer.planFilter(t, acc) // optimise away this one somehow... currently we do that in PhysicalPlanner
       case (acc, v: Var) =>
         producer.planFilter(v, acc)
+      case (acc, pe: PatternExpr) =>
+        val patternPlan = planComponentPattern(acc, pe.pattern, context.sourceGraph)
+        val withPredicate = producer.planPatternPredicate(pe, acc, patternPlan)
+        producer.planFilter(pe, withPredicate)
       case (_, x) =>
         Raise.notYetImplemented(s"logical planning of predicate $x")
     }
@@ -229,6 +236,9 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       case func: FunctionExpr =>
         val projectArg = planInnerExpr(func.expr, in)
         producer.projectExpr(func, projectArg)
+      case pe : PatternExpr =>
+        val patternPlan = planComponentPattern(in, pe.pattern, context.sourceGraph)
+        producer.planPatternPredicate(pe, in, patternPlan)
       case x =>
         Raise.notYetImplemented(s"projection of inner expression $x")
     }

@@ -30,17 +30,30 @@ sealed abstract class LogicalOperator extends AbstractTreeNode[LogicalOperator] 
   val fields: Set[Var]
 
   def sourceGraph: LogicalGraph
+
+  override def args = super.args.filter {
+    case SolvedQueryModel(_, _, _)  => false
+    case other                      => true
+  }
 }
 
 trait LogicalGraph {
   def schema: Schema
 
   def name: String
+
+  override def toString = s"${getClass.getSimpleName}($name)($args)"
+
+  protected def args: String = ""
 }
 
-final case class LogicalExternalGraph(name: String, uri: URI, schema: Schema) extends LogicalGraph
+final case class LogicalExternalGraph(name: String, uri: URI, schema: Schema) extends LogicalGraph {
+  override protected def args: String = uri.toString
+}
 
-final case class LogicalPatternGraph(name: String, schema: Schema, pattern: GraphOfPattern) extends LogicalGraph
+final case class LogicalPatternGraph(name: String, schema: Schema, pattern: GraphOfPattern) extends LogicalGraph {
+  override protected def args: String = pattern.toString
+}
 
 final case class GraphOfPattern(toCreate: Set[ConstructedEntity], toRetain: Set[Var])
 
@@ -220,6 +233,15 @@ final case class Optional(lhs: LogicalOperator, rhs: LogicalOperator, solved: So
     extends BinaryLogicalOperator {
 
   override val fields: Set[Var] = lhs.fields ++ rhs.fields
+}
+
+final case class PatternPredicate(
+    pattern: PatternExpr,
+    lhs: LogicalOperator,
+    rhs: LogicalOperator,
+    solved: SolvedQueryModel[Expr]) extends BinaryLogicalOperator {
+
+  override val fields: Set[Var] = lhs.fields + pattern.predicateField
 }
 
 final case class SetSourceGraph(

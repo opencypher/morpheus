@@ -33,6 +33,10 @@ private[caps] abstract class PhysicalOperator extends AbstractTreeNode[PhysicalO
     context.resolve(uri).getOrElse(Raise.graphNotFound(uri))
   }
 
+  override def args: Iterator[Any] = super.args.flatMap {
+    case RecordHeader(_) | Some(RecordHeader(_))  => None
+    case other                                    => Some(other)
+  }
 }
 
 object PhysicalOperator {

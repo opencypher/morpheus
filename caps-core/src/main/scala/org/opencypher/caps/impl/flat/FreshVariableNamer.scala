@@ -22,4 +22,6 @@ object FreshVariableNamer {
   val PREFIX = "  "
 
   def apply(seed: String, t: CypherType): Var = Var(s"$PREFIX$seed")(t)
+
+  def apply(id: Int, t: CypherType): Var = apply(s"FRESH_VAR$id", t)
 }

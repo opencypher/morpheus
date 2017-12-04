@@ -198,7 +198,17 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   def planOptional(lhs: FlatOperator, rhs: FlatOperator): FlatOperator = {
-    Optional(lhs, rhs, lhs.header, rhs.header)
+    Optional(lhs, rhs, rhs.header)
+  }
+
+  def planPatternPredicate(patternExpr: PatternExpr, lhs: FlatOperator, rhs: FlatOperator): FlatOperator = {
+    val (header, status) = lhs.header.update(addContent(ProjectedField(patternExpr.predicateField, patternExpr)))
+
+    status match {
+      case _: Added[_]        => PatternPredicate(patternExpr.predicateField, lhs, rhs, header)
+      case f: FailedToAdd[_]  => Raise.slotNotAdded(f.toString)
+      case _                  => Raise.impossible("Invalid RecordHeader update status.")
+    }
   }
 
   def orderBy(sortItems: Seq[SortItem[Expr]], sourceOp: FlatOperator): FlatOperator = {

@@ -16,6 +16,7 @@
 package org.opencypher.caps.api.expr
 
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.ir.api.pattern.Pattern
 import org.opencypher.caps.ir.api.{Label, PropertyKey, RelType}
 
 import scala.annotation.tailrec
@@ -350,3 +351,11 @@ sealed abstract class BoolLit(val v: Boolean)(val cypherType: CypherType = CTBoo
 final case class TrueLit() extends BoolLit(true)()
 
 final case class FalseLit() extends BoolLit(false)()
+
+// Pattern Predicate Expression
+
+final case class PatternExpr(predicateField: Var, pattern: Pattern[Expr])(val cypherType: CypherType = CTBoolean) extends Expr {
+  override def toString = s"$withoutType($cypherType)"
+
+  override def withoutType = s"PatternExpr($predicateField, $pattern)"
+}

@@ -76,6 +76,13 @@ class LogicalOperatorProducer {
     Optional(nonOptionalPlan, optionalPlan, optionalPlan.solved)
   }
 
+  def planPatternPredicate(
+      patternExpr: PatternExpr,
+      matchPlan: LogicalOperator,
+      patternPlan: LogicalOperator): PatternPredicate = {
+    PatternPredicate(patternExpr, matchPlan, patternPlan, matchPlan.solved)
+  }
+
   def aggregate(aggregations: Aggregations[Expr], group: Set[IRField], prev: LogicalOperator): Aggregate = {
     val transformed = aggregations.pairs.collect { case (field, aggregator: Aggregator) => toVar(field) -> aggregator }
 
