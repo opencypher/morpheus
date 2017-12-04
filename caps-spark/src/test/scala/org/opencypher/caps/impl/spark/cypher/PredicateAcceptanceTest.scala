@@ -229,7 +229,12 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
 
   test("basic pattern predicate") {
     // Given
-    val given = TestGraph("(v {id:1L})-->({id:2L})-->({id:3L})<--(v)")
+    val given = TestGraph(
+      """
+        |(v {id:1L})-->({id:2L})-->(w {id:3L}),
+        |(v)-->(w),
+        |(w)-->({id: 4L})
+      """.stripMargin)
 
     // When
     val result = given.cypher("MATCH (a)-->(b) WHERE (a)-->()-->(b) RETURN a.id, b.id")

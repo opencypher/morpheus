@@ -135,9 +135,9 @@ final case class Optional(lhs: PhysicalOperator, rhs: PhysicalOperator, header: 
 }
 
 /**
-  * This operator performs a left outer join between the mandatory path and the pattern path. If, for a given mandatory
-  * match, there is a non-null partner, we set a predicate column to true, otherwise false. Only the mandatory match
-  * data and the predicate column are kept in the result.
+  * This operator performs a left outer join between the already matched path and the pattern path. If, for a given,
+  * already bound match, there is a non-null partner, we set a predicate column to true, otherwise false.
+  * Only the mandatory match data and the predicate column are kept in the result.
   *
   * @param lhs mandatory match data
   * @param rhs expanded pattern predicate data

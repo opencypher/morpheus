@@ -209,5 +209,5 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     )
   }
 
-  private def convert(e: ast.Expression): Expr = new ExpressionConverter().convert(e)(testTypes)
+  private def convert(e: ast.Expression): Expr = new ExpressionConverter(new PatternConverter(Map.empty)).convert(e)(testTypes)
 }
