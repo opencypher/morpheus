@@ -24,7 +24,8 @@ case object CAPSRewriting extends Phase[BaseContext, BaseState, BaseState] {
   override def process(from: BaseState, context: BaseContext): BaseState = {
 
     val rewrittenStatement = from.statement().endoRewrite(inSequence(
-      normalizeReturnClauses(context.exceptionCreator)
+      normalizeReturnClauses(context.exceptionCreator),
+      extractSubqueryFromPatternExpression(context.exceptionCreator)
     ))
 
     from.withStatement(rewrittenStatement)

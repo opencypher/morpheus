@@ -374,4 +374,17 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
       CypherMap("a.id" -> 1L)
     ))
   }
+
+  ignore("multiple predicate patterns") {
+    // Given
+    val given = TestGraph("({id:1L})-->({id:2L, foo: true})")
+
+    // When
+    val result = given.cypher("MATCH (a) WHERE (a)-->({id: 2, foo: true}) RETURN a.id")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("a.id" -> 1L)
+    ))
+  }
 }

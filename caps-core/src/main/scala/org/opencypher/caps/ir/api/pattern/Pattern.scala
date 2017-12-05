@@ -17,6 +17,7 @@ package org.opencypher.caps.ir.api.pattern
 
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.caps.impl.exception.Raise
+import org.opencypher.caps.impl.util.MapUtils._
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block.Binds
 
@@ -46,11 +47,9 @@ final case class Pattern[E](fields: Set[IRField], topology: Map[IRField, Connect
 
     verifyFieldTypes(thisMap, otherMap)
 
-    val topologyFields = topology.keySet ++ other.topology.keySet
-    val newTopology = topologyFields.foldLeft(Map.empty[IRField, Connection]) { case (m, f) =>
-      val candidates = topology.get(f).toSet ++ other.topology.get(f).toSet
-      if (candidates.size == 1) m.updated(f, candidates.head)
-      else Raise.invalidArgument("disjoint patterns", s"conflicting connections $f")
+    val newTopology = topology.merge(other.topology) {
+      case (t1, t2) if t1 == t2 => t1
+      case c => Raise.invalidArgument("disjoint patterns", s"conflicting connections ${c._1} and ${c._2}")
     }
 
     Pattern(fields ++ other.fields, newTopology)

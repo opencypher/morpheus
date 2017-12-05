@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, LabelName}
 import org.opencypher.caps.api.expr.{Expr, Var}
 import org.opencypher.caps.api.types.{CTList, CTNode, CTRelationship, CypherType}
-import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.flat.FreshVariableNamer
 import org.opencypher.caps.ir.api._
@@ -33,7 +32,7 @@ import org.opencypher.caps.ir.api.pattern._
 
 import scala.annotation.tailrec
 
-final class PatternConverter(val parameters: Map[String, CypherValue]) extends AnyVal {
+final class PatternConverter {
 
   type Result[A] = State[Pattern[Expr], A]
 

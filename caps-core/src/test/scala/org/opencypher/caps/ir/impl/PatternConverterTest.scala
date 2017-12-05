@@ -138,7 +138,7 @@ class PatternConverterTest extends IrTestSuite {
     )
   }
 
-  val converter = new PatternConverter(Map.empty)
+  val converter = new PatternConverter()
 
   def convert(p: ast.Pattern, knownTypes: Map[ast.Expression, CypherType] = Map.empty): Pattern[Expr] =
     converter.convert(p, knownTypes)

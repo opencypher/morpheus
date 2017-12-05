@@ -19,7 +19,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.{Ref, ast, symbols}
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.flat.FreshVariableNamer
-import org.opencypher.caps.ir.api.pattern.{DirectedRelationship, Endpoints, Pattern}
+import org.opencypher.caps.ir.api.pattern.{DirectedRelationship, Pattern}
 import org.opencypher.caps.ir.api.{IRField, Label, PropertyKey, RelType}
 import org.opencypher.caps.test.BaseTestSuite
 import org.opencypher.caps.test.support.Neo4jAstTestSupport
@@ -209,5 +209,5 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     )
   }
 
-  private def convert(e: ast.Expression): Expr = new ExpressionConverter(new PatternConverter(Map.empty)).convert(e)(testTypes)
+  private def convert(e: ast.Expression): Expr = new ExpressionConverter(new PatternConverter()).convert(e)(testTypes)
 }
