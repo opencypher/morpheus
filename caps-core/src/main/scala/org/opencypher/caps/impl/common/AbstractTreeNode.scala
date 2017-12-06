@@ -30,28 +30,84 @@ import scala.reflect.ClassTag
   * This class caches values that are expensive to recompute. It also uses array operations instead of
   * Scala collections, both for improved performance as well as to save stack frames, which allows to operate on
   * trees that are several thousand nodes high.
+  *
+  * The constructor can also contain a list of children, but there are constraints:
+  *   - A list of children cannot be empty, because the current design relies on testing the type of an element.
+  *   - If any children are contained in a list at all, then all list elements need to be children. This allows
+  *     to only check the type of the first element.
+  *   - There can be at most one list of children and there can be no normal child constructor parameters
+  *     that appear after the list of children. This allows to call `withNewChildren` with a different number of
+  *     children than the original node had and vary the length of the list to accommodate.
   */
 abstract class AbstractTreeNode[T <: AbstractTreeNode[T]: ClassTag] extends TreeNode[T] {
   self: T =>
 
   override final val children: Array[T] = {
     val constructorParamLength = productArity
-    val childrenArray = new Array[T](constructorParamLength)
-    var i = 0
-    var ci = 0
-    while (i < constructorParamLength) {
-      val pi = productElement(i)
-      pi match {
-        case c: T =>
-          childrenArray(ci) = c
-          ci += 1
-        case _ =>
+    val childrenCount = {
+      var count = 0
+      var usedListOfChildren = false
+      var i = 0
+      while (i < constructorParamLength) {
+        val pi = productElement(i)
+        pi match {
+          case _: T =>
+            require(
+              !usedListOfChildren,
+              "there can be no normal child constructor parameters after a list of children.")
+            count += 1
+          case l: List[_] if l.nonEmpty =>
+            // Need explicit pattern match for T, as `isInstanceOf` in `if` results in a warning.
+            l.head match {
+              case _: T =>
+                require(!usedListOfChildren, "there can be at most one list of children in the constructor.")
+                usedListOfChildren = true
+                count += l.length
+              case _ =>
+            }
+          case _ =>
+        }
+        i += 1
       }
-      i += 1
+      count
     }
-    val properSizedChildren = new Array[T](ci)
-    System.arraycopy(childrenArray, 0, properSizedChildren, 0, ci)
-    properSizedChildren
+    val childrenArray = new Array[T](childrenCount)
+    if (childrenCount > 0) {
+      var i = 0
+      var ci = 0
+      while (i < constructorParamLength) {
+        val pi = productElement(i)
+        pi match {
+          case c: T =>
+            childrenArray(ci) = c
+            ci += 1
+          case l: List[_] if l.nonEmpty =>
+            // Need explicit pattern match for T, as `isInstanceOf` in `if` results in a warning.
+            l.head match {
+              case _: T =>
+                val j = l.iterator
+                while (j.hasNext) {
+                  val child = j.next
+                  try {
+                    childrenArray(ci) = child.asInstanceOf[T]
+                  } catch {
+                    case c: ClassCastException =>
+                      Raise.invalidArgument(
+                        "a list that contains either no children or only children",
+                        "a mixed list that contains a child as the head element, " +
+                          s"but also one with a non-child type: ${c.getMessage}"
+                      )
+                  }
+                  ci += 1
+                }
+              case _ =>
+            }
+          case _ =>
+        }
+        i += 1
+      }
+    }
+    childrenArray
   }
 
   @inline override final def withNewChildren(newChildren: Array[T]): T = {
@@ -67,8 +123,8 @@ abstract class AbstractTreeNode[T <: AbstractTreeNode[T]: ClassTag] extends Tree
           Raise.invalidArgument(
             s"valid constructor arguments for $productPrefix",
             s"""|${updatedConstructorParams.mkString(", ")}
-                |Original exception: $e
-                |Copy method: $copyMethod""".stripMargin
+                |Copy method: $copyMethod
+                |Original exception: $e""".stripMargin
           )
       }
     }
@@ -179,24 +235,37 @@ abstract class AbstractTreeNode[T <: AbstractTreeNode[T]: ClassTag] extends Tree
   }
 
   @inline private final def updateConstructorParams(newChildren: Array[T]): Array[Any] = {
-    require(
-      children.length == newChildren.length,
-      s"invalid children for $productPrefix: ${newChildren.mkString(", ")}")
     val parameterArrayLength = productArity
     val childrenLength = children.length
+    val newChildrenLength = newChildren.length
     val parameterArray = new Array[Any](parameterArrayLength)
     var productIndex = 0
     var childrenIndex = 0
     while (productIndex < parameterArrayLength) {
       val currentProductElement = productElement(productIndex)
-      if (childrenIndex < childrenLength && currentProductElement == children(childrenIndex)) {
-        parameterArray(productIndex) = newChildren(childrenIndex)
-        childrenIndex += 1
-      } else {
+      def nonChildCase(): Unit = {
         parameterArray(productIndex) = currentProductElement
+      }
+      currentProductElement match {
+        case c: T if childrenIndex < childrenLength && c == children(childrenIndex) =>
+          parameterArray(productIndex) = newChildren(childrenIndex)
+          childrenIndex += 1
+        case l: List[_] if childrenIndex < childrenLength && l.nonEmpty =>
+          // Need explicit pattern match for T, as `isInstanceOf` in `if` results in a warning.
+          l.head match {
+            case _: T =>
+              require(newChildrenLength > childrenIndex, s"a list of children cannot be empty.")
+              parameterArray(productIndex) = newChildren.slice(childrenIndex, newChildrenLength).toList
+              childrenIndex = newChildrenLength
+            case _ => nonChildCase
+          }
+        case _ => nonChildCase
       }
       productIndex += 1
     }
+    require(
+      childrenIndex == newChildrenLength,
+      "invalid number of children or used an empty list of children in the original node.")
     parameterArray
   }
 
