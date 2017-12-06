@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.parse.rewriter
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{Forced, literalReplacement}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{CNFNormalizer, Forced, literalReplacement}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{BaseContext, BaseState, Phase}
 import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, inSequence}
@@ -28,7 +28,8 @@ case object CAPSRewriting extends Phase[BaseContext, BaseState, BaseState] {
 
     val rewrittenStatement = term.endoRewrite(inSequence(
       normalizeReturnClauses(context.exceptionCreator),
-      extractSubqueryFromPatternExpression(context.exceptionCreator)
+      extractSubqueryFromPatternExpression(context.exceptionCreator),
+      CNFNormalizer.instance(context)
     ))
 
     // Extract literals of possibly rewritten subqueries
@@ -41,7 +42,7 @@ case object CAPSRewriting extends Phase[BaseContext, BaseState, BaseState] {
     val finalStatement = rewriters.foldLeft(rewrittenStatement) {
       case (acc, rewriter) => acc.endoRewrite(rewriter)
     }
-    // merge extraced params
+    // merge extracted params
     val extractedParameters = extractedParams.foldLeft(Map.empty[String, Any]) {
       case (acc, current) => MapUtils.merge(acc, current)((l, r) => l)
     }

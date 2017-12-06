@@ -87,6 +87,12 @@ final case class PatternPredicate(
     rhs: FlatOperator,
     header: RecordHeader) extends BinaryFlatOperator
 
+final case class ExistsPatternPredicate(
+    predicateField: Var,
+    lhs: FlatOperator,
+    rhs: FlatOperator,
+    header: RecordHeader) extends BinaryFlatOperator
+
 final case class ValueJoin(
     lhs: FlatOperator,
     rhs: FlatOperator,

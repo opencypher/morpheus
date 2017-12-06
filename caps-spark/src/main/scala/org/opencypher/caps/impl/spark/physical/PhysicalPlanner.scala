@@ -157,6 +157,9 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOpera
       case flat.PatternPredicate(predicateField, lhs, rhs, header) =>
         PatternPredicate(process(lhs), process(rhs), predicateField, header)
 
+      case flat.ExistsPatternPredicate(predicateField, lhs, rhs, header) =>
+        ExistsPatternPredicate(process(lhs), process(rhs), predicateField, header)
+
       case flat.OrderBy(sortItems: Seq[SortItem[Expr]], in, header) =>
         OrderBy(process(in), sortItems, header)
 

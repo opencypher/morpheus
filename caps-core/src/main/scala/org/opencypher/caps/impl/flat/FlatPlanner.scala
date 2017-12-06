@@ -96,6 +96,9 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
       case logical.PatternPredicate(patternExpr, lhs, rhs, _) =>
         producer.planPatternPredicate(patternExpr, process(lhs), process(rhs))
 
+      case logical.ExistsPatternPredicate(expr, lhs, rhs, _) =>
+        producer.planExistsPatternPredicate(expr, process(lhs), process(rhs))
+
       case logical.OrderBy(sortListItems, sourceOp, _) =>
         producer.orderBy(sortListItems, process(sourceOp))
 

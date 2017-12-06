@@ -1,9 +1,10 @@
 package org.opencypher.caps.impl.parse.rewriter
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{nameMatchPatternElements, normalizeMatchPredicates}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{CNFNormalizer, nameMatchPatternElements, normalizeMatchPredicates}
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{ASTNode, _}
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.{FreshIdNameGenerator, UnNamedNameGenerator}
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, InputPosition, Rewriter, SemanticCheck, SemanticCheckResult, topDown}
+import org.opencypher.caps.impl.parse.RetypingPredicate
 
 case class extractSubqueryFromPatternExpression(mkException: (String, InputPosition) => CypherException) extends Rewriter {
 
@@ -55,12 +56,22 @@ case class extractSubqueryFromPatternExpression(mkException: (String, InputPosit
         )(patternPosition)
       )(patternPosition)
 
-    case a@And(lhs, rhs) =>
+    case a @ And(lhs, rhs) =>
       And(lhs.endoRewrite(whereRewriter), rhs.endoRewrite(whereRewriter))(a.position)
 
-    case o@Or(lhs, rhs) => Or(lhs.endoRewrite(whereRewriter), rhs.endoRewrite(whereRewriter))(o.position)
+    case a @ Ands(inputs) =>
+      Ands(inputs.map(_.endoRewrite(whereRewriter)))(a.position)
 
-    case n@Not(e) => Not(e.endoRewrite(whereRewriter))(n.position)
+    case o @ Or(lhs, rhs) =>
+      Or(lhs.endoRewrite(whereRewriter), rhs.endoRewrite(whereRewriter))(o.position)
+
+    case o @ Ors(inputs) =>
+      Ors(inputs.map(_.endoRewrite(whereRewriter)))(o.position)
+
+    case n @ Not(e) => Not(e.endoRewrite(whereRewriter))(n.position)
+
+    case r @ RetypingPredicate(left, right) =>
+      RetypingPredicate(left.map(_.endoRewrite(whereRewriter)), right.endoRewrite(whereRewriter))(r.position)
   }
 
   private val instance = topDown(rewriter, _.isInstanceOf[Expression])

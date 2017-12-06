@@ -226,7 +226,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
       case (acc, ex: ExistsPatternExpr) =>
         val innerPlan = this(ex.ir)
-        producer.planExistsPatternPredicate(ex, acc, innerPlan)
+        val Predicate = producer.planExistsPatternPredicate(ex, acc, innerPlan)
+        producer.planFilter(ex, Predicate)
 
       case (_, x) =>
         Raise.notYetImplemented(s"logical planning of predicate $x")
@@ -255,6 +256,9 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       case pe : PatternExpr =>
         val patternPlan = planComponentPattern(in, pe.pattern, context.sourceGraph)
         producer.planPatternPredicate(pe, in, patternPlan)
+      case ex: ExistsPatternExpr =>
+        val innerPlan = this(ex.ir)
+        producer.planExistsPatternPredicate(ex, in, innerPlan)
       case x =>
         Raise.notYetImplemented(s"projection of inner expression $x")
     }
