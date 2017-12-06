@@ -21,9 +21,9 @@ import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.api.types.CTRelationship
 import org.opencypher.caps.api.value.CypherValue
+import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.flat.FlatOperator
 import org.opencypher.caps.impl.logical.{GraphOfPattern, LogicalExternalGraph, LogicalPatternGraph}
-import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.spark.physical.operators._
 import org.opencypher.caps.impl.{DirectCompilationStage, flat}
 import org.opencypher.caps.ir.api.block.SortItem
@@ -150,12 +150,8 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOpera
         BoundedVarExpand(first, second, third,
           rel, edgeList, target, sourceOp.endNode, lower, upper, header, isExpandInto)
 
-
       case flat.Optional(lhs, rhs, header) =>
         Optional(process(lhs), process(rhs), header)
-
-      case flat.PatternPredicate(predicateField, lhs, rhs, header) =>
-        PatternPredicate(process(lhs), process(rhs), predicateField, header)
 
       case flat.ExistsPatternPredicate(predicateField, lhs, rhs, header) =>
         ExistsPatternPredicate(process(lhs), process(rhs), predicateField, header)

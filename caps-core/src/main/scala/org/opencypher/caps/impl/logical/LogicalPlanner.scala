@@ -219,11 +219,6 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       case (acc, v: Var) =>
         producer.planFilter(v, acc)
 
-      case (acc, pe: PatternExpr) =>
-        val patternPlan = planComponentPattern(acc, pe.pattern, context.sourceGraph)
-        val withPredicate = producer.planPatternPredicate(pe, acc, patternPlan)
-        producer.planFilter(pe, withPredicate)
-
       case (acc, ex: ExistsPatternExpr) =>
         val innerPlan = this(ex.ir)
         val Predicate = producer.planExistsPatternPredicate(ex, acc, innerPlan)
@@ -239,26 +234,33 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
   private def planInnerExpr(expr: Expr, in: LogicalOperator)(implicit context: LogicalPlannerContext): LogicalOperator = {
     expr match {
       case _: Param => in
+
       case _: Var => in
+
       case p: Property =>
         producer.projectExpr(p, in)
+
       case be: BinaryExpr =>
         val project1 = planInnerExpr(be.lhs, in)
         val project2 = planInnerExpr(be.rhs, project1)
         producer.projectExpr(be, project2)
+
       case HasLabel(e,_) => planInnerExpr(e, in)
+
       case Not(e) => planInnerExpr(e, in)
+
       case IsNull(e) => planInnerExpr(e, in)
+
       case IsNotNull(e) => planInnerExpr(e, in)
+
       case func: FunctionExpr =>
         val projectArg = planInnerExpr(func.expr, in)
         producer.projectExpr(func, projectArg)
-      case pe : PatternExpr =>
-        val patternPlan = planComponentPattern(in, pe.pattern, context.sourceGraph)
-        producer.planPatternPredicate(pe, in, patternPlan)
+
       case ex: ExistsPatternExpr =>
         val innerPlan = this(ex.ir)
         producer.planExistsPatternPredicate(ex, in, innerPlan)
+
       case x =>
         Raise.notYetImplemented(s"projection of inner expression $x")
     }

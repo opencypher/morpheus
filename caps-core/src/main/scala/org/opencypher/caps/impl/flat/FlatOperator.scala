@@ -81,12 +81,6 @@ final case class Optional(
     rhs: FlatOperator,
     header: RecordHeader) extends BinaryFlatOperator
 
-final case class PatternPredicate(
-    predicateField: Var,
-    lhs: FlatOperator,
-    rhs: FlatOperator,
-    header: RecordHeader) extends BinaryFlatOperator
-
 final case class ExistsPatternPredicate(
     predicateField: Var,
     lhs: FlatOperator,

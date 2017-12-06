@@ -15,16 +15,17 @@
  */
 package org.opencypher.caps.ir.impl
 
-import org.neo4j.cypher.internal.frontend.v3_3.{Ref, ast, symbols}
+import java.net.URI
+
+import org.neo4j.cypher.internal.frontend.v3_3.{Ref, SemanticState, ast, symbols}
 import org.opencypher.caps.api.expr._
+import org.opencypher.caps.api.io.GraphSource
+import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.flat.FreshVariableNamer
-import org.opencypher.caps.ir.api.pattern.{DirectedRelationship, Pattern}
-import org.opencypher.caps.ir.api.{IRField, Label, PropertyKey, RelType}
+import org.opencypher.caps.ir.api._
 import org.opencypher.caps.test.BaseTestSuite
 import org.opencypher.caps.test.support.Neo4jAstTestSupport
 import org.opencypher.caps.toVar
-
 import org.scalatest.mockito.MockitoSugar
 
 class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport with MockitoSugar {
@@ -191,26 +192,12 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport wit
     )
   }
 
-  test("can convert pattern expression") {
-    val given = parseExpr("(a)-[:KNOWS]->(b)")
-
-    convert(given) should equal(
-      PatternExpr(
-        FreshVariableNamer(7, CTBoolean),
-        Pattern(
-          Set(
-            IRField("a")(CTNode),
-            IRField("b")(CTNode),
-            IRField("  FRESH_VAR10")(CTRelationship("KNOWS"))
-          ),
-          Map(
-            IRField("  FRESH_VAR10")(CTRelationship("KNOWS")) -> DirectedRelationship(IRField("a")(CTNode), IRField("b")(CTNode))
-          )
-        )
-      )()
-    )
-  }
-
-  lazy val testContext = mock[IRBuilderContext]
+  lazy val testContext = IRBuilderContext.initial(
+    "",
+    Map.empty,
+    SemanticState.clean,
+    IRExternalGraph("", Schema.empty, URI.create("")),
+    (resolver) => mock[GraphSource]
+  )
   private def convert(e: ast.Expression): Expr = new ExpressionConverter(new PatternConverter())(testContext).convert(e)(testTypes)
 }

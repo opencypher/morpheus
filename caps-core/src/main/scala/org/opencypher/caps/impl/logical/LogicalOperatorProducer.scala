@@ -76,13 +76,6 @@ class LogicalOperatorProducer {
     Optional(nonOptionalPlan, optionalPlan, optionalPlan.solved)
   }
 
-  def planPatternPredicate(
-      patternExpr: PatternExpr,
-      matchPlan: LogicalOperator,
-      patternPlan: LogicalOperator): PatternPredicate = {
-    PatternPredicate(patternExpr, matchPlan, patternPlan, matchPlan.solved)
-  }
-
   def planExistsPatternPredicate(
       expr: ExistsPatternExpr,
       matchPlan: LogicalOperator,
