@@ -177,41 +177,57 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
           case (_acc, expr) => planInnerExpr(expr, _acc)
         }
         producer.planFilter(ors, withInnerExprs)
+
       case (acc, eq: Equals) =>
         val project1 = planInnerExpr(eq.lhs, acc)
         val project2 = planInnerExpr(eq.rhs, project1)
         producer.planFilter(eq, project2)
+
       case (acc, be: BinaryExpr) =>
         val project1 = planInnerExpr(be.lhs, acc)
         val project2 = planInnerExpr(be.rhs, project1)
         val projectParent = producer.projectExpr(be, project2)
         producer.planFilter(be, projectParent)
+
       case (acc, h@HasLabel(_: Var, _)) =>
         producer.planFilter(h, acc)
+
       case (acc, not@Not(Equals(lhs, rhs))) =>
         val p1 = planInnerExpr(lhs, acc)
         val p2 = planInnerExpr(rhs, p1)
         producer.planFilter(not, p2)
+
       case (acc, not@Not(expr)) =>
         val project = planInnerExpr(expr, acc)
         producer.planFilter(not, project)
+
       case (acc, exists@Exists(expr)) =>
         val project = planInnerExpr(expr, acc)
         producer.planFilter(exists, project)
+
       case (acc, isNull@IsNull(expr)) =>
         val project = planInnerExpr(expr, acc)
         producer.planFilter(isNull, acc)
+
       case (acc, isNotNull@IsNotNull(expr)) =>
         val project = planInnerExpr(expr, acc)
         producer.planFilter(isNotNull, acc)
+
       case (acc, t: TrueLit) =>
         producer.planFilter(t, acc) // optimise away this one somehow... currently we do that in PhysicalPlanner
+
       case (acc, v: Var) =>
         producer.planFilter(v, acc)
+
       case (acc, pe: PatternExpr) =>
         val patternPlan = planComponentPattern(acc, pe.pattern, context.sourceGraph)
         val withPredicate = producer.planPatternPredicate(pe, acc, patternPlan)
         producer.planFilter(pe, withPredicate)
+
+      case (acc, ex: ExistsPatternExpr) =>
+        val innerPlan = this(ex.ir)
+        producer.planExistsPatternPredicate(ex, acc, innerPlan)
+
       case (_, x) =>
         Raise.notYetImplemented(s"logical planning of predicate $x")
     }

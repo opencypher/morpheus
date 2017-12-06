@@ -360,8 +360,8 @@ final case class PatternExpr(predicateField: Var, pattern: Pattern[Expr])(val cy
   override def withoutType = s"PatternExpr($predicateField, $pattern)"
 }
 
-final case class ExistsPattern(ir: CypherQuery[Expr])(val cypherType: CypherType = CTBoolean) extends Expr {
+final case class ExistsPatternExpr(predicateField: Var, ir: CypherQuery[Expr])(val cypherType: CypherType = CTBoolean) extends Expr {
   override def toString = s"$withoutType($cypherType)"
 
-  override def withoutType = s"Exists(${ir.info})"
+  override def withoutType = s"Exists($predicateField, ${ir.info})"
 }
