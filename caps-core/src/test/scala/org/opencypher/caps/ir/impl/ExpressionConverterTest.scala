@@ -25,7 +25,9 @@ import org.opencypher.caps.test.BaseTestSuite
 import org.opencypher.caps.test.support.Neo4jAstTestSupport
 import org.opencypher.caps.toVar
 
-class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
+import org.scalatest.mockito.MockitoSugar
+
+class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport with MockitoSugar {
 
   private def testTypes(ref: Ref[ast.Expression]): CypherType = ref.value match {
     case ast.Variable("r") => CTRelationship
@@ -209,5 +211,6 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     )
   }
 
-  private def convert(e: ast.Expression): Expr = new ExpressionConverter(new PatternConverter()).convert(e)(testTypes)
+  lazy val testContext = mock[IRBuilderContext]
+  private def convert(e: ast.Expression): Expr = new ExpressionConverter(new PatternConverter())(testContext).convert(e)(testTypes)
 }

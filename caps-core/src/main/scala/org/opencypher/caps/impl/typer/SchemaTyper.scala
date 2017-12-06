@@ -29,6 +29,7 @@ import org.opencypher.caps.api.schema.Schema.AllLabels
 import org.opencypher.caps.api.types.CypherType.joinMonoid
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.parse.RetypingPredicate
+import org.opencypher.caps.impl.parse.rewriter.ExistsPattern
 import org.opencypher.caps.ir.api.pattern.{AllGiven, AnyGiven}
 
 import scala.util.Try
@@ -88,7 +89,7 @@ object SchemaTyper {
         }
       } yield result
 
-    case _: PatternExpression =>
+    case _: ExistsPattern =>
       recordAndUpdate[R](expr -> CTBoolean)
 
     case HasLabels(node, labels) =>

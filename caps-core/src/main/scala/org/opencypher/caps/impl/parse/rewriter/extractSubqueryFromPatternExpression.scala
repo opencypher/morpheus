@@ -40,15 +40,18 @@ case class extractSubqueryFromPatternExpression(mkException: (String, InputPosit
       val trueVariable = Variable(UnNamedNameGenerator.name(p.position))(p.position)
       val returnItemsWithTrue = returnItems :+ AliasedReturnItem(True()(trueVariable.position), trueVariable)(trueVariable.position)
 
-      Exists(
-        SingleQuery(
-          Seq(
-            Match(optional = false, newPattern, Seq.empty, None)(patternPosition)
-                .endoRewrite(nameMatchPatternElements)
-                .endoRewrite(normalizeMatchPredicates)
-            ,
-            Return(ReturnItems(includeExisting = false, returnItemsWithTrue)(patternPosition), None)(patternPosition)
-          )
+      ExistsPattern(
+        Query(
+          None,
+          SingleQuery(
+            Seq(
+              Match(optional = false, newPattern, Seq.empty, None)(patternPosition)
+                  .endoRewrite(nameMatchPatternElements)
+                  .endoRewrite(normalizeMatchPredicates)
+              ,
+              Return(ReturnItems(includeExisting = false, returnItemsWithTrue)(patternPosition), None)(patternPosition)
+            )
+          )(patternPosition)
         )(patternPosition)
       )(patternPosition)
 
@@ -63,6 +66,6 @@ case class extractSubqueryFromPatternExpression(mkException: (String, InputPosit
   private val instance = topDown(rewriter, _.isInstanceOf[Expression])
 }
 
-case class Exists(node: ASTNode)(val position: InputPosition) extends Expression {
+case class ExistsPattern(query: Query)(val position: InputPosition) extends Expression {
   override def semanticCheck(ctx: Expression.SemanticContext): SemanticCheck = SemanticCheckResult.success
 }
