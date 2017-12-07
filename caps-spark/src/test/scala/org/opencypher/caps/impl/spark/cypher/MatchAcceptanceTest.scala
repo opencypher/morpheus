@@ -17,19 +17,25 @@ package org.opencypher.caps.impl.spark.cypher
 
 import org.opencypher.caps.api.value.CypherMap
 import org.opencypher.caps.test.CAPSTestSuite
-import org.opencypher.caps.test.support.testgraph.{GDLTestGraph, Neo4jTestGraph}
+import org.opencypher.caps.test.support.testgraph.GDLTestGraph
 
 import scala.collection.Bag
 
 class MatchAcceptanceTest extends CAPSTestSuite {
 
-  test("match a trivial query via Cypher") {
-    // Given
-    val given = Neo4jTestGraph(
+  testWithGDL("match a trivial query with GDL")("""(p:Person {firstName: "Alice", lastName: "Foo"})""") { given =>
+        // When
+    val result = given.cypher(
       """
-        |CREATE (p:Person {firstName: "Alice", lastName: "Foo"})
+        |MATCH (a:Person)
+        |RETURN a.firstName
       """.stripMargin)
 
+    // Then
+    result.records.toMaps should equal(Bag(CypherMap("a.firstName" -> "Alice")))
+  }
+
+  testWithCypher("match a trivial query via Cypher")("""CREATE (p:Person {firstName: "Alice", lastName: "Foo"})""") { given =>
     // When
     val result = given.cypher(
       """

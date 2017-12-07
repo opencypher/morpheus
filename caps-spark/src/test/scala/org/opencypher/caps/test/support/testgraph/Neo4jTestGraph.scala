@@ -25,13 +25,15 @@ import scala.collection.immutable.Map
 
 final case class Neo4jTestGraph(query: String)(implicit caps: CAPSSession)
     extends TestGraph[GraphDatabaseService, Node, Relationship] {
-  
+
   private val neo4jServer = TestServerBuilders.newInProcessBuilder()
       .withConfig("dbms.security.auth_enabled", "true")
       .withFixture(query)
       .newServer()
 
   override val inputGraph: GraphDatabaseService = neo4jServer.graph()
+
+  def close: Any = neo4jServer.close()
 }
 
 object Neo4jTestGraph {
