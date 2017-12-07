@@ -18,50 +18,55 @@ package org.opencypher.caps.test.support.testgraph
 import org.neo4j.graphdb.{GraphDatabaseService, Node, Relationship}
 import org.neo4j.harness.TestServerBuilders
 import org.opencypher.caps.api.spark.CAPSSession
+import org.opencypher.caps.test.support.testgraph.Neo4jTestGraph._
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Map
 
-final case class Neo4jTestGraph(query: String)(implicit caps: CAPSSession) extends TestGraph {
+final case class Neo4jTestGraph(query: String)(implicit caps: CAPSSession)
+    extends TestGraph[GraphDatabaseService, Node, Relationship] {
   
   private val neo4jServer = TestServerBuilders.newInProcessBuilder()
       .withConfig("dbms.security.auth_enabled", "true")
       .withFixture(query)
       .newServer()
 
-  override val inputGraph = new NeoRichInputGraph(neo4jServer.graph())
+  override val inputGraph: GraphDatabaseService = neo4jServer.graph()
+}
 
-  implicit class NeoRichInputNode(neoNode: Node) extends RichInputNode {
-    override def getLabels: Set[String] = neoNode.getLabels.asScala.map(_.name).toSet
+object Neo4jTestGraph {
 
-    override def getId: Long = neoNode.getId
+  implicit class NeoInputNode(neoNode: Node) extends RichInputNode {
+    override def labels: Set[String] = neoNode.getLabels.asScala.map(_.name).toSet
 
-    override def getProperties: Map[String, AnyRef] = neoNode.getAllProperties.asScala.toMap
+    override def id: Long = neoNode.getId
+
+    override def properties: Map[String, AnyRef] = neoNode.getAllProperties.asScala.toMap
   }
 
-  implicit class NeoRichInputRelationship(neoRel: Relationship) extends RichInputRelationship {
-    override def getType: String = neoRel.getType.name
+  implicit class NeoInputRelationship(neoRel: Relationship) extends RichInputRelationship {
+    override def relType: String = neoRel.getType.name
 
-    override def getSourceId: Long = neoRel.getStartNodeId
+    override def sourceId: Long = neoRel.getStartNodeId
 
-    override def getTargetId: Long = neoRel.getEndNodeId
+    override def targetId: Long = neoRel.getEndNodeId
 
-    override def getId: Long = neoRel.getId
+    override def id: Long = neoRel.getId
 
-    override def getProperties: Map[String, AnyRef] = neoRel.getAllProperties.asScala.toMap
+    override def properties: Map[String, AnyRef] = neoRel.getAllProperties.asScala.toMap
   }
 
-  implicit class NeoRichInputGraph(neoGraph: GraphDatabaseService) extends RichInputGraph {
-    override def getAllNodes: Set[RichInputNode] = {
+  implicit class NeoInputGraph(neoGraph: GraphDatabaseService) extends RichInputGraph[Node, Relationship] {
+    override def allNodes: Set[Node] = {
       val tx = neoGraph.beginTx
-      val nodes: Set[RichInputNode] = neoGraph.getAllNodes.asScala.map(new NeoRichInputNode(_)).toSet
+      val nodes: Set[Node] = neoGraph.getAllNodes.asScala.toSet
       tx.success()
       nodes
     }
 
-    override def getAllRelationships: Set[RichInputRelationship] = {
+    override def allRels: Set[Relationship] = {
       val tx = neoGraph.beginTx
-      val rels: Set[RichInputRelationship] = neoGraph.getAllRelationships.asScala.map(new NeoRichInputRelationship(_)).toSet
+      val rels: Set[Relationship] = neoGraph.getAllRelationships.asScala.toSet
       tx.success()
       rels
     }

@@ -37,25 +37,29 @@ import org.opencypher.caps.impl.spark.io.CAPSGraphSourceImpl
 import scala.collection.JavaConverters._
 import scala.collection.immutable.{Map, Seq}
 
-abstract class TestGraph(implicit caps: CAPSSession) {
+abstract class TestGraph[G, N, R](
+    implicit caps: CAPSSession,
+    graphConverter: G => RichInputGraph[N, R],
+    nodeConverter: N => RichInputNode,
+    relConverter: R => RichInputRelationship) {
 
   outer =>
 
-  def inputGraph: RichInputGraph
+  def inputGraph: G
 
   lazy val schema: Schema = {
-    def extractFromNode(n: RichInputNode) =
-      n.getLabels -> n.getProperties.map {
+    def extractFromNode(n: N) =
+      n.labels -> n.properties.map {
         case (name, prop) => name -> fromJavaType(prop)
       }
 
-    def extractFromRel(r: RichInputRelationship) =
-      r.getType -> r.getProperties.map {
+    def extractFromRel(r: R) =
+      r.relType -> r.properties.map {
         case (name, prop) => name -> fromJavaType(prop)
       }
 
-    val labelsAndProps = inputGraph.getAllNodes.map(extractFromNode)
-    val typesAndProps = inputGraph.getAllRelationships.map(extractFromRel)
+    val labelsAndProps = inputGraph.allNodes.map(extractFromNode)
+    val typesAndProps = inputGraph.allRels.map(extractFromRel)
 
     val schemaWithLabels = labelsAndProps.foldLeft(Schema.empty) {
       case (acc, (labels, props)) => acc.withNodePropertyKeys(labels, props)
@@ -101,21 +105,21 @@ abstract class TestGraph(implicit caps: CAPSSession) {
       val header = RecordHeader.nodeFromSchema(Var(name)(cypherType), schema, cypherType.labels)
 
       val data = {
-        val nodes = inputGraph.getAllNodes
-            .filter(v => cypherType.labels.subsetOf(v.getLabels))
+        val nodes = inputGraph.allNodes
+            .filter(v => cypherType.labels.subsetOf(v.labels))
             .map { v =>
               val exprs = header.slots.map(_.content.key)
               val labelFields = exprs.collect {
-                case HasLabel(_, label) => v.getLabels.contains(label.name)
+                case HasLabel(_, label) => v.labels.contains(label.name)
               }
               val propertyFields = exprs.collect {
                 case p@Property(_, k) =>
-                  val pValue = v.getProperties.getOrElse(k.name, null)
+                  val pValue = v.properties.getOrElse(k.name, null)
                   if (fromJavaType(pValue).material == p.cypherType.material) pValue
                   else null
               }
 
-              Row(v.getId +: (labelFields ++ propertyFields): _*)
+              Row(v.id +: (labelFields ++ propertyFields): _*)
             }.toList.asJava
 
         val fields = header.slots.map { s =>
@@ -131,13 +135,13 @@ abstract class TestGraph(implicit caps: CAPSSession) {
       val header = RecordHeader.relationshipFromSchema(Var(name)(cypherType), schema)
 
       val data = {
-        val rels = inputGraph.getAllRelationships
-            .filter(e => cypherType.types.isEmpty || cypherType.types.contains(e.getType))
+        val rels = inputGraph.allRels
+            .filter(e => cypherType.types.isEmpty || cypherType.types.contains(e.relType))
             .map { e =>
-              val staticFields = Seq(e.getSourceId, e.getId, e.getType, e.getTargetId)
+              val staticFields = Seq(e.sourceId, e.id, e.relType, e.targetId)
 
               val propertyFields = header.slots.slice(4, header.slots.size).map(_.content.key).map {
-                case Property(_, k) => e.getProperties.get(k.name)
+                case Property(_, k) => e.properties.get(k.name)
                 case _ => throw new IllegalArgumentException("Only properties expected in the header")
               }
 
@@ -156,7 +160,7 @@ abstract class TestGraph(implicit caps: CAPSSession) {
     override def union(other: CAPSGraph): Nothing = Raise.unsupportedArgument("union with test graph")
   })
 
-  private case class TestGraphSource(canonicalURI: URI, testGraph: TestGraph)
+  private case class TestGraphSource(canonicalURI: URI, testGraph: TestGraph[G, N, R])
       extends CAPSGraphSourceImpl {
 
     override def sourceForGraphAt(uri: URI): Boolean = uri == canonicalURI

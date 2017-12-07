@@ -17,43 +17,46 @@ package org.opencypher.caps.test.support.testgraph
 
 import org.opencypher.caps.api.spark.CAPSSession
 import org.opencypher.caps.demo.Configuration.DefaultType
+import org.opencypher.caps.test.support.testgraph.GDLTestGraph._
 import org.s1ck.gdl.GDLHandler
 import org.s1ck.gdl.model.{Edge, Vertex}
 
 import scala.collection.JavaConverters._
 
-final case class GDLTestGraph(query: String)(implicit caps: CAPSSession) extends TestGraph {
+final case class GDLTestGraph(query: String)(implicit caps: CAPSSession)
+    extends TestGraph[GDLHandler, Vertex, Edge] {
 
-  override def inputGraph = new GDLInputGraph(new GDLHandler.Builder()
+  override def inputGraph: GDLHandler = new GDLHandler.Builder()
       .disableDefaultVertexLabel()
       .setDefaultEdgeLabel(DefaultType.get())
-      .buildFromString(query))
+      .buildFromString(query)
+}
+
+object GDLTestGraph {
 
   implicit class GDLInputNode(node: Vertex) extends RichInputNode {
-    override def getLabels: Set[String] = node.getLabels.asScala.toSet
+    override def labels: Set[String] = node.getLabels.asScala.toSet
 
-    override def getId: Long = node.getId
+    override def id: Long = node.getId
 
-    override def getProperties: Map[String, AnyRef] = node.getProperties.asScala.toMap
+    override def properties: Map[String, AnyRef] = node.getProperties.asScala.toMap
   }
 
   implicit class GDLInputRelationship(rel: Edge) extends RichInputRelationship {
-    override def getType: String = rel.getLabel
+    override def relType: String = rel.getLabel
 
-    override def getSourceId: Long = rel.getSourceId
+    override def sourceId: Long = rel.getSourceVertexId
 
-    override def getTargetId: Long = rel.getTargetId
+    override def targetId: Long = rel.getTargetVertexId
 
-    override def getId: Long = rel.getId
+    override def id: Long = rel.getId
 
-    override def getProperties: Map[String, AnyRef] = rel.getProperties.asScala.toMap
+    override def properties: Map[String, AnyRef] = rel.getProperties.asScala.toMap
   }
 
-  implicit class GDLInputGraph(queryHandler: GDLHandler) extends RichInputGraph {
-    override def getAllNodes: Set[RichInputNode] =
-      queryHandler.getVertices.asScala.map(new GDLInputNode(_)).toSet
+  implicit class GDLInputGraph(queryHandler: GDLHandler) extends RichInputGraph[Vertex, Edge] {
+    override def allNodes: Set[Vertex] = queryHandler.getVertices.asScala.toSet
 
-    override def getAllRelationships: Set[RichInputRelationship] =
-      queryHandler.getEdges.asScala.map(new GDLInputRelationship(_)).toSet
+    override def allRels: Set[Edge] = queryHandler.getEdges.asScala.toSet
   }
 }

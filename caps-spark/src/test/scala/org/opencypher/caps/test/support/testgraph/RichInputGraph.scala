@@ -17,32 +17,32 @@ package org.opencypher.caps.test.support.testgraph
 
 import scala.collection.immutable.Map
 
-trait RichInputGraph {
+abstract class RichInputGraph[N, R](implicit n: N => RichInputNode, r: R => RichInputRelationship) {
 
-  def getAllNodes: Set[RichInputNode]
+  def allNodes: Set[N]
 
-  def getAllRelationships: Set[RichInputRelationship]
+  def allRels: Set[R]
 }
 
 trait RichInputElement {
 
-  def getId: Long
+  def id: Long
 
-  def getProperties: Map[String, AnyRef]
+  def properties: Map[String, AnyRef]
 
 }
 
 trait RichInputNode extends RichInputElement {
 
-  def getLabels: Set[String]
+  def labels: Set[String]
 
 }
 
 trait RichInputRelationship extends RichInputElement {
 
-  def getType: String
+  def relType: String
 
-  def getSourceId: Long
+  def sourceId: Long
 
-  def getTargetId: Long
+  def targetId: Long
 }
