@@ -71,7 +71,6 @@ object SparkSQLExprMapper {
       * @param expr    the expression to be evaluated.
       * @param df      the dataframe containing the data over which the expression should be evaluated.
       * @param context context with helper functions, such as column names.
-      * @param context context with helper functions, such as column names.
       * @return Some Spark SQL expression if the input was mappable, otherwise None.
       */
     def apply(header: RecordHeader, expr: Expr, df: DataFrame)

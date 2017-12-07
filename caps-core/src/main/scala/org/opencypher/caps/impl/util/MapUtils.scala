@@ -27,8 +27,7 @@ trait MapUtils {
       }.toMap
 
   def submap[A, B](keys: Seq[A], a: Map[A, B]): Map[A, B] = {
-    val filteredKeys = keys.filter(a.contains)
-    filteredKeys.zip(filteredKeys.map(a)).toMap
+    a.filterKeys(keys.contains)
   }
 }
 

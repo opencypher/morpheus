@@ -36,11 +36,11 @@ case class extractSubqueryFromPatternExpression(mkException: (String, InputPosit
       *
       * to
       *
-      * WHERE EXISTS (
+      * WHERE EXISTS {
       *   MATCH (a)-[e0]->(v0)-[e1]->(v1)...
       *   WHERE e0:R AND v0.foo = true
       *   RETURN a, true
-      * ) AND a.age > 20
+      * } AND a.age > 20
       */
     case p@PatternExpression(relationshipsPattern) =>
       val patternPosition: InputPosition = p.position

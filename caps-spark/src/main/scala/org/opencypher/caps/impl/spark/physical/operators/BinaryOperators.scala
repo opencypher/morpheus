@@ -58,7 +58,7 @@ final case class ValueJoin(
   * This operator performs a left outer join between the already matched path and the optional matched pattern and
   * updates the resulting columns.
   *
-  * @param lhs mandatory match data
+  * @param lhs previous match data
   * @param rhs optional match data
   * @param header result header (lhs header + rhs header)
   */
