@@ -17,6 +17,7 @@ package org.opencypher.caps.impl.spark.cypher
 
 import org.opencypher.caps.api.value._
 import org.opencypher.caps.test.CAPSTestSuite
+import org.opencypher.caps.test.support.testgraph.GDLTestGraph
 
 import scala.collection.Bag
 
@@ -25,7 +26,7 @@ class BoundedVarExpandAcceptanceTest extends CAPSTestSuite {
   test("bounded to single relationship") {
 
     // Given
-    val given = TestGraph("""(:Node {val: "source"})-->(:Node {val: "mid1"})-->(:Node {val: "end"})""")
+    val given = GDLTestGraph("""(:Node {val: "source"})-->(:Node {val: "mid1"})-->(:Node {val: "end"})""")
 
     // When
     val result = given.cypher("MATCH (n:Node)-[r*0..1]->(m:Node) RETURN m.val")
@@ -46,7 +47,7 @@ class BoundedVarExpandAcceptanceTest extends CAPSTestSuite {
   test("bounded with lower bound") {
 
     // Given
-    val given = TestGraph("""(:Node {val: "source"})-->(:Node {val: "mid1"})-->(:Node {val: "end"})""")
+    val given = GDLTestGraph("""(:Node {val: "source"})-->(:Node {val: "mid1"})-->(:Node {val: "end"})""")
 
     // When
     val result = given.cypher("MATCH (t:Node)-[r*2..3]->(y:Node) RETURN y.val")
@@ -62,7 +63,7 @@ class BoundedVarExpandAcceptanceTest extends CAPSTestSuite {
 
   test("var expand with default lower and loop") {
     // Given
-    val given = TestGraph("""(a:Node {v: "a"})-->(:Node {v: "b"})-->(:Node {v: "c"})-->(a)""")
+    val given = GDLTestGraph("""(a:Node {v: "a"})-->(:Node {v: "b"})-->(:Node {v: "c"})-->(a)""")
 
     // When
     val result = given.cypher("MATCH (a:Node)-[r*..6]->(b:Node) RETURN b.v")
@@ -86,7 +87,7 @@ class BoundedVarExpandAcceptanceTest extends CAPSTestSuite {
 
   test("var expand return list of rel ids") {
     // Given
-    val given = TestGraph("""(a:Node {v: "a"})-->(:Node {v: "b"})-->(:Node {v: "c"})-->(a)""")
+    val given = GDLTestGraph("""(a:Node {v: "a"})-->(:Node {v: "b"})-->(:Node {v: "c"})-->(a)""")
 
     // When
     val result = given.cypher("MATCH (a:Node)-[r*..6]->(b:Node) RETURN r")
@@ -110,7 +111,7 @@ class BoundedVarExpandAcceptanceTest extends CAPSTestSuite {
 
   test("var expand with rel type") {
     // Given
-    val given = TestGraph("""(a:Node {v: "a"})-[:LOVES]->(:Node {v: "b"})-[:KNOWS]->(:Node {v: "c"})-[:HATES]->(a)""")
+    val given = GDLTestGraph("""(a:Node {v: "a"})-[:LOVES]->(:Node {v: "b"})-[:KNOWS]->(:Node {v: "c"})-[:HATES]->(a)""")
 
     // When
     val result = given.cypher("MATCH (a:Node)-[r:LOVES|KNOWS*..6]->(b:Node) RETURN b.v")
@@ -130,7 +131,7 @@ class BoundedVarExpandAcceptanceTest extends CAPSTestSuite {
   // We could do that better by pre-filtering candidate relationships prior to the iterate step
   ignore("var expand with property filter") {
     // Given
-    val given = TestGraph("""(a:Node {v: "a"})-[{v: 1L}]->(:Node {v: "b"})-[{v: 2L}]->(:Node {v: "c"})-[{v: 2L}]->(a)""")
+    val given = GDLTestGraph("""(a:Node {v: "a"})-[{v: 1L}]->(:Node {v: "b"})-[{v: 2L}]->(:Node {v: "c"})-[{v: 2L}]->(a)""")
 
     // When
     val result = given.cypher("MATCH (a:Node)-[r*..6 {v: 2}]->(b:Node) RETURN b.v")
@@ -148,7 +149,7 @@ class BoundedVarExpandAcceptanceTest extends CAPSTestSuite {
 
   test("var expand with additional hop") {
     // Given
-    val given = TestGraph(
+    val given = GDLTestGraph(
       """
         |(a:Node {v: "a"})-[:KNOWS]->(:Node {v: "b"})-[:KNOWS]->(:Node {v: "c"})-[:HATES]->(d:Node {v: "d"})
       """.stripMargin)
@@ -168,7 +169,7 @@ class BoundedVarExpandAcceptanceTest extends CAPSTestSuite {
 
   test("var expand with expand into") {
     // Given
-    val given = TestGraph(
+    val given = GDLTestGraph(
       """
         |(a:Person {name: "Philip"}),
         |(b:Person {name: "Stefan"}),

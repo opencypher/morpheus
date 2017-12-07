@@ -16,8 +16,8 @@
 package org.opencypher.caps.impl.spark.cypher
 
 import org.opencypher.caps.api.value.CypherMap
-import org.opencypher.caps.demo.Configuration.PrintPhysicalPlan
 import org.opencypher.caps.test.CAPSTestSuite
+import org.opencypher.caps.test.support.testgraph.GDLTestGraph
 
 import scala.collection.immutable.Bag
 
@@ -28,7 +28,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   //--------------------------------------------------------------------------------------------------------------------
 
   test("avg(prop) with integers in WITH") {
-    val graph = TestGraph("({val:2L}),({val:4L}),({val:6L})")
+    val graph = GDLTestGraph("({val:2L}),({val:4L}),({val:6L})")
 
     val result = graph.cypher("MATCH (n) WITH AVG(n.val) AS res RETURN res")
 
@@ -38,7 +38,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("avg(prop) with integers in RETURN") {
-    val graph = TestGraph("({val:2L}),({val:4L}),({val:6L})")
+    val graph = GDLTestGraph("({val:2L}),({val:4L}),({val:6L})")
 
     val result = graph.cypher("MATCH (n) RETURN AVG(n.val) AS res")
 
@@ -48,7 +48,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("avg(prop) with integers in RETURN without alias") {
-    val graph = TestGraph("({val:2L}),({val:4L}),({val:6L})")
+    val graph = GDLTestGraph("({val:2L}),({val:4L}),({val:6L})")
 
     val result = graph.cypher("MATCH (n) RETURN AVG(n.val)")
 
@@ -58,7 +58,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("avg(prop) with floats in WITH") {
-    val graph = TestGraph("({val:5.0D}),({val:5.0D}),({val:0.5D})")
+    val graph = GDLTestGraph("({val:5.0D}),({val:5.0D}),({val:0.5D})")
 
     val result = graph.cypher("MATCH (n) WITH AVG(n.val) AS res RETURN res")
 
@@ -68,7 +68,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("avg(prop) with floats in RETURN") {
-    val graph = TestGraph("({val:5.0D}),({val:5.0D}),({val:0.5D})")
+    val graph = GDLTestGraph("({val:5.0D}),({val:5.0D}),({val:0.5D})")
 
     val result = graph.cypher("MATCH (n) RETURN AVG(n.val) AS res")
 
@@ -78,7 +78,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("avg(prop) with single null value in WITH") {
-    val graph = TestGraph("({val:42.0D}),({val:23.0D}),()")
+    val graph = GDLTestGraph("({val:42.0D}),({val:23.0D}),()")
 
     val result = graph.cypher("MATCH (n) WITH AVG(n.val) AS res RETURN res")
 
@@ -88,7 +88,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("avg(prop) with single null value in RETURN") {
-    val graph = TestGraph("({val:42.0D}),({val:23.0D}),()")
+    val graph = GDLTestGraph("({val:42.0D}),({val:23.0D}),()")
 
     val result = graph.cypher("MATCH (n) RETURN AVG(n.val) AS res")
 
@@ -98,7 +98,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   ignore("avg(prop) with only null values in WITH") {
-    val graph = TestGraph("({val:NULL}),(),()")
+    val graph = GDLTestGraph("({val:NULL}),(),()")
 
     val result = graph.cypher("MATCH (n) WITH AVG(n.val) AS res RETURN res")
 
@@ -108,7 +108,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   ignore("avg(prop) with only null values in RETURN") {
-    val graph = TestGraph("({val:NULL}),(),()")
+    val graph = GDLTestGraph("({val:NULL}),(),()")
 
     val result = graph.cypher("MATCH (n) RETURN AVG(n.val) AS res")
 
@@ -122,7 +122,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   //--------------------------------------------------------------------------------------------------------------------
 
   test("count(*) in WITH") {
-    val graph = TestGraph("({name: 'foo'}), ({name: 'bar'}), (), (), (), ({name: 'baz'})")
+    val graph = GDLTestGraph("({name: 'foo'}), ({name: 'bar'}), (), (), (), ({name: 'baz'})")
 
     val result = graph.cypher("MATCH (n) WITH count(*) AS nbrRows RETURN nbrRows")
 
@@ -132,7 +132,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("count(*) in RETURN") {
-    val graph = TestGraph("({name: 'foo'}), ({name: 'bar'}), (), (), (), ({name: 'baz'})")
+    val graph = GDLTestGraph("({name: 'foo'}), ({name: 'bar'}), (), (), (), ({name: 'baz'})")
 
     val result = graph.cypher("MATCH (n) RETURN count(*) AS nbrRows")
 
@@ -142,7 +142,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("count(n) in RETURN") {
-    val graph = TestGraph("({name: 'foo'}), ({name: 'bar'}), (), (), (), ({name: 'baz'})")
+    val graph = GDLTestGraph("({name: 'foo'}), ({name: 'bar'}), (), (), (), ({name: 'baz'})")
 
     val result = graph.cypher("MATCH (n) RETURN count(n) AS nbrRows")
 
@@ -152,7 +152,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("count(n) in RETURN without alias") {
-    val graph = TestGraph("({name: 'foo'}), ({name: 'bar'}), (), (), (), ({name: 'baz'})")
+    val graph = GDLTestGraph("({name: 'foo'}), ({name: 'bar'}), (), (), (), ({name: 'baz'})")
 
     val result = graph.cypher("MATCH (n) RETURN count(n)")
 
@@ -162,7 +162,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("count(*) in return without alias") {
-    val graph = TestGraph("({name: 'foo'}), ({name: 'bar'}), (), (), (), ({name: 'baz'})")
+    val graph = GDLTestGraph("({name: 'foo'}), ({name: 'bar'}), (), (), (), ({name: 'baz'})")
 
     val result = graph.cypher("MATCH (n) RETURN count(*)")
 
@@ -172,7 +172,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("simple count(prop)") {
-    val graph = TestGraph("({name: 'foo'}), ({name: 'bar'}), (), (), (), ({name: 'baz'})")
+    val graph = GDLTestGraph("({name: 'foo'}), ({name: 'bar'}), (), (), (), ({name: 'baz'})")
 
     val result = graph.cypher("MATCH (n) WITH count(n.name) AS nonNullNames RETURN nonNullNames")
 
@@ -182,7 +182,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("simple count(node)") {
-    val graph = TestGraph("({name: 'foo'}), ({name: 'bar'}), (), (), (), ({name: 'baz'})")
+    val graph = GDLTestGraph("({name: 'foo'}), ({name: 'bar'}), (), (), (), ({name: 'baz'})")
 
     val result = graph.cypher("MATCH (n) WITH count(n) AS nodes RETURN nodes")
 
@@ -192,7 +192,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("count after expand") {
-    val graph = TestGraph("({name: 'foo'})-->(:B), ({name: 'bar'}), (), ()-->(:B), (), ({name: 'baz'})")
+    val graph = GDLTestGraph("({name: 'foo'})-->(:B), ({name: 'bar'}), (), ()-->(:B), (), ({name: 'baz'})")
 
     val result = graph.cypher("MATCH (n)-->(b:B) WITH count(b) AS nodes RETURN nodes")
 
@@ -202,7 +202,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("count() with grouping in RETURN clause") {
-    val graph = TestGraph("({name: 'foo'}), ({name: 'foo'}), (), (), (), ({name: 'baz'})")
+    val graph = GDLTestGraph("({name: 'foo'}), ({name: 'foo'}), (), (), (), ({name: 'baz'})")
 
     val result = graph.cypher("MATCH (n) RETURN n.name as name, count(*) AS amount")
 
@@ -214,7 +214,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("count() with grouping in WITH clause") {
-    val graph = TestGraph("({name: 'foo'}), ({name: 'foo'}), (), (), (), ({name: 'baz'})")
+    val graph = GDLTestGraph("({name: 'foo'}), ({name: 'foo'}), (), (), (), ({name: 'baz'})")
 
     val result = graph.cypher("MATCH (n) WITH n.name as name, count(*) AS amount RETURN name, amount")
 
@@ -226,7 +226,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("count() with grouping on multiple keys") {
-    val graph = TestGraph("({name: 'foo', age: 42L}), ({name: 'foo', age: 42L}), ({name: 'foo', age: 23L}), (), (), ({name: 'baz', age: 23L})")
+    val graph = GDLTestGraph("({name: 'foo', age: 42L}), ({name: 'foo', age: 42L}), ({name: 'foo', age: 23L}), (), (), ({name: 'baz', age: 23L})")
 
     val result = graph.cypher("MATCH (n) WITH n.name AS name, n.age AS age, count(*) AS amount RETURN name, age, amount")
 
@@ -243,7 +243,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   //--------------------------------------------------------------------------------------------------------------------
 
   test("min(prop) in WITH") {
-    val graph = TestGraph("({val:42L}),({val:23L}),({val:84L})")
+    val graph = GDLTestGraph("({val:42L}),({val:23L}),({val:84L})")
 
     val result = graph.cypher("MATCH (n) WITH MIN(n.val) AS res RETURN res")
 
@@ -253,7 +253,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("min(prop) in RETURN") {
-    val graph = TestGraph("({val:42L}),({val:23L}),({val:84L})")
+    val graph = GDLTestGraph("({val:42L}),({val:23L}),({val:84L})")
 
     val result = graph.cypher("MATCH (n) RETURN MIN(n.val) AS res")
 
@@ -263,7 +263,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("min(prop) with single null value in WITH") {
-    val graph = TestGraph("({val:42L}),({val:23L}),()")
+    val graph = GDLTestGraph("({val:42L}),({val:23L}),()")
 
     val result = graph.cypher("MATCH (n) WITH MIN(n.val) AS res RETURN res")
 
@@ -273,7 +273,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("min(prop) with single null value in RETURN") {
-    val graph = TestGraph("({val:42L}),({val:23L}),()")
+    val graph = GDLTestGraph("({val:42L}),({val:23L}),()")
 
     val result = graph.cypher("MATCH (n) RETURN MIN(n.val) AS res")
 
@@ -283,7 +283,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("min(prop) with single null value in RETURN without alias") {
-    val graph = TestGraph("({val:42L}),({val:23L}),()")
+    val graph = GDLTestGraph("({val:42L}),({val:23L}),()")
 
     val result = graph.cypher("MATCH (n) RETURN MIN(n.val)")
 
@@ -293,7 +293,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   ignore("min(prop) with only null values in WITH") {
-    val graph = TestGraph("({val:NULL}),(),()")
+    val graph = GDLTestGraph("({val:NULL}),(),()")
 
     val result = graph.cypher("MATCH (n) WITH MIN(n.val) AS res RETURN res")
 
@@ -303,7 +303,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   ignore("min(prop) with only null values in RETURN") {
-    val graph = TestGraph("({val:NULL}),(),()")
+    val graph = GDLTestGraph("({val:NULL}),(),()")
 
     val result = graph.cypher("MATCH (n) RETURN MIN(n.val) AS res")
 
@@ -317,7 +317,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   //--------------------------------------------------------------------------------------------------------------------
 
   test("max(prop) in WITH") {
-    val graph = TestGraph("({val:42L}),({val:23L}),({val:84L})")
+    val graph = GDLTestGraph("({val:42L}),({val:23L}),({val:84L})")
 
     val result = graph.cypher("MATCH (n) WITH MAX(n.val) AS res RETURN res")
 
@@ -327,7 +327,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("max(prop) in RETURN") {
-    val graph = TestGraph("({val:42L}),({val:23L}),({val:84L})")
+    val graph = GDLTestGraph("({val:42L}),({val:23L}),({val:84L})")
 
     val result = graph.cypher("MATCH (n) RETURN MAX(n.val) AS res")
 
@@ -337,7 +337,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("max(prop) with single null value in WITH") {
-    val graph = TestGraph("({val:42L}),({val:23L}),()")
+    val graph = GDLTestGraph("({val:42L}),({val:23L}),()")
 
     val result = graph.cypher("MATCH (n) WITH MAX(n.val) AS res RETURN res")
 
@@ -347,7 +347,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("max(prop) with single null value in RETURN") {
-    val graph = TestGraph("({val:42L}),({val:23L}),()")
+    val graph = GDLTestGraph("({val:42L}),({val:23L}),()")
 
     val result = graph.cypher("MATCH (n) RETURN MAX(n.val) AS res")
 
@@ -357,7 +357,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("max(prop) with single null value in RETURN without alias") {
-    val graph = TestGraph("({val:42L}),({val:23L}),()")
+    val graph = GDLTestGraph("({val:42L}),({val:23L}),()")
 
     val result = graph.cypher("MATCH (n) RETURN MAX(n.val)")
 
@@ -367,7 +367,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   ignore("simple max(prop) with only null values in WITH") {
-    val graph = TestGraph("({val:NULL}),(),()")
+    val graph = GDLTestGraph("({val:NULL}),(),()")
 
     val result = graph.cypher("MATCH (n) WITH MAX(n.val) AS res RETURN res")
 
@@ -377,7 +377,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   ignore("simple max(prop) with only null values in RETURN") {
-    val graph = TestGraph("({val:NULL}),(),()")
+    val graph = GDLTestGraph("({val:NULL}),(),()")
 
     val result = graph.cypher("MATCH (n) RETURN MAX(n.val) AS res")
 
@@ -390,7 +390,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   //--------------------------------------------------------------------------------------------------------------------
 
   test("sum(prop) with integers in WITH") {
-    val graph = TestGraph("({val:2L}),({val:4L}),({val:6L})")
+    val graph = GDLTestGraph("({val:2L}),({val:4L}),({val:6L})")
 
     val result = graph.cypher("MATCH (n) WITH SUM(n.val) AS res RETURN res")
 
@@ -400,7 +400,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("sum(prop) with integers in RETURN") {
-    val graph = TestGraph("({val:2L}),({val:4L}),({val:6L})")
+    val graph = GDLTestGraph("({val:2L}),({val:4L}),({val:6L})")
 
     val result = graph.cypher("MATCH (n) RETURN SUM(n.val) AS res")
 
@@ -410,7 +410,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("sum(prop) with floats in WITH") {
-    val graph = TestGraph("({val:5.0D}),({val:5.0D}),({val:0.5D})")
+    val graph = GDLTestGraph("({val:5.0D}),({val:5.0D}),({val:0.5D})")
 
     val result = graph.cypher("MATCH (n) WITH SUM(n.val) AS res RETURN res")
 
@@ -420,7 +420,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("sum(prop) with floats in RETURN") {
-    val graph = TestGraph("({val:5.0D}),({val:5.0D}),({val:0.5D})")
+    val graph = GDLTestGraph("({val:5.0D}),({val:5.0D}),({val:0.5D})")
 
     val result = graph.cypher("MATCH (n) RETURN SUM(n.val) AS res")
 
@@ -430,7 +430,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("sum(prop) with floats in RETURN without alias") {
-    val graph = TestGraph("({val:5.0D}),({val:5.0D}),({val:0.5D})")
+    val graph = GDLTestGraph("({val:5.0D}),({val:5.0D}),({val:0.5D})")
 
     val result = graph.cypher("MATCH (n) RETURN SUM(n.val)")
 
@@ -440,7 +440,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("simple sum(prop) with single null value in WITH") {
-    val graph = TestGraph("({val:42.0D}),({val:23.0D}),()")
+    val graph = GDLTestGraph("({val:42.0D}),({val:23.0D}),()")
 
     val result = graph.cypher("MATCH (n) WITH SUM(n.val) AS res RETURN res")
 
@@ -450,7 +450,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("simple sum(prop) with single null value in RETURN") {
-    val graph = TestGraph("({val:42.0D}),({val:23.0D}),()")
+    val graph = GDLTestGraph("({val:42.0D}),({val:23.0D}),()")
 
     val result = graph.cypher("MATCH (n) RETURN SUM(n.val) AS res")
 
@@ -460,7 +460,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   ignore("simple sum(prop) with only null values in WITH") {
-    val graph = TestGraph("({val:NULL}),(),()")
+    val graph = GDLTestGraph("({val:NULL}),(),()")
 
     val result = graph.cypher("MATCH (n) WITH SUM(n.val) AS res RETURN res")
 
@@ -470,7 +470,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   ignore("simple sum(prop) with only null values in RETURN") {
-    val graph = TestGraph("({val:NULL}),(),()")
+    val graph = GDLTestGraph("({val:NULL}),(),()")
 
     val result = graph.cypher("MATCH (n) RETURN SUM(n.val) AS res")
 
@@ -484,7 +484,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   //--------------------------------------------------------------------------------------------------------------------
 
   test("collect(prop) with integers in WITH") {
-    val graph = TestGraph("({val:2L}),({val:4L}),({val:6L})")
+    val graph = GDLTestGraph("({val:2L}),({val:4L}),({val:6L})")
 
     val result = graph.cypher("MATCH (n) WITH COLLECT(n.val) AS res RETURN res")
 
@@ -494,7 +494,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("collect(prop) with integers in RETURN") {
-    val graph = TestGraph("({val:2L}),({val:4L}),({val:6L})")
+    val graph = GDLTestGraph("({val:2L}),({val:4L}),({val:6L})")
 
     val result = graph.cypher("MATCH (n) RETURN COLLECT(n.val) AS res")
 
@@ -505,7 +505,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
 
   test("simple collect(prop) with single null value in WITH") {
-    val graph = TestGraph("({val:42.0D}),({val:23.0D}),()")
+    val graph = GDLTestGraph("({val:42.0D}),({val:23.0D}),()")
 
     val result = graph.cypher("MATCH (n) WITH COLLECT(n.val) AS res RETURN res")
 
@@ -515,7 +515,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("simple collect(prop) with single null value in RETURN") {
-    val graph = TestGraph("({val:42.0D}),({val:23.0D}),()")
+    val graph = GDLTestGraph("({val:42.0D}),({val:23.0D}),()")
 
     val result = graph.cypher("MATCH (n) RETURN COLLECT(n.val) AS res")
 
@@ -526,7 +526,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
 
 
   test("simple collect(prop) with only null values in WITH") {
-    val graph = TestGraph("({val:NULL}),(),()")
+    val graph = GDLTestGraph("({val:NULL}),(),()")
 
     val result = graph.cypher("MATCH (n) WITH Collect(n.val) AS res RETURN res")
 
@@ -536,7 +536,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("simple collect(prop) with only null values in RETURN") {
-    val graph = TestGraph("({val:NULL}),(),()")
+    val graph = GDLTestGraph("({val:NULL}),(),()")
 
     val result = graph.cypher("MATCH (n) RETURN COLLECT(n.val) AS res")
 
@@ -550,7 +550,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   //--------------------------------------------------------------------------------------------------------------------
 
   test("multiple aggregates in WITH") {
-    val graph = TestGraph("({val:42L}),({val:23L}),({val:84L})")
+    val graph = GDLTestGraph("({val:42L}),({val:23L}),({val:84L})")
 
     val result = graph.cypher(
       """MATCH (n)
@@ -569,7 +569,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("multiple aggregates in RETURN") {
-    val graph = TestGraph("({val:42L}),({val:23L}),({val:84L})")
+    val graph = GDLTestGraph("({val:42L}),({val:23L}),({val:84L})")
 
     val result = graph.cypher(
       """MATCH (n)
@@ -587,7 +587,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("multiple aggregates with grouping in RETURN clause") {
-    val graph = TestGraph("({key: 'a', val:42L}),({key: 'a',val:23L}),({key: 'b', val:84L})")
+    val graph = GDLTestGraph("({key: 'a', val:42L}),({key: 'a',val:23L}),({key: 'b', val:84L})")
 
     val result = graph.cypher(
       """MATCH (n)
@@ -607,7 +607,7 @@ class AggregationAcceptanceTest extends CAPSTestSuite {
   }
 
   test("multiple aggregates with grouping in WITH clause") {
-    val graph = TestGraph("({key: 'a', val:42L}),({key: 'a',val:23L}),({key: 'b', val:84L})")
+    val graph = GDLTestGraph("({key: 'a', val:42L}),({key: 'a',val:23L}),({key: 'b', val:84L})")
 
     val result = graph.cypher(
       """MATCH (n)

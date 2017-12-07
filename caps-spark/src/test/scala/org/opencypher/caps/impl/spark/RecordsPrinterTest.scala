@@ -25,6 +25,7 @@ import org.opencypher.caps.api.types.CTNode
 import org.opencypher.caps.api.util.PrintOptions
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.test.CAPSTestSuite
+import org.opencypher.caps.test.support.testgraph.GDLTestGraph
 
 
 class RecordsPrinterTest extends CAPSTestSuite {
@@ -116,7 +117,7 @@ class RecordsPrinterTest extends CAPSTestSuite {
   }
 
   test("return property values without alias") {
-    val given = TestGraph(
+    val given = GDLTestGraph(
       """
         |(a:Person {name: "Alice"})-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person {name: "Bob"})
       """.stripMargin)

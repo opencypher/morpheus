@@ -17,13 +17,14 @@ package org.opencypher.caps.impl.spark.cypher
 
 import org.opencypher.caps.api.value.{CypherList, CypherMap}
 import org.opencypher.caps.test.CAPSTestSuite
+import org.opencypher.caps.test.support.testgraph.GDLTestGraph
 
 import scala.collection.immutable.Bag
 
 class PredicateAcceptanceTest extends CAPSTestSuite {
 
   test("exists()") {
-    val given = TestGraph("({id: 1l}), ({id: 2l}), ({other: 'foo'}), ()")
+    val given = GDLTestGraph("({id: 1l}), ({id: 2l}), ({other: 'foo'}), ()")
 
     val result = given.cypher("MATCH (n) WHERE exists(n.id) RETURN n.id")
 
@@ -35,7 +36,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
 
   test("in") {
     // Given
-    val given = TestGraph("""(:A {val: 1L}), (:A {val: 2L}), (:A {val: 3L})""")
+    val given = GDLTestGraph("""(:A {val: 1L}), (:A {val: 2L}), (:A {val: 3L})""")
 
     // When
     val result = given.cypher("MATCH (a:A) WHERE a.val IN [-1, 2, 5, 0] RETURN a.val")
@@ -51,7 +52,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
 
   test("in with parameter") {
     // Given
-    val given = TestGraph("""(:A {val: 1L}), (:A {val: 2L}), (:A {val: 3L})""")
+    val given = GDLTestGraph("""(:A {val: 1L}), (:A {val: 2L}), (:A {val: 3L})""")
 
     // When
     val result = given.cypher("MATCH (a:A) WHERE a.val IN $list RETURN a.val", Map("list" -> CypherList(Seq(-1, 2, 5, 0))))
@@ -67,7 +68,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
 
   test("or") {
     // Given
-    val given = TestGraph("""(:A {val: 1L}), (:A {val: 2L}), (:A {val: 3L})""")
+    val given = GDLTestGraph("""(:A {val: 1L}), (:A {val: 2L}), (:A {val: 3L})""")
 
     // When
     val result = given.cypher("MATCH (a:A) WHERE a.val = 1 OR a.val = 2 RETURN a.val")
@@ -84,7 +85,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
 
   test("or on labels") {
     // Given
-    val given = TestGraph("""(:A {val: 1L}), (:B {val: 2L}), (:C {val: 3L})""")
+    val given = GDLTestGraph("""(:A {val: 1L}), (:B {val: 2L}), (:C {val: 3L})""")
 
     // When
     val result = given.cypher("MATCH (a) WHERE a:A OR a:B RETURN a.val")
@@ -101,7 +102,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
 
   test("or with and") {
     // Given
-    val given = TestGraph("""(:A {val: 1L, name: 'a'}),
+    val given = GDLTestGraph("""(:A {val: 1L, name: 'a'}),
                             |(:A {val: 2L, name: 'a'}),
                             |(:A {val: 3L, name: 'e'}),
                             |(:A {val: 4L}),
@@ -123,7 +124,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
 
   test("equality between properties") {
     // Given
-    val given = TestGraph("""(:A {val: 1L})-->(:B {p: 2L}),
+    val given = GDLTestGraph("""(:A {val: 1L})-->(:B {p: 2L}),
                             |(:A {val: 2L})-->(:B {p: 1L}),
                             |(:A {val: 100L})-->(:B {p: 100L}),
                             |(:A {val: 1L})-->(:B),
@@ -146,7 +147,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
   test("less than") {
 
     // Given
-    val given = TestGraph("""(:Node {val: 4L})-->(:Node {val: 5L})""")
+    val given = GDLTestGraph("""(:Node {val: 4L})-->(:Node {val: 5L})""")
 
     // When
     val result = given.cypher("MATCH (n:Node)-->(m:Node) WHERE n.val < m.val RETURN n.val")
@@ -162,7 +163,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
 
   test("less than or equal") {
     // Given
-    val given = TestGraph("""(:Node {id: 1L, val: 4L})-->(:Node {id: 2L, val: 5L})-->(:Node {id: 3L, val: 5L})""")
+    val given = GDLTestGraph("""(:Node {id: 1L, val: 4L})-->(:Node {id: 2L, val: 5L})-->(:Node {id: 3L, val: 5L})""")
 
     // When
     val result = given.cypher("MATCH (n:Node)-->(m:Node) WHERE n.val <= m.val RETURN n.id, n.val")
@@ -178,7 +179,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
 
   test("greater than") {
     // Given
-    val given = TestGraph("""(:Node {val: 4L})-->(:Node {val:5L})""")
+    val given = GDLTestGraph("""(:Node {val: 4L})-->(:Node {val:5L})""")
 
     // When
     val result = given.cypher("MATCH (n:Node)<--(m:Node) WHERE n.val > m.val RETURN n.val")
@@ -194,7 +195,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
 
   test("greater than or equal") {
     // Given
-    val given = TestGraph("""(:Node {id: 1L, val: 4L})-->(:Node {id: 2L, val: 5L})-->(:Node {id: 3L, val: 5L})""")
+    val given = GDLTestGraph("""(:Node {id: 1L, val: 4L})-->(:Node {id: 2L, val: 5L})-->(:Node {id: 3L, val: 5L})""")
 
     // When
     val result = given.cypher("MATCH (n:Node)<--(m:Node) WHERE n.val >= m.val RETURN n.id, n.val")
@@ -211,7 +212,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
 
   test("float conversion for integer division") {
     // Given
-    val given = TestGraph("""(:Node {id: 1L, val: 4L}), (:Node {id: 2L, val: 5L}), (:Node {id: 3L, val: 5L})""")
+    val given = GDLTestGraph("""(:Node {id: 1L, val: 4L}), (:Node {id: 2L, val: 5L}), (:Node {id: 3L, val: 5L})""")
 
     // When
     val result = given.cypher("MATCH (n:Node) WHERE (n.val * 1.0) / n.id >= 2.5 RETURN n.id")
@@ -228,7 +229,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
 
   test("basic pattern predicate") {
     // Given
-    val given = TestGraph(
+    val given = GDLTestGraph(
       """
         |(v {id:1L})-->({id:2L})-->(w {id:3L}),
         |(v)-->(w),
@@ -246,7 +247,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
 
   test("pattern predicate with var-length-expand") {
     // Given
-    val given = TestGraph("(v {id:1L})-->({id:2L})-->({id:3L})<--(v)")
+    val given = GDLTestGraph("(v {id:1L})-->({id:2L})-->({id:3L})<--(v)")
 
     // When
     val result = given.cypher("MATCH (a)-->(b) WHERE (a)-[*1..3]->()-->(b) RETURN a.id, b.id")
@@ -259,7 +260,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
 
   test("simple pattern predicate with node predicate") {
     // Given
-    val given = TestGraph(
+    val given = GDLTestGraph(
       """
         |({id:1L})-->({name: 'foo'})
         |({id:3L})-->({name: 'bar'})
@@ -276,7 +277,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
 
   test("simple pattern predicate with relationship predicate") {
     // Given
-    val given = TestGraph(
+    val given = GDLTestGraph(
       """
         |(v{id:1L})-[{val: 'foo'}]->()-->({id:2L})<--(v),
         |(w{id:3L})-[{val: 'bar'}]->()-->({id:4L})<--(w)
@@ -293,7 +294,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
 
   test("simple pattern predicate with node label predicate") {
     // Given
-    val given = TestGraph(
+    val given = GDLTestGraph(
       """
         |(v{id:1L})-[{val: 'foo'}]->(:A)-->({id:2L})<--(v),
         |(w{id:3L})-[{val: 'bar'}]->(:B)-->({id:4L})<--(w)
@@ -310,7 +311,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
 
   test("simple pattern predicate with relationship type predicate") {
     // Given
-    val given = TestGraph(
+    val given = GDLTestGraph(
       """
         |(v{id:1L})-[:A]->()-->({id:2L})<--(v),
         |(w{id:3L})-[:B]->()-->({id:4L})<--(w)
@@ -327,7 +328,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
 
   test("inverse pattern predicate") {
     // Given
-    val given = TestGraph("(v {id:1L})-->({id:2L})-->({id:3L})<--(v)")
+    val given = GDLTestGraph("(v {id:1L})-->({id:2L})-->({id:3L})<--(v)")
 
     // When
     val result = given.cypher("MATCH (a)-->(b) WHERE NOT (a)-->()-->(b) RETURN a.id, b.id")
@@ -340,7 +341,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
   }
 
   test("nested pattern predicate") {
-    val given = TestGraph(
+    val given = GDLTestGraph(
       """
         |({id: 1L, age: 21L}),
         |({id: 2L, age: 18L, foo: true}),
@@ -363,7 +364,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
 
   test("pattern predicate with derived node predicate") {
     // Given
-    val given = TestGraph("({id:1L, val:0L})-->({id:3L, val:2L}), ({id:2L, val:0L})-->({id:3L, val:1L})")
+    val given = GDLTestGraph("({id:1L, val:0L})-->({id:3L, val:2L}), ({id:2L, val:0L})-->({id:3L, val:1L})")
 
     // When
     val result = given.cypher("MATCH (a) WHERE (a)-->({val: a.val + 2}) RETURN a.id")
@@ -376,7 +377,7 @@ class PredicateAcceptanceTest extends CAPSTestSuite {
 
   test("multiple predicate patterns") {
     // Given
-    val given = TestGraph("({id:1L})-->({id:2L, foo: true})")
+    val given = GDLTestGraph("({id:1L})-->({id:2L, foo: true})")
 
     // When
     val result = given.cypher("MATCH (a) WHERE (a)-->({id: 2, foo: true}) RETURN a.id")

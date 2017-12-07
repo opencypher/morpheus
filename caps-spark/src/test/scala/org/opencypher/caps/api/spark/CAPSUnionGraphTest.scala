@@ -18,6 +18,7 @@ package org.opencypher.caps.api.spark
 import org.apache.spark.sql.Row
 import org.opencypher.caps.api.record.NodeScan
 import org.opencypher.caps.test.CAPSTestSuite
+import org.opencypher.caps.test.support.testgraph.GDLTestGraph
 
 import scala.collection.Bag
 
@@ -25,7 +26,7 @@ class CAPSUnionGraphTest extends CAPSTestSuite {
   import CAPSGraphGDLTestData._
 
   test("Node scan from single node CAPSRecords") {
-    val inputGraph = TestGraph(`:Person`).graph
+    val inputGraph = GDLTestGraph(`:Person`).graph
     val inputNodes = inputGraph.nodes("n")
 
     val patternGraph = CAPSUnionGraph(CAPSGraph.create(inputNodes, inputGraph.schema))
@@ -48,7 +49,7 @@ class CAPSUnionGraphTest extends CAPSTestSuite {
   }
 
   test("Node scan from multiple single node CAPSRecords") {
-    val unionGraph = CAPSUnionGraph(TestGraph(`:Person`).graph, TestGraph(`:Book`).graph)
+    val unionGraph = CAPSUnionGraph(GDLTestGraph(`:Person`).graph, GDLTestGraph(`:Book`).graph)
     val outputNodes = unionGraph.nodes("n")
 
     outputNodes.toDF().columns should equal(Array(
@@ -74,7 +75,7 @@ class CAPSUnionGraphTest extends CAPSTestSuite {
   }
 
   test("Returns only distinct results") {
-    val inputGraph = TestGraph(`:Person`).graph
+    val inputGraph = GDLTestGraph(`:Person`).graph
     val inputNodes = inputGraph.nodes("n")
     val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema)
     val nodeScan = NodeScan.on("n" -> "ID") {
@@ -115,8 +116,8 @@ class CAPSUnionGraphTest extends CAPSTestSuite {
 
   private def initPersonReadsBookGraph: CAPSGraph = {
     CAPSUnionGraph(
-      TestGraph(`:READS`).graph,
-      CAPSUnionGraph(TestGraph(`:Book`).graph,
-        CAPSUnionGraph(TestGraph(`:Person`).graph)))
+      GDLTestGraph(`:READS`).graph,
+      CAPSUnionGraph(GDLTestGraph(`:Book`).graph,
+        CAPSUnionGraph(GDLTestGraph(`:Person`).graph)))
   }
 }

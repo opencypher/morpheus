@@ -25,6 +25,7 @@ import org.opencypher.caps.api.types.CTNode
 import org.opencypher.caps.impl.logical.LogicalExternalGraph
 import org.opencypher.caps.impl.spark.physical.operators._
 import org.opencypher.caps.test.CAPSTestSuite
+import org.opencypher.caps.test.support.testgraph.GDLTestGraph
 
 class PhysicalOptimizerTest extends CAPSTestSuite {
   val emptyRecords = CAPSRecords.empty(RecordHeader.empty)
@@ -111,7 +112,7 @@ class PhysicalOptimizerTest extends CAPSTestSuite {
 
   test("test caches expand into for triangle") {
     // Given
-    val given = TestGraph(
+    val given = GDLTestGraph(
       """
         |(p1:Person {name: "Alice"}),
         |(p2:Person {name: "Bob"}),
@@ -137,7 +138,7 @@ class PhysicalOptimizerTest extends CAPSTestSuite {
 
   test("test caching expand into after var expand") {
     // Given
-    val given = TestGraph(
+    val given = GDLTestGraph(
       """
         |(p1:Person {name: "Alice"}),
         |(p2:Person {name: "Bob"}),
@@ -169,7 +170,7 @@ class PhysicalOptimizerTest extends CAPSTestSuite {
 
   test("test caching optional match with duplicates") {
     // Given
-    val given = TestGraph(
+    val given = GDLTestGraph(
       """
         |(p1:Person {name: "Alice"}),
         |(p2:Person {name: "Bob"}),

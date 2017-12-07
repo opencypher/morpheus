@@ -17,14 +17,15 @@ package org.opencypher.caps.impl.spark.cypher
 
 import org.opencypher.caps.api.value.CypherMap
 import org.opencypher.caps.test.CAPSTestSuite
+import org.opencypher.caps.test.support.testgraph.GDLTestGraph
 
 import scala.collection.immutable.Bag
 
 class MultigraphProjectionAcceptanceTest extends CAPSTestSuite {
 
-  private val testGraph1 = TestGraph("(:Person {name: 'Mats'})")
-  private val testGraph2 = TestGraph("(:Person {name: 'Phil'})")
-  private val testGraph3 = TestGraph("(:Car {type: 'Toyota'})")
+  private val testGraph1 = GDLTestGraph("(:Person {name: 'Mats'})")
+  private val testGraph2 = GDLTestGraph("(:Person {name: 'Phil'})")
+  private val testGraph3 = GDLTestGraph("(:Car {type: 'Toyota'})")
 
   test("returning a graph") {
     testGraph1.mountAt("/test/graph1")
