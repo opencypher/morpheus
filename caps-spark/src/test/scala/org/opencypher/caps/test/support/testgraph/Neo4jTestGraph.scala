@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.test.support.testgraph
 
-import org.neo4j.graphdb.{GraphDatabaseService, Node, Relationship}
+import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.harness.TestServerBuilders
 import org.opencypher.caps.api.spark.CAPSSession
 import org.opencypher.caps.test.support.testgraph.Neo4jTestGraph._
@@ -24,7 +24,7 @@ import scala.collection.JavaConverters._
 import scala.collection.immutable.Map
 
 final case class Neo4jTestGraph(query: String)(implicit caps: CAPSSession)
-    extends TestGraph[GraphDatabaseService, Node, Relationship] {
+    extends TestGraph[GraphDatabaseService, org.neo4j.graphdb.Node, org.neo4j.graphdb.Relationship] {
 
   private val neo4jServer = TestServerBuilders.newInProcessBuilder()
       .withConfig("dbms.security.auth_enabled", "true")
@@ -38,7 +38,7 @@ final case class Neo4jTestGraph(query: String)(implicit caps: CAPSSession)
 
 object Neo4jTestGraph {
 
-  implicit class NeoInputNode(neoNode: Node) extends RichInputNode {
+  implicit class NeoInputNode(neoNode:org.neo4j.graphdb.Node) extends RichInputNode {
     override def labels: Set[String] = neoNode.getLabels.asScala.map(_.name).toSet
 
     override def id: Long = neoNode.getId
@@ -46,7 +46,7 @@ object Neo4jTestGraph {
     override def properties: Map[String, AnyRef] = neoNode.getAllProperties.asScala.toMap
   }
 
-  implicit class NeoInputRelationship(neoRel: Relationship) extends RichInputRelationship {
+  implicit class NeoInputRelationship(neoRel: org.neo4j.graphdb.Relationship) extends RichInputRelationship {
     override def relType: String = neoRel.getType.name
 
     override def sourceId: Long = neoRel.getStartNodeId
@@ -58,17 +58,19 @@ object Neo4jTestGraph {
     override def properties: Map[String, AnyRef] = neoRel.getAllProperties.asScala.toMap
   }
 
-  implicit class NeoInputGraph(neoGraph: GraphDatabaseService) extends RichInputGraph[Node, Relationship] {
-    override def allNodes: Set[Node] = {
+  implicit class NeoInputGraph(neoGraph: GraphDatabaseService)
+      extends RichInputGraph[org.neo4j.graphdb.Node, org.neo4j.graphdb.Relationship] {
+
+    override def allNodes: Set[org.neo4j.graphdb.Node] = {
       val tx = neoGraph.beginTx
-      val nodes: Set[Node] = neoGraph.getAllNodes.asScala.toSet
+      val nodes: Set[org.neo4j.graphdb.Node] = neoGraph.getAllNodes.asScala.toSet
       tx.success()
       nodes
     }
 
-    override def allRels: Set[Relationship] = {
+    override def allRels: Set[org.neo4j.graphdb.Relationship] = {
       val tx = neoGraph.beginTx
-      val rels: Set[Relationship] = neoGraph.getAllRelationships.asScala.toSet
+      val rels: Set[org.neo4j.graphdb.Relationship] = neoGraph.getAllRelationships.asScala.toSet
       tx.success()
       rels
     }

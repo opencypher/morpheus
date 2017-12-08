@@ -56,9 +56,12 @@ object CypherCreateParser {
 
   def processPatternElement(patternElement: ASTNode)(implicit state: PropertyGraph, context: ParsingContext): PropertyGraph = {
     patternElement match {
-      case NodePattern(Some(variable), labels, Some(properties: MapExpression)) =>
+      case NodePattern(Some(variable), labels, props) =>
         if (state.getElementByVariable(variable.name).isEmpty) {
-          val newNode = Node(variable.name, context.nextId, labels.map(_.name).toSet, extractProperties(properties))
+          val newNode = props match {
+            case Some(properties: MapExpression) => Node(variable.name, context.nextId, labels.map(_.name).toSet, extractProperties(properties))
+            case _ => Node(variable.name, context.nextId, labels.map(_.name).toSet, Map.empty)
+          }
           state.updated(newNode)
         } else {
           state
