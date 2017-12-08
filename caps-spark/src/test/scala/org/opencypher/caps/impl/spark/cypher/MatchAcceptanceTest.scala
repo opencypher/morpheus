@@ -22,31 +22,6 @@ import org.opencypher.caps.test.support.testgraph.GDLTestGraph
 import scala.collection.Bag
 
 class MatchAcceptanceTest extends CAPSTestSuite {
-
-  testWithGDL("match a trivial query with GDL")("""(p:Person {firstName: "Alice", lastName: "Foo"})""") { given =>
-        // When
-    val result = given.cypher(
-      """
-        |MATCH (a:Person)
-        |RETURN a.firstName
-      """.stripMargin)
-
-    // Then
-    result.records.toMaps should equal(Bag(CypherMap("a.firstName" -> "Alice")))
-  }
-
-  testWithCypher("match a trivial query via Cypher")("""CREATE (p:Person {firstName: "Alice", lastName: "Foo"})""") { given =>
-    // When
-    val result = given.cypher(
-      """
-        |MATCH (a:Person)
-        |RETURN a.firstName
-      """.stripMargin)
-
-    // Then
-    result.records.toMaps should equal(Bag(CypherMap("a.firstName" -> "Alice")))
-  }
-
   test("match a trivial query") {
     // Given
     val given = GDLTestGraph(
