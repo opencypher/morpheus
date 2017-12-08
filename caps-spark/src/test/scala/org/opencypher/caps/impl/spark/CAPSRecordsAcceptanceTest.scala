@@ -69,7 +69,7 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
 
     // Then
     result.records.toDF().collect().toBag should equal(Bag(
-      Row(2L, "Vanessa Redgrave", 1937L, true, true, 21L, 2L, "ACTED_IN", 20L, "Guenevere")
+      Row(2L, true, true, 1937L, "Vanessa Redgrave", 21L, 2L, "ACTED_IN", 20L, "Guenevere")
     ))
   }
 

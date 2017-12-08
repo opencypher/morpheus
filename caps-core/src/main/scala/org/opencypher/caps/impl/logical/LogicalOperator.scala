@@ -235,13 +235,13 @@ final case class Optional(lhs: LogicalOperator, rhs: LogicalOperator, solved: So
   override val fields: Set[Var] = lhs.fields ++ rhs.fields
 }
 
-final case class PatternPredicate(
-    pattern: PatternExpr,
+final case class ExistsPatternPredicate(
+    expr: ExistsPatternExpr,
     lhs: LogicalOperator,
     rhs: LogicalOperator,
     solved: SolvedQueryModel[Expr]) extends BinaryLogicalOperator {
 
-  override val fields: Set[Var] = lhs.fields + pattern.predicateField
+  override val fields: Set[Var] = lhs.fields + expr.predicateField
 }
 
 final case class SetSourceGraph(

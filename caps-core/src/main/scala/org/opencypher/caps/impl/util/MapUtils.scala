@@ -25,6 +25,17 @@ trait MapUtils {
         case (k, Some(v1), _) => k -> v1
         case (k, _, Some(v2)) => k -> v2
       }.toMap
+
+  def submap[A, B](keys: Seq[A], a: Map[A, B]): Map[A, B] = {
+    a.filterKeys(keys.contains)
+  }
 }
 
-object MapUtils extends MapUtils
+object MapUtils extends MapUtils {
+  implicit class RichMapUtils[A, B](map: Map[A, B]) {
+
+    def merge(other: Map[A, B])(mergeValues: (B, B) => B): Map[A, B] = MapUtils.merge(map, other)(mergeValues)
+
+    def submap(keys: Seq[A]): Map[A, B] = MapUtils.submap(keys, map)
+  }
+}

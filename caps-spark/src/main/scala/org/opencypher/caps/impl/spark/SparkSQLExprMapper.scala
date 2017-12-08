@@ -252,8 +252,8 @@ object SparkSQLExprMapper {
         Some(getColumn(e, header, df).cast(DoubleType))
 
       // Pattern Predicate
-      case pe: PatternExpr =>
-        Some(getColumn(pe, header, df))
+      case ep: ExistsPatternExpr =>
+        Some(getColumn(ep, header, df))
 
       case _ =>
         None

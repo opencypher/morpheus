@@ -15,19 +15,40 @@
  */
 package org.opencypher.caps.impl.parse.rewriter
 
-import org.neo4j.cypher.internal.frontend.v3_3.inSequence
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{CNFNormalizer, Forced, literalReplacement}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{BaseContext, BaseState, Phase}
+import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, inSequence}
+import org.opencypher.caps.impl.util.MapUtils
 
 case object CAPSRewriting extends Phase[BaseContext, BaseState, BaseState] {
 
   override def process(from: BaseState, context: BaseContext): BaseState = {
+    val term = from.statement()
 
-    val rewrittenStatement = from.statement().endoRewrite(inSequence(
-      normalizeReturnClauses(context.exceptionCreator)
+    val rewrittenStatement = term.endoRewrite(inSequence(
+      normalizeReturnClauses(context.exceptionCreator),
+      extractSubqueryFromPatternExpression(context.exceptionCreator),
+      CNFNormalizer.instance(context)
     ))
 
-    from.withStatement(rewrittenStatement)
+    // Extract literals of possibly rewritten subqueries
+    // TODO: once this gets into neo4j-frontend, it can be done in literalReplacement
+    val (rewriters, extractedParams) = rewrittenStatement.treeFold(Seq.empty[(Rewriter, Map[String, Any])]) {
+      case ep: ExistsPattern => acc => (acc :+ literalReplacement(ep.query, Forced), None)
+    }.unzip
+
+    // rewrite literals
+    val finalStatement = rewriters.foldLeft(rewrittenStatement) {
+      case (acc, rewriter) => acc.endoRewrite(rewriter)
+    }
+    // merge extracted params
+    val extractedParameters = extractedParams.foldLeft(Map.empty[String, Any]) {
+      case (acc, current) => MapUtils.merge(acc, current)((l, r) => l)
+    }
+
+    from.withStatement(finalStatement)
+        .withParams(from.extractedParams() ++ extractedParameters)
   }
 
   override val phase = AST_REWRITE

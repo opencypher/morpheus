@@ -20,10 +20,9 @@ import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.logical.LogicalGraph
 import org.opencypher.caps.impl.record.{Added, FailedToAdd, Found, Replaced}
-import org.opencypher.caps.impl.exception.Raise
-import org.opencypher.caps.impl.syntax.ExprSyntax._
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.ir.api.block.SortItem
 
@@ -49,10 +48,8 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     val fieldContents = fields.map { field =>
       in.header.slotsFor(field).head.content
     }
-    val exprContents = in.header.contents.collect {
-      case content @ ProjectedExpr(expr) if (expr.dependencies -- fields).isEmpty => content
-    }
-    val finalContents = fieldContents ++ exprContents
+
+    val finalContents = fieldContents ++ fields.flatMap(in.header.childSlots).map(_.content)
 
     val (nextHeader, _) = RecordHeader.empty.update(addContents(finalContents))
 
@@ -201,11 +198,11 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     Optional(lhs, rhs, rhs.header)
   }
 
-  def planPatternPredicate(patternExpr: PatternExpr, lhs: FlatOperator, rhs: FlatOperator): FlatOperator = {
-    val (header, status) = lhs.header.update(addContent(ProjectedField(patternExpr.predicateField, patternExpr)))
+  def planExistsPatternPredicate(expr: ExistsPatternExpr, lhs: FlatOperator, rhs: FlatOperator): FlatOperator = {
+    val (header, status) = lhs.header.update(addContent(ProjectedField(expr.predicateField, expr)))
 
     status match {
-      case _: Added[_]        => PatternPredicate(patternExpr.predicateField, lhs, rhs, header)
+      case _: Added[_]        => ExistsPatternPredicate(expr.predicateField, lhs, rhs, header)
       case f: FailedToAdd[_]  => Raise.slotNotAdded(f.toString)
       case _                  => Raise.impossible("Invalid RecordHeader update status.")
     }

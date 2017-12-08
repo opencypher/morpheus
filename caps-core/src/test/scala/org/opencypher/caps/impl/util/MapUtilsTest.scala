@@ -25,4 +25,10 @@ class MapUtilsTest extends BaseTestSuite {
 
     MapUtils.merge(map1, map2)(_ + _) should equal(Map(1 -> 3, 2 -> 2, 3 -> 3))
   }
+
+  test("submap") {
+    val map = Map(1 -> 1, 2 -> 2, 3 -> 3)
+
+    MapUtils.submap(Seq(1, 2, 4), map) should equal(Map(1 -> 1, 2 -> 2))
+  }
 }

@@ -325,10 +325,6 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     // assertExpr.from("percentileDisc([1, 3.14][$param], 3.14)") shouldHaveInferredType CTInteger
   }
 
-  test("typing of pattern expression") {
-    assertExpr.from("(a)-[:KNOWS]->(b)") shouldHaveInferredType CTBoolean
-  }
-
   private def typeTracker(typings: (String, CypherType)*): TypeTracker =
     TypeTracker(List(typings.map { case (v, t) => varFor(v) -> t }.toMap))
 

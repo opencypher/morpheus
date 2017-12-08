@@ -76,11 +76,11 @@ class LogicalOperatorProducer {
     Optional(nonOptionalPlan, optionalPlan, optionalPlan.solved)
   }
 
-  def planPatternPredicate(
-      patternExpr: PatternExpr,
+  def planExistsPatternPredicate(
+      expr: ExistsPatternExpr,
       matchPlan: LogicalOperator,
-      patternPlan: LogicalOperator): PatternPredicate = {
-    PatternPredicate(patternExpr, matchPlan, patternPlan, matchPlan.solved)
+      patternPlan: LogicalOperator): ExistsPatternPredicate = {
+    ExistsPatternPredicate(expr, matchPlan, patternPlan, matchPlan.solved)
   }
 
   def aggregate(aggregations: Aggregations[Expr], group: Set[IRField], prev: LogicalOperator): Aggregate = {
