@@ -9,7 +9,7 @@ object TCKAdapterForCAPS {
 
   implicit class AsTckGraph(graph: CAPSGraph) extends Graph {
 
-    override def execute(query: String, params: Map[String, CypherValue], queryType: QueryType): (Graph, Records) = {
+    override def execute(query: String, params: Map[String, CypherValue], queryType: QueryType): (Graph, Result) = {
 
       queryType match {
         case InitQuery =>
@@ -22,13 +22,13 @@ object TCKAdapterForCAPS {
         case ExecQuery =>
           // mapValues is lazy, so we force it for debug purposes
           val capsResult = graph.cypher(query, params.mapValues(CAPSValue(_)).view.force)
-          val tckRecords: Records = convertToTckRecords(capsResult.records)
+          val tckRecords = convertToTckStrings(capsResult.records)
           val tckGraph: Graph = capsResult.graphs.values.headOption.map(AsTckGraph).getOrElse(this)
           (tckGraph, tckRecords)
       }
     }
 
-    private def convertToTckRecords(records: CAPSRecords): StringRecords = {
+    private def convertToTckStrings(records: CAPSRecords): StringRecords = {
       val header = records.header.fieldsInOrder.map(_.name).toList
       val rows = records.toLocalScalaIterator.map { cypherMap =>
         cypherMap.keys.map(k => k -> cypherMap.get(k).orNull.toString).toMap
