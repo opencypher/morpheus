@@ -18,13 +18,14 @@ package org.opencypher.caps.impl.spark.cypher
 import org.opencypher.caps.api.value.CypherMap
 import org.opencypher.caps.demo.Configuration.DefaultType
 import org.opencypher.caps.test.CAPSTestSuite
+import org.opencypher.caps.test.support.testgraph.GDLTestGraph
 
 import scala.collection.Bag
 
 class ReturnAcceptanceTest extends CAPSTestSuite {
 
   test("single return query") {
-    val given = TestGraph("[]")
+    val given = GDLTestGraph("[]")
 
     val result  = given.cypher("RETURN 1")
 
@@ -32,7 +33,7 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
   }
 
   test("single return query with several columns") {
-    val given = TestGraph("(), ()")
+    val given = GDLTestGraph("(), ()")
 
     val result  = given.cypher("RETURN 1 AS foo, '' AS str")
 
@@ -40,7 +41,7 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
   }
 
   test("return compact node") {
-    val given = TestGraph("(:Person {foo:'bar'}),()")
+    val given = GDLTestGraph("(:Person {foo:'bar'}),()")
 
     val result = given.cypher("MATCH (n) RETURN n")
 
@@ -51,7 +52,7 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
   }
 
   test("return full node") {
-    val given = TestGraph("({foo:'bar'}),()")
+    val given = GDLTestGraph("({foo:'bar'}),()")
 
     val result = given.cypher("MATCH (n) RETURN n")
 
@@ -62,7 +63,7 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
   }
 
   test("return compact rel") {
-    val given = TestGraph("()-[{foo:'bar'}]->()-[]->()")
+    val given = GDLTestGraph("()-[{foo:'bar'}]->()-[]->()")
 
     val result = given.cypher("MATCH ()-[r]->() RETURN r")
 
@@ -73,7 +74,7 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
   }
 
   test("return full rel") {
-    val given = TestGraph("()-[{foo:'bar'}]->()-[]->()").graph
+    val given = GDLTestGraph("()-[{foo:'bar'}]->()-[]->()").graph
 
     val result = given.cypher("MATCH ()-[r]->() RETURN r")
 
@@ -84,7 +85,7 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
   }
 
   test("return relationship property from relationship without specific type") {
-    val given = TestGraph("()-[{foo:'bar'}]->()-[]->()").graph
+    val given = GDLTestGraph("()-[{foo:'bar'}]->()-[]->()").graph
 
     val result = given.cypher("MATCH ()-[r]->() RETURN r.foo")
 
@@ -95,7 +96,7 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
   }
 
   test("return distinct properties") {
-    val given = TestGraph(
+    val given = GDLTestGraph(
       """({name:'bar'}),
         |({name:'bar'}),
         |({name:'baz'}),
@@ -114,7 +115,7 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
   }
 
   test("return distinct properties for combinations") {
-    val given = TestGraph(
+    val given = GDLTestGraph(
       """({p1:'a', p2: 'a', p3: '1'}),
         |({p1:'a', p2: 'a', p3: '2'}),
         |({p1:'a', p2: 'b', p3: '3'}),
@@ -133,7 +134,7 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
   }
 
   test("order by") {
-    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+    val given = GDLTestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
 
     val result = given.cypher("MATCH (a) RETURN a.val AS val ORDER BY val")
 
@@ -149,7 +150,7 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
   }
 
   test("order by asc") {
-    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+    val given = GDLTestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
 
     val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val ASC")
 
@@ -165,7 +166,7 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
   }
 
   test("order by desc") {
-    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+    val given = GDLTestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
 
     val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val DESC")
 
@@ -181,7 +182,7 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
   }
 
   test("skip") {
-    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+    val given = GDLTestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
 
     val result = given.cypher("MATCH (a) RETURN a.val as val SKIP 2")
 
@@ -193,7 +194,7 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
   }
 
   test("order by with skip") {
-    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+    val given = GDLTestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
 
     val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val SKIP 1")
 
@@ -208,7 +209,7 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
   }
 
   test("order by with (arithmetic) skip") {
-    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+    val given = GDLTestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
 
     val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val SKIP 1 + 1")
 
@@ -222,7 +223,7 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
   }
 
   test("limit") {
-    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+    val given = GDLTestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
 
     val result = given.cypher("MATCH (a) RETURN a.val as val LIMIT 1")
 
@@ -234,7 +235,7 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
   }
 
   test("order by with limit") {
-    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+    val given = GDLTestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
 
     val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val LIMIT 1")
 
@@ -248,7 +249,7 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
   }
 
   test("order by with (arithmetic) limit") {
-    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+    val given = GDLTestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
 
     val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val LIMIT 1 + 1")
 
@@ -263,7 +264,7 @@ class ReturnAcceptanceTest extends CAPSTestSuite {
   }
 
   test("order by with skip and limit") {
-    val given = TestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
+    val given = GDLTestGraph("""(:Node {val: 4L}),(:Node {val: 3L}),(:Node  {val: 42L})""")
 
     val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val SKIP 1 LIMIT 1")
 

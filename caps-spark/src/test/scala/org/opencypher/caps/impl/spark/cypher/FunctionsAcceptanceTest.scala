@@ -18,13 +18,14 @@ package org.opencypher.caps.impl.spark.cypher
 import org.opencypher.caps.api.value.{CypherList, CypherMap}
 import org.opencypher.caps.demo.Configuration.DefaultType
 import org.opencypher.caps.test.CAPSTestSuite
+import org.opencypher.caps.test.support.testgraph.GDLTestGraph
 
 import scala.collection.immutable.Bag
 
 class FunctionsAcceptanceTest extends CAPSTestSuite {
 
   test("exists()") {
-    val given = TestGraph("({id: 1L}), ({id: 2L}), ({other: 'foo'}), ()")
+    val given = GDLTestGraph("({id: 1L}), ({id: 2L}), ({other: 'foo'}), ()")
 
     val result = given.cypher("MATCH (n) RETURN exists(n.id) AS exists")
 
@@ -37,7 +38,7 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
   }
 
   test("type()") {
-    val given = TestGraph("()-[:KNOWS]->()-[:HATES]->()-->()")
+    val given = GDLTestGraph("()-[:KNOWS]->()-[:HATES]->()-->()")
 
     val result = given.cypher("MATCH ()-[r]->() RETURN type(r)")
 
@@ -49,7 +50,7 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
   }
 
   test("id for node") {
-    val given = TestGraph("(),()")
+    val given = GDLTestGraph("(),()")
 
     val result = given.cypher("MATCH (n) RETURN id(n)")
 
@@ -62,7 +63,7 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
   }
 
   test("id for rel") {
-    val given = TestGraph("()-->()-->()")
+    val given = GDLTestGraph("()-->()-->()")
 
     val result = given.cypher("MATCH ()-[e]->() RETURN id(e)")
 
@@ -75,7 +76,7 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
   }
 
   test("get single label") {
-    val given = TestGraph("(:A)(:B)")
+    val given = GDLTestGraph("(:A)(:B)")
 
     val result = given.cypher("MATCH (a) RETURN labels(a)")
 
@@ -86,7 +87,7 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
   }
 
   test("get multiple labels") {
-    val given = TestGraph("(:A:B)(:C:D)")
+    val given = GDLTestGraph("(:A:B)(:C:D)")
 
     val result = given.cypher("MATCH (a) RETURN labels(a)")
 
@@ -97,7 +98,7 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
   }
 
   test("unlabeled nodes") {
-    val given = TestGraph("(:A), (:C:D), ()")
+    val given = GDLTestGraph("(:A), (:C:D), ()")
 
     val result = given.cypher("MATCH (a) RETURN labels(a)")
 
@@ -109,7 +110,7 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
   }
 
   test("size() on literal list") {
-    val given = TestGraph("()")
+    val given = GDLTestGraph("()")
 
     val result = given.cypher("MATCH () RETURN size(['Alice', 'Bob']) as s")
 
@@ -119,7 +120,7 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
   }
 
   test("size() on literal string") {
-    val given = TestGraph("()")
+    val given = GDLTestGraph("()")
 
     val result = given.cypher("MATCH () RETURN size('Alice') as s")
 
@@ -129,7 +130,7 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
   }
 
   test("size() on retrieved string") {
-    val given = TestGraph("({name: 'Alice'})")
+    val given = GDLTestGraph("({name: 'Alice'})")
 
     val result = given.cypher("MATCH (a) RETURN size(a.name) as s")
 
@@ -139,7 +140,7 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
   }
 
   test("size() on constructed list") {
-    val given = TestGraph("(:A:B), (:C:D), (:A), ()")
+    val given = GDLTestGraph("(:A:B), (:C:D), (:A), ()")
 
     val result = given.cypher("MATCH (a) RETURN size(labels(a)) as s")
 
@@ -152,7 +153,7 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
   }
 
   ignore("size() on null") {
-    val given = TestGraph("()")
+    val given = GDLTestGraph("()")
 
     val result = given.cypher("MATCH (a) RETURN size(a.prop) as s")
 
@@ -161,7 +162,7 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
   }
 
   test("keys()") {
-    val given = TestGraph("""({name:'Alice', age:64L, eyes:'brown'})""")
+    val given = GDLTestGraph("""({name:'Alice', age:64L, eyes:'brown'})""")
 
     val result = given.cypher("MATCH (a) WHERE a.name = 'Alice' RETURN keys(a) as k")
 
@@ -173,7 +174,7 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
   }
 
   test("keys() does not return keys of unset properties") {
-    val given = TestGraph(
+    val given = GDLTestGraph(
       """(:Person {name:'Alice', age:64L, eyes:'brown'}),
         | (:Person {name:'Bob', eyes:'blue'})""".stripMargin)
 
@@ -186,7 +187,7 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
 
   // TODO: Enable when "Some error in type inference: Don't know how to type MapExpression" is fixed
   ignore("keys() works with literal maps") {
-    val given = TestGraph("()")
+    val given = GDLTestGraph("()")
 
     val result = given.cypher("MATCH () WITH {person: {name: 'Anne', age: 25}} AS p RETURN keys(p) as k")
 
@@ -196,7 +197,7 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
   }
 
   test("startNode()") {
-    val given = TestGraph("()-[:FOO {val: 'a'}]->(),()-[:FOO {val: 'b'}]->()")
+    val given = GDLTestGraph("()-[:FOO {val: 'a'}]->(),()-[:FOO {val: 'b'}]->()")
 
     val result = given.cypher("MATCH ()-[r:FOO]->() RETURN r.val, startNode(r)")
 
@@ -207,7 +208,7 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
   }
 
   test("endNode()") {
-    val given = TestGraph("()-[:FOO {val: 'a'}]->(),()-[:FOO {val: 'b'}]->()")
+    val given = GDLTestGraph("()-[:FOO {val: 'a'}]->(),()-[:FOO {val: 'b'}]->()")
 
     val result = given.cypher("MATCH (a)-[r]->() RETURN r.val, endNode(r)")
 
@@ -218,7 +219,7 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
   }
 
   test("toFloat from integers") {
-    val given = TestGraph("(a {val: 1l})")
+    val given = GDLTestGraph("(a {val: 1l})")
 
     val result = given.cypher("MATCH (a) RETURN toFloat(a.val) as myFloat")
 
@@ -228,7 +229,7 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
   }
 
   test("toFloat from float") {
-    val given = TestGraph("(a {val: 1.0d})")
+    val given = GDLTestGraph("(a {val: 1.0d})")
 
     val result = given.cypher("MATCH (a) RETURN toFloat(a.val) as myFloat")
 
@@ -238,7 +239,7 @@ class FunctionsAcceptanceTest extends CAPSTestSuite {
   }
 
   test("toFloat from string") {
-    val given = TestGraph("(a {val: '42'})")
+    val given = GDLTestGraph("(a {val: '42'})")
 
     val result = given.cypher("MATCH (a) RETURN toFloat(a.val) as myFloat")
 

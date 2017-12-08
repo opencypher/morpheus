@@ -17,6 +17,7 @@ package org.opencypher.caps.impl.spark.cypher
 
 import org.opencypher.caps.api.value.CypherMap
 import org.opencypher.caps.test.CAPSTestSuite
+import org.opencypher.caps.test.support.testgraph.GDLTestGraph
 
 import scala.collection.Bag
 
@@ -24,7 +25,7 @@ class ExpandIntoAcceptanceTest extends CAPSTestSuite {
 
   test("test expand into for dangling edge") {
     // Given
-    val given = TestGraph(
+    val given = GDLTestGraph(
       """
         |(p1:Person {name: "Alice"}),
         |(p2:Person {name: "Bob"}),
@@ -69,7 +70,7 @@ class ExpandIntoAcceptanceTest extends CAPSTestSuite {
 
   test("test expand into for triangle") {
     // Given
-    val given = TestGraph(
+    val given = GDLTestGraph(
       """
         |(p1:Person {name: "Alice"}),
         |(p2:Person {name: "Bob"}),
@@ -102,7 +103,7 @@ class ExpandIntoAcceptanceTest extends CAPSTestSuite {
 
   test("Expand into after var expand") {
     // Given
-    val given = TestGraph(
+    val given = GDLTestGraph(
       """
         |(p1:Person {name: "Alice"}),
         |(p2:Person {name: "Bob"}),

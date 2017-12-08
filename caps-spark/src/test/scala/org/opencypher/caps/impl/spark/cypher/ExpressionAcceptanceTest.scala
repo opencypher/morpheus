@@ -17,6 +17,7 @@ package org.opencypher.caps.impl.spark.cypher
 
 import org.opencypher.caps.api.value.CypherMap
 import org.opencypher.caps.test.CAPSTestSuite
+import org.opencypher.caps.test.support.testgraph.GDLTestGraph
 
 import scala.collection.Bag
 
@@ -24,7 +25,7 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
 
   test("equality between properties") {
     // Given
-    val given = TestGraph("""(:A {val: 1L})-->(:B {p: 2L}),
+    val given = GDLTestGraph("""(:A {val: 1L})-->(:B {p: 2L}),
                             |(:A {val: 2L})-->(:B {p: 1L}),
                             |(:A {val: 100L})-->(:B {p: 100L}),
                             |(:A {val: 1L})-->(:B),
@@ -52,7 +53,7 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
   test("less than") {
 
     // Given
-    val given = TestGraph("""({val: 4L})-->({val: 5L})-->({val: 5L})-->({val: 2L})-->()""")
+    val given = GDLTestGraph("""({val: 4L})-->({val: 5L})-->({val: 5L})-->({val: 2L})-->()""")
 
     // When
     val result = given.cypher("MATCH (n)-->(m) RETURN n.val < m.val")
@@ -71,7 +72,7 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
 
   test("less than or equal") {
     // Given
-    val given = TestGraph("""({val: 4L})-->({val: 5L})-->({val: 5L})-->({val: 2L})-->()""")
+    val given = GDLTestGraph("""({val: 4L})-->({val: 5L})-->({val: 5L})-->({val: 2L})-->()""")
 
     // When
     val result = given.cypher("MATCH (n)-->(m) RETURN n.val <= m.val")
@@ -89,7 +90,7 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
 
   test("greater than") {
     // Given
-    val given = TestGraph("""({val: 4L})-->({val: 5L})-->({val: 5L})-->({val: 2L})-->()""")
+    val given = GDLTestGraph("""({val: 4L})-->({val: 5L})-->({val: 5L})-->({val: 2L})-->()""")
 
     // When
     val result = given.cypher("MATCH (n)-->(m) RETURN n.val > m.val AS gt")
@@ -108,7 +109,7 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
 
   test("greater than or equal") {
     // Given
-    val given = TestGraph("""({val: 4L})-->({val: 5L})-->({val: 5L})-->({val: 2L})-->()""")
+    val given = GDLTestGraph("""({val: 4L})-->({val: 5L})-->({val: 5L})-->({val: 2L})-->()""")
 
     // When
     val result = given.cypher("MATCH (n)-->(m) RETURN n.val >= m.val")
@@ -127,7 +128,7 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
 
   test("addition") {
     // Given
-    val given = TestGraph("""({val: 4L})-->({val: 5L, other: 3L})-->()""")
+    val given = GDLTestGraph("""({val: 4L})-->({val: 5L, other: 3L})-->()""")
 
     // When
     val result = given.cypher("MATCH (n)-->(m) RETURN m.other + m.val + n.val AS res")
@@ -143,7 +144,7 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
 
   test("subtraction with name") {
     // Given
-    val given = TestGraph("""({val: 4L})-->({val: 5L, other: 3L})-->()""")
+    val given = GDLTestGraph("""({val: 4L})-->({val: 5L, other: 3L})-->()""")
 
     // When
     val result = given.cypher("MATCH (n)-->(m) RETURN m.val - n.val - m.other AS res")
@@ -159,7 +160,7 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
 
   test("subtraction without name") {
     // Given
-    val given = TestGraph("""(:Node {val: 4L})-->(:Node {val: 5L})""")
+    val given = GDLTestGraph("""(:Node {val: 4L})-->(:Node {val: 5L})""")
 
     // When
     val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN m.val - n.val")
@@ -174,7 +175,7 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
 
   test("multiplication with integer") {
     // Given
-    val given = TestGraph("""(:Node {val: 9L})-->(:Node {val: 2L})-->(:Node {val: 3L})""")
+    val given = GDLTestGraph("""(:Node {val: 9L})-->(:Node {val: 2L})-->(:Node {val: 3L})""")
 
     // When
     val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN n.val * m.val")
@@ -191,7 +192,7 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
 
   test("multiplication with float") {
     // Given
-    val given = TestGraph("""(:Node {val: 4.5D})-->(:Node {val: 2.5D})""")
+    val given = GDLTestGraph("""(:Node {val: 4.5D})-->(:Node {val: 2.5D})""")
 
     // When
     val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN n.val * m.val")
@@ -207,7 +208,7 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
 
   test("multiplication with integer and float") {
     // Given
-    val given = TestGraph("""(:Node {val: 9L})-->(:Node {val2: 2.5D})""")
+    val given = GDLTestGraph("""(:Node {val: 9L})-->(:Node {val2: 2.5D})""")
 
     // When
     val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN n.val * m.val2")
@@ -223,7 +224,7 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
 
   test("division with no remainder") {
     // Given
-    val given = TestGraph("""(:Node {val: 9L})-->(:Node {val: 3L})-->(:Node {val: 2L})""")
+    val given = GDLTestGraph("""(:Node {val: 9L})-->(:Node {val: 3L})-->(:Node {val: 2L})""")
 
     // When
     val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN n.val / m.val")
@@ -240,7 +241,7 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
 
   test("division integer and float and null") {
     // Given
-    val given = TestGraph("""(:Node {val: 9L})-->(:Node {val2: 4.5D})-->(:Node)""")
+    val given = GDLTestGraph("""(:Node {val: 9L})-->(:Node {val2: 4.5D})-->(:Node)""")
 
     // When
     val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN n.val / m.val2")
@@ -257,7 +258,7 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
 
   ignore("equality") {
     // Given
-    val given = TestGraph(
+    val given = GDLTestGraph(
       """(:Node {val: 4L})-->(:Node {val: 5L}),
         |(:Node {val: 4L})-->(:Node {val: 4L}),
         |(:Node)-->(:Node {val: 5L})
@@ -278,7 +279,7 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
 
   test("property expression") {
     // Given
-    val given = TestGraph("""(:Person {name: "Mats"})-->(:Person {name: "Martin"})""")
+    val given = GDLTestGraph("""(:Person {name: "Mats"})-->(:Person {name: "Martin"})""")
 
     // When
     val result = given.cypher("MATCH (p:Person) RETURN p.name")
@@ -294,7 +295,7 @@ class ExpressionAcceptanceTest extends CAPSTestSuite {
 
   test("property expression with relationship") {
     // Given
-    val given = TestGraph("""(:Person {name: "Mats"})-[:KNOWS {since: 2017l}]->(:Person {name: "Martin"})""")
+    val given = GDLTestGraph("""(:Person {name: "Mats"})-[:KNOWS {since: 2017l}]->(:Person {name: "Martin"})""")
 
     // When
     val result = given.cypher("MATCH (a:Person)-[r:KNOWS]->(b:Person) RETURN r.since")

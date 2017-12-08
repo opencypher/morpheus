@@ -16,16 +16,15 @@
 package org.opencypher.caps.impl.spark.cypher
 
 import org.opencypher.caps.api.value.CypherMap
-import org.opencypher.caps.demo.Configuration.{PrintLogicalPlan, PrintPhysicalPlan}
 import org.opencypher.caps.test.CAPSTestSuite
+import org.opencypher.caps.test.support.testgraph.GDLTestGraph
 
 import scala.collection.Bag
 
 class MatchAcceptanceTest extends CAPSTestSuite {
-
   test("match a trivial query") {
     // Given
-    val given = TestGraph(
+    val given = GDLTestGraph(
       """
         |(p:Person {firstName: "Alice", lastName: "Foo"})
       """.stripMargin)
@@ -43,7 +42,7 @@ class MatchAcceptanceTest extends CAPSTestSuite {
 
   test("match unknown label") {
     // Given
-    val given = TestGraph(
+    val given = GDLTestGraph(
       """
         |(p:Person {firstName: "Alice", lastName: "Foo"})
       """.stripMargin)
@@ -61,7 +60,7 @@ class MatchAcceptanceTest extends CAPSTestSuite {
 
   test("match property on unknown label") {
     // Given
-    val given = TestGraph(
+    val given = GDLTestGraph(
       """
         |(p:Person {firstName: "Alice", lastName: "Foo"})
       """.stripMargin)
@@ -79,7 +78,7 @@ class MatchAcceptanceTest extends CAPSTestSuite {
 
   test("match return value of non-existing property as null") {
     // Given
-    val given = TestGraph(
+    val given = GDLTestGraph(
       """
         |(p:Person {firstName: "Alice", lastName: "Foo"})
       """.stripMargin)
@@ -100,7 +99,7 @@ class MatchAcceptanceTest extends CAPSTestSuite {
 
   test("multiple match clauses") {
     // Given
-    val given = TestGraph(
+    val given = GDLTestGraph(
       """
         |(p1:Person {name: "Alice"}),
         |(p2:Person {name: "Bob"}),
@@ -131,7 +130,7 @@ class MatchAcceptanceTest extends CAPSTestSuite {
 
   test("cyphermorphism and multiple match clauses") {
     // Given
-    val given = TestGraph(
+    val given = GDLTestGraph(
       """
         |(p1:Person {name: "Alice"}),
         |(p2:Person {name: "Bob"}),
@@ -167,7 +166,7 @@ class MatchAcceptanceTest extends CAPSTestSuite {
 
   test("disconnected components") {
     // Given
-    val given = TestGraph(
+    val given = GDLTestGraph(
       """
         |(p1:Narcissist {name: "Alice"}),
         |(p2:Narcissist {name: "Bob"}),
@@ -193,7 +192,7 @@ class MatchAcceptanceTest extends CAPSTestSuite {
 
   test("joined components") {
     // Given
-    val given = TestGraph(
+    val given = GDLTestGraph(
       """
         |(p1:Narcissist {name: "Alice"}),
         |(p2:Narcissist {name: "Bob"}),
@@ -220,7 +219,7 @@ class MatchAcceptanceTest extends CAPSTestSuite {
 
   ignore("Broken start of demo query") {
     // Given
-    val given = TestGraph(
+    val given = GDLTestGraph(
       """
         |(a:Person {name: "Philip"}),
         |(b:Person {name: "Stefan"}),

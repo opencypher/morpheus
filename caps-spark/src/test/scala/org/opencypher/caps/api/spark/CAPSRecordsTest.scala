@@ -23,6 +23,7 @@ import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTRelationship, CTStrin
 import org.opencypher.caps.api.value.{CypherMap, CypherNode, Properties}
 import org.opencypher.caps.ir.api.{Label, PropertyKey}
 import org.opencypher.caps.test.CAPSTestSuite
+import org.opencypher.caps.test.support.testgraph.GDLTestGraph
 
 class CAPSRecordsTest extends CAPSTestSuite {
 
@@ -130,7 +131,7 @@ class CAPSRecordsTest extends CAPSTestSuite {
   }
 
   test("toCypherMaps delegates to details") {
-    val g = TestGraph("(:Foo {p: 1L})")
+    val g = GDLTestGraph("(:Foo {p: 1L})")
 
     val result = g.cypher("MATCH (n) WITH 5 - n.p + 1 AS b, n RETURN n, b")
 

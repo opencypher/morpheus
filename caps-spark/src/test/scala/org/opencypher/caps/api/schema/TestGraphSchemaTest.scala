@@ -16,12 +16,13 @@
 package org.opencypher.caps.api.schema
 
 import org.opencypher.caps.api.types.{CTInteger, CTString}
-import org.opencypher.caps.test.{BaseTestSuite, CAPSTestSuite}
+import org.opencypher.caps.test.CAPSTestSuite
+import org.opencypher.caps.test.support.testgraph.GDLTestGraph
 
 class TestGraphSchemaTest extends CAPSTestSuite {
 
   test("constructs schema correctly for unlabeled nodes") {
-    val graph = TestGraph("({id: 1l}), ({id: 2l}), ({other: 'foo'}), ()").graph
+    val graph = GDLTestGraph("({id: 1l}), ({id: 2l}), ({other: 'foo'}), ()").graph
 
     graph.schema should equal(Schema.empty
       .withNodePropertyKeys(Schema.NoLabel, Map("id" -> CTInteger.nullable, "other" -> CTString.nullable))
@@ -29,7 +30,7 @@ class TestGraphSchemaTest extends CAPSTestSuite {
   }
 
   test("constructs schema correctly for labeled nodes") {
-    val graph = TestGraph("(:A {id: 1l}), (:A {id: 2l}), (:B {other: 'foo'})").graph
+    val graph = GDLTestGraph("(:A {id: 1l}), (:A {id: 2l}), (:B {other: 'foo'})").graph
 
     graph.schema should equal(Schema.empty
       .withNodePropertyKeys("A")("id" -> CTInteger)
@@ -38,7 +39,7 @@ class TestGraphSchemaTest extends CAPSTestSuite {
   }
 
   test("constructs schema correctly for multi-labeled nodes") {
-    val graph = TestGraph("(:A {id: 1l}), (:A:B {id: 2l}), (:B {other: 'foo'})").graph
+    val graph = GDLTestGraph("(:A {id: 1l}), (:A:B {id: 2l}), (:B {other: 'foo'})").graph
 
     graph.schema should equal(Schema.empty
       .withNodePropertyKeys("A")("id" -> CTInteger)
@@ -48,7 +49,7 @@ class TestGraphSchemaTest extends CAPSTestSuite {
   }
 
   test("constructs schema correctly for relationships") {
-    val graph = TestGraph(
+    val graph = GDLTestGraph(
       """()-[:FOO {p: 1}]->(),
         |()-[:BAR {p: 2, q: 'baz'}]->(),
         |()-[:BAR {p: 3}]->()
