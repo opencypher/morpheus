@@ -2,6 +2,7 @@ package org.opencypher.caps
 
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.api.value.{CypherValue => CAPSValue}
+import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.tools.tck.api._
 import org.opencypher.tools.tck.values.CypherValue
 
@@ -12,7 +13,7 @@ object TCKAdapterForCAPS {
       queryType match {
         case InitQuery =>
           // we don't support updates on this adapter
-          this -> CypherValueRecords.empty
+          Raise.notYetImplemented("update queries for CAPS graphs")
         case SideEffectQuery =>
           // this one is tricky, not sure how can do it without Cypher
           this -> CypherValueRecords.empty

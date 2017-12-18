@@ -6,6 +6,7 @@ import java.util
 import org.junit.jupiter.api.{DynamicTest, TestFactory}
 import org.opencypher.caps.TCKAdapterForCAPS.AsTckGraph
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
+import org.opencypher.caps.demo.Configuration.PrintLogicalPlan
 import org.opencypher.caps.test.support.testgraph.Neo4jTestGraph
 import org.opencypher.tools.tck.api._
 import org.opencypher.tools.tck.values.CypherValue
@@ -29,11 +30,13 @@ class CapsTCKTest {
   }
 
   @TestFactory
-  def runCustomOnTestGraph(): util.Collection[DynamicTest] = {
+  def runCustomOnNeo4j(): util.Collection[DynamicTest] = {
+
+    PrintLogicalPlan.set()
     val file = new File(getClass.getResource("CAPSTestFeature.feature").toURI)
     val dynamicTests = CypherTCK.parseFilesystemFeature(file).scenarios.map { scenario =>
       val name = scenario.toString
-      val executable = scenario(emptyGraph)
+      val executable = scenario(empty)
       DynamicTest.dynamicTest(name, executable)
     }
     dynamicTests.asJavaCollection
@@ -49,12 +52,14 @@ case class Neo4jBackedTestGraph(implicit caps: CAPSSession) extends Graph {
       case InitQuery =>
         // we use an embedded Neo4j for this
         // this works because there is never more than one init query
+        neo4jGraph.inputGraph.execute("MATCH (a) DETACH DELETE a")
         neo4jGraph.inputGraph.execute(query)
         val capsGraph = Try(neo4jGraph.capsGraph) match {
-          case Success(g) => g
-          case Failure(err) => CAPSGraph.empty
+          case Success(g) =>
+            g
+          case Failure(err) =>
+            CAPSGraph.empty
         }
-        neo4jGraph.inputGraph.execute("MATCH (a) DETACH DELETE a")
 
         AsTckGraph(capsGraph) -> CypherValueRecords.empty
       case _ =>
