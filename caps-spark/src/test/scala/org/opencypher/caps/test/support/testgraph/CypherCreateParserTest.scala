@@ -18,7 +18,7 @@ class CypherCreateParserTest extends BaseTestSuite with DebugOutputSupport {
       """.stripMargin)
 
     graph.nodes should equal(Seq(
-      Node("a", 1, Set("Person"), Map("name" -> "Alice"))
+      Node(0, Set("Person"), Map("name" -> "Alice"))
     ))
 
     graph.relationships should be(Seq.empty)
@@ -31,8 +31,8 @@ class CypherCreateParserTest extends BaseTestSuite with DebugOutputSupport {
       """.stripMargin)
 
     graph.nodes.toBag should equal(Bag(
-      Node("a", 1, Set("Person"), Map("name" -> "Alice")),
-      Node("b", 2, Set("Person"), Map("name" -> "Bob"))
+      Node(0, Set("Person"), Map("name" -> "Alice")),
+      Node(1, Set("Person"), Map("name" -> "Bob"))
     ))
 
     graph.relationships should be(Seq.empty)
@@ -46,8 +46,8 @@ class CypherCreateParserTest extends BaseTestSuite with DebugOutputSupport {
       """.stripMargin)
 
     graph.nodes.toBag should equal(Bag(
-      Node("a", 1, Set("Person"), Map("name" -> "Alice")),
-      Node("b", 2, Set("Person"), Map("name" -> "Bob"))
+      Node(0, Set("Person"), Map("name" -> "Alice")),
+      Node(1, Set("Person"), Map("name" -> "Bob"))
     ))
 
     graph.relationships should be(Seq.empty)
@@ -61,12 +61,12 @@ class CypherCreateParserTest extends BaseTestSuite with DebugOutputSupport {
       """.stripMargin)
 
     graph.nodes.toBag should equal(Bag(
-      Node("a", 1, Set("Person"), Map("name" -> "Alice")),
-      Node("b", 2, Set("Person"), Map("name" -> "Bob"))
+      Node(0, Set("Person"), Map("name" -> "Alice")),
+      Node(1, Set("Person"), Map("name" -> "Bob"))
     ))
 
     graph.relationships.toBag should be(Bag(
-      Relationship("  UNNAMED35", 3, 1, 2, "KNOWS", Map("since" -> 42))
+      Relationship(2, 0, 1, "KNOWS", Map("since" -> 42))
     ))
   }
 
@@ -79,13 +79,29 @@ class CypherCreateParserTest extends BaseTestSuite with DebugOutputSupport {
       """.stripMargin)
 
     graph.nodes.toBag should equal(Bag(
-      Node("a", 1, Set("Person"), Map("name" -> "Alice")),
-      Node("b", 2, Set("Person"), Map("name" -> "Bob"))
+      Node(0, Set("Person"), Map("name" -> "Alice")),
+      Node(1, Set("Person"), Map("name" -> "Bob"))
     ))
 
     graph.relationships.toBag should be(Bag(
-      Relationship("  UNNAMED78", 3, 1, 2, "KNOWS", Map("since" -> 42))
+      Relationship(2, 0, 1, "KNOWS", Map("since" -> 42))
     ))
+  }
+
+  test("simple unwind") {
+    val graph =CypherCreateParser(
+      """
+        |UNWIND [1,2,3] as i
+        |CREATE (a {val: i})
+      """.stripMargin)
+
+    graph.nodes.toBag should equal(Bag(
+      Node(0, Set(), Map("val" -> 1)),
+      Node(1, Set(), Map("val" -> 2)),
+      Node(2, Set(), Map("val" -> 3))
+    ))
+
+    graph.relationships.toBag shouldBe empty
   }
 
 }
