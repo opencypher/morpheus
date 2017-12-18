@@ -316,7 +316,7 @@ final case class Distinct(in: PhysicalOperator, header: RecordHeader) extends Un
       val data = records.data
       val columnNames = header.slots.map(slot => data.col(columnName(slot)))
       val relevantColumns = data.select(columnNames: _*)
-      val distinctRows = relevantColumns.distinct()
+      val distinctRows = relevantColumns.dropDuplicates(header.fields.map(SparkColumnName.of).toSeq)
       CAPSRecords.create(header, distinctRows)(records.caps)
     }
   }

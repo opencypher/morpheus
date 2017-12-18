@@ -93,8 +93,9 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
   def distinct(fields: Set[Var], in: FlatOperator): Distinct = {
     val (newHeader, _) = RecordHeader.empty.update(
-      addContents(fields.toSeq.map(OpaqueField))
+      addContents(fields.flatMap(in.header.selfWithChildren(_)).map(_.content).toSeq)
     )
+
     Distinct(in, newHeader)
   }
 
