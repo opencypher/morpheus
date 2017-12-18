@@ -529,7 +529,6 @@ sealed class CypherList(private[CypherList] val v: Seq[CypherValue])
     case _                  => false
   }
 
-  // TODO: Test all the toStrings
   override def toString: String = {
     val builder = new StringBuilder
     builder.append('[')
@@ -650,7 +649,6 @@ sealed class CypherMap(protected[value] val properties: Properties)
     case _ => false
   }
 
-  // TODO: Test all the toStrings, possibly move to companion
   override def toString: String = {
     val builder = new StringBuilder
     builder.append('{')
@@ -780,7 +778,11 @@ sealed class CypherNode(protected[value] val id: EntityId,
 
   override protected[value] def data = NodeData(labels, properties.m)
 
-  override def toString = s"($id${labels.map(":" + _).foldLeft("")(_ ++ _)} ${super.toString})"
+  override def toString = {
+    val lbls = if (labels.isEmpty) "" else labels.mkString(":", ":", "")
+    val props = if (properties.isEmpty) "" else super.toString
+    Seq(lbls, props).filter(_.nonEmpty).mkString("(", " ", ")")
+  }
 }
 
 // *** RELATIONSHIP
@@ -838,7 +840,10 @@ sealed class CypherRelationship(protected[value] val id: EntityId,
 
   override protected[value] def data = RelationshipData(startId, endId, relationshipType, properties.m)
 
-  override def toString = s"($startId)-[$id:$relationshipType ${super.toString}]->($endId)"
+  override def toString = {
+    val props = if (properties.isEmpty) "" else s" ${super.toString}"
+    s"[:$relationshipType$props]"
+  }
 }
 
 // *** Path
