@@ -130,7 +130,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
   def aggregate(aggregations: Set[(Var, Aggregator)], group: Set[Var], in: FlatOperator): Aggregate = {
     val (newHeader, _) = RecordHeader.empty.update(
-      addContents(group.toSeq.map(OpaqueField) ++ aggregations.map(agg => OpaqueField(agg._1)))
+      addContents(group.flatMap(in.header.selfWithChildren).map(_.content).toSeq ++ aggregations.map(agg => OpaqueField(agg._1)))
     )
 
     Aggregate(aggregations, group, in, newHeader)

@@ -351,8 +351,9 @@ final case class Aggregate(
 
       val data: Either[RelationalGroupedDataset, DataFrame] =
         if (group.nonEmpty) {
-          val columns = group.map { expr =>
-            withInnerExpr(expr)(identity)
+          val columns = group.flatMap { expr =>
+            val withChildren = records.header.selfWithChildren(expr).map(_.content.key)
+            withChildren.map(e => withInnerExpr(e)(identity))
           }
           Left(inData.groupBy(columns.toSeq: _*))
         } else Right(inData)
