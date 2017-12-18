@@ -326,7 +326,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
         ProjectedExpr(StartNode(x)(CTInteger)),
         ProjectedExpr(EndNode(x)(CTInteger)),
         OpaqueField(x),
-        ProjectedExpr(OfType(x)(CTString))
+        ProjectedExpr(Type(x)(CTString))
     )
     val (header, _) = RecordHeader.empty.update(addContents(fields))
 

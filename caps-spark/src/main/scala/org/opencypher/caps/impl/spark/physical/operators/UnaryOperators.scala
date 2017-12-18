@@ -248,10 +248,24 @@ final case class ProjectPatternGraph(
     // type is an input
     val typeTuple = {
       val col = org.apache.spark.sql.functions.lit(typ)
-      ProjectedExpr(OfType(rel)(CTString)) -> col
+      ProjectedExpr(Type(rel)(CTString)) -> col
     }
 
     Set(sourceTuple, targetTuple, relTuple, typeTuple)
+  }
+}
+
+final case class RemoveAliases(dependentFields: Set[(ProjectedField, ProjectedExpr)], in: PhysicalOperator, header: RecordHeader) extends UnaryPhysicalOperator {
+
+  override def executeUnary(prev: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult = {
+    prev.mapRecordsWithDetails { records =>
+      val renamed = dependentFields.foldLeft(records.data) {
+        case (df, (v, expr)) =>
+          df.withColumnRenamed(SparkColumnName.of(v), SparkColumnName.of(expr))
+      }
+
+      CAPSRecords.create(header, renamed)(records.caps)
+    }
   }
 }
 

@@ -33,7 +33,7 @@ case class NodeWithMultipleAnnotations(id: Long) extends Node
 
 case class RelWithoutAnnotation(id: Long, source: Long, target: Long) extends Relationship
 
-@Type("One")
+@RelationshipType("One")
 case class RelWithAnnotation(id: Long, source: Long, target: Long) extends Relationship
 
 @TestAnnotation("Foo")

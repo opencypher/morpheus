@@ -153,7 +153,7 @@ object SparkSQLExprMapper {
         Some(inPred)
 
       case HasType(rel, relType) =>
-        val col = getColumn(OfType(rel)(), header, df)
+        val col = getColumn(Type(rel)(), header, df)
         Some(col === relType.name)
 
       case h: HasLabel =>

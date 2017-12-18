@@ -15,14 +15,61 @@
  */
 package org.opencypher.caps.impl.spark.cypher
 
-import org.opencypher.caps.api.value.CypherMap
-import org.opencypher.caps.demo.Configuration.DefaultType
+import org.opencypher.caps.api.value.{CypherMap, CypherNode, Properties}
+import org.opencypher.caps.demo.Configuration.{DefaultType, PrintLogicalPlan}
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.support.testgraph.GDLTestGraph
 
-import scala.collection.Bag
+import scala.collection.immutable.Bag
 
 class ReturnAcceptanceTest extends CAPSTestSuite {
+
+  test("return only the returned fields") {
+    val g = GDLTestGraph("(:A {name: 'me'}), (:A)")
+
+    val result = g.capsGraph.cypher("MATCH (a:A) WITH a, a.name AS foo RETURN a")
+
+    Bag(result.records.toCypherMaps.collect().map(_.toString): _*) should equal(Bag(
+      CypherMap("a" -> CypherNode(0L, Seq("A"), Properties("name" -> "me"))).toString,
+      CypherMap("a" -> CypherNode(1L, Seq("A"), Properties.empty)).toString
+    ))
+  }
+
+  test("return only returned fields with tricky alias") {
+    val g = GDLTestGraph("(:A {name: 'me'}), (:A)")
+
+    val result = g.capsGraph.cypher("MATCH (a:A) WITH a, a AS foo RETURN a")
+
+    Bag(result.records.toCypherMaps.collect().map(_.toString): _*) should equal(Bag(
+      CypherMap("a" -> CypherNode(0L, Seq("A"), Properties("name" -> "me"))).toString,
+      CypherMap("a" -> CypherNode(1L, Seq("A"), Properties.empty)).toString
+    ))
+  }
+
+  ignore("return only returned fields with trickier aliasing") {
+    val g = GDLTestGraph("(:A {name: 'me'}), (:A)")
+
+    PrintLogicalPlan.set()
+
+    // we need to somehow track lineage of aliased entities
+    // perhaps copy all child expressions in RecordHeader
+    val result = g.capsGraph.cypher("MATCH (a:A) WITH a, a AS foo RETURN foo AS b")
+
+    Bag(result.records.toCypherMaps.collect().map(_.toString): _*) should equal(Bag(
+      CypherMap("a" -> CypherNode(0L, Seq("A"), Properties("name" -> "me"))).toString,
+      CypherMap("a" -> CypherNode(1L, Seq("A"), Properties.empty)).toString
+    ))
+  }
+
+  test("return only returned fields without dependencies") {
+    val g = GDLTestGraph("(:A)")
+
+    val result = g.capsGraph.cypher("MATCH (a:A), (b) RETURN a")
+
+    Bag(result.records.toCypherMaps.collect().map(_.toString): _*) should equal(Bag(
+      CypherMap("a" -> CypherNode(1L, Seq("A"), Properties.empty)).toString
+    ))
+  }
 
   test("single return query") {
     val given = GDLTestGraph("[]")

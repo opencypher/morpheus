@@ -47,7 +47,7 @@ case class RowExpansion(
 
   private lazy val typeIndexLookupTable = entitiesWithChildren.map { case (rel, slots) =>
     val typeIndexForRel = slots.collectFirst {
-      case RecordSlot(_, p@ProjectedExpr(OfType(r))) if r == rel =>
+      case RecordSlot(_, p@ProjectedExpr(Type(r))) if r == rel =>
         rowSchema.fieldIndex(SparkColumnName.of(p.withOwner(targetVar)))
     }.getOrElse(Raise.impossible("relationship didn't have a type column!"))
     rel -> typeIndexForRel

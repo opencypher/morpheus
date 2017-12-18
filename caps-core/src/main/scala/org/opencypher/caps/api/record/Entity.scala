@@ -19,7 +19,7 @@ import scala.annotation.StaticAnnotation
 
 case class Labels(labels: String*) extends StaticAnnotation
 
-case class Type(relType: String) extends StaticAnnotation
+case class RelationshipType(relType: String) extends StaticAnnotation
 
 sealed trait Entity extends Product {
   def id: Long

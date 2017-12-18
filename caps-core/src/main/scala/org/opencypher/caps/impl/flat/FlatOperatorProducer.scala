@@ -56,6 +56,24 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     Select(fields, graphs, in, nextHeader)
   }
 
+  def removeAliases(toKeep: IndexedSeq[Var], in: FlatOperator): RemoveAliases = {
+    val renames = in.header.contents.collect {
+      case pf@ProjectedField(v, expr) if !toKeep.contains(v) =>
+        pf -> ProjectedExpr(expr)
+    }
+
+    val newHeaderContents = in.header.contents.map {
+      case ProjectedField(v, expr) if !toKeep.contains(v) =>
+        ProjectedExpr(expr)
+      case other =>
+        other
+    }
+
+    val (header, _) = RecordHeader.empty.update(addContents(newHeaderContents.toSeq))
+
+    RemoveAliases(renames, in, header)
+  }
+
   def filter(expr: Expr, in: FlatOperator): Filter = {
     in.header
 
