@@ -100,7 +100,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           }
         } yield refs
 
-      case ast.With(_, ast.ReturnItems(_, items), GraphReturnItems(_, gItems), orderBy, skip, limit, where) if !items.exists(_.expression.containsAggregate) =>
+      case ast.With(distinct, ast.ReturnItems(_, items), GraphReturnItems(_, gItems), orderBy, skip, limit, where) if !items.exists(_.expression.containsAggregate) =>
         for {
           irGraph <- registerIRGraph(c)
           fieldExprs <- EffMonad[R].sequence(items.map(convertReturnItem[R]).toVector)
@@ -108,14 +108,14 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           given <- convertWhere(where)
           context <- get[R, IRBuilderContext]
           refs <- {
-            val (projectRef, projectReg) = registerProjectBlock(context, fieldExprs, graphs, given, irGraph)
+            val (projectRef, projectReg) = registerProjectBlock(context, fieldExprs, graphs, given, irGraph, distinct = distinct)
             val appendList = (list: Vector[BlockRef]) => pure[R, Vector[BlockRef]](projectRef +: list)
             val orderAndSliceBlock = registerOrderAndSliceBlock(orderBy, skip, limit)
             put[R,IRBuilderContext](context.copy(blocks = projectReg)) >> orderAndSliceBlock >>= appendList
           }
         } yield refs
 
-      case ast.With(_, ast.ReturnItems(_, items), GraphReturnItems(_, Seq()), _, _, _, None) =>
+      case ast.With(distinct, ast.ReturnItems(_, items), GraphReturnItems(_, Seq()), _, _, _, None) =>
         for {
           fieldExprs <- EffMonad[R].sequence(items.map(convertReturnItem[R]).toVector)
           context <- get[R, IRBuilderContext]
@@ -125,7 +125,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
               case _ => false
             }
 
-            val (ref1, reg1) = registerProjectBlock(context, group, source = context.ambientGraph)
+            val (ref1, reg1) = registerProjectBlock(context, group, source = context.ambientGraph, distinct = distinct)
             val after = reg1.lastAdded.toSet
             val aggBlock = AggregationBlock[Expr](after, Aggregations(agg.toSet), group.map(_._1).toSet, context.ambientGraph)
             val (ref2, reg2) = reg1.register(aggBlock)
@@ -194,7 +194,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
     graphs: Seq[IRGraph] = Seq.empty,
     given: AllGiven[Expr] = AllGiven[Expr](),
     source: IRGraph,
-    distinct: Boolean = false): (BlockRef, BlockRegistry[Expr]) = {
+    distinct: Boolean): (BlockRef, BlockRegistry[Expr]) = {
     val blockRegistry = context.blocks
     val binds = FieldsAndGraphs(fieldExprs.toMap, graphs.toSet)
 
