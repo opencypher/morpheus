@@ -45,13 +45,24 @@ class CapsTCKTest {
   }
 
   @TestFactory
-  def runCustomOnNeo4j(): util.Collection[DynamicTest] = {
+  def runSingleScenario(): util.Collection[DynamicTest] = {
+    PrintLogicalPlan.set()
+    val name = "A simple pattern with one bound endpoint"
+    val dynamicTests = CypherTCK.allTckScenarios.filter(s => s.name == name).map { scenario =>
+      val name = scenario.toString
+      val executable = scenario(empty)
+      DynamicTest.dynamicTest(name, executable)
+    }
+    dynamicTests.asJavaCollection
+  }
 
+  @TestFactory
+  def runCustomOnNeo4j(): util.Collection[DynamicTest] = {
     PrintLogicalPlan.set()
     val file = new File(getClass.getResource("CAPSTestFeature.feature").toURI)
     val dynamicTests = CypherTCK.parseFilesystemFeature(file).scenarios.map { scenario =>
       val name = scenario.toString
-      val executable = scenario(empty)
+      val executable = scenario(emptyGraph)
       DynamicTest.dynamicTest(name, executable)
     }
     dynamicTests.asJavaCollection

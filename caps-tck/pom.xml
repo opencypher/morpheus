@@ -16,6 +16,8 @@
 
     <properties>
         <project.rootdir>${project.parent.basedir}</project.rootdir>
+        <dep.tck.version>1.0-SNAPSHOT</dep.tck.version>
+        <dep.apiguardian-api.version>1.0.0</dep.apiguardian-api.version>
     </properties>
 
     <dependencies>
@@ -45,8 +47,14 @@
         <dependency>
             <groupId>org.opencypher</groupId>
             <artifactId>tck</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <version>${dep.tck.version}</version>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apiguardian</groupId>
+            <artifactId>apiguardian-api</artifactId>
+            <version>${dep.apiguardian-api.version}</version>
         </dependency>
 
     </dependencies>
