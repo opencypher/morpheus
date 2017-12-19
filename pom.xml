@@ -13,6 +13,7 @@
     <modules>
         <module>caps-core</module>
         <module>caps-spark</module>
+        <module>caps-tck</module>
     </modules>
 
     <properties>
