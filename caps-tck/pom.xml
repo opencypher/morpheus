@@ -16,22 +16,23 @@
 
     <properties>
         <project.rootdir>${project.parent.basedir}</project.rootdir>
-        <dep.tck.version>1.0-SNAPSHOT</dep.tck.version>
+        <dep.tck.version>1.0.0-M08</dep.tck.version>
         <dep.apiguardian-api.version>1.0.0</dep.apiguardian-api.version>
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>org.opencypher</groupId>
-            <artifactId>caps-spark</artifactId>
-            <version>${parent.version}</version>
-        </dependency>
-
         <!-- Test -->
         <dependency>
             <groupId>org.opencypher</groupId>
             <artifactId>caps-core</artifactId>
-            <version>${parent.version}</version>
+            <version>${project.parent.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.opencypher</groupId>
+            <artifactId>caps-core</artifactId>
+            <version>${project.parent.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
@@ -39,7 +40,14 @@
         <dependency>
             <groupId>org.opencypher</groupId>
             <artifactId>caps-spark</artifactId>
-            <version>${parent.version}</version>
+            <version>${project.parent.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.opencypher</groupId>
+            <artifactId>caps-spark</artifactId>
+            <version>${project.parent.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
@@ -52,9 +60,10 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apiguardian</groupId>
-            <artifactId>apiguardian-api</artifactId>
-            <version>${dep.apiguardian-api.version}</version>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${dep.junit.version}</version>
+            <scope>test</scope>
         </dependency>
 
     </dependencies>

@@ -16,17 +16,22 @@
 package org.opencypher.caps
 
 import java.io.File
+import java.time.Duration.ofSeconds
 import java.util
 
+import org.junit.Ignore
+import org.junit.jupiter.api.Assertions.assertTimeoutPreemptively
+import org.junit.jupiter.api.function.Executable
 import org.junit.jupiter.api.{DynamicTest, TestFactory}
 import org.opencypher.caps.TCKAdapterForCAPS.AsTckGraph
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
+import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
 import org.opencypher.caps.demo.Configuration.PrintLogicalPlan
 import org.opencypher.caps.test.support.testgraph.Neo4jTestGraph
 import org.opencypher.tools.tck.api._
 import org.opencypher.tools.tck.values.CypherValue
 
 import scala.collection.JavaConverters._
+import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
 class CapsTCKTest {
@@ -36,7 +41,11 @@ class CapsTCKTest {
 
   @TestFactory
   def runTCKOnTestGraph(): util.Collection[DynamicTest] = {
-    val dynamicTests = CypherTCK.allTckScenarios.filterNot(s => s.name.startsWith("Optionally matching self-loops") || s.featureName.startsWith("MatchingSelfRelationships")).map { scenario =>
+    val tests = CypherTCK.allTckScenarios.filterNot { s =>
+      ScenarioBlacklist.contains(s.toString())
+    }
+
+    val dynamicTests = tests.map { scenario =>
       val name = scenario.toString
       val executable = scenario(empty)
       DynamicTest.dynamicTest(name, executable)
@@ -44,7 +53,26 @@ class CapsTCKTest {
     dynamicTests.asJavaCollection
   }
 
-  @TestFactory
+  //@TestFactory
+  def runBlacklistedTCKOnTestGraph(): util.Collection[DynamicTest] = {
+    val tests = CypherTCK.allTckScenarios.filter { s =>
+      ScenarioBlacklist.contains(s.toString())
+    }
+
+    val dynamicTests = tests.map { scenario =>
+      val name = scenario.toString
+      val executable = new Executable {
+        override def execute(): Unit = Try(assertTimeoutPreemptively(ofSeconds(8), scenario(empty))) match {
+          case Success(_) => throw new RuntimeException(s"A blacklisted scenario actually worked: $scenario")
+          case Failure(_) => ()
+        }
+      }
+      DynamicTest.dynamicTest(name, executable)
+    }
+    dynamicTests.asJavaCollection
+  }
+
+  //@TestFactory
   def runSingleScenario(): util.Collection[DynamicTest] = {
     PrintLogicalPlan.set()
     val name = "A simple pattern with one bound endpoint"
@@ -67,7 +95,6 @@ class CapsTCKTest {
     }
     dynamicTests.asJavaCollection
   }
-
 }
 
 case class Neo4jBackedTestGraph(implicit caps: CAPSSession) extends Graph {
@@ -92,4 +119,17 @@ case class Neo4jBackedTestGraph(implicit caps: CAPSSession) extends Graph {
         ???
     }
   }
+}
+
+object ScenarioBlacklist {
+  private lazy val blacklist: Set[String] = {
+    val blacklistIter = Source.fromFile(getClass.getResource("scenario_blacklist").toURI).getLines().toSeq
+    val blacklistSet = blacklistIter.toSet
+
+    lazy val errorMessage = s"Blacklist contains duplicate scenarios ${blacklistIter.groupBy(identity).filter(_._2.lengthCompare(1) > 0).keys.mkString("\n")}"
+    assert(blacklistIter.size == blacklistSet.size, errorMessage)
+    blacklistSet
+  }
+
+  def contains(name: String): Boolean = blacklist.contains(name)
 }
