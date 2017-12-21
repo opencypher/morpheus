@@ -15,7 +15,6 @@
  */
 package org.opencypher.caps.impl.common
 
-import org.opencypher.caps.api.exception.CAPSException
 import org.scalatest.{FunSuite, Matchers}
 
 class TreeNodeTest extends FunSuite with Matchers {
@@ -60,43 +59,44 @@ class TreeNodeTest extends FunSuite with Matchers {
     // Test errors when violating list requirements
 
     // - a list of children cannot be empty
-    the[IllegalArgumentException] thrownBy {
+    intercept[IllegalArgumentException] {
       val fail = AddList(List(1), Number(1), 2, List.empty[Number], List[Object]("a", "b"))
       fail.children.toSet should equal(Set(Number(1)))
       fail.withNewChildren(Array(Number(1), Number(2)))
-    } should have message "requirement failed: invalid number of children " +
-      "or used an empty list of children in the original node."
+    }.getMessage should equal("requirement failed: invalid number of children or used an empty list of children in the original node.")
 
-    the[IllegalArgumentException] thrownBy {
+    intercept[IllegalArgumentException]  {
       val fail = AddList(List(1), Number(1), 2, List(Number(2)), List[Object]("a", "b"))
       fail.children.toSet should equal(Set(Number(1), Number(2)))
       fail.withNewChildren(Array(Number(1)))
-    } should have message "requirement failed: a list of children cannot be empty."
+    }.getMessage should equal("requirement failed: a list of children cannot be empty.")
 
     // - if any children are contained in a list at all, then all list elements need to be children
-    the[CAPSException] thrownBy {
+    intercept[InvalidConstructorArgument]  {
       case class Unsupported(elems: List[Object]) extends AbstractTreeNode[Unsupported]
       val fail = Unsupported(List(Unsupported(List.empty), "2"))
-    } should have message "Expected a list that contains either no children or only children but found a mixed list " +
-      "that contains a child as the head element, but also one with a non-child type: " +
-      "java.lang.String cannot be cast to org.opencypher.caps.impl.common.AbstractTreeNode"
+    }.getMessage should equal(
+      s"""Expected a list that contains either no children or only children
+        |but found a mixed list that contains a child as the head element,
+        |but also one with a non-child type: java.lang.String cannot be cast to ${classOf[AbstractTreeNode[_]].getName}.
+        |""".stripMargin)
 
     // - there can be at most one list of children
-    the[IllegalArgumentException] thrownBy {
+    intercept[IllegalArgumentException]  {
       abstract class UnsupportedTree extends AbstractTreeNode[UnsupportedTree]
       case object UnsupportedLeaf extends UnsupportedTree
       case class UnsupportedNode(elems1: List[UnsupportedTree], elems2: List[UnsupportedTree]) extends UnsupportedTree
       UnsupportedNode(List(UnsupportedLeaf), List(UnsupportedLeaf))
-    } should have message "requirement failed: there can be at most one list of children in the constructor."
+    }.getMessage should equal("requirement failed: there can be at most one list of children in the constructor.")
 
     // - there can be no normal child constructor parameters after the list of children
-    the[IllegalArgumentException] thrownBy {
+    intercept[IllegalArgumentException]  {
       abstract class UnsupportedTree2 extends AbstractTreeNode[UnsupportedTree2]
       case object UnsupportedLeaf2 extends UnsupportedTree2
       case class UnsupportedNode2(elems: List[UnsupportedTree2], elem: UnsupportedTree2) extends UnsupportedTree2
       UnsupportedNode2(List(UnsupportedLeaf2), UnsupportedLeaf2)
-    } should have message "requirement failed: there can be no normal child constructor parameters " +
-      "after a list of children."
+    }.getMessage should equal("requirement failed: there can be no normal child constructor parameters " +
+      "after a list of children.")
   }
 
   test("rewrite") {

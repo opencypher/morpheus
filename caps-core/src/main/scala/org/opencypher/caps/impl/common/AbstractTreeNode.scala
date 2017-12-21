@@ -15,8 +15,6 @@
  */
 package org.opencypher.caps.impl.common
 
-import org.opencypher.caps.impl.exception.Raise
-
 import scala.reflect.ClassTag
 
 /**
@@ -90,10 +88,11 @@ abstract class AbstractTreeNode[T <: AbstractTreeNode[T]: ClassTag] extends Tree
                     childrenArray(ci) = child.asInstanceOf[T]
                   } catch {
                     case c: ClassCastException =>
-                      Raise.invalidArgument(
-                        "a list that contains either no children or only children",
-                        "a mixed list that contains a child as the head element, " +
-                          s"but also one with a non-child type: ${c.getMessage}"
+                      throw InvalidConstructorArgument(
+                        s"""Expected a list that contains either no children or only children
+                           |but found a mixed list that contains a child as the head element,
+                           |but also one with a non-child type: ${c.getMessage}.
+                           |""".stripMargin
                       )
                   }
                   ci += 1
@@ -118,11 +117,11 @@ abstract class AbstractTreeNode[T <: AbstractTreeNode[T]: ClassTag] extends Tree
         copyMethod(updatedConstructorParams: _*).asInstanceOf[T]
       } catch {
         case e: Exception =>
-          Raise.invalidArgument(
-            s"valid constructor arguments for $productPrefix",
-            s"""|${updatedConstructorParams.mkString(", ")}
-                |Copy method: $copyMethod
-                |Original exception: $e""".stripMargin
+          throw InvalidConstructorArgument(
+            s"""Expected valid constructor arguments for $productPrefix
+               |but found ${updatedConstructorParams.mkString(", ")}.
+               |""".stripMargin,
+            Some(e)
           )
       }
     }
@@ -230,3 +229,6 @@ object AbstractTreeNode {
   }
 
 }
+
+case class InvalidConstructorArgument(message: String, originalException: Option[Exception] = None)
+    extends RuntimeException(message, originalException.orNull)
