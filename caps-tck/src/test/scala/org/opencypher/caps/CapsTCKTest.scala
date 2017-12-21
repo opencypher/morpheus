@@ -16,11 +16,8 @@
 package org.opencypher.caps
 
 import java.io.File
-import java.time.Duration.ofSeconds
 import java.util
 
-import org.junit.Ignore
-import org.junit.jupiter.api.Assertions.assertTimeoutPreemptively
 import org.junit.jupiter.api.function.Executable
 import org.junit.jupiter.api.{DynamicTest, TestFactory}
 import org.opencypher.caps.TCKAdapterForCAPS.AsTckGraph
@@ -53,7 +50,7 @@ class CapsTCKTest {
     dynamicTests.asJavaCollection
   }
 
-  //@TestFactory
+  @TestFactory
   def runBlacklistedTCKOnTestGraph(): util.Collection[DynamicTest] = {
     val tests = CypherTCK.allTckScenarios.filter { s =>
       ScenarioBlacklist.contains(s.toString())
@@ -62,7 +59,7 @@ class CapsTCKTest {
     val dynamicTests = tests.map { scenario =>
       val name = scenario.toString
       val executable = new Executable {
-        override def execute(): Unit = Try(assertTimeoutPreemptively(ofSeconds(8), scenario(empty))) match {
+        override def execute(): Unit = Try(scenario(empty).execute()) match {
           case Success(_) => throw new RuntimeException(s"A blacklisted scenario actually worked: $scenario")
           case Failure(_) => ()
         }

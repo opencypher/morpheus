@@ -359,7 +359,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     // find all unsolved nodes from the pattern
     val nodes = pattern.fields.filter(_.cypherType.subTypeOf(CTNode).isTrue)
 
-    if (nodes.size == 1) { // simple node scan; just do it
+    if (pattern.topology.isEmpty) { // there is no connection in the pattern => plan a node scan
       val field = nodes.head
 
       // if we have already planned a node: cartesian product
@@ -369,7 +369,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         // we set the source graph because we don't know what the source graph was coming in
         nodePlan(planSetSourceGraph(graph, plan), field)
       }
-    } else if (pattern.topology.nonEmpty) { // we need expansions to tie node plans together
+    } else { // there are connections => we need to expand
 
       val solved = nodes.intersect(plan.solved.fields)
       val unsolved = nodes -- solved
@@ -388,8 +388,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
       // tie all plans together using expansions
       planExpansions(nodePlans + firstPlan, pattern, producer)
-    } else
-      Raise.invalidOrUnsupportedPattern(pattern.toString)
+    }
   }
 
   @tailrec
