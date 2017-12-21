@@ -27,9 +27,7 @@ import scala.reflect.ClassTag
   * in children is their order in the constructor. Every constructor parameter of type `T` is
   * assumed to be a child node.
   *
-  * This class caches values that are expensive to recompute. It also uses array operations instead of
-  * Scala collections, both for improved performance as well as to save stack frames, which allows to operate on
-  * trees that are several thousand nodes high.
+  * This class caches values that are expensive to recompute.
   *
   * The constructor can also contain a list of children, but there are constraints:
   *   - A list of children cannot be empty, because the current design relies on testing the type of an element.
@@ -42,7 +40,7 @@ import scala.reflect.ClassTag
 abstract class AbstractTreeNode[T <: AbstractTreeNode[T]: ClassTag] extends TreeNode[T] {
   self: T =>
 
-  override final val children: Array[T] = {
+  final override val children: Array[T] = {
     val constructorParamLength = productArity
     val childrenCount = {
       var count = 0
@@ -130,62 +128,23 @@ abstract class AbstractTreeNode[T <: AbstractTreeNode[T]: ClassTag] extends Tree
     }
   }
 
-  override final lazy val hashCode: Int = super.hashCode
+  final override lazy val hashCode: Int = super.hashCode
+
+  final override lazy val size: Int = super.size
+
+  final override lazy val height: Int = super.height
 
   final lazy val childrenAsSet = children.toSet
-
-  override final lazy val size: Int = {
-    val childrenLength = children.length
-    var i = 0
-    var result = 1
-    while (i < childrenLength) {
-      result += children(i).size
-      i += 1
-    }
-    result
-  }
-
-  final override lazy val height: Int = {
-    val childrenLength = children.length
-    var i = 0
-    var result = 0
-    while (i < childrenLength) {
-      result = math.max(result, children(i).height)
-      i += 1
-    }
-    result + 1
-  }
-
-  @inline final override def map[O <: TreeNode[O]: ClassTag](f: T => O): O = {
-    val childrenLength = children.length
-    if (childrenLength == 0) {
-      f(self)
-    } else {
-      val mappedChildren = new Array[O](childrenLength)
-      var i = 0
-      while (i < childrenLength) {
-        mappedChildren(i) = f(children(i))
-        i += 1
-      }
-      f(self).withNewChildren(mappedChildren)
-    }
-  }
-
-  @inline final override def foreach[O](f: T => O): Unit = {
-    f(this)
-    val childrenLength = children.length
-    var i = 0
-    while (i < childrenLength) {
-      children(i).foreach(f)
-      i += 1
-    }
-  }
-
-  @inline final override def containsTree(other: T): Boolean = super.containsTree(other)
 
   @inline final override def containsChild(other: T): Boolean = {
     childrenAsSet.contains(other)
   }
+
+  @inline final override def map[O <: TreeNode[O]: ClassTag](f: T => O): O = super.map(f)
+
+  @inline final override def foreach[O](f: T => O): Unit = super.foreach(f)
+
+  @inline final override def containsTree(other: T): Boolean = super.containsTree(other)
 
   @inline final override def transformUp(rule: PartialFunction[T, T]): T = super.transformUp(rule)
 
