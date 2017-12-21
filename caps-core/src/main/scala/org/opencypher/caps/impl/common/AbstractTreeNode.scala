@@ -181,58 +181,15 @@ abstract class AbstractTreeNode[T <: AbstractTreeNode[T]: ClassTag] extends Tree
     }
   }
 
-  @inline final override def containsTree(other: T): Boolean = {
-    if (self == other) {
-      true
-    } else {
-      val childrenLength = children.length
-      var i = 0
-      while (i < childrenLength && !children(i).containsTree(other)) i += 1
-      i != childrenLength
-    }
-  }
+  @inline final override def containsTree(other: T): Boolean = super.containsTree(other)
 
   @inline final override def containsChild(other: T): Boolean = {
     childrenAsSet.contains(other)
   }
 
-  @inline final override def transformUp(rule: PartialFunction[T, T]): T = {
-    val childrenLength = children.length
-    val afterChildren = if (childrenLength == 0) {
-      self
-    } else {
-      val updatedChildren = {
-        val childrenCopy = new Array[T](childrenLength)
-        var i = 0
-        while (i < childrenLength) {
-          childrenCopy(i) = children(i).transformUp(rule)
-          i += 1
-        }
-        childrenCopy
-      }
-      withNewChildren(updatedChildren)
-    }
-    if (rule.isDefinedAt(afterChildren)) rule(afterChildren) else afterChildren
-  }
+  @inline final override def transformUp(rule: PartialFunction[T, T]): T = super.transformUp(rule)
 
-  @inline final override def transformDown(rule: PartialFunction[T, T]): T = {
-    val afterSelf = if (rule.isDefinedAt(self)) rule(self) else self
-    val childrenLength = afterSelf.children.length
-    if (childrenLength == 0) {
-      afterSelf
-    } else {
-      val updatedChildren = {
-        val childrenCopy = new Array[T](childrenLength)
-        var i = 0
-        while (i < childrenLength) {
-          childrenCopy(i) = afterSelf.children(i).transformDown(rule)
-          i += 1
-        }
-        childrenCopy
-      }
-      afterSelf.withNewChildren(updatedChildren)
-    }
-  }
+  @inline final override def transformDown(rule: PartialFunction[T, T]): T = super.transformDown(rule)
 
   @inline private final def updateConstructorParams(newChildren: Array[T]): Array[Any] = {
     val parameterArrayLength = productArity
