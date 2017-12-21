@@ -115,59 +115,6 @@ abstract class TreeNode[T <: TreeNode[T]: ClassTag] extends Product with Travers
   }
 
   /**
-    * Applies the given partial function starting from the
-    * leafs of this tree.
-    *
-    * @param rule rewrite rule
-    * @return rewritten tree
-    */
-  def transformUp(rule: PartialFunction[T, T]): T = {
-    val childrenLength = children.length
-    val afterChildren = if (childrenLength == 0) {
-      self
-    } else {
-      val updatedChildren = {
-        val childrenCopy = new Array[T](childrenLength)
-        var i = 0
-        while (i < childrenLength) {
-          childrenCopy(i) = children(i).transformUp(rule)
-          i += 1
-        }
-        childrenCopy
-      }
-      withNewChildren(updatedChildren)
-    }
-    if (rule.isDefinedAt(afterChildren)) rule(afterChildren) else afterChildren
-  }
-
-  /**
-    * Applies the given partial function starting from the
-    * root of this tree.
-    *
-    * @note Note that the applied rule must not insert new parent nodes.
-    * @param rule rewrite rule
-    * @return rewritten tree
-    */
-  def transformDown(rule: PartialFunction[T, T]): T = {
-    val afterSelf = if (rule.isDefinedAt(self)) rule(self) else self
-    val childrenLength = afterSelf.children.length
-    if (childrenLength == 0) {
-      afterSelf
-    } else {
-      val updatedChildren = {
-        val childrenCopy = new Array[T](childrenLength)
-        var i = 0
-        while (i < childrenLength) {
-          childrenCopy(i) = afterSelf.children(i).transformDown(rule)
-          i += 1
-        }
-        childrenCopy
-      }
-      afterSelf.withNewChildren(updatedChildren)
-    }
-  }
-
-  /**
     * Prints the tree node and its children recursively in a tree-style layout.
     *
     * @param depth indentation depth used by the recursive call
