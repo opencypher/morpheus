@@ -50,7 +50,14 @@ abstract class TreeNode[T <: TreeNode[T]: ClassTag] extends Product with Travers
     * @return true, iff `other` is contained in that tree
     */
   def containsTree(other: T): Boolean = {
-    if (self == other) true else children.exists(_.containsTree(other))
+    if (self == other) {
+      true
+    } else {
+      val childrenLength = children.length
+      var i = 0
+      while (i < childrenLength && !children(i).containsTree(other)) i += 1
+      i != childrenLength
+    }
   }
 
   /**
@@ -71,7 +78,21 @@ abstract class TreeNode[T <: TreeNode[T]: ClassTag] extends Product with Travers
     * @return rewritten tree
     */
   def transformUp(rule: PartialFunction[T, T]): T = {
-    val afterChildren = withNewChildren(children.map(_.transformUp(rule)))
+    val childrenLength = children.length
+    val afterChildren = if (childrenLength == 0) {
+      self
+    } else {
+      val updatedChildren = {
+        val childrenCopy = new Array[T](childrenLength)
+        var i = 0
+        while (i < childrenLength) {
+          childrenCopy(i) = children(i).transformUp(rule)
+          i += 1
+        }
+        childrenCopy
+      }
+      withNewChildren(updatedChildren)
+    }
     if (rule.isDefinedAt(afterChildren)) rule(afterChildren) else afterChildren
   }
 
@@ -85,7 +106,21 @@ abstract class TreeNode[T <: TreeNode[T]: ClassTag] extends Product with Travers
     */
   def transformDown(rule: PartialFunction[T, T]): T = {
     val afterSelf = if (rule.isDefinedAt(self)) rule(self) else self
-    afterSelf.withNewChildren(afterSelf.children.map(_.transformDown(rule)))
+    val childrenLength = afterSelf.children.length
+    if (childrenLength == 0) {
+      afterSelf
+    } else {
+      val updatedChildren = {
+        val childrenCopy = new Array[T](childrenLength)
+        var i = 0
+        while (i < childrenLength) {
+          childrenCopy(i) = afterSelf.children(i).transformDown(rule)
+          i += 1
+        }
+        childrenCopy
+      }
+      afterSelf.withNewChildren(updatedChildren)
+    }
   }
 
   /**
