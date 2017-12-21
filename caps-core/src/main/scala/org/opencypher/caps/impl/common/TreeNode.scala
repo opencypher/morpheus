@@ -18,8 +18,16 @@ package org.opencypher.caps.impl.common
 import scala.reflect.ClassTag
 import scala.util.hashing.MurmurHash3
 
+/**
+  * This is the basic tree node class. Usually it makes more sense to use `AbstractTreeNode`, which uses reflection
+  * to generate the `children` and `withNewChildren` field/method. Our benchmarks show that manually implementing
+  * them can result in a speedup of a factor of ~3 for tree rewrites, so in performance critical places it might
+  * make sense to extend `TreeNode` instead.
+  *
+  * This class uses array operations instead of Scala collections, both for improved performance as well as to save
+  * stack frames during recursion, which allows it to operate on trees that are several thousand nodes high.
+  */
 abstract class TreeNode[T <: TreeNode[T]: ClassTag] extends Product with Traversable[T] {
-
   self: T =>
 
   def withNewChildren(newChildren: Array[T]): T
@@ -32,15 +40,51 @@ abstract class TreeNode[T <: TreeNode[T]: ClassTag] extends Product with Travers
 
   def isLeaf: Boolean = height == 1
 
-  def height: Int = if (children.isEmpty) 1 else children.map(_.height).max + 1
+  def height: Int = {
+    val childrenLength = children.length
+    var i = 0
+    var result = 0
+    while (i < childrenLength) {
+      result = math.max(result, children(i).height)
+      i += 1
+    }
+    result + 1
+  }
+
+  override def size: Int = {
+    val childrenLength = children.length
+    var i = 0
+    var result = 1
+    while (i < childrenLength) {
+      result += children(i).size
+      i += 1
+    }
+    result
+  }
 
   def map[O <: TreeNode[O]: ClassTag](f: T => O): O = {
-    f(self).withNewChildren(children.map(f))
+    val childrenLength = children.length
+    if (childrenLength == 0) {
+      f(self)
+    } else {
+      val mappedChildren = new Array[O](childrenLength)
+      var i = 0
+      while (i < childrenLength) {
+        mappedChildren(i) = f(children(i))
+        i += 1
+      }
+      f(self).withNewChildren(mappedChildren)
+    }
   }
 
   override def foreach[O](f: T => O): Unit = {
     f(this)
-    children.foreach(_.foreach(f))
+    val childrenLength = children.length
+    var i = 0
+    while (i < childrenLength) {
+      children(i).foreach(f)
+      i += 1
+    }
   }
 
   /**
