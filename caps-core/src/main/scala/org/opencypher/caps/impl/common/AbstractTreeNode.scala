@@ -145,10 +145,6 @@ abstract class AbstractTreeNode[T <: AbstractTreeNode[T]: ClassTag] extends Tree
 
   @inline final override def containsTree(other: T): Boolean = super.containsTree(other)
 
-  @inline final override def transformUp(rule: PartialFunction[T, T]): T = super.transformUp(rule)
-
-  @inline final override def transformDown(rule: PartialFunction[T, T]): T = super.transformDown(rule)
-
   @inline private final def updateConstructorParams(newChildren: Array[T]): Array[Any] = {
     val parameterArrayLength = productArity
     val childrenLength = children.length

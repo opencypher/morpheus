@@ -18,16 +18,17 @@ package org.opencypher.caps.impl.logical
 import org.opencypher.caps.api.expr.{HasLabel, Var}
 import org.opencypher.caps.api.types.{CTBoolean, CTNode}
 import org.opencypher.caps.impl.DirectCompilationStage
-import org.opencypher.caps.impl.exception.Raise
+import org.opencypher.caps.impl.common.BottomUp
 import org.opencypher.caps.ir.api.Label
 
 object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalOperator, LogicalPlannerContext] {
 
   override def process(input: LogicalOperator)(implicit context: LogicalPlannerContext): LogicalOperator = {
-    val optimizations = Seq(pushLabelsIntoScans(labelsForVariables(input)), discardScansForNonexistentLabels)
-    optimizations.foldLeft(input) {
-      case (tree, optimization) =>
-        tree.transformUp(optimization)
+    val optimizationRules = Seq(pushLabelsIntoScans(labelsForVariables(input)), discardScansForNonexistentLabels)
+    optimizationRules.foldLeft(input) {
+      // TODO: Evaluate if multiple rewriters could be fused
+      case (tree: LogicalOperator, optimizationRule) =>
+        BottomUp[LogicalOperator](optimizationRule).rewrite(tree)
     }
   }
 

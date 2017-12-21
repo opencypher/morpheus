@@ -63,26 +63,26 @@ class TreeNodeTest extends FunSuite with Matchers {
       val fail = AddList(List(1), Number(1), 2, List.empty[Number], List[Object]("a", "b"))
       fail.children.toSet should equal(Set(Number(1)))
       fail.withNewChildren(Array(Number(1), Number(2)))
-    }.getMessage should equal("requirement failed: invalid number of children or used an empty list of children in the original node.")
+    }.getMessage should equal(
+      "requirement failed: invalid number of children or used an empty list of children in the original node.")
 
-    intercept[IllegalArgumentException]  {
+    intercept[IllegalArgumentException] {
       val fail = AddList(List(1), Number(1), 2, List(Number(2)), List[Object]("a", "b"))
       fail.children.toSet should equal(Set(Number(1), Number(2)))
       fail.withNewChildren(Array(Number(1)))
     }.getMessage should equal("requirement failed: a list of children cannot be empty.")
 
     // - if any children are contained in a list at all, then all list elements need to be children
-    intercept[InvalidConstructorArgument]  {
+    intercept[InvalidConstructorArgument] {
       case class Unsupported(elems: List[Object]) extends AbstractTreeNode[Unsupported]
       val fail = Unsupported(List(Unsupported(List.empty), "2"))
-    }.getMessage should equal(
-      s"""Expected a list that contains either no children or only children
+    }.getMessage should equal(s"""Expected a list that contains either no children or only children
         |but found a mixed list that contains a child as the head element,
         |but also one with a non-child type: java.lang.String cannot be cast to ${classOf[AbstractTreeNode[_]].getName}.
         |""".stripMargin)
 
     // - there can be at most one list of children
-    intercept[IllegalArgumentException]  {
+    intercept[IllegalArgumentException] {
       abstract class UnsupportedTree extends AbstractTreeNode[UnsupportedTree]
       case object UnsupportedLeaf extends UnsupportedTree
       case class UnsupportedNode(elems1: List[UnsupportedTree], elems2: List[UnsupportedTree]) extends UnsupportedTree
@@ -90,13 +90,14 @@ class TreeNodeTest extends FunSuite with Matchers {
     }.getMessage should equal("requirement failed: there can be at most one list of children in the constructor.")
 
     // - there can be no normal child constructor parameters after the list of children
-    intercept[IllegalArgumentException]  {
+    intercept[IllegalArgumentException] {
       abstract class UnsupportedTree2 extends AbstractTreeNode[UnsupportedTree2]
       case object UnsupportedLeaf2 extends UnsupportedTree2
       case class UnsupportedNode2(elems: List[UnsupportedTree2], elem: UnsupportedTree2) extends UnsupportedTree2
       UnsupportedNode2(List(UnsupportedLeaf2), UnsupportedLeaf2)
-    }.getMessage should equal("requirement failed: there can be no normal child constructor parameters " +
-      "after a list of children.")
+    }.getMessage should equal(
+      "requirement failed: there can be no normal child constructor parameters " +
+        "after a list of children.")
   }
 
   test("rewrite") {
@@ -107,10 +108,10 @@ class TreeNodeTest extends FunSuite with Matchers {
     }
 
     val expected = Add(NoOp(Number(5)), Add(NoOp(Number(4)), NoOp(Number(3))))
-    val down = calculation.transformDown(addNoops)
+    val down = TopDown[CalcExpr](addNoops).rewrite(calculation)
     down should equal(expected)
 
-    val up = calculation.transformUp(addNoops)
+    val up = BottomUp[CalcExpr](addNoops).rewrite(calculation)
     up should equal(expected)
   }
 
@@ -118,17 +119,17 @@ class TreeNodeTest extends FunSuite with Matchers {
     val highTree = (1 to 1000).foldLeft(Number(1): CalcExpr) {
       case (t, n) => Add(t, Number(n))
     }
-    val simplified = highTree.transformUp {
+    val simplified = BottomUp[CalcExpr] {
       case Add(Number(n1), Number(n2)) => Number(n1 + n2)
-    }
+    }.rewrite(highTree)
     simplified should equal(Number(500501))
 
     val addNoOpsBeforeLeftAdd: PartialFunction[CalcExpr, CalcExpr] = {
       case Add(a: Add, b) => Add(NoOp(a), b)
     }
-    val noOpTree = highTree.transformDown {
+    val noOpTree = TopDown[CalcExpr] {
       addNoOpsBeforeLeftAdd
-    }
+    }.rewrite(highTree)
     noOpTree.height should equal(2000)
   }
 
