@@ -18,9 +18,9 @@ package org.opencypher.caps.impl.logical
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, _}
-import org.opencypher.caps.impl.common.equalWithTracing
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.impl.IrTestSuite
+import org.opencypher.caps.test.support.equalWithTracing
 
 import scala.language.implicitConversions
 

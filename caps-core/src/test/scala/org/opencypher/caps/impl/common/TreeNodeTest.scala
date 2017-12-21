@@ -15,6 +15,7 @@
  */
 package org.opencypher.caps.impl.common
 
+import org.opencypher.caps.test.support.{equalWithTracing, referenceEqual}
 import org.scalatest.{FunSuite, Matchers}
 
 class TreeNodeTest extends FunSuite with Matchers {

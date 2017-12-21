@@ -22,13 +22,13 @@ import org.opencypher.caps.api.io.GraphSource
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.{CypherBoolean, CypherInteger, CypherString}
-import org.opencypher.caps.impl.common.{MatchHelper, equalWithTracing}
 import org.opencypher.caps.impl.logical
 import org.opencypher.caps.impl.util.toVar
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block._
 import org.opencypher.caps.ir.api.pattern.{CyclicRelationship, DirectedRelationship, Pattern}
 import org.opencypher.caps.ir.impl.IrTestSuite
+import org.opencypher.caps.test.support.{MatchHelper, equalWithTracing}
 import org.opencypher.caps.toField
 import org.scalatest.matchers._
 
