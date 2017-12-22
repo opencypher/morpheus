@@ -288,6 +288,11 @@
                         <version>${dep.junit.platform.version}</version>
                     </dependency>
                     <dependency>
+                        <groupId>org.junit.jupiter</groupId>
+                        <artifactId>junit-jupiter-engine</artifactId>
+                        <version>${dep.junit.version}</version>
+                    </dependency>
+                    <dependency>
                         <groupId>org.junit.vintage</groupId>
                         <artifactId>junit-vintage-engine</artifactId>
                         <version>${dep.junit.vintage.version}</version>

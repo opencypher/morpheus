@@ -31,70 +31,20 @@ import scala.collection.JavaConverters._
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
-object AllTckTests {
+// this is an object with a val because we can only load the
+// scenarios _once_ due to a bug in the TCK API
+object TCKFixture {
   val scenarios: Seq[Scenario] = CypherTCK.allTckScenarios
-}
 
-class CapsTCKTest {
-  implicit val caps: CAPSSession = CAPSSession.local()
-  def emptyGraph: CAPSGraph = CAPSGraph.empty
-  val empty = Neo4jBackedTestGraph()
-
-  @TestFactory
-  def runTCKOnTestGraph(): util.Collection[DynamicTest] = {
-    val tests = AllTckTests.scenarios.filterNot { s =>
-      ScenarioBlacklist.contains(s.toString())
-    }
-
-    val dynamicTests = tests.map { scenario =>
-      val name = scenario.toString
-      val executable = scenario(empty)
-      DynamicTest.dynamicTest(name, executable)
-    }
-    dynamicTests.asJavaCollection
-  }
-
-  @TestFactory
-  def runBlacklistedTCKOnTestGraph(): util.Collection[DynamicTest] = {
-    val tests = AllTckTests.scenarios.filter { s =>
-      ScenarioBlacklist.contains(s.toString())
-    }
-
-    val dynamicTests = tests.map { scenario =>
-      val name = scenario.toString
-      val executable = new Executable {
-        override def execute(): Unit = Try(scenario(empty).execute()) match {
-          case Success(_) => throw new RuntimeException(s"A blacklisted scenario actually worked: $scenario")
-          case Failure(_) => ()
-        }
+  def dynamicTest(graph: Graph)(scenario: Scenario): DynamicTest =
+    DynamicTest.dynamicTest(scenario.toString, new Executable {
+      override def execute(): Unit = {
+        println(scenario)
+        scenario(graph).execute()
       }
-      DynamicTest.dynamicTest(name, executable)
-    }
-    dynamicTests.asJavaCollection
-  }
+    })
 
-  //@TestFactory
-  def runSingleScenario(): util.Collection[DynamicTest] = {
-    PrintLogicalPlan.set()
-    val name = "A simple pattern with one bound endpoint"
-    val dynamicTests = CypherTCK.allTckScenarios.filter(s => s.name == name).map { scenario =>
-      val name = scenario.toString
-      val executable = scenario(empty)
-      DynamicTest.dynamicTest(name, executable)
-    }
-    dynamicTests.asJavaCollection
-  }
-
-  @TestFactory
-  def runCustomOnNeo4j(): util.Collection[DynamicTest] = {
-    val file = new File(getClass.getResource("CAPSTestFeature.feature").toURI)
-    val dynamicTests = CypherTCK.parseFilesystemFeature(file).scenarios.map { scenario =>
-      val name = scenario.toString
-      val executable = scenario(emptyGraph)
-      DynamicTest.dynamicTest(name, executable)
-    }
-    dynamicTests.asJavaCollection
-  }
+  implicit val caps: CAPSSession = CAPSSession.local()
 }
 
 case class Neo4jBackedTestGraph(implicit caps: CAPSSession) extends Graph {
