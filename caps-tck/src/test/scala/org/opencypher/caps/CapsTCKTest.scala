@@ -31,6 +31,10 @@ import scala.collection.JavaConverters._
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
+object AllTckTests {
+  val scenarios: Seq[Scenario] = CypherTCK.allTckScenarios
+}
+
 class CapsTCKTest {
   implicit val caps: CAPSSession = CAPSSession.local()
   def emptyGraph: CAPSGraph = CAPSGraph.empty
@@ -38,7 +42,7 @@ class CapsTCKTest {
 
   @TestFactory
   def runTCKOnTestGraph(): util.Collection[DynamicTest] = {
-    val tests = CypherTCK.allTckScenarios.filterNot { s =>
+    val tests = AllTckTests.scenarios.filterNot { s =>
       ScenarioBlacklist.contains(s.toString())
     }
 
@@ -52,7 +56,7 @@ class CapsTCKTest {
 
   @TestFactory
   def runBlacklistedTCKOnTestGraph(): util.Collection[DynamicTest] = {
-    val tests = CypherTCK.allTckScenarios.filter { s =>
+    val tests = AllTckTests.scenarios.filter { s =>
       ScenarioBlacklist.contains(s.toString())
     }
 
@@ -83,7 +87,6 @@ class CapsTCKTest {
 
   @TestFactory
   def runCustomOnNeo4j(): util.Collection[DynamicTest] = {
-    PrintLogicalPlan.set()
     val file = new File(getClass.getResource("CAPSTestFeature.feature").toURI)
     val dynamicTests = CypherTCK.parseFilesystemFeature(file).scenarios.map { scenario =>
       val name = scenario.toString
