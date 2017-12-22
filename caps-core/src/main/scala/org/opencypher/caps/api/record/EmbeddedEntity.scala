@@ -187,7 +187,7 @@ final case class EmbeddedRelationship(
     }
     relTypeSlotOrName match {
       case Left((slot, _)) if slots.contains(slot) => duplicateEmbeddedEntityColumn(slot)
-      case Left((slot, _)) => slots.updated(slot, OfType(entityVar)(CTString))
+      case Left((slot, _)) => slots.updated(slot, Type(entityVar)(CTString))
       case Right(_) => slots
     }
   }

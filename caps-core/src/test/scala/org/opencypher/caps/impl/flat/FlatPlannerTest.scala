@@ -20,9 +20,9 @@ import org.opencypher.caps.api.record.{FieldSlotContent, OpaqueField, ProjectedE
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.logical.{LogicalGraph, LogicalOperatorProducer}
-import org.opencypher.caps.ir.api.pattern._
-import org.opencypher.caps.ir.api.{IRField, Label, PropertyKey, RelType}
+import org.opencypher.caps.ir.api.{IRField, Label, PropertyKey}
 import org.opencypher.caps.test.BaseTestSuite
+import org.opencypher.caps.test.support.equalWithTracing
 
 import scala.language.implicitConversions
 
@@ -149,7 +149,7 @@ class FlatPlannerTest extends BaseTestSuite {
       ProjectedExpr(Property(source, PropertyKey("salary"))(CTFloat.nullable)),
       ProjectedExpr(StartNode(rel)(CTInteger)),
       OpaqueField(rel),
-      ProjectedExpr(OfType(rel)(CTString)),
+      ProjectedExpr(Type(rel)(CTString)),
       ProjectedExpr(EndNode(rel)(CTInteger)),
       ProjectedExpr(Property(rel, PropertyKey("since"))(CTString.nullable)),
       ProjectedExpr(Property(rel, PropertyKey("bar"))(CTBoolean.nullable)),
@@ -191,7 +191,7 @@ class FlatPlannerTest extends BaseTestSuite {
       ProjectedExpr(Property(source, PropertyKey("salary"))(CTFloat.nullable)),
       ProjectedExpr(StartNode(rel)(CTInteger)),
       OpaqueField(rel),
-      ProjectedExpr(OfType(rel)(CTString)),
+      ProjectedExpr(Type(rel)(CTString)),
       ProjectedExpr(EndNode(rel)(CTInteger)),
       ProjectedExpr(Property(rel, PropertyKey("since"))(CTString)),
       OpaqueField(target),
@@ -272,7 +272,7 @@ class FlatPlannerTest extends BaseTestSuite {
     )
     val headerContents = result.header.contents
 
-    result should equal(
+    result should equalWithTracing(
       mkFlat.select(
         IndexedSeq(Var("foo")(CTString)), Set.empty,
         mkFlat.project(
@@ -281,9 +281,41 @@ class FlatPlannerTest extends BaseTestSuite {
         )
       )
     )
-    headerContents should equal(Set(
+    headerContents should equalWithTracing(Set(
       ProjectedField(Var("foo")(CTString), Property(Var("n")(CTNode), PropertyKey("name"))(CTString))
     ))
+  }
+
+  test("Construct selection with renamed alias") {
+    val n = Var("n")(CTNode("Person"))
+
+    val result = flatPlanner.process(
+      mkLogical.planSelect(IndexedSeq(n),
+        prev = mkLogical.projectField(IRField("foo")(CTString), Property(n, PropertyKey("name"))(CTString),
+          logicalNodeScan("n", "Person")
+        )
+      )
+    )
+    val headerContents = result.header.contents
+
+    result should equalWithTracing(
+      mkFlat.select(
+        IndexedSeq(n), Set.empty,
+        mkFlat.removeAliases(IndexedSeq(n),
+          mkFlat.project(
+            ProjectedField(Var("foo")(CTString), Property(n, PropertyKey("name"))(CTString)),
+            flatNodeScan("n", "Person")
+          )
+        )
+      )
+    )
+    headerContents should equalWithTracing(Set(
+      OpaqueField(n),
+      ProjectedExpr(HasLabel(n, Label("Person"))(CTBoolean)),
+      ProjectedExpr(Property(n, PropertyKey("name"))(CTString)),
+      ProjectedExpr(Property(n, PropertyKey("age"))(CTInteger.nullable))
+    ))
+
   }
 
   test("Construct selection with several fields") {

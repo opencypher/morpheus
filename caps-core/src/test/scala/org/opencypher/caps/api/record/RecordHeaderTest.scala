@@ -435,7 +435,7 @@ class RecordHeaderTest extends BaseTestSuite {
     eHeader should equal(RecordHeader.empty.update(addContents(Seq(
       ProjectedExpr(StartNode(e)(CTNode)),
       OpaqueField(e),
-      ProjectedExpr(OfType(e)(CTString)),
+      ProjectedExpr(Type(e)(CTString)),
       ProjectedExpr(EndNode(e)(CTNode)),
       ProjectedExpr(Property(e, PropertyKey("a"))(CTString)),
       ProjectedExpr(Property(e, PropertyKey("b"))(CTInteger.nullable))
@@ -444,7 +444,7 @@ class RecordHeaderTest extends BaseTestSuite {
     rHeader should equal(RecordHeader.empty.update(addContents(Seq(
       ProjectedExpr(StartNode(r)(CTNode)),
       OpaqueField(r),
-      ProjectedExpr(OfType(r)(CTString)),
+      ProjectedExpr(Type(r)(CTString)),
       ProjectedExpr(EndNode(r)(CTNode)),
       ProjectedExpr(Property(r, PropertyKey("a"))(CTString)),
       ProjectedExpr(Property(r, PropertyKey("b"))(CTInteger.nullable)),
@@ -464,7 +464,7 @@ class RecordHeaderTest extends BaseTestSuite {
     eHeader should equal(RecordHeader.empty.update(addContents(Seq(
       ProjectedExpr(StartNode(e)(CTNode)),
       OpaqueField(e),
-      ProjectedExpr(OfType(e)(CTString)),
+      ProjectedExpr(Type(e)(CTString)),
       ProjectedExpr(EndNode(e)(CTNode)),
       ProjectedExpr(Property(e, PropertyKey("a"))(CTString)),
       ProjectedExpr(Property(e, PropertyKey("b"))(CTInteger.nullable))

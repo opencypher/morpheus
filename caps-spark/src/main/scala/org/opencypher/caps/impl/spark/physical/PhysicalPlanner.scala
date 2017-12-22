@@ -43,6 +43,9 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOpera
       case flat.CartesianProduct(lhs, rhs, header) =>
         CartesianProduct(process(lhs), process(rhs), header)
 
+      case flat.RemoveAliases(dependent, in, header) =>
+        RemoveAliases(dependent, process(in), header)
+
       case flat.Select(fields, graphs, in, header) =>
         val selected = SelectFields(process(in), fields, Some(header))
         SelectGraphs(selected, graphs)

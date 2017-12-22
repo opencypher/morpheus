@@ -42,7 +42,7 @@ final class ExprOps(val e: Expr) extends AnyVal {
       case EndNode(expr) :: tl => computeDependencies(expr :: tl, result)
       case HasLabel(expr, _) :: tl => computeDependencies(expr :: tl, result)
       case HasType(expr, _) :: tl => computeDependencies(expr :: tl, result)
-      case OfType(expr) :: tl => computeDependencies(expr :: tl, result)
+      case Type(expr) :: tl => computeDependencies(expr :: tl, result)
       case Property(expr, _) :: tl => computeDependencies(expr :: tl, result)
       case ExistsPatternExpr(_, _) :: tl => computeDependencies(tl, result)
       case (expr: Not) :: tl => computeDependencies(expr.expr :: tl, result)

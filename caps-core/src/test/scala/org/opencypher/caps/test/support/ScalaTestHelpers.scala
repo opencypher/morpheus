@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.common
+package org.opencypher.caps.test.support
 
 import org.opencypher.caps.impl.common.AsCode._
-import org.opencypher.caps.impl.common.MatchHelper._
+import org.opencypher.caps.test.support.MatchHelper._
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 /**

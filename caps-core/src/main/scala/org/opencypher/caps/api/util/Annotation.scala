@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.api.util
 
-import org.opencypher.caps.api.record.{Labels, Node, Relationship, Type}
+import org.opencypher.caps.api.record.{Labels, Node, Relationship, RelationshipType}
 
 import scala.annotation.StaticAnnotation
 import scala.reflect.runtime.universe._
@@ -30,8 +30,8 @@ private[caps] object Annotation {
   }
 
   def relType[E <: Relationship : TypeTag]: String = {
-    get[Type, E] match {
-      case Some(Type(tpe)) => tpe
+    get[RelationshipType, E] match {
+      case Some(RelationshipType(tpe)) => tpe
       case None => runtimeClass[E].getSimpleName.toUpperCase
     }
   }

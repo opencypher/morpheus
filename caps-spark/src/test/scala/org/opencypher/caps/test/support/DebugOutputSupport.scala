@@ -50,4 +50,5 @@ trait DebugOutputSupport {
 
   // needed for bag builder initialization
   implicit val m: HashedBagConfiguration[Row] = Bag.configuration.compact[Row]
+  implicit val m2: HashedBagConfiguration[String] = Bag.configuration.compact[String]
 }

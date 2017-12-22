@@ -47,7 +47,7 @@ abstract class TestGraph[G, N, R](
 
   def inputGraph: G
 
-  lazy val schema: Schema = {
+  def schema: Schema = {
     def extractFromNode(n: N) =
       n.labels -> n.properties.map {
         case (name, prop) => name -> fromJavaType(prop)
@@ -82,7 +82,7 @@ abstract class TestGraph[G, N, R](
   def cypher(query: String, parameters: Map[String, CypherValue]): CAPSResult =
     caps.cypher(graph, query, parameters)
 
-  lazy val graph: CAPSGraph = CAPSGraph.createLazy(schema, new CAPSGraph {
+  def capsGraph: CAPSGraph = new CAPSGraph {
     self =>
 
     override def session: CAPSSession = caps
@@ -106,21 +106,21 @@ abstract class TestGraph[G, N, R](
 
       val data = {
         val nodes = inputGraph.allNodes
-            .filter(v => cypherType.labels.subsetOf(v.labels))
-            .map { v =>
-              val exprs = header.slots.map(_.content.key)
-              val labelFields = exprs.collect {
-                case HasLabel(_, label) => v.labels.contains(label.name)
-              }
-              val propertyFields = exprs.collect {
-                case p@Property(_, k) =>
-                  val pValue = v.properties.getOrElse(k.name, null)
-                  if (fromJavaType(pValue).material == p.cypherType.material) pValue
-                  else null
-              }
+          .filter(v => cypherType.labels.subsetOf(v.labels))
+          .map { v =>
+            val exprs = header.slots.map(_.content.key)
+            val labelFields = exprs.collect {
+              case HasLabel(_, label) => v.labels.contains(label.name)
+            }
+            val propertyFields = exprs.collect {
+              case p@Property(_, k) =>
+                val pValue = v.properties.getOrElse(k.name, null)
+                if (fromJavaType(pValue).material == p.cypherType.material) pValue
+                else null
+            }
 
-              Row(v.id +: (labelFields ++ propertyFields): _*)
-            }.toList.asJava
+            Row(v.id +: (labelFields ++ propertyFields): _*)
+          }.toList.asJava
 
         val fields = header.slots.map { s =>
           StructField(SparkColumnName.of(s), toSparkType(s.content.cypherType))
@@ -136,17 +136,17 @@ abstract class TestGraph[G, N, R](
 
       val data = {
         val rels = inputGraph.allRels
-            .filter(e => cypherType.types.isEmpty || cypherType.types.contains(e.relType))
-            .map { e =>
-              val staticFields = Seq(e.sourceId, e.id, e.relType, e.targetId)
+          .filter(e => cypherType.types.isEmpty || cypherType.types.contains(e.relType))
+          .map { e =>
+            val staticFields = Seq(e.sourceId, e.id, e.relType, e.targetId)
 
-              val propertyFields = header.slots.slice(4, header.slots.size).map(_.content.key).map {
-                case Property(_, k) => e.properties.get(k.name)
-                case _ => throw new IllegalArgumentException("Only properties expected in the header")
-              }
+            val propertyFields = header.slots.slice(4, header.slots.size).map(_.content.key).map {
+              case Property(_, k) => e.properties.get(k.name)
+              case _ => throw new IllegalArgumentException("Only properties expected in the header")
+            }
 
-              Row(staticFields ++ propertyFields: _*)
-            }.toList.asJava
+            Row(staticFields ++ propertyFields: _*)
+          }.toList.asJava
 
         val fields = header.slots.map { s =>
           StructField(SparkColumnName.of(s), toSparkType(s.content.cypherType))
@@ -158,7 +158,9 @@ abstract class TestGraph[G, N, R](
     }
 
     override def union(other: CAPSGraph): Nothing = Raise.unsupportedArgument("union with test graph")
-  })
+  }
+
+  lazy val graph: CAPSGraph = CAPSGraph.createLazy(schema, capsGraph)
 
   private case class TestGraphSource(canonicalURI: URI, testGraph: TestGraph[G, N, R])
       extends CAPSGraphSourceImpl {

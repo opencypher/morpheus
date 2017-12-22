@@ -18,17 +18,17 @@ package org.opencypher.caps.impl.logical
 import java.net.URI
 
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.api.io.{GraphSource, PersistMode}
+import org.opencypher.caps.api.io.GraphSource
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.{CypherBoolean, CypherInteger, CypherString}
-import org.opencypher.caps.impl.common.{MatchHelper, equalWithTracing}
 import org.opencypher.caps.impl.logical
 import org.opencypher.caps.impl.util.toVar
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block._
-import org.opencypher.caps.ir.api.pattern.{DirectedRelationship, Pattern}
+import org.opencypher.caps.ir.api.pattern.{CyclicRelationship, DirectedRelationship, Pattern}
 import org.opencypher.caps.ir.impl.IrTestSuite
+import org.opencypher.caps.test.support.{MatchHelper, equalWithTracing}
 import org.opencypher.caps.toField
 import org.scalatest.matchers._
 
@@ -82,6 +82,22 @@ class LogicalPlannerTest extends IrTestSuite {
     val expected = ExpandSource(nodeA, relR, nodeB, scan1, scan2, SolvedQueryModel(Set(nodeA, nodeB, relR)))
 
     result should equalWithoutResult(expected)
+  }
+
+  test("convert cyclic match block") {
+    val pattern = Pattern
+      .empty[Expr]
+      .withEntity(nodeA)
+      .withEntity(relR)
+      .withConnection(relR, CyclicRelationship(nodeA))
+
+    val block = matchBlock(pattern)
+    val ir = irWithLeaf(block)
+
+    val scan = NodeScan(nodeA, SetSourceGraph(leafPlan.sourceGraph, leafPlan, emptySqm), emptySqm.withField(nodeA))
+    val expandInto = ExpandInto(nodeA, relR, nodeA, scan, SolvedQueryModel(Set(nodeA, relR)))
+
+    plan(ir) should equalWithoutResult(expandInto)
   }
 
   test("convert project block") {

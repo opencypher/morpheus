@@ -248,10 +248,24 @@ final case class ProjectPatternGraph(
     // type is an input
     val typeTuple = {
       val col = org.apache.spark.sql.functions.lit(typ)
-      ProjectedExpr(OfType(rel)(CTString)) -> col
+      ProjectedExpr(Type(rel)(CTString)) -> col
     }
 
     Set(sourceTuple, targetTuple, relTuple, typeTuple)
+  }
+}
+
+final case class RemoveAliases(dependentFields: Set[(ProjectedField, ProjectedExpr)], in: PhysicalOperator, header: RecordHeader) extends UnaryPhysicalOperator {
+
+  override def executeUnary(prev: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult = {
+    prev.mapRecordsWithDetails { records =>
+      val renamed = dependentFields.foldLeft(records.data) {
+        case (df, (v, expr)) =>
+          df.withColumnRenamed(SparkColumnName.of(v), SparkColumnName.of(expr))
+      }
+
+      CAPSRecords.create(header, renamed)(records.caps)
+    }
   }
 }
 
@@ -302,7 +316,7 @@ final case class Distinct(in: PhysicalOperator, header: RecordHeader) extends Un
       val data = records.data
       val columnNames = header.slots.map(slot => data.col(columnName(slot)))
       val relevantColumns = data.select(columnNames: _*)
-      val distinctRows = relevantColumns.distinct()
+      val distinctRows = relevantColumns.dropDuplicates(header.fields.map(SparkColumnName.of).toSeq)
       CAPSRecords.create(header, distinctRows)(records.caps)
     }
   }
@@ -337,8 +351,9 @@ final case class Aggregate(
 
       val data: Either[RelationalGroupedDataset, DataFrame] =
         if (group.nonEmpty) {
-          val columns = group.map { expr =>
-            withInnerExpr(expr)(identity)
+          val columns = group.flatMap { expr =>
+            val withChildren = records.header.selfWithChildren(expr).map(_.content.key)
+            withChildren.map(e => withInnerExpr(e)(identity))
           }
           Left(inData.groupBy(columns.toSeq: _*))
         } else Right(inData)

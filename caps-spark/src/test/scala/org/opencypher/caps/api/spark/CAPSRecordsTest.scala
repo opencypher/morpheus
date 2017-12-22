@@ -103,7 +103,7 @@ class CAPSRecordsTest extends CAPSTestSuite {
       OpaqueField(entityVar),
       ProjectedExpr(StartNode(entityVar)(CTNode)),
       ProjectedExpr(EndNode(entityVar)(CTNode)),
-      ProjectedExpr(OfType(entityVar)(CTRelationship("RED", "BLUE", "GREEN", "YELLOW")))
+      ProjectedExpr(Type(entityVar)(CTRelationship("RED", "BLUE", "GREEN", "YELLOW")))
     ))
 
     val scan = GraphScan(embeddedRel).from(given)

@@ -77,7 +77,7 @@ final case class RecordHeader(internalHeader: InternalHeader) extends CypherReco
 
   def sourceNodeSlot(rel: Var): RecordSlot = slotsFor(StartNode(rel)()).headOption.getOrElse(???)
   def targetNodeSlot(rel: Var): RecordSlot = slotsFor(EndNode(rel)()).headOption.getOrElse(???)
-  def typeSlot(rel: Expr): RecordSlot = slotsFor(OfType(rel)()).headOption.getOrElse(???)
+  def typeSlot(rel: Expr): RecordSlot = slotsFor(Type(rel)()).headOption.getOrElse(???)
 
   def labels(node: Var): Seq[HasLabel] = labelSlots(node).keys.toSeq
 
@@ -94,6 +94,9 @@ final case class RecordHeader(internalHeader: InternalHeader) extends CypherReco
         }
     }
   }
+
+  def selfWithChildren(field: Var): Seq[RecordSlot] =
+    slotFor(field) +: childSlots(field)
 
   def childSlots(entity: Var): Seq[RecordSlot] = {
     slots.filter {
@@ -226,7 +229,7 @@ object RecordHeader {
     }
 
     val startNode = ProjectedExpr(StartNode(rel)(CTNode))
-    val typeString = ProjectedExpr(OfType(rel)(CTString))
+    val typeString = ProjectedExpr(Type(rel)(CTString))
     val endNode = ProjectedExpr(EndNode(rel)(CTNode))
 
     val relHeaderContents = Seq(startNode, OpaqueField(rel), typeString, endNode) ++ relKeyHeaderContents

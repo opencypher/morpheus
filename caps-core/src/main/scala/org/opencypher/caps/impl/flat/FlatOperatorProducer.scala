@@ -56,6 +56,28 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     Select(fields, graphs, in, nextHeader)
   }
 
+  def removeAliases(toKeep: IndexedSeq[Var], in: FlatOperator): FlatOperator = {
+    val renames = in.header.contents.collect {
+      case pf@ProjectedField(v, expr) if !toKeep.contains(v) =>
+        pf -> ProjectedExpr(expr)
+    }
+
+    if (renames.isEmpty) {
+      in
+    } else {
+      val newHeaderContents = in.header.contents.map {
+        case ProjectedField(v, expr) if !toKeep.contains(v) =>
+          ProjectedExpr(expr)
+        case other =>
+          other
+      }
+
+      val (header, _) = RecordHeader.empty.update(addContents(newHeaderContents.toSeq))
+
+      RemoveAliases(renames, in, header)
+    }
+  }
+
   def filter(expr: Expr, in: FlatOperator): Filter = {
     in.header
 
@@ -75,8 +97,9 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
   def distinct(fields: Set[Var], in: FlatOperator): Distinct = {
     val (newHeader, _) = RecordHeader.empty.update(
-      addContents(fields.toSeq.map(OpaqueField))
+      addContents(fields.flatMap(in.header.selfWithChildren(_)).map(_.content).toSeq)
     )
+
     Distinct(in, newHeader)
   }
 
@@ -111,7 +134,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
   def aggregate(aggregations: Set[(Var, Aggregator)], group: Set[Var], in: FlatOperator): Aggregate = {
     val (newHeader, _) = RecordHeader.empty.update(
-      addContents(group.toSeq.map(OpaqueField) ++ aggregations.map(agg => OpaqueField(agg._1)))
+      addContents(group.flatMap(in.header.selfWithChildren).map(_.content).toSeq ++ aggregations.map(agg => OpaqueField(agg._1)))
     )
 
     Aggregate(aggregations, group, in, newHeader)
