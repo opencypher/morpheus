@@ -51,9 +51,9 @@ object CypherCreateParser {
 
   type Result[A] = State[ParsingContext, A]
 
-  def apply(createQuery: String): PropertyGraph = {
+  def apply(createQuery: String, externalParams: Map[String, Any] = Map.empty): PropertyGraph = {
     val (ast, params, _) = CypherParser.process(createQuery)(CypherParser.defaultContext)
-    val context = ParsingContext.fromParams(params)
+    val context = ParsingContext.fromParams(params ++ externalParams)
 
     ast match {
       case Query(_, SingleQuery(clauses)) => processClauses(clauses).runS(context).value.graph
@@ -156,15 +156,22 @@ object CypherCreateParser {
       res <- expr match {
         case Parameter(name, _) => inspect[ParsingContext, Any](_.parameter(name))
         case Variable(name)     => inspect[ParsingContext, Any](_.variableMapping(name))
+        case l:Literal          => pure[ParsingContext, Any](l.value)
+        case ListLiteral(expressions) => expressions.toList.traverse[Result, Any](processExpr)
       }
     } yield res
   }
 
   def processValues(expr: Expression): Result[List[Any]] = {
-//    expr match {
-//      ListLiteral
-//    }
-    pure[ParsingContext, List[Any]](List(1,2,3))
+    expr match {
+      case ListLiteral(expressions) => expressions.toList.traverse[Result, Any](processExpr)
+      case Variable(name)     => inspect[ParsingContext, List[Any]](_.variableMapping(name) match {
+        case l : List[Any] => l
+      })
+      case Parameter(name, _)     => inspect[ParsingContext, List[Any]](_.parameter(name) match {
+        case l : List[Any] => l
+      })
+    }
   }
 }
 
