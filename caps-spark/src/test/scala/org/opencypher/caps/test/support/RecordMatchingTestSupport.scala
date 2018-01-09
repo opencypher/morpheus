@@ -18,17 +18,15 @@ package org.opencypher.caps.test.support
 import org.opencypher.caps.api.expr.Var
 import org.opencypher.caps.api.record.{FieldSlotContent, OpaqueField, ProjectedExpr, RecordHeader}
 import org.opencypher.caps.api.spark.CAPSRecords
-import org.opencypher.caps.api.value.CypherMap
+import org.opencypher.caps.api.value._
 import org.opencypher.caps.impl.record.CAPSRecordHeader._
 import org.opencypher.caps.test.CAPSTestSuite
 import org.scalatest.Assertion
 
-import scala.collection.Bag
 import scala.collection.JavaConverters._
-import scala.collection.immutable.HashedBagConfiguration
+import scala.collection.immutable.{Bag, HashedBagConfiguration}
 
 trait RecordMatchingTestSupport {
-
 
   self: CAPSTestSuite =>
 
@@ -65,6 +63,8 @@ trait RecordMatchingTestSupport {
   implicit class RichRecords(records: CAPSRecords) {
     import org.opencypher.caps.impl.spark.DfUtils._
 
+    // TODO: Remove this and replace usages with toMapsWithCollectedEntities below
+    // probably use this name though, and have not collecting be the special case
     def toMaps: Bag[CypherMap] = {
       val rows = records.toDF().collect().map { r =>
         val properties = records.header.slots.map { s =>
@@ -77,5 +77,8 @@ trait RecordMatchingTestSupport {
       }
       Bag(rows: _*)
     }
+
+    def toMapsWithCollectedEntities: Bag[CypherMap] =
+      Bag(records.toCypherMaps.collect(): _*)
   }
 }

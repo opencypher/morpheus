@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, StringLiteral, Variable, Pattern => AstPattern}
 import org.opencypher.caps.api.expr._
+import org.opencypher.caps.api.types.{CTAny, CTList, CTWildcard, CypherType}
 import org.opencypher.caps.api.util.parsePathOrURI
 import org.opencypher.caps.impl.CompilationStage
 import org.opencypher.caps.impl.exception.Raise
@@ -135,6 +136,24 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
             put[R, IRBuilderContext](context.copy(blocks = reg2)) >> pure[R, Vector[BlockRef]](Vector(ref1, ref2))
           }
         } yield refs
+
+      case ast.Unwind(listExpression, variable) =>
+        for {
+          irGraph <- registerIRGraph(c)
+          tuple <- convertUnwindItem(listExpression, variable)
+          context <- get[R, IRBuilderContext]
+          block <- {
+            val (list, item) = tuple
+
+            val binds: UnwoundList[Expr] = UnwoundList(list, item)
+
+            val block = UnwindBlock(context.blocks.lastAdded.toSet, binds, irGraph)
+
+            val (ref, reg) = context.blocks.register(block)
+
+            put[R, IRBuilderContext](context.copy(blocks = reg)) >> pure[R, Vector[BlockRef]](Vector(ref))
+          }
+        } yield block
 
       case ast.Return(distinct, ast.ReturnItems(_, items), graphItems, orderBy, skip, limit, _) =>
         for {
@@ -309,6 +328,25 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
 
     case _ =>
       Raise.invalidArgument(s"${AliasedReturnItem.getClass} or ${UnaliasedReturnItem.getClass}", s"${item.getClass}")
+  }
+
+  private def convertUnwindItem[R: _mayFail : _hasContext](list: Expression, variable: Variable): Eff[R, (Expr, IRField)] = {
+    for {
+      expr <- convertExpr(list)
+      context <- get[R, IRBuilderContext]
+      typ <- expr.cypherType.material match {
+        case CTList(inner) =>
+          pure[R, CypherType](inner)
+        case CTAny =>
+          pure[R, CypherType](CTAny)
+        case x =>
+          error(IRBuilderError(s"unwind expression was not a list: $x"))(CTWildcard : CypherType)
+      }
+      field <- {
+        val field = IRField(variable.name)(typ)
+        put[R, IRBuilderContext](context.withFields(Set(field))) >> pure[R, (Expr, IRField)](expr -> field)
+      }
+    } yield field
   }
 
   private def convertPattern[R: _hasContext](p: AstPattern): Eff[R, Pattern[Expr]] = {

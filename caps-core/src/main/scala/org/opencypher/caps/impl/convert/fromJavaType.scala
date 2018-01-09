@@ -30,6 +30,9 @@ object fromJavaType extends Serializable {
     case _: java.lang.Float => CTFloat
     case _: java.lang.Double => CTFloat
     case _: java.lang.Boolean => CTBoolean
+    case a: Array[_] =>
+      val elementType = a.map(fromJavaType.apply).foldLeft[CypherType](CTVoid)(_ join _)
+      CTList(elementType)
     case x => Raise.invalidArgument("instance of a CypherValue", s"${x.getClass}")
   }
 }

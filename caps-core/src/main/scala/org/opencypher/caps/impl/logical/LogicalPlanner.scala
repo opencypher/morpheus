@@ -130,6 +130,10 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         }
         producer.aggregate(a, group, prev)
 
+      case UnwindBlock(_, UnwoundList(list, variable), _) =>
+        val withList = planInnerExpr(list, plan)
+        producer.planUnwind(list, variable, withList)
+
       case x =>
         Raise.notYetImplemented(s"logical planning of $x")
     }

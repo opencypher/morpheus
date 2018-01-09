@@ -180,6 +180,12 @@ final case class Project(expr: Expr, field: Option[Var], in: LogicalOperator, so
   override val fields: Set[Var] = in.fields ++ field
 }
 
+final case class Unwind(expr: Expr, field: Var, in: LogicalOperator, solved: SolvedQueryModel[Expr])
+    extends StackingLogicalOperator {
+
+  override val fields: Set[Var] = in.fields + field
+}
+
 final case class ProjectGraph(graph: LogicalGraph, in: LogicalOperator, solved: SolvedQueryModel[Expr])
     extends StackingLogicalOperator {
 

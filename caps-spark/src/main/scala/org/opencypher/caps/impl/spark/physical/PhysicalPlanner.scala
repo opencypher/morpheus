@@ -80,6 +80,9 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOpera
       case flat.Alias(expr, alias, in, header) =>
         Alias(process(in), expr, alias, header)
 
+      case flat.Unwind(list, item, in, header) =>
+        Unwind(process(in), list, item, header)
+
       case flat.Project(expr, in, header) =>
         Project(process(in), expr, header)
 

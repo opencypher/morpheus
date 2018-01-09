@@ -110,6 +110,10 @@ object Raise {
     s"Some error in type inference: $detail"
   )
 
+  def invalidTypeOfExpression(detail: String) = throw CAPSException(
+    s"An expression had an invalid type: $detail"
+  )
+
   def schemaMismatch(detail: String) = throw CAPSException(
     s"Incompatible schemas: $detail"
   )

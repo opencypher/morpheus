@@ -97,6 +97,10 @@ class LogicalOperatorProducer {
     Project(expr, None, prev, prev.solved)
   }
 
+  def planUnwind(list: Expr, variable: IRField, withList: LogicalOperator): Unwind = {
+    Unwind(list, variable, withList, withList.solved.withField(variable))
+  }
+
   def planSelect(fields: IndexedSeq[Var], graphs: Set[String] = Set.empty, prev: LogicalOperator): Select = {
     Select(fields, graphs, prev, prev.solved)
   }
