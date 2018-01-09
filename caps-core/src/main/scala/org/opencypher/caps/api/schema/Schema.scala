@@ -271,7 +271,7 @@ final case class Schema(
     withRelationshipPropertyKeys(typ, keys.toMap)
 
   def withRelationshipType(relType: String): Schema =
-    copy(relationshipTypes = relationshipTypes + relType)
+    withRelationshipPropertyKeys(relType)()
 
   private def computePropertyTypes(existing: PropertyKeys, input: PropertyKeys): PropertyKeys = {
     // Map over input keys to calculate join of type with existing type

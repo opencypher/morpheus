@@ -20,7 +20,7 @@ import org.opencypher.caps.impl.exception.Raise
 
 object fromJavaType extends Serializable {
 
-  def apply(v: AnyRef): CypherType = v match {
+  def apply(v: Any): CypherType = v match {
     case null => CTNull
     case _: String => CTString
     case _: java.lang.Byte => CTInteger

@@ -29,6 +29,16 @@ trait GraphMatchingTestSupport {
 
   val sparkSession: SparkSession = session
 
+  private def verify(actual: CAPSGraph, expected: CAPSGraph): Assertion = {
+    val expectedNodeIds = expected.nodes("n").data.select("n").collect().map(_.getLong(0)).toSet
+    val expectedRelIds = expected.relationships("r").data.select("r").collect().map(_.getLong(0)).toSet
+    val actualNodeIds = actual.nodes("n").data.select("n").collect().map(_.getLong(0)).toSet
+    val actualRelIds = actual.relationships("r").data.select("r").collect().map(_.getLong(0)).toSet
+
+    expectedNodeIds should equal(actualNodeIds)
+    expectedRelIds should equal(actualRelIds)
+  }
+
   implicit class GraphsMatcher(graphs: Map[String, CAPSGraph]) {
     def shouldMatch(expectedGraphs: CAPSGraph*): Unit = {
       withClue("expected and actual must have same size") {
@@ -39,15 +49,9 @@ trait GraphMatchingTestSupport {
         case (actual, expected) => verify(actual, expected)
       }
     }
+  }
 
-    private def verify(actual: CAPSGraph, expected: CAPSGraph): Assertion = {
-      val expectedNodeIds = expected.nodes("n").data.select("n").collect().map(_.getLong(0)).toSet
-      val expectedRelIds = expected.relationships("r").data.select("r").collect().map(_.getLong(0)).toSet
-      val actualNodeIds = actual.nodes("n").data.select("n").collect().map(_.getLong(0)).toSet
-      val actualRelIds = actual.relationships("r").data.select("r").collect().map(_.getLong(0)).toSet
-
-      expectedNodeIds should equal(actualNodeIds)
-      expectedRelIds should equal(actualRelIds)
-    }
+  implicit class GraphMatcher(graph: CAPSGraph) {
+    def shouldMatch(expectedGraph: CAPSGraph): Unit = verify(graph, expectedGraph)
   }
 }
