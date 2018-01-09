@@ -134,4 +134,8 @@ object Raise {
   def graphAlreadyExists(uri: URI) = throw CAPSException(
     s"Cannot create new graph. There already exists a graph at $uri"
   )
+
+  def unsupportedOperation(op: String) = throw CAPSException(
+    s"The operation '$op' is not supported."
+  )
 }

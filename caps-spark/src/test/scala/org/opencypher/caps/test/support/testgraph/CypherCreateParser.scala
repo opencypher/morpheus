@@ -6,12 +6,12 @@ import cats._
 import cats.data.State
 import cats.data.State._
 import cats.instances.list._
-import cats.syntax.traverse._
+import cats.syntax.all._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.parse.CypherParser
 
-case class ParsingContext(
+final case class ParsingContext(
     parameter: Map[String, Any],
     variableMapping: Map[String, Any],
     graph: PropertyGraph,
@@ -20,15 +20,15 @@ case class ParsingContext(
 
   def nextId: Long = idGenerator.getAndIncrement()
 
-  def protect: ParsingContext = {
+  def protectScope: ParsingContext = {
     copy(protectedScopes = variableMapping :: protectedScopes)
   }
 
-  def clean: ParsingContext = {
+  def restoreScope: ParsingContext = {
     copy(variableMapping = protectedScopes.head)
   }
 
-  def pop: ParsingContext = copy(protectedScopes = protectedScopes.tail)
+  def popProtectedScope: ParsingContext = copy(protectedScopes = protectedScopes.tail)
 
   def updated(k: String, v: Any): ParsingContext = v match {
     case n: Node =>
@@ -65,31 +65,32 @@ object CypherCreateParser {
       case (head::tail) =>
         head match {
           case Create(pattern) =>
-            processPattern(pattern).flatMap(_ => processClauses(tail))
+            processPattern(pattern) >> processClauses(tail)
 
           case Unwind(expr, variable) =>
             for {
               values <- processValues(expr)
-              _ <- {
-                val a = modify[ParsingContext](_.protect)
-                val b = a.flatMap { _ =>
-                  Foldable[List].sequence_[Result, Unit](values.map { v =>
-                    modify[ParsingContext](_.updated(variable.name, v))
-                      .flatMap(_ => processClauses(tail))
-                      .flatMap(_ => modify[ParsingContext](_.clean))
-                  })
-                }
-                b.flatMap(_ => modify[ParsingContext](_.pop))
-              }
-            } yield Unit
+              _ <- modify[ParsingContext](_.protectScope)
+              _ <- Foldable[List].sequence_[Result, Unit](values.map { v =>
+                for {
+                  _ <- modify[ParsingContext](_.updated(variable.name, v))
+                  _ <- processClauses(tail)
+                  _ <- modify[ParsingContext](_.restoreScope)
+                } yield ()
+              })
+              _ <- modify[ParsingContext](_.popProtectedScope)
+            } yield ()
+
+          case other => Raise.unsupportedOperation(other.name)
         }
-      case _ => modify[ParsingContext]{identity}
+      case _ => pure[ParsingContext,Unit](())
     }
   }
 
   def processPattern(pattern: Pattern): Result[Unit] = {
     val parts = pattern.patternParts.map {
       case EveryPath(element) => element
+      case other => Raise.unsupportedOperation(other.getClass.getSimpleName)
     }
 
     Foldable[List].sequence_[Result, GraphElement](parts.toList.map(pe => processPatternElement(pe)))
@@ -102,11 +103,13 @@ object CypherCreateParser {
           properties <- props match {
             case Some(expr: MapExpression) => extractProperties(expr)
             case None                      => pure[ParsingContext, Map[String, Any]](Map.empty)
+            case _                         => Raise.impossible()
           }
           node <- inspect[ParsingContext, Node] { context =>
             context.variableMapping.get(variable.name) match {
               case Some(n: Node) => n
               case None          => Node(context.nextId, labels.map(_.name).toSet, properties)
+              case _             => Raise.impossible()
             }
           }
           _ <- modify[ParsingContext] { context =>
@@ -128,7 +131,8 @@ object CypherCreateParser {
           target <- processPatternElement(third)
           properties <- props match {
               case Some(expr: MapExpression) => extractProperties(expr)
-              case None                       => pure[ParsingContext, Map[String, Any]](Map.empty)
+              case None                      => pure[ParsingContext, Map[String, Any]](Map.empty)
+              case _                         => Raise.impossible()
           }
           rel <- inspect[ParsingContext, Relationship] { context =>
             Relationship(context.nextId, sourceId, target.id, relType.head.name, properties)
@@ -158,6 +162,7 @@ object CypherCreateParser {
         case Variable(name)     => inspect[ParsingContext, Any](_.variableMapping(name))
         case l:Literal          => pure[ParsingContext, Any](l.value)
         case ListLiteral(expressions) => expressions.toList.traverse[Result, Any](processExpr)
+        case other => Raise.unsupportedOperation(other.getClass.getSimpleName)
       }
     } yield res
   }
@@ -165,11 +170,13 @@ object CypherCreateParser {
   def processValues(expr: Expression): Result[List[Any]] = {
     expr match {
       case ListLiteral(expressions) => expressions.toList.traverse[Result, Any](processExpr)
-      case Variable(name)     => inspect[ParsingContext, List[Any]](_.variableMapping(name) match {
+      case Variable(name)           => inspect[ParsingContext, List[Any]](_.variableMapping(name) match {
         case l : List[Any] => l
+        case _             => Raise.impossible()
       })
       case Parameter(name, _)     => inspect[ParsingContext, List[Any]](_.parameter(name) match {
         case l : List[Any] => l
+        case _             => Raise.impossible()
       })
     }
   }
