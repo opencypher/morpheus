@@ -15,11 +15,15 @@
  */
 package org.opencypher.caps
 
+import java.io.File
 import java.util
 
 import org.junit.jupiter.api.function.Executable
 import org.junit.jupiter.api.{DynamicTest, TestFactory}
+import org.opencypher.caps.api.spark.CAPSGraph
 import org.opencypher.caps.demo.Configuration.PrintLogicalPlan
+import org.opencypher.caps.test.support.creation.caps.CAPSScanGraphFactory
+import org.opencypher.tools.tck.api.CypherTCK
 
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
@@ -27,19 +31,25 @@ import scala.util.{Failure, Success, Try}
 class TCKCAPSTest {
   import TCKFixture._
 
-  val empty = Neo4jBackedTestGraph()
-
   @TestFactory
   def run(): util.Collection[DynamicTest] = {
+
+    // our interpretation of parameterized dynamic test in Scala with JUnit 5 ...
+    val factories = Seq(
+      CAPSScanGraphFactory
+    )
+
     val tests = scenarios.filterNot { s =>
       ScenarioBlacklist.contains(s.toString())
     }
 
-    tests.map(dynamicTest(empty)).asJavaCollection
+    factories.flatMap(factory => tests.map(dynamicTest(TCKGraph(factory, CAPSGraph.empty))).toList).asJavaCollection
   }
 
   @TestFactory
   def runBlacklistedTCKOnTestGraph(): util.Collection[DynamicTest] = {
+    val tckGraph = TCKGraph.empty
+
     val tests = scenarios.filter { s =>
       ScenarioBlacklist.contains(s.toString())
     }
@@ -50,7 +60,7 @@ class TCKCAPSTest {
         new Executable {
           override def execute(): Unit = {
             println(scenario)
-            Try(scenario(empty).execute()) match {
+            Try(scenario(tckGraph).execute()) match {
               case Success(_) =>
                 throw new RuntimeException(s"A blacklisted scenario actually worked: $scenario")
               case Failure(_) =>
@@ -62,10 +72,21 @@ class TCKCAPSTest {
     }.asJavaCollection
   }
 
+//  @TestFactory
+  def runCustomScenario(): util.Collection[DynamicTest] = {
+    val file = new File(getClass.getResource("CAPSTestFeature.feature").toURI)
+    CypherTCK
+      .parseFilesystemFeature(file)
+      .scenarios
+      .map(TCKFixture.dynamicTest(TCKGraph.empty))
+      .asJavaCollection
+  }
+
   //@TestFactory
   def runSingleScenario(): util.Collection[DynamicTest] = {
+    val tckGraph = TCKGraph.empty
     PrintLogicalPlan.set()
     val name = "A simple pattern with one bound endpoint"
-    scenarios.filter(s => s.name == name).map(dynamicTest(empty)).asJavaCollection
+    scenarios.filter(s => s.name == name).map(dynamicTest(tckGraph)).asJavaCollection
   }
 }

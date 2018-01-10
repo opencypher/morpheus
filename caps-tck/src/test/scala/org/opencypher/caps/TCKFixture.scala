@@ -19,9 +19,8 @@ import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.function.Executable
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
 import org.opencypher.caps.api.value.{CypherValue => CAPSValue}
-import org.opencypher.caps.impl.exception.Raise
-import org.opencypher.caps.test.support.creation.caps.CAPSScanGraphFactory
-import org.opencypher.caps.test.support.creation.propertygraph.{Neo4jPropertyGraphFactory, PropertyGraph}
+import org.opencypher.caps.test.support.creation.caps.{CAPSGraphFactory, CAPSScanGraphFactory}
+import org.opencypher.caps.test.support.creation.propertygraph.Neo4jPropertyGraphFactory
 import org.opencypher.tools.tck.api._
 import org.opencypher.tools.tck.values.CypherValue
 
@@ -43,30 +42,17 @@ object TCKFixture {
   implicit val caps: CAPSSession = CAPSSession.local()
 }
 
-case class Neo4jBackedTestGraph(implicit caps: CAPSSession) extends Graph {
-  private val neo4jGraph = new Neo4jPropertyGraphFactory
-
-  implicit val converter: PropertyGraph => CAPSGraph = CAPSScanGraphFactory(_).graph
-
-  override def execute(query: String, params: Map[String, CypherValue], queryType: QueryType): (Graph, Result) = {
-    queryType match {
-      case InitQuery =>
-        val propertyGraph = neo4jGraph.create(query, Map.empty)
-        val capsGraph = CAPSScanGraphFactory(propertyGraph).graph
-
-        AsTckGraph(capsGraph) -> CypherValueRecords.empty
-      case _ =>
-        ???
-    }
-  }
+object TCKGraph {
+  def empty(implicit caps: CAPSSession) = TCKGraph(CAPSScanGraphFactory, CAPSGraph.empty)
 }
 
-case class AsTckGraph(graph: CAPSGraph) extends Graph {
+case class TCKGraph(capsGraphFactory: CAPSGraphFactory, graph: CAPSGraph)(implicit caps: CAPSSession) extends Graph {
+
   override def execute(query: String, params: Map[String, CypherValue], queryType: QueryType): (Graph, Result) = {
     queryType match {
       case InitQuery =>
-        // we don't support updates on this adapter
-        Raise.notYetImplemented("update queries for CAPS graphs")
+        val capsGraph = capsGraphFactory(Neo4jPropertyGraphFactory(query, Map.empty))
+        copy(graph = capsGraph) -> CypherValueRecords.empty
       case SideEffectQuery =>
         // this one is tricky, not sure how can do it without Cypher
         this -> CypherValueRecords.empty

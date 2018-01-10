@@ -8,8 +8,11 @@ import org.opencypher.caps.test.support.creation.propertygraph.PropertyGraph
 
 import scala.collection.JavaConverters._
 
-case class CAPSScanGraphFactory(propertyGraph: PropertyGraph)(implicit caps: CAPSSession) extends CAPSGraphFactory {
-  override lazy val graph: CAPSGraph = {
+object CAPSScanGraphFactory extends CAPSGraphFactory {
+
+  override def apply(propertyGraph: PropertyGraph)(implicit caps: CAPSSession): CAPSGraph = {
+    val schema = computeSchema(propertyGraph)
+
     val nodeScans = schema.labelCombinations.combos.map { labels =>
       val propKeys = schema.nodeKeys(labels)
 

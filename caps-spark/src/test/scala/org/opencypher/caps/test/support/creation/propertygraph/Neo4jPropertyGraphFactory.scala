@@ -6,7 +6,13 @@ import org.neo4j.harness.TestServerBuilders
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Map
 
-class Neo4jPropertyGraphFactory extends PropertyGraphFactory {
+object Neo4jPropertyGraphFactory extends PropertyGraphFactory{
+  lazy val factory = new Neo4jPropertyGraphFactory
+
+  def apply(createQuery: String, parameters: Map[String, Any]): PropertyGraph = factory.create(createQuery, parameters)
+}
+
+class Neo4jPropertyGraphFactory {
 
   private val neo4jServer = TestServerBuilders.newInProcessBuilder()
     .withConfig("dbms.security.auth_enabled", "true")
@@ -14,7 +20,7 @@ class Neo4jPropertyGraphFactory extends PropertyGraphFactory {
 
   val inputGraph: GraphDatabaseService = neo4jServer.graph()
 
-  override def create(createQuery: String, parameters: Map[String, Any]): PropertyGraph = {
+  def create(createQuery: String, parameters: Map[String, Any]): PropertyGraph = {
     val tx = inputGraph.beginTx()
     inputGraph.execute("MATCH (a) DETACH DELETE a")
     inputGraph.execute(createQuery)

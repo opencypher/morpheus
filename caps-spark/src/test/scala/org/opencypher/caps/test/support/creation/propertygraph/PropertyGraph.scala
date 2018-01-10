@@ -49,5 +49,5 @@ case class Relationship(
 
 
 trait PropertyGraphFactory {
-  def create(createQuery: String, parameters: Map[String, Any]): PropertyGraph
+  def apply(createQuery: String, parameters: Map[String, Any]): PropertyGraph
 }

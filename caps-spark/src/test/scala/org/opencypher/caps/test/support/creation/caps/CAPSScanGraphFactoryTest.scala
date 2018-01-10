@@ -61,7 +61,7 @@ class CAPSScanGraphFactoryTest extends CAPSTestSuite with GraphMatchingTestSuppo
   ))
 
   test("testSchema") {
-    val propertyGraph = CAPSPropertyGraphFactory.create(createQuery)
+    val propertyGraph = CAPSPropertyGraphFactory(createQuery)
     CAPSScanGraphFactory(propertyGraph).schema should equal(Schema.empty
         .withNodePropertyKeys("Person", "Astronaut")("name" -> CTString)
         .withNodePropertyKeys("Person", "Martian")("name" -> CTString)
@@ -70,7 +70,7 @@ class CAPSScanGraphFactoryTest extends CAPSTestSuite with GraphMatchingTestSuppo
   }
 
   test("testAsScanGraph") {
-    val propertyGraph = CAPSPropertyGraphFactory.create(createQuery)
-    CAPSScanGraphFactory(propertyGraph).graph shouldMatch CAPSGraph.create(personScan, languageScan, knowsScan)
+    val propertyGraph = CAPSPropertyGraphFactory(createQuery)
+    CAPSScanGraphFactory(propertyGraph) shouldMatch CAPSGraph.create(personScan, languageScan, knowsScan)
   }
 }

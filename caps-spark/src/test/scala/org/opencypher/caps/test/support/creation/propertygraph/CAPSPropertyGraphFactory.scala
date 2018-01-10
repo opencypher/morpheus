@@ -15,7 +15,7 @@ object CAPSPropertyGraphFactory extends PropertyGraphFactory {
 
   type Result[A] = State[ParsingContext, A]
 
-  def create(createQuery: String, externalParams: Map[String, Any] = Map.empty): PropertyGraph = {
+  def apply(createQuery: String, externalParams: Map[String, Any] = Map.empty): PropertyGraph = {
     val (ast, params, _) = CypherParser.process(createQuery)(CypherParser.defaultContext)
     val context = ParsingContext.fromParams(params ++ externalParams)
 

@@ -3,17 +3,16 @@ package org.opencypher.caps.test.support.creation.caps
 import org.apache.spark.sql.types.StructField
 import org.opencypher.caps.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.spark.CAPSGraph
+import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
 import org.opencypher.caps.impl.convert.fromJavaType
 import org.opencypher.caps.impl.spark.convert.toSparkType
 import org.opencypher.caps.test.support.creation.propertygraph.{Node, PropertyGraph, Relationship}
 
 trait CAPSGraphFactory {
-  def propertyGraph: PropertyGraph
 
-  def graph: CAPSGraph
+  def apply(propertyGraph: PropertyGraph)(implicit caps: CAPSSession): CAPSGraph
 
-  lazy val schema: Schema = {
+  def computeSchema(propertyGraph: PropertyGraph): Schema = {
     def extractFromNode(n: Node) =
       n.labels -> n.properties.map {
         case (name, prop) => name -> fromJavaType(prop)

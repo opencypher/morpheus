@@ -23,11 +23,11 @@ import org.opencypher.caps.test.support.creation.propertygraph.{CAPSPropertyGrap
 trait CAPSGraphFixture extends BaseTestFixture {
   self: CAPSSessionFixture with BaseTestSuite =>
 
-  val propertyGraphToCAPSGraph: PropertyGraph => CAPSGraph = CAPSScanGraphFactory(_).graph
+  val propertyGraphToCAPSGraph: PropertyGraph => CAPSGraph = CAPSScanGraphFactory(_)
 
   implicit class RichCypherQueryString(createQuery: String) {
     def cypher(query: String): CAPSResult = {
-      val propertyGraph = CAPSPropertyGraphFactory.create(createQuery)
+      val propertyGraph = CAPSPropertyGraphFactory(createQuery)
       propertyGraphToCAPSGraph(propertyGraph).cypher(query)
     }
   }
