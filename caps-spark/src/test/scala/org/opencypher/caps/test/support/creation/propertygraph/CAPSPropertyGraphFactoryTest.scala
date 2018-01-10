@@ -1,4 +1,4 @@
-package org.opencypher.caps.test.support.testgraph
+package org.opencypher.caps.test.support.creation.propertygraph
 
 import org.opencypher.caps.test.BaseTestSuite
 import org.opencypher.caps.test.support.DebugOutputSupport
@@ -6,13 +6,13 @@ import org.opencypher.caps.test.support.DebugOutputSupport
 import scala.collection.Bag
 import scala.collection.immutable.HashedBagConfiguration
 
-class CypherCreateParserTest extends BaseTestSuite with DebugOutputSupport {
+class CAPSPropertyGraphFactoryTest extends BaseTestSuite with DebugOutputSupport {
 
   implicit val n: HashedBagConfiguration[Node] = Bag.configuration.compact[Node]
   implicit val r: HashedBagConfiguration[Relationship] = Bag.configuration.compact[Relationship]
 
   test("parse single node create statement") {
-    val graph = CypherCreateParser(
+    val graph = CAPSPropertyGraphFactory.create(
       """
         |CREATE (a:Person {name: "Alice"})
       """.stripMargin)
@@ -25,7 +25,7 @@ class CypherCreateParserTest extends BaseTestSuite with DebugOutputSupport {
   }
 
   test("parse multiple nodes in single create statement") {
-    val graph = CypherCreateParser(
+    val graph = CAPSPropertyGraphFactory.create(
       """
         |CREATE (a:Person {name: "Alice"}), (b:Person {name: "Bob"})
       """.stripMargin)
@@ -39,7 +39,7 @@ class CypherCreateParserTest extends BaseTestSuite with DebugOutputSupport {
   }
 
   test("parse multiple nodes in separate create statements") {
-    val graph = CypherCreateParser(
+    val graph = CAPSPropertyGraphFactory.create(
       """
         |CREATE (a:Person {name: "Alice"})
         |CREATE (b:Person {name: "Bob"})
@@ -54,7 +54,7 @@ class CypherCreateParserTest extends BaseTestSuite with DebugOutputSupport {
   }
 
   test("parse multiple nodes connected by relationship") {
-    val graph = CypherCreateParser(
+    val graph = CAPSPropertyGraphFactory.create(
       """
         |CREATE (a:Person {name: "Alice"})-[:KNOWS {since: 42}]->(b:Person {name: "Bob"})
       """.stripMargin)
@@ -70,7 +70,7 @@ class CypherCreateParserTest extends BaseTestSuite with DebugOutputSupport {
   }
 
   test("parse multiple nodes and relationship in separate create statements") {
-    val graph = CypherCreateParser(
+    val graph = CAPSPropertyGraphFactory.create(
       """
         |CREATE (a:Person {name: "Alice"})
         |CREATE (b:Person {name: "Bob"})
@@ -88,7 +88,7 @@ class CypherCreateParserTest extends BaseTestSuite with DebugOutputSupport {
   }
 
   test("simple unwind") {
-    val graph = CypherCreateParser(
+    val graph = CAPSPropertyGraphFactory.create(
       """
         |UNWIND [1,2,3] as i
         |CREATE (a {val: i})
@@ -104,7 +104,7 @@ class CypherCreateParserTest extends BaseTestSuite with DebugOutputSupport {
   }
 
   test("stacked unwind") {
-    val graph = CypherCreateParser(
+    val graph = CAPSPropertyGraphFactory.create(
       """
         |UNWIND [1,2,3] AS i
         |UNWIND [4] AS j
@@ -121,7 +121,7 @@ class CypherCreateParserTest extends BaseTestSuite with DebugOutputSupport {
   }
 
   test("unwind with variable reference") {
-    val graph = CypherCreateParser(
+    val graph = CAPSPropertyGraphFactory.create(
       """
         |UNWIND [[1,2,3]] AS i
         |UNWIND i AS j
@@ -138,7 +138,7 @@ class CypherCreateParserTest extends BaseTestSuite with DebugOutputSupport {
   }
 
   test("unwind with parameter reference") {
-    val graph = CypherCreateParser(
+    val graph = CAPSPropertyGraphFactory.create(
       """
         |UNWIND $i AS j
         |CREATE (a {val: j})
@@ -151,5 +151,20 @@ class CypherCreateParserTest extends BaseTestSuite with DebugOutputSupport {
     ))
 
     graph.relationships.toBag shouldBe empty
+  }
+
+  test("create statement with property reference") {
+    val graph = CAPSPropertyGraphFactory.create(
+      """
+        |CREATE (a:Person {name: "Alice"})
+        |CREATE (b:Person {name: a.name})
+      """.stripMargin)
+
+    graph.nodes.toBag should equal(Bag(
+      Node(0, Set("Person"), Map("name" -> "Alice")),
+      Node(1, Set("Person"), Map("name" -> "Alice"))
+    ))
+
+    graph.relationships should be(Seq.empty)
   }
 }

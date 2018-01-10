@@ -42,7 +42,6 @@ object Neo4jTestGraph {
     override def labels: Set[String] = neoNode.getLabels.asScala.map(_.name).toSet
 
     override def id: Long = neoNode.getId
-
     override def properties: Map[String, AnyRef] = neoNode.getAllProperties.asScala.toMap
   }
 

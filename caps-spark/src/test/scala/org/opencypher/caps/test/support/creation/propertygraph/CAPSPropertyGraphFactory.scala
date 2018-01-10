@@ -1,4 +1,4 @@
-package org.opencypher.caps.test.support.testgraph
+package org.opencypher.caps.test.support.creation.propertygraph
 
 import java.util.concurrent.atomic.AtomicLong
 
@@ -11,47 +11,11 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.parse.CypherParser
 
-final case class ParsingContext(
-    parameter: Map[String, Any],
-    variableMapping: Map[String, Any],
-    graph: PropertyGraph,
-    protectedScopes: List[Map[String, Any]],
-    idGenerator: AtomicLong) {
-
-  def nextId: Long = idGenerator.getAndIncrement()
-
-  def protectScope: ParsingContext = {
-    copy(protectedScopes = variableMapping :: protectedScopes)
-  }
-
-  def restoreScope: ParsingContext = {
-    copy(variableMapping = protectedScopes.head)
-  }
-
-  def popProtectedScope: ParsingContext = copy(protectedScopes = protectedScopes.tail)
-
-  def updated(k: String, v: Any): ParsingContext = v match {
-    case n: Node =>
-      copy(graph = graph.updated(n), variableMapping = variableMapping.updated(k, n))
-
-    case r: Relationship =>
-      copy(graph = graph.updated(r), variableMapping = variableMapping.updated(k, r))
-
-    case _ =>
-      copy(variableMapping = variableMapping.updated(k, v))
-  }
-}
-
-object ParsingContext {
-  def fromParams(params: Map[String, Any]): ParsingContext =
-    ParsingContext(params, Map.empty, PropertyGraph.empty, List.empty, new AtomicLong())
-}
-
-object CypherCreateParser {
+object CAPSPropertyGraphFactory extends PropertyGraphFactory {
 
   type Result[A] = State[ParsingContext, A]
 
-  def apply(createQuery: String, externalParams: Map[String, Any] = Map.empty): PropertyGraph = {
+  def create(createQuery: String, externalParams: Map[String, Any] = Map.empty): PropertyGraph = {
     val (ast, params, _) = CypherParser.process(createQuery)(CypherParser.defaultContext)
     val context = ParsingContext.fromParams(params ++ externalParams)
 
@@ -130,9 +94,9 @@ object CypherCreateParser {
           })
           target <- processPatternElement(third)
           properties <- props match {
-              case Some(expr: MapExpression) => extractProperties(expr)
-              case None                      => pure[ParsingContext, Map[String, Any]](Map.empty)
-              case _                         => Raise.impossible()
+            case Some(expr: MapExpression) => extractProperties(expr)
+            case None                      => pure[ParsingContext, Map[String, Any]](Map.empty)
+            case _                         => Raise.impossible()
           }
           rel <- inspect[ParsingContext, Relationship] { context =>
             Relationship(context.nextId, sourceId, target.id, relType.head.name, properties)
@@ -147,8 +111,8 @@ object CypherCreateParser {
     for  {
       keys <- pure(expr.items.map(_._1.name))
       values <- expr.items.toList.traverse[Result, Any] {
-          case (_, inner: Expression) => processExpr(inner)
-          case _ => Raise.impossible()
+        case (_, inner: Expression) => processExpr(inner)
+        case _ => Raise.impossible()
       }
       res <- pure(keys.zip(values).toMap)
     } yield res
@@ -162,6 +126,13 @@ object CypherCreateParser {
         case Variable(name)     => inspect[ParsingContext, Any](_.variableMapping(name))
         case l:Literal          => pure[ParsingContext, Any](l.value)
         case ListLiteral(expressions) => expressions.toList.traverse[Result, Any](processExpr)
+        case Property(variable: Variable, propertyKey) =>
+          inspect[ParsingContext, Any]({ context =>
+            context.variableMapping(variable.name) match {
+              case a: GraphElement => a.properties(propertyKey.name)
+              case other               => Raise.unsupportedOperation(s"Reading property from a ${other.getClass.getSimpleName}")
+            }
+          })
         case other => Raise.unsupportedOperation(other.getClass.getSimpleName)
       }
     } yield res
@@ -170,57 +141,57 @@ object CypherCreateParser {
   def processValues(expr: Expression): Result[List[Any]] = {
     expr match {
       case ListLiteral(expressions) => expressions.toList.traverse[Result, Any](processExpr)
-      case Variable(name)           => inspect[ParsingContext, List[Any]](_.variableMapping(name) match {
+
+      case Variable(name) => inspect[ParsingContext, List[Any]](_.variableMapping(name) match {
         case l : List[Any] => l
         case _             => Raise.impossible()
       })
+
       case Parameter(name, _)     => inspect[ParsingContext, List[Any]](_.parameter(name) match {
         case l : List[Any] => l
         case _             => Raise.impossible()
       })
+
+      case FunctionInvocation(_ , FunctionName("range"), _, Seq(lb: IntegerLiteral, ub: IntegerLiteral)) =>
+        pure[ParsingContext, List[Any]](List.range[Long](lb.value, ub.value + 1))
+
+      case other => Raise.unsupportedOperation(other.getClass.getSimpleName)
     }
   }
 }
 
-trait Graph {
-  def nodes: Seq[Node]
-  def relationships: Seq[Relationship]
+final case class ParsingContext(
+  parameter: Map[String, Any],
+  variableMapping: Map[String, Any],
+  graph: PropertyGraph,
+  protectedScopes: List[Map[String, Any]],
+  idGenerator: AtomicLong) {
 
-  def getNodeById(id: Long): Option[Node] = {
-    nodes.collectFirst {
-      case n : Node if n.id == id => n
-    }
+  def nextId: Long = idGenerator.getAndIncrement()
+
+  def protectScope: ParsingContext = {
+    copy(protectedScopes = variableMapping :: protectedScopes)
   }
 
-  def getRelationshipById(id: Long): Option[Relationship] = {
-    relationships.collectFirst {
-      case r : Relationship if r.id == id => r
-    }
+  def restoreScope: ParsingContext = {
+    copy(variableMapping = protectedScopes.head)
+  }
+
+  def popProtectedScope: ParsingContext = copy(protectedScopes = protectedScopes.tail)
+
+  def updated(k: String, v: Any): ParsingContext = v match {
+    case n: Node =>
+      copy(graph = graph.updated(n), variableMapping = variableMapping.updated(k, n))
+
+    case r: Relationship =>
+      copy(graph = graph.updated(r), variableMapping = variableMapping.updated(k, r))
+
+    case _ =>
+      copy(variableMapping = variableMapping.updated(k, v))
   }
 }
 
-trait GraphElement {
-  def id: Long
-  def properties: Map[String, Any]
+object ParsingContext {
+  def fromParams(params: Map[String, Any]): ParsingContext =
+    ParsingContext(params, Map.empty, PropertyGraph.empty, List.empty, new AtomicLong())
 }
-
-case class PropertyGraph(nodes: Seq[Node], relationships: Seq[Relationship]) extends Graph {
-  def updated(node: Node): PropertyGraph = copy(nodes = node +: nodes)
-
-  def updated(rel: Relationship): PropertyGraph = copy(relationships = rel +: relationships)
-}
-
-object PropertyGraph {
-  def empty: PropertyGraph = PropertyGraph(Seq.empty, Seq.empty)
-}
-
-case class Node(id: Long, labels: Set[String], properties: Map[String, Any]) extends GraphElement
-
-case class Relationship(
-  id: Long,
-  startId: Long,
-  endId: Long,
-  relType: String,
-  properties: Map[String, Any]
-) extends GraphElement
-

@@ -19,7 +19,6 @@ import java.io.File
 import java.util
 
 import org.junit.jupiter.api.{DynamicTest, TestFactory}
-import org.opencypher.caps.TCKAdapterForCAPS._
 import org.opencypher.caps.api.spark.CAPSGraph
 import org.opencypher.tools.tck.api.CypherTCK
 
@@ -34,7 +33,7 @@ class CustomScenariosOnCAPSGraphTest {
     CypherTCK
       .parseFilesystemFeature(file)
       .scenarios
-      .map(TCKFixture.dynamicTest(CAPSGraph.empty))
+      .map(TCKFixture.dynamicTest(AsTckGraph(CAPSGraph.empty)))
       .asJavaCollection
   }
 }

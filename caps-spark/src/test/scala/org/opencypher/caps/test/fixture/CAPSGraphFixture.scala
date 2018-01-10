@@ -15,34 +15,20 @@
  */
 package org.opencypher.caps.test.fixture
 
+import org.opencypher.caps.api.spark.{CAPSGraph, CAPSResult}
 import org.opencypher.caps.test.BaseTestSuite
-import org.opencypher.caps.test.support.testgraph.{GDLTestGraph, Neo4jTestGraph}
-import org.scalactic.source.Position
-import org.scalatest.Tag
+import org.opencypher.caps.test.support.creation.caps.CAPSScanGraphFactory
+import org.opencypher.caps.test.support.creation.propertygraph.{CAPSPropertyGraphFactory, PropertyGraph}
 
-trait TestGraphFixture extends BaseTestFixture {
+trait CAPSGraphFixture extends BaseTestFixture {
   self: CAPSSessionFixture with BaseTestSuite =>
 
-  def testWithGDL(testName: String, testTags: Tag*)
-      (gdl: String)
-      (testFun: GDLTestGraph => Any)
-      (implicit pos: Position): Unit = test(testName, testTags: _*)(testFun(new GDLTestGraph(gdl)))
+  val propertyGraphToCAPSGraph: PropertyGraph => CAPSGraph = CAPSScanGraphFactory(_).graph
 
-
-  def testWithCypher(testName: String, testTags: Tag*)
-      (cypher: String)
-      (testFun: Neo4jTestGraph => Any)
-      (implicit pos: Position): Unit = {
-
-    val graph = new Neo4jTestGraph(cypher)
-
-    test(testName, testTags: _*)({
-      try {
-        testFun(graph)
-      }
-      finally {
-        graph.close
-      }
-    })
+  implicit class RichCypherQueryString(createQuery: String) {
+    def cypher(query: String): CAPSResult = {
+      val propertyGraph = CAPSPropertyGraphFactory.create(createQuery)
+      propertyGraphToCAPSGraph(propertyGraph).cypher(query)
+    }
   }
 }

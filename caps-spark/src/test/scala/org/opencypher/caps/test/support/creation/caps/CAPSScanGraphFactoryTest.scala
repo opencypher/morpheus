@@ -1,4 +1,4 @@
-package org.opencypher.caps.test.support.testgraph
+package org.opencypher.caps.test.support.creation.caps
 
 import org.opencypher.caps.api.record.{NodeScan, RelationshipScan}
 import org.opencypher.caps.api.schema.Schema
@@ -6,8 +6,9 @@ import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.api.types.CTString
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.support.GraphMatchingTestSupport
+import org.opencypher.caps.test.support.creation.propertygraph.CAPSPropertyGraphFactory
 
-class TestGraphFactoryTest extends CAPSTestSuite with GraphMatchingTestSupport {
+class CAPSScanGraphFactoryTest extends CAPSTestSuite with GraphMatchingTestSupport {
 
   val createQuery: String =
     """
@@ -60,7 +61,8 @@ class TestGraphFactoryTest extends CAPSTestSuite with GraphMatchingTestSupport {
   ))
 
   test("testSchema") {
-    new TestGraphFactory(createQuery).schema should equal(Schema.empty
+    val propertyGraph = CAPSPropertyGraphFactory.create(createQuery)
+    CAPSScanGraphFactory(propertyGraph).schema should equal(Schema.empty
         .withNodePropertyKeys("Person", "Astronaut")("name" -> CTString)
         .withNodePropertyKeys("Person", "Martian")("name" -> CTString)
         .withNodePropertyKeys("Language")("title" -> CTString)
@@ -68,6 +70,7 @@ class TestGraphFactoryTest extends CAPSTestSuite with GraphMatchingTestSupport {
   }
 
   test("testAsScanGraph") {
-    new TestGraphFactory(createQuery).asScanGraph shouldMatch CAPSGraph.create(personScan, languageScan, knowsScan)
+    val propertyGraph = CAPSPropertyGraphFactory.create(createQuery)
+    CAPSScanGraphFactory(propertyGraph).graph shouldMatch CAPSGraph.create(personScan, languageScan, knowsScan)
   }
 }

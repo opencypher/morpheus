@@ -19,14 +19,24 @@ import java.util
 
 import org.junit.jupiter.api.function.Executable
 import org.junit.jupiter.api.{DynamicTest, TestFactory}
+import org.opencypher.caps.demo.Configuration.PrintLogicalPlan
 
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
-class BlacklistedScenariosOnNeo4jDerivedTestGraphTest {
+class TCKCAPSTest {
   import TCKFixture._
 
   val empty = Neo4jBackedTestGraph()
+
+  @TestFactory
+  def run(): util.Collection[DynamicTest] = {
+    val tests = scenarios.filterNot { s =>
+      ScenarioBlacklist.contains(s.toString())
+    }
+
+    tests.map(dynamicTest(empty)).asJavaCollection
+  }
 
   @TestFactory
   def runBlacklistedTCKOnTestGraph(): util.Collection[DynamicTest] = {
@@ -52,4 +62,10 @@ class BlacklistedScenariosOnNeo4jDerivedTestGraphTest {
     }.asJavaCollection
   }
 
+  //@TestFactory
+  def runSingleScenario(): util.Collection[DynamicTest] = {
+    PrintLogicalPlan.set()
+    val name = "A simple pattern with one bound endpoint"
+    scenarios.filter(s => s.name == name).map(dynamicTest(empty)).asJavaCollection
+  }
 }

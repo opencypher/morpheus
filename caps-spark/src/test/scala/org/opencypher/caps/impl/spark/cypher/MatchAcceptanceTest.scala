@@ -17,17 +17,18 @@ package org.opencypher.caps.impl.spark.cypher
 
 import org.opencypher.caps.api.value.CypherMap
 import org.opencypher.caps.test.CAPSTestSuite
-import org.opencypher.caps.test.support.testgraph.GDLTestGraph
+import org.opencypher.caps.test.fixture.CAPSGraphFixture
 
 import scala.collection.Bag
 
-class MatchAcceptanceTest extends CAPSTestSuite {
+class MatchAcceptanceTest extends CAPSTestSuite with CAPSGraphFixture {
+
   test("match a trivial query") {
     // Given
-    val given = GDLTestGraph(
+    val given =
       """
-        |(p:Person {firstName: "Alice", lastName: "Foo"})
-      """.stripMargin)
+        |CREATE (p:Person {firstName: "Alice", lastName: "Foo"})
+      """.stripMargin
 
     // When
     val result = given.cypher(
@@ -42,10 +43,10 @@ class MatchAcceptanceTest extends CAPSTestSuite {
 
   test("match unknown label") {
     // Given
-    val given = GDLTestGraph(
+    val given = 
       """
-        |(p:Person {firstName: "Alice", lastName: "Foo"})
-      """.stripMargin)
+        |CREATE (p:Person {firstName: "Alice", lastName: "Foo"})
+      """.stripMargin
 
     // When
     val result = given.cypher(
@@ -60,10 +61,10 @@ class MatchAcceptanceTest extends CAPSTestSuite {
 
   test("match property on unknown label") {
     // Given
-    val given = GDLTestGraph(
+    val given = 
       """
-        |(p:Person {firstName: "Alice", lastName: "Foo"})
-      """.stripMargin)
+        |CREATE (p:Person {firstName: "Alice", lastName: "Foo"})
+      """.stripMargin
 
     // When
     val result = given.cypher(
@@ -78,10 +79,10 @@ class MatchAcceptanceTest extends CAPSTestSuite {
 
   test("match return value of non-existing property as null") {
     // Given
-    val given = GDLTestGraph(
+    val given = 
       """
-        |(p:Person {firstName: "Alice", lastName: "Foo"})
-      """.stripMargin)
+        |CREATE (p:Person {firstName: "Alice", lastName: "Foo"})
+      """.stripMargin
 
     // When
     val result = given.cypher(
@@ -99,14 +100,14 @@ class MatchAcceptanceTest extends CAPSTestSuite {
 
   test("multiple match clauses") {
     // Given
-    val given = GDLTestGraph(
+    val given = 
       """
-        |(p1:Person {name: "Alice"}),
-        |(p2:Person {name: "Bob"}),
-        |(p3:Person {name: "Eve"}),
-        |(p1)-[:KNOWS]->(p2),
-        |(p2)-[:KNOWS]->(p3),
-      """.stripMargin)
+        |CREATE (p1:Person {name: "Alice"})
+        |CREATE (p2:Person {name: "Bob"})
+        |CREATE (p3:Person {name: "Eve"})
+        |CREATE (p1)-[:KNOWS]->(p2)
+        |CREATE (p2)-[:KNOWS]->(p3)
+      """.stripMargin
 
     // When
     val result = given.cypher(
@@ -130,13 +131,13 @@ class MatchAcceptanceTest extends CAPSTestSuite {
 
   test("cyphermorphism and multiple match clauses") {
     // Given
-    val given = GDLTestGraph(
+    val given = 
       """
-        |(p1:Person {name: "Alice"}),
-        |(p2:Person {name: "Bob"}),
-        |(p1)-[:KNOWS]->(p2),
-        |(p2)-[:KNOWS]->(p1)
-      """.stripMargin)
+        |CREATE (p1:Person {name: "Alice"})
+        |CREATE (p2:Person {name: "Bob"})
+        |CREATE (p1)-[:KNOWS]->(p2)
+        |CREATE (p2)-[:KNOWS]->(p1)
+      """.stripMargin
 
     // When
     val result = given.cypher(
@@ -166,13 +167,13 @@ class MatchAcceptanceTest extends CAPSTestSuite {
 
   test("disconnected components") {
     // Given
-    val given = GDLTestGraph(
+    val given = 
       """
-        |(p1:Narcissist {name: "Alice"}),
-        |(p2:Narcissist {name: "Bob"}),
-        |(p1)-[:LOVES]->(p1),
-        |(p2)-[:LOVES]->(p2)
-      """.stripMargin)
+        |CREATE (p1:Narcissist {name: "Alice"})
+        |CREATE (p2:Narcissist {name: "Bob"})
+        |CREATE (p1)-[:LOVES]->(p1)
+        |CREATE (p2)-[:LOVES]->(p2)
+      """.stripMargin
 
     // When
     val result = given.cypher(
@@ -192,13 +193,13 @@ class MatchAcceptanceTest extends CAPSTestSuite {
 
   test("joined components") {
     // Given
-    val given = GDLTestGraph(
+    val given = 
       """
-        |(p1:Narcissist {name: "Alice"}),
-        |(p2:Narcissist {name: "Bob"}),
-        |(p1)-[:LOVES]->(p1),
-        |(p2)-[:LOVES]->(p2)
-      """.stripMargin)
+        |CREATE (p1:Narcissist {name: "Alice"})
+        |CREATE (p2:Narcissist {name: "Bob"})
+        |CREATE (p1)-[:LOVES]->(p1)
+        |CREATE (p2)-[:LOVES]->(p2)
+      """.stripMargin
 
     // When
     val result = given.cypher(
@@ -219,15 +220,15 @@ class MatchAcceptanceTest extends CAPSTestSuite {
 
   ignore("Broken start of demo query") {
     // Given
-    val given = GDLTestGraph(
+    val given = 
       """
-        |(a:Person {name: "Philip"}),
-        |(b:Person {name: "Stefan"}),
-        |(c:City {name: "The Pan-European Sprawl"}),
-        |(a)-[:KNOWS]->(b),
-        |(a)-[:LIVES_IN]->(c),
-        |(b)-[:LIVES_IN]->(c)
-      """.stripMargin)
+        |CREATE (a:Person {name: "Philip"})
+        |CREATE (b:Person {name: "Stefan"})
+        |CREATE (c:City {name: "The Pan-European Sprawl"})
+        |CREATE (a)-[:KNOWS]->(b)
+        |CREATE (a)-[:LIVES_IN]->(c)
+        |CREATE (b)-[:LIVES_IN]->(c)
+      """.stripMargin
 
     // Change last b to x: et voila, it works
     val result = given.cypher(
