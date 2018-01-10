@@ -15,10 +15,11 @@
  */
 package org.opencypher.caps.ir.impl
 
-import org.neo4j.cypher.internal.compiler.v3_3.SyntaxExceptionCreator
-import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
-import org.neo4j.cypher.internal.frontend.v3_3.parser.CypherParser
-import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, SemanticChecker}
+import org.neo4j.cypher.internal.compiler.v3_4.SyntaxExceptionCreator
+import org.neo4j.cypher.internal.frontend.v3_4.ast.Statement
+import org.neo4j.cypher.internal.frontend.v3_4.parser.CypherParser
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticChecker
+import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.opencypher.caps.impl.parse.rewriter.normalizeReturnClauses
 import org.scalatest.FunSuite
 
@@ -26,7 +27,7 @@ class NormalizeReturnClausesTest extends FunSuite {
 
   private val parser = new CypherParser
 
-  val mkException = new SyntaxExceptionCreator("<Query>", Some(DummyPosition(0)))
+  val mkException = new SyntaxExceptionCreator("<Query>", Some(InputPosition.NONE))
   val rewriterUnderTest = normalizeReturnClauses(mkException)
 
   test("do not rewrite unaliased return items of variables") {

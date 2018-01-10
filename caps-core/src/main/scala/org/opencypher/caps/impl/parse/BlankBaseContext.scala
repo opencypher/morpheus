@@ -15,8 +15,9 @@
  */
 package org.opencypher.caps.impl.parse
 
-import org.neo4j.cypher.internal.frontend.v3_3.phases._
-import org.neo4j.cypher.internal.frontend.v3_3.{AstRewritingMonitor, CypherException, InputPosition}
+import org.neo4j.cypher.internal.frontend.v3_4.AstRewritingMonitor
+import org.neo4j.cypher.internal.frontend.v3_4.phases._
+import org.neo4j.cypher.internal.util.v3_4.{CypherException, InputPosition}
 
 import scala.reflect.ClassTag
 

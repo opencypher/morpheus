@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.typer
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.v3_4.expressions.Expression
 import org.opencypher.caps.api.types.CypherType
 
 import scala.annotation.tailrec

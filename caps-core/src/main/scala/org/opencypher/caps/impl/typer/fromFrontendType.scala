@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.typer
 
-import org.neo4j.cypher.internal.frontend.v3_3.{symbols => frontend}
+import org.neo4j.cypher.internal.util.v3_4.{symbols => frontend}
 import org.opencypher.caps.api.types._
 
 // TODO: Should go to option I think

@@ -17,7 +17,7 @@ package org.opencypher.caps.impl.exception
 
 import java.net.URI
 
-import org.neo4j.cypher.internal.frontend.v3_3.SemanticErrorDef
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticErrorDef
 import org.opencypher.caps.api.exception.CAPSException
 
 object Raise {

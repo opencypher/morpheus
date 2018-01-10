@@ -15,10 +15,12 @@
  */
 package org.opencypher.caps.impl.parse.rewriter
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{nameMatchPatternElements, normalizeMatchPredicates}
-import org.neo4j.cypher.internal.frontend.v3_3.helpers.UnNamedNameGenerator
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, InputPosition, Rewriter, SemanticCheck, SemanticCheckResult, topDown}
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
+import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.{nameMatchPatternElements, normalizeMatchPredicates}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticCheckResult, SemanticCheckableExpression}
+import org.neo4j.cypher.internal.util.v3_4._
+import org.neo4j.cypher.internal.v3_4.expressions._
 import org.opencypher.caps.impl.parse.RetypingPredicate
 
 case class extractSubqueryFromPatternExpression(mkException: (String, InputPosition) => CypherException) extends Rewriter {
@@ -46,7 +48,7 @@ case class extractSubqueryFromPatternExpression(mkException: (String, InputPosit
       val patternPosition: InputPosition = p.position
       val newPattern = Pattern(Seq(EveryPath(relationshipsPattern.element)))(patternPosition)
 
-      val joinVariables = relationshipsPattern.element.treeFold(Seq.empty[Variable]) {
+      val joinVariables = relationshipsPattern.element.treeFold(Seq.empty[LogicalVariable]) {
         case NodePattern(Some(v), _, _) => (acc) => (acc :+ v, None)
         case RelationshipPattern(Some(v), _, _, _, _, _) => (acc) => (acc :+ v, None)
       }
@@ -63,7 +65,7 @@ case class extractSubqueryFromPatternExpression(mkException: (String, InputPosit
             Seq(
               Match(optional = false, newPattern, Seq.empty, None)(patternPosition)
                   .endoRewrite(nameMatchPatternElements)
-                  .endoRewrite(normalizeMatchPredicates)
+                  .endoRewrite(normalizeMatchPredicates(true))
               ,
               Return(ReturnItems(includeExisting = false, returnItemsWithTrue)(patternPosition), None)(patternPosition)
             )
@@ -93,6 +95,6 @@ case class extractSubqueryFromPatternExpression(mkException: (String, InputPosit
   private val instance = topDown(rewriter, _.isInstanceOf[Expression])
 }
 
-case class ExistsPattern(query: Query)(val position: InputPosition) extends Expression {
+case class ExistsPattern(query: Query)(val position: InputPosition) extends Expression with SemanticCheckableExpression {
   override def semanticCheck(ctx: Expression.SemanticContext): SemanticCheck = SemanticCheckResult.success
 }

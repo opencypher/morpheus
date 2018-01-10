@@ -18,8 +18,10 @@ package org.opencypher.caps.ir.impl
 import cats.implicits._
 import org.atnos.eff._
 import org.atnos.eff.all._
-import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, ast}
+import org.neo4j.cypher.internal.frontend.v3_4.ast
+import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.util.v3_4.InputPosition
+import org.neo4j.cypher.internal.v3_4.expressions.{Expression, StringLiteral, Variable, Pattern => AstPattern}
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.util.parsePathOrURI
 import org.opencypher.caps.impl.CompilationStage
@@ -33,7 +35,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
 
   override type Out = Either[IRBuilderError, (Option[CypherQuery[Expr]], IRBuilderContext)]
 
-  override def process(input: Statement)(implicit context: IRBuilderContext): Out =
+  override def process(input: ast.Statement)(implicit context: IRBuilderContext): Out =
     buildIR[IRBuilderStack[Option[CypherQuery[Expr]]]](input).run(context)
 
   override def extract(output: Out): CypherQuery[Expr] =
@@ -244,7 +246,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
 
   private def convertSingleGraphAs[R : _hasContext](graph: ast.SingleGraphAs): Eff[R, IRGraph] = {
     graph.as match {
-      case Some(ast.Variable(graphName)) =>
+      case Some(Variable(graphName)) =>
         for {
           context <- get[R, IRBuilderContext]
           result <- graph match {
@@ -263,7 +265,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
             case ast.GraphAtAs(url, _, _) =>
               val graphURI = url.url match {
                 case Left(_) => Raise.notYetImplemented("graph uris by parameter")
-                case Right(ast.StringLiteral(literal)) => parsePathOrURI(literal)
+                case Right(StringLiteral(literal)) => parsePathOrURI(literal)
               }
               val newContext = context.withGraphAt(graphName, graphURI)
               put[R, IRBuilderContext](newContext) >>
@@ -309,14 +311,14 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
       Raise.invalidArgument(s"${AliasedReturnItem.getClass} or ${UnaliasedReturnItem.getClass}", s"${item.getClass}")
   }
 
-  private def convertPattern[R: _hasContext](p: ast.Pattern): Eff[R, Pattern[Expr]] = {
+  private def convertPattern[R: _hasContext](p: AstPattern): Eff[R, Pattern[Expr]] = {
     for {
       context <- get[R, IRBuilderContext]
       result <- {
         val pattern = context.convertPattern(p)
         val patternTypes = pattern.fields.foldLeft(context.knownTypes) {
           case (acc, f) => {
-            acc.updated(ast.Variable(f.name)(InputPosition.NONE), f.cypherType)
+            acc.updated(Variable(f.name)(InputPosition.NONE), f.cypherType)
           }
         }
         put[R, IRBuilderContext](context.copy(knownTypes = patternTypes)) >> pure[R, Pattern[Expr]](pattern)
@@ -324,7 +326,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
     } yield result
   }
 
-  private def convertExpr[R: _mayFail : _hasContext](e: Option[ast.Expression]): Eff[R, Option[Expr]] =
+  private def convertExpr[R: _mayFail : _hasContext](e: Option[Expression]): Eff[R, Option[Expr]] =
     for {
       context <- get[R, IRBuilderContext]
     } yield e match {
@@ -332,7 +334,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
       case None => None
     }
 
-  private def convertExpr[R: _mayFail : _hasContext](e: ast.Expression): Eff[R, Expr] =
+  private def convertExpr[R: _mayFail : _hasContext](e: Expression): Eff[R, Expr] =
     for {
       context <- get[R, IRBuilderContext]
     }
