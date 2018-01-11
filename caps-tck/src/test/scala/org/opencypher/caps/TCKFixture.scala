@@ -15,42 +15,21 @@
  */
 package org.opencypher.caps
 
-import org.junit.jupiter.api.DynamicTest
-import org.junit.jupiter.api.function.Executable
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
 import org.opencypher.caps.api.value.{CypherValue => CAPSValue}
-import org.opencypher.caps.test.support.creation.caps.{CAPSGraphFactory, CAPSScanGraphFactory}
+import org.opencypher.caps.test.support.creation.caps.CAPSGraphFactory
 import org.opencypher.caps.test.support.creation.propertygraph.Neo4jPropertyGraphFactory
 import org.opencypher.tools.tck.api._
 import org.opencypher.tools.tck.values.CypherValue
 
 import scala.io.Source
 
-// this is an object with a val because we can only load the
-// scenarios _once_ due to a bug in the TCK API
-object TCKFixture {
-  val scenarios: Seq[Scenario] = CypherTCK.allTckScenarios
-
-  def dynamicTest(graph: Graph)(scenario: Scenario): DynamicTest =
-    DynamicTest.dynamicTest(scenario.toString, new Executable {
-      override def execute(): Unit = {
-        println(scenario)
-        scenario(graph).execute()
-      }
-    })
-
-  implicit val caps: CAPSSession = CAPSSession.local()
-}
-
-object TCKGraph {
-  def empty(implicit caps: CAPSSession) = TCKGraph(CAPSScanGraphFactory, CAPSGraph.empty)
-}
-
 case class TCKGraph(capsGraphFactory: CAPSGraphFactory, graph: CAPSGraph)(implicit caps: CAPSSession) extends Graph {
 
   override def execute(query: String, params: Map[String, CypherValue], queryType: QueryType): (Graph, Result) = {
     queryType match {
       case InitQuery =>
+        // TODO: respect params
         val capsGraph = capsGraphFactory(Neo4jPropertyGraphFactory(query, Map.empty))
         copy(graph = capsGraph) -> CypherValueRecords.empty
       case SideEffectQuery =>

@@ -44,7 +44,6 @@
         <dep.hadoop.version>2.7.0</dep.hadoop.version>
         <dep.junit.version>5.0.2</dep.junit.version>
         <dep.junit.platform.version>1.0.2</dep.junit.platform.version>
-        <dep.junit.jupiter.version>5.0.2</dep.junit.jupiter.version>
         <dep.junit.vintage.version>4.12.2</dep.junit.vintage.version>
         <dep.mockito.version>1.10.19</dep.mockito.version>
         <dep.multiset.version>0.4</dep.multiset.version>
@@ -278,7 +277,7 @@
                 </executions>
             </plugin>
 
-            <!-- Run scala tests with junit 4 with junit 5 vintage + junit 5 in tck  -->
+            <!-- Run scala tests with junit 4 with junit 5 vintage -->
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.19</version>
@@ -287,11 +286,6 @@
                         <groupId>org.junit.platform</groupId>
                         <artifactId>junit-platform-surefire-provider</artifactId>
                         <version>${dep.junit.platform.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.junit.jupiter</groupId>
-                        <artifactId>junit-jupiter-engine</artifactId>
-                        <version>${dep.junit.jupiter.version}</version>
                     </dependency>
                     <dependency>
                         <groupId>org.junit.vintage</groupId>
