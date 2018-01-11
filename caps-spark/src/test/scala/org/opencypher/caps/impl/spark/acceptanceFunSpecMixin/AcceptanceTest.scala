@@ -1,49 +1,85 @@
+/*
+ * Copyright (c) 2016-2017 "Neo4j, Inc." [https://neo4j.com]
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.opencypher.caps.impl.spark.acceptanceFunSpecMixin
 
-import org.apache.spark.sql.SparkSession
-import org.opencypher.caps.api.expr.Var
-import org.opencypher.caps.api.record.{FieldSlotContent, OpaqueField, ProjectedExpr, RecordHeader}
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
-import org.opencypher.caps.api.value.CypherMap
-import org.opencypher.caps.api.value.instances.AllInstances
-import org.opencypher.caps.api.value.syntax.AllSyntax
-import org.opencypher.caps.impl.record.CAPSRecordHeader._
-import org.opencypher.caps.impl.spark.physical.RuntimeContext
-import org.opencypher.caps.test.{CAPSTestSuite, TestSparkSession}
-import org.opencypher.caps.test.support.DebugOutputSupport
+import org.opencypher.caps.api.spark.CAPSGraph
+import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.support.creation.caps.CAPSGraphFactory
 import org.opencypher.caps.test.support.creation.propertygraph.CAPSPropertyGraphFactory
-import org.scalatest.{Assertion, FunSpec, Matchers}
 
-import scala.collection.Bag
-import scala.collection.JavaConverters._
-import scala.collection.immutable.HashedBagConfiguration
-
-abstract class AcceptanceTest extends CAPSTestSuite {
+abstract class AcceptanceTest extends CAPSTestSuite
+  with AggregationBehaviour
+  with BoundedVarExpandBehaviour
+  with ExpandIntoBehaviour
+  with ExpressionBehaviour
+  with FunctionsBehaviour
+  with MatchBehaviour
+  with MultigraphProjectionBehaviour
+  with OptionalMatchBehaviour
+  with PredicateBehaviour
+  with ReturnBehaviour
+  with WithBehaviour {
 
   def capsGraphFactory: CAPSGraphFactory
 
   val initGraph: String => CAPSGraph = (createQuery) => capsGraphFactory(CAPSPropertyGraphFactory(createQuery))
 
   describe("using " + capsGraphFactory.name) {
-    describe("and run match acceptance tests") {
-      it should behave like it("matches a trivial query") {
-        // Given
-        val given = initGraph(
-          """
-            |CREATE (p:Person {firstName: "Alice", lastName: "Foo"})
-          """.stripMargin)
+    describe("AggregationBehaviour") {
+      it should behave like aggregationBehaviour(initGraph)
+    }
 
-        // When
-        val result = given.cypher(
-          """
-            |MATCH (a:Person)
-            |RETURN a.firstName
-          """.stripMargin)
+    describe("BoundedVarExpandBehaviour") {
+      it should behave like boundedVarExpandBehaviour(initGraph)
+    }
 
-        // Then
-        result.records.toMaps should equal(Bag(CypherMap("a.firstName" -> "Alice")))
-      }
+    describe("ExpandIntoBehaviour") {
+      it should behave like expandIntoBehaviour(initGraph)
+    }
+
+    describe("ExpressionBehaviour") {
+      it should behave like expressionBehaviour(initGraph)
+    }
+
+    describe("FunctionsBehaviour") {
+      it should behave like functionsBehaviour(initGraph)
+    }
+
+    describe("MatchBehaviour") {
+      it should behave like matchBehaviour(initGraph)
+    }
+
+    describe("MultigraphProjectionBehaviour") {
+      it should behave like multigraphProjectionBehaviour(initGraph)
+    }
+
+    describe("OptionalMatchBehaviour") {
+      it should behave like optionalMatchBehaviour(initGraph)
+    }
+
+    describe("PredicateBehaviour") {
+      it should behave like predicateBehaviour(initGraph)
+    }
+
+    describe("ReturnBehaviour") {
+      it should behave like returnBehaviour(initGraph)
+    }
+
+    describe("WithBehaviour") {
+      it should behave like withBehaviour(initGraph)
     }
   }
 }
