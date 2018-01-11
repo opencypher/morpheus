@@ -22,6 +22,7 @@ import cats.data.State
 import cats.data.State._
 import cats.instances.list._
 import cats.syntax.all._
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.parse.CypherParser
@@ -100,7 +101,7 @@ object CAPSPropertyGraphFactory extends PropertyGraphFactory {
           }
         } yield node
 
-      case RelationshipChain(first, RelationshipPattern(Some(variable), relType, None, props, _, _), third) =>
+      case RelationshipChain(first, RelationshipPattern(Some(variable), relType, None, props, direction, _), third) =>
         for {
           source <- processPatternElement(first)
           sourceId <- pure[ParsingContext, Long](source match {
@@ -114,7 +115,11 @@ object CAPSPropertyGraphFactory extends PropertyGraphFactory {
             case _                         => Raise.impossible()
           }
           rel <- inspect[ParsingContext, Relationship] { context =>
-            Relationship(context.nextId, sourceId, target.id, relType.head.name, properties)
+              if (direction == SemanticDirection.OUTGOING)
+                Relationship(context.nextId, sourceId, target.id, relType.head.name, properties)
+              else if (direction == SemanticDirection.INCOMING)
+                Relationship(context.nextId, target.id, sourceId, relType.head.name, properties)
+              else Raise.unsupportedArgument("Only directed relationships are supported in CREATE")
           }
 
           _ <- modify[ParsingContext](_.updated(variable.name, rel))
