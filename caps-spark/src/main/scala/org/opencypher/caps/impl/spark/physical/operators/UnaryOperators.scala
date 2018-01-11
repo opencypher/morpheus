@@ -87,6 +87,7 @@ final case class Unwind(in: PhysicalOperator, list: Expr, item: Var, header: Rec
   override def executeUnary(prev: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult = {
     prev.mapRecordsWithDetails { records =>
 
+      val itemColumn = columnName(header.slotFor(item))
       val newData = list match {
           // the list is external: we create a dataframe and crossjoin with it
         case Param(name) =>
@@ -95,7 +96,6 @@ final case class Unwind(in: PhysicalOperator, list: Expr, item: Var, header: Rec
             case t: TraversableOnce[_] =>
               val list = t.map(Row(_)).toList.asJava
 
-              val itemColumn = columnName(header.slotFor(item))
               val sparkType = toSparkType(item.cypherType)
               val nullable = item.cypherType.isNullable
               val schema = StructType(Seq(StructField(itemColumn, sparkType, nullable)))
@@ -108,19 +108,14 @@ final case class Unwind(in: PhysicalOperator, list: Expr, item: Var, header: Rec
               Raise.invalidArgument("a list", x)
           }
 
-          // the list lives in a column; we flatMap one output row for each element in the list
+          // the list lives in a column: we explode it
         case expr =>
-          val listColIdx = records.data.schema.fieldIndex(SparkColumnName.of(expr))
-          val unwound = records.data.flatMap { row =>
-            if (row.isNullAt(listColIdx)) {
-              Seq.empty
-            } else {
-              val list = row.getSeq[Any](listColIdx)
-              list.map(i => Row.merge(row, Row(i)))
-            }
-          }(RowEncoder(header.asSparkSchema))
+          val listColumn = asSparkSQLExpr(records.header, expr, records.data) match {
+            case Some(c) => c
+            case None => Raise.impossible("no column for the list found")
+          }
 
-          unwound
+          records.data.withColumn(itemColumn, functions.explode(listColumn))
       }
 
       CAPSRecords.create(header, newData)(records.caps)
