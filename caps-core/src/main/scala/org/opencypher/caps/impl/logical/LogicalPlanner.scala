@@ -163,6 +163,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         producer.projectField(f, be, projectRhs)
       case (acc, (f, c: Param)) =>
         producer.projectField(f, c, acc)
+      case (acc, (f, c: Lit[_])) =>
+        producer.projectField(f, c, acc)
       case (_, (_, x)) =>
         Raise.notYetImplemented(s"projection of $x")
     }
@@ -234,6 +236,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
   private def planInnerExpr(expr: Expr, in: LogicalOperator)(implicit context: LogicalPlannerContext): LogicalOperator = {
     expr match {
       case _: Param => in
+
+      case _: Lit[_] => in
 
       case _: Var => in
 

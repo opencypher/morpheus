@@ -47,6 +47,8 @@ object SparkSQLExprMapper {
         udf(const(context.parameters(name)), toSparkType(p.cypherType))()
       case Param(name) =>
         functions.lit(toJavaType(context.parameters(name)))
+      case l: Lit[_] =>
+        functions.lit(l.v)
       case _ =>
         verifyExpression(header, expr)
         val slot = header.slotsFor(expr).head
@@ -81,6 +83,9 @@ object SparkSQLExprMapper {
         Some(col)
 
       case _: Param =>
+        Some(getColumn(expr, header, df))
+
+      case _: Lit[_] =>
         Some(getColumn(expr, header, df))
 
       case _: Property =>

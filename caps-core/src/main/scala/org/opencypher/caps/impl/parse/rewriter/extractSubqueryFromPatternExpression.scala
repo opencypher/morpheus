@@ -65,7 +65,7 @@ case class extractSubqueryFromPatternExpression(mkException: (String, InputPosit
             Seq(
               Match(optional = false, newPattern, Seq.empty, None)(patternPosition)
                   .endoRewrite(nameMatchPatternElements)
-                  .endoRewrite(normalizeMatchPredicates(true))
+                  .endoRewrite(normalizeMatchPredicates(getDegreeRewriting = false))
               ,
               Return(ReturnItems(includeExisting = false, returnItemsWithTrue)(patternPosition), None)(patternPosition)
             )
