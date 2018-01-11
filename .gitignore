@@ -5,6 +5,7 @@ target/
 dependency-reduced-pom.xml
 version.txt
 build/test/
+*/build
 
 # IDE cruft
 .settings

@@ -23,23 +23,23 @@ import scala.collection.Bag
 
 class MatchAcceptanceTest extends CAPSTestSuite with CAPSGraphFixture {
 
-  test("match a trivial query") {
-    // Given
-    val given =
-      """
-        |CREATE (p:Person {firstName: "Alice", lastName: "Foo"})
-      """.stripMargin
-
-    // When
-    val result = given.cypher(
-      """
-        |MATCH (a:Person)
-        |RETURN a.firstName
-      """.stripMargin)
-
-    // Then
-    result.records.toMaps should equal(Bag(CypherMap("a.firstName" -> "Alice")))
-  }
+//  test("match a trivial query") {
+//    // Given
+//    val given =
+//      """
+//        |CREATE (p:Person {firstName: "Alice", lastName: "Foo"})
+//      """.stripMargin
+//
+//    // When
+//    val result = given.cypher(
+//      """
+//        |MATCH (a:Person)
+//        |RETURN a.firstName
+//      """.stripMargin)
+//
+//    // Then
+//    result.records.toMaps should equal(Bag(CypherMap("a.firstName" -> "Alice")))
+//  }
 
   test("match unknown label") {
     // Given
