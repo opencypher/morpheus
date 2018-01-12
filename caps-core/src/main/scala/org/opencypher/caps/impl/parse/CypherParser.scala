@@ -58,7 +58,7 @@ trait CypherParser extends CompilationStage[String, Statement, BaseContext] {
       SyntaxDeprecationWarnings andThen
       PreparatoryRewriting andThen
       SemanticAnalysis(warn = true, SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature).adds(BaseContains[SemanticState]) andThen
-      AstRewriting(RewriterStepSequencer.newPlain, Forced) andThen
+      AstRewriting(RewriterStepSequencer.newPlain, Forced, getDegreeRewriting = false) andThen
       SemanticAnalysis(warn = false, SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature) andThen
       Namespacer andThen
       CNFNormalizer andThen
