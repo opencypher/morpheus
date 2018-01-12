@@ -22,10 +22,13 @@ import cats.data.State
 import cats.data.State._
 import cats.instances.list._
 import cats.syntax.all._
-import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_3.ast._
+import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.util.v3_4.ASTNode
+import org.neo4j.cypher.internal.v3_4.expressions._
 import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.parse.CypherParser
+
+import scala.collection.TraversableOnce
 
 object CAPSPropertyGraphFactory extends PropertyGraphFactory {
 
@@ -163,12 +166,12 @@ object CAPSPropertyGraphFactory extends PropertyGraphFactory {
       case ListLiteral(expressions) => expressions.toList.traverse[Result, Any](processExpr)
 
       case Variable(name) => inspect[ParsingContext, List[Any]](_.variableMapping(name) match {
-        case l : List[Any] => l
+        case l: TraversableOnce[Any] => l.toList
         case _             => Raise.impossible()
       })
 
       case Parameter(name, _)     => inspect[ParsingContext, List[Any]](_.parameter(name) match {
-        case l : List[Any] => l
+        case l : TraversableOnce[Any] => l.toList
         case _             => Raise.impossible()
       })
 

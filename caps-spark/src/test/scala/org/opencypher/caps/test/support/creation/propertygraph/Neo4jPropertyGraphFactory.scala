@@ -15,6 +15,9 @@
  */
 package org.opencypher.caps.test.support.creation.propertygraph
 
+import java.util
+import java.util.stream.Collectors
+
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.harness.TestServerBuilders
 
@@ -40,15 +43,26 @@ class Neo4jPropertyGraphFactory {
     inputGraph.execute("MATCH (a) DETACH DELETE a")
     inputGraph.execute(createQuery)
 
-    val nodes = inputGraph.getAllNodes.iterator().asScala.map { neoNode =>
+    val propertyGraph = getPropertyGraph
+
+    tx.success()
+    tx.close()
+
+   propertyGraph
+  }
+
+  private def getPropertyGraph = {
+    val neoNodes = inputGraph.getAllNodes.iterator().stream().collect(Collectors.toList())
+    val nodes = neoNodes.asScala.map { neoNode =>
       val labels: Set[String] = neoNode.getLabels.asScala.map(_.name).toSet
       val id: Long = neoNode.getId
       val properties: Map[String, Any] = neoNode.getAllProperties.asScala.toMap
 
       Node(id, labels, properties)
-    }.toSeq
+    }
 
-    val relationships = inputGraph.getAllRelationships.iterator().asScala.map { neoRel =>
+    val neoRels = inputGraph.getAllRelationships.iterator().stream().collect(Collectors.toList())
+    val relationships = neoRels.asScala.map { neoRel =>
       val relType: String = neoRel.getType.name
       val sourceId: Long = neoRel.getStartNodeId
       val targetId: Long = neoRel.getEndNodeId
@@ -56,10 +70,7 @@ class Neo4jPropertyGraphFactory {
       val properties: Map[String, Any] = neoRel.getAllProperties.asScala.toMap
 
       Relationship(id, sourceId, targetId, relType, properties)
-    }.toSeq
-
-    tx.success()
-    tx.close()
+    }
 
     PropertyGraph(nodes, relationships)
   }
