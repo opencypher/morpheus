@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.spark.acceptanceFunSpecMixin
+package org.opencypher.caps.impl.spark.acceptance
 
 import org.opencypher.caps.api.spark.CAPSGraph
 import org.opencypher.caps.api.value.CypherMap
@@ -22,7 +22,7 @@ import scala.collection.Bag
 
 trait ExpandIntoBehaviour {
   self: AcceptanceTest =>
-  
+
   def expandIntoBehaviour(initGraph: String => CAPSGraph): Unit = {
     test("test expand into for dangling edge") {
       // Given

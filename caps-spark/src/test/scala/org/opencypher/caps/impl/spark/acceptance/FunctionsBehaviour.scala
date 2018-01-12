@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.spark.acceptanceFunSpecMixin
+package org.opencypher.caps.impl.spark.acceptance
 
 import org.opencypher.caps.api.spark.CAPSGraph
 import org.opencypher.caps.api.value.{CypherList, CypherMap}

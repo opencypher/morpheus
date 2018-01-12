@@ -25,16 +25,16 @@ import org.opencypher.caps.impl.record.CAPSRecordHeader
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.ir.api.{Label, PropertyKey}
 import org.opencypher.caps.test.CAPSTestSuite
-import org.opencypher.caps.test.support.testgraph.GDLTestGraph
+import org.opencypher.caps.test.fixture.GraphCreationFixture
 
 import scala.collection.Bag
 import scala.collection.JavaConverters._
 
-class CAPSPatternGraphTest extends CAPSTestSuite {
-  import CAPSGraphGDLTestData._
+class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
+  import CAPSGraphTestData._
 
   test("project pattern graph") {
-    val inputGraph = GDLTestGraph(`:Person`).graph
+    val inputGraph = initGraph(`:Person`)
 
     val person = inputGraph.cypher(
       """MATCH (a:Swedish)
@@ -47,7 +47,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
   }
 
   test("project pattern graph with relationship") {
-    val inputGraph = GDLTestGraph(`:Person` + `:KNOWS`).graph
+    val inputGraph = initGraph(`:Person` + `:KNOWS`)
 
     val person = inputGraph.cypher(
       """MATCH (a:Person:Swedish)-[r]->(b)
@@ -64,7 +64,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
 
   // TODO: Generate names for GRAPH OF pattern parts in frontend
   test("project pattern graph with created relationship") {
-    val inputGraph = GDLTestGraph(`:Person` + `:KNOWS`).graph
+    val inputGraph = initGraph(`:Person` + `:KNOWS`)
 
     val person = inputGraph.cypher(
       """MATCH (a:Person:Swedish)-[r]->(b)
@@ -80,7 +80,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
   }
 
   test("project pattern graph with created node") {
-    val inputGraph = GDLTestGraph(`:Person` + `:KNOWS`).graph
+    val inputGraph = initGraph(`:Person` + `:KNOWS`)
 
     val person = inputGraph.cypher(
       """MATCH (a:Person:Swedish)-[r]->(b)
@@ -94,7 +94,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
   }
 
   test("relationship scan for specific type") {
-    val inputGraph = GDLTestGraph(`:KNOWS` + `:READS`).graph
+    val inputGraph = initGraph(`:KNOWS` + `:READS`)
     val inputRels = inputGraph.relationships("r")
 
     val patternGraph = CAPSGraph.create(inputRels, inputGraph.schema)
@@ -104,7 +104,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
   }
 
   test("relationship scan for disjunction of types") {
-    val inputGraph = GDLTestGraph(`:KNOWS` + `:READS` + `:INFLUENCES`).graph
+    val inputGraph = initGraph(`:KNOWS` + `:READS` + `:INFLUENCES`)
     val inputRels = inputGraph.relationships("r")
 
     val patternGraph = CAPSGraph.create(inputRels, inputGraph.schema)
@@ -114,7 +114,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
   }
 
   test("relationship scan for all types") {
-    val inputGraph = GDLTestGraph(`:KNOWS` + `:READS`).graph
+    val inputGraph = initGraph(`:KNOWS` + `:READS`)
     val inputRels = inputGraph.relationships("r")
 
     val patternGraph = CAPSGraph.create(inputRels, inputGraph.schema)
@@ -124,7 +124,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
   }
 
   test("project pattern graph with created node with labels") {
-    val inputGraph = GDLTestGraph(`:Person` + `:KNOWS`).graph
+    val inputGraph = initGraph(`:Person` + `:KNOWS`)
 
     val person = inputGraph.cypher(
       """MATCH (a:Person:Swedish)-[r]->(b)
@@ -145,7 +145,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
   //TODO: Test creating computed property value
 
   test("Node scan from single node CAPSRecords") {
-    val inputGraph = GDLTestGraph(`:Person`).graph
+    val inputGraph = initGraph(`:Person`)
     val inputNodes = inputGraph.nodes("n")
 
     val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema)
@@ -168,7 +168,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
   }
 
   test("Node scan from mixed node CapsRecords") {
-    val inputGraph = GDLTestGraph(`:Person` + `:Book`).graph
+    val inputGraph = initGraph(`:Person` + `:Book`)
     val inputNodes = inputGraph.nodes("n")
 
     val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema)
@@ -246,7 +246,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
   }
 
   test("Specific node scan from mixed node CapsRecords") {
-    val inputGraph = GDLTestGraph(`:Person` + `:Book`).graph
+    val inputGraph = initGraph(`:Person` + `:Book`)
     val inputNodes = inputGraph.nodes("n")
 
     val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema)
@@ -269,7 +269,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
   }
 
   test("Node scan for missing label") {
-    val inputGraph = GDLTestGraph(`:Book`).graph
+    val inputGraph = initGraph(`:Book`)
     val inputNodes = inputGraph.nodes("n")
 
     val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema)
@@ -400,7 +400,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
     val sparkHeader = CAPSRecordHeader.asSparkStructType(header)
     val df = session.createDataFrame(List(
       Row( 0L, true, 1L, true, "PersonPeter", "EmployeePeter"),
-      Row(10L, true, 11L, true, "PersonSusanna", "EmployeeSusanna")
+      Row(10L, true, 11L, true, "person.graphsusanna", "EmployeeSusanna")
     ).asJava, sparkHeader)
 
     val schema = Schema.empty
@@ -412,7 +412,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
     patternGraph.nodes("n", CTNode).toMaps should equal(Bag(
       CypherMap("n" ->  0L, "n.name" -> "PersonPeter", "n:Person" -> true, "n:Employee" -> false),
       CypherMap("n" ->  1L, "n.name" -> "EmployeePeter", "n:Person" -> false, "n:Employee" -> true),
-      CypherMap("n" -> 10L, "n.name" -> "PersonSusanna", "n:Person" -> true, "n:Employee" -> false),
+      CypherMap("n" -> 10L, "n.name" -> "person.graphsusanna", "n:Person" -> true, "n:Employee" -> false),
       CypherMap("n" -> 11L, "n.name" -> "EmployeeSusanna", "n:Person" -> false, "n:Employee" -> true)
     ))
   }
@@ -435,7 +435,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
     val sparkHeader = CAPSRecordHeader.asSparkStructType(header)
     val df = session.createDataFrame(List(
       Row(0L, 1L, 2L, "PersonPeter", "EmployeePeter", "HybridPeter"),
-      Row(10L, 11L, 12L, "PersonSusanna", null, "HybridSusanna")
+      Row(10L, 11L, 12L, "person.graphsusanna", null, "HybridSusanna")
     ).asJava, sparkHeader)
 
     val schema = Schema.empty
@@ -449,21 +449,21 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
       CypherMap("n" -> 0L, "n.name" -> "PersonPeter", "n:Person" -> true, "n:Employee" -> false),
       CypherMap("n" -> 1L, "n.name" -> "EmployeePeter", "n:Person" -> false, "n:Employee" -> true),
       CypherMap("n" -> 2L, "n.name" -> "HybridPeter", "n:Person" -> true, "n:Employee" -> true),
-      CypherMap("n" -> 10L, "n.name" -> "PersonSusanna", "n:Person" -> true, "n:Employee" -> false),
+      CypherMap("n" -> 10L, "n.name" -> "person.graphsusanna", "n:Person" -> true, "n:Employee" -> false),
       CypherMap("n" -> 11L, "n.name" -> null, "n:Person" -> false, "n:Employee" -> true),
       CypherMap("n" -> 12L, "n.name" -> "HybridSusanna", "n:Person" -> true, "n:Employee" -> true)
     ))
   }
 
   test("Reduce cardinality of the pattern graph base table") {
-    val given = GDLTestGraph(
+    val given = initGraph(
       """
-        |(a: Person),
-        |(b: Person),
-        |(a)-[:HAS_INTEREST]->(i1:Interest {val: 1L}),
-        |(a)-[:HAS_INTEREST]->(i2:Interest {val: 2L}),
-        |(a)-[:HAS_INTEREST]->(i3:Interest {val: 3L}),
-        |(a)-[:KNOWS]->(b)
+        |CREATE (a: Person)
+        |CREATE (b: Person)
+        |CREATE (a)-[:HAS_INTEREST]->(i1:Interest {val: 1})
+        |CREATE (a)-[:HAS_INTEREST]->(i2:Interest {val: 2})
+        |CREATE (a)-[:HAS_INTEREST]->(i3:Interest {val: 3})
+        |CREATE (a)-[:KNOWS]->(b)
       """.stripMargin)
 
     val when = given.cypher(
@@ -476,14 +476,14 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
   }
 
   test("deduplicating identical instances of the same graph of pattern") {
-    val given = GDLTestGraph(
+    val given = initGraph(
       """
-        |(a: Person),
-        |(b: Person),
-        |(a)-[:HAS_INTEREST]->(i1:Interest {val: 1L}),
-        |(a)-[:HAS_INTEREST]->(i2:Interest {val: 2L}),
-        |(a)-[:HAS_INTEREST]->(i3:Interest {val: 3L}),
-        |(a)-[:KNOWS]->(b)
+        |CREATE (a: Person)
+        |CREATE (b: Person)
+        |CREATE (a)-[:HAS_INTEREST]->(i1:Interest {val: 1})
+        |CREATE (a)-[:HAS_INTEREST]->(i2:Interest {val: 2})
+        |CREATE (a)-[:HAS_INTEREST]->(i3:Interest {val: 3})
+        |CREATE (a)-[:KNOWS]->(b)
       """.stripMargin)
 
     val when = given.cypher(
@@ -496,7 +496,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite {
   }
 
   private def initPersonReadsBookGraph: CAPSGraph = {
-    val inputGraph = GDLTestGraph(`:Person` + `:Book` + `:READS`).graph
+    val inputGraph = initGraph(`:Person` + `:Book` + `:READS`)
 
     val books = inputGraph.nodes("b", CTNode("Book"))
     val booksDf = books.toDF().as("b")

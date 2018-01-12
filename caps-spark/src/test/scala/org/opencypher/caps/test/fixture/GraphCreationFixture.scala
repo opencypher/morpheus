@@ -13,9 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.spark.acceptanceFunSpecMixin
-import org.opencypher.caps.test.support.creation.caps.{CAPSGraphFactory, CAPSScanGraphFactory}
+package org.opencypher.caps.test.fixture
 
-class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
-  override def capsGraphFactory: CAPSGraphFactory = CAPSScanGraphFactory
+import org.opencypher.caps.api.spark.CAPSGraph
+import org.opencypher.caps.test.BaseTestSuite
+import org.opencypher.caps.test.support.creation.caps.CAPSScanGraphFactory
+import org.opencypher.caps.test.support.creation.propertygraph.CAPSPropertyGraphFactory
+
+trait GraphCreationFixture {
+  self: CAPSSessionFixture with BaseTestSuite =>
+
+  val initGraph: String => CAPSGraph = (createQuery) => CAPSScanGraphFactory(CAPSPropertyGraphFactory(createQuery))
 }

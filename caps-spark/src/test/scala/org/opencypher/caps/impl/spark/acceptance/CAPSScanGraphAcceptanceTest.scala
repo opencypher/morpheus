@@ -13,36 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.test.support.testgraph
+package org.opencypher.caps.impl.spark.acceptance
+import org.opencypher.caps.test.support.creation.caps.{CAPSGraphFactory, CAPSScanGraphFactory}
 
-import scala.collection.immutable.Map
-
-abstract class RichInputGraph[N, R](implicit n: N => RichInputNode, r: R => RichInputRelationship) {
-
-  def allNodes: Set[N]
-
-  def allRels: Set[R]
-}
-
-trait RichInputElement {
-
-  def id: Long
-
-  def properties: Map[String, AnyRef]
-
-}
-
-trait RichInputNode extends RichInputElement {
-
-  def labels: Set[String]
-
-}
-
-trait RichInputRelationship extends RichInputElement {
-
-  def relType: String
-
-  def sourceId: Long
-
-  def targetId: Long
+class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
+  override def capsGraphFactory: CAPSGraphFactory = CAPSScanGraphFactory
 }

@@ -40,7 +40,6 @@
         <dep.cats.version>0.9.0</dep.cats.version>
         <dep.circe.version>0.8.0</dep.circe.version>
         <dep.eff.version>4.5.0</dep.eff.version>
-        <dep.gdl.version>0.3.1</dep.gdl.version>
         <dep.hadoop.version>2.7.0</dep.hadoop.version>
         <dep.junit.version>5.0.2</dep.junit.version>
         <dep.junit.platform.version>1.0.2</dep.junit.platform.version>
@@ -547,13 +546,6 @@
             <groupId>org.mockito</groupId>
             <artifactId>mockito-all</artifactId>
             <version>${dep.mockito.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.github.s1ck</groupId>
-            <artifactId>gdl</artifactId>
-            <version>${dep.gdl.version}</version>
             <scope>test</scope>
         </dependency>
 
