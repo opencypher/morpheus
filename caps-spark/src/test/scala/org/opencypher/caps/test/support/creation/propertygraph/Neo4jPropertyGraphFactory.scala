@@ -59,6 +59,7 @@ class Neo4jPropertyGraphFactory {
     }.toSeq
 
     tx.success()
+    tx.close()
 
     PropertyGraph(nodes, relationships)
   }

@@ -48,7 +48,7 @@ trait DebugOutputSupport {
     def toBag: Bag[Row] = Bag(elements.toSeq: _*)
   }
 
-  implicit class GenericIterableToBagConverter[T](val elements: Iterable[T]) {
+  implicit class GenericIterableToBagConverter[T](val elements: TraversableOnce[T]) {
     implicit val m: HashedBagConfiguration[T] = Bag.configuration.compact[T]
     def toBag: Bag[T] = Bag(elements.toSeq: _*)
   }

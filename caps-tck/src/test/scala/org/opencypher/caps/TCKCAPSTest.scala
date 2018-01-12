@@ -29,7 +29,8 @@ import scala.util.{Failure, Success, Try}
 class TCKCAPSTest extends CAPSTestSuite {
 
   // needs to be a val because of a TCK bug (scenarios can only be read once)
-  val scenarios: Seq[Scenario] = CypherTCK.allTckScenarios
+  // TODO: enable flaky test once new TCk release is there
+  val scenarios: Seq[Scenario] = CypherTCK.allTckScenarios.filterNot(_.name == "Limit to two hits")
 
   object WhiteList extends Tag("WhiteList Scenario")
 
