@@ -16,7 +16,7 @@
 package org.opencypher.caps.impl.spark.acceptanceFunSpecMixin
 
 import org.opencypher.caps.api.spark.CAPSGraph
-import org.opencypher.caps.api.value.CypherMap
+import org.opencypher.caps.api.value.{CypherList, CypherMap}
 
 import scala.collection.immutable.Bag
 
@@ -50,21 +50,21 @@ trait PredicateBehaviour { this: AcceptanceTest =>
       result.graphs shouldBe empty
     }
 
-//    test("in with parameter") {
-//      // Given
-//      val given = initGraph("""CREATE (:A {val: 1}), (:A {val: 2}), (:A {val: 3})""")
-//
-//      // When
-//      val result = given.cypher("MATCH (a:A) WHERE a.val IN $list RETURN a.val", Map("list" -> CypherList(Seq(-1, 2, 5, 0))))
-//
-//      // Then
-//      result.records.toMaps should equal(Bag(
-//        CypherMap("a.val" -> 2)
-//      ))
-//
-//      // And
-//      result.graphs shouldBe empty
-//    }
+    test("in with parameter") {
+      // Given
+      val given = initGraph("""CREATE (:A {val: 1}), (:A {val: 2}), (:A {val: 3})""")
+
+      // When
+      val result = given.cypher("MATCH (a:A) WHERE a.val IN $list RETURN a.val", Map("list" -> CypherList(Seq(-1, 2, 5, 0))))
+
+      // Then
+      result.records.toMaps should equal(Bag(
+        CypherMap("a.val" -> 2)
+      ))
+
+      // And
+      result.graphs shouldBe empty
+    }
 
     test("or") {
       // Given

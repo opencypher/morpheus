@@ -17,10 +17,11 @@ package org.opencypher.caps
 
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
 import org.opencypher.caps.api.value.{CypherValue => CAPSValue}
+import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.test.support.creation.caps.CAPSGraphFactory
 import org.opencypher.caps.test.support.creation.propertygraph.Neo4jPropertyGraphFactory
 import org.opencypher.tools.tck.api._
-import org.opencypher.tools.tck.values.CypherValue
+import org.opencypher.tools.tck.values._
 
 import scala.io.Source
 
@@ -29,8 +30,7 @@ case class TCKGraph(capsGraphFactory: CAPSGraphFactory, graph: CAPSGraph)(implic
   override def execute(query: String, params: Map[String, CypherValue], queryType: QueryType): (Graph, Result) = {
     queryType match {
       case InitQuery =>
-        // TODO: respect params
-        val capsGraph = capsGraphFactory(Neo4jPropertyGraphFactory(query, Map.empty))
+        val capsGraph = capsGraphFactory(Neo4jPropertyGraphFactory(query, params.mapValues(tckCypherValueToScala)))
         copy(graph = capsGraph) -> CypherValueRecords.empty
       case SideEffectQuery =>
         // this one is tricky, not sure how can do it without Cypher
@@ -51,6 +51,18 @@ case class TCKGraph(capsGraphFactory: CAPSGraphFactory, graph: CAPSGraph)(implic
     }.toList
 
     StringRecords(header, rows)
+  }
+
+  private def tckCypherValueToScala(cypherValue: CypherValue): Any = cypherValue match {
+    case CypherString(v) => v
+    case CypherInteger(v) => v
+    case CypherFloat(v) => v
+    case CypherBoolean(v) => v
+    case CypherProperty(key, value) => key -> tckCypherValueToScala(value)
+    case CypherPropertyMap(properties) => properties.mapValues(tckCypherValueToScala)
+    case l: CypherList => l.elements.map(tckCypherValueToScala)
+    case CypherNull => null
+    case other => Raise.unsupportedArgument(s"Parameter of type `${other.getClass.getSimpleName}`")
   }
 }
 
