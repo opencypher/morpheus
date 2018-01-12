@@ -26,11 +26,15 @@ import org.scalatest.prop.TableDrivenPropertyChecks._
 
 import scala.util.{Failure, Success, Try}
 
-class TCKCAPSTest extends CAPSTestSuite {
-
-  // needs to be a val because of a TCK bug (scenarios can only be read once)
+// needs to be a val because of a TCK bug (scenarios can only be read once)
+object TCKFixture {
   // TODO: enable flaky test once new TCk release is there
   val scenarios: Seq[Scenario] = CypherTCK.allTckScenarios.filterNot(_.name == "Limit to two hits")
+}
+
+class TCKCAPSTest extends CAPSTestSuite {
+  import TCKFixture._
+
 
   object WhiteList extends Tag("WhiteList Scenario")
 
