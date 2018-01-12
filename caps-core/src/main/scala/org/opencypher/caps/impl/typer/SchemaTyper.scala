@@ -22,8 +22,8 @@ import cats.implicits._
 import cats.{Foldable, Monoid}
 import org.atnos.eff._
 import org.atnos.eff.all._
-import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.functions.{Collect, Exists, Max, Min}
+import org.neo4j.cypher.internal.v3_4.expressions._
+import org.neo4j.cypher.internal.v3_4.functions.{Collect, Exists, Max, Min}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.schema.Schema.AllLabels
 import org.opencypher.caps.api.types.CypherType.joinMonoid
@@ -395,7 +395,7 @@ object SchemaTyper {
       (expr: FunctionInvocation, args: Seq[(Expression, CypherType)])
     : Eff[R, Set[(Seq[CypherType], CypherType)]] =
       expr.function match {
-        case f: ExpressionCallTypeChecking =>
+        case f: TypeSignatures =>
           pure(f.signatures.map { sig =>
             val sigInputTypes = sig.argumentTypes.map(fromFrontendType).map(_.nullable)
             val sigOutputType = fromFrontendType(sig.outputType)

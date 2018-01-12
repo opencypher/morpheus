@@ -15,11 +15,14 @@
  */
 package org.opencypher.caps.test.support
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{CNFNormalizer, Namespacer, Never}
-import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_3.phases._
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, InputPosition, SemanticCheckResult, SemanticState, ast}
+import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.{CNFNormalizer, Namespacer, Never}
+import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
+import org.neo4j.cypher.internal.frontend.v3_4.phases._
+import org.neo4j.cypher.internal.frontend.v3_4.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticCheckResult, SemanticState}
+import org.neo4j.cypher.internal.util.v3_4.{CypherException, InputPosition}
+import org.neo4j.cypher.internal.v3_4.expressions.Expression
 import org.opencypher.caps.impl.parse.{CypherParser, ExtractPredicatesFromAnds}
 import org.opencypher.caps.test.BaseTestSuite
 
@@ -34,7 +37,7 @@ trait Neo4jAstTestSupport extends AstConstructionTestSupport {
   def parseQuery(queryText: String): (Statement, Map[String, Any], SemanticState) =
     CypherParserWithoutSemanticChecking.process(queryText)(CypherParser.defaultContext)
 
-  implicit def parseExpr(exprText: String): ast.Expression = {
+  implicit def parseExpr(exprText: String): Expression = {
     CypherParserWithoutSemanticChecking.process(s"RETURN $exprText")(CypherParser.defaultContext)._1 match {
       case Query(_, SingleQuery(Return(_, ReturnItems(_, items), _, _, _, _, _) :: Nil)) =>
         items.head.expression

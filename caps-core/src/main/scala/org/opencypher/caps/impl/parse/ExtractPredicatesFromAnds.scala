@@ -15,10 +15,12 @@
  */
 package org.opencypher.caps.impl.parse
 
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, Rewriter, SemanticCheck, bottomUp}
-import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.StatementRewriter
-import org.neo4j.cypher.internal.frontend.v3_3.phases.{BaseContext, Condition}
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
+import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.StatementRewriter
+import org.neo4j.cypher.internal.frontend.v3_4.phases.{BaseContext, Condition}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticCheckableExpression, SemanticExpressionCheck}
+import org.neo4j.cypher.internal.util.v3_4.{InputPosition, Rewriter, bottomUp}
+import org.neo4j.cypher.internal.v3_4.expressions.{Ands, Expression, HasLabels, True}
 
 object ExtractPredicatesFromAnds extends StatementRewriter {
   override def instance(context: BaseContext): Rewriter = bottomUp(Rewriter.lift {
@@ -42,7 +44,7 @@ object ExtractPredicatesFromAnds extends StatementRewriter {
   override def postConditions: Set[Condition] = Set.empty
 }
 
-case class RetypingPredicate(left: Set[Expression], right: Expression)(val position: InputPosition) extends Expression {
+case class RetypingPredicate(left: Set[Expression], right: Expression)(val position: InputPosition) extends Expression with SemanticCheckableExpression {
   override def semanticCheck(ctx: Expression.SemanticContext): SemanticCheck =
-    Ands(left + right)(position).semanticCheck(ctx)
+    SemanticExpressionCheck.check(ctx, Ands(left + right)(position))
 }

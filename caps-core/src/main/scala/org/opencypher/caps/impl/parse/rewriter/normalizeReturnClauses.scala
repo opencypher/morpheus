@@ -15,9 +15,9 @@
  */
 package org.opencypher.caps.impl.parse.rewriter
 
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, InputPosition, Rewriter, bottomUp}
-import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.helpers.FreshIdNameGenerator
+import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.util.v3_4._
+import org.neo4j.cypher.internal.v3_4.expressions.{Property, Variable}
 
 case class normalizeReturnClauses(mkException: (String, InputPosition) => CypherException) extends Rewriter {
 

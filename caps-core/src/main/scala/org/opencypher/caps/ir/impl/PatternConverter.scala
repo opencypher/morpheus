@@ -20,9 +20,8 @@ import cats.data.State
 import cats.data.State._
 import cats.instances.list._
 import cats.syntax.flatMap._
-import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection._
-import org.neo4j.cypher.internal.frontend.v3_3.ast
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, LabelName}
+import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 import org.opencypher.caps.api.expr.{Expr, Var}
 import org.opencypher.caps.api.types.{CTList, CTNode, CTRelationship, CypherType}
 import org.opencypher.caps.impl.exception.Raise
@@ -36,26 +35,26 @@ final class PatternConverter {
 
   type Result[A] = State[Pattern[Expr], A]
 
-  def convert(p: ast.Pattern, knownTypes: Map[Expression, CypherType], pattern: Pattern[Expr] = Pattern.empty): Pattern[Expr] =
+  def convert(p: ast.Pattern, knownTypes: Map[ast.Expression, CypherType], pattern: Pattern[Expr] = Pattern.empty): Pattern[Expr] =
     convertPattern(p, knownTypes).runS(pattern).value
 
   def convertRelsPattern(
       p: ast.RelationshipsPattern,
-      knownTypes: Map[Expression, CypherType],
+      knownTypes: Map[ast.Expression, CypherType],
       pattern: Pattern[Expr] = Pattern.empty): Pattern[Expr] =
     convertElement(p.element, knownTypes).runS(pattern).value
 
-  private def convertPattern(p: ast.Pattern, knownTypes: Map[Expression, CypherType]): Result[Unit] =
+  private def convertPattern(p: ast.Pattern, knownTypes: Map[ast.Expression, CypherType]): Result[Unit] =
     Foldable[List].sequence_[Result, Unit](p.patternParts.toList.map(convertPart(knownTypes)))
 
   @tailrec
-  private def convertPart(knownTypes: Map[Expression, CypherType])(p: ast.PatternPart): Result[Unit] = p match {
+  private def convertPart(knownTypes: Map[ast.Expression, CypherType])(p: ast.PatternPart): Result[Unit] = p match {
     case _: ast.AnonymousPatternPart => stomp(convertElement(p.element, knownTypes))
     case ast.NamedPatternPart(_, part) => convertPart(knownTypes)(part)
   }
 
-  private def convertElement(p: ast.PatternElement, knownTypes: Map[Expression, CypherType]): Result[IRField] = p match {
-    case np @ ast.NodePattern(vOpt, labels: Seq[LabelName], None) =>
+  private def convertElement(p: ast.PatternElement, knownTypes: Map[ast.Expression, CypherType]): Result[IRField] = p match {
+    case np @ ast.NodePattern(vOpt, labels: Seq[ast.LabelName], None) =>
       val labelSet = labels.map(_.name).toSet
       val v = vOpt match {
         case Some(v) => Var(v.name)(knownTypes.getOrElse(v, CTNode(labelSet)))

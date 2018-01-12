@@ -15,9 +15,9 @@
  */
 package org.opencypher.caps.impl.typer
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
 import org.opencypher.caps.api.types._
 import cats.syntax.show._
+import org.neo4j.cypher.internal.v3_4.expressions.Expression
 
 sealed trait TyperError
 
@@ -30,7 +30,7 @@ case class UnTypedExpr(it: Expression) extends TyperError {
 }
 
 case class UnTypedParameter(it: String) extends TyperError {
-  override def toString = s"Expected a type for $$${it} but found none"
+  override def toString = s"Expected a type for $$$it but found none"
 }
 
 case class NoSuitableSignatureForExpr(it: Expression, argTypes: Seq[CypherType]) extends TyperError {

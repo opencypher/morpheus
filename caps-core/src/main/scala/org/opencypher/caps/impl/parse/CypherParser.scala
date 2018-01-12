@@ -15,14 +15,14 @@
  */
 package org.opencypher.caps.impl.parse
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters._
-import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_3.phases._
-import org.neo4j.cypher.internal.frontend.v3_3.{SemanticError, SemanticErrorDef, SemanticFeature, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters._
+import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
+import org.neo4j.cypher.internal.frontend.v3_4.phases._
+import org.neo4j.cypher.internal.frontend.v3_4.semantics._
 import org.opencypher.caps.impl.CompilationStage
-import org.opencypher.caps.impl.parse.rewriter.CAPSRewriting
 import org.opencypher.caps.impl.exception.Raise
+import org.opencypher.caps.impl.parse.rewriter.CAPSRewriting
 
 object CypherParser extends CypherParser {
   implicit object defaultContext extends BlankBaseContext {
@@ -58,7 +58,7 @@ trait CypherParser extends CompilationStage[String, Statement, BaseContext] {
       SyntaxDeprecationWarnings andThen
       PreparatoryRewriting andThen
       SemanticAnalysis(warn = true, SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature).adds(BaseContains[SemanticState]) andThen
-      AstRewriting(RewriterStepSequencer.newPlain, Forced) andThen
+      AstRewriting(RewriterStepSequencer.newPlain, Forced, getDegreeRewriting = false) andThen
       SemanticAnalysis(warn = false, SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature) andThen
       Namespacer andThen
       CNFNormalizer andThen

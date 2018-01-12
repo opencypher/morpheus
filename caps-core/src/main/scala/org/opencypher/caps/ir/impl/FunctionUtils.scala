@@ -15,7 +15,8 @@
  */
 package org.opencypher.caps.ir.impl
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{FunctionInvocation, _}
+import org.neo4j.cypher.internal.v3_4.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.v3_4.functions
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.types.CypherType
 import org.opencypher.caps.impl.exception.Raise
@@ -40,7 +41,7 @@ object FunctionUtils {
         case functions.EndNode => EndNodeFunction(expr.head)(cypherType)
         case functions.ToFloat => ToFloat(expr.head)(cypherType)
         case functions.Collect => Collect(expr.head)(cypherType)
-        case a: Function => Raise.notYetImplemented(s"converting ${a.name} function")
+        case a: functions.Function => Raise.notYetImplemented(s"converting ${a.name} function")
       }
     }
   }
