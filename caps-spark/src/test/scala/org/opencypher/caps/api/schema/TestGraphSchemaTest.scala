@@ -17,12 +17,12 @@ package org.opencypher.caps.api.schema
 
 import org.opencypher.caps.api.types.{CTInteger, CTString}
 import org.opencypher.caps.test.CAPSTestSuite
-import org.opencypher.caps.test.support.testgraph.GDLTestGraph
+import org.opencypher.caps.test.fixture.GraphCreationFixture
 
-class TestGraphSchemaTest extends CAPSTestSuite {
+class TestGraphSchemaTest extends CAPSTestSuite with GraphCreationFixture {
 
   test("constructs schema correctly for unlabeled nodes") {
-    val graph = GDLTestGraph("({id: 1l}), ({id: 2l}), ({other: 'foo'}), ()").graph
+    val graph = initGraph("CREATE ({id: 1}), ({id: 2}), ({other: 'foo'}), ()")
 
     graph.schema should equal(Schema.empty
       .withNodePropertyKeys(Schema.NoLabel, Map("id" -> CTInteger.nullable, "other" -> CTString.nullable))
@@ -30,7 +30,7 @@ class TestGraphSchemaTest extends CAPSTestSuite {
   }
 
   test("constructs schema correctly for labeled nodes") {
-    val graph = GDLTestGraph("(:A {id: 1l}), (:A {id: 2l}), (:B {other: 'foo'})").graph
+    val graph = initGraph("CREATE (:A {id: 1}), (:A {id: 2}), (:B {other: 'foo'})")
 
     graph.schema should equal(Schema.empty
       .withNodePropertyKeys("A")("id" -> CTInteger)
@@ -39,7 +39,7 @@ class TestGraphSchemaTest extends CAPSTestSuite {
   }
 
   test("constructs schema correctly for multi-labeled nodes") {
-    val graph = GDLTestGraph("(:A {id: 1l}), (:A:B {id: 2l}), (:B {other: 'foo'})").graph
+    val graph = initGraph("CREATE (:A {id: 1}), (:A:B {id: 2}), (:B {other: 'foo'})")
 
     graph.schema should equal(Schema.empty
       .withNodePropertyKeys("A")("id" -> CTInteger)
@@ -49,12 +49,13 @@ class TestGraphSchemaTest extends CAPSTestSuite {
   }
 
   test("constructs schema correctly for relationships") {
-    val graph = GDLTestGraph(
-      """()-[:FOO {p: 1}]->(),
-        |()-[:BAR {p: 2, q: 'baz'}]->(),
-        |()-[:BAR {p: 3}]->()
+    val graph = initGraph(
+      """
+        |CREATE ()-[:FOO {p: 1}]->()
+        |CREATE ()-[:BAR {p: 2, q: 'baz'}]->()
+        |CREATE ()-[:BAR {p: 3}]->()
       """.stripMargin
-    ).graph
+    )
 
     graph.schema should equal(Schema.empty
       .withNodePropertyKeys(Schema.NoLabel, PropertyKeys.empty)

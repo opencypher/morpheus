@@ -17,7 +17,7 @@ package org.opencypher.caps.test
 
 import org.junit.runner.RunWith
 import org.opencypher.caps.impl.spark.physical.RuntimeContext
-import org.opencypher.caps.test.fixture.{CAPSSessionFixture, TestGraphFixture, SparkSessionFixture}
+import org.opencypher.caps.test.fixture.{CAPSSessionFixture, SparkSessionFixture}
 import org.opencypher.caps.test.support.{DebugOutputSupport, GraphMatchingTestSupport, RecordMatchingTestSupport}
 import org.scalatest.junit.JUnitRunner
 
@@ -30,8 +30,7 @@ abstract class CAPSTestSuite
     with CAPSSessionFixture
     with GraphMatchingTestSupport
     with RecordMatchingTestSupport
-    with DebugOutputSupport
-    with TestGraphFixture {
+    with DebugOutputSupport {
 
   implicit val context: RuntimeContext = RuntimeContext.empty
 

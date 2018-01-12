@@ -25,9 +25,9 @@ import org.opencypher.caps.api.types.CTNode
 import org.opencypher.caps.impl.logical.LogicalExternalGraph
 import org.opencypher.caps.impl.spark.physical.operators._
 import org.opencypher.caps.test.CAPSTestSuite
-import org.opencypher.caps.test.support.testgraph.GDLTestGraph
+import org.opencypher.caps.test.fixture.GraphCreationFixture
 
-class PhysicalOptimizerTest extends CAPSTestSuite {
+class PhysicalOptimizerTest extends CAPSTestSuite with GraphCreationFixture {
   val emptyRecords = CAPSRecords.empty(RecordHeader.empty)
   val emptyGraph = LogicalExternalGraph("foo", URI.create("example.com"), Schema.empty)
 
@@ -112,14 +112,14 @@ class PhysicalOptimizerTest extends CAPSTestSuite {
 
   test("test caches expand into for triangle") {
     // Given
-    val given = GDLTestGraph(
+    val given = initGraph(
       """
-        |(p1:Person {name: "Alice"}),
-        |(p2:Person {name: "Bob"}),
-        |(p3:Person {name: "Eve"}),
-        |(p1)-[:KNOWS]->(p2),
-        |(p2)-[:KNOWS]->(p3),
-        |(p1)-[:KNOWS]->(p3),
+        |CREATE (p1:Person {name: "Alice"})
+        |CREATE (p2:Person {name: "Bob"})
+        |CREATE (p3:Person {name: "Eve"})
+        |CREATE (p1)-[:KNOWS]->(p2)
+        |CREATE (p2)-[:KNOWS]->(p3)
+        |CREATE (p1)-[:KNOWS]->(p3)
       """.stripMargin)
 
     // When
@@ -138,17 +138,17 @@ class PhysicalOptimizerTest extends CAPSTestSuite {
 
   test("test caching expand into after var expand") {
     // Given
-    val given = GDLTestGraph(
+    val given = initGraph(
       """
-        |(p1:Person {name: "Alice"}),
-        |(p2:Person {name: "Bob"}),
-        |(comment:Comment),
-        |(post1:Post {content: "asdf"}),
-        |(post2:Post {content: "foobar"}),
-        |(p1)-[:KNOWS]->(p2),
-        |(p2)<-[:HASCREATOR]-(comment),
-        |(comment)-[:REPLYOF]->(post1)-[:REPLYOF]->(post2),
-        |(post2)-[:HASCREATOR]->(p1)
+        |CREATE (p1:Person {name: "Alice"})
+        |CREATE (p2:Person {name: "Bob"})
+        |CREATE (comment:Comment)
+        |CREATE (post1:Post {content: "asdf"})
+        |CREATE (post2:Post {content: "foobar"})
+        |CREATE (p1)-[:KNOWS]->(p2)
+        |CREATE (p2)<-[:HASCREATOR]-(comment)
+        |CREATE (comment)-[:REPLYOF]->(post1)-[:REPLYOF]->(post2)
+        |CREATE (post2)-[:HASCREATOR]->(p1)
       """.stripMargin)
 
     // When
@@ -170,15 +170,15 @@ class PhysicalOptimizerTest extends CAPSTestSuite {
 
   test("test caching optional match with duplicates") {
     // Given
-    val given = GDLTestGraph(
+    val given = initGraph(
       """
-        |(p1:Person {name: "Alice"}),
-        |(p2:Person {name: "Bob"}),
-        |(p3:Person {name: "Eve"}),
-        |(p4:Person {name: "Paul"}),
-        |(p1)-[:KNOWS]->(p3),
-        |(p2)-[:KNOWS]->(p3),
-        |(p3)-[:KNOWS]->(p4),
+        |CREATE (p1:Person {name: "Alice"})
+        |CREATE (p2:Person {name: "Bob"})
+        |CREATE (p3:Person {name: "Eve"})
+        |CREATE (p4:Person {name: "Paul"})
+        |CREATE (p1)-[:KNOWS]->(p3)
+        |CREATE (p2)-[:KNOWS]->(p3)
+        |CREATE (p3)-[:KNOWS]->(p4)
       """.stripMargin)
 
     // When
@@ -193,5 +193,4 @@ class PhysicalOptimizerTest extends CAPSTestSuite {
     val cacheOps = result.explain.physical.plan.collect { case c: Cache => c }
     cacheOps.size shouldBe 2
   }
-
 }

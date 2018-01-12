@@ -44,9 +44,10 @@ sealed trait EmbeddedEntity extends Verifiable {
 
   def withPropertyKey(propertyNameAndSlot: (String, String)): Self
 
-  def withPropertyKey(property: String): Self = {
-    withPropertyKey((property -> property))
-  }
+  def withPropertyKey(property: String): Self =
+    withPropertyKey(property -> property)
+
+  def withPropertyKeys(properties: String*): Self
 
   protected def computeSlots: Map[String, Expr] = {
     val keyMap = propertiesFromSlots
@@ -93,8 +94,14 @@ final case class EmbeddedNode(
     copy(propertiesFromSlots = propertiesFromSlots.updated(propertyName, newPropertySlots))
   }
 
+  override def withPropertyKeys(properties: String*): EmbeddedNode =
+    properties.foldLeft(this)((entity, property) => entity.withPropertyKey(property))
+
   def withImpliedLabel(impliedLabel: String): EmbeddedNode =
     copy(labelsFromSlotOrImplied = labelsFromSlotOrImplied.updated(impliedLabel, None))
+
+  def withImpliedLabels(impliedLabels: String*): EmbeddedNode =
+    impliedLabels.foldLeft(this)((node, label) => node.withImpliedLabel(label))
 
   def withOptionalLabel(optionalLabelAndSlot: String): EmbeddedNode =
     withOptionalLabel(optionalLabelAndSlot -> optionalLabelAndSlot)
@@ -176,6 +183,9 @@ final case class EmbeddedRelationship(
     val newPropertySlots = propertiesFromSlots.getOrElse(propertyName, Set.empty) + propertySlot
     copy(propertiesFromSlots = propertiesFromSlots.updated(propertyName, newPropertySlots))
   }
+
+  override def withPropertyKeys(properties: String*): EmbeddedRelationship =
+    properties.foldLeft(this)((entity, property) => entity.withPropertyKey(property))
 
   override protected def computeSlots: Map[String, Expr] = {
     val slots = Seq(

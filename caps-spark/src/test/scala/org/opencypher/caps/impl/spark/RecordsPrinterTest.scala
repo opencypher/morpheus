@@ -25,10 +25,10 @@ import org.opencypher.caps.api.types.CTNode
 import org.opencypher.caps.api.util.PrintOptions
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.test.CAPSTestSuite
-import org.opencypher.caps.test.support.testgraph.GDLTestGraph
+import org.opencypher.caps.test.fixture.GraphCreationFixture
 
 
-class RecordsPrinterTest extends CAPSTestSuite {
+class RecordsPrinterTest extends CAPSTestSuite with GraphCreationFixture {
 
   implicit val options: PrintOptions = PrintOptions.out
 
@@ -117,14 +117,15 @@ class RecordsPrinterTest extends CAPSTestSuite {
   }
 
   test("return property values without alias") {
-    val given = GDLTestGraph(
+    val given = initGraph(
       """
-        |(a:Person {name: "Alice"})-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person {name: "Bob"})
+        |CREATE (a:Person {name: "Alice"})-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person {name: "Bob"})
       """.stripMargin)
 
     val when = given.cypher(
       """MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person)
         |RETURN a.name, b.name
+        |ORDER BY a.name
       """.stripMargin)
 
     print(when.records)
@@ -133,8 +134,8 @@ class RecordsPrinterTest extends CAPSTestSuite {
       """+---------------------------------------------+
         !| a.name               | b.name               |
         !+---------------------------------------------+
-        !| 'Bob'                | 'Alice'              |
         !| 'Alice'              | 'Bob'                |
+        !| 'Bob'                | 'Alice'              |
         !+---------------------------------------------+
         !(2 rows)
         !""".stripMargin('!'))

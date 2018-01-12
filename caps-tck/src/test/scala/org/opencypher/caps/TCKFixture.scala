@@ -15,59 +15,54 @@
  */
 package org.opencypher.caps
 
-import java.io.File
-import java.util
-
-import org.junit.jupiter.api.function.Executable
-import org.junit.jupiter.api.{DynamicTest, TestFactory}
-import org.opencypher.caps.TCKAdapterForCAPS.AsTckGraph
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
-import org.opencypher.caps.demo.Configuration.PrintLogicalPlan
-import org.opencypher.caps.test.support.testgraph.Neo4jTestGraph
+import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
+import org.opencypher.caps.api.value.{CypherValue => CAPSValue}
+import org.opencypher.caps.impl.exception.Raise
+import org.opencypher.caps.test.support.creation.caps.CAPSGraphFactory
+import org.opencypher.caps.test.support.creation.propertygraph.Neo4jPropertyGraphFactory
 import org.opencypher.tools.tck.api._
-import org.opencypher.tools.tck.values.CypherValue
+import org.opencypher.tools.tck.values._
 
-import scala.collection.JavaConverters._
 import scala.io.Source
-import scala.util.{Failure, Success, Try}
 
-// this is an object with a val because we can only load the
-// scenarios _once_ due to a bug in the TCK API
-object TCKFixture {
-  val scenarios: Seq[Scenario] = CypherTCK.allTckScenarios
-
-  def dynamicTest(graph: Graph)(scenario: Scenario): DynamicTest =
-    DynamicTest.dynamicTest(scenario.toString, new Executable {
-      override def execute(): Unit = {
-        println(scenario)
-        scenario(graph).execute()
-      }
-    })
-
-  implicit val caps: CAPSSession = CAPSSession.local()
-}
-
-case class Neo4jBackedTestGraph(implicit caps: CAPSSession) extends Graph {
-  private val neo4jGraph = Neo4jTestGraph("RETURN 1")
+case class TCKGraph(capsGraphFactory: CAPSGraphFactory, graph: CAPSGraph)(implicit caps: CAPSSession) extends Graph {
 
   override def execute(query: String, params: Map[String, CypherValue], queryType: QueryType): (Graph, Result) = {
     queryType match {
       case InitQuery =>
-        // we use an embedded Neo4j for this
-        // this works because there is never more than one init query
-        neo4jGraph.inputGraph.execute("MATCH (a) DETACH DELETE a")
-        neo4jGraph.inputGraph.execute(query)
-        val capsGraph = Try(neo4jGraph.capsGraph) match {
-          case Success(g) =>
-            g
-          case Failure(err) =>
-            CAPSGraph.empty
-        }
+        val capsGraph = capsGraphFactory(Neo4jPropertyGraphFactory(query, params.mapValues(tckCypherValueToScala)))
+        copy(graph = capsGraph) -> CypherValueRecords.empty
+      case SideEffectQuery =>
+        // this one is tricky, not sure how can do it without Cypher
+        this -> CypherValueRecords.empty
+      case ExecQuery =>
+        // mapValues is lazy, so we force it for debug purposes
+        val capsResult = graph.cypher(query, params.mapValues(CAPSValue(_)).view.force)
+        val tckRecords = convertToTckStrings(capsResult.records)
 
-        AsTckGraph(capsGraph) -> CypherValueRecords.empty
-      case _ =>
-        ???
+        this -> tckRecords
     }
+  }
+
+  private def convertToTckStrings(records: CAPSRecords): StringRecords = {
+    val header = records.header.fieldsInOrder.map(_.name).toList
+    val rows = records.toLocalScalaIterator.map { cypherMap =>
+      cypherMap.keys.map(k => k -> java.util.Objects.toString(cypherMap.get(k).get)).toMap
+    }.toList
+
+    StringRecords(header, rows)
+  }
+
+  private def tckCypherValueToScala(cypherValue: CypherValue): Any = cypherValue match {
+    case CypherString(v) => v
+    case CypherInteger(v) => v
+    case CypherFloat(v) => v
+    case CypherBoolean(v) => v
+    case CypherProperty(key, value) => key -> tckCypherValueToScala(value)
+    case CypherPropertyMap(properties) => properties.mapValues(tckCypherValueToScala)
+    case l: CypherList => l.elements.map(tckCypherValueToScala)
+    case CypherNull => null
+    case other => Raise.unsupportedArgument(s"Parameter of type `${other.getClass.getSimpleName}`")
   }
 }
 
@@ -77,7 +72,7 @@ object ScenarioBlacklist {
     val blacklistSet = blacklistIter.toSet
 
     lazy val errorMessage = s"Blacklist contains duplicate scenarios ${blacklistIter.groupBy(identity).filter(_._2.lengthCompare(1) > 0).keys.mkString("\n")}"
-    assert(blacklistIter.size == blacklistSet.size, errorMessage)
+    assert(blacklistIter.lengthCompare(blacklistSet.size) == 0, errorMessage)
     blacklistSet
   }
 
