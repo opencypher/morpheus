@@ -17,9 +17,14 @@ package org.opencypher.caps.impl.spark.physical.operators
 
 import org.apache.spark.sql.functions
 import org.opencypher.caps.api.expr.Var
-import org.opencypher.caps.api.record.{OpaqueField, RecordHeader, RecordSlot}
 import org.opencypher.caps.api.spark.CAPSRecords
-import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.{assertIsNode, columnName, joinDFs, joinRecords}
+import org.opencypher.caps.impl.record.{OpaqueField, RecordHeader, RecordSlot}
+import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.{
+  assertIsNode,
+  columnName,
+  joinDFs,
+  joinRecords
+}
 import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
 import org.opencypher.caps.impl.spark.{ColumnNameGenerator, SparkColumnName}
 
@@ -65,8 +70,8 @@ final case class ValueJoin(
 final case class Optional(lhs: PhysicalOperator, rhs: PhysicalOperator, header: RecordHeader)
     extends BinaryPhysicalOperator {
 
-  override def executeBinary(left: PhysicalResult, right: PhysicalResult)
-      (implicit context: RuntimeContext): PhysicalResult = {
+  override def executeBinary(left: PhysicalResult, right: PhysicalResult)(
+      implicit context: RuntimeContext): PhysicalResult = {
     val leftData = left.records.toDF()
     val rightData = right.records.toDF()
     val leftHeader = left.records.header
@@ -76,21 +81,21 @@ final case class Optional(lhs: PhysicalOperator, rhs: PhysicalOperator, header: 
 
     val (joinSlots, otherCommonSlots) = commonFields.partition {
       case RecordSlot(_, _: OpaqueField) => true
-      case RecordSlot(_, _) => false
+      case RecordSlot(_, _)              => false
     }
 
     val joinFields = joinSlots
-        .map(_.content)
-        .collect { case OpaqueField(v) => v }
+      .map(_.content)
+      .collect { case OpaqueField(v) => v }
 
     val otherCommonFields = otherCommonSlots
-        .map(_.content)
+      .map(_.content)
 
     val columnsToRemove = joinFields
-        .flatMap(rightHeader.childSlots)
-        .map(_.content)
-        .union(otherCommonFields)
-        .map(columnName)
+      .flatMap(rightHeader.childSlots)
+      .map(_.content)
+      .union(otherCommonFields)
+      .map(columnName)
 
     val lhsJoinSlots = joinFields.map(leftHeader.slotFor)
     val rhsJoinSlots = joinFields.map(rightHeader.slotFor)
@@ -98,21 +103,21 @@ final case class Optional(lhs: PhysicalOperator, rhs: PhysicalOperator, header: 
     // Find the join pairs and introduce an alias for the right hand side
     // This is necessary to be able to deduplicate the join columns later
     val joinColumnMapping = lhsJoinSlots
-        .map(lhsSlot => {
-          lhsSlot -> rhsJoinSlots.find(_.content == lhsSlot.content).get
-        })
-        .map(pair => {
-          val lhsCol = leftData.col(columnName(pair._1))
-          val rhsColName = columnName(pair._2)
+      .map(lhsSlot => {
+        lhsSlot -> rhsJoinSlots.find(_.content == lhsSlot.content).get
+      })
+      .map(pair => {
+        val lhsCol = leftData.col(columnName(pair._1))
+        val rhsColName = columnName(pair._2)
 
-          (lhsCol, rhsColName, ColumnNameGenerator.generateUniqueName(rightHeader))
-        })
-        .toSeq
+        (lhsCol, rhsColName, ColumnNameGenerator.generateUniqueName(rightHeader))
+      })
+      .toSeq
 
     // Rename join columns on the right hand side and drop common non-join columns
     val reducedRhsData = joinColumnMapping
-        .foldLeft(rightData)((acc, col) => acc.withColumnRenamed(col._2, col._3))
-        .drop(columnsToRemove: _*)
+      .foldLeft(rightData)((acc, col) => acc.withColumnRenamed(col._2, col._3))
+      .drop(columnsToRemove: _*)
 
     val joinCols = joinColumnMapping.map(t => t._1 -> reducedRhsData.col(t._3))
 
@@ -140,20 +145,20 @@ final case class ExistsPatternPredicate(
     header: RecordHeader)
     extends BinaryPhysicalOperator {
 
-  override def executeBinary(left: PhysicalResult, right: PhysicalResult)
-      (implicit context: RuntimeContext): PhysicalResult = {
+  override def executeBinary(left: PhysicalResult, right: PhysicalResult)(
+      implicit context: RuntimeContext): PhysicalResult = {
     val leftData = left.records.toDF()
     val rightData = right.records.toDF()
     val leftHeader = left.records.header
     val rightHeader = right.records.header
 
-    val joinFields = leftHeader.fields.intersect(rightHeader.fields)
+    val joinFields = leftHeader.internalHeader.fields.intersect(rightHeader.internalHeader.fields)
 
     val columnsToRemove = joinFields
-        .flatMap(rightHeader.childSlots)
-        .map(_.content)
-        .map(columnName)
-        .toSeq
+      .flatMap(rightHeader.childSlots)
+      .map(_.content)
+      .map(columnName)
+      .toSeq
 
     val lhsJoinSlots = joinFields.map(leftHeader.slotFor)
     val rhsJoinSlots = joinFields.map(rightHeader.slotFor)
@@ -161,22 +166,21 @@ final case class ExistsPatternPredicate(
     // Find the join pairs and introduce an alias for the right hand side
     // This is necessary to be able to deduplicate the join columns later
     val joinColumnMapping = lhsJoinSlots
-        .map(lhsSlot => {
-          lhsSlot -> rhsJoinSlots.find(_.content == lhsSlot.content).get
-        })
-        .map(pair => {
-          val lhsCol = leftData.col(columnName(pair._1))
-          val rhsColName = columnName(pair._2)
+      .map(lhsSlot => {
+        lhsSlot -> rhsJoinSlots.find(_.content == lhsSlot.content).get
+      })
+      .map(pair => {
+        val lhsCol = leftData.col(columnName(pair._1))
+        val rhsColName = columnName(pair._2)
 
-          (lhsCol, rhsColName, ColumnNameGenerator.generateUniqueName(rightHeader))
-        })
-        .toSeq
+        (lhsCol, rhsColName, ColumnNameGenerator.generateUniqueName(rightHeader))
+      })
+      .toSeq
 
     // Rename join columns on the right hand side and drop common non-join columns
     val reducedRhsData = joinColumnMapping
-        .foldLeft(rightData)((acc, col) => acc.withColumnRenamed(col._2, col._3))
-        .drop(columnsToRemove: _*)
-
+      .foldLeft(rightData)((acc, col) => acc.withColumnRenamed(col._2, col._3))
+      .drop(columnsToRemove: _*)
 
     // Compute distinct rows based on join columns
     val distinctRightData = reducedRhsData.dropDuplicates(joinColumnMapping.map(_._3))
@@ -184,7 +188,8 @@ final case class ExistsPatternPredicate(
     val joinCols = joinColumnMapping.map(t => t._1 -> distinctRightData.col(t._3))
 
     val joinedRecords =
-      joinDFs(left.records.data, distinctRightData, rightHeader, joinCols)("leftouter", deduplicate = true)(left.records.caps)
+      joinDFs(left.records.data, distinctRightData, rightHeader, joinCols)("leftouter", deduplicate = true)(
+        left.records.caps)
 
     val rightNonJoinColumns = distinctRightData.columns.toSet -- joinColumnMapping.map(_._3)
 
@@ -196,10 +201,10 @@ final case class ExistsPatternPredicate(
     // After that we drop all right columns and only keep the predicate field.
     // The predicate field is later checked by a filter operator.
     val updatedJoinedRecords = joinedRecords.data
-        .withColumn(
-          SparkColumnName.of(header.slotFor(predicateField)),
-          functions.when(functions.isnull(rightNonJoinColumn), false).otherwise(true))
-        .drop(rightNonJoinColumns.toSeq ++ joinColumnMapping.map(_._3): _*)
+      .withColumn(
+        SparkColumnName.of(header.slotFor(predicateField)),
+        functions.when(functions.isnull(rightNonJoinColumn), false).otherwise(true))
+      .drop(rightNonJoinColumns.toSeq ++ joinColumnMapping.map(_._3): _*)
 
     PhysicalResult(CAPSRecords.create(header, updatedJoinedRecords)(left.records.caps), left.graphs ++ right.graphs)
   }

@@ -15,18 +15,21 @@
  */
 package org.opencypher.caps.ir.api.block
 
+import org.opencypher.caps.api.schema.AllGiven
 import org.opencypher.caps.ir.api._
-import org.opencypher.caps.ir.api.pattern.AllGiven
 
 final case class ProjectBlock[E](
-  after: Set[BlockRef],
-  binds: FieldsAndGraphs[E] = FieldsAndGraphs[E](),
-  where: AllGiven[E] = AllGiven[E](),
-  source: IRGraph,
-  distinct: Boolean = false
+    after: Set[BlockRef],
+    binds: FieldsAndGraphs[E] = FieldsAndGraphs[E](),
+    where: AllGiven[E] = AllGiven[E](),
+    source: IRGraph,
+    distinct: Boolean = false
 ) extends BasicBlock[FieldsAndGraphs[E], E](BlockType("project"))
 
-final case class FieldsAndGraphs[E](items: Map[IRField, E] = Map.empty[IRField, E], override val graphs: Set[IRGraph] = Set.empty) extends Binds[E] {
+final case class FieldsAndGraphs[E](
+    items: Map[IRField, E] = Map.empty[IRField, E],
+    override val graphs: Set[IRGraph] = Set.empty)
+    extends Binds[E] {
   override def fields: Set[IRField] = items.keySet
 }
 

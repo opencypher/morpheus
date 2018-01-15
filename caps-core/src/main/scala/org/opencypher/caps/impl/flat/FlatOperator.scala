@@ -16,10 +16,10 @@
 package org.opencypher.caps.impl.flat
 
 import org.opencypher.caps.api.expr.{Aggregator, Expr, Var}
-import org.opencypher.caps.api.record.{OpaqueField, ProjectedExpr, ProjectedField, RecordHeader}
-import org.opencypher.caps.impl.common.AbstractTreeNode
 import org.opencypher.caps.impl.logical.LogicalGraph
+import org.opencypher.caps.impl.record.{OpaqueField, ProjectedExpr, ProjectedField, RecordHeader}
 import org.opencypher.caps.ir.api.block.SortItem
+import org.opencypher.caps.trees.AbstractTreeNode
 
 sealed abstract class FlatOperator extends AbstractTreeNode[FlatOperator] {
   def header: RecordHeader
@@ -61,7 +61,11 @@ final case class Distinct(in: FlatOperator, header: RecordHeader) extends Stacki
 final case class Select(fields: IndexedSeq[Var], graphs: Set[String], in: FlatOperator, header: RecordHeader)
     extends StackingFlatOperator
 
-final case class RemoveAliases(dependentFields: Set[(ProjectedField, ProjectedExpr)], in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
+final case class RemoveAliases(
+    dependentFields: Set[(ProjectedField, ProjectedExpr)],
+    in: FlatOperator,
+    header: RecordHeader)
+    extends StackingFlatOperator
 
 final case class Project(expr: Expr, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
@@ -80,16 +84,10 @@ final case class Alias(expr: Expr, alias: Var, in: FlatOperator, header: RecordH
 
 final case class CartesianProduct(lhs: FlatOperator, rhs: FlatOperator, header: RecordHeader) extends BinaryFlatOperator
 
-final case class Optional(
-    lhs: FlatOperator,
-    rhs: FlatOperator,
-    header: RecordHeader) extends BinaryFlatOperator
+final case class Optional(lhs: FlatOperator, rhs: FlatOperator, header: RecordHeader) extends BinaryFlatOperator
 
-final case class ExistsPatternPredicate(
-    predicateField: Var,
-    lhs: FlatOperator,
-    rhs: FlatOperator,
-    header: RecordHeader) extends BinaryFlatOperator
+final case class ExistsPatternPredicate(predicateField: Var, lhs: FlatOperator, rhs: FlatOperator, header: RecordHeader)
+    extends BinaryFlatOperator
 
 final case class ValueJoin(
     lhs: FlatOperator,

@@ -15,10 +15,10 @@
  */
 package org.opencypher.caps.impl.flat
 
-import org.opencypher.caps.api.record.{ProjectedExpr, ProjectedField}
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.logical.LogicalOperator
 import org.opencypher.caps.impl.exception.Raise
+import org.opencypher.caps.impl.record.{ProjectedExpr, ProjectedField}
 import org.opencypher.caps.impl.{DirectCompilationStage, logical}
 
 final case class FlatPlannerContext(parameters: Map[String, CypherValue])

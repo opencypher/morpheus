@@ -48,11 +48,10 @@ object ZeppelinSupport {
 
       val header = fields.mkString("\t")
       val rows = result.records.toLocalScalaIterator.map { data =>
-        fields.map(field => data.get(field.name).get).mkString("\t")
+        fields.map(field => data.get(field).get).mkString("\t")
       }.mkString("\n")
 
-      print(
-        s"""
+      print(s"""
           |%table
           |$header
           |$rows""".stripMargin)
@@ -114,16 +113,15 @@ object ZeppelinSupport {
     def asZeppelinGraph(name: String): Unit = {
       val graph = result.graphs(name)
       val graphJson = ZeppelinJsonSerialiser.toJsonString(graph)
-      print(
-        s"""
+      print(s"""
            |%network
            |$graphJson
         """.stripMargin)
     }
   }
 
-
   implicit class GraphVisualizer(graph: CAPSGraph) {
+
     /**
       * Prints the specified graph in Zeppelins %network format
       *
@@ -178,8 +176,7 @@ object ZeppelinSupport {
       */
     def asZeppelinGraph(): Unit = {
       val graphJson = ZeppelinJsonSerialiser.toJsonString(graph)
-      print(
-        s"""
+      print(s"""
            |%network
            |$graphJson
         """.stripMargin)
@@ -200,8 +197,12 @@ object ZeppelinSupport {
       )
     }
 
-    override protected def formatRel(id: Long, source: Long, target: Long,
-                                     typ: String, properties: Map[String, Json]): Json = {
+    override protected def formatRel(
+        id: Long,
+        source: Long,
+        target: Long,
+        typ: String,
+        properties: Map[String, Json]): Json = {
       Json.obj(
         "id" -> Json.fromLong(id),
         "source" -> Json.fromLong(source),

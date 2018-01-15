@@ -15,8 +15,8 @@
  */
 package org.opencypher.caps.ir.api.block
 
+import org.opencypher.caps.api.schema.AllGiven
 import org.opencypher.caps.ir.api.{IRField, IRGraph}
-import org.opencypher.caps.ir.api.pattern.AllGiven
 
 final case class UnwindBlock[E](
     after: Set[BlockRef],

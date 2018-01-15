@@ -15,9 +15,8 @@
  */
 package org.opencypher.caps.ir.api.block
 
-import org.opencypher.caps.ir.api.pattern.AllGiven
+import org.opencypher.caps.api.schema.AllGiven
 import org.opencypher.caps.ir.api.{IRField, IRGraph}
-
 
 trait Block[E] {
   def blockType: BlockType
@@ -58,5 +57,3 @@ object NoWhereBlock {
   def unapply[E](block: Block[E]): Option[Block[E]] =
     if (block.where.elements.isEmpty) Some(block) else None
 }
-
-

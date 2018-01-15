@@ -15,7 +15,6 @@
  */
 package org.opencypher.caps.api.types
 
-import org.opencypher.caps.common.{False, Maybe, True}
 import org.opencypher.caps.test.BaseTestSuite
 
 import scala.language.postfixOps
@@ -96,7 +95,6 @@ class CypherTypesTest extends BaseTestSuite {
       CTWildcard -> ("?" -> "??")
     ).foreach {
       case (t, (materialName, nullableName)) =>
-
         t.isMaterial shouldBe true
         t.toString shouldBe materialName
         t.nullable.toString shouldBe nullableName
@@ -205,7 +203,7 @@ class CypherTypesTest extends BaseTestSuite {
     CTVoid subTypeOf CTVoid shouldBe True
     CTVoid subTypeOf CTList(CTInteger) shouldBe True
 
-    CTBoolean.nullable superTypeOf CTAny  shouldBe False
+    CTBoolean.nullable superTypeOf CTAny shouldBe False
     CTAny superTypeOf CTBoolean.nullable shouldBe False
   }
 
@@ -253,7 +251,11 @@ class CypherTypesTest extends BaseTestSuite {
     CTRelationship join CTRelationship("KNOWS") shouldBe CTRelationship
     CTRelationship("OTHER") join CTRelationship("KNOWS") shouldBe CTRelationship("KNOWS", "OTHER")
     CTRelationship("KNOWS") join CTRelationship("KNOWS") shouldBe CTRelationship("KNOWS")
-    CTRelationship("T1", "T2", "Tx") join CTRelationship("T1", "T2", "Ty") shouldBe CTRelationship("T1", "T2", "Tx", "Ty")
+    CTRelationship("T1", "T2", "Tx") join CTRelationship("T1", "T2", "Ty") shouldBe CTRelationship(
+      "T1",
+      "T2",
+      "Tx",
+      "Ty")
 
     CTNode("Person") join CTRelationship("KNOWS") shouldBe CTMap
     CTNode("Person") join CTRelationship shouldBe CTMap
@@ -298,7 +300,6 @@ class CypherTypesTest extends BaseTestSuite {
   test("type equality between different types") {
     allTypes.foreach { t1 =>
       allTypes.foreach { t2 =>
-
         val result = t1 sameTypeAs t2
         (result isDefinite) should be(
           (t1.isDefinite && t2.isDefinite) ||
@@ -329,8 +330,8 @@ class CypherTypesTest extends BaseTestSuite {
           case Maybe =>
             (
               (t1.isWildcard || t2.isWildcard) ||
-              (t1.isNullable && t2.isMaterial) ||
-              (t1.isMaterial && t2.isNullable)
+                (t1.isNullable && t2.isMaterial) ||
+                (t1.isMaterial && t2.isNullable)
             ) shouldBe true
         }
       }
@@ -348,7 +349,7 @@ class CypherTypesTest extends BaseTestSuite {
 
   test("type equality between the same type") {
     allTypes.foreach(t => t == t)
-    allTypes.foreach(t => t superTypeOf  t)
+    allTypes.foreach(t => t superTypeOf t)
     allTypes.foreach(t => t subTypeOf t)
     allTypes.foreach(t => (t join t) == t)
     allTypes.foreach(t => (t meet t) == t)
@@ -381,17 +382,33 @@ class CypherTypesTest extends BaseTestSuite {
     (CTWildcard subTypeOf CTAny) shouldBe True
     (CTVoid subTypeOf CTWildcard) shouldBe True
 
-    materialTypes.foreach { t => (t join CTWildcard).wildcardErasedSuperType shouldBe CTAny }
-    materialTypes.foreach { t => (t meet CTWildcard).wildcardErasedSubType shouldBe CTVoid }
+    materialTypes.foreach { t =>
+      (t join CTWildcard).wildcardErasedSuperType shouldBe CTAny
+    }
+    materialTypes.foreach { t =>
+      (t meet CTWildcard).wildcardErasedSubType shouldBe CTVoid
+    }
 
-    materialTypes.foreach { t => (t join CTWildcard.nullable).wildcardErasedSuperType shouldBe CTAny.nullable }
-    materialTypes.foreach { t => (t meet CTWildcard.nullable).wildcardErasedSubType shouldBe CTVoid }
+    materialTypes.foreach { t =>
+      (t join CTWildcard.nullable).wildcardErasedSuperType shouldBe CTAny.nullable
+    }
+    materialTypes.foreach { t =>
+      (t meet CTWildcard.nullable).wildcardErasedSubType shouldBe CTVoid
+    }
 
-    nullableTypes.foreach { t => (t join CTWildcard.nullable).wildcardErasedSuperType shouldBe CTAny.nullable }
-    nullableTypes.foreach { t => (t meet CTWildcard.nullable).wildcardErasedSubType shouldBe CTNull }
+    nullableTypes.foreach { t =>
+      (t join CTWildcard.nullable).wildcardErasedSuperType shouldBe CTAny.nullable
+    }
+    nullableTypes.foreach { t =>
+      (t meet CTWildcard.nullable).wildcardErasedSubType shouldBe CTNull
+    }
 
-    nullableTypes.foreach { t => (t join CTWildcard).wildcardErasedSuperType shouldBe CTAny.nullable }
-    nullableTypes.foreach { t => (t meet CTWildcard).wildcardErasedSubType shouldBe CTVoid }
+    nullableTypes.foreach { t =>
+      (t join CTWildcard).wildcardErasedSuperType shouldBe CTAny.nullable
+    }
+    nullableTypes.foreach { t =>
+      (t meet CTWildcard).wildcardErasedSubType shouldBe CTVoid
+    }
   }
 
   test("contains wildcard") {
@@ -415,10 +432,10 @@ class CypherTypesTest extends BaseTestSuite {
 
   test("is inhabited") {
     allTypes.foreach {
-      case t @ CTAny => t.isInhabited should be(True)
-      case t @ CTVoid => t.isInhabited should be(False)
+      case t @ CTAny      => t.isInhabited should be(True)
+      case t @ CTVoid     => t.isInhabited should be(False)
       case t @ CTWildcard => t.isInhabited should be(Maybe)
-      case t => t.isInhabited should be(True)
+      case t              => t.isInhabited should be(True)
     }
   }
 

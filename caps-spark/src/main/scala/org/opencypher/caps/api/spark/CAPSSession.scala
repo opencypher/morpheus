@@ -27,7 +27,6 @@ import org.opencypher.caps.api.graph.CypherSession
 import org.opencypher.caps.api.io.{CreateOrFail, PersistMode}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.io.{CAPSGraphSource, CAPSGraphSourceFactory}
-import org.opencypher.caps.api.util.parsePathOrURI
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.demo.Configuration.{PrintLogicalPlan, PrintPhysicalPlan, PrintQueryExecutionStages}
 import org.opencypher.caps.demo.CypherKryoRegistrar
@@ -41,6 +40,7 @@ import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvGraphSourceFactory
 import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraphSourceFactory
 import org.opencypher.caps.impl.spark.io.session.SessionGraphSourceFactory
 import org.opencypher.caps.impl.spark.physical._
+import org.opencypher.caps.impl.util.parsePathOrURI
 import org.opencypher.caps.ir.api.{IRExternalGraph, IRField}
 import org.opencypher.caps.ir.impl.{IRBuilder, IRBuilderContext}
 
@@ -110,7 +110,8 @@ sealed class CAPSSession private (
     logStageProgress("Done!")
 
     logStageProgress("Logical plan ...", false)
-    val logicalPlannerContext = LogicalPlannerContext(graph.schema, Set.empty, ir.model.graphs.andThen(sourceAt), ambientGraph)
+    val logicalPlannerContext =
+      LogicalPlannerContext(graph.schema, Set.empty, ir.model.graphs.andThen(sourceAt), ambientGraph)
     val logicalPlan = logicalPlanner(ir)(logicalPlannerContext)
     logStageProgress("Done!")
 
@@ -167,26 +168,26 @@ sealed class CAPSSession private (
   }
 
   def filter(graph: Graph, in: Records, expr: Expr, queryParameters: Map[String, CypherValue]): Records = {
-    val scan = planStart(graph, in.header.fields)
+    val scan = planStart(graph, in.header.internalHeader.fields)
     val filter = producer.planFilter(expr, scan)
     plan(graph, in, queryParameters, filter).records
   }
 
   def select(graph: Graph, in: Records, fields: IndexedSeq[Var], queryParameters: Map[String, CypherValue]): Records = {
-    val scan = planStart(graph, in.header.fields)
+    val scan = planStart(graph, in.header.internalHeader.fields)
     val select = producer.planSelect(fields, Set.empty, scan)
     plan(graph, in, queryParameters, select).records
   }
 
   def project(graph: Graph, in: Records, expr: Expr, queryParameters: Map[String, CypherValue]): Records = {
-    val scan = planStart(graph, in.header.fields)
+    val scan = planStart(graph, in.header.internalHeader.fields)
     val project = producer.projectExpr(expr, scan)
     plan(graph, in, queryParameters, project).records
   }
 
   def alias(graph: Graph, in: Records, alias: (Expr, Var), queryParameters: Map[String, CypherValue]): Records = {
     val (expr, v) = alias
-    val scan = planStart(graph, in.header.fields)
+    val scan = planStart(graph, in.header.internalHeader.fields)
     val select = producer.projectField(IRField(v.name)(v.cypherType), expr, scan)
     plan(graph, in, queryParameters, select).records
   }

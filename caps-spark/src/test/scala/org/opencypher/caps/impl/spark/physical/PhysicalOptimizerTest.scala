@@ -18,11 +18,11 @@ package org.opencypher.caps.impl.spark.physical
 import java.net.URI
 
 import org.opencypher.caps.api.expr.Var
-import org.opencypher.caps.api.record.RecordHeader
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.api.types.CTNode
 import org.opencypher.caps.impl.logical.LogicalExternalGraph
+import org.opencypher.caps.impl.record.RecordHeader
 import org.opencypher.caps.impl.spark.physical.operators._
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.fixture.GraphCreationFixture
@@ -112,8 +112,7 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphCreationFixture {
 
   test("test caches expand into for triangle") {
     // Given
-    val given = initGraph(
-      """
+    val given = initGraph("""
         |CREATE (p1:Person {name: "Alice"})
         |CREATE (p2:Person {name: "Bob"})
         |CREATE (p3:Person {name: "Eve"})
@@ -123,8 +122,7 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphCreationFixture {
       """.stripMargin)
 
     // When
-    val result = given.cypher(
-      """
+    val result = given.cypher("""
         |MATCH (p1:Person)-[e1:KNOWS]->(p2:Person),
         |(p2)-[e2:KNOWS]->(p3:Person),
         |(p1)-[e3:KNOWS]->(p3)
@@ -138,8 +136,7 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphCreationFixture {
 
   test("test caching expand into after var expand") {
     // Given
-    val given = initGraph(
-      """
+    val given = initGraph("""
         |CREATE (p1:Person {name: "Alice"})
         |CREATE (p2:Person {name: "Bob"})
         |CREATE (comment:Comment)
@@ -170,8 +167,7 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphCreationFixture {
 
   test("test caching optional match with duplicates") {
     // Given
-    val given = initGraph(
-      """
+    val given = initGraph("""
         |CREATE (p1:Person {name: "Alice"})
         |CREATE (p2:Person {name: "Bob"})
         |CREATE (p3:Person {name: "Eve"})
@@ -182,8 +178,7 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphCreationFixture {
       """.stripMargin)
 
     // When
-    val result = given.cypher(
-      """
+    val result = given.cypher("""
         |MATCH (a:Person)-[e1:KNOWS]->(b:Person)
         |OPTIONAL MATCH (b)-[e2:KNOWS]->(c:Person)
         |RETURN b.name, c.name

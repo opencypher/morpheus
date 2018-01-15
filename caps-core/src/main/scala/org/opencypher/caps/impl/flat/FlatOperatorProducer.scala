@@ -22,7 +22,7 @@ import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.logical.LogicalGraph
-import org.opencypher.caps.impl.record.{Added, FailedToAdd, Found, Replaced}
+import org.opencypher.caps.impl.record._
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.ir.api.block.SortItem
 
@@ -58,7 +58,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
   def removeAliases(toKeep: IndexedSeq[Var], in: FlatOperator): FlatOperator = {
     val renames = in.header.contents.collect {
-      case pf@ProjectedField(v, expr) if !toKeep.contains(v) =>
+      case pf @ ProjectedField(v, expr) if !toKeep.contains(v) =>
         pf -> ProjectedExpr(expr)
     }
 
@@ -134,7 +134,8 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
   def aggregate(aggregations: Set[(Var, Aggregator)], group: Set[Var], in: FlatOperator): Aggregate = {
     val (newHeader, _) = RecordHeader.empty.update(
-      addContents(group.flatMap(in.header.selfWithChildren).map(_.content).toSeq ++ aggregations.map(agg => OpaqueField(agg._1)))
+      addContents(
+        group.flatMap(in.header.selfWithChildren).map(_.content).toSeq ++ aggregations.map(agg => OpaqueField(agg._1)))
     )
 
     Aggregate(aggregations, group, in, newHeader)
@@ -231,9 +232,9 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     val (header, status) = lhs.header.update(addContent(ProjectedField(expr.predicateField, expr)))
 
     status match {
-      case _: Added[_]        => ExistsPatternPredicate(expr.predicateField, lhs, rhs, header)
-      case f: FailedToAdd[_]  => Raise.slotNotAdded(f.toString)
-      case _                  => Raise.impossible("Invalid RecordHeader update status.")
+      case _: Added[_]       => ExistsPatternPredicate(expr.predicateField, lhs, rhs, header)
+      case f: FailedToAdd[_] => Raise.slotNotAdded(f.toString)
+      case _                 => Raise.impossible("Invalid RecordHeader update status.")
     }
   }
 

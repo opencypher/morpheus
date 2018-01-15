@@ -18,8 +18,8 @@ package org.opencypher.caps.impl.logical
 import org.opencypher.caps.api.expr.{HasLabel, Var}
 import org.opencypher.caps.api.types.{CTBoolean, CTNode}
 import org.opencypher.caps.impl.DirectCompilationStage
-import org.opencypher.caps.impl.common.BottomUp
 import org.opencypher.caps.ir.api.Label
+import org.opencypher.caps.trees.BottomUp
 
 object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalOperator, LogicalPlannerContext] {
 

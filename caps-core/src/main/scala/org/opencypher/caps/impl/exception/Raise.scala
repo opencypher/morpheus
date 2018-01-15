@@ -22,13 +22,13 @@ import org.opencypher.caps.api.exception.CAPSException
 
 object Raise {
 
-  def invalidEmptyLabel() = throw CAPSException(
-    "A label can not be empty"
-  )
+//  def invalidEmptyLabel() = throw CAPSException(
+//    "A label can not be empty"
+//  )
 
-  def sparkIncompatible(label: Option[Any], key: Any, t1: Any, t2: Any) = throw CAPSException(
-    s"The property types $t1 and $t2 (for property '$key'${label.map(l => s" and label '$l'").getOrElse("")}) can not be stored in the same Spark column"
-  )
+//  def sparkIncompatible(label: Option[Any], key: Any, t1: Any, t2: Any) = throw CAPSException(
+//    s"The property types $t1 and $t2 (for property '$key'${label.map(l => s" and label '$l'").getOrElse("")}) can not be stored in the same Spark column"
+//  )
 
   def duplicateEmbeddedEntityColumn(name: String) = throw CAPSException(
     "The input column '$name' is used more than once to describe an embedded entity"
@@ -114,9 +114,11 @@ object Raise {
     s"Incompatible schemas: $detail"
   )
 
-  def semanticErrors(errors: Seq[SemanticErrorDef]): Unit = if (errors.nonEmpty) throw CAPSException(
-    s"Errors during semantic checking: ${errors.mkString(", ")}"
-  )
+  def semanticErrors(errors: Seq[SemanticErrorDef]): Unit =
+    if (errors.nonEmpty)
+      throw CAPSException(
+        s"Errors during semantic checking: ${errors.mkString(", ")}"
+      )
 
   def graphURIMalformedForUseBy(uri: URI, name: String) = throw CAPSException(
     s"Graph URI $uri is malformed for use by $name"
@@ -124,7 +126,7 @@ object Raise {
 
   def graphSourceSchemeNotSupported(uri: URI, schemes: Set[String]) = throw CAPSException(
     s"Cannot create a graph source for $uri due to an unsupported scheme ${uri.getScheme} " +
-    s"(supported schemes: ${schemes.toSeq.sorted.mkString(", ")})"
+      s"(supported schemes: ${schemes.toSeq.sorted.mkString(", ")})"
   )
 
   def graphNotFound(uri: URI) = throw CAPSException(

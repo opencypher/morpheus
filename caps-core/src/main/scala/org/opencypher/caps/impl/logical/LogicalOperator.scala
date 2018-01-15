@@ -20,9 +20,9 @@ import java.net.URI
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.CTNode
-import org.opencypher.caps.impl.common.AbstractTreeNode
 import org.opencypher.caps.ir.api.block.SortItem
 import org.opencypher.caps.ir.api.{Label, SolvedQueryModel}
+import org.opencypher.caps.trees.AbstractTreeNode
 
 sealed abstract class LogicalOperator extends AbstractTreeNode[LogicalOperator] {
   def solved: SolvedQueryModel[Expr]
@@ -32,8 +32,8 @@ sealed abstract class LogicalOperator extends AbstractTreeNode[LogicalOperator] 
   def sourceGraph: LogicalGraph
 
   override def args = super.args.filter {
-    case SolvedQueryModel(_, _, _)  => false
-    case other                      => true
+    case SolvedQueryModel(_, _, _) => false
+    case other                     => true
   }
 }
 
@@ -245,7 +245,8 @@ final case class ExistsPatternPredicate(
     expr: ExistsPatternExpr,
     lhs: LogicalOperator,
     rhs: LogicalOperator,
-    solved: SolvedQueryModel[Expr]) extends BinaryLogicalOperator {
+    solved: SolvedQueryModel[Expr])
+    extends BinaryLogicalOperator {
 
   override val fields: Set[Var] = lhs.fields + expr.predicateField
 }

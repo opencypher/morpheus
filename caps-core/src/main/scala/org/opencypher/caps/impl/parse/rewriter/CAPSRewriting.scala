@@ -19,24 +19,29 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.{CNFNormalizer, For
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{BaseContext, BaseState, Phase}
 import org.neo4j.cypher.internal.util.v3_4.{Rewriter, inSequence}
-import org.opencypher.caps.impl.util.MapUtils
+import org.opencypher.caps.api.util.MapUtils
 
 case object CAPSRewriting extends Phase[BaseContext, BaseState, BaseState] {
 
   override def process(from: BaseState, context: BaseContext): BaseState = {
     val term = from.statement()
 
-    val rewrittenStatement = term.endoRewrite(inSequence(
-      normalizeReturnClauses(context.exceptionCreator),
-      extractSubqueryFromPatternExpression(context.exceptionCreator),
-      CNFNormalizer.instance(context)
-    ))
+    val rewrittenStatement = term.endoRewrite(
+      inSequence(
+        normalizeReturnClauses(context.exceptionCreator),
+        extractSubqueryFromPatternExpression(context.exceptionCreator),
+        CNFNormalizer.instance(context)
+      ))
 
     // Extract literals of possibly rewritten subqueries
     // TODO: once this gets into neo4j-frontend, it can be done in literalReplacement
-    val (rewriters, extractedParams) = rewrittenStatement.treeFold(Seq.empty[(Rewriter, Map[String, Any])]) {
-      case ep: ExistsPattern => acc => (acc :+ literalReplacement(ep.query, Forced), None)
-    }.unzip
+    val (rewriters, extractedParams) = rewrittenStatement
+      .treeFold(Seq.empty[(Rewriter, Map[String, Any])]) {
+        case ep: ExistsPattern =>
+          acc =>
+            (acc :+ literalReplacement(ep.query, Forced), None)
+      }
+      .unzip
 
     // rewrite literals
     val finalStatement = rewriters.foldLeft(rewrittenStatement) {
@@ -47,8 +52,9 @@ case object CAPSRewriting extends Phase[BaseContext, BaseState, BaseState] {
       case (acc, current) => MapUtils.merge(acc, current)((l, r) => l)
     }
 
-    from.withStatement(finalStatement)
-        .withParams(from.extractedParams() ++ extractedParameters)
+    from
+      .withStatement(finalStatement)
+      .withParams(from.extractedParams() ++ extractedParameters)
   }
 
   override val phase = AST_REWRITE

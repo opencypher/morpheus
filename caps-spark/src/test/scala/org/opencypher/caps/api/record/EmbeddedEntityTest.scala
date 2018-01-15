@@ -16,6 +16,7 @@
 package org.opencypher.caps.api.record
 
 import org.opencypher.caps.api.exception.CypherException
+import org.opencypher.caps.impl.record.{EmbeddedNode, EmbeddedRelationship, VerifiedEmbeddedEntity}
 import org.opencypher.caps.test.BaseTestSuite
 
 class EmbeddedEntityTest extends BaseTestSuite {
@@ -37,12 +38,17 @@ class EmbeddedEntityTest extends BaseTestSuite {
     )
 
     given should equal(actual)
-    show(given) should equal("Seq((AGE,n.age :: ?), (YEARS,n.age :: ?), (id,n :: :Person NODE), (is_emp,n:Employee :: BOOLEAN), (name,n.name :: ?))")
+    show(given) should equal(
+      "Seq((AGE,n.age :: ?), (YEARS,n.age :: ?), (id,n :: :Person NODE), (is_emp,n:Employee :: BOOLEAN), (name,n.name :: ?))")
   }
 
   test("Construct embedded relationship with static type") {
     val given =
-      EmbeddedRelationship("r").from("src").relType("KNOWS").to("dst").build
+      EmbeddedRelationship("r")
+        .from("src")
+        .relType("KNOWS")
+        .to("dst")
+        .build
         .withProperty("name")
         .withPropertyKey("age" -> "YEARS")
         .withPropertyKey("age" -> "AGE")
@@ -57,12 +63,17 @@ class EmbeddedEntityTest extends BaseTestSuite {
     )
 
     given should equal(actual)
-    show(given) should equal("Seq((AGE,r.age :: ?), (YEARS,r.age :: ?), (dst,target(r :: :KNOWS RELATIONSHIP)), (name,r.name :: ?), (r,r :: :KNOWS RELATIONSHIP), (src,source(r :: :KNOWS RELATIONSHIP)))")
+    show(given) should equal(
+      "Seq((AGE,r.age :: ?), (YEARS,r.age :: ?), (dst,target(r :: :KNOWS RELATIONSHIP)), (name,r.name :: ?), (r,r :: :KNOWS RELATIONSHIP), (src,source(r :: :KNOWS RELATIONSHIP)))")
   }
 
   test("Construct embedded relationship with dynamic type") {
     val given =
-      EmbeddedRelationship("r").from("src").relTypes("typ", "ADMIRES", "IGNORES").to("dst").build
+      EmbeddedRelationship("r")
+        .from("src")
+        .relTypes("typ", "ADMIRES", "IGNORES")
+        .to("dst")
+        .build
         .withProperty("name")
         .withPropertyKey("age" -> "YEARS")
         .withPropertyKey("age" -> "AGE")
@@ -77,7 +88,8 @@ class EmbeddedEntityTest extends BaseTestSuite {
     )
 
     given should equal(actual)
-    show(given) should equal("Seq((AGE,r.age :: ?), (YEARS,r.age :: ?), (dst,target(r :: :ADMIRES|IGNORES RELATIONSHIP)), (name,r.name :: ?), (r,r :: :ADMIRES|IGNORES RELATIONSHIP), (src,source(r :: :ADMIRES|IGNORES RELATIONSHIP)), (typ,type(r :: :ADMIRES|IGNORES RELATIONSHIP)))")
+    show(given) should equal(
+      "Seq((AGE,r.age :: ?), (YEARS,r.age :: ?), (dst,target(r :: :ADMIRES|IGNORES RELATIONSHIP)), (name,r.name :: ?), (r,r :: :ADMIRES|IGNORES RELATIONSHIP), (src,source(r :: :ADMIRES|IGNORES RELATIONSHIP)), (typ,type(r :: :ADMIRES|IGNORES RELATIONSHIP)))")
   }
 
   test("Refuses to use the same slot multiple times when constructing nodes") {
@@ -89,7 +101,14 @@ class EmbeddedEntityTest extends BaseTestSuite {
     raisesSlotReUse(EmbeddedRelationship("r").from("r").to("b").relType("KNOWS").build.verify)
     raisesSlotReUse(EmbeddedRelationship("r").from("a").to("r").relType("KNOWS").build.verify)
     raisesSlotReUse(EmbeddedRelationship("r").from("a").to("b").relTypes("r", "KNOWS").build.verify)
-    raisesSlotReUse(EmbeddedRelationship("r" -> "the_slot").from("a").to("b").relType("KNOWS").build.withPropertyKey("a" -> "the_slot").verify)
+    raisesSlotReUse(
+      EmbeddedRelationship("r" -> "the_slot")
+        .from("a")
+        .to("b")
+        .relType("KNOWS")
+        .build
+        .withPropertyKey("a" -> "the_slot")
+        .verify)
   }
 
   private def show(entity: VerifiedEmbeddedEntity[_]) = {

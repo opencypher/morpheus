@@ -19,6 +19,13 @@
   </properties>
 
   <dependencies>
+    <!--CAPS Module-->
+    <dependency>
+      <groupId>org.opencypher</groupId>
+      <artifactId>caps-api</artifactId>
+      <version>${parent.version}</version>
+    </dependency>
+
     <!-- Neo4j -->
     <dependency>
       <groupId>org.neo4j</groupId>

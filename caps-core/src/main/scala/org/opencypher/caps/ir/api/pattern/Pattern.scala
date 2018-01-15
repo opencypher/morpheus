@@ -17,7 +17,7 @@ package org.opencypher.caps.ir.api.pattern
 
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.caps.impl.exception.Raise
-import org.opencypher.caps.impl.util.MapUtils._
+import org.opencypher.caps.api.util.MapUtils._
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block.Binds
 
@@ -49,7 +49,7 @@ final case class Pattern[E](fields: Set[IRField], topology: Map[IRField, Connect
 
     val newTopology = topology.merge(other.topology) {
       case (t1, t2) if t1 == t2 => t1
-      case c => Raise.invalidArgument("disjoint patterns", s"conflicting connections ${c._1} and ${c._2}")
+      case c                    => Raise.invalidArgument("disjoint patterns", s"conflicting connections ${c._1} and ${c._2}")
     }
 
     Pattern(fields ++ other.fields, newTopology)
@@ -82,18 +82,20 @@ final case class Pattern[E](fields: Set[IRField], topology: Map[IRField, Connect
 
   def components: Set[Pattern[E]] = {
     val _fields = fields.foldLeft(Map.empty[IRField, Int]) { case (m, f) => m.updated(f, m.size) }
-    val components = nodes.foldLeft(Map.empty[Int, Pattern[E]]) { case (m, f) => m.updated(_fields(f), Pattern.node(f)) }
+    val components = nodes.foldLeft(Map.empty[Int, Pattern[E]]) {
+      case (m, f) => m.updated(_fields(f), Pattern.node(f))
+    }
     computeComponents(topology.toSeq, components, _fields.size, _fields)
   }
 
   @tailrec
   private def computeComponents(
-    input: Seq[(IRField, Connection)],
-    components: Map[Int, Pattern[E]],
-    count: Int,
-    fieldToComponentIndex: Map[IRField, Int]
+      input: Seq[(IRField, Connection)],
+      components: Map[Int, Pattern[E]],
+      count: Int,
+      fieldToComponentIndex: Map[IRField, Int]
   ): Set[Pattern[E]] = input match {
-    case Seq((field, connection), tail@_*) =>
+    case Seq((field, connection), tail @ _*) =>
       val endpoints = connection.endpoints.toSet
       val links = endpoints.flatMap(fieldToComponentIndex.get).toSet
 
@@ -135,4 +137,3 @@ final case class Pattern[E](fields: Set[IRField], topology: Map[IRField, Connect
   }
 
 }
-

@@ -45,7 +45,7 @@ case class TCKGraph(capsGraphFactory: CAPSGraphFactory, graph: CAPSGraph)(implic
   }
 
   private def convertToTckStrings(records: CAPSRecords): StringRecords = {
-    val header = records.header.fieldsInOrder.map(_.name).toList
+    val header = records.header.fieldsInOrder.toList
     val rows = records.toLocalScalaIterator.map { cypherMap =>
       cypherMap.keys.map(k => k -> java.util.Objects.toString(cypherMap.get(k).get)).toMap
     }.toList
@@ -54,15 +54,15 @@ case class TCKGraph(capsGraphFactory: CAPSGraphFactory, graph: CAPSGraph)(implic
   }
 
   private def tckCypherValueToScala(cypherValue: CypherValue): Any = cypherValue match {
-    case CypherString(v) => v
-    case CypherInteger(v) => v
-    case CypherFloat(v) => v
-    case CypherBoolean(v) => v
-    case CypherProperty(key, value) => key -> tckCypherValueToScala(value)
+    case CypherString(v)               => v
+    case CypherInteger(v)              => v
+    case CypherFloat(v)                => v
+    case CypherBoolean(v)              => v
+    case CypherProperty(key, value)    => key -> tckCypherValueToScala(value)
     case CypherPropertyMap(properties) => properties.mapValues(tckCypherValueToScala)
-    case l: CypherList => l.elements.map(tckCypherValueToScala)
-    case CypherNull => null
-    case other => Raise.unsupportedArgument(s"Parameter of type `${other.getClass.getSimpleName}`")
+    case l: CypherList                 => l.elements.map(tckCypherValueToScala)
+    case CypherNull                    => null
+    case other                         => Raise.unsupportedArgument(s"Parameter of type `${other.getClass.getSimpleName}`")
   }
 }
 
@@ -71,7 +71,8 @@ object ScenarioBlacklist {
     val blacklistIter = Source.fromFile(getClass.getResource("scenario_blacklist").toURI).getLines().toSeq
     val blacklistSet = blacklistIter.toSet
 
-    lazy val errorMessage = s"Blacklist contains duplicate scenarios ${blacklistIter.groupBy(identity).filter(_._2.lengthCompare(1) > 0).keys.mkString("\n")}"
+    lazy val errorMessage =
+      s"Blacklist contains duplicate scenarios ${blacklistIter.groupBy(identity).filter(_._2.lengthCompare(1) > 0).keys.mkString("\n")}"
     assert(blacklistIter.lengthCompare(blacklistSet.size) == 0, errorMessage)
     blacklistSet
   }

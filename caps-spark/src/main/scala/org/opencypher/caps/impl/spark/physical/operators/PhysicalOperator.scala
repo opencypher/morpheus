@@ -21,10 +21,11 @@ import org.apache.spark.sql.{Column, DataFrame}
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.common.AbstractTreeNode
 import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.exception.Raise
+import org.opencypher.caps.impl.record.{RecordHeader, RecordSlot, SlotContent}
 import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
+import org.opencypher.caps.trees.AbstractTreeNode
 
 private[caps] abstract class PhysicalOperator extends AbstractTreeNode[PhysicalOperator] {
   def execute(implicit context: RuntimeContext): PhysicalResult
@@ -34,8 +35,8 @@ private[caps] abstract class PhysicalOperator extends AbstractTreeNode[PhysicalO
   }
 
   override def args: Iterator[Any] = super.args.flatMap {
-    case RecordHeader(_) | Some(RecordHeader(_))  => None
-    case other                                    => Some(other)
+    case RecordHeader(_) | Some(RecordHeader(_)) => None
+    case other                                   => Some(other)
   }
 }
 

@@ -17,17 +17,16 @@ package org.opencypher.caps.impl.spark.physical
 
 import org.apache.spark.sql.Row
 import org.opencypher.caps.api.expr._
-import org.opencypher.caps.api.record.RecordHeader
 import org.opencypher.caps.api.value.instances._
 import org.opencypher.caps.api.value.syntax._
 import org.opencypher.caps.impl.spark.DfUtils._
 import org.opencypher.caps.impl.exception.Raise
+import org.opencypher.caps.impl.record.RecordHeader
 
 /*
  * Used when the predicate depends on values not stored inside the dataframe.
  */
-case class cypherFilter(header: RecordHeader, expr: Expr)
-                       (implicit context: RuntimeContext) extends (Row => Boolean) {
+case class cypherFilter(header: RecordHeader, expr: Expr)(implicit context: RuntimeContext) extends (Row => Boolean) {
   def apply(row: Row): Boolean =
     expr match {
       case Equals(lhs, rhs) =>

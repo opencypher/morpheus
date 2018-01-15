@@ -18,7 +18,7 @@ package org.opencypher.caps.impl.syntax
 import cats.data.State
 import cats.data.State.{get, set}
 import org.opencypher.caps.api.record._
-import org.opencypher.caps.impl.record.{AdditiveUpdateResult, InternalHeader, RemovingUpdateResult}
+import org.opencypher.caps.impl.record._
 
 import scala.language.implicitConversions
 
@@ -50,8 +50,8 @@ trait RecordHeaderSyntax {
 
   private def exec[O](inner: State[InternalHeader, O]): State[RecordHeader, O] =
     get[RecordHeader]
-    .map(header => inner.run(header.internalHeader).value)
-    .flatMap { case (newInternalHeader, value) => set(RecordHeader(newInternalHeader)).map(_ => value) }
+      .map(header => inner.run(header.internalHeader).value)
+      .flatMap { case (newInternalHeader, value) => set(RecordHeader(newInternalHeader)).map(_ => value) }
 }
 
 final class RecordHeaderOps(header: RecordHeader) {

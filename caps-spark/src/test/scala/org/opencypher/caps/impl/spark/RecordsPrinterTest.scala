@@ -19,14 +19,13 @@ import java.io.{ByteArrayOutputStream, PrintStream}
 import java.nio.charset.StandardCharsets.UTF_8
 
 import org.opencypher.caps.api.expr.Var
-import org.opencypher.caps.api.record.{OpaqueField, RecordHeader}
 import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.api.types.CTNode
 import org.opencypher.caps.api.util.PrintOptions
+import org.opencypher.caps.impl.record.{OpaqueField, RecordHeader}
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.fixture.GraphCreationFixture
-
 
 class RecordsPrinterTest extends CAPSTestSuite with GraphCreationFixture {
 
@@ -93,11 +92,12 @@ class RecordsPrinterTest extends CAPSTestSuite with GraphCreationFixture {
 
   test("three columns, three rows") {
     // Given
-    val records = CAPSRecords.create(Seq(
-      Row3("myString", 4L, false),
-      Row3("foo", 99999999L, true),
-      Row3(null, -1L, true)
-    ))
+    val records = CAPSRecords.create(
+      Seq(
+        Row3("myString", 4L, false),
+        Row3("foo", 99999999L, true),
+        Row3(null, -1L, true)
+      ))
 
     // When
     print(records)
@@ -117,21 +117,19 @@ class RecordsPrinterTest extends CAPSTestSuite with GraphCreationFixture {
   }
 
   test("return property values without alias") {
-    val given = initGraph(
-      """
+    val given =
+      initGraph("""
         |CREATE (a:Person {name: "Alice"})-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person {name: "Bob"})
       """.stripMargin)
 
-    val when = given.cypher(
-      """MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person)
+    val when = given.cypher("""MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person)
         |RETURN a.name, b.name
         |ORDER BY a.name
       """.stripMargin)
 
     print(when.records)
 
-    getString should equal(
-      """+---------------------------------------------+
+    getString should equal("""+---------------------------------------------+
         !| a.name               | b.name               |
         !+---------------------------------------------+
         !| 'Alice'              | 'Bob'                |

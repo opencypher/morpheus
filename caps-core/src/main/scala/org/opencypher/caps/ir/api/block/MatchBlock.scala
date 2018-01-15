@@ -15,13 +15,14 @@
  */
 package org.opencypher.caps.ir.api.block
 
+import org.opencypher.caps.api.schema.AllGiven
 import org.opencypher.caps.ir.api.IRGraph
-import org.opencypher.caps.ir.api.pattern.{AllGiven, Pattern}
+import org.opencypher.caps.ir.api.pattern.Pattern
 
 final case class MatchBlock[E](
-  after: Set[BlockRef],
-  binds: Pattern[E],
-  where: AllGiven[E] = AllGiven[E](),
-  optional: Boolean,
-  source: IRGraph
+    after: Set[BlockRef],
+    binds: Pattern[E],
+    where: AllGiven[E] = AllGiven[E](),
+    optional: Boolean,
+    source: IRGraph
 ) extends BasicBlock[Pattern[E], E](BlockType("match"))

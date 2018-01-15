@@ -21,13 +21,13 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
 import org.opencypher.caps.api.expr.Expr
 import org.opencypher.caps.api.io.GraphSource
-import org.opencypher.caps.api.schema.Schema
+import org.opencypher.caps.api.schema.{AllGiven, Schema}
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.logical.{LogicalExternalGraph, Start}
 import org.opencypher.caps.impl.parse.CypherParser
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block._
-import org.opencypher.caps.ir.api.pattern.{AllGiven, Pattern}
+import org.opencypher.caps.ir.api.pattern.Pattern
 import org.opencypher.caps.test.BaseTestSuite
 import org.scalatest.mockito.MockitoSugar
 

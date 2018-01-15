@@ -25,18 +25,21 @@ class Neo4jSchemaLoaderTest extends CAPSTestSuite with Neo4jServerFixture {
   val emptyQ = "WITH 1 AS a LIMIT 0 RETURN *"
 
   test("read empty") {
-    val graph = Neo4jGraphLoader.loadSchema(neo4jConfig, emptyQ, emptyQ)
+    val schema = Neo4jGraphLoader.loadSchema(neo4jConfig, emptyQ, emptyQ)
 
-    graph.schema should equal(Schema.empty)
+    schema should equal(Schema.empty)
   }
 
   test("read nodes") {
-    val graph = Neo4jGraphLoader.loadSchema(neo4jConfig, "MATCH (n) RETURN n", emptyQ)
+    val schema = Neo4jGraphLoader.loadSchema(neo4jConfig, "MATCH (n) RETURN n", emptyQ)
 
-    graph.schema should equal(
+    schema should equal(
       Schema.empty
         .withNodePropertyKeys("Person")("name" -> CTString, "age" -> CTInteger.nullable)
-        .withNodePropertyKeys("Person", "Employee")("name" -> CTString, "salary" -> CTInteger, "team" -> CTString.nullable)
+        .withNodePropertyKeys("Person", "Employee")(
+          "name" -> CTString,
+          "salary" -> CTInteger,
+          "team" -> CTString.nullable)
         .withNodePropertyKeys("Person", "Driver")("name" -> CTString)
         .withNodePropertyKeys("Driver")("fast" -> CTBoolean)
         .withNodePropertyKeys(Schema.NoLabel, Map("pi" -> CTFloat.nullable))
@@ -44,9 +47,9 @@ class Neo4jSchemaLoaderTest extends CAPSTestSuite with Neo4jServerFixture {
   }
 
   test("read relationships") {
-    val graph = Neo4jGraphLoader.loadSchema(neo4jConfig, emptyQ, "MATCH ()-[r]->() RETURN r")
+    val schema = Neo4jGraphLoader.loadSchema(neo4jConfig, emptyQ, "MATCH ()-[r]->() RETURN r")
 
-    graph.schema should equal(
+    schema should equal(
       Schema.empty
         .withRelationshipPropertyKeys("EMPTY")()
         .withRelationshipPropertyKeys("KNOWS")("since" -> CTInteger, "because" -> CTString.nullable)
@@ -54,12 +57,15 @@ class Neo4jSchemaLoaderTest extends CAPSTestSuite with Neo4jServerFixture {
   }
 
   test("load full graph") {
-    val graph = Neo4jGraphLoader.loadSchema(neo4jConfig, "MATCH (n) RETURN n", "MATCH ()-[r]->() RETURN r")
+    val schema = Neo4jGraphLoader.loadSchema(neo4jConfig, "MATCH (n) RETURN n", "MATCH ()-[r]->() RETURN r")
 
-    graph.schema should equal(
+    schema should equal(
       Schema.empty
         .withNodePropertyKeys("Person")("name" -> CTString, "age" -> CTInteger.nullable)
-        .withNodePropertyKeys("Person", "Employee")("name" -> CTString, "salary" -> CTInteger, "team" -> CTString.nullable)
+        .withNodePropertyKeys("Person", "Employee")(
+          "name" -> CTString,
+          "salary" -> CTInteger,
+          "team" -> CTString.nullable)
         .withNodePropertyKeys("Person", "Driver")("name" -> CTString)
         .withNodePropertyKeys("Driver")("fast" -> CTBoolean)
         .withNodePropertyKeys(Schema.NoLabel, Map("pi" -> CTFloat.nullable))

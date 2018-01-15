@@ -19,19 +19,18 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.opencypher.caps.api.expr.Var
-import org.opencypher.caps.api.record.{OpaqueField, RecordHeader, RecordSlot}
 import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.convert.{fromSparkType, toSparkType}
 import org.opencypher.caps.impl.exception.Raise
 
 object CAPSRecordHeader {
 
-  def fromSparkStructType(structType: StructType): RecordHeader = RecordHeader.from(structType.fields.map {
-    field =>
-      OpaqueField(Var(field.name)(fromSparkType(field.dataType, field.nullable).getOrElse(
-        Raise.invalidArgument("A supported Spark type", field.dataType.toString))
-      ))
-  }: _*)
+  def fromSparkStructType(structType: StructType): RecordHeader =
+    RecordHeader.from(structType.fields.map { field =>
+      OpaqueField(
+        Var(field.name)(fromSparkType(field.dataType, field.nullable)
+          .getOrElse(Raise.invalidArgument("A supported Spark type", field.dataType.toString))))
+    }: _*)
 
   def asSparkStructType(header: RecordHeader): StructType = {
     val fields = header.slots.map(slot => structField(slot, !header.mandatory(slot)))

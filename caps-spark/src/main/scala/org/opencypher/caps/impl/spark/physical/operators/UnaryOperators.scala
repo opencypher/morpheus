@@ -31,6 +31,7 @@ import org.opencypher.caps.impl.convert.toJavaType
 import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.logical._
 import org.opencypher.caps.impl.record.CAPSRecordHeader._
+import org.opencypher.caps.impl.record._
 import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.SparkSQLExprMapper.asSparkSQLExpr
 import org.opencypher.caps.impl.spark.convert.toSparkType
@@ -61,7 +62,8 @@ final case class Cache(in: PhysicalOperator) extends UnaryPhysicalOperator {
 
 }
 
-final case class Scan(in: PhysicalOperator, inGraph: LogicalGraph, v: Var, header: RecordHeader) extends UnaryPhysicalOperator {
+final case class Scan(in: PhysicalOperator, inGraph: LogicalGraph, v: Var, header: RecordHeader)
+    extends UnaryPhysicalOperator {
 
   // TODO: Move to Graph interface?
   override def executeUnary(prev: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult = {
@@ -86,10 +88,9 @@ final case class Unwind(in: PhysicalOperator, list: Expr, item: Var, header: Rec
 
   override def executeUnary(prev: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult = {
     prev.mapRecordsWithDetails { records =>
-
       val itemColumn = columnName(header.slotFor(item))
       val newData = list match {
-          // the list is external: we create a dataframe and crossjoin with it
+        // the list is external: we create a dataframe and crossjoin with it
         case Param(name) =>
           // we need a Java list of rows to construct a DataFrame
           toJavaType(context.parameters(name)) match {
@@ -108,11 +109,11 @@ final case class Unwind(in: PhysicalOperator, list: Expr, item: Var, header: Rec
               Raise.invalidArgument("a list", x)
           }
 
-          // the list lives in a column: we explode it
+        // the list lives in a column: we explode it
         case expr =>
           val listColumn = asSparkSQLExpr(records.header, expr, records.data) match {
             case Some(c) => c
-            case None => Raise.impossible("no column for the list found")
+            case None    => Raise.impossible("no column for the list found")
           }
 
           records.data.withColumn(itemColumn, functions.explode(listColumn))
@@ -301,7 +302,11 @@ final case class ProjectPatternGraph(
   }
 }
 
-final case class RemoveAliases(dependentFields: Set[(ProjectedField, ProjectedExpr)], in: PhysicalOperator, header: RecordHeader) extends UnaryPhysicalOperator {
+final case class RemoveAliases(
+    dependentFields: Set[(ProjectedField, ProjectedExpr)],
+    in: PhysicalOperator,
+    header: RecordHeader)
+    extends UnaryPhysicalOperator {
 
   override def executeUnary(prev: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult = {
     prev.mapRecordsWithDetails { records =>
@@ -362,7 +367,7 @@ final case class Distinct(in: PhysicalOperator, header: RecordHeader) extends Un
       val data = records.data
       val columnNames = header.slots.map(slot => data.col(columnName(slot)))
       val relevantColumns = data.select(columnNames: _*)
-      val distinctRows = relevantColumns.dropDuplicates(header.fields.map(SparkColumnName.of).toSeq)
+      val distinctRows = relevantColumns.dropDuplicates(header.fields.toSeq)
       CAPSRecords.create(header, distinctRows)(records.caps)
     }
   }
@@ -502,7 +507,7 @@ final case class Limit(in: PhysicalOperator, expr: Expr, header: RecordHeader) e
   override def executeUnary(prev: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult = {
     val limit = expr match {
       case IntegerLit(v) => v
-      case _                => Raise.impossible()
+      case _             => Raise.impossible()
     }
 
     prev.mapRecordsWithDetails { records =>
