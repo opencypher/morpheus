@@ -24,6 +24,15 @@ import org.opencypher.caps.test.BaseTestSuite
 
 class SchemaTest extends BaseTestSuite {
 
+  test("lists of void and others") {
+    val s1 = Schema.empty.withNodePropertyKeys("A")("v" -> CTList(CTVoid))
+    val s2 = Schema.empty.withNodePropertyKeys("A")("v" -> CTList(CTString).nullable)
+
+    val joined = s1 ++ s2
+    joined should equal(s2)
+    joined.verify // should not throw
+  }
+
   test("for entities") {
     val schema = Schema.empty
       .withNodePropertyKeys("Person")("name" -> CTString)
@@ -148,7 +157,7 @@ class SchemaTest extends BaseTestSuite {
       .withNodePropertyKeys("Pet")("name" -> CTBoolean)
 
     the [CAPSException] thrownBy schema.verify should have message
-      "The schema had a conflict on key 'name': FLOAT and BOOLEAN (for label Pet)"
+      "The property types FLOAT and BOOLEAN (for property 'name' and label 'Pet') can not be stored in the same Spark column"
   }
 
   test("verifying schema with conflict on combined labels") {
@@ -160,7 +169,7 @@ class SchemaTest extends BaseTestSuite {
       .withNodePropertyKeys("Pet")("notName" -> CTBoolean)
 
     the [CAPSException] thrownBy schema.verify should have message
-      "The schema had a conflict on key 'name': STRING and INTEGER (for label Person)"
+      "The property types STRING and INTEGER (for property 'name' and label 'Person') can not be stored in the same Spark column"
   }
 
   test("chaining calls should amend types") {
@@ -182,7 +191,7 @@ class SchemaTest extends BaseTestSuite {
     schema.withNodePropertyKeys("Foo")("name2" -> CTInteger).verify  // different key: fine
     the [CAPSException] thrownBy {
       schema.withNodePropertyKeys("Foo")("name" -> CTInteger).verify // not fine
-    } should have message "Attempt to overwrite key 'name': had STRING and got INTEGER"
+    } should have message "The property types INTEGER and STRING (for property 'name') can not be stored in the same Spark column"
   }
 
   test("combining schemas, separate keys") {
@@ -241,7 +250,7 @@ class SchemaTest extends BaseTestSuite {
       .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTInteger)
 
     the [CAPSException] thrownBy (schema1 ++ schema2) should have message
-      "Attempt to overwrite key 'bar': had STRING and got INTEGER"
+      "The property types INTEGER and STRING (for property 'bar') can not be stored in the same Spark column"
   }
 
   // TODO: Do we want to support this particular join between property keys? (Number)
@@ -252,7 +261,7 @@ class SchemaTest extends BaseTestSuite {
       .withNodePropertyKeys("A")("foo" -> CTString, "baz" -> CTFloat)
 
     the [CAPSException] thrownBy (schema1 ++ schema2) should have message
-      "Attempt to overwrite key 'baz': had INTEGER and got FLOAT"
+      "The property types FLOAT and INTEGER (for property 'baz') can not be stored in the same Spark column"
   }
 
   test("combining schemas with restricting label implications") {

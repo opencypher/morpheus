@@ -277,18 +277,8 @@ final case class Schema(
     // Map over input keys to calculate join of type with existing type
     val keysWithJoinedTypes = input.map {
       case (key, propType) =>
-        val inType = existing.get(key) match {
-          case Some(t) if t.material == propType.material =>
-            // input agrees with existing (barring nullability)
-            t
-          case Some(t) =>
-            // input conflicts with existing
-            Raise.invalidSchemaAddition(key, t, propType)
-          case None =>
-            // if the key did not previously exist it should be optional
-            CTNull
-        }
-        key -> propType.join(inType)
+        val inType = existing.getOrElse(key, CTNull)
+        key -> sparkCompatibleJoin(None, key, propType, inType)
     }
 
     // Map over the rest of the existing keys to mark them all nullable
@@ -410,9 +400,7 @@ final case class Schema(
           (keys1.keySet intersect keys2.keySet).foreach { k =>
             val t1 = keys1(k)
             val t2 = keys2(k)
-            // conflict on nullability is fine
-            if (t1.material != t2.material)
-              Raise.invalidSchema(label, k, t1, t2)
+            sparkCompatibleJoin(Some(label), k, t1, t2)
           }
         }
     }
@@ -420,6 +408,14 @@ final case class Schema(
     new VerifiedSchema {
       override def schema: Schema = self
     }
+  }
+
+  def sparkCompatibleJoin(label: Option[String], key: String, t1: CypherType, t2: CypherType): CypherType = {
+    val join = t1.join(t2)
+    if (join.material == t1.material || join.material == t2.material) {
+      join
+    } else
+      Raise.sparkIncompatible(label, key, t1, t2)
   }
 
   override def toString: String =

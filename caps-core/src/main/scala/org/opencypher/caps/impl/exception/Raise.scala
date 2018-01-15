@@ -26,12 +26,8 @@ object Raise {
     "A label can not be empty"
   )
 
-  def invalidSchema(label: String, key: Any, t1: Any, t2: Any) = throw CAPSException(
-    s"The schema had a conflict on key '$key': $t1 and $t2 (for label $label)"
-  )
-
-  def invalidSchemaAddition(key: Any, t1: Any, t2: Any) = throw CAPSException(
-    s"Attempt to overwrite key '$key': had $t1 and got $t2"
+  def sparkIncompatible(label: Option[Any], key: Any, t1: Any, t2: Any) = throw CAPSException(
+    s"The property types $t1 and $t2 (for property '$key'${label.map(l => s" and label '$l'").getOrElse("")}) can not be stored in the same Spark column"
   )
 
   def duplicateEmbeddedEntityColumn(name: String) = throw CAPSException(

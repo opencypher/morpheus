@@ -18,6 +18,8 @@ package org.opencypher.caps.impl.convert
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.exception.Raise
 
+import scala.collection.GenTraversableOnce
+
 object fromJavaType extends Serializable {
 
   def apply(v: Any): CypherType = v match {
@@ -30,9 +32,13 @@ object fromJavaType extends Serializable {
     case _: java.lang.Float => CTFloat
     case _: java.lang.Double => CTFloat
     case _: java.lang.Boolean => CTBoolean
-    case a: Array[_] =>
-      val elementType = a.map(fromJavaType.apply).foldLeft[CypherType](CTVoid)(_ join _)
-      CTList(elementType)
+    case a: Array[_] => constructList(a)
+    case v: Vector[_] => constructList(v)
     case x => Raise.invalidArgument("instance of a CypherValue", s"${x.getClass}")
+  }
+
+  private def constructList[E](l: GenTraversableOnce[E]): CTList = {
+    val elementType = l.toSeq.map(fromJavaType.apply).foldLeft[CypherType](CTVoid)(_ join _)
+    CTList(elementType)
   }
 }
