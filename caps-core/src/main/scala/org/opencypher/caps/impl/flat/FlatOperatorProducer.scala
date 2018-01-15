@@ -140,6 +140,12 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     Aggregate(aggregations, group, in, newHeader)
   }
 
+  def unwind(list: Expr, item: Var, in: FlatOperator): Unwind = {
+    val (header, _) = in.header.update(addContent(OpaqueField(item)))
+
+    Unwind(list, item, in, header)
+  }
+
   def project(it: ProjectedSlotContent, in: FlatOperator): FlatOperator = {
     val (newHeader, result) = in.header.update(addContent(it))
 

@@ -20,18 +20,20 @@ import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.support.creation.caps.CAPSGraphFactory
 import org.opencypher.caps.test.support.creation.propertygraph.CAPSPropertyGraphFactory
 
-abstract class AcceptanceTest extends CAPSTestSuite
-  with AggregationBehaviour
-  with BoundedVarExpandBehaviour
-  with ExpandIntoBehaviour
-  with ExpressionBehaviour
-  with FunctionsBehaviour
-  with MatchBehaviour
-  with MultigraphProjectionBehaviour
-  with OptionalMatchBehaviour
-  with PredicateBehaviour
-  with ReturnBehaviour
-  with WithBehaviour {
+abstract class AcceptanceTest
+    extends CAPSTestSuite
+    with AggregationBehaviour
+    with BoundedVarExpandBehaviour
+    with ExpandIntoBehaviour
+    with ExpressionBehaviour
+    with FunctionsBehaviour
+    with MatchBehaviour
+    with MultigraphProjectionBehaviour
+    with OptionalMatchBehaviour
+    with PredicateBehaviour
+    with ReturnBehaviour
+    with WithBehaviour
+    with UnwindBehaviour {
 
   def capsGraphFactory: CAPSGraphFactory
 
@@ -81,7 +83,9 @@ abstract class AcceptanceTest extends CAPSTestSuite
     describe("WithBehaviour") {
       it should behave like withBehaviour(initGraph)
     }
+
+    describe("UnwindBehaviour") {
+      it should behave like unwindBehaviour(initGraph)
+    }
   }
 }
-
-

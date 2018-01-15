@@ -70,7 +70,6 @@ class ConvertersTest extends BaseTestSuite {
     }
   }
 
-  // TODO: container types
   test("converts from spark values to cypher types") {
     val mappings = Seq(
       "string" -> CTString,
@@ -80,7 +79,11 @@ class ConvertersTest extends BaseTestSuite {
       java.lang.Byte.valueOf("1") -> CTInteger,
       java.lang.Double.valueOf(3.14) -> CTFloat,
       java.lang.Float.valueOf(3.14f) -> CTFloat,
-      java.lang.Boolean.TRUE -> CTBoolean
+      java.lang.Boolean.TRUE -> CTBoolean,
+      Array(1) -> CTList(CTInteger),
+      Array() -> CTList(CTVoid),
+      Array(Int.box(1), Double.box(3.14)) -> CTList(CTNumber),
+      Array(null, "foo") -> CTList(CTString.nullable)
     )
 
     mappings.foreach {

@@ -17,20 +17,23 @@ package org.opencypher.caps.impl.spark.physical.operators
 
 import java.net.URI
 
+import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.functions.{asc, desc, monotonically_increasing_id, udf}
-import org.apache.spark.sql.types.{ArrayType, LongType}
-import org.apache.spark.sql.{Column, DataFrame, RelationalGroupedDataset, functions}
+import org.apache.spark.sql.types.{ArrayType, LongType, StructField, StructType}
 import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherInteger
+import org.opencypher.caps.impl.convert.toJavaType
+import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.logical._
+import org.opencypher.caps.impl.record.CAPSRecordHeader._
 import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.SparkSQLExprMapper.asSparkSQLExpr
 import org.opencypher.caps.impl.spark.convert.toSparkType
-import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.{assertIsNode, columnName}
 import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext, cypherFilter, udfUtils}
 import org.opencypher.caps.impl.syntax.ExprSyntax._
@@ -74,6 +77,49 @@ final case class Scan(in: PhysicalOperator, inGraph: LogicalGraph, v: Var, heade
     }
     assert(header == records.header)
     PhysicalResult(records, graphs)
+  }
+}
+
+final case class Unwind(in: PhysicalOperator, list: Expr, item: Var, header: RecordHeader)
+    extends UnaryPhysicalOperator {
+  import scala.collection.JavaConverters._
+
+  override def executeUnary(prev: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult = {
+    prev.mapRecordsWithDetails { records =>
+
+      val itemColumn = columnName(header.slotFor(item))
+      val newData = list match {
+          // the list is external: we create a dataframe and crossjoin with it
+        case Param(name) =>
+          // we need a Java list of rows to construct a DataFrame
+          toJavaType(context.parameters(name)) match {
+            case t: TraversableOnce[_] =>
+              val list = t.map(Row(_)).toList.asJava
+
+              val sparkType = toSparkType(item.cypherType)
+              val nullable = item.cypherType.isNullable
+              val schema = StructType(Seq(StructField(itemColumn, sparkType, nullable)))
+
+              val df = records.caps.sparkSession.createDataFrame(list, schema)
+
+              records.data.crossJoin(df)
+
+            case x =>
+              Raise.invalidArgument("a list", x)
+          }
+
+          // the list lives in a column: we explode it
+        case expr =>
+          val listColumn = asSparkSQLExpr(records.header, expr, records.data) match {
+            case Some(c) => c
+            case None => Raise.impossible("no column for the list found")
+          }
+
+          records.data.withColumn(itemColumn, functions.explode(listColumn))
+      }
+
+      CAPSRecords.create(header, newData)(records.caps)
+    }
   }
 }
 

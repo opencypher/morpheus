@@ -67,6 +67,14 @@ class CypherTypesTest extends BaseTestSuite {
     CTList(CTAny) couldBeSameTypeAs CTList(CTInteger) shouldBe true
   }
 
+  test("joining with list of void") {
+    val voidList = CTList(CTVoid)
+    val otherList = CTList(CTString).nullable
+
+    voidList join otherList should equal(otherList)
+    otherList join voidList should equal(otherList)
+  }
+
   test("type names") {
     Seq[(CypherType, (String, String))](
       CTAny -> ("ANY" -> "ANY?"),
