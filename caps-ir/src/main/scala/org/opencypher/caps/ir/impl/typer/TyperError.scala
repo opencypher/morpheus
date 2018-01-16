@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.typer
+package org.opencypher.caps.ir.impl.typer
 
 import org.opencypher.caps.api.types._
 import cats.syntax.show._

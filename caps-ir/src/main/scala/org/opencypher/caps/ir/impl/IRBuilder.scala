@@ -25,11 +25,11 @@ import org.neo4j.cypher.internal.v3_4.expressions.{Expression, StringLiteral, Va
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.schema.{AllGiven, Schema}
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.CompilationStage
 import org.opencypher.caps.impl.util.parsePathOrURI
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block.{SortItem, _}
 import org.opencypher.caps.ir.api.pattern.Pattern
+import org.opencypher.caps.ir.api.util.CompilationStage
 import org.opencypher.caps.ir.impl.refactor.instances._
 
 object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBuilderContext] {

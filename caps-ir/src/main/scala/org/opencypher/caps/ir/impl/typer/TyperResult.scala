@@ -13,9 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl
+package org.opencypher.caps.ir.impl.typer
 
-trait DirectCompilationStage[-A, B, C] extends CompilationStage[A, B, C] {
-  final override type Out = B
-  final override def extract(output: Out): B = output
-}
+case class TyperResult[A](value: A, recorder: TypeRecorder, tracker: TypeTracker)

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticCheckResult, SemanticState}
 import org.neo4j.cypher.internal.util.v3_4.{CypherException, InputPosition}
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
-import org.opencypher.caps.impl.parse.{CypherParser, ExtractPredicatesFromAnds}
+import org.opencypher.caps.ir.impl.parse.{CypherParser, ExtractPredicatesFromAnds}
 import org.opencypher.caps.test.BaseTestSuite
 
 import scala.language.implicitConversions

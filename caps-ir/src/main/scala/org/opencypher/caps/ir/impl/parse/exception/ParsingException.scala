@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.ir.api
+package org.opencypher.caps.ir.impl.parse.exception
 
-final case class CypherQuery[E](
-    info: QueryInfo,
-    model: QueryModel[E]
-)
+import org.opencypher.caps.api.exception.CypherException
+
+final case class ParsingException(msg: String) extends CypherException(msg)

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.parse.rewriter
+package org.opencypher.caps.ir.impl.parse.rewriter
 
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
@@ -21,9 +21,10 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.{nameMatchPatternEl
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticCheckResult, SemanticCheckableExpression}
 import org.neo4j.cypher.internal.util.v3_4._
 import org.neo4j.cypher.internal.v3_4.expressions._
-import org.opencypher.caps.impl.parse.RetypingPredicate
+import org.opencypher.caps.ir.impl.parse.RetypingPredicate
 
-case class extractSubqueryFromPatternExpression(mkException: (String, InputPosition) => CypherException) extends Rewriter {
+case class extractSubqueryFromPatternExpression(mkException: (String, InputPosition) => CypherException)
+    extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = instance.apply(that)
 
@@ -33,6 +34,7 @@ case class extractSubqueryFromPatternExpression(mkException: (String, InputPosit
   }
 
   private def whereRewriter: Rewriter = Rewriter.lift {
+
     /**
       * WHERE (a)-[:R]->({foo:true})-->()... AND a.age > 20
       *
@@ -44,19 +46,24 @@ case class extractSubqueryFromPatternExpression(mkException: (String, InputPosit
       *   RETURN a, true
       * } AND a.age > 20
       */
-    case p@PatternExpression(relationshipsPattern) =>
+    case p @ PatternExpression(relationshipsPattern) =>
       val patternPosition: InputPosition = p.position
       val newPattern = Pattern(Seq(EveryPath(relationshipsPattern.element)))(patternPosition)
 
       val joinVariables = relationshipsPattern.element.treeFold(Seq.empty[LogicalVariable]) {
-        case NodePattern(Some(v), _, _) => (acc) => (acc :+ v, None)
-        case RelationshipPattern(Some(v), _, _, _, _, _) => (acc) => (acc :+ v, None)
+        case NodePattern(Some(v), _, _) =>
+          (acc) =>
+            (acc :+ v, None)
+        case RelationshipPattern(Some(v), _, _, _, _, _) =>
+          (acc) =>
+            (acc :+ v, None)
       }
 
       val returnItems = joinVariables.map(v => AliasedReturnItem(v, v)(v.position))
 
       val trueVariable = Variable(UnNamedNameGenerator.name(p.position))(p.position)
-      val returnItemsWithTrue = returnItems :+ AliasedReturnItem(True()(trueVariable.position), trueVariable)(trueVariable.position)
+      val returnItemsWithTrue = returnItems :+ AliasedReturnItem(True()(trueVariable.position), trueVariable)(
+        trueVariable.position)
 
       ExistsPattern(
         Query(
@@ -64,9 +71,8 @@ case class extractSubqueryFromPatternExpression(mkException: (String, InputPosit
           SingleQuery(
             Seq(
               Match(optional = false, newPattern, Seq.empty, None)(patternPosition)
-                  .endoRewrite(nameMatchPatternElements)
-                  .endoRewrite(normalizeMatchPredicates(getDegreeRewriting = false))
-              ,
+                .endoRewrite(nameMatchPatternElements)
+                .endoRewrite(normalizeMatchPredicates(getDegreeRewriting = false)),
               Return(ReturnItems(includeExisting = false, returnItemsWithTrue)(patternPosition), None)(patternPosition)
             )
           )(patternPosition)
@@ -95,6 +101,8 @@ case class extractSubqueryFromPatternExpression(mkException: (String, InputPosit
   private val instance = topDown(rewriter, _.isInstanceOf[Expression])
 }
 
-case class ExistsPattern(query: Query)(val position: InputPosition) extends Expression with SemanticCheckableExpression {
+case class ExistsPattern(query: Query)(val position: InputPosition)
+    extends Expression
+    with SemanticCheckableExpression {
   override def semanticCheck(ctx: Expression.SemanticContext): SemanticCheck = SemanticCheckResult.success
 }

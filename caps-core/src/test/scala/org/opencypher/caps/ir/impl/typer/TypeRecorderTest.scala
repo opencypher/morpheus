@@ -13,18 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.typer
+package org.opencypher.caps.ir.impl.typer
 
-import org.neo4j.cypher.internal.util.v3_4.{symbols => frontend}
-import org.opencypher.caps.api.types.{CTBoolean, CTFloat, CTInteger, CTNumber}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.util.v3_4.Ref
+import org.neo4j.cypher.internal.v3_4.expressions.True
+import org.opencypher.caps.api.types.{CTBoolean, CTString}
 import org.opencypher.caps.test.BaseTestSuite
 
-class fromFrontendTypeTest extends BaseTestSuite {
+class TypeRecorderTest extends BaseTestSuite with AstConstructionTestSupport {
 
-  test("should convert basic types") {
-    fromFrontendType(frontend.CTBoolean) shouldBe CTBoolean
-    fromFrontendType(frontend.CTInteger) shouldBe CTInteger
-    fromFrontendType(frontend.CTFloat) shouldBe CTFloat
-    fromFrontendType(frontend.CTNumber) shouldBe CTNumber
+  test("can convert to map") {
+    val expr1 = True()(pos)
+    val expr2 = True()(pos)
+    val recorder = TypeRecorder(List(Ref(expr1) -> CTBoolean, Ref(expr2) -> CTString))
+
+    recorder.toMap should equal(Map(Ref(expr1) -> CTBoolean, Ref(expr2) -> CTString))
   }
+
 }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.parse
+package org.opencypher.caps.ir.impl.parse
 
 import org.neo4j.cypher.internal.frontend.v3_4.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v3_4.expressions._
@@ -55,8 +55,7 @@ class ExtractPredicatesFromAndsTest extends BaseTestSuite with AstConstructionTe
 
     val result = ExtractPredicatesFromAnds.instance(CypherParser.defaultContext)(expr)
 
-    result should equal(RetypingPredicate(Set(hasLabels1, hasLabels2),
-      Ands(Set(False() _, True() _)) _)(pos))
+    result should equal(RetypingPredicate(Set(hasLabels1, hasLabels2), Ands(Set(False() _, True() _)) _)(pos))
   }
 
   test("doesn't do anything if no haslabels") {

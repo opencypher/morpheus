@@ -19,7 +19,8 @@ import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.logical.LogicalOperator
 import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.record.{ProjectedExpr, ProjectedField}
-import org.opencypher.caps.impl.{DirectCompilationStage, logical}
+import org.opencypher.caps.impl.logical
+import org.opencypher.caps.ir.api.util.DirectCompilationStage
 
 final case class FlatPlannerContext(parameters: Map[String, CypherValue])
 

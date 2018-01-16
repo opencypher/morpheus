@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.typer
+package org.opencypher.caps.ir.impl.typer
 
 import cats.kernel.Semigroup
 import org.neo4j.cypher.internal.util.v3_4.Ref
@@ -27,13 +27,14 @@ final case class TypeRecorder(recordedTypes: List[(Ref[Expression], CypherType)]
   def toMap: Map[Ref[Expression], CypherType] = toMap(Map.empty, recordedTypes)
 
   @tailrec
-  private def toMap(m: Map[Ref[Expression], CypherType],
-                    recorded: Seq[(Ref[Expression], CypherType)]): Map[Ref[Expression], CypherType] =
+  private def toMap(
+      m: Map[Ref[Expression], CypherType],
+      recorded: Seq[(Ref[Expression], CypherType)]): Map[Ref[Expression], CypherType] =
     recorded.headOption match {
       case Some((ref, t)) =>
         m.get(ref) match {
           case Some(t2) => toMap(m.updated(ref, t.join(t2)), recorded.tail)
-          case None => toMap(m.updated(ref, t), recorded.tail)
+          case None     => toMap(m.updated(ref, t), recorded.tail)
         }
       case None =>
         m

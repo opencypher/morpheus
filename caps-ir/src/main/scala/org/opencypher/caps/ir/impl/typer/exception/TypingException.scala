@@ -13,16 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl
+package org.opencypher.caps.ir.impl.typer.exception
 
-trait CompilationStage[-A, +B, C] {
+import org.opencypher.caps.ir.api.exception.IrException
 
-  type Out
-
-  final def apply(input: A)(implicit context: C): B =
-    extract(process(input))
-
-  def process(input: A)(implicit context: C): Out
-
-  def extract(output: Out): B
-}
+final case class TypingException(msg: String) extends IrException(msg)

@@ -24,7 +24,7 @@ import org.opencypher.caps.api.io.GraphSource
 import org.opencypher.caps.api.schema.{AllGiven, Schema}
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.logical.{LogicalExternalGraph, Start}
-import org.opencypher.caps.impl.parse.CypherParser
+import org.opencypher.caps.ir.impl.parse.CypherParser
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block._
 import org.opencypher.caps.ir.api.pattern.Pattern

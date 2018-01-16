@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.parse
+package org.opencypher.caps.ir.impl.parse
 
 import org.neo4j.cypher.internal.frontend.v3_4.AstRewritingMonitor
 import org.neo4j.cypher.internal.frontend.v3_4.phases._
@@ -27,7 +27,7 @@ abstract class BlankBaseContext extends BaseContext {
   override def exceptionCreator: (String, InputPosition) => CypherException = (_, _) => null
 
   override def monitors: Monitors = new Monitors {
-    override def newMonitor[T <: AnyRef : ClassTag](tags: String*): T = {
+    override def newMonitor[T <: AnyRef: ClassTag](tags: String*): T = {
       new AstRewritingMonitor {
         override def abortedRewriting(obj: AnyRef): Unit = ()
         override def abortedRewritingDueToLargeDNF(obj: AnyRef): Unit = ()

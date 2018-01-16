@@ -19,7 +19,7 @@ import org.neo4j.cypher.internal.util.v3_4.Ref
 import org.neo4j.cypher.internal.v3_4.{functions, expressions => ast}
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.parse.RetypingPredicate
+import org.opencypher.caps.ir.impl.parse.RetypingPredicate
 import org.opencypher.caps.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.caps.ir.impl.FunctionUtils._
 import org.opencypher.caps.ir.api.util.FreshVariableNamer
@@ -104,7 +104,7 @@ final class ExpressionConverter(patternConverter: PatternConverter)(implicit con
       CountStar(typings(e))
 
     // Exists (rewritten Pattern Expressions)
-    case ep @ org.opencypher.caps.impl.parse.rewriter.ExistsPattern(subquery) =>
+    case ep @ org.opencypher.caps.ir.impl.parse.rewriter.ExistsPattern(subquery) =>
       val innerModel = IRBuilder(subquery)(context)
       ExistsPatternExpr(
         FreshVariableNamer(ep.position.offset, CTBoolean),

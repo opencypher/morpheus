@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.parse.exception
+package org.opencypher.caps.ir.api.util
 
-import org.opencypher.caps.api.exception.CypherException
-
-final case class ParsingException(msg: String) extends CypherException(msg)
+trait DirectCompilationStage[-A, B, C] extends CompilationStage[A, B, C] {
+  final override type Out = B
+  final override def extract(output: Out): B = output
+}

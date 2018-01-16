@@ -25,8 +25,8 @@ import org.opencypher.caps.api.io.GraphSource
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue
-import org.opencypher.caps.impl.typer.exception.TypingException
-import org.opencypher.caps.impl.typer.{SchemaTyper, TypeTracker}
+import org.opencypher.caps.ir.impl.typer.exception.TypingException
+import org.opencypher.caps.ir.impl.typer.{SchemaTyper, TypeTracker}
 import org.opencypher.caps.ir.api.block.SourceBlock
 import org.opencypher.caps.ir.api.pattern.Pattern
 import org.opencypher.caps.ir.api.{IRExternalGraph, IRField, IRGraph}

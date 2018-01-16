@@ -13,6 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.typer
+package org.opencypher.caps.ir.impl.typer
 
-case class TyperResult[A](value: A, recorder: TypeRecorder, tracker: TypeTracker)
+import org.neo4j.cypher.internal.util.v3_4.{symbols => frontend}
+import org.opencypher.caps.api.types.{CTBoolean, CTFloat, CTInteger, CTNumber}
+import org.opencypher.caps.test.BaseTestSuite
+
+class fromFrontendTypeTest extends BaseTestSuite {
+
+  test("should convert basic types") {
+    fromFrontendType(frontend.CTBoolean) shouldBe CTBoolean
+    fromFrontendType(frontend.CTInteger) shouldBe CTInteger
+    fromFrontendType(frontend.CTFloat) shouldBe CTFloat
+    fromFrontendType(frontend.CTNumber) shouldBe CTNumber
+  }
+}

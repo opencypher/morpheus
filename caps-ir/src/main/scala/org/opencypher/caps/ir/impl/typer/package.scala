@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl
+package org.opencypher.caps.ir.impl
 
 import cats.Show
 import cats.data._
@@ -67,28 +67,28 @@ package object typer {
     }
   }
 
-  def parameterType[R : _hasTracker : _keepsErrors](it: String): Eff[R, CypherType] =
+  def parameterType[R: _hasTracker: _keepsErrors](it: String): Eff[R, CypherType] =
     for {
       tracker <- get[R, TypeTracker]
       cypherType <- tracker.getParameter(it) match {
-        case None => error(UnTypedParameter(it)) >> pure[R, CypherType](CTWildcard)
+        case None    => error(UnTypedParameter(it)) >> pure[R, CypherType](CTWildcard)
         case Some(t) => pure[R, CypherType](t)
       }
     } yield cypherType
 
-  def typeOf[R : _hasTracker : _keepsErrors](it: Expression): Eff[R, CypherType] =
+  def typeOf[R: _hasTracker: _keepsErrors](it: Expression): Eff[R, CypherType] =
     for {
       tracker <- get[R, TypeTracker]
       cypherType <- tracker.get(it) match {
-        case None => error(UnTypedExpr(it)) >> pure[R, CypherType](CTWildcard)
+        case None    => error(UnTypedExpr(it)) >> pure[R, CypherType](CTWildcard)
         case Some(t) => pure[R, CypherType](t)
       }
     } yield cypherType
 
-  def recordAndUpdate[R : _hasTracker : _logsTypes](entry: (Expression, CypherType)): Eff[R, CypherType] =
+  def recordAndUpdate[R: _hasTracker: _logsTypes](entry: (Expression, CypherType)): Eff[R, CypherType] =
     recordType(entry) >> updateTyping(entry)
 
-  def updateTyping[R : _hasTracker](entry: (Expression, CypherType)): Eff[R, CypherType] = {
+  def updateTyping[R: _hasTracker](entry: (Expression, CypherType)): Eff[R, CypherType] = {
     val (expr, cypherType) = entry
     for {
       tracker <- get[R, TypeTracker]
@@ -96,15 +96,15 @@ package object typer {
     } yield cypherType
   }
 
-  def recordType[R : _logsTypes](entry: (Expression, CypherType)): Eff[R, Unit] = {
+  def recordType[R: _logsTypes](entry: (Expression, CypherType)): Eff[R, Unit] = {
     tell[R, (Expression, CypherType)](entry)
   }
 
-  def recordTypes[R : _logsTypes](entries: (Expression, CypherType)*): Eff[R, Unit] = {
+  def recordTypes[R: _logsTypes](entries: (Expression, CypherType)*): Eff[R, Unit] = {
     entries.map(entry => tell[R, (Expression, CypherType)](entry)).reduce(_ >> _)
   }
 
-  def error[R : _keepsErrors](failure: TyperError): Eff[R, CypherType] =
+  def error[R: _keepsErrors](failure: TyperError): Eff[R, CypherType] =
     wrong[R, TyperError](failure) >> pure(CTWildcard)
 
   implicit val showExpr = new Show[Expression] {

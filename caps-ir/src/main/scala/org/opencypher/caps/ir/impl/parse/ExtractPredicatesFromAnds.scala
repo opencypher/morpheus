@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.parse
+package org.opencypher.caps.ir.impl.parse
 
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.StatementRewriter
@@ -23,28 +23,32 @@ import org.neo4j.cypher.internal.util.v3_4.{InputPosition, Rewriter, bottomUp}
 import org.neo4j.cypher.internal.v3_4.expressions.{Ands, Expression, HasLabels, True}
 
 object ExtractPredicatesFromAnds extends StatementRewriter {
-  override def instance(context: BaseContext): Rewriter = bottomUp(Rewriter.lift {
-    case a@Ands(exprs) =>
-      val (left, right) = exprs.partition {
-        case _: HasLabels => true
-        case _ => false
-      }
-      val singleRight: Expression = right.headOption match {
-        case None => True()(a.position)
-        case Some(expr) => right.tail.headOption match {
-          case None => expr
-          case _ => Ands(right)(a.position)
+  override def instance(context: BaseContext): Rewriter =
+    bottomUp(Rewriter.lift {
+      case a @ Ands(exprs) =>
+        val (left, right) = exprs.partition {
+          case _: HasLabels => true
+          case _            => false
         }
-      }
-      RetypingPredicate(left, singleRight)(a.position)
-  })
+        val singleRight: Expression = right.headOption match {
+          case None => True()(a.position)
+          case Some(expr) =>
+            right.tail.headOption match {
+              case None => expr
+              case _    => Ands(right)(a.position)
+            }
+        }
+        RetypingPredicate(left, singleRight)(a.position)
+    })
 
   override def description: String = "split ands"
 
   override def postConditions: Set[Condition] = Set.empty
 }
 
-case class RetypingPredicate(left: Set[Expression], right: Expression)(val position: InputPosition) extends Expression with SemanticCheckableExpression {
+case class RetypingPredicate(left: Set[Expression], right: Expression)(val position: InputPosition)
+    extends Expression
+    with SemanticCheckableExpression {
   override def semanticCheck(ctx: Expression.SemanticContext): SemanticCheck =
     SemanticExpressionCheck.check(ctx, Ands(left + right)(position))
 }

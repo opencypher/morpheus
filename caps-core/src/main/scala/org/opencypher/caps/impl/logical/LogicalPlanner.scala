@@ -19,12 +19,12 @@ import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.io.GraphSource
 import org.opencypher.caps.api.schema.{AllGiven, Schema}
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.DirectCompilationStage
 import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.syntax.ExprSyntax._
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block._
 import org.opencypher.caps.ir.api.pattern._
+import org.opencypher.caps.ir.api.util.DirectCompilationStage
 
 import scala.annotation.tailrec
 

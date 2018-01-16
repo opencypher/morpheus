@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.parse
+package org.opencypher.caps.ir.impl.parse
 
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters._
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_4.phases._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics._
-import org.opencypher.caps.impl.CompilationStage
-import org.opencypher.caps.impl.parse.exception.ParsingException
-import org.opencypher.caps.impl.parse.rewriter.CAPSRewriting
+import org.opencypher.caps.ir.api.util.CompilationStage
+import org.opencypher.caps.ir.impl.parse.exception.ParsingException
+import org.opencypher.caps.ir.impl.parse.rewriter.CAPSRewriting
 
 object CypherParser extends CypherParser {
   implicit object defaultContext extends BlankBaseContext {

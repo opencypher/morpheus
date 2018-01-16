@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.typer
+package org.opencypher.caps.ir.impl.typer
 
 import java.lang.Integer.parseInt
 
@@ -28,8 +28,8 @@ import org.opencypher.caps.api.schema.{AllGiven, AnyGiven, Schema}
 import org.opencypher.caps.api.schema.Schema.AllLabels
 import org.opencypher.caps.api.types.CypherType.joinMonoid
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.parse.RetypingPredicate
-import org.opencypher.caps.impl.parse.rewriter.ExistsPattern
+import org.opencypher.caps.ir.impl.parse.RetypingPredicate
+import org.opencypher.caps.ir.impl.parse.rewriter.ExistsPattern
 
 import scala.util.Try
 

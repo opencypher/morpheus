@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.parse.rewriter
+package org.opencypher.caps.ir.impl.parse.rewriter
 
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.{CNFNormalizer, Forced, literalReplacement}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
