@@ -25,24 +25,23 @@ import org.opencypher.caps.api.io.GraphSource
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue
-import org.opencypher.caps.impl.exception.Raise
+import org.opencypher.caps.impl.typer.exception.TypingException
 import org.opencypher.caps.impl.typer.{SchemaTyper, TypeTracker}
 import org.opencypher.caps.ir.api.block.SourceBlock
 import org.opencypher.caps.ir.api.pattern.Pattern
 import org.opencypher.caps.ir.api.{IRExternalGraph, IRField, IRGraph}
 
 final case class IRBuilderContext(
-  queryString: String,
-  parameters: Map[String, CypherValue],
-  ambientGraph: IRExternalGraph,
-  blocks: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
-  semanticState: SemanticState,
-  graphs: Map[String, URI],
-  graphList: List[IRGraph],
-  resolver: URI => GraphSource,
-  // TODO: Remove this
-  knownTypes: Map[ast.Expression, CypherType] = Map.empty)
-{
+    queryString: String,
+    parameters: Map[String, CypherValue],
+    ambientGraph: IRExternalGraph,
+    blocks: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
+    semanticState: SemanticState,
+    graphs: Map[String, URI],
+    graphList: List[IRGraph],
+    resolver: URI => GraphSource,
+    // TODO: Remove this
+    knownTypes: Map[ast.Expression, CypherType] = Map.empty) {
   self =>
 
   private def typer = SchemaTyper(currentGraph.schema)
@@ -56,7 +55,7 @@ final case class IRBuilderContext(
         result.recorder.toMap
 
       case Left(errors) =>
-        Raise.typeInferenceFailed(s"${errors.toList.mkString(", ")}")
+        throw TypingException(s"Type inference errors: ${errors.toList.mkString(", ")}")
     }
   }
 
@@ -102,11 +101,11 @@ final case class IRBuilderContext(
 object IRBuilderContext {
 
   def initial(
-    query: String,
-    parameters: Map[String, CypherValue],
-    semState: SemanticState,
-    ambientGraph: IRExternalGraph,
-    resolver: URI => GraphSource
+      query: String,
+      parameters: Map[String, CypherValue],
+      semState: SemanticState,
+      ambientGraph: IRExternalGraph,
+      resolver: URI => GraphSource
   ): IRBuilderContext = {
     val registry = BlockRegistry.empty[Expr]
     val block = SourceBlock[Expr](ambientGraph)

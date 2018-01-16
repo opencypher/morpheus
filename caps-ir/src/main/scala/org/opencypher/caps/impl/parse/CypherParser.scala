@@ -21,7 +21,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_4.phases._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics._
 import org.opencypher.caps.impl.CompilationStage
-import org.opencypher.caps.impl.exception.Raise
+import org.opencypher.caps.impl.parse.exception.ParsingException
 import org.opencypher.caps.impl.parse.rewriter.CAPSRewriting
 
 object CypherParser extends CypherParser {
@@ -32,9 +32,11 @@ object CypherParser extends CypherParser {
           // TODO: Fix by updating frontend dependency
           // Related to using bound variables in GRAPH OF
           case s: SemanticError if s.msg.matches("Variable .* already declared") => false
-          case _ => true
+          case _                                                                 => true
         }
-        Raise.semanticErrors(filtered)
+        if (filtered.nonEmpty) {
+          throw ParsingException(s"Errors during semantic checking: ${filtered.mkString(", ")}")
+        }
       }
   }
 }
@@ -57,7 +59,8 @@ trait CypherParser extends CompilationStage[String, Statement, BaseContext] {
     Parsing.adds(BaseContains[Statement]) andThen
       SyntaxDeprecationWarnings andThen
       PreparatoryRewriting andThen
-      SemanticAnalysis(warn = true, SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature).adds(BaseContains[SemanticState]) andThen
+      SemanticAnalysis(warn = true, SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature)
+        .adds(BaseContains[SemanticState]) andThen
       AstRewriting(RewriterStepSequencer.newPlain, Forced, getDegreeRewriting = false) andThen
       SemanticAnalysis(warn = false, SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature) andThen
       Namespacer andThen
@@ -66,4 +69,3 @@ trait CypherParser extends CompilationStage[String, Statement, BaseContext] {
       ExtractPredicatesFromAnds andThen
       CAPSRewriting
 }
-

@@ -13,14 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.api.exception
+package org.opencypher.caps.impl.parse.exception
 
-abstract class CypherException(msg: String) extends RuntimeException(msg) with Serializable
+import org.opencypher.caps.api.exception.CypherException
 
-final case class SchemaException(msg: String) extends CypherException(msg)
-
-final case class CypherValueException(msg: String) extends CypherException(msg)
-
-//final case class NotYetImplementedException(msg: String) extends CypherException(msg)
-
-//final case class IllegalStateException(msg: String) extends CypherException(msg)
+final case class ParsingException(msg: String) extends CypherException(msg)

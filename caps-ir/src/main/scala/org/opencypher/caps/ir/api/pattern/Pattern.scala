@@ -16,10 +16,10 @@
 package org.opencypher.caps.ir.api.pattern
 
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType}
-import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.api.util.MapUtils._
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block.Binds
+import org.opencypher.caps.ir.api.exception.{IrException, PatternConversionException}
 
 import scala.annotation.tailrec
 
@@ -49,7 +49,9 @@ final case class Pattern[E](fields: Set[IRField], topology: Map[IRField, Connect
 
     val newTopology = topology.merge(other.topology) {
       case (t1, t2) if t1 == t2 => t1
-      case c                    => Raise.invalidArgument("disjoint patterns", s"conflicting connections ${c._1} and ${c._2}")
+      case c =>
+        throw PatternConversionException(
+          s"Expected disjoint patterns but found conflicting connections ${c._1} and ${c._2}")
     }
 
     Pattern(fields ++ other.fields, newTopology)
@@ -60,7 +62,7 @@ final case class Pattern[E](fields: Set[IRField], topology: Map[IRField, Connect
       map1.get(f) -> map2.get(f) match {
         case (Some(t1), Some(t2)) =>
           if (t1 != t2)
-            Raise.invalidArgument("disjoint patterns", s"conflicting entities $f")
+            throw PatternConversionException(s"Expected disjoint patterns but found conflicting entities $f")
         case _ =>
       }
     }
@@ -97,7 +99,7 @@ final case class Pattern[E](fields: Set[IRField], topology: Map[IRField, Connect
   ): Set[Pattern[E]] = input match {
     case Seq((field, connection), tail @ _*) =>
       val endpoints = connection.endpoints.toSet
-      val links = endpoints.flatMap(fieldToComponentIndex.get).toSet
+      val links = endpoints.flatMap(fieldToComponentIndex.get)
 
       if (links.isEmpty) {
         // Connection forms a new connected component on its own

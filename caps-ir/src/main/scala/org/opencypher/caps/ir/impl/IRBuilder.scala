@@ -26,7 +26,6 @@ import org.opencypher.caps.api.expr._
 import org.opencypher.caps.api.schema.{AllGiven, Schema}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.CompilationStage
-import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.util.parsePathOrURI
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block.{SortItem, _}
@@ -267,8 +266,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
     case ast.ReturnedGraph(graph) =>
       convertSingleGraphAs[R](graph)
 
-    case _ =>
-      Raise.notYetImplemented("Setting a different target graph")
+    case _ => throw new NotImplementedError(s"Support for setting a different target graph not yet implemented")
   }
 
   private def convertSingleGraphAs[R: _hasContext](graph: ast.SingleGraphAs): Eff[R, IRGraph] = {
@@ -291,7 +289,8 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
 
             case ast.GraphAtAs(url, _, _) =>
               val graphURI = url.url match {
-                case Left(_)                       => Raise.notYetImplemented("graph uris by parameter")
+                case Left(_) =>
+                  throw new NotImplementedError(s"Support for graph uris by parameter not yet implemented")
                 case Right(StringLiteral(literal)) => parsePathOrURI(literal)
               }
               val newContext = context.withGraphAt(graphName, graphURI)
@@ -302,12 +301,12 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
               pure[R, IRGraph](IRNamedGraph(graphName, context.schemaFor(graphName)))
 
             case _ =>
-              Raise.notYetImplemented("graph aliasing")
+              throw new NotImplementedError(s"Support for graph aliasing not yet implemented")
           }
         } yield result
 
       case None =>
-        Raise.impossible("graph didn't have a name!")
+        throw new IllegalArgumentException(s"$graph does not have an alias")
     }
   }
 
@@ -340,8 +339,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
       schema.forNode(n)
     case r: CTRelationship =>
       schema.forRelationship(r)
-    case x =>
-      Raise.invalidArgument("an entity type", x.toString)
+    case x => throw new IllegalArgumentException(s"$x is not an entity type")
   }
 
   private def convertReturnItem[R: _mayFail: _hasContext](item: ast.ReturnItem): Eff[R, (IRField, Expr)] = item match {
@@ -367,7 +365,8 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
       } yield field -> expr
 
     case _ =>
-      Raise.invalidArgument(s"${AliasedReturnItem.getClass} or ${UnaliasedReturnItem.getClass}", s"${item.getClass}")
+      throw new IllegalArgumentException(
+        s"Expected ${AliasedReturnItem.getClass} or ${UnaliasedReturnItem.getClass} but found ${item.getClass}")
   }
 
   private def convertUnwindItem[R: _mayFail: _hasContext](

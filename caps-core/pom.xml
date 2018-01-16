@@ -26,13 +26,13 @@
       <version>${parent.version}</version>
     </dependency>
 
-    <!-- Neo4j -->
     <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-frontend-3.4</artifactId>
-      <version>${dep.neo4j.version}</version>
+      <groupId>org.opencypher</groupId>
+      <artifactId>caps-ir</artifactId>
+      <version>${parent.version}</version>
     </dependency>
 
+    <!-- Neo4j -->
     <dependency>
       <groupId>org.neo4j.driver</groupId>
       <artifactId>neo4j-java-driver</artifactId>
@@ -43,12 +43,6 @@
       <groupId>org.typelevel</groupId>
       <artifactId>cats_${project.scala.binary.version}</artifactId>
       <version>${dep.cats.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.atnos</groupId>
-      <artifactId>eff_${project.scala.binary.version}</artifactId>
-      <version>${dep.eff.version}</version>
     </dependency>
 
     <!-- Utils -->

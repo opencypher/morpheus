@@ -22,14 +22,6 @@ import org.opencypher.caps.api.exception.CAPSException
 
 object Raise {
 
-//  def invalidEmptyLabel() = throw CAPSException(
-//    "A label can not be empty"
-//  )
-
-//  def sparkIncompatible(label: Option[Any], key: Any, t1: Any, t2: Any) = throw CAPSException(
-//    s"The property types $t1 and $t2 (for property '$key'${label.map(l => s" and label '$l'").getOrElse("")}) can not be stored in the same Spark column"
-//  )
-
   def duplicateEmbeddedEntityColumn(name: String) = throw CAPSException(
     "The input column '$name' is used more than once to describe an embedded entity"
   )

@@ -66,14 +66,17 @@ final case class UnorderedPair[T](fst: T, snd: T) extends Pair[T] {
 
   override def hashCode(): Int = MurmurHash3.unorderedHash(this, Pair.hashSeed)
 
-  override def equals(obj: scala.Any): Boolean = if (super.equals(obj)) true else obj match {
-    case other: UnorderedPair[_] =>
-      val otherFst = other.fst
-      val otherSnd = other.snd
-      (fst == otherFst && snd == otherSnd) || (snd == otherFst && fst == otherSnd)
-    case _ =>
-      false
-  }
+  override def equals(obj: scala.Any): Boolean =
+    if (super.equals(obj)) true
+    else
+      obj match {
+        case other: UnorderedPair[_] =>
+          val otherFst = other.fst
+          val otherSnd = other.snd
+          (fst == otherFst && snd == otherSnd) || (snd == otherFst && fst == otherSnd)
+        case _ =>
+          false
+      }
 
   override def flip: UnorderedPair[T] = this
 }
