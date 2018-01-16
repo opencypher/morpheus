@@ -15,14 +15,15 @@
  */
 package org.opencypher.caps.impl.logical
 
-import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.io.GraphSource
 import org.opencypher.caps.api.schema.{AllGiven, Schema}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.syntax.ExprSyntax._
+import org.opencypher.caps.impl.util.VarConverters._
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block._
+import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.ir.api.pattern._
 import org.opencypher.caps.ir.api.util.DirectCompilationStage
 
@@ -285,8 +286,6 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
   private def resolveGraph(graph: IRGraph, sourceSchema: Schema, fieldsInScope: Set[Var])(
       implicit context: LogicalPlannerContext): LogicalGraph = {
-
-    import org.opencypher.caps.impl.util._
 
     graph match {
       // TODO: IRGraph[Expr]

@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl
+package org.opencypher.caps.impl.util
 
-import org.opencypher.caps.ir.api.expr.Var
 import org.opencypher.caps.ir.api.IRField
+import org.opencypher.caps.ir.api.expr.Var
 
 import scala.language.implicitConversions
 
-package object util {
+object VarConverters {
   implicit def toVar(f: IRField): Var = Var(f.name)(f.cypherType)
 
   implicit def toVars(fields: Set[IRField]): Set[Var] = fields.map(toVar)
