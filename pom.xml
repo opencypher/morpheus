@@ -12,6 +12,7 @@
 
     <modules>
         <module>caps-api</module>
+        <module>caps-trees</module>
         <module>caps-core</module>
         <module>caps-spark</module>
         <module>caps-tck</module>

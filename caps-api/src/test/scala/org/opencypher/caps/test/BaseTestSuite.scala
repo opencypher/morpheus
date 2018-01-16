@@ -26,7 +26,7 @@ import org.scalatest.{FunSpec, Matchers, Tag}
 abstract class BaseTestSuite extends FunSpec with Matchers with AllInstances with AllSyntax {
 
   /**
-    * Wraps an 'it' call for convenience reasons
+    * Wraps an 'it' call for convenience
     */
   def test(name: String, tags: Tag*)(testFun: => Any /* Assertion */ )(implicit pos: source.Position): Unit =
     it(name, tags: _*)(testFun)

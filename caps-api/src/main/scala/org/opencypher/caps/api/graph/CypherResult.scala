@@ -29,13 +29,6 @@ trait CypherResult extends CypherPrintable {
   type Graph <: CypherGraph
   type Records <: CypherRecords
 
-  //  def cypher(...): CypherResult
-  //  def sourceGraph: Graph = ???
-  //  def targetGraph: Graph = ???
-  //
-  //  def sourceGraphName: String = ???
-  //  def targetGraphName: String = ???
-
   /**
     * Retrieves the single graph returned by the query, if it returned exactly one graph.
     *
