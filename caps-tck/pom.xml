@@ -24,14 +24,14 @@
         <!-- Test -->
         <dependency>
             <groupId>org.opencypher</groupId>
-            <artifactId>caps-core</artifactId>
+            <artifactId>caps-cora</artifactId>
             <version>${project.parent.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.opencypher</groupId>
-            <artifactId>caps-core</artifactId>
+            <artifactId>caps-cora</artifactId>
             <version>${project.parent.version}</version>
             <type>test-jar</type>
             <scope>test</scope>

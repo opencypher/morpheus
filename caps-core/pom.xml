@@ -32,49 +32,6 @@
       <version>${parent.version}</version>
     </dependency>
 
-    <!-- Neo4j -->
-    <dependency>
-      <groupId>org.neo4j.driver</groupId>
-      <artifactId>neo4j-java-driver</artifactId>
-      <version>${dep.neo4j.driver.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.typelevel</groupId>
-      <artifactId>cats_${project.scala.binary.version}</artifactId>
-      <version>${dep.cats.version}</version>
-    </dependency>
-
-    <!-- Utils -->
-    <dependency>
-      <groupId>com.lihaoyi</groupId>
-      <artifactId>ammonite_${project.scala.binary.version}.11</artifactId>
-      <version>${dep.ammonite.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>com.lihaoyi</groupId>
-      <artifactId>ammonite-ops_${project.scala.binary.version}</artifactId>
-      <version>${dep.ammonite.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>io.circe</groupId>
-      <artifactId>circe-core_${project.scala.binary.version}</artifactId>
-      <version>${dep.circe.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>io.circe</groupId>
-      <artifactId>circe-generic_${project.scala.binary.version}</artifactId>
-      <version>${dep.circe.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>io.circe</groupId>
-      <artifactId>circe-parser_${project.scala.binary.version}</artifactId>
-      <version>${dep.circe.version}</version>
-    </dependency>
   </dependencies>
 
 </project>

@@ -21,7 +21,7 @@
     <dependencies>
         <dependency>
             <groupId>org.opencypher</groupId>
-            <artifactId>caps-core</artifactId>
+            <artifactId>caps-cora</artifactId>
             <version>${parent.version}</version>
         </dependency>
 
@@ -47,7 +47,7 @@
         <!-- Test -->
         <dependency>
             <groupId>org.opencypher</groupId>
-            <artifactId>caps-core</artifactId>
+            <artifactId>caps-cora</artifactId>
             <version>${parent.version}</version>
             <type>test-jar</type>
             <scope>test</scope>

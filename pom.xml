@@ -17,6 +17,7 @@
         <module>caps-spark</module>
         <module>caps-tck</module>
         <module>caps-ir</module>
+        <module>caps-cora</module>
     </modules>
 
     <properties>
