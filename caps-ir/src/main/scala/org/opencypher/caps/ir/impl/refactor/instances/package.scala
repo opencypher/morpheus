@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.ir.impl
+package org.opencypher.caps.ir.impl.refactor
 
-package object syntax extends AllSyntax {
-  case object block extends BlockSyntax
+package object instances extends AllInstances {
+  object expr extends ExprBlockInstances
 }

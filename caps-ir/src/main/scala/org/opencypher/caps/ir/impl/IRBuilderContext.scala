@@ -20,7 +20,7 @@ import java.net.URI
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
 import org.neo4j.cypher.internal.util.v3_4.{InputPosition, Ref}
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
-import org.opencypher.caps.api.expr.Expr
+import org.opencypher.caps.ir.api.expr.Expr
 import org.opencypher.caps.api.io.GraphSource
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._

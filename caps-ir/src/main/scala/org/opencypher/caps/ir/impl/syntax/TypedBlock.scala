@@ -13,15 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.common.instances
+package org.opencypher.caps.refactor.classes
 
-import cats.Monoid
-import org.opencypher.caps.common.syntax._
+import org.opencypher.caps.ir.api.IRField
 
-trait MapInstances {
-  implicit def mapValueMonoid[K, V](implicit monoid: Monoid[V]): Monoid[Map[K, V]] =
-    new Monoid[Map[K, V]] {
-      override def empty: Map[K, V] = Map.empty[K, V]
-      override def combine(x: Map[K, V], y: Map[K, V]): Map[K, V] = (x ++ y).groups[K, V]
-    }
+trait TypedBlock[Block] {
+
+  type BlockExpr
+
+  def outputs(block: Block): Set[IRField]
 }

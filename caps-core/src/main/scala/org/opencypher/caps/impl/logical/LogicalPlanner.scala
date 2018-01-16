@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.logical
 
-import org.opencypher.caps.api.expr._
+import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.io.GraphSource
 import org.opencypher.caps.api.schema.{AllGiven, Schema}
 import org.opencypher.caps.api.types._
@@ -360,7 +360,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         val solvedPredicates = lhs.solved.predicates ++ rhs.solved.predicates
         val predicates = where.filter(_.evaluable(fieldsInScope)).filterNot(solvedPredicates)
         val (joinPredicates, otherPredicates) = predicates.flatPartition {
-          case expr: org.opencypher.caps.api.expr.Equals => expr
+          case expr: org.opencypher.caps.ir.api.expr.Equals => expr
         }
         if (joinPredicates.isEmpty) {
           val combinedPlan = producer.planCartesianProduct(lhs, rhs)

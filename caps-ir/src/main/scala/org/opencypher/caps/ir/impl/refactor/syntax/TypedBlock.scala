@@ -13,8 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.common
+package org.opencypher.caps.ir.impl.refactor.syntax
 
-package object instances extends org.opencypher.caps.common.instances.AllInstances {
-  object map extends MapInstances
+import org.opencypher.caps.ir.api.IRField
+
+trait TypedBlock[Block] {
+
+  type BlockExpr
+
+  def outputs(block: Block): Set[IRField]
 }

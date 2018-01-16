@@ -17,12 +17,12 @@ package org.opencypher.caps.ir.impl
 
 import org.neo4j.cypher.internal.util.v3_4.Ref
 import org.neo4j.cypher.internal.v3_4.{functions, expressions => ast}
-import org.opencypher.caps.api.expr._
+import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.flat.FreshVariableNamer
 import org.opencypher.caps.impl.parse.RetypingPredicate
 import org.opencypher.caps.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.caps.ir.impl.FunctionUtils._
+import org.opencypher.caps.ir.api.util.FreshVariableNamer
 
 import scala.language.implicitConversions
 
@@ -56,11 +56,13 @@ final class ExpressionConverter(patternConverter: PatternConverter)(implicit con
     case ast.Ors(exprs) =>
       new Ors(exprs.map(convert))(typings(e))
     case ast.HasLabels(node, labels) =>
-      val exprs = labels.map { (l: ast.LabelName) => HasLabel(convert(node), Label(l.name))(typings(e)) }
+      val exprs = labels.map { (l: ast.LabelName) =>
+        HasLabel(convert(node), Label(l.name))(typings(e))
+      }
       if (exprs.size == 1) exprs.head else new Ands(exprs.toSet)(typings(e))
     case ast.Not(expr) =>
       Not(convert(expr))(typings(e))
-      // TODO: Does this belong here still?
+    // TODO: Does this belong here still?
     case ast.Equals(f: ast.FunctionInvocation, s: ast.StringLiteral) if f.function == functions.Type =>
       HasType(convert(f.args.head), RelType(s.value))(CTBoolean)
     case ast.Equals(lhs, rhs) =>

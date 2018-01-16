@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl
 
-import org.opencypher.caps.api.expr.Var
+import org.opencypher.caps.ir.api.expr.Var
 import org.opencypher.caps.ir.api.IRField
 
 import scala.language.implicitConversions

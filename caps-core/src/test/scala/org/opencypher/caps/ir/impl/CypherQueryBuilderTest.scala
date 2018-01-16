@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.ir.impl
 
-import org.opencypher.caps.api.expr.{Expr, HasLabel, Property, Var}
+import org.opencypher.caps.ir.api.expr.{Expr, HasLabel, Property, Var}
 import org.opencypher.caps.api.schema.{AllGiven, Schema}
 import org.opencypher.caps.api.types.{CTNode, CTNull, CTRelationship}
 import org.opencypher.caps.api.value.CypherValue

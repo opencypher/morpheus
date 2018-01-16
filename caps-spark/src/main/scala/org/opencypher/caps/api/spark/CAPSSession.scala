@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicLong
 import org.apache.spark.SparkConf
 import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.sql.{DataFrame, SparkSession}
-import org.opencypher.caps.api.expr.{Expr, Var}
+import org.opencypher.caps.ir.api.expr.{Expr, Var}
 import org.opencypher.caps.api.graph.CypherSession
 import org.opencypher.caps.api.io.{CreateOrFail, PersistMode}
 import org.opencypher.caps.api.schema.Schema

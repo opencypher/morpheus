@@ -17,7 +17,7 @@ package org.opencypher.caps.impl.spark.physical
 
 import java.net.URI
 
-import org.opencypher.caps.api.expr._
+import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.api.types.CTRelationship
 import org.opencypher.caps.api.value.CypherValue
@@ -153,8 +153,18 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOpera
         val second = process(relOp)
         val third = process(targetOp)
 
-        BoundedVarExpand(first, second, third,
-          rel, edgeList, target, sourceOp.endNode, lower, upper, header, isExpandInto)
+        BoundedVarExpand(
+          first,
+          second,
+          third,
+          rel,
+          edgeList,
+          target,
+          sourceOp.endNode,
+          lower,
+          upper,
+          header,
+          isExpandInto)
 
       case flat.Optional(lhs, rhs, header) =>
         Optional(process(lhs), process(rhs), header)

@@ -13,8 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.common.syntax
+package org.opencypher.caps.refactor
 
-trait AllSyntax
-  extends RegisterSyntax
-  with TraversableSyntax
+import scala.language.implicitConversions
+
+trait Verifiable {
+
+  type Self
+  type VerifiedSelf <: Verified[Self]
+
+  def verify: VerifiedSelf
+}
+
+trait Verified[+V] {
+  def v: V
+}
+
+object Verified {
+  implicit def lift[IN, OUT <: Verified[IN]](input: Verifiable { type Self = IN; type VerifiedSelf = OUT }): OUT =
+    input.verify
+}

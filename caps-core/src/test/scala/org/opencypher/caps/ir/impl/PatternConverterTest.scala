@@ -19,7 +19,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.parser.{Expressions, Patterns}
 import org.neo4j.cypher.internal.util.v3_4.InputPosition.NONE
 import org.neo4j.cypher.internal.util.v3_4.{InputPosition, SyntaxException}
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
-import org.opencypher.caps.api.expr.Expr
+import org.opencypher.caps.ir.api.expr.Expr
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.caps.ir.api.IRField
 import org.opencypher.caps.ir.api.pattern._

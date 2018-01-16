@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.api.expr
+package org.opencypher.caps.ir.api.expr
 
 import org.opencypher.caps.api.types.{CTNode, CTNull, CTRelationship, CTWildcard}
 import org.scalatest.{FunSuite, Matchers}
@@ -43,13 +43,13 @@ class ExprTest extends FunSuite with Matchers {
   test("different expressions are not equal") {
     val p = Param("a")()
     val v = Var("a")()
-    p should not equal(v)
+    p should not equal (v)
   }
 
   test("different expressions have different hash codes") {
     val p = Param("a")()
     val v = Var("b")()
-    p.hashCode should not equal(v.hashCode)
+    p.hashCode should not equal (v.hashCode)
   }
 
 }

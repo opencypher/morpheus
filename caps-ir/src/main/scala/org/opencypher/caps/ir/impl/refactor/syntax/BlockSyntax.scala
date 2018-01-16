@@ -13,23 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.api.expr
+package org.opencypher.caps.ir.impl.refactor.syntax
 
-import org.opencypher.caps.ir.api.Label
-import org.opencypher.caps.test.BaseTestSuite
+import org.opencypher.caps.ir.api.IRField
+import org.opencypher.caps.ir.api.block.Block
 
-class AndsTest extends BaseTestSuite {
+import scala.language.implicitConversions
 
-  test("unnests inner ands") {
-    val x = Var("x")()
-    val args: Set[Expr] = Set(Ands(TrueLit()), HasLabel(x, Label("X"))(), Ands(Ands(Ands(FalseLit()))))
+trait BlockSyntax {
+  implicit def typedBlockOps[B <: Block[_], E](
+      block: B)(implicit instance: TypedBlock[B] { type BlockExpr = E }): TypedBlockOps[B, E] =
+    new TypedBlockOps[B, E](block)
+}
 
-    Ands(args) should equal(Ands(TrueLit(), HasLabel(x, Label("X"))(), FalseLit()))
-  }
-
-  test("empty ands not allowed") {
-    a [IllegalStateException] should be thrownBy {
-      Ands()
-    }
-  }
+final class TypedBlockOps[B <: Block[_], E](block: B)(implicit instance: TypedBlock[B] { type BlockExpr = E }) {
+  def outputs: Set[IRField] = instance.outputs(block)
 }

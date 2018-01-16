@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.web
 
-import org.opencypher.caps.api.expr.Var
+import org.opencypher.caps.ir.api.expr.Var
 import org.opencypher.caps.api.record.{NodeScan, RelationshipScan}
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.api.types.CTNode

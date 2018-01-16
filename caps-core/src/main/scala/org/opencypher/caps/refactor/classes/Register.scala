@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.common.classes
+package org.opencypher.caps.refactor.classes
 
 // Manage collections of elements of type Def such that the collection holds at most one element
 // with a key of type Key.
@@ -50,9 +50,9 @@ trait Register[Collection] {
 object Register {
   @inline
   final def apply[C, R, K, D](implicit register: Register[C] { type Ref = R; type Key = K; type Def = D })
-  : Register[C] {
-    type Ref = R
-    type Key = K
-    type Def = D
-  } = register
+    : Register[C] {
+      type Ref = R
+      type Key = K
+      type Def = D
+    } = register
 }

@@ -17,7 +17,7 @@ package org.opencypher.caps.impl.logical
 
 import java.net.URI
 
-import org.opencypher.caps.api.expr._
+import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.CTNode
 import org.opencypher.caps.ir.api.block.SortItem
@@ -156,7 +156,7 @@ final case class BoundedVarLengthExpand(
 final case class ValueJoin(
     lhs: LogicalOperator,
     rhs: LogicalOperator,
-    predicates: Set[org.opencypher.caps.api.expr.Equals],
+    predicates: Set[org.opencypher.caps.ir.api.expr.Equals],
     solved: SolvedQueryModel[Expr])
     extends BinaryLogicalOperator {
 

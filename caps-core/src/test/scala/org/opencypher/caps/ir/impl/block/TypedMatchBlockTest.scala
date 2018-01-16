@@ -15,42 +15,45 @@
  */
 package org.opencypher.caps.ir.impl.block
 
-import org.opencypher.caps.api.expr.Expr
+import org.opencypher.caps.ir.api.expr.Expr
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.ir.api.block.MatchBlock
 import org.opencypher.caps.ir.impl.IrTestSuite
-import org.opencypher.caps.ir.impl.instances._
+import org.opencypher.caps.ir.impl.refactor.instances._
 
 class TypedMatchBlockTest extends IrTestSuite {
 
   test("computes detailed type of pattern variables") {
     implicit val (block, globals) = matchBlock("MATCH (n:Person:Foo)-[r:TYPE]->(m) RETURN n")
 
-    typedMatchBlock.outputs(block).map(_.toTypedTuple) should equal(Set(
-      "n" -> CTNode("Person", "Foo"),
-      "r" -> CTRelationship("TYPE"),
-      "m" -> CTNode()
-    ))
+    typedMatchBlock.outputs(block).map(_.toTypedTuple) should equal(
+      Set(
+        "n" -> CTNode("Person", "Foo"),
+        "r" -> CTRelationship("TYPE"),
+        "m" -> CTNode()
+      ))
   }
 
   test("computes detailed type of entities also from WHERE clause") {
     implicit val (block, globals) = matchBlock("MATCH (n:Person:Foo)-[r:TYPE]->(m) WHERE n:Three RETURN n")
 
-    typedMatchBlock.outputs(block).map(_.toTypedTuple) should equal(Set(
-      "n" -> CTNode("Person", "Foo", "Three"),
-      "r" -> CTRelationship("TYPE"),
-      "m" -> CTNode()
-    ))
+    typedMatchBlock.outputs(block).map(_.toTypedTuple) should equal(
+      Set(
+        "n" -> CTNode("Person", "Foo", "Three"),
+        "r" -> CTRelationship("TYPE"),
+        "m" -> CTNode()
+      ))
   }
 
   // TODO: We need to register the string literal as a relationship type in globals extraction -- is this what we want
   ignore("computes detailed relationship type from WHERE clause") {
     implicit val (block, globals) = matchBlock("MATCH ()-[r]->() WHERE type(r) = 'TYPE' RETURN $noAutoParams")
 
-    typedMatchBlock.outputs(block).map(_.toTypedTuple) should equal(Set(
-      "r" -> CTRelationship("TYPE")
-    ))
+    typedMatchBlock.outputs(block).map(_.toTypedTuple) should equal(
+      Set(
+        "r" -> CTRelationship("TYPE")
+      ))
   }
 
   private def matchBlock(singleMatchQuery: String): (MatchBlock[Expr], Map[String, CypherValue]) = {

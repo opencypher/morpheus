@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.flat
 
-import org.opencypher.caps.api.expr.{Aggregator, Expr, Var}
+import org.opencypher.caps.ir.api.expr.{Aggregator, Expr, Var}
 import org.opencypher.caps.impl.logical.LogicalGraph
 import org.opencypher.caps.impl.record.{OpaqueField, ProjectedExpr, ProjectedField, RecordHeader}
 import org.opencypher.caps.ir.api.block.SortItem
@@ -92,7 +92,7 @@ final case class ExistsPatternPredicate(predicateField: Var, lhs: FlatOperator, 
 final case class ValueJoin(
     lhs: FlatOperator,
     rhs: FlatOperator,
-    predicates: Set[org.opencypher.caps.api.expr.Equals],
+    predicates: Set[org.opencypher.caps.ir.api.expr.Equals],
     header: RecordHeader)
     extends BinaryFlatOperator
 

@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.record
 
-import org.opencypher.caps.api.expr._
+import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTString, _}

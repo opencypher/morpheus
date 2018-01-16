@@ -16,7 +16,7 @@
 package org.opencypher.caps.api.spark
 
 import org.apache.spark.storage.StorageLevel
-import org.opencypher.caps.api.expr._
+import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.graph.CypherGraph
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.schema.Schema

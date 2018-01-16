@@ -16,7 +16,7 @@
 package org.opencypher.caps.impl.spark.physical.operators
 
 import org.apache.spark.sql.functions
-import org.opencypher.caps.api.expr.Var
+import org.opencypher.caps.ir.api.expr.Var
 import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.impl.record.{OpaqueField, RecordHeader, RecordSlot}
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.{
@@ -42,7 +42,7 @@ private[spark] abstract class BinaryPhysicalOperator extends PhysicalOperator {
 final case class ValueJoin(
     lhs: PhysicalOperator,
     rhs: PhysicalOperator,
-    predicates: Set[org.opencypher.caps.api.expr.Equals],
+    predicates: Set[org.opencypher.caps.ir.api.expr.Equals],
     header: RecordHeader)
     extends BinaryPhysicalOperator {
 

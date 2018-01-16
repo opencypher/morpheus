@@ -13,9 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.common
+package org.opencypher.caps.ir.impl.refactor.syntax
 
-package object syntax extends AllSyntax {
-  case object register extends RegisterSyntax
-  case object traversable extends TraversableSyntax
-}
+trait AllSyntax extends BlockSyntax

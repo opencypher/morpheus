@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.test.support
 
-import org.opencypher.caps.api.expr.Var
+import org.opencypher.caps.ir.api.expr.Var
 import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.api.value._
 import org.opencypher.caps.impl.record.CAPSRecordHeader._

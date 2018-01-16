@@ -16,7 +16,7 @@
 package org.opencypher.caps.impl.spark.physical
 
 import org.apache.spark.sql.Row
-import org.opencypher.caps.api.expr._
+import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.value.instances._
 import org.opencypher.caps.api.value.syntax._
 import org.opencypher.caps.impl.spark.DfUtils._

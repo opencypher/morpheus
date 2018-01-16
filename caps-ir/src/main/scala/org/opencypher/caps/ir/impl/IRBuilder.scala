@@ -22,7 +22,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, StringLiteral, Variable, Pattern => AstPattern}
-import org.opencypher.caps.api.expr._
+import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.schema.{AllGiven, Schema}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.CompilationStage
@@ -30,7 +30,7 @@ import org.opencypher.caps.impl.util.parsePathOrURI
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block.{SortItem, _}
 import org.opencypher.caps.ir.api.pattern.Pattern
-import org.opencypher.caps.ir.impl.instances._
+import org.opencypher.caps.ir.impl.refactor.instances._
 
 object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBuilderContext] {
 
@@ -425,8 +425,8 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
         predicate <- convertExpr(expr)
       } yield {
         predicate match {
-          case org.opencypher.caps.api.expr.Ands(exprs) => AllGiven(exprs)
-          case e                                        => AllGiven(Set(e))
+          case org.opencypher.caps.ir.api.expr.Ands(exprs) => AllGiven(exprs)
+          case e                                           => AllGiven(Set(e))
         }
       }
 

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.api.expr
+package org.opencypher.caps.ir.api.expr
 
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.ir.api.{CypherQuery, Label, PropertyKey, RelType}
@@ -91,7 +91,7 @@ sealed abstract class FlatteningOpExpr(_exprs: Set[Expr]) extends Expr with Seri
       val remaining = exprs.tail
       companion.unapply(expr) match {
         case Some(moreExprs) => flatExpr(moreExprs ++ remaining, result)
-        case None => flatExpr(remaining, result + expr)
+        case None            => flatExpr(remaining, result + expr)
       }
     }
 }
@@ -103,7 +103,7 @@ object Ands extends FlatteningOpExprCompanion[Ands] {
 
   override def unapply(expr: Any): Option[Set[Expr]] = expr match {
     case ands: Ands => Some(ands.exprs)
-    case _ => None
+    case _          => None
   }
 }
 
@@ -124,7 +124,7 @@ object Ors extends FlatteningOpExprCompanion[Ors] {
 
   override def unapply(expr: Any): Option[Set[Expr]] = expr match {
     case ors: Ors => Some(ors.exprs)
-    case _ => None
+    case _        => None
   }
 }
 
@@ -204,9 +204,9 @@ final case class Property(m: Expr, key: PropertyKey)(val cypherType: CypherType 
   }
 
   override def equals(obj: scala.Any) = obj match {
-    case null => false
+    case null            => false
     case other: Property => m == other.m && key == other.key && cypherType == other.cypherType
-    case _ => false
+    case _               => false
   }
 }
 
@@ -349,7 +349,8 @@ final case class FalseLit() extends BoolLit(false)()
 
 // Pattern Predicate Expression
 
-final case class ExistsPatternExpr(predicateField: Var, ir: CypherQuery[Expr])(val cypherType: CypherType = CTBoolean) extends Expr {
+final case class ExistsPatternExpr(predicateField: Var, ir: CypherQuery[Expr])(val cypherType: CypherType = CTBoolean)
+    extends Expr {
   override def toString = s"$withoutType($cypherType)"
 
   override def withoutType = s"Exists($predicateField, ${ir.info})"

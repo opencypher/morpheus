@@ -18,7 +18,7 @@ package org.opencypher.caps.impl.spark
 import org.apache.spark.sql.functions.udf
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame, functions}
-import org.opencypher.caps.api.expr._
+import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.types.{CTAny, CTList, CTNode, CTString}
 import org.opencypher.caps.impl.convert.toJavaType
 import org.opencypher.caps.impl.spark.Udfs._

@@ -17,7 +17,7 @@ package org.opencypher.caps.ir.impl
 
 import org.neo4j.cypher.internal.v3_4.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.v3_4.functions
-import org.opencypher.caps.api.expr._
+import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.types.CypherType
 
 object FunctionUtils {

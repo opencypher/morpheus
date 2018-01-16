@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.logical
 
-import org.opencypher.caps.api.expr._
+import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, _}
 import org.opencypher.caps.ir.api._
@@ -40,7 +40,8 @@ class LogicalOptimizerTest extends IrTestSuite {
 //    (CTNode: CTNode) -> "CTNode"
 //  )
 
-  def plannerContext(schema: Schema) = LogicalPlannerContext(schema, Set.empty, (_) => testGraphSource(schema), testGraph())
+  def plannerContext(schema: Schema) =
+    LogicalPlannerContext(schema, Set.empty, (_) => testGraphSource(schema), testGraph())
 
   test("push label filter into scan") {
     val animalSchema = schema.withNodePropertyKeys("Animal")()

@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.ir.impl.instances
+package org.opencypher.caps.ir.impl.refactor.instances
 
-import org.opencypher.caps.api.expr.{Expr, HasLabel, HasType, Var}
+import org.opencypher.caps.ir.api.expr.{Expr, HasLabel, HasType, Var}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
-import org.opencypher.caps.common.classes.TypedBlock
+import org.opencypher.caps.ir.impl.refactor.syntax.TypedBlock
 import org.opencypher.caps.ir.api.{IRField, Label}
 import org.opencypher.caps.ir.api.block.MatchBlock
 
@@ -43,22 +43,25 @@ trait ExprBlockInstances {
         val predicates = block.where.elements
 
         predicates.foldLeft(opaqueTypedFields) {
-          case (fields, predicate) => predicate match {
-            case HasLabel(node: Var, label) => fields.map {
-              case f if f representsNode node =>
-                f.withLabel(label)
-              case f => f
-            }
+          case (fields, predicate) =>
+            predicate match {
+              case HasLabel(node: Var, label) =>
+                fields.map {
+                  case f if f representsNode node =>
+                    f.withLabel(label)
+                  case f => f
+                }
               // The below predicate is never present currently
               // Possibly it will be if we introduce a rewrite
               // Rel types are currently detailed already in pattern conversion
-            case HasType(rel: Var, relType) => fields.map {
-              case f if f representsRel rel =>
-                throw new NotImplementedError("No support for annotating relationships in IR yet")
-              case f => f
+              case HasType(rel: Var, relType) =>
+                fields.map {
+                  case f if f representsRel rel =>
+                    throw new NotImplementedError("No support for annotating relationships in IR yet")
+                  case f => f
+                }
+              case _ => fields
             }
-            case _ => fields
-          }
         }
       }
     }

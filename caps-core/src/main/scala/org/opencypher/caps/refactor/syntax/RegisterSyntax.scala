@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.common.syntax
+package org.opencypher.caps.refactor.syntax
 
-import org.opencypher.caps.common.classes.Register
+import org.opencypher.caps.refactor.classes.Register
 
 import scala.language.implicitConversions
 
@@ -25,17 +25,15 @@ trait RegisterSyntax {
   def key[D, K](defn: D)(implicit register: Register[_] { type Def = D; type Key = K }): register.Key =
     register.key(defn)
 
-  implicit def registerSyntax[C, R, K, D](coll: C)
-  (implicit
-   register: Register[C] { type Ref = R; type Key = K; type Def = D }
-  ): RegisterOps[C, R, K, D] =
+  implicit def registerSyntax[C, R, K, D](coll: C)(
+      implicit
+      register: Register[C] { type Ref = R; type Key = K; type Def = D }): RegisterOps[C, R, K, D] =
     new RegisterOps[C, R, K, D](coll)
 }
 
-final class RegisterOps[C, R, K, D](coll: C)
-(implicit
-  val register: Register[C] { type Ref = R; type Key = K; type Def = D }
-) {
+final class RegisterOps[C, R, K, D](coll: C)(
+    implicit
+    val register: Register[C] { type Ref = R; type Key = K; type Def = D }) {
   def contents: Traversable[(R, D)] = register.contents(coll)
 
   def lookup(ref: R): Option[D] = register.lookup(coll, ref)

@@ -17,7 +17,7 @@ package org.opencypher.caps.ir.api
 
 import java.net.URI
 
-import org.opencypher.caps.api.expr.{Equals, Expr}
+import org.opencypher.caps.ir.api.expr.{Equals, Expr}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTBoolean, CTNode}
 import org.opencypher.caps.ir.api.block.{FieldsAndGraphs, ProjectedFieldsOf}

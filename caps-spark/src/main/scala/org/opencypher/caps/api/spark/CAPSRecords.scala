@@ -22,7 +22,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
-import org.opencypher.caps.api.expr.{Property, Var}
+import org.opencypher.caps.ir.api.expr.{Property, Var}
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.util.PrintOptions

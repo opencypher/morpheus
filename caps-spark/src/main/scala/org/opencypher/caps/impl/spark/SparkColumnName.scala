@@ -16,7 +16,7 @@
 package org.opencypher.caps.impl.spark
 
 import org.apache.spark.sql.{Column, DataFrame}
-import org.opencypher.caps.api.expr.{Expr, Property, Var}
+import org.opencypher.caps.ir.api.expr.{Expr, Property, Var}
 import org.opencypher.caps.impl.record.{FieldSlotContent, ProjectedExpr, RecordSlot, SlotContent}
 
 import scala.collection.mutable

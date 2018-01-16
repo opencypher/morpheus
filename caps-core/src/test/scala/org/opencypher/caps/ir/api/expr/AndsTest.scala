@@ -13,7 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.ir.impl.syntax
+package org.opencypher.caps.ir.api.expr
 
-trait AllSyntax
-  extends BlockSyntax
+import org.opencypher.caps.ir.api.Label
+import org.opencypher.caps.test.BaseTestSuite
+
+class AndsTest extends BaseTestSuite {
+
+  test("unnests inner ands") {
+    val x = Var("x")()
+    val args: Set[Expr] = Set(Ands(TrueLit()), HasLabel(x, Label("X"))(), Ands(Ands(Ands(FalseLit()))))
+
+    Ands(args) should equal(Ands(TrueLit(), HasLabel(x, Label("X"))(), FalseLit()))
+  }
+
+  test("empty ands not allowed") {
+    a[IllegalStateException] should be thrownBy {
+      Ands()
+    }
+  }
+}

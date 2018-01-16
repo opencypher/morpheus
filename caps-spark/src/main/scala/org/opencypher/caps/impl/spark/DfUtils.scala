@@ -16,7 +16,7 @@
 package org.opencypher.caps.impl.spark
 
 import org.apache.spark.sql.{Column, DataFrame, Row}
-import org.opencypher.caps.api.expr.{Expr, Param}
+import org.opencypher.caps.ir.api.expr.{Expr, Param}
 import org.opencypher.caps.api.spark.CAPSSession
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value._

@@ -18,7 +18,7 @@ package org.opencypher.caps.api.record
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
 import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.storage.StorageLevel
-import org.opencypher.caps.api.expr._
+import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSRecords, CAPSSession}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType}

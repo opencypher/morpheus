@@ -19,7 +19,7 @@ import cats.data.State
 import org.atnos.eff._
 import org.atnos.eff.all._
 import org.atnos.eff.syntax.all._
-import org.opencypher.caps.api.expr.Expr
+import org.opencypher.caps.ir.api.expr.Expr
 
 package object impl {
 
@@ -40,6 +40,6 @@ package object impl {
     }
   }
 
-  def error[R: _mayFail : _hasContext, A](err: IRBuilderError)(v: A): Eff[R, A] =
+  def error[R: _mayFail: _hasContext, A](err: IRBuilderError)(v: A): Eff[R, A] =
     left[R, IRBuilderError, BlockRegistry[Expr]](err) >> pure(v)
 }

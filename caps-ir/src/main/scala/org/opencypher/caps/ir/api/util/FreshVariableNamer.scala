@@ -13,13 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.common.classes
+package org.opencypher.caps.ir.api.util
 
-import org.opencypher.caps.ir.api.IRField
+import org.opencypher.caps.ir.api.expr.Var
+import org.opencypher.caps.api.types.CypherType
 
-trait TypedBlock[Block] {
+object FreshVariableNamer {
+  val PREFIX = "  "
 
-  type BlockExpr
+  def apply(seed: String, t: CypherType): Var = Var(s"$PREFIX$seed")(t)
 
-  def outputs(block: Block): Set[IRField]
+  def apply(id: Int, t: CypherType): Var = apply(s"FRESH_VAR$id", t)
 }

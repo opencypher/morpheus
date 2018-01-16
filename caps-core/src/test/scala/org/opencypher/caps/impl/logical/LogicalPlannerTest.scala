@@ -17,7 +17,7 @@ package org.opencypher.caps.impl.logical
 
 import java.net.URI
 
-import org.opencypher.caps.api.expr._
+import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.io.GraphSource
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
@@ -107,7 +107,7 @@ class LogicalPlannerTest extends IrTestSuite {
     val result = plan(irWithLeaf(block))
 
     val expected = Project(
-      Property('n, PropertyKey("prop"))(CTFloat),  // n is a dangling reference here
+      Property('n, PropertyKey("prop"))(CTFloat), // n is a dangling reference here
       Some('a),
       leafPlan,
       emptySqm.withFields('a))

@@ -16,7 +16,7 @@
 package org.opencypher.caps.impl.flat
 
 import cats.Monoid
-import org.opencypher.caps.api.expr._
+import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
@@ -25,6 +25,7 @@ import org.opencypher.caps.impl.logical.LogicalGraph
 import org.opencypher.caps.impl.record._
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.ir.api.block.SortItem
+import org.opencypher.caps.ir.api.util.FreshVariableNamer
 
 import scala.annotation.tailrec
 
@@ -183,7 +184,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   def valueJoin(
       lhs: FlatOperator,
       rhs: FlatOperator,
-      predicates: Set[org.opencypher.caps.api.expr.Equals]): FlatOperator = {
+      predicates: Set[org.opencypher.caps.ir.api.expr.Equals]): FlatOperator = {
     ValueJoin(lhs, rhs, predicates, lhs.header ++ rhs.header)
   }
 
