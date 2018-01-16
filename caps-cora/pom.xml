@@ -23,7 +23,7 @@
         <!--CAPS Module-->
         <dependency>
             <groupId>org.opencypher</groupId>
-            <artifactId>caps-core</artifactId>
+            <artifactId>caps-logical</artifactId>
             <version>${parent.version}</version>
         </dependency>
 
