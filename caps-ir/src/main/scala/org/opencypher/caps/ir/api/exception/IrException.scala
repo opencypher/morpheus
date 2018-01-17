@@ -20,3 +20,5 @@ import org.opencypher.caps.api.exception.CypherException
 abstract class IrException(msg: String) extends CypherException(msg)
 
 final case class PatternConversionException(msg: String) extends IrException(msg)
+
+final case class TyperException(msg: String) extends IrException(msg)

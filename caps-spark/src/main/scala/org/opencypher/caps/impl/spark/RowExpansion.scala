@@ -17,10 +17,10 @@ package org.opencypher.caps.impl.spark
 
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.StructType
+import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.impl.record.CAPSRecordHeader._
-import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.record.{ProjectedExpr, RecordHeader, RecordSlot}
 
 case class RowExpansion(
@@ -51,7 +51,7 @@ case class RowExpansion(
       val typeIndexForRel = slots.collectFirst {
         case RecordSlot(_, p @ ProjectedExpr(Type(r))) if r == rel =>
           rowSchema.fieldIndex(SparkColumnName.of(p.withOwner(targetVar)))
-      }.getOrElse(Raise.impossible("relationship didn't have a type column!"))
+      }.getOrElse(throw IllegalArgumentException(s"a type column for relationship $rel"))
       rel -> typeIndexForRel
   }
 
@@ -74,7 +74,7 @@ case class RowExpansion(
             if (hasMatchingType) Some(adaptedRow)
             else None
           case _ =>
-            Raise.invalidArgument("an entity variable", entity)
+            throw IllegalArgumentException("an entity variable", entity)
         }
     }
     adaptedRows.toSeq
@@ -91,7 +91,7 @@ case class RowExpansion(
           val value = targetSlot.content match {
             case ProjectedExpr(HasLabel(_, _)) => false
             case ProjectedExpr(Property(_, _)) => null
-            case _                             => Raise.impossible()
+            case other                         => throw IllegalArgumentException("a projected expression of label or property", other)
           }
           newRowAcc :+ value
       }

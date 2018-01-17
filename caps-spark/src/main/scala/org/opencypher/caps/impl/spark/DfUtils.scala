@@ -16,12 +16,12 @@
 package org.opencypher.caps.impl.spark
 
 import org.apache.spark.sql.{Column, DataFrame, Row}
+import org.opencypher.caps.api.exception.{IllegalArgumentException, NotImplementedException}
 import org.opencypher.caps.ir.api.expr.{Expr, Param}
 import org.opencypher.caps.api.spark.CAPSSession
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value._
 import org.opencypher.caps.api.value.instances._
-import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.record.RecordHeader
 import org.opencypher.caps.impl.spark.physical.RuntimeContext
 
@@ -33,7 +33,7 @@ object DfUtils {
         case Param(name) => context.parameters(name)
         case _ =>
           header.slotsFor(expr).headOption match {
-            case None => Raise.slotNotFound(expr.toString)
+            case None => throw IllegalArgumentException(s"slot for $expr")
             case Some(slot) =>
               val index = slot.index
 
@@ -74,7 +74,7 @@ object DfUtils {
         case null => null
         case v    => typeToValue(r.material)(v)
       }
-      case _ => Raise.notYetImplemented(s"converting value of type $t")
+      case _ => throw NotImplementedException(s"Converting value with cypher type $t")
     }
   }
 

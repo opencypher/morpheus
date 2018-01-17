@@ -18,13 +18,13 @@ package org.opencypher.caps.api.record
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
 import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.storage.StorageLevel
+import org.opencypher.caps.api.exception.{IllegalArgumentException, IllegalStateException}
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSRecords, CAPSSession}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.caps.api.util.Annotation
 import org.opencypher.caps.impl.record.CAPSRecordHeader._
-import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.record.{CAPSRecordHeader => _, _}
 import org.opencypher.caps.impl.spark.{SparkColumn, SparkColumnName}
 import org.opencypher.caps.ir.api.Label
@@ -76,13 +76,12 @@ object GraphScan extends GraphScanCompanion[EmbeddedEntity] {
     * @return a new instance of `CAPSRecords` aligned with the argument header
     */
   def align(records: CAPSRecords, v: Var, targetHeader: RecordHeader)(implicit session: CAPSSession): CAPSRecords = {
-    val oldEntity =
-      records.header.internalHeader.fields.headOption
-        .getOrElse(Raise.impossible("GraphScan table did not contain any fields"))
+    val oldEntity = records.header.internalHeader.fields.headOption
+      .getOrElse(throw IllegalStateException("GraphScan table did not contain any fields"))
     val entityLabels: Set[String] = oldEntity.cypherType match {
       case CTNode(labels)      => labels
       case CTRelationship(typ) => typ
-      case _                   => Raise.impossible("GraphScan table entities should either be nodes or relationships")
+      case _                   => throw IllegalArgumentException("CTNode or CTRelationship", oldEntity.cypherType)
     }
 
     val slots = records.header.slots
@@ -246,10 +245,12 @@ object GraphScanBuilder {
     protected def getPropertyKeys(entity: EmbeddedEntity, header: RecordHeader): Seq[(String, CypherType)] = {
       val headerKeys = header.slots.map(_.content.key)
       entity.propertiesFromSlots.keys
-        .map(key =>
-          key -> headerKeys.collectFirst {
-            case p: Property if p.m == entity.entityVar && p.key.name == key => p.cypherType
-          }.getOrElse(Raise.slotNotFound(s"variable ${entity.entityVar} with key $key when searching in $headerKeys")))
+        .map(
+          key =>
+            key -> headerKeys.collectFirst {
+              case p: Property if p.m == entity.entityVar && p.key.name == key => p.cypherType
+            }.getOrElse(throw IllegalStateException(
+              s"Slot not found using variable ${entity.entityVar} with key $key when searching in $headerKeys")))
         .toSeq
     }
   }

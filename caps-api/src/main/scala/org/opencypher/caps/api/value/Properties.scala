@@ -15,10 +15,11 @@
  */
 package org.opencypher.caps.api.value
 
+import org.opencypher.caps.api.exception.IllegalArgumentException
+import org.opencypher.caps.api.value.syntax.cypherNull
+
 import scala.collection.immutable.SortedMap
 import scala.language.implicitConversions
-
-import syntax.cypherNull
 
 object Properties {
 
@@ -28,7 +29,7 @@ object Properties {
     fromMap(SortedMap(elts: _*))
 
   implicit def fromMap(v: Map[String, CypherValue]): Properties = {
-    if (v == null) throw new IllegalArgumentException("Property map must not be null")
+    if (v == null) throw IllegalArgumentException("a property map", v)
     v match {
       case m: SortedMap[String, CypherValue] if m.ordering eq Ordering.String =>
         new Properties(m)

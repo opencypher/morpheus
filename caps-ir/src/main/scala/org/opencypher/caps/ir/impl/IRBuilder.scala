@@ -22,12 +22,13 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, StringLiteral, Variable, Pattern => AstPattern}
-import org.opencypher.caps.ir.api.expr._
+import org.opencypher.caps.api.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.caps.api.schema.{AllGiven, Schema}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.util.parsePathOrURI
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block.{SortItem, _}
+import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.ir.api.pattern.Pattern
 import org.opencypher.caps.ir.api.util.CompilationStage
 import org.opencypher.caps.ir.impl.refactor.instances._
@@ -41,9 +42,9 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
 
   override def extract(output: Out): CypherQuery[Expr] =
     output match {
-      case Left(error)         => throw new IllegalStateException(s"Error during IR construction: $error")
+      case Left(error)         => throw IllegalStateException(s"Error during IR construction: $error")
       case Right((Some(q), _)) => q
-      case Right((None, _))    => throw new IllegalStateException(s"Failed to construct IR")
+      case Right((None, _))    => throw IllegalStateException(s"Failed to construct IR")
     }
 
   private def buildIR[R: _mayFail: _hasContext](s: ast.Statement): Eff[R, Option[CypherQuery[Expr]]] =
@@ -266,7 +267,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
     case ast.ReturnedGraph(graph) =>
       convertSingleGraphAs[R](graph)
 
-    case _ => throw new NotImplementedError(s"Support for setting a different target graph not yet implemented")
+    case _ => throw NotImplementedException(s"Support for setting a different target graph not yet implemented")
   }
 
   private def convertSingleGraphAs[R: _hasContext](graph: ast.SingleGraphAs): Eff[R, IRGraph] = {
@@ -290,7 +291,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
             case ast.GraphAtAs(url, _, _) =>
               val graphURI = url.url match {
                 case Left(_) =>
-                  throw new NotImplementedError(s"Support for graph uris by parameter not yet implemented")
+                  throw NotImplementedException(s"Support for graph uris by parameter not yet implemented")
                 case Right(StringLiteral(literal)) => parsePathOrURI(literal)
               }
               val newContext = context.withGraphAt(graphName, graphURI)
@@ -301,12 +302,12 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
               pure[R, IRGraph](IRNamedGraph(graphName, context.schemaFor(graphName)))
 
             case _ =>
-              throw new NotImplementedError(s"Support for graph aliasing not yet implemented")
+              throw NotImplementedException(s"Support for graph aliasing not yet implemented")
           }
         } yield result
 
       case None =>
-        throw new IllegalArgumentException(s"$graph does not have an alias")
+        throw IllegalArgumentException("graph with alias", graph)
     }
   }
 
@@ -339,7 +340,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
       schema.forNode(n)
     case r: CTRelationship =>
       schema.forRelationship(r)
-    case x => throw new IllegalArgumentException(s"$x is not an entity type")
+    case x => throw IllegalArgumentException("entity type", x)
   }
 
   private def convertReturnItem[R: _mayFail: _hasContext](item: ast.ReturnItem): Eff[R, (IRField, Expr)] = item match {
@@ -365,8 +366,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
       } yield field -> expr
 
     case _ =>
-      throw new IllegalArgumentException(
-        s"Expected ${AliasedReturnItem.getClass} or ${UnaliasedReturnItem.getClass} but found ${item.getClass}")
+      throw IllegalArgumentException(s"${AliasedReturnItem.getClass} or ${UnaliasedReturnItem.getClass}", item.getClass)
   }
 
   private def convertUnwindItem[R: _mayFail: _hasContext](

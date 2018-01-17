@@ -17,6 +17,7 @@ package org.opencypher.caps.ir.impl
 
 import org.neo4j.cypher.internal.v3_4.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.v3_4.functions
+import org.opencypher.caps.api.exception.NotImplementedException
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.types.CypherType
 
@@ -41,7 +42,7 @@ object FunctionUtils {
         case functions.ToFloat   => ToFloat(expr.head)(cypherType)
         case functions.Collect   => Collect(expr.head)(cypherType)
         case a: functions.Function =>
-          throw new NotImplementedError(s"Support for converting ${a.name} function not yet implemented")
+          throw NotImplementedException(s"Support for converting ${a.name} function not yet implemented")
       }
     }
   }

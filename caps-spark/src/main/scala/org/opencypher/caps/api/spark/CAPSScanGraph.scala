@@ -17,11 +17,11 @@ package org.opencypher.caps.api.spark
 
 import cats.data.NonEmptyVector
 import org.apache.spark.storage.StorageLevel
+import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType, DefiniteCypherType}
-import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.record.RecordHeader
 
 class CAPSScanGraph(val scans: Seq[GraphScan], val schema: Schema)(implicit val session: CAPSSession)
@@ -74,7 +74,9 @@ class CAPSScanGraph(val scans: Seq[GraphScan], val schema: Schema)(implicit val 
   override def union(other: CAPSGraph): CAPSGraph = other match {
     case (otherScanGraph: CAPSScanGraph) =>
       val allScans = scans ++ otherScanGraph.scans
-      val nodeScan = allScans.collectFirst[NodeScan] { case scan: NodeScan => scan }.getOrElse(Raise.impossible())
+      val nodeScan = allScans
+        .collectFirst[NodeScan] { case scan: NodeScan => scan }
+        .getOrElse(throw IllegalArgumentException("at least one node scan"))
       CAPSGraph.create(nodeScan, allScans.filterNot(_ == nodeScan): _*)
     case _ => CAPSUnionGraph(this, other)
   }

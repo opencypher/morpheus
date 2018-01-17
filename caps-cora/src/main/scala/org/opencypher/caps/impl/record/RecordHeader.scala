@@ -15,11 +15,11 @@
  */
 package org.opencypher.caps.impl.record
 
+import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTString, _}
-import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.ir.api.{Label, PropertyKey}
 
@@ -166,7 +166,7 @@ object RecordHeader {
   def nodeFromSchema(node: Var, schema: Schema): RecordHeader = {
     val labels: Set[String] = node.cypherType match {
       case CTNode(l) => l
-      case other     => Raise.invalidArgument("CTNode", other.toString)
+      case other     => throw IllegalArgumentException("CTNode", other)
     }
     nodeFromSchema(node, schema, labels)
   }
@@ -207,7 +207,7 @@ object RecordHeader {
       case CTRelationship(_types) =>
         _types
       case other =>
-        Raise.invalidArgument("CTRelationship", other.toString)
+        throw IllegalArgumentException("CTRelationship", other)
     }
 
     relationshipFromSchema(rel, schema, types)

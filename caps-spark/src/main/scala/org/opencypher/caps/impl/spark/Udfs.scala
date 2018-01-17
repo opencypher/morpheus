@@ -15,10 +15,10 @@
  */
 package org.opencypher.caps.impl.spark
 
+import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.api.value.instances._
 import org.opencypher.caps.api.value.syntax._
-import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.ir.api.Label
 import org.opencypher.caps.ir.impl.convert.toJava
 
@@ -54,12 +54,12 @@ object Udfs {
         }
         .toArray
         .sorted
-    case x => Raise.invalidArgument("an array", x.toString)
+    case x => throw IllegalArgumentException("an array", x)
   }
 
   def in[T](elem: Any, list: Any): Boolean = list match {
     case a: mutable.WrappedArray[_] => a.contains(elem)
-    case x                          => Raise.invalidArgument("an array", x.toString)
+    case x                          => throw IllegalArgumentException("an array", x)
   }
 
 }

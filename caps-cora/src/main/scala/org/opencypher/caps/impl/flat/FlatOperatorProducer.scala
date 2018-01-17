@@ -16,9 +16,9 @@
 package org.opencypher.caps.impl.flat
 
 import cats.Monoid
+import org.opencypher.caps.api.exception.{IllegalStateException, RecordHeaderException}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.record._
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.ir.api.block.SortItem
@@ -120,10 +120,12 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   @tailrec
-  private def relTypeFromList(t: CypherType): Set[String] = t match {
-    case l: CTList         => relTypeFromList(l.elementType)
-    case r: CTRelationship => r.types
-    case _                 => Raise.impossible()
+  private def relTypeFromList(t: CypherType): Set[String] = {
+    t match {
+      case l: CTList         => relTypeFromList(l.elementType)
+      case r: CTRelationship => r.types
+      case _                 => throw IllegalStateException(s"Required CTList or CTRelationship, but got $t")
+    }
   }
 
   def varLengthEdgeScan(edgeList: Var, prev: FlatOperator): EdgeScan = {
@@ -154,7 +156,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
       case _: Found[_]       => in
       case _: Replaced[_]    => Alias(it.expr, it.alias.get, in, newHeader)
       case _: Added[_]       => Project(it.expr, in, newHeader)
-      case f: FailedToAdd[_] => Raise.slotNotAdded(f.toString)
+      case f: FailedToAdd[_] => throw RecordHeaderException(s"Slot already exists: ${f.conflict}")
     }
   }
 
@@ -231,10 +233,11 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   def planExistsPatternPredicate(expr: ExistsPatternExpr, lhs: FlatOperator, rhs: FlatOperator): FlatOperator = {
     val (header, status) = lhs.header.update(addContent(ProjectedField(expr.predicateField, expr)))
 
+    // TODO: record header should have sealed effects or be a map
     status match {
       case _: Added[_]       => ExistsPatternPredicate(expr.predicateField, lhs, rhs, header)
-      case f: FailedToAdd[_] => Raise.slotNotAdded(f.toString)
-      case _                 => Raise.impossible("Invalid RecordHeader update status.")
+      case f: FailedToAdd[_] => throw RecordHeaderException(s"Slot already exists: ${f.conflict}")
+      case _                 => throw RecordHeaderException("Invalid RecordHeader update status.")
     }
   }
 

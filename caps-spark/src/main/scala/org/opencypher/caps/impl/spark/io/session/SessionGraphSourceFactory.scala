@@ -20,9 +20,9 @@ import java.net.URI
 import org.opencypher.caps.api.spark.io._
 import org.opencypher.caps.api.spark.CAPSSession
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceFactoryImpl
-import org.opencypher.caps.impl.exception.Raise
 import java.util.concurrent.ConcurrentHashMap
 
+import org.opencypher.caps.api.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.caps.api.graph.CypherSession
 
 import scala.collection.JavaConversions._
@@ -30,22 +30,20 @@ import scala.collection.JavaConversions._
 case object SessionGraphSourceFactory extends CAPSGraphSourceFactoryCompanion(CypherSession.sessionGraphSchema)
 
 case class SessionGraphSourceFactory(
-  mountPoints: collection.concurrent.Map[String, CAPSGraphSource] = new ConcurrentHashMap[String, CAPSGraphSource]())
-  extends CAPSGraphSourceFactoryImpl[CAPSGraphSource](SessionGraphSourceFactory) {
+    mountPoints: collection.concurrent.Map[String, CAPSGraphSource] = new ConcurrentHashMap[String, CAPSGraphSource]())
+    extends CAPSGraphSourceFactoryImpl[CAPSGraphSource](SessionGraphSourceFactory) {
 
   def mountSourceAt(existingSource: CAPSGraphSource, uri: URI)(implicit capsSession: CAPSSession): Unit =
     if (schemes.contains(uri.getScheme))
       withValidPath(uri) { (path: String) =>
         mountPoints.get(path) match {
           case Some(source) =>
-            Raise.graphAlreadyExists(uri)
+            throw UnsupportedOperationException(s"Overwriting session graph at $source")
 
           case _ =>
             mountPoints.put(path, existingSource)
         }
-      }
-    else
-      Raise.graphSourceSchemeNotSupported(uri, schemes)
+      } else throw IllegalArgumentException(s"supported scheme: ${schemes.mkString("[", ", ", "]")}", uri.getScheme)
 
   def unmountAll(implicit capsSession: CAPSSession): Unit =
     mountPoints.clear()
@@ -66,17 +64,15 @@ case class SessionGraphSourceFactory(
   private def withValidPath[T](uri: URI)(f: String => T): T = {
     val path = uri.getPath
     if (uri.getUserInfo != null ||
-      uri.getHost != null ||
-      uri.getPort != -1 ||
-      uri.getQuery != null ||
-      uri.getAuthority != null ||
-      uri.getFragment != null ||
-      path == null ||
-      !path.startsWith("/"))
-      Raise.graphURIMalformedForUseBy(uri, "session graph source factory")
+        uri.getHost != null ||
+        uri.getPort != -1 ||
+        uri.getQuery != null ||
+        uri.getAuthority != null ||
+        uri.getFragment != null ||
+        path == null ||
+        !path.startsWith("/"))
+      throw IllegalArgumentException(s"a valid URI for use by $name", uri)
     else
       f(path)
   }
 }
-
-

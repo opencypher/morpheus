@@ -17,6 +17,7 @@ package org.opencypher.caps.ir.api
 
 import java.net.URI
 
+import org.opencypher.caps.api.exception.IllegalStateException
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.ir.api.block._
 import org.opencypher.caps.ir.api.pattern._
@@ -25,10 +26,10 @@ import scala.annotation.tailrec
 import scala.collection.generic.CanBuildFrom
 
 final case class QueryModel[E](
-  result: ResultBlock[E],
-  parameters: Map[String, CypherValue],
-  blocks: Map[BlockRef, Block[E]],
-  graphs: Map[String, URI]
+    result: ResultBlock[E],
+    parameters: Map[String, CypherValue],
+    blocks: Map[BlockRef, Block[E]],
+    graphs: Map[String, URI]
 ) {
 
   def apply(ref: BlockRef): Block[E] = blocks(ref)
@@ -42,17 +43,19 @@ final case class QueryModel[E](
     allDependencies(dependencies(ref).toList, List.empty, Set(ref)) - ref
 
   @tailrec
-  private def allDependencies(current: List[BlockRef], remaining: List[Set[BlockRef]], deps: Set[BlockRef])
-  : Set[BlockRef] = {
+  private def allDependencies(
+      current: List[BlockRef],
+      remaining: List[Set[BlockRef]],
+      deps: Set[BlockRef]): Set[BlockRef] = {
     if (current.isEmpty) {
       remaining match {
         case hd :: tl => allDependencies(hd.toList, tl, deps)
-        case _ => deps
+        case _        => deps
       }
     } else {
       current match {
         case hd :: _ if deps(hd) =>
-          throw new IllegalStateException("Cycle of blocks detected!")
+          throw IllegalStateException("Cycle of blocks detected!")
 
         case hd :: tl =>
           allDependencies(tl, dependencies(hd) +: remaining, deps + hd)
@@ -63,15 +66,16 @@ final case class QueryModel[E](
     }
   }
 
-  def collect[T, That](f: PartialFunction[(BlockRef, Block[E]), T])(implicit bf: CanBuildFrom[Map[BlockRef, Block[E]], T, That]): That = {
+  def collect[T, That](f: PartialFunction[(BlockRef, Block[E]), T])(
+      implicit bf: CanBuildFrom[Map[BlockRef, Block[E]], T, That]): That = {
     blocks.collect(f)
   }
 }
 
 case class SolvedQueryModel[E](
-  fields: Set[IRField],
-  predicates: Set[E] = Set.empty[E],
-  graphs: Set[IRNamedGraph] = Set.empty[IRNamedGraph]
+    fields: Set[IRField],
+    predicates: Set[E] = Set.empty[E],
+    graphs: Set[IRNamedGraph] = Set.empty[IRNamedGraph]
 ) {
 
   // extension

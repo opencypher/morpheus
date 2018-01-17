@@ -15,6 +15,7 @@
  */
 package org.opencypher.caps.ir.impl.refactor.instances
 
+import org.opencypher.caps.api.exception.NotImplementedException
 import org.opencypher.caps.ir.api.expr.{Expr, HasLabel, HasType, Var}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.ir.impl.refactor.syntax.TypedBlock
@@ -57,7 +58,7 @@ trait ExprBlockInstances {
               case HasType(rel: Var, relType) =>
                 fields.map {
                   case f if f representsRel rel =>
-                    throw new NotImplementedError("No support for annotating relationships in IR yet")
+                    throw NotImplementedException("No support for annotating relationships in IR yet")
                   case f => f
                 }
               case _ => fields

@@ -18,23 +18,23 @@ package org.opencypher.caps.impl.spark.io.hdfs
 import java.net.URI
 
 import org.apache.hadoop.conf.Configuration
+import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.io.{CreateOrFail, PersistMode}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceImpl
-import org.opencypher.caps.impl.exception.Raise
 
-case class HdfsCsvGraphSource(override val canonicalURI: URI, hadoopConfig: Configuration, path: String)
-                             (implicit capsSession: CAPSSession)
-  extends CAPSGraphSourceImpl {
+case class HdfsCsvGraphSource(override val canonicalURI: URI, hadoopConfig: Configuration, path: String)(
+    implicit capsSession: CAPSSession)
+    extends CAPSGraphSourceImpl {
 
   import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvGraphSourceFactory.supportedSchemes
 
   override def sourceForGraphAt(uri: URI): Boolean = {
     val hadoopURIString = Option(hadoopConfig.get("fs.defaultFS"))
-      .getOrElse(Option(hadoopConfig.get("fs.default.name"))
-      .getOrElse(Raise.invalidConnection("Neither fs.defaultFS nor fs.default.name found"))
-    )
+      .getOrElse(
+        Option(hadoopConfig.get("fs.default.name"))
+          .getOrElse(throw IllegalArgumentException("a value for fs.defaultFS or fs.default.name")))
     val hadoopURI = URI.create(hadoopURIString)
     supportedSchemes.contains(uri.getScheme) && hadoopURI.getHost == uri.getHost && hadoopURI.getPort == uri.getPort
   }

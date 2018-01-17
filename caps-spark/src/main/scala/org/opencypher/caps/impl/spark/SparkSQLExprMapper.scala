@@ -18,14 +18,14 @@ package org.opencypher.caps.impl.spark
 import org.apache.spark.sql.functions.udf
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame, functions}
-import org.opencypher.caps.ir.api.expr._
+import org.opencypher.caps.api.exception.{IllegalStateException, NotImplementedException}
 import org.opencypher.caps.api.types.{CTAny, CTList, CTNode, CTString}
+import org.opencypher.caps.impl.record.RecordHeader
 import org.opencypher.caps.impl.spark.Udfs._
 import org.opencypher.caps.impl.spark.convert.toSparkType
-import org.opencypher.caps.impl.exception.Raise
-import org.opencypher.caps.impl.record.RecordHeader
 import org.opencypher.caps.impl.spark.physical.RuntimeContext
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.columnName
+import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.ir.impl.convert.toJava
 
 object SparkSQLExprMapper {
@@ -34,9 +34,9 @@ object SparkSQLExprMapper {
     val slots = header.slotsFor(expr)
 
     if (slots.isEmpty) {
-      Raise.slotNotFound(expr.toString)
+      throw IllegalStateException(s"No slot for expression $expr")
     } else if (slots.size > 1 && !expr.isInstanceOf[Var]) {
-      Raise.notYetImplemented("support for multi-column expressions")
+      throw NotImplementedException("Support for multi-column expressions")
     }
   }
 
@@ -100,7 +100,7 @@ object SparkSQLExprMapper {
         case Not(e) =>
           apply(header, e, df) match {
             case Some(res) => Some(!res)
-            case _         => Raise.notYetImplemented(s"Support for expression $e")
+            case _         => throw NotImplementedException(s"Support for expression $e")
           }
 
         case IsNull(e) =>
@@ -118,30 +118,19 @@ object SparkSQLExprMapper {
           val computedSize = s.expr.cypherType match {
             case CTString  => udf((s: String) => s.length.toLong, LongType)(col)
             case _: CTList => functions.size(col).cast(LongType)
-            case other     => Raise.notYetImplemented(s"size() on type $other")
+            case other     => throw NotImplementedException(s"size() on type $other")
           }
           Some(computedSize)
 
         case Ands(exprs) =>
           val cols = exprs.map(asSparkSQLExpr(header, _, df))
           if (cols.contains(None)) None
-          else {
-            cols.reduce[Option[Column]] {
-              // TODO: Does this work with Cypher's ternary logic?
-              case (Some(l: Column), Some(r: Column)) => Some(l && r)
-              case _                                  => Raise.impossible()
-            }
-          }
+          else Some(cols.flatten.foldLeft(functions.lit(true))(_ && _))
 
         case Ors(exprs) =>
           val cols = exprs.map(asSparkSQLExpr(header, _, df))
           if (cols.contains(None)) None
-          else {
-            cols.reduce[Option[Column]] {
-              case (Some(l: Column), Some(r: Column)) => Some(l || r)
-              case _                                  => Raise.impossible()
-            }
-          }
+          else Some(cols.flatten.foldLeft(functions.lit(false))(_ || _))
 
         case In(lhs, rhs) =>
           verifyExpression(header, expr)
@@ -239,7 +228,7 @@ object SparkSQLExprMapper {
               Some(typeCol)
 
             case _ =>
-              Raise.notYetImplemented("type() of non-variables")
+              throw NotImplementedException("type() of non-variables")
           }
 
         case StartNodeFunction(e) =>

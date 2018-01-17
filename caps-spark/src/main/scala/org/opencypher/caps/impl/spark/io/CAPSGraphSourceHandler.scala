@@ -17,22 +17,24 @@ package org.opencypher.caps.impl.spark.io
 
 import java.net.URI
 
+import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.spark.CAPSSession
 import org.opencypher.caps.api.spark.io.{CAPSGraphSource, CAPSGraphSourceFactory}
-import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.spark.io.session.SessionGraphSourceFactory
 
-case class CAPSGraphSourceHandler(sessionGraphSourceFactory: SessionGraphSourceFactory,
-                                  additionalGraphSourceFactories: Set[CAPSGraphSourceFactory]) {
+case class CAPSGraphSourceHandler(
+    sessionGraphSourceFactory: SessionGraphSourceFactory,
+    additionalGraphSourceFactories: Set[CAPSGraphSourceFactory]) {
   private val factoriesByScheme: Map[String, CAPSGraphSourceFactory] = {
     val allFactories = additionalGraphSourceFactories + sessionGraphSourceFactory
     val entries = allFactories.flatMap(factory => factory.schemes.map(scheme => scheme -> factory))
     if (entries.size == entries.map(_._1).size)
       entries.toMap
     else
-      Raise.invalidArgument(
-        "At most one graph source factory per URI scheme",
-        s"Factories for schemes: ${allFactories.map(factory => factory.name -> factory.schemes.mkString("[", ", ", "]")).mkString(",")}")
+      throw IllegalArgumentException(
+        "at most one graph source factory per URI scheme",
+        s"factories for schemes: ${allFactories.map(factory => factory.name -> factory.schemes.mkString("[", ", ", "]")).mkString(",")}"
+      )
   }
 
   def mountSourceAt(source: CAPSGraphSource, uri: URI)(implicit capsSession: CAPSSession): Unit =
@@ -42,10 +44,7 @@ case class CAPSGraphSourceHandler(sessionGraphSourceFactory: SessionGraphSourceF
     sessionGraphSourceFactory.unmountAll(capsSession)
 
   def sourceAt(uri: URI)(implicit capsSession: CAPSSession): CAPSGraphSource =
-    factoriesByScheme
-      .get(uri.getScheme)
-      .map(_.sourceFor(uri))
-      .getOrElse(Raise.graphNotFound(uri))
+    optSourceAt(uri).getOrElse(throw IllegalArgumentException(s"graph source for URI: $uri"))
 
   def optSourceAt(uri: URI)(implicit capsSession: CAPSSession): Option[CAPSGraphSource] =
     factoriesByScheme

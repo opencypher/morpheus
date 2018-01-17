@@ -20,12 +20,12 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
 import org.neo4j.driver.internal.{InternalNode, InternalRelationship}
+import org.opencypher.caps.api.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.caps.api.value.CypherValue
-import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.record.{CAPSRecordHeader, RecordHeader}
 import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraph.{filterNode, filterRel, nodeToRow, relToRow}
@@ -79,7 +79,7 @@ class Neo4jGraph(val schema: Schema, val session: CAPSSession)(
   }
 
   override def union(other: CAPSGraph): CAPSGraph =
-    Raise.unsupportedArgument("union with neo graph")
+    throw UnsupportedOperationException(s"Union with $this")
 
   private def computeRecords(name: String, cypherType: CypherType, header: RecordHeader)(
       computeRdd: (RecordHeader, StructType) => RDD[Row]): CAPSRecords = {
@@ -126,7 +126,7 @@ object Neo4jGraph {
             importedNode.id()
 
           case x =>
-            Raise.invalidArgument("a node member expression (property, label, node variable)", x.toString)
+            throw IllegalArgumentException("a node member expression (property, label, node variable)", x)
 
         }
       }
@@ -168,9 +168,9 @@ object Neo4jGraph {
             importedRel.id()
 
           case x =>
-            Raise.invalidArgument(
+            throw IllegalArgumentException(
               "a relationship member expression (property, start node, end node, type, relationship variable)",
-              x.toString)
+              x)
         }
       }
 

@@ -17,6 +17,7 @@ package org.opencypher.caps.ir.impl
 
 import org.neo4j.cypher.internal.util.v3_4.Ref
 import org.neo4j.cypher.internal.v3_4.{functions, expressions => ast}
+import org.opencypher.caps.api.exception.NotImplementedException
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.ir.impl.parse.RetypingPredicate
@@ -112,6 +113,6 @@ final class ExpressionConverter(patternConverter: PatternConverter)(implicit con
       )(typings(e))
 
     case _ =>
-      throw new NotImplementedError(s"Not yet able to convert expression: $e")
+      throw NotImplementedException(s"Not yet able to convert expression: $e")
   }
 }

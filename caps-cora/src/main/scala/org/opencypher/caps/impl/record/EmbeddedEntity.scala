@@ -15,11 +15,11 @@
  */
 package org.opencypher.caps.impl.record
 
-import org.opencypher.caps.ir.api.expr._
+import org.opencypher.caps.api.exception.DuplicateInputColumnException
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.refactor.{Verifiable, Verified}
-import org.opencypher.caps.impl.exception.Raise.duplicateEmbeddedEntityColumn
+import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.ir.api.{Label, PropertyKey}
+import org.opencypher.caps.refactor.{Verifiable, Verified}
 
 sealed trait EmbeddedEntity extends Verifiable {
 
@@ -56,10 +56,15 @@ sealed trait EmbeddedEntity extends Verifiable {
         }
     }.flatten
       .foldLeft(Map.empty[String, Expr]) {
-        case (m, (slot, expr)) => if (m.contains(slot)) duplicateEmbeddedEntityColumn(slot) else m.updated(slot, expr)
+        case (m, (slot, expr)) =>
+          if (m.contains(slot))
+            throw DuplicateInputColumnException(slot, entityVar)
+          else m.updated(slot, expr)
       }
 
-    if (keyMap.contains(idSlot)) duplicateEmbeddedEntityColumn(idSlot) else keyMap.updated(idSlot, entityVar)
+    if (keyMap.contains(idSlot))
+      throw DuplicateInputColumnException(idSlot, entityVar)
+    else keyMap.updated(idSlot, entityVar)
   }
 }
 
@@ -117,7 +122,10 @@ final case class EmbeddedNode(
     labelsFromSlotOrImplied.toSeq.collect {
       case (label, Some(slot)) => slot -> HasLabel(entityVar, Label(label))(CTBoolean)
     }.foldLeft(super.computeSlots) {
-      case (m, (slot, expr)) => if (m.contains(slot)) duplicateEmbeddedEntityColumn(slot) else m.updated(slot, expr)
+      case (m, (slot, expr)) =>
+        if (m.contains(slot))
+          throw DuplicateInputColumnException(slot, entityVar)
+        else m.updated(slot, expr)
     }
 }
 
@@ -194,12 +202,15 @@ final case class EmbeddedRelationship(
       toSlot -> EndNode(entityVar)(CTInteger)
     ).foldLeft(super.computeSlots) {
       case (acc, (slot, expr)) =>
-        if (acc.contains(slot)) duplicateEmbeddedEntityColumn(slot) else acc.updated(slot, expr)
+        if (acc.contains(slot))
+          throw DuplicateInputColumnException(slot, entityVar)
+        else acc.updated(slot, expr)
     }
     relTypeSlotOrName match {
-      case Left((slot, _)) if slots.contains(slot) => duplicateEmbeddedEntityColumn(slot)
-      case Left((slot, _))                         => slots.updated(slot, Type(entityVar)(CTString))
-      case Right(_)                                => slots
+      case Left((slot, _)) if slots.contains(slot) =>
+        throw DuplicateInputColumnException(slot, entityVar)
+      case Left((slot, _)) => slots.updated(slot, Type(entityVar)(CTString))
+      case Right(_)        => slots
     }
   }
 }

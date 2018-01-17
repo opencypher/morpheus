@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicLong
 import org.apache.spark.SparkConf
 import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.opencypher.caps.api.exception.UnsupportedOperationException
 import org.opencypher.caps.api.graph.CypherSession
 import org.opencypher.caps.api.io.{CreateOrFail, PersistMode}
 import org.opencypher.caps.api.schema.Schema
@@ -29,7 +30,6 @@ import org.opencypher.caps.api.spark.io.{CAPSGraphSource, CAPSGraphSourceFactory
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.demo.Configuration.{PrintLogicalPlan, PrintPhysicalPlan, PrintQueryExecutionStages}
 import org.opencypher.caps.demo.CypherKryoRegistrar
-import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceHandler
 import org.opencypher.caps.impl.spark.io.file.FileCsvGraphSourceFactory
@@ -77,6 +77,7 @@ sealed class CAPSSession private (
   def graphAt(path: String): CAPSGraph =
     graphAt(parsePathOrURI(path))
 
+  // TODO: why not Option[CAPSGraph] in general?
   def graphAt(uri: URI): CAPSGraph =
     graphSourceHandler.sourceAt(uri)(this).graph
 
@@ -147,12 +148,12 @@ sealed class CAPSSession private (
     val graphSource = new CAPSGraphSource {
       override def schema: Option[Schema] = Some(graph.schema)
       override def canonicalURI: URI = uri
-      override def delete(): Unit = Raise.impossible("Don't delete the ambient graph")
+      override def delete(): Unit = throw UnsupportedOperationException("Deletion of an ambient graph")
       override def graph: CAPSGraph = ambient
       override def sourceForGraphAt(uri: URI): Boolean = uri == canonicalURI
-      override def create: CAPSGraph = Raise.impossible("Don't create the ambient graph")
+      override def create: CAPSGraph = throw UnsupportedOperationException("Creation of an ambient graph")
       override def store(graph: CAPSGraph, mode: PersistMode): CAPSGraph =
-        Raise.impossible("Don't persist the ambient graph")
+        throw UnsupportedOperationException("Persisting an ambient graph")
       override val session: CAPSSession = self
     }
 

@@ -18,10 +18,10 @@ package org.opencypher.caps.impl.record
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.types.{StructField, StructType}
+import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.ir.api.expr.Var
 import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.convert.{fromSparkType, toSparkType}
-import org.opencypher.caps.impl.exception.Raise
 
 object CAPSRecordHeader {
 
@@ -29,7 +29,7 @@ object CAPSRecordHeader {
     RecordHeader.from(structType.fields.map { field =>
       OpaqueField(
         Var(field.name)(fromSparkType(field.dataType, field.nullable)
-          .getOrElse(Raise.invalidArgument("A supported Spark type", field.dataType.toString))))
+          .getOrElse(throw IllegalArgumentException("a supported Spark type", field.dataType))))
     }: _*)
 
   def asSparkStructType(header: RecordHeader): StructType = {

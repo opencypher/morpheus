@@ -22,6 +22,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
+import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.ir.api.expr.{Property, Var}
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.types._
@@ -32,7 +33,6 @@ import org.opencypher.caps.impl.record.CAPSRecordHeader
 import org.opencypher.caps.impl.record.CAPSRecordHeader._
 import org.opencypher.caps.impl.spark.DfUtils._
 import org.opencypher.caps.impl.spark.convert.{fromSparkType, rowToCypherMap, toSparkType}
-import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.spark.{RecordsPrinter, SparkColumnName}
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 
@@ -217,8 +217,7 @@ object CAPSRecords {
           case ByteType | ShortType | IntegerType => LongType
           case FloatType                          => DoubleType
           case other =>
-            Raise.unsupportedArgument(
-              s"Cannot convert or cast type $other of field $field to a Spark type supported by Cypher")
+            throw IllegalArgumentException("a Spark type supported by Cypher", s"type $other of field $field")
         }
         df.mapColumn(field.name)(_.cast(castType))
     }
@@ -242,41 +241,50 @@ object CAPSRecords {
     * @return a new SparkCypherRecords representing the input.
     */
   def create(initialHeader: RecordHeader, initialData: DataFrame)(implicit caps: CAPSSession): CAPSRecords = {
-    if (initialData.sparkSession == caps.sparkSession) {
-
-      // Ensure no duplicate columns in initialData
-      val initialDataColumns = initialData.columns.toSeq
-      if (initialDataColumns.size != initialDataColumns.distinct.size)
-        Raise.duplicateColumnNamesInData()
-
-      // Verify that all header column names exist in the data
-      val headerColumnNames = initialHeader.internalHeader.columns.toSet
-      val dataColumnNames = initialData.columns.toSet
-      if (!headerColumnNames.subsetOf(dataColumnNames)) {
-        Raise.recordsDataHeaderMismatch(
-          s"with columns ${initialHeader.internalHeader.columns.sorted.mkString("\n", ", ", "\n")}",
-          s"with columns ${initialData.columns.sorted.mkString("\n", ", ", "\n")}"
-        )
-      }
-
-      // Verify column types
-      initialHeader.slots.foreach { slot =>
-        val dfSchema = initialData.schema
-        val field = dfSchema(SparkColumnName.of(slot))
-        val cypherType = fromSparkType(field.dataType, field.nullable)
-          .getOrElse(Raise.invalidArgument("A supported Spark type", field.dataType.toString))
-        val headerType = slot.content.cypherType
-
-        // if the type in the data doesn't correspond to the type in the header we fail
-        // except: we encode nodes, rels and integers with the same data type, so we can't fail
-        // on conflicts when we expect entities (alternative: change reverse-mapping function somehow)
-        if (toSparkType(headerType) != toSparkType(cypherType) && !containsEntity(headerType))
-          Raise.invalidDataTypeForColumn(field.name, headerType.toString, cypherType.toString)
-      }
-      createInternal(initialHeader, initialData)
-    } else {
-      Raise.capsSessionMismatch()
+    if (initialData.sparkSession != caps.sparkSession) {
+      throw IllegalArgumentException(
+        "a DataFrame belonging to the same Spark session",
+        "DataFrame from different session")
     }
+
+    // Ensure no duplicate columns in initialData
+    val initialDataColumns = initialData.columns.toSeq
+
+    val duplicateColumns = initialDataColumns.groupBy(identity).collect {
+      case (key, values) if values.size > 1 => key
+    }
+
+    if (duplicateColumns.nonEmpty)
+      throw IllegalArgumentException(
+        "a DataFrame with distinct columns",
+        s"a DataFrame with duplicate columns: $duplicateColumns")
+
+    // Verify that all header column names exist in the data
+    val headerColumnNames = initialHeader.internalHeader.columns.toSet
+    val dataColumnNames = initialData.columns.toSet
+    val missingColumnNames = headerColumnNames -- dataColumnNames
+    if (missingColumnNames.nonEmpty) {
+      throw IllegalArgumentException(
+        s"data with columns ${initialHeader.internalHeader.columns.sorted.mkString("\n", ", ", "\n")}",
+        s"data with missing columns ${missingColumnNames.toSeq.sorted.mkString("\n", ", ", "\n")}"
+      )
+    }
+
+    // Verify column types
+    initialHeader.slots.foreach { slot =>
+      val dfSchema = initialData.schema
+      val field = dfSchema(SparkColumnName.of(slot))
+      val cypherType = fromSparkType(field.dataType, field.nullable)
+        .getOrElse(throw IllegalArgumentException("a supported Spark type", field.dataType))
+      val headerType = slot.content.cypherType
+
+      // if the type in the data doesn't correspond to the type in the header we fail
+      // except: we encode nodes, rels and integers with the same data type, so we can't fail
+      // on conflicts when we expect entities (alternative: change reverse-mapping function somehow)
+      if (toSparkType(headerType) != toSparkType(cypherType) && !containsEntity(headerType))
+        throw IllegalArgumentException(s"a valid data type for column ${field.name} of type $headerType", cypherType)
+    }
+    createInternal(initialHeader, initialData)
   }
 
   private def createInternal(header: RecordHeader, data: DataFrame)(implicit caps: CAPSSession) =

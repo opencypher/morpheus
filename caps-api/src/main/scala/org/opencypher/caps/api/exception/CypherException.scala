@@ -21,6 +21,11 @@ final case class SchemaException(msg: String) extends CypherException(msg)
 
 final case class CypherValueException(msg: String) extends CypherException(msg)
 
-//final case class NotYetImplementedException(msg: String) extends CypherException(msg)
+final case class NotImplementedException(msg: String) extends CypherException(msg)
 
-//final case class IllegalStateException(msg: String) extends CypherException(msg)
+final case class IllegalStateException(msg: String) extends CypherException(msg)
+
+final case class IllegalArgumentException(expected: Any, actual: Any = "none")
+    extends CypherException(s"Expected:\n\t$expected, but found:\n\t$actual")
+
+final case class UnsupportedOperationException(msg: String) extends CypherException(s"Don't do that :)\n\t$msg")

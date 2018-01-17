@@ -16,11 +16,11 @@
 package org.opencypher.caps.impl.spark.physical
 
 import org.apache.spark.sql.Row
+import org.opencypher.caps.api.exception.NotImplementedException
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.value.instances._
 import org.opencypher.caps.api.value.syntax._
 import org.opencypher.caps.impl.spark.DfUtils._
-import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.record.RecordHeader
 
 /*
@@ -55,6 +55,6 @@ case class cypherFilter(header: RecordHeader, expr: Expr)(implicit context: Runt
         (lhsValue >= rhsValue).orNull
 
       case x =>
-        Raise.notYetImplemented(s"Predicate $x")
+        throw NotImplementedException(s"Predicate $x")
     }
 }

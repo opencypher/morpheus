@@ -23,6 +23,7 @@ import org.atnos.eff.syntax.all._
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.ir.api.exception.TyperException
 
 package object typer {
 
@@ -43,9 +44,7 @@ package object typer {
     def runOrThrow(schema: Schema): TyperResult[A] =
       run(schema) match {
         case Left(failures) =>
-          throw new IllegalArgumentException(
-            s"Errors during schema-based expression typing: ${failures.toList.mkString(", ")}"
-          )
+          throw TyperException(s"Errors during schema-based expression typing: ${failures.toList.mkString(", ")}")
 
         case Right(result) =>
           result

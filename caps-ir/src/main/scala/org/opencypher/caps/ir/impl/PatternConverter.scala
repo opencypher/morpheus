@@ -22,6 +22,7 @@ import cats.instances.list._
 import cats.syntax.flatMap._
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
+import org.opencypher.caps.api.exception.NotImplementedException
 import org.opencypher.caps.ir.api.expr.{Expr, Var}
 import org.opencypher.caps.api.types.{CTList, CTNode, CTRelationship, CypherType}
 import org.opencypher.caps.ir.api._
@@ -120,11 +121,11 @@ final class PatternConverter {
             val upper =
               range.upper
                 .map(_.value.intValue())
-                .getOrElse(throw new NotImplementedError("Support for unbounded var-length not yet implemented"))
+                .getOrElse(throw NotImplementedException("Support for unbounded var-length not yet implemented"))
 
             Endpoints.apply(source, target) match {
               case _: IdenticalEndpoints =>
-                throw new NotImplementedError("Support for cyclic var-length not yet implemented")
+                throw NotImplementedException("Support for cyclic var-length not yet implemented")
 
               case ends: DifferentEndpoints =>
                 dir match {
@@ -135,14 +136,14 @@ final class PatternConverter {
                     registered.withConnection(rel, DirectedVarLengthRelationship(ends.flip, lower, Some(upper)))
 
                   case BOTH =>
-                    throw new NotImplementedError("Support for undirected var-length not yet implemented")
+                    throw NotImplementedException("Support for undirected var-length not yet implemented")
                 }
             }
           }
         } yield target
 
       case x =>
-        throw new NotImplementedError(s"Support for pattern conversion of $x not yet implemented")
+        throw NotImplementedException(s"Support for pattern conversion of $x not yet implemented")
     }
 
   private def stomp[T](result: Result[T]): Result[Unit] = result >> pure(())

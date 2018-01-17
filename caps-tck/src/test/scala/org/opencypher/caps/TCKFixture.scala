@@ -15,9 +15,9 @@
  */
 package org.opencypher.caps
 
+import org.opencypher.caps.api.exception.NotImplementedException
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
 import org.opencypher.caps.api.value.{CypherValue => CAPSValue}
-import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.test.support.creation.caps.CAPSGraphFactory
 import org.opencypher.caps.test.support.creation.propertygraph.Neo4jPropertyGraphFactory
 import org.opencypher.tools.tck.api._
@@ -62,7 +62,8 @@ case class TCKGraph(capsGraphFactory: CAPSGraphFactory, graph: CAPSGraph)(implic
     case CypherPropertyMap(properties) => properties.mapValues(tckCypherValueToScala)
     case l: CypherList                 => l.elements.map(tckCypherValueToScala)
     case CypherNull                    => null
-    case other                         => Raise.unsupportedArgument(s"Parameter of type `${other.getClass.getSimpleName}`")
+    case other =>
+      throw NotImplementedException(s"Converting Cypher value $cypherValue of type `${other.getClass.getSimpleName}`")
   }
 }
 

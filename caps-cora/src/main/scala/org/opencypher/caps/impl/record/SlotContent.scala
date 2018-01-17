@@ -15,9 +15,9 @@
  */
 package org.opencypher.caps.impl.record
 
+import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.exception.Raise
 
 final case class RecordSlot(index: Int, content: SlotContent) {
   def withOwner(v: Var): RecordSlot = copy(content = content.withOwner(v))
@@ -96,6 +96,6 @@ final case class ProjectedField(field: Var, expr: Expr) extends ProjectedSlotCon
     case p: Property  => ProjectedExpr(Property(newOwner, p.key)(p.cypherType))
     case s: StartNode => ProjectedExpr(StartNode(newOwner)(s.cypherType))
     case e: EndNode   => ProjectedExpr(EndNode(newOwner)(e.cypherType))
-    case _            => Raise.impossible()
+    case _            => throw IllegalArgumentException("expression with owner", expr)
   }
 }

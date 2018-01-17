@@ -15,6 +15,7 @@
  */
 package org.opencypher.caps.ir.api.expr
 
+import org.opencypher.caps.api.exception.IllegalStateException
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.ir.api.{CypherQuery, Label, PropertyKey, RelType}
 
@@ -67,7 +68,7 @@ trait FlatteningOpExprCompanion[T] {
 sealed abstract class FlatteningOpExpr(_exprs: Set[Expr]) extends Expr with Serializable with Product1[Set[Expr]] {
 
   val exprs: Set[Expr] =
-    if (_exprs.isEmpty) throw new IllegalStateException(s"Attempt to construct empty $productPrefix")
+    if (_exprs.isEmpty) throw IllegalStateException(s"Attempt to construct empty $productPrefix")
     else flatExpr(_exprs)
 
   override def _1: Set[Expr] = exprs

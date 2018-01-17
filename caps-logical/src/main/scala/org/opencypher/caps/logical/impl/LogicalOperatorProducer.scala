@@ -15,6 +15,7 @@
  */
 package org.opencypher.caps.logical.impl
 
+import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.ir.api.block.{Aggregations, SortItem}
 import org.opencypher.caps.ir.api.expr._
@@ -162,7 +163,7 @@ class LogicalOperatorProducer {
               Ors(types.map(t => HasType(r, RelType(t))(CTBoolean)).toSeq: _*)
           solved.withField(r).withPredicate(predicate)
         case _ =>
-          throw new IllegalArgumentException(s"Expected a relationship variable but found $r")
+          throw IllegalArgumentException("a relationship variable", r)
       }
     }
   }

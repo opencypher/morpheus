@@ -15,13 +15,14 @@
  */
 package org.opencypher.caps.ir.test.support
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{AstConstructionTestSupport, _}
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.{CNFNormalizer, Namespacer, Never}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.{AstConstructionTestSupport, _}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_4.phases._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticCheckResult, SemanticState}
 import org.neo4j.cypher.internal.util.v3_4.{CypherException, InputPosition}
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
+import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.ir.impl.parse.{CypherParser, ExtractPredicatesFromAnds}
 import org.opencypher.caps.test.BaseTestSuite
 
@@ -40,7 +41,7 @@ trait Neo4jAstTestSupport extends AstConstructionTestSupport {
     CypherParserWithoutSemanticChecking.process(s"RETURN $exprText")(CypherParser.defaultContext)._1 match {
       case Query(_, SingleQuery(Return(_, ReturnItems(_, items), _, _, _, _, _) :: Nil)) =>
         items.head.expression
-      case _ => throw new IllegalArgumentException(s"This is not an expression, is it: $exprText")
+      case _ => throw IllegalArgumentException("an expression", exprText)
     }
   }
 }

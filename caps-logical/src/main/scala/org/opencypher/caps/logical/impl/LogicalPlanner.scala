@@ -1,5 +1,6 @@
 package org.opencypher.caps.logical.impl
 
+import org.opencypher.caps.api.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.caps.api.schema.{AllGiven, Schema}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.ir.api._
@@ -9,7 +10,11 @@ import org.opencypher.caps.ir.api.pattern.{Connection, Pattern, VarLengthRelatio
 import org.opencypher.caps.ir.api.util.DirectCompilationStage
 import org.opencypher.caps.ir.impl.syntax.ExprSyntax._
 import org.opencypher.caps.ir.impl.util.VarConverters._
-import org.opencypher.caps.logical.api.exception.{InvalidCypherTypeException, InvalidDependencyException, InvalidPatternException}
+import org.opencypher.caps.logical.api.exception.{
+  InvalidCypherTypeException,
+  InvalidDependencyException,
+  InvalidPatternException
+}
 
 import scala.annotation.tailrec
 
@@ -52,8 +57,9 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         case Some(_plan) =>
           // we need to plan a block that hasn't already been solved
           // TODO: refactor to remove illegal state
-          block.after.find(r => !_plan.solved.contains(model(r))).getOrElse(
-            throw new IllegalStateException("Found block with unsolved dependencies which cannot be solved."))
+          block.after
+            .find(r => !_plan.solved.contains(model(r)))
+            .getOrElse(throw IllegalStateException("Found block with unsolved dependencies which cannot be solved."))
       }
       val dependency = planBlock(depRef, model, plan)
       planBlock(ref, model, Some(dependency))
@@ -68,7 +74,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
           LogicalExternalGraph(irGraph.name, graphSource.canonicalURI, graphSource.schema.get),
           context.inputRecordFields)
       case x =>
-        throw new NotImplementedError(s"Support for leaf planning of $x not yet implemented")
+        throw NotImplementedException(s"Support for leaf planning of $x not yet implemented")
     }
   }
 
@@ -109,7 +115,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
           case (prevPlan, (_, agg)) =>
             agg match {
               case a: Aggregator => a.inner.map(e => planInnerExpr(e, prevPlan)).getOrElse(prevPlan)
-              case _             => throw new IllegalArgumentException(s"Expected an aggregator but found $agg")
+              case _             => throw IllegalArgumentException("an aggregator", agg)
             }
         }
         producer.aggregate(a, group, prev)
@@ -119,7 +125,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         producer.planUnwind(list, variable, withList)
 
       case x =>
-        throw new NotImplementedError(s"Support for logical planning of $x not yet implemented")
+        throw NotImplementedException(s"Support for logical planning of $x not yet implemented")
     }
   }
 
@@ -156,7 +162,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       case (acc, (f, c: Lit[_])) =>
         producer.projectField(f, c, acc)
       case (_, (_, x)) =>
-        throw new NotImplementedError(s"Support for projection of $x not yet implemented")
+        throw NotImplementedException(s"Support for projection of $x not yet implemented")
     }
   }
 
@@ -217,7 +223,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         producer.planFilter(ex, predicate)
 
       case (_, x) =>
-        throw new NotImplementedError(s"Support for logical planning of predicate $x not yet implemented")
+        throw NotImplementedException(s"Support for logical planning of predicate $x not yet implemented")
     }
 
     filtersAndProjs
@@ -257,7 +263,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         producer.planExistsPatternPredicate(ex, in, innerPlan)
 
       case x =>
-        throw new NotImplementedError(s"Support for projection of inner expression $x not yet implemented")
+        throw NotImplementedException(s"Support for projection of inner expression $x not yet implemented")
     }
   }
 

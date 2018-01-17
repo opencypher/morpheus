@@ -15,6 +15,7 @@
  */
 package org.opencypher.caps.ir.impl.convert
 
+import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.value._
 
 object toJava extends Serializable {
@@ -28,6 +29,6 @@ object toJava extends Serializable {
     case CypherFloat(f)      => f
     case CypherList(list)    => list.map(apply)
     case x =>
-      throw new IllegalArgumentException(s"Expected a (representation of a) Cypher value, but was $x (${x.getClass})")
+      throw IllegalArgumentException(s"(representation of a) Cypher value", s"$x (${x.getClass})")
   }
 }

@@ -15,6 +15,7 @@
  */
 package org.opencypher.caps.ir.impl.convert
 
+import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.types._
 
 import scala.collection.GenTraversableOnce
@@ -34,8 +35,7 @@ object toCypherType extends Serializable {
     case a: Array[_]          => constructList(a)
     case v: Vector[_]         => constructList(v)
     case x =>
-      throw new IllegalArgumentException(
-        s"Expected an instance of a Cypher-compatible Java type, but was value $x of type (${x.getClass})")
+      throw IllegalArgumentException("instance of a Cypher-compatible Java type", s"value $x of type (${x.getClass})")
   }
 
   private def constructList[E](l: GenTraversableOnce[E]): CTList = {

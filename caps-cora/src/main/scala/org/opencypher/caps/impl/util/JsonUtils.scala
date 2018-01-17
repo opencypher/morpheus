@@ -18,6 +18,7 @@ package org.opencypher.caps.impl.util
 import io.circe.Decoder
 import io.circe.parser.parse
 
+// TODO: test
 object JsonUtils {
   def parseJson[T](jsonString: String)(implicit decoder: Decoder[T]): T = {
     parse(jsonString) match {

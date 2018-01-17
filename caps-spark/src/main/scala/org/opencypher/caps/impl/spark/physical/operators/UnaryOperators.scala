@@ -20,11 +20,11 @@ import java.net.URI
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions.{asc, desc, monotonically_increasing_id, udf}
 import org.apache.spark.sql.types.{ArrayType, LongType, StructField, StructType}
+import org.opencypher.caps.api.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherInteger
-import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.record._
 import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.SparkSQLExprMapper.asSparkSQLExpr
@@ -72,7 +72,7 @@ final case class Scan(in: PhysicalOperator, inGraph: LogicalGraph, v: Var, heade
       case n: CTNode =>
         graph.nodes(v.name, n)
       case x =>
-        Raise.invalidArgument("an entity type", x.toString)
+        throw IllegalArgumentException("an entity type", x)
     }
     assert(header == records.header)
     PhysicalResult(records, graphs)
@@ -103,14 +103,14 @@ final case class Unwind(in: PhysicalOperator, list: Expr, item: Var, header: Rec
               records.data.crossJoin(df)
 
             case x =>
-              Raise.invalidArgument("a list", x)
+              throw IllegalArgumentException("a list", x)
           }
 
         // the list lives in a column: we explode it
         case expr =>
           val listColumn = asSparkSQLExpr(records.header, expr, records.data) match {
             case Some(c) => c
-            case None    => Raise.impossible("no column for the list found")
+            case None    => throw IllegalArgumentException(s"a column for the list $expr")
           }
 
           records.data.withColumn(itemColumn, functions.explode(listColumn))
@@ -136,7 +136,7 @@ final case class Alias(in: PhysicalOperator, expr: Expr, alias: Var, header: Rec
       val newData = if (records.data.columns.contains(oldColumnName)) {
         records.data.withColumnRenamed(oldColumnName, newColumnName)
       } else {
-        Raise.columnNotFound(oldColumnName)
+        throw IllegalArgumentException(s"a column with name $oldColumnName")
       }
 
       CAPSRecords.create(header, newData)(records.caps)
@@ -149,7 +149,7 @@ final case class Project(in: PhysicalOperator, expr: Expr, header: RecordHeader)
   override def executeUnary(prev: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult = {
     prev.mapRecordsWithDetails { records =>
       val newData = asSparkSQLExpr(header, expr, records.data) match {
-        case None => Raise.notYetImplemented(s"projecting $expr")
+        case None => throw NotImplementedException(s"Projecting $expr")
 
         case Some(sparkSqlExpr) =>
           val headerNames = header.slotsFor(expr).map(columnName)
@@ -164,7 +164,7 @@ final case class Project(in: PhysicalOperator, expr: Expr, header: RecordHeader)
                 .map(records.data.col) :+ newCol
 
               records.data.select(columnsToSelect: _*)
-            case _ => Raise.multipleSlotsForExpression()
+            case _ => throw IllegalStateException(s"Got multiple slots for expression $expr")
           }
       }
 
@@ -392,7 +392,7 @@ final case class Aggregate(
 
       def withInnerExpr(expr: Expr)(f: Column => Column) = {
         asSparkSQLExpr(records.header, expr, inData) match {
-          case None         => Raise.notYetImplemented(s"projecting $expr")
+          case None         => throw NotImplementedException(s"Projecting $expr")
           case Some(column) => f(column)
         }
       }
@@ -437,7 +437,7 @@ final case class Aggregate(
               withInnerExpr(expr)(functions.collect_list(_).as(columnName))
 
             case x =>
-              Raise.notYetImplemented(s"Aggregator $x")
+              throw NotImplementedException(s"Aggregation function $x")
           }
       }
 
@@ -460,7 +460,7 @@ final case class OrderBy(in: PhysicalOperator, sortItems: Seq[SortItem[Expr]], h
     val sortExpression = sortItems.map {
       case Asc(expr: Var)  => asc(getColumnName(expr))
       case Desc(expr: Var) => desc(getColumnName(expr))
-      case _               => Raise.impossible()
+      case other           => throw IllegalArgumentException("ASC or DESC", other)
     }
 
     prev.mapRecordsWithDetails { records =>
@@ -478,9 +478,9 @@ final case class Skip(in: PhysicalOperator, expr: Expr, header: RecordHeader) ex
       case Param(name) =>
         context.parameters(name) match {
           case CypherInteger(v) => v
-          case _                => Raise.impossible()
+          case other            => throw IllegalArgumentException("a CypherInteger", other)
         }
-      case _ => Raise.impossible()
+      case other => throw IllegalArgumentException("an integer literal or parameter", other)
     }
 
     // TODO: Replace with data frame based implementation ASAP
@@ -504,7 +504,7 @@ final case class Limit(in: PhysicalOperator, expr: Expr, header: RecordHeader) e
   override def executeUnary(prev: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult = {
     val limit = expr match {
       case IntegerLit(v) => v
-      case _             => Raise.impossible()
+      case other         => throw IllegalArgumentException("an integer literal", other)
     }
 
     prev.mapRecordsWithDetails { records =>
