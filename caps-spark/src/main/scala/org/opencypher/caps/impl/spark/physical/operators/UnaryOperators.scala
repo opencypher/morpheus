@@ -18,28 +18,25 @@ package org.opencypher.caps.impl.spark.physical.operators
 import java.net.URI
 
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.functions.{asc, desc, monotonically_increasing_id, udf}
 import org.apache.spark.sql.types.{ArrayType, LongType, StructField, StructType}
-import org.opencypher.caps.ir.api.expr._
-import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherInteger
 import org.opencypher.caps.impl.convert.toJavaType
 import org.opencypher.caps.impl.exception.Raise
-import org.opencypher.caps.impl.logical._
-import org.opencypher.caps.impl.record.CAPSRecordHeader._
 import org.opencypher.caps.impl.record._
 import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.SparkSQLExprMapper.asSparkSQLExpr
 import org.opencypher.caps.impl.spark.convert.toSparkType
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.{assertIsNode, columnName}
 import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext, cypherFilter, udfUtils}
-import org.opencypher.caps.ir.impl.syntax.ExprSyntax._
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.ir.api.block.{Asc, Desc, SortItem}
+import org.opencypher.caps.ir.api.expr._
+import org.opencypher.caps.ir.impl.syntax.ExprSyntax._
+import org.opencypher.caps.logical.impl.{ConstructedEntity, _}
 
 private[spark] abstract class UnaryPhysicalOperator extends PhysicalOperator {
 

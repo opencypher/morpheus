@@ -16,8 +16,8 @@
 package org.opencypher.caps.impl.spark.physical.operators
 
 import org.opencypher.caps.api.spark.{CAPSRecords, CAPSSession}
-import org.opencypher.caps.impl.logical.LogicalExternalGraph
 import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
+import org.opencypher.caps.logical.impl.LogicalExternalGraph
 
 private[spark] abstract class LeafPhysicalOperator extends PhysicalOperator {
 

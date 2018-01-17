@@ -19,11 +19,12 @@ import java.util.Collections
 
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 import org.apache.spark.sql.{Column, DataFrame, Row}
-import org.opencypher.caps.ir.api.expr.{Expr, Subtract, Var}
 import org.opencypher.caps.impl.record.{OpaqueField, ProjectedField, RecordHeader}
 import org.opencypher.caps.impl.spark.SparkSQLExprMapper.asSparkSQLExpr
 import org.opencypher.caps.impl.spark.physical.RuntimeContext
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
+import org.opencypher.caps.ir.api.expr.{Expr, Subtract, Var}
+import org.opencypher.caps.ir.test._
 import org.opencypher.caps.test.BaseTestSuite
 import org.opencypher.caps.test.fixture.SparkSessionFixture
 

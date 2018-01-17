@@ -23,7 +23,7 @@ import org.opencypher.caps.api.types.CTRelationship
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.flat.FlatOperator
-import org.opencypher.caps.impl.logical.{GraphOfPattern, LogicalExternalGraph, LogicalPatternGraph}
+import org.opencypher.caps.logical.impl.{GraphOfPattern, LogicalExternalGraph, LogicalPatternGraph}
 import org.opencypher.caps.impl.spark.physical.operators._
 import org.opencypher.caps.impl.flat
 import org.opencypher.caps.ir.api.block.SortItem

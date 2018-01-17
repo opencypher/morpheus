@@ -16,16 +16,15 @@
 package org.opencypher.caps.impl.flat
 
 import cats.Monoid
-import org.opencypher.caps.ir.api.expr._
-import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.exception.Raise
-import org.opencypher.caps.impl.logical.LogicalGraph
 import org.opencypher.caps.impl.record._
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.ir.api.block.SortItem
+import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.ir.api.util.FreshVariableNamer
+import org.opencypher.caps.logical.impl.LogicalGraph
 
 import scala.annotation.tailrec
 

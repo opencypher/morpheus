@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicLong
 import org.apache.spark.SparkConf
 import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.sql.{DataFrame, SparkSession}
-import org.opencypher.caps.ir.api.expr.{Expr, Var}
 import org.opencypher.caps.api.graph.CypherSession
 import org.opencypher.caps.api.io.{CreateOrFail, PersistMode}
 import org.opencypher.caps.api.schema.Schema
@@ -30,10 +29,8 @@ import org.opencypher.caps.api.spark.io.{CAPSGraphSource, CAPSGraphSourceFactory
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.demo.Configuration.{PrintLogicalPlan, PrintPhysicalPlan, PrintQueryExecutionStages}
 import org.opencypher.caps.demo.CypherKryoRegistrar
-import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
-import org.opencypher.caps.impl.logical._
-import org.opencypher.caps.ir.impl.parse.CypherParser
 import org.opencypher.caps.impl.exception.Raise
+import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceHandler
 import org.opencypher.caps.impl.spark.io.file.FileCsvGraphSourceFactory
 import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvGraphSourceFactory
@@ -41,8 +38,11 @@ import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraphSourceFactory
 import org.opencypher.caps.impl.spark.io.session.SessionGraphSourceFactory
 import org.opencypher.caps.impl.spark.physical._
 import org.opencypher.caps.impl.util.parsePathOrURI
+import org.opencypher.caps.ir.api.expr.{Expr, Var}
 import org.opencypher.caps.ir.api.{IRExternalGraph, IRField}
+import org.opencypher.caps.ir.impl.parse.CypherParser
 import org.opencypher.caps.ir.impl.{IRBuilder, IRBuilderContext}
+import org.opencypher.caps.logical.impl._
 
 sealed class CAPSSession private (
     val sparkSession: SparkSession,

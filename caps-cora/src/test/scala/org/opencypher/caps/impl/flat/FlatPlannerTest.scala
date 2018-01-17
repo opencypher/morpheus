@@ -15,14 +15,15 @@
  */
 package org.opencypher.caps.impl.flat
 
-import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.logical.{LogicalGraph, LogicalOperatorProducer}
 import org.opencypher.caps.impl.record.{FieldSlotContent, OpaqueField, ProjectedExpr, ProjectedField}
+import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.ir.api.{IRField, Label, PropertyKey}
+import org.opencypher.caps.ir.test._
+import org.opencypher.caps.ir.test.support.MatchHelper._
+import org.opencypher.caps.logical.impl.{LogicalGraph, LogicalOperatorProducer}
 import org.opencypher.caps.test.BaseTestSuite
-import org.opencypher.caps.test.support.equalWithTracing
 
 import scala.language.implicitConversions
 
