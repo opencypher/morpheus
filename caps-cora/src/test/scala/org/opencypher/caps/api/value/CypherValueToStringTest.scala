@@ -16,7 +16,6 @@
 package org.opencypher.caps.api.value
 
 import org.opencypher.caps.test.BaseTestSuite
-import org.scalatest.FunSuite
 
 class CypherValueToStringTest extends BaseTestSuite {
 

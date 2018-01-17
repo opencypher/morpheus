@@ -45,6 +45,15 @@
         </dependency>
 
         <!-- Test -->
+
+        <dependency>
+            <groupId>org.opencypher</groupId>
+            <artifactId>caps-api</artifactId>
+            <version>${parent.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.opencypher</groupId>
             <artifactId>caps-cora</artifactId>

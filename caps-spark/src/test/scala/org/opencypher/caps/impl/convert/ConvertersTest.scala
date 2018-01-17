@@ -16,7 +16,6 @@
 package org.opencypher.caps.impl.convert
 
 import org.apache.spark.sql.types._
-import org.opencypher.caps.api.exception.CAPSException
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.spark.convert.{fromSparkType, toSparkType}
 import org.opencypher.caps.test.BaseTestSuite

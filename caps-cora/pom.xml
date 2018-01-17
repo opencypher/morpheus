@@ -71,6 +71,16 @@
             <version>${dep.circe.version}</version>
         </dependency>
 
+        <!-- Test dependencies -->
+
+        <dependency>
+            <groupId>org.opencypher</groupId>
+            <artifactId>caps-api</artifactId>
+            <version>${project.parent.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
 </project>
