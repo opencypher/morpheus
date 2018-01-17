@@ -13,10 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.ir.api.exception
+package org.opencypher.caps.api.exception
 
-import org.opencypher.caps.api.exception.CypherException
+abstract class LogicalPlannerException(msg: String) extends CypherException(msg)
 
-abstract class IrException(msg: String) extends CypherException(msg)
+final case class UnsolvedBlockException(msg: String) extends LogicalPlannerException(msg)
 
-final case class PatternConversionException(msg: String) extends IrException(msg)
+final case class InvalidCypherTypeException(msg: String) extends LogicalPlannerException(msg)
+
+final case class InvalidPatternException(msg: String) extends LogicalPlannerException(msg)
+
+final case class InvalidDependencyException(msg: String) extends LogicalPlannerException(msg)

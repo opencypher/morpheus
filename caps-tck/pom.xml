@@ -12,7 +12,7 @@
 
     <artifactId>caps-tck</artifactId>
 
-    <name>Cypher for Apache Spark - openCypher TCK Implementation</name>
+    <name>Cypher for Apache Spark - TCK</name>
 
     <properties>
         <project.rootdir>${project.parent.basedir}</project.rootdir>

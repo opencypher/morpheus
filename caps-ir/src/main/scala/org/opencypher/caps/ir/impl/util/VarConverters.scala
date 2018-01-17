@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.util
+package org.opencypher.caps.ir.impl.util
 
 import org.opencypher.caps.ir.api.IRField
 import org.opencypher.caps.ir.api.expr.Var

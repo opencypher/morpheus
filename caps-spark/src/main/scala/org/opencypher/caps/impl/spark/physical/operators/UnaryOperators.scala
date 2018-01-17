@@ -37,7 +37,7 @@ import org.opencypher.caps.impl.spark.SparkSQLExprMapper.asSparkSQLExpr
 import org.opencypher.caps.impl.spark.convert.toSparkType
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.{assertIsNode, columnName}
 import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext, cypherFilter, udfUtils}
-import org.opencypher.caps.impl.syntax.ExprSyntax._
+import org.opencypher.caps.ir.impl.syntax.ExprSyntax._
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.ir.api.block.{Asc, Desc, SortItem}
 

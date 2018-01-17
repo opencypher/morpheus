@@ -25,7 +25,7 @@ import org.opencypher.caps.api.types._
 import org.opencypher.caps.refactor.RefCollection
 import org.opencypher.caps.refactor.RefCollection.AbstractRegister
 import org.opencypher.caps.refactor.syntax.RegisterSyntax._
-import org.opencypher.caps.impl.syntax.ExprSyntax._
+import org.opencypher.caps.ir.impl.syntax.ExprSyntax._
 
 import scala.annotation.tailrec
 

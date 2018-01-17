@@ -17,8 +17,7 @@ package org.opencypher.caps.impl.logical
 
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.exception.Raise
-import org.opencypher.caps.impl.util.VarConverters._
+import org.opencypher.caps.ir.impl.util.VarConverters._
 import org.opencypher.caps.ir.api.block.{Aggregations, SortItem}
 import org.opencypher.caps.ir.api.{IRField, RelType, SolvedQueryModel}
 
@@ -149,6 +148,7 @@ class LogicalOperatorProducer {
     Limit(expr, prev, prev.solved)
   }
 
+  // TODO: move to caps-ir
   implicit class RichQueryModel(solved: SolvedQueryModel[Expr]) {
     def solveRelationship(r: IRField): SolvedQueryModel[Expr] = {
       r.cypherType match {
@@ -162,7 +162,7 @@ class LogicalOperatorProducer {
               Ors(types.map(t => HasType(r, RelType(t))(CTBoolean)).toSeq: _*)
           solved.withField(r).withPredicate(predicate)
         case _ =>
-          Raise.invalidArgument("a relationship variable", r)
+          throw new IllegalArgumentException(s"Expected a relationship variable but found $r")
       }
     }
   }

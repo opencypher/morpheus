@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.syntax
+package org.opencypher.caps.ir.impl.syntax
 
 import org.opencypher.caps.ir.api.expr._
 
 import scala.annotation.tailrec
-import scala.language.implicitConversions
 
 object ExprSyntax {
   implicit def exprOps(e: Expr): ExprOps = new ExprOps(e)

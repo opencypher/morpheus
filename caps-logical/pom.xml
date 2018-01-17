@@ -12,7 +12,7 @@
 
   <artifactId>caps-logical</artifactId>
 
-  <name>Cypher for Apache Spark - Logical Query Planning for Cypher</name>
+  <name>Cypher for Apache Spark - Logical Planning</name>
 
   <properties>
     <project.rootdir>${project.parent.basedir}</project.rootdir>

@@ -20,7 +20,7 @@ import org.opencypher.caps.api.schema.Schema.NoLabel
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.record._
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
-import org.opencypher.caps.impl.util.VarConverters.toVar
+import org.opencypher.caps.ir.impl.util.VarConverters.toVar
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.caps.test.BaseTestSuite

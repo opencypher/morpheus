@@ -15,17 +15,17 @@
  */
 package org.opencypher.caps.impl.logical
 
+import org.opencypher.caps.api.exception.{InvalidCypherTypeException, InvalidDependencyException, InvalidPatternException}
 import org.opencypher.caps.api.io.GraphSource
 import org.opencypher.caps.api.schema.{AllGiven, Schema}
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.exception.Raise
-import org.opencypher.caps.impl.syntax.ExprSyntax._
-import org.opencypher.caps.impl.util.VarConverters._
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block._
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.ir.api.pattern._
 import org.opencypher.caps.ir.api.util.DirectCompilationStage
+import org.opencypher.caps.ir.impl.syntax.ExprSyntax._
+import org.opencypher.caps.ir.impl.util.VarConverters._
 
 import scala.annotation.tailrec
 
@@ -76,7 +76,9 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
           block.after.head
         case Some(_plan) =>
           // we need to plan a block that hasn't already been solved
-          block.after.find(r => !_plan.solved.contains(model(r))).getOrElse(Raise.logicalPlanningFailure())
+          // TODO: refactor to remove illegal state
+          block.after.find(r => !_plan.solved.contains(model(r))).getOrElse(
+            throw new IllegalStateException("Found block with unsolved dependencies which cannot be solved."))
       }
       val dependency = planBlock(depRef, model, plan)
       planBlock(ref, model, Some(dependency))
@@ -91,7 +93,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
           LogicalExternalGraph(irGraph.name, graphSource.canonicalURI, graphSource.schema.get),
           context.inputRecordFields)
       case x =>
-        Raise.notYetImplemented(s"leaf planning of $x")
+        throw new NotImplementedError(s"Support for leaf planning of $x not yet implemented")
     }
   }
 
@@ -132,7 +134,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
           case (prevPlan, (_, agg)) =>
             agg match {
               case a: Aggregator => a.inner.map(e => planInnerExpr(e, prevPlan)).getOrElse(prevPlan)
-              case _             => Raise.invalidArgument("an aggregator", agg)
+              case _             => throw new IllegalArgumentException(s"Expected an aggregator but found $agg")
             }
         }
         producer.aggregate(a, group, prev)
@@ -142,7 +144,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         producer.planUnwind(list, variable, withList)
 
       case x =>
-        Raise.notYetImplemented(s"logical planning of $x")
+        throw new NotImplementedError(s"Support for logical planning of $x not yet implemented")
     }
   }
 
@@ -179,7 +181,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       case (acc, (f, c: Lit[_])) =>
         producer.projectField(f, c, acc)
       case (_, (_, x)) =>
-        Raise.notYetImplemented(s"projection of $x")
+        throw new NotImplementedError(s"Support for projection of $x not yet implemented")
     }
   }
 
@@ -240,7 +242,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         producer.planFilter(ex, predicate)
 
       case (_, x) =>
-        Raise.notYetImplemented(s"logical planning of predicate $x")
+        throw new NotImplementedError(s"Support for logical planning of predicate $x not yet implemented")
     }
 
     filtersAndProjs
@@ -280,7 +282,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         producer.planExistsPatternPredicate(ex, in, innerPlan)
 
       case x =>
-        Raise.notYetImplemented(s"projection of inner expression $x")
+        throw new NotImplementedError(s"Support for projection of inner expression $x not yet implemented")
     }
   }
 
@@ -305,7 +307,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
             case CTNode(labels) =>
               ConstructedNode(e, labels.map(Label))
             case _ =>
-              Raise.impossible(s"could not construct entity from $e")
+              throw InvalidCypherTypeException(s"Expected an entity type (CTNode, CTRelationShip), got $e")
           }
         }
 
@@ -372,7 +374,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
           producer.planValueJoin(leftIn, rightIn, joinPredicates.elements)
         }
       }
-      result.getOrElse(Raise.invalidOrUnsupportedPattern("empty pattern"))
+      // TODO: use type system to avoid empty pattern
+      result.getOrElse(throw InvalidPatternException("Cannot plan an empty match pattern"))
     }
   }
 
@@ -424,14 +427,17 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     val (r, c) = pattern.topology.collectFirst {
       case (rel, conn: Connection) if !allSolved.solves(rel) =>
         rel -> conn
-    }.getOrElse(Raise.patternPlanningFailure())
+    }.getOrElse(
+      // TODO: exclude case with type system
+      throw InvalidPatternException("Cannot plan an expansion that has already been solved")
+    )
 
     val sourcePlan = disconnectedPlans.collectFirst {
       case p if p.solved.solves(c.source) => p
-    }.getOrElse(Raise.invalidConnection("source"))
+    }.getOrElse(throw InvalidDependencyException("Cannot plan expansion for unsolved source plan"))
     val targetPlan = disconnectedPlans.collectFirst {
       case p if p.solved.solves(c.target) => p
-    }.getOrElse(Raise.invalidConnection("target"))
+    }.getOrElse(throw InvalidDependencyException("Cannot plan expansion for unsolved target plan"))
 
     val expand = c match {
       case v: VarLengthRelationship if v.upper.nonEmpty =>
