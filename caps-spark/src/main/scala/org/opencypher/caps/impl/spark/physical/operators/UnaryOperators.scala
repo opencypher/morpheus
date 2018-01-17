@@ -24,7 +24,6 @@ import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherInteger
-import org.opencypher.caps.impl.convert.toJavaType
 import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.record._
 import org.opencypher.caps.impl.spark.SparkColumnName
@@ -35,6 +34,7 @@ import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext, 
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.caps.ir.api.expr._
+import org.opencypher.caps.ir.impl.convert.toJava
 import org.opencypher.caps.ir.impl.syntax.ExprSyntax._
 import org.opencypher.caps.logical.impl.{ConstructedEntity, _}
 
@@ -90,7 +90,7 @@ final case class Unwind(in: PhysicalOperator, list: Expr, item: Var, header: Rec
         // the list is external: we create a dataframe and crossjoin with it
         case Param(name) =>
           // we need a Java list of rows to construct a DataFrame
-          toJavaType(context.parameters(name)) match {
+          toJava(context.parameters(name)) match {
             case t: TraversableOnce[_] =>
               val list = t.map(Row(_)).toList.asJava
 

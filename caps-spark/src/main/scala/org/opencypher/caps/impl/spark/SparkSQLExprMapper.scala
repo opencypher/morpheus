@@ -20,13 +20,13 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.types.{CTAny, CTList, CTNode, CTString}
-import org.opencypher.caps.impl.convert.toJavaType
 import org.opencypher.caps.impl.spark.Udfs._
 import org.opencypher.caps.impl.spark.convert.toSparkType
 import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.record.RecordHeader
 import org.opencypher.caps.impl.spark.physical.RuntimeContext
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.columnName
+import org.opencypher.caps.ir.impl.convert.toJava
 
 object SparkSQLExprMapper {
 
@@ -46,7 +46,7 @@ object SparkSQLExprMapper {
       case p @ Param(name) if p.cypherType.subTypeOf(CTList(CTAny)).maybeTrue =>
         udf(const(context.parameters(name)), toSparkType(p.cypherType))()
       case Param(name) =>
-        functions.lit(toJavaType(context.parameters(name)))
+        functions.lit(toJava(context.parameters(name)))
       case l: Lit[_] =>
         functions.lit(l.v)
       case _ =>

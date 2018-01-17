@@ -13,32 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.convert
+package org.opencypher.caps.ir.impl.convert
 
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.exception.Raise
 
 import scala.collection.GenTraversableOnce
 
-object fromJavaType extends Serializable {
+object toCypherType extends Serializable {
 
   def apply(v: Any): CypherType = v match {
-    case null => CTNull
-    case _: String => CTString
-    case _: java.lang.Byte => CTInteger
-    case _: java.lang.Short => CTInteger
+    case null                 => CTNull
+    case _: String            => CTString
+    case _: java.lang.Byte    => CTInteger
+    case _: java.lang.Short   => CTInteger
     case _: java.lang.Integer => CTInteger
-    case _: java.lang.Long => CTInteger
-    case _: java.lang.Float => CTFloat
-    case _: java.lang.Double => CTFloat
+    case _: java.lang.Long    => CTInteger
+    case _: java.lang.Float   => CTFloat
+    case _: java.lang.Double  => CTFloat
     case _: java.lang.Boolean => CTBoolean
-    case a: Array[_] => constructList(a)
-    case v: Vector[_] => constructList(v)
-    case x => Raise.invalidArgument("instance of a CypherValue", s"${x.getClass}")
+    case a: Array[_]          => constructList(a)
+    case v: Vector[_]         => constructList(v)
+    case x =>
+      throw new IllegalArgumentException(
+        s"Expected an instance of a Cypher-compatible Java type, but was value $x of type (${x.getClass})")
   }
 
   private def constructList[E](l: GenTraversableOnce[E]): CTList = {
-    val elementType = l.toSeq.map(fromJavaType.apply).foldLeft[CypherType](CTVoid)(_ join _)
+    val elementType = l.toSeq.map(toCypherType.apply).foldLeft[CypherType](CTVoid)(_ join _)
     CTList(elementType)
   }
 }

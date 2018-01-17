@@ -18,15 +18,15 @@ package org.opencypher.caps.impl.spark
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.api.value.instances._
 import org.opencypher.caps.api.value.syntax._
-import org.opencypher.caps.impl.convert.toJavaType
 import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.ir.api.Label
+import org.opencypher.caps.ir.impl.convert.toJava
 
 import scala.collection.mutable
 
 object Udfs {
 
-  def const(v: CypherValue): () => Any = () => toJavaType(v)
+  def const(v: CypherValue): () => Any = () => toJava(v)
 
   // TODO: Try to share code with cypherFilter()
   def lt(lhs: Any, rhs: Any): Any = (CypherValue(lhs) < CypherValue(rhs)).orNull
@@ -39,22 +39,27 @@ object Udfs {
 
   def getNodeLabels(labelNames: Seq[Label]): (Any) => Array[String] = {
     case a: mutable.WrappedArray[_] =>
-      a.zip(labelNames).collect {
-        case (true, label) => label.name
-      }.toArray
+      a.zip(labelNames)
+        .collect {
+          case (true, label) => label.name
+        }
+        .toArray
   }
 
   def getNodeKeys(keyNames: Seq[String]): (Any) => Array[String] = {
     case a: mutable.WrappedArray[_] =>
-      a.zip(keyNames).collect {
-        case (v, key) if v != null => key
-      }.toArray.sorted
+      a.zip(keyNames)
+        .collect {
+          case (v, key) if v != null => key
+        }
+        .toArray
+        .sorted
     case x => Raise.invalidArgument("an array", x.toString)
   }
 
   def in[T](elem: Any, list: Any): Boolean = list match {
     case a: mutable.WrappedArray[_] => a.contains(elem)
-    case x => Raise.invalidArgument("an array", x.toString)
+    case x                          => Raise.invalidArgument("an array", x.toString)
   }
 
 }
