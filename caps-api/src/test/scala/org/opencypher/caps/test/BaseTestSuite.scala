@@ -15,11 +15,14 @@
  */
 package org.opencypher.caps.test
 
+import org.junit.runner.RunWith
 import org.opencypher.caps.api.value.instances.AllInstances
 import org.opencypher.caps.api.value.syntax.AllSyntax
 import org.scalactic.source
+import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FunSpec, Matchers, Tag}
 
+@RunWith(classOf[JUnitRunner])
 abstract class BaseTestSuite extends FunSpec with Matchers with AllInstances with AllSyntax {
 
   /**

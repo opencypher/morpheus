@@ -15,8 +15,11 @@
  */
 package org.opencypher.caps.trees
 
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FunSuite, Matchers}
 
+@RunWith(classOf[JUnitRunner])
 class TreeNodeTest extends FunSuite with Matchers {
 
   val calculation = Add(Number(5), Add(Number(4), Number(3)))
