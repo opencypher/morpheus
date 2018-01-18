@@ -51,6 +51,15 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Workaround for https://youtrack.jetbrains.com/issue/SCL-13184 -->
+        <dependency>
+            <groupId>org.opencypher</groupId>
+            <artifactId>caps-trees</artifactId>
+            <version>${parent.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
 </project>
