@@ -16,15 +16,16 @@
 package org.opencypher.caps.api.spark
 
 import org.apache.spark.storage.StorageLevel
-import org.opencypher.caps.api.expr._
+import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.impl.record.CAPSRecordHeader._
+import org.opencypher.caps.impl.record.{RecordHeader, SlotContent}
 import org.opencypher.caps.impl.spark.{RowExpansion, SparkColumnName}
 
-class CAPSPatternGraph(private[spark] val baseTable: CAPSRecords, val schema: Schema)
-                      (implicit val session: CAPSSession) extends CAPSGraph {
+class CAPSPatternGraph(private[spark] val baseTable: CAPSRecords, val schema: Schema)(implicit val session: CAPSSession)
+    extends CAPSGraph {
 
   private val header = baseTable.header
 
@@ -70,14 +71,15 @@ class CAPSPatternGraph(private[spark] val baseTable: CAPSRecords, val schema: Sc
         relVar -> createScanToBaseTableLookup(targetVar, slotsForRel.map(_.content))
     }
 
-    val extractedDf = baseTable.toDF().flatMap(
-      RowExpansion(targetHeader, targetVar, extractionSlots, relColumnsLookupTables))(targetHeader.rowEncoder)
+    val extractedDf = baseTable
+      .toDF()
+      .flatMap(RowExpansion(targetHeader, targetVar, extractionSlots, relColumnsLookupTables))(targetHeader.rowEncoder)
     val distinctData = extractedDf.distinct()
 
     CAPSRecords.create(targetHeader, distinctData)
   }
 
-  private def createScanToBaseTableLookup(scanTableVar: Var, slotContents: Seq[SlotContent]): Map[String,String] = {
+  private def createScanToBaseTableLookup(scanTableVar: Var, slotContents: Seq[SlotContent]): Map[String, String] = {
     slotContents.map { baseTableSlotContent =>
       SparkColumnName.of(baseTableSlotContent.withOwner(scanTableVar)) -> SparkColumnName.of(baseTableSlotContent)
     }.toMap

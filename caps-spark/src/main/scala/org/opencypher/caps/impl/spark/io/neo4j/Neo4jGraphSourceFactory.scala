@@ -18,18 +18,18 @@ package org.opencypher.caps.impl.spark.io.neo4j
 import java.net.{URI, URLDecoder}
 
 import org.apache.http.client.utils.URIBuilder
+import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.spark.io.CAPSGraphSourceFactoryCompanion
 import org.opencypher.caps.api.spark.CAPSSession
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceFactoryImpl
-import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.spark.io.neo4j.external.Neo4jConfig
 
 case object Neo4jGraphSourceFactory extends CAPSGraphSourceFactoryCompanion("bolt", "bolt+routing")
 
-case class Neo4jGraphSourceFactory()
-  extends CAPSGraphSourceFactoryImpl[Neo4jGraphSource](Neo4jGraphSourceFactory) {
+case class Neo4jGraphSourceFactory() extends CAPSGraphSourceFactoryImpl[Neo4jGraphSource](Neo4jGraphSourceFactory) {
 
-  override protected def sourceForURIWithSupportedScheme(uri: URI)(implicit capsSession: CAPSSession): Neo4jGraphSource = {
+  override protected def sourceForURIWithSupportedScheme(uri: URI)(
+      implicit capsSession: CAPSSession): Neo4jGraphSource = {
     val (user, passwd) = getUserInfo(uri)
     val boltUri = new URIBuilder()
       .setScheme(uri.getScheme)
@@ -47,7 +47,7 @@ case class Neo4jGraphSourceFactory()
 
     case info =>
       val tokens = info.split(":")
-      if (tokens.size != 2) Raise.invalidArgument("username:password", "nothing")
+      if (tokens.size != 2) throw IllegalArgumentException("values for username:password")
       tokens(0) -> Some(tokens(1))
   }
 
@@ -56,8 +56,8 @@ case class Neo4jGraphSourceFactory()
 
     case queries =>
       val tokens = queries.split(";")
-      val nodeQuery = tokens.headOption.getOrElse(Raise.invalidArgument("a node query", "none"))
-      val relQuery = tokens.tail.headOption.getOrElse(Raise.invalidArgument("a relationship query", "none"))
+      val nodeQuery = tokens.headOption.getOrElse(throw IllegalArgumentException("a node query"))
+      val relQuery = tokens.tail.headOption.getOrElse(throw IllegalArgumentException("a relationship query"))
       Some(URLDecoder.decode(nodeQuery, "UTF-8") -> URLDecoder.decode(relQuery, "UTF-8"))
   }
 }

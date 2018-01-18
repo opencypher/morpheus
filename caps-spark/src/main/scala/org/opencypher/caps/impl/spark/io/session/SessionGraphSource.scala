@@ -17,14 +17,13 @@ package org.opencypher.caps.impl.spark.io.session
 
 import java.net.URI
 
+import org.opencypher.caps.api.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.caps.api.io.{CreateOrFail, Overwrite, PersistMode}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceImpl
-import org.opencypher.caps.impl.exception.Raise
 
-case class SessionGraphSource(path: String)(implicit capsSession: CAPSSession)
-  extends CAPSGraphSourceImpl {
+case class SessionGraphSource(path: String)(implicit capsSession: CAPSSession) extends CAPSGraphSourceImpl {
 
   private var currentGraph: Option[CAPSGraph] = None
 
@@ -34,7 +33,7 @@ case class SessionGraphSource(path: String)(implicit capsSession: CAPSSession)
     uri == canonicalURI
 
   override def create: CAPSGraph = store(CAPSGraph.empty, CreateOrFail)
-  override def graph: CAPSGraph = currentGraph.getOrElse(Raise.graphNotFound(canonicalURI))
+  override def graph: CAPSGraph = currentGraph.getOrElse(throw IllegalArgumentException(s"a graph at $canonicalURI"))
   override def schema: Option[Schema] = None
 
   override def store(graph: CAPSGraph, mode: PersistMode): CAPSGraph = mode match {
@@ -47,7 +46,7 @@ case class SessionGraphSource(path: String)(implicit capsSession: CAPSSession)
       graph
 
     case CreateOrFail =>
-      Raise.graphAlreadyExists(canonicalURI)
+      throw UnsupportedOperationException(s"Overwriting the session graph")
   }
 
   override def delete(): Unit =

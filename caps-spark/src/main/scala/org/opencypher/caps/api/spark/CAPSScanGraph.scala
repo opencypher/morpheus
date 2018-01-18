@@ -17,14 +17,15 @@ package org.opencypher.caps.api.spark
 
 import cats.data.NonEmptyVector
 import org.apache.spark.storage.StorageLevel
-import org.opencypher.caps.api.expr._
+import org.opencypher.caps.api.exception.IllegalArgumentException
+import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType, DefiniteCypherType}
-import org.opencypher.caps.impl.exception.Raise
+import org.opencypher.caps.impl.record.RecordHeader
 
-class CAPSScanGraph(val scans: Seq[GraphScan], val schema: Schema)
-                   (implicit val session: CAPSSession) extends CAPSGraph {
+class CAPSScanGraph(val scans: Seq[GraphScan], val schema: Schema)(implicit val session: CAPSSession)
+    extends CAPSGraph {
 
   // TODO: Normalize (remove redundant columns for implied Schema information, clear aliases?)
 
@@ -32,7 +33,7 @@ class CAPSScanGraph(val scans: Seq[GraphScan], val schema: Schema)
 
   override protected def graph: CAPSScanGraph = this
 
-  private val nodeEntityScans = NodeEntityScans(scans.collect { case it: NodeScan => it }.toVector)
+  private val nodeEntityScans = NodeEntityScans(scans.collect { case it: NodeScan                => it }.toVector)
   private val relEntityScans = RelationshipEntityScans(scans.collect { case it: RelationshipScan => it }.toVector)
 
   override def cache(): CAPSScanGraph = map(_.cache())
@@ -56,7 +57,7 @@ class CAPSScanGraph(val scans: Seq[GraphScan], val schema: Schema)
 
     val scanRecords: Seq[CAPSRecords] = selectedScans.map(_.records)
     val alignedRecords = scanRecords.map(GraphScan.align(_, node, targetNodeHeader))
-    alignedRecords.reduceOption(_ unionAll(targetNodeHeader, _)).getOrElse(CAPSRecords.empty(targetNodeHeader))
+    alignedRecords.reduceOption(_ unionAll (targetNodeHeader, _)).getOrElse(CAPSRecords.empty(targetNodeHeader))
   }
 
   override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
@@ -67,13 +68,15 @@ class CAPSScanGraph(val scans: Seq[GraphScan], val schema: Schema)
 
     val scanRecords = selectedScans.map(_.records)
     val alignedRecords = scanRecords.map(GraphScan.align(_, rel, targetRelHeader))
-    alignedRecords.reduceOption(_ unionAll(targetRelHeader, _)).getOrElse(CAPSRecords.empty(targetRelHeader))
+    alignedRecords.reduceOption(_ unionAll (targetRelHeader, _)).getOrElse(CAPSRecords.empty(targetRelHeader))
   }
 
   override def union(other: CAPSGraph): CAPSGraph = other match {
     case (otherScanGraph: CAPSScanGraph) =>
       val allScans = scans ++ otherScanGraph.scans
-      val nodeScan = allScans.collectFirst[NodeScan] { case scan: NodeScan => scan }.getOrElse(Raise.impossible())
+      val nodeScan = allScans
+        .collectFirst[NodeScan] { case scan: NodeScan => scan }
+        .getOrElse(throw IllegalArgumentException("at least one node scan"))
       CAPSGraph.create(nodeScan, allScans.filterNot(_ == nodeScan): _*)
     case _ => CAPSUnionGraph(this, other)
   }
@@ -90,7 +93,7 @@ class CAPSScanGraph(val scans: Seq[GraphScan], val schema: Schema)
 
   private trait EntityScans {
     type EntityType <: CypherType with DefiniteCypherType
-    type EntityScan <: GraphScan {type EntityCypherType = EntityType}
+    type EntityScan <: GraphScan { type EntityCypherType = EntityType }
 
     def entityScans: Vector[EntityScan]
 

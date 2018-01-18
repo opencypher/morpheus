@@ -16,6 +16,7 @@
 package org.opencypher.caps.impl.spark
 
 import org.apache.spark.sql.Row
+import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraphLoader
 import org.opencypher.caps.test.CAPSTestSuite
@@ -37,11 +38,12 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     val strings = result.records.toLocalScalaIterator.map(_.toString).toSet
 
     // We do string comparisons here because CypherNode.equals() does not check labels/properties
-    strings should equal(Set(
-      "{a: (:Actor:Person {birthyear: 1910, name: 'Rachel Kempson'}), a.name: 'Rachel Kempson'}",
-      "{a: (:Actor:Person {birthyear: 1908, name: 'Michael Redgrave'}), a.name: 'Michael Redgrave'}",
-      "{a: (:Actor:Person {birthyear: 1873, name: 'Roy Redgrave'}), a.name: 'Roy Redgrave'}"
-    ))
+    strings should equal(
+      Set(
+        "{a: (:Actor:Person {birthyear: 1910, name: 'Rachel Kempson'}), a.name: 'Rachel Kempson'}",
+        "{a: (:Actor:Person {birthyear: 1908, name: 'Michael Redgrave'}), a.name: 'Michael Redgrave'}",
+        "{a: (:Actor:Person {birthyear: 1873, name: 'Roy Redgrave'}), a.name: 'Roy Redgrave'}"
+      ))
   }
 
   test("label scan and project") {
@@ -68,9 +70,10 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     val result = graph.cypher(query)
 
     // Then
-    result.records.toDF().collect().toBag should equal(Bag(
-      Row(2L, true, true, 1937L, "Vanessa Redgrave", 21L, 2L, "ACTED_IN", 20L, "Guenevere")
-    ))
+    result.records.toDF().collect().toBag should equal(
+      Bag(
+        Row(2L, true, true, 1937L, "Vanessa Redgrave", 21L, 2L, "ACTED_IN", 20L, "Guenevere")
+      ))
   }
 
   test("filter nodes on property") {
@@ -120,12 +123,13 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     // When
     val records = graph.cypher(query).records
 
-    records.toDF().collect().toBag should equal(Bag(
-      Row("Natasha Richardson", "London", "The Parent Trap"),
-      Row("Dennis Quaid", "Houston", "The Parent Trap"),
-      Row("Lindsay Lohan", "New York", "The Parent Trap"),
-      Row("Vanessa Redgrave", "London", "Camelot"))
-    )
+    records.toDF().collect().toBag should equal(
+      Bag(
+        Row("Natasha Richardson", "London", "The Parent Trap"),
+        Row("Dennis Quaid", "Houston", "The Parent Trap"),
+        Row("Lindsay Lohan", "New York", "The Parent Trap"),
+        Row("Vanessa Redgrave", "London", "Camelot")
+      ))
   }
 
   // TODO: Figure out what invariant this was meant to measure
@@ -137,7 +141,9 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     val result = graph.cypher(query)
 
     // Then
-    val tuple = ("Brendan Madden", "Tom Sawyer Software",
+    val tuple = (
+      "Brendan Madden",
+      "Tom Sawyer Software",
       "#tsperspectives 7.6 is 15% faster with #neo4j Bolt support. https://t.co/1xPxB9slrB @TSawyerSoftware #graphviz")
     result.records shouldHaveSize 79 andContain tuple
   }
@@ -165,7 +171,7 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     }
 
     def asProduct(elts: IndexedSeq[Any]): Product = elts.length match {
-      case 0 => throw new IllegalArgumentException("Can't turn empty sequence into a tuple")
+      case 0 => throw IllegalArgumentException("non-empty list of elements")
       case 1 => Tuple1(elts(0))
       case 2 => Tuple2(elts(0), elts(1))
       case 3 => Tuple3(elts(0), elts(1), elts(2))

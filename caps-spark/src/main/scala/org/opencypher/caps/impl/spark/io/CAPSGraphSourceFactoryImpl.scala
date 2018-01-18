@@ -17,12 +17,12 @@ package org.opencypher.caps.impl.spark.io
 
 import java.net.URI
 
+import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.spark.io.{CAPSGraphSource, CAPSGraphSourceFactory, CAPSGraphSourceFactoryCompanion}
 import org.opencypher.caps.api.spark.CAPSSession
-import org.opencypher.caps.impl.exception.Raise
 
 abstract class CAPSGraphSourceFactoryImpl[S <: CAPSGraphSource](val companion: CAPSGraphSourceFactoryCompanion)
-  extends CAPSGraphSourceFactory {
+    extends CAPSGraphSourceFactory {
 
   override final type Source = S
 
@@ -32,7 +32,7 @@ abstract class CAPSGraphSourceFactoryImpl[S <: CAPSGraphSource](val companion: C
 
   override final def sourceFor(uri: URI)(implicit capsSession: CAPSSession): Source =
     if (schemes.contains(uri.getScheme)) sourceForURIWithSupportedScheme(uri)
-    else Raise.graphSourceSchemeNotSupported(uri, schemes)
+    else throw IllegalArgumentException(s"a supported scheme: ${schemes.toSeq.sorted.mkString(", ")}", uri.getScheme)
 
   protected def sourceForURIWithSupportedScheme(uri: URI)(implicit capsSession: CAPSSession): Source
 }

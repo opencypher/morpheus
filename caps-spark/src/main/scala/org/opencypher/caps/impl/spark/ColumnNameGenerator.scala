@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.spark
 
-import org.opencypher.caps.api.record.RecordHeader
+import org.opencypher.caps.impl.record.RecordHeader
 
 import scala.annotation.tailrec
 import scala.util.Random

@@ -12,7 +12,7 @@
 
     <artifactId>caps-tck</artifactId>
 
-    <name>Cypher for Apache Spark - openCypher TCK Implementation</name>
+    <name>Cypher for Apache Spark - TCK</name>
 
     <properties>
         <project.rootdir>${project.parent.basedir}</project.rootdir>
@@ -24,14 +24,22 @@
         <!-- Test -->
         <dependency>
             <groupId>org.opencypher</groupId>
-            <artifactId>caps-core</artifactId>
+            <artifactId>caps-api</artifactId>
+            <version>${parent.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.opencypher</groupId>
+            <artifactId>caps-cora</artifactId>
             <version>${project.parent.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.opencypher</groupId>
-            <artifactId>caps-core</artifactId>
+            <artifactId>caps-cora</artifactId>
             <version>${project.parent.version}</version>
             <type>test-jar</type>
             <scope>test</scope>

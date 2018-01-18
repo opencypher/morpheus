@@ -18,8 +18,8 @@ package org.opencypher.caps.impl.spark.physical
 import org.opencypher.caps.api.graph.{CypherResultPlan, Plan}
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSResult}
 import org.opencypher.caps.impl.flat.FlatOperator
-import org.opencypher.caps.impl.logical.LogicalOperator
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator
+import org.opencypher.caps.logical.impl.LogicalOperator
 
 object CAPSResultBuilder {
   def from(logical: LogicalOperator, flat: FlatOperator, physical: PhysicalOperator)(
@@ -31,7 +31,7 @@ object CAPSResultBuilder {
 
       override def graphs: Map[String, CAPSGraph] = result.graphs
 
-      override def explain = {
+      override def explain: Plan[LogicalOperator, FlatOperator, PhysicalOperator] = {
         Plan(CypherResultPlan(logical), CypherResultPlan(flat), CypherResultPlan(physical))
       }
     }

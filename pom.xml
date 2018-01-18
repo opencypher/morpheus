@@ -11,9 +11,13 @@
     <name>Cypher for Apache Spark</name>
 
     <modules>
-        <module>caps-core</module>
+        <module>caps-api</module>
+        <module>caps-trees</module>
+        <module>caps-logical</module>
         <module>caps-spark</module>
         <module>caps-tck</module>
+        <module>caps-ir</module>
+        <module>caps-cora</module>
     </modules>
 
     <properties>
@@ -477,6 +481,12 @@
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-reflect</artifactId>
+            <version>${project.scala.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-compiler</artifactId>
             <version>${project.scala.version}</version>
         </dependency>
 

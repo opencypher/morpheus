@@ -18,7 +18,7 @@ package org.opencypher.caps.impl.spark.io.hdfs
 import io.circe.Decoder
 import org.apache.spark.sql.types._
 import io.circe.generic.auto._
-import org.opencypher.caps.api.util.JsonUtils
+import org.opencypher.caps.impl.util.JsonUtils
 
 abstract class CsvSchema {
   def idField: CsvField
@@ -29,21 +29,22 @@ abstract class CsvSchema {
 
 case class CsvField(name: String, column: Int, valueType: String) {
   def getType: DataType = valueType.toLowerCase match {
-    case "string" => StringType
+    case "string"  => StringType
     case "integer" => LongType
-    case "long" => LongType
+    case "long"    => LongType
     case "boolean" => BooleanType
-    case x => throw new RuntimeException(s"Unknown type $x")
+    case x         => throw new RuntimeException(s"Unknown type $x")
   }
 
   def toStructField: StructField = StructField(name, getType, nullable = true)
 }
 
-case class CsvNodeSchema(idField: CsvField,
-                         implicitLabels: List[String],
-                         optionalLabels: List[CsvField],
-                         propertyFields: List[CsvField])
-                         extends CsvSchema {
+case class CsvNodeSchema(
+    idField: CsvField,
+    implicitLabels: List[String],
+    optionalLabels: List[CsvField],
+    propertyFields: List[CsvField])
+    extends CsvSchema {
 
   def toStructType: StructType = {
     StructType(
@@ -102,17 +103,18 @@ object CsvNodeSchema {
   }
 }
 
-case class CsvRelSchema(idField: CsvField,
-                        startIdField: CsvField,
-                        endIdField: CsvField,
-                        relType: String,
-                        propertyFields: List[CsvField])
-                        extends CsvSchema {
+case class CsvRelSchema(
+    idField: CsvField,
+    startIdField: CsvField,
+    endIdField: CsvField,
+    relType: String,
+    propertyFields: List[CsvField])
+    extends CsvSchema {
 
   def toStructType: StructType = {
     StructType(
       (List(idField, startIdField, endIdField) ++ propertyFields)
-          .sortBy(_.column)
+        .sortBy(_.column)
         .map(_.toStructField)
     )
   }
