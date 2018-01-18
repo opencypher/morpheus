@@ -7,14 +7,14 @@
   <servers>
     <server>
       <id>snapshots</id>
-      <username>${env.NEO4J_M2_USERNAME}</username>
-      <password>${env.NEO4J_M2_PASSWORD}</password>
+      <username>${env.OC_JFROG_USERNAME}</username>
+      <password>${env.OC_JFROG_PASSWORD}</password>
     </server>
 
     <server>
       <id>releases</id>
-      <username>${env.NEO4J_M2_USERNAME}</username>
-      <password>${env.NEO4J_M2_PASSWORD}</password>
+      <username>${env.OC_JFROG_USERNAME}</username>
+      <password>${env.OC_JFROG_PASSWORD}</password>
     </server>
   </servers>
 </settings>
