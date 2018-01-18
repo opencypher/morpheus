@@ -23,9 +23,9 @@ import org.opencypher.caps.impl.record._
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.ir.api.{Label, PropertyKey}
+import org.opencypher.caps.ir.test._
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.fixture.GraphCreationFixture
-import org.opencypher.caps.ir.test._
 
 import scala.collection.Bag
 import scala.collection.JavaConverters._

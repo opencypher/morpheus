@@ -37,6 +37,8 @@
         <plugin.maven-shade.version>2.4.3</plugin.maven-shade.version>
         <plugin.scala-maven.version>3.2.1</plugin.scala-maven.version>
         <plugin.scalastyle-maven.version>0.8.0</plugin.scalastyle-maven.version>
+        <plugin.scalatest-maven.version>1.0</plugin.scalatest-maven.version>
+        <plugin.surefire-maven.version>2.20.1</plugin.surefire-maven.version>
 
         <!-- Used dependencies -->
         <dep.ammonite.version>1.0.1-6-6d2db3a</dep.ammonite.version>
@@ -280,27 +282,34 @@
                 </executions>
             </plugin>
 
-            <!-- Run scala tests with junit 4 with junit 5 vintage -->
+            <!-- disable surefire -->
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.19</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.junit.platform</groupId>
-                        <artifactId>junit-platform-surefire-provider</artifactId>
-                        <version>${dep.junit.platform.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.junit.vintage</groupId>
-                        <artifactId>junit-vintage-engine</artifactId>
-                        <version>${dep.junit.vintage.version}</version>
-                    </dependency>
-                </dependencies>
+                <version>${plugin.surefire-maven.version}</version>
                 <configuration>
-                    <forkCount>3</forkCount>
-                    <reuseForks>true</reuseForks>
-                    <argLine>-Xmx1024m</argLine>
+                    <skipTests>true</skipTests>
                 </configuration>
+            </plugin>
+
+            <!-- enable scalatest -->
+            <plugin>
+                <groupId>org.scalatest</groupId>
+                <artifactId>scalatest-maven-plugin</artifactId>
+                <version>${plugin.scalatest-maven.version}</version>
+                <configuration>
+                    <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
+                    <junitxml>.</junitxml>
+                    <filereports>WDF TestSuite.txt</filereports>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>test</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- setup ammonite repl runner -->
@@ -429,7 +438,8 @@
                                         </filter>
 
                                         <filter>
-                                            <artifact>com.lihaoyi:ammonite-ops_${project.scala.binary.version}</artifact>
+                                            <artifact>com.lihaoyi:ammonite-ops_${project.scala.binary.version}
+                                            </artifact>
                                             <excludes>
                                                 <exclude>ammonite/Constants.class</exclude>
                                                 <exclude>ammonite/Constants$.class</exclude>
@@ -437,7 +447,8 @@
                                         </filter>
 
                                         <filter>
-                                            <artifact>com.lihaoyi:ammonite-terminal_${project.scala.binary.version}</artifact>
+                                            <artifact>com.lihaoyi:ammonite-terminal_${project.scala.binary.version}
+                                            </artifact>
                                             <excludes>
                                                 <exclude>ammonite/Constants.class</exclude>
                                                 <exclude>ammonite/Constants$.class</exclude>
@@ -449,7 +460,8 @@
                                             <excludes>
                                                 <exclude>org/apache/hadoop/yarn/util/package-info.class</exclude>
                                                 <exclude>org/apache/hadoop/yarn/factories/package-info.class</exclude>
-                                                <exclude>org/apache/hadoop/yarn/factory/providers/package-info.class</exclude>
+                                                <exclude>org/apache/hadoop/yarn/factory/providers/package-info.class
+                                                </exclude>
                                             </excludes>
                                         </filter>
 
@@ -493,23 +505,23 @@
         </dependency>
 
         <!-- Tests -->
-      <dependency>
-        <groupId>org.neo4j</groupId>
-        <artifactId>neo4j-cypher-frontend-3.4</artifactId>
-        <version>${dep.neo4j.version}</version>
-        <type>test-jar</type>
-        <scope>test</scope>
-      </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher-frontend-3.4</artifactId>
+            <version>${dep.neo4j.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
 
-      <dependency>
-        <groupId>org.neo4j</groupId>
-        <artifactId>neo4j-cypher-util-3.4</artifactId>
-        <version>${dep.neo4j.version}</version>
-        <type>test-jar</type>
-        <scope>test</scope>
-      </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher-util-3.4</artifactId>
+            <version>${dep.neo4j.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
 
-      <dependency>
+        <dependency>
             <groupId>org.neo4j.test</groupId>
             <artifactId>neo4j-harness</artifactId>
             <version>${dep.neo4j.version}</version>
