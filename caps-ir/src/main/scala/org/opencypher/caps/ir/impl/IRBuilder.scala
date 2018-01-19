@@ -284,7 +284,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
                 val entities = pattern.fields
                 val graphList = context.graphList
                 val schemaUnion = graphList.map(_.schema).reduce(_ ++ _)
-                val patternGraphSchema = schemaForEntities(schemaUnion, entities)
+                val patternGraphSchema = schemaUnion.forEntities(entities)
                 IRPatternGraph(graphName, patternGraphSchema, pattern)
               }
 
@@ -309,38 +309,6 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
       case None =>
         throw IllegalArgumentException("graph with alias", graph)
     }
-  }
-
-  // TODO: Refactor into RichSchema and add tests
-  //  test("for entities") {
-  //    val schema = Schema.empty
-  //      .withNodePropertyKeys("Person")("name" -> CTString)
-  //      .withNodePropertyKeys("City")("name" -> CTString, "region" -> CTBoolean)
-  //      .withRelationshipPropertyKeys("KNOWS")("since" -> CTFloat.nullable)
-  //      .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
-  //
-  //    schema.forEntities(
-  //      Set(
-  //        IRField("n")(CTNode("Person")),
-  //        IRField("r")(CTRelationship("BAR"))
-  //      )) should equal(
-  //      Schema.empty
-  //        .withNodePropertyKeys("Person")("name" -> CTString)
-  //        .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger))
-  //  }
-
-  private def schemaForEntities(schema: Schema, entities: Set[IRField]): Schema = {
-    entities
-      .map(schemaForEntity(schema, _))
-      .foldLeft(Schema.empty)(_ ++ _)
-  }
-
-  private def schemaForEntity(schema: Schema, entity: IRField): Schema = entity.cypherType match {
-    case n: CTNode =>
-      schema.forNode(n)
-    case r: CTRelationship =>
-      schema.forRelationship(r)
-    case x => throw IllegalArgumentException("entity type", x)
   }
 
   private def convertReturnItem[R: _mayFail: _hasContext](item: ast.ReturnItem): Eff[R, (IRField, Expr)] = item match {
