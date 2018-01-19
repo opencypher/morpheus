@@ -22,27 +22,27 @@ import java.util.concurrent.atomic.AtomicLong
 import org.apache.spark.SparkConf
 import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.sql.{DataFrame, SparkSession}
-import org.opencypher.caps.api.expr.{Expr, Var}
+import org.opencypher.caps.api.exception.UnsupportedOperationException
 import org.opencypher.caps.api.graph.CypherSession
 import org.opencypher.caps.api.io.{CreateOrFail, PersistMode}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.io.{CAPSGraphSource, CAPSGraphSourceFactory}
-import org.opencypher.caps.api.util.parsePathOrURI
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.demo.Configuration.{PrintLogicalPlan, PrintPhysicalPlan, PrintQueryExecutionStages}
 import org.opencypher.caps.demo.CypherKryoRegistrar
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
-import org.opencypher.caps.impl.logical._
-import org.opencypher.caps.impl.parse.CypherParser
-import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceHandler
 import org.opencypher.caps.impl.spark.io.file.FileCsvGraphSourceFactory
 import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvGraphSourceFactory
 import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraphSourceFactory
 import org.opencypher.caps.impl.spark.io.session.SessionGraphSourceFactory
 import org.opencypher.caps.impl.spark.physical._
+import org.opencypher.caps.impl.util.parsePathOrURI
+import org.opencypher.caps.ir.api.expr.{Expr, Var}
 import org.opencypher.caps.ir.api.{IRExternalGraph, IRField}
+import org.opencypher.caps.ir.impl.parse.CypherParser
 import org.opencypher.caps.ir.impl.{IRBuilder, IRBuilderContext}
+import org.opencypher.caps.logical.impl._
 
 sealed class CAPSSession private (
     val sparkSession: SparkSession,
@@ -77,6 +77,7 @@ sealed class CAPSSession private (
   def graphAt(path: String): CAPSGraph =
     graphAt(parsePathOrURI(path))
 
+  // TODO: why not Option[CAPSGraph] in general?
   def graphAt(uri: URI): CAPSGraph =
     graphSourceHandler.sourceAt(uri)(this).graph
 
@@ -110,7 +111,8 @@ sealed class CAPSSession private (
     logStageProgress("Done!")
 
     logStageProgress("Logical plan ...", false)
-    val logicalPlannerContext = LogicalPlannerContext(graph.schema, Set.empty, ir.model.graphs.andThen(sourceAt), ambientGraph)
+    val logicalPlannerContext =
+      LogicalPlannerContext(graph.schema, Set.empty, ir.model.graphs.andThen(sourceAt), ambientGraph)
     val logicalPlan = logicalPlanner(ir)(logicalPlannerContext)
     logStageProgress("Done!")
 
@@ -146,12 +148,12 @@ sealed class CAPSSession private (
     val graphSource = new CAPSGraphSource {
       override def schema: Option[Schema] = Some(graph.schema)
       override def canonicalURI: URI = uri
-      override def delete(): Unit = Raise.impossible("Don't delete the ambient graph")
+      override def delete(): Unit = throw UnsupportedOperationException("Deletion of an ambient graph")
       override def graph: CAPSGraph = ambient
       override def sourceForGraphAt(uri: URI): Boolean = uri == canonicalURI
-      override def create: CAPSGraph = Raise.impossible("Don't create the ambient graph")
+      override def create: CAPSGraph = throw UnsupportedOperationException("Creation of an ambient graph")
       override def store(graph: CAPSGraph, mode: PersistMode): CAPSGraph =
-        Raise.impossible("Don't persist the ambient graph")
+        throw UnsupportedOperationException("Persisting an ambient graph")
       override val session: CAPSSession = self
     }
 
@@ -167,26 +169,26 @@ sealed class CAPSSession private (
   }
 
   def filter(graph: Graph, in: Records, expr: Expr, queryParameters: Map[String, CypherValue]): Records = {
-    val scan = planStart(graph, in.header.fields)
+    val scan = planStart(graph, in.header.internalHeader.fields)
     val filter = producer.planFilter(expr, scan)
     plan(graph, in, queryParameters, filter).records
   }
 
   def select(graph: Graph, in: Records, fields: IndexedSeq[Var], queryParameters: Map[String, CypherValue]): Records = {
-    val scan = planStart(graph, in.header.fields)
+    val scan = planStart(graph, in.header.internalHeader.fields)
     val select = producer.planSelect(fields, Set.empty, scan)
     plan(graph, in, queryParameters, select).records
   }
 
   def project(graph: Graph, in: Records, expr: Expr, queryParameters: Map[String, CypherValue]): Records = {
-    val scan = planStart(graph, in.header.fields)
+    val scan = planStart(graph, in.header.internalHeader.fields)
     val project = producer.projectExpr(expr, scan)
     plan(graph, in, queryParameters, project).records
   }
 
   def alias(graph: Graph, in: Records, alias: (Expr, Var), queryParameters: Map[String, CypherValue]): Records = {
     val (expr, v) = alias
-    val scan = planStart(graph, in.header.fields)
+    val scan = planStart(graph, in.header.internalHeader.fields)
     val select = producer.projectField(IRField(v.name)(v.cypherType), expr, scan)
     plan(graph, in, queryParameters, select).records
   }

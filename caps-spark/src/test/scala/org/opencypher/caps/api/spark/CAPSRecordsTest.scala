@@ -17,10 +17,11 @@ package org.opencypher.caps.api.spark
 
 import org.apache.spark.sql.Row
 import org.opencypher.caps.api.exception.CypherException
-import org.opencypher.caps.api.expr._
+import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTRelationship, CTString, _}
 import org.opencypher.caps.api.value.{CypherMap, CypherNode, Properties}
+import org.opencypher.caps.impl.record._
 import org.opencypher.caps.ir.api.{Label, PropertyKey}
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.fixture.GraphCreationFixture
@@ -28,12 +29,16 @@ import org.opencypher.caps.test.fixture.GraphCreationFixture
 class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture {
 
   test("contract and scan nodes") {
-    val given = CAPSRecords.create(session.createDataFrame(Seq(
-      (1L, true, "Mats"),
-      (2L, false, "Martin"),
-      (3L, false, "Max"),
-      (4L, false, "Stefan")
-    )).toDF("ID", "IS_SWEDE", "NAME"))
+    val given = CAPSRecords.create(
+      session
+        .createDataFrame(
+          Seq(
+            (1L, true, "Mats"),
+            (2L, false, "Martin"),
+            (3L, false, "Max"),
+            (4L, false, "Stefan")
+          ))
+        .toDF("ID", "IS_SWEDE", "NAME"))
 
     val embeddedNode = EmbeddedNode("n" -> "ID").build
       .withImpliedLabel("Person")
@@ -41,15 +46,15 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture {
       .withPropertyKey("name" -> "NAME")
       .verify
 
-
     val result = given.contract(embeddedNode)
     val entityVar = Var("n")(CTNode("Person"))
 
-    result.header.slots.map(_.content).toVector should equal(Vector(
-      OpaqueField(entityVar),
-      ProjectedExpr(HasLabel(entityVar, Label("Swedish"))(CTBoolean)),
-      ProjectedExpr(Property(entityVar, PropertyKey("name"))(CTString.nullable))
-    ))
+    result.header.slots.map(_.content).toVector should equal(
+      Vector(
+        OpaqueField(entityVar),
+        ProjectedExpr(HasLabel(entityVar, Label("Swedish"))(CTBoolean)),
+        ProjectedExpr(Property(entityVar, PropertyKey("name"))(CTString.nullable))
+      ))
 
     val scan = GraphScan(embeddedNode).from(given)
     scan.entity should equal(entityVar)
@@ -58,26 +63,35 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture {
 
   test("contract relationships with a fixed type") {
 
-    val given = CAPSRecords.create(session.createDataFrame(Seq(
-      (10L, 1L, 2L, "red"),
-      (11L, 2L, 3L, "blue"),
-      (12L, 3L, 4L, "green"),
-      (13L, 4L, 1L, "yellow")
-    )).toDF("ID", "FROM", "TO", "COLOR"))
+    val given = CAPSRecords.create(
+      session
+        .createDataFrame(
+          Seq(
+            (10L, 1L, 2L, "red"),
+            (11L, 2L, 3L, "blue"),
+            (12L, 3L, 4L, "green"),
+            (13L, 4L, 1L, "yellow")
+          ))
+        .toDF("ID", "FROM", "TO", "COLOR"))
 
-    val embeddedRel = EmbeddedRelationship("r" -> "ID").from("FROM").to("TO").relType("NEXT").build
+    val embeddedRel = EmbeddedRelationship("r" -> "ID")
+      .from("FROM")
+      .to("TO")
+      .relType("NEXT")
+      .build
       .withPropertyKey("color" -> "COLOR")
       .verify
     val result = given.contract(embeddedRel)
 
     val entityVar = Var("r")(CTRelationship("NEXT"))
 
-    result.header.slots.map(_.content).toVector should equal(Vector(
-      OpaqueField(entityVar),
-      ProjectedExpr(StartNode(entityVar)(CTNode)),
-      ProjectedExpr(EndNode(entityVar)(CTNode)),
-      ProjectedExpr(Property(entityVar, PropertyKey("color"))(CTString.nullable))
-    ))
+    result.header.slots.map(_.content).toVector should equal(
+      Vector(
+        OpaqueField(entityVar),
+        ProjectedExpr(StartNode(entityVar)(CTNode)),
+        ProjectedExpr(EndNode(entityVar)(CTNode)),
+        ProjectedExpr(Property(entityVar, PropertyKey("color"))(CTString.nullable))
+      ))
 
     val scan = GraphScan(embeddedRel).from(given)
     scan.entity should equal(entityVar)
@@ -85,12 +99,16 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture {
   }
 
   test("contract relationships with a dynamic type") {
-    val given = CAPSRecords.create(session.createDataFrame(Seq(
-      (10L, 1L, 2L, "RED"),
-      (11L, 2L, 3L, "BLUE"),
-      (12L, 3L, 4L, "GREEN"),
-      (13L, 4L, 1L, "YELLOW")
-    )).toDF("ID", "FROM", "TO", "COLOR"))
+    val given = CAPSRecords.create(
+      session
+        .createDataFrame(
+          Seq(
+            (10L, 1L, 2L, "RED"),
+            (11L, 2L, 3L, "BLUE"),
+            (12L, 3L, 4L, "GREEN"),
+            (13L, 4L, 1L, "YELLOW")
+          ))
+        .toDF("ID", "FROM", "TO", "COLOR"))
 
     val embeddedRel =
       EmbeddedRelationship("r" -> "ID").from("FROM").to("TO").relTypes("COLOR", "RED", "BLUE", "GREEN", "YELLOW").build
@@ -99,12 +117,13 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture {
 
     val entityVar = Var("r")(CTRelationship("RED", "BLUE", "GREEN", "YELLOW"))
 
-    result.header.slots.map(_.content).toVector should equal(Vector(
-      OpaqueField(entityVar),
-      ProjectedExpr(StartNode(entityVar)(CTNode)),
-      ProjectedExpr(EndNode(entityVar)(CTNode)),
-      ProjectedExpr(Type(entityVar)(CTRelationship("RED", "BLUE", "GREEN", "YELLOW")))
-    ))
+    result.header.slots.map(_.content).toVector should equal(
+      Vector(
+        OpaqueField(entityVar),
+        ProjectedExpr(StartNode(entityVar)(CTNode)),
+        ProjectedExpr(EndNode(entityVar)(CTNode)),
+        ProjectedExpr(Type(entityVar)(CTRelationship("RED", "BLUE", "GREEN", "YELLOW")))
+      ))
 
     val scan = GraphScan(embeddedRel).from(given)
     scan.entity should equal(entityVar)
@@ -115,15 +134,13 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture {
     val data = session.createDataFrame(Seq((1, "foo"), (2, "bar"))).toDF("int", "string")
     val header = RecordHeader.from(OpaqueField(Var("int")()), OpaqueField(Var("notString")()))
 
-    a [CypherException] shouldBe thrownBy {
+    a[CypherException] shouldBe thrownBy {
       CAPSRecords.create(header, data)
     }
   }
 
   test("can construct records with matching data/header") {
-    val data = session.createDataFrame(Seq(
-      (1L, "foo"),
-      (2L, "bar"))).toDF("int", "string")
+    val data = session.createDataFrame(Seq((1L, "foo"), (2L, "bar"))).toDF("int", "string")
     val header = RecordHeader.from(OpaqueField(Var("int")(CTInteger)), OpaqueField(Var("string")(CTString)))
 
     val records = CAPSRecords.create(header, data) // no exception is thrown
@@ -135,11 +152,12 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture {
 
     val result = g.cypher("MATCH (n) WITH 5 - n.p + 1 AS b, n RETURN n, b")
 
-    result.records.toCypherMaps.collect().map(_.toString) should equal(Array(
-      CypherMap(
-        "n" -> CypherNode(0L, Seq("Foo"), Properties("p" -> 1)),
-        "b" -> 5
-      ).toString
-    ))
+    result.records.toCypherMaps.collect().map(_.toString) should equal(
+      Array(
+        CypherMap(
+          "n" -> CypherNode(0L, Seq("Foo"), Properties("p" -> 1)),
+          "b" -> 5
+        ).toString
+      ))
   }
 }

@@ -17,16 +17,17 @@ package org.opencypher.caps.impl.spark.physical
 
 import java.net.URI
 
-import org.opencypher.caps.api.expr._
+import org.opencypher.caps.api.exception.{IllegalArgumentException, NotImplementedException}
+import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.api.types.CTRelationship
 import org.opencypher.caps.api.value.CypherValue
-import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.flat.FlatOperator
-import org.opencypher.caps.impl.logical.{GraphOfPattern, LogicalExternalGraph, LogicalPatternGraph}
+import org.opencypher.caps.logical.impl.{GraphOfPattern, LogicalExternalGraph, LogicalPatternGraph}
 import org.opencypher.caps.impl.spark.physical.operators._
-import org.opencypher.caps.impl.{DirectCompilationStage, flat}
+import org.opencypher.caps.impl.flat
 import org.opencypher.caps.ir.api.block.SortItem
+import org.opencypher.caps.ir.api.util.DirectCompilationStage
 
 case class PhysicalPlannerContext(
     resolver: URI => CAPSGraph,
@@ -58,8 +59,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOpera
           case g: LogicalExternalGraph =>
             Start(context.inputRecords, g)
 
-          case _ =>
-            Raise.impossible(s"Got an unknown type of graph to start from: $graph")
+          case _ => throw IllegalArgumentException("a LogicalExternalGraph", graph)
         }
 
       case flat.SetSourceGraph(graph, in, header) =>
@@ -67,8 +67,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOpera
           case g: LogicalExternalGraph =>
             SetSourceGraph(process(in), g)
 
-          case _ =>
-            Raise.impossible(s"Got an unknown type of graph to start from: $graph")
+          case _ => throw IllegalArgumentException("a LogicalExternalGraph", graph)
         }
 
       case op @ flat.NodeScan(v, in, header) =>
@@ -120,7 +119,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOpera
 
         val externalGraph = sourceOp.sourceGraph match {
           case e: LogicalExternalGraph => e
-          case _                       => Raise.invalidArgument("an external graph", sourceOp.sourceGraph.toString)
+          case _                       => throw IllegalArgumentException("a LogicalExternalGraph", sourceOp.sourceGraph)
         }
 
         val startFrom = StartFromUnit(externalGraph)
@@ -153,8 +152,18 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOpera
         val second = process(relOp)
         val third = process(targetOp)
 
-        BoundedVarExpand(first, second, third,
-          rel, edgeList, target, sourceOp.endNode, lower, upper, header, isExpandInto)
+        BoundedVarExpand(
+          first,
+          second,
+          third,
+          rel,
+          edgeList,
+          target,
+          sourceOp.endNode,
+          lower,
+          upper,
+          header,
+          isExpandInto)
 
       case flat.Optional(lhs, rhs, header) =>
         Optional(process(lhs), process(rhs), header)
@@ -172,7 +181,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOpera
         Limit(process(in), expr, header)
 
       case x =>
-        Raise.notYetImplemented(s"physical planning of operator $x")
+        throw NotImplementedException(s"Physical planning of operator $x")
     }
   }
 

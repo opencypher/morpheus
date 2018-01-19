@@ -17,15 +17,15 @@ package org.opencypher.caps.impl.spark.io.file
 
 import java.net.URI
 
+import org.opencypher.caps.api.exception.NotImplementedException
 import org.opencypher.caps.api.io.{CreateOrFail, PersistMode}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
-import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceImpl
 import org.opencypher.caps.impl.spark.io.hdfs.CsvGraphLoader
 
 case class FileCsvGraphSource(override val canonicalURI: URI)(implicit capsSession: CAPSSession)
-  extends CAPSGraphSourceImpl {
+    extends CAPSGraphSourceImpl {
 
   override def sourceForGraphAt(uri: URI): Boolean = {
     FileCsvGraphSourceFactory.supportedSchemes.contains(uri.getScheme)
@@ -42,8 +42,8 @@ case class FileCsvGraphSource(override val canonicalURI: URI)(implicit capsSessi
     store(CAPSGraph.empty, CreateOrFail)
 
   override def store(graph: CAPSGraph, mode: PersistMode): CAPSGraph =
-    Raise.notYetImplemented("persisting graphs to local file system")
+    throw NotImplementedException("Persisting graphs to local file system")
 
   override def delete(): Unit =
-    Raise.notYetImplemented("deleting graphs from local file system")
+    throw NotImplementedException("deleting graphs from local file system")
 }

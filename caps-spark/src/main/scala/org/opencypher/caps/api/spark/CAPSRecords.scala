@@ -22,16 +22,17 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
-import org.opencypher.caps.api.expr.{Property, Var}
+import org.opencypher.caps.api.exception.IllegalArgumentException
+import org.opencypher.caps.ir.api.expr.{Property, Var}
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.util.PrintOptions
 import org.opencypher.caps.api.value.CypherMap
+import org.opencypher.caps.impl.record._
 import org.opencypher.caps.impl.record.CAPSRecordHeader
 import org.opencypher.caps.impl.record.CAPSRecordHeader._
 import org.opencypher.caps.impl.spark.DfUtils._
 import org.opencypher.caps.impl.spark.convert.{fromSparkType, rowToCypherMap, toSparkType}
-import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.spark.{RecordsPrinter, SparkColumnName}
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 
@@ -39,10 +40,11 @@ import scala.annotation.tailrec
 import scala.reflect.runtime.universe.TypeTag
 
 sealed abstract class CAPSRecords(
-  override val header: RecordHeader,
-  override val data: DataFrame
+    override val header: RecordHeader,
+    override val data: DataFrame
 )(implicit val caps: CAPSSession)
-  extends CypherRecords with Serializable {
+    extends CypherRecords
+    with Serializable {
 
   self =>
 
@@ -113,15 +115,17 @@ sealed abstract class CAPSRecords(
     CAPSRecords.create(header, unionData)
   }
 
-  override def contract[E <: EmbeddedEntity](entity: VerifiedEmbeddedEntity[E]): CAPSRecords = {
+  def contract[E <: EmbeddedEntity](entity: VerifiedEmbeddedEntity[E]): CAPSRecords = {
     val slotExprs = entity.slots
     val newSlots = header.slots.map {
-      case slot@RecordSlot(idx, content: FieldSlotContent) =>
-        slotExprs.get(content.field.name).map {
-          case expr: Var => OpaqueField(expr)
-          case expr: Property => ProjectedExpr(expr.copy()(cypherType = content.cypherType))
-          case expr => ProjectedExpr(expr)
-        }
+      case slot @ RecordSlot(idx, content: FieldSlotContent) =>
+        slotExprs
+          .get(content.field.name)
+          .map {
+            case expr: Var      => OpaqueField(expr)
+            case expr: Property => ProjectedExpr(expr.copy()(cypherType = content.cypherType))
+            case expr           => ProjectedExpr(expr)
+          }
           .getOrElse(slot.content)
 
       case slot =>
@@ -171,29 +175,26 @@ sealed abstract class CAPSRecords(
 
 object CAPSRecords {
 
-  def create[A <: Product : TypeTag](columns: Seq[String], data: Seq[A])(implicit caps: CAPSSession)
-  : CAPSRecords =
+  def create[A <: Product: TypeTag](columns: Seq[String], data: Seq[A])(implicit caps: CAPSSession): CAPSRecords =
     create(caps.sparkSession.createDataFrame(data).toDF(columns: _*))
 
-  def create[A <: Product : TypeTag](data: Seq[A])(implicit caps: CAPSSession)
-  : CAPSRecords =
+  def create[A <: Product: TypeTag](data: Seq[A])(implicit caps: CAPSSession): CAPSRecords =
     create(caps.sparkSession.createDataFrame(data))
 
-  def create(columns: String*)(rows: java.util.List[Row], schema: StructType)(implicit caps: CAPSSession)
-  : CAPSRecords =
+  def create(columns: String*)(rows: java.util.List[Row], schema: StructType)(implicit caps: CAPSSession): CAPSRecords =
     create(caps.sparkSession.createDataFrame(rows, schema).toDF(columns: _*))
 
   def create(rows: java.util.List[Row], schema: StructType)(implicit caps: CAPSSession): CAPSRecords =
     create(caps.sparkSession.createDataFrame(rows, schema))
 
-  def create(columns: Seq[String], data: java.util.List[_], beanClass: Class[_])(implicit caps: CAPSSession)
-  : CAPSRecords =
+  def create(columns: Seq[String], data: java.util.List[_], beanClass: Class[_])(
+      implicit caps: CAPSSession): CAPSRecords =
     create(caps.sparkSession.createDataFrame(data, beanClass).toDF(columns: _*))
 
   def create(data: java.util.List[_], beanClass: Class[_])(implicit caps: CAPSSession): CAPSRecords =
     create(caps.sparkSession.createDataFrame(data, beanClass))
 
-  def create[A <: Product : TypeTag](rdd: RDD[A])(implicit caps: CAPSSession): CAPSRecords =
+  def create[A <: Product: TypeTag](rdd: RDD[A])(implicit caps: CAPSSession): CAPSRecords =
     create(caps.sparkSession.createDataFrame(rdd))
 
   def create(rowRDD: RDD[Row], schema: StructType)(implicit caps: CAPSSession): CAPSRecords =
@@ -210,12 +211,13 @@ object CAPSRecords {
 
   def create(initialDataFrame: DataFrame)(implicit caps: CAPSSession): CAPSRecords = {
     val toCast = initialDataFrame.schema.fields.filter(f => fromSparkType(f.dataType, f.nullable).isEmpty)
-    val dfWithCompatibleTypes: DataFrame = toCast.foldLeft(initialDataFrame) { case (df, field) =>
+    val dfWithCompatibleTypes: DataFrame = toCast.foldLeft(initialDataFrame) {
+      case (df, field) =>
         val castType = field.dataType match {
           case ByteType | ShortType | IntegerType => LongType
-          case FloatType => DoubleType
-          case other => Raise.unsupportedArgument(
-            s"Cannot convert or cast type $other of field $field to a Spark type supported by Cypher")
+          case FloatType                          => DoubleType
+          case other =>
+            throw IllegalArgumentException("a Spark type supported by Cypher", s"type $other of field $field")
         }
         df.mapColumn(field.name)(_.cast(castType))
     }
@@ -238,44 +240,51 @@ object CAPSRecords {
     * @param caps the space in which the data belongs.
     * @return a new SparkCypherRecords representing the input.
     */
-  def create(initialHeader: RecordHeader, initialData: DataFrame)(implicit caps: CAPSSession)
-  : CAPSRecords = {
-    if (initialData.sparkSession == caps.sparkSession) {
-
-      // Ensure no duplicate columns in initialData
-      val initialDataColumns = initialData.columns.toSeq
-      if (initialDataColumns.size != initialDataColumns.distinct.size)
-        Raise.duplicateColumnNamesInData()
-
-      // Verify that all header column names exist in the data
-      val headerColumnNames = initialHeader.internalHeader.columns.toSet
-      val dataColumnNames = initialData.columns.toSet
-      if (!headerColumnNames.subsetOf(dataColumnNames)) {
-        Raise.recordsDataHeaderMismatch(
-          s"with columns ${initialHeader.internalHeader.columns.sorted.mkString("\n", ", ", "\n")}",
-          s"with columns ${initialData.columns.sorted.mkString("\n", ", ", "\n")}"
-        )
-      }
-
-      // Verify column types
-      initialHeader.slots.foreach { slot =>
-        val dfSchema = initialData.schema
-        val field = dfSchema(SparkColumnName.of(slot))
-        val cypherType = fromSparkType(field.dataType, field.nullable).getOrElse(
-          Raise.invalidArgument("A supported Spark type", field.dataType.toString))
-        val headerType = slot.content.cypherType
-
-        // if the type in the data doesn't correspond to the type in the header we fail
-        // except: we encode nodes, rels and integers with the same data type, so we can't fail
-        // on conflicts when we expect entities (alternative: change reverse-mapping function somehow)
-        if (toSparkType(headerType) != toSparkType(cypherType) && !containsEntity(headerType))
-          Raise.invalidDataTypeForColumn(field.name, headerType.toString, cypherType.toString)
-      }
-      createInternal(initialHeader, initialData)
+  def create(initialHeader: RecordHeader, initialData: DataFrame)(implicit caps: CAPSSession): CAPSRecords = {
+    if (initialData.sparkSession != caps.sparkSession) {
+      throw IllegalArgumentException(
+        "a DataFrame belonging to the same Spark session",
+        "DataFrame from different session")
     }
-    else {
-      Raise.capsSessionMismatch()
+
+    // Ensure no duplicate columns in initialData
+    val initialDataColumns = initialData.columns.toSeq
+
+    val duplicateColumns = initialDataColumns.groupBy(identity).collect {
+      case (key, values) if values.size > 1 => key
     }
+
+    if (duplicateColumns.nonEmpty)
+      throw IllegalArgumentException(
+        "a DataFrame with distinct columns",
+        s"a DataFrame with duplicate columns: $duplicateColumns")
+
+    // Verify that all header column names exist in the data
+    val headerColumnNames = initialHeader.internalHeader.columns.toSet
+    val dataColumnNames = initialData.columns.toSet
+    val missingColumnNames = headerColumnNames -- dataColumnNames
+    if (missingColumnNames.nonEmpty) {
+      throw IllegalArgumentException(
+        s"data with columns ${initialHeader.internalHeader.columns.sorted.mkString("\n", ", ", "\n")}",
+        s"data with missing columns ${missingColumnNames.toSeq.sorted.mkString("\n", ", ", "\n")}"
+      )
+    }
+
+    // Verify column types
+    initialHeader.slots.foreach { slot =>
+      val dfSchema = initialData.schema
+      val field = dfSchema(SparkColumnName.of(slot))
+      val cypherType = fromSparkType(field.dataType, field.nullable)
+        .getOrElse(throw IllegalArgumentException("a supported Spark type", field.dataType))
+      val headerType = slot.content.cypherType
+
+      // if the type in the data doesn't correspond to the type in the header we fail
+      // except: we encode nodes, rels and integers with the same data type, so we can't fail
+      // on conflicts when we expect entities (alternative: change reverse-mapping function somehow)
+      if (toSparkType(headerType) != toSparkType(cypherType) && !containsEntity(headerType))
+        throw IllegalArgumentException(s"a valid data type for column ${field.name} of type $headerType", cypherType)
+    }
+    createInternal(initialHeader, initialData)
   }
 
   private def createInternal(header: RecordHeader, data: DataFrame)(implicit caps: CAPSSession) =
@@ -283,14 +292,13 @@ object CAPSRecords {
 
   @tailrec
   private def containsEntity(t: CypherType): Boolean = t match {
-    case _: CTNode => true
+    case _: CTNode         => true
     case _: CTRelationship => true
-    case l: CTList => containsEntity(l.elementType)
-    case _ => false
+    case l: CTList         => containsEntity(l.elementType)
+    case _                 => false
   }
 
-  def empty(initialHeader: RecordHeader = RecordHeader.empty)(implicit caps: CAPSSession)
-  : CAPSRecords = {
+  def empty(initialHeader: RecordHeader = RecordHeader.empty)(implicit caps: CAPSSession): CAPSRecords = {
     val initialSparkStructType = CAPSRecordHeader.asSparkStructType(initialHeader)
     val initialDataFrame = caps.sparkSession.createDataFrame(Collections.emptyList[Row](), initialSparkStructType)
     create(initialHeader, initialDataFrame)

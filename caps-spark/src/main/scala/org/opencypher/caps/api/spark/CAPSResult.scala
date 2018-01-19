@@ -19,7 +19,7 @@ import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.opencypher.caps.api.graph.CypherResult
 import org.opencypher.caps.api.util.PrintOptions
 import org.opencypher.caps.impl.flat.FlatOperator
-import org.opencypher.caps.impl.logical.LogicalOperator
+import org.opencypher.caps.logical.impl.LogicalOperator
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator
 
 import scala.collection.JavaConversions._

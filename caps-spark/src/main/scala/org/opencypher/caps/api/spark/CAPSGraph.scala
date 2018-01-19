@@ -16,12 +16,13 @@
 package org.opencypher.caps.api.spark
 
 import org.apache.spark.storage.StorageLevel
-import org.opencypher.caps.api.expr._
+import org.opencypher.caps.api.exception.IllegalArgumentException
+import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.graph.CypherGraph
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
-import org.opencypher.caps.impl.exception.Raise
+import org.opencypher.caps.impl.record.{OpaqueField, RecordHeader}
 
 trait CAPSGraph extends CypherGraph with Serializable {
 
@@ -66,8 +67,7 @@ object CAPSGraph {
     new CAPSScanGraph(allScans, schema)
   }
 
-  def create(records: CAPSRecords, schema: Schema)
-    (implicit caps: CAPSSession): CAPSGraph = {
+  def create(records: CAPSRecords, schema: Schema)(implicit caps: CAPSSession): CAPSGraph = {
 
     new CAPSPatternGraph(records, schema)
   }
@@ -76,10 +76,10 @@ object CAPSGraph {
     new LazyGraph(theSchema, loadGraph) {}
 
   sealed abstract class LazyGraph(override val schema: Schema, loadGraph: => CAPSGraph)(implicit caps: CAPSSession)
-    extends CAPSGraph {
+      extends CAPSGraph {
     override protected lazy val graph: CAPSGraph = {
       val g = loadGraph
-      if (g.schema == schema) g else Raise.schemaMismatch()
+      if (g.schema == schema) g else throw IllegalArgumentException(s"a graph with schema $schema", g.schema)
     }
 
     override def session: CAPSSession = caps

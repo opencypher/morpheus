@@ -18,15 +18,15 @@ package org.opencypher.caps.impl.spark
 import org.apache.spark.sql.functions.udf
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame, functions}
-import org.opencypher.caps.api.expr._
-import org.opencypher.caps.api.record.RecordHeader
+import org.opencypher.caps.api.exception.{IllegalStateException, NotImplementedException}
 import org.opencypher.caps.api.types.{CTAny, CTList, CTNode, CTString}
-import org.opencypher.caps.impl.convert.toJavaType
+import org.opencypher.caps.impl.record.RecordHeader
 import org.opencypher.caps.impl.spark.Udfs._
 import org.opencypher.caps.impl.spark.convert.toSparkType
-import org.opencypher.caps.impl.exception.Raise
 import org.opencypher.caps.impl.spark.physical.RuntimeContext
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.columnName
+import org.opencypher.caps.ir.api.expr._
+import org.opencypher.caps.ir.impl.convert.toJava
 
 object SparkSQLExprMapper {
 
@@ -34,19 +34,19 @@ object SparkSQLExprMapper {
     val slots = header.slotsFor(expr)
 
     if (slots.isEmpty) {
-      Raise.slotNotFound(expr.toString)
+      throw IllegalStateException(s"No slot for expression $expr")
     } else if (slots.size > 1 && !expr.isInstanceOf[Var]) {
-      Raise.notYetImplemented("support for multi-column expressions")
+      throw NotImplementedException("Support for multi-column expressions")
     }
   }
 
-  private def getColumn(expr: Expr, header: RecordHeader, dataFrame: DataFrame)
-                       (implicit context: RuntimeContext): Column = {
+  private def getColumn(expr: Expr, header: RecordHeader, dataFrame: DataFrame)(
+      implicit context: RuntimeContext): Column = {
     expr match {
-      case p@Param(name) if p.cypherType.subTypeOf(CTList(CTAny)).maybeTrue =>
+      case p @ Param(name) if p.cypherType.subTypeOf(CTList(CTAny)).maybeTrue =>
         udf(const(context.parameters(name)), toSparkType(p.cypherType))()
       case Param(name) =>
-        functions.lit(toJavaType(context.parameters(name)))
+        functions.lit(toJava(context.parameters(name)))
       case l: Lit[_] =>
         functions.lit(l.v)
       case _ =>
@@ -75,197 +75,186 @@ object SparkSQLExprMapper {
       * @param context context with helper functions, such as column names.
       * @return Some Spark SQL expression if the input was mappable, otherwise None.
       */
-    def apply(header: RecordHeader, expr: Expr, df: DataFrame)
-             (implicit context: RuntimeContext): Option[Column] = expr match {
+    def apply(header: RecordHeader, expr: Expr, df: DataFrame)(implicit context: RuntimeContext): Option[Column] =
+      expr match {
 
-      case _: Var =>
-        val col = getColumn(expr, header, df)
-        Some(col)
+        case _: Var =>
+          val col = getColumn(expr, header, df)
+          Some(col)
 
-      case _: Param =>
-        Some(getColumn(expr, header, df))
+        case _: Param =>
+          Some(getColumn(expr, header, df))
 
-      case _: Lit[_] =>
-        Some(getColumn(expr, header, df))
+        case _: Lit[_] =>
+          Some(getColumn(expr, header, df))
 
-      case _: Property =>
-        Some(getColumn(expr, header, df))
+        case _: Property =>
+          Some(getColumn(expr, header, df))
 
-      // predicates
-      case Equals(e1, e2) =>
-        val lCol = getColumn(e1, header, df)
-        val rCol = getColumn(e2, header, df)
-        Some(lCol === rCol)
+        // predicates
+        case Equals(e1, e2) =>
+          val lCol = getColumn(e1, header, df)
+          val rCol = getColumn(e2, header, df)
+          Some(lCol === rCol)
 
-      case Not(e) =>
-        apply(header, e, df) match {
-          case Some(res) => Some(!res)
-          case _ => Raise.notYetImplemented(s"Support for expression $e")
-        }
-
-      case IsNull(e) =>
-        val col = getColumn(e, header, df)
-        Some(col.isNull)
-
-      case IsNotNull(e) =>
-        val col = getColumn(e, header, df)
-        Some(col.isNotNull)
-
-      case s: Size =>
-        verifyExpression(header, expr)
-
-        val col = getColumn(s.expr, header, df)
-        val computedSize = s.expr.cypherType match {
-          case CTString => udf((s: String) => s.length.toLong, LongType)(col)
-          case _: CTList => functions.size(col).cast(LongType)
-          case other => Raise.notYetImplemented(s"size() on type $other")
-        }
-        Some(computedSize)
-
-      case Ands(exprs) =>
-        val cols = exprs.map(asSparkSQLExpr(header, _, df))
-        if (cols.contains(None)) None
-        else {
-          cols.reduce[Option[Column]] {
-            // TODO: Does this work with Cypher's ternary logic?
-            case (Some(l: Column), Some(r: Column)) => Some(l && r)
-            case _ => Raise.impossible()
+        case Not(e) =>
+          apply(header, e, df) match {
+            case Some(res) => Some(!res)
+            case _         => throw NotImplementedException(s"Support for expression $e")
           }
-        }
 
-      case Ors(exprs) =>
-        val cols = exprs.map(asSparkSQLExpr(header, _, df))
-        if (cols.contains(None)) None
-        else {
-          cols.reduce[Option[Column]] {
-            case (Some(l: Column), Some(r: Column)) => Some(l || r)
-            case _ => Raise.impossible()
+        case IsNull(e) =>
+          val col = getColumn(e, header, df)
+          Some(col.isNull)
+
+        case IsNotNull(e) =>
+          val col = getColumn(e, header, df)
+          Some(col.isNotNull)
+
+        case s: Size =>
+          verifyExpression(header, expr)
+
+          val col = getColumn(s.expr, header, df)
+          val computedSize = s.expr.cypherType match {
+            case CTString  => udf((s: String) => s.length.toLong, LongType)(col)
+            case _: CTList => functions.size(col).cast(LongType)
+            case other     => throw NotImplementedException(s"size() on type $other")
           }
-        }
+          Some(computedSize)
 
-      case In(lhs, rhs) =>
-        verifyExpression(header, expr)
+        case Ands(exprs) =>
+          val cols = exprs.map(asSparkSQLExpr(header, _, df))
+          if (cols.contains(None)) None
+          else Some(cols.flatten.foldLeft(functions.lit(true))(_ && _))
 
-        val lhsColumn = getColumn(lhs, header, df)
-        val rhsColumn = getColumn(rhs, header, df)
+        case Ors(exprs) =>
+          val cols = exprs.map(asSparkSQLExpr(header, _, df))
+          if (cols.contains(None)) None
+          else Some(cols.flatten.foldLeft(functions.lit(false))(_ || _))
 
-        // if we were able to store the list as a Spark array, we could do
-        // new Column(ArrayContains(lhsColumn.expr, rhsColumn.expr))
-        // and avoid UDF
+        case In(lhs, rhs) =>
+          verifyExpression(header, expr)
 
-        val inPred = udf(Udfs.in _, BooleanType)(lhsColumn, rhsColumn)
+          val lhsColumn = getColumn(lhs, header, df)
+          val rhsColumn = getColumn(rhs, header, df)
 
-        Some(inPred)
+          // if we were able to store the list as a Spark array, we could do
+          // new Column(ArrayContains(lhsColumn.expr, rhsColumn.expr))
+          // and avoid UDF
 
-      case HasType(rel, relType) =>
-        val col = getColumn(Type(rel)(), header, df)
-        Some(col === relType.name)
+          val inPred = udf(Udfs.in _, BooleanType)(lhsColumn, rhsColumn)
 
-      case h: HasLabel =>
-        Some(getColumn(h, header, df)) // it's a boolean column
+          Some(inPred)
 
-      case inEq: LessThan => Some(inequality(lt, header, inEq, df))
-      case inEq: LessThanOrEqual => Some(inequality(lteq, header, inEq, df))
-      case inEq: GreaterThanOrEqual => Some(inequality(gteq, header, inEq, df))
-      case inEq: GreaterThan => Some(inequality(gt, header, inEq, df))
+        case HasType(rel, relType) =>
+          val col = getColumn(Type(rel)(), header, df)
+          Some(col === relType.name)
 
-      // Arithmetics
-      case add: Add =>
-        verifyExpression(header, expr)
+        case h: HasLabel =>
+          Some(getColumn(h, header, df)) // it's a boolean column
 
-        val lhsColumn = getColumn(add.lhs, header, df)
-        val rhsColumn = getColumn(add.rhs, header, df)
-        Some(lhsColumn + rhsColumn)
+        case inEq: LessThan           => Some(inequality(lt, header, inEq, df))
+        case inEq: LessThanOrEqual    => Some(inequality(lteq, header, inEq, df))
+        case inEq: GreaterThanOrEqual => Some(inequality(gteq, header, inEq, df))
+        case inEq: GreaterThan        => Some(inequality(gt, header, inEq, df))
 
-      case sub: Subtract =>
-        verifyExpression(header, expr)
+        // Arithmetics
+        case add: Add =>
+          verifyExpression(header, expr)
 
-        val lhsColumn = getColumn(sub.lhs, header, df)
-        val rhsColumn = getColumn(sub.rhs, header, df)
-        Some(lhsColumn - rhsColumn)
+          val lhsColumn = getColumn(add.lhs, header, df)
+          val rhsColumn = getColumn(add.rhs, header, df)
+          Some(lhsColumn + rhsColumn)
 
-      case mul: Multiply =>
-        verifyExpression(header, expr)
+        case sub: Subtract =>
+          verifyExpression(header, expr)
 
-        val lhsColumn = getColumn(mul.lhs, header, df)
-        val rhsColumn = getColumn(mul.rhs, header, df)
-        Some(lhsColumn * rhsColumn)
+          val lhsColumn = getColumn(sub.lhs, header, df)
+          val rhsColumn = getColumn(sub.rhs, header, df)
+          Some(lhsColumn - rhsColumn)
 
-      case div: Divide =>
-        verifyExpression(header, expr)
+        case mul: Multiply =>
+          verifyExpression(header, expr)
 
-        val lhsColumn = getColumn(div.lhs, header, df)
-        val rhsColumn = getColumn(div.rhs, header, df)
-        Some((lhsColumn / rhsColumn).cast(toSparkType(div.cypherType)))
+          val lhsColumn = getColumn(mul.lhs, header, df)
+          val rhsColumn = getColumn(mul.rhs, header, df)
+          Some(lhsColumn * rhsColumn)
 
-      // Functions
-      case e: Exists =>
-        val column = getColumn(e.expr, header, df)
-        Some(column.isNotNull)
+        case div: Divide =>
+          verifyExpression(header, expr)
 
-      case id: Id =>
-        verifyExpression(header, expr)
+          val lhsColumn = getColumn(div.lhs, header, df)
+          val rhsColumn = getColumn(div.rhs, header, df)
+          Some((lhsColumn / rhsColumn).cast(toSparkType(div.cypherType)))
 
-        val column = getColumn(id.expr, header, df)
-        Some(column)
+        // Functions
+        case e: Exists =>
+          val column = getColumn(e.expr, header, df)
+          Some(column.isNotNull)
 
-      case labels: Labels =>
-        verifyExpression(header, expr)
+        case id: Id =>
+          verifyExpression(header, expr)
 
-        val node = Var(columnName(header.slotsFor(labels.expr).head))(CTNode)
-        val labelExprs = header.labels(node)
-        val labelColumns = labelExprs.map(getColumn(_, header, df))
-        val labelNames = labelExprs.map(_.label)
-        val labelsUDF = udf(getNodeLabels(labelNames), ArrayType(StringType, containsNull = false))
-        Some(labelsUDF(functions.array(labelColumns: _*)))
+          val column = getColumn(id.expr, header, df)
+          Some(column)
 
-      case keys: Keys =>
-        verifyExpression(header, expr)
+        case labels: Labels =>
+          verifyExpression(header, expr)
 
-        val node = Var(columnName(header.slotsFor(keys.expr).head))(CTNode)
-        val propertyExprs = header.properties(node)
-        val propertyColumns = propertyExprs.map(getColumn(_, header, df))
-        val keyNames = propertyExprs.map(_.key.name)
-        val keysUDF = udf(getNodeKeys(keyNames), ArrayType(StringType, containsNull = false))
-        Some(keysUDF(functions.array(propertyColumns: _*)))
+          val node = Var(columnName(header.slotsFor(labels.expr).head))(CTNode)
+          val labelExprs = header.labels(node)
+          val labelColumns = labelExprs.map(getColumn(_, header, df))
+          val labelNames = labelExprs.map(_.label)
+          val labelsUDF = udf(getNodeLabels(labelNames), ArrayType(StringType, containsNull = false))
+          Some(labelsUDF(functions.array(labelColumns: _*)))
 
-      case Type(inner) =>
-        verifyExpression(header, expr)
+        case keys: Keys =>
+          verifyExpression(header, expr)
 
-        inner match {
-          case v: Var =>
-            val typeSlot = header.typeSlot(v)
-            val typeCol = df.col(columnName(typeSlot))
-            Some(typeCol)
+          val node = Var(columnName(header.slotsFor(keys.expr).head))(CTNode)
+          val propertyExprs = header.properties(node)
+          val propertyColumns = propertyExprs.map(getColumn(_, header, df))
+          val keyNames = propertyExprs.map(_.key.name)
+          val keysUDF = udf(getNodeKeys(keyNames), ArrayType(StringType, containsNull = false))
+          Some(keysUDF(functions.array(propertyColumns: _*)))
 
-          case _ =>
-            Raise.notYetImplemented("type() of non-variables")
-        }
+        case Type(inner) =>
+          verifyExpression(header, expr)
 
-      case StartNodeFunction(e) =>
-        verifyExpression(header, expr)
-        val rel = Var(columnName(header.slotsFor(e).head))(CTNode)
-        Some(getColumn(header.sourceNodeSlot(rel).content.key, header, df))
+          inner match {
+            case v: Var =>
+              val typeSlot = header.typeSlot(v)
+              val typeCol = df.col(columnName(typeSlot))
+              Some(typeCol)
 
-      case EndNodeFunction(e) =>
-        verifyExpression(header, expr)
-        val rel = Var(columnName(header.slotsFor(e).head))(CTNode)
-        Some(getColumn(header.targetNodeSlot(rel).content.key, header, df))
+            case _ =>
+              throw NotImplementedException("type() of non-variables")
+          }
 
-      case ToFloat(e) =>
-        verifyExpression(header, expr)
-        Some(getColumn(e, header, df).cast(DoubleType))
+        case StartNodeFunction(e) =>
+          verifyExpression(header, expr)
+          val rel = Var(columnName(header.slotsFor(e).head))(CTNode)
+          Some(getColumn(header.sourceNodeSlot(rel).content.key, header, df))
 
-      // Pattern Predicate
-      case ep: ExistsPatternExpr =>
-        Some(getColumn(ep, header, df))
+        case EndNodeFunction(e) =>
+          verifyExpression(header, expr)
+          val rel = Var(columnName(header.slotsFor(e).head))(CTNode)
+          Some(getColumn(header.targetNodeSlot(rel).content.key, header, df))
 
-      case _ =>
-        None
-    }
+        case ToFloat(e) =>
+          verifyExpression(header, expr)
+          Some(getColumn(e, header, df).cast(DoubleType))
 
-    private def inequality(f: (Any, Any) => Any, header: RecordHeader, expr: BinaryExpr, df: DataFrame)
-                          (implicit context: RuntimeContext): Column = {
+        // Pattern Predicate
+        case ep: ExistsPatternExpr =>
+          Some(getColumn(ep, header, df))
+
+        case _ =>
+          None
+      }
+
+    private def inequality(f: (Any, Any) => Any, header: RecordHeader, expr: BinaryExpr, df: DataFrame)(
+        implicit context: RuntimeContext): Column = {
       verifyExpression(header, expr)
 
       val lhsColumn = getColumn(expr.lhs, header, df)

@@ -17,7 +17,7 @@ package org.opencypher.caps.impl.spark.io.neo4j.external
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SparkSession}
-import org.opencypher.caps.impl.exception.Raise
+import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.impl.spark.io.neo4j.external.Neo4j._
 
 import scala.reflect.ClassTag
@@ -63,10 +63,11 @@ object Neo4j {
   }
 }
 
-case class Partitions(partitions: Long = 1,
-                      batchSize: Long = Neo4j.UNDEFINED,
-                      rows: Long = Neo4j.UNDEFINED,
-                      rowSource: Option[() => Long] = None) {
+case class Partitions(
+    partitions: Long = 1,
+    batchSize: Long = Neo4j.UNDEFINED,
+    rows: Long = Neo4j.UNDEFINED,
+    rowSource: Option[() => Long] = None) {
 
   def upper(v1: Long, v2: Long): Long = v1 / v2 + Math.signum(v1 % v2).asInstanceOf[Long]
 
@@ -147,14 +148,14 @@ case class Neo4j(config: Neo4jConfig, session: SparkSession) extends QueriesDsl 
     if (!nodes.isEmpty) {
       new Neo4jRDD(session.sparkContext, nodes.query, config, nodes.params, partitions)
     } else {
-      Raise.invalidArgument("node query", "none")
+      throw IllegalArgumentException("node query")
     }
 
   override def loadRelRdd: RDD[Row] =
     if (!rels.isEmpty) {
       new Neo4jRDD(session.sparkContext, rels.query, config, rels.params, partitions)
     } else {
-      Raise.invalidArgument("relationship query", "none")
+      throw IllegalArgumentException("relationship query")
     }
 
   override def loadRowRdd: RDD[Row] = loadNodeRdds

@@ -39,11 +39,12 @@ object RecordsPrinter {
     if (fieldContents.isEmpty) {
       stream.print(sep)
       stream.print(fitToColumn("(no columns)"))
-    } else fieldContents.foreach { field =>
-      stream.print(sep)
-      stream.print(fitToColumn(field.name))
-      sep = " | "
-    }
+    } else
+      fieldContents.foreach { field =>
+        stream.print(sep)
+        stream.print(fitToColumn(field))
+        sep = " | "
+      }
     stream.println(" |")
     stream.println(---)
 
@@ -55,7 +56,7 @@ object RecordsPrinter {
         stream.print(fitToColumn("(empty row)"))
       } else {
         fieldContents.foreach { field =>
-          map.get(SparkColumnName.of(field)) match {
+          map.get(field) match {
             case None =>
               stream.print(sep)
               stream.print(fitToColumn("null"))

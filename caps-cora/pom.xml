@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.opencypher</groupId>
+        <artifactId>cypher-for-apache-spark</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>caps-cora</artifactId>
+
+    <name>Cypher for Apache Spark - CORA</name>
+
+    <properties>
+        <project.rootdir>${project.parent.basedir}</project.rootdir>
+    </properties>
+
+    <dependencies>
+
+        <!--CAPS Module-->
+        <dependency>
+            <groupId>org.opencypher</groupId>
+            <artifactId>caps-logical</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+
+        <!-- Neo4j -->
+        <dependency>
+            <groupId>org.neo4j.driver</groupId>
+            <artifactId>neo4j-java-driver</artifactId>
+            <version>${dep.neo4j.driver.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.typelevel</groupId>
+            <artifactId>cats_${project.scala.binary.version}</artifactId>
+            <version>${dep.cats.version}</version>
+        </dependency>
+
+        <!-- Utils -->
+        <dependency>
+            <groupId>com.lihaoyi</groupId>
+            <artifactId>ammonite_${project.scala.binary.version}.11</artifactId>
+            <version>${dep.ammonite.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.lihaoyi</groupId>
+            <artifactId>ammonite-ops_${project.scala.binary.version}</artifactId>
+            <version>${dep.ammonite.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.circe</groupId>
+            <artifactId>circe-core_${project.scala.binary.version}</artifactId>
+            <version>${dep.circe.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.circe</groupId>
+            <artifactId>circe-generic_${project.scala.binary.version}</artifactId>
+            <version>${dep.circe.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.circe</groupId>
+            <artifactId>circe-parser_${project.scala.binary.version}</artifactId>
+            <version>${dep.circe.version}</version>
+        </dependency>
+
+        <!-- Test dependencies -->
+
+        <dependency>
+            <groupId>org.opencypher</groupId>
+            <artifactId>caps-api</artifactId>
+            <version>${project.parent.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.opencypher</groupId>
+            <artifactId>caps-ir</artifactId>
+            <version>${project.parent.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Workaround for https://youtrack.jetbrains.com/issue/SCL-13184 -->
+        <dependency>
+            <groupId>org.opencypher</groupId>
+            <artifactId>caps-trees</artifactId>
+            <version>${project.parent.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+
+</project>

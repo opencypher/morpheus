@@ -18,24 +18,24 @@ package org.opencypher.caps.impl.spark.physical.operators
 import java.net.URI
 
 import org.apache.spark.sql.{Column, DataFrame}
-import org.opencypher.caps.api.record._
+import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.common.AbstractTreeNode
 import org.opencypher.caps.impl.spark.SparkColumnName
-import org.opencypher.caps.impl.exception.Raise
+import org.opencypher.caps.impl.record.{RecordHeader, RecordSlot, SlotContent}
 import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
+import org.opencypher.caps.trees.AbstractTreeNode
 
 private[caps] abstract class PhysicalOperator extends AbstractTreeNode[PhysicalOperator] {
   def execute(implicit context: RuntimeContext): PhysicalResult
 
   protected def resolve(uri: URI)(implicit context: RuntimeContext): CAPSGraph = {
-    context.resolve(uri).getOrElse(Raise.graphNotFound(uri))
+    context.resolve(uri).getOrElse(throw IllegalArgumentException(s"a graph at $uri"))
   }
 
   override def args: Iterator[Any] = super.args.flatMap {
-    case RecordHeader(_) | Some(RecordHeader(_))  => None
-    case other                                    => Some(other)
+    case RecordHeader(_) | Some(RecordHeader(_)) => None
+    case other                                   => Some(other)
   }
 }
 
@@ -79,7 +79,7 @@ object PhysicalOperator {
     slot.content.cypherType match {
       case CTNode(_) =>
       case x =>
-        throw new IllegalArgumentException(s"Expected $slot to contain a node, but was $x")
+        throw IllegalArgumentException(s"Expected $slot to contain a node, but was $x")
     }
   }
 

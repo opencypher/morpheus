@@ -19,8 +19,8 @@ import org.apache.spark.sql.types.StructField
 import org.opencypher.caps.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
-import org.opencypher.caps.impl.convert.fromJavaType
 import org.opencypher.caps.impl.spark.convert.toSparkType
+import org.opencypher.caps.ir.impl.convert.toCypherType
 import org.opencypher.caps.test.support.creation.propertygraph.{Node, PropertyGraph, Relationship}
 
 trait CAPSGraphFactory {
@@ -34,12 +34,12 @@ trait CAPSGraphFactory {
   def computeSchema(propertyGraph: PropertyGraph): Schema = {
     def extractFromNode(n: Node) =
       n.labels -> n.properties.map {
-        case (name, prop) => name -> fromJavaType(prop)
+        case (name, prop) => name -> toCypherType(prop)
       }
 
     def extractFromRel(r: Relationship) =
       r.relType -> r.properties.map {
-        case (name, prop) => name -> fromJavaType(prop)
+        case (name, prop) => name -> toCypherType(prop)
       }
 
     val labelsAndProps = propertyGraph.nodes.map(extractFromNode)
