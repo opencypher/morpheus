@@ -19,6 +19,10 @@ import cats.data.State
 import org.atnos.eff._
 import org.atnos.eff.all._
 import org.atnos.eff.syntax.all._
+import org.opencypher.caps.api.exception.IllegalArgumentException
+import org.opencypher.caps.api.schema.Schema
+import org.opencypher.caps.api.types.{CTNode, CTRelationship}
+import org.opencypher.caps.ir.api.IRField
 import org.opencypher.caps.ir.api.expr.Expr
 
 package object impl {
@@ -37,6 +41,22 @@ package object impl {
       val stateRun = program.runState(context)
       val errorRun = stateRun.runEither[IRBuilderError]
       errorRun.run
+    }
+  }
+
+  implicit final class RichSchema(schema: Schema) {
+    def forEntities(entities: Set[IRField]): Schema = {
+      entities
+        .map(forEntity)
+        .foldLeft(Schema.empty)(_ ++ _)
+    }
+
+    private def forEntity(entity: IRField): Schema = entity.cypherType match {
+      case n: CTNode =>
+        schema.forNode(n)
+      case r: CTRelationship =>
+        schema.forRelationship(r)
+      case x => throw IllegalArgumentException("entity type", x)
     }
   }
 

@@ -71,39 +71,3 @@ final case class QueryModel[E](
     blocks.collect(f)
   }
 }
-
-case class SolvedQueryModel[E](
-    fields: Set[IRField],
-    predicates: Set[E] = Set.empty[E],
-    graphs: Set[IRNamedGraph] = Set.empty[IRNamedGraph]
-) {
-
-  // extension
-  def withField(f: IRField): SolvedQueryModel[E] = copy(fields = fields + f)
-  def withFields(fs: IRField*): SolvedQueryModel[E] = copy(fields = fields ++ fs)
-  def withPredicate(pred: E): SolvedQueryModel[E] = copy(predicates = predicates + pred)
-  def withPredicates(preds: E*): SolvedQueryModel[E] = copy(predicates = predicates ++ preds)
-  def withGraph(graph: IRNamedGraph): SolvedQueryModel[E] = copy(graphs = graphs + graph)
-
-  def ++(other: SolvedQueryModel[E]): SolvedQueryModel[E] =
-    copy(fields ++ other.fields, predicates ++ other.predicates)
-
-  // containment
-  def contains(blocks: Block[E]*): Boolean = contains(blocks.toSet)
-  def contains(blocks: Set[Block[E]]): Boolean = blocks.forall(contains)
-  def contains(block: Block[E]): Boolean = {
-    val bindsFields = block.binds.fields subsetOf fields
-    val bindsGraphs = block.binds.graphs.map(_.toNamedGraph) subsetOf graphs
-    val preds = block.where.elements subsetOf predicates
-
-    bindsFields && bindsGraphs && preds
-  }
-
-  def solves(f: IRField): Boolean = fields(f)
-  def solves(p: Pattern[E]): Boolean = p.fields.subsetOf(fields)
-  def solves(p: IRGraph): Boolean = graphs.contains(p.toNamedGraph)
-}
-
-object SolvedQueryModel {
-  def empty[E]: SolvedQueryModel[E] = SolvedQueryModel[E](Set.empty, Set.empty, Set.empty)
-}

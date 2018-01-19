@@ -43,7 +43,7 @@ class LogicalPlannerTest extends LogicalTestSuite {
   val relR = IRField("r")(CTRelationship)
   val uri = URI.create("test")
 
-  val emptySqm = SolvedQueryModel.empty[Expr]
+  val emptySqm = SolvedQueryModel.empty
 
 //  // Helper to create nicer expected results with `asCode`
 //  implicit val specialMappings = Map[Any, String](

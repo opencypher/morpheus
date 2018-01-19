@@ -20,22 +20,16 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters._
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_4.phases._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics._
+import org.opencypher.caps.ir.api.exception.ParsingException
 import org.opencypher.caps.ir.api.util.CompilationStage
-import org.opencypher.caps.ir.impl.parse.exception.ParsingException
 import org.opencypher.caps.ir.impl.parse.rewriter.CAPSRewriting
 
 object CypherParser extends CypherParser {
   implicit object defaultContext extends BlankBaseContext {
     override def errorHandler: (Seq[SemanticErrorDef]) => Unit =
       (errors) => {
-        val filtered = errors.filter {
-          // TODO: Fix by updating frontend dependency
-          // Related to using bound variables in GRAPH OF
-          case s: SemanticError if s.msg.matches("Variable .* already declared") => false
-          case _                                                                 => true
-        }
-        if (filtered.nonEmpty) {
-          throw ParsingException(s"Errors during semantic checking: ${filtered.mkString(", ")}")
+        if (errors.nonEmpty) {
+          throw ParsingException(s"Errors during semantic checking: ${errors.mkString(", ")}")
         }
       }
   }

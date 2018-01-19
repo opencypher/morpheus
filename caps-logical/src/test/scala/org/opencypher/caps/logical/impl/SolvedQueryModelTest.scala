@@ -13,14 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.ir.api
+package org.opencypher.caps.logical.impl
 
 import java.net.URI
 
-import org.opencypher.caps.ir.api.expr.{Equals, Expr}
+import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.types.{CTBoolean, CTNode}
+import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTRelationship}
+import org.opencypher.caps.ir.api.{IRNamedGraph, RelType}
 import org.opencypher.caps.ir.api.block.{FieldsAndGraphs, ProjectedFieldsOf}
+import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.ir.api.pattern.Pattern
 import org.opencypher.caps.ir.impl.IrTestSuite
 import org.opencypher.caps.ir.test._
@@ -43,7 +45,7 @@ class SolvedQueryModelTest extends IrTestSuite {
 
   test("contains a block") {
     val block = matchBlock(Pattern.empty.withEntity('a).withEntity('b).withEntity('c))
-    val s = SolvedQueryModel.empty[Expr].withField('a).withFields('b, 'c)
+    val s = SolvedQueryModel.empty.withField('a).withFields('b, 'c)
 
     s.contains(block) shouldBe true
   }
@@ -53,10 +55,10 @@ class SolvedQueryModelTest extends IrTestSuite {
     val block2 = matchBlock(Pattern.empty.withEntity('b -> CTNode))
     val binds: FieldsAndGraphs[Expr] = FieldsAndGraphs(Map(toField('c) -> Equals('a, 'b)(CTBoolean)), Set('foo))
     val block3 = project(binds)
-    val block4 = project(ProjectedFieldsOf[Expr](toField('d) -> Equals('c, 'b)(CTBoolean)))
+    val block4 = project(ProjectedFieldsOf(toField('d) -> Equals('c, 'b)(CTBoolean)))
     val block5 = project(FieldsAndGraphs(Map.empty, Set('bar)))
 
-    val s = SolvedQueryModel.empty[Expr].withField('a).withFields('b, 'c).withGraph('foo)
+    val s = SolvedQueryModel.empty.withField('a).withFields('b, 'c).withGraph('foo)
 
     s.contains(block1) shouldBe true
     s.contains(block1, block2) shouldBe true
@@ -66,7 +68,7 @@ class SolvedQueryModelTest extends IrTestSuite {
   }
 
   test("solves") {
-    val s = SolvedQueryModel.empty[Expr].withField('a).withFields('b, 'c)
+    val s = SolvedQueryModel.empty.withField('a).withFields('b, 'c)
     val p = Pattern.empty[Expr].withEntity('a -> CTNode).withEntity('b -> CTNode).withEntity('c -> CTNode)
 
     s.solves(toField('a)) shouldBe true
@@ -74,5 +76,25 @@ class SolvedQueryModelTest extends IrTestSuite {
     s.solves(toField('x)) shouldBe false
     s.solves(p) shouldBe true
     s.solves(p.withEntity('x -> CTNode)) shouldBe false
+  }
+
+  test("solve relationship") {
+    val s = SolvedQueryModel.empty
+
+    an [IllegalArgumentException] should be thrownBy s.solveRelationship('a)
+    s.solveRelationship('r -> CTRelationship) should equal(SolvedQueryModel.empty.withField('r -> CTRelationship))
+    s.solveRelationship('r -> CTRelationship("KNOWS")) should equal(
+      SolvedQueryModel.empty
+        .withField('r -> CTRelationship)
+        .withPredicate(HasType(Var("r")(CTRelationship("KNOWS")), RelType("KNOWS"))(CTBoolean))
+    )
+    s.solveRelationship('r -> CTRelationship("KNOWS", "LOVES", "HATES")) should equal(
+      SolvedQueryModel.empty
+        .withField('r -> CTRelationship)
+        .withPredicate(Ors(
+          HasType(Var("r")(), RelType("KNOWS"))(CTBoolean),
+          HasType(Var("r")(), RelType("LOVES"))(CTBoolean),
+          HasType(Var("r")(), RelType("HATES"))(CTBoolean)))
+    )
   }
 }
