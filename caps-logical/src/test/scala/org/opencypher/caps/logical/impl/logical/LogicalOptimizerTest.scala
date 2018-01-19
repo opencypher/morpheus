@@ -27,7 +27,7 @@ import scala.language.implicitConversions
 
 class LogicalOptimizerTest extends IrTestSuite {
 
-  val emptySqm = SolvedQueryModel.empty[Expr]
+  val emptySqm = SolvedQueryModel.empty
   val logicalGraph = LogicalExternalGraph(testGraph.name, null, Schema.empty)
   val schema = Schema.empty
 

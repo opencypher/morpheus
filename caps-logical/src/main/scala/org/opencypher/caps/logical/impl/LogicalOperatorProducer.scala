@@ -15,11 +15,9 @@
  */
 package org.opencypher.caps.logical.impl
 
-import org.opencypher.caps.api.exception.IllegalArgumentException
-import org.opencypher.caps.api.types._
+import org.opencypher.caps.ir.api.IRField
 import org.opencypher.caps.ir.api.block.{Aggregations, SortItem}
 import org.opencypher.caps.ir.api.expr._
-import org.opencypher.caps.ir.api.{IRField, RelType, SolvedQueryModel}
 import org.opencypher.caps.ir.impl.util.VarConverters._
 
 // TODO: Homogenize naming
@@ -134,7 +132,7 @@ class LogicalOperatorProducer {
     val irFields = fields.map { v =>
       IRField(v.name)(v.cypherType)
     }
-    Start(graph, fields, SolvedQueryModel[Expr](irFields))
+    Start(graph, fields, SolvedQueryModel(irFields))
   }
 
   def planOrderBy(sortItems: Seq[SortItem[Expr]], prev: LogicalOperator): OrderBy = {
@@ -149,22 +147,4 @@ class LogicalOperatorProducer {
     Limit(expr, prev, prev.solved)
   }
 
-  // TODO: move to caps-ir
-  implicit class RichQueryModel(solved: SolvedQueryModel[Expr]) {
-    def solveRelationship(r: IRField): SolvedQueryModel[Expr] = {
-      r.cypherType match {
-        case CTRelationship(types) if types.isEmpty =>
-          solved.withField(r)
-        case CTRelationship(types) =>
-          val predicate =
-            if (types.size == 1)
-              HasType(r, RelType(types.head))(CTBoolean)
-            else
-              Ors(types.map(t => HasType(r, RelType(t))(CTBoolean)).toSeq: _*)
-          solved.withField(r).withPredicate(predicate)
-        case _ =>
-          throw IllegalArgumentException("a relationship variable", r)
-      }
-    }
-  }
 }

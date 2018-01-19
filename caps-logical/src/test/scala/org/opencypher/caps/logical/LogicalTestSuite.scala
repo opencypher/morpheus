@@ -15,9 +15,8 @@
  */
 package org.opencypher.caps.logical
 
-import org.opencypher.caps.ir.api.SolvedQueryModel
 import org.opencypher.caps.ir.impl.IrTestSuite
-import org.opencypher.caps.logical.impl.{LogicalExternalGraph, Start}
+import org.opencypher.caps.logical.impl.{LogicalExternalGraph, SolvedQueryModel, Start}
 
 abstract class LogicalTestSuite extends IrTestSuite {
 
