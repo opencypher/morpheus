@@ -29,7 +29,7 @@ case object Neo4jGraphSourceFactory extends CAPSGraphSourceFactoryCompanion("bol
 case class Neo4jGraphSourceFactory() extends CAPSGraphSourceFactoryImpl(Neo4jGraphSourceFactory) {
 
   override protected def sourceForURIWithSupportedScheme(uri: URI)(
-      implicit capsSession: CAPSSession): Neo4jGraphSource = {
+      implicit capsSession: CAPSSession): Neo4JPropertyGraphDataSource = {
     val (user, passwd) = getUserInfo(uri)
     val boltUri = new URIBuilder()
       .setScheme(uri.getScheme)
@@ -39,7 +39,7 @@ case class Neo4jGraphSourceFactory() extends CAPSGraphSourceFactoryImpl(Neo4jGra
       .build()
 
     val neo4jConfig = Neo4jConfig(boltUri, user, passwd, encrypted = false)
-    Neo4jGraphSource(neo4jConfig, getQueries(uri))
+    Neo4JPropertyGraphDataSource(neo4jConfig, getQueries(uri))
   }
 
   private def getUserInfo(uri: URI) = uri.getUserInfo match {

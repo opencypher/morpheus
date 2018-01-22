@@ -22,11 +22,11 @@ import org.apache.spark.sql.SparkSession
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.UnsupportedOperationException
 import org.opencypher.caps.api.graph.{CypherGraph, CypherResult}
-import org.opencypher.caps.api.io.{CreateOrFail, GraphSource, PersistMode}
+import org.opencypher.caps.api.io.{CreateOrFail, PropertyGraphDataSource, PersistMode}
 import org.opencypher.caps.api.record.CypherRecords
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.CAPSConverters._
-import org.opencypher.caps.api.spark.io.CAPSGraphSource
+import org.opencypher.caps.api.spark.io.CAPSPropertyGraphDataSource
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.demo.Configuration.{PrintLogicalPlan, PrintPhysicalPlan, PrintQueryExecutionStages}
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
@@ -55,7 +55,7 @@ sealed class CAPSSessionImpl(
   private val physicalOptimizer = new PhysicalOptimizer()
   private val parser = CypherParser
 
-  def sourceAt(uri: URI): GraphSource =
+  def sourceAt(uri: URI): PropertyGraphDataSource =
     graphSourceHandler.sourceAt(uri)(this)
 
   override def graphAt(path: String): CypherGraph =
@@ -71,12 +71,12 @@ sealed class CAPSSessionImpl(
   override def storeGraphAt(graph: CypherGraph, pathOrUri: String, mode: PersistMode = CreateOrFail): CypherGraph =
     graphSourceHandler.sourceAt(parsePathOrURI(pathOrUri))(this).store(graph, mode)
 
-  override def mountSourceAt(source: GraphSource, path: String): Unit = source match {
-    case c: CAPSGraphSource => mountSourceAt(c, parsePathOrURI(path))
+  override def mountSourceAt(source: PropertyGraphDataSource, path: String): Unit = source match {
+    case c: CAPSPropertyGraphDataSource => mountSourceAt(c, parsePathOrURI(path))
     case x => throw UnsupportedOperationException(s"can only handle CAPS graph sources, but got $x")
   }
 
-  def mountSourceAt(source: CAPSGraphSource, uri: URI): Unit =
+  def mountSourceAt(source: CAPSPropertyGraphDataSource, uri: URI): Unit =
     graphSourceHandler.mountSourceAt(source, uri)(this)
 
   def unmountAll(): Unit =
@@ -131,7 +131,7 @@ sealed class CAPSSessionImpl(
     val name = UUID.randomUUID().toString
     val uri = URI.create(s"session:///graphs/ambient/$name")
 
-    val graphSource = new CAPSGraphSource {
+    val graphSource = new CAPSPropertyGraphDataSource {
       override def schema: Option[Schema] = Some(graph.schema)
       override def canonicalURI: URI = uri
       override def delete(): Unit = throw UnsupportedOperationException("Deletion of an ambient graph")

@@ -23,10 +23,10 @@ import org.opencypher.caps.api.graph.CypherGraph
 import org.opencypher.caps.api.io.{CreateOrFail, Overwrite, PersistMode}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.CAPSGraph
-import org.opencypher.caps.api.spark.io.CAPSGraphSource
+import org.opencypher.caps.api.spark.io.CAPSPropertyGraphDataSource
 import org.opencypher.caps.api.spark.CAPSConverters._
 
-case class SessionGraphSource(path: String)(implicit val session: CAPSSession) extends CAPSGraphSource {
+case class SessionPropertyGraphDataSource(path: String)(implicit val session: CAPSSession) extends CAPSPropertyGraphDataSource {
 
   private var currentGraph: Option[CAPSGraph] = None
 

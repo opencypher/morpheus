@@ -24,11 +24,11 @@ import org.opencypher.caps.api.graph.CypherGraph
 import org.opencypher.caps.api.io.{CreateOrFail, PersistMode}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.CAPSGraph
-import org.opencypher.caps.api.spark.io.CAPSGraphSource
+import org.opencypher.caps.api.spark.io.CAPSPropertyGraphDataSource
 
-case class HdfsCsvGraphSource(override val canonicalURI: URI, hadoopConfig: Configuration, path: String)(
+case class HdfsCsvPropertyGraphDataSource(override val canonicalURI: URI, hadoopConfig: Configuration, path: String)(
     implicit val session: CAPSSession)
-    extends CAPSGraphSource {
+    extends CAPSPropertyGraphDataSource {
 
   import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvGraphSourceFactory.supportedSchemes
 

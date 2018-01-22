@@ -17,7 +17,7 @@ package org.opencypher.caps.api.graph
 
 import java.net.URI
 
-import org.opencypher.caps.api.io.{CreateOrFail, GraphSource, PersistMode}
+import org.opencypher.caps.api.io.{CreateOrFail, PropertyGraphDataSource, PersistMode}
 import org.opencypher.caps.api.record.CypherRecords
 import org.opencypher.caps.api.value.CypherValue
 
@@ -74,7 +74,7 @@ trait CypherSession {
     * @param source the graph source to register.
     * @param path the path at which this graph source will be discoverable.
     */
-  def mountSourceAt(source: GraphSource, path: String): Unit
+  def mountSourceAt(source: PropertyGraphDataSource, path: String): Unit
 
   /**
     * Stores the given graph at the location and in the format given by the URI, with the overwrite semantics given by

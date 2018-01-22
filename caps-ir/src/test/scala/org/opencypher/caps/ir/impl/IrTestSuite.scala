@@ -20,7 +20,7 @@ import java.net.URI
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
 import org.opencypher.caps.ir.api.expr.Expr
-import org.opencypher.caps.api.io.GraphSource
+import org.opencypher.caps.api.io.PropertyGraphDataSource
 import org.opencypher.caps.api.schema.{AllGiven, Schema}
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.ir.impl.parse.CypherParser
@@ -37,8 +37,8 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
 
   def testGraph()(implicit schema: Schema = Schema.empty) = IRExternalGraph("test", schema, URI.create("test"))
 
-  def testGraphSource(schema: Schema = Schema.empty): GraphSource = {
-    val gs = mock[GraphSource]
+  def testGraphSource(schema: Schema = Schema.empty): PropertyGraphDataSource = {
+    val gs = mock[PropertyGraphDataSource]
     when(gs.schema).thenReturn(Some(schema))
     gs
   }

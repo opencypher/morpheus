@@ -15,6 +15,6 @@
  */
 package org.opencypher.caps.api.spark.io
 
-import org.opencypher.caps.api.io.GraphSource
+import org.opencypher.caps.api.io.PropertyGraphDataSource
 
-trait CAPSGraphSource extends GraphSource
+trait CAPSPropertyGraphDataSource extends PropertyGraphDataSource

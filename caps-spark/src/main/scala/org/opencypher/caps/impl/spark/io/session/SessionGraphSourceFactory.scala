@@ -29,10 +29,10 @@ import scala.collection.JavaConversions._
 case object SessionGraphSourceFactory extends CAPSGraphSourceFactoryCompanion(CypherSession.sessionGraphSchema)
 
 case class SessionGraphSourceFactory(
-    mountPoints: collection.concurrent.Map[String, CAPSGraphSource] = new ConcurrentHashMap[String, CAPSGraphSource]())
+    mountPoints: collection.concurrent.Map[String, CAPSPropertyGraphDataSource] = new ConcurrentHashMap[String, CAPSPropertyGraphDataSource]())
     extends CAPSGraphSourceFactoryImpl(SessionGraphSourceFactory) {
 
-  def mountSourceAt(existingSource: CAPSGraphSource, uri: URI)(implicit capsSession: CAPSSession): Unit =
+  def mountSourceAt(existingSource: CAPSPropertyGraphDataSource, uri: URI)(implicit capsSession: CAPSSession): Unit =
     if (schemes.contains(uri.getScheme))
       withValidPath(uri) { (path: String) =>
         mountPoints.get(path) match {
@@ -47,14 +47,14 @@ case class SessionGraphSourceFactory(
   def unmountAll(implicit capsSession: CAPSSession): Unit =
     mountPoints.clear()
 
-  override protected def sourceForURIWithSupportedScheme(uri: URI)(implicit capsSession: CAPSSession): CAPSGraphSource =
+  override protected def sourceForURIWithSupportedScheme(uri: URI)(implicit capsSession: CAPSSession): CAPSPropertyGraphDataSource =
     withValidPath(uri) { (path: String) =>
       mountPoints.get(path) match {
         case Some(source) =>
           source
 
         case _ =>
-          val newSource = SessionGraphSource(path)
+          val newSource = SessionPropertyGraphDataSource(path)
           mountPoints.put(path, newSource)
           newSource
       }

@@ -19,8 +19,8 @@ import java.net.URI
 
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
-import org.opencypher.caps.api.io.GraphSource
-import org.opencypher.caps.api.spark.io.{CAPSGraphSource, CAPSGraphSourceFactory}
+import org.opencypher.caps.api.io.PropertyGraphDataSource
+import org.opencypher.caps.api.spark.io.{CAPSPropertyGraphDataSource, CAPSGraphSourceFactory}
 import org.opencypher.caps.impl.spark.io.session.SessionGraphSourceFactory
 
 case class CAPSGraphSourceHandler(
@@ -38,16 +38,16 @@ case class CAPSGraphSourceHandler(
       )
   }
 
-  def mountSourceAt(source: CAPSGraphSource, uri: URI)(implicit capsSession: CAPSSession): Unit =
+  def mountSourceAt(source: CAPSPropertyGraphDataSource, uri: URI)(implicit capsSession: CAPSSession): Unit =
     sessionGraphSourceFactory.mountSourceAt(source, uri)
 
   def unmountAll(implicit capsSession: CAPSSession): Unit =
     sessionGraphSourceFactory.unmountAll(capsSession)
 
-  def sourceAt(uri: URI)(implicit capsSession: CAPSSession): GraphSource =
+  def sourceAt(uri: URI)(implicit capsSession: CAPSSession): PropertyGraphDataSource =
     optSourceAt(uri).getOrElse(throw IllegalArgumentException(s"graph source for URI: $uri"))
 
-  def optSourceAt(uri: URI)(implicit capsSession: CAPSSession): Option[GraphSource] =
+  def optSourceAt(uri: URI)(implicit capsSession: CAPSSession): Option[PropertyGraphDataSource] =
     factoriesByScheme
       .get(uri.getScheme)
       .map(_.sourceFor(uri))

@@ -20,7 +20,7 @@ import java.net.URI
 import org.apache.http.client.utils.URIBuilder
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.value.{CypherMap, CypherNode}
-import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvGraphSource
+import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvPropertyGraphDataSource
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.fixture.MiniDFSClusterFixture
 import org.opencypher.caps.test.support.RecordMatchingTestSupport
@@ -43,7 +43,7 @@ class CAPSSessionHDFSTest extends CAPSTestSuite
   }
 
   test("HDFS via mount point") {
-    caps.mountSourceAt(HdfsCsvGraphSource(hdfsURI, session.sparkContext.hadoopConfiguration, hdfsURI.getPath), "/test/graph")
+    caps.mountSourceAt(HdfsCsvPropertyGraphDataSource(hdfsURI, session.sparkContext.hadoopConfiguration, hdfsURI.getPath), "/test/graph")
 
     val graph = caps.graphAt("/test/graph")
     graph.nodes("n").asCaps.toDF().collect().toBag should equal(dfsTestGraphNodes)
