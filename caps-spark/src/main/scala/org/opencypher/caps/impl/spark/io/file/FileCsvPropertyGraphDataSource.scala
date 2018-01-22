@@ -19,7 +19,7 @@ import java.net.URI
 
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.NotImplementedException
-import org.opencypher.caps.api.graph.CypherGraph
+import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.io.{CreateOrFail, PersistMode}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.CAPSGraph
@@ -43,7 +43,7 @@ case class FileCsvPropertyGraphDataSource(override val canonicalURI: URI)(implic
   override def create: CAPSGraph =
     store(CAPSGraph.empty, CreateOrFail)
 
-  override def store(graph: CypherGraph, mode: PersistMode): CAPSGraph =
+  override def store(graph: PropertyGraph, mode: PersistMode): CAPSGraph =
     throw NotImplementedException("Persisting graphs to local file system")
 
   override def delete(): Unit =

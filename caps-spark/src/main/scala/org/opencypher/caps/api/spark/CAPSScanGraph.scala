@@ -19,7 +19,7 @@ import cats.data.NonEmptyVector
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
-import org.opencypher.caps.api.graph.CypherGraph
+import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.CAPSConverters._
@@ -74,7 +74,7 @@ class CAPSScanGraph(val scans: Seq[GraphScan], val schema: Schema)(implicit val 
     alignedRecords.reduceOption(_ unionAll (targetRelHeader, _)).getOrElse(CAPSRecords.empty(targetRelHeader))
   }
 
-  override def union(other: CypherGraph): CAPSGraph = other match {
+  override def union(other: PropertyGraph): CAPSGraph = other match {
     case (otherScanGraph: CAPSScanGraph) =>
       val allScans = scans ++ otherScanGraph.scans
       val nodeScan = allScans

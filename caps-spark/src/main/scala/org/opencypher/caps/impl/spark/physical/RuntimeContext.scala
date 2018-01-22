@@ -17,7 +17,7 @@ package org.opencypher.caps.impl.spark.physical
 
 import java.net.URI
 
-import org.opencypher.caps.api.graph.CypherGraph
+import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.spark.CAPSGraph
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator
@@ -30,7 +30,7 @@ object RuntimeContext {
 
 case class RuntimeContext(
   parameters: Map[String, CypherValue],
-  resolve: URI => Option[CypherGraph],
+  resolve: URI => Option[PropertyGraph],
   cache: collection.mutable.Map[PhysicalOperator, PhysicalResult]
 )
 

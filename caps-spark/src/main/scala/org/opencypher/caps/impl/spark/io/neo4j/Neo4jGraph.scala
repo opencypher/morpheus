@@ -22,7 +22,7 @@ import org.apache.spark.storage.StorageLevel
 import org.neo4j.driver.internal.{InternalNode, InternalRelationship}
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.{IllegalArgumentException, UnsupportedOperationException}
-import org.opencypher.caps.api.graph.CypherGraph
+import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType}
@@ -80,7 +80,7 @@ class Neo4jGraph(val schema: Schema, val session: CAPSSession)(
     }
   }
 
-  override def union(other: CypherGraph): CAPSGraph =
+  override def union(other: PropertyGraph): CAPSGraph =
     throw UnsupportedOperationException(s"Union with $this")
 
   private def computeRecords(name: String, cypherType: CypherType, header: RecordHeader)(

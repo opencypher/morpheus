@@ -17,7 +17,7 @@ package org.opencypher.caps.api.io
 
 import java.net.URI
 
-import org.opencypher.caps.api.graph.{CypherGraph, CypherSession}
+import org.opencypher.caps.api.graph.{PropertyGraph, CypherSession}
 
 /**
   * Factory for creating GraphSource instances for a given set of schemes.

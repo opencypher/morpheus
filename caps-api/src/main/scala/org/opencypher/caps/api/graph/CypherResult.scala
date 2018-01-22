@@ -31,14 +31,14 @@ trait CypherResult extends CypherPrintable {
     *
     * @return the single graph, otherwise None.
     */
-  def singleGraph: Option[CypherGraph] = if (graphs.size == 1) Some(graphs.head._2) else None
+  def singleGraph: Option[PropertyGraph] = if (graphs.size == 1) Some(graphs.head._2) else None
 
   /**
     * The named graphs that were returned by the query that produced this result.
     *
     * @return a map of named graphs.
     */
-  def graphs: Map[String, CypherGraph]
+  def graphs: Map[String, PropertyGraph]
 
   /**
     * The table of records that was returned by the query that produced this result.

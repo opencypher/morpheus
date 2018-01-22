@@ -17,7 +17,7 @@ package org.opencypher.caps.api.io
 
 import java.net.URI
 
-import org.opencypher.caps.api.graph.{CypherGraph, CypherSession}
+import org.opencypher.caps.api.graph.{PropertyGraph, CypherSession}
 import org.opencypher.caps.api.schema.Schema
 
 /**
@@ -52,7 +52,7 @@ trait PropertyGraphDataSource {
     * @return the graph stored in this graph source.
     * @throws java.lang.RuntimeException if the graph could not be created or there already was a graph.
     */
-  def create: CypherGraph
+  def create: PropertyGraph
 
   /**
     * Provides the graph stored in this graph source.
@@ -60,7 +60,7 @@ trait PropertyGraphDataSource {
     * @return the graph stored in this graph source.
     * @throws java.lang.RuntimeException if loading the graph could not be done.
     */
-  def graph: CypherGraph
+  def graph: PropertyGraph
 
   /**
     * Provides only the schema of the graph stored in this graph source or returns None if the schema cannot be
@@ -77,7 +77,7 @@ trait PropertyGraphDataSource {
     * @param mode  the persist mode to use.
     * @return the persisted graph.
     */
-  def store(graph: CypherGraph, mode: PersistMode): CypherGraph
+  def store(graph: PropertyGraph, mode: PersistMode): PropertyGraph
 
   /**
     * Delete the graph stored at this graph source.

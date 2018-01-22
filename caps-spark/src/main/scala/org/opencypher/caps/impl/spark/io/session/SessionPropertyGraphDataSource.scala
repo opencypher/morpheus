@@ -19,7 +19,7 @@ import java.net.URI
 
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.{IllegalArgumentException, UnsupportedOperationException}
-import org.opencypher.caps.api.graph.CypherGraph
+import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.io.{CreateOrFail, Overwrite, PersistMode}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.CAPSGraph
@@ -41,7 +41,7 @@ case class SessionPropertyGraphDataSource(path: String)(implicit val session: CA
 
   override def schema: Option[Schema] = None
 
-  override def store(graph: CypherGraph, mode: PersistMode): CAPSGraph = {
+  override def store(graph: PropertyGraph, mode: PersistMode): CAPSGraph = {
     val capsGraph = graph.asCaps
     mode match {
       case Overwrite =>

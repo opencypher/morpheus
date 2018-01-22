@@ -20,7 +20,7 @@ import java.net.URI
 import org.apache.hadoop.conf.Configuration
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
-import org.opencypher.caps.api.graph.CypherGraph
+import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.io.{CreateOrFail, PersistMode}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.CAPSGraph
@@ -49,7 +49,7 @@ case class HdfsCsvPropertyGraphDataSource(override val canonicalURI: URI, hadoop
   override def create: CAPSGraph =
     store(CAPSGraph.empty, CreateOrFail)
 
-  override def store(graph: CypherGraph, mode: PersistMode): CAPSGraph =
+  override def store(graph: PropertyGraph, mode: PersistMode): CAPSGraph =
     ???
 
   override def delete(): Unit =

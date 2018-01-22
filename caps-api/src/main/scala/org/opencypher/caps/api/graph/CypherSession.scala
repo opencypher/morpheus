@@ -32,7 +32,7 @@ trait CypherSession {
     *
     * @return an immutable empty graph.
     */
-  def emptyGraph: CypherGraph
+  def emptyGraph: PropertyGraph
 
   final def cypher(query: String): CypherResult =
     cypher(emptyGraph, query, Map.empty)
@@ -40,7 +40,7 @@ trait CypherSession {
   final def cypher(query: String, parameters: Map[String, CypherValue]): CypherResult =
     cypher(emptyGraph, query, parameters)
 
-  final def cypher(graph: CypherGraph, query: String): CypherResult =
+  final def cypher(graph: PropertyGraph, query: String): CypherResult =
     cypher(graph, query, Map.empty)
 
   /**
@@ -54,7 +54,7 @@ trait CypherSession {
     * @param parameters the parameters used by the Cypher query.
     * @return the result of the query.
     */
-  def cypher(graph: CypherGraph, query: String, parameters: Map[String, CypherValue]): CypherResult
+  def cypher(graph: PropertyGraph, query: String, parameters: Map[String, CypherValue]): CypherResult
 
   /**
     * Retrieves the graph from the argument URI, if it exists.
@@ -62,9 +62,9 @@ trait CypherSession {
     * @param uri the uri locating the graph.
     * @return the graph located at the uri.
     */
-  def graphAt(uri: URI): CypherGraph
+  def graphAt(uri: URI): PropertyGraph
 
-  def graphAt(uri: String): CypherGraph =
+  def graphAt(uri: String): PropertyGraph =
     graphAt(URI.create(uri))
 
   /**
@@ -85,7 +85,7 @@ trait CypherSession {
     * @param mode the persist mode which determines what happens if the location is occupied.
     * @return the stored graph.
     */
-  def storeGraphAt(graph: CypherGraph, uri: String, mode: PersistMode = CreateOrFail): CypherGraph
+  def storeGraphAt(graph: PropertyGraph, uri: String, mode: PersistMode = CreateOrFail): PropertyGraph
 }
 
 object CypherSession {

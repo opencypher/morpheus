@@ -17,7 +17,7 @@ package org.opencypher.caps.api.spark
 
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.graph.CypherGraph
+import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.record.GraphScan
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.CAPSConverters._
@@ -68,7 +68,7 @@ final case class CAPSUnionGraph(graphs: CAPSGraph*)(implicit val session: CAPSSe
     alignedScans.reduceOption(_ unionAll (targetHeader, _)).map(_.distinct).getOrElse(CAPSRecords.empty(targetHeader))
   }
 
-  override def union(other: CypherGraph): CAPSUnionGraph = other match {
+  override def union(other: PropertyGraph): CAPSUnionGraph = other match {
     case other: CAPSUnionGraph =>
       CAPSUnionGraph(graphs ++ other.graphs: _*)
     case _ =>

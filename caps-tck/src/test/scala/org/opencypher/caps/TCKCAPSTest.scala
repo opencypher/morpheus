@@ -18,7 +18,7 @@ package org.opencypher.caps
 import java.io.File
 
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.graph.{CypherGraph, CypherSession}
+import org.opencypher.caps.api.graph.{PropertyGraph, CypherSession}
 import org.opencypher.caps.api.record.CypherRecords
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.CAPSGraph

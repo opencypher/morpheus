@@ -20,7 +20,7 @@ import java.net.{URI, URLEncoder}
 import org.apache.http.client.utils.URIBuilder
 import org.apache.spark.sql.Row
 import org.neo4j.driver.v1.{AuthTokens, Session}
-import org.opencypher.caps.api.graph.{CypherGraph, CypherResult}
+import org.opencypher.caps.api.graph.{PropertyGraph, CypherResult}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.api.types.{CTInteger, CTString}
@@ -168,7 +168,7 @@ class GCDemoTest
     ))
   }
 
-  def verifyReco(graph: CypherGraph) = {
+  def verifyReco(graph: PropertyGraph) = {
     println("===>>> verifying RECO")
 
     graph.schema should equal(Schema.empty
@@ -316,7 +316,7 @@ class GCDemoTest
     ))
   }
 
-  def verifyLinks(graph: CypherGraph) = {
+  def verifyLinks(graph: PropertyGraph) = {
     println("===>>> verifying LINKS")
 
     graph.schema should equal(Schema.empty
@@ -369,7 +369,7 @@ class GCDemoTest
     ))
   }
 
-  def verifyCityFriendsUS(g: CypherGraph): Assertion = {
+  def verifyCityFriendsUS(g: PropertyGraph): Assertion = {
     println("===>>> verifying CITYFRIENDS_US")
 
     g.schema should equal(Schema.empty
@@ -397,7 +397,7 @@ class GCDemoTest
     ))
   }
 
-  def verifyCityFriendsEU(g: CypherGraph): Assertion = {
+  def verifyCityFriendsEU(g: PropertyGraph): Assertion = {
     println("===>>> verifying CITYFRIENDS_EU")
 
     g.schema should equal(Schema.empty
@@ -425,7 +425,7 @@ class GCDemoTest
     ))
   }
 
-  def verifyAllCityFriends(g: CypherGraph): Assertion = {
+  def verifyAllCityFriends(g: PropertyGraph): Assertion = {
     println("===>>> verifying ALL_CITY_FRIENDS")
 
     g.schema should equal(Schema.empty

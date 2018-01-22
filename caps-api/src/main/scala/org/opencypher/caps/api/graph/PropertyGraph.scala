@@ -31,7 +31,7 @@ import org.opencypher.caps.api.value.CypherValue
   *
   * @see [[https://github.com/opencypher/openCypher/blob/master/docs/property-graph-model.adoc openCypher Property Graph Model]]
   */
-trait CypherGraph {
+trait PropertyGraph {
 
   /**
     * The schema that describes this graph.
@@ -85,7 +85,7 @@ trait CypherGraph {
     * @param other the argument graph with which to union.
     * @return the union of this and the argument graph.
     */
-  def union(other: CypherGraph): CypherGraph
+  def union(other: PropertyGraph): PropertyGraph
 
-  protected def graph: CypherGraph
+  protected def graph: PropertyGraph
 }

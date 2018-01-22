@@ -18,7 +18,7 @@ package org.opencypher.caps.impl.spark.physical
 import java.net.URI
 
 import org.opencypher.caps.api.exception.{IllegalArgumentException, NotImplementedException}
-import org.opencypher.caps.api.graph.CypherGraph
+import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.api.types.CTRelationship
 import org.opencypher.caps.api.value.CypherValue
@@ -31,7 +31,7 @@ import org.opencypher.caps.ir.api.util.DirectCompilationStage
 import org.opencypher.caps.logical.impl.{GraphOfPattern, LogicalExternalGraph, LogicalPatternGraph}
 
 case class PhysicalPlannerContext(
-    resolver: URI => CypherGraph,
+    resolver: URI => PropertyGraph,
     inputRecords: CAPSRecords,
     parameters: Map[String, CypherValue])
 

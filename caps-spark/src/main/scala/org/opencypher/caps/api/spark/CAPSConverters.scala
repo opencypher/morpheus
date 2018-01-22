@@ -17,7 +17,7 @@ package org.opencypher.caps.api.spark
 
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.UnsupportedOperationException
-import org.opencypher.caps.api.graph.{CypherGraph, CypherResult, CypherSession}
+import org.opencypher.caps.api.graph.{PropertyGraph, CypherResult, CypherSession}
 import org.opencypher.caps.api.record.{CypherRecordHeader, CypherRecords}
 import org.opencypher.caps.impl.record.RecordHeader
 
@@ -30,7 +30,7 @@ object CAPSConverters {
     }
   }
 
-  implicit class RichPropertyGraph(graph: CypherGraph) {
+  implicit class RichPropertyGraph(graph: PropertyGraph) {
     def asCaps: CAPSGraph = graph match {
       case caps: CAPSGraph => caps
       case _ => throw UnsupportedOperationException(s"can only handle CAPS graphs, got $graph")

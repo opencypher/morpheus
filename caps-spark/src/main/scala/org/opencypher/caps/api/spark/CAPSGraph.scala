@@ -18,7 +18,7 @@ package org.opencypher.caps.api.spark
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
-import org.opencypher.caps.api.graph.CypherGraph
+import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.CAPSConverters._
@@ -26,7 +26,7 @@ import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.impl.record.{OpaqueField, RecordHeader}
 import org.opencypher.caps.ir.api.expr._
 
-trait CAPSGraph extends CypherGraph with Serializable {
+trait CAPSGraph extends PropertyGraph with Serializable {
 
   override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords
 
@@ -38,7 +38,7 @@ trait CAPSGraph extends CypherGraph with Serializable {
 
   override def session: CAPSSession
 
-  override def union(other: CypherGraph): CAPSGraph
+  override def union(other: PropertyGraph): CAPSGraph
 
   override protected def graph: CAPSGraph
 
@@ -104,7 +104,7 @@ object CAPSGraph {
     override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords =
       graph.relationships(name, relCypherType)
 
-    override def union(other: CypherGraph): CAPSGraph =
+    override def union(other: PropertyGraph): CAPSGraph =
       graph.union(other)
 
     override def cache(): CAPSGraph = {
@@ -139,7 +139,7 @@ object CAPSGraph {
     override def relationships(name: String, cypherType: CTRelationship): CAPSRecords =
       CAPSRecords.empty(RecordHeader.from(OpaqueField(Var(name)(cypherType))))
 
-    override def union(other: CypherGraph): CAPSGraph = other.asCaps
+    override def union(other: PropertyGraph): CAPSGraph = other.asCaps
   }
 
 }
