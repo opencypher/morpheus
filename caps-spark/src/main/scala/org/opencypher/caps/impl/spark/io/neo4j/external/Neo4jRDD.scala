@@ -15,16 +15,17 @@
  */
 package org.opencypher.caps.impl.spark.io.neo4j.external
 
-import org.apache.spark.{Partition, SparkContext, TaskContext}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
+import org.apache.spark.{Partition, SparkContext, TaskContext}
 
-private class Neo4jRDD(sc: SparkContext,
-               val query: String,
-               val neo4jConfig: Neo4jConfig,
-               val parameters: Map[String, Any] = Map.empty,
-               partitions: Partitions = Partitions())
-  extends RDD[Row](sc, Nil) {
+private class Neo4jRDD(
+    sc: SparkContext,
+    val query: String,
+    val neo4jConfig: Neo4jConfig,
+    val parameters: Map[String, Any] = Map.empty,
+    partitions: Partitions = Partitions())
+    extends RDD[Row](sc, Nil) {
 
   override def compute(partition: Partition, context: TaskContext): Iterator[Row] = {
 

@@ -20,10 +20,10 @@ import java.net.URI
 import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTRelationship}
-import org.opencypher.caps.ir.api.{IRNamedGraph, RelType}
 import org.opencypher.caps.ir.api.block.{FieldsAndGraphs, ProjectedFieldsOf}
-import org.opencypher.caps.ir.api.expr._
+import org.opencypher.caps.ir.api.expr.{Equals, Expr, _}
 import org.opencypher.caps.ir.api.pattern.Pattern
+import org.opencypher.caps.ir.api.{IRNamedGraph, RelType}
 import org.opencypher.caps.ir.impl.IrTestSuite
 import org.opencypher.caps.ir.test._
 

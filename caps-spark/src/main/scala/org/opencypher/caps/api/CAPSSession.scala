@@ -19,7 +19,7 @@ import java.util.UUID
 
 import org.apache.spark.SparkConf
 import org.apache.spark.serializer.KryoSerializer
-import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.apache.spark.sql.SparkSession
 import org.opencypher.caps.api.graph.CypherSession
 import org.opencypher.caps.api.spark._
 import org.opencypher.caps.api.spark.io.CAPSPropertyGraphDataSourceFactory

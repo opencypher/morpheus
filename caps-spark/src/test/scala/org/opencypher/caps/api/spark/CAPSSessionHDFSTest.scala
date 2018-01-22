@@ -19,18 +19,16 @@ import java.net.URI
 
 import org.apache.http.client.utils.URIBuilder
 import org.opencypher.caps.api.CAPSSession
+import org.opencypher.caps.api.spark.CAPSConverters._
 import org.opencypher.caps.api.value.{CypherMap, CypherNode}
 import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvPropertyGraphDataSource
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.fixture.MiniDFSClusterFixture
 import org.opencypher.caps.test.support.RecordMatchingTestSupport
-import org.opencypher.caps.api.spark.CAPSConverters._
 
 import scala.collection.Bag
 
-class CAPSSessionHDFSTest extends CAPSTestSuite
-  with MiniDFSClusterFixture
-  with RecordMatchingTestSupport {
+class CAPSSessionHDFSTest extends CAPSTestSuite with MiniDFSClusterFixture with RecordMatchingTestSupport {
 
   protected override val dfsTestGraphPath = "/csv/sn"
 
@@ -43,7 +41,9 @@ class CAPSSessionHDFSTest extends CAPSTestSuite
   }
 
   test("HDFS via mount point") {
-    caps.mountSourceAt(HdfsCsvPropertyGraphDataSource(hdfsURI, session.sparkContext.hadoopConfiguration, hdfsURI.getPath), "/test/graph")
+    caps.mountSourceAt(
+      HdfsCsvPropertyGraphDataSource(hdfsURI, session.sparkContext.hadoopConfiguration, hdfsURI.getPath),
+      "/test/graph")
 
     val graph = caps.graphAt("/test/graph")
     graph.nodes("n").asCaps.toDF().collect().toBag should equal(dfsTestGraphNodes)
@@ -54,18 +54,20 @@ class CAPSSessionHDFSTest extends CAPSTestSuite
     implicit val capsSession = CAPSSession.builder(session).build
 
     val nodes = capsSession.cypher(s"FROM GRAPH test AT '$hdfsURI' MATCH (n) RETURN n")
-    nodes.records.iterator.toBag should equal(Bag(
-      CypherMap("n" -> CypherNode(1L)),
-      CypherMap("n" -> CypherNode(2L)),
-      CypherMap("n" -> CypherNode(3L)),
-      CypherMap("n" -> CypherNode(4L))
-    ))
+    nodes.records.iterator.toBag should equal(
+      Bag(
+        CypherMap("n" -> CypherNode(1L)),
+        CypherMap("n" -> CypherNode(2L)),
+        CypherMap("n" -> CypherNode(3L)),
+        CypherMap("n" -> CypherNode(4L))
+      ))
 
     val edges = capsSession.cypher(s"FROM GRAPH test AT '$hdfsURI' MATCH ()-[r]->() RETURN r")
-    edges.records.asCaps.compact.toMaps should equal(Bag(
-      CypherMap("r" -> 10L),
-      CypherMap("r" -> 20L),
-      CypherMap("r" -> 30L)
-    ))
+    edges.records.asCaps.compact.toMaps should equal(
+      Bag(
+        CypherMap("r" -> 10L),
+        CypherMap("r" -> 20L),
+        CypherMap("r" -> 30L)
+      ))
   }
 }

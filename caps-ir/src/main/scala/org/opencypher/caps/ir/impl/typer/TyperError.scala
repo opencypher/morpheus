@@ -15,9 +15,9 @@
  */
 package org.opencypher.caps.ir.impl.typer
 
-import org.opencypher.caps.api.types._
 import cats.syntax.show._
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
+import org.opencypher.caps.api.types._
 
 sealed trait TyperError
 

@@ -19,14 +19,14 @@ import java.net.URI
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
-import org.opencypher.caps.ir.api.expr.Expr
 import org.opencypher.caps.api.io.PropertyGraphDataSource
 import org.opencypher.caps.api.schema.{AllGiven, Schema}
 import org.opencypher.caps.api.value.CypherValue
-import org.opencypher.caps.ir.impl.parse.CypherParser
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block._
+import org.opencypher.caps.ir.api.expr.Expr
 import org.opencypher.caps.ir.api.pattern.Pattern
+import org.opencypher.caps.ir.impl.parse.CypherParser
 import org.opencypher.caps.test.BaseTestSuite
 import org.scalatest.mockito.MockitoSugar
 
@@ -44,7 +44,6 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
   }
 
   def leafBlock(): SourceBlock[Expr] = SourceBlock[Expr](testGraph)
-
 
   val graphBlockRef: BlockRef = BlockRef("graph")
   val graphBlock: SourceBlock[Expr] = SourceBlock[Expr](testGraph)

@@ -15,13 +15,10 @@
  */
 package org.opencypher.caps.api.schema
 
-import org.junit.runner.RunWith
 import org.opencypher.caps.api.exception.SchemaException
 import org.opencypher.caps.api.schema.Schema.{AllLabels, NoLabel}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.test.BaseTestSuite
-import org.scalatest._
-import org.scalatest.junit.JUnitRunner
 
 class SchemaTest extends BaseTestSuite {
 

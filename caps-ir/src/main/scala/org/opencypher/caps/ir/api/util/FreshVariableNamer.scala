@@ -15,8 +15,8 @@
  */
 package org.opencypher.caps.ir.api.util
 
-import org.opencypher.caps.ir.api.expr.Var
 import org.opencypher.caps.api.types.CypherType
+import org.opencypher.caps.ir.api.expr.Var
 
 object FreshVariableNamer {
   val PREFIX = "  "

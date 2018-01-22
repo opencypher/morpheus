@@ -15,7 +15,6 @@
  */
 package org.opencypher.caps.test.fixture
 
-import org.neo4j.driver.v1.Config
 import org.neo4j.harness.{ServerControls, TestServerBuilders}
 import org.opencypher.caps.impl.spark.io.neo4j.external.Neo4jConfig
 import org.opencypher.caps.test.BaseTestSuite
@@ -25,10 +24,8 @@ trait Neo4jServerFixture extends BaseTestFixture {
 
   var neo4jServer: ServerControls = _
 
-  def neo4jConfig = Neo4jConfig(neo4jServer.boltURI(),
-    user = "anonymous",
-    password = Some("password"),
-    encrypted = false)
+  def neo4jConfig =
+    Neo4jConfig(neo4jServer.boltURI(), user = "anonymous", password = Some("password"), encrypted = false)
 
   def neo4jHost: String = {
     val scheme = neo4jServer.boltURI().getScheme
@@ -43,7 +40,8 @@ trait Neo4jServerFixture extends BaseTestFixture {
 
   abstract override def beforeAll(): Unit = {
     super.beforeAll()
-    neo4jServer = TestServerBuilders.newInProcessBuilder()
+    neo4jServer = TestServerBuilders
+      .newInProcessBuilder()
       .withConfig("dbms.security.auth_enabled", "true")
       .withFixture(userFixture)
       .withFixture(dataFixture)

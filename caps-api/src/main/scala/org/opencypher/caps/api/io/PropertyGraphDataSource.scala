@@ -17,7 +17,7 @@ package org.opencypher.caps.api.io
 
 import java.net.URI
 
-import org.opencypher.caps.api.graph.{PropertyGraph, CypherSession}
+import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph}
 import org.opencypher.caps.api.schema.Schema
 
 /**

@@ -21,11 +21,11 @@ import org.opencypher.caps.api.io.PropertyGraphDataSource
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.{CypherBoolean, CypherInteger, CypherString}
-import org.opencypher.caps.ir.impl.util.VarConverters.{toVar => irFieldToVar}
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block._
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.ir.api.pattern.{CyclicRelationship, DirectedRelationship, Pattern}
+import org.opencypher.caps.ir.impl.util.VarConverters.{toVar => irFieldToVar}
 import org.opencypher.caps.ir.test.support.MatchHelper
 import org.opencypher.caps.ir.test.support.MatchHelper._
 import org.opencypher.caps.ir.test.{toField, toVar}

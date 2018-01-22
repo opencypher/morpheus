@@ -16,8 +16,8 @@
 package org.opencypher.caps.ir.impl.syntax
 
 import org.opencypher.caps.ir.api.expr._
-import scala.annotation.tailrec
 
+import scala.annotation.tailrec
 import scala.language.implicitConversions
 
 object ExprSyntax {

@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.ir.api.expr
 
-import org.opencypher.caps.api.types.{CTNode, CTNull, CTRelationship, CTWildcard}
+import org.opencypher.caps.api.types.{CTNode, CTRelationship, CTWildcard}
 import org.scalatest.{FunSuite, Matchers}
 
 class ExprTest extends FunSuite with Matchers {

@@ -19,13 +19,12 @@ import cats.Monad
 import cats.data.State
 import cats.data.State.{get, set}
 import cats.instances.all._
-import org.opencypher.caps.ir.api.expr._
-import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.ir.api.expr._
+import org.opencypher.caps.ir.impl.syntax.ExprSyntax._
 import org.opencypher.caps.refactor.RefCollection
 import org.opencypher.caps.refactor.RefCollection.AbstractRegister
 import org.opencypher.caps.refactor.syntax.RegisterSyntax._
-import org.opencypher.caps.ir.impl.syntax.ExprSyntax._
 
 import scala.annotation.tailrec
 

@@ -18,7 +18,7 @@ package org.opencypher.caps.api.value
 import java.lang
 
 import cats.Show
-import org.opencypher.caps.api.exception.{CypherException, CypherValueException}
+import org.opencypher.caps.api.exception.CypherValueException
 import org.opencypher.caps.api.types.CypherType.OrderGroups._
 import org.opencypher.caps.api.types.CypherType._
 import org.opencypher.caps.api.types.{CypherType, _}

@@ -20,8 +20,7 @@ import org.opencypher.caps.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.caps.api.schema.Schema.{AllLabels, NoLabel}
 import org.opencypher.caps.api.types._
 
-import scala.language.implicitConversions
-import scala.language.existentials // fix compiler warning
+import scala.language.{existentials, implicitConversions} // fix compiler warning
 
 object Schema {
   val empty: Schema = Schema(

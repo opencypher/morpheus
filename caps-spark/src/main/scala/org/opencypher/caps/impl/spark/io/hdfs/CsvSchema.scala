@@ -16,8 +16,8 @@
 package org.opencypher.caps.impl.spark.io.hdfs
 
 import io.circe.Decoder
-import org.apache.spark.sql.types._
 import io.circe.generic.auto._
+import org.apache.spark.sql.types._
 import org.opencypher.caps.impl.util.JsonUtils
 
 abstract class CsvSchema {

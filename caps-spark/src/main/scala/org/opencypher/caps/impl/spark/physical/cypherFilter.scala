@@ -17,11 +17,11 @@ package org.opencypher.caps.impl.spark.physical
 
 import org.apache.spark.sql.Row
 import org.opencypher.caps.api.exception.NotImplementedException
-import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.value.instances._
 import org.opencypher.caps.api.value.syntax._
-import org.opencypher.caps.impl.spark.DfUtils._
 import org.opencypher.caps.impl.record.RecordHeader
+import org.opencypher.caps.impl.spark.DfUtils._
+import org.opencypher.caps.ir.api.expr._
 
 /*
  * Used when the predicate depends on values not stored inside the dataframe.

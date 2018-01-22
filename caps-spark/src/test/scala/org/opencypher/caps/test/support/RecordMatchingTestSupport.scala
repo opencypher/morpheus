@@ -16,14 +16,14 @@
 package org.opencypher.caps.test.support
 
 import org.opencypher.caps.api.record.CypherRecords
-import org.opencypher.caps.ir.api.expr.Var
+import org.opencypher.caps.api.spark.CAPSConverters._
 import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.api.value._
 import org.opencypher.caps.impl.record.CAPSRecordHeader._
 import org.opencypher.caps.impl.record.{FieldSlotContent, OpaqueField, ProjectedExpr, RecordHeader}
+import org.opencypher.caps.ir.api.expr.Var
 import org.opencypher.caps.test.CAPSTestSuite
 import org.scalatest.Assertion
-import org.opencypher.caps.api.spark.CAPSConverters._
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.{Bag, HashedBagConfiguration}

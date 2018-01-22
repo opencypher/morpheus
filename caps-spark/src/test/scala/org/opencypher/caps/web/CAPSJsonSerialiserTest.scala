@@ -15,12 +15,12 @@
  */
 package org.opencypher.caps.web
 
-import org.opencypher.caps.ir.api.expr.Var
 import org.opencypher.caps.api.record.{NodeScan, RelationshipScan}
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.api.types.CTNode
 import org.opencypher.caps.impl.record.{OpaqueField, RecordHeader}
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
+import org.opencypher.caps.ir.api.expr.Var
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.web.CAPSJsonSerialiser.toJsonString
 

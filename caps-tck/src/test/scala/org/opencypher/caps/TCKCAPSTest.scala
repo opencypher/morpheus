@@ -17,12 +17,7 @@ package org.opencypher.caps
 
 import java.io.File
 
-import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.graph.{PropertyGraph, CypherSession}
-import org.opencypher.caps.api.record.CypherRecords
-import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.CAPSGraph
-import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.support.creation.caps.{CAPSGraphFactory, CAPSScanGraphFactory}
 import org.opencypher.tools.tck.api.{CypherTCK, Scenario}
@@ -40,7 +35,6 @@ object TCKFixture {
 class TCKCAPSTest extends CAPSTestSuite {
   import TCKFixture._
 
-
   object WhiteList extends Tag("WhiteList Scenario")
 
   object BlackList extends Tag("BlackList Scenario")
@@ -54,12 +48,16 @@ class TCKCAPSTest extends CAPSTestSuite {
 
   val whiteListScenarios = Table(
     "scenario",
-    scenarios.filterNot { s => ScenarioBlacklist.contains(s.toString()) }: _*
+    scenarios.filterNot { s =>
+      ScenarioBlacklist.contains(s.toString())
+    }: _*
   )
 
   val blackListScenarios = Table(
     "scenario",
-    scenarios.filter { s => ScenarioBlacklist.contains(s.toString()) }.groupBy(_.toString()).map(_._2.head).toSeq: _*
+    scenarios.filter { s =>
+      ScenarioBlacklist.contains(s.toString())
+    }.groupBy(_.toString()).map(_._2.head).toSeq: _*
   )
 
   // white list tests are run on all factories
@@ -89,15 +87,15 @@ class TCKCAPSTest extends CAPSTestSuite {
     val file = new File(getClass.getResource("CAPSTestFeature.feature").toURI)
 
     CypherTCK
-        .parseFilesystemFeature(file)
-        .scenarios
-        .foreach(scenario => scenario(TCKGraph(defaultFactory, CAPSGraph.empty)).execute())
+      .parseFilesystemFeature(file)
+      .scenarios
+      .foreach(scenario => scenario(TCKGraph(defaultFactory, CAPSGraph.empty)).execute())
   }
 
   ignore("run Single Scenario") {
     val name = "A simple pattern with one bound endpoint"
     scenarios
-        .filter(s => s.name == name)
-        .foreach(scenario => scenario(TCKGraph(defaultFactory, CAPSGraph.empty)).execute())
+      .filter(s => s.name == name)
+      .foreach(scenario => scenario(TCKGraph(defaultFactory, CAPSGraph.empty)).execute())
   }
 }
