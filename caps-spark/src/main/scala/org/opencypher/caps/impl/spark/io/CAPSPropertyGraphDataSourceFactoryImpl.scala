@@ -20,11 +20,11 @@ import java.net.URI
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.graph.CypherSession
-import org.opencypher.caps.api.spark.io.{CAPSPropertyGraphDataSource, CAPSGraphSourceFactory, CAPSGraphSourceFactoryCompanion}
+import org.opencypher.caps.api.spark.io.{CAPSPropertyGraphDataSource, CAPSPropertyGraphDataSourceFactory, CAPSGraphSourceFactoryCompanion}
 import org.opencypher.caps.api.spark.CAPSConverters._
 
-abstract class CAPSGraphSourceFactoryImpl(val companion: CAPSGraphSourceFactoryCompanion)
-    extends CAPSGraphSourceFactory {
+abstract class CAPSPropertyGraphDataSourceFactoryImpl(val companion: CAPSGraphSourceFactoryCompanion)
+    extends CAPSPropertyGraphDataSourceFactory {
 
   override final val name: String = getClass.getSimpleName
 

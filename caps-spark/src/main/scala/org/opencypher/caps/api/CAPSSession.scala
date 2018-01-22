@@ -22,13 +22,13 @@ import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.opencypher.caps.api.graph.CypherSession
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSResult, CAPSSessionImpl}
-import org.opencypher.caps.api.spark.io.CAPSGraphSourceFactory
+import org.opencypher.caps.api.spark.io.CAPSPropertyGraphDataSourceFactory
 import org.opencypher.caps.demo.CypherKryoRegistrar
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceHandler
-import org.opencypher.caps.impl.spark.io.file.FileCsvGraphSourceFactory
-import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvGraphSourceFactory
-import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraphSourceFactory
-import org.opencypher.caps.impl.spark.io.session.SessionGraphSourceFactory
+import org.opencypher.caps.impl.spark.io.file.FileCsvPropertyGraphDataSourceFactory
+import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvPropertyGraphDataSourceFactory
+import org.opencypher.caps.impl.spark.io.neo4j.Neo4JPropertyGraphDataSourceFactory
+import org.opencypher.caps.impl.spark.io.session.SessionPropertyGraphDataSourceFactory
 
 trait CAPSSession extends CypherSession {
 
@@ -62,18 +62,18 @@ object CAPSSession extends Serializable {
 
   def create(implicit session: SparkSession): CAPSSession = Builder(session).build
 
-  case class Builder(session: SparkSession, private val graphSourceFactories: Set[CAPSGraphSourceFactory] = Set.empty) {
+  case class Builder(session: SparkSession, private val graphSourceFactories: Set[CAPSPropertyGraphDataSourceFactory] = Set.empty) {
 
-    def withGraphSourceFactory(factory: CAPSGraphSourceFactory): Builder =
+    def withGraphSourceFactory(factory: CAPSPropertyGraphDataSourceFactory): Builder =
       copy(graphSourceFactories = graphSourceFactories + factory)
 
     def build: CAPSSession = {
-      val sessionFactory = SessionGraphSourceFactory()
+      val sessionFactory = SessionPropertyGraphDataSourceFactory()
       // add some default factories
       val additionalFactories = graphSourceFactories +
-        Neo4jGraphSourceFactory() +
-        HdfsCsvGraphSourceFactory(session.sparkContext.hadoopConfiguration) +
-        FileCsvGraphSourceFactory()
+        Neo4JPropertyGraphDataSourceFactory() +
+        HdfsCsvPropertyGraphDataSourceFactory(session.sparkContext.hadoopConfiguration) +
+        FileCsvPropertyGraphDataSourceFactory()
 
       new CAPSSessionImpl(
         session,

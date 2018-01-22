@@ -22,7 +22,7 @@ import org.opencypher.caps.api.graph.{PropertyGraph, CypherSession}
 /**
   * Factory for creating GraphSource instances for a given set of schemes.
   */
-trait GraphSourceFactory {
+trait PropertyGraphDataSourceFactory {
 
   /**
     * A simple name for the graph source factory,

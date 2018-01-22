@@ -30,7 +30,7 @@ case class SessionPropertyGraphDataSource(path: String)(implicit val session: CA
 
   private var currentGraph: Option[CAPSGraph] = None
 
-  override val canonicalURI: URI = URI.create(s"${SessionGraphSourceFactory.defaultScheme}:$path")
+  override val canonicalURI: URI = URI.create(s"${SessionPropertyGraphDataSourceFactory.defaultScheme}:$path")
 
   override def sourceForGraphAt(uri: URI): Boolean =
     uri == canonicalURI

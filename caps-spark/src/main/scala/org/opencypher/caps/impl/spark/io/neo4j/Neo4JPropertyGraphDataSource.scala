@@ -30,7 +30,7 @@ case class Neo4JPropertyGraphDataSource(config: Neo4jConfig,
                            (implicit val session: CAPSSession)
   extends CAPSPropertyGraphDataSource {
 
-  import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraphSourceFactory.supportedSchemes
+  import org.opencypher.caps.impl.spark.io.neo4j.Neo4JPropertyGraphDataSourceFactory.supportedSchemes
 
   override def sourceForGraphAt(uri: URI): Boolean =
     supportedSchemes.contains(uri.getScheme) && uri.getHost == config.uri.getHost && uri.getPort == config.uri.getPort

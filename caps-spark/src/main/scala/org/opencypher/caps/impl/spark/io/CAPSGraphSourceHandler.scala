@@ -20,13 +20,13 @@ import java.net.URI
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.io.PropertyGraphDataSource
-import org.opencypher.caps.api.spark.io.{CAPSPropertyGraphDataSource, CAPSGraphSourceFactory}
-import org.opencypher.caps.impl.spark.io.session.SessionGraphSourceFactory
+import org.opencypher.caps.api.spark.io.{CAPSPropertyGraphDataSource, CAPSPropertyGraphDataSourceFactory}
+import org.opencypher.caps.impl.spark.io.session.SessionPropertyGraphDataSourceFactory
 
 case class CAPSGraphSourceHandler(
-    sessionGraphSourceFactory: SessionGraphSourceFactory,
-    additionalGraphSourceFactories: Set[CAPSGraphSourceFactory]) {
-  private val factoriesByScheme: Map[String, CAPSGraphSourceFactory] = {
+    sessionGraphSourceFactory: SessionPropertyGraphDataSourceFactory,
+    additionalGraphSourceFactories: Set[CAPSPropertyGraphDataSourceFactory]) {
+  private val factoriesByScheme: Map[String, CAPSPropertyGraphDataSourceFactory] = {
     val allFactories = additionalGraphSourceFactories + sessionGraphSourceFactory
     val entries = allFactories.flatMap(factory => factory.schemes.map(scheme => scheme -> factory))
     if (entries.size == entries.map(_._1).size)

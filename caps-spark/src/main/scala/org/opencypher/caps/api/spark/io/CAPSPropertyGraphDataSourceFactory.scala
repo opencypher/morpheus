@@ -13,20 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.spark.io.file
+package org.opencypher.caps.api.spark.io
 
-import java.net.URI
+import org.opencypher.caps.api.io.PropertyGraphDataSourceFactory
 
-import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.spark.io._
-import org.opencypher.caps.impl.spark.io.CAPSGraphSourceFactoryImpl
+trait CAPSPropertyGraphDataSourceFactory extends PropertyGraphDataSourceFactory
 
-case object FileCsvGraphSourceFactory extends CAPSGraphSourceFactoryCompanion("file+csv", "file")
-
-case class FileCsvGraphSourceFactory()
-  extends CAPSGraphSourceFactoryImpl(FileCsvGraphSourceFactory) {
-
-  override protected def sourceForURIWithSupportedScheme(uri: URI)(implicit capsSession: CAPSSession): FileCsvPropertyGraphDataSource = {
-    FileCsvPropertyGraphDataSource(uri)
-  }
-}

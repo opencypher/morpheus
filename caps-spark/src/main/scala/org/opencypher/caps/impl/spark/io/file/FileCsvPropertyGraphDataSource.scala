@@ -30,7 +30,7 @@ case class FileCsvPropertyGraphDataSource(override val canonicalURI: URI)(implic
     extends CAPSPropertyGraphDataSource {
 
   override def sourceForGraphAt(uri: URI): Boolean = {
-    FileCsvGraphSourceFactory.supportedSchemes.contains(uri.getScheme)
+    FileCsvPropertyGraphDataSourceFactory.supportedSchemes.contains(uri.getScheme)
   }
 
   override def graph: CAPSGraph = {

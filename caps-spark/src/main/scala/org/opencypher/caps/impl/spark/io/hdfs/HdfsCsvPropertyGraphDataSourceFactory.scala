@@ -21,12 +21,12 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.http.client.utils.URIBuilder
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.spark.io._
-import org.opencypher.caps.impl.spark.io.CAPSGraphSourceFactoryImpl
+import org.opencypher.caps.impl.spark.io.CAPSPropertyGraphDataSourceFactoryImpl
 
-case object HdfsCsvGraphSourceFactory extends CAPSGraphSourceFactoryCompanion("hdfs+csv")
+case object HdfsCsvPropertyGraphDataSourceFactory extends CAPSGraphSourceFactoryCompanion("hdfs+csv")
 
-case class HdfsCsvGraphSourceFactory(hadoopConfiguration: Configuration)
-  extends CAPSGraphSourceFactoryImpl(HdfsCsvGraphSourceFactory) {
+case class HdfsCsvPropertyGraphDataSourceFactory(hadoopConfiguration: Configuration)
+  extends CAPSPropertyGraphDataSourceFactoryImpl(HdfsCsvPropertyGraphDataSourceFactory) {
 
   override protected def sourceForURIWithSupportedScheme(uri: URI)(implicit capsSession: CAPSSession): HdfsCsvPropertyGraphDataSource = {
     val internalURI: URI = new URIBuilder(uri)

@@ -30,7 +30,7 @@ case class HdfsCsvPropertyGraphDataSource(override val canonicalURI: URI, hadoop
     implicit val session: CAPSSession)
     extends CAPSPropertyGraphDataSource {
 
-  import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvGraphSourceFactory.supportedSchemes
+  import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvPropertyGraphDataSourceFactory.supportedSchemes
 
   override def sourceForGraphAt(uri: URI): Boolean = {
     val hadoopURIString = Option(hadoopConfig.get("fs.defaultFS"))

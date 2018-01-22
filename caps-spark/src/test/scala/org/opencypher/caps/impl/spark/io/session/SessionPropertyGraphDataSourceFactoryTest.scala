@@ -24,7 +24,7 @@ import org.opencypher.caps.test.BaseTestSuite
 class SessionPropertyGraphDataSourceFactoryTest extends BaseTestSuite {
 
   test("mounting graphs should be thread-safe") {
-    val f = SessionGraphSourceFactory()
+    val f = SessionPropertyGraphDataSourceFactory()
     (0 until 1000).par.foreach { i =>
       if (i % 2 == 0) {
         f.mountSourceAt(mock(classOf[CAPSPropertyGraphDataSource]), URI.create(s"session:/${i}"))(null)
