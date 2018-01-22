@@ -21,7 +21,7 @@ import org.apache.spark.SparkConf
 import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.opencypher.caps.api.graph.CypherSession
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSResult, CAPSSessionImpl}
+import org.opencypher.caps.api.spark._
 import org.opencypher.caps.api.spark.io.CAPSPropertyGraphDataSourceFactory
 import org.opencypher.caps.demo.CypherKryoRegistrar
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceHandler
@@ -30,9 +30,10 @@ import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvPropertyGraphDataSourceFact
 import org.opencypher.caps.impl.spark.io.neo4j.Neo4JPropertyGraphDataSourceFactory
 import org.opencypher.caps.impl.spark.io.session.SessionPropertyGraphDataSourceFactory
 
-trait CAPSSession extends CypherSession {
+trait CAPSSession extends CypherSession with CAPSSessionOps {
 
   def sparkSession: SparkSession
+
 }
 
 object CAPSSession extends Serializable {
@@ -62,7 +63,9 @@ object CAPSSession extends Serializable {
 
   def create(implicit session: SparkSession): CAPSSession = Builder(session).build
 
-  case class Builder(session: SparkSession, private val graphSourceFactories: Set[CAPSPropertyGraphDataSourceFactory] = Set.empty) {
+  case class Builder(
+      session: SparkSession,
+      private val graphSourceFactories: Set[CAPSPropertyGraphDataSourceFactory] = Set.empty) {
 
     def withGraphSourceFactory(factory: CAPSPropertyGraphDataSourceFactory): Builder =
       copy(graphSourceFactories = graphSourceFactories + factory)

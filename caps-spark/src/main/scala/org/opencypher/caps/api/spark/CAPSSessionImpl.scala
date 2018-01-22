@@ -39,11 +39,10 @@ import org.opencypher.caps.ir.impl.parse.CypherParser
 import org.opencypher.caps.ir.impl.{IRBuilder, IRBuilderContext}
 import org.opencypher.caps.logical.impl._
 
-sealed class CAPSSessionImpl(
-    val sparkSession: SparkSession,
-    private val graphSourceHandler: CAPSGraphSourceHandler)
+sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSourceHandler: CAPSGraphSourceHandler)
     extends CAPSSession
-    with Serializable {
+    with Serializable
+    with CAPSSessionOps {
 
   self =>
 
@@ -73,7 +72,7 @@ sealed class CAPSSessionImpl(
 
   override def mountSourceAt(source: PropertyGraphDataSource, path: String): Unit = source match {
     case c: CAPSPropertyGraphDataSource => mountSourceAt(c, parsePathOrURI(path))
-    case x => throw UnsupportedOperationException(s"can only handle CAPS graph sources, but got $x")
+    case x                              => throw UnsupportedOperationException(s"can only handle CAPS graph sources, but got $x")
   }
 
   def mountSourceAt(source: CAPSPropertyGraphDataSource, uri: URI): Unit =
@@ -148,32 +147,47 @@ sealed class CAPSSessionImpl(
     IRExternalGraph(name, ambient.schema, uri)
   }
 
-  // TODO: Move these to own trait
   private def planStart(graph: PropertyGraph, fields: Set[Var]): LogicalOperator = {
     val ambientGraph = mountAmbientGraph(graph)
 
     producer.planStart(LogicalExternalGraph(ambientGraph.name, ambientGraph.uri, graph.schema), fields)
   }
 
-  def filter(graph: PropertyGraph, in: CypherRecords, expr: Expr, queryParameters: Map[String, CypherValue]): CAPSRecords = {
+  override def filter(
+      graph: PropertyGraph,
+      in: CypherRecords,
+      expr: Expr,
+      queryParameters: Map[String, CypherValue]): CAPSRecords = {
     val scan = planStart(graph, in.header.asCaps.internalHeader.fields)
     val filter = producer.planFilter(expr, scan)
     plan(graph, in, queryParameters, filter).records
   }
 
-  def select(graph: PropertyGraph, in: CypherRecords, fields: IndexedSeq[Var], queryParameters: Map[String, CypherValue]): CAPSRecords = {
+  override def select(
+      graph: PropertyGraph,
+      in: CypherRecords,
+      fields: IndexedSeq[Var],
+      queryParameters: Map[String, CypherValue]): CAPSRecords = {
     val scan = planStart(graph, in.header.asCaps.internalHeader.fields)
     val select = producer.planSelect(fields, Set.empty, scan)
     plan(graph, in, queryParameters, select).records
   }
 
-  def project(graph: PropertyGraph, in: CypherRecords, expr: Expr, queryParameters: Map[String, CypherValue]): CAPSRecords = {
+  override def project(
+      graph: PropertyGraph,
+      in: CypherRecords,
+      expr: Expr,
+      queryParameters: Map[String, CypherValue]): CAPSRecords = {
     val scan = planStart(graph, in.header.asCaps.internalHeader.fields)
     val project = producer.projectExpr(expr, scan)
     plan(graph, in, queryParameters, project).records
   }
 
-  def alias(graph: PropertyGraph, in: CypherRecords, alias: (Expr, Var), queryParameters: Map[String, CypherValue]): CAPSRecords = {
+  override def alias(
+      graph: PropertyGraph,
+      in: CypherRecords,
+      alias: (Expr, Var),
+      queryParameters: Map[String, CypherValue]): CAPSRecords = {
     val (expr, v) = alias
     val scan = planStart(graph, in.header.asCaps.internalHeader.fields)
     val select = producer.projectField(IRField(v.name)(v.cypherType), expr, scan)
