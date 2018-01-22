@@ -17,12 +17,13 @@ package org.opencypher.caps.api.spark
 
 import cats.data.NonEmptyVector
 import org.apache.spark.storage.StorageLevel
+import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
-import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType, DefiniteCypherType}
 import org.opencypher.caps.impl.record.RecordHeader
+import org.opencypher.caps.ir.api.expr._
 
 class CAPSScanGraph(val scans: Seq[GraphScan], val schema: Schema)(implicit val session: CAPSSession)
     extends CAPSGraph {

@@ -16,14 +16,14 @@
 package org.opencypher.caps.impl.spark
 
 import org.apache.spark.sql.{Column, DataFrame, Row}
+import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.{IllegalArgumentException, NotImplementedException}
-import org.opencypher.caps.ir.api.expr.{Expr, Param}
-import org.opencypher.caps.api.spark.CAPSSession
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value._
 import org.opencypher.caps.api.value.instances._
 import org.opencypher.caps.impl.record.RecordHeader
 import org.opencypher.caps.impl.spark.physical.RuntimeContext
+import org.opencypher.caps.ir.api.expr.{Expr, Param}
 
 object DfUtils {
 
@@ -79,8 +79,8 @@ object DfUtils {
   }
 
   implicit class ColumnMappableDf(df: DataFrame) {
-    def mapColumn(columnName: String)(f: Column => Column)(implicit caps: CAPSSession): DataFrame = {
-      val tmpColName = caps.temporaryColumnName()
+    def mapColumn(columnName: String)(f: Column => Column): DataFrame = {
+      val tmpColName = SparkColumnName.tempColName
       df.withColumn(tmpColName, f(df(columnName))).drop(columnName).withColumnRenamed(tmpColName, columnName)
     }
   }

@@ -761,7 +761,7 @@ case object CypherNode extends CypherEntityCompanion[CypherNode] {
 
   override type Contents = NodeContents
 
-  def apply(id: EntityId, data: NodeData): CypherNode =
+  def apply(id: EntityId, data: NodeData = NodeData.empty): CypherNode =
     apply(id, data.labels, data.properties)
 
   def apply(id: EntityId, labels: Seq[String], properties: Properties): CypherNode =

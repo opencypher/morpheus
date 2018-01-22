@@ -17,15 +17,16 @@ package org.opencypher.caps.impl.spark.io.file
 
 import java.net.URI
 
+import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.NotImplementedException
 import org.opencypher.caps.api.io.{CreateOrFail, PersistMode}
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
-import org.opencypher.caps.impl.spark.io.CAPSGraphSourceImpl
+import org.opencypher.caps.api.spark.CAPSGraph
+import org.opencypher.caps.api.spark.io.CAPSGraphSource
 import org.opencypher.caps.impl.spark.io.hdfs.CsvGraphLoader
 
-case class FileCsvGraphSource(override val canonicalURI: URI)(implicit capsSession: CAPSSession)
-    extends CAPSGraphSourceImpl {
+case class FileCsvGraphSource(override val canonicalURI: URI)(implicit val session: CAPSSession)
+    extends CAPSGraphSource {
 
   override def sourceForGraphAt(uri: URI): Boolean = {
     FileCsvGraphSourceFactory.supportedSchemes.contains(uri.getScheme)

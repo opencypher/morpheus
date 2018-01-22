@@ -18,7 +18,8 @@ package org.opencypher.caps.api.spark
 import java.net.URI
 
 import org.apache.http.client.utils.URIBuilder
-import org.opencypher.caps.api.value.CypherMap
+import org.opencypher.caps.api.CAPSSession
+import org.opencypher.caps.api.value.{CypherMap, CypherNode}
 import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvGraphSource
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.fixture.MiniDFSClusterFixture
@@ -49,14 +50,14 @@ class CAPSSessionHDFSTest extends CAPSTestSuite
   }
 
   test("HDFS via GRAPH AT") {
-    implicit val capsSession: CAPSSession = CAPSSession.builder(session).build
+    implicit val capsSession = CAPSSession.builder(session).build
 
     val nodes = capsSession.cypher(s"FROM GRAPH test AT '$hdfsURI' MATCH (n) RETURN n")
-    nodes.records.compact.toMaps should equal(Bag(
-      CypherMap("n" -> 1L),
-      CypherMap("n" -> 2L),
-      CypherMap("n" -> 3L),
-      CypherMap("n" -> 4L)
+    nodes.records.iterator.toBag should equal(Bag(
+      CypherMap("n" -> CypherNode(1L)),
+      CypherMap("n" -> CypherNode(2L)),
+      CypherMap("n" -> CypherNode(3L)),
+      CypherMap("n" -> CypherNode(4L))
     ))
 
     val edges = capsSession.cypher(s"FROM GRAPH test AT '$hdfsURI' MATCH ()-[r]->() RETURN r")

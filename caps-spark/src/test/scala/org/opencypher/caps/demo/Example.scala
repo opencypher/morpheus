@@ -15,8 +15,9 @@
  */
 package org.opencypher.caps.demo
 
+import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.record._
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
+import org.opencypher.caps.api.spark.CAPSGraph
 
 case class Person(id: Long, name: String) extends Node
 

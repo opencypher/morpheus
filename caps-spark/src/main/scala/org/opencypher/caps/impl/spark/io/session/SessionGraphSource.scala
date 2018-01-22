@@ -17,13 +17,14 @@ package org.opencypher.caps.impl.spark.io.session
 
 import java.net.URI
 
+import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.caps.api.io.{CreateOrFail, Overwrite, PersistMode}
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
-import org.opencypher.caps.impl.spark.io.CAPSGraphSourceImpl
+import org.opencypher.caps.api.spark.CAPSGraph
+import org.opencypher.caps.api.spark.io.CAPSGraphSource
 
-case class SessionGraphSource(path: String)(implicit capsSession: CAPSSession) extends CAPSGraphSourceImpl {
+case class SessionGraphSource(path: String)(implicit val session: CAPSSession) extends CAPSGraphSource {
 
   private var currentGraph: Option[CAPSGraph] = None
 

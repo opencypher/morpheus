@@ -16,14 +16,13 @@
 package org.opencypher.caps.impl.spark.io.session
 
 import java.net.URI
-
-import org.opencypher.caps.api.spark.io._
-import org.opencypher.caps.api.spark.CAPSSession
-import org.opencypher.caps.impl.spark.io.CAPSGraphSourceFactoryImpl
 import java.util.concurrent.ConcurrentHashMap
 
+import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.caps.api.graph.CypherSession
+import org.opencypher.caps.api.spark.io._
+import org.opencypher.caps.impl.spark.io.CAPSGraphSourceFactoryImpl
 
 import scala.collection.JavaConversions._
 

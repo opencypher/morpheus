@@ -19,10 +19,10 @@ import java.net.{URI, URLEncoder}
 
 import org.apache.http.client.utils.URIBuilder
 import org.apache.spark.sql.Row
-import org.apache.spark.storage.StorageLevel
 import org.neo4j.driver.v1.{AuthTokens, Session}
+import org.opencypher.caps.api.graph.{CypherGraph, CypherResult}
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSResult}
+import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.api.types.{CTInteger, CTString}
 import org.opencypher.caps.api.value.CypherMap
 import org.opencypher.caps.test.CAPSTestSuite
@@ -43,10 +43,9 @@ class GCDemoTest
 
   ignore("the demo") {
     val t0 = System.currentTimeMillis()
-    val storageLevel = StorageLevel.MEMORY_ONLY_SER
     lazy val SN_US = caps.graphAt(neoURIforRegion("US"))
     lazy val SN_EU = caps.graphAt(neoURIforRegion("EU"))
-    lazy val PRODUCTS = caps.graphAt(hdfsURI).persist(storageLevel)
+    lazy val PRODUCTS = caps.graphAt(hdfsURI)
 
     val CITYFRIENDS_US = SN_US.cypher(
       """MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b)
@@ -64,7 +63,7 @@ class GCDemoTest
 
     check( verifyCityFriendsEU(CITYFRIENDS_EU.graphs("result")) )
 
-    val ALL_CITYFRIENDS = (CITYFRIENDS_EU.graphs("result") union CITYFRIENDS_US.graphs("result")).persist(storageLevel)
+    val ALL_CITYFRIENDS = CITYFRIENDS_EU.graphs("result") union CITYFRIENDS_US.graphs("result")
 
     check( verifyAllCityFriends(ALL_CITYFRIENDS) )
 
@@ -79,11 +78,11 @@ class GCDemoTest
          |WITH c.name as customerName, personName, c, p
          |WHERE customerName = personName
          |RETURN GRAPH result OF (c)-[x:IS]->(p)
-      """.stripMargin).graphs("result").persist(storageLevel)
+      """.stripMargin).graphs("result")
 
     check( verifyLinks(LINKS) )
 
-    val RECO = (ALL_CITYFRIENDS union PRODUCTS union LINKS union SN_EU union SN_US).persist(storageLevel)
+    val RECO = ALL_CITYFRIENDS union PRODUCTS union LINKS union SN_EU union SN_US
 
     check( verifyReco(RECO) )
 
@@ -103,7 +102,7 @@ class GCDemoTest
     //Write back to Neo
     withBoltSession { session =>
       // maybe iterate over rows instead of CypherMaps is faster
-      result.records.toLocalScalaIterator.foreach { cypherMap =>
+      result.records.iterator.foreach { cypherMap =>
         session.run(s"MATCH (p:Person {name: ${cypherMap.get("name").get}}) SET p.should_buy = ${cypherMap.get("product").get}")
       }
     }
@@ -116,7 +115,7 @@ class GCDemoTest
     val SN_US = caps.graphAt(neoURIforRegion("US"))
     val result = SN_US.cypher("""MATCH (n:Person {name: "Alice"}) RETURN n.name AS name""")
     withBoltSession { session =>
-      result.records.toLocalScalaIterator.foreach { cypherMap =>
+      result.records.iterator.foreach { cypherMap =>
         session.run(s"MATCH (p:Person {name: ${cypherMap.get("name").get}}) SET p.should_buy = 'a book'")
       }
     }
@@ -124,7 +123,7 @@ class GCDemoTest
     val resultGraph = caps.graphAt(neoURIforRegion("US"))
     val res = resultGraph.cypher("MATCH (n:Person {name: 'Alice'}) RETURN n.should_buy as rec")
 
-    res.records.toLocalScalaIterator.toSet should equal(Set(
+    res.records.iterator.toSet should equal(Set(
       CypherMap("rec" -> "a book")
     ))
   }
@@ -157,12 +156,10 @@ class GCDemoTest
     uri
   }
 
-  def verifyRecoResult(r: CAPSResult) = {
+  def verifyRecoResult(r: CypherResult) = {
     println("===>>> verifying RECO result")
 
-    r.records.cache()
-
-    r.records.toCypherMaps.collect().toSet should equal(Set(
+    r.records.asInstanceOf[CAPSRecords].toCypherMaps.collect().toSet should equal(Set(
       CypherMap("name" -> "Eve", "product" -> "Terminator 2"),
       CypherMap("name" -> "Carl", "product" -> "Jurassic Park"),
       CypherMap("name" -> "Bob", "product" -> "1984"),
@@ -171,7 +168,7 @@ class GCDemoTest
     ))
   }
 
-  def verifyReco(graph: CAPSGraph) = {
+  def verifyReco(graph: CypherGraph) = {
     println("===>>> verifying RECO")
 
     graph.schema should equal(Schema.empty
@@ -194,7 +191,7 @@ class GCDemoTest
       .withRelationshipPropertyKeys("KNOWS")("region" -> CTString)
     )
 
-    graph.nodes("n").toDF().collect().toBag should equal (Bag(
+    graph.nodes("n").iterator.toBag should equal (Bag(
       Row(2009L, false, false, true, false, false, "Trent", null, null, null, null),
       Row(1L, true, false, false, false, false, "San Francisco", null, "US", null, null),
       Row(10L, false, false, false, false, true, "Carol", null, "US", null, null),
@@ -252,7 +249,7 @@ class GCDemoTest
       Row(22L, false, true, false, false, false, "Video", null, "US", null, null)
     ))
 
-    graph.relationships("r").toDF().drop("r").collect().toBag should equal (Bag(
+    graph.relationships("r").asInstanceOf[CAPSRecords].toDF().drop("r").collect().toBag should equal (Bag(
       Row(18L, "KNOWS", 16L, "EU", null, null, null),
       Row(18L, "ACQUAINTED", 16L, null, null, null, null),
       Row(13L, "ACQUAINTED", 15L, null, null, null, null),
@@ -319,7 +316,7 @@ class GCDemoTest
     ))
   }
 
-  def verifyLinks(graph: CAPSGraph) = {
+  def verifyLinks(graph: CypherGraph) = {
     println("===>>> verifying LINKS")
 
     graph.schema should equal(Schema.empty
@@ -328,7 +325,7 @@ class GCDemoTest
       .withRelationshipType("IN")
     )
 
-    graph.nodes("n").toDF().collect().toBag should equal (Bag(
+    graph.nodes("n").iterator.toBag should equal (Bag(
       Row(7L, true, false, "Alice", "US"),
       Row(2001L, false, true, "Alice", null),
       Row(8L, true, false, "Bob", "US"),
@@ -355,7 +352,7 @@ class GCDemoTest
       Row(2011L, false, true, "Victor", null)
     ))
 
-    val relsWithoutRelId = graph.relationships("r").toDF().drop("r")
+    val relsWithoutRelId = graph.relationships("r").asInstanceOf[CAPSRecords].toDF().drop("r")
     relsWithoutRelId.collect().toBag should equal (Bag(
       Row(2009L, "IS", 15L),
       Row(2011L, "IS", 17L),
@@ -372,7 +369,7 @@ class GCDemoTest
     ))
   }
 
-  def verifyCityFriendsUS(g: CAPSGraph): Assertion = {
+  def verifyCityFriendsUS(g: CypherGraph): Assertion = {
     println("===>>> verifying CITYFRIENDS_US")
 
     g.schema should equal(Schema.empty
@@ -380,7 +377,7 @@ class GCDemoTest
       .withRelationshipType("ACQUAINTED")
     )
 
-    g.nodes("n").toDF().collect().toBag should equal (Bag(
+    g.nodes("n").iterator.toBag should equal (Bag(
       Row(7L, true, "Alice", "US"),
       Row(8L, true, "Bob", "US"),
       Row(9L, true, "Eve", "US"),
@@ -389,7 +386,7 @@ class GCDemoTest
       Row(12L, true, "Dave", "US")
     ))
 
-    val relsWithoutRelId = g.relationships("r").toDF().drop("r")
+    val relsWithoutRelId = g.relationships("r").asInstanceOf[CAPSRecords].toDF().drop("r")
     relsWithoutRelId.collect().toBag should equal (Bag(
       Row(7L, "ACQUAINTED", 8L),
       Row(7L, "ACQUAINTED", 9L),
@@ -400,7 +397,7 @@ class GCDemoTest
     ))
   }
 
-  def verifyCityFriendsEU(g: CAPSGraph): Assertion = {
+  def verifyCityFriendsEU(g: CypherGraph): Assertion = {
     println("===>>> verifying CITYFRIENDS_EU")
 
     g.schema should equal(Schema.empty
@@ -408,7 +405,7 @@ class GCDemoTest
       .withRelationshipType("ACQUAINTED")
     )
 
-    g.nodes("n").toDF().collect().toBag should equal (Bag(
+    g.nodes("n").iterator.toBag should equal (Bag(
       Row(13L, true, "Mallory", "EU"),
       Row(14L, true, "Trudy", "EU"),
       Row(15L, true, "Trent", "EU"),
@@ -417,7 +414,7 @@ class GCDemoTest
       Row(18L, true, "Peggy", "EU")
     ))
 
-    val relsWithoutRelId = g.relationships("r").toDF().drop("r")
+    val relsWithoutRelId = g.relationships("r").asInstanceOf[CAPSRecords].toDF().drop("r")
     relsWithoutRelId.collect().toBag should equal (Bag(
       Row(13L, "ACQUAINTED", 14L),
       Row(13L, "ACQUAINTED", 15L),
@@ -428,7 +425,7 @@ class GCDemoTest
     ))
   }
 
-  def verifyAllCityFriends(g: CAPSGraph): Assertion = {
+  def verifyAllCityFriends(g: CypherGraph): Assertion = {
     println("===>>> verifying ALL_CITY_FRIENDS")
 
     g.schema should equal(Schema.empty
@@ -436,7 +433,7 @@ class GCDemoTest
       .withRelationshipType("ACQUAINTED")
     )
 
-    Bag(g.nodes("n").toDF().collect(): _*) should equal (Bag(
+    g.nodes("n").iterator.toBag should equal (Bag(
       Row(7L,true,"Alice","US"),
       Row(8L,true,"Bob","US"),
       Row(9L,true,"Eve","US"),
@@ -451,7 +448,7 @@ class GCDemoTest
       Row(18L,true,"Peggy","EU")
     ))
 
-    val relsWithoutRelId = g.relationships("r").toDF().drop("r")
+    val relsWithoutRelId = g.relationships("r").asInstanceOf[CAPSRecords].toDF().drop("r")
     Bag(relsWithoutRelId.collect(): _*) should equal (Bag(
       Row(7L, "ACQUAINTED", 8L),
       Row(7L, "ACQUAINTED", 9L),

@@ -17,25 +17,17 @@ package org.opencypher.caps.api.spark
 
 import java.net.URI
 import java.util.UUID
-import java.util.concurrent.atomic.AtomicLong
 
-import org.apache.spark.SparkConf
-import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.UnsupportedOperationException
-import org.opencypher.caps.api.graph.CypherSession
-import org.opencypher.caps.api.io.{CreateOrFail, PersistMode}
+import org.opencypher.caps.api.io.{CreateOrFail, GraphSource, PersistMode}
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.spark.io.{CAPSGraphSource, CAPSGraphSourceFactory}
+import org.opencypher.caps.api.spark.io.CAPSGraphSource
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.demo.Configuration.{PrintLogicalPlan, PrintPhysicalPlan, PrintQueryExecutionStages}
-import org.opencypher.caps.demo.CypherKryoRegistrar
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceHandler
-import org.opencypher.caps.impl.spark.io.file.FileCsvGraphSourceFactory
-import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvGraphSourceFactory
-import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraphSourceFactory
-import org.opencypher.caps.impl.spark.io.session.SessionGraphSourceFactory
 import org.opencypher.caps.impl.spark.physical._
 import org.opencypher.caps.impl.util.parsePathOrURI
 import org.opencypher.caps.ir.api.expr.{Expr, Var}
@@ -44,19 +36,13 @@ import org.opencypher.caps.ir.impl.parse.CypherParser
 import org.opencypher.caps.ir.impl.{IRBuilder, IRBuilderContext}
 import org.opencypher.caps.logical.impl._
 
-sealed class CAPSSession private (
+sealed class CAPSSessionImpl(
     val sparkSession: SparkSession,
     private val graphSourceHandler: CAPSGraphSourceHandler)
-    extends CypherSession
+    extends CAPSSession
     with Serializable {
 
   self =>
-
-  override type Graph = CAPSGraph
-  override type Session = CAPSSession
-  override type Records = CAPSRecords
-  override type Result = CAPSResult
-  override type Data = DataFrame
 
   private val producer = new LogicalOperatorProducer
   private val logicalPlanner = new LogicalPlanner(producer)
@@ -65,30 +51,27 @@ sealed class CAPSSession private (
   private val physicalPlanner = new PhysicalPlanner()
   private val physicalOptimizer = new PhysicalOptimizer()
   private val parser = CypherParser
-  private val temporaryColumnId = new AtomicLong()
-
-  def temporaryColumnName(): String = {
-    s"___Tmp${temporaryColumnId.incrementAndGet()}"
-  }
 
   def sourceAt(uri: URI): CAPSGraphSource =
     graphSourceHandler.sourceAt(uri)(this)
 
-  def graphAt(path: String): CAPSGraph =
+  override def graphAt(path: String): CAPSGraph =
     graphAt(parsePathOrURI(path))
 
   // TODO: why not Option[CAPSGraph] in general?
-  def graphAt(uri: URI): CAPSGraph =
+  override def graphAt(uri: URI): CAPSGraph =
     graphSourceHandler.sourceAt(uri)(this).graph
 
   def optGraphAt(uri: URI): Option[CAPSGraph] =
     graphSourceHandler.optSourceAt(uri)(this).map(_.graph)
 
-  def storeGraphAt(graph: CAPSGraph, pathOrUri: String, mode: PersistMode = CreateOrFail): CAPSGraph =
+  override def storeGraphAt(graph: CAPSGraph, pathOrUri: String, mode: PersistMode = CreateOrFail): CAPSGraph =
     graphSourceHandler.sourceAt(parsePathOrURI(pathOrUri))(this).store(graph, mode)
 
-  def mountSourceAt(source: CAPSGraphSource, pathOrUri: String): Unit =
-    mountSourceAt(source, parsePathOrURI(pathOrUri))
+  override def mountSourceAt(source: GraphSource, path: String): Unit = source match {
+    case c: CAPSGraphSource => mountSourceAt(c, parsePathOrURI(path))
+    case x => throw UnsupportedOperationException(s"can only handle CAPS graph sources, but got $x")
+  }
 
   def mountSourceAt(source: CAPSGraphSource, uri: URI): Unit =
     graphSourceHandler.mountSourceAt(source, uri)(this)
@@ -235,54 +218,4 @@ sealed class CAPSSession private (
 
     s"${this.getClass.getSimpleName}($mountPointsString)"
   }
-}
-
-object CAPSSession extends Serializable {
-
-  /**
-    * Creates a new CAPSSession that wraps a local Spark session with CAPS default parameters.
-    */
-  def local(): CAPSSession = {
-    val conf = new SparkConf(true)
-    conf.set("spark.serializer", classOf[KryoSerializer].getCanonicalName)
-    conf.set("spark.kryo.registrator", classOf[CypherKryoRegistrar].getCanonicalName)
-    conf.set("spark.sql.codegen.wholeStage", "true")
-    conf.set("spark.kryo.unsafe", "true")
-    conf.set("spark.kryo.referenceTracking", "false")
-    conf.set("spark.kryo.registrationRequired", "true")
-
-    val session = SparkSession
-      .builder()
-      .config(conf)
-      .master("local[*]")
-      .appName(s"caps-local-${UUID.randomUUID()}")
-      .getOrCreate()
-    session.sparkContext.setLogLevel("error")
-
-    create(session)
-  }
-
-  def create(implicit session: SparkSession): CAPSSession = Builder(session).build
-
-  case class Builder(session: SparkSession, private val graphSourceFactories: Set[CAPSGraphSourceFactory] = Set.empty) {
-
-    def withGraphSourceFactory(factory: CAPSGraphSourceFactory): Builder =
-      copy(graphSourceFactories = graphSourceFactories + factory)
-
-    def build: CAPSSession = {
-      val sessionFactory = SessionGraphSourceFactory()
-      // add some default factories
-      val additionalFactories = graphSourceFactories +
-        Neo4jGraphSourceFactory() +
-        HdfsCsvGraphSourceFactory(session.sparkContext.hadoopConfiguration) +
-        FileCsvGraphSourceFactory()
-
-      new CAPSSession(
-        session,
-        CAPSGraphSourceHandler(sessionFactory, additionalFactories)
-      )
-    }
-  }
-
-  def builder(sparkSession: SparkSession): Builder = Builder(sparkSession)
 }

@@ -15,7 +15,8 @@
  */
 package org.opencypher.caps.impl.spark.physical
 
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
+import org.opencypher.caps.api.CAPSSession
+import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 
 object PhysicalResult {
   def unit(implicit caps: CAPSSession) = PhysicalResult(CAPSRecords.unit(), Map.empty)

@@ -15,28 +15,28 @@
  */
 package org.opencypher.caps.impl.spark
 
-import org.opencypher.caps.ir.api.expr.{Expr, Var}
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
+import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSessionImpl}
 import org.opencypher.caps.api.value.CypherValue
+import org.opencypher.caps.ir.api.expr.{Expr, Var}
 
 object operations {
 
   implicit final class RichCAPSGraph(val graph: CAPSGraph) extends AnyVal {
 
     def filter(subject: CAPSRecords, expr: Expr, parameters: Map[String, CypherValue] = Map.empty)(
-        implicit caps: CAPSSession): CAPSRecords =
+        implicit caps: CAPSSessionImpl): CAPSRecords =
       caps.filter(graph, subject, expr, parameters)
 
     def select(subject: CAPSRecords, fields: IndexedSeq[Var], parameters: Map[String, CypherValue] = Map.empty)(
-        implicit caps: CAPSSession): CAPSRecords =
+        implicit caps: CAPSSessionImpl): CAPSRecords =
       caps.select(graph, subject, fields, parameters)
 
     def project(subject: CAPSRecords, expr: Expr, parameters: Map[String, CypherValue] = Map.empty)(
-        implicit caps: CAPSSession): CAPSRecords =
+        implicit caps: CAPSSessionImpl): CAPSRecords =
       caps.project(graph, subject, expr, parameters)
 
     def alias(subject: CAPSRecords, alias: (Expr, Var), parameters: Map[String, CypherValue] = Map.empty)(
-        implicit caps: CAPSSession): CAPSRecords =
+        implicit caps: CAPSSessionImpl): CAPSRecords =
       caps.alias(graph, subject, alias, parameters)
   }
 }

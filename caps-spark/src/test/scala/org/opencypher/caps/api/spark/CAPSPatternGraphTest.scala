@@ -40,7 +40,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
         |RETURN GRAPH result OF (a)
       """.stripMargin)
 
-    person.graphs("result").cypher("MATCH (n) RETURN n.name").records.toLocalScalaIterator.toSet should equal(
+    person.graphs("result").cypher("MATCH (n) RETURN n.name").records.iterator.toSet should equal(
       Set(
         CypherMap("n.name" -> CypherString("Mats"))
       ))
@@ -53,7 +53,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
         |RETURN GRAPH result OF (a)-[r]->(b)
       """.stripMargin)
 
-    person.graphs("result").cypher("MATCH (n) RETURN n.name").records.toLocalScalaIterator.toSet should equal(
+    person.graphs("result").cypher("MATCH (n) RETURN n.name").records.iterator.toSet should equal(
       Set(
         CypherMap("n.name" -> CypherString("Mats")),
         CypherMap("n.name" -> CypherString("Stefan")),
@@ -74,7 +74,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
       .graphs("result")
       .cypher("MATCH ()-[:SWEDISH_KNOWS]->(n) RETURN n.name")
       .records
-      .toLocalScalaIterator
+      .iterator
       .toSet should equal(
       Set(
         CypherMap("n.name" -> CypherString("Stefan")),
@@ -94,7 +94,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
       .graphs("result")
       .cypher("MATCH (b)-[:KNOWS_A]->(n) WITH COUNT(n) as cnt RETURN cnt")
       .records
-      .toLocalScalaIterator
+      .iterator
       .toSet should equal(
       Set(
         CypherMap("cnt" -> 3)

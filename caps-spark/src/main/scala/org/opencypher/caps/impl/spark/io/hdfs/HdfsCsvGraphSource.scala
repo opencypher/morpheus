@@ -18,15 +18,16 @@ package org.opencypher.caps.impl.spark.io.hdfs
 import java.net.URI
 
 import org.apache.hadoop.conf.Configuration
+import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.io.{CreateOrFail, PersistMode}
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
-import org.opencypher.caps.impl.spark.io.CAPSGraphSourceImpl
+import org.opencypher.caps.api.spark.CAPSGraph
+import org.opencypher.caps.api.spark.io.CAPSGraphSource
 
 case class HdfsCsvGraphSource(override val canonicalURI: URI, hadoopConfig: Configuration, path: String)(
-    implicit capsSession: CAPSSession)
-    extends CAPSGraphSourceImpl {
+    implicit val session: CAPSSession)
+    extends CAPSGraphSource {
 
   import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvGraphSourceFactory.supportedSchemes
 

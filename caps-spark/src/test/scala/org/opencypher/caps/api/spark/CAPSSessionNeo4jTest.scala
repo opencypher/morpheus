@@ -17,6 +17,7 @@ package org.opencypher.caps.api.spark
 
 import java.net.{URI, URLEncoder}
 
+import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraphSource
 import org.opencypher.caps.test.BaseTestSuite
 import org.opencypher.caps.test.fixture.{Neo4jServerFixture, SparkSessionFixture, TeamDataFixture}
@@ -29,7 +30,7 @@ class CAPSSessionNeo4jTest extends BaseTestSuite
   with Matchers {
 
   test("Neo4j via URI") {
-    implicit val capsSession: CAPSSession = CAPSSession.builder(session).build
+    implicit val capsSession = CAPSSession.builder(session).build
 
     val nodeQuery = URLEncoder.encode("MATCH (n) RETURN n", "UTF-8")
     val relQuery = URLEncoder.encode("MATCH ()-[r]->() RETURN r", "UTF-8")
@@ -37,16 +38,16 @@ class CAPSSessionNeo4jTest extends BaseTestSuite
 
     val graph = capsSession.graphAt(uri)
 
-    graph.nodes("n").toDF().collect().toBag should equal(teamDataGraphNodes)
-    graph.relationships("rel").toDF().collect.toBag should equal(teamDataGraphRels)
+    graph.nodes("n").iterator.toBag should equal(teamDataGraphNodes)
+    graph.relationships("rel").iterator.toBag should equal(teamDataGraphRels)
   }
 
   test("Neo4j via mount point") {
-    implicit val capsSession: CAPSSession = CAPSSession.builder(session).build
+    implicit val capsSession = CAPSSession.builder(session).build
     capsSession.mountSourceAt(Neo4jGraphSource(neo4jConfig, Some("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r")), "/neo4j1")
 
     val graph = capsSession.graphAt("/neo4j1")
-    graph.nodes("n").toDF().collect().toBag should equal(teamDataGraphNodes)
-    graph.relationships("rel").toDF().collect.toBag should equal(teamDataGraphRels)
+    graph.nodes("n").iterator.toBag should equal(teamDataGraphNodes)
+    graph.relationships("rel").iterator.toBag should equal(teamDataGraphRels)
   }
 }

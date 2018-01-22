@@ -22,6 +22,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
+import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.ir.api.expr.{Property, Var}
 import org.opencypher.caps.api.record._
@@ -50,6 +51,17 @@ sealed abstract class CAPSRecords(
 
   override type Data = DataFrame
   override type Records = CAPSRecords
+
+  override def print(implicit options: PrintOptions): Unit =
+    RecordsPrinter.print(this)
+
+  override def iterator: Iterator[CypherMap] = {
+    import scala.collection.JavaConverters._
+
+    toLocalIterator.asScala
+  }
+
+  override def size: Long = data.count()
 
   def sparkColumns: IndexedSeq[String] = header.internalHeader.columns
 
@@ -82,12 +94,6 @@ sealed abstract class CAPSRecords(
     data.unpersist(blocking)
     this
   }
-
-  //  def repartition(numPartitions: Int): CAPSRecords =
-  //    CAPSRecords.create(header, data.repartition(numPartitions))
-
-  override def print(implicit options: PrintOptions): Unit =
-    RecordsPrinter.print(this)
 
   def select(fields: Set[Var]): CAPSRecords = {
     val selectedHeader = header.select(fields)
@@ -138,12 +144,6 @@ sealed abstract class CAPSRecords(
 
   def distinct: CAPSRecords = {
     CAPSRecords.create(header, data.distinct())
-  }
-
-  def toLocalScalaIterator: Iterator[CypherMap] = {
-    import scala.collection.JavaConverters._
-
-    toLocalIterator.asScala
   }
 
   def toLocalIterator: java.util.Iterator[CypherMap] = {

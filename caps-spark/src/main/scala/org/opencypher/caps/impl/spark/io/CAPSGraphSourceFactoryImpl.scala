@@ -17,9 +17,9 @@ package org.opencypher.caps.impl.spark.io
 
 import java.net.URI
 
+import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.spark.io.{CAPSGraphSource, CAPSGraphSourceFactory, CAPSGraphSourceFactoryCompanion}
-import org.opencypher.caps.api.spark.CAPSSession
 
 abstract class CAPSGraphSourceFactoryImpl[S <: CAPSGraphSource](val companion: CAPSGraphSourceFactoryCompanion)
     extends CAPSGraphSourceFactory {

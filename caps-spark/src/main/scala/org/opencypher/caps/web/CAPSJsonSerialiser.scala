@@ -23,7 +23,7 @@ import org.opencypher.caps.api.value._
 trait JsonSerialiser {
   implicit val recordsEncoder: Encoder[CAPSRecords] = new Encoder[CAPSRecords] {
     override final def apply(records: CAPSRecords): Json = {
-      val rows = records.toLocalScalaIterator.map { map =>
+      val rows = records.iterator.map { map =>
         val unit = map.keys.map { key =>
           key -> constructValue(map.get(key))
         }
@@ -39,11 +39,11 @@ trait JsonSerialiser {
 
   implicit val graphEncoder: Encoder[CAPSGraph] = new Encoder[CAPSGraph] {
     override final def apply(graph: CAPSGraph): Json = {
-      val nodes = graph.nodes("n").toLocalScalaIterator.map { map =>
+      val nodes = graph.nodes("n").iterator.map { map =>
         constructValue(map.get("n"))
       }.toSeq
 
-      val rels = graph.relationships("rel").toLocalScalaIterator.map { map =>
+      val rels = graph.relationships("rel").iterator.map { map =>
         constructValue(map.get("rel"))
       }.toSeq
 

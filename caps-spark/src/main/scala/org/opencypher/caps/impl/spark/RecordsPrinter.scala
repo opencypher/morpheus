@@ -50,7 +50,7 @@ object RecordsPrinter {
 
     sep = "| "
     var count = 0
-    records.toLocalScalaIterator.foreach { map =>
+    records.iterator.foreach { map =>
       if (fieldContents.isEmpty) {
         stream.print(sep)
         stream.print(fitToColumn("(empty row)"))

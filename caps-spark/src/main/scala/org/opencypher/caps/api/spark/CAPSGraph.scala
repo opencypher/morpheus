@@ -16,13 +16,14 @@
 package org.opencypher.caps.api.spark
 
 import org.apache.spark.storage.StorageLevel
+import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
-import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.graph.CypherGraph
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.impl.record.{OpaqueField, RecordHeader}
+import org.opencypher.caps.ir.api.expr._
 
 trait CAPSGraph extends CypherGraph with Serializable {
 

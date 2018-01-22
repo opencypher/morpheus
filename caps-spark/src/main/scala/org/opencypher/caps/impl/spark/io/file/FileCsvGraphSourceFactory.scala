@@ -17,7 +17,7 @@ package org.opencypher.caps.impl.spark.io.file
 
 import java.net.URI
 
-import org.opencypher.caps.api.spark.CAPSSession
+import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.spark.io._
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceFactoryImpl
 

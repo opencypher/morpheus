@@ -20,16 +20,17 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
 import org.neo4j.driver.internal.{InternalNode, InternalRelationship}
+import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.{IllegalArgumentException, UnsupportedOperationException}
-import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
+import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.record.{CAPSRecordHeader, RecordHeader}
 import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraph.{filterNode, filterRel, nodeToRow, relToRow}
 import org.opencypher.caps.ir.api.PropertyKey
+import org.opencypher.caps.ir.api.expr._
 
 class Neo4jGraph(val schema: Schema, val session: CAPSSession)(
     inputNodes: RDD[InternalNode],

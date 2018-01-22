@@ -17,6 +17,7 @@ package org.opencypher.caps.api.graph
 
 import java.net.URI
 
+import org.opencypher.caps.api.io.{CreateOrFail, GraphSource, PersistMode}
 import org.opencypher.caps.api.record.CypherRecords
 import org.opencypher.caps.api.value.CypherValue
 
@@ -73,6 +74,29 @@ trait CypherSession {
     * @return the graph located at the uri.
     */
   def graphAt(uri: URI): Graph
+
+  def graphAt(uri: String): Graph =
+    graphAt(URI.create(uri))
+
+  /**
+    * Mounts the given graph source to session-local storage under the given path. The graph will be accessible under
+    * the session-local URI scheme, e.g. session://<path>.
+    *
+    * @param source the graph source to register.
+    * @param path the path at which this graph source will be discoverable.
+    */
+  def mountSourceAt(source: GraphSource, path: String): Unit
+
+  /**
+    * Stores the given graph at the location and in the format given by the URI, with the overwrite semantics given by
+    * the mode.
+    *
+    * @param graph the graph to store.
+    * @param uri the graph URI indicating location and format to store the graph in.
+    * @param mode the persist mode which determines what happens if the location is occupied.
+    * @return the stored graph.
+    */
+  def storeGraphAt(graph: Graph, uri: String, mode: PersistMode = CreateOrFail): Graph
 }
 
 object CypherSession {

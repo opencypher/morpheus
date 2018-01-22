@@ -35,7 +35,7 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     val result = graph.cypher("MATCH (a:Person) WHERE a.birthyear < 1930 RETURN a, a.name")
 
     // Then
-    val strings = result.records.toLocalScalaIterator.map(_.toString).toSet
+    val strings = result.records.iterator.map(_.toString).toSet
 
     // We do string comparisons here because CypherNode.equals() does not check labels/properties
     strings should equal(

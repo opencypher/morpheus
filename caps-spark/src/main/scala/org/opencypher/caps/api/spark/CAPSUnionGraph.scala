@@ -16,11 +16,12 @@
 package org.opencypher.caps.api.spark
 
 import org.apache.spark.storage.StorageLevel
-import org.opencypher.caps.ir.api.expr.Var
+import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.record.GraphScan
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.impl.record.RecordHeader
+import org.opencypher.caps.ir.api.expr.Var
 
 final case class CAPSUnionGraph(graphs: CAPSGraph*)(implicit val session: CAPSSession) extends CAPSGraph {
 

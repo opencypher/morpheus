@@ -15,6 +15,8 @@
  */
 package org.opencypher.caps.api.record
 
+import org.opencypher.caps.api.value.CypherMap
+
 trait CypherRecordHeader {
   def fields: Set[String]
   def fieldsInOrder: Seq[String]
@@ -46,4 +48,15 @@ trait CypherRecords extends CypherPrintable {
     */
   def data: Data
 
+  /**
+    * Consume these records as an iterator.
+    *
+    * WARNING: This operation may be very expensive as it may have to materialise
+    */
+  def iterator: Iterator[CypherMap]
+
+  /**
+    * @return the number of records in this CypherRecords.
+    */
+  def size: Long
 }

@@ -20,9 +20,10 @@ import java.net.URI
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions.{asc, desc, monotonically_increasing_id, udf}
 import org.apache.spark.sql.types.{ArrayType, LongType, StructField, StructType}
+import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSession}
+import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherInteger
 import org.opencypher.caps.impl.record._

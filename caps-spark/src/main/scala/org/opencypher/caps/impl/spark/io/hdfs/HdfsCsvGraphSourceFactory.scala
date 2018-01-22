@@ -19,8 +19,8 @@ import java.net.URI
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.http.client.utils.URIBuilder
+import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.spark.io._
-import org.opencypher.caps.api.spark.CAPSSession
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceFactoryImpl
 
 case object HdfsCsvGraphSourceFactory extends CAPSGraphSourceFactoryCompanion("hdfs+csv")
