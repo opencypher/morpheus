@@ -28,9 +28,6 @@ trait MapUtils {
       }
       .toMap
 
-  def submap[A, B](keys: Seq[A], a: Map[A, B]): Map[A, B] = {
-    a.filterKeys(keys.contains)
-  }
 }
 
 object MapUtils extends MapUtils {
@@ -38,6 +35,5 @@ object MapUtils extends MapUtils {
 
     def merge(other: Map[A, B])(mergeValues: (B, B) => B): Map[A, B] = MapUtils.merge(map, other)(mergeValues)
 
-    def submap(keys: Seq[A]): Map[A, B] = MapUtils.submap(keys, map)
   }
 }
