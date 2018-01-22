@@ -24,7 +24,7 @@ import org.opencypher.caps.impl.spark.io.CAPSGraphSourceFactoryImpl
 case object FileCsvGraphSourceFactory extends CAPSGraphSourceFactoryCompanion("file+csv", "file")
 
 case class FileCsvGraphSourceFactory()
-  extends CAPSGraphSourceFactoryImpl[FileCsvGraphSource](FileCsvGraphSourceFactory) {
+  extends CAPSGraphSourceFactoryImpl(FileCsvGraphSourceFactory) {
 
   override protected def sourceForURIWithSupportedScheme(uri: URI)(implicit capsSession: CAPSSession): FileCsvGraphSource = {
     FileCsvGraphSource(uri)

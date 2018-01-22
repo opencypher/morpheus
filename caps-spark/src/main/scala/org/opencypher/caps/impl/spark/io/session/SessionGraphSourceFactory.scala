@@ -30,7 +30,7 @@ case object SessionGraphSourceFactory extends CAPSGraphSourceFactoryCompanion(Cy
 
 case class SessionGraphSourceFactory(
     mountPoints: collection.concurrent.Map[String, CAPSGraphSource] = new ConcurrentHashMap[String, CAPSGraphSource]())
-    extends CAPSGraphSourceFactoryImpl[CAPSGraphSource](SessionGraphSourceFactory) {
+    extends CAPSGraphSourceFactoryImpl(SessionGraphSourceFactory) {
 
   def mountSourceAt(existingSource: CAPSGraphSource, uri: URI)(implicit capsSession: CAPSSession): Unit =
     if (schemes.contains(uri.getScheme))

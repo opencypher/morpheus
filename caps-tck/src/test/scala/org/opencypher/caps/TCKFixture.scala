@@ -17,7 +17,8 @@ package org.opencypher.caps
 
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.NotImplementedException
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
+import org.opencypher.caps.api.record.CypherRecords
+import org.opencypher.caps.api.spark.CAPSGraph
 import org.opencypher.caps.api.value.{CypherValue => CAPSValue}
 import org.opencypher.caps.test.support.creation.caps.CAPSGraphFactory
 import org.opencypher.caps.test.support.creation.propertygraph.Neo4jPropertyGraphFactory
@@ -45,7 +46,7 @@ case class TCKGraph(capsGraphFactory: CAPSGraphFactory, graph: CAPSGraph)(implic
     }
   }
 
-  private def convertToTckStrings(records: CAPSRecords): StringRecords = {
+  private def convertToTckStrings(records: CypherRecords): StringRecords = {
     val header = records.header.fieldsInOrder.toList
     val rows = records.iterator.map { cypherMap =>
       cypherMap.keys.map(k => k -> java.util.Objects.toString(cypherMap.get(k).get)).toMap

@@ -15,6 +15,7 @@
  */
 package org.opencypher.caps.impl.spark.acceptance
 
+import org.opencypher.caps.api.spark.CAPSConverters._
 import org.opencypher.caps.api.spark.CAPSGraph
 import org.opencypher.caps.api.value.CypherMap
 
@@ -42,7 +43,7 @@ trait MultigraphProjectionBehaviour { this: AcceptanceTest =>
         CypherMap("name" -> "Phil")
       ))
 
-      result.graphs shouldMatch testGraph2
+      result.asCaps.graphs shouldMatch testGraph2
     }
 
     test("Can select a source graph to match data from") {

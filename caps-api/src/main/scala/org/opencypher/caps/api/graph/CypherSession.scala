@@ -27,31 +27,20 @@ import org.opencypher.caps.api.value.CypherValue
   */
 trait CypherSession {
 
-  self =>
-
-  type Graph <: CypherGraph { type Graph = self.Graph; type Records = self.Records }
-  type Session <: CypherSession {
-    type Session = self.Session; type Graph = self.Graph; type Records = self.Records; type Result = self.Result;
-    type Data = self.Data
-  }
-  type Records <: CypherRecords { type Records = self.Records; type Data = self.Data }
-  type Result <: CypherResult { type Graph = self.Graph; type Records = self.Records }
-  type Data
-
   /**
     * An immutable empty graph.
     *
     * @return an immutable empty graph.
     */
-  def emptyGraph: Graph
+  def emptyGraph: CypherGraph
 
-  final def cypher(query: String): Result =
+  final def cypher(query: String): CypherResult =
     cypher(emptyGraph, query, Map.empty)
 
-  final def cypher(query: String, parameters: Map[String, CypherValue]): Result =
+  final def cypher(query: String, parameters: Map[String, CypherValue]): CypherResult =
     cypher(emptyGraph, query, parameters)
 
-  final def cypher(graph: Graph, query: String): Result =
+  final def cypher(graph: CypherGraph, query: String): CypherResult =
     cypher(graph, query, Map.empty)
 
   /**
@@ -65,7 +54,7 @@ trait CypherSession {
     * @param parameters the parameters used by the Cypher query.
     * @return the result of the query.
     */
-  def cypher(graph: Graph, query: String, parameters: Map[String, CypherValue]): Result
+  def cypher(graph: CypherGraph, query: String, parameters: Map[String, CypherValue]): CypherResult
 
   /**
     * Retrieves the graph from the argument URI, if it exists.
@@ -73,9 +62,9 @@ trait CypherSession {
     * @param uri the uri locating the graph.
     * @return the graph located at the uri.
     */
-  def graphAt(uri: URI): Graph
+  def graphAt(uri: URI): CypherGraph
 
-  def graphAt(uri: String): Graph =
+  def graphAt(uri: String): CypherGraph =
     graphAt(URI.create(uri))
 
   /**
@@ -96,7 +85,7 @@ trait CypherSession {
     * @param mode the persist mode which determines what happens if the location is occupied.
     * @return the stored graph.
     */
-  def storeGraphAt(graph: Graph, uri: String, mode: PersistMode = CreateOrFail): Graph
+  def storeGraphAt(graph: CypherGraph, uri: String, mode: PersistMode = CreateOrFail): CypherGraph
 }
 
 object CypherSession {

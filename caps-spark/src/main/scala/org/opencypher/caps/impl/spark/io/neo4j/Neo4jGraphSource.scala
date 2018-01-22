@@ -18,6 +18,7 @@ package org.opencypher.caps.impl.spark.io.neo4j
 import java.net.URI
 
 import org.opencypher.caps.api.CAPSSession
+import org.opencypher.caps.api.graph.CypherGraph
 import org.opencypher.caps.api.io.{CreateOrFail, PersistMode}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.CAPSGraph
@@ -53,7 +54,7 @@ case class Neo4jGraphSource(config: Neo4jConfig,
   override def create: CAPSGraph =
     store(CAPSGraph.empty, CreateOrFail)
 
-  override def store(graph: CAPSGraph, mode: PersistMode): CAPSGraph =
+  override def store(graph: CypherGraph, mode: PersistMode): CAPSGraph =
     ???
 
   override def delete(): Unit =

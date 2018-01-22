@@ -42,15 +42,10 @@ import scala.reflect.runtime.universe.TypeTag
 
 sealed abstract class CAPSRecords(
     override val header: RecordHeader,
-    override val data: DataFrame
+    val data: DataFrame
 )(implicit val caps: CAPSSession)
     extends CypherRecords
     with Serializable {
-
-  self =>
-
-  override type Data = DataFrame
-  override type Records = CAPSRecords
 
   override def print(implicit options: PrintOptions): Unit =
     RecordsPrinter.print(this)
@@ -66,9 +61,9 @@ sealed abstract class CAPSRecords(
   def sparkColumns: IndexedSeq[String] = header.internalHeader.columns
 
   //noinspection AccessorLikeMethodIsEmptyParen
-  def toDF(): Data = data
+  def toDF(): DataFrame = data
 
-  def mapDF(f: Data => Data): CAPSRecords = CAPSRecords.create(f(data))
+  def mapDF(f: DataFrame => DataFrame): CAPSRecords = CAPSRecords.create(f(data))
 
   def cache(): CAPSRecords = {
     data.cache()
@@ -103,13 +98,13 @@ sealed abstract class CAPSRecords(
   }
 
   def compact(implicit details: RetainedDetails): CAPSRecords = {
-    val cachedHeader = self.header.update(compactFields)._1
+    val cachedHeader = header.update(compactFields)._1
     if (header == cachedHeader) {
       this
     } else {
       val cachedData = {
         val columns = cachedHeader.slots.map(c => new Column(SparkColumnName.of(c.content)))
-        self.data.select(columns: _*)
+        data.select(columns: _*)
       }
 
       CAPSRecords.create(cachedHeader, cachedData)

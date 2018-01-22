@@ -19,10 +19,12 @@ import java.net.URI
 
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.{IllegalArgumentException, UnsupportedOperationException}
+import org.opencypher.caps.api.graph.CypherGraph
 import org.opencypher.caps.api.io.{CreateOrFail, Overwrite, PersistMode}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.CAPSGraph
 import org.opencypher.caps.api.spark.io.CAPSGraphSource
+import org.opencypher.caps.api.spark.CAPSConverters._
 
 case class SessionGraphSource(path: String)(implicit val session: CAPSSession) extends CAPSGraphSource {
 
@@ -34,20 +36,25 @@ case class SessionGraphSource(path: String)(implicit val session: CAPSSession) e
     uri == canonicalURI
 
   override def create: CAPSGraph = store(CAPSGraph.empty, CreateOrFail)
+
   override def graph: CAPSGraph = currentGraph.getOrElse(throw IllegalArgumentException(s"a graph at $canonicalURI"))
+
   override def schema: Option[Schema] = None
 
-  override def store(graph: CAPSGraph, mode: PersistMode): CAPSGraph = mode match {
-    case Overwrite =>
-      currentGraph = Some(graph)
-      graph
+  override def store(graph: CypherGraph, mode: PersistMode): CAPSGraph = {
+    val capsGraph = graph.asCaps
+    mode match {
+      case Overwrite =>
+        currentGraph = Some(capsGraph)
+        capsGraph
 
-    case CreateOrFail if currentGraph.isEmpty =>
-      currentGraph = Some(graph)
-      graph
+      case CreateOrFail if currentGraph.isEmpty =>
+        currentGraph = Some(capsGraph)
+        capsGraph
 
-    case CreateOrFail =>
-      throw UnsupportedOperationException(s"Overwriting the session graph")
+      case CreateOrFail =>
+        throw UnsupportedOperationException(s"Overwriting the session graph")
+    }
   }
 
   override def delete(): Unit =

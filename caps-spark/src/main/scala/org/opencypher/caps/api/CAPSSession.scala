@@ -32,12 +32,6 @@ import org.opencypher.caps.impl.spark.io.session.SessionGraphSourceFactory
 
 trait CAPSSession extends CypherSession {
 
-  override type Graph = CAPSGraph
-  override type Session = CAPSSession
-  override type Records = CAPSRecords
-  override type Result = CAPSResult
-  override type Data = DataFrame
-
   def sparkSession: SparkSession
 }
 

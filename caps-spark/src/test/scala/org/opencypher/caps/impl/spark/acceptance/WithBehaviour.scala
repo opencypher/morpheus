@@ -17,6 +17,7 @@ package org.opencypher.caps.impl.spark.acceptance
 
 import org.opencypher.caps.api.spark.CAPSGraph
 import org.opencypher.caps.api.value.CypherMap
+import org.opencypher.caps.api.spark.CAPSConverters._
 
 import scala.collection.Bag
 
@@ -223,7 +224,7 @@ trait WithBehaviour { this: AcceptanceTest =>
     test("skip") {
       val given = initGraph("""CREATE (:Node {val: 4}),(:Node {val: 3}),(:Node  {val: 42})""")
 
-      val result = given.cypher("MATCH (a) WITH a.val as val SKIP 2 RETURN val")
+      val result = given.cypher("MATCH (a) WITH a.val as val SKIP 2 RETURN val").asCaps
 
       // Then
       result.records.toDF().count() should equal(1)
@@ -264,7 +265,7 @@ trait WithBehaviour { this: AcceptanceTest =>
     test("limit") {
       val given = initGraph("""CREATE (:Node {val: 4}),(:Node {val: 3}),(:Node  {val: 42})""")
 
-      val result = given.cypher("MATCH (a) WITH a.val as val LIMIT 1 RETURN val")
+      val result = given.cypher("MATCH (a) WITH a.val as val LIMIT 1 RETURN val").asCaps
 
       // Then
       result.records.toDF().count() should equal(1)

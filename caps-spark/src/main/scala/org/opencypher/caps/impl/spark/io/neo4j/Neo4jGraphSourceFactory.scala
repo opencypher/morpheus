@@ -26,7 +26,7 @@ import org.opencypher.caps.impl.spark.io.neo4j.external.Neo4jConfig
 
 case object Neo4jGraphSourceFactory extends CAPSGraphSourceFactoryCompanion("bolt", "bolt+routing")
 
-case class Neo4jGraphSourceFactory() extends CAPSGraphSourceFactoryImpl[Neo4jGraphSource](Neo4jGraphSourceFactory) {
+case class Neo4jGraphSourceFactory() extends CAPSGraphSourceFactoryImpl(Neo4jGraphSourceFactory) {
 
   override protected def sourceForURIWithSupportedScheme(uri: URI)(
       implicit capsSession: CAPSSession): Neo4jGraphSource = {

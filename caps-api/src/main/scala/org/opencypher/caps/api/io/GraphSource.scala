@@ -25,15 +25,10 @@ import org.opencypher.caps.api.schema.Schema
   */
 trait GraphSource {
 
-  self =>
-
-  type Session <: CypherSession { type Session = self.Session; type Graph = self.Graph }
-  type Graph <: CypherGraph { type Session = self.Session; type Graph = self.Graph }
-
   /**
     * The session tied to this graph source.
     */
-  val session: Session
+  val session: CypherSession
 
   /**
     * Determines whether this is a source for the graph at the argument URI.
@@ -57,7 +52,7 @@ trait GraphSource {
     * @return the graph stored in this graph source.
     * @throws java.lang.RuntimeException if the graph could not be created or there already was a graph.
     */
-  def create: Graph
+  def create: CypherGraph
 
   /**
     * Provides the graph stored in this graph source.
@@ -65,7 +60,7 @@ trait GraphSource {
     * @return the graph stored in this graph source.
     * @throws java.lang.RuntimeException if loading the graph could not be done.
     */
-  def graph: Graph
+  def graph: CypherGraph
 
   /**
     * Provides only the schema of the graph stored in this graph source or returns None if the schema cannot be
@@ -82,7 +77,7 @@ trait GraphSource {
     * @param mode  the persist mode to use.
     * @return the persisted graph.
     */
-  def store(graph: Graph, mode: PersistMode): Graph
+  def store(graph: CypherGraph, mode: PersistMode): CypherGraph
 
   /**
     * Delete the graph stored at this graph source.

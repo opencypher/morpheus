@@ -26,6 +26,7 @@ import org.opencypher.caps.ir.api.expr.Var
 import org.opencypher.caps.logical.impl.LogicalExternalGraph
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.fixture.GraphCreationFixture
+import org.opencypher.caps.api.spark.CAPSConverters._
 
 class PhysicalOptimizerTest extends CAPSTestSuite with GraphCreationFixture {
   val emptyRecords = CAPSRecords.empty(RecordHeader.empty)
@@ -130,7 +131,7 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphCreationFixture {
       """.stripMargin)
 
     // Then
-    val cacheOps = result.explain.physical.plan.collect { case c: Cache => c }
+    val cacheOps = result.asCaps.explain.physical.plan.collect { case c: Cache => c }
     cacheOps.size shouldBe 2
   }
 
@@ -161,7 +162,7 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphCreationFixture {
     )
 
     // Then
-    val cacheOps = result.explain.physical.plan.collect { case c: Cache => c }
+    val cacheOps = result.asCaps.explain.physical.plan.collect { case c: Cache => c }
     cacheOps.size shouldBe 2
   }
 
@@ -185,7 +186,7 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphCreationFixture {
       """.stripMargin)
 
     // Then
-    val cacheOps = result.explain.physical.plan.collect { case c: Cache => c }
+    val cacheOps = result.asCaps.explain.physical.plan.collect { case c: Cache => c }
     cacheOps.size shouldBe 2
   }
 }

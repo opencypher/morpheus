@@ -24,6 +24,7 @@ import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvGraphSource
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.fixture.MiniDFSClusterFixture
 import org.opencypher.caps.test.support.RecordMatchingTestSupport
+import org.opencypher.caps.api.spark.CAPSConverters._
 
 import scala.collection.Bag
 
@@ -37,16 +38,16 @@ class CAPSSessionHDFSTest extends CAPSTestSuite
 
   test("HDFS via URI") {
     val graph = caps.graphAt(hdfsURI)
-    graph.nodes("n").toDF().collect().toBag should equal(dfsTestGraphNodes)
-    graph.relationships("rel").toDF().collect.toBag should equal(dfsTestGraphRels)
+    graph.nodes("n").asCaps.toDF().collect().toBag should equal(dfsTestGraphNodes)
+    graph.relationships("rel").asCaps.toDF().collect.toBag should equal(dfsTestGraphRels)
   }
 
   test("HDFS via mount point") {
     caps.mountSourceAt(HdfsCsvGraphSource(hdfsURI, session.sparkContext.hadoopConfiguration, hdfsURI.getPath), "/test/graph")
 
     val graph = caps.graphAt("/test/graph")
-    graph.nodes("n").toDF().collect().toBag should equal(dfsTestGraphNodes)
-    graph.relationships("rel").toDF().collect.toBag should equal(dfsTestGraphRels)
+    graph.nodes("n").asCaps.toDF().collect().toBag should equal(dfsTestGraphNodes)
+    graph.relationships("rel").asCaps.toDF().collect.toBag should equal(dfsTestGraphRels)
   }
 
   test("HDFS via GRAPH AT") {
@@ -61,7 +62,7 @@ class CAPSSessionHDFSTest extends CAPSTestSuite
     ))
 
     val edges = capsSession.cypher(s"FROM GRAPH test AT '$hdfsURI' MATCH ()-[r]->() RETURN r")
-    edges.records.compact.toMaps should equal(Bag(
+    edges.records.asCaps.compact.toMaps should equal(Bag(
       CypherMap("r" -> 10L),
       CypherMap("r" -> 20L),
       CypherMap("r" -> 30L)

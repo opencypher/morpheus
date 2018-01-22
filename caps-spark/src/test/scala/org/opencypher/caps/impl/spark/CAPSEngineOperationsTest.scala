@@ -41,7 +41,7 @@ class CAPSEngineOperationsTest extends CAPSTestSuite {
 
     val result = base.filter(given, Var("IS_SWEDE")(CTBoolean))
 
-    result.toDF().count() should equal(1L)
+    result.size should equal(1L)
   }
 
   test("select operation on records") {

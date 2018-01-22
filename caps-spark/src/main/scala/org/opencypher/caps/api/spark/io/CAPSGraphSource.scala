@@ -15,11 +15,6 @@
  */
 package org.opencypher.caps.api.spark.io
 
-import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.io.GraphSource
-import org.opencypher.caps.api.spark.CAPSGraph
 
-trait CAPSGraphSource extends GraphSource {
-  override final type Session = CAPSSession
-  override final type Graph = CAPSGraph
-}
+trait CAPSGraphSource extends GraphSource

@@ -31,22 +31,12 @@ trait CypherRecordHeader {
   */
 trait CypherRecords extends CypherPrintable {
 
-  type Data
-  type Records <: CypherRecords
-
   /**
     * The header for this table, describing the slots stored.
     *
     * @return the header for this table.
     */
   def header: CypherRecordHeader
-
-  /**
-    * The data structure that actually holds all tabular data.
-    *
-    * @return the underlying data of this table.
-    */
-  def data: Data
 
   /**
     * Consume these records as an iterator.

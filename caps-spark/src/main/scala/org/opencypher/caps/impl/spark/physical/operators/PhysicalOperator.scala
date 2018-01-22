@@ -20,6 +20,7 @@ import java.net.URI
 import org.apache.spark.sql.{Column, DataFrame}
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
+import org.opencypher.caps.api.spark.CAPSConverters._
 import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.record.{RecordHeader, RecordSlot, SlotContent}
@@ -31,7 +32,7 @@ private[caps] abstract class PhysicalOperator extends AbstractTreeNode[PhysicalO
   def execute(implicit context: RuntimeContext): PhysicalResult
 
   protected def resolve(uri: URI)(implicit context: RuntimeContext): CAPSGraph = {
-    context.resolve(uri).getOrElse(throw IllegalArgumentException(s"a graph at $uri"))
+    context.resolve(uri).map(_.asCaps).getOrElse(throw IllegalArgumentException(s"a graph at $uri"))
   }
 
   override def args: Iterator[Any] = super.args.flatMap {

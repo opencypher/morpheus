@@ -21,18 +21,26 @@ import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.graph.CypherGraph
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.schema.Schema
+import org.opencypher.caps.api.spark.CAPSConverters._
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.impl.record.{OpaqueField, RecordHeader}
 import org.opencypher.caps.ir.api.expr._
 
 trait CAPSGraph extends CypherGraph with Serializable {
 
-  self =>
+  override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords
 
-  final override type Graph = CAPSGraph
-  final override type Records = CAPSRecords
-  final override type Session = CAPSSession
-  final override type Result = CAPSResult
+  override def nodes(name: String): CAPSRecords = nodes(name, CTNode)
+
+  override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords
+
+  override def relationships(name: String): CAPSRecords = relationships(name, CTRelationship)
+
+  override def session: CAPSSession
+
+  override def union(other: CypherGraph): CAPSGraph
+
+  override protected def graph: CAPSGraph
 
   def cache(): CAPSGraph
 
@@ -45,6 +53,7 @@ trait CAPSGraph extends CypherGraph with Serializable {
   def unpersist(blocking: Boolean): CAPSGraph
 
   override def toString = s"${getClass.getSimpleName}"
+
 }
 
 object CAPSGraph {
@@ -56,9 +65,13 @@ object CAPSGraph {
       override def session: CAPSSession = caps
 
       override def cache(): CAPSGraph = this
+
       override def persist(): CAPSGraph = this
+
       override def persist(storageLevel: StorageLevel): CAPSGraph = this
+
       override def unpersist(): CAPSGraph = this
+
       override def unpersist(blocking: Boolean): CAPSGraph = this
     }
 
@@ -68,16 +81,16 @@ object CAPSGraph {
     new CAPSScanGraph(allScans, schema)
   }
 
-  def create(records: CAPSRecords, schema: Schema)(implicit caps: CAPSSession): CAPSGraph = {
-
-    new CAPSPatternGraph(records, schema)
+  def create(records: CypherRecords, schema: Schema)(implicit caps: CAPSSession): CAPSGraph = {
+    val capsRecords = records.asCaps
+    new CAPSPatternGraph(capsRecords, schema)
   }
 
   def createLazy(theSchema: Schema, loadGraph: => CAPSGraph)(implicit caps: CAPSSession): CAPSGraph =
     new LazyGraph(theSchema, loadGraph) {}
 
   sealed abstract class LazyGraph(override val schema: Schema, loadGraph: => CAPSGraph)(implicit caps: CAPSSession)
-      extends CAPSGraph {
+    extends CAPSGraph {
     override protected lazy val graph: CAPSGraph = {
       val g = loadGraph
       if (g.schema == schema) g else throw IllegalArgumentException(s"a graph with schema $schema", g.schema)
@@ -91,17 +104,29 @@ object CAPSGraph {
     override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords =
       graph.relationships(name, relCypherType)
 
-    override def union(other: CAPSGraph): CAPSGraph =
+    override def union(other: CypherGraph): CAPSGraph =
       graph.union(other)
 
-    override def cache(): CAPSGraph = { graph.cache(); this }
-    override def persist(): CAPSGraph = { graph.persist(); this }
+    override def cache(): CAPSGraph = {
+      graph.cache(); this
+    }
+
+    override def persist(): CAPSGraph = {
+      graph.persist(); this
+    }
+
     override def persist(storageLevel: StorageLevel): CAPSGraph = {
       graph.persist(storageLevel)
       this
     }
-    override def unpersist(): CAPSGraph = { graph.unpersist(); this }
-    override def unpersist(blocking: Boolean): CAPSGraph = { graph.unpersist(blocking); this }
+
+    override def unpersist(): CAPSGraph = {
+      graph.unpersist(); this
+    }
+
+    override def unpersist(blocking: Boolean): CAPSGraph = {
+      graph.unpersist(blocking); this
+    }
   }
 
   sealed abstract class EmptyGraph(implicit val caps: CAPSSession) extends CAPSGraph {
@@ -114,6 +139,7 @@ object CAPSGraph {
     override def relationships(name: String, cypherType: CTRelationship): CAPSRecords =
       CAPSRecords.empty(RecordHeader.from(OpaqueField(Var(name)(cypherType))))
 
-    override def union(other: CAPSGraph): CAPSGraph = other
+    override def union(other: CypherGraph): CAPSGraph = other.asCaps
   }
+
 }
