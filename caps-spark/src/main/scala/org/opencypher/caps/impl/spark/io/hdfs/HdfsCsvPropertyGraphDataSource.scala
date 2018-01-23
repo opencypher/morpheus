@@ -18,17 +18,19 @@ package org.opencypher.caps.impl.spark.io.hdfs
 import java.net.URI
 
 import org.apache.hadoop.conf.Configuration
+import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
+import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.io.{CreateOrFail, PersistMode}
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
-import org.opencypher.caps.impl.spark.io.CAPSGraphSourceImpl
+import org.opencypher.caps.api.spark.CAPSGraph
+import org.opencypher.caps.api.spark.io.CAPSPropertyGraphDataSource
 
-case class HdfsCsvGraphSource(override val canonicalURI: URI, hadoopConfig: Configuration, path: String)(
-    implicit capsSession: CAPSSession)
-    extends CAPSGraphSourceImpl {
+case class HdfsCsvPropertyGraphDataSource(override val canonicalURI: URI, hadoopConfig: Configuration, path: String)(
+    implicit val session: CAPSSession)
+    extends CAPSPropertyGraphDataSource {
 
-  import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvGraphSourceFactory.supportedSchemes
+  import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvPropertyGraphDataSourceFactory.supportedSchemes
 
   override def sourceForGraphAt(uri: URI): Boolean = {
     val hadoopURIString = Option(hadoopConfig.get("fs.defaultFS"))
@@ -47,7 +49,7 @@ case class HdfsCsvGraphSource(override val canonicalURI: URI, hadoopConfig: Conf
   override def create: CAPSGraph =
     store(CAPSGraph.empty, CreateOrFail)
 
-  override def store(graph: CAPSGraph, mode: PersistMode): CAPSGraph =
+  override def store(graph: PropertyGraph, mode: PersistMode): CAPSGraph =
     ???
 
   override def delete(): Unit =

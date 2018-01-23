@@ -17,6 +17,7 @@ package org.opencypher.caps.api.graph
 
 import java.net.URI
 
+import org.opencypher.caps.api.io.{CreateOrFail, PropertyGraphDataSource, PersistMode}
 import org.opencypher.caps.api.record.CypherRecords
 import org.opencypher.caps.api.value.CypherValue
 
@@ -26,31 +27,20 @@ import org.opencypher.caps.api.value.CypherValue
   */
 trait CypherSession {
 
-  self =>
-
-  type Graph <: CypherGraph { type Graph = self.Graph; type Records = self.Records }
-  type Session <: CypherSession {
-    type Session = self.Session; type Graph = self.Graph; type Records = self.Records; type Result = self.Result;
-    type Data = self.Data
-  }
-  type Records <: CypherRecords { type Records = self.Records; type Data = self.Data }
-  type Result <: CypherResult { type Graph = self.Graph; type Records = self.Records }
-  type Data
-
   /**
     * An immutable empty graph.
     *
     * @return an immutable empty graph.
     */
-  def emptyGraph: Graph
+  def emptyGraph: PropertyGraph
 
-  final def cypher(query: String): Result =
+  final def cypher(query: String): CypherResult =
     cypher(emptyGraph, query, Map.empty)
 
-  final def cypher(query: String, parameters: Map[String, CypherValue]): Result =
+  final def cypher(query: String, parameters: Map[String, CypherValue]): CypherResult =
     cypher(emptyGraph, query, parameters)
 
-  final def cypher(graph: Graph, query: String): Result =
+  final def cypher(graph: PropertyGraph, query: String): CypherResult =
     cypher(graph, query, Map.empty)
 
   /**
@@ -64,7 +54,7 @@ trait CypherSession {
     * @param parameters the parameters used by the Cypher query.
     * @return the result of the query.
     */
-  def cypher(graph: Graph, query: String, parameters: Map[String, CypherValue]): Result
+  def cypher(graph: PropertyGraph, query: String, parameters: Map[String, CypherValue]): CypherResult
 
   /**
     * Retrieves the graph from the argument URI, if it exists.
@@ -72,7 +62,30 @@ trait CypherSession {
     * @param uri the uri locating the graph.
     * @return the graph located at the uri.
     */
-  def graphAt(uri: URI): Graph
+  def graphAt(uri: URI): PropertyGraph
+
+  def graphAt(uri: String): PropertyGraph =
+    graphAt(URI.create(uri))
+
+  /**
+    * Mounts the given graph source to session-local storage under the given path. The graph will be accessible under
+    * the session-local URI scheme, e.g. session://<path>.
+    *
+    * @param source the graph source to register.
+    * @param path the path at which this graph source will be discoverable.
+    */
+  def mountSourceAt(source: PropertyGraphDataSource, path: String): Unit
+
+  /**
+    * Stores the given graph at the location and in the format given by the URI, with the overwrite semantics given by
+    * the mode.
+    *
+    * @param graph the graph to store.
+    * @param uri the graph URI indicating location and format to store the graph in.
+    * @param mode the persist mode which determines what happens if the location is occupied.
+    * @return the stored graph.
+    */
+  def storeGraphAt(graph: PropertyGraph, uri: String, mode: PersistMode = CreateOrFail): PropertyGraph
 }
 
 object CypherSession {

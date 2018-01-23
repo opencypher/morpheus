@@ -17,7 +17,12 @@ package org.opencypher.caps
 
 import java.io.File
 
+import org.opencypher.caps.api.CAPSSession
+import org.opencypher.caps.api.graph.{PropertyGraph, CypherSession}
+import org.opencypher.caps.api.record.CypherRecords
+import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.CAPSGraph
+import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.support.creation.caps.{CAPSGraphFactory, CAPSScanGraphFactory}
 import org.opencypher.tools.tck.api.{CypherTCK, Scenario}

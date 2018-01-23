@@ -16,13 +16,15 @@
 package org.opencypher.caps.api.spark
 
 import org.apache.spark.storage.StorageLevel
-import org.opencypher.caps.ir.api.expr._
-import org.opencypher.caps.api.record._
+import org.opencypher.caps.api.CAPSSession
+import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.impl.record.CAPSRecordHeader._
 import org.opencypher.caps.impl.record.{RecordHeader, SlotContent}
 import org.opencypher.caps.impl.spark.{RowExpansion, SparkColumnName}
+import org.opencypher.caps.ir.api.expr._
+import org.opencypher.caps.api.spark.CAPSConverters._
 
 class CAPSPatternGraph(private[spark] val baseTable: CAPSRecords, val schema: Schema)(implicit val session: CAPSSession)
     extends CAPSGraph {
@@ -85,7 +87,9 @@ class CAPSPatternGraph(private[spark] val baseTable: CAPSRecords, val schema: Sc
     }.toMap
   }
 
-  override def union(other: CAPSGraph): CAPSGraph = CAPSUnionGraph(this, other)
+  override def union(other: PropertyGraph): CAPSGraph = {
+    CAPSUnionGraph(this, other.asCaps)
+  }
 
   override protected def graph: CAPSGraph = this
 }

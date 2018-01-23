@@ -17,36 +17,44 @@ package org.opencypher.caps.impl.spark.io.session
 
 import java.net.URI
 
+import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.{IllegalArgumentException, UnsupportedOperationException}
+import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.io.{CreateOrFail, Overwrite, PersistMode}
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
-import org.opencypher.caps.impl.spark.io.CAPSGraphSourceImpl
+import org.opencypher.caps.api.spark.CAPSGraph
+import org.opencypher.caps.api.spark.io.CAPSPropertyGraphDataSource
+import org.opencypher.caps.api.spark.CAPSConverters._
 
-case class SessionGraphSource(path: String)(implicit capsSession: CAPSSession) extends CAPSGraphSourceImpl {
+case class SessionPropertyGraphDataSource(path: String)(implicit val session: CAPSSession) extends CAPSPropertyGraphDataSource {
 
   private var currentGraph: Option[CAPSGraph] = None
 
-  override val canonicalURI: URI = URI.create(s"${SessionGraphSourceFactory.defaultScheme}:$path")
+  override val canonicalURI: URI = URI.create(s"${SessionPropertyGraphDataSourceFactory.defaultScheme}:$path")
 
   override def sourceForGraphAt(uri: URI): Boolean =
     uri == canonicalURI
 
   override def create: CAPSGraph = store(CAPSGraph.empty, CreateOrFail)
+
   override def graph: CAPSGraph = currentGraph.getOrElse(throw IllegalArgumentException(s"a graph at $canonicalURI"))
+
   override def schema: Option[Schema] = None
 
-  override def store(graph: CAPSGraph, mode: PersistMode): CAPSGraph = mode match {
-    case Overwrite =>
-      currentGraph = Some(graph)
-      graph
+  override def store(graph: PropertyGraph, mode: PersistMode): CAPSGraph = {
+    val capsGraph = graph.asCaps
+    mode match {
+      case Overwrite =>
+        currentGraph = Some(capsGraph)
+        capsGraph
 
-    case CreateOrFail if currentGraph.isEmpty =>
-      currentGraph = Some(graph)
-      graph
+      case CreateOrFail if currentGraph.isEmpty =>
+        currentGraph = Some(capsGraph)
+        capsGraph
 
-    case CreateOrFail =>
-      throw UnsupportedOperationException(s"Overwriting the session graph")
+      case CreateOrFail =>
+        throw UnsupportedOperationException(s"Overwriting the session graph")
+    }
   }
 
   override def delete(): Unit =

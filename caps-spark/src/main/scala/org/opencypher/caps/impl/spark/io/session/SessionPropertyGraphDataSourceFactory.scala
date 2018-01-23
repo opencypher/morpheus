@@ -16,24 +16,23 @@
 package org.opencypher.caps.impl.spark.io.session
 
 import java.net.URI
-
-import org.opencypher.caps.api.spark.io._
-import org.opencypher.caps.api.spark.CAPSSession
-import org.opencypher.caps.impl.spark.io.CAPSGraphSourceFactoryImpl
 import java.util.concurrent.ConcurrentHashMap
 
+import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.caps.api.graph.CypherSession
+import org.opencypher.caps.api.spark.io._
+import org.opencypher.caps.impl.spark.io.CAPSPropertyGraphDataSourceFactoryImpl
 
 import scala.collection.JavaConversions._
 
-case object SessionGraphSourceFactory extends CAPSGraphSourceFactoryCompanion(CypherSession.sessionGraphSchema)
+case object SessionPropertyGraphDataSourceFactory extends CAPSGraphSourceFactoryCompanion(CypherSession.sessionGraphSchema)
 
-case class SessionGraphSourceFactory(
-    mountPoints: collection.concurrent.Map[String, CAPSGraphSource] = new ConcurrentHashMap[String, CAPSGraphSource]())
-    extends CAPSGraphSourceFactoryImpl[CAPSGraphSource](SessionGraphSourceFactory) {
+case class SessionPropertyGraphDataSourceFactory(
+    mountPoints: collection.concurrent.Map[String, CAPSPropertyGraphDataSource] = new ConcurrentHashMap[String, CAPSPropertyGraphDataSource]())
+    extends CAPSPropertyGraphDataSourceFactoryImpl(SessionPropertyGraphDataSourceFactory) {
 
-  def mountSourceAt(existingSource: CAPSGraphSource, uri: URI)(implicit capsSession: CAPSSession): Unit =
+  def mountSourceAt(existingSource: CAPSPropertyGraphDataSource, uri: URI)(implicit capsSession: CAPSSession): Unit =
     if (schemes.contains(uri.getScheme))
       withValidPath(uri) { (path: String) =>
         mountPoints.get(path) match {
@@ -48,14 +47,14 @@ case class SessionGraphSourceFactory(
   def unmountAll(implicit capsSession: CAPSSession): Unit =
     mountPoints.clear()
 
-  override protected def sourceForURIWithSupportedScheme(uri: URI)(implicit capsSession: CAPSSession): CAPSGraphSource =
+  override protected def sourceForURIWithSupportedScheme(uri: URI)(implicit capsSession: CAPSSession): CAPSPropertyGraphDataSource =
     withValidPath(uri) { (path: String) =>
       mountPoints.get(path) match {
         case Some(source) =>
           source
 
         case _ =>
-          val newSource = SessionGraphSource(path)
+          val newSource = SessionPropertyGraphDataSource(path)
           mountPoints.put(path, newSource)
           newSource
       }

@@ -17,7 +17,9 @@ package org.opencypher.caps.impl.spark
 
 import org.apache.spark.sql.Row
 import org.opencypher.caps.api.exception.IllegalArgumentException
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
+import org.opencypher.caps.api.record.CypherRecords
+import org.opencypher.caps.api.spark.CAPSConverters._
+import org.opencypher.caps.api.spark.CAPSGraph
 import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraphLoader
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.fixture.{Neo4jServerFixture, OpenCypherDataFixture}
@@ -35,7 +37,7 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     val result = graph.cypher("MATCH (a:Person) WHERE a.birthyear < 1930 RETURN a, a.name")
 
     // Then
-    val strings = result.records.toLocalScalaIterator.map(_.toString).toSet
+    val strings = result.records.iterator.map(_.toString).toSet
 
     // We do string comparisons here because CypherNode.equals() does not check labels/properties
     strings should equal(
@@ -70,7 +72,7 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     val result = graph.cypher(query)
 
     // Then
-    result.records.toDF().collect().toBag should equal(
+    result.records.asCaps.toDF().collect().toBag should equal(
       Bag(
         Row(2L, true, true, 1937L, "Vanessa Redgrave", 21L, 2L, "ACTED_IN", 20L, "Guenevere")
       ))
@@ -123,7 +125,7 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     // When
     val records = graph.cypher(query).records
 
-    records.toDF().collect().toBag should equal(
+    records.asCaps.toDF().collect().toBag should equal(
       Bag(
         Row("Natasha Richardson", "London", "The Parent Trap"),
         Row("Dennis Quaid", "Houston", "The Parent Trap"),
@@ -149,10 +151,13 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
   }
 
   // TODO: Replace with Bag testing
-  implicit class OtherRichRecords(records: CAPSRecords) {
+  implicit class OtherRichRecords(records: CypherRecords) {
+    import org.opencypher.caps.api.spark.CAPSConverters._
+    val capsRecords = records.asCaps
+
     def shouldHaveSize(size: Int) = {
-      val tuples = records.data.collect().toSeq.map { r =>
-        val cells = records.header.slots.map { s =>
+      val tuples = capsRecords.data.collect().toSeq.map { r =>
+        val cells = capsRecords.header.slots.map { s =>
           r.get(s.index)
         }
 

@@ -43,7 +43,7 @@ object CAPSRecordHeader {
     StructField(name, dataType, nullable)
   }
 
-  implicit class CAPSRecordHeader(header: RecordHeader) {
+  implicit class CAPSRecordHeader(header: RecordHeader) extends Serializable {
     def asSparkSchema: StructType =
       StructType(header.internalHeader.slots.map(_.asStructField))
 

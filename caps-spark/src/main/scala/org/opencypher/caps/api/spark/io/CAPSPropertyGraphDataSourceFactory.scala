@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.spark.io
+package org.opencypher.caps.api.spark.io
 
-import org.opencypher.caps.api.spark.io.CAPSGraphSource
-import org.opencypher.caps.api.spark.CAPSSession
+import org.opencypher.caps.api.io.PropertyGraphDataSourceFactory
 
-abstract class CAPSGraphSourceImpl(implicit override final val session: CAPSSession) extends CAPSGraphSource
+trait CAPSPropertyGraphDataSourceFactory extends PropertyGraphDataSourceFactory
 

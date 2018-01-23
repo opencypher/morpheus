@@ -18,16 +18,17 @@ package org.opencypher.caps.api.record
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
 import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.storage.StorageLevel
+import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.{IllegalArgumentException, IllegalStateException}
-import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.spark.{CAPSRecords, CAPSSession}
+import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.caps.api.util.Annotation
 import org.opencypher.caps.impl.record.CAPSRecordHeader._
-import org.opencypher.caps.impl.record.{CAPSRecordHeader => _, _}
+import org.opencypher.caps.impl.record._
 import org.opencypher.caps.impl.spark.{SparkColumn, SparkColumnName}
 import org.opencypher.caps.ir.api.Label
+import org.opencypher.caps.ir.api.expr._
 
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.TypeTag
@@ -109,13 +110,14 @@ object GraphScan extends GraphScanCompanion[EmbeddedEntity] {
       }
       slotDataSelector
     }
+    val wrappedHeader = new CAPSRecordHeader(targetHeader)
 
     val alignedData = records
       .toDF()
       .map { (row: Row) =>
         val alignedRow = slotDataSelectors.map(_(row))
-        new GenericRowWithSchema(alignedRow.toArray, targetHeader.asSparkSchema).asInstanceOf[Row]
-      }(targetHeader.rowEncoder)
+        new GenericRowWithSchema(alignedRow.toArray, wrappedHeader.asSparkSchema).asInstanceOf[Row]
+      }(wrappedHeader.rowEncoder)
 
     CAPSRecords.create(targetHeader, alignedData)
   }

@@ -15,9 +15,11 @@
  */
 package org.opencypher.caps.impl.spark
 
+import java.util.UUID
+
 import org.apache.spark.sql.{Column, DataFrame}
-import org.opencypher.caps.ir.api.expr.{Expr, Property, Var}
 import org.opencypher.caps.impl.record.{FieldSlotContent, ProjectedExpr, RecordSlot, SlotContent}
+import org.opencypher.caps.ir.api.expr.{Expr, Property, Var}
 
 import scala.collection.mutable
 
@@ -26,6 +28,9 @@ object SparkColumn {
 }
 
 object SparkColumnName {
+
+  def tempColName: String =
+    UUID.randomUUID().toString
 
   def of(slot: RecordSlot): String = of(slot.content)
 

@@ -17,16 +17,16 @@ package org.opencypher.caps.impl.spark.io.file
 
 import java.net.URI
 
-import org.opencypher.caps.api.spark.CAPSSession
+import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.spark.io._
-import org.opencypher.caps.impl.spark.io.CAPSGraphSourceFactoryImpl
+import org.opencypher.caps.impl.spark.io.CAPSPropertyGraphDataSourceFactoryImpl
 
-case object FileCsvGraphSourceFactory extends CAPSGraphSourceFactoryCompanion("file+csv", "file")
+case object FileCsvPropertyGraphDataSourceFactory extends CAPSGraphSourceFactoryCompanion("file+csv", "file")
 
-case class FileCsvGraphSourceFactory()
-  extends CAPSGraphSourceFactoryImpl[FileCsvGraphSource](FileCsvGraphSourceFactory) {
+case class FileCsvPropertyGraphDataSourceFactory()
+  extends CAPSPropertyGraphDataSourceFactoryImpl(FileCsvPropertyGraphDataSourceFactory) {
 
-  override protected def sourceForURIWithSupportedScheme(uri: URI)(implicit capsSession: CAPSSession): FileCsvGraphSource = {
-    FileCsvGraphSource(uri)
+  override protected def sourceForURIWithSupportedScheme(uri: URI)(implicit capsSession: CAPSSession): FileCsvPropertyGraphDataSource = {
+    FileCsvPropertyGraphDataSource(uri)
   }
 }

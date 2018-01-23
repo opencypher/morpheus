@@ -22,7 +22,7 @@ import org.opencypher.caps.CAPS
 object Shell {
 
   def main(args: Array[String]): Unit = {
-    implicit val session = CSVDemo.session
+    implicit val session = CSVDemo.sparkSession
     try {
       val welcomeBanner = {
         val ownVersion = CAPS.version.getOrElse("<unknown>")

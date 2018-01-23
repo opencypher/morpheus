@@ -15,6 +15,7 @@
  */
 package org.opencypher.caps.test.support
 
+import org.opencypher.caps.api.record.CypherRecords
 import org.opencypher.caps.ir.api.expr.Var
 import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.api.value._
@@ -22,6 +23,7 @@ import org.opencypher.caps.impl.record.CAPSRecordHeader._
 import org.opencypher.caps.impl.record.{FieldSlotContent, OpaqueField, ProjectedExpr, RecordHeader}
 import org.opencypher.caps.test.CAPSTestSuite
 import org.scalatest.Assertion
+import org.opencypher.caps.api.spark.CAPSConverters._
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.{Bag, HashedBagConfiguration}
@@ -34,7 +36,7 @@ trait RecordMatchingTestSupport {
 
   implicit class RecordMatcher(records: CAPSRecords) {
     def shouldMatch(expected: CypherMap*): Assertion = {
-      records.toMaps should equal(Bag(expected: _*))
+      records.iterator.toBag should equal(Bag(expected: _*))
     }
 
     def shouldMatch(expectedRecords: CAPSRecords): Assertion = {
@@ -60,17 +62,18 @@ trait RecordMatchingTestSupport {
     }
   }
 
-  implicit class RichRecords(records: CAPSRecords) {
+  implicit class RichRecords(records: CypherRecords) {
+    val capsRecords = records.asCaps
     import org.opencypher.caps.impl.spark.DfUtils._
 
     // TODO: Remove this and replace usages with toMapsWithCollectedEntities below
     // probably use this name though, and have not collecting be the special case
     def toMaps: Bag[CypherMap] = {
-      val rows = records.toDF().collect().map { r =>
-        val properties = records.header.slots.map { s =>
+      val rows = capsRecords.toDF().collect().map { r =>
+        val properties = capsRecords.header.slots.map { s =>
           s.content match {
-            case f: FieldSlotContent => f.field.name -> r.getCypherValue(f.key, records.header)
-            case x                   => x.key.withoutType -> r.getCypherValue(x.key, records.header)
+            case f: FieldSlotContent => f.field.name -> r.getCypherValue(f.key, capsRecords.header)
+            case x                   => x.key.withoutType -> r.getCypherValue(x.key, capsRecords.header)
           }
         }.toMap
         CypherMap(properties)
@@ -79,6 +82,6 @@ trait RecordMatchingTestSupport {
     }
 
     def toMapsWithCollectedEntities: Bag[CypherMap] =
-      Bag(records.toCypherMaps.collect(): _*)
+      Bag(capsRecords.toCypherMaps.collect(): _*)
   }
 }

@@ -17,7 +17,7 @@ package org.opencypher.caps.impl.spark
 
 import java.util.Objects
 
-import org.opencypher.caps.api.spark.CAPSRecords
+import org.opencypher.caps.api.record.CypherRecords
 import org.opencypher.caps.api.util.PrintOptions
 
 object RecordsPrinter {
@@ -26,7 +26,7 @@ object RecordsPrinter {
     * Prints the given SparkCypherRecords to stdout
     * @param records the records to be printed.
     */
-  def print(records: CAPSRecords)(implicit options: PrintOptions): Unit = {
+  def print(records: CypherRecords)(implicit options: PrintOptions): Unit = {
     val fieldContents = records.header.fieldsInOrder
     val factor = if (fieldContents.size > 1) fieldContents.size else 1
 
@@ -50,7 +50,7 @@ object RecordsPrinter {
 
     sep = "| "
     var count = 0
-    records.toLocalScalaIterator.foreach { map =>
+    records.iterator.foreach { map =>
       if (fieldContents.isEmpty) {
         stream.print(sep)
         stream.print(fitToColumn("(empty row)"))

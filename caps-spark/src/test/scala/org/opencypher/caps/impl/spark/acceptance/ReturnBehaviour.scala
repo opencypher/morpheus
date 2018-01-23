@@ -15,9 +15,10 @@
  */
 package org.opencypher.caps.impl.spark.acceptance
 
+import org.opencypher.caps.api.spark.CAPSConverters._
 import org.opencypher.caps.api.spark.CAPSGraph
 import org.opencypher.caps.api.value.{CypherMap, CypherNode, Properties}
-import org.opencypher.caps.demo.Configuration.{DefaultType, PrintLogicalPlan}
+import org.opencypher.caps.demo.Configuration.PrintLogicalPlan
 
 import scala.collection.immutable.Bag
 
@@ -29,9 +30,9 @@ trait ReturnBehaviour { this: AcceptanceTest =>
 
       val result = g.cypher("MATCH (a:A) WITH a, a.name AS foo RETURN a")
 
-      Bag(result.records.toCypherMaps.collect().map(_.toString): _*) should equal(Bag(
-        CypherMap("a" -> CypherNode(0L, Seq("A"), Properties("name" -> "me"))).toString,
-        CypherMap("a" -> CypherNode(1L, Seq("A"), Properties.empty)).toString
+      result.records.iterator.toBag should equal(Bag(
+        CypherMap("a" -> CypherNode(0L, Seq("A"), Properties("name" -> "me"))),
+        CypherMap("a" -> CypherNode(1L, Seq("A"), Properties.empty))
       ))
     }
 
@@ -40,9 +41,9 @@ trait ReturnBehaviour { this: AcceptanceTest =>
 
       val result = g.cypher("MATCH (a:A) WITH a, a AS foo RETURN a")
 
-      Bag(result.records.toCypherMaps.collect().map(_.toString): _*) should equal(Bag(
-        CypherMap("a" -> CypherNode(0L, Seq("A"), Properties("name" -> "me"))).toString,
-        CypherMap("a" -> CypherNode(1L, Seq("A"), Properties.empty)).toString
+      result.records.iterator.toBag should equal(Bag(
+        CypherMap("a" -> CypherNode(0L, Seq("A"), Properties("name" -> "me"))),
+        CypherMap("a" -> CypherNode(1L, Seq("A"), Properties.empty))
       ))
     }
 
@@ -55,9 +56,9 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       // perhaps copy all child expressions in RecordHeader
       val result = g.cypher("MATCH (a:A) WITH a, a AS foo RETURN foo AS b")
 
-      Bag(result.records.toCypherMaps.collect().map(_.toString): _*) should equal(Bag(
-        CypherMap("a" -> CypherNode(0L, Seq("A"), Properties("name" -> "me"))).toString,
-        CypherMap("a" -> CypherNode(1L, Seq("A"), Properties.empty)).toString
+      result.records.iterator.toBag should equal(Bag(
+        CypherMap("a" -> CypherNode(0L, Seq("A"), Properties("name" -> "me"))),
+        CypherMap("a" -> CypherNode(1L, Seq("A"), Properties.empty))
       ))
     }
 
@@ -66,15 +67,15 @@ trait ReturnBehaviour { this: AcceptanceTest =>
 
       val result = g.cypher("MATCH (a:A), (b) RETURN a")
 
-      Bag(result.records.toCypherMaps.collect().map(_.toString): _*) should equal(Bag(
-        CypherMap("a" -> CypherNode(1L, Seq("A"), Properties.empty)).toString
+      result.records.iterator.toBag should equal(Bag(
+        CypherMap("a" -> CypherNode(0L, Seq("A"), Properties.empty))
       ))
     }
 
     test("single return query") {
       val given = initGraph("CREATE ()")
 
-      val result  = given.cypher("RETURN 1")
+      val result  = given.cypher("RETURN 1").asCaps
 
       result.records shouldMatch CypherMap("1" -> 1)
     }
@@ -82,7 +83,7 @@ trait ReturnBehaviour { this: AcceptanceTest =>
     test("single return query with several columns") {
       val given = initGraph("CREATE (), ()")
 
-      val result  = given.cypher("RETURN 1 AS foo, '' AS str")
+      val result  = given.cypher("RETURN 1 AS foo, '' AS str").asCaps
 
       result.records shouldMatch CypherMap("foo" -> 1, "str" -> "")
     }
@@ -90,7 +91,7 @@ trait ReturnBehaviour { this: AcceptanceTest =>
     test("return compact node") {
       val given = initGraph("CREATE (:Person {foo:'bar'}),()")
 
-      val result = given.cypher("MATCH (n) RETURN n")
+      val result = given.cypher("MATCH (n) RETURN n").asCaps
 
       result.records.compact.toMaps should equal(Bag(
         CypherMap("n" -> 0),
@@ -112,7 +113,7 @@ trait ReturnBehaviour { this: AcceptanceTest =>
     test("return compact rel") {
       val given = initGraph("CREATE ()-[:Rel {foo:'bar'}]->()-[:Rel]->()")
 
-      val result = given.cypher("MATCH ()-[r]->() RETURN r")
+      val result = given.cypher("MATCH ()-[r]->() RETURN r").asCaps
 
       result.records.compact.toMaps should equal(Bag(
         CypherMap("r" -> 2),
@@ -231,7 +232,7 @@ trait ReturnBehaviour { this: AcceptanceTest =>
     test("skip") {
       val given = initGraph("""CREATE (:Node {val: 4}),(:Node {val: 3}),(:Node  {val: 42})""")
 
-      val result = given.cypher("MATCH (a) RETURN a.val as val SKIP 2")
+      val result = given.cypher("MATCH (a) RETURN a.val as val SKIP 2").asCaps
 
       // Then
       result.records.toDF().count() should equal(1)
@@ -272,7 +273,7 @@ trait ReturnBehaviour { this: AcceptanceTest =>
     test("limit") {
       val given = initGraph("""CREATE (:Node {val: 4}),(:Node {val: 3}),(:Node  {val: 42})""")
 
-      val result = given.cypher("MATCH (a) RETURN a.val as val LIMIT 1")
+      val result = given.cypher("MATCH (a) RETURN a.val as val LIMIT 1").asCaps
 
       // Then
       result.records.toDF().count() should equal(1)

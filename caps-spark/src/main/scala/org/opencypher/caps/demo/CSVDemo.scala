@@ -20,8 +20,8 @@ import java.util.Calendar
 import org.apache.spark.SparkConf
 import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.sql.SparkSession
-import org.opencypher.caps.impl.spark.io.hdfs.CsvGraphLoader
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSResult, CAPSSession}
+import org.opencypher.caps.api.CAPSSession
+import org.opencypher.caps.api.graph.CypherResult
 import org.opencypher.caps.demo.Configuration.{Logging, MasterAddress}
 
 object CSVDemo {
@@ -30,31 +30,23 @@ object CSVDemo {
   conf.set("spark.serializer", classOf[KryoSerializer].getCanonicalName)
   conf.set("spark.kryo.registrator", classOf[CypherKryoRegistrar].getCanonicalName)
 
-  implicit lazy val session = SparkSession.builder()
+  implicit lazy val sparkSession = SparkSession.builder()
     .config(conf)
     .master(MasterAddress.get())
     .appName(s"cypher-for-apache-spark-benchmark-${Calendar.getInstance().getTime}")
     .getOrCreate()
 
-  implicit val caps = CAPSSession.create(session)
+  sparkSession.sparkContext.setLogLevel(Logging.get())
 
-  lazy val graph: CAPSGraph = CsvGraphLoader(
-    getClass.getResource("/demo/ldbc_1").getFile,
-    caps.sparkSession.sparkContext.hadoopConfiguration
-  ).load
-
-  session.sparkContext.setLogLevel(Logging.get())
-
-  def cypher(query: String): CAPSResult = {
+  def cypher(query: String): CypherResult = {
     println(s"Now executing query: $query")
 
-    implicit val caps: CAPSSession = CAPSSession.create(session)
-    val result: CAPSResult = graph.cypher(query)
-
-    result.records.toDF().cache()
+    implicit val caps = CAPSSession.create(sparkSession)
+    val graph = caps.graphAt("file+csv:///demo/ldbc_1")
+    val result = graph.cypher(query)
 
     val start = System.currentTimeMillis()
-    println(s"Returned ${result.records.toDF().count()} row(s) in ${System.currentTimeMillis() - start} ms")
+    println(s"Returned ${result.records.size} row(s) in ${System.currentTimeMillis() - start} ms")
 
     result
   }

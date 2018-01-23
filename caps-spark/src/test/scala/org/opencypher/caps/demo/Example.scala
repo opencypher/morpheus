@@ -15,8 +15,9 @@
  */
 package org.opencypher.caps.demo
 
+import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.record._
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
+import org.opencypher.caps.api.spark.CAPSGraph
 
 case class Person(id: Long, name: String) extends Node
 
@@ -39,8 +40,5 @@ object Example extends App {
        | RETURN a.name AS person, b.name AS friendsWith, r.since AS since""".stripMargin
   )
 
-  case class ResultSchema(person: String, friendsWith: String, since: String)
-
-  // Print result rows mapped to a case class
-  results.as[ResultSchema].foreach(println)
+  results.print
 }

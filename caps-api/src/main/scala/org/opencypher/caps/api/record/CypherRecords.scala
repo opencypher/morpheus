@@ -15,6 +15,8 @@
  */
 package org.opencypher.caps.api.record
 
+import org.opencypher.caps.api.value.CypherMap
+
 trait CypherRecordHeader {
   def fields: Set[String]
   def fieldsInOrder: Seq[String]
@@ -29,9 +31,6 @@ trait CypherRecordHeader {
   */
 trait CypherRecords extends CypherPrintable {
 
-  type Data
-  type Records <: CypherRecords
-
   /**
     * The header for this table, describing the slots stored.
     *
@@ -40,10 +39,14 @@ trait CypherRecords extends CypherPrintable {
   def header: CypherRecordHeader
 
   /**
-    * The data structure that actually holds all tabular data.
+    * Consume these records as an iterator.
     *
-    * @return the underlying data of this table.
+    * WARNING: This operation may be very expensive as it may have to materialise
     */
-  def data: Data
+  def iterator: Iterator[CypherMap]
 
+  /**
+    * @return the number of records in this CypherRecords.
+    */
+  def size: Long
 }

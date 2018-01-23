@@ -15,14 +15,16 @@
  */
 package org.opencypher.caps.impl.spark
 
-import org.opencypher.caps.ir.api.expr.{Expr, Not, Var}
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
+import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSessionImpl}
 import org.opencypher.caps.api.types.{CTBoolean, CTInteger, CTString}
+import org.opencypher.caps.ir.api.expr.{Expr, Not, Var}
 import org.opencypher.caps.test.CAPSTestSuite
 
 class CAPSEngineOperationsTest extends CAPSTestSuite {
 
   import operations._
+
+  implicit val extendedCaps = caps.asInstanceOf[CAPSSessionImpl]
 
   def base = CAPSGraph.empty(caps)
 
@@ -39,7 +41,7 @@ class CAPSEngineOperationsTest extends CAPSTestSuite {
 
     val result = base.filter(given, Var("IS_SWEDE")(CTBoolean))
 
-    result.toDF().count() should equal(1L)
+    result.size should equal(1L)
   }
 
   test("select operation on records") {

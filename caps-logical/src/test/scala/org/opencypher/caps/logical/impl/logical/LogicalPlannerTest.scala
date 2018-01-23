@@ -17,7 +17,7 @@ package org.opencypher.caps.logical.impl.logical
 
 import java.net.URI
 
-import org.opencypher.caps.api.io.GraphSource
+import org.opencypher.caps.api.io.PropertyGraphDataSource
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.{CypherBoolean, CypherInteger, CypherString}
@@ -377,10 +377,10 @@ class LogicalPlannerTest extends LogicalTestSuite {
     }
   }
 
-  def graphSource(schema: Schema): GraphSource = {
+  def graphSource(schema: Schema): PropertyGraphDataSource = {
     import org.mockito.Mockito.when
 
-    val graphSource = mock[GraphSource]
+    val graphSource = mock[PropertyGraphDataSource]
     when(graphSource.schema).thenReturn(Some(schema))
     when(graphSource.canonicalURI).thenReturn(uri)
 

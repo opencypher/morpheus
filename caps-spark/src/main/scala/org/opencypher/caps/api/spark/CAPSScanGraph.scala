@@ -17,12 +17,15 @@ package org.opencypher.caps.api.spark
 
 import cats.data.NonEmptyVector
 import org.apache.spark.storage.StorageLevel
+import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
-import org.opencypher.caps.ir.api.expr._
+import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.schema.Schema
+import org.opencypher.caps.api.spark.CAPSConverters._
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType, DefiniteCypherType}
 import org.opencypher.caps.impl.record.RecordHeader
+import org.opencypher.caps.ir.api.expr._
 
 class CAPSScanGraph(val scans: Seq[GraphScan], val schema: Schema)(implicit val session: CAPSSession)
     extends CAPSGraph {
@@ -71,14 +74,14 @@ class CAPSScanGraph(val scans: Seq[GraphScan], val schema: Schema)(implicit val 
     alignedRecords.reduceOption(_ unionAll (targetRelHeader, _)).getOrElse(CAPSRecords.empty(targetRelHeader))
   }
 
-  override def union(other: CAPSGraph): CAPSGraph = other match {
+  override def union(other: PropertyGraph): CAPSGraph = other match {
     case (otherScanGraph: CAPSScanGraph) =>
       val allScans = scans ++ otherScanGraph.scans
       val nodeScan = allScans
         .collectFirst[NodeScan] { case scan: NodeScan => scan }
         .getOrElse(throw IllegalArgumentException("at least one node scan"))
       CAPSGraph.create(nodeScan, allScans.filterNot(_ == nodeScan): _*)
-    case _ => CAPSUnionGraph(this, other)
+    case _ => CAPSUnionGraph(this, other.asCaps)
   }
 
   private case class NodeEntityScans(override val entityScans: Vector[NodeScan]) extends EntityScans {

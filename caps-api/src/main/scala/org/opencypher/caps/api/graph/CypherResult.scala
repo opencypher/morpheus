@@ -26,29 +26,26 @@ import org.opencypher.caps.trees.TreeNode
   */
 trait CypherResult extends CypherPrintable {
 
-  type Graph <: CypherGraph
-  type Records <: CypherRecords
-
   /**
     * Retrieves the single graph returned by the query, if it returned exactly one graph.
     *
     * @return the single graph, otherwise None.
     */
-  def singleGraph: Option[Graph] = if (graphs.size == 1) Some(graphs.head._2) else None
+  def singleGraph: Option[PropertyGraph] = if (graphs.size == 1) Some(graphs.head._2) else None
 
   /**
     * The named graphs that were returned by the query that produced this result.
     *
     * @return a map of named graphs.
     */
-  def graphs: Map[String, Graph]
+  def graphs: Map[String, PropertyGraph]
 
   /**
     * The table of records that was returned by the query that produced this result.
     *
     * @return a table of records.
     */
-  def records: Records
+  def records: CypherRecords
 
   type LogicalPlan <: TreeNode[LogicalPlan]
   type FlatPlan <: TreeNode[FlatPlan]

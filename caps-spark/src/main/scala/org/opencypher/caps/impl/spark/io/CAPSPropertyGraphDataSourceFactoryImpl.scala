@@ -17,22 +17,24 @@ package org.opencypher.caps.impl.spark.io
 
 import java.net.URI
 
+import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
-import org.opencypher.caps.api.spark.io.{CAPSGraphSource, CAPSGraphSourceFactory, CAPSGraphSourceFactoryCompanion}
-import org.opencypher.caps.api.spark.CAPSSession
+import org.opencypher.caps.api.graph.CypherSession
+import org.opencypher.caps.api.spark.io.{CAPSPropertyGraphDataSource, CAPSPropertyGraphDataSourceFactory, CAPSGraphSourceFactoryCompanion}
+import org.opencypher.caps.api.spark.CAPSConverters._
 
-abstract class CAPSGraphSourceFactoryImpl[S <: CAPSGraphSource](val companion: CAPSGraphSourceFactoryCompanion)
-    extends CAPSGraphSourceFactory {
-
-  override final type Source = S
+abstract class CAPSPropertyGraphDataSourceFactoryImpl(val companion: CAPSGraphSourceFactoryCompanion)
+    extends CAPSPropertyGraphDataSourceFactory {
 
   override final val name: String = getClass.getSimpleName
 
   override final def schemes: Set[String] = companion.supportedSchemes
 
-  override final def sourceFor(uri: URI)(implicit capsSession: CAPSSession): Source =
+  override final def sourceFor(uri: URI)(implicit cypherSession: CypherSession): CAPSPropertyGraphDataSource = {
+    implicit val capsSession = cypherSession.asCaps
     if (schemes.contains(uri.getScheme)) sourceForURIWithSupportedScheme(uri)
     else throw IllegalArgumentException(s"a supported scheme: ${schemes.toSeq.sorted.mkString(", ")}", uri.getScheme)
+  }
 
-  protected def sourceForURIWithSupportedScheme(uri: URI)(implicit capsSession: CAPSSession): Source
+  protected def sourceForURIWithSupportedScheme(uri: URI)(implicit capsSession: CAPSSession): CAPSPropertyGraphDataSource
 }

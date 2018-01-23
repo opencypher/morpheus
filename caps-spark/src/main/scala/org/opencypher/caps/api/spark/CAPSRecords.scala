@@ -22,6 +22,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
+import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.ir.api.expr.{Property, Var}
 import org.opencypher.caps.api.record._
@@ -41,22 +42,28 @@ import scala.reflect.runtime.universe.TypeTag
 
 sealed abstract class CAPSRecords(
     override val header: RecordHeader,
-    override val data: DataFrame
+    val data: DataFrame
 )(implicit val caps: CAPSSession)
     extends CypherRecords
     with Serializable {
 
-  self =>
+  override def print(implicit options: PrintOptions): Unit =
+    RecordsPrinter.print(this)
 
-  override type Data = DataFrame
-  override type Records = CAPSRecords
+  override def iterator: Iterator[CypherMap] = {
+    import scala.collection.JavaConverters._
+
+    toLocalIterator.asScala
+  }
+
+  override def size: Long = data.count()
 
   def sparkColumns: IndexedSeq[String] = header.internalHeader.columns
 
   //noinspection AccessorLikeMethodIsEmptyParen
-  def toDF(): Data = data
+  def toDF(): DataFrame = data
 
-  def mapDF(f: Data => Data): CAPSRecords = CAPSRecords.create(f(data))
+  def mapDF(f: DataFrame => DataFrame): CAPSRecords = CAPSRecords.create(f(data))
 
   def cache(): CAPSRecords = {
     data.cache()
@@ -83,12 +90,6 @@ sealed abstract class CAPSRecords(
     this
   }
 
-  //  def repartition(numPartitions: Int): CAPSRecords =
-  //    CAPSRecords.create(header, data.repartition(numPartitions))
-
-  override def print(implicit options: PrintOptions): Unit =
-    RecordsPrinter.print(this)
-
   def select(fields: Set[Var]): CAPSRecords = {
     val selectedHeader = header.select(fields)
     val selectedColumnNames = selectedHeader.contents.map(SparkColumnName.of).toSeq
@@ -97,13 +98,13 @@ sealed abstract class CAPSRecords(
   }
 
   def compact(implicit details: RetainedDetails): CAPSRecords = {
-    val cachedHeader = self.header.update(compactFields)._1
+    val cachedHeader = header.update(compactFields)._1
     if (header == cachedHeader) {
       this
     } else {
       val cachedData = {
         val columns = cachedHeader.slots.map(c => new Column(SparkColumnName.of(c.content)))
-        self.data.select(columns: _*)
+        data.select(columns: _*)
       }
 
       CAPSRecords.create(cachedHeader, cachedData)
@@ -138,12 +139,6 @@ sealed abstract class CAPSRecords(
 
   def distinct: CAPSRecords = {
     CAPSRecords.create(header, data.distinct())
-  }
-
-  def toLocalScalaIterator: Iterator[CypherMap] = {
-    import scala.collection.JavaConverters._
-
-    toLocalIterator.asScala
   }
 
   def toLocalIterator: java.util.Iterator[CypherMap] = {

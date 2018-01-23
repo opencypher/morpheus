@@ -31,17 +31,7 @@ import org.opencypher.caps.api.value.CypherValue
   *
   * @see [[https://github.com/opencypher/openCypher/blob/master/docs/property-graph-model.adoc openCypher Property Graph Model]]
   */
-trait CypherGraph {
-
-  self =>
-
-  type Graph <: CypherGraph { type Records = self.Records }
-  type Records <: CypherRecords { type Records = self.Records }
-  type Result <: CypherResult { type Graph = self.Graph; type Records = self.Records }
-  type Session <: CypherSession {
-    type Session = self.Session; type Graph = self.Graph;
-    type Records = self.Records; type Result = self.Result
-  }
+trait PropertyGraph {
 
   /**
     * The schema that describes this graph.
@@ -55,9 +45,9 @@ trait CypherGraph {
     *
     * @return the session of this graph.
     */
-  def session: Session
+  def session: CypherSession
 
-  final def nodes(name: String): Records = nodes(name, CTNode)
+  def nodes(name: String): CypherRecords = nodes(name, CTNode)
 
   /**
     * Constructs a scan table of all the nodes in this graph with the given cypher type.
@@ -65,9 +55,9 @@ trait CypherGraph {
     * @param name the field name for the returned nodes.
     * @return a table of nodes of the specified type.
     */
-  def nodes(name: String, nodeCypherType: CTNode): Records
+  def nodes(name: String, nodeCypherType: CTNode): CypherRecords
 
-  final def relationships(name: String): Records = relationships(name, CTRelationship)
+  def relationships(name: String): CypherRecords = relationships(name, CTRelationship)
 
   /**
     * Constructs a scan table of all the relationships in this graph with the given cypher type.
@@ -75,7 +65,7 @@ trait CypherGraph {
     * @param name the field name for the returned relationships.
     * @return a table of relationships of the specified type.
     */
-  def relationships(name: String, relCypherType: CTRelationship): Records
+  def relationships(name: String, relCypherType: CTRelationship): CypherRecords
 
   /**
     * Executes a Cypher query in the session that manages this graph, using this graph as the ambient graph.
@@ -85,7 +75,7 @@ trait CypherGraph {
     * @return           the result of the query.
     * @see              [[CypherSession.cypher()]]
     */
-  final def cypher(query: String, parameters: Map[String, CypherValue] = Map.empty): Result =
+  final def cypher(query: String, parameters: Map[String, CypherValue] = Map.empty): CypherResult =
     session.cypher(graph, query, parameters)
 
   /**
@@ -95,7 +85,7 @@ trait CypherGraph {
     * @param other the argument graph with which to union.
     * @return the union of this and the argument graph.
     */
-  def union(other: Graph): Graph
+  def union(other: PropertyGraph): PropertyGraph
 
-  protected def graph: Graph
+  protected def graph: PropertyGraph
 }

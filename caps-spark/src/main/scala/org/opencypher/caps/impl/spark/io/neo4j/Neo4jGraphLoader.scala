@@ -17,10 +17,11 @@ package org.opencypher.caps.impl.spark.io.neo4j
 
 import org.apache.spark.rdd.RDD
 import org.neo4j.driver.internal.{InternalNode, InternalRelationship}
+import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.caps.api.schema.Schema.NoLabel
 import org.opencypher.caps.api.schema.{PropertyKeys, Schema}
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
+import org.opencypher.caps.api.spark.CAPSGraph
 import org.opencypher.caps.impl.spark.io.neo4j.external.{Neo4j, Neo4jConfig}
 import org.opencypher.caps.ir.impl.convert.toCypherType
 

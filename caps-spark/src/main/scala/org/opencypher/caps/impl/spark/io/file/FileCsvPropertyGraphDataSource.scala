@@ -17,18 +17,20 @@ package org.opencypher.caps.impl.spark.io.file
 
 import java.net.URI
 
+import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.NotImplementedException
+import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.io.{CreateOrFail, PersistMode}
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
-import org.opencypher.caps.impl.spark.io.CAPSGraphSourceImpl
+import org.opencypher.caps.api.spark.CAPSGraph
+import org.opencypher.caps.api.spark.io.CAPSPropertyGraphDataSource
 import org.opencypher.caps.impl.spark.io.hdfs.CsvGraphLoader
 
-case class FileCsvGraphSource(override val canonicalURI: URI)(implicit capsSession: CAPSSession)
-    extends CAPSGraphSourceImpl {
+case class FileCsvPropertyGraphDataSource(override val canonicalURI: URI)(implicit val session: CAPSSession)
+    extends CAPSPropertyGraphDataSource {
 
   override def sourceForGraphAt(uri: URI): Boolean = {
-    FileCsvGraphSourceFactory.supportedSchemes.contains(uri.getScheme)
+    FileCsvPropertyGraphDataSourceFactory.supportedSchemes.contains(uri.getScheme)
   }
 
   override def graph: CAPSGraph = {
@@ -41,7 +43,7 @@ case class FileCsvGraphSource(override val canonicalURI: URI)(implicit capsSessi
   override def create: CAPSGraph =
     store(CAPSGraph.empty, CreateOrFail)
 
-  override def store(graph: CAPSGraph, mode: PersistMode): CAPSGraph =
+  override def store(graph: PropertyGraph, mode: PersistMode): CAPSGraph =
     throw NotImplementedException("Persisting graphs to local file system")
 
   override def delete(): Unit =

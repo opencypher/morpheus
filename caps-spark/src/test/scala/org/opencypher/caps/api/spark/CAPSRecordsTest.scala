@@ -26,6 +26,8 @@ import org.opencypher.caps.ir.api.{Label, PropertyKey}
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.fixture.GraphCreationFixture
 
+import scala.collection.Bag
+
 class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture {
 
   test("contract and scan nodes") {
@@ -152,12 +154,12 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture {
 
     val result = g.cypher("MATCH (n) WITH 5 - n.p + 1 AS b, n RETURN n, b")
 
-    result.records.toCypherMaps.collect().map(_.toString) should equal(
-      Array(
+    result.records.iterator.toBag should equal(
+      Bag(
         CypherMap(
           "n" -> CypherNode(0L, Seq("Foo"), Properties("p" -> 1)),
           "b" -> 5
-        ).toString
+        )
       ))
   }
 }

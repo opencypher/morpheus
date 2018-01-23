@@ -17,18 +17,20 @@ package org.opencypher.caps.api.spark
 
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.opencypher.caps.api.graph.CypherResult
+import org.opencypher.caps.api.spark.CAPSConverters._
 import org.opencypher.caps.api.util.PrintOptions
 import org.opencypher.caps.impl.flat.FlatOperator
-import org.opencypher.caps.logical.impl.LogicalOperator
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator
+import org.opencypher.caps.logical.impl.LogicalOperator
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe.TypeTag
 
 trait CAPSResult extends CypherResult {
 
-  override type Graph = CAPSGraph
-  override type Records = CAPSRecords
+  override def records: CAPSRecords
+
+  override def graphs: Map[String, CAPSGraph]
 
   override type LogicalPlan = LogicalOperator
   override type FlatPlan = FlatOperator
@@ -36,7 +38,7 @@ trait CAPSResult extends CypherResult {
 
   def as[E <: Product : TypeTag]: Iterator[E] = {
     implicit val encoder = ExpressionEncoder[E]
-    records.data.as[E].toLocalIterator()
+    records.asCaps.data.as[E].toLocalIterator().asScala
   }
 
   override def print(implicit options: PrintOptions): Unit =

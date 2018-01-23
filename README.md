@@ -84,8 +84,9 @@ The scan construction describes to `CAPSGraph` how this graph structure is read 
 Once the graph is constructed the `CAPSGraph` instance supports Cypher queries with its `cypher` method.
 
 ```scala
+import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.record._
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSSession}
+import org.opencypher.caps.api.spark.CAPSGraph
 
 case class Person(id: Long, name: String) extends Node
 
@@ -108,17 +109,18 @@ object Example extends App {
        | RETURN a.name AS person, b.name AS friendsWith, r.since AS since""".stripMargin
   )
 
-  case class ResultSchema(person: String, friendsWith: String, since: String)
-
-  // Print result rows mapped to a case class
-  results.as[ResultSchema].foreach(println)
+  results.print
 }
 ```
 
 The above program prints:
 ```
-ResultSchema(Alice,Bob,23/01/1987)
-ResultSchema(Bob,Carol,12/12/2009)
++--------------------------------------------------------------------+
+| person               | friendsWith          | since                |
++--------------------------------------------------------------------+
+| 'Alice'              | 'Bob'                | '23/01/1987'         |
+| 'Bob'                | 'Carol'              | '12/12/2009'         |
++--------------------------------------------------------------------+
 ```
 
 Remember to add `fork in run := true` in your `build.sbt` for scala projects; this is not CAPS

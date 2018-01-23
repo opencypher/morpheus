@@ -17,25 +17,20 @@ package org.opencypher.caps.api.spark
 
 import java.net.URI
 import java.util.UUID
-import java.util.concurrent.atomic.AtomicLong
 
-import org.apache.spark.SparkConf
-import org.apache.spark.serializer.KryoSerializer
-import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.apache.spark.sql.SparkSession
+import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.UnsupportedOperationException
-import org.opencypher.caps.api.graph.CypherSession
-import org.opencypher.caps.api.io.{CreateOrFail, PersistMode}
+import org.opencypher.caps.api.graph.{PropertyGraph, CypherResult}
+import org.opencypher.caps.api.io.{CreateOrFail, PropertyGraphDataSource, PersistMode}
+import org.opencypher.caps.api.record.CypherRecords
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.spark.io.{CAPSGraphSource, CAPSGraphSourceFactory}
+import org.opencypher.caps.api.spark.CAPSConverters._
+import org.opencypher.caps.api.spark.io.CAPSPropertyGraphDataSource
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.demo.Configuration.{PrintLogicalPlan, PrintPhysicalPlan, PrintQueryExecutionStages}
-import org.opencypher.caps.demo.CypherKryoRegistrar
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceHandler
-import org.opencypher.caps.impl.spark.io.file.FileCsvGraphSourceFactory
-import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvGraphSourceFactory
-import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraphSourceFactory
-import org.opencypher.caps.impl.spark.io.session.SessionGraphSourceFactory
 import org.opencypher.caps.impl.spark.physical._
 import org.opencypher.caps.impl.util.parsePathOrURI
 import org.opencypher.caps.ir.api.expr.{Expr, Var}
@@ -44,19 +39,12 @@ import org.opencypher.caps.ir.impl.parse.CypherParser
 import org.opencypher.caps.ir.impl.{IRBuilder, IRBuilderContext}
 import org.opencypher.caps.logical.impl._
 
-sealed class CAPSSession private (
-    val sparkSession: SparkSession,
-    private val graphSourceHandler: CAPSGraphSourceHandler)
-    extends CypherSession
-    with Serializable {
+sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSourceHandler: CAPSGraphSourceHandler)
+    extends CAPSSession
+    with Serializable
+    with CAPSSessionOps {
 
   self =>
-
-  override type Graph = CAPSGraph
-  override type Session = CAPSSession
-  override type Records = CAPSRecords
-  override type Result = CAPSResult
-  override type Data = DataFrame
 
   private val producer = new LogicalOperatorProducer
   private val logicalPlanner = new LogicalPlanner(producer)
@@ -65,32 +53,29 @@ sealed class CAPSSession private (
   private val physicalPlanner = new PhysicalPlanner()
   private val physicalOptimizer = new PhysicalOptimizer()
   private val parser = CypherParser
-  private val temporaryColumnId = new AtomicLong()
 
-  def temporaryColumnName(): String = {
-    s"___Tmp${temporaryColumnId.incrementAndGet()}"
-  }
-
-  def sourceAt(uri: URI): CAPSGraphSource =
+  def sourceAt(uri: URI): PropertyGraphDataSource =
     graphSourceHandler.sourceAt(uri)(this)
 
-  def graphAt(path: String): CAPSGraph =
+  override def graphAt(path: String): PropertyGraph =
     graphAt(parsePathOrURI(path))
 
   // TODO: why not Option[CAPSGraph] in general?
-  def graphAt(uri: URI): CAPSGraph =
+  override def graphAt(uri: URI): PropertyGraph =
     graphSourceHandler.sourceAt(uri)(this).graph
 
-  def optGraphAt(uri: URI): Option[CAPSGraph] =
+  def optGraphAt(uri: URI): Option[PropertyGraph] =
     graphSourceHandler.optSourceAt(uri)(this).map(_.graph)
 
-  def storeGraphAt(graph: CAPSGraph, pathOrUri: String, mode: PersistMode = CreateOrFail): CAPSGraph =
+  override def storeGraphAt(graph: PropertyGraph, pathOrUri: String, mode: PersistMode = CreateOrFail): PropertyGraph =
     graphSourceHandler.sourceAt(parsePathOrURI(pathOrUri))(this).store(graph, mode)
 
-  def mountSourceAt(source: CAPSGraphSource, pathOrUri: String): Unit =
-    mountSourceAt(source, parsePathOrURI(pathOrUri))
+  override def mountSourceAt(source: PropertyGraphDataSource, path: String): Unit = source match {
+    case c: CAPSPropertyGraphDataSource => mountSourceAt(c, parsePathOrURI(path))
+    case x                              => throw UnsupportedOperationException(s"can only handle CAPS graph sources, but got $x")
+  }
 
-  def mountSourceAt(source: CAPSGraphSource, uri: URI): Unit =
+  def mountSourceAt(source: CAPSPropertyGraphDataSource, uri: URI): Unit =
     graphSourceHandler.mountSourceAt(source, uri)(this)
 
   def unmountAll(): Unit =
@@ -98,7 +83,7 @@ sealed class CAPSSession private (
 
   override def emptyGraph: CAPSGraph = CAPSGraph.empty(this)
 
-  override def cypher(graph: Graph, query: String, queryParameters: Map[String, CypherValue]): Result = {
+  override def cypher(graph: PropertyGraph, query: String, queryParameters: Map[String, CypherValue]): CypherResult = {
     val ambientGraph = mountAmbientGraph(graph)
 
     val (stmt, extractedLiterals, semState) = parser.process(query)(CypherParser.defaultContext)
@@ -141,18 +126,18 @@ sealed class CAPSSession private (
     }
   }
 
-  private def mountAmbientGraph(ambient: CAPSGraph): IRExternalGraph = {
+  private def mountAmbientGraph(ambient: PropertyGraph): IRExternalGraph = {
     val name = UUID.randomUUID().toString
     val uri = URI.create(s"session:///graphs/ambient/$name")
 
-    val graphSource = new CAPSGraphSource {
+    val graphSource = new CAPSPropertyGraphDataSource {
       override def schema: Option[Schema] = Some(graph.schema)
       override def canonicalURI: URI = uri
       override def delete(): Unit = throw UnsupportedOperationException("Deletion of an ambient graph")
-      override def graph: CAPSGraph = ambient
+      override def graph: PropertyGraph = ambient
       override def sourceForGraphAt(uri: URI): Boolean = uri == canonicalURI
       override def create: CAPSGraph = throw UnsupportedOperationException("Creation of an ambient graph")
-      override def store(graph: CAPSGraph, mode: PersistMode): CAPSGraph =
+      override def store(graph: PropertyGraph, mode: PersistMode): CAPSGraph =
         throw UnsupportedOperationException("Persisting an ambient graph")
       override val session: CAPSSession = self
     }
@@ -162,40 +147,56 @@ sealed class CAPSSession private (
     IRExternalGraph(name, ambient.schema, uri)
   }
 
-  private def planStart(graph: Graph, fields: Set[Var]): LogicalOperator = {
+  private def planStart(graph: PropertyGraph, fields: Set[Var]): LogicalOperator = {
     val ambientGraph = mountAmbientGraph(graph)
 
     producer.planStart(LogicalExternalGraph(ambientGraph.name, ambientGraph.uri, graph.schema), fields)
   }
 
-  def filter(graph: Graph, in: Records, expr: Expr, queryParameters: Map[String, CypherValue]): Records = {
-    val scan = planStart(graph, in.header.internalHeader.fields)
+  override def filter(
+      graph: PropertyGraph,
+      in: CypherRecords,
+      expr: Expr,
+      queryParameters: Map[String, CypherValue]): CAPSRecords = {
+    val scan = planStart(graph, in.header.asCaps.internalHeader.fields)
     val filter = producer.planFilter(expr, scan)
     plan(graph, in, queryParameters, filter).records
   }
 
-  def select(graph: Graph, in: Records, fields: IndexedSeq[Var], queryParameters: Map[String, CypherValue]): Records = {
-    val scan = planStart(graph, in.header.internalHeader.fields)
+  override def select(
+      graph: PropertyGraph,
+      in: CypherRecords,
+      fields: IndexedSeq[Var],
+      queryParameters: Map[String, CypherValue]): CAPSRecords = {
+    val scan = planStart(graph, in.header.asCaps.internalHeader.fields)
     val select = producer.planSelect(fields, Set.empty, scan)
     plan(graph, in, queryParameters, select).records
   }
 
-  def project(graph: Graph, in: Records, expr: Expr, queryParameters: Map[String, CypherValue]): Records = {
-    val scan = planStart(graph, in.header.internalHeader.fields)
+  override def project(
+      graph: PropertyGraph,
+      in: CypherRecords,
+      expr: Expr,
+      queryParameters: Map[String, CypherValue]): CAPSRecords = {
+    val scan = planStart(graph, in.header.asCaps.internalHeader.fields)
     val project = producer.projectExpr(expr, scan)
     plan(graph, in, queryParameters, project).records
   }
 
-  def alias(graph: Graph, in: Records, alias: (Expr, Var), queryParameters: Map[String, CypherValue]): Records = {
+  override def alias(
+      graph: PropertyGraph,
+      in: CypherRecords,
+      alias: (Expr, Var),
+      queryParameters: Map[String, CypherValue]): CAPSRecords = {
     val (expr, v) = alias
-    val scan = planStart(graph, in.header.internalHeader.fields)
+    val scan = planStart(graph, in.header.asCaps.internalHeader.fields)
     val select = producer.projectField(IRField(v.name)(v.cypherType), expr, scan)
     plan(graph, in, queryParameters, select).records
   }
 
   private def plan(
-      graph: CAPSGraph,
-      records: CAPSRecords,
+      graph: PropertyGraph,
+      records: CypherRecords,
       parameters: Map[String, CypherValue],
       logicalPlan: LogicalOperator): CAPSResult = {
     logStageProgress("Flat plan ... ", false)
@@ -203,7 +204,7 @@ sealed class CAPSSession private (
     logStageProgress("Done!")
 
     logStageProgress("Physical plan ... ", false)
-    val physicalPlannerContext = PhysicalPlannerContext(graphAt, records, parameters)
+    val physicalPlannerContext = PhysicalPlannerContext(graphAt, records.asCaps, parameters)
     val physicalPlan = physicalPlanner(flatPlan)(physicalPlannerContext)
     logStageProgress("Done!")
 
@@ -235,54 +236,4 @@ sealed class CAPSSession private (
 
     s"${this.getClass.getSimpleName}($mountPointsString)"
   }
-}
-
-object CAPSSession extends Serializable {
-
-  /**
-    * Creates a new CAPSSession that wraps a local Spark session with CAPS default parameters.
-    */
-  def local(): CAPSSession = {
-    val conf = new SparkConf(true)
-    conf.set("spark.serializer", classOf[KryoSerializer].getCanonicalName)
-    conf.set("spark.kryo.registrator", classOf[CypherKryoRegistrar].getCanonicalName)
-    conf.set("spark.sql.codegen.wholeStage", "true")
-    conf.set("spark.kryo.unsafe", "true")
-    conf.set("spark.kryo.referenceTracking", "false")
-    conf.set("spark.kryo.registrationRequired", "true")
-
-    val session = SparkSession
-      .builder()
-      .config(conf)
-      .master("local[*]")
-      .appName(s"caps-local-${UUID.randomUUID()}")
-      .getOrCreate()
-    session.sparkContext.setLogLevel("error")
-
-    create(session)
-  }
-
-  def create(implicit session: SparkSession): CAPSSession = Builder(session).build
-
-  case class Builder(session: SparkSession, private val graphSourceFactories: Set[CAPSGraphSourceFactory] = Set.empty) {
-
-    def withGraphSourceFactory(factory: CAPSGraphSourceFactory): Builder =
-      copy(graphSourceFactories = graphSourceFactories + factory)
-
-    def build: CAPSSession = {
-      val sessionFactory = SessionGraphSourceFactory()
-      // add some default factories
-      val additionalFactories = graphSourceFactories +
-        Neo4jGraphSourceFactory() +
-        HdfsCsvGraphSourceFactory(session.sparkContext.hadoopConfiguration) +
-        FileCsvGraphSourceFactory()
-
-      new CAPSSession(
-        session,
-        CAPSGraphSourceHandler(sessionFactory, additionalFactories)
-      )
-    }
-  }
-
-  def builder(sparkSession: SparkSession): Builder = Builder(sparkSession)
 }

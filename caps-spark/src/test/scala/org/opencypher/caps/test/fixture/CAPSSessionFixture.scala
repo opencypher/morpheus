@@ -15,7 +15,8 @@
  */
 package org.opencypher.caps.test.fixture
 
-import org.opencypher.caps.api.spark.CAPSSession
+import org.opencypher.caps.api.CAPSSession
+import org.opencypher.caps.api.spark.CAPSSessionImpl
 import org.opencypher.caps.test.BaseTestSuite
 
 trait CAPSSessionFixture extends BaseTestFixture {
@@ -24,6 +25,6 @@ trait CAPSSessionFixture extends BaseTestFixture {
   implicit lazy val caps: CAPSSession = CAPSSession.local()
 
   abstract override protected def afterEach(): Unit =
-    caps.unmountAll()
+    caps.asInstanceOf[CAPSSessionImpl].unmountAll()
     super.afterEach()
 }

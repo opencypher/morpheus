@@ -220,7 +220,7 @@ final case class Schema(
     */
   def withNodePropertyKeys(nodeLabels: Set[String], keys: PropertyKeys): Schema = {
     if (nodeLabels.exists(_.isEmpty))
-      throw new SchemaException("Labels must be non-empty")
+      throw SchemaException("Labels must be non-empty")
     val propertyKeys = if (labelPropertyMap.labelCombinations(nodeLabels)) {
       computePropertyTypes(labelPropertyMap.properties(nodeLabels), keys)
     } else {
