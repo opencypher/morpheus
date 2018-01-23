@@ -20,7 +20,7 @@ import java.net.URI
 import org.opencypher.caps.api.graph.CypherSession
 
 /**
-  * Factory for creating GraphSource instances for a given set of schemes.
+  * Factory for creating `PropertyGraphDataSource` instances for a given set of schemes.
   */
 trait PropertyGraphDataSourceFactory {
 
@@ -39,7 +39,7 @@ trait PropertyGraphDataSourceFactory {
   def schemes: Set[String]
 
   /**
-    * Creates a new graph source at the argument uri.
+    * Creates a new property graph source at the argument uri.
     *
     * @param uri at which a new graph source is to be created.
     * @return create a new graph source for the given uri.
