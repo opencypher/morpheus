@@ -21,8 +21,8 @@ import org.apache.spark.SparkConf
 import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.sql.SparkSession
 import org.opencypher.caps.api.graph.CypherSession
-import org.opencypher.caps.api.spark._
-import org.opencypher.caps.api.spark.io.CAPSPropertyGraphDataSourceFactory
+import org.opencypher.caps.impl.spark._
+import org.opencypher.caps.impl.spark.io.CAPSPropertyGraphDataSourceFactory
 import org.opencypher.caps.demo.CypherKryoRegistrar
 import org.opencypher.caps.impl.spark.io.CAPSGraphSourceHandler
 import org.opencypher.caps.impl.spark.io.file.FileCsvPropertyGraphDataSourceFactory

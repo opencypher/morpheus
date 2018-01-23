@@ -15,10 +15,10 @@
  */
 package org.opencypher.caps.impl.spark.acceptance
 
-import org.opencypher.caps.api.spark.CAPSConverters._
-import org.opencypher.caps.api.spark.CAPSGraph
 import org.opencypher.caps.api.value.{CypherMap, CypherNode, Properties}
 import org.opencypher.caps.demo.Configuration.PrintLogicalPlan
+import org.opencypher.caps.impl.spark.CAPSConverters._
+import org.opencypher.caps.impl.spark.CAPSGraph
 
 import scala.collection.immutable.Bag
 

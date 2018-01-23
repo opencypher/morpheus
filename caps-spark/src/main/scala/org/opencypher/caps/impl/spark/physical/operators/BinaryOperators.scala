@@ -16,16 +16,10 @@
 package org.opencypher.caps.impl.spark.physical.operators
 
 import org.apache.spark.sql.functions
-import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.impl.record.{OpaqueField, RecordHeader, RecordSlot}
-import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.{
-  assertIsNode,
-  columnName,
-  joinDFs,
-  joinRecords
-}
+import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.{assertIsNode, columnName, joinDFs, joinRecords}
 import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
-import org.opencypher.caps.impl.spark.{ColumnNameGenerator, SparkColumnName}
+import org.opencypher.caps.impl.spark.{CAPSRecords, ColumnNameGenerator, SparkColumnName}
 import org.opencypher.caps.ir.api.expr.Var
 
 private[spark] abstract class BinaryPhysicalOperator extends PhysicalOperator {

@@ -22,8 +22,8 @@ import org.opencypher.caps.api.exception.NotImplementedException
 import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.io.{CreateOrFail, PersistMode}
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.spark.CAPSGraph
-import org.opencypher.caps.api.spark.io.CAPSPropertyGraphDataSource
+import org.opencypher.caps.impl.spark.CAPSGraph
+import org.opencypher.caps.impl.spark.io.CAPSPropertyGraphDataSource
 import org.opencypher.caps.impl.spark.io.hdfs.CsvGraphLoader
 
 case class FileCsvPropertyGraphDataSource(override val canonicalURI: URI)(implicit val session: CAPSSession)

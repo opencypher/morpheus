@@ -17,7 +17,7 @@ package org.opencypher.caps
 
 import java.io.File
 
-import org.opencypher.caps.api.spark.CAPSGraph
+import org.opencypher.caps.impl.spark.CAPSGraph
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.support.creation.caps.{CAPSGraphFactory, CAPSScanGraphFactory}
 import org.opencypher.tools.tck.api.{CypherTCK, Scenario}

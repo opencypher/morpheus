@@ -24,12 +24,11 @@ import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.record.{CAPSRecordHeader, RecordHeader}
-import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraph.{filterNode, filterRel, nodeToRow, relToRow}
+import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords, SparkColumnName}
 import org.opencypher.caps.ir.api.PropertyKey
 import org.opencypher.caps.ir.api.expr._
 

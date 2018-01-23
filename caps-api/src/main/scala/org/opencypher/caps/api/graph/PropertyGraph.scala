@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.api.graph
 
-import org.opencypher.caps.api.record.CypherRecords
+import org.opencypher.caps.impl.record.CypherRecords
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.api.value.CypherValue

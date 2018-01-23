@@ -18,8 +18,7 @@ package org.opencypher.caps.impl.spark.io.file
 import java.net.URI
 
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.spark.io._
-import org.opencypher.caps.impl.spark.io.CAPSPropertyGraphDataSourceFactoryImpl
+import org.opencypher.caps.impl.spark.io.{CAPSPropertyGraphDataSourceFactoryImpl, _}
 
 case object FileCsvPropertyGraphDataSourceFactory extends CAPSGraphSourceFactoryCompanion("file+csv", "file")
 

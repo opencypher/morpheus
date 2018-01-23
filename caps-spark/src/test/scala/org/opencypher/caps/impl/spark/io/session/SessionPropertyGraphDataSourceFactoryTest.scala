@@ -18,7 +18,7 @@ package org.opencypher.caps.impl.spark.io.session
 import java.net.URI
 
 import org.mockito.Mockito._
-import org.opencypher.caps.api.spark.io.CAPSPropertyGraphDataSource
+import org.opencypher.caps.impl.spark.io.CAPSPropertyGraphDataSource
 import org.opencypher.caps.test.BaseTestSuite
 
 class SessionPropertyGraphDataSourceFactoryTest extends BaseTestSuite {

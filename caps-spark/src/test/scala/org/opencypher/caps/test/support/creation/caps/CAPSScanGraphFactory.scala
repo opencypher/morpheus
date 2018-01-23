@@ -18,8 +18,8 @@ package org.opencypher.caps.test.support.creation.caps
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.record.{NodeScan, RelationshipScan}
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSScanGraph}
+import org.opencypher.caps.impl.record.{NodeScan, RelationshipScan}
+import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords, CAPSScanGraph}
 import org.opencypher.caps.test.support.creation.propertygraph.PropertyGraph
 
 import scala.collection.JavaConverters._

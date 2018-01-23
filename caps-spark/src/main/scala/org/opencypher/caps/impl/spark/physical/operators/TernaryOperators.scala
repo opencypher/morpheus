@@ -18,12 +18,11 @@ package org.opencypher.caps.impl.spark.physical.operators
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.functions.udf
 import org.apache.spark.sql.types.{ArrayType, BooleanType, LongType}
-import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.api.types.CTNode
 import org.opencypher.caps.impl.record.{OpaqueField, ProjectedExpr, RecordHeader, RecordSlot}
-import org.opencypher.caps.impl.spark.ColumnNameGenerator
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.{assertIsNode, columnName, joinRecords}
 import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext, udfUtils}
+import org.opencypher.caps.impl.spark.{CAPSRecords, ColumnNameGenerator}
 import org.opencypher.caps.ir.api.expr.{EndNode, Var}
 
 private[spark] abstract class TernaryPhysicalOperator extends PhysicalOperator {

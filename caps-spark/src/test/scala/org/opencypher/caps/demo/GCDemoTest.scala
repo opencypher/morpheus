@@ -22,9 +22,9 @@ import org.apache.spark.sql.Row
 import org.neo4j.driver.v1.{AuthTokens, Session}
 import org.opencypher.caps.api.graph.{CypherResult, PropertyGraph}
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.api.types.{CTInteger, CTString}
 import org.opencypher.caps.api.value.CypherMap
+import org.opencypher.caps.impl.spark.CAPSRecords
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.fixture.{MiniDFSClusterFixture, Neo4jServerFixture, SparkSessionFixture}
 import org.scalatest.Assertion

@@ -19,11 +19,11 @@ import java.net.URI
 
 import org.opencypher.caps.api.exception.{IllegalArgumentException, NotImplementedException}
 import org.opencypher.caps.api.graph.PropertyGraph
-import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.api.types.CTRelationship
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.flat
 import org.opencypher.caps.impl.flat.FlatOperator
+import org.opencypher.caps.impl.spark.CAPSRecords
 import org.opencypher.caps.impl.spark.physical.operators._
 import org.opencypher.caps.ir.api.block.SortItem
 import org.opencypher.caps.ir.api.expr._

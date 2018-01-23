@@ -17,9 +17,8 @@ package org.opencypher.caps.impl.spark
 
 import org.apache.spark.sql.Row
 import org.opencypher.caps.api.exception.IllegalArgumentException
-import org.opencypher.caps.api.record.CypherRecords
-import org.opencypher.caps.api.spark.CAPSConverters._
-import org.opencypher.caps.api.spark.CAPSGraph
+import org.opencypher.caps.impl.record.CypherRecords
+import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraphLoader
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.fixture.{Neo4jServerFixture, OpenCypherDataFixture}
@@ -152,7 +151,7 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
 
   // TODO: Replace with Bag testing
   implicit class OtherRichRecords(records: CypherRecords) {
-    import org.opencypher.caps.api.spark.CAPSConverters._
+    import org.opencypher.caps.impl.spark.CAPSConverters._
     val capsRecords = records.asCaps
 
     def shouldHaveSize(size: Int) = {

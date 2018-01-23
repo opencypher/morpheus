@@ -17,8 +17,8 @@ package org.opencypher.caps.impl.spark
 
 import java.util.Objects
 
-import org.opencypher.caps.api.record.CypherRecords
-import org.opencypher.caps.api.util.PrintOptions
+import org.opencypher.caps.impl.record.CypherRecords
+import org.opencypher.caps.impl.util.PrintOptions
 
 object RecordsPrinter {
 

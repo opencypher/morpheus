@@ -25,8 +25,8 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.SparkSession
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
-import org.opencypher.caps.api.record.{NodeScan, RelationshipScan}
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
+import org.opencypher.caps.impl.record.{NodeScan, RelationshipScan}
+import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords}
 
 trait CsvGraphLoaderFileHandler {
   def location: String

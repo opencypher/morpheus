@@ -16,9 +16,9 @@
 package org.opencypher.caps.impl.spark.physical
 
 import org.opencypher.caps.api.graph.{CypherResultPlan, Plan}
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSResult}
 import org.opencypher.caps.impl.flat.FlatOperator
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator
+import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords, CAPSResult}
 import org.opencypher.caps.logical.impl.LogicalOperator
 
 object CAPSResultBuilder {

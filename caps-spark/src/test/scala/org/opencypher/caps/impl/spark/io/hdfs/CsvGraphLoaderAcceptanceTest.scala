@@ -17,7 +17,7 @@ package org.opencypher.caps.impl.spark.io.hdfs
 
 import java.net.URI
 
-import org.opencypher.caps.api.spark.CAPSGraph
+import org.opencypher.caps.impl.spark.CAPSGraph
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.fixture.MiniDFSClusterFixture
 import org.scalatest.Matchers

@@ -18,10 +18,10 @@ package org.opencypher.caps.impl.spark.physical
 import java.net.URI
 
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.spark.CAPSConverters._
-import org.opencypher.caps.api.spark.CAPSRecords
 import org.opencypher.caps.api.types.CTNode
 import org.opencypher.caps.impl.record.RecordHeader
+import org.opencypher.caps.impl.spark.CAPSConverters._
+import org.opencypher.caps.impl.spark.CAPSRecords
 import org.opencypher.caps.impl.spark.physical.operators._
 import org.opencypher.caps.ir.api.expr.Var
 import org.opencypher.caps.logical.impl.LogicalExternalGraph

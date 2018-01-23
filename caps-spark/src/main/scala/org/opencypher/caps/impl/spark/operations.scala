@@ -15,7 +15,6 @@
  */
 package org.opencypher.caps.impl.spark
 
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords, CAPSSessionImpl}
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.ir.api.expr.{Expr, Var}
 
