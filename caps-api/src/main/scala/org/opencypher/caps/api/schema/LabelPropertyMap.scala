@@ -15,9 +15,11 @@
  */
 package org.opencypher.caps.api.schema
 
+import cats.instances.all._
+import cats.syntax.semigroup._
 import org.opencypher.caps.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.caps.api.types.CypherType
-import org.opencypher.caps.api.util.MapUtils._
+import org.opencypher.caps.api.types.CypherType.joinMonoid
 
 object PropertyKeys {
   type PropertyKeys = Map[String, CypherType]
@@ -62,9 +64,7 @@ final case class LabelPropertyMap(map: Map[Set[String], PropertyKeys]) {
     * @param other LabelPropertyMap to merge
     * @return merged LabelPropertyMap
     */
-  def ++(other: LabelPropertyMap): LabelPropertyMap =
-    copy(map = merge(map, other.map)((aValue, bValue) =>
-      merge(aValue, bValue)((aType, bType) => if (aType == bType) aType else aType.join(bType))))
+  def ++(other: LabelPropertyMap): LabelPropertyMap = copy(map |+| other.map)
 
   /**
     * Returns a LabelPropertyMap that contains all label combinations which include one or more of the specified labels.

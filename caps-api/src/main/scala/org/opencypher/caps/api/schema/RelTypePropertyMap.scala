@@ -15,9 +15,11 @@
  */
 package org.opencypher.caps.api.schema
 
+import cats.instances.all._
+import cats.syntax.semigroup._
 import org.opencypher.caps.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.caps.api.types.CypherType
-import org.opencypher.caps.api.util.MapUtils.merge
+import org.opencypher.caps.api.types.CypherType.joinMonoid
 
 object RelTypePropertyMap {
   val empty: RelTypePropertyMap = RelTypePropertyMap(Map.empty)
@@ -50,9 +52,7 @@ final case class RelTypePropertyMap(map: Map[String, PropertyKeys]) {
     RelTypePropertyMap(map.filterKeys(relType.contains))
   }
 
-  def ++(other: RelTypePropertyMap): RelTypePropertyMap =
-    copy(map = merge(map, other.map)((aValue, bValue) =>
-      merge(aValue, bValue)((aType, bType) => if (aType == bType) aType else aType.join(bType))))
+  def ++(other: RelTypePropertyMap): RelTypePropertyMap = copy(map |+| other.map)
 
   // utility signatures
 

@@ -19,7 +19,6 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.{CNFNormalizer, For
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{BaseContext, BaseState, Phase}
 import org.neo4j.cypher.internal.util.v3_4.{Rewriter, inSequence}
-import org.opencypher.caps.api.util.MapUtils
 
 case object CAPSRewriting extends Phase[BaseContext, BaseState, BaseState] {
 
@@ -48,9 +47,7 @@ case object CAPSRewriting extends Phase[BaseContext, BaseState, BaseState] {
       case (acc, rewriter) => acc.endoRewrite(rewriter)
     }
     // merge extracted params
-    val extractedParameters = extractedParams.foldLeft(Map.empty[String, Any]) {
-      case (acc, current) => MapUtils.merge(acc, current)((l, r) => l)
-    }
+    val extractedParameters = extractedParams.foldLeft(Map.empty[String, Any])(_ ++ _)
 
     from
       .withStatement(finalStatement)
