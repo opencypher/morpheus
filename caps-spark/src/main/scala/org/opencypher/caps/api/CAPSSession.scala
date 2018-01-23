@@ -15,20 +15,17 @@
  */
 package org.opencypher.caps.api
 
-import java.util.UUID
+import java.util.{ServiceLoader, UUID}
 
 import org.apache.spark.SparkConf
 import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.sql.SparkSession
 import org.opencypher.caps.api.graph.CypherSession
-import org.opencypher.caps.impl.spark._
-import org.opencypher.caps.impl.spark.io.CAPSPropertyGraphDataSourceFactory
 import org.opencypher.caps.demo.CypherKryoRegistrar
-import org.opencypher.caps.impl.spark.io.CAPSGraphSourceHandler
-import org.opencypher.caps.impl.spark.io.file.FileCsvPropertyGraphDataSourceFactory
-import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvPropertyGraphDataSourceFactory
-import org.opencypher.caps.impl.spark.io.neo4j.Neo4JPropertyGraphDataSourceFactory
-import org.opencypher.caps.impl.spark.io.session.SessionPropertyGraphDataSourceFactory
+import org.opencypher.caps.impl.spark._
+import org.opencypher.caps.impl.spark.io.{CAPSGraphSourceHandler, CAPSPropertyGraphDataSourceFactory}
+
+import scala.collection.JavaConverters._
 
 trait CAPSSession extends CypherSession {
 
@@ -71,16 +68,12 @@ object CAPSSession extends Serializable {
       copy(graphSourceFactories = graphSourceFactories + factory)
 
     def build: CAPSSession = {
-      val sessionFactory = SessionPropertyGraphDataSourceFactory()
-      // add some default factories
-      val additionalFactories = graphSourceFactories +
-        Neo4JPropertyGraphDataSourceFactory() +
-        HdfsCsvPropertyGraphDataSourceFactory(session.sparkContext.hadoopConfiguration) +
-        FileCsvPropertyGraphDataSourceFactory()
+      val discoveredFactories = ServiceLoader.load(classOf[CAPSPropertyGraphDataSourceFactory]).asScala.toSet
+      val allFactories = graphSourceFactories ++ discoveredFactories
 
       new CAPSSessionImpl(
         session,
-        CAPSGraphSourceHandler(sessionFactory, additionalFactories)
+        CAPSGraphSourceHandler(allFactories)
       )
     }
   }

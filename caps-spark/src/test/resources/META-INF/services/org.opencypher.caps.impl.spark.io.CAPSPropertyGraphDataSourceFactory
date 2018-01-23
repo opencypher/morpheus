@@ -1,0 +1,5 @@
+# These are copied from main/resources
+org.opencypher.caps.impl.spark.io.session.SessionPropertyGraphDataSourceFactory
+org.opencypher.caps.impl.spark.io.file.FileCsvPropertyGraphDataSourceFactory
+org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvPropertyGraphDataSourceFactory
+org.opencypher.caps.impl.spark.io.neo4j.Neo4JPropertyGraphDataSourceFactory
