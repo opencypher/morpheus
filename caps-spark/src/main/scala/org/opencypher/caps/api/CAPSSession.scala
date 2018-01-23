@@ -30,7 +30,7 @@ import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvPropertyGraphDataSourceFact
 import org.opencypher.caps.impl.spark.io.neo4j.Neo4JPropertyGraphDataSourceFactory
 import org.opencypher.caps.impl.spark.io.session.SessionPropertyGraphDataSourceFactory
 
-trait CAPSSession extends CypherSession with CAPSSessionOps {
+trait CAPSSession extends CypherSession {
 
   def sparkSession: SparkSession
 
