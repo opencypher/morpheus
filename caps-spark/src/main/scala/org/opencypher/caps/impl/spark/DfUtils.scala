@@ -16,7 +16,6 @@
 package org.opencypher.caps.impl.spark
 
 import org.apache.spark.sql.{Column, DataFrame, Row}
-import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.{IllegalArgumentException, NotImplementedException}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value._

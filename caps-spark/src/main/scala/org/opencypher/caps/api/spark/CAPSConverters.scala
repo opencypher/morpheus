@@ -17,7 +17,7 @@ package org.opencypher.caps.api.spark
 
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.UnsupportedOperationException
-import org.opencypher.caps.api.graph.{PropertyGraph, CypherResult, CypherSession}
+import org.opencypher.caps.api.graph.{CypherResult, CypherSession, PropertyGraph}
 import org.opencypher.caps.api.record.{CypherRecordHeader, CypherRecords}
 import org.opencypher.caps.impl.record.RecordHeader
 
@@ -26,35 +26,35 @@ object CAPSConverters {
   implicit class RichSession(session: CypherSession) {
     def asCaps: CAPSSession = session match {
       case caps: CAPSSession => caps
-      case _ => throw UnsupportedOperationException(s"can only handle CAPS sessions, got $session")
+      case _                 => throw UnsupportedOperationException(s"can only handle CAPS sessions, got $session")
     }
   }
 
   implicit class RichPropertyGraph(graph: PropertyGraph) {
     def asCaps: CAPSGraph = graph match {
       case caps: CAPSGraph => caps
-      case _ => throw UnsupportedOperationException(s"can only handle CAPS graphs, got $graph")
+      case _               => throw UnsupportedOperationException(s"can only handle CAPS graphs, got $graph")
     }
   }
 
   implicit class RichCypherResult(result: CypherResult) {
     def asCaps: CAPSResult = result match {
       case caps: CAPSResult => caps
-      case _ => throw UnsupportedOperationException(s"can only handle CAPS result, got $result")
+      case _                => throw UnsupportedOperationException(s"can only handle CAPS result, got $result")
     }
   }
 
   implicit class RichCypherRecords(records: CypherRecords) {
     def asCaps: CAPSRecords = records match {
       case caps: CAPSRecords => caps
-      case _ => throw UnsupportedOperationException(s"can only handle CAPS records, got $records")
+      case _                 => throw UnsupportedOperationException(s"can only handle CAPS records, got $records")
     }
   }
 
   implicit class RichCypherHeader(header: CypherRecordHeader) {
     def asCaps: RecordHeader = header match {
       case caps: RecordHeader => caps
-      case _ => throw UnsupportedOperationException(s"can only handle CORA record header, got $header")
+      case _                  => throw UnsupportedOperationException(s"can only handle CORA record header, got $header")
     }
   }
 

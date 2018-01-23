@@ -24,18 +24,17 @@ import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
-import org.opencypher.caps.ir.api.expr.{Property, Var}
 import org.opencypher.caps.api.record._
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.util.PrintOptions
 import org.opencypher.caps.api.value.CypherMap
-import org.opencypher.caps.impl.record._
-import org.opencypher.caps.impl.record.CAPSRecordHeader
 import org.opencypher.caps.impl.record.CAPSRecordHeader._
+import org.opencypher.caps.impl.record.{CAPSRecordHeader, _}
 import org.opencypher.caps.impl.spark.DfUtils._
 import org.opencypher.caps.impl.spark.convert.{fromSparkType, rowToCypherMap, toSparkType}
 import org.opencypher.caps.impl.spark.{RecordsPrinter, SparkColumnName}
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
+import org.opencypher.caps.ir.api.expr.{Property, Var}
 
 import scala.annotation.tailrec
 import scala.reflect.runtime.universe.TypeTag

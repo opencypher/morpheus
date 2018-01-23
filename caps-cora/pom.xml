@@ -34,12 +34,6 @@
             <version>${dep.neo4j.driver.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.typelevel</groupId>
-            <artifactId>cats_${project.scala.binary.version}</artifactId>
-            <version>${dep.cats.version}</version>
-        </dependency>
-
         <!-- Utils -->
         <dependency>
             <groupId>com.lihaoyi</groupId>

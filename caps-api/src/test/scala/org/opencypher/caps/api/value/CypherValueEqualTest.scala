@@ -20,8 +20,6 @@ import org.opencypher.caps.api.types._
 class CypherValueEqualTest extends CypherValueTestSuite {
 
   import CypherTestValues._
-  import instances._
-  import syntax._
 
   test("PATH equal") {
     verifyEqual(PATH_valueGroups)

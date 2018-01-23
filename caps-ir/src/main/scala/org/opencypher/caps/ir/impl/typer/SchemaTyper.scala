@@ -24,8 +24,8 @@ import org.atnos.eff._
 import org.atnos.eff.all._
 import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.v3_4.functions.{Collect, Exists, Max, Min}
-import org.opencypher.caps.api.schema.{AllGiven, AnyGiven, Schema}
 import org.opencypher.caps.api.schema.Schema.AllLabels
+import org.opencypher.caps.api.schema.{AllGiven, AnyGiven, Schema}
 import org.opencypher.caps.api.types.CypherType.joinMonoid
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.ir.impl.parse.RetypingPredicate

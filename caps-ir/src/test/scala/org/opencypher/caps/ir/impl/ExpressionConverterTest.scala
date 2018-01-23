@@ -18,16 +18,16 @@ package org.opencypher.caps.ir.impl
 import java.net.URI
 
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
-import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 import org.neo4j.cypher.internal.util.v3_4.{Ref, symbols}
-import org.opencypher.caps.ir.api.expr._
+import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 import org.opencypher.caps.api.io.PropertyGraphDataSource
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.ir.api._
-import org.opencypher.caps.test.BaseTestSuite
+import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.ir.test.support.Neo4jAstTestSupport
 import org.opencypher.caps.ir.test.toVar
+import org.opencypher.caps.test.BaseTestSuite
 import org.scalatest.mockito.MockitoSugar
 
 class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport with MockitoSugar {

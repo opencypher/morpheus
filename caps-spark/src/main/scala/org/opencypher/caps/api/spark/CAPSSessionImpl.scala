@@ -21,8 +21,8 @@ import java.util.UUID
 import org.apache.spark.sql.SparkSession
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.UnsupportedOperationException
-import org.opencypher.caps.api.graph.{PropertyGraph, CypherResult}
-import org.opencypher.caps.api.io.{CreateOrFail, PropertyGraphDataSource, PersistMode}
+import org.opencypher.caps.api.graph.{CypherResult, PropertyGraph}
+import org.opencypher.caps.api.io.{CreateOrFail, PersistMode, PropertyGraphDataSource}
 import org.opencypher.caps.api.record.CypherRecords
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.spark.CAPSConverters._

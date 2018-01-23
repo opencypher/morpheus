@@ -15,12 +15,12 @@
  */
 package org.opencypher.caps.ir.impl
 
-import org.opencypher.caps.ir.api.expr.{Expr, HasLabel, Property, Var}
 import org.opencypher.caps.api.schema.{AllGiven, Schema}
 import org.opencypher.caps.api.types.{CTNode, CTNull, CTRelationship}
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block._
+import org.opencypher.caps.ir.api.expr.{Expr, HasLabel, Property, Var}
 import org.opencypher.caps.ir.api.pattern._
 import org.opencypher.caps.ir.test._
 

@@ -15,7 +15,6 @@
  */
 package org.opencypher.caps.test.support.creation.propertygraph
 
-import java.util
 import java.util.stream.Collectors
 
 import org.neo4j.graphdb.GraphDatabaseService
@@ -24,7 +23,7 @@ import org.neo4j.harness.TestServerBuilders
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Map
 
-object Neo4jPropertyGraphFactory extends PropertyGraphFactory{
+object Neo4jPropertyGraphFactory extends PropertyGraphFactory {
   lazy val factory = new Neo4jPropertyGraphFactory
 
   def apply(createQuery: String, parameters: Map[String, Any]): PropertyGraph = factory.create(createQuery, parameters)
@@ -32,7 +31,8 @@ object Neo4jPropertyGraphFactory extends PropertyGraphFactory{
 
 class Neo4jPropertyGraphFactory {
 
-  private val neo4jServer = TestServerBuilders.newInProcessBuilder()
+  private val neo4jServer = TestServerBuilders
+    .newInProcessBuilder()
     .withConfig("dbms.security.auth_enabled", "true")
     .newServer()
 
@@ -48,7 +48,7 @@ class Neo4jPropertyGraphFactory {
     tx.success()
     tx.close()
 
-   propertyGraph
+    propertyGraph
   }
 
   private def getPropertyGraph = {

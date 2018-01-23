@@ -15,9 +15,9 @@
  */
 package org.opencypher.caps.impl.spark.io.neo4j.external
 
-import org.apache.spark.sql.{Row, types}
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.{Row, types}
 import org.neo4j.driver.internal.types.InternalTypeSystem
 import org.neo4j.driver.v1.types.{Type, TypeSystem}
 import org.neo4j.driver.v1.{Driver, Session, StatementResult}
@@ -32,7 +32,7 @@ private object Executor {
 
   private def toJava(x: Any): AnyRef = x match {
     case y: Seq[_] => y.asJava
-    case _ => x.asInstanceOf[AnyRef]
+    case _         => x.asInstanceOf[AnyRef]
   }
 
   val EMPTY = Array.empty[Any]
@@ -58,7 +58,7 @@ private object Executor {
         }
         driver.close()
       } catch {
-        case _:Throwable => // ignore
+        case _: Throwable => // ignore
       }
     }
 
@@ -76,7 +76,8 @@ private object Executor {
       val peek = result.peek()
       val keyCount = peek.size()
       if (keyCount == 0) {
-        val res: CypherResult = new CypherResult(new StructType(), Array.fill[Array[Any]](rows(result))(EMPTY).toIterator)
+        val res: CypherResult =
+          new CypherResult(new StructType(), Array.fill[Array[Any]](rows(result))(EMPTY).toIterator)
         result.consume()
         close(driver, session)
         return res
@@ -112,21 +113,21 @@ private object CypherTypes {
   val BOOLEAN: BooleanType.type = types.BooleanType
   val NULL: NullType.type = types.NullType
 
-  def apply(typ:String): DataType = typ.toUpperCase match {
-    case "LONG" => INTEGER
-    case "INT" => INTEGER
+  def apply(typ: String): DataType = typ.toUpperCase match {
+    case "LONG"    => INTEGER
+    case "INT"     => INTEGER
     case "INTEGER" => INTEGER
-    case "FLOAT" => FlOAT
-    case "DOUBLE" => FlOAT
+    case "FLOAT"   => FlOAT
+    case "DOUBLE"  => FlOAT
     case "NUMERIC" => FlOAT
-    case "STRING" => STRING
+    case "STRING"  => STRING
     case "BOOLEAN" => BOOLEAN
-    case "BOOL" => BOOLEAN
-    case "NULL" => NULL
-    case _ => STRING
+    case "BOOL"    => BOOLEAN
+    case "NULL"    => NULL
+    case _         => STRING
   }
 
-  def toSparkType(typeSystem : TypeSystem, typ : Type): org.apache.spark.sql.types.DataType =
+  def toSparkType(typeSystem: TypeSystem, typ: Type): org.apache.spark.sql.types.DataType =
     if (typ == typeSystem.BOOLEAN()) CypherTypes.BOOLEAN
     else if (typ == typeSystem.STRING()) CypherTypes.STRING
     else if (typ == typeSystem.INTEGER()) CypherTypes.INTEGER
@@ -139,14 +140,12 @@ private object CypherTypes {
   }
 
   def schemaFromNamedType(schemaInfo: Seq[(String, String)]): StructType = {
-    val fields = schemaInfo.map(field =>
-      StructField(field._1, CypherTypes(field._2), nullable = true) )
+    val fields = schemaInfo.map(field => StructField(field._1, CypherTypes(field._2), nullable = true))
     StructType(fields)
   }
 
   def schemaFromDataType(schemaInfo: Seq[(String, types.DataType)]): StructType = {
-    val fields = schemaInfo.map(field =>
-      StructField(field._1, field._2, nullable = true) )
+    val fields = schemaInfo.map(field => StructField(field._1, field._2, nullable = true))
     StructType(fields)
   }
 }

@@ -15,10 +15,10 @@
  */
 package org.opencypher.caps.ir.impl.block
 
-import org.opencypher.caps.ir.api.expr.Expr
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.ir.api.block.MatchBlock
+import org.opencypher.caps.ir.api.expr.Expr
 import org.opencypher.caps.ir.impl.IrTestSuite
 import org.opencypher.caps.ir.impl.refactor.instances._
 

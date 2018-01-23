@@ -17,8 +17,7 @@ package org.opencypher.caps.api.graph
 
 import java.net.URI
 
-import org.opencypher.caps.api.io.{CreateOrFail, PropertyGraphDataSource, PersistMode}
-import org.opencypher.caps.api.record.CypherRecords
+import org.opencypher.caps.api.io.{CreateOrFail, PersistMode, PropertyGraphDataSource}
 import org.opencypher.caps.api.value.CypherValue
 
 /**

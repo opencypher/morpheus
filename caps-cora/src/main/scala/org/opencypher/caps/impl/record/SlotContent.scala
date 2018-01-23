@@ -16,8 +16,8 @@
 package org.opencypher.caps.impl.record
 
 import org.opencypher.caps.api.exception.IllegalArgumentException
-import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.ir.api.expr._
 
 final case class RecordSlot(index: Int, content: SlotContent) {
   def withOwner(v: Var): RecordSlot = copy(content = content.withOwner(v))

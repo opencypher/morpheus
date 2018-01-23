@@ -20,16 +20,16 @@ import java.net.URI
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
 import org.neo4j.cypher.internal.util.v3_4.{InputPosition, Ref}
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
-import org.opencypher.caps.ir.api.expr.Expr
 import org.opencypher.caps.api.io.PropertyGraphDataSource
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue
-import org.opencypher.caps.ir.impl.typer.exception.TypingException
-import org.opencypher.caps.ir.impl.typer.{SchemaTyper, TypeTracker}
 import org.opencypher.caps.ir.api.block.SourceBlock
+import org.opencypher.caps.ir.api.expr.Expr
 import org.opencypher.caps.ir.api.pattern.Pattern
 import org.opencypher.caps.ir.api.{IRExternalGraph, IRField, IRGraph}
+import org.opencypher.caps.ir.impl.typer.exception.TypingException
+import org.opencypher.caps.ir.impl.typer.{SchemaTyper, TypeTracker}
 
 final case class IRBuilderContext(
     queryString: String,
