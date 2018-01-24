@@ -22,7 +22,7 @@ import org.opencypher.caps.api.CAPSSession
   * from CSV data and schema files. The example connects both networks via matching user and customer names. A Cypher
   * query is then used to compute products that friends have bought.
   */
-object MultiGraphExample extends App {
+object MultipleGraphExample extends App {
   // 1) Create CAPS session
   implicit val session = CAPSSession.local()
 
