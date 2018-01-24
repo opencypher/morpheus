@@ -22,7 +22,8 @@ import java.util.stream.Collectors
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.types.ArrayType
+import org.apache.spark.sql.{DataFrame, SparkSession, functions}
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.impl.record.{NodeScan, RelationshipScan}
@@ -116,12 +117,14 @@ class CsvGraphLoader(fileHandler: CsvGraphLoaderFileHandler)(implicit capsSessio
     csvFiles.map(e => {
       val schema = parseSchema(e)(CsvNodeSchema(_))
 
-      val records = CAPSRecords.create(
-        sparkSession.read
-          .option("timestampFormat", "yyyy-MM-dd'T'HH:mm:ss.SSS")
-          .schema(schema.toStructType)
-          .csv(e.toString)
-      )
+      val dataFrame = sparkSession.read
+        .option("timestampFormat", "yyyy-MM-dd'T'HH:mm:ss.SSS")
+        .schema(schema.toStructType)
+        .csv(e.toString)
+
+      val withListFields = convertLists(dataFrame, schema)
+
+      val records = CAPSRecords.create(withListFields)
 
       NodeScan
         .on("n" -> schema.idField.name)(builder => {
@@ -144,11 +147,15 @@ class CsvGraphLoader(fileHandler: CsvGraphLoaderFileHandler)(implicit capsSessio
 
       val schema = parseSchema(relationShipFile)(CsvRelSchema(_))
 
+      val dataFrame = sparkSession.read
+        .option("timestampFormat", "yyyy-MM-dd'T'HH:mm:ss.SSS")
+        .schema(schema.toStructType)
+        .csv(relationShipFile.toString)
+
+      val withLists = convertLists(dataFrame, schema)
+
       val records = CAPSRecords.create(
-        sparkSession.read
-          .option("timestampFormat", "yyyy-MM-dd'T'HH:mm:ss.SSS")
-          .schema(schema.toStructType)
-          .csv(relationShipFile.toString)
+        withLists
       )
 
       RelationshipScan
@@ -173,6 +180,23 @@ class CsvGraphLoader(fileHandler: CsvGraphLoaderFileHandler)(implicit capsSessio
   private def parseSchema[T <: CsvSchema](path: URI)(parser: String => T): T = {
     val text = fileHandler.readSchemaFile(path)
     parser(text)
+  }
+
+  /**
+    * CSV does not allow to read array fields. Thus we have to read all list fields as Strings and then manually convert
+    * them
+    *
+    * @param dataFrame the input data frame with list column represented as string
+    * @param schema the dataframes csv schema
+    * @return Date frame with array list columns
+    */
+  private def convertLists(dataFrame: DataFrame, schema: CsvSchema): DataFrame = {
+    schema.propertyFields
+      .filter(field => field.getTargetType.isInstanceOf[ArrayType])
+      .foldLeft(dataFrame) {
+        case (df, field) =>
+          df.withColumn(field.name, functions.split(df(field.name), "\\|").cast(field.getTargetType))
+      }
   }
 }
 

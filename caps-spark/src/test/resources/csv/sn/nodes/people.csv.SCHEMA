@@ -27,6 +27,11 @@
       "name": "luckyNumber",
       "column": 2,
       "valueType": "LONG"
+    },
+    {
+      "name": "languages",
+      "column": 5,
+      "valueType": "LIST[STRING]"
     }
   ]
 }

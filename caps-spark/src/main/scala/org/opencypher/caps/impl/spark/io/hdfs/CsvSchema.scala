@@ -28,15 +28,42 @@ abstract class CsvSchema {
 }
 
 case class CsvField(name: String, column: Int, valueType: String) {
-  def getType: DataType = valueType.toLowerCase match {
-    case "string"  => StringType
-    case "integer" => LongType
-    case "long"    => LongType
-    case "boolean" => BooleanType
-    case x         => throw new RuntimeException(s"Unknown type $x")
+  private val listType = raw"list\[(\w+)\]".r
+
+  /**
+    * As CSV does not support list types they are represented as Strings and have to be read as such.
+    * @return the Spark SQL type of the csv field at load time
+    */
+  def getSourceType: DataType = valueType.toLowerCase match {
+    case l if listType.pattern.matcher(l).matches() => StringType
+    case other => extractSimpleType(other)
   }
 
-  def toStructField: StructField = StructField(name, getType, nullable = true)
+  /**
+    * For List types we return the target array type.
+    * @return the Spark SQL type of the csv field at after special conversions
+    */
+  def getTargetType: DataType = valueType.toLowerCase match {
+    case l if listType.pattern.matcher(l).matches() => l match {
+      case listType(inner) => ArrayType(extractSimpleType(inner))
+    }
+
+    case other => extractSimpleType(other)
+  }
+
+  def toSourceStructField: StructField = StructField(name, getSourceType, nullable = true)
+
+  def toTargetStructField: StructField = StructField(name, getTargetType, nullable = true)
+
+  private def extractSimpleType(typeString: String): DataType = typeString match {
+    case "string"                  => StringType
+    case "integer"                 => LongType
+    case "long"                    => LongType
+    case "boolean"                 => BooleanType
+    case "float"                   => DoubleType
+    case "double"                  => DoubleType
+    case x                         => throw new RuntimeException(s"Unknown type $x")
+  }
 }
 
 case class CsvNodeSchema(
@@ -50,7 +77,7 @@ case class CsvNodeSchema(
     StructType(
       (List(idField) ++ optionalLabels ++ propertyFields)
         .sortBy(_.column)
-        .map(_.toStructField)
+        .map(_.toSourceStructField)
     )
   }
 }
@@ -115,7 +142,7 @@ case class CsvRelSchema(
     StructType(
       (List(idField, startIdField, endIdField) ++ propertyFields)
         .sortBy(_.column)
-        .map(_.toStructField)
+        .map(_.toSourceStructField)
     )
   }
 }
