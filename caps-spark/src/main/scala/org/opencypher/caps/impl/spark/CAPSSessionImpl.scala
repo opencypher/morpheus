@@ -56,20 +56,20 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
   def sourceAt(uri: URI): PropertyGraphDataSource =
     graphSourceHandler.sourceAt(uri)(this)
 
-  override def graphAt(path: String): PropertyGraph =
-    graphAt(parsePathOrURI(path))
+  override def readFromURI(path: String): PropertyGraph =
+    readFromURI(parsePathOrURI(path))
 
   // TODO: why not Option[CAPSGraph] in general?
-  override def graphAt(uri: URI): PropertyGraph =
+  override def readFromURI(uri: URI): PropertyGraph =
     graphSourceHandler.sourceAt(uri)(this).graph
 
   def optGraphAt(uri: URI): Option[PropertyGraph] =
     graphSourceHandler.optSourceAt(uri)(this).map(_.graph)
 
-  override def storeGraphAt(graph: PropertyGraph, pathOrUri: String, mode: PersistMode = CreateOrFail): PropertyGraph =
+  override def write(graph: PropertyGraph, pathOrUri: String, mode: PersistMode = CreateOrFail): Unit =
     graphSourceHandler.sourceAt(parsePathOrURI(pathOrUri))(this).store(graph, mode)
 
-  override def mountSourceAt(source: PropertyGraphDataSource, path: String): Unit = source match {
+  override def mount(source: PropertyGraphDataSource, path: String): Unit = source match {
     case c: CAPSPropertyGraphDataSource => mountSourceAt(c, parsePathOrURI(path))
     case x                              => throw UnsupportedOperationException(s"can only handle CAPS graph sources, but got $x")
   }
@@ -80,9 +80,10 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
   def unmountAll(): Unit =
     graphSourceHandler.unmountAll(this)
 
-  override def emptyGraph: CAPSGraph = CAPSGraph.empty(this)
+  override def cypher(query: String, parameters: Map[String, CypherValue]): CypherResult =
+    cypherOnGraph(CAPSGraph.empty(this), query, parameters)
 
-  override def cypher(graph: PropertyGraph, query: String, queryParameters: Map[String, CypherValue]): CypherResult = {
+  override def cypherOnGraph(graph: PropertyGraph, query: String, queryParameters: Map[String, CypherValue]): CypherResult = {
     val ambientGraph = mountAmbientGraph(graph)
 
     val (stmt, extractedLiterals, semState) = parser.process(query)(CypherParser.defaultContext)
@@ -203,7 +204,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
     logStageProgress("Done!")
 
     logStageProgress("Physical plan ... ", false)
-    val physicalPlannerContext = PhysicalPlannerContext(graphAt, records.asCaps, parameters)
+    val physicalPlannerContext = PhysicalPlannerContext(readFromURI, records.asCaps, parameters)
     val physicalPlan = physicalPlanner(flatPlan)(physicalPlannerContext)
     logStageProgress("Done!")
 

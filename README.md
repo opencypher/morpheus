@@ -77,51 +77,63 @@ Documentation will be generated and placed under `caps-core/target/site/scaladoc
 Cypher is based on the [property graph](https://github.com/opencypher/openCypher/blob/master/docs/property-graph-model.adoc) model, comprising labelled nodes and typed relationships, with a relationship either connecting two nodes, or forming a self-loop on a single node. 
 Both nodes and relationships are uniquely identified by an ID of type `Long`, and contain a set of properties. 
 
-The following example shows how to convert a friendship graph represented as Scala case classes to a `CAPSGraph` representation. 
-The `CAPSGraph` representation is constructed from node and relationship scans.
-The scan construction describes to `CAPSGraph` how this graph structure is read from a `DataFrame`.  
+The following example shows how to convert a social network represented as Scala case classes to a `PropertyGraph` representation. 
+The `PropertyGraph` representation is internally transformed into Spark data frames. 
+If you have existing data frames which you would like to treat as a graph, have a look at (this example)[TODO].   
 
-Once the graph is constructed the `CAPSGraph` instance supports Cypher queries with its `cypher` method.
+Once the property graph is constructed, it supports Cypher queries via its `cypher` method.
 
 ```scala
-import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.record._
-import org.opencypher.caps.api.spark.CAPSGraph
+import org.opencypher.caps.api._
 
-case class Person(id: Long, name: String) extends Node
+object SimpleExample extends App {
 
-case class Friend(id: Long, source: Long, target: Long, since: String) extends Relationship
+  // 1) Create CAPS session
+  implicit val session = CAPSSession.local()
 
-object Example extends App {
-  // Node and relationship data
-  val persons = List(Person(0, "Alice"), Person(1, "Bob"), Person(2, "Carol"))
-  val friendships = List(Friend(0, 0, 1, "23/01/1987"), Friend(1, 1, 2, "12/12/2009"))
+  // 2) Load social network data via case class instances
+  val socialNetwork = session.readFromSeqs(SocialNetworkData.persons, SocialNetworkData.friendships)
 
-  // Create CAPS session
-  implicit val caps = CAPSSession.local()
-
-  // Create graph from nodes and relationships
-  val graph = CAPSGraph.create(persons, friendships)
-
-  // Query graph with Cypher
-  val results = graph.cypher(
-    """| MATCH (a:Person)-[r:FRIEND]->(b)
-       | RETURN a.name AS person, b.name AS friendsWith, r.since AS since""".stripMargin
+  // 3) Query graph with Cypher
+  val results = socialNetwork.cypher(
+    """|MATCH (a:Person)-[r:FRIEND_OF]->(b)
+       |RETURN a.name, b.name, r.since""".stripMargin
   )
 
+  // 4) Print results to console
   results.print
+}
+
+/**
+  * Specify schema and data via case classes
+  */
+object SocialNetworkData {
+
+  case class Person(id: Long, name: String) extends schema.Node
+
+  @schema.RelationshipType("FRIEND_OF")
+  case class Friend(id: Long, source: Long, target: Long, since: String) extends schema.Relationship
+
+  val alice = Person(0, "Alice")
+  val bob = Person(1, "Bob")
+  val carol = Person(2, "Carol")
+
+  val persons = List(alice, bob, carol)
+  val friendships = List(Friend(0, alice.id, bob.id, "23/01/1987"), Friend(1, bob.id, carol.id, "12/12/2009"))
 }
 ```
 
 The above program prints:
 ```
 +--------------------------------------------------------------------+
-| person               | friendsWith          | since                |
+| a.name               | b.name               | r.since              |
 +--------------------------------------------------------------------+
 | 'Alice'              | 'Bob'                | '23/01/1987'         |
 | 'Bob'                | 'Carol'              | '12/12/2009'         |
 +--------------------------------------------------------------------+
 ```
+
+More examples, including [multiple graph features](https://github.com/opencypher/cypher-for-apache-spark/tree/master/caps-spark/src/main/scala/org/opencypher/caps/demo/MultiGraphExample.scala), can be found [in the demo package](https://github.com/opencypher/cypher-for-apache-spark/tree/master/caps-spark/src/main/scala/org/opencypher/caps/demo).
 
 Remember to add `fork in run := true` in your `build.sbt` for scala projects; this is not CAPS
 specific, but a quirk of spark execution that will help 

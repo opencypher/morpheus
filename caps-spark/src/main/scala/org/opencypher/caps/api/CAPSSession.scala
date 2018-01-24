@@ -20,17 +20,30 @@ import java.util.{ServiceLoader, UUID}
 import org.apache.spark.SparkConf
 import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.sql.SparkSession
-import org.opencypher.caps.api.graph.CypherSession
+import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph}
+import org.opencypher.caps.api.schema.{Node, Relationship, Schema}
 import org.opencypher.caps.demo.CypherKryoRegistrar
+import org.opencypher.caps.impl.record.CypherRecords
+import org.opencypher.caps.impl.record.GraphScan.{nodesToScan, relationshipsToScan}
 import org.opencypher.caps.impl.spark._
 import org.opencypher.caps.impl.spark.io.{CAPSGraphSourceHandler, CAPSPropertyGraphDataSourceFactory}
 
 import scala.collection.JavaConverters._
+import scala.reflect.runtime.universe._
 
 trait CAPSSession extends CypherSession {
 
   def sparkSession: SparkSession
 
+  def readFromSeqs[N <: Node : TypeTag, R <: Relationship : TypeTag](
+    nodes: Seq[N],
+    relationships: Seq[R]): PropertyGraph = {
+    implicit val session: CAPSSession = this
+    CAPSGraph.create(nodesToScan(nodes), relationshipsToScan(relationships))
+  }
+
+  override def readFromRecords(records: CypherRecords, schema: Schema): PropertyGraph =
+    CAPSGraph.create(records, schema)(this)
 }
 
 object CAPSSession extends Serializable {

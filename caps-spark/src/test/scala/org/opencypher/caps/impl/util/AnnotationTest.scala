@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.util
 
-import org.opencypher.caps.impl.record._
+import org.opencypher.caps.api.schema._
 import org.scalatest.{FunSuite, Matchers}
 
 import scala.annotation.StaticAnnotation
@@ -56,5 +56,4 @@ class AnnotationTest extends FunSuite with Matchers {
   test("read more general static annotation") {
     Annotation.get[TestAnnotation, TestAnnotation] should equal(Some(TestAnnotation("Foo")))
   }
-
 }
