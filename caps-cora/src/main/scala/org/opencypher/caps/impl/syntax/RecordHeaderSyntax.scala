@@ -39,14 +39,6 @@ trait RecordHeaderSyntax {
   def compactFields(implicit details: RetainedDetails): State[RecordHeader, Vector[RemovingUpdateResult[RecordSlot]]] =
     exec(InternalHeader.compactFields)
 
-//  def selectFields(predicate: RecordSlot => Boolean)
-//  : State[RecordHeader, Vector[RemovingUpdateResult[RecordSlot]]] =
-//    exec(InternalHeader.selectFields(predicate))
-
-//  def removeContent(content: SlotContent)
-//  : State[RecordHeader, RemovingUpdateResult[SlotContent]] =
-//    exec(InternalHeader.removeContent(content))
-
   private def exec[O](inner: State[InternalHeader, O]): State[RecordHeader, O] =
     get[RecordHeader]
       .map(header => inner.run(header.internalHeader).value)

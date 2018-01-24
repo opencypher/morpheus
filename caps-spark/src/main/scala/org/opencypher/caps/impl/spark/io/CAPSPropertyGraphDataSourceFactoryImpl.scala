@@ -20,12 +20,7 @@ import java.net.URI
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.graph.CypherSession
-import org.opencypher.caps.api.spark.CAPSConverters._
-import org.opencypher.caps.api.spark.io.{
-  CAPSGraphSourceFactoryCompanion,
-  CAPSPropertyGraphDataSource,
-  CAPSPropertyGraphDataSourceFactory
-}
+import org.opencypher.caps.impl.spark.CAPSConverters._
 
 abstract class CAPSPropertyGraphDataSourceFactoryImpl(val companion: CAPSGraphSourceFactoryCompanion)
     extends CAPSPropertyGraphDataSourceFactory {

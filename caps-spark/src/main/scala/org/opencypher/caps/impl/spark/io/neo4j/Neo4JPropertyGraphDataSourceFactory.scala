@@ -20,8 +20,7 @@ import java.net.{URI, URLDecoder}
 import org.apache.http.client.utils.URIBuilder
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
-import org.opencypher.caps.api.spark.io.CAPSGraphSourceFactoryCompanion
-import org.opencypher.caps.impl.spark.io.CAPSPropertyGraphDataSourceFactoryImpl
+import org.opencypher.caps.impl.spark.io.{CAPSGraphSourceFactoryCompanion, CAPSPropertyGraphDataSourceFactoryImpl}
 import org.opencypher.caps.impl.spark.io.neo4j.external.Neo4jConfig
 
 case object Neo4JPropertyGraphDataSourceFactory extends CAPSGraphSourceFactoryCompanion("bolt", "bolt+routing")

@@ -20,12 +20,11 @@ import java.net.URI
 import org.apache.spark.sql.{Column, DataFrame}
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
-import org.opencypher.caps.api.spark.CAPSConverters._
-import org.opencypher.caps.api.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.record.{RecordHeader, RecordSlot, SlotContent}
-import org.opencypher.caps.impl.spark.SparkColumnName
+import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
+import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords, SparkColumnName}
 import org.opencypher.caps.trees.AbstractTreeNode
 
 private[caps] abstract class PhysicalOperator extends AbstractTreeNode[PhysicalOperator] {

@@ -21,16 +21,18 @@ import java.util.concurrent.ConcurrentHashMap
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.caps.api.graph.CypherSession
-import org.opencypher.caps.api.spark.io._
-import org.opencypher.caps.impl.spark.io.CAPSPropertyGraphDataSourceFactoryImpl
+import org.opencypher.caps.impl.spark.io.{CAPSPropertyGraphDataSourceFactoryImpl, _}
 
 import scala.collection.JavaConversions._
 
 case object SessionPropertyGraphDataSourceFactory extends CAPSGraphSourceFactoryCompanion(CypherSession.sessionGraphSchema)
 
-case class SessionPropertyGraphDataSourceFactory(
-    mountPoints: collection.concurrent.Map[String, CAPSPropertyGraphDataSource] = new ConcurrentHashMap[String, CAPSPropertyGraphDataSource]())
+case class SessionPropertyGraphDataSourceFactory()
     extends CAPSPropertyGraphDataSourceFactoryImpl(SessionPropertyGraphDataSourceFactory) {
+
+  val mountPoints: collection.concurrent.Map[String, CAPSPropertyGraphDataSource] = {
+    new ConcurrentHashMap[String, CAPSPropertyGraphDataSource]()
+  }
 
   def mountSourceAt(existingSource: CAPSPropertyGraphDataSource, uri: URI)(implicit capsSession: CAPSSession): Unit =
     if (schemes.contains(uri.getScheme))

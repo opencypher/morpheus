@@ -18,14 +18,30 @@ package org.opencypher.caps.impl.spark.io
 import java.net.URI
 
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.exception.IllegalArgumentException
+import org.opencypher.caps.api.exception.{IllegalArgumentException, IllegalStateException}
 import org.opencypher.caps.api.io.PropertyGraphDataSource
-import org.opencypher.caps.api.spark.io.{CAPSPropertyGraphDataSource, CAPSPropertyGraphDataSourceFactory}
 import org.opencypher.caps.impl.spark.io.session.SessionPropertyGraphDataSourceFactory
 
+object CAPSGraphSourceHandler {
+
+  def apply(allFactories: Set[CAPSPropertyGraphDataSourceFactory]): CAPSGraphSourceHandler = {
+    val (sessionGraphSourceFactories, additionalGraphSourceFactories) = allFactories.partition {
+      case _: SessionPropertyGraphDataSourceFactory => true
+      case _ => false
+    }
+    val sessionGraphSourceFactory: SessionPropertyGraphDataSourceFactory = sessionGraphSourceFactories.headOption match {
+      case Some(f: SessionPropertyGraphDataSourceFactory) => f
+      case _ => throw IllegalStateException("There needs to be at least one session graph source factory")
+    }
+
+    CAPSGraphSourceHandler(sessionGraphSourceFactory, additionalGraphSourceFactories)
+  }
+
+}
+
 case class CAPSGraphSourceHandler(
-    sessionGraphSourceFactory: SessionPropertyGraphDataSourceFactory,
-    additionalGraphSourceFactories: Set[CAPSPropertyGraphDataSourceFactory]) {
+  sessionGraphSourceFactory: SessionPropertyGraphDataSourceFactory,
+  additionalGraphSourceFactories: Set[CAPSPropertyGraphDataSourceFactory]) {
   private val factoriesByScheme: Map[String, CAPSPropertyGraphDataSourceFactory] = {
     val allFactories = additionalGraphSourceFactories + sessionGraphSourceFactory
     val entries = allFactories.flatMap(factory => factory.schemes.map(scheme => scheme -> factory))

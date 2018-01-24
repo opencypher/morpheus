@@ -15,8 +15,8 @@
  */
 package org.opencypher.caps.impl.spark.acceptance
 
-import org.opencypher.caps.api.spark.CAPSGraph
 import org.opencypher.caps.api.value.{CypherList, CypherMap}
+import org.opencypher.caps.impl.spark.CAPSGraph
 
 import scala.collection.immutable.Bag
 

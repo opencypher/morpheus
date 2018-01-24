@@ -16,7 +16,7 @@
 package org.opencypher.caps.test.fixture
 
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.spark.CAPSSessionImpl
+import org.opencypher.caps.impl.spark.CAPSSessionImpl
 import org.opencypher.caps.test.BaseTestSuite
 
 trait CAPSSessionFixture extends BaseTestFixture {

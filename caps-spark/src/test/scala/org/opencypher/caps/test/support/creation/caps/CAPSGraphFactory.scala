@@ -19,7 +19,7 @@ import org.apache.spark.sql.types.StructField
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.spark.CAPSGraph
+import org.opencypher.caps.impl.spark.CAPSGraph
 import org.opencypher.caps.impl.spark.convert.toSparkType
 import org.opencypher.caps.ir.impl.convert.toCypherType
 import org.opencypher.caps.test.support.creation.propertygraph.{Node, PropertyGraph, Relationship}

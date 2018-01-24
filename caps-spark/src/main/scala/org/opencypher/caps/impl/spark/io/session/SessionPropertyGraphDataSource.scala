@@ -22,9 +22,9 @@ import org.opencypher.caps.api.exception.{IllegalArgumentException, UnsupportedO
 import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.io.{CreateOrFail, Overwrite, PersistMode}
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.spark.CAPSConverters._
-import org.opencypher.caps.api.spark.CAPSGraph
-import org.opencypher.caps.api.spark.io.CAPSPropertyGraphDataSource
+import org.opencypher.caps.impl.spark.CAPSConverters._
+import org.opencypher.caps.impl.spark.CAPSGraph
+import org.opencypher.caps.impl.spark.io.CAPSPropertyGraphDataSource
 
 case class SessionPropertyGraphDataSource(path: String)(implicit val session: CAPSSession)
     extends CAPSPropertyGraphDataSource {
