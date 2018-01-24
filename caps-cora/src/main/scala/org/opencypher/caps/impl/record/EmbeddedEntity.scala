@@ -113,6 +113,9 @@ final case class EmbeddedNode(
   def withOptionalLabel(optionalLabelAndSlot: String): EmbeddedNode =
     withOptionalLabel(optionalLabelAndSlot -> optionalLabelAndSlot)
 
+  def withOptionalLabels(optionalLabelAndSlot: String*): EmbeddedNode =
+    optionalLabelAndSlot.foldLeft(this)((entity, property) => entity.withPropertyKey(property))
+
   def withOptionalLabel(optionalLabel: (String, String)): EmbeddedNode = {
     val (labelName, slotName) = optionalLabel
     copy(labelsFromSlotOrImplied = labelsFromSlotOrImplied.updated(labelName, Some(slotName)))

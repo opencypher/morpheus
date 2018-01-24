@@ -19,16 +19,29 @@ import java.util.{ServiceLoader, UUID}
 
 import org.apache.spark.SparkConf
 import org.apache.spark.serializer.KryoSerializer
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph}
 import org.opencypher.caps.api.schema.{Node, Relationship}
 import org.opencypher.caps.demo.CypherKryoRegistrar
+import org.opencypher.caps.impl.record.{CypherRecords, NodeScan}
 import org.opencypher.caps.impl.record.GraphScan.{nodesToScan, relationshipsToScan}
 import org.opencypher.caps.impl.spark._
 import org.opencypher.caps.impl.spark.io.{CAPSGraphSourceHandler, CAPSPropertyGraphDataSourceFactory}
 
 import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe._
+
+// TODO: Move where they belong
+trait CAPSEntitySchema
+case class CAPSEntities(schema: CAPSEntitySchema, df: DataFrame)
+case class CAPSNodeSchema(
+  idColumn: String,
+  impliedLabels: Set[String] = Set.empty,
+  labelColumns: Set[String] = Set.empty,
+  excludedColumns: Set[String] = Set.empty,
+  optionalLabelColumns: Set[String] = Set.empty
+) extends CAPSEntitySchema
+
 
 trait CAPSSession extends CypherSession {
 
@@ -49,6 +62,24 @@ trait CAPSSession extends CypherSession {
     implicit val session: CAPSSession = this
     CAPSGraph.create(nodesToScan(nodes), relationshipsToScan(relationships))
   }
+
+//  def readFromDataFrame(entities: CAPSEntities): PropertyGraph = {
+
+//    def toNodeScan(df: DataFrame): NodeScan = {
+//      val allColumns = df.columns.toSet
+//      val propertyColumns = allColumns -- labelColumns -- excludedColumns -- optionalLabelColumns
+//      NodeScan
+//        .on("___some_leaked_internal_var_name" -> idColumn) { builder =>
+//          builder.build.
+//            withProperties(propertyColumns).
+//            withImpliedLabels(impliedLabels.toArray: _*).
+//            withOptionalLabels(optionalLabelColumns.toArray: _*)
+//        }
+//        .fromDf(df)
+//    }
+
+//    CAPSGraph.create(records, schema)(this)
+//  }
 }
 
 object CAPSSession extends Serializable {
