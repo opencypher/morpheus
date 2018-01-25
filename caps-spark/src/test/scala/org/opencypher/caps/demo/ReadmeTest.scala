@@ -16,26 +16,37 @@
 package org.opencypher.caps.demo
 
 import java.io.File
+import java.nio.file.Paths
 
+import org.apache.hadoop.fs.PathNotFoundException
 import org.opencypher.caps.test.BaseTestSuite
 
+import scala.annotation.tailrec
 import scala.io.Source
+import scala.util.Try
 
 class ReadmeTest extends BaseTestSuite {
+
+  val sep = File.separator
+
+  val readmeName = "README.md"
+  val rootFolderPath = findRootFolderPath(Paths.get(".").toAbsolutePath.normalize.toString)
+  val readmePath = s"${rootFolderPath}${sep}${readmeName}"
+
+  val testSourceFolderPath = s"${sep}src${sep}test${sep}scala${sep}"
+  val moduleName = "caps-spark"
+  val examplePackagePath = Example.getClass.getName.dropRight(1).replace(".", sep)
+  val examplePath = s"$rootFolderPath$sep$moduleName$testSourceFolderPath$examplePackagePath.scala"
 
   test("running the example code") {
     Example.main(Array.empty[String])
   }
 
   test("the code in the readme matches the example") {
-    val readmeLines = Source.fromFile("README.md").getLines.toVector
+    val readmeLines = Source.fromFile(readmePath).getLines.toVector
     val sourceCodeBlocks = extractMarkdownScalaSourceBlocks(readmeLines).toSet
 
-    val sep = File.separatorChar
-    val modulePrefix = s".${sep}caps-spark${sep}src${sep}test${sep}scala${sep}"
-    val packagePath = Example.getClass.getName.dropRight(1).replace('.', sep)
-    val pathToSource = modulePrefix + packagePath + ".scala"
-    val exampleSourceLines = Source.fromFile(pathToSource).
+    val exampleSourceLines = Source.fromFile(examplePath).
       getLines.dropWhile(line => !line.startsWith("import")).filterNot(_ == "").toVector
     val exampleSourceText = ScalaSourceCode(exampleSourceLines)
 
@@ -49,6 +60,28 @@ class ReadmeTest extends BaseTestSuite {
 
     override def toString = lines.mkString("\n")
   }
+
+  /**
+    * Find the root folder path even if the tests are executed in a child path.
+    */
+  def findRootFolderPath(potentialChildFolderPath: String): String = {
+    @tailrec def recFindRootFolderPath(folder: String): String = {
+      if (isRootFolderPath(folder)) {
+        folder
+      } else {
+        recFindRootFolderPath(new File(folder).getParent)
+      }
+    }
+
+    Try(recFindRootFolderPath(potentialChildFolderPath)).getOrElse(
+      throw new PathNotFoundException(
+        s"Directory $potentialChildFolderPath is not a sub-folder of the project root directory."))
+  }
+
+  /**
+    * Check by testing if the README.md file can be found. This works even if the root folder has a different name.
+    */
+  def isRootFolderPath(path: String): Boolean = new File(s"$path${sep}$readmeName").exists
 
   def extractMarkdownScalaSourceBlocks(lines: Vector[String]): Seq[ScalaSourceCode] = {
     val currentParsingState: (Vector[ScalaSourceCode], Option[Vector[String]]) = (Vector.empty, None)
