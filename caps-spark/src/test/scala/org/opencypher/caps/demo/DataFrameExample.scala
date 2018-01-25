@@ -17,10 +17,13 @@ package org.opencypher.caps.demo
 
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
-import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.impl.record.{NodeScan, RelationshipScan}
+import org.opencypher.caps.api.{CAPSEntities, CAPSSession}
+import org.opencypher.caps.impl.record._
 
 import scala.collection.JavaConverters._
+
+
+
 
 object DataFrameExample extends App {
   // 1) Create CAPS session and retrieve Spark session
@@ -32,20 +35,37 @@ object DataFrameExample extends App {
   val rels = SocialNetworkDataFrames2.rels(spark)
 
   // 3) Generate node- and relationship scans that wrap the DataFrames and describe their contained data
-  //  val nodeScan2 = NodeScan("id")
-  //    .withImpliedLabel("Person")
-  //    .withPropertyKey("name")
-  //    .load(nodes) // DataFrame or CAPSRecords
-  //
-  //  val relScan = RelationshipScan("id", "source", "target")
-  //    .withPropertyKey("since")
-  //    .load(rels)
+
+  val personNodeConversion = NodeMapping("id")
+    .withImpliedLabel("Person")
+    .withPropertyKey("name")
+
+  val friendOfRelConversion = RelationshipMapping("id", "source", "target", "FRIEND_OF")
+    .withPropertyKey("since")
+
+
+  val personEntities = CAPSEntities(personNodeConversion, nodes)
+  val friendOfEntities = CAPSEntities(friendOfRelConversion, rels)
+
+
+  val graph = session.readFrom(personEntities, friendOfEntities)
+
 
   val nodeScan = NodeScan.on("id") {
     _.build
       .withImpliedLabel("Person")
       .withPropertyKey("name")
   }.fromDataFrame(nodes)
+
+
+  /**
+    * {
+    *   id: 1235L
+    *   labels: [Person,...]
+    *   ...
+    *
+    * }
+    */
 
   val relScan = RelationshipScan.on("id") {
     _.from("source").to("target").relType("FRIEND_OF").build
