@@ -27,11 +27,11 @@ object MultiGraphExample extends App {
   implicit val session = CAPSSession.local()
 
   // 2) Load social network data via case class instances
-  val socialNetwork = session.readFromSeqs(SocialNetworkData.persons, SocialNetworkData.friendships)
+  val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
 
   // 3) Load purchase network data via CSV + Schema files
   val csvFolder = getClass.getResource("/csv/prod/").getFile
-  val purchaseNetwork = session.readFromURI(s"file+csv://$csvFolder")
+  val purchaseNetwork = session.readFrom(s"file+csv://$csvFolder")
 
   // 4) Build union of social and purchase network (note, that there are no relationships connecting nodes from both graphs)
   val disconnectedGraph = socialNetwork union purchaseNetwork

@@ -56,11 +56,11 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
   def sourceAt(uri: URI): PropertyGraphDataSource =
     graphSourceHandler.sourceAt(uri)(this)
 
-  override def readFromURI(path: String): PropertyGraph =
-    readFromURI(parsePathOrURI(path))
+  override def readFrom(path: String): PropertyGraph =
+    readFrom(parsePathOrURI(path))
 
   // TODO: why not Option[CAPSGraph] in general?
-  override def readFromURI(uri: URI): PropertyGraph =
+  override def readFrom(uri: URI): PropertyGraph =
     graphSourceHandler.sourceAt(uri)(this).graph
 
   def optGraphAt(uri: URI): Option[PropertyGraph] =
@@ -204,7 +204,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
     logStageProgress("Done!")
 
     logStageProgress("Physical plan ... ", false)
-    val physicalPlannerContext = PhysicalPlannerContext(readFromURI, records.asCaps, parameters)
+    val physicalPlannerContext = PhysicalPlannerContext(readFrom, records.asCaps, parameters)
     val physicalPlan = physicalPlanner(flatPlan)(physicalPlannerContext)
     logStageProgress("Done!")
 

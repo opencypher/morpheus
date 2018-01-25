@@ -43,7 +43,7 @@ object CSVDemo {
     println(s"Now executing query: $query")
 
     implicit val caps = CAPSSession.create(sparkSession)
-    val graph = caps.readFromURI("file+csv:///demo/ldbc_1")
+    val graph = caps.readFrom("file+csv:///demo/ldbc_1")
     val result = graph.cypher(query)
 
     val start = System.currentTimeMillis()

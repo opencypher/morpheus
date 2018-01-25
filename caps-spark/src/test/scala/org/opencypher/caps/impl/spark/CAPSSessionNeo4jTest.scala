@@ -38,7 +38,7 @@ class CAPSSessionNeo4jTest
     val relQuery = URLEncoder.encode("MATCH ()-[r]->() RETURN r", "UTF-8")
     val uri = URI.create(s"$neo4jHost?$nodeQuery;$relQuery")
 
-    val graph = capsSession.readFromURI(uri).asCaps
+    val graph = capsSession.readFrom(uri).asCaps
 
     graph.nodes("n").toDF().collect().toBag should equal(teamDataGraphNodes)
     graph.relationships("rel").toDF().collect().toBag should equal(teamDataGraphRels)
@@ -50,7 +50,7 @@ class CAPSSessionNeo4jTest
       Neo4JPropertyGraphDataSource(neo4jConfig, Some("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r")),
       "/neo4j1")
 
-    val graph = capsSession.readFromURI("/neo4j1").asCaps
+    val graph = capsSession.readFrom("/neo4j1").asCaps
     graph.nodes("n").toDF().collect().toBag should equal(teamDataGraphNodes)
     graph.relationships("rel").toDF().collect().toBag should equal(teamDataGraphRels)
   }

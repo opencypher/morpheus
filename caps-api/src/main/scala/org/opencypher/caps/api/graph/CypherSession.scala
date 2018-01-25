@@ -18,13 +18,11 @@ package org.opencypher.caps.api.graph
 import java.net.URI
 
 import org.opencypher.caps.api.io.{CreateOrFail, PersistMode, PropertyGraphDataSource}
-import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.value.CypherValue
-import org.opencypher.caps.impl.record.CypherRecords
 
 // TODO: extend doc with explanation for writing graphs
 /**
-  * The Cypher Session is the main entry point for a CAPS application. It manages graphs which can be queried using
+  * The Cypher Session is the main API for a Cypher-based application. It manages graphs which can be queried using
   * Cypher. Graphs can be read from different data sources (e.g. CSV) and mounted in the session-local storage.
   */
 trait CypherSession {
@@ -57,7 +55,7 @@ trait CypherSession {
     * @param uri URI locating a graph
     * @return graph located at the URI
     */
-  def readFromURI(uri: URI): PropertyGraph
+  def readFrom(uri: URI): PropertyGraph
 
   /**
     * Reads a graph from an argument string that represents a valid URI.
@@ -65,16 +63,7 @@ trait CypherSession {
     * @param uri URI string locating a graph
     * @return graph located at the URI
     */
-  def readFromURI(uri: String): PropertyGraph = readFromURI(URI.create(uri))
-
-  /**
-    * Reads a graph from the specified records according the the given schema.
-    *
-    * @param records records containing graph data
-    * @param schema  graph schema
-    * @return graph defined by records and schema
-    */
-  def readFromRecords(records: CypherRecords, schema: Schema): PropertyGraph
+  def readFrom(uri: String): PropertyGraph = readFrom(URI.create(uri))
 
   /**
     * Mounts the given graph source to session-local storage under the given path. The specified graph will be

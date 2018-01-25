@@ -35,7 +35,7 @@ class CAPSSessionHDFSTest extends CAPSTestSuite with MiniDFSClusterFixture with 
   protected override def hdfsURI: URI = new URIBuilder(super.hdfsURI).setScheme("hdfs+csv").build()
 
   test("HDFS via URI") {
-    val graph = caps.readFromURI(hdfsURI)
+    val graph = caps.readFrom(hdfsURI)
     graph.nodes("n").asCaps.toDF().collect().toBag should equal(dfsTestGraphNodes)
     graph.relationships("rel").asCaps.toDF().collect.toBag should equal(dfsTestGraphRels)
   }
@@ -45,7 +45,7 @@ class CAPSSessionHDFSTest extends CAPSTestSuite with MiniDFSClusterFixture with 
       HdfsCsvPropertyGraphDataSource(hdfsURI, session.sparkContext.hadoopConfiguration, hdfsURI.getPath),
       "/test/graph")
 
-    val graph = caps.readFromURI("/test/graph")
+    val graph = caps.readFrom("/test/graph")
     graph.nodes("n").asCaps.toDF().collect().toBag should equal(dfsTestGraphNodes)
     graph.relationships("rel").asCaps.toDF().collect.toBag should equal(dfsTestGraphRels)
   }

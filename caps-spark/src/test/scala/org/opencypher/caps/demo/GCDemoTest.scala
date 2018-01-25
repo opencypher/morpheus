@@ -38,9 +38,9 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
 
   ignore("the demo") {
     val t0 = System.currentTimeMillis()
-    lazy val SN_US = caps.readFromURI(neoURIforRegion("US"))
-    lazy val SN_EU = caps.readFromURI(neoURIforRegion("EU"))
-    lazy val PRODUCTS = caps.readFromURI(hdfsURI)
+    lazy val SN_US = caps.readFrom(neoURIforRegion("US"))
+    lazy val SN_EU = caps.readFrom(neoURIforRegion("EU"))
+    lazy val PRODUCTS = caps.readFrom(hdfsURI)
 
     val CITYFRIENDS_US =
       SN_US.cypher("""MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b)
@@ -106,7 +106,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
   }
 
   test("write back to Neo") {
-    val SN_US = caps.readFromURI(neoURIforRegion("US"))
+    val SN_US = caps.readFrom(neoURIforRegion("US"))
     val result = SN_US.cypher("""MATCH (n:Person {name: "Alice"}) RETURN n.name AS name""")
     withBoltSession { session =>
       result.records.iterator.foreach { cypherMap =>
@@ -114,7 +114,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
       }
     }
 
-    val resultGraph = caps.readFromURI(neoURIforRegion("US"))
+    val resultGraph = caps.readFrom(neoURIforRegion("US"))
     val res = resultGraph.cypher("MATCH (n:Person {name: 'Alice'}) RETURN n.should_buy as rec")
 
     res.records.iterator.toSet should equal(

@@ -27,7 +27,7 @@ object SimpleExample extends App {
   implicit val session = CAPSSession.local()
 
   // 2) Load social network data via case class instances
-  val socialNetwork = session.readFromSeqs(SocialNetworkData.persons, SocialNetworkData.friendships)
+  val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
 
   // 3) Query graph with Cypher
   val results = socialNetwork.cypher(
