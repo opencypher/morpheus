@@ -33,7 +33,7 @@ class NodeScanTest extends CAPSTestSuite {
       .on("id") { builder =>
         builder.build.withImpliedLabel("Person").withPropertyKey("name")
       }
-      .fromDf(personsDf)
+      .fromDataFrame(personsDf)
     personScanScala.schema should equal(personScan.schema)
 
     val friends = List(Friend(0, 0, 1, "23/01/1987"), Friend(1, 1, 2, "12/12/2009"))
@@ -43,7 +43,7 @@ class NodeScanTest extends CAPSTestSuite {
       .on("id") { builder =>
         builder.from("from").to("to").relType("FRIEND_OF").build.withPropertyKey("since")
       }
-      .fromDf(friendsDf)
+      .fromDataFrame(friendsDf)
     friendScanScala.schema should equal(friendScan.schema)
   }
 

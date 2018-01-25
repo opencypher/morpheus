@@ -23,8 +23,8 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph}
 import org.opencypher.caps.api.schema.{Node, Relationship}
 import org.opencypher.caps.demo.CypherKryoRegistrar
-import org.opencypher.caps.impl.record.{CypherRecords, NodeScan}
 import org.opencypher.caps.impl.record.GraphScan.{nodesToScan, relationshipsToScan}
+import org.opencypher.caps.impl.record.{CypherRecords, GraphScan, NodeScan}
 import org.opencypher.caps.impl.spark._
 import org.opencypher.caps.impl.spark.io.{CAPSGraphSourceHandler, CAPSPropertyGraphDataSourceFactory}
 
@@ -63,7 +63,8 @@ trait CAPSSession extends CypherSession {
     CAPSGraph.create(nodesToScan(nodes), relationshipsToScan(relationships))
   }
 
-//  def readFromDataFrame(entities: CAPSEntities): PropertyGraph = {
+  def readFromScans(nodeScan: NodeScan, scans: GraphScan*): PropertyGraph =
+    CAPSGraph.create(nodeScan, scans: _*)(this)
 
 //    def toNodeScan(df: DataFrame): NodeScan = {
 //      val allColumns = df.columns.toSet
@@ -77,9 +78,6 @@ trait CAPSSession extends CypherSession {
 //        }
 //        .fromDf(df)
 //    }
-
-//    CAPSGraph.create(records, schema)(this)
-//  }
 }
 
 object CAPSSession extends Serializable {

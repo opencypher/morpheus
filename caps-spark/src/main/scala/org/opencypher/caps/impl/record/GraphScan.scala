@@ -233,7 +233,7 @@ object GraphScanBuilder {
       create(entity, newRecords, schema(entity, newRecords.header))
     }
 
-    def fromDf(df: DataFrame)(implicit caps: CAPSSession) = {
+    def fromDataFrame(df: DataFrame)(implicit caps: CAPSSession) = {
       val record = CAPSRecords.create(df)
       from(record)
     }
