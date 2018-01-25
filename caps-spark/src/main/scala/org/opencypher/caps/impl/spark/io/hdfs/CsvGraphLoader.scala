@@ -118,7 +118,6 @@ class CsvGraphLoader(fileHandler: CsvGraphLoaderFileHandler)(implicit capsSessio
       val schema = parseSchema(e)(CsvNodeSchema(_))
 
       val dataFrame = sparkSession.read
-        .option("timestampFormat", "yyyy-MM-dd'T'HH:mm:ss.SSS")
         .schema(schema.toStructType)
         .csv(e.toString)
 

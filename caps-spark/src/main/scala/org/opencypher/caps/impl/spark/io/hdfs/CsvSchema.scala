@@ -34,7 +34,7 @@ case class CsvField(name: String, column: Int, valueType: String) {
     * As CSV does not support list types they are represented as Strings and have to be read as such.
     * @return the Spark SQL type of the csv field at load time
     */
-  def getSourceType: DataType = valueType.toLowerCase match {
+  lazy val getSourceType: DataType = valueType.toLowerCase match {
     case l if listType.pattern.matcher(l).matches() => StringType
     case other => extractSimpleType(other)
   }
@@ -43,7 +43,7 @@ case class CsvField(name: String, column: Int, valueType: String) {
     * For List types we return the target array type.
     * @return the Spark SQL type of the csv field at after special conversions
     */
-  def getTargetType: DataType = valueType.toLowerCase match {
+  lazy val getTargetType: DataType = valueType.toLowerCase match {
     case l if listType.pattern.matcher(l).matches() => l match {
       case listType(inner) => ArrayType(extractSimpleType(inner))
     }
@@ -51,9 +51,9 @@ case class CsvField(name: String, column: Int, valueType: String) {
     case other => extractSimpleType(other)
   }
 
-  def toSourceStructField: StructField = StructField(name, getSourceType, nullable = true)
+  lazy val toSourceStructField: StructField = StructField(name, getSourceType, nullable = true)
 
-  def toTargetStructField: StructField = StructField(name, getTargetType, nullable = true)
+  lazy val toTargetStructField: StructField = StructField(name, getTargetType, nullable = true)
 
   private def extractSimpleType(typeString: String): DataType = typeString match {
     case "string"                  => StringType
