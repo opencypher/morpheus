@@ -21,6 +21,9 @@
     </modules>
 
     <properties>
+        <!-- Encoding -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
         <!-- Project settings -->
         <project.build.encoding>UTF-8</project.build.encoding>
         <project.java.version>1.8</project.java.version>
