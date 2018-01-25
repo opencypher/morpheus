@@ -44,19 +44,18 @@ class ReadmeTest extends BaseTestSuite {
 
   test("the code in the readme matches the example") {
     val readmeLines = Source.fromFile(readmePath).getLines.toVector
-    val sourceCodeBlocks = extractMarkdownScalaSourceBlocks(readmeLines).toSet
+    val readmeSourceCodeBlocks = extractMarkdownScalaSourceBlocks(readmeLines).map(_.canonical).toSet
 
-    val exampleSourceLines = Source.fromFile(examplePath).
-      getLines.dropWhile(line => !line.startsWith("import")).filterNot(_ == "").toVector
-    val exampleSourceText = ScalaSourceCode(exampleSourceLines)
+    val exampleSourceCodeLines = Source.fromFile(examplePath).getLines.toVector
+    val exampleSourceCode = ScalaSourceCode(exampleSourceCodeLines).canonical
 
-    sourceCodeBlocks.map(_.canonical) should contain(exampleSourceText.canonical)
+    readmeSourceCodeBlocks should contain(exampleSourceCode)
   }
 
   case class ScalaSourceCode(lines: Vector[String]) {
-    def canonical: Vector[String] = {
-      lines.dropWhile(line => !line.startsWith("import")).filterNot(_ == "")
-    }
+    def canonical: Vector[String] = lines
+      .dropWhile(line => !line.startsWith("import")) // Drop license and everything else before the first import
+      .filterNot(_ == "") // Filter empty lines
 
     override def toString = lines.mkString("\n")
   }
