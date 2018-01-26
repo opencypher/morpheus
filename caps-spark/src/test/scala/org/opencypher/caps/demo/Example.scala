@@ -18,10 +18,9 @@ package org.opencypher.caps.demo
 import org.opencypher.caps.api._
 
 /**
-  * Demonstrates basic usage of the CAPS API by loading an example network via case class instances and issuing a query
-  * on the graph.
+  * Demonstrates basic usage of the CAPS API by loading an example network and running a cypher query on it.
   */
-object SimpleExample extends App {
+object Example extends App {
 
   // 1) Create CAPS session
   implicit val session = CAPSSession.local()
@@ -40,7 +39,7 @@ object SimpleExample extends App {
 }
 
 /**
-  * Specify schema and data via case classes
+  * Specify schema and data with case classes.
   */
 object SocialNetworkData {
 
