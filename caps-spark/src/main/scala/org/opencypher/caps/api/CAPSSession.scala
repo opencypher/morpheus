@@ -23,8 +23,8 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph}
 import org.opencypher.caps.api.schema.{Node, Relationship}
 import org.opencypher.caps.demo.CypherKryoRegistrar
+import org.opencypher.caps.impl.record.EmbeddedEntity
 import org.opencypher.caps.impl.record.GraphScan.{nodesToScan, relationshipsToScan}
-import org.opencypher.caps.impl.record.{EmbeddedEntity, GraphScan, NodeScan}
 import org.opencypher.caps.impl.spark._
 import org.opencypher.caps.impl.spark.io.{CAPSGraphSourceHandler, CAPSPropertyGraphDataSourceFactory}
 
@@ -54,7 +54,7 @@ trait CAPSSession extends CypherSession {
     CAPSGraph.create(nodesToScan(nodes), relationshipsToScan(relationships))
   }
 
-  def readFrom(capsEntities: CAPSEntities*): PropertyGraph
+  def readFrom(capsEntities: CAPSEntities*): PropertyGraph = ???
 
   //    def toNodeScan(df: DataFrame): NodeScan = {
   //      val allColumns = df.columns.toSet

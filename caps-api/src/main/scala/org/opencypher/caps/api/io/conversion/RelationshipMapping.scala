@@ -15,42 +15,25 @@ package org.opencypher.caps.api.io.conversion
   * from the source is expected to be convertible to a valid [[org.opencypher.caps.api.value.CypherValue]].
   *
   * @param sourceIdKey     key to access the node identifier in the source data
-  * @param labelMapping    mapping from label to source key
   * @param propertyMapping mapping from property key source key
   */
-case class NodeMapping(
+case class RelationshipMapping(
   sourceIdKey: String,
-  labelMapping: Map[String, Option[String]] = Map.empty,
+  sourceStartNodeKey: String,
+  sourceEndNodeKey: String,
+  relTypeOrSourceRelTypeKey: Either[String, String],
   propertyMapping: Map[String, String] = Map.empty) {
 
-  def withImpliedLabel(label: String): NodeMapping =
-    copy(labelMapping = labelMapping.updated(label, None))
-
-  def withImpliedLabels(labels: String*): NodeMapping =
-    labels.foldLeft(this)((mapping, label) => mapping.withImpliedLabel(label))
-
-  def withOptionalLabel(label: String): NodeMapping =
-    withOptionalLabel(label, label)
-
-  def withOptionalLabels(labels: String*): NodeMapping =
-    labels.foldLeft(this)((mapping, label) => mapping.withOptionalLabel(label, label))
-
-  def withOptionalLabel(sourceLabelKey: String, label: String): NodeMapping =
-    copy(labelMapping = labelMapping.updated(label, Some(sourceLabelKey)))
-
-  def withOptionalLabel(tuple: (String, String)): RelationshipMapping =
-    withOptionalLabel(tuple._1 -> tuple._2)
-
-  def withPropertyKey(sourcePropertyKey: String, propertyKey: String): NodeMapping =
+  def withPropertyKey(sourcePropertyKey: String, propertyKey: String): RelationshipMapping =
     copy(propertyMapping = propertyMapping.updated(propertyKey, sourcePropertyKey))
 
-  def withPropertyKey(tuple: (String, String)): NodeMapping =
+  def withPropertyKey(tuple: (String, String)): RelationshipMapping =
     withPropertyKey(tuple._1, tuple._2)
 
-  def withPropertyKey(property: String): NodeMapping =
+  def withPropertyKey(property: String): RelationshipMapping =
     withPropertyKey(property, property)
 
-  def withPropertyKeys(properties: String*): NodeMapping =
+  def withPropertyKeys(properties: String*): RelationshipMapping =
     properties.foldLeft(this)((mapping, propertyKey) => mapping.withPropertyKey(propertyKey, propertyKey))
 
 }
