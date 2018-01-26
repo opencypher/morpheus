@@ -23,7 +23,7 @@ import cats.{Foldable, Monoid}
 import org.atnos.eff._
 import org.atnos.eff.all._
 import org.neo4j.cypher.internal.v3_4.expressions._
-import org.neo4j.cypher.internal.v3_4.functions.{Collect, Exists, Max, Min}
+import org.neo4j.cypher.internal.v3_4.functions.{Coalesce, Collect, Exists, Max, Min}
 import org.opencypher.caps.api.schema.Schema.AllLabels
 import org.opencypher.caps.api.schema.{AllGiven, AnyGiven, Schema}
 import org.opencypher.caps.api.types.CypherType.joinMonoid
@@ -232,6 +232,25 @@ object SchemaTyper {
             pure[R, CypherType](CTList(innerType.nullable).nullable)
           case None =>
             error(NoSuitableSignatureForExpr(expr, argTypes))
+        }
+        result <- recordAndUpdate(expr -> computedType)
+      } yield result
+
+    case expr: FunctionInvocation if expr.function == Coalesce =>
+      for {
+        argExprs <- pure(expr.arguments)
+        argTypes <- EffMonad.traverse(argExprs.toList)(process[R])
+        computedType <- {
+          val relevantArguments = argTypes.indexWhere(_.isMaterial) match {
+            case -1 => argTypes
+            case other => argTypes.slice(0, other + 1)
+          }
+          relevantArguments.reduceLeftOption(_ join _) match {
+            case Some(innerType) =>
+              pure[R, CypherType](innerType)
+            case None =>
+              error(WrongNumberOfArguments(expr, 1, argTypes.size))
+          }
         }
         result <- recordAndUpdate(expr -> computedType)
       } yield result

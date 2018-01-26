@@ -237,33 +237,40 @@ final case class Divide(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWil
 
 // Functions
 sealed trait FunctionExpr extends Expr {
-  def expr: Expr
+  def exprs: IndexedSeq[Expr]
 
   def name: String = this.getClass.getSimpleName.toLowerCase
 
-  override final def toString = s"$name($expr)"
+  override final def toString = s"$name(${exprs.mkString(", ")})"
 
-  override final def withoutType = s"$name(${expr.withoutType})"
-
+  override final def withoutType = s"$name(${exprs.map(_.withoutType).mkString(", ")})"
 }
 
-final case class Id(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr
+sealed trait UnaryFunctionExpr extends FunctionExpr {
+  def expr: Expr
 
-final case class Labels(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr
+  def exprs: IndexedSeq[Expr] = IndexedSeq(expr)
+}
 
-final case class Type(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr
+final case class Id(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr
 
-final case class Exists(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr
+final case class Labels(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr
 
-final case class Size(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr
+final case class Type(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr
 
-final case class Keys(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr
+final case class Exists(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr
 
-final case class StartNodeFunction(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr
+final case class Size(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr
 
-final case class EndNodeFunction(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr
+final case class Keys(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr
 
-final case class ToFloat(expr: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr
+final case class StartNodeFunction(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr
+
+final case class EndNodeFunction(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr
+
+final case class ToFloat(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr
+
+final case class Coalesce(exprs: IndexedSeq[Expr])(val cypherType: CypherType = CTWildcard) extends FunctionExpr
 
 // Aggregators
 sealed trait Aggregator extends Expr {

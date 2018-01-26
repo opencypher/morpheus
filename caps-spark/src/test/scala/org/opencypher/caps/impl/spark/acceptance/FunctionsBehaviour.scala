@@ -258,5 +258,21 @@ trait FunctionsBehaviour {
           CypherMap("myFloat" -> 42.0)
         ))
     }
+
+    describe("coalesce") {
+      it("can run coalesce") {
+        val given = initGraph("CREATE ({valA: 1}), ({valB: 2}), ({valC: 3}), ()")
+
+        val result = given.cypher("MATCH (n) RETURN coalesce(n.valA, n.valB, n.valC) as value")
+
+        result.records.iterator.toBag should equal(
+          Bag(
+            CypherMap("value" -> 1),
+            CypherMap("value" -> 2),
+            CypherMap("value" -> 3),
+            CypherMap("value" -> null)
+          ))
+      }
+    }
   }
 }

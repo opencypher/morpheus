@@ -35,6 +35,19 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
 
   val typer = SchemaTyper(schema)
 
+  it("typing coalesce()") {
+    implicit val context = typeTracker("a" -> CTInteger, "b" -> CTInteger.nullable, "c" -> CTString)
+
+    assertExpr.from("coalesce(a, a)") shouldHaveInferredType CTInteger
+    assertExpr.from("coalesce(b, b)") shouldHaveInferredType CTInteger.nullable
+    assertExpr.from("coalesce(a, b)") shouldHaveInferredType CTInteger
+    assertExpr.from("coalesce(a, c)") shouldHaveInferredType CTInteger
+    assertExpr.from("coalesce(b, c)") shouldHaveInferredType CTAny.nullable
+    assertExpr.from("coalesce()") shouldFailToInferTypeWithErrors
+      WrongNumberOfArguments("coalesce()", 1, 0)
+  }
+
+
   test("typing exists()") {
     implicit val context = typeTracker("n" -> CTNode)
 
