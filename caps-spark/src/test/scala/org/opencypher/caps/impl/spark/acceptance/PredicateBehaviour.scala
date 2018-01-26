@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.spark.acceptance
 
-import org.opencypher.caps.api.value.{CypherList, CypherMap}
+import org.opencypher.caps.api.value.{CAPSList, CAPSMap}
 import org.opencypher.caps.impl.spark.CAPSGraph
 
 import scala.collection.immutable.Bag
@@ -29,8 +29,8 @@ trait PredicateBehaviour { this: AcceptanceTest =>
       val result = given.cypher("MATCH (n) WHERE exists(n.id) RETURN n.id")
 
       result.records.toMaps should equal(Bag(
-        CypherMap("n.id" -> 1),
-        CypherMap("n.id" -> 2)
+        CAPSMap("n.id" -> 1),
+        CAPSMap("n.id" -> 2)
       ))
     }
 
@@ -43,7 +43,7 @@ trait PredicateBehaviour { this: AcceptanceTest =>
 
       // Then
       result.records.toMaps should equal(Bag(
-        CypherMap("a.val" -> 2)
+        CAPSMap("a.val" -> 2)
       ))
 
       // And
@@ -55,11 +55,11 @@ trait PredicateBehaviour { this: AcceptanceTest =>
       val given = initGraph("""CREATE (:A {val: 1}), (:A {val: 2}), (:A {val: 3})""")
 
       // When
-      val result = given.cypher("MATCH (a:A) WHERE a.val IN $list RETURN a.val", Map("list" -> CypherList(Seq(-1, 2, 5, 0))))
+      val result = given.cypher("MATCH (a:A) WHERE a.val IN $list RETURN a.val", Map("list" -> CAPSList(Seq(-1, 2, 5, 0))))
 
       // Then
       result.records.toMaps should equal(Bag(
-        CypherMap("a.val" -> 2)
+        CAPSMap("a.val" -> 2)
       ))
 
       // And
@@ -75,8 +75,8 @@ trait PredicateBehaviour { this: AcceptanceTest =>
 
       // Then
       result.records.toMaps should equal(Bag(
-        CypherMap("a.val" -> 1),
-        CypherMap("a.val" -> 2)
+        CAPSMap("a.val" -> 1),
+        CAPSMap("a.val" -> 2)
       ))
 
       // And
@@ -92,8 +92,8 @@ trait PredicateBehaviour { this: AcceptanceTest =>
 
       // Then
       result.records.toMaps should equal(Bag(
-        CypherMap("a.val" -> 1),
-        CypherMap("a.val" -> 2)
+        CAPSMap("a.val" -> 1),
+        CAPSMap("a.val" -> 2)
       ))
 
       // And
@@ -114,8 +114,8 @@ trait PredicateBehaviour { this: AcceptanceTest =>
 
       // Then
       result.records.toMaps should equal(Bag(
-        CypherMap("a.val" -> 1, "a.name" -> "a"),
-        CypherMap("a.val" -> 5, "a.name" -> "e")
+        CAPSMap("a.val" -> 1, "a.name" -> "a"),
+        CAPSMap("a.val" -> 5, "a.name" -> "e")
       ))
 
       // And
@@ -138,7 +138,7 @@ trait PredicateBehaviour { this: AcceptanceTest =>
 
       // Then
       result.records.toMaps should equal(Bag(
-        CypherMap("b.p" -> 100)
+        CAPSMap("b.p" -> 100)
       ))
 
       // And
@@ -155,7 +155,7 @@ trait PredicateBehaviour { this: AcceptanceTest =>
 
       // Then
       result.records.toMaps should equal(Bag(
-        CypherMap("n.val" -> 4)
+        CAPSMap("n.val" -> 4)
       ))
 
       // And
@@ -174,8 +174,8 @@ trait PredicateBehaviour { this: AcceptanceTest =>
 
       // Then
       result.records.toMaps should equal(Bag(
-        CypherMap("n.id" -> 1, "n.val" -> 4),
-        CypherMap("n.id" -> 2, "n.val" -> 5)
+        CAPSMap("n.id" -> 1, "n.val" -> 4),
+        CAPSMap("n.id" -> 2, "n.val" -> 5)
       ))
       // And
       result.graphs shouldBe empty
@@ -190,7 +190,7 @@ trait PredicateBehaviour { this: AcceptanceTest =>
 
       // Then
       result.records.toMaps should equal(Bag(
-        CypherMap("n.val" -> 5)
+        CAPSMap("n.val" -> 5)
       ))
 
       // And
@@ -206,8 +206,8 @@ trait PredicateBehaviour { this: AcceptanceTest =>
 
       // Then
       result.records.toMaps should equal(Bag(
-        CypherMap("n.id" -> 2, "n.val" -> 5),
-        CypherMap("n.id" -> 3, "n.val" -> 5)
+        CAPSMap("n.id" -> 2, "n.val" -> 5),
+        CAPSMap("n.id" -> 3, "n.val" -> 5)
       ))
 
       // And
@@ -223,8 +223,8 @@ trait PredicateBehaviour { this: AcceptanceTest =>
 
       // Then
       result.records.toMaps should equal(Bag(
-        CypherMap("n.id" -> 1),
-        CypherMap("n.id" -> 2)
+        CAPSMap("n.id" -> 1),
+        CAPSMap("n.id" -> 2)
       ))
 
       // And
@@ -245,7 +245,7 @@ trait PredicateBehaviour { this: AcceptanceTest =>
 
       // Then
       result.records.toMaps should equal(Bag(
-        CypherMap("a.id" -> 1L, "b.id" -> 3L)
+        CAPSMap("a.id" -> 1L, "b.id" -> 3L)
       ))
     }
 
@@ -258,7 +258,7 @@ trait PredicateBehaviour { this: AcceptanceTest =>
 
       // Then
       result.records.toMaps should equal(Bag(
-        CypherMap("a.id" -> 1L, "b.id" -> 3L)
+        CAPSMap("a.id" -> 1L, "b.id" -> 3L)
       ))
     }
 
@@ -275,7 +275,7 @@ trait PredicateBehaviour { this: AcceptanceTest =>
 
       // Then
       result.records.toMaps should equal(Bag(
-        CypherMap("a.id" -> 1L)
+        CAPSMap("a.id" -> 1L)
       ))
     }
 
@@ -292,7 +292,7 @@ trait PredicateBehaviour { this: AcceptanceTest =>
 
       // Then
       result.records.toMaps should equal(Bag(
-        CypherMap("a.id" -> 1L, "b.id" -> 2L)
+        CAPSMap("a.id" -> 1L, "b.id" -> 2L)
       ))
     }
 
@@ -309,7 +309,7 @@ trait PredicateBehaviour { this: AcceptanceTest =>
 
       // Then
       result.records.toMaps should equal(Bag(
-        CypherMap("a.id" -> 1L, "b.id" -> 2L)
+        CAPSMap("a.id" -> 1L, "b.id" -> 2L)
       ))
     }
 
@@ -326,7 +326,7 @@ trait PredicateBehaviour { this: AcceptanceTest =>
 
       // Then
       result.records.toMaps should equal(Bag(
-        CypherMap("a.id" -> 1L, "b.id" -> 2L)
+        CAPSMap("a.id" -> 1L, "b.id" -> 2L)
       ))
     }
 
@@ -339,8 +339,8 @@ trait PredicateBehaviour { this: AcceptanceTest =>
 
       // Then
       result.records.toMaps should equal(Bag(
-        CypherMap("a.id" -> 1L, "b.id" -> 2L),
-        CypherMap("a.id" -> 2L, "b.id" -> 3L)
+        CAPSMap("a.id" -> 1L, "b.id" -> 2L),
+        CAPSMap("a.id" -> 2L, "b.id" -> 3L)
       ))
     }
 
@@ -361,8 +361,8 @@ trait PredicateBehaviour { this: AcceptanceTest =>
         """.stripMargin)
 
       result.records.toMaps should equal(Bag(
-        CypherMap("a.id" -> 1),
-        CypherMap("a.id" -> 3)
+        CAPSMap("a.id" -> 1),
+        CAPSMap("a.id" -> 3)
       ))
     }
 
@@ -379,7 +379,7 @@ trait PredicateBehaviour { this: AcceptanceTest =>
 
       // Then
       result.records.toMaps should equal(Bag(
-        CypherMap("a.id" -> 1L)
+        CAPSMap("a.id" -> 1L)
       ))
     }
 
@@ -392,7 +392,7 @@ trait PredicateBehaviour { this: AcceptanceTest =>
 
       // Then
       result.records.toMaps should equal(Bag(
-        CypherMap("a.id" -> 1L)
+        CAPSMap("a.id" -> 1L)
       ))
     }
   }

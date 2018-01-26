@@ -51,30 +51,30 @@ trait JsonSerialiser {
     }
   }
 
-  protected def constructValue(v: Option[CypherValue]): Json = {
+  protected def constructValue(v: Option[CAPSValue]): Json = {
     v match {
-      case Some(n: CypherNode) =>
-        CypherNode.contents(n) match {
+      case Some(n: CAPSNode) =>
+        CAPSNode.contents(n) match {
           case Some(NodeContents(id, labels, properties)) =>
             formatNode(id.v, labels, properties.m.mapValues(p => constructValue(Some(p))))
           case None =>
             Json.Null
         }
 
-      case Some(r: CypherRelationship) =>
-        CypherRelationship.contents(r) match {
+      case Some(r: CAPSRelationship) =>
+        CAPSRelationship.contents(r) match {
           case Some(RelationshipContents(id, source, target, typ, properties)) =>
             formatRel(id.v, source.v, target.v, typ, properties.m.mapValues(p => constructValue(Some(p))))
           case None =>
             Json.Null
         }
 
-      case Some(CypherInteger(i)) => Json.fromLong(i)
-      case Some(CypherFloat(f)) => Json.fromDouble(f).getOrElse(Json.fromString(f.toString))
-      case Some(CypherBoolean(b)) => Json.fromBoolean(b)
-      case Some(CypherString(s)) => Json.fromString(s)
-      case Some(CypherList(contents)) => Json.arr(contents.map(v => constructValue(Some(v))): _*)
-      case Some(CypherMap(contents)) => Json.obj(contents.properties.m.mapValues(p => constructValue(Some(p))).toSeq: _*)
+      case Some(CAPSInteger(i)) => Json.fromLong(i)
+      case Some(CAPSFloat(f)) => Json.fromDouble(f).getOrElse(Json.fromString(f.toString))
+      case Some(CAPSBoolean(b)) => Json.fromBoolean(b)
+      case Some(CAPSString(s)) => Json.fromString(s)
+      case Some(CAPSList(contents)) => Json.arr(contents.map(v => constructValue(Some(v))): _*)
+      case Some(CAPSMap(contents)) => Json.obj(contents.properties.m.mapValues(p => constructValue(Some(p))).toSeq: _*)
 
       case _ =>
         Json.Null
@@ -144,7 +144,7 @@ trait JsonSerialiser {
   * }
   * }}}
   *
-  * The format of scalar values follows the `toString()` format of [[org.opencypher.caps.api.value.CypherValue]].
+  * The format of scalar values follows the `toString()` format of [[org.opencypher.caps.api.value.CAPSValue]].
   * The format of nodes is as follows:
   *
   * {{{

@@ -19,7 +19,7 @@ import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.NotImplementedException
 import org.opencypher.caps.impl.record.CypherRecords
 import org.opencypher.caps.impl.spark.CAPSGraph
-import org.opencypher.caps.api.value.{CypherValue => CAPSValue}
+import org.opencypher.caps.api.value.{CAPSValue => CAPSValue}
 import org.opencypher.caps.test.support.creation.caps.CAPSGraphFactory
 import org.opencypher.caps.test.support.creation.propertygraph.Neo4jPropertyGraphFactory
 import org.opencypher.tools.tck.api._

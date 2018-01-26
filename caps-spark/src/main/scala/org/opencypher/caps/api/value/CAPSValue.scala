@@ -29,11 +29,11 @@ import org.opencypher.caps.api.value.syntax.cypherNull
 import scala.collection.JavaConverters._
 import scala.collection.TraversableOnce
 
-object CypherValueCompanion {
-  def apply[V <: CypherValue](implicit companion: CypherValueCompanion[V]): CypherValueCompanion[V] = companion
+object CAPSValueCompanion {
+  def apply[V <: CAPSValue](implicit companion: CAPSValueCompanion[V]): CAPSValueCompanion[V] = companion
 }
 
-sealed trait CypherValueCompanion[V <: CypherValue] extends Equiv[V] with Show[V] {
+sealed trait CAPSValueCompanion[V <: CAPSValue] extends Equiv[V] with Show[V] {
 
   type Contents <: Any
   type Input <: Any
@@ -149,7 +149,7 @@ sealed trait CypherValueCompanion[V <: CypherValue] extends Equiv[V] with Show[V
   protected[value] def computeCompare(l: V, r: V): Int = computeOrder(l, r)
 }
 
-sealed trait CypherScalarValueCompanion[V <: CypherValue] extends CypherValueCompanion[V] {
+sealed trait CAPSScalarValueCompanion[V <: CAPSValue] extends CAPSValueCompanion[V] {
 
   override type Input = Contents
 
@@ -163,29 +163,29 @@ sealed trait CypherScalarValueCompanion[V <: CypherValue] extends CypherValueCom
 
 // *** ANY
 
-case object CypherValue extends CypherValueCompanion[CypherValue] {
+case object CAPSValue extends CAPSValueCompanion[CAPSValue] {
 
   override type Contents = Any
   override type Input = Any
 
-  override def apply(value: Input): CypherValue = value match {
+  override def apply(value: Input): CAPSValue = value match {
     case null => cypherNull
-    case v: CypherValue => v
-    case v: java.util.List[_] if v.isEmpty => CypherList.empty
-    case v: java.util.List[_] => cypherList(v.asScala)(CypherValue.apply)
-    case v: Array[_] if v.isEmpty => CypherList.empty
-    case v: Array[_] => cypherList(v)(CypherValue.apply)
-    case ((k: String, v)) => cypherMap(Properties(k -> CypherValue.apply(v)))
-    case v: Map[_, _] if v.isEmpty => CypherMap.empty
-    case v: Map[_, _] => cypherMap(v)(CypherValue.apply)
-    case v: java.util.Map[_, _] if v.isEmpty => CypherMap.empty
-    case v: java.util.Map[_, _] => cypherMap(v.asScala.toMap)(CypherValue.apply)
-    case v: Properties if v.isEmpty => CypherMap.empty
+    case v: CAPSValue => v
+    case v: java.util.List[_] if v.isEmpty => CAPSList.empty
+    case v: java.util.List[_] => cypherList(v.asScala)(CAPSValue.apply)
+    case v: Array[_] if v.isEmpty => CAPSList.empty
+    case v: Array[_] => cypherList(v)(CAPSValue.apply)
+    case ((k: String, v)) => cypherMap(Properties(k -> CAPSValue.apply(v)))
+    case v: Map[_, _] if v.isEmpty => CAPSMap.empty
+    case v: Map[_, _] => cypherMap(v)(CAPSValue.apply)
+    case v: java.util.Map[_, _] if v.isEmpty => CAPSMap.empty
+    case v: java.util.Map[_, _] => cypherMap(v.asScala.toMap)(CAPSValue.apply)
+    case v: Properties if v.isEmpty => CAPSMap.empty
     case v: Properties => cypherMap(v)
     case v => create(v)
   }
 
-  def create(value: Contents): CypherValue = value match {
+  def create(value: Contents): CAPSValue = value match {
     case v: String => cypherString(v)
     case v: java.lang.Byte => cypherInteger(v)
     case v: java.lang.Short => cypherInteger(v)
@@ -194,126 +194,126 @@ case object CypherValue extends CypherValueCompanion[CypherValue] {
     case v: java.lang.Float => cypherFloat(v)
     case v: java.lang.Double => cypherFloat(v)
     case v: java.lang.Boolean => cypherBoolean(v)
-    case v: Seq[_] if v.isEmpty => CypherList.empty
-    case v: Seq[_] => cypherList(v)(CypherValue.apply)
+    case v: Seq[_] if v.isEmpty => CAPSList.empty
+    case v: Seq[_] => cypherList(v)(CAPSValue.apply)
     case v: NodeContents => cypherNode(v)
     case v: RelationshipContents => cypherRelationship(v)
     case v: RegularMap => cypherMap(v)
     case _ => throw CypherValueException(s"Object $value could not be converted to a CypherValue")
   }
 
-  override def cypherType(value: CypherValue): CypherType =
+  override def cypherType(value: CAPSValue): CypherType =
     if (isNull(value)) CTNull
     else
       value match {
-        case v: CypherBoolean => CypherBoolean.cypherType(v)
-        case v: CypherString => CypherString.cypherType(v)
-        case v: CypherNumber => CypherNumber.cypherType(v)
-        case v: CypherList => CypherList.cypherType(v)
-        case v: CypherMap => CypherMap.cypherType(v)
-        case v: CypherPath => CypherPath.cypherType(v)
+        case v: CAPSBoolean => CAPSBoolean.cypherType(v)
+        case v: CAPSString => CAPSString.cypherType(v)
+        case v: CAPSNumber => CAPSNumber.cypherType(v)
+        case v: CAPSList => CAPSList.cypherType(v)
+        case v: CAPSMap => CAPSMap.cypherType(v)
+        case v: CAPSPath => CAPSPath.cypherType(v)
       }
 
-  override def contents(value: CypherValue): Option[Any] =
+  override def contents(value: CAPSValue): Option[Any] =
     if (isNull(value)) None
     else
       value match {
-        case v: CypherBoolean => CypherBoolean.contents(v)
-        case v: CypherString => CypherString.contents(v)
-        case v: CypherNumber => CypherNumber.contents(v)
-        case v: CypherList => CypherList.contents(v)
-        case v: CypherMap => CypherMap.contents(v)
-        case v: CypherPath => CypherPath.contents(v)
+        case v: CAPSBoolean => CAPSBoolean.contents(v)
+        case v: CAPSString => CAPSString.contents(v)
+        case v: CAPSNumber => CAPSNumber.contents(v)
+        case v: CAPSList => CAPSList.contents(v)
+        case v: CAPSMap => CAPSMap.contents(v)
+        case v: CAPSPath => CAPSPath.contents(v)
       }
 
-  override def orderGroup(value: CypherValue): OrderGroup =
+  override def orderGroup(value: CAPSValue): OrderGroup =
     if (isNull(value)) VoidOrderGroup
     else
       value match {
-        case v: CypherBoolean => CypherBoolean.orderGroup(v)
-        case v: CypherString => CypherString.orderGroup(v)
-        case v: CypherNumber => CypherNumber.orderGroup(v)
-        case v: CypherList => CypherList.orderGroup(v)
-        case v: CypherMap => CypherMap.orderGroup(v)
-        case v: CypherPath => CypherPath.orderGroup(v)
+        case v: CAPSBoolean => CAPSBoolean.orderGroup(v)
+        case v: CAPSString => CAPSString.orderGroup(v)
+        case v: CAPSNumber => CAPSNumber.orderGroup(v)
+        case v: CAPSList => CAPSList.orderGroup(v)
+        case v: CAPSMap => CAPSMap.orderGroup(v)
+        case v: CAPSPath => CAPSPath.orderGroup(v)
       }
 
-  protected[value] def computeOrder(l: CypherValue, r: CypherValue): Int = {
+  protected[value] def computeOrder(l: CAPSValue, r: CAPSValue): Int = {
     val lGroup = orderGroup(l)
     val rGroup = orderGroup(r)
     val cmp = lGroup.id - rGroup.id
     if (cmp == 0)
       (l, r) match {
-        case (a: CypherBoolean, b: CypherBoolean) => CypherBoolean.computeOrder(a, b)
-        case (a: CypherString, b: CypherString) => CypherString.computeOrder(a, b)
-        case (a: CypherNumber, b: CypherNumber) => CypherNumber.computeOrder(a, b)
-        case (a: CypherList, b: CypherList) => CypherList.computeOrder(a, b)
-        case (a: CypherMap, b: CypherMap) => CypherMap.computeOrder(a, b)
-        case (a: CypherPath, b: CypherPath) => CypherPath.computeOrder(a, b)
+        case (a: CAPSBoolean, b: CAPSBoolean) => CAPSBoolean.computeOrder(a, b)
+        case (a: CAPSString, b: CAPSString) => CAPSString.computeOrder(a, b)
+        case (a: CAPSNumber, b: CAPSNumber) => CAPSNumber.computeOrder(a, b)
+        case (a: CAPSList, b: CAPSList) => CAPSList.computeOrder(a, b)
+        case (a: CAPSMap, b: CAPSMap) => CAPSMap.computeOrder(a, b)
+        case (a: CAPSPath, b: CAPSPath) => CAPSPath.computeOrder(a, b)
         case _ => throw CypherValueException(s"Order between `$l` and `$r` is undefined")
       } else
       cmp
   }
 
   //TODO: Try to remove
-  protected[value] override def computeCompare(l: CypherValue, r: CypherValue): Int = (l, r) match {
-    case (a: CypherBoolean, b: CypherBoolean) => CypherBoolean.computeCompare(a, b)
-    case (a: CypherString, b: CypherString) => CypherString.computeCompare(a, b)
-    case (a: CypherNumber, b: CypherNumber) => CypherNumber.computeCompare(a, b)
-    case (a: CypherList, b: CypherList) => CypherList.computeCompare(a, b)
-    case (a: CypherMap, b: CypherMap) => CypherMap.computeCompare(a, b)
-    case (a: CypherPath, b: CypherPath) => CypherPath.computeCompare(a, b)
+  protected[value] override def computeCompare(l: CAPSValue, r: CAPSValue): Int = (l, r) match {
+    case (a: CAPSBoolean, b: CAPSBoolean) => CAPSBoolean.computeCompare(a, b)
+    case (a: CAPSString, b: CAPSString) => CAPSString.computeCompare(a, b)
+    case (a: CAPSNumber, b: CAPSNumber) => CAPSNumber.computeCompare(a, b)
+    case (a: CAPSList, b: CAPSList) => CAPSList.computeCompare(a, b)
+    case (a: CAPSMap, b: CAPSMap) => CAPSMap.computeCompare(a, b)
+    case (a: CAPSPath, b: CAPSPath) => CAPSPath.computeCompare(a, b)
     case _ =>
       throw CypherValueException(s"Comparison between `$l` and `$r` is undefined")
   }
 
-  override def isOrContainsNull(value: CypherValue): Boolean =
+  override def isOrContainsNull(value: CAPSValue): Boolean =
     if (isNull(value)) true
     else
       value match {
-        case v: CypherBoolean => CypherBoolean.isOrContainsNull(v)
-        case v: CypherString => CypherString.isOrContainsNull(v)
-        case v: CypherNumber => CypherNumber.isOrContainsNull(v)
-        case v: CypherList => CypherList.isOrContainsNull(v)
-        case v: CypherMap => CypherMap.isOrContainsNull(v)
-        case v: CypherPath => CypherPath.isOrContainsNull(v)
+        case v: CAPSBoolean => CAPSBoolean.isOrContainsNull(v)
+        case v: CAPSString => CAPSString.isOrContainsNull(v)
+        case v: CAPSNumber => CAPSNumber.isOrContainsNull(v)
+        case v: CAPSList => CAPSList.isOrContainsNull(v)
+        case v: CAPSMap => CAPSMap.isOrContainsNull(v)
+        case v: CAPSPath => CAPSPath.isOrContainsNull(v)
       }
 }
 
-sealed trait CypherValue extends PlaceholderCypherValue {
+sealed trait CAPSValue extends PlaceholderCypherValue {
   self: Serializable =>
 }
 
 // *** BOOLEAN
 
-case object CypherBoolean extends CypherScalarValueCompanion[CypherBoolean] {
+case object CAPSBoolean extends CAPSScalarValueCompanion[CAPSBoolean] {
 
   override type Contents = Boolean
 
-  val TRUE = new CypherBoolean(true)
-  val FALSE = new CypherBoolean(false)
+  val TRUE = new CAPSBoolean(true)
+  val FALSE = new CAPSBoolean(false)
 
-  override def create(value: Contents): CypherBoolean =
+  override def create(value: Contents): CAPSBoolean =
     if (value) TRUE else FALSE
 
-  override def cypherType(value: CypherBoolean): CypherType with DefiniteCypherType =
+  override def cypherType(value: CAPSBoolean): CypherType with DefiniteCypherType =
     if (isNull(value)) CTNull else CTBoolean
 
-  override def contents(value: CypherBoolean): Option[Contents] =
+  override def contents(value: CAPSBoolean): Option[Contents] =
     if (isNull(value)) None else Some(value.v)
 
-  def orderGroup(value: CypherBoolean): CypherType.OrderGroups.Value =
+  def orderGroup(value: CAPSBoolean): CypherType.OrderGroups.Value =
     if (isNull(value)) VoidOrderGroup else BooleanOrderGroup
 
-  override protected[value] def computeOrder(l: CypherBoolean, r: CypherBoolean): Int =
+  override protected[value] def computeOrder(l: CAPSBoolean, r: CAPSBoolean): Int =
     Ordering.Boolean.compare(l.v, r.v)
 }
 
-final class CypherBoolean(private[CypherBoolean] val v: Boolean) extends CypherValue with PlaceholderCypherBoolean with Serializable {
+final class CAPSBoolean(private[CAPSBoolean] val v: Boolean) extends CAPSValue with PlaceholderCypherBoolean with Serializable {
   override def hashCode(): Int = v.hashCode()
 
   override def equals(obj: scala.Any): Boolean = obj match {
-    case other: CypherBoolean => CypherBoolean.equiv(this, other)
+    case other: CAPSBoolean => CAPSBoolean.equiv(this, other)
     case _ => false
   }
 
@@ -322,31 +322,31 @@ final class CypherBoolean(private[CypherBoolean] val v: Boolean) extends CypherV
 
 // *** STRING
 
-case object CypherString extends CypherScalarValueCompanion[CypherString] {
-  
+case object CAPSString extends CAPSScalarValueCompanion[CAPSString] {
+
   override type Contents = String
 
-  def create(value: String): CypherString =
-    new CypherString(value)
+  def create(value: String): CAPSString =
+    new CAPSString(value)
 
-  override def cypherType(value: CypherString): CypherType with DefiniteCypherType =
+  override def cypherType(value: CAPSString): CypherType with DefiniteCypherType =
     if (isNull(value)) CTNull else CTString
 
-  override def contents(value: CypherString): Option[Contents] =
+  override def contents(value: CAPSString): Option[Contents] =
     if (isNull(value)) None else Some(value.value)
 
-  def orderGroup(value: CypherString): CypherType.OrderGroups.Value =
+  def orderGroup(value: CAPSString): CypherType.OrderGroups.Value =
     if (isNull(value)) VoidOrderGroup else StringOrderGroup
 
-  override protected[value] def computeOrder(l: CypherString, r: CypherString): Int =
+  override protected[value] def computeOrder(l: CAPSString, r: CAPSString): Int =
     Ordering.String.compare(l.value, r.value)
 }
 
-final class CypherString(val value: String) extends CypherValue with PlaceholderCypherString with Serializable {
+final class CAPSString(val value: String) extends CAPSValue with PlaceholderCypherString with Serializable {
   override def hashCode(): Int = value.hashCode()
 
   override def equals(obj: scala.Any): Boolean = obj match {
-    case other: CypherString => CypherString.equiv(this, other)
+    case other: CAPSString => CAPSString.equiv(this, other)
     case _ => false
   }
 
@@ -355,7 +355,7 @@ final class CypherString(val value: String) extends CypherValue with Placeholder
 
 // *** NUMBER
 
-sealed trait CypherNumberCompanion[V <: CypherNumber] extends CypherScalarValueCompanion[V] {
+sealed trait CAPSNumberCompanion[V <: CAPSNumber] extends CAPSScalarValueCompanion[V] {
 
   override type Contents <: Number
 
@@ -363,46 +363,46 @@ sealed trait CypherNumberCompanion[V <: CypherNumber] extends CypherScalarValueC
     if (isNull(value)) VoidOrderGroup else NumberOrderGroup
 }
 
-case object CypherNumber extends CypherNumberCompanion[CypherNumber] {
+case object CAPSNumber extends CAPSNumberCompanion[CAPSNumber] {
 
   override type Contents = Number
 
-  def create(contents: Contents): CypherNumber = contents match {
-    case _: lang.Long | _: lang.Integer | _: lang.Short | _: lang.Byte => CypherInteger(contents.longValue)
-    case _: lang.Double | _: lang.Float => CypherFloat(contents.doubleValue)
+  def create(contents: Contents): CAPSNumber = contents match {
+    case _: lang.Long | _: lang.Integer | _: lang.Short | _: lang.Byte => CAPSInteger(contents.longValue)
+    case _: lang.Double | _: lang.Float => CAPSFloat(contents.doubleValue)
     case _ =>
       throw CypherValueException(s"$contents is not a CypherNumber")
   }
 
-  override def cypherType(value: CypherNumber): CypherType =
+  override def cypherType(value: CAPSNumber): CypherType =
     if (isNull(value)) CTNull
     else
       value match {
-        case v: CypherInteger => CypherInteger.cypherType(v)
-        case v: CypherFloat => CypherFloat.cypherType(v)
+        case v: CAPSInteger => CAPSInteger.cypherType(v)
+        case v: CAPSFloat => CAPSFloat.cypherType(v)
       }
 
-  override def contents(value: CypherNumber): Option[Contents] =
+  override def contents(value: CAPSNumber): Option[Contents] =
     if (isNull(value)) None
     else
       value match {
-        case CypherInteger(v) => Some(v)
-        case CypherFloat(v) => Some(v)
+        case CAPSInteger(v) => Some(v)
+        case CAPSFloat(v) => Some(v)
       }
 
-  override protected[value] def computeOrder(l: CypherNumber, r: CypherNumber): Int = (l, r) match {
-    case (a: CypherInteger, b: CypherInteger) =>
-      CypherInteger.computeOrder(a, b)
+  override protected[value] def computeOrder(l: CAPSNumber, r: CAPSNumber): Int = (l, r) match {
+    case (a: CAPSInteger, b: CAPSInteger) =>
+      CAPSInteger.computeOrder(a, b)
 
-    case (a: CypherFloat, b: CypherFloat) =>
-      CypherFloat.computeOrder(a, b)
+    case (a: CAPSFloat, b: CAPSFloat) =>
+      CAPSFloat.computeOrder(a, b)
 
-    case (a@CypherFloat(f), b@CypherInteger(i)) =>
-      if (fitsDouble(i)) CypherFloat.computeOrder(a, CypherFloat(i.toDouble))
+    case (a@CAPSFloat(f), b@CAPSInteger(i)) =>
+      if (fitsDouble(i)) CAPSFloat.computeOrder(a, CAPSFloat(i.toDouble))
       else BigDecimal.decimal(f).compare(BigDecimal.decimal(i))
 
-    case (a@CypherInteger(i), b@CypherFloat(f)) =>
-      if (fitsDouble(i)) CypherFloat.computeOrder(CypherFloat(i.toDouble), b)
+    case (a@CAPSInteger(i), b@CAPSFloat(f)) =>
+      if (fitsDouble(i)) CAPSFloat.computeOrder(CAPSFloat(i.toDouble), b)
       else BigDecimal.decimal(i).compare(BigDecimal.decimal(f))
   }
 
@@ -410,36 +410,36 @@ case object CypherNumber extends CypherNumberCompanion[CypherNumber] {
   private def fitsDouble(v: Long): Boolean = true
 }
 
-sealed trait CypherNumber extends CypherValue {
+sealed trait CAPSNumber extends CAPSValue {
   self: Serializable =>
 }
 
 // *** INTEGER
 
-case object CypherInteger extends CypherNumberCompanion[CypherInteger] {
+case object CAPSInteger extends CAPSNumberCompanion[CAPSInteger] {
 
   override type Contents = lang.Long
 
-  def create(value: Contents): CypherInteger = new CypherInteger(value)
+  def create(value: Contents): CAPSInteger = new CAPSInteger(value)
 
-  override def cypherType(value: CypherInteger): CypherType with DefiniteCypherType =
+  override def cypherType(value: CAPSInteger): CypherType with DefiniteCypherType =
     if (isNull(value)) CTNull else CTInteger
 
-  override def contents(value: CypherInteger): Option[Contents] =
+  override def contents(value: CAPSInteger): Option[Contents] =
     if (isNull(value)) None else Some(value.value)
 
-  override protected[value] def computeOrder(l: CypherInteger, r: CypherInteger): Int =
+  override protected[value] def computeOrder(l: CAPSInteger, r: CAPSInteger): Int =
     Ordering.Long.compare(l.value, r.value)
 }
 
-final class CypherInteger(val v: Long) extends CypherNumber with PlaceholderCypherInteger with Serializable {
+final class CAPSInteger(val v: Long) extends CAPSNumber with PlaceholderCypherInteger with Serializable {
   override def hashCode(): Int = value.hashCode()
 
   def value = v
 
   override def equals(obj: scala.Any): Boolean = obj match {
-    case other: CypherInteger => CypherInteger.equiv(this, other)
-    case other: CypherNumber => CypherNumber.equiv(this, other)
+    case other: CAPSInteger => CAPSInteger.equiv(this, other)
+    case other: CAPSNumber => CAPSNumber.equiv(this, other)
     case _ => false
   }
 
@@ -448,20 +448,20 @@ final class CypherInteger(val v: Long) extends CypherNumber with PlaceholderCyph
 
 // *** FLOAT ***
 
-case object CypherFloat extends CypherNumberCompanion[CypherFloat] {
+case object CAPSFloat extends CAPSNumberCompanion[CAPSFloat] {
 
   override type Contents = lang.Double
 
-  def create(value: Contents): CypherFloat =
-    new CypherFloat(value)
+  def create(value: Contents): CAPSFloat =
+    new CAPSFloat(value)
 
-  override def cypherType(value: CypherFloat): CypherType with DefiniteCypherType =
+  override def cypherType(value: CAPSFloat): CypherType with DefiniteCypherType =
     if (isNull(value)) CTNull else CTFloat
 
-  override def contents(value: CypherFloat): Option[Contents] =
+  override def contents(value: CAPSFloat): Option[Contents] =
     if (isNull(value)) None else Some(value.value)
 
-  override protected[value] def computeOrder(l: CypherFloat, r: CypherFloat): Int = {
+  override protected[value] def computeOrder(l: CAPSFloat, r: CAPSFloat): Int = {
     val lVal = l.value
     val rVal = r.value
     if (lVal.isNaN) {
@@ -472,12 +472,12 @@ case object CypherFloat extends CypherNumberCompanion[CypherFloat] {
   }
 }
 
-final class CypherFloat(val value: Double) extends CypherNumber with PlaceholderCypherFloat with Serializable {
+final class CAPSFloat(val value: Double) extends CAPSNumber with PlaceholderCypherFloat with Serializable {
   override def hashCode(): Int = value.hashCode()
 
   override def equals(obj: scala.Any): Boolean = obj match {
-    case other: CypherFloat => CypherFloat.equiv(this, other)
-    case other: CypherNumber => CypherNumber.equiv(this, other)
+    case other: CAPSFloat => CAPSFloat.equiv(this, other)
+    case other: CAPSNumber => CAPSNumber.equiv(this, other)
     case _ => false
   }
 
@@ -486,65 +486,65 @@ final class CypherFloat(val value: Double) extends CypherNumber with Placeholder
 
 // *** LIST
 
-case object CypherList extends CypherValueCompanion[CypherList] {
+case object CAPSList extends CAPSValueCompanion[CAPSList] {
 
-  override type Contents = Seq[CypherValue]
+  override type Contents = Seq[CAPSValue]
   override type Input = Any
 
-  object empty extends CypherList(Seq.empty)
+  object empty extends CAPSList(Seq.empty)
 
-  override def apply(value: Input): CypherList = value match {
+  override def apply(value: Input): CAPSList = value match {
     case null => cypherNull
-    case v: CypherList => v
-    case v: Seq[_] if v.isEmpty => CypherList.empty
-    case v: Seq[_] => cypherList(v)(CypherValue.apply)
-    case v: java.util.List[_] if v.isEmpty => CypherList.empty
-    case v: java.util.List[_] => cypherList(v.asScala)(CypherValue.apply)
-    case v: Array[_] if v.isEmpty => CypherList.empty
-    case v: Array[_] => cypherList(v)(CypherValue.apply)
+    case v: CAPSList => v
+    case v: Seq[_] if v.isEmpty => CAPSList.empty
+    case v: Seq[_] => cypherList(v)(CAPSValue.apply)
+    case v: java.util.List[_] if v.isEmpty => CAPSList.empty
+    case v: java.util.List[_] => cypherList(v.asScala)(CAPSValue.apply)
+    case v: Array[_] if v.isEmpty => CAPSList.empty
+    case v: Array[_] => cypherList(v)(CAPSValue.apply)
     case v => throw CypherValueException(s"$v is not a CypherList")
   }
 
-  def create(value: Contents): CypherList =
-    if (value.isEmpty) CypherList.empty else new CypherList(value)
+  def create(value: Contents): CAPSList =
+    if (value.isEmpty) CAPSList.empty else new CAPSList(value)
 
-  override def cypherType(value: CypherList): CypherType with DefiniteCypherType =
+  override def cypherType(value: CAPSList): CypherType with DefiniteCypherType =
     if (isNull(value)) CTNull else CTList(value.cachedElementType)
 
-  override def contents(value: CypherList): Option[Contents] =
+  override def contents(value: CAPSList): Option[Contents] =
     if (isNull(value)) None else Some(value.v)
 
-  override def isOrContainsNull(value: CypherList): Boolean =
+  override def isOrContainsNull(value: CAPSList): Boolean =
     isNull(value) || value.cachedIsOrContainsNulls
 
-  override protected[value] def computeOrder(l: CypherList, r: CypherList): Int =
+  override protected[value] def computeOrder(l: CAPSList, r: CAPSList): Int =
     valueListOrderability.compare(l.v, r.v)
 
   // Values in the same order group are ordered (sorted) together by orderability
-  override def orderGroup(value: CypherList): OrderGroup =
+  override def orderGroup(value: CAPSList): OrderGroup =
     if (isNull(value)) VoidOrderGroup else ListOrderGroup
 
-  private val valueListOrderability = Ordering.Iterable(CypherValue.order)
+  private val valueListOrderability = Ordering.Iterable(CAPSValue.order)
 }
 
-sealed class CypherList(private[CypherList] val v: Seq[CypherValue]) extends CypherValue with Serializable {
+sealed class CAPSList(private[CAPSList] val v: Seq[CAPSValue]) extends CAPSValue with Serializable {
 
   override def cypherType = CTList(cachedElementType)
 
-  def map[B](f: CypherValue => B): TraversableOnce[B] = v.map(f)
+  def map[B](f: CAPSValue => B): TraversableOnce[B] = v.map(f)
 
   @transient
-  private[CypherList] lazy val cachedIsOrContainsNulls: Boolean =
-    v.exists(CypherValue.isOrContainsNull)
+  private[CAPSList] lazy val cachedIsOrContainsNulls: Boolean =
+    v.exists(CAPSValue.isOrContainsNull)
 
   @transient
-  private[CypherList] lazy val cachedElementType: CypherType =
-    v.map(CypherValue.cypherType).reduceOption(_ join _).getOrElse(CTVoid)
+  private[CAPSList] lazy val cachedElementType: CypherType =
+    v.map(CAPSValue.cypherType).reduceOption(_ join _).getOrElse(CTVoid)
 
   override def hashCode(): Int = v.hashCode()
 
   override def equals(obj: scala.Any): Boolean = obj match {
-    case other: CypherList => CypherList.equiv(this, other)
+    case other: CAPSList => CAPSList.equiv(this, other)
     case _ => false
   }
 
@@ -570,107 +570,107 @@ sealed class CypherList(private[CypherList] val v: Seq[CypherValue]) extends Cyp
 
 // *** MAP
 
-sealed trait CypherMapCompanion[V <: CypherMap] extends CypherValueCompanion[V] {
+sealed trait CAPSMapCompanion[V <: CAPSMap] extends CAPSValueCompanion[V] {
 
   override type Contents <: MapContents
 
-  def property(value: V)(name: String): CypherValue =
+  def property(value: V)(name: String): CAPSValue =
     if (isNull(value)) null else value.properties(name)
 
   def properties(value: V): Option[Properties] =
     if (isNull(value)) None else Some(value.properties)
 }
 
-case object CypherMap extends CypherMapCompanion[CypherMap] {
+case object CAPSMap extends CAPSMapCompanion[CAPSMap] {
 
   override type Contents = MapContents
   override type Input = Any
 
-  object empty extends CypherMap(Properties.empty)
+  object empty extends CAPSMap(Properties.empty)
 
-  override def apply(value: Input): CypherMap = value match {
+  override def apply(value: Input): CAPSMap = value match {
     case null => cypherNull
-    case v: CypherMap => v
-    case ((k: String, v)) => cypherMap(Properties(k -> CypherValue.apply(v)))
-    case v: Map[_, _] if v.isEmpty => CypherMap.empty
-    case v: Map[_, _] => cypherMap(v)(CypherValue.apply)
-    case v: java.util.Map[_, _] if v.isEmpty => CypherMap.empty
-    case v: java.util.Map[_, _] => cypherMap(v.asScala.toMap)(CypherValue.apply)
+    case v: CAPSMap => v
+    case ((k: String, v)) => cypherMap(Properties(k -> CAPSValue.apply(v)))
+    case v: Map[_, _] if v.isEmpty => CAPSMap.empty
+    case v: Map[_, _] => cypherMap(v)(CAPSValue.apply)
+    case v: java.util.Map[_, _] if v.isEmpty => CAPSMap.empty
+    case v: java.util.Map[_, _] => cypherMap(v.asScala.toMap)(CAPSValue.apply)
     case v: MapContents => cypherMap(v)
-    case v: Properties if v.isEmpty => CypherMap.empty
+    case v: Properties if v.isEmpty => CAPSMap.empty
     case v: Properties => cypherMap(v)
     case v => throw CypherValueException(s"$v is not a CypherMap")
   }
 
-  def apply(elts: (String, CypherValue)*): CypherMap =
+  def apply(elts: (String, CAPSValue)*): CAPSMap =
     create(if (elts.isEmpty) Properties.empty else Properties(elts: _*))
 
-  def create(value: Contents): CypherMap = value match {
+  def create(value: Contents): CAPSMap = value match {
     case m: RegularMap => create(m.properties)
-    case node: NodeContents => CypherNode.create(node)
-    case rel: RelationshipContents => CypherRelationship.create(rel)
+    case node: NodeContents => CAPSNode.create(node)
+    case rel: RelationshipContents => CAPSRelationship.create(rel)
   }
 
-  def create(value: Properties): CypherMap =
-    if (value == Properties.empty) empty else new CypherMap(value)
+  def create(value: Properties): CAPSMap =
+    if (value == Properties.empty) empty else new CAPSMap(value)
 
-  override def isOrContainsNull(v: CypherMap): Boolean =
+  override def isOrContainsNull(v: CAPSMap): Boolean =
     isNull(v) || (v match {
-      case entity: CypherEntityValue => CypherEntityCompanion.isOrContainsNull(entity)
+      case entity: CAPSEntityValue => CAPSEntityCompanion.isOrContainsNull(entity)
       case _ => v.cachedIsOrContainsNulls
     })
 
-  override def cypherType(value: CypherMap): CypherType =
+  override def cypherType(value: CAPSMap): CypherType =
     if (value == null) CTNull
     else
       value match {
-        case entity: CypherEntityValue => CypherEntityCompanion.cypherType(entity)
+        case entity: CAPSEntityValue => CAPSEntityCompanion.cypherType(entity)
         case _ => CTMap
       }
 
-  override def contents(value: CypherMap): Option[Contents] =
+  override def contents(value: CAPSMap): Option[Contents] =
     if (value == null) None
     else
       value match {
-        case entity: CypherEntityValue => CypherEntityCompanion.contents(entity)
+        case entity: CAPSEntityValue => CAPSEntityCompanion.contents(entity)
         case _ => properties(value).map(RegularMap)
       }
 
   // Values in the same order group are ordered (sorted) together by orderability
-  override def orderGroup(value: CypherMap): OrderGroup =
+  override def orderGroup(value: CAPSMap): OrderGroup =
     if (isNull(value)) VoidOrderGroup
     else
       value match {
-        case entity: CypherEntityValue => CypherEntityCompanion.orderGroup(entity)
+        case entity: CAPSEntityValue => CAPSEntityCompanion.orderGroup(entity)
         case _ => MapOrderGroup
       }
 
-  protected[value] def computeOrder(l: CypherMap, r: CypherMap): Int = (l, r) match {
-    case (a: CypherEntityValue, b: CypherEntityValue) => CypherEntityCompanion.computeOrder(a, b)
-    case (a: CypherMap, b: CypherMap) => mapEntryOrdering.compare(l.properties.m, r.properties.m)
+  protected[value] def computeOrder(l: CAPSMap, r: CAPSMap): Int = (l, r) match {
+    case (a: CAPSEntityValue, b: CAPSEntityValue) => CAPSEntityCompanion.computeOrder(a, b)
+    case (a: CAPSMap, b: CAPSMap) => mapEntryOrdering.compare(l.properties.m, r.properties.m)
   }
 
   private val mapEntryOrdering =
-    Ordering.Iterable(Ordering.Tuple2(Ordering.String, CypherValue.order))
+    Ordering.Iterable(Ordering.Tuple2(Ordering.String, CAPSValue.order))
 }
 
-sealed class CypherMap(protected[value] val properties: Properties) extends CypherValue with PlaceholderCypherMap with Serializable {
+sealed class CAPSMap(protected[value] val properties: Properties) extends CAPSValue with PlaceholderCypherMap with Serializable {
 
-  def get(key: String): Option[CypherValue] = properties.get(key)
+  def get(key: String): Option[CAPSValue] = properties.get(key)
 
   def keys: Set[String] = properties.m.keySet
 
-  def values: Iterable[CypherValue] = properties.m.values
+  def values: Iterable[CAPSValue] = properties.m.values
 
   @transient
   protected[value] lazy val cachedIsOrContainsNulls: Boolean =
-    properties.m.values.exists(CypherValue.isOrContainsNull)
+    properties.m.values.exists(CAPSValue.isOrContainsNull)
 
   override def hashCode(): Int = properties.hashCode()
 
   override def equals(obj: scala.Any): Boolean = obj match {
-    case other: CypherEntityValue => false
-    case other: CypherMap => CypherMap.equiv(this, other)
+    case other: CAPSEntityValue => false
+    case other: CAPSMap => CAPSMap.equiv(this, other)
     case _ => false
   }
 
@@ -700,43 +700,43 @@ sealed class CypherMap(protected[value] val properties: Properties) extends Cyph
 
 // *** ENTITY
 
-case object CypherEntityCompanion extends CypherEntityCompanion[CypherEntityValue] {
+case object CAPSEntityCompanion extends CAPSEntityCompanion[CAPSEntityValue] {
 
   override type Contents = EntityContents
 
-  def create(contents: EntityContents): CypherEntityValue =
+  def create(contents: EntityContents): CAPSEntityValue =
     contents match {
-      case node: NodeContents => CypherNode.create(node)
-      case rel: RelationshipContents => CypherRelationship.create(rel)
+      case node: NodeContents => CAPSNode.create(node)
+      case rel: RelationshipContents => CAPSRelationship.create(rel)
     }
 
-  override def contents(value: CypherEntityValue): Option[Contents] = {
+  override def contents(value: CAPSEntityValue): Option[Contents] = {
     if (isNull(value)) None
     else
       value match {
-        case node: CypherNode => CypherNode.contents(node)
-        case rel: CypherRelationship => CypherRelationship.contents(rel)
+        case node: CAPSNode => CAPSNode.contents(node)
+        case rel: CAPSRelationship => CAPSRelationship.contents(rel)
       }
   }
 
-  override def cypherType(value: CypherEntityValue): CypherType =
+  override def cypherType(value: CAPSEntityValue): CypherType =
     if (isNull(value)) CTNull
     else
       value match {
-        case node: CypherNode => CypherNode.cypherType(node)
-        case rel: CypherRelationship => CypherRelationship.cypherType(rel)
+        case node: CAPSNode => CAPSNode.cypherType(node)
+        case rel: CAPSRelationship => CAPSRelationship.cypherType(rel)
       }
 
-  override def orderGroup(value: CypherEntityValue): OrderGroup =
+  override def orderGroup(value: CAPSEntityValue): OrderGroup =
     if (isNull(value)) VoidOrderGroup
     else
       value match {
-        case node: CypherNode => CypherNode.orderGroup(node)
-        case rel: CypherRelationship => CypherRelationship.orderGroup(rel)
+        case node: CAPSNode => CAPSNode.orderGroup(node)
+        case rel: CAPSRelationship => CAPSRelationship.orderGroup(rel)
       }
 }
 
-sealed trait CypherEntityCompanion[V <: CypherEntityValue] extends CypherMapCompanion[V] {
+sealed trait CAPSEntityCompanion[V <: CAPSEntityValue] extends CAPSMapCompanion[V] {
 
   override type Contents <: EntityContents
   override type Input = Contents
@@ -755,8 +755,8 @@ sealed trait CypherEntityCompanion[V <: CypherEntityValue] extends CypherMapComp
     EntityId.ordering.compare(l.id, r.id)
 }
 
-sealed abstract class CypherEntityValue(override protected[value] val properties: Properties)
-  extends CypherMap(properties) {
+sealed abstract class CAPSEntityValue(override protected[value] val properties: Properties)
+  extends CAPSMap(properties) {
 
   protected[value] def id: EntityId
 
@@ -765,45 +765,45 @@ sealed abstract class CypherEntityValue(override protected[value] val properties
 
 // *** NODE
 
-case object CypherNode extends CypherEntityCompanion[CypherNode] {
+case object CAPSNode extends CAPSEntityCompanion[CAPSNode] {
 
   override type Contents = NodeContents
 
-  def apply(id: EntityId, data: NodeData = NodeData.empty): CypherNode =
+  def apply(id: EntityId, data: NodeData = NodeData.empty): CAPSNode =
     apply(id, data.labels, data.properties)
 
-  def apply(id: EntityId, labels: Seq[String], properties: Properties): CypherNode =
-    new CypherNode(id, labels, properties)
+  def apply(id: EntityId, labels: Seq[String], properties: Properties): CAPSNode =
+    new CAPSNode(id, labels, properties)
 
-  def create(contents: NodeContents): CypherNode =
+  def create(contents: NodeContents): CAPSNode =
     apply(contents.id, contents.labels, contents.properties)
 
-  override def contents(value: CypherNode): Option[Contents] =
+  override def contents(value: CAPSNode): Option[Contents] =
     if (value == null) None else Some(NodeContents(value.id, value.labels, value.properties))
 
-  override def cypherType(value: CypherNode): CypherType with DefiniteCypherType =
+  override def cypherType(value: CAPSNode): CypherType with DefiniteCypherType =
     if (value == null) CTNull else CTNode(labels(value).toSeq.flatten: _*)
 
   // Values in the same order group are ordered (sorted) together by orderability
-  override def orderGroup(value: CypherNode): OrderGroup =
+  override def orderGroup(value: CAPSNode): OrderGroup =
     if (isNull(value)) VoidOrderGroup else NodeOrderGroup
 
-  def labels(node: CypherNode): Option[Seq[String]] =
+  def labels(node: CAPSNode): Option[Seq[String]] =
     if (isNull(node)) None else Some(node.labels)
 }
 
-sealed class CypherNode(
+sealed class CAPSNode(
                          protected[value] val id: EntityId,
                          // TODO: Use Set once available in Spark 2.3
                          protected[value] val labels: Seq[String],
                          override protected[value] val properties: Properties)
-  extends CypherEntityValue(properties)
+  extends CAPSEntityValue(properties)
     with Serializable {
 
   override def hashCode(): Int = id.hashCode()
 
   override def equals(obj: scala.Any): Boolean = obj match {
-    case other: CypherNode => CypherNode.equiv(this, other)
+    case other: CAPSNode => CAPSNode.equiv(this, other)
     case _ => false
   }
 
@@ -818,60 +818,60 @@ sealed class CypherNode(
 
 // *** RELATIONSHIP
 
-case object CypherRelationship extends CypherEntityCompanion[CypherRelationship] {
+case object CAPSRelationship extends CAPSEntityCompanion[CAPSRelationship] {
 
   override type Contents = RelationshipContents
 
-  def apply(id: EntityId, data: RelationshipData): CypherRelationship =
-    new CypherRelationship(id, data.startId, data.endId, data.relationshipType, data.properties)
+  def apply(id: EntityId, data: RelationshipData): CAPSRelationship =
+    new CAPSRelationship(id, data.startId, data.endId, data.relationshipType, data.properties)
 
   def apply(
              id: EntityId,
              startId: EntityId,
              endId: EntityId,
              relType: String,
-             properties: Properties): CypherRelationship =
-    new CypherRelationship(id, startId, endId, relType, properties)
+             properties: Properties): CAPSRelationship =
+    new CAPSRelationship(id, startId, endId, relType, properties)
 
-  def create(contents: RelationshipContents): CypherRelationship =
+  def create(contents: RelationshipContents): CAPSRelationship =
     apply(contents.id, contents.startId, contents.endId, contents.relationshipType, contents.properties)
 
-  override def contents(value: CypherRelationship): Option[RelationshipContents] =
+  override def contents(value: CAPSRelationship): Option[RelationshipContents] =
     if (isNull(value))
       None
     else
       Some(RelationshipContents(value.id, value.startId, value.endId, value.relationshipType, value.properties))
 
-  override def cypherType(value: CypherRelationship): CypherType with DefiniteCypherType =
+  override def cypherType(value: CAPSRelationship): CypherType with DefiniteCypherType =
     if (isNull(value)) CTNull else relationshipType(value).map(t => CTRelationship(t)).getOrElse(CTRelationship)
 
   // Values in the same order group are ordered (sorted) together by orderability
-  override def orderGroup(value: CypherRelationship): OrderGroup =
+  override def orderGroup(value: CAPSRelationship): OrderGroup =
     if (isNull(value)) VoidOrderGroup else RelationshipOrderGroup
 
-  def relationshipType(value: CypherRelationship): Option[String] =
+  def relationshipType(value: CAPSRelationship): Option[String] =
     if (isNull(value)) None else Some(value.relationshipType)
 
-  def startId(value: CypherRelationship): Option[EntityId] =
+  def startId(value: CAPSRelationship): Option[EntityId] =
     if (isNull(value)) None else Some(value.startId)
 
-  def endId(value: CypherRelationship): Option[EntityId] =
+  def endId(value: CAPSRelationship): Option[EntityId] =
     if (isNull(value)) None else Some(value.endId)
 }
 
-sealed class CypherRelationship(
+sealed class CAPSRelationship(
                                  protected[value] val id: EntityId,
                                  protected[value] val startId: EntityId,
                                  protected[value] val endId: EntityId,
                                  protected[value] val relationshipType: String,
                                  override protected[value] val properties: Properties)
-  extends CypherEntityValue(properties)
+  extends CAPSEntityValue(properties)
     with Serializable {
 
   override def hashCode(): Int = id.hashCode()
 
   override def equals(obj: scala.Any): Boolean = obj match {
-    case other: CypherRelationship => CypherRelationship.equiv(this, other)
+    case other: CAPSRelationship => CAPSRelationship.equiv(this, other)
     case _ => false
   }
 
@@ -885,45 +885,45 @@ sealed class CypherRelationship(
 
 // *** Path
 
-case object CypherPath extends CypherValueCompanion[CypherPath] {
+case object CAPSPath extends CAPSValueCompanion[CAPSPath] {
 
-  override type Contents = Seq[CypherEntityValue]
+  override type Contents = Seq[CAPSEntityValue]
   override type Input = Contents
 
-  def apply(value: Input): CypherPath = value match {
+  def apply(value: Input): CAPSPath = value match {
     case null => cypherNull
     case v => create(v)
   }
 
-  def create(contents: Seq[CypherEntityValue]): CypherPath =
+  def create(contents: Seq[CAPSEntityValue]): CAPSPath =
   // TODO: Prevent construction of invalid paths, cf CypherTestValue suite for some initial code for this
-    new CypherPath(contents)
+    new CAPSPath(contents)
 
-  override def cypherType(value: CypherPath): CypherType =
+  override def cypherType(value: CAPSPath): CypherType =
     if (isNull(value)) CTNull else CTPath
 
-  override def contents(value: CypherPath): Option[Contents] =
+  override def contents(value: CAPSPath): Option[Contents] =
     if (isNull(value)) None else Some(value.elements)
 
   // Values in the same order group are ordered (sorted) together by orderability
-  override def orderGroup(value: CypherPath): OrderGroup =
+  override def orderGroup(value: CAPSPath): OrderGroup =
     if (isNull(value)) VoidOrderGroup else PathOrderGroup
 
-  override protected[value] def computeOrder(l: CypherPath, r: CypherPath): Int =
+  override protected[value] def computeOrder(l: CAPSPath, r: CAPSPath): Int =
     pathOrdering.compare(l.elements, r.elements)
 
-  private val pathOrdering = Ordering.Iterable(CypherEntityCompanion.order)
+  private val pathOrdering = Ordering.Iterable(CAPSEntityCompanion.order)
 
   // A path containing null entities is malformed and therefore not considered here
-  override def isOrContainsNull(v: CypherPath): Boolean = isNull(v)
+  override def isOrContainsNull(v: CAPSPath): Boolean = isNull(v)
 }
 
-sealed class CypherPath(protected[value] val elements: Seq[CypherEntityValue]) extends CypherValue with PlaceholderCypherPath with Serializable {
+sealed class CAPSPath(protected[value] val elements: Seq[CAPSEntityValue]) extends CAPSValue with PlaceholderCypherPath with Serializable {
 
   override def hashCode(): Int = elements.hashCode()
 
   override def equals(obj: scala.Any): Boolean = obj match {
-    case other: CypherPath => CypherPath.equiv(this, other)
+    case other: CAPSPath => CAPSPath.equiv(this, other)
     case _ => false
   }
 

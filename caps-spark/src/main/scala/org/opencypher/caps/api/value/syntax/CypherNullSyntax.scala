@@ -15,8 +15,8 @@
  */
 package org.opencypher.caps.api.value.syntax
 
-import org.opencypher.caps.api.value.CypherValue
+import org.opencypher.caps.api.value.CAPSValue
 
 trait CypherNullSyntax {
-  def cypherNull[V <: CypherValue]: V = null.asInstanceOf[V]
+  def cypherNull[V <: CAPSValue]: V = null.asInstanceOf[V]
 }

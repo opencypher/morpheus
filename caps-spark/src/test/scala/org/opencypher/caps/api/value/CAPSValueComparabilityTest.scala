@@ -15,9 +15,9 @@
  */
 package org.opencypher.caps.api.value
 
-class CypherValueComparabilityTest extends CypherValueTestSuite {
+class CAPSValueComparabilityTest extends CAPSValueTestSuite {
 
-  import CypherTestValues._
+  import CAPSTestValues._
 
   test("should compare PATH values correctly") {
     verifyComparability(PATH_valueGroups)
@@ -63,7 +63,7 @@ class CypherValueComparabilityTest extends CypherValueTestSuite {
     verifyComparability(ANY_valueGroups)
   }
 
-  private def verifyComparability[V <: CypherValue : CypherValueCompanion](valueGroups: ValueGroups[V]): Unit = {
+  private def verifyComparability[V <: CAPSValue : CAPSValueCompanion](valueGroups: ValueGroups[V]): Unit = {
     valueGroups.flatten.foreach { v =>
       tryCompare(v, v) should be(if (v.comparesNulls) None else Some(0))
     }
@@ -89,13 +89,13 @@ class CypherValueComparabilityTest extends CypherValueTestSuite {
         // direction 2: knowing the values are comparable
         if (cmp.nonEmpty && cmp.get <= 0) {
           (leftIndex <= rightIndex) should be(true)
-          (CypherValueCompanion[V].order(leftValue, rightValue) <= 0) should be(true)
+          (CAPSValueCompanion[V].order(leftValue, rightValue) <= 0) should be(true)
         }
       }
     }
   }
 
-  private def tryCompare[V <: CypherValue](l: V, r: V)(implicit companion: CypherValueCompanion[V]): Option[Int] = {
+  private def tryCompare[V <: CAPSValue](l: V, r: V)(implicit companion: CAPSValueCompanion[V]): Option[Int] = {
     val a = companion.compare(l, r)
     val b = companion.compare(r, l)
 

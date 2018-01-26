@@ -27,7 +27,7 @@ import org.opencypher.caps.ir.api.expr.{Expr, Param}
 object DfUtils {
 
   implicit class CypherRow(r: Row) {
-    def getCypherValue(expr: Expr, header: RecordHeader)(implicit context: RuntimeContext): CypherValue = {
+    def getCypherValue(expr: Expr, header: RecordHeader)(implicit context: RuntimeContext): CAPSValue = {
       expr match {
         case Param(name) => context.parameters(name)
         case _ =>
@@ -43,7 +43,7 @@ object DfUtils {
       }
     }
 
-    def typeToValue(t: CypherType): Any => CypherValue = t match {
+    def typeToValue(t: CypherType): Any => CAPSValue = t match {
       case CTBoolean =>
         (in) =>
           cypherBoolean(in.asInstanceOf[Boolean])

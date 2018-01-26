@@ -18,7 +18,7 @@ package org.opencypher.caps.impl.record
 import org.apache.spark.sql.Row
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTFloat, CTInteger, CTString}
-import org.opencypher.caps.api.value.CypherMap
+import org.opencypher.caps.api.value.CAPSMap
 import org.opencypher.caps.demo.SocialNetworkData.{Friend, Person}
 import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.test.CAPSTestSuite
@@ -120,7 +120,7 @@ class NodeScanTest extends CAPSTestSuite {
 
     val graph = CAPSGraph.create(nodeScan)
     graph.nodes("n").iterator.toSet {
-      CypherMap("n" -> "1")
+      CAPSMap("n" -> "1")
     }
 
   }

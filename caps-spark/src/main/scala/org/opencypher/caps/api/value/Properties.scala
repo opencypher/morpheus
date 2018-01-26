@@ -25,13 +25,13 @@ object Properties {
 
   val empty = new Properties(SortedMap.empty)
 
-  def apply(elts: (String, CypherValue)*): Properties =
+  def apply(elts: (String, CAPSValue)*): Properties =
     fromMap(SortedMap(elts: _*))
 
-  implicit def fromMap(v: Map[String, CypherValue]): Properties = {
+  implicit def fromMap(v: Map[String, CAPSValue]): Properties = {
     if (v == null) throw IllegalArgumentException("a property map", v)
     v match {
-      case m: SortedMap[String, CypherValue] if m.ordering eq Ordering.String =>
+      case m: SortedMap[String, CAPSValue] if m.ordering eq Ordering.String =>
         new Properties(m)
 
       case _ =>
@@ -40,12 +40,12 @@ object Properties {
   }
 }
 
-final class Properties private (val m: SortedMap[String, CypherValue]) extends AnyVal with Serializable {
+final class Properties private (val m: SortedMap[String, CAPSValue]) extends AnyVal with Serializable {
 
   def isEmpty: Boolean = m.isEmpty
 
-  def apply(key: String): CypherValue = m.getOrElse(key, cypherNull[CypherValue])
-  def get(key: String): Option[CypherValue] = m.get(key)
+  def apply(key: String): CAPSValue = m.getOrElse(key, cypherNull[CAPSValue])
+  def get(key: String): Option[CAPSValue] = m.get(key)
 
-  def containsNullValue: Boolean = m.values.exists(CypherValue.isOrContainsNull)
+  def containsNullValue: Boolean = m.values.exists(CAPSValue.isOrContainsNull)
 }

@@ -31,10 +31,10 @@ trait RecordMatchingTestSupport {
 
   self: CAPSTestSuite =>
 
-  implicit val bagConfig: HashedBagConfiguration[CypherMap] = Bag.configuration.compact[CypherMap]
+  implicit val bagConfig: HashedBagConfiguration[CAPSMap] = Bag.configuration.compact[CAPSMap]
 
   implicit class RecordMatcher(records: CAPSRecords) {
-    def shouldMatch(expected: CypherMap*): Assertion = {
+    def shouldMatch(expected: CAPSMap*): Assertion = {
       records.iterator.toBag should equal(Bag(expected: _*))
     }
 
@@ -67,7 +67,7 @@ trait RecordMatchingTestSupport {
 
     // TODO: Remove this and replace usages with toMapsWithCollectedEntities below
     // probably use this name though, and have not collecting be the special case
-    def toMaps: Bag[CypherMap] = {
+    def toMaps: Bag[CAPSMap] = {
       val rows = capsRecords.toDF().collect().map { r =>
         val properties = capsRecords.header.slots.map { s =>
           s.content match {
@@ -75,12 +75,12 @@ trait RecordMatchingTestSupport {
             case x                   => x.key.withoutType -> r.getCypherValue(x.key, capsRecords.header)
           }
         }.toMap
-        CypherMap(properties)
+        CAPSMap(properties)
       }
       Bag(rows: _*)
     }
 
-    def toMapsWithCollectedEntities: Bag[CypherMap] =
+    def toMapsWithCollectedEntities: Bag[CAPSMap] =
       Bag(capsRecords.toCypherMaps.collect(): _*)
   }
 }

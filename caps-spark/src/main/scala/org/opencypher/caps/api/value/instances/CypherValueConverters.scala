@@ -23,38 +23,38 @@ import scala.language.implicitConversions
 
 trait CypherValueConverters extends LowPriorityCypherValueConverters {
 
-  implicit def cypherBoolean(v: Boolean): CypherBoolean = CypherBoolean.create(v)
-  implicit def cypherString(v: String): CypherString = CypherString.create(v)
-  implicit def cypherInteger(v: Byte): CypherInteger = CypherInteger.create(v.toLong)
-  implicit def cypherInteger(v: Short): CypherInteger = CypherInteger.create(v.toLong)
-  implicit def cypherInteger(v: Int): CypherInteger = CypherInteger.create(v.toLong)
-  implicit def cypherInteger(v: Long): CypherInteger = CypherInteger.create(v)
-  implicit def cypherFloat(v: Float): CypherFloat = CypherFloat.create(v.toDouble)
-  implicit def cypherFloat(v: Double): CypherFloat = CypherFloat.create(v)
+  implicit def cypherBoolean(v: Boolean): CAPSBoolean = CAPSBoolean.create(v)
+  implicit def cypherString(v: String): CAPSString = CAPSString.create(v)
+  implicit def cypherInteger(v: Byte): CAPSInteger = CAPSInteger.create(v.toLong)
+  implicit def cypherInteger(v: Short): CAPSInteger = CAPSInteger.create(v.toLong)
+  implicit def cypherInteger(v: Int): CAPSInteger = CAPSInteger.create(v.toLong)
+  implicit def cypherInteger(v: Long): CAPSInteger = CAPSInteger.create(v)
+  implicit def cypherFloat(v: Float): CAPSFloat = CAPSFloat.create(v.toDouble)
+  implicit def cypherFloat(v: Double): CAPSFloat = CAPSFloat.create(v)
 
-  implicit def cypherTernary(v: Ternary): CypherValue =
-    if (v.isDefinite) CypherBoolean.create(v.isTrue) else cypherNull[CypherValue]
+  implicit def cypherTernary(v: Ternary): CAPSValue =
+    if (v.isDefinite) CAPSBoolean.create(v.isTrue) else cypherNull[CAPSValue]
 
-  implicit def cypherOption[T](v: Option[T])(implicit ev: T => CypherValue): CypherValue =
-    v.map(ev).getOrElse(cypherNull[CypherValue])
+  implicit def cypherOption[T](v: Option[T])(implicit ev: T => CAPSValue): CAPSValue =
+    v.map(ev).getOrElse(cypherNull[CAPSValue])
 
-  implicit def cypherList[T](v: Seq[T])(implicit ev: T => CypherValue): CypherList =
-    CypherList.create(v.map(ev))
+  implicit def cypherList[T](v: Seq[T])(implicit ev: T => CAPSValue): CAPSList =
+    CAPSList.create(v.map(ev))
 
-  implicit def cypherMap(v: MapContents): CypherMap =
-    CypherMap.create(v)
+  implicit def cypherMap(v: MapContents): CAPSMap =
+    CAPSMap.create(v)
 
-  implicit def cypherMap(v: Properties): CypherMap =
-    CypherMap.create(v)
+  implicit def cypherMap(v: Properties): CAPSMap =
+    CAPSMap.create(v)
 
-  implicit def cypherMap[K, V](v: Map[K, V])(implicit ev: V => CypherValue): CypherMap = {
+  implicit def cypherMap[K, V](v: Map[K, V])(implicit ev: V => CAPSValue): CAPSMap = {
     val contents = Properties.fromMap(v.map(entry => entry._1.toString -> ev(entry._2)))
-    CypherMap.create(contents)
+    CAPSMap.create(contents)
   }
 
-  implicit def cypherNode(v: NodeContents): CypherNode =
-    CypherNode.create(v)
+  implicit def cypherNode(v: NodeContents): CAPSNode =
+    CAPSNode.create(v)
 
-  implicit def cypherRelationship(v: RelationshipContents): CypherRelationship =
-    CypherRelationship.create(v)
+  implicit def cypherRelationship(v: RelationshipContents): CAPSRelationship =
+    CAPSRelationship.create(v)
 }

@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.spark.acceptance
 
-import org.opencypher.caps.api.value.{CypherList, CypherMap}
+import org.opencypher.caps.api.value.{CAPSList, CAPSMap}
 import org.opencypher.caps.impl.spark.CAPSGraph
 
 import scala.collection.Bag
@@ -34,11 +34,11 @@ trait BoundedVarExpandBehaviour {
 
       // Then
       result.records.toMaps should equal(Bag(
-        CypherMap("m.val" -> "source"),
-        CypherMap("m.val" -> "mid1"),
-        CypherMap("m.val" -> "mid1"),
-        CypherMap("m.val" -> "end"),
-        CypherMap("m.val" -> "end")
+        CAPSMap("m.val" -> "source"),
+        CAPSMap("m.val" -> "mid1"),
+        CAPSMap("m.val" -> "mid1"),
+        CAPSMap("m.val" -> "end"),
+        CAPSMap("m.val" -> "end")
       ))
 
       // And
@@ -55,7 +55,7 @@ trait BoundedVarExpandBehaviour {
 
       // Then
       result.records.toMaps should equal(Bag(
-        CypherMap("y.val" -> "end")
+        CAPSMap("y.val" -> "end")
       ))
 
       // And
@@ -71,15 +71,15 @@ trait BoundedVarExpandBehaviour {
 
       // Then
       result.records.toMaps should equal(Bag(
-        CypherMap("b.v" -> "a"),
-        CypherMap("b.v" -> "a"),
-        CypherMap("b.v" -> "a"),
-        CypherMap("b.v" -> "b"),
-        CypherMap("b.v" -> "b"),
-        CypherMap("b.v" -> "b"),
-        CypherMap("b.v" -> "c"),
-        CypherMap("b.v" -> "c"),
-        CypherMap("b.v" -> "c")
+        CAPSMap("b.v" -> "a"),
+        CAPSMap("b.v" -> "a"),
+        CAPSMap("b.v" -> "a"),
+        CAPSMap("b.v" -> "b"),
+        CAPSMap("b.v" -> "b"),
+        CAPSMap("b.v" -> "b"),
+        CAPSMap("b.v" -> "c"),
+        CAPSMap("b.v" -> "c"),
+        CAPSMap("b.v" -> "c")
       ))
 
       // And
@@ -95,15 +95,15 @@ trait BoundedVarExpandBehaviour {
 
       // Then
       result.records.toMaps should equal(Bag(
-        CypherMap("r" -> CypherList(Seq(2))),
-        CypherMap("r" -> CypherList(Seq(2, 4))),
-        CypherMap("r" -> CypherList(Seq(2, 4, 5))),
-        CypherMap("r" -> CypherList(Seq(4))),
-        CypherMap("r" -> CypherList(Seq(4, 5))),
-        CypherMap("r" -> CypherList(Seq(4, 5, 2))),
-        CypherMap("r" -> CypherList(Seq(5))),
-        CypherMap("r" -> CypherList(Seq(5, 2))),
-        CypherMap("r" -> CypherList(Seq(5, 2, 4)))
+        CAPSMap("r" -> CAPSList(Seq(2))),
+        CAPSMap("r" -> CAPSList(Seq(2, 4))),
+        CAPSMap("r" -> CAPSList(Seq(2, 4, 5))),
+        CAPSMap("r" -> CAPSList(Seq(4))),
+        CAPSMap("r" -> CAPSList(Seq(4, 5))),
+        CAPSMap("r" -> CAPSList(Seq(4, 5, 2))),
+        CAPSMap("r" -> CAPSList(Seq(5))),
+        CAPSMap("r" -> CAPSList(Seq(5, 2))),
+        CAPSMap("r" -> CAPSList(Seq(5, 2, 4)))
       ))
 
       // And
@@ -119,9 +119,9 @@ trait BoundedVarExpandBehaviour {
 
       // Then
       result.records.toMaps should equal(Bag(
-        CypherMap("b.v" -> "b"),
-        CypherMap("b.v" -> "c"),
-        CypherMap("b.v" -> "c")
+        CAPSMap("b.v" -> "b"),
+        CAPSMap("b.v" -> "c"),
+        CAPSMap("b.v" -> "c")
       ))
 
       // And
@@ -139,9 +139,9 @@ trait BoundedVarExpandBehaviour {
 
       // Then
       result.records.toMaps should equal(Bag(
-        CypherMap("b.v" -> "c"),
-        CypherMap("b.v" -> "a"),
-        CypherMap("b.v" -> "a")
+        CAPSMap("b.v" -> "c"),
+        CAPSMap("b.v" -> "a"),
+        CAPSMap("b.v" -> "a")
       ))
 
       // And
@@ -157,8 +157,8 @@ trait BoundedVarExpandBehaviour {
 
       // Then
       result.records.toMaps should equal(Bag(
-        CypherMap("c.v" -> "d"),
-        CypherMap("c.v" -> "d")
+        CAPSMap("c.v" -> "d"),
+        CAPSMap("c.v" -> "d")
       ))
 
       // And
@@ -186,7 +186,7 @@ trait BoundedVarExpandBehaviour {
 
       // Then
       result.records.toMaps should equal(Bag(
-        CypherMap("a.name" -> "Philip", "b.name" -> "Stefan", "c.name" -> "Berlondon")
+        CAPSMap("a.name" -> "Philip", "b.name" -> "Stefan", "c.name" -> "Berlondon")
       ))
     }
   }

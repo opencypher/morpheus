@@ -15,9 +15,9 @@
  */
 package org.opencypher.caps.api.value
 
-class CypherValueEquivTest extends CypherValueTestSuite {
+class CAPSValueEquivTest extends CAPSValueTestSuite {
 
-  import CypherTestValues._
+  import CAPSTestValues._
 
   test("PATH equiv") {
     verifyEquiv(PATH_valueGroups)
@@ -63,7 +63,7 @@ class CypherValueEquivTest extends CypherValueTestSuite {
     verifyEquiv(ANY_valueGroups)
   }
 
-  private def verifyEquiv[V <: CypherValue : CypherValueCompanion](valueGroups: ValueGroups[V]): Unit = {
+  private def verifyEquiv[V <: CAPSValue : CAPSValueCompanion](valueGroups: ValueGroups[V]): Unit = {
     valueGroups.flatten.foreach { v =>
       equiv(v, v) should be(true)
       if (! v.isNull) {
@@ -90,9 +90,9 @@ class CypherValueEquivTest extends CypherValueTestSuite {
     }
   }
 
-  private def equiv[V <: CypherValue : CypherValueCompanion](v1: V, v2: V): Boolean = {
-    val b1 = CypherValueCompanion[V].equiv(v1, v2)
-    val b2 = CypherValueCompanion[V].equiv(v2, v1)
+  private def equiv[V <: CAPSValue : CAPSValueCompanion](v1: V, v2: V): Boolean = {
+    val b1 = CAPSValueCompanion[V].equiv(v1, v2)
+    val b2 = CAPSValueCompanion[V].equiv(v2, v1)
 
 //    println(s"$v1 $v2 $b1 $b2")
 

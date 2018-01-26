@@ -44,7 +44,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
 
     person.graphs("result").cypher("MATCH (n) RETURN n.name").records.iterator.toSet should equal(
       Set(
-        CypherMap("n.name" -> CypherString("Mats"))
+        CAPSMap("n.name" -> CAPSString("Mats"))
       ))
   }
 
@@ -58,10 +58,10 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
 
     person.graphs("result").cypher("MATCH (n) RETURN n.name").records.iterator.toSet should equal(
       Set(
-        CypherMap("n.name" -> CypherString("Mats")),
-        CypherMap("n.name" -> CypherString("Stefan")),
-        CypherMap("n.name" -> CypherString("Martin")),
-        CypherMap("n.name" -> CypherString("Max"))
+        CAPSMap("n.name" -> CAPSString("Mats")),
+        CAPSMap("n.name" -> CAPSString("Stefan")),
+        CAPSMap("n.name" -> CAPSString("Martin")),
+        CAPSMap("n.name" -> CAPSString("Max"))
       ))
   }
 
@@ -81,9 +81,9 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
       .iterator
       .toSet should equal(
       Set(
-        CypherMap("n.name" -> CypherString("Stefan")),
-        CypherMap("n.name" -> CypherString("Martin")),
-        CypherMap("n.name" -> CypherString("Max"))
+        CAPSMap("n.name" -> CAPSString("Stefan")),
+        CAPSMap("n.name" -> CAPSString("Martin")),
+        CAPSMap("n.name" -> CAPSString("Max"))
       ))
   }
 
@@ -102,7 +102,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
       .iterator
       .toSet should equal(
       Set(
-        CypherMap("cnt" -> 3)
+        CAPSMap("cnt" -> 3)
       ))
   }
 
@@ -148,9 +148,9 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
 
     graph.cypher("MATCH (n:Swede) RETURN labels(n)").records.iterator.toSet should equal(
       Set(
-        CypherMap("labels(n)" -> Array("Swede")),
-        CypherMap("labels(n)" -> Array("Swede")),
-        CypherMap("labels(n)" -> Array("Swede"))
+        CAPSMap("labels(n)" -> Array("Swede")),
+        CAPSMap("labels(n)" -> Array("Swede")),
+        CAPSMap("labels(n)" -> Array("Swede"))
       ))
   }
 
@@ -304,7 +304,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
     val patternGraph = initPersonReadsBookGraph
 
     patternGraph.cypher("MATCH (p:Person {name: 'Mats'}) RETURN p.luckyNumber").records.iterator.toBag should equal(
-      Bag(CypherMap("p.luckyNumber" -> 23)))
+      Bag(CAPSMap("p.luckyNumber" -> 23)))
   }
 
   test("Supports node scans from ad-hoc table") {
@@ -332,9 +332,9 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
 
     patternGraph.nodes("n", CTNode("Person")).iterator.toBag should equal(
       Bag(
-        CypherMap("n" -> CypherNode(0L)),
-        CypherMap("n" -> CypherNode(1L)),
-        CypherMap("n" -> CypherNode(10L))
+        CAPSMap("n" -> CAPSNode(0L)),
+        CAPSMap("n" -> CAPSNode(1L)),
+        CAPSMap("n" -> CAPSNode(10L))
       ))
   }
 
@@ -413,7 +413,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
 
     patternGraph.nodes("n", CTNode).iterator.toBag should equal(
       Bag(
-        CypherMap("n" -> CypherNode(0L, Seq("Person"), Properties("name" -> "PersonPeter"))))
+        CAPSMap("n" -> CAPSNode(0L, Seq("Person"), Properties("name" -> "PersonPeter"))))
     )
   }
 
@@ -446,10 +446,10 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
 
     patternGraph.nodes("n", CTNode).iterator.toBag should equal(
       Bag(
-        CypherMap("n" -> CypherNode(0L, Seq("Person"), Properties("name" -> "PersonPeter"))),
-        CypherMap("n" -> CypherNode(1L, Seq("Employee"), Properties("name" -> "EmployeePeter"))),
-        CypherMap("n" -> CypherNode(10L, Seq("Person"), Properties("name" -> "PersonSusanna"))),
-        CypherMap("n" -> CypherNode(11L, Seq("Employee"), Properties("name" -> "EmployeeSusanna")))
+        CAPSMap("n" -> CAPSNode(0L, Seq("Person"), Properties("name" -> "PersonPeter"))),
+        CAPSMap("n" -> CAPSNode(1L, Seq("Employee"), Properties("name" -> "EmployeePeter"))),
+        CAPSMap("n" -> CAPSNode(10L, Seq("Person"), Properties("name" -> "PersonSusanna"))),
+        CAPSMap("n" -> CAPSNode(11L, Seq("Employee"), Properties("name" -> "EmployeeSusanna")))
       )
     )
   }
@@ -486,12 +486,12 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
 
     patternGraph.nodes("n", CTNode).toMaps should equal(
       Bag(
-        CypherMap("n" -> 0L, "n.name" -> "PersonPeter", "n:Person" -> true, "n:Employee" -> false),
-        CypherMap("n" -> 1L, "n.name" -> "EmployeePeter", "n:Person" -> false, "n:Employee" -> true),
-        CypherMap("n" -> 2L, "n.name" -> "HybridPeter", "n:Person" -> true, "n:Employee" -> true),
-        CypherMap("n" -> 10L, "n.name" -> "person.graphsusanna", "n:Person" -> true, "n:Employee" -> false),
-        CypherMap("n" -> 11L, "n.name" -> null, "n:Person" -> false, "n:Employee" -> true),
-        CypherMap("n" -> 12L, "n.name" -> "HybridSusanna", "n:Person" -> true, "n:Employee" -> true)
+        CAPSMap("n" -> 0L, "n.name" -> "PersonPeter", "n:Person" -> true, "n:Employee" -> false),
+        CAPSMap("n" -> 1L, "n.name" -> "EmployeePeter", "n:Person" -> false, "n:Employee" -> true),
+        CAPSMap("n" -> 2L, "n.name" -> "HybridPeter", "n:Person" -> true, "n:Employee" -> true),
+        CAPSMap("n" -> 10L, "n.name" -> "person.graphsusanna", "n:Person" -> true, "n:Employee" -> false),
+        CAPSMap("n" -> 11L, "n.name" -> null, "n:Person" -> false, "n:Employee" -> true),
+        CAPSMap("n" -> 12L, "n.name" -> "HybridSusanna", "n:Person" -> true, "n:Employee" -> true)
       ))
   }
 

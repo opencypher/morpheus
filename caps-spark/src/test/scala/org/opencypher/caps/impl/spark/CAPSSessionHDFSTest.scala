@@ -19,7 +19,7 @@ import java.net.URI
 
 import org.apache.http.client.utils.URIBuilder
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.value.{CypherMap, CypherNode}
+import org.opencypher.caps.api.value.{CAPSMap, CAPSNode}
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvPropertyGraphDataSource
 import org.opencypher.caps.test.CAPSTestSuite
@@ -56,18 +56,18 @@ class CAPSSessionHDFSTest extends CAPSTestSuite with MiniDFSClusterFixture with 
     val nodes = capsSession.cypher(s"FROM GRAPH test AT '$hdfsURI' MATCH (n) RETURN n")
     nodes.records.iterator.toBag should equal(
       Bag(
-        CypherMap("n" -> CypherNode(1L)),
-        CypherMap("n" -> CypherNode(2L)),
-        CypherMap("n" -> CypherNode(3L)),
-        CypherMap("n" -> CypherNode(4L))
+        CAPSMap("n" -> CAPSNode(1L)),
+        CAPSMap("n" -> CAPSNode(2L)),
+        CAPSMap("n" -> CAPSNode(3L)),
+        CAPSMap("n" -> CAPSNode(4L))
       ))
 
     val edges = capsSession.cypher(s"FROM GRAPH test AT '$hdfsURI' MATCH ()-[r]->() RETURN r")
     edges.records.asCaps.compact.toMaps should equal(
       Bag(
-        CypherMap("r" -> 10L),
-        CypherMap("r" -> 20L),
-        CypherMap("r" -> 30L)
+        CAPSMap("r" -> 10L),
+        CAPSMap("r" -> 20L),
+        CAPSMap("r" -> 30L)
       ))
   }
 }

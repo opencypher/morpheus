@@ -18,7 +18,7 @@ package org.opencypher.caps.impl.spark
 import org.apache.spark.sql.Row
 import org.opencypher.caps.api.exception.CypherException
 import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTRelationship, CTString, _}
-import org.opencypher.caps.api.value.{CypherMap, CypherNode, Properties}
+import org.opencypher.caps.api.value.{CAPSMap, CAPSNode, Properties}
 import org.opencypher.caps.impl.record._
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.ir.api.{Label, PropertyKey}
@@ -155,8 +155,8 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture {
 
     result.records.iterator.toBag should equal(
       Bag(
-        CypherMap(
-          "n" -> CypherNode(0L, Seq("Foo"), Properties("p" -> 1)),
+        CAPSMap(
+          "n" -> CAPSNode(0L, Seq("Foo"), Properties("p" -> 1)),
           "b" -> 5
         )
       ))

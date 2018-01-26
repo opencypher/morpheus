@@ -22,71 +22,71 @@ import scala.language.implicitConversions
 
 trait CypherValueSyntax {
 
-  implicit def cypherMapOps[V <: CypherMap](value: V): CypherMapOps[V] =
+  implicit def cypherMapOps[V <: CAPSMap](value: V): CypherMapOps[V] =
     new CypherMapOps[V](value)
 
-  implicit def cypherEntityOps[V <: CypherEntityValue](value: V): CypherEntityOps[V] =
+  implicit def cypherEntityOps[V <: CAPSEntityValue](value: V): CypherEntityOps[V] =
     new CypherEntityOps[V](value)
 
-  implicit def cypherNodeOps[V <: CypherNode](value: V): CypherNodeOps[V] =
+  implicit def cypherNodeOps[V <: CAPSNode](value: V): CypherNodeOps[V] =
     new CypherNodeOps[V](value)
 
-  implicit def cypherRelOps[V <: CypherRelationship](value: V): CypherRelOps[V] =
+  implicit def cypherRelOps[V <: CAPSRelationship](value: V): CypherRelOps[V] =
     new CypherRelOps[V](value)
 
-  implicit def cypherValueOps[V <: CypherValue](value: V): CypherValueOps[V] =
+  implicit def cypherValueOps[V <: CAPSValue](value: V): CypherValueOps[V] =
     new CypherValueOps[V](value)
 }
 
-final class CypherMapOps[V <: CypherMap](val value: V) extends AnyVal with Serializable {
-  def properties(implicit companion: CypherMapCompanion[V]): Option[Properties] =
+final class CypherMapOps[V <: CAPSMap](val value: V) extends AnyVal with Serializable {
+  def properties(implicit companion: CAPSMapCompanion[V]): Option[Properties] =
     companion.properties(value)
 }
 
-final class CypherEntityOps[V <: CypherEntityValue](val value: V) extends AnyVal with Serializable {
-  def id(implicit companion: CypherEntityCompanion[V]): Option[EntityId] =
+final class CypherEntityOps[V <: CAPSEntityValue](val value: V) extends AnyVal with Serializable {
+  def id(implicit companion: CAPSEntityCompanion[V]): Option[EntityId] =
     companion.id(value)
 }
 
-final class CypherNodeOps[V <: CypherNode](val value: V) extends AnyVal with Serializable {
-  def labels: Option[Seq[String]] = CypherNode.labels(value)
+final class CypherNodeOps[V <: CAPSNode](val value: V) extends AnyVal with Serializable {
+  def labels: Option[Seq[String]] = CAPSNode.labels(value)
 }
 
-final class CypherRelOps[V <: CypherRelationship](val value: V) extends AnyVal with Serializable {
-  def startId: Option[EntityId] = CypherRelationship.startId(value)
-  def endId: Option[EntityId] = CypherRelationship.endId(value)
-  def relationshipType: Option[String] = CypherRelationship.relationshipType(value)
+final class CypherRelOps[V <: CAPSRelationship](val value: V) extends AnyVal with Serializable {
+  def startId: Option[EntityId] = CAPSRelationship.startId(value)
+  def endId: Option[EntityId] = CAPSRelationship.endId(value)
+  def relationshipType: Option[String] = CAPSRelationship.relationshipType(value)
 }
 
-final class CypherValueOps[V <: CypherValue](val value: V) extends AnyVal with Serializable {
+final class CypherValueOps[V <: CAPSValue](val value: V) extends AnyVal with Serializable {
 
-  def contents(implicit companion: CypherValueCompanion[V]): Option[companion.Contents] =
+  def contents(implicit companion: CAPSValueCompanion[V]): Option[companion.Contents] =
     companion.contents(value)
 
-  def cypherType(implicit companion: CypherValueCompanion[V]): CypherType =
+  def cypherType(implicit companion: CAPSValueCompanion[V]): CypherType =
     companion.cypherType(value)
 
-  def equalTo(other: V)(implicit companion: CypherValueCompanion[V]): Ternary =
+  def equalTo(other: V)(implicit companion: CAPSValueCompanion[V]): Ternary =
     companion.equal(value, other)
 
-  def equivTo(other: V)(implicit companion: CypherValueCompanion[V]): Boolean =
+  def equivTo(other: V)(implicit companion: CAPSValueCompanion[V]): Boolean =
     companion.equiv(value, other)
 
-  def isNull(implicit companion: CypherValueCompanion[V]): Boolean =
+  def isNull(implicit companion: CAPSValueCompanion[V]): Boolean =
     companion.isNull(value)
 
-  def comparesNulls(implicit companion: CypherValueCompanion[V]): Boolean =
+  def comparesNulls(implicit companion: CAPSValueCompanion[V]): Boolean =
     companion.isOrContainsNull(value)
 
-  def <(other: V)(implicit companion: CypherValueCompanion[V]): Ternary =
+  def <(other: V)(implicit companion: CAPSValueCompanion[V]): Ternary =
     Ternary(companion.compare(value, other).map(_ < 0))
 
-  def <=(other: V)(implicit companion: CypherValueCompanion[V]): Ternary =
+  def <=(other: V)(implicit companion: CAPSValueCompanion[V]): Ternary =
     Ternary(companion.compare(value, other).map(_ <= 0))
 
-  def >(other: V)(implicit companion: CypherValueCompanion[V]): Ternary =
+  def >(other: V)(implicit companion: CAPSValueCompanion[V]): Ternary =
     Ternary(companion.compare(value, other).map(_ > 0))
 
-  def >=(other: V)(implicit companion: CypherValueCompanion[V]): Ternary =
+  def >=(other: V)(implicit companion: CAPSValueCompanion[V]): Ternary =
     Ternary(companion.compare(value, other).map(_ >= 0))
 }

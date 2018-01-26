@@ -24,7 +24,7 @@ import org.opencypher.caps.api.exception.UnsupportedOperationException
 import org.opencypher.caps.api.graph.{CypherResult, PlaceholderCypherValue, PropertyGraph}
 import org.opencypher.caps.api.io.{CreateOrFail, PersistMode, PropertyGraphDataSource}
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.value.CypherValue
+import org.opencypher.caps.api.value.CAPSValue
 import org.opencypher.caps.demo.Configuration.{PrintLogicalPlan, PrintPhysicalPlan, PrintQueryExecutionStages}
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
 import org.opencypher.caps.impl.record.CypherRecords
@@ -88,7 +88,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
 
     val (stmt, extractedLiterals, semState) = parser.process(query)(CypherParser.defaultContext)
 
-    val extractedParameters = extractedLiterals.mapValues(v => CypherValue(v))
+    val extractedParameters = extractedLiterals.mapValues(v => CAPSValue(v))
     val allParameters = queryParameters ++ extractedParameters
 
     logStageProgress("IR ...", false)

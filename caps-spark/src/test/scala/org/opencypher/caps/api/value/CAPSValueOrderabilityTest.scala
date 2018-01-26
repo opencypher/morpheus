@@ -18,9 +18,9 @@ package org.opencypher.caps.api.value
 import scala.annotation.tailrec
 import scala.util.Random
 
-class CypherValueOrderabilityTest extends CypherValueTestSuite {
+class CAPSValueOrderabilityTest extends CAPSValueTestSuite {
 
-  import CypherTestValues._
+  import CAPSTestValues._
 
   test("should order PATH values correctly") {
     verifyOrderabilityReflexivity(PATH_valueGroups)
@@ -88,27 +88,27 @@ class CypherValueOrderabilityTest extends CypherValueTestSuite {
     verifyOrderabilityOrder(ANY_valueGroups)
   }
 
-  private def verifyOrderabilityReflexivity[V <: CypherValue : CypherValueCompanion](values: ValueGroups[V]): Unit = {
+  private def verifyOrderabilityReflexivity[V <: CAPSValue : CAPSValueCompanion](values: ValueGroups[V]): Unit = {
     values.flatten.foreach { (v: V) =>
-      CypherValueCompanion[V].order.compare(v, v) should be(0)
+      CAPSValueCompanion[V].order.compare(v, v) should be(0)
       if (! v.isNull) {
-        (CypherValueCompanion[V].order.compare(v, cypherNull[V]) < 0) should be(true)
-        (CypherValueCompanion[V].order.compare(cypherNull[V], v) > 0) should be(true)
+        (CAPSValueCompanion[V].order.compare(v, cypherNull[V]) < 0) should be(true)
+        (CAPSValueCompanion[V].order.compare(cypherNull[V], v) > 0) should be(true)
       }
     }
 
-    (CypherValueCompanion[V].order.compare(cypherNull[V], cypherNull[V]) == 0) should be(true)
+    (CAPSValueCompanion[V].order.compare(cypherNull[V], cypherNull[V]) == 0) should be(true)
 
     values.indexed.zip(values.indexed).foreach { entry =>
       val ((leftIndex, leftValue), (rightIndex, rightValue)) = entry
-      val cmp = CypherValueCompanion[V].order.compare(leftValue, rightValue)
+      val cmp = CAPSValueCompanion[V].order.compare(leftValue, rightValue)
       val isEqual = cmp == 0
       val isSameValue = leftIndex == rightIndex
       isEqual should be(isSameValue)
     }
   }
 
-  private def verifyOrderabilityTransitivity[V <: CypherValue : CypherValueCompanion](values: ValueGroups[V]): Unit = {
+  private def verifyOrderabilityTransitivity[V <: CAPSValue : CAPSValueCompanion](values: ValueGroups[V]): Unit = {
     var count = 0
     val flatValues = values.indexed
     flatValues.foreach { a =>
@@ -118,9 +118,9 @@ class CypherValueOrderabilityTest extends CypherValueTestSuite {
           val (i2, v2) = b
           val (i3, v3) = c
 
-          val cmp1 = CypherValueCompanion[V].order(v1, v2)
-          val cmp2 = CypherValueCompanion[V].order(v2, v3)
-          val cmp3 = CypherValueCompanion[V].order(v1, v3)
+          val cmp1 = CAPSValueCompanion[V].order(v1, v2)
+          val cmp2 = CAPSValueCompanion[V].order(v2, v3)
+          val cmp3 = CAPSValueCompanion[V].order(v1, v3)
 
 //          println(s"$count $a << $cmp1 >> $b << $cmp2 >> $c : $cmp3")
 //          count += 1
@@ -160,18 +160,18 @@ class CypherValueOrderabilityTest extends CypherValueTestSuite {
     if (cmp > 0) (leftIndex > rightIndex) should be(true)
   }
 
-  private def verifyOrderabilityOrder[V <: CypherValue : CypherValueCompanion](expected: ValueGroups[V]): Unit = {
+  private def verifyOrderabilityOrder[V <: CAPSValue : CAPSValueCompanion](expected: ValueGroups[V]): Unit = {
     1.to(1000).foreach { _ =>
       val shuffled = Random.shuffle[Seq[V], Seq](expected)
-      val sorted = shuffled.sortBy(values => Random.shuffle(values).head)(CypherValueCompanion[V].order)
+      val sorted = shuffled.sortBy(values => Random.shuffle(values).head)(CAPSValueCompanion[V].order)
 
-      assertSameGroupsInSameOrder(sorted, expected)(CypherValueCompanion[V].order)
+      assertSameGroupsInSameOrder(sorted, expected)(CAPSValueCompanion[V].order)
     }
   }
 
   @tailrec
-  private def assertSameGroupsInSameOrder[V <: CypherValue](lhs: ValueGroups[V], rhs: ValueGroups[V])
-                                                           (implicit order: Ordering[V]): Unit =
+  private def assertSameGroupsInSameOrder[V <: CAPSValue](lhs: ValueGroups[V], rhs: ValueGroups[V])
+                                                         (implicit order: Ordering[V]): Unit =
     (lhs, rhs) match {
 
       case (Seq(lefts, lhsTail@_*), Seq(rights, rhsTail@_*)) =>
