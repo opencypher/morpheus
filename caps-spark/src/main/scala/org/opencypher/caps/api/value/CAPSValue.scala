@@ -280,7 +280,7 @@ case object CAPSValue extends CAPSValueCompanion[CAPSValue] {
       }
 }
 
-sealed trait CAPSValue extends PlaceholderCypherValue {
+sealed trait CAPSValue extends CypherValue {
   self: Serializable =>
 }
 
@@ -309,7 +309,7 @@ case object CAPSBoolean extends CAPSScalarValueCompanion[CAPSBoolean] {
     Ordering.Boolean.compare(l.v, r.v)
 }
 
-final class CAPSBoolean(private[CAPSBoolean] val v: Boolean) extends CAPSValue with PlaceholderCypherBoolean with Serializable {
+final class CAPSBoolean(private[CAPSBoolean] val v: Boolean) extends CAPSValue with CypherBoolean with Serializable {
   override def hashCode(): Int = v.hashCode()
 
   override def equals(obj: scala.Any): Boolean = obj match {
@@ -342,7 +342,7 @@ case object CAPSString extends CAPSScalarValueCompanion[CAPSString] {
     Ordering.String.compare(l.value, r.value)
 }
 
-final class CAPSString(val value: String) extends CAPSValue with PlaceholderCypherString with Serializable {
+final class CAPSString(val value: String) extends CAPSValue with CypherString with Serializable {
   override def hashCode(): Int = value.hashCode()
 
   override def equals(obj: scala.Any): Boolean = obj match {
@@ -432,7 +432,7 @@ case object CAPSInteger extends CAPSNumberCompanion[CAPSInteger] {
     Ordering.Long.compare(l.value, r.value)
 }
 
-final class CAPSInteger(val v: Long) extends CAPSNumber with PlaceholderCypherInteger with Serializable {
+final class CAPSInteger(val v: Long) extends CAPSNumber with CypherInteger with Serializable {
   override def hashCode(): Int = value.hashCode()
 
   def value = v
@@ -472,7 +472,7 @@ case object CAPSFloat extends CAPSNumberCompanion[CAPSFloat] {
   }
 }
 
-final class CAPSFloat(val value: Double) extends CAPSNumber with PlaceholderCypherFloat with Serializable {
+final class CAPSFloat(val value: Double) extends CAPSNumber with CypherFloat with Serializable {
   override def hashCode(): Int = value.hashCode()
 
   override def equals(obj: scala.Any): Boolean = obj match {
@@ -654,7 +654,7 @@ case object CAPSMap extends CAPSMapCompanion[CAPSMap] {
     Ordering.Iterable(Ordering.Tuple2(Ordering.String, CAPSValue.order))
 }
 
-sealed class CAPSMap(protected[value] val properties: Properties) extends CAPSValue with PlaceholderCypherMap with Serializable {
+sealed class CAPSMap(protected[value] val properties: Properties) extends CAPSValue with CypherMap with Serializable {
 
   def get(key: String): Option[CAPSValue] = properties.get(key)
 
@@ -918,7 +918,7 @@ case object CAPSPath extends CAPSValueCompanion[CAPSPath] {
   override def isOrContainsNull(v: CAPSPath): Boolean = isNull(v)
 }
 
-sealed class CAPSPath(protected[value] val elements: Seq[CAPSEntityValue]) extends CAPSValue with PlaceholderCypherPath with Serializable {
+sealed class CAPSPath(protected[value] val elements: Seq[CAPSEntityValue]) extends CAPSValue with CypherPath with Serializable {
 
   override def hashCode(): Int = elements.hashCode()
 

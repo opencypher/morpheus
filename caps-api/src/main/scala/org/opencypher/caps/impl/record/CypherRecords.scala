@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.record
 
-import org.opencypher.caps.api.graph.PlaceholderCypherMap
+import org.opencypher.caps.api.value.CypherMap
 
 trait CypherRecordHeader {
   def fields: Set[String]
@@ -43,7 +43,7 @@ trait CypherRecords extends CypherPrintable {
     *
     * WARNING: This operation may be very expensive as it may have to materialise
     */
-  def iterator: Iterator[PlaceholderCypherMap]
+  def iterator: Iterator[CypherMap]
 
   /**
     * @return the number of records in this CypherRecords.

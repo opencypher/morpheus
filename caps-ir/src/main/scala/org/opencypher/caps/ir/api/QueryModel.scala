@@ -18,7 +18,7 @@ package org.opencypher.caps.ir.api
 import java.net.URI
 
 import org.opencypher.caps.api.exception.IllegalStateException
-import org.opencypher.caps.api.graph.PlaceholderCypherValue
+import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.ir.api.block._
 
 import scala.annotation.tailrec
@@ -26,7 +26,7 @@ import scala.collection.generic.CanBuildFrom
 
 final case class QueryModel[E](
                                 result: ResultBlock[E],
-                                parameters: Map[String, PlaceholderCypherValue],
+                                parameters: Map[String, CypherValue],
                                 blocks: Map[BlockRef, Block[E]],
                                 graphs: Map[String, URI]
 ) {

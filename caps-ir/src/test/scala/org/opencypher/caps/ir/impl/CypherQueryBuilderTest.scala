@@ -15,9 +15,9 @@
  */
 package org.opencypher.caps.ir.impl
 
-import org.opencypher.caps.api.graph.PlaceholderCypherValue
 import org.opencypher.caps.api.schema.{AllGiven, Schema}
 import org.opencypher.caps.api.types.{CTNode, CTNull, CTRelationship}
+import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block._
 import org.opencypher.caps.ir.api.expr.{Expr, HasLabel, Property, Var}
@@ -224,7 +224,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
 
   implicit class RichModel(model: QueryModel[Expr]) {
 
-    def ensureThat(f: (QueryModel[Expr], Map[String, PlaceholderCypherValue]) => Unit) = f(model, model.parameters)
+    def ensureThat(f: (QueryModel[Expr], Map[String, CypherValue]) => Unit) = f(model, model.parameters)
 
     def requirements = {
       val deps = model.result.after

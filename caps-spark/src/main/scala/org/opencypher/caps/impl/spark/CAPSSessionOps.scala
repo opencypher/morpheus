@@ -15,7 +15,8 @@
  */
 package org.opencypher.caps.impl.spark
 
-import org.opencypher.caps.api.graph.{PlaceholderCypherValue, PropertyGraph}
+import org.opencypher.caps.api.graph.PropertyGraph
+import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.record.CypherRecords
 import org.opencypher.caps.ir.api.expr.{Expr, Var}
 
@@ -25,24 +26,24 @@ trait CAPSSessionOps {
       graph: PropertyGraph,
       in: CypherRecords,
       expr: Expr,
-      queryParameters: Map[String, PlaceholderCypherValue]): CypherRecords
+      queryParameters: Map[String, CypherValue]): CypherRecords
 
   def select(
       graph: PropertyGraph,
       in: CypherRecords,
       fields: IndexedSeq[Var],
-      queryParameters: Map[String, PlaceholderCypherValue]): CypherRecords
+      queryParameters: Map[String, CypherValue]): CypherRecords
 
   def project(
       graph: PropertyGraph,
       in: CypherRecords,
       expr: Expr,
-      queryParameters: Map[String, PlaceholderCypherValue]): CypherRecords
+      queryParameters: Map[String, CypherValue]): CypherRecords
 
   def alias(
       graph: PropertyGraph,
       in: CypherRecords,
       alias: (Expr, Var),
-      queryParameters: Map[String, PlaceholderCypherValue]): CypherRecords
+      queryParameters: Map[String, CypherValue]): CypherRecords
 
 }

@@ -17,10 +17,10 @@ package org.opencypher.caps.logical.impl.logical
 
 import java.net.URI
 
-import org.opencypher.caps.api.graph.{PlaceholderCypherBoolean, PlaceholderCypherInteger, PlaceholderCypherString}
 import org.opencypher.caps.api.io.PropertyGraphDataSource
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.api.value._
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block._
 import org.opencypher.caps.ir.api.expr._
@@ -37,9 +37,9 @@ import scala.language.implicitConversions
 
 class LogicalPlannerTest extends LogicalTestSuite {
 
-  case class TestCypherString(value: String) extends PlaceholderCypherString
-  case class TestCypherInteger(value: Long) extends PlaceholderCypherInteger
-  case class TestCypherBoolean(value: Boolean) extends PlaceholderCypherBoolean
+  case class TestCypherString(value: String) extends CypherString
+  case class TestCypherInteger(value: Long) extends CypherInteger
+  case class TestCypherBoolean(value: Boolean) extends CypherBoolean
 
 
   val nodeA = IRField("a")(CTNode)

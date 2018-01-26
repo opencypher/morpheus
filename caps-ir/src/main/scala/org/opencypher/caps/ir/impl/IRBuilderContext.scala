@@ -20,10 +20,10 @@ import java.net.URI
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
 import org.neo4j.cypher.internal.util.v3_4.{InputPosition, Ref}
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
-import org.opencypher.caps.api.graph.PlaceholderCypherValue
 import org.opencypher.caps.api.io.PropertyGraphDataSource
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.ir.api.block.SourceBlock
 import org.opencypher.caps.ir.api.expr.Expr
 import org.opencypher.caps.ir.api.pattern.Pattern
@@ -33,7 +33,7 @@ import org.opencypher.caps.ir.impl.typer.{SchemaTyper, TypeTracker}
 
 final case class IRBuilderContext(
                                    queryString: String,
-                                   parameters: Map[String, PlaceholderCypherValue],
+                                   parameters: Map[String, CypherValue],
                                    ambientGraph: IRExternalGraph,
                                    blocks: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
                                    semanticState: SemanticState,
@@ -101,11 +101,11 @@ final case class IRBuilderContext(
 object IRBuilderContext {
 
   def initial(
-      query: String,
-      parameters: Map[String, PlaceholderCypherValue],
-      semState: SemanticState,
-      ambientGraph: IRExternalGraph,
-      resolver: URI => PropertyGraphDataSource
+               query: String,
+               parameters: Map[String, CypherValue],
+               semState: SemanticState,
+               ambientGraph: IRExternalGraph,
+               resolver: URI => PropertyGraphDataSource
   ): IRBuilderContext = {
     val registry = BlockRegistry.empty[Expr]
     val block = SourceBlock[Expr](ambientGraph)
