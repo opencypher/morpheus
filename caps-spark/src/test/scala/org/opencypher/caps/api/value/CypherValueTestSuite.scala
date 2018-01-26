@@ -16,11 +16,11 @@
 package org.opencypher.caps.api.value
 
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.test.BaseTestSuite
+import org.opencypher.caps.test.CAPSTestSuite
 
 import scala.annotation.tailrec
 
-class CypherValueTestSuite extends BaseTestSuite {
+class CypherValueTestSuite extends CAPSTestSuite {
 
   @tailrec
   final def isPathLike(l: Seq[Any], nextIsNode: Ternary = Maybe): Boolean = l match {

@@ -19,9 +19,9 @@ import java.net.URI
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
+import org.opencypher.caps.api.graph.PlaceholderCypherValue
 import org.opencypher.caps.api.io.PropertyGraphDataSource
 import org.opencypher.caps.api.schema.{AllGiven, Schema}
-import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block._
 import org.opencypher.caps.ir.api.expr.Expr
@@ -99,12 +99,12 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
 
     def ir(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
-      val parameters = Map.empty[String, CypherValue]
+      val parameters = Map.empty[String, PlaceholderCypherValue]
       IRBuilder(stmt)(
         IRBuilderContext.initial(queryText, parameters, SemanticState.clean, testGraph, _ => testGraphSource(schema)))
     }
 
-    def irWithParams(params: (String, CypherValue)*)(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
+    def irWithParams(params: (String, PlaceholderCypherValue)*)(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
       IRBuilder(stmt)(
         IRBuilderContext.initial(queryText, params.toMap, SemanticState.clean, testGraph, _ => testGraphSource(schema)))

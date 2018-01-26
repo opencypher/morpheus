@@ -15,9 +15,9 @@
  */
 package org.opencypher.caps.api.value
 
-import org.opencypher.caps.test.BaseTestSuite
+import org.opencypher.caps.test.CAPSTestSuite
 
-class CypherValueToStringTest extends BaseTestSuite {
+class CypherValueToStringTest extends CAPSTestSuite {
 
   test("node") {
     CypherNode(1L, Seq.empty, Properties.empty).toString should equal("()")

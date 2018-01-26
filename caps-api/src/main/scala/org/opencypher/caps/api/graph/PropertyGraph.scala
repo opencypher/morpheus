@@ -17,7 +17,6 @@ package org.opencypher.caps.api.graph
 
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
-import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.record.CypherRecords
 
 /**
@@ -75,7 +74,7 @@ trait PropertyGraph {
     * @return           the result of the query.
     * @see [[CypherSession.cypherOnGraph()]]
     */
-  final def cypher(query: String, parameters: Map[String, CypherValue] = Map.empty): CypherResult =
+  final def cypher(query: String, parameters: Map[String, PlaceholderCypherValue] = Map.empty): CypherResult =
     session.cypherOnGraph(graph, query, parameters)
 
   /**

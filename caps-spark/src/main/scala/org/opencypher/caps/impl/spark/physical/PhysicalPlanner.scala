@@ -18,7 +18,7 @@ package org.opencypher.caps.impl.spark.physical
 import java.net.URI
 
 import org.opencypher.caps.api.exception.{IllegalArgumentException, NotImplementedException}
-import org.opencypher.caps.api.graph.PropertyGraph
+import org.opencypher.caps.api.graph.{PlaceholderCypherValue, PropertyGraph}
 import org.opencypher.caps.api.types.CTRelationship
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.flat
@@ -31,9 +31,20 @@ import org.opencypher.caps.ir.api.util.DirectCompilationStage
 import org.opencypher.caps.logical.impl.{GraphOfPattern, LogicalExternalGraph, LogicalPatternGraph}
 
 case class PhysicalPlannerContext(
-    resolver: URI => PropertyGraph,
-    inputRecords: CAPSRecords,
-    parameters: Map[String, CypherValue])
+                                   resolver: URI => PropertyGraph,
+                                   inputRecords: CAPSRecords,
+                                   parameters: Map[String, CypherValue])
+
+object PhysicalPlannerContext {
+  def from(
+             resolver: URI => PropertyGraph,
+             inputRecords: CAPSRecords,
+             parameters: Map[String, PlaceholderCypherValue]): PhysicalPlannerContext = {
+    val convertedParams = parameters.mapValues(CypherValue(_))
+    new PhysicalPlannerContext(resolver, inputRecords, convertedParams)
+  }
+
+}
 
 class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOperator, PhysicalPlannerContext] {
 
@@ -71,10 +82,10 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOpera
           case _ => throw IllegalArgumentException("a LogicalExternalGraph", graph)
         }
 
-      case op @ flat.NodeScan(v, in, header) =>
+      case op@flat.NodeScan(v, in, header) =>
         Scan(process(in), op.sourceGraph, v, header)
 
-      case op @ flat.EdgeScan(e, in, header) =>
+      case op@flat.EdgeScan(e, in, header) =>
         Scan(process(in), op.sourceGraph, e, header)
 
       case flat.Alias(expr, alias, in, header) =>
@@ -114,13 +125,13 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOpera
         Distinct(process(in), header)
 
       // TODO: This needs to be a ternary operator taking source, rels and target records instead of just source and target and planning rels only at the physical layer
-      case op @ flat.ExpandSource(source, rel, target, sourceOp, targetOp, header, relHeader) =>
+      case op@flat.ExpandSource(source, rel, target, sourceOp, targetOp, header, relHeader) =>
         val first = process(sourceOp)
         val third = process(targetOp)
 
         val externalGraph = sourceOp.sourceGraph match {
           case e: LogicalExternalGraph => e
-          case _                       => throw IllegalArgumentException("a LogicalExternalGraph", sourceOp.sourceGraph)
+          case _ => throw IllegalArgumentException("a LogicalExternalGraph", sourceOp.sourceGraph)
         }
 
         val startFrom = StartFromUnit(externalGraph)
@@ -128,7 +139,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOpera
 
         ExpandSource(first, second, third, source, rel, target, header)
 
-      case op @ flat.ExpandInto(source, rel, target, sourceOp, header, relHeader) =>
+      case op@flat.ExpandInto(source, rel, target, sourceOp, header, relHeader) =>
         val in = process(sourceOp)
 
         val rels = Scan(in, op.sourceGraph, rel, relHeader)
@@ -139,16 +150,16 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOpera
         InitVarExpand(process(in), source, edgeList, endNode, header)
 
       case flat.BoundedVarExpand(
-          rel,
-          edgeList,
-          target,
-          lower,
-          upper,
-          sourceOp,
-          relOp,
-          targetOp,
-          header,
-          isExpandInto) =>
+      rel,
+      edgeList,
+      target,
+      lower,
+      upper,
+      sourceOp,
+      relOp,
+      targetOp,
+      header,
+      isExpandInto) =>
         val first = process(sourceOp)
         val second = process(relOp)
         val third = process(targetOp)
@@ -188,6 +199,6 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOpera
 
   private def relTypes(r: Var): Set[String] = r.cypherType match {
     case t: CTRelationship => t.types
-    case _                 => Set.empty
+    case _ => Set.empty
   }
 }

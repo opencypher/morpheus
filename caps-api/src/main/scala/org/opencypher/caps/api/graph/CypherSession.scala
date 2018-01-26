@@ -18,7 +18,56 @@ package org.opencypher.caps.api.graph
 import java.net.URI
 
 import org.opencypher.caps.api.io.{CreateOrFail, PersistMode, PropertyGraphDataSource}
-import org.opencypher.caps.api.value.CypherValue
+import org.opencypher.caps.api.types._
+
+
+trait PlaceholderCypherValue {
+  def cypherType: CypherType
+}
+
+trait PlaceholderCypherNull extends PlaceholderCypherValue {
+  override def cypherType = CTNull
+}
+
+trait PlaceholderCypherList extends PlaceholderCypherValue {
+  override def cypherType: CTList
+}
+
+trait PlaceholderCypherBoolean extends PlaceholderCypherValue {
+  override def cypherType = CTBoolean
+}
+
+trait PlaceholderCypherInteger extends PlaceholderCypherValue {
+  def value: Long
+
+  override def cypherType = CTInteger
+}
+
+trait PlaceholderCypherFloat extends PlaceholderCypherValue {
+  def value: Double
+
+  override def cypherType = CTFloat
+}
+
+trait PlaceholderCypherString extends PlaceholderCypherValue {
+  def value: String
+
+  override def cypherType = CTString
+}
+
+trait PlaceholderCypherMap extends PlaceholderCypherValue {
+  def get(key: String): Option[PlaceholderCypherValue]
+
+  def keys: Set[String]
+
+  override def cypherType = CTMap
+}
+
+trait PlaceholderCypherPath extends PlaceholderCypherValue {
+
+  override def cypherType = CTPath
+}
+
 
 // TODO: extend doc with explanation for writing graphs
 /**
@@ -34,7 +83,7 @@ trait CypherSession {
     * @param parameters parameters used by the Cypher query
     * @return result of the query
     */
-  def cypher(query: String, parameters: Map[String, CypherValue] = Map.empty): CypherResult
+  def cypher(query: String, parameters: Map[String, PlaceholderCypherValue] = Map.empty): CypherResult
 
   /**
     * Executes a Cypher query in this session, using the argument graph as the ambient graph.
@@ -47,7 +96,7 @@ trait CypherSession {
     * @param parameters parameters used by the Cypher query
     * @return result of the query
     */
-  private[graph] def cypherOnGraph(graph: PropertyGraph, query: String, parameters: Map[String, CypherValue] = Map.empty): CypherResult
+  private[graph] def cypherOnGraph(graph: PropertyGraph, query: String, parameters: Map[String, PlaceholderCypherValue] = Map.empty): CypherResult
 
   /**
     * Reads a graph from the argument URI.

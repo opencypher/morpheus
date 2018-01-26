@@ -15,12 +15,10 @@
  */
 package org.opencypher.caps.test
 
-import org.opencypher.caps.api.value.instances.AllInstances
-import org.opencypher.caps.api.value.syntax.AllSyntax
 import org.scalactic.source
 import org.scalatest.{FunSpec, Matchers, Tag}
 
-abstract class BaseTestSuite extends FunSpec with Matchers with AllInstances with AllSyntax {
+abstract class BaseTestSuite extends FunSpec with Matchers {
 
   /**
     * Wraps an 'it' call for convenience
