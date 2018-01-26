@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.record
+package org.opencypher.caps.api.schema
 
 import scala.annotation.StaticAnnotation
 
@@ -34,7 +34,7 @@ trait Node extends Entity
 
 /**
   * If a relationship has no type annotation, then the class name in all caps is used as its type.
-  * If a `Type` annotation, for example `@Type("FRIEND_OF")` is present,
+  * If a `Type` annotation, for example `@RelationshipType("FRIEND_OF")` is present,
   * then the type from that annotation is used instead.
   */
 trait Relationship extends Entity {

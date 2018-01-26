@@ -15,10 +15,10 @@
  */
 package org.opencypher.caps.api.graph
 
-import org.opencypher.caps.impl.record.CypherRecords
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.api.value.CypherValue
+import org.opencypher.caps.impl.record.CypherRecords
 
 /**
   * A Property Graph as defined by the openCypher Property Graph Model.
@@ -73,10 +73,10 @@ trait PropertyGraph {
     * @param query      the Cypher query to execute.
     * @param parameters the parameters used by the Cypher query.
     * @return           the result of the query.
-    * @see              [[CypherSession.cypher()]]
+    * @see [[CypherSession.cypherOnGraph()]]
     */
   final def cypher(query: String, parameters: Map[String, CypherValue] = Map.empty): CypherResult =
-    session.cypher(graph, query, parameters)
+    session.cypherOnGraph(graph, query, parameters)
 
   /**
     * Constructs the union of this graph and the argument graph.

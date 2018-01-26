@@ -27,11 +27,12 @@ import org.opencypher.caps.trees.TreeNode
 trait CypherResult extends CypherPrintable {
 
   /**
-    * Retrieves the single graph returned by the query, if it returned exactly one graph.
+    * Retrieves the graph returned by the query. Note, if the query returns more than one graph, there is no guarantee
+    * about which graph is returned.
     *
-    * @return the single graph, otherwise None.
+    * @return a graph
     */
-  def singleGraph: Option[PropertyGraph] = if (graphs.size == 1) Some(graphs.head._2) else None
+  def graph: Option[PropertyGraph] = graphs.headOption.map(_._2)
 
   /**
     * The named graphs that were returned by the query that produced this result.

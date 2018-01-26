@@ -20,27 +20,21 @@ import java.net.URI
 import org.opencypher.caps.api.io.{CreateOrFail, PersistMode, PropertyGraphDataSource}
 import org.opencypher.caps.api.value.CypherValue
 
+// TODO: extend doc with explanation for writing graphs
 /**
-  * The session that manages graphs and adds Cypher query capabilities to them.
-  * Sessions serve as containers for configuration and provide graph loading via URIs.
+  * The Cypher Session is the main API for a Cypher-based application. It manages graphs which can be queried using
+  * Cypher. Graphs can be read from different data sources (e.g. CSV) and mounted in the session-local storage.
   */
 trait CypherSession {
 
   /**
-    * An immutable empty graph.
+    * Executes a Cypher query in this session on the current ambient graph.
     *
-    * @return an immutable empty graph.
+    * @param query      Cypher query to execute
+    * @param parameters parameters used by the Cypher query
+    * @return result of the query
     */
-  def emptyGraph: PropertyGraph
-
-  final def cypher(query: String): CypherResult =
-    cypher(emptyGraph, query, Map.empty)
-
-  final def cypher(query: String, parameters: Map[String, CypherValue]): CypherResult =
-    cypher(emptyGraph, query, parameters)
-
-  final def cypher(graph: PropertyGraph, query: String): CypherResult =
-    cypher(graph, query, Map.empty)
+  def cypher(query: String, parameters: Map[String, CypherValue] = Map.empty): CypherResult
 
   /**
     * Executes a Cypher query in this session, using the argument graph as the ambient graph.
@@ -48,43 +42,47 @@ trait CypherSession {
     * The ambient graph is the graph that is used for graph matching and updating,
     * unless another graph is explicitly selected by the query.
     *
-    * @param graph      the ambient graph for this query.
-    * @param query      the Cypher query to execute.
-    * @param parameters the parameters used by the Cypher query.
-    * @return the result of the query.
+    * @param graph      ambient graph for this query
+    * @param query      Cypher query to execute
+    * @param parameters parameters used by the Cypher query
+    * @return result of the query
     */
-  def cypher(graph: PropertyGraph, query: String, parameters: Map[String, CypherValue]): CypherResult
+  private[graph] def cypherOnGraph(graph: PropertyGraph, query: String, parameters: Map[String, CypherValue] = Map.empty): CypherResult
 
   /**
-    * Retrieves the graph from the argument URI, if it exists.
+    * Reads a graph from the argument URI.
     *
-    * @param uri the uri locating the graph.
-    * @return the graph located at the uri.
+    * @param uri URI locating a graph
+    * @return graph located at the URI
     */
-  def graphAt(uri: URI): PropertyGraph
-
-  def graphAt(uri: String): PropertyGraph =
-    graphAt(URI.create(uri))
+  def readFrom(uri: URI): PropertyGraph
 
   /**
-    * Mounts the given graph source to session-local storage under the given path. The graph will be accessible under
-    * the session-local URI scheme, e.g. session://<path>.
+    * Reads a graph from an argument string that represents a valid URI.
     *
-    * @param source the graph source to register.
-    * @param path the path at which this graph source will be discoverable.
+    * @param uri URI string locating a graph
+    * @return graph located at the URI
     */
-  def mountSourceAt(source: PropertyGraphDataSource, path: String): Unit
+  def readFrom(uri: String): PropertyGraph = readFrom(URI.create(uri))
 
   /**
-    * Stores the given graph at the location and in the format given by the URI, with the overwrite semantics given by
-    * the mode.
+    * Mounts the given graph source to session-local storage under the given path. The specified graph will be
+    * accessible under the session-local URI scheme, e.g. {{{session://$path}}}.
     *
-    * @param graph the graph to store.
-    * @param uri the graph URI indicating location and format to store the graph in.
-    * @param mode the persist mode which determines what happens if the location is occupied.
-    * @return the stored graph.
+    * @param source graph source to register
+    * @param path   path at which this graph can be accessed via {{{session://$path}}}
     */
-  def storeGraphAt(graph: PropertyGraph, uri: String, mode: PersistMode = CreateOrFail): PropertyGraph
+  def mount(source: PropertyGraphDataSource, path: String): Unit
+
+  /**
+    * Writes the given graph to the location using the format specified by the URI.
+    *
+    * @param graph graph to write
+    * @param uri   graph URI indicating location and format to write the graph to
+    * @param mode  persist mode which determines what happens if the location is occupied
+    */
+  // TODO: Error handling via Return Type (Success, Failed) or just throw exception?
+  def write(graph: PropertyGraph, uri: String, mode: PersistMode = CreateOrFail): Unit
 }
 
 object CypherSession {

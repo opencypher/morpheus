@@ -29,8 +29,8 @@ trait MultigraphProjectionBehaviour { this: AcceptanceTest =>
     def testGraph3 = initGraph("CREATE (:Car {type: 'Toyota'})")
 
     test("returning a graph") {
-      caps.storeGraphAt(testGraph1, "/test/graph1")
-      caps.storeGraphAt(testGraph2, "/test/graph2")
+      caps.write(testGraph1, "/test/graph1")
+      caps.write(testGraph2, "/test/graph2")
 
       val query =
         """FROM GRAPH AT '/test/graph2' AS myGraph
@@ -39,16 +39,17 @@ trait MultigraphProjectionBehaviour { this: AcceptanceTest =>
 
       val result = testGraph1.cypher(query)
 
-      result.records.toMaps should equal(Bag(
-        CypherMap("name" -> "Phil")
-      ))
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("name" -> "Phil")
+        ))
 
       result.asCaps.graphs shouldMatch testGraph2
     }
 
     test("Can select a source graph to match data from") {
-      caps.storeGraphAt(testGraph1, "/test/graph1")
-      caps.storeGraphAt(testGraph2, "/test/graph2")
+      caps.write(testGraph1, "/test/graph1")
+      caps.write(testGraph2, "/test/graph2")
 
       val query =
         """WITH * GRAPHS *, GRAPH myGraph AT '/test/graph2' >>
@@ -57,16 +58,17 @@ trait MultigraphProjectionBehaviour { this: AcceptanceTest =>
 
       val result = testGraph1.cypher(query)
 
-      result.records.toMaps should equal(Bag(
-        CypherMap("name" -> "Phil")
-      ))
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("name" -> "Phil")
+        ))
 
       result.graphs shouldBe empty
     }
 
     test("Can select a source graph to match data from (syntactic sugar variant)") {
-      caps.storeGraphAt(testGraph1, "/test/graph1")
-      caps.storeGraphAt(testGraph2, "/test/graph2")
+      caps.write(testGraph1, "/test/graph1")
+      caps.write(testGraph2, "/test/graph2")
 
       val query =
         """FROM GRAPH myGraph AT '/test/graph2'
@@ -75,17 +77,18 @@ trait MultigraphProjectionBehaviour { this: AcceptanceTest =>
 
       val result = testGraph1.cypher(query)
 
-      result.records.toMaps should equal(Bag(
-        CypherMap("name" -> "Phil")
-      ))
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("name" -> "Phil")
+        ))
 
       result.graphs shouldBe empty
     }
 
     test("matching from different graphs") {
-      caps.storeGraphAt(testGraph1, "/test/graph1")
-      caps.storeGraphAt(testGraph2, "/test/graph2")
-      caps.storeGraphAt(testGraph3, "/test/graph3")
+      caps.write(testGraph1, "/test/graph1")
+      caps.write(testGraph2, "/test/graph2")
+      caps.write(testGraph3, "/test/graph3")
 
       val query =
         """FROM GRAPH myGraph AT '/test/graph2'
@@ -97,9 +100,10 @@ trait MultigraphProjectionBehaviour { this: AcceptanceTest =>
 
       val result = testGraph1.cypher(query)
 
-      result.records.toMaps should equal(Bag(
-        CypherMap("name" -> "Phil", "car" -> "Toyota")
-      ))
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("name" -> "Phil", "car" -> "Toyota")
+        ))
       result.graphs shouldBe empty
     }
   }

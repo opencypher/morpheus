@@ -31,14 +31,14 @@ class CAPSSessionFileTest extends CAPSTestSuite {
   private def fileURI: URI = new URI(s"file+csv://$testGraphPath")
 
   test("File via URI") {
-    val graph = caps.graphAt(fileURI)
+    val graph = caps.readFrom(fileURI)
     graph.nodes("n").asCaps.toDF().collect().toBag should equal(testGraphNodes)
     graph.relationships("rel").asCaps.toDF().collect.toBag should equal(testGraphRels)
   }
 
   test("File via mount point") {
-    caps.mountSourceAt(FileCsvPropertyGraphDataSource(fileURI), "/test/graph")
-    val graph = caps.graphAt("/test/graph")
+    caps.mount(FileCsvPropertyGraphDataSource(fileURI), "/test/graph")
+    val graph = caps.readFrom("/test/graph")
     graph.nodes("n").asCaps.toDF().collect().toBag should equal(testGraphNodes)
     graph.relationships("rel").asCaps.toDF().collect.toBag should equal(testGraphRels)
   }

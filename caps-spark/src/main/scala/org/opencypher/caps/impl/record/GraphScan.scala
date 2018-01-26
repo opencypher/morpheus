@@ -20,7 +20,7 @@ import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.{IllegalArgumentException, IllegalStateException}
-import org.opencypher.caps.api.schema.Schema
+import org.opencypher.caps.api.schema.{Node, Relationship, Schema}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.caps.impl.record.CAPSRecordHeader._
 import org.opencypher.caps.impl.spark.{CAPSRecords, SparkColumn, SparkColumnName}
