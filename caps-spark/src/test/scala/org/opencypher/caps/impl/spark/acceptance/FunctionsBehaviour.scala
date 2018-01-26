@@ -289,8 +289,7 @@ trait FunctionsBehaviour {
     }
 
     describe("coalesce") {
-
-      it("can run coalesce") {
+     it("can evaluate coalesce") {
         val given = initGraph("CREATE ({valA: 1}), ({valB: 2}), ({valC: 3}), ()")
 
         val result = given.cypher("MATCH (n) RETURN coalesce(n.valA, n.valB, n.valC) as value")
@@ -300,6 +299,19 @@ trait FunctionsBehaviour {
             CypherMap("value" -> 1),
             CypherMap("value" -> 2),
             CypherMap("value" -> 3),
+            CypherMap("value" -> null)
+          ))
+      }
+
+      it("can evaluate coalesce on non-existing expressions") {
+        val given = initGraph("CREATE ({valA: 1}), ({valB: 2}), ()")
+
+        val result = given.cypher("MATCH (n) RETURN coalesce(n.valD, n.valE) as value")
+
+        result.records.iterator.toBag should equal(
+          Bag(
+            CypherMap("value" -> null),
+            CypherMap("value" -> null),
             CypherMap("value" -> null)
           ))
       }
