@@ -311,5 +311,179 @@ trait ExpressionBehaviour {
 
       result.graphs shouldBe empty
     }
+
+    describe("EXISTS with pattern") {
+      it("evaluates basic exists pattern") {
+        // Given
+        val given = initGraph(
+          """
+            |CREATE (v {id: 1})-[:REL]->({id: 2})-[:REL]->(w {id: 3})
+            |CREATE (v)-[:REL]->(w)
+            |CREATE (w)-[:REL]->({id: 4})
+          """.stripMargin)
+
+        // When
+        val result = given.cypher("MATCH (a)-->(b) WITH a, b, EXISTS((a)-->()-->(b)) as con RETURN a.id, b.id, con")
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CypherMap("a.id" -> 1L, "b.id" -> 3L, "con" -> true),
+          CypherMap("a.id" -> 1L, "b.id" -> 2L, "con" -> false),
+          CypherMap("a.id" -> 2L, "b.id" -> 3L, "con" -> false),
+          CypherMap("a.id" -> 3L, "b.id" -> 4L, "con" -> false)
+        ))
+      }
+
+      it("evaluates exists pattern with var-length-expand") {
+        // Given
+        val given = initGraph("CREATE (v {id: 1})-[:REL]->({id: 2})-[:REL]->({id: 3})<-[:REL]-(v)")
+
+        // When
+        val result = given.cypher(
+          """
+            |MATCH (a)-->(b)
+            |WITH a, b, EXISTS((a)-[*1..3]->()-->(b)) as con
+            |RETURN a.id, b.id, con""".stripMargin)
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CypherMap("a.id" -> 1L, "b.id" -> 2L, "con" -> false),
+          CypherMap("a.id" -> 1L, "b.id" -> 3L, "con" -> true),
+          CypherMap("a.id" -> 2L, "b.id" -> 3L, "con" -> false)
+        ))
+      }
+
+      it("can evaluate simple exists pattern with node predicate") {
+        // Given
+        val given = initGraph(
+          """
+            |CREATE ({id: 1})-[:REL]->({id: 2, name: 'foo'})
+            |CREATE ({id: 3})-[:REL]->({id: 4, name: 'bar'})
+          """.stripMargin)
+
+        // When
+        val result = given.cypher(
+          """
+            |MATCH (a)
+            |WITH a, EXISTS((a)-->({name: 'foo'})) AS con
+            |RETURN a.id, con""".stripMargin)
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CypherMap("a.id" -> 1L, "con" -> true),
+          CypherMap("a.id" -> 2L, "con" -> false),
+          CypherMap("a.id" -> 3L, "con" -> false),
+          CypherMap("a.id" -> 4L, "con" -> false)
+        ))
+      }
+
+      it("can evaluate simple exists pattern with relationship predicate") {
+        // Given
+        val given = initGraph(
+          """
+            |CREATE (v {id: 1})-[:REL {val: 'foo'}]->({id: 2})<-[:REL]-(v)
+            |CREATE (w {id: 3})-[:REL {val: 'bar'}]->({id: 4})<-[:REL]-(w)
+          """.stripMargin)
+
+        // When
+        val result = given.cypher(
+          """
+            |MATCH (a)-->(b)
+            |WITH DISTINCT a, b
+            |WITH a, b, EXISTS((a)-[{val: 'foo'}]->(b)) AS con
+            |RETURN a.id, b.id, con""".stripMargin)
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CypherMap("a.id" -> 1L, "b.id" -> 2L, "con" -> true),
+          CypherMap("a.id" -> 3L, "b.id" -> 4L, "con" -> false)
+        ))
+      }
+
+      it("can evaluate simple exists pattern with node label predicate") {
+        // Given
+        val given = initGraph(
+          """
+            |CREATE (v:SRC {id: 1})-[:REL]->(:A)
+            |CREATE (w:SRC {id: 2})-[:REL]->(:B)
+          """.stripMargin)
+
+        // When
+        val result = given.cypher(
+          """
+            |MATCH (a:SRC)
+            |WITH a, EXISTS((a)-->(:A)) AS con
+            |RETURN a.id, con""".stripMargin)
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CypherMap("a.id" -> 1L, "con" -> true),
+          CypherMap("a.id" -> 2L, "con" -> false)
+        ))
+      }
+
+      it("can evaluate simple exists pattern with relationship type predicate") {
+        // Given
+        val given = initGraph(
+          """
+            |CREATE (v {id: 1})-[:A]->({id: 2})<-[:REL]-(v)
+            |CREATE (w {id: 3})-[:B]->({id: 4})<-[:REL]-(w)
+          """.stripMargin)
+
+        // When
+        val result = given.cypher(
+          """
+            |MATCH (a)-[:REL]->(b)
+            |WITH a, b, EXISTS((a)-[:A]->(b)) AS con
+            |RETURN a.id, b.id, con""".stripMargin)
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CypherMap("a.id" -> 1L, "b.id" -> 2L, "con" -> true),
+          CypherMap("a.id" -> 3L, "b.id" -> 4L, "con" -> false)
+        ))
+      }
+
+      it("can evaluate inverse exist pattern") {
+        // Given
+        val given = initGraph("CREATE (v {id: 1})-[:REL]->({id: 2})")
+
+        // When
+        val result = given.cypher(
+          """
+            |MATCH (a), (b)
+            |WITH a, b, NOT EXISTS((a)-->(b)) AS con
+            |RETURN a.id, b.id, con""".stripMargin)
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CypherMap("a.id" -> 1L, "b.id" -> 1L, "con" -> true),
+          CypherMap("a.id" -> 1L, "b.id" -> 2L, "con" -> false),
+          CypherMap("a.id" -> 2L, "b.id" -> 1L, "con" -> true),
+          CypherMap("a.id" -> 2L, "b.id" -> 2L, "con" -> true)
+        ))
+      }
+
+      it("can evaluate exist pattern with derived node predicate") {
+        // Given
+        val given = initGraph(
+          """
+            |CREATE ({id: 1, val: 0})-[:REL]->({id: 2, val: 2})<-[:REL]-({id: 3, val: 10})
+          """.stripMargin)
+
+        // When
+        val result = given.cypher(
+          """
+            |MATCH (a)
+            |WITH a, EXISTS((a)-->({val: a.val + 2})) AS other RETURN a.id, other""".stripMargin)
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CypherMap("a.id" -> 1L, "other" -> true),
+          CypherMap("a.id" -> 2L, "other" -> false),
+          CypherMap("a.id" -> 3L, "other" -> false)
+        ))
+      }
+    }
   }
 }

@@ -124,18 +124,18 @@ final case class Optional(lhs: PhysicalOperator, rhs: PhysicalOperator, header: 
 
 /**
   * This operator performs a left outer join between the already matched path and the pattern path. If, for a given,
-  * already bound match, there is a non-null partner, we set a predicate column to true, otherwise false.
-  * Only the mandatory match data and the predicate column are kept in the result.
+  * already bound match, there is a non-null partner, we set a target column to true, otherwise false.
+  * Only the mandatory match data and the target column are kept in the result.
   *
   * @param lhs mandatory match data
   * @param rhs expanded pattern predicate data
-  * @param predicateField field that will store the predicate value
+  * @param targetField field that will store the subquery value (exists true/false)
   * @param header result header (lhs header + predicateField)
   */
 final case class ExistsSubQuery(
     lhs: PhysicalOperator,
     rhs: PhysicalOperator,
-    predicateField: Var,
+    targetField: Var,
     header: RecordHeader)
     extends BinaryPhysicalOperator {
 
@@ -184,16 +184,16 @@ final case class ExistsSubQuery(
     val joinedRecords =
       joinDFs(left.records.data, distinctRightData, header, joinCols)("leftouter", deduplicate = true)(left.records.caps)
 
-    val trueColumnName = columnName(rightHeader.slotFor(predicateField))
-    val trueColumn = joinedRecords.data.col(trueColumnName)
+    val targetFieldColumnName = columnName(rightHeader.slotFor(targetField))
+    val targetFieldColumn = joinedRecords.data.col(targetFieldColumnName)
 
-    // If the non-join column contains no value we set the expression field to false, otherwise true.
+    // If the targetField column contains no value we replace it with false, otherwise true.
     // After that we drop all right columns and only keep the predicate field.
     // The predicate field is later checked by a filter operator.
     val updatedJoinedRecords = joinedRecords.data
       .withColumn(
-        trueColumnName,
-        functions.when(functions.isnull(trueColumn), false).otherwise(true))
+        targetFieldColumnName,
+        functions.when(functions.isnull(targetFieldColumn), false).otherwise(true))
 
     PhysicalResult(CAPSRecords.create(header, updatedJoinedRecords)(left.records.caps), left.graphs ++ right.graphs)
   }

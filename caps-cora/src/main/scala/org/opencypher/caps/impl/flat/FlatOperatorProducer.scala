@@ -231,11 +231,11 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   def planExistsSubQuery(expr: ExistsPatternExpr, lhs: FlatOperator, rhs: FlatOperator): FlatOperator = {
-    val (header, status) = lhs.header.update(addContent(ProjectedField(expr.predicateField, expr)))
+    val (header, status) = lhs.header.update(addContent(ProjectedField(expr.targetField, expr)))
 
     // TODO: record header should have sealed effects or be a map
     status match {
-      case _: Added[_]       => ExistsSubQuery(expr.predicateField, lhs, rhs, header)
+      case _: Added[_]       => ExistsSubQuery(expr.targetField, lhs, rhs, header)
       case f: FailedToAdd[_] => throw RecordHeaderException(s"Slot already exists: ${f.conflict}")
       case _                 => throw RecordHeaderException("Invalid RecordHeader update status.")
     }

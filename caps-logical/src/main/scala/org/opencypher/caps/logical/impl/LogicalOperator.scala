@@ -248,7 +248,7 @@ final case class ExistsSubQuery(
     solved: SolvedQueryModel)
     extends BinaryLogicalOperator {
 
-  override val fields: Set[Var] = lhs.fields + expr.predicateField
+  override val fields: Set[Var] = lhs.fields + expr.targetField
 }
 
 final case class SetSourceGraph(

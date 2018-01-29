@@ -357,9 +357,9 @@ final case class FalseLit() extends BoolLit(false)()
 
 // Pattern Predicate Expression
 
-final case class ExistsPatternExpr(predicateField: Var, ir: CypherQuery[Expr])(val cypherType: CypherType = CTBoolean)
+final case class ExistsPatternExpr(targetField: Var, ir: CypherQuery[Expr])(val cypherType: CypherType = CTBoolean)
     extends Expr {
   override def toString = s"$withoutType($cypherType)"
 
-  override def withoutType = s"Exists(${ir.info.singleLine}, $predicateField)"
+  override def withoutType = s"Exists(${ir.info.singleLine}, $targetField)"
 }
