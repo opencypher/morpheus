@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.{nameMatchPatternEl
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticCheckResult, SemanticCheckableExpression}
 import org.neo4j.cypher.internal.util.v3_4._
 import org.neo4j.cypher.internal.v3_4.expressions._
+import org.neo4j.cypher.internal.v3_4.functions.Exists
 import org.opencypher.caps.ir.impl.parse.RetypingPredicate
 
 case class extractSubqueryFromPatternExpression(mkException: (String, InputPosition) => CypherException)
@@ -78,6 +79,9 @@ case class extractSubqueryFromPatternExpression(mkException: (String, InputPosit
           )(patternPosition)
         )(patternPosition)
       )(patternPosition)
+
+    case f @ FunctionInvocation(_, _, _, IndexedSeq(p : PatternExpression)) if f.function == Exists =>
+      p.endoRewrite(whereRewriter)
 
     case a @ And(lhs, rhs) =>
       And(lhs.endoRewrite(whereRewriter), rhs.endoRewrite(whereRewriter))(a.position)

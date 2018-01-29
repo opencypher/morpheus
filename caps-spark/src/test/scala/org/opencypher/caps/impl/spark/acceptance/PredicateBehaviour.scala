@@ -395,5 +395,339 @@ trait PredicateBehaviour { this: AcceptanceTest =>
         CAPSMap("a.id" -> 1L)
       ))
     }
+
+    describe("Inline pattern predicates") {
+      test("basic pattern predicate") {
+        // Given
+        val given = initGraph(
+          """
+            |CREATE (v {id: 1})-[:REL]->({id: 2})-[:REL]->(w {id: 3})
+            |CREATE (v)-[:REL]->(w)
+            |CREATE (w)-[:REL]->({id: 4})
+          """.stripMargin)
+
+        // When
+        val result = given.cypher("MATCH (a)-->(b) WHERE (a)-->()-->(b) RETURN a.id, b.id")
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CAPSMap("a.id" -> 1L, "b.id" -> 3L)
+        ))
+      }
+
+      test("pattern predicate with var-length-expand") {
+        // Given
+        val given = initGraph("CREATE (v {id: 1})-[:REL]->({id: 2})-[:REL]->({id: 3})<-[:REL]-(v)")
+
+        // When
+        val result = given.cypher("MATCH (a)-->(b) WHERE (a)-[*1..3]->()-->(b) RETURN a.id, b.id")
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CAPSMap("a.id" -> 1L, "b.id" -> 3L)
+        ))
+      }
+
+      test("simple pattern predicate with node predicate") {
+        // Given
+        val given = initGraph(
+          """
+            |CREATE ({id: 1})-[:REL]->({name: 'foo'})
+            |CREATE ({id: 3})-[:REL]->({name: 'bar'})
+          """.stripMargin)
+
+        // When
+        val result = given.cypher("MATCH (a) WHERE (a)-->({name: 'foo'}) RETURN a.id")
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CAPSMap("a.id" -> 1L)
+        ))
+      }
+
+      test("simple pattern predicate with relationship predicate") {
+        // Given
+        val given = initGraph(
+          """
+            |CREATE (v {id: 1})-[:REL {val: 'foo'}]->()-[:REL]->({id: 2})<-[:REL]-(v)
+            |CREATE (w {id: 3})-[:REL {val: 'bar'}]->()-[:REL]->({id: 4})<-[:REL]-(w)
+          """.stripMargin)
+
+        // When
+        val result = given.cypher("MATCH (a)-->(b) WHERE (a)-[{val: 'foo'}]-()-->(b) RETURN a.id, b.id")
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CAPSMap("a.id" -> 1L, "b.id" -> 2L)
+        ))
+      }
+
+      test("simple pattern predicate with node label predicate") {
+        // Given
+        val given = initGraph(
+          """
+            |CREATE (v{id: 1})-[:REL {val: 'foo'}]->(:A)-[:REL]->({id: 2})<-[:REL]-(v)
+            |CREATE (w{id: 3})-[:REL {val: 'bar'}]->(:B)-[:REL]->({id: 4})<-[:REL]-(w)
+          """.stripMargin)
+
+        // When
+        val result = given.cypher("MATCH (a)-->(b) WHERE (a)-->(:A)-->(b) RETURN a.id, b.id")
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CAPSMap("a.id" -> 1L, "b.id" -> 2L)
+        ))
+      }
+
+      test("simple pattern predicate with relationship type predicate") {
+        // Given
+        val given = initGraph(
+          """
+            |CREATE (v {id: 1})-[:A]->()-[:REL]->({id: 2})<-[:REL]-(v)
+            |CREATE (w {id: 3})-[:B]->()-[:REL]->({id: 4})<-[:REL]-(w)
+          """.stripMargin)
+
+        // When
+        val result = given.cypher("MATCH (a)-->(b) WHERE (a)-[:A]-()-->(b) RETURN a.id, b.id")
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CAPSMap("a.id" -> 1L, "b.id" -> 2L)
+        ))
+      }
+
+      test("inverse pattern predicate") {
+        // Given
+        val given = initGraph("CREATE (v {id: 1})-[:REL]->({id: 2})-[:REL]->({id: 3})<-[:REL]-(v)")
+
+        // When
+        val result = given.cypher("MATCH (a)-->(b) WHERE NOT (a)-->()-->(b) RETURN a.id, b.id")
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CAPSMap("a.id" -> 1L, "b.id" -> 2L),
+          CAPSMap("a.id" -> 2L, "b.id" -> 3L)
+        ))
+      }
+
+      test("nested pattern predicate") {
+        val given = initGraph(
+          """
+            |CREATE ({id: 1, age: 21})
+            |CREATE ({id: 2, age: 18, foo: true})
+            |CREATE ({id: 3, age: 18, foo: true})-[:KNOWS]->(:Foo)
+            |CREATE ({id: 4, age: 18, foo: false})-[:KNOWS]->(:Foo)
+          """.stripMargin)
+
+        val result = given.cypher(
+          """
+            |MATCH (a)
+            |WHERE a.age > 20 OR ( (a)-[:KNOWS]->(:Foo) AND a.foo = true )
+            |RETURN a.id
+          """.stripMargin)
+
+        result.records.toMaps should equal(Bag(
+          CAPSMap("a.id" -> 1),
+          CAPSMap("a.id" -> 3)
+        ))
+      }
+
+      test("pattern predicate with derived node predicate") {
+        // Given
+        val given = initGraph(
+          """
+            |CREATE ({id: 1, val: 0})-[:REL]->({id: 3, val: 2})
+            |CREATE ({id: 2, val: 0})-[:REL]->({id: 3, val: 1})
+          """.stripMargin)
+
+        // When
+        val result = given.cypher("MATCH (a) WHERE (a)-->({val: a.val + 2}) RETURN a.id")
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CAPSMap("a.id" -> 1L)
+        ))
+      }
+
+      test("multiple predicate patterns") {
+        // Given
+        val given = initGraph("CREATE ({id: 1})-[:REL]->({id: 2, foo: true})")
+
+        // When
+        val result = given.cypher("MATCH (a) WHERE (a)-->({id: 2, foo: true}) RETURN a.id")
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CAPSMap("a.id" -> 1L)
+        ))
+      }
+    }
+
+    describe("Pattern predicates via exists") {
+      test("basic pattern predicate") {
+        // Given
+        val given = initGraph(
+          """
+            |CREATE (v {id: 1})-[:REL]->({id: 2})-[:REL]->(w {id: 3})
+            |CREATE (v)-[:REL]->(w)
+            |CREATE (w)-[:REL]->({id: 4})
+          """.stripMargin)
+
+        // When
+        val result = given.cypher("MATCH (a)-->(b) WHERE EXISTS((a)-->()-->(b)) RETURN a.id, b.id")
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CAPSMap("a.id" -> 1L, "b.id" -> 3L)
+        ))
+      }
+
+      test("pattern predicate with var-length-expand") {
+        // Given
+        val given = initGraph("CREATE (v {id: 1})-[:REL]->({id: 2})-[:REL]->({id: 3})<-[:REL]-(v)")
+
+        // When
+        val result = given.cypher("MATCH (a)-->(b) WHERE EXISTS((a)-[*1..3]->()-->(b)) RETURN a.id, b.id")
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CAPSMap("a.id" -> 1L, "b.id" -> 3L)
+        ))
+      }
+
+      test("simple pattern predicate with node predicate") {
+        // Given
+        val given = initGraph(
+          """
+            |CREATE ({id: 1})-[:REL]->({name: 'foo'})
+            |CREATE ({id: 3})-[:REL]->({name: 'bar'})
+          """.stripMargin)
+
+        // When
+        val result = given.cypher("MATCH (a) WHERE EXISTS((a)-->({name: 'foo'})) RETURN a.id")
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CAPSMap("a.id" -> 1L)
+        ))
+      }
+
+      test("simple pattern predicate with relationship predicate") {
+        // Given
+        val given = initGraph(
+          """
+            |CREATE (v {id: 1})-[:REL {val: 'foo'}]->()-[:REL]->({id: 2})<-[:REL]-(v)
+            |CREATE (w {id: 3})-[:REL {val: 'bar'}]->()-[:REL]->({id: 4})<-[:REL]-(w)
+          """.stripMargin)
+
+        // When
+        val result = given.cypher("MATCH (a)-->(b) WHERE EXISTS((a)-[{val: 'foo'}]-()-->(b)) RETURN a.id, b.id")
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CAPSMap("a.id" -> 1L, "b.id" -> 2L)
+        ))
+      }
+
+      test("simple pattern predicate with node label predicate") {
+        // Given
+        val given = initGraph(
+          """
+            |CREATE (v{id: 1})-[:REL {val: 'foo'}]->(:A)-[:REL]->({id: 2})<-[:REL]-(v)
+            |CREATE (w{id: 3})-[:REL {val: 'bar'}]->(:B)-[:REL]->({id: 4})<-[:REL]-(w)
+          """.stripMargin)
+
+        // When
+        val result = given.cypher("MATCH (a)-->(b) WHERE EXISTS((a)-->(:A)-->(b)) RETURN a.id, b.id")
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CAPSMap("a.id" -> 1L, "b.id" -> 2L)
+        ))
+      }
+
+      test("simple pattern predicate with relationship type predicate") {
+        // Given
+        val given = initGraph(
+          """
+            |CREATE (v {id: 1})-[:A]->()-[:REL]->({id: 2})<-[:REL]-(v)
+            |CREATE (w {id: 3})-[:B]->()-[:REL]->({id: 4})<-[:REL]-(w)
+          """.stripMargin)
+
+        // When
+        val result = given.cypher("MATCH (a)-->(b) WHERE EXISTS((a)-[:A]-()-->(b)) RETURN a.id, b.id")
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CAPSMap("a.id" -> 1L, "b.id" -> 2L)
+        ))
+      }
+
+      test("inverse pattern predicate") {
+        // Given
+        val given = initGraph("CREATE (v {id: 1})-[:REL]->({id: 2})-[:REL]->({id: 3})<-[:REL]-(v)")
+
+        // When
+        val result = given.cypher("MATCH (a)-->(b) WHERE NOT EXISTS((a)-->()-->(b)) RETURN a.id, b.id")
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CAPSMap("a.id" -> 1L, "b.id" -> 2L),
+          CAPSMap("a.id" -> 2L, "b.id" -> 3L)
+        ))
+      }
+
+      test("nested pattern predicate") {
+        val given = initGraph(
+          """
+            |CREATE ({id: 1, age: 21})
+            |CREATE ({id: 2, age: 18, foo: true})
+            |CREATE ({id: 3, age: 18, foo: true})-[:KNOWS]->(:Foo)
+            |CREATE ({id: 4, age: 18, foo: false})-[:KNOWS]->(:Foo)
+          """.stripMargin)
+
+        val result = given.cypher(
+          """
+            |MATCH (a)
+            |WHERE a.age > 20 OR ( EXISTS((a)-[:KNOWS]->(:Foo)) AND a.foo = true )
+            |RETURN a.id
+          """.stripMargin)
+
+        result.records.toMaps should equal(Bag(
+          CAPSMap("a.id" -> 1),
+          CAPSMap("a.id" -> 3)
+        ))
+      }
+
+      test("pattern predicate with derived node predicate") {
+        // Given
+        val given = initGraph(
+          """
+            |CREATE ({id: 1, val: 0})-[:REL]->({id: 3, val: 2})
+            |CREATE ({id: 2, val: 0})-[:REL]->({id: 3, val: 1})
+          """.stripMargin)
+
+        // When
+        val result = given.cypher("MATCH (a) WHERE EXISTS((a)-->({val: a.val + 2})) RETURN a.id")
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CAPSMap("a.id" -> 1L)
+        ))
+      }
+
+      test("multiple predicate patterns") {
+        // Given
+        val given = initGraph("CREATE ({id: 1})-[:REL]->({id: 2, foo: true})")
+
+        // When
+        val result = given.cypher("MATCH (a) WHERE EXISTS((a)-->({id: 2, foo: true})) RETURN a.id")
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CAPSMap("a.id" -> 1L)
+        ))
+      }
+    }
   }
 }
