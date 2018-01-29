@@ -32,21 +32,29 @@ import org.opencypher.caps.ir.impl.typer.exception.TypingException
 import org.opencypher.caps.ir.impl.typer.{SchemaTyper, TypeTracker}
 
 final case class IRBuilderContext(
-                                   queryString: String,
-                                   parameters: Map[String, CypherValue],
-                                   ambientGraph: IRExternalGraph,
-                                   blocks: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
-                                   semanticState: SemanticState,
-                                   graphs: Map[String, URI],
-                                   graphList: List[IRGraph],
-                                   resolver: URI => PropertyGraphDataSource,
-                                   // TODO: Remove this
-                                   knownTypes: Map[ast.Expression, CypherType] = Map.empty) {
+  queryString: String,
+  parameters: Map[String, CypherValue],
+  ambientGraph: IRExternalGraph,
+  blocks: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
+  semanticState: SemanticState,
+  graphs: Map[String, URI],
+  graphList: List[IRGraph],
+  resolver: URI => PropertyGraphDataSource,
+  // TODO: Remove this
+  knownTypes: Map[ast.Expression, CypherType] = Map.empty) {
   self =>
 
-  private def typer = SchemaTyper(currentGraph.schema)
   private lazy val patternConverter = new PatternConverter()
   private lazy val exprConverter = new ExpressionConverter(patternConverter)(self)
+
+  def convertPattern(p: ast.Pattern): Pattern[Expr] =
+    patternConverter.convert(p, knownTypes)
+
+  def convertExpression(e: ast.Expression): Expr = {
+    val inferred = infer(e)
+    val convert = exprConverter.convert(e)(inferred)
+    convert
+  }
 
   // TODO: Fuse monads
   def infer(expr: ast.Expression): Map[Ref[ast.Expression], CypherType] = {
@@ -59,14 +67,9 @@ final case class IRBuilderContext(
     }
   }
 
-  def convertPattern(p: ast.Pattern): Pattern[Expr] =
-    patternConverter.convert(p, knownTypes)
+  private def typer = SchemaTyper(currentGraph.schema)
 
-  def convertExpression(e: ast.Expression): Expr = {
-    val inferred = infer(e)
-    val convert = exprConverter.convert(e)(inferred)
-    convert
-  }
+  def currentGraph: IRGraph = graphList.head
 
   def schemaFor(graphName: String): Schema = {
     val source = resolver(graphs(graphName))
@@ -94,18 +97,16 @@ final case class IRBuilderContext(
 
   def withGraph(graph: IRGraph): IRBuilderContext =
     copy(graphList = graph :: graphList)
-
-  def currentGraph: IRGraph = graphList.head
 }
 
 object IRBuilderContext {
 
   def initial(
-               query: String,
-               parameters: Map[String, CypherValue],
-               semState: SemanticState,
-               ambientGraph: IRExternalGraph,
-               resolver: URI => PropertyGraphDataSource
+    query: String,
+    parameters: Map[String, CypherValue],
+    semState: SemanticState,
+    ambientGraph: IRExternalGraph,
+    resolver: URI => PropertyGraphDataSource
   ): IRBuilderContext = {
     val registry = BlockRegistry.empty[Expr]
     val block = SourceBlock[Expr](ambientGraph)

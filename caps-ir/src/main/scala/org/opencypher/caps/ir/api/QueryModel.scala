@@ -25,10 +25,10 @@ import scala.annotation.tailrec
 import scala.collection.generic.CanBuildFrom
 
 final case class QueryModel[E](
-                                result: ResultBlock[E],
-                                parameters: Map[String, CypherValue],
-                                blocks: Map[BlockRef, Block[E]],
-                                graphs: Map[String, URI]
+  result: ResultBlock[E],
+  parameters: Map[String, CypherValue],
+  blocks: Map[BlockRef, Block[E]],
+  graphs: Map[String, URI]
 ) {
 
   def apply(ref: BlockRef): Block[E] = blocks(ref)
@@ -41,15 +41,20 @@ final case class QueryModel[E](
   def allDependencies(ref: BlockRef): Set[BlockRef] =
     allDependencies(dependencies(ref).toList, List.empty, Set(ref)) - ref
 
+  def collect[T, That](f: PartialFunction[(BlockRef, Block[E]), T])(
+    implicit bf: CanBuildFrom[Map[BlockRef, Block[E]], T, That]): That = {
+    blocks.collect(f)
+  }
+
   @tailrec
   private def allDependencies(
-      current: List[BlockRef],
-      remaining: List[Set[BlockRef]],
-      deps: Set[BlockRef]): Set[BlockRef] = {
+    current: List[BlockRef],
+    remaining: List[Set[BlockRef]],
+    deps: Set[BlockRef]): Set[BlockRef] = {
     if (current.isEmpty) {
       remaining match {
         case hd :: tl => allDependencies(hd.toList, tl, deps)
-        case _        => deps
+        case _ => deps
       }
     } else {
       current match {
@@ -63,10 +68,5 @@ final case class QueryModel[E](
           deps
       }
     }
-  }
-
-  def collect[T, That](f: PartialFunction[(BlockRef, Block[E]), T])(
-      implicit bf: CanBuildFrom[Map[BlockRef, Block[E]], T, That]): That = {
-    blocks.collect(f)
   }
 }

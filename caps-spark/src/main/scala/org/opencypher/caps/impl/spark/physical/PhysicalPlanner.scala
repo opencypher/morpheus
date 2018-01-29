@@ -31,15 +31,15 @@ import org.opencypher.caps.ir.api.util.DirectCompilationStage
 import org.opencypher.caps.logical.impl.{GraphOfPattern, LogicalExternalGraph, LogicalPatternGraph}
 
 case class PhysicalPlannerContext(
-                                   resolver: URI => PropertyGraph,
-                                   inputRecords: CAPSRecords,
-                                   parameters: Map[String, CAPSValue])
+  resolver: URI => PropertyGraph,
+  inputRecords: CAPSRecords,
+  parameters: Map[String, CAPSValue])
 
 object PhysicalPlannerContext {
   def from(
-             resolver: URI => PropertyGraph,
-             inputRecords: CAPSRecords,
-             parameters: Map[String, CypherValue]): PhysicalPlannerContext = {
+    resolver: URI => PropertyGraph,
+    inputRecords: CAPSRecords,
+    parameters: Map[String, CypherValue]): PhysicalPlannerContext = {
     val convertedParams = parameters.mapValues(CAPSValue(_))
     new PhysicalPlannerContext(resolver, inputRecords, convertedParams)
   }
