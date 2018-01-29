@@ -160,22 +160,31 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     exprs.foldLeft(in) {
       case (acc, (f, p: Property)) =>
         producer.projectField(f, p, acc)
+
       case (acc, (f, func: FunctionExpr)) =>
-        val projectArg = planInnerExpr(func.expr, acc)
+        val projectArg = func.exprs.foldLeft(acc) {
+          case (acc2, expr) => planInnerExpr(expr, acc2)
+        }
         producer.projectField(f, func, projectArg)
       // this is for aliasing
+
       case (acc, (f, v: Var)) if f.name != v.name =>
         producer.projectField(f, v, acc)
+
       case (acc, (_, _: Var)) =>
         acc
+
       case (acc, (f, be: BinaryExpr)) =>
         val projectLhs = planInnerExpr(be.lhs, acc)
         val projectRhs = planInnerExpr(be.rhs, projectLhs)
         producer.projectField(f, be, projectRhs)
+
       case (acc, (f, c: Param)) =>
         producer.projectField(f, c, acc)
+
       case (acc, (f, c: Lit[_])) =>
         producer.projectField(f, c, acc)
+
       case (_, (_, x)) =>
         throw NotImplementedException(s"Support for projection of $x not yet implemented")
     }
@@ -270,7 +279,9 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       case IsNotNull(e) => planInnerExpr(e, in)
 
       case func: FunctionExpr =>
-        val projectArg = planInnerExpr(func.expr, in)
+        val projectArg = func.exprs.foldLeft(in) {
+          case (acc, e) => planInnerExpr(e, acc)
+        }
         producer.projectExpr(func, projectArg)
 
       case ex: ExistsPatternExpr =>

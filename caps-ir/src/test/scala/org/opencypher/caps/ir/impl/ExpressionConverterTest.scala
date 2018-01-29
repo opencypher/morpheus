@@ -39,6 +39,12 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport wit
     case _                 => CTWildcard
   }
 
+  it("coalesce") {
+    convert(parseExpr("coalesce(a, b, c)")) should equal(
+      Coalesce(IndexedSeq('a, 'b, 'c))()
+    )
+  }
+
   test("exists") {
     convert(parseExpr("exists(n.key)")) should equal(
       Exists(Property('n, PropertyKey("key"))())()
