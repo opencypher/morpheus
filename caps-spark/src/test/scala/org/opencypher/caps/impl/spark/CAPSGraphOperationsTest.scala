@@ -16,100 +16,16 @@
 package org.opencypher.caps.impl.spark
 
 import org.apache.spark.sql.Row
-import org.opencypher.caps.impl.record.{NodeScan, RelationshipScan}
 import org.opencypher.caps.test.CAPSTestSuite
+import org.opencypher.caps.test.fixture.TeamDataFixture
 
 import scala.collection.Bag
 
-class CAPSGraphOperationsTest extends CAPSTestSuite {
-
-  val `:Person` =
-    NodeScan.on("p" -> "ID") {
-      _.build
-        .withImpliedLabel("Person")
-        .withOptionalLabel("Swedish" -> "IS_SWEDE")
-        .withPropertyKey("name" -> "NAME")
-        .withPropertyKey("lucky_number" -> "NUM")
-    }
-      .from(CAPSRecords.create(
-        Seq("ID", "IS_SWEDE", "NAME", "NUM"),
-        Seq(
-          (1L, true, "Mats", 23L),
-          (2L, false, "Martin", 42L),
-          (3L, false, "Max", 1337L),
-          (4L, false, "Stefan", 9L))
-      ))
-
-  val `:KNOWS` =
-    RelationshipScan.on("k" -> "ID") {
-      _.from("SRC").to("DST").relType("KNOWS")
-        .build
-        .withPropertyKey("since" -> "SINCE")
-    }
-      .from(CAPSRecords.create(
-        Seq("SRC", "ID", "DST", "SINCE"),
-        Seq(
-          (1L, 1L, 2L, 2017L),
-          (1L, 2L, 3L, 2016L),
-          (1L, 3L, 4L, 2015L),
-          (2L, 4L, 3L, 2016L),
-          (2L, 5L, 4L, 2013L),
-          (3L, 6L, 4L, 2016L))
-      ))
-
-  val `:Programmer` =
-    NodeScan.on("p" -> "ID") {
-      _.build
-        .withImpliedLabel("Programmer")
-        .withImpliedLabel("Person")
-        .withPropertyKey("name" -> "NAME")
-        .withPropertyKey("lucky_number" -> "NUM")
-        .withPropertyKey("language" -> "LANG")
-    }
-      .from(CAPSRecords.create(
-        Seq("ID", "NAME", "NUM", "LANG"),
-        Seq(
-          (100L, "Alice", 42L, "C"),
-          (200L,   "Bob", 23L, "D"),
-          (300L,   "Eve", 84L, "F"),
-          (400L,  "Carl", 49L, "R")
-        )
-      ))
-
-  val `:Book` =
-    NodeScan.on("b" -> "ID") {
-      _.build
-        .withImpliedLabel("Book")
-        .withPropertyKey("title" -> "NAME")
-        .withPropertyKey("year" -> "YEAR")
-    }
-      .from(CAPSRecords.create(
-        Seq("ID", "NAME", "YEAR"),
-        Seq(
-          (10L, "1984", 1949L),
-          (20L, "Cryptonomicon", 1999L),
-          (30L, "The Eye of the World", 1990L),
-          (40L, "The Circle", 2013L))
-      ))
-
-  val `:READS` =
-    RelationshipScan.on("r" -> "ID") {
-      _.from("SRC").to("DST").relType("READS")
-        .build
-        .withPropertyKey("recommends" -> "RECOMMENDS")
-    }
-      .from(CAPSRecords.create(
-        Seq("SRC", "ID", "DST", "RECOMMENDS"),
-        Seq(
-          (100L, 100L, 10L, true),
-          (200L, 200L, 40L, true),
-          (300L, 300L, 30L, true),
-          (400L, 400L, 20L, false))
-      ))
+class CAPSGraphOperationsTest extends CAPSTestSuite with TeamDataFixture {
 
   test("union") {
-    val graph1 = CAPSGraph.create(`:Person`, `:KNOWS`)
-    val graph2 = CAPSGraph.create(`:Programmer`, `:Book`, `:READS`)
+    val graph1 = CAPSGraph.create(personTable, knowsTable)
+    val graph2 = CAPSGraph.create(programmerTable, bookTable, readsTable)
 
     val result = graph1 union graph2
 

@@ -16,95 +16,16 @@
 package org.opencypher.caps.web
 
 import org.opencypher.caps.api.types.CTNode
-import org.opencypher.caps.impl.record.{NodeScan, OpaqueField, RecordHeader, RelationshipScan}
+import org.opencypher.caps.impl.record.{OpaqueField, RecordHeader}
 import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.ir.api.expr.Var
 import org.opencypher.caps.test.CAPSTestSuite
+import org.opencypher.caps.test.fixture.TeamDataFixture
 import org.opencypher.caps.web.CAPSJsonSerialiser.toJsonString
 
 //noinspection NameBooleanParameters
-class CAPSJsonSerialiserTest extends CAPSTestSuite {
-
-  val `:Person` =
-    NodeScan
-      .on("p" -> "ID") {
-        _.build
-          .withImpliedLabel("Person")
-          .withOptionalLabel("Swedish" -> "IS_SWEDE")
-          .withPropertyKey("name" -> "NAME")
-          .withPropertyKey("lucky_number" -> "NUM")
-      }
-      .from(
-        CAPSRecords.create(
-          Seq("ID", "IS_SWEDE", "NAME", "NUM"),
-          Seq((1L, true, "Mats", 23L), (2L, false, "Martin", 42L), (3L, false, "Max", 1337L), (4L, false, "Stefan", 9L))
-        ))
-
-  val `:Book` =
-    NodeScan
-      .on("b" -> "ID") {
-        _.build
-          .withImpliedLabel("Book")
-          .withPropertyKey("title" -> "NAME")
-          .withPropertyKey("year" -> "YEAR")
-      }
-      .from(
-        CAPSRecords.create(
-          Seq("ID", "NAME", "YEAR"),
-          Seq(
-            (10L, "1984", 1949L),
-            (20L, "Cryptonomicon", 1999L),
-            (30L, "The Eye of the World", 1990L),
-            (40L, "The Circle", 2013L))
-        ))
-
-  val `:KNOWS` =
-    RelationshipScan
-      .on("k" -> "ID") {
-        _.from("SRC")
-          .to("DST")
-          .relType("KNOWS")
-          .build
-          .withPropertyKey("since" -> "SINCE")
-      }
-      .from(
-        CAPSRecords.create(
-          Seq("SRC", "ID", "DST", "SINCE"),
-          Seq(
-            (1L, 1L, 2L, 2017L),
-            (1L, 2L, 3L, 2016L),
-            (1L, 3L, 4L, 2015L),
-            (2L, 4L, 3L, 2016L),
-            (2L, 5L, 4L, 2013L),
-            (3L, 6L, 4L, 2016L))
-        ))
-
-  val `:READS` =
-    RelationshipScan
-      .on("r" -> "ID") {
-        _.from("SRC")
-          .to("DST")
-          .relType("READS")
-          .build
-          .withPropertyKey("recommends" -> "RECOMMENDS")
-      }
-      .from(
-        CAPSRecords.create(
-          Seq("SRC", "ID", "DST", "RECOMMENDS"),
-          Seq((1L, 100L, 10L, true), (2L, 200L, 40L, true), (3L, 300L, 30L, true), (4L, 400L, 20L, false))
-        ))
-
-  val `:INFLUENCES` =
-    RelationshipScan
-      .on("i" -> "ID") {
-        _.from("SRC").to("DST").relType("INFLUENCES").build
-      }
-      .from(
-        CAPSRecords.create(
-          Seq("SRC", "ID", "DST"),
-          Seq((10L, 1000L, 20L))
-        ))
+class CAPSJsonSerialiserTest extends CAPSTestSuite with TeamDataFixture {
 
   test("unit table") {
     // Given
@@ -301,7 +222,7 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
   }
 
   test("graph serialization") {
-    val graph = CAPSGraph.create(`:Person`, `:Book`, `:READS`, `:KNOWS`, `:INFLUENCES`)
+    val graph = CAPSGraph.create(personTable, bookTable, readsTable, knowsTable, influencesTable)
     toJsonString(graph) should equal(s"""{
           |  "nodes" : [
           |    {

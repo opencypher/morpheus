@@ -17,8 +17,8 @@ package org.opencypher.caps.test.support.creation.caps
 
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
-import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.impl.record.{NodeScan, RelationshipScan}
+import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
+import org.opencypher.caps.api.{CAPSSession, NodeTable, RelationshipTable}
 import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords, CAPSScanGraph}
 import org.opencypher.caps.test.support.creation.propertygraph.PropertyGraph
 
@@ -47,11 +47,10 @@ object CAPSScanGraphFactory extends CAPSGraphFactory {
 
       val records = CAPSRecords.create(header: _*)(rows.asJava, structType)
 
-      NodeScan.on("n" -> "ID")(_
-        .build
+      NodeTable(NodeMapping
+        .on("ID")
         .withImpliedLabels(labels.toSeq: _*)
-        .withPropertyKeys(propKeys.keys.toSeq: _*)
-      ).from(records)
+        .withPropertyKeys(propKeys.keys.toSeq: _*), records)
     }
 
     val relScans = schema.relationshipTypes.map { relType =>
@@ -73,13 +72,12 @@ object CAPSScanGraphFactory extends CAPSGraphFactory {
 
       val records = CAPSRecords.create(header: _*)(rows.asJava, structType)
 
-      RelationshipScan.on("r" -> "ID")(_
+      RelationshipTable(RelationshipMapping
+        .on("ID")
         .from("SRC")
         .to("DST")
         .relType(relType)
-        .build
-        .withPropertyKeys(propKeys.keys.toSeq: _*)
-      ).from(records)
+        .withPropertyKeys(propKeys.keys.toSeq: _*), records)
     }
 
     new CAPSScanGraph(nodeScans.toSeq ++ relScans, schema)

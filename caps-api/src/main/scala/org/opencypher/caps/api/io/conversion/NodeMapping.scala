@@ -16,44 +16,84 @@
 package org.opencypher.caps.api.io.conversion
 
 object NodeMapping {
-  val empty = MissingSourceIdKey
+  /**
+    *
+    * @param sourceIdKey represents a key to the node identifier within the source data. The retrieved value
+    *                    from the source data is expected to be a [[Long]] value that is unique among nodes.
+    * @return node mapping
+    */
+  def withSourceIdKey(sourceIdKey: String): NodeMapping =
+    NodeMapping(sourceIdKey)
 
-  object MissingSourceIdKey {
-    /**
-      *
-      * @param sourceIdKey
-      * @return
-      */
-    def withSourceIdKey(sourceIdKey: String) = NodeMapping(sourceIdKey)
+  /**
+    * Alias for [[withSourceIdKey()]].
+    *
+    * @param sourceIdKey key to access the node identifier in the source data
+    * @return node mapping
+    */
+  def on(sourceIdKey: String): NodeMapping =
+    withSourceIdKey(sourceIdKey)
+
+  /**
+    * Creates a NodeMapping where optional labels and property keys match with their corresponding keys in the source
+    * data.
+    *
+    * See [[NodeMapping]] for further information.
+    *
+    * @param nodeIdKey      key to access the node identifier in the source data
+    * @param impliedLabels  set of node labels
+    * @param optionalLabels set of optional node labels
+    * @param propertyKeys   set of property keys
+    * @return node mapping
+    */
+  def create(nodeIdKey: String, impliedLabels: Set[String] = Set.empty, optionalLabels: Set[String] = Set.empty, propertyKeys: Set[String] = Set.empty): NodeMapping = {
+
+    val mappingWithImpliedLabels = impliedLabels.foldLeft(NodeMapping.withSourceIdKey(nodeIdKey)) {
+      (mapping, label) => mapping.withImpliedLabel(label)
+    }
+
+    val mappingWithOptionalLabels = optionalLabels.foldLeft(mappingWithImpliedLabels) {
+      (mapping, label) => mapping.withOptionalLabel(label)
+    }
+
+    propertyKeys.foldLeft(mappingWithOptionalLabels) {
+      (mapping, property) => mapping.withPropertyKey(property)
+    }
   }
-
 }
+
+// TODO: separate types for Label, Type and PropertyKey
 
 /**
   * Represents a mapping from a source with key-based access to node components (e.g. a table definition) to a Cypher
   * node. The purpose of this class is to define a mapping from an external data source to a property graph.
   *
+  * Construct a [[NodeMapping]] starting with {{NodeMapping.on}}.
+  *
   * The [[sourceIdKey]] represents a key to the node identifier within the source data. The retrieved value from the
   * source data is expected to be a [[Long]] value that is unique among nodes.
   *
-  * The [[labelMapping]] represents a map from node labels to keys in the source data. The retrieved value from the
-  * source data is expected to be a [[Boolean]] value indicating if the label is present on that node. If the label is
-  * implied, e.g., is present on all nodes in the source data, then the value for that label is [[None]].
+  * The [[impliedLabels]] represent a set of node labels.
+  *
+  * The [[optionalLabelMapping]] represent a map from node labels to keys in the source data. The retrieved value from
+  * the source data is expected to be a [[Boolean]] value indicating if the label is present on that node.
   *
   * The [[propertyMapping]] represents a map from node property keys to keys in the source data. The retrieved value
   * from the source is expected to be convertible to a valid [[org.opencypher.caps.api.value.CypherValue]].
   *
-  * @param sourceIdKey     key to access the node identifier in the source data
-  * @param labelMapping    mapping from label to source key
-  * @param propertyMapping mapping from property key source key
+  * @param sourceIdKey          key to access the node identifier in the source data
+  * @param impliedLabels        set of node labels
+  * @param optionalLabelMapping mapping from source key to label
+  * @param propertyMapping      mapping from source key to property key
   */
 case class NodeMapping(
   sourceIdKey: String,
-  labelMapping: Map[String, Option[String]] = Map.empty,
+  impliedLabels: Set[String] = Set.empty,
+  optionalLabelMapping: Map[String, String] = Map.empty,
   propertyMapping: Map[String, String] = Map.empty) {
 
   def withImpliedLabel(label: String): NodeMapping =
-    copy(labelMapping = labelMapping.updated(label, None))
+    copy(impliedLabels = impliedLabels + label)
 
   def withImpliedLabels(labels: String*): NodeMapping =
     labels.foldLeft(this)((mapping, label) => mapping.withImpliedLabel(label))
@@ -65,9 +105,9 @@ case class NodeMapping(
     labels.foldLeft(this)((mapping, label) => mapping.withOptionalLabel(label, label))
 
   def withOptionalLabel(sourceLabelKey: String, label: String): NodeMapping =
-    copy(labelMapping = labelMapping.updated(label, Some(sourceLabelKey)))
+    copy(optionalLabelMapping = optionalLabelMapping.updated(label, sourceLabelKey))
 
-  def withOptionalLabel(tuple: (String, String)): RelationshipMapping =
+  def withOptionalLabel(tuple: (String, String)): NodeMapping =
     withOptionalLabel(tuple._1 -> tuple._2)
 
   def withPropertyKey(sourcePropertyKey: String, propertyKey: String): NodeMapping =

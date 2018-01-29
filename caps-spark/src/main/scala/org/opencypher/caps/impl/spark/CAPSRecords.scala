@@ -20,10 +20,11 @@ import java.util.Collections
 import org.apache.spark.api.java.JavaRDD
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.exception.IllegalArgumentException
+import org.opencypher.caps.api.exception.{IllegalArgumentException, IllegalStateException}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CAPSMap
 import org.opencypher.caps.impl.record.CAPSRecordHeader._
@@ -32,7 +33,8 @@ import org.opencypher.caps.impl.spark.DfUtils._
 import org.opencypher.caps.impl.spark.convert.{fromSparkType, rowToCypherMap, toSparkType}
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.impl.util.PrintOptions
-import org.opencypher.caps.ir.api.expr.{Property, Var}
+import org.opencypher.caps.ir.api.Label
+import org.opencypher.caps.ir.api.expr.{HasLabel, Property, Type, Var}
 
 import scala.annotation.tailrec
 import scala.reflect.runtime.universe.TypeTag
@@ -162,6 +164,63 @@ sealed abstract class CAPSRecords(
     import encoders._
 
     data.map(rowToCypherMap(header))
+  }
+
+  /**
+    * Align the record header to the target header and rename the stored entity to `v`.
+    *
+    * It is required that the `CAPSRecords` instance is a scan, meaning that it must contain exactly a single entity
+    * (node or relationship) and its parts (flattened). The stored entity is renamed by this function to the argument
+    * variable `v`.
+    *
+    * @param v            the variable that the aligned scan should contain
+    * @param targetHeader the header to align with
+    * @return a new instance of `CAPSRecords` aligned with the argument header
+    */
+  def alignWith(v: Var, targetHeader: RecordHeader): CAPSRecords = {
+    val oldEntity = this.header.internalHeader.fields.headOption
+      .getOrElse(throw IllegalStateException("GraphScan table did not contain any fields"))
+    val entityLabels: Set[String] = oldEntity.cypherType match {
+      case CTNode(labels) => labels
+      case CTRelationship(typ) => typ
+      case _ => throw IllegalArgumentException("CTNode or CTRelationship", oldEntity.cypherType)
+    }
+
+    val slots = this.header.slots
+    val renamedSlots = slots.map(_.withOwner(v))
+
+    val dataColumnNameToIndex: Map[String, Int] = renamedSlots.map { dataSlot =>
+      val dataColumnName = SparkColumnName.of(dataSlot)
+      val dataColumnIndex = dataSlot.index
+      dataColumnName -> dataColumnIndex
+    }.toMap
+
+    val slotDataSelectors: Seq[Row => Any] = targetHeader.slots.map { targetSlot =>
+      val columnName = SparkColumnName.of(targetSlot)
+      val defaultValue = targetSlot.content.key match {
+        case HasLabel(_, l: Label) => entityLabels(l.name)
+        case _: Type if entityLabels.size == 1 => entityLabels.head
+        case _ => null
+      }
+      val maybeDataIndex = dataColumnNameToIndex.get(columnName)
+      val slotDataSelector: Row => Any = maybeDataIndex match {
+        case None =>
+          (_) =>
+            defaultValue
+        case Some(index) => _.get(index)
+      }
+      slotDataSelector
+    }
+    val wrappedHeader = new CAPSRecordHeader(targetHeader)
+
+    val alignedData = this
+      .toDF()
+      .map { (row: Row) =>
+        val alignedRow = slotDataSelectors.map(_ (row))
+        new GenericRowWithSchema(alignedRow.toArray, wrappedHeader.asSparkSchema).asInstanceOf[Row]
+      }(wrappedHeader.rowEncoder)
+
+    CAPSRecords.create(targetHeader, alignedData)
   }
 }
 

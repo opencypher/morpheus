@@ -17,17 +17,17 @@ package org.opencypher.caps.impl.spark
 
 import cats.data.NonEmptyVector
 import org.apache.spark.storage.StorageLevel
-import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType, DefiniteCypherType}
-import org.opencypher.caps.impl.record.{RecordHeader, _}
+import org.opencypher.caps.api.{CAPSSession, EntityTable, NodeTable, RelationshipTable}
+import org.opencypher.caps.impl.record.RecordHeader
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.ir.api.expr._
 
-class CAPSScanGraph(val scans: Seq[GraphScan], val schema: Schema)(implicit val session: CAPSSession)
-    extends CAPSGraph {
+class CAPSScanGraph(val scans: Seq[EntityTable], val schema: Schema)(implicit val session: CAPSSession)
+  extends CAPSGraph {
 
   // TODO: Normalize (remove redundant columns for implied Schema information, clear aliases?)
 
@@ -35,84 +35,76 @@ class CAPSScanGraph(val scans: Seq[GraphScan], val schema: Schema)(implicit val 
 
   override protected def graph: CAPSScanGraph = this
 
-  private val nodeEntityScans = NodeEntityScans(scans.collect { case it: NodeScan                => it }.toVector)
-  private val relEntityScans = RelationshipEntityScans(scans.collect { case it: RelationshipScan => it }.toVector)
+  private val nodeEntityTables = EntityTables(scans.collect { case it: NodeTable => it }.toVector)
+  private val relEntityTables = EntityTables(scans.collect { case it: RelationshipTable => it }.toVector)
 
-  override def cache(): CAPSScanGraph = map(_.cache())
+  override def cache(): CAPSScanGraph = forEach(_.table.cache())
 
-  override def persist(): CAPSScanGraph = map(_.persist())
+  override def persist(): CAPSScanGraph = forEach(_.table.persist())
 
-  override def persist(storageLevel: StorageLevel): CAPSScanGraph = map(_.persist(storageLevel))
+  override def persist(storageLevel: StorageLevel): CAPSScanGraph = forEach(_.table.persist(storageLevel))
 
-  override def unpersist(): CAPSScanGraph = map(_.unpersist())
+  override def unpersist(): CAPSScanGraph = forEach(_.table.unpersist())
 
-  override def unpersist(blocking: Boolean): CAPSScanGraph = map(_.unpersist(blocking))
+  override def unpersist(blocking: Boolean): CAPSScanGraph = forEach(_.table.unpersist(blocking))
 
-  private def map(f: GraphScan => GraphScan): CAPSScanGraph =
-    new CAPSScanGraph(scans.map(f), schema)
+  private def forEach(f: EntityTable => Unit): CAPSScanGraph = {
+    scans.foreach(f)
+    this
+  }
 
   override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
     val node = Var(name)(nodeCypherType)
-    val selectedScans = nodeEntityScans.scans(nodeCypherType)
+    val selectedScans = nodeEntityTables.scans(nodeCypherType)
     val schema = selectedScans.map(_.schema).foldLeft(Schema.empty)(_ ++ _)
     val targetNodeHeader = RecordHeader.nodeFromSchema(node, schema)
 
     val scanRecords: Seq[CAPSRecords] = selectedScans.map(_.records)
-    val alignedRecords = scanRecords.map(GraphScan.align(_, node, targetNodeHeader))
-    alignedRecords.reduceOption(_ unionAll (targetNodeHeader, _)).getOrElse(CAPSRecords.empty(targetNodeHeader))
+    val alignedRecords = scanRecords.map(_.alignWith(node, targetNodeHeader))
+    alignedRecords.reduceOption(_ unionAll(targetNodeHeader, _)).getOrElse(CAPSRecords.empty(targetNodeHeader))
   }
 
   override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
     val rel = Var(name)(relCypherType)
-    val selectedScans = relEntityScans.scans(relCypherType)
+    val selectedScans = relEntityTables.scans(relCypherType)
     val schema = selectedScans.map(_.schema).foldLeft(Schema.empty)(_ ++ _)
     val targetRelHeader = RecordHeader.relationshipFromSchema(rel, schema)
 
     val scanRecords = selectedScans.map(_.records)
-    val alignedRecords = scanRecords.map(GraphScan.align(_, rel, targetRelHeader))
-    alignedRecords.reduceOption(_ unionAll (targetRelHeader, _)).getOrElse(CAPSRecords.empty(targetRelHeader))
+    val alignedRecords = scanRecords.map(_.alignWith(rel, targetRelHeader))
+    alignedRecords.reduceOption(_ unionAll(targetRelHeader, _)).getOrElse(CAPSRecords.empty(targetRelHeader))
   }
 
   override def union(other: PropertyGraph): CAPSGraph = other match {
     case (otherScanGraph: CAPSScanGraph) =>
       val allScans = scans ++ otherScanGraph.scans
-      val nodeScan = allScans
-        .collectFirst[NodeScan] { case scan: NodeScan => scan }
+      val nodeTable = allScans
+        .collectFirst[NodeTable] { case table: NodeTable => table }
         .getOrElse(throw IllegalArgumentException("at least one node scan"))
-      CAPSGraph.create(nodeScan, allScans.filterNot(_ == nodeScan): _*)
+      CAPSGraph.create(nodeTable, allScans.filterNot(_ == nodeTable): _*)
     case _ => CAPSUnionGraph(this, other.asCaps)
   }
 
-  private case class NodeEntityScans(override val entityScans: Vector[NodeScan]) extends EntityScans {
-    override type EntityType = CTNode
-    override type EntityScan = NodeScan
-  }
+  // TODO: add test case where there are multiple rel types in the underlying DF and see if it filters the right one
+  case class EntityTables(entityTables: Vector[EntityTable]) {
+    type EntityType = CypherType with DefiniteCypherType
 
-  private case class RelationshipEntityScans(override val entityScans: Vector[RelationshipScan]) extends EntityScans {
-    override type EntityType = CTRelationship
-    override type EntityScan = RelationshipScan
-  }
+    lazy val entityScanTypes: Vector[EntityType] = entityTables.map(_.entityType)
 
-  private trait EntityScans {
-    type EntityType <: CypherType with DefiniteCypherType
-    type EntityScan <: GraphScan { type EntityCypherType = EntityType }
-
-    def entityScans: Vector[EntityScan]
-
-    lazy val entityScanTypes: Seq[EntityType] = entityScans.map(_.entityType)
-
-    lazy val entityScansByType: Map[EntityType, NonEmptyVector[EntityScan]] =
-      entityScans
+    lazy val entityScansByType: Map[EntityType, NonEmptyVector[EntityTable]] =
+      entityTables
         .groupBy(_.entityType)
         .flatMap { case (k, entityScans) => NonEmptyVector.fromVector(entityScans).map(k -> _) }
 
-    def scans(entityType: EntityType): Seq[EntityScan] = {
-      val candidateTypes = entityScanTypes.filter(_.subTypeOf(entityType).isTrue)
+    def scans(entityType: EntityType): Seq[EntityTable] = {
+
+      def isSubType(tableType: EntityType) = tableType.subTypeOf(entityType).isTrue
+
+      val candidateTypes = entityScanTypes.filter(isSubType)
       // TODO: we always select the head of the NonEmptyVector, why not changing to Map[EntityType, EntityScan]?
       // TODO: does this work for relationships?
       val selectedScans = candidateTypes.flatMap(typ => entityScansByType.get(typ).map(_.head))
       selectedScans
     }
   }
-
 }

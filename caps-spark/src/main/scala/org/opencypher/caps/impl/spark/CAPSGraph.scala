@@ -16,7 +16,7 @@
 package org.opencypher.caps.impl.spark
 
 import org.apache.spark.storage.StorageLevel
-import org.opencypher.caps.api.CAPSSession
+import org.opencypher.caps.api.{CAPSSession, EntityTable, NodeTable}
 import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.schema.Schema
@@ -74,7 +74,7 @@ object CAPSGraph {
       override def unpersist(blocking: Boolean): CAPSGraph = this
     }
 
-  def create(nodes: NodeScan, scans: GraphScan*)(implicit caps: CAPSSession): CAPSGraph = {
+  def create(nodes: NodeTable, scans: EntityTable*)(implicit caps: CAPSSession): CAPSGraph = {
     val allScans = nodes +: scans
     val schema = allScans.map(_.schema).reduce(_ ++ _)
     new CAPSScanGraph(allScans, schema)
