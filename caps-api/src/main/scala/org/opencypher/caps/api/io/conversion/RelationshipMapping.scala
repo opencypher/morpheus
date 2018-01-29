@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) 2016-2018 "Neo4j, Inc." [https://neo4j.com]
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.opencypher.caps.api.io.conversion
 
 object RelationshipMapping {
@@ -13,7 +28,7 @@ object RelationshipMapping {
       new MissingSourceStartNodeKey(sourceIdKey)
   }
 
-  private sealed class MissingSourceStartNodeKey(sourceIdKey: String) {
+  sealed class MissingSourceStartNodeKey(sourceIdKey: String) {
     /**
       * @param sourceStartNodeKey represents a key to the start node identifier within the source data. The retrieved
       *                           value from the source data is expected to be a [[Long]] value.
@@ -23,7 +38,7 @@ object RelationshipMapping {
       new MissingSourceEndNodeKey(sourceIdKey, sourceStartNodeKey)
   }
 
-  private sealed class MissingSourceEndNodeKey(sourceIdKey: String, sourceStartNodeKey: String) {
+  sealed class MissingSourceEndNodeKey(sourceIdKey: String, sourceStartNodeKey: String) {
     /**
       * @param sourceEndNodeKey represents a key to the end node identifier within the source data. The retrieved
       *                         value from the source data is expected to be a [[Long]] value.
@@ -33,7 +48,7 @@ object RelationshipMapping {
       new MissingRelTypeMapping(sourceIdKey, sourceStartNodeKey, sourceEndNodeKey)
   }
 
-  private sealed class MissingRelTypeMapping(sourceIdKey: String, sourceStartNodeKey: String, sourceEndNodeKey: String) {
+  sealed class MissingRelTypeMapping(sourceIdKey: String, sourceStartNodeKey: String, sourceEndNodeKey: String) {
     /**
       * @param relType represents the relationship type for all relationships in the source data
       * @return relationship mapping
