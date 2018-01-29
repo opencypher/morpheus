@@ -180,8 +180,8 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOpera
       case flat.Optional(lhs, rhs, header) =>
         Optional(process(lhs), process(rhs), header)
 
-      case flat.ExistsPatternPredicate(predicateField, lhs, rhs, header) =>
-        ExistsPatternPredicate(process(lhs), process(rhs), predicateField, header)
+      case flat.ExistsSubQuery(predicateField, lhs, rhs, header) =>
+        ExistsSubQuery(process(lhs), process(rhs), predicateField, header)
 
       case flat.OrderBy(sortItems: Seq[SortItem[Expr]], in, header) =>
         OrderBy(process(in), sortItems, header)

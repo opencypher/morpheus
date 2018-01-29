@@ -86,7 +86,7 @@ final case class CartesianProduct(lhs: FlatOperator, rhs: FlatOperator, header: 
 
 final case class Optional(lhs: FlatOperator, rhs: FlatOperator, header: RecordHeader) extends BinaryFlatOperator
 
-final case class ExistsPatternPredicate(predicateField: Var, lhs: FlatOperator, rhs: FlatOperator, header: RecordHeader)
+final case class ExistsSubQuery(predicateField: Var, lhs: FlatOperator, rhs: FlatOperator, header: RecordHeader)
     extends BinaryFlatOperator
 
 final case class ValueJoin(

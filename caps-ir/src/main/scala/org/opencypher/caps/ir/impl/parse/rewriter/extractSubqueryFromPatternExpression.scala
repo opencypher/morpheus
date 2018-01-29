@@ -82,12 +82,13 @@ case class extractSubqueryFromPatternExpression(mkException: (String, InputPosit
             Return(ReturnItems(includeExisting = false, returnItemsWithTrue)(patternPosition), None)(patternPosition)
           )
         )(patternPosition)
-      )(patternPosition)
+      )(patternPosition),
+      trueVariable
     )(patternPosition)
   }
 }
 
-case class ExistsPattern(query: Query)(val position: InputPosition)
+case class ExistsPattern(query: Query, trueVariable: Variable)(val position: InputPosition)
     extends Expression
     with SemanticCheckableExpression {
   override def semanticCheck(ctx: Expression.SemanticContext): SemanticCheck = SemanticCheckResult.success

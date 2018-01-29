@@ -15,4 +15,6 @@
  */
 package org.opencypher.caps.ir.api
 
-final case class QueryInfo(text: String, version: String = "Spark Cypher 0.1")
+final case class QueryInfo(text: String, version: String = "Spark Cypher 0.1") {
+  def singleLine: String = toString.replaceAll(raw"\n", raw"\\n")
+}

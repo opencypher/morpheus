@@ -241,7 +241,7 @@ final case class Optional(lhs: LogicalOperator, rhs: LogicalOperator, solved: So
   override val fields: Set[Var] = lhs.fields ++ rhs.fields
 }
 
-final case class ExistsPatternPredicate(
+final case class ExistsSubQuery(
     expr: ExistsPatternExpr,
     lhs: LogicalOperator,
     rhs: LogicalOperator,

@@ -19,7 +19,7 @@ import org.apache.spark.sql.functions
 import org.opencypher.caps.impl.record.{OpaqueField, RecordHeader, RecordSlot}
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.{assertIsNode, columnName, joinDFs, joinRecords}
 import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
-import org.opencypher.caps.impl.spark.{CAPSRecords, ColumnNameGenerator, SparkColumnName}
+import org.opencypher.caps.impl.spark.{CAPSRecords, ColumnNameGenerator}
 import org.opencypher.caps.ir.api.expr.Var
 
 private[spark] abstract class BinaryPhysicalOperator extends PhysicalOperator {
@@ -132,7 +132,7 @@ final case class Optional(lhs: PhysicalOperator, rhs: PhysicalOperator, header: 
   * @param predicateField field that will store the predicate value
   * @param header result header (lhs header + predicateField)
   */
-final case class ExistsPatternPredicate(
+final case class ExistsSubQuery(
     lhs: PhysicalOperator,
     rhs: PhysicalOperator,
     predicateField: Var,
@@ -182,23 +182,18 @@ final case class ExistsPatternPredicate(
     val joinCols = joinColumnMapping.map(t => t._1 -> distinctRightData.col(t._3))
 
     val joinedRecords =
-      joinDFs(left.records.data, distinctRightData, rightHeader, joinCols)("leftouter", deduplicate = true)(
-        left.records.caps)
+      joinDFs(left.records.data, distinctRightData, header, joinCols)("leftouter", deduplicate = true)(left.records.caps)
 
-    val rightNonJoinColumns = distinctRightData.columns.toSet -- joinColumnMapping.map(_._3)
+    val trueColumnName = columnName(rightHeader.slotFor(predicateField))
+    val trueColumn = joinedRecords.data.col(trueColumnName)
 
-    // We only need to check one non-join column for its value to decide if the pattern exists
-    assert(rightNonJoinColumns.size == 1)
-    val rightNonJoinColumn = distinctRightData.col(rightNonJoinColumns.head)
-
-    // If the non-join column contains no value we set the predicate field to false, otherwise true.
+    // If the non-join column contains no value we set the expression field to false, otherwise true.
     // After that we drop all right columns and only keep the predicate field.
     // The predicate field is later checked by a filter operator.
     val updatedJoinedRecords = joinedRecords.data
       .withColumn(
-        SparkColumnName.of(header.slotFor(predicateField)),
-        functions.when(functions.isnull(rightNonJoinColumn), false).otherwise(true))
-      .drop(rightNonJoinColumns.toSeq ++ joinColumnMapping.map(_._3): _*)
+        trueColumnName,
+        functions.when(functions.isnull(trueColumn), false).otherwise(true))
 
     PhysicalResult(CAPSRecords.create(header, updatedJoinedRecords)(left.records.caps), left.graphs ++ right.graphs)
   }

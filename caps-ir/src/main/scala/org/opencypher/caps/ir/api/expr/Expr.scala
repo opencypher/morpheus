@@ -361,5 +361,5 @@ final case class ExistsPatternExpr(predicateField: Var, ir: CypherQuery[Expr])(v
     extends Expr {
   override def toString = s"$withoutType($cypherType)"
 
-  override def withoutType = s"Exists($predicateField, ${ir.info})"
+  override def withoutType = s"Exists(${ir.info.singleLine}, $predicateField)"
 }

@@ -166,8 +166,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
           case (acc2, expr) => planInnerExpr(expr, acc2)
         }
         producer.projectField(f, func, projectArg)
-      // this is for aliasing
 
+      // this is for aliasing
       case (acc, (f, v: Var)) if f.name != v.name =>
         producer.projectField(f, v, acc)
 
@@ -184,6 +184,11 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
       case (acc, (f, c: Lit[_])) =>
         producer.projectField(f, c, acc)
+
+      case (acc, (f, ex: ExistsPatternExpr)) =>
+        val subqueryPlan = this(ex.ir)
+        val existsPlan = producer.planExistsSubQuery(ex, acc, subqueryPlan)
+        producer.projectField(f, existsPlan.expr.predicateField, existsPlan)
 
       case (_, (_, x)) =>
         throw NotImplementedException(s"Support for projection of $x not yet implemented")
@@ -243,7 +248,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
       case (acc, ex: ExistsPatternExpr) =>
         val innerPlan = this(ex.ir)
-        val predicate = producer.planExistsPatternPredicate(ex, acc, innerPlan)
+        val predicate = producer.planExistsSubQuery(ex, acc, innerPlan)
         producer.planFilter(ex, predicate)
 
       case (_, x) =>
@@ -286,7 +291,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
       case ex: ExistsPatternExpr =>
         val innerPlan = this(ex.ir)
-        producer.planExistsPatternPredicate(ex, in, innerPlan)
+        producer.planExistsSubQuery(ex, in, innerPlan)
 
       case x =>
         throw NotImplementedException(s"Support for projection of inner expression $x not yet implemented")
