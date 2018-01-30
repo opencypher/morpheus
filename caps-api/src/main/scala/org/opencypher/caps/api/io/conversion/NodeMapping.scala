@@ -83,8 +83,8 @@ object NodeMapping {
   *
   * @param sourceIdKey          key to access the node identifier in the source data
   * @param impliedLabels        set of node labels
-  * @param optionalLabelMapping mapping from source key to label
-  * @param propertyMapping      mapping from source key to property key
+  * @param optionalLabelMapping mapping from label to source key
+  * @param propertyMapping      mapping from property key to source property key
   */
 case class NodeMapping(
   sourceIdKey: String,
@@ -104,11 +104,11 @@ case class NodeMapping(
   def withOptionalLabels(labels: String*): NodeMapping =
     labels.foldLeft(this)((mapping, label) => mapping.withOptionalLabel(label, label))
 
-  def withOptionalLabel(sourceLabelKey: String, label: String): NodeMapping =
+  def withOptionalLabel(label: String, sourceLabelKey: String): NodeMapping =
     copy(optionalLabelMapping = optionalLabelMapping.updated(label, sourceLabelKey))
 
   def withOptionalLabel(tuple: (String, String)): NodeMapping =
-    withOptionalLabel(tuple._1 -> tuple._2)
+    withOptionalLabel(tuple._1, tuple._2)
 
   def withPropertyKey(tuple: (String, String)): NodeMapping =
     withPropertyKey(tuple._1, tuple._2)
@@ -116,7 +116,7 @@ case class NodeMapping(
   def withPropertyKey(property: String): NodeMapping =
     withPropertyKey(property, property)
 
-  def withPropertyKey(sourcePropertyKey: String, propertyKey: String): NodeMapping =
+  def withPropertyKey(propertyKey: String, sourcePropertyKey: String): NodeMapping =
     copy(propertyMapping = propertyMapping.updated(propertyKey, sourcePropertyKey))
 
   def withPropertyKeys(properties: String*): NodeMapping =

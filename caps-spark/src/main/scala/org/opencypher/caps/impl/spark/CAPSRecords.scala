@@ -107,26 +107,26 @@ sealed abstract class CAPSRecords(
     CAPSRecords.create(header, unionData)
   }
 
-  def contract[E <: EmbeddedEntity](entity: VerifiedEmbeddedEntity[E]): CAPSRecords = {
-    val slotExprs = entity.slots
-    val newSlots = header.slots.map {
-      case slot@RecordSlot(idx, content: FieldSlotContent) =>
-        slotExprs
-          .get(content.field.name)
-          .map {
-            case expr: Var => OpaqueField(expr)
-            case expr: Property => ProjectedExpr(expr.copy()(cypherType = content.cypherType))
-            case expr => ProjectedExpr(expr)
-          }
-          .getOrElse(slot.content)
-
-      case slot =>
-        slot.content
-    }
-    val newHeader = RecordHeader.from(newSlots: _*)
-    val renamed = data.toDF(newHeader.internalHeader.columns: _*)
-    CAPSRecords.create(newHeader, renamed)
-  }
+//  def contract[E <: EmbeddedEntity](entity: VerifiedEmbeddedEntity[E]): CAPSRecords = {
+//    val slotExprs = entity.slots
+//    val newSlots = header.slots.map {
+//      case slot@RecordSlot(idx, content: FieldSlotContent) =>
+//        slotExprs
+//          .get(content.field.name)
+//          .map {
+//            case expr: Var => OpaqueField(expr)
+//            case expr: Property => ProjectedExpr(expr.copy()(cypherType = content.cypherType))
+//            case expr => ProjectedExpr(expr)
+//          }
+//          .getOrElse(slot.content)
+//
+//      case slot =>
+//        slot.content
+//    }
+//    val newHeader = RecordHeader.from(newSlots: _*)
+//    val renamed = data.toDF(newHeader.internalHeader.columns: _*)
+//    CAPSRecords.create(newHeader, renamed)
+//  }
 
   def distinct: CAPSRecords = {
     CAPSRecords.create(header, data.distinct())
@@ -227,8 +227,6 @@ sealed abstract class CAPSRecords(
 object CAPSRecords {
 
   def create(entityTable: EntityTable)(implicit caps: CAPSSession): CAPSRecords = {
-    val untypedVar = Var("boo")
-
     def sourceColumnToPropertyExpressionMapping(
       variable: Var): Map[String, Expr] = {
       val keyMap = entityTable.mapping.propertyMapping.map { case (key, sourceColumn) =>
@@ -249,26 +247,31 @@ object CAPSRecords {
     def sourceColumnRelationshipToExpressionMapping(relMapping: RelationshipMapping): Map[String, Expr] = {
       // TODO: Generate var. Nice-to-have property: Same DF gets same var.
       // TODO: Labels on node var?
-      val relVar = untypedVar(CTRelationship)
-
+      val relVar = Var("boo")(CTRelationship(relMapping.possibleRelTypes))
       val entityMappings = sourceColumnToPropertyExpressionMapping(relVar)
 
-      //TODO: Port code from old impl.
-      //      relMapping.optionalLabelMapping.map { case (label, sourceColumn) =>
-      //        sourceColumn -> HasLabel(relVar, Label(label))(CTBoolean)
-      //      }.foldLeft(entityMappings) {
-      //        case (m, (slot, expr)) =>
-      //          if (m.contains(slot))
-      //            throw DuplicateSourceColumnException(slot, relVar)
-      //          else m.updated(slot, expr)
-      //      }
+      val sourceColumnToExpressionMapping: Map[String, Expr] = Seq(
+        relMapping.sourceStartNodeKey -> StartNode(relVar)(CTInteger),
+        relMapping.sourceEndNodeKey -> EndNode(relVar)(CTInteger)
+      ).foldLeft(entityMappings) {
+        case (acc, (slot, expr)) =>
+          if (acc.contains(slot))
+            throw DuplicateSourceColumnException(slot, relVar)
+          else acc.updated(slot, expr)
+      }
+      relMapping.relTypeOrSourceRelTypeKey match {
+        case Right((sourceRelTypeColumn, _)) if sourceColumnToExpressionMapping.contains(sourceRelTypeColumn) =>
+          throw DuplicateSourceColumnException(sourceRelTypeColumn, relVar)
+        case Right((sourceRelTypeColumn, _)) => sourceColumnToExpressionMapping.updated(sourceRelTypeColumn, Type(relVar)(CTString))
+        case Left(_)        => sourceColumnToExpressionMapping
+      }
     }
 
     // Computes map of sourceColumn -> Expression
     def sourceColumnNodeToExpressionMapping(nodeMapping: NodeMapping): Map[String, Expr] = {
       // TODO: Generate var. Nice-to-have property: Same DF gets same var.
       // TODO: Labels on node var?
-      val generatedVar = Var("boo")(CTNode)
+      val generatedVar = Var("boo")(CTNode(nodeMapping.impliedLabels))
 
       val entityMappings = sourceColumnToPropertyExpressionMapping(generatedVar)
 

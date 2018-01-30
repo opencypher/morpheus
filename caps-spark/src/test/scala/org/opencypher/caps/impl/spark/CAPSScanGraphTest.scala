@@ -32,6 +32,9 @@ class CAPSScanGraphTest extends CAPSTestSuite with TeamDataFixture {
     val graph1 = CAPSGraph.create(personTable, knowsTable)
     val graph2 = CAPSGraph.create(programmerTable, bookTable, readsTable)
 
+    graph1.nodes("n").capsRecords.data.show()
+    graph2.nodes("n").capsRecords.data.show()
+
     val result = graph1 union graph2
 
     val nodes = result.nodes("n").toDF().collect.toBag

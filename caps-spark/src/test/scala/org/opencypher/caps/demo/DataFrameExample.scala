@@ -54,6 +54,8 @@ object DataFrameExample extends App {
 
   // 5) Execute Cypher query and print results
   graph.cypher("MATCH (n) RETURN n").print
+
+//  graph.cypher("MATCH ()-[n]->() RETURN n").print
 }
 
 object SocialNetworkDataFrames {

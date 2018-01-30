@@ -138,7 +138,7 @@ object RelationshipMapping {
   * @param sourceStartNodeKey        key to access the start node identifier in the source data
   * @param sourceEndNodeKey          key to access the end node identifier in the source data
   * @param relTypeOrSourceRelTypeKey either a relationship type or a key to access the type in the source data and a set of all possible types
-  * @param propertyMapping           mapping from source key to property key
+  * @param propertyMapping           mapping from property key to source property key
   */
 final case class RelationshipMapping(
   sourceIdKey: String,
@@ -147,7 +147,14 @@ final case class RelationshipMapping(
   relTypeOrSourceRelTypeKey: Either[String, (String, Set[String])],
   propertyMapping: Map[String, String] = Map.empty) extends EntityMapping {
 
-  def withPropertyKey(sourcePropertyKey: String, propertyKey: String): RelationshipMapping =
+  def possibleRelTypes: Set[String] = {
+    relTypeOrSourceRelTypeKey match {
+      case Left(relType) => Set(relType)
+      case Right((_, possibleRelValues)) => possibleRelValues
+    }
+  }
+
+  def withPropertyKey(propertyKey: String, sourcePropertyKey: String): RelationshipMapping =
     copy(propertyMapping = propertyMapping.updated(propertyKey, sourcePropertyKey))
 
   def withPropertyKey(tuple: (String, String)): RelationshipMapping =

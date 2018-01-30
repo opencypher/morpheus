@@ -24,11 +24,10 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.types.ArrayType
 import org.apache.spark.sql.{DataFrame, SparkSession, functions}
-import org.opencypher.caps.api.{CAPSSession, NodeTable, RelationshipTable}
 import org.opencypher.caps.api.exception.IllegalArgumentException
+import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
-import org.opencypher.caps.impl.record.{NodeScan, RelationshipScan}
-import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords}
+import org.opencypher.caps.api.{CAPSSession, NodeTable, RelationshipTable}
 
 trait CsvGraphLoaderFileHandler {
   def location: String
@@ -106,14 +105,10 @@ class CsvGraphLoader(fileHandler: CsvGraphLoaderFileHandler)(implicit capsSessio
 
   private val sparkSession: SparkSession = capsSession.sparkSession
 
-  def load: CAPSGraph = {
-    val nodeTables = loadNodes
-    val relTables = loadRels
-    CAPSGraph.create(nodeTables.head, nodeTables.tail ++ relTables: _*)
-  }
+  def load: PropertyGraph = capsSession.readFrom(loadNodes ++ loadRels: _*)
 
-  private def loadNodes: Array[NodeTable] = {
-    val csvFiles = listCsvFiles("nodes")
+  private def loadNodes: List[NodeTable] = {
+    val csvFiles = listCsvFiles("nodes").toList
 
     csvFiles.map(e => {
       val schema = parseSchema(e)(CsvNodeSchema(_))
@@ -133,8 +128,8 @@ class CsvGraphLoader(fileHandler: CsvGraphLoaderFileHandler)(implicit capsSessio
     })
   }
 
-  private def loadRels: Array[RelationshipTable] = {
-    val csvFiles = listCsvFiles("relationships")
+  private def loadRels: List[RelationshipTable] = {
+    val csvFiles = listCsvFiles("relationships").toList
 
     csvFiles.map(relationShipFile => {
 

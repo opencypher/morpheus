@@ -29,107 +29,107 @@ import scala.collection.Bag
 
 class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture {
 
-  test("contract and scan nodes") {
-    val given = CAPSRecords.prepareDataFrame(
-      session
-        .createDataFrame(
-          Seq(
-            (1L, true, "Mats"),
-            (2L, false, "Martin"),
-            (3L, false, "Max"),
-            (4L, false, "Stefan")
-          ))
-        .toDF("ID", "IS_SWEDE", "NAME"))
-
-    val embeddedNode = EmbeddedNode("n" -> "ID").build
-      .withImpliedLabel("Person")
-      .withOptionalLabel("Swedish" -> "IS_SWEDE")
-      .withPropertyKey("name" -> "NAME")
-      .verify
-
-    val result = given.contract(embeddedNode)
-    val entityVar = Var("n")(CTNode("Person"))
-
-    result.header.slots.map(_.content).toVector should equal(
-      Vector(
-        OpaqueField(entityVar),
-        ProjectedExpr(HasLabel(entityVar, Label("Swedish"))(CTBoolean)),
-        ProjectedExpr(Property(entityVar, PropertyKey("name"))(CTString.nullable))
-      ))
-
-    val scan = GraphScan(embeddedNode).from(given)
-    scan.entity should equal(entityVar)
-    scan.records.header should equal(result.header)
-  }
-
-  test("contract relationships with a fixed type") {
-
-    val given = CAPSRecords.prepareDataFrame(
-      session
-        .createDataFrame(
-          Seq(
-            (10L, 1L, 2L, "red"),
-            (11L, 2L, 3L, "blue"),
-            (12L, 3L, 4L, "green"),
-            (13L, 4L, 1L, "yellow")
-          ))
-        .toDF("ID", "FROM", "TO", "COLOR"))
-
-    val embeddedRel = EmbeddedRelationship("r" -> "ID")
-      .from("FROM")
-      .to("TO")
-      .relType("NEXT")
-      .build
-      .withPropertyKey("color" -> "COLOR")
-      .verify
-    val result = given.contract(embeddedRel)
-
-    val entityVar = Var("r")(CTRelationship("NEXT"))
-
-    result.header.slots.map(_.content).toVector should equal(
-      Vector(
-        OpaqueField(entityVar),
-        ProjectedExpr(StartNode(entityVar)(CTNode)),
-        ProjectedExpr(EndNode(entityVar)(CTNode)),
-        ProjectedExpr(Property(entityVar, PropertyKey("color"))(CTString.nullable))
-      ))
-
-    val scan = GraphScan(embeddedRel).from(given)
-    scan.entity should equal(entityVar)
-    scan.records.header should equal(result.header)
-  }
-
-  test("contract relationships with a dynamic type") {
-    val given = CAPSRecords.prepareDataFrame(
-      session
-        .createDataFrame(
-          Seq(
-            (10L, 1L, 2L, "RED"),
-            (11L, 2L, 3L, "BLUE"),
-            (12L, 3L, 4L, "GREEN"),
-            (13L, 4L, 1L, "YELLOW")
-          ))
-        .toDF("ID", "FROM", "TO", "COLOR"))
-
-    val embeddedRel =
-      EmbeddedRelationship("r" -> "ID").from("FROM").to("TO").relTypes("COLOR", "RED", "BLUE", "GREEN", "YELLOW").build
-
-    val result = given.contract(embeddedRel)
-
-    val entityVar = Var("r")(CTRelationship("RED", "BLUE", "GREEN", "YELLOW"))
-
-    result.header.slots.map(_.content).toVector should equal(
-      Vector(
-        OpaqueField(entityVar),
-        ProjectedExpr(StartNode(entityVar)(CTNode)),
-        ProjectedExpr(EndNode(entityVar)(CTNode)),
-        ProjectedExpr(Type(entityVar)(CTRelationship("RED", "BLUE", "GREEN", "YELLOW")))
-      ))
-
-    val scan = GraphScan(embeddedRel).from(given)
-    scan.entity should equal(entityVar)
-    scan.records.header should equal(result.header)
-  }
+//  test("contract and scan nodes") {
+//    val given = CAPSRecords.prepareDataFrame(
+//      session
+//        .createDataFrame(
+//          Seq(
+//            (1L, true, "Mats"),
+//            (2L, false, "Martin"),
+//            (3L, false, "Max"),
+//            (4L, false, "Stefan")
+//          ))
+//        .toDF("ID", "IS_SWEDE", "NAME"))
+//
+//    val embeddedNode = EmbeddedNode("n" -> "ID").build
+//      .withImpliedLabel("Person")
+//      .withOptionalLabel("Swedish" -> "IS_SWEDE")
+//      .withPropertyKey("name" -> "NAME")
+//      .verify
+//
+//    val result = given.contract(embeddedNode)
+//    val entityVar = Var("n")(CTNode("Person"))
+//
+//    result.header.slots.map(_.content).toVector should equal(
+//      Vector(
+//        OpaqueField(entityVar),
+//        ProjectedExpr(HasLabel(entityVar, Label("Swedish"))(CTBoolean)),
+//        ProjectedExpr(Property(entityVar, PropertyKey("name"))(CTString.nullable))
+//      ))
+//
+//    val scan = GraphScan(embeddedNode).from(given)
+//    scan.entity should equal(entityVar)
+//    scan.records.header should equal(result.header)
+//  }
+//
+//  test("contract relationships with a fixed type") {
+//
+//    val given = CAPSRecords.prepareDataFrame(
+//      session
+//        .createDataFrame(
+//          Seq(
+//            (10L, 1L, 2L, "red"),
+//            (11L, 2L, 3L, "blue"),
+//            (12L, 3L, 4L, "green"),
+//            (13L, 4L, 1L, "yellow")
+//          ))
+//        .toDF("ID", "FROM", "TO", "COLOR"))
+//
+//    val embeddedRel = EmbeddedRelationship("r" -> "ID")
+//      .from("FROM")
+//      .to("TO")
+//      .relType("NEXT")
+//      .build
+//      .withPropertyKey("color" -> "COLOR")
+//      .verify
+//    val result = given.contract(embeddedRel)
+//
+//    val entityVar = Var("r")(CTRelationship("NEXT"))
+//
+//    result.header.slots.map(_.content).toVector should equal(
+//      Vector(
+//        OpaqueField(entityVar),
+//        ProjectedExpr(StartNode(entityVar)(CTNode)),
+//        ProjectedExpr(EndNode(entityVar)(CTNode)),
+//        ProjectedExpr(Property(entityVar, PropertyKey("color"))(CTString.nullable))
+//      ))
+//
+//    val scan = GraphScan(embeddedRel).from(given)
+//    scan.entity should equal(entityVar)
+//    scan.records.header should equal(result.header)
+//  }
+//
+//  test("contract relationships with a dynamic type") {
+//    val given = CAPSRecords.prepareDataFrame(
+//      session
+//        .createDataFrame(
+//          Seq(
+//            (10L, 1L, 2L, "RED"),
+//            (11L, 2L, 3L, "BLUE"),
+//            (12L, 3L, 4L, "GREEN"),
+//            (13L, 4L, 1L, "YELLOW")
+//          ))
+//        .toDF("ID", "FROM", "TO", "COLOR"))
+//
+//    val embeddedRel =
+//      EmbeddedRelationship("r" -> "ID").from("FROM").to("TO").relTypes("COLOR", "RED", "BLUE", "GREEN", "YELLOW").build
+//
+//    val result = given.contract(embeddedRel)
+//
+//    val entityVar = Var("r")(CTRelationship("RED", "BLUE", "GREEN", "YELLOW"))
+//
+//    result.header.slots.map(_.content).toVector should equal(
+//      Vector(
+//        OpaqueField(entityVar),
+//        ProjectedExpr(StartNode(entityVar)(CTNode)),
+//        ProjectedExpr(EndNode(entityVar)(CTNode)),
+//        ProjectedExpr(Type(entityVar)(CTRelationship("RED", "BLUE", "GREEN", "YELLOW")))
+//      ))
+//
+//    val scan = GraphScan(embeddedRel).from(given)
+//    scan.entity should equal(entityVar)
+//    scan.records.header should equal(result.header)
+//  }
 
   test("can not construct records with data/header column name conflict") {
     val data = session.createDataFrame(Seq((1, "foo"), (2, "bar"))).toDF("int", "string")
