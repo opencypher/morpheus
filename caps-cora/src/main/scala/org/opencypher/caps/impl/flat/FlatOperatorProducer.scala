@@ -24,7 +24,7 @@ import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.ir.api.block.SortItem
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.ir.api.util.FreshVariableNamer
-import org.opencypher.caps.logical.impl.LogicalGraph
+import org.opencypher.caps.logical.impl.{Direction, LogicalGraph}
 
 import scala.annotation.tailrec
 
@@ -160,9 +160,10 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     }
   }
 
-  def expandSource(
+  def expand(
       source: Var,
       rel: Var,
+      direction: Direction,
       target: Var,
       schema: Schema,
       sourceOp: FlatOperator,
@@ -171,7 +172,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
     val expandHeader = sourceOp.header ++ relHeader ++ targetOp.header
 
-    ExpandSource(source, rel, target, sourceOp, targetOp, expandHeader, relHeader)
+    Expand(source, rel, direction, target, sourceOp, targetOp, expandHeader, relHeader)
   }
 
   def expandInto(source: Var, rel: Var, target: Var, schema: Schema, sourceOp: FlatOperator): FlatOperator = {

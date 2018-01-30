@@ -125,7 +125,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOpera
         Distinct(process(in), header)
 
       // TODO: This needs to be a ternary operator taking source, rels and target records instead of just source and target and planning rels only at the physical layer
-      case op@flat.ExpandSource(source, rel, target, sourceOp, targetOp, header, relHeader) =>
+      case op@flat.Expand(source, rel, direction, target, sourceOp, targetOp, header, relHeader) =>
         val first = process(sourceOp)
         val third = process(targetOp)
 

@@ -18,7 +18,7 @@ package org.opencypher.caps.impl.flat
 import org.opencypher.caps.impl.record.{OpaqueField, ProjectedExpr, ProjectedField, RecordHeader}
 import org.opencypher.caps.ir.api.block.SortItem
 import org.opencypher.caps.ir.api.expr.{Aggregator, Expr, Var}
-import org.opencypher.caps.logical.impl.LogicalGraph
+import org.opencypher.caps.logical.impl.{Direction, LogicalGraph}
 import org.opencypher.caps.trees.AbstractTreeNode
 
 sealed abstract class FlatOperator extends AbstractTreeNode[FlatOperator] {
@@ -96,9 +96,10 @@ final case class ValueJoin(
     header: RecordHeader)
     extends BinaryFlatOperator
 
-final case class ExpandSource(
+final case class Expand(
     source: Var,
     rel: Var,
+    direction: Direction,
     target: Var,
     sourceOp: FlatOperator,
     targetOp: FlatOperator,
