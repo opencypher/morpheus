@@ -154,6 +154,11 @@ object GraphScanBuilder {
   sealed abstract class RichGraphScanBuilder[E <: EmbeddedEntity, S <: GraphScan] {
     def builder: GraphScanBuilder[E]
 
+    def fromDataFrame(df: DataFrame)(implicit caps: CAPSSession) = {
+      val record = CAPSRecords.prepareDataFrame(df)
+      from(record)
+    }
+
     def from(records: CAPSRecords) = {
       val verifiedEntity = builder.entity
       val entity = verifiedEntity.v
@@ -170,11 +175,6 @@ object GraphScanBuilder {
           CAPSRecords.create(newHeader, newData)(records.caps)
         }
       create(entity, newRecords, schema(entity, newRecords.header))
-    }
-
-    def fromDataFrame(df: DataFrame)(implicit caps: CAPSSession) = {
-      val record = CAPSRecords.create(df)
-      from(record)
     }
 
     protected def create(entity: E, records: CAPSRecords, schema: Schema): S

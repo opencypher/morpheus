@@ -26,6 +26,6 @@ final case class NotImplementedException(msg: String) extends CypherException(ms
 final case class IllegalStateException(msg: String) extends CypherException(msg)
 
 final case class IllegalArgumentException(expected: Any, actual: Any = "none")
-    extends CypherException(s"Expected:\n\t$expected, but found:\n\t$actual")
+  extends CypherException(s"\nExpected:\n\t$expected\nFound:\n\t$actual")
 
-final case class UnsupportedOperationException(msg: String) extends CypherException(s"Don't do that :)\n\t$msg")
+final case class UnsupportedOperationException(msg: String) extends CypherException(msg)

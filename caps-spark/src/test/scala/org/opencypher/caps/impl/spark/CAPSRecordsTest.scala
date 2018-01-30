@@ -30,7 +30,7 @@ import scala.collection.Bag
 class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture {
 
   test("contract and scan nodes") {
-    val given = CAPSRecords.create(
+    val given = CAPSRecords.prepareDataFrame(
       session
         .createDataFrame(
           Seq(
@@ -64,7 +64,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture {
 
   test("contract relationships with a fixed type") {
 
-    val given = CAPSRecords.create(
+    val given = CAPSRecords.prepareDataFrame(
       session
         .createDataFrame(
           Seq(
@@ -100,7 +100,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture {
   }
 
   test("contract relationships with a dynamic type") {
-    val given = CAPSRecords.create(
+    val given = CAPSRecords.prepareDataFrame(
       session
         .createDataFrame(
           Seq(

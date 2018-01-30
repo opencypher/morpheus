@@ -26,7 +26,7 @@ import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph}
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.caps.api.schema.{Node, Relationship, Schema}
-import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType, DefiniteCypherType}
+import org.opencypher.caps.api.types._
 import org.opencypher.caps.demo.CypherKryoRegistrar
 import org.opencypher.caps.impl.spark._
 import org.opencypher.caps.impl.spark.convert.fromSparkType
@@ -38,19 +38,19 @@ import scala.reflect.runtime.universe._
 
 object SparkUtils {
 
-  def sparkFieldForColumn(df: DataFrame, column: String): StructField = {
-    if (df.schema.fieldIndex(column) < 0) {
-      throw IllegalArgumentException(s"column with name $column", s"columns with names ${df.columns.mkString("[", ", ", "]")}")
-    }
-    df.schema.fields(df.schema.fieldIndex(column))
-  }
-
   def cypherTypeForColumn(df: DataFrame, columnName: String): CypherType = {
     val structField = sparkFieldForColumn(df, columnName)
     fromSparkType(structField.dataType, structField.nullable) match {
       case Some(cypherType) => cypherType
       case None => throw IllegalArgumentException("a supported Spark DataType that can be converted to CypherType", structField.dataType)
     }
+  }
+
+  def sparkFieldForColumn(df: DataFrame, column: String): StructField = {
+    if (df.schema.fieldIndex(column) < 0) {
+      throw IllegalArgumentException(s"column with name $column", s"columns with names ${df.columns.mkString("[", ", ", "]")}")
+    }
+    df.schema.fields(df.schema.fieldIndex(column))
   }
 }
 
@@ -62,7 +62,8 @@ sealed trait EntityTable {
   // TODO: create CTEntity type
   private[caps] def entityType: CypherType with DefiniteCypherType
 
-  private[caps] def records: CAPSRecords
+  private[caps] def records(implicit caps: CAPSSession): CAPSRecords = CAPSRecords.create(this)
+
 }
 
 // TODO: Move where they belong
@@ -82,26 +83,22 @@ case class NodeTable(mapping: NodeMapping, table: DataFrame)(implicit session: C
 
   override private[caps] def entityType: CTNode = CTNode(schema.labels)
 
-  override private[caps] def records = CAPSRecords.create(table)
 }
 
 object NodeTable {
 
   private val nodeIdColumnName = "id"
 
-  private def properties(nodeColumnNames: Seq[String]): Set[String] = {
-    nodeColumnNames.filter(_ != nodeIdColumnName).toSet
-  }
-
   def apply[E <: Node : TypeTag](nodes: Seq[E])(implicit caps: CAPSSession): NodeTable = {
     val nodeLabels = Annotation.labels[E]
     val nodeDF = caps.sparkSession.createDataFrame(nodes)
-    val nodeRecords = CAPSRecords.create(nodes)
     val nodeProperties = properties(nodeDF.columns)
-
     val nodeMapping = NodeMapping.create(nodeIdKey = nodeIdColumnName, impliedLabels = nodeLabels, propertyKeys = nodeProperties)
-
     NodeTable(nodeMapping, nodeDF)
+  }
+
+  private def properties(nodeColumnNames: Seq[String]): Set[String] = {
+    nodeColumnNames.filter(_ != nodeIdColumnName).toSet
   }
 
   // TODO: validate record schema vs mapping
@@ -110,6 +107,8 @@ object NodeTable {
 }
 
 case class RelationshipTable(mapping: RelationshipMapping, table: DataFrame)(implicit session: CAPSSession) extends EntityTable {
+  override private[caps] def entityType: CTRelationship = CTRelationship(schema.relationshipTypes)
+
   override def schema: Schema = {
     val relTypes = mapping.relTypeOrSourceRelTypeKey match {
       case Left(name) => Set(name)
@@ -125,9 +124,6 @@ case class RelationshipTable(mapping: RelationshipMapping, table: DataFrame)(imp
     }
   }
 
-  override private[caps] def entityType: CTRelationship = CTRelationship(schema.relationshipTypes)
-
-  override private[caps] def records = CAPSRecords.create(table)
 }
 
 object RelationshipTable {
@@ -136,10 +132,6 @@ object RelationshipTable {
   private val relationshipTargetColumnName = "target"
   private val nonPropertyAttributes =
     Set(relationshipIdColumnName, relationshipSourceColumnName, relationshipTargetColumnName)
-
-  private def properties(relColumnNames: Set[String]): Set[String] = {
-    relColumnNames.filter(!nonPropertyAttributes.contains(_))
-  }
 
   def apply[E <: Relationship : TypeTag](relationships: Seq[E])(implicit caps: CAPSSession): RelationshipTable = {
     val relationshipType: String = Annotation.relType[E]
@@ -153,6 +145,10 @@ object RelationshipTable {
       relationshipProperties)
 
     RelationshipTable(relationshipMapping, relationshipDF)
+  }
+
+  private def properties(relColumnNames: Set[String]): Set[String] = {
+    relColumnNames.filter(!nonPropertyAttributes.contains(_))
   }
 
   private[caps] def apply(mapping: RelationshipMapping, records: CAPSRecords): RelationshipTable =
@@ -180,17 +176,6 @@ trait CAPSSession extends CypherSession {
   }
 
   /**
-    * Reads a graph from a sequence of entity tables that contains at least one node table.
-    *
-    * @param nodeTable    first parameter to guarantee there is at least one node table
-    * @param entityTables sequence of node and relationship tables defining the graph
-    * @return property graph
-    */
-  def readFrom(nodeTable: NodeTable, entityTables: EntityTable*): PropertyGraph = {
-    CAPSGraph.create(nodeTable, entityTables: _*)(this)
-  }
-
-  /**
     * Reads a graph from a sequence of entity tables and expects, that the first table is a node table.
     *
     * @param entityTables sequence of node and relationship tables defining the graph
@@ -199,6 +184,17 @@ trait CAPSSession extends CypherSession {
   def readFrom(entityTables: EntityTable*): PropertyGraph = entityTables.head match {
     case h: NodeTable => readFrom(h, entityTables.tail: _*)
     case _ => throw IllegalArgumentException("first argument of type NodeTable", "RelationshipTable")
+  }
+
+  /**
+    * Reads a graph from a sequence of entity tables that contains at least one node table.
+    *
+    * @param nodeTable    first parameter to guarantee there is at least one node table
+    * @param entityTables sequence of node and relationship tables defining the graph
+    * @return property graph
+    */
+  def readFrom(nodeTable: NodeTable, entityTables: EntityTable*): PropertyGraph = {
+    CAPSGraph.create(nodeTable, entityTables: _*)(this)
   }
 }
 
@@ -229,6 +225,8 @@ object CAPSSession extends Serializable {
 
   def create(implicit session: SparkSession): CAPSSession = Builder(session).build
 
+  def builder(sparkSession: SparkSession): Builder = Builder(sparkSession)
+
   case class Builder(
     session: SparkSession,
     private val graphSourceFactories: Set[CAPSPropertyGraphDataSourceFactory] = Set.empty) {
@@ -246,6 +244,4 @@ object CAPSSession extends Serializable {
       )
     }
   }
-
-  def builder(sparkSession: SparkSession): Builder = Builder(sparkSession)
 }

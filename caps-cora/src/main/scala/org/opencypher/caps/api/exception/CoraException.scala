@@ -21,6 +21,6 @@ abstract class CoraException(msg: String) extends CypherException(msg)
 
 final case class RecordHeaderException(msg: String) extends CoraException(msg)
 
-final case class DuplicateInputColumnException(columnName: String, entity: Var)
+final case class DuplicateSourceColumnException(columnName: String, entity: Var)
     extends CoraException(
-      s"The input column '$columnName' is used more than once to describe the embedded entity $entity")
+          s"The source column '$columnName' is used more than once to describe the mapping of $entity")

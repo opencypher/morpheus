@@ -33,8 +33,6 @@ class CAPSScanGraph(val scans: Seq[EntityTable], val schema: Schema)(implicit va
 
   self: CAPSGraph =>
 
-  override protected def graph: CAPSScanGraph = this
-
   private val nodeEntityTables = EntityTables(scans.collect { case it: NodeTable => it }.toVector)
   private val relEntityTables = EntityTables(scans.collect { case it: RelationshipTable => it }.toVector)
 
@@ -42,31 +40,31 @@ class CAPSScanGraph(val scans: Seq[EntityTable], val schema: Schema)(implicit va
 
   override def persist(): CAPSScanGraph = forEach(_.table.persist())
 
+  private def forEach(f: EntityTable => Unit): CAPSScanGraph = {
+    scans.foreach(f)
+    this
+  }
+
   override def persist(storageLevel: StorageLevel): CAPSScanGraph = forEach(_.table.persist(storageLevel))
 
   override def unpersist(): CAPSScanGraph = forEach(_.table.unpersist())
 
   override def unpersist(blocking: Boolean): CAPSScanGraph = forEach(_.table.unpersist(blocking))
 
-  private def forEach(f: EntityTable => Unit): CAPSScanGraph = {
-    scans.foreach(f)
-    this
-  }
-
   override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
     val node = Var(name)(nodeCypherType)
-    val selectedScans = nodeEntityTables.scans(nodeCypherType)
-    val schema = selectedScans.map(_.schema).foldLeft(Schema.empty)(_ ++ _)
+    val selectedTables = nodeEntityTables.byType(nodeCypherType)
+    val schema = selectedTables.map(_.schema).foldLeft(Schema.empty)(_ ++ _)
     val targetNodeHeader = RecordHeader.nodeFromSchema(node, schema)
 
-    val scanRecords: Seq[CAPSRecords] = selectedScans.map(_.records)
+    val scanRecords: Seq[CAPSRecords] = selectedTables.map(_.records)
     val alignedRecords = scanRecords.map(_.alignWith(node, targetNodeHeader))
     alignedRecords.reduceOption(_ unionAll(targetNodeHeader, _)).getOrElse(CAPSRecords.empty(targetNodeHeader))
   }
 
   override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
     val rel = Var(name)(relCypherType)
-    val selectedScans = relEntityTables.scans(relCypherType)
+    val selectedScans = relEntityTables.byType(relCypherType)
     val schema = selectedScans.map(_.schema).foldLeft(Schema.empty)(_ ++ _)
     val targetRelHeader = RecordHeader.relationshipFromSchema(rel, schema)
 
@@ -85,6 +83,8 @@ class CAPSScanGraph(val scans: Seq[EntityTable], val schema: Schema)(implicit va
     case _ => CAPSUnionGraph(this, other.asCaps)
   }
 
+  override protected def graph: CAPSScanGraph = this
+
   // TODO: add test case where there are multiple rel types in the underlying DF and see if it filters the right one
   case class EntityTables(entityTables: Vector[EntityTable]) {
     type EntityType = CypherType with DefiniteCypherType
@@ -96,7 +96,7 @@ class CAPSScanGraph(val scans: Seq[EntityTable], val schema: Schema)(implicit va
         .groupBy(_.entityType)
         .flatMap { case (k, entityScans) => NonEmptyVector.fromVector(entityScans).map(k -> _) }
 
-    def scans(entityType: EntityType): Seq[EntityTable] = {
+    def byType(entityType: EntityType): Seq[EntityTable] = {
 
       def isSubType(tableType: EntityType) = tableType.subTypeOf(entityType).isTrue
 

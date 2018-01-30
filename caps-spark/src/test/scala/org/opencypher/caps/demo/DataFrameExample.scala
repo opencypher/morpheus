@@ -17,9 +17,8 @@ package org.opencypher.caps.demo
 
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
-import org.opencypher.caps.api.{CAPSSession, NodeTable, RelationshipTable}
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
-import org.opencypher.caps.impl.record._
+import org.opencypher.caps.api.{CAPSSession, NodeTable, RelationshipTable}
 
 import scala.collection.JavaConverters._
 
@@ -30,8 +29,8 @@ object DataFrameExample extends App {
   val spark = session.sparkSession
 
   // 2) Generate some DataFrames that we'd like to interpret as a property graph.
-  val nodesDF = SocialNetworkDataFrames2.nodes(spark)
-  val relsDF = SocialNetworkDataFrames2.rels(spark)
+  val nodesDF = SocialNetworkDataFrames.nodes(spark)
+  val relsDF = SocialNetworkDataFrames.rels(spark)
 
   // 3) Generate node- and relationship scans that wrap the DataFrames and describe their contained data
 
@@ -50,50 +49,14 @@ object DataFrameExample extends App {
   val personTable = NodeTable(personNodeMapping, nodesDF)
   val friendsTable = RelationshipTable(friendOfMapping, relsDF)
 
+  // 4) Create property graph from graph scans
   val graph = session.readFrom(personTable, friendsTable)
 
-
-
-//
-//  // 4) Create property graph from graph scans
-//  val graph = session.readFrom(nodeScan, relScan)
-//
-//  // 5) Execute Cypher query and print results
-//  graph.cypher("MATCH (n) RETURN n").print
+  // 5) Execute Cypher query and print results
+  graph.cypher("MATCH (n) RETURN n").print
 }
 
 object SocialNetworkDataFrames {
-  def nodes(session: SparkSession): DataFrame = {
-    val nodes = List(
-      Row(0L, true, "Alice"),
-      Row(1L, true, "Bob"),
-      Row(2L, true, "Eve")
-    ).asJava
-    val nodeSchema = StructType(List(
-      StructField("id", LongType, false),
-      StructField("Person", BooleanType, false),
-      StructField("name", StringType, false))
-    )
-    session.createDataFrame(nodes, nodeSchema)
-  }
-
-  def rels(session: SparkSession): DataFrame = {
-    val rels = List(
-      Row(0L, 0L, 1L, "FRIEND_OF", "23/01/1987"),
-      Row(1L, 1L, 2L, "FRIEND_OF", "12/12/2009")
-    ).asJava
-    val relSchema = StructType(List(
-      StructField("id", LongType, false),
-      StructField("source", LongType, false),
-      StructField("target", LongType, false),
-      StructField("type", StringType, false),
-      StructField("since", StringType, false))
-    )
-    session.createDataFrame(rels, relSchema)
-  }
-}
-
-object SocialNetworkDataFrames2 {
   def nodes(session: SparkSession): DataFrame = {
     val nodes = List(
       Row(0L, "Alice"),
