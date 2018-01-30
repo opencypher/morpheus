@@ -24,7 +24,7 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.opencypher.caps.api.SparkUtils.cypherTypeForColumn
 import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph}
-import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
+import org.opencypher.caps.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
 import org.opencypher.caps.api.schema.{Node, Relationship, Schema}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.demo.CypherKryoRegistrar
@@ -56,6 +56,8 @@ object SparkUtils {
 
 sealed trait EntityTable {
   def schema: Schema
+
+  def mapping: EntityMapping
 
   def table: DataFrame
 

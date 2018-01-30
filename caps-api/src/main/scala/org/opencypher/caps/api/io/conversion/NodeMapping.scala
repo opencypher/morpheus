@@ -17,15 +17,6 @@ package org.opencypher.caps.api.io.conversion
 
 object NodeMapping {
   /**
-    *
-    * @param sourceIdKey represents a key to the node identifier within the source data. The retrieved value
-    *                    from the source data is expected to be a [[Long]] value that is unique among nodes.
-    * @return node mapping
-    */
-  def withSourceIdKey(sourceIdKey: String): NodeMapping =
-    NodeMapping(sourceIdKey)
-
-  /**
     * Alias for [[withSourceIdKey()]].
     *
     * @param sourceIdKey key to access the node identifier in the source data
@@ -33,6 +24,15 @@ object NodeMapping {
     */
   def on(sourceIdKey: String): NodeMapping =
     withSourceIdKey(sourceIdKey)
+
+  /**
+    *
+    * @param sourceIdKey represents a key to the node identifier within the source data. The retrieved value
+    *                    from the source data is expected to be a [[Long]] value that is unique among nodes.
+    * @return node mapping
+    */
+  def withSourceIdKey(sourceIdKey: String): NodeMapping =
+    NodeMapping(sourceIdKey)
 
   /**
     * Creates a NodeMapping where optional labels and property keys match with their corresponding keys in the source
@@ -90,13 +90,13 @@ case class NodeMapping(
   sourceIdKey: String,
   impliedLabels: Set[String] = Set.empty,
   optionalLabelMapping: Map[String, String] = Map.empty,
-  propertyMapping: Map[String, String] = Map.empty) {
-
-  def withImpliedLabel(label: String): NodeMapping =
-    copy(impliedLabels = impliedLabels + label)
+  propertyMapping: Map[String, String] = Map.empty) extends EntityMapping {
 
   def withImpliedLabels(labels: String*): NodeMapping =
     labels.foldLeft(this)((mapping, label) => mapping.withImpliedLabel(label))
+
+  def withImpliedLabel(label: String): NodeMapping =
+    copy(impliedLabels = impliedLabels + label)
 
   def withOptionalLabel(label: String): NodeMapping =
     withOptionalLabel(label, label)
@@ -110,14 +110,14 @@ case class NodeMapping(
   def withOptionalLabel(tuple: (String, String)): NodeMapping =
     withOptionalLabel(tuple._1 -> tuple._2)
 
-  def withPropertyKey(sourcePropertyKey: String, propertyKey: String): NodeMapping =
-    copy(propertyMapping = propertyMapping.updated(propertyKey, sourcePropertyKey))
-
   def withPropertyKey(tuple: (String, String)): NodeMapping =
     withPropertyKey(tuple._1, tuple._2)
 
   def withPropertyKey(property: String): NodeMapping =
     withPropertyKey(property, property)
+
+  def withPropertyKey(sourcePropertyKey: String, propertyKey: String): NodeMapping =
+    copy(propertyMapping = propertyMapping.updated(propertyKey, sourcePropertyKey))
 
   def withPropertyKeys(properties: String*): NodeMapping =
     properties.foldLeft(this)((mapping, propertyKey) => mapping.withPropertyKey(propertyKey, propertyKey))

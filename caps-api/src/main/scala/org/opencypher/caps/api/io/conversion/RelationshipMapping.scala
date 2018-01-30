@@ -145,7 +145,7 @@ final case class RelationshipMapping(
   sourceStartNodeKey: String,
   sourceEndNodeKey: String,
   relTypeOrSourceRelTypeKey: Either[String, (String, Set[String])],
-  propertyMapping: Map[String, String] = Map.empty) {
+  propertyMapping: Map[String, String] = Map.empty) extends EntityMapping {
 
   def withPropertyKey(sourcePropertyKey: String, propertyKey: String): RelationshipMapping =
     copy(propertyMapping = propertyMapping.updated(propertyKey, sourcePropertyKey))

@@ -24,7 +24,7 @@ import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.exception.{DuplicateSourceColumnException, IllegalArgumentException, IllegalStateException}
-import org.opencypher.caps.api.io.conversion.NodeMapping
+import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value._
 import org.opencypher.caps.api.{CAPSSession, EntityTable, NodeTable, RelationshipTable}
@@ -227,30 +227,54 @@ sealed abstract class CAPSRecords(
 object CAPSRecords {
 
   def create(entityTable: EntityTable)(implicit caps: CAPSSession): CAPSRecords = {
+    val untypedVar = Var("boo")
+
+    def sourceColumnToPropertyExpressionMapping(
+      variable: Var): Map[String, Expr] = {
+      val keyMap = entityTable.mapping.propertyMapping.map { case (key, sourceColumn) =>
+        sourceColumn -> Property(variable, PropertyKey(key))()
+      }.foldLeft(Map.empty[String, Expr]) {
+        case (m, (sourceColumn, propertyExpr)) =>
+          if (m.contains(sourceColumn))
+            throw DuplicateSourceColumnException(sourceColumn, variable)
+          else m.updated(sourceColumn, propertyExpr)
+      }
+      val sourceKey = entityTable.mapping.sourceIdKey
+      if (keyMap.contains(sourceKey))
+        throw DuplicateSourceColumnException(sourceKey, variable)
+      else keyMap.updated(sourceKey, variable)
+    }
 
     // Computes map of sourceColumn -> Expression
-    def computeNodeSlots(nodeMapping: NodeMapping): Map[String, Expr] = {
+    def sourceColumnRelationshipToExpressionMapping(relMapping: RelationshipMapping): Map[String, Expr] = {
+      // TODO: Generate var. Nice-to-have property: Same DF gets same var.
+      // TODO: Labels on node var?
+      val relVar = untypedVar(CTRelationship)
+
+      val entityMappings = sourceColumnToPropertyExpressionMapping(relVar)
+
+      //TODO: Port code from old impl.
+      //      relMapping.optionalLabelMapping.map { case (label, sourceColumn) =>
+      //        sourceColumn -> HasLabel(relVar, Label(label))(CTBoolean)
+      //      }.foldLeft(entityMappings) {
+      //        case (m, (slot, expr)) =>
+      //          if (m.contains(slot))
+      //            throw DuplicateSourceColumnException(slot, relVar)
+      //          else m.updated(slot, expr)
+      //      }
+    }
+
+    // Computes map of sourceColumn -> Expression
+    def sourceColumnNodeToExpressionMapping(nodeMapping: NodeMapping): Map[String, Expr] = {
       // TODO: Generate var. Nice-to-have property: Same DF gets same var.
       // TODO: Labels on node var?
       val generatedVar = Var("boo")(CTNode)
 
-      // TODO: Share code with RelMapping via EntityMapping
-      val entitySlots = {
-        val keyMap = nodeMapping.propertyMapping.map { case (key, sourceColumn) =>
-          sourceColumn -> Property(generatedVar, PropertyKey(key))()
-        }.foldLeft(Map.empty[String, Expr]) {
-          case (m, (sourceColumn, propertyExpr)) =>
-            if (m.contains(sourceColumn))
-              throw DuplicateSourceColumnException(sourceColumn, generatedVar)
-            else m.updated(sourceColumn, propertyExpr)
-        }
-        if (keyMap.contains(nodeMapping.sourceIdKey))
-          throw DuplicateSourceColumnException(nodeMapping.sourceIdKey, generatedVar)
-        else keyMap.updated(nodeMapping.sourceIdKey, generatedVar)
-      }
+      val entityMappings = sourceColumnToPropertyExpressionMapping(generatedVar)
+
       nodeMapping.optionalLabelMapping.map { case (label, sourceColumn) =>
         sourceColumn -> HasLabel(generatedVar, Label(label))(CTBoolean)
-      }.foldLeft(entitySlots) {
+      }.foldLeft(entityMappings) {
         case (m, (slot, expr)) =>
           if (m.contains(slot))
             throw DuplicateSourceColumnException(slot, generatedVar)
@@ -259,8 +283,8 @@ object CAPSRecords {
     }
 
     val sourceColumnToExpressionMap = entityTable match {
-      case nt: NodeTable => computeNodeSlots(nt.mapping)
-      case rt: RelationshipTable => ???
+      case nt: NodeTable => sourceColumnNodeToExpressionMapping(nt.mapping)
+      case rt: RelationshipTable => sourceColumnRelationshipToExpressionMapping(rt.mapping)
     }
 
     val sourceRecords = CAPSRecords.prepareDataFrame(entityTable.table)
