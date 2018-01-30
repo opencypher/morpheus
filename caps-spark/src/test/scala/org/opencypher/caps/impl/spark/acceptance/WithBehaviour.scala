@@ -331,5 +331,49 @@ trait WithBehaviour { this: AcceptanceTest =>
       // And
       result.graphs shouldBe empty
     }
+
+
+    describe("NOT") {
+      it("can project not of literal") {
+        // Given
+        val given = initGraph(
+          """
+            |CREATE ()
+          """.stripMargin)
+
+        // When
+        val result = given.cypher(
+          """
+            |WITH true AS t, false AS f
+            |WITH NOT true AS nt, not false AS nf
+            |RETURN nt, nf""".stripMargin)
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CAPSMap("nt" -> false, "nf" -> true)
+        ))
+      }
+
+      it("can project not of expression") {
+        // Given
+        val given = initGraph(
+          """
+            |CREATE ({id: 1, val: true}), ({id: 2, val: false})
+          """.stripMargin)
+
+        // When
+        val result = given.cypher(
+          """
+            |MATCH (n)
+            |WITH n.id AS id, NOT n.val AS val2
+            |RETURN id, val2""".stripMargin)
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CAPSMap("id" -> 1L, "val2" -> false),
+          CAPSMap("id" -> 2L, "val2" -> true)
+        ))
+      }
+    }
   }
 }

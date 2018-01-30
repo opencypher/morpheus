@@ -247,7 +247,7 @@ object SparkSQLExprMapper {
 
         // Pattern Predicate
         case ep: ExistsPatternExpr =>
-          Some(getColumn(ep, header, df))
+          Some(getColumn(ep.targetField, header, df))
 
         case c: Coalesce =>
           val columns = c.exprs.map(e => getColumn(e, header, df))

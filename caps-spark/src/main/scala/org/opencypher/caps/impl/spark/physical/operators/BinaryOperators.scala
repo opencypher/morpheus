@@ -19,7 +19,7 @@ import org.apache.spark.sql.functions
 import org.opencypher.caps.impl.record.{OpaqueField, RecordHeader, RecordSlot}
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.{assertIsNode, columnName, joinDFs, joinRecords}
 import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
-import org.opencypher.caps.impl.spark.{CAPSRecords, ColumnNameGenerator, SparkColumnName}
+import org.opencypher.caps.impl.spark.{CAPSRecords, ColumnNameGenerator}
 import org.opencypher.caps.ir.api.expr.Var
 
 private[spark] abstract class BinaryPhysicalOperator extends PhysicalOperator {
@@ -124,18 +124,18 @@ final case class Optional(lhs: PhysicalOperator, rhs: PhysicalOperator, header: 
 
 /**
   * This operator performs a left outer join between the already matched path and the pattern path. If, for a given,
-  * already bound match, there is a non-null partner, we set a predicate column to true, otherwise false.
-  * Only the mandatory match data and the predicate column are kept in the result.
+  * already bound match, there is a non-null partner, we set a target column to true, otherwise false.
+  * Only the mandatory match data and the target column are kept in the result.
   *
   * @param lhs mandatory match data
   * @param rhs expanded pattern predicate data
-  * @param predicateField field that will store the predicate value
+  * @param targetField field that will store the subquery value (exists true/false)
   * @param header result header (lhs header + predicateField)
   */
-final case class ExistsPatternPredicate(
+final case class ExistsSubQuery(
     lhs: PhysicalOperator,
     rhs: PhysicalOperator,
-    predicateField: Var,
+    targetField: Var,
     header: RecordHeader)
     extends BinaryPhysicalOperator {
 
@@ -182,23 +182,18 @@ final case class ExistsPatternPredicate(
     val joinCols = joinColumnMapping.map(t => t._1 -> distinctRightData.col(t._3))
 
     val joinedRecords =
-      joinDFs(left.records.data, distinctRightData, rightHeader, joinCols)("leftouter", deduplicate = true)(
-        left.records.caps)
+      joinDFs(left.records.data, distinctRightData, header, joinCols)("leftouter", deduplicate = true)(left.records.caps)
 
-    val rightNonJoinColumns = distinctRightData.columns.toSet -- joinColumnMapping.map(_._3)
+    val targetFieldColumnName = columnName(rightHeader.slotFor(targetField))
+    val targetFieldColumn = joinedRecords.data.col(targetFieldColumnName)
 
-    // We only need to check one non-join column for its value to decide if the pattern exists
-    assert(rightNonJoinColumns.size == 1)
-    val rightNonJoinColumn = distinctRightData.col(rightNonJoinColumns.head)
-
-    // If the non-join column contains no value we set the predicate field to false, otherwise true.
+    // If the targetField column contains no value we replace it with false, otherwise true.
     // After that we drop all right columns and only keep the predicate field.
     // The predicate field is later checked by a filter operator.
     val updatedJoinedRecords = joinedRecords.data
       .withColumn(
-        SparkColumnName.of(header.slotFor(predicateField)),
-        functions.when(functions.isnull(rightNonJoinColumn), false).otherwise(true))
-      .drop(rightNonJoinColumns.toSeq ++ joinColumnMapping.map(_._3): _*)
+        targetFieldColumnName,
+        functions.when(functions.isnull(targetFieldColumn), false).otherwise(true))
 
     PhysicalResult(CAPSRecords.create(header, updatedJoinedRecords)(left.records.caps), left.graphs ++ right.graphs)
   }

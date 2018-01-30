@@ -105,10 +105,10 @@ final class ExpressionConverter(patternConverter: PatternConverter)(implicit con
       CountStar(typings(e))
 
     // Exists (rewritten Pattern Expressions)
-    case ep @ org.opencypher.caps.ir.impl.parse.rewriter.ExistsPattern(subquery) =>
+    case org.opencypher.caps.ir.impl.parse.rewriter.ExistsPattern(subquery, trueVar) =>
       val innerModel = IRBuilder(subquery)(context)
       ExistsPatternExpr(
-        FreshVariableNamer(ep.position.offset, CTBoolean),
+        Var(trueVar.name)(CTBoolean),
         innerModel
       )(typings(e))
 
