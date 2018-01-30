@@ -190,6 +190,52 @@ trait MatchBehaviour {
       }
     }
 
+    describe("undirected patterns") {
+      it("matches an undirected relationship") {
+        val given = initGraph(
+          """
+            |CREATE (a:A {prop: 'isA'})
+            |CREATE (b:B {prop: 'fromA'})
+            |CREATE (c:C {prop: 'toA'})
+            |CREATE (d:D)
+            |CREATE (a)-[:T]->(b)
+            |CREATE (b)-[:T]->(c)
+            |CREATE (c)-[:T]->(a)
+          """.stripMargin
+        )
+
+        val result = given.cypher("MATCH (a:A)--(other) RETURN a.prop, other.prop")
+
+        result.records.iterator.toBag should equal(Bag(
+          CAPSMap("a.prop" -> "isA", "other.prop" -> "fromA"),
+          CAPSMap("a.prop" -> "isA", "other.prop" -> "toA")
+        ))
+      }
+
+      it("matches an undirected relationship with two hops") {
+        val given = initGraph(
+          """
+            |CREATE (a:A {prop: 'a'})
+            |CREATE (b:B {prop: 'b'})
+            |CREATE (c:C {prop: 'c'})
+            |CREATE (d:D {prop: 'd'})
+            |CREATE (a)-[:T]->(b)
+            |CREATE (b)-[:T]->(c)
+            |CREATE (c)-[:T]->(a)
+            |CREATE (c)-[:T]->(d)
+          """.stripMargin
+        )
+
+        val result = given.cypher("MATCH (a:A)--()--(other) RETURN a.prop, other.prop")
+
+        result.records.iterator.toBag should equal(Bag(
+          CAPSMap("a.prop" -> "a", "other.prop" -> "c"),
+          CAPSMap("a.prop" -> "a", "other.prop" -> "b"),
+          CAPSMap("a.prop" -> "a", "other.prop" -> "d")
+        ))
+      }
+    }
+
     ignore("Broken start of demo query") {
       // Given
       val given = initGraph(
