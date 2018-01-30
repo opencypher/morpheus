@@ -25,7 +25,7 @@ import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.api.value.CypherMap
+import org.opencypher.caps.api.value.CAPSMap
 import org.opencypher.caps.impl.record.CAPSRecordHeader._
 import org.opencypher.caps.impl.record.{CAPSRecordHeader, _}
 import org.opencypher.caps.impl.spark.DfUtils._
@@ -47,7 +47,7 @@ sealed abstract class CAPSRecords(
   override def print(implicit options: PrintOptions): Unit =
     RecordsPrinter.print(this)
 
-  override def iterator: Iterator[CypherMap] = {
+  override def iterator: Iterator[CAPSMap] = {
     import scala.collection.JavaConverters._
 
     toLocalIterator.asScala
@@ -138,15 +138,15 @@ sealed abstract class CAPSRecords(
     CAPSRecords.create(header, data.distinct())
   }
 
-  def toLocalIterator: java.util.Iterator[CypherMap] = {
+  def toLocalIterator: java.util.Iterator[CAPSMap] = {
     toCypherMaps.toLocalIterator()
   }
 
-  def foreachPartition(f: Iterator[CypherMap] => Unit): Unit = {
+  def foreachPartition(f: Iterator[CAPSMap] => Unit): Unit = {
     toCypherMaps.foreachPartition(f)
   }
 
-  def collect(): Array[CypherMap] =
+  def collect(): Array[CAPSMap] =
     toCypherMaps.collect()
 
   /**
@@ -158,7 +158,7 @@ sealed abstract class CAPSRecords(
     *
     * @return a dataset of CypherMaps.
     */
-  def toCypherMaps: Dataset[CypherMap] = {
+  def toCypherMaps: Dataset[CAPSMap] = {
     import encoders._
 
     data.map(rowToCypherMap(header))

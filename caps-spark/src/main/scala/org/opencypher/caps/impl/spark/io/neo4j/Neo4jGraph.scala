@@ -25,7 +25,7 @@ import org.opencypher.caps.api.exception.{IllegalArgumentException, UnsupportedO
 import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType}
-import org.opencypher.caps.api.value.CypherValue
+import org.opencypher.caps.api.value.CAPSValue
 import org.opencypher.caps.impl.record.{CAPSRecordHeader, RecordHeader}
 import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraph.{filterNode, filterRel, nodeToRow, relToRow}
 import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords, SparkColumnName}
@@ -181,6 +181,6 @@ object Neo4jGraph {
 
   private def importedToSparkEncodedCypherValue(typ: DataType, value: AnyRef): AnyRef = typ match {
     case StringType | LongType | BooleanType | DoubleType => value
-    case _                                                => CypherValue(value)
+    case _                                                => CAPSValue(value)
   }
 }

@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.spark.acceptance
 
-import org.opencypher.caps.api.value.CypherMap
+import org.opencypher.caps.api.value.CAPSMap
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.impl.spark.CAPSGraph
 
@@ -41,7 +41,7 @@ trait MultigraphProjectionBehaviour { this: AcceptanceTest =>
 
       result.records.toMaps should equal(
         Bag(
-          CypherMap("name" -> "Phil")
+          CAPSMap("name" -> "Phil")
         ))
 
       result.asCaps.graphs shouldMatch testGraph2
@@ -60,7 +60,7 @@ trait MultigraphProjectionBehaviour { this: AcceptanceTest =>
 
       result.records.toMaps should equal(
         Bag(
-          CypherMap("name" -> "Phil")
+          CAPSMap("name" -> "Phil")
         ))
 
       result.graphs shouldBe empty
@@ -79,7 +79,7 @@ trait MultigraphProjectionBehaviour { this: AcceptanceTest =>
 
       result.records.toMaps should equal(
         Bag(
-          CypherMap("name" -> "Phil")
+          CAPSMap("name" -> "Phil")
         ))
 
       result.graphs shouldBe empty
@@ -102,7 +102,7 @@ trait MultigraphProjectionBehaviour { this: AcceptanceTest =>
 
       result.records.toMaps should equal(
         Bag(
-          CypherMap("name" -> "Phil", "car" -> "Toyota")
+          CAPSMap("name" -> "Phil", "car" -> "Toyota")
         ))
       result.graphs shouldBe empty
     }

@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.spark.acceptance
 
-import org.opencypher.caps.api.value.CypherMap
+import org.opencypher.caps.api.value.CAPSMap
 import org.opencypher.caps.impl.spark.CAPSGraph
 
 import scala.collection.Bag
@@ -44,17 +44,17 @@ trait OptionalMatchBehaviour { this: AcceptanceTest =>
 
       // Then
       result.records.toMaps should equal(Bag(
-        CypherMap(
+        CAPSMap(
           "p1.name" -> "Eve",
           "p2.name" -> null,
           "p3.name" -> null
         ),
-        CypherMap(
+        CAPSMap(
           "p1.name" -> "Bob",
           "p2.name" -> null,
           "p3.name" -> null
         ),
-        CypherMap(
+        CAPSMap(
           "p1.name" -> "Alice",
           "p2.name" -> "Bob",
           "p3.name" -> "Eve"
@@ -82,11 +82,11 @@ trait OptionalMatchBehaviour { this: AcceptanceTest =>
 
       // Then
       result.records.toMaps should equal(Bag(
-        CypherMap(
+        CAPSMap(
           "p1.name" -> "Bob",
           "p2.name" -> null
         ),
-        CypherMap(
+        CAPSMap(
           "p1.name" -> "Alice",
           "p2.name" -> "Bob"
         )
@@ -115,17 +115,17 @@ trait OptionalMatchBehaviour { this: AcceptanceTest =>
 
       // Then
       result.records.toMaps should equal(Bag(
-        CypherMap(
+        CAPSMap(
           "p1.name" -> "Alice",
           "p2.name" -> "Bob",
           "p3.name" -> "Eve"
         ),
-        CypherMap(
+        CAPSMap(
           "p1.name" -> "Bob",
           "p2.name" -> null,
           "p3.name" -> null
         ),
-        CypherMap(
+        CAPSMap(
           "p1.name" -> "Eve",
           "p2.name" -> null,
           "p3.name" -> null
@@ -157,15 +157,15 @@ trait OptionalMatchBehaviour { this: AcceptanceTest =>
 
       // Then
       result.records.toMaps should equal(Bag(
-        CypherMap(
+        CAPSMap(
           "b.name" -> "Eve",
           "c.name" -> "Paul"
         ),
-        CypherMap(
+        CAPSMap(
           "b.name" -> "Eve",
           "c.name" -> "Paul"
         ),
-        CypherMap(
+        CAPSMap(
           "b.name" -> "Paul",
           "c.name" -> null
         )
@@ -197,25 +197,25 @@ trait OptionalMatchBehaviour { this: AcceptanceTest =>
 
       // Then
       result.records.toMaps should equal(Bag(
-        CypherMap(
+        CAPSMap(
           "a.name" -> "Alice",
           "b.name" -> "Eve",
           "c.name" -> "Paul",
           "e3.foo" -> 42
         ),
-        CypherMap(
+        CAPSMap(
           "a.name" -> "Eve",
           "b.name" -> "Paul",
           "c.name" -> "Alice",
           "e3.foo" -> null
         ),
-        CypherMap(
+        CAPSMap(
           "a.name" -> "Paul",
           "b.name" -> "Alice",
           "c.name" -> "Eve",
           "e3.foo" -> null
         ),
-        CypherMap(
+        CAPSMap(
           "a.name" -> "Bob",
           "b.name" -> "Eve",
           "c.name" -> "Paul",

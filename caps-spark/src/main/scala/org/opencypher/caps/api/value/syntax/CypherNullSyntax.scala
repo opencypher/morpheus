@@ -13,18 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.api.value.instances
+package org.opencypher.caps.api.value.syntax
 
-import org.opencypher.caps.api.value.CypherValue
+import org.opencypher.caps.api.value.CAPSValue
 
-import scala.language.implicitConversions
-
-trait LowPriorityCypherValueConverters {
-  implicit def mapOfCypherValues[T](v: Map[String, T])(implicit ev: T => CypherValue)
-  : Map[String, CypherValue] =
-    v.mapValues(ev)
-
-  implicit def entryToCypherValue[T](v: (String, T))(implicit ev: T => CypherValue)
-  : (String, CypherValue) =
-    v._1 -> v._2
+trait CypherNullSyntax {
+  def cypherNull[V <: CAPSValue]: V = null.asInstanceOf[V]
 }

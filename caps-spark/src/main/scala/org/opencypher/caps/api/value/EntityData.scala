@@ -27,22 +27,22 @@ object EntityData {
     def newLabeledNode(labels: String*): NodeData =
       newNode.withLabels(labels: _*)
 
-    def newUntypedRelationship(nodes: (CypherNode, CypherNode)): RelationshipData =
+    def newUntypedRelationship(nodes: (CAPSNode, CAPSNode)): RelationshipData =
       newUntypedRelationship(nodes._1, nodes._2)
 
-    def newUntypedRelationship(startNode: CypherNode, endNode: CypherNode): RelationshipData =
+    def newUntypedRelationship(startNode: CAPSNode, endNode: CAPSNode): RelationshipData =
       RelationshipData(startNode.id, endNode.id, "")
 
-    def newRelationship(triple: ((CypherNode, String), CypherNode)): RelationshipData =
+    def newRelationship(triple: ((CAPSNode, String), CAPSNode)): RelationshipData =
       newRelationship(triple._1._1, triple._1._2, triple._2)
 
-    def newRelationship(startNode: CypherNode, relType: String, endNode: CypherNode): RelationshipData =
+    def newRelationship(startNode: CAPSNode, relType: String, endNode: CAPSNode): RelationshipData =
       RelationshipData(startNode.id, endNode.id, relType)
   }
 }
 
 sealed trait EntityData {
-  def asEntity(id: EntityId): CypherEntityValue
+  def asEntity(id: EntityId): CAPSEntityValue
 }
 
 object NodeData {
@@ -53,10 +53,10 @@ final case class NodeData(labels: Seq[String],
                           properties: Properties)
   extends EntityData {
 
-  override def asEntity(id: EntityId) = CypherNode(id, labels, properties)
+  override def asEntity(id: EntityId) = CAPSNode(id, labels, properties)
 
   def withLabels(newLabels: String*): NodeData = copy(labels = newLabels.toSeq)
-  def withProperties(newProperties: (String, CypherValue)*): NodeData = copy(properties = Properties(newProperties: _*))
+  def withProperties(newProperties: (String, CAPSValue)*): NodeData = copy(properties = Properties(newProperties: _*))
   def withProperties(newProperties: Properties): NodeData = copy(properties = newProperties)
 }
 
@@ -66,14 +66,14 @@ final case class RelationshipData(startId: EntityId,
                                   properties: Properties = Properties.empty)
   extends EntityData {
 
-  override def asEntity(id: EntityId) = CypherRelationship(id, startId, endId, relationshipType, properties)
+  override def asEntity(id: EntityId) = CAPSRelationship(id, startId, endId, relationshipType, properties)
 
   def withStartId(newStartId: EntityId): RelationshipData = copy(startId = newStartId)
   def withEndId(newEndId: EntityId): RelationshipData = copy(endId = newEndId)
 
   def withRelationshipType(newType: String): RelationshipData = copy(relationshipType = newType)
 
-  def withProperties(newProperties: (String, CypherValue)*): RelationshipData =
+  def withProperties(newProperties: (String, CAPSValue)*): RelationshipData =
     copy(properties = Properties(newProperties: _*))
 
   def withProperties(newProperties: Properties): RelationshipData = copy(properties = newProperties)

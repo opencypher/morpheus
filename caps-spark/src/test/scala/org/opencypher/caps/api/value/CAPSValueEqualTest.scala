@@ -17,9 +17,9 @@ package org.opencypher.caps.api.value
 
 import org.opencypher.caps.api.types._
 
-class CypherValueEqualTest extends CypherValueTestSuite {
+class CAPSValueEqualTest extends CAPSValueTestSuite {
 
-  import CypherTestValues._
+  import CAPSTestValues._
 
   test("PATH equal") {
     verifyEqual(PATH_valueGroups)
@@ -61,7 +61,7 @@ class CypherValueEqualTest extends CypherValueTestSuite {
     verifyEqual(ANY_valueGroups)
   }
 
-  def verifyEqual[V <: CypherValue: CypherValueCompanion](valueGroups: ValueGroups[V]): Unit = {
+  def verifyEqual[V <: CAPSValue: CAPSValueCompanion](valueGroups: ValueGroups[V]): Unit = {
     val values = valueGroups.flatten
 
     values.foreach { v =>
@@ -87,9 +87,9 @@ class CypherValueEqualTest extends CypherValueTestSuite {
     }
   }
 
-  private def equal[V <: CypherValue: CypherValueCompanion](v1: V, v2: V): Ternary = {
-    val cmp1 = CypherValueCompanion[V].equal(v1, v2)
-    val cmp2 = CypherValueCompanion[V].equal(v2, v1)
+  private def equal[V <: CAPSValue: CAPSValueCompanion](v1: V, v2: V): Ternary = {
+    val cmp1 = CAPSValueCompanion[V].equal(v1, v2)
+    val cmp2 = CAPSValueCompanion[V].equal(v2, v1)
 
     cmp1 should equal(cmp2)
 

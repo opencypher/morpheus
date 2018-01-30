@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.spark.acceptance
 
-import org.opencypher.caps.api.value.CypherMap
+import org.opencypher.caps.api.value.CAPSMap
 import org.opencypher.caps.impl.spark.CAPSGraph
 
 import scala.collection.Bag
@@ -36,7 +36,7 @@ trait MatchBehaviour { this: AcceptanceTest =>
         """.stripMargin)
 
       // Then
-      result.records.toMaps should equal(Bag(CypherMap("a.firstName" -> "Alice")))
+      result.records.toMaps should equal(Bag(CAPSMap("a.firstName" -> "Alice")))
     }
 
     test("match unknown label") {
@@ -84,7 +84,7 @@ trait MatchBehaviour { this: AcceptanceTest =>
         """.stripMargin)
 
       // Then
-      result.records.toMaps should equal(Bag(CypherMap("a.age" -> null, "a.firstName" -> "Alice")))
+      result.records.toMaps should equal(Bag(CAPSMap("a.age" -> null, "a.firstName" -> "Alice")))
     }
 
     test("multiple match clauses") {
@@ -108,7 +108,7 @@ trait MatchBehaviour { this: AcceptanceTest =>
       // Then
       result.records.toMaps should equal(
         Bag(
-          CypherMap(
+          CAPSMap(
             "p1.name" -> "Alice",
             "p2.name" -> "Bob",
             "p3.name" -> "Eve"
@@ -136,13 +136,13 @@ trait MatchBehaviour { this: AcceptanceTest =>
       // Then
       result.records.toMaps should equal(
         Bag(
-          CypherMap(
+          CAPSMap(
             "p1.name" -> "Bob",
             "p2.name" -> "Alice",
             "p3.name" -> "Bob",
             "p4.name" -> "Alice"
           ),
-          CypherMap(
+          CAPSMap(
             "p1.name" -> "Alice",
             "p2.name" -> "Bob",
             "p3.name" -> "Alice",
@@ -170,10 +170,10 @@ trait MatchBehaviour { this: AcceptanceTest =>
       // Then
       result.records.toMaps should equal(
         Bag(
-          CypherMap("one" -> "Alice", "two" -> "Alice"),
-          CypherMap("one" -> "Alice", "two" -> "Bob"),
-          CypherMap("one" -> "Bob", "two" -> "Bob"),
-          CypherMap("one" -> "Bob", "two" -> "Alice")
+          CAPSMap("one" -> "Alice", "two" -> "Alice"),
+          CAPSMap("one" -> "Alice", "two" -> "Bob"),
+          CAPSMap("one" -> "Bob", "two" -> "Bob"),
+          CAPSMap("one" -> "Bob", "two" -> "Alice")
         ))
     }
 
@@ -195,8 +195,8 @@ trait MatchBehaviour { this: AcceptanceTest =>
       // Then
       result.records.toMaps should equal(
         Bag(
-          CypherMap("one" -> "Alice", "two" -> "Alice"),
-          CypherMap("one" -> "Bob", "two" -> "Bob")
+          CAPSMap("one" -> "Alice", "two" -> "Alice"),
+          CAPSMap("one" -> "Bob", "two" -> "Bob")
         ))
 
       // TODO: Move to plan based testing

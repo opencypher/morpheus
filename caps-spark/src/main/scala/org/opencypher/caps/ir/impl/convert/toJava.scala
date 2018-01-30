@@ -22,12 +22,12 @@ object toJava extends Serializable {
 
   // TODO: tests & refactor value extraction into CypherValue
   // Inverse operation found in CypherValue.apply()
-  def apply(v: CypherValue): Any = v match {
-    case CypherInteger(long) => long
-    case CypherString(s)     => s
-    case CypherBoolean(b)    => b
-    case CypherFloat(f)      => f
-    case CypherList(list)    => list.map(apply)
+  def apply(v: CAPSValue): Any = v match {
+    case CAPSInteger(long) => long
+    case CAPSString(s)     => s
+    case CAPSBoolean(b)    => b
+    case CAPSFloat(f)      => f
+    case CAPSList(list)    => list.map(apply)
     case x =>
       throw IllegalArgumentException(s"(representation of a) Cypher value", s"$x (${x.getClass})")
   }

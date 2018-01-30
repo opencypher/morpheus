@@ -24,7 +24,7 @@ import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.api.value.CypherInteger
+import org.opencypher.caps.api.value.CAPSInteger
 import org.opencypher.caps.impl.record._
 import org.opencypher.caps.impl.spark.SparkSQLExprMapper.asSparkSQLExpr
 import org.opencypher.caps.impl.spark.convert.toSparkType
@@ -477,7 +477,7 @@ final case class Skip(in: PhysicalOperator, expr: Expr, header: RecordHeader) ex
       case IntegerLit(v) => v
       case Param(name) =>
         context.parameters(name) match {
-          case CypherInteger(v) => v
+          case CAPSInteger(v) => v
           case other            => throw IllegalArgumentException("a CypherInteger", other)
         }
       case other => throw IllegalArgumentException("an integer literal or parameter", other)

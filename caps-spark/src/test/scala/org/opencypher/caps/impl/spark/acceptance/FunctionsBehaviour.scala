@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.spark.acceptance
 
-import org.opencypher.caps.api.value.{CypherList, CypherMap}
+import org.opencypher.caps.api.value.{CAPSList, CAPSMap}
 import org.opencypher.caps.impl.spark.CAPSGraph
 
 import scala.collection.immutable.Bag
@@ -34,10 +34,10 @@ trait FunctionsBehaviour {
 
         result.records.toMaps should equal(
           Bag(
-            CypherMap("exists" -> true),
-            CypherMap("exists" -> true),
-            CypherMap("exists" -> false),
-            CypherMap("exists" -> false)
+            CAPSMap("exists" -> true),
+            CAPSMap("exists" -> true),
+            CAPSMap("exists" -> false),
+            CAPSMap("exists" -> false)
           ))
       }
     }
@@ -51,9 +51,9 @@ trait FunctionsBehaviour {
 
         result.records.toMaps should equal(
           Bag(
-            CypherMap("type(r)" -> "KNOWS"),
-            CypherMap("type(r)" -> "HATES"),
-            CypherMap("type(r)" -> "REL")
+            CAPSMap("type(r)" -> "KNOWS"),
+            CAPSMap("type(r)" -> "HATES"),
+            CAPSMap("type(r)" -> "REL")
           ))
       }
     }
@@ -65,7 +65,7 @@ trait FunctionsBehaviour {
 
         val result = given.cypher("MATCH (n) RETURN id(n)")
 
-        result.records.toMaps should equal(Bag(CypherMap("id(n)" -> 0), CypherMap("id(n)" -> 1)))
+        result.records.toMaps should equal(Bag(CAPSMap("id(n)" -> 0), CAPSMap("id(n)" -> 1)))
 
         result.graphs shouldBe empty
       }
@@ -75,10 +75,11 @@ trait FunctionsBehaviour {
 
         val result = given.cypher("MATCH ()-[e]->() RETURN id(e)")
 
-        result.records.toMaps should equal(Bag(CypherMap("id(e)" -> 2), CypherMap("id(e)" -> 4)))
+        result.records.toMaps should equal(Bag(CAPSMap("id(e)" -> 2), CAPSMap("id(e)" -> 4)))
 
         result.graphs shouldBe empty
       }
+
     }
 
     describe("labels") {
@@ -90,8 +91,8 @@ trait FunctionsBehaviour {
 
         result.records.toMaps should equal(
           Bag(
-            CypherMap("labels(a)" -> cypherList(IndexedSeq("A"))),
-            CypherMap("labels(a)" -> cypherList(IndexedSeq("B")))
+            CAPSMap("labels(a)" -> cypherList(IndexedSeq("A"))),
+            CAPSMap("labels(a)" -> cypherList(IndexedSeq("B")))
           ))
       }
 
@@ -102,8 +103,8 @@ trait FunctionsBehaviour {
 
         result.records.toMaps should equal(
           Bag(
-            CypherMap("labels(a)" -> cypherList(IndexedSeq("A", "B"))),
-            CypherMap("labels(a)" -> cypherList(IndexedSeq("C", "D")))
+            CAPSMap("labels(a)" -> cypherList(IndexedSeq("A", "B"))),
+            CAPSMap("labels(a)" -> cypherList(IndexedSeq("C", "D")))
           ))
       }
 
@@ -114,11 +115,12 @@ trait FunctionsBehaviour {
 
         result.records.toMaps should equal(
           Bag(
-            CypherMap("labels(a)" -> cypherList(IndexedSeq("A"))),
-            CypherMap("labels(a)" -> cypherList(IndexedSeq("C", "D"))),
-            CypherMap("labels(a)" -> CypherList.empty)
+            CAPSMap("labels(a)" -> cypherList(IndexedSeq("A"))),
+            CAPSMap("labels(a)" -> cypherList(IndexedSeq("C", "D"))),
+            CAPSMap("labels(a)" -> CAPSList.empty)
           ))
       }
+
     }
 
     describe("size") {
@@ -130,7 +132,7 @@ trait FunctionsBehaviour {
 
         result.records.toMaps should equal(
           Bag(
-            CypherMap("s" -> 2)
+            CAPSMap("s" -> 2)
           ))
       }
 
@@ -141,7 +143,7 @@ trait FunctionsBehaviour {
 
         result.records.toMaps should equal(
           Bag(
-            CypherMap("s" -> 5)
+            CAPSMap("s" -> 5)
           ))
       }
 
@@ -152,7 +154,7 @@ trait FunctionsBehaviour {
 
         result.records.toMaps should equal(
           Bag(
-            CypherMap("s" -> 5)
+            CAPSMap("s" -> 5)
           ))
       }
 
@@ -163,10 +165,10 @@ trait FunctionsBehaviour {
 
         result.records.toMaps should equal(
           Bag(
-            CypherMap("s" -> 2),
-            CypherMap("s" -> 2),
-            CypherMap("s" -> 1),
-            CypherMap("s" -> 0)
+            CAPSMap("s" -> 2),
+            CAPSMap("s" -> 2),
+            CAPSMap("s" -> 1),
+            CAPSMap("s" -> 0)
           ))
       }
 
@@ -175,8 +177,9 @@ trait FunctionsBehaviour {
 
         val result = given.cypher("MATCH (a) RETURN size(a.prop) as s")
 
-        result.records.toMaps should equal(Bag(CypherMap("s" -> null)))
+        result.records.toMaps should equal(Bag(CAPSMap("s" -> null)))
       }
+
     }
 
     describe("keys") {
@@ -190,12 +193,13 @@ trait FunctionsBehaviour {
 
         keysAsMap should equal(
           Bag(
-            CypherMap("k" -> CypherList(Seq("age", "eyes", "name")))
+            CAPSMap("k" -> CAPSList(Seq("age", "eyes", "name")))
           ))
       }
 
       test("keys() does not return keys of unset properties") {
-        val given = initGraph("""
+        val given = initGraph(
+          """
             |CREATE (:Person {name:'Alice', age: 64, eyes:'brown'})
             |CREATE (:Person {name:'Bob', eyes:'blue'})
           """.stripMargin)
@@ -204,7 +208,7 @@ trait FunctionsBehaviour {
 
         result.records.toMaps should equal(
           Bag(
-            CypherMap("k" -> CypherList(Seq("eyes", "name")))
+            CAPSMap("k" -> CAPSList(Seq("eyes", "name")))
           ))
       }
 
@@ -216,7 +220,7 @@ trait FunctionsBehaviour {
 
         result.records.toMaps should equal(
           Bag(
-            CypherMap("k" -> CypherList(Seq("age", "name")))
+            CAPSMap("k" -> CAPSList(Seq("age", "name")))
           ))
       }
 
@@ -231,8 +235,8 @@ trait FunctionsBehaviour {
 
         result.records.toMaps should equal(
           Bag(
-            CypherMap("r.val" -> "a", "startNode(r)" -> 0),
-            CypherMap("r.val" -> "b", "startNode(r)" -> 3)
+            CAPSMap("r.val" -> "a", "startNode(r)" -> 0),
+            CAPSMap("r.val" -> "b", "startNode(r)" -> 3)
           ))
       }
     }
@@ -246,8 +250,8 @@ trait FunctionsBehaviour {
 
         result.records.toMaps should equal(
           Bag(
-            CypherMap("r.val" -> "a", "endNode(r)" -> 1),
-            CypherMap("r.val" -> "b", "endNode(r)" -> 4)
+            CAPSMap("r.val" -> "a", "endNode(r)" -> 1),
+            CAPSMap("r.val" -> "b", "endNode(r)" -> 4)
           ))
       }
     }
@@ -261,7 +265,7 @@ trait FunctionsBehaviour {
 
         result.records.toMaps should equal(
           Bag(
-            CypherMap("myFloat" -> 1.0)
+            CAPSMap("myFloat" -> 1.0)
           ))
       }
 
@@ -272,7 +276,7 @@ trait FunctionsBehaviour {
 
         result.records.toMaps should equal(
           Bag(
-            CypherMap("myFloat" -> 1.0)
+            CAPSMap("myFloat" -> 1.0)
           ))
       }
 
@@ -283,23 +287,23 @@ trait FunctionsBehaviour {
 
         result.records.toMaps should equal(
           Bag(
-            CypherMap("myFloat" -> 42.0)
+            CAPSMap("myFloat" -> 42.0)
           ))
       }
     }
 
     describe("coalesce") {
-     it("can evaluate coalesce") {
+      it("can evaluate coalesce") {
         val given = initGraph("CREATE ({valA: 1}), ({valB: 2}), ({valC: 3}), ()")
 
         val result = given.cypher("MATCH (n) RETURN coalesce(n.valA, n.valB, n.valC) as value")
 
         result.records.iterator.toBag should equal(
           Bag(
-            CypherMap("value" -> 1),
-            CypherMap("value" -> 2),
-            CypherMap("value" -> 3),
-            CypherMap("value" -> null)
+            CAPSMap("value" -> 1),
+            CAPSMap("value" -> 2),
+            CAPSMap("value" -> 3),
+            CAPSMap("value" -> null)
           ))
       }
 
@@ -310,11 +314,12 @@ trait FunctionsBehaviour {
 
         result.records.iterator.toBag should equal(
           Bag(
-            CypherMap("value" -> null),
-            CypherMap("value" -> null),
-            CypherMap("value" -> null)
+            CAPSMap("value" -> null),
+            CAPSMap("value" -> null),
+            CAPSMap("value" -> null)
           ))
       }
+
     }
   }
 }

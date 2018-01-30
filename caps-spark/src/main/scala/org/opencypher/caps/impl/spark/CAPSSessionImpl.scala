@@ -24,7 +24,7 @@ import org.opencypher.caps.api.exception.UnsupportedOperationException
 import org.opencypher.caps.api.graph.{CypherResult, PropertyGraph}
 import org.opencypher.caps.api.io.{CreateOrFail, PersistMode, PropertyGraphDataSource}
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.value.CypherValue
+import org.opencypher.caps.api.value.{CAPSValue, CypherValue}
 import org.opencypher.caps.demo.Configuration.{PrintLogicalPlan, PrintPhysicalPlan, PrintQueryExecutionStages}
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
 import org.opencypher.caps.impl.record.CypherRecords
@@ -88,7 +88,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
 
     val (stmt, extractedLiterals, semState) = parser.process(query)(CypherParser.defaultContext)
 
-    val extractedParameters = extractedLiterals.mapValues(v => CypherValue(v))
+    val extractedParameters = extractedLiterals.mapValues(v => CAPSValue(v))
     val allParameters = queryParameters ++ extractedParameters
 
     logStageProgress("IR ...", false)
@@ -195,16 +195,16 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
   }
 
   private def plan(
-      graph: PropertyGraph,
-      records: CypherRecords,
-      parameters: Map[String, CypherValue],
-      logicalPlan: LogicalOperator): CAPSResult = {
+                    graph: PropertyGraph,
+                    records: CypherRecords,
+                    parameters: Map[String, CypherValue],
+                    logicalPlan: LogicalOperator): CAPSResult = {
     logStageProgress("Flat plan ... ", false)
     val flatPlan = flatPlanner(logicalPlan)(FlatPlannerContext(parameters))
     logStageProgress("Done!")
 
     logStageProgress("Physical plan ... ", false)
-    val physicalPlannerContext = PhysicalPlannerContext(readFrom, records.asCaps, parameters)
+    val physicalPlannerContext = PhysicalPlannerContext.from(readFrom, records.asCaps, parameters)
     val physicalPlan = physicalPlanner(flatPlan)(physicalPlannerContext)
     logStageProgress("Done!")
 
