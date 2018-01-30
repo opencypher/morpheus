@@ -85,7 +85,7 @@ class LogicalPlannerTest extends LogicalTestSuite {
     val ir = irWithLeaf(block)
     val result = plan(ir)
 
-    val expected = ExpandSource(nodeA, relR, nodeB, scan1, scan2, SolvedQueryModel(Set(nodeA, nodeB, relR)))
+    val expected = Expand(nodeA, relR, Outgoing, nodeB, scan1, scan2, SolvedQueryModel(Set(nodeA, nodeB, relR)))
 
     result should equalWithoutResult(expected)
   }
@@ -138,9 +138,10 @@ class LogicalPlannerTest extends LogicalTestSuite {
             HasLabel(Var("g")(CTNode), Label("Group"))(CTBoolean),
             Filter(
               HasLabel(Var("a")(CTNode), Label("Administrator"))(CTBoolean),
-              ExpandSource(
+              Expand(
                 Var("a")(CTNode),
                 Var("r")(CTRelationship),
+                Outgoing,
                 Var("g")(CTNode),
                 NodeScan(
                   Var("a")(CTNode),
@@ -220,9 +221,10 @@ class LogicalPlannerTest extends LogicalTestSuite {
             HasLabel(Var("g")(CTNode), Label("Group"))(CTBoolean),
             Filter(
               HasLabel(Var("a")(CTNode), Label("Administrator"))(CTBoolean),
-              ExpandSource(
+              Expand(
                 Var("a")(CTNode),
                 Var("r")(CTRelationship),
+                Outgoing,
                 Var("g")(CTNode),
                 NodeScan(
                   Var("a")(CTNode),

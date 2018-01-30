@@ -22,7 +22,7 @@ import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.ir.api.{IRField, Label, PropertyKey}
 import org.opencypher.caps.ir.test._
 import org.opencypher.caps.ir.test.support.MatchHelper._
-import org.opencypher.caps.logical.impl.{LogicalGraph, LogicalOperatorProducer}
+import org.opencypher.caps.logical.impl.{LogicalGraph, LogicalOperatorProducer, Outgoing}
 import org.opencypher.caps.test.BaseTestSuite
 
 import scala.language.implicitConversions
@@ -127,9 +127,10 @@ class FlatPlannerTest extends BaseTestSuite {
 
   test("flat plan for expand") {
     val result = flatPlanner.process(
-      mkLogical.planSourceExpand(
+      mkLogical.planExpand(
         IRField("n")(CTNode),
         IRField("r")(CTRelationship),
+        Outgoing,
         IRField("m")(CTNode),
         logicalNodeScan("n"),
         logicalNodeScan("m"))
@@ -168,9 +169,10 @@ class FlatPlannerTest extends BaseTestSuite {
 
   test("flat plan for expand with rel type info") {
     val result = flatPlanner.process(
-      mkLogical.planSourceExpand(
+      mkLogical.planExpand(
         IRField("n")(CTNode),
         IRField("r")(CTRelationship("KNOWS")),
+        Outgoing,
         IRField("m")(CTNode),
         logicalNodeScan("n"),
         logicalNodeScan("m")

@@ -112,9 +112,14 @@ sealed trait ExpandOperator {
   def target: Var
 }
 
-final case class ExpandSource(
+sealed trait Direction
+case object Outgoing extends Direction
+case object Undirected extends Direction
+
+final case class Expand(
     source: Var,
     rel: Var,
+    direction: Direction,
     target: Var,
     lhs: LogicalOperator,
     rhs: LogicalOperator,

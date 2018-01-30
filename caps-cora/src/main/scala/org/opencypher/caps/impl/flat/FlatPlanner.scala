@@ -63,7 +63,7 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
       case logical.Aggregate(aggregations, group, in, _) =>
         producer.aggregate(aggregations, group, process(in))
 
-      case logical.ExpandSource(source, rel, target, sourceOp, targetOp, _) =>
+      case logical.Expand(source, rel, direction, target, sourceOp, targetOp, _) =>
         producer.expandSource(source, rel, target, input.sourceGraph.schema, process(sourceOp), process(targetOp))
 
       case logical.ExpandInto(source, rel, target, sourceOp, _) =>
