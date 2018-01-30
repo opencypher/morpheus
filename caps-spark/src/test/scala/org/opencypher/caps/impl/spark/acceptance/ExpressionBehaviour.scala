@@ -327,10 +327,10 @@ trait ExpressionBehaviour {
 
         // Then
         result.records.toMaps should equal(Bag(
-          CypherMap("a.id" -> 1L, "b.id" -> 3L, "con" -> true),
-          CypherMap("a.id" -> 1L, "b.id" -> 2L, "con" -> false),
-          CypherMap("a.id" -> 2L, "b.id" -> 3L, "con" -> false),
-          CypherMap("a.id" -> 3L, "b.id" -> 4L, "con" -> false)
+          CAPSMap("a.id" -> 1L, "b.id" -> 3L, "con" -> true),
+          CAPSMap("a.id" -> 1L, "b.id" -> 2L, "con" -> false),
+          CAPSMap("a.id" -> 2L, "b.id" -> 3L, "con" -> false),
+          CAPSMap("a.id" -> 3L, "b.id" -> 4L, "con" -> false)
         ))
       }
 
@@ -347,9 +347,9 @@ trait ExpressionBehaviour {
 
         // Then
         result.records.toMaps should equal(Bag(
-          CypherMap("a.id" -> 1L, "b.id" -> 2L, "con" -> false),
-          CypherMap("a.id" -> 1L, "b.id" -> 3L, "con" -> true),
-          CypherMap("a.id" -> 2L, "b.id" -> 3L, "con" -> false)
+          CAPSMap("a.id" -> 1L, "b.id" -> 2L, "con" -> false),
+          CAPSMap("a.id" -> 1L, "b.id" -> 3L, "con" -> true),
+          CAPSMap("a.id" -> 2L, "b.id" -> 3L, "con" -> false)
         ))
       }
 
@@ -370,10 +370,10 @@ trait ExpressionBehaviour {
 
         // Then
         result.records.toMaps should equal(Bag(
-          CypherMap("a.id" -> 1L, "con" -> true),
-          CypherMap("a.id" -> 2L, "con" -> false),
-          CypherMap("a.id" -> 3L, "con" -> false),
-          CypherMap("a.id" -> 4L, "con" -> false)
+          CAPSMap("a.id" -> 1L, "con" -> true),
+          CAPSMap("a.id" -> 2L, "con" -> false),
+          CAPSMap("a.id" -> 3L, "con" -> false),
+          CAPSMap("a.id" -> 4L, "con" -> false)
         ))
       }
 
@@ -395,8 +395,8 @@ trait ExpressionBehaviour {
 
         // Then
         result.records.toMaps should equal(Bag(
-          CypherMap("a.id" -> 1L, "b.id" -> 2L, "con" -> true),
-          CypherMap("a.id" -> 3L, "b.id" -> 4L, "con" -> false)
+          CAPSMap("a.id" -> 1L, "b.id" -> 2L, "con" -> true),
+          CAPSMap("a.id" -> 3L, "b.id" -> 4L, "con" -> false)
         ))
       }
 
@@ -417,8 +417,8 @@ trait ExpressionBehaviour {
 
         // Then
         result.records.toMaps should equal(Bag(
-          CypherMap("a.id" -> 1L, "con" -> true),
-          CypherMap("a.id" -> 2L, "con" -> false)
+          CAPSMap("a.id" -> 1L, "con" -> true),
+          CAPSMap("a.id" -> 2L, "con" -> false)
         ))
       }
 
@@ -439,8 +439,8 @@ trait ExpressionBehaviour {
 
         // Then
         result.records.toMaps should equal(Bag(
-          CypherMap("a.id" -> 1L, "b.id" -> 2L, "con" -> true),
-          CypherMap("a.id" -> 3L, "b.id" -> 4L, "con" -> false)
+          CAPSMap("a.id" -> 1L, "b.id" -> 2L, "con" -> true),
+          CAPSMap("a.id" -> 3L, "b.id" -> 4L, "con" -> false)
         ))
       }
 
@@ -457,10 +457,10 @@ trait ExpressionBehaviour {
 
         // Then
         result.records.toMaps should equal(Bag(
-          CypherMap("a.id" -> 1L, "b.id" -> 1L, "con" -> true),
-          CypherMap("a.id" -> 1L, "b.id" -> 2L, "con" -> false),
-          CypherMap("a.id" -> 2L, "b.id" -> 1L, "con" -> true),
-          CypherMap("a.id" -> 2L, "b.id" -> 2L, "con" -> true)
+          CAPSMap("a.id" -> 1L, "b.id" -> 1L, "con" -> true),
+          CAPSMap("a.id" -> 1L, "b.id" -> 2L, "con" -> false),
+          CAPSMap("a.id" -> 2L, "b.id" -> 1L, "con" -> true),
+          CAPSMap("a.id" -> 2L, "b.id" -> 2L, "con" -> true)
         ))
       }
 
@@ -479,9 +479,9 @@ trait ExpressionBehaviour {
 
         // Then
         result.records.toMaps should equal(Bag(
-          CypherMap("a.id" -> 1L, "other" -> true),
-          CypherMap("a.id" -> 2L, "other" -> false),
-          CypherMap("a.id" -> 3L, "other" -> false)
+          CAPSMap("a.id" -> 1L, "other" -> true),
+          CAPSMap("a.id" -> 2L, "other" -> false),
+          CAPSMap("a.id" -> 3L, "other" -> false)
         ))
       }
     }

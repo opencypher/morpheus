@@ -350,7 +350,7 @@ trait WithBehaviour { this: AcceptanceTest =>
 
         // Then
         result.records.toMaps should equal(Bag(
-          CypherMap("nt" -> false, "nf" -> true)
+          CAPSMap("nt" -> false, "nf" -> true)
         ))
       }
 
@@ -370,8 +370,8 @@ trait WithBehaviour { this: AcceptanceTest =>
 
         // Then
         result.records.toMaps should equal(Bag(
-          CypherMap("id" -> 1L, "val2" -> false),
-          CypherMap("id" -> 2L, "val2" -> true)
+          CAPSMap("id" -> 1L, "val2" -> false),
+          CAPSMap("id" -> 2L, "val2" -> true)
         ))
       }
     }
