@@ -22,7 +22,7 @@ import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.ir.api.{IRField, Label, PropertyKey}
 import org.opencypher.caps.ir.test._
 import org.opencypher.caps.ir.test.support.MatchHelper._
-import org.opencypher.caps.logical.impl.{LogicalGraph, LogicalOperatorProducer, Outgoing, Undirected}
+import org.opencypher.caps.logical.impl.{LogicalGraph, LogicalOperatorProducer, Directed, Undirected}
 import org.opencypher.caps.test.BaseTestSuite
 
 import scala.language.implicitConversions
@@ -130,8 +130,8 @@ class FlatPlannerTest extends BaseTestSuite {
       mkLogical.planExpand(
         IRField("n")(CTNode),
         IRField("r")(CTRelationship),
-        Undirected,
         IRField("m")(CTNode),
+        Undirected,
         logicalNodeScan("n"),
         logicalNodeScan("m"))
     )
@@ -172,8 +172,8 @@ class FlatPlannerTest extends BaseTestSuite {
       mkLogical.planExpand(
         IRField("n")(CTNode),
         IRField("r")(CTRelationship("KNOWS")),
-        Outgoing,
         IRField("m")(CTNode),
+        Directed,
         logicalNodeScan("n"),
         logicalNodeScan("m")
       )
@@ -185,7 +185,7 @@ class FlatPlannerTest extends BaseTestSuite {
     val target = Var("m")(CTNode)
 
     result should equal(
-      mkFlat.expand(source, rel, Outgoing, target, schema, flatNodeScan(source), flatNodeScan(target))
+      mkFlat.expand(source, rel, Directed, target, schema, flatNodeScan(source), flatNodeScan(target))
     )
     headerContents should equal(
       Set(

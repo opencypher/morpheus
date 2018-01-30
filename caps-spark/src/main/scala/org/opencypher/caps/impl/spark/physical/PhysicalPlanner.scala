@@ -139,27 +139,27 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOpera
         val second = Scan(startFrom, op.sourceGraph, rel, relHeader)
 
         direction match {
-          case Outgoing =>
+          case Directed =>
             ExpandSource(first, second, third, source, rel, target, header)
           case Undirected =>
             val outgoing = ExpandSource(first, second, third, source, rel, target, header)
             val incoming = ExpandSource(third, second, first, target, rel, source, header)
-
-            require(outgoing.header == incoming.header)
-
-            val union = Union(outgoing, incoming)
-
-            union
-//            ExpandUndirected(first, second, third, source, rel, target, header)
+            Union(outgoing, incoming)
         }
 
 
-      case op@flat.ExpandInto(source, rel, target, sourceOp, header, relHeader) =>
+      case op@flat.ExpandInto(source, rel, target, direction, sourceOp, header, relHeader) =>
         val in = process(sourceOp)
+        val relationships = Scan(in, op.sourceGraph, rel, relHeader)
 
-        val rels = Scan(in, op.sourceGraph, rel, relHeader)
-
-        operators.ExpandInto(in, rels, source, rel, target, header)
+        direction match {
+          case Directed =>
+            operators.ExpandInto(in, relationships, source, rel, target, header)
+          case Undirected =>
+            val outgoing = operators.ExpandInto(in, relationships, source, rel, target, header)
+            val incoming = operators.ExpandInto(in, relationships, target, rel, source, header)
+            Union(outgoing, incoming)
+        }
 
       case flat.InitVarExpand(source, edgeList, endNode, in, header) =>
         InitVarExpand(process(in), source, edgeList, endNode, header)

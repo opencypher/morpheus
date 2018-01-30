@@ -64,10 +64,10 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
         producer.aggregate(aggregations, group, process(in))
 
       case logical.Expand(source, rel, direction, target, sourceOp, targetOp, _) =>
-        producer.expand(source, rel, direction, target, input.sourceGraph.schema, process(sourceOp), process(targetOp))
+        producer.expand(source, rel, target, direction, input.sourceGraph.schema, process(sourceOp), process(targetOp))
 
-      case logical.ExpandInto(source, rel, target, sourceOp, _) =>
-        producer.expandInto(source, rel, target, input.sourceGraph.schema, process(sourceOp))
+      case logical.ExpandInto(source, rel, target, direction, sourceOp, _) =>
+        producer.expandInto(source, rel, target, direction, input.sourceGraph.schema, process(sourceOp))
 
       case logical.ValueJoin(lhs, rhs, predicates, _) =>
         producer.valueJoin(process(lhs), process(rhs), predicates)
@@ -81,7 +81,7 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
       case logical.SetSourceGraph(graph, in, _) =>
         producer.planSetSourceGraph(graph, process(in))
 
-      case logical.BoundedVarLengthExpand(source, edgeList, target, lower, upper, sourceOp, targetOp, _) =>
+      case logical.BoundedVarLengthExpand(source, edgeList, target, direction, lower, upper, sourceOp, targetOp, _) =>
         val initVarExpand = producer.initVarExpand(source, edgeList, process(sourceOp))
         val edgeScan = producer.varLengthEdgeScan(edgeList, producer.planStart(input.sourceGraph, Set.empty))
         producer.boundedVarExpand(

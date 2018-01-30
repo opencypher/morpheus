@@ -454,12 +454,15 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     val expand = c match {
       case v: VarLengthRelationship if v.upper.nonEmpty =>
         producer.planBoundedVarLengthExpand(c.source, r, c.target, v.lower, v.upper.get, sourcePlan, targetPlan)
+      case _: UndirectedConnection if sourcePlan == targetPlan =>
+        producer.planExpandInto(c.source, r, c.target, Undirected, sourcePlan)
+        // cyclic and directed are handled the same way for expandInto
       case _ if sourcePlan == targetPlan =>
-        producer.planExpandInto(c.source, r, c.target, sourcePlan)
+        producer.planExpandInto(c.source, r, c.target, Directed, sourcePlan)
       case _: DirectedConnection =>
-        producer.planExpand(c.source, r, Outgoing, c.target, sourcePlan, targetPlan)
+        producer.planExpand(c.source, r, c.target, Directed, sourcePlan, targetPlan)
       case _: UndirectedConnection =>
-        producer.planExpand(c.source, r, Undirected, c.target, sourcePlan, targetPlan)
+        producer.planExpand(c.source, r, c.target, Undirected, sourcePlan, targetPlan)
 
     }
 

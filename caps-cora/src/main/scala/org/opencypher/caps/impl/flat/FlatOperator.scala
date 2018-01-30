@@ -115,6 +115,7 @@ final case class ExpandInto(
     source: Var,
     rel: Var,
     target: Var,
+    direction: Direction,
     sourceOp: FlatOperator,
     header: RecordHeader,
     relHeader: RecordHeader)

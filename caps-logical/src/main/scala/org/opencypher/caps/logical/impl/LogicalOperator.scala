@@ -110,13 +110,15 @@ sealed trait ExpandOperator {
   def rel: Var
 
   def target: Var
+
+  def direction: Direction
 }
 
 final case class Expand(
     source: Var,
     rel: Var,
-    direction: Direction,
     target: Var,
+    direction: Direction,
     lhs: LogicalOperator,
     rhs: LogicalOperator,
     solved: SolvedQueryModel)
@@ -130,6 +132,7 @@ final case class BoundedVarLengthExpand(
     source: Var,
     rel: Var,
     target: Var,
+    direction: Direction,
     lower: Int,
     upper: Int,
     lhs: LogicalOperator,
@@ -151,7 +154,7 @@ final case class ValueJoin(
   override val fields: Set[Var] = lhs.fields ++ rhs.fields
 }
 
-final case class ExpandInto(source: Var, rel: Var, target: Var, in: LogicalOperator, solved: SolvedQueryModel)
+final case class ExpandInto(source: Var, rel: Var, target: Var, direction: Direction, in: LogicalOperator, solved: SolvedQueryModel)
     extends StackingLogicalOperator
     with ExpandOperator {
 

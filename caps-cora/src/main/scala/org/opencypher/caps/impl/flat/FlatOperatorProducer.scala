@@ -175,12 +175,12 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     Expand(source, rel, direction, target, sourceOp, targetOp, expandHeader, relHeader)
   }
 
-  def expandInto(source: Var, rel: Var, target: Var, schema: Schema, sourceOp: FlatOperator): FlatOperator = {
+  def expandInto(source: Var, rel: Var, target: Var, direction: Direction, schema: Schema, sourceOp: FlatOperator): FlatOperator = {
     val relHeader = RecordHeader.relationshipFromSchema(rel, schema)
 
     val expandHeader = sourceOp.header ++ relHeader
 
-    ExpandInto(source, rel, target, sourceOp, expandHeader, relHeader)
+    ExpandInto(source, rel, target, direction, sourceOp, expandHeader, relHeader)
   }
 
   def valueJoin(

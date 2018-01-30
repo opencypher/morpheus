@@ -288,7 +288,7 @@ trait PredicateBehaviour { this: AcceptanceTest =>
         """.stripMargin)
 
       // When
-      val result = given.cypher("MATCH (a)-->(b) WHERE (a)-[{val: 'foo'}]-()-->(b) RETURN a.id, b.id")
+      val result = given.cypher("MATCH (a)-->(b) WHERE (a)-[{val: 'foo'}]->()-->(b) RETURN a.id, b.id")
 
       // Then
       result.records.toMaps should equal(Bag(
@@ -322,7 +322,7 @@ trait PredicateBehaviour { this: AcceptanceTest =>
         """.stripMargin)
 
       // When
-      val result = given.cypher("MATCH (a)-->(b) WHERE (a)-[:A]-()-->(b) RETURN a.id, b.id")
+      val result = given.cypher("MATCH (a)-->(b) WHERE (a)-[:A]->()-->(b) RETURN a.id, b.id")
 
       // Then
       result.records.toMaps should equal(Bag(
@@ -454,7 +454,7 @@ trait PredicateBehaviour { this: AcceptanceTest =>
           """.stripMargin)
 
         // When
-        val result = given.cypher("MATCH (a)-->(b) WHERE (a)-[{val: 'foo'}]-()-->(b) RETURN a.id, b.id")
+        val result = given.cypher("MATCH (a)-->(b) WHERE (a)-[{val: 'foo'}]->()-->(b) RETURN a.id, b.id")
 
         // Then
         result.records.toMaps should equal(Bag(
@@ -488,7 +488,7 @@ trait PredicateBehaviour { this: AcceptanceTest =>
           """.stripMargin)
 
         // When
-        val result = given.cypher("MATCH (a)-->(b) WHERE (a)-[:A]-()-->(b) RETURN a.id, b.id")
+        val result = given.cypher("MATCH (a)-->(b) WHERE (a)-[:A]->()-->(b) RETURN a.id, b.id")
 
         // Then
         result.records.toMaps should equal(Bag(
@@ -621,7 +621,7 @@ trait PredicateBehaviour { this: AcceptanceTest =>
           """.stripMargin)
 
         // When
-        val result = given.cypher("MATCH (a)-->(b) WHERE EXISTS((a)-[{val: 'foo'}]-()-->(b)) RETURN a.id, b.id")
+        val result = given.cypher("MATCH (a)-->(b) WHERE EXISTS((a)-[{val: 'foo'}]->()-->(b)) RETURN a.id, b.id")
 
         // Then
         result.records.toMaps should equal(Bag(
@@ -655,7 +655,7 @@ trait PredicateBehaviour { this: AcceptanceTest =>
           """.stripMargin)
 
         // When
-        val result = given.cypher("MATCH (a)-->(b) WHERE EXISTS((a)-[:A]-()-->(b)) RETURN a.id, b.id")
+        val result = given.cypher("MATCH (a)-->(b) WHERE EXISTS((a)-[:A]->()-->(b)) RETURN a.id, b.id")
 
         // Then
         result.records.toMaps should equal(Bag(

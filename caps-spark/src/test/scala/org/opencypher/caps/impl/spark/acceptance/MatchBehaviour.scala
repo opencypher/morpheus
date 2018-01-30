@@ -234,6 +234,70 @@ trait MatchBehaviour {
           CAPSMap("a.prop" -> "a", "other.prop" -> "d")
         ))
       }
+
+      it("matches an undirected pattern with pre-bound nodes") {
+        val given = initGraph(
+          """
+            |CREATE (a:A {prop: 'a'})
+            |CREATE (b:B {prop: 'b'})
+            |CREATE (b)-[:T]->(a)
+            |CREATE (a)-[:T]->(b)
+          """.stripMargin
+        )
+
+        val result = given.cypher(
+          """
+            |MATCH (a:A)
+            |MATCH (b:B)
+            |MATCH (a)--(b)
+            |RETURN a.prop, b.prop
+          """.stripMargin)
+
+        result.records.iterator.toBag should equal(Bag(
+          CAPSMap("a.prop" -> "a", "b.prop" -> "b"),
+          CAPSMap("a.prop" -> "a", "b.prop" -> "b")
+        ))
+      }
+
+      it("matches a mixed directed/undirected pattern") {
+        val given = initGraph(
+          """
+            |CREATE (a:A {prop: 'a'})
+            |CREATE (b:B {prop: 'b'})
+            |CREATE (c:C {prop: 'c'})
+            |CREATE (a)-[:T]->(a)
+            |CREATE (a)-[:T]->(a)
+            |CREATE (b)-[:T]->(a)
+            |CREATE (a)-[:T]->(c)
+          """.stripMargin
+        )
+
+        val result = given.cypher("MATCH (a:A)--(a)<--(other) RETURN a.prop, other.prop")
+
+        result.records.iterator.toBag should equal(Bag(
+          CAPSMap("a.prop" -> "a", "other.prop" -> "a"),
+          CAPSMap("a.prop" -> "a", "other.prop" -> "a"),
+          CAPSMap("a.prop" -> "a", "other.prop" -> "b"),
+          CAPSMap("a.prop" -> "a", "other.prop" -> "b")
+        ))
+      }
+
+      it("matches an undirected cyclic relationship") {
+        val given = initGraph(
+          """
+            |CREATE (a:A {prop: 'isA'})
+            |CREATE (b:B)
+            |CREATE (a)-[:T]->(a)
+            |CREATE (b)-[:T]->(a)
+          """.stripMargin
+        )
+
+        val result = given.cypher("MATCH (a:A)--(a) RETURN a.prop")
+
+        result.records.iterator.toBag should equal(Bag(
+          CAPSMap("a.prop" -> "isA")
+        ))
+      }
     }
 
     ignore("Broken start of demo query") {
