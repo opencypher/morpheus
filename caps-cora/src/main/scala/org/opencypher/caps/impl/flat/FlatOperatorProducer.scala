@@ -214,6 +214,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
       edge: Var,
       edgeList: Var,
       target: Var,
+      direction: Direction,
       lower: Int,
       upper: Int,
       sourceOp: InitVarExpand,
@@ -224,7 +225,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     val (initHeader, _) = sourceOp.in.header.update(addContent(OpaqueField(edgeList)))
     val header = initHeader ++ targetOp.header
 
-    BoundedVarExpand(edge, edgeList, target, lower, upper, sourceOp, edgeOp, targetOp, header, isExpandInto)
+    BoundedVarExpand(edge, edgeList, target, direction, lower, upper, sourceOp, edgeOp, targetOp, header, isExpandInto)
   }
 
   def planOptional(lhs: FlatOperator, rhs: FlatOperator): FlatOperator = {

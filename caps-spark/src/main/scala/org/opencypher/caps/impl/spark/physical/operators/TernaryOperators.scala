@@ -23,7 +23,8 @@ import org.opencypher.caps.impl.record.{OpaqueField, ProjectedExpr, RecordHeader
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.{assertIsNode, columnName, joinRecords}
 import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext, udfUtils}
 import org.opencypher.caps.impl.spark.{CAPSRecords, ColumnNameGenerator}
-import org.opencypher.caps.ir.api.expr.{EndNode, Var}
+import org.opencypher.caps.ir.api.expr.{EndNode, StartNode, Var}
+import org.opencypher.caps.logical.impl.{Directed, Direction, Undirected}
 
 private[spark] abstract class TernaryPhysicalOperator extends PhysicalOperator {
 
@@ -85,12 +86,13 @@ final case class BoundedVarExpand(
     initialEndNode: Var,
     lower: Int,
     upper: Int,
+    direction: Direction,
     header: RecordHeader,
     isExpandInto: Boolean)
     extends TernaryPhysicalOperator {
 
-  override def executeTernary(first: PhysicalResult, second: PhysicalResult, third: PhysicalResult)(
-      implicit context: RuntimeContext): PhysicalResult = {
+  override def executeTernary(first: PhysicalResult, second: PhysicalResult, third: PhysicalResult)
+    (implicit context: RuntimeContext): PhysicalResult = {
     val expanded = expand(first.records, second.records)
 
     PhysicalResult(finalize(expanded, third.records), first.graphs ++ second.graphs ++ third.graphs)
@@ -158,7 +160,30 @@ final case class BoundedVarExpand(
 
   private def expand(firstRecords: CAPSRecords, secondRecords: CAPSRecords): CAPSRecords = {
     val initData = firstRecords.data
-    val relsData = secondRecords.data
+    val relsData = direction match {
+      case Directed =>
+        secondRecords.data
+      case Undirected =>
+        // TODO this is a crude hack that will not work once we have proper path support
+        val startNodeSlot = columnName(secondRecords.header.slots.map(_.content).find {
+          case ProjectedExpr(_ : StartNode) => true
+          case _ => false
+        }.get)
+        val endNodeSlot = columnName(secondRecords.header.slots.map(_.content).find {
+          case ProjectedExpr(_ : EndNode) => true
+          case _ => false
+        }.get)
+
+        val colOrder = secondRecords.header.slots.map(columnName)
+
+        val inverted = secondRecords.data
+          .withColumnRenamed(startNodeSlot, "__tmp__")
+          .withColumnRenamed(endNodeSlot, startNodeSlot)
+          .withColumnRenamed("__tmp__", endNodeSlot)
+          .select(colOrder.head, colOrder.tail: _*)
+
+        inverted.union(secondRecords.data)
+    }
 
     val edgeListColName = columnName(firstRecords.header.slotFor(edgeList))
 

@@ -165,7 +165,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOpera
         InitVarExpand(process(in), source, edgeList, endNode, header)
 
       case flat.BoundedVarExpand(
-          rel, edgeList, target,
+          rel, edgeList, target, direction,
           lower, upper,
           sourceOp, relOp, targetOp,
           header, isExpandInto) =>
@@ -183,6 +183,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOpera
           sourceOp.endNode,
           lower,
           upper,
+          direction,
           header,
           isExpandInto)
 

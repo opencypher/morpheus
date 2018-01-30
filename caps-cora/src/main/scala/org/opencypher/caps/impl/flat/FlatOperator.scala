@@ -131,6 +131,7 @@ final case class BoundedVarExpand(
     rel: Var,
     edgeList: Var,
     target: Var,
+    direction: Direction,
     lower: Int,
     upper: Int,
     sourceOp: InitVarExpand,

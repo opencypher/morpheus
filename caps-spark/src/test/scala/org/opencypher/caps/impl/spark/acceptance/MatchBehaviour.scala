@@ -298,6 +298,24 @@ trait MatchBehaviour {
           CAPSMap("a.prop" -> "isA")
         ))
       }
+
+      it("matches an undirected variable-length relationship") {
+        val given = initGraph(
+          """
+            |CREATE (a:A {prop: 'a'})
+            |CREATE (b:B {prop: 'b'})
+            |CREATE (c:C {prop: 'c'})
+            |CREATE (a)-[:T]->(b)
+            |CREATE (b)<-[:T]-(c)
+          """.stripMargin
+        )
+
+        val result = given.cypher("MATCH (a:A)-[*2..2]-(other) RETURN a.prop, other.prop")
+
+        result.records.iterator.toBag should equal(Bag(
+          CAPSMap("a.prop" -> "a", "other.prop" -> "c")
+        ))
+      }
     }
 
     ignore("Broken start of demo query") {
