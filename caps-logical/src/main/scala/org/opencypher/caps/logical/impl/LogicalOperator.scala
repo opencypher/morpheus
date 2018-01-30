@@ -125,19 +125,6 @@ final case class ExpandSource(
   override val fields: Set[Var] = lhs.fields ++ rhs.fields + rel
 }
 
-final case class ExpandTarget(
-    source: Var,
-    rel: Var,
-    target: Var,
-    lhs: LogicalOperator,
-    rhs: LogicalOperator,
-    solved: SolvedQueryModel)
-    extends BinaryLogicalOperator
-    with ExpandOperator {
-
-  override val fields: Set[Var] = lhs.fields ++ rhs.fields
-}
-
 final case class BoundedVarLengthExpand(
     source: Var,
     rel: Var,

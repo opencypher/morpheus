@@ -50,19 +50,6 @@ class LogicalOperatorProducer {
     BoundedVarLengthExpand(source, r, target, lower, upper, sourcePlan, targetPlan, prevSolved.withField(r))
   }
 
-  def planTargetExpand(
-      source: IRField,
-      rel: IRField,
-      target: IRField,
-      sourcePlan: LogicalOperator,
-      targetPlan: LogicalOperator): ExpandTarget = {
-    val prevSolved = sourcePlan.solved ++ targetPlan.solved
-
-    val solved = prevSolved.withField(rel)
-
-    ExpandTarget(source, rel, target, sourcePlan, targetPlan, solved)
-  }
-
   def planSourceExpand(
       source: IRField,
       rel: IRField,
