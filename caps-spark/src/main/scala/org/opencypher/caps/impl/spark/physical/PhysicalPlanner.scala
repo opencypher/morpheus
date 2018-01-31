@@ -143,7 +143,7 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOpera
             ExpandSource(first, second, third, source, rel, target, header)
           case Undirected =>
             val outgoing = ExpandSource(first, second, third, source, rel, target, header)
-            val incoming = ExpandSource(third, second, first, target, rel, source, header)
+            val incoming = ExpandSource(third, second, first, target, rel, source, header, removeSelfRelationships = true)
             Union(outgoing, incoming)
         }
 

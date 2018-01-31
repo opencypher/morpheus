@@ -462,10 +462,13 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       case _: UndirectedConnection if sourcePlan == targetPlan =>
         producer.planExpandInto(c.source, r, c.target, Undirected, sourcePlan)
         // cyclic and directed are handled the same way for expandInto
+
       case _ if sourcePlan == targetPlan =>
         producer.planExpandInto(c.source, r, c.target, Directed, sourcePlan)
+
       case _: DirectedConnection =>
         producer.planExpand(c.source, r, c.target, Directed, sourcePlan, targetPlan)
+
       case _: UndirectedConnection =>
         producer.planExpand(c.source, r, c.target, Undirected, sourcePlan, targetPlan)
 

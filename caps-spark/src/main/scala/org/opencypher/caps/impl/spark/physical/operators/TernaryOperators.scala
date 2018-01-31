@@ -49,18 +49,20 @@ final case class ExpandSource(
     source: Var,
     rel: Var,
     target: Var,
-    header: RecordHeader)
+    header: RecordHeader,
+    removeSelfRelationships: Boolean = false)
     extends TernaryPhysicalOperator {
 
-  override def executeTernary(first: PhysicalResult, second: PhysicalResult, third: PhysicalResult)(
-      implicit context: RuntimeContext): PhysicalResult = {
+  override def executeTernary(first: PhysicalResult, second: PhysicalResult, third: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult = {
+    val relationships = getRelationshipData(second.records)
+    
     val sourceSlot = first.records.header.slotFor(source)
     val sourceSlotInRel = second.records.header.sourceNodeSlot(rel)
     assertIsNode(sourceSlot)
     assertIsNode(sourceSlotInRel)
 
     val sourceToRelHeader = first.records.header ++ second.records.header
-    val sourceAndRel = joinRecords(sourceToRelHeader, Seq(sourceSlot -> sourceSlotInRel))(first.records, second.records)
+    val sourceAndRel = joinRecords(sourceToRelHeader, Seq(sourceSlot -> sourceSlotInRel))(first.records, relationships)
 
     val targetSlot = third.records.header.slotFor(target)
     val targetSlotInRel = sourceAndRel.header.targetNodeSlot(rel)
@@ -71,6 +73,16 @@ final case class ExpandSource(
     PhysicalResult(joinedRecords, first.graphs ++ second.graphs ++ third.graphs)
   }
 
+  
+  private def getRelationshipData(rels: CAPSRecords)(implicit context: RuntimeContext): CAPSRecords = {
+    if(removeSelfRelationships) {
+      val data = rels.data
+      val startNodeColumn = data.col(columnName(rels.header.sourceNodeSlot(rel)))
+      val endNodeColumn = data.col(columnName(rels.header.targetNodeSlot(rel)))
+
+      CAPSRecords.create(rels.header, data.where(endNodeColumn =!= startNodeColumn))(rels.caps)
+    } else rels
+  }
 }
 
 // Expands a pattern like (s)-[r*n..m]->(t) where s is solved by first, r is solved by second and t is solved by third
