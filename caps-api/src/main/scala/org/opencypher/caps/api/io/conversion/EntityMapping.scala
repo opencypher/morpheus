@@ -15,6 +15,7 @@
  */
 package org.opencypher.caps.api.io.conversion
 
+import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.types.{CypherType, DefiniteCypherType}
 
 /**
@@ -28,5 +29,10 @@ trait EntityMapping {
   def sourceIdKey: String
 
   def propertyMapping: Map[String, String]
+
+  protected def preventOverwritingProperty(propertyKey: String): Unit =
+    if (propertyMapping.contains(propertyKey))
+      throw IllegalArgumentException("unique property key definitions",
+        s"given key $propertyKey overwrites existing mapping")
 
 }

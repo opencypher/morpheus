@@ -15,6 +15,7 @@
  */
 package org.opencypher.caps.api.io.conversion
 
+import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.types.CTNode
 
 object NodeMapping {
@@ -94,6 +95,9 @@ case class NodeMapping(
   optionalLabelMapping: Map[String, String] = Map.empty,
   propertyMapping: Map[String, String] = Map.empty) extends EntityMapping {
 
+  // on construction
+  validate()
+
   def cypherType: CTNode = CTNode(impliedLabels)
 
   def withImpliedLabels(labels: String*): NodeMapping =
@@ -120,10 +124,17 @@ case class NodeMapping(
   def withPropertyKey(property: String): NodeMapping =
     withPropertyKey(property, property)
 
-  def withPropertyKey(propertyKey: String, sourcePropertyKey: String): NodeMapping =
+  def withPropertyKey(propertyKey: String, sourcePropertyKey: String): NodeMapping = {
+    preventOverwritingProperty(propertyKey)
     copy(propertyMapping = propertyMapping.updated(propertyKey, sourcePropertyKey))
+  }
 
   def withPropertyKeys(properties: String*): NodeMapping =
     properties.foldLeft(this)((mapping, propertyKey) => mapping.withPropertyKey(propertyKey, propertyKey))
 
+  private def validate(): Unit = {
+    if (optionalLabelMapping.values.toSet.contains(sourceIdKey))
+      throw IllegalArgumentException("source id key and optional labels referring to different source keys",
+        s"$sourceIdKey used for source id key and optional label")
+  }
 }

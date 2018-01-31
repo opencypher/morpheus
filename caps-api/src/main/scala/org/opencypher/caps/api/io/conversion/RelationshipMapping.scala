@@ -15,6 +15,7 @@
  */
 package org.opencypher.caps.api.io.conversion
 
+import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.types.CTRelationship
 
 object RelationshipMapping {
@@ -149,6 +150,9 @@ final case class RelationshipMapping(
   relTypeOrSourceRelTypeKey: Either[String, (String, Set[String])],
   propertyMapping: Map[String, String] = Map.empty) extends EntityMapping {
 
+  // on construction
+  validate()
+
   def cypherType: CTRelationship = {
     val possibleRelTypes = relTypeOrSourceRelTypeKey match {
       case Left(relType) => Set(relType)
@@ -157,8 +161,10 @@ final case class RelationshipMapping(
     CTRelationship(possibleRelTypes)
   }
 
-  def withPropertyKey(propertyKey: String, sourcePropertyKey: String): RelationshipMapping =
+  def withPropertyKey(propertyKey: String, sourcePropertyKey: String): RelationshipMapping = {
+    preventOverwritingProperty(propertyKey)
     copy(propertyMapping = propertyMapping.updated(propertyKey, sourcePropertyKey))
+  }
 
   def withPropertyKey(tuple: (String, String)): RelationshipMapping =
     withPropertyKey(tuple._1, tuple._2)
@@ -168,4 +174,20 @@ final case class RelationshipMapping(
 
   def withPropertyKeys(properties: String*): RelationshipMapping =
     properties.foldLeft(this)((mapping, propertyKey) => mapping.withPropertyKey(propertyKey, propertyKey))
+
+  private def validate(): Unit = {
+    val idKeys = Set(sourceIdKey, sourceStartNodeKey, sourceEndNodeKey)
+
+    if (idKeys.size != 3)
+      throw IllegalArgumentException(
+        s"id ($sourceIdKey, start ($sourceStartNodeKey) and end ($sourceEndNodeKey) source keys need to be distinct",
+        s"non-distinct source keys")
+
+    relTypeOrSourceRelTypeKey match {
+      case Right((sourceKey, _)) if idKeys.contains(sourceKey) =>
+        throw IllegalArgumentException("dedicated source column for relationship type",
+          s"relationship type source column $sourceKey is referring to one of id, start or end column")
+      case _ =>
+    }
+  }
 }
