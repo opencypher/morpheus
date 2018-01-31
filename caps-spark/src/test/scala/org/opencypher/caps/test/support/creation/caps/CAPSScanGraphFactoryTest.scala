@@ -47,7 +47,7 @@ class CAPSScanGraphFactoryTest extends CAPSTestSuite with GraphMatchingTestSuppo
     Seq(
       (0L, true, false, "Max"),
       (1L, false, true, "Martin"))
-  ).toDF(Seq("ID", "IS_ASTRONAUT", "IS_MARTIAN", "NAME"): _*))
+  ).toDF("ID", "IS_ASTRONAUT", "IS_MARTIAN", "NAME"))
 
 
   val languageTable: NodeTable = NodeTable(NodeMapping
@@ -58,7 +58,7 @@ class CAPSScanGraphFactoryTest extends CAPSTestSuite with GraphMatchingTestSuppo
       (2L, "Swedish"),
       (3L, "German"),
       (4L, "Orbital"))
-  ).toDF(Seq("ID", "TITLE"): _*))
+  ).toDF("ID", "TITLE"))
 
 
   val knowsScan: RelationshipTable = RelationshipTable(RelationshipMapping
@@ -69,7 +69,7 @@ class CAPSScanGraphFactoryTest extends CAPSTestSuite with GraphMatchingTestSuppo
       (0L, 6L, 3L),
       (1L, 7L, 3L),
       (1L, 8L, 4L))
-  ).toDF(Seq("SRC", "ID", "DST"): _*))
+  ).toDF("SRC", "ID", "DST"))
 
 
   test("testSchema") {

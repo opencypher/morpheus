@@ -67,7 +67,7 @@ trait TeamDataFixture extends TestDataFixture with DebugOutputSupport {
       (2L, false, "Martin", 42L),
       (3L, false, "Max", 1337L),
       (4L, false, "Stefan", 9L))
-  ).toDF(Seq("ID", "IS_SWEDE", "NAME", "NUM"): _*)
+  ).toDF("ID", "IS_SWEDE", "NAME", "NUM")
 
   lazy val personTable = NodeTable(personMapping, personDF)
 
@@ -83,7 +83,7 @@ trait TeamDataFixture extends TestDataFixture with DebugOutputSupport {
       (2L, 4L, 3L, 2016L),
       (2L, 5L, 4L, 2013L),
       (3L, 6L, 4L, 2016L))
-  ).toDF(Seq("SRC", "ID", "DST", "SINCE"): _*)
+  ).toDF("SRC", "ID", "DST", "SINCE")
 
   lazy val knowsTable = RelationshipTable(knowsMapping, knowsDF)
 
@@ -101,7 +101,7 @@ trait TeamDataFixture extends TestDataFixture with DebugOutputSupport {
       (200L, "Bob", 23L, "D"),
       (300L, "Eve", 84L, "F"),
       (400L, "Carl", 49L, "R")
-    )).toDF(Seq("ID", "NAME", "NUM", "LANG"): _*)
+    )).toDF("ID", "NAME", "NUM", "LANG")
 
   lazy val programmerTable = NodeTable(programmerMapping, programmerDF)
 
@@ -117,7 +117,7 @@ trait TeamDataFixture extends TestDataFixture with DebugOutputSupport {
       (200L, "Coffeescript"),
       (300L, "Javascript"),
       (400L, "Typescript")
-    )).toDF(Seq("ID", "LANG"): _*)
+    )).toDF("ID", "LANG")
 
   // required to test conflicting input data
   lazy val brogrammerTable = NodeTable(brogrammerMapping, brogrammerDF)
@@ -134,7 +134,7 @@ trait TeamDataFixture extends TestDataFixture with DebugOutputSupport {
       (20L, "Cryptonomicon", 1999L),
       (30L, "The Eye of the World", 1990L),
       (40L, "The Circle", 2013L)
-    )).toDF(Seq("ID", "NAME", "YEAR"): _*)
+    )).toDF("ID", "NAME", "YEAR")
 
   lazy val bookTable = NodeTable(bookMapping, bookDF)
 
@@ -147,7 +147,7 @@ trait TeamDataFixture extends TestDataFixture with DebugOutputSupport {
       (200L, 200L, 40L, true),
       (300L, 300L, 30L, true),
       (400L, 400L, 20L, false)
-    )).toDF(Seq("SRC", "ID", "DST", "RECOMMENDS"): _*)
+    )).toDF("SRC", "ID", "DST", "RECOMMENDS")
 
   lazy val readsTable = RelationshipTable(readsMapping, readsDF)
 
@@ -155,7 +155,7 @@ trait TeamDataFixture extends TestDataFixture with DebugOutputSupport {
     .on("ID").from("SRC").to("DST").relType("INFLUENCES")
 
   private lazy val influencesDF: DataFrame = caps.sparkSession.createDataFrame(
-    Seq((10L, 1000L, 20L))).toDF(Seq("SRC", "ID", "DST"): _*)
+    Seq((10L, 1000L, 20L))).toDF("SRC", "ID", "DST")
 
   lazy val influencesTable = RelationshipTable(influencesMapping, influencesDF)
 }

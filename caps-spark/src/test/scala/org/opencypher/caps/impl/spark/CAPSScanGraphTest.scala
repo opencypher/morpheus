@@ -91,7 +91,7 @@ class CAPSScanGraphTest extends CAPSTestSuite with TeamDataFixture {
           (10L, 1000L, 20L),
           (50L, 500L, 25L)
         )
-      ).toDF(Seq("SRC", "ID", "DST"): _*))
+      ).toDF("SRC", "ID", "DST"))
 
 
     val graph = CAPSGraph.create(nodes, rs)

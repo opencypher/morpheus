@@ -53,7 +53,7 @@ class EntityTableTest extends CAPSTestSuite {
   }
 
   test("test schema creation") {
-    val df = session.createDataFrame(Seq((1L, true, "Mats", 23L))).toDF(Seq("ID", "IS_C", "FOO", "BAR"): _*)
+    val df = session.createDataFrame(Seq((1L, true, "Mats", 23L))).toDF("ID", "IS_C", "FOO", "BAR")
 
     val nodeTable = NodeTable(nodeMapping, df)
 
@@ -64,7 +64,7 @@ class EntityTableTest extends CAPSTestSuite {
   }
 
   test("test type casts when creating an EntityTable from a DataFrame") {
-    val df = session.createDataFrame(Seq((1, true, 10.toShort, 23.1f))).toDF(Seq("ID", "IS_C", "FOO", "BAR"): _*)
+    val df = session.createDataFrame(Seq((1, true, 10.toShort, 23.1f))).toDF("ID", "IS_C", "FOO", "BAR")
 
     val nodeTable = NodeTable(nodeMapping, df)
 
@@ -77,7 +77,7 @@ class EntityTableTest extends CAPSTestSuite {
   }
 
   test("test ScanGraph can handle shuffled columns due to cast") {
-    val df = session.createDataFrame(Seq((1, true, 10.toShort, 23.1f))).toDF(Seq("ID", "IS_C", "FOO", "BAR"): _*)
+    val df = session.createDataFrame(Seq((1, true, 10.toShort, 23.1f))).toDF("ID", "IS_C", "FOO", "BAR")
 
     val nodeTable = NodeTable(nodeMapping, df)
 
