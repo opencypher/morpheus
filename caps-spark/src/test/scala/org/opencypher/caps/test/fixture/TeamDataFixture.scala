@@ -59,7 +59,7 @@ trait TeamDataFixture extends TestDataFixture with DebugOutputSupport {
     .withImpliedLabel("Person")
     .withOptionalLabel("Swedish" -> "IS_SWEDE")
     .withPropertyKey("name" -> "NAME")
-    .withPropertyKey("lucky_number" -> "NUM")
+    .withPropertyKey("luckyNumber" -> "NUM")
 
   private lazy val personDF: DataFrame = caps.sparkSession.createDataFrame(
     Seq(
@@ -92,7 +92,7 @@ trait TeamDataFixture extends TestDataFixture with DebugOutputSupport {
     .withImpliedLabel("Programmer")
     .withImpliedLabel("Person")
     .withPropertyKey("name" -> "NAME")
-    .withPropertyKey("lucky_number" -> "NUM")
+    .withPropertyKey("luckyNumber" -> "NUM")
     .withPropertyKey("language" -> "LANG")
 
   private lazy val programmerDF: DataFrame = caps.sparkSession.createDataFrame(

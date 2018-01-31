@@ -224,201 +224,201 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite with TeamDataFixture {
   test("graph serialization") {
     val graph = CAPSGraph.create(personTable, bookTable, readsTable, knowsTable, influencesTable)
     toJsonString(graph) should equal(s"""{
-          |  "nodes" : [
-          |    {
-          |      "id" : 1,
-          |      "labels" : [
-          |        "Person",
-          |        "Swedish"
-          |      ],
-          |      "properties" : {
-          |        "lucky_number" : 23,
-          |        "name" : "Mats"
-          |      }
-          |    },
-          |    {
-          |      "id" : 2,
-          |      "labels" : [
-          |        "Person"
-          |      ],
-          |      "properties" : {
-          |        "lucky_number" : 42,
-          |        "name" : "Martin"
-          |      }
-          |    },
-          |    {
-          |      "id" : 3,
-          |      "labels" : [
-          |        "Person"
-          |      ],
-          |      "properties" : {
-          |        "lucky_number" : 1337,
-          |        "name" : "Max"
-          |      }
-          |    },
-          |    {
-          |      "id" : 4,
-          |      "labels" : [
-          |        "Person"
-          |      ],
-          |      "properties" : {
-          |        "lucky_number" : 9,
-          |        "name" : "Stefan"
-          |      }
-          |    },
-          |    {
-          |      "id" : 10,
-          |      "labels" : [
-          |        "Book"
-          |      ],
-          |      "properties" : {
-          |        "title" : "1984",
-          |        "year" : 1949
-          |      }
-          |    },
-          |    {
-          |      "id" : 20,
-          |      "labels" : [
-          |        "Book"
-          |      ],
-          |      "properties" : {
-          |        "title" : "Cryptonomicon",
-          |        "year" : 1999
-          |      }
-          |    },
-          |    {
-          |      "id" : 30,
-          |      "labels" : [
-          |        "Book"
-          |      ],
-          |      "properties" : {
-          |        "title" : "The Eye of the World",
-          |        "year" : 1990
-          |      }
-          |    },
-          |    {
-          |      "id" : 40,
-          |      "labels" : [
-          |        "Book"
-          |      ],
-          |      "properties" : {
-          |        "title" : "The Circle",
-          |        "year" : 2013
-          |      }
-          |    }
-          |  ],
-          |  "edges" : [
-          |    {
-          |      "id" : 100,
-          |      "source" : 1,
-          |      "target" : 10,
-          |      "type" : "READS",
-          |      "properties" : {
-          |        "recommends" : true
-          |      }
-          |    },
-          |    {
-          |      "id" : 200,
-          |      "source" : 2,
-          |      "target" : 40,
-          |      "type" : "READS",
-          |      "properties" : {
-          |        "recommends" : true
-          |      }
-          |    },
-          |    {
-          |      "id" : 300,
-          |      "source" : 3,
-          |      "target" : 30,
-          |      "type" : "READS",
-          |      "properties" : {
-          |        "recommends" : true
-          |      }
-          |    },
-          |    {
-          |      "id" : 400,
-          |      "source" : 4,
-          |      "target" : 20,
-          |      "type" : "READS",
-          |      "properties" : {
-          |        "recommends" : false
-          |      }
-          |    },
-          |    {
-          |      "id" : 1,
-          |      "source" : 1,
-          |      "target" : 2,
-          |      "type" : "KNOWS",
-          |      "properties" : {
-          |        "since" : 2017
-          |      }
-          |    },
-          |    {
-          |      "id" : 2,
-          |      "source" : 1,
-          |      "target" : 3,
-          |      "type" : "KNOWS",
-          |      "properties" : {
-          |        "since" : 2016
-          |      }
-          |    },
-          |    {
-          |      "id" : 3,
-          |      "source" : 1,
-          |      "target" : 4,
-          |      "type" : "KNOWS",
-          |      "properties" : {
-          |        "since" : 2015
-          |      }
-          |    },
-          |    {
-          |      "id" : 4,
-          |      "source" : 2,
-          |      "target" : 3,
-          |      "type" : "KNOWS",
-          |      "properties" : {
-          |        "since" : 2016
-          |      }
-          |    },
-          |    {
-          |      "id" : 5,
-          |      "source" : 2,
-          |      "target" : 4,
-          |      "type" : "KNOWS",
-          |      "properties" : {
-          |        "since" : 2013
-          |      }
-          |    },
-          |    {
-          |      "id" : 6,
-          |      "source" : 3,
-          |      "target" : 4,
-          |      "type" : "KNOWS",
-          |      "properties" : {
-          |        "since" : 2016
-          |      }
-          |    },
-          |    {
-          |      "id" : 1000,
-          |      "source" : 10,
-          |      "target" : 20,
-          |      "type" : "INFLUENCES",
-          |      "properties" : {
-          |        ${""}
-          |      }
-          |    }
-          |  ],
-          |  "labels" : [
-          |    "Person",
-          |    "Swedish",
-          |    "Book"
-          |  ],
-          |  "types" : [
-          |    "READS",
-          |    "KNOWS",
-          |    "INFLUENCES"
-          |  ]
-          |}""".stripMargin)
+                                        |  "nodes" : [
+                                        |    {
+                                        |      "id" : 1,
+                                        |      "labels" : [
+                                        |        "Person",
+                                        |        "Swedish"
+                                        |      ],
+                                        |      "properties" : {
+                                        |        "luckyNumber" : 23,
+                                        |        "name" : "Mats"
+                                        |      }
+                                        |    },
+                                        |    {
+                                        |      "id" : 2,
+                                        |      "labels" : [
+                                        |        "Person"
+                                        |      ],
+                                        |      "properties" : {
+                                        |        "luckyNumber" : 42,
+                                        |        "name" : "Martin"
+                                        |      }
+                                        |    },
+                                        |    {
+                                        |      "id" : 3,
+                                        |      "labels" : [
+                                        |        "Person"
+                                        |      ],
+                                        |      "properties" : {
+                                        |        "luckyNumber" : 1337,
+                                        |        "name" : "Max"
+                                        |      }
+                                        |    },
+                                        |    {
+                                        |      "id" : 4,
+                                        |      "labels" : [
+                                        |        "Person"
+                                        |      ],
+                                        |      "properties" : {
+                                        |        "luckyNumber" : 9,
+                                        |        "name" : "Stefan"
+                                        |      }
+                                        |    },
+                                        |    {
+                                        |      "id" : 10,
+                                        |      "labels" : [
+                                        |        "Book"
+                                        |      ],
+                                        |      "properties" : {
+                                        |        "title" : "1984",
+                                        |        "year" : 1949
+                                        |      }
+                                        |    },
+                                        |    {
+                                        |      "id" : 20,
+                                        |      "labels" : [
+                                        |        "Book"
+                                        |      ],
+                                        |      "properties" : {
+                                        |        "title" : "Cryptonomicon",
+                                        |        "year" : 1999
+                                        |      }
+                                        |    },
+                                        |    {
+                                        |      "id" : 30,
+                                        |      "labels" : [
+                                        |        "Book"
+                                        |      ],
+                                        |      "properties" : {
+                                        |        "title" : "The Eye of the World",
+                                        |        "year" : 1990
+                                        |      }
+                                        |    },
+                                        |    {
+                                        |      "id" : 40,
+                                        |      "labels" : [
+                                        |        "Book"
+                                        |      ],
+                                        |      "properties" : {
+                                        |        "title" : "The Circle",
+                                        |        "year" : 2013
+                                        |      }
+                                        |    }
+                                        |  ],
+                                        |  "edges" : [
+                                        |    {
+                                        |      "id" : 100,
+                                        |      "source" : 1,
+                                        |      "target" : 10,
+                                        |      "type" : "READS",
+                                        |      "properties" : {
+                                        |        "recommends" : true
+                                        |      }
+                                        |    },
+                                        |    {
+                                        |      "id" : 200,
+                                        |      "source" : 2,
+                                        |      "target" : 40,
+                                        |      "type" : "READS",
+                                        |      "properties" : {
+                                        |        "recommends" : true
+                                        |      }
+                                        |    },
+                                        |    {
+                                        |      "id" : 300,
+                                        |      "source" : 3,
+                                        |      "target" : 30,
+                                        |      "type" : "READS",
+                                        |      "properties" : {
+                                        |        "recommends" : true
+                                        |      }
+                                        |    },
+                                        |    {
+                                        |      "id" : 400,
+                                        |      "source" : 4,
+                                        |      "target" : 20,
+                                        |      "type" : "READS",
+                                        |      "properties" : {
+                                        |        "recommends" : false
+                                        |      }
+                                        |    },
+                                        |    {
+                                        |      "id" : 1,
+                                        |      "source" : 1,
+                                        |      "target" : 2,
+                                        |      "type" : "KNOWS",
+                                        |      "properties" : {
+                                        |        "since" : 2017
+                                        |      }
+                                        |    },
+                                        |    {
+                                        |      "id" : 2,
+                                        |      "source" : 1,
+                                        |      "target" : 3,
+                                        |      "type" : "KNOWS",
+                                        |      "properties" : {
+                                        |        "since" : 2016
+                                        |      }
+                                        |    },
+                                        |    {
+                                        |      "id" : 3,
+                                        |      "source" : 1,
+                                        |      "target" : 4,
+                                        |      "type" : "KNOWS",
+                                        |      "properties" : {
+                                        |        "since" : 2015
+                                        |      }
+                                        |    },
+                                        |    {
+                                        |      "id" : 4,
+                                        |      "source" : 2,
+                                        |      "target" : 3,
+                                        |      "type" : "KNOWS",
+                                        |      "properties" : {
+                                        |        "since" : 2016
+                                        |      }
+                                        |    },
+                                        |    {
+                                        |      "id" : 5,
+                                        |      "source" : 2,
+                                        |      "target" : 4,
+                                        |      "type" : "KNOWS",
+                                        |      "properties" : {
+                                        |        "since" : 2013
+                                        |      }
+                                        |    },
+                                        |    {
+                                        |      "id" : 6,
+                                        |      "source" : 3,
+                                        |      "target" : 4,
+                                        |      "type" : "KNOWS",
+                                        |      "properties" : {
+                                        |        "since" : 2016
+                                        |      }
+                                        |    },
+                                        |    {
+                                        |      "id" : 1000,
+                                        |      "source" : 10,
+                                        |      "target" : 20,
+                                        |      "type" : "INFLUENCES",
+                                        |      "properties" : {
+                                        |        ${""}
+                                        |      }
+                                        |    }
+                                        |  ],
+                                        |  "labels" : [
+                                        |    "Person",
+                                        |    "Swedish",
+                                        |    "Book"
+                                        |  ],
+                                        |  "types" : [
+                                        |    "READS",
+                                        |    "KNOWS",
+                                        |    "INFLUENCES"
+                                        |  ]
+                                        |}""".stripMargin)
   }
 
   private case class Row1(foo: String)
