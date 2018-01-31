@@ -26,7 +26,7 @@ import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.exception.{DuplicateSourceColumnException, IllegalArgumentException, IllegalStateException}
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.api.value.{CypherMap, _}
+import org.opencypher.caps.api.value._
 import org.opencypher.caps.api.{CAPSSession, EntityTable, NodeTable, RelationshipTable, _}
 import org.opencypher.caps.impl.record.CAPSRecordHeader._
 import org.opencypher.caps.impl.record.{CAPSRecordHeader, _}
@@ -132,7 +132,7 @@ sealed abstract class CAPSRecords(override val header: RecordHeader, val data: D
     toCypherMaps.toLocalIterator()
   }
 
-  def foreachPartition(f: Iterator[CypherMap] => Unit): Unit = {
+  def foreachPartition(f: Iterator[CAPSMap] => Unit): Unit = {
     toCypherMaps.foreachPartition(f)
   }
 
