@@ -32,9 +32,6 @@ class CAPSScanGraphTest extends CAPSTestSuite with TeamDataFixture {
     val graph1 = CAPSGraph.create(personTable, knowsTable)
     val graph2 = CAPSGraph.create(programmerTable, bookTable, readsTable)
 
-    graph1.nodes("n").capsRecords.data.show()
-    graph2.nodes("n").capsRecords.data.show()
-
     val result = graph1 union graph2
 
     val nodes = result.nodes("n").toDF().collect.toBag
@@ -117,7 +114,7 @@ class CAPSScanGraphTest extends CAPSTestSuite with TeamDataFixture {
         "n",
         "____n:Person",
         "____n:Swedish",
-        "____n_dot_lucky_bar_numberINTEGER",
+        "____n_dot_luckyNumberINTEGER",
         "____n_dot_nameSTRING"
       ))
 
@@ -139,7 +136,7 @@ class CAPSScanGraphTest extends CAPSTestSuite with TeamDataFixture {
         "____n:Book",
         "____n:Person",
         "____n:Swedish",
-        "____n_dot_lucky_bar_numberINTEGER",
+        "____n_dot_luckyNumberINTEGER",
         "____n_dot_nameSTRING",
         "____n_dot_titleSTRING",
         "____n_dot_yearINTEGER"
@@ -193,7 +190,7 @@ class CAPSScanGraphTest extends CAPSTestSuite with TeamDataFixture {
         "____n:Book",
         "____n:Person",
         "____n:Swedish",
-        "____n_dot_lucky_bar_numberINTEGER",
+        "____n_dot_luckyNumberINTEGER",
         "____n_dot_nameSTRING",
         "____n_dot_titleSTRING",
         "____n_dot_yearINTEGER"
@@ -222,7 +219,7 @@ class CAPSScanGraphTest extends CAPSTestSuite with TeamDataFixture {
         "n",
         "____n:Person",
         "____n:Swedish",
-        "____n_dot_lucky_bar_numberINTEGER",
+        "____n_dot_luckyNumberINTEGER",
         "____n_dot_nameSTRING"
       ))
 
@@ -329,7 +326,7 @@ class CAPSScanGraphTest extends CAPSTestSuite with TeamDataFixture {
         "____n:Programmer",
         "____n:Swedish",
         "____n_dot_languageSTRING",
-        "____n_dot_lucky_bar_numberINTEGER",
+        "____n_dot_luckyNumberINTEGER",
         "____n_dot_nameSTRING"
       ))
 
@@ -358,7 +355,7 @@ class CAPSScanGraphTest extends CAPSTestSuite with TeamDataFixture {
         "____n:Person",
         "____n:Swedish",
         "____n_dot_languageSTRING",
-        "____n_dot_lucky_bar_numberINTEGER",
+        "____n_dot_luckyNumberINTEGER",
         "____n_dot_nameSTRING"
       ))
 
