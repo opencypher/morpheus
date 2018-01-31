@@ -204,6 +204,10 @@ sealed abstract class CAPSRecords(override val header: RecordHeader, val data: D
 
 object CAPSRecords {
 
+  // Used for Expressions that are not yet tied to a variable
+  private val placeHolderVarName = ""
+
+  // TODO: remove unneeded create functions (they seem redundant with Spark DataFrame construction)
   def create[A <: Product : TypeTag](columns: Seq[String], data: Seq[A])(implicit caps: CAPSSession): CAPSRecords =
     verifyAndCreate(prepareDataFrame(caps.sparkSession.createDataFrame(data).toDF(columns: _*)))
 
@@ -258,7 +262,7 @@ object CAPSRecords {
     def sourceColumnNodeToExpressionMapping(nodeMapping: NodeMapping): Map[String, Expr] = {
       // TODO: Generate var. Nice-to-have property: Same DF gets same var.
       // TODO: Labels on node var?
-      val generatedVar = Var("boo")(nodeMapping.cypherType)
+      val generatedVar = Var(placeHolderVarName)(nodeMapping.cypherType)
 
       val entityMappings = sourceColumnToPropertyExpressionMapping(generatedVar)
 
@@ -278,7 +282,7 @@ object CAPSRecords {
     def sourceColumnRelationshipToExpressionMapping(relMapping: RelationshipMapping): Map[String, Expr] = {
       // TODO: Generate var. Nice-to-have property: Same DF gets same var.
       // TODO: Labels on node var?
-      val relVar = Var("boo")(relMapping.cypherType)
+      val relVar = Var(placeHolderVarName)(relMapping.cypherType)
       val entityMappings = sourceColumnToPropertyExpressionMapping(relVar)
 
       val sourceColumnToExpressionMapping: Map[String, Expr] = Seq(
