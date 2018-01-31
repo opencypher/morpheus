@@ -74,8 +74,7 @@ class CAPSScanGraphTest extends CAPSTestSuite with TeamDataFixture {
 
   test("dont lose schema information when mapping") {
     val nodes = NodeTable(NodeMapping.on("id"),
-      CAPSRecords.create(
-        Seq("id"),
+      caps.sparkSession.createDataFrame(
         Seq(
           Tuple1(10L),
           Tuple1(11L),
@@ -87,16 +86,16 @@ class CAPSScanGraphTest extends CAPSTestSuite with TeamDataFixture {
           Tuple1(50L),
           Tuple1(51L)
         )
-      ))
+      ).toDF("id"))
 
     val rs = RelationshipTable(RelationshipMapping.on("ID").from("SRC").to("DST").relType("FOO"),
-      CAPSRecords.create(
-        Seq("SRC", "ID", "DST"),
+      caps.sparkSession.createDataFrame(
         Seq(
           (10L, 1000L, 20L),
           (50L, 500L, 25L)
         )
-      ))
+      ).toDF(Seq("SRC", "ID", "DST"): _*))
+
 
     val graph = CAPSGraph.create(nodes, rs)
 

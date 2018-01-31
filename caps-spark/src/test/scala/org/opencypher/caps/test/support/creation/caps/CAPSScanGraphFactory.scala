@@ -19,7 +19,7 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.caps.api.{CAPSSession, NodeTable, RelationshipTable}
-import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords, CAPSScanGraph}
+import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSScanGraph}
 import org.opencypher.caps.test.support.creation.propertygraph.PropertyGraph
 
 import scala.collection.JavaConverters._
@@ -45,7 +45,7 @@ object CAPSScanGraphFactory extends CAPSGraphFactory {
           Row.fromSeq(Seq(node.id) ++ propertyValues)
         }
 
-      val records = CAPSRecords.create(header: _*)(rows.asJava, structType)
+      val records = caps.sparkSession.createDataFrame(rows.asJava, structType).toDF(header: _*)
 
       NodeTable(NodeMapping
         .on("ID")
@@ -70,7 +70,7 @@ object CAPSScanGraphFactory extends CAPSGraphFactory {
           Row.fromSeq(Seq(rel.id, rel.startId, rel.endId) ++ propertyValues)
         }
 
-      val records = CAPSRecords.create(header: _*)(rows.asJava, structType)
+      val records = caps.sparkSession.createDataFrame(rows.asJava, structType).toDF(header: _*)
 
       RelationshipTable(RelationshipMapping
         .on("ID")

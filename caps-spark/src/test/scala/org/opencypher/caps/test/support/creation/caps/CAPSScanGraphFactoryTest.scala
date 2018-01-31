@@ -19,7 +19,7 @@ import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.CTString
 import org.opencypher.caps.api.{NodeTable, RelationshipTable}
-import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords}
+import org.opencypher.caps.impl.spark.CAPSGraph
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.support.GraphMatchingTestSupport
 import org.opencypher.caps.test.support.creation.propertygraph.CAPSPropertyGraphFactory
@@ -44,34 +44,34 @@ class CAPSScanGraphFactoryTest extends CAPSTestSuite with GraphMatchingTestSuppo
     .withImpliedLabel("Person")
     .withOptionalLabel("Astronaut" -> "IS_ASTRONAUT")
     .withOptionalLabel("Martian" -> "IS_MARTIAN")
-    .withPropertyKey("name" -> "NAME"), CAPSRecords.create(
-    Seq("ID", "IS_ASTRONAUT", "IS_MARTIAN", "NAME"),
+    .withPropertyKey("name" -> "NAME"), caps.sparkSession.createDataFrame(
     Seq(
       (0L, true, false, "Max"),
       (1L, false, true, "Martin"))
-  ))
+  ).toDF(Seq("ID", "IS_ASTRONAUT", "IS_MARTIAN", "NAME"): _*))
+
 
   val languageTable: NodeTable = NodeTable(NodeMapping
     .on("ID")
     .withImpliedLabel("Language")
-    .withPropertyKey("title" -> "TITLE"), CAPSRecords.create(
-    Seq("ID", "TITLE"),
+    .withPropertyKey("title" -> "TITLE"), caps.sparkSession.createDataFrame(
     Seq(
       (2L, "Swedish"),
       (3L, "German"),
       (4L, "Orbital"))
-  ))
+  ).toDF(Seq("ID", "TITLE"): _*))
+
 
   val knowsScan: RelationshipTable = RelationshipTable(RelationshipMapping
     .on("ID")
-    .from("SRC").to("DST").relType("KNOWS"), CAPSRecords.create(
-    Seq("SRC", "ID", "DST"),
+    .from("SRC").to("DST").relType("KNOWS"), caps.sparkSession.createDataFrame(
     Seq(
       (0L, 5L, 2L),
       (0L, 6L, 3L),
       (1L, 7L, 3L),
       (1L, 8L, 4L))
-  ))
+  ).toDF(Seq("SRC", "ID", "DST"): _*))
+
 
   test("testSchema") {
     val propertyGraph = CAPSPropertyGraphFactory(createQuery)

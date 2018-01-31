@@ -107,27 +107,6 @@ sealed abstract class CAPSRecords(
     CAPSRecords.create(header, unionData)
   }
 
-//  def contract[E <: EmbeddedEntity](entity: VerifiedEmbeddedEntity[E]): CAPSRecords = {
-//    val slotExprs = entity.slots
-//    val newSlots = header.slots.map {
-//      case slot@RecordSlot(idx, content: FieldSlotContent) =>
-//        slotExprs
-//          .get(content.field.name)
-//          .map {
-//            case expr: Var => OpaqueField(expr)
-//            case expr: Property => ProjectedExpr(expr.copy()(cypherType = content.cypherType))
-//            case expr => ProjectedExpr(expr)
-//          }
-//          .getOrElse(slot.content)
-//
-//      case slot =>
-//        slot.content
-//    }
-//    val newHeader = RecordHeader.from(newSlots: _*)
-//    val renamed = data.toDF(newHeader.internalHeader.columns: _*)
-//    CAPSRecords.create(newHeader, renamed)
-//  }
-
   def distinct: CAPSRecords = {
     CAPSRecords.create(header, data.distinct())
   }
@@ -227,10 +206,9 @@ sealed abstract class CAPSRecords(
 object CAPSRecords {
 
   def create(entityTable: EntityTable)(implicit caps: CAPSSession): CAPSRecords = {
-    def sourceColumnToPropertyExpressionMapping(
-      variable: Var): Map[String, Expr] = {
-      val keyMap = entityTable.mapping.propertyMapping.map { case (key, sourceColumn) =>
-        sourceColumn -> Property(variable, PropertyKey(key))()
+    def sourceColumnToPropertyExpressionMapping(variable: Var): Map[String, Expr] = {
+      val keyMap = entityTable.mapping.propertyMapping.map {
+        case (key, sourceColumn) => sourceColumn -> Property(variable, PropertyKey(key))()
       }.foldLeft(Map.empty[String, Expr]) {
         case (m, (sourceColumn, propertyExpr)) =>
           if (m.contains(sourceColumn))
@@ -243,7 +221,27 @@ object CAPSRecords {
       else keyMap.updated(sourceKey, variable)
     }
 
-    // Computes map of sourceColumn -> Expression
+    // Computes map of sourceColumn -> Expression for nodes
+    def sourceColumnNodeToExpressionMapping(nodeMapping: NodeMapping): Map[String, Expr] = {
+      // TODO: Generate var. Nice-to-have property: Same DF gets same var.
+      // TODO: Labels on node var?
+      val generatedVar = Var("boo")(CTNode(nodeMapping.impliedLabels))
+
+      val entityMappings = sourceColumnToPropertyExpressionMapping(generatedVar)
+
+      nodeMapping.optionalLabelMapping.map {
+        case (label, sourceColumn) => {
+          sourceColumn -> HasLabel(generatedVar, Label(label))(CTBoolean)
+        }
+      }.foldLeft(entityMappings) {
+        case (m, (sourceColumn, expr)) =>
+          if (m.contains(sourceColumn))
+            throw DuplicateSourceColumnException(sourceColumn, generatedVar)
+          else m.updated(sourceColumn, expr)
+      }
+    }
+
+    // Computes map of sourceColumn -> Expression for relationships
     def sourceColumnRelationshipToExpressionMapping(relMapping: RelationshipMapping): Map[String, Expr] = {
       // TODO: Generate var. Nice-to-have property: Same DF gets same var.
       // TODO: Labels on node var?
@@ -263,25 +261,7 @@ object CAPSRecords {
         case Right((sourceRelTypeColumn, _)) if sourceColumnToExpressionMapping.contains(sourceRelTypeColumn) =>
           throw DuplicateSourceColumnException(sourceRelTypeColumn, relVar)
         case Right((sourceRelTypeColumn, _)) => sourceColumnToExpressionMapping.updated(sourceRelTypeColumn, Type(relVar)(CTString))
-        case Left(_)        => sourceColumnToExpressionMapping
-      }
-    }
-
-    // Computes map of sourceColumn -> Expression
-    def sourceColumnNodeToExpressionMapping(nodeMapping: NodeMapping): Map[String, Expr] = {
-      // TODO: Generate var. Nice-to-have property: Same DF gets same var.
-      // TODO: Labels on node var?
-      val generatedVar = Var("boo")(CTNode(nodeMapping.impliedLabels))
-
-      val entityMappings = sourceColumnToPropertyExpressionMapping(generatedVar)
-
-      nodeMapping.optionalLabelMapping.map { case (label, sourceColumn) =>
-        sourceColumn -> HasLabel(generatedVar, Label(label))(CTBoolean)
-      }.foldLeft(entityMappings) {
-        case (m, (slot, expr)) =>
-          if (m.contains(slot))
-            throw DuplicateSourceColumnException(slot, generatedVar)
-          else m.updated(slot, expr)
+        case Left(_) => sourceColumnToExpressionMapping
       }
     }
 

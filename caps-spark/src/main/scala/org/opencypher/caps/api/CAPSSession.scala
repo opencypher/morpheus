@@ -70,14 +70,14 @@ sealed trait EntityTable {
 
 // TODO: Move where they belong
 case class NodeTable(mapping: NodeMapping, table: DataFrame)(implicit session: CAPSSession) extends EntityTable {
-  override val schema: Schema = {
+  override def schema: Schema = {
     // TODO: validate that optional label columns have structfield datatype boolean
 
     val propertyKeys = mapping.propertyMapping.toSeq.map {
       case (propertyKey, sourceKey) => propertyKey -> cypherTypeForColumn(table, sourceKey)
     }
 
-    mapping.optionalLabelMapping.values.toSet.subsets
+    mapping.optionalLabelMapping.keys.toSet.subsets
       .map(_.union(mapping.impliedLabels))
       .map(combo => Schema.empty.withNodePropertyKeys(combo.toSeq: _*)(propertyKeys: _*))
       .reduce(_ ++ _)
@@ -104,8 +104,8 @@ object NodeTable {
   }
 
   // TODO: validate record schema vs mapping
-  private[caps] def apply(mapping: NodeMapping, records: CAPSRecords): NodeTable =
-    NodeTable(mapping, records.data)(records.caps)
+//  private[caps] def apply(mapping: NodeMapping, records: CAPSRecords): NodeTable =
+//    NodeTable(mapping, records.data)(records.caps)
 }
 
 case class RelationshipTable(mapping: RelationshipMapping, table: DataFrame)(implicit session: CAPSSession) extends EntityTable {
@@ -153,8 +153,8 @@ object RelationshipTable {
     relColumnNames.filter(!nonPropertyAttributes.contains(_))
   }
 
-  private[caps] def apply(mapping: RelationshipMapping, records: CAPSRecords): RelationshipTable =
-    RelationshipTable(mapping, records.data)(records.caps)
+//  private[caps] def apply(mapping: RelationshipMapping, records: CAPSRecords): RelationshipTable =
+//    RelationshipTable(mapping, records.data)(records.caps)
 }
 
 trait CAPSSession extends CypherSession {
