@@ -74,13 +74,10 @@ class CAPSUnionGraphTest extends CAPSTestSuite with GraphCreationFixture with Te
   }
 
   test("Returns only distinct results") {
-    val inputGraph = initGraph(`:Person`)
-    val inputNodes = inputGraph.nodes("n")
-    val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema)
+    val scanGraph1 = CAPSGraph.create(personTable)
+    val scanGraph2 = CAPSGraph.create(personTable)
 
-    val scanGraph = CAPSGraph.create(personTable)
-
-    val unionGraph = CAPSUnionGraph(patternGraph, scanGraph)
+    val unionGraph = CAPSUnionGraph(scanGraph1, scanGraph2)
     val outputNodes = unionGraph.nodes("n")
 
     outputNodes.toDF().columns should equal(Array(
@@ -92,10 +89,10 @@ class CAPSUnionGraphTest extends CAPSTestSuite with GraphCreationFixture with Te
     ))
 
     outputNodes.toDF().collect().toBag should equal(Bag(
-      Row(0L, true, true, 23L, "Mats"),
-      Row(2L, true, false, 1337L, "Max"),
-      Row(1L, true, false, 42L, "Martin"),
-      Row(3L, true, false, 9L, "Stefan"))
+      Row(1L, true, true, 23L, "Mats"),
+      Row(2L, true, false, 42L, "Martin"),
+      Row(3L, true, false, 1337L, "Max"),
+      Row(4L, true, false, 9L, "Stefan"))
     )
   }
 
