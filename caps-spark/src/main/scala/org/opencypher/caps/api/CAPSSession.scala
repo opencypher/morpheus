@@ -19,9 +19,7 @@ import java.util.{ServiceLoader, UUID}
 
 import org.apache.spark.SparkConf
 import org.apache.spark.serializer.KryoSerializer
-import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, SparkSession}
-import org.opencypher.caps.api.SparkUtils._
 import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph}
 import org.opencypher.caps.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
@@ -29,37 +27,12 @@ import org.opencypher.caps.api.schema.{Node, Relationship, Schema}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.demo.CypherKryoRegistrar
 import org.opencypher.caps.impl.spark._
-import org.opencypher.caps.impl.spark.convert.fromSparkType
+import org.opencypher.caps.impl.spark.convert.SparkUtils._
 import org.opencypher.caps.impl.spark.io.{CAPSGraphSourceHandler, CAPSPropertyGraphDataSourceFactory}
 import org.opencypher.caps.impl.util.Annotation
 
 import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe._
-
-// TODO: Place in same location as `fromSparkType`
-object SparkUtils {
-
-  def cypherCompatibleDataType(dt: DataType): Option[DataType] = dt match {
-    case ByteType | ShortType | IntegerType => Some(LongType)
-    case FloatType => Some(DoubleType)
-    case compatible if fromSparkType(dt, nullable = false).isDefined => Some(compatible)
-    case _ => None
-  }
-
-  def cypherTypeForColumn(df: DataFrame, columnName: String): CypherType = {
-    val structField = sparkFieldForColumn(df, columnName)
-    val compatibleCypherType = cypherCompatibleDataType(structField.dataType).flatMap(fromSparkType(_, structField.nullable))
-    compatibleCypherType.getOrElse(
-      throw IllegalArgumentException("a supported Spark DataType that can be converted to CypherType", structField.dataType))
-  }
-
-  def sparkFieldForColumn(df: DataFrame, column: String): StructField = {
-    if (df.schema.fieldIndex(column) < 0) {
-      throw IllegalArgumentException(s"column with name $column", s"columns with names ${df.columns.mkString("[", ", ", "]")}")
-    }
-    df.schema.fields(df.schema.fieldIndex(column))
-  }
-}
 
 sealed trait EntityTable {
   def schema: Schema

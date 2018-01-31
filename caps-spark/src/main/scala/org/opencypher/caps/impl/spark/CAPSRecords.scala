@@ -27,12 +27,13 @@ import org.opencypher.caps.api.exception.{DuplicateSourceColumnException, Illega
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value._
-import org.opencypher.caps.api.{CAPSSession, EntityTable, NodeTable, RelationshipTable, _}
+import org.opencypher.caps.api.{CAPSSession, EntityTable, NodeTable, RelationshipTable}
 import org.opencypher.caps.impl.record.CAPSRecordHeader._
 import org.opencypher.caps.impl.record.{CAPSRecordHeader, _}
 import org.opencypher.caps.impl.spark.CAPSRecords.{prepareDataFrame, verifyAndCreate}
 import org.opencypher.caps.impl.spark.DfUtils._
-import org.opencypher.caps.impl.spark.convert.{fromSparkType, rowToCypherMap, toSparkType}
+import org.opencypher.caps.impl.spark.convert.SparkUtils._
+import org.opencypher.caps.impl.spark.convert.rowToCypherMap
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.impl.util.PrintOptions
 import org.opencypher.caps.ir.api.expr._
@@ -345,7 +346,7 @@ object CAPSRecords {
     val toCast = initialDataFrame.schema.fields.filter(f => fromSparkType(f.dataType, f.nullable).isEmpty)
     val dfWithCompatibleTypes: DataFrame = toCast.foldLeft(initialDataFrame) {
       case (df, field) =>
-        val castType = SparkUtils.cypherCompatibleDataType(field.dataType).getOrElse(
+        val castType = cypherCompatibleDataType(field.dataType).getOrElse(
           throw IllegalArgumentException("a Spark type supported by Cypher", s"type ${field.dataType} of field $field"))
         df.mapColumn(field.name)(_.cast(castType))
     }

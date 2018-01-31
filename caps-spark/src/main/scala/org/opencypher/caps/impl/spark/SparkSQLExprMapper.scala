@@ -22,7 +22,7 @@ import org.opencypher.caps.api.exception.{IllegalStateException, NotImplementedE
 import org.opencypher.caps.api.types.{CTAny, CTList, CTNode, CTString}
 import org.opencypher.caps.impl.record.RecordHeader
 import org.opencypher.caps.impl.spark.Udfs._
-import org.opencypher.caps.impl.spark.convert.toSparkType
+import org.opencypher.caps.impl.spark.convert.SparkUtils._
 import org.opencypher.caps.impl.spark.physical.RuntimeContext
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.columnName
 import org.opencypher.caps.ir.api.expr._
@@ -41,9 +41,9 @@ object SparkSQLExprMapper {
   }
 
   private def getColumn(expr: Expr, header: RecordHeader, dataFrame: DataFrame)(
-      implicit context: RuntimeContext): Column = {
+    implicit context: RuntimeContext): Column = {
     expr match {
-      case p @ Param(name) if p.cypherType.subTypeOf(CTList(CTAny)).maybeTrue =>
+      case p@Param(name) if p.cypherType.subTypeOf(CTList(CTAny)).maybeTrue =>
         udf(const(context.parameters(name)), toSparkType(p.cypherType))()
       case Param(name) =>
         functions.lit(toJava(context.parameters(name)))
@@ -107,7 +107,7 @@ object SparkSQLExprMapper {
         case Not(e) =>
           apply(header, e, df) match {
             case Some(res) => Some(!res)
-            case _         => throw NotImplementedException(s"Support for expression $e")
+            case _ => throw NotImplementedException(s"Support for expression $e")
           }
 
         case IsNull(e) =>
@@ -123,9 +123,9 @@ object SparkSQLExprMapper {
 
           val col = getColumn(s.expr, header, df)
           val computedSize = s.expr.cypherType match {
-            case CTString  => udf((s: String) => s.length.toLong, LongType)(col)
+            case CTString => udf((s: String) => s.length.toLong, LongType)(col)
             case _: CTList => functions.size(col).cast(LongType)
-            case other     => throw NotImplementedException(s"size() on type $other")
+            case other => throw NotImplementedException(s"size() on type $other")
           }
           Some(computedSize)
 
@@ -160,10 +160,10 @@ object SparkSQLExprMapper {
         case h: HasLabel =>
           Some(getColumn(h, header, df)) // it's a boolean column
 
-        case inEq: LessThan           => Some(inequality(lt, header, inEq, df))
-        case inEq: LessThanOrEqual    => Some(inequality(lteq, header, inEq, df))
+        case inEq: LessThan => Some(inequality(lt, header, inEq, df))
+        case inEq: LessThanOrEqual => Some(inequality(lteq, header, inEq, df))
         case inEq: GreaterThanOrEqual => Some(inequality(gteq, header, inEq, df))
-        case inEq: GreaterThan        => Some(inequality(gt, header, inEq, df))
+        case inEq: GreaterThan => Some(inequality(gt, header, inEq, df))
 
         // Arithmetics
         case add: Add =>
@@ -265,7 +265,7 @@ object SparkSQLExprMapper {
       }
 
     private def inequality(f: (Any, Any) => Any, header: RecordHeader, expr: BinaryExpr, df: DataFrame)(
-        implicit context: RuntimeContext): Column = {
+      implicit context: RuntimeContext): Column = {
       verifyExpression(header, expr)
 
       val lhsColumn = getColumn(expr.lhs, header, df)
