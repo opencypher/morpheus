@@ -76,7 +76,7 @@ object PhysicalOperator {
       colsToDrop.foldLeft(joinedData)((acc, col) => acc.drop(col))
     } else joinedData
 
-    CAPSRecords.create(header, returnData)
+    CAPSRecords.verifyAndCreate(header, returnData)
   }
 
   def assertIsNode(slot: RecordSlot): Unit = {

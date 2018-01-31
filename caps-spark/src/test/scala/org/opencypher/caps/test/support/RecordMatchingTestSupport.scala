@@ -57,7 +57,7 @@ trait RecordMatchingTestSupport {
       }
       val newHeader = RecordHeader.from(newSlots: _*)
       val newData = records.data.toDF(newHeader.internalHeader.columns: _*)
-      CAPSRecords.create(newHeader, newData)(records.caps)
+      CAPSRecords.verifyAndCreate(newHeader, newData)(records.caps)
     }
   }
 

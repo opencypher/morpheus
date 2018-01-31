@@ -116,7 +116,7 @@ final case class Unwind(in: PhysicalOperator, list: Expr, item: Var, header: Rec
           records.data.withColumn(itemColumn, functions.explode(listColumn))
       }
 
-      CAPSRecords.create(header, newData)(records.caps)
+      CAPSRecords.verifyAndCreate(header, newData)(records.caps)
     }
   }
 }
@@ -139,7 +139,7 @@ final case class Alias(in: PhysicalOperator, expr: Expr, alias: Var, header: Rec
         throw IllegalArgumentException(s"a column with name $oldColumnName")
       }
 
-      CAPSRecords.create(header, newData)(records.caps)
+      CAPSRecords.verifyAndCreate(header, newData)(records.caps)
     }
   }
 }
@@ -168,7 +168,7 @@ final case class Project(in: PhysicalOperator, expr: Expr, header: RecordHeader)
           }
       }
 
-      CAPSRecords.create(header, newData)(records.caps)
+      CAPSRecords.verifyAndCreate(header, newData)(records.caps)
     }
   }
 }
@@ -193,7 +193,7 @@ final case class Filter(in: PhysicalOperator, expr: Expr, header: RecordHeader) 
 
       val newData = filteredRows.select(selectedColumns: _*)
 
-      CAPSRecords.create(header, newData)(records.caps)
+      CAPSRecords.verifyAndCreate(header, newData)(records.caps)
     }
   }
 }
@@ -247,7 +247,7 @@ final case class ProjectPatternGraph(
       )
       ._1
 
-    CAPSRecords.create(newHeader, newData)(records.caps)
+    CAPSRecords.verifyAndCreate(newHeader, newData)(records.caps)
   }
 
   private def constructNode(node: ConstructedNode, records: CAPSRecords): (Set[(SlotContent, Column)]) = {
@@ -312,7 +312,7 @@ final case class RemoveAliases(
           df.withColumnRenamed(SparkColumnName.of(v), SparkColumnName.of(expr))
       }
 
-      CAPSRecords.create(header, renamed)(records.caps)
+      CAPSRecords.verifyAndCreate(header, renamed)(records.caps)
     }
   }
 }
@@ -343,7 +343,7 @@ final case class SelectFields(in: PhysicalOperator, fields: IndexedSeq[Var], hea
       }
       val newData = records.data.select(columns: _*)
 
-      CAPSRecords.create(header, newData)(records.caps)
+      CAPSRecords.verifyAndCreate(header, newData)(records.caps)
     }
   }
 }
@@ -364,7 +364,7 @@ final case class Distinct(in: PhysicalOperator, header: RecordHeader) extends Un
       val columnNames = header.slots.map(slot => data.col(columnName(slot)))
       val relevantColumns = data.select(columnNames: _*)
       val distinctRows = relevantColumns.dropDuplicates(header.fields.toSeq)
-      CAPSRecords.create(header, distinctRows)(records.caps)
+      CAPSRecords.verifyAndCreate(header, distinctRows)(records.caps)
     }
   }
 }
@@ -374,7 +374,7 @@ final case class SimpleDistinct(in: PhysicalOperator)
 
   override def executeUnary(prev: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult = {
     prev.mapRecordsWithDetails { records =>
-      CAPSRecords.create(prev.records.header, records.data.distinct())(records.caps)
+      CAPSRecords.verifyAndCreate(prev.records.header, records.data.distinct())(records.caps)
     }
   }
 }
@@ -446,7 +446,7 @@ final case class Aggregate(
         _.agg(sparkAggFunctions.head, sparkAggFunctions.tail.toSeq: _*)
       )
 
-      CAPSRecords.create(header, aggregated)(records.caps)
+      CAPSRecords.verifyAndCreate(header, aggregated)(records.caps)
     }
   }
 }
@@ -465,7 +465,7 @@ final case class OrderBy(in: PhysicalOperator, sortItems: Seq[SortItem[Expr]], h
 
     prev.mapRecordsWithDetails { records =>
       val sortedData = records.toDF().sort(sortExpression: _*)
-      CAPSRecords.create(header, sortedData)(records.caps)
+      CAPSRecords.verifyAndCreate(header, sortedData)(records.caps)
     }
   }
 }
@@ -494,7 +494,7 @@ final case class Skip(in: PhysicalOperator, expr: Expr, header: RecordHeader) ex
           .map(_._1),
         records.toDF().schema
       )
-      CAPSRecords.create(header, newDf)(records.caps)
+      CAPSRecords.verifyAndCreate(header, newDf)(records.caps)
     }
   }
 }
@@ -513,7 +513,7 @@ final case class Limit(in: PhysicalOperator, expr: Expr, header: RecordHeader) e
     }
 
     prev.mapRecordsWithDetails { records =>
-      CAPSRecords.create(header, records.toDF().limit(limit.toInt))(records.caps)
+      CAPSRecords.verifyAndCreate(header, records.toDF().limit(limit.toInt))(records.caps)
     }
   }
 }
@@ -543,7 +543,7 @@ final case class InitVarExpand(in: PhysicalOperator, source: Var, edgeList: Var,
 
       val initializedData = withEmptyList.select(cols: _*)
 
-      CAPSRecords.create(header, initializedData)(records.caps)
+      CAPSRecords.verifyAndCreate(header, initializedData)(records.caps)
     }
   }
 }

@@ -136,7 +136,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture {
     val header = RecordHeader.from(OpaqueField(Var("int")()), OpaqueField(Var("notString")()))
 
     a[CypherException] shouldBe thrownBy {
-      CAPSRecords.create(header, data)
+      CAPSRecords.verifyAndCreate(header, data)
     }
   }
 
@@ -144,7 +144,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture {
     val data = session.createDataFrame(Seq((1L, "foo"), (2L, "bar"))).toDF("int", "string")
     val header = RecordHeader.from(OpaqueField(Var("int")(CTInteger)), OpaqueField(Var("string")(CTString)))
 
-    val records = CAPSRecords.create(header, data) // no exception is thrown
+    val records = CAPSRecords.verifyAndCreate(header, data) // no exception is thrown
     records.data.select("int").collect() should equal(Array(Row(1), Row(2)))
   }
 
