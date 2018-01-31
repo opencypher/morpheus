@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.spark.acceptance
 
-import org.opencypher.caps.api.value.CAPSMap
+import org.opencypher.caps.api.value.{CAPSMap, CAPSValue}
 import org.opencypher.caps.impl.spark.CAPSGraph
 
 import scala.collection.Bag
@@ -523,6 +523,34 @@ trait ExpressionBehaviour {
           CAPSMap("a.id" -> 1L, "other" -> true),
           CAPSMap("a.id" -> 2L, "other" -> false),
           CAPSMap("a.id" -> 3L, "other" -> false)
+        ))
+      }
+    }
+
+    describe("ListLiteral") {
+      it("can convert string ListLiterals from parameters"){
+        val graph = initGraph("CREATE ()")
+
+        val result = graph.cypher(
+          """
+            |WITH [$a, $b] as strings
+            |RETURN strings""".stripMargin, Map("a" -> CAPSValue("bar"), "b" -> CAPSValue("foo")))
+
+        result.records.toMaps should equal(Bag(
+          CAPSMap("strings" -> Seq("bar", "foo"))
+        ))
+      }
+
+      it("can convert string ListLiterals"){
+        val graph = initGraph("CREATE ()")
+
+        val result = graph.cypher(
+          """
+            |WITH ["bar", "foo"] as strings
+            |RETURN strings""".stripMargin)
+
+        result.records.toMaps should equal(Bag(
+          CAPSMap("strings" -> Seq("bar", "foo"))
         ))
       }
     }

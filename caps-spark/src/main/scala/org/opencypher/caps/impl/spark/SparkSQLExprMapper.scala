@@ -47,6 +47,9 @@ object SparkSQLExprMapper {
         udf(const(context.parameters(name)), toSparkType(p.cypherType))()
       case Param(name) =>
         functions.lit(toJava(context.parameters(name)))
+      case ListLit(exprs) =>
+        val cols = exprs.map(getColumn(_, header, dataFrame))
+        functions.array(cols: _*)
       case l: Lit[_] =>
         functions.lit(l.v)
       case _ =>
@@ -84,6 +87,10 @@ object SparkSQLExprMapper {
 
         case _: Param =>
           Some(getColumn(expr, header, df))
+
+        case ListLit(exprs) =>
+          val cols = exprs.map(asSparkSQLExpr(header, _, df).get)
+          Some(functions.array(cols: _*))
 
         case _: Lit[_] =>
           Some(getColumn(expr, header, df))
