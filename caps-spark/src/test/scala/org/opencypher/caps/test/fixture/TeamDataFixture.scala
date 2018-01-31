@@ -17,7 +17,7 @@ package org.opencypher.caps.test.fixture
 
 import org.apache.spark.sql.{DataFrame, Row}
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
-import org.opencypher.caps.api.{NodeTable, RelationshipTable}
+import org.opencypher.caps.api.schema.{NodeTable, RelationshipTable}
 import org.opencypher.caps.test.support.DebugOutputSupport
 
 import scala.collection.Bag

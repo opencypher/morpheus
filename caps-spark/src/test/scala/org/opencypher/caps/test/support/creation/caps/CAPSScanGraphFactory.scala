@@ -17,8 +17,9 @@ package org.opencypher.caps.test.support.creation.caps
 
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
+import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
-import org.opencypher.caps.api.{CAPSSession, NodeTable, RelationshipTable}
+import org.opencypher.caps.api.schema.{NodeTable, RelationshipTable}
 import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSScanGraph}
 import org.opencypher.caps.test.support.creation.propertygraph.PropertyGraph
 

@@ -24,10 +24,11 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.types.ArrayType
 import org.apache.spark.sql.{DataFrame, SparkSession, functions}
+import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
-import org.opencypher.caps.api.{CAPSSession, NodeTable, RelationshipTable}
+import org.opencypher.caps.api.schema.{NodeTable, RelationshipTable}
 
 trait CsvGraphLoaderFileHandler {
   def location: String

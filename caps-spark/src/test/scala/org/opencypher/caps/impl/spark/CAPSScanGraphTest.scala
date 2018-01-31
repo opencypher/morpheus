@@ -17,10 +17,10 @@ package org.opencypher.caps.impl.spark
 
 import org.apache.spark.sql.Row
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
+import org.opencypher.caps.api.schema.{NodeTable, RelationshipTable}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.api.value.EntityId._
 import org.opencypher.caps.api.value._
-import org.opencypher.caps.api.{NodeTable, RelationshipTable}
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.fixture.TeamDataFixture
 
