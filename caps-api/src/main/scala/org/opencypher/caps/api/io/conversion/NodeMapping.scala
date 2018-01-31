@@ -15,6 +15,8 @@
  */
 package org.opencypher.caps.api.io.conversion
 
+import org.opencypher.caps.api.types.CTNode
+
 object NodeMapping {
   /**
     * Alias for [[withSourceIdKey()]].
@@ -91,6 +93,8 @@ case class NodeMapping(
   impliedLabels: Set[String] = Set.empty,
   optionalLabelMapping: Map[String, String] = Map.empty,
   propertyMapping: Map[String, String] = Map.empty) extends EntityMapping {
+
+  def cypherType: CTNode = CTNode(impliedLabels)
 
   def withImpliedLabels(labels: String*): NodeMapping =
     labels.foldLeft(this)((mapping, label) => mapping.withImpliedLabel(label))

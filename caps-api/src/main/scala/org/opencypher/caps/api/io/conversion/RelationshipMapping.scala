@@ -15,6 +15,8 @@
  */
 package org.opencypher.caps.api.io.conversion
 
+import org.opencypher.caps.api.types.CTRelationship
+
 object RelationshipMapping {
   /**
     * @param sourceIdKey represents a key to the relationship identifier within the source data. The retrieved value
@@ -147,11 +149,12 @@ final case class RelationshipMapping(
   relTypeOrSourceRelTypeKey: Either[String, (String, Set[String])],
   propertyMapping: Map[String, String] = Map.empty) extends EntityMapping {
 
-  def possibleRelTypes: Set[String] = {
-    relTypeOrSourceRelTypeKey match {
+  def cypherType: CTRelationship = {
+    val possibleRelTypes = relTypeOrSourceRelTypeKey match {
       case Left(relType) => Set(relType)
       case Right((_, possibleRelValues)) => possibleRelValues
     }
+    CTRelationship(possibleRelTypes)
   }
 
   def withPropertyKey(propertyKey: String, sourcePropertyKey: String): RelationshipMapping =

@@ -26,8 +26,8 @@ import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.exception.{DuplicateSourceColumnException, IllegalArgumentException, IllegalStateException}
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.api.value._
-import org.opencypher.caps.api.{CAPSSession, EntityTable, NodeTable, RelationshipTable}
+import org.opencypher.caps.api.value.{CypherMap, _}
+import org.opencypher.caps.api.{CAPSSession, EntityTable, NodeTable, RelationshipTable, _}
 import org.opencypher.caps.impl.record.CAPSRecordHeader._
 import org.opencypher.caps.impl.record.{CAPSRecordHeader, _}
 import org.opencypher.caps.impl.spark.CAPSRecords.{prepareDataFrame, verifyAndCreate}
@@ -256,7 +256,7 @@ object CAPSRecords {
     def sourceColumnNodeToExpressionMapping(nodeMapping: NodeMapping): Map[String, Expr] = {
       // TODO: Generate var. Nice-to-have property: Same DF gets same var.
       // TODO: Labels on node var?
-      val generatedVar = Var("boo")(CTNode(nodeMapping.impliedLabels))
+      val generatedVar = Var("boo")(nodeMapping.cypherType)
 
       val entityMappings = sourceColumnToPropertyExpressionMapping(generatedVar)
 
@@ -276,7 +276,7 @@ object CAPSRecords {
     def sourceColumnRelationshipToExpressionMapping(relMapping: RelationshipMapping): Map[String, Expr] = {
       // TODO: Generate var. Nice-to-have property: Same DF gets same var.
       // TODO: Labels on node var?
-      val relVar = Var("boo")(CTRelationship(relMapping.possibleRelTypes))
+      val relVar = Var("boo")(relMapping.cypherType)
       val entityMappings = sourceColumnToPropertyExpressionMapping(relVar)
 
       val sourceColumnToExpressionMapping: Map[String, Expr] = Seq(
@@ -345,12 +345,8 @@ object CAPSRecords {
     val toCast = initialDataFrame.schema.fields.filter(f => fromSparkType(f.dataType, f.nullable).isEmpty)
     val dfWithCompatibleTypes: DataFrame = toCast.foldLeft(initialDataFrame) {
       case (df, field) =>
-        val castType = field.dataType match {
-          case ByteType | ShortType | IntegerType => LongType
-          case FloatType => DoubleType
-          case other =>
-            throw IllegalArgumentException("a Spark type supported by Cypher", s"type $other of field $field")
-        }
+        val castType = SparkUtils.cypherCompatibleDataType(field.dataType).getOrElse(
+          throw IllegalArgumentException("a Spark type supported by Cypher", s"type ${field.dataType} of field $field"))
         df.mapColumn(field.name)(_.cast(castType))
     }
     dfWithCompatibleTypes

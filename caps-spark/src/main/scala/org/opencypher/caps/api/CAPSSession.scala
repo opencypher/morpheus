@@ -19,9 +19,9 @@ import java.util.{ServiceLoader, UUID}
 
 import org.apache.spark.SparkConf
 import org.apache.spark.serializer.KryoSerializer
-import org.apache.spark.sql.types.StructField
+import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, SparkSession}
-import org.opencypher.caps.api.SparkUtils.cypherTypeForColumn
+import org.opencypher.caps.api.SparkUtils._
 import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph}
 import org.opencypher.caps.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
@@ -36,14 +36,21 @@ import org.opencypher.caps.impl.util.Annotation
 import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe._
 
+// TODO: Place in same location as `fromSparkType`
 object SparkUtils {
+
+  def cypherCompatibleDataType(dt: DataType): Option[DataType] = dt match {
+    case ByteType | ShortType | IntegerType => Some(LongType)
+    case FloatType => Some(DoubleType)
+    case compatible if fromSparkType(dt, nullable = false).isDefined => Some(compatible)
+    case _ => None
+  }
 
   def cypherTypeForColumn(df: DataFrame, columnName: String): CypherType = {
     val structField = sparkFieldForColumn(df, columnName)
-    fromSparkType(structField.dataType, structField.nullable) match {
-      case Some(cypherType) => cypherType
-      case None => throw IllegalArgumentException("a supported Spark DataType that can be converted to CypherType", structField.dataType)
-    }
+    val compatibleCypherType = cypherCompatibleDataType(structField.dataType).flatMap(fromSparkType(_, structField.nullable))
+    compatibleCypherType.getOrElse(
+      throw IllegalArgumentException("a supported Spark DataType that can be converted to CypherType", structField.dataType))
   }
 
   def sparkFieldForColumn(df: DataFrame, column: String): StructField = {
@@ -62,7 +69,7 @@ sealed trait EntityTable {
   def table: DataFrame
 
   // TODO: create CTEntity type
-  private[caps] def entityType: CypherType with DefiniteCypherType
+  private[caps] def entityType: CypherType with DefiniteCypherType = mapping.cypherType
 
   private[caps] def records(implicit caps: CAPSSession): CAPSRecords = CAPSRecords.create(this)
 
@@ -70,7 +77,8 @@ sealed trait EntityTable {
 
 // TODO: Move where they belong
 case class NodeTable(mapping: NodeMapping, table: DataFrame)(implicit session: CAPSSession) extends EntityTable {
-  override def schema: Schema = {
+
+  override lazy val schema: Schema = {
     // TODO: validate that optional label columns have structfield datatype boolean
 
     val propertyKeys = mapping.propertyMapping.toSeq.map {
@@ -82,8 +90,6 @@ case class NodeTable(mapping: NodeMapping, table: DataFrame)(implicit session: C
       .map(combo => Schema.empty.withNodePropertyKeys(combo.toSeq: _*)(propertyKeys: _*))
       .reduce(_ ++ _)
   }
-
-  override private[caps] def entityType: CTNode = CTNode(schema.labels)
 
 }
 
@@ -103,15 +109,11 @@ object NodeTable {
     nodeColumnNames.filter(_ != nodeIdColumnName).toSet
   }
 
-  // TODO: validate record schema vs mapping
-//  private[caps] def apply(mapping: NodeMapping, records: CAPSRecords): NodeTable =
-//    NodeTable(mapping, records.data)(records.caps)
 }
 
 case class RelationshipTable(mapping: RelationshipMapping, table: DataFrame)(implicit session: CAPSSession) extends EntityTable {
-  override private[caps] def entityType: CTRelationship = CTRelationship(schema.relationshipTypes)
 
-  override def schema: Schema = {
+  override lazy val schema: Schema = {
     val relTypes = mapping.relTypeOrSourceRelTypeKey match {
       case Left(name) => Set(name)
       case Right((_, possibleTypes)) => possibleTypes
@@ -153,8 +155,6 @@ object RelationshipTable {
     relColumnNames.filter(!nonPropertyAttributes.contains(_))
   }
 
-//  private[caps] def apply(mapping: RelationshipMapping, records: CAPSRecords): RelationshipTable =
-//    RelationshipTable(mapping, records.data)(records.caps)
 }
 
 trait CAPSSession extends CypherSession {
@@ -246,4 +246,5 @@ object CAPSSession extends Serializable {
       )
     }
   }
+
 }

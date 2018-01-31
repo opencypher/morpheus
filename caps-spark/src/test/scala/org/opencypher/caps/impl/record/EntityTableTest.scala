@@ -36,7 +36,6 @@ class EntityTableTest extends CAPSTestSuite {
     .withPropertyKey("bar" -> "BAR")
 
   test("mapping from scala classes") {
-    val persons = List(Person(0, "Alice"), Person(1, "Bob"), Person(2, "Carol"))
     val personTableScala = NodeTable(List(Person(0, "Alice")))
     personTableScala.mapping should equal(NodeMapping
       .withSourceIdKey("id")
@@ -48,8 +47,8 @@ class EntityTableTest extends CAPSTestSuite {
 
     friendTableScala.mapping should equal(RelationshipMapping
       .withSourceIdKey("id")
-      .withSourceStartNodeKey("from")
-      .withSourceEndNodeKey("to")
+      .withSourceStartNodeKey("source")
+      .withSourceEndNodeKey("target")
       .withRelType("FRIEND_OF")
       .withPropertyKey("since"))
   }

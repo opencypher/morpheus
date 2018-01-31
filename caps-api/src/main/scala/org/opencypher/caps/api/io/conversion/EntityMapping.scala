@@ -15,10 +15,15 @@
  */
 package org.opencypher.caps.api.io.conversion
 
+import org.opencypher.caps.api.types.{CypherType, DefiniteCypherType}
+
 /**
   * Represents a map from node property keys to keys in the source data.
   */
 trait EntityMapping {
+
+  // TODO: CTEntity
+  def cypherType: CypherType with DefiniteCypherType
 
   def sourceIdKey: String
 
