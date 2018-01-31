@@ -53,7 +53,7 @@ sealed trait EntityTable {
 case class NodeTable(mapping: NodeMapping, table: DataFrame)(implicit session: CAPSSession) extends EntityTable {
 
   override lazy val schema: Schema = {
-    // TODO: validate that optional label columns have structfield datatype boolean
+    // TODO: validate compatible column data types for ids (castable to long) and optional labels (boolean)
 
     val propertyKeys = mapping.propertyMapping.toSeq.map {
       case (propertyKey, sourceKey) => propertyKey -> cypherTypeForColumn(table, sourceKey)
@@ -90,6 +90,8 @@ object NodeTable {
 case class RelationshipTable(mapping: RelationshipMapping, table: DataFrame)(implicit session: CAPSSession) extends EntityTable {
 
   override lazy val schema: Schema = {
+    // TODO: validate compatible column data types for ids (castable to long) and rel type columns (string)
+
     val relTypes = mapping.relTypeOrSourceRelTypeKey match {
       case Left(name) => Set(name)
       case Right((_, possibleTypes)) => possibleTypes

@@ -65,8 +65,6 @@ object NodeMapping {
   }
 }
 
-// TODO: separate types for Label, Type and PropertyKey
-
 /**
   * Represents a mapping from a source with key-based access to node components (e.g. a table definition) to a Cypher
   * node. The purpose of this class is to define a mapping from an external data source to a property graph.

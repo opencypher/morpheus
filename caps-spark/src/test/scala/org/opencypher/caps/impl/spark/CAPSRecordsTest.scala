@@ -17,7 +17,9 @@ package org.opencypher.caps.impl.spark
 
 import org.apache.spark.sql.Row
 import org.opencypher.caps.api.exception.CypherException
-import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTRelationship, CTString, _}
+import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
+import org.opencypher.caps.api.schema.{NodeTable, RelationshipTable}
+import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.{CAPSMap, CAPSNode, Properties}
 import org.opencypher.caps.impl.record._
 import org.opencypher.caps.ir.api.expr._
@@ -29,107 +31,93 @@ import scala.collection.Bag
 
 class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture {
 
-//  test("contract and scan nodes") {
-//    val given = CAPSRecords.prepareDataFrame(
-//      session
-//        .createDataFrame(
-//          Seq(
-//            (1L, true, "Mats"),
-//            (2L, false, "Martin"),
-//            (3L, false, "Max"),
-//            (4L, false, "Stefan")
-//          ))
-//        .toDF("ID", "IS_SWEDE", "NAME"))
-//
-//    val embeddedNode = EmbeddedNode("n" -> "ID").build
-//      .withImpliedLabel("Person")
-//      .withOptionalLabel("Swedish" -> "IS_SWEDE")
-//      .withPropertyKey("name" -> "NAME")
-//      .verify
-//
-//    val result = given.contract(embeddedNode)
-//    val entityVar = Var("n")(CTNode("Person"))
-//
-//    result.header.slots.map(_.content).toVector should equal(
-//      Vector(
-//        OpaqueField(entityVar),
-//        ProjectedExpr(HasLabel(entityVar, Label("Swedish"))(CTBoolean)),
-//        ProjectedExpr(Property(entityVar, PropertyKey("name"))(CTString.nullable))
-//      ))
-//
-//    val scan = GraphScan(embeddedNode).from(given)
-//    scan.entity should equal(entityVar)
-//    scan.records.header should equal(result.header)
-//  }
-//
-//  test("contract relationships with a fixed type") {
-//
-//    val given = CAPSRecords.prepareDataFrame(
-//      session
-//        .createDataFrame(
-//          Seq(
-//            (10L, 1L, 2L, "red"),
-//            (11L, 2L, 3L, "blue"),
-//            (12L, 3L, 4L, "green"),
-//            (13L, 4L, 1L, "yellow")
-//          ))
-//        .toDF("ID", "FROM", "TO", "COLOR"))
-//
-//    val embeddedRel = EmbeddedRelationship("r" -> "ID")
-//      .from("FROM")
-//      .to("TO")
-//      .relType("NEXT")
-//      .build
-//      .withPropertyKey("color" -> "COLOR")
-//      .verify
-//    val result = given.contract(embeddedRel)
-//
-//    val entityVar = Var("r")(CTRelationship("NEXT"))
-//
-//    result.header.slots.map(_.content).toVector should equal(
-//      Vector(
-//        OpaqueField(entityVar),
-//        ProjectedExpr(StartNode(entityVar)(CTNode)),
-//        ProjectedExpr(EndNode(entityVar)(CTNode)),
-//        ProjectedExpr(Property(entityVar, PropertyKey("color"))(CTString.nullable))
-//      ))
-//
-//    val scan = GraphScan(embeddedRel).from(given)
-//    scan.entity should equal(entityVar)
-//    scan.records.header should equal(result.header)
-//  }
-//
-//  test("contract relationships with a dynamic type") {
-//    val given = CAPSRecords.prepareDataFrame(
-//      session
-//        .createDataFrame(
-//          Seq(
-//            (10L, 1L, 2L, "RED"),
-//            (11L, 2L, 3L, "BLUE"),
-//            (12L, 3L, 4L, "GREEN"),
-//            (13L, 4L, 1L, "YELLOW")
-//          ))
-//        .toDF("ID", "FROM", "TO", "COLOR"))
-//
-//    val embeddedRel =
-//      EmbeddedRelationship("r" -> "ID").from("FROM").to("TO").relTypes("COLOR", "RED", "BLUE", "GREEN", "YELLOW").build
-//
-//    val result = given.contract(embeddedRel)
-//
-//    val entityVar = Var("r")(CTRelationship("RED", "BLUE", "GREEN", "YELLOW"))
-//
-//    result.header.slots.map(_.content).toVector should equal(
-//      Vector(
-//        OpaqueField(entityVar),
-//        ProjectedExpr(StartNode(entityVar)(CTNode)),
-//        ProjectedExpr(EndNode(entityVar)(CTNode)),
-//        ProjectedExpr(Type(entityVar)(CTRelationship("RED", "BLUE", "GREEN", "YELLOW")))
-//      ))
-//
-//    val scan = GraphScan(embeddedRel).from(given)
-//    scan.entity should equal(entityVar)
-//    scan.records.header should equal(result.header)
-//  }
+  test("verify CAPSRecords header") {
+    val givenDF = session.createDataFrame(
+      Seq(
+        (1L, true, "Mats"),
+        (2L, false, "Martin"),
+        (3L, false, "Max"),
+        (4L, false, "Stefan")
+      )).toDF("ID", "IS_SWEDE", "NAME")
+
+    val givenMapping = NodeMapping.on("ID")
+      .withImpliedLabel("Person")
+      .withOptionalLabel("Swedish" -> "IS_SWEDE")
+      .withPropertyKey("name" -> "NAME")
+
+    val nodeTable = NodeTable(givenMapping, givenDF)
+
+    val records = CAPSRecords.create(nodeTable)
+
+    val entityVar = Var(CAPSRecords.placeHolderVarName)(CTNode("Person"))
+
+    records.header.slots.map(_.content).toVector should equal(
+      Vector(
+        OpaqueField(entityVar),
+        ProjectedExpr(HasLabel(entityVar, Label("Swedish"))(CTBoolean)),
+        ProjectedExpr(Property(entityVar, PropertyKey("name"))(CTString.nullable))
+      ))
+  }
+
+  test("verify CAPSRecords header for relationship with a fixed type") {
+
+    val givenDF = session.createDataFrame(
+      Seq(
+        (10L, 1L, 2L, "red"),
+        (11L, 2L, 3L, "blue"),
+        (12L, 3L, 4L, "green"),
+        (13L, 4L, 1L, "yellow")
+      )).toDF("ID", "FROM", "TO", "COLOR")
+
+    val givenMapping = RelationshipMapping.on("ID")
+      .from("FROM")
+      .to("TO")
+      .relType("NEXT")
+      .withPropertyKey("color" -> "COLOR")
+
+    val relTable = RelationshipTable(givenMapping, givenDF)
+
+    val records = CAPSRecords.create(relTable)
+
+    val entityVar = Var(CAPSRecords.placeHolderVarName)(CTRelationship("NEXT"))
+
+    records.header.slots.map(_.content).toVector should equal(
+      Vector(
+        OpaqueField(entityVar),
+        ProjectedExpr(StartNode(entityVar)(CTNode)),
+        ProjectedExpr(EndNode(entityVar)(CTNode)),
+        ProjectedExpr(Property(entityVar, PropertyKey("color"))(CTString.nullable))
+      ))
+  }
+
+  test("contract relationships with a dynamic type") {
+    val givenDF = session.createDataFrame(
+      Seq(
+        (10L, 1L, 2L, "RED"),
+        (11L, 2L, 3L, "BLUE"),
+        (12L, 3L, 4L, "GREEN"),
+        (13L, 4L, 1L, "YELLOW")
+      )).toDF("ID", "FROM", "TO", "COLOR")
+
+    val givenMapping = RelationshipMapping.on("ID")
+      .from("FROM")
+      .to("TO")
+      .withSourceRelTypeKey("COLOR", Set("RED", "BLUE", "GREEN", "YELLOW"))
+
+    val relTable = RelationshipTable(givenMapping, givenDF)
+
+    val records = CAPSRecords.create(relTable)
+
+    val entityVar = Var(CAPSRecords.placeHolderVarName)(CTRelationship("RED", "BLUE", "GREEN", "YELLOW"))
+
+    records.header.slots.map(_.content).toVector should equal(
+      Vector(
+        OpaqueField(entityVar),
+        ProjectedExpr(StartNode(entityVar)(CTNode)),
+        ProjectedExpr(EndNode(entityVar)(CTNode)),
+        ProjectedExpr(Type(entityVar)(CTRelationship("RED", "BLUE", "GREEN", "YELLOW")))
+      ))
+  }
 
   test("can not construct records with data/header column name conflict") {
     val data = session.createDataFrame(Seq((1, "foo"), (2, "bar"))).toDF("int", "string")

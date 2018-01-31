@@ -89,9 +89,9 @@ class CAPSScanGraph(val scans: Seq[EntityTable], val schema: Schema)(implicit va
   case class EntityTables(entityTables: Vector[EntityTable]) {
     type EntityType = CypherType with DefiniteCypherType
 
-    lazy val entityScanTypes: Vector[EntityType] = entityTables.map(_.entityType)
+    lazy val entityTableTypes: Vector[EntityType] = entityTables.map(_.entityType)
 
-    lazy val entityScansByType: Map[EntityType, NonEmptyVector[EntityTable]] =
+    lazy val entityTablesByType: Map[EntityType, NonEmptyVector[EntityTable]] =
       entityTables
         .groupBy(_.entityType)
         .flatMap { case (k, entityScans) => NonEmptyVector.fromVector(entityScans).map(k -> _) }
@@ -100,10 +100,10 @@ class CAPSScanGraph(val scans: Seq[EntityTable], val schema: Schema)(implicit va
 
       def isSubType(tableType: EntityType) = tableType.subTypeOf(entityType).isTrue
 
-      val candidateTypes = entityScanTypes.filter(isSubType)
+      val candidateTypes = entityTableTypes.filter(isSubType)
       // TODO: we always select the head of the NonEmptyVector, why not changing to Map[EntityType, EntityScan]?
       // TODO: does this work for relationships?
-      val selectedScans = candidateTypes.flatMap(typ => entityScansByType.get(typ).map(_.head))
+      val selectedScans = candidateTypes.flatMap(typ => entityTablesByType.get(typ).map(_.head))
       selectedScans
     }
   }

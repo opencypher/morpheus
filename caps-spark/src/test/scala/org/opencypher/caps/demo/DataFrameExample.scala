@@ -34,7 +34,6 @@ object DataFrameExample extends App {
   val relsDF = SocialNetworkDataFrames.rels(spark)
 
   // 3) Generate node- and relationship scans that wrap the DataFrames and describe their contained data
-
   val personNodeMapping = NodeMapping
     .withSourceIdKey("id")
     .withImpliedLabel("Person")

@@ -27,7 +27,7 @@ object Schema {
     labels = Set.empty,
     relationshipTypes = Set.empty,
     labelPropertyMap = LabelPropertyMap.empty,
-    relKeyMap = RelTypePropertyMap.empty
+    relTypePropertyMap = RelTypePropertyMap.empty
   )
 
   object NoLabel extends Set[String] with Serializable {
@@ -49,27 +49,30 @@ object Schema {
 
     override def iterator: Iterator[String] = Iterator.empty
   }
+
 }
 
 final case class Schema(
-    // TODO: Move labels and relationship types away from constructor
-    /**
-      * All labels present in this graph
-      */
-    labels: Set[String],
-    /**
-      * All relationship types present in this graph
-      */
-    relationshipTypes: Set[String],
-    /**
-      * Property keys associated with a node label
-      */
-    labelPropertyMap: LabelPropertyMap,
-    /**
-      * Property keys associated with a relationship type
-      */
-  //TODO: Rename to typePropertyMap
-    relKeyMap: RelTypePropertyMap) {
+  // TODO: Move labels and relationship types away from constructor
+  /**
+    * All labels present in this graph
+    */
+  labels: Set[String],
+
+  /**
+    * All relationship types present in this graph
+    */
+  relationshipTypes: Set[String],
+
+  /**
+    * Property keys associated with a node label
+    */
+  labelPropertyMap: LabelPropertyMap,
+
+  /**
+    * Property keys associated with a relationship type
+    */
+  relTypePropertyMap: RelTypePropertyMap) {
 
   self: Schema =>
 
@@ -87,6 +90,9 @@ final case class Schema(
   lazy val labelCombinations: LabelCombinations =
     LabelCombinations(labelPropertyMap.labelCombinations)
 
+  /**
+    * Given a set of labels that a node definitely has, returns all labels the node _must_ have.
+    */
   def impliedLabels(knownLabels: String*): Set[String] =
     impliedLabels(knownLabels.toSet)
 
@@ -140,7 +146,7 @@ final case class Schema(
     * Computes the type (if any) for a property given a predicate of labels.
     *
     * @param labels the labels predicate; either a lower bound of expected labels, or a disjunction of possible labels
-    * @param key the property key
+    * @param key    the property key
     * @return the Cypher type, if any, mapped to the key for nodes that pass the predicate
     */
   def nodeKeyType(labels: Elements[String], key: String): Option[CypherType] = labels match {
@@ -158,7 +164,7 @@ final case class Schema(
           case (inferred, next) => inferred.join(next.getOrElse(key, CTNull))
         } match {
         case CTNull | CTVoid => None
-        case tpe             => Some(tpe)
+        case tpe => Some(tpe)
       }
   }
 
@@ -191,14 +197,14 @@ final case class Schema(
       case (inferred, next) => inferred.join(next.getOrElse(key, CTNull))
     } match {
       case CTNull => None
-      case tpe    => Some(tpe)
+      case tpe => Some(tpe)
     }
   }
 
   /**
     * Returns the property schema for a given relationship type
     */
-  def relationshipKeys(typ: String): Map[String, CypherType] = relKeyMap.properties(typ)
+  def relationshipKeys(typ: String): Map[String, CypherType] = relTypePropertyMap.properties(typ)
 
   def withNodePropertyKeys(nodeLabels: String*)(keys: (String, CypherType)*): Schema =
     withNodePropertyKeys(nodeLabels.toSet, keys.toMap)
@@ -219,7 +225,7 @@ final case class Schema(
     * calculates the join of the property types, respectively.
     *
     * @param nodeLabels the node labels to add to the schema
-    * @param keys the typed property keys to associate with the labels
+    * @param keys       the typed property keys to associate with the labels
     * @return a copy of the Schema with the provided new data
     */
   def withNodePropertyKeys(nodeLabels: Set[String], keys: PropertyKeys): Schema = {
@@ -281,24 +287,24 @@ final case class Schema(
     * as the schema understands that it is possible to map `:FOO` to both sets of properties, and it
     * calculates the join of the property types, respectively.
     *
-    * @param typ the relationship type to add to the schema
+    * @param typ  the relationship type to add to the schema
     * @param keys the properties (name and type) to associate with the relationship type
     * @return a copy of the Schema with the provided new data
     */
   def withRelationshipPropertyKeys(typ: String, keys: PropertyKeys): Schema = {
     if (relationshipTypes contains typ) {
-      val updatedTypes = computePropertyTypes(relKeyMap.properties(typ), keys)
+      val updatedTypes = computePropertyTypes(relTypePropertyMap.properties(typ), keys)
 
-      copy(relKeyMap = relKeyMap.register(typ, updatedTypes.toSeq))
+      copy(relTypePropertyMap = relTypePropertyMap.register(typ, updatedTypes.toSeq))
     } else {
-      copy(relationshipTypes = relationshipTypes + typ, relKeyMap = relKeyMap.register(typ, keys))
+      copy(relationshipTypes = relationshipTypes + typ, relTypePropertyMap = relTypePropertyMap.register(typ, keys))
     }
   }
 
   def ++(other: Schema): Schema = {
     val newLabels = labels ++ other.labels
     val newRelTypes = relationshipTypes ++ other.relationshipTypes
-    val newRelKeyMap = relKeyMap ++ other.relKeyMap
+    val newRelTypePropertyMap = relTypePropertyMap ++ other.relTypePropertyMap
     val conflictingLabels = labelPropertyMap.labelCombinations intersect other.labelPropertyMap.labelCombinations
     val nulledOut = conflictingLabels.foldLeft(Map.empty[Set[String], PropertyKeys]) {
       case (acc, next) =>
@@ -307,7 +313,7 @@ final case class Schema(
     }
     val newNodeKeyMap = labelPropertyMap ++ other.labelPropertyMap ++ LabelPropertyMap(nulledOut)
 
-    copy(newLabels, newRelTypes, newNodeKeyMap, newRelKeyMap).verify
+    copy(newLabels, newRelTypes, newNodeKeyMap, newRelTypePropertyMap).verify
   }
 
   // Verification makes sure that we will always know the exact type of a property when given at least one label
@@ -373,14 +379,14 @@ final case class Schema(
     val newLabelPropertyMap = this.labelPropertyMap.filterForLabels(possibleLabels)
     val updatedLabelPropertyMap = possibleLabels.foldLeft(newLabelPropertyMap) {
       case (agg, label) if agg.map.keys.exists(_.contains(label)) => agg
-      case (agg, label)                                           => agg.register(label)()
+      case (agg, label) => agg.register(label)()
     }
 
     copy(
       labels = possibleLabels,
       Set.empty,
       labelPropertyMap = updatedLabelPropertyMap,
-      relKeyMap = RelTypePropertyMap.empty
+      relTypePropertyMap = RelTypePropertyMap.empty
     )
   }
 
@@ -397,8 +403,8 @@ final case class Schema(
       relType.types
     }
 
-    val updatedRelKeyMap = this.relKeyMap.filterForRelTypes(givenRelTypes)
-    val updatedMap = givenRelTypes.foldLeft(updatedRelKeyMap.map) {
+    val updatedRelTypePropertyMap = this.relTypePropertyMap.filterForRelTypes(givenRelTypes)
+    val updatedMap = givenRelTypes.foldLeft(updatedRelTypePropertyMap.map) {
       case (map, givenRelType) =>
         if (!map.contains(givenRelType)) map.updated(givenRelType, PropertyKeys.empty) else map
     }
@@ -407,7 +413,7 @@ final case class Schema(
       labels = Set.empty,
       relationshipTypes = givenRelTypes,
       labelPropertyMap = LabelPropertyMap.empty,
-      relKeyMap = RelTypePropertyMap(updatedMap)
+      relTypePropertyMap = RelTypePropertyMap(updatedMap)
     )
   }
 

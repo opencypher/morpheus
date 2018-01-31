@@ -205,7 +205,7 @@ sealed abstract class CAPSRecords(override val header: RecordHeader, val data: D
 object CAPSRecords {
 
   // Used for Expressions that are not yet tied to a variable
-  private val placeHolderVarName = ""
+  private[spark] val placeHolderVarName = ""
 
   // TODO: remove unneeded create functions (they seem redundant with Spark DataFrame construction)
   def create[A <: Product : TypeTag](columns: Seq[String], data: Seq[A])(implicit caps: CAPSSession): CAPSRecords =
