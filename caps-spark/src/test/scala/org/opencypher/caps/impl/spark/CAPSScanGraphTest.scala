@@ -257,10 +257,10 @@ class CAPSScanGraphTest extends CAPSTestSuite with TeamDataFixture {
         Row(2L, 4L, "KNOWS", 3L, null, 2016L),
         Row(2L, 5L, "KNOWS", 4L, null, 2013L),
         Row(3L, 6L, "KNOWS", 4L, null, 2016L),
-        Row(1L, 100L, "READS", 10L, true, null),
-        Row(2L, 200L, "READS", 40L, true, null),
-        Row(3L, 300L, "READS", 30L, true, null),
-        Row(4L, 400L, "READS", 20L, false, null)
+        Row(100L, 100L, "READS", 10L, true, null),
+        Row(200L, 200L, "READS", 40L, true, null),
+        Row(300L, 300L, "READS", 30L, true, null),
+        Row(400L, 400L, "READS", 20L, false, null)
       ))
   }
 
