@@ -18,15 +18,4 @@ import org.opencypher.caps.test.support.creation.caps.{CAPSGraphFactory, CAPSSca
 
 class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
   override def capsGraphFactory: CAPSGraphFactory = CAPSScanGraphFactory
-
-  describe("foo") {
-    it("bar"){
-      val graph = initGraph("CREATE (a:A)-[:LOOP]->(a)")
-
-      val res = graph.cypher(
-        """
-          |MATCH (a)-[r]-(b)
-          |RETURN a, r, b""".stripMargin)
-    }
-  }
 }

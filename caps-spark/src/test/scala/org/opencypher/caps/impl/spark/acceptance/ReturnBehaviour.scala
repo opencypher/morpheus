@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.spark.acceptance
 
-import org.opencypher.caps.api.value.{CAPSMap, CAPSNode, Properties}
+import org.opencypher.caps.api.value.{CAPSMap, CAPSNode, CAPSValue, Properties}
 import org.opencypher.caps.demo.Configuration.PrintLogicalPlan
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.impl.spark.CAPSGraph
@@ -270,16 +270,31 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       result.graphs shouldBe empty
     }
 
-    test("limit") {
-      val given = initGraph("""CREATE (:Node {val: 4}),(:Node {val: 3}),(:Node  {val: 42})""")
+    describe("limit") {
+      it("can evaluate limit") {
+        val given = initGraph("""CREATE (:Node {val: 4}),(:Node {val: 3}),(:Node  {val: 42})""")
 
-      val result = given.cypher("MATCH (a) RETURN a.val as val LIMIT 1").asCaps
+        val result = given.cypher("MATCH (a) RETURN a.val as val LIMIT 1").asCaps
 
-      // Then
-      result.records.toDF().count() should equal(1)
+        // Then
+        result.records.toDF().count() should equal(1)
 
-      // And
-      result.graphs shouldBe empty
+        // And
+        result.graphs shouldBe empty
+      }
+
+      it("can evaluate limit with parameter value"){
+        val graph = initGraph("CREATE (a:A),(b:B),(c:C)")
+
+        val res = graph.cypher(
+          """
+            |MATCH (a)
+            |WITH a
+            |LIMIT {limit}
+            |RETURN a""".stripMargin, Map("limit" -> CAPSValue(1)))
+
+        res.records.size
+      }
     }
 
     test("order by with limit") {

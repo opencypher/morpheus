@@ -502,8 +502,13 @@ final case class Skip(in: PhysicalOperator, expr: Expr, header: RecordHeader) ex
 final case class Limit(in: PhysicalOperator, expr: Expr, header: RecordHeader) extends UnaryPhysicalOperator {
 
   override def executeUnary(prev: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult = {
-    val limit = expr match {
+    val limit: Long = expr match {
       case IntegerLit(v) => v
+      case Param(name) =>
+        context.parameters(name) match {
+          case CAPSInteger(v) => v
+          case other          => throw IllegalArgumentException("a CypherInteger", other)
+        }
       case other         => throw IllegalArgumentException("an integer literal", other)
     }
 
