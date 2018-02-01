@@ -246,7 +246,7 @@ final case class Union(lhs: PhysicalOperator, rhs: PhysicalOperator)
     val rightData = right.records.data.select(leftData.columns.head, leftData.columns.tail: _*)
 
     val unionedData = leftData.union(rightData)
-    val records = CAPSRecords.create(header, unionedData)(left.records.caps)
+    val records = CAPSRecords.verifyAndCreate(header, unionedData)(left.records.caps)
 
     PhysicalResult(records, left.graphs ++ right.graphs)
   }

@@ -79,7 +79,7 @@ final case class ExpandSource(
       val startNodeColumn = data.col(columnName(rels.header.sourceNodeSlot(rel)))
       val endNodeColumn = data.col(columnName(rels.header.targetNodeSlot(rel)))
 
-      CAPSRecords.create(rels.header, data.where(endNodeColumn =!= startNodeColumn))(rels.caps)
+      CAPSRecords.verifyAndCreate(rels.header, data.where(endNodeColumn =!= startNodeColumn))(rels.caps)
     } else rels
   }
 }
