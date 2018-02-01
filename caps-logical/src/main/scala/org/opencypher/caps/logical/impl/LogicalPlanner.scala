@@ -21,15 +21,11 @@ import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block._
 import org.opencypher.caps.ir.api.expr._
-import org.opencypher.caps.ir.api.pattern.{Connection, Pattern, VarLengthRelationship}
+import org.opencypher.caps.ir.api.pattern._
 import org.opencypher.caps.ir.api.util.DirectCompilationStage
 import org.opencypher.caps.ir.impl.syntax.ExprSyntax._
 import org.opencypher.caps.ir.impl.util.VarConverters._
-import org.opencypher.caps.logical.api.exception.{
-  InvalidCypherTypeException,
-  InvalidDependencyException,
-  InvalidPatternException
-}
+import org.opencypher.caps.logical.api.exception.{InvalidCypherTypeException, InvalidDependencyException, InvalidPatternException}
 
 import scala.annotation.tailrec
 
@@ -457,11 +453,25 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
     val expand = c match {
       case v: VarLengthRelationship if v.upper.nonEmpty =>
-        producer.planBoundedVarLengthExpand(c.source, r, c.target, v.lower, v.upper.get, sourcePlan, targetPlan)
+        val direction = v match {
+          case _: DirectedVarLengthRelationship => Directed
+          case _: UndirectedVarLengthRelationship => Undirected
+        }
+        producer.planBoundedVarLengthExpand(c.source, r, c.target, direction, v.lower, v.upper.get, sourcePlan, targetPlan)
+
+      case _: UndirectedConnection if sourcePlan == targetPlan =>
+        producer.planExpandInto(c.source, r, c.target, Undirected, sourcePlan)
+        // cyclic and directed are handled the same way for expandInto
+
       case _ if sourcePlan == targetPlan =>
-        producer.planExpandInto(c.source, r, c.target, sourcePlan)
-      case _ =>
-        producer.planSourceExpand(c.source, r, c.target, sourcePlan, targetPlan)
+        producer.planExpandInto(c.source, r, c.target, Directed, sourcePlan)
+
+      case _: DirectedConnection =>
+        producer.planExpand(c.source, r, c.target, Directed, sourcePlan, targetPlan)
+
+      case _: UndirectedConnection =>
+        producer.planExpand(c.source, r, c.target, Undirected, sourcePlan, targetPlan)
+
     }
 
     if (expand.solved.solves(pattern)) expand

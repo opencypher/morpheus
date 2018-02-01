@@ -22,7 +22,7 @@ import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.ir.api.{IRField, Label, PropertyKey}
 import org.opencypher.caps.ir.test._
 import org.opencypher.caps.ir.test.support.MatchHelper._
-import org.opencypher.caps.logical.impl.{LogicalGraph, LogicalOperatorProducer}
+import org.opencypher.caps.logical.impl.{LogicalGraph, LogicalOperatorProducer, Directed, Undirected}
 import org.opencypher.caps.test.BaseTestSuite
 
 import scala.language.implicitConversions
@@ -127,10 +127,11 @@ class FlatPlannerTest extends BaseTestSuite {
 
   test("flat plan for expand") {
     val result = flatPlanner.process(
-      mkLogical.planSourceExpand(
+      mkLogical.planExpand(
         IRField("n")(CTNode),
         IRField("r")(CTRelationship),
         IRField("m")(CTNode),
+        Undirected,
         logicalNodeScan("n"),
         logicalNodeScan("m"))
     )
@@ -141,7 +142,7 @@ class FlatPlannerTest extends BaseTestSuite {
     val target = Var("m")(CTNode)
 
     result should equal(
-      mkFlat.expandSource(source, rel, target, schema, flatNodeScan(source), flatNodeScan(target))
+      mkFlat.expand(source, rel, Undirected, target, schema, flatNodeScan(source), flatNodeScan(target))
     )
     headerContents should equal(
       Set(
@@ -168,10 +169,11 @@ class FlatPlannerTest extends BaseTestSuite {
 
   test("flat plan for expand with rel type info") {
     val result = flatPlanner.process(
-      mkLogical.planSourceExpand(
+      mkLogical.planExpand(
         IRField("n")(CTNode),
         IRField("r")(CTRelationship("KNOWS")),
         IRField("m")(CTNode),
+        Directed,
         logicalNodeScan("n"),
         logicalNodeScan("m")
       )
@@ -183,7 +185,7 @@ class FlatPlannerTest extends BaseTestSuite {
     val target = Var("m")(CTNode)
 
     result should equal(
-      mkFlat.expandSource(source, rel, target, schema, flatNodeScan(source), flatNodeScan(target))
+      mkFlat.expand(source, rel, Directed, target, schema, flatNodeScan(source), flatNodeScan(target))
     )
     headerContents should equal(
       Set(
@@ -214,6 +216,7 @@ class FlatPlannerTest extends BaseTestSuite {
       'n -> CTNode,
       'r -> CTList(CTRelationship),
       'm -> CTNode,
+      Directed,
       1,
       1,
       sourceScan,
@@ -231,6 +234,7 @@ class FlatPlannerTest extends BaseTestSuite {
       edgeScan.edge,
       edgeList,
       target,
+      Directed,
       1,
       1,
       initVarExpand,

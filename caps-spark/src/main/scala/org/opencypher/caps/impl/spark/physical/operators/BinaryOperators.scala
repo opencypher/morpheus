@@ -228,6 +228,30 @@ final case class ExpandInto(
 
 }
 
+/**
+  * Computes the union of the two input operators. The two inputs must have identical headers.
+  * This operation does not remove duplicates.
+  *
+  * The output header of this operation is identical to the input headers.
+  *
+  * @param lhs the first operand
+  * @param rhs the second operand
+  */
+final case class Union(lhs: PhysicalOperator, rhs: PhysicalOperator)
+  extends BinaryPhysicalOperator with InheritedHeader {
+
+  override def executeBinary(left: PhysicalResult, right: PhysicalResult)(implicit context: RuntimeContext) = {
+    val leftData = left.records.data
+    // left and right have the same set of columns, but the order must also match
+    val rightData = right.records.data.select(leftData.columns.head, leftData.columns.tail: _*)
+
+    val unionedData = leftData.union(rightData)
+    val records = CAPSRecords.create(header, unionedData)(left.records.caps)
+
+    PhysicalResult(records, left.graphs ++ right.graphs)
+  }
+}
+
 final case class CartesianProduct(lhs: PhysicalOperator, rhs: PhysicalOperator, header: RecordHeader)
     extends BinaryPhysicalOperator {
 

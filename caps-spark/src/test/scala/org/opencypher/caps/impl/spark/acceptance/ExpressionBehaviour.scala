@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.spark.acceptance
 
-import org.opencypher.caps.api.value.CAPSMap
+import org.opencypher.caps.api.value.{CAPSMap, CAPSValue}
 import org.opencypher.caps.impl.spark.CAPSGraph
 
 import scala.collection.Bag
@@ -24,34 +24,75 @@ trait ExpressionBehaviour {
   self: AcceptanceTest =>
 
   def expressionBehaviour(initGraph: String => CAPSGraph): Unit = {
-    test("equality between properties") {
-      // Given
-      val given = initGraph(
-        """
-          |CREATE (:A {val: 1})-[:REL]->(:B {p: 2})
-          |CREATE (:A {val: 2})-[:REL]->(:B {p: 1})
-          |CREATE (:A {val: 100})-[:REL]->(:B {p: 100})
-          |CREATE (:A {val: 1})-[:REL]->(:B)
-          |CREATE (:A)-[:REL]->(:B {p: 2})
-          |CREATE (:A)-[:REL]->(:B)
-        """.stripMargin)
 
-      // When
-      val result = given.cypher("MATCH (a:A)-->(b:B) RETURN a.val = b.p AS eq")
+    describe("properties") {
+      it("handles property expression on unknown label") {
+        // Given
+        val given = initGraph(
+          """
+            |CREATE (p:Person {firstName: "Alice", lastName: "Foo"})
+          """.stripMargin)
 
-      // Then
-      result.records.toMaps should equal(Bag(
-        CAPSMap("eq" -> false),
-        CAPSMap("eq" -> false),
-        CAPSMap("eq" -> true),
-        CAPSMap("eq" -> null),
-        CAPSMap("eq" -> null),
-        CAPSMap("eq" -> null)
-      ))
+        // When
+        val result = given.cypher(
+          """
+            |MATCH (a:Animal)
+            |RETURN a.name
+          """.stripMargin
+        )
 
-      // And
-      result.graphs shouldBe empty
+        // Then
+        result.records.toMaps shouldBe empty
+      }
+
+      it("handles unknown properties") {
+        // Given
+        val given = initGraph(
+          """
+            |CREATE (p:Person {firstName: "Alice", lastName: "Foo"})
+          """.stripMargin)
+
+        // When
+        val result = given.cypher(
+          """
+            |MATCH (a:Person)
+            |RETURN a.firstName, a.age
+          """.stripMargin)
+
+        // Then
+        result.records.toMaps should equal(Bag(CAPSMap("a.age" -> null, "a.firstName" -> "Alice")))
+      }
+
+      it("equality between properties") {
+        // Given
+        val given = initGraph(
+          """
+            |CREATE (:A {val: 1})-[:REL]->(:B {p: 2})
+            |CREATE (:A {val: 2})-[:REL]->(:B {p: 1})
+            |CREATE (:A {val: 100})-[:REL]->(:B {p: 100})
+            |CREATE (:A {val: 1})-[:REL]->(:B)
+            |CREATE (:A)-[:REL]->(:B {p: 2})
+            |CREATE (:A)-[:REL]->(:B)
+          """.stripMargin)
+
+        // When
+        val result = given.cypher("MATCH (a:A)-->(b:B) RETURN a.val = b.p AS eq")
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CAPSMap("eq" -> false),
+          CAPSMap("eq" -> false),
+          CAPSMap("eq" -> true),
+          CAPSMap("eq" -> null),
+          CAPSMap("eq" -> null),
+          CAPSMap("eq" -> null)
+        ))
+
+        // And
+        result.graphs shouldBe empty
+      }
     }
+
 
     test("less than") {
 
@@ -482,6 +523,34 @@ trait ExpressionBehaviour {
           CAPSMap("a.id" -> 1L, "other" -> true),
           CAPSMap("a.id" -> 2L, "other" -> false),
           CAPSMap("a.id" -> 3L, "other" -> false)
+        ))
+      }
+    }
+
+    describe("ListLiteral") {
+      it("can convert string ListLiterals from parameters"){
+        val graph = initGraph("CREATE ()")
+
+        val result = graph.cypher(
+          """
+            |WITH [$a, $b] as strings
+            |RETURN strings""".stripMargin, Map("a" -> CAPSValue("bar"), "b" -> CAPSValue("foo")))
+
+        result.records.toMaps should equal(Bag(
+          CAPSMap("strings" -> Seq("bar", "foo"))
+        ))
+      }
+
+      it("can convert string ListLiterals"){
+        val graph = initGraph("CREATE ()")
+
+        val result = graph.cypher(
+          """
+            |WITH ["bar", "foo"] as strings
+            |RETURN strings""".stripMargin)
+
+        result.records.toMaps should equal(Bag(
+          CAPSMap("strings" -> Seq("bar", "foo"))
         ))
       }
     }

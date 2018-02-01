@@ -41,42 +41,31 @@ class LogicalOperatorProducer {
       source: IRField,
       r: IRField,
       target: IRField,
+      direction: Direction,
       lower: Int,
       upper: Int,
       sourcePlan: LogicalOperator,
       targetPlan: LogicalOperator): BoundedVarLengthExpand = {
     val prevSolved = sourcePlan.solved ++ targetPlan.solved
 
-    BoundedVarLengthExpand(source, r, target, lower, upper, sourcePlan, targetPlan, prevSolved.withField(r))
+    BoundedVarLengthExpand(source, r, target, direction, lower, upper, sourcePlan, targetPlan, prevSolved.withField(r))
   }
 
-  def planTargetExpand(
+  def planExpand(
       source: IRField,
       rel: IRField,
       target: IRField,
+      direction: Direction,
       sourcePlan: LogicalOperator,
-      targetPlan: LogicalOperator): ExpandTarget = {
-    val prevSolved = sourcePlan.solved ++ targetPlan.solved
-
-    val solved = prevSolved.withField(rel)
-
-    ExpandTarget(source, rel, target, sourcePlan, targetPlan, solved)
-  }
-
-  def planSourceExpand(
-      source: IRField,
-      rel: IRField,
-      target: IRField,
-      sourcePlan: LogicalOperator,
-      targetPlan: LogicalOperator): ExpandSource = {
+      targetPlan: LogicalOperator): Expand = {
 
     val prevSolved = sourcePlan.solved ++ targetPlan.solved
 
-    ExpandSource(source, rel, target, sourcePlan, targetPlan, prevSolved.solveRelationship(rel))
+    Expand(source, rel, target, direction, sourcePlan, targetPlan, prevSolved.solveRelationship(rel))
   }
 
-  def planExpandInto(source: IRField, rel: IRField, target: IRField, sourcePlan: LogicalOperator): ExpandInto = {
-    ExpandInto(source, rel, target, sourcePlan, sourcePlan.solved.solveRelationship(rel))
+  def planExpandInto(source: IRField, rel: IRField, target: IRField, direction: Direction, sourcePlan: LogicalOperator): ExpandInto = {
+    ExpandInto(source, rel, target, direction, sourcePlan, sourcePlan.solved.solveRelationship(rel))
   }
 
   def planNodeScan(node: IRField, prev: LogicalOperator): NodeScan = {

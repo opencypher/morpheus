@@ -24,7 +24,7 @@ import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.ir.api.block.SortItem
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.ir.api.util.FreshVariableNamer
-import org.opencypher.caps.logical.impl.LogicalGraph
+import org.opencypher.caps.logical.impl.{Direction, LogicalGraph}
 
 import scala.annotation.tailrec
 
@@ -160,9 +160,10 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     }
   }
 
-  def expandSource(
+  def expand(
       source: Var,
       rel: Var,
+      direction: Direction,
       target: Var,
       schema: Schema,
       sourceOp: FlatOperator,
@@ -171,15 +172,15 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
     val expandHeader = sourceOp.header ++ relHeader ++ targetOp.header
 
-    ExpandSource(source, rel, target, sourceOp, targetOp, expandHeader, relHeader)
+    Expand(source, rel, direction, target, sourceOp, targetOp, expandHeader, relHeader)
   }
 
-  def expandInto(source: Var, rel: Var, target: Var, schema: Schema, sourceOp: FlatOperator): FlatOperator = {
+  def expandInto(source: Var, rel: Var, target: Var, direction: Direction, schema: Schema, sourceOp: FlatOperator): FlatOperator = {
     val relHeader = RecordHeader.relationshipFromSchema(rel, schema)
 
     val expandHeader = sourceOp.header ++ relHeader
 
-    ExpandInto(source, rel, target, sourceOp, expandHeader, relHeader)
+    ExpandInto(source, rel, target, direction, sourceOp, expandHeader, relHeader)
   }
 
   def valueJoin(
@@ -213,6 +214,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
       edge: Var,
       edgeList: Var,
       target: Var,
+      direction: Direction,
       lower: Int,
       upper: Int,
       sourceOp: InitVarExpand,
@@ -223,7 +225,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     val (initHeader, _) = sourceOp.in.header.update(addContent(OpaqueField(edgeList)))
     val header = initHeader ++ targetOp.header
 
-    BoundedVarExpand(edge, edgeList, target, lower, upper, sourceOp, edgeOp, targetOp, header, isExpandInto)
+    BoundedVarExpand(edge, edgeList, target, direction, lower, upper, sourceOp, edgeOp, targetOp, header, isExpandInto)
   }
 
   def planOptional(lhs: FlatOperator, rhs: FlatOperator): FlatOperator = {

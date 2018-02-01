@@ -28,6 +28,9 @@ import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords, SparkColumnName}
 import org.opencypher.caps.trees.AbstractTreeNode
 
 private[caps] abstract class PhysicalOperator extends AbstractTreeNode[PhysicalOperator] {
+
+  def header: RecordHeader
+
   def execute(implicit context: RuntimeContext): PhysicalResult
 
   protected def resolve(uri: URI)(implicit context: RuntimeContext): CAPSGraph = {

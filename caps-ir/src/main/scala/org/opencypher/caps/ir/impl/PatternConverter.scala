@@ -136,7 +136,7 @@ final class PatternConverter {
                     registered.withConnection(rel, DirectedVarLengthRelationship(ends.flip, lower, Some(upper)))
 
                   case BOTH =>
-                    throw NotImplementedException("Support for undirected var-length not yet implemented")
+                    registered.withConnection(rel, UndirectedVarLengthRelationship(ends.flip, lower, Some(upper)))
                 }
             }
           }

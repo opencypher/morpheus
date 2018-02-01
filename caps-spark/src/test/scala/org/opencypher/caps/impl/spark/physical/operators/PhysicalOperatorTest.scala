@@ -28,6 +28,8 @@ class PhysicalOperatorTest extends CAPSTestSuite {
 
   case class DummyOp(physicalResult: PhysicalResult) extends LeafPhysicalOperator {
 
+    override val header = physicalResult.records.header
+
     override def executeLeaf()(implicit context: RuntimeContext): PhysicalResult = physicalResult
   }
 
