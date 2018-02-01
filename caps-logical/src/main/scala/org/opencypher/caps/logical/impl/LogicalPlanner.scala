@@ -18,11 +18,11 @@ package org.opencypher.caps.logical.impl
 import org.opencypher.caps.api.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.caps.api.schema.{AllGiven, Schema}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
-import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block._
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.ir.api.pattern._
 import org.opencypher.caps.ir.api.util.DirectCompilationStage
+import org.opencypher.caps.ir.api.{Label, _}
 import org.opencypher.caps.ir.impl.syntax.ExprSyntax._
 import org.opencypher.caps.ir.impl.util.VarConverters._
 import org.opencypher.caps.logical.api.exception.{InvalidCypherTypeException, InvalidDependencyException, InvalidPatternException}

@@ -195,7 +195,7 @@ final case class ExistsSubQuery(
         targetFieldColumnName,
         functions.when(functions.isnull(targetFieldColumn), false).otherwise(true))
 
-    PhysicalResult(CAPSRecords.create(header, updatedJoinedRecords)(left.records.caps), left.graphs ++ right.graphs)
+    PhysicalResult(CAPSRecords.verifyAndCreate(header, updatedJoinedRecords)(left.records.caps), left.graphs ++ right.graphs)
   }
 }
 
@@ -246,7 +246,7 @@ final case class Union(lhs: PhysicalOperator, rhs: PhysicalOperator)
     val rightData = right.records.data.select(leftData.columns.head, leftData.columns.tail: _*)
 
     val unionedData = leftData.union(rightData)
-    val records = CAPSRecords.create(header, unionedData)(left.records.caps)
+    val records = CAPSRecords.verifyAndCreate(header, unionedData)(left.records.caps)
 
     PhysicalResult(records, left.graphs ++ right.graphs)
   }
@@ -260,7 +260,7 @@ final case class CartesianProduct(lhs: PhysicalOperator, rhs: PhysicalOperator, 
     val data = left.records.data
     val otherData = right.records.data
     val newData = data.crossJoin(otherData)
-    val records = CAPSRecords.create(header, newData)(left.records.caps)
+    val records = CAPSRecords.verifyAndCreate(header, newData)(left.records.caps)
     val graphs = left.graphs ++ right.graphs
     PhysicalResult(records, graphs)
   }

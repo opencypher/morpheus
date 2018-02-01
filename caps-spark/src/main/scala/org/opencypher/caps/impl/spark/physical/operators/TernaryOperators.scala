@@ -79,7 +79,7 @@ final case class ExpandSource(
       val startNodeColumn = data.col(columnName(rels.header.sourceNodeSlot(rel)))
       val endNodeColumn = data.col(columnName(rels.header.targetNodeSlot(rel)))
 
-      CAPSRecords.create(rels.header, data.where(endNodeColumn =!= startNodeColumn))(rels.caps)
+      CAPSRecords.verifyAndCreate(rels.header, data.where(endNodeColumn =!= startNodeColumn))(rels.caps)
     } else rels
   }
 }
@@ -153,7 +153,7 @@ final case class BoundedVarExpand(
     // If the expansion ends in an already solved plan, the final join can be replaced by a filter.
     val result = if (isExpandInto) {
       val data = expanded.toDF()
-      CAPSRecords.create(header, data.filter(data.col(targetNodeCol) === data.col(endNodeCol)))(expanded.caps)
+      CAPSRecords.verifyAndCreate(header, data.filter(data.col(targetNodeCol) === data.col(endNodeCol)))(expanded.caps)
     } else {
       val joinHeader = expanded.header ++ targets.header
 
@@ -166,7 +166,7 @@ final case class BoundedVarExpand(
       joinRecords(joinHeader, Seq(lhsSlot -> rhsSlot))(expanded, targets)
     }
 
-    CAPSRecords.create(header, result.toDF().drop(endNodeCol))(expanded.caps)
+    CAPSRecords.verifyAndCreate(header, result.toDF().drop(endNodeCol))(expanded.caps)
   }
 
   private def expand(firstRecords: CAPSRecords, secondRecords: CAPSRecords): CAPSRecords = {
@@ -210,6 +210,6 @@ final case class BoundedVarExpand(
       case (l, r) => l.union(r)
     }
 
-    CAPSRecords.create(firstRecords.header, union)(firstRecords.caps)
+    CAPSRecords.verifyAndCreate(firstRecords.header, union)(firstRecords.caps)
   }
 }

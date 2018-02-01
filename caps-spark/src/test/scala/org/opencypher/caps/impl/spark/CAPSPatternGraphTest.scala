@@ -328,7 +328,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
       .withNodePropertyKeys("Person")()
       .withNodePropertyKeys("Foo")()
 
-    val patternGraph = CAPSGraph.create(CAPSRecords.create(header, df), schema)
+    val patternGraph = CAPSGraph.create(CAPSRecords.verifyAndCreate(header, df), schema)
 
     patternGraph.nodes("n", CTNode("Person")).iterator.toBag should equal(
       Bag(
@@ -380,7 +380,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
       .withNodePropertyKeys("Customer")("name" -> CTString.nullable)
       .withRelationshipType("IN")
 
-    val patternGraph = CAPSGraph.create(CAPSRecords.create(header, df), schema)
+    val patternGraph = CAPSGraph.create(CAPSRecords.verifyAndCreate(header, df), schema)
 
     //    patternGraph.nodes("n").toCypherMaps.collect().toSet should equal(Set(
     //      CypherMap("n" ->  0L),
@@ -409,7 +409,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
     val schema = Schema.empty
       .withNodePropertyKeys("Person")("name" -> CTString)
 
-    val patternGraph = CAPSGraph.create(CAPSRecords.create(header, df), schema)
+    val patternGraph = CAPSGraph.create(CAPSRecords.verifyAndCreate(header, df), schema)
 
     patternGraph.nodes("n", CTNode).iterator.toBag should equal(
       Bag(
@@ -442,7 +442,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
       .withNodePropertyKeys("Person")("name" -> CTString)
       .withNodePropertyKeys("Employee")("name" -> CTString)
 
-    val patternGraph = CAPSGraph.create(CAPSRecords.create(header, df), schema)
+    val patternGraph = CAPSGraph.create(CAPSRecords.verifyAndCreate(header, df), schema)
 
     patternGraph.nodes("n", CTNode).iterator.toBag should equal(
       Bag(
@@ -482,7 +482,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
       .withNodePropertyKeys("Employee")("name" -> CTString.nullable)
       .withNodePropertyKeys("Employee", "Person")("name" -> CTString)
 
-    val patternGraph = CAPSGraph.create(CAPSRecords.create(header, df), schema)
+    val patternGraph = CAPSGraph.create(CAPSRecords.verifyAndCreate(header, df), schema)
 
     patternGraph.nodes("n", CTNode).toMaps should equal(
       Bag(
@@ -552,6 +552,6 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
     val slots = persons.header.slots ++ reads.header.slots ++ books.header.slots
     val joinHeader = RecordHeader.from(slots.map(_.content): _*)
 
-    CAPSGraph.create(CAPSRecords.create(joinHeader, joinedDf), inputGraph.schema)
+    CAPSGraph.create(CAPSRecords.verifyAndCreate(joinHeader, joinedDf), inputGraph.schema)
   }
 }

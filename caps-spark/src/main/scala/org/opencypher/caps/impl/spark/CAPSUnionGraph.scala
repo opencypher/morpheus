@@ -20,7 +20,7 @@ import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
-import org.opencypher.caps.impl.record.{GraphScan, RecordHeader}
+import org.opencypher.caps.impl.record.RecordHeader
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.ir.api.expr.Var
 
@@ -51,7 +51,7 @@ final case class CAPSUnionGraph(graphs: CAPSGraph*)(implicit val session: CAPSSe
     val nodeScans: Seq[CAPSRecords] = graphs
       .filter(nodeCypherType.labels.isEmpty || _.schema.labels.intersect(nodeCypherType.labels).nonEmpty)
       .map(_.nodes(name, nodeCypherType))
-    val alignedScans = nodeScans.map(GraphScan.align(_, node, targetHeader))
+    val alignedScans = nodeScans.map(_.alignWith(node, targetHeader))
     // TODO: Only distinct on id column
     alignedScans.reduceOption(_ unionAll (targetHeader, _)).map(_.distinct).getOrElse(CAPSRecords.empty(targetHeader))
   }
@@ -62,7 +62,7 @@ final case class CAPSUnionGraph(graphs: CAPSGraph*)(implicit val session: CAPSSe
     val relScans: Seq[CAPSRecords] = graphs
       .filter(relCypherType.types.isEmpty || _.schema.relationshipTypes.intersect(relCypherType.types).nonEmpty)
       .map(_.relationships(name, relCypherType))
-    val alignedScans = relScans.map(GraphScan.align(_, rel, targetHeader))
+    val alignedScans = relScans.map(_.alignWith(rel, targetHeader))
     // TODO: Only distinct on id column
     alignedScans.reduceOption(_ unionAll (targetHeader, _)).map(_.distinct).getOrElse(CAPSRecords.empty(targetHeader))
   }

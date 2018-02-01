@@ -27,7 +27,7 @@ object Schema {
     labels = Set.empty,
     relationshipTypes = Set.empty,
     labelPropertyMap = LabelPropertyMap.empty,
-    relKeyMap = RelTypePropertyMap.empty
+    relTypePropertyMap = RelTypePropertyMap.empty
   )
 
   object NoLabel extends Set[String] with Serializable {
@@ -49,26 +49,30 @@ object Schema {
 
     override def iterator: Iterator[String] = Iterator.empty
   }
+
 }
 
 final case class Schema(
-    // TODO: Move labels and relationship types away from constructor
-    /**
-      * All labels present in this graph
-      */
-    labels: Set[String],
-    /**
-      * All relationship types present in this graph
-      */
-    relationshipTypes: Set[String],
-    /**
-      * Property keys associated with a node label
-      */
-    labelPropertyMap: LabelPropertyMap,
-    /**
-      * Property keys associated with a relationship type
-      */
-    relKeyMap: RelTypePropertyMap) {
+  // TODO: Move labels and relationship types away from constructor
+  /**
+    * All labels present in this graph
+    */
+  labels: Set[String],
+
+  /**
+    * All relationship types present in this graph
+    */
+  relationshipTypes: Set[String],
+
+  /**
+    * Property keys associated with a node label
+    */
+  labelPropertyMap: LabelPropertyMap,
+
+  /**
+    * Property keys associated with a relationship type
+    */
+  relTypePropertyMap: RelTypePropertyMap) {
 
   self: Schema =>
 
@@ -80,16 +84,6 @@ final case class Schema(
 
     ImpliedLabels(implications)
   }
-
-  /**
-    * Given a set of labels that a node definitely has, returns all labels the node _must_ have.
-    */
-  def impliedLabels(knownLabels: Set[String]): Set[String] =
-    impliedLabels.transitiveImplicationsFor(knownLabels.intersect(labels))
-
-  def impliedLabels(knownLabels: String*): Set[String] =
-    impliedLabels(knownLabels.toSet)
-
   /**
     * Groups of labels where each group contains possible label combinations.
     */
@@ -97,13 +91,18 @@ final case class Schema(
     LabelCombinations(labelPropertyMap.labelCombinations)
 
   /**
-    * Given a set of labels that a node definitely has, returns all combinations of labels that the node could possibly have.
+    * Given a set of labels that a node definitely has, returns all labels the node _must_ have.
     */
-  def combinationsFor(knownLabels: Set[String]): Set[Set[String]] =
-    labelCombinations.combinationsFor(knownLabels)
+  def impliedLabels(knownLabels: String*): Set[String] =
+    impliedLabels(knownLabels.toSet)
 
-  def allLabelCombinations: Set[Set[String]] =
-    combinationsFor(NoLabel)
+  /**
+    * Given a set of labels that a node definitely has, returns all labels the node _must_ have.
+    */
+  def impliedLabels(knownLabels: Set[String]): Set[String] =
+    impliedLabels.transitiveImplicationsFor(knownLabels.intersect(labels))
+
+  def nodeKeys(labels: String*): PropertyKeys = nodeKeys(labels.toSet)
 
   /**
     * Given a set of labels that a node definitely has, returns its property schema.
@@ -111,7 +110,7 @@ final case class Schema(
     * TODO: consider implied labels here?
     */
   def nodeKeys(labels: Set[String]): PropertyKeys = labelPropertyMap.properties(labels)
-  def nodeKeys(labels: String*): PropertyKeys = nodeKeys(labels.toSet)
+
   def nodeKeys(label: String): PropertyKeys = nodeKeys(Set(label))
 
   def allNodeKeys: PropertyKeys = {
@@ -131,6 +130,41 @@ final case class Schema(
           if (allLabelCombinations.map(nodeKeys).forall(_.get(key).isDefined))
             key -> tpe
           else key -> tpe.nullable
+      }
+  }
+
+  def allLabelCombinations: Set[Set[String]] =
+    combinationsFor(NoLabel)
+
+  /**
+    * Given a set of labels that a node definitely has, returns all combinations of labels that the node could possibly have.
+    */
+  def combinationsFor(knownLabels: Set[String]): Set[Set[String]] =
+    labelCombinations.combinationsFor(knownLabels)
+
+  /**
+    * Computes the type (if any) for a property given a predicate of labels.
+    *
+    * @param labels the labels predicate; either a lower bound of expected labels, or a disjunction of possible labels
+    * @param key    the property key
+    * @return the Cypher type, if any, mapped to the key for nodes that pass the predicate
+    */
+  def nodeKeyType(labels: Elements[String], key: String): Option[CypherType] = labels match {
+    case AllGiven(elements) =>
+      val combos = combinationsFor(elements)
+      keysFor(combos).get(key)
+    case AnyGiven(elements) =>
+      val relevantCombos =
+        if (elements eq AllLabels) allLabelCombinations
+        else if (elements eq NoLabel) Set(NoLabel)
+        else combinationsFor(elements)
+      relevantCombos
+        .map(nodeKeys)
+        .foldLeft(CTVoid: CypherType) {
+          case (inferred, next) => inferred.join(next.getOrElse(key, CTNull))
+        } match {
+        case CTNull | CTVoid => None
+        case tpe => Some(tpe)
       }
   }
 
@@ -155,32 +189,6 @@ final case class Schema(
     propertyKeys
   }
 
-  /**
-    * Computes the type (if any) for a property given a predicate of labels.
-    *
-    * @param labels the labels predicate; either a lower bound of expected labels, or a disjunction of possible labels
-    * @param key the property key
-    * @return the Cypher type, if any, mapped to the key for nodes that pass the predicate
-    */
-  def nodeKeyType(labels: Elements[String], key: String): Option[CypherType] = labels match {
-    case AllGiven(elements) =>
-      val combos = combinationsFor(elements)
-      keysFor(combos).get(key)
-    case AnyGiven(elements) =>
-      val relevantCombos =
-        if (elements eq AllLabels) allLabelCombinations
-        else if (elements eq NoLabel) Set(NoLabel)
-        else combinationsFor(elements)
-      relevantCombos
-        .map(nodeKeys)
-        .foldLeft(CTVoid: CypherType) {
-          case (inferred, next) => inferred.join(next.getOrElse(key, CTNull))
-        } match {
-        case CTNull | CTVoid => None
-        case tpe             => Some(tpe)
-      }
-  }
-
   def relationshipKeyType(types: Set[String], key: String): Option[CypherType] = {
     // relationship types have OR semantics: empty set means all types
     val relevantTypes = if (types.isEmpty) relationshipTypes else types
@@ -189,14 +197,17 @@ final case class Schema(
       case (inferred, next) => inferred.join(next.getOrElse(key, CTNull))
     } match {
       case CTNull => None
-      case tpe    => Some(tpe)
+      case tpe => Some(tpe)
     }
   }
 
   /**
     * Returns the property schema for a given relationship type
     */
-  def relationshipKeys(typ: String): Map[String, CypherType] = relKeyMap.properties(typ)
+  def relationshipKeys(typ: String): Map[String, CypherType] = relTypePropertyMap.properties(typ)
+
+  def withNodePropertyKeys(nodeLabels: String*)(keys: (String, CypherType)*): Schema =
+    withNodePropertyKeys(nodeLabels.toSet, keys.toMap)
 
   /**
     * Adds information about a label and its associated properties to the schema.
@@ -214,7 +225,7 @@ final case class Schema(
     * calculates the join of the property types, respectively.
     *
     * @param nodeLabels the node labels to add to the schema
-    * @param keys the typed property keys to associate with the labels
+    * @param keys       the typed property keys to associate with the labels
     * @return a copy of the Schema with the provided new data
     */
   def withNodePropertyKeys(nodeLabels: Set[String], keys: PropertyKeys): Schema = {
@@ -227,44 +238,6 @@ final case class Schema(
     }
     copy(labels = labels union nodeLabels, labelPropertyMap = labelPropertyMap.register(nodeLabels, propertyKeys))
   }
-
-  def withNodePropertyKeys(nodeLabels: String*)(keys: (String, CypherType)*): Schema =
-    withNodePropertyKeys(nodeLabels.toSet, keys.toMap)
-
-  /**
-    * Adds information about a relationship type and its associated properties to the schema.
-    * The arguments provided to this method are interpreted as describing a whole piece of information,
-    * meaning that for a specific instance of the relationship type, the given properties were present
-    * in their exact given shape. For example, consider
-    *
-    * {{{
-    *   val s = schema.withRelationshipPropertyKeys("FOO")("p" -> CTString, "q" -> CTInteger)
-    *   val t = s.withRelationshipPropertyKeys("FOO")("p" -> CTString)
-    * }}}
-    *
-    * The resulting schema (assigned to `t`) will indicate that the type of `q` is CTInteger.nullable,
-    * as the schema understands that it is possible to map `:FOO` to both sets of properties, and it
-    * calculates the join of the property types, respectively.
-    *
-    * @param typ the relationship type to add to the schema
-    * @param keys the properties (name and type) to associate with the relationship type
-    * @return a copy of the Schema with the provided new data
-    */
-  def withRelationshipPropertyKeys(typ: String, keys: PropertyKeys): Schema = {
-    if (relationshipTypes contains typ) {
-      val updatedTypes = computePropertyTypes(relKeyMap.properties(typ), keys)
-
-      copy(relKeyMap = relKeyMap.register(typ, updatedTypes.toSeq))
-    } else {
-      copy(relationshipTypes = relationshipTypes + typ, relKeyMap = relKeyMap.register(typ, keys))
-    }
-  }
-
-  def withRelationshipPropertyKeys(typ: String)(keys: (String, CypherType)*): Schema =
-    withRelationshipPropertyKeys(typ, keys.toMap)
-
-  def withRelationshipType(relType: String): Schema =
-    withRelationshipPropertyKeys(relType)()
 
   private def computePropertyTypes(existing: PropertyKeys, input: PropertyKeys): PropertyKeys = {
     // Map over input keys to calculate join of type with existing type
@@ -283,12 +256,55 @@ final case class Schema(
     propertiesMarkedOptional
   }
 
-  def isEmpty: Boolean = this == Schema.empty
+  def sparkCompatibleJoin(label: Option[String], key: String, t1: CypherType, t2: CypherType): CypherType = {
+    val join = t1.join(t2)
+    if (join.material == t1.material || join.material == t2.material) {
+      join
+    } else
+      throw new SchemaException(
+        s"The property types $t1 and $t2 (for property '$key'${label.map(l => s" and label '$l'").getOrElse("")}) " +
+          s"can not be stored in the same Spark column")
+  }
+
+  def withRelationshipType(relType: String): Schema =
+    withRelationshipPropertyKeys(relType)()
+
+  def withRelationshipPropertyKeys(typ: String)(keys: (String, CypherType)*): Schema =
+    withRelationshipPropertyKeys(typ, keys.toMap)
+
+  /**
+    * Adds information about a relationship type and its associated properties to the schema.
+    * The arguments provided to this method are interpreted as describing a whole piece of information,
+    * meaning that for a specific instance of the relationship type, the given properties were present
+    * in their exact given shape. For example, consider
+    *
+    * {{{
+    *   val s = schema.withRelationshipPropertyKeys("FOO")("p" -> CTString, "q" -> CTInteger)
+    *   val t = s.withRelationshipPropertyKeys("FOO")("p" -> CTString)
+    * }}}
+    *
+    * The resulting schema (assigned to `t`) will indicate that the type of `q` is CTInteger.nullable,
+    * as the schema understands that it is possible to map `:FOO` to both sets of properties, and it
+    * calculates the join of the property types, respectively.
+    *
+    * @param typ  the relationship type to add to the schema
+    * @param keys the properties (name and type) to associate with the relationship type
+    * @return a copy of the Schema with the provided new data
+    */
+  def withRelationshipPropertyKeys(typ: String, keys: PropertyKeys): Schema = {
+    if (relationshipTypes contains typ) {
+      val updatedTypes = computePropertyTypes(relTypePropertyMap.properties(typ), keys)
+
+      copy(relTypePropertyMap = relTypePropertyMap.register(typ, updatedTypes.toSeq))
+    } else {
+      copy(relationshipTypes = relationshipTypes + typ, relTypePropertyMap = relTypePropertyMap.register(typ, keys))
+    }
+  }
 
   def ++(other: Schema): Schema = {
     val newLabels = labels ++ other.labels
     val newRelTypes = relationshipTypes ++ other.relationshipTypes
-    val newRelKeyMap = relKeyMap ++ other.relKeyMap
+    val newRelTypePropertyMap = relTypePropertyMap ++ other.relTypePropertyMap
     val conflictingLabels = labelPropertyMap.labelCombinations intersect other.labelPropertyMap.labelCombinations
     val nulledOut = conflictingLabels.foldLeft(Map.empty[Set[String], PropertyKeys]) {
       case (acc, next) =>
@@ -297,67 +313,7 @@ final case class Schema(
     }
     val newNodeKeyMap = labelPropertyMap ++ other.labelPropertyMap ++ LabelPropertyMap(nulledOut)
 
-    copy(newLabels, newRelTypes, newNodeKeyMap, newRelKeyMap).verify
-  }
-
-  /**
-    * Returns the sub-schema for `nodeType`
-    *
-    * @param nodeType Specifies the type for which the schema is extracted
-    * @return sub-schema for `nodeType`
-    */
-  def forNode(nodeType: CTNode): Schema = {
-    val requiredLabels = {
-      val explicitLabels = nodeType.labels
-      val impliedLabels = this.impliedLabels.transitiveImplicationsFor(explicitLabels)
-      explicitLabels union impliedLabels
-    }
-
-    val possibleLabels = if (nodeType.labels.isEmpty) {
-      this.labels
-    } else {
-      requiredLabels union this.labelCombinations.filterByLabels(requiredLabels).combos.flatten
-    }
-
-    val newLabelPropertyMap = this.labelPropertyMap.filterForLabels(possibleLabels)
-    val updatedLabelPropertyMap = possibleLabels.foldLeft(newLabelPropertyMap) {
-      case (agg, label) if agg.map.keys.exists(_.contains(label)) => agg
-      case (agg, label)                                           => agg.register(label)()
-    }
-
-    copy(
-      labels = possibleLabels,
-      Set.empty,
-      labelPropertyMap = updatedLabelPropertyMap,
-      relKeyMap = RelTypePropertyMap.empty
-    )
-  }
-
-  /**
-    * Returns the sub-schema for `relType`
-    *
-    * @param relType Specifies the type for which the schema is extracted
-    * @return sub-schema for `relType`
-    */
-  def forRelationship(relType: CTRelationship): Schema = {
-    val givenRelTypes = if (relType.types.isEmpty) {
-      relationshipTypes
-    } else {
-      relType.types
-    }
-
-    val updatedRelKeyMap = this.relKeyMap.filterForRelTypes(givenRelTypes)
-    val updatedMap = givenRelTypes.foldLeft(updatedRelKeyMap.map) {
-      case (map, givenRelType) =>
-        if (!map.contains(givenRelType)) map.updated(givenRelType, PropertyKeys.empty) else map
-    }
-
-    copy(
-      labels = Set.empty,
-      relationshipTypes = givenRelTypes,
-      labelPropertyMap = LabelPropertyMap.empty,
-      relKeyMap = RelTypePropertyMap(updatedMap)
-    )
+    copy(newLabels, newRelTypes, newNodeKeyMap, newRelTypePropertyMap).verify
   }
 
   // Verification makes sure that we will always know the exact type of a property when given at least one label
@@ -385,14 +341,80 @@ final case class Schema(
     self
   }
 
-  def sparkCompatibleJoin(label: Option[String], key: String, t1: CypherType, t2: CypherType): CypherType = {
-    val join = t1.join(t2)
-    if (join.material == t1.material || join.material == t2.material) {
-      join
-    } else
-      throw new SchemaException(
-        s"The property types $t1 and $t2 (for property '$key'${label.map(l => s" and label '$l'").getOrElse("")}) " +
-          s"can not be stored in the same Spark column")
+  private def foldAndProduce[A](
+    zero: Map[String, A])(bound: (A, Set[String], String) => A, fresh: (Set[String], String) => A) = {
+    labelPropertyMap.labelCombinations.foldLeft(zero) {
+      case (map, labelCombos) =>
+        labelCombos.foldLeft(map) {
+          case (innerMap, label) =>
+            innerMap.get(label) match {
+              case Some(a) =>
+                innerMap.updated(label, bound(a, labelCombos, label))
+              case None =>
+                innerMap.updated(label, fresh(labelCombos, label))
+            }
+        }
+    }
+  }
+
+  /**
+    * Returns the sub-schema for `nodeType`
+    *
+    * @param nodeType Specifies the type for which the schema is extracted
+    * @return sub-schema for `nodeType`
+    */
+  def forNode(nodeType: CTNode): Schema = {
+    val requiredLabels = {
+      val explicitLabels = nodeType.labels
+      val impliedLabels = this.impliedLabels.transitiveImplicationsFor(explicitLabels)
+      explicitLabels union impliedLabels
+    }
+
+    val possibleLabels = if (nodeType.labels.isEmpty) {
+      this.labels
+    } else {
+      requiredLabels union this.labelCombinations.filterByLabels(requiredLabels).combos.flatten
+    }
+
+    val newLabelPropertyMap = this.labelPropertyMap.filterForLabels(possibleLabels)
+    val updatedLabelPropertyMap = possibleLabels.foldLeft(newLabelPropertyMap) {
+      case (agg, label) if agg.map.keys.exists(_.contains(label)) => agg
+      case (agg, label) => agg.register(label)()
+    }
+
+    copy(
+      labels = possibleLabels,
+      Set.empty,
+      labelPropertyMap = updatedLabelPropertyMap,
+      relTypePropertyMap = RelTypePropertyMap.empty
+    )
+  }
+
+  /**
+    * Returns the sub-schema for `relType`
+    *
+    * @param relType Specifies the type for which the schema is extracted
+    * @return sub-schema for `relType`
+    */
+  def forRelationship(relType: CTRelationship): Schema = {
+    val givenRelTypes = if (relType.types.isEmpty) {
+      relationshipTypes
+    } else {
+      relType.types
+    }
+
+    val updatedRelTypePropertyMap = this.relTypePropertyMap.filterForRelTypes(givenRelTypes)
+    val updatedMap = givenRelTypes.foldLeft(updatedRelTypePropertyMap.map) {
+      case (map, givenRelType) =>
+        if (!map.contains(givenRelType)) map.updated(givenRelType, PropertyKeys.empty) else map
+    }
+
+    copy(
+      labels = Set.empty,
+      relationshipTypes = givenRelTypes,
+      labelPropertyMap = LabelPropertyMap.empty,
+      relTypePropertyMap = RelTypePropertyMap(updatedMap)
+    )
   }
 
   override def toString: String =
@@ -443,19 +465,5 @@ final case class Schema(
       builder.toString
     }
 
-  private def foldAndProduce[A](
-      zero: Map[String, A])(bound: (A, Set[String], String) => A, fresh: (Set[String], String) => A) = {
-    labelPropertyMap.labelCombinations.foldLeft(zero) {
-      case (map, labelCombos) =>
-        labelCombos.foldLeft(map) {
-          case (innerMap, label) =>
-            innerMap.get(label) match {
-              case Some(a) =>
-                innerMap.updated(label, bound(a, labelCombos, label))
-              case None =>
-                innerMap.updated(label, fresh(labelCombos, label))
-            }
-        }
-    }
-  }
+  def isEmpty: Boolean = this == Schema.empty
 }

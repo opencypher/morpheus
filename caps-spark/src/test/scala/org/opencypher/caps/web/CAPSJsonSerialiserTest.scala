@@ -16,95 +16,16 @@
 package org.opencypher.caps.web
 
 import org.opencypher.caps.api.types.CTNode
-import org.opencypher.caps.impl.record.{NodeScan, OpaqueField, RecordHeader, RelationshipScan}
+import org.opencypher.caps.impl.record.{OpaqueField, RecordHeader}
 import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.ir.api.expr.Var
 import org.opencypher.caps.test.CAPSTestSuite
+import org.opencypher.caps.test.fixture.TeamDataFixture
 import org.opencypher.caps.web.CAPSJsonSerialiser.toJsonString
 
 //noinspection NameBooleanParameters
-class CAPSJsonSerialiserTest extends CAPSTestSuite {
-
-  val `:Person` =
-    NodeScan
-      .on("p" -> "ID") {
-        _.build
-          .withImpliedLabel("Person")
-          .withOptionalLabel("Swedish" -> "IS_SWEDE")
-          .withPropertyKey("name" -> "NAME")
-          .withPropertyKey("lucky_number" -> "NUM")
-      }
-      .from(
-        CAPSRecords.create(
-          Seq("ID", "IS_SWEDE", "NAME", "NUM"),
-          Seq((1L, true, "Mats", 23L), (2L, false, "Martin", 42L), (3L, false, "Max", 1337L), (4L, false, "Stefan", 9L))
-        ))
-
-  val `:Book` =
-    NodeScan
-      .on("b" -> "ID") {
-        _.build
-          .withImpliedLabel("Book")
-          .withPropertyKey("title" -> "NAME")
-          .withPropertyKey("year" -> "YEAR")
-      }
-      .from(
-        CAPSRecords.create(
-          Seq("ID", "NAME", "YEAR"),
-          Seq(
-            (10L, "1984", 1949L),
-            (20L, "Cryptonomicon", 1999L),
-            (30L, "The Eye of the World", 1990L),
-            (40L, "The Circle", 2013L))
-        ))
-
-  val `:KNOWS` =
-    RelationshipScan
-      .on("k" -> "ID") {
-        _.from("SRC")
-          .to("DST")
-          .relType("KNOWS")
-          .build
-          .withPropertyKey("since" -> "SINCE")
-      }
-      .from(
-        CAPSRecords.create(
-          Seq("SRC", "ID", "DST", "SINCE"),
-          Seq(
-            (1L, 1L, 2L, 2017L),
-            (1L, 2L, 3L, 2016L),
-            (1L, 3L, 4L, 2015L),
-            (2L, 4L, 3L, 2016L),
-            (2L, 5L, 4L, 2013L),
-            (3L, 6L, 4L, 2016L))
-        ))
-
-  val `:READS` =
-    RelationshipScan
-      .on("r" -> "ID") {
-        _.from("SRC")
-          .to("DST")
-          .relType("READS")
-          .build
-          .withPropertyKey("recommends" -> "RECOMMENDS")
-      }
-      .from(
-        CAPSRecords.create(
-          Seq("SRC", "ID", "DST", "RECOMMENDS"),
-          Seq((1L, 100L, 10L, true), (2L, 200L, 40L, true), (3L, 300L, 30L, true), (4L, 400L, 20L, false))
-        ))
-
-  val `:INFLUENCES` =
-    RelationshipScan
-      .on("i" -> "ID") {
-        _.from("SRC").to("DST").relType("INFLUENCES").build
-      }
-      .from(
-        CAPSRecords.create(
-          Seq("SRC", "ID", "DST"),
-          Seq((10L, 1000L, 20L))
-        ))
+class CAPSJsonSerialiserTest extends CAPSTestSuite with TeamDataFixture {
 
   test("unit table") {
     // Given
@@ -132,12 +53,12 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
     // Then
     toJsonString(records) should equal(
       s"""{
-        |  "columns" : [
-        |    "foo"
-        |  ],
-        |  "rows" : [
-        |  ]
-        |}""".stripMargin
+         |  "columns" : [
+         |    "foo"
+         |  ],
+         |  "rows" : [
+         |  ]
+         |}""".stripMargin
     )
   }
 
@@ -301,208 +222,214 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
   }
 
   test("graph serialization") {
-    val graph = CAPSGraph.create(`:Person`, `:Book`, `:READS`, `:KNOWS`, `:INFLUENCES`)
-    toJsonString(graph) should equal(s"""{
-          |  "nodes" : [
-          |    {
-          |      "id" : 1,
-          |      "labels" : [
-          |        "Person",
-          |        "Swedish"
-          |      ],
-          |      "properties" : {
-          |        "lucky_number" : 23,
-          |        "name" : "Mats"
-          |      }
-          |    },
-          |    {
-          |      "id" : 2,
-          |      "labels" : [
-          |        "Person"
-          |      ],
-          |      "properties" : {
-          |        "lucky_number" : 42,
-          |        "name" : "Martin"
-          |      }
-          |    },
-          |    {
-          |      "id" : 3,
-          |      "labels" : [
-          |        "Person"
-          |      ],
-          |      "properties" : {
-          |        "lucky_number" : 1337,
-          |        "name" : "Max"
-          |      }
-          |    },
-          |    {
-          |      "id" : 4,
-          |      "labels" : [
-          |        "Person"
-          |      ],
-          |      "properties" : {
-          |        "lucky_number" : 9,
-          |        "name" : "Stefan"
-          |      }
-          |    },
-          |    {
-          |      "id" : 10,
-          |      "labels" : [
-          |        "Book"
-          |      ],
-          |      "properties" : {
-          |        "title" : "1984",
-          |        "year" : 1949
-          |      }
-          |    },
-          |    {
-          |      "id" : 20,
-          |      "labels" : [
-          |        "Book"
-          |      ],
-          |      "properties" : {
-          |        "title" : "Cryptonomicon",
-          |        "year" : 1999
-          |      }
-          |    },
-          |    {
-          |      "id" : 30,
-          |      "labels" : [
-          |        "Book"
-          |      ],
-          |      "properties" : {
-          |        "title" : "The Eye of the World",
-          |        "year" : 1990
-          |      }
-          |    },
-          |    {
-          |      "id" : 40,
-          |      "labels" : [
-          |        "Book"
-          |      ],
-          |      "properties" : {
-          |        "title" : "The Circle",
-          |        "year" : 2013
-          |      }
-          |    }
-          |  ],
-          |  "edges" : [
-          |    {
-          |      "id" : 100,
-          |      "source" : 1,
-          |      "target" : 10,
-          |      "type" : "READS",
-          |      "properties" : {
-          |        "recommends" : true
-          |      }
-          |    },
-          |    {
-          |      "id" : 200,
-          |      "source" : 2,
-          |      "target" : 40,
-          |      "type" : "READS",
-          |      "properties" : {
-          |        "recommends" : true
-          |      }
-          |    },
-          |    {
-          |      "id" : 300,
-          |      "source" : 3,
-          |      "target" : 30,
-          |      "type" : "READS",
-          |      "properties" : {
-          |        "recommends" : true
-          |      }
-          |    },
-          |    {
-          |      "id" : 400,
-          |      "source" : 4,
-          |      "target" : 20,
-          |      "type" : "READS",
-          |      "properties" : {
-          |        "recommends" : false
-          |      }
-          |    },
-          |    {
-          |      "id" : 1,
-          |      "source" : 1,
-          |      "target" : 2,
-          |      "type" : "KNOWS",
-          |      "properties" : {
-          |        "since" : 2017
-          |      }
-          |    },
-          |    {
-          |      "id" : 2,
-          |      "source" : 1,
-          |      "target" : 3,
-          |      "type" : "KNOWS",
-          |      "properties" : {
-          |        "since" : 2016
-          |      }
-          |    },
-          |    {
-          |      "id" : 3,
-          |      "source" : 1,
-          |      "target" : 4,
-          |      "type" : "KNOWS",
-          |      "properties" : {
-          |        "since" : 2015
-          |      }
-          |    },
-          |    {
-          |      "id" : 4,
-          |      "source" : 2,
-          |      "target" : 3,
-          |      "type" : "KNOWS",
-          |      "properties" : {
-          |        "since" : 2016
-          |      }
-          |    },
-          |    {
-          |      "id" : 5,
-          |      "source" : 2,
-          |      "target" : 4,
-          |      "type" : "KNOWS",
-          |      "properties" : {
-          |        "since" : 2013
-          |      }
-          |    },
-          |    {
-          |      "id" : 6,
-          |      "source" : 3,
-          |      "target" : 4,
-          |      "type" : "KNOWS",
-          |      "properties" : {
-          |        "since" : 2016
-          |      }
-          |    },
-          |    {
-          |      "id" : 1000,
-          |      "source" : 10,
-          |      "target" : 20,
-          |      "type" : "INFLUENCES",
-          |      "properties" : {
-          |        ${""}
-          |      }
-          |    }
-          |  ],
-          |  "labels" : [
-          |    "Person",
-          |    "Swedish",
-          |    "Book"
-          |  ],
-          |  "types" : [
-          |    "READS",
-          |    "KNOWS",
-          |    "INFLUENCES"
-          |  ]
-          |}""".stripMargin)
+    val graph = CAPSGraph.create(personTable, bookTable, readsTable, knowsTable, influencesTable)
+    val asJson = toJsonString(graph)
+    val expected =
+      s"""{
+         |  "nodes" : [
+         |    {
+         |      "id" : 1,
+         |      "labels" : [
+         |        "Person",
+         |        "Swedish"
+         |      ],
+         |      "properties" : {
+         |        "luckyNumber" : 23,
+         |        "name" : "Mats"
+         |      }
+         |    },
+         |    {
+         |      "id" : 2,
+         |      "labels" : [
+         |        "Person"
+         |      ],
+         |      "properties" : {
+         |        "luckyNumber" : 42,
+         |        "name" : "Martin"
+         |      }
+         |    },
+         |    {
+         |      "id" : 3,
+         |      "labels" : [
+         |        "Person"
+         |      ],
+         |      "properties" : {
+         |        "luckyNumber" : 1337,
+         |        "name" : "Max"
+         |      }
+         |    },
+         |    {
+         |      "id" : 4,
+         |      "labels" : [
+         |        "Person"
+         |      ],
+         |      "properties" : {
+         |        "luckyNumber" : 9,
+         |        "name" : "Stefan"
+         |      }
+         |    },
+         |    {
+         |      "id" : 10,
+         |      "labels" : [
+         |        "Book"
+         |      ],
+         |      "properties" : {
+         |        "title" : "1984",
+         |        "year" : 1949
+         |      }
+         |    },
+         |    {
+         |      "id" : 20,
+         |      "labels" : [
+         |        "Book"
+         |      ],
+         |      "properties" : {
+         |        "title" : "Cryptonomicon",
+         |        "year" : 1999
+         |      }
+         |    },
+         |    {
+         |      "id" : 30,
+         |      "labels" : [
+         |        "Book"
+         |      ],
+         |      "properties" : {
+         |        "title" : "The Eye of the World",
+         |        "year" : 1990
+         |      }
+         |    },
+         |    {
+         |      "id" : 40,
+         |      "labels" : [
+         |        "Book"
+         |      ],
+         |      "properties" : {
+         |        "title" : "The Circle",
+         |        "year" : 2013
+         |      }
+         |    }
+         |  ],
+         |  "edges" : [
+         |    {
+         |      "id" : 100,
+         |      "source" : 100,
+         |      "target" : 10,
+         |      "type" : "READS",
+         |      "properties" : {
+         |        "recommends" : true
+         |      }
+         |    },
+         |    {
+         |      "id" : 200,
+         |      "source" : 200,
+         |      "target" : 40,
+         |      "type" : "READS",
+         |      "properties" : {
+         |        "recommends" : true
+         |      }
+         |    },
+         |    {
+         |      "id" : 300,
+         |      "source" : 300,
+         |      "target" : 30,
+         |      "type" : "READS",
+         |      "properties" : {
+         |        "recommends" : true
+         |      }
+         |    },
+         |    {
+         |      "id" : 400,
+         |      "source" : 400,
+         |      "target" : 20,
+         |      "type" : "READS",
+         |      "properties" : {
+         |        "recommends" : false
+         |      }
+         |    },
+         |    {
+         |      "id" : 1,
+         |      "source" : 1,
+         |      "target" : 2,
+         |      "type" : "KNOWS",
+         |      "properties" : {
+         |        "since" : 2017
+         |      }
+         |    },
+         |    {
+         |      "id" : 2,
+         |      "source" : 1,
+         |      "target" : 3,
+         |      "type" : "KNOWS",
+         |      "properties" : {
+         |        "since" : 2016
+         |      }
+         |    },
+         |    {
+         |      "id" : 3,
+         |      "source" : 1,
+         |      "target" : 4,
+         |      "type" : "KNOWS",
+         |      "properties" : {
+         |        "since" : 2015
+         |      }
+         |    },
+         |    {
+         |      "id" : 4,
+         |      "source" : 2,
+         |      "target" : 3,
+         |      "type" : "KNOWS",
+         |      "properties" : {
+         |        "since" : 2016
+         |      }
+         |    },
+         |    {
+         |      "id" : 5,
+         |      "source" : 2,
+         |      "target" : 4,
+         |      "type" : "KNOWS",
+         |      "properties" : {
+         |        "since" : 2013
+         |      }
+         |    },
+         |    {
+         |      "id" : 6,
+         |      "source" : 3,
+         |      "target" : 4,
+         |      "type" : "KNOWS",
+         |      "properties" : {
+         |        "since" : 2016
+         |      }
+         |    },
+         |    {
+         |      "id" : 1000,
+         |      "source" : 10,
+         |      "target" : 20,
+         |      "type" : "INFLUENCES",
+         |      "properties" : {
+         |        ${""}
+         |      }
+         |    }
+         |  ],
+         |  "labels" : [
+         |    "Person",
+         |    "Swedish",
+         |    "Book"
+         |  ],
+         |  "types" : [
+         |    "READS",
+         |    "KNOWS",
+         |    "INFLUENCES"
+         |  ]
+         |}""".stripMargin
+    asJson should equal(expected)
   }
 
   private case class Row1(foo: String)
+
   private case class Row3(foo: String, v: Long, veryLongColumnNameWithBoolean: Boolean)
+
   private case class ListRow(strings: Seq[String], integers: Seq[Long], booleans: Seq[Boolean])
+
   private case class MapRow(strings: Map[String, String], integers: Map[String, Long], booleans: Map[String, Boolean])
 
   private def headerOf(fields: Symbol*): RecordHeader = {

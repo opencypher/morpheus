@@ -17,40 +17,37 @@ package org.opencypher.caps.impl.spark
 
 import java.net.{URI, URLEncoder}
 
-import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.impl.spark.io.neo4j.Neo4JPropertyGraphDataSource
 import org.opencypher.caps.test.BaseTestSuite
-import org.opencypher.caps.test.fixture.{Neo4jServerFixture, SparkSessionFixture, TeamDataFixture}
+import org.opencypher.caps.test.fixture.{CAPSSessionFixture, Neo4jServerFixture, SparkSessionFixture, TeamDataFixture}
 import org.scalatest.Matchers
 
 class CAPSSessionNeo4jTest
     extends BaseTestSuite
     with SparkSessionFixture
+    with CAPSSessionFixture
     with Neo4jServerFixture
     with TeamDataFixture
     with Matchers {
 
   test("Neo4j via URI") {
-    implicit val capsSession = CAPSSession.builder(session).build
-
     val nodeQuery = URLEncoder.encode("MATCH (n) RETURN n", "UTF-8")
     val relQuery = URLEncoder.encode("MATCH ()-[r]->() RETURN r", "UTF-8")
     val uri = URI.create(s"$neo4jHost?$nodeQuery;$relQuery")
 
-    val graph = capsSession.readFrom(uri).asCaps
+    val graph = caps.readFrom(uri).asCaps
 
     graph.nodes("n").toDF().collect().toBag should equal(teamDataGraphNodes)
     graph.relationships("rel").toDF().collect().toBag should equal(teamDataGraphRels)
   }
 
   test("Neo4j via mount point") {
-    implicit val capsSession = CAPSSession.builder(session).build
-    capsSession.mount(
+    caps.mount(
       Neo4JPropertyGraphDataSource(neo4jConfig, Some("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r")),
       "/neo4j1")
 
-    val graph = capsSession.readFrom("/neo4j1").asCaps
+    val graph = caps.readFrom("/neo4j1").asCaps
     graph.nodes("n").toDF().collect().toBag should equal(teamDataGraphNodes)
     graph.relationships("rel").toDF().collect().toBag should equal(teamDataGraphRels)
   }

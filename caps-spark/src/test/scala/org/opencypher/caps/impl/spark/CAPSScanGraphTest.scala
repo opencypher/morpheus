@@ -16,170 +16,83 @@
 package org.opencypher.caps.impl.spark
 
 import org.apache.spark.sql.Row
+import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
+import org.opencypher.caps.api.schema.{NodeTable, RelationshipTable}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.api.value.EntityId._
-import org.opencypher.caps.api.value.{CAPSMap, CAPSRelationship, RelationshipData}
-import org.opencypher.caps.impl.record._
+import org.opencypher.caps.api.value._
 import org.opencypher.caps.test.CAPSTestSuite
+import org.opencypher.caps.test.fixture.TeamDataFixture
 
 import scala.collection.Bag
 
-class CAPSScanGraphTest extends CAPSTestSuite {
+class CAPSScanGraphTest extends CAPSTestSuite with TeamDataFixture {
 
-  val `:Person` =
-    NodeScan
-      .on("p" -> "ID") {
-        _.build
-          .withImpliedLabel("Person")
-          .withOptionalLabel("Swedish" -> "IS_SWEDE")
-          .withPropertyKey("name" -> "NAME")
-          .withPropertyKey("lucky_number" -> "NUM")
-      }
-      .from(
-        CAPSRecords.create(
-          Seq("ID", "IS_SWEDE", "NAME", "NUM"),
-          Seq((1L, true, "Mats", 23L), (2L, false, "Martin", 42L), (3L, false, "Max", 1337L), (4L, false, "Stefan", 9L))
-        ))
+  test("union") {
+    val graph1 = CAPSGraph.create(personTable, knowsTable)
+    val graph2 = CAPSGraph.create(programmerTable, bookTable, readsTable)
 
-  // required to test conflicting input data
-  val `:Brogrammer` =
-    NodeScan
-      .on("p" -> "ID") {
-        _.build
-          .withImpliedLabel("Brogrammer")
-          .withImpliedLabel("Person")
-          .withPropertyKey("language" -> "LANG")
-      }
-      .from(
-        CAPSRecords.create(
-          Seq("ID", "LANG"),
-          Seq(
-            (100L, "Node"),
-            (200L, "Coffeescript"),
-            (300L, "Javascript"),
-            (400L, "Typescript")
-          )
-        ))
+    val result = graph1 union graph2
 
-  val `:Programmer` =
-    NodeScan
-      .on("p" -> "ID") {
-        _.build
-          .withImpliedLabel("Programmer")
-          .withImpliedLabel("Person")
-          .withPropertyKey("name" -> "NAME")
-          .withPropertyKey("lucky_number" -> "NUM")
-          .withPropertyKey("language" -> "LANG")
-      }
-      .from(
-        CAPSRecords.create(
-          Seq("ID", "NAME", "NUM", "LANG"),
-          Seq(
-            (100L, "Alice", 42L, "C"),
-            (200L, "Bob", 23L, "D"),
-            (300L, "Eve", 84L, "F"),
-            (400L, "Carl", 49L, "R")
-          )
-        ))
+    val nodes = result.nodes("n").toDF().collect.toBag
+    nodes should equal(
+      Bag(
+        Row(1L, false, true, false, true, null, 23L, "Mats", null, null),
+        Row(2L, false, true, false, false, null, 42L, "Martin", null, null),
+        Row(3L, false, true, false, false, null, 1337L, "Max", null, null),
+        Row(4L, false, true, false, false, null, 9L, "Stefan", null, null),
+        Row(10L, true, false, false, false, null, null, null, "1984", 1949L),
+        Row(20L, true, false, false, false, null, null, null, "Cryptonomicon", 1999L),
+        Row(30L, true, false, false, false, null, null, null, "The Eye of the World", 1990L),
+        Row(40L, true, false, false, false, null, null, null, "The Circle", 2013L),
+        Row(100L, false, true, true, false, "C", 42L, "Alice", null, null),
+        Row(200L, false, true, true, false, "D", 23L, "Bob", null, null),
+        Row(300L, false, true, true, false, "F", 84L, "Eve", null, null),
+        Row(400L, false, true, true, false, "R", 49L, "Carl", null, null)
+      )
+    )
 
-  val `:Book` =
-    NodeScan
-      .on("b" -> "ID") {
-        _.build
-          .withImpliedLabel("Book")
-          .withPropertyKey("title" -> "NAME")
-          .withPropertyKey("year" -> "YEAR")
-      }
-      .from(
-        CAPSRecords.create(
-          Seq("ID", "NAME", "YEAR"),
-          Seq(
-            (10L, "1984", 1949L),
-            (20L, "Cryptonomicon", 1999L),
-            (30L, "The Eye of the World", 1990L),
-            (40L, "The Circle", 2013L))
-        ))
-
-  val `:KNOWS` =
-    RelationshipScan
-      .on("k" -> "ID") {
-        _.from("SRC")
-          .to("DST")
-          .relType("KNOWS")
-          .build
-          .withPropertyKey("since" -> "SINCE")
-      }
-      .from(
-        CAPSRecords.create(
-          Seq("SRC", "ID", "DST", "SINCE"),
-          Seq(
-            (1L, 1L, 2L, 2017L),
-            (1L, 2L, 3L, 2016L),
-            (1L, 3L, 4L, 2015L),
-            (2L, 4L, 3L, 2016L),
-            (2L, 5L, 4L, 2013L),
-            (3L, 6L, 4L, 2016L))
-        ))
-
-  val `:READS` =
-    RelationshipScan
-      .on("r" -> "ID") {
-        _.from("SRC")
-          .to("DST")
-          .relType("READS")
-          .build
-          .withPropertyKey("recommends" -> "RECOMMENDS")
-      }
-      .from(
-        CAPSRecords.create(
-          Seq("SRC", "ID", "DST", "RECOMMENDS"),
-          Seq((1L, 100L, 10L, true), (2L, 200L, 40L, true), (3L, 300L, 30L, true), (4L, 400L, 20L, false))
-        ))
-
-  val `:INFLUENCES` =
-    RelationshipScan
-      .on("i" -> "ID") {
-        _.from("SRC").to("DST").relType("INFLUENCES").build
-      }
-      .from(
-        CAPSRecords.create(
-          Seq("SRC", "ID", "DST"),
-          Seq((10L, 1000L, 20L))
-        ))
+    val rels = result.relationships("r").toDF().collect.toBag
+    rels should equal(
+      Bag(
+        Row(1L, 1L, "KNOWS", 2L, null, 2017L),
+        Row(1L, 2L, "KNOWS", 3L, null, 2016L),
+        Row(1L, 3L, "KNOWS", 4L, null, 2015L),
+        Row(2L, 4L, "KNOWS", 3L, null, 2016L),
+        Row(2L, 5L, "KNOWS", 4L, null, 2013L),
+        Row(3L, 6L, "KNOWS", 4L, null, 2016L),
+        Row(100L, 100L, "READS", 10L, true, null),
+        Row(200L, 200L, "READS", 40L, true, null),
+        Row(300L, 300L, "READS", 30L, true, null),
+        Row(400L, 400L, "READS", 20L, false, null)
+      )
+    )
+  }
 
   test("dont lose schema information when mapping") {
-    val nodes = NodeScan
-      .on("n" -> "id") {
-        _.build
-      }
-      .from(
-        CAPSRecords.create(
-          Seq("id"),
-          Seq(
-            Tuple1(10L),
-            Tuple1(11L),
-            Tuple1(12L),
-            Tuple1(20L),
-            Tuple1(21L),
-            Tuple1(22L),
-            Tuple1(25L),
-            Tuple1(50L),
-            Tuple1(51L)
-          )
-        ))
+    val nodes = NodeTable(NodeMapping.on("id"),
+      caps.sparkSession.createDataFrame(
+        Seq(
+          Tuple1(10L),
+          Tuple1(11L),
+          Tuple1(12L),
+          Tuple1(20L),
+          Tuple1(21L),
+          Tuple1(22L),
+          Tuple1(25L),
+          Tuple1(50L),
+          Tuple1(51L)
+        )
+      ).toDF("id"))
 
-    val rs = RelationshipScan
-      .on("i" -> "ID") {
-        _.from("SRC").to("DST").relType("FOO").build
-      }
-      .from(
-        CAPSRecords.create(
-          Seq("SRC", "ID", "DST"),
-          Seq(
-            (10L, 1000L, 20L),
-            (50L, 500L, 25L)
-          )
-        ))
+    val rs = RelationshipTable(RelationshipMapping.on("ID").from("SRC").to("DST").relType("FOO"),
+      caps.sparkSession.createDataFrame(
+        Seq(
+          (10L, 1000L, 20L),
+          (50L, 500L, 25L)
+        )
+      ).toDF("SRC", "ID", "DST"))
+
 
     val graph = CAPSGraph.create(nodes, rs)
 
@@ -193,7 +106,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
   }
 
   test("Construct graph from single node scan") {
-    val graph = CAPSGraph.create(`:Person`)
+    val graph = CAPSGraph.create(personTable)
     val nodes = graph.nodes("n")
 
     nodes.toDF().columns should equal(
@@ -201,7 +114,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
         "n",
         "____n:Person",
         "____n:Swedish",
-        "____n_dot_lucky_bar_numberINTEGER",
+        "____n_dot_luckyNumberINTEGER",
         "____n_dot_nameSTRING"
       ))
 
@@ -214,7 +127,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
   }
 
   test("Construct graph from multiple node scans") {
-    val graph = CAPSGraph.create(`:Person`, `:Book`)
+    val graph = CAPSGraph.create(personTable, bookTable)
     val nodes = graph.nodes("n")
 
     nodes.toDF().columns should equal(
@@ -223,7 +136,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
         "____n:Book",
         "____n:Person",
         "____n:Swedish",
-        "____n_dot_lucky_bar_numberINTEGER",
+        "____n_dot_luckyNumberINTEGER",
         "____n_dot_nameSTRING",
         "____n_dot_titleSTRING",
         "____n_dot_yearINTEGER"
@@ -243,7 +156,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
   }
 
   test("Construct graph from single node and single relationship scan") {
-    val graph = CAPSGraph.create(`:Person`, `:KNOWS`)
+    val graph = CAPSGraph.create(personTable, knowsTable)
     val rels = graph.relationships("e")
 
     rels.toDF().columns should equal(
@@ -267,7 +180,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
   }
 
   test("Extract all node scans") {
-    val graph = CAPSGraph.create(`:Person`, `:Book`)
+    val graph = CAPSGraph.create(personTable, bookTable)
 
     val nodes = graph.nodes("n", CTNode())
 
@@ -277,7 +190,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
         "____n:Book",
         "____n:Person",
         "____n:Swedish",
-        "____n_dot_lucky_bar_numberINTEGER",
+        "____n_dot_luckyNumberINTEGER",
         "____n_dot_nameSTRING",
         "____n_dot_titleSTRING",
         "____n_dot_yearINTEGER"
@@ -297,7 +210,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
   }
 
   test("Extract node scan subset") {
-    val graph = CAPSGraph.create(`:Person`, `:Book`)
+    val graph = CAPSGraph.create(personTable, bookTable)
 
     val nodes = graph.nodes("n", CTNode("Person"))
 
@@ -306,7 +219,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
         "n",
         "____n:Person",
         "____n:Swedish",
-        "____n_dot_lucky_bar_numberINTEGER",
+        "____n_dot_luckyNumberINTEGER",
         "____n_dot_nameSTRING"
       ))
 
@@ -319,7 +232,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
   }
 
   test("Extract all relationship scans") {
-    val graph = CAPSGraph.create(`:Person`, `:Book`, `:KNOWS`, `:READS`)
+    val graph = CAPSGraph.create(personTable, bookTable, knowsTable, readsTable)
 
     val rels = graph.relationships("e")
 
@@ -341,15 +254,15 @@ class CAPSScanGraphTest extends CAPSTestSuite {
         Row(2L, 4L, "KNOWS", 3L, null, 2016L),
         Row(2L, 5L, "KNOWS", 4L, null, 2013L),
         Row(3L, 6L, "KNOWS", 4L, null, 2016L),
-        Row(1L, 100L, "READS", 10L, true, null),
-        Row(2L, 200L, "READS", 40L, true, null),
-        Row(3L, 300L, "READS", 30L, true, null),
-        Row(4L, 400L, "READS", 20L, false, null)
+        Row(100L, 100L, "READS", 10L, true, null),
+        Row(200L, 200L, "READS", 40L, true, null),
+        Row(300L, 300L, "READS", 30L, true, null),
+        Row(400L, 400L, "READS", 20L, false, null)
       ))
   }
 
   test("Extract relationship scan subset") {
-    val graph = CAPSGraph.create(`:Person`, `:Book`, `:KNOWS`, `:READS`)
+    val graph = CAPSGraph.create(personTable, bookTable, knowsTable, readsTable)
 
     val rels = graph.relationships("e", CTRelationship("KNOWS"))
 
@@ -374,7 +287,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
   }
 
   test("Extract relationship scan strict subset") {
-    val graph = CAPSGraph.create(`:Person`, `:Book`, `:KNOWS`, `:READS`, `:INFLUENCES`)
+    val graph = CAPSGraph.create(personTable, bookTable, knowsTable, readsTable, influencesTable)
 
     val rels = graph.relationships("e", CTRelationship("KNOWS", "INFLUENCES"))
 
@@ -402,7 +315,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
   }
 
   test("Extract from scans with overlapping labels") {
-    val graph = CAPSGraph.create(`:Person`, `:Programmer`)
+    val graph = CAPSGraph.create(personTable, programmerTable)
 
     val nodes = graph.nodes("n", CTNode("Person"))
 
@@ -413,7 +326,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
         "____n:Programmer",
         "____n:Swedish",
         "____n_dot_languageSTRING",
-        "____n_dot_lucky_bar_numberINTEGER",
+        "____n_dot_luckyNumberINTEGER",
         "____n_dot_nameSTRING"
       ))
 
@@ -431,7 +344,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
   }
 
   test("Extract from scans with implied label but missing keys") {
-    val graph = CAPSGraph.create(`:Person`, `:Brogrammer`)
+    val graph = CAPSGraph.create(personTable, brogrammerTable)
 
     val nodes = graph.nodes("n", CTNode("Person"))
 
@@ -442,7 +355,7 @@ class CAPSScanGraphTest extends CAPSTestSuite {
         "____n:Person",
         "____n:Swedish",
         "____n_dot_languageSTRING",
-        "____n_dot_lucky_bar_numberINTEGER",
+        "____n_dot_luckyNumberINTEGER",
         "____n_dot_nameSTRING"
       ))
 

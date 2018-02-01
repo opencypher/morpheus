@@ -19,9 +19,9 @@ import java.net.URI
 
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.CTNode
+import org.opencypher.caps.ir.api.Label
 import org.opencypher.caps.ir.api.block.SortItem
 import org.opencypher.caps.ir.api.expr._
-import org.opencypher.caps.ir.api.Label
 import org.opencypher.caps.trees.AbstractTreeNode
 
 sealed abstract class LogicalOperator extends AbstractTreeNode[LogicalOperator] {

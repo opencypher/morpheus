@@ -26,8 +26,9 @@ import org.apache.spark.sql.types.ArrayType
 import org.apache.spark.sql.{DataFrame, SparkSession, functions}
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
-import org.opencypher.caps.impl.record.{NodeScan, RelationshipScan}
-import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords}
+import org.opencypher.caps.api.graph.PropertyGraph
+import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
+import org.opencypher.caps.api.schema.{NodeTable, RelationshipTable}
 
 trait CsvGraphLoaderFileHandler {
   def location: String
@@ -105,71 +106,50 @@ class CsvGraphLoader(fileHandler: CsvGraphLoaderFileHandler)(implicit capsSessio
 
   private val sparkSession: SparkSession = capsSession.sparkSession
 
-  def load: CAPSGraph = {
-    val nodeScans = loadNodes
-    val relScans = loadRels
-    CAPSGraph.create(nodeScans.head, nodeScans.tail ++ relScans: _*)
-  }
+  def load: PropertyGraph = capsSession.readFrom(loadNodes ++ loadRels: _*)
 
-  private def loadNodes: Array[NodeScan] = {
-    val csvFiles = listCsvFiles("nodes")
+  private def loadNodes: List[NodeTable] = {
+    val csvFiles = listCsvFiles("nodes").toList
 
     csvFiles.map(e => {
       val schema = parseSchema(e)(CsvNodeSchema(_))
 
-      val dataFrame = sparkSession.read
+      val intermediateDF = sparkSession.read
         .schema(schema.toStructType)
         .csv(e.toString)
 
-      val withListFields = convertLists(dataFrame, schema)
+      val dataFrame = convertLists(intermediateDF, schema)
 
-      val records = CAPSRecords.create(withListFields)
+      val nodeMapping = NodeMapping.create(schema.idField.name,
+        impliedLabels = schema.implicitLabels.toSet,
+        optionalLabels = schema.optionalLabels.map(_.name).toSet,
+        propertyKeys = schema.propertyFields.map(_.name).toSet)
 
-      NodeScan
-        .on("n" -> schema.idField.name)(builder => {
-          val withImpliedLabels = schema.implicitLabels.foldLeft(builder.build)(_ withImpliedLabel _)
-          val withOptionalLabels = schema.optionalLabels.foldLeft(withImpliedLabels)((a, b) => {
-            a.withOptionalLabel(b.name -> b.name)
-          })
-          schema.propertyFields.foldLeft(withOptionalLabels)((builder, field) => {
-            builder.withPropertyKey(field.name -> field.name)
-          })
-        })
-        .from(records)
+      NodeTable(nodeMapping, dataFrame)
     })
   }
 
-  private def loadRels: Array[RelationshipScan] = {
-    val csvFiles = listCsvFiles("relationships")
+  private def loadRels: List[RelationshipTable] = {
+    val csvFiles = listCsvFiles("relationships").toList
 
     csvFiles.map(relationShipFile => {
 
       val schema = parseSchema(relationShipFile)(CsvRelSchema(_))
 
-      val dataFrame = sparkSession.read
+      val intermediateDF = sparkSession.read
         .option("timestampFormat", "yyyy-MM-dd'T'HH:mm:ss.SSS")
         .schema(schema.toStructType)
         .csv(relationShipFile.toString)
 
-      val withLists = convertLists(dataFrame, schema)
+      val dataFrame = convertLists(intermediateDF, schema)
 
-      val records = CAPSRecords.create(
-        withLists
-      )
+      val relMapping = RelationshipMapping.create(schema.idField.name,
+        schema.startIdField.name,
+        schema.endIdField.name,
+        schema.relType,
+        schema.propertyFields.map(_.name).toSet)
 
-      RelationshipScan
-        .on("r" -> schema.idField.name)(builder => {
-          val baseBuilder = builder
-            .from(schema.startIdField.name)
-            .to(schema.endIdField.name)
-            .relType(schema.relType)
-            .build
-
-          schema.propertyFields.foldLeft(baseBuilder)((builder, field) => {
-            builder.withPropertyKey(field.name -> field.name)
-          })
-        })
-        .from(records)
+      RelationshipTable(relMapping, dataFrame)
     })
   }
 

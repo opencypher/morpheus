@@ -21,6 +21,7 @@ import org.opencypher.caps.impl.spark.CAPSGraph
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.fixture.MiniDFSClusterFixture
 import org.scalatest.Matchers
+import org.opencypher.caps.impl.spark.CAPSConverters._
 
 class CsvGraphLoaderAcceptanceTest extends CAPSTestSuite
   with MiniDFSClusterFixture
@@ -31,7 +32,7 @@ class CsvGraphLoaderAcceptanceTest extends CAPSTestSuite
   test("load csv graph") {
     val loader = CsvGraphLoader(hdfsURI.toString, session.sparkContext.hadoopConfiguration)
 
-    val graph: CAPSGraph = loader.load
+    val graph: CAPSGraph = loader.load.asCaps
 
     graph.nodes("n").toDF().collect().toBag should equal(dfsTestGraphNodes)
     graph.relationships("rel").toDF().collect.toBag should equal(dfsTestGraphRels)
@@ -41,7 +42,7 @@ class CsvGraphLoaderAcceptanceTest extends CAPSTestSuite
     val fileURI: URI = new URI(s"file://${getClass.getResource("/csv/sn").getPath}")
     val loader = CsvGraphLoader(fileURI.toString, session.sparkContext.hadoopConfiguration)
 
-    val graph: CAPSGraph = loader.load
+    val graph: CAPSGraph = loader.load.asCaps
     graph.nodes("n").toDF().collect().toBag should equal(dfsTestGraphNodes)
     graph.relationships("rel").toDF().collect.toBag should equal(dfsTestGraphRels)
   }

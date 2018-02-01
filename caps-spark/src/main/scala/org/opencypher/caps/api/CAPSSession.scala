@@ -20,10 +20,10 @@ import java.util.{ServiceLoader, UUID}
 import org.apache.spark.SparkConf
 import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.sql.SparkSession
+import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph}
-import org.opencypher.caps.api.schema.{Node, Relationship}
+import org.opencypher.caps.api.schema._
 import org.opencypher.caps.demo.CypherKryoRegistrar
-import org.opencypher.caps.impl.record.GraphScan.{nodesToScan, relationshipsToScan}
 import org.opencypher.caps.impl.spark._
 import org.opencypher.caps.impl.spark.io.{CAPSGraphSourceHandler, CAPSPropertyGraphDataSourceFactory}
 
@@ -47,7 +47,29 @@ trait CAPSSession extends CypherSession {
     nodes: Seq[N],
     relationships: Seq[R] = Seq.empty): PropertyGraph = {
     implicit val session: CAPSSession = this
-    CAPSGraph.create(nodesToScan(nodes), relationshipsToScan(relationships))
+    CAPSGraph.create(NodeTable(nodes), RelationshipTable(relationships))
+  }
+
+  /**
+    * Reads a graph from a sequence of entity tables and expects that the first table is a node table.
+    *
+    * @param entityTables sequence of node and relationship tables defining the graph
+    * @return property graph
+    */
+  def readFrom(entityTables: EntityTable*): PropertyGraph = entityTables.head match {
+    case h: NodeTable => readFrom(h, entityTables.tail: _*)
+    case _ => throw IllegalArgumentException("first argument of type NodeTable", "RelationshipTable")
+  }
+
+  /**
+    * Reads a graph from a sequence of entity tables that contains at least one node table.
+    *
+    * @param nodeTable    first parameter to guarantee there is at least one node table
+    * @param entityTables sequence of node and relationship tables defining the graph
+    * @return property graph
+    */
+  def readFrom(nodeTable: NodeTable, entityTables: EntityTable*): PropertyGraph = {
+    CAPSGraph.create(nodeTable, entityTables: _*)(this)
   }
 }
 
@@ -78,9 +100,11 @@ object CAPSSession extends Serializable {
 
   def create(implicit session: SparkSession): CAPSSession = Builder(session).build
 
+  def builder(sparkSession: SparkSession): Builder = Builder(sparkSession)
+
   case class Builder(
-      session: SparkSession,
-      private val graphSourceFactories: Set[CAPSPropertyGraphDataSourceFactory] = Set.empty) {
+    session: SparkSession,
+    private val graphSourceFactories: Set[CAPSPropertyGraphDataSourceFactory] = Set.empty) {
 
     def withGraphSourceFactory(factory: CAPSPropertyGraphDataSourceFactory): Builder =
       copy(graphSourceFactories = graphSourceFactories + factory)
@@ -96,5 +120,4 @@ object CAPSSession extends Serializable {
     }
   }
 
-  def builder(sparkSession: SparkSession): Builder = Builder(sparkSession)
 }
