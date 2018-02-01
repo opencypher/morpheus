@@ -20,7 +20,7 @@ import java.net.URI
 import org.opencypher.caps.api.exception.{IllegalArgumentException, NotImplementedException}
 import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.types.CTRelationship
-import org.opencypher.caps.api.value.{CAPSValue, CypherValue}
+import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.flat
 import org.opencypher.caps.impl.flat.FlatOperator
 import org.opencypher.caps.impl.spark.CAPSRecords
@@ -33,15 +33,14 @@ import org.opencypher.caps.logical.impl.{GraphOfPattern, LogicalExternalGraph, L
 case class PhysicalPlannerContext(
   resolver: URI => PropertyGraph,
   inputRecords: CAPSRecords,
-  parameters: Map[String, CAPSValue])
+  parameters: Map[String, CypherValue[_]])
 
 object PhysicalPlannerContext {
   def from(
     resolver: URI => PropertyGraph,
     inputRecords: CAPSRecords,
-    parameters: Map[String, CypherValue]): PhysicalPlannerContext = {
-    val convertedParams = parameters.mapValues(CAPSValue(_))
-    new PhysicalPlannerContext(resolver, inputRecords, convertedParams)
+    parameters: Map[String, CypherValue[_]]): PhysicalPlannerContext = {
+    new PhysicalPlannerContext(resolver, inputRecords, parameters)
   }
 
 }

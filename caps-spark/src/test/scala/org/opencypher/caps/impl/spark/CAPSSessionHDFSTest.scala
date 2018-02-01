@@ -19,7 +19,8 @@ import java.net.URI
 
 import org.apache.http.client.utils.URIBuilder
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.value.{CAPSMap, CAPSNode}
+import org.opencypher.caps.api.value.CAPSNode
+import org.opencypher.caps.api.value.CypherValue.{CypherMap, Properties}
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvPropertyGraphDataSource
 import org.opencypher.caps.test.CAPSTestSuite
@@ -54,20 +55,25 @@ class CAPSSessionHDFSTest extends CAPSTestSuite with MiniDFSClusterFixture with 
     implicit val capsSession = CAPSSession.builder(session).build
 
     val nodes = capsSession.cypher(s"FROM GRAPH test AT '$hdfsURI' MATCH (n) RETURN n")
-    nodes.records.iterator.toBag should equal(
-      Bag(
-        CAPSMap("n" -> CAPSNode(1L)),
-        CAPSMap("n" -> CAPSNode(2L)),
-        CAPSMap("n" -> CAPSNode(3L)),
-        CAPSMap("n" -> CAPSNode(4L))
-      ))
+
+    val stefanNode = CAPSNode(1L, Set("Employee", "German", "Person"), Properties("name" -> "Stefan", "luckyNumber" -> 42, "languages" -> List("german", "english")))
+    val matsNode = CAPSNode(2L, Set("Employee", "Swede", "Person"), Properties("name" -> "Mats", "luckyNumber" -> 23, "languages" -> List("swedish", "english", "german")))
+    val martinNode = CAPSNode(3L, Set("Employee", "German", "Person"), Properties("name" -> "Martin", "luckyNumber" -> 1337, "languages" -> List("german", "english")))
+    val maxNode = CAPSNode(4L, Set("Employee", "German", "Person"), Properties("name" -> "Max", "luckyNumber" -> 8, "languages" -> List("german", "swedish", "english")))
+
+    nodes.records.iterator.toBag should equal(Bag(
+      CypherMap("n" -> stefanNode),
+      CypherMap("n" -> matsNode),
+      CypherMap("n" -> martinNode),
+      CypherMap("n" -> maxNode)
+    ))
 
     val edges = capsSession.cypher(s"FROM GRAPH test AT '$hdfsURI' MATCH ()-[r]->() RETURN r")
     edges.records.asCaps.compact.toMaps should equal(
       Bag(
-        CAPSMap("r" -> 10L),
-        CAPSMap("r" -> 20L),
-        CAPSMap("r" -> 30L)
+        CypherMap("r" -> 10L),
+        CypherMap("r" -> 20L),
+        CypherMap("r" -> 30L)
       ))
   }
 }

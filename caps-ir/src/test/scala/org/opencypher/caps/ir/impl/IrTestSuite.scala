@@ -99,12 +99,12 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
 
     def ir(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
-      val parameters = Map.empty[String, CypherValue]
+      val parameters = Map.empty[String, CypherValue[_]]
       IRBuilder(stmt)(
         IRBuilderContext.initial(queryText, parameters, SemanticState.clean, testGraph, _ => testGraphSource(schema)))
     }
 
-    def irWithParams(params: (String, CypherValue)*)(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
+    def irWithParams(params: (String, CypherValue[_])*)(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
       IRBuilder(stmt)(
         IRBuilderContext.initial(queryText, params.toMap, SemanticState.clean, testGraph, _ => testGraphSource(schema)))

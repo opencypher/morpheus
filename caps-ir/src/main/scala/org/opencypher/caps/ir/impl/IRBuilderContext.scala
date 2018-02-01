@@ -33,7 +33,7 @@ import org.opencypher.caps.ir.impl.typer.{SchemaTyper, TypeTracker}
 
 final case class IRBuilderContext(
   queryString: String,
-  parameters: Map[String, CypherValue],
+  parameters: Map[String, CypherValue[_]],
   ambientGraph: IRExternalGraph,
   blocks: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
   semanticState: SemanticState,
@@ -103,7 +103,7 @@ object IRBuilderContext {
 
   def initial(
     query: String,
-    parameters: Map[String, CypherValue],
+    parameters: Map[String, CypherValue[_]],
     semState: SemanticState,
     ambientGraph: IRExternalGraph,
     resolver: URI => PropertyGraphDataSource

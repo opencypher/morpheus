@@ -22,7 +22,7 @@ import org.opencypher.caps.ir.api.util.DirectCompilationStage
 import org.opencypher.caps.logical.impl.LogicalOperator
 import org.opencypher.caps.logical.{impl => logical}
 
-final case class FlatPlannerContext(parameters: Map[String, CypherValue])
+final case class FlatPlannerContext(parameters: Map[String, CypherValue[_]])
 
 class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, FlatPlannerContext] {
 

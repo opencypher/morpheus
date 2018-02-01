@@ -25,11 +25,12 @@ import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.api.value.CAPSMap
+import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.impl.record.CAPSRecordHeader._
 import org.opencypher.caps.impl.record.{CAPSRecordHeader, _}
 import org.opencypher.caps.impl.spark.DfUtils._
 import org.opencypher.caps.impl.spark.convert.{fromSparkType, rowToCypherMap, toSparkType}
+import org.opencypher.caps.impl.spark.encoders.CypherValueEncoders
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.impl.util.PrintOptions
 import org.opencypher.caps.ir.api.expr.{Property, Var}
@@ -38,16 +39,17 @@ import scala.annotation.tailrec
 import scala.reflect.runtime.universe.TypeTag
 
 sealed abstract class CAPSRecords(
-    override val header: RecordHeader,
-    val data: DataFrame
+  override val header: RecordHeader,
+  val data: DataFrame
 )(implicit val caps: CAPSSession)
-    extends CypherRecords
+  extends CypherRecords
+    with CypherValueEncoders
     with Serializable {
 
   override def print(implicit options: PrintOptions): Unit =
     RecordsPrinter.print(this)
 
-  override def iterator: Iterator[CAPSMap] = {
+  override def iterator: Iterator[CypherMap] = {
     import scala.collection.JavaConverters._
 
     toLocalIterator.asScala
@@ -116,13 +118,13 @@ sealed abstract class CAPSRecords(
   def contract[E <: EmbeddedEntity](entity: VerifiedEmbeddedEntity[E]): CAPSRecords = {
     val slotExprs = entity.slots
     val newSlots = header.slots.map {
-      case slot @ RecordSlot(idx, content: FieldSlotContent) =>
+      case slot@RecordSlot(idx, content: FieldSlotContent) =>
         slotExprs
           .get(content.field.name)
           .map {
-            case expr: Var      => OpaqueField(expr)
+            case expr: Var => OpaqueField(expr)
             case expr: Property => ProjectedExpr(expr.copy()(cypherType = content.cypherType))
-            case expr           => ProjectedExpr(expr)
+            case expr => ProjectedExpr(expr)
           }
           .getOrElse(slot.content)
 
@@ -138,15 +140,15 @@ sealed abstract class CAPSRecords(
     CAPSRecords.create(header, data.distinct())
   }
 
-  def toLocalIterator: java.util.Iterator[CAPSMap] = {
+  def toLocalIterator: java.util.Iterator[CypherMap] = {
     toCypherMaps.toLocalIterator()
   }
 
-  def foreachPartition(f: Iterator[CAPSMap] => Unit): Unit = {
+  def foreachPartition(f: Iterator[CypherMap] => Unit): Unit = {
     toCypherMaps.foreachPartition(f)
   }
 
-  def collect(): Array[CAPSMap] =
+  def collect(): Array[CypherMap] =
     toCypherMaps.collect()
 
   /**
@@ -158,19 +160,17 @@ sealed abstract class CAPSRecords(
     *
     * @return a dataset of CypherMaps.
     */
-  def toCypherMaps: Dataset[CAPSMap] = {
-    import encoders._
-
+  def toCypherMaps: Dataset[CypherMap] = {
     data.map(rowToCypherMap(header))
   }
 }
 
 object CAPSRecords {
 
-  def create[A <: Product: TypeTag](columns: Seq[String], data: Seq[A])(implicit caps: CAPSSession): CAPSRecords =
+  def create[A <: Product : TypeTag](columns: Seq[String], data: Seq[A])(implicit caps: CAPSSession): CAPSRecords =
     create(caps.sparkSession.createDataFrame(data).toDF(columns: _*))
 
-  def create[A <: Product: TypeTag](data: Seq[A])(implicit caps: CAPSSession): CAPSRecords =
+  def create[A <: Product : TypeTag](data: Seq[A])(implicit caps: CAPSSession): CAPSRecords =
     create(caps.sparkSession.createDataFrame(data))
 
   def create(columns: String*)(rows: java.util.List[Row], schema: StructType)(implicit caps: CAPSSession): CAPSRecords =
@@ -180,13 +180,13 @@ object CAPSRecords {
     create(caps.sparkSession.createDataFrame(rows, schema))
 
   def create(columns: Seq[String], data: java.util.List[_], beanClass: Class[_])(
-      implicit caps: CAPSSession): CAPSRecords =
+    implicit caps: CAPSSession): CAPSRecords =
     create(caps.sparkSession.createDataFrame(data, beanClass).toDF(columns: _*))
 
   def create(data: java.util.List[_], beanClass: Class[_])(implicit caps: CAPSSession): CAPSRecords =
     create(caps.sparkSession.createDataFrame(data, beanClass))
 
-  def create[A <: Product: TypeTag](rdd: RDD[A])(implicit caps: CAPSSession): CAPSRecords =
+  def create[A <: Product : TypeTag](rdd: RDD[A])(implicit caps: CAPSSession): CAPSRecords =
     create(caps.sparkSession.createDataFrame(rdd))
 
   def create(rowRDD: RDD[Row], schema: StructType)(implicit caps: CAPSSession): CAPSRecords =
@@ -207,7 +207,7 @@ object CAPSRecords {
       case (df, field) =>
         val castType = field.dataType match {
           case ByteType | ShortType | IntegerType => LongType
-          case FloatType                          => DoubleType
+          case FloatType => DoubleType
           case other =>
             throw IllegalArgumentException("a Spark type supported by Cypher", s"type $other of field $field")
         }
@@ -228,8 +228,8 @@ object CAPSRecords {
     * <i>names</i> are the same (and not duplicated).
     *
     * @param initialHeader the header of the records.
-    * @param initialData the data of the records.
-    * @param caps the space in which the data belongs.
+    * @param initialData   the data of the records.
+    * @param caps          the space in which the data belongs.
     * @return a new SparkCypherRecords representing the input.
     */
   def create(initialHeader: RecordHeader, initialData: DataFrame)(implicit caps: CAPSSession): CAPSRecords = {
@@ -284,10 +284,10 @@ object CAPSRecords {
 
   @tailrec
   private def containsEntity(t: CypherType): Boolean = t match {
-    case _: CTNode         => true
+    case _: CTNode => true
     case _: CTRelationship => true
-    case l: CTList         => containsEntity(l.elementType)
-    case _                 => false
+    case l: CTList => containsEntity(l.elementType)
+    case _ => false
   }
 
   def empty(initialHeader: RecordHeader = RecordHeader.empty)(implicit caps: CAPSSession): CAPSRecords = {
@@ -302,4 +302,5 @@ object CAPSRecords {
   }
 
   private case class EmptyRow()
+
 }

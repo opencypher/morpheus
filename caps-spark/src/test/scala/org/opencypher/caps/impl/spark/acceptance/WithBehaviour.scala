@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.spark.acceptance
 
-import org.opencypher.caps.api.value.CAPSMap
+import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.impl.spark.CAPSGraph
 
@@ -39,8 +39,8 @@ trait WithBehaviour { this: AcceptanceTest =>
       // Then
       result.records.toMaps should equal(
         Bag(
-          CAPSMap("foo" -> 5),
-          CAPSMap("foo" -> 6)
+          CypherMap("foo" -> 5),
+          CypherMap("foo" -> 6)
         ))
 
       // And
@@ -61,8 +61,8 @@ trait WithBehaviour { this: AcceptanceTest =>
       // Then
       result.records.toMaps should equal(
         Bag(
-          CAPSMap("bar" -> 5),
-          CAPSMap("bar" -> 5)
+          CypherMap("bar" -> 5),
+          CypherMap("bar" -> 5)
         ))
 
       // And
@@ -80,7 +80,7 @@ trait WithBehaviour { this: AcceptanceTest =>
       // Then
       result.records.toMaps should equal(
         Bag(
-          CAPSMap("n.val" -> 4)
+          CypherMap("n.val" -> 4)
         ))
 
       // And
@@ -98,7 +98,7 @@ trait WithBehaviour { this: AcceptanceTest =>
       // Then
       result.records.toMaps should equal(
         Bag(
-          CAPSMap("n_val" -> 4)
+          CypherMap("n_val" -> 4)
         ))
 
       // And
@@ -116,8 +116,8 @@ trait WithBehaviour { this: AcceptanceTest =>
       // Then
       result.records.toMaps should equal(
         Bag(
-          CAPSMap("n_val" -> 3),
-          CAPSMap("n_val" -> 4)
+          CypherMap("n_val" -> 3),
+          CypherMap("n_val" -> 4)
         ))
 
       // And
@@ -135,7 +135,7 @@ trait WithBehaviour { this: AcceptanceTest =>
       // Then
       result.records.toMaps should equal(
         Bag(
-          CAPSMap("sum_n_m_val" -> 9)
+          CypherMap("sum_n_m_val" -> 9)
         ))
 
       // And
@@ -153,7 +153,7 @@ trait WithBehaviour { this: AcceptanceTest =>
       // Then
       result.records.toMaps should equal(
         Bag(
-          CAPSMap("sum2" -> 9)
+          CypherMap("sum2" -> 9)
         ))
 
       // And
@@ -172,8 +172,8 @@ trait WithBehaviour { this: AcceptanceTest =>
       // Then
       result.records.toMaps should equal(
         Bag(
-          CAPSMap("sum_n_m_val" -> 9, "n_val" -> 4),
-          CAPSMap("sum_n_m_val" -> null, "n_val" -> 5)
+          CypherMap("sum_n_m_val" -> 9, "n_val" -> 4),
+          CypherMap("sum_n_m_val" -> null, "n_val" -> 5)
         ))
 
       // And
@@ -188,9 +188,9 @@ trait WithBehaviour { this: AcceptanceTest =>
       // Then
       result.records.toMaps should equal(
         Bag(
-          CAPSMap("val" -> 3L),
-          CAPSMap("val" -> 4L),
-          CAPSMap("val" -> 42L)
+          CypherMap("val" -> 3L),
+          CypherMap("val" -> 4L),
+          CypherMap("val" -> 42L)
         ))
 
       // And
@@ -205,9 +205,9 @@ trait WithBehaviour { this: AcceptanceTest =>
       // Then
       result.records.toMaps should equal(
         Bag(
-          CAPSMap("val" -> 3L),
-          CAPSMap("val" -> 4L),
-          CAPSMap("val" -> 42L)
+          CypherMap("val" -> 3L),
+          CypherMap("val" -> 4L),
+          CypherMap("val" -> 42L)
         ))
 
       // And
@@ -222,9 +222,9 @@ trait WithBehaviour { this: AcceptanceTest =>
       // Then
       result.records.toMaps should equal(
         Bag(
-          CAPSMap("val" -> 42L),
-          CAPSMap("val" -> 4L),
-          CAPSMap("val" -> 3L)
+          CypherMap("val" -> 42L),
+          CypherMap("val" -> 4L),
+          CypherMap("val" -> 3L)
         ))
 
       // And
@@ -251,8 +251,8 @@ trait WithBehaviour { this: AcceptanceTest =>
       // Then
       result.records.toMaps should equal(
         Bag(
-          CAPSMap("val" -> 4L),
-          CAPSMap("val" -> 42L)
+          CypherMap("val" -> 4L),
+          CypherMap("val" -> 42L)
         ))
 
       // And
@@ -267,7 +267,7 @@ trait WithBehaviour { this: AcceptanceTest =>
       // Then
       result.records.toMaps should equal(
         Bag(
-          CAPSMap("val" -> 42L)
+          CypherMap("val" -> 42L)
         ))
 
       // And
@@ -294,7 +294,7 @@ trait WithBehaviour { this: AcceptanceTest =>
       // Then
       result.records.toMaps should equal(
         Bag(
-          CAPSMap("val" -> 3L)
+          CypherMap("val" -> 3L)
         ))
 
       // And
@@ -309,8 +309,8 @@ trait WithBehaviour { this: AcceptanceTest =>
       // Then
       result.records.toMaps should equal(
         Bag(
-          CAPSMap("val" -> 3L),
-          CAPSMap("val" -> 4L)
+          CypherMap("val" -> 3L),
+          CypherMap("val" -> 4L)
         ))
 
       // And
@@ -325,7 +325,7 @@ trait WithBehaviour { this: AcceptanceTest =>
       // Then
       result.records.toMaps should equal(
         Bag(
-          CAPSMap("val" -> 4L)
+          CypherMap("val" -> 4L)
         ))
 
       // And
@@ -350,7 +350,7 @@ trait WithBehaviour { this: AcceptanceTest =>
 
         // Then
         result.records.toMaps should equal(Bag(
-          CAPSMap("nt" -> false, "nf" -> true)
+          CypherMap("nt" -> false, "nf" -> true)
         ))
       }
 
@@ -370,8 +370,8 @@ trait WithBehaviour { this: AcceptanceTest =>
 
         // Then
         result.records.toMaps should equal(Bag(
-          CAPSMap("id" -> 1L, "val2" -> false),
-          CAPSMap("id" -> 2L, "val2" -> true)
+          CypherMap("id" -> 1L, "val2" -> false),
+          CypherMap("id" -> 2L, "val2" -> true)
         ))
       }
     }

@@ -18,13 +18,15 @@ package org.opencypher.caps.impl.spark.encoders
 import org.apache.spark.sql.Encoder
 import org.apache.spark.sql.Encoders._
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
-import org.opencypher.caps.api.value.CAPSValue
+import org.opencypher.caps.api.value._
 
 import scala.language.implicitConversions
 
 trait LowPriorityCypherValueEncoders {
   implicit def asExpressionEncoder[T](v: Encoder[T]): ExpressionEncoder[T] = v.asInstanceOf[ExpressionEncoder[T]]
-  implicit def cypherValueEncoder: ExpressionEncoder[CAPSValue] = kryo[CAPSValue]
-  implicit def cypherRecordEncoder: ExpressionEncoder[Map[String, CAPSValue]] = kryo[Map[String, CAPSValue]]
+
+  implicit def cypherValueEncoder: ExpressionEncoder[NullableCypherValue[_]] = kryo[NullableCypherValue[_]]
+
+  implicit def cypherRecordEncoder: ExpressionEncoder[Map[String, NullableCypherValue[_]]] = kryo[Map[String, NullableCypherValue[_]]]
 }
 

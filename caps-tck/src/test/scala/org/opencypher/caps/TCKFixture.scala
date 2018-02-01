@@ -17,19 +17,19 @@ package org.opencypher.caps
 
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.NotImplementedException
-import org.opencypher.caps.api.value.CAPSValue
+import org.opencypher.caps.api.value.{CypherValue => CAPSCypherValue}
 import org.opencypher.caps.impl.record.CypherRecords
 import org.opencypher.caps.impl.spark.CAPSGraph
 import org.opencypher.caps.test.support.creation.caps.CAPSGraphFactory
 import org.opencypher.caps.test.support.creation.propertygraph.Neo4jPropertyGraphFactory
 import org.opencypher.tools.tck.api._
-import org.opencypher.tools.tck.values._
+import org.opencypher.tools.tck.values.{CypherValue => TCKCypherValue, _}
 
 import scala.io.Source
 
 case class TCKGraph(capsGraphFactory: CAPSGraphFactory, graph: CAPSGraph)(implicit caps: CAPSSession) extends Graph {
 
-  override def execute(query: String, params: Map[String, CypherValue], queryType: QueryType): (Graph, Result) = {
+  override def execute(query: String, params: Map[String, TCKCypherValue], queryType: QueryType): (Graph, Result) = {
     queryType match {
       case InitQuery =>
         val capsGraph = capsGraphFactory(Neo4jPropertyGraphFactory(query, params.mapValues(tckCypherValueToScala)))
@@ -39,7 +39,7 @@ case class TCKGraph(capsGraphFactory: CAPSGraphFactory, graph: CAPSGraph)(implic
         this -> CypherValueRecords.empty
       case ExecQuery =>
         // mapValues is lazy, so we force it for debug purposes
-        val capsResult = graph.cypher(query, params.mapValues(CAPSValue(_)).view.force)
+        val capsResult = graph.cypher(query, params.mapValues(CAPSCypherValue(_)).view.force)
         val tckRecords = convertToTckStrings(capsResult.records)
 
         this -> tckRecords
@@ -55,7 +55,7 @@ case class TCKGraph(capsGraphFactory: CAPSGraphFactory, graph: CAPSGraph)(implic
     StringRecords(header, rows)
   }
 
-  private def tckCypherValueToScala(cypherValue: CypherValue): Any = cypherValue match {
+  private def tckCypherValueToScala(cypherValue: TCKCypherValue): Any = cypherValue match {
     case CypherString(v)               => v
     case CypherInteger(v)              => v
     case CypherFloat(v)                => v

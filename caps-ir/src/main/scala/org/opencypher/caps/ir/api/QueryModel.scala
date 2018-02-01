@@ -26,7 +26,7 @@ import scala.collection.generic.CanBuildFrom
 
 final case class QueryModel[E](
   result: ResultBlock[E],
-  parameters: Map[String, CypherValue],
+  parameters: Map[String, CypherValue[_]],
   blocks: Map[BlockRef, Block[E]],
   graphs: Map[String, URI]
 ) {

@@ -17,8 +17,8 @@ package org.opencypher.caps.impl.spark
 
 import org.apache.spark.sql.Row
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
-import org.opencypher.caps.api.value.EntityId._
-import org.opencypher.caps.api.value.{CAPSMap, CAPSRelationship, RelationshipData}
+import org.opencypher.caps.api.value.CAPSRelationship
+import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.impl.record._
 import org.opencypher.caps.test.CAPSTestSuite
 
@@ -187,8 +187,8 @@ class CAPSScanGraphTest extends CAPSTestSuite {
 
     results.collect().toSet should equal(
       Set(
-        CAPSMap("r" -> CAPSRelationship(1000L, RelationshipData(10L, 20L, "FOO"))),
-        CAPSMap("r" -> CAPSRelationship(500L, RelationshipData(50L, 25L, "FOO")))
+        CypherMap("r" -> CAPSRelationship(1000L, 10L, 20L, "FOO")),
+        CypherMap("r" -> CAPSRelationship(500L, 50L, 25L, "FOO"))
       ))
   }
 

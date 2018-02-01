@@ -26,24 +26,24 @@ trait CAPSSessionOps {
       graph: PropertyGraph,
       in: CypherRecords,
       expr: Expr,
-      queryParameters: Map[String, CypherValue]): CypherRecords
+      queryParameters: Map[String, CypherValue[_]]): CypherRecords
 
   def select(
       graph: PropertyGraph,
       in: CypherRecords,
       fields: IndexedSeq[Var],
-      queryParameters: Map[String, CypherValue]): CypherRecords
+      queryParameters: Map[String, CypherValue[_]]): CypherRecords
 
   def project(
       graph: PropertyGraph,
       in: CypherRecords,
       expr: Expr,
-      queryParameters: Map[String, CypherValue]): CypherRecords
+      queryParameters: Map[String, CypherValue[_]]): CypherRecords
 
   def alias(
       graph: PropertyGraph,
       in: CypherRecords,
       alias: (Expr, Var),
-      queryParameters: Map[String, CypherValue]): CypherRecords
+      queryParameters: Map[String, CypherValue[_]]): CypherRecords
 
 }

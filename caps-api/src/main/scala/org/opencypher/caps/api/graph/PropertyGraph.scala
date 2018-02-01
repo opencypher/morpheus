@@ -75,7 +75,7 @@ trait PropertyGraph {
     * @return           the result of the query.
     * @see [[CypherSession.cypherOnGraph()]]
     */
-  final def cypher(query: String, parameters: Map[String, CypherValue] = Map.empty): CypherResult =
+  final def cypher(query: String, parameters: Map[String, CypherValue[_]] = Map.empty): CypherResult =
     session.cypherOnGraph(graph, query, parameters)
 
   /**

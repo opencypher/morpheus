@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.spark.acceptance
 
-import org.opencypher.caps.api.value.CAPSMap
+import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.impl.spark.CAPSGraph
 
 import scala.collection.Bag
@@ -52,13 +52,13 @@ trait ExpandIntoBehaviour {
 
       // Then
       result.records.toMaps should equal(Bag(
-        CAPSMap(
+        CypherMap(
           "p1.name" -> "Alice",
           "p2.name" -> "Bob",
           "p3.name" -> "Eve",
           "p4.name" -> "Carl"
         ),
-        CAPSMap(
+        CypherMap(
           "p1.name" -> "Alice",
           "p2.name" -> "Bob",
           "p3.name" -> "Eve",
@@ -92,7 +92,7 @@ trait ExpandIntoBehaviour {
 
       // Then
       result.records.toMaps should equal(Bag(
-        CAPSMap(
+        CypherMap(
           "p1.name" -> "Alice",
           "p2.name" -> "Bob",
           "p3.name" -> "Eve"
@@ -131,7 +131,7 @@ trait ExpandIntoBehaviour {
 
       // Then
       result.records.toMaps should equal(Bag(
-        CAPSMap(
+        CypherMap(
           "p1.name" -> "Alice",
           "p2.name" -> "Bob",
           "post.content" -> "foobar"

@@ -224,7 +224,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
 
   implicit class RichModel(model: QueryModel[Expr]) {
 
-    def ensureThat(f: (QueryModel[Expr], Map[String, CypherValue]) => Unit) = f(model, model.parameters)
+    def ensureThat(f: (QueryModel[Expr], Map[String, CypherValue[_]]) => Unit) = f(model, model.parameters)
 
     def requirements = {
       val deps = model.result.after

@@ -23,7 +23,7 @@ import org.neo4j.driver.v1.{AuthTokens, Session}
 import org.opencypher.caps.api.graph.{CypherResult, PropertyGraph}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTInteger, CTString}
-import org.opencypher.caps.api.value.CAPSMap
+import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.impl.spark.CAPSRecords
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.fixture.{MiniDFSClusterFixture, Neo4jServerFixture, SparkSessionFixture}
@@ -119,7 +119,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
 
     res.records.iterator.toSet should equal(
       Set(
-        CAPSMap("rec" -> "a book")
+        CypherMap("rec" -> "a book")
       ))
   }
 
@@ -155,11 +155,11 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
 
     r.records.asInstanceOf[CAPSRecords].toCypherMaps.collect().toSet should equal(
       Set(
-        CAPSMap("name" -> "Eve", "product" -> "Terminator 2"),
-        CAPSMap("name" -> "Carl", "product" -> "Jurassic Park"),
-        CAPSMap("name" -> "Bob", "product" -> "1984"),
-        CAPSMap("name" -> "Trudy", "product" -> "Cryptonomicon"),
-        CAPSMap("name" -> "Dave", "product" -> "Shakira")
+        CypherMap("name" -> "Eve", "product" -> "Terminator 2"),
+        CypherMap("name" -> "Carl", "product" -> "Jurassic Park"),
+        CypherMap("name" -> "Bob", "product" -> "1984"),
+        CypherMap("name" -> "Trudy", "product" -> "Cryptonomicon"),
+        CypherMap("name" -> "Dave", "product" -> "Shakira")
       ))
   }
 

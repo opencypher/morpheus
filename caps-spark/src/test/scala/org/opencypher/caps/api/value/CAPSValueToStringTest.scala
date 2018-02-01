@@ -15,17 +15,18 @@
  */
 package org.opencypher.caps.api.value
 
+import org.opencypher.caps.api.value.CypherValue.{CypherMap, _}
 import org.opencypher.caps.test.CAPSTestSuite
 
 class CAPSValueToStringTest extends CAPSTestSuite {
 
   test("node") {
-    CAPSNode(1L, Seq.empty, Properties.empty).toString should equal("()")
-    CAPSNode(1L, Seq("A"), Properties.empty).toString should equal("(:A)")
-    CAPSNode(1L, Seq("A", "B"), Properties.empty).toString should equal("(:A:B)")
-    CAPSNode(1L, Seq("A", "B"), Properties("a" -> "b")).toString should equal("(:A:B {a: 'b'})")
-    CAPSNode(1L, Seq("A", "B"), Properties("a" -> "b", "b" -> 1)).toString should equal("(:A:B {a: 'b', b: 1})")
-    CAPSNode(1L, Seq.empty, Properties("a" -> "b", "b" -> 1)).toString should equal("({a: 'b', b: 1})")
+    CAPSNode(1L, Set.empty, Properties.empty).toString should equal("()")
+    CAPSNode(1L, Set("A"), Properties.empty).toString should equal("(:A)")
+    CAPSNode(1L, Set("A", "B"), Properties.empty).toString should equal("(:A:B)")
+    CAPSNode(1L, Set("A", "B"), Properties("a" -> "b")).toString should equal("(:A:B {a: 'b'})")
+    CAPSNode(1L, Set("A", "B"), Properties("a" -> "b", "b" -> 1)).toString should equal("(:A:B {a: 'b', b: 1})")
+    CAPSNode(1L, Set.empty, Properties("a" -> "b", "b" -> 1)).toString should equal("({a: 'b', b: 1})")
   }
 
   test("relationship") {
@@ -35,21 +36,21 @@ class CAPSValueToStringTest extends CAPSTestSuite {
   }
 
   test("literals") {
-    CAPSInteger(1L).toString should equal("1")
-    CAPSFloat(3.14).toString should equal("3.14")
-    CAPSString("foo").toString should equal("'foo'")
-    CAPSString("").toString should equal("''")
-    CAPSBoolean(true).toString should equal("true")
+    CypherInteger(1L).toString should equal("1")
+    CypherFloat(3.14).toString should equal("3.14")
+    CypherString("foo").toString should equal("'foo'")
+    CypherString("").toString should equal("''")
+    CypherBoolean(true).toString should equal("true")
   }
 
   test("list") {
-    CAPSList(Seq.empty).toString should equal("[]")
-    CAPSList(Seq("A", "B", 1L)).toString should equal("['A', 'B', 1]")
+    CypherList(List.empty[MaterialCypherValue]).toString should equal("[]")
+    CypherList(List[MaterialCypherValue]("A", "B", 1L)).toString should equal("['A', 'B', 1]")
   }
 
   test("map") {
-    CAPSMap().toString should equal("{}")
-    CAPSMap("a" -> 1).toString should equal("{a: 1}")
-    CAPSMap("a" -> 1, "b" -> true).toString should equal("{a: 1, b: true}")
+    CypherMap().toString should equal("{}")
+    CypherMap("a" -> 1).toString should equal("{a: 1}")
+    CypherMap("a" -> 1, "b" -> true).toString should equal("{a: 1, b: true}")
   }
 }

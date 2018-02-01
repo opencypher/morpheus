@@ -184,12 +184,12 @@ object ZeppelinSupport {
   }
 
   object ZeppelinJsonSerialiser extends JsonSerialiser {
-    override protected def formatNode(id: Long, labels: Seq[String], properties: Map[String, Json]): Json = {
+    override protected def formatNode(id: Long, labels: Set[String], properties: Map[String, Json]): Json = {
       Json.obj(
         "id" -> Json.fromLong(id),
         "label" -> Json.fromString(labels.headOption.getOrElse("")),
         "labels" -> Json.arr(
-          labels.map(Json.fromString): _*
+          labels.toSeq.map(Json.fromString): _*
         ),
         "data" -> Json.obj(
           properties.toSeq: _*

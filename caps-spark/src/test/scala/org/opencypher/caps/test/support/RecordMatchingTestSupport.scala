@@ -15,6 +15,7 @@
  */
 package org.opencypher.caps.test.support
 
+import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.api.value._
 import org.opencypher.caps.impl.record.CAPSRecordHeader._
 import org.opencypher.caps.impl.record._
@@ -31,10 +32,10 @@ trait RecordMatchingTestSupport {
 
   self: CAPSTestSuite =>
 
-  implicit val bagConfig: HashedBagConfiguration[CAPSMap] = Bag.configuration.compact[CAPSMap]
+  implicit val bagConfig: HashedBagConfiguration[CypherMap] = Bag.configuration.compact[CypherMap]
 
   implicit class RecordMatcher(records: CAPSRecords) {
-    def shouldMatch(expected: CAPSMap*): Assertion = {
+    def shouldMatch(expected: CypherMap*): Assertion = {
       records.iterator.toBag should equal(Bag(expected: _*))
     }
 
@@ -67,7 +68,7 @@ trait RecordMatchingTestSupport {
 
     // TODO: Remove this and replace usages with toMapsWithCollectedEntities below
     // probably use this name though, and have not collecting be the special case
-    def toMaps: Bag[CAPSMap] = {
+    def toMaps: Bag[CypherMap] = {
       val rows = capsRecords.toDF().collect().map { r =>
         val properties = capsRecords.header.slots.map { s =>
           s.content match {
@@ -75,12 +76,12 @@ trait RecordMatchingTestSupport {
             case x                   => x.key.withoutType -> r.getCypherValue(x.key, capsRecords.header)
           }
         }.toMap
-        CAPSMap(properties)
+        CypherMap(properties)
       }
       Bag(rows: _*)
     }
 
-    def toMapsWithCollectedEntities: Bag[CAPSMap] =
+    def toMapsWithCollectedEntities: Bag[CypherMap] =
       Bag(capsRecords.toCypherMaps.collect(): _*)
   }
 }

@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.record
 
-import org.opencypher.caps.api.value.CypherMap
+import org.opencypher.caps.api.value.CypherValue._
 
 trait CypherRecordHeader {
   def fields: Set[String]

@@ -15,7 +15,8 @@
  */
 package org.opencypher.caps.impl.spark.acceptance
 
-import org.opencypher.caps.api.value.{CAPSMap, CAPSNode, Properties}
+import org.opencypher.caps.api.value.CAPSNode
+import org.opencypher.caps.api.value.CypherValue.{CypherMap, Properties}
 import org.opencypher.caps.demo.Configuration.PrintLogicalPlan
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.impl.spark.CAPSGraph
@@ -31,8 +32,8 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       val result = g.cypher("MATCH (a:A) WITH a, a.name AS foo RETURN a")
 
       result.records.iterator.toBag should equal(Bag(
-        CAPSMap("a" -> CAPSNode(0L, Seq("A"), Properties("name" -> "me"))),
-        CAPSMap("a" -> CAPSNode(1L, Seq("A"), Properties.empty))
+        CypherMap("a" -> CAPSNode(0L, Set("A"), Properties("name" -> "me"))),
+        CypherMap("a" -> CAPSNode(1L, Set("A"), Properties.empty))
       ))
     }
 
@@ -42,8 +43,8 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       val result = g.cypher("MATCH (a:A) WITH a, a AS foo RETURN a")
 
       result.records.iterator.toBag should equal(Bag(
-        CAPSMap("a" -> CAPSNode(0L, Seq("A"), Properties("name" -> "me"))),
-        CAPSMap("a" -> CAPSNode(1L, Seq("A"), Properties.empty))
+        CypherMap("a" -> CAPSNode(0L, Set("A"), Properties("name" -> "me"))),
+        CypherMap("a" -> CAPSNode(1L, Set("A"), Properties.empty))
       ))
     }
 
@@ -57,8 +58,8 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       val result = g.cypher("MATCH (a:A) WITH a, a AS foo RETURN foo AS b")
 
       result.records.iterator.toBag should equal(Bag(
-        CAPSMap("a" -> CAPSNode(0L, Seq("A"), Properties("name" -> "me"))),
-        CAPSMap("a" -> CAPSNode(1L, Seq("A"), Properties.empty))
+        CypherMap("a" -> CAPSNode(0L, Set("A"), Properties("name" -> "me"))),
+        CypherMap("a" -> CAPSNode(1L, Set("A"), Properties.empty))
       ))
     }
 
@@ -68,7 +69,7 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       val result = g.cypher("MATCH (a:A), (b) RETURN a")
 
       result.records.iterator.toBag should equal(Bag(
-        CAPSMap("a" -> CAPSNode(0L, Seq("A"), Properties.empty))
+        CypherMap("a" -> CAPSNode(0L, Set("A"), Properties.empty))
       ))
     }
 
@@ -77,7 +78,7 @@ trait ReturnBehaviour { this: AcceptanceTest =>
 
       val result  = given.cypher("RETURN 1").asCaps
 
-      result.records shouldMatch CAPSMap("1" -> 1)
+      result.records shouldMatch CypherMap("1" -> 1)
     }
 
     test("single return query with several columns") {
@@ -85,7 +86,7 @@ trait ReturnBehaviour { this: AcceptanceTest =>
 
       val result  = given.cypher("RETURN 1 AS foo, '' AS str").asCaps
 
-      result.records shouldMatch CAPSMap("foo" -> 1, "str" -> "")
+      result.records shouldMatch CypherMap("foo" -> 1, "str" -> "")
     }
 
     test("return compact node") {
@@ -94,8 +95,8 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       val result = given.cypher("MATCH (n) RETURN n").asCaps
 
       result.records.compact.toMaps should equal(Bag(
-        CAPSMap("n" -> 0),
-        CAPSMap("n" -> 1))
+        CypherMap("n" -> 0),
+        CypherMap("n" -> 1))
       )
     }
 
@@ -105,8 +106,8 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       val result = given.cypher("MATCH (n) RETURN n")
 
       result.records.toMaps should equal(Bag(
-        CAPSMap("n" -> 0, "n.foo" -> "bar"),
-        CAPSMap("n" -> 1, "n.foo" -> null))
+        CypherMap("n" -> 0, "n.foo" -> "bar"),
+        CypherMap("n" -> 1, "n.foo" -> null))
       )
     }
 
@@ -116,8 +117,8 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       val result = given.cypher("MATCH ()-[r]->() RETURN r").asCaps
 
       result.records.compact.toMaps should equal(Bag(
-        CAPSMap("r" -> 2),
-        CAPSMap("r" -> 4)
+        CypherMap("r" -> 2),
+        CypherMap("r" -> 4)
       ))
     }
 
@@ -127,8 +128,8 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       val result = given.cypher("MATCH ()-[r]->() RETURN r")
 
       result.records.toMaps should equal(Bag(
-        CAPSMap("r" -> 2, "source(r)" -> 0, "target(r)" -> 1, "type(r)" -> "Rel", "r.foo" -> "bar"),
-        CAPSMap("r" -> 4, "source(r)" -> 1, "target(r)" -> 3, "type(r)" -> "Rel", "r.foo" -> null)
+        CypherMap("r" -> 2, "source(r)" -> 0, "target(r)" -> 1, "type(r)" -> "Rel", "r.foo" -> "bar"),
+        CypherMap("r" -> 4, "source(r)" -> 1, "target(r)" -> 3, "type(r)" -> "Rel", "r.foo" -> null)
       ))
     }
 
@@ -138,8 +139,8 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       val result = given.cypher("MATCH ()-[r]->() RETURN r.foo")
 
       result.records.toMaps should equal(Bag(
-        CAPSMap("r.foo" -> "bar"),
-        CAPSMap("r.foo" -> null)
+        CypherMap("r.foo" -> "bar"),
+        CypherMap("r.foo" -> null)
       ))
     }
 
@@ -156,9 +157,9 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       val result = given.cypher("MATCH (n) RETURN DISTINCT n.name AS name")
 
       result.records.toMaps should equal(Bag(
-        CAPSMap("name" -> "bar"),
-        CAPSMap("name" -> "foo"),
-        CAPSMap("name" -> "baz")
+        CypherMap("name" -> "bar"),
+        CypherMap("name" -> "foo"),
+        CypherMap("name" -> "baz")
       ))
     }
 
@@ -174,10 +175,10 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       val result = given.cypher("MATCH (n) RETURN DISTINCT n.p1 as p1, n.p2 as p2")
 
       result.records.toMaps should equal(Bag(
-        CAPSMap("p1" -> "a", "p2" -> "a"),
-        CAPSMap("p1" -> "a", "p2" -> "b"),
-        CAPSMap("p1" -> "b", "p2" -> "a"),
-        CAPSMap("p1" -> "b", "p2" -> "b")
+        CypherMap("p1" -> "a", "p2" -> "a"),
+        CypherMap("p1" -> "a", "p2" -> "b"),
+        CypherMap("p1" -> "b", "p2" -> "a"),
+        CypherMap("p1" -> "b", "p2" -> "b")
       ))
     }
 
@@ -188,9 +189,9 @@ trait ReturnBehaviour { this: AcceptanceTest =>
 
       // Then
       result.records.toMaps should equal(Bag(
-        CAPSMap("val" -> 3L),
-        CAPSMap("val" -> 4L),
-        CAPSMap("val" -> 42L)
+        CypherMap("val" -> 3L),
+        CypherMap("val" -> 4L),
+        CypherMap("val" -> 42L)
       ))
 
       // And
@@ -204,9 +205,9 @@ trait ReturnBehaviour { this: AcceptanceTest =>
 
       // Then
       result.records.toMaps should equal(Bag(
-        CAPSMap("val" -> 3L),
-        CAPSMap("val" -> 4L),
-        CAPSMap("val" -> 42L)
+        CypherMap("val" -> 3L),
+        CypherMap("val" -> 4L),
+        CypherMap("val" -> 42L)
       ))
 
       // And
@@ -220,9 +221,9 @@ trait ReturnBehaviour { this: AcceptanceTest =>
 
       // Then
       result.records.toMaps should equal(Bag(
-        CAPSMap("val" -> 42L),
-        CAPSMap("val" -> 4L),
-        CAPSMap("val" -> 3L)
+        CypherMap("val" -> 42L),
+        CypherMap("val" -> 4L),
+        CypherMap("val" -> 3L)
       ))
 
       // And
@@ -248,8 +249,8 @@ trait ReturnBehaviour { this: AcceptanceTest =>
 
       // Then
       result.records.toMaps should equal(Bag(
-        CAPSMap("val" -> 4L),
-        CAPSMap("val" -> 42L)
+        CypherMap("val" -> 4L),
+        CypherMap("val" -> 42L)
       ))
 
       // And
@@ -263,7 +264,7 @@ trait ReturnBehaviour { this: AcceptanceTest =>
 
       // Then
       result.records.toMaps should equal(Bag(
-        CAPSMap("val" -> 42L)
+        CypherMap("val" -> 42L)
       ))
 
       // And
@@ -289,7 +290,7 @@ trait ReturnBehaviour { this: AcceptanceTest =>
 
       // Then
       result.records.toMaps should equal(Bag(
-        CAPSMap("val" -> 3L)
+        CypherMap("val" -> 3L)
       ))
 
       // And
@@ -303,8 +304,8 @@ trait ReturnBehaviour { this: AcceptanceTest =>
 
       // Then
       result.records.toMaps should equal(Bag(
-        CAPSMap("val" -> 3L),
-        CAPSMap("val" -> 4L)
+        CypherMap("val" -> 3L),
+        CypherMap("val" -> 4L)
       ))
 
       // And
@@ -318,7 +319,7 @@ trait ReturnBehaviour { this: AcceptanceTest =>
 
       // Then
       result.records.toMaps should equal(Bag(
-        CAPSMap("val" -> 4L)
+        CypherMap("val" -> 4L)
       ))
 
       // And

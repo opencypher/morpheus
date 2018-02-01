@@ -17,8 +17,6 @@ package org.opencypher.caps.impl.spark.physical
 
 import org.apache.spark.sql.Row
 import org.opencypher.caps.api.exception.NotImplementedException
-import org.opencypher.caps.api.value.instances._
-import org.opencypher.caps.api.value.syntax._
 import org.opencypher.caps.impl.record.RecordHeader
 import org.opencypher.caps.impl.spark.DfUtils._
 import org.opencypher.caps.ir.api.expr._
@@ -32,27 +30,27 @@ case class cypherFilter(header: RecordHeader, expr: Expr)(implicit context: Runt
       case Equals(lhs, rhs) =>
         val lhsValue = row.getCypherValue(lhs, header)
         val rhsValue = row.getCypherValue(rhs, header)
-        (lhsValue equalTo rhsValue).isTrue
+        lhsValue.cypherEqual(rhsValue).isTrue
 
       case LessThan(lhs, rhs) =>
         val lhsValue = row.getCypherValue(lhs, header)
         val rhsValue = row.getCypherValue(rhs, header)
-        (lhsValue < rhsValue).orNull
+        (lhsValue.cypherLessThan(rhsValue)).orNull
 
       case LessThanOrEqual(lhs, rhs) =>
         val lhsValue = row.getCypherValue(lhs, header)
         val rhsValue = row.getCypherValue(rhs, header)
-        (lhsValue <= rhsValue).orNull
+        (lhsValue.cypherLargerThanOrEqual(rhsValue)).orNull
 
       case GreaterThan(lhs, rhs) =>
         val lhsValue = row.getCypherValue(lhs, header)
         val rhsValue = row.getCypherValue(rhs, header)
-        (lhsValue > rhsValue).orNull
+        (lhsValue.cypherLargerThan(rhsValue)).orNull
 
       case GreaterThanOrEqual(lhs, rhs) =>
         val lhsValue = row.getCypherValue(lhs, header)
         val rhsValue = row.getCypherValue(rhs, header)
-        (lhsValue >= rhsValue).orNull
+        (lhsValue.cypherLargerThanOrEqual(rhsValue)).orNull
 
       case x =>
         throw NotImplementedException(s"Predicate $x")

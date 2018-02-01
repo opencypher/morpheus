@@ -20,7 +20,7 @@ import java.net.URI
 import org.opencypher.caps.api.io.PropertyGraphDataSource
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.api.value._
+import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block._
 import org.opencypher.caps.ir.api.expr._
@@ -36,12 +36,6 @@ import org.scalatest.matchers._
 import scala.language.implicitConversions
 
 class LogicalPlannerTest extends LogicalTestSuite {
-
-  case class TestCypherString(value: String) extends CypherString
-  case class TestCypherInteger(value: Long) extends CypherInteger
-  case class TestCypherBoolean(value: Boolean) extends CypherBoolean
-
-
   val nodeA = IRField("a")(CTNode)
   val nodeB = IRField("b")(CTNode)
   val nodeG = IRField("g")(CTNode)
@@ -122,7 +116,7 @@ class LogicalPlannerTest extends LogicalTestSuite {
 
   test("plan query") {
     val ir = "MATCH (a:Administrator)-[r]->(g:Group) WHERE g.name = $foo RETURN a.name".irWithParams(
-      "foo" -> TestCypherString("test"))
+      "foo" -> CypherString("test"))
     val result = plan(ir)
 
     val expected = Project(
@@ -203,7 +197,7 @@ class LogicalPlannerTest extends LogicalTestSuite {
       .withNodePropertyKeys("Administrator")("name" -> CTFloat)
 
     val ir = "MATCH (a:Administrator)-[r]->(g:Group) WHERE g.name = $foo RETURN a.name".irWithParams(
-      "foo" -> TestCypherString("test"))
+      "foo" -> CypherString("test"))
 
     val result = plan(ir, schema)
 
@@ -304,7 +298,7 @@ class LogicalPlannerTest extends LogicalTestSuite {
 
   test("plan query with negation") {
     val ir =
-      "MATCH (a) WHERE NOT $p1 = $p2 RETURN a.prop".irWithParams("p1" -> TestCypherInteger(1L), "p2" -> TestCypherBoolean(true))
+      "MATCH (a) WHERE NOT $p1 = $p2 RETURN a.prop".irWithParams("p1" -> CypherInteger(1L), "p2" -> CypherBoolean(true))
 
     val result = plan(ir)
 

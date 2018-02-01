@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.spark.acceptance
 
-import org.opencypher.caps.api.value.CAPSMap
+import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.impl.spark.CAPSGraph
 
 import scala.collection.Bag
@@ -41,12 +41,12 @@ trait ExpressionBehaviour {
 
       // Then
       result.records.toMaps should equal(Bag(
-        CAPSMap("eq" -> false),
-        CAPSMap("eq" -> false),
-        CAPSMap("eq" -> true),
-        CAPSMap("eq" -> null),
-        CAPSMap("eq" -> null),
-        CAPSMap("eq" -> null)
+        CypherMap("eq" -> false),
+        CypherMap("eq" -> false),
+        CypherMap("eq" -> true),
+        CypherMap("eq" -> null),
+        CypherMap("eq" -> null),
+        CypherMap("eq" -> null)
       ))
 
       // And
@@ -63,10 +63,10 @@ trait ExpressionBehaviour {
 
       // Then
       result.records.toMaps should equal(Bag(
-        CAPSMap("n.val < m.val" -> true),
-        CAPSMap("n.val < m.val" -> false),
-        CAPSMap("n.val < m.val" -> false),
-        CAPSMap("n.val < m.val" -> null)
+        CypherMap("n.val < m.val" -> true),
+        CypherMap("n.val < m.val" -> false),
+        CypherMap("n.val < m.val" -> false),
+        CypherMap("n.val < m.val" -> null)
       ))
 
       // And
@@ -82,10 +82,10 @@ trait ExpressionBehaviour {
 
       // Then
       result.records.toMaps should equal(Bag(
-        CAPSMap("n.val <= m.val" -> true),
-        CAPSMap("n.val <= m.val" -> true),
-        CAPSMap("n.val <= m.val" -> false),
-        CAPSMap("n.val <= m.val" -> null)
+        CypherMap("n.val <= m.val" -> true),
+        CypherMap("n.val <= m.val" -> true),
+        CypherMap("n.val <= m.val" -> false),
+        CypherMap("n.val <= m.val" -> null)
       ))
       // And
       result.graphs shouldBe empty
@@ -100,10 +100,10 @@ trait ExpressionBehaviour {
 
       // Then
       result.records.toMaps should equal(Bag(
-        CAPSMap("gt" -> false),
-        CAPSMap("gt" -> false),
-        CAPSMap("gt" -> true),
-        CAPSMap("gt" -> null)
+        CypherMap("gt" -> false),
+        CypherMap("gt" -> false),
+        CypherMap("gt" -> true),
+        CypherMap("gt" -> null)
       ))
 
       // And
@@ -119,10 +119,10 @@ trait ExpressionBehaviour {
 
       // Then
       result.records.toMaps should equal(Bag(
-        CAPSMap("n.val >= m.val" -> false),
-        CAPSMap("n.val >= m.val" -> true),
-        CAPSMap("n.val >= m.val" -> true),
-        CAPSMap("n.val >= m.val" -> null)
+        CypherMap("n.val >= m.val" -> false),
+        CypherMap("n.val >= m.val" -> true),
+        CypherMap("n.val >= m.val" -> true),
+        CypherMap("n.val >= m.val" -> null)
       ))
 
       // And
@@ -138,8 +138,8 @@ trait ExpressionBehaviour {
 
       // Then
       result.records.toMaps should equal(Bag(
-        CAPSMap("res" -> 12),
-        CAPSMap("res" -> null)
+        CypherMap("res" -> 12),
+        CypherMap("res" -> null)
       ))
       // And
       result.graphs shouldBe empty
@@ -154,8 +154,8 @@ trait ExpressionBehaviour {
 
       // Then
       result.records.toMaps should equal(Bag(
-        CAPSMap("res" -> -2),
-        CAPSMap("res" -> null)
+        CypherMap("res" -> -2),
+        CypherMap("res" -> null)
       ))
       // And
       result.graphs shouldBe empty
@@ -170,7 +170,7 @@ trait ExpressionBehaviour {
 
       // Then
       result.records.toMaps should equal(Bag(
-        CAPSMap("m.val - n.val" -> 1)
+        CypherMap("m.val - n.val" -> 1)
       ))
       // And
       result.graphs shouldBe empty
@@ -185,8 +185,8 @@ trait ExpressionBehaviour {
 
       // Then
       result.records.toMaps should equal(Bag(
-        CAPSMap("n.val * m.val" -> 18),
-        CAPSMap("n.val * m.val" -> 6)
+        CypherMap("n.val * m.val" -> 18),
+        CypherMap("n.val * m.val" -> 6)
       ))
 
       // And
@@ -202,7 +202,7 @@ trait ExpressionBehaviour {
 
       // Then
       result.records.toMaps should equal(Bag(
-        CAPSMap("n.val * m.val" -> 11.25)
+        CypherMap("n.val * m.val" -> 11.25)
       ))
 
       // And
@@ -218,7 +218,7 @@ trait ExpressionBehaviour {
 
       // Then
       result.records.toMaps should equal(Bag(
-        CAPSMap("n.val * m.val2" -> 22.5)
+        CypherMap("n.val * m.val2" -> 22.5)
       ))
 
       // And
@@ -234,8 +234,8 @@ trait ExpressionBehaviour {
 
       // Then
       result.records.toMaps should equal(Bag(
-        CAPSMap("n.val / m.val" -> 3),
-        CAPSMap("n.val / m.val" -> 1)
+        CypherMap("n.val / m.val" -> 3),
+        CypherMap("n.val / m.val" -> 1)
       ))
 
       // And
@@ -251,8 +251,8 @@ trait ExpressionBehaviour {
 
       // Then
       result.records.toMaps should equal(Bag(
-        CAPSMap("n.val / m.val2" -> 2.0),
-        CAPSMap("n.val / m.val2" -> null)
+        CypherMap("n.val / m.val2" -> 2.0),
+        CypherMap("n.val / m.val2" -> null)
       ))
 
       // And
@@ -273,9 +273,9 @@ trait ExpressionBehaviour {
 
       // Then
       result.records.toMaps should equal(Bag(
-        CAPSMap("res" -> false),
-        CAPSMap("res" -> true),
-        CAPSMap("res" -> null)
+        CypherMap("res" -> false),
+        CypherMap("res" -> true),
+        CypherMap("res" -> null)
       ))
       // And
       result.graphs shouldBe empty
@@ -290,8 +290,8 @@ trait ExpressionBehaviour {
 
       // Then
       result.records.toMaps should equal(Bag(
-        CAPSMap("p.name" -> "Mats"),
-        CAPSMap("p.name" -> "Martin")
+        CypherMap("p.name" -> "Mats"),
+        CypherMap("p.name" -> "Martin")
       ))
 
       result.graphs shouldBe empty
@@ -306,7 +306,7 @@ trait ExpressionBehaviour {
 
       // Then
       result.records.toMaps should equal(Bag(
-        CAPSMap("r.since" -> 2017)
+        CypherMap("r.since" -> 2017)
       ))
 
       result.graphs shouldBe empty
@@ -327,10 +327,10 @@ trait ExpressionBehaviour {
 
         // Then
         result.records.toMaps should equal(Bag(
-          CAPSMap("a.id" -> 1L, "b.id" -> 3L, "con" -> true),
-          CAPSMap("a.id" -> 1L, "b.id" -> 2L, "con" -> false),
-          CAPSMap("a.id" -> 2L, "b.id" -> 3L, "con" -> false),
-          CAPSMap("a.id" -> 3L, "b.id" -> 4L, "con" -> false)
+          CypherMap("a.id" -> 1L, "b.id" -> 3L, "con" -> true),
+          CypherMap("a.id" -> 1L, "b.id" -> 2L, "con" -> false),
+          CypherMap("a.id" -> 2L, "b.id" -> 3L, "con" -> false),
+          CypherMap("a.id" -> 3L, "b.id" -> 4L, "con" -> false)
         ))
       }
 
@@ -347,9 +347,9 @@ trait ExpressionBehaviour {
 
         // Then
         result.records.toMaps should equal(Bag(
-          CAPSMap("a.id" -> 1L, "b.id" -> 2L, "con" -> false),
-          CAPSMap("a.id" -> 1L, "b.id" -> 3L, "con" -> true),
-          CAPSMap("a.id" -> 2L, "b.id" -> 3L, "con" -> false)
+          CypherMap("a.id" -> 1L, "b.id" -> 2L, "con" -> false),
+          CypherMap("a.id" -> 1L, "b.id" -> 3L, "con" -> true),
+          CypherMap("a.id" -> 2L, "b.id" -> 3L, "con" -> false)
         ))
       }
 
@@ -370,10 +370,10 @@ trait ExpressionBehaviour {
 
         // Then
         result.records.toMaps should equal(Bag(
-          CAPSMap("a.id" -> 1L, "con" -> true),
-          CAPSMap("a.id" -> 2L, "con" -> false),
-          CAPSMap("a.id" -> 3L, "con" -> false),
-          CAPSMap("a.id" -> 4L, "con" -> false)
+          CypherMap("a.id" -> 1L, "con" -> true),
+          CypherMap("a.id" -> 2L, "con" -> false),
+          CypherMap("a.id" -> 3L, "con" -> false),
+          CypherMap("a.id" -> 4L, "con" -> false)
         ))
       }
 
@@ -395,8 +395,8 @@ trait ExpressionBehaviour {
 
         // Then
         result.records.toMaps should equal(Bag(
-          CAPSMap("a.id" -> 1L, "b.id" -> 2L, "con" -> true),
-          CAPSMap("a.id" -> 3L, "b.id" -> 4L, "con" -> false)
+          CypherMap("a.id" -> 1L, "b.id" -> 2L, "con" -> true),
+          CypherMap("a.id" -> 3L, "b.id" -> 4L, "con" -> false)
         ))
       }
 
@@ -417,8 +417,8 @@ trait ExpressionBehaviour {
 
         // Then
         result.records.toMaps should equal(Bag(
-          CAPSMap("a.id" -> 1L, "con" -> true),
-          CAPSMap("a.id" -> 2L, "con" -> false)
+          CypherMap("a.id" -> 1L, "con" -> true),
+          CypherMap("a.id" -> 2L, "con" -> false)
         ))
       }
 
@@ -439,8 +439,8 @@ trait ExpressionBehaviour {
 
         // Then
         result.records.toMaps should equal(Bag(
-          CAPSMap("a.id" -> 1L, "b.id" -> 2L, "con" -> true),
-          CAPSMap("a.id" -> 3L, "b.id" -> 4L, "con" -> false)
+          CypherMap("a.id" -> 1L, "b.id" -> 2L, "con" -> true),
+          CypherMap("a.id" -> 3L, "b.id" -> 4L, "con" -> false)
         ))
       }
 
@@ -457,10 +457,10 @@ trait ExpressionBehaviour {
 
         // Then
         result.records.toMaps should equal(Bag(
-          CAPSMap("a.id" -> 1L, "b.id" -> 1L, "con" -> true),
-          CAPSMap("a.id" -> 1L, "b.id" -> 2L, "con" -> false),
-          CAPSMap("a.id" -> 2L, "b.id" -> 1L, "con" -> true),
-          CAPSMap("a.id" -> 2L, "b.id" -> 2L, "con" -> true)
+          CypherMap("a.id" -> 1L, "b.id" -> 1L, "con" -> true),
+          CypherMap("a.id" -> 1L, "b.id" -> 2L, "con" -> false),
+          CypherMap("a.id" -> 2L, "b.id" -> 1L, "con" -> true),
+          CypherMap("a.id" -> 2L, "b.id" -> 2L, "con" -> true)
         ))
       }
 
@@ -479,9 +479,9 @@ trait ExpressionBehaviour {
 
         // Then
         result.records.toMaps should equal(Bag(
-          CAPSMap("a.id" -> 1L, "other" -> true),
-          CAPSMap("a.id" -> 2L, "other" -> false),
-          CAPSMap("a.id" -> 3L, "other" -> false)
+          CypherMap("a.id" -> 1L, "other" -> true),
+          CypherMap("a.id" -> 2L, "other" -> false),
+          CypherMap("a.id" -> 3L, "other" -> false)
         ))
       }
     }

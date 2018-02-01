@@ -25,7 +25,7 @@ import org.opencypher.caps.api.exception.{IllegalArgumentException, UnsupportedO
 import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType}
-import org.opencypher.caps.api.value.CAPSValue
+import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.record.{CAPSRecordHeader, RecordHeader}
 import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraph.{filterNode, filterRel, nodeToRow, relToRow}
 import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords, SparkColumnName}
@@ -33,12 +33,12 @@ import org.opencypher.caps.ir.api.PropertyKey
 import org.opencypher.caps.ir.api.expr._
 
 class Neo4jGraph(val schema: Schema, val session: CAPSSession)(
-    inputNodes: RDD[InternalNode],
-    inputRels: RDD[InternalRelationship],
-    sourceNode: String = "source",
-    rel: String = "rel",
-    targetNode: String = "target")
-    extends CAPSGraph {
+  inputNodes: RDD[InternalNode],
+  inputRels: RDD[InternalRelationship],
+  sourceNode: String = "source",
+  rel: String = "rel",
+  targetNode: String = "target")
+  extends CAPSGraph {
 
   override def cache(): CAPSGraph = map(_.cache(), _.cache())
 
@@ -51,9 +51,9 @@ class Neo4jGraph(val schema: Schema, val session: CAPSSession)(
   override def unpersist(blocking: Boolean): CAPSGraph = map(_.unpersist(blocking), _.unpersist(blocking))
 
   private def map(
-      f: RDD[InternalNode] => RDD[InternalNode],
-      g: RDD[InternalRelationship] => RDD[InternalRelationship]) =
-    // We need to construct new RDDs since otherwise providing a different storage level may fail
+    f: RDD[InternalNode] => RDD[InternalNode],
+    g: RDD[InternalRelationship] => RDD[InternalRelationship]) =
+  // We need to construct new RDDs since otherwise providing a different storage level may fail
     new Neo4jGraph(schema, session)(
       f(inputNodes.filter(_ => true)),
       g(inputRels.filter(_ => true)),
@@ -83,7 +83,7 @@ class Neo4jGraph(val schema: Schema, val session: CAPSSession)(
     throw UnsupportedOperationException(s"Union with $this")
 
   private def computeRecords(name: String, cypherType: CypherType, header: RecordHeader)(
-      computeRdd: (RecordHeader, StructType) => RDD[Row]): CAPSRecords = {
+    computeRdd: (RecordHeader, StructType) => RDD[Row]): CAPSRecords = {
     val struct = CAPSRecordHeader.asSparkStructType(header)
     val rdd = computeRdd(header, struct)
     val slot = header.slotFor(Var(name)(cypherType))
@@ -97,6 +97,7 @@ class Neo4jGraph(val schema: Schema, val session: CAPSSession)(
 }
 
 object Neo4jGraph {
+
   private case class filterNode(nodeType: CTNode) extends (InternalNode => Boolean) {
 
     val requiredLabels: Set[String] = nodeType.labels
@@ -181,6 +182,6 @@ object Neo4jGraph {
 
   private def importedToSparkEncodedCypherValue(typ: DataType, value: AnyRef): AnyRef = typ match {
     case StringType | LongType | BooleanType | DoubleType => value
-    case _                                                => CAPSValue(value)
+    case _ => CypherValue(value)
   }
 }

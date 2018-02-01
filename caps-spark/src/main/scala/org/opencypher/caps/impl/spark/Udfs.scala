@@ -16,26 +16,23 @@
 package org.opencypher.caps.impl.spark
 
 import org.opencypher.caps.api.exception.IllegalArgumentException
-import org.opencypher.caps.api.value.CAPSValue
-import org.opencypher.caps.api.value.instances._
-import org.opencypher.caps.api.value.syntax._
+import org.opencypher.caps.api.value.{CypherValue, NullableCypherValue}
 import org.opencypher.caps.ir.api.Label
-import org.opencypher.caps.ir.impl.convert.toJava
 
 import scala.collection.mutable
 
 object Udfs {
 
-  def const(v: CAPSValue): () => Any = () => toJava(v)
+  def const(v: NullableCypherValue[_]): () => Any = () => v.value
 
-  // TODO: Try to share code with cypherFilter()
-  def lt(lhs: Any, rhs: Any): Any = (CAPSValue(lhs) < CAPSValue(rhs)).orNull
-
-  def lteq(lhs: Any, rhs: Any): Any = (CAPSValue(lhs) <= CAPSValue(rhs)).orNull
-
-  def gteq(lhs: Any, rhs: Any): Any = (CAPSValue(lhs) >= CAPSValue(rhs)).orNull
-
-  def gt(lhs: Any, rhs: Any): Any = (CAPSValue(lhs) > CAPSValue(rhs)).orNull
+  //  // TODO: Try to share code with cypherFilter()
+  //  def lt(lhs: Any, rhs: Any): Any = (CypherValue(lhs) < CypherValue(rhs)).orNull
+  //
+  //  def lteq(lhs: Any, rhs: Any): Any = (CypherValue(lhs) <= CypherValue(rhs)).orNull
+  //
+  //  def gteq(lhs: Any, rhs: Any): Any = (CypherValue(lhs) >= CypherValue(rhs)).orNull
+  //
+  //  def gt(lhs: Any, rhs: Any): Any = (CypherValue(lhs) > CypherValue(rhs)).orNull
 
   def getNodeLabels(labelNames: Seq[Label]): (Any) => Array[String] = {
     case a: mutable.WrappedArray[_] =>

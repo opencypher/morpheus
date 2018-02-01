@@ -26,7 +26,6 @@ import org.opencypher.caps.impl.spark.convert.toSparkType
 import org.opencypher.caps.impl.spark.physical.RuntimeContext
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.columnName
 import org.opencypher.caps.ir.api.expr._
-import org.opencypher.caps.ir.impl.convert.toJava
 
 object SparkSQLExprMapper {
 
@@ -46,7 +45,7 @@ object SparkSQLExprMapper {
       case p @ Param(name) if p.cypherType.subTypeOf(CTList(CTAny)).maybeTrue =>
         udf(const(context.parameters(name)), toSparkType(p.cypherType))()
       case Param(name) =>
-        functions.lit(toJava(context.parameters(name)))
+        functions.lit(context.parameters(name).value)
       case l: Lit[_] =>
         functions.lit(l.v)
       case _ =>
@@ -153,10 +152,10 @@ object SparkSQLExprMapper {
         case h: HasLabel =>
           Some(getColumn(h, header, df)) // it's a boolean column
 
-        case inEq: LessThan           => Some(inequality(lt, header, inEq, df))
-        case inEq: LessThanOrEqual    => Some(inequality(lteq, header, inEq, df))
-        case inEq: GreaterThanOrEqual => Some(inequality(gteq, header, inEq, df))
-        case inEq: GreaterThan        => Some(inequality(gt, header, inEq, df))
+                case inEq: LessThan           => Some(inequality(lt, header, inEq, df))
+                case inEq: LessThanOrEqual    => Some(inequality(lteq, header, inEq, df))
+                case inEq: GreaterThanOrEqual => Some(inequality(gteq, header, inEq, df))
+                case inEq: GreaterThan        => Some(inequality(gt, header, inEq, df))
 
         // Arithmetics
         case add: Add =>

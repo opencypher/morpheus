@@ -21,8 +21,6 @@ import org.opencypher.caps.test.support.{DebugOutputSupport, GraphMatchingTestSu
 
 abstract class CAPSTestSuite
     extends BaseTestSuite
-    with org.opencypher.caps.impl.spark.instances.AllInstances
-    with org.opencypher.caps.impl.spark.syntax.AllSyntax
     with SparkSessionFixture
     with CAPSSessionFixture
     with GraphMatchingTestSupport

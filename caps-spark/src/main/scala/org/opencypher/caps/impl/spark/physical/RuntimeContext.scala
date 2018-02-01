@@ -18,7 +18,7 @@ package org.opencypher.caps.impl.spark.physical
 import java.net.URI
 
 import org.opencypher.caps.api.graph.PropertyGraph
-import org.opencypher.caps.api.value.CAPSValue
+import org.opencypher.caps.api.value.CypherValue.CypherParameters
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator
 
 import scala.collection.mutable
@@ -28,9 +28,9 @@ object RuntimeContext {
 }
 
 case class RuntimeContext(
-                           parameters: Map[String, CAPSValue],
-                           resolve: URI => Option[PropertyGraph],
-                           cache: collection.mutable.Map[PhysicalOperator, PhysicalResult]
+  parameters: CypherParameters,
+  resolve: URI => Option[PropertyGraph],
+  cache: collection.mutable.Map[PhysicalOperator, PhysicalResult]
 )
 
 case object udfUtils {

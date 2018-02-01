@@ -17,6 +17,7 @@ package org.opencypher.caps.web
 
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
+import org.opencypher.caps.api.value.CypherValue.{MapData, MaterialCypherValue}
 import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.api.value._
 
@@ -51,42 +52,28 @@ trait JsonSerialiser {
     }
   }
 
-  protected def constructValue(v: Option[CAPSValue]): Json = {
-    v match {
-      case Some(n: CAPSNode) =>
-        CAPSNode.contents(n) match {
-          case Some(NodeContents(id, labels, properties)) =>
-            formatNode(id.v, labels, properties.m.mapValues(p => constructValue(Some(p))))
-          case None =>
-            Json.Null
-        }
-
-      case Some(r: CAPSRelationship) =>
-        CAPSRelationship.contents(r) match {
-          case Some(RelationshipContents(id, source, target, typ, properties)) =>
-            formatRel(id.v, source.v, target.v, typ, properties.m.mapValues(p => constructValue(Some(p))))
-          case None =>
-            Json.Null
-        }
-
-      case Some(CAPSInteger(i)) => Json.fromLong(i)
-      case Some(CAPSFloat(f)) => Json.fromDouble(f).getOrElse(Json.fromString(f.toString))
-      case Some(CAPSBoolean(b)) => Json.fromBoolean(b)
-      case Some(CAPSString(s)) => Json.fromString(s)
-      case Some(CAPSList(contents)) => Json.arr(contents.map(v => constructValue(Some(v))): _*)
-      case Some(CAPSMap(contents)) => Json.obj(contents.properties.m.mapValues(p => constructValue(Some(p))).toSeq: _*)
-
-      case _ =>
-        Json.Null
-    }
+  protected def constructValue(v: Option[CypherValue[_]]): Json = {
+    v.map { cypherValue =>
+      cypherValue.value match {
+        case CAPSNode(id, labels, properties) =>
+          formatNode(id, labels, properties.mapValues(p => constructValue(p.asMaterial)))
+        case CAPSRelationship(id, source, target, relType, properties) =>
+          formatRel(id, source, target, relType, properties.mapValues(p => constructValue(p.asMaterial)))
+        case l: Long => Json.fromLong(l)
+        case d: Double => Json.fromDouble(d).getOrElse(Json.fromString(d.toString))
+        case b: Boolean => Json.fromBoolean(b)
+        case s: String => Json.fromString(s)
+        case l: List[_] => Json.arr(l.map(v => constructValue(CypherValue(v).asMaterial)): _*)
+        case m: Map[String, _] => Json.obj(m.mapValues(p => constructValue(CypherValue(p).asMaterial)).toSeq: _*)
+      }
+    }.getOrElse(Json.Null)
   }
 
-
-  protected def formatNode(id: Long, labels: Seq[String], properties: Map[String, Json]) = {
+  protected def formatNode(id: Long, labels: Set[String], properties: Map[String, Json]) = {
     Json.obj(
       "id" -> Json.fromLong(id),
       "labels" -> Json.arr(
-        labels.map(Json.fromString): _*
+        labels.toSeq.map(Json.fromString): _*
       ),
       "properties" -> Json.obj(
         properties.toSeq: _*
