@@ -87,7 +87,7 @@ object NodeMapping {
   * @param optionalLabelMapping mapping from label to source key
   * @param propertyMapping      mapping from property key to source property key
   */
-case class NodeMapping(
+private[caps] final case class NodeMapping(
   sourceIdKey: String,
   impliedLabels: Set[String] = Set.empty,
   optionalLabelMapping: Map[String, String] = Map.empty,

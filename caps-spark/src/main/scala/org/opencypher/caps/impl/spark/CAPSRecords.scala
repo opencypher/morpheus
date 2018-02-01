@@ -329,11 +329,11 @@ object CAPSRecords {
     val newHeader = RecordHeader.from(slotContents: _*)
     val renamed = sourceDataFrame.toDF(newHeader.internalHeader.columns: _*)
 
-    CAPSRecords.verifyAndCreate(newHeader, renamed)
+    CAPSRecords.createInternal(newHeader, renamed)
   }
 
   /**
-    * Validates the data types within the DataFrame for compatibility, creates an initial [[RecordHeader]] and upgraded
+    * Validates the data types within the DataFrame for compatibility, creates an initial [[RecordHeader]] and aligns
     * the data frame column names according to that header.
     *
     * @param initialDataFrame initial data frame containing source data
@@ -429,12 +429,12 @@ object CAPSRecords {
   def empty(initialHeader: RecordHeader = RecordHeader.empty)(implicit caps: CAPSSession): CAPSRecords = {
     val initialSparkStructType = CAPSRecordHeader.asSparkStructType(initialHeader)
     val initialDataFrame = caps.sparkSession.createDataFrame(Collections.emptyList[Row](), initialSparkStructType)
-    verifyAndCreate(initialHeader, initialDataFrame)
+    createInternal(initialHeader, initialDataFrame)
   }
 
   def unit()(implicit caps: CAPSSession): CAPSRecords = {
     val initialDataFrame = caps.sparkSession.createDataFrame(Seq(EmptyRow()))
-    verifyAndCreate(RecordHeader.empty, initialDataFrame)
+    createInternal(RecordHeader.empty, initialDataFrame)
   }
 
 

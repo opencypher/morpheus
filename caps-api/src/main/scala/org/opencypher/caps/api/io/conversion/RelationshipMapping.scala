@@ -143,7 +143,7 @@ object RelationshipMapping {
   * @param relTypeOrSourceRelTypeKey either a relationship type or a key to access the type in the source data and a set of all possible types
   * @param propertyMapping           mapping from property key to source property key
   */
-final case class RelationshipMapping(
+private[caps] final case class RelationshipMapping(
   sourceIdKey: String,
   sourceStartNodeKey: String,
   sourceEndNodeKey: String,

@@ -17,8 +17,8 @@ package org.opencypher.caps.logical.impl.logical
 
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, _}
-import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.expr._
+import org.opencypher.caps.ir.api.{Label, _}
 import org.opencypher.caps.ir.impl.IrTestSuite
 import org.opencypher.caps.ir.test.support.MatchHelper._
 import org.opencypher.caps.logical.impl._

@@ -91,7 +91,7 @@ object SparkUtils {
     * @param columnName column name
     * @return struct field
     */
-  def structFieldForColumn(dataFrame: DataFrame, columnName: String): StructField = {
+  private def structFieldForColumn(dataFrame: DataFrame, columnName: String): StructField = {
     if (dataFrame.schema.fieldIndex(columnName) < 0) {
       throw IllegalArgumentException(s"column with name $columnName", s"columns with names ${dataFrame.columns.mkString("[", ", ", "]")}")
     }

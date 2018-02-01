@@ -50,7 +50,7 @@ sealed trait EntityTable {
   * @param mapping mapping from input data description to a Cypher node
   * @param table   input data frame
   */
-case class NodeTable(mapping: NodeMapping, table: DataFrame)(implicit session: CAPSSession) extends EntityTable {
+case class NodeTable(mapping: NodeMapping, table: DataFrame) extends EntityTable {
 
   override lazy val schema: Schema = {
     // TODO: validate compatible column data types for ids (castable to long) and optional labels (boolean)
@@ -87,7 +87,7 @@ object NodeTable {
   * @param mapping mapping from input data description to a Cypher relationship
   * @param table   input data frame
   */
-case class RelationshipTable(mapping: RelationshipMapping, table: DataFrame)(implicit session: CAPSSession) extends EntityTable {
+case class RelationshipTable(mapping: RelationshipMapping, table: DataFrame) extends EntityTable {
 
   override lazy val schema: Schema = {
     // TODO: validate compatible column data types for ids (castable to long) and rel type columns (string)

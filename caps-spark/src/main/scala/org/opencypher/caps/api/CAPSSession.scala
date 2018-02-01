@@ -51,7 +51,7 @@ trait CAPSSession extends CypherSession {
   }
 
   /**
-    * Reads a graph from a sequence of entity tables and expects, that the first table is a node table.
+    * Reads a graph from a sequence of entity tables and expects that the first table is a node table.
     *
     * @param entityTables sequence of node and relationship tables defining the graph
     * @return property graph
