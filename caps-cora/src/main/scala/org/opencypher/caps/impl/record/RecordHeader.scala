@@ -147,9 +147,7 @@ final case class RecordHeader(internalHeader: InternalHeader) extends CypherReco
     }
   }
 
-  override def toString: String = {
-    s"RecordHeader with ${slots.size} slots"
-  }
+  override def toString: String = s"RecordHeader with ${slots.size} slots"
 
   def pretty: String = s"RecordHeader with ${slots.size} slots: \n\t ${slots.mkString("\n\t")}"
 }

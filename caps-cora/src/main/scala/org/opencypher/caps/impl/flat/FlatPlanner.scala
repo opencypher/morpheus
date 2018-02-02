@@ -35,7 +35,7 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
         producer.cartesianProduct(process(lhs), process(rhs))
 
       case logical.Select(fields, graphs, in, _) =>
-        val withAliasesRemoved = if(fields.nonEmpty) {
+        val withAliasesRemoved = if (fields.nonEmpty) {
           producer.removeAliases(fields, process(in))
         } else process(in)
         producer.select(fields, graphs, withAliasesRemoved)
