@@ -22,6 +22,21 @@ import org.opencypher.caps.api.types._
 
 object SparkUtils {
 
+  // Spark data types that are supported within the Cypher type system
+  val supportedTypes = Seq(
+    // numeric
+    ByteType,
+    ShortType,
+    IntegerType,
+    LongType,
+    FloatType,
+    DoubleType,
+    // other
+    StringType,
+    BooleanType,
+    NullType
+  )
+
   def fromSparkType(dt: DataType, nullable: Boolean): Option[CypherType] = {
     val result = dt match {
       case StringType => Some(CTString)
@@ -39,23 +54,33 @@ object SparkUtils {
     if (nullable) result.map(_.nullable) else result.map(_.material)
   }
 
-  def toSparkType(ct: CypherType): DataType =
-    ct match {
-      case CTNull | CTVoid => NullType
-      case _ =>
-        ct.material match {
-          case CTString => StringType
-          case CTInteger => LongType
-          case CTBoolean => BooleanType
-          case CTAny => BinaryType
-          case CTFloat => DoubleType
-          case _: CTNode => LongType
-          case _: CTRelationship => LongType
-          case CTList(elemType) => ArrayType(toSparkType(elemType), elemType.isNullable)
-          case x =>
-            throw NotImplementedException(s"Mapping of CypherType $x to Spark type")
-        }
-    }
+  def toSparkType(ct: CypherType): DataType = ct match {
+    case CTNull | CTVoid => NullType
+    case _ =>
+      ct.material match {
+        case CTString => StringType
+        case CTInteger => LongType
+        case CTBoolean => BooleanType
+        case CTAny => BinaryType
+        case CTFloat => DoubleType
+        case _: CTNode => LongType
+        case _: CTRelationship => LongType
+        case CTList(elemType) => ArrayType(toSparkType(elemType), elemType.isNullable)
+        case x =>
+          throw NotImplementedException(s"Mapping of CypherType $x to Spark type")
+      }
+  }
+
+  /**
+    * Checks if the given data type is supported within the Cypher type system.
+    *
+    * @param dataType data type
+    * @return true, iff the data type is supported
+    */
+  def isCypherCompatible(dataType: DataType): Boolean = dataType match {
+    case ArrayType(internalType, _) => isCypherCompatible(internalType)
+    case other => supportedTypes.contains(other)
+  }
 
   /**
     * Converts the given Spark data type into a Cypher type system compatible Spark data type.
@@ -91,11 +116,29 @@ object SparkUtils {
     * @param columnName column name
     * @return struct field
     */
-  private def structFieldForColumn(dataFrame: DataFrame, columnName: String): StructField = {
+  def structFieldForColumn(dataFrame: DataFrame, columnName: String): StructField = {
     if (dataFrame.schema.fieldIndex(columnName) < 0) {
       throw IllegalArgumentException(s"column with name $columnName", s"columns with names ${dataFrame.columns.mkString("[", ", ", "]")}")
     }
     dataFrame.schema.fields(dataFrame.schema.fieldIndex(columnName))
   }
 
+  /**
+    * Checks if the data type of the given column is compatible to the given data type.
+    *
+    * @param dataFrame    data frame
+    * @param columnName   column to be checked
+    * @param expectedType excepted data type
+    */
+  def verifyColumnType(dataFrame: DataFrame, columnName: String, expectedType: DataType): Unit = {
+    val columnDataType = structFieldForColumn(dataFrame, columnName).dataType
+    val compatibleType = cypherCompatibleDataType(columnDataType).getOrElse(throw IllegalArgumentException(
+      s"column with name $columnName being type compatible to $expectedType", columnDataType))
+
+    compatibleType match {
+      case `expectedType` => ()
+      case other => throw IllegalArgumentException(
+        s"column with name $columnName being type compatible to $expectedType", other)
+    }
+  }
 }

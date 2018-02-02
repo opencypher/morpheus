@@ -34,7 +34,7 @@ import org.opencypher.caps.impl.record.{CAPSRecordHeader, _}
 import org.opencypher.caps.impl.spark.CAPSRecords.{prepareDataFrame, verifyAndCreate}
 import org.opencypher.caps.impl.spark.DfUtils._
 import org.opencypher.caps.impl.spark.convert.SparkUtils._
-import org.opencypher.caps.impl.spark.convert.rowToCypherMap
+import org.opencypher.caps.impl.spark.convert.{SparkUtils, rowToCypherMap}
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.impl.util.PrintOptions
 import org.opencypher.caps.ir.api.expr._
@@ -352,7 +352,9 @@ object CAPSRecords {
     val dfWithCompatibleTypes: DataFrame = toCast.foldLeft(initialDataFrame) {
       case (df, field) =>
         val castType = cypherCompatibleDataType(field.dataType).getOrElse(
-          throw IllegalArgumentException("a Spark type supported by Cypher", s"type ${field.dataType} of field $field"))
+          throw IllegalArgumentException(
+            s"a Spark type supported by Cypher: ${supportedTypes.mkString("[", ", ", "]")}",
+            s"type ${field.dataType} of field $field"))
         df.mapColumn(field.name)(_.cast(castType))
     }
     dfWithCompatibleTypes
