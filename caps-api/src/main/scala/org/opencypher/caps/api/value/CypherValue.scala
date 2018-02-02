@@ -371,9 +371,13 @@ object CypherValue {
   }
 
   object CypherMap {
+
     def apply(values: (String, Any)*): CypherMap = {
-      Properties(values: _*)
+      values.toMap
     }
+
+    def empty = Map.empty[String, Any]
+    
   }
 
   implicit class CypherMap(raw: Map[String, Any]) extends NullableCypherMap with CypherValue[MapData] {

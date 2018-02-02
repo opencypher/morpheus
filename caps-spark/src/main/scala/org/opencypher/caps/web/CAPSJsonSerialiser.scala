@@ -63,7 +63,7 @@ trait JsonSerialiser {
         case d: Double => Json.fromDouble(d).getOrElse(Json.fromString(d.toString))
         case b: Boolean => Json.fromBoolean(b)
         case s: String => Json.fromString(s)
-        case l: List[_] => Json.arr(l.map(v => constructValue(CypherValue(v).asMaterial)): _*)
+        case l: Vector[_] => Json.arr(l.map(v => constructValue(CypherValue(v).asMaterial)): _*)
         case m: Map[String, _] => Json.obj(m.mapValues(p => constructValue(CypherValue(p).asMaterial)).toSeq: _*)
       }
     }.getOrElse(Json.Null)
