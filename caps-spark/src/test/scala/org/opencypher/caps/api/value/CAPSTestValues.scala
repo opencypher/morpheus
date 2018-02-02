@@ -16,7 +16,7 @@
 package org.opencypher.caps.api.value
 
 import org.opencypher.caps.api.value._
-import org.opencypher.caps.api.value.CypherValue._
+import org.opencypher.caps.api.value.CypherValue.{CypherList, _}
 
 object CAPSTestValues {
 
@@ -124,13 +124,13 @@ object CAPSTestValues {
 
   implicit val LIST_valueGroups: ValueGroups[NullableCypherList[_]] = Seq(
     // TODO: Add more nested examples
-    Seq(List.empty[MaterialCypherValue]),
-    Seq(List(1)),
-    Seq(List(1, 0)),
-    Seq(List(1, 0, 2)),
-    Seq(List(1, 0.5)),
-    Seq(List(1, 1.5)),
-    Seq(List[NullableCypherNumber](1, CypherNull, 2)),
+    Seq(CypherList()),
+    Seq(CypherList(1)),
+    Seq(CypherList(1, 0)),
+    Seq(CypherList(1, 0, 2)),
+    Seq(CypherList(1, 0.5)),
+    Seq(CypherList(1, 1.5)),
+    Seq(CypherList(1, CypherNull, 2)),
     Seq(CypherNull)
   )
 

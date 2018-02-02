@@ -182,15 +182,15 @@ sealed trait NullableCypherValue[+V] {
   // TODO: Simplify property string creation
   override def toString(): String = {
     def toPropertyString(values: MapData): String = {
-      if (values.isEmpty) "" else values.toSeq.sortBy(_._1).map { case (k: String, v: NullableCypherValue[_]) =>
-        s"$k: ${v.toString}"
+      if (values.isEmpty) "" else values.toSeq.sortBy(_._1).map { case (k: String, v: Any) =>
+        s"$k: ${CypherValue.nullable(v).toString}"
       }.mkString("{", ", ", "}")
     }
 
     this match {
       case CypherNull => "null"
       case _: CypherString => s"'$value'"
-      case l: CypherList[_, _] => l.value.map(_.toString()).mkString("[", ", ", "]")
+      case l: CypherList => l.value.map(CypherValue.nullable(_).toString).mkString("[", ", ", "]")
       case m: CypherMap =>
         val propertyString = toPropertyString(m.value)
         if (propertyString.isEmpty) "{}" else propertyString
@@ -225,7 +225,7 @@ object CypherValue {
 
   object Properties {
     def apply(values: (String, Any)*): MapData = {
-      values.map { case (k, v) => k -> CypherValue.nullable(v) }.toMap
+      CypherMap(values: _*).value
     }
 
     def empty: MapData = Map.empty
@@ -235,10 +235,10 @@ object CypherValue {
   def nullable(v: Any): NullableCypherValue[_] = {
     v match {
       case cv: NullableCypherValue[_] => cv
-      case a: mutable.WrappedArray[_] => a.map(CypherValue.nullable(_)).toList
-      case l: List[_] => l.map(CypherValue.nullable(_)).toList
-      case v: Vector[_] => v.map(CypherValue.nullable(_)).toList
-      case m: Map[_, _] => m.map { case (k, rawValue) => k.toString -> CypherValue.nullable(rawValue) }.toMap
+      case a: mutable.WrappedArray[_] => a.toArray[Any]
+      case l: List[_] => l.toArray[Any]
+      case v: Vector[_] => v.toArray[Any]
+      case m: Map[_, _] => m.map { case (k, cv) => k.toString -> cv }
       case ji: Integer => ji.toInt
       case b: Boolean => b
       case l: Long => l
@@ -257,18 +257,19 @@ object CypherValue {
     }
   }
 
-  sealed trait NullableCypherList[+E <: NullableCypherValue[Any]] extends NullableCypherValue[List[E]]
+  sealed trait NullableCypherList[+E <: NullableCypherValue[Any]] extends NullableCypherValue[Vector[E]]
 
   object CypherList {
-    def apply(elem: Any*): CypherList[NullableCypherValue[_], _] = {
-      elem.map(CypherValue.nullable).toList
+    def apply(elem: Any*): CypherList = {
+      elem.toArray
     }
   }
 
-  implicit class CypherList[V <: NullableCypherValue[_], P](@transient l: List[P])(implicit ev: P => V) extends NullableCypherList[V] with CypherValue[List[V]] {
-    val value: List[V] = l.map(ev.apply(_))
+  implicit class CypherList(raw: Array[Any]) extends NullableCypherList[NullableCypherValue[_]] with CypherValue[Vector[NullableCypherValue[_]]] {
 
-    override def cypherType: CypherType = CTList(value.map(v => v.cypherType).foldLeft[CypherType](CTVoid)(_ join _))
+    override def value: Vector[NullableCypherValue[_]] = raw.map(CypherValue.nullable).toVector
+
+    override def cypherType: CypherType = CTList(value.map(v => CypherValue.nullable(v).cypherType).foldLeft[CypherType](CTVoid)(_ join _))
 
     override def isOrContainsNull: Boolean = value.contains(CypherNull)
   }
@@ -375,14 +376,16 @@ object CypherValue {
     }
   }
 
-  implicit class CypherMap(val value: MapData) extends NullableCypherMap with CypherValue[MapData] {
+  implicit class CypherMap(raw: Map[String, Any]) extends NullableCypherMap with CypherValue[MapData] {
     override def cypherType: CypherType = CTMap
 
-    def keys: Set[String] = value.keySet
+    override def value: MapData = raw.map { case (k, v) => k -> CypherValue.nullable(v) }
 
-    override def get(key: String): Option[CypherValue[_]] = value.get(key).flatMap(_.as[CypherValue[_]])
+    override def keys: Set[String] = value.keySet
 
-    override def apply(key: String): NullableCypherValue[_] = value.getOrElse(key, CypherNull)
+    override def get(key: String): Option[CypherValue[_]] = value.get(key).flatMap(CypherValue.nullable(_).asMaterial)
+
+    override def apply(key: String): NullableCypherValue[_] = get(key).getOrElse(CypherNull)
 
     override def isOrContainsNull: Boolean = value.valuesIterator.contains(CypherNull)
   }

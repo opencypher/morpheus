@@ -16,7 +16,7 @@
 package org.opencypher.caps.impl.spark.acceptance
 
 import org.opencypher.caps.api.value.CAPSNode
-import org.opencypher.caps.api.value.CypherValue.{CypherMap, MaterialCypherValue, Properties}
+import org.opencypher.caps.api.value.CypherValue.{CypherList, CypherMap, MaterialCypherValue, Properties}
 import org.opencypher.caps.impl.spark.CAPSGraph
 
 import scala.collection.immutable.Bag
@@ -28,7 +28,7 @@ trait UnwindBehaviour { self: AcceptanceTest =>
     test("standalone unwind from parameter") {
       val query = "UNWIND $param AS item RETURN item"
 
-      val result = caps.cypher(query, Map("param" -> List[MaterialCypherValue](1, 2, 3)))
+      val result = caps.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
       result.records.toMapsWithCollectedEntities should equal(
         Bag(
@@ -56,7 +56,7 @@ trait UnwindBehaviour { self: AcceptanceTest =>
 
       val query = "MATCH (a)-[r]->(b) UNWIND $param AS item RETURN a, item"
 
-      val result = graph.cypher(query, Map("param" -> List[MaterialCypherValue](1, 2, 3)))
+      val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
       result.records.toMapsWithCollectedEntities.map(_.toString) should equal(
         Bag(
@@ -74,7 +74,7 @@ trait UnwindBehaviour { self: AcceptanceTest =>
 
       val query = "MATCH (a:A) WITH collect(a.v) AS list UNWIND list AS item RETURN item"
 
-      val result = graph.cypher(query, Map("param" -> List[MaterialCypherValue](1, 2, 3)))
+      val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
       result.records.toMapsWithCollectedEntities should equal(
         Bag(
@@ -89,7 +89,7 @@ trait UnwindBehaviour { self: AcceptanceTest =>
 
       val query = "MATCH (a:A) WITH a.v AS list UNWIND list AS item RETURN item"
 
-      val result = graph.cypher(query, Map("param" -> List[MaterialCypherValue](1, 2, 3)))
+      val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
       result.records.toMapsWithCollectedEntities should equal(
         Bag(
@@ -109,7 +109,7 @@ trait UnwindBehaviour { self: AcceptanceTest =>
         |  WHERE item > 1
         |RETURN a, item""".stripMargin
 
-      val result = graph.cypher(query, Map("param" -> List[MaterialCypherValue](1, 2, 3)))
+      val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
       result.records.toMapsWithCollectedEntities.map(_.toString) should equal(
         Bag(

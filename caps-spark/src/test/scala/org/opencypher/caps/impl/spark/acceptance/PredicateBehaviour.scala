@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.spark.acceptance
 
-import org.opencypher.caps.api.value.CypherValue.{CypherMap, MaterialCypherValue}
+import org.opencypher.caps.api.value.CypherValue.{CypherList, CypherMap, MaterialCypherValue}
 import org.opencypher.caps.impl.spark.CAPSGraph
 
 import scala.collection.immutable.Bag
@@ -55,7 +55,7 @@ trait PredicateBehaviour { this: AcceptanceTest =>
       val given = initGraph("""CREATE (:A {val: 1}), (:A {val: 2}), (:A {val: 3})""")
 
       // When
-      val result = given.cypher("MATCH (a:A) WHERE a.val IN $list RETURN a.val", Map("list" -> List[MaterialCypherValue](-1, 2, 5, 0)))
+      val result = given.cypher("MATCH (a:A) WHERE a.val IN $list RETURN a.val", Map("list" -> CypherList(-1, 2, 5, 0)))
 
       // Then
       result.records.toMaps should equal(Bag(
