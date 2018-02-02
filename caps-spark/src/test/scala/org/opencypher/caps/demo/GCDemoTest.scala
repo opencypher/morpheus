@@ -36,6 +36,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
   protected override def hdfsURI: URI = new URIBuilder(super.hdfsURI).setScheme("hdfs+csv").build()
   protected override val dfsTestGraphPath = "/csv/prod"
 
+
   ignore("the demo") {
     val t0 = System.currentTimeMillis()
     lazy val SN_US = caps.readFrom(neoURIforRegion("US"))

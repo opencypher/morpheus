@@ -56,7 +56,7 @@ final case class EdgeScan(edge: Var, in: FlatOperator, header: RecordHeader) ext
 
 final case class Filter(expr: Expr, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
-final case class Distinct(in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
+final case class Distinct(fields: Set[Var], in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
 final case class Select(fields: IndexedSeq[Var], graphs: Set[String], in: FlatOperator, header: RecordHeader)
     extends StackingFlatOperator

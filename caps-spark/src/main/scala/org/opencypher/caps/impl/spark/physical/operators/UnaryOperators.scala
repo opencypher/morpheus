@@ -210,8 +210,9 @@ final case class ProjectPatternGraph(
   in: PhysicalOperator,
   toCreate: Set[ConstructedEntity],
   name: String,
-  schema: Schema)
-  extends UnaryPhysicalOperator with InheritedHeader {
+  schema: Schema,
+  header: RecordHeader)
+  extends UnaryPhysicalOperator {
 
   override def executeUnary(prev: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult = {
     val input = prev.records
@@ -357,14 +358,14 @@ final case class SelectGraphs(in: PhysicalOperator, graphs: Set[String])
 
 }
 
-final case class Distinct(in: PhysicalOperator, header: RecordHeader) extends UnaryPhysicalOperator {
+final case class Distinct(fields: Set[Var], in: PhysicalOperator)
+  extends UnaryPhysicalOperator with InheritedHeader {
 
   override def executeUnary(prev: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult = {
     prev.mapRecordsWithDetails { records =>
       val data = records.data
-      val columnNames = header.slots.map(slot => data.col(columnName(slot)))
-      val relevantColumns = data.select(columnNames: _*)
-      val distinctRows = relevantColumns.dropDuplicates(header.fields.toSeq)
+      val relevantColumns = fields.map(header.slotFor).map(columnName)
+      val distinctRows = data.dropDuplicates(relevantColumns.toSeq)
       CAPSRecords.verifyAndCreate(header, distinctRows)(records.caps)
     }
   }

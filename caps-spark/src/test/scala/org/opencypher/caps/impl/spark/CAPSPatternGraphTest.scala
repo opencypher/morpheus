@@ -512,7 +512,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
         |RETURN GRAPH result OF (a)-[k]->(b)
       """.stripMargin)
 
-    when.graphs("result").asInstanceOf[CAPSPatternGraph].baseTable.data.count() should equal(1)
+    when.graphs("result").asInstanceOf[CAPSPatternGraph].baseTable.data.count() should equal(3)
   }
 
   test("deduplicating identical instances of the same graph of pattern") {
@@ -532,7 +532,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
         |RETURN GRAPH result OF (a)-[f:FOO]->(b)
       """.stripMargin)
 
-    when.graphs("result").relationships("f").size should equal(1)
+    when.graphs("result").relationships("f", CTRelationship("FOO")).size should equal(3)
   }
 
   private def initPersonReadsBookGraph: CAPSGraph = {

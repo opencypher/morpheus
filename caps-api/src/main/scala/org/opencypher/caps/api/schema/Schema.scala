@@ -417,7 +417,10 @@ final case class Schema(
     )
   }
 
-  override def toString: String =
+
+  override def toString: String = "Schema"
+
+  def pretty: String =
     if (isEmpty) "empty schema"
     else {
       import scala.compat.Platform.EOL
