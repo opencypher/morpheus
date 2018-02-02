@@ -52,6 +52,7 @@ trait JsonSerialiser {
     }
   }
 
+  // TODO: Operate on CypherValue.unwrap instead
   protected def constructValue(v: Option[CypherValue[_]]): Json = {
     v.map { cypherValue =>
       cypherValue.value match {
@@ -63,7 +64,7 @@ trait JsonSerialiser {
         case d: Double => Json.fromDouble(d).getOrElse(Json.fromString(d.toString))
         case b: Boolean => Json.fromBoolean(b)
         case s: String => Json.fromString(s)
-        case l: Vector[_] => Json.arr(l.map(v => constructValue(CypherValue(v).asMaterial)): _*)
+        case l: List[_] => Json.arr(l.map(v => constructValue(CypherValue(v).asMaterial)): _*)
         case m: Map[_, _] => Json.obj(m.map { p => p.toString -> constructValue(CypherValue(p).asMaterial)}.toSeq: _*)
       }
     }.getOrElse(Json.Null)

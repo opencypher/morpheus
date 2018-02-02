@@ -60,6 +60,13 @@ class CypherKryoRegistrar extends SparkKryoRegistrar {
     Class.forName("scala.Predef$$anon$1"),
 
 //    classOf[Array[CypherValue]],
+    classOf[Array[String]],
+    classOf[Array[Long]],
+    classOf[Array[Integer]],
+    classOf[Array[Int]],
+    classOf[Array[Double]],
+    classOf[Array[Float]],
+
     classOf[Array[CypherInteger]],
     classOf[Array[CypherFloat]],
     classOf[Array[CypherNumber]],

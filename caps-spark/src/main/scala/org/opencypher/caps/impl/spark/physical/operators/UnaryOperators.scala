@@ -24,6 +24,7 @@ import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.api.value.CypherValue.CypherList
 import org.opencypher.caps.impl.record._
 import org.opencypher.caps.impl.spark.SparkSQLExprMapper.asSparkSQLExpr
 import org.opencypher.caps.impl.spark.convert.toSparkType
@@ -35,6 +36,7 @@ import org.opencypher.caps.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.ir.impl.syntax.ExprSyntax._
 import org.opencypher.caps.logical.impl.{ConstructedEntity, _}
+import scala.collection.JavaConverters._
 
 private[spark] abstract class UnaryPhysicalOperator extends PhysicalOperator {
 
@@ -89,20 +91,19 @@ final case class Unwind(in: PhysicalOperator, list: Expr, item: Var, header: Rec
         // the list is external: we create a dataframe and crossjoin with it
         case Param(name) =>
           // we need a Java list of rows to construct a DataFrame
-          context.parameters(name).javaValue match {
-            case t: TraversableOnce[_] =>
-              val list = t.map(Row(_)).toList.asJava
-
+          context.parameters(name).as[CypherList] match {
+            case Some(l) =>
               val sparkType = toSparkType(item.cypherType)
               val nullable = item.cypherType.isNullable
               val schema = StructType(Seq(StructField(itemColumn, sparkType, nullable)))
 
-              val df = records.caps.sparkSession.createDataFrame(list, schema)
+              val javaRowList = l.unwrap.map(Row(_)).asJava
+              val df = records.caps.sparkSession.createDataFrame(javaRowList, schema)
 
               records.data.crossJoin(df)
 
-            case x =>
-              throw IllegalArgumentException("a list", x)
+            case None =>
+              throw IllegalArgumentException("a list", list)
           }
 
         // the list lives in a column: we explode it

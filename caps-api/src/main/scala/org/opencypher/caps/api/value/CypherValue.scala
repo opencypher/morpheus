@@ -17,7 +17,7 @@ package org.opencypher.caps.api.value
 
 import org.opencypher.caps.api.exception.UnsupportedOperationException
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.api.value.CypherValue._
+import org.opencypher.caps.api.value.CypherValue.{CypherMap, CypherNull, _}
 
 import scala.collection.mutable
 import scala.language.implicitConversions
@@ -93,7 +93,7 @@ sealed trait NullableCypherValue[+V] {
 
   def value: V
 
-  def javaValue: Any = value
+  def unwrap: Any = value
 
   def getValue: Option[V] = None
 
@@ -201,9 +201,8 @@ object CypherValue {
   def nullable(v: Any): NullableCypherValue[_] = {
     v match {
       case cv: NullableCypherValue[_] => cv
-      case a: mutable.WrappedArray[_] => a.toArray[Any]
-      case l: List[_] => l.toArray[Any]
-      case v: Vector[_] => v.toArray[Any]
+      case a: mutable.WrappedArray[_] => CypherList(a: _*)
+      case s: Seq[_] => s.toList
       case m: Map[_, _] => m.map { case (k, cv) => k.toString -> cv }
       case ji: Integer => ji.toInt
       case b: Boolean => b
@@ -223,17 +222,19 @@ object CypherValue {
     }
   }
 
-  sealed trait NullableCypherList[+E <: NullableCypherValue[Any]] extends NullableCypherValue[Vector[E]]
+  sealed trait NullableCypherList[+E <: NullableCypherValue[Any]] extends NullableCypherValue[List[E]]
 
   object CypherList {
     def apply(elem: Any*): CypherList = {
-      elem.toArray
+      elem.toList
     }
   }
 
-  implicit class CypherList(val raw: Array[Any]) extends NullableCypherList[NullableCypherValue[_]] with CypherValue[Vector[NullableCypherValue[_]]] {
+  implicit class CypherList(raw: List[Any]) extends NullableCypherList[NullableCypherValue[_]] with CypherValue[List[NullableCypherValue[_]]] {
 
-    override def value: Vector[NullableCypherValue[_]] = raw.map(CypherValue.nullable).toVector
+    override def value: List[NullableCypherValue[_]] = raw.map(CypherValue.nullable)
+
+    override def unwrap: List[Any] = value.map(_.unwrap)
 
     override def cypherType: CypherType = CTList(value.map(v => CypherValue.nullable(v).cypherType).foldLeft[CypherType](CTVoid)(_ join _))
 
@@ -248,10 +249,7 @@ object CypherValue {
 
   sealed trait NullableCypherNumber extends NullableCypherValue[Any]
 
-  sealed trait CypherNumber extends NullableCypherNumber with CypherValue[Any] {
-
-    def longOrDouble: Either[Long, Double]
-  }
+  sealed trait CypherNumber extends NullableCypherNumber with CypherValue[Any]
 
   sealed trait NullableCypherFloat extends NullableCypherValue[Double] with NullableCypherNumber
 
@@ -259,8 +257,6 @@ object CypherValue {
 
   implicit class CypherFloat(val value: Double) extends NullableCypherFloat with NullableCypherNumber with CypherNumber with CypherValue[Double] {
     override def cypherType: CypherType = CTFloat
-
-    override def longOrDouble: Either[Long, Double] = Right(value)
   }
 
   sealed trait NullableCypherInteger extends NullableCypherValue[Long] with NullableCypherNumber
@@ -269,8 +265,6 @@ object CypherValue {
 
   implicit class CypherInteger(val value: Long) extends NullableCypherInteger with NullableCypherNumber with CypherNumber with CypherValue[Long] {
     override def cypherType: CypherType = CTInteger
-
-    override def longOrDouble: Either[Long, Double] = Left(value)
   }
 
   sealed trait NullableCypherString extends NullableCypherValue[String]
@@ -301,6 +295,8 @@ object CypherValue {
     override def cypherType: CypherType = CTMap
 
     override def value: MapData = raw.map { case (k, v) => k -> CypherValue.nullable(v) }
+
+    override def unwrap: Map[String, Any] = value.map { case (k, v) => k -> v.unwrap }
 
     override def keys: Set[String] = value.keySet
 
@@ -335,6 +331,8 @@ object CypherValue {
     override def cypherType: CypherType = CTNull
 
     override def value = throw UnsupportedOperationException("CypherNull has no value.")
+
+    override def unwrap = null
 
     override def apply(key: String): NullableCypherValue[Nothing] = this
 

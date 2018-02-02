@@ -594,18 +594,6 @@ trait PredicateBehaviour { this: AcceptanceTest =>
           CypherMap("a.id" -> 1),
           CypherMap("a.id" -> 3)
         ))
-
-        val bag = result.records.iterator.toBag
-
-        val foo: NullableCypherValue[_] = bag.head("a.id")
-
-        "RETURN a.id, foo.prop"
-
-        result.records.iterator.map { map =>
-          val primitive: String = null //= map("a.id").cast[Long]
-
-          given.cypher("", Map("param" -> primitive))
-        }
       }
 
       test("pattern predicate with derived node predicate") {

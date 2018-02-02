@@ -44,8 +44,7 @@ object SparkSQLExprMapper {
     implicit context: RuntimeContext): Column = {
     expr match {
       case p@Param(name) if p.cypherType.subTypeOf(CTList(CTAny)).maybeTrue =>
-        // TODO: what about null?
-        val value = context.parameters(name).as[CypherList].get.raw
+        val value = context.parameters(name).unwrap
         udf(const(value), toSparkType(p.cypherType))()
       case Param(name) =>
         val value = context.parameters(name).value
