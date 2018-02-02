@@ -353,7 +353,7 @@ object CAPSRecords {
       case (df, field) =>
         val castType = cypherCompatibleDataType(field.dataType).getOrElse(
           throw IllegalArgumentException(
-            s"a Spark type supported by Cypher: ${compatibleTypes.mkString("[", ", ", "]")}",
+            s"a Spark type supported by Cypher: ${supportedTypes.mkString("[", ", ", "]")}",
             s"type ${field.dataType} of field $field"))
         df.mapColumn(field.name)(_.cast(castType))
     }

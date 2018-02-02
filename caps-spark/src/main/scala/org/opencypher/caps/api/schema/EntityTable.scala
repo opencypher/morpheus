@@ -52,7 +52,7 @@ sealed trait EntityTable {
       val dataType = structFieldForColumn(table, propertySourceKey).dataType
       if (!isCypherCompatible(dataType))
         throw IllegalArgumentException(
-          s"column with name $propertySourceKey having type of ${SparkUtils.compatibleTypes.mkString("[", ", ", "]")}",
+          s"column with name $propertySourceKey having type out of ${supportedTypes.mkString("[", ", ", "]")}",
           dataType)
     })
 }

@@ -22,8 +22,8 @@ import org.opencypher.caps.api.types._
 
 object SparkUtils {
 
-  // Spark data types that can be used within the Cypher type system
-  val compatibleTypes = Seq(
+  // Spark data types that are supported within the Cypher type system
+  val supportedTypes = Seq(
     // numeric
     ByteType,
     ShortType,
@@ -33,7 +33,8 @@ object SparkUtils {
     DoubleType,
     // other
     StringType,
-    BooleanType
+    BooleanType,
+    ArrayType
   )
 
   def fromSparkType(dt: DataType, nullable: Boolean): Option[CypherType] = {
@@ -70,9 +71,14 @@ object SparkUtils {
       }
   }
 
-  def isCypherCompatible(dataType: DataType): Boolean = {
-    compatibleTypes.contains(dataType)
-  }
+  /**
+    * Checks if the given data type is supported within the Cypher type system.
+    *
+    * @param dataType data type
+    * @return true, iff the data type is supported
+    */
+  def isCypherCompatible(dataType: DataType): Boolean = supportedTypes.contains(dataType)
+
 
   /**
     * Converts the given Spark data type into a Cypher type system compatible Spark data type.
