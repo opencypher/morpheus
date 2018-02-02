@@ -91,11 +91,30 @@ object SparkUtils {
     * @param columnName column name
     * @return struct field
     */
-  private def structFieldForColumn(dataFrame: DataFrame, columnName: String): StructField = {
+  def structFieldForColumn(dataFrame: DataFrame, columnName: String): StructField = {
     if (dataFrame.schema.fieldIndex(columnName) < 0) {
       throw IllegalArgumentException(s"column with name $columnName", s"columns with names ${dataFrame.columns.mkString("[", ", ", "]")}")
     }
     dataFrame.schema.fields(dataFrame.schema.fieldIndex(columnName))
   }
 
+  /**
+    * Checks if the data type of the given column is compatible to the given data type.
+    *
+    * @param dataFrame data frame
+    * @param columnName column to be checked
+    * @param expectedType excepted data type
+    */
+  def verifyColumnType(dataFrame: DataFrame, columnName: String, expectedType: DataType): Unit = {
+    val columnDataType = structFieldForColumn(dataFrame, columnName).dataType
+    cypherCompatibleDataType(columnDataType) match {
+      case Some(compatibleType) => compatibleType match {
+        case `expectedType` => ()
+        case other => throw IllegalArgumentException(
+          s"column with name $columnName being type compatible to $expectedType", other)
+      }
+      case None => throw IllegalArgumentException(
+        s"column with name $columnName being type compatible to $expectedType", columnDataType)
+    }
+  }
 }

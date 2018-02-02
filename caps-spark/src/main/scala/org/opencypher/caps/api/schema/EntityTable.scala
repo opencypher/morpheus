@@ -16,6 +16,7 @@
 package org.opencypher.caps.api.schema
 
 import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.types.{BooleanType, LongType, StringType}
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
 import org.opencypher.caps.api.schema.Entity.sourceIdKey
@@ -52,9 +53,9 @@ sealed trait EntityTable {
   */
 case class NodeTable(mapping: NodeMapping, table: DataFrame) extends EntityTable {
 
-  override lazy val schema: Schema = {
-    // TODO: validate compatible column data types for ids (castable to long) and optional labels (boolean)
+  verify()
 
+  override lazy val schema: Schema = {
     val propertyKeys = mapping.propertyMapping.toSeq.map {
       case (propertyKey, sourceKey) => propertyKey -> cypherTypeForColumn(table, sourceKey)
     }
@@ -63,6 +64,11 @@ case class NodeTable(mapping: NodeMapping, table: DataFrame) extends EntityTable
       .map(_.union(mapping.impliedLabels))
       .map(combo => Schema.empty.withNodePropertyKeys(combo.toSeq: _*)(propertyKeys: _*))
       .reduce(_ ++ _)
+  }
+
+  def verify(): Unit = {
+    verifyColumnType(table, mapping.sourceIdKey, LongType)
+    mapping.optionalLabelMapping.values.foreach(verifyColumnType(table, _, BooleanType))
   }
 }
 
@@ -89,9 +95,9 @@ object NodeTable {
   */
 case class RelationshipTable(mapping: RelationshipMapping, table: DataFrame) extends EntityTable {
 
-  override lazy val schema: Schema = {
-    // TODO: validate compatible column data types for ids (castable to long) and rel type columns (string)
+  verify()
 
+  override lazy val schema: Schema = {
     val relTypes = mapping.relTypeOrSourceRelTypeKey match {
       case Left(name) => Set(name)
       case Right((_, possibleTypes)) => possibleTypes
@@ -103,6 +109,15 @@ case class RelationshipTable(mapping: RelationshipMapping, table: DataFrame) ext
 
     relTypes.foldLeft(Schema.empty) {
       case (partialSchema, relType) => partialSchema.withRelationshipPropertyKeys(relType)(propertyKeys: _*)
+    }
+  }
+
+  def verify(): Unit = {
+    verifyColumnType(table, mapping.sourceIdKey, LongType)
+    verifyColumnType(table, mapping.sourceStartNodeKey, LongType)
+    verifyColumnType(table, mapping.sourceEndNodeKey, LongType)
+    if (mapping.relTypeOrSourceRelTypeKey.isRight) {
+      mapping.relTypeOrSourceRelTypeKey.right.map(pair => verifyColumnType(table, pair._1, StringType))
     }
   }
 }

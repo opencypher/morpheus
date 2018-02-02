@@ -16,6 +16,7 @@
 package org.opencypher.caps.impl.record
 
 import org.apache.spark.sql.Row
+import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.caps.api.schema.{NodeTable, RelationshipTable, Schema}
 import org.opencypher.caps.api.types.{CTFloat, CTInteger, CTString}
@@ -52,7 +53,7 @@ class EntityTableTest extends CAPSTestSuite {
       .withPropertyKey("since"))
   }
 
-  test("test schema creation") {
+  test("NodeTable should create correct schema") {
     val df = session.createDataFrame(Seq((1L, true, "Mats", 23L))).toDF("ID", "IS_C", "FOO", "BAR")
 
     val nodeTable = NodeTable(nodeMapping, df)
@@ -63,7 +64,7 @@ class EntityTableTest extends CAPSTestSuite {
         .withNodePropertyKeys("A", "B", "C")("foo" -> CTString.nullable, "bar" -> CTInteger))
   }
 
-  test("test type casts when creating an EntityTable from a DataFrame") {
+  test("NodeTable should cast compatible types in input DataFrame") {
     val df = session.createDataFrame(Seq((1, true, 10.toShort, 23.1f))).toDF("ID", "IS_C", "FOO", "BAR")
 
     val nodeTable = NodeTable(nodeMapping, df)
@@ -76,7 +77,7 @@ class EntityTableTest extends CAPSTestSuite {
     nodeTable.records.toDF().collect().toSet should equal(Set(Row(true, 1L, 10L, (23.1f).toDouble)))
   }
 
-  test("test ScanGraph can handle shuffled columns due to cast") {
+  test("NodeTable can handle shuffled columns due to cast") {
     val df = session.createDataFrame(Seq((1, true, 10.toShort, 23.1f))).toDF("ID", "IS_C", "FOO", "BAR")
 
     val nodeTable = NodeTable(nodeMapping, df)
@@ -84,6 +85,46 @@ class EntityTableTest extends CAPSTestSuite {
     val graph = CAPSGraph.create(nodeTable)
     graph.nodes("n").iterator.toSet {
       CAPSMap("n" -> "1")
+    }
+  }
+
+  test("NodeTable should not accept wrong source id key type (should be compatible to LongType)") {
+    an[IllegalArgumentException] should be thrownBy {
+      val df = session.createDataFrame(Seq(("1", true))).toDF("ID", "IS_A")
+      val nodeMapping = NodeMapping.on("ID").withOptionalLabel("A" -> "IS_A")
+      NodeTable(nodeMapping, df)
+    }
+  }
+
+  test("NodeTable should not accept wrong optional label source key type (should be BooleanType") {
+    an[IllegalArgumentException] should be thrownBy {
+      val df = session.createDataFrame(Seq((1, "true"))).toDF("ID", "IS_A")
+      val nodeMapping = NodeMapping.on("ID").withOptionalLabel("A" -> "IS_A")
+      NodeTable(nodeMapping, df)
+    }
+  }
+
+  test("RelationshipTable should not accept wrong sourceId, -StartNode, -EndNode key type (should be compatible to LongType)") {
+    val relMapping = RelationshipMapping.on("ID").from("SOURCE").to("TARGET").relType("A")
+    an[IllegalArgumentException] should be thrownBy {
+      val df = session.createDataFrame(Seq(("1", 1, 1))).toDF("ID", "SOURCE", "TARGET")
+      RelationshipTable(relMapping, df)
+    }
+    an[IllegalArgumentException] should be thrownBy {
+      val df = session.createDataFrame(Seq((1, "1", 1))).toDF("ID", "SOURCE", "TARGET")
+      RelationshipTable(relMapping, df)
+    }
+    an[IllegalArgumentException] should be thrownBy {
+      val df = session.createDataFrame(Seq((1, 1, "1"))).toDF("ID", "SOURCE", "TARGET")
+      RelationshipTable(relMapping, df)
+    }
+  }
+
+  test("RelationshipTable should not accept wrong source relType key type (should be StringType") {
+    an[IllegalArgumentException] should be thrownBy {
+      val relMapping = RelationshipMapping.on("ID").from("SOURCE").to("TARGET").withSourceRelTypeKey("TYPE", Set("A"))
+      val df = session.createDataFrame(Seq((1, 1, 1, true))).toDF("ID", "SOURCE", "TARGET", "TYPE")
+      RelationshipTable(relMapping, df)
     }
   }
 }
