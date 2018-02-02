@@ -34,7 +34,7 @@ object SparkUtils {
     // other
     StringType,
     BooleanType,
-    ArrayType
+    NullType
   )
 
   def fromSparkType(dt: DataType, nullable: Boolean): Option[CypherType] = {
@@ -77,8 +77,10 @@ object SparkUtils {
     * @param dataType data type
     * @return true, iff the data type is supported
     */
-  def isCypherCompatible(dataType: DataType): Boolean = supportedTypes.contains(dataType)
-
+  def isCypherCompatible(dataType: DataType): Boolean = dataType match {
+    case ArrayType(internalType, _) => isCypherCompatible(internalType)
+    case other => supportedTypes.contains(other)
+  }
 
   /**
     * Converts the given Spark data type into a Cypher type system compatible Spark data type.
@@ -130,14 +132,13 @@ object SparkUtils {
     */
   def verifyColumnType(dataFrame: DataFrame, columnName: String, expectedType: DataType): Unit = {
     val columnDataType = structFieldForColumn(dataFrame, columnName).dataType
-    cypherCompatibleDataType(columnDataType) match {
-      case Some(compatibleType) => compatibleType match {
-        case `expectedType` => ()
-        case other => throw IllegalArgumentException(
-          s"column with name $columnName being type compatible to $expectedType", other)
-      }
-      case None => throw IllegalArgumentException(
-        s"column with name $columnName being type compatible to $expectedType", columnDataType)
+    val compatibleType = cypherCompatibleDataType(columnDataType).getOrElse(throw IllegalArgumentException(
+      s"column with name $columnName being type compatible to $expectedType", columnDataType))
+
+    compatibleType match {
+      case `expectedType` => ()
+      case other => throw IllegalArgumentException(
+        s"column with name $columnName being type compatible to $expectedType", other)
     }
   }
 }
