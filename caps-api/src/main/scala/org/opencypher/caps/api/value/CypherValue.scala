@@ -23,10 +23,6 @@ import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
-case class CAPSRelationship(override val id: Long, override val source: Long, override val target: Long, override val relType: String, override val properties: MapData = Map.empty) extends CypherRelationship(id, source, target, relType, properties)
-
-case class CAPSNode(override val id: Long, override val labels: Set[String] = Set.empty, override val properties: MapData = Map.empty) extends CypherNode[Long](id, labels, properties)
-
 sealed trait NullableCypherEntity[+Id] extends NullableCypherValue[NullableCypherEntity[Id]]
 
 sealed trait CypherEntity[+Id] extends NullableCypherEntity[Id] with CypherValue[CypherEntity[Id]] {
