@@ -222,28 +222,28 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
         |  ],
         |  "rows" : [
         |    {
-        |      "booleans" : [
-        |        true,
-        |        false,
-        |        false
+        |      "strings" : [
+        |        "foo",
+        |        "bar",
+        |        "baz"
         |      ],
         |      "integers" : [
         |        42,
         |        23,
         |        8
         |      ],
-        |      "strings" : [
-        |        "foo",
-        |        "bar",
-        |        "baz"
+        |      "booleans" : [
+        |        true,
+        |        false,
+        |        false
         |      ]
         |    },
         |    {
-        |      "booleans" : [
-        |      ],
+        |      "strings" : null,
         |      "integers" : [
         |      ],
-        |      "strings" : null
+        |      "booleans" : [
+        |      ]
         |    }
         |  ]
         |}""".stripMargin
