@@ -15,7 +15,8 @@
  */
 package org.opencypher.caps.impl.spark.acceptance
 
-import org.opencypher.caps.api.value.CypherValue.{CypherList, CypherMap, MaterialCypherValue}
+import org.opencypher.caps.api.value.CypherValue.{CypherInteger, CypherList, CypherMap, MaterialCypherValue}
+import org.opencypher.caps.api.value.NullableCypherValue
 import org.opencypher.caps.impl.spark.CAPSGraph
 
 import scala.collection.immutable.Bag
@@ -145,73 +146,136 @@ trait PredicateBehaviour { this: AcceptanceTest =>
       result.graphs shouldBe empty
     }
 
-    test("less than") {
+    describe("comparison operators") {
+      test("less than") {
 
-      // Given
-      val given = initGraph("""CREATE (:Node {val: 4})-[:REL]->(:Node {val: 5})""")
+        // Given
+        val given = initGraph("""CREATE (:Node {val: 4})-[:REL]->(:Node {val: 5})""")
 
-      // When
-      val result = given.cypher("MATCH (n:Node)-->(m:Node) WHERE n.val < m.val RETURN n.val")
+        // When
+        val result = given.cypher("MATCH (n:Node)-->(m:Node) WHERE n.val < m.val RETURN n.val")
 
-      // Then
-      result.records.toMaps should equal(Bag(
-        CypherMap("n.val" -> 4)
-      ))
+        // Then
+        result.records.toMaps should equal(Bag(
+          CypherMap("n.val" -> 4)
+        ))
 
-      // And
-      result.graphs shouldBe empty
-    }
+        // And
+        result.graphs shouldBe empty
+      }
 
-    test("less than or equal") {
-      // Given
-      val given = initGraph(
-        """
-          |CREATE (:Node {id: 1, val: 4})-[:REL]->(:Node {id: 2, val: 5})-[:REL]->(:Node {id: 3, val: 5})
-       |""".stripMargin)
+      it("compares less than between different types") {
 
-      // When
-      val result = given.cypher("MATCH (n:Node)-->(m:Node) WHERE n.val <= m.val RETURN n.id, n.val")
+        // Given
+        val given = initGraph("""CREATE (:A {val: 4})-[:REL]->(:B {val: 'string'})""")
 
-      // Then
-      result.records.toMaps should equal(Bag(
-        CypherMap("n.id" -> 1, "n.val" -> 4),
-        CypherMap("n.id" -> 2, "n.val" -> 5)
-      ))
-      // And
-      result.graphs shouldBe empty
-    }
+        // When
+        val result = given.cypher("MATCH (a:A)-->(b:B) WHERE a.val < b.val RETURN a.val")
 
-    test("greater than") {
-      // Given
-      val given = initGraph("""CREATE (:Node {val: 4})-[:REL]->(:Node {val: 5})""")
+        // Then
+        result.records.iterator.toBag shouldBe empty
 
-      // When
-      val result = given.cypher("MATCH (n:Node)<--(m:Node) WHERE n.val > m.val RETURN n.val")
+        // And
+        result.graphs shouldBe empty
+      }
 
-      // Then
-      result.records.toMaps should equal(Bag(
-        CypherMap("n.val" -> 5)
-      ))
+      test("less than or equal") {
+        // Given
+        val given = initGraph(
+          """
+            |CREATE (:Node {id: 1, val: 4})-[:REL]->(:Node {id: 2, val: 5})-[:REL]->(:Node {id: 3, val: 5})
+            |""".stripMargin)
 
-      // And
-      result.graphs shouldBe empty
-    }
+        // When
+        val
+        result = given.cypher("MATCH (n:Node)-->(m:Node) WHERE n.val <= m.val RETURN n.id, n.val")
 
-    test("greater than or equal") {
-      // Given
-      val given = initGraph("""CREATE (:Node {id: 1, val: 4})-[:REL]->(:Node {id: 2, val: 5})-[:REL]->(:Node {id: 3, val: 5})""")
+        // Then
+        result.records.toMaps should equal(Bag(
+          CypherMap("n.id" -> 1, "n.val" -> 4),
+          CypherMap("n.id" -> 2, "n.val" -> 5)
+        ))
+        // And
+        result.graphs shouldBe empty
+      }
 
-      // When
-      val result = given.cypher("MATCH (n:Node)<--(m:Node) WHERE n.val >= m.val RETURN n.id, n.val")
+      it("compares less than or equal between different types") {
 
-      // Then
-      result.records.toMaps should equal(Bag(
-        CypherMap("n.id" -> 2, "n.val" -> 5),
-        CypherMap("n.id" -> 3, "n.val" -> 5)
-      ))
+        // Given
+        val given = initGraph("""CREATE (:A {val: 4})-[:REL]->(:B {val: 'string'})""")
 
-      // And
-      result.graphs shouldBe empty
+        // When
+        val result = given.cypher("MATCH (a:A)-->(b:B) WHERE a.val <= b.val RETURN a.val")
+
+        // Then
+        result.records.iterator.toBag shouldBe empty
+
+        // And
+        result.graphs shouldBe empty
+      }
+
+      test("greater than") {
+        // Given
+        val given = initGraph("""CREATE (:Node {val: 4})-[:REL]->(:Node {val: 5})""")
+
+        // When
+        val result = given.cypher("MATCH (n:Node)<--(m:Node) WHERE n.val > m.val RETURN n.val")
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CypherMap("n.val" -> 5)
+        ))
+
+        // And
+        result.graphs shouldBe empty
+      }
+
+      it("compares greater than between different types") {
+
+        // Given
+        val given = initGraph("""CREATE (:A {val: 4})-[:REL]->(:B {val: 'string'})""")
+
+        // When
+        val result = given.cypher("MATCH (a:A)-->(b:B) WHERE a.val > b.val RETURN a.val")
+
+        // Then
+        result.records.iterator.toBag shouldBe empty
+
+        // And
+        result.graphs shouldBe empty
+      }
+
+      test("greater than or equal") {
+        // Given
+        val given = initGraph("""CREATE (:Node {id: 1, val: 4})-[:REL]->(:Node {id: 2, val: 5})-[:REL]->(:Node {id: 3, val: 5})""")
+
+        // When
+        val result = given.cypher("MATCH (n:Node)<--(m:Node) WHERE n.val >= m.val RETURN n.id, n.val")
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CypherMap("n.id" -> 2, "n.val" -> 5),
+          CypherMap("n.id" -> 3, "n.val" -> 5)
+        ))
+
+        // And
+        result.graphs shouldBe empty
+      }
+
+      it("compares greater than or equal between different types") {
+
+        // Given
+        val given = initGraph("""CREATE (:A {val: 4})-[:REL]->(:B {val: 'string'})""")
+
+        // When
+        val result = given.cypher("MATCH (a:A)-->(b:B) WHERE a.val >= b.val RETURN a.val")
+
+        // Then
+        result.records.iterator.toBag shouldBe empty
+
+        // And
+        result.graphs shouldBe empty
+      }
     }
 
     test("float conversion for integer division") {
@@ -530,6 +594,18 @@ trait PredicateBehaviour { this: AcceptanceTest =>
           CypherMap("a.id" -> 1),
           CypherMap("a.id" -> 3)
         ))
+
+        val bag = result.records.iterator.toBag
+
+        val foo: NullableCypherValue[_] = bag.head("a.id")
+
+        "RETURN a.id, foo.prop"
+
+        result.records.iterator.map { map =>
+          val primitive: String = null //= map("a.id").cast[Long]
+
+          given.cypher("", Map("param" -> primitive))
+        }
       }
 
       test("pattern predicate with derived node predicate") {

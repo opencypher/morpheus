@@ -39,26 +39,19 @@ sealed trait CypherEntity[+Id] extends NullableCypherEntity[Id] with CypherValue
 
 sealed trait NullableCypherNode[+Id] extends NullableCypherEntity[Id] with NullableCypherValue[NullableCypherNode[Id]]
 
-class CypherNode[+Id](val id: Id, val labels: Set[String] = Set.empty, val properties: MapData = Map.empty) extends NullableCypherNode[Id] with CypherValue[CypherNode[Id]] with CypherEntity[Id] with Product {
+class CypherNode[+Id](val id: Id, val labels: Set[String] = Set.empty, val properties: MapData = Map.empty) extends NullableCypherNode[Id] with CypherValue[CypherNode[Id]] with CypherEntity[Id] {
   override def cypherType: CypherType = CTNode(labels)
 
   override def value: CypherNode[Id] = this
 
-  override def productElement(n: Int): Any = n match {
-    case 0 => id
-    case 1 => labels
-    case 2 => properties
-    case _ => throw UnsupportedOperationException("Invalid product access.")
-  }
-
-  override def productArity: Int = 3
-
-  override def canEqual(that: Any): Boolean = {
+  override def equals(that: Any): Boolean = {
     that match {
       case cn: CypherNode[_] if cn.id == id => true
       case _ => false
     }
   }
+
+  override def hashCode(): Int = id.hashCode()
 
 }
 
@@ -72,28 +65,19 @@ object CypherNode {
 
 sealed trait NullableCypherRelationship[+Id] extends NullableCypherEntity[Id] with NullableCypherValue[NullableCypherRelationship[Id]]
 
-class CypherRelationship[+Id](val id: Id, val source: Id, val target: Id, val relType: String, val properties: MapData = Map.empty) extends NullableCypherRelationship[Id] with CypherValue[CypherRelationship[Id]] with CypherEntity[Id] with Product {
+class CypherRelationship[+Id](val id: Id, val source: Id, val target: Id, val relType: String, val properties: MapData = Map.empty) extends NullableCypherRelationship[Id] with CypherValue[CypherRelationship[Id]] with CypherEntity[Id] {
   override def cypherType: CypherType = CTRelationship(relType)
 
   override def value: CypherRelationship[Id] = this
 
-  override def productElement(n: Int): Any = n match {
-    case 0 => id
-    case 1 => source
-    case 2 => target
-    case 3 => relType
-    case 4 => properties
-    case _ => throw UnsupportedOperationException("Invalid product access.")
-  }
-
-  override def productArity: Int = 5
-
-  override def canEqual(that: Any): Boolean = {
+  override def equals(that: Any): Boolean = {
     that match {
       case cr: CypherRelationship[_] if cr.id == id => true
       case _ => false
     }
   }
+
+  override def hashCode(): Int = id.hashCode()
 
 }
 
@@ -138,8 +122,8 @@ sealed trait NullableCypherValue[+V] {
   override def equals(other: Any): Boolean = {
     other match {
       case CypherNull => this.isNull
-      case cn: CypherNode[_] => cn.canEqual(this)
-      case cr: CypherRelationship[_] => cr.canEqual(this)
+      case cn: CypherNode[_] => cn.equals(this)
+      case cr: CypherRelationship[_] => cr.equals(this)
       case f: CypherFloat if f.value.isNaN => // NaN is a special case
         value match {
           case d: Double if d.isNaN => true
@@ -157,27 +141,6 @@ sealed trait NullableCypherValue[+V] {
       other.value.equals(this.value)
     }
   }
-
-  private[caps] def materialLessThan(other: MaterialCypherValue): Boolean = {
-    throw new UnsupportedOperationException(s"Cypher entities of type ${this.cypherType} and ${other.cypherType} are not comparable.")
-  }
-
-  def cypherLessThan(other: NullableCypherValue[_]): Ternary = {
-    if (this.isNull) {
-      Maybe
-    } else {
-      other match {
-        case CypherNull => Maybe
-        case cv: MaterialCypherValue => materialLessThan(cv)
-      }
-    }
-  }
-
-  def cypherLessThanOrEqual(other: NullableCypherValue[_]): Ternary = cypherEqual(other) or cypherLessThan(other)
-
-  def cypherLargerThan(other: NullableCypherValue[_]): Ternary = cypherLessThan(other).negated
-
-  def cypherLargerThanOrEqual(other: NullableCypherValue[_]): Ternary = cypherEqual(other) or cypherLargerThan(other)
 
   // TODO: Simplify property string creation
   override def toString(): String = {
@@ -207,6 +170,9 @@ sealed trait NullableCypherValue[+V] {
 }
 
 sealed trait CypherValue[+V] extends NullableCypherValue[V] {
+
+  require(value != null)
+
   override def isNull = false
 
   // Overridden by Map and List
@@ -265,7 +231,7 @@ object CypherValue {
     }
   }
 
-  implicit class CypherList(raw: Array[Any]) extends NullableCypherList[NullableCypherValue[_]] with CypherValue[Vector[NullableCypherValue[_]]] {
+  implicit class CypherList(val raw: Array[Any]) extends NullableCypherList[NullableCypherValue[_]] with CypherValue[Vector[NullableCypherValue[_]]] {
 
     override def value: Vector[NullableCypherValue[_]] = raw.map(CypherValue.nullable).toVector
 
@@ -278,14 +244,6 @@ object CypherValue {
 
   implicit class CypherBoolean(val value: Boolean) extends NullableCypherBoolean with CypherValue[Boolean] {
     override def cypherType: CypherType = CTBoolean
-
-    private[caps] override def materialLessThan(other: MaterialCypherValue): Boolean = {
-      other.value match {
-        case b: Boolean =>
-          value == false && b == true
-        case _ => super.materialLessThan(other)
-      }
-    }
   }
 
   sealed trait NullableCypherNumber extends NullableCypherValue[Any]
@@ -302,24 +260,6 @@ object CypherValue {
   implicit class CypherFloat(val value: Double) extends NullableCypherFloat with NullableCypherNumber with CypherNumber with CypherValue[Double] {
     override def cypherType: CypherType = CTFloat
 
-    private[caps] override def materialLessThan(other: MaterialCypherValue): Boolean = {
-      other.value match {
-        case d: Double =>
-          if (value == Double.NaN && d != Double.NaN) {
-            false
-          } else {
-            value < d
-          }
-        case l: Long =>
-          if (value == Double.NaN) {
-            false
-          } else {
-            value < l.toDouble
-          }
-        case _ => super.materialLessThan(other)
-      }
-    }
-
     override def longOrDouble: Either[Long, Double] = Right(value)
   }
 
@@ -330,20 +270,6 @@ object CypherValue {
   implicit class CypherInteger(val value: Long) extends NullableCypherInteger with NullableCypherNumber with CypherNumber with CypherValue[Long] {
     override def cypherType: CypherType = CTInteger
 
-    private[caps] override def materialLessThan(other: MaterialCypherValue): Boolean = {
-      other.value match {
-        case l: Long =>
-          value < l
-        case d: Double =>
-          if (d == Double.NaN) {
-            true
-          } else {
-            value.toDouble < d
-          }
-        case _ => super.materialLessThan(other)
-      }
-    }
-
     override def longOrDouble: Either[Long, Double] = Left(value)
   }
 
@@ -351,15 +277,6 @@ object CypherValue {
 
   implicit class CypherString(val value: String) extends NullableCypherString with CypherValue[String] {
     override def cypherType: CypherType = CTString
-
-    private[caps] override def materialLessThan(other: MaterialCypherValue): Boolean = {
-      other.value match {
-        case s: String =>
-          value < s
-        case _ => super.materialLessThan(other)
-      }
-    }
-
   }
 
   sealed trait NullableCypherMap extends NullableCypherValue[MapData] {
@@ -377,7 +294,7 @@ object CypherValue {
     }
 
     def empty = Map.empty[String, Any]
-    
+
   }
 
   implicit class CypherMap(raw: Map[String, Any]) extends NullableCypherMap with CypherValue[MapData] {

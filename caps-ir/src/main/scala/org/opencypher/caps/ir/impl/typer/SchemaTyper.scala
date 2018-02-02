@@ -28,7 +28,6 @@ import org.opencypher.caps.api.schema.Schema.AllLabels
 import org.opencypher.caps.api.schema.{AllGiven, AnyGiven, Schema}
 import org.opencypher.caps.api.types.CypherType.joinMonoid
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.ir.impl.parse.RetypingPredicate
 import org.opencypher.caps.ir.impl.parse.rewriter.ExistsPattern
 
 import scala.util.Try
@@ -108,13 +107,6 @@ object SchemaTyper {
         }
       } yield result
 
-    case RetypingPredicate(left, rhs) =>
-      for {
-        result <- if (left.isEmpty) pure[R, CypherType](CTBoolean) else processAndsOrs(expr, left.toVector)
-        rhsType <- process[R](rhs)
-        _ <- recordType(rhs -> rhsType) >> recordAndUpdate(expr -> result)
-      } yield result
-
     case Not(inner) =>
       for {
         innerType <- process[R](inner)
@@ -154,16 +146,8 @@ object SchemaTyper {
         lhsType <- process[R](cmp.lhs)
         rhsType <- process[R](cmp.rhs)
         result <- {
-          val materialResultType = (lhsType.material, rhsType.material) match {
-            case (CTInteger, CTFloat)              => CTBoolean
-            case (CTFloat, CTInteger)              => CTBoolean
-            case (x, y) if !x.couldBeSameTypeAs(y) => CTVoid
-            case _                                 => CTBoolean
-          }
-          val resultType = materialResultType
-            .asNullableAs(lhsType)
-            .asNullableAs(rhsType)
-          recordTypes(cmp.lhs -> lhsType, cmp.rhs -> rhsType) >> recordAndUpdate(expr -> resultType)
+          // TODO: We can know for some cases that this is null, statically -- teach the planner to use that
+          recordTypes(cmp.lhs -> lhsType, cmp.rhs -> rhsType) >> recordAndUpdate(expr -> CTBoolean.nullable)
         }
       } yield result
 
@@ -349,15 +333,21 @@ object SchemaTyper {
       expr: Expression,
       orderedExprs: Vector[Expression]): Eff[R, CypherType] = {
     for {
-      innerTypes <- EffMonad[R].sequence(orderedExprs.map(process[R]))
+      hasLabelPreds <- EffMonad[R].sequence(orderedExprs.collect { case h: HasLabels => h }.map(process[R]))
+      otherTypes <- EffMonad[R].sequence(orderedExprs.filter {
+        case h: HasLabels => false
+        case _ => true
+      }.map(process[R]))
       result <- {
+        val innerTypes = hasLabelPreds ++ otherTypes
         val typeErrors = innerTypes.zipWithIndex.collect {
-          case (t, idx) if t != CTBoolean =>
+          case (t, idx) if t.material != CTBoolean =>
             error(InvalidType(orderedExprs(idx), CTBoolean, t))
         }
+        val outType = if (innerTypes.exists(_.isNullable)) CTBoolean.nullable else CTBoolean
         if (typeErrors.isEmpty) {
           recordTypes(orderedExprs.zip(innerTypes): _*) >>
-            recordAndUpdate(expr -> CTBoolean)
+            recordAndUpdate(expr -> outType)
         } else typeErrors.reduce(_ >> _)
       }
     } yield result

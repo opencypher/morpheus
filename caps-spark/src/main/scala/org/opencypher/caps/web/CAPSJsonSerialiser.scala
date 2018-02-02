@@ -64,7 +64,7 @@ trait JsonSerialiser {
         case b: Boolean => Json.fromBoolean(b)
         case s: String => Json.fromString(s)
         case l: Vector[_] => Json.arr(l.map(v => constructValue(CypherValue(v).asMaterial)): _*)
-        case m: Map[String, _] => Json.obj(m.mapValues(p => constructValue(CypherValue(p).asMaterial)).toSeq: _*)
+        case m: Map[_, _] => Json.obj(m.map { p => p.toString -> constructValue(CypherValue(p).asMaterial)}.toSeq: _*)
       }
     }.getOrElse(Json.Null)
   }
@@ -131,7 +131,7 @@ trait JsonSerialiser {
   * }
   * }}}
   *
-  * The format of scalar values follows the `toString()` format of [[org.opencypher.caps.api.value.CAPSValue]].
+  * The format of scalar values follows the `toString()` format of [[org.opencypher.caps.api.value.CypherValue]].
   * The format of nodes is as follows:
   *
   * {{{

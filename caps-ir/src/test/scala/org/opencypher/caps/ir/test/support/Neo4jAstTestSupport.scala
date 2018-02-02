@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticCheckResult, S
 import org.neo4j.cypher.internal.util.v3_4.{CypherException, InputPosition}
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
 import org.opencypher.caps.api.exception.IllegalArgumentException
-import org.opencypher.caps.ir.impl.parse.{CypherParser, ExtractPredicatesFromAnds}
+import org.opencypher.caps.ir.impl.parse.CypherParser
 import org.opencypher.caps.test.BaseTestSuite
 
 import scala.language.implicitConversions
@@ -57,8 +57,7 @@ object Neo4jAstTestSupport {
         AstRewriting(RewriterStepSequencer.newPlain, Never) andThen
         Namespacer andThen
         CNFNormalizer andThen
-        LateAstRewriting andThen
-        ExtractPredicatesFromAnds
+        LateAstRewriting
 
     object NonThrowingSemanticAnalysis extends SemanticAnalysis(true) {
       override def process(from: BaseState, context: BaseContext): BaseState = {

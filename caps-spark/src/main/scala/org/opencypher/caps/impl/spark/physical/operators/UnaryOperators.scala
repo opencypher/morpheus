@@ -28,7 +28,7 @@ import org.opencypher.caps.impl.record._
 import org.opencypher.caps.impl.spark.SparkSQLExprMapper.asSparkSQLExpr
 import org.opencypher.caps.impl.spark.convert.toSparkType
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.{assertIsNode, columnName}
-import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext, cypherFilter, udfUtils}
+import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext, udfUtils}
 import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords, SparkColumnName}
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.ir.api.block.{Asc, Desc, SortItem}
@@ -163,7 +163,8 @@ final case class Project(in: PhysicalOperator, expr: Expr, header: RecordHeader)
                 .map(records.data.col) :+ newCol
 
               records.data.select(columnsToSelect: _*)
-            case _ => throw IllegalStateException(s"Got multiple slots for expression $expr")
+            case seq if seq.isEmpty => throw IllegalStateException(s"Did not find a slot for expression $expr in $headerNames")
+            case seq => throw IllegalStateException(s"Got multiple slots for expression $expr: $seq")
           }
       }
 
@@ -181,8 +182,7 @@ final case class Filter(in: PhysicalOperator, expr: Expr, header: RecordHeader) 
           case Some(sqlExpr) =>
             records.data.where(sqlExpr)
           case None =>
-            val predicate = cypherFilter(header, expr)
-            records.data.filter(predicate)
+            throw NotImplementedException(s"filtering using predicate: $expr")
         }
 
       val selectedColumns = header.slots.map { c =>

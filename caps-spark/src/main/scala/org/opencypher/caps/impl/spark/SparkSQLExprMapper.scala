@@ -20,6 +20,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.caps.api.exception.{IllegalStateException, NotImplementedException}
 import org.opencypher.caps.api.types.{CTAny, CTList, CTNode, CTString}
+import org.opencypher.caps.api.value.CypherValue.CypherList
 import org.opencypher.caps.impl.record.RecordHeader
 import org.opencypher.caps.impl.spark.Udfs._
 import org.opencypher.caps.impl.spark.convert.toSparkType
@@ -43,7 +44,8 @@ object SparkSQLExprMapper {
     implicit context: RuntimeContext): Column = {
     expr match {
       case p@Param(name) if p.cypherType.subTypeOf(CTList(CTAny)).maybeTrue =>
-        val value = context.parameters(name).value
+        // TODO: what about null?
+        val value = context.parameters(name).as[CypherList].get.raw
         udf(const(value), toSparkType(p.cypherType))()
       case Param(name) =>
         val value = context.parameters(name).value
@@ -154,10 +156,29 @@ object SparkSQLExprMapper {
         case h: HasLabel =>
           Some(getColumn(h, header, df)) // it's a boolean column
 
-        case inEq: LessThan => Some(inequality(lt, header, inEq, df))
-        case inEq: LessThanOrEqual => Some(inequality(lteq, header, inEq, df))
-        case inEq: GreaterThanOrEqual => Some(inequality(gteq, header, inEq, df))
-        case inEq: GreaterThan => Some(inequality(gt, header, inEq, df))
+        case LessThan(lhs, rhs) =>
+          val l = getColumn(lhs, header, df)
+          val r = getColumn(rhs, header, df)
+
+          Some(l < r)
+
+        case LessThanOrEqual(lhs, rhs) =>
+          val l = getColumn(lhs, header, df)
+          val r = getColumn(rhs, header, df)
+
+          Some(l <= r)
+
+        case GreaterThanOrEqual(lhs, rhs) =>
+          val l = getColumn(lhs, header, df)
+          val r = getColumn(rhs, header, df)
+
+          Some(l >= r)
+
+        case GreaterThan(lhs, rhs) =>
+          val l = getColumn(lhs, header, df)
+          val r = getColumn(rhs, header, df)
+
+          Some(l > r)
 
         // Arithmetics
         case add: Add =>
@@ -257,16 +278,6 @@ object SparkSQLExprMapper {
         case _ =>
           None
       }
-
-    private def inequality(f: (Any, Any) => Any, header: RecordHeader, expr: BinaryExpr, df: DataFrame)(
-      implicit context: RuntimeContext): Column = {
-      verifyExpression(header, expr)
-
-      val lhsColumn = getColumn(expr.lhs, header, df)
-      val rhsColumn = getColumn(expr.rhs, header, df)
-
-      udf(f, BooleanType)(lhsColumn, rhsColumn)
-    }
   }
 
 }

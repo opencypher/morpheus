@@ -21,7 +21,7 @@ import org.opencypher.caps.test.support.creation.caps.CAPSGraphFactory
 import org.opencypher.caps.test.support.creation.propertygraph.CAPSPropertyGraphFactory
 
 abstract class AcceptanceTest
-    extends CAPSTestSuite
+  extends CAPSTestSuite
     with AggregationBehaviour
     with BoundedVarExpandBehaviour
     with ExpandIntoBehaviour
@@ -44,48 +44,48 @@ abstract class AcceptanceTest
       it should behave like aggregationBehaviour(initGraph)
     }
 
-    //    describe("BoundedVarExpandBehaviour") {
-    //      it should behave like boundedVarExpandBehaviour(initGraph)
-    //    }
-    //
-    //    describe("ExpandIntoBehaviour") {
-    //      it should behave like expandIntoBehaviour(initGraph)
-    //    }
-    //
-    //    describe("ExpressionBehaviour") {
-    //      it should behave like expressionBehaviour(initGraph)
-    //    }
-    //
-    //    describe("FunctionsBehaviour") {
-    //      it should behave like functionsBehaviour(initGraph)
-    //    }
-    //
-    //    describe("MatchBehaviour") {
-    //      it should behave like matchBehaviour(initGraph)
-    //    }
-    //
-    //    describe("MultigraphProjectionBehaviour") {
-    //      it should behave like multigraphProjectionBehaviour(initGraph)
-    //    }
-    //
-    //    describe("OptionalMatchBehaviour") {
-    //      it should behave like optionalMatchBehaviour(initGraph)
-    //    }
-    //
-    //    describe("PredicateBehaviour") {
-    //      it should behave like predicateBehaviour(initGraph)
-    //    }
-    //
-    //    describe("ReturnBehaviour") {
-    //      it should behave like returnBehaviour(initGraph)
-    //    }
-    //
-    //    describe("WithBehaviour") {
-    //      it should behave like withBehaviour(initGraph)
-    //    }
-    //
-    //    describe("UnwindBehaviour") {
-    //      it should behave like unwindBehaviour(initGraph)
-    //    }
+    describe("BoundedVarExpandBehaviour") {
+      it should behave like boundedVarExpandBehaviour(initGraph)
+    }
+
+    describe("ExpandIntoBehaviour") {
+      it should behave like expandIntoBehaviour(initGraph)
+    }
+
+    describe("ExpressionBehaviour") {
+      it should behave like expressionBehaviour(initGraph)
+    }
+
+    describe("FunctionsBehaviour") {
+      it should behave like functionsBehaviour(initGraph)
+    }
+
+    describe("MatchBehaviour") {
+      it should behave like matchBehaviour(initGraph)
+    }
+
+    describe("MultigraphProjectionBehaviour") {
+      it should behave like multigraphProjectionBehaviour(initGraph)
+    }
+
+    describe("OptionalMatchBehaviour") {
+      it should behave like optionalMatchBehaviour(initGraph)
+    }
+
+    describe("PredicateBehaviour") {
+      it should behave like predicateBehaviour(initGraph)
+    }
+
+    describe("ReturnBehaviour") {
+      it should behave like returnBehaviour(initGraph)
+    }
+
+    describe("WithBehaviour") {
+      it should behave like withBehaviour(initGraph)
+    }
+
+    describe("UnwindBehaviour") {
+      it should behave like unwindBehaviour(initGraph)
+    }
   }
 }
