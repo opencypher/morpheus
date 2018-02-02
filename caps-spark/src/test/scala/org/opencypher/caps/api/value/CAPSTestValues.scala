@@ -15,7 +15,6 @@
  */
 package org.opencypher.caps.api.value
 
-import org.opencypher.caps.api.value._
 import org.opencypher.caps.api.value.CypherValue._
 
 object CAPSTestValues {
