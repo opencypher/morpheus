@@ -22,6 +22,20 @@ import org.opencypher.caps.api.types._
 
 object SparkUtils {
 
+  // Spark data types that can be used within the Cypher type system
+  val compatibleTypes = Seq(
+    // numeric
+    ByteType,
+    ShortType,
+    IntegerType,
+    LongType,
+    FloatType,
+    DoubleType,
+    // other
+    StringType,
+    BooleanType
+  )
+
   def fromSparkType(dt: DataType, nullable: Boolean): Option[CypherType] = {
     val result = dt match {
       case StringType => Some(CTString)
@@ -39,23 +53,26 @@ object SparkUtils {
     if (nullable) result.map(_.nullable) else result.map(_.material)
   }
 
-  def toSparkType(ct: CypherType): DataType =
-    ct match {
-      case CTNull | CTVoid => NullType
-      case _ =>
-        ct.material match {
-          case CTString => StringType
-          case CTInteger => LongType
-          case CTBoolean => BooleanType
-          case CTAny => BinaryType
-          case CTFloat => DoubleType
-          case _: CTNode => LongType
-          case _: CTRelationship => LongType
-          case CTList(elemType) => ArrayType(toSparkType(elemType), elemType.isNullable)
-          case x =>
-            throw NotImplementedException(s"Mapping of CypherType $x to Spark type")
-        }
-    }
+  def toSparkType(ct: CypherType): DataType = ct match {
+    case CTNull | CTVoid => NullType
+    case _ =>
+      ct.material match {
+        case CTString => StringType
+        case CTInteger => LongType
+        case CTBoolean => BooleanType
+        case CTAny => BinaryType
+        case CTFloat => DoubleType
+        case _: CTNode => LongType
+        case _: CTRelationship => LongType
+        case CTList(elemType) => ArrayType(toSparkType(elemType), elemType.isNullable)
+        case x =>
+          throw NotImplementedException(s"Mapping of CypherType $x to Spark type")
+      }
+  }
+
+  def isCypherCompatible(dataType: DataType): Boolean = {
+    compatibleTypes.contains(dataType)
+  }
 
   /**
     * Converts the given Spark data type into a Cypher type system compatible Spark data type.
@@ -101,8 +118,8 @@ object SparkUtils {
   /**
     * Checks if the data type of the given column is compatible to the given data type.
     *
-    * @param dataFrame data frame
-    * @param columnName column to be checked
+    * @param dataFrame    data frame
+    * @param columnName   column to be checked
     * @param expectedType excepted data type
     */
   def verifyColumnType(dataFrame: DataFrame, columnName: String, expectedType: DataType): Unit = {

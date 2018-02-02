@@ -16,6 +16,7 @@
 package org.opencypher.caps.impl.record
 
 import org.apache.spark.sql.Row
+import org.apache.spark.sql.types.DecimalType
 import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.caps.api.schema.{NodeTable, RelationshipTable, Schema}
@@ -23,6 +24,7 @@ import org.opencypher.caps.api.types.{CTFloat, CTInteger, CTString}
 import org.opencypher.caps.api.value.CAPSMap
 import org.opencypher.caps.demo.SocialNetworkData.{Friend, Person}
 import org.opencypher.caps.impl.spark.CAPSGraph
+import org.opencypher.caps.impl.spark.convert.SparkUtils
 import org.opencypher.caps.test.CAPSTestSuite
 
 class EntityTableTest extends CAPSTestSuite {
@@ -125,6 +127,15 @@ class EntityTableTest extends CAPSTestSuite {
       val relMapping = RelationshipMapping.on("ID").from("SOURCE").to("TARGET").withSourceRelTypeKey("TYPE", Set("A"))
       val df = session.createDataFrame(Seq((1, 1, 1, true))).toDF("ID", "SOURCE", "TARGET", "TYPE")
       RelationshipTable(relMapping, df)
+    }
+  }
+
+  test("NodeTable should not accept wrong source property key type") {
+    assert(!SparkUtils.compatibleTypes.contains(DecimalType))
+    an[IllegalArgumentException] should be thrownBy {
+      val df = session.createDataFrame(Seq((1, true, BigDecimal(13.37)))).toDF("ID", "IS_A", "PROP")
+      val nodeMapping = NodeMapping.on("ID").withOptionalLabel("A" -> "IS_A").withPropertyKey("PROP")
+      NodeTable(nodeMapping, df)
     }
   }
 }

@@ -18,10 +18,12 @@ package org.opencypher.caps.api.schema
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.{BooleanType, LongType, StringType}
 import org.opencypher.caps.api.CAPSSession
+import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
 import org.opencypher.caps.api.schema.Entity.sourceIdKey
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.spark._
+import org.opencypher.caps.impl.spark.convert.SparkUtils
 import org.opencypher.caps.impl.spark.convert.SparkUtils._
 import org.opencypher.caps.impl.util.Annotation
 
@@ -31,6 +33,8 @@ import scala.reflect.runtime.universe._
   * An entity table describes how to map an input data frame to a Cypher entity (i.e. nodes or relationships).
   */
 sealed trait EntityTable {
+
+  verify()
 
   def schema: Schema
 
@@ -43,6 +47,14 @@ sealed trait EntityTable {
 
   private[caps] def records(implicit caps: CAPSSession): CAPSRecords = CAPSRecords.create(this)
 
+  protected def verify(): Unit = mapping.propertyMapping.values
+    .foreach(propertySourceKey => {
+      val dataType = structFieldForColumn(table, propertySourceKey).dataType
+      if (!isCypherCompatible(dataType))
+        throw IllegalArgumentException(
+          s"column with name $propertySourceKey having type of ${SparkUtils.compatibleTypes.mkString("[", ", ", "]")}",
+          dataType)
+    })
 }
 
 /**
@@ -52,8 +64,6 @@ sealed trait EntityTable {
   * @param table   input data frame
   */
 case class NodeTable(mapping: NodeMapping, table: DataFrame) extends EntityTable {
-
-  verify()
 
   override lazy val schema: Schema = {
     val propertyKeys = mapping.propertyMapping.toSeq.map {
@@ -66,7 +76,8 @@ case class NodeTable(mapping: NodeMapping, table: DataFrame) extends EntityTable
       .reduce(_ ++ _)
   }
 
-  def verify(): Unit = {
+  override def verify(): Unit = {
+    super.verify()
     verifyColumnType(table, mapping.sourceIdKey, LongType)
     mapping.optionalLabelMapping.values.foreach(verifyColumnType(table, _, BooleanType))
   }
@@ -95,8 +106,6 @@ object NodeTable {
   */
 case class RelationshipTable(mapping: RelationshipMapping, table: DataFrame) extends EntityTable {
 
-  verify()
-
   override lazy val schema: Schema = {
     val relTypes = mapping.relTypeOrSourceRelTypeKey match {
       case Left(name) => Set(name)
@@ -112,13 +121,16 @@ case class RelationshipTable(mapping: RelationshipMapping, table: DataFrame) ext
     }
   }
 
-  def verify(): Unit = {
+  override def verify(): Unit = {
+    super.verify()
     verifyColumnType(table, mapping.sourceIdKey, LongType)
     verifyColumnType(table, mapping.sourceStartNodeKey, LongType)
     verifyColumnType(table, mapping.sourceEndNodeKey, LongType)
     if (mapping.relTypeOrSourceRelTypeKey.isRight) {
       mapping.relTypeOrSourceRelTypeKey.right.map(pair => verifyColumnType(table, pair._1, StringType))
     }
+    mapping.propertyMapping.values
+      .foreach(propertySourceKey => isCypherCompatible(structFieldForColumn(table, propertySourceKey).dataType))
   }
 }
 
