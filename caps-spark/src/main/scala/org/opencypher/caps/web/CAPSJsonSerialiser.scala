@@ -25,14 +25,14 @@ trait JsonSerialiser {
   implicit val recordsEncoder: Encoder[CAPSRecords] = new Encoder[CAPSRecords] {
     override final def apply(records: CAPSRecords): Json = {
       val rows = records.iterator.map { map =>
-        val unit = map.keys.map { key =>
-          key -> constructValue(map.get(key))
+        val unit = records.header.fieldsInOrder.map { field =>
+          field -> constructValue(map.get(field))
         }
-        Json.obj(unit.toSeq: _*)
+        Json.obj(unit: _*)
       }
 
       Json.obj(
-        "columns" -> Json.arr(records.sparkColumns.map(Json.fromString): _*),
+        "columns" -> Json.arr(records.header.fieldsInOrder.map(Json.fromString): _*),
         "rows" -> Json.arr(rows.toSeq: _*)
       )
     }

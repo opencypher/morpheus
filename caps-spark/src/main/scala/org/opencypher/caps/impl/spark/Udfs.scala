@@ -23,16 +23,16 @@ import scala.collection.mutable
 
 object Udfs {
 
-  def const(v: NullableCypherValue[_]): () => Any = () => v.value
+  def const(v: Any): () => Any = () => v
 
   //  // TODO: Try to share code with cypherFilter()
-  //  def lt(lhs: Any, rhs: Any): Any = (CypherValue(lhs) < CypherValue(rhs)).orNull
-  //
-  //  def lteq(lhs: Any, rhs: Any): Any = (CypherValue(lhs) <= CypherValue(rhs)).orNull
-  //
-  //  def gteq(lhs: Any, rhs: Any): Any = (CypherValue(lhs) >= CypherValue(rhs)).orNull
-  //
-  //  def gt(lhs: Any, rhs: Any): Any = (CypherValue(lhs) > CypherValue(rhs)).orNull
+  def lt(lhs: Any, rhs: Any): Any = CypherValue.nullable(lhs).cypherLessThan(CypherValue.nullable(rhs)).orNull
+
+  def lteq(lhs: Any, rhs: Any): Any = CypherValue.nullable(lhs).cypherLessThanOrEqual(CypherValue.nullable(rhs)).orNull
+
+  def gteq(lhs: Any, rhs: Any): Any = CypherValue.nullable(lhs).cypherLargerThanOrEqual(CypherValue.nullable(rhs)).orNull
+
+  def gt(lhs: Any, rhs: Any): Any = CypherValue.nullable(lhs).cypherLargerThan(CypherValue.nullable(rhs)).orNull
 
   def getNodeLabels(labelNames: Seq[Label]): (Any) => Array[String] = {
     case a: mutable.WrappedArray[_] =>
@@ -56,7 +56,7 @@ object Udfs {
 
   def in[T](elem: Any, list: Any): Boolean = list match {
     case a: mutable.WrappedArray[_] => a.contains(elem)
-    case x                          => throw IllegalArgumentException("an array", x)
+    case x => throw IllegalArgumentException("an array", x)
   }
 
 }

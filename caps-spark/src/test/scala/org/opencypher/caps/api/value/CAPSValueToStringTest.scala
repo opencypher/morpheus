@@ -44,8 +44,8 @@ class CAPSValueToStringTest extends CAPSTestSuite {
   }
 
   test("list") {
-    CypherList(List.empty[MaterialCypherValue]).toString should equal("[]")
-    CypherList(List[MaterialCypherValue]("A", "B", 1L)).toString should equal("['A', 'B', 1]")
+    CypherList().toString should equal("[]")
+    CypherList("A", "B", 1L).toString should equal("['A', 'B', 1]")
   }
 
   test("map") {

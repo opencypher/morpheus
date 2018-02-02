@@ -55,7 +55,7 @@ class CypherKryoRegistrar extends SparkKryoRegistrar {
     classOf[MapData],
     Class.forName("org.opencypher.caps.api.value.CypherValue$CypherList"),
     Class.forName("scala.collection.immutable.MapLike$$anon$2"),
-    Class.forName("org.opencypher.caps.api.value.CypherValue$CypherMap$$anonfun$apply$2"),
+    //Class.forName("org.opencypher.caps.api.value.CypherValue$CypherMap$$anonfun$apply$2"),
     Class.forName("scala.collection.mutable.WrappedArray$ofRef"),
     Class.forName("scala.Predef$$anon$1"),
 

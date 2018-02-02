@@ -23,17 +23,18 @@ import scala.collection.GenTraversableOnce
 object toCypherType extends Serializable {
 
   def apply(v: Any): CypherType = v match {
-    case null                 => CTNull
-    case _: String            => CTString
-    case _: java.lang.Byte    => CTInteger
-    case _: java.lang.Short   => CTInteger
+    case null => CTNull
+    case _: String => CTString
+    case _: java.lang.Byte => CTInteger
+    case _: java.lang.Short => CTInteger
     case _: java.lang.Integer => CTInteger
-    case _: java.lang.Long    => CTInteger
-    case _: java.lang.Float   => CTFloat
-    case _: java.lang.Double  => CTFloat
+    case _: java.lang.Long => CTInteger
+    case _: java.lang.Float => CTFloat
+    case _: java.lang.Double => CTFloat
     case _: java.lang.Boolean => CTBoolean
-    case a: Array[_]          => constructList(a)
-    case v: Vector[_]         => constructList(v)
+    case a: Array[_] => constructList(a)
+    case l: List[_] => constructList(l)
+    case v: Vector[_] => constructList(v)
     case x =>
       throw IllegalArgumentException("instance of a Cypher-compatible Java type", s"value $x of type (${x.getClass})")
   }
