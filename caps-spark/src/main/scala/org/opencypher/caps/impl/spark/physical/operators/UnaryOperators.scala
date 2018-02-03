@@ -24,7 +24,7 @@ import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.api.value.CypherValue.CypherList
+import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.impl.record._
 import org.opencypher.caps.impl.spark.SparkSQLExprMapper.asSparkSQLExpr
 import org.opencypher.caps.impl.spark.convert.toSparkType
@@ -97,7 +97,7 @@ final case class Unwind(in: PhysicalOperator, list: Expr, item: Var, header: Rec
               val nullable = item.cypherType.isNullable
               val schema = StructType(Seq(StructField(itemColumn, sparkType, nullable)))
 
-              val javaRowList = l.unwrap.map(Row(_)).asJava
+              val javaRowList = l.value.map(elem => Row(elem.toScala)).asJava
               val df = records.caps.sparkSession.createDataFrame(javaRowList, schema)
 
               records.data.crossJoin(df)

@@ -157,7 +157,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture {
     result.records.iterator.toBag should equal(
       Bag(
         CypherMap(
-          "n" -> CAPSNode(0L, Set("Foo"), Properties("p" -> 1)),
+          "n" -> CAPSNode(0L, Set("Foo"), CypherMap("p" -> 1)),
           "b" -> 5
         )
       ))

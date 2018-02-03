@@ -35,10 +35,10 @@ object CypherType {
     val VoidOrderGroup: OrderGroups.Value = Value("VOID ORDER GROUP")
   }
 
-  implicit val typeVectorMonoid: Monoid[Vector[CypherType]] = new Monoid[Vector[CypherType]] {
-    override def empty: Vector[CypherType] = Vector.empty
-    override def combine(x: Vector[CypherType], y: Vector[CypherType]): Vector[CypherType] = x ++ y
-  }
+//  implicit val typeVectorMonoid: Monoid[Vector[CypherType]] = new Monoid[Vector[CypherType]] {
+//    override def empty: Vector[CypherType] = Vector.empty
+//    override def combine(x: Vector[CypherType], y: Vector[CypherType]): Vector[CypherType] = x ++ y
+//  }
 
   implicit val joinMonoid: Monoid[CypherType] = new Monoid[CypherType] {
     override def empty: CypherType = CTVoid
@@ -46,11 +46,11 @@ object CypherType {
     override def combine(x: CypherType, y: CypherType): CypherType = x join y
   }
 
-  implicit val meetMonoid: Monoid[CypherType] = new Monoid[CypherType] {
-    override def empty: CypherType = CTAny.nullable
-
-    override def combine(x: CypherType, y: CypherType): CypherType = x meet y
-  }
+//  implicit val meetMonoid: Monoid[CypherType] = new Monoid[CypherType] {
+//    override def empty: CypherType = CTAny.nullable
+//
+//    override def combine(x: CypherType, y: CypherType): CypherType = x meet y
+//  }
 }
 
 case object CTAny extends MaterialDefiniteCypherType with MaterialDefiniteCypherType.DefaultOrNull {

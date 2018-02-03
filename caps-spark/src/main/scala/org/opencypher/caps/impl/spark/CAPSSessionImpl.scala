@@ -24,7 +24,7 @@ import org.opencypher.caps.api.exception.UnsupportedOperationException
 import org.opencypher.caps.api.graph.{CypherResult, PropertyGraph}
 import org.opencypher.caps.api.io.{CreateOrFail, PersistMode, PropertyGraphDataSource}
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.value.CypherValue.MaterialCypherValue
+import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.api.value._
 import org.opencypher.caps.demo.Configuration.{PrintLogicalPlan, PrintPhysicalPlan, PrintQueryExecutionStages}
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
@@ -81,16 +81,16 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
   def unmountAll(): Unit =
     graphSourceHandler.unmountAll(this)
 
-  override def cypher(query: String, parameters: Map[String, CypherValue[_]]): CypherResult =
+  override def cypher(query: String, parameters: CypherMap): CypherResult =
     cypherOnGraph(CAPSGraph.empty(this), query, parameters)
 
-  override def cypherOnGraph(graph: PropertyGraph, query: String, queryParameters: Map[String, CypherValue[_]]): CypherResult = {
+  override def cypherOnGraph(graph: PropertyGraph, query: String, queryParameters: CypherMap): CypherResult = {
     val ambientGraph = mountAmbientGraph(graph)
 
     val (stmt, extractedLiterals, semState) = parser.process(query)(CypherParser.defaultContext)
 
-    val extractedParameters = extractedLiterals.mapValues(v => CypherValue(v))
-    val allParameters = queryParameters ++ extractedParameters
+    val extractedParameters: CypherMap = extractedLiterals.mapValues(v => CypherValue(v))
+    val allParameters = queryParameters.value ++ extractedParameters.value
 
     logStageProgress("IR ...", false)
     val ir = IRBuilder(stmt)(IRBuilderContext.initial(query, allParameters, semState, ambientGraph, sourceAt))
@@ -165,7 +165,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
     graph: PropertyGraph,
     in: CypherRecords,
     expr: Expr,
-    queryParameters: Map[String, MaterialCypherValue]): CAPSRecords = {
+    queryParameters: CypherMap): CAPSRecords = {
     val scan = planStart(graph, in.header.asCaps.internalHeader.fields)
     val filter = producer.planFilter(expr, scan)
     plan(graph, in, queryParameters, filter).records
@@ -175,7 +175,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
     graph: PropertyGraph,
     in: CypherRecords,
     fields: IndexedSeq[Var],
-    queryParameters: Map[String, MaterialCypherValue]): CAPSRecords = {
+    queryParameters: CypherMap): CAPSRecords = {
     val scan = planStart(graph, in.header.asCaps.internalHeader.fields)
     val select = producer.planSelect(fields, Set.empty, scan)
     plan(graph, in, queryParameters, select).records
@@ -185,7 +185,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
     graph: PropertyGraph,
     in: CypherRecords,
     expr: Expr,
-    queryParameters: Map[String, MaterialCypherValue]): CAPSRecords = {
+    queryParameters: CypherMap): CAPSRecords = {
     val scan = planStart(graph, in.header.asCaps.internalHeader.fields)
     val project = producer.projectExpr(expr, scan)
     plan(graph, in, queryParameters, project).records
@@ -195,7 +195,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
     graph: PropertyGraph,
     in: CypherRecords,
     alias: (Expr, Var),
-    queryParameters: Map[String, CypherValue[_]]): CAPSRecords = {
+    queryParameters: CypherMap): CAPSRecords = {
     val (expr, v) = alias
     val scan = planStart(graph, in.header.asCaps.internalHeader.fields)
     val select = producer.projectField(IRField(v.name)(v.cypherType), expr, scan)
@@ -205,7 +205,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
   private def plan(
     graph: PropertyGraph,
     records: CypherRecords,
-    parameters: Map[String, CypherValue[_]],
+    parameters: CypherMap,
     logicalPlan: LogicalOperator): CAPSResult = {
     logStageProgress("Flat plan ... ", false)
     val flatPlan = flatPlanner(logicalPlan)(FlatPlannerContext(parameters))

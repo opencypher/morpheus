@@ -17,7 +17,7 @@ package org.opencypher.caps.impl.spark.convert
 
 import org.apache.spark.sql.Row
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
-import org.opencypher.caps.api.value.CypherValue.{CypherMap, MapData}
+import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.api.value._
 import org.opencypher.caps.impl.record.RecordHeader
 import org.opencypher.caps.impl.spark.SparkColumnName
@@ -32,7 +32,7 @@ final case class rowToCypherMap(header: RecordHeader) extends (Row => CypherMap)
     CypherMap(values: _*)
   }
 
-  private def constructValue(row: Row, field: Var): NullableCypherValue[_] = {
+  private def constructValue(row: Row, field: Var): CypherValue = {
     field.cypherType match {
       case _: CTNode =>
         val (id, labels, properties) = collectNode(row, field)
@@ -45,11 +45,11 @@ final case class rowToCypherMap(header: RecordHeader) extends (Row => CypherMap)
 
       case _ =>
         val raw = row.getAs[Any](SparkColumnName.of(header.slotFor(field)))
-        CypherValue.nullable(raw)
+        CypherValue.apply(raw)
     }
   }
 
-  private def collectNode(row: Row, field: Var): (Long, Seq[String], Map[String, NullableCypherValue[_]]) = {
+  private def collectNode(row: Row, field: Var): (Long, Seq[String], Map[String, CypherValue]) = {
     val id = row.getAs[Long](SparkColumnName.of(header.slotFor(field)))
     val labels = header
       .labelSlots(field)
@@ -64,7 +64,7 @@ final case class rowToCypherMap(header: RecordHeader) extends (Row => CypherMap)
     val properties = header
       .propertySlots(field)
       .mapValues { s =>
-        CypherValue.nullable(row.getAs[Any](SparkColumnName.of(s)))
+        CypherValue(row.getAs[Any](SparkColumnName.of(s)))
       }
       .collect {
         case (p, v) if !v.isNull =>
@@ -74,7 +74,7 @@ final case class rowToCypherMap(header: RecordHeader) extends (Row => CypherMap)
     (id, labels, properties)
   }
 
-  private def collectRel(row: Row, field: Var): (Long, Long, Long, String, MapData) = {
+  private def collectRel(row: Row, field: Var): (Long, Long, Long, String, CypherMap) = {
     val id = row.getAs[Long](SparkColumnName.of(header.slotFor(field)))
     val source = row.getAs[Long](SparkColumnName.of(header.sourceNodeSlot(field)))
     val target = row.getAs[Long](SparkColumnName.of(header.targetNodeSlot(field)))
@@ -82,7 +82,7 @@ final case class rowToCypherMap(header: RecordHeader) extends (Row => CypherMap)
     val properties = header
       .propertySlots(field)
       .mapValues { s =>
-        CypherValue.nullable(row.getAs[Any](SparkColumnName.of(s)))
+        CypherValue.apply(row.getAs[Any](SparkColumnName.of(s)))
       }
       .collect {
         case (p, v) if !v.isNull =>

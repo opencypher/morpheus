@@ -15,16 +15,16 @@
  */
 package org.opencypher.caps.api.value
 
-import org.opencypher.caps.api.value.CypherValue.MapData
+import org.opencypher.caps.api.value.CypherValue._
 
 case class CAPSNode(
   override val id: Long,
   override val labels: Set[String] = Set.empty,
-  override val properties: MapData = Map.empty) extends CypherNode[Long](id, labels, properties)
+  override val properties: CypherMap = CypherMap.empty) extends CypherNode[Long](id, labels, properties)
 
 case class CAPSRelationship(
   override val id: Long,
   override val source: Long,
   override val target: Long,
   override val relType: String,
-  override val properties: MapData = Map.empty) extends CypherRelationship(id, source, target, relType, properties)
+  override val properties: CypherMap = CypherMap.empty) extends CypherRelationship(id, source, target, relType, properties)

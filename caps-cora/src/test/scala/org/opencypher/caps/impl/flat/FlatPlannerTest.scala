@@ -17,6 +17,7 @@ package org.opencypher.caps.impl.flat
 
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.impl.record.{FieldSlotContent, OpaqueField, ProjectedExpr, ProjectedField}
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.ir.api.{IRField, Label, PropertyKey}
@@ -41,7 +42,7 @@ class FlatPlannerTest extends BaseTestSuite {
 
   schema.verify
 
-  implicit val flatContext: FlatPlannerContext = FlatPlannerContext(Map.empty)
+  implicit val flatContext: FlatPlannerContext = FlatPlannerContext(CypherMap.empty)
 
   val mkLogical = new LogicalOperatorProducer
   val mkFlat = new FlatOperatorProducer()

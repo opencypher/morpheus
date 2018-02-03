@@ -25,7 +25,7 @@ import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.api.value.CypherValue.CypherMap
+import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.impl.record.CAPSRecordHeader._
 import org.opencypher.caps.impl.record.{CAPSRecordHeader, _}
 import org.opencypher.caps.impl.spark.DfUtils._

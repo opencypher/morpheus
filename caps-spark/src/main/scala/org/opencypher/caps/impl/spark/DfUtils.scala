@@ -18,7 +18,7 @@ package org.opencypher.caps.impl.spark
 import org.apache.spark.sql.{Column, DataFrame, Row}
 import org.opencypher.caps.api.exception.{IllegalArgumentException, NotImplementedException}
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.api.value.CypherValue.MaterialCypherValue
+import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.api.value._
 import org.opencypher.caps.impl.record.RecordHeader
 import org.opencypher.caps.impl.spark.physical.RuntimeContext
@@ -27,7 +27,7 @@ import org.opencypher.caps.ir.api.expr.{Expr, Param}
 object DfUtils {
 
   implicit class CypherRow(r: Row) {
-    def getCypherValue(expr: Expr, header: RecordHeader)(implicit context: RuntimeContext): NullableCypherValue[_] = {
+    def getCypherValue(expr: Expr, header: RecordHeader)(implicit context: RuntimeContext): CypherValue = {
       expr match {
         case Param(name) => context.parameters(name)
         case _ =>
@@ -35,7 +35,7 @@ object DfUtils {
             case None => throw IllegalArgumentException(s"slot for $expr")
             case Some(slot) =>
               val index = slot.index
-              CypherValue.nullable(r.get(index))
+              CypherValue.apply(r.get(index))
             //              if (r.isNullAt(index))
             //                null
             //              else typeToValue(slot.content.cypherType.material)(r.get(index))

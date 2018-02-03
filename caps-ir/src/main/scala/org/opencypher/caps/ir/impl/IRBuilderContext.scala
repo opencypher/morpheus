@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 import org.opencypher.caps.api.io.PropertyGraphDataSource
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.api.value.CypherValue
+import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.ir.api.block.SourceBlock
 import org.opencypher.caps.ir.api.expr.Expr
 import org.opencypher.caps.ir.api.pattern.Pattern
@@ -33,7 +33,7 @@ import org.opencypher.caps.ir.impl.typer.{SchemaTyper, TypeTracker}
 
 final case class IRBuilderContext(
   queryString: String,
-  parameters: Map[String, CypherValue[_]],
+  parameters: CypherMap,
   ambientGraph: IRExternalGraph,
   blocks: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
   semanticState: SemanticState,
@@ -58,7 +58,7 @@ final case class IRBuilderContext(
 
   // TODO: Fuse monads
   def infer(expr: ast.Expression): Map[Ref[ast.Expression], CypherType] = {
-    typer.infer(expr, TypeTracker(List(knownTypes), parameters.mapValues(_.cypherType))) match {
+    typer.infer(expr, TypeTracker(List(knownTypes), parameters.value.mapValues(_.cypherType))) match {
       case Right(result) =>
         result.recorder.toMap
 
@@ -103,7 +103,7 @@ object IRBuilderContext {
 
   def initial(
     query: String,
-    parameters: Map[String, CypherValue[_]],
+    parameters: CypherMap,
     semState: SemanticState,
     ambientGraph: IRExternalGraph,
     resolver: URI => PropertyGraphDataSource

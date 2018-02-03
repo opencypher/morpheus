@@ -18,7 +18,7 @@ package org.opencypher.caps.impl.spark
 import org.apache.spark.sql.Row
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.api.value.CypherValue.{CypherMap, Properties}
+import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.api.value.{CypherValue, _}
 import org.opencypher.caps.impl.record._
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
@@ -414,7 +414,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
 
     patternGraph.nodes("n", CTNode).iterator.toBag should equal(
       Bag(
-        CypherMap("n" -> CAPSNode(0L, Set("Person"), Properties("name" -> "PersonPeter"))))
+        CypherMap("n" -> CAPSNode(0L, Set("Person"), CypherMap("name" -> "PersonPeter"))))
     )
   }
 
@@ -447,10 +447,10 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
 
     patternGraph.nodes("n", CTNode).iterator.toBag should equal(
       Bag(
-        CypherMap("n" -> CAPSNode(0L, Set("Person"), Properties("name" -> "PersonPeter"))),
-        CypherMap("n" -> CAPSNode(1L, Set("Employee"), Properties("name" -> "EmployeePeter"))),
-        CypherMap("n" -> CAPSNode(10L, Set("Person"), Properties("name" -> "PersonSusanna"))),
-        CypherMap("n" -> CAPSNode(11L, Set("Employee"), Properties("name" -> "EmployeeSusanna")))
+        CypherMap("n" -> CAPSNode(0L, Set("Person"), CypherMap("name" -> "PersonPeter"))),
+        CypherMap("n" -> CAPSNode(1L, Set("Employee"), CypherMap("name" -> "EmployeePeter"))),
+        CypherMap("n" -> CAPSNode(10L, Set("Person"), CypherMap("name" -> "PersonSusanna"))),
+        CypherMap("n" -> CAPSNode(11L, Set("Employee"), CypherMap("name" -> "EmployeeSusanna")))
       )
     )
   }

@@ -16,7 +16,7 @@
 package org.opencypher.caps.ir.impl.block
 
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
-import org.opencypher.caps.api.value.CypherValue
+import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.ir.api.block.MatchBlock
 import org.opencypher.caps.ir.api.expr.Expr
 import org.opencypher.caps.ir.impl.IrTestSuite
@@ -56,7 +56,7 @@ class TypedMatchBlockTest extends IrTestSuite {
       ))
   }
 
-  private def matchBlock(singleMatchQuery: String): (MatchBlock[Expr], Map[String, CypherValue[_]]) = {
+  private def matchBlock(singleMatchQuery: String): (MatchBlock[Expr], CypherMap) = {
     val model = singleMatchQuery.ir.model
     val projectBlockRef = model.result.after.head
     val matchBlockRef = model.blocks(projectBlockRef).after.head

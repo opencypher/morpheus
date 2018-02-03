@@ -16,7 +16,6 @@
 package org.opencypher.caps.impl.spark
 
 import org.opencypher.caps.api.exception.IllegalArgumentException
-import org.opencypher.caps.api.value.{CypherValue, NullableCypherValue}
 import org.opencypher.caps.ir.api.Label
 
 import scala.collection.mutable

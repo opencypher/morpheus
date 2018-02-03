@@ -23,7 +23,7 @@ import org.neo4j.driver.v1.{AuthTokens, Session}
 import org.opencypher.caps.api.graph.{CypherResult, PropertyGraph}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTInteger, CTString}
-import org.opencypher.caps.api.value.CypherValue.CypherMap
+import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.impl.spark.CAPSRecords
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.fixture.{MiniDFSClusterFixture, Neo4jServerFixture, SparkSessionFixture}
@@ -110,7 +110,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
     val result = SN_US.cypher("""MATCH (n:Person {name: "Alice"}) RETURN n.name AS name""")
     withBoltSession { session =>
       result.records.iterator.foreach { cypherMap =>
-        session.run(s"MATCH (p:Person {name: ${cypherMap.get("name").get}}) SET p.should_buy = 'a book'")
+        session.run(s"MATCH (p:Person {name: ${cypherMap.get("name").get.toCypherString}}) SET p.should_buy = 'a book'")
       }
     }
 

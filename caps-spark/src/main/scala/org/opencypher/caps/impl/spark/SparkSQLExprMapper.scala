@@ -20,7 +20,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.caps.api.exception.{IllegalStateException, NotImplementedException}
 import org.opencypher.caps.api.types.{CTAny, CTList, CTNode, CTString}
-import org.opencypher.caps.api.value.CypherValue.CypherList
+import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.impl.record.RecordHeader
 import org.opencypher.caps.impl.spark.Udfs._
 import org.opencypher.caps.impl.spark.convert.toSparkType
@@ -44,8 +44,13 @@ object SparkSQLExprMapper {
     implicit context: RuntimeContext): Column = {
     expr match {
       case p@Param(name) if p.cypherType.subTypeOf(CTList(CTAny)).maybeTrue =>
-        val value = context.parameters(name).unwrap
-        udf(const(value), toSparkType(p.cypherType))()
+        val list = context.parameters(name).as[CypherList]
+        list match {
+          case None => functions.lit(null).cast(toSparkType(p.cypherType))
+          case Some(l) =>
+            val paramLiterals = l.value.map(_.toScala).map(functions.lit(_))
+            functions.array(paramLiterals: _*)
+        }
       case Param(name) =>
         val value = context.parameters(name).value
         functions.lit(value)

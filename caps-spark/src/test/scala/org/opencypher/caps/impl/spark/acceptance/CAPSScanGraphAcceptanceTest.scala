@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 package org.opencypher.caps.impl.spark.acceptance
-import org.opencypher.caps.api.value.CypherValue.CypherMap
+import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.test.support.creation.caps.{CAPSGraphFactory, CAPSScanGraphFactory}
 
 import scala.collection.Bag

@@ -15,8 +15,8 @@
  */
 package org.opencypher.caps.impl.spark.acceptance
 
-import org.opencypher.caps.api.value.CAPSNode
-import org.opencypher.caps.api.value.CypherValue.{CypherMap, Properties}
+import org.opencypher.caps.api.value.{CAPSNode, CypherValue}
+import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.demo.Configuration.PrintLogicalPlan
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.impl.spark.CAPSGraph
@@ -32,8 +32,8 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       val result = g.cypher("MATCH (a:A) WITH a, a.name AS foo RETURN a")
 
       result.records.iterator.toBag should equal(Bag(
-        CypherMap("a" -> CAPSNode(0L, Set("A"), Properties("name" -> "me"))),
-        CypherMap("a" -> CAPSNode(1L, Set("A"), Properties.empty))
+        CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap("name" -> "me"))),
+        CypherMap("a" -> CAPSNode(1L, Set("A"), CypherMap.empty))
       ))
     }
 
@@ -43,8 +43,8 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       val result = g.cypher("MATCH (a:A) WITH a, a AS foo RETURN a")
 
       result.records.iterator.toBag should equal(Bag(
-        CypherMap("a" -> CAPSNode(0L, Set("A"), Properties("name" -> "me"))),
-        CypherMap("a" -> CAPSNode(1L, Set("A"), Properties.empty))
+        CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap("name" -> "me"))),
+        CypherMap("a" -> CAPSNode(1L, Set("A"), CypherMap.empty))
       ))
     }
 
@@ -58,8 +58,8 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       val result = g.cypher("MATCH (a:A) WITH a, a AS foo RETURN foo AS b")
 
       result.records.iterator.toBag should equal(Bag(
-        CypherMap("a" -> CAPSNode(0L, Set("A"), Properties("name" -> "me"))),
-        CypherMap("a" -> CAPSNode(1L, Set("A"), Properties.empty))
+        CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap("name" -> "me"))),
+        CypherMap("a" -> CAPSNode(1L, Set("A"), CypherMap.empty))
       ))
     }
 
@@ -69,7 +69,7 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       val result = g.cypher("MATCH (a:A), (b) RETURN a")
 
       result.records.iterator.toBag should equal(Bag(
-        CypherMap("a" -> CAPSNode(0L, Set("A"), Properties.empty))
+        CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty))
       ))
     }
 
@@ -144,7 +144,7 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       ))
     }
 
-    test("return distinct properties") {
+    test("return distinct CypherMap") {
       val given = initGraph(
         """CREATE ({name:'bar'})
           |CREATE ({name:'bar'})
@@ -163,7 +163,7 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       ))
     }
 
-    test("return distinct properties for combinations") {
+    test("return distinct CypherMap for combinations") {
       val given = initGraph(
         """CREATE ({p1:'a', p2: 'a', p3: '1'})
           |CREATE ({p1:'a', p2: 'a', p3: '2'})

@@ -16,7 +16,7 @@
 package org.opencypher.caps.impl.spark.acceptance
 
 import org.opencypher.caps.api.value.CAPSNode
-import org.opencypher.caps.api.value.CypherValue.{CypherList, CypherMap, MaterialCypherValue, Properties}
+import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.impl.spark.CAPSGraph
 
 import scala.collection.immutable.Bag
@@ -60,12 +60,12 @@ trait UnwindBehaviour { self: AcceptanceTest =>
 
       result.records.toMapsWithCollectedEntities.map(_.toString) should equal(
         Bag(
-          CypherMap("a" -> CAPSNode(0L, Set("A"), Properties.empty), "item" -> 1),
-          CypherMap("a" -> CAPSNode(0L, Set("A"), Properties.empty), "item" -> 2),
-          CypherMap("a" -> CAPSNode(0L, Set("A"), Properties.empty), "item" -> 3),
-          CypherMap("a" -> CAPSNode(1L, Set("B"), Properties("item" -> "1")), "item" -> 1),
-          CypherMap("a" -> CAPSNode(1L, Set("B"), Properties("item" -> "1")), "item" -> 2),
-          CypherMap("a" -> CAPSNode(1L, Set("B"), Properties("item" -> "1")), "item" -> 3)
+          CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 1),
+          CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 2),
+          CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 3),
+          CypherMap("a" -> CAPSNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 1),
+          CypherMap("a" -> CAPSNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 2),
+          CypherMap("a" -> CAPSNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 3)
         ).map(_.toString))
     }
 
@@ -113,10 +113,10 @@ trait UnwindBehaviour { self: AcceptanceTest =>
 
       result.records.toMapsWithCollectedEntities.map(_.toString) should equal(
         Bag(
-          CypherMap("a" -> CAPSNode(0L, Set("A"), Properties.empty), "item" -> 3),
-          CypherMap("a" -> CAPSNode(1L, Set("B"), Properties("item" -> "1")), "item" -> 3),
-          CypherMap("a" -> CAPSNode(0L, Set("A"), Properties.empty), "item" -> 2),
-          CypherMap("a" -> CAPSNode(1L, Set("B"), Properties("item" -> "1")), "item" -> 2)
+          CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 3),
+          CypherMap("a" -> CAPSNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 3),
+          CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 2),
+          CypherMap("a" -> CAPSNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 2)
         ).map(_.toString))
     }
   }

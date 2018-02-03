@@ -180,7 +180,7 @@ object Neo4jGraph {
     }
   }
 
-  private def importedToSparkEncodedCypherValue(typ: DataType, value: AnyRef): AnyRef = typ match {
+  private def importedToSparkEncodedCypherValue(typ: DataType, value: AnyRef) = typ match {
     case StringType | LongType | BooleanType | DoubleType => value
     case _ => CypherValue(value)
   }

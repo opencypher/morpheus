@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.test.support
 
-import org.opencypher.caps.api.value.CypherValue.CypherMap
+import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.api.value._
 import org.opencypher.caps.impl.record.CAPSRecordHeader._
 import org.opencypher.caps.impl.record._

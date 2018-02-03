@@ -20,7 +20,7 @@ import java.net.URI
 import org.apache.http.client.utils.URIBuilder
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.value.CAPSNode
-import org.opencypher.caps.api.value.CypherValue.{CypherMap, Properties}
+import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvPropertyGraphDataSource
 import org.opencypher.caps.test.CAPSTestSuite
@@ -56,10 +56,10 @@ class CAPSSessionHDFSTest extends CAPSTestSuite with MiniDFSClusterFixture with 
 
     val nodes = capsSession.cypher(s"FROM GRAPH test AT '$hdfsURI' MATCH (n) RETURN n")
 
-    val stefanNode = CAPSNode(1L, Set("Employee", "German", "Person"), Properties("name" -> "Stefan", "luckyNumber" -> 42, "languages" -> List("german", "english")))
-    val matsNode = CAPSNode(2L, Set("Employee", "Swede", "Person"), Properties("name" -> "Mats", "luckyNumber" -> 23, "languages" -> List("swedish", "english", "german")))
-    val martinNode = CAPSNode(3L, Set("Employee", "German", "Person"), Properties("name" -> "Martin", "luckyNumber" -> 1337, "languages" -> List("german", "english")))
-    val maxNode = CAPSNode(4L, Set("Employee", "German", "Person"), Properties("name" -> "Max", "luckyNumber" -> 8, "languages" -> List("german", "swedish", "english")))
+    val stefanNode = CAPSNode(1L, Set("Employee", "German", "Person"), CypherMap("name" -> "Stefan", "luckyNumber" -> 42, "languages" -> List("german", "english")))
+    val matsNode = CAPSNode(2L, Set("Employee", "Swede", "Person"), CypherMap("name" -> "Mats", "luckyNumber" -> 23, "languages" -> List("swedish", "english", "german")))
+    val martinNode = CAPSNode(3L, Set("Employee", "German", "Person"), CypherMap("name" -> "Martin", "luckyNumber" -> 1337, "languages" -> List("german", "english")))
+    val maxNode = CAPSNode(4L, Set("Employee", "German", "Person"), CypherMap("name" -> "Max", "luckyNumber" -> 8, "languages" -> List("german", "swedish", "english")))
 
     nodes.records.iterator.toBag should equal(Bag(
       CypherMap("n" -> stefanNode),

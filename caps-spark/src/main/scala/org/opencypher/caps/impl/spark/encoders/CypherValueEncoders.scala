@@ -17,8 +17,7 @@ package org.opencypher.caps.impl.spark.encoders
 
 import org.apache.spark.sql.Encoders._
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
-import org.opencypher.caps.api.value._
-import org.opencypher.caps.api.value.CypherValue.CypherMap
+import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.api.value._
 
 trait CypherValueEncoders extends LowPriorityCypherValueEncoders {
