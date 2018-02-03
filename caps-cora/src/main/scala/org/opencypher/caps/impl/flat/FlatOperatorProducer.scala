@@ -58,16 +58,16 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
   def removeAliases(toKeep: IndexedSeq[Var], in: FlatOperator): FlatOperator = {
     val renames = in.header.contents.collect {
-      case pf @ ProjectedField(v, expr) if !toKeep.contains(v) =>
-        pf -> ProjectedExpr(expr)
+      case pf @ ProjectedField(v, _: Property | _: HasLabel | _: HasType) if !toKeep.contains(v) =>
+        pf -> ProjectedExpr(pf.expr)
     }
 
     if (renames.isEmpty) {
       in
     } else {
       val newHeaderContents = in.header.contents.map {
-        case ProjectedField(v, expr) if !toKeep.contains(v) =>
-          ProjectedExpr(expr)
+        case pf @ ProjectedField(v, _: Property | _: HasLabel | _: HasType) if !toKeep.contains(v) =>
+          ProjectedExpr(pf.expr)
         case other =>
           other
       }
@@ -96,11 +96,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   def distinct(fields: Set[Var], in: FlatOperator): Distinct = {
-    val (newHeader, _) = RecordHeader.empty.update(
-      addContents(fields.flatMap(in.header.selfWithChildren(_)).map(_.content).toSeq)
-    )
-
-    Distinct(in, newHeader)
+    Distinct(fields, in, in.header)
   }
 
   /**

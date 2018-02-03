@@ -97,15 +97,12 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOpera
       case flat.Project(expr, in, header) =>
         operators.Project(process(in), expr, header)
 
-      case flat.ProjectGraph(graph, in, _) =>
+      case flat.ProjectGraph(graph, in, header) =>
         graph match {
           case LogicalExternalGraph(name, uri, _) =>
             ProjectExternalGraph(process(in), name, uri)
-          case LogicalPatternGraph(name, targetSchema, GraphOfPattern(toCreate, toRetain)) =>
-            val input = process(in)
-            val select = SelectFields(input, toRetain.toIndexedSeq, input.header.select(toRetain))
-            val distinct = SimpleDistinct(select)
-            ProjectPatternGraph(distinct, toCreate, name, targetSchema)
+          case LogicalPatternGraph(name, targetSchema, GraphOfPattern(toCreate, _)) =>
+            ProjectPatternGraph(process(in), toCreate, name, targetSchema, header)
         }
 
       case flat.Aggregate(aggregations, group, in, header) =>
@@ -122,8 +119,8 @@ class PhysicalPlanner extends DirectCompilationStage[FlatOperator, PhysicalOpera
       case flat.ValueJoin(lhs, rhs, predicates, header) =>
         operators.ValueJoin(process(lhs), process(rhs), predicates, header)
 
-      case flat.Distinct(in, header) =>
-        operators.Distinct(process(in), header)
+      case flat.Distinct(fields, in, _) =>
+        operators.Distinct(fields, process(in))
 
       // TODO: This needs to be a ternary operator taking source, rels and target records instead of just source and target and planning rels only at the physical layer
       case op@flat.Expand(source, rel, direction, target, sourceOp, targetOp, header, relHeader) =>
