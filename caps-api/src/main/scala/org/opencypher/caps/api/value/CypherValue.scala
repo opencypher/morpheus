@@ -88,9 +88,13 @@ object CypherValue {
       }
     }
 
+    override def toString(): String = {
+      if (isNull) CypherNull.toString
+      else value.toString
+    }
+
     def toCypherString: String = {
       this match {
-        case CypherNull => "null"
         case s: CypherString => s"'${s.value}'"
         case l: CypherList => l.value.map(_.toCypherString).mkString("[", ", ", "]")
         case m: CypherMap =>
@@ -139,6 +143,8 @@ object CypherValue {
 
   object CypherNull extends CypherValue {
     def value: Null = null
+
+    override def toString = "null"
   }
 
   implicit class CypherString(val value: String) extends AnyVal with CypherValue
@@ -202,6 +208,8 @@ object CypherValue {
     }
 
     override def hashCode: Int = id.hashCode
+
+    override def toString = s"${this.getClass.getSimpleName}($id, ${labels}, ${properties})"
   }
 
   object CypherNode {
@@ -230,6 +238,8 @@ object CypherValue {
     }
 
     override def hashCode: Int = id.hashCode
+
+    override def toString = s"${this.getClass.getSimpleName}($id, $source, $target, $relType, $properties)"
   }
 
   object CypherRelationship {
