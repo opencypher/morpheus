@@ -95,7 +95,7 @@ class CypherTypesTest extends BaseTestSuite {
       CTWildcard -> ("?" -> "??")
     ).foreach {
       case (t, (materialName, nullableName)) =>
-        t.isMaterial shouldBe true
+        t.isNullable shouldBe false
         t.toString shouldBe materialName
         t.nullable.toString shouldBe nullableName
     }
@@ -301,10 +301,10 @@ class CypherTypesTest extends BaseTestSuite {
     allTypes.foreach { t1 =>
       allTypes.foreach { t2 =>
         val result = t1 sameTypeAs t2
-        (result isDefinite) should be(
-          (t1.isDefinite && t2.isDefinite) ||
-            (t1.isNullable && t2.isMaterial) ||
-            (t1.isMaterial && t2.isNullable)
+        (result.isDefinite) should be(
+          (!t1.isWildcard && !t2.isWildcard) ||
+            (t1.isNullable && !t2.isNullable) ||
+            (!t1.isNullable && t2.isNullable)
         )
 
         result match {
@@ -330,8 +330,8 @@ class CypherTypesTest extends BaseTestSuite {
           case Maybe =>
             (
               (t1.isWildcard || t2.isWildcard) ||
-                (t1.isNullable && t2.isMaterial) ||
-                (t1.isMaterial && t2.isNullable)
+                (t1.isNullable && !t2.isNullable) ||
+                (!t1.isNullable && t2.isNullable)
             ) shouldBe true
         }
       }

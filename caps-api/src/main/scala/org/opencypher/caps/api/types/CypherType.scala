@@ -16,29 +16,27 @@
 package org.opencypher.caps.api.types
 
 import cats.Monoid
+import org.opencypher.caps.api.value.CypherValue._
 
 import scala.language.postfixOps
 
 object CypherType {
-  // Values in the same order group are ordered (sorted) together
-  type OrderGroup = OrderGroups.Value
 
-  object OrderGroups extends Enumeration with Serializable {
-    val MapOrderGroup: OrderGroups.Value = Value("MAP ORDER GROUP")
-    val NodeOrderGroup: OrderGroups.Value = Value("NODE ORDER GROUP")
-    val RelationshipOrderGroup: OrderGroups.Value = Value("RELATIONSHIP ORDER GROUP")
-    val PathOrderGroup: OrderGroups.Value = Value("PATH ORDER GROUP")
-    val ListOrderGroup: OrderGroups.Value = Value("LIST ORDER GROUP")
-    val StringOrderGroup: OrderGroups.Value = Value("STRING ORDER GROUP")
-    val BooleanOrderGroup: OrderGroups.Value = Value("BOOLEAN ORDER GROUP")
-    val NumberOrderGroup: OrderGroups.Value = Value("NUMBER ORDER GROUP")
-    val VoidOrderGroup: OrderGroups.Value = Value("VOID ORDER GROUP")
+  implicit class TypeCypherValue(cv: CypherValue) {
+    def cypherType: CypherType = {
+      cv match {
+        case CypherNull => CTNull
+        case CypherBoolean(_) => CTBoolean
+        case CypherFloat(_) => CTFloat
+        case CypherInteger(_) => CTInteger
+        case CypherString(_) => CTString
+        case CypherMap(_) => CTMap
+        case CypherNode(_, labels, _) => CTNode(labels)
+        case CypherRelationship(_, _, _, relType, _) => CTRelationship(relType)
+        case CypherList(l) => CTList(l.map(_.cypherType).foldLeft[CypherType](CTVoid)(_.join(_)))
+      }
+    }
   }
-
-//  implicit val typeVectorMonoid: Monoid[Vector[CypherType]] = new Monoid[Vector[CypherType]] {
-//    override def empty: Vector[CypherType] = Vector.empty
-//    override def combine(x: Vector[CypherType], y: Vector[CypherType]): Vector[CypherType] = x ++ y
-//  }
 
   implicit val joinMonoid: Monoid[CypherType] = new Monoid[CypherType] {
     override def empty: CypherType = CTVoid
@@ -46,17 +44,12 @@ object CypherType {
     override def combine(x: CypherType, y: CypherType): CypherType = x join y
   }
 
-//  implicit val meetMonoid: Monoid[CypherType] = new Monoid[CypherType] {
-//    override def empty: CypherType = CTAny.nullable
-//
-//    override def combine(x: CypherType, y: CypherType): CypherType = x meet y
-//  }
 }
 
 case object CTAny extends MaterialDefiniteCypherType with MaterialDefiniteCypherType.DefaultOrNull {
   override def name = "ANY"
 
-  override def superTypeOf(other: CypherType): Ternary = other.isMaterial
+  override def superTypeOf(other: CypherType): Ternary = !other.isNullable
 
   override def joinMaterially(other: MaterialCypherType): MaterialCypherType = this
 
@@ -358,7 +351,7 @@ case object CTWildcard extends MaterialCypherType with WildcardCypherType {
   override def isInhabited: Ternary = Maybe
 
   override def sameTypeAs(other: CypherType): Ternary =
-    if (other.isMaterial) Maybe else False
+    if (!other.isNullable) Maybe else False
 
   override def wildcardErasedSuperType: CTAny.type = CTAny
 
@@ -376,7 +369,7 @@ case object CTWildcard extends MaterialCypherType with WildcardCypherType {
 
   override def superTypeOf(other: CypherType): Ternary = other match {
     case CTVoid => True
-    case _      => if (other.isMaterial) Maybe else False
+    case _      => if (!other.isNullable) Maybe else False
   }
 
   override object nullable extends NullableCypherType with WildcardCypherType with Serializable {
@@ -410,16 +403,7 @@ sealed trait CypherType extends Serializable {
   // true, if null is a value of this type
   def isNullable: Boolean
 
-  // false, if null is a value of this type
-  def isMaterial: Boolean
-
-  // (II) definite (a single known type) vs a wildcard (standing for an arbitrary unknown type)
-  //
-
-  // true, if this type only (i.e. excluding type parameters) is not a wildcard
-  def isDefinite: Boolean
-
-  // true, if this type only (i.e. excluding type parameters) is a wildcard
+  // true, if this type only (i.e. excluding type parameters) is a wildcard (= standing for an arbitrary unknown type)
   def isWildcard: Boolean
 
   def isInhabited: Ternary = True
@@ -493,8 +477,6 @@ sealed trait MaterialCypherType extends CypherType {
 
   final override def isNullable = false
 
-  final override def isMaterial = true
-
   def joinMaterially(other: MaterialCypherType): MaterialCypherType
 
   def meetMaterially(other: MaterialCypherType): MaterialCypherType =
@@ -512,8 +494,6 @@ sealed trait NullableCypherType extends CypherType {
 
   final override def isNullable = true
 
-  final override def isMaterial = false
-
   override def wildcardErasedSuperType: NullableCypherType with DefiniteCypherType
 
   override def wildcardErasedSubType: NullableCypherType with DefiniteCypherType
@@ -524,8 +504,6 @@ sealed trait NullableCypherType extends CypherType {
 
 sealed trait DefiniteCypherType {
   self: CypherType =>
-
-  final override def isDefinite = true
 
   final override def isWildcard = false
 
@@ -540,8 +518,6 @@ sealed trait DefiniteCypherType {
 
 sealed trait WildcardCypherType {
   self: CypherType =>
-
-  final override def isDefinite = false
 
   final override def isWildcard = true
 

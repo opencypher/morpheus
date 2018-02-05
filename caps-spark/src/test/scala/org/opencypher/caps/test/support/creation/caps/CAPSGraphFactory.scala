@@ -19,6 +19,7 @@ import org.apache.spark.sql.types.StructField
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.caps.api.schema.Schema
+import org.opencypher.caps.api.types.CypherType._
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.spark.CAPSGraph
 import org.opencypher.caps.impl.spark.convert.SparkUtils._

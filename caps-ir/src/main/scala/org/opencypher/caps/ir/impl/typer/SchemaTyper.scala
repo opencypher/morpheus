@@ -225,7 +225,7 @@ object SchemaTyper {
         argExprs <- pure(expr.arguments)
         argTypes <- EffMonad.traverse(argExprs.toList)(process[R])
         computedType <- {
-          val relevantArguments = argTypes.indexWhere(_.isMaterial) match {
+          val relevantArguments = argTypes.indexWhere(!_.isNullable) match {
             case -1 => argTypes
             case other => argTypes.slice(0, other + 1)
           }

@@ -21,6 +21,7 @@ import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.caps.api.schema.Schema.NoLabel
 import org.opencypher.caps.api.schema.{PropertyKeys, Schema}
+import org.opencypher.caps.api.types.CypherType._
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.spark.CAPSGraph
 import org.opencypher.caps.impl.spark.io.neo4j.external.{Neo4j, Neo4jConfig}

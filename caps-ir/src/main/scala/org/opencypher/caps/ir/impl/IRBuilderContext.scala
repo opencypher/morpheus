@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.util.v3_4.{InputPosition, Ref}
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 import org.opencypher.caps.api.io.PropertyGraphDataSource
 import org.opencypher.caps.api.schema.Schema
+import org.opencypher.caps.api.types.CypherType._
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.ir.api.block.SourceBlock

@@ -18,7 +18,6 @@ package org.opencypher.caps.api.value
 import java.util.Objects
 
 import org.opencypher.caps.api.exception._
-import org.opencypher.caps.api.types._
 
 import scala.reflect.{ClassTag, classTag}
 import scala.util.Try
@@ -164,20 +163,6 @@ object CypherValue {
             .filter(_.nonEmpty)
             .mkString("(", " ", ")")
         case _ => Objects.toString(value)
-      }
-    }
-
-    private[caps] def cypherType: CypherType = {
-      this match {
-        case CypherNull => CTNull
-        case CypherBoolean(_) => CTBoolean
-        case CypherFloat(_) => CTFloat
-        case CypherInteger(_) => CTInteger
-        case CypherString(_) => CTString
-        case CypherMap(_) => CTMap
-        case CypherNode(_, labels, _) => CTNode(labels)
-        case CypherRelationship(_, _, _, relType, _) => CTRelationship(relType)
-        case CypherList(l) => CTList(l.map(_.cypherType).foldLeft[CypherType](CTVoid)(_.join(_)))
       }
     }
 
