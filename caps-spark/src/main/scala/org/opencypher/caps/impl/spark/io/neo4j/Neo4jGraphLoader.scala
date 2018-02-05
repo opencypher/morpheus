@@ -21,9 +21,9 @@ import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.caps.api.schema.Schema.NoLabel
 import org.opencypher.caps.api.schema.{PropertyKeys, Schema}
+import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.spark.CAPSGraph
 import org.opencypher.caps.impl.spark.io.neo4j.external.{Neo4j, Neo4jConfig}
-import org.opencypher.caps.ir.impl.convert.toCypherType
 
 import scala.collection.JavaConverters._
 
@@ -61,7 +61,7 @@ object Neo4jGraphLoader {
       PropertyKeys.empty
     } else {
       properties.asScala.map {
-        case (k, v) => k -> toCypherType(v)
+        case (k, v) => k -> CypherValue(v).cypherType
       }.toMap
     }
   }

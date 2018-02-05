@@ -17,8 +17,8 @@ package org.opencypher.caps.impl.convert
 
 import org.apache.spark.sql.types._
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.spark.convert.SparkUtils._
-import org.opencypher.caps.ir.impl.convert.toCypherType
 import org.opencypher.caps.test.BaseTestSuite
 
 class ConvertersTest extends BaseTestSuite {
@@ -88,7 +88,7 @@ class ConvertersTest extends BaseTestSuite {
 
     mappings.foreach {
       case (spark, cypher) =>
-        toCypherType(spark) should equal(cypher)
+        CypherValue(spark).cypherType should equal(cypher)
     }
   }
 }
