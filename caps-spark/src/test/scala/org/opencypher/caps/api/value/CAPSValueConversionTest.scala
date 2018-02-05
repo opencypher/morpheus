@@ -17,7 +17,7 @@ package org.opencypher.caps.api.value
 
 import org.opencypher.caps.api.value.CypherValue._
 
-class CypherValueConversionTest extends CypherValueTestSuite {
+class CAPSValueConversionTest extends CAPSValueTestSuite {
 
   import CAPSTestValues._
 

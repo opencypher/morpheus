@@ -22,22 +22,34 @@ import org.opencypher.caps.api.types._
 
 import scala.reflect.{ClassTag, classTag}
 import scala.util.Try
+import scala.util.hashing.MurmurHash3
 
 object CypherValue {
 
   def apply(v: Any): CypherValue = {
+    def seqToCypherList(s: Seq[_]): CypherList = s.map(CypherValue(_)).toList
     v match {
       case cv: CypherValue => cv
-      case s: Seq[_] => s.map(CypherValue(_)).toList
-      case m: Map[_, _] => m.map { case (k, cv) => k.toString -> CypherValue(cv) }
-      case ji: Integer => ji.toLong
-      case b: Boolean => b
-      case l: Long => l
-      case i: Int => i.toLong
-      case d: Double => d
-      case f: Float => f.toDouble
-      case s: String => s
       case null => CypherNull
+      case jb: java.lang.Byte => jb.toLong
+      case js: java.lang.Short => js.toLong
+      case ji: java.lang.Integer => ji.toLong
+      case jl: java.lang.Long => jl.toLong
+      case jf: java.lang.Float => jf.toDouble
+      case jd: java.lang.Double => jd.toDouble
+      case jb: java.lang.Boolean => jb.booleanValue
+      case jl: java.util.List[_] => seqToCypherList(jl.toArray)
+      case a: Array[_] => seqToCypherList(a)
+      case s: Seq[_] => seqToCypherList(s)
+      case m: Map[_, _] => m.map { case (k, cv) => k.toString -> CypherValue(cv) }
+      case b: Byte => b.toLong
+      case s: Short => s.toLong
+      case i: Int => i.toLong
+      case l: Long => l
+      case f: Float => f.toDouble
+      case d: Double => d
+      case s: String => s
+      case b: Boolean => b
       case invalid =>
         throw IllegalArgumentException("A valid CypherValue", invalid)
     }
@@ -65,8 +77,8 @@ object CypherValue {
           value match {
             case v: V => v
             case _ =>
-                throw UnsupportedOperationException(
-                  s"Cannot cast $value of type ${value.getClass.getSimpleName} to ${classTag[V].runtimeClass.getSimpleName}")
+              throw UnsupportedOperationException(
+                s"Cannot cast $value of type ${value.getClass.getSimpleName} to ${classTag[V].runtimeClass.getSimpleName}")
           }
       }
     }
@@ -75,6 +87,11 @@ object CypherValue {
 
     override def hashCode: Int = Objects.hashCode(unwrap)
 
+    /**
+      * Scala structural value comparison.
+      *
+      * This is NOT Cypher equality or equivalence.
+      */
     override def equals(other: Any): Boolean = {
       other match {
         case cv: CypherValue => Objects.equals(unwrap, cv.unwrap)
@@ -182,10 +199,32 @@ object CypherValue {
     val empty: CypherList = List.empty[CypherValue]
   }
 
-  sealed trait CypherEntity[+Id] {
+  sealed trait CypherEntity[+Id] extends Product with MaterialCypherValue[CypherEntity[Id]] {
     def id: Id
 
     def properties: CypherMap
+
+    override def hashCode(): Int = {
+      MurmurHash3.orderedHash(productIterator, MurmurHash3.stringHash(productPrefix))
+    }
+
+    override def equals(other: Any): Boolean = other match {
+      case that: CypherEntity[_] =>
+        (that canEqual this) && haveEqualValues(this.productIterator, that.productIterator)
+      case _ =>
+        false
+    }
+
+    protected def haveEqualValues(a: Iterator[Any], b: Iterator[Any]): Boolean = {
+      while (a.hasNext && b.hasNext) {
+        if (a.next != b.next) return false
+      }
+      a.hasNext == b.hasNext
+    }
+
+    override def productPrefix: String = getClass.getSimpleName
+
+    override def toString = s"${productPrefix}(${productIterator.mkString(", ")})"
   }
 
   class CypherNode[+Id](val id: Id,
@@ -193,20 +232,21 @@ object CypherValue {
     val properties: CypherMap = CypherMap.empty)
     extends CypherEntity[Id]
       with MaterialCypherValue[CypherNode[Id]] {
+
     override def value: CypherNode[Id] = this
 
     override def unwrap: CypherNode[Id] = this
 
-    override def equals(that: Any): Boolean = {
-      that match {
-        case CypherNode(otherId, _, _) => Objects.equals(id, otherId)
-        case _ => false
-      }
+    override def productArity: Int = 3
+
+    override def productElement(n: Int): Any = n match {
+      case 0 => id
+      case 1 => labels
+      case 2 => properties
+      case other => throw IllegalArgumentException("a valid product index", s"$other")
     }
 
-    override def hashCode: Int = id.hashCode
-
-    override def toString = s"${this.getClass.getSimpleName}($id, $labels, $properties)"
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[CypherNode[_]]
   }
 
   object CypherNode {
@@ -223,22 +263,24 @@ object CypherValue {
     val relType: String,
     val properties: CypherMap = CypherMap.empty)
     extends CypherEntity[Id]
-      with MaterialCypherValue[CypherRelationship[Id]] {
+      with MaterialCypherValue[CypherRelationship[Id]] with Product {
 
     override def value: CypherRelationship[Id] = this
 
     override def unwrap: CypherRelationship[Id] = this
 
-    override def equals(that: Any): Boolean = {
-      that match {
-        case CypherRelationship(otherId, _, _, _, _) => Objects.equals(id, otherId)
-        case _ => false
-      }
+    override def productArity: Int = 5
+
+    override def productElement(n: Int): Any = n match {
+      case 0 => id
+      case 1 => source
+      case 2 => target
+      case 3 => relType
+      case 4 => properties
+      case other => throw IllegalArgumentException("a valid product index", s"$other")
     }
 
-    override def hashCode: Int = id.hashCode
-
-    override def toString = s"${this.getClass.getSimpleName}($id, $source, $target, $relType, $properties)"
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[CypherRelationship[_]]
   }
 
   object CypherRelationship {

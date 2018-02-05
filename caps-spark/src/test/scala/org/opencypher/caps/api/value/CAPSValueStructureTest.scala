@@ -19,7 +19,7 @@ import org.opencypher.caps.api.value.CAPSTestValues._
 import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.api.value.{CypherValue, _}
 
-class CypherValueStructureTest extends CypherValueTestSuite {
+class CAPSValueStructureTest extends CAPSValueTestSuite {
 
   //  test("Construct PATH values") {
   //    val originalValueGroups = PATH_valueGroups
