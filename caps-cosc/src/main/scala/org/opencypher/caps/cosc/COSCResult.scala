@@ -35,7 +35,7 @@ object COSCResultBuilder {
   def from(logical: LogicalOperator, flat: FlatOperator, physical: COSCOperator)(implicit context: COSCRuntimeContext)
   : COSCResult = {
     new COSCResult {
-      lazy val result: COSCResult = physical.execute
+      lazy val result: COSCPhysicalResult = physical.execute
 
       override def records: COSCRecords = result.records
 

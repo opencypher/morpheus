@@ -1,11 +1,11 @@
 package org.opencypher.caps.cosc
 
-import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph}
+import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
-import org.opencypher.caps.api.value.{CAPSNode, CAPSRelationship}
-import org.opencypher.caps.impl.record.CypherRecords
-import org.opencypher.caps.ir.impl.convert.toCypherType
+import org.opencypher.caps.api.value.{CAPSMap, CAPSNode, CAPSRelationship}
+import org.opencypher.caps.impl.record.RecordHeader
+import org.opencypher.caps.ir.api.expr.Var
 
 object COSCGraph {
   def empty(implicit session: COSCSession): COSCGraph = COSCGraph(Seq.empty, Seq.empty)(session)
@@ -49,7 +49,12 @@ case class COSCGraph(nodes: Seq[CAPSNode], rels: Seq[CAPSRelationship])(implicit
     * @param name the field name for the returned nodes.
     * @return a table of nodes of the specified type.
     */
-  override def nodes(name: String, nodeCypherType: CTNode): CypherRecords = ???
+  override def nodes(name: String, nodeCypherType: CTNode): COSCRecords = {
+    val node = Var(name)(nodeCypherType)
+    val targetNodeHeader = RecordHeader.nodeFromSchema(node, schema)
+
+    COSCRecords.create(nodes.map(node => CAPSMap(name -> node)).toList, targetNodeHeader)
+  }
 
   /**
     * Constructs a scan table of all the relationships in this graph with the given cypher type.
@@ -57,7 +62,7 @@ case class COSCGraph(nodes: Seq[CAPSNode], rels: Seq[CAPSRelationship])(implicit
     * @param name the field name for the returned relationships.
     * @return a table of relationships of the specified type.
     */
-  override def relationships(name: String, relCypherType: CTRelationship): CypherRecords = ???
+  override def relationships(name: String, relCypherType: CTRelationship): COSCRecords = ???
 
   /**
     * Constructs the union of this graph and the argument graph.

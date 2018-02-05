@@ -85,6 +85,9 @@ class COSCSession(private val graphSourceHandler: COSCGraphSourceHandler) extend
     println("COSC Plan ...")
     val coscPlannerContext = COSCPlannerContext(readFrom, COSCRecords.unit, allParameters)
     val coscPlan = coscPlanner.process(flatPlan)(coscPlannerContext)
+    println("Done!")
+
+    println(coscPlan.pretty)
 
     COSCResultBuilder.from(logicalPlan, flatPlan, coscPlan)(COSCRuntimeContext(coscPlannerContext.parameters, optGraphAt))
   }
