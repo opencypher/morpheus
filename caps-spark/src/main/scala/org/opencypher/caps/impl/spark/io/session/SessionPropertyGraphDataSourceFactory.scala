@@ -34,7 +34,7 @@ case class SessionPropertyGraphDataSourceFactory()
     new ConcurrentHashMap[String, CAPSPropertyGraphDataSource]()
   }
 
-  def mountSourceAt(existingSource: CAPSPropertyGraphDataSource, uri: URI)(implicit capsSession: CAPSSession): Unit =
+  def mountSourceAt(existingSource: CAPSPropertyGraphDataSource, uri: URI)(implicit capsSession: CypherSession): Unit =
     if (schemes.contains(uri.getScheme))
       withValidPath(uri) { (path: String) =>
         mountPoints.get(path) match {
@@ -46,7 +46,7 @@ case class SessionPropertyGraphDataSourceFactory()
         }
       } else throw IllegalArgumentException(s"supported scheme: ${schemes.mkString("[", ", ", "]")}", uri.getScheme)
 
-  def unmountAll(implicit capsSession: CAPSSession): Unit =
+  def unmountAll(implicit capsSession: CypherSession): Unit =
     mountPoints.clear()
 
   override protected def sourceForURIWithSupportedScheme(uri: URI)(implicit capsSession: CAPSSession): CAPSPropertyGraphDataSource =
