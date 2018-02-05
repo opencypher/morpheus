@@ -204,18 +204,13 @@ class CAPSValueStructureTest extends CAPSValueTestSuite {
         case other => fail(s"Unexpected value $other")
       }
     }
-    assert(withoutNaNs(reconstructedValueGroups) == withoutNaNs(originalValueGroups))
+    assert(reconstructedValueGroups.withoutNaNs == originalValueGroups.withoutNaNs)
   }
-
-  def withoutNaNs(values: Seq[Seq[Any]]): Seq[Seq[Any]] = values.map(_.filter {
-    case CypherFloat(d) => !d.isNaN
-    case _ => true
-  })
 
   test("Deconstruct FLOAT values") {
     val cypherValueGroups = FLOAT_valueGroups.materialValueGroups
     val actual = cypherValueGroups.map { values => values.map { case CypherFloat(v) => CypherFloat(v) } }
-    assert(withoutNaNs(actual) == withoutNaNs(cypherValueGroups))
+    assert(actual.withoutNaNs == cypherValueGroups.withoutNaNs)
   }
 
   test("Construct NUMBER values") {
@@ -229,7 +224,7 @@ class CAPSValueStructureTest extends CAPSValueTestSuite {
           case other => fail(s"Unexpected value $other")
         }
     }
-    assert(withoutNaNs(reconstructedValueGroups) == withoutNaNs(originalValueGroups))
+    assert(reconstructedValueGroups.withoutNaNs == originalValueGroups.withoutNaNs)
   }
 
   test("Construct ANY values") {
@@ -251,7 +246,7 @@ class CAPSValueStructureTest extends CAPSValueTestSuite {
         case other => fail(s"Unexpected value $other")
       }
     }
-    assert(withoutNaNs(reconstructedValueGroups) == withoutNaNs(originalValueGroups))
+    assert(reconstructedValueGroups.withoutNaNs == originalValueGroups.withoutNaNs)
   }
 
   test("Deconstruct ANY values") {
@@ -262,7 +257,7 @@ class CAPSValueStructureTest extends CAPSValueTestSuite {
         case other => fail(s"Unexpected value $other")
       }
     }
-    assert(withoutNaNs(actual) == withoutNaNs(cypherValueGroups))
+    assert(actual.withoutNaNs == cypherValueGroups.withoutNaNs)
     CypherValue.unapply(CypherNull) should equal(None)
   }
 

@@ -16,12 +16,24 @@
 package org.opencypher.caps.api.value
 
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.api.value.CypherValue.CypherFloat
 import org.opencypher.caps.impl.spark.encoders.CypherValueEncoders
 import org.opencypher.caps.test.CAPSTestSuite
 
 import scala.annotation.tailrec
 
 class CAPSValueTestSuite extends CAPSTestSuite with CypherValueEncoders {
+
+  implicit class FilterValueGroup(valueGroups: Seq[Seq[Any]]) {
+    def withoutNaNs: Seq[Seq[Any]] = valueGroups.map(_.withoutNaNs)
+  }
+
+  implicit class FilterValues(values: Seq[Any]) {
+    def withoutNaNs: Seq[Any] = values.filter {
+      case CypherFloat(d) => !d.isNaN
+      case _ => true
+    }
+  }
 
   @tailrec
   final def isPathLike(l: Seq[Any], nextIsNode: Ternary = Maybe): Boolean = l match {
