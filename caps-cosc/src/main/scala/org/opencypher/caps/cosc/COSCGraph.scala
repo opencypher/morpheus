@@ -5,18 +5,36 @@ import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.caps.impl.record.CypherRecords
+import org.opencypher.caps.ir.impl.convert.toCypherType
 
 object COSCGraph {
   def empty(implicit session: COSCSession): COSCGraph = COSCGraph(Seq.empty, Seq.empty)(session)
 }
 
 case class COSCGraph(nodes: Seq[CAPSNode], rels: Seq[CAPSRelationship])(implicit cosc: COSCSession) extends PropertyGraph {
+
+  type CypherSession = COSCSession
+
   /**
     * The schema that describes this graph.
     *
     * @return the schema of this graph.
     */
-  override def schema: Schema = ???
+  override def schema: Schema = {
+    val nodeSchema = nodes.foldLeft(Schema.empty) {
+      case (tmpSchema, node) => CAPSNode.contents(node) match {
+        case Some(content) => tmpSchema.withNodePropertyKeys(content.labels: _*)(
+          content.properties.m.keySet.map(key => key -> content.properties(key).cypherType).toSeq: _*)
+      }
+    }
+
+    rels.foldLeft(nodeSchema) {
+      case (tmpSchema, rel) => CAPSRelationship.contents(rel) match {
+        case Some(content) => tmpSchema.withRelationshipPropertyKeys(content.relationshipType)(
+          content.properties.m.keySet.map(key => key -> content.properties(key).cypherType).toSeq: _*)
+      }
+    }
+  }
 
   /**
     * The session in which this graph is managed.

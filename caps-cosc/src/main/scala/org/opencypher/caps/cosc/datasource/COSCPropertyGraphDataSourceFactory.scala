@@ -1,0 +1,5 @@
+package org.opencypher.caps.cosc.datasource
+
+import org.opencypher.caps.api.io.PropertyGraphDataSourceFactory
+
+trait COSCPropertyGraphDataSourceFactory extends PropertyGraphDataSourceFactory

@@ -18,7 +18,7 @@ object DemoData {
   def rels = Seq(aliceKnowsBob)
 
   val aliceId = EntityId(0L)
-  val alice = CAPSNode(
+  val alice: CAPSNode = CAPSNode(
     aliceId,
     Seq("Person"),
     Properties(
