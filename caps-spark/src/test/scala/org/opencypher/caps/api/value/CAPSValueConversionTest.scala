@@ -21,21 +21,6 @@ class CAPSValueConversionTest extends CAPSValueTestSuite {
 
   import CAPSTestValues._
 
-  //  test("PATH conversion") {
-  //    val originalValues = PATH_valueGroups.flatten
-  //    val scalaValues = originalValues.map(CAPSPath.contents).map(_.orNull)
-  //    val newValues = scalaValues.map {
-  //      case null             => null
-  //      case elements: Seq[_] => CAPSPath(elements.asInstanceOf[Seq[CAPSEntityValue]])
-  //    }
-  //
-  //    newValues should equal(originalValues)
-  //
-  //    originalValues.foreach { v =>
-  //      CAPSPath.isOrContainsNull(v) should equal(v == null)
-  //    }
-  //  }
-
   test("RELATIONSHIP conversion") {
     val originalValues = RELATIONSHIP_valueGroups.flatten
     val scalaValues = originalValues.map(_.unwrap)

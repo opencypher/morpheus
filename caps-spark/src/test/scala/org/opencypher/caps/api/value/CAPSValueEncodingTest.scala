@@ -22,13 +22,6 @@ class CAPSValueEncodingTest extends CAPSValueTestSuite with SparkSessionFixture 
 
   import CAPSTestValues._
 
-//  test("PATH encoding") {
-//    val values = PATH_valueGroups.flatten
-//    val ds = session.createDataset[CypherValue](values)(cypherValueEncoder)
-//
-//   ds.collect().toList should equal(values)
-//  }
-
   test("RELATIONSHIP encoding") {
     val values = RELATIONSHIP_valueGroups.flatten
     val ds = session.createDataset[CypherValue](values)(cypherValueEncoder)

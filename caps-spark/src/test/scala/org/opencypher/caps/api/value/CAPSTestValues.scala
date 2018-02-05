@@ -30,35 +30,6 @@ object CAPSTestValues {
   type ValueGroups[V] = Seq[Values[V]]
   type Values[V] = Seq[V]
 
-  //  implicit val PATH_valueGroups: ValueGroups[CAPSPath] = Seq(
-  //    Seq(
-  //      CAPSPath(Seq(CAPSNode(1l, Array("Label"), CypherMap.empty))),
-  //      CAPSPath(Seq(CAPSNode(1l, Array("NotSignificant"), CypherMap.empty))),
-  //      CAPSPath(Seq(CAPSNode(1l, Array("NotSignificant"), CypherMap("alsoNotSig" -> CAPSBoolean(true)))))
-  //    ),
-  //    Seq(
-  //      CAPSPath(
-  //        Seq(
-  //          CAPSNode(1l, Array("Label"), CypherMap.empty),
-  //          CAPSRelationship(100l, 1l, 2l, "KNOWS", CypherMap.empty),
-  //          CAPSNode(2l, Seq.empty, CypherMap.empty))),
-  //      CAPSPath(
-  //        Seq(
-  //          CAPSNode(1l, Seq("Label"), CypherMap.empty),
-  //          CAPSRelationship(100l, 1l, 2l, "FORGETS", CypherMap.empty),
-  //          CAPSNode(2l, Seq.empty, CypherMap.empty)))
-  //    ),
-  //    Seq(
-  //      CAPSPath(Seq(
-  //        CAPSNode(1l, Seq("Label"), CypherMap.empty),
-  //        CAPSRelationship(100l, 1l, 2l, "KNOWS", CypherMap("aRelProp" -> 667.5)),
-  //        CAPSNode(2l, Seq.empty, CypherMap.empty),
-  //        CAPSRelationship(100l, 1l, 2l, "KNOWS", CypherMap.empty),
-  //        CAPSNode(2l, Seq("One", "Two", "Three"), CypherMap.empty)
-  //      ))),
-  //    Seq(cypherNull[CAPSPath])
-  //  )
-
   implicit lazy val RELATIONSHIP_valueGroups: ValueGroups[CypherValue] = Seq(
     Seq[CypherValue](
       CAPSRelationship(1, 1, 1, "KNOWS", CypherMap("a" -> 1, "b" -> CypherNull)),
