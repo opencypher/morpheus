@@ -17,7 +17,7 @@ package org.opencypher.caps.api.value
 
 import java.util.Objects
 
-import org.opencypher.caps.api.exception.{IllegalArgumentException, UnsupportedOperationException}
+import org.opencypher.caps.api.exception._
 import org.opencypher.caps.api.types._
 
 import scala.reflect.{ClassTag, classTag}
@@ -26,6 +26,11 @@ import scala.util.hashing.MurmurHash3
 
 object CypherValue {
 
+  /**
+    * Converts a Scala/Java value to a compatible Cypher value, fails if the conversion is not supported.
+    * @param v value to convert
+    * @return compatible CypherValue
+    */
   def apply(v: Any): CypherValue = {
     def seqToCypherList(s: Seq[_]): CypherList = s.map(CypherValue(_)).toList
     v match {
@@ -51,25 +56,52 @@ object CypherValue {
       case s: String => s
       case b: Boolean => b
       case invalid =>
-        throw IllegalArgumentException("A valid CypherValue", invalid)
+        throw IllegalArgumentException("a value that can be converted to a Cypher value", invalid)
     }
   }
 
+  /**
+    * Attempts to extract the wrapped value from a CypherValue.
+    * @param cv CypherValue to extract from
+    * @return none or some extracted value.
+    */
   def unapply(cv: CypherValue): Option[Any] = {
     Option(cv).flatMap(v => Option(v.value))
   }
 
+  /**
+    * CypherValue is a wrapper for Scala/Java classes that represent valid Cypher values.
+    */
   sealed trait CypherValue extends Any {
+    /**
+      * @return wrapped value
+      */
     def value: Any
 
+    /**
+      * @return null-safe version of [[value]]
+      */
     def getValue: Option[Any]
 
+    /**
+      * @return unwraps the Cypher value into Scala/Java structures. Unlike [[value]] this is done recursively for the
+      *         Cypher values stores inside of maps and lists.
+      */
     def unwrap: Any
 
+    /**
+      * @return true iff the stored value is null.
+      */
     def isNull: Boolean = Objects.isNull(value)
 
+    /**
+      * Safe version of [[cast]]
+      */
     def as[V: ClassTag]: Option[V] = Try(cast[V]).toOption
 
+    /**
+      * Attempts to cast the Cypher value to [[V]], fails when this is not supported.
+      */
     def cast[V: ClassTag]: V = {
       this match {
         case cv: V => cv
@@ -83,12 +115,18 @@ object CypherValue {
       }
     }
 
+    /**
+      * String of the Scala representation of this value.
+      */
     override def toString: String = Objects.toString(unwrap)
 
+    /**
+      * Hash code of the Scala representation.
+      */
     override def hashCode: Int = Objects.hashCode(unwrap)
 
     /**
-      * Scala structural value comparison.
+      * Structural comparison of the Scala representation.
       *
       * This is NOT Cypher equality or equivalence.
       */
@@ -99,6 +137,9 @@ object CypherValue {
       }
     }
 
+    /**
+      * A Cypher string representation.
+      */
     def toCypherString: String = {
       this match {
         case CypherString(s) => s"'$s'"
