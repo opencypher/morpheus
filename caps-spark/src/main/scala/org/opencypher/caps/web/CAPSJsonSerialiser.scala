@@ -54,8 +54,8 @@ trait JsonSerialiser {
 
   protected def constructValue(cv: CypherValue): Json = {
     cv match {
-      case CAPSNode(id, labels, properties) =>
-        formatNode(id, labels, properties.value.filter(!_._2.isNull).mapValues(p => constructValue(p)))
+      case CAPSNode(id, labels, CypherMap(properties)) =>
+        formatNode(id, labels, properties.filter(!_._2.isNull).mapValues(p => constructValue(p)))
       case CAPSRelationship(id, source, target, relType, CypherMap(properties)) =>
         formatRel(id, source, target, relType, properties.filter(!_._2.isNull).mapValues(p => constructValue(p)))
       case CypherInteger(l) => Json.fromLong(l)
@@ -72,7 +72,7 @@ trait JsonSerialiser {
     Json.obj(
       "id" -> Json.fromLong(id),
       "labels" -> Json.arr(
-        labels.toSeq.map(Json.fromString): _*
+        labels.toSeq.sorted.map(Json.fromString): _*
       ),
       "properties" -> Json.obj(
         properties.toSeq: _*
