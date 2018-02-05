@@ -35,36 +35,10 @@ object DfUtils {
             case None => throw IllegalArgumentException(s"slot for $expr")
             case Some(slot) =>
               val index = slot.index
-              CypherValue.apply(r.get(index))
-            //              if (r.isNullAt(index))
-            //                null
-            //              else typeToValue(slot.content.cypherType.material)(r.get(index))
+              CypherValue(r.get(index))
           }
       }
     }
-
-    //    def typeToValue(t: CypherType): Any => AnyCypherValue = t match {
-    //      case CTBoolean =>
-    //        (in) => in.asInstanceOf[Boolean]
-    //      case CTInteger =>
-    //        (in) => in.asInstanceOf[Long]
-    //      case CTString =>
-    //        (in) => in.asInstanceOf[String]
-    //      case CTFloat =>
-    //        (in) => in.asInstanceOf[Double]
-    //      case _: CTNode =>
-    //        (in) => in.asInstanceOf[Long]
-    //      // TODO: This supports var-expand where we only track rel ids, but it's not right
-    //      case _: CTRelationship =>
-    //        (in) => in.asInstanceOf[Long]
-    //      case l: CTList =>
-    //        (in) => in.asInstanceOf[Seq[_]].map(typeToValue(l.elementType)).toList
-    //      case r: NullableDefiniteCypherType => {
-    //        case null => null
-    //        case v => typeToValue(r.material)(v)
-    //      }
-    //      case _ => throw NotImplementedException(s"Converting value with Cypher type $t")
-    //    }
   }
 
   implicit class ColumnMappableDf(df: DataFrame) {
