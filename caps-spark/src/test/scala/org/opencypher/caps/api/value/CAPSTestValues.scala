@@ -199,20 +199,20 @@ object CAPSTestValues {
 
     val materials: ValueGroups[CypherValue] =
       allGroups.flatMap(_.materialValueGroups)
-    val CypherNulls: ValueGroups[CypherValue] = Seq(
+    val nulls: ValueGroups[CypherValue] = Seq(
       allGroups.flatMap(_.CypherNullableValueGroups).flatten)
 
-    materials ++ CypherNulls
+    materials ++ nulls
   }
 
   implicit final class CypherValueGroups[V <: CypherValue](
-    elts: ValueGroups[V]) {
+    elements: ValueGroups[V]) {
 
     def materialValueGroups: ValueGroups[V] =
-      elts.map(_.filter(!_.isNull)).filter(_.nonEmpty)
+      elements.map(_.filterNot(_.isNull)).filter(_.nonEmpty)
 
     def CypherNullableValueGroups: ValueGroups[V] =
-      elts.map(_.filter(_.isNull)).filter(_.nonEmpty)
+      elements.map(_.filter(_.isNull)).filter(_.nonEmpty)
 
   }
 
