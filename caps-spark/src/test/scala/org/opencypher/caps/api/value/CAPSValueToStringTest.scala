@@ -18,7 +18,7 @@ package org.opencypher.caps.api.value
 import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.test.CAPSTestSuite
 
-class CAPSValueToStringTest extends CAPSTestSuite {
+class CypherValueToStringTest extends CAPSTestSuite {
 
   test("node") {
     CAPSNode(1L, Set.empty, CypherMap.empty).toCypherString should equal("()")

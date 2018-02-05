@@ -20,7 +20,7 @@ import org.opencypher.caps.test.CAPSTestSuite
 
 import scala.annotation.tailrec
 
-class CAPSValueTestSuite extends CAPSTestSuite {
+class CypherValueTestSuite extends CAPSTestSuite {
 
   @tailrec
   final def isPathLike(l: Seq[Any], nextIsNode: Ternary = Maybe): Boolean = l match {

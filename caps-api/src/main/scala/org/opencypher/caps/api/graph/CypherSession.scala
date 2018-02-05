@@ -74,6 +74,7 @@ trait CypherSession {
     */
   def mount(source: PropertyGraphDataSource, path: String): Unit
 
+  // TODO: reintroduce "mount(source: String, path: String): Unit" with source lookup via URI scheme
   /**
     * Writes the given graph to the location using the format specified by the URI.
     *

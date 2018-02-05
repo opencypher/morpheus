@@ -195,7 +195,7 @@ final case class ExistsSubQuery(
         targetFieldColumnName,
         functions.when(functions.isnull(targetFieldColumn), false).otherwise(true))
 
-    PhysicalResult(CAPSRecords.create(header, updatedJoinedRecords)(left.records.caps), left.graphs ++ right.graphs)
+    PhysicalResult(CAPSRecords.verifyAndCreate(header, updatedJoinedRecords)(left.records.caps), left.graphs ++ right.graphs)
   }
 }
 
@@ -228,6 +228,30 @@ final case class ExpandInto(
 
 }
 
+/**
+  * Computes the union of the two input operators. The two inputs must have identical headers.
+  * This operation does not remove duplicates.
+  *
+  * The output header of this operation is identical to the input headers.
+  *
+  * @param lhs the first operand
+  * @param rhs the second operand
+  */
+final case class Union(lhs: PhysicalOperator, rhs: PhysicalOperator)
+  extends BinaryPhysicalOperator with InheritedHeader {
+
+  override def executeBinary(left: PhysicalResult, right: PhysicalResult)(implicit context: RuntimeContext) = {
+    val leftData = left.records.data
+    // left and right have the same set of columns, but the order must also match
+    val rightData = right.records.data.select(leftData.columns.head, leftData.columns.tail: _*)
+
+    val unionedData = leftData.union(rightData)
+    val records = CAPSRecords.verifyAndCreate(header, unionedData)(left.records.caps)
+
+    PhysicalResult(records, left.graphs ++ right.graphs)
+  }
+}
+
 final case class CartesianProduct(lhs: PhysicalOperator, rhs: PhysicalOperator, header: RecordHeader)
     extends BinaryPhysicalOperator {
 
@@ -236,7 +260,7 @@ final case class CartesianProduct(lhs: PhysicalOperator, rhs: PhysicalOperator, 
     val data = left.records.data
     val otherData = right.records.data
     val newData = data.crossJoin(otherData)
-    val records = CAPSRecords.create(header, newData)(left.records.caps)
+    val records = CAPSRecords.verifyAndCreate(header, newData)(left.records.caps)
     val graphs = left.graphs ++ right.graphs
     PhysicalResult(records, graphs)
   }

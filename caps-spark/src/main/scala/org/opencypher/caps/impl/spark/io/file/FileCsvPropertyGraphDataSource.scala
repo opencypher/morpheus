@@ -33,7 +33,7 @@ case class FileCsvPropertyGraphDataSource(override val canonicalURI: URI)(implic
     FileCsvPropertyGraphDataSourceFactory.supportedSchemes.contains(uri.getScheme)
   }
 
-  override def graph: CAPSGraph = {
+  override def graph: PropertyGraph = {
     CsvGraphLoader(canonicalURI.getPath).load
   }
 

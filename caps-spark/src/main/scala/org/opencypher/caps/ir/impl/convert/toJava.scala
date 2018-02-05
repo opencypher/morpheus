@@ -22,7 +22,7 @@
 //
 //  // TODO: tests & refactor value extraction into CypherValue
 //  // Inverse operation found in CypherValue.apply()
-//  def apply(v: CAPSValue): Any = v match {
+//  def apply(v: CypherValue): Any = v match {
 //    case CAPSInteger(long) => long
 //    case CAPSString(s)     => s
 //    case CAPSBoolean(b)    => b

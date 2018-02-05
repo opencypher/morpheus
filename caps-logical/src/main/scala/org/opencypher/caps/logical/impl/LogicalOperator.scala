@@ -19,9 +19,9 @@ import java.net.URI
 
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.CTNode
+import org.opencypher.caps.ir.api.Label
 import org.opencypher.caps.ir.api.block.SortItem
 import org.opencypher.caps.ir.api.expr._
-import org.opencypher.caps.ir.api.Label
 import org.opencypher.caps.trees.AbstractTreeNode
 
 sealed abstract class LogicalOperator extends AbstractTreeNode[LogicalOperator] {
@@ -110,12 +110,15 @@ sealed trait ExpandOperator {
   def rel: Var
 
   def target: Var
+
+  def direction: Direction
 }
 
-final case class ExpandSource(
+final case class Expand(
     source: Var,
     rel: Var,
     target: Var,
+    direction: Direction,
     lhs: LogicalOperator,
     rhs: LogicalOperator,
     solved: SolvedQueryModel)
@@ -125,23 +128,11 @@ final case class ExpandSource(
   override val fields: Set[Var] = lhs.fields ++ rhs.fields + rel
 }
 
-final case class ExpandTarget(
-    source: Var,
-    rel: Var,
-    target: Var,
-    lhs: LogicalOperator,
-    rhs: LogicalOperator,
-    solved: SolvedQueryModel)
-    extends BinaryLogicalOperator
-    with ExpandOperator {
-
-  override val fields: Set[Var] = lhs.fields ++ rhs.fields
-}
-
 final case class BoundedVarLengthExpand(
     source: Var,
     rel: Var,
     target: Var,
+    direction: Direction,
     lower: Int,
     upper: Int,
     lhs: LogicalOperator,
@@ -163,7 +154,7 @@ final case class ValueJoin(
   override val fields: Set[Var] = lhs.fields ++ rhs.fields
 }
 
-final case class ExpandInto(source: Var, rel: Var, target: Var, in: LogicalOperator, solved: SolvedQueryModel)
+final case class ExpandInto(source: Var, rel: Var, target: Var, direction: Direction, in: LogicalOperator, solved: SolvedQueryModel)
     extends StackingLogicalOperator
     with ExpandOperator {
 

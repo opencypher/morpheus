@@ -35,7 +35,9 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
         producer.cartesianProduct(process(lhs), process(rhs))
 
       case logical.Select(fields, graphs, in, _) =>
-        val withAliasesRemoved = producer.removeAliases(fields, process(in))
+        val withAliasesRemoved = if (fields.nonEmpty) {
+          producer.removeAliases(fields, process(in))
+        } else process(in)
         producer.select(fields, graphs, withAliasesRemoved)
 
       case logical.Filter(expr, in, _) =>
@@ -63,11 +65,11 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
       case logical.Aggregate(aggregations, group, in, _) =>
         producer.aggregate(aggregations, group, process(in))
 
-      case logical.ExpandSource(source, rel, target, sourceOp, targetOp, _) =>
-        producer.expandSource(source, rel, target, input.sourceGraph.schema, process(sourceOp), process(targetOp))
+      case logical.Expand(source, rel, direction, target, sourceOp, targetOp, _) =>
+        producer.expand(source, rel, target, direction, input.sourceGraph.schema, process(sourceOp), process(targetOp))
 
-      case logical.ExpandInto(source, rel, target, sourceOp, _) =>
-        producer.expandInto(source, rel, target, input.sourceGraph.schema, process(sourceOp))
+      case logical.ExpandInto(source, rel, target, direction, sourceOp, _) =>
+        producer.expandInto(source, rel, target, direction, input.sourceGraph.schema, process(sourceOp))
 
       case logical.ValueJoin(lhs, rhs, predicates, _) =>
         producer.valueJoin(process(lhs), process(rhs), predicates)
@@ -81,13 +83,14 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
       case logical.SetSourceGraph(graph, in, _) =>
         producer.planSetSourceGraph(graph, process(in))
 
-      case logical.BoundedVarLengthExpand(source, edgeList, target, lower, upper, sourceOp, targetOp, _) =>
+      case logical.BoundedVarLengthExpand(source, edgeList, target, direction, lower, upper, sourceOp, targetOp, _) =>
         val initVarExpand = producer.initVarExpand(source, edgeList, process(sourceOp))
         val edgeScan = producer.varLengthEdgeScan(edgeList, producer.planStart(input.sourceGraph, Set.empty))
         producer.boundedVarExpand(
           edgeScan.edge,
           edgeList,
           target,
+          direction,
           lower,
           upper,
           initVarExpand,

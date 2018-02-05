@@ -16,13 +16,12 @@
 package org.opencypher.caps.impl.spark
 
 import org.apache.spark.sql.Row
-import org.opencypher.caps.impl.record.NodeScan
 import org.opencypher.caps.test.CAPSTestSuite
-import org.opencypher.caps.test.fixture.GraphCreationFixture
+import org.opencypher.caps.test.fixture.{GraphCreationFixture, TeamDataFixture}
 
 import scala.collection.Bag
 
-class CAPSUnionGraphTest extends CAPSTestSuite with GraphCreationFixture {
+class CAPSUnionGraphTest extends CAPSTestSuite with GraphCreationFixture with TeamDataFixture {
   import CAPSGraphTestData._
 
   test("Node scan from single node CAPSRecords") {
@@ -75,27 +74,10 @@ class CAPSUnionGraphTest extends CAPSTestSuite with GraphCreationFixture {
   }
 
   test("Returns only distinct results") {
-    val inputGraph = initGraph(`:Person`)
-    val inputNodes = inputGraph.nodes("n")
-    val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema)
-    val nodeScan = NodeScan.on("n" -> "ID") {
-        _.build
-          .withImpliedLabel("Person")
-          .withOptionalLabel("Swedish" -> "IS_SWEDE")
-          .withPropertyKey("name" -> "NAME")
-          .withPropertyKey("luckyNumber" -> "NUM")
-      }
-        .from(CAPSRecords.create(
-          Seq("ID", "IS_SWEDE", "NAME", "NUM"),
-          Seq(
-            (0L, true, "Mats", 23L),
-            (1L, false, "Martin", 42L),
-            (2L, false, "Max", 1337L),
-            (3L, false, "Stefan", 9L))
-        ))
-    val scanGraph = CAPSGraph.create(nodeScan)
+    val scanGraph1 = CAPSGraph.create(personTable)
+    val scanGraph2 = CAPSGraph.create(personTable)
 
-    val unionGraph = CAPSUnionGraph(patternGraph, scanGraph)
+    val unionGraph = CAPSUnionGraph(scanGraph1, scanGraph2)
     val outputNodes = unionGraph.nodes("n")
 
     outputNodes.toDF().columns should equal(Array(
@@ -107,10 +89,10 @@ class CAPSUnionGraphTest extends CAPSTestSuite with GraphCreationFixture {
     ))
 
     outputNodes.toDF().collect().toBag should equal(Bag(
-      Row(0L, true, true, 23L, "Mats"),
-      Row(2L, true, false, 1337L, "Max"),
-      Row(1L, true, false, 42L, "Martin"),
-      Row(3L, true, false, 9L, "Stefan"))
+      Row(1L, true, true, 23L, "Mats"),
+      Row(2L, true, false, 42L, "Martin"),
+      Row(3L, true, false, 1337L, "Max"),
+      Row(4L, true, false, 9L, "Stefan"))
     )
   }
 

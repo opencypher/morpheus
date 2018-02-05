@@ -77,7 +77,7 @@ class CAPSPatternGraph(private[spark] val baseTable: CAPSRecords, val schema: Sc
       .flatMap(RowExpansion(targetHeader, targetVar, extractionSlots, relColumnsLookupTables))(targetHeader.rowEncoder)
     val distinctData = extractedDf.distinct()
 
-    CAPSRecords.create(targetHeader, distinctData)
+    CAPSRecords.verifyAndCreate(targetHeader, distinctData)
   }
 
   private def createScanToBaseTableLookup(scanTableVar: Var, slotContents: Seq[SlotContent]): Map[String, String] = {

@@ -156,3 +156,14 @@ final case class DirectedVarLengthRelationship(endpoints: DifferentEndpoints, lo
     case _ => false
   }
 }
+
+final case class UndirectedVarLengthRelationship(endpoints: DifferentEndpoints, lower: Int, upper: Option[Int]) extends VarLengthRelationship with UndirectedConnection {
+  override type SELF[XO, XE] = UndirectedVarLengthRelationship { type O = XO; type E = XE }
+
+  override def flip: UndirectedVarLengthRelationship = this
+
+  override protected def equalsIfNotEq(obj: Any): Boolean = obj match {
+    case other: UndirectedVarLengthRelationship => orientation.eqv(endpoints, other.endpoints)
+    case _ => false
+  }
+}

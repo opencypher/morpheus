@@ -24,6 +24,7 @@ import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.{asser
 import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext, udfUtils}
 import org.opencypher.caps.impl.spark.{CAPSRecords, ColumnNameGenerator}
 import org.opencypher.caps.ir.api.expr.{EndNode, Var}
+import org.opencypher.caps.logical.impl.{Directed, Direction, Undirected}
 
 private[spark] abstract class TernaryPhysicalOperator extends PhysicalOperator {
 
@@ -48,18 +49,20 @@ final case class ExpandSource(
     source: Var,
     rel: Var,
     target: Var,
-    header: RecordHeader)
+    header: RecordHeader,
+    removeSelfRelationships: Boolean = false)
     extends TernaryPhysicalOperator {
 
-  override def executeTernary(first: PhysicalResult, second: PhysicalResult, third: PhysicalResult)(
-      implicit context: RuntimeContext): PhysicalResult = {
+  override def executeTernary(first: PhysicalResult, second: PhysicalResult, third: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult = {
+    val relationships = getRelationshipData(second.records)
+
     val sourceSlot = first.records.header.slotFor(source)
     val sourceSlotInRel = second.records.header.sourceNodeSlot(rel)
     assertIsNode(sourceSlot)
     assertIsNode(sourceSlotInRel)
 
     val sourceToRelHeader = first.records.header ++ second.records.header
-    val sourceAndRel = joinRecords(sourceToRelHeader, Seq(sourceSlot -> sourceSlotInRel))(first.records, second.records)
+    val sourceAndRel = joinRecords(sourceToRelHeader, Seq(sourceSlot -> sourceSlotInRel))(first.records, relationships)
 
     val targetSlot = third.records.header.slotFor(target)
     val targetSlotInRel = sourceAndRel.header.targetNodeSlot(rel)
@@ -70,6 +73,15 @@ final case class ExpandSource(
     PhysicalResult(joinedRecords, first.graphs ++ second.graphs ++ third.graphs)
   }
 
+  private def getRelationshipData(rels: CAPSRecords)(implicit context: RuntimeContext): CAPSRecords = {
+    if(removeSelfRelationships) {
+      val data = rels.data
+      val startNodeColumn = data.col(columnName(rels.header.sourceNodeSlot(rel)))
+      val endNodeColumn = data.col(columnName(rels.header.targetNodeSlot(rel)))
+
+      CAPSRecords.verifyAndCreate(rels.header, data.where(endNodeColumn =!= startNodeColumn))(rels.caps)
+    } else rels
+  }
 }
 
 // Expands a pattern like (s)-[r*n..m]->(t) where s is solved by first, r is solved by second and t is solved by third
@@ -85,12 +97,13 @@ final case class BoundedVarExpand(
     initialEndNode: Var,
     lower: Int,
     upper: Int,
+    direction: Direction,
     header: RecordHeader,
     isExpandInto: Boolean)
     extends TernaryPhysicalOperator {
 
-  override def executeTernary(first: PhysicalResult, second: PhysicalResult, third: PhysicalResult)(
-      implicit context: RuntimeContext): PhysicalResult = {
+  override def executeTernary(first: PhysicalResult, second: PhysicalResult, third: PhysicalResult)
+    (implicit context: RuntimeContext): PhysicalResult = {
     val expanded = expand(first.records, second.records)
 
     PhysicalResult(finalize(expanded, third.records), first.graphs ++ second.graphs ++ third.graphs)
@@ -140,7 +153,7 @@ final case class BoundedVarExpand(
     // If the expansion ends in an already solved plan, the final join can be replaced by a filter.
     val result = if (isExpandInto) {
       val data = expanded.toDF()
-      CAPSRecords.create(header, data.filter(data.col(targetNodeCol) === data.col(endNodeCol)))(expanded.caps)
+      CAPSRecords.verifyAndCreate(header, data.filter(data.col(targetNodeCol) === data.col(endNodeCol)))(expanded.caps)
     } else {
       val joinHeader = expanded.header ++ targets.header
 
@@ -153,12 +166,28 @@ final case class BoundedVarExpand(
       joinRecords(joinHeader, Seq(lhsSlot -> rhsSlot))(expanded, targets)
     }
 
-    CAPSRecords.create(header, result.toDF().drop(endNodeCol))(expanded.caps)
+    CAPSRecords.verifyAndCreate(header, result.toDF().drop(endNodeCol))(expanded.caps)
   }
 
   private def expand(firstRecords: CAPSRecords, secondRecords: CAPSRecords): CAPSRecords = {
     val initData = firstRecords.data
-    val relsData = secondRecords.data
+    val relsData = direction match {
+      case Directed =>
+        secondRecords.data
+      case Undirected =>
+        // TODO this is a crude hack that will not work once we have proper path support
+        val startNodeSlot = columnName(secondRecords.header.sourceNodeSlot(rel))
+        val endNodeSlot = columnName(secondRecords.header.targetNodeSlot(rel))
+        val colOrder = secondRecords.header.slots.map(columnName)
+
+        val inverted = secondRecords.data
+          .withColumnRenamed(startNodeSlot, "__tmp__")
+          .withColumnRenamed(endNodeSlot, startNodeSlot)
+          .withColumnRenamed("__tmp__", endNodeSlot)
+          .select(colOrder.head, colOrder.tail: _*)
+
+        inverted.union(secondRecords.data)
+    }
 
     val edgeListColName = columnName(firstRecords.header.slotFor(edgeList))
 
@@ -181,7 +210,6 @@ final case class BoundedVarExpand(
       case (l, r) => l.union(r)
     }
 
-    CAPSRecords.create(firstRecords.header, union)(firstRecords.caps)
+    CAPSRecords.verifyAndCreate(firstRecords.header, union)(firstRecords.caps)
   }
-
 }

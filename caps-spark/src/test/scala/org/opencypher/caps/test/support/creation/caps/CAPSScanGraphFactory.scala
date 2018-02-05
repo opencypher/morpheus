@@ -18,8 +18,9 @@ package org.opencypher.caps.test.support.creation.caps
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.impl.record.{NodeScan, RelationshipScan}
-import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords, CAPSScanGraph}
+import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
+import org.opencypher.caps.api.schema.{NodeTable, RelationshipTable}
+import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSScanGraph}
 import org.opencypher.caps.test.support.creation.propertygraph.PropertyGraph
 
 import scala.collection.JavaConverters._
@@ -45,13 +46,12 @@ object CAPSScanGraphFactory extends CAPSGraphFactory {
           Row.fromSeq(Seq(node.id) ++ propertyValues)
         }
 
-      val records = CAPSRecords.create(header: _*)(rows.asJava, structType)
+      val records = caps.sparkSession.createDataFrame(rows.asJava, structType).toDF(header: _*)
 
-      NodeScan.on("n" -> "ID")(_
-        .build
+      NodeTable(NodeMapping
+        .on("ID")
         .withImpliedLabels(labels.toSeq: _*)
-        .withPropertyKeys(propKeys.keys.toSeq: _*)
-      ).from(records)
+        .withPropertyKeys(propKeys.keys.toSeq: _*), records)
     }
 
     val relScans = schema.relationshipTypes.map { relType =>
@@ -71,15 +71,14 @@ object CAPSScanGraphFactory extends CAPSGraphFactory {
           Row.fromSeq(Seq(rel.id, rel.startId, rel.endId) ++ propertyValues)
         }
 
-      val records = CAPSRecords.create(header: _*)(rows.asJava, structType)
+      val records = caps.sparkSession.createDataFrame(rows.asJava, structType).toDF(header: _*)
 
-      RelationshipScan.on("r" -> "ID")(_
+      RelationshipTable(RelationshipMapping
+        .on("ID")
         .from("SRC")
         .to("DST")
         .relType(relType)
-        .build
-        .withPropertyKeys(propKeys.keys.toSeq: _*)
-      ).from(records)
+        .withPropertyKeys(propKeys.keys.toSeq: _*), records)
     }
 
     new CAPSScanGraph(nodeScans.toSeq ++ relScans, schema)

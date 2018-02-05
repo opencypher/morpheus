@@ -18,7 +18,7 @@ package org.opencypher.caps.impl.flat
 import org.opencypher.caps.impl.record.{OpaqueField, ProjectedExpr, ProjectedField, RecordHeader}
 import org.opencypher.caps.ir.api.block.SortItem
 import org.opencypher.caps.ir.api.expr.{Aggregator, Expr, Var}
-import org.opencypher.caps.logical.impl.LogicalGraph
+import org.opencypher.caps.logical.impl.{Direction, LogicalGraph}
 import org.opencypher.caps.trees.AbstractTreeNode
 
 sealed abstract class FlatOperator extends AbstractTreeNode[FlatOperator] {
@@ -56,7 +56,7 @@ final case class EdgeScan(edge: Var, in: FlatOperator, header: RecordHeader) ext
 
 final case class Filter(expr: Expr, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
-final case class Distinct(in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
+final case class Distinct(fields: Set[Var], in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
 final case class Select(fields: IndexedSeq[Var], graphs: Set[String], in: FlatOperator, header: RecordHeader)
     extends StackingFlatOperator
@@ -96,9 +96,10 @@ final case class ValueJoin(
     header: RecordHeader)
     extends BinaryFlatOperator
 
-final case class ExpandSource(
+final case class Expand(
     source: Var,
     rel: Var,
+    direction: Direction,
     target: Var,
     sourceOp: FlatOperator,
     targetOp: FlatOperator,
@@ -114,6 +115,7 @@ final case class ExpandInto(
     source: Var,
     rel: Var,
     target: Var,
+    direction: Direction,
     sourceOp: FlatOperator,
     header: RecordHeader,
     relHeader: RecordHeader)
@@ -129,6 +131,7 @@ final case class BoundedVarExpand(
     rel: Var,
     edgeList: Var,
     target: Var,
+    direction: Direction,
     lower: Int,
     upper: Int,
     sourceOp: InitVarExpand,

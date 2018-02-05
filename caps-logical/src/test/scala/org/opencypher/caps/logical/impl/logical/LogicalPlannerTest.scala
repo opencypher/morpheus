@@ -79,7 +79,7 @@ class LogicalPlannerTest extends LogicalTestSuite {
     val ir = irWithLeaf(block)
     val result = plan(ir)
 
-    val expected = ExpandSource(nodeA, relR, nodeB, scan1, scan2, SolvedQueryModel(Set(nodeA, nodeB, relR)))
+    val expected = Expand(nodeA, relR, nodeB, Directed, scan1, scan2, SolvedQueryModel(Set(nodeA, nodeB, relR)))
 
     result should equalWithoutResult(expected)
   }
@@ -95,7 +95,7 @@ class LogicalPlannerTest extends LogicalTestSuite {
     val ir = irWithLeaf(block)
 
     val scan = NodeScan(nodeA, SetSourceGraph(leafPlan.sourceGraph, leafPlan, emptySqm), emptySqm.withField(nodeA))
-    val expandInto = ExpandInto(nodeA, relR, nodeA, scan, SolvedQueryModel(Set(nodeA, relR)))
+    val expandInto = ExpandInto(nodeA, relR, nodeA, Directed, scan, SolvedQueryModel(Set(nodeA, relR)))
 
     plan(ir) should equalWithoutResult(expandInto)
   }
@@ -132,10 +132,11 @@ class LogicalPlannerTest extends LogicalTestSuite {
             HasLabel(Var("g")(CTNode), Label("Group"))(CTBoolean),
             Filter(
               HasLabel(Var("a")(CTNode), Label("Administrator"))(CTBoolean),
-              ExpandSource(
+              Expand(
                 Var("a")(CTNode),
                 Var("r")(CTRelationship),
                 Var("g")(CTNode),
+                Directed,
                 NodeScan(
                   Var("a")(CTNode),
                   SetSourceGraph(
@@ -214,10 +215,11 @@ class LogicalPlannerTest extends LogicalTestSuite {
             HasLabel(Var("g")(CTNode), Label("Group"))(CTBoolean),
             Filter(
               HasLabel(Var("a")(CTNode), Label("Administrator"))(CTBoolean),
-              ExpandSource(
+              Expand(
                 Var("a")(CTNode),
                 Var("r")(CTRelationship),
                 Var("g")(CTNode),
+                Directed,
                 NodeScan(
                   Var("a")(CTNode),
                   SetSourceGraph(

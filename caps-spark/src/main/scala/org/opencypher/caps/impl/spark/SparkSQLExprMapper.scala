@@ -23,7 +23,7 @@ import org.opencypher.caps.api.types.{CTAny, CTList, CTNode, CTString}
 import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.impl.record.RecordHeader
 import org.opencypher.caps.impl.spark.Udfs._
-import org.opencypher.caps.impl.spark.convert.toSparkType
+import org.opencypher.caps.impl.spark.convert.SparkUtils._
 import org.opencypher.caps.impl.spark.physical.RuntimeContext
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.columnName
 import org.opencypher.caps.ir.api.expr._
@@ -50,6 +50,9 @@ object SparkSQLExprMapper {
         }
       case Param(name) =>
         functions.lit(context.parameters(name).unwrap)
+      case ListLit(exprs) =>
+        val cols = exprs.map(getColumn(_, header, dataFrame))
+        functions.array(cols: _*)
       case l: Lit[_] =>
         functions.lit(l.v)
       case _ =>
@@ -87,6 +90,10 @@ object SparkSQLExprMapper {
 
         case _: Param =>
           Some(getColumn(expr, header, df))
+
+        case ListLit(exprs) =>
+          val cols = exprs.map(asSparkSQLExpr(header, _, df).get)
+          Some(functions.array(cols: _*))
 
         case _: Lit[_] =>
           Some(getColumn(expr, header, df))

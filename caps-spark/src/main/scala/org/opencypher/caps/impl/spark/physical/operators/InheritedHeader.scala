@@ -13,14 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.api.exception
+package org.opencypher.caps.impl.spark.physical.operators
 
-import org.opencypher.caps.ir.api.expr.Var
-
-abstract class CoraException(msg: String) extends CypherException(msg)
-
-final case class RecordHeaderException(msg: String) extends CoraException(msg)
-
-final case class DuplicateSourceColumnException(columnName: String, entity: Var)
-    extends CoraException(
-          s"The source column '$columnName' is used more than once to describe the mapping of $entity")
+trait InheritedHeader {
+  this: PhysicalOperator =>
+    override val header = children.head.header
+}

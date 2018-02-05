@@ -90,7 +90,7 @@ class Neo4jGraph(val schema: Schema, val session: CAPSSession)(
     val rawData = session.sparkSession.createDataFrame(rdd, struct)
     val col = rawData.col(rawData.columns(slot.index))
     val recordData = rawData.repartition(col).sortWithinPartitions(col)
-    CAPSRecords.create(header, recordData)(session)
+    CAPSRecords.verifyAndCreate(header, recordData)(session)
   }
 
   override def toString = "Neo4jGraph"

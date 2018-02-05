@@ -13,14 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.api.exception
+package org.opencypher.caps.logical.impl
 
-import org.opencypher.caps.ir.api.expr.Var
+sealed trait Direction
 
-abstract class CoraException(msg: String) extends CypherException(msg)
+case object Directed extends Direction
 
-final case class RecordHeaderException(msg: String) extends CoraException(msg)
-
-final case class DuplicateSourceColumnException(columnName: String, entity: Var)
-    extends CoraException(
-          s"The source column '$columnName' is used more than once to describe the mapping of $entity")
+case object Undirected extends Direction

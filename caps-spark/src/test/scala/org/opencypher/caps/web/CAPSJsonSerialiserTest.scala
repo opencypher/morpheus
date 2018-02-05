@@ -16,95 +16,16 @@
 package org.opencypher.caps.web
 
 import org.opencypher.caps.api.types.CTNode
-import org.opencypher.caps.impl.record.{NodeScan, OpaqueField, RecordHeader, RelationshipScan}
+import org.opencypher.caps.impl.record.{OpaqueField, RecordHeader}
 import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.ir.api.expr.Var
 import org.opencypher.caps.test.CAPSTestSuite
+import org.opencypher.caps.test.fixture.TeamDataFixture
 import org.opencypher.caps.web.CAPSJsonSerialiser.toJsonString
 
 //noinspection NameBooleanParameters
-class CAPSJsonSerialiserTest extends CAPSTestSuite {
-
-  val `:Person` =
-    NodeScan
-      .on("p" -> "ID") {
-        _.build
-          .withImpliedLabel("Person")
-          .withOptionalLabel("Swedish" -> "IS_SWEDE")
-          .withPropertyKey("name" -> "NAME")
-          .withPropertyKey("lucky_number" -> "NUM")
-      }
-      .from(
-        CAPSRecords.create(
-          Seq("ID", "IS_SWEDE", "NAME", "NUM"),
-          Seq((1L, true, "Mats", 23L), (2L, false, "Martin", 42L), (3L, false, "Max", 1337L), (4L, false, "Stefan", 9L))
-        ))
-
-  val `:Book` =
-    NodeScan
-      .on("b" -> "ID") {
-        _.build
-          .withImpliedLabel("Book")
-          .withPropertyKey("title" -> "NAME")
-          .withPropertyKey("year" -> "YEAR")
-      }
-      .from(
-        CAPSRecords.create(
-          Seq("ID", "NAME", "YEAR"),
-          Seq(
-            (10L, "1984", 1949L),
-            (20L, "Cryptonomicon", 1999L),
-            (30L, "The Eye of the World", 1990L),
-            (40L, "The Circle", 2013L))
-        ))
-
-  val `:KNOWS` =
-    RelationshipScan
-      .on("k" -> "ID") {
-        _.from("SRC")
-          .to("DST")
-          .relType("KNOWS")
-          .build
-          .withPropertyKey("since" -> "SINCE")
-      }
-      .from(
-        CAPSRecords.create(
-          Seq("SRC", "ID", "DST", "SINCE"),
-          Seq(
-            (1L, 1L, 2L, 2017L),
-            (1L, 2L, 3L, 2016L),
-            (1L, 3L, 4L, 2015L),
-            (2L, 4L, 3L, 2016L),
-            (2L, 5L, 4L, 2013L),
-            (3L, 6L, 4L, 2016L))
-        ))
-
-  val `:READS` =
-    RelationshipScan
-      .on("r" -> "ID") {
-        _.from("SRC")
-          .to("DST")
-          .relType("READS")
-          .build
-          .withPropertyKey("recommends" -> "RECOMMENDS")
-      }
-      .from(
-        CAPSRecords.create(
-          Seq("SRC", "ID", "DST", "RECOMMENDS"),
-          Seq((1L, 100L, 10L, true), (2L, 200L, 40L, true), (3L, 300L, 30L, true), (4L, 400L, 20L, false))
-        ))
-
-  val `:INFLUENCES` =
-    RelationshipScan
-      .on("i" -> "ID") {
-        _.from("SRC").to("DST").relType("INFLUENCES").build
-      }
-      .from(
-        CAPSRecords.create(
-          Seq("SRC", "ID", "DST"),
-          Seq((10L, 1000L, 20L))
-        ))
+class CAPSJsonSerialiserTest extends CAPSTestSuite with TeamDataFixture {
 
   test("unit table") {
     // Given
@@ -301,8 +222,10 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
   }
 
   test("graph serialization") {
-    val graph = CAPSGraph.create(`:Person`, `:Book`, `:READS`, `:KNOWS`, `:INFLUENCES`)
-    toJsonString(graph) should equal(s"""{
+    val graph = CAPSGraph.create(personTable, bookTable, readsTable, knowsTable, influencesTable)
+    val asJson = toJsonString(graph)
+    val expected =
+      s"""{
           |  "nodes" : [
           |    {
           |      "id" : 1,
@@ -311,7 +234,7 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
           |        "Swedish"
           |      ],
           |      "properties" : {
-          |        "lucky_number" : 23,
+         |        "luckyNumber" : 23,
           |        "name" : "Mats"
           |      }
           |    },
@@ -321,7 +244,7 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
           |        "Person"
           |      ],
           |      "properties" : {
-          |        "lucky_number" : 42,
+         |        "luckyNumber" : 42,
           |        "name" : "Martin"
           |      }
           |    },
@@ -331,7 +254,7 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
           |        "Person"
           |      ],
           |      "properties" : {
-          |        "lucky_number" : 1337,
+         |        "luckyNumber" : 1337,
           |        "name" : "Max"
           |      }
           |    },
@@ -341,7 +264,7 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
           |        "Person"
           |      ],
           |      "properties" : {
-          |        "lucky_number" : 9,
+         |        "luckyNumber" : 9,
           |        "name" : "Stefan"
           |      }
           |    },
@@ -389,7 +312,7 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
           |  "edges" : [
           |    {
           |      "id" : 100,
-          |      "source" : 1,
+         |      "source" : 100,
           |      "target" : 10,
           |      "type" : "READS",
           |      "properties" : {
@@ -398,7 +321,7 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
           |    },
           |    {
           |      "id" : 200,
-          |      "source" : 2,
+         |      "source" : 200,
           |      "target" : 40,
           |      "type" : "READS",
           |      "properties" : {
@@ -407,7 +330,7 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
           |    },
           |    {
           |      "id" : 300,
-          |      "source" : 3,
+         |      "source" : 300,
           |      "target" : 30,
           |      "type" : "READS",
           |      "properties" : {
@@ -416,7 +339,7 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
           |    },
           |    {
           |      "id" : 400,
-          |      "source" : 4,
+         |      "source" : 400,
           |      "target" : 20,
           |      "type" : "READS",
           |      "properties" : {
@@ -497,12 +420,16 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite {
           |    "KNOWS",
           |    "INFLUENCES"
           |  ]
-          |}""".stripMargin)
+         |}""".stripMargin
+    asJson should equal(expected)
   }
 
   private case class Row1(foo: String)
+
   private case class Row3(foo: String, v: Long, veryLongColumnNameWithBoolean: Boolean)
+
   private case class ListRow(strings: Seq[String], integers: Seq[Long], booleans: Seq[Boolean])
+
   private case class MapRow(strings: Map[String, String], integers: Map[String, Long], booleans: Map[String, Boolean])
 
   private def headerOf(fields: Symbol*): RecordHeader = {

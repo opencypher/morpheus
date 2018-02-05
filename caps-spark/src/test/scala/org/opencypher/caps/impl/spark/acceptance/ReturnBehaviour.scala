@@ -15,8 +15,8 @@
  */
 package org.opencypher.caps.impl.spark.acceptance
 
-import org.opencypher.caps.api.value.{CAPSNode, CypherValue}
 import org.opencypher.caps.api.value.CypherValue._
+import org.opencypher.caps.api.value.{CAPSNode, CypherValue}
 import org.opencypher.caps.demo.Configuration.PrintLogicalPlan
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.impl.spark.CAPSGraph
@@ -26,7 +26,8 @@ import scala.collection.immutable.Bag
 trait ReturnBehaviour { this: AcceptanceTest =>
 
   def returnBehaviour(initGraph: String => CAPSGraph): Unit = {
-    test("return only the returned fields") {
+    describe("RETURN") {
+      it("returns only the returned fields") {
       val g = initGraph("CREATE (:A {name: 'me'}), (:A)")
 
       val result = g.cypher("MATCH (a:A) WITH a, a.name AS foo RETURN a")
@@ -37,7 +38,7 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       ))
     }
 
-    test("return only returned fields with tricky alias") {
+      it("returns only returned fields with tricky alias") {
       val g = initGraph("CREATE (:A {name: 'me'}), (:A)")
 
       val result = g.cypher("MATCH (a:A) WITH a, a AS foo RETURN a")
@@ -63,7 +64,7 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       ))
     }
 
-    test("return only returned fields without dependencies") {
+      it("returns only returned fields without dependencies") {
       val g = initGraph("CREATE (:A)")
 
       val result = g.cypher("MATCH (a:A), (b) RETURN a")
@@ -73,7 +74,7 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       ))
     }
 
-    test("single return query") {
+      it("can run a single return query") {
       val given = initGraph("CREATE ()")
 
       val result  = given.cypher("RETURN 1").asCaps
@@ -81,7 +82,7 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       result.records shouldMatch CypherMap("1" -> 1)
     }
 
-    test("single return query with several columns") {
+      it("can run single return query with several columns") {
       val given = initGraph("CREATE (), ()")
 
       val result  = given.cypher("RETURN 1 AS foo, '' AS str").asCaps
@@ -89,7 +90,7 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       result.records shouldMatch CypherMap("foo" -> 1, "str" -> "")
     }
 
-    test("return compact node") {
+      it("returns compact node") {
       val given = initGraph("CREATE (:Person {foo:'bar'}),()")
 
       val result = given.cypher("MATCH (n) RETURN n").asCaps
@@ -100,7 +101,7 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       )
     }
 
-    test("return full node") {
+      it("returns full node") {
       val given = initGraph("CREATE ({foo:'bar'}),()")
 
       val result = given.cypher("MATCH (n) RETURN n")
@@ -111,7 +112,7 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       )
     }
 
-    test("return compact rel") {
+      it("returns compact rel") {
       val given = initGraph("CREATE ()-[:Rel {foo:'bar'}]->()-[:Rel]->()")
 
       val result = given.cypher("MATCH ()-[r]->() RETURN r").asCaps
@@ -122,7 +123,7 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       ))
     }
 
-    test("return full rel") {
+      it("returns full rel") {
       val given = initGraph("CREATE ()-[:Rel {foo:'bar'}]->()-[:Rel]->()")
 
       val result = given.cypher("MATCH ()-[r]->() RETURN r")
@@ -133,7 +134,7 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       ))
     }
 
-    test("return relationship property from relationship without specific type") {
+      it("returns relationship property from relationship without specific type") {
       val given = initGraph("CREATE ()-[:Rel {foo:'bar'}]->()-[:Rel]->()")
 
       val result = given.cypher("MATCH ()-[r]->() RETURN r.foo")
@@ -143,8 +144,10 @@ trait ReturnBehaviour { this: AcceptanceTest =>
         CypherMap("r.foo" -> null)
       ))
     }
+    }
 
-    test("return distinct CypherMap") {
+    describe("DISTINCT") {
+      it("can return distinct properties") {
       val given = initGraph(
         """CREATE ({name:'bar'})
           |CREATE ({name:'bar'})
@@ -163,7 +166,7 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       ))
     }
 
-    test("return distinct CypherMap for combinations") {
+      it("can return distinct properties for combinations") {
       val given = initGraph(
         """CREATE ({p1:'a', p2: 'a', p3: '1'})
           |CREATE ({p1:'a', p2: 'a', p3: '2'})
@@ -181,8 +184,10 @@ trait ReturnBehaviour { this: AcceptanceTest =>
         CypherMap("p1" -> "b", "p2" -> "b")
       ))
     }
+    }
 
-    test("order by") {
+    describe("ORDER BY") {
+      it("can order with default direction") {
       val given = initGraph("""CREATE (:Node {val: 4}), (:Node {val: 3}), (:Node  {val: 42})""")
 
       val result = given.cypher("MATCH (a) RETURN a.val AS val ORDER BY val")
@@ -198,7 +203,7 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       result.graphs shouldBe empty
     }
 
-    test("order by asc") {
+      it("can order ascending") {
       val given = initGraph("""CREATE (:Node {val: 4}),(:Node {val: 3}),(:Node  {val: 42})""")
 
       val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val ASC")
@@ -214,7 +219,7 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       result.graphs shouldBe empty
     }
 
-    test("order by desc") {
+      it("can order descending") {
       val given = initGraph("""CREATE (:Node {val: 4}),(:Node {val: 3}),(:Node  {val: 42})""")
 
       val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val DESC")
@@ -229,8 +234,9 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       // And
       result.graphs shouldBe empty
     }
-
-    test("skip") {
+    }
+    describe("SKIP") {
+      it("can skip") {
       val given = initGraph("""CREATE (:Node {val: 4}),(:Node {val: 3}),(:Node  {val: 42})""")
 
       val result = given.cypher("MATCH (a) RETURN a.val as val SKIP 2").asCaps
@@ -242,7 +248,7 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       result.graphs shouldBe empty
     }
 
-    test("order by with skip") {
+      it("can order with skip") {
       val given = initGraph("""CREATE (:Node {val: 4}),(:Node {val: 3}),(:Node  {val: 42})""")
 
       val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val SKIP 1")
@@ -257,7 +263,7 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       result.graphs shouldBe empty
     }
 
-    test("order by with (arithmetic) skip") {
+      it("can order with (arithmetic) skip") {
       val given = initGraph("""CREATE (:Node {val: 4}),(:Node {val: 3}),(:Node  {val: 42})""")
 
       val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val SKIP 1 + 1")
@@ -270,8 +276,10 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       // And
       result.graphs shouldBe empty
     }
+    }
 
-    test("limit") {
+    describe("limit") {
+      it("can evaluate limit") {
       val given = initGraph("""CREATE (:Node {val: 4}),(:Node {val: 3}),(:Node  {val: 42})""")
 
       val result = given.cypher("MATCH (a) RETURN a.val as val LIMIT 1").asCaps
@@ -283,7 +291,21 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       result.graphs shouldBe empty
     }
 
-    test("order by with limit") {
+      it("can evaluate limit with parameter value"){
+        val graph = initGraph("CREATE (a:A),(b:B),(c:C)")
+
+        val res = graph.cypher(
+          """
+            |MATCH (a)
+            |WITH a
+            |LIMIT $limit
+            |RETURN a""".stripMargin, Map("limit" -> CypherValue(1)))
+
+        res.records.size
+      }
+
+
+      it("can order with limit") {
       val given = initGraph("""CREATE (:Node {val: 4}),(:Node {val: 3}),(:Node  {val: 42})""")
 
       val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val LIMIT 1")
@@ -297,7 +319,7 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       result.graphs shouldBe empty
     }
 
-    test("order by with (arithmetic) limit") {
+      it("can order with (arithmetic) limit") {
       val given = initGraph("""CREATE (:Node {val: 4}),(:Node {val: 3}),(:Node  {val: 42})""")
 
       val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val LIMIT 1 + 1")
@@ -312,7 +334,7 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       result.graphs shouldBe empty
     }
 
-    test("order by with skip and limit") {
+      it("can order with skip and limit") {
       val given = initGraph("""CREATE (:Node {val: 4}),(:Node {val: 3}),(:Node  {val: 42})""")
 
       val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val SKIP 1 LIMIT 1")
@@ -326,4 +348,5 @@ trait ReturnBehaviour { this: AcceptanceTest =>
       result.graphs shouldBe empty
     }
   }
+}
 }

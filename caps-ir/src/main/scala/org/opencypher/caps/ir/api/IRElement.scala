@@ -44,12 +44,16 @@ trait IRGraph extends IRElement {
   def toNamedGraph: IRNamedGraph = IRNamedGraph(name, schema)
 
   def schema: Schema
+
+  override def toString: String = s"IRNamedGraph(name = $name)"
 }
 
 final case class IRNamedGraph(name: String, schema: Schema) extends IRGraph {
   override def toNamedGraph: IRNamedGraph = this
 }
 
-final case class IRExternalGraph(name: String, schema: Schema, uri: URI) extends IRGraph
+final case class IRExternalGraph(name: String, schema: Schema, uri: URI) extends IRGraph {
+  override def toString: String = s"IRExternalGraph(name = $name, uri = $uri)"
+}
 
 final case class IRPatternGraph[E](name: String, schema: Schema, pattern: Pattern[E]) extends IRGraph

@@ -15,6 +15,7 @@
  */
 package org.opencypher.caps.impl.spark.acceptance
 
+import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.impl.spark.CAPSGraph
 
@@ -24,7 +25,46 @@ trait ExpressionBehaviour {
   self: AcceptanceTest =>
 
   def expressionBehaviour(initGraph: String => CAPSGraph): Unit = {
-    test("equality between properties") {
+
+    describe("properties") {
+      it("handles property expression on unknown label") {
+        // Given
+        val given = initGraph(
+          """
+            |CREATE (p:Person {firstName: "Alice", lastName: "Foo"})
+          """.stripMargin)
+
+        // When
+        val result = given.cypher(
+          """
+            |MATCH (a:Animal)
+            |RETURN a.name
+          """.stripMargin
+        )
+
+        // Then
+        result.records.toMaps shouldBe empty
+      }
+
+      it("handles unknown properties") {
+        // Given
+        val given = initGraph(
+          """
+            |CREATE (p:Person {firstName: "Alice", lastName: "Foo"})
+          """.stripMargin)
+
+        // When
+        val result = given.cypher(
+          """
+            |MATCH (a:Person)
+            |RETURN a.firstName, a.age
+          """.stripMargin)
+
+        // Then
+        result.records.toMaps should equal(Bag(CypherMap("a.age" -> null, "a.firstName" -> "Alice")))
+      }
+
+      it("equality between properties") {
       // Given
       val given = initGraph(
         """
@@ -52,6 +92,8 @@ trait ExpressionBehaviour {
       // And
       result.graphs shouldBe empty
     }
+    }
+
 
     test("less than") {
 
@@ -482,6 +524,34 @@ trait ExpressionBehaviour {
           CypherMap("a.id" -> 1L, "other" -> true),
           CypherMap("a.id" -> 2L, "other" -> false),
           CypherMap("a.id" -> 3L, "other" -> false)
+        ))
+      }
+    }
+
+    describe("ListLiteral") {
+      it("can convert string ListLiterals from parameters"){
+        val graph = initGraph("CREATE ()")
+
+        val result = graph.cypher(
+          """
+            |WITH [$a, $b] as strings
+            |RETURN strings""".stripMargin, Map("a" -> CypherValue("bar"), "b" -> CypherValue("foo")))
+
+        result.records.toMaps should equal(Bag(
+          CypherMap("strings" -> Seq("bar", "foo"))
+        ))
+      }
+
+      it("can convert string ListLiterals"){
+        val graph = initGraph("CREATE ()")
+
+        val result = graph.cypher(
+          """
+            |WITH ["bar", "foo"] as strings
+            |RETURN strings""".stripMargin)
+
+        result.records.toMaps should equal(Bag(
+          CypherMap("strings" -> Seq("bar", "foo"))
         ))
       }
     }

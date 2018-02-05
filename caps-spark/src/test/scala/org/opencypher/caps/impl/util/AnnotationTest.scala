@@ -42,10 +42,10 @@ case class TestAnnotation(foo: String) extends StaticAnnotation
 class AnnotationTest extends FunSuite with Matchers {
 
   test("read node label annotation") {
-    Annotation.labels[NodeWithoutAnnotation] should equal(Seq(classOf[NodeWithoutAnnotation].getSimpleName))
-    Annotation.labels[NodeWithEmptyAnnotation] should equal(Seq.empty)
-    Annotation.labels[NodeWithSingleAnnotation] should equal(Seq("One"))
-    Annotation.labels[NodeWithMultipleAnnotations] should equal(Seq("One", "Two", "Three"))
+    Annotation.labels[NodeWithoutAnnotation] should equal(Set(classOf[NodeWithoutAnnotation].getSimpleName))
+    Annotation.labels[NodeWithEmptyAnnotation] should equal(Set.empty)
+    Annotation.labels[NodeWithSingleAnnotation] should equal(Set("One"))
+    Annotation.labels[NodeWithMultipleAnnotations] should equal(Set("One", "Two", "Three"))
   }
 
   test("read relationship type annotation") {

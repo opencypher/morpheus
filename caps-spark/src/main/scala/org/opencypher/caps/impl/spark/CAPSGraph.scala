@@ -19,7 +19,7 @@ import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.graph.PropertyGraph
-import org.opencypher.caps.api.schema.Schema
+import org.opencypher.caps.api.schema.{EntityTable, NodeTable, Schema}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.impl.record.{OpaqueField, RecordHeader, _}
 import org.opencypher.caps.impl.spark.CAPSConverters._
@@ -39,8 +39,6 @@ trait CAPSGraph extends PropertyGraph with Serializable {
 
   override def union(other: PropertyGraph): CAPSGraph
 
-  override protected def graph: CAPSGraph
-
   def cache(): CAPSGraph
 
   def persist(): CAPSGraph
@@ -52,6 +50,8 @@ trait CAPSGraph extends PropertyGraph with Serializable {
   def unpersist(blocking: Boolean): CAPSGraph
 
   override def toString = s"${getClass.getSimpleName}"
+
+  override protected def graph: CAPSGraph
 
 }
 
@@ -74,10 +74,10 @@ object CAPSGraph {
       override def unpersist(blocking: Boolean): CAPSGraph = this
     }
 
-  def create(nodes: NodeScan, scans: GraphScan*)(implicit caps: CAPSSession): CAPSGraph = {
-    val allScans = nodes +: scans
-    val schema = allScans.map(_.schema).reduce(_ ++ _)
-    new CAPSScanGraph(allScans, schema)
+  def create(nodeTable: NodeTable, entityTables: EntityTable*)(implicit caps: CAPSSession): CAPSGraph = {
+    val allTables = nodeTable +: entityTables
+    val schema = allTables.map(_.schema).reduce(_ ++ _)
+    new CAPSScanGraph(allTables, schema)
   }
 
   def create(records: CypherRecords, schema: Schema)(implicit caps: CAPSSession): CAPSGraph = {

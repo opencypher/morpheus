@@ -15,10 +15,10 @@
  */
 package org.opencypher.caps.test.support.creation.caps
 
-import org.opencypher.caps.api.schema.Schema
+import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
+import org.opencypher.caps.api.schema.{NodeTable, RelationshipTable, Schema}
 import org.opencypher.caps.api.types.CTString
-import org.opencypher.caps.impl.record.{NodeScan, RelationshipScan}
-import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords}
+import org.opencypher.caps.impl.spark.CAPSGraph
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.support.GraphMatchingTestSupport
 import org.opencypher.caps.test.support.creation.propertygraph.CAPSPropertyGraphFactory
@@ -38,54 +38,51 @@ class CAPSScanGraphFactoryTest extends CAPSTestSuite with GraphMatchingTestSuppo
       |CREATE (martin)-[:SPEAKS]->(orbital)
     """.stripMargin
 
-  val personScan: NodeScan = NodeScan.on("p" -> "ID") {
-    _.build
-        .withImpliedLabel("Person")
-        .withOptionalLabel("Astronaut" -> "IS_ASTRONAUT")
-        .withOptionalLabel("Martian" -> "IS_MARTIAN")
-        .withPropertyKey("name" -> "NAME")
-  }.from(CAPSRecords.create(
-    Seq("ID", "IS_ASTRONAUT", "IS_MARTIAN", "NAME"),
+  val personTable: NodeTable = NodeTable(NodeMapping
+    .on("ID")
+    .withImpliedLabel("Person")
+    .withOptionalLabel("Astronaut" -> "IS_ASTRONAUT")
+    .withOptionalLabel("Martian" -> "IS_MARTIAN")
+    .withPropertyKey("name" -> "NAME"), caps.sparkSession.createDataFrame(
     Seq(
       (0L, true, false, "Max"),
       (1L, false, true, "Martin"))
-  ))
+  ).toDF("ID", "IS_ASTRONAUT", "IS_MARTIAN", "NAME"))
 
-  val languageScan: NodeScan = NodeScan.on("l" -> "ID") {
-    _.build
-        .withImpliedLabel("Language")
-        .withPropertyKey("title" -> "TITLE")
-  }.from(CAPSRecords.create(
-    Seq("ID", "TITLE"),
+
+  val languageTable: NodeTable = NodeTable(NodeMapping
+    .on("ID")
+    .withImpliedLabel("Language")
+    .withPropertyKey("title" -> "TITLE"), caps.sparkSession.createDataFrame(
     Seq(
       (2L, "Swedish"),
       (3L, "German"),
       (4L, "Orbital"))
-  ))
+  ).toDF("ID", "TITLE"))
 
-  val knowsScan: RelationshipScan = RelationshipScan.on("k" -> "ID") {
-    _.from("SRC").to("DST").relType("KNOWS")
-        .build
-  }.from(CAPSRecords.create(
-    Seq("SRC", "ID", "DST"),
+
+  val knowsScan: RelationshipTable = RelationshipTable(RelationshipMapping
+    .on("ID")
+    .from("SRC").to("DST").relType("KNOWS"), caps.sparkSession.createDataFrame(
     Seq(
       (0L, 5L, 2L),
       (0L, 6L, 3L),
       (1L, 7L, 3L),
       (1L, 8L, 4L))
-  ))
+  ).toDF("SRC", "ID", "DST"))
+
 
   test("testSchema") {
     val propertyGraph = CAPSPropertyGraphFactory(createQuery)
     CAPSScanGraphFactory(propertyGraph).schema should equal(Schema.empty
-        .withNodePropertyKeys("Person", "Astronaut")("name" -> CTString)
-        .withNodePropertyKeys("Person", "Martian")("name" -> CTString)
-        .withNodePropertyKeys("Language")("title" -> CTString)
-        .withRelationshipType("SPEAKS"))
+      .withNodePropertyKeys("Person", "Astronaut")("name" -> CTString)
+      .withNodePropertyKeys("Person", "Martian")("name" -> CTString)
+      .withNodePropertyKeys("Language")("title" -> CTString)
+      .withRelationshipType("SPEAKS"))
   }
 
   test("testAsScanGraph") {
     val propertyGraph = CAPSPropertyGraphFactory(createQuery)
-    CAPSScanGraphFactory(propertyGraph) shouldMatch CAPSGraph.create(personScan, languageScan, knowsScan)
+    CAPSScanGraphFactory(propertyGraph) shouldMatch CAPSGraph.create(personTable, languageTable, knowsScan)
   }
 }
