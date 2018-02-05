@@ -222,7 +222,7 @@ class CAPSValueStructureTest extends CAPSValueTestSuite {
     val cypherValueGroups = ANY_valueGroups.materialValueGroups
     val actual = cypherValueGroups.map { values =>
       values.map {
-        case CypherValue(v) => v
+        case CypherValue(v) => CypherValue(v)
         case other => fail(s"Unexpected value $other")
       }
     }
