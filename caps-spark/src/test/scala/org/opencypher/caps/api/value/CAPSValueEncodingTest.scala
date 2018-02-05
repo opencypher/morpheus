@@ -15,12 +15,11 @@
  */
 package org.opencypher.caps.api.value
 
+import org.opencypher.caps.api.value.CAPSTestValues._
 import org.opencypher.caps.api.value.CypherValue.CypherValue
 import org.opencypher.caps.test.fixture.SparkSessionFixture
 
 class CAPSValueEncodingTest extends CAPSValueTestSuite with SparkSessionFixture {
-
-  import CAPSTestValues._
 
   test("RELATIONSHIP encoding") {
     val values = RELATIONSHIP_valueGroups.flatten

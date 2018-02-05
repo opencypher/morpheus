@@ -17,9 +17,9 @@ package org.opencypher.caps.api.value
 
 import org.opencypher.caps.api.value.CypherValue.CypherFloat
 import org.opencypher.caps.impl.spark.encoders.CypherValueEncoders
-import org.opencypher.caps.test.CAPSTestSuite
+import org.opencypher.caps.test.BaseTestSuite
 
-class CAPSValueTestSuite extends CAPSTestSuite with CypherValueEncoders {
+class CAPSValueTestSuite extends BaseTestSuite with CypherValueEncoders {
 
   implicit class FilterValueGroup(valueGroups: Seq[Seq[Any]]) {
     def withoutNaNs: Seq[Seq[Any]] = valueGroups.map(_.withoutNaNs)

@@ -13,11 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.Cypher.api.value
+package org.opencypher.caps.api.value
 
 import org.opencypher.caps.api.value.CAPSTestValues._
 import org.opencypher.caps.api.value.CypherValue._
-import org.opencypher.caps.api.value.{CypherValue, _}
 
 class CAPSValueStructureTest extends CAPSValueTestSuite {
 
