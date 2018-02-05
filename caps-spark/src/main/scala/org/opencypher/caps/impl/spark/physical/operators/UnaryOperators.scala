@@ -97,7 +97,7 @@ final case class Unwind(in: PhysicalOperator, list: Expr, item: Var, header: Rec
               val nullable = item.cypherType.isNullable
               val schema = StructType(Seq(StructField(itemColumn, sparkType, nullable)))
 
-              val javaRowList = l.value.map(elem => Row(elem.toScala)).asJava
+              val javaRowList = l.unwrap.map(Row(_)).asJava
               val df = records.caps.sparkSession.createDataFrame(javaRowList, schema)
 
               records.data.crossJoin(df)
@@ -476,8 +476,8 @@ final case class Skip(in: PhysicalOperator, expr: Expr, header: RecordHeader) ex
     val skip: Long = expr match {
       case IntegerLit(v) => v
       case Param(name) =>
-        context.parameters(name).value match {
-          case l: Long => l
+        context.parameters(name) match {
+          case CypherInteger(l) => l
           case other => throw IllegalArgumentException("a CypherInteger", other)
         }
       case other => throw IllegalArgumentException("an integer literal or parameter", other)

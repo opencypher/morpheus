@@ -59,69 +59,52 @@ object CAPSTestValues {
   //    Seq(cypherNull[CAPSPath])
   //  )
 
-  implicit val RELATIONSHIP_valueGroups: ValueGroups[CypherValue] = Seq(
+  implicit lazy val RELATIONSHIP_valueGroups: ValueGroups[CypherValue] = Seq(
     Seq[CypherValue](
-      CAPSRelationship(
-        1,
-        1,
-        1,
-        "KNOWS",
-        CypherMap("a" -> 1, "b" -> null)),
-      CAPSRelationship(
-        1,
-        2,
-        4,
-        "FORGETS",
-        CypherMap("a" -> 1.0, "b" -> null))
+      CAPSRelationship(1, 1, 1, "KNOWS", CypherMap("a" -> 1, "b" -> CypherNull)),
+      CAPSRelationship(1, 2, 4, "FORGETS", CypherMap("a" -> 1.0, "b" -> CypherNull))
     ),
     Seq[CypherValue](CAPSRelationship(10, 1, 1, "KNOWS", CypherMap("a" -> 1))),
     Seq[CypherValue](
-      CAPSRelationship(
-        20,
-        1,
-        1,
-        "KNOWS",
-        CypherMap("a" -> 1, "b" -> 1))),
-    Seq[CypherValue](CAPSRelationship(21, 0, -1, "KNOWS", CypherMap("b" -> null))),
+      CAPSRelationship(20, 1, 1, "KNOWS", CypherMap("a" -> 1, "b" -> 1))),
+    Seq[CypherValue](
+      CAPSRelationship(21, 0, -1, "KNOWS", CypherMap("b" -> CypherNull))),
     Seq[CypherValue](CAPSRelationship(30, 1, 1, "_-&", CypherMap.empty)),
     Seq[CypherValue](
-      CAPSRelationship(
-        40,
-        1,
-        1,
-        "",
-        CypherMap("c" -> 10, "b" -> null))),
-    Seq[CypherValue](null)
+      CAPSRelationship(40, 1, 1, "", CypherMap("c" -> 10, "b" -> CypherNull))),
+    Seq[CypherValue](CypherNull)
   )
 
-  implicit val NODE_valueGroups: ValueGroups[CypherValue] = Seq(
+  implicit lazy val NODE_valueGroups: ValueGroups[CypherValue] = Seq(
     Seq[CypherValue](
-      CAPSNode(1, Set("Person"), CypherMap("a" -> 1, "b" -> null)),
-      CAPSNode(1, Set("Person"), CypherMap("a" -> 1.0d, "b" -> null))
+      CAPSNode(1, Set("Person"), CypherMap("a" -> 1, "b" -> CypherNull)),
+      CAPSNode(1, Set("Person"), CypherMap("a" -> 1.0d, "b" -> CypherNull))
     ),
     Seq[CypherValue](CAPSNode(10, Set(), CypherMap("a" -> 1))),
-    Seq[CypherValue](CAPSNode(20, Set("MathGuy"), CypherMap("a" -> 1, "b" -> 1))),
-    Seq[CypherValue](CAPSNode(21, Set("MathGuy", "FanOfNulls"), CypherMap("b" -> null))),
+    Seq[CypherValue](
+      CAPSNode(20, Set("MathGuy"), CypherMap("a" -> 1, "b" -> 1))),
+    Seq[CypherValue](
+      CAPSNode(21, Set("MathGuy", "FanOfNulls"), CypherMap("b" -> CypherNull))),
     Seq[CypherValue](CAPSNode(30, Set("NoOne"), CypherMap.empty)),
-    Seq[CypherValue](CAPSNode(40, Set(), CypherMap("c" -> 10, "b" -> null))),
-    Seq[CypherValue](null)
+    Seq[CypherValue](CAPSNode(40, Set(), CypherMap("c" -> 10, "b" -> CypherNull))),
+    Seq[CypherValue](CypherNull)
   )
 
-  implicit val MAP_valueGroups: ValueGroups[CypherValue] = Seq(
+  implicit lazy val MAP_valueGroups: ValueGroups[CypherValue] = Seq(
     // TODO: Add more nested examples
     Seq[CypherValue](CypherMap.empty),
     Seq[CypherValue](CypherMap("a" -> 1L)),
     Seq[CypherValue](CypherMap("a" -> 1L, "b" -> 1L)),
     Seq[CypherValue](
-      CypherMap("a" -> 1L, "b" -> null),
-      CypherMap("a" -> 1.0d, "b" -> null)
+      CypherMap("a" -> 1L, "b" -> CypherNull),
+      CypherMap("a" -> 1.0d, "b" -> CypherNull)
     ),
-    Seq[CypherValue](CypherMap("b" -> null)),
-    Seq[CypherValue](CypherMap("c" -> 10L, "b" -> null)),
-    Seq[CypherValue](null)
+    Seq[CypherValue](CypherMap("b" -> CypherNull)),
+    Seq[CypherValue](CypherMap("c" -> 10L, "b" -> CypherNull)),
+    Seq[CypherValue](CypherNull)
   )
 
-  implicit val LIST_valueGroups: ValueGroups[CypherValue] = Seq(
+  implicit lazy val LIST_valueGroups: ValueGroups[CypherValue] = Seq(
     // TODO: Add more nested examples
     Seq[CypherValue](CypherList.empty),
     Seq[CypherValue](CypherList(1)),
@@ -129,11 +112,11 @@ object CAPSTestValues {
     Seq[CypherValue](CypherList(1, 0, 2)),
     Seq[CypherValue](CypherList(1, 0.5)),
     Seq[CypherValue](CypherList(1, 1.5)),
-    Seq[CypherValue](CypherList(1, null, 2)),
-    Seq[CypherValue](null)
+    Seq[CypherValue](CypherList(1, CypherNull, 2)),
+    Seq[CypherValue](CypherNull)
   )
 
-  implicit val STRING_valueGroups: ValueGroups[CypherValue] = Seq(
+  implicit lazy val STRING_valueGroups: ValueGroups[CypherValue] = Seq(
     Seq[CypherValue](""),
     Seq[CypherValue]("  "),
     Seq[CypherValue]("1234567890"),
@@ -142,16 +125,16 @@ object CAPSTestValues {
     Seq[CypherValue]("ABC"),
     Seq[CypherValue]("Is it a query, if no one sees it running?"),
     Seq[CypherValue]("a", "a"),
-    Seq[CypherValue](null)
+    Seq[CypherValue](CypherNull)
   )
 
-  implicit val BOOLEAN_valueGroups: ValueGroups[CypherValue] = Seq(
+  implicit lazy val BOOLEAN_valueGroups: ValueGroups[CypherValue] = Seq(
     Seq[CypherValue](false, false),
     Seq[CypherValue](true),
-    Seq[CypherValue](null)
+    Seq[CypherValue](CypherNull)
   )
 
-  implicit val INTEGER_valueGroups: ValueGroups[CypherValue] = Seq(
+  implicit lazy val INTEGER_valueGroups: ValueGroups[CypherValue] = Seq(
     Seq[CypherValue](Long.MinValue),
     Seq[CypherValue](-23L),
     Seq[CypherValue](-10L, -10L),
@@ -162,10 +145,10 @@ object CAPSTestValues {
     Seq[CypherValue](5L, 5L),
     Seq[CypherValue](42L),
     Seq[CypherValue](Long.MaxValue),
-    Seq[CypherValue](null, null)
+    Seq[CypherValue](CypherNull, CypherNull)
   )
 
-  implicit val FLOAT_valueGroups: ValueGroups[CypherValue] = Seq(
+  implicit lazy val FLOAT_valueGroups: ValueGroups[CypherValue] = Seq(
     Seq[CypherValue](Double.NegativeInfinity),
     Seq[CypherValue](Double.MinValue),
     Seq[CypherValue](-23.0d),
@@ -178,10 +161,10 @@ object CAPSTestValues {
     Seq[CypherValue](Double.MaxValue),
     Seq[CypherValue](Double.PositiveInfinity),
     Seq[CypherValue](Double.NaN),
-    Seq[CypherValue](null)
+    Seq[CypherValue](CypherNull)
   )
 
-  implicit val NUMBER_valueGroups: ValueGroups[CypherValue] = Seq(
+  implicit lazy val NUMBER_valueGroups: ValueGroups[CypherValue] = Seq(
     Seq[CypherValue](Double.NegativeInfinity),
     Seq[CypherValue](Double.MinValue),
     Seq[CypherValue](Long.MinValue),
@@ -199,10 +182,10 @@ object CAPSTestValues {
     Seq[CypherValue](Double.MaxValue),
     Seq[CypherValue](Double.PositiveInfinity),
     Seq[CypherValue](Double.NaN),
-    Seq[CypherValue](null, null, null)
+    Seq[CypherValue](CypherNull, CypherNull)
   )
 
-  implicit val ANY_valueGroups: ValueGroups[CypherValue] = {
+  implicit lazy val ANY_valueGroups: ValueGroups[CypherValue] = {
     val allGroups: Seq[ValueGroups[CypherValue]] = Seq(
       MAP_valueGroups,
       NODE_valueGroups,
@@ -214,17 +197,22 @@ object CAPSTestValues {
       NUMBER_valueGroups
     )
 
-    val materials: ValueGroups[CypherValue] = allGroups.flatMap(_.materialValueGroups)
-    val nulls: ValueGroups[CypherValue] = Seq(allGroups.flatMap(_.nullableValueGroups).flatten)
+    val materials: ValueGroups[CypherValue] =
+      allGroups.flatMap(_.materialValueGroups)
+    val CypherNulls: ValueGroups[CypherValue] = Seq(
+      allGroups.flatMap(_.CypherNullableValueGroups).flatten)
 
-    materials ++ nulls
+    materials ++ CypherNulls
   }
 
-  implicit final class CypherValueGroups[V <: CypherValue](elts: ValueGroups[V]) {
+  implicit final class CypherValueGroups[V <: CypherValue](
+    elts: ValueGroups[V]) {
 
-    def materialValueGroups: ValueGroups[V] = elts.map(_.filter(!_.isNull)).filter(_.nonEmpty)
+    def materialValueGroups: ValueGroups[V] =
+      elts.map(_.filter(!_.isNull)).filter(_.nonEmpty)
 
-    def nullableValueGroups: ValueGroups[V] = elts.map(_.filter(_.isNull)).filter(_.nonEmpty)
+    def CypherNullableValueGroups: ValueGroups[V] =
+      elts.map(_.filter(_.isNull)).filter(_.nonEmpty)
 
   }
 

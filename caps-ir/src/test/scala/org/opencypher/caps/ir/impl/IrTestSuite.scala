@@ -82,7 +82,7 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
       where = AllGiven[Expr](),
       source = testGraph
     )
-    val model = QueryModel(result, Map.empty, blocks, Map.empty)
+    val model = QueryModel(result, CypherMap.empty, blocks, Map.empty)
     CypherQuery(QueryInfo("test"), model)
   }
 

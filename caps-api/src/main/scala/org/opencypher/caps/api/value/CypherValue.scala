@@ -15,11 +15,13 @@
  */
 package org.opencypher.caps.api.value
 
+import java.util.Objects
+
 import org.opencypher.caps.api.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.caps.api.types._
 
-import scala.collection.JavaConverters._
 import scala.reflect.{ClassTag, classTag}
+import scala.util.Try
 
 object CypherValue {
 
@@ -41,14 +43,20 @@ object CypherValue {
     }
   }
 
+  def unapply(cv: CypherValue): Option[Any] = {
+    Option(cv).flatMap(v => Option(v.value))
+  }
+
   sealed trait CypherValue extends Any {
     def value: Any
 
-    def getValue: Any = Option(value)
+    def getValue: Option[Any]
 
-    def isNull: Boolean = value == null
+    def unwrap: Any
 
-    def as[V: ClassTag]: Option[V] = Option(cast[V])
+    def isNull: Boolean = Objects.isNull(value)
+
+    def as[V: ClassTag]: Option[V] = Try(cast[V]).toOption
 
     def cast[V: ClassTag]: V = {
       this match {
@@ -56,31 +64,66 @@ object CypherValue {
         case _ =>
           value match {
             case v: V => v
-            case unsupported => throw UnsupportedOperationException(
-              s"Cannot cast $unsupported of type ${unsupported.getClass.getSimpleName} to ${classTag[V].getClass.getSimpleName}")
+            case _ =>
+                throw UnsupportedOperationException(
+                  s"Cannot cast $value of type ${value.getClass.getSimpleName} to ${classTag[V].runtimeClass.getSimpleName}")
           }
       }
     }
 
-    //TODO: Adapt return type
-    def toScala: Any = {
-      this match {
-        case l: CypherList => l.value.map(_.toScala)
-        case m: CypherMap => m.value.map { case (k, v) => k -> v.toScala }
-        case other => other.value
+    override def toString: String = Objects.toString(unwrap)
+
+    override def hashCode: Int = Objects.hashCode(unwrap)
+
+    override def equals(other: Any): Boolean = {
+      other match {
+        case cv: CypherValue => Objects.equals(unwrap, cv.unwrap)
+        case _ => false
       }
     }
 
-    //TODO: Adapt return type
-    def toJava: Any = {
+    def toCypherString: String = {
       this match {
-        case l: CypherList => l.value.map(_.toJava).asJava
-        case m: CypherMap => m.value.map { case (k, v) => k -> v.toJava }.asJava
-        case other => other.value
+        case CypherString(s) => s"'$s'"
+        case CypherList(l) => l.map(_.toCypherString).mkString("[", ", ", "]")
+        case CypherMap(m) =>
+          m.toSeq
+            .sortBy(_._1)
+            .map { case (k, v) => s"$k: ${v.toCypherString}" }
+            .mkString("{", ", ", "}")
+        case CypherRelationship(_, _, _, relType, CypherMap(properties)) =>
+          s"[:$relType${
+            if (properties.isEmpty) ""
+            else s" ${properties.toCypherString}"
+          }]"
+        case CypherNode(_, labels, CypherMap(properties)) =>
+          val labelString =
+            if (labels.isEmpty) ""
+            else labels.toSeq.sorted.mkString(":", ":", "")
+          val propertyString = if (properties.isEmpty) ""
+          else s"${properties.toCypherString}"
+          Seq(labelString, propertyString)
+            .filter(_.nonEmpty)
+            .mkString("(", " ", ")")
+        case _ => Objects.toString(value)
       }
     }
 
-    private[caps] def isOrContainsNull: Boolean = Option(value).nonEmpty || {
+    private[caps] def cypherType: CypherType = {
+      this match {
+        case CypherNull => CTNull
+        case CypherBoolean(_) => CTBoolean
+        case CypherFloat(_) => CTFloat
+        case CypherInteger(_) => CTInteger
+        case CypherString(_) => CTString
+        case CypherMap(_) => CTMap
+        case CypherNode(_, labels, _) => CTNode(labels)
+        case CypherRelationship(_, _, _, relType, _) => CTRelationship(relType)
+        case CypherList(l) => CTList(l.map(_.cypherType).foldLeft[CypherType](CTVoid)(_.join(_)))
+      }
+    }
+
+    private[caps] def isOrContainsNull: Boolean = isNull || {
       this match {
         case l: CypherList => l.value.exists(_.isOrContainsNull)
         case m: CypherMap => m.value.valuesIterator.exists(_.isOrContainsNull)
@@ -88,104 +131,56 @@ object CypherValue {
       }
     }
 
-    override def toString(): String = {
-      if (isNull) CypherNull.toString
-      else value.toString
-    }
-
-    def toCypherString: String = {
-      this match {
-        case s: CypherString => s"'${s.value}'"
-        case l: CypherList => l.value.map(_.toCypherString).mkString("[", ", ", "]")
-        case m: CypherMap =>
-          m.value.toSeq
-            .sortBy(_._1)
-            .map { case (k, v) => s"$k: ${v.toCypherString}" }
-            .mkString("{", ", ", "}")
-        case r: CypherRelationship[_] =>
-          s"[:${r.relType}${
-            if (r.properties.value.isEmpty) ""
-            else s" ${r.properties.toCypherString}"
-          }]"
-        case n: CypherNode[_] =>
-          val labelString =
-            if (n.labels.isEmpty) ""
-            else n.labels.toSeq.sorted.mkString(":", ":", "")
-          val propertyString = if (n.properties.value.isEmpty) ""
-          else s"${n.properties.toCypherString}"
-          Seq(labelString, propertyString)
-            .filter(_.nonEmpty)
-            .mkString("(", " ", ")")
-        case _ => value.toString
-      }
-    }
-
-    private[caps] def cypherType: CypherType = {
-      val material = this match {
-        case CypherNull => CTNull
-        case _: CypherBoolean => CTBoolean
-        case _: CypherFloat => CTFloat
-        case _: CypherInteger => CTInteger
-        case _: CypherString => CTString
-        case _: CypherMap => CTMap
-        case n: CypherNode[_] => CTNode(n.labels)
-        case r: CypherRelationship[_] => CTRelationship(r.relType)
-        case l: CypherList => CTList(l.value.map(_.cypherType).foldLeft[CypherType](CTVoid)(_.join(_)))
-      }
-      if (Option(value).isEmpty) {
-        material.nullable
-      } else {
-        material
-      }
-    }
-
   }
 
   object CypherNull extends CypherValue {
-    def value: Null = null
+    override def value: Null = null
 
-    override def toString = "null"
+    override def unwrap: Null = value
+
+    override def getValue: Option[Any] = None
   }
 
-  implicit class CypherString(val value: String) extends AnyVal with CypherValue
+  implicit class CypherString(val value: String) extends AnyVal with PrimitiveCypherValue[String]
 
-  implicit class CypherBoolean(val value: Boolean) extends AnyVal with CypherValue
+  implicit class CypherBoolean(val value: Boolean) extends AnyVal with PrimitiveCypherValue[Boolean]
 
-  sealed trait CypherNumber extends Any with CypherValue
+  sealed trait CypherNumber[+V] extends Any with PrimitiveCypherValue[V]
 
-  implicit class CypherInteger(val value: Long) extends AnyVal with CypherNumber
+  implicit class CypherInteger(val value: Long) extends AnyVal with CypherNumber[Long]
 
-  implicit class CypherFloat(val value: Double) extends AnyVal with CypherNumber
+  implicit class CypherFloat(val value: Double) extends AnyVal with CypherNumber[Double]
 
-  implicit class CypherMap(val value: Map[String, CypherValue]) extends AnyVal with CypherValue {
+  implicit class CypherMap(val value: Map[String, CypherValue]) extends AnyVal with MaterialCypherValue[Map[String, CypherValue]] {
+    override def unwrap: Map[String, Any] = value.map { case (k, v) => k -> v.unwrap }
+
     def keys: Set[String] = value.keySet
 
-    def get(k: String): Option[CypherValue] = value.get(k).flatMap(v => Option(v))
+    def get(k: String): Option[CypherValue] = value.get(k)
 
     def apply(k: String): CypherValue = value.getOrElse(k, CypherNull)
+
+    def ++(other: CypherMap): CypherMap = value ++ other.value
   }
 
-  object CypherMap {
-
+  object CypherMap extends UnapplyValue[Map[String, CypherValue], CypherMap] {
     def apply(values: (String, Any)*): CypherMap = {
       values.map { case (k, v) => k -> CypherValue(v) }.toMap
     }
 
     val empty: CypherMap = Map.empty[String, CypherValue]
+
   }
 
-  implicit class CypherList(val value: List[CypherValue]) extends AnyVal with CypherValue
+  implicit class CypherList(val value: List[CypherValue]) extends AnyVal with MaterialCypherValue[List[CypherValue]] {
+    override def unwrap: List[Any] = value.map(_.unwrap)
+  }
 
-  object CypherList {
-
+  object CypherList extends UnapplyValue[List[CypherValue], CypherList] {
     def apply(elem: Any*): CypherList = elem.map(CypherValue(_)).toList
 
     val empty: CypherList = List.empty[CypherValue]
-
-    def unapplySeq(l: CypherList): Option[List[CypherValue]] =
-      Option(l).map(_.value)
   }
-
 
   sealed trait CypherEntity[+Id] {
     def id: Id
@@ -197,25 +192,27 @@ object CypherValue {
     val labels: Set[String] = Set.empty,
     val properties: CypherMap = CypherMap.empty)
     extends CypherEntity[Id]
-      with CypherValue {
+      with MaterialCypherValue[CypherNode[Id]] {
     override def value: CypherNode[Id] = this
+
+    override def unwrap: CypherNode[Id] = this
 
     override def equals(that: Any): Boolean = {
       that match {
-        case cn: CypherNode[_] if cn.id == id => true
+        case CypherNode(otherId, _, _) => Objects.equals(id, otherId)
         case _ => false
       }
     }
 
     override def hashCode: Int = id.hashCode
 
-    override def toString = s"${this.getClass.getSimpleName}($id, ${labels}, ${properties})"
+    override def toString = s"${this.getClass.getSimpleName}($id, $labels, $properties)"
   }
 
   object CypherNode {
 
     def unapply[Id](n: CypherNode[Id]): Option[(Id, Set[String], CypherMap)] = {
-      Some((n.id, n.labels, n.properties))
+      Option(n).map(node => (node.id, node.labels, node.properties))
     }
   }
 
@@ -226,13 +223,15 @@ object CypherValue {
     val relType: String,
     val properties: CypherMap = CypherMap.empty)
     extends CypherEntity[Id]
-      with CypherValue {
+      with MaterialCypherValue[CypherRelationship[Id]] {
 
     override def value: CypherRelationship[Id] = this
 
+    override def unwrap: CypherRelationship[Id] = this
+
     override def equals(that: Any): Boolean = {
       that match {
-        case cr: CypherRelationship[_] if cr.id == id => true
+        case CypherRelationship(otherId, _, _, _, _) => Objects.equals(id, otherId)
         case _ => false
       }
     }
@@ -244,10 +243,34 @@ object CypherValue {
 
   object CypherRelationship {
 
-    def unapply[Id](
-      r: CypherRelationship[Id]): Option[(Id, Id, Id, String, CypherMap)] = {
-      Some((r.id, r.source, r.target, r.relType, r.properties))
+    def unapply[Id](r: CypherRelationship[Id]): Option[(Id, Id, Id, String, CypherMap)] = {
+      Option(r).map(rel => (rel.id, rel.source, rel.target, rel.relType, rel.properties))
     }
   }
+
+  trait MaterialCypherValue[+T] extends Any with CypherValue {
+    override def value: T
+
+    override def getValue: Option[T] = Option(value)
+  }
+
+  /**
+    * A primitive Cypher value is one that does not contain any other Cypher values.
+    */
+  trait PrimitiveCypherValue[+T] extends Any with MaterialCypherValue[T] {
+    override def unwrap: T = value
+  }
+
+  abstract class UnapplyValue[V, CV <: MaterialCypherValue[V]] {
+    def unapply(v: CV): Option[V] = Option(v).flatMap(_.getValue)
+  }
+
+  object CypherString extends UnapplyValue[String, CypherString]
+
+  object CypherBoolean extends UnapplyValue[Boolean, CypherBoolean]
+
+  object CypherInteger extends UnapplyValue[Long, CypherInteger]
+
+  object CypherFloat extends UnapplyValue[Double, CypherFloat]
 
 }

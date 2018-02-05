@@ -90,7 +90,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
     val (stmt, extractedLiterals, semState) = parser.process(query)(CypherParser.defaultContext)
 
     val extractedParameters: CypherMap = extractedLiterals.mapValues(v => CypherValue(v))
-    val allParameters = queryParameters.value ++ extractedParameters.value
+    val allParameters = queryParameters ++ extractedParameters
 
     logStageProgress("IR ...", false)
     val ir = IRBuilder(stmt)(IRBuilderContext.initial(query, allParameters, semState, ambientGraph, sourceAt))

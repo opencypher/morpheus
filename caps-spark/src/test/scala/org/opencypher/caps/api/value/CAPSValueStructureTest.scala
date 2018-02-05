@@ -17,7 +17,7 @@ package org.opencypher.Cypher.api.value
 
 import org.opencypher.caps.api.value.CAPSTestValues._
 import org.opencypher.caps.api.value.CypherValue._
-import org.opencypher.caps.api.value._
+import org.opencypher.caps.api.value.{CypherValue, _}
 
 class CypherValueStructureTest extends CAPSValueTestSuite {
 
@@ -34,7 +34,7 @@ class CypherValueStructureTest extends CAPSValueTestSuite {
   //          cypherNull[CypherPath]
   //
   //        case _ =>
-  //          fail("Unexpected scala value")
+  //          fail("Unexpected value")
   //      }
   //    }
   //
@@ -54,7 +54,7 @@ class CypherValueStructureTest extends CAPSValueTestSuite {
 
   test("Construct RELATIONSHIP values") {
     val originalValueGroups = RELATIONSHIP_valueGroups
-    val raw = originalValueGroups.map(_.map(_.toScala))
+    val raw = originalValueGroups.map(_.map(_.unwrap))
     val reconstructedValueGroups = raw.map(_.map(CypherValue(_)))
     reconstructedValueGroups should equal(originalValueGroups)
   }
@@ -63,18 +63,20 @@ class CypherValueStructureTest extends CAPSValueTestSuite {
     val originalValueGroups = RELATIONSHIP_valueGroups
     val reconstructedValueGroups = originalValueGroups.map { values =>
       values.map {
-        case CypherNull => null
-        case CypherRelationship(id, source, target, relType, properties) =>
-          CAPSRelationship(id.asInstanceOf[Long], source.asInstanceOf[Long], target.asInstanceOf[Long], relType, properties)
-        case v => fail(s"Unexpected value $v")
+        case CypherNull => CypherNull
+        case CAPSRelationship(id, source, target, relType, properties) =>
+          CAPSRelationship(id, source, target, relType, properties)
+        case other => fail(s"Unexpected value $other")
       }
     }
-    reconstructedValueGroups should equal(originalValueGroups)
+    // ScalaTest is being silly, should equal fails, hashCode matches as well.
+    assert(reconstructedValueGroups == originalValueGroups)
+    CypherRelationship.unapply(null) should equal(None)
   }
 
   test("Construct NODE values") {
     val originalValueGroups = NODE_valueGroups
-    val raw = originalValueGroups.map(_.map(_.toScala))
+    val raw = originalValueGroups.map(_.map(_.unwrap))
     val reconstructedValueGroups = raw.map(_.map(CypherValue(_)))
     reconstructedValueGroups should equal(originalValueGroups)
   }
@@ -83,10 +85,9 @@ class CypherValueStructureTest extends CAPSValueTestSuite {
     val originalValueGroups = NODE_valueGroups
     val reconstructedValueGroups = originalValueGroups.map { values =>
       values.map {
-        case CypherNull => null
-        case CypherNode(id, labels, properties) =>
-          CAPSNode(id.asInstanceOf[Long], labels, properties)
-        case v => fail(s"Unexpected value $v")
+        case CypherNull => CypherNull
+        case CAPSNode(id, labels, properties) => CAPSNode(id, labels, properties)
+        case other => fail(s"Unexpected value $other")
       }
     }
     reconstructedValueGroups should equal(originalValueGroups)
@@ -96,280 +97,178 @@ class CypherValueStructureTest extends CAPSValueTestSuite {
     val originalValueGroups = MAP_valueGroups
     val reconstructedValueGroups = originalValueGroups.map { values =>
       values.map {
-        case CypherNull => null
-        case m: CypherMap => CypherValue(m.toScala)
-        case v => fail(s"Unexpected value $v")
+        case CypherNull => CypherNull
+        case CypherMap(m) => CypherValue(m)
+        case other => fail(s"Unexpected value $other")
+      }
+    }
+    assert(reconstructedValueGroups == originalValueGroups)
+  }
+
+  test("Deconstruct MAP values") {
+    val cypherValueGroups = MAP_valueGroups.materialValueGroups
+    val actual = cypherValueGroups.map { values =>
+      values.map {
+        case CypherMap(m) => CypherMap(m)
+        case other => fail(s"Unexpected value $other")
+      }
+    }
+    assert(actual == cypherValueGroups)
+  }
+
+  test("Construct LIST values") {
+    val originalValueGroups = LIST_valueGroups
+
+    val reconstructedValueGroups = originalValueGroups.map { values =>
+      values.map {
+        case CypherList(l) => CypherList(l)
+        case CypherNull => CypherNull
+        case other => fail(s"Unexpected value $other")
       }
     }
     reconstructedValueGroups should equal(originalValueGroups)
   }
 
-//  test("Deconstruct MAP values") {
-//    val cypherValueGroups = MAP_valueGroups.materialValueGroups
-//    val actual = cypherValueGroups.map { values => values.map {
-//      case CypherMap(m) => m } }
-//
-//    actual should equal(expected)
-//
-//    CypherMap.unapply(cypherNull[CypherMap]) should equal(None)
-//  }
+  test("Deconstruct LIST values") {
+    val cypherValueGroups = LIST_valueGroups.materialValueGroups
+    val actual = cypherValueGroups.map { values =>
+      values.map {
+        case CypherList(v) => CypherList(v)
+        case other => fail(s"Unexpected value $other")
+      }
+    }
+    actual should equal(cypherValueGroups)
+  }
 
-  //  test("Construct LIST values") {
-  //    val originalValueGroups = LIST_valueGroups
-  //    val scalaValueGroups = originalValueGroups.scalaValueGroups
-  //
-  //    val reconstructedValueGroups = scalaValueGroups.map {
-  //      values => values.map {
-  //        case l: Seq[_] =>
-  //          CypherList(l.asInstanceOf[Seq[CypherValue]])
-  //
-  //        case null =>
-  //          cypherNull[CypherList]
-  //
-  //        case _ =>
-  //          fail("Unexpected scala value")
-  //      }
-  //    }
-  //
-  //    reconstructedValueGroups should equal(originalValueGroups)
-  //  }
-  //
-  //  test("Deconstruct LIST values") {
-  //    val cypherValueGroups = LIST_valueGroups.materialValueGroups
-  //
-  //    val expected = cypherValueGroups.scalaValueGroups
-  //    val actual = cypherValueGroups.map { values => values.map { case CypherList(v) => v } }
-  //
-  //    actual should equal(expected)
-  //
-  //    CypherList.unapply(cypherNull[CypherList]) should equal(None)
-  //  }
-  //
-  //  test("Construct STRING values") {
-  //    val originalValueGroups = STRING_valueGroups
-  //    val scalaValueGroups = originalValueGroups.scalaValueGroups
-  //
-  //    val reconstructedValueGroups = scalaValueGroups.map {
-  //      values => values.map {
-  //        case s: String =>
-  //          CypherString(s)
-  //
-  //        case null =>
-  //          cypherNull[CypherString]
-  //
-  //        case _ =>
-  //          fail("Unexpected scala value")
-  //      }
-  //    }
-  //
-  //    reconstructedValueGroups should equal(originalValueGroups)
-  //  }
-  //
-  //  test("Deconstruct STRING values") {
-  //    val cypherValueGroups = STRING_valueGroups.materialValueGroups
-  //
-  //    val expected = cypherValueGroups.scalaValueGroups
-  //    val actual = cypherValueGroups.map { values => values.map { case CypherString(v) => v } }
-  //
-  //    actual should equal(expected)
-  //
-  //    CypherString.unapply(cypherNull[CypherString]) should equal(None)
-  //  }
-  //
-  //  test("Construct BOOLEAN values") {
-  //    val originalValueGroups = BOOLEAN_valueGroups
-  //    val scalaValueGroups = originalValueGroups.scalaValueGroups
-  //
-  //    val reconstructedValueGroups = scalaValueGroups.map {
-  //      values => values.map {
-  //        case b: Boolean =>
-  //          CypherBoolean(b)
-  //
-  //        case null =>
-  //          cypherNull[CypherBoolean]
-  //
-  //        case _ =>
-  //          fail("Unexpected scala value")
-  //      }
-  //    }
-  //
-  //    reconstructedValueGroups should equal(originalValueGroups)
-  //  }
-  //
-  //  test("Deconstruct BOOLEAN values") {
-  //    val cypherValueGroups = BOOLEAN_valueGroups.materialValueGroups
-  //
-  //    val expected = cypherValueGroups.scalaValueGroups
-  //    val actual = cypherValueGroups.map { values => values.map { case CypherBoolean(v) => v } }
-  //
-  //    actual should equal(expected)
-  //
-  //    CypherBoolean.unapply(cypherNull[CypherBoolean]) should equal(None)
-  //  }
-  //
-  //  test("Construct INTEGER values") {
-  //    val originalValueGroups = INTEGER_valueGroups
-  //    val scalaValueGroups = originalValueGroups.scalaValueGroups
-  //
-  //    val reconstructedValueGroups = scalaValueGroups.map {
-  //      values => values.map {
-  //        case l: Long =>
-  //          CypherInteger(l)
-  //
-  //        case null =>
-  //          cypherNull[CypherInteger]
-  //
-  //        case _ =>
-  //          fail("Unexpected scala value")
-  //      }
-  //    }
-  //
-  //    reconstructedValueGroups should equal(originalValueGroups)
-  //  }
-  //
-  //  test("Deconstruct INTEGER values") {
-  //    val cypherValueGroups = INTEGER_valueGroups.materialValueGroups
-  //
-  //    val expected = cypherValueGroups.scalaValueGroups
-  //    val actual = cypherValueGroups.map { values => values.map { case CypherInteger(v) => v } }
-  //
-  //    actual should equal(expected)
-  //
-  //    CypherInteger.unapply(cypherNull[CypherInteger]) should equal(None)
-  //  }
-  //
-  //  test("Construct FLOAT values") {
-  //    val originalValueGroups = FLOAT_valueGroups
-  //    val scalaValueGroups = originalValueGroups.scalaValueGroups
-  //
-  //    val reconstructedValueGroups = scalaValueGroups.map {
-  //      values => values.map {
-  //        case d: Double =>
-  //          CypherFloat(d)
-  //
-  //        case null =>
-  //          cypherNull[CypherFloat]
-  //
-  //        case _ =>
-  //          fail("Unexpected scala value")
-  //      }
-  //    }
-  //
-  //    reconstructedValueGroups should equal(originalValueGroups)
-  //  }
-  //
-  //  def withoutNaNs(values: Seq[Seq[Any]]) = values.map(_.filter {
-  //    case d: Double => !d.isNaN
-  //    case _         => true
-  //  })
-  //
-  //  test("Deconstruct FLOAT values") {
-  //    val cypherValueGroups = FLOAT_valueGroups.materialValueGroups
-  //
-  //    val expected = cypherValueGroups.scalaValueGroups
-  //    val actual = cypherValueGroups.map { values => values.map { case CypherFloat(v) => v } }
-  //
-  //    withoutNaNs(actual) should equal(withoutNaNs(expected))
-  //
-  //    CypherFloat.unapply(cypherNull[CypherFloat]) should equal(None)
-  //  }
-  //
-  //  test("Construct NUMBER values") {
-  //    val originalValueGroups = NUMBER_valueGroups
-  //    val scalaValueGroups = originalValueGroups.scalaValueGroups
-  //
-  //    val reconstructedValueGroups = scalaValueGroups.map {
-  //      values => values.map {
-  //        case l: Long =>
-  //          CypherInteger(l)
-  //
-  //        case d: Double =>
-  //          CypherFloat(d)
-  //
-  //        case null =>
-  //          cypherNull[CypherNumber]
-  //
-  //        case _ =>
-  //          fail("Unexpected scala value")
-  //      }
-  //    }
-  //
-  //    reconstructedValueGroups should equal(originalValueGroups)
-  //  }
-  //
-  //  test("Deconstruct NUMBER values") {
-  //    val cypherValueGroups = NUMBER_valueGroups.materialValueGroups
-  //
-  //    val expected = cypherValueGroups.scalaValueGroups
-  //    val actual = cypherValueGroups.map { values => values.map { case CypherNumber(v) => v } }
-  //
-  //    withoutNaNs(actual) should equal(withoutNaNs(expected))
-  //
-  //    CypherNumber.unapply(cypherNull[CypherNumber]) should equal(None)
-  //  }
-  //
-  //  test("Construct ANY values") {
-  //    val originalValueGroups = ANY_valueGroups
-  //    val scalaValueGroups = originalValueGroups.scalaValueGroups
-  //
-  //    val reconstructedValueGroups = scalaValueGroups.map {
-  //      values => values.map {
-  //        case contents: NodeContents =>
-  //          val id = contents.id
-  //          val data = contents.data
-  //          CAPSNode(id, data.labels, data.properties)
-  //
-  //        case contents: RelationshipContents =>
-  //          val id = contents.id
-  //          val data = contents.data
-  //          CAPSRelationship(id, data)
-  //
-  //        case contents: MapContents =>
-  //          CypherMap(contents.properties)
-  //
-  ////        case elements: Seq[_] if isPathLike(elements) =>
-  ////          CypherPath(elements.asInstanceOf[Seq[CypherEntityValue]])
-  //
-  //        case l: Seq[_] =>
-  //          CypherList(l.asInstanceOf[Seq[CypherValue]])
-  //
-  //        case b: Boolean =>
-  //          CypherBoolean(b)
-  //
-  //        case s: String =>
-  //          CypherString(s)
-  //
-  //        case l: Long =>
-  //          CypherInteger(l)
-  //
-  //        case d: Double =>
-  //          CypherFloat(d)
-  //
-  //        case null =>
-  //          cypherNull[CypherValue]
-  //
-  //        case x =>
-  //          fail(s"Unexpected scala value $x")
-  //      }
-  //    }
-  //
-  //    reconstructedValueGroups should equal(originalValueGroups)
-  //  }
-  //
-  //  test("Deconstruct ANY values") {
-  //    val cypherValueGroups = ANY_valueGroups.materialValueGroups
-  //
-  //    val expected = cypherValueGroups.scalaValueGroups
-  //    val actual = cypherValueGroups.map { values => values.map { case CypherValue(v) => v } }
-  //
-  //    withoutNaNs(actual) should equal(withoutNaNs(expected))
-  //
-  //    CypherValue.unapply(cypherNull[CypherValue]) should equal(None)
-  //  }
-  //
-  //  test("Compares nulls and material values without throwing a NPE") {
-  //    (cypherNull[CypherInteger] == CypherInteger(2)) should be(false)
-  //    (cypherNull[CypherFloat] == cypherNull[CypherFloat]) should be(true)
-  //    (CypherFloat(2.5) == cypherNull[CypherFloat]) should be(false)
-  //  }
+  test("Construct STRING values") {
+    val originalValueGroups = STRING_valueGroups
+    val reconstructedValueGroups = originalValueGroups.map { values =>
+      values.map {
+        case CypherString(s) => CypherString(s)
+        case CypherNull => CypherNull
+        case other => fail(s"Unexpected value $other")
+      }
+    }
+    reconstructedValueGroups should equal(originalValueGroups)
+  }
+
+  test("Deconstruct STRING values") {
+    val cypherValueGroups = STRING_valueGroups.materialValueGroups
+    val actual = cypherValueGroups.map { values => values.map { case CypherString(v) => CypherString(v) } }
+    actual should equal(cypherValueGroups)
+    CypherString.unapply(null.asInstanceOf[CypherString]) should equal(None)
+  }
+
+  test("Construct BOOLEAN values") {
+    val originalValueGroups = BOOLEAN_valueGroups
+    val reconstructedValueGroups = originalValueGroups.map { values =>
+      values.map {
+        case CypherBoolean(b) => CypherBoolean(b)
+        case CypherNull => CypherNull
+        case other => fail(s"Unexpected value $other")
+      }
+    }
+    reconstructedValueGroups should equal(originalValueGroups)
+  }
+
+  test("Deconstruct BOOLEAN values") {
+    val cypherValueGroups = BOOLEAN_valueGroups.materialValueGroups
+    val actual = cypherValueGroups.map { values => values.map { case CypherBoolean(v) => CypherBoolean(v) } }
+    actual should equal(cypherValueGroups)
+  }
+
+  test("Construct INTEGER values") {
+    val originalValueGroups = INTEGER_valueGroups
+    val reconstructedValueGroups = originalValueGroups.map { values =>
+      values.map {
+        case CypherInteger(l) => CypherInteger(l)
+        case CypherNull => CypherNull
+        case other => fail(s"Unexpected value $other")
+      }
+    }
+    reconstructedValueGroups should equal(originalValueGroups)
+  }
+
+  test("Deconstruct INTEGER values") {
+    val cypherValueGroups = INTEGER_valueGroups.materialValueGroups
+    val actual = cypherValueGroups.map { values => values.map { case CypherInteger(v) => CypherInteger(v) } }
+    actual should equal(cypherValueGroups)
+  }
+
+  test("Construct FLOAT values") {
+    val originalValueGroups = FLOAT_valueGroups
+    val reconstructedValueGroups = originalValueGroups.map { values =>
+      values.map {
+        case CypherFloat(d) => CypherFloat(d)
+        case CypherNull => CypherNull
+        case other => fail(s"Unexpected value $other")
+      }
+    }
+    assert(withoutNaNs(reconstructedValueGroups) == withoutNaNs(originalValueGroups))
+  }
+
+  def withoutNaNs(values: Seq[Seq[Any]]): Seq[Seq[Any]] = values.map(_.filter {
+    case CypherFloat(d) => !d.isNaN
+    case _ => true
+  })
+
+  test("Deconstruct FLOAT values") {
+    val cypherValueGroups = FLOAT_valueGroups.materialValueGroups
+    val actual = cypherValueGroups.map { values => values.map { case CypherFloat(v) => CypherFloat(v) } }
+    assert(withoutNaNs(actual) == withoutNaNs(cypherValueGroups))
+  }
+
+  test("Construct NUMBER values") {
+    val originalValueGroups = NUMBER_valueGroups
+    val reconstructedValueGroups = originalValueGroups.map {
+      values =>
+        values.map {
+          case CypherNull => CypherNull
+          case CypherInteger(l) => CypherInteger(l)
+          case CypherFloat(d) => CypherFloat(d)
+          case other => fail(s"Unexpected value $other")
+        }
+    }
+    assert(withoutNaNs(reconstructedValueGroups) == withoutNaNs(originalValueGroups))
+  }
+
+  test("Construct ANY values") {
+    val originalValueGroups = ANY_valueGroups
+    val reconstructedValueGroups = originalValueGroups.map { values =>
+      values.map {
+        case CAPSNode(id, labels, properties) =>
+          CypherValue(CAPSNode(id, labels, properties))
+        case CAPSRelationship(id, source, target, relType, properties) =>
+          CypherValue(CAPSRelationship(id, source, target, relType, properties))
+        case CypherMap(map) => CypherValue(map)
+        //case elements: Seq[_] if isPathLike(elements) => CypherPath(elements.asInstanceOf[Seq[CypherEntityValue]])
+        case CypherList(l) => CypherValue(l)
+        case CypherBoolean(b) => CypherValue(b)
+        case CypherString(s) => CypherString(s)
+        case CypherInteger(l) => CypherValue(l)
+        case CypherFloat(d) => CypherValue(d)
+        case CypherNull => CypherValue(null)
+        case other => fail(s"Unexpected value $other")
+      }
+    }
+    assert(withoutNaNs(reconstructedValueGroups) == withoutNaNs(originalValueGroups))
+  }
+
+  test("Deconstruct ANY values") {
+    val cypherValueGroups = ANY_valueGroups.materialValueGroups
+    val actual = cypherValueGroups.map { values =>
+      values.map {
+        case CypherValue(v) => v
+        case other => fail(s"Unexpected value $other")
+      }
+    }
+    assert(withoutNaNs(actual) == withoutNaNs(cypherValueGroups))
+    CypherValue.unapply(CypherNull) should equal(None)
+  }
+
+  test("Compares nulls and material values without throwing a NPE") {
+    (CypherNull == (CypherInteger(2): CypherValue)) should be(false)
+    (CypherNull == (CypherString(null): CypherValue)) should be(true)
+    ((CypherFloat(2.5): CypherValue) == CypherNull) should be(false)
+  }
 }

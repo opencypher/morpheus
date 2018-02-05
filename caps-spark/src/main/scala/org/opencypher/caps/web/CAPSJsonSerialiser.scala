@@ -52,19 +52,19 @@ trait JsonSerialiser {
     }
   }
 
-  protected def constructValue(v: CypherValue): Json = {
-    v.value match {
+  protected def constructValue(cv: CypherValue): Json = {
+    cv match {
       case CAPSNode(id, labels, properties) =>
-        formatNode(id, labels, properties.value.filter(_._2.value != null).mapValues(p => constructValue(p)))
-      case CAPSRelationship(id, source, target, relType, properties) =>
-        formatRel(id, source, target, relType, properties.value.filter(_._2.value != null).mapValues(p => constructValue(p)))
-      case l: Long => Json.fromLong(l)
-      case d: Double => Json.fromDouble(d).getOrElse(Json.fromString(d.toString))
-      case b: Boolean => Json.fromBoolean(b)
-      case s: String => Json.fromString(s)
-      case l: List[_] => Json.arr(l.map(v => constructValue(CypherValue(v))): _*)
-      case m: Map[_, _] => Json.obj(m.map { p => p.toString -> constructValue(CypherValue(p)) }.toSeq: _*)
-      case null => Json.Null
+        formatNode(id, labels, properties.value.filter(!_._2.isNull).mapValues(p => constructValue(p)))
+      case CAPSRelationship(id, source, target, relType, CypherMap(properties)) =>
+        formatRel(id, source, target, relType, properties.filter(!_._2.isNull).mapValues(p => constructValue(p)))
+      case CypherInteger(l) => Json.fromLong(l)
+      case CypherFloat(d) => Json.fromDouble(d).getOrElse(Json.fromString(d.toString))
+      case CypherBoolean(b) => Json.fromBoolean(b)
+      case CypherString(s) => Json.fromString(s)
+      case CypherList(l) => Json.arr(l.map(v => constructValue(CypherValue(v))): _*)
+      case CypherMap(m) => Json.obj(m.map { case (k, v) => k -> constructValue(v) }.toSeq: _*)
+      case CypherNull => Json.Null
     }
   }
 
