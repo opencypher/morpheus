@@ -1,17 +1,10 @@
 package org.opencypher.caps.cosc
 
 import org.opencypher.caps.api.value.CypherMap
-import org.opencypher.caps.impl.record.{CypherRecordHeader, CypherRecords}
+import org.opencypher.caps.impl.record.{CypherRecords, RecordHeader}
 import org.opencypher.caps.impl.util.PrintOptions
 
-class COSCRecords extends CypherRecords {
-  /**
-    * The header for this table, describing the slots stored.
-    *
-    * @return the header for this table.
-    */
-  override def header: CypherRecordHeader = ???
-
+sealed abstract class COSCRecords(val header: RecordHeader) extends CypherRecords {
   /**
     * Consume these records as an iterator.
     *
@@ -29,6 +22,6 @@ class COSCRecords extends CypherRecords {
 
 object COSCRecords {
   def unit: COSCRecords = {
-    ???
+    new COSCRecords(RecordHeader.empty) {}
   }
 }

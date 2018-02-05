@@ -19,8 +19,7 @@ case class COSCPlannerContext(
 class COSCPlanner extends DirectCompilationStage[FlatOperator, COSCOperator, COSCPlannerContext]{
 
   override def process(input: FlatOperator)(implicit context: COSCPlannerContext): COSCOperator = {
-    println("I'm planning shit")
-
+    println("Physical planning starts here ...")
     ???
   }
 }
