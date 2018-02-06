@@ -7,13 +7,13 @@ import org.opencypher.caps.api.exception.UnsupportedOperationException
 import org.opencypher.caps.api.graph.{CypherResult, CypherSession, PropertyGraph}
 import org.opencypher.caps.api.io.{PersistMode, PropertyGraphDataSource}
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.value.{CAPSValue, CypherValue}
+import org.opencypher.caps.api.value.CypherValue
+import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.cosc.Configuration.PrintCOSCPlan
 import org.opencypher.caps.cosc.datasource.{COSCGraphSourceHandler, COSCPropertyGraphDataSource, COSCSessionPropertyGraphDataSourceFactory}
 import org.opencypher.caps.cosc.planning.{COSCPlanner, COSCPlannerContext}
 import org.opencypher.caps.demo.Configuration.{PrintFlatPlan, PrintLogicalPlan}
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
-import org.opencypher.caps.impl.util.Measurement
 import org.opencypher.caps.impl.util.Measurement.time
 import org.opencypher.caps.ir.api.IRExternalGraph
 import org.opencypher.caps.ir.impl.parse.CypherParser
@@ -46,10 +46,10 @@ class COSCSession(private val graphSourceHandler: COSCGraphSourceHandler) extend
     * @param parameters parameters used by the Cypher query
     * @return result of the query
     */
-  override def cypher(query: String, parameters: Map[String, CypherValue]): CypherResult =
+  override def cypher(query: String, parameters: CypherMap): CypherResult =
     cypherOnGraph(COSCGraph.empty(this), query, parameters)
 
-  override def cypherOnGraph(graph: PropertyGraph, query: String, parameters: Map[String, CypherValue] = Map.empty): CypherResult = {
+  override def cypherOnGraph(graph: PropertyGraph, query: String, parameters: CypherMap): CypherResult = {
     val ambientGraph = getAmbientGraph(graph)
 
     println(
@@ -59,7 +59,7 @@ class COSCSession(private val graphSourceHandler: COSCGraphSourceHandler) extend
 
     val (stmt, extractedLiterals, semState) = time("AST construction")(parser.process(query)(CypherParser.defaultContext))
 
-    val extractedParameters = extractedLiterals.mapValues(v => CAPSValue(v))
+    val extractedParameters = extractedLiterals.mapValues(v => CypherValue(v))
     val allParameters = parameters ++ extractedParameters
 
     val ir = time("IR translation")(IRBuilder(stmt)(IRBuilderContext.initial(query, allParameters, semState, ambientGraph, sourceAt)))

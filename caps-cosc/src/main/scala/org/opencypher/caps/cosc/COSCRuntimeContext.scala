@@ -3,14 +3,14 @@ package org.opencypher.caps.cosc
 import java.net.URI
 
 import org.opencypher.caps.api.graph.PropertyGraph
-import org.opencypher.caps.api.value.CypherValue
+import org.opencypher.caps.api.value.CypherValue.CypherMap
 
 object COSCRuntimeContext {
-  val empty = COSCRuntimeContext(Map.empty, _ => None)
+  val empty = COSCRuntimeContext(CypherMap.empty, _ => None)
 }
 
 case class COSCRuntimeContext(
-  parameters: Map[String, CypherValue],
+  parameters: CypherMap,
   resolve: URI => Option[PropertyGraph]
 )
 

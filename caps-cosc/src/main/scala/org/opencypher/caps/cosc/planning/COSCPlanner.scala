@@ -4,7 +4,7 @@ import java.net.URI
 
 import org.opencypher.caps.api.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.caps.api.graph.PropertyGraph
-import org.opencypher.caps.api.value.CypherValue
+import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.cosc.COSCRecords
 import org.opencypher.caps.impl.flat._
 import org.opencypher.caps.ir.api.util.DirectCompilationStage
@@ -13,9 +13,7 @@ import org.opencypher.caps.logical.impl.LogicalExternalGraph
 case class COSCPlannerContext(
   resolver: URI => PropertyGraph,
   records: COSCRecords,
-  parameters: Map[String, CypherValue]) {
-
-}
+  parameters: CypherMap)
 
 class COSCPlanner extends DirectCompilationStage[FlatOperator, COSCOperator, COSCPlannerContext]{
 

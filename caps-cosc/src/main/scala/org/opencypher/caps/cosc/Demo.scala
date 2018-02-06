@@ -1,6 +1,7 @@
 package org.opencypher.caps.cosc
 
-import org.opencypher.caps.api.value._
+import org.opencypher.caps.api.value.CypherValue.{CypherInteger, CypherMap, CypherString}
+import org.opencypher.caps.cosc.value.{COSCNode, COSCRelationship}
 
 object Demo extends App {
 
@@ -17,33 +18,31 @@ object DemoData {
 
   def rels = Seq(aliceKnowsBob)
 
-  val aliceId = EntityId(0L)
-  val alice: CAPSNode = CAPSNode(
+  val aliceId = 0L
+  val alice = COSCNode(
     aliceId,
-    Seq("Person"),
-    Properties(
-      "name" -> CAPSValue("Alice"),
-      "age" -> CAPSValue(42)
+    Set("Person"),
+    CypherMap(
+      "name" -> CypherString("Alice"),
+      "age" -> CypherInteger(42)
     )
   )
 
-  val bobId = EntityId(1L)
-  val bob = CAPSNode(
+  val bobId = 1L
+  val bob = COSCNode(
     bobId,
-    Seq("Person"),
-    Properties(
-      "name" -> CAPSValue("Bob"),
-      "age" -> CAPSValue(23)
+    Set("Person"),
+    CypherMap(
+      "name" -> CypherString("Bob"),
+      "age" -> CypherInteger(23)
     )
   )
 
-  val aliceKnowsBob = CAPSRelationship(
-    EntityId(0L),
+  val aliceKnowsBob = COSCRelationship(
+    0L,
     aliceId,
     bobId,
     "KNOWS",
-    Properties(
-      "since" -> CAPSValue(2018)
-    )
+    CypherMap("since" -> CypherInteger(2018))
   )
 }
