@@ -201,7 +201,6 @@ Feature "ReturnAcceptance2": Scenario "`substring()` with default second argumen
 Feature "ReturnAcceptance2": Scenario "Returned columns do not change from using ORDER BY"
 Feature "ReturnAcceptance2": Scenario "Arithmetic expressions should propagate null values"
 Feature "ReturnAcceptance2": Scenario "Indexing into nested literal lists"
-Feature "ReturnAcceptance2": Scenario "Aliasing expressions"
 Feature "ReturnAcceptance2": Scenario "Projecting an arithmetic expression with aggregation"
 Feature "ReturnAcceptance2": Scenario "Multiple aliasing and backreferencing"
 Feature "ReturnAcceptance2": Scenario "Reusing variable names"

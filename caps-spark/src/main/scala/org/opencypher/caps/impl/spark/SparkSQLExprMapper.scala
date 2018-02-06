@@ -32,12 +32,7 @@ object SparkSQLExprMapper {
   implicit class RichExpression(expr: Expr) {
 
     def verify(implicit header: RecordHeader) = {
-      val slots = header.slotsFor(expr)
-      if (slots.isEmpty) {
-        throw IllegalStateException(s"No slot for expression $expr")
-      } else if (slots.size > 1 && !expr.isInstanceOf[Var]) {
-        throw NotImplementedException("Support for multi-column expressions")
-      }
+      if (header.slotsFor(expr).isEmpty) throw IllegalStateException(s"No slot for expression $expr")
     }
 
     def column(implicit header: RecordHeader, dataFrame: DataFrame, context: RuntimeContext): Column = {
