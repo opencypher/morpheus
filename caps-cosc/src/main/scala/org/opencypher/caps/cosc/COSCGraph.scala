@@ -1,5 +1,6 @@
 package org.opencypher.caps.cosc
 
+import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
@@ -8,33 +9,55 @@ import org.opencypher.caps.impl.record.RecordHeader
 import org.opencypher.caps.ir.api.expr.Var
 
 object COSCGraph {
-  def empty(implicit session: COSCSession): COSCGraph = COSCGraph(Seq.empty, Seq.empty)(session)
+  def empty(implicit session: COSCSession): COSCGraph = COSCGraph(Map.empty, Map.empty)(session)
+
+  def create(nodes: Seq[CAPSNode], rels: Seq[CAPSRelationship])(implicit session: COSCSession): COSCGraph = {
+    val labelNodeMap = nodes.groupBy(n => CAPSNode.contents(n) match {
+      case Some(content) => content.labels.toSet
+      case None => throw IllegalArgumentException("Node with contents")
+    })
+
+    val typeRelMap = rels.groupBy(r => CAPSRelationship.contents(r) match {
+      case Some(content) => content.relationshipType
+      case None => throw IllegalArgumentException("Relationship with contents")
+    })
+
+    COSCGraph(labelNodeMap, typeRelMap)
+  }
 }
 
-case class COSCGraph(nodes: Seq[CAPSNode], rels: Seq[CAPSRelationship])(implicit cosc: COSCSession) extends PropertyGraph {
+case class COSCGraph(labelNodeMap: Map[Set[String], Seq[CAPSNode]], typeRelMap: Map[String, Seq[CAPSRelationship]])
+  (implicit cosc: COSCSession) extends PropertyGraph {
 
   type CypherSession = COSCSession
 
-  /**
-    * The schema that describes this graph.
-    *
-    * @return the schema of this graph.
-    */
-  override def schema: Schema = {
-    val nodeSchema = nodes.foldLeft(Schema.empty) {
+  private def allNodes = labelNodeMap.values.flatten.toSeq
+
+  private def allRelationships = typeRelMap.values.flatten.toSeq
+
+  private def schemaForNodes(nodes: Seq[CAPSNode], initialSchema: Schema = Schema.empty): Schema =
+    nodes.foldLeft(initialSchema) {
       case (tmpSchema, node) => CAPSNode.contents(node) match {
         case Some(content) => tmpSchema.withNodePropertyKeys(content.labels: _*)(
           content.properties.m.keySet.map(key => key -> content.properties(key).cypherType).toSeq: _*)
       }
     }
 
-    rels.foldLeft(nodeSchema) {
+  private def schemaForRels(rels: Seq[CAPSRelationship], initialSchema: Schema = Schema.empty): Schema =
+    rels.foldLeft(initialSchema) {
       case (tmpSchema, rel) => CAPSRelationship.contents(rel) match {
         case Some(content) => tmpSchema.withRelationshipPropertyKeys(content.relationshipType)(
           content.properties.m.keySet.map(key => key -> content.properties(key).cypherType).toSeq: _*)
       }
     }
-  }
+
+  /**
+    * The schema that describes this graph.
+    *
+    * @return the schema of this graph.
+    */
+  override def schema: Schema = schemaForRels(allRelationships, initialSchema = schemaForNodes(allNodes))
+
 
   /**
     * The session in which this graph is managed.
@@ -51,9 +74,10 @@ case class COSCGraph(nodes: Seq[CAPSNode], rels: Seq[CAPSRelationship])(implicit
     */
   override def nodes(name: String, nodeCypherType: CTNode): COSCRecords = {
     val node = Var(name)(nodeCypherType)
-    val targetNodeHeader = RecordHeader.nodeFromSchema(node, schema)
-
-    COSCRecords.create(nodes.map(node => CAPSMap(name -> node)).toList, targetNodeHeader)
+    val filteredNodes = if (nodeCypherType.labels.isEmpty) allNodes else labelNodeMap(nodeCypherType.labels)
+    val filteredSchema = schemaForNodes(filteredNodes)
+    val targetNodeHeader = RecordHeader.nodeFromSchema(node, filteredSchema)
+    COSCRecords.create(filteredNodes.map(node => CAPSMap(name -> node)).toList, targetNodeHeader)
   }
 
   /**
@@ -62,7 +86,13 @@ case class COSCGraph(nodes: Seq[CAPSNode], rels: Seq[CAPSRelationship])(implicit
     * @param name the field name for the returned relationships.
     * @return a table of relationships of the specified type.
     */
-  override def relationships(name: String, relCypherType: CTRelationship): COSCRecords = ???
+  override def relationships(name: String, relCypherType: CTRelationship): COSCRecords = {
+    val rel = Var(name)(relCypherType)
+    val filteredRels = if (relCypherType.types.isEmpty) allRelationships else typeRelMap.filterKeys(relCypherType.types.contains).values.flatten.toSeq
+    val filteredSchema = schemaForRels(filteredRels)
+    val targetHeader = RecordHeader.relationshipFromSchema(rel, filteredSchema)
+    COSCRecords.create(filteredRels.map(rel => CAPSMap(name -> rel)).toList, targetHeader)
+  }
 
   /**
     * Constructs the union of this graph and the argument graph.

@@ -6,7 +6,7 @@ object Demo extends App {
 
   implicit val coscSession: COSCSession = COSCSession.create
 
-  val graph = COSCGraph(DemoData.nodes, DemoData.rels)
+  val graph = COSCGraph.create(DemoData.nodes, DemoData.rels)
 
   graph.cypher("MATCH (n) RETURN n").print
 }
