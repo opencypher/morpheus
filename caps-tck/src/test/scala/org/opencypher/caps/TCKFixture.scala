@@ -17,16 +17,21 @@ package org.opencypher.caps
 
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.NotImplementedException
+import org.opencypher.caps.api.graph.CypherResult
 import org.opencypher.caps.api.value.CypherValue
-import org.opencypher.caps.api.value.CypherValue.{ CypherValue => CAPSCypherValue, CypherMap => CAPSCypherMap, CypherList => CAPSCypherList }
+import org.opencypher.caps.api.value.CypherValue.{CypherList => CAPSCypherList, CypherMap => CAPSCypherMap, CypherValue => CAPSCypherValue}
 import org.opencypher.caps.impl.record.CypherRecords
-import org.opencypher.caps.impl.spark.CAPSGraph
+import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSResult}
+import org.opencypher.caps.ir.impl.typer.exception.TypingException
 import org.opencypher.caps.test.support.creation.caps.CAPSGraphFactory
 import org.opencypher.caps.test.support.creation.propertygraph.Neo4jPropertyGraphFactory
 import org.opencypher.tools.tck.api._
 import org.opencypher.tools.tck.values.{CypherValue => TCKCypherValue, _}
+import org.opencypher.tools.tck.api.ExecutionFailed
+import org.opencypher.tools.tck.constants.{TCKErrorDetails, TCKErrorPhases, TCKErrorTypes}
 
 import scala.io.Source
+import scala.util.{Failure, Success, Try}
 
 case class TCKGraph(capsGraphFactory: CAPSGraphFactory, graph: CAPSGraph)(implicit caps: CAPSSession) extends Graph {
 
@@ -40,10 +45,16 @@ case class TCKGraph(capsGraphFactory: CAPSGraphFactory, graph: CAPSGraph)(implic
         this -> CypherValueRecords.empty
       case ExecQuery =>
         // mapValues is lazy, so we force it for debug purposes
-        val capsResult = graph.cypher(query, params.mapValues(tckValueToCAPSValue).view.force)
-        val tckRecords = convertToTckStrings(capsResult.records)
-
-        this -> tckRecords
+        val capsResult = Try(graph.cypher(query, params.mapValues(tckValueToCAPSValue).view.force))
+        capsResult match {
+          case Success(r) => this -> convertToTckStrings(r.records)
+          case Failure(e) =>
+            val phase = TCKErrorPhases.RUNTIME // We have no way to detect errors during compile time yet
+            e match {
+              case t: TypingException => this ->
+                ExecutionFailed(TCKErrorTypes.TYPE_ERROR, phase, TCKErrorDetails.INVALID_ARGUMENT_VALUE)
+            }
+        }
     }
   }
 
@@ -56,14 +67,14 @@ case class TCKGraph(capsGraphFactory: CAPSGraphFactory, graph: CAPSGraph)(implic
   }
 
   private def tckValueToCAPSValue(cypherValue: TCKCypherValue): CAPSCypherValue = cypherValue match {
-    case CypherString(v)               => CypherValue(v)
-    case CypherInteger(v)              => CypherValue(v)
-    case CypherFloat(v)                => CypherValue(v)
-    case CypherBoolean(v)              => CypherValue(v)
-    case CypherProperty(key, value)    => CAPSCypherMap(key -> tckValueToCAPSValue(value))
+    case CypherString(v) => CypherValue(v)
+    case CypherInteger(v) => CypherValue(v)
+    case CypherFloat(v) => CypherValue(v)
+    case CypherBoolean(v) => CypherValue(v)
+    case CypherProperty(key, value) => CAPSCypherMap(key -> tckValueToCAPSValue(value))
     case CypherPropertyMap(properties) => CAPSCypherMap(properties.mapValues(tckValueToCAPSValue))
-    case l: CypherList                 => CAPSCypherList(l.elements.map(tckValueToCAPSValue))
-    case CypherNull                    => CypherValue(null)
+    case l: CypherList => CAPSCypherList(l.elements.map(tckValueToCAPSValue))
+    case CypherNull => CypherValue(null)
     case other =>
       throw NotImplementedException(s"Converting Cypher value $cypherValue of type `${other.getClass.getSimpleName}`")
   }
