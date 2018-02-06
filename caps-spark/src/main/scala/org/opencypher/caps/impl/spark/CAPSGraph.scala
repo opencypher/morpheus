@@ -51,15 +51,12 @@ trait CAPSGraph extends PropertyGraph with Serializable {
 
   override def toString = s"${getClass.getSimpleName}"
 
-  override protected def graph: CAPSGraph
-
 }
 
 object CAPSGraph {
 
   def empty(implicit caps: CAPSSession): CAPSGraph =
     new EmptyGraph() {
-      override protected def graph: CAPSGraph = this
 
       override def session: CAPSSession = caps
 
@@ -90,7 +87,7 @@ object CAPSGraph {
 
   sealed abstract class LazyGraph(override val schema: Schema, loadGraph: => CAPSGraph)(implicit caps: CAPSSession)
     extends CAPSGraph {
-    override protected lazy val graph: CAPSGraph = {
+    protected lazy val lazyGraph: CAPSGraph = {
       val g = loadGraph
       if (g.schema == schema) g else throw IllegalArgumentException(s"a graph with schema $schema", g.schema)
     }
@@ -98,33 +95,33 @@ object CAPSGraph {
     override def session: CAPSSession = caps
 
     override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords =
-      graph.nodes(name, nodeCypherType)
+      lazyGraph.nodes(name, nodeCypherType)
 
     override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords =
-      graph.relationships(name, relCypherType)
+      lazyGraph.relationships(name, relCypherType)
 
     override def union(other: PropertyGraph): CAPSGraph =
-      graph.union(other)
+      lazyGraph.union(other)
 
     override def cache(): CAPSGraph = {
-      graph.cache(); this
+      lazyGraph.cache(); this
     }
 
     override def persist(): CAPSGraph = {
-      graph.persist(); this
+      lazyGraph.persist(); this
     }
 
     override def persist(storageLevel: StorageLevel): CAPSGraph = {
-      graph.persist(storageLevel)
+      lazyGraph.persist(storageLevel)
       this
     }
 
     override def unpersist(): CAPSGraph = {
-      graph.unpersist(); this
+      lazyGraph.unpersist(); this
     }
 
     override def unpersist(blocking: Boolean): CAPSGraph = {
-      graph.unpersist(blocking); this
+      lazyGraph.unpersist(blocking); this
     }
   }
 

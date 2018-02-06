@@ -61,8 +61,6 @@ class Neo4jGraph(val schema: Schema, val session: CAPSSession)(
       rel,
       targetNode)
 
-  override protected def graph: CAPSGraph = this
-
   override def nodes(name: String, cypherType: CTNode): CAPSRecords = {
     val header = RecordHeader.nodeFromSchema(Var(name)(cypherType), schema)
 

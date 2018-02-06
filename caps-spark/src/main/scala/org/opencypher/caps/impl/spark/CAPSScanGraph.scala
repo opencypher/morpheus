@@ -83,8 +83,6 @@ class CAPSScanGraph(val scans: Seq[EntityTable], val schema: Schema)(implicit va
     case _ => CAPSUnionGraph(this, other.asCaps)
   }
 
-  override protected def graph: CAPSScanGraph = this
-
   // TODO: add test case where there are multiple rel types in the underlying DF and see if it filters the right one
   case class EntityTables(entityTables: Vector[EntityTable]) {
     type EntityType = CypherType with DefiniteCypherType

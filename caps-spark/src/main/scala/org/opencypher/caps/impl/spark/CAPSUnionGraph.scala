@@ -26,8 +26,6 @@ import org.opencypher.caps.ir.api.expr.Var
 
 final case class CAPSUnionGraph(graphs: CAPSGraph*)(implicit val session: CAPSSession) extends CAPSGraph {
 
-  override protected def graph: CAPSGraph = this
-
   private lazy val individualSchemas = graphs.map(_.schema)
 
   override lazy val schema: Schema = individualSchemas.foldLeft(Schema.empty)(_ ++ _)
