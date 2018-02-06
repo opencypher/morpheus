@@ -139,7 +139,7 @@ final class Ors(_exprs: Set[Expr])(val cypherType: CypherType = CTWildcard) exte
   override protected def hashPrime: Int = 61
 }
 
-trait PredicateExpression extends Expr {
+sealed trait PredicateExpression extends Expr {
   def inner: Expr
 }
 
