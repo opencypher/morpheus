@@ -186,9 +186,9 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         val existsPlan = producer.planExistsSubQuery(ex, acc, subqueryPlan)
         producer.projectField(f, existsPlan.expr.targetField, existsPlan)
 
-      case (acc, (f, n: Not)) =>
-        val projectInner = planInnerExpr(n.expr, acc)
-        producer.projectField(f, n, projectInner)
+      case (acc, (f, e: PredicateExpression)) =>
+        val projectInner = planInnerExpr(e.inner, acc)
+        producer.projectField(f, e, projectInner)
 
       case (_, (_, x)) =>
         throw NotImplementedException(s"Support for projection of $x not yet implemented")
