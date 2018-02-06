@@ -139,23 +139,32 @@ final class Ors(_exprs: Set[Expr])(val cypherType: CypherType = CTWildcard) exte
   override protected def hashPrime: Int = 61
 }
 
-final case class Not(expr: Expr)(val cypherType: CypherType = CTWildcard) extends Expr {
+trait PredicateExpression extends Expr {
+  def inner: Expr
+}
+
+final case class Not(expr: Expr)(val cypherType: CypherType = CTWildcard) extends PredicateExpression {
+  def inner = expr
   override def withoutType = s"NOT ${expr.withoutType}"
 }
 
-final case class HasLabel(node: Expr, label: Label)(val cypherType: CypherType = CTWildcard) extends Expr {
+final case class HasLabel(node: Expr, label: Label)(val cypherType: CypherType = CTWildcard) extends PredicateExpression {
+  def inner = node
   override def withoutType: String = s"${node.withoutType}:${label.name}"
 }
 
-final case class HasType(rel: Expr, relType: RelType)(val cypherType: CypherType = CTWildcard) extends Expr {
+final case class HasType(rel: Expr, relType: RelType)(val cypherType: CypherType = CTWildcard) extends PredicateExpression {
+  def inner = rel
   override def withoutType: String = s"type(${rel.withoutType}) = '${relType.name}'"
 }
 
-final case class IsNull(expr: Expr)(val cypherType: CypherType = CTWildcard) extends Expr {
+final case class IsNull(expr: Expr)(val cypherType: CypherType = CTWildcard) extends PredicateExpression {
+  def inner = expr
   override def withoutType: String = s"type(${expr.withoutType}) IS NULL"
 }
 
-final case class IsNotNull(expr: Expr)(val cypherType: CypherType = CTWildcard) extends Expr {
+final case class IsNotNull(expr: Expr)(val cypherType: CypherType = CTWildcard) extends PredicateExpression {
+  def inner = expr
   override def withoutType: String = s"type(${expr.withoutType}) IS NOT NULL"
 }
 
