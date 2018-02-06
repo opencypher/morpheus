@@ -86,6 +86,7 @@ object CAPSSession extends Serializable {
     conf.set("spark.kryo.unsafe", "true")
     conf.set("spark.kryo.referenceTracking", "false")
     conf.set("spark.kryo.registrationRequired", "true")
+    conf.set("spark.sql.shuffle.partitions", "12")
 
     val session = SparkSession
       .builder()

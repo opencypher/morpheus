@@ -30,15 +30,8 @@ import org.opencypher.caps.ir.impl.convert.toJava
 
 object SparkSQLExprMapper {
 
-  private def verifyExpression(header: RecordHeader, expr: Expr) = {
-    val slots = header.slotsFor(expr)
-
-    if (slots.isEmpty) {
-      throw IllegalStateException(s"No slot for expression $expr")
-    } else if (slots.size > 1 && !expr.isInstanceOf[Var]) {
-      throw NotImplementedException("Support for multi-column expressions")
-    }
-  }
+  private def verifyExpression(header: RecordHeader, expr: Expr): Unit =
+    if (header.slotsFor(expr).isEmpty) throw IllegalStateException(s"No slot for expression $expr")
 
   private def getColumn(expr: Expr, header: RecordHeader, dataFrame: DataFrame)(
     implicit context: RuntimeContext): Column = {

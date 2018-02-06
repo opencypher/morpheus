@@ -20,7 +20,8 @@ import org.opencypher.caps.impl.spark.CAPSGraph
 
 import scala.collection.immutable.Bag
 
-trait PredicateBehaviour { this: AcceptanceTest =>
+trait PredicateBehaviour {
+  this: AcceptanceTest =>
 
   def predicateBehaviour(initGraph: String => CAPSGraph): Unit = {
     test("exists()") {
@@ -102,12 +103,13 @@ trait PredicateBehaviour { this: AcceptanceTest =>
 
     test("or with and") {
       // Given
-      val given = initGraph("""CREATE (:A {val: 1, name: 'a'})
-                                 |CREATE (:A {val: 2, name: 'a'})
-                                 |CREATE (:A {val: 3, name: 'e'})
-                                 |CREATE (:A {val: 4})
-                                 |CREATE (:A {val: 5, name: 'e'})
-                               """.stripMargin)
+      val given = initGraph(
+        """CREATE (:A {val: 1, name: 'a'})
+          |CREATE (:A {val: 2, name: 'a'})
+          |CREATE (:A {val: 3, name: 'e'})
+          |CREATE (:A {val: 4})
+          |CREATE (:A {val: 5, name: 'e'})
+        """.stripMargin)
 
       // When
       val result = given.cypher("MATCH (a:A) WHERE a.val = 1 OR (a.val >= 4 AND a.name = 'e') RETURN a.val, a.name")
@@ -126,11 +128,11 @@ trait PredicateBehaviour { this: AcceptanceTest =>
       // Given
       val given = initGraph(
         """ CREATE (:A {val: 1})-[:REL]->(:B {p: 2})
-           |CREATE (:A {val: 2})-[:REL]->(:B {p: 1})
-           |CREATE (:A {val: 100})-[:REL]->(:B {p: 100})
-           |CREATE (:A {val: 1})-[:REL]->(:B)
-           |CREATE (:A)-[:REL]->(:B {p: 2})
-           |CREATE (:A)-[:REL]->(:B)
+          |CREATE (:A {val: 2})-[:REL]->(:B {p: 1})
+          |CREATE (:A {val: 100})-[:REL]->(:B {p: 100})
+          |CREATE (:A {val: 1})-[:REL]->(:B)
+          |CREATE (:A)-[:REL]->(:B {p: 2})
+          |CREATE (:A)-[:REL]->(:B)
         """.stripMargin)
 
       // When
@@ -167,7 +169,7 @@ trait PredicateBehaviour { this: AcceptanceTest =>
       val given = initGraph(
         """
           |CREATE (:Node {id: 1, val: 4})-[:REL]->(:Node {id: 2, val: 5})-[:REL]->(:Node {id: 3, val: 5})
-       |""".stripMargin)
+          |""".stripMargin)
 
       // When
       val result = given.cypher("MATCH (n:Node)-->(m:Node) WHERE n.val <= m.val RETURN n.id, n.val")
@@ -212,6 +214,21 @@ trait PredicateBehaviour { this: AcceptanceTest =>
 
       // And
       result.graphs shouldBe empty
+    }
+
+    it("can chain range predicates") {
+      val graph = initGraph("CREATE ({val: 10}), ({val: 0}), ({val: 11})")
+
+      val query =
+        """
+          |MATCH (a)
+          |WHERE 0 < a.val <= 10
+          |RETURN a.val
+        """.stripMargin
+
+      graph.cypher(query).records.iterator.toBag should equal(Bag(
+        CAPSMap("a.val" -> 10)
+      ))
     }
 
     test("float conversion for integer division") {
