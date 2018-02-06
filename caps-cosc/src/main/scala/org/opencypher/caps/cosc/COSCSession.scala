@@ -8,10 +8,13 @@ import org.opencypher.caps.api.graph.{CypherResult, CypherSession, PropertyGraph
 import org.opencypher.caps.api.io.{PersistMode, PropertyGraphDataSource}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.value.{CAPSValue, CypherValue}
+import org.opencypher.caps.cosc.Configuration.PrintCOSCPlan
 import org.opencypher.caps.cosc.datasource.{COSCGraphSourceHandler, COSCPropertyGraphDataSource, COSCSessionPropertyGraphDataSourceFactory}
 import org.opencypher.caps.cosc.planning.{COSCPlanner, COSCPlannerContext}
-import org.opencypher.caps.demo.Configuration.PrintLogicalPlan
+import org.opencypher.caps.demo.Configuration.{PrintFlatPlan, PrintLogicalPlan}
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
+import org.opencypher.caps.impl.util.Measurement
+import org.opencypher.caps.impl.util.Measurement.time
 import org.opencypher.caps.ir.api.IRExternalGraph
 import org.opencypher.caps.ir.impl.parse.CypherParser
 import org.opencypher.caps.ir.impl.{IRBuilder, IRBuilderContext}
@@ -49,47 +52,34 @@ class COSCSession(private val graphSourceHandler: COSCGraphSourceHandler) extend
   override def cypherOnGraph(graph: PropertyGraph, query: String, parameters: Map[String, CypherValue] = Map.empty): CypherResult = {
     val ambientGraph = getAmbientGraph(graph)
 
-    val (stmt, extractedLiterals, semState) = parser.process(query)(CypherParser.defaultContext)
+    println(
+      s"""Executing query:
+         |$query
+       """.stripMargin)
+
+    val (stmt, extractedLiterals, semState) = time("AST construction")(parser.process(query)(CypherParser.defaultContext))
 
     val extractedParameters = extractedLiterals.mapValues(v => CAPSValue(v))
     val allParameters = parameters ++ extractedParameters
 
-    println("IR ...")
-    val ir = IRBuilder(stmt)(IRBuilderContext.initial(query, allParameters, semState, ambientGraph, sourceAt))
-    println("Done!")
+    val ir = time("IR translation")(IRBuilder(stmt)(IRBuilderContext.initial(query, allParameters, semState, ambientGraph, sourceAt)))
 
-    println("Logical plan ...")
-    val logicalPlannerContext =
-      LogicalPlannerContext(graph.schema, Set.empty, ir.model.graphs.andThen(sourceAt), ambientGraph)
-    val logicalPlan = logicalPlanner(ir)(logicalPlannerContext)
-    println("Done!")
-
-    println("Optimizing logical plan ...")
-    val optimizedLogicalPlan = logicalOptimizer(logicalPlan)(logicalPlannerContext)
-    println("Done!")
-
+    val logicalPlannerContext = LogicalPlannerContext(graph.schema, Set.empty, ir.model.graphs.andThen(sourceAt), ambientGraph)
+    val logicalPlan = time("Logical planning")(logicalPlanner(ir)(logicalPlannerContext))
+    val optimizedLogicalPlan = time("Logical optimization")(logicalOptimizer(logicalPlan)(logicalPlannerContext))
     if (PrintLogicalPlan.get()) {
-      println("Logical plan:")
-      println(logicalPlan.pretty())
-      println("Optimized logical plan:")
-      println(optimizedLogicalPlan.pretty())
+      println(logicalPlan.pretty)
+      println(optimizedLogicalPlan.pretty)
     }
 
-    println("Flat planning ...")
-    val flatPlan = flatPlanner(logicalPlan)(FlatPlannerContext(parameters))
-    println("Done!")
+    val flatPlan = time("Flat planning")(flatPlanner(optimizedLogicalPlan)(FlatPlannerContext(parameters)))
+    if (PrintFlatPlan.get()) println(flatPlan.pretty)
 
-    println(flatPlan.pretty)
-
-
-    println("COSC Plan ...")
     val coscPlannerContext = COSCPlannerContext(readFrom, COSCRecords.unit, allParameters)
-    val coscPlan = coscPlanner.process(flatPlan)(coscPlannerContext)
-    println("Done!")
+    val coscPlan = time("COSC planning")(coscPlanner.process(flatPlan)(coscPlannerContext))
+    if (PrintCOSCPlan.get()) println(coscPlan.pretty)
 
-    println(coscPlan.pretty)
-
-    COSCResultBuilder.from(logicalPlan, flatPlan, coscPlan)(COSCRuntimeContext(coscPlannerContext.parameters, optGraphAt))
+    time("Query execution")(COSCResultBuilder.from(logicalPlan, flatPlan, coscPlan)(COSCRuntimeContext(coscPlannerContext.parameters, optGraphAt)))
   }
 
   /**
@@ -125,13 +115,20 @@ class COSCSession(private val graphSourceHandler: COSCGraphSourceHandler) extend
 
     val graphSource = new COSCPropertyGraphDataSource {
       override def schema: Option[Schema] = Some(graph.schema)
+
       override def canonicalURI: URI = uri
+
       override def delete(): Unit = throw UnsupportedOperationException("Deletion of an ambient graph")
+
       override def graph: PropertyGraph = ambient
+
       override def sourceForGraphAt(uri: URI): Boolean = uri == canonicalURI
+
       override def create: COSCGraph = throw UnsupportedOperationException("Creation of an ambient graph")
+
       override def store(graph: PropertyGraph, mode: PersistMode): COSCGraph =
         throw UnsupportedOperationException("Persisting an ambient graph")
+
       override val session: COSCSession = self
     }
 

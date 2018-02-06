@@ -16,6 +16,7 @@
 package org.opencypher.caps.logical.impl
 
 import org.opencypher.caps.api.types.{CTBoolean, CTNode}
+import org.opencypher.caps.impl.util.Measurement
 import org.opencypher.caps.ir.api.Label
 import org.opencypher.caps.ir.api.expr.{HasLabel, Var}
 import org.opencypher.caps.ir.api.util.DirectCompilationStage
@@ -28,7 +29,9 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
     optimizationRules.foldLeft(input) {
       // TODO: Evaluate if multiple rewriters could be fused
       case (tree: LogicalOperator, optimizationRule) =>
-        BottomUp[LogicalOperator](optimizationRule).rewrite(tree)
+        val name = optimizationRule.getClass.getSimpleName
+        val methodName = name.substring(name.indexOf("$") + 1, name.lastIndexOf("$"))
+        Measurement.time(s"\t$methodName")(BottomUp[LogicalOperator] (optimizationRule).rewrite(tree))
     }
   }
 
