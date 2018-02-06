@@ -50,7 +50,7 @@ class CAPSScanGraphTest extends CAPSTestSuite with TeamDataFixture {
         Row(300L, false, true, true, false, "F", 84L, "Eve", null, null),
         Row(400L, false, true, true, false, "R", 49L, "Carl", null, null)
       )
-          )
+    )
 
     val rels = result.relationships("r").toDF().collect.toBag
     rels should equal(
@@ -67,30 +67,30 @@ class CAPSScanGraphTest extends CAPSTestSuite with TeamDataFixture {
         Row(400L, 400L, "READS", 20L, false, null)
       )
     )
-      }
+  }
 
   test("dont lose schema information when mapping") {
     val nodes = NodeTable(NodeMapping.on("id"),
       caps.sparkSession.createDataFrame(
-          Seq(
-            Tuple1(10L),
-            Tuple1(11L),
-            Tuple1(12L),
-            Tuple1(20L),
-            Tuple1(21L),
-            Tuple1(22L),
-            Tuple1(25L),
-            Tuple1(50L),
-            Tuple1(51L)
-          )
+        Seq(
+          Tuple1(10L),
+          Tuple1(11L),
+          Tuple1(12L),
+          Tuple1(20L),
+          Tuple1(21L),
+          Tuple1(22L),
+          Tuple1(25L),
+          Tuple1(50L),
+          Tuple1(51L)
+        )
       ).toDF("id"))
 
     val rs = RelationshipTable(RelationshipMapping.on("ID").from("SRC").to("DST").relType("FOO"),
       caps.sparkSession.createDataFrame(
-          Seq(
-            (10L, 1000L, 20L),
-            (50L, 500L, 25L)
-          )
+        Seq(
+          (10L, 1000L, 20L),
+          (50L, 500L, 25L)
+        )
       ).toDF("SRC", "ID", "DST"))
 
 

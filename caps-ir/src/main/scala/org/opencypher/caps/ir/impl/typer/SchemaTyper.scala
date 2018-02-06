@@ -333,6 +333,8 @@ object SchemaTyper {
       expr: Expression,
       orderedExprs: Vector[Expression]): Eff[R, CypherType] = {
     for {
+        // We have to process label predicates first in order to use label information on node
+        // variables for looking up the type of property expressions on these variables.
       hasLabelPreds <- EffMonad[R].sequence(orderedExprs.collect { case h: HasLabels => h }.map(process[R]))
       otherTypes <- EffMonad[R].sequence(orderedExprs.filter {
         case h: HasLabels => false

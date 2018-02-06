@@ -84,7 +84,7 @@ object CypherValue {
 
     /**
       * @return unwraps the Cypher value into Scala/Java structures. Unlike [[value]] this is done recursively for the
-      *         Cypher values stores inside of maps and lists.
+      *         Cypher values stored inside of maps and lists.
       */
     def unwrap: Any
 
@@ -137,7 +137,8 @@ object CypherValue {
     }
 
     /**
-      * A Cypher string representation.
+      * A Cypher string representation. For more information about the exact format of these, please refer to
+      * [[https://github.com/opencypher/openCypher/tree/master/tck#format-of-the-expected-results the openCypher TCK]].
       */
     def toCypherString: String = {
       this match {
