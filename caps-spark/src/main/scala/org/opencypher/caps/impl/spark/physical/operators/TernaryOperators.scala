@@ -15,13 +15,14 @@
  */
 package org.opencypher.caps.impl.spark.physical.operators
 
-import org.apache.spark.sql.DataFrame
+import org.opencypher.caps.impl.spark.CAPSFunctions._
+import org.apache.spark.sql.{DataFrame, functions}
 import org.apache.spark.sql.functions.udf
 import org.apache.spark.sql.types.{ArrayType, BooleanType, LongType}
 import org.opencypher.caps.api.types.CTNode
 import org.opencypher.caps.impl.record.{OpaqueField, ProjectedExpr, RecordHeader, RecordSlot}
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.{assertIsNode, columnName, joinRecords}
-import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext, udfUtils}
+import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
 import org.opencypher.caps.impl.spark.{CAPSRecords, ColumnNameGenerator}
 import org.opencypher.caps.ir.api.expr.{EndNode, Var}
 import org.opencypher.caps.logical.impl.{Directed, Direction, Undirected}
@@ -124,10 +125,9 @@ final case class BoundedVarExpand(
 
     val joined = lhs.join(rels, expandColumn === startColumn, "inner")
 
-    val appendUdf = udf(udfUtils.arrayAppend _, ArrayType(LongType))
-    val extendedArray = appendUdf(lhs.col(edgeListColName), relIdColumn)
+    val extendedArray = array_append_long(lhs.col(edgeListColName), relIdColumn)
     val withExtendedArray = joined.withColumn(listTempColName, extendedArray)
-    val arrayContains = udf(udfUtils.contains _, BooleanType)(withExtendedArray.col(edgeListColName), relIdColumn)
+    val arrayContains = array_contains(withExtendedArray.col(edgeListColName), relIdColumn)
     val filtered = withExtendedArray.filter(!arrayContains)
 
     // TODO: Try and get rid of the Var rel here

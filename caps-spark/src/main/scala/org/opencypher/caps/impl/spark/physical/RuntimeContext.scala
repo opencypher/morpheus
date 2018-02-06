@@ -32,23 +32,3 @@ case class RuntimeContext(
   resolve: URI => Option[PropertyGraph],
   cache: collection.mutable.Map[PhysicalOperator, PhysicalResult]
 )
-
-case object udfUtils {
-  def initArray(): Any = {
-    Array[Long]()
-  }
-
-  def arrayAppend(array: Any, next: Any): Any = {
-    array match {
-      case a: mutable.WrappedArray[_] =>
-        a :+ next
-    }
-  }
-
-  def contains(array: Any, elem: Any): Any = {
-    array match {
-      case a: mutable.WrappedArray[_] =>
-        a.contains(elem)
-    }
-  }
-}

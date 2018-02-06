@@ -26,10 +26,10 @@ import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.impl.record._
-import org.opencypher.caps.impl.spark.SparkSQLExprMapper.asSparkSQLExpr
+import org.opencypher.caps.impl.spark.SparkSQLExprMapper._
 import org.opencypher.caps.impl.spark.convert.SparkUtils._
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.{assertIsNode, columnName}
-import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext, udfUtils}
+import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
 import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords, SparkColumnName}
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.ir.api.block.{Asc, Desc, SortItem}
@@ -108,7 +108,7 @@ final case class Unwind(in: PhysicalOperator, list: Expr, item: Var, header: Rec
 
         // the list lives in a column: we explode it
         case expr =>
-          val listColumn = asSparkSQLExpr(records.header, expr, records.data) match {
+          val listColumn = expr.asSparkSQLExpr(records.header, records.data, context) match {
             case Some(c) => c
             case None => throw IllegalArgumentException(s"a column for the list $expr")
           }
@@ -148,7 +148,7 @@ final case class Project(in: PhysicalOperator, expr: Expr, header: RecordHeader)
 
   override def executeUnary(prev: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult = {
     prev.mapRecordsWithDetails { records =>
-      val newData = asSparkSQLExpr(header, expr, records.data) match {
+      val newData = expr.asSparkSQLExpr(header, records.data, context) match {
         case None => throw NotImplementedException(s"Projecting $expr of type ${expr.cypherType}")
 
         case Some(sparkSqlExpr) =>
@@ -178,13 +178,12 @@ final case class Filter(in: PhysicalOperator, expr: Expr, header: RecordHeader) 
 
   override def executeUnary(prev: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult = {
     prev.mapRecordsWithDetails { records =>
-      val filteredRows =
-        asSparkSQLExpr(records.header, expr, records.data) match {
-          case Some(sqlExpr) =>
-            records.data.where(sqlExpr)
-          case None =>
-            throw NotImplementedException(s"filtering using predicate: $expr")
-        }
+      val filteredRows = expr.asSparkSQLExpr(header, records.data, context) match {
+        case Some(sqlExpr) =>
+          records.data.where(sqlExpr)
+        case None =>
+          throw NotImplementedException(s"filtering using predicate: $expr")
+      }
 
       val selectedColumns = header.slots.map { c =>
         val name = columnName(c)
@@ -391,11 +390,9 @@ final case class Aggregate(
     prev.mapRecordsWithDetails { records =>
       val inData = records.data
 
-      def withInnerExpr(expr: Expr)(f: Column => Column) = {
-        asSparkSQLExpr(records.header, expr, inData) match {
-          case None => throw NotImplementedException(s"Projecting $expr")
-          case Some(column) => f(column)
-        }
+      def withInnerExpr(expr: Expr)(f: Column => Column) = expr.asSparkSQLExpr(records.header, inData, context) match {
+        case None => throw NotImplementedException(s"Projecting $expr")
+        case Some(column) => f(column)
       }
 
       val data: Either[RelationalGroupedDataset, DataFrame] =
@@ -535,7 +532,7 @@ final case class InitVarExpand(in: PhysicalOperator, source: Var, edgeList: Var,
       val keep = inputData.columns.map(inputData.col)
 
       val edgeListColName = columnName(edgeListSlot)
-      val edgeListColumn = udf(udfUtils.initArray _, ArrayType(LongType))()
+      val edgeListColumn = functions.typedLit(Array[Long]())
       val withEmptyList = inputData.withColumn(edgeListColName, edgeListColumn)
 
       val cols = keep ++ Seq(
