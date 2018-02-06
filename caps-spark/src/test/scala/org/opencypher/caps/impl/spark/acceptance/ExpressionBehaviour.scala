@@ -40,12 +40,42 @@ trait ExpressionBehaviour {
         val result = given.cypher(
           """MATCH (n)
             |RETURN
-            |n.val,
-            |CASE
-            | WHEN n.val = 'foo' THEN 1
-            | WHEN n.val = 'bar' THEN 2
-            | ELSE 3
-            |END AS result
+            | n.val,
+            | CASE
+            |   WHEN n.val = 'foo' THEN 1
+            |   WHEN n.val = 'bar' THEN 2
+            |   ELSE 3
+            | END AS result
+          """.stripMargin)
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CAPSMap("n.val" -> "foo", "result" -> 1),
+          CAPSMap("n.val" -> "bar", "result" -> 2),
+          CAPSMap("n.val" -> "baz", "result" -> 3))
+        )
+      }
+
+      it("should evaluate a simple equality CASE expression") {
+        // Given
+        val given =
+          initGraph(
+            """
+              |CREATE (:Person {val: "foo"})
+              |CREATE (:Person {val: "bar"})
+              |CREATE (:Person {val: "baz"})
+            """.stripMargin)
+
+        // When
+        val result = given.cypher(
+          """MATCH (n)
+            |RETURN
+            | n.val,
+            | CASE n.val
+            |   WHEN 'foo' THEN 1
+            |   WHEN 'bar' THEN 2
+            |   ELSE 3
+            | END AS result
           """.stripMargin)
 
         // Then

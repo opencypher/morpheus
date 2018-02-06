@@ -13,22 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.ir.impl
+package org.opencypher.caps.ir.impl.parse.rewriter
 
 import org.neo4j.cypher.internal.compiler.v3_4.SyntaxExceptionCreator
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Statement
-import org.neo4j.cypher.internal.frontend.v3_4.parser.CypherParser
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticChecker
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
-import org.opencypher.caps.ir.impl.parse.rewriter.normalizeReturnClauses
-import org.scalatest.FunSuite
+import org.opencypher.caps.ir.test.support.RewriterTestSupport
+import org.opencypher.caps.test.BaseTestSuite
 
-class NormalizeReturnClausesTest extends FunSuite {
-
-  private val parser = new CypherParser
-
-  val mkException = new SyntaxExceptionCreator("<Query>", Some(InputPosition.NONE))
-  val rewriterUnderTest = normalizeReturnClauses(mkException)
+class normalizeReturnClausesTest extends BaseTestSuite with RewriterTestSupport {
+  override val rewriter = normalizeReturnClauses(new SyntaxExceptionCreator("<Query>", Some(InputPosition.NONE)))
 
   test("do not rewrite unaliased return items of variables") {
     assertRewrite(
@@ -119,17 +112,4 @@ class NormalizeReturnClausesTest extends FunSuite {
       """.stripMargin
     )
   }
-
-  private def assertRewrite(originalQuery: String, expectedQuery: String): Unit = {
-    val original = parseForRewriting(originalQuery)
-    val expected = parseForRewriting(expectedQuery)
-    SemanticChecker.check(original)
-    val result = rewrite(original)
-    assert(result === expected, "\n" + originalQuery)
-  }
-
-  private def parseForRewriting(queryText: String): Statement = parser.parse(queryText.replace("\r\n", "\n"))
-
-  private def rewrite(original: Statement): AnyRef =
-    original.rewrite(rewriterUnderTest)
 }
