@@ -13,8 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.api.value.instances
+package org.opencypher.caps.api.value
 
-trait AllInstances
-  extends CypherValueCompanionInstances
-  with CypherValueConverters
+import org.opencypher.caps.api.value.CypherValue._
+
+case class CAPSNode(
+  override val id: Long,
+  override val labels: Set[String] = Set.empty,
+  override val properties: CypherMap = CypherMap.empty) extends CypherNode[Long](id, labels, properties)
+
+case class CAPSRelationship(
+  override val id: Long,
+  override val source: Long,
+  override val target: Long,
+  override val relType: String,
+  override val properties: CypherMap = CypherMap.empty) extends CypherRelationship(id, source, target, relType, properties)

@@ -60,6 +60,5 @@ trait CypherParser extends CompilationStage[String, Statement, BaseContext] {
       Namespacer andThen
       CNFNormalizer andThen
       LateAstRewriting andThen
-      ExtractPredicatesFromAnds andThen
       CAPSRewriting
 }

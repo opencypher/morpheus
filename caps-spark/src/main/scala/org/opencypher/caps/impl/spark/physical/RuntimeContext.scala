@@ -18,37 +18,17 @@ package org.opencypher.caps.impl.spark.physical
 import java.net.URI
 
 import org.opencypher.caps.api.graph.PropertyGraph
-import org.opencypher.caps.api.value.CAPSValue
+import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator
 
 import scala.collection.mutable
 
 object RuntimeContext {
-  val empty = RuntimeContext(Map.empty, _ => None, mutable.Map.empty)
+  val empty = RuntimeContext(CypherMap.empty, _ => None, mutable.Map.empty)
 }
 
 case class RuntimeContext(
-                           parameters: Map[String, CAPSValue],
-                           resolve: URI => Option[PropertyGraph],
-                           cache: collection.mutable.Map[PhysicalOperator, PhysicalResult]
+  parameters: CypherMap,
+  resolve: URI => Option[PropertyGraph],
+  cache: collection.mutable.Map[PhysicalOperator, PhysicalResult]
 )
-
-case object udfUtils {
-  def initArray(): Any = {
-    Array[Long]()
-  }
-
-  def arrayAppend(array: Any, next: Any): Any = {
-    array match {
-      case a: mutable.WrappedArray[_] =>
-        a :+ next
-    }
-  }
-
-  def contains(array: Any, elem: Any): Any = {
-    array match {
-      case a: mutable.WrappedArray[_] =>
-        a.contains(elem)
-    }
-  }
-}

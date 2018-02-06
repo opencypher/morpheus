@@ -67,8 +67,8 @@ final case class InternalHeader protected[caps](
     addContent(addedContent).runS(self).value
 
   def mandatory(slot: RecordSlot) = slot.content match {
-    case _: FieldSlotContent => slot.content.cypherType.isMaterial
-    case p@ProjectedExpr(expr) => p.cypherType.isMaterial && slotsFor(expr).size <= 1
+    case _: FieldSlotContent => !slot.content.cypherType.isNullable
+    case p@ProjectedExpr(expr) => !p.cypherType.isNullable && slotsFor(expr).size <= 1
   }
 }
 

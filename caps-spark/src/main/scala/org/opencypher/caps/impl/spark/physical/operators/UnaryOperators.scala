@@ -24,19 +24,19 @@ import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.api.value.CAPSInteger
+import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.impl.record._
-import org.opencypher.caps.impl.spark.SparkSQLExprMapper.asSparkSQLExpr
+import org.opencypher.caps.impl.spark.SparkSQLExprMapper._
 import org.opencypher.caps.impl.spark.convert.SparkUtils._
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.{assertIsNode, columnName}
-import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext, cypherFilter, udfUtils}
+import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
 import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords, SparkColumnName}
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.caps.ir.api.expr._
-import org.opencypher.caps.ir.impl.convert.toJava
 import org.opencypher.caps.ir.impl.syntax.ExprSyntax._
 import org.opencypher.caps.logical.impl.{ConstructedEntity, _}
+import scala.collection.JavaConverters._
 
 private[spark] abstract class UnaryPhysicalOperator extends PhysicalOperator {
 
@@ -91,28 +91,24 @@ final case class Unwind(in: PhysicalOperator, list: Expr, item: Var, header: Rec
         // the list is external: we create a dataframe and crossjoin with it
         case Param(name) =>
           // we need a Java list of rows to construct a DataFrame
-          toJava(context.parameters(name)) match {
-            case t: TraversableOnce[_] =>
-              val list = t.map(Row(_)).toList.asJava
-
+          context.parameters(name).as[CypherList] match {
+            case Some(l) =>
               val sparkType = toSparkType(item.cypherType)
               val nullable = item.cypherType.isNullable
               val schema = StructType(Seq(StructField(itemColumn, sparkType, nullable)))
 
-              val df = records.caps.sparkSession.createDataFrame(list, schema)
+              val javaRowList = l.unwrap.map(Row(_)).asJava
+              val df = records.caps.sparkSession.createDataFrame(javaRowList, schema)
 
               records.data.crossJoin(df)
 
-            case x =>
-              throw IllegalArgumentException("a list", x)
+            case None =>
+              throw IllegalArgumentException("a list", list)
           }
 
         // the list lives in a column: we explode it
         case expr =>
-          val listColumn = asSparkSQLExpr(records.header, expr, records.data) match {
-            case Some(c) => c
-            case None => throw IllegalArgumentException(s"a column for the list $expr")
-          }
+          val listColumn = expr.asSparkSQLExpr(records.header, records.data, context)
 
           records.data.withColumn(itemColumn, functions.explode(listColumn))
       }
@@ -149,24 +145,20 @@ final case class Project(in: PhysicalOperator, expr: Expr, header: RecordHeader)
 
   override def executeUnary(prev: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult = {
     prev.mapRecordsWithDetails { records =>
-      val newData = asSparkSQLExpr(header, expr, records.data) match {
-        case None => throw NotImplementedException(s"Projecting $expr")
+      val headerNames = header.slotsFor(expr).map(columnName)
+      val dataNames = records.data.columns.toSeq
 
-        case Some(sparkSqlExpr) =>
-          val headerNames = header.slotsFor(expr).map(columnName)
-          val dataNames = records.data.columns.toSeq
+      // TODO: Can optimise for var AS var2 case -- avoid duplicating data
+      val newData = headerNames.diff(dataNames) match {
+        case Seq(one) =>
+          // align the name of the column to what the header expects
+          val newCol = expr.asSparkSQLExpr(header, records.data, context).as(one)
+          val columnsToSelect = records.data.columns
+            .map(records.data.col) :+ newCol
 
-          // TODO: Can optimise for var AS var2 case -- avoid duplicating data
-          headerNames.diff(dataNames) match {
-            case Seq(one) =>
-              // align the name of the column to what the header expects
-              val newCol = sparkSqlExpr.as(one)
-              val columnsToSelect = records.data.columns
-                .map(records.data.col) :+ newCol
-
-              records.data.select(columnsToSelect: _*)
-            case _ => throw IllegalStateException(s"Got multiple slots for expression $expr")
-          }
+          records.data.select(columnsToSelect: _*)
+        case seq if seq.isEmpty => throw IllegalStateException(s"Did not find a slot for expression $expr in $headerNames")
+        case seq => throw IllegalStateException(s"Got multiple slots for expression $expr: $seq")
       }
 
       CAPSRecords.verifyAndCreate(header, newData)(records.caps)
@@ -178,14 +170,7 @@ final case class Filter(in: PhysicalOperator, expr: Expr, header: RecordHeader) 
 
   override def executeUnary(prev: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult = {
     prev.mapRecordsWithDetails { records =>
-      val filteredRows =
-        asSparkSQLExpr(records.header, expr, records.data) match {
-          case Some(sqlExpr) =>
-            records.data.where(sqlExpr)
-          case None =>
-            val predicate = cypherFilter(header, expr)
-            records.data.filter(predicate)
-        }
+      val filteredRows = records.data.where(expr.asSparkSQLExpr(header, records.data, context))
 
       val selectedColumns = header.slots.map { c =>
         val name = columnName(c)
@@ -392,12 +377,8 @@ final case class Aggregate(
     prev.mapRecordsWithDetails { records =>
       val inData = records.data
 
-      def withInnerExpr(expr: Expr)(f: Column => Column) = {
-        asSparkSQLExpr(records.header, expr, inData) match {
-          case None => throw NotImplementedException(s"Projecting $expr")
-          case Some(column) => f(column)
-        }
-      }
+      def withInnerExpr(expr: Expr)(f: Column => Column) =
+        f(expr.asSparkSQLExpr(records.header, inData, context))
 
       val data: Either[RelationalGroupedDataset, DataFrame] =
         if (group.nonEmpty) {
@@ -479,7 +460,7 @@ final case class Skip(in: PhysicalOperator, expr: Expr, header: RecordHeader) ex
       case IntegerLit(v) => v
       case Param(name) =>
         context.parameters(name) match {
-          case CAPSInteger(v) => v
+          case CypherInteger(l) => l
           case other => throw IllegalArgumentException("a CypherInteger", other)
         }
       case other => throw IllegalArgumentException("an integer literal or parameter", other)
@@ -508,7 +489,7 @@ final case class Limit(in: PhysicalOperator, expr: Expr, header: RecordHeader) e
       case IntegerLit(v) => v
       case Param(name) =>
         context.parameters(name) match {
-          case CAPSInteger(v) => v
+          case CypherInteger(v) => v
           case other => throw IllegalArgumentException("a CypherInteger", other)
         }
       case other => throw IllegalArgumentException("an integer literal", other)
@@ -536,7 +517,7 @@ final case class InitVarExpand(in: PhysicalOperator, source: Var, edgeList: Var,
       val keep = inputData.columns.map(inputData.col)
 
       val edgeListColName = columnName(edgeListSlot)
-      val edgeListColumn = udf(udfUtils.initArray _, ArrayType(LongType))()
+      val edgeListColumn = functions.typedLit(Array[Long]())
       val withEmptyList = inputData.withColumn(edgeListColName, edgeListColumn)
 
       val cols = keep ++ Seq(

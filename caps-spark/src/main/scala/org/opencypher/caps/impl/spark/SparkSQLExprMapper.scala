@@ -15,256 +15,181 @@
  */
 package org.opencypher.caps.impl.spark
 
-import org.apache.spark.sql.functions.udf
+import CAPSFunctions._
+import org.apache.spark.sql._
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{Column, DataFrame, functions}
-import org.opencypher.caps.api.exception.{IllegalStateException, NotImplementedException}
-import org.opencypher.caps.api.types.{CTAny, CTList, CTNode, CTString}
+import org.opencypher.caps.api.exception._
+import org.opencypher.caps.api.types._
+import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.impl.record.RecordHeader
-import org.opencypher.caps.impl.spark.Udfs._
 import org.opencypher.caps.impl.spark.convert.SparkUtils._
 import org.opencypher.caps.impl.spark.physical.RuntimeContext
 import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.columnName
 import org.opencypher.caps.ir.api.expr._
-import org.opencypher.caps.ir.impl.convert.toJava
 
 object SparkSQLExprMapper {
 
-  private def verifyExpression(header: RecordHeader, expr: Expr): Unit =
-    if (header.slotsFor(expr).isEmpty) throw IllegalStateException(s"No slot for expression $expr")
+  implicit class RichExpression(expr: Expr) {
 
-  private def getColumn(expr: Expr, header: RecordHeader, dataFrame: DataFrame)(
-    implicit context: RuntimeContext): Column = {
-    expr match {
-      case p@Param(name) if p.cypherType.subTypeOf(CTList(CTAny)).maybeTrue =>
-        udf(const(context.parameters(name)), toSparkType(p.cypherType))()
-      case Param(name) =>
-        functions.lit(toJava(context.parameters(name)))
-      case ListLit(exprs) =>
-        val cols = exprs.map(getColumn(_, header, dataFrame))
-        functions.array(cols: _*)
-      case l: Lit[_] =>
-        functions.lit(l.v)
-      case _ =>
-        verifyExpression(header, expr)
-        val slot = header.slotsFor(expr).head
-
-        val columns = dataFrame.columns.toSet
-        val colName = columnName(slot)
-
-        if (columns.contains(colName)) {
-          dataFrame.col(colName)
-        } else {
-          functions.lit(null)
-        }
+    def verify(implicit header: RecordHeader) = {
+      if (header.slotsFor(expr).isEmpty) throw IllegalStateException(s"No slot for expression $expr")
     }
-  }
 
-  object asSparkSQLExpr {
+    def column(implicit header: RecordHeader, dataFrame: DataFrame, context: RuntimeContext): Column = {
+      expr match {
+        case p@Param(name) if p.cypherType.subTypeOf(CTList(CTAny)).maybeTrue =>
+          context.parameters(name) match {
+            case CypherList(l) => functions.array(l.unwrap.map(functions.lit(_)): _*)
+            case notAList => throw IllegalArgumentException("a Cypher list", notAList)
+          }
+        case Param(name) =>
+          functions.lit(context.parameters(name).unwrap)
+        case ListLit(exprs) =>
+          val cols = exprs.map(_.column)
+          functions.array(cols: _*)
+        case l: Lit[_] =>
+          functions.lit(l.v)
+        case _ =>
+          verify
+
+          val slot = header.slotsFor(expr).head
+
+          val columns = dataFrame.columns.toSet
+          val colName = columnName(slot)
+
+          if (columns.contains(colName)) {
+            dataFrame.col(colName)
+          } else {
+            functions.lit(null)
+          }
+      }
+
+    }
+
+    /**
+      * This is possible without violating Cypher semantics because
+      *   - Spark SQL returns null when comparing across types (from initial investigation)
+      *   - We never have multiple types per column in CAPS (yet)
+      */
+    def compare(comparator: Column => (Column => Column), lhs: Expr, rhs: Expr)
+      (implicit header: RecordHeader, df: DataFrame, context: RuntimeContext): Column = {
+      comparator(lhs.column)(rhs.column)
+    }
+
+    def lt(c: Column): Column => Column = c < _
+
+    def lteq(c: Column): Column => Column = c <= _
+
+    def gt(c: Column): Column => Column = c > _
+
+    def gteq(c: Column): Column => Column = c >= _
 
     /**
       * Attempts to create a Spark SQL expression from the CAPS expression.
       *
       * @param header  the header of the CAPSRecords in which the expression should be evaluated.
-      * @param expr    the expression to be evaluated.
       * @param df      the dataframe containing the data over which the expression should be evaluated.
       * @param context context with helper functions, such as column names.
       * @return Some Spark SQL expression if the input was mappable, otherwise None.
       */
-    def apply(header: RecordHeader, expr: Expr, df: DataFrame)(implicit context: RuntimeContext): Option[Column] =
+    def asSparkSQLExpr(implicit header: RecordHeader, df: DataFrame, context: RuntimeContext): Column = {
+
       expr match {
-
-        case _: Var =>
-          val col = getColumn(expr, header, df)
-          Some(col)
-
-        case _: Param =>
-          Some(getColumn(expr, header, df))
-
         case ListLit(exprs) =>
-          val cols = exprs.map(asSparkSQLExpr(header, _, df).get)
-          Some(functions.array(cols: _*))
+          functions.array(exprs.map(_.asSparkSQLExpr): _*)
 
-        case _: Lit[_] =>
-          Some(getColumn(expr, header, df))
-
-        case _: Property =>
-          Some(getColumn(expr, header, df))
+        case _: Var | _: Param | _: Lit[_] | _: Property => expr.column
 
         // predicates
-        case Equals(e1, e2) =>
-          val lCol = getColumn(e1, header, df)
-          val rCol = getColumn(e2, header, df)
-          Some(lCol === rCol)
-
-        case Not(e) =>
-          apply(header, e, df) match {
-            case Some(res) => Some(!res)
-            case _ => throw NotImplementedException(s"Support for expression $e")
-          }
-
-        case IsNull(e) =>
-          val col = getColumn(e, header, df)
-          Some(col.isNull)
-
-        case IsNotNull(e) =>
-          val col = getColumn(e, header, df)
-          Some(col.isNotNull)
-
-        case s: Size =>
-          verifyExpression(header, expr)
-
-          val col = getColumn(s.expr, header, df)
-          val computedSize = s.expr.cypherType match {
-            case CTString => udf((s: String) => s.length.toLong, LongType)(col)
+        case Equals(e1, e2) => e1.column === e2.column
+        case Not(e) => !e.asSparkSQLExpr
+        case IsNull(e) => e.column.isNull
+        case IsNotNull(e) => e.column.isNotNull
+        case Size(e) =>
+          val col = e.column
+          e.cypherType match {
+            case CTString => functions.length(col).cast(LongType)
             case _: CTList => functions.size(col).cast(LongType)
-            case other => throw NotImplementedException(s"size() on type $other")
+            case other => throw NotImplementedException(s"size() on values of type $other")
           }
-          Some(computedSize)
 
         case Ands(exprs) =>
-          val cols = exprs.map(asSparkSQLExpr(header, _, df))
-          if (cols.contains(None)) None
-          else Some(cols.flatten.foldLeft(functions.lit(true))(_ && _))
+          exprs.map(_.asSparkSQLExpr).foldLeft(functions.lit(true))(_ && _)
 
         case Ors(exprs) =>
-          val cols = exprs.map(asSparkSQLExpr(header, _, df))
-          if (cols.contains(None)) None
-          else Some(cols.flatten.foldLeft(functions.lit(false))(_ || _))
+          exprs.map(_.asSparkSQLExpr).foldLeft(functions.lit(false))(_ || _)
 
         case In(lhs, rhs) =>
-          verifyExpression(header, expr)
-
-          val lhsColumn = getColumn(lhs, header, df)
-          val rhsColumn = getColumn(rhs, header, df)
-
-          // if we were able to store the list as a Spark array, we could do
-          // new Column(ArrayContains(lhsColumn.expr, rhsColumn.expr))
-          // and avoid UDF
-
-          val inPred = udf(Udfs.in _, BooleanType)(lhsColumn, rhsColumn)
-
-          Some(inPred)
+          val element = lhs.column
+          val array = rhs.column
+          array_contains(array, element)
 
         case HasType(rel, relType) =>
-          val col = getColumn(Type(rel)(), header, df)
-          Some(col === relType.name)
+          Type(rel)().column === relType.name
 
-        case h: HasLabel =>
-          Some(getColumn(h, header, df)) // it's a boolean column
+        case h: HasLabel => h.column // it's a boolean column
 
-        case inEq: LessThan => Some(inequality(lt, header, inEq, df))
-        case inEq: LessThanOrEqual => Some(inequality(lteq, header, inEq, df))
-        case inEq: GreaterThanOrEqual => Some(inequality(gteq, header, inEq, df))
-        case inEq: GreaterThan => Some(inequality(gt, header, inEq, df))
+        case LessThan(lhs, rhs) => compare(lt, lhs, rhs)
+        case LessThanOrEqual(lhs, rhs) => compare(lteq, lhs, rhs)
+        case GreaterThanOrEqual(lhs, rhs) => compare(gteq, lhs, rhs)
+        case GreaterThan(lhs, rhs) => compare(gt, lhs, rhs)
 
         // Arithmetics
-        case add: Add =>
-          verifyExpression(header, expr)
-
-          val lhsColumn = getColumn(add.lhs, header, df)
-          val rhsColumn = getColumn(add.rhs, header, df)
-          Some(lhsColumn + rhsColumn)
-
-        case sub: Subtract =>
-          verifyExpression(header, expr)
-
-          val lhsColumn = getColumn(sub.lhs, header, df)
-          val rhsColumn = getColumn(sub.rhs, header, df)
-          Some(lhsColumn - rhsColumn)
-
-        case mul: Multiply =>
-          verifyExpression(header, expr)
-
-          val lhsColumn = getColumn(mul.lhs, header, df)
-          val rhsColumn = getColumn(mul.rhs, header, df)
-          Some(lhsColumn * rhsColumn)
-
-        case div: Divide =>
-          verifyExpression(header, expr)
-
-          val lhsColumn = getColumn(div.lhs, header, df)
-          val rhsColumn = getColumn(div.rhs, header, df)
-          Some((lhsColumn / rhsColumn).cast(toSparkType(div.cypherType)))
+        case Add(lhs, rhs) => lhs.column + rhs.column
+        case Subtract(lhs, rhs) => lhs.column - rhs.column
+        case Multiply(lhs, rhs) => lhs.column * rhs.column
+        case div@Divide(lhs, rhs) => (lhs.column / rhs.column).cast(toSparkType(div.cypherType))
 
         // Functions
-        case e: Exists =>
-          val column = getColumn(e.expr, header, df)
-          Some(column.isNotNull)
-
-        case id: Id =>
-          verifyExpression(header, expr)
-
-          val column = getColumn(id.expr, header, df)
-          Some(column)
-
-        case labels: Labels =>
-          verifyExpression(header, expr)
-
-          val node = Var(columnName(header.slotsFor(labels.expr).head))(CTNode)
+        case Exists(e) => e.column.isNotNull
+        case Id(e) => e.column
+        case Labels(e) =>
+          val node = Var(columnName(header.slotsFor(e).head))(CTNode)
           val labelExprs = header.labels(node)
-          val labelColumns = labelExprs.map(getColumn(_, header, df))
-          val labelNames = labelExprs.map(_.label)
-          val labelsUDF = udf(getNodeLabels(labelNames), ArrayType(StringType, containsNull = false))
-          Some(labelsUDF(functions.array(labelColumns: _*)))
+          val labelColumns = labelExprs.map(_.column)
+          val labelNames = labelExprs.map(_.label.name)
+          val booleanLabelFlagColumn = functions.array(labelColumns: _*)
+          get_node_labels(labelNames)(booleanLabelFlagColumn)
 
-        case keys: Keys =>
-          verifyExpression(header, expr)
-
-          val node = Var(columnName(header.slotsFor(keys.expr).head))(CTNode)
+        case Keys(e) =>
+          val node = Var(columnName(header.slotsFor(e).head))(CTNode)
           val propertyExprs = header.properties(node)
-          val propertyColumns = propertyExprs.map(getColumn(_, header, df))
+          val propertyColumns = propertyExprs.map(_.column)
           val keyNames = propertyExprs.map(_.key.name)
-          val keysUDF = udf(getNodeKeys(keyNames), ArrayType(StringType, containsNull = false))
-          Some(keysUDF(functions.array(propertyColumns: _*)))
+          val valuesColumn = functions.array(propertyColumns: _*)
+          get_property_keys(keyNames)(valuesColumn)
 
         case Type(inner) =>
-          verifyExpression(header, expr)
-
           inner match {
             case v: Var =>
               val typeSlot = header.typeSlot(v)
               val typeCol = df.col(columnName(typeSlot))
-              Some(typeCol)
-
+              typeCol
             case _ =>
-              throw NotImplementedException("type() of non-variables")
+              throw NotImplementedException(s"Inner expression $inner of $expr is not yet supported (only variables)")
           }
 
         case StartNodeFunction(e) =>
-          verifyExpression(header, expr)
           val rel = Var(columnName(header.slotsFor(e).head))(CTNode)
-          Some(getColumn(header.sourceNodeSlot(rel).content.key, header, df))
+          header.sourceNodeSlot(rel).content.key.column
 
         case EndNodeFunction(e) =>
-          verifyExpression(header, expr)
           val rel = Var(columnName(header.slotsFor(e).head))(CTNode)
-          Some(getColumn(header.targetNodeSlot(rel).content.key, header, df))
+          header.targetNodeSlot(rel).content.key.column
 
-        case ToFloat(e) =>
-          verifyExpression(header, expr)
-          Some(getColumn(e, header, df).cast(DoubleType))
+        case ToFloat(e) => e.column.cast(DoubleType)
 
         // Pattern Predicate
-        case ep: ExistsPatternExpr =>
-          Some(getColumn(ep.targetField, header, df))
+        case ep: ExistsPatternExpr => ep.targetField.column
 
-        case c: Coalesce =>
-          val columns = c.exprs.map(e => getColumn(e, header, df))
-          Some(functions.coalesce(columns: _*))
+        case Coalesce(es) =>
+          val columns = es.map(_.column)
+          functions.coalesce(columns: _*)
 
         case _ =>
-          None
+          throw NotImplementedException(s"No support for converting Cypher expression $expr to a Spark SQL expression")
       }
-
-    private def inequality(f: (Any, Any) => Any, header: RecordHeader, expr: BinaryExpr, df: DataFrame)(
-      implicit context: RuntimeContext): Column = {
-      verifyExpression(header, expr)
-
-      val lhsColumn = getColumn(expr.lhs, header, df)
-      val rhsColumn = getColumn(expr.rhs, header, df)
-
-      udf(f, BooleanType)(lhsColumn, rhsColumn)
     }
   }
+
 }

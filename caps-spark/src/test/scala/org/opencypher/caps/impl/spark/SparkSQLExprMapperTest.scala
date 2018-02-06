@@ -20,7 +20,7 @@ import java.util.Collections
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 import org.apache.spark.sql.{Column, DataFrame, Row}
 import org.opencypher.caps.impl.record.{OpaqueField, ProjectedField, RecordHeader}
-import org.opencypher.caps.impl.spark.SparkSQLExprMapper.asSparkSQLExpr
+import org.opencypher.caps.impl.spark.SparkSQLExprMapper._
 import org.opencypher.caps.impl.spark.physical.RuntimeContext
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.ir.api.expr.{Expr, Subtract, Var}
@@ -36,13 +36,12 @@ class SparkSQLExprMapperTest extends BaseTestSuite with SparkSessionFixture {
     val expr = Subtract(Var("a")(), Var("b")())()
 
     convert(expr, _header.update(addContent(ProjectedField('foo, expr)))) should equal(
-      Some(
-        df.col("a") - df.col("b")
-      ))
+      df.col("a") - df.col("b")
+    )
   }
 
-  private def convert(expr: Expr, header: RecordHeader = _header): Option[Column] = {
-    asSparkSQLExpr(header, expr, df)(RuntimeContext.empty)
+  private def convert(expr: Expr, header: RecordHeader = _header): Column = {
+    expr.asSparkSQLExpr(header, df, RuntimeContext.empty)
   }
 
   val _header: RecordHeader = RecordHeader.empty.update(addContents(Seq(OpaqueField('a), OpaqueField('b))))

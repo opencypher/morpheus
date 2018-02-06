@@ -19,7 +19,7 @@ import org.apache.spark.sql.Row
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.caps.api.schema.{NodeTable, RelationshipTable}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
-import org.opencypher.caps.api.value.EntityId._
+import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.api.value._
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.fixture.TeamDataFixture
@@ -100,8 +100,8 @@ class CAPSScanGraphTest extends CAPSTestSuite with TeamDataFixture {
 
     results.collect().toSet should equal(
       Set(
-        CAPSMap("r" -> CAPSRelationship(1000L, RelationshipData(10L, 20L, "FOO"))),
-        CAPSMap("r" -> CAPSRelationship(500L, RelationshipData(50L, 25L, "FOO")))
+        CypherMap("r" -> CAPSRelationship(1000L, 10L, 20L, "FOO")),
+        CypherMap("r" -> CAPSRelationship(500L, 50L, 25L, "FOO"))
       ))
   }
 

@@ -21,7 +21,7 @@ import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.caps.api.schema.{NodeTable, RelationshipTable, Schema}
 import org.opencypher.caps.api.types.{CTFloat, CTInteger, CTString}
-import org.opencypher.caps.api.value.CAPSMap
+import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.demo.SocialNetworkData.{Friend, Person}
 import org.opencypher.caps.impl.spark.CAPSGraph
 import org.opencypher.caps.impl.spark.convert.SparkUtils
@@ -86,7 +86,7 @@ class EntityTableTest extends CAPSTestSuite {
 
     val graph = CAPSGraph.create(nodeTable)
     graph.nodes("n").iterator.toSet {
-      CAPSMap("n" -> "1")
+      CypherMap("n" -> "1")
     }
   }
 

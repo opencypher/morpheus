@@ -18,8 +18,8 @@ package org.opencypher.caps.impl.spark
 import org.apache.spark.sql.{Column, DataFrame, Row}
 import org.opencypher.caps.api.exception.{IllegalArgumentException, NotImplementedException}
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.api.value._
-import org.opencypher.caps.api.value.instances._
 import org.opencypher.caps.impl.record.RecordHeader
 import org.opencypher.caps.impl.spark.physical.RuntimeContext
 import org.opencypher.caps.ir.api.expr.{Expr, Param}
@@ -27,7 +27,7 @@ import org.opencypher.caps.ir.api.expr.{Expr, Param}
 object DfUtils {
 
   implicit class CypherRow(r: Row) {
-    def getCypherValue(expr: Expr, header: RecordHeader)(implicit context: RuntimeContext): CAPSValue = {
+    def getCypherValue(expr: Expr, header: RecordHeader)(implicit context: RuntimeContext): CypherValue = {
       expr match {
         case Param(name) => context.parameters(name)
         case _ =>
@@ -35,45 +35,9 @@ object DfUtils {
             case None => throw IllegalArgumentException(s"slot for $expr")
             case Some(slot) =>
               val index = slot.index
-
-              if (r.isNullAt(index))
-                null
-              else typeToValue(slot.content.cypherType.material)(r.get(index))
+              CypherValue(r.get(index))
           }
       }
-    }
-
-    def typeToValue(t: CypherType): Any => CAPSValue = t match {
-      case CTBoolean =>
-        (in) =>
-          cypherBoolean(in.asInstanceOf[Boolean])
-      case CTInteger =>
-        (in) =>
-          cypherInteger(in.asInstanceOf[Long])
-      case CTString =>
-        (in) =>
-          cypherString(in.asInstanceOf[String])
-      case CTFloat =>
-        (in) =>
-          cypherFloat(in.asInstanceOf[Double])
-      case _: CTNode =>
-        (in) =>
-          cypherInteger(in.asInstanceOf[Long])
-      // TODO: This supports var-expand where we only track rel ids, but it's not right
-      case _: CTRelationship =>
-        (in) =>
-          cypherInteger(in.asInstanceOf[Long])
-      case l: CTList =>
-        (in) =>
-          {
-            val converted = in.asInstanceOf[Seq[_]].map(typeToValue(l.elementType))
-            cypherList(converted.toIndexedSeq)
-          }
-      case r: NullableDefiniteCypherType => {
-        case null => null
-        case v    => typeToValue(r.material)(v)
-      }
-      case _ => throw NotImplementedException(s"Converting value with cypher type $t")
     }
   }
 
@@ -83,4 +47,5 @@ object DfUtils {
       df.withColumn(tmpColName, f(df(columnName))).drop(columnName).withColumnRenamed(tmpColName, columnName)
     }
   }
+
 }

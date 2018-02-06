@@ -28,6 +28,7 @@ import org.opencypher.caps.api.exception.{DuplicateSourceColumnException, Illega
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.caps.api.schema.{EntityTable, NodeTable, RelationshipTable}
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.api.value._
 import org.opencypher.caps.impl.record.CAPSRecordHeader._
 import org.opencypher.caps.impl.record.{CAPSRecordHeader, _}
@@ -119,26 +120,26 @@ sealed abstract class CAPSRecords(override val header: RecordHeader, val data: D
     *
     * @return a dataset of CypherMaps.
     */
-  def toCypherMaps: Dataset[CAPSMap] = {
+  def toCypherMaps: Dataset[CypherMap] = {
     import encoders._
     data.map(rowToCypherMap(header))
   }
 
-  override def iterator: Iterator[CAPSMap] = {
+  override def iterator: Iterator[CypherMap] = {
     import scala.collection.JavaConverters._
 
     toLocalIterator.asScala
   }
 
-  def toLocalIterator: java.util.Iterator[CAPSMap] = {
+  def toLocalIterator: java.util.Iterator[CypherMap] = {
     toCypherMaps.toLocalIterator()
   }
 
-  def foreachPartition(f: Iterator[CAPSMap] => Unit): Unit = {
+  def foreachPartition(f: Iterator[CypherMap] => Unit): Unit = {
     toCypherMaps.foreachPartition(f)
   }
 
-  def collect(): Array[CAPSMap] =
+  def collect(): Array[CypherMap] =
     toCypherMaps.collect()
 
   /**

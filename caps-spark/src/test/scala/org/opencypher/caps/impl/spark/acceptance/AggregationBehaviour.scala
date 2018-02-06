@@ -15,15 +15,15 @@
  */
 package org.opencypher.caps.impl.spark.acceptance
 
-import org.opencypher.caps.api.value.CAPSMap
-import org.opencypher.caps.impl.spark.CAPSGraph
+import org.opencypher.caps.api.graph.PropertyGraph
+import org.opencypher.caps.api.value.CypherValue._
 
 import scala.collection.immutable.Bag
 
 trait AggregationBehaviour {
   this: AcceptanceTest =>
 
-  def aggregationBehaviour(initGraph: String => CAPSGraph): Unit = {
+  def aggregationBehaviour(initGraph: String => PropertyGraph): Unit = {
 
     describe("AVG") {
 
@@ -32,8 +32,8 @@ trait AggregationBehaviour {
 
         val result = graph.cypher("MATCH (n) WITH AVG(n.val) AS res RETURN res")
 
-        result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> 4)
+        result.records.iterator.toBag should equal(Bag(
+          CypherMap("res" -> 4)
         ))
       }
 
@@ -42,8 +42,8 @@ trait AggregationBehaviour {
 
         val result = graph.cypher("MATCH (n) RETURN AVG(n.val) AS res")
 
-        result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> 4)
+        result.records.iterator.toBag should equal(Bag(
+          CypherMap("res" -> 4)
         ))
       }
 
@@ -53,7 +53,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) RETURN AVG(n.val)")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("AVG(n.val)" -> 4)
+          CypherMap("AVG(n.val)" -> 4)
         ))
       }
 
@@ -63,7 +63,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) WITH AVG(n.val) AS res RETURN res")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> 3.5)
+          CypherMap("res" -> 3.5)
         ))
       }
 
@@ -73,7 +73,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) RETURN AVG(n.val) AS res")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> 3.5)
+          CypherMap("res" -> 3.5)
         ))
       }
 
@@ -83,7 +83,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) WITH AVG(n.val) AS res RETURN res")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> 32.5)
+          CypherMap("res" -> 32.5)
         ))
       }
 
@@ -93,7 +93,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) RETURN AVG(n.val) AS res")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> 32.5)
+          CypherMap("res" -> 32.5)
         ))
       }
 
@@ -103,7 +103,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) WITH AVG(n.val) AS res RETURN res")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> null)
+          CypherMap("res" -> null)
         ))
       }
 
@@ -113,7 +113,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) RETURN AVG(n.val) AS res")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> null)
+          CypherMap("res" -> null)
         ))
       }
     }
@@ -126,7 +126,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) WITH count(*) AS nbrRows RETURN nbrRows")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("nbrRows" -> 6)
+          CypherMap("nbrRows" -> 6)
         ))
       }
 
@@ -136,7 +136,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) RETURN count(*) AS nbrRows")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("nbrRows" -> 6)
+          CypherMap("nbrRows" -> 6)
         ))
       }
 
@@ -146,7 +146,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) RETURN count(n) AS nbrRows")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("nbrRows" -> 6)
+          CypherMap("nbrRows" -> 6)
         ))
       }
 
@@ -156,7 +156,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) RETURN count(n)")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("count(n)" -> 6)
+          CypherMap("count(n)" -> 6)
         ))
       }
 
@@ -166,7 +166,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) RETURN count(*)")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("count(*)" -> 6)
+          CypherMap("count(*)" -> 6)
         ))
       }
 
@@ -176,7 +176,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) WITH count(n.name) AS nonNullNames RETURN nonNullNames")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("nonNullNames" -> 3)
+          CypherMap("nonNullNames" -> 3)
         ))
       }
 
@@ -186,7 +186,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) WITH count(n) AS nodes RETURN nodes")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("nodes" -> 6)
+          CypherMap("nodes" -> 6)
         ))
       }
 
@@ -196,7 +196,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n)-->(b:B) WITH count(b) AS nodes RETURN nodes")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("nodes" -> 2)
+          CypherMap("nodes" -> 2)
         ))
       }
 
@@ -206,9 +206,9 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) RETURN n.name as name, count(*) AS amount")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("name" -> "foo", "amount" -> 2),
-          CAPSMap("name" -> null, "amount" -> 3),
-          CAPSMap("name" -> "baz", "amount" -> 1)
+          CypherMap("name" -> "foo", "amount" -> 2),
+          CypherMap("name" -> null, "amount" -> 3),
+          CypherMap("name" -> "baz", "amount" -> 1)
         ))
       }
 
@@ -218,9 +218,9 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) WITH n.name as name, count(*) AS amount RETURN name, amount")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("name" -> "foo", "amount" -> 2),
-          CAPSMap("name" -> null, "amount" -> 3),
-          CAPSMap("name" -> "baz", "amount" -> 1)
+          CypherMap("name" -> "foo", "amount" -> 2),
+          CypherMap("name" -> null, "amount" -> 3),
+          CypherMap("name" -> "baz", "amount" -> 1)
         ))
       }
 
@@ -228,13 +228,13 @@ trait AggregationBehaviour {
         val graph = initGraph("CREATE ({name: 'foo', age: 42}), ({name: 'foo', age: 42}), ({name: 'foo', age: 23}), (), (), ({name: 'baz', age: 23})")
 
         val result = graph
-            .cypher("MATCH (n) WITH n.name AS name, n.age AS age, count(*) AS amount RETURN name, age, amount")
+          .cypher("MATCH (n) WITH n.name AS name, n.age AS age, count(*) AS amount RETURN name, age, amount")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("name" -> "foo", "age" -> 23, "amount" -> 1),
-          CAPSMap("name" -> "foo", "age" -> 42, "amount" -> 2),
-          CAPSMap("name" -> "baz", "age" -> 23, "amount" -> 1),
-          CAPSMap("name" -> null, "age" -> null, "amount" -> 2)
+          CypherMap("name" -> "foo", "age" -> 23, "amount" -> 1),
+          CypherMap("name" -> "foo", "age" -> 42, "amount" -> 2),
+          CypherMap("name" -> "baz", "age" -> 23, "amount" -> 1),
+          CypherMap("name" -> null, "age" -> null, "amount" -> 2)
         ))
       }
     }
@@ -247,7 +247,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) WITH MIN(n.val) AS res RETURN res")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> 23L)
+          CypherMap("res" -> 23L)
         ))
       }
 
@@ -257,7 +257,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) RETURN MIN(n.val) AS res")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> 23L)
+          CypherMap("res" -> 23L)
         ))
       }
 
@@ -267,7 +267,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) WITH MIN(n.val) AS res RETURN res")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> 23L)
+          CypherMap("res" -> 23L)
         ))
       }
 
@@ -277,7 +277,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) RETURN MIN(n.val) AS res")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> 23L)
+          CypherMap("res" -> 23L)
         ))
       }
 
@@ -287,7 +287,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) RETURN MIN(n.val)")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("MIN(n.val)" -> 23L)
+          CypherMap("MIN(n.val)" -> 23L)
         ))
       }
 
@@ -297,7 +297,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) WITH MIN(n.val) AS res RETURN res")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> null)
+          CypherMap("res" -> null)
         ))
       }
 
@@ -307,7 +307,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) RETURN MIN(n.val) AS res")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> null)
+          CypherMap("res" -> null)
         ))
       }
     }
@@ -320,7 +320,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) WITH MAX(n.val) AS res RETURN res")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> 84L)
+          CypherMap("res" -> 84L)
         ))
       }
 
@@ -330,7 +330,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) RETURN MAX(n.val) AS res")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> 84L)
+          CypherMap("res" -> 84L)
         ))
       }
 
@@ -340,7 +340,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) WITH MAX(n.val) AS res RETURN res")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> 42L)
+          CypherMap("res" -> 42L)
         ))
       }
 
@@ -350,7 +350,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) RETURN MAX(n.val) AS res")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> 42L)
+          CypherMap("res" -> 42L)
         ))
       }
 
@@ -360,7 +360,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) RETURN MAX(n.val)")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("MAX(n.val)" -> 42L)
+          CypherMap("MAX(n.val)" -> 42L)
         ))
       }
 
@@ -370,7 +370,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) WITH MAX(n.val) AS res RETURN res")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> null)
+          CypherMap("res" -> null)
         ))
       }
 
@@ -380,7 +380,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) RETURN MAX(n.val) AS res")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> null)
+          CypherMap("res" -> null)
         ))
       }
     }
@@ -394,7 +394,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) WITH SUM(n.val) AS res RETURN res")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> 12)
+          CypherMap("res" -> 12)
         ))
       }
 
@@ -404,7 +404,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) RETURN SUM(n.val) AS res")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> 12)
+          CypherMap("res" -> 12)
         ))
       }
 
@@ -414,7 +414,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) WITH SUM(n.val) AS res RETURN res")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> 10.5)
+          CypherMap("res" -> 10.5)
         ))
       }
 
@@ -424,7 +424,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) RETURN SUM(n.val) AS res")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> 10.5)
+          CypherMap("res" -> 10.5)
         ))
       }
 
@@ -434,7 +434,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) RETURN SUM(n.val)")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("SUM(n.val)" -> 10.5)
+          CypherMap("SUM(n.val)" -> 10.5)
         ))
       }
 
@@ -444,7 +444,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) WITH SUM(n.val) AS res RETURN res")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> 65.0)
+          CypherMap("res" -> 65.0)
         ))
       }
 
@@ -454,7 +454,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) RETURN SUM(n.val) AS res")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> 65.0)
+          CypherMap("res" -> 65.0)
         ))
       }
 
@@ -464,7 +464,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) WITH SUM(n.val) AS res RETURN res")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> null)
+          CypherMap("res" -> null)
         ))
       }
 
@@ -474,7 +474,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) RETURN SUM(n.val) AS res")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> null)
+          CypherMap("res" -> null)
         ))
       }
     }
@@ -487,7 +487,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) WITH COLLECT(n.val) AS res RETURN res")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> Seq(6, 4, 2))
+          CypherMap("res" -> Seq(6, 4, 2))
         ))
       }
 
@@ -497,7 +497,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) RETURN COLLECT(n.val) AS res")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> Seq(6, 4, 2))
+          CypherMap("res" -> Seq(6, 4, 2))
         ))
       }
 
@@ -508,7 +508,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) WITH COLLECT(n.val) AS res RETURN res")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> Seq(23.0, 42.0))
+          CypherMap("res" -> Seq(23.0, 42.0))
         ))
       }
 
@@ -518,7 +518,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) RETURN COLLECT(n.val) AS res")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> Seq(23.0, 42.0))
+          CypherMap("res" -> Seq(23.0, 42.0))
         ))
       }
 
@@ -529,7 +529,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) WITH Collect(n.val) AS res RETURN res")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> Seq.empty)
+          CypherMap("res" -> Seq.empty)
         ))
       }
 
@@ -539,7 +539,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) RETURN COLLECT(n.val) AS res")
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("res" -> Seq.empty)
+          CypherMap("res" -> Seq.empty)
         ))
       }
     }
@@ -561,7 +561,7 @@ trait AggregationBehaviour {
             |RETURN avg, cnt, min, max, sum, col""".stripMargin)
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("avg" -> 49, "cnt" -> 3, "min" -> 23L, "max" -> 84L, "sum" -> 149, "col" -> Seq(84, 23, 42))
+          CypherMap("avg" -> 49, "cnt" -> 3, "min" -> 23L, "max" -> 84L, "sum" -> 149, "col" -> Seq(84, 23, 42))
         ))
       }
 
@@ -579,7 +579,7 @@ trait AggregationBehaviour {
             | COLLECT(n.val) AS col""".stripMargin)
 
         result.records.toMaps should equal(Bag(
-          CAPSMap("avg" -> 49, "cnt" -> 3, "min" -> 23L, "max" -> 84L, "sum" -> 149, "col" -> Seq(84, 23, 42))
+          CypherMap("avg" -> 49, "cnt" -> 3, "min" -> 23L, "max" -> 84L, "sum" -> 149, "col" -> Seq(84, 23, 42))
         ))
       }
 
@@ -598,9 +598,9 @@ trait AggregationBehaviour {
             | COLLECT(n.val) as col""".stripMargin)
 
         result.records.toMaps should equal(Bag(
-          CAPSMap(
+          CypherMap(
             "key" -> "a", "avg" -> 32, "cnt" -> 2, "min" -> 23L, "max" -> 42L, "sum" -> 65, "col" -> Seq(23, 42)),
-          CAPSMap("key" -> "b", "avg" -> 84, "cnt" -> 1, "min" -> 84, "max" -> 84, "sum" -> 84, "col" -> Seq(84))
+          CypherMap("key" -> "b", "avg" -> 84, "cnt" -> 1, "min" -> 84, "max" -> 84, "sum" -> 84, "col" -> Seq(84))
         ))
       }
 
@@ -620,9 +620,9 @@ trait AggregationBehaviour {
             |RETURN key, avg, cnt, min, max, sum, col""".stripMargin)
 
         result.records.toMaps should equal(Bag(
-          CAPSMap(
+          CypherMap(
             "key" -> "a", "avg" -> 32, "cnt" -> 2, "min" -> 23L, "max" -> 42L, "sum" -> 65, "col" -> Seq(23, 42)),
-          CAPSMap("key" -> "b", "avg" -> 84, "cnt" -> 1, "min" -> 84, "max" -> 84, "sum" -> 84, "col" -> Seq(84))
+          CypherMap("key" -> "b", "avg" -> 84, "cnt" -> 1, "min" -> 84, "max" -> 84, "sum" -> 84, "col" -> Seq(84))
         ))
       }
     }

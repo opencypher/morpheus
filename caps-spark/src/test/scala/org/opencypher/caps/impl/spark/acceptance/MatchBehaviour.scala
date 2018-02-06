@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.spark.acceptance
 
-import org.opencypher.caps.api.value.CAPSMap
+import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.impl.spark.CAPSGraph
 
 import scala.collection.Bag
@@ -28,166 +28,166 @@ trait MatchBehaviour {
     describe("match single node") {
 
       it("matches a label") {
-        // Given
+      // Given
         val given = initGraph(
           """
-            |CREATE (p:Person {firstName: "Alice", lastName: "Foo"})
-          """.stripMargin)
+          |CREATE (p:Person {firstName: "Alice", lastName: "Foo"})
+        """.stripMargin)
 
-        // When
+      // When
         val result = given.cypher(
           """
-            |MATCH (a:Person)
-            |RETURN a.firstName
-          """.stripMargin)
+          |MATCH (a:Person)
+          |RETURN a.firstName
+        """.stripMargin)
 
-        // Then
-        result.records.toMaps should equal(Bag(CAPSMap("a.firstName" -> "Alice")
+      // Then
+        result.records.toMaps should equal(Bag(CypherMap("a.firstName" -> "Alice")
         ))
-      }
+    }
 
       it("matches an unknown label") {
-        // Given
+      // Given
         val given = initGraph("CREATE (p:Person {firstName: 'Alice', lastName: 'Foo'})")
 
-        // When
+      // When
         val result = given.cypher(
           """
-            |MATCH (a:Animal)
-            |RETURN a
-          """.stripMargin)
+          |MATCH (a:Animal)
+          |RETURN a
+        """.stripMargin)
 
-        // Then
-        result.records.toMaps shouldBe empty
-      }
+      // Then
+      result.records.toMaps shouldBe empty
+    }
     }
 
     describe("multiple match clauses") {
       it("can handle multiple match clauses") {
-        // Given
+      // Given
         val given = initGraph(
           """CREATE (p1:Person {name: "Alice"})
-            |CREATE (p2:Person {name: "Bob"})
-            |CREATE (p3:Person {name: "Eve"})
-            |CREATE (p1)-[:KNOWS]->(p2)
-            |CREATE (p2)-[:KNOWS]->(p3)
-          """.stripMargin)
+          |CREATE (p2:Person {name: "Bob"})
+          |CREATE (p3:Person {name: "Eve"})
+          |CREATE (p1)-[:KNOWS]->(p2)
+          |CREATE (p2)-[:KNOWS]->(p3)
+        """.stripMargin)
 
-        // When
+      // When
         val result = given.cypher(
           """MATCH (p1:Person)
-            |MATCH (p1:Person)-[e1]->(p2:Person)
-            |MATCH (p2)-[e2]->(p3:Person)
-            |RETURN p1.name, p2.name, p3.name
-          """.stripMargin)
+          |MATCH (p1:Person)-[e1]->(p2:Person)
+          |MATCH (p2)-[e2]->(p3:Person)
+          |RETURN p1.name, p2.name, p3.name
+        """.stripMargin)
 
-        // Then
-        result.records.toMaps should equal(
-          Bag(
-            CAPSMap(
-              "p1.name" -> "Alice",
-              "p2.name" -> "Bob",
+      // Then
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap(
+            "p1.name" -> "Alice",
+            "p2.name" -> "Bob",
               "p3.name" ->
                 "Eve"
-            )
-          ))
-        result.graphs shouldBe empty
-      }
+          )
+        ))
+      result.graphs shouldBe empty
+    }
 
       it("cyphermorphism and multiple match clauses") {
-        // Given
+      // Given
         val given = initGraph(
           """
-            |CREATE (p1:Person {name: "Alice"})
-            |CREATE (p2:Person {name: "Bob"})
-            |CREATE (p1)-[:KNOWS]->(p2)
-            |CREATE (p2)-[:KNOWS]->(p1)
-          """.stripMargin)
+          |CREATE (p1:Person {name: "Alice"})
+          |CREATE (p2:Person {name: "Bob"})
+          |CREATE (p1)-[:KNOWS]->(p2)
+          |CREATE (p2)-[:KNOWS]->(p1)
+        """.stripMargin)
 
-        // When
+      // When
         val result = given.cypher(
           """
-            |MATCH (p1:Person)-[e1:KNOWS]->(p2:Person)-[e2:KNOWS]->(p3:Person)
-            |MATCH (p3)-[e3:KNOWS]->(p4:Person)
-            |RETURN p1.name, p2.name, p3.name, p4.name
-          """.stripMargin)
+          |MATCH (p1:Person)-[e1:KNOWS]->(p2:Person)-[e2:KNOWS]->(p3:Person)
+          |MATCH (p3)-[e3:KNOWS]->(p4:Person)
+          |RETURN p1.name, p2.name, p3.name, p4.name
+        """.stripMargin)
 
-        // Then
-        result.records.toMaps should equal(
-          Bag(
-            CAPSMap(
-              "p1.name" -> "Bob",
-              "p2.name" -> "Alice",
-              "p3.name" -> "Bob",
-              "p4.name" -> "Alice"
-            ),
-            CAPSMap(
-              "p1.name" -> "Alice",
-              "p2.name" -> "Bob",
-              "p3.name" -> "Alice",
-              "p4.name" -> "Bob"
-            )
-          ))
-        result.graphs shouldBe empty
-      }
+      // Then
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap(
+            "p1.name" -> "Bob",
+            "p2.name" -> "Alice",
+            "p3.name" -> "Bob",
+            "p4.name" -> "Alice"
+          ),
+          CypherMap(
+            "p1.name" -> "Alice",
+            "p2.name" -> "Bob",
+            "p3.name" -> "Alice",
+            "p4.name" -> "Bob"
+          )
+        ))
+      result.graphs shouldBe empty
+    }
     }
 
     describe("disconnected match clauses") {
 
       it("disconnected components") {
-        // Given
+      // Given
         val given = initGraph(
           """
-            |CREATE (p1:Narcissist {name: "Alice"})
-            |CREATE (p2:Narcissist {name: "Bob"})
-            |CREATE (p1)-[:LOVES]->(p1)
-            |CREATE (p2)-[:LOVES]->(p2)
-          """.stripMargin)
+          |CREATE (p1:Narcissist {name: "Alice"})
+          |CREATE (p2:Narcissist {name: "Bob"})
+          |CREATE (p1)-[:LOVES]->(p1)
+          |CREATE (p2)-[:LOVES]->(p2)
+        """.stripMargin)
 
-        // When
+      // When
         val result = given.cypher(
           """
-            |MATCH (a:Narcissist), (b:Narcissist)
-            |RETURN a.name AS one, b.name AS two
-          """.stripMargin)
+          |MATCH (a:Narcissist), (b:Narcissist)
+          |RETURN a.name AS one, b.name AS two
+        """.stripMargin)
 
-        // Then
-        result.records.toMaps should equal(
-          Bag(
-            CAPSMap("one" -> "Alice", "two" -> "Alice"),
-            CAPSMap("one" -> "Alice", "two" -> "Bob"),
-            CAPSMap("one" -> "Bob", "two" -> "Bob"),
-            CAPSMap("one" -> "Bob", "two" -> "Alice")
-          ))
-      }
+      // Then
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("one" -> "Alice", "two" -> "Alice"),
+          CypherMap("one" -> "Alice", "two" -> "Bob"),
+          CypherMap("one" -> "Bob", "two" -> "Bob"),
+          CypherMap("one" -> "Bob", "two" -> "Alice")
+        ))
+    }
 
       it("joined components") {
-        // Given
+      // Given
         val given = initGraph(
           """
-            |CREATE (p1:Narcissist {name: "Alice"})
-            |CREATE (p2:Narcissist {name: "Bob"})
-            |CREATE (p1)-[:LOVES]->(p1)
-            |CREATE (p2)-[:LOVES]->(p2)
-          """.stripMargin)
+          |CREATE (p1:Narcissist {name: "Alice"})
+          |CREATE (p2:Narcissist {name: "Bob"})
+          |CREATE (p1)-[:LOVES]->(p1)
+          |CREATE (p2)-[:LOVES]->(p2)
+        """.stripMargin)
 
-        // When
+      // When
         val result = given.cypher(
           """
-            |MATCH (a:Narcissist), (b:Narcissist) WHERE a.name = b.name
-            |RETURN a.name AS one, b.name AS two
-          """.stripMargin)
+          |MATCH (a:Narcissist), (b:Narcissist) WHERE a.name = b.name
+          |RETURN a.name AS one, b.name AS two
+        """.stripMargin)
 
-        // Then
-        result.records.toMaps should equal(
-          Bag(
-            CAPSMap("one" -> "Alice", "two" -> "Alice"),
-            CAPSMap("one" -> "Bob", "two" -> "Bob")
-          ))
+      // Then
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("one" -> "Alice", "two" -> "Alice"),
+          CypherMap("one" -> "Bob", "two" -> "Bob")
+        ))
 
-        // TODO: Move to plan based testing
-        result.explain.logical.plan.pretty() should include("ValueJoin")
-      }
+      // TODO: Move to plan based testing
+      result.explain.logical.plan.pretty() should include("ValueJoin")
+    }
     }
 
     describe("undirected patterns") {
@@ -207,8 +207,8 @@ trait MatchBehaviour {
         val result = given.cypher("MATCH (a:A)--(other) RETURN a.prop, other.prop")
 
         result.records.iterator.toBag should equal(Bag(
-          CAPSMap("a.prop" -> "isA", "other.prop" -> "fromA"),
-          CAPSMap("a.prop" -> "isA", "other.prop" -> "toA")
+          CypherMap("a.prop" -> "isA", "other.prop" -> "fromA"),
+          CypherMap("a.prop" -> "isA", "other.prop" -> "toA")
         ))
       }
 
@@ -229,9 +229,9 @@ trait MatchBehaviour {
         val result = given.cypher("MATCH (a:A)--()--(other) RETURN a.prop, other.prop")
 
         result.records.iterator.toBag should equal(Bag(
-          CAPSMap("a.prop" -> "a", "other.prop" -> "c"),
-          CAPSMap("a.prop" -> "a", "other.prop" -> "b"),
-          CAPSMap("a.prop" -> "a", "other.prop" -> "d")
+          CypherMap("a.prop" -> "a", "other.prop" -> "c"),
+          CypherMap("a.prop" -> "a", "other.prop" -> "b"),
+          CypherMap("a.prop" -> "a", "other.prop" -> "d")
         ))
       }
 
@@ -254,8 +254,8 @@ trait MatchBehaviour {
           """.stripMargin)
 
         result.records.iterator.toBag should equal(Bag(
-          CAPSMap("a.prop" -> "a", "b.prop" -> "b"),
-          CAPSMap("a.prop" -> "a", "b.prop" -> "b")
+          CypherMap("a.prop" -> "a", "b.prop" -> "b"),
+          CypherMap("a.prop" -> "a", "b.prop" -> "b")
         ))
       }
 
@@ -275,10 +275,10 @@ trait MatchBehaviour {
         val result = given.cypher("MATCH (a:A)--(a)<--(other) RETURN a.prop, other.prop")
 
         result.records.iterator.toBag should equal(Bag(
-          CAPSMap("a.prop" -> "a", "other.prop" -> "a"),
-          CAPSMap("a.prop" -> "a", "other.prop" -> "a"),
-          CAPSMap("a.prop" -> "a", "other.prop" -> "b"),
-          CAPSMap("a.prop" -> "a", "other.prop" -> "b")
+          CypherMap("a.prop" -> "a", "other.prop" -> "a"),
+          CypherMap("a.prop" -> "a", "other.prop" -> "a"),
+          CypherMap("a.prop" -> "a", "other.prop" -> "b"),
+          CypherMap("a.prop" -> "a", "other.prop" -> "b")
         ))
       }
 
@@ -295,7 +295,7 @@ trait MatchBehaviour {
         val result = given.cypher("MATCH (a:A)--(a) RETURN a.prop")
 
         result.records.iterator.toBag should equal(Bag(
-          CAPSMap("a.prop" -> "isA")
+          CypherMap("a.prop" -> "isA")
         ))
       }
 
@@ -313,7 +313,7 @@ trait MatchBehaviour {
         val result = given.cypher("MATCH (a:A)-[*2..2]-(other) RETURN a.prop, other.prop")
 
         result.records.iterator.toBag should equal(Bag(
-          CAPSMap("a.prop" -> "a", "other.prop" -> "c")
+          CypherMap("a.prop" -> "a", "other.prop" -> "c")
         ))
       }
     }

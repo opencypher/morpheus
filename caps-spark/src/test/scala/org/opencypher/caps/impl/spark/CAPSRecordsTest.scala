@@ -20,7 +20,8 @@ import org.opencypher.caps.api.exception.CypherException
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.caps.api.schema.{NodeTable, RelationshipTable}
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.api.value.{CAPSMap, CAPSNode, Properties}
+import org.opencypher.caps.api.value.CAPSNode
+import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.impl.record._
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.ir.api.{Label, PropertyKey}
@@ -33,11 +34,11 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture {
 
   test("verify CAPSRecords header") {
     val givenDF = session.createDataFrame(
-      Seq(
-        (1L, true, "Mats"),
-        (2L, false, "Martin"),
-        (3L, false, "Max"),
-        (4L, false, "Stefan")
+          Seq(
+            (1L, true, "Mats"),
+            (2L, false, "Martin"),
+            (3L, false, "Max"),
+            (4L, false, "Stefan")
       )).toDF("ID", "IS_SWEDE", "NAME")
 
     val givenMapping = NodeMapping.on("ID")
@@ -62,11 +63,11 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture {
   test("verify CAPSRecords header for relationship with a fixed type") {
 
     val givenDF = session.createDataFrame(
-      Seq(
-        (10L, 1L, 2L, "red"),
-        (11L, 2L, 3L, "blue"),
-        (12L, 3L, 4L, "green"),
-        (13L, 4L, 1L, "yellow")
+          Seq(
+            (10L, 1L, 2L, "red"),
+            (11L, 2L, 3L, "blue"),
+            (12L, 3L, 4L, "green"),
+            (13L, 4L, 1L, "yellow")
       )).toDF("ID", "FROM", "TO", "COLOR")
 
     val givenMapping = RelationshipMapping.on("ID")
@@ -92,11 +93,11 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture {
 
   test("contract relationships with a dynamic type") {
     val givenDF = session.createDataFrame(
-      Seq(
-        (10L, 1L, 2L, "RED"),
-        (11L, 2L, 3L, "BLUE"),
-        (12L, 3L, 4L, "GREEN"),
-        (13L, 4L, 1L, "YELLOW")
+          Seq(
+            (10L, 1L, 2L, "RED"),
+            (11L, 2L, 3L, "BLUE"),
+            (12L, 3L, 4L, "GREEN"),
+            (13L, 4L, 1L, "YELLOW")
       )).toDF("ID", "FROM", "TO", "COLOR")
 
     val givenMapping = RelationshipMapping.on("ID")
@@ -143,8 +144,8 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture {
 
     result.records.iterator.toBag should equal(
       Bag(
-        CAPSMap(
-          "n" -> CAPSNode(0L, Seq("Foo"), Properties("p" -> 1)),
+        CypherMap(
+          "n" -> CAPSNode(0L, Set("Foo"), CypherMap("p" -> 1)),
           "b" -> 5
         )
       ))

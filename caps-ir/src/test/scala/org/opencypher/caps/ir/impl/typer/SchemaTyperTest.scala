@@ -176,9 +176,11 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     assertExpr.from("NOT(NOT(n:Person:Car))") shouldHaveInferredType CTBoolean
   }
 
-  test("typing AND and OR") {
-    implicit val context = typeTracker("b" -> CTBoolean, "c" -> CTBoolean, "int" -> CTInteger)
+  it("typing AND and OR") {
+    implicit val context = typeTracker("b" -> CTBoolean, "c" -> CTBoolean, "int" -> CTInteger, "d" -> CTBoolean.nullable)
 
+    assertExpr.from("b AND d") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("b OR d") shouldHaveInferredType CTBoolean.nullable
     assertExpr.from("b AND true") shouldHaveInferredType CTBoolean
     assertExpr.from("b OR false") shouldHaveInferredType CTBoolean
     assertExpr.from("(b AND true) OR (b AND c)") shouldHaveInferredType CTBoolean
@@ -188,13 +190,13 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     }
   }
 
-  test("can convert RetypingPredicate") {
-    implicit val tracker = typeTracker("b" -> CTBoolean, "n" -> CTNode())
+  it("can get label information through combined predicates") {
+    implicit val tracker = typeTracker("b" -> CTBoolean, "n" -> CTNode(), "x" -> CTString)
 
     assertExpr.from("b AND n:Person AND b AND n:Foo") shouldHaveInferredType CTBoolean
     assertExpr.from("b AND n:Person AND b AND n:Foo") shouldMake varFor("n") haveType CTNode("Person", "Foo")
-    assertExpr.from("n.prop AND n:Person") shouldMake varFor("n") haveType CTNode("Person")
-    assertExpr.from("n.name AND n:Person") shouldMake prop("n", "name") haveType CTString
+    assertExpr.from("n.name = x AND n:Person") shouldMake varFor("n") haveType CTNode("Person")
+    assertExpr.from("n.name = x AND n:Person") shouldMake prop("n", "name") haveType CTString
   }
 
   test("should detail entity type from predicate") {
@@ -214,35 +216,37 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
   }
 
   test("typing less than") {
-    implicit val context = typeTracker("n" -> CTInteger, "m" -> CTInteger, "o" -> CTString)
+    implicit val context = typeTracker("n" -> CTInteger, "m" -> CTFloat, "o" -> CTString)
 
-    assertExpr.from("n < m") shouldHaveInferredType CTBoolean
-    assertExpr.from("n < o") shouldHaveInferredType CTVoid
-    assertExpr.from("o < n") shouldHaveInferredType CTVoid
+    assertExpr.from("n < n") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("n < m") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("n < o") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("o < n") shouldHaveInferredType CTBoolean.nullable
   }
 
   test("typing less than or equal") {
-    implicit val context = typeTracker("n" -> CTInteger, "m" -> CTInteger, "o" -> CTString)
+    implicit val context = typeTracker("n" -> CTInteger, "m" -> CTInteger.nullable, "o" -> CTString)
 
-    assertExpr.from("n <= m") shouldHaveInferredType CTBoolean
-    assertExpr.from("n <= o") shouldHaveInferredType CTVoid
-    assertExpr.from("o <= n") shouldHaveInferredType CTVoid
+    assertExpr.from("n <= n") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("n <= m") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("n <= o") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("o <= n") shouldHaveInferredType CTBoolean.nullable
   }
 
   test("typing greater than") {
     implicit val context = typeTracker("n" -> CTInteger, "m" -> CTInteger, "o" -> CTString)
 
-    assertExpr.from("n > m") shouldHaveInferredType CTBoolean
-    assertExpr.from("n > o") shouldHaveInferredType CTVoid
-    assertExpr.from("o > n") shouldHaveInferredType CTVoid
+    assertExpr.from("n > m") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("n > o") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("o > n") shouldHaveInferredType CTBoolean.nullable
   }
 
   test("typing greater than or equal") {
     implicit val context = typeTracker("n" -> CTInteger, "m" -> CTInteger, "o" -> CTString)
 
-    assertExpr.from("n >= m") shouldHaveInferredType CTBoolean
-    assertExpr.from("n >= o") shouldHaveInferredType CTVoid
-    assertExpr.from("o >= n") shouldHaveInferredType CTVoid
+    assertExpr.from("n >= m") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("n >= o") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("o >= n") shouldHaveInferredType CTBoolean.nullable
   }
 
   test("typing property equality and IN") {

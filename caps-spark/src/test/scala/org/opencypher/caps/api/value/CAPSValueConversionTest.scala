@@ -15,182 +15,130 @@
  */
 package org.opencypher.caps.api.value
 
+import org.opencypher.caps.api.value.CypherValue._
+
 class CAPSValueConversionTest extends CAPSValueTestSuite {
 
   import CAPSTestValues._
 
-  test("PATH conversion") {
-    val originalValues = PATH_valueGroups.flatten
-    val scalaValues = originalValues.map(CAPSPath.contents).map(_.orNull)
-    val newValues = scalaValues.map {
-      case null             => null
-      case elements: Seq[_] => CAPSPath(elements.asInstanceOf[Seq[CAPSEntityValue]])
-    }
-
-    newValues should equal(originalValues)
-
-    originalValues.foreach { v =>
-      CAPSPath.isOrContainsNull(v) should equal(v == null)
-    }
-  }
-
   test("RELATIONSHIP conversion") {
     val originalValues = RELATIONSHIP_valueGroups.flatten
-    val scalaValues: Seq[RelationshipContents] = originalValues.map(CAPSRelationship.contents).map(_.orNull)
+    val scalaValues = originalValues.map(_.unwrap)
     val newValues = scalaValues.map {
-      case null     => null
-      case contents => CAPSRelationship(contents.id, contents.startId, contents.endId, contents.relationshipType, contents.properties)
+      case scalaClass => CypherValue(scalaClass)
     }
-
-    newValues should equal(originalValues)
-
+    assert(newValues == originalValues)
     originalValues.foreach { v =>
-      CAPSRelationship.isOrContainsNull(v) should equal(v == null)
+      assert(v.isNull == (v == CypherNull))
     }
   }
 
   test("NODE conversion") {
     val originalValues = NODE_valueGroups.flatten
-    val scalaValues: Seq[NodeContents] = originalValues.map(CAPSNode.contents).map(_.orNull)
-    val newValues = scalaValues.map {
-      case null     => null
-      case contents => CAPSNode(contents.id, contents.data.labels, contents.data.properties)
-    }
-
-    newValues should equal(originalValues)
-
+    val scalaValues = originalValues.map(_.unwrap)
+    val newValues = scalaValues.map(CypherValue(_))
+    assert(newValues == originalValues)
     originalValues.foreach { v =>
-      CAPSNode.isOrContainsNull(v) should equal(v == null)
+      assert(v.isNull == (v == CypherNull))
     }
   }
 
   test("MAP conversion") {
     val originalValues = MAP_valueGroups.flatten
-    val scalaValues = originalValues.map(CAPSMap.contents).map(_.orNull)
-    val newValues = scalaValues.map {
-      case null     => null
-      case contents => CAPSMap(contents.properties)
-    }
-
-    newValues should equal(originalValues)
-
+    val scalaValues = originalValues.map(_.unwrap)
+    val newValues = scalaValues.map(CypherValue(_))
+    assert(newValues == originalValues)
     originalValues.foreach { v =>
-      CAPSMap.isOrContainsNull(v) should equal (v == null || CAPSMap.unapply(v).map(_.properties.m).exists(_.values.exists(_ == null)))
+      assert(v.isOrContainsNull == (v == CypherNull || v.as[CypherMap].get.unwrap.valuesIterator.exists(_ == null)))
     }
   }
 
   test("LIST conversion") {
     val originalValues = LIST_valueGroups.flatten
-    val scalaValues = originalValues.map(CAPSList.contents).map(_.orNull)
+    val scalaValues = originalValues.map(_.unwrap)
     val newValues = scalaValues.map {
-      case null                 => null
-      case l: Seq[CAPSValue]  => CAPSList(l)
+      case null => CypherNull
+      case l: List[_] => CypherList(l: _*)
     }
-
-    newValues should equal(originalValues)
-
+    assert(newValues == originalValues)
     originalValues.foreach { v =>
-      CAPSList.isOrContainsNull(v) should equal (v == null || CAPSList.unapply(v).exists(_.exists(_ == null)))
+      assert(v.isOrContainsNull == v.isNull || v.as[CypherList].get.unwrap.exists(_ == null))
     }
   }
 
   test("STRING conversion") {
     val originalValues = STRING_valueGroups.flatten
-    val scalaValues = originalValues.map(CAPSString.contents).map(_.orNull)
+    val scalaValues = originalValues.map(_.unwrap)
     val newValues = scalaValues.map {
-      case null                => null
-      case s: java.lang.String => CAPSString(s)
+      case null => CypherNull
+      case s: java.lang.String => CypherString(s)
     }
-
-    newValues should equal(originalValues)
-
+    assert(newValues == originalValues)
     originalValues.foreach { v =>
-      CAPSString.isOrContainsNull(v) should equal (v == null)
+      assert(v.isOrContainsNull == (v.value == null))
     }
   }
 
   test("BOOLEAN conversion") {
     val originalValues = BOOLEAN_valueGroups.flatten
-    val scalaValues = originalValues.map(CAPSBoolean.contents)
+    val scalaValues = originalValues.map(_.value)
     val newValues = scalaValues.map {
-      case None    => null
-      case Some(b) => CAPSBoolean(b)
+      case null => CypherNull
+      case b: Boolean => CypherBoolean(b)
     }
-
-    newValues should equal(originalValues)
-
+    assert(newValues == originalValues)
     originalValues.foreach { v =>
-      CAPSBoolean.isOrContainsNull(v) should equal (v == null)
+      assert(v.isOrContainsNull == (v.value == null))
     }
   }
 
   test("INTEGER conversion") {
     val originalValues = INTEGER_valueGroups.flatten
-    val scalaValues = originalValues.map(CAPSInteger.contents).map(_.orNull)
+    val scalaValues = originalValues.map(_.value)
     val newValues = scalaValues.map {
-      case null              => null
-      case l: java.lang.Long => CAPSInteger(l)
+      case null => CypherNull
+      case l: java.lang.Long => CypherInteger(l)
     }
-
-    newValues should equal(originalValues)
-
+    assert(newValues == originalValues)
     originalValues.foreach { v =>
-      CAPSInteger.isOrContainsNull(v) should equal (v == null)
+      assert(v.isOrContainsNull == (v.value == null))
     }
   }
 
   test("FLOAT conversion") {
     val originalValues = FLOAT_valueGroups.flatten
-    val scalaValues = originalValues.map(CAPSFloat.contents).map(_.orNull)
+    val scalaValues = originalValues.map(_.value)
     val newValues = scalaValues.map {
-      case null                => null
-      case d: java.lang.Double => CAPSFloat(d)
+      case null => CypherNull
+      case d: java.lang.Double => CypherFloat(d)
     }
-
-    newValues should equal(originalValues)
-
+    assert(newValues.withoutNaNs == originalValues.withoutNaNs)
     originalValues.foreach { v =>
-      CAPSFloat.isOrContainsNull(v) should equal (v == null)
+      assert(v.isOrContainsNull == (v.value == null))
     }
   }
 
   test("NUMBER conversion") {
     val originalValues = NUMBER_valueGroups.flatten
-    val scalaValues = originalValues.map(CAPSNumber.contents).map(_.orNull)
+    val scalaValues = originalValues.map(_.value)
     val newValues = scalaValues.map {
-      case null                => null
-      case l: java.lang.Long   => CAPSInteger(l)
-      case d: java.lang.Double => CAPSFloat(d)
+      case null => CypherNull
+      case l: java.lang.Long => CypherInteger(l)
+      case d: java.lang.Double => CypherFloat(d)
     }
-
-    newValues should equal(originalValues)
-
+    assert(newValues.withoutNaNs == originalValues.withoutNaNs)
     originalValues.foreach { v =>
-      CAPSNumber.isOrContainsNull(v) should equal (v == null)
+      assert(v.isOrContainsNull == (v.value == null))
     }
   }
 
   test("ALL conversion") {
     val originalValues = ANY_valueGroups.flatten
-    val scalaValues = originalValues.map(CAPSValue.contents).map(_.orNull)
-    val wut = originalValues.map(x => x -> CAPSValue.contents(x))
-    val newValues = scalaValues.map {
-      case null => null
-      case b: java.lang.Boolean => CAPSBoolean(b)
-      case s: java.lang.String => CAPSString(s)
-      case l: java.lang.Long => CAPSInteger(l)
-      case r: RegularMap => CAPSMap(r.properties)
-      case n: NodeContents => CAPSNode(n.id, n.labels, n.properties)
-      case r: RelationshipContents => CAPSRelationship(r.id, r.startId, r.endId, r.relationshipType, r.properties)
-      case d: java.lang.Double => CAPSFloat(d)
-      case l: Seq[_] if isPathLike(l) => CAPSPath(l.asInstanceOf[Seq[CAPSEntityValue]])
-      case l: Seq[_] => CAPSList(l.asInstanceOf[Seq[CAPSValue]])
-    }
-
-    newValues should equal(originalValues)
-
+    val scalaValues = originalValues.map(_.unwrap)
+    val newValues = scalaValues.map(CypherValue(_))
+    assert(newValues.withoutNaNs == originalValues.withoutNaNs)
     originalValues.foreach { v =>
-      if (v == null) CAPSValue.isOrContainsNull(v) should equal(true)
+      if (v == null) assert(v.isOrContainsNull)
     }
   }
 }

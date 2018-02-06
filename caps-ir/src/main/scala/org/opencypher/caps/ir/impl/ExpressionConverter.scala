@@ -22,7 +22,6 @@ import org.opencypher.caps.api.types._
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.caps.ir.impl.FunctionUtils._
-import org.opencypher.caps.ir.impl.parse.RetypingPredicate
 
 import scala.language.implicitConversions
 
@@ -75,8 +74,6 @@ final class ExpressionConverter(patternConverter: PatternConverter)(implicit con
       GreaterThan(convert(lhs), convert(rhs))(typings(e))
     case ast.GreaterThanOrEqual(lhs, rhs) =>
       GreaterThanOrEqual(convert(lhs), convert(rhs))(typings(e))
-    case RetypingPredicate(lhs, rhs) =>
-      new Ands(lhs.map(convert) + convert(rhs))(typings(e))
     // if the list only contains a single element, convert to simple equality to avoid list construction
     case ast.In(lhs, ast.ListLiteral(elems)) if elems.size == 1 =>
       Equals(convert(lhs), convert(elems.head))(typings(e))

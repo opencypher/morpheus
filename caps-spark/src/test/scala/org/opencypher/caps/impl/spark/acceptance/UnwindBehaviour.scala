@@ -15,7 +15,8 @@
  */
 package org.opencypher.caps.impl.spark.acceptance
 
-import org.opencypher.caps.api.value.{CAPSList, CAPSMap, CAPSNode, Properties}
+import org.opencypher.caps.api.value.CAPSNode
+import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.impl.spark.CAPSGraph
 
 import scala.collection.immutable.Bag
@@ -27,13 +28,13 @@ trait UnwindBehaviour { self: AcceptanceTest =>
     test("standalone unwind from parameter") {
       val query = "UNWIND $param AS item RETURN item"
 
-      val result = caps.cypher(query, Map("param" -> CAPSList(Seq(1, 2, 3))))
+      val result = caps.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
       result.records.toMapsWithCollectedEntities should equal(
         Bag(
-          CAPSMap("item" -> 1),
-          CAPSMap("item" -> 2),
-          CAPSMap("item" -> 3)
+          CypherMap("item" -> 1),
+          CypherMap("item" -> 2),
+          CypherMap("item" -> 3)
         ))
     }
 
@@ -42,11 +43,11 @@ trait UnwindBehaviour { self: AcceptanceTest =>
 
       val result = caps.cypher(query)
 
-      result.records.toMapsWithCollectedEntities should equal(
+      result.records.toMapsWithCollectedEntities should be(
         Bag(
-          CAPSMap("item" -> 1),
-          CAPSMap("item" -> 2),
-          CAPSMap("item" -> 3)
+          CypherMap("item" -> 1),
+          CypherMap("item" -> 2),
+          CypherMap("item" -> 3)
         ))
     }
 
@@ -55,16 +56,16 @@ trait UnwindBehaviour { self: AcceptanceTest =>
 
       val query = "MATCH (a)-[r]->(b) UNWIND $param AS item RETURN a, item"
 
-      val result = graph.cypher(query, Map("param" -> CAPSList(Seq(1, 2, 3))))
+      val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
       result.records.toMapsWithCollectedEntities.map(_.toString) should equal(
         Bag(
-          CAPSMap("a" -> CAPSNode(0L, Seq("A"), Properties.empty), "item" -> 1),
-          CAPSMap("a" -> CAPSNode(0L, Seq("A"), Properties.empty), "item" -> 2),
-          CAPSMap("a" -> CAPSNode(0L, Seq("A"), Properties.empty), "item" -> 3),
-          CAPSMap("a" -> CAPSNode(1L, Seq("B"), Properties("item" -> "1")), "item" -> 1),
-          CAPSMap("a" -> CAPSNode(1L, Seq("B"), Properties("item" -> "1")), "item" -> 2),
-          CAPSMap("a" -> CAPSNode(1L, Seq("B"), Properties("item" -> "1")), "item" -> 3)
+          CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 1),
+          CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 2),
+          CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 3),
+          CypherMap("a" -> CAPSNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 1),
+          CypherMap("a" -> CAPSNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 2),
+          CypherMap("a" -> CAPSNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 3)
         ).map(_.toString))
     }
 
@@ -73,13 +74,13 @@ trait UnwindBehaviour { self: AcceptanceTest =>
 
       val query = "MATCH (a:A) WITH collect(a.v) AS list UNWIND list AS item RETURN item"
 
-      val result = graph.cypher(query, Map("param" -> CAPSList(Seq(1, 2, 3))))
+      val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
       result.records.toMapsWithCollectedEntities should equal(
         Bag(
-          CAPSMap("item" -> 1),
-          CAPSMap("item" -> 15),
-          CAPSMap("item" -> -32)
+          CypherMap("item" -> 1),
+          CypherMap("item" -> 15),
+          CypherMap("item" -> -32)
         ))
     }
 
@@ -88,13 +89,13 @@ trait UnwindBehaviour { self: AcceptanceTest =>
 
       val query = "MATCH (a:A) WITH a.v AS list UNWIND list AS item RETURN item"
 
-      val result = graph.cypher(query, Map("param" -> CAPSList(Seq(1, 2, 3))))
+      val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
       result.records.toMapsWithCollectedEntities should equal(
         Bag(
-          CAPSMap("item" -> 1),
-          CAPSMap("item" -> 2),
-          CAPSMap("item" -> -4)
+          CypherMap("item" -> 1),
+          CypherMap("item" -> 2),
+          CypherMap("item" -> -4)
         ))
     }
 
@@ -108,14 +109,14 @@ trait UnwindBehaviour { self: AcceptanceTest =>
         |  WHERE item > 1
         |RETURN a, item""".stripMargin
 
-      val result = graph.cypher(query, Map("param" -> CAPSList(Seq(1, 2, 3))))
+      val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
       result.records.toMapsWithCollectedEntities.map(_.toString) should equal(
         Bag(
-          CAPSMap("a" -> CAPSNode(0L, Seq("A"), Properties.empty), "item" -> 3),
-          CAPSMap("a" -> CAPSNode(1L, Seq("B"), Properties("item" -> "1")), "item" -> 3),
-          CAPSMap("a" -> CAPSNode(0L, Seq("A"), Properties.empty), "item" -> 2),
-          CAPSMap("a" -> CAPSNode(1L, Seq("B"), Properties("item" -> "1")), "item" -> 2)
+          CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 3),
+          CypherMap("a" -> CAPSNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 3),
+          CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 2),
+          CypherMap("a" -> CAPSNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 2)
         ).map(_.toString))
     }
   }

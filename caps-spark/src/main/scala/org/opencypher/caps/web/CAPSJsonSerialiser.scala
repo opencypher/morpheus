@@ -17,21 +17,22 @@ package org.opencypher.caps.web
 
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
-import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords}
+import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.api.value._
+import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords}
 
 trait JsonSerialiser {
   implicit val recordsEncoder: Encoder[CAPSRecords] = new Encoder[CAPSRecords] {
     override final def apply(records: CAPSRecords): Json = {
       val rows = records.iterator.map { map =>
-        val unit = map.keys.map { key =>
-          key -> constructValue(map.get(key))
+        val unit = records.header.fieldsInOrder.map { field =>
+          field -> constructValue(map(field))
         }
-        Json.obj(unit.toSeq: _*)
+        Json.obj(unit: _*)
       }
 
       Json.obj(
-        "columns" -> Json.arr(records.sparkColumns.map(Json.fromString): _*),
+        "columns" -> Json.arr(records.header.fieldsInOrder.map(Json.fromString): _*),
         "rows" -> Json.arr(rows.toSeq: _*)
       )
     }
@@ -40,53 +41,38 @@ trait JsonSerialiser {
   implicit val graphEncoder: Encoder[CAPSGraph] = new Encoder[CAPSGraph] {
     override final def apply(graph: CAPSGraph): Json = {
       val nodes = graph.nodes("n").iterator.map { map =>
-        constructValue(map.get("n"))
+        constructValue(map("n"))
       }.toSeq
 
       val rels = graph.relationships("rel").iterator.map { map =>
-        constructValue(map.get("rel"))
+        constructValue(map("rel"))
       }.toSeq
 
       formatGraph(graph, nodes, rels)
     }
   }
 
-  protected def constructValue(v: Option[CAPSValue]): Json = {
-    v match {
-      case Some(n: CAPSNode) =>
-        CAPSNode.contents(n) match {
-          case Some(NodeContents(id, labels, properties)) =>
-            formatNode(id.v, labels, properties.m.mapValues(p => constructValue(Some(p))))
-          case None =>
-            Json.Null
-        }
-
-      case Some(r: CAPSRelationship) =>
-        CAPSRelationship.contents(r) match {
-          case Some(RelationshipContents(id, source, target, typ, properties)) =>
-            formatRel(id.v, source.v, target.v, typ, properties.m.mapValues(p => constructValue(Some(p))))
-          case None =>
-            Json.Null
-        }
-
-      case Some(CAPSInteger(i)) => Json.fromLong(i)
-      case Some(CAPSFloat(f)) => Json.fromDouble(f).getOrElse(Json.fromString(f.toString))
-      case Some(CAPSBoolean(b)) => Json.fromBoolean(b)
-      case Some(CAPSString(s)) => Json.fromString(s)
-      case Some(CAPSList(contents)) => Json.arr(contents.map(v => constructValue(Some(v))): _*)
-      case Some(CAPSMap(contents)) => Json.obj(contents.properties.m.mapValues(p => constructValue(Some(p))).toSeq: _*)
-
-      case _ =>
-        Json.Null
+  protected def constructValue(cv: CypherValue): Json = {
+    cv match {
+      case CAPSNode(id, labels, CypherMap(properties)) =>
+        formatNode(id, labels, properties.filter(!_._2.isNull).mapValues(p => constructValue(p)))
+      case CAPSRelationship(id, source, target, relType, CypherMap(properties)) =>
+        formatRel(id, source, target, relType, properties.filter(!_._2.isNull).mapValues(p => constructValue(p)))
+      case CypherInteger(l) => Json.fromLong(l)
+      case CypherFloat(d) => Json.fromDouble(d).getOrElse(Json.fromString(d.toString))
+      case CypherBoolean(b) => Json.fromBoolean(b)
+      case CypherString(s) => Json.fromString(s)
+      case CypherList(l) => Json.arr(l.map(v => constructValue(CypherValue(v))): _*)
+      case CypherMap(m) => Json.obj(m.map { case (k, v) => k -> constructValue(v) }.toSeq: _*)
+      case CypherNull => Json.Null
     }
   }
 
-
-  protected def formatNode(id: Long, labels: Seq[String], properties: Map[String, Json]) = {
+  protected def formatNode(id: Long, labels: Set[String], properties: Map[String, Json]) = {
     Json.obj(
       "id" -> Json.fromLong(id),
       "labels" -> Json.arr(
-        labels.map(Json.fromString): _*
+        labels.toSeq.sorted.map(Json.fromString): _*
       ),
       "properties" -> Json.obj(
         properties.toSeq: _*
@@ -116,6 +102,7 @@ trait JsonSerialiser {
   }
 
   def toJsonString(records: CAPSRecords): String = records.asJson.spaces2
+
   def toJsonString(graph: CAPSGraph): String = graph.asJson.spaces2
 }
 
@@ -144,7 +131,7 @@ trait JsonSerialiser {
   * }
   * }}}
   *
-  * The format of scalar values follows the `toString()` format of [[org.opencypher.caps.api.value.CAPSValue]].
+  * The format of scalar values follows the `toString()` format of [[org.opencypher.caps.api.value.CypherValue]].
   * The format of nodes is as follows:
   *
   * {{{

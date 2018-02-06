@@ -24,7 +24,8 @@ import org.opencypher.caps.api.exception.UnsupportedOperationException
 import org.opencypher.caps.api.graph.{CypherResult, PropertyGraph}
 import org.opencypher.caps.api.io.{CreateOrFail, PersistMode, PropertyGraphDataSource}
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.value.{CAPSValue, CypherValue}
+import org.opencypher.caps.api.value.CypherValue._
+import org.opencypher.caps.api.value._
 import org.opencypher.caps.demo.Configuration.{PrintLogicalPlan, PrintPhysicalPlan, PrintQueryExecutionStages}
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
 import org.opencypher.caps.impl.record.CypherRecords
@@ -39,7 +40,7 @@ import org.opencypher.caps.ir.impl.{IRBuilder, IRBuilderContext}
 import org.opencypher.caps.logical.impl._
 
 sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSourceHandler: CAPSGraphSourceHandler)
-    extends CAPSSession
+  extends CAPSSession
     with Serializable
     with CAPSSessionOps {
 
@@ -71,7 +72,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
 
   override def mount(source: PropertyGraphDataSource, path: String): Unit = source match {
     case c: CAPSPropertyGraphDataSource => mountSourceAt(c, parsePathOrURI(path))
-    case x                              => throw UnsupportedOperationException(s"can only handle CAPS graph sources, but got $x")
+    case x => throw UnsupportedOperationException(s"can only handle CAPS graph sources, but got $x")
   }
 
   def mountSourceAt(source: CAPSPropertyGraphDataSource, uri: URI): Unit =
@@ -80,15 +81,15 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
   def unmountAll(): Unit =
     graphSourceHandler.unmountAll(this)
 
-  override def cypher(query: String, parameters: Map[String, CypherValue]): CypherResult =
+  override def cypher(query: String, parameters: CypherMap): CypherResult =
     cypherOnGraph(CAPSGraph.empty(this), query, parameters)
 
-  override def cypherOnGraph(graph: PropertyGraph, query: String, queryParameters: Map[String, CypherValue]): CypherResult = {
+  override def cypherOnGraph(graph: PropertyGraph, query: String, queryParameters: CypherMap): CypherResult = {
     val ambientGraph = mountAmbientGraph(graph)
 
     val (stmt, extractedLiterals, semState) = parser.process(query)(CypherParser.defaultContext)
 
-    val extractedParameters = extractedLiterals.mapValues(v => CAPSValue(v))
+    val extractedParameters: CypherMap = extractedLiterals.mapValues(v => CypherValue(v))
     val allParameters = queryParameters ++ extractedParameters
 
     logStageProgress("IR ...", false)
@@ -132,13 +133,20 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
 
     val graphSource = new CAPSPropertyGraphDataSource {
       override def schema: Option[Schema] = Some(graph.schema)
+
       override def canonicalURI: URI = uri
+
       override def delete(): Unit = throw UnsupportedOperationException("Deletion of an ambient graph")
+
       override def graph: PropertyGraph = ambient
+
       override def sourceForGraphAt(uri: URI): Boolean = uri == canonicalURI
+
       override def create: CAPSGraph = throw UnsupportedOperationException("Creation of an ambient graph")
+
       override def store(graph: PropertyGraph, mode: PersistMode): CAPSGraph =
         throw UnsupportedOperationException("Persisting an ambient graph")
+
       override val session: CAPSSession = self
     }
 
@@ -154,40 +162,40 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
   }
 
   override def filter(
-      graph: PropertyGraph,
-      in: CypherRecords,
-      expr: Expr,
-      queryParameters: Map[String, CypherValue]): CAPSRecords = {
+    graph: PropertyGraph,
+    in: CypherRecords,
+    expr: Expr,
+    queryParameters: CypherMap): CAPSRecords = {
     val scan = planStart(graph, in.header.asCaps.internalHeader.fields)
     val filter = producer.planFilter(expr, scan)
     plan(graph, in, queryParameters, filter).records
   }
 
   override def select(
-      graph: PropertyGraph,
-      in: CypherRecords,
-      fields: IndexedSeq[Var],
-      queryParameters: Map[String, CypherValue]): CAPSRecords = {
+    graph: PropertyGraph,
+    in: CypherRecords,
+    fields: IndexedSeq[Var],
+    queryParameters: CypherMap): CAPSRecords = {
     val scan = planStart(graph, in.header.asCaps.internalHeader.fields)
     val select = producer.planSelect(fields, Set.empty, scan)
     plan(graph, in, queryParameters, select).records
   }
 
   override def project(
-      graph: PropertyGraph,
-      in: CypherRecords,
-      expr: Expr,
-      queryParameters: Map[String, CypherValue]): CAPSRecords = {
+    graph: PropertyGraph,
+    in: CypherRecords,
+    expr: Expr,
+    queryParameters: CypherMap): CAPSRecords = {
     val scan = planStart(graph, in.header.asCaps.internalHeader.fields)
     val project = producer.projectExpr(expr, scan)
     plan(graph, in, queryParameters, project).records
   }
 
   override def alias(
-      graph: PropertyGraph,
-      in: CypherRecords,
-      alias: (Expr, Var),
-      queryParameters: Map[String, CypherValue]): CAPSRecords = {
+    graph: PropertyGraph,
+    in: CypherRecords,
+    alias: (Expr, Var),
+    queryParameters: CypherMap): CAPSRecords = {
     val (expr, v) = alias
     val scan = planStart(graph, in.header.asCaps.internalHeader.fields)
     val select = producer.projectField(IRField(v.name)(v.cypherType), expr, scan)
@@ -195,10 +203,10 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
   }
 
   private def plan(
-                    graph: PropertyGraph,
-                    records: CypherRecords,
-                    parameters: Map[String, CypherValue],
-                    logicalPlan: LogicalOperator): CAPSResult = {
+    graph: PropertyGraph,
+    records: CypherRecords,
+    parameters: CypherMap,
+    logicalPlan: LogicalOperator): CAPSResult = {
     logStageProgress("Flat plan ... ", false)
     val flatPlan = flatPlanner(logicalPlan)(FlatPlannerContext(parameters))
     logStageProgress("Done!")

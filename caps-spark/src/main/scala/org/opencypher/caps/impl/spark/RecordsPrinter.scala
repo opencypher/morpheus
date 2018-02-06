@@ -63,7 +63,7 @@ object RecordsPrinter {
               sep = " | "
             case Some(v) =>
               stream.print(sep)
-              stream.print(fitToColumn(Objects.toString(v)))
+              stream.print(fitToColumn(v.toCypherString))
               sep = " | "
           }
         }

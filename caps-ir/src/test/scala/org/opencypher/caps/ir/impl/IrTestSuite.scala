@@ -21,7 +21,7 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
 import org.opencypher.caps.api.io.PropertyGraphDataSource
 import org.opencypher.caps.api.schema.{AllGiven, Schema}
-import org.opencypher.caps.api.value.CypherValue
+import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block._
 import org.opencypher.caps.ir.api.expr.Expr
@@ -82,7 +82,7 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
       where = AllGiven[Expr](),
       source = testGraph
     )
-    val model = QueryModel(result, Map.empty, blocks, Map.empty)
+    val model = QueryModel(result, CypherMap.empty, blocks, Map.empty)
     CypherQuery(QueryInfo("test"), model)
   }
 
