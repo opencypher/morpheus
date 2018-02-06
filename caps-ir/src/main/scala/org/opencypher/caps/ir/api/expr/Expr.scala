@@ -372,3 +372,11 @@ final case class ExistsPatternExpr(targetField: Var, ir: CypherQuery[Expr])(val 
 
   override def withoutType = s"Exists(${ir.info.singleLine}, $targetField)"
 }
+
+final case class CaseExpr(alternatives: IndexedSeq[(Expr, Expr)], default: Option[Expr])
+  (val cypherType: CypherType = CTWildcard) extends Expr {
+
+  override def toString: String = s"$withoutType($cypherType)"
+
+  override def withoutType: String = s"CaseExpr(${alternatives.map(pair => pair._1.withoutType -> pair._2.withoutType).mkString("[", ", ", "]")}, $default"
+}

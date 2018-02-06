@@ -108,6 +108,12 @@ final class ExpressionConverter(patternConverter: PatternConverter)(implicit con
         innerModel
       )(typings(e))
 
+    // Case When .. Then .. [Else ..] End
+    case ast.CaseExpression(None, alternatives, default) =>
+      val alternativeExprs = alternatives.map { case (left, right) => convert(left) -> convert(right) }
+      val defaultExpr = default.flatMap(expr => Some(convert(expr)))
+      CaseExpr(alternativeExprs, defaultExpr)(typings(e))
+
     case _ =>
       throw NotImplementedException(s"Not yet able to convert expression: $e")
   }

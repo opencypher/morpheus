@@ -294,6 +294,19 @@ object SchemaTyper {
         }
       } yield result
 
+    // generic CASE case (https://neo4j.com/docs/developer-manual/current/cypher/syntax/expressions/#query-syntax-case)
+    case expr@ CaseExpression(None, alternatives, default) =>
+      for {
+        // get types for predicates of each alternative
+        _ <- EffMonad.traverse(alternatives.map(_._1).toVector)(process[R])
+        alternativeType <- Foldable[Vector].foldMap(alternatives.map(_._2).toVector)(process[R])(joinMonoid)
+        defaultType <- default match {
+          case Some(expression) => process[R](expression)
+          case None => pure[R, CypherType](alternativeType)
+        }
+        result <- recordAndUpdate(expr -> alternativeType.join(defaultType))
+      } yield result
+
     case _ =>
       error(UnsupportedExpr(expr))
   }
