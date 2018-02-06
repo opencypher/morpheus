@@ -188,11 +188,11 @@ object SparkSQLExprMapper {
 
         case c: CaseExpr =>
           val alternatives = c.alternatives.map {
-            case (predicate, action) => functions.when(getColumn(predicate, header, df), getColumn(action, header, df))
+            case (predicate, action) => functions.when(predicate.column, action.column)
           }
 
           val alternativesWithDefault = c.default match {
-            case Some(inner) => alternatives :+ getColumn(inner, header, df)
+            case Some(inner) => alternatives :+ inner.column
             case None => alternatives
           }
 
@@ -201,8 +201,7 @@ object SparkSQLExprMapper {
           val caseColumn = reversedColumns.tail.foldLeft(reversedColumns.head) {
             case (tmpCol, whenCol) => whenCol.otherwise(tmpCol)
           }
-
-          Some(caseColumn)
+          caseColumn
 
         case _ =>
           throw NotImplementedException(s"No support for converting Cypher expression $expr to a Spark SQL expression")

@@ -50,9 +50,9 @@ trait ExpressionBehaviour {
 
         // Then
         result.records.toMaps should equal(Bag(
-          CAPSMap("n.val" -> "foo", "result" -> 1),
-          CAPSMap("n.val" -> "bar", "result" -> 2),
-          CAPSMap("n.val" -> "baz", "result" -> 3))
+          CypherMap("n.val" -> "foo", "result" -> 1),
+          CypherMap("n.val" -> "bar", "result" -> 2),
+          CypherMap("n.val" -> "baz", "result" -> 3))
         )
       }
 
@@ -80,9 +80,9 @@ trait ExpressionBehaviour {
 
         // Then
         result.records.toMaps should equal(Bag(
-          CAPSMap("n.val" -> "foo", "result" -> 1),
-          CAPSMap("n.val" -> "bar", "result" -> 2),
-          CAPSMap("n.val" -> "baz", "result" -> 3))
+          CypherMap("n.val" -> "foo", "result" -> 1),
+          CypherMap("n.val" -> "bar", "result" -> 2),
+          CypherMap("n.val" -> "baz", "result" -> 3))
         )
       }
     }
