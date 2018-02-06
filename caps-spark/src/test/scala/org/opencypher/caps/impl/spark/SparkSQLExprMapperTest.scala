@@ -36,12 +36,11 @@ class SparkSQLExprMapperTest extends BaseTestSuite with SparkSessionFixture {
     val expr = Subtract(Var("a")(), Var("b")())()
 
     convert(expr, _header.update(addContent(ProjectedField('foo, expr)))) should equal(
-      Some(
-        df.col("a") - df.col("b")
-      ))
+      df.col("a") - df.col("b")
+    )
   }
 
-  private def convert(expr: Expr, header: RecordHeader = _header): Option[Column] = {
+  private def convert(expr: Expr, header: RecordHeader = _header): Column = {
     expr.asSparkSQLExpr(header, df, RuntimeContext.empty)
   }
 

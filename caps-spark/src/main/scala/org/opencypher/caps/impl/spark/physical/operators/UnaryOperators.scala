@@ -108,10 +108,7 @@ final case class Unwind(in: PhysicalOperator, list: Expr, item: Var, header: Rec
 
         // the list lives in a column: we explode it
         case expr =>
-          val listColumn = expr.asSparkSQLExpr(records.header, records.data, context) match {
-            case Some(c) => c
-            case None => throw IllegalArgumentException(s"a column for the list $expr")
-          }
+          val listColumn = expr.asSparkSQLExpr(records.header, records.data, context)
 
           records.data.withColumn(itemColumn, functions.explode(listColumn))
       }
@@ -148,25 +145,20 @@ final case class Project(in: PhysicalOperator, expr: Expr, header: RecordHeader)
 
   override def executeUnary(prev: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult = {
     prev.mapRecordsWithDetails { records =>
-      val newData = expr.asSparkSQLExpr(header, records.data, context) match {
-        case None => throw NotImplementedException(s"Projecting $expr of type ${expr.cypherType}")
+      val headerNames = header.slotsFor(expr).map(columnName)
+      val dataNames = records.data.columns.toSeq
 
-        case Some(sparkSqlExpr) =>
-          val headerNames = header.slotsFor(expr).map(columnName)
-          val dataNames = records.data.columns.toSeq
+      // TODO: Can optimise for var AS var2 case -- avoid duplicating data
+      val newData = headerNames.diff(dataNames) match {
+        case Seq(one) =>
+          // align the name of the column to what the header expects
+          val newCol = expr.asSparkSQLExpr(header, records.data, context).as(one)
+          val columnsToSelect = records.data.columns
+            .map(records.data.col) :+ newCol
 
-          // TODO: Can optimise for var AS var2 case -- avoid duplicating data
-          headerNames.diff(dataNames) match {
-            case Seq(one) =>
-              // align the name of the column to what the header expects
-              val newCol = sparkSqlExpr.as(one)
-              val columnsToSelect = records.data.columns
-                .map(records.data.col) :+ newCol
-
-              records.data.select(columnsToSelect: _*)
-            case seq if seq.isEmpty => throw IllegalStateException(s"Did not find a slot for expression $expr in $headerNames")
-            case seq => throw IllegalStateException(s"Got multiple slots for expression $expr: $seq")
-          }
+          records.data.select(columnsToSelect: _*)
+        case seq if seq.isEmpty => throw IllegalStateException(s"Did not find a slot for expression $expr in $headerNames")
+        case seq => throw IllegalStateException(s"Got multiple slots for expression $expr: $seq")
       }
 
       CAPSRecords.verifyAndCreate(header, newData)(records.caps)
@@ -178,12 +170,7 @@ final case class Filter(in: PhysicalOperator, expr: Expr, header: RecordHeader) 
 
   override def executeUnary(prev: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult = {
     prev.mapRecordsWithDetails { records =>
-      val filteredRows = expr.asSparkSQLExpr(header, records.data, context) match {
-        case Some(sqlExpr) =>
-          records.data.where(sqlExpr)
-        case None =>
-          throw NotImplementedException(s"filtering using predicate: $expr")
-      }
+      val filteredRows = records.data.where(expr.asSparkSQLExpr(header, records.data, context))
 
       val selectedColumns = header.slots.map { c =>
         val name = columnName(c)
@@ -390,10 +377,8 @@ final case class Aggregate(
     prev.mapRecordsWithDetails { records =>
       val inData = records.data
 
-      def withInnerExpr(expr: Expr)(f: Column => Column) = expr.asSparkSQLExpr(records.header, inData, context) match {
-        case None => throw NotImplementedException(s"Projecting $expr")
-        case Some(column) => f(column)
-      }
+      def withInnerExpr(expr: Expr)(f: Column => Column) =
+        f(expr.asSparkSQLExpr(records.header, inData, context))
 
       val data: Either[RelationalGroupedDataset, DataFrame] =
         if (group.nonEmpty) {
