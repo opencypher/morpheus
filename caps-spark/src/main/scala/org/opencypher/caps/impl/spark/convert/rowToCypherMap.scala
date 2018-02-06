@@ -41,11 +41,10 @@ final case class rowToCypherMap(header: RecordHeader) extends (Row => CypherMap)
       case _: CTRelationship =>
         val (id, source, target, typ, properties) = collectRel(row, field)
         CAPSRelationship(id, source, target, typ, properties)
-      // TODO: Lists, maps
 
       case _ =>
         val raw = row.getAs[Any](SparkColumnName.of(header.slotFor(field)))
-        CypherValue.apply(raw)
+        CypherValue(raw)
     }
   }
 
