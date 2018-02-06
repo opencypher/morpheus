@@ -143,6 +143,23 @@ trait ReturnBehaviour { this: AcceptanceTest =>
           CAPSMap("r.foo" -> null)
         ))
       }
+
+      it("should be able to project expression with multiple references") {
+        val graph = initGraph("""CREATE ({val: 0})""")
+
+        val query =
+          """
+            |MATCH (a)
+            |WITH a, a.val as foo
+            |WITH a, foo as bar
+            |RETURN a.val
+          """.stripMargin
+
+
+        graph.cypher(query).records.iterator.toBag should equal(Bag(
+          CAPSMap("a.val"-> 0)
+        ))
+      }
     }
 
     describe("DISTINCT") {
