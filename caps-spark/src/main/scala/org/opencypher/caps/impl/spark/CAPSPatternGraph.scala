@@ -90,5 +90,4 @@ class CAPSPatternGraph(private[spark] val baseTable: CAPSRecords, val schema: Sc
     CAPSUnionGraph(this, other.asCaps)
   }
 
-  override protected def graph: CAPSGraph = this
 }
