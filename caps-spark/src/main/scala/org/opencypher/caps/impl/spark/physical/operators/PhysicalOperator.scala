@@ -17,7 +17,7 @@ package org.opencypher.caps.impl.spark.physical.operators
 
 import java.net.URI
 
-import org.apache.spark.sql.{Column, DataFrame}
+import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.types._
@@ -67,7 +67,7 @@ object PhysicalOperator {
       deduplicate: Boolean)(implicit caps: CAPSSession): CAPSRecords = {
 
     val joinExpr = joinCols.map { case (l, r) => l === r }
-      .reduce(_ && _)
+      .foldLeft(functions.lit(true))(_ && _)
 
     val joinedData = lhsData.join(rhsData, joinExpr, joinType)
 
