@@ -63,7 +63,7 @@ object CAPSRecordHeader {
     def asStructField: StructField = {
       val name = SparkColumnName.of(slot)
       val sparkType = toSparkType(slot.content.cypherType)
-      StructField(name, sparkType)
+      StructField(name, sparkType, slot.content.cypherType.isNullable)
     }
   }
 }
