@@ -19,7 +19,7 @@ import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.impl.spark.CAPSGraph
 
-import scala.collection.Bag
+import scala.collection.immutable.Bag
 
 trait WithBehaviour { this: AcceptanceTest =>
 
@@ -178,6 +178,25 @@ trait WithBehaviour { this: AcceptanceTest =>
 
       // And
       result.graphs shouldBe empty
+    }
+
+    it("can project and predicates") {
+      val graph = initGraph(
+        """
+          |CREATE ({val1: 1, val2: 3, val3: 10}), ({val1: 1, val2: 2, val3: 3})
+        """.stripMargin)
+
+      val result = graph.cypher(
+        """
+          |MATCH (n)
+          |WITH n.val1 AS val1, n.val2 AS val2, n.val3 AS val3
+          |WHERE val1 >= 1 AND val2 > 2 AND val3 > 5
+          |RETURN val1, val2, val3
+        """.stripMargin)
+
+      result.records.iterator.toBag should equal(Bag(
+        CypherMap("val1" -> 1, "val2" -> 3, "val3" -> 10)
+      ))
     }
 
     test("order by") {
