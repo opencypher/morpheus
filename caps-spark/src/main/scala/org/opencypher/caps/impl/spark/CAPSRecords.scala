@@ -51,6 +51,9 @@ sealed abstract class CAPSRecords(override val header: RecordHeader, val data: D
   override def print(implicit options: PrintOptions): Unit =
     RecordsPrinter.print(this)
 
+  override def register(name: String): Unit =
+    data.createOrReplaceTempView(name)
+
   override def size: Long = data.count()
 
   def sparkColumns: IndexedSeq[String] = header.internalHeader.columns

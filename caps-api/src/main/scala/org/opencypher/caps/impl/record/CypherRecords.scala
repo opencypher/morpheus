@@ -80,4 +80,11 @@ trait CypherRecords extends CypherTable with CypherPrintable {
     * @return the number of records in this CypherRecords.
     */
   def size: Long
+
+  /**
+    * Registers these records as a table under the given name.
+    *
+    * @param name the name under which this table may be referenced.
+    */
+  def register(name: String): Unit
 }

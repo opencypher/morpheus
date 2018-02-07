@@ -50,6 +50,27 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture {
     ))
   }
 
+  it("can be registered and queried from SQL") {
+    val givenDF = session.createDataFrame(
+      Seq(
+        (1L, true, "Mats"),
+        (2L, false, "Martin"),
+        (3L, false, "Max"),
+        (4L, false, "Stefan")
+      )).toDF("ID", "IS_SWEDE", "NAME")
+
+    CAPSRecords.wrap(givenDF).register("people")
+
+    val df = session.sql("SELECT * FROM people")
+
+    df.collect() should equal(Array(
+      Row(1L, true, "Mats"),
+      Row(2L, false, "Martin"),
+      Row(3L, false, "Max"),
+      Row(4L, false, "Stefan")
+    ))
+  }
+
   test("verify CAPSRecords header") {
     val givenDF = session.createDataFrame(
           Seq(
