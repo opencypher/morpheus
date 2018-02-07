@@ -615,6 +615,21 @@ trait ExpressionBehaviour {
           CypherMap("strings" -> Seq("bar", "foo"))
         ))
       }
+
+      it("can convert ListLiterals with nested non literal expressions") {
+        val graph = initGraph("CREATE ({val: 1}), ({val: 2})")
+
+        val result = graph.cypher(
+          """
+            |MATCH (n)
+            |WITH [n.val*10, n.val*100] as vals
+            |RETURN val""".stripMargin)
+
+        result.records.toMaps should equal(Bag(
+          CypherMap("vals" -> Seq(10, 100)),
+          CypherMap("val" -> Seq(20, 200))
+        ))
+      }
     }
   }
 }

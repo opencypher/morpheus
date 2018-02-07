@@ -277,6 +277,9 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     expr match {
       case _: Param => in
 
+      case ListLit(exprs) =>
+        exprs.foldLeft(in) { case (acc, inner) => planInnerExpr(inner, acc) }
+
       case _: Lit[_] => in
 
       case _: Var => in

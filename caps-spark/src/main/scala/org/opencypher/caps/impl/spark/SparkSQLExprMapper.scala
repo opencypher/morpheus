@@ -44,11 +44,14 @@ object SparkSQLExprMapper {
           }
         case Param(name) =>
           functions.lit(context.parameters(name).unwrap)
+
         case ListLit(exprs) =>
           val cols = exprs.map(_.column)
           functions.array(cols: _*)
+
         case l: Lit[_] =>
           functions.lit(l.v)
+
         case _ =>
           verify
 
