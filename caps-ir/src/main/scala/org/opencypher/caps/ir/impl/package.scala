@@ -46,7 +46,7 @@ package object impl {
   }
 
   implicit final class RichSchema(schema: Schema) {
-    def fromPattern(pattern: Pattern[Expr]): Schema = {
+    def forPattern(pattern: Pattern[Expr]): Schema = {
       pattern.fields
         .map(fromField)
         .foldLeft(Schema.empty)(_ ++ _)

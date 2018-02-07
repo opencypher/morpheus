@@ -15,28 +15,91 @@
  */
 package org.opencypher.caps.ir.impl
 
-import org.opencypher.caps.api.schema.Schema
+import org.opencypher.caps.api.schema.{PropertyKeys, Schema}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.ir.api.IRField
+import org.opencypher.caps.ir.api.pattern.{DirectedRelationship, Pattern}
 import org.opencypher.caps.test.BaseTestSuite
 
 class RichSchemaTest extends BaseTestSuite {
+    describe("fromPattern") {
+      it("can convert a pattern with all known fields") {
+        val schema = Schema.empty
+          .withNodePropertyKeys("Person")("name" -> CTString)
+          .withNodePropertyKeys("City")("name" -> CTString, "region" -> CTBoolean)
+          .withRelationshipPropertyKeys("KNOWS")("since" -> CTFloat.nullable)
+          .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
 
-//    test("for entities") {
-//      val schema = Schema.empty
-//        .withNodePropertyKeys("Person")("name" -> CTString)
-//        .withNodePropertyKeys("City")("name" -> CTString, "region" -> CTBoolean)
-//        .withRelationshipPropertyKeys("KNOWS")("since" -> CTFloat.nullable)
-//        .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
-//
-//      schema.forEntities(
-//        Set(
-//          IRField("n")(CTNode("Person")),
-//          IRField("r")(CTRelationship("BAR"))
-//        )) should equal(
-//        Schema.empty
-//          .withNodePropertyKeys("Person")("name" -> CTString)
-//          .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger))
-//    }
+        val actual = schema.forPattern(Pattern(
+          Set(
+            IRField("n")(CTNode("Person")),
+            IRField("r")(CTRelationship("BAR")),
+            IRField("m")(CTNode("Person"))
+          ),
+          Map(
+            IRField("r")(CTRelationship("BAR")) -> DirectedRelationship(IRField("n")(CTNode("Person")), IRField("m")(CTNode("Person")))
+          )
+        ))
+
+        val expected = Schema.empty
+          .withNodePropertyKeys("Person")("name" -> CTString)
+          .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
+
+        actual should be(expected)
+      }
+
+      it("can convert a pattern with unknown field") {
+        val schema = Schema.empty
+          .withNodePropertyKeys("Person")("name" -> CTString)
+          .withNodePropertyKeys("City")("name" -> CTString, "region" -> CTBoolean)
+          .withRelationshipPropertyKeys("KNOWS")("since" -> CTFloat.nullable)
+          .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
+
+        val actual = schema.forPattern(Pattern(
+          Set(
+            IRField("n")(CTNode("Person")),
+            IRField("r")(CTRelationship("BAR")),
+            IRField("m")(CTNode())
+          ),
+          Map(
+            IRField("r")(CTRelationship("BAR")) -> DirectedRelationship(IRField("n")(CTNode("Person")), IRField("m")(CTNode("Person")))
+          )
+        ))
+
+        val expected = Schema.empty
+          .withNodePropertyKeys("Person")("name" -> CTString)
+          .withNodePropertyKeys(Set.empty[String], PropertyKeys.empty)
+          .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
+
+        actual should be(expected)
+      }
+
+      it("can convert a pattern with empty labeled field") {
+        val schema = Schema.empty
+          .withNodePropertyKeys("Person")("name" -> CTString)
+          .withNodePropertyKeys("City")("name" -> CTString, "region" -> CTBoolean)
+          .withNodePropertyKeys()("name" -> CTString)
+          .withRelationshipPropertyKeys("KNOWS")("since" -> CTFloat.nullable)
+          .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
+
+        val actual = schema.forPattern(Pattern(
+          Set(
+            IRField("n")(CTNode("Person")),
+            IRField("r")(CTRelationship("BAR")),
+            IRField("m")(CTNode())
+          ),
+          Map(
+            IRField("r")(CTRelationship("BAR")) -> DirectedRelationship(IRField("n")(CTNode("Person")), IRField("m")(CTNode("Person")))
+          )
+        ))
+
+        val expected = Schema.empty
+          .withNodePropertyKeys("Person")("name" -> CTString)
+          .withNodePropertyKeys()("name" -> CTString)
+          .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
+
+        actual should be(expected)
+      }
+    }
 
 }
