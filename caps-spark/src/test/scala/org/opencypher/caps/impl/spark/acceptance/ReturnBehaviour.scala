@@ -17,7 +17,6 @@ package org.opencypher.caps.impl.spark.acceptance
 
 import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.api.value.{CAPSNode, CypherValue}
-import org.opencypher.caps.demo.Configuration.PrintLogicalPlan
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.impl.spark.CAPSGraph
 
@@ -52,8 +51,6 @@ trait ReturnBehaviour {
 
       ignore("return only returned fields with trickier aliasing") {
         val g = initGraph("CREATE (:A {name: 'me'}), (:A)")
-
-        PrintLogicalPlan.set()
 
         // we need to somehow track lineage of aliased entities
         // perhaps copy all child expressions in RecordHeader

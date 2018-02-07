@@ -18,20 +18,15 @@ package org.opencypher.caps.impl.spark.physical
 import java.net.URI
 
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.exception.{IllegalArgumentException, NotImplementedException}
-import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph}
-import org.opencypher.caps.api.physical.{PhysicalOperator, PhysicalOperatorProducer, PhysicalPlannerContext, RuntimeContext}
+import org.opencypher.caps.api.graph.PropertyGraph
+import org.opencypher.caps.api.physical.{PhysicalOperatorProducer, PhysicalPlannerContext}
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.types.CTRelationship
 import org.opencypher.caps.api.value.CypherValue._
-import org.opencypher.caps.impl.flat
-import org.opencypher.caps.impl.flat.FlatOperator
 import org.opencypher.caps.impl.record._
-import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.impl.spark.physical.operators._
+import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.ir.api.block.SortItem
 import org.opencypher.caps.ir.api.expr._
-import org.opencypher.caps.ir.api.util.DirectCompilationStage
 import org.opencypher.caps.logical.impl._
 
 case class SparkPhysicalPlannerContext(

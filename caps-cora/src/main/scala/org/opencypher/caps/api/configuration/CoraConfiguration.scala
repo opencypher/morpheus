@@ -13,27 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.demo
+package org.opencypher.caps.api.configuration
 
 import scala.util.Try
 
-object Configuration {
+object CoraConfiguration extends Configuration {
 
-  abstract class ConfigOption[T](val name: String, val defaultValue: T)(convert: String => Option[T]) {
-    def set(v: String): Unit = System.setProperty(name, v)
-
-    def get(): T = Option(System.getProperty(name)).flatMap(convert).getOrElse(defaultValue)
-
-    override def toString: String = {
-      val filled = name + (name.length to 25).map(_ => " ").reduce(_ + _)
-      s"$filled = ${get()}"
-    }
-  }
-
-  object MasterAddress extends ConfigOption("caps.master", "local[*]")(Some(_))
-  object Logging extends ConfigOption("caps.logging", "OFF")(Some(_))
-
-  object PrintLogicalPlan extends ConfigOption("caps.explain", false)(s => Try(s.toBoolean).toOption) {
+  object PrintFlatPlan extends ConfigOption("caps.explainFlat", false)(s => Try(s.toBoolean).toOption) {
     def set(): Unit = set(true.toString)
   }
 
@@ -48,15 +34,4 @@ object Configuration {
   object PrintQueryExecutionStages extends ConfigOption("caps.stages", false)(s => Try(s.toBoolean).toOption) {
     def set(): Unit = set(true.toString)
   }
-
-  object DefaultLabel extends ConfigOption("caps.defaultLabel", "")(Some(_))
-
-  object DefaultType extends ConfigOption("caps.defaultType", "")(Some(_))
-
-  val conf = Seq(MasterAddress, Logging)
-
-  def print(): Unit = {
-    conf.foreach(println)
-  }
-
 }
