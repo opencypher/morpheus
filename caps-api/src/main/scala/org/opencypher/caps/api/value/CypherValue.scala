@@ -53,7 +53,6 @@ object CypherValue {
       case l: Long => l
       case f: Float => f.toDouble
       case d: Double => d
-      case s: String => s
       case b: Boolean => b
       case invalid =>
         throw IllegalArgumentException(
