@@ -378,5 +378,10 @@ final case class CaseExpr(alternatives: IndexedSeq[(Expr, Expr)], default: Optio
 
   override def toString: String = s"$withoutType($cypherType)"
 
-  override def withoutType: String = s"CaseExpr(${alternatives.map(pair => pair._1.withoutType -> pair._2.withoutType).mkString("[", ", ", "]")}, $default"
+  override def withoutType: String = {
+    val alternativesString = alternatives
+      .map(pair => pair._1.withoutType -> pair._2.withoutType)
+      .mkString("[", ", ", "]")
+    s"CaseExpr($alternativesString, $default)"
+  }
 }
