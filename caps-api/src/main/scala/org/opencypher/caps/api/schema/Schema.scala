@@ -360,7 +360,7 @@ final case class Schema(
     val possibleLabels = if (labelConstraints.isEmpty) {
       allLabelCombinations
     } else {
-      // todo check if `+ requiredLabels` is necessary
+      // add required labels because they might not be present in the schema already (newly created)
       this.labelCombinations.filterByLabels(requiredLabels).combos + requiredLabels
     }
 
