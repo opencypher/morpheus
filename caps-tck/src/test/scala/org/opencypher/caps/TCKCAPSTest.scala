@@ -46,18 +46,38 @@ class TCKCAPSTest extends CAPSTestSuite {
 
   val defaultFactory: CAPSGraphFactory = CAPSScanGraphFactory
 
+
+  implicit class Scenarios(scenarios: Seq[Scenario]) {
+    /**
+      * Scenario outlines are parameterised scenarios that all have the same name, but different parameters.
+      * Because test names need to be unique, we enumerate these scenarios and put the enumeration into the
+      * scenario name to make those names unique.
+      */
+    def enumerateScenarioOutlines: Seq[Scenario] = {
+      scenarios.groupBy(_.toString).flatMap { case (name, nameCollisionGroup) =>
+        if (nameCollisionGroup.size <= 1) {
+          nameCollisionGroup
+        } else {
+          nameCollisionGroup.zipWithIndex.map { case (groupScenario, index) =>
+            groupScenario.copy(name = s"${groupScenario.name} #${index + 1}")
+          }
+        }
+      }
+    }.toSeq
+  }
+
   val whiteListScenarios = Table(
     "scenario",
     scenarios.filterNot { s =>
       ScenarioBlacklist.contains(s.toString())
-    }: _*
+    }.enumerateScenarioOutlines: _*
   )
 
   val blackListScenarios = Table(
     "scenario",
     scenarios.filter { s =>
       ScenarioBlacklist.contains(s.toString())
-    }.groupBy(_.toString()).map(_._2.head).toSeq: _*
+    }.enumerateScenarioOutlines: _*
   )
 
   // white list tests are run on all factories
