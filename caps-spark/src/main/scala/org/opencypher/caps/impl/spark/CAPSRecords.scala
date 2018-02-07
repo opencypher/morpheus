@@ -344,6 +344,16 @@ object CAPSRecords {
   }
 
   /**
+    * Wraps a Spark SQL table (DataFrame) in a CAPSRecords, making it understandable by Cypher.
+    *
+    * @param df the table to wrap.
+    * @param caps the session to which the resulting CAPSRecords is tied.
+    * @return a Cypher table.
+    */
+  def wrap(df: DataFrame)(implicit caps: CAPSSession): CAPSRecords =
+    verifyAndCreate(prepareDataFrame(df))
+
+  /**
     * Validates the data types within the DataFrame for compatibility, creates an initial [[RecordHeader]] and aligns
     * the data frame column names according to that header.
     *

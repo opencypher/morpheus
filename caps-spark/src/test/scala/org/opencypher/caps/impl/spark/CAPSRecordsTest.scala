@@ -32,6 +32,24 @@ import scala.collection.Bag
 
 class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture {
 
+  it("can wrap a dataframe") {
+    val givenDF = session.createDataFrame(
+      Seq(
+        (1L, true, "Mats"),
+        (2L, false, "Martin"),
+        (3L, false, "Max"),
+        (4L, false, "Stefan")
+      )).toDF("ID", "IS_SWEDE", "NAME")
+
+    val records = CAPSRecords.wrap(givenDF)
+
+    records.header.slots.map(s => s.content -> s.content.cypherType).toSet should equal(Set(
+      OpaqueField(Var("ID")()) -> CTInteger,
+      OpaqueField(Var("IS_SWEDE")()) -> CTBoolean,
+      OpaqueField(Var("NAME")()) -> CTString.nullable
+    ))
+  }
+
   test("verify CAPSRecords header") {
     val givenDF = session.createDataFrame(
           Seq(
