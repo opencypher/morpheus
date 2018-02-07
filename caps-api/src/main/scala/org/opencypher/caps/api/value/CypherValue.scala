@@ -41,6 +41,7 @@ object CypherValue {
       case jl: java.lang.Long => jl.toLong
       case jf: java.lang.Float => jf.toDouble
       case jd: java.lang.Double => jd.toDouble
+      case js: java.lang.String => js.toString
       case jb: java.lang.Boolean => jb.booleanValue
       case jl: java.util.List[_] => seqToCypherList(jl.toArray)
       case a: Array[_] => seqToCypherList(a)
@@ -52,10 +53,10 @@ object CypherValue {
       case l: Long => l
       case f: Float => f.toDouble
       case d: Double => d
-      case s: String => s
       case b: Boolean => b
       case invalid =>
-        throw IllegalArgumentException("a value that can be converted to a Cypher value", invalid)
+        throw IllegalArgumentException(
+          "a value that can be converted to a Cypher value", s"$invalid of type ${invalid.getClass.getName}")
     }
   }
 
