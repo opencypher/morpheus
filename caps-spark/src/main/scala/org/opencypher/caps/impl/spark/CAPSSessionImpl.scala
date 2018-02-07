@@ -50,7 +50,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
   private val logicalPlanner = new LogicalPlanner(producer)
   private val logicalOptimizer = LogicalOptimizer
   private val flatPlanner = new FlatPlanner()
-  private val physicalPlanner = new PhysicalPlanner()
+  private val physicalPlanner = new PhysicalPlanner(new SparkPhysicalOperatorProducer()(self))
   private val physicalOptimizer = new PhysicalOptimizer()
   private val parser = CypherParser
 
@@ -92,17 +92,17 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
     val extractedParameters: CypherMap = extractedLiterals.mapValues(v => CypherValue(v))
     val allParameters = queryParameters ++ extractedParameters
 
-    logStageProgress("IR ...", false)
+    logStageProgress("IR ...", newLine = false)
     val ir = IRBuilder(stmt)(IRBuilderContext.initial(query, allParameters, semState, ambientGraph, sourceAt))
     logStageProgress("Done!")
 
-    logStageProgress("Logical plan ...", false)
+    logStageProgress("Logical plan ...", newLine = false)
     val logicalPlannerContext =
       LogicalPlannerContext(graph.schema, Set.empty, ir.model.graphs.andThen(sourceAt), ambientGraph)
     val logicalPlan = logicalPlanner(ir)(logicalPlannerContext)
     logStageProgress("Done!")
 
-    logStageProgress("Optimizing logical plan ...", false)
+    logStageProgress("Optimizing logical plan ...", newLine = false)
     val optimizedLogicalPlan = logicalOptimizer(logicalPlan)(logicalPlannerContext)
     logStageProgress("Done!")
 
@@ -207,12 +207,12 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
     records: CypherRecords,
     parameters: CypherMap,
     logicalPlan: LogicalOperator): CAPSResult = {
-    logStageProgress("Flat plan ... ", false)
+    logStageProgress("Flat plan ... ", newLine = false)
     val flatPlan = flatPlanner(logicalPlan)(FlatPlannerContext(parameters))
     logStageProgress("Done!")
 
-    logStageProgress("Physical plan ... ", false)
-    val physicalPlannerContext = PhysicalPlannerContext.from(readFrom, records.asCaps, parameters)
+    logStageProgress("Physical plan ... ", newLine = false)
+    val physicalPlannerContext = SparkPhysicalPlannerContext.from(readFrom, records.asCaps, parameters)(self)
     val physicalPlan = physicalPlanner(flatPlan)(physicalPlannerContext)
     logStageProgress("Done!")
 
@@ -221,7 +221,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
       println(physicalPlan.pretty())
     }
 
-    logStageProgress("Optimizing physical plan ... ", false)
+    logStageProgress("Optimizing physical plan ... ", newLine = false)
     val optimizedPhysicalPlan = physicalOptimizer(physicalPlan)(PhysicalOptimizerContext())
     logStageProgress("Done!")
 

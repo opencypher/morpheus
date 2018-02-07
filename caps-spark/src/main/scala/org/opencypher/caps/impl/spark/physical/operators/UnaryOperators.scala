@@ -287,10 +287,9 @@ final case class ProjectPatternGraph(
 }
 
 final case class RemoveAliases(
-  dependentFields: Set[(ProjectedField, ProjectedExpr)],
   in: PhysicalOperator,
-  header: RecordHeader)
-  extends UnaryPhysicalOperator {
+  dependentFields: Set[(ProjectedField, ProjectedExpr)],
+  header: RecordHeader) extends UnaryPhysicalOperator {
 
   override def executeUnary(prev: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult = {
     prev.mapRecordsWithDetails { records =>
@@ -343,7 +342,7 @@ final case class SelectGraphs(in: PhysicalOperator, graphs: Set[String])
 
 }
 
-final case class Distinct(fields: Set[Var], in: PhysicalOperator)
+final case class Distinct(in: PhysicalOperator, fields: Set[Var])
   extends UnaryPhysicalOperator with InheritedHeader {
 
   override def executeUnary(prev: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult = {
