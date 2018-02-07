@@ -16,6 +16,6 @@
 package org.opencypher.caps.impl.spark.physical.operators
 
 trait InheritedHeader {
-  this: PhysicalOperator =>
+  this: CAPSPhysicalOperator =>
     override val header = children.head.header
 }

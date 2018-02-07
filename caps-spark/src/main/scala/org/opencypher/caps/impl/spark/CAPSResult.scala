@@ -19,7 +19,7 @@ import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.opencypher.caps.api.graph.CypherResult
 import org.opencypher.caps.impl.flat.FlatOperator
 import org.opencypher.caps.impl.spark.CAPSConverters._
-import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator
+import org.opencypher.caps.impl.spark.physical.operators.CAPSPhysicalOperator
 import org.opencypher.caps.impl.util.PrintOptions
 import org.opencypher.caps.logical.impl.LogicalOperator
 
@@ -34,7 +34,7 @@ trait CAPSResult extends CypherResult {
 
   override type LogicalPlan = LogicalOperator
   override type FlatPlan = FlatOperator
-  override type PhysicalPlan = PhysicalOperator
+  override type PhysicalPlan = CAPSPhysicalOperator
 
   def as[E <: Product : TypeTag]: Iterator[E] = {
     implicit val encoder = ExpressionEncoder[E]

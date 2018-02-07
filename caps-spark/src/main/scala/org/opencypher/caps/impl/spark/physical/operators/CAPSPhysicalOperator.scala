@@ -20,20 +20,23 @@ import java.net.URI
 import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
+import org.opencypher.caps.api.physical.PhysicalOperator
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.record.{RecordHeader, RecordSlot, SlotContent}
 import org.opencypher.caps.impl.spark.CAPSConverters._
-import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
+import org.opencypher.caps.impl.spark.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
 import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords, SparkColumnName}
 import org.opencypher.caps.trees.AbstractTreeNode
 
-private[caps] abstract class PhysicalOperator extends AbstractTreeNode[PhysicalOperator] {
+private[caps] abstract class CAPSPhysicalOperator
+  extends AbstractTreeNode[CAPSPhysicalOperator]
+  with PhysicalOperator[CAPSRecords, CAPSGraph, CAPSRuntimeContext] {
 
-  def header: RecordHeader
+  override def header: RecordHeader
 
-  def execute(implicit context: RuntimeContext): PhysicalResult
+  override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult
 
-  protected def resolve(uri: URI)(implicit context: RuntimeContext): CAPSGraph = {
+  protected def resolve(uri: URI)(implicit context: CAPSRuntimeContext): CAPSGraph = {
     context.resolve(uri).map(_.asCaps).getOrElse(throw IllegalArgumentException(s"a graph at $uri"))
   }
 
@@ -43,7 +46,7 @@ private[caps] abstract class PhysicalOperator extends AbstractTreeNode[PhysicalO
   }
 }
 
-object PhysicalOperator {
+object CAPSPhysicalOperator {
   def columnName(slot: RecordSlot): String = SparkColumnName.of(slot)
 
   def columnName(content: SlotContent): String = SparkColumnName.of(content)

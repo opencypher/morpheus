@@ -18,22 +18,22 @@ package org.opencypher.caps.impl.spark.physical.operators
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.impl.record.RecordHeader
 import org.opencypher.caps.impl.spark.CAPSRecords
-import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
+import org.opencypher.caps.impl.spark.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
 import org.opencypher.caps.logical.impl.LogicalExternalGraph
 
-private[spark] abstract class LeafPhysicalOperator extends PhysicalOperator {
+private[spark] abstract class LeafPhysicalOperator extends CAPSPhysicalOperator {
 
-  override def execute(implicit context: RuntimeContext): PhysicalResult = executeLeaf()
+  override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = executeLeaf()
 
-  def executeLeaf()(implicit context: RuntimeContext): PhysicalResult
+  def executeLeaf()(implicit context: CAPSRuntimeContext): CAPSPhysicalResult
 }
 
 final case class Start(records: CAPSRecords, graph: LogicalExternalGraph) extends LeafPhysicalOperator {
 
   override val header = records.header
 
-  override def executeLeaf()(implicit context: RuntimeContext): PhysicalResult =
-    PhysicalResult(records, Map(graph.name -> resolve(graph.uri)))
+  override def executeLeaf()(implicit context: CAPSRuntimeContext): CAPSPhysicalResult =
+    CAPSPhysicalResult(records, Map(graph.name -> resolve(graph.uri)))
 
 }
 
@@ -42,7 +42,7 @@ final case class StartFromUnit(graph: LogicalExternalGraph)(implicit caps: CAPSS
 
   override val header = RecordHeader.empty
 
-  override def executeLeaf()(implicit context: RuntimeContext): PhysicalResult =
-    PhysicalResult(CAPSRecords.unit(), Map(graph.name -> resolve(graph.uri)))
+  override def executeLeaf()(implicit context: CAPSRuntimeContext): CAPSPhysicalResult =
+    CAPSPhysicalResult(CAPSRecords.unit(), Map(graph.name -> resolve(graph.uri)))
 
 }

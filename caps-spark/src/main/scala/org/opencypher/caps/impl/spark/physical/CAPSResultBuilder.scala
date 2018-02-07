@@ -16,22 +16,25 @@
 package org.opencypher.caps.impl.spark.physical
 
 import org.opencypher.caps.api.graph.{CypherResultPlan, Plan}
+import org.opencypher.caps.api.physical.RuntimeContext
 import org.opencypher.caps.impl.flat.FlatOperator
-import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator
+import org.opencypher.caps.impl.spark.physical.operators.CAPSPhysicalOperator
 import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords, CAPSResult}
 import org.opencypher.caps.logical.impl.LogicalOperator
 
 object CAPSResultBuilder {
-  def from(logical: LogicalOperator, flat: FlatOperator, physical: PhysicalOperator)(
-      implicit context: RuntimeContext): CAPSResult = {
+
+  def from(logical: LogicalOperator, flat: FlatOperator, physical: CAPSPhysicalOperator)(
+      implicit context: CAPSRuntimeContext): CAPSResult = {
+
     new CAPSResult {
-      lazy val result: PhysicalResult = physical.execute
+      lazy val result: CAPSPhysicalResult = physical.execute
 
       override def records: CAPSRecords = result.records
 
       override def graphs: Map[String, CAPSGraph] = result.graphs
 
-      override def explain: Plan[LogicalOperator, FlatOperator, PhysicalOperator] = {
+      override def explain: Plan[LogicalOperator, FlatOperator, CAPSPhysicalOperator] = {
         Plan(CypherResultPlan(logical), CypherResultPlan(flat), CypherResultPlan(physical))
       }
     }

@@ -16,18 +16,21 @@
 package org.opencypher.caps.impl.spark.physical
 
 import org.opencypher.caps.api.CAPSSession
+import org.opencypher.caps.api.physical.PhysicalResult
 import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords}
 
-object PhysicalResult {
-  def unit(implicit caps: CAPSSession) = PhysicalResult(CAPSRecords.unit(), Map.empty)
+object CAPSPhysicalResult {
+  def unit(implicit caps: CAPSSession) = CAPSPhysicalResult(CAPSRecords.unit(), Map.empty)
 }
 
-case class PhysicalResult(records: CAPSRecords, graphs: Map[String, CAPSGraph]) {
-  def mapRecordsWithDetails(f: CAPSRecords => CAPSRecords): PhysicalResult =
+case class CAPSPhysicalResult(records: CAPSRecords, graphs: Map[String, CAPSGraph])
+  extends PhysicalResult[CAPSRecords, CAPSGraph] {
+
+  override def mapRecordsWithDetails(f: CAPSRecords => CAPSRecords): CAPSPhysicalResult =
     copy(records = f(records))
-  def withGraph(t: (String, CAPSGraph)): PhysicalResult =
+  override def withGraph(t: (String, CAPSGraph)): CAPSPhysicalResult =
     copy(graphs = graphs.updated(t._1, t._2))
-  def selectGraphs(selected: Set[String]): PhysicalResult =
+  override def selectGraphs(selected: Set[String]): CAPSPhysicalResult =
     copy(graphs = graphs.filterKeys(selected))
 }
 

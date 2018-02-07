@@ -13,20 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.test
+package org.opencypher.caps.api.physical
 
-import org.opencypher.caps.impl.spark.physical.CAPSRuntimeContext
-import org.opencypher.caps.test.fixture.{CAPSSessionFixture, SparkSessionFixture}
-import org.opencypher.caps.test.support.{DebugOutputSupport, GraphMatchingTestSupport, RecordMatchingTestSupport}
+import org.opencypher.caps.api.graph.PropertyGraph
+import org.opencypher.caps.impl.record.{CypherRecords, RecordHeader}
 
-abstract class CAPSTestSuite
-    extends BaseTestSuite
-    with SparkSessionFixture
-    with CAPSSessionFixture
-    with GraphMatchingTestSupport
-    with RecordMatchingTestSupport
-    with DebugOutputSupport {
+trait PhysicalOperator[R <: CypherRecords, G <: PropertyGraph, C <: RuntimeContext[R, G]] {
 
-  implicit val context: CAPSRuntimeContext = CAPSRuntimeContext.empty
+  def header: RecordHeader
+
+  def execute(implicit context: C): PhysicalResult[R, G]
 
 }

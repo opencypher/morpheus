@@ -13,22 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.spark.physical
+package org.opencypher.caps.api.physical
 
 import java.net.URI
 
 import org.opencypher.caps.api.graph.PropertyGraph
-import org.opencypher.caps.api.value.CypherValue._
-import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator
+import org.opencypher.caps.api.value.CypherValue.CypherMap
+import org.opencypher.caps.impl.record.CypherRecords
 
-import scala.collection.mutable
+trait RuntimeContext[R <: CypherRecords, G <: PropertyGraph] {
+  def parameters: CypherMap
 
-object RuntimeContext {
-  val empty = RuntimeContext(CypherMap.empty, _ => None, mutable.Map.empty)
+  def resolve: URI => Option[G]
 }
-
-case class RuntimeContext(
-  parameters: CypherMap,
-  resolve: URI => Option[PropertyGraph],
-  cache: collection.mutable.Map[PhysicalOperator, PhysicalResult]
-)

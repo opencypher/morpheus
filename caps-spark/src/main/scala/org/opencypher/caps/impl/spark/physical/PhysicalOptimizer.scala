@@ -15,20 +15,20 @@
  */
 package org.opencypher.caps.impl.spark.physical
 
-import org.opencypher.caps.impl.spark.physical.operators.{Cache, PhysicalOperator, Start, StartFromUnit}
+import org.opencypher.caps.impl.spark.physical.operators.{Cache, CAPSPhysicalOperator, Start, StartFromUnit}
 import org.opencypher.caps.ir.api.util.DirectCompilationStage
 import org.opencypher.caps.trees.TopDown
 
 case class PhysicalOptimizerContext()
 
-class PhysicalOptimizer extends DirectCompilationStage[PhysicalOperator, PhysicalOperator, PhysicalOptimizerContext] {
+class PhysicalOptimizer extends DirectCompilationStage[CAPSPhysicalOperator, CAPSPhysicalOperator, PhysicalOptimizerContext] {
 
-  override def process(input: PhysicalOperator)(implicit context: PhysicalOptimizerContext): PhysicalOperator = {
+  override def process(input: CAPSPhysicalOperator)(implicit context: PhysicalOptimizerContext): CAPSPhysicalOperator = {
     InsertCachingOperators(input)
   }
 
-  object InsertCachingOperators extends (PhysicalOperator => PhysicalOperator) {
-    def apply(input: PhysicalOperator): PhysicalOperator = {
+  object InsertCachingOperators extends (CAPSPhysicalOperator => CAPSPhysicalOperator) {
+    def apply(input: CAPSPhysicalOperator): CAPSPhysicalOperator = {
       val replacements = calculateReplacementMap(input).filterKeys {
         case _: Start | _: StartFromUnit => false
         case _                           => true
@@ -36,7 +36,7 @@ class PhysicalOptimizer extends DirectCompilationStage[PhysicalOperator, Physica
 
       val nodesToReplace = replacements.keySet
 
-      TopDown[PhysicalOperator] {
+      TopDown[CAPSPhysicalOperator] {
         case cache: Cache => cache
         case parent if (parent.childrenAsSet intersect nodesToReplace).nonEmpty =>
           val newChildren = parent.children.map(c => replacements.getOrElse(c, c))
@@ -44,12 +44,12 @@ class PhysicalOptimizer extends DirectCompilationStage[PhysicalOperator, Physica
       }.rewrite(input)
     }
 
-    private def calculateReplacementMap(input: PhysicalOperator): Map[PhysicalOperator, PhysicalOperator] = {
+    private def calculateReplacementMap(input: CAPSPhysicalOperator): Map[CAPSPhysicalOperator, CAPSPhysicalOperator] = {
       val opCounts = identifyDuplicates(input)
       val opsByHeight = opCounts.keys.toSeq.sortWith((a, b) => a.height > b.height)
-      val (opsToCache, _) = opsByHeight.foldLeft(Set.empty[PhysicalOperator] -> opCounts) { (agg, currentOp) =>
+      val (opsToCache, _) = opsByHeight.foldLeft(Set.empty[CAPSPhysicalOperator] -> opCounts) { (agg, currentOp) =>
         agg match {
-          case (currentOpsToCache: Set[PhysicalOperator], currentCounts: Map[PhysicalOperator, Int]) =>
+          case (currentOpsToCache: Set[CAPSPhysicalOperator], currentCounts: Map[CAPSPhysicalOperator, Int]) =>
             val currentOpCount = currentCounts(currentOp)
             if (currentOpCount > 1) {
               val updatedOps = currentOpsToCache + currentOp
@@ -66,9 +66,9 @@ class PhysicalOptimizer extends DirectCompilationStage[PhysicalOperator, Physica
       opsToCache.map(op => op -> Cache(op)).toMap
     }
 
-    private def identifyDuplicates(input: PhysicalOperator): Map[PhysicalOperator, Int] = {
+    private def identifyDuplicates(input: CAPSPhysicalOperator): Map[CAPSPhysicalOperator, Int] = {
       input
-        .foldLeft(Map.empty[PhysicalOperator, Int].withDefaultValue(0)) {
+        .foldLeft(Map.empty[CAPSPhysicalOperator, Int].withDefaultValue(0)) {
           case (agg, op) => agg.updated(op, agg(op) + 1)
         }
         .filter(_._2 > 1)

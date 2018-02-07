@@ -28,6 +28,7 @@ import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.api.value._
 import org.opencypher.caps.demo.Configuration.{PrintLogicalPlan, PrintPhysicalPlan, PrintQueryExecutionStages}
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
+import org.opencypher.caps.impl.physical.PhysicalPlanner
 import org.opencypher.caps.impl.record.CypherRecords
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.impl.spark.io.{CAPSGraphSourceHandler, CAPSPropertyGraphDataSource}
@@ -64,8 +65,11 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
   override def readFrom(uri: URI): PropertyGraph =
     graphSourceHandler.sourceAt(uri)(this).graph
 
-  def optGraphAt(uri: URI): Option[PropertyGraph] =
-    graphSourceHandler.optSourceAt(uri)(this).map(_.graph)
+  def optGraphAt(uri: URI): Option[CAPSGraph] =
+    graphSourceHandler.optSourceAt(uri)(this).map(_.graph) match {
+      case Some(graph) => Some(graph.asCaps)
+      case None => None
+    }
 
   override def write(graph: PropertyGraph, pathOrUri: String, mode: PersistMode = CreateOrFail): Unit =
     graphSourceHandler.sourceAt(parsePathOrURI(pathOrUri))(this).store(graph, mode)
@@ -231,7 +235,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
     }
 
     CAPSResultBuilder.from(logicalPlan, flatPlan, optimizedPhysicalPlan)(
-      RuntimeContext(physicalPlannerContext.parameters, optGraphAt, collection.mutable.Map.empty))
+      CAPSRuntimeContext(physicalPlannerContext.parameters, optGraphAt, collection.mutable.Map.empty))
   }
 
   override def toString: String = {

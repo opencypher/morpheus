@@ -17,24 +17,24 @@ package org.opencypher.caps.impl.spark.physical.operators
 
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.impl.spark.CAPSRecords
-import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
+import org.opencypher.caps.impl.spark.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
 import org.opencypher.caps.test.CAPSTestSuite
 
-class PhysicalOperatorTest extends CAPSTestSuite {
+class CAPSPhysicalOperatorTest extends CAPSTestSuite {
 
   case class TestContent(foo: Int, bar: String)
 
   val testContents = Seq(TestContent(42, "foo"), TestContent(23, "bar"))
 
-  case class DummyOp(physicalResult: PhysicalResult) extends LeafPhysicalOperator {
+  case class DummyOp(physicalResult: CAPSPhysicalResult) extends LeafPhysicalOperator {
 
     override val header = physicalResult.records.header
 
-    override def executeLeaf()(implicit context: RuntimeContext): PhysicalResult = physicalResult
+    override def executeLeaf()(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = physicalResult
   }
 
   test("cache operator with single input") {
-    val expectedResult = PhysicalResult(CAPSRecords.create(testContents), Map.empty)
+    val expectedResult = CAPSPhysicalResult(CAPSRecords.create(testContents), Map.empty)
 
     val toCache = DummyOp(expectedResult)
 
@@ -47,7 +47,7 @@ class PhysicalOperatorTest extends CAPSTestSuite {
   }
 
   test("cache operator with cache reuse") {
-    val expectedResult = PhysicalResult(CAPSRecords.create(testContents), Map.empty)
+    val expectedResult = CAPSPhysicalResult(CAPSRecords.create(testContents), Map.empty)
 
     val toCache0 = DummyOp(expectedResult)
     val toCache1 = DummyOp(expectedResult)
