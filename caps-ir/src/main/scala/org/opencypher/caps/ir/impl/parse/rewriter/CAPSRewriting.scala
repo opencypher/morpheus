@@ -27,6 +27,7 @@ case object CAPSRewriting extends Phase[BaseContext, BaseState, BaseState] {
 
     val rewrittenStatement = term.endoRewrite(
       inSequence(
+        normalizeCaseExpression(context.exceptionCreator),
         normalizeReturnClauses(context.exceptionCreator),
         extractSubqueryFromPatternExpression(context.exceptionCreator),
         CNFNormalizer.instance(context)

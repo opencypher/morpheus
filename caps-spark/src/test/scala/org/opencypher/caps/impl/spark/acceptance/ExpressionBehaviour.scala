@@ -25,6 +25,67 @@ trait ExpressionBehaviour {
   self: AcceptanceTest =>
 
   def expressionBehaviour(initGraph: String => CAPSGraph): Unit = {
+    describe("CASE") {
+      it("should evaluate a generic CASE expression with default") {
+        // Given
+        val given =
+          initGraph(
+            """
+              |CREATE (:Person {val: "foo"})
+              |CREATE (:Person {val: "bar"})
+              |CREATE (:Person {val: "baz"})
+            """.stripMargin)
+
+        // When
+        val result = given.cypher(
+          """MATCH (n)
+            |RETURN
+            | n.val,
+            | CASE
+            |   WHEN n.val = 'foo' THEN 1
+            |   WHEN n.val = 'bar' THEN 2
+            |   ELSE 3
+            | END AS result
+          """.stripMargin)
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CypherMap("n.val" -> "foo", "result" -> 1),
+          CypherMap("n.val" -> "bar", "result" -> 2),
+          CypherMap("n.val" -> "baz", "result" -> 3))
+        )
+      }
+
+      it("should evaluate a simple equality CASE expression") {
+        // Given
+        val given =
+          initGraph(
+            """
+              |CREATE (:Person {val: "foo"})
+              |CREATE (:Person {val: "bar"})
+              |CREATE (:Person {val: "baz"})
+            """.stripMargin)
+
+        // When
+        val result = given.cypher(
+          """MATCH (n)
+            |RETURN
+            | n.val,
+            | CASE n.val
+            |   WHEN 'foo' THEN 1
+            |   WHEN 'bar' THEN 2
+            |   ELSE 3
+            | END AS result
+          """.stripMargin)
+
+        // Then
+        result.records.toMaps should equal(Bag(
+          CypherMap("n.val" -> "foo", "result" -> 1),
+          CypherMap("n.val" -> "bar", "result" -> 2),
+          CypherMap("n.val" -> "baz", "result" -> 3))
+        )
+      }
+    }
 
     describe("properties") {
       it("handles property expression on unknown label") {
@@ -529,7 +590,7 @@ trait ExpressionBehaviour {
     }
 
     describe("ListLiteral") {
-      it("can convert string ListLiterals from parameters"){
+      it("can convert string ListLiterals from parameters") {
         val graph = initGraph("CREATE ()")
 
         val result = graph.cypher(
@@ -542,7 +603,7 @@ trait ExpressionBehaviour {
         ))
       }
 
-      it("can convert string ListLiterals"){
+      it("can convert string ListLiterals") {
         val graph = initGraph("CREATE ()")
 
         val result = graph.cypher(

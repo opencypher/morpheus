@@ -190,6 +190,16 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         val projectInner = planInnerExpr(e.inner, acc)
         producer.projectField(f, e, projectInner)
 
+      case (acc, (f, c: CaseExpr)) =>
+        val (leftExprs, rightExprs) = c.alternatives.unzip
+        val plannedAlternatives = (leftExprs ++ rightExprs).foldLeft(acc)((op, expr) => planInnerExpr(expr, op))
+
+        val plannedAll = c.default match {
+          case Some(inner) => planInnerExpr(inner, plannedAlternatives)
+          case None => plannedAlternatives
+        }
+        producer.projectField(f, c, plannedAll)
+
       case (_, (_, x)) =>
         throw NotImplementedException(s"Support for projection of $x not yet implemented")
     }
@@ -234,11 +244,11 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
       case (acc, isNull @ IsNull(expr)) =>
         val project = planInnerExpr(expr, acc)
-        producer.planFilter(isNull, acc)
+        producer.planFilter(isNull, project)
 
       case (acc, isNotNull @ IsNotNull(expr)) =>
         val project = planInnerExpr(expr, acc)
-        producer.planFilter(isNotNull, acc)
+        producer.planFilter(isNotNull, project)
 
       case (acc, t: TrueLit) =>
         producer.planFilter(t, acc) // optimise away this one somehow... currently we do that in PhysicalPlanner

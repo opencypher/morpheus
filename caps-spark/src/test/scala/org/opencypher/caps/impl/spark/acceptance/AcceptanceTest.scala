@@ -37,7 +37,8 @@ abstract class AcceptanceTest
 
   def capsGraphFactory: CAPSGraphFactory
 
-  val initGraph: String => CAPSGraph = (createQuery) => capsGraphFactory(CAPSPropertyGraphFactory(createQuery))
+  val initGraph: String => CAPSGraph = (createQuery) =>
+    capsGraphFactory(CAPSPropertyGraphFactory(createQuery))
 
   describe("using " + capsGraphFactory.name) {
     describe("AggregationBehaviour") {

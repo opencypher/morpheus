@@ -40,7 +40,16 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport wit
     case _                 => CTWildcard
   }
 
-  it("coalesce") {
+  it("should convert CASE") {
+    convert(parseExpr("CASE WHEN a > b THEN c ELSE d END")) should equal(
+      CaseExpr(IndexedSeq((GreaterThan('a, 'b)(CTBoolean), 'c)), Some('d))()
+    )
+    convert(parseExpr("CASE WHEN a > b THEN c END")) should equal(
+      CaseExpr(IndexedSeq((GreaterThan('a, 'b)(CTBoolean), 'c)), None)()
+    )
+  }
+
+  it("should convert coalesce") {
     convert(parseExpr("coalesce(a, b, c)")) should equal(
       Coalesce(IndexedSeq('a, 'b, 'c))()
     )
