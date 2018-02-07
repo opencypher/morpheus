@@ -19,7 +19,6 @@ import org.apache.spark.rdd.RDD
 import org.neo4j.driver.internal.{InternalNode, InternalRelationship}
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.schema.PropertyKeys.PropertyKeys
-import org.opencypher.caps.api.schema.Schema.NoLabel
 import org.opencypher.caps.api.schema.{PropertyKeys, Schema}
 import org.opencypher.caps.api.types.CypherType._
 import org.opencypher.caps.api.value.CypherValue
@@ -39,11 +38,7 @@ object Neo4jGraphLoader {
   private def loadSchema(nodes: RDD[InternalNode], rels: RDD[InternalRelationship]): Schema = {
 
     def computeNodeSchema(schema: Schema, node: InternalNode): Schema = {
-      val labels =
-        if (node.labels().isEmpty) // could remove this unless we rely on `NoLabel`
-          NoLabel
-        else
-          node.labels().asScala.toSet
+      val labels = node.labels().asScala.toSet
 
       schema.withNodePropertyKeys(labels, convertProperties(node.asMap()))
     }

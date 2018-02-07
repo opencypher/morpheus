@@ -15,7 +15,6 @@
  */
 package org.opencypher.caps.api.schema
 
-import org.opencypher.caps.api.schema.Schema.NoLabel
 import org.opencypher.caps.test.BaseTestSuite
 
 class LabelCombinationsTest extends BaseTestSuite {
@@ -25,7 +24,7 @@ class LabelCombinationsTest extends BaseTestSuite {
       Set("A"), Set("A", "B", "X"), Set("A", "X"), Set("B")
     ))
 
-    in.combinationsFor(NoLabel) should equal(in.combos)
+    in.combinationsFor(Set.empty) should equal(in.combos)
     in.combinationsFor(Set("A")) should equal(Set(
       Set("A"), Set("A", "B", "X"), Set("A", "X")
     ))

@@ -25,7 +25,7 @@ class TestGraphSchemaTest extends CAPSTestSuite with GraphCreationFixture {
     val graph = initGraph("CREATE ({id: 1}), ({id: 2}), ({other: 'foo'}), ()")
 
     graph.schema should equal(Schema.empty
-      .withNodePropertyKeys(Schema.NoLabel, Map("id" -> CTInteger.nullable, "other" -> CTString.nullable))
+      .withNodePropertyKeys(Set.empty[String], Map("id" -> CTInteger.nullable, "other" -> CTString.nullable))
     )
   }
 
@@ -58,7 +58,7 @@ class TestGraphSchemaTest extends CAPSTestSuite with GraphCreationFixture {
     )
 
     graph.schema should equal(Schema.empty
-      .withNodePropertyKeys(Schema.NoLabel, PropertyKeys.empty)
+      .withNodePropertyKeys(Set.empty[String], PropertyKeys.empty)
       .withRelationshipPropertyKeys("FOO")("p" -> CTInteger)
       .withRelationshipPropertyKeys("BAR")("p" -> CTInteger, "q" -> CTString.nullable)
     )

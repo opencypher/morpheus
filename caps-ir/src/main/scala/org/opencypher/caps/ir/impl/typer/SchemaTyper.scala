@@ -24,8 +24,7 @@ import org.atnos.eff._
 import org.atnos.eff.all._
 import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.v3_4.functions.{Coalesce, Collect, Exists, Max, Min}
-import org.opencypher.caps.api.schema.Schema.AllLabels
-import org.opencypher.caps.api.schema.{AllGiven, AnyGiven, Schema}
+import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.CypherType.joinMonoid
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.ir.impl.parse.rewriter.ExistsPattern
@@ -72,9 +71,17 @@ object SchemaTyper {
         varTyp <- process[R](v)
         schema <- ask[R, Schema]
         result <- varTyp.material match {
+
+          // This means that the node can have any possible label combination, as the user did not specify any constraints
+          case n: CTNode if n.labels.isEmpty =>
+            val propType = schema.allLabelCombinations
+              .map(l => schema.nodeKeyType(l, name).getOrElse(CTNull))
+              .foldLeft(CTVoid: CypherType)(_ join _)
+            recordType(v -> varTyp) >> recordAndUpdate(expr -> propType)
+
+          // User specified label constraints - we can use those for type inference
           case CTNode(labels) =>
-            val relevantLabels = if (labels.isEmpty) AnyGiven(AllLabels) else AllGiven(labels)
-            val propType = schema.nodeKeyType(relevantLabels, name).getOrElse(CTNull)
+            val propType = schema.nodeKeyType(labels, name).getOrElse(CTNull)
             recordType(v -> varTyp) >> recordAndUpdate(expr -> propType)
 
           case CTRelationship(types) =>

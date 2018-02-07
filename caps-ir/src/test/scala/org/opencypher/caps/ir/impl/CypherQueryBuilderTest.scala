@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.ir.impl
 
-import org.opencypher.caps.api.schema.{AllGiven, Schema}
+import org.opencypher.caps.api.schema.{AllGiven, PropertyKeys, Schema}
 import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.api.types.{CTNode, CTNull, CTRelationship}
 import org.opencypher.caps.ir.api._
@@ -174,9 +174,11 @@ class CypherQueryBuilderTest extends IrTestSuite {
     }
   }
 
-  test("return graph of") {
+  it("can handle return graph of") {
     "MATCH (a), (b) RETURN GRAPH moo OF (a)-[r:TEST]->(b)".model.ensureThat { (model, globals) =>
-      val expectedSchema = Schema.empty.withRelationshipPropertyKeys("TEST")()
+      val expectedSchema = Schema.empty
+        .withNodePropertyKeys(Set.empty[String], PropertyKeys.empty)
+        .withRelationshipPropertyKeys("TEST")()
 
       val loadRef = model.findExactlyOne {
         case NoWhereBlock(s @ SourceBlock(_)) =>

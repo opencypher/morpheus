@@ -192,7 +192,6 @@ trait MatchBehaviour {
 
       it("can evaluate cross Product between multiple match clauses") {
         val graph = initGraph("CREATE (:A {val: 0}), (:B {val: 1})-[:REL]->(:C {val: 2})")
-        PrintLogicalPlan.set()
         val query =
           """
             |MATCH (a:A)

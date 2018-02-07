@@ -24,6 +24,7 @@ import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.ir.api.IRField
 import org.opencypher.caps.ir.api.expr.Expr
+import org.opencypher.caps.ir.api.pattern.Pattern
 
 package object impl {
 
@@ -45,15 +46,15 @@ package object impl {
   }
 
   implicit final class RichSchema(schema: Schema) {
-    def forEntities(entities: Set[IRField]): Schema = {
-      entities
-        .map(forEntity)
+    def fromPattern(pattern: Pattern[Expr]): Schema = {
+      pattern.fields
+        .map(fromField)
         .foldLeft(Schema.empty)(_ ++ _)
     }
 
-    private def forEntity(entity: IRField): Schema = entity.cypherType match {
+    private def fromField(entity: IRField): Schema = entity.cypherType match {
       case n: CTNode =>
-        schema.forNode(n)
+        schema.fromNodeEntity(n.labels)
       case r: CTRelationship =>
         schema.forRelationship(r)
       case x => throw IllegalArgumentException("entity type", x)

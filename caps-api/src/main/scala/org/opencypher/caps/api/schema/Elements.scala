@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.api.schema
 
-// TODO: AnyVal
+// TODO: Remove?
 trait Elements[T] {
   def isEmpty: Boolean = elements.isEmpty
   def headOption: Option[T]

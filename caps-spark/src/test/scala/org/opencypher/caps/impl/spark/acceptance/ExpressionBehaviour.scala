@@ -623,11 +623,11 @@ trait ExpressionBehaviour {
           """
             |MATCH (n)
             |WITH [n.val*10, n.val*100] as vals
-            |RETURN val""".stripMargin)
+            |RETURN vals""".stripMargin)
 
         result.records.toMaps should equal(Bag(
           CypherMap("vals" -> Seq(10, 100)),
-          CypherMap("val" -> Seq(20, 200))
+          CypherMap("vals" -> Seq(20, 200))
         ))
       }
     }

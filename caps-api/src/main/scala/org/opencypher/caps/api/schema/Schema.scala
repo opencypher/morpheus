@@ -17,7 +17,6 @@ package org.opencypher.caps.api.schema
 
 import org.opencypher.caps.api.exception.SchemaException
 import org.opencypher.caps.api.schema.PropertyKeys.PropertyKeys
-import org.opencypher.caps.api.schema.Schema.{AllLabels, NoLabel}
 import org.opencypher.caps.api.types._
 
 import scala.language.{existentials, implicitConversions} // fix compiler warning
@@ -29,27 +28,6 @@ object Schema {
     labelPropertyMap = LabelPropertyMap.empty,
     relTypePropertyMap = RelTypePropertyMap.empty
   )
-
-  object NoLabel extends Set[String] with Serializable {
-    override def contains(elem: String): Boolean = false
-
-    override def +(elem: String): Set[String] = this
-
-    override def -(elem: String): Set[String] = this
-
-    override def iterator: Iterator[String] = Iterator.empty
-  }
-
-  object AllLabels extends Set[String] {
-    override def contains(elem: String): Boolean = false
-
-    override def +(elem: String): Set[String] = this
-
-    override def -(elem: String): Set[String] = this
-
-    override def iterator: Iterator[String] = Iterator.empty
-  }
-
 }
 
 final case class Schema(
@@ -75,6 +53,8 @@ final case class Schema(
   relTypePropertyMap: RelTypePropertyMap) {
 
   self: Schema =>
+
+  private def graphContainsNodeWithoutLabel: Boolean = labelPropertyMap.map.keySet.contains(Set.empty)
 
   /**
     * Implied labels for each existing label
@@ -134,7 +114,7 @@ final case class Schema(
   }
 
   def allLabelCombinations: Set[Set[String]] =
-    combinationsFor(NoLabel)
+    combinationsFor(Set.empty)
 
   /**
     * Given a set of labels that a node definitely has, returns all combinations of labels that the node could possibly have.
@@ -149,23 +129,9 @@ final case class Schema(
     * @param key    the property key
     * @return the Cypher type, if any, mapped to the key for nodes that pass the predicate
     */
-  def nodeKeyType(labels: Elements[String], key: String): Option[CypherType] = labels match {
-    case AllGiven(elements) =>
-      val combos = combinationsFor(elements)
-      keysFor(combos).get(key)
-    case AnyGiven(elements) =>
-      val relevantCombos =
-        if (elements eq AllLabels) allLabelCombinations
-        else if (elements eq NoLabel) Set(NoLabel)
-        else combinationsFor(elements)
-      relevantCombos
-        .map(nodeKeys)
-        .foldLeft(CTVoid: CypherType) {
-          case (inferred, next) => inferred.join(next.getOrElse(key, CTNull))
-        } match {
-        case CTNull | CTVoid => None
-        case tpe => Some(tpe)
-      }
+  def nodeKeyType(labels: Set[String], key: String): Option[CypherType] = {
+    val combos = combinationsFor(labels)
+    keysFor(combos).get(key)
   }
 
   /**
@@ -229,8 +195,6 @@ final case class Schema(
     * @return a copy of the Schema with the provided new data
     */
   def withNodePropertyKeys(nodeLabels: Set[String], keys: PropertyKeys): Schema = {
-    if (nodeLabels.exists(_.isEmpty))
-      throw SchemaException("Labels must be non-empty")
     val propertyKeys = if (labelPropertyMap.labelCombinations(nodeLabels)) {
       computePropertyTypes(labelPropertyMap.properties(nodeLabels), keys)
     } else {
@@ -358,32 +322,58 @@ final case class Schema(
   }
 
   /**
-    * Returns the sub-schema for `nodeType`
+    * Given the current schema, construct a new Schema for an entity with a given set of labels.
+    * If the set of labels is empty, this means that the resulting schema will only have properties present on nodes
+    * that have no labels.
     *
-    * @param nodeType Specifies the type for which the schema is extracted
-    * @return sub-schema for `nodeType`
+    * @param labels labels present on the node entity
+    * @return
     */
-  def forNode(nodeType: CTNode): Schema = {
+  def fromNodeEntity(labels: Set[String]): Schema = {
+    if(labels.nonEmpty) {
+      forNodeScan(labels)
+    } else {
+      val propertyKeys = if(graphContainsNodeWithoutLabel) {
+        labelPropertyMap.properties(Set.empty[String])
+      } else {
+        PropertyKeys.empty
+      }
+      Schema.empty.withNodePropertyKeys(Set.empty[String], propertyKeys)
+    }
+  }
+
+  /**
+    * Returns the sub-schema for a node scan under the given constraints.
+    * Labels are interpreted as constraints on the resulting Schema.
+    * If no labels are specified, this means the resulting node can have any valid label combination.
+    *
+    * @param labelConstraints Specifies the labels that the node is guaranteed to have
+    * @return sub-schema for `labelConstraints`
+    */
+  def forNodeScan(labelConstraints: Set[String]): Schema = {
     val requiredLabels = {
-      val explicitLabels = nodeType.labels
+      val explicitLabels = labelConstraints
       val impliedLabels = this.impliedLabels.transitiveImplicationsFor(explicitLabels)
       explicitLabels union impliedLabels
     }
 
-    val possibleLabels = if (nodeType.labels.isEmpty) {
-      this.labels
+    val possibleLabels = if (labelConstraints.isEmpty) {
+      allLabelCombinations
     } else {
-      requiredLabels union this.labelCombinations.filterByLabels(requiredLabels).combos.flatten
+      // todo check if `+ requiredLabels` is necessary
+      this.labelCombinations.filterByLabels(requiredLabels).combos + requiredLabels
     }
 
-    val newLabelPropertyMap = this.labelPropertyMap.filterForLabels(possibleLabels)
-    val updatedLabelPropertyMap = possibleLabels.foldLeft(newLabelPropertyMap) {
+    val newLabelPropertyMap = LabelPropertyMap(this.labelPropertyMap.map.filterKeys(possibleLabels.contains))
+
+    // add labels that were specified in the constraints but are not present in source schema
+    val updatedLabelPropertyMap = possibleLabels.flatten.foldLeft(newLabelPropertyMap) {
       case (agg, label) if agg.map.keys.exists(_.contains(label)) => agg
       case (agg, label) => agg.register(label)()
     }
 
     copy(
-      labels = possibleLabels,
+      labels = possibleLabels.flatten,
       Set.empty,
       labelPropertyMap = updatedLabelPropertyMap,
       relTypePropertyMap = RelTypePropertyMap.empty
@@ -430,7 +420,7 @@ final case class Schema(
       if (labelPropertyMap.labelCombinations.nonEmpty) {
         builder.append(s"Node labels {$EOL")
         labelPropertyMap.labelCombinations.foreach { combo =>
-          val labelStr = if (combo eq NoLabel) "(no label)" else combo.mkString(":", ":", "")
+          val labelStr = if (combo eq Set.empty) "(no label)" else combo.mkString(":", ":", "")
           builder.append(s"\t$labelStr$EOL")
           nodeKeys(combo).foreach {
             case (key, typ) => builder.append(s"\t\t$key: $typ$EOL")

@@ -16,7 +16,6 @@
 package org.opencypher.caps.api.schema
 
 import org.opencypher.caps.api.exception.SchemaException
-import org.opencypher.caps.api.schema.Schema.{AllLabels, NoLabel}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.test.BaseTestSuite
 
@@ -278,13 +277,13 @@ class SchemaTest extends BaseTestSuite {
       .withNodePropertyKeys("Pet")("notName" -> CTBoolean)
       .withRelationshipPropertyKeys("OWNER")("since" -> CTInteger)
 
-    schema.forNode(CTNode("Person")) should equal(
+    schema.forNodeScan(Set("Person")) should equal(
       Schema.empty
         .withNodePropertyKeys("Person")("name" -> CTString)
         .withNodePropertyKeys("Employee", "Person")("name" -> CTString, "salary" -> CTInteger)
     )
 
-    schema.forNode(CTNode("Dog")) should equal(
+    schema.forNodeScan(Set("Dog")) should equal(
       Schema.empty
         .withNodePropertyKeys("Dog", "Pet")("name" -> CTFloat)
         .withNodePropertyKeys("Pet")("notName" -> CTBoolean)
@@ -325,36 +324,23 @@ class SchemaTest extends BaseTestSuite {
 
   test("handles empty label set") {
     val schema = Schema.empty
-      .withNodePropertyKeys(NoLabel, Map("name" -> CTString))
+      .withNodePropertyKeys(Set.empty[String], Map("name" -> CTString))
       .withNodePropertyKeys("A")("name" -> CTInteger)
 
     schema.nodeKeys() should equal(Map("name" -> CTString))
-    schema.nodeKeys(NoLabel) should equal(Map("name" -> CTString))
+    schema.nodeKeys(Set.empty[String]) should equal(Map("name" -> CTString))
   }
 
   test("get node key type with all given semantics") {
     val schema = Schema.empty
       .withNodePropertyKeys(Set("A"), Map("a" -> CTInteger, "b" -> CTString, "c" -> CTFloat, "d" -> CTFloat.nullable))
-      .withNodePropertyKeys(NoLabel, Map("a" -> CTString))
+      .withNodePropertyKeys(Set.empty[String], Map("a" -> CTString))
 
-    schema.nodeKeyType(AllOf("A"), "a") should equal(Some(CTInteger))
-    schema.nodeKeyType(AllGiven(NoLabel), "a") should equal(Some(CTAny))
-    schema.nodeKeyType(AllGiven(NoLabel), "b") should equal(Some(CTString.nullable))
-    schema.nodeKeyType(AllOf("B"), "b") should equal(None)
-    schema.nodeKeyType(AllOf("A"), "x") should equal(None)
-  }
-
-  test("get node key type with any given semantics") {
-    val schema = Schema.empty
-      .withNodePropertyKeys(
-        Set("A", "B"),
-        Map("a" -> CTInteger, "b" -> CTString, "c" -> CTFloat, "d" -> CTFloat.nullable))
-      .withNodePropertyKeys(NoLabel, Map("a" -> CTString))
-
-    schema.nodeKeyType(AnyOf("A"), "a") should equal(Some(CTInteger))
-    schema.nodeKeyType(AnyGiven(NoLabel), "a") should equal(Some(CTString))
-    schema.nodeKeyType(AnyOf("A"), "b") should equal(Some(CTString))
-    schema.nodeKeyType(AnyGiven(AllLabels), "a") should equal(Some(CTAny))
+    schema.nodeKeyType(Set("A"), "a") should equal(Some(CTInteger))
+    schema.nodeKeyType(Set.empty[String], "a") should equal(Some(CTAny))
+    schema.nodeKeyType(Set.empty[String], "b") should equal(Some(CTString.nullable))
+    schema.nodeKeyType(Set("B"), "b") should equal(None)
+    schema.nodeKeyType(Set("A"), "x") should equal(None)
   }
 
   test("get rel key type") {
@@ -378,7 +364,7 @@ class SchemaTest extends BaseTestSuite {
 
   test("get all keys") {
     val schema = Schema.empty
-      .withNodePropertyKeys(NoLabel, Map("a" -> CTString, "c" -> CTString, "d" -> CTString.nullable, "f" -> CTString))
+      .withNodePropertyKeys(Set.empty[String], Map("a" -> CTString, "c" -> CTString, "d" -> CTString.nullable, "f" -> CTString))
       .withNodePropertyKeys("A")("b" -> CTInteger, "c" -> CTString, "e" -> CTString, "f" -> CTInteger)
       .withNodePropertyKeys("B")("b" -> CTFloat, "c" -> CTString, "e" -> CTInteger, "f" -> CTBoolean)
 
@@ -406,10 +392,5 @@ class SchemaTest extends BaseTestSuite {
 
     Schema.empty.withNodePropertyKeys("label")().isEmpty shouldBe false
     Schema.empty.withRelationshipPropertyKeys("type")("name" -> CTFloat).isEmpty shouldBe false
-  }
-
-  test("can not use empty labels") {
-    the[SchemaException] thrownBy Schema.empty.withNodePropertyKeys("")() should have message
-      "Labels must be non-empty"
   }
 }

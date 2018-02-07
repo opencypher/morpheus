@@ -22,21 +22,21 @@ import org.opencypher.caps.test.BaseTestSuite
 
 class RichSchemaTest extends BaseTestSuite {
 
-    test("for entities") {
-      val schema = Schema.empty
-        .withNodePropertyKeys("Person")("name" -> CTString)
-        .withNodePropertyKeys("City")("name" -> CTString, "region" -> CTBoolean)
-        .withRelationshipPropertyKeys("KNOWS")("since" -> CTFloat.nullable)
-        .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
-
-      schema.forEntities(
-        Set(
-          IRField("n")(CTNode("Person")),
-          IRField("r")(CTRelationship("BAR"))
-        )) should equal(
-        Schema.empty
-          .withNodePropertyKeys("Person")("name" -> CTString)
-          .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger))
-    }
+//    test("for entities") {
+//      val schema = Schema.empty
+//        .withNodePropertyKeys("Person")("name" -> CTString)
+//        .withNodePropertyKeys("City")("name" -> CTString, "region" -> CTBoolean)
+//        .withRelationshipPropertyKeys("KNOWS")("since" -> CTFloat.nullable)
+//        .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
+//
+//      schema.forEntities(
+//        Set(
+//          IRField("n")(CTNode("Person")),
+//          IRField("r")(CTRelationship("BAR"))
+//        )) should equal(
+//        Schema.empty
+//          .withNodePropertyKeys("Person")("name" -> CTString)
+//          .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger))
+//    }
 
 }

@@ -16,7 +16,6 @@
 package org.opencypher.caps.impl.record
 
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.api.schema.Schema.NoLabel
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.ir.api.expr._
@@ -348,7 +347,7 @@ class RecordHeaderTest extends BaseTestSuite {
 
   test("node from schema") {
     val schema = Schema.empty
-      .withNodePropertyKeys(NoLabel, Map("prop" -> CTString))
+      .withNodePropertyKeys(Set.empty[String], Map("prop" -> CTString))
       .withNodePropertyKeys("A")("a" -> CTString.nullable)
       .withNodePropertyKeys("B")("b" -> CTInteger, "extra" -> CTBoolean, "c" -> CTFloat)
       .withNodePropertyKeys("A", "B")("a" -> CTString, "b" -> CTInteger.nullable, "c" -> CTFloat)
@@ -431,7 +430,7 @@ class RecordHeaderTest extends BaseTestSuite {
 
   test("node from schema with implication") {
     val schema = Schema.empty
-      .withNodePropertyKeys(NoLabel, Map("prop" -> CTString))
+      .withNodePropertyKeys( Set.empty[String], Map("prop" -> CTString))
       .withNodePropertyKeys("A")("a" -> CTString.nullable)
       .withNodePropertyKeys("A", "X")("a" -> CTString.nullable, "x" -> CTFloat)
       .withNodePropertyKeys("B")("b" -> CTInteger, "extra" -> CTBoolean)
