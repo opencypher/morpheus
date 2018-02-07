@@ -9,7 +9,7 @@ object Demo extends App {
 
   val graph = COSCGraph.create(DemoData.nodes, DemoData.rels)
 
-  graph.cypher("MATCH (n) RETURN n").print
+  graph.cypher("MATCH (n) WHERE n.age > 40 RETURN n").print
 }
 
 object DemoData {

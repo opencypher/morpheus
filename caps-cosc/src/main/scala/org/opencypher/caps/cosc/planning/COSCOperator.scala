@@ -7,7 +7,7 @@ import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.cosc.COSCConverters._
 import org.opencypher.caps.cosc._
 import org.opencypher.caps.impl.record.RecordHeader
-import org.opencypher.caps.ir.api.expr.Var
+import org.opencypher.caps.ir.api.expr.{Expr, Var}
 import org.opencypher.caps.logical.impl.{LogicalExternalGraph, LogicalGraph}
 import org.opencypher.caps.trees.AbstractTreeNode
 
@@ -18,6 +18,26 @@ abstract class COSCOperator extends AbstractTreeNode[COSCOperator] {
   protected def resolve(uri: URI)(implicit context: COSCRuntimeContext): COSCGraph = {
     context.resolve(uri).map(_.asCosc).getOrElse(throw IllegalArgumentException(s"a graph at $uri"))
   }
+}
+
+case class COSCProject(expr: Expr, in: COSCOperator, header: RecordHeader) extends COSCOperator {
+
+  override def execute(implicit context: COSCRuntimeContext): COSCPhysicalResult = in.execute
+}
+
+case class COSCFilter(expr: Expr, in: COSCOperator, header: RecordHeader) extends COSCOperator {
+
+  override def execute(implicit context: COSCRuntimeContext): COSCPhysicalResult = {
+    val prev = in.execute
+    val newRecords = prev.records
+    println(expr)
+    COSCPhysicalResult(newRecords, prev.graphs)
+  }
+}
+
+case class COSCSelect(fields: Seq[Var], graphs: Set[String], in: COSCOperator, header: RecordHeader) extends COSCOperator {
+
+  override def execute(implicit context: COSCRuntimeContext): COSCPhysicalResult = in.execute
 }
 
 case class COSCScan(in: COSCOperator, inGraph: LogicalGraph, v: Var, header: RecordHeader) extends COSCOperator {

@@ -20,7 +20,14 @@ class COSCPlanner extends DirectCompilationStage[FlatOperator, COSCOperator, COS
   override def process(input: FlatOperator)(implicit context: COSCPlannerContext): COSCOperator = {
     input match {
 
-      case Select(fields, graphs, in, header) => process(in)
+      case Project(expr, in, header) =>
+        COSCProject(expr, process(in), header)
+
+      case Filter(expr, in, header) =>
+        COSCFilter(expr, process(in), header)
+
+      case Select(fields, graphs, in, header) =>
+        COSCSelect(fields, graphs, process(in), header)
 
       case op@NodeScan(node, in, header) =>
         COSCScan(process(in), op.sourceGraph, node, header)
