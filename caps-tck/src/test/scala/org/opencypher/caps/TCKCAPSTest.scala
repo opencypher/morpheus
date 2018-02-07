@@ -54,7 +54,7 @@ class TCKCAPSTest extends CAPSTestSuite {
       * scenario name to make those names unique.
       */
     def enumerateScenarioOutlines: Seq[Scenario] = {
-      scenarios.groupBy(_.toString).flatMap { case (name, nameCollisionGroup) =>
+      scenarios.groupBy(_.toString).flatMap { case (_, nameCollisionGroup) =>
         if (nameCollisionGroup.size <= 1) {
           nameCollisionGroup
         } else {
