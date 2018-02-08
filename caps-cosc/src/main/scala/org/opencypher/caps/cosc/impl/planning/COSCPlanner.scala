@@ -1,11 +1,11 @@
-package org.opencypher.caps.cosc.planning
+package org.opencypher.caps.cosc.impl.planning
 
 import java.net.URI
 
 import org.opencypher.caps.api.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.value.CypherValue.CypherMap
-import org.opencypher.caps.cosc.COSCRecords
+import org.opencypher.caps.cosc.impl.COSCRecords
 import org.opencypher.caps.impl.flat._
 import org.opencypher.caps.ir.api.util.DirectCompilationStage
 import org.opencypher.caps.logical.impl.LogicalExternalGraph

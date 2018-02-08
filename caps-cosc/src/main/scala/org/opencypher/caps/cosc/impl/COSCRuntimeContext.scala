@@ -1,4 +1,4 @@
-package org.opencypher.caps.cosc
+package org.opencypher.caps.cosc.impl
 
 import java.net.URI
 

@@ -1,4 +1,4 @@
-package org.opencypher.caps.cosc
+package org.opencypher.caps.cosc.impl
 
 import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.impl.record.{CypherRecords, RecordHeader}

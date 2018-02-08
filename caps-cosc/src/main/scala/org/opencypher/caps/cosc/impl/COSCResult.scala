@@ -1,7 +1,7 @@
-package org.opencypher.caps.cosc
+package org.opencypher.caps.cosc.impl
 
 import org.opencypher.caps.api.graph.{CypherResult, CypherResultPlan, Plan}
-import org.opencypher.caps.cosc.planning.COSCOperator
+import org.opencypher.caps.cosc.impl.planning.COSCOperator
 import org.opencypher.caps.impl.flat.FlatOperator
 import org.opencypher.caps.impl.util.PrintOptions
 import org.opencypher.caps.logical.impl.LogicalOperator

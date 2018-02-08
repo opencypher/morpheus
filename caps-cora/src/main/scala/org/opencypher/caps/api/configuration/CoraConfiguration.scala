@@ -19,19 +19,19 @@ import scala.util.Try
 
 object CoraConfiguration extends Configuration {
 
-  object PrintFlatPlan extends ConfigOption("caps.explainFlat", false)(s => Try(s.toBoolean).toOption) {
+  object PrintFlatPlan extends ConfigOption("cora.explainFlat", false)(s => Try(s.toBoolean).toOption) {
     def set(): Unit = set(true.toString)
   }
 
-  object PrintPhysicalPlan extends ConfigOption("caps.explainPhysical", false)(s => Try(s.toBoolean).toOption) {
+  object PrintPhysicalPlan extends ConfigOption("cora.explainPhysical", false)(s => Try(s.toBoolean).toOption) {
     def set(): Unit = set(true.toString)
   }
 
-  object DebugPhysicalResult extends ConfigOption("caps.debugPhysical", false)(s => Try(s.toBoolean).toOption) {
+  object DebugPhysicalResult extends ConfigOption("cora.debugPhysical", false)(s => Try(s.toBoolean).toOption) {
     def set(): Unit = set(true.toString)
   }
 
-  object PrintQueryExecutionStages extends ConfigOption("caps.stages", false)(s => Try(s.toBoolean).toOption) {
+  object PrintQueryExecutionStages extends ConfigOption("cora.stages", false)(s => Try(s.toBoolean).toOption) {
     def set(): Unit = set(true.toString)
   }
 }

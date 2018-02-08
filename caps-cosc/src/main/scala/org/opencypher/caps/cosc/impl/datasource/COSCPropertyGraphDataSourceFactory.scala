@@ -1,4 +1,4 @@
-package org.opencypher.caps.cosc.datasource
+package org.opencypher.caps.cosc.impl.datasource
 
 import org.opencypher.caps.api.io.PropertyGraphDataSourceFactory
 

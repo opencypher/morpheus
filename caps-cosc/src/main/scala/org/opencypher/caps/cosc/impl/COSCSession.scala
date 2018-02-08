@@ -1,23 +1,23 @@
-package org.opencypher.caps.cosc
+package org.opencypher.caps.cosc.impl
 
 import java.net.URI
 import java.util.UUID
 
+import org.opencypher.caps.api.configuration.CoraConfiguration.PrintFlatPlan
 import org.opencypher.caps.api.exception.UnsupportedOperationException
 import org.opencypher.caps.api.graph.{CypherResult, CypherSession, PropertyGraph}
 import org.opencypher.caps.api.io.{PersistMode, PropertyGraphDataSource}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.api.value.CypherValue.CypherMap
-import org.opencypher.caps.cosc.Configuration.PrintCOSCPlan
-import org.opencypher.caps.cosc.datasource.{COSCGraphSourceHandler, COSCPropertyGraphDataSource, COSCSessionPropertyGraphDataSourceFactory}
-import org.opencypher.caps.cosc.planning.{COSCPlanner, COSCPlannerContext}
-import org.opencypher.caps.demo.Configuration.{PrintFlatPlan, PrintLogicalPlan}
+import org.opencypher.caps.cosc.impl.datasource.{COSCGraphSourceHandler, COSCPropertyGraphDataSource, COSCSessionPropertyGraphDataSourceFactory}
+import org.opencypher.caps.cosc.impl.planning.{COSCPlanner, COSCPlannerContext}
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
 import org.opencypher.caps.impl.util.Measurement.time
 import org.opencypher.caps.ir.api.IRExternalGraph
 import org.opencypher.caps.ir.impl.parse.CypherParser
 import org.opencypher.caps.ir.impl.{IRBuilder, IRBuilderContext}
+import org.opencypher.caps.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
 import org.opencypher.caps.logical.impl.{LogicalOperatorProducer, LogicalOptimizer, LogicalPlanner, LogicalPlannerContext}
 
 object COSCSession {
@@ -77,7 +77,6 @@ class COSCSession(private val graphSourceHandler: COSCGraphSourceHandler) extend
 
     val coscPlannerContext = COSCPlannerContext(readFrom, COSCRecords.unit, allParameters)
     val coscPlan = time("COSC planning")(coscPlanner.process(flatPlan)(coscPlannerContext))
-    if (PrintCOSCPlan.get()) println(coscPlan.pretty)
 
     time("Query execution")(COSCResultBuilder.from(logicalPlan, flatPlan, coscPlan)(COSCRuntimeContext(coscPlannerContext.parameters, optGraphAt)))
   }

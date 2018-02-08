@@ -1,7 +1,7 @@
-package org.opencypher.caps.cosc
+package org.opencypher.caps.cosc.impl
 
 import org.opencypher.caps.api.value.CypherValue.{CypherInteger, CypherMap, CypherString}
-import org.opencypher.caps.cosc.value.{COSCNode, COSCRelationship}
+import org.opencypher.caps.cosc.impl.value.{COSCNode, COSCRelationship}
 
 object Demo extends App {
 

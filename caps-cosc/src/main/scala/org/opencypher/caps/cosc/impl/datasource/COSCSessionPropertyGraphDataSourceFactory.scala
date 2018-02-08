@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.cosc.datasource
+package org.opencypher.caps.cosc.impl.datasource
 
 import java.net.URI
 import java.util.concurrent.ConcurrentHashMap
 
 import org.opencypher.caps.api.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.caps.api.graph.CypherSession
-import org.opencypher.caps.cosc.COSCSession
+import org.opencypher.caps.cosc.impl.COSCSession
 
 import scala.collection.JavaConversions._
 

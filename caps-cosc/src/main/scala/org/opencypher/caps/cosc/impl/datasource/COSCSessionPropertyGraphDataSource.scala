@@ -13,17 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.cosc.datasource
+package org.opencypher.caps.cosc.impl.datasource
 
 import java.net.URI
 
-import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.io.{CreateOrFail, Overwrite, PersistMode}
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.cosc.{COSCGraph, COSCSession}
-import org.opencypher.caps.cosc.COSCConverters._
+import org.opencypher.caps.cosc.impl.COSCConverters._
+import org.opencypher.caps.cosc.impl.{COSCGraph, COSCSession}
 
 case class COSCSessionPropertyGraphDataSource(path: String)(implicit val session: COSCSession)
   extends COSCPropertyGraphDataSource {

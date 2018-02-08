@@ -1,11 +1,12 @@
-package org.opencypher.caps.cosc.planning
+package org.opencypher.caps.cosc.impl.planning
 
 import java.net.URI
 
 import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
-import org.opencypher.caps.cosc.COSCConverters._
-import org.opencypher.caps.cosc._
+import org.opencypher.caps.cosc.impl.COSCConverters._
+import org.opencypher.caps.cosc.{impl, _}
+import org.opencypher.caps.cosc.impl.{COSCGraph, COSCPhysicalResult, COSCRecords, COSCRuntimeContext}
 import org.opencypher.caps.impl.record.RecordHeader
 import org.opencypher.caps.ir.api.expr.{Expr, Var}
 import org.opencypher.caps.logical.impl.{LogicalExternalGraph, LogicalGraph}
@@ -61,7 +62,7 @@ case class COSCScan(in: COSCOperator, inGraph: LogicalGraph, v: Var, header: Rec
 
 case class COSCStart(records: COSCRecords, graph: LogicalExternalGraph) extends COSCOperator {
   override def execute(implicit context: COSCRuntimeContext): COSCPhysicalResult =
-    COSCPhysicalResult(records, Map(graph.name -> resolve(graph.uri)))
+    impl.COSCPhysicalResult(records, Map(graph.name -> resolve(graph.uri)))
 }
 
 case class COSCSetSourceGraph(in: COSCOperator, graph: LogicalExternalGraph) extends COSCOperator {

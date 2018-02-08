@@ -1,4 +1,4 @@
-package org.opencypher.caps.cosc.value
+package org.opencypher.caps.cosc.impl.value
 
 import org.opencypher.caps.api.value.CypherValue.{CypherMap, CypherNode, CypherRelationship}
 

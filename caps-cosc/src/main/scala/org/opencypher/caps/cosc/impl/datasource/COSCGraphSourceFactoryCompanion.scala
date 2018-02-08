@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.cosc.datasource
+package org.opencypher.caps.cosc.impl.datasource
 
 class COSCGraphSourceFactoryCompanion(val defaultScheme: String, additionalSchemes: String*) {
   val supportedSchemes: Set[String] = additionalSchemes.toSet + defaultScheme

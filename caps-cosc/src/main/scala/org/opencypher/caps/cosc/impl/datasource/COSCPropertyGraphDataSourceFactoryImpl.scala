@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.cosc.datasource
+package org.opencypher.caps.cosc.impl.datasource
 
 import java.net.URI
 
 import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.graph.CypherSession
-import org.opencypher.caps.cosc.COSCConverters._
-import org.opencypher.caps.cosc.COSCSession
+import org.opencypher.caps.cosc.impl.COSCConverters._
+import org.opencypher.caps.cosc.impl.COSCSession
 
 abstract class COSCPropertyGraphDataSourceFactoryImpl(val companion: COSCGraphSourceFactoryCompanion)
     extends COSCPropertyGraphDataSourceFactory {

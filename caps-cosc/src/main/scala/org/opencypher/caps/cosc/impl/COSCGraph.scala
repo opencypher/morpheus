@@ -1,11 +1,12 @@
-package org.opencypher.caps.cosc
+package org.opencypher.caps.cosc.impl
 
 import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.CypherType._
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.api.value.CypherValue.CypherMap
-import org.opencypher.caps.cosc.value.{COSCNode, COSCRelationship}
+import org.opencypher.caps.cosc.impl
+import org.opencypher.caps.cosc.impl.value.{COSCNode, COSCRelationship}
 import org.opencypher.caps.impl.record.RecordHeader
 import org.opencypher.caps.ir.api.expr.Var
 
@@ -15,7 +16,7 @@ object COSCGraph {
   def create(nodes: Seq[COSCNode], rels: Seq[COSCRelationship])(implicit session: COSCSession): COSCGraph = {
     val labelNodeMap = nodes.groupBy(_.labels)
     val typeRelMap = rels.groupBy(_.relType)
-    COSCGraph(labelNodeMap, typeRelMap)
+    impl.COSCGraph(labelNodeMap, typeRelMap)
   }
 }
 
