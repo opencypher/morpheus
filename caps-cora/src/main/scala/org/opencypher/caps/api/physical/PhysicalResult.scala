@@ -18,11 +18,35 @@ package org.opencypher.caps.api.physical
 import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.impl.record.CypherRecords
 
+/**
+  * Represents a back-end specific physical result that is being produced by a [[PhysicalOperator]].
+  *
+  * @tparam R backend-specific cypher records
+  * @tparam G backend-specific property graph
+  */
 trait PhysicalResult[R <: CypherRecords, G <: PropertyGraph] {
 
+  /**
+    * Performs the given function on the underlying records and returns the updated records.
+    *
+    * @param f map function
+    * @return updated result
+    */
   def mapRecordsWithDetails(f: R => R): PhysicalResult[R, G]
 
+  /**
+    * Stores the given graph identifed by the specified name in the result.
+    *
+    * @param t tuple mapping a graph name to a graph
+    * @return updated result
+    */
   def withGraph(t: (String, G)): PhysicalResult[R, G]
 
-  def selectGraphs(selected: Set[String]): PhysicalResult[R, G]
+  /**
+    * Returns a result that only contains the graphs with the given names.
+    *
+    * @param names graphs to select
+    * @return updated result containing only selected graphs
+    */
+  def selectGraphs(names: Set[String]): PhysicalResult[R, G]
 }

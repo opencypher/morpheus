@@ -21,8 +21,25 @@ import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.impl.record.CypherRecords
 
+/**
+  * Represents a back-end specific runtime context that is being used by [[PhysicalOperator]] implementations.
+  *
+  * @tparam R backend-specific cypher records
+  * @tparam G backend-specific property graph
+  */
 trait RuntimeContext[R <: CypherRecords, G <: PropertyGraph] {
-  def parameters: CypherMap
 
+  /**
+    * Returns the graph referenced by the given URI.
+    *
+    * @return back-end specific property graph
+    */
   def resolve: URI => Option[G]
+
+  /**
+    * Query parameters
+    *
+    * @return query parameters
+    */
+  def parameters: CypherMap
 }

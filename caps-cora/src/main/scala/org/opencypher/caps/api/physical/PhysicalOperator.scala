@@ -18,10 +18,28 @@ package org.opencypher.caps.api.physical
 import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.impl.record.{CypherRecords, RecordHeader}
 
+/**
+  * Represents a backend-specific implementation of a physical query operation on the underlying data.
+  *
+  * @tparam R backend-specific cypher records
+  * @tparam G backend-specific property graph
+  * @tparam C backend-specific runtime context
+  */
 trait PhysicalOperator[R <: CypherRecords, G <: PropertyGraph, C <: RuntimeContext[R, G]] {
 
+  /**
+    * The record header constructed by that operator.
+    *
+    * @return record header describing the output data
+    */
   def header: RecordHeader
 
+  /**
+    * Triggers the execution of that operator.
+    *
+    * @param context backend-specific runtime context
+    * @return physical result
+    */
   def execute(implicit context: C): PhysicalResult[R, G]
 
 }

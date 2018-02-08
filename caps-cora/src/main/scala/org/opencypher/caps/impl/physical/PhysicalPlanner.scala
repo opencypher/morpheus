@@ -89,7 +89,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
         }
 
       case flat.Aggregate(aggregations, group, in, header) =>
-        producer.planAggregate(process(in), aggregations, group, header)
+        producer.planAggregate(process(in), group, aggregations, header)
 
       case flat.Filter(expr, in, header) =>
         expr match {

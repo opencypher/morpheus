@@ -29,22 +29,22 @@ import org.opencypher.caps.ir.api.block.SortItem
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.logical.impl._
 
-case class SparkPhysicalPlannerContext(
+case class CAPSPhysicalPlannerContext(
   session: CAPSSession,
   resolver: URI => PropertyGraph,
   inputRecords: CAPSRecords,
   parameters: CypherMap) extends PhysicalPlannerContext[CAPSRecords]
 
-object SparkPhysicalPlannerContext {
+object CAPSPhysicalPlannerContext {
   def from(
     resolver: URI => PropertyGraph,
     inputRecords: CAPSRecords,
     parameters: CypherMap)(implicit session: CAPSSession): PhysicalPlannerContext[CAPSRecords] = {
-    SparkPhysicalPlannerContext(session, resolver, inputRecords, parameters)
+    CAPSPhysicalPlannerContext(session, resolver, inputRecords, parameters)
   }
 }
 
-final class SparkPhysicalOperatorProducer(implicit caps: CAPSSession)
+final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
   extends PhysicalOperatorProducer[CAPSPhysicalOperator, CAPSRecords, CAPSGraph, CAPSRuntimeContext] {
 
   override def planCartesianProduct(
@@ -103,11 +103,7 @@ final class SparkPhysicalOperatorProducer(implicit caps: CAPSSession)
     schema: Schema,
     header: RecordHeader): CAPSPhysicalOperator = operators.ProjectPatternGraph(in, toCreate, name, schema, header)
 
-  override def planAggregate(
-    in: CAPSPhysicalOperator,
-    aggregations: Set[(Var, Aggregator)],
-    group: Set[Var],
-    header: RecordHeader): CAPSPhysicalOperator = operators.Aggregate(in, aggregations, group, header)
+  override def planAggregate(in: CAPSPhysicalOperator, group: Set[Var], aggregations: Set[(Var, Aggregator)], header: RecordHeader): CAPSPhysicalOperator = operators.Aggregate(in, aggregations, group, header)
 
   override def planFilter(in: CAPSPhysicalOperator, expr: Expr, header: RecordHeader): CAPSPhysicalOperator =
     operators.Filter(in, expr, header)
@@ -180,7 +176,7 @@ final class SparkPhysicalOperatorProducer(implicit caps: CAPSSession)
   override def planOrderBy(
     in: CAPSPhysicalOperator,
     sortItems: Seq[SortItem[Expr]],
-    header: RecordHeader): CAPSPhysicalOperator = operators.OrderBy(in, sortItems, header)
+    header: RecordHeader): CAPSPhysicalOperator = operators.OrderBy(in, sortItems)
 
   override def planSkip(in: CAPSPhysicalOperator, expr: Expr, header: RecordHeader): CAPSPhysicalOperator =
     operators.Skip(in, expr, header)

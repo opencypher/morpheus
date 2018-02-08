@@ -171,6 +171,7 @@ final case class Filter(in: CAPSPhysicalOperator, expr: Expr, header: RecordHead
     prev.mapRecordsWithDetails { records =>
       val filteredRows = records.data.where(expr.asSparkSQLExpr(header, records.data, context))
 
+      // TODO: is this necessary? Filter should just remove rows
       val selectedColumns = header.slots.map { c =>
         val name = columnName(c)
         filteredRows.col(name)
@@ -432,8 +433,8 @@ final case class Aggregate(
   }
 }
 
-final case class OrderBy(in: CAPSPhysicalOperator, sortItems: Seq[SortItem[Expr]], header: RecordHeader)
-  extends UnaryPhysicalOperator {
+final case class OrderBy(in: CAPSPhysicalOperator, sortItems: Seq[SortItem[Expr]])
+  extends UnaryPhysicalOperator with InheritedHeader {
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     val getColumnName = (expr: Var) => columnName(prev.records.header.slotFor(expr))

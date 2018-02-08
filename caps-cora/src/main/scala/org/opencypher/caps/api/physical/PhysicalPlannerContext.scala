@@ -21,12 +21,37 @@ import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph}
 import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.impl.record.CypherRecords
 
+/**
+  * Represents a back-end specific context which is used by the [[org.opencypher.caps.impl.physical.PhysicalPlanner]].
+  *
+  * @tparam R backend-specific cypher records
+  */
 trait PhysicalPlannerContext[R <: CypherRecords] {
+  /**
+    * Refers to the session in which that query is executed.
+    *
+    * @return back-end specific cypher session
+    */
   def session: CypherSession
 
+  /**
+    * Lookup function that resolves URIs to property graphs.
+    *
+    * @return lookup function
+    */
   def resolver: URI => PropertyGraph
 
+  /**
+    * Initial records for physical planning.
+    *
+    * @return
+    */
   def inputRecords: R
 
+  /**
+    * Query parameters
+    *
+    * @return query parameters
+    */
   def parameters: CypherMap
 }

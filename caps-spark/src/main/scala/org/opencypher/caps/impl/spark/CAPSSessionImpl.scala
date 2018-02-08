@@ -52,7 +52,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
   private val logicalPlanner = new LogicalPlanner(producer)
   private val logicalOptimizer = LogicalOptimizer
   private val flatPlanner = new FlatPlanner()
-  private val physicalPlanner = new PhysicalPlanner(new SparkPhysicalOperatorProducer()(self))
+  private val physicalPlanner = new PhysicalPlanner(new CAPSPhysicalOperatorProducer()(self))
   private val physicalOptimizer = new PhysicalOptimizer()
   private val parser = CypherParser
 
@@ -217,7 +217,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
     logStageProgress("Done!")
 
     logStageProgress("Physical plan ... ", newLine = false)
-    val physicalPlannerContext = SparkPhysicalPlannerContext.from(readFrom, records.asCaps, parameters)(self)
+    val physicalPlannerContext = CAPSPhysicalPlannerContext.from(readFrom, records.asCaps, parameters)(self)
     val physicalPlan = physicalPlanner(flatPlan)(physicalPlannerContext)
     logStageProgress("Done!")
 
