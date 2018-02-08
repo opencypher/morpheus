@@ -126,33 +126,33 @@ trait ExpressionBehaviour {
       }
 
       it("equality between properties") {
-      // Given
-      val given = initGraph(
-        """
-          |CREATE (:A {val: 1})-[:REL]->(:B {p: 2})
-          |CREATE (:A {val: 2})-[:REL]->(:B {p: 1})
-          |CREATE (:A {val: 100})-[:REL]->(:B {p: 100})
-          |CREATE (:A {val: 1})-[:REL]->(:B)
-          |CREATE (:A)-[:REL]->(:B {p: 2})
-          |CREATE (:A)-[:REL]->(:B)
-        """.stripMargin)
+        // Given
+        val given = initGraph(
+          """
+            |CREATE (:A {val: 1})-[:REL]->(:B {p: 2})
+            |CREATE (:A {val: 2})-[:REL]->(:B {p: 1})
+            |CREATE (:A {val: 100})-[:REL]->(:B {p: 100})
+            |CREATE (:A {val: 1})-[:REL]->(:B)
+            |CREATE (:A)-[:REL]->(:B {p: 2})
+            |CREATE (:A)-[:REL]->(:B)
+          """.stripMargin)
 
-      // When
-      val result = given.cypher("MATCH (a:A)-->(b:B) RETURN a.val = b.p AS eq")
+        // When
+        val result = given.cypher("MATCH (a:A)-->(b:B) RETURN a.val = b.p AS eq")
 
-      // Then
-      result.records.toMaps should equal(Bag(
-        CypherMap("eq" -> false),
-        CypherMap("eq" -> false),
-        CypherMap("eq" -> true),
-        CypherMap("eq" -> null),
-        CypherMap("eq" -> null),
-        CypherMap("eq" -> null)
-      ))
+        // Then
+        result.records.toMaps should equal(Bag(
+          CypherMap("eq" -> false),
+          CypherMap("eq" -> false),
+          CypherMap("eq" -> true),
+          CypherMap("eq" -> null),
+          CypherMap("eq" -> null),
+          CypherMap("eq" -> null)
+        ))
 
-      // And
-      result.graphs shouldBe empty
-    }
+        // And
+        result.graphs shouldBe empty
+      }
     }
 
 
@@ -628,6 +628,26 @@ trait ExpressionBehaviour {
         result.records.toMaps should equal(Bag(
           CypherMap("vals" -> Seq(10, 100)),
           CypherMap("vals" -> Seq(20, 200))
+        ))
+      }
+    }
+
+    describe("ANDs") {
+      it("can project ands") {
+        val graph = initGraph(
+          """
+            |CREATE ({v1: true, v2: true, v3: true}), ({v1: false, v2: true, v3: true})
+          """.stripMargin)
+
+        val query =
+          """
+            | MATCH (n)
+            | WHERE (n.v1 AND n.v2 AND n.v3) = true
+            | RETURN n.v1
+          """.stripMargin('|')
+
+        graph.cypher(query).records.toMaps should equal(Bag(
+          CypherMap("n.v1" -> true)
         ))
       }
     }

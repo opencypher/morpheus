@@ -310,6 +310,10 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         val innerPlan = this (ex.ir)
         producer.planExistsSubQuery(ex, in, innerPlan)
 
+      case ands @ Ands(inner) =>
+        val plannedInner = inner.foldLeft(in)((op, expr) => planInnerExpr(expr, op))
+        producer.projectExpr(ands, plannedInner)
+
       case x =>
         throw NotImplementedException(s"Support for projection of inner expression $x not yet implemented")
     }
