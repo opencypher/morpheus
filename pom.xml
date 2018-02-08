@@ -342,11 +342,11 @@
         </profile>
 
         <profile>
-            <id>skipShade</id>
+            <id>buildShade</id>
             <activation>
                 <property>
-                    <name>skipShade</name>
-                    <value>!true</value>
+                    <name>buildShade</name>
+                    <value>true</value>
                 </property>
             </activation>
             <build>
