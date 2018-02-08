@@ -74,9 +74,15 @@ final case class RecordHeader(internalHeader: InternalHeader) extends CypherReco
   def mandatory(slot: RecordSlot): Boolean =
     internalHeader.mandatory(slot)
 
-  def sourceNodeSlot(rel: Var): RecordSlot = slotsFor(StartNode(rel)()).headOption.getOrElse(???)
-  def targetNodeSlot(rel: Var): RecordSlot = slotsFor(EndNode(rel)()).headOption.getOrElse(???)
-  def typeSlot(rel: Expr): RecordSlot = slotsFor(Type(rel)()).headOption.getOrElse(???)
+  def sourceNodeSlot(rel: Var): RecordSlot = slotsFor(StartNode(rel)()).headOption.getOrElse(
+    throw IllegalArgumentException(s"One of $fields", rel)
+  )
+  def targetNodeSlot(rel: Var): RecordSlot = slotsFor(EndNode(rel)()).headOption.getOrElse(
+    throw IllegalArgumentException(s"One of $fields", rel)
+  )
+  def typeSlot(rel: Expr): RecordSlot = slotsFor(Type(rel)()).headOption.getOrElse(
+    throw IllegalArgumentException(s"One of $fields", rel)
+  )
 
   def labels(node: Var): Seq[HasLabel] = labelSlots(node).keys.toSeq
 

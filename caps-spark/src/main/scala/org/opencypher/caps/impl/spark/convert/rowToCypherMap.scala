@@ -16,6 +16,7 @@
 package org.opencypher.caps.impl.spark.convert
 
 import org.apache.spark.sql.Row
+import org.opencypher.caps.api.exception.UnsupportedOperationException
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.api.value._
@@ -32,15 +33,14 @@ final case class rowToCypherMap(header: RecordHeader) extends (Row => CypherMap)
     CypherMap(values: _*)
   }
 
+  // TODO: Validate all column types. At the moment null values are cast to the expected type...
   private def constructValue(row: Row, field: Var): CypherValue = {
     field.cypherType match {
       case _: CTNode =>
-        val (id, labels, properties) = collectNode(row, field)
-        CAPSNode(id, labels.toSet, properties)
+        collectNode(row, field)
 
       case _: CTRelationship =>
-        val (id, source, target, typ, properties) = collectRel(row, field)
-        CAPSRelationship(id, source, target, typ, properties)
+        collectRel(row, field)
 
       case _ =>
         val raw = row.getAs[Any](SparkColumnName.of(header.slotFor(field)))
@@ -48,46 +48,57 @@ final case class rowToCypherMap(header: RecordHeader) extends (Row => CypherMap)
     }
   }
 
-  private def collectNode(row: Row, field: Var): (Long, Seq[String], Map[String, CypherValue]) = {
-    val id = row.getAs[Long](SparkColumnName.of(header.slotFor(field)))
-    val labels = header
-      .labelSlots(field)
-      .mapValues { s =>
-        row.getAs[Boolean](SparkColumnName.of(s))
-      }
-      .collect {
-        case (h, b) if b =>
-          h.label.name
-      }
-      .toSeq
-    val properties = header
-      .propertySlots(field)
-      .mapValues { s =>
-        CypherValue(row.getAs[Any](SparkColumnName.of(s)))
-      }
-      .collect {
-        case (p, v) if !v.isNull =>
-          p.key.name -> v
-      }
+  private def collectNode(row: Row, field: Var): CypherValue = {
+    val idValue = row.getAs[Any](SparkColumnName.of(header.slotFor(field)))
+    idValue match {
+      case null       => CypherNull
+      case id: Long   =>
+        val labels = header
+        .labelSlots(field)
+        .mapValues { s =>
+          row.getAs[Boolean](SparkColumnName.of(s))
+        }
+        .collect {
+          case (h, b) if b =>
+            h.label.name
+        }
+        .toSet
 
-    (id, labels, properties)
+        val properties = header
+          .propertySlots(field)
+          .mapValues { s =>
+            CypherValue(row.getAs[Any](SparkColumnName.of(s)))
+          }
+          .collect {
+            case (p, v) if !v.isNull =>
+              p.key.name -> v
+          }
+
+        CAPSNode(id, labels, properties)
+      case invalidID => throw UnsupportedOperationException(s"CAPSNode ID has to be a Long instead of ${invalidID.getClass}")
+    }
   }
 
-  private def collectRel(row: Row, field: Var): (Long, Long, Long, String, CypherMap) = {
-    val id = row.getAs[Long](SparkColumnName.of(header.slotFor(field)))
-    val source = row.getAs[Long](SparkColumnName.of(header.sourceNodeSlot(field)))
-    val target = row.getAs[Long](SparkColumnName.of(header.targetNodeSlot(field)))
-    val typ = row.getAs[String](SparkColumnName.of(header.typeSlot(field)))
-    val properties = header
-      .propertySlots(field)
-      .mapValues { s =>
-        CypherValue.apply(row.getAs[Any](SparkColumnName.of(s)))
-      }
-      .collect {
-        case (p, v) if !v.isNull =>
-          p.key.name -> v
-      }
+  private def collectRel(row: Row, field: Var): CypherValue = {
+    val idValue = row.getAs[Any](SparkColumnName.of(header.slotFor(field)))
+    idValue match {
+      case null       => CypherNull
+      case id: Long   =>
+        val source = row.getAs[Long](SparkColumnName.of(header.sourceNodeSlot(field)))
+        val target = row.getAs[Long](SparkColumnName.of(header.targetNodeSlot(field)))
+        val typ = row.getAs[String](SparkColumnName.of(header.typeSlot(field)))
+        val properties = header
+          .propertySlots(field)
+          .mapValues { s =>
+            CypherValue.apply(row.getAs[Any](SparkColumnName.of(s)))
+          }
+          .collect {
+            case (p, v) if !v.isNull =>
+              p.key.name -> v
+          }
 
-    (id, source, target, typ, properties)
+        CAPSRelationship(id, source, target, typ, properties)
+      case invalidID => throw UnsupportedOperationException(s"CAPSRelationship ID has to be a Long instead of ${invalidID.getClass}")
+    }
   }
 }
