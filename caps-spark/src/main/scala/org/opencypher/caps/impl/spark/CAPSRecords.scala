@@ -15,6 +15,7 @@
  */
 package org.opencypher.caps.impl.spark
 
+import java.util
 import java.util.Collections
 
 import org.apache.spark.api.java.JavaRDD
@@ -28,7 +29,7 @@ import org.opencypher.caps.api.exception.{DuplicateSourceColumnException, Illega
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.caps.api.schema.{EntityTable, NodeTable, RelationshipTable}
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.api.value.CypherValue.CypherMap
+import org.opencypher.caps.api.value.CypherValue.{CypherMap, CypherValue}
 import org.opencypher.caps.api.value._
 import org.opencypher.caps.impl.record.CAPSRecordHeader._
 import org.opencypher.caps.impl.record.{CAPSRecordHeader, _}
@@ -40,6 +41,7 @@ import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.impl.util.PrintOptions
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.ir.api.{Label, PropertyKey}
+import scala.collection.JavaConverters._
 
 import scala.annotation.tailrec
 import scala.reflect.runtime.universe.TypeTag
@@ -125,9 +127,13 @@ sealed abstract class CAPSRecords(override val header: RecordHeader, val data: D
     data.map(rowToCypherMap(header))
   }
 
-  override def iterator: Iterator[CypherMap] = {
-    import scala.collection.JavaConverters._
+  override def columns: Set[String] = header.fields
 
+  override def rows: Iterator[String => CypherValue] = {
+    toLocalIterator.asScala.map(_.value)
+  }
+
+  override def iterator: Iterator[CypherMap] = {
     toLocalIterator.asScala
   }
 
@@ -201,6 +207,7 @@ sealed abstract class CAPSRecords(override val header: RecordHeader, val data: D
 
   //noinspection AccessorLikeMethodIsEmptyParen
   def toDF(): DataFrame = data
+
 }
 
 object CAPSRecords {

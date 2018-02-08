@@ -15,10 +15,33 @@
  */
 package org.opencypher.caps.impl.record
 
-import org.opencypher.caps.api.value.CypherValue.CypherMap
+import org.opencypher.caps.api.value.CypherValue.{CypherMap, CypherValue}
 
+
+/**
+  * Represents a table in which each row contains Vs.
+  * Each row contains one V per column.
+  */
+trait Table[+V] {
+
+  def columns: Set[String]
+
+  /**
+    * Iterate over the rows in this table.
+    */
+  def rows: Iterator[String => V]
+
+  /**
+    * @return number of rows in this Table.
+    */
+  def size: Long
+
+}
+
+//TODO: Move and rename
 trait CypherRecordHeader {
   def fields: Set[String]
+
   def fieldsInOrder: Seq[String]
 }
 
@@ -27,9 +50,10 @@ trait CypherRecordHeader {
   * Each column (or slot) in this table represents an evaluated Cypher expression.
   *
   * Slots that have been bound to a variable name are called <i>fields</i>.
+  *
   * @see [[CypherRecordHeader]]
   */
-trait CypherRecords extends CypherPrintable {
+trait CypherRecords extends Table[CypherValue] with CypherPrintable {
 
   /**
     * The header for this table, describing the slots stored.
