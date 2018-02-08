@@ -18,7 +18,7 @@ package org.opencypher.caps.impl.spark
 import org.apache.spark.sql.Row
 import org.opencypher.caps.api.exception.CypherException
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
-import org.opencypher.caps.api.schema.{NodeTable, RelationshipTable}
+import org.opencypher.caps.api.schema.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CAPSNode
 import org.opencypher.caps.api.value.CypherValue._
@@ -46,7 +46,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture {
       .withOptionalLabel("Swedish" -> "IS_SWEDE")
       .withPropertyKey("name" -> "NAME")
 
-    val nodeTable = NodeTable(givenMapping, givenDF)
+    val nodeTable = CAPSNodeTable(givenMapping, givenDF)
 
     val records = CAPSRecords.create(nodeTable)
 
@@ -76,7 +76,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture {
       .relType("NEXT")
       .withPropertyKey("color" -> "COLOR")
 
-    val relTable = RelationshipTable(givenMapping, givenDF)
+    val relTable = CAPSRelationshipTable(givenMapping, givenDF)
 
     val records = CAPSRecords.create(relTable)
 
@@ -105,7 +105,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture {
       .to("TO")
       .withSourceRelTypeKey("COLOR", Set("RED", "BLUE", "GREEN", "YELLOW"))
 
-    val relTable = RelationshipTable(givenMapping, givenDF)
+    val relTable = CAPSRelationshipTable(givenMapping, givenDF)
 
     val records = CAPSRecords.create(relTable)
 

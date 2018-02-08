@@ -16,7 +16,7 @@
 package org.opencypher.caps.test.support.creation.caps
 
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
-import org.opencypher.caps.api.schema.{NodeTable, RelationshipTable, Schema}
+import org.opencypher.caps.api.schema.{CAPSNodeTable, CAPSRelationshipTable, Schema}
 import org.opencypher.caps.api.types.CTString
 import org.opencypher.caps.impl.spark.CAPSGraph
 import org.opencypher.caps.test.CAPSTestSuite
@@ -38,7 +38,7 @@ class CAPSScanGraphFactoryTest extends CAPSTestSuite with GraphMatchingTestSuppo
       |CREATE (martin)-[:SPEAKS]->(orbital)
     """.stripMargin
 
-  val personTable: NodeTable = NodeTable(NodeMapping
+  val personTable: CAPSNodeTable = CAPSNodeTable(NodeMapping
     .on("ID")
     .withImpliedLabel("Person")
     .withOptionalLabel("Astronaut" -> "IS_ASTRONAUT")
@@ -50,7 +50,7 @@ class CAPSScanGraphFactoryTest extends CAPSTestSuite with GraphMatchingTestSuppo
   ).toDF("ID", "IS_ASTRONAUT", "IS_MARTIAN", "NAME"))
 
 
-  val languageTable: NodeTable = NodeTable(NodeMapping
+  val languageTable: CAPSNodeTable = CAPSNodeTable(NodeMapping
     .on("ID")
     .withImpliedLabel("Language")
     .withPropertyKey("title" -> "TITLE"), caps.sparkSession.createDataFrame(
@@ -61,7 +61,7 @@ class CAPSScanGraphFactoryTest extends CAPSTestSuite with GraphMatchingTestSuppo
   ).toDF("ID", "TITLE"))
 
 
-  val knowsScan: RelationshipTable = RelationshipTable(RelationshipMapping
+  val knowsScan: CAPSRelationshipTable = CAPSRelationshipTable(RelationshipMapping
     .on("ID")
     .from("SRC").to("DST").relType("KNOWS"), caps.sparkSession.createDataFrame(
     Seq(

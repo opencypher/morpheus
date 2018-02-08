@@ -20,27 +20,27 @@ import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.graph.PropertyGraph
-import org.opencypher.caps.api.schema.{EntityTable, NodeTable, RelationshipTable, Schema}
+import org.opencypher.caps.api.schema._
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType, DefiniteCypherType}
 import org.opencypher.caps.impl.record.RecordHeader
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.ir.api.expr._
 
-class CAPSScanGraph(val scans: Seq[EntityTable], val schema: Schema)(implicit val session: CAPSSession)
+class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: Schema)(implicit val session: CAPSSession)
   extends CAPSGraph {
 
   // TODO: Normalize (remove redundant columns for implied Schema information, clear aliases?)
 
   self: CAPSGraph =>
 
-  private val nodeEntityTables = EntityTables(scans.collect { case it: NodeTable => it }.toVector)
-  private val relEntityTables = EntityTables(scans.collect { case it: RelationshipTable => it }.toVector)
+  private val nodeEntityTables = EntityTables(scans.collect { case it: CAPSNodeTable => it }.toVector)
+  private val relEntityTables = EntityTables(scans.collect { case it: CAPSRelationshipTable => it }.toVector)
 
   override def cache(): CAPSScanGraph = forEach(_.table.cache())
 
   override def persist(): CAPSScanGraph = forEach(_.table.persist())
 
-  private def forEach(f: EntityTable => Unit): CAPSScanGraph = {
+  private def forEach(f: CAPSEntityTable => Unit): CAPSScanGraph = {
     scans.foreach(f)
     this
   }
@@ -77,24 +77,24 @@ class CAPSScanGraph(val scans: Seq[EntityTable], val schema: Schema)(implicit va
     case (otherScanGraph: CAPSScanGraph) =>
       val allScans = scans ++ otherScanGraph.scans
       val nodeTable = allScans
-        .collectFirst[NodeTable] { case table: NodeTable => table }
+        .collectFirst[CAPSNodeTable] { case table: CAPSNodeTable => table }
         .getOrElse(throw IllegalArgumentException("at least one node scan"))
       CAPSGraph.create(nodeTable, allScans.filterNot(_ == nodeTable): _*)
     case _ => CAPSUnionGraph(this, other.asCaps)
   }
 
   // TODO: add test case where there are multiple rel types in the underlying DF and see if it filters the right one
-  case class EntityTables(entityTables: Vector[EntityTable]) {
+  case class EntityTables(entityTables: Vector[CAPSEntityTable]) {
     type EntityType = CypherType with DefiniteCypherType
 
     lazy val entityTableTypes: Vector[EntityType] = entityTables.map(_.entityType)
 
-    lazy val entityTablesByType: Map[EntityType, NonEmptyVector[EntityTable]] =
+    lazy val entityTablesByType: Map[EntityType, NonEmptyVector[CAPSEntityTable]] =
       entityTables
         .groupBy(_.entityType)
         .flatMap { case (k, entityScans) => NonEmptyVector.fromVector(entityScans).map(k -> _) }
 
-    def byType(entityType: EntityType): Seq[EntityTable] = {
+    def byType(entityType: EntityType): Seq[CAPSEntityTable] = {
 
       def isSubType(tableType: EntityType) = tableType.subTypeOf(entityType).isTrue
 

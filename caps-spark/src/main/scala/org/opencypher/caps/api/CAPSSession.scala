@@ -22,6 +22,7 @@ import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.sql.SparkSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph}
+import org.opencypher.caps.api.schema.EntityTable.SparkTable
 import org.opencypher.caps.api.schema._
 import org.opencypher.caps.demo.CypherKryoRegistrar
 import org.opencypher.caps.impl.spark._
@@ -47,7 +48,7 @@ trait CAPSSession extends CypherSession {
     nodes: Seq[N],
     relationships: Seq[R] = Seq.empty): PropertyGraph = {
     implicit val session: CAPSSession = this
-    CAPSGraph.create(NodeTable(nodes), RelationshipTable(relationships))
+    CAPSGraph.create(CAPSNodeTable(nodes), CAPSRelationshipTable(relationships))
   }
 
   /**
@@ -56,8 +57,8 @@ trait CAPSSession extends CypherSession {
     * @param entityTables sequence of node and relationship tables defining the graph
     * @return property graph
     */
-  def readFrom(entityTables: EntityTable*): PropertyGraph = entityTables.head match {
-    case h: NodeTable => readFrom(h, entityTables.tail: _*)
+  def readFrom(entityTables: CAPSEntityTable*): PropertyGraph = entityTables.head match {
+    case h: CAPSNodeTable => readFrom(h, entityTables.tail: _*)
     case _ => throw IllegalArgumentException("first argument of type NodeTable", "RelationshipTable")
   }
 
@@ -68,7 +69,7 @@ trait CAPSSession extends CypherSession {
     * @param entityTables sequence of node and relationship tables defining the graph
     * @return property graph
     */
-  def readFrom(nodeTable: NodeTable, entityTables: EntityTable*): PropertyGraph = {
+  def readFrom(nodeTable: CAPSNodeTable, entityTables: CAPSEntityTable*): PropertyGraph = {
     CAPSGraph.create(nodeTable, entityTables: _*)(this)
   }
 }

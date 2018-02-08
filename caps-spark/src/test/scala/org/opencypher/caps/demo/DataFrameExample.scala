@@ -19,10 +19,9 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
-import org.opencypher.caps.api.schema.{NodeTable, RelationshipTable}
+import org.opencypher.caps.api.schema.{CAPSNodeTable, CAPSRelationshipTable}
 
 import scala.collection.JavaConverters._
-
 
 object DataFrameExample extends App {
   // 1) Create CAPS session and retrieve Spark session
@@ -46,8 +45,8 @@ object DataFrameExample extends App {
     .withRelType("FRIEND_OF")
     .withPropertyKey("since")
 
-  val personTable = NodeTable(personNodeMapping, nodesDF)
-  val friendsTable = RelationshipTable(friendOfMapping, relsDF)
+  val personTable = CAPSNodeTable(personNodeMapping, nodesDF)
+  val friendsTable = CAPSRelationshipTable(friendOfMapping, relsDF)
 
   // 4) Create property graph from graph scans
   val graph = session.readFrom(personTable, friendsTable)
