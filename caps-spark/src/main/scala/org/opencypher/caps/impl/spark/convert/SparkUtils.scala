@@ -24,12 +24,15 @@ object SparkUtils {
 
   implicit class NullabilityOps(df: DataFrame) {
     def setNonNullable(columnName: String): DataFrame = {
-      val schema = df.schema
-      val newSchema = StructType(schema.map {
+      val newSchema = StructType(df.schema.map {
         case s@StructField(cn, _, true, _) if cn == columnName => s.copy(nullable = false)
         case other => other
       })
-      df.sparkSession.createDataFrame(df.rdd, newSchema)
+      if (newSchema == df.schema) {
+        df
+      } else {
+        df.sparkSession.createDataFrame(df.rdd, newSchema)
+      }
     }
   }
 
