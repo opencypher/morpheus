@@ -102,6 +102,21 @@
                 </configuration>
             </plugin>
 
+            <!-- Builds a source JAR -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.0.0</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
             <!-- setup scalac -->
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
@@ -109,44 +124,12 @@
                 <version>${plugin.maven-scala.version}</version>
                 <executions>
                     <execution>
-                        <id>scala-compile</id>
                         <goals>
-                            <goal>add-source</goal>
                             <goal>compile</goal>
-                        </goals>
-                        <phase>process-resources</phase>
-                        <configuration>
-                            <args>
-                                <arg>–explaintypes</arg>
-                                <arg>–optimise</arg>
-                                <arg>-Xfatal-warnings</arg>
-                            </args>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>scala-test-compile</id>
-                        <goals>
                             <goal>testCompile</goal>
+                            <goal>add-source</goal>
+                            <goal>doc-jar</goal>
                         </goals>
-                        <phase>test-compile</phase>
-                        <configuration>
-                            <args>
-                                <arg>–explaintypes</arg>
-                                <arg>-Xfatal-warnings</arg>
-                            </args>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>scala-doc</id>
-                        <goals>
-                            <goal>doc</goal>
-                        </goals>
-                        <phase>prepare-package</phase>
-                        <configuration>
-                            <args>
-                                <arg>-no-link-warnings</arg>
-                            </args>
-                        </configuration>
                     </execution>
                 </executions>
                 <configuration>
@@ -196,32 +179,6 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-
-            <!-- scaladoc -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-site-plugin</artifactId>
-                <version>3.0</version>
-                <configuration>
-                    <reportPlugins>
-                        <plugin>
-                            <artifactId>maven-project-info-reports-plugin</artifactId>
-                            <version>2.2</version>
-                        </plugin>
-                        <plugin>
-                            <groupId>net.alchim31.maven</groupId>
-                            <artifactId>scala-maven-plugin</artifactId>
-                            <version>3.3.1</version>
-                            <configuration>
-                                <jvmArgs>
-                                    <jvmArg>-Xms64m</jvmArg>
-                                    <jvmArg>-Xmx1024m</jvmArg>
-                                </jvmArgs>
-                            </configuration>
-                        </plugin>
-                    </reportPlugins>
-                </configuration>
             </plugin>
 
             <!-- add version information to jar -->
