@@ -10,9 +10,11 @@ import org.opencypher.caps.api.io.{PersistMode, PropertyGraphDataSource}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.api.value.CypherValue.CypherMap
+import org.opencypher.caps.cosc.impl.COSCConverters._
 import org.opencypher.caps.cosc.impl.datasource.{COSCGraphSourceHandler, COSCPropertyGraphDataSource, COSCSessionPropertyGraphDataSourceFactory}
-import org.opencypher.caps.cosc.impl.planning.{COSCPlanner, COSCPlannerContext}
+import org.opencypher.caps.cosc.impl.planning.{COSCPhysicalOperatorProducer, COSCPhysicalPlannerContext}
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
+import org.opencypher.caps.impl.physical.PhysicalPlanner
 import org.opencypher.caps.impl.util.Measurement.time
 import org.opencypher.caps.ir.api.IRExternalGraph
 import org.opencypher.caps.ir.impl.parse.CypherParser
@@ -32,12 +34,17 @@ class COSCSession(private val graphSourceHandler: COSCGraphSourceHandler) extend
   private val logicalPlanner = new LogicalPlanner(producer)
   private val logicalOptimizer = LogicalOptimizer
   private val flatPlanner = new FlatPlanner()
-  private val coscPlanner = new COSCPlanner()
+  private val physicalPlanner = new PhysicalPlanner(new COSCPhysicalOperatorProducer()(this))
   private val parser = CypherParser
 
-  def sourceAt(uri: URI): PropertyGraphDataSource = graphSourceHandler.sourceAt(uri)(this)
+  def sourceAt(uri: URI): PropertyGraphDataSource =
+    graphSourceHandler.sourceAt(uri)(this)
 
-  def optGraphAt(uri: URI): Option[PropertyGraph] = graphSourceHandler.optSourceAt(uri)(this).map(_.graph)
+  def optGraphAt(uri: URI): Option[COSCGraph] =
+    graphSourceHandler.optSourceAt(uri)(this).map(_.graph) match {
+      case Some(graph) => Some(graph.asCosc)
+      case None => None
+    }
 
   /**
     * Executes a Cypher query in this session on the current ambient graph.
@@ -75,8 +82,8 @@ class COSCSession(private val graphSourceHandler: COSCGraphSourceHandler) extend
     val flatPlan = time("Flat planning")(flatPlanner(optimizedLogicalPlan)(FlatPlannerContext(parameters)))
     if (PrintFlatPlan.get()) println(flatPlan.pretty)
 
-    val coscPlannerContext = COSCPlannerContext(readFrom, COSCRecords.unit, allParameters)
-    val coscPlan = time("COSC planning")(coscPlanner.process(flatPlan)(coscPlannerContext))
+    val coscPlannerContext = COSCPhysicalPlannerContext(this, readFrom, COSCRecords.unit, allParameters)
+    val coscPlan = time("Physical planning")(physicalPlanner.process(flatPlan)(coscPlannerContext))
 
     time("Query execution")(COSCResultBuilder.from(logicalPlan, flatPlan, coscPlan)(COSCRuntimeContext(coscPlannerContext.parameters, optGraphAt)))
   }

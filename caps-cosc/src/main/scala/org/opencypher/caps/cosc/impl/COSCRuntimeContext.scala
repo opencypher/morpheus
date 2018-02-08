@@ -2,7 +2,7 @@ package org.opencypher.caps.cosc.impl
 
 import java.net.URI
 
-import org.opencypher.caps.api.graph.PropertyGraph
+import org.opencypher.caps.api.physical.RuntimeContext
 import org.opencypher.caps.api.value.CypherValue.CypherMap
 
 object COSCRuntimeContext {
@@ -11,7 +11,7 @@ object COSCRuntimeContext {
 
 case class COSCRuntimeContext(
   parameters: CypherMap,
-  resolve: URI => Option[PropertyGraph]
-)
+  resolve: URI => Option[COSCGraph]
+) extends RuntimeContext[COSCRecords, COSCGraph]
 
 
