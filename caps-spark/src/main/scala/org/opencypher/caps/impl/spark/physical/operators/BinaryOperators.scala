@@ -17,38 +17,38 @@ package org.opencypher.caps.impl.spark.physical.operators
 
 import org.apache.spark.sql.functions
 import org.opencypher.caps.impl.record.{OpaqueField, RecordHeader, RecordSlot}
-import org.opencypher.caps.impl.spark.physical.operators.PhysicalOperator.{assertIsNode, columnName, joinDFs, joinRecords}
-import org.opencypher.caps.impl.spark.physical.{PhysicalResult, RuntimeContext}
+import org.opencypher.caps.impl.spark.physical.operators.CAPSPhysicalOperator.{assertIsNode, columnName, joinDFs, joinRecords}
+import org.opencypher.caps.impl.spark.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
 import org.opencypher.caps.impl.spark.{CAPSRecords, ColumnNameGenerator}
 import org.opencypher.caps.ir.api.expr.Var
 
-private[spark] abstract class BinaryPhysicalOperator extends PhysicalOperator {
+private[spark] abstract class BinaryPhysicalOperator extends CAPSPhysicalOperator {
 
-  def lhs: PhysicalOperator
+  def lhs: CAPSPhysicalOperator
 
-  def rhs: PhysicalOperator
+  def rhs: CAPSPhysicalOperator
 
-  override def execute(implicit context: RuntimeContext): PhysicalResult = executeBinary(lhs.execute, rhs.execute)
+  override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = executeBinary(lhs.execute, rhs.execute)
 
-  def executeBinary(left: PhysicalResult, right: PhysicalResult)(implicit context: RuntimeContext): PhysicalResult
+  def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult
 }
 
 final case class ValueJoin(
-    lhs: PhysicalOperator,
-    rhs: PhysicalOperator,
+    lhs: CAPSPhysicalOperator,
+    rhs: CAPSPhysicalOperator,
     predicates: Set[org.opencypher.caps.ir.api.expr.Equals],
     header: RecordHeader)
     extends BinaryPhysicalOperator {
 
-  override def executeBinary(left: PhysicalResult, right: PhysicalResult)(
-      implicit context: RuntimeContext): PhysicalResult = {
+  override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
+      implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     val leftHeader = left.records.header
     val rightHeader = right.records.header
     val slots = predicates.map { p =>
       leftHeader.slotsFor(p.lhs).head -> rightHeader.slotsFor(p.rhs).head
     }.toSeq
 
-    PhysicalResult(joinRecords(header, slots)(left.records, right.records), left.graphs ++ right.graphs)
+    CAPSPhysicalResult(joinRecords(header, slots)(left.records, right.records), left.graphs ++ right.graphs)
   }
 
 }
@@ -61,11 +61,11 @@ final case class ValueJoin(
   * @param rhs optional match data
   * @param header result header (lhs header + rhs header)
   */
-final case class Optional(lhs: PhysicalOperator, rhs: PhysicalOperator, header: RecordHeader)
+final case class Optional(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator, header: RecordHeader)
     extends BinaryPhysicalOperator {
 
-  override def executeBinary(left: PhysicalResult, right: PhysicalResult)(
-      implicit context: RuntimeContext): PhysicalResult = {
+  override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
+      implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     val leftData = left.records.toDF()
     val rightData = right.records.toDF()
     val leftHeader = left.records.header
@@ -106,7 +106,6 @@ final case class Optional(lhs: PhysicalOperator, rhs: PhysicalOperator, header: 
 
         (lhsCol, rhsColName, ColumnNameGenerator.generateUniqueName(rightHeader))
       })
-      .toSeq
 
     // Rename join columns on the right hand side and drop common non-join columns
     val reducedRhsData = joinColumnMapping
@@ -118,7 +117,7 @@ final case class Optional(lhs: PhysicalOperator, rhs: PhysicalOperator, header: 
     val joinedRecords =
       joinDFs(left.records.data, reducedRhsData, header, joinCols)("leftouter", deduplicate = true)(left.records.caps)
 
-    PhysicalResult(joinedRecords, left.graphs ++ right.graphs)
+    CAPSPhysicalResult(joinedRecords, left.graphs ++ right.graphs)
   }
 }
 
@@ -133,14 +132,14 @@ final case class Optional(lhs: PhysicalOperator, rhs: PhysicalOperator, header: 
   * @param header result header (lhs header + predicateField)
   */
 final case class ExistsSubQuery(
-    lhs: PhysicalOperator,
-    rhs: PhysicalOperator,
+    lhs: CAPSPhysicalOperator,
+    rhs: CAPSPhysicalOperator,
     targetField: Var,
     header: RecordHeader)
     extends BinaryPhysicalOperator {
 
-  override def executeBinary(left: PhysicalResult, right: PhysicalResult)(
-      implicit context: RuntimeContext): PhysicalResult = {
+  override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
+      implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     val leftData = left.records.toDF()
     val rightData = right.records.toDF()
     val leftHeader = left.records.header
@@ -195,22 +194,22 @@ final case class ExistsSubQuery(
         targetFieldColumnName,
         functions.when(functions.isnull(targetFieldColumn), false).otherwise(true))
 
-    PhysicalResult(CAPSRecords.verifyAndCreate(header, updatedJoinedRecords)(left.records.caps), left.graphs ++ right.graphs)
+    CAPSPhysicalResult(CAPSRecords.verifyAndCreate(header, updatedJoinedRecords)(left.records.caps), left.graphs ++ right.graphs)
   }
 }
 
 // This maps a Cypher pattern such as (s)-[r]->(t), where s and t are both solved by lhs, and r is solved by rhs
 final case class ExpandInto(
-    lhs: PhysicalOperator,
-    rhs: PhysicalOperator,
+    lhs: CAPSPhysicalOperator,
+    rhs: CAPSPhysicalOperator,
     source: Var,
     rel: Var,
     target: Var,
     header: RecordHeader)
     extends BinaryPhysicalOperator {
 
-  override def executeBinary(left: PhysicalResult, right: PhysicalResult)(
-      implicit context: RuntimeContext): PhysicalResult = {
+  override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
+      implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     val sourceSlot = left.records.header.slotFor(source)
     val targetSlot = left.records.header.slotFor(target)
     val relSourceSlot = right.records.header.sourceNodeSlot(rel)
@@ -223,7 +222,7 @@ final case class ExpandInto(
 
     val joinedRecords =
       joinRecords(header, Seq(sourceSlot -> relSourceSlot, targetSlot -> relTargetSlot))(left.records, right.records)
-    PhysicalResult(joinedRecords, left.graphs ++ right.graphs)
+    CAPSPhysicalResult(joinedRecords, left.graphs ++ right.graphs)
   }
 
 }
@@ -237,10 +236,10 @@ final case class ExpandInto(
   * @param lhs the first operand
   * @param rhs the second operand
   */
-final case class Union(lhs: PhysicalOperator, rhs: PhysicalOperator)
+final case class Union(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator)
   extends BinaryPhysicalOperator with InheritedHeader {
 
-  override def executeBinary(left: PhysicalResult, right: PhysicalResult)(implicit context: RuntimeContext) = {
+  override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext) = {
     val leftData = left.records.data
     // left and right have the same set of columns, but the order must also match
     val rightData = right.records.data.select(leftData.columns.head, leftData.columns.tail: _*)
@@ -248,21 +247,21 @@ final case class Union(lhs: PhysicalOperator, rhs: PhysicalOperator)
     val unionedData = leftData.union(rightData)
     val records = CAPSRecords.verifyAndCreate(header, unionedData)(left.records.caps)
 
-    PhysicalResult(records, left.graphs ++ right.graphs)
+    CAPSPhysicalResult(records, left.graphs ++ right.graphs)
   }
 }
 
-final case class CartesianProduct(lhs: PhysicalOperator, rhs: PhysicalOperator, header: RecordHeader)
+final case class CartesianProduct(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator, header: RecordHeader)
     extends BinaryPhysicalOperator {
 
-  override def executeBinary(left: PhysicalResult, right: PhysicalResult)(
-      implicit context: RuntimeContext): PhysicalResult = {
+  override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
+      implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     val data = left.records.data
     val otherData = right.records.data
     val newData = data.crossJoin(otherData)
     val records = CAPSRecords.verifyAndCreate(header, newData)(left.records.caps)
     val graphs = left.graphs ++ right.graphs
-    PhysicalResult(records, graphs)
+    CAPSPhysicalResult(records, graphs)
   }
 
 }

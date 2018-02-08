@@ -13,20 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.test
+package org.opencypher.caps.api
 
-import org.opencypher.caps.impl.spark.physical.CAPSRuntimeContext
-import org.opencypher.caps.test.fixture.{CAPSSessionFixture, SparkSessionFixture}
-import org.opencypher.caps.test.support.{DebugOutputSupport, GraphMatchingTestSupport, RecordMatchingTestSupport}
+import org.opencypher.caps.api.configuration.Configuration
 
-abstract class CAPSTestSuite
-    extends BaseTestSuite
-    with SparkSessionFixture
-    with CAPSSessionFixture
-    with GraphMatchingTestSupport
-    with RecordMatchingTestSupport
-    with DebugOutputSupport {
+object SparkConfiguration extends Configuration {
 
-  implicit val context: CAPSRuntimeContext = CAPSRuntimeContext.empty
+  object MasterAddress extends ConfigOption("caps.master", "local[*]")(Some(_))
 
 }

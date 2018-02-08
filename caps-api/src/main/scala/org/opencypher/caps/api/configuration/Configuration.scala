@@ -13,20 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.test
+package org.opencypher.caps.api.configuration
 
-import org.opencypher.caps.impl.spark.physical.CAPSRuntimeContext
-import org.opencypher.caps.test.fixture.{CAPSSessionFixture, SparkSessionFixture}
-import org.opencypher.caps.test.support.{DebugOutputSupport, GraphMatchingTestSupport, RecordMatchingTestSupport}
+trait Configuration {
 
-abstract class CAPSTestSuite
-    extends BaseTestSuite
-    with SparkSessionFixture
-    with CAPSSessionFixture
-    with GraphMatchingTestSupport
-    with RecordMatchingTestSupport
-    with DebugOutputSupport {
+  abstract class ConfigOption[T](val name: String, val defaultValue: T)(convert: String => Option[T]) {
+    def set(v: String): Unit = System.setProperty(name, v)
 
-  implicit val context: CAPSRuntimeContext = CAPSRuntimeContext.empty
+    def get(): T = Option(System.getProperty(name)).flatMap(convert).getOrElse(defaultValue)
 
+    override def toString: String = {
+      val filled = name + (name.length to 25).map(_ => " ").reduce(_ + _)
+      s"$filled = ${get()}"
+    }
+  }
+
+  object Logging extends ConfigOption("caps.logging", "OFF")(Some(_))
 }

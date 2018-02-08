@@ -13,20 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.test
+package org.opencypher.caps.logical.api.configuration
 
-import org.opencypher.caps.impl.spark.physical.CAPSRuntimeContext
-import org.opencypher.caps.test.fixture.{CAPSSessionFixture, SparkSessionFixture}
-import org.opencypher.caps.test.support.{DebugOutputSupport, GraphMatchingTestSupport, RecordMatchingTestSupport}
+import org.opencypher.caps.api.configuration.Configuration
 
-abstract class CAPSTestSuite
-    extends BaseTestSuite
-    with SparkSessionFixture
-    with CAPSSessionFixture
-    with GraphMatchingTestSupport
-    with RecordMatchingTestSupport
-    with DebugOutputSupport {
+import scala.util.Try
 
-  implicit val context: CAPSRuntimeContext = CAPSRuntimeContext.empty
+object LogicalConfiguration extends Configuration {
+
+  object PrintLogicalPlan extends ConfigOption("caps.explain", false)(s => Try(s.toBoolean).toOption) {
+    def set(): Unit = set(true.toString)
+  }
 
 }
