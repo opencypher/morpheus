@@ -75,8 +75,8 @@ trait PropertyGraph {
     * @return           the result of the query.
     * @see [[CypherSession.cypherOnGraph()]]
     */
-  final def cypher(query: String, parameters: CypherMap = CypherMap.empty): CypherResult =
-    session.cypherOnGraph(this, query, parameters)
+  final def cypher(query: String, parameters: CypherMap = CypherMap.empty, drivingTable: Option[CypherRecords] = None): CypherResult =
+    session.cypherOnGraph(this, query, parameters, drivingTable)
 
   /**
     * Constructs the union of this graph and the argument graph.

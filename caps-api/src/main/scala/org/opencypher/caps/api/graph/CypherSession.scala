@@ -19,6 +19,7 @@ import java.net.URI
 
 import org.opencypher.caps.api.io.{CreateOrFail, PersistMode, PropertyGraphDataSource}
 import org.opencypher.caps.api.value.CypherValue._
+import org.opencypher.caps.impl.record.CypherRecords
 
 // TODO: extend doc with explanation for writing graphs
 /**
@@ -34,7 +35,7 @@ trait CypherSession {
     * @param parameters parameters used by the Cypher query
     * @return result of the query
     */
-  def cypher(query: String, parameters: CypherMap = CypherMap.empty): CypherResult
+  def cypher(query: String, parameters: CypherMap = CypherMap.empty, drivingTable: Option[CypherRecords] = None): CypherResult
 
   /**
     * Executes a Cypher query in this session, using the argument graph as the ambient graph.
@@ -47,7 +48,7 @@ trait CypherSession {
     * @param parameters parameters used by the Cypher query
     * @return result of the query
     */
-  private[graph] def cypherOnGraph(graph: PropertyGraph, query: String, parameters: CypherMap = CypherMap.empty): CypherResult
+  private[graph] def cypherOnGraph(graph: PropertyGraph, query: String, parameters: CypherMap = CypherMap.empty, drivingTable: Option[CypherRecords]): CypherResult
 
   /**
     * Reads a graph from the argument URI.
