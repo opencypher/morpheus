@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.spark.physical
 
-import org.apache.spark.sql.{Column, DataFrame}
+import org.apache.spark.sql.{Column, DataFrame, functions}
 
 object DataFrameOps {
   implicit class RichDataFrame(data: DataFrame) {
@@ -49,7 +49,7 @@ object DataFrameOps {
 
       val joinExpr = joinCols.map{
         case (l, r) => data.col(l) === other.col(r)
-      }.reduce(_ && _)
+      }.foldLeft(functions.lit(true))((acc, expr) => acc && expr)
 
       data.join(other, joinExpr, joinType)
     }
