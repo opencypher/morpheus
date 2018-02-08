@@ -29,6 +29,7 @@ import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.caps.api.schema.{CAPSNodeTable, CAPSRelationshipTable}
+import org.opencypher.caps.impl.spark.convert.SparkUtils.NullabilityOps
 
 trait CsvGraphLoaderFileHandler {
   def location: String
@@ -110,17 +111,6 @@ final class LocalFileHandler(override val location: String) extends CsvGraphLoad
 class CsvGraphLoader(fileHandler: CsvGraphLoaderFileHandler)(implicit capsSession: CAPSSession) {
 
   private val sparkSession: SparkSession = capsSession.sparkSession
-
-  implicit class NullabilityOps(df: DataFrame) {
-    def setNonNullable(columnName: String): DataFrame = {
-      val schema = df.schema
-      val newSchema = StructType(schema.map {
-        case s@StructField(cn, _, true, _) if cn == columnName => s.copy(nullable = false)
-        case other => other
-      })
-      df.sparkSession.createDataFrame(df.rdd, newSchema)
-    }
-  }
 
   def load: PropertyGraph = capsSession.readFrom(loadNodes ++ loadRels: _*)
 

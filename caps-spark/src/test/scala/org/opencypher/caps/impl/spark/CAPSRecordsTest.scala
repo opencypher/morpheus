@@ -92,13 +92,14 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture {
   }
 
   test("contract relationships with a dynamic type") {
+    import org.opencypher.caps.impl.spark.convert.SparkUtils.NullabilityOps
     val givenDF = session.createDataFrame(
           Seq(
             (10L, 1L, 2L, "RED"),
             (11L, 2L, 3L, "BLUE"),
             (12L, 3L, 4L, "GREEN"),
             (13L, 4L, 1L, "YELLOW")
-      )).toDF("ID", "FROM", "TO", "COLOR")
+      )).toDF("ID", "FROM", "TO", "COLOR").setNonNullable("COLOR")
 
     val givenMapping = RelationshipMapping.on("ID")
       .from("FROM")

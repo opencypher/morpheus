@@ -22,6 +22,17 @@ import org.opencypher.caps.api.types._
 
 object SparkUtils {
 
+  implicit class NullabilityOps(df: DataFrame) {
+    def setNonNullable(columnName: String): DataFrame = {
+      val schema = df.schema
+      val newSchema = StructType(schema.map {
+        case s@StructField(cn, _, true, _) if cn == columnName => s.copy(nullable = false)
+        case other => other
+      })
+      df.sparkSession.createDataFrame(df.rdd, newSchema)
+    }
+  }
+
   // Spark data types that are supported within the Cypher type system
   val supportedTypes = Seq(
     // numeric
