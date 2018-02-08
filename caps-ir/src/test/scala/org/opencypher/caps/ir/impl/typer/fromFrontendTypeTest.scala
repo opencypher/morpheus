@@ -16,15 +16,35 @@
 package org.opencypher.caps.ir.impl.typer
 
 import org.neo4j.cypher.internal.util.v3_4.{symbols => frontend}
-import org.opencypher.caps.api.types.{CTBoolean, CTFloat, CTInteger, CTNumber}
+import org.opencypher.caps.api.types._
 import org.opencypher.caps.test.BaseTestSuite
+import org.scalatest.Assertion
 
 class fromFrontendTypeTest extends BaseTestSuite {
 
   test("should convert basic types") {
-    fromFrontendType(frontend.CTBoolean) shouldBe CTBoolean
-    fromFrontendType(frontend.CTInteger) shouldBe CTInteger
-    fromFrontendType(frontend.CTFloat) shouldBe CTFloat
-    fromFrontendType(frontend.CTNumber) shouldBe CTNumber
+    frontend.CTBoolean shouldBeConvertedTo CTBoolean
+    frontend.CTInteger shouldBeConvertedTo CTInteger
+    frontend.CTFloat shouldBeConvertedTo CTFloat
+    frontend.CTNumber shouldBeConvertedTo CTNumber
+    frontend.CTString shouldBeConvertedTo CTString
+    frontend.CTAny shouldBeConvertedTo CTAny
+  }
+
+  test("should convert entity types") {
+    frontend.CTNode shouldBeConvertedTo CTNode
+    frontend.CTRelationship shouldBeConvertedTo CTRelationship
+    frontend.CTPath shouldBeConvertedTo CTPath
+  }
+
+  test("should convert container types") {
+    frontend.CTList(frontend.CTInteger) shouldBeConvertedTo CTList(CTInteger)
+    frontend.CTMap shouldBeConvertedTo CTMap
+  }
+
+  implicit class RichType(t: frontend.CypherType) {
+    def shouldBeConvertedTo(other: CypherType): Assertion = {
+      fromFrontendType(t) should equal(other)
+    }
   }
 }
