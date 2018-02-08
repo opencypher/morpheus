@@ -34,8 +34,7 @@ import scala.reflect.runtime.universe._
 
 trait CAPSSession extends CypherSession {
 
-  def sql(query: String): CypherRecords =
-    CAPSRecords.wrap(sparkSession.sql(query))(this)
+  def sql(query: String): CypherRecords
 
   def sparkSession: SparkSession
 

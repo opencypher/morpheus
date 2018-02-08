@@ -86,6 +86,9 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
   def unmountAll(): Unit =
     graphSourceHandler.unmountAll(this)
 
+  override def sql(query: String): CAPSRecords =
+    CAPSRecords.wrap(sparkSession.sql(query))(this)
+
   override def cypher(query: String, parameters: CypherMap, drivingTable: Option[CypherRecords]): CypherResult =
     cypherOnGraph(CAPSGraph.empty(this), query, parameters, drivingTable)
 

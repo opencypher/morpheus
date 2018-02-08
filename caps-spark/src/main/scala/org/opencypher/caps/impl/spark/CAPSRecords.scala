@@ -353,7 +353,7 @@ object CAPSRecords {
     * @param caps the session to which the resulting CAPSRecords is tied.
     * @return a Cypher table.
     */
-  def wrap(df: DataFrame)(implicit caps: CAPSSession): CAPSRecords =
+  private[spark] def wrap(df: DataFrame)(implicit caps: CAPSSession): CAPSRecords =
     verifyAndCreate(prepareDataFrame(df))
 
   /**
@@ -371,6 +371,9 @@ object CAPSRecords {
     (initialHeader, withRenamedColumns)
   }
 
+  /**
+    * Normalises the dataframe by lifting numeric fields to Long and similar ops.
+    */
   private def generalizeColumnTypes(initialDataFrame: DataFrame): DataFrame = {
     val toCast = initialDataFrame.schema.fields.filter(f => fromSparkType(f.dataType, f.nullable).isEmpty)
     val dfWithCompatibleTypes: DataFrame = toCast.foldLeft(initialDataFrame) {
