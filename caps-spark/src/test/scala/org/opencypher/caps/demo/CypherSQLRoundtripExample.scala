@@ -29,7 +29,7 @@ object CypherSQLRoundtripExample extends App {
   implicit val session = CAPSSession.local()
 
   // 2) Load social network data via case class instances
-  val socialNetwork = session.readFrom(SampleData.persons, SampleData.friendships)
+  val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
 
   // 3) Query for a view of the people in the social network
   val result = socialNetwork.cypher(
@@ -54,22 +54,4 @@ object CypherSQLRoundtripExample extends App {
   val result2 = purchaseNetwork.cypher("WITH name AS name, age AS age MATCH (c:Customer {name: name})-->(p:Product) RETURN c.name, age, p.title", drivingTable = Some(sqlResults))
 
   result2.print
-}
-
-/**
-  * Specify schema and data with case classes.
-  */
-object SampleData {
-
-  case class Person(id: Long, name: String, age: Int) extends schema.Node
-
-  @schema.RelationshipType("FRIEND_OF")
-  case class Friend(id: Long, source: Long, target: Long, since: String) extends schema.Relationship
-
-  val alice = Person(0, "Alice", 10)
-  val bob = Person(1, "Bob", 15)
-  val carol = Person(2, "Carol", 25)
-
-  val persons = List(alice, bob, carol)
-  val friendships = List(Friend(0, alice.id, bob.id, "23/01/1987"), Friend(1, bob.id, carol.id, "12/12/2009"))
 }
