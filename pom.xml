@@ -2,510 +2,510 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+  <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.opencypher</groupId>
-    <artifactId>cypher-for-apache-spark</artifactId>
-    <version>1.0-SNAPSHOT</version>
+  <groupId>org.opencypher</groupId>
+  <artifactId>cypher-for-apache-spark</artifactId>
+  <version>1.0-SNAPSHOT</version>
 
-    <name>Cypher for Apache Spark</name>
+  <name>Cypher for Apache Spark</name>
 
-    <modules>
-        <module>caps-api</module>
-        <module>caps-trees</module>
-        <module>caps-logical</module>
-        <module>caps-spark</module>
-        <module>caps-tck</module>
-        <module>caps-ir</module>
-        <module>caps-cora</module>
-    </modules>
+  <modules>
+    <module>caps-api</module>
+    <module>caps-trees</module>
+    <module>caps-logical</module>
+    <module>caps-spark</module>
+    <module>caps-tck</module>
+    <module>caps-ir</module>
+    <module>caps-cora</module>
+  </modules>
 
-    <properties>
-        <!-- Encoding -->
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  <properties>
+    <!-- Encoding -->
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <!-- Project settings -->
-        <project.build.encoding>UTF-8</project.build.encoding>
-        <project.java.version>1.8</project.java.version>
-        <project.scala.binary.version>2.11</project.scala.binary.version>
-        <project.scala.version>${project.scala.binary.version}.12</project.scala.version>
-        <project.rootdir>${project.basedir}</project.rootdir>
+    <!-- Project settings -->
+    <project.build.encoding>UTF-8</project.build.encoding>
+    <project.java.version>1.8</project.java.version>
+    <project.scala.binary.version>2.11</project.scala.binary.version>
+    <project.scala.version>${project.scala.binary.version}.12</project.scala.version>
+    <project.rootdir>${project.basedir}</project.rootdir>
 
-        <!-- Used plugins -->
-        <plugin.exec-maven.version>1.4.0</plugin.exec-maven.version>
-        <plugin.license-maven.version>3.0</plugin.license-maven.version>
-        <plugin.maven-compiler.version>3.5.1</plugin.maven-compiler.version>
-        <plugin.maven-jar.version>3.0.2</plugin.maven-jar.version>
-        <plugin.maven-resources.version>2.7</plugin.maven-resources.version>
-        <plugin.maven-scala.version>3.2.1</plugin.maven-scala.version>
-        <plugin.maven-scalastyle.version>0.8.0</plugin.maven-scalastyle.version>
-        <plugin.maven-scalatest.version>1.0</plugin.maven-scalatest.version>
-        <plugin.maven-shade.version>2.4.3</plugin.maven-shade.version>
-        <plugin.maven-surefire.version>2.20.1</plugin.maven-surefire.version>
+    <!-- Used plugins -->
+    <plugin.exec-maven.version>1.4.0</plugin.exec-maven.version>
+    <plugin.license-maven.version>3.0</plugin.license-maven.version>
+    <plugin.maven-compiler.version>3.5.1</plugin.maven-compiler.version>
+    <plugin.maven-jar.version>3.0.2</plugin.maven-jar.version>
+    <plugin.maven-resources.version>2.7</plugin.maven-resources.version>
+    <plugin.maven-scala.version>3.2.1</plugin.maven-scala.version>
+    <plugin.maven-scalastyle.version>0.8.0</plugin.maven-scalastyle.version>
+    <plugin.maven-scalatest.version>1.0</plugin.maven-scalatest.version>
+    <plugin.maven-shade.version>2.4.3</plugin.maven-shade.version>
+    <plugin.maven-surefire.version>2.20.1</plugin.maven-surefire.version>
 
-        <!-- Used dependencies -->
-        <dep.ammonite.version>1.0.1-6-6d2db3a</dep.ammonite.version>
-        <dep.bouncycastle.version>1.57</dep.bouncycastle.version>
-        <dep.cats.version>0.9.0</dep.cats.version>
-        <dep.circe.version>0.8.0</dep.circe.version>
-        <dep.eff.version>4.5.0</dep.eff.version>
-        <dep.hadoop.version>2.7.0</dep.hadoop.version>
-        <dep.junit.version>5.0.2</dep.junit.version>
-        <dep.junit.platform.version>1.0.2</dep.junit.platform.version>
-        <dep.junit.vintage.version>4.12.2</dep.junit.vintage.version>
-        <dep.mockito.version>1.10.19</dep.mockito.version>
-        <dep.multiset.version>0.4</dep.multiset.version>
-        <dep.neo4j.version>3.4.0-alpha05</dep.neo4j.version>
-        <dep.netty.version>4.1.8.Final</dep.netty.version>
-        <dep.neo4j.driver.version>1.4.2</dep.neo4j.driver.version>
-        <dep.scalatest.version>3.0.4</dep.scalatest.version>
-        <dep.sourcecode.version>0.1.2</dep.sourcecode.version>
+    <!-- Used dependencies -->
+    <dep.ammonite.version>1.0.1-6-6d2db3a</dep.ammonite.version>
+    <dep.bouncycastle.version>1.57</dep.bouncycastle.version>
+    <dep.cats.version>0.9.0</dep.cats.version>
+    <dep.circe.version>0.8.0</dep.circe.version>
+    <dep.eff.version>4.5.0</dep.eff.version>
+    <dep.hadoop.version>2.7.0</dep.hadoop.version>
+    <dep.junit.version>5.0.2</dep.junit.version>
+    <dep.junit.platform.version>1.0.2</dep.junit.platform.version>
+    <dep.junit.vintage.version>4.12.2</dep.junit.vintage.version>
+    <dep.mockito.version>1.10.19</dep.mockito.version>
+    <dep.multiset.version>0.4</dep.multiset.version>
+    <dep.neo4j.version>3.4.0-alpha05</dep.neo4j.version>
+    <dep.netty.version>4.1.8.Final</dep.netty.version>
+    <dep.neo4j.driver.version>1.4.2</dep.neo4j.driver.version>
+    <dep.scalatest.version>3.0.4</dep.scalatest.version>
+    <dep.sourcecode.version>0.1.2</dep.sourcecode.version>
+    <dep.spark.version>2.2.0</dep.spark.version>
+  </properties>
+
+  <repositories>
+    <repository>
+      <id>Neo4j snapshots</id>
+      <name>Neo4j snapshots repository</name>
+      <url>https://m2.neo4j.org/content/repositories/snapshots</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
+
+  <packaging>pom</packaging>
+
+  <build>
+    <resources>
+      <resource>
+        <directory>${basedir}/src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
+    <testResources>
+      <testResource>
+        <directory>${basedir}/src/test/resources</directory>
+        <filtering>true</filtering>
+      </testResource>
+    </testResources>
+
+    <plugins>
+      <!-- javac -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>${plugin.maven-compiler.version}</version>
+        <configuration>
+          <source>${project.java.version}</source>
+          <target>${project.java.version}</target>
+        </configuration>
+      </plugin>
+
+      <!-- Builds a source JAR -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>3.0.0</version>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- setup scalac -->
+      <plugin>
+        <groupId>net.alchim31.maven</groupId>
+        <artifactId>scala-maven-plugin</artifactId>
+        <version>${plugin.maven-scala.version}</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>compile</goal>
+              <goal>testCompile</goal>
+              <goal>add-source</goal>
+              <goal>doc-jar</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <recompileMode>incremental</recompileMode>
+          <scalaVersion>${project.scala.version}</scalaVersion>
+          <scalaCompatVersion>${project.scala.binary.version}</scalaCompatVersion>
+          <encoding>${project.build.encoding}</encoding>
+          <args combine.children="append">
+            <!-- need to pass encoding to scalac manually -->
+            <arg>-encoding</arg>
+            <arg>${project.build.encoding}</arg>
+            <arg>-target:jvm-1.8</arg>
+            <arg>-unchecked</arg>
+            <arg>-deprecation</arg>
+            <arg>-feature</arg>
+            <arg>-Xfuture</arg>
+            <arg>-Ywarn-adapted-args</arg>
+            <arg>-Yopt-warnings:at-inline-failed</arg>
+            <arg>-Yopt:l:project</arg>
+            <arg>-Ypartial-unification</arg>
+          </args>
+        </configuration>
+      </plugin>
+
+      <!-- scalastyle) -->
+      <plugin>
+        <groupId>org.scalastyle</groupId>
+        <artifactId>scalastyle-maven-plugin</artifactId>
+        <version>${plugin.maven-scalastyle.version}</version>
+        <configuration>
+          <verbose>false</verbose>
+          <failOnViolation>true</failOnViolation>
+          <includeTestSourceDirectory>true</includeTestSourceDirectory>
+          <failOnWarning>false</failOnWarning>
+          <inputEncoding>${project.build.encoding}</inputEncoding>
+          <sourceDirectory>${basedir}/src/main/scala</sourceDirectory>
+          <testSourceDirectory>${basedir}/src/test/scala</testSourceDirectory>
+          <configLocation>${project.rootdir}/etc/scalastyle_config.xml</configLocation>
+          <outputFile>${basedir}/target/scalastyle-output.xml</outputFile>
+          <outputEncoding>${project.build.encoding}</outputEncoding>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>test</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- add version information to jar -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>${plugin.maven-jar.version}</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <archive>
+            <index>true</index>
+            <addMavenDescriptor>true</addMavenDescriptor>
+            <manifest>
+              <addClasspath>true</addClasspath>
+              <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+              <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
+
+      <!-- disable surefire -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>${plugin.maven-surefire.version}</version>
+        <configuration>
+          <skipTests>true</skipTests>
+        </configuration>
+      </plugin>
+
+      <!-- enable scalatest -->
+      <plugin>
+        <groupId>org.scalatest</groupId>
+        <artifactId>scalatest-maven-plugin</artifactId>
+        <version>${plugin.maven-scalatest.version}</version>
+        <configuration>
+          <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
+          <junitxml>.</junitxml>
+          <filereports>WDF TestSuite.txt</filereports>
+        </configuration>
+        <executions>
+          <execution>
+            <id>test</id>
+            <goals>
+              <goal>test</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- setup ammonite repl runner -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>${plugin.exec-maven.version}</version>
+        <configuration>
+          <mainClass>org.opencypher.caps.demo.Shell</mainClass>
+          <classpathScope>test</classpathScope>
+        </configuration>
+      </plugin>
+
+      <!-- Licenses -->
+      <plugin>
+        <groupId>com.mycila</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <version>${plugin.license-maven.version}</version>
+        <configuration>
+          <header>${project.rootdir}/license-header.txt</header>
+          <basedir>${basedir}/src</basedir>
+          <mapping>
+            <scala>SLASHSTAR_STYLE</scala>
+          </mapping>
+          <excludes>
+            <exclude>test/resources/**</exclude>
+            <exclude>main/resources/**</exclude>
+          </excludes>
+        </configuration>
+        <executions>
+          <execution>
+            <id>check-license-headers</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <profile>
+      <id>databricks</id>
+      <properties>
         <dep.spark.version>2.2.0</dep.spark.version>
-    </properties>
+      </properties>
+    </profile>
 
-    <repositories>
+    <profile>
+      <id>cloudera</id>
+      <repositories>
         <repository>
-            <id>Neo4j snapshots</id>
-            <name>Neo4j snapshots repository</name>
-            <url>https://m2.neo4j.org/content/repositories/snapshots</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
+          <id>cloudera</id>
+          <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
         </repository>
-    </repositories>
+      </repositories>
 
-    <packaging>pom</packaging>
+      <properties>
+        <dep.spark.version>2.2.0.cloudera1</dep.spark.version>
+      </properties>
+    </profile>
 
-    <build>
-        <resources>
-            <resource>
-                <directory>${basedir}/src/main/resources</directory>
-                <filtering>true</filtering>
-            </resource>
-        </resources>
-        <testResources>
-            <testResource>
-                <directory>${basedir}/src/test/resources</directory>
-                <filtering>true</filtering>
-            </testResource>
-        </testResources>
-
+    <profile>
+      <id>buildShade</id>
+      <activation>
+        <property>
+          <name>buildShade</name>
+          <value>true</value>
+        </property>
+      </activation>
+      <build>
         <plugins>
-            <!-- javac -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>${plugin.maven-compiler.version}</version>
+          <!-- shade plugin -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-shade-plugin</artifactId>
+            <version>${plugin.maven-shade.version}</version>
+            <executions>
+              <!-- run shade goal on package phase -->
+              <execution>
+                <phase>package</phase>
+                <goals>
+                  <goal>shade</goal>
+                </goals>
                 <configuration>
-                    <source>${project.java.version}</source>
-                    <target>${project.java.version}</target>
-                </configuration>
-            </plugin>
-
-            <!-- Builds a source JAR -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>3.0.0</version>
-                <executions>
-                    <execution>
-                        <id>attach-sources</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- setup scalac -->
-            <plugin>
-                <groupId>net.alchim31.maven</groupId>
-                <artifactId>scala-maven-plugin</artifactId>
-                <version>${plugin.maven-scala.version}</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>compile</goal>
-                            <goal>testCompile</goal>
-                            <goal>add-source</goal>
-                            <goal>doc-jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <recompileMode>incremental</recompileMode>
-                    <scalaVersion>${project.scala.version}</scalaVersion>
-                    <scalaCompatVersion>${project.scala.binary.version}</scalaCompatVersion>
-                    <encoding>${project.build.encoding}</encoding>
-                    <args combine.children="append">
-                        <!-- need to pass encoding to scalac manually -->
-                        <arg>-encoding</arg>
-                        <arg>${project.build.encoding}</arg>
-                        <arg>-target:jvm-1.8</arg>
-                        <arg>-unchecked</arg>
-                        <arg>-deprecation</arg>
-                        <arg>-feature</arg>
-                        <arg>-Xfuture</arg>
-                        <arg>-Ywarn-adapted-args</arg>
-                        <arg>-Yopt-warnings:at-inline-failed</arg>
-                        <arg>-Yopt:l:project</arg>
-                        <arg>-Ypartial-unification</arg>
-                    </args>
-                </configuration>
-            </plugin>
-
-            <!-- scalastyle) -->
-            <plugin>
-                <groupId>org.scalastyle</groupId>
-                <artifactId>scalastyle-maven-plugin</artifactId>
-                <version>${plugin.maven-scalastyle.version}</version>
-                <configuration>
-                    <verbose>false</verbose>
-                    <failOnViolation>true</failOnViolation>
-                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
-                    <failOnWarning>false</failOnWarning>
-                    <inputEncoding>${project.build.encoding}</inputEncoding>
-                    <sourceDirectory>${basedir}/src/main/scala</sourceDirectory>
-                    <testSourceDirectory>${basedir}/src/test/scala</testSourceDirectory>
-                    <configLocation>${project.rootdir}/etc/scalastyle_config.xml</configLocation>
-                    <outputFile>${basedir}/target/scalastyle-output.xml</outputFile>
-                    <outputEncoding>${project.build.encoding}</outputEncoding>
-                </configuration>
-                <executions>
-                    <execution>
-                        <phase>test</phase>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- add version information to jar -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>${plugin.maven-jar.version}</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>test-jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <archive>
-                        <index>true</index>
-                        <addMavenDescriptor>true</addMavenDescriptor>
-                        <manifest>
-                            <addClasspath>true</addClasspath>
-                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-                            <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
-                        </manifest>
-                    </archive>
-                </configuration>
-            </plugin>
-
-            <!-- disable surefire -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>${plugin.maven-surefire.version}</version>
-                <configuration>
-                    <skipTests>true</skipTests>
-                </configuration>
-            </plugin>
-
-            <!-- enable scalatest -->
-            <plugin>
-                <groupId>org.scalatest</groupId>
-                <artifactId>scalatest-maven-plugin</artifactId>
-                <version>${plugin.maven-scalatest.version}</version>
-                <configuration>
-                    <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
-                    <junitxml>.</junitxml>
-                    <filereports>WDF TestSuite.txt</filereports>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>test</id>
-                        <goals>
-                            <goal>test</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- setup ammonite repl runner -->
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>${plugin.exec-maven.version}</version>
-                <configuration>
-                    <mainClass>org.opencypher.caps.demo.Shell</mainClass>
-                    <classpathScope>test</classpathScope>
-                </configuration>
-            </plugin>
-
-            <!-- Licenses -->
-            <plugin>
-                <groupId>com.mycila</groupId>
-                <artifactId>license-maven-plugin</artifactId>
-                <version>${plugin.license-maven.version}</version>
-                <configuration>
-                    <header>${project.rootdir}/license-header.txt</header>
-                    <basedir>${basedir}/src</basedir>
-                    <mapping>
-                        <scala>SLASHSTAR_STYLE</scala>
-                    </mapping>
+                  <shadedArtifactAttached>true</shadedArtifactAttached>
+                  <shadedClassifierName>standalone-shell</shadedClassifierName>
+                  <createDependencyReducedPom>true</createDependencyReducedPom>
+                  <artifactSet>
                     <excludes>
-                        <exclude>test/resources/**</exclude>
-                        <exclude>main/resources/**</exclude>
+                      <exclude>junit:junit</exclude>
+                      <exclude>jmock:*</exclude>
+                      <exclude>org.scalatest:*</exclude>
+                      <exclude>org.scalacheck:*</exclude>
+                      <exclude>org.apache.maven:lib:tests</exclude>
+                      <exclude>commons-beanutils:*</exclude>
+                      <exclude>aopalliance:*</exclude>
+                      <exclude>javax.inject:*</exclude>
                     </excludes>
+                  </artifactSet>
+                  <transformers>
+                    <transformer
+                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                      <mainClass>org.opencypher.caps.demo.Shell</mainClass>
+                    </transformer>
+                  </transformers>
+                  <filters>
+
+                    <filter>
+                      <artifact>jline:jline</artifact>
+                      <excludes>
+                        <exclude>org/fusesource/hawtjni/runtime/Library.class</exclude>
+                        <exclude>org/fusesource/hawtjni/runtime/PointerMath.class</exclude>
+                        <exclude>org/fusesource/hawtjni/runtime/Callback.class</exclude>
+                        <exclude>org/fusesource/hawtjni/runtime/JNIEnv.class</exclude>
+                      </excludes>
+                    </filter>
+
+                    <filter>
+                      <artifact>org.apache.spark:*</artifact>
+                      <excludes>
+                        <exclude>org/apache/spark/unused/UnusedStubClass.class</exclude>
+                      </excludes>
+                    </filter>
+
+                    <filter>
+                      <artifact>com.lihaoyi:ammonite-ops_${project.scala.binary.version}
+                      </artifact>
+                      <excludes>
+                        <exclude>ammonite/Constants.class</exclude>
+                        <exclude>ammonite/Constants$.class</exclude>
+                      </excludes>
+                    </filter>
+
+                    <filter>
+                      <artifact>com.lihaoyi:ammonite-terminal_${project.scala.binary.version}
+                      </artifact>
+                      <excludes>
+                        <exclude>ammonite/Constants.class</exclude>
+                        <exclude>ammonite/Constants$.class</exclude>
+                      </excludes>
+                    </filter>
+
+                    <filter>
+                      <artifact>org.apache.hadoop:hadoop-yarn-api</artifact>
+                      <excludes>
+                        <exclude>org/apache/hadoop/yarn/util/package-info.class</exclude>
+                        <exclude>org/apache/hadoop/yarn/factories/package-info.class</exclude>
+                        <exclude>org/apache/hadoop/yarn/factory/providers/package-info.class
+                        </exclude>
+                      </excludes>
+                    </filter>
+
+                    <filter>
+                      <artifact>*:*</artifact>
+                      <excludes>
+                        <exclude>META-INF/*.SF</exclude>
+                        <exclude>META-INF/*.DSA</exclude>
+                        <exclude>META-INF/*.RSA</exclude>
+                      </excludes>
+                    </filter>
+
+                  </filters>
                 </configuration>
-                <executions>
-                    <execution>
-                        <id>check-license-headers</id>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
+              </execution>
+            </executions>
+          </plugin>
         </plugins>
-    </build>
+      </build>
+    </profile>
+  </profiles>
 
-    <profiles>
-        <profile>
-            <id>databricks</id>
-            <properties>
-                <dep.spark.version>2.2.0</dep.spark.version>
-            </properties>
-        </profile>
+  <dependencies>
+    <!-- Scala -->
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+      <version>${project.scala.version}</version>
+    </dependency>
 
-        <profile>
-            <id>cloudera</id>
-            <repositories>
-                <repository>
-                    <id>cloudera</id>
-                    <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
-                </repository>
-            </repositories>
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-reflect</artifactId>
+      <version>${project.scala.version}</version>
+    </dependency>
 
-            <properties>
-                <dep.spark.version>2.2.0.cloudera1</dep.spark.version>
-            </properties>
-        </profile>
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-compiler</artifactId>
+      <version>${project.scala.version}</version>
+    </dependency>
 
-        <profile>
-            <id>buildShade</id>
-            <activation>
-                <property>
-                    <name>buildShade</name>
-                    <value>true</value>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-                    <!-- shade plugin -->
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-shade-plugin</artifactId>
-                        <version>${plugin.maven-shade.version}</version>
-                        <executions>
-                            <!-- run shade goal on package phase -->
-                            <execution>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>shade</goal>
-                                </goals>
-                                <configuration>
-                                    <shadedArtifactAttached>true</shadedArtifactAttached>
-                                    <shadedClassifierName>standalone-shell</shadedClassifierName>
-                                    <createDependencyReducedPom>true</createDependencyReducedPom>
-                                    <artifactSet>
-                                        <excludes>
-                                            <exclude>junit:junit</exclude>
-                                            <exclude>jmock:*</exclude>
-                                            <exclude>org.scalatest:*</exclude>
-                                            <exclude>org.scalacheck:*</exclude>
-                                            <exclude>org.apache.maven:lib:tests</exclude>
-                                            <exclude>commons-beanutils:*</exclude>
-                                            <exclude>aopalliance:*</exclude>
-                                            <exclude>javax.inject:*</exclude>
-                                        </excludes>
-                                    </artifactSet>
-                                    <transformers>
-                                        <transformer
-                                                implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                            <mainClass>org.opencypher.caps.demo.Shell</mainClass>
-                                        </transformer>
-                                    </transformers>
-                                    <filters>
+    <!-- Tests -->
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-frontend-3.4</artifactId>
+      <version>${dep.neo4j.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
 
-                                        <filter>
-                                            <artifact>jline:jline</artifact>
-                                            <excludes>
-                                                <exclude>org/fusesource/hawtjni/runtime/Library.class</exclude>
-                                                <exclude>org/fusesource/hawtjni/runtime/PointerMath.class</exclude>
-                                                <exclude>org/fusesource/hawtjni/runtime/Callback.class</exclude>
-                                                <exclude>org/fusesource/hawtjni/runtime/JNIEnv.class</exclude>
-                                            </excludes>
-                                        </filter>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-util-3.4</artifactId>
+      <version>${dep.neo4j.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
 
-                                        <filter>
-                                            <artifact>org.apache.spark:*</artifact>
-                                            <excludes>
-                                                <exclude>org/apache/spark/unused/UnusedStubClass.class</exclude>
-                                            </excludes>
-                                        </filter>
+    <dependency>
+      <groupId>org.neo4j.test</groupId>
+      <artifactId>neo4j-harness</artifactId>
+      <version>${dep.neo4j.version}</version>
+      <scope>test</scope>
+    </dependency>
 
-                                        <filter>
-                                            <artifact>com.lihaoyi:ammonite-ops_${project.scala.binary.version}
-                                            </artifact>
-                                            <excludes>
-                                                <exclude>ammonite/Constants.class</exclude>
-                                                <exclude>ammonite/Constants$.class</exclude>
-                                            </excludes>
-                                        </filter>
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bctls-jdk15on</artifactId>
+      <version>${dep.bouncycastle.version}</version>
+      <scope>test</scope>
+    </dependency>
 
-                                        <filter>
-                                            <artifact>com.lihaoyi:ammonite-terminal_${project.scala.binary.version}
-                                            </artifact>
-                                            <excludes>
-                                                <exclude>ammonite/Constants.class</exclude>
-                                                <exclude>ammonite/Constants$.class</exclude>
-                                            </excludes>
-                                        </filter>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-all</artifactId>
+      <version>${dep.netty.version}</version>
+      <scope>test</scope>
+    </dependency>
 
-                                        <filter>
-                                            <artifact>org.apache.hadoop:hadoop-yarn-api</artifact>
-                                            <excludes>
-                                                <exclude>org/apache/hadoop/yarn/util/package-info.class</exclude>
-                                                <exclude>org/apache/hadoop/yarn/factories/package-info.class</exclude>
-                                                <exclude>org/apache/hadoop/yarn/factory/providers/package-info.class
-                                                </exclude>
-                                            </excludes>
-                                        </filter>
+    <dependency>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest_${project.scala.binary.version}</artifactId>
+      <version>${dep.scalatest.version}</version>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.scala-lang</groupId>
+          <artifactId>scala-library</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
 
-                                        <filter>
-                                            <artifact>*:*</artifact>
-                                            <excludes>
-                                                <exclude>META-INF/*.SF</exclude>
-                                                <exclude>META-INF/*.DSA</exclude>
-                                                <exclude>META-INF/*.RSA</exclude>
-                                            </excludes>
-                                        </filter>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-minicluster</artifactId>
+      <version>${dep.hadoop.version}</version>
+      <scope>test</scope>
+    </dependency>
 
-                                    </filters>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-runner</artifactId>
+      <version>${dep.junit.platform.version}</version>
+      <scope>test</scope>
+    </dependency>
 
-    <dependencies>
-        <!-- Scala -->
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
-            <version>${project.scala.version}</version>
-        </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-all</artifactId>
+      <version>${dep.mockito.version}</version>
+      <scope>test</scope>
+    </dependency>
 
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-reflect</artifactId>
-            <version>${project.scala.version}</version>
-        </dependency>
+    <dependency>
+      <groupId>io.github.nicolasstucki</groupId>
+      <artifactId>multisets_${project.scala.binary.version}</artifactId>
+      <version>${dep.multiset.version}</version>
+      <scope>test</scope>
+    </dependency>
 
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-compiler</artifactId>
-            <version>${project.scala.version}</version>
-        </dependency>
-
-        <!-- Tests -->
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cypher-frontend-3.4</artifactId>
-            <version>${dep.neo4j.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cypher-util-3.4</artifactId>
-            <version>${dep.neo4j.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j.test</groupId>
-            <artifactId>neo4j-harness</artifactId>
-            <version>${dep.neo4j.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bctls-jdk15on</artifactId>
-            <version>${dep.bouncycastle.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-all</artifactId>
-            <version>${dep.netty.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.scalatest</groupId>
-            <artifactId>scalatest_${project.scala.binary.version}</artifactId>
-            <version>${dep.scalatest.version}</version>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.scala-lang</groupId>
-                    <artifactId>scala-library</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-minicluster</artifactId>
-            <version>${dep.hadoop.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.junit.platform</groupId>
-            <artifactId>junit-platform-runner</artifactId>
-            <version>${dep.junit.platform.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
-            <version>${dep.mockito.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>io.github.nicolasstucki</groupId>
-            <artifactId>multisets_${project.scala.binary.version}</artifactId>
-            <version>${dep.multiset.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-    </dependencies>
+  </dependencies>
 </project>
