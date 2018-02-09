@@ -16,8 +16,7 @@
 package org.opencypher.caps.cosc.impl
 
 import org.opencypher.caps.api.value.CypherValue.CypherMap
-import org.opencypher.caps.impl.record.{CypherRecords, RecordHeader}
-import org.opencypher.caps.impl.spark.RecordsPrinter
+import org.opencypher.caps.impl.record.{CypherRecords, RecordHeader, RecordsPrinter}
 import org.opencypher.caps.impl.util.PrintOptions
 
 object COSCRecords {

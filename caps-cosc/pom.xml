@@ -26,13 +26,6 @@
       <version>${project.parent.version}</version>
     </dependency>
 
-    <!-- TODO: Remove once CAPS Value is being refactored into CypherValue -->
-    <dependency>
-      <groupId>org.opencypher</groupId>
-      <artifactId>caps-spark</artifactId>
-      <version>${project.parent.version}</version>
-    </dependency>
-
     <!-- Test -->
 
     <dependency>

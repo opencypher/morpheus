@@ -19,14 +19,14 @@ import java.io.{ByteArrayOutputStream, PrintStream}
 import java.nio.charset.StandardCharsets.UTF_8
 
 import org.opencypher.caps.api.types.CTNode
-import org.opencypher.caps.impl.record.{CypherRecords, OpaqueField, RecordHeader}
+import org.opencypher.caps.impl.record.{CypherRecords, OpaqueField, RecordHeader, RecordsPrinter}
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.impl.util.PrintOptions
 import org.opencypher.caps.ir.api.expr.Var
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.fixture.GraphCreationFixture
 
-class RecordsPrinterTest extends CAPSTestSuite with GraphCreationFixture {
+class CAPSRecordsPrinterTest extends CAPSTestSuite with GraphCreationFixture {
 
   implicit val options: PrintOptions = PrintOptions.out
 
