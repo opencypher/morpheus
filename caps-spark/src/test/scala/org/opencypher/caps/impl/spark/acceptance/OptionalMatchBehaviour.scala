@@ -224,6 +224,25 @@ trait OptionalMatchBehaviour { this: AcceptanceTest =>
       ))
       result.graphs shouldBe empty
     }
+
+    it("can match multiple optional matches"){
+      val graph = initGraph(
+        """
+          |CREATE (s {val: 1})
+        """.stripMargin)
+
+      val result = graph.cypher(
+        """
+          |MATCH (a)
+          |OPTIONAL MATCH (a)-->(b:NonExistent)
+          |OPTIONAL MATCH (a)-->(c:NonExistent)
+          |RETURN b,c
+        """.stripMargin)
+
+      result.records.iterator.toBag should equal(Bag(
+        CypherMap("b" -> CypherNull, "c" -> CypherNull)
+      ))
+    }
   }
 
 }

@@ -24,6 +24,7 @@ import org.opencypher.caps.api.physical.PhysicalOperator
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.record.{RecordHeader, RecordSlot, SlotContent}
 import org.opencypher.caps.impl.spark.CAPSConverters._
+import org.opencypher.caps.impl.spark.physical.DataFrameOps._
 import org.opencypher.caps.impl.spark.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
 import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords, SparkColumnName}
 import org.opencypher.caps.trees.AbstractTreeNode
@@ -60,19 +61,16 @@ object CAPSPhysicalOperator {
     val lhsData = lhs.toDF()
     val rhsData = rhs.toDF()
 
-    val joinCols = joinSlots.map(pair => lhsData.col(columnName(pair._1)) -> rhsData.col(columnName(pair._2)))
+    val joinCols = joinSlots.map(pair => columnName(pair._1) -> columnName(pair._2))
 
     joinDFs(lhsData, rhsData, header, joinCols)(joinType, deduplicate)(lhs.caps)
   }
 
-  def joinDFs(lhsData: DataFrame, rhsData: DataFrame, header: RecordHeader, joinCols: Seq[(Column, Column)])(
+  def joinDFs(lhsData: DataFrame, rhsData: DataFrame, header: RecordHeader, joinCols: Seq[(String, String)])(
       joinType: String,
       deduplicate: Boolean)(implicit caps: CAPSSession): CAPSRecords = {
 
-    val joinExpr = joinCols.map { case (l, r) => l === r }
-      .foldLeft(functions.lit(true))(_ && _)
-
-    val joinedData = lhsData.join(rhsData, joinExpr, joinType)
+    val joinedData = lhsData.safeJoin(rhsData, joinCols, joinType)
 
     val returnData = if (deduplicate) {
       val colsToDrop = joinCols.map(col => col._2)

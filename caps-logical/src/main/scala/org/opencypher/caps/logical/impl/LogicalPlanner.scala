@@ -277,6 +277,9 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     expr match {
       case _: Param => in
 
+      case ListLit(exprs) =>
+        exprs.foldLeft(in) { case (acc, inner) => planInnerExpr(inner, acc) }
+
       case _: Lit[_] => in
 
       case _: Var => in
@@ -306,6 +309,10 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       case ex: ExistsPatternExpr =>
         val innerPlan = this (ex.ir)
         producer.planExistsSubQuery(ex, in, innerPlan)
+
+      case ands @ Ands(inner) =>
+        val plannedInner = inner.foldLeft(in)((op, expr) => planInnerExpr(expr, op))
+        producer.projectExpr(ands, plannedInner)
 
       case x =>
         throw NotImplementedException(s"Support for projection of inner expression $x not yet implemented")
@@ -414,11 +421,11 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     if (pattern.topology.isEmpty) { // there is no connection in the pattern => plan a node scan
       val field = nodes.head
 
-      // if we have already planned a node: cartesian product
-      if (plan.solved.fields.exists(_.cypherType.subTypeOf(CTNode).isTrue)) {
+      // if we have already have a previous result we need to plan a cartesian product
+      if (plan.solved.fields.nonEmpty) {
         producer.planCartesianProduct(plan, nodePlan(planSetSourceGraph(graph, planStart(graph)), field))
       } else { // first node scan
-        // we set the source graph because we don't know what the source graph was coming in
+        // we set the source graph because we don't know what source graph was coming in
         nodePlan(planSetSourceGraph(graph, plan), field)
       }
     } else { // there are connections => we need to expand
@@ -426,11 +433,15 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       val solved = nodes.intersect(plan.solved.fields)
       val unsolved = nodes -- solved
 
-      val (firstPlan, remaining) = if (solved.isEmpty) {
+      val (firstPlan, remaining) = if (solved.isEmpty) { // there is no connection to the previous plan
         val field = nodes.head
-        // TODO: Will need branch in plan for cartesian products
-        nodePlan(planSetSourceGraph(graph, plan), field) -> nodes.tail
-      } else {
+        if (plan.solved.fields.nonEmpty) { // there are already fields in the previous plan, we need to plan a cartesian product
+          producer.planCartesianProduct(plan, nodePlan(planSetSourceGraph(graph, planStart(graph)), field)) -> nodes.tail
+        } else { // there are no previous results, it's safe to plan a node scan
+          // we set the source graph because we don't know what source graph was coming in
+          nodePlan(planSetSourceGraph(graph, plan), field) -> nodes.tail
+        }
+      } else { // we can connect to the previous plan
         plan -> unsolved
       }
 

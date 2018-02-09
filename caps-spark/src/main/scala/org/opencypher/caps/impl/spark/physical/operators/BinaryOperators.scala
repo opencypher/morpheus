@@ -21,6 +21,7 @@ import org.opencypher.caps.impl.spark.physical.operators.CAPSPhysicalOperator.{a
 import org.opencypher.caps.impl.spark.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
 import org.opencypher.caps.impl.spark.{CAPSRecords, ColumnNameGenerator}
 import org.opencypher.caps.ir.api.expr.Var
+import org.opencypher.caps.impl.spark.physical.DataFrameOps._
 
 private[spark] abstract class BinaryPhysicalOperator extends CAPSPhysicalOperator {
 
@@ -101,19 +102,18 @@ final case class Optional(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator, 
         lhsSlot -> rhsJoinSlots.find(_.content == lhsSlot.content).get
       })
       .map(pair => {
-        val lhsCol = leftData.col(columnName(pair._1))
+        val lhsColName = columnName(pair._1)
         val rhsColName = columnName(pair._2)
 
-        (lhsCol, rhsColName, ColumnNameGenerator.generateUniqueName(rightHeader))
+        (lhsColName, rhsColName, ColumnNameGenerator.generateUniqueName(rightHeader))
       })
 
     // Rename join columns on the right hand side and drop common non-join columns
     val reducedRhsData = joinColumnMapping
-      .foldLeft(rightData)((acc, col) => acc.withColumnRenamed(col._2, col._3))
-      .drop(columnsToRemove: _*)
+      .foldLeft(rightData)((acc, col) => acc.safeRenameColumn(col._2, col._3))
+      .safeDropColumns(columnsToRemove: _*)
 
-    val joinCols = joinColumnMapping.map(t => t._1 -> reducedRhsData.col(t._3))
-
+    val joinCols = joinColumnMapping.map(t => t._1 -> t._3)
     val joinedRecords =
       joinDFs(left.records.data, reducedRhsData, header, joinCols)("leftouter", deduplicate = true)(left.records.caps)
 
@@ -163,7 +163,7 @@ final case class ExistsSubQuery(
         lhsSlot -> rhsJoinSlots.find(_.content == lhsSlot.content).get
       })
       .map(pair => {
-        val lhsCol = leftData.col(columnName(pair._1))
+        val lhsCol = columnName(pair._1)
         val rhsColName = columnName(pair._2)
 
         (lhsCol, rhsColName, ColumnNameGenerator.generateUniqueName(rightHeader))
@@ -178,7 +178,7 @@ final case class ExistsSubQuery(
     // Compute distinct rows based on join columns
     val distinctRightData = reducedRhsData.dropDuplicates(joinColumnMapping.map(_._3))
 
-    val joinCols = joinColumnMapping.map(t => t._1 -> distinctRightData.col(t._3))
+    val joinCols = joinColumnMapping.map(t => t._1 -> t._3)
 
     val joinedRecords =
       joinDFs(left.records.data, distinctRightData, header, joinCols)("leftouter", deduplicate = true)(left.records.caps)

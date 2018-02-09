@@ -42,7 +42,7 @@ class Neo4jSchemaLoaderTest extends CAPSTestSuite with Neo4jServerFixture {
           "team" -> CTString.nullable)
         .withNodePropertyKeys("Person", "Driver")("name" -> CTString)
         .withNodePropertyKeys("Driver")("fast" -> CTBoolean)
-        .withNodePropertyKeys(Schema.NoLabel, Map("pi" -> CTFloat.nullable))
+        .withNodePropertyKeys(Set.empty[String], Map("pi" -> CTFloat.nullable))
     )
   }
 
@@ -68,7 +68,7 @@ class Neo4jSchemaLoaderTest extends CAPSTestSuite with Neo4jServerFixture {
           "team" -> CTString.nullable)
         .withNodePropertyKeys("Person", "Driver")("name" -> CTString)
         .withNodePropertyKeys("Driver")("fast" -> CTBoolean)
-        .withNodePropertyKeys(Schema.NoLabel, Map("pi" -> CTFloat.nullable))
+        .withNodePropertyKeys(Set.empty[String], Map("pi" -> CTFloat.nullable))
         .withRelationshipPropertyKeys("EMPTY")()
         .withRelationshipPropertyKeys("KNOWS")("since" -> CTInteger, "because" -> CTString.nullable)
     )

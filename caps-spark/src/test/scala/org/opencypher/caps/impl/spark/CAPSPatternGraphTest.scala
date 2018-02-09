@@ -35,7 +35,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
 
   import CAPSGraphTestData._
 
-  test("project pattern graph") {
+  it("project pattern graph") {
     val inputGraph = initGraph(`:Person`)
 
     val person = inputGraph.cypher(
@@ -88,13 +88,15 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
       ))
   }
 
-  test("project pattern graph with created node") {
+  it("project pattern graph with created node") {
     val inputGraph = initGraph(`:Person` + `:KNOWS`)
 
     val person = inputGraph.cypher(
       """MATCH (a:Person:Swedish)-[r]->(b)
-        |RETURN GRAPH result OF (a)-[r]->(b)-[bar:KNOWS_A]->(baz)
+        |RETURN GRAPH result OF (a)-[r]->(b)-[bar:KNOWS_A]->()
       """.stripMargin)
+
+    person.graphs("result")
 
     person
       .graphs("result")

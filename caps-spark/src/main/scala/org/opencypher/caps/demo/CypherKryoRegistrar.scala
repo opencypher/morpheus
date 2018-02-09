@@ -70,7 +70,6 @@ class CypherKryoRegistrar extends SparkKryoRegistrar {
     classOf[LabelCombinations],
     classOf[RelTypePropertyMap],
     classOf[LabelPropertyMap],
-    Schema.NoLabel.getClass,
     classOf[CypherType],
     CTWildcard.getClass,
     CTWildcard.nullable.getClass,
