@@ -17,7 +17,7 @@ package org.opencypher.caps.impl.spark
 
 import org.apache.spark.sql.Row
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
-import org.opencypher.caps.api.schema.{NodeTable, RelationshipTable}
+import org.opencypher.caps.api.schema.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.api.value._
@@ -70,7 +70,7 @@ class CAPSScanGraphTest extends CAPSTestSuite with TeamDataFixture {
   }
 
   test("dont lose schema information when mapping") {
-    val nodes = NodeTable(NodeMapping.on("id"),
+    val nodes = CAPSNodeTable(NodeMapping.on("id"),
       caps.sparkSession.createDataFrame(
         Seq(
           Tuple1(10L),
@@ -85,7 +85,7 @@ class CAPSScanGraphTest extends CAPSTestSuite with TeamDataFixture {
         )
       ).toDF("id"))
 
-    val rs = RelationshipTable(RelationshipMapping.on("ID").from("SRC").to("DST").relType("FOO"),
+    val rs = CAPSRelationshipTable(RelationshipMapping.on("ID").from("SRC").to("DST").relType("FOO"),
       caps.sparkSession.createDataFrame(
         Seq(
           (10L, 1000L, 20L),

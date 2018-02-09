@@ -16,81 +16,40 @@
 package org.opencypher.caps.api.schema
 
 import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.types.{BooleanType, LongType, StringType}
+import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
 import org.opencypher.caps.api.schema.Entity.sourceIdKey
+import org.opencypher.caps.api.schema.EntityTable._
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.api.value.CypherValue
+import org.opencypher.caps.api.value.CypherValue.CypherValue
+import org.opencypher.caps.impl.record.CypherTable
 import org.opencypher.caps.impl.spark._
 import org.opencypher.caps.impl.spark.convert.SparkUtils
-import org.opencypher.caps.impl.spark.convert.SparkUtils._
 import org.opencypher.caps.impl.util.Annotation
 
+import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe._
 
-/**
-  * An entity table describes how to map an input data frame to a Cypher entity (i.e. nodes or relationships).
-  */
-sealed trait EntityTable {
-
-  verify()
-
-  def schema: Schema
-
-  def mapping: EntityMapping
-
-  def table: DataFrame
-
+trait CAPSEntityTable extends EntityTable[SparkTable] {
   // TODO: create CTEntity type
   private[caps] def entityType: CypherType with DefiniteCypherType = mapping.cypherType
 
   private[caps] def records(implicit caps: CAPSSession): CAPSRecords = CAPSRecords.create(this)
-
-  protected def verify(): Unit = mapping.propertyMapping.values
-    .foreach(propertySourceKey => {
-      val dataType = structFieldForColumn(table, propertySourceKey).dataType
-      if (!isCypherCompatible(dataType))
-        throw IllegalArgumentException(
-          s"column with name $propertySourceKey having type out of ${supportedTypes.mkString("[", ", ", "]")}",
-          dataType)
-    })
 }
 
-/**
-  * A node table describes how to map an input data frame to a Cypher node.
-  *
-  * @param mapping mapping from input data description to a Cypher node
-  * @param table   input data frame
-  */
-case class NodeTable(mapping: NodeMapping, table: DataFrame) extends EntityTable {
+case class CAPSNodeTable(mapping: NodeMapping, table: SparkTable) extends NodeTable(mapping, table) with CAPSEntityTable
 
-  override lazy val schema: Schema = {
-    val propertyKeys = mapping.propertyMapping.toSeq.map {
-      case (propertyKey, sourceKey) => propertyKey -> cypherTypeForColumn(table, sourceKey)
-    }
+object CAPSNodeTable {
 
-    mapping.optionalLabelMapping.keys.toSet.subsets
-      .map(_.union(mapping.impliedLabels))
-      .map(combo => Schema.empty.withNodePropertyKeys(combo.toSeq: _*)(propertyKeys: _*))
-      .reduce(_ ++ _)
-  }
-
-  override def verify(): Unit = {
-    super.verify()
-    verifyColumnType(table, mapping.sourceIdKey, LongType)
-    mapping.optionalLabelMapping.values.foreach(verifyColumnType(table, _, BooleanType))
-  }
-}
-
-object NodeTable {
-
-  def apply[E <: Node : TypeTag](nodes: Seq[E])(implicit caps: CAPSSession): NodeTable = {
+  def apply[E <: Node : TypeTag](nodes: Seq[E])(implicit caps: CAPSSession): CAPSNodeTable = {
     val nodeLabels = Annotation.labels[E]
     val nodeDF = caps.sparkSession.createDataFrame(nodes)
     val nodeProperties = properties(nodeDF.columns)
     val nodeMapping = NodeMapping.create(nodeIdKey = sourceIdKey, impliedLabels = nodeLabels, propertyKeys = nodeProperties)
-    NodeTable(nodeMapping, nodeDF)
+    CAPSNodeTable(nodeMapping, nodeDF)
   }
 
   private def properties(nodeColumnNames: Seq[String]): Set[String] = {
@@ -98,45 +57,11 @@ object NodeTable {
   }
 }
 
-/**
-  * A relationship table describes how to map an input data frame to a Cypher relationship.
-  *
-  * @param mapping mapping from input data description to a Cypher relationship
-  * @param table   input data frame
-  */
-case class RelationshipTable(mapping: RelationshipMapping, table: DataFrame) extends EntityTable {
+case class CAPSRelationshipTable(mapping: RelationshipMapping, table: SparkTable) extends RelationshipTable(mapping, table) with CAPSEntityTable
 
-  override lazy val schema: Schema = {
-    val relTypes = mapping.relTypeOrSourceRelTypeKey match {
-      case Left(name) => Set(name)
-      case Right((_, possibleTypes)) => possibleTypes
-    }
+object CAPSRelationshipTable {
 
-    val propertyKeys = mapping.propertyMapping.toSeq.map {
-      case (propertyKey, sourceKey) => propertyKey -> cypherTypeForColumn(table, sourceKey)
-    }
-
-    relTypes.foldLeft(Schema.empty) {
-      case (partialSchema, relType) => partialSchema.withRelationshipPropertyKeys(relType)(propertyKeys: _*)
-    }
-  }
-
-  override def verify(): Unit = {
-    super.verify()
-    verifyColumnType(table, mapping.sourceIdKey, LongType)
-    verifyColumnType(table, mapping.sourceStartNodeKey, LongType)
-    verifyColumnType(table, mapping.sourceEndNodeKey, LongType)
-    if (mapping.relTypeOrSourceRelTypeKey.isRight) {
-      mapping.relTypeOrSourceRelTypeKey.right.map(pair => verifyColumnType(table, pair._1, StringType))
-    }
-    mapping.propertyMapping.values
-      .foreach(propertySourceKey => isCypherCompatible(structFieldForColumn(table, propertySourceKey).dataType))
-  }
-}
-
-object RelationshipTable {
-
-  def apply[E <: Relationship : TypeTag](relationships: Seq[E])(implicit caps: CAPSSession): RelationshipTable = {
+  def apply[E <: Relationship : TypeTag](relationships: Seq[E])(implicit caps: CAPSSession): CAPSRelationshipTable = {
     val relationshipType: String = Annotation.relType[E]
     val relationshipDF = caps.sparkSession.createDataFrame(relationships)
     val relationshipProperties = properties(relationshipDF.columns.toSet)
@@ -147,10 +72,134 @@ object RelationshipTable {
       relationshipType,
       relationshipProperties)
 
-    RelationshipTable(relationshipMapping, relationshipDF)
+    CAPSRelationshipTable(relationshipMapping, relationshipDF)
   }
 
   private def properties(relColumnNames: Set[String]): Set[String] = {
     relColumnNames.filter(!Relationship.nonPropertyAttributes.contains(_))
+  }
+}
+
+
+/**
+  * An entity table describes how to map an input data frame to a Cypher entity (i.e. nodes or relationships).
+  */
+sealed trait EntityTable[T <: CypherTable] {
+
+  verify()
+
+  def schema: Schema
+
+  def mapping: EntityMapping
+
+  def table: T
+
+  protected def verify(): Unit = {
+    val sourceIdKeyType = table.columnType(mapping.sourceIdKey)
+    if (sourceIdKeyType != CTInteger) throw IllegalArgumentException(
+      s"id key type in column `${mapping.sourceIdKey}` that is compatible with CTInteger", sourceIdKeyType)
+  }
+
+}
+
+object EntityTable {
+
+  implicit class SparkTable(val df: DataFrame) extends CypherTable {
+
+    override def columns: Set[String] = df.columns.toSet
+
+    override def columnType: Map[String, CypherType] = columns.map(c => c -> SparkUtils.cypherTypeForColumn(df, c)).toMap
+
+    override def rows: Iterator[String => CypherValue] = df.toLocalIterator.asScala.map { row =>
+      columns.map(c => c -> CypherValue(row.get(row.fieldIndex(c)))).toMap
+    }
+
+    override def size: Long = df.size
+
+    def cache(): SparkTable = df.cache()
+
+    def persist(): SparkTable = df.persist()
+
+    def persist(newLevel: StorageLevel): SparkTable = df.persist(newLevel)
+
+    def unpersist(): SparkTable = df.unpersist()
+
+    def unpersist(blocking: Boolean): SparkTable = df.unpersist(blocking)
+
+  }
+
+}
+
+/**
+  * A node table describes how to map an input data frame to a Cypher node.
+  *
+  * @param mapping mapping from input data description to a Cypher node
+  * @param table   input data frame
+  */
+abstract class NodeTable[T <: CypherTable](mapping: NodeMapping, table: T) extends EntityTable[T] {
+
+  override lazy val schema: Schema = {
+    val propertyKeys = mapping.propertyMapping.toSeq.map {
+      case (propertyKey, sourceKey) => propertyKey -> table.columnType(sourceKey)
+    }
+
+    mapping.optionalLabelMapping.keys.toSet.subsets
+      .map(_.union(mapping.impliedLabels))
+      .map(combo => Schema.empty.withNodePropertyKeys(combo.toSeq: _*)(propertyKeys: _*))
+      .reduce(_ ++ _)
+  }
+
+  override protected def verify(): Unit = {
+    super.verify()
+    mapping.optionalLabelMapping.values.foreach { optionalLabelKey =>
+      val columnType = table.columnType(optionalLabelKey)
+      if (columnType != CTBoolean) {
+        throw IllegalArgumentException(
+          s"optional label key type in column `$optionalLabelKey`that is compatible with CTBoolean", columnType)
+      }
+    }
+  }
+}
+
+/**
+  * A relationship table describes how to map an input data frame to a Cypher relationship.
+  *
+  * @param mapping mapping from input data description to a Cypher relationship
+  * @param table   input data frame
+  */
+abstract class RelationshipTable[T <: CypherTable](mapping: RelationshipMapping, table: T) extends EntityTable[T] {
+
+  override lazy val schema: Schema = {
+    val relTypes = mapping.relTypeOrSourceRelTypeKey match {
+      case Left(name) => Set(name)
+      case Right((_, possibleTypes)) => possibleTypes
+    }
+
+    val propertyKeys = mapping.propertyMapping.toSeq.map {
+      case (propertyKey, sourceKey) => propertyKey -> table.columnType(sourceKey)
+    }
+
+    relTypes.foldLeft(Schema.empty) {
+      case (partialSchema, relType) => partialSchema.withRelationshipPropertyKeys(relType)(propertyKeys: _*)
+    }
+  }
+
+  override protected def verify(): Unit = {
+    super.verify()
+
+    val sourceStartNodeKeyType = table.columnType(mapping.sourceStartNodeKey)
+    if (sourceStartNodeKeyType != CTInteger) throw IllegalArgumentException(
+      s"start node key type in column `${mapping.sourceStartNodeKey}` that is compatible with CTInteger", sourceStartNodeKeyType)
+
+    val sourceEndNodeKeyType = table.columnType(mapping.sourceEndNodeKey)
+    if (sourceEndNodeKeyType != CTInteger) throw IllegalArgumentException(
+      s"end node key type in column `${mapping.sourceEndNodeKey}` that is compatible with CTInteger", sourceEndNodeKeyType)
+
+    mapping.relTypeOrSourceRelTypeKey.right.foreach { k =>
+      val relTypeKey = k._1
+      val relType = table.columnType(relTypeKey)
+      if (relType != CTString) throw IllegalArgumentException(
+        s"relationship type in column `${relTypeKey}` that is compatible with CTString", relType)
+    }
   }
 }

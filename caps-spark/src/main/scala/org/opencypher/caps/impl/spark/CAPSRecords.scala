@@ -26,22 +26,23 @@ import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.{DuplicateSourceColumnException, IllegalArgumentException, IllegalStateException}
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
-import org.opencypher.caps.api.schema.{EntityTable, NodeTable, RelationshipTable}
+import org.opencypher.caps.api.schema.EntityTable._
+import org.opencypher.caps.api.schema._
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.api.value.CypherValue.CypherMap
-import org.opencypher.caps.api.value._
+import org.opencypher.caps.api.value.CypherValue.{CypherMap, CypherValue}
 import org.opencypher.caps.impl.record.CAPSRecordHeader._
 import org.opencypher.caps.impl.record.{CAPSRecordHeader, _}
 import org.opencypher.caps.impl.spark.CAPSRecords.{prepareDataFrame, verifyAndCreate}
 import org.opencypher.caps.impl.spark.DfUtils._
 import org.opencypher.caps.impl.spark.convert.SparkUtils._
-import org.opencypher.caps.impl.spark.convert.{SparkUtils, rowToCypherMap}
+import org.opencypher.caps.impl.spark.convert.rowToCypherMap
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.impl.util.PrintOptions
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.ir.api.{Label, PropertyKey}
 
 import scala.annotation.tailrec
+import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe.TypeTag
 
 sealed abstract class CAPSRecords(override val header: RecordHeader, val data: DataFrame)
@@ -53,6 +54,8 @@ sealed abstract class CAPSRecords(override val header: RecordHeader, val data: D
   override def size: Long = data.count()
 
   def sparkColumns: IndexedSeq[String] = header.internalHeader.columns
+
+  override lazy val columnType: Map[String, CypherType] = data.columnType
 
   def mapDF(f: DataFrame => DataFrame): CAPSRecords = verifyAndCreate(prepareDataFrame(f(data)))
 
@@ -125,9 +128,13 @@ sealed abstract class CAPSRecords(override val header: RecordHeader, val data: D
     data.map(rowToCypherMap(header))
   }
 
-  override def iterator: Iterator[CypherMap] = {
-    import scala.collection.JavaConverters._
+  override def columns: Set[String] = header.fields
 
+  override def rows: Iterator[String => CypherValue] = {
+    toLocalIterator.asScala.map(_.value)
+  }
+
+  override def iterator: Iterator[CypherMap] = {
     toLocalIterator.asScala
   }
 
@@ -201,6 +208,7 @@ sealed abstract class CAPSRecords(override val header: RecordHeader, val data: D
 
   //noinspection AccessorLikeMethodIsEmptyParen
   def toDF(): DataFrame = data
+
 }
 
 object CAPSRecords {
@@ -243,7 +251,7 @@ object CAPSRecords {
   def create(rdd: JavaRDD[_], beanClass: Class[_])(implicit caps: CAPSSession): CAPSRecords =
     verifyAndCreate(prepareDataFrame(caps.sparkSession.createDataFrame(rdd, beanClass)))
 
-  def create(entityTable: EntityTable)(implicit caps: CAPSSession): CAPSRecords = {
+  def create(entityTable: CAPSEntityTable)(implicit caps: CAPSSession): CAPSRecords = {
     def sourceColumnToPropertyExpressionMapping(variable: Var): Map[String, Expr] = {
       val keyMap = entityTable.mapping.propertyMapping.map {
         case (key, sourceColumn) => sourceColumn -> Property(variable, PropertyKey(key))()
@@ -304,11 +312,13 @@ object CAPSRecords {
     }
 
     val sourceColumnToExpressionMap = entityTable match {
-      case nt: NodeTable => sourceColumnNodeToExpressionMapping(nt.mapping)
-      case rt: RelationshipTable => sourceColumnRelationshipToExpressionMapping(rt.mapping)
+      case nt: CAPSNodeTable => sourceColumnNodeToExpressionMapping(nt.mapping)
+      case rt: CAPSRelationshipTable => sourceColumnRelationshipToExpressionMapping(rt.mapping)
     }
 
-    val (sourceHeader, sourceDataFrame) = prepareDataFrame(entityTable.table)
+    val (sourceHeader, sourceDataFrame) = {
+      prepareDataFrame(entityTable.table.df)
+    }
 
     // Remove columns from source data that are not contained in the mapping.
     // Wrap source expressions in OpaqueField/ProjectedExpr

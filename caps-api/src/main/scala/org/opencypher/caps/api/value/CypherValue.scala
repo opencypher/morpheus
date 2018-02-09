@@ -27,11 +27,13 @@ object CypherValue {
 
   /**
     * Converts a Scala/Java value to a compatible Cypher value, fails if the conversion is not supported.
+    *
     * @param v value to convert
     * @return compatible CypherValue
     */
   def apply(v: Any): CypherValue = {
     def seqToCypherList(s: Seq[_]): CypherList = s.map(CypherValue(_)).toList
+
     v match {
       case cv: CypherValue => cv
       case null => CypherNull
@@ -62,6 +64,7 @@ object CypherValue {
 
   /**
     * Attempts to extract the wrapped value from a CypherValue.
+    *
     * @param cv CypherValue to extract from
     * @return none or some extracted value.
     */
@@ -232,7 +235,7 @@ object CypherValue {
 
     def properties: CypherMap
 
-    override def hashCode(): Int = {
+    override def hashCode: Int = {
       MurmurHash3.orderedHash(productIterator, MurmurHash3.stringHash(productPrefix))
     }
 
@@ -252,14 +255,11 @@ object CypherValue {
 
     override def productPrefix: String = getClass.getSimpleName
 
-    override def toString = s"${productPrefix}(${productIterator.mkString(", ")})"
+    override def toString = s"$productPrefix(${productIterator.mkString(", ")})"
   }
 
-  class CypherNode[+Id](val id: Id,
-    val labels: Set[String] = Set.empty,
-    val properties: CypherMap = CypherMap.empty)
-    extends CypherEntity[Id]
-      with MaterialCypherValue[CypherNode[Id]] {
+  trait CypherNode[+Id] extends CypherEntity[Id] with MaterialCypherValue[CypherNode[Id]] {
+    def labels: Set[String] = Set.empty
 
     override def value: CypherNode[Id] = this
 
@@ -284,14 +284,12 @@ object CypherValue {
     }
   }
 
-  class CypherRelationship[+Id](
-    val id: Id,
-    val source: Id,
-    val target: Id,
-    val relType: String,
-    val properties: CypherMap = CypherMap.empty)
-    extends CypherEntity[Id]
-      with MaterialCypherValue[CypherRelationship[Id]] with Product {
+  trait CypherRelationship[+Id] extends CypherEntity[Id] with MaterialCypherValue[CypherRelationship[Id]] with Product {
+    def source: Id
+
+    def target: Id
+
+    def relType: String
 
     override def value: CypherRelationship[Id] = this
 

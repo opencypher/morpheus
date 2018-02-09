@@ -22,22 +22,25 @@ import java.util.stream.Collectors
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.spark.sql.types.ArrayType
+import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, SparkSession, functions}
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
-import org.opencypher.caps.api.schema.{NodeTable, RelationshipTable}
+import org.opencypher.caps.api.schema.{CAPSNodeTable, CAPSRelationshipTable}
+import org.opencypher.caps.impl.spark.convert.SparkUtils.NullabilityOps
 
 trait CsvGraphLoaderFileHandler {
   def location: String
+
   def listDataFiles(directory: String): Array[URI]
+
   def readSchemaFile(path: URI): String
 }
 
 final class HadoopFileHandler(override val location: String, private val hadoopConfig: Configuration)
-    extends CsvGraphLoaderFileHandler {
+  extends CsvGraphLoaderFileHandler {
 
   private val fs: FileSystem = FileSystem.get(new URI(location), hadoopConfig)
 
@@ -53,12 +56,15 @@ final class HadoopFileHandler(override val location: String, private val hadoopC
     val optSchemaPath = schemaPaths.find(fs.exists)
     val schemaPath = optSchemaPath.getOrElse(throw IllegalArgumentException(s"to find a schema file at $path"))
     val stream = new BufferedReader(new InputStreamReader(fs.open(schemaPath)))
+
     def readLines = Stream.cons(stream.readLine(), Stream.continually(stream.readLine))
+
     readLines.takeWhile(_ != null).mkString
   }
 }
 
 final class LocalFileHandler(override val location: String) extends CsvGraphLoaderFileHandler {
+
   import scala.collection.JavaConverters._
 
   override def listDataFiles(directory: String): Array[URI] = {
@@ -89,8 +95,8 @@ final class LocalFileHandler(override val location: String) extends CsvGraphLoad
   * # Nodes
   *   - all files describing nodes are stored in a subfolder called "nodes"
   *   - create one file for each possible label combination that exists in the data, i.e. there must not be overlapping
-  *     entities in different files (e.g. all nodes with labels :Person:Employee in a single file and all nodes that
-  *     have label :Person exclusively in another file)
+  * entities in different files (e.g. all nodes with labels :Person:Employee in a single file and all nodes that
+  * have label :Person exclusively in another file)
   *   - for every node csv file create a schema file called FILE_NAME.csv.SCHEMA
   *   - for information about the structure of the node schema file see [[CsvNodeSchema]]
   * # Relationships
@@ -98,7 +104,7 @@ final class LocalFileHandler(override val location: String) extends CsvGraphLoad
   *   - create one csv file per relationship type
   *   - for every relationship csv file create a schema file called FILE_NAME.csv.SCHEMA
   *   - for information about the structure of the relationship schema file see [[CsvRelSchema]]
-
+  *
   * @param fileHandler CsvGraphLoaderFileHandler file handler for hdfs or local file system
   * @param capsSession CAPS Session
   */
@@ -108,7 +114,7 @@ class CsvGraphLoader(fileHandler: CsvGraphLoaderFileHandler)(implicit capsSessio
 
   def load: PropertyGraph = capsSession.readFrom(loadNodes ++ loadRels: _*)
 
-  private def loadNodes: List[NodeTable] = {
+  private def loadNodes: List[CAPSNodeTable] = {
     val csvFiles = listCsvFiles("nodes").toList
 
     csvFiles.map(e => {
@@ -125,11 +131,14 @@ class CsvGraphLoader(fileHandler: CsvGraphLoaderFileHandler)(implicit capsSessio
         optionalLabels = schema.optionalLabels.map(_.name).toSet,
         propertyKeys = schema.propertyFields.map(_.name).toSet)
 
-      NodeTable(nodeMapping, dataFrame)
+      val shouldBeNonNullable = schema.optionalLabels.map(_.name).toSet + schema.idField.name
+      val dfWithCorrectNullability = shouldBeNonNullable.foldLeft(dataFrame)(_.setNonNullable(_))
+
+      CAPSNodeTable(nodeMapping, dfWithCorrectNullability)
     })
   }
 
-  private def loadRels: List[RelationshipTable] = {
+  private def loadRels: List[CAPSRelationshipTable] = {
     val csvFiles = listCsvFiles("relationships").toList
 
     csvFiles.map(relationShipFile => {
@@ -149,7 +158,10 @@ class CsvGraphLoader(fileHandler: CsvGraphLoaderFileHandler)(implicit capsSessio
         schema.relType,
         schema.propertyFields.map(_.name).toSet)
 
-      RelationshipTable(relMapping, dataFrame)
+      val shouldBeNonNullable = Set(schema.idField.name, schema.startIdField.name, schema.endIdField.name)
+      val dfWithCorrectNullability = shouldBeNonNullable.foldLeft(dataFrame)(_.setNonNullable(_))
+
+      CAPSRelationshipTable(relMapping, dfWithCorrectNullability)
     })
   }
 
@@ -166,7 +178,7 @@ class CsvGraphLoader(fileHandler: CsvGraphLoaderFileHandler)(implicit capsSessio
     * them
     *
     * @param dataFrame the input data frame with list column represented as string
-    * @param schema the dataframes csv schema
+    * @param schema    the dataframes csv schema
     * @return Date frame with array list columns
     */
   private def convertLists(dataFrame: DataFrame, schema: CsvSchema): DataFrame = {

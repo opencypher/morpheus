@@ -15,10 +15,39 @@
  */
 package org.opencypher.caps.impl.record
 
-import org.opencypher.caps.api.value.CypherValue.CypherMap
+import org.opencypher.caps.api.types.CypherType
+import org.opencypher.caps.api.value.CypherValue.{CypherMap, CypherValue}
 
+/**
+  * Represents a table with column names of type String in which each row contains one CypherValue per column and the
+  * values in each column have the same Cypher type.
+  *
+  * This interface is used to access simple Cypher values from a table. When it is implemented with an entity mapping
+  * it can also be used to assemble complex Cypher values such as CypherNode/CypherRelationship that are stored over
+  * multiple columns in a low-level Cypher table.
+  */
+trait CypherTable {
+
+  def columns: Set[String]
+
+  def columnType: Map[String, CypherType]
+
+  /**
+    * Iterator over the rows in this table.
+    */
+  def rows: Iterator[String => CypherValue]
+
+  /**
+    * @return number of rows in this Table.
+    */
+  def size: Long
+
+}
+
+// TODO: Remove
 trait CypherRecordHeader {
   def fields: Set[String]
+
   def fieldsInOrder: Seq[String]
 }
 
@@ -27,9 +56,11 @@ trait CypherRecordHeader {
   * Each column (or slot) in this table represents an evaluated Cypher expression.
   *
   * Slots that have been bound to a variable name are called <i>fields</i>.
+  *
   * @see [[CypherRecordHeader]]
   */
-trait CypherRecords extends CypherPrintable {
+//TODO: Move to API package
+trait CypherRecords extends CypherTable with CypherPrintable {
 
   /**
     * The header for this table, describing the slots stored.

@@ -18,7 +18,7 @@ package org.opencypher.caps.impl.spark
 import org.apache.spark.sql.Row
 import org.opencypher.caps.api.exception.CypherException
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
-import org.opencypher.caps.api.schema.{NodeTable, RelationshipTable}
+import org.opencypher.caps.api.schema.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CAPSNode
 import org.opencypher.caps.api.value.CypherValue._
@@ -46,7 +46,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture {
       .withOptionalLabel("Swedish" -> "IS_SWEDE")
       .withPropertyKey("name" -> "NAME")
 
-    val nodeTable = NodeTable(givenMapping, givenDF)
+    val nodeTable = CAPSNodeTable(givenMapping, givenDF)
 
     val records = CAPSRecords.create(nodeTable)
 
@@ -76,7 +76,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture {
       .relType("NEXT")
       .withPropertyKey("color" -> "COLOR")
 
-    val relTable = RelationshipTable(givenMapping, givenDF)
+    val relTable = CAPSRelationshipTable(givenMapping, givenDF)
 
     val records = CAPSRecords.create(relTable)
 
@@ -92,20 +92,21 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture {
   }
 
   test("contract relationships with a dynamic type") {
+    import org.opencypher.caps.impl.spark.convert.SparkUtils.NullabilityOps
     val givenDF = session.createDataFrame(
           Seq(
             (10L, 1L, 2L, "RED"),
             (11L, 2L, 3L, "BLUE"),
             (12L, 3L, 4L, "GREEN"),
             (13L, 4L, 1L, "YELLOW")
-      )).toDF("ID", "FROM", "TO", "COLOR")
+      )).toDF("ID", "FROM", "TO", "COLOR").setNonNullable("COLOR")
 
     val givenMapping = RelationshipMapping.on("ID")
       .from("FROM")
       .to("TO")
       .withSourceRelTypeKey("COLOR", Set("RED", "BLUE", "GREEN", "YELLOW"))
 
-    val relTable = RelationshipTable(givenMapping, givenDF)
+    val relTable = CAPSRelationshipTable(givenMapping, givenDF)
 
     val records = CAPSRecords.create(relTable)
 

@@ -17,7 +17,7 @@ package org.opencypher.caps.test.fixture
 
 import org.apache.spark.sql.{DataFrame, Row}
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
-import org.opencypher.caps.api.schema.{NodeTable, RelationshipTable}
+import org.opencypher.caps.api.schema.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.caps.test.support.DebugOutputSupport
 
 import scala.collection.Bag
@@ -69,7 +69,7 @@ trait TeamDataFixture extends TestDataFixture with DebugOutputSupport {
       (4L, false, "Stefan", 9L))
   ).toDF("ID", "IS_SWEDE", "NAME", "NUM")
 
-  lazy val personTable = NodeTable(personMapping, personDF)
+  lazy val personTable = CAPSNodeTable(personMapping, personDF)
 
   private lazy val knowsMapping: RelationshipMapping = RelationshipMapping
     .on("ID").from("SRC").to("DST").relType("KNOWS").withPropertyKey("since" -> "SINCE")
@@ -85,7 +85,7 @@ trait TeamDataFixture extends TestDataFixture with DebugOutputSupport {
       (3L, 6L, 4L, 2016L))
   ).toDF("SRC", "ID", "DST", "SINCE")
 
-  lazy val knowsTable = RelationshipTable(knowsMapping, knowsDF)
+  lazy val knowsTable = CAPSRelationshipTable(knowsMapping, knowsDF)
 
   private lazy val programmerMapping = NodeMapping
     .on("ID")
@@ -103,7 +103,7 @@ trait TeamDataFixture extends TestDataFixture with DebugOutputSupport {
       (400L, "Carl", 49L, "R")
     )).toDF("ID", "NAME", "NUM", "LANG")
 
-  lazy val programmerTable = NodeTable(programmerMapping, programmerDF)
+  lazy val programmerTable = CAPSNodeTable(programmerMapping, programmerDF)
 
   private lazy val brogrammerMapping = NodeMapping
     .on("ID")
@@ -120,7 +120,7 @@ trait TeamDataFixture extends TestDataFixture with DebugOutputSupport {
     )).toDF("ID", "LANG")
 
   // required to test conflicting input data
-  lazy val brogrammerTable = NodeTable(brogrammerMapping, brogrammerDF)
+  lazy val brogrammerTable = CAPSNodeTable(brogrammerMapping, brogrammerDF)
 
   private lazy val bookMapping = NodeMapping
     .on("ID")
@@ -136,7 +136,7 @@ trait TeamDataFixture extends TestDataFixture with DebugOutputSupport {
       (40L, "The Circle", 2013L)
     )).toDF("ID", "NAME", "YEAR")
 
-  lazy val bookTable = NodeTable(bookMapping, bookDF)
+  lazy val bookTable = CAPSNodeTable(bookMapping, bookDF)
 
   private lazy val readsMapping = RelationshipMapping
     .on("ID").from("SRC").to("DST").relType("READS").withPropertyKey("recommends" -> "RECOMMENDS")
@@ -149,7 +149,7 @@ trait TeamDataFixture extends TestDataFixture with DebugOutputSupport {
       (400L, 400L, 20L, false)
     )).toDF("SRC", "ID", "DST", "RECOMMENDS")
 
-  lazy val readsTable = RelationshipTable(readsMapping, readsDF)
+  lazy val readsTable = CAPSRelationshipTable(readsMapping, readsDF)
 
   private lazy val influencesMapping = RelationshipMapping
     .on("ID").from("SRC").to("DST").relType("INFLUENCES")
@@ -157,5 +157,5 @@ trait TeamDataFixture extends TestDataFixture with DebugOutputSupport {
   private lazy val influencesDF: DataFrame = caps.sparkSession.createDataFrame(
     Seq((10L, 1000L, 20L))).toDF("SRC", "ID", "DST")
 
-  lazy val influencesTable = RelationshipTable(influencesMapping, influencesDF)
+  lazy val influencesTable = CAPSRelationshipTable(influencesMapping, influencesDF)
 }
