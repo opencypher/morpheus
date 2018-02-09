@@ -35,7 +35,9 @@ object COSCGraph {
   }
 }
 
-case class COSCGraph(labelNodeMap: Map[Set[String], Seq[COSCNode]], typeRelMap: Map[String, Seq[COSCRelationship]])
+case class COSCGraph(
+  labelNodeMap: Map[Set[String], Seq[COSCNode]],
+  typeRelMap: Map[String, Seq[COSCRelationship]])
   (implicit cosc: COSCSession) extends PropertyGraph {
 
   type CypherSession = COSCSession

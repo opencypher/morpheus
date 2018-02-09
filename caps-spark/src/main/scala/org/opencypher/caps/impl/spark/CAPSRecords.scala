@@ -211,7 +211,7 @@ sealed abstract class CAPSRecords(override val header: RecordHeader, val data: D
 
 }
 
-object CAPSRecords {
+object CAPSRecords extends CypherRecordsCompanion[CAPSRecords, CAPSSession] {
 
   // Used for Expressions that are not yet tied to a variable
   private[spark] val placeHolderVarName = ""
@@ -445,7 +445,7 @@ object CAPSRecords {
     createInternal(initialHeader, initialDataFrame)
   }
 
-  def unit()(implicit caps: CAPSSession): CAPSRecords = {
+  override def unit()(implicit caps: CAPSSession): CAPSRecords = {
     val initialDataFrame = caps.sparkSession.createDataFrame(Seq(EmptyRow()))
     createInternal(RecordHeader.empty, initialDataFrame)
   }

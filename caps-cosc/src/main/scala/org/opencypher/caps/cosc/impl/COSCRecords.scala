@@ -16,13 +16,14 @@
 package org.opencypher.caps.cosc.impl
 
 import org.opencypher.caps.api.value.CypherValue.CypherMap
-import org.opencypher.caps.impl.record.{CypherRecords, RecordHeader, RecordsPrinter}
+import org.opencypher.caps.impl.record.{CypherRecords, CypherRecordsCompanion, RecordHeader, RecordsPrinter}
 import org.opencypher.caps.impl.util.PrintOptions
 
-object COSCRecords {
+object COSCRecords extends CypherRecordsCompanion[COSCRecords, COSCSession] {
+
   def create(rows: List[CypherMap], header: RecordHeader): COSCRecords = new COSCRecords(rows, header) {}
 
-  def unit: COSCRecords = {
+  override def unit()(implicit session: COSCSession): COSCRecords = {
     new COSCRecords(List.empty, RecordHeader.empty) {}
   }
 }

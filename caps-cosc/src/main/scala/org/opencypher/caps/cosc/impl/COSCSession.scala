@@ -97,7 +97,7 @@ class COSCSession(private val graphSourceHandler: COSCGraphSourceHandler) extend
     val flatPlan = time("Flat planning")(flatPlanner(optimizedLogicalPlan)(FlatPlannerContext(parameters)))
     if (PrintFlatPlan.get()) println(flatPlan.pretty)
 
-    val coscPlannerContext = COSCPhysicalPlannerContext(this, readFrom, COSCRecords.unit, allParameters)
+    val coscPlannerContext = COSCPhysicalPlannerContext(this, readFrom, COSCRecords.unit()(self), allParameters)
     val coscPlan = time("Physical planning")(physicalPlanner.process(flatPlan)(coscPlannerContext))
 
     time("Query execution")(COSCResultBuilder.from(logicalPlan, flatPlan, coscPlan)(COSCRuntimeContext(coscPlannerContext.parameters, optGraphAt)))

@@ -12,7 +12,7 @@
 
   <artifactId>caps-cosc</artifactId>
 
-  <name>Cypher for Apache Spark - Cypher on Spark Collections</name>
+  <name>Cypher for Apache Spark - Cypher on Scala Collections</name>
 
   <properties>
     <project.rootdir>${project.parent.basedir}</project.rootdir>
