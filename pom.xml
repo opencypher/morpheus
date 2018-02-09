@@ -145,6 +145,7 @@
             <arg>-unchecked</arg>
             <arg>-deprecation</arg>
             <arg>-feature</arg>
+            <arg>-Xfatal-warnings</arg>
             <arg>-Xfuture</arg>
             <arg>-Ywarn-adapted-args</arg>
             <arg>-Yopt-warnings:at-inline-failed</arg>
