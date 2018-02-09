@@ -13,17 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.spark
+package org.opencypher.caps.impl.record
 
-import java.util.Objects
-
-import org.opencypher.caps.impl.record.CypherRecords
 import org.opencypher.caps.impl.util.PrintOptions
 
 object RecordsPrinter {
 
   /**
-    * Prints the given SparkCypherRecords to stdout
+    * Prints the given CypherRecords to stdout
+    *
     * @param records the records to be printed.
     */
   def print(records: CypherRecords)(implicit options: PrintOptions): Unit = {
@@ -84,6 +82,7 @@ object RecordsPrinter {
   }
 
   private def repeat(x: String, size: Int): String = (1 to size).map((_) => x).mkString
+
   private def fitToColumn(s: String)(implicit options: PrintOptions) = {
     val spaces = (1 until options.columnWidth).map(_ => " ").reduce(_ + _)
     val cell = s + spaces

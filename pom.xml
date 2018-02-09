@@ -11,13 +11,14 @@
   <name>Cypher for Apache Spark</name>
 
   <modules>
-    <module>caps-api</module>
     <module>caps-trees</module>
-    <module>caps-logical</module>
-    <module>caps-spark</module>
-    <module>caps-tck</module>
+    <module>caps-api</module>
     <module>caps-ir</module>
+    <module>caps-logical</module>
     <module>caps-cora</module>
+    <module>caps-spark</module>
+    <module>caps-cosc</module>
+    <module>caps-tck</module>
   </modules>
 
   <properties>

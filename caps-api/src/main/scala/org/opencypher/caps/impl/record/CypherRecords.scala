@@ -15,6 +15,7 @@
  */
 package org.opencypher.caps.impl.record
 
+import org.opencypher.caps.api.graph.CypherSession
 import org.opencypher.caps.api.types.CypherType
 import org.opencypher.caps.api.value.CypherValue.{CypherMap, CypherValue}
 
@@ -49,6 +50,10 @@ trait CypherRecordHeader {
   def fields: Set[String]
 
   def fieldsInOrder: Seq[String]
+}
+
+trait CypherRecordsCompanion[R <: CypherRecords, S <: CypherSession] {
+  def unit()(implicit session: S): R
 }
 
 /**

@@ -13,28 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.spark.io.session
+package org.opencypher.caps.cosc.impl.datasource
 
 import java.net.URI
 import java.util.concurrent.ConcurrentHashMap
 
-import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.caps.api.graph.CypherSession
-import org.opencypher.caps.impl.spark.io.{CAPSPropertyGraphDataSourceFactoryImpl, _}
+import org.opencypher.caps.cosc.impl.COSCSession
 
 import scala.collection.JavaConversions._
 
-case object SessionPropertyGraphDataSourceFactory extends CAPSGraphSourceFactoryCompanion(CypherSession.sessionGraphSchema)
+case object COSCSessionPropertyGraphDataSourceFactory extends COSCGraphSourceFactoryCompanion(CypherSession.sessionGraphSchema)
 
-case class SessionPropertyGraphDataSourceFactory()
-    extends CAPSPropertyGraphDataSourceFactoryImpl(SessionPropertyGraphDataSourceFactory) {
+case class COSCSessionPropertyGraphDataSourceFactory()
+  extends COSCPropertyGraphDataSourceFactoryImpl(COSCSessionPropertyGraphDataSourceFactory) {
 
-  val mountPoints: collection.concurrent.Map[String, CAPSPropertyGraphDataSource] = {
-    new ConcurrentHashMap[String, CAPSPropertyGraphDataSource]()
+  val mountPoints: collection.concurrent.Map[String, COSCPropertyGraphDataSource] = {
+    new ConcurrentHashMap[String, COSCPropertyGraphDataSource]()
   }
 
-  def mountSourceAt(existingSource: CAPSPropertyGraphDataSource, uri: URI)(implicit capsSession: CypherSession): Unit =
+  def mountSourceAt(existingSource: COSCPropertyGraphDataSource, uri: URI)(implicit capsSession: COSCSession): Unit =
     if (schemes.contains(uri.getScheme))
       withValidPath(uri) { (path: String) =>
         mountPoints.get(path) match {
@@ -49,14 +48,14 @@ case class SessionPropertyGraphDataSourceFactory()
   def unmountAll(implicit capsSession: CypherSession): Unit =
     mountPoints.clear()
 
-  override protected def sourceForURIWithSupportedScheme(uri: URI)(implicit capsSession: CAPSSession): CAPSPropertyGraphDataSource =
+  override protected def sourceForURIWithSupportedScheme(uri: URI)(implicit capsSession: COSCSession): COSCPropertyGraphDataSource =
     withValidPath(uri) { (path: String) =>
       mountPoints.get(path) match {
         case Some(source) =>
           source
 
         case _ =>
-          val newSource = SessionPropertyGraphDataSource(path)
+          val newSource = COSCSessionPropertyGraphDataSource(path)
           mountPoints.put(path, newSource)
           newSource
       }
@@ -65,15 +64,16 @@ case class SessionPropertyGraphDataSourceFactory()
   private def withValidPath[T](uri: URI)(f: String => T): T = {
     val path = uri.getPath
     if (uri.getUserInfo != null ||
-        uri.getHost != null ||
-        uri.getPort != -1 ||
-        uri.getQuery != null ||
-        uri.getAuthority != null ||
-        uri.getFragment != null ||
-        path == null ||
-        !path.startsWith("/"))
+      uri.getHost != null ||
+      uri.getPort != -1 ||
+      uri.getQuery != null ||
+      uri.getAuthority != null ||
+      uri.getFragment != null ||
+      path == null ||
+      !path.startsWith("/"))
       throw IllegalArgumentException(s"a valid URI for use by $name", uri)
     else
       f(path)
   }
 }
+
