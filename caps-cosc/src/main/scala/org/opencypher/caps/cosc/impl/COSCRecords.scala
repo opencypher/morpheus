@@ -15,7 +15,8 @@
  */
 package org.opencypher.caps.cosc.impl
 
-import org.opencypher.caps.api.value.CypherValue.CypherMap
+import org.opencypher.caps.api.types.CypherType
+import org.opencypher.caps.api.value.CypherValue.{CypherMap, CypherValue}
 import org.opencypher.caps.impl.record.{CypherRecords, CypherRecordsCompanion, RecordHeader, RecordsPrinter}
 import org.opencypher.caps.impl.util.PrintOptions
 
@@ -29,14 +30,24 @@ object COSCRecords extends CypherRecordsCompanion[COSCRecords, COSCSession] {
 }
 
 sealed abstract class COSCRecords(
-  val rows: List[CypherMap],
+  val data: List[CypherMap],
   val header: RecordHeader) extends CypherRecords {
+
+  /**
+    * Iterator over the rows in this table.
+    */
+  override def rows: Iterator[String => CypherValue] = data.iterator.map(_.value)
+
+  override def columns: Set[String] = ???
+
+  override def columnType: Map[String, CypherType] = ???
+
   /**
     * Consume these records as an iterator.
     *
     * WARNING: This operation may be very expensive as it may have to materialise
     */
-  override def iterator: Iterator[CypherMap] = rows.iterator
+  override def iterator: Iterator[CypherMap] = data.iterator
 
   /**
     * @return the number of records in this CypherRecords.

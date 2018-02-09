@@ -20,11 +20,11 @@ import org.opencypher.caps.api.value.CypherValue.{CypherMap, CypherNode, CypherR
 case class COSCNode(
   override val id: Long,
   override val labels: Set[String] = Set.empty,
-  override val properties: CypherMap = CypherMap.empty) extends CypherNode[Long](id, labels, properties)
+  override val properties: CypherMap = CypherMap.empty) extends CypherNode[Long]
 
 case class COSCRelationship(
   override val id: Long,
   override val source: Long,
   override val target: Long,
   override val relType: String,
-  override val properties: CypherMap = CypherMap.empty) extends CypherRelationship(id, source, target, relType, properties)
+  override val properties: CypherMap = CypherMap.empty) extends CypherRelationship[Long]

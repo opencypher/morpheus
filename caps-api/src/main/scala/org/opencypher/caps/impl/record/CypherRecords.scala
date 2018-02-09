@@ -15,6 +15,7 @@
  */
 package org.opencypher.caps.impl.record
 
+import org.opencypher.caps.api.graph.CypherSession
 import org.opencypher.caps.api.types.CypherType
 import org.opencypher.caps.api.value.CypherValue.{CypherMap, CypherValue}
 
