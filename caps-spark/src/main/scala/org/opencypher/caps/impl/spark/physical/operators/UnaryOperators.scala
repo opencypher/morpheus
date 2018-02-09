@@ -30,7 +30,7 @@ import org.opencypher.caps.impl.spark.SparkSQLExprMapper._
 import org.opencypher.caps.impl.spark.convert.SparkUtils._
 import org.opencypher.caps.impl.spark.physical.operators.CAPSPhysicalOperator.{assertIsNode, columnName}
 import org.opencypher.caps.impl.spark.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
-import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords, SparkColumnName}
+import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.caps.ir.api.expr._
@@ -295,7 +295,7 @@ final case class RemoveAliases(
     prev.mapRecordsWithDetails { records =>
       val renamed = dependentFields.foldLeft(records.data) {
         case (df, (v, expr)) =>
-          df.withColumnRenamed(SparkColumnName.of(v), SparkColumnName.of(expr))
+          df.withColumnRenamed(ColumnName.of(v), ColumnName.of(expr))
       }
 
       CAPSRecords.verifyAndCreate(header, renamed)(records.caps)
@@ -390,7 +390,7 @@ final case class Aggregate(
 
       val sparkAggFunctions = aggregations.map {
         case (to, inner) =>
-          val columnName = SparkColumnName.from(Some(to.name))
+          val columnName = ColumnName.from(Some(to.name))
           inner match {
             case Avg(expr) =>
               withInnerExpr(expr)(

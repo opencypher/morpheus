@@ -20,7 +20,7 @@ import org.apache.spark.sql.types.StructType
 import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.impl.record.CAPSRecordHeader._
-import org.opencypher.caps.impl.record.{ProjectedExpr, RecordHeader, RecordSlot}
+import org.opencypher.caps.impl.record.{ColumnName, ProjectedExpr, RecordHeader, RecordSlot}
 import org.opencypher.caps.ir.api.expr._
 
 case class RowExpansion(
@@ -41,7 +41,7 @@ case class RowExpansion(
     case (node, slots) =>
       val labelIndicesForNode = slots.collect {
         case RecordSlot(_, p @ ProjectedExpr(HasLabel(_, l))) if targetLabels.contains(l.name) =>
-          rowSchema.fieldIndex(SparkColumnName.of(p.withOwner(targetVar)))
+          rowSchema.fieldIndex(ColumnName.of(p.withOwner(targetVar)))
       }
       node -> labelIndicesForNode
   }
@@ -50,7 +50,7 @@ case class RowExpansion(
     case (rel, slots) =>
       val typeIndexForRel = slots.collectFirst {
         case RecordSlot(_, p @ ProjectedExpr(Type(r))) if r == rel =>
-          rowSchema.fieldIndex(SparkColumnName.of(p.withOwner(targetVar)))
+          rowSchema.fieldIndex(ColumnName.of(p.withOwner(targetVar)))
       }.getOrElse(throw IllegalArgumentException(s"a type column for relationship $rel"))
       rel -> typeIndexForRel
   }
@@ -82,7 +82,7 @@ case class RowExpansion(
 
   def adaptRowToNewHeader(row: Row, lookupTable: Map[String, String]): Row = {
     val orderedRowContent = targetHeader.slots.foldLeft(Seq.empty[Any]) { (newRowAcc, targetSlot) =>
-      val maybeColumnName = lookupTable.get(SparkColumnName.of(targetSlot))
+      val maybeColumnName = lookupTable.get(ColumnName.of(targetSlot))
       maybeColumnName match {
         case Some(columnName) =>
           val index = row.fieldIndex(columnName)

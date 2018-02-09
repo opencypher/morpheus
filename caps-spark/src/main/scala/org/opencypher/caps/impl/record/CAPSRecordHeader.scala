@@ -19,7 +19,6 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.opencypher.caps.api.exception.IllegalArgumentException
-import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.impl.spark.convert.SparkUtils._
 import org.opencypher.caps.ir.api.expr.Var
 
@@ -38,7 +37,7 @@ object CAPSRecordHeader {
   }
 
   private def structField(slot: RecordSlot, nullable: Boolean): StructField = {
-    val name = SparkColumnName.of(slot.content)
+    val name = ColumnName.of(slot.content)
     val dataType = toSparkType(slot.content.cypherType)
     StructField(name, dataType, nullable)
   }
@@ -56,12 +55,12 @@ object CAPSRecordHeader {
 
     def column(slot: RecordSlot) = columns(slot.index)
 
-    private def computeColumnName(slot: RecordSlot): String = SparkColumnName.of(slot)
+    private def computeColumnName(slot: RecordSlot): String = ColumnName.of(slot)
   }
 
   implicit class CAPSRecordSlot(slot: RecordSlot) {
     def asStructField: StructField = {
-      val name = SparkColumnName.of(slot)
+      val name = ColumnName.of(slot)
       val sparkType = toSparkType(slot.content.cypherType)
       StructField(name, sparkType, slot.content.cypherType.isNullable)
     }

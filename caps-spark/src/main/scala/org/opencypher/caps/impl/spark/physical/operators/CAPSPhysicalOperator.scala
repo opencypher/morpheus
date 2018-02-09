@@ -17,16 +17,16 @@ package org.opencypher.caps.impl.spark.physical.operators
 
 import java.net.URI
 
-import org.apache.spark.sql.{Column, DataFrame, functions}
+import org.apache.spark.sql.DataFrame
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.physical.PhysicalOperator
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.impl.record.{RecordHeader, RecordSlot, SlotContent}
+import org.opencypher.caps.impl.record.{ColumnName, RecordHeader, RecordSlot, SlotContent}
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.impl.spark.physical.DataFrameOps._
 import org.opencypher.caps.impl.spark.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
-import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords, SparkColumnName}
+import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.trees.AbstractTreeNode
 
 private[caps] abstract class CAPSPhysicalOperator
@@ -48,9 +48,9 @@ private[caps] abstract class CAPSPhysicalOperator
 }
 
 object CAPSPhysicalOperator {
-  def columnName(slot: RecordSlot): String = SparkColumnName.of(slot)
+  def columnName(slot: RecordSlot): String = ColumnName.of(slot)
 
-  def columnName(content: SlotContent): String = SparkColumnName.of(content)
+  def columnName(content: SlotContent): String = ColumnName.of(content)
 
   def joinRecords(
       header: RecordHeader,

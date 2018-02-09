@@ -13,21 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.spark
+package org.opencypher.caps.impl.record
 
 import java.util.UUID
 
-import org.apache.spark.sql.{Column, DataFrame}
-import org.opencypher.caps.impl.record.{FieldSlotContent, ProjectedExpr, RecordSlot, SlotContent}
 import org.opencypher.caps.ir.api.expr.{Expr, Property, Var}
 
 import scala.collection.mutable
 
-object SparkColumn {
-  def from(df: DataFrame): RecordSlot => Column = (record) => df.col(SparkColumnName.of(record.content))
-}
-
-object SparkColumnName {
+object ColumnName {
 
   def tempColName: String =
     UUID.randomUUID().toString
@@ -37,8 +31,8 @@ object SparkColumnName {
   def of(slot: SlotContent): String = {
     val builder = slot match {
       case fieldContent: FieldSlotContent => new NameBuilder() += fieldContent.field.name
-      case ProjectedExpr(p: Property)     => new NameBuilder() += None += p.withoutType + p.cypherType.material.name
-      case ProjectedExpr(expr)            => new NameBuilder() += None += expr.withoutType
+      case ProjectedExpr(p: Property) => new NameBuilder() += None += p.withoutType + p.cypherType.material.name
+      case ProjectedExpr(expr) => new NameBuilder() += None += expr.withoutType
     }
 
     builder.result()
@@ -62,7 +56,7 @@ object SparkColumnName {
     builder.sizeHint(sizeHint)
 
     override def +=(part: Option[String]): this.type = part match {
-      case None       => builder.append("__"); this
+      case None => builder.append("__"); this
       case Some(text) => this += text
     }
 
@@ -110,47 +104,48 @@ object SparkColumnName {
       Character.isLetterOrDigit(ch)
 
     private def escapeChar(ch: Char) = ch match {
-      case ' '  => "_space_"
-      case '_'  => "_bar_"
-      case '.'  => "_dot_"
-      case ','  => "_comma_"
-      case '#'  => "_hash_"
-      case '%'  => "_percent_"
-      case '@'  => "_at_"
-      case '&'  => "_amp_"
-      case '|'  => "_pipe_"
-      case '^'  => "_caret_"
-      case '$'  => "_dollar_"
-      case '?'  => "_query_"
-      case '!'  => "_exclamation_"
-      case ':'  => ":"
-      case ';'  => "_semicolon_"
-      case '-'  => "_dash_"
-      case '+'  => "_plus_"
-      case '*'  => "_star_"
-      case '/'  => "_slash_"
+      case ' ' => "_space_"
+      case '_' => "_bar_"
+      case '.' => "_dot_"
+      case ',' => "_comma_"
+      case '#' => "_hash_"
+      case '%' => "_percent_"
+      case '@' => "_at_"
+      case '&' => "_amp_"
+      case '|' => "_pipe_"
+      case '^' => "_caret_"
+      case '$' => "_dollar_"
+      case '?' => "_query_"
+      case '!' => "_exclamation_"
+      case ':' => ":"
+      case ';' => "_semicolon_"
+      case '-' => "_dash_"
+      case '+' => "_plus_"
+      case '*' => "_star_"
+      case '/' => "_slash_"
       case '\\' => "_backslash_"
       case '\'' => "_single_quote_"
-      case '`'  => "_backquote_"
-      case '"'  => "_double_quote_"
-      case '('  => "("
-      case '['  => "_open_bracket_"
-      case '{'  => "_open_brace_"
-      case ')'  => ")"
-      case ']'  => "_close_bracket_"
-      case '}'  => "_close_brace_"
-      case '<'  => "_lt_"
-      case '>'  => "_gt_"
-      case '='  => "_eq_"
-      case '~'  => "_tilde_"
-      case '§'  => "_section_"
-      case '°'  => "_deg_"
+      case '`' => "_backquote_"
+      case '"' => "_double_quote_"
+      case '(' => "("
+      case '[' => "_open_bracket_"
+      case '{' => "_open_brace_"
+      case ')' => ")"
+      case ']' => "_close_bracket_"
+      case '}' => "_close_brace_"
+      case '<' => "_lt_"
+      case '>' => "_gt_"
+      case '=' => "_eq_"
+      case '~' => "_tilde_"
+      case '§' => "_section_"
+      case '°' => "_deg_"
       case '\r' => "_cr_"
       case '\n' => "_nl_"
       case '\t' => "_tab_"
       case '\f' => "_ff_"
       case '\b' => "_backspace_"
-      case _    => s"_u${Integer.toHexString(ch.toInt)}_"
+      case _ => s"_u${Integer.toHexString(ch.toInt)}_"
     }
   }
+
 }

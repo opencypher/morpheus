@@ -22,21 +22,21 @@ import org.opencypher.caps.impl.util.PrintOptions
 
 object COSCRecords extends CypherRecordsCompanion[COSCRecords, COSCSession] {
 
-  def create(rows: List[CypherMap], header: RecordHeader): COSCRecords = new COSCRecords(rows, header) {}
+  def create(rows: List[CypherMap], header: RecordHeader): COSCRecords = new COSCRecords(Embeddings(rows), header) {}
 
   override def unit()(implicit session: COSCSession): COSCRecords = {
-    new COSCRecords(List.empty, RecordHeader.empty) {}
+    new COSCRecords(Embeddings.empty, RecordHeader.empty) {}
   }
 }
 
 sealed abstract class COSCRecords(
-  val data: List[CypherMap],
+  val data: Embeddings,
   val header: RecordHeader) extends CypherRecords {
 
   /**
     * Iterator over the rows in this table.
     */
-  override def rows: Iterator[String => CypherValue] = data.iterator.map(_.value)
+  override def rows: Iterator[String => CypherValue] = data.rows.map(_.value)
 
   override def columns: Set[String] = ???
 
@@ -47,7 +47,7 @@ sealed abstract class COSCRecords(
     *
     * WARNING: This operation may be very expensive as it may have to materialise
     */
-  override def iterator: Iterator[CypherMap] = data.iterator
+  override def iterator: Iterator[CypherMap] = data.rows
 
   /**
     * @return the number of records in this CypherRecords.
@@ -55,4 +55,15 @@ sealed abstract class COSCRecords(
   override def size: Long = rows.size
 
   override def print(implicit options: PrintOptions): Unit = RecordsPrinter.print(this)
+}
+
+
+object Embeddings {
+  def empty: Embeddings = Embeddings(List.empty)
+}
+
+case class Embeddings(data: List[CypherMap]) {
+
+  def rows: Iterator[CypherMap] = data.iterator
+
 }
