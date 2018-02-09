@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.util
+package org.opencypher.caps.impl.record
 
-import org.opencypher.caps.impl.spark.SparkColumnName
 import org.opencypher.caps.test.BaseTestSuite
 
-class SparkColumnNameTest extends BaseTestSuite {
+class ColumnNameTest extends BaseTestSuite {
 
   test("escape length 0 spark identifier") {
     fromString("") should equal("_empty_")
@@ -46,5 +45,5 @@ class SparkColumnNameTest extends BaseTestSuite {
     }
   }
 
-  def fromString(text: String) = SparkColumnName.from(Some(text))
+  def fromString(text: String) = ColumnName.from(Some(text))
 }

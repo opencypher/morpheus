@@ -26,9 +26,9 @@ import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.caps.api.value.CypherValue
-import org.opencypher.caps.impl.record.{CAPSRecordHeader, RecordHeader}
+import org.opencypher.caps.impl.record.{CAPSRecordHeader, ColumnName, RecordHeader}
 import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraph.{filterNode, filterRel, nodeToRow, relToRow}
-import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords, SparkColumnName}
+import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.ir.api.PropertyKey
 import org.opencypher.caps.ir.api.expr._
 
@@ -116,7 +116,7 @@ object Neo4jGraph {
         slot.content.key match {
           case Property(_, PropertyKey(keyName)) =>
             val propValue = props.get(keyName).orNull
-            val dataType = schema(SparkColumnName.of(slot)).dataType
+            val dataType = schema(ColumnName.of(slot)).dataType
             importedToSparkEncodedCypherValue(dataType, propValue)
 
           case HasLabel(_, label) =>
@@ -152,7 +152,7 @@ object Neo4jGraph {
         slot.content.key match {
           case Property(_, PropertyKey(keyName)) =>
             val propValue = props.get(keyName).orNull
-            val dataType = schema(SparkColumnName.of(slot)).dataType
+            val dataType = schema(ColumnName.of(slot)).dataType
             importedToSparkEncodedCypherValue(dataType, propValue)
 
           case _: StartNode =>

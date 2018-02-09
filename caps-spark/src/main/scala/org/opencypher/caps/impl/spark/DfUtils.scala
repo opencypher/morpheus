@@ -19,7 +19,7 @@ import org.apache.spark.sql.{Column, DataFrame, Row}
 import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.api.value._
-import org.opencypher.caps.impl.record.RecordHeader
+import org.opencypher.caps.impl.record.{ColumnName, RecordHeader}
 import org.opencypher.caps.impl.spark.physical.CAPSRuntimeContext
 import org.opencypher.caps.ir.api.expr.{Expr, Param}
 
@@ -42,7 +42,7 @@ object DfUtils {
 
   implicit class ColumnMappableDf(df: DataFrame) {
     def mapColumn(columnName: String)(f: Column => Column): DataFrame = {
-      val tmpColName = SparkColumnName.tempColName
+      val tmpColName = ColumnName.tempColName
       df.withColumn(tmpColName, f(df(columnName))).drop(columnName).withColumnRenamed(tmpColName, columnName)
     }
   }

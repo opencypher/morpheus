@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.spark
 
-import org.opencypher.caps.impl.record.RecordHeader
+import org.opencypher.caps.impl.record.{ColumnName, RecordHeader}
 
 import scala.annotation.tailrec
 import scala.util.Random
@@ -26,9 +26,9 @@ object ColumnNameGenerator {
   @tailrec
   def generateUniqueName(header: RecordHeader): String = {
     val chars = (1 to NAME_SIZE).map(_ => Random.nextPrintableChar())
-    val name = SparkColumnName.from(Some(String.valueOf(chars.toArray)))
+    val name = ColumnName.from(Some(String.valueOf(chars.toArray)))
 
-    if (header.slots.map(SparkColumnName.of).contains(name)) generateUniqueName(header)
+    if (header.slots.map(ColumnName.of).contains(name)) generateUniqueName(header)
     else name
   }
 }

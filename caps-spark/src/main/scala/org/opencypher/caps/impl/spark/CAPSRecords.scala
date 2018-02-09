@@ -86,7 +86,7 @@ sealed abstract class CAPSRecords(override val header: RecordHeader, val data: D
 
   def select(fields: Set[Var]): CAPSRecords = {
     val selectedHeader = header.select(fields)
-    val selectedColumnNames = selectedHeader.contents.map(SparkColumnName.of).toSeq
+    val selectedColumnNames = selectedHeader.contents.map(ColumnName.of).toSeq
     val selectedColumns = data.select(selectedColumnNames.head, selectedColumnNames.tail: _*)
     CAPSRecords.verifyAndCreate(selectedHeader, selectedColumns)
   }
@@ -97,7 +97,7 @@ sealed abstract class CAPSRecords(override val header: RecordHeader, val data: D
       this
     } else {
       val cachedData = {
-        val columns = cachedHeader.slots.map(c => new Column(SparkColumnName.of(c.content)))
+        val columns = cachedHeader.slots.map(c => new Column(ColumnName.of(c.content)))
         data.select(columns: _*)
       }
 
@@ -173,13 +173,13 @@ sealed abstract class CAPSRecords(override val header: RecordHeader, val data: D
     val renamedSlots = slots.map(_.withOwner(v))
 
     val dataColumnNameToIndex: Map[String, Int] = renamedSlots.map { dataSlot =>
-      val dataColumnName = SparkColumnName.of(dataSlot)
+      val dataColumnName = ColumnName.of(dataSlot)
       val dataColumnIndex = dataSlot.index
       dataColumnName -> dataColumnIndex
     }.toMap
 
     val slotDataSelectors: Seq[Row => Any] = targetHeader.slots.map { targetSlot =>
-      val columnName = SparkColumnName.of(targetSlot)
+      val columnName = ColumnName.of(targetSlot)
       val defaultValue = targetSlot.content.key match {
         case HasLabel(_, l: Label) => entityLabels(l.name)
         case _: Type if entityLabels.size == 1 => entityLabels.head
@@ -425,7 +425,7 @@ object CAPSRecords extends CypherRecordsCompanion[CAPSRecords, CAPSSession] {
     // Verify column types
     initialHeader.slots.foreach { slot =>
       val dfSchema = initialData.schema
-      val field = dfSchema(SparkColumnName.of(slot))
+      val field = dfSchema(ColumnName.of(slot))
       val cypherType = fromSparkType(field.dataType, field.nullable)
         .getOrElse(throw IllegalArgumentException("a supported Spark type", field.dataType))
       val headerType = slot.content.cypherType
