@@ -42,7 +42,8 @@ class EntityTableTest extends CAPSTestSuite {
     personTableScala.mapping should equal(NodeMapping
       .withSourceIdKey("id")
       .withImpliedLabel("Person")
-      .withPropertyKey("name"))
+      .withPropertyKey("name")
+      .withPropertyKey("age"))
 
     val friends = List(Friend(0, 0, 1, "23/01/1987"), Friend(1, 1, 2, "12/12/2009"))
     val friendTableScala = CAPSRelationshipTable(friends)
