@@ -10,9 +10,9 @@
     <version>1.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>caps-collections</artifactId>
+  <artifactId>caps-cosc</artifactId>
 
-  <name>Cypher for Apache Spark - Collection Implementation</name>
+  <name>Cypher for Apache Spark - Cypher on Spark Collections</name>
 
   <properties>
     <project.rootdir>${project.parent.basedir}</project.rootdir>
