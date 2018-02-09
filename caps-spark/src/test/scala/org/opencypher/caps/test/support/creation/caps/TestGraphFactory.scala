@@ -16,24 +16,23 @@
 package org.opencypher.caps.test.support.creation.caps
 
 import org.apache.spark.sql.types.StructField
-import org.opencypher.caps.api.CAPSSession
+import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph}
 import org.opencypher.caps.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.CypherType._
 import org.opencypher.caps.api.value.CypherValue
-import org.opencypher.caps.impl.spark.CAPSGraph
 import org.opencypher.caps.impl.spark.convert.SparkUtils._
-import org.opencypher.caps.test.support.creation.propertygraph.{Node, PropertyGraph, Relationship}
+import org.opencypher.caps.test.support.creation.propertygraph.{Node, Relationship, PropertyGraph => TestPropertGraph}
 
-trait CAPSGraphFactory {
+trait TestGraphFactory[C <: CypherSession] {
 
-  def apply(propertyGraph: PropertyGraph)(implicit caps: CAPSSession): CAPSGraph
+  def apply(propertyGraph: TestPropertGraph)(implicit caps: C): PropertyGraph
 
   def name: String
 
   override def toString: String = name
 
-  def computeSchema(propertyGraph: PropertyGraph): Schema = {
+  def computeSchema(propertyGraph: TestPropertGraph): Schema = {
     def extractFromNode(n: Node) =
       n.labels -> n.properties.map {
         case (name, prop) => name -> CypherValue(prop).cypherType

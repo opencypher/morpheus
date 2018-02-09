@@ -25,7 +25,8 @@ import org.opencypher.caps.test.support.creation.propertygraph.PropertyGraph
 
 import scala.collection.JavaConverters._
 
-object CAPSScanGraphFactory extends CAPSGraphFactory {
+object CAPSScanGraphFactory extends CAPSTestGraphFactory {
+
 
   override def apply(propertyGraph: PropertyGraph)(implicit caps: CAPSSession): CAPSGraph = {
     val schema = computeSchema(propertyGraph)

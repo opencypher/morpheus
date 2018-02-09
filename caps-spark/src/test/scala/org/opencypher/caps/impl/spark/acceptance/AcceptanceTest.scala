@@ -15,9 +15,10 @@
  */
 package org.opencypher.caps.impl.spark.acceptance
 
+import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.impl.spark.CAPSGraph
 import org.opencypher.caps.test.CAPSTestSuite
-import org.opencypher.caps.test.support.creation.caps.CAPSGraphFactory
+import org.opencypher.caps.test.support.creation.caps.CAPSTestGraphFactory
 import org.opencypher.caps.test.support.creation.propertygraph.CAPSPropertyGraphFactory
 
 abstract class AcceptanceTest
@@ -35,10 +36,10 @@ abstract class AcceptanceTest
     with WithBehaviour
     with UnwindBehaviour {
 
-  def capsGraphFactory: CAPSGraphFactory
+  def capsGraphFactory: CAPSTestGraphFactory
 
   val initGraph: String => CAPSGraph = (createQuery) =>
-    capsGraphFactory(CAPSPropertyGraphFactory(createQuery))
+    capsGraphFactory(CAPSPropertyGraphFactory(createQuery)).asCaps
 
   describe("using " + capsGraphFactory.name) {
     describe("AggregationBehaviour") {

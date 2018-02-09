@@ -19,7 +19,7 @@ import java.io.File
 
 import org.opencypher.caps.impl.spark.CAPSGraph
 import org.opencypher.caps.test.CAPSTestSuite
-import org.opencypher.caps.test.support.creation.caps.{CAPSGraphFactory, CAPSScanGraphFactory}
+import org.opencypher.caps.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 import org.opencypher.tools.tck.api.{CypherTCK, Scenario}
 import org.scalatest.Tag
 import org.scalatest.prop.TableDrivenPropertyChecks._
@@ -33,6 +33,7 @@ object TCKFixture {
 }
 
 class TCKCAPSTest extends CAPSTestSuite {
+
   import TCKFixture._
 
   object WhiteList extends Tag("WhiteList Scenario")
@@ -44,7 +45,7 @@ class TCKCAPSTest extends CAPSTestSuite {
     CAPSScanGraphFactory
   )
 
-  val defaultFactory: CAPSGraphFactory = CAPSScanGraphFactory
+  val defaultFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
 
 
   implicit class Scenarios(scenarios: Seq[Scenario]) {
