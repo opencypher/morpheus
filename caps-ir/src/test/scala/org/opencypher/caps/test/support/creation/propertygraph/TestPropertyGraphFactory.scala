@@ -30,11 +30,11 @@ import org.opencypher.caps.ir.impl.parse.CypherParser
 
 import scala.collection.TraversableOnce
 
-object CAPSPropertyGraphFactory extends PropertyGraphFactory {
+object TestPropertyGraphFactory extends PropertyGraphFactory {
 
   type Result[A] = State[ParsingContext, A]
 
-  def apply(createQuery: String, externalParams: Map[String, Any] = Map.empty): PropertyGraph = {
+  def apply(createQuery: String, externalParams: Map[String, Any] = Map.empty): TestPropertyGraph = {
     val (ast, params, _) = CypherParser.process(createQuery)(CypherParser.defaultContext)
     val context = ParsingContext.fromParams(params ++ externalParams)
 
@@ -188,7 +188,7 @@ object CAPSPropertyGraphFactory extends PropertyGraphFactory {
 final case class ParsingContext(
     parameter: Map[String, Any],
     variableMapping: Map[String, Any],
-    graph: PropertyGraph,
+    graph: TestPropertyGraph,
     protectedScopes: List[Map[String, Any]],
     idGenerator: AtomicLong) {
 
@@ -218,5 +218,5 @@ final case class ParsingContext(
 
 object ParsingContext {
   def fromParams(params: Map[String, Any]): ParsingContext =
-    ParsingContext(params, Map.empty, PropertyGraph.empty, List.empty, new AtomicLong())
+    ParsingContext(params, Map.empty, TestPropertyGraph.empty, List.empty, new AtomicLong())
 }

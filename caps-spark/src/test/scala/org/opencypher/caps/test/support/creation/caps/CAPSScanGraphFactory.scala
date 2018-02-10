@@ -19,16 +19,17 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
+import org.opencypher.caps.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.caps.api.schema.{CAPSNodeTable, CAPSRelationshipTable}
+import org.opencypher.caps.impl.spark.convert.SparkUtils._
 import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSScanGraph}
-import org.opencypher.caps.test.support.creation.propertygraph.PropertyGraph
+import org.opencypher.caps.test.support.creation.propertygraph.TestPropertyGraph
 
 import scala.collection.JavaConverters._
 
 object CAPSScanGraphFactory extends CAPSTestGraphFactory {
 
-
-  override def apply(propertyGraph: PropertyGraph)(implicit caps: CAPSSession): CAPSGraph = {
+  override def apply(propertyGraph: TestPropertyGraph)(implicit caps: CAPSSession): CAPSGraph = {
     val schema = computeSchema(propertyGraph)
 
     val nodeScans = schema.labelCombinations.combos.map { labels =>
@@ -86,4 +87,10 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory {
   }
 
   override def name: String = "CAPSScanGraphFactory"
+
+  protected def getPropertyStructFields(propKeys: PropertyKeys): Seq[StructField] = {
+    propKeys.foldLeft(Seq.empty[StructField]) {
+      case (fields, key) => fields :+ StructField(key._1, toSparkType(key._2), key._2.isNullable)
+    }
+  }
 }

@@ -13,26 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.test.support.creation.caps
+package org.opencypher.caps.test.support.creation
 
-import org.apache.spark.sql.types.StructField
 import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph}
-import org.opencypher.caps.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.CypherType._
 import org.opencypher.caps.api.value.CypherValue
-import org.opencypher.caps.impl.spark.convert.SparkUtils._
-import org.opencypher.caps.test.support.creation.propertygraph.{Node, Relationship, PropertyGraph => TestPropertGraph}
+import org.opencypher.caps.test.support.creation.propertygraph.{Node, Relationship, TestPropertyGraph}
 
 trait TestGraphFactory[C <: CypherSession] {
 
-  def apply(propertyGraph: TestPropertGraph)(implicit caps: C): PropertyGraph
+  def apply(propertyGraph: TestPropertyGraph)(implicit caps: C): PropertyGraph
 
   def name: String
 
   override def toString: String = name
 
-  def computeSchema(propertyGraph: TestPropertGraph): Schema = {
+  def computeSchema(propertyGraph: TestPropertyGraph): Schema = {
     def extractFromNode(n: Node) =
       n.labels -> n.properties.map {
         case (name, prop) => name -> CypherValue(prop).cypherType
@@ -52,12 +49,6 @@ trait TestGraphFactory[C <: CypherSession] {
 
     typesAndProps.foldLeft(schemaWithLabels) {
       case (acc, (t, props)) => acc.withRelationshipPropertyKeys(t)(props.toSeq: _*)
-    }
-  }
-
-  protected def getPropertyStructFields(propKeys: PropertyKeys): Seq[StructField] = {
-    propKeys.foldLeft(Seq.empty[StructField]) {
-      case (fields, key) => fields :+ StructField(key._1, toSparkType(key._2), key._2.isNullable)
     }
   }
 }

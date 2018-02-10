@@ -26,7 +26,7 @@ import scala.collection.immutable.Map
 object Neo4jPropertyGraphFactory extends PropertyGraphFactory {
   lazy val factory = new Neo4jPropertyGraphFactory
 
-  def apply(createQuery: String, parameters: Map[String, Any]): PropertyGraph = factory.create(createQuery, parameters)
+  def apply(createQuery: String, parameters: Map[String, Any]): TestPropertyGraph = factory.create(createQuery, parameters)
 }
 
 class Neo4jPropertyGraphFactory {
@@ -38,7 +38,7 @@ class Neo4jPropertyGraphFactory {
 
   val inputGraph: GraphDatabaseService = neo4jServer.graph()
 
-  def create(createQuery: String, parameters: Map[String, Any]): PropertyGraph = {
+  def create(createQuery: String, parameters: Map[String, Any]): TestPropertyGraph = {
     val tx = inputGraph.beginTx()
     inputGraph.execute("MATCH (a) DETACH DELETE a")
     inputGraph.execute(createQuery)
@@ -72,7 +72,7 @@ class Neo4jPropertyGraphFactory {
       Relationship(id, sourceId, targetId, relType, properties)
     }
 
-    PropertyGraph(nodes, relationships)
+    TestPropertyGraph(nodes, relationships)
   }
 
   def close: Any = neo4jServer.close()

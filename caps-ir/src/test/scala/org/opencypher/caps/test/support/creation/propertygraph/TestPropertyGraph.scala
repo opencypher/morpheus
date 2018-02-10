@@ -32,16 +32,15 @@ trait Graph {
   }
 }
 
-case class PropertyGraph(nodes: Seq[Node], relationships: Seq[Relationship]) extends Graph {
-  def updated(node: Node): PropertyGraph = copy(nodes = node +: nodes)
+case class TestPropertyGraph(nodes: Seq[Node], relationships: Seq[Relationship]) extends Graph {
+  def updated(node: Node): TestPropertyGraph = copy(nodes = node +: nodes)
 
-  def updated(rel: Relationship): PropertyGraph = copy(relationships = rel +: relationships)
+  def updated(rel: Relationship): TestPropertyGraph = copy(relationships = rel +: relationships)
 }
 
-object PropertyGraph {
-  def empty: PropertyGraph = PropertyGraph(Seq.empty, Seq.empty)
+object TestPropertyGraph {
+  def empty: TestPropertyGraph = TestPropertyGraph(Seq.empty, Seq.empty)
 }
-
 
 trait GraphElement {
   def id: Long
@@ -64,5 +63,5 @@ case class Relationship(
 
 
 trait PropertyGraphFactory {
-  def apply(createQuery: String, parameters: Map[String, Any]): PropertyGraph
+  def apply(createQuery: String, parameters: Map[String, Any]): TestPropertyGraph
 }

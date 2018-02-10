@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.test.fixture
+package org.opencypher.caps.cosc.test.support.creation.cosc
 
-import org.opencypher.caps.impl.spark.CAPSGraph
-import org.opencypher.caps.test.BaseTestSuite
-import org.opencypher.caps.test.support.creation.caps.CAPSScanGraphFactory
-import org.opencypher.caps.test.support.creation.propertygraph.TestPropertyGraphFactory
+import org.opencypher.caps.api.graph.PropertyGraph
+import org.opencypher.caps.cosc.impl.COSCSession
+import org.opencypher.caps.test.support.creation.TestGraphFactory
+import org.opencypher.caps.test.support.creation.propertygraph.TestPropertyGraph
 
-trait GraphCreationFixture {
-  self: CAPSSessionFixture with BaseTestSuite =>
+object COSCTestGraphFactory extends TestGraphFactory[COSCSession] {
 
-  val initGraph: String => CAPSGraph =
-    (createQuery) => CAPSScanGraphFactory(TestPropertyGraphFactory(createQuery))
+  override def apply(propertyGraph: TestPropertyGraph)(implicit caps: COSCSession): PropertyGraph = ???
+
+  override def name: String = "COSCTestGraphFactory"
 }

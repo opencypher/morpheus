@@ -15,15 +15,14 @@
  */
 package org.opencypher.caps
 
-import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.NotImplementedException
+import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph}
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.api.value.CypherValue.{CypherList => CAPSCypherList, CypherMap => CAPSCypherMap, CypherValue => CAPSCypherValue}
 import org.opencypher.caps.impl.record.CypherRecords
 import org.opencypher.caps.impl.spark.CAPSConverters._
-import org.opencypher.caps.impl.spark.CAPSGraph
 import org.opencypher.caps.ir.impl.typer.exception.TypingException
-import org.opencypher.caps.test.support.creation.caps.CAPSTestGraphFactory
+import org.opencypher.caps.test.support.creation.TestGraphFactory
 import org.opencypher.caps.test.support.creation.propertygraph.Neo4jPropertyGraphFactory
 import org.opencypher.tools.tck.api.{ExecutionFailed, _}
 import org.opencypher.tools.tck.constants.{TCKErrorDetails, TCKErrorPhases, TCKErrorTypes}
@@ -32,7 +31,7 @@ import org.opencypher.tools.tck.values.{CypherValue => TCKCypherValue, _}
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
-case class TCKGraph(capsGraphFactory: CAPSTestGraphFactory, graph: CAPSGraph)(implicit caps: CAPSSession) extends Graph {
+case class TCKGraph[C <: CypherSession](capsGraphFactory: TestGraphFactory[C], graph: PropertyGraph)(implicit caps: C) extends Graph {
 
   override def execute(query: String, params: Map[String, TCKCypherValue], queryType: QueryType): (Graph, Result) = {
     queryType match {
