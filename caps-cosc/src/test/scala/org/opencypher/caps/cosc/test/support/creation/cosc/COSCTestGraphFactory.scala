@@ -16,13 +16,19 @@
 package org.opencypher.caps.cosc.test.support.creation.cosc
 
 import org.opencypher.caps.api.graph.PropertyGraph
-import org.opencypher.caps.cosc.impl.COSCSession
+import org.opencypher.caps.cosc.impl.value.{COSCNode, COSCRelationship}
+import org.opencypher.caps.cosc.impl.{COSCGraph, COSCSession}
 import org.opencypher.caps.test.support.creation.TestGraphFactory
 import org.opencypher.caps.test.support.creation.propertygraph.TestPropertyGraph
 
 object COSCTestGraphFactory extends TestGraphFactory[COSCSession] {
 
-  override def apply(propertyGraph: TestPropertyGraph)(implicit caps: COSCSession): PropertyGraph = ???
+  override def apply(propertyGraph: TestPropertyGraph)(implicit caps: COSCSession): PropertyGraph = {
+    val nodes = propertyGraph.nodes.map(n => COSCNode(n.id, n.labels, n.properties))
+    val rels = propertyGraph.relationships.map(r => COSCRelationship(r.id, r.source, r.target, r.relType, r.properties))
+
+    COSCGraph.create(nodes, rels)
+  }
 
   override def name: String = "COSCTestGraphFactory"
 }

@@ -20,7 +20,6 @@ import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph}
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.api.value.CypherValue.{CypherList => CAPSCypherList, CypherMap => CAPSCypherMap, CypherValue => CAPSCypherValue}
 import org.opencypher.caps.impl.record.CypherRecords
-import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.ir.impl.typer.exception.TypingException
 import org.opencypher.caps.tck.TCKFixture._
 import org.opencypher.caps.test.support.creation.TestGraphFactory
@@ -37,6 +36,12 @@ import scala.util.{Failure, Success, Try}
 object TCKFixture {
   // TODO: enable flaky test once new TCk release is there
   val scenarios: Seq[Scenario] = CypherTCK.allTckScenarios.filterNot(_.name == "Limit to two hits")
+
+  def printAll(): Unit = scenarios
+    .map(s => s"""Feature "${s.featureName}": Scenario "${s.name}"""")
+    .distinct
+    .sorted
+    .foreach(println)
 
   implicit class Scenarios(scenarios: Seq[Scenario]) {
     /**
@@ -58,13 +63,13 @@ object TCKFixture {
   }
 }
 
-case class TCKGraph[C <: CypherSession](capsGraphFactory: TestGraphFactory[C], graph: PropertyGraph)(implicit caps: C) extends Graph {
+case class TCKGraph[C <: CypherSession](testGraphFactory: TestGraphFactory[C], graph: PropertyGraph)(implicit caps: C) extends Graph {
 
   override def execute(query: String, params: Map[String, TCKCypherValue], queryType: QueryType): (Graph, Result) = {
     queryType match {
       case InitQuery =>
-        val capsGraph = capsGraphFactory(Neo4jPropertyGraphFactory(query, params.mapValues(tckValueToCAPSValue))).asCaps
-        copy(graph = capsGraph) -> CypherValueRecords.empty
+        val propertyGraph = testGraphFactory(Neo4jPropertyGraphFactory(query, params.mapValues(tckValueToCAPSValue)))
+        copy(graph = propertyGraph) -> CypherValueRecords.empty
       case SideEffectQuery =>
         // this one is tricky, not sure how can do it without Cypher
         this -> CypherValueRecords.empty
