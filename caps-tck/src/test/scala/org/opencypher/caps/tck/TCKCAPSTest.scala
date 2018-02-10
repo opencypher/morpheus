@@ -13,77 +13,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps
+package org.opencypher.caps.tck
 
 import java.io.File
 
 import org.opencypher.caps.impl.spark.CAPSGraph
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
-import org.opencypher.tools.tck.api.{CypherTCK, Scenario}
+import org.opencypher.tools.tck.api.CypherTCK
 import org.scalatest.Tag
 import org.scalatest.prop.TableDrivenPropertyChecks._
 
 import scala.util.{Failure, Success, Try}
 
-// needs to be a val because of a TCK bug (scenarios can only be read once)
-object TCKFixture {
-  // TODO: enable flaky test once new TCk release is there
-  val scenarios: Seq[Scenario] = CypherTCK.allTckScenarios.filterNot(_.name == "Limit to two hits")
-}
-
 class TCKCAPSTest extends CAPSTestSuite {
-
-  import TCKFixture._
 
   object WhiteList extends Tag("WhiteList Scenario")
 
   object BlackList extends Tag("BlackList Scenario")
 
-  val factories = Table(
+  // Defines the graphs to run on
+  private val factories = Table(
     "factory",
     CAPSScanGraphFactory
   )
 
-  val defaultFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
+  private val defaultFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
 
-
-  implicit class Scenarios(scenarios: Seq[Scenario]) {
-    /**
-      * Scenario outlines are parameterised scenarios that all have the same name, but different parameters.
-      * Because test names need to be unique, we enumerate these scenarios and put the enumeration into the
-      * scenario name to make those names unique.
-      */
-    def enumerateScenarioOutlines: Seq[Scenario] = {
-      scenarios.groupBy(_.toString).flatMap { case (_, nameCollisionGroup) =>
-        if (nameCollisionGroup.size <= 1) {
-          nameCollisionGroup
-        } else {
-          nameCollisionGroup.zipWithIndex.map { case (groupScenario, index) =>
-            groupScenario.copy(name = s"${groupScenario.name} #${index + 1}")
-          }
-        }
-      }
-    }.toSeq
-  }
-
-  val whiteListScenarios = Table(
-    "scenario",
-    scenarios.filterNot { s =>
-      ScenarioBlacklist.contains(s.toString())
-    }.enumerateScenarioOutlines: _*
-  )
-
-  val blackListScenarios = Table(
-    "scenario",
-    scenarios.filter { s =>
-      ScenarioBlacklist.contains(s.toString())
-    }.enumerateScenarioOutlines: _*
-  )
+  private val scenarios = ScenariosFor("spark")
 
   // white list tests are run on all factories
   forAll(factories) { factory =>
-    forAll(whiteListScenarios) { scenario =>
+    forAll(scenarios.whiteList) { scenario =>
       test(s"[${factory.name}, ${WhiteList.name}] $scenario", WhiteList) {
         scenario(TCKGraph(factory, CAPSGraph.empty)).execute()
       }
@@ -91,7 +52,7 @@ class TCKCAPSTest extends CAPSTestSuite {
   }
 
   // black list tests are run on default factory
-  forAll(blackListScenarios) { scenario =>
+  forAll(scenarios.blackList) { scenario =>
     test(s"[${defaultFactory.name}, ${BlackList.name}] $scenario", BlackList) {
       val tckGraph = TCKGraph(defaultFactory, CAPSGraph.empty)
 
@@ -105,7 +66,7 @@ class TCKCAPSTest extends CAPSTestSuite {
   }
 
   ignore("run Custom Scenario") {
-    val file = new File(getClass.getResource("CAPSTestFeature.feature").toURI)
+    val file = new File(getClass.getResource("CustomTest.feature").toURI)
 
     CypherTCK
       .parseFilesystemFeature(file)
@@ -114,9 +75,7 @@ class TCKCAPSTest extends CAPSTestSuite {
   }
 
   ignore("run Single Scenario") {
-    val name = "A simple pattern with one bound endpoint"
-    scenarios
-      .filter(s => s.name == name)
+    scenarios.get("A simple pattern with one bound endpoint")
       .foreach(scenario => scenario(TCKGraph(defaultFactory, CAPSGraph.empty)).execute())
   }
 }
