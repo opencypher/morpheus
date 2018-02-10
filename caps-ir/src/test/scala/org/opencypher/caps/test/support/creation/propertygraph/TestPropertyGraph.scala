@@ -15,51 +15,48 @@
  */
 package org.opencypher.caps.test.support.creation.propertygraph
 
-trait Graph {
-  def nodes: Seq[Node]
-  def relationships: Seq[Relationship]
+import org.opencypher.caps.api.value.CypherValue.{CypherMap, CypherNode, CypherRelationship}
 
-  def getNodeById(id: Long): Option[Node] = {
+trait Graph {
+  def nodes: Seq[TestNode]
+  def relationships: Seq[TestRelationship]
+
+  def getNodeById(id: Long): Option[TestNode] = {
     nodes.collectFirst {
-      case n : Node if n.id == id => n
+      case n : TestNode if n.id == id => n
     }
   }
 
-  def getRelationshipById(id: Long): Option[Relationship] = {
+  def getRelationshipById(id: Long): Option[TestRelationship] = {
     relationships.collectFirst {
-      case r : Relationship if r.id == id => r
+      case r : TestRelationship if r.id == id => r
     }
   }
 }
 
-case class TestPropertyGraph(nodes: Seq[Node], relationships: Seq[Relationship]) extends Graph {
-  def updated(node: Node): TestPropertyGraph = copy(nodes = node +: nodes)
+case class TestPropertyGraph(nodes: Seq[TestNode], relationships: Seq[TestRelationship]) extends Graph {
+  def updated(node: TestNode): TestPropertyGraph = copy(nodes = node +: nodes)
 
-  def updated(rel: Relationship): TestPropertyGraph = copy(relationships = rel +: relationships)
+  def updated(rel: TestRelationship): TestPropertyGraph = copy(relationships = rel +: relationships)
 }
 
 object TestPropertyGraph {
   def empty: TestPropertyGraph = TestPropertyGraph(Seq.empty, Seq.empty)
 }
 
-trait GraphElement {
-  def id: Long
-  def properties: Map[String, Any]
-}
+case class TestNode(
+  override val id: Long,
+  override val labels: Set[String],
+  override val properties: CypherMap
+) extends CypherNode[Long]
 
-case class Node(
-  id: Long,
-  labels: Set[String],
-  properties: Map[String, Any]
-) extends GraphElement
-
-case class Relationship(
-  id: Long,
-  startId: Long,
-  endId: Long,
-  relType: String,
-  properties: Map[String, Any]
-) extends GraphElement
+case class TestRelationship(
+  override val id: Long,
+  override val source: Long,
+  override val target: Long,
+  override val relType: String,
+  override val properties: CypherMap
+) extends CypherRelationship[Long]
 
 
 trait PropertyGraphFactory {

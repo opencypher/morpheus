@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.util.v3_4.ASTNode
 import org.neo4j.cypher.internal.v3_4.expressions._
 import org.opencypher.caps.api.exception.{IllegalArgumentException, UnsupportedOperationException}
+import org.opencypher.caps.api.value.CypherValue.{CypherEntity, CypherMap, CypherNode, CypherRelationship}
 import org.opencypher.caps.ir.impl.parse.CypherParser
 
 import scala.collection.TraversableOnce
@@ -73,26 +74,26 @@ object TestPropertyGraphFactory extends PropertyGraphFactory {
   def processPattern(pattern: Pattern): Result[Unit] = {
     val parts = pattern.patternParts.map {
       case EveryPath(element) => element
-      case other              => throw UnsupportedOperationException(s"Processing pattern: ${other.getClass.getSimpleName}")
+      case other => throw UnsupportedOperationException(s"Processing pattern: ${other.getClass.getSimpleName}")
     }
 
-    Foldable[List].sequence_[Result, GraphElement](parts.toList.map(pe => processPatternElement(pe)))
+    Foldable[List].sequence_[Result, CypherEntity[Long]](parts.toList.map(pe => processPatternElement(pe)))
   }
 
-  def processPatternElement(patternElement: ASTNode): Result[GraphElement] = {
+  def processPatternElement(patternElement: ASTNode): Result[CypherEntity[Long]] = {
     patternElement match {
       case NodePattern(Some(variable), labels, props) =>
         for {
           properties <- props match {
             case Some(expr: MapExpression) => extractProperties(expr)
-            case Some(other)               => throw IllegalArgumentException("a NodePattern with MapExpression", other)
-            case None                      => pure[ParsingContext, Map[String, Any]](Map.empty)
+            case Some(other) => throw IllegalArgumentException("a NodePattern with MapExpression", other)
+            case None => pure[ParsingContext, CypherMap](CypherMap.empty)
           }
-          node <- inspect[ParsingContext, Node] { context =>
+          node <- inspect[ParsingContext, TestNode] { context =>
             context.variableMapping.get(variable.name) match {
-              case Some(n: Node) => n
-              case Some(other)   => throw IllegalArgumentException(s"a Node for variable ${variable.name}", other)
-              case None          => Node(context.nextId, labels.map(_.name).toSet, properties)
+              case Some(n: TestNode) => n
+              case Some(other) => throw IllegalArgumentException(s"a Node for variable ${variable.name}", other)
+              case None => TestNode(context.nextId, labels.map(_.name).toSet, properties)
             }
           }
           _ <- modify[ParsingContext] { context =>
@@ -108,20 +109,20 @@ object TestPropertyGraphFactory extends PropertyGraphFactory {
         for {
           source <- processPatternElement(first)
           sourceId <- pure[ParsingContext, Long](source match {
-            case Node(id, _, _)  => id
-            case r: Relationship => r.endId
+            case n: CypherNode[Long] => n.id
+            case r: CypherRelationship[Long] => r.target
           })
           target <- processPatternElement(third)
           properties <- props match {
             case Some(expr: MapExpression) => extractProperties(expr)
-            case Some(other)               => throw IllegalArgumentException("a RelationshipChain with MapExpression", other)
-            case None                      => pure[ParsingContext, Map[String, Any]](Map.empty)
+            case Some(other) => throw IllegalArgumentException("a RelationshipChain with MapExpression", other)
+            case None => pure[ParsingContext, CypherMap](CypherMap.empty)
           }
-          rel <- inspect[ParsingContext, Relationship] { context =>
+          rel <- inspect[ParsingContext, TestRelationship] { context =>
             if (direction == SemanticDirection.OUTGOING)
-              Relationship(context.nextId, sourceId, target.id, relType.head.name, properties)
+              TestRelationship(context.nextId, sourceId, target.id, relType.head.name, properties)
             else if (direction == SemanticDirection.INCOMING)
-              Relationship(context.nextId, target.id, sourceId, relType.head.name, properties)
+              TestRelationship(context.nextId, target.id, sourceId, relType.head.name, properties)
             else throw IllegalArgumentException("a directed relationship", direction)
           }
 
@@ -130,27 +131,27 @@ object TestPropertyGraphFactory extends PropertyGraphFactory {
     }
   }
 
-  def extractProperties(expr: MapExpression): Result[Map[String, Any]] = {
+  def extractProperties(expr: MapExpression): Result[CypherMap] = {
     for {
       keys <- pure(expr.items.map(_._1.name))
       values <- expr.items.toList.traverse[Result, Any] {
         case (_, inner) => processExpr(inner)
       }
-      res <- pure(keys.zip(values).toMap)
+      res <- pure(CypherMap(keys.zip(values): _*))
     } yield res
   }
 
   def processExpr(expr: Expression): Result[Any] = {
     for {
       res <- expr match {
-        case Parameter(name, _)       => inspect[ParsingContext, Any](_.parameter(name))
-        case Variable(name)           => inspect[ParsingContext, Any](_.variableMapping(name))
-        case l: Literal               => pure[ParsingContext, Any](l.value)
+        case Parameter(name, _) => inspect[ParsingContext, Any](_.parameter(name))
+        case Variable(name) => inspect[ParsingContext, Any](_.variableMapping(name))
+        case l: Literal => pure[ParsingContext, Any](l.value)
         case ListLiteral(expressions) => expressions.toList.traverse[Result, Any](processExpr)
         case Property(variable: Variable, propertyKey) =>
           inspect[ParsingContext, Any]({ context =>
             context.variableMapping(variable.name) match {
-              case a: GraphElement => a.properties(propertyKey.name)
+              case a: CypherEntity[_] => a.properties(propertyKey.name)
               case other =>
                 throw UnsupportedOperationException(s"Reading property from a ${other.getClass.getSimpleName}")
             }
@@ -168,13 +169,13 @@ object TestPropertyGraphFactory extends PropertyGraphFactory {
       case Variable(name) =>
         inspect[ParsingContext, List[Any]](_.variableMapping(name) match {
           case l: TraversableOnce[Any] => l.toList
-          case other                   => throw IllegalArgumentException(s"a list value for variable $name", other)
+          case other => throw IllegalArgumentException(s"a list value for variable $name", other)
         })
 
       case Parameter(name, _) =>
         inspect[ParsingContext, List[Any]](_.parameter(name) match {
           case l: TraversableOnce[Any] => l.toList
-          case other                   => throw IllegalArgumentException(s"a list value for parameter $name", other)
+          case other => throw IllegalArgumentException(s"a list value for parameter $name", other)
         })
 
       case FunctionInvocation(_, FunctionName("range"), _, Seq(lb: IntegerLiteral, ub: IntegerLiteral)) =>
@@ -186,11 +187,11 @@ object TestPropertyGraphFactory extends PropertyGraphFactory {
 }
 
 final case class ParsingContext(
-    parameter: Map[String, Any],
-    variableMapping: Map[String, Any],
-    graph: TestPropertyGraph,
-    protectedScopes: List[Map[String, Any]],
-    idGenerator: AtomicLong) {
+  parameter: Map[String, Any],
+  variableMapping: Map[String, Any],
+  graph: TestPropertyGraph,
+  protectedScopes: List[Map[String, Any]],
+  idGenerator: AtomicLong) {
 
   def nextId: Long = idGenerator.getAndIncrement()
 
@@ -205,10 +206,10 @@ final case class ParsingContext(
   def popProtectedScope: ParsingContext = copy(protectedScopes = protectedScopes.tail)
 
   def updated(k: String, v: Any): ParsingContext = v match {
-    case n: Node =>
+    case n: TestNode =>
       copy(graph = graph.updated(n), variableMapping = variableMapping.updated(k, n))
 
-    case r: Relationship =>
+    case r: TestRelationship =>
       copy(graph = graph.updated(r), variableMapping = variableMapping.updated(k, r))
 
     case _ =>

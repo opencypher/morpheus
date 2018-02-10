@@ -76,27 +76,27 @@ class TCKCOSCTest extends COSCTestSuite {
   )
 
   // white list tests are run on all factories
-  forAll(factories) { factory =>
-    forAll(whiteListScenarios) { scenario =>
-      test(s"[${factory.name}, ${WhiteList.name}] $scenario", WhiteList) {
-        scenario(TCKGraph(factory, COSCGraph.empty)).execute()
-      }
-    }
-  }
-
-  // black list tests are run on default factory
-  forAll(blackListScenarios) { scenario =>
-    test(s"[${defaultFactory.name}, ${BlackList.name}] $scenario", BlackList) {
-      val tckGraph = TCKGraph(defaultFactory, COSCGraph.empty)
-
-      Try(scenario(tckGraph).execute()) match {
-        case Success(_) =>
-          throw new RuntimeException(s"A blacklisted scenario actually worked: $scenario")
-        case Failure(_) =>
-          ()
-      }
-    }
-  }
+//  forAll(factories) { factory =>
+//    forAll(whiteListScenarios) { scenario =>
+//      test(s"[${factory.name}, ${WhiteList.name}] $scenario", WhiteList) {
+//        scenario(TCKGraph(factory, COSCGraph.empty)).execute()
+//      }
+//    }
+//  }
+//
+//  // black list tests are run on default factory
+//  forAll(blackListScenarios) { scenario =>
+//    test(s"[${defaultFactory.name}, ${BlackList.name}] $scenario", BlackList) {
+//      val tckGraph = TCKGraph(defaultFactory, COSCGraph.empty)
+//
+//      Try(scenario(tckGraph).execute()) match {
+//        case Success(_) =>
+//          throw new RuntimeException(s"A blacklisted scenario actually worked: $scenario")
+//        case Failure(_) =>
+//          ()
+//      }
+//    }
+//  }
 
   ignore("run Custom Scenario") {
     val file = new File(getClass.getResource("CAPSTestFeature.feature").toURI)

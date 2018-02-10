@@ -43,7 +43,7 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory {
         .filter(_.labels == labels)
         .map { node =>
           val propertyValues = propKeys.map(key =>
-            node.properties.getOrElse(key._1, null)
+            node.properties.unwrap.getOrElse(key._1, null)
           )
           Row.fromSeq(Seq(node.id) ++ propertyValues)
         }
@@ -69,8 +69,8 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory {
       val rows = propertyGraph.relationships
         .filter(_.relType == relType)
         .map { rel =>
-          val propertyValues = propKeys.map(key => rel.properties.getOrElse(key._1, null))
-          Row.fromSeq(Seq(rel.id, rel.startId, rel.endId) ++ propertyValues)
+          val propertyValues = propKeys.map(key => rel.properties.unwrap.getOrElse(key._1, null))
+          Row.fromSeq(Seq(rel.id, rel.source, rel.target) ++ propertyValues)
         }
 
       val records = caps.sparkSession.createDataFrame(rows.asJava, structType).toDF(header: _*)

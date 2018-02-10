@@ -19,6 +19,7 @@ import java.util.stream.Collectors
 
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.harness.TestServerBuilders
+import org.opencypher.caps.api.value.CypherValue.CypherMap
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Map
@@ -56,9 +57,9 @@ class Neo4jPropertyGraphFactory {
     val nodes = neoNodes.asScala.map { neoNode =>
       val labels: Set[String] = neoNode.getLabels.asScala.map(_.name).toSet
       val id: Long = neoNode.getId
-      val properties: Map[String, Any] = neoNode.getAllProperties.asScala.toMap
+      val properties = CypherMap(neoNode.getAllProperties.asScala.toSeq: _*)
 
-      Node(id, labels, properties)
+      TestNode(id, labels, properties)
     }
 
     val neoRels = inputGraph.getAllRelationships.iterator().stream().collect(Collectors.toList())
@@ -67,9 +68,9 @@ class Neo4jPropertyGraphFactory {
       val sourceId: Long = neoRel.getStartNodeId
       val targetId: Long = neoRel.getEndNodeId
       val id: Long = neoRel.getId
-      val properties: Map[String, Any] = neoRel.getAllProperties.asScala.toMap
+      val properties = CypherMap(neoRel.getAllProperties.asScala.toSeq: _*)
 
-      Relationship(id, sourceId, targetId, relType, properties)
+      TestRelationship(id, sourceId, targetId, relType, properties)
     }
 
     TestPropertyGraph(nodes, relationships)

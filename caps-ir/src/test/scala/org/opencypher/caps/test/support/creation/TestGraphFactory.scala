@@ -18,8 +18,7 @@ package org.opencypher.caps.test.support.creation
 import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.CypherType._
-import org.opencypher.caps.api.value.CypherValue
-import org.opencypher.caps.test.support.creation.propertygraph.{Node, Relationship, TestPropertyGraph}
+import org.opencypher.caps.test.support.creation.propertygraph.{TestNode, TestPropertyGraph, TestRelationship}
 
 trait TestGraphFactory[C <: CypherSession] {
 
@@ -30,14 +29,14 @@ trait TestGraphFactory[C <: CypherSession] {
   override def toString: String = name
 
   def computeSchema(propertyGraph: TestPropertyGraph): Schema = {
-    def extractFromNode(n: Node) =
-      n.labels -> n.properties.map {
-        case (name, prop) => name -> CypherValue(prop).cypherType
+    def extractFromNode(n: TestNode) =
+      n.labels -> n.properties.value.map {
+        case (name, prop) => name -> prop.cypherType
       }
 
-    def extractFromRel(r: Relationship) =
-      r.relType -> r.properties.map {
-        case (name, prop) => name -> CypherValue(prop).cypherType
+    def extractFromRel(r: TestRelationship) =
+      r.relType -> r.properties.value.map {
+        case (name, prop) => name -> prop.cypherType
       }
 
     val labelsAndProps = propertyGraph.nodes.map(extractFromNode)
