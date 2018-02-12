@@ -17,34 +17,30 @@ package org.opencypher.caps.cosc.impl.planning
 
 import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
-import org.opencypher.caps.cosc.impl
-import org.opencypher.caps.cosc.impl.{COSCPhysicalResult, COSCRecords, COSCRuntimeContext}
+import org.opencypher.caps.cosc.impl.{COSCPhysicalResult, COSCRuntimeContext}
 import org.opencypher.caps.impl.record.RecordHeader
 import org.opencypher.caps.ir.api.expr.{Expr, Var}
 import org.opencypher.caps.logical.impl.{LogicalExternalGraph, LogicalGraph}
 
-abstract class UnaryOperator extends COSCOperator
+abstract class UnaryOperator extends COSCOperator {
 
-case class Start(records: COSCRecords, graph: LogicalExternalGraph) extends COSCOperator {
+  def in: COSCOperator
 
-  override val header: RecordHeader = records.header
+  override def execute(implicit context: COSCRuntimeContext): COSCPhysicalResult = executeUnary(in.execute)
 
-  override def execute(implicit context: COSCRuntimeContext): COSCPhysicalResult =
-    impl.COSCPhysicalResult(records, Map(graph.name -> resolve(graph.uri)))
+  def executeUnary(prev: COSCPhysicalResult)(implicit context: COSCRuntimeContext): COSCPhysicalResult
 }
 
-case class SetSourceGraph(in: COSCOperator, graph: LogicalExternalGraph) extends COSCOperator {
+case class SetSourceGraph(in: COSCOperator, graph: LogicalExternalGraph) extends UnaryOperator with InheritedHeader {
 
-  override val header: RecordHeader = in.header
-
-  override def execute(implicit context: COSCRuntimeContext): COSCPhysicalResult =
-    in.execute.withGraph(graph.name -> resolve(graph.uri))
+  override def executeUnary(prev: COSCPhysicalResult)(implicit context: COSCRuntimeContext): COSCPhysicalResult =
+    prev.withGraph(graph.name -> resolve(graph.uri))
 }
 
-case class Scan(in: COSCOperator, inGraph: LogicalGraph, v: Var, header: RecordHeader) extends COSCOperator {
+case class Scan(in: COSCOperator, inGraph: LogicalGraph, v: Var, header: RecordHeader) extends UnaryOperator {
 
-  override def execute(implicit context: COSCRuntimeContext): COSCPhysicalResult = {
-    val graphs = in.execute.graphs
+  override def executeUnary(prev: COSCPhysicalResult)(implicit context: COSCRuntimeContext): COSCPhysicalResult = {
+    val graphs = prev.graphs
     val graph = graphs(inGraph.name)
     val records = v.cypherType match {
       case r: CTRelationship =>
@@ -57,24 +53,20 @@ case class Scan(in: COSCOperator, inGraph: LogicalGraph, v: Var, header: RecordH
     assert(header == records.header)
     COSCPhysicalResult(records, graphs)
   }
+
 }
 
-case class Select(in: COSCOperator, fields: Seq[Var], graphs: Set[String], header: RecordHeader) extends COSCOperator {
+case class Select(in: COSCOperator, fields: Seq[Var], graphs: Set[String], header: RecordHeader) extends UnaryOperator {
 
-  override def execute(implicit context: COSCRuntimeContext): COSCPhysicalResult = in.execute
+  override def executeUnary(prev: COSCPhysicalResult)(implicit context: COSCRuntimeContext): COSCPhysicalResult = prev
 }
 
 case class Project(in: COSCOperator, expr: Expr, header: RecordHeader) extends UnaryOperator {
 
-  override def execute(implicit context: COSCRuntimeContext): COSCPhysicalResult = in.execute
+  override def executeUnary(prev: COSCPhysicalResult)(implicit context: COSCRuntimeContext): COSCPhysicalResult = prev
 }
 
-case class Filter(in: COSCOperator, expr: Expr, header: RecordHeader) extends COSCOperator {
+case class Filter(in: COSCOperator, expr: Expr, header: RecordHeader) extends UnaryOperator {
 
-  override def execute(implicit context: COSCRuntimeContext): COSCPhysicalResult = {
-    val prev = in.execute
-    val newRecords = prev.records
-    println(expr)
-    COSCPhysicalResult(newRecords, prev.graphs)
-  }
+  override def executeUnary(prev: COSCPhysicalResult)(implicit context: COSCRuntimeContext): COSCPhysicalResult = prev
 }

@@ -35,7 +35,7 @@ import java.util.UUID
 import org.apache.spark.SparkConf
 import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.sql.SparkSession
-import org.opencypher.caps.api.SparkConfiguration.Logging
+import org.opencypher.caps.api.configuration.Configuration.Logging
 import org.opencypher.caps.demo.CypherKryoRegistrar
 
 object TestSparkSession {

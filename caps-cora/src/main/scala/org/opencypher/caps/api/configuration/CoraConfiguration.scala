@@ -15,9 +15,11 @@
  */
 package org.opencypher.caps.api.configuration
 
+import org.opencypher.caps.api.configuration.Configuration.ConfigOption
+
 import scala.util.Try
 
-object CoraConfiguration extends Configuration {
+object CoraConfiguration {
 
   object PrintFlatPlan extends ConfigOption("cora.explainFlat", false)(s => Try(s.toBoolean).toOption) {
     def set(): Unit = set(true.toString)
