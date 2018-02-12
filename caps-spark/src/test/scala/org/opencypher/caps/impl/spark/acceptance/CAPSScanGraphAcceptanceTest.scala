@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 package org.opencypher.caps.impl.spark.acceptance
-import org.opencypher.caps.test.support.creation.caps.{CAPSGraphFactory, CAPSScanGraphFactory}
+
+import org.opencypher.caps.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 
 class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
-  override def capsGraphFactory: CAPSGraphFactory = CAPSScanGraphFactory
+  override def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
 }

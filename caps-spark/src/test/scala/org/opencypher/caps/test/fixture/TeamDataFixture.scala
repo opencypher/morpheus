@@ -18,11 +18,11 @@ package org.opencypher.caps.test.fixture
 import org.apache.spark.sql.{DataFrame, Row}
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.caps.api.schema.{CAPSNodeTable, CAPSRelationshipTable}
-import org.opencypher.caps.test.support.DebugOutputSupport
+import org.opencypher.caps.test.support.RowDebugOutputSupport
 
 import scala.collection.Bag
 
-trait TeamDataFixture extends TestDataFixture with DebugOutputSupport {
+trait TeamDataFixture extends TestDataFixture with RowDebugOutputSupport {
 
   self: CAPSSessionFixture =>
 

@@ -13,35 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.test.support.creation.caps
+package org.opencypher.caps.test.support.creation
 
-import org.apache.spark.sql.types.StructField
-import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.schema.PropertyKeys.PropertyKeys
+import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.CypherType._
-import org.opencypher.caps.api.value.CypherValue
-import org.opencypher.caps.impl.spark.CAPSGraph
-import org.opencypher.caps.impl.spark.convert.SparkUtils._
-import org.opencypher.caps.test.support.creation.propertygraph.{Node, PropertyGraph, Relationship}
+import org.opencypher.caps.test.support.creation.propertygraph.{TestNode, TestPropertyGraph, TestRelationship}
 
-trait CAPSGraphFactory {
+trait TestGraphFactory[C <: CypherSession] {
 
-  def apply(propertyGraph: PropertyGraph)(implicit caps: CAPSSession): CAPSGraph
+  def apply(propertyGraph: TestPropertyGraph)(implicit caps: C): PropertyGraph
 
   def name: String
 
   override def toString: String = name
 
-  def computeSchema(propertyGraph: PropertyGraph): Schema = {
-    def extractFromNode(n: Node) =
-      n.labels -> n.properties.map {
-        case (name, prop) => name -> CypherValue(prop).cypherType
+  def computeSchema(propertyGraph: TestPropertyGraph): Schema = {
+    def extractFromNode(n: TestNode) =
+      n.labels -> n.properties.value.map {
+        case (name, prop) => name -> prop.cypherType
       }
 
-    def extractFromRel(r: Relationship) =
-      r.relType -> r.properties.map {
-        case (name, prop) => name -> CypherValue(prop).cypherType
+    def extractFromRel(r: TestRelationship) =
+      r.relType -> r.properties.value.map {
+        case (name, prop) => name -> prop.cypherType
       }
 
     val labelsAndProps = propertyGraph.nodes.map(extractFromNode)
@@ -53,12 +48,6 @@ trait CAPSGraphFactory {
 
     typesAndProps.foldLeft(schemaWithLabels) {
       case (acc, (t, props)) => acc.withRelationshipPropertyKeys(t)(props.toSeq: _*)
-    }
-  }
-
-  protected def getPropertyStructFields(propKeys: PropertyKeys): Seq[StructField] = {
-    propKeys.foldLeft(Seq.empty[StructField]) {
-      case (fields, key) => fields :+ StructField(key._1, toSparkType(key._2), key._2.isNullable)
     }
   }
 }

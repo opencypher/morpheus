@@ -21,7 +21,7 @@ import org.opencypher.caps.api.types.CTString
 import org.opencypher.caps.impl.spark.CAPSGraph
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.support.GraphMatchingTestSupport
-import org.opencypher.caps.test.support.creation.propertygraph.CAPSPropertyGraphFactory
+import org.opencypher.caps.test.support.creation.propertygraph.TestPropertyGraphFactory
 
 class CAPSScanGraphFactoryTest extends CAPSTestSuite with GraphMatchingTestSupport {
 
@@ -49,7 +49,6 @@ class CAPSScanGraphFactoryTest extends CAPSTestSuite with GraphMatchingTestSuppo
       (1L, false, true, "Martin"))
   ).toDF("ID", "IS_ASTRONAUT", "IS_MARTIAN", "NAME"))
 
-
   val languageTable: CAPSNodeTable = CAPSNodeTable(NodeMapping
     .on("ID")
     .withImpliedLabel("Language")
@@ -59,7 +58,6 @@ class CAPSScanGraphFactoryTest extends CAPSTestSuite with GraphMatchingTestSuppo
       (3L, "German"),
       (4L, "Orbital"))
   ).toDF("ID", "TITLE"))
-
 
   val knowsScan: CAPSRelationshipTable = CAPSRelationshipTable(RelationshipMapping
     .on("ID")
@@ -71,9 +69,8 @@ class CAPSScanGraphFactoryTest extends CAPSTestSuite with GraphMatchingTestSuppo
       (1L, 8L, 4L))
   ).toDF("SRC", "ID", "DST"))
 
-
   test("testSchema") {
-    val propertyGraph = CAPSPropertyGraphFactory(createQuery)
+    val propertyGraph = TestPropertyGraphFactory(createQuery)
     CAPSScanGraphFactory(propertyGraph).schema should equal(Schema.empty
       .withNodePropertyKeys("Person", "Astronaut")("name" -> CTString)
       .withNodePropertyKeys("Person", "Martian")("name" -> CTString)
@@ -82,7 +79,7 @@ class CAPSScanGraphFactoryTest extends CAPSTestSuite with GraphMatchingTestSuppo
   }
 
   test("testAsScanGraph") {
-    val propertyGraph = CAPSPropertyGraphFactory(createQuery)
+    val propertyGraph = TestPropertyGraphFactory(createQuery)
     CAPSScanGraphFactory(propertyGraph) shouldMatch CAPSGraph.create(personTable, languageTable, knowsScan)
   }
 }

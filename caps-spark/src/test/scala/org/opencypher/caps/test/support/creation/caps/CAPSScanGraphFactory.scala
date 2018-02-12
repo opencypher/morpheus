@@ -19,15 +19,17 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
+import org.opencypher.caps.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.caps.api.schema.{CAPSNodeTable, CAPSRelationshipTable}
+import org.opencypher.caps.impl.spark.convert.SparkUtils._
 import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSScanGraph}
-import org.opencypher.caps.test.support.creation.propertygraph.PropertyGraph
+import org.opencypher.caps.test.support.creation.propertygraph.TestPropertyGraph
 
 import scala.collection.JavaConverters._
 
-object CAPSScanGraphFactory extends CAPSGraphFactory {
+object CAPSScanGraphFactory extends CAPSTestGraphFactory {
 
-  override def apply(propertyGraph: PropertyGraph)(implicit caps: CAPSSession): CAPSGraph = {
+  override def apply(propertyGraph: TestPropertyGraph)(implicit caps: CAPSSession): CAPSGraph = {
     val schema = computeSchema(propertyGraph)
 
     val nodeScans = schema.labelCombinations.combos.map { labels =>
@@ -41,7 +43,7 @@ object CAPSScanGraphFactory extends CAPSGraphFactory {
         .filter(_.labels == labels)
         .map { node =>
           val propertyValues = propKeys.map(key =>
-            node.properties.getOrElse(key._1, null)
+            node.properties.unwrap.getOrElse(key._1, null)
           )
           Row.fromSeq(Seq(node.id) ++ propertyValues)
         }
@@ -67,8 +69,8 @@ object CAPSScanGraphFactory extends CAPSGraphFactory {
       val rows = propertyGraph.relationships
         .filter(_.relType == relType)
         .map { rel =>
-          val propertyValues = propKeys.map(key => rel.properties.getOrElse(key._1, null))
-          Row.fromSeq(Seq(rel.id, rel.startId, rel.endId) ++ propertyValues)
+          val propertyValues = propKeys.map(key => rel.properties.unwrap.getOrElse(key._1, null))
+          Row.fromSeq(Seq(rel.id, rel.source, rel.target) ++ propertyValues)
         }
 
       val records = caps.sparkSession.createDataFrame(rows.asJava, structType).toDF(header: _*)
@@ -85,4 +87,10 @@ object CAPSScanGraphFactory extends CAPSGraphFactory {
   }
 
   override def name: String = "CAPSScanGraphFactory"
+
+  protected def getPropertyStructFields(propKeys: PropertyKeys): Seq[StructField] = {
+    propKeys.foldLeft(Seq.empty[StructField]) {
+      case (fields, key) => fields :+ StructField(key._1, toSparkType(key._2), key._2.isNullable)
+    }
+  }
 }

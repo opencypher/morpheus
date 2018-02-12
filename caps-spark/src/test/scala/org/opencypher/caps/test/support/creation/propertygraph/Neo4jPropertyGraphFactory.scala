@@ -19,6 +19,7 @@ import java.util.stream.Collectors
 
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.harness.TestServerBuilders
+import org.opencypher.caps.api.value.CypherValue.CypherMap
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Map
@@ -26,7 +27,7 @@ import scala.collection.immutable.Map
 object Neo4jPropertyGraphFactory extends PropertyGraphFactory {
   lazy val factory = new Neo4jPropertyGraphFactory
 
-  def apply(createQuery: String, parameters: Map[String, Any]): PropertyGraph = factory.create(createQuery, parameters)
+  def apply(createQuery: String, parameters: Map[String, Any]): TestPropertyGraph = factory.create(createQuery, parameters)
 }
 
 class Neo4jPropertyGraphFactory {
@@ -38,7 +39,7 @@ class Neo4jPropertyGraphFactory {
 
   val inputGraph: GraphDatabaseService = neo4jServer.graph()
 
-  def create(createQuery: String, parameters: Map[String, Any]): PropertyGraph = {
+  def create(createQuery: String, parameters: Map[String, Any]): TestPropertyGraph = {
     val tx = inputGraph.beginTx()
     inputGraph.execute("MATCH (a) DETACH DELETE a")
     inputGraph.execute(createQuery)
@@ -56,9 +57,9 @@ class Neo4jPropertyGraphFactory {
     val nodes = neoNodes.asScala.map { neoNode =>
       val labels: Set[String] = neoNode.getLabels.asScala.map(_.name).toSet
       val id: Long = neoNode.getId
-      val properties: Map[String, Any] = neoNode.getAllProperties.asScala.toMap
+      val properties = CypherMap(neoNode.getAllProperties.asScala.toSeq: _*)
 
-      Node(id, labels, properties)
+      TestNode(id, labels, properties)
     }
 
     val neoRels = inputGraph.getAllRelationships.iterator().stream().collect(Collectors.toList())
@@ -67,12 +68,12 @@ class Neo4jPropertyGraphFactory {
       val sourceId: Long = neoRel.getStartNodeId
       val targetId: Long = neoRel.getEndNodeId
       val id: Long = neoRel.getId
-      val properties: Map[String, Any] = neoRel.getAllProperties.asScala.toMap
+      val properties = CypherMap(neoRel.getAllProperties.asScala.toSeq: _*)
 
-      Relationship(id, sourceId, targetId, relType, properties)
+      TestRelationship(id, sourceId, targetId, relType, properties)
     }
 
-    PropertyGraph(nodes, relationships)
+    TestPropertyGraph(nodes, relationships)
   }
 
   def close: Any = neo4jServer.close()

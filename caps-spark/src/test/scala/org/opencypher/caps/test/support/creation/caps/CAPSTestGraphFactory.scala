@@ -13,16 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.test.fixture
+package org.opencypher.caps.test.support.creation.caps
 
-import org.opencypher.caps.impl.spark.CAPSGraph
-import org.opencypher.caps.test.BaseTestSuite
-import org.opencypher.caps.test.support.creation.caps.CAPSScanGraphFactory
-import org.opencypher.caps.test.support.creation.propertygraph.TestPropertyGraphFactory
+import org.opencypher.caps.api.CAPSSession
+import org.opencypher.caps.test.support.creation.TestGraphFactory
 
-trait GraphCreationFixture {
-  self: CAPSSessionFixture with BaseTestSuite =>
-
-  val initGraph: String => CAPSGraph =
-    (createQuery) => CAPSScanGraphFactory(TestPropertyGraphFactory(createQuery))
-}
+trait CAPSTestGraphFactory extends TestGraphFactory[CAPSSession]

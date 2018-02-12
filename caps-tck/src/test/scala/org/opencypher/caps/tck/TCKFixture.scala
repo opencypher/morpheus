@@ -13,33 +13,63 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps
+package org.opencypher.caps.tck
 
-import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.exception.NotImplementedException
-import org.opencypher.caps.api.graph.CypherResult
+import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph}
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.api.value.CypherValue.{CypherList => CAPSCypherList, CypherMap => CAPSCypherMap, CypherValue => CAPSCypherValue}
 import org.opencypher.caps.impl.record.CypherRecords
-import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSResult}
 import org.opencypher.caps.ir.impl.typer.exception.TypingException
-import org.opencypher.caps.test.support.creation.caps.CAPSGraphFactory
+import org.opencypher.caps.tck.TCKFixture._
+import org.opencypher.caps.test.support.creation.TestGraphFactory
 import org.opencypher.caps.test.support.creation.propertygraph.Neo4jPropertyGraphFactory
-import org.opencypher.tools.tck.api._
-import org.opencypher.tools.tck.values.{CypherValue => TCKCypherValue, _}
-import org.opencypher.tools.tck.api.ExecutionFailed
+import org.opencypher.tools.tck.api.{ExecutionFailed, _}
 import org.opencypher.tools.tck.constants.{TCKErrorDetails, TCKErrorPhases, TCKErrorTypes}
+import org.opencypher.tools.tck.values.{CypherValue => TCKCypherValue, _}
+import org.scalatest.prop.TableDrivenPropertyChecks._
 
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
-case class TCKGraph(capsGraphFactory: CAPSGraphFactory, graph: CAPSGraph)(implicit caps: CAPSSession) extends Graph {
+// needs to be a val because of a TCK bug (scenarios can only be read once)
+object TCKFixture {
+  // TODO: enable flaky test once new TCk release is there
+  val scenarios: Seq[Scenario] = CypherTCK.allTckScenarios.filterNot(_.name == "Limit to two hits")
+
+  def printAll(): Unit = scenarios
+    .map(s => s"""Feature "${s.featureName}": Scenario "${s.name}"""")
+    .distinct
+    .sorted
+    .foreach(println)
+
+  implicit class Scenarios(scenarios: Seq[Scenario]) {
+    /**
+      * Scenario outlines are parameterised scenarios that all have the same name, but different parameters.
+      * Because test names need to be unique, we enumerate these scenarios and put the enumeration into the
+      * scenario name to make those names unique.
+      */
+    def enumerateScenarioOutlines: Seq[Scenario] = {
+      scenarios.groupBy(_.toString).flatMap { case (_, nameCollisionGroup) =>
+        if (nameCollisionGroup.size <= 1) {
+          nameCollisionGroup
+        } else {
+          nameCollisionGroup.zipWithIndex.map { case (groupScenario, index) =>
+            groupScenario.copy(name = s"${groupScenario.name} #${index + 1}")
+          }
+        }
+      }
+    }.toSeq
+  }
+}
+
+case class TCKGraph[C <: CypherSession](testGraphFactory: TestGraphFactory[C], graph: PropertyGraph)(implicit caps: C) extends Graph {
 
   override def execute(query: String, params: Map[String, TCKCypherValue], queryType: QueryType): (Graph, Result) = {
     queryType match {
       case InitQuery =>
-        val capsGraph = capsGraphFactory(Neo4jPropertyGraphFactory(query, params.mapValues(tckValueToCAPSValue)))
-        copy(graph = capsGraph) -> CypherValueRecords.empty
+        val propertyGraph = testGraphFactory(Neo4jPropertyGraphFactory(query, params.mapValues(tckValueToCAPSValue)))
+        copy(graph = propertyGraph) -> CypherValueRecords.empty
       case SideEffectQuery =>
         // this one is tricky, not sure how can do it without Cypher
         this -> CypherValueRecords.empty
@@ -80,9 +110,26 @@ case class TCKGraph(capsGraphFactory: CAPSGraphFactory, graph: CAPSGraph)(implic
   }
 }
 
-object ScenarioBlacklist {
+case class ScenariosFor(engine: String)  {
+
+  def whiteList = Table(
+    "scenario",
+    scenarios.filterNot { s =>
+      blacklist.contains(s.toString())
+    }.enumerateScenarioOutlines: _*
+  )
+
+  def blackList = Table(
+    "scenario",
+    scenarios.filter { s =>
+      blacklist.contains(s.toString())
+    }.enumerateScenarioOutlines: _*
+  )
+
+  def get(name: String): Seq[Scenario] = scenarios.filter(s => s.name == name)
+
   private lazy val blacklist: Set[String] = {
-    val blacklistIter = Source.fromFile(getClass.getResource("scenario_blacklist").toURI).getLines().toSeq
+    val blacklistIter = Source.fromFile(getClass.getResource(s"scenario_blacklist_$engine").toURI).getLines().toSeq
     val blacklistSet = blacklistIter.toSet
 
     lazy val errorMessage =
@@ -90,6 +137,4 @@ object ScenarioBlacklist {
     assert(blacklistIter.lengthCompare(blacklistSet.size) == 0, errorMessage)
     blacklistSet
   }
-
-  def contains(name: String): Boolean = blacklist.contains(name)
 }

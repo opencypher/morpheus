@@ -17,7 +17,7 @@ package org.opencypher.caps.test
 
 import org.opencypher.caps.impl.spark.physical.CAPSRuntimeContext
 import org.opencypher.caps.test.fixture.{CAPSSessionFixture, SparkSessionFixture}
-import org.opencypher.caps.test.support.{DebugOutputSupport, GraphMatchingTestSupport, RecordMatchingTestSupport}
+import org.opencypher.caps.test.support.{GraphMatchingTestSupport, RecordMatchingTestSupport, RowDebugOutputSupport}
 
 abstract class CAPSTestSuite
     extends BaseTestSuite
@@ -25,7 +25,7 @@ abstract class CAPSTestSuite
     with CAPSSessionFixture
     with GraphMatchingTestSupport
     with RecordMatchingTestSupport
-    with DebugOutputSupport {
+    with RowDebugOutputSupport {
 
   implicit val context: CAPSRuntimeContext = CAPSRuntimeContext.empty
 
