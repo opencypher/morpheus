@@ -136,7 +136,7 @@ The above program prints:
 +--------------------------------------------------------------------+
 ```
 
-More examples, including [multiple graph features](https://github.com/opencypher/cypher-for-apache-spark/tree/master/caps-spark/src/main/scala/org/opencypher/caps/demo/MultipleGraphExample.scala), can be found [in the demo package](https://github.com/opencypher/cypher-for-apache-spark/tree/master/caps-spark/src/main/scala/org/opencypher/caps/demo).
+More examples, including [multiple graph features](https://github.com/opencypher/cypher-for-apache-spark/tree/master/caps-spark/src/test/scala/org/opencypher/caps/demo/MultipleGraphExample.scala), can be found [in the demo package](https://github.com/opencypher/cypher-for-apache-spark/tree/master/caps-spark/src/test/scala/org/opencypher/caps/demo).
 
 Remember to add `fork in run := true` in your `build.sbt` for scala projects; this is not CAPS
 specific, but a quirk of spark execution that will help 
