@@ -19,9 +19,9 @@ import cats.data.State
 import org.atnos.eff._
 import org.atnos.eff.all._
 import org.atnos.eff.syntax.all._
-import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
+import org.opencypher.caps.impl.exception.IllegalArgumentException
 import org.opencypher.caps.ir.api.IRField
 import org.opencypher.caps.ir.api.expr.Expr
 import org.opencypher.caps.ir.api.pattern.Pattern

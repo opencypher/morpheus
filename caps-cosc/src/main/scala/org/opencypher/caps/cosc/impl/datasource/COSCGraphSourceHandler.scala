@@ -17,9 +17,9 @@ package org.opencypher.caps.cosc.impl.datasource
 
 import java.net.URI
 
-import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.io.PropertyGraphDataSource
 import org.opencypher.caps.cosc.impl.COSCSession
+import org.opencypher.caps.impl.exception.IllegalArgumentException
 
 case class COSCGraphSourceHandler(
   sessionGraphSourceFactory: COSCSessionPropertyGraphDataSourceFactory,

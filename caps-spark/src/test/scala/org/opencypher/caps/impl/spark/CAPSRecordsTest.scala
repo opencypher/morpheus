@@ -16,7 +16,7 @@
 package org.opencypher.caps.impl.spark
 
 import org.apache.spark.sql.Row
-import org.opencypher.caps.api.exception.CypherException
+import org.opencypher.caps.impl.exception.InternalException
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.caps.api.schema.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.caps.api.types._
@@ -153,7 +153,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture with TeamD
     val data = session.createDataFrame(Seq((1, "foo"), (2, "bar"))).toDF("int", "string")
     val header = RecordHeader.from(OpaqueField(Var("int")()), OpaqueField(Var("notString")()))
 
-    a[CypherException] shouldBe thrownBy {
+    a[InternalException] shouldBe thrownBy {
       CAPSRecords.verifyAndCreate(header, data)
     }
   }

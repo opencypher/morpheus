@@ -16,10 +16,10 @@
 package org.opencypher.caps.impl.spark.convert
 
 import org.apache.spark.sql.Row
-import org.opencypher.caps.api.exception.UnsupportedOperationException
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.api.value._
+import org.opencypher.caps.impl.exception.UnsupportedOperationException
 import org.opencypher.caps.impl.record.{ColumnName, RecordHeader}
 import org.opencypher.caps.ir.api.expr.Var
 

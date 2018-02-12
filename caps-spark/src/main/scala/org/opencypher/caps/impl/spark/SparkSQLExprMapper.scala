@@ -17,9 +17,10 @@ package org.opencypher.caps.impl.spark
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
-import org.opencypher.caps.api.exception._
+import org.opencypher.caps.impl.exception._
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue._
+import org.opencypher.caps.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.caps.impl.record.RecordHeader
 import org.opencypher.caps.impl.spark.CAPSFunctions._
 import org.opencypher.caps.impl.spark.convert.SparkUtils._

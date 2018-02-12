@@ -15,8 +15,8 @@
  */
 package org.opencypher.caps.impl.record
 
-import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.impl.exception.IllegalArgumentException
 import org.opencypher.caps.ir.api.expr._
 
 final case class RecordSlot(index: Int, content: SlotContent) {

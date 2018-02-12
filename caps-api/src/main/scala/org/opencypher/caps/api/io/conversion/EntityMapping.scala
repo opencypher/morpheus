@@ -15,8 +15,8 @@
  */
 package org.opencypher.caps.api.io.conversion
 
-import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.types.{CypherType, DefiniteCypherType}
+import org.opencypher.caps.impl.exception.IllegalArgumentException
 
 /**
   * Represents a map from node property keys to keys in the source data.

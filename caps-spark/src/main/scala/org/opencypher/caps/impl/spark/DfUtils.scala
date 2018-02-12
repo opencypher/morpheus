@@ -16,9 +16,9 @@
 package org.opencypher.caps.impl.spark
 
 import org.apache.spark.sql.{Column, DataFrame, Row}
-import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.api.value._
+import org.opencypher.caps.impl.exception.IllegalArgumentException
 import org.opencypher.caps.impl.record.{ColumnName, RecordHeader}
 import org.opencypher.caps.impl.spark.physical.CAPSRuntimeContext
 import org.opencypher.caps.ir.api.expr.{Expr, Param}

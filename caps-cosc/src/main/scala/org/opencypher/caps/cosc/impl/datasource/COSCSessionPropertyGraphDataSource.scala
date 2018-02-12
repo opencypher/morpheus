@@ -17,12 +17,13 @@ package org.opencypher.caps.cosc.impl.datasource
 
 import java.net.URI
 
-import org.opencypher.caps.api.exception.{IllegalArgumentException, UnsupportedOperationException}
+import org.opencypher.caps.impl.exception.UnsupportedOperationException
 import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.io.{CreateOrFail, Overwrite, PersistMode}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.cosc.impl.COSCConverters._
 import org.opencypher.caps.cosc.impl.{COSCGraph, COSCSession}
+import org.opencypher.caps.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 
 case class COSCSessionPropertyGraphDataSource(path: String)(implicit val session: COSCSession)
   extends COSCPropertyGraphDataSource {

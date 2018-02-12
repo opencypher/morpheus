@@ -15,8 +15,8 @@
  */
 package org.opencypher.caps.api.io.conversion
 
-import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.types.CTNode
+import org.opencypher.caps.impl.exception.IllegalArgumentException
 
 object NodeMapping {
   /**

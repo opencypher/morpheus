@@ -15,6 +15,6 @@
  */
 package org.opencypher.caps.ir.impl.typer.exception
 
-import org.opencypher.caps.ir.api.exception.IrException
+import org.opencypher.caps.ir.impl.exception.IrException
 
 final case class TypingException(msg: String) extends IrException(msg)

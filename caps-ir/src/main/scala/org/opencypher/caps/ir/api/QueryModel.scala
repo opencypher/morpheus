@@ -17,8 +17,8 @@ package org.opencypher.caps.ir.api
 
 import java.net.URI
 
-import org.opencypher.caps.api.exception.IllegalStateException
 import org.opencypher.caps.api.value.CypherValue._
+import org.opencypher.caps.impl.exception.IllegalStateException
 import org.opencypher.caps.ir.api.block._
 
 import scala.annotation.tailrec

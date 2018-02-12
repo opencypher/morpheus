@@ -15,10 +15,11 @@
  */
 package org.opencypher.caps.impl.physical
 
-import org.opencypher.caps.api.exception.{IllegalArgumentException, NotImplementedException}
+import org.opencypher.caps.impl.exception.IllegalArgumentException
 import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph}
 import org.opencypher.caps.api.physical.{PhysicalOperator, PhysicalOperatorProducer, PhysicalPlannerContext, RuntimeContext}
 import org.opencypher.caps.api.types.CTRelationship
+import org.opencypher.caps.impl.exception.{IllegalArgumentException, NotImplementedException}
 import org.opencypher.caps.impl.flat
 import org.opencypher.caps.impl.flat.FlatOperator
 import org.opencypher.caps.impl.record.CypherRecords

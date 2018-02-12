@@ -17,8 +17,9 @@ package org.opencypher.caps.impl.spark.convert
 
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types._
-import org.opencypher.caps.api.exception.{IllegalArgumentException, NotImplementedException}
+import org.opencypher.caps.impl.exception.IllegalArgumentException
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.impl.exception.{IllegalArgumentException, NotImplementedException}
 
 object SparkUtils {
 

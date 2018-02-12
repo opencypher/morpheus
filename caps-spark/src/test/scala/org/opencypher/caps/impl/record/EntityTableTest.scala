@@ -17,12 +17,12 @@ package org.opencypher.caps.impl.record
 
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.DecimalType
-import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.caps.api.schema.{CAPSNodeTable, CAPSRelationshipTable, Schema}
 import org.opencypher.caps.api.types.{CTFloat, CTInteger, CTString}
 import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.demo.SocialNetworkData.{Friend, Person}
+import org.opencypher.caps.impl.exception.IllegalArgumentException
 import org.opencypher.caps.impl.spark.CAPSGraph
 import org.opencypher.caps.impl.spark.convert.SparkUtils
 import org.opencypher.caps.test.CAPSTestSuite

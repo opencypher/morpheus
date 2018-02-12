@@ -18,7 +18,7 @@ package org.opencypher.caps.ir.api.pattern
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block.Binds
-import org.opencypher.caps.ir.api.exception.PatternConversionException
+import org.opencypher.caps.ir.impl.exception.PatternConversionException
 
 import scala.annotation.tailrec
 

@@ -16,7 +16,7 @@
 package org.opencypher.caps.impl.spark
 
 import org.apache.spark.sql.Row
-import org.opencypher.caps.api.exception.IllegalArgumentException
+import org.opencypher.caps.impl.exception.IllegalArgumentException
 import org.opencypher.caps.impl.record.CypherRecords
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraphLoader

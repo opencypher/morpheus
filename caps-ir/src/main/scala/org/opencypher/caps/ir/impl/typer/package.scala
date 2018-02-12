@@ -23,7 +23,7 @@ import org.atnos.eff.syntax.all._
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.ir.api.exception.TyperException
+import org.opencypher.caps.ir.impl.exception.TyperException
 
 package object typer {
 

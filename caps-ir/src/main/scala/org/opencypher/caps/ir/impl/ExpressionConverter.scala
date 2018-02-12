@@ -17,8 +17,8 @@ package org.opencypher.caps.ir.impl
 
 import org.neo4j.cypher.internal.util.v3_4.Ref
 import org.neo4j.cypher.internal.v3_4.{functions, expressions => ast}
-import org.opencypher.caps.api.exception.NotImplementedException
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.impl.exception.NotImplementedException
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.caps.ir.impl.FunctionUtils._

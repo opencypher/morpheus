@@ -18,10 +18,10 @@ package org.opencypher.caps.impl.spark
 import cats.data.NonEmptyVector
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.schema._
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType, DefiniteCypherType}
+import org.opencypher.caps.impl.exception.IllegalArgumentException
 import org.opencypher.caps.impl.record.RecordHeader
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.ir.api.expr._
