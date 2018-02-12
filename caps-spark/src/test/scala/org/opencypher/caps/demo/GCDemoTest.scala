@@ -105,7 +105,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
     System.out.println(s"${tx - t0} ms")
   }
 
-  ignore("write back to Neo") {
+  test("write back to Neo") {
     val SN_US = caps.readFrom(neoURIforRegion("US"))
     val result = SN_US.cypher("""MATCH (n:Person {name: "Alice"}) RETURN n.name AS name""")
     withBoltSession { session =>
