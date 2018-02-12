@@ -31,42 +31,8 @@ object SparkSQLExprMapper {
 
   implicit class RichExpression(expr: Expr) {
 
-    def verify(implicit header: RecordHeader) = {
+    def verify(implicit header: RecordHeader): Unit = {
       if (header.slotsFor(expr).isEmpty) throw IllegalStateException(s"No slot for expression $expr")
-    }
-
-    def column(implicit header: RecordHeader, dataFrame: DataFrame, context: CAPSRuntimeContext): Column = {
-      expr match {
-        case p@Param(name) if p.cypherType.subTypeOf(CTList(CTAny)).maybeTrue =>
-          context.parameters(name) match {
-            case CypherList(l) => functions.array(l.unwrap.map(functions.lit(_)): _*)
-            case notAList => throw IllegalArgumentException("a Cypher list", notAList)
-          }
-        case Param(name) =>
-          functions.lit(context.parameters(name).unwrap)
-
-        case ListLit(exprs) =>
-          val cols = exprs.map(_.column)
-          functions.array(cols: _*)
-
-        case l: Lit[_] =>
-          functions.lit(l.v)
-
-        case _ =>
-          verify
-
-          val slot = header.slotsFor(expr).head
-
-          val columns = dataFrame.columns.toSet
-          val colName = columnName(slot)
-
-          if (columns.contains(colName)) {
-            dataFrame.col(colName)
-          } else {
-            functions.lit(null)
-          }
-      }
-
     }
 
     /**
@@ -76,7 +42,7 @@ object SparkSQLExprMapper {
       */
     def compare(comparator: Column => (Column => Column), lhs: Expr, rhs: Expr)
       (implicit header: RecordHeader, df: DataFrame, context: CAPSRuntimeContext): Column = {
-      comparator(lhs.column)(rhs.column)
+      comparator(lhs.asSparkSQLExpr)(rhs.asSparkSQLExpr)
     }
 
     def lt(c: Column): Column => Column = c < _
@@ -98,18 +64,44 @@ object SparkSQLExprMapper {
     def asSparkSQLExpr(implicit header: RecordHeader, df: DataFrame, context: CAPSRuntimeContext): Column = {
 
       expr match {
+
+        // context based lookups
+        case p@Param(name) if p.cypherType.subTypeOf(CTList(CTAny)).maybeTrue =>
+          context.parameters(name) match {
+            case CypherList(l) => functions.array(l.unwrap.map(functions.lit): _*)
+            case notAList => throw IllegalArgumentException("a Cypher list", notAList)
+          }
+        case Param(name) =>
+          functions.lit(context.parameters(name).unwrap)
+
+        // direct column lookup
+        case _: Var | _: Param | _: Property | _: HasLabel | _: StartNode | _: EndNode =>
+          verify
+
+          val slot = header.slotsFor(expr).head
+
+          val columns = df.columns.toSet
+          val colName = columnName(slot)
+
+          if (columns.contains(colName)) {
+            df.col(colName)
+          } else {
+            functions.lit(null)
+          }
+
+        // Literals
         case ListLit(exprs) =>
           functions.array(exprs.map(_.asSparkSQLExpr): _*)
 
-        case _: Var | _: Param | _: Lit[_] | _: Property => expr.column
+        case l: Lit[_] => functions.lit(l.v)
 
         // predicates
-        case Equals(e1, e2) => e1.column === e2.column
+        case Equals(e1, e2) => e1.asSparkSQLExpr === e2.asSparkSQLExpr
         case Not(e) => !e.asSparkSQLExpr
-        case IsNull(e) => e.column.isNull
-        case IsNotNull(e) => e.column.isNotNull
+        case IsNull(e) => e.asSparkSQLExpr.isNull
+        case IsNotNull(e) => e.asSparkSQLExpr.isNotNull
         case Size(e) =>
-          val col = e.column
+          val col = e.asSparkSQLExpr
           e.cypherType match {
             case CTString => functions.length(col).cast(LongType)
             case _: CTList => functions.size(col).cast(LongType)
@@ -123,14 +115,12 @@ object SparkSQLExprMapper {
           exprs.map(_.asSparkSQLExpr).foldLeft(functions.lit(false))(_ || _)
 
         case In(lhs, rhs) =>
-          val element = lhs.column
-          val array = rhs.column
+          val element = lhs.asSparkSQLExpr
+          val array = rhs.asSparkSQLExpr
           array_contains(array, element)
 
         case HasType(rel, relType) =>
-          Type(rel)().column === relType.name
-
-        case h: HasLabel => h.column // it's a boolean column
+          Type(rel)().asSparkSQLExpr === relType.name
 
         case LessThan(lhs, rhs) => compare(lt, lhs, rhs)
         case LessThanOrEqual(lhs, rhs) => compare(lteq, lhs, rhs)
@@ -138,18 +128,18 @@ object SparkSQLExprMapper {
         case GreaterThan(lhs, rhs) => compare(gt, lhs, rhs)
 
         // Arithmetics
-        case Add(lhs, rhs) => lhs.column + rhs.column
-        case Subtract(lhs, rhs) => lhs.column - rhs.column
-        case Multiply(lhs, rhs) => lhs.column * rhs.column
-        case div@Divide(lhs, rhs) => (lhs.column / rhs.column).cast(toSparkType(div.cypherType))
+        case Add(lhs, rhs) => lhs.asSparkSQLExpr + rhs.asSparkSQLExpr
+        case Subtract(lhs, rhs) => lhs.asSparkSQLExpr - rhs.asSparkSQLExpr
+        case Multiply(lhs, rhs) => lhs.asSparkSQLExpr * rhs.asSparkSQLExpr
+        case div@Divide(lhs, rhs) => (lhs.asSparkSQLExpr / rhs.asSparkSQLExpr).cast(toSparkType(div.cypherType))
 
         // Functions
-        case Exists(e) => e.column.isNotNull
-        case Id(e) => e.column
+        case Exists(e) => e.asSparkSQLExpr.isNotNull
+        case Id(e) => e.asSparkSQLExpr
         case Labels(e) =>
           val node = Var(columnName(header.slotsFor(e).head))(CTNode)
           val labelExprs = header.labels(node)
-          val labelColumns = labelExprs.map(_.column)
+          val labelColumns = labelExprs.map(_.asSparkSQLExpr)
           val labelNames = labelExprs.map(_.label.name)
           val booleanLabelFlagColumn = functions.array(labelColumns: _*)
           get_node_labels(labelNames)(booleanLabelFlagColumn)
@@ -157,7 +147,7 @@ object SparkSQLExprMapper {
         case Keys(e) =>
           val node = Var(columnName(header.slotsFor(e).head))(CTNode)
           val propertyExprs = header.properties(node)
-          val propertyColumns = propertyExprs.map(_.column)
+          val propertyColumns = propertyExprs.map(_.asSparkSQLExpr)
           val keyNames = propertyExprs.map(_.key.name)
           val valuesColumn = functions.array(propertyColumns: _*)
           get_property_keys(keyNames)(valuesColumn)
@@ -174,28 +164,28 @@ object SparkSQLExprMapper {
 
         case StartNodeFunction(e) =>
           val rel = Var(columnName(header.slotsFor(e).head))(CTNode)
-          header.sourceNodeSlot(rel).content.key.column
+          header.sourceNodeSlot(rel).content.key.asSparkSQLExpr
 
         case EndNodeFunction(e) =>
           val rel = Var(columnName(header.slotsFor(e).head))(CTNode)
-          header.targetNodeSlot(rel).content.key.column
+          header.targetNodeSlot(rel).content.key.asSparkSQLExpr
 
-        case ToFloat(e) => e.column.cast(DoubleType)
+        case ToFloat(e) => e.asSparkSQLExpr.cast(DoubleType)
 
         // Pattern Predicate
-        case ep: ExistsPatternExpr => ep.targetField.column
+        case ep: ExistsPatternExpr => ep.targetField.asSparkSQLExpr
 
         case Coalesce(es) =>
-          val columns = es.map(_.column)
+          val columns = es.map(_.asSparkSQLExpr)
           functions.coalesce(columns: _*)
 
         case c: CaseExpr =>
           val alternatives = c.alternatives.map {
-            case (predicate, action) => functions.when(predicate.column, action.column)
+            case (predicate, action) => functions.when(predicate.asSparkSQLExpr, action.asSparkSQLExpr)
           }
 
           val alternativesWithDefault = c.default match {
-            case Some(inner) => alternatives :+ inner.column
+            case Some(inner) => alternatives :+ inner.asSparkSQLExpr
             case None => alternatives
           }
 
