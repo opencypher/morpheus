@@ -17,17 +17,17 @@ package org.opencypher.caps.impl.spark.io.hdfs
 
 import java.net.URI
 
+import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.impl.spark.CAPSGraph
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.fixture.MiniDFSClusterFixture
 import org.scalatest.Matchers
-import org.opencypher.caps.impl.spark.CAPSConverters._
 
 class CsvGraphLoaderAcceptanceTest extends CAPSTestSuite
   with MiniDFSClusterFixture
   with Matchers {
 
-  protected override val dfsTestGraphPath = "/csv/sn"
+  protected override def dfsTestGraphPath = "/csv/sn"
 
   test("load csv graph") {
     val loader = CsvGraphLoader(hdfsURI.toString, session.sparkContext.hadoopConfiguration)

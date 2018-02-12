@@ -31,7 +31,7 @@ import scala.collection.Bag
 
 class CAPSSessionHDFSTest extends CAPSTestSuite with MiniDFSClusterFixture with RecordMatchingTestSupport {
 
-  protected override val dfsTestGraphPath = "/csv/sn"
+  protected override def dfsTestGraphPath = "/csv/sn"
 
   protected override def hdfsURI: URI = new URIBuilder(super.hdfsURI).setScheme("hdfs+csv").build()
 

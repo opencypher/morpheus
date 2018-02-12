@@ -34,7 +34,7 @@ import scala.collection.Bag
 class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServerFixture with MiniDFSClusterFixture {
 
   protected override def hdfsURI: URI = new URIBuilder(super.hdfsURI).setScheme("hdfs+csv").build()
-  protected override val dfsTestGraphPath = "/csv/prod"
+  protected override def dfsTestGraphPath = "/csv/prod"
 
   ignore("the demo") {
     val t0 = System.currentTimeMillis()
@@ -105,7 +105,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
     System.out.println(s"${tx - t0} ms")
   }
 
-  test("write back to Neo") {
+  ignore("write back to Neo") {
     val SN_US = caps.readFrom(neoURIforRegion("US"))
     val result = SN_US.cypher("""MATCH (n:Person {name: "Alice"}) RETURN n.name AS name""")
     withBoltSession { session =>
