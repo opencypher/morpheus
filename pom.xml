@@ -227,7 +227,6 @@
           <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
           <junitxml>.</junitxml>
           <filereports>WDF TestSuite.txt</filereports>
-          <parallel>true</parallel>
         </configuration>
         <executions>
           <execution>
