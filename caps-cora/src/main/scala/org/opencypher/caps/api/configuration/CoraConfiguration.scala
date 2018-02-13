@@ -15,25 +15,16 @@
  */
 package org.opencypher.caps.api.configuration
 
-import org.opencypher.caps.api.configuration.Configuration.ConfigOption
-
-import scala.util.Try
+import org.opencypher.caps.api.configuration.Configuration.ConfigFlag
 
 object CoraConfiguration {
 
-  object PrintFlatPlan extends ConfigOption("cora.explainFlat", false)(s => Try(s.toBoolean).toOption) {
-    def set(): Unit = set(true.toString)
-  }
+  object PrintFlatPlan extends ConfigFlag("cora.explainFlat")
 
-  object PrintPhysicalPlan extends ConfigOption("cora.explainPhysical", false)(s => Try(s.toBoolean).toOption) {
-    def set(): Unit = set(true.toString)
-  }
+  object PrintPhysicalPlan extends ConfigFlag("cora.explainPhysical", false)
 
-  object DebugPhysicalResult extends ConfigOption("cora.debugPhysical", false)(s => Try(s.toBoolean).toOption) {
-    def set(): Unit = set(true.toString)
-  }
+  object DebugPhysicalResult extends ConfigFlag("cora.debugPhysical", false)
 
-  object PrintQueryExecutionStages extends ConfigOption("cora.stages", false)(s => Try(s.toBoolean).toOption) {
-    def set(): Unit = set(true.toString)
-  }
+  object PrintQueryExecutionStages extends ConfigFlag("cora.stages", false)
+
 }

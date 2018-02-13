@@ -35,7 +35,7 @@ import java.util.UUID
 import org.apache.spark.SparkConf
 import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.sql.SparkSession
-import org.opencypher.caps.api.configuration.Configuration.Logging
+import org.opencypher.caps.api.configuration.Configuration.LogLevel
 import org.opencypher.caps.demo.CypherKryoRegistrar
 
 object TestSparkSession {
@@ -63,7 +63,7 @@ object TestSparkSession {
       .appName(s"cypher-for-apache-spark-tests-${UUID.randomUUID()}")
       .getOrCreate()
 
-    session.sparkContext.setLogLevel(Logging.get())
+    session.sparkContext.setLogLevel(LogLevel.get)
     session
   }
 }

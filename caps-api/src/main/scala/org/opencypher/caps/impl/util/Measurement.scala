@@ -25,7 +25,7 @@ object Measurement {
     val res = block
     val end = System.nanoTime
     val total = Duration.fromNanos(end - start)
-    if (PrintTimings.get()) println(s"$name took: ${total.toMillis} ms")
+    if (PrintTimings.isSet) println(s"$name took: ${total.toMillis} ms")
     res
   }
 }

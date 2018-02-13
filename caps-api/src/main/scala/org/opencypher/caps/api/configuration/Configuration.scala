@@ -22,17 +22,22 @@ object Configuration {
   abstract class ConfigOption[T](val name: String, val defaultValue: T)(convert: String => Option[T]) {
     def set(v: String): Unit = System.setProperty(name, v)
 
-    def get(): T = Option(System.getProperty(name)).flatMap(convert).getOrElse(defaultValue)
+    def get: T = Option(System.getProperty(name)).flatMap(convert).getOrElse(defaultValue)
 
     override def toString: String = {
-      val filled = name + (name.length to 25).map(_ => " ").reduce(_ + _)
-      s"$filled = ${get()}"
+      val padded = name.padTo(25, " ").mkString("")
+      s"$padded = $get"
     }
   }
 
-  object PrintTimings extends ConfigOption("caps.printTiminigs", false)(s => Try(s.toBoolean).toOption) {
+  abstract class ConfigFlag(name: String, defaultValue: Boolean = false)
+    extends ConfigOption[Boolean](name, defaultValue)(s => Try(s.toBoolean).toOption) {
     def set(): Unit = set(true.toString)
+    def isSet = get
   }
 
-  object Logging extends ConfigOption("caps.logging", "OFF")(Some(_))
+  object PrintTimings extends ConfigFlag("caps.printTimings")
+
+  object LogLevel extends ConfigOption[String]("caps.logging", "OFF")(Some(_))
+
 }
