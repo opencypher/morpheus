@@ -258,7 +258,7 @@ object CypherValue {
   }
 
   trait CypherNode[+Id] extends CypherEntity[Id] with MaterialCypherValue[CypherNode[Id]] {
-    def labels: Set[String] = Set.empty
+    def labels: Set[String]
 
     override def value: CypherNode[Id] = this
 
