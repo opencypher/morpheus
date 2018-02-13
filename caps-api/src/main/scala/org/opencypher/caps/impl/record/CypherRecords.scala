@@ -27,16 +27,16 @@ import org.opencypher.caps.api.value.CypherValue.{CypherMap, CypherValue}
   * it can also be used to assemble complex Cypher values such as CypherNode/CypherRelationship that are stored over
   * multiple columns in a low-level Cypher table.
   */
-trait CypherTable {
+trait CypherTable[K] {
 
-  def columns: Set[String]
+  def columns: Set[K]
 
-  def columnType: Map[String, CypherType]
+  def columnType: Map[K, CypherType]
 
   /**
     * Iterator over the rows in this table.
     */
-  def rows: Iterator[String => CypherValue]
+  def rows: Iterator[K => CypherValue]
 
   /**
     * @return number of rows in this Table.
@@ -65,7 +65,7 @@ trait CypherRecordsCompanion[R <: CypherRecords, S <: CypherSession] {
   * @see [[CypherRecordHeader]]
   */
 //TODO: Move to API package
-trait CypherRecords extends CypherTable with CypherPrintable {
+trait CypherRecords extends CypherTable[String] with CypherPrintable {
 
   /**
     * The header for this table, describing the slots stored.

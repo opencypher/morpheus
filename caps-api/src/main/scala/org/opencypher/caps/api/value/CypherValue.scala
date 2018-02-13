@@ -17,11 +17,9 @@ package org.opencypher.caps.api.value
 
 import java.util.Objects
 
-import org.opencypher.caps.impl.exception._
 import org.opencypher.caps.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 
 import scala.reflect.{ClassTag, classTag}
-import scala.util.Try
 import scala.util.hashing.MurmurHash3
 
 object CypherValue {
@@ -101,23 +99,23 @@ object CypherValue {
     /**
       * Safe version of [[cast]]
       */
-    def as[V: ClassTag]: Option[V] = Try(cast[V]).toOption
+    def as[V: ClassTag]: Option[V] = {
+      this match {
+        case cv: V => Some(cv)
+        case _ =>
+          value match {
+            case v: V => Some(v)
+            case _ => None
+          }
+      }
+    }
 
     /**
       * Attempts to cast the Cypher value to [[V]], fails when this is not supported.
       */
-    def cast[V: ClassTag]: V = {
-      this match {
-        case cv: V => cv
-        case _ =>
-          value match {
-            case v: V => v
-            case _ =>
-              throw UnsupportedOperationException(
-                s"Cannot cast $value of type ${value.getClass.getSimpleName} to ${classTag[V].runtimeClass.getSimpleName}")
-          }
-      }
-    }
+    def cast[V: ClassTag]: V = as[V].getOrElse(throw UnsupportedOperationException(
+      s"Cannot cast $value of type ${value.getClass.getSimpleName} to ${classTag[V].runtimeClass.getSimpleName}"))
+
 
     /**
       * String of the Scala representation of this value.
