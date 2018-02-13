@@ -81,7 +81,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport wit
 
   test("convert count") {
     convert(parseExpr("count(a)")) should equal(
-      Count(Var("a")())()
+      Count(Var("a")(), false)()
     )
     convert(parseExpr("count(*)")) should equal(
       CountStar()

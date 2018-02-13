@@ -300,7 +300,7 @@ final case class CountStar(cypherType: CypherType = CTWildcard) extends Aggregat
   override def toString = "count(*)"
 }
 
-final case class Count(expr: Expr)(val cypherType: CypherType = CTWildcard) extends Aggregator {
+final case class Count(expr: Expr, distinct: Boolean)(val cypherType: CypherType = CTWildcard) extends Aggregator {
   override val inner: Option[Expr] = Some(expr)
 
   override def toString = s"count($expr)"
@@ -332,7 +332,7 @@ final case class Sum(expr: Expr)(val cypherType: CypherType = CTWildcard) extend
   override def withoutType: String = s"sum(${expr.withoutType})"
 }
 
-final case class Collect(expr: Expr)(val cypherType: CypherType = CTWildcard) extends Aggregator {
+final case class Collect(expr: Expr, distinct: Boolean)(val cypherType: CypherType = CTWildcard) extends Aggregator {
   override val inner: Option[Expr] = Some(expr)
 
   override def toString = s"collect($expr)"

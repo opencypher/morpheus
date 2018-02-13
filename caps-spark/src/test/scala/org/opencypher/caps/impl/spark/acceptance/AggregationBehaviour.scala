@@ -237,6 +237,27 @@ trait AggregationBehaviour {
           CypherMap("name" -> null, "age" -> null, "amount" -> 2)
         ))
       }
+
+      it("counts distinct with grouping") {
+        val graph = initGraph(
+          """
+            |CREATE (a:Start{id: 1})
+            |CREATE (a)-[:REL]->({val: "foo"})
+            |CREATE (a)-[:REL]->({val: "foo"})
+          """.stripMargin)
+
+        val result = graph.cypher(
+          """
+            |MATCH (a:Start)-->(b)
+            |
+            |RETURN a.id,
+            |       count(distinct b.val) as val
+          """.stripMargin)
+
+        result.records.toMaps should equal(Bag(
+          CypherMap("a.id" -> 1, "val" -> 1)
+        ))
+      }
     }
 
     describe("MIN") {
@@ -540,6 +561,27 @@ trait AggregationBehaviour {
 
         result.records.toMaps should equal(Bag(
           CypherMap("res" -> Seq.empty)
+        ))
+      }
+
+      it("collects distinct lists with grouping") {
+        val graph = initGraph(
+          """
+            |CREATE (a:Start{id: 1})
+            |CREATE (a)-[:REL]->({val: "foo"})
+            |CREATE (a)-[:REL]->({val: "foo"})
+          """.stripMargin)
+
+        val result = graph.cypher(
+          """
+            |MATCH (a:Start)-->(b)
+            |
+            |RETURN a.id,
+            |       collect(distinct b.val) as val
+          """.stripMargin)
+
+        result.records.toMaps should equal(Bag(
+          CypherMap("a.id" -> 1, "val" -> CypherList("foo"))
         ))
       }
     }
