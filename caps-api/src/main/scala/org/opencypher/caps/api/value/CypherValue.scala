@@ -17,7 +17,8 @@ package org.opencypher.caps.api.value
 
 import java.util.Objects
 
-import org.opencypher.caps.api.exception._
+import org.opencypher.caps.impl.exception._
+import org.opencypher.caps.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 
 import scala.reflect.{ClassTag, classTag}
 import scala.util.Try

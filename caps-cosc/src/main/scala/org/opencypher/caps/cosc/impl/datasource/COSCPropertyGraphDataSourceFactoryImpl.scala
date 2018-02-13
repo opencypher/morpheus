@@ -17,10 +17,10 @@ package org.opencypher.caps.cosc.impl.datasource
 
 import java.net.URI
 
-import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.graph.CypherSession
 import org.opencypher.caps.cosc.impl.COSCConverters._
 import org.opencypher.caps.cosc.impl.COSCSession
+import org.opencypher.caps.impl.exception.IllegalArgumentException
 
 abstract class COSCPropertyGraphDataSourceFactoryImpl(val companion: COSCGraphSourceFactoryCompanion)
     extends COSCPropertyGraphDataSourceFactory {

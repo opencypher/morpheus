@@ -19,10 +19,10 @@ import java.net.URI
 
 import org.apache.hadoop.conf.Configuration
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.io.{CreateOrFail, PersistMode}
 import org.opencypher.caps.api.schema.Schema
+import org.opencypher.caps.impl.exception.IllegalArgumentException
 import org.opencypher.caps.impl.spark.CAPSGraph
 import org.opencypher.caps.impl.spark.io.CAPSPropertyGraphDataSource
 

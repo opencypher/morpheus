@@ -22,8 +22,8 @@ import cats.instances.list._
 import cats.syntax.flatMap._
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
-import org.opencypher.caps.api.exception.NotImplementedException
 import org.opencypher.caps.api.types.{CTList, CTNode, CTRelationship, CypherType}
+import org.opencypher.caps.impl.exception.NotImplementedException
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.expr.{Expr, Var}
 import org.opencypher.caps.ir.api.pattern._

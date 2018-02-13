@@ -22,9 +22,10 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, StringLiteral, Variable, Pattern => AstPattern}
-import org.opencypher.caps.api.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
+import org.opencypher.caps.impl.exception.{IllegalArgumentException, IllegalStateException}
 import org.opencypher.caps.api.schema.AllGiven
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.caps.impl.util.parsePathOrURI
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block.{SortItem, _}

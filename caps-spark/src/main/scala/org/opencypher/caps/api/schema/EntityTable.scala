@@ -18,13 +18,13 @@ package org.opencypher.caps.api.schema
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
 import org.opencypher.caps.api.schema.Entity.sourceIdKey
 import org.opencypher.caps.api.schema.EntityTable._
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.api.value.CypherValue.CypherValue
+import org.opencypher.caps.impl.exception.IllegalArgumentException
 import org.opencypher.caps.impl.record.CypherTable
 import org.opencypher.caps.impl.spark._
 import org.opencypher.caps.impl.spark.convert.SparkUtils

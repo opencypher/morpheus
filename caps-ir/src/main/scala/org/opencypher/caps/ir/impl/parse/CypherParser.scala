@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters._
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_4.phases._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics._
-import org.opencypher.caps.ir.api.exception.ParsingException
+import org.opencypher.caps.ir.impl.exception.ParsingException
 import org.opencypher.caps.ir.api.util.CompilationStage
 import org.opencypher.caps.ir.impl.parse.rewriter.CAPSRewriting
 

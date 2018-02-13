@@ -16,8 +16,8 @@
 package org.opencypher.caps.impl.spark
 
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.exception.UnsupportedOperationException
 import org.opencypher.caps.api.graph.{CypherResult, CypherSession, PropertyGraph}
+import org.opencypher.caps.impl.exception.UnsupportedOperationException
 import org.opencypher.caps.impl.record.{CypherRecordHeader, CypherRecords, RecordHeader}
 
 object CAPSConverters {

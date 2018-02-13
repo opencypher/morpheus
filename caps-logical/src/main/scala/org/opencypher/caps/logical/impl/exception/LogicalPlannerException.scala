@@ -13,14 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.api.exception
+package org.opencypher.caps.logical.impl.exception
 
-import org.opencypher.caps.ir.api.expr.Var
+import org.opencypher.caps.impl.exception.InternalException
 
-abstract class CoraException(msg: String) extends CypherException(msg)
+abstract class LogicalPlannerException(msg: String) extends InternalException(msg)
 
-final case class RecordHeaderException(msg: String) extends CoraException(msg)
+final case class UnsolvedBlockException(msg: String) extends LogicalPlannerException(msg)
 
-final case class DuplicateSourceColumnException(columnName: String, entity: Var)
-    extends CoraException(
-          s"The source column '$columnName' is used more than once to describe the mapping of $entity")
+final case class InvalidCypherTypeException(msg: String) extends LogicalPlannerException(msg)
+
+final case class InvalidPatternException(msg: String) extends LogicalPlannerException(msg)
+
+final case class InvalidDependencyException(msg: String) extends LogicalPlannerException(msg)

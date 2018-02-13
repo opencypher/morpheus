@@ -25,8 +25,8 @@ import cats.syntax.all._
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.util.v3_4.ASTNode
 import org.neo4j.cypher.internal.v3_4.expressions._
-import org.opencypher.caps.api.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.caps.api.value.CypherValue.{CypherEntity, CypherMap, CypherNode, CypherRelationship}
+import org.opencypher.caps.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.caps.ir.impl.parse.CypherParser
 
 import scala.collection.TraversableOnce

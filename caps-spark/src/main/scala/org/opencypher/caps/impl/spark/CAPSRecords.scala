@@ -24,12 +24,13 @@ import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.exception.{DuplicateSourceColumnException, IllegalArgumentException, IllegalStateException}
+import org.opencypher.caps.impl.exception.DuplicateSourceColumnException
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.caps.api.schema.EntityTable._
 import org.opencypher.caps.api.schema.{CAPSEntityTable, CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue.{CypherMap, CypherValue}
+import org.opencypher.caps.impl.exception.{IllegalArgumentException, IllegalStateException}
 import org.opencypher.caps.impl.record.CAPSRecordHeader._
 import org.opencypher.caps.impl.record.{CAPSRecordHeader, _}
 import org.opencypher.caps.impl.spark.CAPSRecords.{prepareDataFrame, verifyAndCreate}

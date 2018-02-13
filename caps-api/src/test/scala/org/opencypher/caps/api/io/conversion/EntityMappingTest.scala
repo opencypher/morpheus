@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.api.io.conversion
 
-import org.opencypher.caps.api.exception.IllegalArgumentException
+import org.opencypher.caps.impl.exception.IllegalArgumentException
 import org.opencypher.caps.test.BaseTestSuite
 
 class EntityMappingTest extends BaseTestSuite {

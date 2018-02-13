@@ -21,11 +21,12 @@ import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
 import org.neo4j.driver.internal.{InternalNode, InternalRelationship}
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.exception.{IllegalArgumentException, UnsupportedOperationException}
+import org.opencypher.caps.impl.exception.UnsupportedOperationException
 import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.caps.api.value.CypherValue
+import org.opencypher.caps.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.caps.impl.record.{CAPSRecordHeader, ColumnName, RecordHeader}
 import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraph.{filterNode, filterRel, nodeToRow, relToRow}
 import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords}

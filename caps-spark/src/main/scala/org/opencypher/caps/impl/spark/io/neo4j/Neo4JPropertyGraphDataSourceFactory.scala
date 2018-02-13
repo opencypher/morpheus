@@ -19,7 +19,7 @@ import java.net.{URI, URLDecoder}
 
 import org.apache.http.client.utils.URIBuilder
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.exception.IllegalArgumentException
+import org.opencypher.caps.impl.exception.IllegalArgumentException
 import org.opencypher.caps.impl.spark.io.{CAPSGraphSourceFactoryCompanion, CAPSPropertyGraphDataSourceFactoryImpl}
 import org.opencypher.caps.impl.spark.io.neo4j.external.Neo4jConfig
 

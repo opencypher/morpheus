@@ -19,7 +19,6 @@ import java.net.URI
 import java.util.UUID
 
 import org.opencypher.caps.api.configuration.CoraConfiguration.PrintFlatPlan
-import org.opencypher.caps.api.exception.UnsupportedOperationException
 import org.opencypher.caps.api.graph.{CypherResult, CypherSession, PropertyGraph}
 import org.opencypher.caps.api.io.{PersistMode, PropertyGraphDataSource}
 import org.opencypher.caps.api.schema.Schema
@@ -28,8 +27,10 @@ import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.cosc.impl.COSCConverters._
 import org.opencypher.caps.cosc.impl.datasource.{COSCGraphSourceHandler, COSCPropertyGraphDataSource, COSCSessionPropertyGraphDataSourceFactory}
 import org.opencypher.caps.cosc.impl.planning.{COSCPhysicalOperatorProducer, COSCPhysicalPlannerContext}
+import org.opencypher.caps.impl.exception.UnsupportedOperationException
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
 import org.opencypher.caps.impl.physical.PhysicalPlanner
+import org.opencypher.caps.impl.record.CypherRecords
 import org.opencypher.caps.impl.util.Measurement.time
 import org.opencypher.caps.ir.api.IRExternalGraph
 import org.opencypher.caps.ir.impl.parse.CypherParser
@@ -68,10 +69,10 @@ class COSCSession(private val graphSourceHandler: COSCGraphSourceHandler) extend
     * @param parameters parameters used by the Cypher query
     * @return result of the query
     */
-  override def cypher(query: String, parameters: CypherMap): CypherResult =
-    cypherOnGraph(COSCGraph.empty(this), query, parameters)
+  override def cypher(query: String, parameters: CypherMap = CypherMap.empty, drivingTable: Option[CypherRecords] = None): CypherResult =
+    cypherOnGraph(COSCGraph.empty(this), query, parameters, drivingTable)
 
-  override def cypherOnGraph(graph: PropertyGraph, query: String, parameters: CypherMap): CypherResult = {
+  override def cypherOnGraph(graph: PropertyGraph, query: String, parameters: CypherMap, drivingTable: Option[CypherRecords]): CypherResult = {
     val ambientGraph = getAmbientGraph(graph)
 
     val (stmt, extractedLiterals, semState) = time("AST construction")(parser.process(query)(CypherParser.defaultContext))

@@ -18,8 +18,8 @@ package org.opencypher.caps.impl.spark.io
 import java.net.URI
 
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.graph.CypherSession
+import org.opencypher.caps.impl.exception.IllegalArgumentException
 import org.opencypher.caps.impl.spark.CAPSConverters._
 
 abstract class CAPSPropertyGraphDataSourceFactoryImpl(val companion: CAPSGraphSourceFactoryCompanion)

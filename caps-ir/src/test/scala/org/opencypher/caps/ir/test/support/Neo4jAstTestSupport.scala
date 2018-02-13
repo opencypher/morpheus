@@ -22,7 +22,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticCheckResult, SemanticState}
 import org.neo4j.cypher.internal.util.v3_4.{CypherException, InputPosition}
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
-import org.opencypher.caps.api.exception.IllegalArgumentException
+import org.opencypher.caps.impl.exception.IllegalArgumentException
 import org.opencypher.caps.ir.impl.parse.CypherParser
 import org.opencypher.caps.test.BaseTestSuite
 

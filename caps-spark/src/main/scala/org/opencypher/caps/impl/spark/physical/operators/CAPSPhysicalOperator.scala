@@ -19,9 +19,9 @@ import java.net.URI
 
 import org.apache.spark.sql.DataFrame
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.physical.PhysicalOperator
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.impl.exception.IllegalArgumentException
 import org.opencypher.caps.impl.record.{ColumnName, RecordHeader, RecordSlot, SlotContent}
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.impl.spark.physical.DataFrameOps._

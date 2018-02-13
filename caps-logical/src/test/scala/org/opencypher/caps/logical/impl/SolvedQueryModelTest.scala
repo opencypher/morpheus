@@ -17,9 +17,9 @@ package org.opencypher.caps.logical.impl
 
 import java.net.URI
 
-import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTRelationship}
+import org.opencypher.caps.impl.exception.IllegalArgumentException
 import org.opencypher.caps.ir.api.block.{FieldsAndGraphs, ProjectedFieldsOf}
 import org.opencypher.caps.ir.api.expr.{Equals, Expr, _}
 import org.opencypher.caps.ir.api.pattern.Pattern

@@ -15,8 +15,8 @@
  */
 package org.opencypher.caps.logical.impl
 
-import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.types.{CTBoolean, CTRelationship}
+import org.opencypher.caps.impl.exception.IllegalArgumentException
 import org.opencypher.caps.ir.api.block.Block
 import org.opencypher.caps.ir.api.expr.{Expr, HasType, Ors}
 import org.opencypher.caps.ir.api.pattern.Pattern

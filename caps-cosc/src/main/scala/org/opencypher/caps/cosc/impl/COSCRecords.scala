@@ -55,6 +55,13 @@ sealed abstract class COSCRecords(
   override def size: Long = rows.size
 
   override def print(implicit options: PrintOptions): Unit = RecordsPrinter.print(this)
+
+  /**
+    * Registers these records as a table under the given name.
+    *
+    * @param name the name under which this table may be referenced.
+    */
+  override def register(name: String): Unit = ???
 }
 
 

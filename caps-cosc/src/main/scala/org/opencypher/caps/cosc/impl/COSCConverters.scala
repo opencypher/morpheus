@@ -15,8 +15,8 @@
  */
 package org.opencypher.caps.cosc.impl
 
-import org.opencypher.caps.api.exception.UnsupportedOperationException
 import org.opencypher.caps.api.graph.{CypherResult, CypherSession, PropertyGraph}
+import org.opencypher.caps.impl.exception.UnsupportedOperationException
 import org.opencypher.caps.impl.record.{CypherRecordHeader, CypherRecords, RecordHeader}
 
 object COSCConverters {

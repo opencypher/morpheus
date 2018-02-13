@@ -15,8 +15,8 @@
  */
 package org.opencypher.caps.ir.api.expr
 
-import org.opencypher.caps.api.exception.IllegalStateException
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.impl.exception.IllegalStateException
 import org.opencypher.caps.ir.api.{CypherQuery, Label, PropertyKey, RelType}
 
 import scala.annotation.tailrec

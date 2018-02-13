@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.ir.api.exception
+package org.opencypher.caps.impl.exception
 
-import org.opencypher.caps.api.exception.CypherException
+import org.opencypher.caps.ir.api.expr.Var
 
-abstract class IrException(msg: String) extends CypherException(msg)
+abstract class CoraException(msg: String) extends InternalException(msg)
 
-final case class PatternConversionException(msg: String) extends IrException(msg)
+final case class RecordHeaderException(msg: String) extends CoraException(msg)
 
-final case class TyperException(msg: String) extends IrException(msg)
-
-final case class ParsingException(msg: String) extends IrException(msg)
+final case class DuplicateSourceColumnException(columnName: String, entity: Var)
+    extends CoraException(
+          s"The source column '$columnName' is used more than once to describe the mapping of $entity")

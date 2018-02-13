@@ -18,9 +18,10 @@ package org.opencypher.caps.impl.spark.io
 import java.net.URI
 
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.exception.{IllegalArgumentException, IllegalStateException}
+import org.opencypher.caps.impl.exception.IllegalArgumentException
 import org.opencypher.caps.api.graph.CypherSession
 import org.opencypher.caps.api.io.PropertyGraphDataSource
+import org.opencypher.caps.impl.exception.{IllegalArgumentException, IllegalStateException}
 import org.opencypher.caps.impl.spark.io.session.SessionPropertyGraphDataSourceFactory
 
 object CAPSGraphSourceHandler {

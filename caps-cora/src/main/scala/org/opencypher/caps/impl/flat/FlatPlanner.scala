@@ -15,8 +15,8 @@
  */
 package org.opencypher.caps.impl.flat
 
-import org.opencypher.caps.api.exception.NotImplementedException
 import org.opencypher.caps.api.value.CypherValue._
+import org.opencypher.caps.impl.exception.NotImplementedException
 import org.opencypher.caps.impl.record.{ProjectedExpr, ProjectedField}
 import org.opencypher.caps.ir.api.util.DirectCompilationStage
 import org.opencypher.caps.logical.impl.LogicalOperator

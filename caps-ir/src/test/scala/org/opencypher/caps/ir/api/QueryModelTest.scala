@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.ir.api
 
-import org.opencypher.caps.api.exception.IllegalStateException
+import org.opencypher.caps.impl.exception.IllegalStateException
 import org.opencypher.caps.ir.api.block._
 import org.opencypher.caps.ir.impl.IrTestSuite
 

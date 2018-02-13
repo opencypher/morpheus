@@ -18,9 +18,10 @@ package org.opencypher.caps.cosc.impl.datasource
 import java.net.URI
 import java.util.concurrent.ConcurrentHashMap
 
-import org.opencypher.caps.api.exception.{IllegalArgumentException, UnsupportedOperationException}
+import org.opencypher.caps.impl.exception.UnsupportedOperationException
 import org.opencypher.caps.api.graph.CypherSession
 import org.opencypher.caps.cosc.impl.COSCSession
+import org.opencypher.caps.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 
 import scala.collection.JavaConversions._
 

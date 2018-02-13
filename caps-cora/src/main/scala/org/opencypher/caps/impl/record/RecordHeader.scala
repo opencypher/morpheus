@@ -15,9 +15,9 @@
  */
 package org.opencypher.caps.impl.record
 
-import org.opencypher.caps.api.exception.IllegalArgumentException
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTString, _}
+import org.opencypher.caps.impl.exception.IllegalArgumentException
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.ir.api.{Label, PropertyKey}
