@@ -172,8 +172,8 @@ final case class ExistsSubQuery(
 
     // Rename join columns on the right hand side and drop common non-join columns
     val reducedRhsData = joinColumnMapping
-      .foldLeft(rightData)((acc, col) => acc.withColumnRenamed(col._2, col._3))
-      .drop(columnsToRemove: _*)
+      .foldLeft(rightData)((acc, col) => acc.safeRenameColumn(col._2, col._3))
+      .safeDropColumns(columnsToRemove: _*)
 
     // Compute distinct rows based on join columns
     val distinctRightData = reducedRhsData.dropDuplicates(joinColumnMapping.map(_._3))
@@ -190,7 +190,7 @@ final case class ExistsSubQuery(
     // After that we drop all right columns and only keep the predicate field.
     // The predicate field is later checked by a filter operator.
     val updatedJoinedRecords = joinedRecords.data
-      .withColumn(
+      .safeReplaceColumn(
         targetFieldColumnName,
         functions.when(functions.isnull(targetFieldColumn), false).otherwise(true))
 

@@ -74,7 +74,7 @@ object CAPSPhysicalOperator {
 
     val returnData = if (deduplicate) {
       val colsToDrop = joinCols.map(col => col._2)
-      colsToDrop.foldLeft(joinedData)((acc, col) => acc.drop(col))
+      joinedData.safeDropColumns(colsToDrop: _*)
     } else joinedData
 
     CAPSRecords.verifyAndCreate(header, returnData)

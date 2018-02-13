@@ -24,6 +24,7 @@ import org.opencypher.caps.impl.spark.physical.{CAPSPhysicalResult, CAPSRuntimeC
 import org.opencypher.caps.impl.spark.{CAPSRecords, ColumnNameGenerator}
 import org.opencypher.caps.ir.api.expr.{EndNode, Var}
 import org.opencypher.caps.logical.impl.{Directed, Direction, Undirected}
+import org.opencypher.caps.impl.spark.DataFrameOps._
 
 private[spark] abstract class TernaryPhysicalOperator extends CAPSPhysicalOperator {
 
@@ -124,7 +125,7 @@ final case class BoundedVarExpand(
     val joined = lhs.join(rels, expandColumn === startColumn, "inner")
 
     val extendedArray = array_append_long(lhs.col(edgeListColName), relIdColumn)
-    val withExtendedArray = joined.withColumn(listTempColName, extendedArray)
+    val withExtendedArray = joined.safeAddColumn(listTempColName, extendedArray)
     val arrayContains = array_contains(withExtendedArray.col(edgeListColName), relIdColumn)
     val filtered = withExtendedArray.filter(!arrayContains)
 
@@ -135,10 +136,10 @@ final case class BoundedVarExpand(
     val withoutRelProperties = filtered.select(columns.head, columns.tail: _*) // drops joined columns from relationship table
 
     withoutRelProperties
-      .drop(expandColumn)
-      .withColumnRenamed(endNodeIdColNameOfJoinedRel, expandColumnName)
-      .drop(edgeListColName)
-      .withColumnRenamed(listTempColName, edgeListColName)
+      .safeDropColumn(expandColumnName)
+      .safeRenameColumn(endNodeIdColNameOfJoinedRel, expandColumnName)
+      .safeDropColumn(edgeListColName)
+      .safeRenameColumn(listTempColName, edgeListColName)
   }
 
   private def finalize(expanded: CAPSRecords, targets: CAPSRecords): CAPSRecords = {
@@ -164,7 +165,7 @@ final case class BoundedVarExpand(
       joinRecords(joinHeader, Seq(lhsSlot -> rhsSlot))(expanded, targets)
     }
 
-    CAPSRecords.verifyAndCreate(header, result.toDF().drop(endNodeCol))(expanded.caps)
+    CAPSRecords.verifyAndCreate(header, result.toDF().safeDropColumn(endNodeCol))(expanded.caps)
   }
 
   private def expand(firstRecords: CAPSRecords, secondRecords: CAPSRecords): CAPSRecords = {
@@ -179,9 +180,9 @@ final case class BoundedVarExpand(
         val colOrder = secondRecords.header.slots.map(columnName)
 
         val inverted = secondRecords.data
-          .withColumnRenamed(startNodeSlot, "__tmp__")
-          .withColumnRenamed(endNodeSlot, startNodeSlot)
-          .withColumnRenamed("__tmp__", endNodeSlot)
+          .safeRenameColumn(startNodeSlot, "__tmp__")
+          .safeRenameColumn(endNodeSlot, startNodeSlot)
+          .safeRenameColumn("__tmp__", endNodeSlot)
           .select(colOrder.head, colOrder.tail: _*)
 
         inverted.union(secondRecords.data)

@@ -186,7 +186,7 @@ class CsvGraphLoader(fileHandler: CsvGraphLoaderFileHandler)(implicit capsSessio
       .filter(field => field.getTargetType.isInstanceOf[ArrayType])
       .foldLeft(dataFrame) {
         case (df, field) =>
-          df.withColumn(field.name, functions.split(df(field.name), "\\|").cast(field.getTargetType))
+          df.safeReplaceColumn(field.name, functions.split(df(field.name), "\\|").cast(field.getTargetType))
       }
   }
 }
