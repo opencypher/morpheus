@@ -38,11 +38,12 @@ class EntityTableTest extends CAPSTestSuite {
     .withPropertyKey("bar" -> "BAR")
 
   test("mapping from scala classes") {
-    val personTableScala = CAPSNodeTable(List(Person(0, "Alice")))
+    val personTableScala = CAPSNodeTable(List(Person(0, "Alice", 15)))
     personTableScala.mapping should equal(NodeMapping
       .withSourceIdKey("id")
       .withImpliedLabel("Person")
-      .withPropertyKey("name"))
+      .withPropertyKey("name")
+      .withPropertyKey("age"))
 
     val friends = List(Friend(0, 0, 1, "23/01/1987"), Friend(1, 1, 2, "12/12/2009"))
     val friendTableScala = CAPSRelationshipTable(friends)

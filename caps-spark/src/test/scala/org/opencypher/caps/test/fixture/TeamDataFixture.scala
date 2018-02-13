@@ -61,7 +61,7 @@ trait TeamDataFixture extends TestDataFixture with RowDebugOutputSupport {
     .withPropertyKey("name" -> "NAME")
     .withPropertyKey("luckyNumber" -> "NUM")
 
-  private lazy val personDF: DataFrame = caps.sparkSession.createDataFrame(
+  protected lazy val personDF: DataFrame = caps.sparkSession.createDataFrame(
     Seq(
       (1L, true, "Mats", 23L),
       (2L, false, "Martin", 42L),
@@ -75,7 +75,7 @@ trait TeamDataFixture extends TestDataFixture with RowDebugOutputSupport {
     .on("ID").from("SRC").to("DST").relType("KNOWS").withPropertyKey("since" -> "SINCE")
 
 
-  private lazy val knowsDF: DataFrame = caps.sparkSession.createDataFrame(
+  protected lazy val knowsDF: DataFrame = caps.sparkSession.createDataFrame(
     Seq(
       (1L, 1L, 2L, 2017L),
       (1L, 2L, 3L, 2016L),

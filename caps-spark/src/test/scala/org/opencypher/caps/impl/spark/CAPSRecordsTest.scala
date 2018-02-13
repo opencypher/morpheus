@@ -26,11 +26,39 @@ import org.opencypher.caps.impl.record._
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.ir.api.{Label, PropertyKey}
 import org.opencypher.caps.test.CAPSTestSuite
-import org.opencypher.caps.test.fixture.GraphCreationFixture
+import org.opencypher.caps.test.fixture.{GraphCreationFixture, TeamDataFixture}
 
 import scala.collection.Bag
 
-class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture {
+class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture with TeamDataFixture {
+
+  it("can wrap a dataframe") {
+    // Given (generally produced by a SQL query)
+    val records = CAPSRecords.wrap(personDF)
+
+    records.header.slots.map(s => s.content -> s.content.cypherType).toSet should equal(Set(
+      OpaqueField(Var("ID")()) -> CTInteger,
+      OpaqueField(Var("IS_SWEDE")()) -> CTBoolean,
+      OpaqueField(Var("NAME")()) -> CTString.nullable,
+      OpaqueField(Var("NUM")()) -> CTInteger
+    ))
+  }
+
+  it("can be registered and queried from SQL") {
+    // Given
+    CAPSRecords.create(personTable).register("people")
+
+    // When
+    val df = session.sql("SELECT * FROM people")
+
+    // Then
+    df.collect() should equal(Array(
+      Row(1L, true, "Mats", 23),
+      Row(2L, false, "Martin", 42),
+      Row(3L, false, "Max", 1337),
+      Row(4L, false, "Stefan", 9)
+    ))
+  }
 
   test("verify CAPSRecords header") {
     val givenDF = session.createDataFrame(
