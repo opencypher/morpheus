@@ -21,7 +21,6 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.functions.{asc, desc, monotonically_increasing_id}
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.impl.exception.{IllegalArgumentException, IllegalStateException}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue._
@@ -404,8 +403,14 @@ final case class Aggregate(
               functions.count(functions.lit(0)).as(columnName)
 
             // TODO: Consider not implicitly projecting the inner expr here, but rewriting it into a variable in logical planning or IR construction
-            case Count(expr) =>
-              withInnerExpr(expr)(functions.count(_).as(columnName))
+            case Count(expr, distinct) => withInnerExpr(expr) { column =>
+              val count = {
+                if (distinct) functions.countDistinct(column)
+                else functions.count(column)
+              }
+
+              count.as(columnName)
+            }
 
             case Max(expr) =>
               withInnerExpr(expr)(functions.max(_).as(columnName))
@@ -416,8 +421,14 @@ final case class Aggregate(
             case Sum(expr) =>
               withInnerExpr(expr)(functions.sum(_).as(columnName))
 
-            case Collect(expr) =>
-              withInnerExpr(expr)(functions.collect_list(_).as(columnName))
+            case Collect(expr, distinct) => withInnerExpr(expr) { column =>
+              val list = {
+                if (distinct) functions.collect_set(column)
+                else functions.collect_list(column)
+              }
+
+              list.as(columnName)
+            }
 
             case x =>
               throw NotImplementedException(s"Aggregation function $x")
