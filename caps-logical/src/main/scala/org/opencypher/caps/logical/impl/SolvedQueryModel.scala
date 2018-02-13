@@ -45,7 +45,7 @@ case class SolvedQueryModel(
   def contains(block: Block[Expr]): Boolean = {
     val bindsFields = block.binds.fields subsetOf fields
     val bindsGraphs = block.binds.graphs.map(_.toNamedGraph) subsetOf graphs
-    val preds = block.where.elements subsetOf predicates
+    val preds = block.where subsetOf predicates
 
     bindsFields && bindsGraphs && preds
   }

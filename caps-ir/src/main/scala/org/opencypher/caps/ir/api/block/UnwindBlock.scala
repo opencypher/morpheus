@@ -15,7 +15,6 @@
  */
 package org.opencypher.caps.ir.api.block
 
-import org.opencypher.caps.api.schema.AllGiven
 import org.opencypher.caps.ir.api.{IRField, IRGraph}
 
 final case class UnwindBlock[E](
@@ -23,7 +22,7 @@ final case class UnwindBlock[E](
     binds: UnwoundList[E],
     source: IRGraph
 ) extends BasicBlock[UnwoundList[E], E](BlockType("unwind")) {
-  override def where: AllGiven[E] = AllGiven[E]() // never filters
+  override def where: Set[E] = Set.empty[E] // never filters
 }
 
 final case class UnwoundList[E](list: E, variable: IRField) extends Binds[E] {

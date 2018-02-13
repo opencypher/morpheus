@@ -20,7 +20,7 @@ import java.net.URI
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
 import org.opencypher.caps.api.io.PropertyGraphDataSource
-import org.opencypher.caps.api.schema.{AllGiven, Schema}
+import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block._
@@ -67,11 +67,11 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
   def project(
       fields: FieldsAndGraphs[Expr],
       after: Set[BlockRef] = Set(leafRef),
-      given: AllGiven[Expr] = AllGiven[Expr]()) =
+      given: Set[Expr] = Set.empty[Expr]) =
     ProjectBlock(after, fields, given, testGraph)
 
   protected def matchBlock(pattern: Pattern[Expr]): Block[Expr] =
-    MatchBlock[Expr](Set(leafRef), pattern, AllGiven[Expr](), false, testGraph)
+    MatchBlock[Expr](Set(leafRef), pattern, Set.empty[Expr], false, testGraph)
 
   def irFor(rootRef: BlockRef, blocks: Map[BlockRef, Block[Expr]]): CypherQuery[Expr] = {
     val result = ResultBlock[Expr](
@@ -79,7 +79,7 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
       binds = OrderedFieldsAndGraphs[Expr](),
       nodes = Set.empty,
       relationships = Set.empty,
-      where = AllGiven[Expr](),
+      where = Set.empty[Expr],
       source = testGraph
     )
     val model = QueryModel(result, CypherMap.empty, blocks, Map.empty)
@@ -88,7 +88,7 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
 
   case class DummyBlock[E](after: Set[BlockRef] = Set.empty) extends BasicBlock[DummyBinds[E], E](BlockType("dummy")) {
     override def binds: DummyBinds[E] = DummyBinds[E]()
-    override def where: AllGiven[E] = AllGiven[E]()
+    override def where: Set[E] = Set.empty[E]
     override val source = testGraph
   }
 

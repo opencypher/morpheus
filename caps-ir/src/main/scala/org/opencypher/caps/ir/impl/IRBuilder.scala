@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, StringLiteral, Variable, Pattern => AstPattern}
 import org.opencypher.caps.impl.exception.{IllegalArgumentException, IllegalStateException}
-import org.opencypher.caps.api.schema.AllGiven
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.caps.impl.util.parsePathOrURI
@@ -221,7 +220,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
       context: IRBuilderContext,
       fieldExprs: Vector[(IRField, Expr)],
       graphs: Seq[IRGraph] = Seq.empty,
-      given: AllGiven[Expr] = AllGiven[Expr](),
+      given: Set[Expr] = Set.empty[Expr],
       source: IRGraph,
       distinct: Boolean): (BlockRef, BlockRegistry[Expr]) = {
     val blockRegistry = context.blocks
@@ -386,19 +385,19 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
       context <- get[R, IRBuilderContext]
     } yield context.convertExpression(e)
 
-  private def convertWhere[R: _mayFail: _hasContext](where: Option[ast.Where]): Eff[R, AllGiven[Expr]] = where match {
+  private def convertWhere[R: _mayFail: _hasContext](where: Option[ast.Where]): Eff[R, Set[Expr]] = where match {
     case Some(ast.Where(expr)) =>
       for {
         predicate <- convertExpr(expr)
       } yield {
         predicate match {
-          case org.opencypher.caps.ir.api.expr.Ands(exprs) => AllGiven(exprs)
-          case e                                           => AllGiven(Set(e))
+          case org.opencypher.caps.ir.api.expr.Ands(exprs) => exprs
+          case e                                           => Set(e)
         }
       }
 
     case None =>
-      pure[R, AllGiven[Expr]](AllGiven[Expr]())
+      pure[R, Set[Expr]](Set.empty[Expr])
   }
 
   private def convertRegistry[R: _mayFail: _hasContext]: Eff[R, Option[CypherQuery[Expr]]] =

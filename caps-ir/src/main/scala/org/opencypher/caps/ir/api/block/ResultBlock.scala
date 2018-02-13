@@ -15,7 +15,6 @@
  */
 package org.opencypher.caps.ir.api.block
 
-import org.opencypher.caps.api.schema.{AllGiven, AllOf}
 import org.opencypher.caps.ir.api._
 
 final case class ResultBlock[E](
@@ -24,7 +23,7 @@ final case class ResultBlock[E](
     nodes: Set[IRField],
     relationships: Set[IRField],
     source: IRGraph,
-    where: AllGiven[E] = AllGiven[E]()
+    where: Set[E] = Set.empty[E]
 ) extends BasicBlock[OrderedFieldsAndGraphs[E], E](BlockType("result")) {
 
   def select(fields: Set[IRField]): ResultBlock[E] =
@@ -33,7 +32,7 @@ final case class ResultBlock[E](
 
 object ResultBlock {
   def empty[E](graph: IRGraph) =
-    ResultBlock(Set.empty, OrderedFieldsAndGraphs[E](), Set.empty, Set.empty, graph, AllOf[E]())
+    ResultBlock(Set.empty, OrderedFieldsAndGraphs[E](), Set.empty, Set.empty, graph, Set.empty[E])
 }
 
 final case class OrderedFieldsAndGraphs[E](

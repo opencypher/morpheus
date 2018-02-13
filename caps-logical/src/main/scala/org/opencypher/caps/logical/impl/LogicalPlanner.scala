@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.logical.impl
 
-import org.opencypher.caps.api.schema.{AllGiven, Schema}
+import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.caps.ir.api.block._
@@ -210,9 +210,9 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
   }
 
   // TODO: Should we check (or silently drop) predicates that are not eligible for planning here? (check dependencies)
-  private def planFilter(in: LogicalOperator, where: AllGiven[Expr])(
+  private def planFilter(in: LogicalOperator, where: Set[Expr])(
     implicit context: LogicalPlannerContext): LogicalOperator = {
-    val filtersAndProjs = where.elements.foldLeft(in) {
+    val filtersAndProjs = where.foldLeft(in) {
       case (acc, ors: Ors) =>
         val withInnerExprs = ors.exprs.foldLeft(acc) {
           case (_acc, expr) => planInnerExpr(expr, _acc)
@@ -372,7 +372,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     producer.planSetSourceGraph(logicalGraph, prev)
   }
 
-  private def planMatchPattern(plan: LogicalOperator, pattern: Pattern[Expr], where: AllGiven[Expr], graph: IRGraph)(
+  private def planMatchPattern(plan: LogicalOperator, pattern: Pattern[Expr], where: Set[Expr], graph: IRGraph)(
     implicit context: LogicalPlannerContext) = {
     val components = pattern.components.toSeq
     if (components.size == 1) {
@@ -393,18 +393,16 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         val fieldsInScope = lhs.fields ++ rhs.fields
         val solvedPredicates = lhs.solved.predicates ++ rhs.solved.predicates
         val predicates = where.filter(_.evaluable(fieldsInScope)).filterNot(solvedPredicates)
-        val (joinPredicates, otherPredicates) = predicates.flatPartition {
-          case expr: org.opencypher.caps.ir.api.expr.Equals => expr
-        }
+        val joinPredicates = predicates.collect { case e: Equals => e }
         if (joinPredicates.isEmpty) {
           val combinedPlan = producer.planCartesianProduct(lhs, rhs)
           val filteredPlan = planFilter(combinedPlan, predicates)
           filteredPlan
         } else {
-          val (leftIn, rightIn) = joinPredicates.elements.foldLeft((lhs, rhs)) {
+          val (leftIn, rightIn) = joinPredicates.foldLeft((lhs, rhs)) {
             case ((l, r), predicate) => producer.projectExpr(predicate.lhs, l) -> producer.projectExpr(predicate.rhs, r)
           }
-          producer.planValueJoin(leftIn, rightIn, joinPredicates.elements)
+          producer.planValueJoin(leftIn, rightIn, joinPredicates)
         }
       }
       // TODO: use type system to avoid empty pattern

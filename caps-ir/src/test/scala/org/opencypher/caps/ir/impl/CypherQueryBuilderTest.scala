@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.ir.impl
 
-import org.opencypher.caps.api.schema.{AllGiven, PropertyKeys, Schema}
+import org.opencypher.caps.api.schema.{PropertyKeys, Schema}
 import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.api.types.{CTNode, CTNull, CTRelationship}
 import org.opencypher.caps.ir.api._
@@ -36,7 +36,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
       }
 
       val matchRef = model.findExactlyOne {
-        case MatchBlock(deps, Pattern(fields, topo), AllGiven(exprs), _, _) =>
+        case MatchBlock(deps, Pattern(fields, topo), exprs, _, _) =>
           deps should equal(Set(loadRef))
           fields should equal(Set(toField('a -> CTNode)))
           topo shouldBe empty
@@ -113,7 +113,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
         }
 
         val matchRef = model.findExactlyOne {
-          case MatchBlock(deps, Pattern(fields, topo), AllGiven(exprs), _, _) =>
+          case MatchBlock(deps, Pattern(fields, topo), exprs, _, _) =>
             deps should equal(Set(loadRef))
             fields should equal(Set(toField('a -> CTNode)))
             topo shouldBe empty
@@ -190,7 +190,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
       val rel = toField('r -> CTRelationship("TEST"))
 
       val matchRef = model.findExactlyOne {
-        case MatchBlock(deps, Pattern(fields, topo), AllGiven(exprs), _, _) =>
+        case MatchBlock(deps, Pattern(fields, topo), exprs, _, _) =>
           fields should equal(Set(nodeA, nodeB))
           topo should equal(Map())
           exprs shouldBe empty

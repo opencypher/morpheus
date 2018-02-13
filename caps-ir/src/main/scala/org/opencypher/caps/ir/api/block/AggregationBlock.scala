@@ -15,7 +15,6 @@
  */
 package org.opencypher.caps.ir.api.block
 
-import org.opencypher.caps.api.schema.AllGiven
 import org.opencypher.caps.ir.api.{IRField, IRGraph}
 
 final case class AggregationBlock[E](
@@ -25,7 +24,7 @@ final case class AggregationBlock[E](
     source: IRGraph
 ) extends BasicBlock[Aggregations[E], E](BlockType("aggregation")) {
 
-  override val where: AllGiven[E] = AllGiven[E]() // no filtering in aggregation blocks
+  override val where: Set[E] = Set.empty[E] // no filtering in aggregation blocks
 }
 
 final case class Aggregations[E](pairs: Set[(IRField, E)]) extends Binds[E] {

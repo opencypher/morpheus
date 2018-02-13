@@ -15,7 +15,6 @@
  */
 package org.opencypher.caps.ir.api.block
 
-import org.opencypher.caps.api.schema.AllGiven
 import org.opencypher.caps.ir.api.{IRField, IRGraph}
 
 trait Block[E] {
@@ -25,7 +24,7 @@ trait Block[E] {
   def after: Set[BlockRef]
 
   def binds: Binds[E]
-  def where: AllGiven[E]
+  def where: Set[E]
 
   def source: IRGraph
 }
@@ -50,10 +49,10 @@ trait Binds[E] {
 }
 
 object BlockWhere {
-  def unapply[E](block: Block[E]): Option[Set[E]] = Some(block.where.elements)
+  def unapply[E](block: Block[E]): Option[Set[E]] = Some(block.where)
 }
 
 object NoWhereBlock {
   def unapply[E](block: Block[E]): Option[Block[E]] =
-    if (block.where.elements.isEmpty) Some(block) else None
+    if (block.where.isEmpty) Some(block) else None
 }
