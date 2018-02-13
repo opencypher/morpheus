@@ -22,7 +22,7 @@ import org.opencypher.caps.test.BaseTestSuite
 trait CAPSSessionFixture extends BaseTestFixture {
   self: SparkSessionFixture with BaseTestSuite =>
 
-  implicit lazy val caps: CAPSSession = CAPSSession.local()
+  implicit lazy val caps: CAPSSession = CAPSSession.create(session)
 
   abstract override protected def afterEach(): Unit =
     caps.asInstanceOf[CAPSSessionImpl].unmountAll()

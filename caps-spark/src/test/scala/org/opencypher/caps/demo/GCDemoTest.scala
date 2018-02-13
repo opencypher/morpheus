@@ -34,7 +34,7 @@ import scala.collection.Bag
 class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServerFixture with MiniDFSClusterFixture {
 
   protected override def hdfsURI: URI = new URIBuilder(super.hdfsURI).setScheme("hdfs+csv").build()
-  protected override val dfsTestGraphPath = "/csv/prod"
+  protected override def dfsTestGraphPath = "/csv/prod"
 
   ignore("the demo") {
     val t0 = System.currentTimeMillis()

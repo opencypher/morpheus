@@ -22,21 +22,21 @@ import scala.reflect.runtime.universe._
 import scala.tools.reflect.ToolBox
 
 private[caps] object Annotation {
-  def labels[E <: Node: TypeTag]: Set[String] = {
+  def labels[E <: Node: TypeTag]: Set[String] = synchronized {
     get[Labels, E] match {
       case Some(ls) => ls.labels.toSet
       case None     => Set(runtimeClass[E].getSimpleName)
     }
   }
 
-  def relType[E <: Relationship: TypeTag]: String = {
+  def relType[E <: Relationship: TypeTag]: String = synchronized {
     get[RelationshipType, E] match {
       case Some(RelationshipType(tpe)) => tpe
       case None                        => runtimeClass[E].getSimpleName.toUpperCase
     }
   }
 
-  def get[A <: StaticAnnotation: TypeTag, E: TypeTag]: Option[A] = {
+  def get[A <: StaticAnnotation: TypeTag, E: TypeTag]: Option[A] = synchronized {
     val maybeAnnotation = staticClass[E].annotations.find(_.tree.tpe =:= typeOf[A])
     maybeAnnotation.map { annotation =>
       val tb = typeTag[E].mirror.mkToolBox()
@@ -45,14 +45,14 @@ private[caps] object Annotation {
     }
   }
 
-  private def runtimeClass[E: TypeTag]: Class[E] = {
+  private def runtimeClass[E: TypeTag]: Class[E] = synchronized {
     val tag = typeTag[E]
     val mirror = tag.mirror
     val runtimeClass = mirror.runtimeClass(tag.tpe.typeSymbol.asClass)
     runtimeClass.asInstanceOf[Class[E]]
   }
 
-  private def staticClass[E: TypeTag]: ClassSymbol = {
+  private def staticClass[E: TypeTag]: ClassSymbol = synchronized {
     val mirror = typeTag[E].mirror
     mirror.staticClass(runtimeClass[E].getCanonicalName)
   }

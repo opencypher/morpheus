@@ -19,34 +19,67 @@ import java.net.URI
 
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hdfs.MiniDFSCluster
-import org.apache.spark.sql.Row
+import org.apache.spark.sql.{Row, SparkSession}
 import org.opencypher.caps.test.CAPSTestSuite
+import org.opencypher.caps.test.fixture.GlobalMiniDFSCluster.{clusterForPath, releaseClusterForPath}
 
 import scala.collection.{Bag, mutable}
+
+/**
+  * Allows multiple tests to use the same MiniDFSCluster for the same local filesystem folder.
+  */
+object GlobalMiniDFSCluster {
+
+  private var clusters: Map[String, MiniDFSCluster] = Map.empty
+  private var clusterUsageCountsByPath: Map[String, Int] = Map.empty.withDefaultValue(0)
+
+  def clusterForPath(path: String)(implicit session: SparkSession): MiniDFSCluster = synchronized {
+    if (clusters.contains(path)) {
+      clusterUsageCountsByPath = clusterUsageCountsByPath.updated(path, clusterUsageCountsByPath(path) + 1)
+      clusters(path)
+    } else {
+      val cluster = new MiniDFSCluster.Builder(session.sparkContext.hadoopConfiguration).build()
+      cluster.waitClusterUp()
+      cluster.getFileSystem.copyFromLocalFile(
+        new Path(getClass.getResource(path).toString),
+        new Path(path))
+      clusters += path -> cluster
+      clusterUsageCountsByPath += path -> 1
+      cluster
+    }
+  }
+
+  def releaseClusterForPath(path: String): Unit = synchronized {
+    val count = clusterUsageCountsByPath(path)
+    if (count == 1) {
+      clusters(path).shutdown(true)
+      clusters -= path
+      clusterUsageCountsByPath -= path
+    } else {
+      clusterUsageCountsByPath = clusterUsageCountsByPath.updated(path, clusterUsageCountsByPath(path) - 1)
+    }
+  }
+
+}
 
 trait MiniDFSClusterFixture extends BaseTestFixture {
 
   self: SparkSessionFixture with CAPSTestSuite =>
 
-  protected var dfsCluster: MiniDFSCluster = _
+  protected def dfsTestGraphPath: String
 
-  protected val dfsTestGraphPath: String
+  protected val cluster: MiniDFSCluster = clusterForPath(dfsTestGraphPath)
 
-  protected def hdfsURI: URI = hdfsURI(dfsTestGraphPath)
+  protected def hdfsURI: URI = {
+    hdfsURI(dfsTestGraphPath)
+  }
 
-  protected def hdfsURI(path: String): URI = URI.create(s"hdfs://${dfsCluster.getNameNode.getHostAndPort}$path")
-
-  abstract override def beforeAll(): Unit = {
-    super.beforeAll()
-    dfsCluster = new MiniDFSCluster.Builder(session.sparkContext.hadoopConfiguration).build()
-    dfsCluster.waitClusterUp()
-    dfsCluster.getFileSystem.copyFromLocalFile(
-      new Path(getClass.getResource(dfsTestGraphPath).toString),
-      new Path(dfsTestGraphPath))
+  protected def hdfsURI(path: String): URI = {
+    URI.create(s"hdfs://${cluster.getNameNode.getHostAndPort}$path")
   }
 
   abstract override def afterAll: Unit = {
-    dfsCluster.shutdown(true)
+    releaseClusterForPath(dfsTestGraphPath)
     super.afterAll()
   }
 
@@ -56,10 +89,10 @@ trait MiniDFSClusterFixture extends BaseTestFixture {
     * @return expected nodes
     */
   def dfsTestGraphNodes: Bag[Row] = Bag(
-    Row(1L, true,  true, true, false, mutable.WrappedArray.make(Array("german", "english")),            42L, "Stefan"),
-    Row(2L, true, false, true,  true, mutable.WrappedArray.make(Array("swedish", "english", "german")), 23L,   "Mats"),
-    Row(3L, true,  true, true, false, mutable.WrappedArray.make(Array("german", "english")),            1337L, "Martin"),
-    Row(4L, true,  true, true, false, mutable.WrappedArray.make(Array("german", "swedish", "english")), 8L,    "Max")
+    Row(1L, true, true, true, false, mutable.WrappedArray.make(Array("german", "english")), 42L, "Stefan"),
+    Row(2L, true, false, true, true, mutable.WrappedArray.make(Array("swedish", "english", "german")), 23L, "Mats"),
+    Row(3L, true, true, true, false, mutable.WrappedArray.make(Array("german", "english")), 1337L, "Martin"),
+    Row(4L, true, true, true, false, mutable.WrappedArray.make(Array("german", "swedish", "english")), 8L, "Max")
   )
 
   /**
