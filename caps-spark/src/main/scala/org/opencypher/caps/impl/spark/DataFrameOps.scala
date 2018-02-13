@@ -76,7 +76,6 @@ object DataFrameOps {
       }
   }
 
-
   implicit class CypherRow(r: Row) {
     def getCypherValue(expr: Expr, header: RecordHeader)(implicit context: CAPSRuntimeContext): CypherValue = {
       expr match {
@@ -120,9 +119,8 @@ object DataFrameOps {
       df.schema.fields(df.schema.fieldIndex(columnName))
     }
 
-    def mapColumn(columnName: String)(f: Column => Column): DataFrame = {
-      val tmpColName = ColumnName.tempColName
-      df.safeAddColumn(tmpColName, f(df(columnName))).drop(columnName).safeRenameColumn(tmpColName, columnName)
+    def mapColumn(name: String)(f: Column => Column): DataFrame = {
+      df.withColumn(name, f(df.col(name)))
     }
 
     def setNonNullable(columnName: String): DataFrame = {
