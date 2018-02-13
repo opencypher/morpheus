@@ -15,14 +15,10 @@
  */
 package org.opencypher.caps.logical.api.configuration
 
-import org.opencypher.caps.api.configuration.Configuration.ConfigOption
-
-import scala.util.Try
+import org.opencypher.caps.api.configuration.Configuration.ConfigFlag
 
 object LogicalConfiguration {
 
-  object PrintLogicalPlan extends ConfigOption("caps.explain", false)(s => Try(s.toBoolean).toOption) {
-    def set(): Unit = set(true.toString)
-  }
+  object PrintLogicalPlan extends ConfigFlag("caps.explain")
 
 }

@@ -114,7 +114,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
     val optimizedLogicalPlan = logicalOptimizer(logicalPlan)(logicalPlannerContext)
     logStageProgress("Done!")
 
-    if (PrintLogicalPlan.get) {
+    if (PrintLogicalPlan.isSet) {
       println("Logical plan:")
       println(logicalPlan.pretty())
       println("Optimized logical plan:")
@@ -125,7 +125,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
   }
 
   private def logStageProgress(s: String, newLine: Boolean = true): Unit = {
-    if (PrintQueryExecutionStages.get) {
+    if (PrintQueryExecutionStages.isSet) {
       if (newLine) {
         println(s)
       } else {
@@ -224,7 +224,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
     val physicalPlan = physicalPlanner(flatPlan)(physicalPlannerContext)
     logStageProgress("Done!")
 
-    if (PrintPhysicalPlan.get) {
+    if (PrintPhysicalPlan.isSet) {
       println("Physical plan:")
       println(physicalPlan.pretty())
     }
@@ -233,7 +233,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
     val optimizedPhysicalPlan = physicalOptimizer(physicalPlan)(PhysicalOptimizerContext())
     logStageProgress("Done!")
 
-    if (PrintPhysicalPlan.get) {
+    if (PrintPhysicalPlan.isSet) {
       println("Optimized physical plan:")
       println(optimizedPhysicalPlan.pretty())
     }
