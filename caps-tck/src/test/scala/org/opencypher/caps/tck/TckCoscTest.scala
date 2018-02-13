@@ -20,18 +20,14 @@ import java.io.File
 import org.opencypher.caps.cosc.impl.{COSCGraph, COSCSession}
 import org.opencypher.caps.cosc.test.COSCTestSuite
 import org.opencypher.caps.cosc.test.support.creation.cosc.COSCTestGraphFactory
+import org.opencypher.caps.tck.Tags.{BlackList, TckCoscTag, WhiteList}
 import org.opencypher.caps.test.support.creation.TestGraphFactory
 import org.opencypher.tools.tck.api.CypherTCK
-import org.scalatest.Tag
 import org.scalatest.prop.TableDrivenPropertyChecks._
 
 import scala.util.{Failure, Success, Try}
 
-class TCKCOSCTest extends COSCTestSuite {
-
-  object WhiteList extends Tag("WhiteList Scenario")
-
-  object BlackList extends Tag("BlackList Scenario")
+class TckCoscTest extends COSCTestSuite {
 
   val factories = Table(
     "factory",
@@ -45,7 +41,7 @@ class TCKCOSCTest extends COSCTestSuite {
   // white list tests are run on all factories
   forAll(factories) { factory =>
     forAll(scenarios.whiteList) { scenario =>
-      test(s"[${factory.name}, ${WhiteList.name}] $scenario", WhiteList) {
+      test(s"[${factory.name}, ${WhiteList.name}] $scenario", WhiteList, TckCoscTag) {
         scenario(TCKGraph(factory, COSCGraph.empty)).execute()
       }
     }
@@ -53,7 +49,7 @@ class TCKCOSCTest extends COSCTestSuite {
 
   // black list tests are run on default factory
   forAll(scenarios.blackList) { scenario =>
-    test(s"[${defaultFactory.name}, ${BlackList.name}] $scenario", BlackList) {
+    test(s"[${defaultFactory.name}, ${BlackList.name}] $scenario", BlackList, TckCoscTag) {
       val tckGraph = TCKGraph(defaultFactory, COSCGraph.empty)
 
       Try(scenario(tckGraph).execute()) match {

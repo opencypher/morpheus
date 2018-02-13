@@ -18,19 +18,15 @@ package org.opencypher.caps.tck
 import java.io.File
 
 import org.opencypher.caps.impl.spark.CAPSGraph
+import org.opencypher.caps.tck.Tags.{BlackList, TckCapsTag, WhiteList}
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 import org.opencypher.tools.tck.api.CypherTCK
-import org.scalatest.Tag
 import org.scalatest.prop.TableDrivenPropertyChecks._
 
 import scala.util.{Failure, Success, Try}
 
-class TCKCAPSTest extends CAPSTestSuite {
-
-  object WhiteList extends Tag("WhiteList Scenario")
-
-  object BlackList extends Tag("BlackList Scenario")
+class TckCapsTest extends CAPSTestSuite {
 
   // Defines the graphs to run on
   private val factories = Table(
@@ -45,7 +41,7 @@ class TCKCAPSTest extends CAPSTestSuite {
   // white list tests are run on all factories
   forAll(factories) { factory =>
     forAll(scenarios.whiteList) { scenario =>
-      test(s"[${factory.name}, ${WhiteList.name}] $scenario", WhiteList) {
+      test(s"[${factory.name}, ${WhiteList.name}] $scenario", WhiteList, TckCapsTag) {
         scenario(TCKGraph(factory, CAPSGraph.empty)).execute()
       }
     }
@@ -53,7 +49,7 @@ class TCKCAPSTest extends CAPSTestSuite {
 
   // black list tests are run on default factory
   forAll(scenarios.blackList) { scenario =>
-    test(s"[${defaultFactory.name}, ${BlackList.name}] $scenario", BlackList) {
+    test(s"[${defaultFactory.name}, ${BlackList.name}] $scenario", BlackList, TckCapsTag) {
       val tckGraph = TCKGraph(defaultFactory, CAPSGraph.empty)
 
       Try(scenario(tckGraph).execute()) match {
