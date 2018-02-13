@@ -18,6 +18,7 @@ package org.opencypher.caps.impl.record
 import org.opencypher.caps.api.graph.CypherSession
 import org.opencypher.caps.api.types.CypherType
 import org.opencypher.caps.api.value.CypherValue.{CypherMap, CypherValue}
+import org.opencypher.caps.impl.exception.IllegalArgumentException
 
 /**
   * Represents a table with column names of type String in which each row contains one CypherValue per column and the
@@ -42,6 +43,36 @@ trait CypherTable[K] {
     * @return number of rows in this Table.
     */
   def size: Long
+
+}
+
+object CypherTable {
+
+  implicit class RichCypherTable[K](table: CypherTable[K]) {
+
+    /**
+      * Checks if the data type of the given column is compatible with the expected type.
+      *
+      * @param columnKey    column to be checked
+      * @param expectedType excepted data type
+      */
+    def verifyColumnType(columnKey: K, expectedType: CypherType, keyDescription: String): Unit = {
+      val columnType = table.columnType(columnKey)
+      if (!columnType.subTypeOf(expectedType).isTrue) {
+        if (columnType.material == expectedType.material) {
+          throw IllegalArgumentException(
+            s"a non-nullable type for $keyDescription column `$columnKey`",
+            "a nullable type")
+        } else {
+          throw IllegalArgumentException(
+            s"$keyDescription column `$columnKey` of type $expectedType",
+            s"incompatible column type $columnType")
+        }
+      }
+
+    }
+
+  }
 
 }
 

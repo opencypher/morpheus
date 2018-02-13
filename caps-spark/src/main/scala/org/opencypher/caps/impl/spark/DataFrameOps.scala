@@ -95,24 +95,6 @@ object DataFrameOps {
   implicit class RichDataFrame(df: DataFrame) {
 
     /**
-      * Checks if the data type of the given column is compatible to the given data type.
-      *
-      * @param columnName   column to be checked
-      * @param expectedType excepted data type
-      */
-    def verifyColumnType(columnName: String, expectedType: DataType): Unit = {
-      val columnDataType = structFieldForColumn(columnName).dataType
-      val compatibleType = cypherCompatibleDataType(columnDataType).getOrElse(throw IllegalArgumentException(
-        s"column with name $columnName being type compatible to $expectedType", columnDataType))
-
-      compatibleType match {
-        case `expectedType` => ()
-        case other => throw IllegalArgumentException(
-          s"column with name $columnName being type compatible to $expectedType", other)
-      }
-    }
-
-    /**
       * Returns the corresponding Cypher type for the given column name in the data frame.
       *
       * @param columnName column name
