@@ -84,7 +84,7 @@ object CAPSRelationshipTable {
 /**
   * An entity table describes how to map an input data frame to a Cypher entity (i.e. nodes or relationships).
   */
-sealed trait EntityTable[T <: CypherTable] {
+sealed trait EntityTable[T <: CypherTable[String]] {
 
   verify()
 
@@ -104,7 +104,7 @@ sealed trait EntityTable[T <: CypherTable] {
 
 object EntityTable {
 
-  implicit class SparkTable(val df: DataFrame) extends CypherTable {
+  implicit class SparkTable(val df: DataFrame) extends CypherTable[String] {
 
     override def columns: Set[String] = df.columns.toSet
 
@@ -136,7 +136,7 @@ object EntityTable {
   * @param mapping mapping from input data description to a Cypher node
   * @param table   input data frame
   */
-abstract class NodeTable[T <: CypherTable](mapping: NodeMapping, table: T) extends EntityTable[T] {
+abstract class NodeTable[T <: CypherTable[String]](mapping: NodeMapping, table: T) extends EntityTable[T] {
 
   override lazy val schema: Schema = {
     val propertyKeys = mapping.propertyMapping.toSeq.map {
@@ -167,7 +167,7 @@ abstract class NodeTable[T <: CypherTable](mapping: NodeMapping, table: T) exten
   * @param mapping mapping from input data description to a Cypher relationship
   * @param table   input data frame
   */
-abstract class RelationshipTable[T <: CypherTable](mapping: RelationshipMapping, table: T) extends EntityTable[T] {
+abstract class RelationshipTable[T <: CypherTable[String]](mapping: RelationshipMapping, table: T) extends EntityTable[T] {
 
   override lazy val schema: Schema = {
     val relTypes = mapping.relTypeOrSourceRelTypeKey match {

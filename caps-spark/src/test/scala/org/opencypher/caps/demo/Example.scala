@@ -34,8 +34,8 @@ object Example extends App {
        |RETURN a.name, b.name, r.since""".stripMargin
   )
 
-  // 4) Print results to console
-  results.print
+  // 4) Convert to maps and print to console
+  println(results.records.iterator.mkString("\n"))
 }
 
 /**

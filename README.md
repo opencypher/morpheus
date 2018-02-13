@@ -103,8 +103,8 @@ object Example extends App {
        |RETURN a.name, b.name, r.since""".stripMargin
   )
 
-  // 4) Print results to console
-  results.print
+  // 4) Convert to maps and print to console
+  println(results.records.iterator.mkString("\n"))
 }
 
 /**
@@ -128,12 +128,8 @@ object SocialNetworkData {
 
 The above program prints:
 ```
-+--------------------------------------------------------------------+
-| a.name               | b.name               | r.since              |
-+--------------------------------------------------------------------+
-| 'Alice'              | 'Bob'                | '23/01/1987'         |
-| 'Bob'                | 'Carol'              | '12/12/2009'         |
-+--------------------------------------------------------------------+
+Map(a.name -> Alice, b.name -> Bob, r.since -> 23/01/1987)
+Map(a.name -> Bob, b.name -> Carol, r.since -> 12/12/2009)
 ```
 
 More examples, including [multiple graph features](https://github.com/opencypher/cypher-for-apache-spark/tree/master/caps-spark/src/test/scala/org/opencypher/caps/demo/MultipleGraphExample.scala), can be found [in the demo package](https://github.com/opencypher/cypher-for-apache-spark/tree/master/caps-spark/src/test/scala/org/opencypher/caps/demo).
