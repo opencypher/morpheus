@@ -13,29 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.spark.convert
+package org.opencypher.caps.impl.spark
 
-import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types._
-import org.opencypher.caps.impl.exception.IllegalArgumentException
+import org.apache.spark.sql.{Column, DataFrame, Row, functions}
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.api.value.CypherValue
+import org.opencypher.caps.api.value.CypherValue.CypherValue
 import org.opencypher.caps.impl.exception.{IllegalArgumentException, NotImplementedException}
+import org.opencypher.caps.impl.record.{ColumnName, RecordHeader}
+import org.opencypher.caps.impl.spark.physical.CAPSRuntimeContext
+import org.opencypher.caps.ir.api.expr.{Expr, Param}
 
-object SparkUtils {
-
-  implicit class NullabilityOps(df: DataFrame) {
-    def setNonNullable(columnName: String): DataFrame = {
-      val newSchema = StructType(df.schema.map {
-        case s@StructField(cn, _, true, _) if cn == columnName => s.copy(nullable = false)
-        case other => other
-      })
-      if (newSchema == df.schema) {
-        df
-      } else {
-        df.sparkSession.createDataFrame(df.rdd, newSchema)
-      }
-    }
-  }
+object DataFrameOps {
 
   // Spark data types that are supported within the Cypher type system
   val supportedTypes = Seq(
@@ -84,6 +74,77 @@ object SparkUtils {
         case x =>
           throw NotImplementedException(s"Mapping of CypherType $x to Spark type")
       }
+  }
+
+
+  implicit class CypherRow(r: Row) {
+    def getCypherValue(expr: Expr, header: RecordHeader)(implicit context: CAPSRuntimeContext): CypherValue = {
+      expr match {
+        case Param(name) => context.parameters(name)
+        case _ =>
+          header.slotsFor(expr).headOption match {
+            case None => throw IllegalArgumentException(s"slot for $expr")
+            case Some(slot) =>
+              val index = slot.index
+              CypherValue(r.get(index))
+          }
+      }
+    }
+  }
+
+  implicit class RichDataFrame(df: DataFrame) {
+
+    def mapColumn(columnName: String)(f: Column => Column): DataFrame = {
+      val tmpColName = ColumnName.tempColName
+      df.withColumn(tmpColName, f(df(columnName))).drop(columnName).withColumnRenamed(tmpColName, columnName)
+    }
+
+    def setNonNullable(columnName: String): DataFrame = {
+      val newSchema = StructType(df.schema.map {
+        case s@StructField(cn, _, true, _) if cn == columnName => s.copy(nullable = false)
+        case other => other
+      })
+      if (newSchema == df.schema) {
+        df
+      } else {
+        df.sparkSession.createDataFrame(df.rdd, newSchema)
+      }
+    }
+
+    /**
+      * TODO clean up
+      */
+    def safeAddColumn(name: String, col: Column): DataFrame = {
+      require(!df.columns.contains(name))
+      df.withColumn(name, col)
+    }
+
+    /**
+      * TODO clean up
+      */
+    def safeRenameColumn(oldName: String, newName: String): DataFrame = {
+      require(!df.columns.contains(newName))
+      df.withColumnRenamed(oldName, newName)
+    }
+
+    def safeDropColumn(colName: String): DataFrame = {
+      df.drop(colName)
+    }
+
+    def safeDropColumns(colNames: String*): DataFrame = {
+      df.drop(colNames: _*)
+    }
+
+    def safeJoin(other: DataFrame, joinCols: Seq[(String, String)], joinType: String): DataFrame = {
+      require(joinCols.map(_._1).forall(col => !other.columns.contains(col)))
+      require(joinCols.map(_._2).forall(col => !df.columns.contains(col)))
+
+      val joinExpr = joinCols.map {
+        case (l, r) => df.col(l) === other.col(r)
+      }.foldLeft(functions.lit(true))((acc, expr) => acc && expr)
+
+      df.join(other, joinExpr, joinType)
+    }
   }
 
   /**
@@ -156,4 +217,5 @@ object SparkUtils {
         s"column with name $columnName being type compatible to $expectedType", other)
     }
   }
+
 }

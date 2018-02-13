@@ -16,13 +16,14 @@
 package org.opencypher.caps.impl.spark
 
 import org.apache.spark.sql.Row
-import org.opencypher.caps.impl.exception.InternalException
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.caps.api.schema.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CAPSNode
 import org.opencypher.caps.api.value.CypherValue._
+import org.opencypher.caps.impl.exception.InternalException
 import org.opencypher.caps.impl.record._
+import org.opencypher.caps.impl.spark.DataFrameOps._
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.ir.api.{Label, PropertyKey}
 import org.opencypher.caps.test.CAPSTestSuite
@@ -120,7 +121,6 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture with TeamD
   }
 
   test("contract relationships with a dynamic type") {
-    import org.opencypher.caps.impl.spark.convert.SparkUtils.NullabilityOps
     val givenDF = session.createDataFrame(
           Seq(
             (10L, 1L, 2L, "RED"),

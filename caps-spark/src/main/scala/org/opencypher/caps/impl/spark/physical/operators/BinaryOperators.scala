@@ -21,7 +21,7 @@ import org.opencypher.caps.impl.spark.physical.operators.CAPSPhysicalOperator.{a
 import org.opencypher.caps.impl.spark.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
 import org.opencypher.caps.impl.spark.{CAPSRecords, ColumnNameGenerator}
 import org.opencypher.caps.ir.api.expr.Var
-import org.opencypher.caps.impl.spark.physical.DataFrameOps._
+import org.opencypher.caps.impl.spark.DataFrameOps._
 
 private[spark] abstract class BinaryPhysicalOperator extends CAPSPhysicalOperator {
 

@@ -63,7 +63,7 @@ trait RecordMatchingTestSupport {
 
   implicit class RichRecords(records: CypherRecords) {
     val capsRecords = records.asCaps
-    import org.opencypher.caps.impl.spark.DfUtils._
+    import org.opencypher.caps.impl.spark.DataFrameOps._
 
     // TODO: Remove this and replace usages with toMapsWithCollectedEntities below
     // probably use this name though, and have not collecting be the special case

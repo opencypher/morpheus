@@ -26,8 +26,8 @@ import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.api.value.CypherValue.CypherValue
 import org.opencypher.caps.impl.exception.IllegalArgumentException
 import org.opencypher.caps.impl.record.CypherTable
+import org.opencypher.caps.impl.spark.DataFrameOps._
 import org.opencypher.caps.impl.spark._
-import org.opencypher.caps.impl.spark.convert.SparkUtils
 import org.opencypher.caps.impl.util.Annotation
 
 import scala.collection.JavaConverters._
@@ -108,7 +108,7 @@ object EntityTable {
 
     override def columns: Set[String] = df.columns.toSet
 
-    override def columnType: Map[String, CypherType] = columns.map(c => c -> SparkUtils.cypherTypeForColumn(df, c)).toMap
+    override def columnType: Map[String, CypherType] = columns.map(c => c -> cypherTypeForColumn(df, c)).toMap
 
     override def rows: Iterator[String => CypherValue] = df.toLocalIterator.asScala.map { row =>
       columns.map(c => c -> CypherValue(row.get(row.fieldIndex(c)))).toMap
