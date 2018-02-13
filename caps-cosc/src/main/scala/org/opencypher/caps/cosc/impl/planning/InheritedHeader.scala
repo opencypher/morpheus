@@ -13,16 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.logical.api.configuration
+package org.opencypher.caps.cosc.impl.planning
 
-import org.opencypher.caps.api.configuration.Configuration.ConfigOption
-
-import scala.util.Try
-
-object LogicalConfiguration {
-
-  object PrintLogicalPlan extends ConfigOption("caps.explain", false)(s => Try(s.toBoolean).toOption) {
-    def set(): Unit = set(true.toString)
-  }
-
+trait InheritedHeader {
+  this: COSCOperator =>
+    override val header = children.head.header
 }

@@ -15,6 +15,8 @@
  */
 package org.opencypher.caps.impl.util
 
+import org.opencypher.caps.api.configuration.Configuration.PrintTimings
+
 import scala.concurrent.duration.Duration
 
 object Measurement {
@@ -23,7 +25,7 @@ object Measurement {
     val res = block
     val end = System.nanoTime
     val total = Duration.fromNanos(end - start)
-    println(s"$name took: ${total.toMillis} ms")
+    if (PrintTimings.get()) println(s"$name took: ${total.toMillis} ms")
     res
   }
 }

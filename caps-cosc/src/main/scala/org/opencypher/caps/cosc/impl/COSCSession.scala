@@ -74,11 +74,6 @@ class COSCSession(private val graphSourceHandler: COSCGraphSourceHandler) extend
   override def cypherOnGraph(graph: PropertyGraph, query: String, parameters: CypherMap): CypherResult = {
     val ambientGraph = getAmbientGraph(graph)
 
-    println(
-      s"""Executing query:
-         |$query
-       """.stripMargin)
-
     val (stmt, extractedLiterals, semState) = time("AST construction")(parser.process(query)(CypherParser.defaultContext))
 
     val extractedParameters = extractedLiterals.mapValues(v => CypherValue(v))

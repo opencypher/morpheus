@@ -15,16 +15,26 @@
  */
 package org.opencypher.caps.cosc.impl
 
+import org.opencypher.caps.api.configuration.Configuration.PrintTimings
 import org.opencypher.caps.api.value.CypherValue.{CypherInteger, CypherMap, CypherString}
 import org.opencypher.caps.cosc.impl.value.{COSCNode, COSCRelationship}
 
 object Demo extends App {
 
+  PrintTimings.set()
+
+  val query = "MATCH (n) WHERE n.age > 40 RETURN n"
+
+  println(
+    s"""Executing query:
+       |$query
+       """.stripMargin)
+
   implicit val coscSession: COSCSession = COSCSession.create
 
   val graph = COSCGraph.create(DemoData.nodes, DemoData.rels)
 
-  graph.cypher("MATCH (n) WHERE n.age > 40 RETURN n").print
+  graph.cypher(query).print
 }
 
 object DemoData {

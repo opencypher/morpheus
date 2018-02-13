@@ -21,7 +21,8 @@ import org.apache.spark.SparkConf
 import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.sql.SparkSession
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.SparkConfiguration.{MasterAddress, Logging}
+import org.opencypher.caps.api.SparkConfiguration.MasterAddress
+import org.opencypher.caps.api.configuration.Configuration.Logging
 import org.opencypher.caps.api.graph.CypherResult
 
 object CSVDemo {

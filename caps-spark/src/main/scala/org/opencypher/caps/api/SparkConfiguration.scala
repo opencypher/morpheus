@@ -15,9 +15,9 @@
  */
 package org.opencypher.caps.api
 
-import org.opencypher.caps.api.configuration.Configuration
+import org.opencypher.caps.api.configuration.Configuration.ConfigOption
 
-object SparkConfiguration extends Configuration {
+object SparkConfiguration {
 
   object MasterAddress extends ConfigOption("caps.master", "local[*]")(Some(_))
 

@@ -15,7 +15,9 @@
  */
 package org.opencypher.caps.api.configuration
 
-trait Configuration {
+import scala.util.Try
+
+object Configuration {
 
   abstract class ConfigOption[T](val name: String, val defaultValue: T)(convert: String => Option[T]) {
     def set(v: String): Unit = System.setProperty(name, v)
@@ -26,6 +28,10 @@ trait Configuration {
       val filled = name + (name.length to 25).map(_ => " ").reduce(_ + _)
       s"$filled = ${get()}"
     }
+  }
+
+  object PrintTimings extends ConfigOption("caps.printTiminigs", false)(s => Try(s.toBoolean).toOption) {
+    def set(): Unit = set(true.toString)
   }
 
   object Logging extends ConfigOption("caps.logging", "OFF")(Some(_))
