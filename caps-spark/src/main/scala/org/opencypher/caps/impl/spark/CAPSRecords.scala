@@ -44,7 +44,7 @@ import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe.TypeTag
 
-sealed abstract class CAPSRecords(override val header: RecordHeader, val data: DataFrame)
+sealed abstract class CAPSRecords(val header: RecordHeader, val data: DataFrame)
   (implicit val caps: CAPSSession) extends CypherRecords with Serializable {
 
   override def print(implicit options: PrintOptions): Unit =
@@ -130,7 +130,7 @@ sealed abstract class CAPSRecords(override val header: RecordHeader, val data: D
     data.map(rowToCypherMap(header))
   }
 
-  override def columns: Set[String] = header.fields
+  override def columns: Seq[String] = header.fieldsInOrder
 
   override def rows: Iterator[String => CypherValue] = {
     toLocalIterator.asScala.map(_.value)

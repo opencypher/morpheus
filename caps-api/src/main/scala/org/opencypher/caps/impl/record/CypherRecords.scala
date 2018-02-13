@@ -30,7 +30,7 @@ import org.opencypher.caps.impl.exception.IllegalArgumentException
   */
 trait CypherTable[K] {
 
-  def columns: Set[K]
+  def columns: Seq[K]
 
   def columnType: Map[K, CypherType]
 
@@ -76,13 +76,6 @@ object CypherTable {
 
 }
 
-// TODO: Remove
-trait CypherRecordHeader {
-  def fields: Set[String]
-
-  def fieldsInOrder: Seq[String]
-}
-
 trait CypherRecordsCompanion[R <: CypherRecords, S <: CypherSession] {
   def unit()(implicit session: S): R
 }
@@ -90,20 +83,8 @@ trait CypherRecordsCompanion[R <: CypherRecords, S <: CypherSession] {
 /**
   * Represents a table of records containing Cypher values.
   * Each column (or slot) in this table represents an evaluated Cypher expression.
-  *
-  * Slots that have been bound to a variable name are called <i>fields</i>.
-  *
-  * @see [[CypherRecordHeader]]
   */
-//TODO: Move to API package
 trait CypherRecords extends CypherTable[String] with CypherPrintable {
-
-  /**
-    * The header for this table, describing the slots stored.
-    *
-    * @return the header for this table.
-    */
-  def header: CypherRecordHeader
 
   /**
     * Consume these records as an iterator.

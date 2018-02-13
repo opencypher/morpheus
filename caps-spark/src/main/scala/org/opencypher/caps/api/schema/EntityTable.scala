@@ -102,7 +102,7 @@ object EntityTable {
 
   implicit class SparkTable(val df: DataFrame) extends CypherTable[String] {
 
-    override def columns: Set[String] = df.columns.toSet
+    override def columns: Seq[String] = df.columns
 
     override def columnType: Map[String, CypherType] = columns.map(c => c -> df.cypherTypeForColumn(c)).toMap
 

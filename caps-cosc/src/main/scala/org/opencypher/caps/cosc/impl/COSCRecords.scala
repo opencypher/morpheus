@@ -38,7 +38,7 @@ sealed abstract class COSCRecords(
     */
   override def rows: Iterator[String => CypherValue] = data.rows.map(_.value)
 
-  override def columns: Set[String] = ???
+  override def columns: Seq[String] = ???
 
   override def columnType: Map[String, CypherType] = ???
 

@@ -17,7 +17,7 @@ package org.opencypher.caps.cosc.impl
 
 import org.opencypher.caps.api.graph.{CypherResult, CypherSession, PropertyGraph}
 import org.opencypher.caps.impl.exception.UnsupportedOperationException
-import org.opencypher.caps.impl.record.{CypherRecordHeader, CypherRecords, RecordHeader}
+import org.opencypher.caps.impl.record.{CypherRecords, RecordHeader}
 
 object COSCConverters {
 
@@ -46,13 +46,6 @@ object COSCConverters {
     def asCosc: COSCRecords = records match {
       case cosc: COSCRecords => cosc
       case _                 => throw UnsupportedOperationException(s"can only handle COSC records, got $records")
-    }
-  }
-
-  implicit class RichCypherHeader(header: CypherRecordHeader) {
-    def asCosc: RecordHeader = header match {
-      case cosc: RecordHeader => cosc
-      case _                  => throw UnsupportedOperationException(s"can only handle CORA record header, got $header")
     }
   }
 

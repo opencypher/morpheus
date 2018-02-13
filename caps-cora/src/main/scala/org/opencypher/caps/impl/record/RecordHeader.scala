@@ -28,7 +28,7 @@ import org.opencypher.caps.ir.api.{Label, PropertyKey}
   * The header consists of a number of slots, each of which represents a Cypher expression.
   * The slots that represent variables (which is a kind of expression) are called <i>fields</i>.
   */
-final case class RecordHeader(internalHeader: InternalHeader) extends CypherRecordHeader {
+final case class RecordHeader(internalHeader: InternalHeader) {
 
   /**
     * Computes the concatenation of this header and another header.

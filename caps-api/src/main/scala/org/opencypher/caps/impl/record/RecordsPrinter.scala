@@ -25,7 +25,7 @@ object RecordsPrinter {
     * @param records the records to be printed.
     */
   def print(records: CypherRecords)(implicit options: PrintOptions): Unit = {
-    val fieldContents = records.header.fieldsInOrder
+    val fieldContents = records.columns
     val factor = if (fieldContents.size > 1) fieldContents.size else 1
 
     val lineWidth = (options.columnWidth + options.margin) * factor + factor - 1
