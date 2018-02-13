@@ -140,7 +140,7 @@ object DataFrameOps {
 
     def mapColumn(columnName: String)(f: Column => Column): DataFrame = {
       val tmpColName = ColumnName.tempColName
-      df.withColumn(tmpColName, f(df(columnName))).drop(columnName).withColumnRenamed(tmpColName, columnName)
+      df.safeAddColumn(tmpColName, f(df(columnName))).drop(columnName).safeRenameColumn(tmpColName, columnName)
     }
 
     def setNonNullable(columnName: String): DataFrame = {
@@ -155,28 +155,36 @@ object DataFrameOps {
       }
     }
 
-    /**
-      * TODO clean up
-      */
     def safeAddColumn(name: String, col: Column): DataFrame = {
-      require(!df.columns.contains(name))
+      require(!df.columns.contains(name),
+        s"Cannot add column `$name`. A column with that name exists already. " +
+          s"Use `safeReplaceColumn` if you intend to replace that column.")
       df.withColumn(name, col)
     }
 
-    /**
-      * TODO clean up
-      */
+    def safeReplaceColumn(name: String, newColumn: Column): DataFrame = {
+      require(df.columns.contains(name), s"Cannot replace column `$name`. No column with that name exists. " +
+        s"Use `safeAddColumn` if you intend to add that column.")
+      df.withColumn(name, newColumn)
+    }
+
     def safeRenameColumn(oldName: String, newName: String): DataFrame = {
-      require(!df.columns.contains(newName))
+      require(!df.columns.contains(newName),
+        s"Cannot rename column `$oldName` to `$newName`. A column with name `$newName` exists already.")
       df.withColumnRenamed(oldName, newName)
     }
 
-    def safeDropColumn(colName: String): DataFrame = {
-      df.drop(colName)
+    def safeDropColumn(name: String): DataFrame = {
+      require(df.columns.contains(name),
+        s"Cannot drop column `$name`. No column with that name exists.")
+      df.drop(name)
     }
 
-    def safeDropColumns(colNames: String*): DataFrame = {
-      df.drop(colNames: _*)
+    def safeDropColumns(names: String*): DataFrame = {
+      val nonExistentColumns = names.toSet -- df.columns
+      require(nonExistentColumns.isEmpty,
+        s"Cannot drop column(s) ${nonExistentColumns.map(c => s"`$c`").mkString(", ")}. They do not exist.")
+      df.drop(names: _*)
     }
 
     def safeJoin(other: DataFrame, joinCols: Seq[(String, String)], joinType: String): DataFrame = {
