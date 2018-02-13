@@ -108,7 +108,7 @@ object EntityTable {
 
     override def columns: Set[String] = df.columns.toSet
 
-    override def columnType: Map[String, CypherType] = columns.map(c => c -> cypherTypeForColumn(df, c)).toMap
+    override def columnType: Map[String, CypherType] = columns.map(c => c -> df.cypherTypeForColumn(c)).toMap
 
     override def rows: Iterator[String => CypherValue] = df.toLocalIterator.asScala.map { row =>
       columns.map(c => c -> CypherValue(row.get(row.fieldIndex(c)))).toMap

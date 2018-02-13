@@ -94,6 +94,50 @@ object DataFrameOps {
 
   implicit class RichDataFrame(df: DataFrame) {
 
+    /**
+      * Checks if the data type of the given column is compatible to the given data type.
+      *
+      * @param columnName   column to be checked
+      * @param expectedType excepted data type
+      */
+    def verifyColumnType(columnName: String, expectedType: DataType): Unit = {
+      val columnDataType = structFieldForColumn(columnName).dataType
+      val compatibleType = cypherCompatibleDataType(columnDataType).getOrElse(throw IllegalArgumentException(
+        s"column with name $columnName being type compatible to $expectedType", columnDataType))
+
+      compatibleType match {
+        case `expectedType` => ()
+        case other => throw IllegalArgumentException(
+          s"column with name $columnName being type compatible to $expectedType", other)
+      }
+    }
+
+    /**
+      * Returns the corresponding Cypher type for the given column name in the data frame.
+      *
+      * @param columnName column name
+      * @return Cypher type for column
+      */
+    def cypherTypeForColumn(columnName: String): CypherType = {
+      val structField = structFieldForColumn(columnName)
+      val compatibleCypherType = cypherCompatibleDataType(structField.dataType).flatMap(fromSparkType(_, structField.nullable))
+      compatibleCypherType.getOrElse(
+        throw IllegalArgumentException("a supported Spark DataType that can be converted to CypherType", structField.dataType))
+    }
+
+    /**
+      * Returns the struct field for the given column.
+      *
+      * @param columnName column name
+      * @return struct field
+      */
+    def structFieldForColumn(columnName: String): StructField = {
+      if (df.schema.fieldIndex(columnName) < 0) {
+        throw IllegalArgumentException(s"column with name $columnName", s"columns with names ${df.columns.mkString("[", ", ", "]")}")
+      }
+      df.schema.fields(df.schema.fieldIndex(columnName))
+    }
+
     def mapColumn(columnName: String)(f: Column => Column): DataFrame = {
       val tmpColName = ColumnName.tempColName
       df.withColumn(tmpColName, f(df(columnName))).drop(columnName).withColumnRenamed(tmpColName, columnName)
@@ -169,53 +213,6 @@ object DataFrameOps {
     case FloatType => Some(DoubleType)
     case compatible if fromSparkType(dataType, nullable = false).isDefined => Some(compatible)
     case _ => None
-  }
-
-  /**
-    * Returns the corresponding Cypher type for the given column name in the data frame.
-    *
-    * @param dataFrame  data frame
-    * @param columnName column name
-    * @return Cypher type for column
-    */
-  def cypherTypeForColumn(dataFrame: DataFrame, columnName: String): CypherType = {
-    val structField = structFieldForColumn(dataFrame, columnName)
-    val compatibleCypherType = cypherCompatibleDataType(structField.dataType).flatMap(fromSparkType(_, structField.nullable))
-    compatibleCypherType.getOrElse(
-      throw IllegalArgumentException("a supported Spark DataType that can be converted to CypherType", structField.dataType))
-  }
-
-  /**
-    * Returns the struct field for the given column.
-    *
-    * @param dataFrame  data frame
-    * @param columnName column name
-    * @return struct field
-    */
-  def structFieldForColumn(dataFrame: DataFrame, columnName: String): StructField = {
-    if (dataFrame.schema.fieldIndex(columnName) < 0) {
-      throw IllegalArgumentException(s"column with name $columnName", s"columns with names ${dataFrame.columns.mkString("[", ", ", "]")}")
-    }
-    dataFrame.schema.fields(dataFrame.schema.fieldIndex(columnName))
-  }
-
-  /**
-    * Checks if the data type of the given column is compatible to the given data type.
-    *
-    * @param dataFrame    data frame
-    * @param columnName   column to be checked
-    * @param expectedType excepted data type
-    */
-  def verifyColumnType(dataFrame: DataFrame, columnName: String, expectedType: DataType): Unit = {
-    val columnDataType = structFieldForColumn(dataFrame, columnName).dataType
-    val compatibleType = cypherCompatibleDataType(columnDataType).getOrElse(throw IllegalArgumentException(
-      s"column with name $columnName being type compatible to $expectedType", columnDataType))
-
-    compatibleType match {
-      case `expectedType` => ()
-      case other => throw IllegalArgumentException(
-        s"column with name $columnName being type compatible to $expectedType", other)
-    }
   }
 
 }
