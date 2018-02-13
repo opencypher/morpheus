@@ -18,8 +18,9 @@ package org.opencypher.caps.impl.spark
 import java.io.{ByteArrayOutputStream, PrintStream}
 import java.nio.charset.StandardCharsets.UTF_8
 
+import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.types.CTNode
-import org.opencypher.caps.impl.record.{CypherRecords, OpaqueField, RecordHeader, RecordsPrinter}
+import org.opencypher.caps.impl.table.{OpaqueField, RecordHeader, RecordsPrinter}
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.impl.util.PrintOptions
 import org.opencypher.caps.ir.api.expr.Var

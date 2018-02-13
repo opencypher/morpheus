@@ -20,7 +20,7 @@ import org.opencypher.caps.impl.exception.RecordHeaderException
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.exception.IllegalStateException
-import org.opencypher.caps.impl.record._
+import org.opencypher.caps.impl.table._
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.ir.api.block.SortItem
 import org.opencypher.caps.ir.api.expr._

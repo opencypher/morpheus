@@ -19,7 +19,7 @@ import java.util.Collections
 
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 import org.apache.spark.sql.{Column, DataFrame, Row}
-import org.opencypher.caps.impl.record.{OpaqueField, ProjectedField, RecordHeader}
+import org.opencypher.caps.impl.table.{OpaqueField, ProjectedField, RecordHeader}
 import org.opencypher.caps.impl.spark.SparkSQLExprMapper._
 import org.opencypher.caps.impl.spark.physical.CAPSRuntimeContext
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._

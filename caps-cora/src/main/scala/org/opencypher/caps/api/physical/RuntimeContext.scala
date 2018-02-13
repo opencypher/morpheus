@@ -18,8 +18,8 @@ package org.opencypher.caps.api.physical
 import java.net.URI
 
 import org.opencypher.caps.api.graph.PropertyGraph
+import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.value.CypherValue.CypherMap
-import org.opencypher.caps.impl.record.CypherRecords
 
 /**
   * Represents a back-end specific runtime context that is being used by [[PhysicalOperator]] implementations.

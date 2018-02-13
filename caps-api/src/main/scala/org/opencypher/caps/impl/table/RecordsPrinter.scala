@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.record
+package org.opencypher.caps.impl.table
 
+import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.impl.util.PrintOptions
 
 object RecordsPrinter {

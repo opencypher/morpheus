@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.flat
 
-import org.opencypher.caps.impl.record.{OpaqueField, ProjectedExpr, ProjectedField, RecordHeader}
+import org.opencypher.caps.impl.table.{OpaqueField, ProjectedExpr, ProjectedField, RecordHeader}
 import org.opencypher.caps.ir.api.block.SortItem
 import org.opencypher.caps.ir.api.expr.{Aggregator, Expr, Var}
 import org.opencypher.caps.logical.impl.{Direction, LogicalGraph}

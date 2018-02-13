@@ -20,8 +20,8 @@ import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
-import org.opencypher.caps.impl.record.CAPSRecordHeader._
-import org.opencypher.caps.impl.record.{ColumnName, RecordHeader, SlotContent}
+import org.opencypher.caps.impl.table.CAPSRecordHeader._
+import org.opencypher.caps.impl.table.{ColumnName, RecordHeader, SlotContent}
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.ir.api.expr._
 

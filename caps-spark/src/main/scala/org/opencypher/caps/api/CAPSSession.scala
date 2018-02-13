@@ -23,8 +23,8 @@ import org.apache.spark.sql.SparkSession
 import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph}
 import org.opencypher.caps.api.schema.EntityTable.SparkTable
 import org.opencypher.caps.api.schema._
+import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.demo.CypherKryoRegistrar
-import org.opencypher.caps.impl.record.CypherRecords
 import org.opencypher.caps.impl.exception.IllegalArgumentException
 import org.opencypher.caps.impl.spark._
 import org.opencypher.caps.impl.spark.io.{CAPSGraphSourceHandler, CAPSPropertyGraphDataSourceFactory}

@@ -20,7 +20,7 @@ import org.apache.spark.sql.types._
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
-import org.opencypher.caps.impl.record.RecordHeader
+import org.opencypher.caps.impl.table.RecordHeader
 import org.opencypher.caps.impl.spark.CAPSFunctions._
 import org.opencypher.caps.impl.spark.DataFrameOps._
 import org.opencypher.caps.impl.spark.physical.CAPSRuntimeContext

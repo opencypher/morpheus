@@ -17,7 +17,7 @@ package org.opencypher.caps.cosc.impl.planning
 
 import org.opencypher.caps.cosc.impl
 import org.opencypher.caps.cosc.impl.{COSCPhysicalResult, COSCRecords, COSCRuntimeContext}
-import org.opencypher.caps.impl.record.RecordHeader
+import org.opencypher.caps.impl.table.RecordHeader
 import org.opencypher.caps.logical.impl.LogicalExternalGraph
 
 abstract class LeafOperator extends COSCOperator

@@ -22,7 +22,7 @@ import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.physical.{PhysicalOperatorProducer, PhysicalPlannerContext}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.value.CypherValue._
-import org.opencypher.caps.impl.record._
+import org.opencypher.caps.impl.table._
 import org.opencypher.caps.impl.spark.physical.operators._
 import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.ir.api.block.SortItem

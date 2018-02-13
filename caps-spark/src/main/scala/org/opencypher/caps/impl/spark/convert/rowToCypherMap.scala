@@ -20,7 +20,7 @@ import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.api.value._
 import org.opencypher.caps.impl.exception.UnsupportedOperationException
-import org.opencypher.caps.impl.record.{ColumnName, RecordHeader}
+import org.opencypher.caps.impl.table.{ColumnName, RecordHeader}
 import org.opencypher.caps.ir.api.expr.Var
 
 final case class rowToCypherMap(header: RecordHeader) extends (Row => CypherMap) {

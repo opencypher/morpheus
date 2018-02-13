@@ -19,7 +19,8 @@ import java.net.URI
 
 import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.impl.record.{CypherRecords, ProjectedExpr, ProjectedField, RecordHeader}
+import org.opencypher.caps.api.table.CypherRecords
+import org.opencypher.caps.impl.table.{ProjectedExpr, ProjectedField, RecordHeader}
 import org.opencypher.caps.ir.api.block.SortItem
 import org.opencypher.caps.ir.api.expr.{Aggregator, Expr, Var}
 import org.opencypher.caps.logical.impl.{ConstructedEntity, Direction, LogicalExternalGraph, LogicalGraph}

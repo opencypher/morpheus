@@ -21,7 +21,7 @@ import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.api.value.CypherValue.CypherValue
 import org.opencypher.caps.impl.exception.{IllegalArgumentException, NotImplementedException}
-import org.opencypher.caps.impl.record.{ColumnName, RecordHeader}
+import org.opencypher.caps.impl.table.{ColumnName, RecordHeader}
 import org.opencypher.caps.impl.spark.physical.CAPSRuntimeContext
 import org.opencypher.caps.ir.api.expr.{Expr, Param}
 

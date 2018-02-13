@@ -16,7 +16,7 @@
 package org.opencypher.caps.impl.spark.physical.operators
 
 import org.apache.spark.sql.functions
-import org.opencypher.caps.impl.record.{OpaqueField, RecordHeader, RecordSlot}
+import org.opencypher.caps.impl.table.{OpaqueField, RecordHeader, RecordSlot}
 import org.opencypher.caps.impl.spark.physical.operators.CAPSPhysicalOperator.{assertIsNode, columnName, joinDFs, joinRecords}
 import org.opencypher.caps.impl.spark.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
 import org.opencypher.caps.impl.spark.{CAPSRecords, ColumnNameGenerator}
