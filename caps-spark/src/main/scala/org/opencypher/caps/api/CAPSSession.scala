@@ -19,15 +19,15 @@ import java.util.{ServiceLoader, UUID}
 
 import org.apache.spark.SparkConf
 import org.apache.spark.serializer.KryoSerializer
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph}
-import org.opencypher.caps.api.schema.EntityTable.SparkTable
 import org.opencypher.caps.api.schema._
 import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.demo.CypherKryoRegistrar
-import org.opencypher.caps.impl.exception.IllegalArgumentException
+import org.opencypher.caps.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.caps.impl.spark._
 import org.opencypher.caps.impl.spark.io.{CAPSGraphSourceHandler, CAPSPropertyGraphDataSourceFactory}
+import org.opencypher.caps.impl.table.ColumnName
 
 import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe._
@@ -102,6 +102,16 @@ object CAPSSession extends Serializable {
 
     create(session)
   }
+
+  implicit class DataFrameFromRecords(val records: CypherRecords) extends AnyVal {
+    def asDF: DataFrame = records match {
+      case caps: CAPSRecords => caps.data
+      case _ => throw UnsupportedOperationException(s"can only handle CAPS records, got $records")
+    }
+  }
+
+  def columnFor(returnItem: String): String = ColumnName.from(Some(returnItem))
+
 
   def create(implicit session: SparkSession): CAPSSession = Builder(session).build
 

@@ -23,7 +23,7 @@ import org.opencypher.caps.api.schema.{CAPSNodeTable, CAPSRelationshipTable}
 
 import scala.collection.JavaConverters._
 
-object DataFrameExample extends App {
+object DataFrameInputExample extends App {
   // 1) Create CAPS session and retrieve Spark session
   implicit val session: CAPSSession = CAPSSession.local()
   val spark = session.sparkSession
