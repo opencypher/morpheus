@@ -27,12 +27,12 @@ import org.opencypher.caps.impl.spark.CAPSGraph
 import org.opencypher.caps.impl.spark.DataFrameOps._
 import org.opencypher.caps.test.CAPSTestSuite
 
+case class Person(id: Long, name: String, age: Int) extends schema.Node
+
+@schema.RelationshipType("FRIEND_OF")
+case class Friend(id: Long, source: Long, target: Long, since: String) extends schema.Relationship
+
 class EntityTableTest extends CAPSTestSuite {
-
-  case class Person(id: Long, name: String, age: Int) extends schema.Node
-
-  @schema.RelationshipType("FRIEND_OF")
-  case class Friend(id: Long, source: Long, target: Long, since: String) extends schema.Relationship
 
   val nodeMapping = NodeMapping
     .withSourceIdKey("ID")
