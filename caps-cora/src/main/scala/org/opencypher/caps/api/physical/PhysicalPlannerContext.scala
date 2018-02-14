@@ -18,8 +18,8 @@ package org.opencypher.caps.api.physical
 import java.net.URI
 
 import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph}
+import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.value.CypherValue.CypherMap
-import org.opencypher.caps.impl.record.CypherRecords
 
 /**
   * Represents a back-end specific context which is used by the [[org.opencypher.caps.impl.physical.PhysicalPlanner]].

@@ -18,8 +18,8 @@ package org.opencypher.caps.api.graph
 import java.net.URI
 
 import org.opencypher.caps.api.io.{CreateOrFail, PersistMode, PropertyGraphDataSource}
+import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.value.CypherValue._
-import org.opencypher.caps.impl.record.CypherRecords
 
 // TODO: extend doc with explanation for writing graphs
 /**

@@ -16,7 +16,8 @@
 package org.opencypher.caps.api.physical
 
 import org.opencypher.caps.api.graph.PropertyGraph
-import org.opencypher.caps.impl.record.{CypherRecords, RecordHeader}
+import org.opencypher.caps.api.table.CypherRecords
+import org.opencypher.caps.impl.table.RecordHeader
 
 /**
   * Represents a backend-specific implementation of a physical query operation on the underlying data.

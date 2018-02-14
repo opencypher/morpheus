@@ -22,6 +22,7 @@ import org.opencypher.caps.api.configuration.CoraConfiguration.PrintFlatPlan
 import org.opencypher.caps.api.graph.{CypherResult, CypherSession, PropertyGraph}
 import org.opencypher.caps.api.io.{PersistMode, PropertyGraphDataSource}
 import org.opencypher.caps.api.schema.Schema
+import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.cosc.impl.COSCConverters._
@@ -30,7 +31,6 @@ import org.opencypher.caps.cosc.impl.planning.{COSCPhysicalOperatorProducer, COS
 import org.opencypher.caps.impl.exception.UnsupportedOperationException
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
 import org.opencypher.caps.impl.physical.PhysicalPlanner
-import org.opencypher.caps.impl.record.CypherRecords
 import org.opencypher.caps.impl.util.Measurement.time
 import org.opencypher.caps.ir.api.IRExternalGraph
 import org.opencypher.caps.ir.impl.parse.CypherParser
@@ -85,13 +85,13 @@ class COSCSession(private val graphSourceHandler: COSCGraphSourceHandler) extend
     val logicalPlannerContext = LogicalPlannerContext(graph.schema, Set.empty, ir.model.graphs.andThen(sourceAt), ambientGraph)
     val logicalPlan = time("Logical planning")(logicalPlanner(ir)(logicalPlannerContext))
     val optimizedLogicalPlan = time("Logical optimization")(logicalOptimizer(logicalPlan)(logicalPlannerContext))
-    if (PrintLogicalPlan.get()) {
+    if (PrintLogicalPlan.isSet) {
       println(logicalPlan.pretty)
       println(optimizedLogicalPlan.pretty)
     }
 
     val flatPlan = time("Flat planning")(flatPlanner(optimizedLogicalPlan)(FlatPlannerContext(parameters)))
-    if (PrintFlatPlan.get()) println(flatPlan.pretty)
+    if (PrintFlatPlan.isSet) println(flatPlan.pretty)
 
     val coscPlannerContext = COSCPhysicalPlannerContext(this, readFrom, COSCRecords.unit()(self), allParameters)
     val coscPlan = time("Physical planning")(physicalPlanner.process(flatPlan)(coscPlannerContext))

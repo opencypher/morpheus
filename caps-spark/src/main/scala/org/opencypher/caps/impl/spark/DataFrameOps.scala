@@ -21,7 +21,7 @@ import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.api.value.CypherValue.CypherValue
 import org.opencypher.caps.impl.exception.{IllegalArgumentException, NotImplementedException}
-import org.opencypher.caps.impl.record.{ColumnName, RecordHeader}
+import org.opencypher.caps.impl.table.{ColumnName, RecordHeader}
 import org.opencypher.caps.impl.spark.physical.CAPSRuntimeContext
 import org.opencypher.caps.ir.api.expr.{Expr, Param}
 
@@ -76,7 +76,6 @@ object DataFrameOps {
       }
   }
 
-
   implicit class CypherRow(r: Row) {
     def getCypherValue(expr: Expr, header: RecordHeader)(implicit context: CAPSRuntimeContext): CypherValue = {
       expr match {
@@ -92,7 +91,7 @@ object DataFrameOps {
     }
   }
 
-  implicit class RichDataFrame(df: DataFrame) {
+  implicit class RichDataFrame(val df: DataFrame) extends AnyVal {
 
     /**
       * Returns the corresponding Cypher type for the given column name in the data frame.
@@ -120,9 +119,8 @@ object DataFrameOps {
       df.schema.fields(df.schema.fieldIndex(columnName))
     }
 
-    def mapColumn(columnName: String)(f: Column => Column): DataFrame = {
-      val tmpColName = ColumnName.tempColName
-      df.safeAddColumn(tmpColName, f(df(columnName))).drop(columnName).safeRenameColumn(tmpColName, columnName)
+    def mapColumn(name: String)(f: Column => Column): DataFrame = {
+      df.withColumn(name, f(df.col(name)))
     }
 
     def setNonNullable(columnName: String): DataFrame = {

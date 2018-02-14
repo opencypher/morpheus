@@ -24,7 +24,7 @@ import org.opencypher.caps.api.schema.EntityTable._
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.api.value.CypherValue.CypherValue
-import org.opencypher.caps.impl.record.CypherTable
+import org.opencypher.caps.impl.table.CypherTable
 import org.opencypher.caps.impl.spark.DataFrameOps._
 import org.opencypher.caps.impl.spark._
 import org.opencypher.caps.impl.util.Annotation
@@ -102,7 +102,7 @@ object EntityTable {
 
   implicit class SparkTable(val df: DataFrame) extends CypherTable[String] {
 
-    override def columns: Set[String] = df.columns.toSet
+    override def columns: Seq[String] = df.columns
 
     override def columnType: Map[String, CypherType] = columns.map(c => c -> df.cypherTypeForColumn(c)).toMap
 

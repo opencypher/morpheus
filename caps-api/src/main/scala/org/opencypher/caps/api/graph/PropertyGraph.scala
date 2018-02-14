@@ -16,9 +16,9 @@
 package org.opencypher.caps.api.graph
 
 import org.opencypher.caps.api.schema.Schema
+import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.api.value.CypherValue.CypherMap
-import org.opencypher.caps.impl.record.CypherRecords
 
 /**
   * A Property Graph as defined by the openCypher Property Graph Model.

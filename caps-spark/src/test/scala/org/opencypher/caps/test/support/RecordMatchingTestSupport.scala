@@ -15,9 +15,10 @@
  */
 package org.opencypher.caps.test.support
 
+import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.value.CypherValue._
-import org.opencypher.caps.impl.record.CAPSRecordHeader._
-import org.opencypher.caps.impl.record._
+import org.opencypher.caps.impl.table.CAPSRecordHeader._
+import org.opencypher.caps.impl.table._
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.impl.spark.CAPSRecords
 import org.opencypher.caps.ir.api.expr.Var

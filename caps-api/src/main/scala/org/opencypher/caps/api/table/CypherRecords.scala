@@ -13,33 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.api.physical
+package org.opencypher.caps.api.table
 
-import java.net.URI
-
-import org.opencypher.caps.api.graph.PropertyGraph
-import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.value.CypherValue.CypherMap
+import org.opencypher.caps.impl.table.CypherTable
 
 /**
-  * Represents a back-end specific runtime context that is being used by [[PhysicalOperator]] implementations.
-  *
-  * @tparam R backend-specific cypher records
-  * @tparam G backend-specific property graph
+  * Represents a table of records containing Cypher values.
+  * Each column (or slot) in this table represents an evaluated Cypher expression.
   */
-trait RuntimeContext[R <: CypherRecords, G <: PropertyGraph] {
+trait CypherRecords extends CypherTable[String] with CypherPrintable {
 
   /**
-    * Returns the graph referenced by the given URI.
+    * Consume these records as an iterator.
     *
-    * @return back-end specific property graph
+    * WARNING: This operation may be very expensive as it may have to materialise
     */
-  def resolve: URI => Option[G]
+  def iterator: Iterator[CypherMap]
 
   /**
-    * Query parameters
-    *
-    * @return query parameters
+    * @return the number of records in this CypherRecords.
     */
-  def parameters: CypherMap
+  def size: Long
+
+  /**
+    * Registers these records as a table under the given name.
+    *
+    * @param name the name under which this table may be referenced.
+    */
+  def register(name: String): Unit
 }

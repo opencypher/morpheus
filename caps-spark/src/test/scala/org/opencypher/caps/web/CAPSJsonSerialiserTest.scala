@@ -16,7 +16,7 @@
 package org.opencypher.caps.web
 
 import org.opencypher.caps.api.types.CTNode
-import org.opencypher.caps.impl.record.{OpaqueField, RecordHeader}
+import org.opencypher.caps.impl.table.{OpaqueField, RecordHeader}
 import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.caps.ir.api.expr.Var

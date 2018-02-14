@@ -16,7 +16,7 @@
 package org.opencypher.caps.api.physical
 
 import org.opencypher.caps.api.graph.PropertyGraph
-import org.opencypher.caps.impl.record.CypherRecords
+import org.opencypher.caps.api.table.CypherRecords
 
 /**
   * Represents a back-end specific physical result that is being produced by a [[PhysicalOperator]].

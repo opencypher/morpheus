@@ -15,13 +15,12 @@
  */
 package org.opencypher.caps.ir.api.block
 
-import org.opencypher.caps.api.schema.AllGiven
 import org.opencypher.caps.ir.api._
 
 final case class ProjectBlock[E](
     after: Set[BlockRef],
     binds: FieldsAndGraphs[E] = FieldsAndGraphs[E](),
-    where: AllGiven[E] = AllGiven[E](),
+    where: Set[E] = Set.empty[E],
     source: IRGraph,
     distinct: Boolean = false
 ) extends BasicBlock[FieldsAndGraphs[E], E](BlockType("project"))

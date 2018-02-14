@@ -75,46 +75,87 @@ object CypherException {
     * Possible error details as specified by the TCK.
     */
   object ErrorDetails {
+
     object InvalidElementAccess extends ErrorDetails
+
     object MapElementAccessByNonString extends ErrorDetails
+
     object ListElementAccessByNonInteger extends ErrorDetails
+
     object NestedAggregation extends ErrorDetails
+
     object NegativeIntegerArgument extends ErrorDetails
+
     object DeleteConnectedNode extends ErrorDetails
+
     object RequiresDirectedRelationship extends ErrorDetails
+
     object InvalidRelationshipPattern extends ErrorDetails
+
     object VariableAlreadyBound extends ErrorDetails
+
     object InvalidArgumentType extends ErrorDetails
+
     object InvalidArgumentValue extends ErrorDetails
+
     object NumberOutOfRange extends ErrorDetails
+
     object UndefinedVariable extends ErrorDetails
+
     object VariableTypeConflict extends ErrorDetails
+
     object RelationshipUniquenessViolation extends ErrorDetails
+
     object CreatingVarLength extends ErrorDetails
+
     object InvalidParameterUse extends ErrorDetails
+
     object InvalidClauseComposition extends ErrorDetails
+
     object FloatingPointOverflow extends ErrorDetails
+
     object PropertyAccessOnNonMap extends ErrorDetails
+
     object InvalidArgumentExpression extends ErrorDetails
+
     object InvalidUnicodeCharacter extends ErrorDetails
+
     object NonConstantExpression extends ErrorDetails
+
     object NoSingleRelationshipType extends ErrorDetails
+
     object InvalidAggregation extends ErrorDetails
+
     object UnknownFunction extends ErrorDetails
+
     object InvalidNumberLiteral extends ErrorDetails
+
     object InvalidUnicodeLiteral extends ErrorDetails
+
     object MergeReadOwnWrites extends ErrorDetails
+
     object NoExpressionAlias extends ErrorDetails
+
     object DifferentColumnsInUnion extends ErrorDetails
+
     object InvalidDelete extends ErrorDetails
+
     object InvalidPropertyType extends ErrorDetails
+
     object ColumnNameConflict extends ErrorDetails
+
     object NoVariablesInScope extends ErrorDetails
+
     object DeletedEntityAccess extends ErrorDetails
+
     object InvalidArgumentPassingMode extends ErrorDetails
+
     object InvalidNumberOfArguments extends ErrorDetails
+
     object MissingParameter extends ErrorDetails
+
     object ProcedureNotFound extends ErrorDetails
+
   }
 
 }

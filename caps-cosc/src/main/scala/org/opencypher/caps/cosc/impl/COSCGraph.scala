@@ -22,7 +22,7 @@ import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.cosc.impl
 import org.opencypher.caps.cosc.impl.value.{COSCNode, COSCRelationship}
-import org.opencypher.caps.impl.record.RecordHeader
+import org.opencypher.caps.impl.table.RecordHeader
 import org.opencypher.caps.ir.api.expr.Var
 
 object COSCGraph {

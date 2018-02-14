@@ -16,8 +16,8 @@
 package org.opencypher.caps.impl.spark
 
 import org.opencypher.caps.api.graph.PropertyGraph
+import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.value.CypherValue._
-import org.opencypher.caps.impl.record.CypherRecords
 import org.opencypher.caps.ir.api.expr.{Expr, Var}
 
 trait CAPSSessionOps {

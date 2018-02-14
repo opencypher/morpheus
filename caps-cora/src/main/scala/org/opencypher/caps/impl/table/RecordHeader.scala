@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.record
+package org.opencypher.caps.impl.table
 
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTBoolean, CTNode, CTString, _}
@@ -28,7 +28,7 @@ import org.opencypher.caps.ir.api.{Label, PropertyKey}
   * The header consists of a number of slots, each of which represents a Cypher expression.
   * The slots that represent variables (which is a kind of expression) are called <i>fields</i>.
   */
-final case class RecordHeader(internalHeader: InternalHeader) extends CypherRecordHeader {
+final case class RecordHeader(internalHeader: InternalHeader) {
 
   /**
     * Computes the concatenation of this header and another header.

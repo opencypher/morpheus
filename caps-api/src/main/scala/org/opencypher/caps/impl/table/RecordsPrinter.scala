@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.record
+package org.opencypher.caps.impl.table
 
+import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.impl.util.PrintOptions
 
 object RecordsPrinter {
@@ -25,7 +26,7 @@ object RecordsPrinter {
     * @param records the records to be printed.
     */
   def print(records: CypherRecords)(implicit options: PrintOptions): Unit = {
-    val fieldContents = records.header.fieldsInOrder
+    val fieldContents = records.columns
     val factor = if (fieldContents.size > 1) fieldContents.size else 1
 
     val lineWidth = (options.columnWidth + options.margin) * factor + factor - 1

@@ -15,7 +15,6 @@
  */
 package org.opencypher.caps.ir.api.block
 
-import org.opencypher.caps.api.schema.AllGiven
 import org.opencypher.caps.ir.api.IRGraph
 
 final case class OrderAndSliceBlock[E](
@@ -26,7 +25,7 @@ final case class OrderAndSliceBlock[E](
     source: IRGraph
 ) extends BasicBlock[OrderedFieldsAndGraphs[E], E](BlockType("order-and-slice")) {
   override val binds = OrderedFieldsAndGraphs[E]()
-  override def where: AllGiven[E] = AllGiven(Set())
+  override def where: Set[E] = Set.empty[E]
 }
 
 sealed trait SortItem[E] {

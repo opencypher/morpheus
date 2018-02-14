@@ -15,8 +15,8 @@
  */
 package org.opencypher.caps.demo
 
+import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.{CAPSSession, schema}
-import org.opencypher.caps.impl.record.CypherRecords
 
 /**
   * Demonstrates usage patterns where Cypher and SQL can be interleaved in the

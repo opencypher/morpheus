@@ -27,7 +27,7 @@ import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
-import org.opencypher.caps.impl.record.{CAPSRecordHeader, ColumnName, RecordHeader}
+import org.opencypher.caps.impl.table.{CAPSRecordHeader, ColumnName, RecordHeader}
 import org.opencypher.caps.impl.spark.io.neo4j.Neo4jGraph.{filterNode, filterRel, nodeToRow, relToRow}
 import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.ir.api.PropertyKey

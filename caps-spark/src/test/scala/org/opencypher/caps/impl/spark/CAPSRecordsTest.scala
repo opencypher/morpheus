@@ -22,7 +22,7 @@ import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CAPSNode
 import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.impl.exception.InternalException
-import org.opencypher.caps.impl.record._
+import org.opencypher.caps.impl.table._
 import org.opencypher.caps.impl.spark.DataFrameOps._
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.ir.api.{Label, PropertyKey}

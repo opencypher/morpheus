@@ -27,11 +27,12 @@ import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.caps.api.schema.EntityTable._
 import org.opencypher.caps.api.schema.{CAPSEntityTable, CAPSNodeTable, CAPSRelationshipTable}
+import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue.{CypherMap, CypherValue}
 import org.opencypher.caps.impl.exception.{DuplicateSourceColumnException, IllegalArgumentException, IllegalStateException}
-import org.opencypher.caps.impl.record.CAPSRecordHeader._
-import org.opencypher.caps.impl.record.{CAPSRecordHeader, _}
+import org.opencypher.caps.impl.table.CAPSRecordHeader._
+import org.opencypher.caps.impl.table.{CAPSRecordHeader, _}
 import org.opencypher.caps.impl.spark.CAPSRecords.{prepareDataFrame, verifyAndCreate}
 import org.opencypher.caps.impl.spark.DataFrameOps._
 import org.opencypher.caps.impl.spark.convert.rowToCypherMap
@@ -44,7 +45,7 @@ import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe.TypeTag
 
-sealed abstract class CAPSRecords(override val header: RecordHeader, val data: DataFrame)
+sealed abstract class CAPSRecords(val header: RecordHeader, val data: DataFrame)
   (implicit val caps: CAPSSession) extends CypherRecords with Serializable {
 
   override def print(implicit options: PrintOptions): Unit =
@@ -130,7 +131,7 @@ sealed abstract class CAPSRecords(override val header: RecordHeader, val data: D
     data.map(rowToCypherMap(header))
   }
 
-  override def columns: Set[String] = header.fields
+  override def columns: Seq[String] = header.fieldsInOrder
 
   override def rows: Iterator[String => CypherValue] = {
     toLocalIterator.asScala.map(_.value)

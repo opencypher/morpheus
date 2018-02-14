@@ -22,7 +22,7 @@ import org.opencypher.caps.api.physical.{PhysicalOperatorProducer, PhysicalPlann
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.cosc.impl.{COSCGraph, COSCRecords, COSCRuntimeContext, COSCSession}
-import org.opencypher.caps.impl.record.{ProjectedExpr, ProjectedField, RecordHeader}
+import org.opencypher.caps.impl.table.{ProjectedExpr, ProjectedField, RecordHeader}
 import org.opencypher.caps.ir.api.block.SortItem
 import org.opencypher.caps.ir.api.expr
 import org.opencypher.caps.ir.api.expr.{Aggregator, Expr, Var}

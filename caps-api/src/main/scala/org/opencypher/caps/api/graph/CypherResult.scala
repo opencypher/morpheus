@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.api.graph
 
-import org.opencypher.caps.impl.record.{CypherPrintable, CypherRecords}
+import org.opencypher.caps.api.table.{CypherPrintable, CypherRecords}
 import org.opencypher.caps.impl.util.PrintOptions
 import org.opencypher.caps.trees.TreeNode
 

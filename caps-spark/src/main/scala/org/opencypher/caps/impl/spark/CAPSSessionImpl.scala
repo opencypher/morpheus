@@ -24,12 +24,12 @@ import org.opencypher.caps.api.configuration.CoraConfiguration.{PrintPhysicalPla
 import org.opencypher.caps.api.graph.{CypherResult, PropertyGraph}
 import org.opencypher.caps.api.io.{CreateOrFail, PersistMode, PropertyGraphDataSource}
 import org.opencypher.caps.api.schema.Schema
+import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.api.value._
 import org.opencypher.caps.impl.exception.UnsupportedOperationException
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
 import org.opencypher.caps.impl.physical.PhysicalPlanner
-import org.opencypher.caps.impl.record.CypherRecords
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.impl.spark.io.{CAPSGraphSourceHandler, CAPSPropertyGraphDataSource}
 import org.opencypher.caps.impl.spark.physical._
@@ -114,7 +114,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
     val optimizedLogicalPlan = logicalOptimizer(logicalPlan)(logicalPlannerContext)
     logStageProgress("Done!")
 
-    if (PrintLogicalPlan.get()) {
+    if (PrintLogicalPlan.isSet) {
       println("Logical plan:")
       println(logicalPlan.pretty())
       println("Optimized logical plan:")
@@ -125,7 +125,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
   }
 
   private def logStageProgress(s: String, newLine: Boolean = true): Unit = {
-    if (PrintQueryExecutionStages.get()) {
+    if (PrintQueryExecutionStages.isSet) {
       if (newLine) {
         println(s)
       } else {
@@ -174,7 +174,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
     in: CypherRecords,
     expr: Expr,
     queryParameters: CypherMap): CAPSRecords = {
-    val scan = planStart(graph, in.header.asCaps.internalHeader.fields)
+    val scan = planStart(graph, in.asCaps.header.internalHeader.fields)
     val filter = producer.planFilter(expr, scan)
     plan(graph, in, queryParameters, filter).records
   }
@@ -184,7 +184,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
     in: CypherRecords,
     fields: IndexedSeq[Var],
     queryParameters: CypherMap): CAPSRecords = {
-    val scan = planStart(graph, in.header.asCaps.internalHeader.fields)
+    val scan = planStart(graph, in.asCaps.header.internalHeader.fields)
     val select = producer.planSelect(fields, Set.empty, scan)
     plan(graph, in, queryParameters, select).records
   }
@@ -194,7 +194,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
     in: CypherRecords,
     expr: Expr,
     queryParameters: CypherMap): CAPSRecords = {
-    val scan = planStart(graph, in.header.asCaps.internalHeader.fields)
+    val scan = planStart(graph, in.asCaps.header.internalHeader.fields)
     val project = producer.projectExpr(expr, scan)
     plan(graph, in, queryParameters, project).records
   }
@@ -205,7 +205,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
     alias: (Expr, Var),
     queryParameters: CypherMap): CAPSRecords = {
     val (expr, v) = alias
-    val scan = planStart(graph, in.header.asCaps.internalHeader.fields)
+    val scan = planStart(graph, in.asCaps.header.internalHeader.fields)
     val select = producer.projectField(IRField(v.name)(v.cypherType), expr, scan)
     plan(graph, in, queryParameters, select).records
   }
@@ -224,7 +224,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
     val physicalPlan = physicalPlanner(flatPlan)(physicalPlannerContext)
     logStageProgress("Done!")
 
-    if (PrintPhysicalPlan.get()) {
+    if (PrintPhysicalPlan.isSet) {
       println("Physical plan:")
       println(physicalPlan.pretty())
     }
@@ -233,7 +233,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
     val optimizedPhysicalPlan = physicalOptimizer(physicalPlan)(PhysicalOptimizerContext())
     logStageProgress("Done!")
 
-    if (PrintPhysicalPlan.get()) {
+    if (PrintPhysicalPlan.isSet) {
       println("Optimized physical plan:")
       println(optimizedPhysicalPlan.pretty())
     }

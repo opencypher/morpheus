@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.record
+package org.opencypher.caps.impl.table
 
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.DecimalType
@@ -77,7 +77,7 @@ class EntityTableTest extends CAPSTestSuite {
         .withNodePropertyKeys("A", "B")("foo" -> CTInteger, "bar" -> CTFloat)
         .withNodePropertyKeys("A", "B", "C")("foo" -> CTInteger, "bar" -> CTFloat))
 
-    nodeTable.records.toDF().collect().toSet should equal(Set(Row(true, 1L, 10L, (23.1f).toDouble)))
+    nodeTable.records.toDF().collect().toSet should equal(Set(Row(1L, true, 10L, (23.1f).toDouble)))
   }
 
   test("NodeTable can handle shuffled columns due to cast") {
