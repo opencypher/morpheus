@@ -33,8 +33,8 @@ class ReadmeTest extends FunSuite with Matchers {
   val rootFolderPath = findRootFolderPath(Paths.get(".").toAbsolutePath.normalize.toString)
   val readmePath = s"${rootFolderPath}${sep}${readmeName}"
 
-  val testSourceFolderPath = s"${sep}src${sep}test${sep}scala${sep}"
-  val moduleName = "caps-spark"
+  val testSourceFolderPath = s"${sep}src${sep}main${sep}scala${sep}"
+  val moduleName = "caps-examples"
   val examplePackagePath = Example.getClass.getName.dropRight(1).replace(".", sep)
   val examplePath = s"$rootFolderPath$sep$moduleName$testSourceFolderPath$examplePackagePath.scala"
 
