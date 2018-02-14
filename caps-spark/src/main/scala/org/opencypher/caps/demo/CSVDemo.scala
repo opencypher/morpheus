@@ -24,13 +24,13 @@ import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.SparkConfiguration.MasterAddress
 import org.opencypher.caps.api.configuration.Configuration.LogLevel
 import org.opencypher.caps.api.graph.CypherResult
-import org.opencypher.caps.impl.spark.CypherKryoRegistrar
+import org.opencypher.caps.impl.spark.CypherKryoRegistrator
 
 object CSVDemo {
 
   val conf = new SparkConf(true)
   conf.set("spark.serializer", classOf[KryoSerializer].getCanonicalName)
-  conf.set("spark.kryo.registrator", classOf[CypherKryoRegistrar].getCanonicalName)
+  conf.set("spark.kryo.registrator", classOf[CypherKryoRegistrator].getCanonicalName)
 
   implicit lazy val sparkSession = SparkSession
     .builder()

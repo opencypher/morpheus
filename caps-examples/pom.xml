@@ -24,6 +24,13 @@
       <artifactId>caps-spark</artifactId>
       <version>${project.parent.version}</version>
     </dependency>
+
+    <dependency>
+      <groupId>org.apache.spark</groupId>
+      <artifactId>spark-graphx_${project.scala.binary.version}</artifactId>
+      <version>${dep.spark.version}</version>
+    </dependency>
+
   </dependencies>
 
 </project>

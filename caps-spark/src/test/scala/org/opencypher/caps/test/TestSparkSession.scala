@@ -36,7 +36,7 @@ import org.apache.spark.SparkConf
 import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.sql.SparkSession
 import org.opencypher.caps.api.configuration.Configuration.LogLevel
-import org.opencypher.caps.impl.spark.CypherKryoRegistrar
+import org.opencypher.caps.impl.spark.CypherKryoRegistrator
 
 object TestSparkSession {
 
@@ -45,7 +45,7 @@ object TestSparkSession {
 
     conf.set("spark.sql.codegen.wholeStage", "true")
     conf.set("spark.serializer", classOf[KryoSerializer].getCanonicalName)
-    conf.set("spark.kryo.registrator", classOf[CypherKryoRegistrar].getCanonicalName)
+    conf.set("spark.kryo.registrator", classOf[CypherKryoRegistrator].getCanonicalName)
     conf.set("spark.kryo.unsafe", "true")
     conf.set("spark.kryo.referenceTracking","false")
     conf.set("spark.kryo.registrationRequired", "true")

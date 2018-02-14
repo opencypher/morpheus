@@ -16,7 +16,7 @@
 package org.opencypher.caps.impl.spark
 
 import com.esotericsoftware.kryo.Kryo
-import org.apache.spark.serializer.{KryoRegistrator => SparkKryoRegistrar}
+import org.apache.spark.serializer.{KryoRegistrator => SparkKryoRegistrator}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, NullsFirst, NullsLast, UnsafeRow}
 import org.apache.spark.sql.catalyst.util.TypeUtils
@@ -32,7 +32,7 @@ import org.opencypher.caps.api.value._
 import scala.collection.immutable.TreeMap
 import scala.language.existentials
 
-class CypherKryoRegistrar extends SparkKryoRegistrar {
+class CypherKryoRegistrator extends SparkKryoRegistrator {
 
   private val registeredClasses = Seq(
     classOf[CypherMap],

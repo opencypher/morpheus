@@ -25,7 +25,7 @@ import org.opencypher.caps.api.schema._
 import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.caps.impl.spark.io.{CAPSGraphSourceHandler, CAPSPropertyGraphDataSourceFactory}
-import org.opencypher.caps.impl.spark.{CypherKryoRegistrar, _}
+import org.opencypher.caps.impl.spark.{CypherKryoRegistrator, _}
 import org.opencypher.caps.impl.table.ColumnName
 
 import scala.collection.JavaConverters._
@@ -81,15 +81,16 @@ object CAPSSession extends Serializable {
   /**
     * Creates a new CAPSSession that wraps a local Spark session with CAPS default parameters.
     */
-  def local(): CAPSSession = {
+  def local(settings: (String, String)*): CAPSSession = {
     val conf = new SparkConf(true)
     conf.set("spark.serializer", classOf[KryoSerializer].getCanonicalName)
-    conf.set("spark.kryo.registrator", classOf[CypherKryoRegistrar].getCanonicalName)
+    conf.set("spark.kryo.registrator", classOf[CypherKryoRegistrator].getCanonicalName)
     conf.set("spark.sql.codegen.wholeStage", "true")
     conf.set("spark.kryo.unsafe", "true")
     conf.set("spark.kryo.referenceTracking", "false")
     conf.set("spark.kryo.registrationRequired", "true")
     conf.set("spark.sql.shuffle.partitions", "12")
+    conf.setAll(settings)
 
     val session = SparkSession
       .builder()
