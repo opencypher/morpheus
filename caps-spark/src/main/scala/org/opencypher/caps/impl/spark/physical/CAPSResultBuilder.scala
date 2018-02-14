@@ -15,17 +15,18 @@
  */
 package org.opencypher.caps.impl.spark.physical
 
-import org.opencypher.caps.api.graph.{CypherResultPlan, Plan}
-import org.opencypher.caps.api.physical.RuntimeContext
+import org.opencypher.caps.api.graph.CypherQueryPlans
+import org.opencypher.caps.api.table.CypherPrintable
 import org.opencypher.caps.impl.flat.FlatOperator
 import org.opencypher.caps.impl.spark.physical.operators.CAPSPhysicalOperator
 import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords, CAPSResult}
 import org.opencypher.caps.logical.impl.LogicalOperator
+import org.opencypher.caps.trees.TreeNode
 
 object CAPSResultBuilder {
 
   def from(logical: LogicalOperator, flat: FlatOperator, physical: CAPSPhysicalOperator)(
-      implicit context: CAPSRuntimeContext): CAPSResult = {
+    implicit context: CAPSRuntimeContext): CAPSResult = {
 
     new CAPSResult {
       lazy val result: CAPSPhysicalResult = physical.execute
@@ -34,9 +35,19 @@ object CAPSResultBuilder {
 
       override def graphs: Map[String, CAPSGraph] = result.graphs
 
-      override def explain: Plan[LogicalOperator, FlatOperator, CAPSPhysicalOperator] = {
-        Plan(CypherResultPlan(logical), CypherResultPlan(flat), CypherResultPlan(physical))
-      }
+      override def plans = CAPSQueryPlans(logical, flat, physical)
+
     }
   }
+}
+
+case class CAPSQueryPlans(
+  logicalPlan: TreeNode[LogicalOperator],
+  flatPlan: TreeNode[FlatOperator],
+  physicalPlan: TreeNode[CAPSPhysicalOperator]) extends CypherQueryPlans {
+
+  override def logical = CypherPrintable(logicalPlan.pretty)
+
+  override def physical = CypherPrintable(physicalPlan.pretty)
+
 }

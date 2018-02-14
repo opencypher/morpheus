@@ -17,7 +17,7 @@ package org.opencypher.caps.impl.spark.acceptance
 
 import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.impl.spark.CAPSGraph
-import org.opencypher.caps.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
+import org.opencypher.caps.impl.spark.CAPSConverters._
 
 import scala.collection.Bag
 
@@ -187,7 +187,7 @@ trait MatchBehaviour {
           ))
 
         // TODO: Move to plan based testing
-        result.explain.logical.plan.pretty() should include("ValueJoin")
+        result.plans.asCaps.logicalPlan.pretty should include("ValueJoin")
       }
 
       it("can evaluate cross Product between multiple match clauses") {
