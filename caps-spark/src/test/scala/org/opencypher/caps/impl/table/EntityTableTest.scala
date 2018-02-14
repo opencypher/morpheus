@@ -68,7 +68,7 @@ class EntityTableTest extends CAPSTestSuite {
   }
 
   test("NodeTable should cast compatible types in input DataFrame") {
-    val df = session.createDataFrame(Seq((1L, true, 10.toShort, 23.1f))).toDF("ID", "IS_C", "FOO", "BAR")
+    val df = session.createDataFrame(Seq((1, true, 10.toShort, 23.1f))).toDF("ID", "IS_C", "FOO", "BAR")
 
     val nodeTable = CAPSNodeTable(nodeMapping, df)
 
