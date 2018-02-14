@@ -18,16 +18,21 @@ package org.opencypher.caps.impl.table
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.DecimalType
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
+import org.opencypher.caps.api.schema
 import org.opencypher.caps.api.schema.{CAPSNodeTable, CAPSRelationshipTable, Schema}
 import org.opencypher.caps.api.types.{CTFloat, CTInteger, CTString}
 import org.opencypher.caps.api.value.CypherValue.CypherMap
-import org.opencypher.caps.demo.SocialNetworkData.{Friend, Person}
 import org.opencypher.caps.impl.exception.IllegalArgumentException
+import org.opencypher.caps.impl.spark.CAPSGraph
 import org.opencypher.caps.impl.spark.DataFrameOps._
-import org.opencypher.caps.impl.spark.{CAPSGraph, DataFrameOps}
 import org.opencypher.caps.test.CAPSTestSuite
 
 class EntityTableTest extends CAPSTestSuite {
+
+  case class Person(id: Long, name: String, age: Int) extends schema.Node
+
+  @schema.RelationshipType("FRIEND_OF")
+  case class Friend(id: Long, source: Long, target: Long, since: String) extends schema.Relationship
 
   val nodeMapping = NodeMapping
     .withSourceIdKey("ID")

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.demo
+package org.opencypher.caps.examples
 
 import org.opencypher.caps.api.CAPSSession
 

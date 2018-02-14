@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.demo
+package org.opencypher.caps.examples
 
+import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.table.CypherRecords
-import org.opencypher.caps.api.{CAPSSession, schema}
 
 /**
   * Demonstrates usage patterns where Cypher and SQL can be interleaved in the
@@ -44,7 +44,7 @@ object CypherSQLRoundtripExample extends App {
   // 5) Query the registered table using SQL
   val sqlResults: CypherRecords = session.sql("SELECT age, name FROM people")
 
-//  sqlResults.print
+  //  sqlResults.print
 
   // 6) Load a purchase network graph via CSV + Schema files
   val csvFolder = getClass.getResource("/csv/prod/").getFile

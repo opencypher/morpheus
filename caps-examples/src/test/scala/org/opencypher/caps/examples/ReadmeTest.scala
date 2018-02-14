@@ -13,19 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.demo
+package org.opencypher.caps.examples
 
 import java.io.File
 import java.nio.file.Paths
 
 import org.apache.hadoop.fs.PathNotFoundException
-import org.opencypher.caps.test.BaseTestSuite
+import org.scalatest.{FunSuite, Matchers}
 
 import scala.annotation.tailrec
 import scala.io.Source
 import scala.util.Try
 
-class ReadmeTest extends BaseTestSuite {
+class ReadmeTest extends FunSuite with Matchers {
 
   val sep = File.separator
 
@@ -103,5 +103,4 @@ class ReadmeTest extends BaseTestSuite {
     }._1
     sourceCodeSnippets
   }
-
 }
