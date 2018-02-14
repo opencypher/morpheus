@@ -21,7 +21,7 @@ import org.opencypher.caps.cosc.impl.value.{COSCNode, COSCRelationship}
 
 object Demo extends App {
 
-  PrintTimings.set
+  PrintTimings.set()
 
   val query = "MATCH (n) WHERE n.age > 40 RETURN n"
 
