@@ -68,7 +68,7 @@ class EntityTableTest extends CAPSTestSuite {
   }
 
   test("NodeTable should cast compatible types in input DataFrame") {
-    val df = session.createDataFrame(Seq((1, true, 10.toShort, 23.1f))).toDF("ID", "IS_C", "FOO", "BAR")
+    val df = session.createDataFrame(Seq((1L, true, 10.toShort, 23.1f))).toDF("ID", "IS_C", "FOO", "BAR")
 
     val nodeTable = CAPSNodeTable(nodeMapping, df)
 
@@ -77,7 +77,7 @@ class EntityTableTest extends CAPSTestSuite {
         .withNodePropertyKeys("A", "B")("foo" -> CTInteger, "bar" -> CTFloat)
         .withNodePropertyKeys("A", "B", "C")("foo" -> CTInteger, "bar" -> CTFloat))
 
-    nodeTable.records.toDF().collect().toSet should equal(Set(Row(true, 1L, 10L, (23.1f).toDouble)))
+    nodeTable.records.toDF().collect().toSet should equal(Set(Row(1L, true, 10L, (23.1f).toDouble)))
   }
 
   test("NodeTable can handle shuffled columns due to cast") {
