@@ -137,7 +137,7 @@ object CAPSSession extends Serializable {
     * @param returnItem Cypher RETURN item (e.g. "a.name")
     * @return DataFrame column name for given RETURN item
     */
-  def columnFor(returnItem: String): String = ColumnName.from(Some(returnItem))
+  def columnFor(returnItem: String): String = ColumnName.from(returnItem)
 
   def create(implicit session: SparkSession): CAPSSession = Builder(session).build
 

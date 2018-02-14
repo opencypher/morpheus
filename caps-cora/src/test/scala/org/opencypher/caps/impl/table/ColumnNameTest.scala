@@ -45,5 +45,5 @@ class ColumnNameTest extends BaseTestSuite {
     }
   }
 
-  def fromString(text: String) = ColumnName.from(Some(text))
+  def fromString(text: String) = ColumnName.from(text)
 }

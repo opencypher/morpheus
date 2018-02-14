@@ -26,7 +26,7 @@ object ColumnNameGenerator {
   @tailrec
   def generateUniqueName(header: RecordHeader): String = {
     val chars = (1 to NAME_SIZE).map(_ => Random.nextPrintableChar())
-    val name = ColumnName.from(Some(String.valueOf(chars.toArray)))
+    val name = ColumnName.from(String.valueOf(chars.toArray))
 
     if (header.slots.map(ColumnName.of).contains(name)) generateUniqueName(header)
     else name
