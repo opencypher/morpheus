@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.demo
+package org.opencypher.caps.examples
 
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
@@ -53,13 +53,15 @@ object DataFrameExample extends App {
   val graph = session.readFrom(personTable, friendsTable)
 
   // 5) Execute Cypher query and print results
-  val result = graph.cypher("MATCH (n) RETURN n")
+  val result = graph.cypher("MATCH (n) RETURN n.name")
 
   // 6) Collect results into string by selecting a specific column
   // 6a) type safe version, discards values with wrong type
   val set0: Set[String] = result.records.iterator.flatMap(_ ("n.name").as[String]).toSet
   // 6b) unsafe version, throws an exception when value cannot be cast
   val set1: Set[String] = result.records.iterator.map(_ ("n.name").cast[String]).toSet
+
+  println(set0)
 }
 
 object SocialNetworkDataFrames {
