@@ -23,8 +23,8 @@ import org.opencypher.caps.api.types.{CTFloat, CTInteger, CTString}
 import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.demo.SocialNetworkData.{Friend, Person}
 import org.opencypher.caps.impl.exception.IllegalArgumentException
-import org.opencypher.caps.impl.spark.CAPSGraph
-import org.opencypher.caps.impl.spark.convert.SparkUtils
+import org.opencypher.caps.impl.spark.DataFrameOps._
+import org.opencypher.caps.impl.spark.{CAPSGraph, DataFrameOps}
 import org.opencypher.caps.test.CAPSTestSuite
 
 class EntityTableTest extends CAPSTestSuite {
@@ -132,7 +132,7 @@ class EntityTableTest extends CAPSTestSuite {
   }
 
   test("NodeTable should not accept wrong source property key type") {
-    assert(!SparkUtils.supportedTypes.contains(DecimalType))
+    assert(!supportedTypes.contains(DecimalType))
     an[IllegalArgumentException] should be thrownBy {
       val df = session.createDataFrame(Seq((1, true, BigDecimal(13.37)))).toDF("ID", "IS_A", "PROP")
       val nodeMapping = NodeMapping.on("ID").withOptionalLabel("A" -> "IS_A").withPropertyKey("PROP")

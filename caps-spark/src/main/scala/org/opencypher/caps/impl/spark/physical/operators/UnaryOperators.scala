@@ -27,7 +27,7 @@ import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.caps.impl.record._
 import org.opencypher.caps.impl.spark.SparkSQLExprMapper._
-import org.opencypher.caps.impl.spark.convert.SparkUtils._
+import org.opencypher.caps.impl.spark.DataFrameOps._
 import org.opencypher.caps.impl.spark.physical.operators.CAPSPhysicalOperator.{assertIsNode, columnName}
 import org.opencypher.caps.impl.spark.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
 import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords}
@@ -36,6 +36,7 @@ import org.opencypher.caps.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.ir.impl.syntax.ExprSyntax._
 import org.opencypher.caps.logical.impl.{ConstructedEntity, _}
+import org.opencypher.caps.impl.spark.DataFrameOps._
 
 private[spark] abstract class UnaryPhysicalOperator extends CAPSPhysicalOperator {
 
@@ -109,7 +110,7 @@ final case class Unwind(in: CAPSPhysicalOperator, list: Expr, item: Var, header:
         case expr =>
           val listColumn = expr.asSparkSQLExpr(records.header, records.data, context)
 
-          records.data.withColumn(itemColumn, functions.explode(listColumn))
+          records.data.safeAddColumn(itemColumn, functions.explode(listColumn))
       }
 
       CAPSRecords.verifyAndCreate(header, newData)(records.caps)
@@ -130,7 +131,7 @@ final case class Alias(in: CAPSPhysicalOperator, expr: Expr, alias: Var, header:
       val newColumnName = columnName(newSlot)
 
       val newData = if (records.data.columns.contains(oldColumnName)) {
-        records.data.withColumnRenamed(oldColumnName, newColumnName)
+        records.data.safeRenameColumn(oldColumnName, newColumnName)
       } else {
         throw IllegalArgumentException(s"a column with name $oldColumnName")
       }
@@ -224,7 +225,7 @@ final case class ProjectPatternGraph(
   private def addEntitiesToRecords(columnsToAdd: Set[(SlotContent, Column)], records: CAPSRecords): CAPSRecords = {
     val newData = columnsToAdd.foldLeft(records.data) {
       case (acc, (expr, col)) =>
-        acc.withColumn(columnName(expr), col)
+        acc.safeAddColumn(columnName(expr), col)
     }
 
     // TODO: Move header construction to FlatPlanner
@@ -295,7 +296,7 @@ final case class RemoveAliases(
     prev.mapRecordsWithDetails { records =>
       val renamed = dependentFields.foldLeft(records.data) {
         case (df, (v, expr)) =>
-          df.withColumnRenamed(ColumnName.of(v), ColumnName.of(expr))
+          df.safeRenameColumn(ColumnName.of(v), ColumnName.of(expr))
       }
 
       CAPSRecords.verifyAndCreate(header, renamed)(records.caps)
@@ -529,7 +530,7 @@ final case class InitVarExpand(in: CAPSPhysicalOperator, source: Var, edgeList: 
 
       val edgeListColName = columnName(edgeListSlot)
       val edgeListColumn = functions.typedLit(Array[Long]())
-      val withEmptyList = inputData.withColumn(edgeListColName, edgeListColumn)
+      val withEmptyList = inputData.safeAddColumn(edgeListColName, edgeListColumn)
 
       val cols = keep ++ Seq(
         withEmptyList.col(edgeListColName),

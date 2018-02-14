@@ -24,10 +24,9 @@ import org.opencypher.caps.api.schema.EntityTable._
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.api.value.CypherValue.CypherValue
-import org.opencypher.caps.impl.exception.IllegalArgumentException
 import org.opencypher.caps.impl.record.CypherTable
+import org.opencypher.caps.impl.spark.DataFrameOps._
 import org.opencypher.caps.impl.spark._
-import org.opencypher.caps.impl.spark.convert.SparkUtils
 import org.opencypher.caps.impl.util.Annotation
 
 import scala.collection.JavaConverters._
@@ -80,7 +79,6 @@ object CAPSRelationshipTable {
   }
 }
 
-
 /**
   * An entity table describes how to map an input data frame to a Cypher entity (i.e. nodes or relationships).
   */
@@ -95,9 +93,7 @@ sealed trait EntityTable[T <: CypherTable[String]] {
   def table: T
 
   protected def verify(): Unit = {
-    val sourceIdKeyType = table.columnType(mapping.sourceIdKey)
-    if (sourceIdKeyType != CTInteger) throw IllegalArgumentException(
-      s"id key type in column `${mapping.sourceIdKey}` that is compatible with CTInteger", sourceIdKeyType)
+    table.verifyColumnType(mapping.sourceIdKey, CTInteger, "id key")
   }
 
 }
@@ -108,7 +104,7 @@ object EntityTable {
 
     override def columns: Set[String] = df.columns.toSet
 
-    override def columnType: Map[String, CypherType] = columns.map(c => c -> SparkUtils.cypherTypeForColumn(df, c)).toMap
+    override def columnType: Map[String, CypherType] = columns.map(c => c -> df.cypherTypeForColumn(c)).toMap
 
     override def rows: Iterator[String => CypherValue] = df.toLocalIterator.asScala.map { row =>
       columns.map(c => c -> CypherValue(row.get(row.fieldIndex(c)))).toMap
@@ -152,11 +148,7 @@ abstract class NodeTable[T <: CypherTable[String]](mapping: NodeMapping, table: 
   override protected def verify(): Unit = {
     super.verify()
     mapping.optionalLabelMapping.values.foreach { optionalLabelKey =>
-      val columnType = table.columnType(optionalLabelKey)
-      if (columnType != CTBoolean) {
-        throw IllegalArgumentException(
-          s"optional label key type in column `$optionalLabelKey`that is compatible with CTBoolean", columnType)
-      }
+      table.verifyColumnType(optionalLabelKey, CTBoolean, "optional label")
     }
   }
 }
@@ -186,20 +178,10 @@ abstract class RelationshipTable[T <: CypherTable[String]](mapping: Relationship
 
   override protected def verify(): Unit = {
     super.verify()
-
-    val sourceStartNodeKeyType = table.columnType(mapping.sourceStartNodeKey)
-    if (sourceStartNodeKeyType != CTInteger) throw IllegalArgumentException(
-      s"start node key type in column `${mapping.sourceStartNodeKey}` that is compatible with CTInteger", sourceStartNodeKeyType)
-
-    val sourceEndNodeKeyType = table.columnType(mapping.sourceEndNodeKey)
-    if (sourceEndNodeKeyType != CTInteger) throw IllegalArgumentException(
-      s"end node key type in column `${mapping.sourceEndNodeKey}` that is compatible with CTInteger", sourceEndNodeKeyType)
-
-    mapping.relTypeOrSourceRelTypeKey.right.foreach { k =>
-      val relTypeKey = k._1
-      val relType = table.columnType(relTypeKey)
-      if (relType != CTString) throw IllegalArgumentException(
-        s"relationship type in column `${relTypeKey}` that is compatible with CTString", relType)
+    table.verifyColumnType(mapping.sourceStartNodeKey, CTInteger, "start node")
+    table.verifyColumnType(mapping.sourceEndNodeKey, CTInteger, "end node")
+    mapping.relTypeOrSourceRelTypeKey.right.foreach { key =>
+      table.verifyColumnType(key._1, CTString, "relationship type")
     }
   }
 }

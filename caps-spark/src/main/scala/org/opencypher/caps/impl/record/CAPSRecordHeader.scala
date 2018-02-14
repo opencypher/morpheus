@@ -19,7 +19,7 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.opencypher.caps.impl.exception.IllegalArgumentException
-import org.opencypher.caps.impl.spark.convert.SparkUtils._
+import org.opencypher.caps.impl.spark.DataFrameOps._
 import org.opencypher.caps.ir.api.expr.Var
 
 object CAPSRecordHeader {

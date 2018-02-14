@@ -21,7 +21,7 @@ import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.caps.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.caps.api.schema.{CAPSNodeTable, CAPSRelationshipTable}
-import org.opencypher.caps.impl.spark.convert.SparkUtils._
+import org.opencypher.caps.impl.spark.DataFrameOps._
 import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSScanGraph}
 import org.opencypher.caps.test.support.creation.propertygraph.TestPropertyGraph
 

@@ -19,7 +19,7 @@ import org.apache.spark.sql.types._
 import org.opencypher.caps.api.types.CypherType._
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue
-import org.opencypher.caps.impl.spark.convert.SparkUtils._
+import org.opencypher.caps.impl.spark.DataFrameOps._
 import org.opencypher.caps.test.BaseTestSuite
 
 class ConvertersTest extends BaseTestSuite {

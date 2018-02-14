@@ -29,7 +29,7 @@ import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.caps.api.schema.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.caps.impl.exception.IllegalArgumentException
-import org.opencypher.caps.impl.spark.convert.SparkUtils.NullabilityOps
+import org.opencypher.caps.impl.spark.DataFrameOps._
 
 trait CsvGraphLoaderFileHandler {
   def location: String
@@ -186,7 +186,7 @@ class CsvGraphLoader(fileHandler: CsvGraphLoaderFileHandler)(implicit capsSessio
       .filter(field => field.getTargetType.isInstanceOf[ArrayType])
       .foldLeft(dataFrame) {
         case (df, field) =>
-          df.withColumn(field.name, functions.split(df(field.name), "\\|").cast(field.getTargetType))
+          df.safeReplaceColumn(field.name, functions.split(df(field.name), "\\|").cast(field.getTargetType))
       }
   }
 }
