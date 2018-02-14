@@ -19,6 +19,15 @@ import java.io.PrintStream
 
 import org.opencypher.caps.impl.util.PrintOptions
 
+object CypherPrintable {
+
+  def apply(s: String): CypherPrintable = new CypherPrintable {
+    override def print(implicit options: PrintOptions): Unit =
+      options.stream.print(s)
+  }
+
+}
+
 trait CypherPrintable {
 
   final def printTo(stream: PrintStream)(implicit options: PrintOptions): Unit =

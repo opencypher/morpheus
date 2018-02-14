@@ -131,7 +131,7 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphCreationFixture {
       """.stripMargin)
 
     // Then
-    val cacheOps = result.asCaps.explain.physical.plan.collect { case c: Cache => c }
+    val cacheOps = result.asCaps.plans.physicalPlan.collect { case c: Cache => c }
     cacheOps.size shouldBe 2
   }
 
@@ -162,7 +162,7 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphCreationFixture {
     )
 
     // Then
-    val cacheOps = result.asCaps.explain.physical.plan.collect { case c: Cache => c }
+    val cacheOps = result.asCaps.plans.physicalPlan.collect { case c: Cache => c }
     cacheOps.size shouldBe 2
   }
 
@@ -186,7 +186,7 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphCreationFixture {
       """.stripMargin)
 
     // Then
-    val cacheOps = result.asCaps.explain.physical.plan.collect { case c: Cache => c }
+    val cacheOps = result.asCaps.plans.physicalPlan.collect { case c: Cache => c }
     cacheOps.size shouldBe 2
   }
 }

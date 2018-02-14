@@ -15,17 +15,15 @@
  */
 package org.opencypher.caps.cosc.impl
 
-import org.opencypher.caps.api.graph.{CypherResult, CypherResultPlan, Plan}
+import org.opencypher.caps.api.graph.{CypherQueryPlans, CypherResult}
+import org.opencypher.caps.api.table.CypherPrintable
 import org.opencypher.caps.cosc.impl.planning.COSCOperator
 import org.opencypher.caps.impl.flat.FlatOperator
 import org.opencypher.caps.impl.util.PrintOptions
 import org.opencypher.caps.logical.impl.LogicalOperator
+import org.opencypher.caps.trees.TreeNode
 
 trait COSCResult extends CypherResult {
-
-  override type LogicalPlan = LogicalOperator
-  override type FlatPlan = FlatOperator
-  override type PhysicalPlan = COSCOperator
 
   /**
     * The table of records that was returned by the query that produced this result.
@@ -56,9 +54,19 @@ object COSCResultBuilder {
 
       override def graphs: Map[String, COSCGraph] = result.graphs
 
-      override def explain: Plan[LogicalOperator, FlatOperator, COSCOperator] = {
-        Plan(CypherResultPlan(logical), CypherResultPlan(flat), CypherResultPlan(physical))
-      }
+      override def plans = COSCQueryPlans(logical, flat, physical)
+
     }
   }
+}
+
+case class COSCQueryPlans(
+  logicalPlan: TreeNode[LogicalOperator],
+  flatPlan: TreeNode[FlatOperator],
+  physicalPlan: TreeNode[COSCOperator]) extends CypherQueryPlans {
+
+  override def logical = CypherPrintable(logicalPlan.pretty)
+
+  override def physical = CypherPrintable(physicalPlan.pretty)
+
 }
