@@ -103,15 +103,41 @@ object CAPSSession extends Serializable {
     create(session)
   }
 
-  implicit class DataFrameFromRecords(val records: CypherRecords) extends AnyVal {
+  /**
+    * Import this into scope in order to use:
+    *
+    * {{{
+    * import org.opencypher.caps.api.CAPSSession.RecordsAsDF
+    * // ...
+    * val df: DataFrame = results.records.asDF
+    * }}}
+    *
+    */
+  implicit class RecordsAsDF(val records: CypherRecords) extends AnyVal {
+    /**
+      * Extracts the underlying [[DataFrame]] from the given [[records]].
+      */
     def asDF: DataFrame = records match {
       case caps: CAPSRecords => caps.data
       case _ => throw UnsupportedOperationException(s"can only handle CAPS records, got $records")
     }
   }
 
+  /**
+    * Returns the DataFrame column name for the given Cypher RETURN item.
+    *
+    * {{{
+    * import org.opencypher.caps.api.CAPSSession._
+    * // ...
+    * val results = socialNetwork.cypher("MATCH (a) RETURN a.name")
+    * val dataFrame = results.records.asDF
+    * val projection = dataFrame.select(columnFor("a.name"))
+    * }}}
+    *
+    * @param returnItem Cypher RETURN item (e.g. "a.name")
+    * @return DataFrame column name for given RETURN item
+    */
   def columnFor(returnItem: String): String = ColumnName.from(Some(returnItem))
-
 
   def create(implicit session: SparkSession): CAPSSession = Builder(session).build
 
@@ -134,5 +160,4 @@ object CAPSSession extends Serializable {
       )
     }
   }
-
 }

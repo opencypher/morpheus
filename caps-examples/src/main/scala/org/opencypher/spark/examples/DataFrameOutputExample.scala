@@ -17,7 +17,7 @@ package org.opencypher.spark.examples
 
 import org.apache.spark.sql.DataFrame
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.CAPSSession._
+import org.opencypher.caps.api.CAPSSession.{RecordsAsDF, columnFor}
 
 object DataFrameOutputExample extends App {
 
