@@ -23,10 +23,9 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph}
 import org.opencypher.caps.api.schema._
 import org.opencypher.caps.api.table.CypherRecords
-import org.opencypher.caps.demo.CypherKryoRegistrar
 import org.opencypher.caps.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
-import org.opencypher.caps.impl.spark._
 import org.opencypher.caps.impl.spark.io.{CAPSGraphSourceHandler, CAPSPropertyGraphDataSourceFactory}
+import org.opencypher.caps.impl.spark.{CypherKryoRegistrar, _}
 import org.opencypher.caps.impl.table.ColumnName
 
 import scala.collection.JavaConverters._

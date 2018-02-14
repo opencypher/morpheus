@@ -24,6 +24,7 @@ import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.SparkConfiguration.MasterAddress
 import org.opencypher.caps.api.configuration.Configuration.LogLevel
 import org.opencypher.caps.api.graph.CypherResult
+import org.opencypher.caps.impl.spark.CypherKryoRegistrar
 
 object CSVDemo {
 

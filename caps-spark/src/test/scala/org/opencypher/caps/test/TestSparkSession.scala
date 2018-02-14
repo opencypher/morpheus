@@ -36,7 +36,7 @@ import org.apache.spark.SparkConf
 import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.sql.SparkSession
 import org.opencypher.caps.api.configuration.Configuration.LogLevel
-import org.opencypher.caps.demo.CypherKryoRegistrar
+import org.opencypher.caps.impl.spark.CypherKryoRegistrar
 
 object TestSparkSession {
 

@@ -15,7 +15,7 @@
  */
 package org.opencypher.spark.examples
 
-import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.{DataFrame, functions}
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.CAPSSession.{RecordsAsDF, columnFor}
 
@@ -37,6 +37,29 @@ object DataFrameOutputExample extends App {
 
   // 5) Select specific return items from the query result
   val projection: DataFrame = df.select(columnFor("a.name"), columnFor("b.name"))
+
+  projection.show()
+}
+
+object DataFrameOutputUsingAliasExample extends App {
+  // 1) Create CAPS session and retrieve Spark session
+  implicit val session: CAPSSession = CAPSSession.local()
+
+  // 2) Load social network data via case class instances
+  val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
+
+  // 3) Query graph with Cypher
+  val results = socialNetwork.cypher(
+    """|MATCH (a:Person)-[r:FRIEND_OF]->(b)
+       |RETURN a.name AS person1, b.name AS person2, r.since AS friendsSince""".stripMargin)
+
+  // 4) Extract DataFrame representing the query result
+  val df: DataFrame = results.records.asDF
+
+  // 5) Select aliased return items from the query result
+  val projection: DataFrame = df
+    .select("person1", "friendsSince", "person2")
+    .orderBy(functions.to_date(df.col("friendsSince"), "dd/mm/yyyy"))
 
   projection.show()
 }
