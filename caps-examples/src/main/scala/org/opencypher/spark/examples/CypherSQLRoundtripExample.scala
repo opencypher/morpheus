@@ -16,7 +16,6 @@
 package org.opencypher.spark.examples
 
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.table.CypherRecords
 
 /**
   * Demonstrates usage patterns where Cypher and SQL can be interleaved in the
@@ -42,9 +41,7 @@ object CypherSQLRoundtripExample extends App {
   result.records.register("people")
 
   // 5) Query the registered table using SQL
-  val sqlResults: CypherRecords = session.sql("SELECT age, name FROM people")
-
-  //  sqlResults.print
+  val sqlResults = session.sql("SELECT age, name FROM people")
 
   // 6) Load a purchase network graph via CSV + Schema files
   val csvFolder = getClass.getResource("/csv/prod/").getFile

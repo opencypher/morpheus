@@ -1,0 +1,25 @@
+{
+  "idField": {
+     "name": "id",
+     "column": 0,
+     "valueType": "LONG"
+  },
+  "startIdField": {
+     "name": "startId",
+     "column": 1,
+     "valueType": "LONG"
+  },
+  "endIdField":  {
+     "name": "endId",
+     "column": 2,
+     "valueType": "LONG"
+  },
+  "relationshipType": "KNOWS",
+  "propertyFields": [
+    {
+      "name": "since",
+      "column": 3,
+      "valueType": "LONG"
+    }
+  ]
+}
