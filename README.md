@@ -89,7 +89,7 @@ import org.opencypher.caps.api._
 /**
   * Demonstrates basic usage of the CAPS API by loading an example network and running a cypher query on it.
   */
-object Example extends App {
+object CaseClassExample extends App {
 
   // 1) Create CAPS session
   implicit val session = CAPSSession.local()

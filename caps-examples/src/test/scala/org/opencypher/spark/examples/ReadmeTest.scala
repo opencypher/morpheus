@@ -25,6 +25,9 @@ import scala.annotation.tailrec
 import scala.io.Source
 import scala.util.Try
 
+/**
+  * Tests whether the README example is aligned with the code contained in [[CaseClassExample]].
+  */
 class ReadmeTest extends FunSuite with Matchers {
 
   val sep = File.separator
@@ -35,11 +38,11 @@ class ReadmeTest extends FunSuite with Matchers {
 
   val testSourceFolderPath = s"${sep}src${sep}main${sep}scala${sep}"
   val moduleName = "caps-examples"
-  val examplePackagePath = Example.getClass.getName.dropRight(1).replace(".", sep)
+  val examplePackagePath = CaseClassExample.getClass.getName.dropRight(1).replace(".", sep)
   val examplePath = s"$rootFolderPath$sep$moduleName$testSourceFolderPath$examplePackagePath.scala"
 
   test("running the example code") {
-    Example.main(Array.empty[String])
+    CaseClassExample.main(Array.empty[String])
   }
 
   test("the code in the readme matches the example") {
