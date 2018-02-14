@@ -91,7 +91,7 @@ object DataFrameOps {
     }
   }
 
-  implicit class RichDataFrame(df: DataFrame) {
+  implicit class RichDataFrame(val df: DataFrame) extends AnyVal {
 
     /**
       * Returns the corresponding Cypher type for the given column name in the data frame.
