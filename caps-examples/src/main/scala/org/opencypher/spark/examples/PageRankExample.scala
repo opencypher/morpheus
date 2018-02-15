@@ -20,6 +20,9 @@ import org.apache.spark.graphx._
 import org.apache.spark.util.collection.{BitSet, OpenHashSet}
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.CAPSSession._
+import org.opencypher.caps.api.io.conversion.NodeMapping
+import org.opencypher.caps.api.schema.CAPSNodeTable
+import org.opencypher.caps.api.schema.EntityTable.SparkTable
 import org.opencypher.caps.impl.spark.CypherKryoRegistrator
 
 object PageRankExample extends App {
@@ -42,19 +45,46 @@ object PageRankExample extends App {
   )
 
   // 4) Create GraphX compatible RDDs from nodes and relationships
-  val graphXNodeRDD = nodes.records.asDF.rdd.map(row => (row.getLong(0), row.getString(1)))
+  val graphXNodeRDD = nodes.records.asDF.rdd.map(row => row.getLong(0) -> row.getString(1))
   val graphXRelRDD = rels.records.asDF.rdd.map(row => Edge(row.getLong(0), row.getLong(1), ()))
 
   // 5) Compute Page Rank via GraphX
   val graph = Graph(graphXNodeRDD, graphXRelRDD)
-  val ranks = graph.pageRank(0.0001).vertices.join(graphXNodeRDD).map { case (_, (rank, name)) => name -> rank }
+  val ranks = graph.pageRank(0.0001).vertices //.join(graphXNodeRDD).map { case (_, (rank, name)) => name -> rank }
 
-  // 6) Sort and print resulting ranks
-  val rankDF = session.sparkSession.createDataFrame(ranks)
-    .withColumnRenamed("_1", "name")
+  // 6) Convert RDD to DataFrame
+  val rankTable: SparkTable = session.sparkSession.createDataFrame(ranks)
+    .withColumnRenamed("_1", "id")
     .withColumnRenamed("_2", "rank")
 
-  rankDF.orderBy(rankDF.col("rank").desc).show
+  // 7) Create property graph from rank data
+  val ranksNodeMapping = NodeMapping.on("id").withPropertyKey("rank")
+  val rankNodes = session.readFrom(CAPSNodeTable(ranksNodeMapping, rankTable))
+
+  // 8) Mount both graphs in session
+  session.mount(rankNodes, "/ranks")
+  session.mount(socialNetwork, "/sn")
+
+  // 9) Query across both graphs to print names with corresponding ranks, sorted by rank
+  val result = session.cypher(
+    """|FROM GRAPH AT '/ranks'
+       |MATCH (r)
+       |WITH id(r) as id, r.rank as rank
+       |FROM GRAPH AT '/sn'
+       |MATCH (p:Person)
+       |WHERE id(p) = id
+       |RETURN p.name as name, rank
+       |ORDER BY rank DESC""".stripMargin)
+
+  result.records.print
+  //+---------------------------------------------+
+  //| name                 | rank                 |
+  //+---------------------------------------------+
+  //| 'Carol'              | 1.4232365145228216   |
+  //| 'Bob'                | 1.0235131396957122   |
+  //| 'Alice'              | 0.5532503457814661   |
+  //+---------------------------------------------+
+
 }
 
 /**
@@ -80,4 +110,5 @@ class CustomKryoRegistrator extends CypherKryoRegistrator {
     import com.twitter.chill.toRich
     kryo.registerClasses(graphXClasses)
   }
+
 }
