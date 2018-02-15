@@ -20,11 +20,27 @@ import org.opencypher.caps.api.value.CypherValue.{CypherMap, CypherNode, CypherR
 case class COSCNode(
   override val id: Long,
   override val labels: Set[String] = Set.empty,
-  override val properties: CypherMap = CypherMap.empty) extends CypherNode[Long]
+  override val properties: CypherMap = CypherMap.empty) extends CypherNode[Long]{
+
+  type I = COSCNode
+
+  override def copy(id: Long = id, labels: Set[String] = labels, properties: CypherMap = properties) = {
+    COSCNode(id, labels, properties).asInstanceOf[this.type]
+  }
+
+}
 
 case class COSCRelationship(
   override val id: Long,
   override val source: Long,
   override val target: Long,
   override val relType: String,
-  override val properties: CypherMap = CypherMap.empty) extends CypherRelationship[Long]
+  override val properties: CypherMap = CypherMap.empty) extends CypherRelationship[Long] {
+
+  type I = COSCRelationship
+
+  override def copy(id: Long = id, source: Long = source, target: Long = target, relType: String = relType, properties: CypherMap = properties) = {
+    COSCRelationship(id, source, target, relType, properties).asInstanceOf[this.type]
+  }
+
+}

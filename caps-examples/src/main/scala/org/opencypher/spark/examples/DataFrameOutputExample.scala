@@ -18,8 +18,10 @@ package org.opencypher.spark.examples
 import org.apache.spark.sql.{DataFrame, functions}
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.CAPSSession._
-import org.opencypher.caps.api.value.CypherValue.{CypherMap, CypherNode, CypherRelationship}
 
+/**
+  * Shows how to access a Cypher query result as a [[DataFrame]].
+  */
 object DataFrameOutputExample extends App {
 
   // 1) Create CAPS session and retrieve Spark session
@@ -42,6 +44,9 @@ object DataFrameOutputExample extends App {
   projection.show()
 }
 
+/**
+  * Alternative to accessing a Cypher query result as a [[DataFrame]].
+  */
 object DataFrameOutputUsingAliasExample extends App {
   // 1) Create CAPS session and retrieve Spark session
   implicit val session: CAPSSession = CAPSSession.local()

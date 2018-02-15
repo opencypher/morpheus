@@ -25,7 +25,13 @@ import org.opencypher.caps.api.schema.CAPSNodeTable
 import org.opencypher.caps.api.schema.EntityTable.SparkTable
 import org.opencypher.caps.impl.spark.CypherKryoRegistrator
 
-object PageRankExample extends App {
+/**
+  * Round trip CAPS -> GraphX -> CAPS
+  *
+  * This example demonstrates how CAPS results can be used to construct a GraphX graph and invoke a GraphX algorithm
+  * on it. The computed ranks are imported back into CAPS and used in a Cypher query.
+  */
+object GraphXPageRankExample extends App {
 
   // 1) Create CAPS session
   implicit val session = CAPSSession.local("spark.kryo.registrator" -> classOf[CustomKryoRegistrator].getCanonicalName)
