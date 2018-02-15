@@ -17,7 +17,8 @@ package org.opencypher.spark.examples
 
 import org.apache.spark.sql.{DataFrame, functions}
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.CAPSSession.{RecordsAsDF, columnFor}
+import org.opencypher.caps.api.CAPSSession._
+import org.opencypher.caps.api.value.CypherValue.{CypherMap, CypherNode, CypherRelationship}
 
 object DataFrameOutputExample extends App {
 
@@ -33,7 +34,7 @@ object DataFrameOutputExample extends App {
        |RETURN a.name, b.name, r.since""".stripMargin)
 
   // 4) Extract DataFrame representing the query result
-  val df: DataFrame = results.records.asDF
+  val df: DataFrame = results.records.asDataFrame
 
   // 5) Select specific return items from the query result
   val projection: DataFrame = df.select(columnFor("a.name"), columnFor("b.name"))
@@ -54,7 +55,7 @@ object DataFrameOutputUsingAliasExample extends App {
        |RETURN a.name AS person1, b.name AS person2, r.since AS friendsSince""".stripMargin)
 
   // 4) Extract DataFrame representing the query result
-  val df: DataFrame = results.records.asDF
+  val df: DataFrame = results.records.asDataFrame
 
   // 5) Select aliased return items from the query result
   val projection: DataFrame = df
