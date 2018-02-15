@@ -17,9 +17,9 @@ package org.opencypher.caps.api.schema
 
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.exception.SchemaException
-import org.opencypher.caps.test.BaseTestSuite
+import org.scalatest.{FunSuite, Matchers}
 
-class SchemaTest extends BaseTestSuite {
+class SchemaTest extends FunSuite with Matchers {
 
   test("lists of void and others") {
     val s1 = Schema.empty.withNodePropertyKeys("A")("v" -> CTList(CTVoid))
@@ -376,6 +376,30 @@ class SchemaTest extends BaseTestSuite {
         "d" -> CTString.nullable,
         "e" -> CTAny.nullable,
         "f" -> CTAny))
+  }
+
+  test("get keys for") {
+    val schema = Schema.empty
+      .withNodePropertyKeys(Set.empty[String], Map("a" -> CTString, "c" -> CTString, "d" -> CTString.nullable, "f" -> CTString))
+      .withNodePropertyKeys("A")("b" -> CTInteger, "c" -> CTString, "e" -> CTString, "f" -> CTInteger)
+      .withNodePropertyKeys("B")("b" -> CTFloat, "c" -> CTString, "e" -> CTInteger)
+
+    schema.keysFor("A") should equal(Map("b" -> CTInteger, "c" -> CTString, "e" -> CTString, "f" -> CTInteger))
+    schema.keysFor("B") should equal(Map("b" -> CTFloat, "c" -> CTString, "e" -> CTInteger))
+    schema.keysFor("A", "B") should equal(Map("b" -> CTNumber, "c" -> CTString, "e" -> CTAny, "f" -> CTInteger.nullable))
+  }
+
+  test("get keys for label combinations") {
+    val schema = Schema.empty
+      .withNodePropertyKeys(Set.empty[String], Map("a" -> CTString, "c" -> CTString, "d" -> CTString.nullable, "f" -> CTString))
+      .withNodePropertyKeys("A")("b" -> CTInteger, "c" -> CTString, "e" -> CTString, "f" -> CTInteger)
+      .withNodePropertyKeys("B")("b" -> CTFloat, "c" -> CTString, "e" -> CTInteger)
+
+    schema.keysFor(Set(Set("A"))) should equal(Map("b" -> CTInteger, "c" -> CTString, "e" -> CTString, "f" -> CTInteger))
+    schema.keysFor(Set(Set("B"))) should equal(Map("b" -> CTFloat, "c" -> CTString, "e" -> CTInteger))
+    schema.keysFor(Set(Set("A"), Set("B"))) should equal(Map("b" -> CTNumber, "c" -> CTString, "e" -> CTAny, "f" -> CTInteger.nullable))
+    schema.keysFor(Set(Set("A", "B"))) should equal(Map.empty)
+    schema.keysFor(Set(Set.empty[String])) should equal(Map("a" -> CTString, "c" -> CTString, "d" -> CTString.nullable, "f" -> CTString))
   }
 
   test("isEmpty") {

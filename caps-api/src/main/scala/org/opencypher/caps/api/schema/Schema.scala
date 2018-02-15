@@ -155,6 +155,17 @@ final case class Schema(
     propertyKeys
   }
 
+  /**
+    * Returns the property keys that exist on any of the labels.
+    * Types of conflicting property keys are joined.
+    *
+    * @param labels labels for which to return the property keys
+    * @return property keys for labels
+    */
+  def keysFor(labels: String*): PropertyKeys = {
+    keysFor(labels.map(Set(_)).toSet)
+  }
+
   def relationshipKeyType(types: Set[String], key: String): Option[CypherType] = {
     // relationship types have OR semantics: empty set means all types
     val relevantTypes = if (types.isEmpty) relationshipTypes else types
