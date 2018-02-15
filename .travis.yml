@@ -2,7 +2,6 @@ language: scala
 
 jdk:
   - openjdk8
-  - oraclejdk8
 
 scala:
   - 2.11.12
@@ -10,7 +9,6 @@ scala:
 env:
   matrix:
     - PROFILE=databricks
-    - PROFILE=cloudera
 
 script: "mvn clean install -P ${PROFILE}"
 
