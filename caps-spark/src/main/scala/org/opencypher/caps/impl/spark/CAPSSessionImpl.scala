@@ -31,6 +31,7 @@ import org.opencypher.caps.impl.exception.UnsupportedOperationException
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
 import org.opencypher.caps.impl.physical.PhysicalPlanner
 import org.opencypher.caps.impl.spark.CAPSConverters._
+import org.opencypher.caps.impl.spark.io.session.SessionPropertyGraphDataSource
 import org.opencypher.caps.impl.spark.io.{CAPSGraphSourceHandler, CAPSPropertyGraphDataSource}
 import org.opencypher.caps.impl.spark.physical._
 import org.opencypher.caps.impl.util.parsePathOrURI
@@ -48,6 +49,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
 
   self =>
 
+  private implicit def capsSession = this
   private val producer = new LogicalOperatorProducer
   private val logicalPlanner = new LogicalPlanner(producer)
   private val logicalOptimizer = LogicalOptimizer
@@ -57,23 +59,29 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
   private val parser = CypherParser
 
   def sourceAt(uri: URI): PropertyGraphDataSource =
-    graphSourceHandler.sourceAt(uri)(this)
+    graphSourceHandler.sourceAt(uri)
 
   override def readFrom(path: String): PropertyGraph =
     readFrom(parsePathOrURI(path))
 
   // TODO: why not Option[CAPSGraph] in general?
   override def readFrom(uri: URI): PropertyGraph =
-    graphSourceHandler.sourceAt(uri)(this).graph
+    graphSourceHandler.sourceAt(uri).graph
 
   def optGraphAt(uri: URI): Option[CAPSGraph] =
-    graphSourceHandler.optSourceAt(uri)(this).map(_.graph) match {
+    graphSourceHandler.optSourceAt(uri).map(_.graph) match {
       case Some(graph) => Some(graph.asCaps)
       case None => None
     }
 
   override def write(graph: PropertyGraph, pathOrUri: String, mode: PersistMode = CreateOrFail): Unit =
-    graphSourceHandler.sourceAt(parsePathOrURI(pathOrUri))(this).store(graph, mode)
+    graphSourceHandler.sourceAt(parsePathOrURI(pathOrUri)).store(graph, mode)
+
+  override def mount(graph: PropertyGraph, path: String): Unit = {
+    val source = SessionPropertyGraphDataSource(path)
+    source.store(graph, CreateOrFail)
+    mount(source, path)
+  }
 
   override def mount(source: PropertyGraphDataSource, path: String): Unit = source match {
     case c: CAPSPropertyGraphDataSource => mountSourceAt(c, parsePathOrURI(path))
@@ -81,16 +89,16 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
   }
 
   def mountSourceAt(source: CAPSPropertyGraphDataSource, uri: URI): Unit =
-    graphSourceHandler.mountSourceAt(source, uri)(this)
+    graphSourceHandler.mountSourceAt(source, uri)
 
   def unmountAll(): Unit =
-    graphSourceHandler.unmountAll(this)
+    graphSourceHandler.unmountAll
 
   override def sql(query: String): CAPSRecords =
-    CAPSRecords.wrap(sparkSession.sql(query))(this)
+    CAPSRecords.wrap(sparkSession.sql(query))
 
   override def cypher(query: String, parameters: CypherMap, drivingTable: Option[CypherRecords]): CypherResult =
-    cypherOnGraph(CAPSGraph.empty(this), query, parameters, drivingTable)
+    cypherOnGraph(CAPSGraph.empty, query, parameters, drivingTable)
 
   override def cypherOnGraph(graph: PropertyGraph, query: String, queryParameters: CypherMap, maybeDrivingTable: Option[CypherRecords]): CypherResult = {
     val ambientGraph = mountAmbientGraph(graph)
@@ -121,7 +129,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
       println(optimizedLogicalPlan.pretty())
     }
 
-    plan(graph, CAPSRecords.unit()(this), allParameters, optimizedLogicalPlan)
+    plan(graph, CAPSRecords.unit(), allParameters, optimizedLogicalPlan)
   }
 
   private def logStageProgress(s: String, newLine: Boolean = true): Unit = {
@@ -252,4 +260,5 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
 
     s"${this.getClass.getSimpleName}($mountPointsString)"
   }
+
 }
