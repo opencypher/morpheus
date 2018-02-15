@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.demo
+package org.opencypher.spark.examples
 
 import org.opencypher.caps.api._
 
 /**
-  * Demonstrates basic usage of the CAPS API by loading an example network and running a cypher query on it.
+  * Demonstrates basic usage of the CAPS API by loading an example network via Scala case classes and running a Cypher
+  * query on it.
   */
-object Example extends App {
+object CaseClassExample extends App {
 
   // 1) Create CAPS session
   implicit val session = CAPSSession.local()

@@ -87,9 +87,10 @@ Once the property graph is constructed, it supports Cypher queries via its `cyph
 import org.opencypher.caps.api._
 
 /**
-  * Demonstrates basic usage of the CAPS API by loading an example network and running a cypher query on it.
+  * Demonstrates basic usage of the CAPS API by loading an example network via Scala case classes and running a Cypher
+  * query on it.
   */
-object Example extends App {
+object CaseClassExample extends App {
 
   // 1) Create CAPS session
   implicit val session = CAPSSession.local()

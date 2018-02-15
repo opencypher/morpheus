@@ -25,18 +25,17 @@ import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
-import org.opencypher.caps.impl.table._
-import org.opencypher.caps.impl.spark.SparkSQLExprMapper._
 import org.opencypher.caps.impl.spark.DataFrameOps._
+import org.opencypher.caps.impl.spark.SparkSQLExprMapper._
 import org.opencypher.caps.impl.spark.physical.operators.CAPSPhysicalOperator.{assertIsNode, columnName}
 import org.opencypher.caps.impl.spark.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
 import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords}
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
+import org.opencypher.caps.impl.table._
 import org.opencypher.caps.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.ir.impl.syntax.ExprSyntax._
 import org.opencypher.caps.logical.impl.{ConstructedEntity, _}
-import org.opencypher.caps.impl.spark.DataFrameOps._
 
 private[spark] abstract class UnaryPhysicalOperator extends CAPSPhysicalOperator {
 
@@ -391,7 +390,7 @@ final case class Aggregate(
 
       val sparkAggFunctions = aggregations.map {
         case (to, inner) =>
-          val columnName = ColumnName.from(Some(to.name))
+          val columnName = ColumnName.from(to.name)
           inner match {
             case Avg(expr) =>
               withInnerExpr(expr)(

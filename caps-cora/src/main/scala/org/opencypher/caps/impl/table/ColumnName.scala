@@ -47,8 +47,7 @@ object ColumnName {
     }
   }
 
-  def from(parts: Option[String]*): String =
-    parts.foldLeft(new NameBuilder()) { case (builder, part) => builder += part }.result()
+  def from(name: String): String = (new NameBuilder() += name).result()
 
   final class NameBuilder(sizeHint: Int = 16) extends mutable.Builder[Option[String], String] {
 

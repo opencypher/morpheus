@@ -19,15 +19,15 @@ import java.util.{ServiceLoader, UUID}
 
 import org.apache.spark.SparkConf
 import org.apache.spark.serializer.KryoSerializer
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
 import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph}
-import org.opencypher.caps.api.schema.EntityTable.SparkTable
 import org.opencypher.caps.api.schema._
 import org.opencypher.caps.api.table.CypherRecords
-import org.opencypher.caps.demo.CypherKryoRegistrar
-import org.opencypher.caps.impl.exception.IllegalArgumentException
-import org.opencypher.caps.impl.spark._
+import org.opencypher.caps.api.value.CypherValue.CypherMap
+import org.opencypher.caps.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.caps.impl.spark.io.{CAPSGraphSourceHandler, CAPSPropertyGraphDataSourceFactory}
+import org.opencypher.caps.impl.spark.{CypherKryoRegistrator, _}
+import org.opencypher.caps.impl.table.ColumnName
 
 import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe._
@@ -82,15 +82,16 @@ object CAPSSession extends Serializable {
   /**
     * Creates a new CAPSSession that wraps a local Spark session with CAPS default parameters.
     */
-  def local(): CAPSSession = {
+  def local(settings: (String, String)*): CAPSSession = {
     val conf = new SparkConf(true)
     conf.set("spark.serializer", classOf[KryoSerializer].getCanonicalName)
-    conf.set("spark.kryo.registrator", classOf[CypherKryoRegistrar].getCanonicalName)
+    conf.set("spark.kryo.registrator", classOf[CypherKryoRegistrator].getCanonicalName)
     conf.set("spark.sql.codegen.wholeStage", "true")
     conf.set("spark.kryo.unsafe", "true")
     conf.set("spark.kryo.referenceTracking", "false")
     conf.set("spark.kryo.registrationRequired", "true")
     conf.set("spark.sql.shuffle.partitions", "12")
+    conf.setAll(settings)
 
     val session = SparkSession
       .builder()
@@ -102,6 +103,62 @@ object CAPSSession extends Serializable {
 
     create(session)
   }
+
+  /**
+    * Import this into scope in order to use:
+    *
+    * {{{
+    * import org.opencypher.caps.api.CAPSSession.RecordsAsDF
+    * // ...
+    * val df: DataFrame = results.records.asDF
+    * }}}
+    */
+  implicit class RecordsAsDF(val records: CypherRecords) extends AnyVal {
+    /**
+      * Extracts the underlying [[DataFrame]] from the given [[records]].
+      *
+      * Note that the column names in the returned DF do not necessarily correspond to the names of the Cypher RETURN
+      * items, e.g. "RETURN n.name" does not mean that the column for that item is named "n.name". In order to get the
+      * column name for a RETURN item, use [[columnFor]].
+      *
+      * @return [[DataFrame]] representing the records
+      */
+    def asDataFrame: DataFrame = records match {
+      case caps: CAPSRecords => caps.data
+      case _ => throw UnsupportedOperationException(s"can only handle CAPS records, got $records")
+    }
+
+    /**
+      * Converts all values stored in this table to instances of the corresponding CypherValue class.
+      * In particular, this de-flattens, or collects, flattened entities (nodes and relationships) into
+      * compact CypherNode/CypherRelationship objects.
+      *
+      * All values on each row are inserted into a CypherMap object mapped to the corresponding field name.
+      *
+      * @return [[Dataset]] of CypherMaps
+      */
+    def asDataset: Dataset[CypherMap] = records match {
+      case caps: CAPSRecords => caps.toCypherMaps
+      case _ => throw UnsupportedOperationException(s"can only handle CAPS records, got $records")
+    }
+
+  }
+
+  /**
+    * Returns the DataFrame column name for the given Cypher RETURN item.
+    *
+    * {{{
+    * import org.opencypher.caps.api.CAPSSession._
+    * // ...
+    * val results = socialNetwork.cypher("MATCH (a) RETURN a.name")
+    * val dataFrame = results.records.asDF
+    * val projection = dataFrame.select(columnFor("a.name"))
+    * }}}
+    *
+    * @param returnItem Cypher RETURN item (e.g. "a.name")
+    * @return DataFrame column name for given RETURN item
+    */
+  def columnFor(returnItem: String): String = ColumnName.from(returnItem)
 
   def create(implicit session: SparkSession): CAPSSession = Builder(session).build
 

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.demo
+package org.opencypher.spark.examples
 
 import org.opencypher.caps.api.CAPSSession
 
@@ -24,13 +24,14 @@ import org.opencypher.caps.api.CAPSSession
   */
 object MultipleGraphExample extends App {
   // 1) Create CAPS session
-  implicit val session = CAPSSession.local()
+  implicit val session: CAPSSession = CAPSSession.local()
 
   // 2) Load social network data via case class instances
   val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
 
-  // 3) Load purchase network data via CSV + Schema files
+  // 3) Load purchase network data via local CSV + Schema files
   val csvFolder = getClass.getResource("/csv/prod/").getFile
+  // Note: if files were stored in HDFS, change the URI scheme to `hdfs+csv` to load from HDFS instead
   val purchaseNetwork = session.readFrom(s"file+csv://$csvFolder")
 
   // 4) Build union of social and purchase network (note, that there are no relationships connecting nodes from both graphs)

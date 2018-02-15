@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.demo
+package org.opencypher.caps.impl.spark
 
 import com.esotericsoftware.kryo.Kryo
-import org.apache.spark.serializer.{KryoRegistrator => SparkKryoRegistrar}
+import org.apache.spark.serializer.{KryoRegistrator => SparkKryoRegistrator}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, NullsFirst, NullsLast, UnsafeRow}
 import org.apache.spark.sql.catalyst.util.TypeUtils
@@ -26,13 +26,13 @@ import org.neo4j.driver.internal.value._
 import org.neo4j.driver.v1.Value
 import org.opencypher.caps.api.schema._
 import org.opencypher.caps.api.types._
-import org.opencypher.caps.api.value._
 import org.opencypher.caps.api.value.CypherValue._
+import org.opencypher.caps.api.value._
 
 import scala.collection.immutable.TreeMap
 import scala.language.existentials
 
-class CypherKryoRegistrar extends SparkKryoRegistrar {
+class CypherKryoRegistrator extends SparkKryoRegistrator {
 
   private val registeredClasses = Seq(
     classOf[CypherMap],
@@ -108,7 +108,11 @@ class CypherKryoRegistrar extends SparkKryoRegistrar {
     Class.forName("org.apache.spark.sql.execution.joins.LongHashedRelation"),
     Class.forName("org.apache.spark.sql.execution.joins.LongToUnsafeRowMap"),
     Class.forName("org.apache.spark.sql.execution.columnar.CachedBatch"),
+    Class.forName("org.apache.spark.sql.catalyst.expressions.Cast"),
     Class.forName("org.apache.spark.sql.catalyst.expressions.GenericInternalRow"),
+    Class.forName("org.apache.spark.sql.catalyst.expressions.Literal"),
+    Class.forName("org.apache.spark.sql.catalyst.expressions.ToDate"),
+    Class.forName("org.apache.spark.sql.catalyst.expressions.UnixTimestamp"),
     Class.forName("org.apache.spark.unsafe.types.UTF8String"),
     Class.forName("org.apache.spark.sql.execution.joins.UnsafeHashedRelation"),
     classOf[Array[InternalRow]],
@@ -138,6 +142,8 @@ class CypherKryoRegistrar extends SparkKryoRegistrar {
     BinaryType.getClass,
     DoubleType.getClass,
     BooleanType.getClass,
+    DateType.getClass,
+    TimestampType.getClass,
 
     Class.forName("scala.collection.immutable.RedBlackTree$Tree"),
     Class.forName("scala.collection.immutable.RedBlackTree$BlackTree"),

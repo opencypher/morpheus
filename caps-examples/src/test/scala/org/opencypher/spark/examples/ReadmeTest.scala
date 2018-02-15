@@ -13,19 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.demo
+package org.opencypher.spark.examples
 
 import java.io.File
 import java.nio.file.Paths
 
 import org.apache.hadoop.fs.PathNotFoundException
-import org.opencypher.caps.test.BaseTestSuite
+import org.scalatest.{FunSuite, Matchers}
 
 import scala.annotation.tailrec
 import scala.io.Source
 import scala.util.Try
 
-class ReadmeTest extends BaseTestSuite {
+/**
+  * Tests whether the README example is aligned with the code contained in [[CaseClassExample]].
+  */
+class ReadmeTest extends FunSuite with Matchers {
 
   val sep = File.separator
 
@@ -33,13 +36,13 @@ class ReadmeTest extends BaseTestSuite {
   val rootFolderPath = findRootFolderPath(Paths.get(".").toAbsolutePath.normalize.toString)
   val readmePath = s"${rootFolderPath}${sep}${readmeName}"
 
-  val testSourceFolderPath = s"${sep}src${sep}test${sep}scala${sep}"
-  val moduleName = "caps-spark"
-  val examplePackagePath = Example.getClass.getName.dropRight(1).replace(".", sep)
+  val testSourceFolderPath = s"${sep}src${sep}main${sep}scala${sep}"
+  val moduleName = "caps-examples"
+  val examplePackagePath = CaseClassExample.getClass.getName.dropRight(1).replace(".", sep)
   val examplePath = s"$rootFolderPath$sep$moduleName$testSourceFolderPath$examplePackagePath.scala"
 
   test("running the example code") {
-    Example.main(Array.empty[String])
+    CaseClassExample.main(Array.empty[String])
   }
 
   test("the code in the readme matches the example") {
@@ -103,5 +106,4 @@ class ReadmeTest extends BaseTestSuite {
     }._1
     sourceCodeSnippets
   }
-
 }

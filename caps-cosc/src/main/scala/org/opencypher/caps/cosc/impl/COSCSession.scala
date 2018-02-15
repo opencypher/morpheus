@@ -153,4 +153,13 @@ class COSCSession(private val graphSourceHandler: COSCGraphSourceHandler) extend
 
     IRExternalGraph(name, ambient.schema, uri)
   }
+
+  /**
+    * Mounts the given property graph to session-local storage under the given path. The specified graph will be
+    * accessible under the session-local URI scheme, e.g. {{{session://$path}}}.
+    *
+    * @param graph property graph to register
+    * @param path  path at which this graph can be accessed via {{{session://$path}}}
+    */
+  override def mount(graph: PropertyGraph, path: String): Unit = ???
 }

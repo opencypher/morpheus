@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.demo
+package org.opencypher.spark.examples
 
-import org.opencypher.caps.api.table.CypherRecords
-import org.opencypher.caps.api.{CAPSSession, schema}
+import org.opencypher.caps.api.CAPSSession
 
 /**
   * Demonstrates usage patterns where Cypher and SQL can be interleaved in the
@@ -26,7 +25,7 @@ import org.opencypher.caps.api.{CAPSSession, schema}
   */
 object CypherSQLRoundtripExample extends App {
   // 1) Create CAPS session
-  implicit val session = CAPSSession.local()
+  implicit val session: CAPSSession = CAPSSession.local()
 
   // 2) Load social network data via case class instances
   val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
@@ -42,9 +41,7 @@ object CypherSQLRoundtripExample extends App {
   result.records.register("people")
 
   // 5) Query the registered table using SQL
-  val sqlResults: CypherRecords = session.sql("SELECT age, name FROM people")
-
-//  sqlResults.print
+  val sqlResults = session.sql("SELECT age, name FROM people")
 
   // 6) Load a purchase network graph via CSV + Schema files
   val csvFolder = getClass.getResource("/csv/prod/").getFile

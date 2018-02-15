@@ -48,7 +48,14 @@ case class TestNode(
   override val id: Long,
   override val labels: Set[String],
   override val properties: CypherMap
-) extends CypherNode[Long]
+) extends CypherNode[Long] {
+
+  type I = TestNode
+
+  override def copy(id: Long = id, labels: Set[String] = labels, properties: CypherMap = properties) = {
+    TestNode(id, labels, properties).asInstanceOf[this.type]
+  }
+}
 
 case class TestRelationship(
   override val id: Long,
@@ -56,7 +63,15 @@ case class TestRelationship(
   override val target: Long,
   override val relType: String,
   override val properties: CypherMap
-) extends CypherRelationship[Long]
+) extends CypherRelationship[Long] {
+
+  type I = TestRelationship
+
+  override def copy(id: Long = id, source: Long = source, target: Long = target, relType: String = relType, properties: CypherMap = properties) = {
+    TestRelationship(id, source, target, relType, properties).asInstanceOf[this.type]
+  }
+
+}
 
 
 trait PropertyGraphFactory {

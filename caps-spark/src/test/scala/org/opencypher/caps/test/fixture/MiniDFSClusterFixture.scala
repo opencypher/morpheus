@@ -24,6 +24,7 @@ import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.fixture.GlobalMiniDFSCluster.{clusterForPath, releaseClusterForPath}
 
 import scala.collection.{Bag, mutable}
+import scala.util.Try
 
 /**
   * Allows multiple tests to use the same MiniDFSCluster for the same local filesystem folder.
@@ -50,16 +51,16 @@ object GlobalMiniDFSCluster {
   }
 
   def releaseClusterForPath(path: String): Unit = synchronized {
+
     val count = clusterUsageCountsByPath(path)
     if (count == 1) {
-      clusters(path).shutdown(true)
+      Try(clusters(path).shutdown(true))
       clusters -= path
       clusterUsageCountsByPath -= path
     } else {
       clusterUsageCountsByPath = clusterUsageCountsByPath.updated(path, clusterUsageCountsByPath(path) - 1)
     }
   }
-
 }
 
 trait MiniDFSClusterFixture extends BaseTestFixture {

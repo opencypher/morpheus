@@ -19,6 +19,7 @@
     <module>caps-spark</module>
     <module>caps-cosc</module>
     <module>caps-tck</module>
+    <module>caps-examples</module>
   </modules>
 
   <properties>
@@ -459,13 +460,6 @@
       <groupId>org.bouncycastle</groupId>
       <artifactId>bctls-jdk15on</artifactId>
       <version>${dep.bouncycastle.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-all</artifactId>
-      <version>${dep.netty.version}</version>
       <scope>test</scope>
     </dependency>
 

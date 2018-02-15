@@ -19,6 +19,7 @@ import java.util.Objects
 
 import org.opencypher.caps.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 
+import scala.annotation.unchecked.uncheckedVariance
 import scala.reflect.{ClassTag, classTag}
 import scala.util.hashing.MurmurHash3
 
@@ -208,6 +209,7 @@ object CypherValue {
     def apply(k: String): CypherValue = value.getOrElse(k, CypherNull)
 
     def ++(other: CypherMap): CypherMap = value ++ other.value
+
   }
 
   object CypherMap extends UnapplyValue[Map[String, CypherValue], CypherMap] {
@@ -229,7 +231,9 @@ object CypherValue {
     val empty: CypherList = List.empty[CypherValue]
   }
 
-  sealed trait CypherEntity[+Id] extends Product with MaterialCypherValue[CypherEntity[Id]] {
+  trait CypherEntity[Id] extends Product with MaterialCypherValue[CypherEntity[Id]] {
+    type I <: CypherEntity[Id]
+
     def id: Id
 
     def properties: CypherMap
@@ -255,9 +259,15 @@ object CypherValue {
     override def productPrefix: String = getClass.getSimpleName
 
     override def toString = s"$productPrefix(${productIterator.mkString(", ")})"
+
+    def withProperty(key: String, value: CypherValue): I
+
   }
 
-  trait CypherNode[+Id] extends CypherEntity[Id] with MaterialCypherValue[CypherNode[Id]] {
+  trait CypherNode[Id] extends CypherEntity[Id] with MaterialCypherValue[CypherNode[Id]] {
+
+    override type I <: CypherNode[Id]
+
     def labels: Set[String]
 
     override def value: CypherNode[Id] = this
@@ -274,6 +284,17 @@ object CypherValue {
     }
 
     override def canEqual(that: Any): Boolean = that.isInstanceOf[CypherNode[_]]
+
+    def copy(id: Id = id, labels: Set[String] = labels, properties: CypherMap = properties): I
+
+    def withLabel(label: String): I = {
+      copy(labels = labels + label)
+    }
+
+    override def withProperty(key: String, value: CypherValue): I = {
+      copy(properties = properties.value.updated(key, value))
+    }
+
   }
 
   object CypherNode {
@@ -283,7 +304,10 @@ object CypherValue {
     }
   }
 
-  trait CypherRelationship[+Id] extends CypherEntity[Id] with MaterialCypherValue[CypherRelationship[Id]] with Product {
+  trait CypherRelationship[Id] extends CypherEntity[Id] with MaterialCypherValue[CypherRelationship[Id]] with Product {
+
+    override type I <: CypherRelationship[Id]
+
     def source: Id
 
     def target: Id
@@ -306,6 +330,22 @@ object CypherValue {
     }
 
     override def canEqual(that: Any): Boolean = that.isInstanceOf[CypherRelationship[_]]
+
+    def copy(
+      id: Id = id,
+      source: Id = source,
+      target: Id = target,
+      relType: String = relType,
+      properties: CypherMap = properties): I
+
+    def withType(relType: String): I = {
+      copy(relType = relType)
+    }
+
+    override def withProperty(key: String, value: CypherValue): I = {
+      copy(properties = properties.value.updated(key, value))
+    }
+
   }
 
   object CypherRelationship {
