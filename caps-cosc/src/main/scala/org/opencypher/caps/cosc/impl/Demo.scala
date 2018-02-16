@@ -23,7 +23,7 @@ object Demo extends App {
 
   PrintTimings.set()
 
-  val query = "MATCH (n) WHERE n.age > 40 RETURN n"
+  val query = "MATCH (n) WHERE n.age <> 42 RETURN n"
 
   println(
     s"""Executing query:

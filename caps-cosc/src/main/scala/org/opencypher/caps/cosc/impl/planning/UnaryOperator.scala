@@ -16,9 +16,9 @@
 package org.opencypher.caps.cosc.impl.planning
 
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
-import org.opencypher.caps.cosc.impl.{COSCPhysicalResult, COSCRuntimeContext}
+import org.opencypher.caps.cosc.impl.{COSCPhysicalResult, COSCRecords, COSCRuntimeContext}
 import org.opencypher.caps.impl.exception.IllegalArgumentException
-import org.opencypher.caps.impl.table.RecordHeader
+import org.opencypher.caps.impl.table.{ColumnName, RecordHeader}
 import org.opencypher.caps.ir.api.expr.{Expr, Var}
 import org.opencypher.caps.logical.impl.{LogicalExternalGraph, LogicalGraph}
 
@@ -63,10 +63,26 @@ case class Select(in: COSCOperator, fields: Seq[Var], graphs: Set[String], heade
 
 case class Project(in: COSCOperator, expr: Expr, header: RecordHeader) extends UnaryOperator {
 
-  override def executeUnary(prev: COSCPhysicalResult)(implicit context: COSCRuntimeContext): COSCPhysicalResult = prev
+  override def executeUnary(prev: COSCPhysicalResult)(implicit context: COSCRuntimeContext): COSCPhysicalResult = {
+    val headerNames = header.slotsFor(expr).map(ColumnName.of)
+    val dataNames = prev.records.data.columns.toSeq
+    val data = prev.records.data
+
+    val newData = headerNames.diff(dataNames) match {
+      case Seq(one) =>
+        println(s"Projecting $expr to key $one")
+        data.project(expr, one)(header, context)
+    }
+
+    COSCPhysicalResult(COSCRecords.create(newData, header), prev.graphs)
+  }
 }
 
 case class Filter(in: COSCOperator, expr: Expr, header: RecordHeader) extends UnaryOperator {
 
-  override def executeUnary(prev: COSCPhysicalResult)(implicit context: COSCRuntimeContext): COSCPhysicalResult = prev
+  override def executeUnary(prev: COSCPhysicalResult)(implicit context: COSCRuntimeContext): COSCPhysicalResult = {
+    println(s"Filtering based on predicate: $expr")
+    val newData = prev.records.data.filter(expr)(header, context)
+    COSCPhysicalResult(COSCRecords.create(newData, header), prev.graphs)
+  }
 }

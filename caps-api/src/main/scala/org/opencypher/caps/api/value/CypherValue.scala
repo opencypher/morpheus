@@ -19,7 +19,6 @@ import java.util.Objects
 
 import org.opencypher.caps.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 
-import scala.annotation.unchecked.uncheckedVariance
 import scala.reflect.{ClassTag, classTag}
 import scala.util.hashing.MurmurHash3
 
@@ -210,6 +209,7 @@ object CypherValue {
 
     def ++(other: CypherMap): CypherMap = value ++ other.value
 
+    def updated(k: String, v: CypherValue): CypherMap = value.updated(k, v)
   }
 
   object CypherMap extends UnapplyValue[Map[String, CypherValue], CypherMap] {
