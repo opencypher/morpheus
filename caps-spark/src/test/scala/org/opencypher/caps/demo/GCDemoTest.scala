@@ -104,7 +104,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
     //Write back to Neo
     withBoltSession { session =>
       // maybe iterate over rows instead of CypherMaps is faster
-      result.records.iterator.foreach { cypherMap =>
+      result.records.collect.foreach { cypherMap =>
         session.run(
           s"MATCH (p:Person {name: ${cypherMap.get("name").get}}) SET p.should_buy = ${cypherMap.get("product").get}")
       }
@@ -118,7 +118,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
     val SN_US = neoRegionGraph("US")
     val result = SN_US.cypher("""MATCH (n:Person {name: "Alice"}) RETURN n.name AS name""")
     withBoltSession { session =>
-      result.records.iterator.foreach { cypherMap =>
+      result.records.collect.foreach { cypherMap =>
         session.run(s"MATCH (p:Person {name: ${cypherMap.get("name").get.toCypherString}}) SET p.should_buy = 'a book'")
       }
     }
@@ -126,7 +126,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
     val resultGraph = neoRegionGraph("US")
     val res = resultGraph.cypher("MATCH (n:Person {name: 'Alice'}) RETURN n.should_buy as rec")
 
-    res.records.iterator.toSet should equal(
+    res.records.collect.toSet should equal(
       Set(
         CypherMap("rec" -> "a book")
       ))
@@ -199,7 +199,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
         .withRelationshipPropertyKeys("HAS_INTEREST")("region" -> CTString)
         .withRelationshipPropertyKeys("KNOWS")("region" -> CTString))
 
-    graph.nodes("n").iterator.toBag should equal(
+    graph.nodes("n").collect.toBag should equal(
       Bag(
         Row(2009L, false, false, true, false, false, "Trent", null, null, null, null),
         Row(1L, true, false, false, false, false, "San Francisco", null, "US", null, null),
@@ -335,7 +335,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
         .withNodePropertyKeys("Customer")("name" -> CTString.nullable)
         .withRelationshipType("IN"))
 
-    graph.nodes("n").iterator.toBag should equal(
+    graph.nodes("n").collect.toBag should equal(
       Bag(
         Row(7L, true, false, "Alice", "US"),
         Row(2001L, false, true, "Alice", null),
@@ -389,7 +389,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
         .withNodePropertyKeys("Person")("name" -> CTString, "region" -> CTString)
         .withRelationshipType("ACQUAINTED"))
 
-    g.nodes("n").iterator.toBag should equal(
+    g.nodes("n").collect.toBag should equal(
       Bag(
         Row(7L, true, "Alice", "US"),
         Row(8L, true, "Bob", "US"),
@@ -419,7 +419,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
         .withNodePropertyKeys("Person")("name" -> CTString, "region" -> CTString)
         .withRelationshipType("ACQUAINTED"))
 
-    g.nodes("n").iterator.toBag should equal(
+    g.nodes("n").collect.toBag should equal(
       Bag(
         Row(13L, true, "Mallory", "EU"),
         Row(14L, true, "Trudy", "EU"),
@@ -449,7 +449,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
         .withNodePropertyKeys("Person")("name" -> CTString, "region" -> CTString)
         .withRelationshipType("ACQUAINTED"))
 
-    g.nodes("n").iterator.toBag should equal(
+    g.nodes("n").collect.toBag should equal(
       Bag(
         Row(7L, true, "Alice", "US"),
         Row(8L, true, "Bob", "US"),

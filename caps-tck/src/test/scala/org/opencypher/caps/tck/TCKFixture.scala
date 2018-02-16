@@ -90,7 +90,7 @@ case class TCKGraph[C <: CypherSession](testGraphFactory: TestGraphFactory[C], g
 
   private def convertToTckStrings(records: CypherRecords): StringRecords = {
     val header = records.columns.toList
-    val rows: List[Map[String, String]] = records.iterator.map { cypherMap: CAPSCypherMap =>
+    val rows: List[Map[String, String]] = records.collect.map { cypherMap: CAPSCypherMap =>
       cypherMap.keys.map(k => k -> cypherMap(k).toCypherString).toMap
     }.toList
     StringRecords(header, rows)

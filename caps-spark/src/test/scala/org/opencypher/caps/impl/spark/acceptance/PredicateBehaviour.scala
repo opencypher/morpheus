@@ -174,7 +174,7 @@ trait PredicateBehaviour {
         val result = given.cypher("MATCH (a:A)-->(b:B) WHERE a.val < b.val RETURN a.val")
 
         // Then
-        result.records.iterator.toBag shouldBe empty
+        result.records.collect.toBag shouldBe empty
 
         // And
         result.graphs shouldBe empty
@@ -209,7 +209,7 @@ trait PredicateBehaviour {
         val result = given.cypher("MATCH (a:A)-->(b:B) WHERE a.val <= b.val RETURN a.val")
 
         // Then
-        result.records.iterator.toBag shouldBe empty
+        result.records.collect.toBag shouldBe empty
 
         // And
         result.graphs shouldBe empty
@@ -240,7 +240,7 @@ trait PredicateBehaviour {
         val result = given.cypher("MATCH (a:A)-->(b:B) WHERE a.val > b.val RETURN a.val")
 
         // Then
-        result.records.iterator.toBag shouldBe empty
+        result.records.collect.toBag shouldBe empty
 
         // And
         result.graphs shouldBe empty
@@ -272,7 +272,7 @@ trait PredicateBehaviour {
         val result = given.cypher("MATCH (a:A)-->(b:B) WHERE a.val >= b.val RETURN a.val")
 
         // Then
-        result.records.iterator.toBag shouldBe empty
+        result.records.collect.toBag shouldBe empty
 
         // And
         result.graphs shouldBe empty
@@ -289,7 +289,7 @@ trait PredicateBehaviour {
           |RETURN a.val
         """.stripMargin
 
-      graph.cypher(query).records.iterator.toBag should equal(Bag(
+      graph.cypher(query).records.collect.toBag should equal(Bag(
         CypherMap("a.val" -> 10)
       ))
     }

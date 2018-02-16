@@ -32,7 +32,7 @@ trait ReturnBehaviour {
 
         val result = g.cypher("MATCH (a:A) WITH a, a.name AS foo RETURN a")
 
-        result.records.iterator.toBag should equal(Bag(
+        result.records.collect.toBag should equal(Bag(
           CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap("name" -> "me"))),
           CypherMap("a" -> CAPSNode(1L, Set("A"), CypherMap.empty))
         ))
@@ -43,7 +43,7 @@ trait ReturnBehaviour {
 
         val result = g.cypher("MATCH (a:A) WITH a, a AS foo RETURN a")
 
-        result.records.iterator.toBag should equal(Bag(
+        result.records.collect.toBag should equal(Bag(
           CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap("name" -> "me"))),
           CypherMap("a" -> CAPSNode(1L, Set("A"), CypherMap.empty))
         ))
@@ -56,7 +56,7 @@ trait ReturnBehaviour {
         // perhaps copy all child expressions in RecordHeader
         val result = g.cypher("MATCH (a:A) WITH a, a AS foo RETURN foo AS b")
 
-        result.records.iterator.toBag should equal(Bag(
+        result.records.collect.toBag should equal(Bag(
           CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap("name" -> "me"))),
           CypherMap("a" -> CAPSNode(1L, Set("A"), CypherMap.empty))
         ))
@@ -67,7 +67,7 @@ trait ReturnBehaviour {
 
         val result = g.cypher("MATCH (a:A), (b) RETURN a")
 
-        result.records.iterator.toBag should equal(Bag(
+        result.records.collect.toBag should equal(Bag(
           CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty))
         ))
       }
@@ -155,7 +155,7 @@ trait ReturnBehaviour {
           """.stripMargin
 
 
-        graph.cypher(query).records.iterator.toBag should equal(Bag(
+        graph.cypher(query).records.collect.toBag should equal(Bag(
           CypherMap("a.val" -> 0)
         ))
       }

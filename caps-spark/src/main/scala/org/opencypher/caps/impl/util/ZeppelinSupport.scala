@@ -47,7 +47,7 @@ object ZeppelinSupport {
       val fields = result.records.header.fieldsInOrder
 
       val header = fields.mkString("\t")
-      val rows = result.records.iterator.map { data =>
+      val rows = result.records.collect.map { data =>
         fields.map(field => data.get(field).get).mkString("\t")
       }.mkString("\n")
 
