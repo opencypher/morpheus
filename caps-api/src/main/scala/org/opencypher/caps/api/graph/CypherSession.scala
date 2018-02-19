@@ -17,9 +17,10 @@ package org.opencypher.caps.api.graph
 
 import java.net.URI
 
-import org.opencypher.caps.api.io.{CreateOrFail, PersistMode, PropertyGraphDataSourceOld}
+import org.opencypher.caps.api.io._
 import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.value.CypherValue._
+import org.opencypher.caps.impl.io.SessionPropertyGraphDataSource
 
 // TODO: extend doc with explanation for writing graphs
 /**
@@ -27,6 +28,19 @@ import org.opencypher.caps.api.value.CypherValue._
   * Cypher. Graphs can be read from different data sources (e.g. CSV) and mounted in the session-local storage.
   */
 trait CypherSession {
+
+  /**
+    * Stores a mutable mapping between a data source namespace and the specific [[PropertyGraphDataSource]].
+    *
+    */
+  protected var dataSourceMapping: Map[Namespace, PropertyGraphDataSource] =
+    Map(SessionPropertyGraphDataSource.Namespace -> new SessionPropertyGraphDataSource)
+
+  def register(namespace: Namespace, dataSource: PropertyGraphDataSource): Unit =
+    dataSourceMapping = dataSourceMapping.updated(namespace, dataSource)
+
+  def dataSource(namespace: Namespace): PropertyGraphDataSource =
+    dataSourceMapping(namespace)
 
   /**
     * Executes a Cypher query in this session on the current ambient graph.
@@ -94,8 +108,10 @@ trait CypherSession {
     */
   // TODO: Error handling via Return Type (Success, Failed) or just throw exception?
   def write(graph: PropertyGraph, uri: String, mode: PersistMode = CreateOrFail): Unit
+
 }
 
 object CypherSession {
   val sessionGraphSchema = "session"
 }
+

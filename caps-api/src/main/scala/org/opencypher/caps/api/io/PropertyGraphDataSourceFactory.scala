@@ -47,3 +47,5 @@ trait PropertyGraphDataSourceFactory {
     */
   def sourceFor(uri: URI)(implicit session: CypherSession): PropertyGraphDataSourceOld
 }
+
+
