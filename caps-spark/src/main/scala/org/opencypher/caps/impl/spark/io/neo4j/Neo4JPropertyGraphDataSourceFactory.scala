@@ -20,15 +20,15 @@ import java.net.{URI, URLDecoder}
 import org.apache.http.client.utils.URIBuilder
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.impl.exception.IllegalArgumentException
-import org.opencypher.caps.impl.spark.io.{CAPSGraphSourceFactoryCompanion, CAPSPropertyGraphDataSourceFactoryImpl}
 import org.opencypher.caps.impl.spark.io.neo4j.external.Neo4jConfig
+import org.opencypher.caps.impl.spark.io.{CAPSGraphSourceFactoryCompanion, CAPSPropertyGraphDataSourceFactoryImpl}
 
 case object Neo4JPropertyGraphDataSourceFactory extends CAPSGraphSourceFactoryCompanion("bolt", "bolt+routing")
 
 case class Neo4JPropertyGraphDataSourceFactory() extends CAPSPropertyGraphDataSourceFactoryImpl(Neo4JPropertyGraphDataSourceFactory) {
 
   override protected def sourceForURIWithSupportedScheme(uri: URI)(
-      implicit capsSession: CAPSSession): Neo4JPropertyGraphDataSource = {
+    implicit capsSession: CAPSSession): Neo4JPropertyGraphDataSourceOld = {
     val (user, passwd) = getUserInfo(uri)
     val boltUri = new URIBuilder()
       .setScheme(uri.getScheme)
@@ -38,7 +38,7 @@ case class Neo4JPropertyGraphDataSourceFactory() extends CAPSPropertyGraphDataSo
       .build()
 
     val neo4jConfig = Neo4jConfig(boltUri, user, passwd, encrypted = false)
-    Neo4JPropertyGraphDataSource(neo4jConfig, getQueries(uri))
+    Neo4JPropertyGraphDataSourceOld(neo4jConfig, getQueries(uri))
   }
 
   private def getUserInfo(uri: URI) = uri.getUserInfo match {

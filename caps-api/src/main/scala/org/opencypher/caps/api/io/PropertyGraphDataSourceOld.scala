@@ -23,7 +23,7 @@ import org.opencypher.caps.api.schema.Schema
 /**
   * Describes a location for a Cypher graph.
   */
-trait PropertyGraphDataSource {
+trait PropertyGraphDataSourceOld {
 
   /**
     * The session tied to this graph source.

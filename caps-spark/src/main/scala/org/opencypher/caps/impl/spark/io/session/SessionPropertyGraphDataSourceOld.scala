@@ -18,17 +18,16 @@ package org.opencypher.caps.impl.spark.io.session
 import java.net.URI
 
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.impl.exception.UnsupportedOperationException
 import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.io.{CreateOrFail, Overwrite, PersistMode}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.impl.spark.CAPSGraph
-import org.opencypher.caps.impl.spark.io.CAPSPropertyGraphDataSource
+import org.opencypher.caps.impl.spark.io.CAPSPropertyGraphDataSourceOld
 
-case class SessionPropertyGraphDataSource(path: String)(implicit val session: CAPSSession)
-    extends CAPSPropertyGraphDataSource {
+case class SessionPropertyGraphDataSourceOld(path: String)(implicit val session: CAPSSession)
+  extends CAPSPropertyGraphDataSourceOld {
 
   private var currentGraph: Option[CAPSGraph] = None
 

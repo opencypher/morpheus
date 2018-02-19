@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.spark.io
+package org.opencypher.caps.cosc.impl.datasource
 
-import org.opencypher.caps.api.io.PropertyGraphDataSource
+import org.opencypher.caps.api.io.PropertyGraphDataSourceOld
 
-trait CAPSPropertyGraphDataSource extends PropertyGraphDataSource
+trait COSCPropertyGraphDataSourceOld extends PropertyGraphDataSourceOld

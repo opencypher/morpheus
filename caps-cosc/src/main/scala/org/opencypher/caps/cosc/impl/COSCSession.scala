@@ -20,13 +20,13 @@ import java.util.UUID
 
 import org.opencypher.caps.api.configuration.CoraConfiguration.PrintFlatPlan
 import org.opencypher.caps.api.graph.{CypherResult, CypherSession, PropertyGraph}
-import org.opencypher.caps.api.io.{PersistMode, PropertyGraphDataSource}
+import org.opencypher.caps.api.io.{PersistMode, PropertyGraphDataSourceOld}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.cosc.impl.COSCConverters._
-import org.opencypher.caps.cosc.impl.datasource.{COSCGraphSourceHandler, COSCPropertyGraphDataSource, COSCSessionPropertyGraphDataSourceFactory}
+import org.opencypher.caps.cosc.impl.datasource.{COSCGraphSourceHandler, COSCPropertyGraphDataSourceOld, COSCSessionPropertyGraphDataSourceFactory}
 import org.opencypher.caps.cosc.impl.planning.{COSCPhysicalOperatorProducer, COSCPhysicalPlannerContext}
 import org.opencypher.caps.impl.exception.UnsupportedOperationException
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
@@ -53,7 +53,7 @@ class COSCSession(private val graphSourceHandler: COSCGraphSourceHandler) extend
   private val physicalPlanner = new PhysicalPlanner(new COSCPhysicalOperatorProducer()(this))
   private val parser = CypherParser
 
-  def sourceAt(uri: URI): PropertyGraphDataSource =
+  def sourceAt(uri: URI): PropertyGraphDataSourceOld =
     graphSourceHandler.sourceAt(uri)(this)
 
   def optGraphAt(uri: URI): Option[COSCGraph] =
@@ -115,7 +115,7 @@ class COSCSession(private val graphSourceHandler: COSCGraphSourceHandler) extend
     * @param source graph source to register
     * @param path   path at which this graph can be accessed via {{{session://$path}}}
     */
-  override def mount(source: PropertyGraphDataSource, path: String): Unit = ???
+  override def mount(source: PropertyGraphDataSourceOld, path: String): Unit = ???
 
   /**
     * Writes the given graph to the location using the format specified by the URI.
@@ -130,7 +130,7 @@ class COSCSession(private val graphSourceHandler: COSCGraphSourceHandler) extend
     val name = UUID.randomUUID().toString
     val uri = URI.create(s"session:///graphs/ambient/$name")
 
-    val graphSource = new COSCPropertyGraphDataSource {
+    val graphSource = new COSCPropertyGraphDataSourceOld {
       override def schema: Option[Schema] = Some(graph.schema)
 
       override def canonicalURI: URI = uri

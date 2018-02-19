@@ -19,7 +19,7 @@ import java.net.URI
 
 import org.apache.spark.sql.Row
 import org.opencypher.caps.impl.spark.CAPSConverters._
-import org.opencypher.caps.impl.spark.io.file.FileCsvPropertyGraphDataSource
+import org.opencypher.caps.impl.spark.io.file.FileCsvPropertyGraphDataSourceOld
 import org.opencypher.caps.test.CAPSTestSuite
 
 import scala.collection.{Bag, mutable}
@@ -37,7 +37,7 @@ class CAPSSessionFileTest extends CAPSTestSuite {
   }
 
   test("File via mount point") {
-    caps.mount(FileCsvPropertyGraphDataSource(fileURI), "/test/graph")
+    caps.mount(FileCsvPropertyGraphDataSourceOld(fileURI), "/test/graph")
     val graph = caps.readFrom("/test/graph")
     graph.nodes("n").asCaps.toDF().collect().toBag should equal(testGraphNodes)
     graph.relationships("rel").asCaps.toDF().collect.toBag should equal(testGraphRels)

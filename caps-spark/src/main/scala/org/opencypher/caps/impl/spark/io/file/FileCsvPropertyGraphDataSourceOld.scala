@@ -23,11 +23,11 @@ import org.opencypher.caps.api.io.{CreateOrFail, PersistMode}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.impl.exception.NotImplementedException
 import org.opencypher.caps.impl.spark.CAPSGraph
-import org.opencypher.caps.impl.spark.io.CAPSPropertyGraphDataSource
+import org.opencypher.caps.impl.spark.io.CAPSPropertyGraphDataSourceOld
 import org.opencypher.caps.impl.spark.io.hdfs.CsvGraphLoader
 
-case class FileCsvPropertyGraphDataSource(override val canonicalURI: URI)(implicit val session: CAPSSession)
-    extends CAPSPropertyGraphDataSource {
+case class FileCsvPropertyGraphDataSourceOld(override val canonicalURI: URI)(implicit val session: CAPSSession)
+  extends CAPSPropertyGraphDataSourceOld {
 
   override def sourceForGraphAt(uri: URI): Boolean = {
     FileCsvPropertyGraphDataSourceFactory.supportedSchemes.contains(uri.getScheme)

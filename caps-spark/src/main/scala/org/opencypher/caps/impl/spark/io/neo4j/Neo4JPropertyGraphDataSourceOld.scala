@@ -22,13 +22,13 @@ import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.io.{CreateOrFail, PersistMode}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.impl.spark.CAPSGraph
-import org.opencypher.caps.impl.spark.io.CAPSPropertyGraphDataSource
+import org.opencypher.caps.impl.spark.io.CAPSPropertyGraphDataSourceOld
 import org.opencypher.caps.impl.spark.io.neo4j.external.Neo4jConfig
 
-case class Neo4JPropertyGraphDataSource(config: Neo4jConfig,
+case class Neo4JPropertyGraphDataSourceOld(config: Neo4jConfig,
                             queries: Option[(String, String)])
                            (implicit val session: CAPSSession)
-  extends CAPSPropertyGraphDataSource {
+  extends CAPSPropertyGraphDataSourceOld {
 
   import org.opencypher.caps.impl.spark.io.neo4j.Neo4JPropertyGraphDataSourceFactory.supportedSchemes
 

@@ -29,11 +29,11 @@ abstract class COSCPropertyGraphDataSourceFactoryImpl(val companion: COSCGraphSo
 
   override final def schemes: Set[String] = companion.supportedSchemes
 
-  override final def sourceFor(uri: URI)(implicit cypherSession: CypherSession): COSCPropertyGraphDataSource = {
+  override final def sourceFor(uri: URI)(implicit cypherSession: CypherSession): COSCPropertyGraphDataSourceOld = {
     implicit val coscSession = cypherSession.asCosc
     if (schemes.contains(uri.getScheme)) sourceForURIWithSupportedScheme(uri)
     else throw IllegalArgumentException(s"a supported scheme: ${schemes.toSeq.sorted.mkString(", ")}", uri.getScheme)
   }
 
-  protected def sourceForURIWithSupportedScheme(uri: URI)(implicit coscSession: COSCSession): COSCPropertyGraphDataSource
+  protected def sourceForURIWithSupportedScheme(uri: URI)(implicit coscSession: COSCSession): COSCPropertyGraphDataSourceOld
 }

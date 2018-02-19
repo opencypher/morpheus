@@ -18,7 +18,7 @@ package org.opencypher.caps.impl.spark
 import java.net.{URI, URLEncoder}
 
 import org.opencypher.caps.impl.spark.CAPSConverters._
-import org.opencypher.caps.impl.spark.io.neo4j.Neo4JPropertyGraphDataSource
+import org.opencypher.caps.impl.spark.io.neo4j.Neo4JPropertyGraphDataSourceOld
 import org.opencypher.caps.test.BaseTestSuite
 import org.opencypher.caps.test.fixture.{CAPSSessionFixture, Neo4jServerFixture, SparkSessionFixture, TeamDataFixture}
 import org.scalatest.Matchers
@@ -44,7 +44,7 @@ class CAPSSessionNeo4jTest
 
   test("Neo4j via mount point") {
     caps.mount(
-      Neo4JPropertyGraphDataSource(neo4jConfig, Some("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r")),
+      Neo4JPropertyGraphDataSourceOld(neo4jConfig, Some("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r")),
       "/neo4j1")
 
     val graph = caps.readFrom("/neo4j1").asCaps

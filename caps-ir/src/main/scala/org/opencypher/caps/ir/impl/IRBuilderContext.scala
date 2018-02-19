@@ -20,7 +20,7 @@ import java.net.URI
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
 import org.neo4j.cypher.internal.util.v3_4.{InputPosition, Ref}
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
-import org.opencypher.caps.api.io.PropertyGraphDataSource
+import org.opencypher.caps.api.io.PropertyGraphDataSourceOld
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.CypherType._
 import org.opencypher.caps.api.types._
@@ -40,7 +40,7 @@ final case class IRBuilderContext(
   semanticState: SemanticState,
   graphs: Map[String, URI],
   graphList: List[IRGraph],
-  resolver: URI => PropertyGraphDataSource,
+  resolver: URI => PropertyGraphDataSourceOld,
   // TODO: Remove this
   knownTypes: Map[ast.Expression, CypherType] = Map.empty) {
   self =>
@@ -107,7 +107,7 @@ object IRBuilderContext {
     parameters: CypherMap,
     semState: SemanticState,
     ambientGraph: IRExternalGraph,
-    resolver: URI => PropertyGraphDataSource
+    resolver: URI => PropertyGraphDataSourceOld
   ): IRBuilderContext = {
     val registry = BlockRegistry.empty[Expr]
     val block = SourceBlock[Expr](ambientGraph)

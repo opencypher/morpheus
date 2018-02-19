@@ -45,5 +45,5 @@ trait PropertyGraphDataSourceFactory {
     * @return create a new graph source for the given uri.
     * @throws java.lang.RuntimeException if the uri is not supported by this graph source factory.
     */
-  def sourceFor(uri: URI)(implicit session: CypherSession): PropertyGraphDataSource
+  def sourceFor(uri: URI)(implicit session: CypherSession): PropertyGraphDataSourceOld
 }

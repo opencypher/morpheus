@@ -18,16 +18,16 @@ package org.opencypher.caps.impl.spark.io.session
 import java.net.URI
 
 import org.mockito.Mockito._
-import org.opencypher.caps.impl.spark.io.CAPSPropertyGraphDataSource
+import org.opencypher.caps.impl.spark.io.CAPSPropertyGraphDataSourceOld
 import org.opencypher.caps.test.BaseTestSuite
 
-class SessionPropertyGraphDataSourceFactoryTest extends BaseTestSuite {
+class SessionPropertyGraphDataSourceOldFactoryTest extends BaseTestSuite {
 
   test("mounting graphs should be thread-safe") {
     val f = SessionPropertyGraphDataSourceFactory()
     (0 until 1000).par.foreach { i =>
       if (i % 2 == 0) {
-        f.mountSourceAt(mock(classOf[CAPSPropertyGraphDataSource]), URI.create(s"session:/${i}"))(null)
+        f.mountSourceAt(mock(classOf[CAPSPropertyGraphDataSourceOld]), URI.create(s"session:/${i}"))(null)
       } else {
         f.mountPoints.get(URI.create(s"session:/${i + 1}").getPath)
       }

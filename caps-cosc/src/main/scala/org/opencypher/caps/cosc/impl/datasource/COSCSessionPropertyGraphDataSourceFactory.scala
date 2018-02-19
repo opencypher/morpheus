@@ -18,7 +18,6 @@ package org.opencypher.caps.cosc.impl.datasource
 import java.net.URI
 import java.util.concurrent.ConcurrentHashMap
 
-import org.opencypher.caps.impl.exception.UnsupportedOperationException
 import org.opencypher.caps.api.graph.CypherSession
 import org.opencypher.caps.cosc.impl.COSCSession
 import org.opencypher.caps.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
@@ -30,11 +29,11 @@ case object COSCSessionPropertyGraphDataSourceFactory extends COSCGraphSourceFac
 case class COSCSessionPropertyGraphDataSourceFactory()
   extends COSCPropertyGraphDataSourceFactoryImpl(COSCSessionPropertyGraphDataSourceFactory) {
 
-  val mountPoints: collection.concurrent.Map[String, COSCPropertyGraphDataSource] = {
-    new ConcurrentHashMap[String, COSCPropertyGraphDataSource]()
+  val mountPoints: collection.concurrent.Map[String, COSCPropertyGraphDataSourceOld] = {
+    new ConcurrentHashMap[String, COSCPropertyGraphDataSourceOld]()
   }
 
-  def mountSourceAt(existingSource: COSCPropertyGraphDataSource, uri: URI)(implicit capsSession: COSCSession): Unit =
+  def mountSourceAt(existingSource: COSCPropertyGraphDataSourceOld, uri: URI)(implicit capsSession: COSCSession): Unit =
     if (schemes.contains(uri.getScheme))
       withValidPath(uri) { (path: String) =>
         mountPoints.get(path) match {
@@ -49,14 +48,14 @@ case class COSCSessionPropertyGraphDataSourceFactory()
   def unmountAll(implicit capsSession: CypherSession): Unit =
     mountPoints.clear()
 
-  override protected def sourceForURIWithSupportedScheme(uri: URI)(implicit capsSession: COSCSession): COSCPropertyGraphDataSource =
+  override protected def sourceForURIWithSupportedScheme(uri: URI)(implicit capsSession: COSCSession): COSCPropertyGraphDataSourceOld =
     withValidPath(uri) { (path: String) =>
       mountPoints.get(path) match {
         case Some(source) =>
           source
 
         case _ =>
-          val newSource = COSCSessionPropertyGraphDataSource(path)
+          val newSource = COSCSessionPropertyGraphDataSourceOld(path)
           mountPoints.put(path, newSource)
           newSource
       }

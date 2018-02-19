@@ -17,7 +17,7 @@ package org.opencypher.caps.cosc.impl.datasource
 
 import java.net.URI
 
-import org.opencypher.caps.api.io.PropertyGraphDataSource
+import org.opencypher.caps.api.io.PropertyGraphDataSourceOld
 import org.opencypher.caps.cosc.impl.COSCSession
 import org.opencypher.caps.impl.exception.IllegalArgumentException
 
@@ -36,16 +36,16 @@ case class COSCGraphSourceHandler(
       )
   }
 
-  def mountSourceAt(source: COSCPropertyGraphDataSource, uri: URI)(implicit coscSession: COSCSession): Unit =
+  def mountSourceAt(source: COSCPropertyGraphDataSourceOld, uri: URI)(implicit coscSession: COSCSession): Unit =
     sessionGraphSourceFactory.mountSourceAt(source, uri)
 
   def unmountAll(implicit coscSession: COSCSession): Unit =
     sessionGraphSourceFactory.unmountAll(coscSession)
 
-  def sourceAt(uri: URI)(implicit coscSession: COSCSession): PropertyGraphDataSource =
+  def sourceAt(uri: URI)(implicit coscSession: COSCSession): PropertyGraphDataSourceOld =
     optSourceAt(uri).getOrElse(throw IllegalArgumentException(s"graph source for URI: $uri"))
 
-  def optSourceAt(uri: URI)(implicit coscSession: COSCSession): Option[PropertyGraphDataSource] =
+  def optSourceAt(uri: URI)(implicit coscSession: COSCSession): Option[PropertyGraphDataSourceOld] =
     factoriesByScheme
       .get(uri.getScheme)
       .map(_.sourceFor(uri))

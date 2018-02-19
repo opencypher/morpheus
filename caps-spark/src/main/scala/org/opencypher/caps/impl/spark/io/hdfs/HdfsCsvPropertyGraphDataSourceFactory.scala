@@ -27,13 +27,13 @@ case object HdfsCsvPropertyGraphDataSourceFactory extends CAPSGraphSourceFactory
 case class HdfsCsvPropertyGraphDataSourceFactory()
   extends CAPSPropertyGraphDataSourceFactoryImpl(HdfsCsvPropertyGraphDataSourceFactory) {
 
-  override protected def sourceForURIWithSupportedScheme(uri: URI)(implicit capsSession: CAPSSession): HdfsCsvPropertyGraphDataSource = {
+  override protected def sourceForURIWithSupportedScheme(uri: URI)(implicit capsSession: CAPSSession): HdfsCsvPropertyGraphDataSourceOld = {
     val internalURI: URI = new URIBuilder(uri)
       .setScheme("hdfs")
       .build()
 
     val hadoopConf = new Configuration(capsSession.sparkSession.sparkContext.hadoopConfiguration)
     hadoopConf.set("fs.default.name", internalURI.toString)
-    HdfsCsvPropertyGraphDataSource(uri, hadoopConf, uri.getPath)
+    HdfsCsvPropertyGraphDataSourceOld(uri, hadoopConf, uri.getPath)
   }
 }

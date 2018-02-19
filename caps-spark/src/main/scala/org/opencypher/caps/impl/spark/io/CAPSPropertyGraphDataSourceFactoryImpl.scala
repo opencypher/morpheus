@@ -29,12 +29,12 @@ abstract class CAPSPropertyGraphDataSourceFactoryImpl(val companion: CAPSGraphSo
 
   override final def schemes: Set[String] = companion.supportedSchemes
 
-  override final def sourceFor(uri: URI)(implicit cypherSession: CypherSession): CAPSPropertyGraphDataSource = {
+  override final def sourceFor(uri: URI)(implicit cypherSession: CypherSession): CAPSPropertyGraphDataSourceOld = {
     implicit val capsSession = cypherSession.asCaps
     if (schemes.contains(uri.getScheme)) sourceForURIWithSupportedScheme(uri)
     else throw IllegalArgumentException(s"a supported scheme: ${schemes.toSeq.sorted.mkString(", ")}", uri.getScheme)
   }
 
   protected def sourceForURIWithSupportedScheme(uri: URI)(
-      implicit capsSession: CAPSSession): CAPSPropertyGraphDataSource
+    implicit capsSession: CAPSSession): CAPSPropertyGraphDataSourceOld
 }

@@ -19,7 +19,6 @@ import java.net.URI
 import java.util.concurrent.ConcurrentHashMap
 
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.impl.exception.UnsupportedOperationException
 import org.opencypher.caps.api.graph.CypherSession
 import org.opencypher.caps.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.caps.impl.spark.io.{CAPSPropertyGraphDataSourceFactoryImpl, _}
@@ -31,11 +30,11 @@ case object SessionPropertyGraphDataSourceFactory extends CAPSGraphSourceFactory
 case class SessionPropertyGraphDataSourceFactory()
     extends CAPSPropertyGraphDataSourceFactoryImpl(SessionPropertyGraphDataSourceFactory) {
 
-  val mountPoints: collection.concurrent.Map[String, CAPSPropertyGraphDataSource] = {
-    new ConcurrentHashMap[String, CAPSPropertyGraphDataSource]()
+  val mountPoints: collection.concurrent.Map[String, CAPSPropertyGraphDataSourceOld] = {
+    new ConcurrentHashMap[String, CAPSPropertyGraphDataSourceOld]()
   }
 
-  def mountSourceAt(existingSource: CAPSPropertyGraphDataSource, uri: URI)(implicit capsSession: CypherSession): Unit =
+  def mountSourceAt(existingSource: CAPSPropertyGraphDataSourceOld, uri: URI)(implicit capsSession: CypherSession): Unit =
     if (schemes.contains(uri.getScheme))
       withValidPath(uri) { (path: String) =>
         mountPoints.get(path) match {
@@ -50,14 +49,14 @@ case class SessionPropertyGraphDataSourceFactory()
   def unmountAll(implicit capsSession: CypherSession): Unit =
     mountPoints.clear()
 
-  override protected def sourceForURIWithSupportedScheme(uri: URI)(implicit capsSession: CAPSSession): CAPSPropertyGraphDataSource =
+  override protected def sourceForURIWithSupportedScheme(uri: URI)(implicit capsSession: CAPSSession): CAPSPropertyGraphDataSourceOld =
     withValidPath(uri) { (path: String) =>
       mountPoints.get(path) match {
         case Some(source) =>
           source
 
         case _ =>
-          val newSource = SessionPropertyGraphDataSource(path)
+          val newSource = SessionPropertyGraphDataSourceOld(path)
           mountPoints.put(path, newSource)
           newSource
       }

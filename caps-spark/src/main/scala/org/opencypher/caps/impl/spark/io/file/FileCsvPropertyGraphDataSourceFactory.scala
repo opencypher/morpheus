@@ -25,7 +25,7 @@ case object FileCsvPropertyGraphDataSourceFactory extends CAPSGraphSourceFactory
 case class FileCsvPropertyGraphDataSourceFactory()
   extends CAPSPropertyGraphDataSourceFactoryImpl(FileCsvPropertyGraphDataSourceFactory) {
 
-  override protected def sourceForURIWithSupportedScheme(uri: URI)(implicit capsSession: CAPSSession): FileCsvPropertyGraphDataSource = {
-    FileCsvPropertyGraphDataSource(uri)
+  override protected def sourceForURIWithSupportedScheme(uri: URI)(implicit capsSession: CAPSSession): FileCsvPropertyGraphDataSourceOld = {
+    FileCsvPropertyGraphDataSourceOld(uri)
   }
 }
