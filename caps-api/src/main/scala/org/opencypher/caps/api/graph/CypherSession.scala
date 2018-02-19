@@ -21,6 +21,7 @@ import org.opencypher.caps.api.io._
 import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.impl.io.SessionPropertyGraphDataSource
+import org.opencypher.caps.impl.io.SessionPropertyGraphDataSource.{Namespace => SessionNamespace}
 
 // TODO: extend doc with explanation for writing graphs
 /**
@@ -34,7 +35,7 @@ trait CypherSession {
     *
     */
   protected var dataSourceMapping: Map[Namespace, PropertyGraphDataSource] =
-    Map(SessionPropertyGraphDataSource.Namespace -> new SessionPropertyGraphDataSource)
+    Map(SessionNamespace -> new SessionPropertyGraphDataSource)
 
   def register(namespace: Namespace, dataSource: PropertyGraphDataSource): Unit =
     dataSourceMapping = dataSourceMapping.updated(namespace, dataSource)
@@ -97,6 +98,12 @@ trait CypherSession {
     * @param path   path at which this graph can be accessed via {{{session://$path}}}
     */
   def mount(graph: PropertyGraph, path: String): Unit
+
+  // TODO: document
+  def mount(graphName: GraphName, graph: PropertyGraph): GraphIdentifier = {
+    dataSourceMapping(SessionNamespace).store(graphName, graph)
+    GraphIdentifier(SessionNamespace, graphName)
+  }
 
   // TODO: reintroduce "mount(source: String, path: String): Unit" with source lookup via URI scheme
   /**
