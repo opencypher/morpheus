@@ -20,19 +20,17 @@ import java.util.UUID
 
 import org.opencypher.caps.api.configuration.CoraConfiguration.PrintFlatPlan
 import org.opencypher.caps.api.graph.{CypherResult, CypherSession, PropertyGraph}
-import org.opencypher.caps.api.io.{PersistMode, PropertyGraphDataSourceOld, QualifiedGraphName}
-import org.opencypher.caps.api.schema.Schema
+import org.opencypher.caps.api.io.{GraphName, PersistMode, PropertyGraphDataSourceOld, QualifiedGraphName}
 import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.cosc.impl.COSCConverters._
-import org.opencypher.caps.cosc.impl.datasource.{COSCGraphSourceHandler, COSCPropertyGraphDataSourceOld, COSCSessionPropertyGraphDataSourceFactory}
+import org.opencypher.caps.cosc.impl.datasource.{COSCGraphSourceHandler, COSCSessionPropertyGraphDataSourceFactory}
 import org.opencypher.caps.cosc.impl.planning.{COSCPhysicalOperatorProducer, COSCPhysicalPlannerContext}
-import org.opencypher.caps.impl.exception.UnsupportedOperationException
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
 import org.opencypher.caps.impl.physical.PhysicalPlanner
 import org.opencypher.caps.impl.util.Measurement.time
-import org.opencypher.caps.ir.api.IRExternalGraph
+import org.opencypher.caps.ir.api.IRExternalGraphNew
 import org.opencypher.caps.ir.impl.parse.CypherParser
 import org.opencypher.caps.ir.impl.{IRBuilder, IRBuilderContext}
 import org.opencypher.caps.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
@@ -76,14 +74,14 @@ class COSCSession(private val graphSourceHandler: COSCGraphSourceHandler) extend
     cypherOnGraph(COSCGraph.empty(this), query, parameters, drivingTable)
 
   override def cypherOnGraph(graph: PropertyGraph, query: String, parameters: CypherMap, drivingTable: Option[CypherRecords]): CypherResult = {
-    val ambientGraph = getAmbientGraph(graph)
+    val ambientGraph = mountAmbientGraph(graph)
 
     val (stmt, extractedLiterals, semState) = time("AST construction")(parser.process(query)(CypherParser.defaultContext))
 
     val extractedParameters = extractedLiterals.mapValues(v => CypherValue(v))
     val allParameters = parameters ++ extractedParameters
 
-    val ir = time("IR translation")(IRBuilder(stmt)(IRBuilderContext.initial(query, allParameters, semState, ambientGraph, ???, sourceAt, dataSource)))
+    val ir = time("IR translation")(IRBuilder(stmt)(IRBuilderContext.initial(query, allParameters, semState, ambientGraph, sourceAt, dataSource)))
 
     val logicalPlannerContext = LogicalPlannerContext(graph.schema, Set.empty, ir.model.graphs.mapValues(_.namespace).andThen(dataSource), ambientGraph)
     val logicalPlan = time("Logical planning")(logicalPlanner(ir)(logicalPlannerContext))
@@ -129,32 +127,10 @@ class COSCSession(private val graphSourceHandler: COSCGraphSourceHandler) extend
     */
   override def write(graph: PropertyGraph, uri: String, mode: PersistMode): Unit = ???
 
-  private def getAmbientGraph(ambient: PropertyGraph): IRExternalGraph = {
-    val name = UUID.randomUUID().toString
-    val uri = URI.create(s"session:///graphs/ambient/$name")
-
-    val graphSource = new COSCPropertyGraphDataSourceOld {
-      override def schema: Option[Schema] = Some(graph.schema)
-
-      override def canonicalURI: URI = uri
-
-      override def delete(): Unit = throw UnsupportedOperationException("Deletion of an ambient graph")
-
-      override def graph: PropertyGraph = ambient
-
-      override def sourceForGraphAt(uri: URI): Boolean = uri == canonicalURI
-
-      override def create: COSCGraph = throw UnsupportedOperationException("Creation of an ambient graph")
-
-      override def store(graph: PropertyGraph, mode: PersistMode): COSCGraph =
-        throw UnsupportedOperationException("Persisting an ambient graph")
-
-      override val session: COSCSession = self
-    }
-
-    graphSourceHandler.mountSourceAt(graphSource, uri)(self)
-
-    IRExternalGraph(name, ambient.schema, uri)
+  private def mountAmbientGraph(ambient: PropertyGraph): IRExternalGraphNew = {
+    val graphName = GraphName(UUID.randomUUID().toString)
+    val qualifiedGraphName = mount(graphName, ambient)
+    IRExternalGraphNew(graphName.value, ambient.schema, qualifiedGraphName)
   }
 
   /**

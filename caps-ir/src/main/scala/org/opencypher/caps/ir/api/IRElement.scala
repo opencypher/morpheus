@@ -15,8 +15,6 @@
  */
 package org.opencypher.caps.ir.api
 
-import java.net.URI
-
 import org.opencypher.caps.api.io.{GraphName, QualifiedGraphName}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
@@ -66,9 +64,9 @@ final case class IRNamedGraph(name: String, schema: Schema, qualifiedName: Quali
   override def toString: String = s"IRNamedGraph(name = $name, qualifiedName = $qualifiedName)"
 }
 
-final case class IRExternalGraph(name: String, schema: Schema, uri: URI) extends IRGraph {
-  override def toString: String = s"IRExternalGraph(name = $name, uri = $uri)"
-}
+//final case class IRExternalGraph(name: String, schema: Schema, uri: URI) extends IRGraph {
+//  override def toString: String = s"IRExternalGraph(name = $name, uri = $uri)"
+//}
 
 final case class IRExternalGraphNew(name: String, schema: Schema, qualifiedName: QualifiedGraphName) extends IRQualifiedGraph {
   override def toString: String = s"IRExternalGraph(name = $name, qualifiedName = $qualifiedName)"

@@ -23,7 +23,6 @@ import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.configuration.CoraConfiguration.{PrintPhysicalPlan, PrintQueryExecutionStages}
 import org.opencypher.caps.api.graph.{CypherResult, PropertyGraph}
 import org.opencypher.caps.api.io._
-import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.api.value._
@@ -36,7 +35,7 @@ import org.opencypher.caps.impl.spark.io.{CAPSGraphSourceHandler, CAPSPropertyGr
 import org.opencypher.caps.impl.spark.physical._
 import org.opencypher.caps.impl.util.parsePathOrURI
 import org.opencypher.caps.ir.api.expr.{Expr, Var}
-import org.opencypher.caps.ir.api.{IRExternalGraph, IRExternalGraphNew, IRField}
+import org.opencypher.caps.ir.api.{IRExternalGraphNew, IRField}
 import org.opencypher.caps.ir.impl.parse.CypherParser
 import org.opencypher.caps.ir.impl.{IRBuilder, IRBuilderContext}
 import org.opencypher.caps.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
@@ -104,9 +103,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
     cypherOnGraph(CAPSGraph.empty, query, parameters, drivingTable)
 
   override def cypherOnGraph(graph: PropertyGraph, query: String, queryParameters: CypherMap, maybeDrivingTable: Option[CypherRecords]): CypherResult = {
-    val ambientGraph = mountAmbientGraph(graph)
-    val ambientGraphNew = mountAmbientGraphNew(graph)
-
+    val ambientGraphNew = mountAmbientGraph(graph)
 
     val (stmt, extractedLiterals, semState) = parser.process(query)(CypherParser.defaultContext)
 
@@ -114,7 +111,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
     val allParameters = queryParameters ++ extractedParameters
 
     logStageProgress("IR ...", newLine = false)
-    val ir = IRBuilder(stmt)(IRBuilderContext.initial(query, allParameters, semState, ambientGraph, ambientGraphNew, sourceAt, dataSource))
+    val ir = IRBuilder(stmt)(IRBuilderContext.initial(query, allParameters, semState, ambientGraphNew, sourceAt, dataSource))
     logStageProgress("Done!")
 
     logStageProgress("Logical plan ...", newLine = false)
@@ -148,42 +145,14 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
     }
   }
 
-  private def mountAmbientGraphNew(ambient: PropertyGraph): IRExternalGraphNew = {
+  private def mountAmbientGraph(ambient: PropertyGraph): IRExternalGraphNew = {
     val graphName = GraphName(UUID.randomUUID().toString)
     val qualifiedGraphName = mount(graphName, ambient)
     IRExternalGraphNew(graphName.value, ambient.schema, qualifiedGraphName)
   }
 
-  private def mountAmbientGraph(ambient: PropertyGraph): IRExternalGraph = {
-    val name = UUID.randomUUID().toString
-    val uri = URI.create(s"session:///graphs/ambient/$name")
-
-    val graphSource = new CAPSPropertyGraphDataSourceOld {
-      override def schema: Option[Schema] = Some(graph.schema)
-
-      override def canonicalURI: URI = uri
-
-      override def delete(): Unit = throw UnsupportedOperationException("Deletion of an ambient graph")
-
-      override def graph: PropertyGraph = ambient
-
-      override def sourceForGraphAt(uri: URI): Boolean = uri == canonicalURI
-
-      override def create: CAPSGraph = throw UnsupportedOperationException("Creation of an ambient graph")
-
-      override def store(graph: PropertyGraph, mode: PersistMode): CAPSGraph =
-        throw UnsupportedOperationException("Persisting an ambient graph")
-
-      override val session: CAPSSession = self
-    }
-
-    graphSourceHandler.mountSourceAt(graphSource, uri)(self)
-
-    IRExternalGraph(name, ambient.schema, uri)
-  }
-
   private def planStart(graph: PropertyGraph, fields: Set[Var]): LogicalOperator = {
-    val ambientGraph = mountAmbientGraphNew(graph)
+    val ambientGraph = mountAmbientGraph(graph)
 
     producer.planStart(LogicalExternalGraph(ambientGraph.name, ambientGraph.qualifiedName, graph.schema), fields)
   }

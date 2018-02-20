@@ -15,8 +15,6 @@
  */
 package org.opencypher.caps.ir.impl
 
-import java.net.URI
-
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
 import org.opencypher.caps.api.io._
@@ -40,9 +38,6 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
   val testQualifiedGraphName = QualifiedGraphName(testNamespace, testGraphName)
 
   def testGraph()(implicit schema: Schema = Schema.empty) =
-    IRExternalGraph("test", schema, URI.create("test"))
-
-  def testGraphNew()(implicit schema: Schema = Schema.empty) =
     IRExternalGraphNew("test", schema, testQualifiedGraphName)
 
   def testGraphSource(schema: Schema = Schema.empty): PropertyGraphDataSourceOld = {
@@ -119,7 +114,6 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
           parameters,
           SemanticState.clean,
           testGraph,
-          testGraphNew,
           _ => testGraphSource(schema),
           _ => testGraphSourceNew(schema)))
     }
@@ -131,7 +125,6 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
           params.toMap,
           SemanticState.clean,
           testGraph,
-          testGraphNew,
           _ => testGraphSource(schema),
           _ => testGraphSourceNew(schema)))
     }

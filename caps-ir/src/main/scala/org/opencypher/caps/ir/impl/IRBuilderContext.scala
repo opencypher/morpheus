@@ -28,17 +28,16 @@ import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.ir.api.block.SourceBlock
 import org.opencypher.caps.ir.api.expr.Expr
 import org.opencypher.caps.ir.api.pattern.Pattern
-import org.opencypher.caps.ir.api.{IRExternalGraph, IRExternalGraphNew, IRField, IRGraph}
+import org.opencypher.caps.ir.api.{IRExternalGraphNew, IRField, IRGraph}
 import org.opencypher.caps.ir.impl.typer.exception.TypingException
 import org.opencypher.caps.ir.impl.typer.{SchemaTyper, TypeTracker}
 
 final case class IRBuilderContext(
   queryString: String,
   parameters: CypherMap,
-  ambientGraph: IRExternalGraph,
+  ambientGraph: IRExternalGraphNew,
   blocks: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
   semanticState: SemanticState,
-  graphs: Map[String, URI],
   graphsNew: Map[String, QualifiedGraphName],
   graphList: List[IRGraph],
   resolver: URI => PropertyGraphDataSourceOld,
@@ -97,9 +96,6 @@ final case class IRBuilderContext(
     copy(knownTypes = withFieldTypes)
   }
 
-  def withGraphAt(name: String, uri: URI): IRBuilderContext =
-    copy(graphs = graphs.updated(name, uri))
-
   def withGraphAt(name: String, qualifiedName: QualifiedGraphName) =
     copy(graphsNew = graphsNew.updated(name, qualifiedName))
 
@@ -113,13 +109,12 @@ object IRBuilderContext {
     query: String,
     parameters: CypherMap,
     semState: SemanticState,
-    ambientGraph: IRExternalGraph,
-    ambientGraphNew: IRExternalGraphNew,
+    ambientGraph: IRExternalGraphNew,
     resolver: URI => PropertyGraphDataSourceOld,
     resolverNew: Namespace => PropertyGraphDataSource
   ): IRBuilderContext = {
     val registry = BlockRegistry.empty[Expr]
-    val block = SourceBlock[Expr](ambientGraphNew)
+    val block = SourceBlock[Expr](ambientGraph)
     val (_, reg) = registry.register(block)
 
     IRBuilderContext(
@@ -128,8 +123,7 @@ object IRBuilderContext {
       ambientGraph,
       reg,
       semState,
-      Map(ambientGraph.name -> ambientGraph.uri),
-      Map(ambientGraphNew.name -> ambientGraphNew.qualifiedName),
+      Map(ambientGraph.name -> ambientGraph.qualifiedName),
       List(ambientGraph),
       resolver,
       resolverNew)
