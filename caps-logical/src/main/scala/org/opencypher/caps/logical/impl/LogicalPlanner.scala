@@ -81,7 +81,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     model(ref) match {
       case SourceBlock(irGraph: IRExternalGraphNew) =>
         val qualifiedGraphName = irGraph.qualifiedName
-        val graphSource = context.resolver(qualifiedGraphName.namespace.value)
+        val graphSource = context.resolver(irGraph.name)
         producer.planStart(
           LogicalExternalGraph(irGraph.name, qualifiedGraphName, graphSource.schema(qualifiedGraphName.graphName).get),
           context.inputRecordFields)
@@ -347,8 +347,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
         LogicalPatternGraph(name, schema, GraphOfPattern(entities, boundEntities))
 
-      case IRExternalGraphNew(_, _, qualifiedName) =>
-        val graphSource = context.resolver(qualifiedName.namespace.value)
+      case IRExternalGraphNew(name, _, qualifiedName) =>
+        val graphSource = context.resolver(name)
         val schema = graphSource.schema(qualifiedName.graphName) match {
           case None =>
             // This initialises the graph eagerly!!
