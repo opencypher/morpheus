@@ -40,13 +40,7 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
   def testGraph()(implicit schema: Schema = Schema.empty) =
     IRExternalGraphNew("test", schema, testQualifiedGraphName)
 
-  def testGraphSource(schema: Schema = Schema.empty): PropertyGraphDataSourceOld = {
-    val gs = mock[PropertyGraphDataSourceOld]
-    when(gs.schema).thenReturn(Some(schema))
-    gs
-  }
-
-  def testGraphSourceNew(schema: Schema = Schema.empty): PropertyGraphDataSource = {
+  def testGraphSource(schema: Schema = Schema.empty): PropertyGraphDataSource = {
     val gs = mock[PropertyGraphDataSource]
     when(gs.schema(testGraphName)).thenReturn(Some(schema))
     gs
@@ -114,8 +108,7 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
           parameters,
           SemanticState.clean,
           testGraph,
-          _ => testGraphSource(schema),
-          _ => testGraphSourceNew(schema)))
+          _ => testGraphSource(schema)))
     }
 
     def irWithParams(params: (String, CypherValue)*)(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
@@ -125,8 +118,7 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
           params.toMap,
           SemanticState.clean,
           testGraph,
-          _ => testGraphSource(schema),
-          _ => testGraphSourceNew(schema)))
+          _ => testGraphSource(schema)))
     }
   }
 }

@@ -111,7 +111,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, private val graphSo
     val allParameters = queryParameters ++ extractedParameters
 
     logStageProgress("IR ...", newLine = false)
-    val ir = IRBuilder(stmt)(IRBuilderContext.initial(query, allParameters, semState, ambientGraphNew, sourceAt, dataSource))
+    val ir = IRBuilder(stmt)(IRBuilderContext.initial(query, allParameters, semState, ambientGraphNew, dataSource))
     logStageProgress("Done!")
 
     logStageProgress("Logical plan ...", newLine = false)

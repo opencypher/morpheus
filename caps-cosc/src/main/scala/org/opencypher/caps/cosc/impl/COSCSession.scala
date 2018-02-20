@@ -81,7 +81,7 @@ class COSCSession(private val graphSourceHandler: COSCGraphSourceHandler) extend
     val extractedParameters = extractedLiterals.mapValues(v => CypherValue(v))
     val allParameters = parameters ++ extractedParameters
 
-    val ir = time("IR translation")(IRBuilder(stmt)(IRBuilderContext.initial(query, allParameters, semState, ambientGraph, sourceAt, dataSource)))
+    val ir = time("IR translation")(IRBuilder(stmt)(IRBuilderContext.initial(query, allParameters, semState, ambientGraph, dataSource)))
 
     val logicalPlannerContext = LogicalPlannerContext(graph.schema, Set.empty, ir.model.graphs.mapValues(_.namespace).andThen(dataSource), ambientGraph)
     val logicalPlan = time("Logical planning")(logicalPlanner(ir)(logicalPlannerContext))

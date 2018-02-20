@@ -76,7 +76,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
             c.position == clause.position
         }.map(_._2)
           .map { g =>
-            IRNamedGraph(g.source, context.schemaFor(g.source), context.graphsNew(g.source))
+            IRNamedGraph(g.source, context.schemaFor(g.source), context.graphs(g.source))
           }
           .getOrElse(context.ambientGraph)
         put[R, IRBuilderContext](context.withGraph(currentGraph)) >> pure[R, IRGraph](currentGraph)
@@ -298,7 +298,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
                 pure[R, IRGraph](IRExternalGraphNew(graphName, newContext.schemaFor(graphName), qualifiedGraphName))
 
             case ast.GraphAs(ref, alias, _) if alias.isEmpty || alias.contains(ref) =>
-              pure[R, IRGraph](IRNamedGraph(graphName, context.schemaFor(graphName), context.graphsNew(graphName)))
+              pure[R, IRGraph](IRNamedGraph(graphName, context.schemaFor(graphName), context.graphs(graphName)))
 
             case _ =>
               throw NotImplementedException(s"Support for graph aliasing not yet implemented")
@@ -410,7 +410,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
         case (_ref, r: ResultBlock[Expr]) => _ref -> r
       }.get
 
-      val model = QueryModel(r, context.parameters, blocks.reg.toMap - ref, context.graphsNew)
+      val model = QueryModel(r, context.parameters, blocks.reg.toMap - ref, context.graphs)
       val info = QueryInfo(context.queryString)
 
       Some(CypherQuery(info, model))

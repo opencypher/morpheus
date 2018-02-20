@@ -15,12 +15,10 @@
  */
 package org.opencypher.caps.ir.impl
 
-import java.net.URI
-
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
 import org.neo4j.cypher.internal.util.v3_4.{InputPosition, Ref}
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
-import org.opencypher.caps.api.io.{Namespace, PropertyGraphDataSource, PropertyGraphDataSourceOld, QualifiedGraphName}
+import org.opencypher.caps.api.io.{Namespace, PropertyGraphDataSource, QualifiedGraphName}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.CypherType._
 import org.opencypher.caps.api.types._
@@ -38,9 +36,8 @@ final case class IRBuilderContext(
   ambientGraph: IRExternalGraphNew,
   blocks: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
   semanticState: SemanticState,
-  graphsNew: Map[String, QualifiedGraphName],
+  graphs: Map[String, QualifiedGraphName],
   graphList: List[IRGraph],
-  resolver: URI => PropertyGraphDataSourceOld,
   resolverNew: Namespace => PropertyGraphDataSource,
   // TODO: Remove this
   knownTypes: Map[ast.Expression, CypherType] = Map.empty) {
@@ -74,7 +71,7 @@ final case class IRBuilderContext(
   def currentGraph: IRGraph = graphList.head
 
   def schemaFor(graphName: String): Schema = {
-    val qualifiedGraphName = graphsNew(graphName)
+    val qualifiedGraphName = graphs(graphName)
     val dataSource = resolverNew(qualifiedGraphName.namespace)
 
     dataSource.schema(qualifiedGraphName.graphName) match {
@@ -97,7 +94,7 @@ final case class IRBuilderContext(
   }
 
   def withGraphAt(name: String, qualifiedName: QualifiedGraphName) =
-    copy(graphsNew = graphsNew.updated(name, qualifiedName))
+    copy(graphs = graphs.updated(name, qualifiedName))
 
   def withGraph(graph: IRGraph): IRBuilderContext =
     copy(graphList = graph :: graphList)
@@ -110,8 +107,7 @@ object IRBuilderContext {
     parameters: CypherMap,
     semState: SemanticState,
     ambientGraph: IRExternalGraphNew,
-    resolver: URI => PropertyGraphDataSourceOld,
-    resolverNew: Namespace => PropertyGraphDataSource
+    resolver: Namespace => PropertyGraphDataSource
   ): IRBuilderContext = {
     val registry = BlockRegistry.empty[Expr]
     val block = SourceBlock[Expr](ambientGraph)
@@ -125,7 +121,6 @@ object IRBuilderContext {
       semState,
       Map(ambientGraph.name -> ambientGraph.qualifiedName),
       List(ambientGraph),
-      resolver,
-      resolverNew)
+      resolver)
   }
 }

@@ -42,7 +42,7 @@ class LogicalOptimizerTest extends IrTestSuite {
 //  )
 
   def plannerContext(schema: Schema) =
-    LogicalPlannerContext(schema, Set.empty, (_) => testGraphSourceNew(schema), testGraph())
+    LogicalPlannerContext(schema, Set.empty, (_) => testGraphSource(schema), testGraph())
 
   test("push label filter into scan") {
     val animalSchema = schema.withNodePropertyKeys("Animal")()
