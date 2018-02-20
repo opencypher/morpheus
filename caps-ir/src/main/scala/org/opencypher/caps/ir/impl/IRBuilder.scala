@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.{Expression, StringLiteral, Va
 import org.opencypher.caps.api.io.{GraphName, Namespace, QualifiedGraphName}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
+import org.opencypher.caps.impl.io.SessionPropertyGraphDataSource
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block.{SortItem, _}
 import org.opencypher.caps.ir.api.expr._
@@ -290,9 +291,13 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
               val parts = url.url match {
                 case Left(_) =>
                   throw NotImplementedException(s"Support for graph uris by parameter not yet implemented")
-                case Right(StringLiteral(literal)) => literal.split("\\.")
+                case Right(StringLiteral(literal)) => literal.split("\\.").toList
               }
-              val qualifiedGraphName = QualifiedGraphName(Namespace(parts.head), GraphName(parts.tail.reduce(_ + _)))
+              val qualifiedGraphName = parts match {
+                case Nil => throw IllegalArgumentException("qualified graph name or single graph name")
+                case head :: Nil => QualifiedGraphName(SessionPropertyGraphDataSource.Namespace, GraphName(head))
+                case head :: tail => QualifiedGraphName(Namespace.create(head), GraphName(tail.reduce(_ + _)))
+              }
               val newContext = context.withGraphAt(graphName, qualifiedGraphName)
               put[R, IRBuilderContext](newContext) >>
                 pure[R, IRGraph](IRExternalGraphNew(graphName, newContext.schemaFor(graphName), qualifiedGraphName))
