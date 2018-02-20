@@ -35,14 +35,17 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
 
   val testNamespace = Namespace("testNamespace")
   val testGraphName = GraphName("test")
+  val testGraphSchema = Schema.empty
   val testQualifiedGraphName = QualifiedGraphName(testNamespace, testGraphName)
 
-  def testGraph()(implicit schema: Schema = Schema.empty) =
+  def testGraph()(implicit schema: Schema = testGraphSchema) =
     IRExternalGraphNew("test", schema, testQualifiedGraphName)
 
-  def testGraphSource(schema: Schema = Schema.empty): PropertyGraphDataSource = {
+  def testGraphSource(graphsWithSchema: (GraphName, Schema)*): PropertyGraphDataSource = {
     val gs = mock[PropertyGraphDataSource]
-    when(gs.schema(testGraphName)).thenReturn(Some(schema))
+    graphsWithSchema.foreach {
+      case (graphName, schema) => when(gs.schema(graphName)).thenReturn(Some(schema))
+    }
     gs
   }
 
@@ -98,9 +101,9 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
   case class DummyBinds[E](fields: Set[IRField] = Set.empty) extends Binds[E]
 
   implicit class RichString(queryText: String) {
-    def model: QueryModel[Expr] = ir.model
+    def model: QueryModel[Expr] = ir().model
 
-    def ir(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
+    def ir(graphsWithSchema: (GraphName, Schema)*)(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
       val parameters = Map.empty[String, CypherValue]
       IRBuilder(stmt)(
@@ -108,7 +111,7 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
           parameters,
           SemanticState.clean,
           testGraph,
-          _ => testGraphSource(schema)))
+          _ => testGraphSource(graphsWithSchema :+ (testGraphName -> schema): _*)))
     }
 
     def irWithParams(params: (String, CypherValue)*)(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
@@ -118,7 +121,7 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
           params.toMap,
           SemanticState.clean,
           testGraph,
-          _ => testGraphSource(schema)))
+          _ => testGraphSource(testGraphName -> schema)))
     }
   }
 }

@@ -42,7 +42,7 @@ class LogicalOptimizerTest extends IrTestSuite {
 //  )
 
   def plannerContext(schema: Schema) =
-    LogicalPlannerContext(schema, Set.empty, (_) => testGraphSource(schema), testGraph())
+    LogicalPlannerContext(schema, Set.empty, (_) => testGraphSource(testGraphName -> schema), testGraph())
 
   test("push label filter into scan") {
     val animalSchema = schema.withNodePropertyKeys("Animal")()
@@ -135,7 +135,7 @@ class LogicalOptimizerTest extends IrTestSuite {
   private def logicalPlan(query: String, schema: Schema): LogicalOperator = {
     val producer = new LogicalOperatorProducer
     val logicalPlanner = new LogicalPlanner(producer)
-    val ir = query.ir(schema)
+    val ir = query.ir(testGraphName -> schema)
     val logicalPlannerContext = plannerContext(schema)
     val logicalPlan = logicalPlanner(ir)(logicalPlannerContext)
     logicalPlan
