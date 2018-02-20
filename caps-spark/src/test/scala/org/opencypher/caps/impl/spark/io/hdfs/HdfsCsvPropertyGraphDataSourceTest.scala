@@ -13,24 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.spark
+package org.opencypher.caps.impl.spark.io.hdfs
 
 import org.opencypher.caps.api.io.{GraphName, Namespace}
 import org.opencypher.caps.api.value.CAPSNode
 import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.impl.spark.CAPSConverters._
-import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvPropertyGraphDataSource
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.fixture.MiniDFSClusterFixture
 import org.opencypher.caps.test.support.RecordMatchingTestSupport
 
 import scala.collection.Bag
 
-class CAPSSessionHDFSTest extends CAPSTestSuite with MiniDFSClusterFixture with RecordMatchingTestSupport {
+class HdfsCsvPropertyGraphDataSourceTest
+  extends CAPSTestSuite with MiniDFSClusterFixture with RecordMatchingTestSupport {
 
   protected override def dfsTestGraphPath = "/csv/sn"
 
-  test("Load graph via DataSource") {
+  test("Load graph from HDFS via DataSource") {
     val testGraphName = GraphName("sn")
 
     val dataSource = new HdfsCsvPropertyGraphDataSource(
@@ -42,7 +42,7 @@ class CAPSSessionHDFSTest extends CAPSTestSuite with MiniDFSClusterFixture with 
     graph.relationships("rel").asCaps.toDF().collect.toBag should equal(dfsTestGraphRels)
   }
 
-  test("Load graph via Catalog") {
+  test("Load graph from HDFS via Catalog") {
 
     val testNamespace = Namespace("myHDFS")
     val testGraphName = GraphName("sn")

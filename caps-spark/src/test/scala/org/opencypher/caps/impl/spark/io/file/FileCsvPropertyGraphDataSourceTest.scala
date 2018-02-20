@@ -13,34 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.spark
-
-import java.net.URI
+package org.opencypher.caps.impl.spark.io.file
 
 import org.apache.spark.sql.Row
+import org.opencypher.caps.api.io.GraphName
 import org.opencypher.caps.impl.spark.CAPSConverters._
-import org.opencypher.caps.impl.spark.io.file.FileCsvPropertyGraphDataSourceOld
 import org.opencypher.caps.test.CAPSTestSuite
 
 import scala.collection.{Bag, mutable}
 
-class CAPSSessionFileTest extends CAPSTestSuite {
+class FileCsvPropertyGraphDataSourceTest extends CAPSTestSuite {
 
-  private val testGraphPath = getClass.getResource("/csv/sn").getPath
+  private val testRootPath = getClass.getResource("/csv").getPath
 
-  private def fileURI: URI = new URI(s"file+csv://$testGraphPath")
+  test("Load graph from file via DataSource") {
+    val testGraphName = GraphName("sn")
 
-  test("File via URI") {
-    val graph = caps.readFrom(fileURI)
+    val dataSource = new FileCsvPropertyGraphDataSource(rootPath = testRootPath)
+
+    val graph = dataSource.graph(testGraphName)
     graph.nodes("n").asCaps.toDF().collect().toBag should equal(testGraphNodes)
     graph.relationships("rel").asCaps.toDF().collect.toBag should equal(testGraphRels)
   }
 
-  test("File via mount point") {
-    caps.mount(FileCsvPropertyGraphDataSourceOld(fileURI), "/test/graph")
-    val graph = caps.readFrom("/test/graph")
-    graph.nodes("n").asCaps.toDF().collect().toBag should equal(testGraphNodes)
-    graph.relationships("rel").asCaps.toDF().collect.toBag should equal(testGraphRels)
+  ignore("Load graph from file via Catalog") {
+    // TODO: implement me
   }
 
   /**
