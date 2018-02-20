@@ -15,14 +15,11 @@
  */
 package org.opencypher.caps.impl.spark
 
-import java.net.URI
-
-import org.apache.http.client.utils.URIBuilder
-import org.opencypher.caps.api.CAPSSession
+import org.opencypher.caps.api.io.{GraphName, Namespace}
 import org.opencypher.caps.api.value.CAPSNode
 import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.impl.spark.CAPSConverters._
-import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvPropertyGraphDataSourceOld
+import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvPropertyGraphDataSource
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.fixture.MiniDFSClusterFixture
 import org.opencypher.caps.test.support.RecordMatchingTestSupport
@@ -33,28 +30,30 @@ class CAPSSessionHDFSTest extends CAPSTestSuite with MiniDFSClusterFixture with 
 
   protected override def dfsTestGraphPath = "/csv/sn"
 
-  protected override def hdfsURI: URI = new URIBuilder(super.hdfsURI).setScheme("hdfs+csv").build()
+  test("Load graph via DataSource") {
+    val testGraphName = GraphName("sn")
 
-  test("HDFS via URI") {
-    val graph = caps.readFrom(hdfsURI)
+    val dataSource = new HdfsCsvPropertyGraphDataSource(
+      hadoopConfig = clusterConfig,
+      rootPath = "/csv")
+
+    val graph = dataSource.graph(testGraphName)
     graph.nodes("n").asCaps.toDF().collect().toBag should equal(dfsTestGraphNodes)
     graph.relationships("rel").asCaps.toDF().collect.toBag should equal(dfsTestGraphRels)
   }
 
-  test("HDFS via mount point") {
-    caps.mount(
-      HdfsCsvPropertyGraphDataSourceOld(hdfsURI, session.sparkContext.hadoopConfiguration, hdfsURI.getPath),
-      "/test/graph")
+  test("Load graph via Catalog") {
 
-    val graph = caps.readFrom("/test/graph")
-    graph.nodes("n").asCaps.toDF().collect().toBag should equal(dfsTestGraphNodes)
-    graph.relationships("rel").asCaps.toDF().collect.toBag should equal(dfsTestGraphRels)
-  }
+    val testNamespace = Namespace("myHDFS")
+    val testGraphName = GraphName("sn")
 
-  test("HDFS via GRAPH AT") {
-    implicit val capsSession = CAPSSession.builder(session).build
+    val dataSource = new HdfsCsvPropertyGraphDataSource(
+      hadoopConfig = sparkSession.sparkContext.hadoopConfiguration,
+      rootPath = "/csv")
 
-    val nodes = capsSession.cypher(s"FROM GRAPH test AT '$hdfsURI' MATCH (n) RETURN n")
+    caps.register(testNamespace, dataSource)
+
+    val nodes = caps.cypher(s"FROM GRAPH AT '${testNamespace.value}.${testGraphName.value}' MATCH (n) RETURN n")
 
     val stefanNode = CAPSNode(1L, Set("Employee", "German", "Person"), CypherMap("name" -> "Stefan", "luckyNumber" -> 42, "languages" -> List("german", "english")))
     val matsNode = CAPSNode(2L, Set("Employee", "Swede", "Person"), CypherMap("name" -> "Mats", "luckyNumber" -> 23, "languages" -> List("swedish", "english", "german")))
@@ -68,7 +67,7 @@ class CAPSSessionHDFSTest extends CAPSTestSuite with MiniDFSClusterFixture with 
       CypherMap("n" -> maxNode)
     ))
 
-    val edges = capsSession.cypher(s"FROM GRAPH test AT '$hdfsURI' MATCH ()-[r]->() RETURN r")
+    val edges = caps.cypher(s"FROM GRAPH AT '${testNamespace.value}.${testGraphName.value}' MATCH ()-[r]->() RETURN r")
     edges.records.asCaps.compact.toMaps should equal(
       Bag(
         CypherMap("r" -> 10L),

@@ -38,7 +38,7 @@ final case class IRBuilderContext(
   semanticState: SemanticState,
   graphs: Map[String, QualifiedGraphName],
   graphList: List[IRGraph],
-  resolverNew: Namespace => PropertyGraphDataSource,
+  resolver: Namespace => PropertyGraphDataSource,
   // TODO: Remove this
   knownTypes: Map[ast.Expression, CypherType] = Map.empty) {
   self =>
@@ -72,7 +72,7 @@ final case class IRBuilderContext(
 
   def schemaFor(graphName: String): Schema = {
     val qualifiedGraphName = graphs(graphName)
-    val dataSource = resolverNew(qualifiedGraphName.namespace)
+    val dataSource = resolver(qualifiedGraphName.namespace)
 
     dataSource.schema(qualifiedGraphName.graphName) match {
       case None =>

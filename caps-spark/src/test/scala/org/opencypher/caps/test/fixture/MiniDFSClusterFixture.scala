@@ -17,6 +17,7 @@ package org.opencypher.caps.test.fixture
 
 import java.net.URI
 
+import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hdfs.MiniDFSCluster
 import org.apache.spark.sql.{Row, SparkSession}
@@ -71,12 +72,11 @@ trait MiniDFSClusterFixture extends BaseTestFixture {
 
   protected val cluster: MiniDFSCluster = clusterForPath(dfsTestGraphPath)
 
-  protected def hdfsURI: URI = {
-    hdfsURI(dfsTestGraphPath)
-  }
+  protected def hdfsURI: URI = URI.create(s"hdfs://${cluster.getNameNode.getHostAndPort}")
 
-  protected def hdfsURI(path: String): URI = {
-    URI.create(s"hdfs://${cluster.getNameNode.getHostAndPort}$path")
+  protected def clusterConfig: Configuration = {
+    sparkSession.sparkContext.hadoopConfiguration.set("fs.default.name", hdfsURI.toString)
+    sparkSession.sparkContext.hadoopConfiguration
   }
 
   abstract override def afterAll: Unit = {
