@@ -15,6 +15,6 @@
  */
 package org.opencypher.caps.impl.spark.io
 
-class CAPSGraphSourceFactoryCompanion(val defaultScheme: String, additionalSchemes: String*) {
-  val supportedSchemes: Set[String]= additionalSchemes.toSet + defaultScheme
-}
+import org.opencypher.caps.api.io.PropertyGraphDataSource
+
+trait CAPSPropertyGraphDataSource extends PropertyGraphDataSource

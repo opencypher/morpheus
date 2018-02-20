@@ -5,8 +5,9 @@ import java.io.File
 import org.apache.hadoop.conf.Configuration
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.graph.PropertyGraph
-import org.opencypher.caps.api.io.{GraphName, PropertyGraphDataSource}
+import org.opencypher.caps.api.io.GraphName
 import org.opencypher.caps.api.schema.Schema
+import org.opencypher.caps.impl.spark.io.CAPSPropertyGraphDataSource
 
 /**
   * Data source for loading graphs from HDFS.
@@ -16,7 +17,7 @@ import org.opencypher.caps.api.schema.Schema
   */
 class HdfsCsvPropertyGraphDataSource(
   hadoopConfig: Configuration,
-  rootPath: String)(implicit val session: CAPSSession) extends PropertyGraphDataSource {
+  rootPath: String)(implicit val session: CAPSSession) extends CAPSPropertyGraphDataSource {
 
   override def graph(name: GraphName): PropertyGraph =
     CsvGraphLoader(s"$rootPath${File.separator}$name", hadoopConfig).load
