@@ -39,7 +39,7 @@ private[caps] abstract class CAPSPhysicalOperator
   protected def resolve(qualifiedGraphName: QualifiedGraphName)(implicit context: CAPSRuntimeContext): CAPSGraph = {
     context.resolve(qualifiedGraphName).map(_.asCaps).getOrElse(throw IllegalArgumentException(s"a graph at $qualifiedGraphName"))
   }
-  
+
   override def args: Iterator[Any] = super.args.flatMap {
     case RecordHeader(_) | Some(RecordHeader(_)) => None
     case other                                   => Some(other)
