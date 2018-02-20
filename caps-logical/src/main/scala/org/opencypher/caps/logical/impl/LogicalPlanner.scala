@@ -311,7 +311,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         val innerPlan = this (ex.ir)
         producer.planExistsSubQuery(ex, in, innerPlan)
 
-      case ands @ Ands(inner) =>
+      case ands@Ands(inner) =>
         val plannedInner = inner.foldLeft(in)((op, expr) => planInnerExpr(expr, op))
         producer.projectExpr(ands, plannedInner)
 
@@ -347,16 +347,17 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
         LogicalPatternGraph(name, schema, GraphOfPattern(entities, boundEntities))
 
-      case IRExternalGraphNew(name, _, qualifiedName) =>
-        val graphSource = context.resolver(name)
-        val schema = graphSource.schema(qualifiedName.graphName) match {
+      case g: IRQualifiedGraph =>
+        val graphSource = context.resolver(g.name)
+        // TODO can we use the schema attached to the IRGraph?
+        val schema = graphSource.schema(g.qualifiedName.graphName) match {
           case None =>
             // This initialises the graph eagerly!!
             // TODO: We probably want to save the graph reference somewhere
-            graphSource.graph(qualifiedName.graphName).schema
+            graphSource.graph(g.qualifiedName.graphName).schema
           case Some(s) => s
         }
-        LogicalExternalGraph(graph.name, qualifiedName, schema)
+        LogicalExternalGraph(graph.name, g.qualifiedName, schema)
     }
   }
 
