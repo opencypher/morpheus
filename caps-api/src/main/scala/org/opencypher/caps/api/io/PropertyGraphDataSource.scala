@@ -18,12 +18,25 @@ trait PropertyGraphDataSource {
 
 }
 
+object GraphName {
+  def create(graphName: String) = GraphName(graphName)
+}
+
 case class GraphName(value: String) extends AnyVal {
   override def toString: String = value
 }
 
+object Namespace {
+  def create(namespace: String) = Namespace(namespace)
+}
+
 case class Namespace(value: String) extends AnyVal {
   override def toString: String = value
+}
+
+object QualifiedGraphName {
+  def create(namespace: String, graphName: String) =
+    QualifiedGraphName(Namespace.create(namespace), GraphName.create(graphName))
 }
 
 case class QualifiedGraphName(namespace: Namespace, graphName: GraphName) {

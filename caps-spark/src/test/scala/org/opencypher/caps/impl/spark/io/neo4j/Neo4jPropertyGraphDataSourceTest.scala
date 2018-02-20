@@ -13,42 +13,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.spark
+package org.opencypher.caps.impl.spark.io.neo4j
 
-import java.net.{URI, URLEncoder}
-
+import org.opencypher.caps.api.io.{GraphName, Namespace}
 import org.opencypher.caps.impl.spark.CAPSConverters._
-import org.opencypher.caps.impl.spark.io.neo4j.Neo4JPropertyGraphDataSourceOld
 import org.opencypher.caps.test.BaseTestSuite
 import org.opencypher.caps.test.fixture.{CAPSSessionFixture, Neo4jServerFixture, SparkSessionFixture, TeamDataFixture}
 import org.scalatest.Matchers
 
-class CAPSSessionNeo4jTest
-    extends BaseTestSuite
+class Neo4jPropertyGraphDataSourceTest
+  extends BaseTestSuite
     with SparkSessionFixture
     with CAPSSessionFixture
     with Neo4jServerFixture
     with TeamDataFixture
     with Matchers {
 
-  test("Neo4j via URI") {
-    val nodeQuery = URLEncoder.encode("MATCH (n) RETURN n", "UTF-8")
-    val relQuery = URLEncoder.encode("MATCH ()-[r]->() RETURN r", "UTF-8")
-    val uri = URI.create(s"$neo4jHost?$nodeQuery;$relQuery")
+  test("Load graph from Neo4j via DataSource") {
+    val dataSource = new Neo4jPropertyGraphDataSource(neo4jConfig)
 
-    val graph = caps.readFrom(uri).asCaps
-
+    val graph = dataSource.graph(GraphName.create("foo")).asCaps
     graph.nodes("n").toDF().collect().toBag should equal(teamDataGraphNodes)
     graph.relationships("rel").toDF().collect().toBag should equal(teamDataGraphRels)
   }
 
-  test("Neo4j via mount point") {
-    caps.mount(
-      Neo4JPropertyGraphDataSourceOld(neo4jConfig, Some("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r")),
-      "/neo4j1")
+  ignore("Load graph from Neo4j via Catalog") {
+    val testNamespace = Namespace("myNeo4j")
 
-    val graph = caps.readFrom("/neo4j1").asCaps
-    graph.nodes("n").toDF().collect().toBag should equal(teamDataGraphNodes)
-    graph.relationships("rel").toDF().collect().toBag should equal(teamDataGraphRels)
+    val dataSource = new Neo4jPropertyGraphDataSource(neo4jConfig)
+
+    caps.register(testNamespace, dataSource)
+
+    val nodes = caps.cypher(s"FROM GRAPH AT '$testNamespace' MATCH (n) RETURN n")
+    // TODO: implement verification
+    val edges = caps.cypher(s"FROM GRAPH AT '$testNamespace' MATCH ()-[r]->() RETURN r")
+    // TODO: implement verification
   }
 }

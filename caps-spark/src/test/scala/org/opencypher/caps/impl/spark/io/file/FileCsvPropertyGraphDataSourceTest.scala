@@ -16,7 +16,7 @@
 package org.opencypher.caps.impl.spark.io.file
 
 import org.apache.spark.sql.Row
-import org.opencypher.caps.api.io.GraphName
+import org.opencypher.caps.api.io.{GraphName, Namespace}
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.test.CAPSTestSuite
 
@@ -37,7 +37,16 @@ class FileCsvPropertyGraphDataSourceTest extends CAPSTestSuite {
   }
 
   ignore("Load graph from file via Catalog") {
-    // TODO: implement me
+    val testNamespace = Namespace("myFS")
+    val testGraphName = GraphName("sn")
+
+    val dataSource = new FileCsvPropertyGraphDataSource(rootPath = testRootPath)
+    caps.register(testNamespace, dataSource)
+
+    val nodes = caps.cypher(s"FROM GRAPH AT '$testNamespace.$testGraphName' MATCH (n) RETURN n")
+    // TODO: implement verification
+    val edges = caps.cypher(s"FROM GRAPH AT '$testNamespace.$testGraphName' MATCH ()-[r]->() RETURN r")
+    // TODO: implement verification
   }
 
   /**
