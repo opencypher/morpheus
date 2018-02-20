@@ -17,6 +17,7 @@ package org.opencypher.caps.impl.spark.io.hdfs
 
 import java.net.URI
 
+import org.apache.http.client.utils.URIBuilder
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.impl.spark.CAPSGraph
 import org.opencypher.caps.test.CAPSTestSuite
@@ -29,7 +30,9 @@ class CsvGraphLoaderAcceptanceTest extends CAPSTestSuite
 
   protected override def dfsTestGraphPath = "/csv/sn"
 
-  test("load csv graph") {
+  override protected def hdfsURI: URI = new URIBuilder(super.hdfsURI).setPath(dfsTestGraphPath).build()
+
+  test("load csv graph from HDFS") {
     val loader = CsvGraphLoader(hdfsURI.toString, session.sparkContext.hadoopConfiguration)
 
     val graph: CAPSGraph = loader.load.asCaps
@@ -46,4 +49,5 @@ class CsvGraphLoaderAcceptanceTest extends CAPSTestSuite
     graph.nodes("n").toDF().collect().toBag should equal(dfsTestGraphNodes)
     graph.relationships("rel").toDF().collect.toBag should equal(dfsTestGraphRels)
   }
+
 }

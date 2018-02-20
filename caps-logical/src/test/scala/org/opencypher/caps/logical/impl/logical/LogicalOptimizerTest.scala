@@ -28,7 +28,7 @@ import scala.language.implicitConversions
 class LogicalOptimizerTest extends IrTestSuite {
 
   val emptySqm = SolvedQueryModel.empty
-  val logicalGraph = LogicalExternalGraph(testGraph.name, null, Schema.empty)
+  val logicalGraph = LogicalExternalGraph(testGraph.name, testQualifiedGraphName, Schema.empty)
   val schema = Schema.empty
 
 //  //Helper to create nicer expected results with `asCode`
@@ -46,7 +46,7 @@ class LogicalOptimizerTest extends IrTestSuite {
 
   test("push label filter into scan") {
     val animalSchema = schema.withNodePropertyKeys("Animal")()
-    val animalGraph = LogicalExternalGraph(testGraph.name, null, animalSchema)
+    val animalGraph = LogicalExternalGraph(testGraph.name, testQualifiedGraphName, animalSchema)
     val query = """
                   | MATCH (a:Animal)
                   | RETURN a""".stripMargin
@@ -101,7 +101,7 @@ class LogicalOptimizerTest extends IrTestSuite {
                   | MATCH (a:Animal:Astronaut)
                   | RETURN a""".stripMargin
     val schema = Schema.empty.withNodePropertyKeys("Animal")().withNodePropertyKeys("Astronaut")()
-    val logicalGraph = LogicalExternalGraph(testGraph.name, null, schema)
+    val logicalGraph = LogicalExternalGraph(testGraph.name, testQualifiedGraphName, schema)
 
     val plan = logicalPlan(query, schema)
     val optimizedLogicalPlan = LogicalOptimizer(plan)(plannerContext(schema))
