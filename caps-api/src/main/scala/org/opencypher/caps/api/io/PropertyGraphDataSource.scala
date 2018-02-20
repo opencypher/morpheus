@@ -13,13 +13,18 @@ trait PropertyGraphDataSource {
 
   def delete(name: GraphName): Unit
 
+  // TODO: necessary?
   def graphNames: Set[GraphName]
 
 }
 
-case class GraphName(value: String) extends AnyVal
+case class GraphName(value: String) extends AnyVal {
+  override def toString: String = value
+}
 
-case class Namespace(value: String) extends AnyVal
+case class Namespace(value: String) extends AnyVal {
+  override def toString: String = value
+}
 
 case class QualifiedGraphName(namespace: Namespace, graphName: GraphName) {
   override def toString: String = s"$namespace.$graphName"

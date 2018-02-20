@@ -53,7 +53,7 @@ class CAPSSessionHDFSTest extends CAPSTestSuite with MiniDFSClusterFixture with 
 
     caps.register(testNamespace, dataSource)
 
-    val nodes = caps.cypher(s"FROM GRAPH AT '${testNamespace.value}.${testGraphName.value}' MATCH (n) RETURN n")
+    val nodes = caps.cypher(s"FROM GRAPH AT '$testNamespace.$testGraphName' MATCH (n) RETURN n")
 
     val stefanNode = CAPSNode(1L, Set("Employee", "German", "Person"), CypherMap("name" -> "Stefan", "luckyNumber" -> 42, "languages" -> List("german", "english")))
     val matsNode = CAPSNode(2L, Set("Employee", "Swede", "Person"), CypherMap("name" -> "Mats", "luckyNumber" -> 23, "languages" -> List("swedish", "english", "german")))
@@ -67,7 +67,7 @@ class CAPSSessionHDFSTest extends CAPSTestSuite with MiniDFSClusterFixture with 
       CypherMap("n" -> maxNode)
     ))
 
-    val edges = caps.cypher(s"FROM GRAPH AT '${testNamespace.value}.${testGraphName.value}' MATCH ()-[r]->() RETURN r")
+    val edges = caps.cypher(s"FROM GRAPH AT '$testNamespace.$testGraphName' MATCH ()-[r]->() RETURN r")
     edges.records.asCaps.compact.toMaps should equal(
       Bag(
         CypherMap("r" -> 10L),
