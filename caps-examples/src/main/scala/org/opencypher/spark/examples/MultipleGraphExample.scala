@@ -16,6 +16,8 @@
 package org.opencypher.spark.examples
 
 import org.opencypher.caps.api.CAPSSession
+import org.opencypher.caps.api.io.GraphName
+import org.opencypher.caps.impl.spark.io.file.FileCsvPropertyGraphDataSource
 
 /**
   * Demonstrates multiple graph capabilities by loading a social network from case class objects and a purchase network
@@ -30,9 +32,9 @@ object MultipleGraphExample extends App {
   val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
 
   // 3) Load purchase network data via local CSV + Schema files
-  val csvFolder = getClass.getResource("/csv/prod/").getFile
-  // Note: if files were stored in HDFS, change the URI scheme to `hdfs+csv` to load from HDFS instead
-  val purchaseNetwork = session.readFrom(s"file+csv://$csvFolder")
+  val csvFolder = getClass.getResource("/csv").getFile
+  // Note: if files were stored in HDFS, change the data source to HdfsCsvPropertyGraphDataSource
+  val purchaseNetwork = new FileCsvPropertyGraphDataSource(rootPath = csvFolder).graph(GraphName.create("prod"))
 
   // 4) Build union of social and purchase network (note, that there are no relationships connecting nodes from both graphs)
   val disconnectedGraph = socialNetwork union purchaseNetwork

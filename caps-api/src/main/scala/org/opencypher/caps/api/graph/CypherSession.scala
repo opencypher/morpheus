@@ -15,8 +15,6 @@
  */
 package org.opencypher.caps.api.graph
 
-import java.net.URI
-
 import org.opencypher.caps.api.io._
 import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.value.CypherValue._
@@ -65,60 +63,44 @@ trait CypherSession {
     */
   private[graph] def cypherOnGraph(graph: PropertyGraph, query: String, parameters: CypherMap = CypherMap.empty, drivingTable: Option[CypherRecords]): CypherResult
 
-  /**
-    * Reads a graph from the argument URI.
-    *
-    * @param uri URI locating a graph
-    * @return graph located at the URI
-    */
-  def readFrom(uri: URI): PropertyGraph
-
-  /**
-    * Reads a graph from an argument string that represents a valid URI.
-    *
-    * @param uri URI string locating a graph
-    * @return graph located at the URI
-    */
-  def readFrom(uri: String): PropertyGraph = readFrom(URI.create(uri))
-
   def readFrom(qualifiedGraphName: QualifiedGraphName): PropertyGraph =
     dataSource(qualifiedGraphName.namespace).graph(qualifiedGraphName.graphName)
 
   /**
-    * Mounts the given graph source to session-local storage under the given path. The specified graph will be
-    * accessible under the session-local URI scheme, e.g. {{{session://$path}}}.
-    *
-    * @param source graph source to register
-    * @param path   path at which this graph can be accessed via {{{session://$path}}}
-    */
-  def mount(source: PropertyGraphDataSourceOld, path: String): Unit
-
-  // TODO update docs
-  /**
-    * Mounts the given property graph to session-local storage under the given path. The specified graph will be
-    * accessible under the session-local URI scheme, e.g. {{{session://$path}}}.
+    * Mounts the given property graph to session-local storage under the given name. The specified graph will be
+    * accessible under the session-local naming scheme, e.g. {{{session.$graphName}}}.
     *
     * @param graph     property graph to register
-    * @param graphName path at which this graph can be accessed via {{{session.$path}}}
+    * @param graphName name of the graph within the session {{{session.graphName}}}
     */
-  def mount(graphName: String, graph: PropertyGraph): Unit
-
-  // TODO: document
   def mount(graphName: GraphName, graph: PropertyGraph): QualifiedGraphName = {
     dataSourceMapping(SessionNamespace).store(graphName, graph)
     QualifiedGraphName(SessionNamespace, graphName)
   }
 
-  // TODO: reintroduce "mount(source: String, path: String): Unit" with source lookup via URI scheme
   /**
-    * Writes the given graph to the location using the format specified by the URI.
+    * Unmounts the property graph associated with the given name from the session-local storage.
     *
-    * @param graph graph to write
-    * @param uri   graph URI indicating location and format to write the graph to
-    * @param mode  persist mode which determines what happens if the location is occupied
+    * @param graphName name of the graph within the session {{{session.graphName}}}
+    */
+  def unmount(graphName: GraphName): Unit =
+    dataSourceMapping(SessionNamespace).delete(graphName)
+
+  /**
+    * Unmounts all property graphs from the session-local storage.
+    */
+  def unmountAll(): Unit =
+    dataSourceMapping(SessionNamespace).graphNames.foreach(unmount)
+
+  /**
+    * Writes the given graph to the data source using the specified qualified graph name.
+    *
+    * @param qualifiedGraphName qualified graph name
+    * @param graph              graph to write
     */
   // TODO: Error handling via Return Type (Success, Failed) or just throw exception?
-  def write(graph: PropertyGraph, uri: String, mode: PersistMode = CreateOrFail): Unit
+  def write(qualifiedGraphName: QualifiedGraphName, graph: PropertyGraph): Unit =
+    dataSource(qualifiedGraphName.namespace).store(qualifiedGraphName.graphName, graph)
 
 }
 

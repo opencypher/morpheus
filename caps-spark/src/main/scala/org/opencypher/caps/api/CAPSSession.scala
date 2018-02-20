@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.api
 
-import java.util.{ServiceLoader, UUID}
+import java.util.UUID
 
 import org.apache.spark.SparkConf
 import org.apache.spark.serializer.KryoSerializer
@@ -25,11 +25,9 @@ import org.opencypher.caps.api.schema._
 import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
-import org.opencypher.caps.impl.spark.io.{CAPSGraphSourceHandler, CAPSPropertyGraphDataSourceFactory}
 import org.opencypher.caps.impl.spark.{CypherKryoRegistrator, _}
 import org.opencypher.caps.impl.table.ColumnName
 
-import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe._
 
 trait CAPSSession extends CypherSession {
@@ -80,6 +78,14 @@ trait CAPSSession extends CypherSession {
 object CAPSSession extends Serializable {
 
   /**
+    * Creates a new [[CAPSSession]] based on the given [[SparkSession]].
+    *
+    * @param session Spark session
+    * @return CAPS session
+    */
+  def create(implicit session: SparkSession): CAPSSession = new CAPSSessionImpl(session)
+
+  /**
     * Creates a new CAPSSession that wraps a local Spark session with CAPS default parameters.
     */
   def local(settings: (String, String)*): CAPSSession = {
@@ -103,6 +109,22 @@ object CAPSSession extends Serializable {
 
     create(session)
   }
+
+  /**
+    * Returns the DataFrame column name for the given Cypher RETURN item.
+    *
+    * {{{
+    * import org.opencypher.caps.api.CAPSSession._
+    * // ...
+    * val results = socialNetwork.cypher("MATCH (a) RETURN a.name")
+    * val dataFrame = results.records.asDF
+    * val projection = dataFrame.select(columnFor("a.name"))
+    * }}}
+    *
+    * @param returnItem Cypher RETURN item (e.g. "a.name")
+    * @return DataFrame column name for given RETURN item
+    */
+  def columnFor(returnItem: String): String = ColumnName.from(returnItem)
 
   /**
     * Import this into scope in order to use:
@@ -141,45 +163,5 @@ object CAPSSession extends Serializable {
       case caps: CAPSRecords => caps.toCypherMaps
       case _ => throw UnsupportedOperationException(s"can only handle CAPS records, got $records")
     }
-
   }
-
-  /**
-    * Returns the DataFrame column name for the given Cypher RETURN item.
-    *
-    * {{{
-    * import org.opencypher.caps.api.CAPSSession._
-    * // ...
-    * val results = socialNetwork.cypher("MATCH (a) RETURN a.name")
-    * val dataFrame = results.records.asDF
-    * val projection = dataFrame.select(columnFor("a.name"))
-    * }}}
-    *
-    * @param returnItem Cypher RETURN item (e.g. "a.name")
-    * @return DataFrame column name for given RETURN item
-    */
-  def columnFor(returnItem: String): String = ColumnName.from(returnItem)
-
-  def create(implicit session: SparkSession): CAPSSession = Builder(session).build
-
-  def builder(sparkSession: SparkSession): Builder = Builder(sparkSession)
-
-  case class Builder(
-    session: SparkSession,
-    private val graphSourceFactories: Set[CAPSPropertyGraphDataSourceFactory] = Set.empty) {
-
-    def withGraphSourceFactory(factory: CAPSPropertyGraphDataSourceFactory): Builder =
-      copy(graphSourceFactories = graphSourceFactories + factory)
-
-    def build: CAPSSession = {
-      val discoveredFactories = ServiceLoader.load(classOf[CAPSPropertyGraphDataSourceFactory]).asScala.toSet
-      val allFactories = graphSourceFactories ++ discoveredFactories
-
-      new CAPSSessionImpl(
-        session,
-        CAPSGraphSourceHandler(allFactories)
-      )
-    }
-  }
-
 }

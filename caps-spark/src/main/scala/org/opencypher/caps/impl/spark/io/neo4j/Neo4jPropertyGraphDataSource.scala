@@ -6,10 +6,15 @@ import org.opencypher.caps.api.io.{GraphName, PropertyGraphDataSource}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.impl.spark.io.neo4j.external.Neo4jConfig
 
-class Neo4jPropertyGraphDataSource(config: Neo4jConfig)(implicit val session: CAPSSession)
+class Neo4jPropertyGraphDataSource(
+  config: Neo4jConfig,
+  queries: Option[(String, String)] = None)(implicit val session: CAPSSession)
   extends PropertyGraphDataSource {
 
-  override def graph(name: GraphName): PropertyGraph = Neo4jGraphLoader.fromNeo4j(config)
+  override def graph(name: GraphName): PropertyGraph = queries match {
+    case Some((nodeQuery, relQuery)) => Neo4jGraphLoader.fromNeo4j(config, nodeQuery, relQuery)
+    case None => Neo4jGraphLoader.fromNeo4j(config) // load the whole graph
+  }
 
   override def schema(name: GraphName): Option[Schema] = None
 

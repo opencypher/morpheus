@@ -15,17 +15,15 @@
  */
 package org.opencypher.caps.cosc.impl
 
-import java.net.URI
 import java.util.UUID
 
 import org.opencypher.caps.api.configuration.CoraConfiguration.PrintFlatPlan
 import org.opencypher.caps.api.graph.{CypherResult, CypherSession, PropertyGraph}
-import org.opencypher.caps.api.io.{GraphName, PersistMode, PropertyGraphDataSourceOld, QualifiedGraphName}
+import org.opencypher.caps.api.io.{GraphName, QualifiedGraphName}
 import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.cosc.impl.COSCConverters._
-import org.opencypher.caps.cosc.impl.datasource.{COSCGraphSourceHandler, COSCSessionPropertyGraphDataSourceFactory}
 import org.opencypher.caps.cosc.impl.planning.{COSCPhysicalOperatorProducer, COSCPhysicalPlannerContext}
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
 import org.opencypher.caps.impl.physical.PhysicalPlanner
@@ -37,10 +35,10 @@ import org.opencypher.caps.logical.api.configuration.LogicalConfiguration.PrintL
 import org.opencypher.caps.logical.impl.{LogicalOperatorProducer, LogicalOptimizer, LogicalPlanner, LogicalPlannerContext}
 
 object COSCSession {
-  def create: COSCSession = new COSCSession(COSCGraphSourceHandler(COSCSessionPropertyGraphDataSourceFactory(), Set.empty))
+  def create: COSCSession = new COSCSession()
 }
 
-class COSCSession(private val graphSourceHandler: COSCGraphSourceHandler) extends CypherSession {
+class COSCSession() extends CypherSession {
 
   self =>
 
@@ -50,18 +48,6 @@ class COSCSession(private val graphSourceHandler: COSCGraphSourceHandler) extend
   private val flatPlanner = new FlatPlanner()
   private val physicalPlanner = new PhysicalPlanner(new COSCPhysicalOperatorProducer()(this))
   private val parser = CypherParser
-
-  def sourceAt(uri: URI): PropertyGraphDataSourceOld =
-    graphSourceHandler.sourceAt(uri)(this)
-
-  def optGraphAt(uri: URI): Option[COSCGraph] =
-    graphSourceHandler.optSourceAt(uri)(this).map(_.graph) match {
-      case Some(graph) => Some(graph.asCosc)
-      case None => None
-    }
-
-  def optGraphAtNew(qualifiedGraphName: QualifiedGraphName): Option[COSCGraph] =
-    Some(dataSource(qualifiedGraphName.namespace).graph(qualifiedGraphName.graphName).asCosc)
 
   /**
     * Executes a Cypher query in this session on the current ambient graph.
@@ -97,48 +83,15 @@ class COSCSession(private val graphSourceHandler: COSCGraphSourceHandler) extend
     val coscPlannerContext = COSCPhysicalPlannerContext(this, readFrom, COSCRecords.unit()(self), allParameters)
     val coscPlan = time("Physical planning")(physicalPlanner.process(flatPlan)(coscPlannerContext))
 
-    time("Query execution")(COSCResultBuilder.from(logicalPlan, flatPlan, coscPlan)(COSCRuntimeContext(coscPlannerContext.parameters, optGraphAtNew)))
+    time("Query execution")(COSCResultBuilder.from(logicalPlan, flatPlan, coscPlan)(COSCRuntimeContext(coscPlannerContext.parameters, graphAt)))
   }
 
-  /**
-    * Reads a graph from the argument URI.
-    *
-    * @param uri URI locating a graph
-    * @return graph located at the URI
-    */
-  override def readFrom(uri: URI): PropertyGraph =
-    graphSourceHandler.sourceAt(uri)(this).graph
-
-  /**
-    * Mounts the given graph source to session-local storage under the given path. The specified graph will be
-    * accessible under the session-local URI scheme, e.g. {{{session://$path}}}.
-    *
-    * @param source graph source to register
-    * @param path   path at which this graph can be accessed via {{{session://$path}}}
-    */
-  override def mount(source: PropertyGraphDataSourceOld, path: String): Unit = ???
-
-  /**
-    * Writes the given graph to the location using the format specified by the URI.
-    *
-    * @param graph graph to write
-    * @param uri   graph URI indicating location and format to write the graph to
-    * @param mode  persist mode which determines what happens if the location is occupied
-    */
-  override def write(graph: PropertyGraph, uri: String, mode: PersistMode): Unit = ???
+  private def graphAt(qualifiedGraphName: QualifiedGraphName): Option[COSCGraph] =
+    Some(dataSource(qualifiedGraphName.namespace).graph(qualifiedGraphName.graphName).asCosc)
 
   private def mountAmbientGraph(ambient: PropertyGraph): IRExternalGraphNew = {
     val graphName = GraphName(UUID.randomUUID().toString)
     val qualifiedGraphName = mount(graphName, ambient)
     IRExternalGraphNew(graphName.value, ambient.schema, qualifiedGraphName)
   }
-
-  /**
-    * Mounts the given property graph to session-local storage under the given path. The specified graph will be
-    * accessible under the session-local URI scheme, e.g. {{{session://$path}}}.
-    *
-    * @param graph property graph to register
-    * @param path  path at which this graph can be accessed via {{{session://$path}}}
-    */
-  override def mount(path: String, graph: PropertyGraph): Unit = ???
 }
