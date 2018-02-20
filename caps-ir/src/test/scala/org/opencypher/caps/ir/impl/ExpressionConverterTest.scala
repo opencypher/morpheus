@@ -20,7 +20,7 @@ import java.net.URI
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
 import org.neo4j.cypher.internal.util.v3_4.{Ref, symbols}
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
-import org.opencypher.caps.api.io.PropertyGraphDataSourceOld
+import org.opencypher.caps.api.io._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue.CypherMap
@@ -220,7 +220,9 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport wit
     CypherMap.empty,
     SemanticState.clean,
     IRExternalGraph("", Schema.empty, URI.create("")),
-    (resolver) => mock[PropertyGraphDataSourceOld]
+    IRExternalGraphNew("", Schema.empty, QualifiedGraphName(Namespace(""), GraphName(""))),
+    _ => mock[PropertyGraphDataSourceOld],
+    _ => mock[PropertyGraphDataSource]
   )
   private def convert(e: ast.Expression): Expr =
     new ExpressionConverter(new PatternConverter())(testContext).convert(e)(testTypes)

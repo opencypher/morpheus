@@ -15,8 +15,7 @@
  */
 package org.opencypher.caps.cosc.impl.planning
 
-import java.net.URI
-
+import org.opencypher.caps.api.io.QualifiedGraphName
 import org.opencypher.caps.api.physical.PhysicalOperator
 import org.opencypher.caps.cosc.impl.COSCConverters._
 import org.opencypher.caps.cosc.impl.{COSCGraph, COSCPhysicalResult, COSCRecords, COSCRuntimeContext}
@@ -28,8 +27,8 @@ abstract class COSCOperator extends AbstractTreeNode[COSCOperator]
 
   def execute(implicit context: COSCRuntimeContext): COSCPhysicalResult
 
-  protected def resolve(uri: URI)(implicit context: COSCRuntimeContext): COSCGraph = {
-    context.resolve(uri).map(_.asCosc).getOrElse(throw IllegalArgumentException(s"a graph at $uri"))
+  protected def resolve(qualifiedGraphName: QualifiedGraphName)(implicit context: COSCRuntimeContext): COSCGraph = {
+    context.resolve(qualifiedGraphName).map(_.asCosc).getOrElse(throw IllegalArgumentException(s"a graph at $qualifiedGraphName"))
   }
 }
 

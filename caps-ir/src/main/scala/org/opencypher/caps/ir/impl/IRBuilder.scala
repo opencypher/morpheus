@@ -22,10 +22,9 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, StringLiteral, Variable, Pattern => AstPattern}
-import org.opencypher.caps.impl.exception.{IllegalArgumentException, IllegalStateException}
+import org.opencypher.caps.api.io.{GraphName, Namespace, QualifiedGraphName}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
-import org.opencypher.caps.impl.util.parsePathOrURI
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block.{SortItem, _}
 import org.opencypher.caps.ir.api.expr._
@@ -287,14 +286,16 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
               }
 
             case ast.GraphAtAs(url, _, _) =>
-              val graphURI = url.url match {
+
+              val parts = url.url match {
                 case Left(_) =>
                   throw NotImplementedException(s"Support for graph uris by parameter not yet implemented")
-                case Right(StringLiteral(literal)) => parsePathOrURI(literal)
+                case Right(StringLiteral(literal)) => literal.split("\\.")
               }
-              val newContext = context.withGraphAt(graphName, graphURI)
+              val qualifiedGraphName = QualifiedGraphName(Namespace(parts.head), GraphName(parts.tail.reduce(_ + _)))
+              val newContext = context.withGraphAt(graphName, qualifiedGraphName)
               put[R, IRBuilderContext](newContext) >>
-                pure[R, IRGraph](IRExternalGraph(graphName, newContext.schemaFor(graphName), graphURI))
+                pure[R, IRGraph](IRExternalGraphNew(graphName, newContext.schemaFor(graphName), qualifiedGraphName))
 
             case ast.GraphAs(ref, alias, _) if alias.isEmpty || alias.contains(ref) =>
               pure[R, IRGraph](IRNamedGraph(graphName, context.schemaFor(graphName)))
@@ -409,7 +410,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
         case (_ref, r: ResultBlock[Expr]) => _ref -> r
       }.get
 
-      val model = QueryModel(r, context.parameters, blocks.reg.toMap - ref, context.graphs)
+      val model = QueryModel(r, context.parameters, blocks.reg.toMap - ref, context.graphsNew)
       val info = QueryInfo(context.queryString)
 
       Some(CypherQuery(info, model))

@@ -27,5 +27,5 @@ case class Start(records: COSCRecords, graph: LogicalExternalGraph) extends Leaf
   override val header: RecordHeader = records.header
 
   override def execute(implicit context: COSCRuntimeContext): COSCPhysicalResult =
-    impl.COSCPhysicalResult(records, Map(graph.name -> resolve(graph.uri)))
+    impl.COSCPhysicalResult(records, Map(graph.name -> resolve(graph.qualifiedGraphName)))
 }

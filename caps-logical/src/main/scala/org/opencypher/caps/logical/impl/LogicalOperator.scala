@@ -15,8 +15,7 @@
  */
 package org.opencypher.caps.logical.impl
 
-import java.net.URI
-
+import org.opencypher.caps.api.io.QualifiedGraphName
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.CTNode
 import org.opencypher.caps.ir.api.Label
@@ -47,8 +46,8 @@ trait LogicalGraph {
   protected def args: String = ""
 }
 
-final case class LogicalExternalGraph(name: String, uri: URI, schema: Schema) extends LogicalGraph {
-  override protected def args: String = uri.toString
+final case class LogicalExternalGraph(name: String, qualifiedGraphName: QualifiedGraphName, schema: Schema) extends LogicalGraph {
+  override protected def args: String = s"alias = $name, qualifiedGraphName = $qualifiedGraphName"
 }
 
 final case class LogicalPatternGraph(name: String, schema: Schema, pattern: GraphOfPattern) extends LogicalGraph {

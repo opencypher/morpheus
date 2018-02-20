@@ -20,7 +20,7 @@ import java.net.URI
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
 import org.neo4j.cypher.internal.util.v3_4.{InputPosition, Ref}
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
-import org.opencypher.caps.api.io.PropertyGraphDataSourceOld
+import org.opencypher.caps.api.io.{Namespace, PropertyGraphDataSource, PropertyGraphDataSourceOld, QualifiedGraphName}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.CypherType._
 import org.opencypher.caps.api.types._
@@ -28,7 +28,7 @@ import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.ir.api.block.SourceBlock
 import org.opencypher.caps.ir.api.expr.Expr
 import org.opencypher.caps.ir.api.pattern.Pattern
-import org.opencypher.caps.ir.api.{IRExternalGraph, IRField, IRGraph}
+import org.opencypher.caps.ir.api.{IRExternalGraph, IRExternalGraphNew, IRField, IRGraph}
 import org.opencypher.caps.ir.impl.typer.exception.TypingException
 import org.opencypher.caps.ir.impl.typer.{SchemaTyper, TypeTracker}
 
@@ -39,8 +39,10 @@ final case class IRBuilderContext(
   blocks: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
   semanticState: SemanticState,
   graphs: Map[String, URI],
+  graphsNew: Map[String, QualifiedGraphName],
   graphList: List[IRGraph],
   resolver: URI => PropertyGraphDataSourceOld,
+  resolverNew: Namespace => PropertyGraphDataSource,
   // TODO: Remove this
   knownTypes: Map[ast.Expression, CypherType] = Map.empty) {
   self =>
@@ -73,12 +75,14 @@ final case class IRBuilderContext(
   def currentGraph: IRGraph = graphList.head
 
   def schemaFor(graphName: String): Schema = {
-    val source = resolver(graphs(graphName))
-    source.schema match {
+    val qualifiedGraphName = graphsNew(graphName)
+    val dataSource = resolverNew(qualifiedGraphName.namespace)
+
+    dataSource.schema(qualifiedGraphName.graphName) match {
       case None =>
         // This initialises the graph eagerly!!
         // TODO: We probably want to save the graph reference somewhere
-        source.graph.schema
+        dataSource.graph(qualifiedGraphName.graphName).schema
       case Some(s) => s
     }
   }
@@ -96,6 +100,9 @@ final case class IRBuilderContext(
   def withGraphAt(name: String, uri: URI): IRBuilderContext =
     copy(graphs = graphs.updated(name, uri))
 
+  def withGraphAt(name: String, qualifiedName: QualifiedGraphName) =
+    copy(graphsNew = graphsNew.updated(name, qualifiedName))
+
   def withGraph(graph: IRGraph): IRBuilderContext =
     copy(graphList = graph :: graphList)
 }
@@ -107,10 +114,12 @@ object IRBuilderContext {
     parameters: CypherMap,
     semState: SemanticState,
     ambientGraph: IRExternalGraph,
-    resolver: URI => PropertyGraphDataSourceOld
+    ambientGraphNew: IRExternalGraphNew,
+    resolver: URI => PropertyGraphDataSourceOld,
+    resolverNew: Namespace => PropertyGraphDataSource
   ): IRBuilderContext = {
     val registry = BlockRegistry.empty[Expr]
-    val block = SourceBlock[Expr](ambientGraph)
+    val block = SourceBlock[Expr](ambientGraphNew)
     val (_, reg) = registry.register(block)
 
     IRBuilderContext(
@@ -120,7 +129,9 @@ object IRBuilderContext {
       reg,
       semState,
       Map(ambientGraph.name -> ambientGraph.uri),
+      Map(ambientGraphNew.name -> ambientGraphNew.qualifiedName),
       List(ambientGraph),
-      resolver)
+      resolver,
+      resolverNew)
   }
 }

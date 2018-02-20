@@ -17,10 +17,10 @@ trait PropertyGraphDataSource {
 
 }
 
-case class GraphName(graphName: String) extends AnyVal
+case class GraphName(value: String) extends AnyVal
 
-case class Namespace(namespace: String) extends AnyVal
+case class Namespace(value: String) extends AnyVal
 
-case class GraphIdentifier(namespace: Namespace, graphName: GraphName) {
+case class QualifiedGraphName(namespace: Namespace, graphName: GraphName) {
   override def toString: String = s"$namespace.$graphName"
 }

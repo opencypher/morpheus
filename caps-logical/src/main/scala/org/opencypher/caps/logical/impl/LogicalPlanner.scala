@@ -79,10 +79,11 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
   def planLeaf(ref: BlockRef, model: QueryModel[Expr])(implicit context: LogicalPlannerContext): LogicalOperator = {
     model(ref) match {
-      case SourceBlock(irGraph) =>
-        val graphSource = context.resolver(irGraph.name)
+      case SourceBlock(irGraph: IRExternalGraphNew) =>
+        val qualifiedGraphName = irGraph.qualifiedName
+        val graphSource = context.resolver(qualifiedGraphName.namespace.value)
         producer.planStart(
-          LogicalExternalGraph(irGraph.name, graphSource.canonicalURI, graphSource.schema.get),
+          LogicalExternalGraph(irGraph.name, qualifiedGraphName, graphSource.schema(qualifiedGraphName.graphName).get),
           context.inputRecordFields)
       case x =>
         throw NotImplementedException(s"Support for leaf planning of $x not yet implemented")
@@ -346,16 +347,16 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
         LogicalPatternGraph(name, schema, GraphOfPattern(entities, boundEntities))
 
-      case _ =>
-        val graphSource = context.resolver(graph.name)
-        val schema = graphSource.schema match {
+      case IRExternalGraphNew(_, _, qualifiedName) =>
+        val graphSource = context.resolver(qualifiedName.namespace.value)
+        val schema = graphSource.schema(qualifiedName.graphName) match {
           case None =>
             // This initialises the graph eagerly!!
             // TODO: We probably want to save the graph reference somewhere
-            graphSource.graph.schema
+            graphSource.graph(qualifiedName.graphName).schema
           case Some(s) => s
         }
-        LogicalExternalGraph(graph.name, graphSource.canonicalURI, schema)
+        LogicalExternalGraph(graph.name, qualifiedName, schema)
     }
   }
 

@@ -15,9 +15,8 @@
  */
 package org.opencypher.caps.api.physical
 
-import java.net.URI
-
 import org.opencypher.caps.api.graph.PropertyGraph
+import org.opencypher.caps.api.io.QualifiedGraphName
 import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.value.CypherValue.CypherMap
 
@@ -30,11 +29,11 @@ import org.opencypher.caps.api.value.CypherValue.CypherMap
 trait RuntimeContext[R <: CypherRecords, G <: PropertyGraph] {
 
   /**
-    * Returns the graph referenced by the given URI.
+    * Returns the graph referenced by the given [[QualifiedGraphName]].
     *
     * @return back-end specific property graph
     */
-  def resolve: URI => Option[G]
+  def resolve: QualifiedGraphName => Option[G]
 
   /**
     * Query parameters

@@ -15,7 +15,6 @@
  */
 package org.opencypher.caps.impl.physical
 
-import org.opencypher.caps.impl.exception.IllegalArgumentException
 import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph}
 import org.opencypher.caps.api.physical.{PhysicalOperator, PhysicalOperatorProducer, PhysicalPlannerContext, RuntimeContext}
 import org.opencypher.caps.api.table.CypherRecords
@@ -83,8 +82,8 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
 
       case flat.ProjectGraph(graph, in, header) =>
         graph match {
-          case LogicalExternalGraph(name, uri, _) =>
-            producer.planProjectExternalGraph(process(in), name, uri)
+          case LogicalExternalGraph(name, qualifiedGraphName, _) =>
+            producer.planProjectExternalGraph(process(in), name, qualifiedGraphName)
           case LogicalPatternGraph(name, targetSchema, GraphOfPattern(toCreate, _)) =>
             producer.planProjectPatternGraph(process(in), toCreate, name, targetSchema, header)
         }

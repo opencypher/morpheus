@@ -68,8 +68,8 @@ object GraphXPageRankExample extends App {
   val rankNodes = session.readFrom(CAPSNodeTable(ranksNodeMapping, rankTable))
 
   // 8) Mount both graphs in session
-  session.mount(rankNodes, "/ranks")
-  session.mount(socialNetwork, "/sn")
+  session.mount("/ranks", rankNodes)
+  session.mount("/sn", socialNetwork)
 
   // 9) Query across both graphs to print names with corresponding ranks, sorted by rank
   val result = session.cypher(

@@ -81,6 +81,9 @@ trait CypherSession {
     */
   def readFrom(uri: String): PropertyGraph = readFrom(URI.create(uri))
 
+  def readFrom(qualifiedGraphName: QualifiedGraphName): PropertyGraph =
+    dataSource(qualifiedGraphName.namespace).graph(qualifiedGraphName.graphName)
+
   /**
     * Mounts the given graph source to session-local storage under the given path. The specified graph will be
     * accessible under the session-local URI scheme, e.g. {{{session://$path}}}.
@@ -90,19 +93,20 @@ trait CypherSession {
     */
   def mount(source: PropertyGraphDataSourceOld, path: String): Unit
 
+  // TODO update docs
   /**
     * Mounts the given property graph to session-local storage under the given path. The specified graph will be
     * accessible under the session-local URI scheme, e.g. {{{session://$path}}}.
     *
-    * @param graph property graph to register
-    * @param path   path at which this graph can be accessed via {{{session://$path}}}
+    * @param graph     property graph to register
+    * @param graphName path at which this graph can be accessed via {{{session.$path}}}
     */
-  def mount(graph: PropertyGraph, path: String): Unit
+  def mount(graphName: String, graph: PropertyGraph): Unit
 
   // TODO: document
-  def mount(graphName: GraphName, graph: PropertyGraph): GraphIdentifier = {
+  def mount(graphName: GraphName, graph: PropertyGraph): QualifiedGraphName = {
     dataSourceMapping(SessionNamespace).store(graphName, graph)
-    GraphIdentifier(SessionNamespace, graphName)
+    QualifiedGraphName(SessionNamespace, graphName)
   }
 
   // TODO: reintroduce "mount(source: String, path: String): Unit" with source lookup via URI scheme

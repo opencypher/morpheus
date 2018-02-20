@@ -21,6 +21,6 @@ import org.opencypher.caps.logical.impl.{LogicalExternalGraph, SolvedQueryModel,
 abstract class LogicalTestSuite extends IrTestSuite {
 
   def leafPlan: Start =
-    Start(LogicalExternalGraph(testGraph.name, testGraph.uri, testGraph.schema), Set.empty, SolvedQueryModel.empty)
+    Start(LogicalExternalGraph(testGraphNew.name, testGraphNew.qualifiedName, testGraph.schema), Set.empty, SolvedQueryModel.empty)
 
 }

@@ -20,7 +20,7 @@ import java.util.UUID
 
 import org.opencypher.caps.api.configuration.CoraConfiguration.PrintFlatPlan
 import org.opencypher.caps.api.graph.{CypherResult, CypherSession, PropertyGraph}
-import org.opencypher.caps.api.io.{PersistMode, PropertyGraphDataSourceOld}
+import org.opencypher.caps.api.io.{PersistMode, PropertyGraphDataSourceOld, QualifiedGraphName}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.value.CypherValue
@@ -62,6 +62,9 @@ class COSCSession(private val graphSourceHandler: COSCGraphSourceHandler) extend
       case None => None
     }
 
+  def optGraphAtNew(qualifiedGraphName: QualifiedGraphName): Option[COSCGraph] =
+    Some(dataSource(qualifiedGraphName.namespace).graph(qualifiedGraphName.graphName).asCosc)
+
   /**
     * Executes a Cypher query in this session on the current ambient graph.
     *
@@ -80,9 +83,9 @@ class COSCSession(private val graphSourceHandler: COSCGraphSourceHandler) extend
     val extractedParameters = extractedLiterals.mapValues(v => CypherValue(v))
     val allParameters = parameters ++ extractedParameters
 
-    val ir = time("IR translation")(IRBuilder(stmt)(IRBuilderContext.initial(query, allParameters, semState, ambientGraph, sourceAt)))
+    val ir = time("IR translation")(IRBuilder(stmt)(IRBuilderContext.initial(query, allParameters, semState, ambientGraph, ???, sourceAt, dataSource)))
 
-    val logicalPlannerContext = LogicalPlannerContext(graph.schema, Set.empty, ir.model.graphs.andThen(sourceAt), ambientGraph)
+    val logicalPlannerContext = LogicalPlannerContext(graph.schema, Set.empty, ir.model.graphs.mapValues(_.namespace).andThen(dataSource), ambientGraph)
     val logicalPlan = time("Logical planning")(logicalPlanner(ir)(logicalPlannerContext))
     val optimizedLogicalPlan = time("Logical optimization")(logicalOptimizer(logicalPlan)(logicalPlannerContext))
     if (PrintLogicalPlan.isSet) {
@@ -96,7 +99,7 @@ class COSCSession(private val graphSourceHandler: COSCGraphSourceHandler) extend
     val coscPlannerContext = COSCPhysicalPlannerContext(this, readFrom, COSCRecords.unit()(self), allParameters)
     val coscPlan = time("Physical planning")(physicalPlanner.process(flatPlan)(coscPlannerContext))
 
-    time("Query execution")(COSCResultBuilder.from(logicalPlan, flatPlan, coscPlan)(COSCRuntimeContext(coscPlannerContext.parameters, optGraphAt)))
+    time("Query execution")(COSCResultBuilder.from(logicalPlan, flatPlan, coscPlan)(COSCRuntimeContext(coscPlannerContext.parameters, optGraphAtNew)))
   }
 
   /**
@@ -161,5 +164,5 @@ class COSCSession(private val graphSourceHandler: COSCGraphSourceHandler) extend
     * @param graph property graph to register
     * @param path  path at which this graph can be accessed via {{{session://$path}}}
     */
-  override def mount(graph: PropertyGraph, path: String): Unit = ???
+  override def mount(path: String, graph: PropertyGraph): Unit = ???
 }

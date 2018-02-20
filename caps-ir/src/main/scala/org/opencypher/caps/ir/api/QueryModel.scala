@@ -15,8 +15,7 @@
  */
 package org.opencypher.caps.ir.api
 
-import java.net.URI
-
+import org.opencypher.caps.api.io.QualifiedGraphName
 import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.impl.exception.IllegalStateException
 import org.opencypher.caps.ir.api.block._
@@ -28,7 +27,8 @@ final case class QueryModel[E](
   result: ResultBlock[E],
   parameters: CypherMap,
   blocks: Map[BlockRef, Block[E]],
-  graphs: Map[String, URI]
+  // graph alias -> namespace + graph name
+  graphs: Map[String, QualifiedGraphName]
 ) {
 
   def apply(ref: BlockRef): Block[E] = blocks(ref)

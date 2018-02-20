@@ -19,7 +19,7 @@ import java.net.URI
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
-import org.opencypher.caps.api.io.PropertyGraphDataSourceOld
+import org.opencypher.caps.api.io._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.ir.api._
@@ -35,11 +35,25 @@ import scala.language.implicitConversions
 abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
   val leafRef = BlockRef("leaf")
 
-  def testGraph()(implicit schema: Schema = Schema.empty) = IRExternalGraph("test", schema, URI.create("test"))
+  val testNamespace = Namespace("testNamespace")
+  val testGraphName = GraphName("test")
+  val testQualifiedGraphName = QualifiedGraphName(testNamespace, testGraphName)
+
+  def testGraph()(implicit schema: Schema = Schema.empty) =
+    IRExternalGraph("test", schema, URI.create("test"))
+
+  def testGraphNew()(implicit schema: Schema = Schema.empty) =
+    IRExternalGraphNew("test", schema, testQualifiedGraphName)
 
   def testGraphSource(schema: Schema = Schema.empty): PropertyGraphDataSourceOld = {
     val gs = mock[PropertyGraphDataSourceOld]
     when(gs.schema).thenReturn(Some(schema))
+    gs
+  }
+
+  def testGraphSourceNew(schema: Schema = Schema.empty): PropertyGraphDataSource = {
+    val gs = mock[PropertyGraphDataSource]
+    when(gs.schema(testGraphName)).thenReturn(Some(schema))
     gs
   }
 
@@ -101,13 +115,25 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
       val parameters = Map.empty[String, CypherValue]
       IRBuilder(stmt)(
-        IRBuilderContext.initial(queryText, parameters, SemanticState.clean, testGraph, _ => testGraphSource(schema)))
+        IRBuilderContext.initial(queryText,
+          parameters,
+          SemanticState.clean,
+          testGraph,
+          testGraphNew,
+          _ => testGraphSource(schema),
+          _ => testGraphSourceNew(schema)))
     }
 
     def irWithParams(params: (String, CypherValue)*)(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
       IRBuilder(stmt)(
-        IRBuilderContext.initial(queryText, params.toMap, SemanticState.clean, testGraph, _ => testGraphSource(schema)))
+        IRBuilderContext.initial(queryText,
+          params.toMap,
+          SemanticState.clean,
+          testGraph,
+          testGraphNew,
+          _ => testGraphSource(schema),
+          _ => testGraphSourceNew(schema)))
     }
   }
 }
