@@ -18,11 +18,15 @@ package org.opencypher.caps.impl.spark.io.hdfs
 import java.io.File
 
 import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.{FileSystem, Path, RemoteIterator}
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.io.GraphName
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.impl.spark.io.CAPSPropertyGraphDataSource
+import org.opencypher.caps.impl.spark.io.hdfs.RemoteIteratorWrapper._
+
+import scala.language.implicitConversions
 
 /**
   * Data source for loading graphs from HDFS.
@@ -34,8 +38,7 @@ class HdfsCsvPropertyGraphDataSource(
   hadoopConfig: Configuration,
   rootPath: String)(implicit val session: CAPSSession) extends CAPSPropertyGraphDataSource {
 
-  override def graph(name: GraphName): PropertyGraph =
-    CsvGraphLoader(s"$rootPath${File.separator}$name", hadoopConfig).load
+  override def graph(name: GraphName): PropertyGraph = CsvGraphLoader(graphPath(name), hadoopConfig).load
 
   override def schema(name: GraphName): Option[Schema] = None
 
@@ -43,5 +46,25 @@ class HdfsCsvPropertyGraphDataSource(
 
   override def delete(name: GraphName): Unit = ???
 
-  override def graphNames: Set[GraphName] = ???
+  override def graphNames: Set[GraphName] = FileSystem.get(hadoopConfig).listFiles(new Path(rootPath), false)
+    .filter(f => f.isDirectory)
+    .map(f => f.getPath.getName)
+    .map(GraphName.from)
+    .toSet
+
+  override def hasGraph(name: GraphName): Boolean = FileSystem.get(hadoopConfig).exists(new Path(graphPath(name)))
+
+  private def graphPath(name: GraphName): String = s"$rootPath${File.separator}$name"
+
+}
+
+object RemoteIteratorWrapper {
+  implicit def convertToScalaIterator[T](underlying: RemoteIterator[T]): Iterator[T] = {
+    case class wrapper(underlying: RemoteIterator[T]) extends Iterator[T] {
+      override def hasNext = underlying.hasNext
+
+      override def next = underlying.next
+    }
+    wrapper(underlying)
+  }
 }

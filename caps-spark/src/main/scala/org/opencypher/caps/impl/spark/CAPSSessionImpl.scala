@@ -31,7 +31,7 @@ import org.opencypher.caps.impl.physical.PhysicalPlanner
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.impl.spark.physical._
 import org.opencypher.caps.ir.api.expr.{Expr, Var}
-import org.opencypher.caps.ir.api.{IRExternalGraphNew, IRField}
+import org.opencypher.caps.ir.api.{IRExternalGraph, IRField}
 import org.opencypher.caps.ir.impl.parse.CypherParser
 import org.opencypher.caps.ir.impl.{IRBuilder, IRBuilderContext}
 import org.opencypher.caps.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
@@ -117,10 +117,10 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
     }
   }
 
-  private def mountAmbientGraph(ambient: PropertyGraph): IRExternalGraphNew = {
+  private def mountAmbientGraph(ambient: PropertyGraph): IRExternalGraph = {
     val graphName = GraphName(UUID.randomUUID().toString)
     val qualifiedGraphName = mount(graphName, ambient)
-    IRExternalGraphNew(graphName.value, ambient.schema, qualifiedGraphName)
+    IRExternalGraph(graphName.value, ambient.schema, qualifiedGraphName)
   }
 
   private def planStart(graph: PropertyGraph, fields: Set[Var]): LogicalOperator = {

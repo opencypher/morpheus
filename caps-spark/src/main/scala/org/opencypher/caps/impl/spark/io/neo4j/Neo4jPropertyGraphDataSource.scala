@@ -40,4 +40,6 @@ class Neo4jPropertyGraphDataSource(
   override def delete(name: GraphName): Unit = ???
 
   override def graphNames: Set[GraphName] = queries.keySet
+
+  override def hasGraph(name: GraphName): Boolean = queries.contains(name)
 }

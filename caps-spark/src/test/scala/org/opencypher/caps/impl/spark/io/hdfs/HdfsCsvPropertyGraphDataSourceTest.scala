@@ -26,8 +26,37 @@ class HdfsCsvPropertyGraphDataSourceTest
 
   protected override def dfsTestGraphPath = "/csv/sn"
 
+  test("hasGraph should return true for existing graph") {
+    val testGraphName = GraphName.from("sn")
+
+    val dataSource = new HdfsCsvPropertyGraphDataSource(
+      hadoopConfig = clusterConfig,
+      rootPath = "/csv")
+
+    dataSource.hasGraph(testGraphName) should be(true)
+  }
+
+  test("hasGraph should return false for non-existing graph") {
+    val testGraphName = GraphName.from("sn2")
+
+    val dataSource = new HdfsCsvPropertyGraphDataSource(
+      hadoopConfig = clusterConfig,
+      rootPath = "/csv")
+
+    dataSource.hasGraph(testGraphName) should be(false)
+  }
+
+  test("graphNames should return all names of stored graphs") {
+    val testGraphName = GraphName.from("sn")
+    val source = new HdfsCsvPropertyGraphDataSource(
+      hadoopConfig = clusterConfig,
+      rootPath = "/csv")
+
+    source.graphNames should equal(Set(testGraphName))
+  }
+
   test("Load graph from HDFS via DataSource") {
-    val testGraphName = GraphName("sn")
+    val testGraphName = GraphName.from("sn")
 
     val dataSource = new HdfsCsvPropertyGraphDataSource(
       hadoopConfig = clusterConfig,
@@ -39,9 +68,8 @@ class HdfsCsvPropertyGraphDataSourceTest
   }
 
   test("Load graph from HDFS via Catalog") {
-
-    val testNamespace = Namespace("myHDFS")
-    val testGraphName = GraphName("sn")
+    val testNamespace = Namespace.from("myHDFS")
+    val testGraphName = GraphName.from("sn")
 
     val dataSource = new HdfsCsvPropertyGraphDataSource(
       hadoopConfig = sparkSession.sparkContext.hadoopConfiguration,

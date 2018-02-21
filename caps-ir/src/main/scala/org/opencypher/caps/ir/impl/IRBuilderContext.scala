@@ -26,14 +26,14 @@ import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.ir.api.block.SourceBlock
 import org.opencypher.caps.ir.api.expr.Expr
 import org.opencypher.caps.ir.api.pattern.Pattern
-import org.opencypher.caps.ir.api.{IRExternalGraphNew, IRField, IRGraph}
+import org.opencypher.caps.ir.api.{IRExternalGraph, IRField, IRGraph}
 import org.opencypher.caps.ir.impl.typer.exception.TypingException
 import org.opencypher.caps.ir.impl.typer.{SchemaTyper, TypeTracker}
 
 final case class IRBuilderContext(
   queryString: String,
   parameters: CypherMap,
-  ambientGraph: IRExternalGraphNew,
+  ambientGraph: IRExternalGraph,
   blocks: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
   semanticState: SemanticState,
   graphs: Map[String, QualifiedGraphName],
@@ -106,7 +106,7 @@ object IRBuilderContext {
     query: String,
     parameters: CypherMap,
     semState: SemanticState,
-    ambientGraph: IRExternalGraphNew,
+    ambientGraph: IRExternalGraph,
     resolver: Namespace => PropertyGraphDataSource
   ): IRBuilderContext = {
     val registry = BlockRegistry.empty[Expr]

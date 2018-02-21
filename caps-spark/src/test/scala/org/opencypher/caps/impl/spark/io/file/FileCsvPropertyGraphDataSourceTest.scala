@@ -24,6 +24,30 @@ class FileCsvPropertyGraphDataSourceTest extends CAPSTestSuite with TeamDataFixt
 
   private val testRootPath = getClass.getResource("/csv").getPath
 
+  test("hasGraph should return true for existing graph") {
+    val testGraphName = GraphName.from("sn")
+
+    val dataSource = new FileCsvPropertyGraphDataSource(rootPath = testRootPath)
+
+    dataSource.hasGraph(testGraphName) should be(true)
+  }
+
+  test("hasGraph should return false for non-existing graph") {
+    val testGraphName = GraphName.from("sn2")
+
+    val dataSource = new FileCsvPropertyGraphDataSource(rootPath = testRootPath)
+
+    dataSource.hasGraph(testGraphName) should be(false)
+  }
+
+  test("graphNames should return all names of stored graphs") {
+    val testGraphName1 = GraphName.from("sn")
+    val testGraphName2 = GraphName.from("prod")
+    val source = new FileCsvPropertyGraphDataSource(rootPath = testRootPath)
+
+    source.graphNames should equal(Set(testGraphName1, testGraphName2))
+  }
+
   test("Load graph from file via DataSource") {
     val testGraphName = GraphName("sn")
 

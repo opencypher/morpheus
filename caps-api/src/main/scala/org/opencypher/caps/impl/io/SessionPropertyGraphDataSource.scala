@@ -27,19 +27,16 @@ class SessionPropertyGraphDataSource() extends PropertyGraphDataSource {
 
   private var graphMap: Map[GraphName, PropertyGraph] = Map.empty
 
-  override def graph(name: GraphName): PropertyGraph =
-    graphMap(name)
+  override def graph(name: GraphName): PropertyGraph = graphMap(name)
 
-  override def schema(name: GraphName): Option[Schema] =
-    Some(graphMap(name).schema)
+  override def schema(name: GraphName): Option[Schema] = Some(graphMap(name).schema)
 
-  override def store(name: GraphName, graph: PropertyGraph): Unit =
-    graphMap = graphMap.updated(name, graph)
+  override def store(name: GraphName, graph: PropertyGraph): Unit = graphMap = graphMap.updated(name, graph)
 
-  override def delete(name: GraphName): Unit =
   // TODO: uncache graph
-    graphMap = graphMap.filterKeys(_ != name)
+  override def delete(name: GraphName): Unit = graphMap = graphMap.filterKeys(_ != name)
 
-  override def graphNames: Set[GraphName] =
-    graphMap.keySet
+  override def graphNames: Set[GraphName] = graphMap.keySet
+
+  override def hasGraph(name: GraphName): Boolean = graphMap.contains(name)
 }

@@ -300,7 +300,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
               }
               val newContext = context.withGraphAt(graphName, qualifiedGraphName)
               put[R, IRBuilderContext](newContext) >>
-                pure[R, IRGraph](IRExternalGraphNew(graphName, newContext.schemaFor(graphName), qualifiedGraphName))
+                pure[R, IRGraph](IRExternalGraph(graphName, newContext.schemaFor(graphName), qualifiedGraphName))
 
             case ast.GraphAs(ref, alias, _) if alias.isEmpty || alias.contains(ref) =>
               pure[R, IRGraph](IRNamedGraph(graphName, context.schemaFor(graphName), context.graphs(graphName)))

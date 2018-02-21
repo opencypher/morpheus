@@ -39,7 +39,7 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
   val testQualifiedGraphName = QualifiedGraphName(testNamespace, testGraphName)
 
   def testGraph()(implicit schema: Schema = testGraphSchema) =
-    IRExternalGraphNew("test", schema, testQualifiedGraphName)
+    IRExternalGraph("test", schema, testQualifiedGraphName)
 
   def testGraphSource(graphsWithSchema: (GraphName, Schema)*): PropertyGraphDataSource = {
     val gs = mock[PropertyGraphDataSource]

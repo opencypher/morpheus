@@ -19,7 +19,7 @@ import org.opencypher.caps.api.io.{GraphName, Namespace}
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.test.BaseTestSuite
 import org.opencypher.caps.test.fixture.{CAPSSessionFixture, Neo4jServerFixture, SparkSessionFixture, TeamDataFixture}
-import org.scalatest.Matchers
+import org.scalatest.mockito.MockitoSugar
 
 class Neo4jPropertyGraphDataSourceTest
   extends BaseTestSuite
@@ -27,7 +27,37 @@ class Neo4jPropertyGraphDataSourceTest
     with CAPSSessionFixture
     with Neo4jServerFixture
     with TeamDataFixture
-    with Matchers {
+    with MockitoSugar {
+
+  test("hasGraph should return true for existing graph") {
+    val testGraphName = GraphName.from("sn")
+
+    val dataSource = new Neo4jPropertyGraphDataSource(neo4jConfig, Map(
+      testGraphName -> ("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r")
+    ))
+
+    dataSource.hasGraph(testGraphName) should be(true)
+  }
+
+  test("hasGraph should return false for non-existing graph") {
+    val testGraphName = GraphName.from("sn")
+
+    val dataSource = new Neo4jPropertyGraphDataSource(neo4jConfig, Map(
+      GraphName.from("sn2") -> ("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r")
+    ))
+
+    dataSource.hasGraph(testGraphName) should be(false)
+  }
+
+  test("graphNames should return all names of stored graphs") {
+    val testGraphName1 = GraphName.from("test1")
+    val testGraphName2 = GraphName.from("test2")
+    val source = new Neo4jPropertyGraphDataSource(neo4jConfig, Map(
+      testGraphName1 -> ("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r"),
+      testGraphName2 -> ("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r")
+    ))
+    source.graphNames should equal(Set(testGraphName1, testGraphName2))
+  }
 
   test("Load graph from Neo4j via DataSource") {
     val dataSource = new Neo4jPropertyGraphDataSource(neo4jConfig, Map(
@@ -40,7 +70,7 @@ class Neo4jPropertyGraphDataSourceTest
   }
 
   test("Load graph from Neo4j via Catalog") {
-    val testNamespace = Namespace("myNeo4j")
+    val testNamespace = Namespace.from("myNeo4j")
     val testGraphName = GraphName.from("foo")
 
     val dataSource = new Neo4jPropertyGraphDataSource(neo4jConfig, Map(

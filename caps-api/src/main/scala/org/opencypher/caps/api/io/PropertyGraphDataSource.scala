@@ -32,6 +32,14 @@ import org.opencypher.caps.api.schema.Schema
 trait PropertyGraphDataSource {
 
   /**
+    * Returns {{true}} if the data source stores a graph under the given [[GraphName]].
+    *
+    * @param name name of the graph within the data source
+    * @return {{true}}, iff the graph is stored within the data source
+    */
+  def hasGraph(name: GraphName): Boolean
+
+  /**
     * Returns the [[PropertyGraph]] that is stored under the given name.
     *
     * @param name name of the graph within the data source

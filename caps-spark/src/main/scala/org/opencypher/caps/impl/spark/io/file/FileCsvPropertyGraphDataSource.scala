@@ -15,7 +15,9 @@
  */
 package org.opencypher.caps.impl.spark.io.file
 
+
 import java.io.File
+import java.nio.file.{Files, Paths}
 
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.graph.PropertyGraph
@@ -24,11 +26,12 @@ import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.impl.spark.io.CAPSPropertyGraphDataSource
 import org.opencypher.caps.impl.spark.io.hdfs.CsvGraphLoader
 
+import scala.collection.JavaConverters._
+
 class FileCsvPropertyGraphDataSource(rootPath: String)(implicit val session: CAPSSession)
   extends CAPSPropertyGraphDataSource {
 
-  override def graph(name: GraphName): PropertyGraph =
-    CsvGraphLoader(s"$rootPath${File.separator}$name").load
+  override def graph(name: GraphName): PropertyGraph = CsvGraphLoader(graphPath(name)).load
 
   override def schema(name: GraphName): Option[Schema] = None
 
@@ -36,5 +39,13 @@ class FileCsvPropertyGraphDataSource(rootPath: String)(implicit val session: CAP
 
   override def delete(name: GraphName): Unit = ???
 
-  override def graphNames: Set[GraphName] = ???
+  override def graphNames: Set[GraphName] = Files.list(Paths.get(rootPath)).iterator().asScala
+    .filter(p => Files.isDirectory(p))
+    .map(p => p.getFileName.toString)
+    .map(GraphName.from)
+    .toSet
+
+  override def hasGraph(name: GraphName): Boolean = Files.exists(Paths.get(graphPath(name)))
+
+  private def graphPath(name: GraphName): String = s"$rootPath${File.separator}$name"
 }

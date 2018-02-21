@@ -79,7 +79,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
   def planLeaf(ref: BlockRef, model: QueryModel[Expr])(implicit context: LogicalPlannerContext): LogicalOperator = {
     model(ref) match {
-      case SourceBlock(irGraph: IRExternalGraphNew) =>
+      case SourceBlock(irGraph: IRExternalGraph) =>
         val qualifiedGraphName = irGraph.qualifiedName
         val graphSource = context.resolver(irGraph.name)
         producer.planStart(

@@ -28,7 +28,7 @@ import org.opencypher.caps.cosc.impl.planning.{COSCPhysicalOperatorProducer, COS
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
 import org.opencypher.caps.impl.physical.PhysicalPlanner
 import org.opencypher.caps.impl.util.Measurement.time
-import org.opencypher.caps.ir.api.IRExternalGraphNew
+import org.opencypher.caps.ir.api.IRExternalGraph
 import org.opencypher.caps.ir.impl.parse.CypherParser
 import org.opencypher.caps.ir.impl.{IRBuilder, IRBuilderContext}
 import org.opencypher.caps.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
@@ -89,9 +89,9 @@ class COSCSession() extends CypherSession {
   private def graphAt(qualifiedGraphName: QualifiedGraphName): Option[COSCGraph] =
     Some(dataSource(qualifiedGraphName.namespace).graph(qualifiedGraphName.graphName).asCosc)
 
-  private def mountAmbientGraph(ambient: PropertyGraph): IRExternalGraphNew = {
+  private def mountAmbientGraph(ambient: PropertyGraph): IRExternalGraph = {
     val graphName = GraphName(UUID.randomUUID().toString)
     val qualifiedGraphName = mount(graphName, ambient)
-    IRExternalGraphNew(graphName.value, ambient.schema, qualifiedGraphName)
+    IRExternalGraph(graphName.value, ambient.schema, qualifiedGraphName)
   }
 }

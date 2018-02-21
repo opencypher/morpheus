@@ -39,17 +39,13 @@ final case class IRField(name: String)(val cypherType: CypherType = CTWildcard) 
   def toTypedTuple: (String, CypherType) = name -> cypherType
 }
 
-trait IRGraph extends IRElement {
-  def toNamedGraph: IRNamedGraph =
-    IRNamedGraph(name, schema, QualifiedGraphName(SessionPropertyGraphDataSource.Namespace, GraphName(name)))
+sealed trait IRGraph extends IRElement {
+  def toNamedGraph: IRNamedGraph = IRNamedGraph(name, schema)
 
   def schema: Schema
-
-  override def toString: String = s"IRNamedGraph(name = $name)"
 }
 
-trait IRQualifiedGraph extends IRGraph {
-
+sealed trait IRQualifiedGraph extends IRGraph {
   def qualifiedName: QualifiedGraphName
 }
 
@@ -58,17 +54,14 @@ object IRNamedGraph {
     IRNamedGraph(name, schema, QualifiedGraphName(SessionPropertyGraphDataSource.Namespace, GraphName(name)))
 }
 
+// TODO: unify IRNamedGraph and IRExternalGraph as there is no real difference
 final case class IRNamedGraph(name: String, schema: Schema, qualifiedName: QualifiedGraphName) extends IRQualifiedGraph {
   override def toNamedGraph: IRNamedGraph = this
 
   override def toString: String = s"IRNamedGraph(name = $name, qualifiedName = $qualifiedName)"
 }
 
-//final case class IRExternalGraph(name: String, schema: Schema, uri: URI) extends IRGraph {
-//  override def toString: String = s"IRExternalGraph(name = $name, uri = $uri)"
-//}
-
-final case class IRExternalGraphNew(name: String, schema: Schema, qualifiedName: QualifiedGraphName) extends IRQualifiedGraph {
+final case class IRExternalGraph(name: String, schema: Schema, qualifiedName: QualifiedGraphName) extends IRQualifiedGraph {
   override def toString: String = s"IRExternalGraph(name = $name, qualifiedName = $qualifiedName)"
 }
 
