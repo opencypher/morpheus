@@ -15,14 +15,12 @@
  */
 package org.opencypher.caps.impl.spark.io.file
 
-import org.apache.spark.sql.Row
 import org.opencypher.caps.api.io.{GraphName, Namespace}
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.test.CAPSTestSuite
+import org.opencypher.caps.test.fixture.TeamDataFixture
 
-import scala.collection.{Bag, mutable}
-
-class FileCsvPropertyGraphDataSourceTest extends CAPSTestSuite {
+class FileCsvPropertyGraphDataSourceTest extends CAPSTestSuite with TeamDataFixture {
 
   private val testRootPath = getClass.getResource("/csv").getPath
 
@@ -32,11 +30,11 @@ class FileCsvPropertyGraphDataSourceTest extends CAPSTestSuite {
     val dataSource = new FileCsvPropertyGraphDataSource(rootPath = testRootPath)
 
     val graph = dataSource.graph(testGraphName)
-    graph.nodes("n").asCaps.toDF().collect().toBag should equal(testGraphNodes)
-    graph.relationships("rel").asCaps.toDF().collect.toBag should equal(testGraphRels)
+    graph.nodes("n").asCaps.toDF().collect().toBag should equal(csvTestGraphNodes)
+    graph.relationships("rel").asCaps.toDF().collect.toBag should equal(csvTestGraphRels)
   }
 
-  ignore("Load graph from file via Catalog") {
+  test("Load graph from file via Catalog") {
     val testNamespace = Namespace("myFS")
     val testGraphName = GraphName("sn")
 
@@ -44,31 +42,8 @@ class FileCsvPropertyGraphDataSourceTest extends CAPSTestSuite {
     caps.register(testNamespace, dataSource)
 
     val nodes = caps.cypher(s"FROM GRAPH AT '$testNamespace.$testGraphName' MATCH (n) RETURN n")
-    // TODO: implement verification
+    nodes.records.asCaps.toDF().collect().toBag should equal(csvTestGraphNodes)
     val edges = caps.cypher(s"FROM GRAPH AT '$testNamespace.$testGraphName' MATCH ()-[r]->() RETURN r")
-    // TODO: implement verification
+    edges.records.asCaps.toDF().collect().toBag should equal(csvTestGraphRelsFromRecords)
   }
-
-  /**
-    * Returns the expected nodes for the test graph in /resources/csv/sn
-    *
-    * @return expected nodes
-    */
-  def testGraphNodes: Bag[Row] = Bag(
-    Row(1L, true,  true, true, false, mutable.WrappedArray.make(Array("german", "english")),            42L, "Stefan"),
-    Row(2L, true, false, true,  true, mutable.WrappedArray.make(Array("swedish", "english", "german")), 23L,   "Mats"),
-    Row(3L, true,  true, true, false, mutable.WrappedArray.make(Array("german", "english")),            1337L, "Martin"),
-    Row(4L, true,  true, true, false, mutable.WrappedArray.make(Array("german", "swedish", "english")), 8L,    "Max")
-  )
-
-  /**
-    * Returns the expected rels for the test graph in /resources/csv/sn
-    *
-    * @return expected rels
-    */
-  def testGraphRels: Bag[Row] = Bag(
-    Row(1L, 10L, "KNOWS", 2L, 2016L),
-    Row(2L, 20L, "KNOWS", 3L, 2017L),
-    Row(3L, 30L, "KNOWS", 4L, 2015L)
-  )
 }

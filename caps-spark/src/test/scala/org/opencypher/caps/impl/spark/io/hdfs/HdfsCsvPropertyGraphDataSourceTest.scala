@@ -16,17 +16,13 @@
 package org.opencypher.caps.impl.spark.io.hdfs
 
 import org.opencypher.caps.api.io.{GraphName, Namespace}
-import org.opencypher.caps.api.value.CAPSNode
-import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.test.CAPSTestSuite
-import org.opencypher.caps.test.fixture.MiniDFSClusterFixture
+import org.opencypher.caps.test.fixture.{MiniDFSClusterFixture, TeamDataFixture}
 import org.opencypher.caps.test.support.RecordMatchingTestSupport
 
-import scala.collection.Bag
-
 class HdfsCsvPropertyGraphDataSourceTest
-  extends CAPSTestSuite with MiniDFSClusterFixture with RecordMatchingTestSupport {
+  extends CAPSTestSuite with MiniDFSClusterFixture with RecordMatchingTestSupport with TeamDataFixture {
 
   protected override def dfsTestGraphPath = "/csv/sn"
 
@@ -38,8 +34,8 @@ class HdfsCsvPropertyGraphDataSourceTest
       rootPath = "/csv")
 
     val graph = dataSource.graph(testGraphName)
-    graph.nodes("n").asCaps.toDF().collect().toBag should equal(dfsTestGraphNodes)
-    graph.relationships("rel").asCaps.toDF().collect.toBag should equal(dfsTestGraphRels)
+    graph.nodes("n").asCaps.toDF().collect().toBag should equal(csvTestGraphNodes)
+    graph.relationships("rel").asCaps.toDF().collect.toBag should equal(csvTestGraphRels)
   }
 
   test("Load graph from HDFS via Catalog") {
@@ -54,25 +50,9 @@ class HdfsCsvPropertyGraphDataSourceTest
     caps.register(testNamespace, dataSource)
 
     val nodes = caps.cypher(s"FROM GRAPH AT '$testNamespace.$testGraphName' MATCH (n) RETURN n")
-
-    val stefanNode = CAPSNode(1L, Set("Employee", "German", "Person"), CypherMap("name" -> "Stefan", "luckyNumber" -> 42, "languages" -> List("german", "english")))
-    val matsNode = CAPSNode(2L, Set("Employee", "Swede", "Person"), CypherMap("name" -> "Mats", "luckyNumber" -> 23, "languages" -> List("swedish", "english", "german")))
-    val martinNode = CAPSNode(3L, Set("Employee", "German", "Person"), CypherMap("name" -> "Martin", "luckyNumber" -> 1337, "languages" -> List("german", "english")))
-    val maxNode = CAPSNode(4L, Set("Employee", "German", "Person"), CypherMap("name" -> "Max", "luckyNumber" -> 8, "languages" -> List("german", "swedish", "english")))
-
-    nodes.records.iterator.toBag should equal(Bag(
-      CypherMap("n" -> stefanNode),
-      CypherMap("n" -> matsNode),
-      CypherMap("n" -> martinNode),
-      CypherMap("n" -> maxNode)
-    ))
+    nodes.records.asCaps.toDF().collect().toBag should equal(csvTestGraphNodes)
 
     val edges = caps.cypher(s"FROM GRAPH AT '$testNamespace.$testGraphName' MATCH ()-[r]->() RETURN r")
-    edges.records.asCaps.compact.toMaps should equal(
-      Bag(
-        CypherMap("r" -> 10L),
-        CypherMap("r" -> 20L),
-        CypherMap("r" -> 30L)
-      ))
+    edges.records.asCaps.toDF().collect().toBag should equal(csvTestGraphRelsFromRecords)
   }
 }

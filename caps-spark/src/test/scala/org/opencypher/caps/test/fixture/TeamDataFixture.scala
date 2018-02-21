@@ -20,7 +20,7 @@ import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.caps.api.schema.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.caps.test.support.RowDebugOutputSupport
 
-import scala.collection.Bag
+import scala.collection.{Bag, mutable}
 
 trait TeamDataFixture extends TestDataFixture with RowDebugOutputSupport {
 
@@ -52,6 +52,43 @@ trait TeamDataFixture extends TestDataFixture with RowDebugOutputSupport {
     Row(0L, 0L, "KNOWS", 1L, 2016L),
     Row(1L, 1L, "KNOWS", 2L, 2016L),
     Row(2L, 2L, "KNOWS", 3L, 2016L)
+  )
+
+  /**
+    * Returns the expected nodes for the test graph in /resources/csv/sn
+    *
+    * @return expected nodes
+    */
+  lazy val csvTestGraphNodes: Bag[Row] = Bag(
+    Row(1L, true, true, true, false, mutable.WrappedArray.make(Array("german", "english")), 42L, "Stefan"),
+    Row(2L, true, false, true, true, mutable.WrappedArray.make(Array("swedish", "english", "german")), 23L, "Mats"),
+    Row(3L, true, true, true, false, mutable.WrappedArray.make(Array("german", "english")), 1337L, "Martin"),
+    Row(4L, true, true, true, false, mutable.WrappedArray.make(Array("german", "swedish", "english")), 8L, "Max")
+  )
+
+  // TODO: figure out why the column order is different for the calls in this and the next method
+  /**
+    * Returns the rels for the test graph in /resources/csv/sn as expected by a
+    * [[org.opencypher.caps.impl.spark.CAPSGraph#relationships]] call.
+    *
+    * @return expected rels
+    */
+  lazy val csvTestGraphRels: Bag[Row] = Bag(
+    Row(1L, 10L, "KNOWS", 2L, 2016L),
+    Row(2L, 20L, "KNOWS", 3L, 2017L),
+    Row(3L, 30L, "KNOWS", 4L, 2015L)
+  )
+
+  /**
+    * Returns the rels for the test graph in /resources/csv/sn as expected by a
+    * [[org.opencypher.caps.impl.spark.CAPSResult#records]] call.
+    *
+    * @return expected rels
+    */
+  lazy val csvTestGraphRelsFromRecords: Bag[Row] = Bag(
+    Row(10L, 1L, "KNOWS", 2L, 2016L),
+    Row(20L, 2L, "KNOWS", 3L, 2017L),
+    Row(30L, 3L, "KNOWS", 4L, 2015L)
   )
 
   private lazy val personMapping: NodeMapping = NodeMapping

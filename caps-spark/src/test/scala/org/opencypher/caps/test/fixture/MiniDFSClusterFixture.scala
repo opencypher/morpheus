@@ -20,11 +20,10 @@ import java.net.URI
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hdfs.MiniDFSCluster
-import org.apache.spark.sql.{Row, SparkSession}
+import org.apache.spark.sql.SparkSession
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.fixture.GlobalMiniDFSCluster.{clusterForPath, releaseClusterForPath}
 
-import scala.collection.{Bag, mutable}
 import scala.util.Try
 
 /**
@@ -83,27 +82,4 @@ trait MiniDFSClusterFixture extends BaseTestFixture {
     releaseClusterForPath(dfsTestGraphPath)
     super.afterAll()
   }
-
-  /**
-    * Returns the expected nodes for the test graph in /resources/csv/sn
-    *
-    * @return expected nodes
-    */
-  def dfsTestGraphNodes: Bag[Row] = Bag(
-    Row(1L, true, true, true, false, mutable.WrappedArray.make(Array("german", "english")), 42L, "Stefan"),
-    Row(2L, true, false, true, true, mutable.WrappedArray.make(Array("swedish", "english", "german")), 23L, "Mats"),
-    Row(3L, true, true, true, false, mutable.WrappedArray.make(Array("german", "english")), 1337L, "Martin"),
-    Row(4L, true, true, true, false, mutable.WrappedArray.make(Array("german", "swedish", "english")), 8L, "Max")
-  )
-
-  /**
-    * Returns the expected rels for the test graph in /resources/csv/sn
-    *
-    * @return expected rels
-    */
-  def dfsTestGraphRels: Bag[Row] = Bag(
-    Row(1L, 10L, "KNOWS", 2L, 2016L),
-    Row(2L, 20L, "KNOWS", 3L, 2017L),
-    Row(3L, 30L, "KNOWS", 4L, 2015L)
-  )
 }
