@@ -107,11 +107,7 @@ case class Namespace private(value: String) extends AnyVal {
 object QualifiedGraphName {
   def from(namespace: String, graphName: String) =
     QualifiedGraphName(Namespace.from(namespace), GraphName.from(graphName))
-
-  def from(namespace: Namespace, graphName: GraphName) =
-    QualifiedGraphName(namespace, graphName)
 }
-
 /**
   * A qualified graph name is used in a Cypher query to address a specific graph within a namespace.
   *
