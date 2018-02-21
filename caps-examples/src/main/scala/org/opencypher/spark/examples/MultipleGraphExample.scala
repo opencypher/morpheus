@@ -34,7 +34,7 @@ object MultipleGraphExample extends App {
   // 3) Load purchase network data via local CSV + Schema files
   val csvFolder = getClass.getResource("/csv").getFile
   // Note: if files were stored in HDFS, change the data source to HdfsCsvPropertyGraphDataSource
-  val purchaseNetwork = new FileCsvPropertyGraphDataSource(rootPath = csvFolder).graph(GraphName.create("prod"))
+  val purchaseNetwork = new FileCsvPropertyGraphDataSource(rootPath = csvFolder).graph(GraphName.from("prod"))
 
   // 4) Build union of social and purchase network (note, that there are no relationships connecting nodes from both graphs)
   val disconnectedGraph = socialNetwork union purchaseNetwork

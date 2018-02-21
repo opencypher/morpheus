@@ -47,7 +47,7 @@ object CypherSQLRoundtripExample extends App {
 
   // 6) Load a purchase network graph via CSV + Schema files
   val csvFolder = getClass.getResource("/csv").getFile
-  val purchaseNetwork = new FileCsvPropertyGraphDataSource(rootPath = csvFolder).graph(GraphName.create("prod"))
+  val purchaseNetwork = new FileCsvPropertyGraphDataSource(rootPath = csvFolder).graph(GraphName.from("prod"))
 
   // 7) Use the results from the SQL query as driving table for a Cypher query
   val result2 = purchaseNetwork.cypher("WITH name AS name, age AS age MATCH (c:Customer {name: name})-->(p:Product) RETURN c.name, age, p.title", drivingTable = Some(sqlResults))

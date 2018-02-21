@@ -338,8 +338,8 @@ class LogicalPlannerTest extends LogicalTestSuite {
         |RETURN GRAPHS *
       """.stripMargin
 
-    val barGraphName = GraphName.create("bar")
-    val fooGraphName = GraphName.create("foo")
+    val barGraphName = GraphName.from("bar")
+    val fooGraphName = GraphName.from("foo")
 
     val ir = query.ir(barGraphName -> Schema.empty, fooGraphName -> Schema.empty)
 

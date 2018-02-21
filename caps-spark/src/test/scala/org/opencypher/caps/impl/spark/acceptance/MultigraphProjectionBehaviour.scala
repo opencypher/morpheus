@@ -30,8 +30,8 @@ trait MultigraphProjectionBehaviour { this: AcceptanceTest =>
     def testGraph3 = initGraph("CREATE (:Car {type: 'Toyota'})")
 
     test("returning a graph") {
-      caps.mount(GraphName.create("graph1"), testGraph1)
-      caps.mount(GraphName.create("graph2"), testGraph2)
+      caps.mount(GraphName.from("graph1"), testGraph1)
+      caps.mount(GraphName.from("graph2"), testGraph2)
 
       val query =
         """FROM GRAPH AT 'graph2' AS myGraph
@@ -49,8 +49,8 @@ trait MultigraphProjectionBehaviour { this: AcceptanceTest =>
     }
 
     test("Can select a source graph to match data from") {
-      caps.mount(GraphName.create("graph1"), testGraph1)
-      caps.mount(GraphName.create("graph2"), testGraph2)
+      caps.mount(GraphName.from("graph1"), testGraph1)
+      caps.mount(GraphName.from("graph2"), testGraph2)
 
       val query =
         """WITH * GRAPHS *, GRAPH myGraph AT 'graph2' >>
@@ -68,8 +68,8 @@ trait MultigraphProjectionBehaviour { this: AcceptanceTest =>
     }
 
     test("Can select a source graph to match data from (syntactic sugar variant)") {
-      caps.mount(GraphName.create("graph1"), testGraph1)
-      caps.mount(GraphName.create("graph2"), testGraph2)
+      caps.mount(GraphName.from("graph1"), testGraph1)
+      caps.mount(GraphName.from("graph2"), testGraph2)
 
       val query =
         """FROM GRAPH myGraph AT 'graph2'
@@ -87,9 +87,9 @@ trait MultigraphProjectionBehaviour { this: AcceptanceTest =>
     }
 
     test("matching from different graphs") {
-      caps.mount(GraphName.create("graph1"), testGraph1)
-      caps.mount(GraphName.create("graph2"), testGraph2)
-      caps.mount(GraphName.create("graph3"), testGraph3)
+      caps.mount(GraphName.from("graph1"), testGraph1)
+      caps.mount(GraphName.from("graph2"), testGraph2)
+      caps.mount(GraphName.from("graph3"), testGraph3)
 
       val query =
         """FROM GRAPH myGraph AT 'graph2'

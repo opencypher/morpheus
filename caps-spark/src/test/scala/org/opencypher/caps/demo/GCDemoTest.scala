@@ -68,8 +68,8 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
 
     check(verifyAllCityFriends(ALL_CITYFRIENDS))
 
-    caps.mount(GraphName.create("friends"), ALL_CITYFRIENDS)
-    caps.mount(GraphName.create("products"), PRODUCTS)
+    caps.mount(GraphName.from("friends"), ALL_CITYFRIENDS)
+    caps.mount(GraphName.from("products"), PRODUCTS)
 
     val LINKS = caps.cypher(
       s"""FROM GRAPH AT 'friends'
@@ -153,7 +153,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
   }
 
   private def neoRegionGraph(region: String): PropertyGraph = {
-    val regionGraphName = GraphName.create(region)
+    val regionGraphName = GraphName.from(region)
     val nodeQuery = URLEncoder.encode(s"MATCH (n {region: '$region'}) RETURN n", "UTF-8")
     val relQuery = URLEncoder.encode(s"MATCH ()-[r {region: '$region'}]->() RETURN r", "UTF-8")
     new Neo4jPropertyGraphDataSource(neo4jConfig, Map(regionGraphName -> (nodeQuery -> relQuery)))
@@ -161,7 +161,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
   }
 
   private def hdfsProductGraph: PropertyGraph =
-    new HdfsCsvPropertyGraphDataSource(clusterConfig, rootPath = "/csv").graph(GraphName.create("prod"))
+    new HdfsCsvPropertyGraphDataSource(clusterConfig, rootPath = "/csv").graph(GraphName.from("prod"))
 
   def verifyRecoResult(r: CypherResult) = {
     println("===>>> verifying RECO result")

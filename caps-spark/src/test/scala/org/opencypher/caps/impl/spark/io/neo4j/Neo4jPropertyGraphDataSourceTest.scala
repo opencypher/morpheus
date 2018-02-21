@@ -31,17 +31,17 @@ class Neo4jPropertyGraphDataSourceTest
 
   test("Load graph from Neo4j via DataSource") {
     val dataSource = new Neo4jPropertyGraphDataSource(neo4jConfig, Map(
-      GraphName.create("foo") -> ("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r")
+      GraphName.from("foo") -> ("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r")
     ))
 
-    val graph = dataSource.graph(GraphName.create("foo")).asCaps
+    val graph = dataSource.graph(GraphName.from("foo")).asCaps
     graph.nodes("n").toDF().collect().toBag should equal(teamDataGraphNodes)
     graph.relationships("rel").toDF().collect().toBag should equal(teamDataGraphRels)
   }
 
   test("Load graph from Neo4j via Catalog") {
     val testNamespace = Namespace("myNeo4j")
-    val testGraphName = GraphName.create("foo")
+    val testGraphName = GraphName.from("foo")
 
     val dataSource = new Neo4jPropertyGraphDataSource(neo4jConfig, Map(
       testGraphName -> ("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r")

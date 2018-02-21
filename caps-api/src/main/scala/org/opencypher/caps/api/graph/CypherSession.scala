@@ -18,6 +18,7 @@ package org.opencypher.caps.api.graph
 import org.opencypher.caps.api.io._
 import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.value.CypherValue._
+import org.opencypher.caps.impl.exception.IllegalArgumentException
 import org.opencypher.caps.impl.io.SessionPropertyGraphDataSource
 import org.opencypher.caps.impl.io.SessionPropertyGraphDataSource.{Namespace => SessionNamespace}
 
@@ -29,17 +30,32 @@ import org.opencypher.caps.impl.io.SessionPropertyGraphDataSource.{Namespace => 
 trait CypherSession {
 
   /**
-    * Stores a mutable mapping between a data source namespace and the specific [[PropertyGraphDataSource]].
+    * Stores a mutable mapping between a data source [[Namespace]] and the specific [[PropertyGraphDataSource]].
     *
+    * This mapping also holds the [[SessionPropertyGraphDataSource]] by default.
     */
   protected var dataSourceMapping: Map[Namespace, PropertyGraphDataSource] =
     Map(SessionNamespace -> new SessionPropertyGraphDataSource)
 
+  /**
+    * Register the given [[PropertyGraphDataSource]] under the specific [[Namespace]] within this session.
+    *
+    * This enables a user to refer to that [[PropertyGraphDataSource]] within a Cypher query.
+    *
+    * @param namespace  namespace for lookup
+    * @param dataSource property graph data source
+    */
   def register(namespace: Namespace, dataSource: PropertyGraphDataSource): Unit =
     dataSourceMapping = dataSourceMapping.updated(namespace, dataSource)
 
-  def dataSource(namespace: Namespace): PropertyGraphDataSource =
-    dataSourceMapping(namespace)
+  /**
+    * Returns the [[PropertyGraphDataSource]] that is registered under the given [[Namespace]].
+    *
+    * @param namespace namespace for lookup
+    * @return property graph data source
+    */
+  def dataSource(namespace: Namespace): PropertyGraphDataSource = dataSourceMapping.getOrElse(namespace,
+    throw IllegalArgumentException(s"a property graph data source registered with namespace '$namespace'"))
 
   /**
     * Executes a Cypher query in this session on the current ambient graph.
@@ -62,9 +78,6 @@ trait CypherSession {
     * @return result of the query
     */
   private[graph] def cypherOnGraph(graph: PropertyGraph, query: String, parameters: CypherMap = CypherMap.empty, drivingTable: Option[CypherRecords]): CypherResult
-
-  def readFrom(qualifiedGraphName: QualifiedGraphName): PropertyGraph =
-    dataSource(qualifiedGraphName.namespace).graph(qualifiedGraphName.graphName)
 
   /**
     * Mounts the given property graph to session-local storage under the given name. The specified graph will be
@@ -93,18 +106,22 @@ trait CypherSession {
     dataSourceMapping(SessionNamespace).graphNames.foreach(unmount)
 
   /**
-    * Writes the given graph to the data source using the specified qualified graph name.
+    * Returns the [[PropertyGraph]] that is registered under the given [[QualifiedGraphName]].
     *
     * @param qualifiedGraphName qualified graph name
-    * @param graph              graph to write
+    * @return property graph
+    */
+  def catalog(qualifiedGraphName: QualifiedGraphName): PropertyGraph =
+    dataSource(qualifiedGraphName.namespace).graph(qualifiedGraphName.graphName)
+
+  /**
+    * Writes the given [[PropertyGraph]] to the data source using the specified [[QualifiedGraphName]].
+    *
+    * @param qualifiedGraphName qualified graph name
+    * @param graph              property graph to write
     */
   // TODO: Error handling via Return Type (Success, Failed) or just throw exception?
   def write(qualifiedGraphName: QualifiedGraphName, graph: PropertyGraph): Unit =
     dataSource(qualifiedGraphName.namespace).store(qualifiedGraphName.graphName, graph)
 
 }
-
-object CypherSession {
-  val sessionGraphSchema = "session"
-}
-

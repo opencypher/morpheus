@@ -180,7 +180,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
     logStageProgress("Done!")
 
     logStageProgress("Physical plan ... ", newLine = false)
-    val physicalPlannerContext = CAPSPhysicalPlannerContext.from(readFrom, records.asCaps, parameters)(self)
+    val physicalPlannerContext = CAPSPhysicalPlannerContext.from(catalog, records.asCaps, parameters)(self)
     val physicalPlan = physicalPlanner(flatPlan)(physicalPlannerContext)
     logStageProgress("Done!")
 

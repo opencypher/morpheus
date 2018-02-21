@@ -296,7 +296,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
               val qualifiedGraphName = parts match {
                 case Nil => throw IllegalArgumentException("qualified graph name or single graph name")
                 case head :: Nil => QualifiedGraphName(SessionPropertyGraphDataSource.Namespace, GraphName(head))
-                case head :: tail => QualifiedGraphName(Namespace.create(head), GraphName(tail.reduce(_ + _)))
+                case head :: tail => QualifiedGraphName(Namespace.from(head), GraphName(tail.reduce(_ + _)))
               }
               val newContext = context.withGraphAt(graphName, qualifiedGraphName)
               put[R, IRBuilderContext](newContext) >>
