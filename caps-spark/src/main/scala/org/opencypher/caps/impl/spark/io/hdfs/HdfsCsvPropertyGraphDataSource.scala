@@ -46,7 +46,7 @@ class HdfsCsvPropertyGraphDataSource(
 
   override def delete(name: GraphName): Unit = ???
 
-  override def graphNames: Set[GraphName] = FileSystem.get(hadoopConfig).listFiles(new Path(rootPath), false)
+  override def graphNames: Set[GraphName] = FileSystem.get(hadoopConfig).listStatus(new Path(rootPath))
     .filter(f => f.isDirectory)
     .map(f => f.getPath.getName)
     .map(GraphName.from)
