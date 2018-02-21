@@ -30,23 +30,29 @@ class Neo4jPropertyGraphDataSourceTest
     with Matchers {
 
   test("Load graph from Neo4j via DataSource") {
-    val dataSource = new Neo4jPropertyGraphDataSource(neo4jConfig)
+    val dataSource = new Neo4jPropertyGraphDataSource(neo4jConfig, Map(
+      GraphName.create("foo") -> ("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r")
+    ))
 
     val graph = dataSource.graph(GraphName.create("foo")).asCaps
     graph.nodes("n").toDF().collect().toBag should equal(teamDataGraphNodes)
     graph.relationships("rel").toDF().collect().toBag should equal(teamDataGraphRels)
   }
 
-  ignore("Load graph from Neo4j via Catalog") {
+  test("Load graph from Neo4j via Catalog") {
     val testNamespace = Namespace("myNeo4j")
+    val testGraphName = GraphName.create("foo")
 
-    val dataSource = new Neo4jPropertyGraphDataSource(neo4jConfig)
+    val dataSource = new Neo4jPropertyGraphDataSource(neo4jConfig, Map(
+      testGraphName -> ("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r")
+    ))
 
     caps.register(testNamespace, dataSource)
 
-    val nodes = caps.cypher(s"FROM GRAPH AT '$testNamespace' MATCH (n) RETURN n")
-    // TODO: implement verification
-    val edges = caps.cypher(s"FROM GRAPH AT '$testNamespace' MATCH ()-[r]->() RETURN r")
-    // TODO: implement verification
+    val nodes = caps.cypher(s"FROM GRAPH AT '$testNamespace.$testGraphName' MATCH (n) RETURN n")
+    nodes.records.asCaps.toDF().collect().toBag should equal(teamDataGraphNodes)
+
+    val edges = caps.cypher(s"FROM GRAPH AT '$testNamespace.$testGraphName' MATCH ()-[r]->() RETURN r")
+    edges.records.asCaps.toDF().collect().toBag should equal(teamDataGraphRels)
   }
 }
