@@ -37,7 +37,7 @@ import org.opencypher.caps.ir.impl.{IRBuilder, IRBuilderContext}
 import org.opencypher.caps.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
 import org.opencypher.caps.logical.impl._
 
-sealed class CAPSSessionImpl(val sparkSession: SparkSession)
+sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespace: Namespace)
   extends CAPSSession
     with Serializable
     with CAPSSessionOps {
@@ -85,7 +85,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
       println(optimizedLogicalPlan.pretty())
     }
 
-    plan(graph, CAPSRecords.unit(), allParameters, optimizedLogicalPlan)
+    plan(CAPSRecords.unit(), allParameters, optimizedLogicalPlan)
   }
 
   override def sql(query: String): CAPSRecords =
@@ -97,7 +97,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
     *
     * @param graphName name of the graph within the session {{{session.graphName}}}
     */
-  override def unmount(graphName: GraphName): Unit = {
+  override def delete(graphName: GraphName): Unit = {
     val sessionDataSource = dataSourceMapping(SessionPropertyGraphDataSource.Namespace)
     sessionDataSource.graph(graphName).asCaps.unpersist()
     sessionDataSource.delete(graphName)
@@ -119,7 +119,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
 
   private def mountAmbientGraph(ambient: PropertyGraph): IRExternalGraph = {
     val graphName = GraphName(UUID.randomUUID().toString)
-    val qualifiedGraphName = mount(graphName, ambient)
+    val qualifiedGraphName = store(graphName, ambient)
     IRExternalGraph(graphName.value, ambient.schema, qualifiedGraphName)
   }
 
@@ -136,7 +136,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
     queryParameters: CypherMap): CAPSRecords = {
     val scan = planStart(graph, in.asCaps.header.internalHeader.fields)
     val filter = producer.planFilter(expr, scan)
-    plan(graph, in, queryParameters, filter).records
+    plan(in, queryParameters, filter).records
   }
 
   override def select(
@@ -146,7 +146,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
     queryParameters: CypherMap): CAPSRecords = {
     val scan = planStart(graph, in.asCaps.header.internalHeader.fields)
     val select = producer.planSelect(fields, Set.empty, scan)
-    plan(graph, in, queryParameters, select).records
+    plan(in, queryParameters, select).records
   }
 
   override def project(
@@ -156,7 +156,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
     queryParameters: CypherMap): CAPSRecords = {
     val scan = planStart(graph, in.asCaps.header.internalHeader.fields)
     val project = producer.projectExpr(expr, scan)
-    plan(graph, in, queryParameters, project).records
+    plan(in, queryParameters, project).records
   }
 
   override def alias(
@@ -167,11 +167,10 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
     val (expr, v) = alias
     val scan = planStart(graph, in.asCaps.header.internalHeader.fields)
     val select = producer.projectField(IRField(v.name)(v.cypherType), expr, scan)
-    plan(graph, in, queryParameters, select).records
+    plan(in, queryParameters, select).records
   }
 
   private def plan(
-    graph: PropertyGraph,
     records: CypherRecords,
     parameters: CypherMap,
     logicalPlan: LogicalOperator): CAPSResult = {
@@ -180,7 +179,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
     logStageProgress("Done!")
 
     logStageProgress("Physical plan ... ", newLine = false)
-    val physicalPlannerContext = CAPSPhysicalPlannerContext.from(catalog, records.asCaps, parameters)(self)
+    val physicalPlannerContext = CAPSPhysicalPlannerContext.from(this.graph, records.asCaps, parameters)(self)
     val physicalPlan = physicalPlanner(flatPlan)(physicalPlannerContext)
     logStageProgress("Done!")
 

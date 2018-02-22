@@ -21,9 +21,11 @@ import org.opencypher.caps.test.BaseTestSuite
 trait CAPSSessionFixture extends BaseTestFixture {
   self: SparkSessionFixture with BaseTestSuite =>
 
-  implicit lazy val caps: CAPSSession = CAPSSession.create(session)
+  implicit lazy val caps: CAPSSession = CAPSSession.create()
 
-  abstract override protected def afterEach(): Unit =
-    caps.unmountAll()
+  abstract override protected def afterEach(): Unit = {
+    // delete all session graphs via their qualified graph name
+    caps.dataSource(caps.sessionNamespace).graphNames.foreach(caps.delete)
     super.afterEach()
+  }
 }

@@ -77,7 +77,7 @@ class Neo4jPropertyGraphDataSourceTest
       testGraphName -> ("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r")
     ))
 
-    caps.register(testNamespace, dataSource)
+    caps.registerSource(testNamespace, dataSource)
 
     val nodes = caps.cypher(s"FROM GRAPH AT '$testNamespace.$testGraphName' MATCH (n) RETURN n")
     nodes.records.asCaps.toDF().collect().toBag should equal(teamDataGraphNodes)

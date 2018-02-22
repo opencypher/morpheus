@@ -21,10 +21,12 @@ import org.apache.spark.SparkConf
 import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
 import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph}
+import org.opencypher.caps.api.io.Namespace
 import org.opencypher.caps.api.schema._
 import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
+import org.opencypher.caps.impl.io.SessionPropertyGraphDataSource
 import org.opencypher.caps.impl.spark.{CypherKryoRegistrator, _}
 import org.opencypher.caps.impl.table.ColumnName
 
@@ -80,10 +82,11 @@ object CAPSSession extends Serializable {
   /**
     * Creates a new [[CAPSSession]] based on the given [[SparkSession]].
     *
-    * @param session Spark session
+    * @param sparkSession Spark session
     * @return CAPS session
     */
-  def create(implicit session: SparkSession): CAPSSession = new CAPSSessionImpl(session)
+  def create(sessionNamespace: Namespace = SessionPropertyGraphDataSource.Namespace)
+    (implicit sparkSession: SparkSession): CAPSSession = new CAPSSessionImpl(sparkSession, sessionNamespace)
 
   /**
     * Creates a new CAPSSession that wraps a local Spark session with CAPS default parameters.
@@ -107,7 +110,7 @@ object CAPSSession extends Serializable {
       .getOrCreate()
     session.sparkContext.setLogLevel("error")
 
-    create(session)
+    create()(session)
   }
 
   /**

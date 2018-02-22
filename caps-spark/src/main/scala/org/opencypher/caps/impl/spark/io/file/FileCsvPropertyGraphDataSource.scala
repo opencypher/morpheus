@@ -37,7 +37,8 @@ class FileCsvPropertyGraphDataSource(rootPath: String)(implicit val session: CAP
 
   override def store(name: GraphName, graph: PropertyGraph): Unit = ???
 
-  override def delete(name: GraphName): Unit = ???
+  override def delete(name: GraphName): Unit =
+    if (hasGraph(name)) Files.delete(Paths.get(graphPath(name)))
 
   override def graphNames: Set[GraphName] = Files.list(Paths.get(rootPath)).iterator().asScala
     .filter(p => Files.isDirectory(p))

@@ -68,8 +68,8 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
 
     check(verifyAllCityFriends(ALL_CITYFRIENDS))
 
-    caps.mount(GraphName.from("friends"), ALL_CITYFRIENDS)
-    caps.mount(GraphName.from("products"), PRODUCTS)
+    caps.store(GraphName.from("friends"), ALL_CITYFRIENDS)
+    caps.store(GraphName.from("products"), PRODUCTS)
 
     val LINKS = caps.cypher(
       s"""FROM GRAPH AT 'friends'

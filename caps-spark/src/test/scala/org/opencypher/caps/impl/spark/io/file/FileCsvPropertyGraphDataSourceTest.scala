@@ -63,7 +63,7 @@ class FileCsvPropertyGraphDataSourceTest extends CAPSTestSuite with TeamDataFixt
     val testGraphName = GraphName("sn")
 
     val dataSource = new FileCsvPropertyGraphDataSource(rootPath = testRootPath)
-    caps.register(testNamespace, dataSource)
+    caps.registerSource(testNamespace, dataSource)
 
     val nodes = caps.cypher(s"FROM GRAPH AT '$testNamespace.$testGraphName' MATCH (n) RETURN n")
     nodes.records.asCaps.toDF().collect().toBag should equal(csvTestGraphNodes)

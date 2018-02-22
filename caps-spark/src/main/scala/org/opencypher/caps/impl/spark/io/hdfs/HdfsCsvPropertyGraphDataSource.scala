@@ -24,7 +24,6 @@ import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.io.GraphName
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.impl.spark.io.CAPSPropertyGraphDataSource
-import org.opencypher.caps.impl.spark.io.hdfs.RemoteIteratorWrapper._
 
 import scala.language.implicitConversions
 
@@ -38,21 +37,24 @@ class HdfsCsvPropertyGraphDataSource(
   hadoopConfig: Configuration,
   rootPath: String)(implicit val session: CAPSSession) extends CAPSPropertyGraphDataSource {
 
+  private val fileSystem = FileSystem.get(hadoopConfig)
+
   override def graph(name: GraphName): PropertyGraph = CsvGraphLoader(graphPath(name), hadoopConfig).load
 
   override def schema(name: GraphName): Option[Schema] = None
 
   override def store(name: GraphName, graph: PropertyGraph): Unit = ???
 
-  override def delete(name: GraphName): Unit = ???
+  override def delete(name: GraphName): Unit =
+    if (hasGraph(name)) fileSystem.delete(new Path(rootPath), /* recursive = */ true)
 
-  override def graphNames: Set[GraphName] = FileSystem.get(hadoopConfig).listStatus(new Path(rootPath))
+  override def graphNames: Set[GraphName] = fileSystem.listStatus(new Path(rootPath))
     .filter(f => f.isDirectory)
     .map(f => f.getPath.getName)
     .map(GraphName.from)
     .toSet
 
-  override def hasGraph(name: GraphName): Boolean = FileSystem.get(hadoopConfig).exists(new Path(graphPath(name)))
+  override def hasGraph(name: GraphName): Boolean = fileSystem.exists(new Path(graphPath(name)))
 
   private def graphPath(name: GraphName): String = s"$rootPath${File.separator}$name"
 

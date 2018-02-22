@@ -19,13 +19,14 @@ import java.util.UUID
 
 import org.opencypher.caps.api.configuration.CoraConfiguration.PrintFlatPlan
 import org.opencypher.caps.api.graph.{CypherResult, CypherSession, PropertyGraph}
-import org.opencypher.caps.api.io.{GraphName, QualifiedGraphName}
+import org.opencypher.caps.api.io.{GraphName, Namespace, QualifiedGraphName}
 import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.cosc.impl.COSCConverters._
 import org.opencypher.caps.cosc.impl.planning.{COSCPhysicalOperatorProducer, COSCPhysicalPlannerContext}
 import org.opencypher.caps.impl.flat.{FlatPlanner, FlatPlannerContext}
+import org.opencypher.caps.impl.io.SessionPropertyGraphDataSource
 import org.opencypher.caps.impl.physical.PhysicalPlanner
 import org.opencypher.caps.impl.util.Measurement.time
 import org.opencypher.caps.ir.api.IRExternalGraph
@@ -35,10 +36,10 @@ import org.opencypher.caps.logical.api.configuration.LogicalConfiguration.PrintL
 import org.opencypher.caps.logical.impl.{LogicalOperatorProducer, LogicalOptimizer, LogicalPlanner, LogicalPlannerContext}
 
 object COSCSession {
-  def create: COSCSession = new COSCSession()
+  def create: COSCSession = new COSCSession(SessionPropertyGraphDataSource.Namespace)
 }
 
-class COSCSession() extends CypherSession {
+class COSCSession(val sessionNamespace: Namespace) extends CypherSession {
 
   self =>
 
@@ -80,7 +81,7 @@ class COSCSession() extends CypherSession {
     val flatPlan = time("Flat planning")(flatPlanner(optimizedLogicalPlan)(FlatPlannerContext(parameters)))
     if (PrintFlatPlan.isSet) println(flatPlan.pretty)
 
-    val coscPlannerContext = COSCPhysicalPlannerContext(this, catalog, COSCRecords.unit()(self), allParameters)
+    val coscPlannerContext = COSCPhysicalPlannerContext(this, this.graph, COSCRecords.unit()(self), allParameters)
     val coscPlan = time("Physical planning")(physicalPlanner.process(flatPlan)(coscPlannerContext))
 
     time("Query execution")(COSCResultBuilder.from(logicalPlan, flatPlan, coscPlan)(COSCRuntimeContext(coscPlannerContext.parameters, graphAt)))
@@ -91,7 +92,7 @@ class COSCSession() extends CypherSession {
 
   private def mountAmbientGraph(ambient: PropertyGraph): IRExternalGraph = {
     val graphName = GraphName(UUID.randomUUID().toString)
-    val qualifiedGraphName = mount(graphName, ambient)
+    val qualifiedGraphName = store(graphName, ambient)
     IRExternalGraph(graphName.value, ambient.schema, qualifiedGraphName)
   }
 }

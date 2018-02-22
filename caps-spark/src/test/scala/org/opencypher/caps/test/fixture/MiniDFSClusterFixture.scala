@@ -71,7 +71,7 @@ trait MiniDFSClusterFixture extends BaseTestFixture {
 
   protected val cluster: MiniDFSCluster = clusterForPath(dfsTestGraphPath)
 
-  protected def hdfsURI: URI = URI.create(s"hdfs://${cluster.getNameNode.getHostAndPort}")
+  protected def hdfsURI: URI = URI.create(s"hdfs://${cluster.getNameNode.getHostAndPort}$dfsTestGraphPath")
 
   protected def clusterConfig: Configuration = {
     sparkSession.sparkContext.hadoopConfiguration.set("fs.default.name", hdfsURI.toString)

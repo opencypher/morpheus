@@ -20,7 +20,7 @@ import org.opencypher.caps.api.io.{GraphName, PropertyGraphDataSource}
 import org.opencypher.caps.api.schema.Schema
 
 object SessionPropertyGraphDataSource {
-  // TODO: Make this configurable
+
   val Namespace = org.opencypher.caps.api.io.Namespace("session")
 }
 
