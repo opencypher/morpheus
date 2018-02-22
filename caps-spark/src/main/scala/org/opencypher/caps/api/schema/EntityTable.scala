@@ -32,6 +32,7 @@ import org.opencypher.caps.impl.util.Annotation
 import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe._
 
+// TODO: Move to io package
 trait CAPSEntityTable extends EntityTable[SparkTable] {
   // TODO: create CTEntity type
   private[caps] def entityType: CypherType with DefiniteCypherType = mapping.cypherType

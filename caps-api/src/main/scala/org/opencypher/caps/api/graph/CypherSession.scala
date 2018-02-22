@@ -34,6 +34,7 @@ trait CypherSession {
     *
     * This mapping also holds the [[SessionPropertyGraphDataSource]] by default.
     */
+  // TODO: Move session outside the map into its own field
   protected var dataSourceMapping: Map[Namespace, PropertyGraphDataSource] =
     Map(SessionNamespace -> new SessionPropertyGraphDataSource)
 
@@ -45,6 +46,7 @@ trait CypherSession {
     * @param namespace  namespace for lookup
     * @param dataSource property graph data source
     */
+  // TODO: Rename to registerSource!
   def register(namespace: Namespace, dataSource: PropertyGraphDataSource): Unit =
     dataSourceMapping = dataSourceMapping.updated(namespace, dataSource)
 
@@ -77,6 +79,7 @@ trait CypherSession {
     * @param parameters parameters used by the Cypher query
     * @return result of the query
     */
+  // TODO: Move to bottom
   private[graph] def cypherOnGraph(graph: PropertyGraph, query: String, parameters: CypherMap = CypherMap.empty, drivingTable: Option[CypherRecords]): CypherResult
 
   /**
@@ -86,6 +89,7 @@ trait CypherSession {
     * @param graph     property graph to register
     * @param graphName name of the graph within the session {{{session.graphName}}}
     */
+  // TODO: Rename to store
   def mount(graphName: GraphName, graph: PropertyGraph): QualifiedGraphName = {
     dataSourceMapping(SessionNamespace).store(graphName, graph)
     QualifiedGraphName(SessionNamespace, graphName)
@@ -96,12 +100,15 @@ trait CypherSession {
     *
     * @param graphName name of the graph within the session {{{session.graphName}}}
     */
+  // TODO: Rename to delete
+  // TODO: Overload for string arguments
   def unmount(graphName: GraphName): Unit =
     dataSourceMapping(SessionNamespace).delete(graphName)
 
   /**
     * Unmounts all property graphs from the session-local storage.
     */
+  // TODO: Remove
   def unmountAll(): Unit =
     dataSourceMapping(SessionNamespace).graphNames.foreach(unmount)
 
@@ -111,6 +118,8 @@ trait CypherSession {
     * @param qualifiedGraphName qualified graph name
     * @return property graph
     */
+  // TODO: Call this graph
+  // TODO: Overload for string argument
   def catalog(qualifiedGraphName: QualifiedGraphName): PropertyGraph =
     dataSource(qualifiedGraphName.namespace).graph(qualifiedGraphName.graphName)
 
@@ -121,6 +130,8 @@ trait CypherSession {
     * @param graph              property graph to write
     */
   // TODO: Error handling via Return Type (Success, Failed) or just throw exception?
+  // TODO: Rename to store
+  // TODO: Overload for string argument
   def write(qualifiedGraphName: QualifiedGraphName, graph: PropertyGraph): Unit =
     dataSource(qualifiedGraphName.namespace).store(qualifiedGraphName.graphName, graph)
 

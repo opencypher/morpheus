@@ -30,8 +30,9 @@ object Schema {
   )
 }
 
+// TODO: Make a trait or abstract class
+// TODO: Move labels and relationship types away from constructor
 final case class Schema(
-  // TODO: Move labels and relationship types away from constructor
   /**
     * All labels present in this graph
     */
@@ -233,6 +234,7 @@ final case class Schema(
     propertiesMarkedOptional
   }
 
+  // TODO: Move to other piece of code that verifies the schema wrt Spark
   def sparkCompatibleJoin(label: Option[String], key: String, t1: CypherType, t2: CypherType): CypherType = {
     val join = t1.join(t2)
     if (join.material == t1.material || join.material == t2.material) {

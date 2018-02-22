@@ -288,6 +288,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
 
             case ast.GraphAtAs(url, _, _) =>
 
+              // TODO: Move the string -> qualified graph name to QualifiedGraphName.apply
               val parts = url.url match {
                 case Left(_) =>
                   throw NotImplementedException(s"Support for graph uris by parameter not yet implemented")

@@ -39,6 +39,7 @@ trait CypherResult extends CypherPrintable {
     *
     * @return a map of named graphs.
     */
+  // TODO: Remove
   def graphs: Map[String, PropertyGraph]
 
   /**
@@ -46,6 +47,7 @@ trait CypherResult extends CypherPrintable {
     *
     * @return a table of records.
     */
+  // TODO: Make option
   def records: CypherRecords
 
   /**
@@ -56,6 +58,7 @@ trait CypherResult extends CypherPrintable {
 }
 
 trait CypherQueryPlans {
+  // TODO: Return strings instead of printables
   def logical: CypherPrintable
   def physical: CypherPrintable
 }

@@ -47,6 +47,7 @@ trait PropertyGraph {
     */
   def session: CypherSession
 
+  // TODO: Remove
   def nodes(name: String): CypherRecords = nodes(name, CTNode)
 
   /**
@@ -55,8 +56,11 @@ trait PropertyGraph {
     * @param name the field name for the returned nodes.
     * @return a table of nodes of the specified type.
     */
+  // TODO: Add default parameter
+  // TODO: Add missing doc
   def nodes(name: String, nodeCypherType: CTNode): CypherRecords
 
+  // TODO: Remove
   def relationships(name: String): CypherRecords = relationships(name, CTRelationship)
 
   /**
@@ -65,6 +69,8 @@ trait PropertyGraph {
     * @param name the field name for the returned relationships.
     * @return a table of relationships of the specified type.
     */
+  // TODO: Add default parameter
+  // TODO: Add missing doc
   def relationships(name: String, relCypherType: CTRelationship): CypherRecords
 
   /**
@@ -75,6 +81,7 @@ trait PropertyGraph {
     * @return           the result of the query.
     * @see [[CypherSession.cypherOnGraph()]]
     */
+  // TODO: Don't make final
   final def cypher(query: String, parameters: CypherMap = CypherMap.empty, drivingTable: Option[CypherRecords] = None): CypherResult =
     session.cypherOnGraph(this, query, parameters, drivingTable)
 
@@ -85,6 +92,7 @@ trait PropertyGraph {
     * @param other the argument graph with which to union.
     * @return the union of this and the argument graph.
     */
+  // TODO: Move to own trait GraphOperations
   def union(other: PropertyGraph): PropertyGraph
 
 }

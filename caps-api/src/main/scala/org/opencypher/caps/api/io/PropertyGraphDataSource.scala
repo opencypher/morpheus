@@ -79,11 +79,12 @@ trait PropertyGraphDataSource {
     *
     * @return names of stored graphs
     */
-  // TODO: is this method really necessary?
   def graphNames: Set[GraphName]
 
 }
 
+// TODO: Move to another file QualifiedGraphName in graph package
+// TODO: Remove companions and use normal case classes
 object GraphName {
   def from(graphName: String) = GraphName(graphName)
 }

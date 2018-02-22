@@ -28,10 +28,12 @@ object CypherPrintable {
 
 }
 
+// TODO: Inline into CypherRecords directly
 trait CypherPrintable {
 
   final def printTo(stream: PrintStream)(implicit options: PrintOptions): Unit =
     print(options.stream(stream))
 
+  // TODO: Call this show
   def print(implicit options: PrintOptions): Unit
 }

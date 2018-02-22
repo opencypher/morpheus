@@ -124,6 +124,7 @@ object CAPSSession extends Serializable {
     * @param returnItem Cypher RETURN item (e.g. "a.name")
     * @return DataFrame column name for given RETURN item
     */
+  // TODO: Consider moving this to CypherRecords instead
   def columnFor(returnItem: String): String = ColumnName.from(returnItem)
 
   /**
