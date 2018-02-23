@@ -149,7 +149,7 @@ sealed abstract class CAPSRecords(val header: RecordHeader, val data: DataFrame)
     toCypherMaps.foreachPartition(f)
   }
 
-  def collect(): Array[CypherMap] =
+  override def collect: Array[CypherMap] =
     toCypherMaps.collect()
 
   /**

@@ -194,7 +194,7 @@ trait WithBehaviour { this: AcceptanceTest =>
           |RETURN val1, val2, val3
         """.stripMargin)
 
-      result.records.iterator.toBag should equal(Bag(
+      result.records.collect.toBag should equal(Bag(
         CypherMap("val1" -> 1, "val2" -> 3, "val3" -> 10)
       ))
     }

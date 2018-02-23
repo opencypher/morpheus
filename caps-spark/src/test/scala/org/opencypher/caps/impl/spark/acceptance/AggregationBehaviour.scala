@@ -32,7 +32,7 @@ trait AggregationBehaviour {
 
         val result = graph.cypher("MATCH (n) WITH AVG(n.val) AS res RETURN res")
 
-        result.records.iterator.toBag should equal(Bag(
+        result.records.collect.toBag should equal(Bag(
           CypherMap("res" -> 4)
         ))
       }
@@ -42,7 +42,7 @@ trait AggregationBehaviour {
 
         val result = graph.cypher("MATCH (n) RETURN AVG(n.val) AS res")
 
-        result.records.iterator.toBag should equal(Bag(
+        result.records.collect.toBag should equal(Bag(
           CypherMap("res" -> 4)
         ))
       }

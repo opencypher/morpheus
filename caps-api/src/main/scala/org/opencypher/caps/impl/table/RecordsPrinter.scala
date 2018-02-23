@@ -49,7 +49,7 @@ object RecordsPrinter {
 
     sep = "| "
     var count = 0
-    records.iterator.foreach { map =>
+    records.collect.foreach { map =>
       if (fieldContents.isEmpty) {
         stream.print(sep)
         stream.print(fitToColumn("(empty row)"))

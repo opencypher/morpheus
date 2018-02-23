@@ -36,7 +36,7 @@ trait RecordMatchingTestSupport {
 
   implicit class RecordMatcher(records: CAPSRecords) {
     def shouldMatch(expected: CypherMap*): Assertion = {
-      records.iterator.toBag should equal(Bag(expected: _*))
+      records.collect.toBag should equal(Bag(expected: _*))
     }
 
     def shouldMatch(expectedRecords: CAPSRecords): Assertion = {

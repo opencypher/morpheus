@@ -171,7 +171,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture with TeamD
 
     val result = g.cypher("MATCH (n) WITH 5 - n.p + 1 AS b, n RETURN n, b")
 
-    result.records.iterator.toBag should equal(
+    result.records.collect.toBag should equal(
       Bag(
         CypherMap(
           "n" -> CAPSNode(0L, Set("Foo"), CypherMap("p" -> 1)),

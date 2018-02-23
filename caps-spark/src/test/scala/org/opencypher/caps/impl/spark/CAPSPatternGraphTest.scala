@@ -43,7 +43,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
         |RETURN GRAPH result OF (a)
       """.stripMargin)
 
-    person.graphs("result").cypher("MATCH (n) RETURN n.name").records.iterator.toSet should equal(
+    person.graphs("result").cypher("MATCH (n) RETURN n.name").records.collect.toSet should equal(
       Set(
         CypherMap("n.name" -> "Mats")
       ))
@@ -57,7 +57,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
         |RETURN GRAPH result OF (a)-[r]->(b)
       """.stripMargin)
 
-    person.graphs("result").cypher("MATCH (n) RETURN n.name").records.iterator.toSet should equal(
+    person.graphs("result").cypher("MATCH (n) RETURN n.name").records.collect.toSet should equal(
       Set(
         CypherMap("n.name" -> "Mats"),
         CypherMap("n.name" -> "Stefan"),
@@ -79,7 +79,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
       .graphs("result")
       .cypher("MATCH ()-[:SWEDISH_KNOWS]->(n) RETURN n.name")
       .records
-      .iterator
+      .collect
       .toSet should equal(
       Set(
         CypherMap("n.name" -> "Stefan"),
@@ -102,7 +102,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
       .graphs("result")
       .cypher("MATCH (b)-[:KNOWS_A]->(n) WITH COUNT(n) as cnt RETURN cnt")
       .records
-      .iterator
+      .collect
       .toSet should equal(
       Set(
         CypherMap("cnt" -> 3)
@@ -149,7 +149,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
 
     val graph = person.graphs("result")
 
-    graph.cypher("MATCH (n:Swede) RETURN labels(n)").records.iterator.toSet should equal(
+    graph.cypher("MATCH (n:Swede) RETURN labels(n)").records.collect.toSet should equal(
       Set(
         CypherMap("labels(n)" -> List("Swede")),
         CypherMap("labels(n)" -> List("Swede")),
@@ -306,7 +306,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
   test("Supports .cypher node scans") {
     val patternGraph = initPersonReadsBookGraph
 
-    patternGraph.cypher("MATCH (p:Person {name: 'Mats'}) RETURN p.luckyNumber").records.iterator.toBag should equal(
+    patternGraph.cypher("MATCH (p:Person {name: 'Mats'}) RETURN p.luckyNumber").records.collect.toBag should equal(
       Bag(CypherMap("p.luckyNumber" -> 23)))
   }
 
@@ -333,7 +333,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
 
     val patternGraph = CAPSGraph.create(CAPSRecords.verifyAndCreate(header, df), schema)
 
-    patternGraph.nodes("n", CTNode("Person")).iterator.toBag should equal(
+    patternGraph.nodes("n", CTNode("Person")).collect.toBag should equal(
       Bag(
         CypherMap("n" -> CAPSNode(0L, Set())),
         CypherMap("n" -> CAPSNode(1L, Set("Person"))),
@@ -414,7 +414,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
 
     val patternGraph = CAPSGraph.create(CAPSRecords.verifyAndCreate(header, df), schema)
 
-    patternGraph.nodes("n", CTNode).iterator.toBag should equal(
+    patternGraph.nodes("n", CTNode).collect.toBag should equal(
       Bag(
         CypherMap("n" -> CAPSNode(0L, Set("Person"), CypherMap("name" -> "PersonPeter"))))
     )
@@ -447,7 +447,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
 
     val patternGraph = CAPSGraph.create(CAPSRecords.verifyAndCreate(header, df), schema)
 
-    patternGraph.nodes("n", CTNode).iterator.toBag should equal(
+    patternGraph.nodes("n", CTNode).collect.toBag should equal(
       Bag(
         CypherMap("n" -> CAPSNode(0L, Set("Person"), CypherMap("name" -> "PersonPeter"))),
         CypherMap("n" -> CAPSNode(1L, Set("Employee"), CypherMap("name" -> "EmployeePeter"))),

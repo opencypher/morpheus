@@ -72,6 +72,13 @@ sealed abstract class COSCRecords(
     * @param name the name under which this table may be referenced.
     */
   override def register(name: String): Unit = ???
+
+  /**
+    * Consume these records and collect them into an array.
+    *
+    * WARNING: This operation may be very expensive as it may have to materialise
+    */
+  override def collect: Array[CypherMap] = data.rows.toArray
 }
 
 

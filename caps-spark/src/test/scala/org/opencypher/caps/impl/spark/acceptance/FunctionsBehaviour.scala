@@ -298,7 +298,7 @@ trait FunctionsBehaviour {
 
         val result = given.cypher("MATCH (n) RETURN coalesce(n.valA, n.valB, n.valC) as value")
 
-        result.records.iterator.toBag should equal(
+        result.records.collect.toBag should equal(
           Bag(
             CypherMap("value" -> 1),
             CypherMap("value" -> 2),
@@ -312,7 +312,7 @@ trait FunctionsBehaviour {
 
         val result = given.cypher("MATCH (n) RETURN coalesce(n.valD, n.valE) as value")
 
-        result.records.iterator.toBag should equal(
+        result.records.collect.toBag should equal(
           Bag(
             CypherMap("value" -> null),
             CypherMap("value" -> null),

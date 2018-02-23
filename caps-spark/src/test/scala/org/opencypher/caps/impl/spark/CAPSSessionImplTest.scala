@@ -35,7 +35,7 @@ class CAPSSessionImplTest extends CAPSTestSuite with TeamDataFixture {
         |INNER JOIN people p2 ON knows.dst = p2.id
       """.stripMargin)
 
-    sqlResult.iterator.toBag should equal(Bag(
+    sqlResult.collect.toBag should equal(Bag(
       CypherMap("me" -> "Mats", "since" -> 2017, "you" -> "Martin"),
       CypherMap("me" -> "Mats", "since" -> 2016, "you" -> "Max"),
       CypherMap("me" -> "Mats", "since" -> 2015, "you" -> "Stefan"),

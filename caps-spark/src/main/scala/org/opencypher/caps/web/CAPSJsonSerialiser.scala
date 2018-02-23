@@ -24,7 +24,7 @@ import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords}
 trait JsonSerialiser {
   implicit val recordsEncoder: Encoder[CAPSRecords] = new Encoder[CAPSRecords] {
     override final def apply(records: CAPSRecords): Json = {
-      val rows = records.iterator.map { map =>
+      val rows = records.collect.map { map =>
         val unit = records.header.fieldsInOrder.map { field =>
           field -> constructValue(map(field))
         }
@@ -40,11 +40,11 @@ trait JsonSerialiser {
 
   implicit val graphEncoder: Encoder[CAPSGraph] = new Encoder[CAPSGraph] {
     override final def apply(graph: CAPSGraph): Json = {
-      val nodes = graph.nodes("n").iterator.map { map =>
+      val nodes = graph.nodes("n").collect.map { map =>
         constructValue(map("n"))
       }.toSeq
 
-      val rels = graph.relationships("rel").iterator.map { map =>
+      val rels = graph.relationships("rel").collect.map { map =>
         constructValue(map("rel"))
       }.toSeq
 

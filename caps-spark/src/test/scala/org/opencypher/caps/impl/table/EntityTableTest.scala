@@ -91,7 +91,7 @@ class EntityTableTest extends CAPSTestSuite {
     val nodeTable = CAPSNodeTable(nodeMapping, df)
 
     val graph = CAPSGraph.create(nodeTable)
-    graph.nodes("n").iterator.toSet {
+    graph.nodes("n").collect.toSet {
       CypherMap("n" -> "1")
     }
   }

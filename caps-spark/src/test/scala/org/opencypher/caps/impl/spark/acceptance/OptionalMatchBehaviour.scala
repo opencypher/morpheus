@@ -239,7 +239,7 @@ trait OptionalMatchBehaviour { this: AcceptanceTest =>
           |RETURN b,c
         """.stripMargin)
 
-      result.records.iterator.toBag should equal(Bag(
+      result.records.collect.toBag should equal(Bag(
         CypherMap("b" -> CypherNull, "c" -> CypherNull)
       ))
     }

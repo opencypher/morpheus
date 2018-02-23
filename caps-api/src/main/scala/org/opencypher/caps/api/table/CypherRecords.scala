@@ -27,9 +27,19 @@ trait CypherRecords extends CypherTable[String] with CypherPrintable {
   /**
     * Consume these records as an iterator.
     *
-    * WARNING: This operation may be very expensive as it may have to materialise
+    * WARNING: This operation may be very expensive as it may have to materialise the full result set.
+    *
+    * @note This method may be considerably slower than [[org.opencypher.caps.api.table.CypherRecords#collect]].
+    *       Use this method only if collect could outgrow the available driver memory.
     */
   def iterator: Iterator[CypherMap]
+
+  /**
+    * Consume these records and collect them into an array.
+    *
+    * WARNING: This operation may be very expensive as it may have to materialise the full result set.
+    */
+  def collect: Array[CypherMap]
 
   /**
     * Registers these records as a table under the given name.
