@@ -15,7 +15,9 @@
  */
 package org.opencypher.caps.impl.io
 
-import org.opencypher.caps.api.io.GraphName
+import org.mockito.Mockito._
+import org.opencypher.caps.api.graph.{GraphName, PropertyGraph}
+import org.opencypher.caps.api.schema.Schema
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{FunSuite, Matchers}
 
@@ -25,13 +27,45 @@ class SessionPropertyGraphDataSourceTest extends FunSuite with MockitoSugar with
     val source = new SessionPropertyGraphDataSource
     val testGraphName = GraphName.from("test")
     source.store(testGraphName, null)
-    source.hasGraph(testGraphName) should be(true)
+    source.hasGraph(testGraphName) should be
+    true
   }
 
   test("hasGraph should return false for non-existing graph") {
     val source = new SessionPropertyGraphDataSource
     val testGraphName = GraphName.from("test")
-    source.hasGraph(testGraphName) should be(false)
+    source.hasGraph(testGraphName) should be
+    false
+  }
+
+  test("graph should return graph for existing graph") {
+    val source = new SessionPropertyGraphDataSource
+    val testGraphName = GraphName.from("test")
+    val testGraph = mock[PropertyGraph]
+    source.store(testGraphName, testGraph)
+    source.graph(testGraphName) should be(testGraph)
+  }
+
+  test("graph should throw exception for non-existing graph") {
+    val source = new SessionPropertyGraphDataSource
+    val testGraphName = GraphName.from("test")
+    an[NoSuchElementException] should be thrownBy source.graph(testGraphName)
+  }
+
+  test("schema should return None for non-existing graph") {
+    val source = new SessionPropertyGraphDataSource
+    val testGraphName = GraphName.from("test")
+    source.schema(testGraphName).isEmpty should be
+    true
+  }
+
+  test("schema should return schema for existing graph") {
+    val source = new SessionPropertyGraphDataSource
+    val testGraphName = GraphName.from("test")
+    val propertyGraph = mock[PropertyGraph]
+    when(propertyGraph.schema).thenReturn(Schema.empty.withRelationshipType("foo"))
+    source.store(testGraphName, propertyGraph)
+    source.schema(testGraphName).get should be(Schema.empty.withRelationshipType("foo"))
   }
 
   test("graphNames should return all names of stored graphs") {

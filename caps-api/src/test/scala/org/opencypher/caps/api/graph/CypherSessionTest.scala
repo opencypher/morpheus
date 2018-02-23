@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.api.graph
 
-import org.opencypher.caps.api.io.{GraphName, Namespace, PropertyGraphDataSource, QualifiedGraphName}
+import org.opencypher.caps.api.io.PropertyGraphDataSource
 import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.impl.exception.IllegalArgumentException

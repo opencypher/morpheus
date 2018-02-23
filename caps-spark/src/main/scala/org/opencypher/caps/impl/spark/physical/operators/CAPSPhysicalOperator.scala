@@ -17,7 +17,7 @@ package org.opencypher.caps.impl.spark.physical.operators
 
 import org.apache.spark.sql.DataFrame
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.io.QualifiedGraphName
+import org.opencypher.caps.api.graph.QualifiedGraphName
 import org.opencypher.caps.api.physical.PhysicalOperator
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.exception.IllegalArgumentException

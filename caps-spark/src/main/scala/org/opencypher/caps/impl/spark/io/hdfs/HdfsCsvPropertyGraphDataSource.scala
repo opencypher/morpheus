@@ -20,8 +20,7 @@ import java.io.File
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path, RemoteIterator}
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.graph.PropertyGraph
-import org.opencypher.caps.api.io.GraphName
+import org.opencypher.caps.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.impl.spark.io.CAPSPropertyGraphDataSource
 

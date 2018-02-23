@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.spark.physical
 
-import org.opencypher.caps.api.io.{GraphName, Namespace, QualifiedGraphName}
+import org.opencypher.caps.api.graph.{GraphName, Namespace, QualifiedGraphName}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.CTNode
 import org.opencypher.caps.impl.spark.CAPSConverters._

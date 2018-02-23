@@ -20,7 +20,7 @@ import org.apache.spark.graphx._
 import org.apache.spark.util.collection.{BitSet, OpenHashSet}
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.CAPSSession._
-import org.opencypher.caps.api.io.GraphName
+import org.opencypher.caps.api.graph.GraphName
 import org.opencypher.caps.api.io.conversion.NodeMapping
 import org.opencypher.caps.api.schema.CAPSNodeTable
 import org.opencypher.caps.api.schema.EntityTable.SparkTable

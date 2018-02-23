@@ -16,7 +16,7 @@
 package org.opencypher.spark.examples
 
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.io.GraphName
+import org.opencypher.caps.api.graph.Namespace
 import org.opencypher.caps.impl.spark.io.file.FileCsvPropertyGraphDataSource
 
 /**
@@ -47,10 +47,17 @@ object CypherSQLRoundtripExample extends App {
 
   // 6) Load a purchase network graph via CSV + Schema files
   val csvFolder = getClass.getResource("/csv").getFile
-  val purchaseNetwork = new FileCsvPropertyGraphDataSource(rootPath = csvFolder).graph(GraphName.from("prod"))
+  // 6a) Register a file based data source at the session (the root path may contain multiple graphs)
+  session.registerSource(Namespace("myDataSource"), new FileCsvPropertyGraphDataSource(rootPath = csvFolder))
 
-  // 7) Use the results from the SQL query as driving table for a Cypher query
-  val result2 = purchaseNetwork.cypher("WITH name AS name, age AS age MATCH (c:Customer {name: name})-->(p:Product) RETURN c.name, age, p.title", drivingTable = Some(sqlResults))
+  // 7) Use the results from the SQL query as driving table for a Cypher query on a graph contained in the data source
+  val result2 = session.cypher(
+    s"""
+       |WITH name AS name, age AS age
+       |FROM GRAPH AT 'myDataSource.prod' // access the 'prod' graph within the file based data source
+       |MATCH (c:Customer {name: name})-->(p:Product)
+       |RETURN c.name, age, p.title", drivingTable = Some(sqlResults))
+     """.stripMargin)
 
   result2.print
 }

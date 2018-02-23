@@ -15,7 +15,8 @@
  */
 package org.opencypher.caps.logical.impl.logical
 
-import org.opencypher.caps.api.io.{GraphName, PropertyGraphDataSource, QualifiedGraphName}
+import org.opencypher.caps.api.graph.{GraphName, QualifiedGraphName}
+import org.opencypher.caps.api.io.PropertyGraphDataSource
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue._

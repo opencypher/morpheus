@@ -20,8 +20,7 @@ import java.io.File
 import java.nio.file.{Files, Paths}
 
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.graph.PropertyGraph
-import org.opencypher.caps.api.io.GraphName
+import org.opencypher.caps.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.impl.spark.io.CAPSPropertyGraphDataSource
 import org.opencypher.caps.impl.spark.io.hdfs.CsvGraphLoader

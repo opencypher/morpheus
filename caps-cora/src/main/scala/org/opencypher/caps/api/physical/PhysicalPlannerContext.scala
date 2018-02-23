@@ -15,8 +15,7 @@
  */
 package org.opencypher.caps.api.physical
 
-import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph}
-import org.opencypher.caps.api.io.QualifiedGraphName
+import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph, QualifiedGraphName}
 import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.value.CypherValue.CypherMap
 

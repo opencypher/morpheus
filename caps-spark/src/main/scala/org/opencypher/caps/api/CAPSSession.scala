@@ -20,8 +20,7 @@ import java.util.UUID
 import org.apache.spark.SparkConf
 import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
-import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph}
-import org.opencypher.caps.api.io.Namespace
+import org.opencypher.caps.api.graph.{CypherSession, Namespace, PropertyGraph}
 import org.opencypher.caps.api.schema._
 import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.value.CypherValue.CypherMap

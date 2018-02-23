@@ -16,7 +16,7 @@
 package org.opencypher.spark.examples
 
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.io.GraphName
+import org.opencypher.caps.api.graph.GraphName
 
 object DataSourceExample extends App {
 

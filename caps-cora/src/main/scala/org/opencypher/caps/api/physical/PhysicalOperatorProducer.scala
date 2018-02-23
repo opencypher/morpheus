@@ -15,8 +15,7 @@
  */
 package org.opencypher.caps.api.physical
 
-import org.opencypher.caps.api.graph.PropertyGraph
-import org.opencypher.caps.api.io.QualifiedGraphName
+import org.opencypher.caps.api.graph.{PropertyGraph, QualifiedGraphName}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.impl.table.{ProjectedExpr, ProjectedField, RecordHeader}
@@ -339,7 +338,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param rel                     relationship variable in the second input
     * @param target                  node variable in the third input
     * @param header                  resulting record header
-    * @param removeSelfRelationships set true, iff loops shall be removed from the ouput
+    * @param removeSelfRelationships set true, iff loops shall be removed from the output
     * @return expand source operator
     */
   def planExpandSource(

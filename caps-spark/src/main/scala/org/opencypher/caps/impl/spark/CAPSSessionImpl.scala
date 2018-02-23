@@ -20,8 +20,7 @@ import java.util.UUID
 import org.apache.spark.sql.SparkSession
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.configuration.CoraConfiguration.{PrintPhysicalPlan, PrintQueryExecutionStages}
-import org.opencypher.caps.api.graph.{CypherResult, PropertyGraph}
-import org.opencypher.caps.api.io._
+import org.opencypher.caps.api.graph._
 import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.api.value._

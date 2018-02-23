@@ -18,6 +18,7 @@ package org.opencypher.caps.ir.impl
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
 import org.neo4j.cypher.internal.util.v3_4.{Ref, symbols}
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
+import org.opencypher.caps.api.graph.{GraphName, Namespace, QualifiedGraphName}
 import org.opencypher.caps.api.io._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._

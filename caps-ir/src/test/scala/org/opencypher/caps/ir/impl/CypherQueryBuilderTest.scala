@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.ir.impl
 
-import org.opencypher.caps.api.io.{GraphName, QualifiedGraphName}
+import org.opencypher.caps.api.graph.{GraphName, QualifiedGraphName}
 import org.opencypher.caps.api.schema.{PropertyKeys, Schema}
 import org.opencypher.caps.api.types.{CTNode, CTNull, CTRelationship}
 import org.opencypher.caps.api.value.CypherValue._

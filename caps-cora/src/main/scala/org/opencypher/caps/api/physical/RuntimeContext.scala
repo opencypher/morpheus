@@ -15,8 +15,7 @@
  */
 package org.opencypher.caps.api.physical
 
-import org.opencypher.caps.api.graph.PropertyGraph
-import org.opencypher.caps.api.io.QualifiedGraphName
+import org.opencypher.caps.api.graph.{PropertyGraph, QualifiedGraphName}
 import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.value.CypherValue.CypherMap
 
@@ -29,7 +28,7 @@ import org.opencypher.caps.api.value.CypherValue.CypherMap
 trait RuntimeContext[R <: CypherRecords, G <: PropertyGraph] {
 
   /**
-    * Returns the graph referenced by the given [[QualifiedGraphName]].
+    * Returns the graph referenced by the given [[org.opencypher.caps.api.graph.QualifiedGraphName]].
     *
     * @return back-end specific property graph
     */

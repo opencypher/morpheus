@@ -15,13 +15,13 @@
  */
 package org.opencypher.caps.impl.io
 
-import org.opencypher.caps.api.graph.PropertyGraph
-import org.opencypher.caps.api.io.{GraphName, PropertyGraphDataSource}
+import org.opencypher.caps.api.graph.{GraphName, PropertyGraph}
+import org.opencypher.caps.api.io.PropertyGraphDataSource
 import org.opencypher.caps.api.schema.Schema
 
 object SessionPropertyGraphDataSource {
 
-  val Namespace = org.opencypher.caps.api.io.Namespace("session")
+  val Namespace = org.opencypher.caps.api.graph.Namespace("session")
 }
 
 class SessionPropertyGraphDataSource() extends PropertyGraphDataSource {
@@ -30,7 +30,7 @@ class SessionPropertyGraphDataSource() extends PropertyGraphDataSource {
 
   override def graph(name: GraphName): PropertyGraph = graphMap(name)
 
-  override def schema(name: GraphName): Option[Schema] = Some(graphMap(name).schema)
+  override def schema(name: GraphName): Option[Schema] = if (hasGraph(name)) Some(graph(name).schema) else None
 
   override def store(name: GraphName, graph: PropertyGraph): Unit = graphMap = graphMap.updated(name, graph)
 

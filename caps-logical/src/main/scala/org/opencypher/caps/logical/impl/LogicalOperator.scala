@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.logical.impl
 
-import org.opencypher.caps.api.io.QualifiedGraphName
+import org.opencypher.caps.api.graph.QualifiedGraphName
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.CTNode
 import org.opencypher.caps.ir.api.Label

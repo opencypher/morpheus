@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.ir.api
 
-import org.opencypher.caps.api.io.QualifiedGraphName
+import org.opencypher.caps.api.graph.QualifiedGraphName
 import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.impl.exception.IllegalStateException
 import org.opencypher.caps.ir.api.block._

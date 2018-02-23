@@ -23,8 +23,7 @@ import org.apache.spark.sql.SparkSession
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.SparkConfiguration.MasterAddress
 import org.opencypher.caps.api.configuration.Configuration.LogLevel
-import org.opencypher.caps.api.graph.CypherResult
-import org.opencypher.caps.api.io.GraphName
+import org.opencypher.caps.api.graph.{CypherResult, GraphName}
 import org.opencypher.caps.impl.spark.CypherKryoRegistrator
 import org.opencypher.caps.impl.spark.io.file.FileCsvPropertyGraphDataSource
 

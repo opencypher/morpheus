@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.spark.io.neo4j
 
-import org.opencypher.caps.api.io.{GraphName, Namespace}
+import org.opencypher.caps.api.graph.{GraphName, Namespace}
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.test.BaseTestSuite
 import org.opencypher.caps.test.fixture.{CAPSSessionFixture, Neo4jServerFixture, SparkSessionFixture, TeamDataFixture}
