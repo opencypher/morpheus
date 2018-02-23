@@ -17,23 +17,14 @@ package org.opencypher.caps.api.graph
 
 import org.opencypher.caps.api.io.PropertyGraphDataSource
 
-// TODO: Remove companions and use normal case classes
-object GraphName {
-  def from(graphName: String) = GraphName(graphName)
-}
-
 /**
   * A graph name is used to address a specific graph withing a [[Namespace]] and is used for lookups in the
   * [[org.opencypher.caps.api.graph.CypherSession]].
   *
   * @param value string representing the graph name
   */
-case class GraphName private(value: String) extends AnyVal {
+case class GraphName(value: String) extends AnyVal {
   override def toString: String = value
-}
-
-object Namespace {
-  def from(namespace: String) = Namespace(namespace)
 }
 
 /**
@@ -42,14 +33,16 @@ object Namespace {
   *
   * @param value string representing the namespace
   */
-case class Namespace private(value: String) extends AnyVal {
+case class Namespace(value: String) extends AnyVal {
   override def toString: String = value
 }
 
 object QualifiedGraphName {
-  def from(namespace: String, graphName: String) =
-    QualifiedGraphName(Namespace.from(namespace), GraphName.from(graphName))
+  def apply(qualifiedGraphName: String): QualifiedGraphName = {
+    ???
+  }
 }
+
 /**
   * A qualified graph name is used in a Cypher query to address a specific graph within a namespace.
   *
@@ -64,7 +57,7 @@ object QualifiedGraphName {
   * @param namespace namespace part of the qualified graph name
   * @param graphName graph name part of the qualified graph name
   */
-case class QualifiedGraphName private(namespace: Namespace, graphName: GraphName) {
+case class QualifiedGraphName(namespace: Namespace, graphName: GraphName) {
   override def toString: String = s"$namespace.$graphName"
 }
 

@@ -16,7 +16,7 @@
 package org.opencypher.spark.examples
 
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.graph.{Namespace, QualifiedGraphName}
+import org.opencypher.caps.api.graph.{GraphName, Namespace, QualifiedGraphName}
 import org.opencypher.caps.impl.spark.io.file.FileCsvPropertyGraphDataSource
 
 /**
@@ -36,7 +36,7 @@ object MultipleGraphExample extends App {
   // Note: if files were stored in HDFS, change the data source to HdfsCsvPropertyGraphDataSource
   session.registerSource(Namespace("myDataSource"), new FileCsvPropertyGraphDataSource(rootPath = csvFolder))
   // access the graph via its qualified graph name
-  val purchaseNetwork = session.graph(QualifiedGraphName.from("myDataSource", "prod"))
+  val purchaseNetwork = session.graph(QualifiedGraphName(Namespace("myDataSource"), GraphName("prod")))
 
   // 4) Build union of social and purchase network (note, that there are no relationships connecting nodes from both graphs)
   val disconnectedGraph = socialNetwork union purchaseNetwork

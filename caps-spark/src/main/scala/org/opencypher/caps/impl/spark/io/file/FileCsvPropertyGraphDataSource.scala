@@ -42,7 +42,7 @@ class FileCsvPropertyGraphDataSource(rootPath: String)(implicit val session: CAP
   override def graphNames: Set[GraphName] = Files.list(Paths.get(rootPath)).iterator().asScala
     .filter(p => Files.isDirectory(p))
     .map(p => p.getFileName.toString)
-    .map(GraphName.from)
+    .map(GraphName)
     .toSet
 
   override def hasGraph(name: GraphName): Boolean = Files.exists(Paths.get(graphPath(name)))

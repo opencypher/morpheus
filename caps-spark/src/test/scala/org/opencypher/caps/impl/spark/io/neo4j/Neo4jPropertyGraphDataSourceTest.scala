@@ -30,7 +30,7 @@ class Neo4jPropertyGraphDataSourceTest
     with MockitoSugar {
 
   test("hasGraph should return true for existing graph") {
-    val testGraphName = GraphName.from("sn")
+    val testGraphName = GraphName("sn")
 
     val dataSource = new Neo4jPropertyGraphDataSource(neo4jConfig, Map(
       testGraphName -> ("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r")
@@ -40,18 +40,18 @@ class Neo4jPropertyGraphDataSourceTest
   }
 
   test("hasGraph should return false for non-existing graph") {
-    val testGraphName = GraphName.from("sn")
+    val testGraphName = GraphName("sn")
 
     val dataSource = new Neo4jPropertyGraphDataSource(neo4jConfig, Map(
-      GraphName.from("sn2") -> ("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r")
+      GraphName("sn2") -> ("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r")
     ))
 
     dataSource.hasGraph(testGraphName) should be(false)
   }
 
   test("graphNames should return all names of stored graphs") {
-    val testGraphName1 = GraphName.from("test1")
-    val testGraphName2 = GraphName.from("test2")
+    val testGraphName1 = GraphName("test1")
+    val testGraphName2 = GraphName("test2")
     val source = new Neo4jPropertyGraphDataSource(neo4jConfig, Map(
       testGraphName1 -> ("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r"),
       testGraphName2 -> ("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r")
@@ -61,17 +61,17 @@ class Neo4jPropertyGraphDataSourceTest
 
   test("Load graph from Neo4j via DataSource") {
     val dataSource = new Neo4jPropertyGraphDataSource(neo4jConfig, Map(
-      GraphName.from("foo") -> ("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r")
+      GraphName("foo") -> ("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r")
     ))
 
-    val graph = dataSource.graph(GraphName.from("foo")).asCaps
+    val graph = dataSource.graph(GraphName("foo")).asCaps
     graph.nodes("n").toDF().collect().toBag should equal(teamDataGraphNodes)
     graph.relationships("rel").toDF().collect().toBag should equal(teamDataGraphRels)
   }
 
   test("Load graph from Neo4j via Catalog") {
-    val testNamespace = Namespace.from("myNeo4j")
-    val testGraphName = GraphName.from("foo")
+    val testNamespace = Namespace("myNeo4j")
+    val testGraphName = GraphName("foo")
 
     val dataSource = new Neo4jPropertyGraphDataSource(neo4jConfig, Map(
       testGraphName -> ("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r")

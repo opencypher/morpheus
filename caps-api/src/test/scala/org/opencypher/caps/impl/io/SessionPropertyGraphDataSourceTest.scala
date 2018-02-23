@@ -25,7 +25,7 @@ class SessionPropertyGraphDataSourceTest extends FunSuite with MockitoSugar with
 
   test("hasGraph should return true for existing graph") {
     val source = new SessionPropertyGraphDataSource
-    val testGraphName = GraphName.from("test")
+    val testGraphName = GraphName("test")
     source.store(testGraphName, null)
     source.hasGraph(testGraphName) should be
     true
@@ -33,14 +33,14 @@ class SessionPropertyGraphDataSourceTest extends FunSuite with MockitoSugar with
 
   test("hasGraph should return false for non-existing graph") {
     val source = new SessionPropertyGraphDataSource
-    val testGraphName = GraphName.from("test")
+    val testGraphName = GraphName("test")
     source.hasGraph(testGraphName) should be
     false
   }
 
   test("graph should return graph for existing graph") {
     val source = new SessionPropertyGraphDataSource
-    val testGraphName = GraphName.from("test")
+    val testGraphName = GraphName("test")
     val testGraph = mock[PropertyGraph]
     source.store(testGraphName, testGraph)
     source.graph(testGraphName) should be(testGraph)
@@ -48,20 +48,20 @@ class SessionPropertyGraphDataSourceTest extends FunSuite with MockitoSugar with
 
   test("graph should throw exception for non-existing graph") {
     val source = new SessionPropertyGraphDataSource
-    val testGraphName = GraphName.from("test")
+    val testGraphName = GraphName("test")
     an[NoSuchElementException] should be thrownBy source.graph(testGraphName)
   }
 
   test("schema should return None for non-existing graph") {
     val source = new SessionPropertyGraphDataSource
-    val testGraphName = GraphName.from("test")
+    val testGraphName = GraphName("test")
     source.schema(testGraphName).isEmpty should be
     true
   }
 
   test("schema should return schema for existing graph") {
     val source = new SessionPropertyGraphDataSource
-    val testGraphName = GraphName.from("test")
+    val testGraphName = GraphName("test")
     val propertyGraph = mock[PropertyGraph]
     when(propertyGraph.schema).thenReturn(Schema.empty.withRelationshipType("foo"))
     source.store(testGraphName, propertyGraph)
@@ -70,8 +70,8 @@ class SessionPropertyGraphDataSourceTest extends FunSuite with MockitoSugar with
 
   test("graphNames should return all names of stored graphs") {
     val source = new SessionPropertyGraphDataSource
-    val testGraphName1 = GraphName.from("test1")
-    val testGraphName2 = GraphName.from("test2")
+    val testGraphName1 = GraphName("test1")
+    val testGraphName2 = GraphName("test2")
 
     source.graphNames should equal(Set.empty)
 

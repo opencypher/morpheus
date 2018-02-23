@@ -48,7 +48,7 @@ object CSVDemo {
 
     implicit val caps = CAPSSession.create()
     val dataSource = new FileCsvPropertyGraphDataSource(rootPath = "/demo")
-    val graph = dataSource.graph(GraphName.from("ldbc_1"))
+    val graph = dataSource.graph(GraphName("ldbc_1"))
     val result = graph.cypher(query)
 
     val start = System.currentTimeMillis()
