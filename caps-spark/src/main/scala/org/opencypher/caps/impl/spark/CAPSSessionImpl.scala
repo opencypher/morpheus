@@ -19,7 +19,7 @@ import java.util.UUID
 
 import org.apache.spark.sql.SparkSession
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.configuration.CoraConfiguration.{PrintPhysicalPlan, PrintQueryExecutionStages}
+import org.opencypher.caps.api.configuration.CoraConfiguration.{PrintFlatPlan, PrintPhysicalPlan, PrintQueryExecutionStages}
 import org.opencypher.caps.api.graph._
 import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.value.CypherValue._
@@ -29,6 +29,7 @@ import org.opencypher.caps.impl.io.SessionPropertyGraphDataSource
 import org.opencypher.caps.impl.physical.PhysicalPlanner
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.impl.spark.physical._
+import org.opencypher.caps.impl.util.Measurement.time
 import org.opencypher.caps.ir.api.expr.{Expr, Var}
 import org.opencypher.caps.ir.api.{IRExternalGraph, IRField}
 import org.opencypher.caps.ir.impl.parse.CypherParser
@@ -44,6 +45,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
   self =>
 
   private implicit def capsSession = this
+
   private val producer = new LogicalOperatorProducer
   private val logicalPlanner = new LogicalPlanner(producer)
   private val logicalOptimizer = LogicalOptimizer
@@ -58,28 +60,29 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
   override def cypherOnGraph(graph: PropertyGraph, query: String, queryParameters: CypherMap, maybeDrivingTable: Option[CypherRecords]): CypherResult = {
     val ambientGraphNew = mountAmbientGraph(graph)
 
-    val (stmt, extractedLiterals, semState) = parser.process(query)(CypherParser.defaultContext)
+    val (stmt, extractedLiterals, semState) = time("AST construction")(parser.process(query)(CypherParser.defaultContext))
 
     val extractedParameters: CypherMap = extractedLiterals.mapValues(v => CypherValue(v))
     val allParameters = queryParameters ++ extractedParameters
 
-    logStageProgress("IR ...", newLine = false)
-    val ir = IRBuilder(stmt)(IRBuilderContext.initial(query, allParameters, semState, ambientGraphNew, dataSource))
+    logStageProgress("IR translation ...", newLine = false)
+    val irBuilderContext = IRBuilderContext.initial(query, allParameters, semState, ambientGraphNew, dataSource)
+    val ir = time("IR translation")(IRBuilder(stmt)(irBuilderContext))
     logStageProgress("Done!")
 
-    logStageProgress("Logical plan ...", newLine = false)
-    val logicalPlannerContext =
-      LogicalPlannerContext(graph.schema, Set.empty, ir.model.graphs.mapValues(_.namespace).andThen(dataSource), ambientGraphNew)
-    val logicalPlan = logicalPlanner(ir)(logicalPlannerContext)
+    logStageProgress("Logical planning ...", newLine = false)
+    val logicalPlannerContext = LogicalPlannerContext(graph.schema, Set.empty, ir.model.graphs.mapValues(_.namespace).andThen(dataSource), ambientGraphNew)
+    val logicalPlan = time("Logical planning")(logicalPlanner(ir)(logicalPlannerContext))
     logStageProgress("Done!")
-
-    logStageProgress("Optimizing logical plan ...", newLine = false)
-    val optimizedLogicalPlan = logicalOptimizer(logicalPlan)(logicalPlannerContext)
-    logStageProgress("Done!")
-
     if (PrintLogicalPlan.isSet) {
       println("Logical plan:")
-      println(logicalPlan.pretty())
+      println(logicalPlan.pretty)
+    }
+
+    logStageProgress("Logical optimization ...", newLine = false)
+    val optimizedLogicalPlan = time("Logical optimization")(logicalOptimizer(logicalPlan)(logicalPlannerContext))
+    logStageProgress("Done!")
+    if (PrintLogicalPlan.isSet) {
       println("Optimized logical plan:")
       println(optimizedLogicalPlan.pretty())
     }
@@ -114,18 +117,6 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
         print(padded)
       }
     }
-  }
-
-  private def mountAmbientGraph(ambient: PropertyGraph): IRExternalGraph = {
-    val graphName = GraphName(UUID.randomUUID().toString)
-    val qualifiedGraphName = store(graphName, ambient)
-    IRExternalGraph(graphName.value, ambient.schema, qualifiedGraphName)
-  }
-
-  private def planStart(graph: PropertyGraph, fields: Set[Var]): LogicalOperator = {
-    val ambientGraph = mountAmbientGraph(graph)
-
-    producer.planStart(LogicalExternalGraph(ambientGraph.name, ambientGraph.qualifiedName, graph.schema), fields)
   }
 
   override def filter(
@@ -173,24 +164,28 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
     records: CypherRecords,
     parameters: CypherMap,
     logicalPlan: LogicalOperator): CAPSResult = {
-    logStageProgress("Flat plan ... ", newLine = false)
-    val flatPlan = flatPlanner(logicalPlan)(FlatPlannerContext(parameters))
+    logStageProgress("Flat planning ... ", newLine = false)
+    val flatPlannerContext = FlatPlannerContext(parameters)
+    val flatPlan = time("Flat planning")(flatPlanner(logicalPlan)(flatPlannerContext))
     logStageProgress("Done!")
+    if (PrintFlatPlan.isSet) {
+      println("Flat plan:")
+      println(flatPlan)
+    }
 
-    logStageProgress("Physical plan ... ", newLine = false)
+    logStageProgress("Physical planning ... ", newLine = false)
     val physicalPlannerContext = CAPSPhysicalPlannerContext.from(this.graph, records.asCaps, parameters)(self)
-    val physicalPlan = physicalPlanner(flatPlan)(physicalPlannerContext)
+    val physicalPlan = time("Physical planning")(physicalPlanner(flatPlan)(physicalPlannerContext))
     logStageProgress("Done!")
-
     if (PrintPhysicalPlan.isSet) {
       println("Physical plan:")
       println(physicalPlan.pretty())
     }
 
-    logStageProgress("Optimizing physical plan ... ", newLine = false)
-    val optimizedPhysicalPlan = physicalOptimizer(physicalPlan)(PhysicalOptimizerContext())
-    logStageProgress("Done!")
 
+    logStageProgress("Physical optimization ... ", newLine = false)
+    val optimizedPhysicalPlan = time("Physical optimization")(physicalOptimizer(physicalPlan)(PhysicalOptimizerContext()))
+    logStageProgress("Done!")
     if (PrintPhysicalPlan.isSet) {
       println("Optimized physical plan:")
       println(optimizedPhysicalPlan.pretty())
@@ -198,6 +193,18 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
 
     CAPSResultBuilder.from(logicalPlan, flatPlan, optimizedPhysicalPlan)(
       CAPSRuntimeContext(physicalPlannerContext.parameters, graphAt, collection.mutable.Map.empty))
+  }
+
+  private def mountAmbientGraph(ambient: PropertyGraph): IRExternalGraph = {
+    val graphName = GraphName(UUID.randomUUID().toString)
+    val qualifiedGraphName = store(graphName, ambient)
+    IRExternalGraph(graphName.value, ambient.schema, qualifiedGraphName)
+  }
+
+  private def planStart(graph: PropertyGraph, fields: Set[Var]): LogicalOperator = {
+    val ambientGraph = mountAmbientGraph(graph)
+
+    producer.planStart(LogicalExternalGraph(ambientGraph.name, ambientGraph.qualifiedName, graph.schema), fields)
   }
 
   override def toString: String = s"${this.getClass.getSimpleName}"

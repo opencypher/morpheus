@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.api
 
-import org.opencypher.caps.api.configuration.Configuration.ConfigOption
+import org.opencypher.caps.impl.configuration.ConfigOption
 
 object SparkConfiguration {
 

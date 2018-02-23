@@ -22,7 +22,6 @@ import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.sql.SparkSession
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.SparkConfiguration.MasterAddress
-import org.opencypher.caps.api.configuration.Configuration.LogLevel
 import org.opencypher.caps.api.graph.{CypherResult, GraphName}
 import org.opencypher.caps.impl.spark.CypherKryoRegistrator
 import org.opencypher.caps.impl.spark.io.file.FileCsvPropertyGraphDataSource
@@ -40,8 +39,6 @@ object CSVDemo {
     .master(MasterAddress.get)
     .appName(s"cypher-for-apache-spark-benchmark-${Calendar.getInstance().getTime}")
     .getOrCreate()
-
-  sparkSession.sparkContext.setLogLevel(LogLevel.get.toString)
 
   def cypher(query: String): CypherResult = {
     println(s"Now executing query: $query")
