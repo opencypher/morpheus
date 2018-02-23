@@ -16,6 +16,8 @@
 package org.opencypher.spark.examples
 
 import org.opencypher.caps.api.CAPSSession
+import org.opencypher.caps.api.io.GraphName
+import org.opencypher.caps.impl.spark.io.file.FileCsvPropertyGraphDataSource
 
 /**
   * Demonstrates usage patterns where Cypher and SQL can be interleaved in the
@@ -44,8 +46,8 @@ object CypherSQLRoundtripExample extends App {
   val sqlResults = session.sql("SELECT age, name FROM people")
 
   // 6) Load a purchase network graph via CSV + Schema files
-  val csvFolder = getClass.getResource("/csv/prod/").getFile
-  val purchaseNetwork = session.readFrom(s"file+csv://$csvFolder")
+  val csvFolder = getClass.getResource("/csv").getFile
+  val purchaseNetwork = new FileCsvPropertyGraphDataSource(rootPath = csvFolder).graph(GraphName.from("prod"))
 
   // 7) Use the results from the SQL query as driving table for a Cypher query
   val result2 = purchaseNetwork.cypher("WITH name AS name, age AS age MATCH (c:Customer {name: name})-->(p:Product) RETURN c.name, age, p.title", drivingTable = Some(sqlResults))

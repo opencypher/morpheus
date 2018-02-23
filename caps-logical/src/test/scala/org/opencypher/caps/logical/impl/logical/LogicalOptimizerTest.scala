@@ -28,7 +28,7 @@ import scala.language.implicitConversions
 class LogicalOptimizerTest extends IrTestSuite {
 
   val emptySqm = SolvedQueryModel.empty
-  val logicalGraph = LogicalExternalGraph(testGraph.name, null, Schema.empty)
+  val logicalGraph = LogicalExternalGraph(testGraph.name, testQualifiedGraphName, Schema.empty)
   val schema = Schema.empty
 
 //  //Helper to create nicer expected results with `asCode`
@@ -42,11 +42,11 @@ class LogicalOptimizerTest extends IrTestSuite {
 //  )
 
   def plannerContext(schema: Schema) =
-    LogicalPlannerContext(schema, Set.empty, (_) => testGraphSource(schema), testGraph())
+    LogicalPlannerContext(schema, Set.empty, (_) => testGraphSource(testGraphName -> schema), testGraph())
 
   test("push label filter into scan") {
     val animalSchema = schema.withNodePropertyKeys("Animal")()
-    val animalGraph = LogicalExternalGraph(testGraph.name, null, animalSchema)
+    val animalGraph = LogicalExternalGraph(testGraph.name, testQualifiedGraphName, animalSchema)
     val query = """
                   | MATCH (a:Animal)
                   | RETURN a""".stripMargin
@@ -101,7 +101,7 @@ class LogicalOptimizerTest extends IrTestSuite {
                   | MATCH (a:Animal:Astronaut)
                   | RETURN a""".stripMargin
     val schema = Schema.empty.withNodePropertyKeys("Animal")().withNodePropertyKeys("Astronaut")()
-    val logicalGraph = LogicalExternalGraph(testGraph.name, null, schema)
+    val logicalGraph = LogicalExternalGraph(testGraph.name, testQualifiedGraphName, schema)
 
     val plan = logicalPlan(query, schema)
     val optimizedLogicalPlan = LogicalOptimizer(plan)(plannerContext(schema))
@@ -135,7 +135,7 @@ class LogicalOptimizerTest extends IrTestSuite {
   private def logicalPlan(query: String, schema: Schema): LogicalOperator = {
     val producer = new LogicalOperatorProducer
     val logicalPlanner = new LogicalPlanner(producer)
-    val ir = query.ir(schema)
+    val ir = query.ir(testGraphName -> schema)
     val logicalPlannerContext = plannerContext(schema)
     val logicalPlan = logicalPlanner(ir)(logicalPlannerContext)
     logicalPlan

@@ -19,6 +19,7 @@ import scala.util.Try
 
 object Configuration {
 
+  // TODO: Move to impl package
   abstract class ConfigOption[T](val name: String, val defaultValue: T)(convert: String => Option[T]) {
     def set(v: String): Unit = System.setProperty(name, v)
 
@@ -30,14 +31,17 @@ object Configuration {
     }
   }
 
+  // TODO: Move to impl package
   abstract class ConfigFlag(name: String, defaultValue: Boolean = false)
     extends ConfigOption[Boolean](name, defaultValue)(s => Try(s.toBoolean).toOption) {
     def set(): Unit = set(true.toString)
     def isSet = get
   }
 
+  // TODO: Document
   object PrintTimings extends ConfigFlag("caps.printTimings")
 
+  // TODO: Remove
   object LogLevel extends ConfigOption[String]("caps.logging", "OFF")(Some(_))
 
 }

@@ -13,40 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.spark.io.file
-
-
-import java.io.File
-import java.nio.file.{Files, Paths}
+package org.opencypher.caps.impl.spark.io.neo4j
 
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.io.GraphName
 import org.opencypher.caps.api.schema.Schema
+import org.opencypher.caps.impl.exception.IllegalArgumentException
 import org.opencypher.caps.impl.spark.io.CAPSPropertyGraphDataSource
-import org.opencypher.caps.impl.spark.io.hdfs.CsvGraphLoader
+import org.opencypher.caps.impl.spark.io.neo4j.external.Neo4jConfig
 
-import scala.collection.JavaConverters._
-
-class FileCsvPropertyGraphDataSource(rootPath: String)(implicit val session: CAPSSession)
+class Neo4jPropertyGraphDataSource(
+  config: Neo4jConfig,
+  queries: Map[GraphName, (String, String)])(implicit val session: CAPSSession)
   extends CAPSPropertyGraphDataSource {
 
-  override def graph(name: GraphName): PropertyGraph = CsvGraphLoader(graphPath(name)).load
+  override def graph(name: GraphName): PropertyGraph = queries.get(name) match {
+    case Some((nodeQuery, relQuery)) => Neo4jGraphLoader.fromNeo4j(config, nodeQuery, relQuery)
+    case None => throw IllegalArgumentException(s"Neo4j graph with name '$name'")
+  }
 
   override def schema(name: GraphName): Option[Schema] = None
 
   override def store(name: GraphName, graph: PropertyGraph): Unit = ???
 
-  override def delete(name: GraphName): Unit =
-    if (hasGraph(name)) Files.delete(Paths.get(graphPath(name)))
+  override def delete(name: GraphName): Unit = ???
 
-  override def graphNames: Set[GraphName] = Files.list(Paths.get(rootPath)).iterator().asScala
-    .filter(p => Files.isDirectory(p))
-    .map(p => p.getFileName.toString)
-    .map(GraphName.from)
-    .toSet
+  override def graphNames: Set[GraphName] = queries.keySet
 
-  override def hasGraph(name: GraphName): Boolean = Files.exists(Paths.get(graphPath(name)))
-
-  private def graphPath(name: GraphName): String = s"$rootPath${File.separator}$name"
+  override def hasGraph(name: GraphName): Boolean = queries.contains(name)
 }

@@ -57,8 +57,8 @@ object MatchHelper {
         } else {
           left match {
             case p: Product => equalProduct(p, right.asInstanceOf[Product])
-            case t: Seq[_]  => equalTraversable(t, t.asInstanceOf[Seq[_]])
-            case _          => failure(s"${left.asCode} did not equal ${right.asCode}")
+            case t: Seq[_] => equalTraversable(t, t.asInstanceOf[Seq[_]])
+            case _ => failure(s"${left.asCode} did not equal ${right.asCode}")
           }
         }
       }
@@ -75,11 +75,11 @@ object MatchHelper {
           addTrace(
             combine(
               left.toSeq
-                  .zip(right.toSeq)
-                  .map {
-                    case (l, r) =>
-                      equalAny(l, r)
-                  }: _*),
+                .zip(right.toSeq)
+                .map {
+                  case (l, r) =>
+                    equalAny(l, r)
+                }: _*),
             left.asCode)
         }
       }
@@ -99,11 +99,11 @@ object MatchHelper {
             addTrace(
               combine(
                 left.productIterator.toSeq
-                    .zip(right.productIterator.toSeq)
-                    .map {
-                      case (l, r) =>
-                        equalAny(l, r)
-                    }: _*),
+                  .zip(right.productIterator.toSeq)
+                  .map {
+                    case (l, r) =>
+                      equalAny(l, r)
+                  }: _*),
               left.asCode)
           }
         }
@@ -113,7 +113,7 @@ object MatchHelper {
     def failure(msg: String) = MatchResult(false, msg, "")
 
     def notEqual(l: Any, r: Any): Unit = {
-      //    println(s"${AsCode(l)} did NOT equal ${AsCode(r)}")
+      println(s"${AsCode(l)} did NOT equal ${AsCode(r)}")
     }
 
   }

@@ -15,6 +15,7 @@
  */
 package org.opencypher.caps.impl.spark.acceptance
 
+import org.opencypher.caps.api.io.GraphName
 import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.impl.spark.CAPSGraph
@@ -29,11 +30,11 @@ trait MultigraphProjectionBehaviour { this: AcceptanceTest =>
     def testGraph3 = initGraph("CREATE (:Car {type: 'Toyota'})")
 
     test("returning a graph") {
-      caps.write(testGraph1, "/test/graph1")
-      caps.write(testGraph2, "/test/graph2")
+      caps.store(GraphName.from("graph1"), testGraph1)
+      caps.store(GraphName.from("graph2"), testGraph2)
 
       val query =
-        """FROM GRAPH AT '/test/graph2' AS myGraph
+        """FROM GRAPH AT 'graph2' AS myGraph
           |MATCH (n:Person)
           |RETURN n.name AS name GRAPHS myGraph""".stripMargin
 
@@ -48,11 +49,11 @@ trait MultigraphProjectionBehaviour { this: AcceptanceTest =>
     }
 
     test("Can select a source graph to match data from") {
-      caps.write(testGraph1, "/test/graph1")
-      caps.write(testGraph2, "/test/graph2")
+      caps.store(GraphName.from("graph1"), testGraph1)
+      caps.store(GraphName.from("graph2"), testGraph2)
 
       val query =
-        """WITH * GRAPHS *, GRAPH myGraph AT '/test/graph2' >>
+        """WITH * GRAPHS *, GRAPH myGraph AT 'graph2' >>
           |MATCH (n:Person)
           |RETURN n.name AS name""".stripMargin
 
@@ -67,11 +68,11 @@ trait MultigraphProjectionBehaviour { this: AcceptanceTest =>
     }
 
     test("Can select a source graph to match data from (syntactic sugar variant)") {
-      caps.write(testGraph1, "/test/graph1")
-      caps.write(testGraph2, "/test/graph2")
+      caps.store(GraphName.from("graph1"), testGraph1)
+      caps.store(GraphName.from("graph2"), testGraph2)
 
       val query =
-        """FROM GRAPH myGraph AT '/test/graph2'
+        """FROM GRAPH myGraph AT 'graph2'
           |MATCH (n:Person)
           |RETURN n.name AS name""".stripMargin
 
@@ -86,15 +87,15 @@ trait MultigraphProjectionBehaviour { this: AcceptanceTest =>
     }
 
     test("matching from different graphs") {
-      caps.write(testGraph1, "/test/graph1")
-      caps.write(testGraph2, "/test/graph2")
-      caps.write(testGraph3, "/test/graph3")
+      caps.store(GraphName.from("graph1"), testGraph1)
+      caps.store(GraphName.from("graph2"), testGraph2)
+      caps.store(GraphName.from("graph3"), testGraph3)
 
       val query =
-        """FROM GRAPH myGraph AT '/test/graph2'
+        """FROM GRAPH myGraph AT 'graph2'
           |MATCH (n:Person)
           |WITH n.name AS name
-          |FROM GRAPH another AT '/test/graph3'
+          |FROM GRAPH another AT 'graph3'
           |MATCH (c:Car)
           |RETURN name, c.type AS car""".stripMargin
 

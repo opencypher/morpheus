@@ -15,18 +15,17 @@
  */
 package org.opencypher.caps.impl.spark.physical.operators
 
-import java.net.URI
-
 import org.apache.spark.sql.DataFrame
 import org.opencypher.caps.api.CAPSSession
+import org.opencypher.caps.api.io.QualifiedGraphName
 import org.opencypher.caps.api.physical.PhysicalOperator
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.exception.IllegalArgumentException
-import org.opencypher.caps.impl.table.{ColumnName, RecordHeader, RecordSlot, SlotContent}
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.impl.spark.DataFrameOps._
 import org.opencypher.caps.impl.spark.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
 import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords}
+import org.opencypher.caps.impl.table.{ColumnName, RecordHeader, RecordSlot, SlotContent}
 import org.opencypher.caps.trees.AbstractTreeNode
 
 private[caps] abstract class CAPSPhysicalOperator
@@ -37,8 +36,8 @@ private[caps] abstract class CAPSPhysicalOperator
 
   override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult
 
-  protected def resolve(uri: URI)(implicit context: CAPSRuntimeContext): CAPSGraph = {
-    context.resolve(uri).map(_.asCaps).getOrElse(throw IllegalArgumentException(s"a graph at $uri"))
+  protected def resolve(qualifiedGraphName: QualifiedGraphName)(implicit context: CAPSRuntimeContext): CAPSGraph = {
+    context.resolve(qualifiedGraphName).map(_.asCaps).getOrElse(throw IllegalArgumentException(s"a graph at $qualifiedGraphName"))
   }
 
   override def args: Iterator[Any] = super.args.flatMap {

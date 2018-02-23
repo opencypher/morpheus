@@ -15,14 +15,13 @@
  */
 package org.opencypher.caps.impl.spark.physical
 
-import java.net.URI
-
+import org.opencypher.caps.api.io.{GraphName, Namespace, QualifiedGraphName}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.CTNode
-import org.opencypher.caps.impl.table.RecordHeader
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.impl.spark.CAPSRecords
 import org.opencypher.caps.impl.spark.physical.operators._
+import org.opencypher.caps.impl.table.RecordHeader
 import org.opencypher.caps.ir.api.expr.Var
 import org.opencypher.caps.logical.impl.LogicalExternalGraph
 import org.opencypher.caps.test.CAPSTestSuite
@@ -30,7 +29,11 @@ import org.opencypher.caps.test.fixture.GraphCreationFixture
 
 class PhysicalOptimizerTest extends CAPSTestSuite with GraphCreationFixture {
   val emptyRecords = CAPSRecords.empty(RecordHeader.empty)
-  val emptyGraph = LogicalExternalGraph("foo", URI.create("example.com"), Schema.empty)
+  val testNamespace = Namespace("testNamespace")
+  val testGraphName = GraphName("test")
+  val testQualifiedGraphName = QualifiedGraphName(testNamespace, testGraphName)
+
+  val emptyGraph = LogicalExternalGraph("test", testQualifiedGraphName, Schema.empty)
 
   test("Test insert Cache operators") {
     val plan = CartesianProduct(

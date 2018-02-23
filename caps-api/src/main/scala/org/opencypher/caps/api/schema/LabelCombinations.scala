@@ -15,10 +15,12 @@
  */
 package org.opencypher.caps.api.schema
 
+// TODO: Move to impl package
 object LabelCombinations {
   val empty: LabelCombinations = LabelCombinations(Set.empty)
 }
 
+// TODO: Move to impl package
 case class LabelCombinations(combos: Set[Set[String]]) {
 
   def combinationsFor(labels: Set[String]): Set[Set[String]] =

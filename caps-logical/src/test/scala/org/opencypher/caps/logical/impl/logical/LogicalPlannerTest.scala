@@ -15,12 +15,11 @@
  */
 package org.opencypher.caps.logical.impl.logical
 
-import java.net.URI
-
-import org.opencypher.caps.api.io.PropertyGraphDataSource
+import org.opencypher.caps.api.io.{GraphName, PropertyGraphDataSource, QualifiedGraphName}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue._
+import org.opencypher.caps.impl.io.SessionPropertyGraphDataSource
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block._
 import org.opencypher.caps.ir.api.expr._
@@ -40,7 +39,7 @@ class LogicalPlannerTest extends LogicalTestSuite {
   val nodeB = IRField("b")(CTNode)
   val nodeG = IRField("g")(CTNode)
   val relR = IRField("r")(CTRelationship)
-  val uri = URI.create("test")
+
 
   val emptySqm = SolvedQueryModel.empty
 
@@ -140,14 +139,14 @@ class LogicalPlannerTest extends LogicalTestSuite {
                 NodeScan(
                   Var("a")(CTNode),
                   SetSourceGraph(
-                    LogicalExternalGraph("test", uri, Schema.empty),
-                    Start(LogicalExternalGraph("test", uri, Schema.empty), Set(), emptySqm),
+                    LogicalExternalGraph("test", testQualifiedGraphName, Schema.empty),
+                    Start(LogicalExternalGraph("test", testQualifiedGraphName, Schema.empty), Set(), emptySqm),
                     emptySqm),
                   SolvedQueryModel(Set(nodeA), Set(), Set())
                 ),
                 NodeScan(
                   Var("g")(CTNode),
-                  Start(LogicalExternalGraph("test", uri, Schema.empty), Set(), emptySqm),
+                  Start(LogicalExternalGraph("test", testQualifiedGraphName, Schema.empty), Set(), emptySqm),
                   SolvedQueryModel(Set(IRField("g")(CTNode)), Set(), Set())),
                 SolvedQueryModel(Set(nodeA, IRField("g")(CTNode), relR))
               ),
@@ -225,13 +224,13 @@ class LogicalPlannerTest extends LogicalTestSuite {
                   SetSourceGraph(
                     LogicalExternalGraph(
                       "test",
-                      uri,
+                      testQualifiedGraphName,
                       schema
                     ),
                     Start(
                       LogicalExternalGraph(
                         "test",
-                        uri,
+                        testQualifiedGraphName,
                         schema
                       ),
                       Set(),
@@ -246,7 +245,7 @@ class LogicalPlannerTest extends LogicalTestSuite {
                   Start(
                     LogicalExternalGraph(
                       "test",
-                      uri,
+                      testQualifiedGraphName,
                       schema
                     ),
                     Set(),
@@ -312,8 +311,8 @@ class LogicalPlannerTest extends LogicalTestSuite {
         NodeScan(
           Var("a")(CTNode),
           SetSourceGraph(
-            LogicalExternalGraph("test", uri, Schema.empty),
-            Start(LogicalExternalGraph("test", uri, Schema.empty), Set(), emptySqm),
+            LogicalExternalGraph("test", testQualifiedGraphName, Schema.empty),
+            Start(LogicalExternalGraph("test", testQualifiedGraphName, Schema.empty), Set(), emptySqm),
             emptySqm),
           SolvedQueryModel(Set(nodeA), Set(), Set())
         ),
@@ -334,23 +333,26 @@ class LogicalPlannerTest extends LogicalTestSuite {
   test("do not project graphs multiple times") {
     val query =
       """
-        |FROM GRAPH foo AT 'hdfs+csv://localhost/foo'
-        |FROM GRAPH bar AT 'hdfs+csv://localhost/bar'
+        |FROM GRAPH foo AT 'foo'
+        |FROM GRAPH bar AT 'bar'
         |RETURN GRAPHS *
       """.stripMargin
 
-    val ir = query.ir
+    val barGraphName = GraphName.from("bar")
+    val fooGraphName = GraphName.from("foo")
 
-    val result = plan(ir)
+    val ir = query.ir(barGraphName -> Schema.empty, fooGraphName -> Schema.empty)
+
+    val result = plan(ir, testGraphSchema, barGraphName -> Schema.empty, fooGraphName -> Schema.empty)
 
     val expected = Select(
       Vector(),
       Set("bar", "foo"),
       ProjectGraph(
-        LogicalExternalGraph("bar", uri, Schema.empty),
+        LogicalExternalGraph("bar", QualifiedGraphName(SessionPropertyGraphDataSource.Namespace, barGraphName), Schema.empty),
         ProjectGraph(
-          LogicalExternalGraph("foo", uri, Schema.empty),
-          Start(LogicalExternalGraph("test", uri, Schema.empty), Set(), emptySqm),
+          LogicalExternalGraph("foo", QualifiedGraphName(SessionPropertyGraphDataSource.Namespace, fooGraphName), Schema.empty),
+          Start(LogicalExternalGraph("test", testQualifiedGraphName, Schema.empty), Set(), emptySqm),
           SolvedQueryModel(Set(), Set(), Set(IRNamedGraph("foo", Schema.empty)))
         ),
         SolvedQueryModel(Set(), Set(), Set(IRNamedGraph("foo", Schema.empty), IRNamedGraph("bar", Schema.empty)))
@@ -363,8 +365,13 @@ class LogicalPlannerTest extends LogicalTestSuite {
 
   private val planner = new LogicalPlanner(new LogicalOperatorProducer)
 
-  private def plan(ir: CypherQuery[Expr], schema: Schema = Schema.empty) =
-    planner.process(ir)(LogicalPlannerContext(schema, Set.empty, (_) => graphSource(schema), testGraph()))
+  private def plan(ir: CypherQuery[Expr], schema: Schema = Schema.empty): LogicalOperator =
+    plan(ir, schema, testGraphName -> schema)
+
+  private def plan(ir: CypherQuery[Expr], ambientSchema: Schema, graphWithSchema: (GraphName, Schema)*): LogicalOperator = {
+    val withAmbientGraph = graphWithSchema :+ (testGraphName -> ambientSchema)
+    planner.process(ir)(LogicalPlannerContext(ambientSchema, Set.empty, (_) => graphSource(withAmbientGraph: _*), testGraph()))
+  }
 
   case class equalWithoutResult(plan: LogicalOperator) extends Matcher[LogicalOperator] {
     override def apply(left: LogicalOperator): MatchResult = {
@@ -378,12 +385,13 @@ class LogicalPlannerTest extends LogicalTestSuite {
     }
   }
 
-  def graphSource(schema: Schema): PropertyGraphDataSource = {
+  def graphSource(graphWithSchema: (GraphName, Schema)*): PropertyGraphDataSource = {
     import org.mockito.Mockito.when
 
     val graphSource = mock[PropertyGraphDataSource]
-    when(graphSource.schema).thenReturn(Some(schema))
-    when(graphSource.canonicalURI).thenReturn(uri)
+    graphWithSchema.foreach {
+      case (graphName, schema) => when(graphSource.schema(graphName)).thenReturn(Some(schema))
+    }
 
     graphSource
   }

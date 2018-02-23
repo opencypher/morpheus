@@ -22,10 +22,10 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, StringLiteral, Variable, Pattern => AstPattern}
-import org.opencypher.caps.impl.exception.{IllegalArgumentException, IllegalStateException}
+import org.opencypher.caps.api.io.{GraphName, Namespace, QualifiedGraphName}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
-import org.opencypher.caps.impl.util.parsePathOrURI
+import org.opencypher.caps.impl.io.SessionPropertyGraphDataSource
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block.{SortItem, _}
 import org.opencypher.caps.ir.api.expr._
@@ -77,7 +77,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
             c.position == clause.position
         }.map(_._2)
           .map { g =>
-            IRNamedGraph(g.source, context.schemaFor(g.source))
+            IRNamedGraph(g.source, context.schemaFor(g.source), context.graphs(g.source))
           }
           .getOrElse(context.ambientGraph)
         put[R, IRBuilderContext](context.withGraph(currentGraph)) >> pure[R, IRGraph](currentGraph)
@@ -287,17 +287,24 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
               }
 
             case ast.GraphAtAs(url, _, _) =>
-              val graphURI = url.url match {
+
+              // TODO: Move the string -> qualified graph name to QualifiedGraphName.apply
+              val parts = url.url match {
                 case Left(_) =>
                   throw NotImplementedException(s"Support for graph uris by parameter not yet implemented")
-                case Right(StringLiteral(literal)) => parsePathOrURI(literal)
+                case Right(StringLiteral(literal)) => literal.split("\\.").toList
               }
-              val newContext = context.withGraphAt(graphName, graphURI)
+              val qualifiedGraphName = parts match {
+                case Nil => throw IllegalArgumentException("qualified graph name or single graph name")
+                case head :: Nil => QualifiedGraphName(SessionPropertyGraphDataSource.Namespace, GraphName(head))
+                case head :: tail => QualifiedGraphName(Namespace.from(head), GraphName(tail.reduce(_ + _)))
+              }
+              val newContext = context.withGraphAt(graphName, qualifiedGraphName)
               put[R, IRBuilderContext](newContext) >>
-                pure[R, IRGraph](IRExternalGraph(graphName, newContext.schemaFor(graphName), graphURI))
+                pure[R, IRGraph](IRExternalGraph(graphName, newContext.schemaFor(graphName), qualifiedGraphName))
 
             case ast.GraphAs(ref, alias, _) if alias.isEmpty || alias.contains(ref) =>
-              pure[R, IRGraph](IRNamedGraph(graphName, context.schemaFor(graphName)))
+              pure[R, IRGraph](IRNamedGraph(graphName, context.schemaFor(graphName), context.graphs(graphName)))
 
             case _ =>
               throw NotImplementedException(s"Support for graph aliasing not yet implemented")

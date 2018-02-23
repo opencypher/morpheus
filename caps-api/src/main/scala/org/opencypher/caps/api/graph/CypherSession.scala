@@ -15,18 +15,78 @@
  */
 package org.opencypher.caps.api.graph
 
-import java.net.URI
-
-import org.opencypher.caps.api.io.{CreateOrFail, PersistMode, PropertyGraphDataSource}
+import org.opencypher.caps.api.io._
 import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.value.CypherValue._
+import org.opencypher.caps.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
+import org.opencypher.caps.impl.io.SessionPropertyGraphDataSource
+import org.opencypher.caps.impl.io.SessionPropertyGraphDataSource.{Namespace => SessionNamespace}
 
-// TODO: extend doc with explanation for writing graphs
 /**
   * The Cypher Session is the main API for a Cypher-based application. It manages graphs which can be queried using
-  * Cypher. Graphs can be read from different data sources (e.g. CSV) and mounted in the session-local storage.
+  * Cypher. Graphs can be read from / written to different data sources (e.g. CSV) and also stored in / retrieved from
+  * the session-local storage.
   */
 trait CypherSession {
+
+  /**
+    * The [[Namespace]] used to to store graphs within this session.
+    *
+    * @return session namespace
+    */
+  def sessionNamespace: Namespace
+
+  /**
+    * Stores a mutable mapping between a data source [[Namespace]] and the specific [[PropertyGraphDataSource]].
+    *
+    * This mapping also holds the [[SessionPropertyGraphDataSource]] by default.
+    */
+  protected var dataSourceMapping: Map[Namespace, PropertyGraphDataSource] =
+    Map(sessionNamespace -> new SessionPropertyGraphDataSource)
+
+  /**
+    * Register the given [[PropertyGraphDataSource]] under the specific [[Namespace]] within this session.
+    *
+    * This enables a user to refer to that [[PropertyGraphDataSource]] within a Cypher query.
+    *
+    * Note, that it is not allowed to overwrite an already registered [[Namespace]]. Use [[CypherSession#delete]] first.
+    *
+    * @param namespace  namespace for lookup
+    * @param dataSource property graph data source
+    */
+  def registerSource(namespace: Namespace, dataSource: PropertyGraphDataSource): Unit = dataSourceMapping.get(namespace) match {
+    case Some(p) => throw IllegalArgumentException(s"no data source registered with namespace '$namespace'", p)
+    case None => dataSourceMapping = dataSourceMapping.updated(namespace, dataSource)
+  }
+
+  /**
+    * De-registers a [[PropertyGraphDataSource]] from the session by its given [[Namespace]].
+    *
+    * @param namespace namespace for lookup
+    */
+  def deregisterSource(namespace: Namespace): Unit = {
+    if (namespace == sessionNamespace) throw UnsupportedOperationException("de-registering the session data source")
+    dataSourceMapping.get(namespace) match {
+      case Some(_) => dataSourceMapping = dataSourceMapping - namespace
+      case None => throw IllegalArgumentException(s"a data source registered with namespace '$namespace'")
+    }
+  }
+
+  /**
+    * Returns all [[Namespace]]s registered at this session.
+    *
+    * @return registered namespaces
+    */
+  def namespaces: Set[Namespace] = dataSourceMapping.keySet
+
+  /**
+    * Returns the [[PropertyGraphDataSource]] that is registered under the given [[Namespace]].
+    *
+    * @param namespace namespace for lookup
+    * @return property graph data source
+    */
+  def dataSource(namespace: Namespace): PropertyGraphDataSource = dataSourceMapping.getOrElse(namespace,
+    throw IllegalArgumentException(s"a data source registered with namespace '$namespace'"))
 
   /**
     * Executes a Cypher query in this session on the current ambient graph.
@@ -36,6 +96,63 @@ trait CypherSession {
     * @return result of the query
     */
   def cypher(query: String, parameters: CypherMap = CypherMap.empty, drivingTable: Option[CypherRecords] = None): CypherResult
+
+  /**
+    * Stores the given [[PropertyGraph]] to session-local storage under the given [[GraphName]]. The specified graph
+    * will be accessible under the session-local naming scheme, e.g. {{{session.$graphName}}}.
+    *
+    * @param graphName graph name
+    * @param graph     property graph to store
+    */
+  def store(graphName: GraphName, graph: PropertyGraph): QualifiedGraphName = {
+    dataSourceMapping(SessionNamespace).store(graphName, graph)
+    QualifiedGraphName(SessionNamespace, graphName)
+  }
+
+  /**
+    * Stores the given [[PropertyGraph]] using the [[PropertyGraphDataSource]] registered under the [[Namespace]] of the
+    * specified [[QualifiedGraphName]].
+    *
+    * @param qualifiedGraphName qualified graph name
+    * @param graph              property graph to store
+    */
+  def store(qualifiedGraphName: QualifiedGraphName, graph: PropertyGraph): Unit =
+    dataSource(qualifiedGraphName.namespace).store(qualifiedGraphName.graphName, graph)
+
+  /**
+    * Removes the [[PropertyGraph]] associated with the given name from the session-local storage.
+    *
+    * @param graphName name of the graph within the session {{{session.graphName}}}
+    */
+  def delete(graphName: GraphName): Unit =
+    dataSourceMapping(SessionNamespace).delete(graphName)
+
+  /**
+    * Removes the [[PropertyGraph]] with the given qualified name from the data source associated with the specified
+    * [[Namespace]].
+    *
+    * @param qualifiedGraphName qualified graph name
+    */
+  def delete(qualifiedGraphName: QualifiedGraphName): Unit =
+    dataSource(qualifiedGraphName.namespace).delete(qualifiedGraphName.graphName)
+
+  /**
+    * Returns the [[PropertyGraph]] that is stored in session-local storage under the given [[GraphName]].
+    *
+    * @param graphName qualified graph name
+    * @return property graph
+    */
+  def graph(graphName: GraphName): PropertyGraph =
+    dataSource(sessionNamespace).graph(graphName)
+
+  /**
+    * Returns the [[PropertyGraph]] that is stored under the given [[QualifiedGraphName]].
+    *
+    * @param qualifiedGraphName qualified graph name
+    * @return property graph
+    */
+  def graph(qualifiedGraphName: QualifiedGraphName): PropertyGraph =
+    dataSource(qualifiedGraphName.namespace).graph(qualifiedGraphName.graphName)
 
   /**
     * Executes a Cypher query in this session, using the argument graph as the ambient graph.
@@ -48,54 +165,9 @@ trait CypherSession {
     * @param parameters parameters used by the Cypher query
     * @return result of the query
     */
-  private[graph] def cypherOnGraph(graph: PropertyGraph, query: String, parameters: CypherMap = CypherMap.empty, drivingTable: Option[CypherRecords]): CypherResult
-
-  /**
-    * Reads a graph from the argument URI.
-    *
-    * @param uri URI locating a graph
-    * @return graph located at the URI
-    */
-  def readFrom(uri: URI): PropertyGraph
-
-  /**
-    * Reads a graph from an argument string that represents a valid URI.
-    *
-    * @param uri URI string locating a graph
-    * @return graph located at the URI
-    */
-  def readFrom(uri: String): PropertyGraph = readFrom(URI.create(uri))
-
-  /**
-    * Mounts the given graph source to session-local storage under the given path. The specified graph will be
-    * accessible under the session-local URI scheme, e.g. {{{session://$path}}}.
-    *
-    * @param source graph source to register
-    * @param path   path at which this graph can be accessed via {{{session://$path}}}
-    */
-  def mount(source: PropertyGraphDataSource, path: String): Unit
-
-  /**
-    * Mounts the given property graph to session-local storage under the given path. The specified graph will be
-    * accessible under the session-local URI scheme, e.g. {{{session://$path}}}.
-    *
-    * @param graph property graph to register
-    * @param path   path at which this graph can be accessed via {{{session://$path}}}
-    */
-  def mount(graph: PropertyGraph, path: String): Unit
-
-  // TODO: reintroduce "mount(source: String, path: String): Unit" with source lookup via URI scheme
-  /**
-    * Writes the given graph to the location using the format specified by the URI.
-    *
-    * @param graph graph to write
-    * @param uri   graph URI indicating location and format to write the graph to
-    * @param mode  persist mode which determines what happens if the location is occupied
-    */
-  // TODO: Error handling via Return Type (Success, Failed) or just throw exception?
-  def write(graph: PropertyGraph, uri: String, mode: PersistMode = CreateOrFail): Unit
-}
-
-object CypherSession {
-  val sessionGraphSchema = "session"
+  private[graph] def cypherOnGraph(
+    graph: PropertyGraph,
+    query: String,
+    parameters: CypherMap = CypherMap.empty,
+    drivingTable: Option[CypherRecords]): CypherResult
 }

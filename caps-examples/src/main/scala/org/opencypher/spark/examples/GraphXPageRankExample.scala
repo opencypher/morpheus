@@ -20,6 +20,7 @@ import org.apache.spark.graphx._
 import org.apache.spark.util.collection.{BitSet, OpenHashSet}
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.CAPSSession._
+import org.opencypher.caps.api.io.GraphName
 import org.opencypher.caps.api.io.conversion.NodeMapping
 import org.opencypher.caps.api.schema.CAPSNodeTable
 import org.opencypher.caps.api.schema.EntityTable.SparkTable
@@ -67,16 +68,16 @@ object GraphXPageRankExample extends App {
   val ranksNodeMapping = NodeMapping.on("id").withPropertyKey("rank")
   val rankNodes = session.readFrom(CAPSNodeTable(ranksNodeMapping, rankTable))
 
-  // 8) Mount both graphs in session
-  session.mount(rankNodes, "/ranks")
-  session.mount(socialNetwork, "/sn")
+  // 8) Mount both graphs in the session
+  session.store(GraphName.from("ranks"), rankNodes)
+  session.store(GraphName.from("sn"), socialNetwork)
 
   // 9) Query across both graphs to print names with corresponding ranks, sorted by rank
   val result = session.cypher(
-    """|FROM GRAPH AT '/ranks'
+    """|FROM GRAPH AT 'ranks'
        |MATCH (r)
        |WITH id(r) as id, r.rank as rank
-       |FROM GRAPH AT '/sn'
+       |FROM GRAPH AT 'sn'
        |MATCH (p:Person)
        |WHERE id(p) = id
        |RETURN p.name as name, rank

@@ -57,7 +57,7 @@ class TypedMatchBlockTest extends IrTestSuite {
   }
 
   private def matchBlock(singleMatchQuery: String): (MatchBlock[Expr], CypherMap) = {
-    val model = singleMatchQuery.ir.model
+    val model = singleMatchQuery.ir().model
     val projectBlockRef = model.result.after.head
     val matchBlockRef = model.blocks(projectBlockRef).after.head
 

@@ -15,73 +15,122 @@
  */
 package org.opencypher.caps.api.io
 
-import java.net.URI
-
-import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph}
+import org.opencypher.caps.api.graph.PropertyGraph
 import org.opencypher.caps.api.schema.Schema
 
 /**
-  * Describes a location for a Cypher graph.
+  * The Property Graph Data Source (PGDS) is used to read and write property graphs from and to an external storage
+  * (e.g., a database system, a file system or an memory-based collections of graph data).
+  *
+  * The PGDS is the main interface for implementing custom data sources for specific openCypher implementations
+  * (e.g., for Apache Spark, etc.).
+  *
+  * The (PGDS) is able to handle multiple property graphs and  distinguishes between them using [[GraphName]]s.
+  * Furthermore, a PGDS can be registered at a [[org.opencypher.caps.api.graph.CypherSession]] using a specific
+  * [[Namespace]] which enables accessing a [[PropertyGraph]] within a Cypher query.
   */
 trait PropertyGraphDataSource {
 
   /**
-    * The session tied to this graph source.
-    */
-  val session: CypherSession
-
-  /**
-    * Determines whether this is a source for the graph at the argument URI.
+    * Returns {{true}} if the data source stores a graph under the given [[GraphName]].
     *
-    * @param uri the location for a potential graph.
-    * @return true if the graph at this graph source is located at the argument URI, otherwise false.
+    * @param name name of the graph within the data source
+    * @return {{true}}, iff the graph is stored within the data source
     */
-  def sourceForGraphAt(uri: URI): Boolean
+  def hasGraph(name: GraphName): Boolean
 
   /**
-    * A canonical URI describing the location of this graph source.
-    * The sourceForGraphAt function is guaranteed to return true for this URI.
+    * Returns the [[PropertyGraph]] that is stored under the given name.
     *
-    * @return a URI describing the location of this graph source.
+    * @param name name of the graph within the data source
+    * @return property graph
     */
-  def canonicalURI: URI
+  def graph(name: GraphName): PropertyGraph
 
   /**
-    * Create a new empty graph stored in this graph source.
+    * Returns the [[Schema]] of the graph that is stored under the given name.
     *
-    * @return the graph stored in this graph source.
-    * @throws java.lang.RuntimeException if the graph could not be created or there already was a graph.
-    */
-  def create: PropertyGraph
-
-  /**
-    * Provides the graph stored in this graph source.
+    * This method gives implementers the ability to efficiently retrieve a graph schema from the data source directly.
+    * If an efficient retrieval is not possible, the call is typically forwarded to the graph using the
+    * [[PropertyGraph.schema]] call.
     *
-    * @return the graph stored in this graph source.
-    * @throws java.lang.RuntimeException if loading the graph could not be done.
+    * @param name name of the graph within the data source
+    * @return graph schema
     */
-  def graph: PropertyGraph
+  def schema(name: GraphName): Option[Schema]
 
   /**
-    * Provides only the schema of the graph stored in this graph source or returns None if the schema cannot be
-    * provided without loading/constructing the whole graph.
+    * Stores the given [[PropertyGraph]] under the given [[GraphName]] within the data source.
     *
-    * @return the schema of the graph stored in this graph source.
+    * @param name  name under which the graph shall be stored
+    * @param graph property graph
     */
-  def schema: Option[Schema] = None
+  def store(name: GraphName, graph: PropertyGraph): Unit
 
   /**
-    * Stores the argument graph to this source.
+    * Deletes the [[PropertyGraph]] within the data source that is stored under the given [[GraphName]].
     *
-    * @param graph the graph to persist.
-    * @param mode  the persist mode to use.
-    * @return the persisted graph.
+    * @param name name under which the graph is stored
     */
-  def store(graph: PropertyGraph, mode: PersistMode): PropertyGraph
+  def delete(name: GraphName): Unit
 
   /**
-    * Delete the graph stored at this graph source.
-    * If no graph was located at this source, this operation is a no-op.
+    * Returns the [[GraphName]]s of all [[PropertyGraph]]s stored within the data source.
+    *
+    * @return names of stored graphs
     */
-  def delete(): Unit
+  def graphNames: Set[GraphName]
+
+}
+
+// TODO: Move to another file QualifiedGraphName in graph package
+// TODO: Remove companions and use normal case classes
+object GraphName {
+  def from(graphName: String) = GraphName(graphName)
+}
+
+/**
+  * A graph name is used to address a specific graph withing a [[Namespace]] and is used for lookups in the
+  * [[org.opencypher.caps.api.graph.CypherSession]].
+  *
+  * @param value string representing the graph name
+  */
+case class GraphName private(value: String) extends AnyVal {
+  override def toString: String = value
+}
+
+object Namespace {
+  def from(namespace: String) = Namespace(namespace)
+}
+
+/**
+  * A namespace is used to address different [[PropertyGraphDataSource]] implementations within a
+  * [[org.opencypher.caps.api.graph.CypherSession]].
+  *
+  * @param value string representing the namespace
+  */
+case class Namespace private(value: String) extends AnyVal {
+  override def toString: String = value
+}
+
+object QualifiedGraphName {
+  def from(namespace: String, graphName: String) =
+    QualifiedGraphName(Namespace.from(namespace), GraphName.from(graphName))
+}
+/**
+  * A qualified graph name is used in a Cypher query to address a specific graph within a namespace.
+  *
+  * Example:
+  *
+  * {{{
+  * FROM GRAPH AT 'myNamespace.myGraphName' MATCH (n) RETURN n
+  * }}}
+  *
+  * Here, {{myNamespace.myGraphName}} represents a qualified graph name.
+  *
+  * @param namespace namespace part of the qualified graph name
+  * @param graphName graph name part of the qualified graph name
+  */
+case class QualifiedGraphName private(namespace: Namespace, graphName: GraphName) {
+  override def toString: String = s"$namespace.$graphName"
 }

@@ -15,29 +15,28 @@
  */
 package org.opencypher.caps.impl.spark.physical
 
-import java.net.URI
-
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.graph.PropertyGraph
+import org.opencypher.caps.api.io.QualifiedGraphName
 import org.opencypher.caps.api.physical.{PhysicalOperatorProducer, PhysicalPlannerContext}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.value.CypherValue._
-import org.opencypher.caps.impl.table._
 import org.opencypher.caps.impl.spark.physical.operators._
 import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords}
+import org.opencypher.caps.impl.table._
 import org.opencypher.caps.ir.api.block.SortItem
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.logical.impl._
 
 case class CAPSPhysicalPlannerContext(
   session: CAPSSession,
-  resolver: URI => PropertyGraph,
+  resolver: QualifiedGraphName => PropertyGraph,
   inputRecords: CAPSRecords,
   parameters: CypherMap) extends PhysicalPlannerContext[CAPSRecords]
 
 object CAPSPhysicalPlannerContext {
   def from(
-    resolver: URI => PropertyGraph,
+    resolver: QualifiedGraphName => PropertyGraph,
     inputRecords: CAPSRecords,
     parameters: CypherMap)(implicit session: CAPSSession): PhysicalPlannerContext[CAPSRecords] = {
     CAPSPhysicalPlannerContext(session, resolver, inputRecords, parameters)
@@ -93,8 +92,8 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
   override def planProject(in: CAPSPhysicalOperator, expr: Expr, header: RecordHeader): CAPSPhysicalOperator =
     operators.Project(in, expr, header)
 
-  override def planProjectExternalGraph(in: CAPSPhysicalOperator, name: String, uri: URI): CAPSPhysicalOperator =
-    operators.ProjectExternalGraph(in, name, uri)
+  override def planProjectExternalGraph(in: CAPSPhysicalOperator, name: String, qualifiedGraphName: QualifiedGraphName): CAPSPhysicalOperator =
+    operators.ProjectExternalGraph(in, name, qualifiedGraphName)
 
   override def planProjectPatternGraph(
     in: CAPSPhysicalOperator,

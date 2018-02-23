@@ -17,6 +17,7 @@ package org.opencypher.caps.api.value
 
 import org.opencypher.caps.api.value.CypherValue._
 
+// TODO: Add docs
 case class CAPSNode(
   override val id: Long,
   override val labels: Set[String] = Set.empty,
@@ -30,6 +31,7 @@ case class CAPSNode(
 
 }
 
+// TODO: Add docs
 case class CAPSRelationship(
   override val id: Long,
   override val source: Long,

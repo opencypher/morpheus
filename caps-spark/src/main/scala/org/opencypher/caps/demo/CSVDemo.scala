@@ -24,8 +24,11 @@ import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.SparkConfiguration.MasterAddress
 import org.opencypher.caps.api.configuration.Configuration.LogLevel
 import org.opencypher.caps.api.graph.CypherResult
+import org.opencypher.caps.api.io.GraphName
 import org.opencypher.caps.impl.spark.CypherKryoRegistrator
+import org.opencypher.caps.impl.spark.io.file.FileCsvPropertyGraphDataSource
 
+// TODO: check if it still runs and move to caps-examples
 object CSVDemo {
 
   val conf = new SparkConf(true)
@@ -44,8 +47,9 @@ object CSVDemo {
   def cypher(query: String): CypherResult = {
     println(s"Now executing query: $query")
 
-    implicit val caps = CAPSSession.create(sparkSession)
-    val graph = caps.readFrom("file+csv:///demo/ldbc_1")
+    implicit val caps = CAPSSession.create()
+    val dataSource = new FileCsvPropertyGraphDataSource(rootPath = "/demo")
+    val graph = dataSource.graph(GraphName.from("ldbc_1"))
     val result = graph.cypher(query)
 
     val start = System.currentTimeMillis()

@@ -15,10 +15,10 @@
  */
 package org.opencypher.caps.ir.api
 
-import java.net.URI
-
+import org.opencypher.caps.api.io.{GraphName, QualifiedGraphName}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
+import org.opencypher.caps.impl.io.SessionPropertyGraphDataSource
 import org.opencypher.caps.ir.api.pattern._
 
 trait IRElement {
@@ -37,23 +37,32 @@ final case class IRField(name: String)(val cypherType: CypherType = CTWildcard) 
   override def toString = s"$name :: $cypherType"
 
   def toTypedTuple: (String, CypherType) = name -> cypherType
-
 }
 
-trait IRGraph extends IRElement {
+sealed trait IRGraph extends IRElement {
   def toNamedGraph: IRNamedGraph = IRNamedGraph(name, schema)
 
   def schema: Schema
-
-  override def toString: String = s"IRNamedGraph(name = $name)"
 }
 
-final case class IRNamedGraph(name: String, schema: Schema) extends IRGraph {
+sealed trait IRQualifiedGraph extends IRGraph {
+  def qualifiedName: QualifiedGraphName
+}
+
+object IRNamedGraph {
+  def apply(name: String, schema: Schema): IRNamedGraph =
+    IRNamedGraph(name, schema, QualifiedGraphName(SessionPropertyGraphDataSource.Namespace, GraphName(name)))
+}
+
+// TODO: unify IRNamedGraph and IRExternalGraph as there is no real difference
+final case class IRNamedGraph(name: String, schema: Schema, qualifiedName: QualifiedGraphName) extends IRQualifiedGraph {
   override def toNamedGraph: IRNamedGraph = this
+
+  override def toString: String = s"IRNamedGraph(name = $name, qualifiedName = $qualifiedName)"
 }
 
-final case class IRExternalGraph(name: String, schema: Schema, uri: URI) extends IRGraph {
-  override def toString: String = s"IRExternalGraph(name = $name, uri = $uri)"
+final case class IRExternalGraph(name: String, schema: Schema, qualifiedName: QualifiedGraphName) extends IRQualifiedGraph {
+  override def toString: String = s"IRExternalGraph(name = $name, qualifiedName = $qualifiedName)"
 }
 
 final case class IRPatternGraph[E](name: String, schema: Schema, pattern: Pattern[E]) extends IRGraph

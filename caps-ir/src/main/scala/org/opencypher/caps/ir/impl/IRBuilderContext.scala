@@ -15,12 +15,10 @@
  */
 package org.opencypher.caps.ir.impl
 
-import java.net.URI
-
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
 import org.neo4j.cypher.internal.util.v3_4.{InputPosition, Ref}
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
-import org.opencypher.caps.api.io.PropertyGraphDataSource
+import org.opencypher.caps.api.io.{Namespace, PropertyGraphDataSource, QualifiedGraphName}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.CypherType._
 import org.opencypher.caps.api.types._
@@ -38,9 +36,9 @@ final case class IRBuilderContext(
   ambientGraph: IRExternalGraph,
   blocks: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
   semanticState: SemanticState,
-  graphs: Map[String, URI],
+  graphs: Map[String, QualifiedGraphName],
   graphList: List[IRGraph],
-  resolver: URI => PropertyGraphDataSource,
+  resolver: Namespace => PropertyGraphDataSource,
   // TODO: Remove this
   knownTypes: Map[ast.Expression, CypherType] = Map.empty) {
   self =>
@@ -73,12 +71,14 @@ final case class IRBuilderContext(
   def currentGraph: IRGraph = graphList.head
 
   def schemaFor(graphName: String): Schema = {
-    val source = resolver(graphs(graphName))
-    source.schema match {
+    val qualifiedGraphName = graphs(graphName)
+    val dataSource = resolver(qualifiedGraphName.namespace)
+
+    dataSource.schema(qualifiedGraphName.graphName) match {
       case None =>
         // This initialises the graph eagerly!!
         // TODO: We probably want to save the graph reference somewhere
-        source.graph.schema
+        dataSource.graph(qualifiedGraphName.graphName).schema
       case Some(s) => s
     }
   }
@@ -93,8 +93,8 @@ final case class IRBuilderContext(
     copy(knownTypes = withFieldTypes)
   }
 
-  def withGraphAt(name: String, uri: URI): IRBuilderContext =
-    copy(graphs = graphs.updated(name, uri))
+  def withGraphAt(name: String, qualifiedName: QualifiedGraphName) =
+    copy(graphs = graphs.updated(name, qualifiedName))
 
   def withGraph(graph: IRGraph): IRBuilderContext =
     copy(graphList = graph :: graphList)
@@ -107,7 +107,7 @@ object IRBuilderContext {
     parameters: CypherMap,
     semState: SemanticState,
     ambientGraph: IRExternalGraph,
-    resolver: URI => PropertyGraphDataSource
+    resolver: Namespace => PropertyGraphDataSource
   ): IRBuilderContext = {
     val registry = BlockRegistry.empty[Expr]
     val block = SourceBlock[Expr](ambientGraph)
@@ -119,7 +119,7 @@ object IRBuilderContext {
       ambientGraph,
       reg,
       semState,
-      Map(ambientGraph.name -> ambientGraph.uri),
+      Map(ambientGraph.name -> ambientGraph.qualifiedName),
       List(ambientGraph),
       resolver)
   }

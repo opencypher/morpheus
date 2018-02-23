@@ -13,8 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.spark.io
+package org.opencypher.spark.examples
 
-class CAPSGraphSourceFactoryCompanion(val defaultScheme: String, additionalSchemes: String*) {
-  val supportedSchemes: Set[String]= additionalSchemes.toSet + defaultScheme
+import org.opencypher.caps.api.CAPSSession
+import org.opencypher.caps.api.io.GraphName
+
+object DataSourceExample extends App {
+
+  implicit val session: CAPSSession = CAPSSession.local()
+
+  // 2) Load social network data via case class instances
+  val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
+
+  session.store(GraphName("sn"), socialNetwork)
+
+  val result = session.cypher("FROM GRAPH AT 'session.sn' MATCH (n) RETURN n")
+
+  result.print
 }

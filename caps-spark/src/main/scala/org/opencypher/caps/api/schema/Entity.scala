@@ -17,6 +17,8 @@ package org.opencypher.caps.api.schema
 
 import scala.annotation.StaticAnnotation
 
+// TODO: Add docs
+// TODO: Move to io package
 case class Labels(labels: String*) extends StaticAnnotation
 
 case class RelationshipType(relType: String) extends StaticAnnotation
@@ -25,6 +27,7 @@ object Entity {
   private[schema] val sourceIdKey = "id"
 }
 
+// TODO: Rename to graph entity
 sealed trait Entity extends Product {
   def id: Long
 }

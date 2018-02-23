@@ -15,9 +15,11 @@
  */
 package org.opencypher.caps.ir.impl
 
+import org.opencypher.caps.api.io.{GraphName, QualifiedGraphName}
 import org.opencypher.caps.api.schema.{PropertyKeys, Schema}
-import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.api.types.{CTNode, CTNull, CTRelationship}
+import org.opencypher.caps.api.value.CypherValue._
+import org.opencypher.caps.impl.io.SessionPropertyGraphDataSource
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block._
 import org.opencypher.caps.ir.api.expr.{Expr, HasLabel, Property, Var}
@@ -212,7 +214,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
         case NoWhereBlock(ResultBlock(deps, items, _, _, _, _)) =>
           deps should equal(Set(projectRef))
           items.fields shouldBe empty
-          items.graphs should equal(Set(IRNamedGraph("moo", expectedSchema)))
+          items.graphs should equal(Set(IRNamedGraph("moo", expectedSchema, QualifiedGraphName(SessionPropertyGraphDataSource.Namespace, GraphName("moo")))))
       }
 
       model.requirements should equal(

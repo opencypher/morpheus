@@ -15,43 +15,58 @@
  */
 package org.opencypher.caps.impl.spark.io.hdfs
 
-import java.net.URI
+import java.io.File
 
 import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.{FileSystem, Path, RemoteIterator}
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.graph.PropertyGraph
-import org.opencypher.caps.api.io.{CreateOrFail, PersistMode}
+import org.opencypher.caps.api.io.GraphName
 import org.opencypher.caps.api.schema.Schema
-import org.opencypher.caps.impl.exception.IllegalArgumentException
-import org.opencypher.caps.impl.spark.CAPSGraph
 import org.opencypher.caps.impl.spark.io.CAPSPropertyGraphDataSource
 
-case class HdfsCsvPropertyGraphDataSource(override val canonicalURI: URI, hadoopConfig: Configuration, path: String)(
-    implicit val session: CAPSSession)
-    extends CAPSPropertyGraphDataSource {
+import scala.language.implicitConversions
 
-  import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvPropertyGraphDataSourceFactory.supportedSchemes
+/**
+  * Data source for loading graphs from HDFS.
+  *
+  * @param hadoopConfig Hadoop configuration
+  * @param rootPath     root path containing one ore more graphs
+  */
+class HdfsCsvPropertyGraphDataSource(
+  hadoopConfig: Configuration,
+  rootPath: String)(implicit val session: CAPSSession) extends CAPSPropertyGraphDataSource {
 
-  override def sourceForGraphAt(uri: URI): Boolean = {
-    val hadoopURIString = Option(hadoopConfig.get("fs.defaultFS"))
-      .getOrElse(
-        Option(hadoopConfig.get("fs.default.name"))
-          .getOrElse(throw IllegalArgumentException("a value for fs.defaultFS or fs.default.name")))
-    val hadoopURI = URI.create(hadoopURIString)
-    supportedSchemes.contains(uri.getScheme) && hadoopURI.getHost == uri.getHost && hadoopURI.getPort == uri.getPort
+  private val fileSystem = FileSystem.get(hadoopConfig)
+
+  override def graph(name: GraphName): PropertyGraph = CsvGraphLoader(graphPath(name), hadoopConfig).load
+
+  override def schema(name: GraphName): Option[Schema] = None
+
+  override def store(name: GraphName, graph: PropertyGraph): Unit = ???
+
+  override def delete(name: GraphName): Unit =
+    if (hasGraph(name)) fileSystem.delete(new Path(rootPath), /* recursive = */ true)
+
+  override def graphNames: Set[GraphName] = fileSystem.listStatus(new Path(rootPath))
+    .filter(f => f.isDirectory)
+    .map(f => f.getPath.getName)
+    .map(GraphName.from)
+    .toSet
+
+  override def hasGraph(name: GraphName): Boolean = fileSystem.exists(new Path(graphPath(name)))
+
+  private def graphPath(name: GraphName): String = s"$rootPath${File.separator}$name"
+
+}
+
+object RemoteIteratorWrapper {
+  implicit def convertToScalaIterator[T](underlying: RemoteIterator[T]): Iterator[T] = {
+    case class wrapper(underlying: RemoteIterator[T]) extends Iterator[T] {
+      override def hasNext = underlying.hasNext
+
+      override def next = underlying.next
+    }
+    wrapper(underlying)
   }
-
-  override def graph: PropertyGraph = CsvGraphLoader(path, hadoopConfig).load
-
-  // TODO: Make better/cache?
-  override def schema: Option[Schema] = None
-
-  override def create: CAPSGraph =
-    store(CAPSGraph.empty, CreateOrFail)
-
-  override def store(graph: PropertyGraph, mode: PersistMode): CAPSGraph =
-    ???
-
-  override def delete(): Unit =
-    ???
 }

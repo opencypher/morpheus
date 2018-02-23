@@ -79,10 +79,11 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
   def planLeaf(ref: BlockRef, model: QueryModel[Expr])(implicit context: LogicalPlannerContext): LogicalOperator = {
     model(ref) match {
-      case SourceBlock(irGraph) =>
+      case SourceBlock(irGraph: IRExternalGraph) =>
+        val qualifiedGraphName = irGraph.qualifiedName
         val graphSource = context.resolver(irGraph.name)
         producer.planStart(
-          LogicalExternalGraph(irGraph.name, graphSource.canonicalURI, graphSource.schema.get),
+          LogicalExternalGraph(irGraph.name, qualifiedGraphName, graphSource.schema(qualifiedGraphName.graphName).get),
           context.inputRecordFields)
       case x =>
         throw NotImplementedException(s"Support for leaf planning of $x not yet implemented")
@@ -310,7 +311,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         val innerPlan = this (ex.ir)
         producer.planExistsSubQuery(ex, in, innerPlan)
 
-      case ands @ Ands(inner) =>
+      case ands@Ands(inner) =>
         val plannedInner = inner.foldLeft(in)((op, expr) => planInnerExpr(expr, op))
         producer.projectExpr(ands, plannedInner)
 
@@ -346,16 +347,17 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
         LogicalPatternGraph(name, schema, GraphOfPattern(entities, boundEntities))
 
-      case _ =>
-        val graphSource = context.resolver(graph.name)
-        val schema = graphSource.schema match {
+      case g: IRQualifiedGraph =>
+        val graphSource = context.resolver(g.name)
+        // TODO can we use the schema attached to the IRGraph?
+        val schema = graphSource.schema(g.qualifiedName.graphName) match {
           case None =>
             // This initialises the graph eagerly!!
             // TODO: We probably want to save the graph reference somewhere
-            graphSource.graph.schema
+            graphSource.graph(g.qualifiedName.graphName).schema
           case Some(s) => s
         }
-        LogicalExternalGraph(graph.name, graphSource.canonicalURI, schema)
+        LogicalExternalGraph(graph.name, g.qualifiedName, schema)
     }
   }
 

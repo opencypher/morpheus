@@ -16,15 +16,16 @@
 package org.opencypher.caps.test.fixture
 
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.impl.spark.CAPSSessionImpl
 import org.opencypher.caps.test.BaseTestSuite
 
 trait CAPSSessionFixture extends BaseTestFixture {
   self: SparkSessionFixture with BaseTestSuite =>
 
-  implicit lazy val caps: CAPSSession = CAPSSession.create(session)
+  implicit lazy val caps: CAPSSession = CAPSSession.create()
 
-  abstract override protected def afterEach(): Unit =
-    caps.asInstanceOf[CAPSSessionImpl].unmountAll()
+  abstract override protected def afterEach(): Unit = {
+    // delete all session graphs via their qualified graph name
+    caps.dataSource(caps.sessionNamespace).graphNames.foreach(caps.delete)
     super.afterEach()
+  }
 }

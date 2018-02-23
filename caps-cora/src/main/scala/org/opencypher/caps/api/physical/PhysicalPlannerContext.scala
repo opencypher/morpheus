@@ -15,9 +15,8 @@
  */
 package org.opencypher.caps.api.physical
 
-import java.net.URI
-
 import org.opencypher.caps.api.graph.{CypherSession, PropertyGraph}
+import org.opencypher.caps.api.io.QualifiedGraphName
 import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.value.CypherValue.CypherMap
 
@@ -39,7 +38,7 @@ trait PhysicalPlannerContext[R <: CypherRecords] {
     *
     * @return lookup function
     */
-  def resolver: URI => PropertyGraph
+  def resolver: QualifiedGraphName => PropertyGraph
 
   /**
     * Initial records for physical planning.

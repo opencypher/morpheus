@@ -20,12 +20,15 @@ import org.opencypher.caps.api.exception.CypherException.{ErrorDetails, ErrorPha
 /**
   * Cypher exceptions are thrown due to the reasons specified by the Cypher TCK and follow the specified format.
   */
+// TODO: Make sure all Cypher-related exceptions we throw are instances of this
+// TODO: Make sure all other exceptions are instances of another trait in this package
 abstract class CypherException(errorType: ErrorType, phase: ErrorPhase, detail: ErrorDetails) extends RuntimeException(s"$errorType during $phase. Details: $detail") with Serializable
 
 object CypherException {
 
   sealed trait ErrorType
 
+  // TODO: Turn into case objects
   /**
     * Possible error types as specified by the TCK.
     */

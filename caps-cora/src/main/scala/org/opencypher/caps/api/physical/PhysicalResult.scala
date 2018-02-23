@@ -40,6 +40,7 @@ trait PhysicalResult[R <: CypherRecords, G <: PropertyGraph] {
     * @param t tuple mapping a graph name to a graph
     * @return updated result
     */
+  // TODO: Remove
   def withGraph(t: (String, G)): PhysicalResult[R, G]
 
   /**
@@ -48,5 +49,6 @@ trait PhysicalResult[R <: CypherRecords, G <: PropertyGraph] {
     * @param names graphs to select
     * @return updated result containing only selected graphs
     */
+  // TODO: Remove
   def selectGraphs(names: Set[String]): PhysicalResult[R, G]
 }

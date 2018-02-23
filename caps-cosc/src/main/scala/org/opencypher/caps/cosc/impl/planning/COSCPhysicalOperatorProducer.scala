@@ -15,9 +15,8 @@
  */
 package org.opencypher.caps.cosc.impl.planning
 
-import java.net.URI
-
 import org.opencypher.caps.api.graph.PropertyGraph
+import org.opencypher.caps.api.io.QualifiedGraphName
 import org.opencypher.caps.api.physical.{PhysicalOperatorProducer, PhysicalPlannerContext}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.value.CypherValue.CypherMap
@@ -30,13 +29,13 @@ import org.opencypher.caps.logical.impl.{ConstructedEntity, Direction, LogicalEx
 
 case class COSCPhysicalPlannerContext(
   session: COSCSession,
-  resolver: URI => PropertyGraph,
+  resolver: QualifiedGraphName => PropertyGraph,
   inputRecords: COSCRecords,
   parameters: CypherMap) extends PhysicalPlannerContext[COSCRecords]
 
 object COSCPhysicalPlannerContext {
   def from(
-    resolver: URI => PropertyGraph,
+    resolver: QualifiedGraphName => PropertyGraph,
     inputRecords: COSCRecords,
     parameters: CypherMap)(implicit session: COSCSession): PhysicalPlannerContext[COSCRecords] = {
     COSCPhysicalPlannerContext(session, resolver, inputRecords, parameters)
@@ -175,12 +174,12 @@ class COSCPhysicalOperatorProducer(implicit caps: COSCSession)
   /**
     * Stores the graph identified by the given URI by the given name.
     *
-    * @param in   previous operator
-    * @param name name to project graph to
-    * @param uri  reference to a graph (e.g. an external graph)
+    * @param in                 previous operator
+    * @param name               name to project graph to
+    * @param qualifiedGraphName reference to a graph (e.g. an external graph)
     * @return project external graph operator
     */
-  override def planProjectExternalGraph(in: COSCOperator, name: String, uri: URI): COSCOperator = ???
+  override def planProjectExternalGraph(in: COSCOperator, name: String, qualifiedGraphName: QualifiedGraphName): COSCOperator = ???
 
   /**
     * Creates a new record containing the specified entities (i.e. as defined in a construction pattern).

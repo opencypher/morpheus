@@ -16,10 +16,8 @@
 package org.opencypher.caps.cosc.impl.planning
 
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
-import org.opencypher.caps.cosc.impl
-import org.opencypher.caps.cosc.impl.{COSCPhysicalResult, COSCRecords, COSCRuntimeContext}
-import org.opencypher.caps.impl.exception.IllegalArgumentException
 import org.opencypher.caps.cosc.impl.{COSCPhysicalResult, COSCRuntimeContext}
+import org.opencypher.caps.impl.exception.IllegalArgumentException
 import org.opencypher.caps.impl.table.RecordHeader
 import org.opencypher.caps.ir.api.expr.{Expr, Var}
 import org.opencypher.caps.logical.impl.{LogicalExternalGraph, LogicalGraph}
@@ -36,7 +34,7 @@ abstract class UnaryOperator extends COSCOperator {
 case class SetSourceGraph(in: COSCOperator, graph: LogicalExternalGraph) extends UnaryOperator with InheritedHeader {
 
   override def executeUnary(prev: COSCPhysicalResult)(implicit context: COSCRuntimeContext): COSCPhysicalResult =
-    prev.withGraph(graph.name -> resolve(graph.uri))
+    prev.withGraph(graph.name -> resolve(graph.qualifiedGraphName))
 }
 
 case class Scan(in: COSCOperator, inGraph: LogicalGraph, v: Var, header: RecordHeader) extends UnaryOperator {

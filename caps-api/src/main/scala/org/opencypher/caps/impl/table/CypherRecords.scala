@@ -29,6 +29,8 @@ import org.opencypher.caps.impl.exception.IllegalArgumentException
   * it can also be used to assemble complex Cypher values such as CypherNode/CypherRelationship that are stored over
   * multiple columns in a low-level Cypher table.
   */
+// TODO: Move to api package
+// TODO: Fix docs
 trait CypherTable[K] {
 
   def columns: Seq[K]

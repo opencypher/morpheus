@@ -15,9 +15,8 @@
  */
 package org.opencypher.caps.api.physical
 
-import java.net.URI
-
 import org.opencypher.caps.api.graph.PropertyGraph
+import org.opencypher.caps.api.io.QualifiedGraphName
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.impl.table.{ProjectedExpr, ProjectedField, RecordHeader}
@@ -160,12 +159,12 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   /**
     * Stores the graph identified by the given URI by the given name.
     *
-    * @param in   previous operator
-    * @param name name to project graph to
-    * @param uri  reference to a graph (e.g. an external graph)
+    * @param in            previous operator
+    * @param name          name to project graph to
+    * @param qualifiedName reference to a graph (e.g. an external graph)
     * @return project external graph operator
     */
-  def planProjectExternalGraph(in: P, name: String, uri: URI): P
+  def planProjectExternalGraph(in: P, name: String, qualifiedName: QualifiedGraphName): P
 
   /**
     * Creates a new record containing the specified entities (i.e. as defined in a construction pattern).

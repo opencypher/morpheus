@@ -17,25 +17,26 @@ package org.opencypher.caps.impl.spark.io.hdfs
 
 import java.net.URI
 
+import org.apache.http.client.utils.URIBuilder
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.impl.spark.CAPSGraph
 import org.opencypher.caps.test.CAPSTestSuite
-import org.opencypher.caps.test.fixture.MiniDFSClusterFixture
-import org.scalatest.Matchers
+import org.opencypher.caps.test.fixture.{MiniDFSClusterFixture, TeamDataFixture}
 
-class CsvGraphLoaderAcceptanceTest extends CAPSTestSuite
+class CsvGraphLoaderTest extends CAPSTestSuite
   with MiniDFSClusterFixture
-  with Matchers {
+  with TeamDataFixture {
 
   protected override def dfsTestGraphPath = "/csv/sn"
 
-  test("load csv graph") {
+  override protected def hdfsURI: URI = new URIBuilder(super.hdfsURI).setPath(dfsTestGraphPath).build()
+
+  test("load csv graph from HDFS") {
     val loader = CsvGraphLoader(hdfsURI.toString, session.sparkContext.hadoopConfiguration)
 
     val graph: CAPSGraph = loader.load.asCaps
-
-    graph.nodes("n").toDF().collect().toBag should equal(dfsTestGraphNodes)
-    graph.relationships("rel").toDF().collect.toBag should equal(dfsTestGraphRels)
+    graph.nodes("n").toDF().collect().toBag should equal(csvTestGraphNodes)
+    graph.relationships("rel").toDF().collect.toBag should equal(csvTestGraphRels)
   }
 
   test("load csv graph from local file") {
@@ -43,7 +44,7 @@ class CsvGraphLoaderAcceptanceTest extends CAPSTestSuite
     val loader = CsvGraphLoader(fileURI.toString, session.sparkContext.hadoopConfiguration)
 
     val graph: CAPSGraph = loader.load.asCaps
-    graph.nodes("n").toDF().collect().toBag should equal(dfsTestGraphNodes)
-    graph.relationships("rel").toDF().collect.toBag should equal(dfsTestGraphRels)
+    graph.nodes("n").toDF().collect().toBag should equal(csvTestGraphNodes)
+    graph.relationships("rel").toDF().collect.toBag should equal(csvTestGraphRels)
   }
 }

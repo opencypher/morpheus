@@ -15,12 +15,11 @@
  */
 package org.opencypher.caps.impl.spark.physical.operators
 
-import java.net.URI
-
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions.{asc, desc, monotonically_increasing_id}
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.opencypher.caps.api.CAPSSession
+import org.opencypher.caps.api.io.QualifiedGraphName
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue._
@@ -184,10 +183,10 @@ final case class Filter(in: CAPSPhysicalOperator, expr: Expr, header: RecordHead
   }
 }
 
-final case class ProjectExternalGraph(in: CAPSPhysicalOperator, name: String, uri: URI) extends UnaryPhysicalOperator with InheritedHeader {
+final case class ProjectExternalGraph(in: CAPSPhysicalOperator, name: String, qualifiedGraphName: QualifiedGraphName) extends UnaryPhysicalOperator with InheritedHeader {
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult =
-    prev.withGraph(name -> resolve(uri))
+    prev.withGraph(name -> resolve(qualifiedGraphName))
 
 }
 
@@ -553,6 +552,6 @@ final case class EmptyRecords(in: CAPSPhysicalOperator, header: RecordHeader)(im
 final case class SetSourceGraph(in: CAPSPhysicalOperator, graph: LogicalExternalGraph) extends UnaryPhysicalOperator with InheritedHeader {
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult =
-    prev.withGraph(graph.name -> resolve(graph.uri))
+    prev.withGraph(graph.name -> resolve(graph.qualifiedGraphName))
 
 }

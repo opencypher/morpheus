@@ -21,10 +21,13 @@ import org.apache.http.client.utils.URIBuilder
 import org.apache.spark.sql.Row
 import org.neo4j.driver.v1.{AuthTokens, Session}
 import org.opencypher.caps.api.graph.{CypherResult, PropertyGraph}
+import org.opencypher.caps.api.io.GraphName
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTInteger, CTString}
 import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.impl.spark.CAPSRecords
+import org.opencypher.caps.impl.spark.io.hdfs.HdfsCsvPropertyGraphDataSource
+import org.opencypher.caps.impl.spark.io.neo4j.Neo4jPropertyGraphDataSource
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.fixture.{MiniDFSClusterFixture, Neo4jServerFixture, SparkSessionFixture}
 import org.scalatest.Assertion
@@ -33,28 +36,31 @@ import scala.collection.Bag
 
 class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServerFixture with MiniDFSClusterFixture {
 
-  protected override def hdfsURI: URI = new URIBuilder(super.hdfsURI).setScheme("hdfs+csv").build()
+  protected override def hdfsURI: URI = new URIBuilder(super.hdfsURI).build()
+
   protected override def dfsTestGraphPath = "/csv/prod"
 
   ignore("the demo") {
     val t0 = System.currentTimeMillis()
-    lazy val SN_US = caps.readFrom(neoURIforRegion("US"))
-    lazy val SN_EU = caps.readFrom(neoURIforRegion("EU"))
-    lazy val PRODUCTS = caps.readFrom(hdfsURI)
+    lazy val SN_US = neoRegionGraph("US")
+    lazy val SN_EU = neoRegionGraph("EU")
+    lazy val PRODUCTS = hdfsProductGraph
 
     val CITYFRIENDS_US =
-      SN_US.cypher("""MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b)
-        |WHERE city.name = "New York City" OR city.name = "San Francisco"
-        |RETURN GRAPH result OF (a)-[r:ACQUAINTED]->(b)
-      """.stripMargin)
+      SN_US.cypher(
+        """MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b)
+          |WHERE city.name = "New York City" OR city.name = "San Francisco"
+          |RETURN GRAPH result OF (a)-[r:ACQUAINTED]->(b)
+        """.stripMargin)
 
     check(verifyCityFriendsUS(CITYFRIENDS_US.graphs("result")))
 
     val CITYFRIENDS_EU =
-      SN_EU.cypher("""MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b)
-        |WHERE city.name = "Malmö" OR city.name = "Berlin"
-        |RETURN GRAPH result OF (a)-[r:ACQUAINTED]->(b)
-      """.stripMargin)
+      SN_EU.cypher(
+        """MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b)
+          |WHERE city.name = "Malmö" OR city.name = "Berlin"
+          |RETURN GRAPH result OF (a)-[r:ACQUAINTED]->(b)
+        """.stripMargin)
 
     check(verifyCityFriendsEU(CITYFRIENDS_EU.graphs("result")))
 
@@ -62,12 +68,14 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
 
     check(verifyAllCityFriends(ALL_CITYFRIENDS))
 
-    caps.write(ALL_CITYFRIENDS, "/friends")
+    caps.store(GraphName.from("friends"), ALL_CITYFRIENDS)
+    caps.store(GraphName.from("products"), PRODUCTS)
 
-    val LINKS = caps.cypher(s"""FROM GRAPH friends AT '/friends'
+    val LINKS = caps.cypher(
+      s"""FROM GRAPH AT 'friends'
          |MATCH (p:Person)
          |WITH p.name AS personName, p
-         |FROM GRAPH products AT '$hdfsURI'
+         |FROM GRAPH AT 'products'
          |MATCH (c:Customer)
          |WITH c.name as customerName, personName, c, p
          |WHERE customerName = personName
@@ -80,7 +88,8 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
 
     check(verifyReco(RECO))
 
-    val result = RECO.cypher("""MATCH (a:Person)-[:ACQUAINTED]-(b:Person)-[:HAS_INTEREST]->(i:Interest),
+    val result = RECO.cypher(
+      """MATCH (a:Person)-[:ACQUAINTED]-(b:Person)-[:HAS_INTEREST]->(i:Interest),
         |      (a)<-[:IS]-(x:Customer)-[r:BOUGHT]->(p:Product {category: i.name})
         |WHERE r.rating >= 4 AND (r.helpful * 1.0) / r.votes > 0.6
         |WITH * ORDER BY p.rank
@@ -106,7 +115,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
   }
 
   ignore("write back to Neo") {
-    val SN_US = caps.readFrom(neoURIforRegion("US"))
+    val SN_US = neoRegionGraph("US")
     val result = SN_US.cypher("""MATCH (n:Person {name: "Alice"}) RETURN n.name AS name""")
     withBoltSession { session =>
       result.records.iterator.foreach { cypherMap =>
@@ -114,7 +123,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
       }
     }
 
-    val resultGraph = caps.readFrom(neoURIforRegion("US"))
+    val resultGraph = neoRegionGraph("US")
     val res = resultGraph.cypher("MATCH (n:Person {name: 'Alice'}) RETURN n.should_buy as rec")
 
     res.records.iterator.toSet should equal(
@@ -143,12 +152,16 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
     }
   }
 
-  private def neoURIforRegion(region: String) = {
+  private def neoRegionGraph(region: String): PropertyGraph = {
+    val regionGraphName = GraphName.from(region)
     val nodeQuery = URLEncoder.encode(s"MATCH (n {region: '$region'}) RETURN n", "UTF-8")
     val relQuery = URLEncoder.encode(s"MATCH ()-[r {region: '$region'}]->() RETURN r", "UTF-8")
-    val uri = URI.create(s"$neo4jHost?$nodeQuery;$relQuery")
-    uri
+    new Neo4jPropertyGraphDataSource(neo4jConfig, Map(regionGraphName -> (nodeQuery -> relQuery)))
+      .graph(regionGraphName)
   }
+
+  private def hdfsProductGraph: PropertyGraph =
+    new HdfsCsvPropertyGraphDataSource(clusterConfig, rootPath = "/csv").graph(GraphName.from("prod"))
 
   def verifyRecoResult(r: CypherResult) = {
     println("===>>> verifying RECO result")
