@@ -22,10 +22,9 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, StringLiteral, Variable, Pattern => AstPattern}
-import org.opencypher.caps.api.graph.{GraphName, Namespace, QualifiedGraphName}
+import org.opencypher.caps.api.graph.QualifiedGraphName
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
-import org.opencypher.caps.impl.io.SessionPropertyGraphDataSource
 import org.opencypher.caps.ir.api._
 import org.opencypher.caps.ir.api.block.{SortItem, _}
 import org.opencypher.caps.ir.api.expr._
@@ -288,17 +287,13 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
 
             case ast.GraphAtAs(url, _, _) =>
 
-              // TODO: Move the string -> qualified graph name to QualifiedGraphName.apply
-              val parts = url.url match {
+              val qualifiedGraphNameString = url.url match {
                 case Left(_) =>
-                  throw NotImplementedException(s"Support for graph uris by parameter not yet implemented")
-                case Right(StringLiteral(literal)) => literal.split("\\.").toList
+                  throw NotImplementedException(s"Support for qualified graph names by parameter not yet implemented")
+                case Right(StringLiteral(literal)) => literal
               }
-              val qualifiedGraphName = parts match {
-                case Nil => throw IllegalArgumentException("qualified graph name or single graph name")
-                case head :: Nil => QualifiedGraphName(SessionPropertyGraphDataSource.Namespace, GraphName(head))
-                case head :: tail => QualifiedGraphName(Namespace(head), GraphName(tail.reduce(_ + _)))
-              }
+
+              val qualifiedGraphName = QualifiedGraphName(qualifiedGraphNameString)
               val newContext = context.withGraphAt(graphName, qualifiedGraphName)
               put[R, IRBuilderContext](newContext) >>
                 pure[R, IRGraph](IRExternalGraph(graphName, newContext.schemaFor(graphName), qualifiedGraphName))
