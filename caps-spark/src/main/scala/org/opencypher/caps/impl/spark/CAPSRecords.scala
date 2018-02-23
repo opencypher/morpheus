@@ -142,7 +142,7 @@ sealed abstract class CAPSRecords(val header: RecordHeader, val data: DataFrame)
   }
 
   def toLocalIterator: java.util.Iterator[CypherMap] = {
-    toCypherMaps.collect().toIterator.asJava
+    toCypherMaps.toLocalIterator()
   }
 
   def foreachPartition(f: Iterator[CypherMap] => Unit): Unit = {
