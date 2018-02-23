@@ -651,7 +651,6 @@ Feature "SkipLimitAcceptanceTest": Scenario "LIMIT with an expression that depen
 Feature "SkipLimitAcceptanceTest": Scenario "LIMIT with an expression that does not depend on variables"
 Feature "SkipLimitAcceptanceTest": Scenario "SKIP with an expression that depends on variables should fail"
 Feature "SkipLimitAcceptanceTest": Scenario "SKIP with an expression that does not depend on variables"
-Feature "StartingPointAcceptance": Scenario "Find nodes by property"
 Feature "StartsWithAcceptance": Scenario "Combining string operators"
 Feature "StartsWithAcceptance": Scenario "Finding beginning of string"
 Feature "StartsWithAcceptance": Scenario "Finding end of string 1"
@@ -802,3 +801,4 @@ Feature "WithAcceptance": Scenario "Single WITH using a predicate and aggregatio
 Feature "WithAcceptance": Scenario "WHERE after WITH can filter on top of an aggregation"
 Feature "WithAcceptance": Scenario "WHERE after WITH should filter results"
 Feature "WithAcceptance": Scenario "WHERE on a DISTINCT column"
+Feature "WhereAcceptance": Scenario "NOT and false"
