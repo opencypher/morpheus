@@ -15,16 +15,16 @@
  */
 package org.opencypher.okapi.relational.impl.table
 
-import cats.Monad
+import cats.Traverse
 import cats.data.State
 import cats.data.State.{get, set}
 import cats.instances.all._
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.impl.syntax.ExprSyntax._
+import org.opencypher.okapi.relational.refactor.RefCollection
 import org.opencypher.okapi.relational.refactor.RefCollection.AbstractRegister
 import org.opencypher.okapi.relational.refactor.syntax.RegisterSyntax._
-import org.opencypher.okapi.relational.refactor.RefCollection
 
 import scala.annotation.tailrec
 
@@ -285,6 +285,9 @@ object InternalHeader {
 
   private def slot(header: InternalHeader, ref: Int) = RecordSlot(ref, header.slotContents.elts(ref))
 
-  private def execAll[O](input: Vector[State[InternalHeader, O]]): State[InternalHeader, Vector[O]] =
-    Monad[HeaderState].sequence(input)
+  private def execAll[O](input: Vector[State[InternalHeader, O]]): State[InternalHeader, Vector[O]] = {
+    import cats.implicits._
+
+    Traverse[Vector].sequence(input)
+  }
 }

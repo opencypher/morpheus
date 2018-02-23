@@ -22,7 +22,7 @@
 
     <dependency>
       <groupId>org.typelevel</groupId>
-      <artifactId>cats_${project.scala.binary.version}</artifactId>
+      <artifactId>cats-core_${project.scala.binary.version}</artifactId>
       <version>${dep.cats.version}</version>
     </dependency>
 

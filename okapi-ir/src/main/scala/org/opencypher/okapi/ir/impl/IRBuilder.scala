@@ -53,8 +53,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           query <- {
             part match {
               case ast.SingleQuery(clauses) =>
-                val steps = clauses.map(convertClause[R]).toVector
-                val blocks = EffMonad[R].sequence(steps)
+                val blocks = clauses.toVector.traverse(convertClause[R])
                 blocks >> convertRegistry
 
               case x =>
@@ -109,8 +108,8 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           if !items.exists(_.expression.containsAggregate) =>
         for {
           irGraph <- registerIRGraph(c)
-          fieldExprs <- EffMonad[R].sequence(items.map(convertReturnItem[R]).toVector)
-          graphs <- EffMonad[R].sequence(gItems.map(convertGraphReturnItem[R]).toVector)
+          fieldExprs <- items.toVector.traverse(convertReturnItem[R])
+          graphs <- gItems.toVector.traverse(convertGraphReturnItem[R])
           given <- convertWhere(where)
           context <- get[R, IRBuilderContext]
           refs <- {
@@ -118,13 +117,13 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
               registerProjectBlock(context, fieldExprs, graphs, given, irGraph, distinct = distinct)
             val appendList = (list: Vector[BlockRef]) => pure[R, Vector[BlockRef]](projectRef +: list)
             val orderAndSliceBlock = registerOrderAndSliceBlock(orderBy, skip, limit)
-            put[R, IRBuilderContext](context.copy(blocks = projectReg)) >> orderAndSliceBlock >>= appendList
+            put[R, IRBuilderContext](context.copy(blocks = projectReg)) >> orderAndSliceBlock flatMap appendList
           }
         } yield refs
 
       case ast.With(distinct, ast.ReturnItems(_, items), GraphReturnItems(_, Seq()), _, _, _, None) =>
         for {
-          fieldExprs <- EffMonad[R].sequence(items.map(convertReturnItem[R]).toVector)
+          fieldExprs <- items.toVector.traverse(convertReturnItem[R])
           context <- get[R, IRBuilderContext]
           refs <- {
             val (agg, group) = fieldExprs.partition {
@@ -163,7 +162,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
       case ast.Return(distinct, ast.ReturnItems(_, items), graphItems, orderBy, skip, limit, _) =>
         for {
           irGraph <- registerIRGraph(c)
-          fieldExprs <- EffMonad[R].sequence(items.map(convertReturnItem[R]).toVector)
+          fieldExprs <- items.toVector.traverse(convertReturnItem[R])
           graphs <- convertGraphReturnItems(graphItems)
           context <- get[R, IRBuilderContext]
           refs <- {
@@ -171,7 +170,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
               registerProjectBlock(context, fieldExprs, distinct = distinct, source = irGraph, graphs = graphs)
             val appendList = (list: Vector[BlockRef]) => pure[R, Vector[BlockRef]](projectRef +: list)
             val orderAndSliceBlock = registerOrderAndSliceBlock(orderBy, skip, limit)
-            put[R, IRBuilderContext](context.copy(blocks = projectReg)) >> orderAndSliceBlock >>= appendList
+            put[R, IRBuilderContext](context.copy(blocks = projectReg)) >> orderAndSliceBlock flatMap appendList
           }
           context2 <- get[R, IRBuilderContext]
           refs2 <- {
@@ -210,7 +209,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
         pure[R, Vector[IRGraph]](Vector.empty[IRGraph])
       case Some(GraphReturnItems(_, items)) =>
         for {
-          graphs <- EffMonad[R].sequence(items.map(convertGraphReturnItem[R]).toVector)
+          graphs <- items.toVector.traverse(convertGraphReturnItem[R])
         } yield graphs
     }
   }
@@ -239,8 +238,8 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
       context <- get[R, IRBuilderContext]
       sortItems <- orderBy match {
         case Some(ast.OrderBy(sortItems)) =>
-          EffMonad[R].sequence(sortItems.map(convertSortItem[R]).toVector)
-        case None => EffMonad[R].sequence(Vector[Eff[R, SortItem[Expr]]]())
+          sortItems.toVector.traverse(convertSortItem[R])
+        case None => Vector[ast.SortItem]().traverse(convertSortItem[R])
       }
       skipExpr <- convertExpr(skip.map(_.expression))
       limitExpr <- convertExpr(limit.map(_.expression))
