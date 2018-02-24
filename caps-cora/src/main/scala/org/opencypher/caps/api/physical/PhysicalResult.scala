@@ -40,7 +40,7 @@ trait PhysicalResult[R <: CypherRecords, G <: PropertyGraph] {
     * @param t tuple mapping a graph name to a graph
     * @return updated result
     */
-  // TODO: Remove
+  // TODO: Remove (Update: this seems to be necessary for 'Define a new working graph and continue executing the query on it')
   def withGraph(t: (String, G)): PhysicalResult[R, G]
 
   /**

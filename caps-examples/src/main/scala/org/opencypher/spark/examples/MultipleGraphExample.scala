@@ -61,5 +61,5 @@ object MultipleGraphExample extends App {
        |RETURN DISTINCT product.title AS recommendation, person.name AS for
     """.stripMargin)
 
-  recommendations.print
+  recommendations.show
 }

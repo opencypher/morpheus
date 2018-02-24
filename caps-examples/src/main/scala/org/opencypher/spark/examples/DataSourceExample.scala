@@ -29,5 +29,5 @@ object DataSourceExample extends App {
 
   val result = session.cypher("FROM GRAPH AT 'session.sn' MATCH (n) RETURN n")
 
-  result.print
+  result.show
 }

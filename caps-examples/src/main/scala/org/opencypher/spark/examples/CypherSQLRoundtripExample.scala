@@ -59,5 +59,5 @@ object CypherSQLRoundtripExample extends App {
        |RETURN c.name, age, p.title", drivingTable = Some(sqlResults))
      """.stripMargin)
 
-  result2.print
+  result2.show
 }

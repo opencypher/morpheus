@@ -25,7 +25,7 @@ case class CAPSNode(
 
   override type I = CAPSNode
 
-  override def copy(id: Long = id, labels: Set[String] = labels, properties: CypherMap = properties) = {
+  override def copy(id: Long = id, labels: Set[String] = labels, properties: CypherMap = properties): CAPSNode = {
     CAPSNode(id, labels, properties)
   }
 

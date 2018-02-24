@@ -31,12 +31,12 @@ import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue.{CypherMap, CypherValue}
 import org.opencypher.caps.impl.exception.{DuplicateSourceColumnException, IllegalArgumentException, IllegalStateException}
-import org.opencypher.caps.impl.table.CAPSRecordHeader._
-import org.opencypher.caps.impl.table.{CAPSRecordHeader, _}
 import org.opencypher.caps.impl.spark.CAPSRecords.{prepareDataFrame, verifyAndCreate}
 import org.opencypher.caps.impl.spark.DataFrameOps._
 import org.opencypher.caps.impl.spark.convert.rowToCypherMap
 import org.opencypher.caps.impl.syntax.RecordHeaderSyntax._
+import org.opencypher.caps.impl.table.CAPSRecordHeader._
+import org.opencypher.caps.impl.table.{CAPSRecordHeader, _}
 import org.opencypher.caps.impl.util.PrintOptions
 import org.opencypher.caps.ir.api.expr._
 import org.opencypher.caps.ir.api.{Label, PropertyKey}
@@ -48,7 +48,7 @@ import scala.reflect.runtime.universe.TypeTag
 sealed abstract class CAPSRecords(val header: RecordHeader, val data: DataFrame)
   (implicit val caps: CAPSSession) extends CypherRecords with Serializable {
 
-  override def print(implicit options: PrintOptions): Unit =
+  override def show(implicit options: PrintOptions): Unit =
     RecordsPrinter.print(this)
 
   override def register(name: String): Unit =

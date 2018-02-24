@@ -28,34 +28,33 @@ object CypherException {
 
   sealed trait ErrorType
 
-  // TODO: Turn into case objects
   /**
     * Possible error types as specified by the TCK.
     */
   object ErrorType {
 
-    object SyntaxError extends ErrorType
+    case object SyntaxError extends ErrorType
 
-    object ParameterMissing extends ErrorType
+    case object ParameterMissing extends ErrorType
 
-    object ConstraintVerificationFailed extends ErrorType
+    case object ConstraintVerificationFailed extends ErrorType
 
     //TODO: Validation/verification are too similar. Fix in TCK?
-    object ConstraintValidationFailed extends ErrorType
+    case object ConstraintValidationFailed extends ErrorType
 
-    object EntityNotFound extends ErrorType
+    case object EntityNotFound extends ErrorType
 
-    object PropertyNotFound extends ErrorType
+    case object PropertyNotFound extends ErrorType
 
-    object LabelNotFound extends ErrorType
+    case object LabelNotFound extends ErrorType
 
-    object TypeError extends ErrorType
+    case object TypeError extends ErrorType
 
-    object ArgumentError extends ErrorType
+    case object ArgumentError extends ErrorType
 
-    object ArithmeticError extends ErrorType
+    case object ArithmeticError extends ErrorType
 
-    object ProcedureError extends ErrorType
+    case object ProcedureError extends ErrorType
 
   }
 
@@ -66,9 +65,9 @@ object CypherException {
     */
   object ErrorPhase {
 
-    object Runtime extends ErrorPhase
+    case object Runtime extends ErrorPhase
 
-    object CompileTime extends ErrorPhase
+    case object CompileTime extends ErrorPhase
 
   }
 
@@ -79,86 +78,85 @@ object CypherException {
     */
   object ErrorDetails {
 
-    object InvalidElementAccess extends ErrorDetails
+    case object InvalidElementAccess extends ErrorDetails
 
-    object MapElementAccessByNonString extends ErrorDetails
+    case object MapElementAccessByNonString extends ErrorDetails
 
-    object ListElementAccessByNonInteger extends ErrorDetails
+    case object ListElementAccessByNonInteger extends ErrorDetails
 
-    object NestedAggregation extends ErrorDetails
+    case object NestedAggregation extends ErrorDetails
 
-    object NegativeIntegerArgument extends ErrorDetails
+    case object NegativeIntegerArgument extends ErrorDetails
 
-    object DeleteConnectedNode extends ErrorDetails
+    case object DeleteConnectedNode extends ErrorDetails
 
-    object RequiresDirectedRelationship extends ErrorDetails
+    case object RequiresDirectedRelationship extends ErrorDetails
 
-    object InvalidRelationshipPattern extends ErrorDetails
+    case object InvalidRelationshipPattern extends ErrorDetails
 
-    object VariableAlreadyBound extends ErrorDetails
+    case object VariableAlreadyBound extends ErrorDetails
 
-    object InvalidArgumentType extends ErrorDetails
+    case object InvalidArgumentType extends ErrorDetails
 
-    object InvalidArgumentValue extends ErrorDetails
+    case object InvalidArgumentValue extends ErrorDetails
 
-    object NumberOutOfRange extends ErrorDetails
+    case object NumberOutOfRange extends ErrorDetails
 
-    object UndefinedVariable extends ErrorDetails
+    case object UndefinedVariable extends ErrorDetails
 
-    object VariableTypeConflict extends ErrorDetails
+    case object VariableTypeConflict extends ErrorDetails
 
-    object RelationshipUniquenessViolation extends ErrorDetails
+    case object RelationshipUniquenessViolation extends ErrorDetails
 
-    object CreatingVarLength extends ErrorDetails
+    case object CreatingVarLength extends ErrorDetails
 
-    object InvalidParameterUse extends ErrorDetails
+    case object InvalidParameterUse extends ErrorDetails
 
-    object InvalidClauseComposition extends ErrorDetails
+    case object InvalidClauseComposition extends ErrorDetails
 
-    object FloatingPointOverflow extends ErrorDetails
+    case object FloatingPointOverflow extends ErrorDetails
 
-    object PropertyAccessOnNonMap extends ErrorDetails
+    case object PropertyAccessOnNonMap extends ErrorDetails
 
-    object InvalidArgumentExpression extends ErrorDetails
+    case object InvalidArgumentExpression extends ErrorDetails
 
-    object InvalidUnicodeCharacter extends ErrorDetails
+    case object InvalidUnicodeCharacter extends ErrorDetails
 
-    object NonConstantExpression extends ErrorDetails
+    case object NonConstantExpression extends ErrorDetails
 
-    object NoSingleRelationshipType extends ErrorDetails
+    case object NoSingleRelationshipType extends ErrorDetails
 
-    object InvalidAggregation extends ErrorDetails
+    case object InvalidAggregation extends ErrorDetails
 
-    object UnknownFunction extends ErrorDetails
+    case object UnknownFunction extends ErrorDetails
 
-    object InvalidNumberLiteral extends ErrorDetails
+    case object InvalidNumberLiteral extends ErrorDetails
 
-    object InvalidUnicodeLiteral extends ErrorDetails
+    case object InvalidUnicodeLiteral extends ErrorDetails
 
-    object MergeReadOwnWrites extends ErrorDetails
+    case object MergeReadOwnWrites extends ErrorDetails
 
-    object NoExpressionAlias extends ErrorDetails
+    case object NoExpressionAlias extends ErrorDetails
 
-    object DifferentColumnsInUnion extends ErrorDetails
+    case object DifferentColumnsInUnion extends ErrorDetails
 
-    object InvalidDelete extends ErrorDetails
+    case object InvalidDelete extends ErrorDetails
 
-    object InvalidPropertyType extends ErrorDetails
+    case object InvalidPropertyType extends ErrorDetails
 
-    object ColumnNameConflict extends ErrorDetails
+    case object ColumnNameConflict extends ErrorDetails
 
-    object NoVariablesInScope extends ErrorDetails
+    case object NoVariablesInScope extends ErrorDetails
 
-    object DeletedEntityAccess extends ErrorDetails
+    case object DeletedEntityAccess extends ErrorDetails
 
-    object InvalidArgumentPassingMode extends ErrorDetails
+    case object InvalidArgumentPassingMode extends ErrorDetails
 
-    object InvalidNumberOfArguments extends ErrorDetails
+    case object InvalidNumberOfArguments extends ErrorDetails
 
-    object MissingParameter extends ErrorDetails
+    case object MissingParameter extends ErrorDetails
 
-    object ProcedureNotFound extends ErrorDetails
+    case object ProcedureNotFound extends ErrorDetails
 
   }
-
 }

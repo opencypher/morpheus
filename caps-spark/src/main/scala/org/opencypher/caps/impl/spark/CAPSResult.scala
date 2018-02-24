@@ -37,8 +37,8 @@ trait CAPSResult extends CypherResult {
     records.asCaps.data.as[E].toLocalIterator().asScala
   }
 
-  override def print(implicit options: PrintOptions): Unit =
-    records.print
+  override def show(implicit options: PrintOptions): Unit =
+    records.show
 
   override def plans: CAPSQueryPlans
 

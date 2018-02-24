@@ -13,14 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.api.schema
+package org.opencypher.caps.impl.schema
 
-// TODO: Move to impl package
 object ImpliedLabels {
   val empty: ImpliedLabels = ImpliedLabels(Map.empty)
 }
 
-// TODO: Move to impl package
 case class ImpliedLabels(m: Map[String, Set[String]]) {
 
   def transitiveImplicationsFor(known: Set[String]): Set[String] = {

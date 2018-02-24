@@ -13,14 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.api.schema
+package org.opencypher.caps.impl.schema
 
-// TODO: Move to impl package
 object LabelCombinations {
   val empty: LabelCombinations = LabelCombinations(Set.empty)
 }
 
-// TODO: Move to impl package
 case class LabelCombinations(combos: Set[Set[String]]) {
 
   def combinationsFor(labels: Set[String]): Set[Set[String]] =

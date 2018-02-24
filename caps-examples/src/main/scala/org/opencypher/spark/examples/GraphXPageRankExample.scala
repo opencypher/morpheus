@@ -83,7 +83,7 @@ object GraphXPageRankExample extends App {
        |RETURN p.name as name, rank
        |ORDER BY rank DESC""".stripMargin)
 
-  result.records.print
+  result.records.show
   //+---------------------------------------------+
   //| name                 | rank                 |
   //+---------------------------------------------+

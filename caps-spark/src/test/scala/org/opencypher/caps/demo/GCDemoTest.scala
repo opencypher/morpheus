@@ -99,7 +99,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
 
     check(verifyRecoResult(result))
 
-    result.print
+    result.show
 
     //Write back to Neo
     withBoltSession { session =>

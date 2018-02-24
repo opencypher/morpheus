@@ -22,7 +22,7 @@ import org.opencypher.caps.impl.util.PrintOptions
 object CypherPrintable {
 
   def apply(s: String): CypherPrintable = new CypherPrintable {
-    override def print(implicit options: PrintOptions): Unit =
+    override def show(implicit options: PrintOptions): Unit =
       options.stream.print(s)
   }
 
@@ -32,8 +32,7 @@ object CypherPrintable {
 trait CypherPrintable {
 
   final def printTo(stream: PrintStream)(implicit options: PrintOptions): Unit =
-    print(options.stream(stream))
+    show(options.stream(stream))
 
-  // TODO: Call this show
-  def print(implicit options: PrintOptions): Unit
+  def show(implicit options: PrintOptions): Unit
 }
