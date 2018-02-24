@@ -16,7 +16,6 @@
 package org.opencypher.caps.impl.spark.physical
 
 import org.opencypher.caps.api.graph.CypherQueryPlans
-import org.opencypher.caps.api.table.CypherPrintable
 import org.opencypher.caps.impl.flat.FlatOperator
 import org.opencypher.caps.impl.spark.physical.operators.CAPSPhysicalOperator
 import org.opencypher.caps.impl.spark.{CAPSGraph, CAPSRecords, CAPSResult}
@@ -46,8 +45,8 @@ case class CAPSQueryPlans(
   flatPlan: TreeNode[FlatOperator],
   physicalPlan: TreeNode[CAPSPhysicalOperator]) extends CypherQueryPlans {
 
-  override def logical = CypherPrintable(logicalPlan.pretty)
+  override def logical: String = logicalPlan.pretty
 
-  override def physical = CypherPrintable(physicalPlan.pretty)
+  override def physical: String = physicalPlan.pretty
 
 }

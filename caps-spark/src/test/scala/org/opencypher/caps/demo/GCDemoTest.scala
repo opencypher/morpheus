@@ -20,6 +20,7 @@ import java.net.{URI, URLEncoder}
 import org.apache.http.client.utils.URIBuilder
 import org.apache.spark.sql.Row
 import org.neo4j.driver.v1.{AuthTokens, Session}
+import org.opencypher.caps.api.graph.GraphOperations._
 import org.opencypher.caps.api.graph.{CypherResult, GraphName, PropertyGraph}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTInteger, CTString}

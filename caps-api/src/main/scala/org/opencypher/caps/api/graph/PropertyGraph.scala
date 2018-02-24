@@ -47,52 +47,32 @@ trait PropertyGraph {
     */
   def session: CypherSession
 
-  // TODO: Remove
-  def nodes(name: String): CypherRecords = nodes(name, CTNode)
-
   /**
-    * Constructs a scan table of all the nodes in this graph with the given cypher type.
+    * Returns all nodes in this graph with the given [[CTNode]] type.
     *
-    * @param name the field name for the returned nodes.
-    * @return a table of nodes of the specified type.
+    * @param name           field name for the returned nodes
+    * @param nodeCypherType node type used for selection
+    * @return table of nodes of the specified type
     */
-  // TODO: Add default parameter
-  // TODO: Add missing doc
-  def nodes(name: String, nodeCypherType: CTNode): CypherRecords
-
-  // TODO: Remove
-  def relationships(name: String): CypherRecords = relationships(name, CTRelationship)
+  def nodes(name: String, nodeCypherType: CTNode = CTNode): CypherRecords
 
   /**
-    * Constructs a scan table of all the relationships in this graph with the given cypher type.
+    * Returns all relationships in this graph with the given [[CTRelationship]] type.
     *
-    * @param name the field name for the returned relationships.
-    * @return a table of relationships of the specified type.
+    * @param name          field name for the returned relationships
+    * @param relCypherType relationship type used for selection
+    * @return table of relationships of the specified type
     */
-  // TODO: Add default parameter
-  // TODO: Add missing doc
-  def relationships(name: String, relCypherType: CTRelationship): CypherRecords
+  def relationships(name: String, relCypherType: CTRelationship = CTRelationship): CypherRecords
 
   /**
-    * Executes a Cypher query in the session that manages this graph, using this graph as the ambient graph.
+    * Executes a Cypher query in the session that manages this graph, using this graph as the input graph.
     *
-    * @param query      the Cypher query to execute.
-    * @param parameters the parameters used by the Cypher query.
-    * @return           the result of the query.
+    * @param query      Cypher query to execute
+    * @param parameters parameters used by the Cypher query
+    * @return result of the query.
     * @see [[CypherSession.cypherOnGraph()]]
     */
-  // TODO: Don't make final
-  final def cypher(query: String, parameters: CypherMap = CypherMap.empty, drivingTable: Option[CypherRecords] = None): CypherResult =
+  def cypher(query: String, parameters: CypherMap = CypherMap.empty, drivingTable: Option[CypherRecords] = None): CypherResult =
     session.cypherOnGraph(this, query, parameters, drivingTable)
-
-  /**
-    * Constructs the union of this graph and the argument graph.
-    * The argument graph has to be managed by the same session as this graph.
-    *
-    * @param other the argument graph with which to union.
-    * @return the union of this and the argument graph.
-    */
-  // TODO: Move to own trait GraphOperations
-  def union(other: PropertyGraph): PropertyGraph
-
 }

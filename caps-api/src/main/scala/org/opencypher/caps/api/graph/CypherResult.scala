@@ -56,7 +56,7 @@ trait CypherResult extends CypherPrintable {
 }
 
 trait CypherQueryPlans {
-  // TODO: Return strings instead of printables
-  def logical: CypherPrintable
-  def physical: CypherPrintable
+  def logical: String
+
+  def physical: String
 }
