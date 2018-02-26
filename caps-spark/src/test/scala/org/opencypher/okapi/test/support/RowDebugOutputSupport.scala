@@ -16,6 +16,7 @@
 package org.opencypher.okapi.test.support
 
 import org.apache.spark.sql.Row
+import org.opencypher.okapi.ir.test.support.DebugOutputSupport
 
 import scala.collection.Bag
 import scala.collection.immutable.HashedBagConfiguration

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.okapi.test.support
+package org.opencypher.okapi.ir.test.support
 
 import scala.collection.Bag
 import scala.collection.immutable.HashedBagConfiguration

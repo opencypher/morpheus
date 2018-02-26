@@ -16,8 +16,8 @@
 package org.opencypher.okapi.test.support.creation.propertygraph
 
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.ir.test.support.DebugOutputSupport
 import org.opencypher.okapi.test.BaseTestSuite
-import org.opencypher.okapi.test.support.DebugOutputSupport
 
 import scala.collection.Bag
 import scala.collection.immutable.HashedBagConfiguration
