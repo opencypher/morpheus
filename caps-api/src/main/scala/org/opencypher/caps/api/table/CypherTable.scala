@@ -13,24 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.impl.table
+package org.opencypher.caps.api.table
 
-import org.opencypher.caps.api.graph.CypherSession
-import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.types.CypherType
-import org.opencypher.caps.api.value.CypherValue.{CypherMap, CypherValue}
+import org.opencypher.caps.api.value.CypherValue.CypherValue
 import org.opencypher.caps.impl.exception.IllegalArgumentException
 
 /**
-  * Represents a table with column names of type String in which each row contains one CypherValue per column and the
+  * Represents a table in which each row contains one [[org.opencypher.caps.api.value.CypherValue]] per column and the
   * values in each column have the same Cypher type.
   *
   * This interface is used to access simple Cypher values from a table. When it is implemented with an entity mapping
   * it can also be used to assemble complex Cypher values such as CypherNode/CypherRelationship that are stored over
   * multiple columns in a low-level Cypher table.
   */
-// TODO: Move to api package
-// TODO: Fix docs
 trait CypherTable[K] {
 
   def columns: Seq[K]
@@ -72,13 +68,7 @@ object CypherTable {
             s"incompatible column type $columnType")
         }
       }
-
     }
-
   }
 
-}
-
-trait CypherRecordsCompanion[R <: CypherRecords, S <: CypherSession] {
-  def unit()(implicit session: S): R
 }

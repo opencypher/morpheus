@@ -27,7 +27,7 @@ import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.caps.api.schema.EntityTable._
 import org.opencypher.caps.api.schema.{CAPSEntityTable, CAPSNodeTable, CAPSRelationshipTable}
-import org.opencypher.caps.api.table.CypherRecords
+import org.opencypher.caps.api.table.{CypherRecords, CypherRecordsCompanion}
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue.{CypherMap, CypherValue}
 import org.opencypher.caps.impl.exception.{DuplicateSourceColumnException, IllegalArgumentException, IllegalStateException}

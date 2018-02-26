@@ -15,8 +15,8 @@
  */
 package org.opencypher.caps.api.table
 
+import org.opencypher.caps.api.graph.CypherSession
 import org.opencypher.caps.api.value.CypherValue.CypherMap
-import org.opencypher.caps.impl.table.CypherTable
 
 /**
   * Represents a table of records containing Cypher values.
@@ -47,4 +47,8 @@ trait CypherRecords extends CypherTable[String] with CypherPrintable {
     * @param name the name under which this table may be referenced.
     */
   def register(name: String): Unit
+}
+
+trait CypherRecordsCompanion[R <: CypherRecords, S <: CypherSession] {
+  def unit()(implicit session: S): R
 }

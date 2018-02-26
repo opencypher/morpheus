@@ -21,10 +21,10 @@ import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
 import org.opencypher.caps.api.schema.Entity.sourceIdKey
 import org.opencypher.caps.api.schema.EntityTable._
+import org.opencypher.caps.api.table.CypherTable
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue
 import org.opencypher.caps.api.value.CypherValue.CypherValue
-import org.opencypher.caps.impl.table.CypherTable
 import org.opencypher.caps.impl.spark.DataFrameOps._
 import org.opencypher.caps.impl.spark._
 import org.opencypher.caps.impl.util.Annotation
