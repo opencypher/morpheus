@@ -30,7 +30,7 @@ class SessionPropertyGraphDataSource() extends PropertyGraphDataSource {
 
   override def graph(name: GraphName): PropertyGraph = graphMap(name)
 
-  override def schema(name: GraphName): Option[Schema] = if (hasGraph(name)) Some(graph(name).schema) else None
+  override def schema(name: GraphName): Option[Schema] = Some(graph(name).schema)
 
   override def store(name: GraphName, graph: PropertyGraph): Unit = graphMap = graphMap.updated(name, graph)
 

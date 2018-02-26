@@ -27,12 +27,13 @@ trait GraphOperations {
   self: PropertyGraph =>
 
   /**
-    * Constructs the union of this graph and the argument graph. Note that, the argument graph has to be managed by the
+    * Constructs the union of this graph and the argument graph. Note that the argument graph has to be managed by the
     * same session as this graph.
     *
     * @param other argument graph with which to union
     * @return union of this and the argument graph
     */
+  // TODO: Explain semantics of the union (equality vs equivalence)
   def union(other: PropertyGraph): PropertyGraph
 }
 

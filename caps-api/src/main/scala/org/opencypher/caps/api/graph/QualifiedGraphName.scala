@@ -20,7 +20,7 @@ import org.opencypher.caps.impl.exception.IllegalArgumentException
 import org.opencypher.caps.impl.io.SessionPropertyGraphDataSource
 
 /**
-  * A graph name is used to address a specific graph withing a [[Namespace]] and is used for lookups in the
+  * A graph name is used to address a specific graph within a [[Namespace]] and is used for lookups in the
   * [[org.opencypher.caps.api.graph.CypherSession]].
   *
   * @param value string representing the graph name
@@ -42,7 +42,7 @@ case class Namespace(value: String) extends AnyVal {
 object QualifiedGraphName {
 
   /**
-    * Returns a [[QualifiedGraphName]] from its string representation. A qualified graph name consists of a namespace
+    * Returns a [[org.opencypher.caps.api.graph.QualifiedGraphName]] from its string representation. A qualified graph name consists of a namespace
     * part and a graph name part separated by a '.' character. For example,
     *
     * {{{
@@ -51,8 +51,8 @@ object QualifiedGraphName {
     * }}}
     *
     * are valid qualified graph names. The separation between namespace and graph name is expected to be at the first
-    * occurring ','. A graph name may contain an arbitrary number of additional '.' characters. Note, that a string
-    * without any '.' characters is considered to be associated with the [[SessionPropertyGraphDataSource]].
+    * occurring '.'. A graph name may contain an arbitrary number of additional '.' characters. Note that a string
+    * without any '.' characters is considered to be associated with the [[org.opencypher.caps.impl.io.SessionPropertyGraphDataSource]].
     *
     * @param qualifiedGraphName string representation of a qualified graph name
     * @return qualified graph name

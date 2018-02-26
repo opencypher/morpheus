@@ -27,15 +27,13 @@ class SessionPropertyGraphDataSourceTest extends FunSuite with MockitoSugar with
     val source = new SessionPropertyGraphDataSource
     val testGraphName = GraphName("test")
     source.store(testGraphName, null)
-    source.hasGraph(testGraphName) should be
-    true
+    source.hasGraph(testGraphName) shouldBe true
   }
 
   test("hasGraph should return false for non-existing graph") {
     val source = new SessionPropertyGraphDataSource
     val testGraphName = GraphName("test")
-    source.hasGraph(testGraphName) should be
-    false
+    source.hasGraph(testGraphName) shouldBe false
   }
 
   test("graph should return graph for existing graph") {
@@ -52,11 +50,10 @@ class SessionPropertyGraphDataSourceTest extends FunSuite with MockitoSugar with
     an[NoSuchElementException] should be thrownBy source.graph(testGraphName)
   }
 
-  test("schema should return None for non-existing graph") {
+  test("schema should throw for non-existing graph") {
     val source = new SessionPropertyGraphDataSource
     val testGraphName = GraphName("test")
-    source.schema(testGraphName).isEmpty should be
-    true
+    a [NoSuchElementException] shouldBe thrownBy(source.schema(testGraphName))
   }
 
   test("schema should return schema for existing graph") {
