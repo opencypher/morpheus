@@ -30,26 +30,26 @@ import org.opencypher.caps.impl.io.SessionPropertyGraphDataSource.{Namespace => 
 trait CypherSession {
 
   /**
-    * The [[Namespace]] used to to store graphs within this session.
+    * The [[org.opencypher.caps.api.graph.Namespace]] used to to store graphs within this session.
     *
     * @return session namespace
     */
   def sessionNamespace: Namespace
 
   /**
-    * Stores a mutable mapping between a data source [[Namespace]] and the specific [[PropertyGraphDataSource]].
+    * Stores a mutable mapping between a data source [[org.opencypher.caps.api.graph.Namespace]] and the specific [[org.opencypher.caps.api.io.PropertyGraphDataSource]].
     *
-    * This mapping also holds the [[SessionPropertyGraphDataSource]] by default.
+    * This mapping also holds the [[org.opencypher.caps.impl.io.SessionPropertyGraphDataSource]] by default.
     */
   protected var dataSourceMapping: Map[Namespace, PropertyGraphDataSource] =
     Map(sessionNamespace -> new SessionPropertyGraphDataSource)
 
   /**
-    * Register the given [[PropertyGraphDataSource]] under the specific [[Namespace]] within this session.
+    * Register the given [[org.opencypher.caps.api.io.PropertyGraphDataSource]] under the specific [[org.opencypher.caps.api.graph.Namespace]] within this session.
     *
-    * This enables a user to refer to that [[PropertyGraphDataSource]] within a Cypher query.
+    * This enables a user to refer to that [[org.opencypher.caps.api.io.PropertyGraphDataSource]] within a Cypher query.
     *
-    * Note, that it is not allowed to overwrite an already registered [[Namespace]]. Use [[CypherSession#delete]] first.
+    * Note, that it is not allowed to overwrite an already registered [[org.opencypher.caps.api.graph.Namespace]]. Use [[CypherSession#delete]] first.
     *
     * @param namespace  namespace for lookup
     * @param dataSource property graph data source
@@ -60,7 +60,7 @@ trait CypherSession {
   }
 
   /**
-    * De-registers a [[PropertyGraphDataSource]] from the session by its given [[Namespace]].
+    * De-registers a [[org.opencypher.caps.api.io.PropertyGraphDataSource]] from the session by its given [[org.opencypher.caps.api.graph.Namespace]].
     *
     * @param namespace namespace for lookup
     */
@@ -73,14 +73,14 @@ trait CypherSession {
   }
 
   /**
-    * Returns all [[Namespace]]s registered at this session.
+    * Returns all [[org.opencypher.caps.api.graph.Namespace]]s registered at this session.
     *
     * @return registered namespaces
     */
   def namespaces: Set[Namespace] = dataSourceMapping.keySet
 
   /**
-    * Returns the [[PropertyGraphDataSource]] that is registered under the given [[Namespace]].
+    * Returns the [[org.opencypher.caps.api.io.PropertyGraphDataSource]] that is registered under the given [[org.opencypher.caps.api.graph.Namespace]].
     *
     * @param namespace namespace for lookup
     * @return property graph data source
@@ -98,8 +98,8 @@ trait CypherSession {
   def cypher(query: String, parameters: CypherMap = CypherMap.empty, drivingTable: Option[CypherRecords] = None): CypherResult
 
   /**
-    * Stores the given [[PropertyGraph]] to session-local storage under the given [[GraphName]]. The specified graph
-    * will be accessible under the session-local naming scheme, e.g. {{{session.$graphName}}}.
+    * Stores the given [[org.opencypher.caps.api.graph.PropertyGraph]] to session-local storage under the given [[org.opencypher.caps.api.graph.GraphName]]. The specified graph
+    * will be accessible under the session-local naming scheme, e.g. `session.graphName`.
     *
     * @param graphName graph name
     * @param graph     property graph to store
@@ -110,8 +110,8 @@ trait CypherSession {
   }
 
   /**
-    * Stores the given [[PropertyGraph]] using the [[PropertyGraphDataSource]] registered under the [[Namespace]] of the
-    * specified [[QualifiedGraphName]].
+    * Stores the given [[org.opencypher.caps.api.graph.PropertyGraph]] using the [[org.opencypher.caps.api.io.PropertyGraphDataSource]] registered under the [[org.opencypher.caps.api.graph.Namespace]] of the
+    * specified [[org.opencypher.caps.api.graph.QualifiedGraphName]].
     *
     * @param qualifiedGraphName qualified graph name
     * @param graph              property graph to store
@@ -120,16 +120,16 @@ trait CypherSession {
     dataSource(qualifiedGraphName.namespace).store(qualifiedGraphName.graphName, graph)
 
   /**
-    * Removes the [[PropertyGraph]] associated with the given name from the session-local storage.
+    * Removes the [[org.opencypher.caps.api.graph.PropertyGraph]] associated with the given name from the session-local storage.
     *
-    * @param graphName name of the graph within the session {{{session.graphName}}}
+    * @param graphName name of the graph within the session.
     */
   def delete(graphName: GraphName): Unit =
     dataSourceMapping(SessionNamespace).delete(graphName)
 
   /**
-    * Removes the [[PropertyGraph]] with the given qualified name from the data source associated with the specified
-    * [[Namespace]].
+    * Removes the [[org.opencypher.caps.api.graph.PropertyGraph]] with the given qualified name from the data source associated with the specified
+    * [[org.opencypher.caps.api.graph.Namespace]].
     *
     * @param qualifiedGraphName qualified graph name
     */
@@ -137,7 +137,7 @@ trait CypherSession {
     dataSource(qualifiedGraphName.namespace).delete(qualifiedGraphName.graphName)
 
   /**
-    * Returns the [[PropertyGraph]] that is stored in session-local storage under the given [[GraphName]].
+    * Returns the [[org.opencypher.caps.api.graph.PropertyGraph]] that is stored in session-local storage under the given [[org.opencypher.caps.api.graph.GraphName]].
     *
     * @param graphName qualified graph name
     * @return property graph
@@ -146,7 +146,7 @@ trait CypherSession {
     dataSource(sessionNamespace).graph(graphName)
 
   /**
-    * Returns the [[PropertyGraph]] that is stored under the given [[QualifiedGraphName]].
+    * Returns the [[org.opencypher.caps.api.graph.PropertyGraph]] that is stored under the given [[org.opencypher.caps.api.graph.QualifiedGraphName]].
     *
     * @param qualifiedGraphName qualified graph name
     * @return property graph

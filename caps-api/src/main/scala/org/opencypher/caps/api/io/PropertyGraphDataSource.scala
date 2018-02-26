@@ -60,7 +60,7 @@ trait PropertyGraphDataSource {
   def schema(name: GraphName): Option[Schema]
 
   /**
-    * Stores the given [[org.opencypher.caps.api.graph.PropertyGraph]] under the given [[GraphName]] within the data source.
+    * Stores the given [[org.opencypher.caps.api.graph.PropertyGraph]] under the given [[org.opencypher.caps.api.graph.GraphName]] within the data source.
     *
     * @param name  name under which the graph shall be stored
     * @param graph property graph
@@ -68,7 +68,7 @@ trait PropertyGraphDataSource {
   def store(name: GraphName, graph: PropertyGraph): Unit
 
   /**
-    * Deletes the [[org.opencypher.caps.api.graph.PropertyGraph]] within the data source that is stored under the given [[GraphName]].
+    * Deletes the [[org.opencypher.caps.api.graph.PropertyGraph]] within the data source that is stored under the given [[org.opencypher.caps.api.graph.GraphName]].
     *
     * @param name name under which the graph is stored
     */
