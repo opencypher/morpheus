@@ -17,9 +17,9 @@ package org.opencypher.spark.examples
 
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
-import org.opencypher.okapi.api.CAPSSession
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
-import org.opencypher.okapi.api.io.{CAPSNodeTable, CAPSRelationshipTable}
+import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 
 import scala.collection.JavaConverters._
 

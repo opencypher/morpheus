@@ -21,8 +21,8 @@ import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherList => CAPSCypherList, CypherMap => CAPSCypherMap, CypherValue => CAPSCypherValue}
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.impl.typer.exception.TypingException
+import org.opencypher.okapi.ir.test.support.creation.TestGraphFactory
 import org.opencypher.okapi.tck.TCKFixture._
-import org.opencypher.okapi.test.support.creation.TestGraphFactory
 import org.opencypher.okapi.test.support.creation.propertygraph.Neo4jPropertyGraphFactory
 import org.opencypher.tools.tck.api.{ExecutionFailed, _}
 import org.opencypher.tools.tck.constants.{TCKErrorDetails, TCKErrorPhases, TCKErrorTypes}

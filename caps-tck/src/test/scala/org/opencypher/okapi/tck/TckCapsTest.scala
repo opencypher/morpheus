@@ -17,10 +17,10 @@ package org.opencypher.okapi.tck
 
 import java.io.File
 
-import org.opencypher.okapi.impl.spark.CAPSGraph
 import org.opencypher.okapi.tck.Tags.{BlackList, TckCapsTag, WhiteList}
-import org.opencypher.okapi.test.CAPSTestSuite
-import org.opencypher.okapi.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
+import org.opencypher.spark.impl.CAPSGraph
+import org.opencypher.spark.test.CAPSTestSuite
+import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 import org.opencypher.tools.tck.api.CypherTCK
 import org.scalatest.prop.TableDrivenPropertyChecks._
 
