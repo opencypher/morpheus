@@ -16,7 +16,6 @@
 package org.opencypher.spark.examples
 
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.graph.GraphOperations._
 import org.opencypher.caps.api.graph.{GraphName, Namespace, QualifiedGraphName}
 import org.opencypher.caps.impl.spark.io.file.FileCsvPropertyGraphDataSource
 

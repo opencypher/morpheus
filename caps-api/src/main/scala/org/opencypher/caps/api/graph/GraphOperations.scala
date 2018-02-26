@@ -15,12 +15,10 @@
  */
 package org.opencypher.caps.api.graph
 
-import org.opencypher.caps.impl.exception.UnsupportedOperationException
-
 import scala.language.implicitConversions
 
 /**
-  * Mixin for adding additional operations to a [[PropertyGraph]].
+  * Inter-graph operations between [[org.opencypher.caps.api.graph.PropertyGraph]]s.
   */
 trait GraphOperations {
 
@@ -35,18 +33,4 @@ trait GraphOperations {
     */
   // TODO: Explain semantics of the union (equality vs equivalence)
   def union(other: PropertyGraph): PropertyGraph
-}
-
-object GraphOperations {
-
-  /**
-    * Converts a [[PropertyGraph]] into a [[PropertyGraph]] with [[GraphOperations]] if it is supported.
-    *
-    * @param graph property graph
-    * @return property graph with graph operations
-    */
-  implicit def withOperations(graph: PropertyGraph): PropertyGraph with GraphOperations = graph match {
-    case g: GraphOperations => g
-    case g => throw UnsupportedOperationException(s"graph operations on unsupported graph: $g")
-  }
 }

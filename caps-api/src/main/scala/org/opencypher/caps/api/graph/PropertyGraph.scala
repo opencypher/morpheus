@@ -31,7 +31,7 @@ import org.opencypher.caps.api.value.CypherValue.CypherMap
   *
   * @see [[https://github.com/opencypher/openCypher/blob/master/docs/property-graph-model.adoc openCypher Property Graph Model]]
   */
-trait PropertyGraph {
+trait PropertyGraph extends GraphOperations {
 
   /**
     * The schema that describes this graph.
