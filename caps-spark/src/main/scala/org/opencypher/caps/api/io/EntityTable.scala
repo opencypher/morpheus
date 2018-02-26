@@ -18,7 +18,7 @@ package org.opencypher.caps.api.io
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.io.Entity.sourceIdKey
+import org.opencypher.caps.api.io.GraphEntity.sourceIdKey
 import org.opencypher.caps.api.io.EntityTable._
 import org.opencypher.caps.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
 import org.opencypher.caps.api.schema.Schema

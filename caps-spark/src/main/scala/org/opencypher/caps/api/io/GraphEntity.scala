@@ -17,18 +17,12 @@ package org.opencypher.caps.api.io
 
 import scala.annotation.StaticAnnotation
 
-// TODO: Add docs
-case class Labels(labels: String*) extends StaticAnnotation
-
-case class RelationshipType(relType: String) extends StaticAnnotation
-
-object Entity {
-  private[io] val sourceIdKey = "id"
+sealed trait GraphEntity extends Product {
+  def id: Long
 }
 
-// TODO: Rename to graph entity
-sealed trait Entity extends Product {
-  def id: Long
+object GraphEntity {
+  private[io] val sourceIdKey = "id"
 }
 
 /**
@@ -36,7 +30,7 @@ sealed trait Entity extends Product {
   * If a `Labels` annotation, for example `@Labels("Person", "Mammal")`, is present,
   * then the labels from that annotation are used instead.
   */
-trait Node extends Entity
+trait Node extends GraphEntity
 
 object Relationship {
   private[io] val sourceStartNodeKey = "source"
@@ -44,7 +38,7 @@ object Relationship {
   private[io] val sourceEndNodeKey = "target"
 
   private[io] val nonPropertyAttributes =
-    Set(Entity.sourceIdKey, sourceStartNodeKey, sourceEndNodeKey)
+    Set(GraphEntity.sourceIdKey, sourceStartNodeKey, sourceEndNodeKey)
 }
 
 /**
@@ -52,8 +46,13 @@ object Relationship {
   * If a `Type` annotation, for example `@RelationshipType("FRIEND_OF")` is present,
   * then the type from that annotation is used instead.
   */
-trait Relationship extends Entity {
+trait Relationship extends GraphEntity {
   def source: Long
 
   def target: Long
 }
+
+// TODO: Add docs
+case class Labels(labels: String*) extends StaticAnnotation
+
+case class RelationshipType(relType: String) extends StaticAnnotation
