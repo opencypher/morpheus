@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.okapi.test.support.creation.propertygraph
+package org.opencypher.okapi.ir.test.support.creation.propertygraph
 
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.test.support.DebugOutputSupport

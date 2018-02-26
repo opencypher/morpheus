@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.okapi.test.support.creation
+package org.opencypher.okapi.ir.test.support.creation
 
 import org.opencypher.okapi.api.graph.{CypherSession, PropertyGraph}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CypherType._
-import org.opencypher.okapi.test.support.creation.propertygraph.{TestNode, TestPropertyGraph, TestRelationship}
+import org.opencypher.okapi.ir.test.support.creation.propertygraph.{TestNode, TestPropertyGraph, TestRelationship}
 
 trait TestGraphFactory[C <: CypherSession] {
 
