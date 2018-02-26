@@ -547,49 +547,49 @@ private[okapi] object MaterialDefiniteCypherType {
   }
 }
 
-private[okapi] case object CTIntegerOrNull extends NullableDefiniteCypherType {
+case object CTIntegerOrNull extends NullableDefiniteCypherType {
   override def name: String = CTInteger + "?"
 
   override def material: CTInteger.type = CTInteger
 }
 
-private[okapi] case object CTStringOrNull extends NullableDefiniteCypherType {
+case object CTStringOrNull extends NullableDefiniteCypherType {
   override def name: String = CTString + "?"
 
   override def material: CTString.type = CTString
 }
 
-private[okapi] case object CTBooleanOrNull extends NullableDefiniteCypherType {
+case object CTBooleanOrNull extends NullableDefiniteCypherType {
   override def name: String = CTBoolean + "?"
 
   override def material: CTBoolean.type = CTBoolean
 }
 
-private[okapi] case object CTAnyOrNull extends NullableDefiniteCypherType {
+case object CTAnyOrNull extends NullableDefiniteCypherType {
   override def name: String = CTAny + "?"
 
   override def material: CTAny.type = CTAny
 }
 
-private[okapi] case object CTNumberOrNull extends NullableDefiniteCypherType {
+case object CTNumberOrNull extends NullableDefiniteCypherType {
   override def name: String = CTNumber + "?"
 
   override def material: CTNumber.type = CTNumber
 }
 
-private[okapi] case object CTFloatOrNull extends NullableDefiniteCypherType {
+case object CTFloatOrNull extends NullableDefiniteCypherType {
   override def name: String = CTFloat + "?"
 
   override def material: CTFloat.type = CTFloat
 }
 
-private[okapi] case object CTMapOrNull extends NullableDefiniteCypherType {
+case object CTMapOrNull extends NullableDefiniteCypherType {
   override def name: String = CTMap + "?"
 
   override def material: CTMap.type = CTMap
 }
 
-private[okapi] case object CTPathOrNull extends NullableDefiniteCypherType {
+case object CTPathOrNull extends NullableDefiniteCypherType {
   override def name: String = CTPath + "?"
 
   override def material: CTPath.type = CTPath

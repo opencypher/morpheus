@@ -144,7 +144,7 @@ object RelationshipMapping {
   * @param relTypeOrSourceRelTypeKey either a relationship type or a key to access the type in the source data and a set of all possible types
   * @param propertyMapping           mapping from property key to source property key
   */
-private[okapi] final case class RelationshipMapping(
+final case class RelationshipMapping private[okapi](
   sourceIdKey: String,
   sourceStartNodeKey: String,
   sourceEndNodeKey: String,
