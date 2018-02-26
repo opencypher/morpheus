@@ -33,9 +33,7 @@ package org.opencypher.spark.test
 import java.util.UUID
 
 import org.apache.spark.SparkConf
-import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.sql.SparkSession
-import org.opencypher.spark.impl.CypherKryoRegistrator
 
 object TestSparkSession {
 
@@ -43,11 +41,6 @@ object TestSparkSession {
     val conf = new SparkConf(true)
 
     conf.set("spark.sql.codegen.wholeStage", "true")
-//    conf.set("spark.serializer", classOf[KryoSerializer].getCanonicalName)
-//    conf.set("spark.kryo.registrator", classOf[CypherKryoRegistrator].getCanonicalName)
-//    conf.set("spark.kryo.unsafe", "true")
-//    conf.set("spark.kryo.referenceTracking","false")
-//    conf.set("spark.kryo.registrationRequired", "true")
     conf.set("spark.sql.shuffle.partitions", "1")
 //    conf.set("spark.sql.inMemoryColumnarStorage.compressed", "false")
 //    conf.set("spark.submit.deployMode", "client")

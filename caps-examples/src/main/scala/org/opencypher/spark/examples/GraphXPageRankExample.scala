@@ -15,16 +15,13 @@
  */
 package org.opencypher.spark.examples
 
-import com.esotericsoftware.kryo.Kryo
 import org.apache.spark.graphx._
-import org.apache.spark.util.collection.{BitSet, OpenHashSet}
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.io.conversion.NodeMapping
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.CAPSSession._
 import org.opencypher.spark.api.io.CAPSNodeTable
 import org.opencypher.spark.api.io.EntityTable.SparkTable
-import org.opencypher.spark.impl.CypherKryoRegistrator
 
 /**
   * Round trip CAPS -> GraphX -> CAPS
@@ -35,7 +32,7 @@ import org.opencypher.spark.impl.CypherKryoRegistrator
 object GraphXPageRankExample extends App {
 
   // 1) Create CAPS session
-  implicit val session = CAPSSession.local("spark.kryo.registrator" -> classOf[CustomKryoRegistrator].getCanonicalName)
+  implicit val session = CAPSSession.local()
 
   // 2) Load social network data via case class instances
   val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
@@ -91,31 +88,5 @@ object GraphXPageRankExample extends App {
   //| 'Bob'                | 1.0235131396957122   |
   //| 'Alice'              | 0.5532503457814661   |
   //+---------------------------------------------+
-
-}
-
-/**
-  * Example for a Kryo registrator that contains application specific class registrations.
-  */
-class CustomKryoRegistrator extends CypherKryoRegistrator {
-
-  // GraphX
-  val graphXClasses: Seq[Class[_]] = Seq(
-    classOf[Edge[Unit]],
-    classOf[(VertexId, Unit)],
-    Class.forName("org.apache.spark.graphx.impl.EdgePartition"),
-    classOf[BitSet],
-    Class.forName("org.apache.spark.graphx.impl.VertexAttributeBlock"),
-    classOf[PartitionStrategy],
-    classOf[EdgeDirection],
-    classOf[OpenHashSet[Int]],
-    classOf[OpenHashSet[Long]])
-
-  override def registerClasses(kryo: Kryo): Unit = {
-    super.registerClasses(kryo)
-
-    import com.twitter.chill.toRich
-    kryo.registerClasses(graphXClasses)
-  }
 
 }

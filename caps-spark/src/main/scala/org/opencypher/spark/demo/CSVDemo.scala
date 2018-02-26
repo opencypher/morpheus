@@ -18,24 +18,18 @@ package org.opencypher.spark.demo
 import java.util.Calendar
 
 import org.apache.spark.SparkConf
-import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.sql.SparkSession
 import org.opencypher.okapi.api.graph.{CypherResult, GraphName}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.SparkConfiguration.MasterAddress
-import org.opencypher.spark.impl.CypherKryoRegistrator
 import org.opencypher.spark.impl.io.file.FileCsvPropertyGraphDataSource
 
 // TODO: check if it still runs and move to caps-examples
 object CSVDemo {
 
-  val conf = new SparkConf(true)
-  conf.set("spark.serializer", classOf[KryoSerializer].getCanonicalName)
-  conf.set("spark.kryo.registrator", classOf[CypherKryoRegistrator].getCanonicalName)
-
   implicit lazy val sparkSession = SparkSession
     .builder()
-    .config(conf)
+    .config(new SparkConf(true))
     .master(MasterAddress.get)
     .appName(s"cypher-for-apache-spark-benchmark-${Calendar.getInstance().getTime}")
     .getOrCreate()
