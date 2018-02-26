@@ -17,7 +17,13 @@ package org.opencypher.caps.api.value
 
 import org.opencypher.caps.api.value.CypherValue._
 
-// TODO: Add docs
+/**
+  * Representation of a Cypher node in the CAPS implementation. A node contains an id of type [[Long]], a set of string labels and a map of properties.
+  *
+  * @param id         the id of the node, unique within the containing graph.
+  * @param labels     the labels of the node.
+  * @param properties the properties of the node.
+  */
 case class CAPSNode(
   override val id: Long,
   override val labels: Set[String] = Set.empty,
@@ -31,7 +37,15 @@ case class CAPSNode(
 
 }
 
-// TODO: Add docs
+/**
+  * Representation of a Cypher relationship in the CAPS implementation. A relationship contains an id of type [[Long]], ids of its adjacent nodes, a relationship type and a map of properties.
+  *
+  * @param id         the id of the relationship, unique within the containing graph.
+  * @param source     the id of the source node.
+  * @param target     the id of the target node.
+  * @param relType    the relationship type.
+  * @param properties the properties of the node.
+  */
 case class CAPSRelationship(
   override val id: Long,
   override val source: Long,
@@ -41,7 +55,7 @@ case class CAPSRelationship(
 
   override type I = CAPSRelationship
 
-  override def copy(id: Long = id, source: Long = source, target: Long = target, relType: String = relType, properties: CypherMap = properties) = {
+  override def copy(id: Long = id, source: Long = source, target: Long = target, relType: String = relType, properties: CypherMap = properties): CAPSRelationship = {
     CAPSRelationship(id, source, target, relType, properties).asInstanceOf[this.type]
   }
 
