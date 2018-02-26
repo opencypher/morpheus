@@ -52,7 +52,26 @@ trait Relationship extends GraphEntity {
   def target: Long
 }
 
-// TODO: Add docs
+/**
+  * Annotation to use when mapping a case class to a node with more than one label, or a label different to the class name.
+  *
+  * {{{
+  *   @ Labels("Person", "Employee")
+  *   case class Employee(id: Long, name: String, salary: Double)
+  * }}}
+  *
+  * @param labels the labels that the node has.
+  */
 case class Labels(labels: String*) extends StaticAnnotation
 
+/**
+  * Annotation to use when mapping a case class to a relationship with a different relationship type to the class name.
+  *
+  * {{{
+  *   @ RelationshipType("FRIEND_OF")
+  *   case class Friend(id: Long, src: Long, dst: Long, since: Int)
+  * }}}
+  *
+  * @param relType the relationship type that the relationship has.
+  */
 case class RelationshipType(relType: String) extends StaticAnnotation
