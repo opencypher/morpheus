@@ -15,9 +15,9 @@
  */
 package org.opencypher.spark.examples
 
-import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.graph.{GraphName, Namespace, QualifiedGraphName}
-import org.opencypher.caps.impl.spark.io.file.FileCsvPropertyGraphDataSource
+import org.opencypher.okapi.api.CAPSSession
+import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
+import org.opencypher.okapi.impl.spark.io.file.FileCsvPropertyGraphDataSource
 
 /**
   * Demonstrates multiple graph capabilities by loading a social network from case class objects and a purchase network

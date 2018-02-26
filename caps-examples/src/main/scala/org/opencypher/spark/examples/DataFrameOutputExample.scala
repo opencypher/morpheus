@@ -16,8 +16,8 @@
 package org.opencypher.spark.examples
 
 import org.apache.spark.sql.{DataFrame, functions}
-import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.CAPSSession._
+import org.opencypher.okapi.api.CAPSSession
+import org.opencypher.okapi.api.CAPSSession._
 
 /**
   * Shows how to access a Cypher query result as a [[DataFrame]].

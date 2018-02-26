@@ -18,13 +18,13 @@ package org.opencypher.spark.examples
 import com.esotericsoftware.kryo.Kryo
 import org.apache.spark.graphx._
 import org.apache.spark.util.collection.{BitSet, OpenHashSet}
-import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.CAPSSession._
-import org.opencypher.caps.api.graph.GraphName
-import org.opencypher.caps.api.io.CAPSNodeTable
-import org.opencypher.caps.api.io.EntityTable.SparkTable
-import org.opencypher.caps.api.io.conversion.NodeMapping
-import org.opencypher.caps.impl.spark.CypherKryoRegistrator
+import org.opencypher.okapi.api.CAPSSession
+import org.opencypher.okapi.api.CAPSSession._
+import org.opencypher.okapi.api.graph.GraphName
+import org.opencypher.okapi.api.io.CAPSNodeTable
+import org.opencypher.okapi.api.io.EntityTable.SparkTable
+import org.opencypher.okapi.api.io.conversion.NodeMapping
+import org.opencypher.okapi.impl.spark.CypherKryoRegistrator
 
 /**
   * Round trip CAPS -> GraphX -> CAPS

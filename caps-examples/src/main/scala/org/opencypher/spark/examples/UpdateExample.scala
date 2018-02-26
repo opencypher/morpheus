@@ -16,11 +16,11 @@
 package org.opencypher.spark.examples
 
 import org.apache.spark.sql.Dataset
-import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.CAPSSession._
-import org.opencypher.caps.api.value.CAPSNode
-import org.opencypher.caps.api.value.CypherValue.CypherMap
-import org.opencypher.caps.impl.spark.encoders._
+import org.opencypher.okapi.api.CAPSSession
+import org.opencypher.okapi.api.CAPSSession._
+import org.opencypher.okapi.api.value.CAPSNode
+import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.impl.spark.encoders._
 
 import scala.collection.JavaConverters._
 
