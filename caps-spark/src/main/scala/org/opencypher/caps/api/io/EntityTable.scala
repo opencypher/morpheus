@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.api.schema
+package org.opencypher.caps.api.io
 
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.CAPSSession
+import org.opencypher.caps.api.io.Entity.sourceIdKey
+import org.opencypher.caps.api.io.EntityTable._
 import org.opencypher.caps.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
-import org.opencypher.caps.api.schema.Entity.sourceIdKey
-import org.opencypher.caps.api.schema.EntityTable._
+import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.table.CypherTable
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue
@@ -31,54 +32,6 @@ import org.opencypher.caps.impl.util.Annotation
 
 import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe._
-
-// TODO: Move to io package
-trait CAPSEntityTable extends EntityTable[SparkTable] {
-  // TODO: create CTEntity type
-  private[caps] def entityType: CypherType with DefiniteCypherType = mapping.cypherType
-
-  private[caps] def records(implicit caps: CAPSSession): CAPSRecords = CAPSRecords.create(this)
-}
-
-case class CAPSNodeTable(mapping: NodeMapping, table: SparkTable) extends NodeTable(mapping, table) with CAPSEntityTable
-
-object CAPSNodeTable {
-
-  def apply[E <: Node : TypeTag](nodes: Seq[E])(implicit caps: CAPSSession): CAPSNodeTable = {
-    val nodeLabels = Annotation.labels[E]
-    val nodeDF = caps.sparkSession.createDataFrame(nodes)
-    val nodeProperties = properties(nodeDF.columns)
-    val nodeMapping = NodeMapping.create(nodeIdKey = sourceIdKey, impliedLabels = nodeLabels, propertyKeys = nodeProperties)
-    CAPSNodeTable(nodeMapping, nodeDF)
-  }
-
-  private def properties(nodeColumnNames: Seq[String]): Set[String] = {
-    nodeColumnNames.filter(_ != sourceIdKey).toSet
-  }
-}
-
-case class CAPSRelationshipTable(mapping: RelationshipMapping, table: SparkTable) extends RelationshipTable(mapping, table) with CAPSEntityTable
-
-object CAPSRelationshipTable {
-
-  def apply[E <: Relationship : TypeTag](relationships: Seq[E])(implicit caps: CAPSSession): CAPSRelationshipTable = {
-    val relationshipType: String = Annotation.relType[E]
-    val relationshipDF = caps.sparkSession.createDataFrame(relationships)
-    val relationshipProperties = properties(relationshipDF.columns.toSet)
-
-    val relationshipMapping = RelationshipMapping.create(sourceIdKey,
-      Relationship.sourceStartNodeKey,
-      Relationship.sourceEndNodeKey,
-      relationshipType,
-      relationshipProperties)
-
-    CAPSRelationshipTable(relationshipMapping, relationshipDF)
-  }
-
-  private def properties(relColumnNames: Set[String]): Set[String] = {
-    relColumnNames.filter(!Relationship.nonPropertyAttributes.contains(_))
-  }
-}
 
 /**
   * An entity table describes how to map an input data frame to a Cypher entity (i.e. nodes or relationships).
@@ -125,6 +78,53 @@ object EntityTable {
 
   }
 
+}
+
+trait CAPSEntityTable extends EntityTable[SparkTable] {
+  // TODO: create CTEntity type
+  private[caps] def entityType: CypherType with DefiniteCypherType = mapping.cypherType
+
+  private[caps] def records(implicit caps: CAPSSession): CAPSRecords = CAPSRecords.create(this)
+}
+
+case class CAPSNodeTable(mapping: NodeMapping, table: SparkTable) extends NodeTable(mapping, table) with CAPSEntityTable
+
+object CAPSNodeTable {
+
+  def apply[E <: Node : TypeTag](nodes: Seq[E])(implicit caps: CAPSSession): CAPSNodeTable = {
+    val nodeLabels = Annotation.labels[E]
+    val nodeDF = caps.sparkSession.createDataFrame(nodes)
+    val nodeProperties = properties(nodeDF.columns)
+    val nodeMapping = NodeMapping.create(nodeIdKey = sourceIdKey, impliedLabels = nodeLabels, propertyKeys = nodeProperties)
+    CAPSNodeTable(nodeMapping, nodeDF)
+  }
+
+  private def properties(nodeColumnNames: Seq[String]): Set[String] = {
+    nodeColumnNames.filter(_ != sourceIdKey).toSet
+  }
+}
+
+case class CAPSRelationshipTable(mapping: RelationshipMapping, table: SparkTable) extends RelationshipTable(mapping, table) with CAPSEntityTable
+
+object CAPSRelationshipTable {
+
+  def apply[E <: Relationship : TypeTag](relationships: Seq[E])(implicit caps: CAPSSession): CAPSRelationshipTable = {
+    val relationshipType: String = Annotation.relType[E]
+    val relationshipDF = caps.sparkSession.createDataFrame(relationships)
+    val relationshipProperties = properties(relationshipDF.columns.toSet)
+
+    val relationshipMapping = RelationshipMapping.create(sourceIdKey,
+      Relationship.sourceStartNodeKey,
+      Relationship.sourceEndNodeKey,
+      relationshipType,
+      relationshipProperties)
+
+    CAPSRelationshipTable(relationshipMapping, relationshipDF)
+  }
+
+  private def properties(relColumnNames: Set[String]): Set[String] = {
+    relColumnNames.filter(!Relationship.nonPropertyAttributes.contains(_))
+  }
 }
 
 /**

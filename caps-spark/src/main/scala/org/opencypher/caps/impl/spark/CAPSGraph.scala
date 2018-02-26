@@ -18,6 +18,7 @@ package org.opencypher.caps.impl.spark
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.graph.{GraphOperations, PropertyGraph}
+import org.opencypher.caps.api.io.{CAPSEntityTable, CAPSNodeTable}
 import org.opencypher.caps.api.schema._
 import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}

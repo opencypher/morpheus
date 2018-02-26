@@ -13,18 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.api.schema
+package org.opencypher.caps.api.io
 
 import scala.annotation.StaticAnnotation
 
 // TODO: Add docs
-// TODO: Move to io package
 case class Labels(labels: String*) extends StaticAnnotation
 
 case class RelationshipType(relType: String) extends StaticAnnotation
 
 object Entity {
-  private[schema] val sourceIdKey = "id"
+  private[io] val sourceIdKey = "id"
 }
 
 // TODO: Rename to graph entity
@@ -40,11 +39,11 @@ sealed trait Entity extends Product {
 trait Node extends Entity
 
 object Relationship {
-  private[schema] val sourceStartNodeKey = "source"
+  private[io] val sourceStartNodeKey = "source"
 
-  private[schema] val sourceEndNodeKey = "target"
+  private[io] val sourceEndNodeKey = "target"
 
-  private[schema] val nonPropertyAttributes =
+  private[io] val nonPropertyAttributes =
     Set(Entity.sourceIdKey, sourceStartNodeKey, sourceEndNodeKey)
 }
 

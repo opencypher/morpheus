@@ -17,7 +17,7 @@ package org.opencypher.caps.impl.spark
 
 import org.apache.spark.sql.Row
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
-import org.opencypher.caps.api.schema.{CAPSNodeTable, CAPSRelationshipTable}
+import org.opencypher.caps.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.api.value._
