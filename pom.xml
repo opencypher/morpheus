@@ -17,7 +17,6 @@
     <module>caps-logical</module>
     <module>caps-cora</module>
     <module>caps-spark</module>
-    <module>caps-cosc</module>
     <module>caps-tck</module>
     <module>caps-examples</module>
   </modules>
