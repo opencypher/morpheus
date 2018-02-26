@@ -21,9 +21,9 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherValue
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
-import org.opencypher.okapi.impl.table.{ColumnName, RecordHeader}
 import org.opencypher.okapi.impl.spark.physical.CAPSRuntimeContext
 import org.opencypher.okapi.ir.api.expr.{Expr, Param}
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 
 object DataFrameOps {
 

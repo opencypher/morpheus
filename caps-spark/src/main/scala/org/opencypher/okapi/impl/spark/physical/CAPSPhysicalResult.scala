@@ -16,8 +16,8 @@
 package org.opencypher.okapi.impl.spark.physical
 
 import org.opencypher.okapi.api.CAPSSession
-import org.opencypher.okapi.api.physical.PhysicalResult
 import org.opencypher.okapi.impl.spark.{CAPSGraph, CAPSRecords}
+import org.opencypher.okapi.relational.api.physical.PhysicalResult
 
 object CAPSPhysicalResult {
   def unit(implicit caps: CAPSSession) = CAPSPhysicalResult(CAPSRecords.unit(), Map.empty)

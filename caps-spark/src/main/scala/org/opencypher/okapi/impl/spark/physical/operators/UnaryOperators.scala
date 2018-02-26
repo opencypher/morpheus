@@ -29,12 +29,12 @@ import org.opencypher.okapi.impl.spark.SparkSQLExprMapper._
 import org.opencypher.okapi.impl.spark.physical.operators.CAPSPhysicalOperator.{assertIsNode, columnName}
 import org.opencypher.okapi.impl.spark.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
 import org.opencypher.okapi.impl.spark.{CAPSGraph, CAPSRecords}
-import org.opencypher.okapi.impl.syntax.RecordHeaderSyntax._
-import org.opencypher.okapi.impl.table._
 import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.impl.syntax.ExprSyntax._
 import org.opencypher.okapi.logical.impl.{ConstructedEntity, _}
+import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
+import org.opencypher.okapi.relational.impl.table.{ColumnName, _}
 
 private[spark] abstract class UnaryPhysicalOperator extends CAPSPhysicalOperator {
 

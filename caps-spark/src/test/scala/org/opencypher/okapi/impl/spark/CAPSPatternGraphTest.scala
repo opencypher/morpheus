@@ -21,10 +21,11 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.api.value.{CypherValue, _}
 import org.opencypher.okapi.impl.table._
-import org.opencypher.okapi.impl.syntax.RecordHeaderSyntax._
+import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey}
 import org.opencypher.okapi.ir.test._
+import org.opencypher.okapi.relational.impl.table.{OpaqueField, ProjectedExpr, ProjectedField, RecordHeader}
 import org.opencypher.okapi.test.CAPSTestSuite
 import org.opencypher.okapi.test.fixture.GraphCreationFixture
 

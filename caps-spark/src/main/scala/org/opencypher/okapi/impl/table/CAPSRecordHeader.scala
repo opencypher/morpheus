@@ -21,6 +21,7 @@ import org.apache.spark.sql.types.{StructField, StructType}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.spark.DataFrameOps._
 import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.relational.impl.table._
 
 object CAPSRecordHeader {
 

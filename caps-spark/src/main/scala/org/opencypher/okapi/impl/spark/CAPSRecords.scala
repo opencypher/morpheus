@@ -30,16 +30,18 @@ import org.opencypher.okapi.api.io.{CAPSEntityTable, CAPSNodeTable, CAPSRelation
 import org.opencypher.okapi.api.table.{CypherRecords, CypherRecordsCompanion}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
-import org.opencypher.okapi.impl.exception.{DuplicateSourceColumnException, IllegalArgumentException, IllegalStateException}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException}
 import org.opencypher.okapi.impl.spark.CAPSRecords.{prepareDataFrame, verifyAndCreate}
 import org.opencypher.okapi.impl.spark.DataFrameOps._
 import org.opencypher.okapi.impl.spark.convert.rowToCypherMap
-import org.opencypher.okapi.impl.syntax.RecordHeaderSyntax._
+import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.okapi.impl.table.CAPSRecordHeader._
 import org.opencypher.okapi.impl.table.{CAPSRecordHeader, _}
 import org.opencypher.okapi.impl.util.PrintOptions
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey}
+import org.opencypher.okapi.relational.impl.exception.DuplicateSourceColumnException
+import org.opencypher.okapi.relational.impl.table.{ColumnName, _}
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._

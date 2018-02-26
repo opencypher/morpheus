@@ -24,8 +24,8 @@ import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.spark.CAPSConverters._
-import org.opencypher.okapi.impl.table.{OpaqueField, RecordHeader}
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.relational.impl.table.{OpaqueField, RecordHeader}
 
 trait CAPSGraph extends PropertyGraph with GraphOperations with Serializable {
 

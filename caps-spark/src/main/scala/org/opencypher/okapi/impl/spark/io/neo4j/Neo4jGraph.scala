@@ -27,11 +27,12 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
-import org.opencypher.okapi.impl.table.{CAPSRecordHeader, ColumnName, RecordHeader}
 import org.opencypher.okapi.impl.spark.io.neo4j.Neo4jGraph.{filterNode, filterRel, nodeToRow, relToRow}
 import org.opencypher.okapi.impl.spark.{CAPSGraph, CAPSRecords}
+import org.opencypher.okapi.impl.table.CAPSRecordHeader
 import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.relational.impl.table.{ColumnName, RecordHeader}
 
 class Neo4jGraph(val schema: Schema, val session: CAPSSession)(
   inputNodes: RDD[InternalNode],

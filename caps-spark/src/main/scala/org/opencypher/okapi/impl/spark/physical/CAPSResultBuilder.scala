@@ -16,10 +16,10 @@
 package org.opencypher.okapi.impl.spark.physical
 
 import org.opencypher.okapi.api.graph.CypherQueryPlans
-import org.opencypher.okapi.impl.flat.FlatOperator
 import org.opencypher.okapi.impl.spark.physical.operators.CAPSPhysicalOperator
 import org.opencypher.okapi.impl.spark.{CAPSGraph, CAPSRecords, CAPSResult}
 import org.opencypher.okapi.logical.impl.LogicalOperator
+import org.opencypher.okapi.relational.impl.flat.FlatOperator
 import org.opencypher.okapi.trees.TreeNode
 
 object CAPSResultBuilder {

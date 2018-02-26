@@ -22,6 +22,7 @@ import org.opencypher.okapi.impl.table._
 import org.opencypher.okapi.impl.spark.CAPSConverters._
 import org.opencypher.okapi.impl.spark.CAPSRecords
 import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.relational.impl.table.{FieldSlotContent, OpaqueField, ProjectedExpr, RecordHeader}
 import org.opencypher.okapi.test.CAPSTestSuite
 import org.scalatest.Assertion
 

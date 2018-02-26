@@ -20,8 +20,8 @@ import org.opencypher.okapi.impl.spark.DataFrameOps._
 import org.opencypher.okapi.impl.spark.physical.operators.CAPSPhysicalOperator.{assertIsNode, columnName, joinDFs, joinRecords}
 import org.opencypher.okapi.impl.spark.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
 import org.opencypher.okapi.impl.spark.{CAPSRecords, ColumnNameGenerator}
-import org.opencypher.okapi.impl.table.{OpaqueField, RecordHeader, RecordSlot}
 import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.relational.impl.table.{OpaqueField, RecordHeader, RecordSlot}
 
 private[spark] abstract class BinaryPhysicalOperator extends CAPSPhysicalOperator {
 

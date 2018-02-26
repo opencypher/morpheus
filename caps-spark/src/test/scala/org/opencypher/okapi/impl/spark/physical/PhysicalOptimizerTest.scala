@@ -21,9 +21,9 @@ import org.opencypher.okapi.api.types.CTNode
 import org.opencypher.okapi.impl.spark.CAPSConverters._
 import org.opencypher.okapi.impl.spark.CAPSRecords
 import org.opencypher.okapi.impl.spark.physical.operators._
-import org.opencypher.okapi.impl.table.RecordHeader
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.logical.impl.LogicalExternalGraph
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.test.CAPSTestSuite
 import org.opencypher.okapi.test.fixture.GraphCreationFixture
 

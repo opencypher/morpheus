@@ -18,14 +18,14 @@ package org.opencypher.okapi.impl.spark.physical.operators
 import org.apache.spark.sql.DataFrame
 import org.opencypher.okapi.api.CAPSSession
 import org.opencypher.okapi.api.graph.QualifiedGraphName
-import org.opencypher.okapi.api.physical.PhysicalOperator
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.spark.CAPSConverters._
 import org.opencypher.okapi.impl.spark.DataFrameOps._
 import org.opencypher.okapi.impl.spark.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
 import org.opencypher.okapi.impl.spark.{CAPSGraph, CAPSRecords}
-import org.opencypher.okapi.impl.table.{ColumnName, RecordHeader, RecordSlot, SlotContent}
+import org.opencypher.okapi.relational.api.physical.PhysicalOperator
+import org.opencypher.okapi.relational.impl.table.{ColumnName, RecordHeader, RecordSlot, SlotContent}
 import org.opencypher.okapi.trees.AbstractTreeNode
 
 private[okapi] abstract class CAPSPhysicalOperator

@@ -16,10 +16,10 @@
 package org.opencypher.okapi.web
 
 import org.opencypher.okapi.api.types.CTNode
-import org.opencypher.okapi.impl.table.{OpaqueField, RecordHeader}
 import org.opencypher.okapi.impl.spark.{CAPSGraph, CAPSRecords}
-import org.opencypher.okapi.impl.syntax.RecordHeaderSyntax._
+import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.relational.impl.table.{OpaqueField, RecordHeader}
 import org.opencypher.okapi.test.CAPSTestSuite
 import org.opencypher.okapi.test.fixture.TeamDataFixture
 import org.opencypher.okapi.web.CAPSJsonSerialiser.toJsonString

@@ -17,7 +17,6 @@ package org.opencypher.okapi.impl.spark.physical
 
 import org.opencypher.okapi.api.CAPSSession
 import org.opencypher.okapi.api.graph.{PropertyGraph, QualifiedGraphName}
-import org.opencypher.okapi.api.physical.{PhysicalOperatorProducer, PhysicalPlannerContext}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.spark.physical.operators._
@@ -26,6 +25,8 @@ import org.opencypher.okapi.impl.table._
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.logical.impl._
+import org.opencypher.okapi.relational.api.physical.{PhysicalOperatorProducer, PhysicalPlannerContext}
+import org.opencypher.okapi.relational.impl.table.{ProjectedExpr, ProjectedField, RecordHeader}
 
 case class CAPSPhysicalPlannerContext(
   session: CAPSSession,

@@ -16,10 +16,10 @@
 package org.opencypher.okapi.impl.spark.physical
 
 import org.opencypher.okapi.api.graph.QualifiedGraphName
-import org.opencypher.okapi.api.physical.RuntimeContext
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.spark.physical.operators.CAPSPhysicalOperator
 import org.opencypher.okapi.impl.spark.{CAPSGraph, CAPSRecords}
+import org.opencypher.okapi.relational.api.physical.RuntimeContext
 
 import scala.collection.mutable
 

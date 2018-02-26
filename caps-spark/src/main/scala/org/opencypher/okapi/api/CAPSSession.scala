@@ -28,7 +28,7 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.io.SessionPropertyGraphDataSource
 import org.opencypher.okapi.impl.spark.{CypherKryoRegistrator, _}
-import org.opencypher.okapi.impl.table.ColumnName
+import org.opencypher.okapi.relational.impl.table.ColumnName
 
 import scala.reflect.runtime.universe._
 

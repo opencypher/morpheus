@@ -20,9 +20,9 @@ import org.opencypher.okapi.api.CAPSSession
 import org.opencypher.okapi.api.graph.PropertyGraph
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
-import org.opencypher.okapi.impl.table.RecordHeader
 import org.opencypher.okapi.impl.spark.CAPSConverters._
 import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 
 final case class CAPSUnionGraph(graphs: CAPSGraph*)(implicit val session: CAPSSession) extends CAPSGraph {
 

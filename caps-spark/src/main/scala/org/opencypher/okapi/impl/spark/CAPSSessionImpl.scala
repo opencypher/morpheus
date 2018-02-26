@@ -19,14 +19,12 @@ import java.util.UUID
 
 import org.apache.spark.sql.SparkSession
 import org.opencypher.okapi.api.CAPSSession
-import org.opencypher.okapi.api.configuration.CoraConfiguration.{PrintFlatPlan, PrintPhysicalPlan, PrintQueryExecutionStages}
+import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintFlatPlan, PrintPhysicalPlan, PrintQueryExecutionStages}
 import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.api.value._
-import org.opencypher.okapi.impl.flat.{FlatPlanner, FlatPlannerContext}
 import org.opencypher.okapi.impl.io.SessionPropertyGraphDataSource
-import org.opencypher.okapi.impl.physical.PhysicalPlanner
 import org.opencypher.okapi.impl.spark.CAPSConverters._
 import org.opencypher.okapi.impl.spark.physical._
 import org.opencypher.okapi.impl.util.Measurement.time
@@ -36,6 +34,8 @@ import org.opencypher.okapi.ir.impl.parse.CypherParser
 import org.opencypher.okapi.ir.impl.{IRBuilder, IRBuilderContext}
 import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
 import org.opencypher.okapi.logical.impl._
+import org.opencypher.okapi.relational.impl.flat.{FlatPlanner, FlatPlannerContext}
+import org.opencypher.okapi.relational.impl.physical.PhysicalPlanner
 
 sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespace: Namespace)
   extends CAPSSession

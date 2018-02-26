@@ -20,12 +20,12 @@ import org.apache.spark.sql.types._
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
-import org.opencypher.okapi.impl.table.RecordHeader
 import org.opencypher.okapi.impl.spark.CAPSFunctions._
 import org.opencypher.okapi.impl.spark.DataFrameOps._
 import org.opencypher.okapi.impl.spark.physical.CAPSRuntimeContext
 import org.opencypher.okapi.impl.spark.physical.operators.CAPSPhysicalOperator.columnName
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 
 object SparkSQLExprMapper {
 

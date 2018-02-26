@@ -17,7 +17,6 @@ package org.opencypher.okapi.impl.spark.physical.operators
 
 import org.apache.spark.sql.DataFrame
 import org.opencypher.okapi.api.types.CTNode
-import org.opencypher.okapi.impl.table.{OpaqueField, ProjectedExpr, RecordHeader, RecordSlot}
 import org.opencypher.okapi.impl.spark.CAPSFunctions._
 import org.opencypher.okapi.impl.spark.physical.operators.CAPSPhysicalOperator.{assertIsNode, columnName, joinRecords}
 import org.opencypher.okapi.impl.spark.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
@@ -25,6 +24,7 @@ import org.opencypher.okapi.impl.spark.{CAPSRecords, ColumnNameGenerator}
 import org.opencypher.okapi.ir.api.expr.{EndNode, Var}
 import org.opencypher.okapi.logical.impl.{Directed, Direction, Undirected}
 import org.opencypher.okapi.impl.spark.DataFrameOps._
+import org.opencypher.okapi.relational.impl.table.{OpaqueField, ProjectedExpr, RecordHeader, RecordSlot}
 
 private[spark] abstract class TernaryPhysicalOperator extends CAPSPhysicalOperator {
 

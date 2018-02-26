@@ -15,7 +15,7 @@
  */
 package org.opencypher.okapi.impl.spark
 
-import org.opencypher.okapi.impl.table.{ColumnName, RecordHeader}
+import org.opencypher.okapi.relational.impl.table.{ColumnName, RecordHeader}
 
 import scala.annotation.tailrec
 import scala.util.Random

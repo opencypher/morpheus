@@ -23,9 +23,9 @@ import org.opencypher.okapi.api.io.{CAPSEntityTable, CAPSNodeTable, CAPSRelation
 import org.opencypher.okapi.api.schema._
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType, DefiniteCypherType}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.impl.table.RecordHeader
 import org.opencypher.okapi.impl.spark.CAPSConverters._
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 
 class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: Schema)(implicit val session: CAPSSession)
   extends CAPSGraph {

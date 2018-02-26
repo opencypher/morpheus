@@ -20,10 +20,10 @@ import org.opencypher.okapi.api.CAPSSession
 import org.opencypher.okapi.api.graph.PropertyGraph
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
-import org.opencypher.okapi.impl.table.CAPSRecordHeader._
-import org.opencypher.okapi.impl.table.{ColumnName, RecordHeader, SlotContent}
 import org.opencypher.okapi.impl.spark.CAPSConverters._
+import org.opencypher.okapi.impl.table.CAPSRecordHeader._
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.relational.impl.table.{ColumnName, RecordHeader, SlotContent}
 
 class CAPSPatternGraph(private[spark] val baseTable: CAPSRecords, val schema: Schema)(implicit val session: CAPSSession)
     extends CAPSGraph {

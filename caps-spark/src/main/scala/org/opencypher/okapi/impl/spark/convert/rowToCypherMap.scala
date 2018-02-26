@@ -20,8 +20,8 @@ import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.api.value._
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
-import org.opencypher.okapi.impl.table.{ColumnName, RecordHeader}
 import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.relational.impl.table.{ColumnName, RecordHeader}
 
 final case class rowToCypherMap(header: RecordHeader) extends (Row => CypherMap) {
   override def apply(row: Row): CypherMap = {

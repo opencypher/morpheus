@@ -17,7 +17,7 @@ package org.opencypher.okapi.demo
 
 import ammonite.repl.FrontEnd
 import ammonite.util.{Bind, Util}
-import org.opencypher.okapi.CAPS
+import org.opencypher.okapi.relational.CAPS
 
 object Shell {
 

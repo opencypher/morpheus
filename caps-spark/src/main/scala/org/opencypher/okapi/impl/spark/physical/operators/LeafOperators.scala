@@ -18,8 +18,8 @@ package org.opencypher.okapi.impl.spark.physical.operators
 import org.opencypher.okapi.api.CAPSSession
 import org.opencypher.okapi.impl.spark.CAPSRecords
 import org.opencypher.okapi.impl.spark.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
-import org.opencypher.okapi.impl.table.RecordHeader
 import org.opencypher.okapi.logical.impl.LogicalExternalGraph
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 
 private[spark] abstract class LeafPhysicalOperator extends CAPSPhysicalOperator {
 

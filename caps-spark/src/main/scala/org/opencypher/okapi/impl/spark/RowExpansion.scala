@@ -20,8 +20,8 @@ import org.apache.spark.sql.types.StructType
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.table.CAPSRecordHeader._
-import org.opencypher.okapi.impl.table.{ColumnName, ProjectedExpr, RecordHeader, RecordSlot}
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.relational.impl.table.{ColumnName, ProjectedExpr, RecordHeader, RecordSlot}
 
 case class RowExpansion(
     targetHeader: RecordHeader,

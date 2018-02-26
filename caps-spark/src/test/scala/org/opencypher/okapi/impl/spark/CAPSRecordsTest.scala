@@ -26,6 +26,7 @@ import org.opencypher.okapi.impl.spark.DataFrameOps._
 import org.opencypher.okapi.impl.table._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey}
+import org.opencypher.okapi.relational.impl.table.{OpaqueField, ProjectedExpr, RecordHeader}
 import org.opencypher.okapi.test.CAPSTestSuite
 import org.opencypher.okapi.test.fixture.{GraphCreationFixture, TeamDataFixture}
 
