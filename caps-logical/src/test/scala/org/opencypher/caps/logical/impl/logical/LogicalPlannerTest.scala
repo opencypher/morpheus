@@ -15,7 +15,8 @@
  */
 package org.opencypher.caps.logical.impl.logical
 
-import org.opencypher.caps.api.io.{GraphName, PropertyGraphDataSource, QualifiedGraphName}
+import org.opencypher.caps.api.graph.{GraphName, QualifiedGraphName}
+import org.opencypher.caps.api.io.PropertyGraphDataSource
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue._
@@ -338,8 +339,8 @@ class LogicalPlannerTest extends LogicalTestSuite {
         |RETURN GRAPHS *
       """.stripMargin
 
-    val barGraphName = GraphName.from("bar")
-    val fooGraphName = GraphName.from("foo")
+    val barGraphName = GraphName("bar")
+    val fooGraphName = GraphName("foo")
 
     val ir = query.ir(barGraphName -> Schema.empty, fooGraphName -> Schema.empty)
 

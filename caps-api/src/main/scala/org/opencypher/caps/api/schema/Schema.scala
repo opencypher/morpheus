@@ -18,6 +18,7 @@ package org.opencypher.caps.api.schema
 import org.opencypher.caps.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.impl.exception.SchemaException
+import org.opencypher.caps.impl.schema.{ImpliedLabels, LabelCombinations}
 
 import scala.language.{existentials, implicitConversions} // fix compiler warning
 
@@ -240,7 +241,7 @@ final case class Schema(
     if (join.material == t1.material || join.material == t2.material) {
       join
     } else
-      throw new SchemaException(
+      throw SchemaException(
         s"The property types $t1 and $t2 (for property '$key'${label.map(l => s" and label '$l'").getOrElse("")}) " +
           s"can not be stored in the same Spark column")
   }

@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.spark.physical
 
-import org.opencypher.caps.api.io.QualifiedGraphName
+import org.opencypher.caps.api.graph.QualifiedGraphName
 import org.opencypher.caps.api.physical.RuntimeContext
 import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.impl.spark.physical.operators.CAPSPhysicalOperator

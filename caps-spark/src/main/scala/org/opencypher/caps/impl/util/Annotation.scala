@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.util
 
-import org.opencypher.caps.api.schema.{Labels, Node, Relationship, RelationshipType}
+import org.opencypher.caps.api.io.{Labels, Node, Relationship, RelationshipType}
 
 import scala.annotation.StaticAnnotation
 import scala.reflect.runtime.universe._

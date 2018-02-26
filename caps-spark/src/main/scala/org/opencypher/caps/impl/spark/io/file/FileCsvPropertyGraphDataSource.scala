@@ -20,8 +20,7 @@ import java.io.File
 import java.nio.file.{Files, Paths}
 
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.graph.PropertyGraph
-import org.opencypher.caps.api.io.GraphName
+import org.opencypher.caps.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.impl.spark.io.CAPSPropertyGraphDataSource
 import org.opencypher.caps.impl.spark.io.hdfs.CsvGraphLoader
@@ -43,7 +42,7 @@ class FileCsvPropertyGraphDataSource(rootPath: String)(implicit val session: CAP
   override def graphNames: Set[GraphName] = Files.list(Paths.get(rootPath)).iterator().asScala
     .filter(p => Files.isDirectory(p))
     .map(p => p.getFileName.toString)
-    .map(GraphName.from)
+    .map(GraphName)
     .toSet
 
   override def hasGraph(name: GraphName): Boolean = Files.exists(Paths.get(graphPath(name)))

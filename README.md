@@ -85,6 +85,7 @@ Once the property graph is constructed, it supports Cypher queries via its `cyph
 
 ```scala
 import org.opencypher.caps.api._
+import org.opencypher.caps.api.io.{Node, Relationship, RelationshipType}
 
 /**
   * Demonstrates basic usage of the CAPS API by loading an example network via Scala case classes and running a Cypher
@@ -113,10 +114,10 @@ object CaseClassExample extends App {
   */
 object SocialNetworkData {
 
-  case class Person(id: Long, name: String, age: Int) extends schema.Node
+  case class Person(id: Long, name: String, age: Int) extends Node
 
-  @schema.RelationshipType("FRIEND_OF")
-  case class Friend(id: Long, source: Long, target: Long, since: String) extends schema.Relationship
+  @RelationshipType("FRIEND_OF")
+  case class Friend(id: Long, source: Long, target: Long, since: String) extends Relationship
 
   val alice = Person(0, "Alice", 10)
   val bob = Person(1, "Bob", 20)

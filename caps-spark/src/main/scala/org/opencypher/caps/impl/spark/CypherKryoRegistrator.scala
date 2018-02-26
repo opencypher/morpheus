@@ -28,6 +28,7 @@ import org.opencypher.caps.api.schema._
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.api.value._
+import org.opencypher.caps.impl.schema.{ImpliedLabels, LabelCombinations}
 
 import scala.collection.immutable.TreeMap
 import scala.language.existentials

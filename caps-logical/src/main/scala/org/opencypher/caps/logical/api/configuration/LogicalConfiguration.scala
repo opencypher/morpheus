@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.logical.api.configuration
 
-import org.opencypher.caps.api.configuration.Configuration.ConfigFlag
+import org.opencypher.caps.impl.configuration.ConfigFlag
 
 object LogicalConfiguration {
 

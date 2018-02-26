@@ -19,19 +19,20 @@ import org.opencypher.caps.api.types.CTRelationship
 import org.opencypher.caps.impl.exception.IllegalArgumentException
 
 object RelationshipMapping {
+
   /**
     * @param sourceIdKey represents a key to the relationship identifier within the source data. The retrieved value
-    *                    from the source data is expected to be a [[Long]] value that is unique among relationships.
+    *                    from the source data is expected to be a [[scala.Long]] value that is unique among relationships.
     * @return incomplete relationship mapping
     */
   def withSourceIdKey(sourceIdKey: String): MissingSourceStartNodeKey =
     new MissingSourceStartNodeKey(sourceIdKey)
 
   /**
-    * Alias for [[withSourceIdKey()]].
+    * Alias for [[org.opencypher.caps.api.io.conversion.RelationshipMapping#withSourceIdKey]].
     *
     * @param sourceIdKey represents a key to the relationship identifier within the source data. The retrieved value
-    *                    from the source data is expected to be a [[Long]] value that is unique among relationships.
+    *                    from the source data is expected to be a [[scala.Long]] value that is unique among relationships.
     * @return incomplete relationship mapping
     */
   def on(sourceIdKey: String): MissingSourceStartNodeKey =
@@ -40,7 +41,7 @@ object RelationshipMapping {
   /**
     * Creates a RelationshipMapping where property keys match with their corresponding keys in the source data.
     *
-    * See [[RelationshipMapping]] for further information.
+    * See [[org.opencypher.caps.api.io.conversion.RelationshipMapping]] for further information.
     *
     * @param sourceIdKey        key to access the node identifier in the source data
     * @param sourceStartNodeKey key to access the start node identifier in the source data
@@ -64,17 +65,17 @@ object RelationshipMapping {
   sealed class MissingSourceStartNodeKey(sourceIdKey: String) {
     /**
       * @param sourceStartNodeKey represents a key to the start node identifier within the source data. The retrieved
-      *                           value from the source data is expected to be a [[Long]] value.
+      *                           value from the source data is expected to be a [[scala.Long]] value.
       * @return incomplete relationship mapping
       */
     def withSourceStartNodeKey(sourceStartNodeKey: String): MissingSourceEndNodeKey =
       new MissingSourceEndNodeKey(sourceIdKey, sourceStartNodeKey)
 
     /**
-      * Alias for [[withSourceStartNodeKey()]].
+      * Alias for [[org.opencypher.caps.api.io.conversion.RelationshipMapping.MissingSourceStartNodeKey#withSourceStartNodeKey]].
       *
       * @param sourceStartNodeKey represents a key to the start node identifier within the source data. The retrieved
-      *                           value from the source data is expected to be a [[Long]] value.
+      *                           value from the source data is expected to be a [[scala.Long]] value.
       * @return incomplete relationship mapping
       */
     def from(sourceStartNodeKey: String): MissingSourceEndNodeKey =
@@ -84,7 +85,7 @@ object RelationshipMapping {
   sealed class MissingSourceEndNodeKey(sourceIdKey: String, sourceStartNodeKey: String) {
     /**
       * @param sourceEndNodeKey represents a key to the end node identifier within the source data. The retrieved
-      *                         value from the source data is expected to be a [[Long]] value.
+      *                         value from the source data is expected to be a [[scala.Long]] value.
       * @return incomplete relationship mapping
       */
     def withSourceEndNodeKey(sourceEndNodeKey: String): MissingRelTypeMapping =
@@ -94,7 +95,7 @@ object RelationshipMapping {
       * Alias for [[withSourceEndNodeKey()]].
       *
       * @param sourceEndNodeKey represents a key to the end node identifier within the source data. The retrieved
-      *                         value from the source data is expected to be a [[Long]] value.
+      *                         value from the source data is expected to be a [[scala.Long]] value.
       * @return incomplete relationship mapping
       */
     def to(sourceEndNodeKey: String): MissingRelTypeMapping =

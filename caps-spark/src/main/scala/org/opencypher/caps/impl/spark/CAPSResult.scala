@@ -16,7 +16,7 @@
 package org.opencypher.caps.impl.spark
 
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
-import org.opencypher.caps.api.graph.{CypherQueryPlans, CypherResult}
+import org.opencypher.caps.api.graph.CypherResult
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.impl.spark.physical.CAPSQueryPlans
 import org.opencypher.caps.impl.util.PrintOptions
@@ -26,17 +26,19 @@ import scala.reflect.runtime.universe.TypeTag
 
 trait CAPSResult extends CypherResult {
 
+  type Graph = CAPSGraph
+
   override def records: CAPSRecords
 
-  override def graphs: Map[String, CAPSGraph]
+  override def graphs: Map[String, Graph]
 
   def as[E <: Product : TypeTag]: Iterator[E] = {
     implicit val encoder = ExpressionEncoder[E]
     records.asCaps.data.as[E].toLocalIterator().asScala
   }
 
-  override def print(implicit options: PrintOptions): Unit =
-    records.print
+  override def show(implicit options: PrintOptions): Unit =
+    records.show
 
   override def plans: CAPSQueryPlans
 

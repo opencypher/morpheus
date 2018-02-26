@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.spark.io.hdfs
 
-import org.opencypher.caps.api.io.{GraphName, Namespace}
+import org.opencypher.caps.api.graph.{GraphName, Namespace}
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.fixture.{MiniDFSClusterFixture, TeamDataFixture}
@@ -27,7 +27,7 @@ class HdfsCsvPropertyGraphDataSourceTest
   protected override def dfsTestGraphPath = "/csv/sn"
 
   test("hasGraph should return true for existing graph") {
-    val testGraphName = GraphName.from("sn")
+    val testGraphName = GraphName("sn")
 
     val dataSource = new HdfsCsvPropertyGraphDataSource(
       hadoopConfig = clusterConfig,
@@ -37,7 +37,7 @@ class HdfsCsvPropertyGraphDataSourceTest
   }
 
   test("hasGraph should return false for non-existing graph") {
-    val testGraphName = GraphName.from("sn2")
+    val testGraphName = GraphName("sn2")
 
     val dataSource = new HdfsCsvPropertyGraphDataSource(
       hadoopConfig = clusterConfig,
@@ -47,7 +47,7 @@ class HdfsCsvPropertyGraphDataSourceTest
   }
 
   test("graphNames should return all names of stored graphs") {
-    val testGraphName = GraphName.from("sn")
+    val testGraphName = GraphName("sn")
     val source = new HdfsCsvPropertyGraphDataSource(
       hadoopConfig = clusterConfig,
       rootPath = "/csv")
@@ -56,7 +56,7 @@ class HdfsCsvPropertyGraphDataSourceTest
   }
 
   test("Load graph from HDFS via DataSource") {
-    val testGraphName = GraphName.from("sn")
+    val testGraphName = GraphName("sn")
 
     val dataSource = new HdfsCsvPropertyGraphDataSource(
       hadoopConfig = clusterConfig,
@@ -68,8 +68,8 @@ class HdfsCsvPropertyGraphDataSourceTest
   }
 
   test("Load graph from HDFS via Catalog") {
-    val testNamespace = Namespace.from("myHDFS")
-    val testGraphName = GraphName.from("sn")
+    val testNamespace = Namespace("myHDFS")
+    val testGraphName = GraphName("sn")
 
     val dataSource = new HdfsCsvPropertyGraphDataSource(
       hadoopConfig = sparkSession.sparkContext.hadoopConfiguration,

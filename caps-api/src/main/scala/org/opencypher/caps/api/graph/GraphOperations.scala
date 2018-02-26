@@ -13,12 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.api
+package org.opencypher.caps.api.graph
 
-import org.opencypher.caps.impl.configuration.ConfigOption
+import scala.language.implicitConversions
 
-object SparkConfiguration {
+/**
+  * Inter-graph operations between [[org.opencypher.caps.api.graph.PropertyGraph]]s.
+  */
+trait GraphOperations {
 
-  object MasterAddress extends ConfigOption("caps.master", "local[*]")(Some(_))
+  self: PropertyGraph =>
 
+  /**
+    * Constructs the union of this graph and the argument graph. Note that the argument graph has to be managed by the
+    * same session as this graph.
+    *
+    * @param other argument graph with which to union
+    * @return union of this and the argument graph
+    */
+  // TODO: Explain semantics of the union (equality vs equivalence)
+  def union(other: PropertyGraph): PropertyGraph
 }

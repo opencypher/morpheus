@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.api.io
 
-import org.opencypher.caps.api.graph.PropertyGraph
+import org.opencypher.caps.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.caps.api.schema.Schema
 
 /**
@@ -25,22 +25,22 @@ import org.opencypher.caps.api.schema.Schema
   * The PGDS is the main interface for implementing custom data sources for specific openCypher implementations
   * (e.g., for Apache Spark, etc.).
   *
-  * The (PGDS) is able to handle multiple property graphs and  distinguishes between them using [[GraphName]]s.
+  * The (PGDS) is able to handle multiple property graphs and  distinguishes between them using [[org.opencypher.caps.api.graph.GraphName]]s.
   * Furthermore, a PGDS can be registered at a [[org.opencypher.caps.api.graph.CypherSession]] using a specific
-  * [[Namespace]] which enables accessing a [[PropertyGraph]] within a Cypher query.
+  * [[org.opencypher.caps.api.graph.Namespace]] which enables accessing a [[org.opencypher.caps.api.graph.PropertyGraph]] within a Cypher query.
   */
 trait PropertyGraphDataSource {
 
   /**
-    * Returns {{true}} if the data source stores a graph under the given [[GraphName]].
+    * Returns `true` if the data source stores a graph under the given [[org.opencypher.caps.api.graph.GraphName]].
     *
     * @param name name of the graph within the data source
-    * @return {{true}}, iff the graph is stored within the data source
+    * @return `true`, iff the graph is stored within the data source
     */
   def hasGraph(name: GraphName): Boolean
 
   /**
-    * Returns the [[PropertyGraph]] that is stored under the given name.
+    * Returns the [[org.opencypher.caps.api.graph.PropertyGraph]] that is stored under the given name.
     *
     * @param name name of the graph within the data source
     * @return property graph
@@ -48,11 +48,11 @@ trait PropertyGraphDataSource {
   def graph(name: GraphName): PropertyGraph
 
   /**
-    * Returns the [[Schema]] of the graph that is stored under the given name.
+    * Returns the [[org.opencypher.caps.api.schema.Schema]] of the graph that is stored under the given name.
     *
     * This method gives implementers the ability to efficiently retrieve a graph schema from the data source directly.
-    * If an efficient retrieval is not possible, the call is typically forwarded to the graph using the
-    * [[PropertyGraph.schema]] call.
+    * For reasons of performance, it is highly recommended to make a schema available through this call. If an efficient
+    * retrieval is not possible, the call is typically forwarded to the graph using the [[org.opencypher.caps.api.graph.PropertyGraph#schema]] call, which may require materialising the full graph.
     *
     * @param name name of the graph within the data source
     * @return graph schema
@@ -60,7 +60,7 @@ trait PropertyGraphDataSource {
   def schema(name: GraphName): Option[Schema]
 
   /**
-    * Stores the given [[PropertyGraph]] under the given [[GraphName]] within the data source.
+    * Stores the given [[org.opencypher.caps.api.graph.PropertyGraph]] under the given [[org.opencypher.caps.api.graph.GraphName]] within the data source.
     *
     * @param name  name under which the graph shall be stored
     * @param graph property graph
@@ -68,69 +68,17 @@ trait PropertyGraphDataSource {
   def store(name: GraphName, graph: PropertyGraph): Unit
 
   /**
-    * Deletes the [[PropertyGraph]] within the data source that is stored under the given [[GraphName]].
+    * Deletes the [[org.opencypher.caps.api.graph.PropertyGraph]] within the data source that is stored under the given [[org.opencypher.caps.api.graph.GraphName]].
     *
     * @param name name under which the graph is stored
     */
   def delete(name: GraphName): Unit
 
   /**
-    * Returns the [[GraphName]]s of all [[PropertyGraph]]s stored within the data source.
+    * Returns the [[org.opencypher.caps.api.graph.GraphName]]s of all [[org.opencypher.caps.api.graph.PropertyGraph]]s stored within the data source.
     *
     * @return names of stored graphs
     */
   def graphNames: Set[GraphName]
 
-}
-
-// TODO: Move to another file QualifiedGraphName in graph package
-// TODO: Remove companions and use normal case classes
-object GraphName {
-  def from(graphName: String) = GraphName(graphName)
-}
-
-/**
-  * A graph name is used to address a specific graph withing a [[Namespace]] and is used for lookups in the
-  * [[org.opencypher.caps.api.graph.CypherSession]].
-  *
-  * @param value string representing the graph name
-  */
-case class GraphName private(value: String) extends AnyVal {
-  override def toString: String = value
-}
-
-object Namespace {
-  def from(namespace: String) = Namespace(namespace)
-}
-
-/**
-  * A namespace is used to address different [[PropertyGraphDataSource]] implementations within a
-  * [[org.opencypher.caps.api.graph.CypherSession]].
-  *
-  * @param value string representing the namespace
-  */
-case class Namespace private(value: String) extends AnyVal {
-  override def toString: String = value
-}
-
-object QualifiedGraphName {
-  def from(namespace: String, graphName: String) =
-    QualifiedGraphName(Namespace.from(namespace), GraphName.from(graphName))
-}
-/**
-  * A qualified graph name is used in a Cypher query to address a specific graph within a namespace.
-  *
-  * Example:
-  *
-  * {{{
-  * FROM GRAPH AT 'myNamespace.myGraphName' MATCH (n) RETURN n
-  * }}}
-  *
-  * Here, {{myNamespace.myGraphName}} represents a qualified graph name.
-  *
-  * @param namespace namespace part of the qualified graph name
-  * @param graphName graph name part of the qualified graph name
-  */
-case class QualifiedGraphName private(namespace: Namespace, graphName: GraphName) {
-  override def toString: String = s"$namespace.$graphName"
 }

@@ -19,7 +19,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.functions.{asc, desc, monotonically_increasing_id}
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.io.QualifiedGraphName
+import org.opencypher.caps.api.graph.QualifiedGraphName
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types._
 import org.opencypher.caps.api.value.CypherValue._

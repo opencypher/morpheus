@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.spark.acceptance
 
-import org.opencypher.caps.api.io.GraphName
+import org.opencypher.caps.api.graph.GraphName
 import org.opencypher.caps.api.value.CypherValue._
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.impl.spark.CAPSGraph
@@ -30,8 +30,8 @@ trait MultigraphProjectionBehaviour { this: AcceptanceTest =>
     def testGraph3 = initGraph("CREATE (:Car {type: 'Toyota'})")
 
     test("returning a graph") {
-      caps.store(GraphName.from("graph1"), testGraph1)
-      caps.store(GraphName.from("graph2"), testGraph2)
+      caps.store(GraphName("graph1"), testGraph1)
+      caps.store(GraphName("graph2"), testGraph2)
 
       val query =
         """FROM GRAPH AT 'graph2' AS myGraph
@@ -49,8 +49,8 @@ trait MultigraphProjectionBehaviour { this: AcceptanceTest =>
     }
 
     test("Can select a source graph to match data from") {
-      caps.store(GraphName.from("graph1"), testGraph1)
-      caps.store(GraphName.from("graph2"), testGraph2)
+      caps.store(GraphName("graph1"), testGraph1)
+      caps.store(GraphName("graph2"), testGraph2)
 
       val query =
         """WITH * GRAPHS *, GRAPH myGraph AT 'graph2' >>
@@ -68,8 +68,8 @@ trait MultigraphProjectionBehaviour { this: AcceptanceTest =>
     }
 
     test("Can select a source graph to match data from (syntactic sugar variant)") {
-      caps.store(GraphName.from("graph1"), testGraph1)
-      caps.store(GraphName.from("graph2"), testGraph2)
+      caps.store(GraphName("graph1"), testGraph1)
+      caps.store(GraphName("graph2"), testGraph2)
 
       val query =
         """FROM GRAPH myGraph AT 'graph2'
@@ -87,9 +87,9 @@ trait MultigraphProjectionBehaviour { this: AcceptanceTest =>
     }
 
     test("matching from different graphs") {
-      caps.store(GraphName.from("graph1"), testGraph1)
-      caps.store(GraphName.from("graph2"), testGraph2)
-      caps.store(GraphName.from("graph3"), testGraph3)
+      caps.store(GraphName("graph1"), testGraph1)
+      caps.store(GraphName("graph2"), testGraph2)
+      caps.store(GraphName("graph3"), testGraph3)
 
       val query =
         """FROM GRAPH myGraph AT 'graph2'

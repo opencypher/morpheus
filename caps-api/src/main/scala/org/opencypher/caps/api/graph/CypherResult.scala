@@ -46,6 +46,8 @@ trait CypherResult extends CypherPrintable {
     * @return a table of records.
     */
   // TODO: Make option
+  // TODO: let's discuss this again (shouldn't the user know what the result is?)
+  // TODO: maybe provide an optRecords: Option[CypherRecords] in addition?
   def records: CypherRecords
 
   /**
@@ -56,7 +58,7 @@ trait CypherResult extends CypherPrintable {
 }
 
 trait CypherQueryPlans {
-  // TODO: Return strings instead of printables
-  def logical: CypherPrintable
-  def physical: CypherPrintable
+  def logical: String
+
+  def physical: String
 }

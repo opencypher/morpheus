@@ -16,8 +16,7 @@
 package org.opencypher.caps.impl.spark.io.neo4j
 
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.graph.PropertyGraph
-import org.opencypher.caps.api.io.GraphName
+import org.opencypher.caps.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.impl.exception.IllegalArgumentException
 import org.opencypher.caps.impl.spark.io.CAPSPropertyGraphDataSource

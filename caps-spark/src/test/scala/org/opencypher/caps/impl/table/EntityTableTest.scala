@@ -17,9 +17,9 @@ package org.opencypher.caps.impl.table
 
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.DecimalType
+import org.opencypher.caps.api.io._
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
-import org.opencypher.caps.api.schema
-import org.opencypher.caps.api.schema.{CAPSNodeTable, CAPSRelationshipTable, Schema}
+import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTFloat, CTInteger, CTString}
 import org.opencypher.caps.api.value.CypherValue.CypherMap
 import org.opencypher.caps.impl.exception.IllegalArgumentException
@@ -27,10 +27,10 @@ import org.opencypher.caps.impl.spark.CAPSGraph
 import org.opencypher.caps.impl.spark.DataFrameOps._
 import org.opencypher.caps.test.CAPSTestSuite
 
-case class Person(id: Long, name: String, age: Int) extends schema.Node
+case class Person(id: Long, name: String, age: Int) extends Node
 
-@schema.RelationshipType("FRIEND_OF")
-case class Friend(id: Long, source: Long, target: Long, since: String) extends schema.Relationship
+@RelationshipType("FRIEND_OF")
+case class Friend(id: Long, source: Long, target: Long, since: String) extends Relationship
 
 class EntityTableTest extends CAPSTestSuite {
 

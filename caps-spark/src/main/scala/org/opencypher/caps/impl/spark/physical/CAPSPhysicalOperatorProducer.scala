@@ -16,8 +16,7 @@
 package org.opencypher.caps.impl.spark.physical
 
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.graph.PropertyGraph
-import org.opencypher.caps.api.io.QualifiedGraphName
+import org.opencypher.caps.api.graph.{PropertyGraph, QualifiedGraphName}
 import org.opencypher.caps.api.physical.{PhysicalOperatorProducer, PhysicalPlannerContext}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.value.CypherValue._

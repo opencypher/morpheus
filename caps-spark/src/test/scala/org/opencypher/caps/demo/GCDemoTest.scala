@@ -20,8 +20,7 @@ import java.net.{URI, URLEncoder}
 import org.apache.http.client.utils.URIBuilder
 import org.apache.spark.sql.Row
 import org.neo4j.driver.v1.{AuthTokens, Session}
-import org.opencypher.caps.api.graph.{CypherResult, PropertyGraph}
-import org.opencypher.caps.api.io.GraphName
+import org.opencypher.caps.api.graph.{CypherResult, GraphName, PropertyGraph}
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.{CTInteger, CTString}
 import org.opencypher.caps.api.value.CypherValue._
@@ -68,8 +67,8 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
 
     check(verifyAllCityFriends(ALL_CITYFRIENDS))
 
-    caps.store(GraphName.from("friends"), ALL_CITYFRIENDS)
-    caps.store(GraphName.from("products"), PRODUCTS)
+    caps.store(GraphName("friends"), ALL_CITYFRIENDS)
+    caps.store(GraphName("products"), PRODUCTS)
 
     val LINKS = caps.cypher(
       s"""FROM GRAPH AT 'friends'
@@ -99,7 +98,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
 
     check(verifyRecoResult(result))
 
-    result.print
+    result.show
 
     //Write back to Neo
     withBoltSession { session =>
@@ -153,7 +152,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
   }
 
   private def neoRegionGraph(region: String): PropertyGraph = {
-    val regionGraphName = GraphName.from(region)
+    val regionGraphName = GraphName(region)
     val nodeQuery = URLEncoder.encode(s"MATCH (n {region: '$region'}) RETURN n", "UTF-8")
     val relQuery = URLEncoder.encode(s"MATCH ()-[r {region: '$region'}]->() RETURN r", "UTF-8")
     new Neo4jPropertyGraphDataSource(neo4jConfig, Map(regionGraphName -> (nodeQuery -> relQuery)))
@@ -161,7 +160,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
   }
 
   private def hdfsProductGraph: PropertyGraph =
-    new HdfsCsvPropertyGraphDataSource(clusterConfig, rootPath = "/csv").graph(GraphName.from("prod"))
+    new HdfsCsvPropertyGraphDataSource(clusterConfig, rootPath = "/csv").graph(GraphName("prod"))
 
   def verifyRecoResult(r: CypherResult) = {
     println("===>>> verifying RECO result")

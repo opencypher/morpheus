@@ -17,6 +17,7 @@ package org.opencypher.caps.ir.impl
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
+import org.opencypher.caps.api.graph.{GraphName, Namespace, QualifiedGraphName}
 import org.opencypher.caps.api.io._
 import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.value.CypherValue._

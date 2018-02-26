@@ -13,23 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.caps.api.schema
+package org.opencypher.caps.api.io
 
 import scala.annotation.StaticAnnotation
 
-// TODO: Add docs
-// TODO: Move to io package
-case class Labels(labels: String*) extends StaticAnnotation
-
-case class RelationshipType(relType: String) extends StaticAnnotation
-
-object Entity {
-  private[schema] val sourceIdKey = "id"
+sealed trait GraphEntity extends Product {
+  def id: Long
 }
 
-// TODO: Rename to graph entity
-sealed trait Entity extends Product {
-  def id: Long
+object GraphEntity {
+  private[io] val sourceIdKey = "id"
 }
 
 /**
@@ -37,15 +30,15 @@ sealed trait Entity extends Product {
   * If a `Labels` annotation, for example `@Labels("Person", "Mammal")`, is present,
   * then the labels from that annotation are used instead.
   */
-trait Node extends Entity
+trait Node extends GraphEntity
 
 object Relationship {
-  private[schema] val sourceStartNodeKey = "source"
+  private[io] val sourceStartNodeKey = "source"
 
-  private[schema] val sourceEndNodeKey = "target"
+  private[io] val sourceEndNodeKey = "target"
 
-  private[schema] val nonPropertyAttributes =
-    Set(Entity.sourceIdKey, sourceStartNodeKey, sourceEndNodeKey)
+  private[io] val nonPropertyAttributes =
+    Set(GraphEntity.sourceIdKey, sourceStartNodeKey, sourceEndNodeKey)
 }
 
 /**
@@ -53,8 +46,32 @@ object Relationship {
   * If a `Type` annotation, for example `@RelationshipType("FRIEND_OF")` is present,
   * then the type from that annotation is used instead.
   */
-trait Relationship extends Entity {
+trait Relationship extends GraphEntity {
   def source: Long
 
   def target: Long
 }
+
+/**
+  * Annotation to use when mapping a case class to a node with more than one label, or a label different to the class name.
+  *
+  * {{{
+  *   @ Labels("Person", "Employee")
+  *   case class Employee(id: Long, name: String, salary: Double)
+  * }}}
+  *
+  * @param labels the labels that the node has.
+  */
+case class Labels(labels: String*) extends StaticAnnotation
+
+/**
+  * Annotation to use when mapping a case class to a relationship with a different relationship type to the class name.
+  *
+  * {{{
+  *   @ RelationshipType("FRIEND_OF")
+  *   case class Friend(id: Long, src: Long, dst: Long, since: Int)
+  * }}}
+  *
+  * @param relType the relationship type that the relationship has.
+  */
+case class RelationshipType(relType: String) extends StaticAnnotation

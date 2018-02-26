@@ -17,24 +17,21 @@ package org.opencypher.caps.impl.spark
 
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.caps.api.CAPSSession
-import org.opencypher.caps.api.graph.PropertyGraph
+import org.opencypher.caps.api.graph.{GraphOperations, PropertyGraph}
+import org.opencypher.caps.api.io.{CAPSEntityTable, CAPSNodeTable}
 import org.opencypher.caps.api.schema._
 import org.opencypher.caps.api.table.CypherRecords
 import org.opencypher.caps.api.types.{CTNode, CTRelationship}
 import org.opencypher.caps.impl.exception.IllegalArgumentException
-import org.opencypher.caps.impl.table.{OpaqueField, RecordHeader, _}
 import org.opencypher.caps.impl.spark.CAPSConverters._
+import org.opencypher.caps.impl.table.{OpaqueField, RecordHeader}
 import org.opencypher.caps.ir.api.expr._
 
-trait CAPSGraph extends PropertyGraph with Serializable {
+trait CAPSGraph extends PropertyGraph with GraphOperations with Serializable {
 
-  override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords
+  override def nodes(name: String, nodeCypherType: CTNode = CTNode): CAPSRecords
 
-  override def nodes(name: String): CAPSRecords = nodes(name, CTNode)
-
-  override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords
-
-  override def relationships(name: String): CAPSRecords = relationships(name, CTRelationship)
+  override def relationships(name: String, relCypherType: CTRelationship = CTRelationship): CAPSRecords
 
   override def session: CAPSSession
 

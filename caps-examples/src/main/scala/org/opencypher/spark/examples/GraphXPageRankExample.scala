@@ -20,10 +20,10 @@ import org.apache.spark.graphx._
 import org.apache.spark.util.collection.{BitSet, OpenHashSet}
 import org.opencypher.caps.api.CAPSSession
 import org.opencypher.caps.api.CAPSSession._
-import org.opencypher.caps.api.io.GraphName
+import org.opencypher.caps.api.graph.GraphName
+import org.opencypher.caps.api.io.CAPSNodeTable
+import org.opencypher.caps.api.io.EntityTable.SparkTable
 import org.opencypher.caps.api.io.conversion.NodeMapping
-import org.opencypher.caps.api.schema.CAPSNodeTable
-import org.opencypher.caps.api.schema.EntityTable.SparkTable
 import org.opencypher.caps.impl.spark.CypherKryoRegistrator
 
 /**
@@ -69,8 +69,8 @@ object GraphXPageRankExample extends App {
   val rankNodes = session.readFrom(CAPSNodeTable(ranksNodeMapping, rankTable))
 
   // 8) Mount both graphs in the session
-  session.store(GraphName.from("ranks"), rankNodes)
-  session.store(GraphName.from("sn"), socialNetwork)
+  session.store(GraphName("ranks"), rankNodes)
+  session.store(GraphName("sn"), socialNetwork)
 
   // 9) Query across both graphs to print names with corresponding ranks, sorted by rank
   val result = session.cypher(
@@ -83,7 +83,7 @@ object GraphXPageRankExample extends App {
        |RETURN p.name as name, rank
        |ORDER BY rank DESC""".stripMargin)
 
-  result.records.print
+  result.records.show
   //+---------------------------------------------+
   //| name                 | rank                 |
   //+---------------------------------------------+

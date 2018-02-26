@@ -16,7 +16,8 @@
 package org.opencypher.caps.test.support.creation.caps
 
 import org.opencypher.caps.api.io.conversion.{NodeMapping, RelationshipMapping}
-import org.opencypher.caps.api.schema.{CAPSNodeTable, CAPSRelationshipTable, Schema}
+import org.opencypher.caps.api.io.{CAPSNodeTable, CAPSRelationshipTable}
+import org.opencypher.caps.api.schema.Schema
 import org.opencypher.caps.api.types.CTString
 import org.opencypher.caps.impl.spark.CAPSGraph
 import org.opencypher.caps.test.CAPSTestSuite

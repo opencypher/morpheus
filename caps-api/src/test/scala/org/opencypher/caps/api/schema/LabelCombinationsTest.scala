@@ -15,6 +15,7 @@
  */
 package org.opencypher.caps.api.schema
 
+import org.opencypher.caps.impl.schema.LabelCombinations
 import org.opencypher.caps.test.BaseTestSuite
 
 class LabelCombinationsTest extends BaseTestSuite {

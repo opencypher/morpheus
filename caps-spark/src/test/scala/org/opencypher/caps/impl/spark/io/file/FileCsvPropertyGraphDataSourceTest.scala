@@ -15,7 +15,7 @@
  */
 package org.opencypher.caps.impl.spark.io.file
 
-import org.opencypher.caps.api.io.{GraphName, Namespace}
+import org.opencypher.caps.api.graph.{GraphName, Namespace}
 import org.opencypher.caps.impl.spark.CAPSConverters._
 import org.opencypher.caps.test.CAPSTestSuite
 import org.opencypher.caps.test.fixture.TeamDataFixture
@@ -25,7 +25,7 @@ class FileCsvPropertyGraphDataSourceTest extends CAPSTestSuite with TeamDataFixt
   private val testRootPath = getClass.getResource("/csv").getPath
 
   test("hasGraph should return true for existing graph") {
-    val testGraphName = GraphName.from("sn")
+    val testGraphName = GraphName("sn")
 
     val dataSource = new FileCsvPropertyGraphDataSource(rootPath = testRootPath)
 
@@ -33,7 +33,7 @@ class FileCsvPropertyGraphDataSourceTest extends CAPSTestSuite with TeamDataFixt
   }
 
   test("hasGraph should return false for non-existing graph") {
-    val testGraphName = GraphName.from("sn2")
+    val testGraphName = GraphName("sn2")
 
     val dataSource = new FileCsvPropertyGraphDataSource(rootPath = testRootPath)
 
@@ -41,8 +41,8 @@ class FileCsvPropertyGraphDataSourceTest extends CAPSTestSuite with TeamDataFixt
   }
 
   test("graphNames should return all names of stored graphs") {
-    val testGraphName1 = GraphName.from("sn")
-    val testGraphName2 = GraphName.from("prod")
+    val testGraphName1 = GraphName("sn")
+    val testGraphName2 = GraphName("prod")
     val source = new FileCsvPropertyGraphDataSource(rootPath = testRootPath)
 
     source.graphNames should equal(Set(testGraphName1, testGraphName2))
