@@ -34,9 +34,9 @@ class ReadmeTest extends FunSuite with Matchers {
 
   val readmeName = "README.md"
   val rootFolderPath = findRootFolderPath(Paths.get(".").toAbsolutePath.normalize.toString)
-  val readmePath = s"${rootFolderPath}${sep}${readmeName}"
+  val readmePath = s"$rootFolderPath$sep$readmeName"
 
-  val testSourceFolderPath = s"${sep}src${sep}main${sep}scala${sep}"
+  val testSourceFolderPath = s"${sep}src${sep}main${sep}scala$sep"
   val moduleName = "spark-cypher-examples"
   val examplePackagePath = CaseClassExample.getClass.getName.dropRight(1).replace(".", sep)
   val examplePath = s"$rootFolderPath$sep$moduleName$testSourceFolderPath$examplePackagePath.scala"
@@ -81,9 +81,9 @@ class ReadmeTest extends FunSuite with Matchers {
   }
 
   /**
-    * Check by testing if the README.md file can be found. This works even if the root folder has a different name.
+    * Check by testing if the license-header.txt file can be found. This works even if the root folder has a different name.
     */
-  def isRootFolderPath(path: String): Boolean = new File(s"$path${sep}$readmeName").exists
+  def isRootFolderPath(path: String): Boolean = new File(s"$path${sep}license-header.txt").exists
 
   def extractMarkdownScalaSourceBlocks(lines: Vector[String]): Seq[ScalaSourceCode] = {
     val currentParsingState: (Vector[ScalaSourceCode], Option[Vector[String]]) = (Vector.empty, None)
