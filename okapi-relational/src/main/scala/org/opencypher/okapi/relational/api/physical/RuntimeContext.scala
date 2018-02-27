@@ -28,7 +28,7 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
 trait RuntimeContext[R <: CypherRecords, G <: PropertyGraph] {
 
   /**
-    * Returns the graph referenced by the given [[org.opencypher.okapi.api.graph.QualifiedGraphName]].
+    * Returns the graph referenced by the given QualifiedGraphName.
     *
     * @return back-end specific property graph
     */

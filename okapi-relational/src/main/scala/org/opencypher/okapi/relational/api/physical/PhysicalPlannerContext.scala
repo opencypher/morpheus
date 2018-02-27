@@ -21,7 +21,7 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.relational.impl.physical.PhysicalPlanner
 
 /**
-  * Represents a back-end specific context which is used by the [[PhysicalPlanner]].
+  * Represents a back-end specific context which is used by the [[org.opencypher.okapi.relational.impl.physical.PhysicalPlanner]].
   *
   * @tparam R backend-specific cypher records
   */

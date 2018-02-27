@@ -15,7 +15,6 @@
  */
 package org.opencypher.okapi.api.graph
 
-import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.io.SessionPropertyGraphDataSource
 

@@ -26,7 +26,7 @@ import org.opencypher.okapi.relational.impl.table.{ProjectedExpr, ProjectedField
 
 /**
   * Main interface to be implemented by custom (relational) back-ends to execute a Cypher query. Methods are being
-  * called by [[PhysicalPlanner]], a default implementation for physical planning.
+  * called by [[org.opencypher.okapi.relational.impl.physical.PhysicalPlanner]], a default implementation for physical planning.
   *
   * @tparam P backend-specific physical operators
   * @tparam R backend-specific cypher records
