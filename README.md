@@ -6,39 +6,42 @@ It allows for the **integration** of many **data sources** and supports **multip
 It enables you to use your Spark cluster to run **analytical graph queries**.
 Queries can also return graphs to create **processing pipelines**.
 
-Below you see a screenshot of running a Cypher query with CAPS running in a [Zeppelin notebook](https://github.com/opencypher/cypher-for-apache-spark/wiki/Use-CAPS-in-a-Zeppelin-notebook):
-![CAPS Zeppelin Screenshot](doc/images/zeppelin_screenshot.png)
-
 ## Intended audience
 
 CAPS allows you to develop complex processing pipelines orchestrated by a powerful and expressive high-level language.
 In addition to **developers** and **big data integration specialists**, CAPS is also of practical use to **data scientists**, offering tools allowing for disparate data sources to be integrated into a single graph. From this graph, queries can extract subgraphs of interest into new result graphs, which can be conveniently exported for further processing.
 
-In addition to traditional analytical techniques, the graph data model offers the opportunity to use Cypher and *[Neo4j graph algorithms](https://neo4j.com/blog/efficient-graph-algorithms-neo4j/)* to derive deeper insights from your data.
-<!-- TODO: WIKI How does it relate to GraphX and GraphFrames -->
+CAPS builds on the Spark SQL DataFrame API, offering integration with standard Spark SQL processing and also allows
+integration with GraphX. To learn more about this, please see our [examples](https://github.com/opencypher/cypher-for-apache-spark/tree/master/spark-cypher-examples).
+ 
+<!-- TODO: WIKI How does it relate to GraphFrames -->
 <!--- **Data Analysts**: -->
 <!--  This example shows how to aggregate detailed sales data within a graph — in effect, performing a ‘roll-up’ — in order to obtain a high-level summarized view of the data, stored and returned in another graph, as well as returning an even higher-level view as an executive report. The summarized graph may be used to draw further high-level reports, but may also be used to undertake ‘drill-down’ actions by probing into the graph to extract more detailed information.-->
 
 ## Current status: Alpha
 
-The project is currently in an alpha stage, which means that the code and the functionality are still changing. We haven't yet tested the system with large data sources and in many scenarios. We invite you to try it and welcome any feedback.
+The project is currently in an alpha stage, which means that the code and the functionality are still changing. 
+We invite you to try it and welcome any feedback.
+
+The first release for the project is targeted for May 2018. 
 
 ## CAPS Features
 
-CAPS is built on top of the Spark DataFrames API and uses features such as the Catalyst optimizer.
+CAPS is built on top of the Spark DataFrame API and uses features such as the Catalyst optimizer.
 The Spark representations are accessible and can be converted to representations that integrate with other Spark libraries.
 
 CAPS supports a subset of Cypher <!-- TODO: WIKI supported features --> and is the first implementation of [multiple graphs](https://github.com/boggle/openCypher/blob/CIP2017-06-18-multiple-graphs/cip/1.accepted/CIP2017-06-18-multiple-graphs.adoc) and graph query compositionality.
 
-CAPS currently supports importing graphs from both Neo4j and from custom [CSV format](https://github.com/opencypher/cypher-for-apache-spark/tree/master/caps-core/src/test/resources/csv/sn) in HDFS.
-CAPS has a data source API that allows you to plug in custom data importers for external sources.
+CAPS currently supports importing graphs from both Neo4j and from custom [CSV format](https://github.com/opencypher/cypher-for-apache-spark/tree/master/caps-core/src/test/resources/csv/sn) in HDFS and local file system.
+CAPS has a data source API that allows you to plug in custom data importers for external graphs.
 
 ## CAPS Roadmap
 
-CAPS is under rapid development and we are planning to:
-- Support more Cypher features
-- Make it easier to use by offering it as a Spark package and by integrating it into a notebook
-- Provide additional integration APIs for interacting with existing Spark libraries such as SparkSQL and MLlib
+CAPS is under rapid development and we are planning to offer support for:
+- a large subset of the Cypher language
+- new Cypher Multiple Graph features
+- integration with Spark SQL
+- injection of custom graph data sources
 
 ## Get started with CAPS
 CAPS is currently easiest to use with Scala. Below we explain how you can import a simple graph and run a Cypher query on it.
@@ -51,41 +54,44 @@ CAPS is built using Maven
 mvn clean install
 ```
 
-<!--
+
 #### Add the CAPS dependency to your project
 In order to use CAPS add the following dependency to Maven:
-<!-- TODO: Publish to Maven Central -- >
+
 ```
 <dependency>
-  <groupId>org.opencypher.caps</groupId>
-  <artifactId>caps_2.11</artifactId>
-  <version>0.1.0-NIGHTLY</version>
+  <groupId>org.opencypher</groupId>
+  <artifactId>spark-cypher</artifactId>
+  <version>1.0-SNAPSHOT</version>
 </dependency>
 ```
--->
 
-### Generating API documentation (in progress)
+Remember to add `fork in run := true` in your `build.sbt` for scala projects; this is not CAPS
+specific, but a quirk of spark execution that will help 
+[prevent problems](https://stackoverflow.com/questions/44298847/why-do-we-need-to-add-fork-in-run-true-when-running-spark-sbt-application)
+
+### Generating API documentation
 
 ```
 mvn scala:doc
 ```
 
-Documentation will be generated and placed under `caps-core/target/site/scaladocs/index.html`
+Documentation will be generated and placed under `[MODULE_DIRECTORY]/target/site/scaladocs/index.html`
 
 ### Hello CAPS
 
 Cypher is based on the [property graph](https://github.com/opencypher/openCypher/blob/master/docs/property-graph-model.adoc) model, comprising labelled nodes and typed relationships, with a relationship either connecting two nodes, or forming a self-loop on a single node. 
-Both nodes and relationships are uniquely identified by an ID of type `Long`, and contain a set of properties. 
+Both nodes and relationships are uniquely identified by an ID (in CAPS this is of type `Long`), and contain a set of properties. 
 
 The following example shows how to convert a social network represented as Scala case classes to a `PropertyGraph` representation. 
 The `PropertyGraph` representation is internally transformed into Spark data frames. 
-If you have existing data frames which you would like to treat as a graph, have a look at (this example)[TODO].   
+If you have existing data frames which you would like to treat as a graph, have a look at our [DataFrameInputExample](spark-cypher-examples/src/main/scala/org/opencypher/spark/examples/DataFrameInputExample.scala).   
 
 Once the property graph is constructed, it supports Cypher queries via its `cypher` method.
 
 ```scala
-import org.opencypher.caps.api._
-import org.opencypher.caps.api.io.{Node, Relationship, RelationshipType}
+import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.io.{Node, Relationship, RelationshipType}
 
 /**
   * Demonstrates basic usage of the CAPS API by loading an example network via Scala case classes and running a Cypher
@@ -134,22 +140,17 @@ Map(a.name -> Alice, b.name -> Bob, r.since -> 23/01/1987)
 Map(a.name -> Bob, b.name -> Carol, r.since -> 12/12/2009)
 ```
 
-More examples, including [multiple graph features](https://github.com/opencypher/cypher-for-apache-spark/tree/master/caps-spark/src/test/scala/org/opencypher/caps/demo/MultipleGraphExample.scala), can be found [in the demo package](https://github.com/opencypher/cypher-for-apache-spark/tree/master/caps-spark/src/test/scala/org/opencypher/caps/demo).
-
-Remember to add `fork in run := true` in your `build.sbt` for scala projects; this is not CAPS
-specific, but a quirk of spark execution that will help 
-[prevent problems](https://stackoverflow.com/questions/44298847/why-do-we-need-to-add-fork-in-run-true-when-running-spark-sbt-application)
+More examples, including [multiple graph features](spark-cypher-examples/src/main/scala/org/opencypher/spark/examples/MultipleGraphExample.scala), can be found [in the examples module](spark-cypher-examples).
 
 ### Loading CSV Data
 
-See the documentation in `org.opencypher.caps.impl.spark.io.hdfs.CsvGraphLoader`, which specifies how to structure the
+See the documentation in `org.opencypher.spark.impl.io.hdfs.CsvGraphLoader`, which specifies how to structure the
 CSV and the schema mappings that describe the graph structure for the underlying data.
 
 #### Next steps
 
 - How to use CAPS in [Apache Zeppelin](https://github.com/opencypher/cypher-for-apache-spark/wiki/Use-CAPS-in-a-Zeppelin-notebook)
 - Look at and contribute to the [Wiki](https://github.com/opencypher/cypher-for-apache-spark/wiki)
-<!-- TODO: Multiple graphs example -->
 <!-- TODO: Steps needed to run the demo with toy data -->
 <!-- TODO: WIKI article that demonstrates a more realistic use case with HDFS data source -->
 <!-- TODO: WIKI link to page that explains how to import data -->
@@ -164,6 +165,6 @@ The project is licensed under the Apache Software License, Version 2.0
 
 ## Copyright
 
-© Copyright 2016-2017 Neo4j, Inc.
+© Copyright 2016-2018 Neo4j, Inc.
 
 Apache Spark™, Spark, and Apache are registered trademarks of the [Apache Software Foundation](https://www.apache.org/).
