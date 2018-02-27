@@ -21,7 +21,7 @@ object Configuration {
 
   /**
     * If enabled, the time required for executing a code block wrapped in
-    * [[org.opencypher.okapi.impl.util.Measurement.time()]] will be printed.
+    * [[org.opencypher.okapi.impl.util.Measurement.time]] will be printed.
     */
   object PrintTimings extends ConfigFlag("caps.printTimings")
 

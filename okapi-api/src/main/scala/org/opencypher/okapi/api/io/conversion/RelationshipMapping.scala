@@ -92,7 +92,7 @@ object RelationshipMapping {
       new MissingRelTypeMapping(sourceIdKey, sourceStartNodeKey, sourceEndNodeKey)
 
     /**
-      * Alias for [[withSourceEndNodeKey()]].
+      * Alias for [[withSourceEndNodeKey]].
       *
       * @param sourceEndNodeKey represents a key to the end node identifier within the source data. The retrieved
       *                         value from the source data is expected to be a [[scala.Long]] value.
@@ -111,7 +111,7 @@ object RelationshipMapping {
       RelationshipMapping(sourceIdKey, sourceStartNodeKey, sourceEndNodeKey, Left(relType))
 
     /**
-      * Alias for [[withRelType()]].
+      * Alias for [[withRelType]].
       *
       * @param relType represents the relationship type for all relationships in the source data
       * @return relationship mapping
@@ -136,7 +136,7 @@ object RelationshipMapping {
   * Cypher relationship. The purpose of this class is to define a mapping from an external data source to a property
   * graph.
   *
-  * Construct a [[RelationshipMapping]] starting with {{RelationshipMapping.on}}.
+  * Construct a [[RelationshipMapping]] starting with [[RelationshipMapping#on]].
   *
   * @param sourceIdKey               key to access the node identifier in the source data
   * @param sourceStartNodeKey        key to access the start node identifier in the source data

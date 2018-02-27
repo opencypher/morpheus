@@ -111,7 +111,7 @@ object CypherValue {
     }
 
     /**
-      * Attempts to cast the Cypher value to [[V]], fails when this is not supported.
+      * Attempts to cast the Cypher value to `V`, fails when this is not supported.
       */
     def cast[V: ClassTag]: V = as[V].getOrElse(throw UnsupportedOperationException(
       s"Cannot cast $value of type ${value.getClass.getSimpleName} to ${classTag[V].runtimeClass.getSimpleName}"))

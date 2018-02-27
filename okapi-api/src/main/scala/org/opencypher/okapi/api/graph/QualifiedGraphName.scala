@@ -15,7 +15,6 @@
  */
 package org.opencypher.okapi.api.graph
 
-import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.io.SessionPropertyGraphDataSource
 
@@ -30,7 +29,7 @@ case class GraphName(value: String) extends AnyVal {
 }
 
 /**
-  * A namespace is used to address different [[PropertyGraphDataSource]] implementations within a
+  * A namespace is used to address different [[org.opencypher.okapi.api.io.PropertyGraphDataSource]] implementations within a
   * [[org.opencypher.okapi.api.graph.CypherSession]].
   *
   * @param value string representing the namespace
