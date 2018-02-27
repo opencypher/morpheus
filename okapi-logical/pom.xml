@@ -22,12 +22,6 @@
     <!--CAPS Module-->
     <dependency>
       <groupId>org.opencypher</groupId>
-      <artifactId>okapi-api</artifactId>
-      <version>${project.parent.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.opencypher</groupId>
       <artifactId>okapi-ir</artifactId>
       <version>${project.parent.version}</version>
     </dependency>
