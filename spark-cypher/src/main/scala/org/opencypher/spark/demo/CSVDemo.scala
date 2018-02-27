@@ -22,7 +22,7 @@ import org.apache.spark.sql.SparkSession
 import org.opencypher.okapi.api.graph.{CypherResult, GraphName}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.SparkConfiguration.MasterAddress
-import org.opencypher.spark.impl.io.file.FileCsvPropertyGraphDataSource
+import org.opencypher.spark.api.io.file.FileCsvPropertyGraphDataSource
 
 // TODO: check if it still runs and move to caps-examples
 object CSVDemo {

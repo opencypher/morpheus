@@ -17,7 +17,7 @@ package org.opencypher.spark.examples
 
 import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.io.file.FileCsvPropertyGraphDataSource
+import org.opencypher.spark.api.io.file.FileCsvPropertyGraphDataSource
 
 /**
   * Demonstrates usage patterns where Cypher and SQL can be interleaved in the

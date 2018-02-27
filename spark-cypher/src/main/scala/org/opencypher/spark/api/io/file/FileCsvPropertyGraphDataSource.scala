@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.spark.impl.io.file
+package org.opencypher.spark.api.io.file
 
 import java.io.File
 import java.nio.file.{Files, Paths}
@@ -33,7 +33,8 @@ class FileCsvPropertyGraphDataSource(rootPath: String)(implicit val session: CAP
 
   override def schema(name: GraphName): Option[Schema] = None
 
-  override def store(name: GraphName, graph: PropertyGraph): Unit = ???
+  override def store(name: GraphName, graph: PropertyGraph): Unit =
+    throw new UnsupportedOperationException("'store' operation is not supported by the FileCSV data source")
 
   override def delete(name: GraphName): Unit =
     if (hasGraph(name)) Files.delete(Paths.get(graphPath(name)))

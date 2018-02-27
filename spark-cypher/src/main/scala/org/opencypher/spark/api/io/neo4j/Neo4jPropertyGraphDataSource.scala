@@ -13,18 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.spark.impl.io.neo4j
+package org.opencypher.spark.api.io.neo4j
 
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
-import org.opencypher.spark.impl.io.neo4j.external.Neo4jConfig
+import org.opencypher.spark.impl.io.neo4j.Neo4jGraphLoader
 
-class Neo4jPropertyGraphDataSource(
+object Neo4jPropertyGraphDataSource {
+
+  val defaultQueries: Map[GraphName, (String, String)] =
+    Map(GraphName("complete") -> ("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r"))
+
+}
+
+case class Neo4jPropertyGraphDataSource(
   config: Neo4jConfig,
-  queries: Map[GraphName, (String, String)])(implicit val session: CAPSSession)
+  queries: Map[GraphName, (String, String)] = Neo4jPropertyGraphDataSource.defaultQueries)
+  (implicit val session: CAPSSession)
   extends CAPSPropertyGraphDataSource {
 
   override def graph(name: GraphName): PropertyGraph = queries.get(name) match {
@@ -34,9 +42,11 @@ class Neo4jPropertyGraphDataSource(
 
   override def schema(name: GraphName): Option[Schema] = None
 
-  override def store(name: GraphName, graph: PropertyGraph): Unit = ???
+  override def store(name: GraphName, graph: PropertyGraph): Unit =
+    throw new UnsupportedOperationException("'store' operation is not supported by the Neo4j data source")
 
-  override def delete(name: GraphName): Unit = ???
+  override def delete(name: GraphName): Unit =
+    throw new UnsupportedOperationException("'delete' operation is not supported by the Neo4j data source")
 
   override def graphNames: Set[GraphName] = queries.keySet
 

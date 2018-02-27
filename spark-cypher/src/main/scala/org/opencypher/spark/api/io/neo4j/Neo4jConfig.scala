@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.spark.impl.io.neo4j.external
+package org.opencypher.spark.api.io.neo4j
 
 import java.net.URI
 
 import org.neo4j.driver.v1.{AuthTokens, Config, Driver, GraphDatabase}
 
-case class Neo4jConfig(uri: URI,
+case class Neo4jConfig(uri: URI = URI.create("localhost:7687"),
                        user: String = "",
                        password: Option[String] = None,
                        encrypted: Boolean = true) {
 
-  def boltConfig(): Config = {
+  protected[opencypher] def boltConfig(): Config = {
     val builder = Config.build
 
     if(encrypted)
@@ -33,12 +33,12 @@ case class Neo4jConfig(uri: URI,
       builder.withoutEncryption().toConfig
   }
 
-  def driver(config: Neo4jConfig) : Driver = config.password match {
+  protected[opencypher] def driver(config: Neo4jConfig) : Driver = config.password match {
     case Some(pwd) => GraphDatabase.driver(config.uri, AuthTokens.basic(config.user, pwd), boltConfig())
     case _ => GraphDatabase.driver(config.uri, boltConfig())
   }
 
-  def driver() : Driver = driver(this)
+  protected[opencypher] def driver() : Driver = driver(this)
 
-  def driver(url: String): Driver = GraphDatabase.driver(url, boltConfig())
+  protected[opencypher] def driver(url: String): Driver = GraphDatabase.driver(url, boltConfig())
 }

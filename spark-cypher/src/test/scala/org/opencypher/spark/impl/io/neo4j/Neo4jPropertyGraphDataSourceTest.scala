@@ -18,6 +18,7 @@ package org.opencypher.spark.impl.io.neo4j
 import org.opencypher.okapi.api.graph.{GraphName, Namespace}
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.okapi.test.BaseTestSuite
+import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource
 import org.opencypher.spark.test.fixture.{CAPSSessionFixture, Neo4jServerFixture, SparkSessionFixture, TeamDataFixture}
 import org.scalatest.mockito.MockitoSugar
 
@@ -52,17 +53,12 @@ class Neo4jPropertyGraphDataSourceTest
   test("graphNames should return all names of stored graphs") {
     val testGraphName1 = GraphName("test1")
     val testGraphName2 = GraphName("test2")
-    val source = new Neo4jPropertyGraphDataSource(neo4jConfig, Map(
-      testGraphName1 -> ("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r"),
-      testGraphName2 -> ("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r")
-    ))
+    val source = new Neo4jPropertyGraphDataSource(neo4jConfig)
     source.graphNames should equal(Set(testGraphName1, testGraphName2))
   }
 
   test("Load graph from Neo4j via DataSource") {
-    val dataSource = new Neo4jPropertyGraphDataSource(neo4jConfig, Map(
-      GraphName("foo") -> ("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r")
-    ))
+    val dataSource = new Neo4jPropertyGraphDataSource(neo4jConfig)
 
     val graph = dataSource.graph(GraphName("foo")).asCaps
     graph.nodes("n").toDF().collect().toBag should equal(teamDataGraphNodes)
@@ -73,9 +69,7 @@ class Neo4jPropertyGraphDataSourceTest
     val testNamespace = Namespace("myNeo4j")
     val testGraphName = GraphName("foo")
 
-    val dataSource = new Neo4jPropertyGraphDataSource(neo4jConfig, Map(
-      testGraphName -> ("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r")
-    ))
+    val dataSource = new Neo4jPropertyGraphDataSource(neo4jConfig)
 
     caps.registerSource(testNamespace, dataSource)
 

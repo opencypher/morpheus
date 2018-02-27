@@ -16,8 +16,8 @@
 package org.opencypher.okapi.impl.spark.io.file
 
 import org.opencypher.okapi.api.graph.{GraphName, Namespace}
+import org.opencypher.spark.api.io.file.FileCsvPropertyGraphDataSource
 import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.io.file.FileCsvPropertyGraphDataSource
 import org.opencypher.spark.test.CAPSTestSuite
 import org.opencypher.spark.test.fixture.TeamDataFixture
 

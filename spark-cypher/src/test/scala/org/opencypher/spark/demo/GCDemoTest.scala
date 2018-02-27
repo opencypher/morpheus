@@ -24,9 +24,9 @@ import org.opencypher.okapi.api.graph.{CypherResult, GraphName, PropertyGraph}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTInteger, CTString}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.spark.api.io.hdfs.HdfsCsvPropertyGraphDataSource
+import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource
 import org.opencypher.spark.impl.CAPSRecords
-import org.opencypher.spark.impl.io.hdfs.HdfsCsvPropertyGraphDataSource
-import org.opencypher.spark.impl.io.neo4j.Neo4jPropertyGraphDataSource
 import org.opencypher.spark.test.CAPSTestSuite
 import org.opencypher.spark.test.fixture.{MiniDFSClusterFixture, Neo4jServerFixture, SparkSessionFixture}
 import org.scalatest.Assertion
