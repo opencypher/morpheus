@@ -26,7 +26,6 @@
       <version>${dep.cats.version}</version>
     </dependency>
 
-    <!--CAPS Module-->
     <dependency>
       <groupId>org.opencypher</groupId>
       <artifactId>okapi-trees</artifactId>

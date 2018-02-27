@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{BaseContext, BaseState, Phase}
 import org.neo4j.cypher.internal.util.v3_4.{Rewriter, inSequence}
 
-case object CAPSRewriting extends Phase[BaseContext, BaseState, BaseState] {
+case object OkapiRewriting extends Phase[BaseContext, BaseState, BaseState] {
 
   override def process(from: BaseState, context: BaseContext): BaseState = {
     val term = from.statement()

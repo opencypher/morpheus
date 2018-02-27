@@ -24,7 +24,7 @@ import org.opencypher.okapi.ir.api.expr._
 object FunctionUtils {
 
   implicit class RichFunctionInvocation(functionInvocation: FunctionInvocation) {
-    def toCAPSFunction(expr: IndexedSeq[Expr], cypherType: CypherType): Expr = {
+    def convertFunction(expr: IndexedSeq[Expr], cypherType: CypherType): Expr = {
       val distinct = functionInvocation.distinct
 
       functionInvocation.function match {

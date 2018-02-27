@@ -22,7 +22,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics._
 import org.opencypher.okapi.ir.impl.exception.ParsingException
 import org.opencypher.okapi.ir.api.util.CompilationStage
-import org.opencypher.okapi.ir.impl.parse.rewriter.CAPSRewriting
+import org.opencypher.okapi.ir.impl.parse.rewriter.OkapiRewriting
 
 object CypherParser extends CypherParser {
   implicit object defaultContext extends BlankBaseContext {
@@ -60,5 +60,5 @@ trait CypherParser extends CompilationStage[String, Statement, BaseContext] {
       Namespacer andThen
       CNFNormalizer andThen
       LateAstRewriting andThen
-      CAPSRewriting
+      OkapiRewriting
 }

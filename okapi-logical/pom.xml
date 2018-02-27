@@ -19,7 +19,6 @@
   </properties>
 
   <dependencies>
-    <!--CAPS Module-->
     <dependency>
       <groupId>org.opencypher</groupId>
       <artifactId>okapi-ir</artifactId>

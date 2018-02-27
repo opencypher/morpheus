@@ -31,6 +31,6 @@ case object fromFrontendType extends (frontend.CypherType => CypherType) {
     case frontend.CTPath          => CTPath
     case frontend.CTMap           => CTMap
     case frontend.ListType(inner) => CTList(fromFrontendType(inner))
-    case x                        => throw new UnsupportedOperationException(s"Can not convert openCypher frontend type $x to a CAPS type")
+    case x                        => throw new UnsupportedOperationException(s"Can not convert openCypher frontend type $x to an internal type")
   }
 }

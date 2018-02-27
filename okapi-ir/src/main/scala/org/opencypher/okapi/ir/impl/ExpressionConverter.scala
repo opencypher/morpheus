@@ -96,7 +96,7 @@ final class ExpressionConverter(patternConverter: PatternConverter)(implicit con
 
     // Functions
     case funcInv: ast.FunctionInvocation =>
-      funcInv.toCAPSFunction(funcInv.args.map(convert), typings(e))
+      funcInv.convertFunction(funcInv.args.map(convert), typings(e))
     case _: ast.CountStar =>
       CountStar(typings(e))
 
