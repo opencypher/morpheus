@@ -52,7 +52,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
           |RETURN GRAPH result OF (a)-[r:ACQUAINTED]->(b)
         """.stripMargin)
 
-    check(verifyCityFriendsUS(CITYFRIENDS_US.graphs("result")))
+    check(verifyCityFriendsUS(CITYFRIENDS_US.getGraph))
 
     val CITYFRIENDS_EU =
       SN_EU.cypher(
@@ -61,9 +61,9 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
           |RETURN GRAPH result OF (a)-[r:ACQUAINTED]->(b)
         """.stripMargin)
 
-    check(verifyCityFriendsEU(CITYFRIENDS_EU.graphs("result")))
+    check(verifyCityFriendsEU(CITYFRIENDS_EU.getGraph))
 
-    val ALL_CITYFRIENDS = CITYFRIENDS_EU.graphs("result") union CITYFRIENDS_US.graphs("result")
+    val ALL_CITYFRIENDS = CITYFRIENDS_EU.getGraph union CITYFRIENDS_US.getGraph
 
     check(verifyAllCityFriends(ALL_CITYFRIENDS))
 
@@ -79,7 +79,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
          |WITH c.name as customerName, personName, c, p
          |WHERE customerName = personName
          |RETURN GRAPH result OF (c)-[x:IS]->(p)
-      """.stripMargin).graphs("result")
+      """.stripMargin).getGraph
 
     check(verifyLinks(LINKS))
 
@@ -103,7 +103,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
     //Write back to Neo
     withBoltSession { session =>
       // maybe iterate over rows instead of CypherMaps is faster
-      result.records.collect.foreach { cypherMap =>
+      result.getRecords.collect.foreach { cypherMap =>
         session.run(
           s"MATCH (p:Person {name: ${cypherMap.get("name").get}}) SET p.should_buy = ${cypherMap.get("product").get}")
       }
@@ -117,7 +117,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
     val SN_US = neoRegionGraph("US")
     val result = SN_US.cypher("""MATCH (n:Person {name: "Alice"}) RETURN n.name AS name""")
     withBoltSession { session =>
-      result.records.collect.foreach { cypherMap =>
+      result.getRecords.collect.foreach { cypherMap =>
         session.run(s"MATCH (p:Person {name: ${cypherMap.get("name").get.toCypherString}}) SET p.should_buy = 'a book'")
       }
     }
@@ -125,7 +125,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
     val resultGraph = neoRegionGraph("US")
     val res = resultGraph.cypher("MATCH (n:Person {name: 'Alice'}) RETURN n.should_buy as rec")
 
-    res.records.collect.toSet should equal(
+    res.getRecords.collect.toSet should equal(
       Set(
         CypherMap("rec" -> "a book")
       ))
@@ -165,7 +165,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
   def verifyRecoResult(r: CypherResult) = {
     println("===>>> verifying RECO result")
 
-    r.records.asInstanceOf[CAPSRecords].toCypherMaps.collect().toSet should equal(
+    r.getRecords.asInstanceOf[CAPSRecords].toCypherMaps.collect().toSet should equal(
       Set(
         CypherMap("name" -> "Eve", "product" -> "Terminator 2"),
         CypherMap("name" -> "Carl", "product" -> "Jurassic Park"),

@@ -32,7 +32,7 @@ trait FunctionsBehaviour {
 
         val result = given.cypher("MATCH (n) RETURN exists(n.id) AS exists")
 
-        result.records.toMaps should equal(
+        result.getRecords.toMaps should equal(
           Bag(
             CypherMap("exists" -> true),
             CypherMap("exists" -> true),
@@ -49,7 +49,7 @@ trait FunctionsBehaviour {
 
         val result = given.cypher("MATCH ()-[r]->() RETURN type(r)")
 
-        result.records.toMaps should equal(
+        result.getRecords.toMaps should equal(
           Bag(
             CypherMap("type(r)" -> "KNOWS"),
             CypherMap("type(r)" -> "HATES"),
@@ -65,9 +65,7 @@ trait FunctionsBehaviour {
 
         val result = given.cypher("MATCH (n) RETURN id(n)")
 
-        result.records.toMaps should equal(Bag(CypherMap("id(n)" -> 0), CypherMap("id(n)" -> 1)))
-
-        result.graphs shouldBe empty
+        result.getRecords.toMaps should equal(Bag(CypherMap("id(n)" -> 0), CypherMap("id(n)" -> 1)))
       }
 
       test("id for rel") {
@@ -75,9 +73,7 @@ trait FunctionsBehaviour {
 
         val result = given.cypher("MATCH ()-[e]->() RETURN id(e)")
 
-        result.records.toMaps should equal(Bag(CypherMap("id(e)" -> 2), CypherMap("id(e)" -> 4)))
-
-        result.graphs shouldBe empty
+        result.getRecords.toMaps should equal(Bag(CypherMap("id(e)" -> 2), CypherMap("id(e)" -> 4)))
       }
 
     }
@@ -89,7 +85,7 @@ trait FunctionsBehaviour {
 
         val result = given.cypher("MATCH (a) RETURN labels(a)")
 
-        result.records.toMaps should equal(
+        result.getRecords.toMaps should equal(
           Bag(
             CypherMap("labels(a)" -> List("A")),
             CypherMap("labels(a)" -> List("B"))
@@ -101,7 +97,7 @@ trait FunctionsBehaviour {
 
         val result = given.cypher("MATCH (a) RETURN labels(a)")
 
-        result.records.toMaps should equal(
+        result.getRecords.toMaps should equal(
           Bag(
             CypherMap("labels(a)" -> List("A", "B")),
             CypherMap("labels(a)" -> List("C", "D"))
@@ -113,7 +109,7 @@ trait FunctionsBehaviour {
 
         val result = given.cypher("MATCH (a) RETURN labels(a)")
 
-        result.records.toMaps should equal(
+        result.getRecords.toMaps should equal(
           Bag(
             CypherMap("labels(a)" -> List("A")),
             CypherMap("labels(a)" -> List("C", "D")),
@@ -130,7 +126,7 @@ trait FunctionsBehaviour {
 
         val result = given.cypher("MATCH () RETURN size(['Alice', 'Bob']) as s")
 
-        result.records.toMaps should equal(
+        result.getRecords.toMaps should equal(
           Bag(
             CypherMap("s" -> 2)
           ))
@@ -141,7 +137,7 @@ trait FunctionsBehaviour {
 
         val result = given.cypher("MATCH () RETURN size('Alice') as s")
 
-        result.records.toMaps should equal(
+        result.getRecords.toMaps should equal(
           Bag(
             CypherMap("s" -> 5)
           ))
@@ -152,7 +148,7 @@ trait FunctionsBehaviour {
 
         val result = given.cypher("MATCH (a) RETURN size(a.name) as s")
 
-        result.records.toMaps should equal(
+        result.getRecords.toMaps should equal(
           Bag(
             CypherMap("s" -> 5)
           ))
@@ -163,7 +159,7 @@ trait FunctionsBehaviour {
 
         val result = given.cypher("MATCH (a) RETURN size(labels(a)) as s")
 
-        result.records.toMaps should equal(
+        result.getRecords.toMaps should equal(
           Bag(
             CypherMap("s" -> 2),
             CypherMap("s" -> 2),
@@ -177,7 +173,7 @@ trait FunctionsBehaviour {
 
         val result = given.cypher("MATCH (a) RETURN size(a.prop) as s")
 
-        result.records.toMaps should equal(Bag(CypherMap("s" -> null)))
+        result.getRecords.toMaps should equal(Bag(CypherMap("s" -> null)))
       }
 
     }
@@ -189,7 +185,7 @@ trait FunctionsBehaviour {
 
         val result = given.cypher("MATCH (a) WHERE a.name = 'Alice' RETURN keys(a) as k")
 
-        val keysAsMap = result.records.toMaps
+        val keysAsMap = result.getRecords.toMaps
 
         keysAsMap should equal(
           Bag(
@@ -206,7 +202,7 @@ trait FunctionsBehaviour {
 
         val result = given.cypher("MATCH (a: Person) WHERE a.name = 'Bob' RETURN keys(a) as k")
 
-        result.records.toMaps should equal(
+        result.getRecords.toMaps should equal(
           Bag(
             CypherMap("k" -> List("eyes", "name"))
           ))
@@ -218,7 +214,7 @@ trait FunctionsBehaviour {
 
         val result = given.cypher("MATCH () WITH {person: {name: 'Anne', age: 25}} AS p RETURN keys(p) as k")
 
-        result.records.toMaps should equal(
+        result.getRecords.toMaps should equal(
           Bag(
             CypherMap("k" -> List("age", "name"))
           ))
@@ -233,7 +229,7 @@ trait FunctionsBehaviour {
 
         val result = given.cypher("MATCH ()-[r:FOO]->() RETURN r.val, startNode(r)")
 
-        result.records.toMaps should equal(
+        result.getRecords.toMaps should equal(
           Bag(
             CypherMap("r.val" -> "a", "startNode(r)" -> 0),
             CypherMap("r.val" -> "b", "startNode(r)" -> 3)
@@ -248,7 +244,7 @@ trait FunctionsBehaviour {
 
         val result = given.cypher("MATCH (a)-[r]->() RETURN r.val, endNode(r)")
 
-        result.records.toMaps should equal(
+        result.getRecords.toMaps should equal(
           Bag(
             CypherMap("r.val" -> "a", "endNode(r)" -> 1),
             CypherMap("r.val" -> "b", "endNode(r)" -> 4)
@@ -263,7 +259,7 @@ trait FunctionsBehaviour {
 
         val result = given.cypher("MATCH (a) RETURN toFloat(a.val) as myFloat")
 
-        result.records.toMaps should equal(
+        result.getRecords.toMaps should equal(
           Bag(
             CypherMap("myFloat" -> 1.0)
           ))
@@ -274,7 +270,7 @@ trait FunctionsBehaviour {
 
         val result = given.cypher("MATCH (a) RETURN toFloat(a.val) as myFloat")
 
-        result.records.toMaps should equal(
+        result.getRecords.toMaps should equal(
           Bag(
             CypherMap("myFloat" -> 1.0)
           ))
@@ -285,7 +281,7 @@ trait FunctionsBehaviour {
 
         val result = given.cypher("MATCH (a) RETURN toFloat(a.val) as myFloat")
 
-        result.records.toMaps should equal(
+        result.getRecords.toMaps should equal(
           Bag(
             CypherMap("myFloat" -> 42.0)
           ))
@@ -298,7 +294,7 @@ trait FunctionsBehaviour {
 
         val result = given.cypher("MATCH (n) RETURN coalesce(n.valA, n.valB, n.valC) as value")
 
-        result.records.collect.toBag should equal(
+        result.getRecords.collect.toBag should equal(
           Bag(
             CypherMap("value" -> 1),
             CypherMap("value" -> 2),
@@ -312,7 +308,7 @@ trait FunctionsBehaviour {
 
         val result = given.cypher("MATCH (n) RETURN coalesce(n.valD, n.valE) as value")
 
-        result.records.collect.toBag should equal(
+        result.getRecords.collect.toBag should equal(
           Bag(
             CypherMap("value" -> null),
             CypherMap("value" -> null),

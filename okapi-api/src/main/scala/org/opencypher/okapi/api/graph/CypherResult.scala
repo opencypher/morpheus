@@ -25,30 +25,34 @@ import org.opencypher.okapi.api.table.{CypherPrintable, CypherRecords}
 trait CypherResult extends CypherPrintable {
 
   /**
-    * Retrieves the graph returned by the query. Note, if the query returns more than one graph, there is no guarantee
-    * about which graph is returned.
+    * Retrieves the graph if one is returned by the query.
+    * If the query returns a table, `None` is returned.
     *
-    * @return a graph
+    * @return a graph if the query returned one, `None` otherwise
     */
-  def graph: Option[PropertyGraph] = graphs.headOption.map(_._2)
+  def graph: Option[PropertyGraph]
 
   /**
-    * The named graphs that were returned by the query that produced this result.
+    * Retrieves the graph if one is returned by the query, otherwise an exception is thrown.
     *
-    * @return a map of named graphs.
+    * @return graph as returned by the query.
     */
-  // TODO: Remove
-  def graphs: Map[String, PropertyGraph]
+  def getGraph: PropertyGraph = graph.get
 
   /**
-    * The table of records that was returned by the query that produced this result.
+    * The table of records if one was returned by the query.
+    * Returns `None` if the query returned a graph.
+    *
+    * @return a table of records, `None` otherwise.
+    */
+  def records: Option[CypherRecords]
+
+  /**
+    * The table of records if one was returned by the query, otherwise an exception is thrown.
     *
     * @return a table of records.
     */
-  // TODO: Make option
-  // TODO: let's discuss this again (shouldn't the user know what the result is?)
-  // TODO: maybe provide an optRecords: Option[CypherRecords] in addition?
-  def records: CypherRecords
+  def getRecords: CypherRecords = records.get
 
   /**
     * API for printable plans. This is used for explaining the execution plan of a Cypher query.

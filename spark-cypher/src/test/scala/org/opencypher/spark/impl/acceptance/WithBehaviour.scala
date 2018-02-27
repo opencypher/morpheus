@@ -37,14 +37,11 @@ trait WithBehaviour { this: AcceptanceTest =>
         """.stripMargin)
 
       // Then
-      result.records.toMaps should equal(
+      result.getRecords.toMaps should equal(
         Bag(
           CypherMap("foo" -> 5),
           CypherMap("foo" -> 6)
         ))
-
-      // And
-      result.graphs shouldBe empty
     }
 
     test("projecting constants") {
@@ -59,14 +56,11 @@ trait WithBehaviour { this: AcceptanceTest =>
         """.stripMargin)
 
       // Then
-      result.records.toMaps should equal(
+      result.getRecords.toMaps should equal(
         Bag(
           CypherMap("bar" -> 5),
           CypherMap("bar" -> 5)
         ))
-
-      // And
-      result.graphs shouldBe empty
     }
 
     test("projecting variables in scope") {
@@ -78,13 +72,10 @@ trait WithBehaviour { this: AcceptanceTest =>
       val result = given.cypher("MATCH (n:Node)-->(m:Node) WITH n, m RETURN n.val")
 
       // Then
-      result.records.toMaps should equal(
+      result.getRecords.toMaps should equal(
         Bag(
           CypherMap("n.val" -> 4)
         ))
-
-      // And
-      result.graphs shouldBe empty
     }
 
     test("projecting property expression") {
@@ -96,13 +87,10 @@ trait WithBehaviour { this: AcceptanceTest =>
       val result = given.cypher("MATCH (n:Node)-->(m:Node) WITH n.val AS n_val RETURN n_val")
 
       // Then
-      result.records.toMaps should equal(
+      result.getRecords.toMaps should equal(
         Bag(
           CypherMap("n_val" -> 4)
         ))
-
-      // And
-      result.graphs shouldBe empty
     }
 
     test("projecting property expression with filter") {
@@ -114,14 +102,11 @@ trait WithBehaviour { this: AcceptanceTest =>
       val result = given.cypher("MATCH (n:Node) WITH n.val AS n_val WHERE n_val <= 4 RETURN n_val")
 
       // Then
-      result.records.toMaps should equal(
+      result.getRecords.toMaps should equal(
         Bag(
           CypherMap("n_val" -> 3),
           CypherMap("n_val" -> 4)
         ))
-
-      // And
-      result.graphs shouldBe empty
     }
 
     test("projecting addition expression") {
@@ -133,13 +118,10 @@ trait WithBehaviour { this: AcceptanceTest =>
       val result = given.cypher("MATCH (n:Node)-->(m:Node) WITH n.val + m.val AS sum_n_m_val RETURN sum_n_m_val")
 
       // Then
-      result.records.toMaps should equal(
+      result.getRecords.toMaps should equal(
         Bag(
           CypherMap("sum_n_m_val" -> 9)
         ))
-
-      // And
-      result.graphs shouldBe empty
     }
 
     test("aliasing variables") {
@@ -151,13 +133,10 @@ trait WithBehaviour { this: AcceptanceTest =>
       val result = given.cypher("MATCH (n:Node)-[r]->(m:Node) WITH n.val + m.val AS sum WITH sum AS sum2 RETURN sum2")
 
       // Then
-      result.records.toMaps should equal(
+      result.getRecords.toMaps should equal(
         Bag(
           CypherMap("sum2" -> 9)
         ))
-
-      // And
-      result.graphs shouldBe empty
     }
 
     test("projecting mixed expression") {
@@ -170,14 +149,11 @@ trait WithBehaviour { this: AcceptanceTest =>
         "MATCH (n:Node)-[r]->(m:Node) WITH n.val AS n_val, n.val + m.val AS sum_n_m_val RETURN sum_n_m_val, n_val")
 
       // Then
-      result.records.toMaps should equal(
+      result.getRecords.toMaps should equal(
         Bag(
           CypherMap("sum_n_m_val" -> 9, "n_val" -> 4),
           CypherMap("sum_n_m_val" -> null, "n_val" -> 5)
         ))
-
-      // And
-      result.graphs shouldBe empty
     }
 
     it("can project and predicates") {
@@ -194,7 +170,7 @@ trait WithBehaviour { this: AcceptanceTest =>
           |RETURN val1, val2, val3
         """.stripMargin)
 
-      result.records.collect.toBag should equal(Bag(
+      result.getRecords.collect.toBag should equal(Bag(
         CypherMap("val1" -> 1, "val2" -> 3, "val3" -> 10)
       ))
     }
@@ -205,15 +181,12 @@ trait WithBehaviour { this: AcceptanceTest =>
       val result = given.cypher("MATCH (a) WITH a.val as val ORDER BY val RETURN val")
 
       // Then
-      result.records.toMaps should equal(
+      result.getRecords.toMaps should equal(
         Bag(
           CypherMap("val" -> 3L),
           CypherMap("val" -> 4L),
           CypherMap("val" -> 42L)
         ))
-
-      // And
-      result.graphs shouldBe empty
     }
 
     test("order by asc") {
@@ -222,15 +195,12 @@ trait WithBehaviour { this: AcceptanceTest =>
       val result = given.cypher("MATCH (a) WITH a.val as val ORDER BY val ASC RETURN val")
 
       // Then
-      result.records.toMaps should equal(
+      result.getRecords.toMaps should equal(
         Bag(
           CypherMap("val" -> 3L),
           CypherMap("val" -> 4L),
           CypherMap("val" -> 42L)
         ))
-
-      // And
-      result.graphs shouldBe empty
     }
 
     test("order by desc") {
@@ -239,15 +209,12 @@ trait WithBehaviour { this: AcceptanceTest =>
       val result = given.cypher("MATCH (a) WITH a.val as val ORDER BY val DESC RETURN val")
 
       // Then
-      result.records.toMaps should equal(
+      result.getRecords.toMaps should equal(
         Bag(
           CypherMap("val" -> 42L),
           CypherMap("val" -> 4L),
           CypherMap("val" -> 3L)
         ))
-
-      // And
-      result.graphs shouldBe empty
     }
 
     test("skip") {
@@ -256,10 +223,7 @@ trait WithBehaviour { this: AcceptanceTest =>
       val result = given.cypher("MATCH (a) WITH a.val as val SKIP 2 RETURN val").asCaps
 
       // Then
-      result.records.toDF().count() should equal(1)
-
-      // And
-      result.graphs shouldBe empty
+      result.getRecords.toDF().count() should equal(1)
     }
 
     test("order by with skip") {
@@ -268,14 +232,11 @@ trait WithBehaviour { this: AcceptanceTest =>
       val result = given.cypher("MATCH (a) WITH a.val as val ORDER BY val SKIP 1 RETURN val")
 
       // Then
-      result.records.toMaps should equal(
+      result.getRecords.toMaps should equal(
         Bag(
           CypherMap("val" -> 4L),
           CypherMap("val" -> 42L)
         ))
-
-      // And
-      result.graphs shouldBe empty
     }
 
     test("order by with (arithmetic) skip") {
@@ -284,13 +245,10 @@ trait WithBehaviour { this: AcceptanceTest =>
       val result = given.cypher("MATCH (a) WITH a.val as val ORDER BY val SKIP 1 + 1 RETURN val")
 
       // Then
-      result.records.toMaps should equal(
+      result.getRecords.toMaps should equal(
         Bag(
           CypherMap("val" -> 42L)
         ))
-
-      // And
-      result.graphs shouldBe empty
     }
 
     test("limit") {
@@ -299,10 +257,7 @@ trait WithBehaviour { this: AcceptanceTest =>
       val result = given.cypher("MATCH (a) WITH a.val as val LIMIT 1 RETURN val").asCaps
 
       // Then
-      result.records.toDF().count() should equal(1)
-
-      // And
-      result.graphs shouldBe empty
+      result.getRecords.toDF().count() should equal(1)
     }
 
     test("order by with limit") {
@@ -311,13 +266,10 @@ trait WithBehaviour { this: AcceptanceTest =>
       val result = given.cypher("MATCH (a) WITH a.val as val ORDER BY val LIMIT 1 RETURN val")
 
       // Then
-      result.records.toMaps should equal(
+      result.getRecords.toMaps should equal(
         Bag(
           CypherMap("val" -> 3L)
         ))
-
-      // And
-      result.graphs shouldBe empty
     }
 
     test("order by with (arithmetic) limit") {
@@ -326,14 +278,11 @@ trait WithBehaviour { this: AcceptanceTest =>
       val result = given.cypher("MATCH (a) WITH a.val as val ORDER BY val LIMIT 1 + 1 RETURN val")
 
       // Then
-      result.records.toMaps should equal(
+      result.getRecords.toMaps should equal(
         Bag(
           CypherMap("val" -> 3L),
           CypherMap("val" -> 4L)
         ))
-
-      // And
-      result.graphs shouldBe empty
     }
 
     test("order by with skip and limit") {
@@ -342,13 +291,10 @@ trait WithBehaviour { this: AcceptanceTest =>
       val result = given.cypher("MATCH (a) WITH a.val as val ORDER BY val SKIP 1 LIMIT 1 RETURN val")
 
       // Then
-      result.records.toMaps should equal(
+      result.getRecords.toMaps should equal(
         Bag(
           CypherMap("val" -> 4L)
         ))
-
-      // And
-      result.graphs shouldBe empty
     }
 
 
@@ -368,7 +314,7 @@ trait WithBehaviour { this: AcceptanceTest =>
             |RETURN nt, nf""".stripMargin)
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("nt" -> false, "nf" -> true)
         ))
       }
@@ -388,7 +334,7 @@ trait WithBehaviour { this: AcceptanceTest =>
             |RETURN id, val2""".stripMargin)
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("id" -> 1L, "val2" -> false),
           CypherMap("id" -> 2L, "val2" -> true)
         ))

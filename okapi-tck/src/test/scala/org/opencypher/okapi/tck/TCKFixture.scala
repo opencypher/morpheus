@@ -77,7 +77,7 @@ case class TCKGraph[C <: CypherSession](testGraphFactory: TestGraphFactory[C], g
         // mapValues is lazy, so we force it for debug purposes
         val capsResult = Try(graph.cypher(query, params.mapValues(tckValueToCAPSValue).view.force))
         capsResult match {
-          case Success(r) => this -> convertToTckStrings(r.records)
+          case Success(r) => this -> convertToTckStrings(r.getRecords)
           case Failure(e) =>
             val phase = TCKErrorPhases.RUNTIME // We have no way to detect errors during compile time yet
             e match {

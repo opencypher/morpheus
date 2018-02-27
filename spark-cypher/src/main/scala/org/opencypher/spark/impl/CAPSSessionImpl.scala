@@ -126,7 +126,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
     queryParameters: CypherMap): CAPSRecords = {
     val scan = planStart(graph, in.asCaps.header.internalHeader.fields)
     val filter = producer.planFilter(expr, scan)
-    plan(in, queryParameters, filter).records
+    plan(in, queryParameters, filter).getRecords
   }
 
   override def select(
@@ -136,7 +136,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
     queryParameters: CypherMap): CAPSRecords = {
     val scan = planStart(graph, in.asCaps.header.internalHeader.fields)
     val select = producer.planSelect(fields, Set.empty, scan)
-    plan(in, queryParameters, select).records
+    plan(in, queryParameters, select).getRecords
   }
 
   override def project(
@@ -146,7 +146,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
     queryParameters: CypherMap): CAPSRecords = {
     val scan = planStart(graph, in.asCaps.header.internalHeader.fields)
     val project = producer.projectExpr(expr, scan)
-    plan(in, queryParameters, project).records
+    plan(in, queryParameters, project).getRecords
   }
 
   override def alias(
@@ -157,7 +157,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
     val (expr, v) = alias
     val scan = planStart(graph, in.asCaps.header.internalHeader.fields)
     val select = producer.projectField(IRField(v.name)(v.cypherType), expr, scan)
-    plan(in, queryParameters, select).records
+    plan(in, queryParameters, select).getRecords
   }
 
   private def plan(

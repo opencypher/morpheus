@@ -128,7 +128,7 @@ class CAPSRecordsPrinterTest extends CAPSTestSuite with GraphCreationFixture {
         |ORDER BY a.name
       """.stripMargin)
 
-    print(when.records)
+    print(when.getRecords)
 
     getString should equal("""+---------------------------------------------+
         !| a.name               | b.name               |

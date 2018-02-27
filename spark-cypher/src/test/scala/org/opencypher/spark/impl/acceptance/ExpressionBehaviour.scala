@@ -49,7 +49,7 @@ trait ExpressionBehaviour {
           """.stripMargin)
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("n.val" -> "foo", "result" -> 1),
           CypherMap("n.val" -> "bar", "result" -> 2),
           CypherMap("n.val" -> "baz", "result" -> 3))
@@ -79,7 +79,7 @@ trait ExpressionBehaviour {
           """.stripMargin)
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("n.val" -> "foo", "result" -> 1),
           CypherMap("n.val" -> "bar", "result" -> 2),
           CypherMap("n.val" -> "baz", "result" -> 3))
@@ -104,7 +104,7 @@ trait ExpressionBehaviour {
         )
 
         // Then
-        result.records.toMaps shouldBe empty
+        result.getRecords.toMaps shouldBe empty
       }
 
       it("handles unknown properties") {
@@ -122,7 +122,7 @@ trait ExpressionBehaviour {
           """.stripMargin)
 
         // Then
-        result.records.toMaps should equal(Bag(CypherMap("a.age" -> null, "a.firstName" -> "Alice")))
+        result.getRecords.toMaps should equal(Bag(CypherMap("a.age" -> null, "a.firstName" -> "Alice")))
       }
 
       it("equality between properties") {
@@ -141,7 +141,7 @@ trait ExpressionBehaviour {
         val result = given.cypher("MATCH (a:A)-->(b:B) RETURN a.val = b.p AS eq")
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("eq" -> false),
           CypherMap("eq" -> false),
           CypherMap("eq" -> true),
@@ -149,9 +149,6 @@ trait ExpressionBehaviour {
           CypherMap("eq" -> null),
           CypherMap("eq" -> null)
         ))
-
-        // And
-        result.graphs shouldBe empty
       }
     }
 
@@ -165,15 +162,12 @@ trait ExpressionBehaviour {
       val result = given.cypher("MATCH (n)-->(m) RETURN n.val < m.val")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("n.val < m.val" -> true),
         CypherMap("n.val < m.val" -> false),
         CypherMap("n.val < m.val" -> false),
         CypherMap("n.val < m.val" -> null)
       ))
-
-      // And
-      result.graphs shouldBe empty
     }
 
     test("less than or equal") {
@@ -184,14 +178,12 @@ trait ExpressionBehaviour {
       val result = given.cypher("MATCH (n)-->(m) RETURN n.val <= m.val")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("n.val <= m.val" -> true),
         CypherMap("n.val <= m.val" -> true),
         CypherMap("n.val <= m.val" -> false),
         CypherMap("n.val <= m.val" -> null)
       ))
-      // And
-      result.graphs shouldBe empty
     }
 
     test("greater than") {
@@ -202,15 +194,12 @@ trait ExpressionBehaviour {
       val result = given.cypher("MATCH (n)-->(m) RETURN n.val > m.val AS gt")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("gt" -> false),
         CypherMap("gt" -> false),
         CypherMap("gt" -> true),
         CypherMap("gt" -> null)
       ))
-
-      // And
-      result.graphs shouldBe empty
     }
 
     test("greater than or equal") {
@@ -221,15 +210,12 @@ trait ExpressionBehaviour {
       val result = given.cypher("MATCH (n)-->(m) RETURN n.val >= m.val")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("n.val >= m.val" -> false),
         CypherMap("n.val >= m.val" -> true),
         CypherMap("n.val >= m.val" -> true),
         CypherMap("n.val >= m.val" -> null)
       ))
-
-      // And
-      result.graphs shouldBe empty
     }
 
     test("addition") {
@@ -240,12 +226,10 @@ trait ExpressionBehaviour {
       val result = given.cypher("MATCH (n)-->(m) RETURN m.other + m.val + n.val AS res")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("res" -> 12),
         CypherMap("res" -> null)
       ))
-      // And
-      result.graphs shouldBe empty
     }
 
     test("subtraction with name") {
@@ -256,12 +240,10 @@ trait ExpressionBehaviour {
       val result = given.cypher("MATCH (n)-->(m) RETURN m.val - n.val - m.other AS res")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("res" -> -2),
         CypherMap("res" -> null)
       ))
-      // And
-      result.graphs shouldBe empty
     }
 
     test("subtraction without name") {
@@ -272,11 +254,9 @@ trait ExpressionBehaviour {
       val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN m.val - n.val")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("m.val - n.val" -> 1)
       ))
-      // And
-      result.graphs shouldBe empty
     }
 
     test("multiplication with integer") {
@@ -287,13 +267,11 @@ trait ExpressionBehaviour {
       val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN n.val * m.val")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("n.val * m.val" -> 18),
         CypherMap("n.val * m.val" -> 6)
       ))
 
-      // And
-      result.graphs shouldBe empty
     }
 
     test("multiplication with float") {
@@ -304,12 +282,10 @@ trait ExpressionBehaviour {
       val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN n.val * m.val")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("n.val * m.val" -> 11.25)
       ))
 
-      // And
-      result.graphs shouldBe empty
     }
 
     test("multiplication with integer and float") {
@@ -320,12 +296,10 @@ trait ExpressionBehaviour {
       val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN n.val * m.val2")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("n.val * m.val2" -> 22.5)
       ))
 
-      // And
-      result.graphs shouldBe empty
     }
 
     test("division with no remainder") {
@@ -336,13 +310,11 @@ trait ExpressionBehaviour {
       val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN n.val / m.val")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("n.val / m.val" -> 3),
         CypherMap("n.val / m.val" -> 1)
       ))
 
-      // And
-      result.graphs shouldBe empty
     }
 
     test("division integer and float and null") {
@@ -353,13 +325,11 @@ trait ExpressionBehaviour {
       val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN n.val / m.val2")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("n.val / m.val2" -> 2.0),
         CypherMap("n.val / m.val2" -> null)
       ))
 
-      // And
-      result.graphs shouldBe empty
     }
 
     ignore("equality") {
@@ -375,13 +345,11 @@ trait ExpressionBehaviour {
       val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN m.val = n.val AS res")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("res" -> false),
         CypherMap("res" -> true),
         CypherMap("res" -> null)
       ))
-      // And
-      result.graphs shouldBe empty
     }
 
     test("property expression") {
@@ -392,12 +360,10 @@ trait ExpressionBehaviour {
       val result = given.cypher("MATCH (p:Person) RETURN p.name")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("p.name" -> "Mats"),
         CypherMap("p.name" -> "Martin")
       ))
-
-      result.graphs shouldBe empty
     }
 
     test("property expression with relationship") {
@@ -408,11 +374,9 @@ trait ExpressionBehaviour {
       val result = given.cypher("MATCH (a:Person)-[r:KNOWS]->(b:Person) RETURN r.since")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("r.since" -> 2017)
       ))
-
-      result.graphs shouldBe empty
     }
 
     describe("EXISTS with pattern") {
@@ -429,7 +393,7 @@ trait ExpressionBehaviour {
         val result = given.cypher("MATCH (a)-->(b) WITH a, b, EXISTS((a)-->()-->(b)) as con RETURN a.id, b.id, con")
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("a.id" -> 1L, "b.id" -> 3L, "con" -> true),
           CypherMap("a.id" -> 1L, "b.id" -> 2L, "con" -> false),
           CypherMap("a.id" -> 2L, "b.id" -> 3L, "con" -> false),
@@ -449,7 +413,7 @@ trait ExpressionBehaviour {
             |RETURN a.id, b.id, con""".stripMargin)
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("a.id" -> 1L, "b.id" -> 2L, "con" -> false),
           CypherMap("a.id" -> 1L, "b.id" -> 3L, "con" -> true),
           CypherMap("a.id" -> 2L, "b.id" -> 3L, "con" -> false)
@@ -472,7 +436,7 @@ trait ExpressionBehaviour {
             |RETURN a.id, con""".stripMargin)
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("a.id" -> 1L, "con" -> true),
           CypherMap("a.id" -> 2L, "con" -> false),
           CypherMap("a.id" -> 3L, "con" -> false),
@@ -497,7 +461,7 @@ trait ExpressionBehaviour {
             |RETURN a.id, b.id, con""".stripMargin)
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("a.id" -> 1L, "b.id" -> 2L, "con" -> true),
           CypherMap("a.id" -> 3L, "b.id" -> 4L, "con" -> false)
         ))
@@ -519,7 +483,7 @@ trait ExpressionBehaviour {
             |RETURN a.id, con""".stripMargin)
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("a.id" -> 1L, "con" -> true),
           CypherMap("a.id" -> 2L, "con" -> false)
         ))
@@ -541,7 +505,7 @@ trait ExpressionBehaviour {
             |RETURN a.id, b.id, con""".stripMargin)
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("a.id" -> 1L, "b.id" -> 2L, "con" -> true),
           CypherMap("a.id" -> 3L, "b.id" -> 4L, "con" -> false)
         ))
@@ -559,7 +523,7 @@ trait ExpressionBehaviour {
             |RETURN a.id, b.id, con""".stripMargin)
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("a.id" -> 1L, "b.id" -> 1L, "con" -> true),
           CypherMap("a.id" -> 1L, "b.id" -> 2L, "con" -> false),
           CypherMap("a.id" -> 2L, "b.id" -> 1L, "con" -> true),
@@ -581,7 +545,7 @@ trait ExpressionBehaviour {
             |WITH a, EXISTS((a)-->({val: a.val + 2})) AS other RETURN a.id, other""".stripMargin)
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("a.id" -> 1L, "other" -> true),
           CypherMap("a.id" -> 2L, "other" -> false),
           CypherMap("a.id" -> 3L, "other" -> false)
@@ -598,7 +562,7 @@ trait ExpressionBehaviour {
             |WITH [$a, $b] as strings
             |RETURN strings""".stripMargin, Map("a" -> CypherValue("bar"), "b" -> CypherValue("foo")))
 
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("strings" -> Seq("bar", "foo"))
         ))
       }
@@ -611,7 +575,7 @@ trait ExpressionBehaviour {
             |WITH ["bar", "foo"] as strings
             |RETURN strings""".stripMargin)
 
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("strings" -> Seq("bar", "foo"))
         ))
       }
@@ -625,7 +589,7 @@ trait ExpressionBehaviour {
             |WITH [n.val*10, n.val*100] as vals
             |RETURN vals""".stripMargin)
 
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("vals" -> Seq(10, 100)),
           CypherMap("vals" -> Seq(20, 200))
         ))
@@ -646,7 +610,7 @@ trait ExpressionBehaviour {
             | RETURN n.v1
           """.stripMargin('|')
 
-        graph.cypher(query).records.toMaps should equal(Bag(
+        graph.cypher(query).getRecords.toMaps should equal(Bag(
           CypherMap("n.v1" -> true)
         ))
       }

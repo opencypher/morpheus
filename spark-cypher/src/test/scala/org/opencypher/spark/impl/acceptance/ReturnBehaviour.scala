@@ -32,7 +32,7 @@ trait ReturnBehaviour {
 
         val result = g.cypher("MATCH (a:A) WITH a, a.name AS foo RETURN a")
 
-        result.records.collect.toBag should equal(Bag(
+        result.getRecords.collect.toBag should equal(Bag(
           CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap("name" -> "me"))),
           CypherMap("a" -> CAPSNode(1L, Set("A"), CypherMap.empty))
         ))
@@ -43,7 +43,7 @@ trait ReturnBehaviour {
 
         val result = g.cypher("MATCH (a:A) WITH a, a AS foo RETURN a")
 
-        result.records.collect.toBag should equal(Bag(
+        result.getRecords.collect.toBag should equal(Bag(
           CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap("name" -> "me"))),
           CypherMap("a" -> CAPSNode(1L, Set("A"), CypherMap.empty))
         ))
@@ -56,7 +56,7 @@ trait ReturnBehaviour {
         // perhaps copy all child expressions in RecordHeader
         val result = g.cypher("MATCH (a:A) WITH a, a AS foo RETURN foo AS b")
 
-        result.records.collect.toBag should equal(Bag(
+        result.getRecords.collect.toBag should equal(Bag(
           CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap("name" -> "me"))),
           CypherMap("a" -> CAPSNode(1L, Set("A"), CypherMap.empty))
         ))
@@ -67,7 +67,7 @@ trait ReturnBehaviour {
 
         val result = g.cypher("MATCH (a:A), (b) RETURN a")
 
-        result.records.collect.toBag should equal(Bag(
+        result.getRecords.collect.toBag should equal(Bag(
           CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty))
         ))
       }
@@ -77,7 +77,7 @@ trait ReturnBehaviour {
 
         val result = given.cypher("RETURN 1").asCaps
 
-        result.records shouldMatch CypherMap("1" -> 1)
+        result.getRecords shouldMatch CypherMap("1" -> 1)
       }
 
       it("can run single return query with several columns") {
@@ -85,7 +85,7 @@ trait ReturnBehaviour {
 
         val result = given.cypher("RETURN 1 AS foo, '' AS str").asCaps
 
-        result.records shouldMatch CypherMap("foo" -> 1, "str" -> "")
+        result.getRecords shouldMatch CypherMap("foo" -> 1, "str" -> "")
       }
 
       it("returns compact node") {
@@ -93,7 +93,7 @@ trait ReturnBehaviour {
 
         val result = given.cypher("MATCH (n) RETURN n").asCaps
 
-        result.records.compact.toMaps should equal(Bag(
+        result.getRecords.compact.toMaps should equal(Bag(
           CypherMap("n" -> 0),
           CypherMap("n" -> 1))
         )
@@ -104,7 +104,7 @@ trait ReturnBehaviour {
 
         val result = given.cypher("MATCH (n) RETURN n")
 
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("n" -> 0, "n.foo" -> "bar"),
           CypherMap("n" -> 1, "n.foo" -> null))
         )
@@ -115,7 +115,7 @@ trait ReturnBehaviour {
 
         val result = given.cypher("MATCH ()-[r]->() RETURN r").asCaps
 
-        result.records.compact.toMaps should equal(Bag(
+        result.getRecords.compact.toMaps should equal(Bag(
           CypherMap("r" -> 2),
           CypherMap("r" -> 4)
         ))
@@ -126,7 +126,7 @@ trait ReturnBehaviour {
 
         val result = given.cypher("MATCH ()-[r]->() RETURN r")
 
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("r" -> 2, "source(r)" -> 0, "target(r)" -> 1, "type(r)" -> "Rel", "r.foo" -> "bar"),
           CypherMap("r" -> 4, "source(r)" -> 1, "target(r)" -> 3, "type(r)" -> "Rel", "r.foo" -> null)
         ))
@@ -137,7 +137,7 @@ trait ReturnBehaviour {
 
         val result = given.cypher("MATCH ()-[r]->() RETURN r.foo")
 
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("r.foo" -> "bar"),
           CypherMap("r.foo" -> null)
         ))
@@ -155,7 +155,7 @@ trait ReturnBehaviour {
           """.stripMargin
 
 
-        graph.cypher(query).records.collect.toBag should equal(Bag(
+        graph.cypher(query).getRecords.collect.toBag should equal(Bag(
           CypherMap("a.val" -> 0)
         ))
       }
@@ -174,7 +174,7 @@ trait ReturnBehaviour {
 
         val result = given.cypher("MATCH (n) RETURN DISTINCT n.name AS name")
 
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("name" -> "bar"),
           CypherMap("name" -> "foo"),
           CypherMap("name" -> "baz")
@@ -192,7 +192,7 @@ trait ReturnBehaviour {
 
         val result = given.cypher("MATCH (n) RETURN DISTINCT n.p1 as p1, n.p2 as p2")
 
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("p1" -> "a", "p2" -> "a"),
           CypherMap("p1" -> "a", "p2" -> "b"),
           CypherMap("p1" -> "b", "p2" -> "a"),
@@ -208,14 +208,11 @@ trait ReturnBehaviour {
         val result = given.cypher("MATCH (a) RETURN a.val AS val ORDER BY val")
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("val" -> 3L),
           CypherMap("val" -> 4L),
           CypherMap("val" -> 42L)
         ))
-
-        // And
-        result.graphs shouldBe empty
       }
 
       it("can order ascending") {
@@ -224,14 +221,11 @@ trait ReturnBehaviour {
         val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val ASC")
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("val" -> 3L),
           CypherMap("val" -> 4L),
           CypherMap("val" -> 42L)
         ))
-
-        // And
-        result.graphs shouldBe empty
       }
 
       it("can order descending") {
@@ -240,14 +234,11 @@ trait ReturnBehaviour {
         val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val DESC")
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("val" -> 42L),
           CypherMap("val" -> 4L),
           CypherMap("val" -> 3L)
         ))
-
-        // And
-        result.graphs shouldBe empty
       }
     }
     describe("SKIP") {
@@ -257,10 +248,7 @@ trait ReturnBehaviour {
         val result = given.cypher("MATCH (a) RETURN a.val as val SKIP 2").asCaps
 
         // Then
-        result.records.toDF().count() should equal(1)
-
-        // And
-        result.graphs shouldBe empty
+        result.getRecords.toDF().count() should equal(1)
       }
 
       it("can order with skip") {
@@ -269,13 +257,10 @@ trait ReturnBehaviour {
         val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val SKIP 1")
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("val" -> 4L),
           CypherMap("val" -> 42L)
         ))
-
-        // And
-        result.graphs shouldBe empty
       }
 
       it("can order with (arithmetic) skip") {
@@ -284,12 +269,9 @@ trait ReturnBehaviour {
         val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val SKIP 1 + 1")
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("val" -> 42L)
         ))
-
-        // And
-        result.graphs shouldBe empty
       }
     }
 
@@ -300,10 +282,7 @@ trait ReturnBehaviour {
         val result = given.cypher("MATCH (a) RETURN a.val as val LIMIT 1").asCaps
 
         // Then
-        result.records.toDF().count() should equal(1)
-
-        // And
-        result.graphs shouldBe empty
+        result.getRecords.toDF().count() should equal(1)
       }
 
       it("can evaluate limit with parameter value") {
@@ -316,7 +295,7 @@ trait ReturnBehaviour {
             |LIMIT $limit
             |RETURN a""".stripMargin, Map("limit" -> CypherValue(1)))
 
-        res.records.size
+        res.getRecords.size
       }
 
 
@@ -326,12 +305,9 @@ trait ReturnBehaviour {
         val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val LIMIT 1")
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("val" -> 3L)
         ))
-
-        // And
-        result.graphs shouldBe empty
       }
 
       it("can order with (arithmetic) limit") {
@@ -340,13 +316,10 @@ trait ReturnBehaviour {
         val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val LIMIT 1 + 1")
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("val" -> 3L),
           CypherMap("val" -> 4L)
         ))
-
-        // And
-        result.graphs shouldBe empty
       }
 
       it("can order with skip and limit") {
@@ -355,12 +328,9 @@ trait ReturnBehaviour {
         val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val SKIP 1 LIMIT 1")
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("val" -> 4L)
         ))
-
-        // And
-        result.graphs shouldBe empty
       }
     }
   }

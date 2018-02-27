@@ -16,7 +16,7 @@
 package org.opencypher.spark.impl.util
 
 import io.circe.Json
-import org.opencypher.spark.impl.{CAPSGraph, CAPSResult}
+import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSResult}
 import org.opencypher.spark.web.JsonSerialiser
 
 import scala.util.Random
@@ -28,7 +28,22 @@ object ZeppelinSupport {
   implicit class ResultVisualizer(result: CAPSResult) {
 
     /**
-      * Prints the tabular part of the result in the Zeppelin `%table` format
+      * Visualizes the result in Zeppelin.
+      * If the result contains a graph, it is shown as a network (see [[org.opencypher.spark.impl.util.ZeppelinSupport.GraphVisualizer#asZeppelinGraph]]).
+      * If the result contains a tabular result, they are visualized as a table (see [[org.opencypher.spark.impl.util.ZeppelinSupport.RecordsVisualizer#asZeppelingTable]]).
+      */
+    def asZeppelin(): Unit = {
+      result.graph match {
+        case Some(g) => g.asZeppelinGraph()
+        case None => result.records.get.asZeppelingTable()
+      }
+    }
+  }
+
+  implicit class RecordsVisualizer(records: CAPSRecords) {
+
+    /**
+      * Prints the records in the Zeppelin `%table` format
       * {{{
       *   MATCH (n:Person)
       *   RETURN n.name, n.age
@@ -43,80 +58,17 @@ object ZeppelinSupport {
       *   Bob\t42
       * }}}
       */
-    def asZeppelinTable(): Unit = {
-      val fields = result.records.header.fieldsInOrder
-
+    def asZeppelingTable(): Unit = {
+      val fields = records.header.fieldsInOrder
       val header = fields.mkString("\t")
-      val rows = result.records.collect.map { data =>
+      val rows = records.collect.map { data =>
         fields.map(field => data.get(field).get).mkString("\t")
       }.mkString("\n")
 
       print(s"""
-          |%table
-          |$header
-          |$rows""".stripMargin)
-    }
-
-    /**
-      * Prints the specified graph in Zeppelins `%network` format
-      *
-      * {{{
-      *   g.cypher("""
-      *     MATCH (p:Person)-[k:KNOWS]->(f)
-      *     RETURN GRAPH friends of (p)-[k]->(f)
-      *   """).asZeppelinTable("friends")
-      * }}}
-      *
-      * will print the following data
-      *
-      * {{{
-      *   $network
-      *   {
-      *     "nodes" : [
-      *       {
-      *         "id": 1,
-      *         "label": "Person",
-      *         "labels": ["Person"],
-      *         "data": {
-      *           "name": "Alice",
-      *           "age": 20
-      *         }
-      *       },
-      *       {
-      *         "id": 2,
-      *         "label": "Person",
-      *         "labels": ["Person"],
-      *         "data": {
-      *           "name": "Bob",
-      *           "age": 42
-      *         }
-      *       }
-      *     ],
-      *     "edges" : [
-      *       {
-      *         "id": 3,
-      *         "source": 1,
-      *         "target": 2,
-      *         "label": "KNOWS",
-      *         "data": {
-      *           "since": 2000
-      *         }
-      *       }
-      *     ],
-      *     "labels": {"Person": "#abababa"},
-      *     "types": [ "KNOWS"],
-      *     "directed": true
-      *   }
-      * }}}
-      * @param name the graphs name
-      */
-    def asZeppelinGraph(name: String): Unit = {
-      val graph = result.graphs(name)
-      val graphJson = ZeppelinJsonSerialiser.toJsonString(graph)
-      print(s"""
-           |%network
-           |$graphJson
-        """.stripMargin)
+               |%table
+               |$header
+               |$rows""".stripMargin)
     }
   }
 

@@ -16,7 +16,7 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
-import org.opencypher.okapi.api.graph.CypherResult
+import org.opencypher.okapi.api.graph.{CypherResult, PropertyGraph}
 import org.opencypher.okapi.impl.util.PrintOptions
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.physical.CAPSQueryPlans
@@ -28,17 +28,29 @@ trait CAPSResult extends CypherResult {
 
   type Graph = CAPSGraph
 
-  override def records: CAPSRecords
+  override def records: Option[CAPSRecords]
 
-  override def graphs: Map[String, Graph]
+  override def getRecords: CAPSRecords = records.get
+
+  override def graph: Option[Graph]
+
+  override def getGraph: Graph = graph.get
 
   def as[E <: Product : TypeTag]: Iterator[E] = {
-    implicit val encoder = ExpressionEncoder[E]
-    records.asCaps.data.as[E].toLocalIterator().asScala
+    records match {
+      case Some(r) =>
+        implicit val encoder = ExpressionEncoder[E]
+        r.asCaps.data.as[E].toLocalIterator().asScala
+      case None =>
+        Iterator.empty
+    }
   }
 
   override def show(implicit options: PrintOptions): Unit =
-    records.show
+    records match {
+      case Some(r) => r.show
+      case None => options.stream.print("No results")
+    }
 
   override def plans: CAPSQueryPlans
 

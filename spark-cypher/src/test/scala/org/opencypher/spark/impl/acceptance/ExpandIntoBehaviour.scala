@@ -51,7 +51,7 @@ trait ExpandIntoBehaviour {
         """.stripMargin)
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap(
           "p1.name" -> "Alice",
           "p2.name" -> "Bob",
@@ -65,8 +65,6 @@ trait ExpandIntoBehaviour {
           "p4.name" -> "Richard"
         )
       ))
-
-      result.graphs shouldBe empty
     }
 
     test("test expand into for triangle") {
@@ -91,15 +89,13 @@ trait ExpandIntoBehaviour {
         """.stripMargin)
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap(
           "p1.name" -> "Alice",
           "p2.name" -> "Bob",
           "p3.name" -> "Eve"
         )
       ))
-
-      result.graphs shouldBe empty
     }
 
     test("Expand into after var expand") {
@@ -130,7 +126,7 @@ trait ExpandIntoBehaviour {
       )
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap(
           "p1.name" -> "Alice",
           "p2.name" -> "Bob",

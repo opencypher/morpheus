@@ -49,8 +49,8 @@ object GraphXPageRankExample extends App {
   )
 
   // 4) Create GraphX compatible RDDs from nodes and relationships
-  val graphXNodeRDD = nodes.records.asDataFrame.rdd.map(row => row.getLong(0) -> row.getString(1))
-  val graphXRelRDD = rels.records.asDataFrame.rdd.map(row => Edge(row.getLong(0), row.getLong(1), ()))
+  val graphXNodeRDD = nodes.getRecords.asDataFrame.rdd.map(row => row.getLong(0) -> row.getString(1))
+  val graphXRelRDD = rels.getRecords.asDataFrame.rdd.map(row => Edge(row.getLong(0), row.getLong(1), ()))
 
   // 5) Compute Page Rank via GraphX
   val graph = Graph(graphXNodeRDD, graphXRelRDD)
@@ -80,7 +80,7 @@ object GraphXPageRankExample extends App {
        |RETURN p.name as name, rank
        |ORDER BY rank DESC""".stripMargin)
 
-  result.records.show
+  result.getRecords.show
   //+---------------------------------------------+
   //| name                 | rank                 |
   //+---------------------------------------------+
