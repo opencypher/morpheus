@@ -24,8 +24,12 @@ import org.opencypher.spark.impl.io.neo4j.Neo4jGraphLoader
 
 object Neo4jPropertyGraphDataSource {
 
+  val defaultGraphName = GraphName("complete")
+
+  val defaultQuery = "MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r"
+
   val defaultQueries: Map[GraphName, (String, String)] =
-    Map(GraphName("complete") -> ("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r"))
+    Map(defaultGraphName -> defaultQuery)
 
 }
 
