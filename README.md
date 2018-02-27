@@ -90,8 +90,8 @@ If you have existing data frames which you would like to treat as a graph, have 
 Once the property graph is constructed, it supports Cypher queries via its `cypher` method.
 
 ```scala
-import org.opencypher.caps.api._
-import org.opencypher.caps.api.io.{Node, Relationship, RelationshipType}
+import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.io.{Node, Relationship, RelationshipType}
 
 /**
   * Demonstrates basic usage of the CAPS API by loading an example network via Scala case classes and running a Cypher

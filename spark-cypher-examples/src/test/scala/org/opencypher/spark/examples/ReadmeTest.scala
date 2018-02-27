@@ -37,7 +37,7 @@ class ReadmeTest extends FunSuite with Matchers {
   val readmePath = s"${rootFolderPath}${sep}${readmeName}"
 
   val testSourceFolderPath = s"${sep}src${sep}main${sep}scala${sep}"
-  val moduleName = "caps-examples"
+  val moduleName = "spark-cypher-examples"
   val examplePackagePath = CaseClassExample.getClass.getName.dropRight(1).replace(".", sep)
   val examplePath = s"$rootFolderPath$sep$moduleName$testSourceFolderPath$examplePackagePath.scala"
 
