@@ -19,8 +19,8 @@ import java.net.URI
 
 import org.neo4j.driver.v1.{AuthTokens, Config, Driver, GraphDatabase}
 
-case class Neo4jConfig(uri: URI = URI.create("localhost:7687"),
-                       user: String = "",
+case class Neo4jConfig(uri: URI = URI.create("bolt://localhost"),
+                       user: String = "neo4j",
                        password: Option[String] = None,
                        encrypted: Boolean = true) {
 

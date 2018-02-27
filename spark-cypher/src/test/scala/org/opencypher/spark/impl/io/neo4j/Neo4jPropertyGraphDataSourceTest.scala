@@ -62,14 +62,14 @@ class Neo4jPropertyGraphDataSourceTest
   test("Load graph from Neo4j via DataSource") {
     val dataSource = new Neo4jPropertyGraphDataSource(neo4jConfig)
 
-    val graph = dataSource.graph(defaultGraphName).asCaps
+    val graph = dataSource.graph(neo4jDefaultGraphName).asCaps
     graph.nodes("n").toDF().collect().toBag should equal(teamDataGraphNodes)
     graph.relationships("rel").toDF().collect().toBag should equal(teamDataGraphRels)
   }
 
   test("Load graph from Neo4j via Catalog") {
     val testNamespace = Namespace("myNeo4j")
-    val testGraphName = defaultGraphName
+    val testGraphName = neo4jDefaultGraphName
 
     val dataSource = new Neo4jPropertyGraphDataSource(neo4jConfig)
 
