@@ -41,8 +41,8 @@ trait CAPSSession extends CypherSession {
     *
     * @param nodes         sequence of nodes
     * @param relationships sequence of relationships
-    * @tparam N node type implementing [[Node]]
-    * @tparam R relationship type implementing [[Relationship]]
+    * @tparam N node type implementing [[org.opencypher.spark.api.io.Node]]
+    * @tparam R relationship type implementing [[org.opencypher.spark.api.io.Relationship]]
     * @return graph defined by the sequences
     */
   def readFrom[N <: Node : TypeTag, R <: Relationship : TypeTag](
@@ -78,7 +78,7 @@ trait CAPSSession extends CypherSession {
 object CAPSSession extends Serializable {
 
   /**
-    * Creates a new [[CAPSSession]] based on the given [[SparkSession]].
+    * Creates a new [[org.opencypher.spark.api.CAPSSession]] based on the given [[org.apache.spark.sql.SparkSession]].
     *
     * @param sparkSession Spark session
     * @return CAPS session
@@ -135,13 +135,13 @@ object CAPSSession extends Serializable {
     */
   implicit class RecordsAsDF(val records: CypherRecords) extends AnyVal {
     /**
-      * Extracts the underlying [[DataFrame]] from the given [[records]].
+      * Extracts the underlying [[org.apache.spark.sql#DataFrame]] from the given [[records]].
       *
       * Note that the column names in the returned DF do not necessarily correspond to the names of the Cypher RETURN
       * items, e.g. "RETURN n.name" does not mean that the column for that item is named "n.name". In order to get the
       * column name for a RETURN item, use [[columnFor]].
       *
-      * @return [[DataFrame]] representing the records
+      * @return [[org.apache.spark.sql#DataFrame]] representing the records
       */
     def asDataFrame: DataFrame = records match {
       case caps: CAPSRecords => caps.data
@@ -155,7 +155,7 @@ object CAPSSession extends Serializable {
       *
       * All values on each row are inserted into a CypherMap object mapped to the corresponding field name.
       *
-      * @return [[Dataset]] of CypherMaps
+      * @return [[org.apache.spark.sql.Dataset]] of CypherMaps
       */
     def asDataset: Dataset[CypherMap] = records match {
       case caps: CAPSRecords => caps.toCypherMaps

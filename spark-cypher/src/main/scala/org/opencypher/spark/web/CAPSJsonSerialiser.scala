@@ -131,7 +131,7 @@ trait JsonSerialiser {
   * }
   * }}}
   *
-  * The format of scalar values follows the `toString()` format of [[org.opencypher.okapi.api.value.CypherValue]].
+  * The format of scalar values follows the format of [[org.opencypher.okapi.api.value.CypherValue.CypherValue#toString]].
   * The format of nodes is as follows:
   *
   * {{{

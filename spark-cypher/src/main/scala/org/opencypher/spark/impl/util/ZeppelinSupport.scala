@@ -28,7 +28,7 @@ object ZeppelinSupport {
   implicit class ResultVisualizer(result: CAPSResult) {
 
     /**
-      * Prints the tabular part of the result in the Zeppelin %table format
+      * Prints the tabular part of the result in the Zeppelin `%table` format
       * {{{
       *   MATCH (n:Person)
       *   RETURN n.name, n.age
@@ -58,7 +58,7 @@ object ZeppelinSupport {
     }
 
     /**
-      * Prints the specified graph in Zeppelins %network format
+      * Prints the specified graph in Zeppelins `%network` format
       *
       * {{{
       *   g.cypher("""
@@ -123,7 +123,7 @@ object ZeppelinSupport {
   implicit class GraphVisualizer(graph: CAPSGraph) {
 
     /**
-      * Prints the specified graph in Zeppelins %network format
+      * Prints the specified graph in Zeppelins `%network` format
       *
       * {{{
       *   g.cypher("""
