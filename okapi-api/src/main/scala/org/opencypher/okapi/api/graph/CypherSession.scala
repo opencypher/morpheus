@@ -49,7 +49,8 @@ trait CypherSession {
     *
     * This enables a user to refer to that [[org.opencypher.okapi.api.io.PropertyGraphDataSource]] within a Cypher query.
     *
-    * Note, that it is not allowed to overwrite an already registered [[org.opencypher.okapi.api.graph.Namespace]]. Use [[CypherSession#delete]] first.
+    * Note, that it is not allowed to overwrite an already registered [[org.opencypher.okapi.api.graph.Namespace]].
+    * Use [[CypherSession#deregisterSource]] first.
     *
     * @param namespace  namespace for lookup
     * @param dataSource property graph data source

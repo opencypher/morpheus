@@ -20,7 +20,7 @@ import org.opencypher.okapi.impl.exception.IllegalArgumentException
 
 object NodeMapping {
   /**
-    * Alias for [[withSourceIdKey()]].
+    * Alias for [[withSourceIdKey]].
     *
     * @param sourceIdKey key to access the node identifier in the source data
     * @return node mapping
@@ -69,15 +69,15 @@ object NodeMapping {
   * Represents a mapping from a source with key-based access to node components (e.g. a table definition) to a Cypher
   * node. The purpose of this class is to define a mapping from an external data source to a property graph.
   *
-  * Construct a [[NodeMapping]] starting with {{NodeMapping.on}}.
+  * Construct a [[NodeMapping]] starting with [[NodeMapping#on]].
   *
   * The [[sourceIdKey]] represents a key to the node identifier within the source data. The retrieved value from the
-  * source data is expected to be a [[Long]] value that is unique among nodes.
+  * source data is expected to be a [[scala.Long]] value that is unique among nodes.
   *
   * The [[impliedLabels]] represent a set of node labels.
   *
   * The [[optionalLabelMapping]] represent a map from node labels to keys in the source data. The retrieved value from
-  * the source data is expected to be a [[Boolean]] value indicating if the label is present on that node.
+  * the source data is expected to be a [[scala.Boolean]] value indicating if the label is present on that node.
   *
   * The [[propertyMapping]] represents a map from node property keys to keys in the source data. The retrieved value
   * from the source is expected to be convertible to a valid [[org.opencypher.okapi.api.value.CypherValue]].

@@ -48,7 +48,7 @@ trait PropertyGraph extends GraphOperations {
   def session: CypherSession
 
   /**
-    * Returns all nodes in this graph with the given [[CTNode]] type.
+    * Returns all nodes in this graph with the given [[org.opencypher.okapi.api.types.CTNode]] type.
     *
     * @param name           field name for the returned nodes
     * @param nodeCypherType node type used for selection
@@ -57,7 +57,7 @@ trait PropertyGraph extends GraphOperations {
   def nodes(name: String, nodeCypherType: CTNode = CTNode): CypherRecords
 
   /**
-    * Returns all relationships in this graph with the given [[CTRelationship]] type.
+    * Returns all relationships in this graph with the given [[org.opencypher.okapi.api.types.CTRelationship]] type.
     *
     * @param name          field name for the returned relationships
     * @param relCypherType relationship type used for selection
@@ -71,7 +71,6 @@ trait PropertyGraph extends GraphOperations {
     * @param query      Cypher query to execute
     * @param parameters parameters used by the Cypher query
     * @return result of the query.
-    * @see [[CypherSession.cypherOnGraph()]]
     */
   def cypher(query: String, parameters: CypherMap = CypherMap.empty, drivingTable: Option[CypherRecords] = None): CypherResult =
     session.cypherOnGraph(this, query, parameters, drivingTable)
