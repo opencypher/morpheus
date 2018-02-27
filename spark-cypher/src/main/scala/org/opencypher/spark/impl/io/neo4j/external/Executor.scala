@@ -37,7 +37,7 @@ private object Executor {
 
   val EMPTY = Array.empty[Any]
 
-  class CypherResult(val schema: StructType, val rows: Iterator[Array[Any]]) {
+  class Neo4jQueryResult(val schema: StructType, val rows: Iterator[Array[Any]]) {
     def sparkRows: Iterator[Row] = rows.map(row => new GenericRowWithSchema(row, schema))
 
     def fields: Array[String] = schema.fieldNames
@@ -49,7 +49,7 @@ private object Executor {
     i
   }
 
-  def execute(config: Neo4jConfig, query: String, parameters: Map[String, Any]): CypherResult = {
+  def execute(config: Neo4jConfig, query: String, parameters: Map[String, Any]): Neo4jQueryResult = {
 
     def close(driver: Driver, session: Session): Unit = {
       try {
@@ -71,13 +71,13 @@ private object Executor {
         result.consume()
         session.close()
         driver.close()
-        return new CypherResult(new StructType(), Iterator.empty)
+        return new Neo4jQueryResult(new StructType(), Iterator.empty)
       }
       val peek = result.peek()
       val keyCount = peek.size()
       if (keyCount == 0) {
-        val res: CypherResult =
-          new CypherResult(new StructType(), Array.fill[Array[Any]](rows(result))(EMPTY).toIterator)
+        val res: Neo4jQueryResult =
+          new Neo4jQueryResult(new StructType(), Array.fill[Array[Any]](rows(result))(EMPTY).toIterator)
         result.consume()
         close(driver, session)
         return res
@@ -99,7 +99,7 @@ private object Executor {
         }
         row
       })
-      new CypherResult(schema, it)
+      new Neo4jQueryResult(schema, it)
     } finally {
       close(driver, session)
     }
