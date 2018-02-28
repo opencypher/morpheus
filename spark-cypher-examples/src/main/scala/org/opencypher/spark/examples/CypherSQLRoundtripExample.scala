@@ -56,8 +56,8 @@ object CypherSQLRoundtripExample extends App {
        |WITH name AS name, age AS age
        |FROM GRAPH AT 'myDataSource.prod' // access the 'prod' graph within the file based data source
        |MATCH (c:Customer {name: name})-->(p:Product)
-       |RETURN c.name, age, p.title", drivingTable = Some(sqlResults))
-     """.stripMargin)
+       |RETURN c.name, age, p.title
+     """.stripMargin, drivingTable = Some(sqlResults))
 
   result2.show
 }
