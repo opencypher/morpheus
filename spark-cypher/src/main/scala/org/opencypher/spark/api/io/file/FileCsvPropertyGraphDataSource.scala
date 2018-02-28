@@ -26,7 +26,29 @@ import org.opencypher.spark.impl.io.hdfs.CsvGraphLoader
 
 import scala.collection.JavaConverters._
 
-class FileCsvPropertyGraphDataSource(rootPath: String)(implicit val session: CAPSSession)
+/**
+  * Loads a graph stored in indexed CSV format from the local file system.
+  * The CSV files must be stored following this schema:
+  *
+  * # Nodes
+  *   - all files describing nodes are stored in a sub folder called "nodes"
+  *   - create one file for each possible label combination that exists in the data. This means that a node can only
+  *     be present in one file. Example: All nodes with labels :Person:Employee are in a single file and all nodes that
+  *     have label :Person are stored in another file. A node that appears in :Person:Employee CANNOT appear again in the
+  *     file for :Person.
+  *   - for every node csv file create a schema file called FILE_NAME.csv.SCHEMA
+  *   - for information about the structure of the node schema file see [[org.opencypher.spark.impl.io.hdfs.CsvNodeSchema]]
+  *
+  * # Relationships
+  *   - all files describing relationships are stored in a sub folder called "relationships"
+  *   - create one csv file per relationship type
+  *   - for every relationship csv file create a schema file called FILE_NAME.csv.SCHEMA
+  *   - for information about the structure of the relationship schema file see [[org.opencypher.spark.impl.io.hdfs.CsvRelSchema]]
+  *
+  * @param graphFolder path to the folder containing the nodes/relationships folders
+  * @param session CAPS Session
+  */
+case class FileCsvPropertyGraphDataSource(graphFolder: String)(implicit val session: CAPSSession)
   extends CAPSPropertyGraphDataSource {
 
   override def graph(name: GraphName): PropertyGraph = CsvGraphLoader(graphPath(name)).load
@@ -39,7 +61,7 @@ class FileCsvPropertyGraphDataSource(rootPath: String)(implicit val session: CAP
   override def delete(name: GraphName): Unit =
     if (hasGraph(name)) Files.delete(Paths.get(graphPath(name)))
 
-  override def graphNames: Set[GraphName] = Files.list(Paths.get(rootPath)).iterator().asScala
+  override def graphNames: Set[GraphName] = Files.list(Paths.get(graphFolder)).iterator().asScala
     .filter(p => Files.isDirectory(p))
     .map(p => p.getFileName.toString)
     .map(GraphName)
@@ -47,5 +69,5 @@ class FileCsvPropertyGraphDataSource(rootPath: String)(implicit val session: CAP
 
   override def hasGraph(name: GraphName): Boolean = Files.exists(Paths.get(graphPath(name)))
 
-  private def graphPath(name: GraphName): String = s"$rootPath${File.separator}$name"
+  private def graphPath(name: GraphName): String = s"$graphFolder${File.separator}$name"
 }
