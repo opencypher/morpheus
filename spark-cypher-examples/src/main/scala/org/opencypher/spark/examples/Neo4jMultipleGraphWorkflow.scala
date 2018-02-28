@@ -15,8 +15,11 @@
  */
 package org.opencypher.spark.examples
 
-import org.neo4j.driver.v1.{AuthTokens, Session}
+import java.io.PrintStream
+
+import org.neo4j.driver.v1.{AuthTokens, Session, StatementResult}
 import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
+import org.opencypher.okapi.impl.util.PrintOptions
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.file.FileCsvPropertyGraphDataSource
 import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource._
@@ -42,7 +45,7 @@ object Neo4jMultipleGraphWorkflow extends App {
   implicit val neo4jConfig = Neo4jConfig(password = Some(neo4jPw))
 
   //   Load test data into Neo4j
-  withBoltSession(loadPersonNetwork)
+  //withBoltSession(loadPersonNetwork)
 
   val neo4jSource = new Neo4jPropertyGraphDataSource(neo4jConfig)
   val neo4jNamespace = Namespace("neo4j")
@@ -62,12 +65,14 @@ object Neo4jMultipleGraphWorkflow extends App {
   val disconnectedGraph = socialNetwork union purchaseNetwork
 
   // 5) Create new edges between users and customers with the same name
+  // TODO: Fix bug that requires "WITH p.name as pName, p"
   val integrationGraph = disconnectedGraph.cypher(
-    """|FROM GRAPH AT neo4j.graph
+    """|FROM GRAPH AT 'neo4j.graph'
        |MATCH (p:Person)
-       |FROM GRAPH AT csv.prod
+       |WITH p.name as pName, p
+       |FROM GRAPH AT 'csv.prod'
        |MATCH (c:Customer)
-       |WHERE p.name = c.name
+       |WHERE pName = c.name
        |RETURN GRAPH OF (p)-[x:IS]->(c)
     """.stripMargin
   ).graph.get
@@ -80,30 +85,44 @@ object Neo4jMultipleGraphWorkflow extends App {
     """|MATCH (person:Person)-[:FRIEND_OF]-(friend:Person),
        |(friend)-[:IS]->(customer:Customer),
        |(customer)-[:BOUGHT]->(product:Product)
-       |RETURN DISTINCT product.title AS recommendation, person.name AS for
-    """.stripMargin)
+       |RETURN person.name AS for, collect(DISTINCT product.title) AS recommendations""".stripMargin)
 
   // 8) Use Cypher queries to write the product recommendations back to Neo4j
   withBoltSession { session =>
     recommendations.records.collect.foreach { recommendation =>
       session.run(
         s"""|MATCH (p:Person {name: ${recommendation.get("for").get.toCypherString}})
-            |SET p.should_buy = ${recommendation.get("recommendation").get.toCypherString}""".stripMargin)
+            |SET p.should_buy = ${recommendation.get("recommendations").get.toCypherString}""".stripMargin)
     }
   }
+
+  // 9. Proof that the write-back to Neo4j worked, retrieve and print updated Neo4j results
+  val updatedNeo4jSource = new Neo4jPropertyGraphDataSource(neo4jConfig)
+  val updatedNeo4jNamespace = Namespace("updated-neo4j")
+  session.registerSource(updatedNeo4jNamespace, updatedNeo4jSource)
+  val socialNetworkWithRanks = session.graph(QualifiedGraphName(updatedNeo4jNamespace, neo4jDefaultGraphName))
+  socialNetworkWithRanks.cypher("MATCH (p) RETURN p.name, p.should_buy").show
 
 }
 
 object Neo4jHelpers {
 
-  // TODO: Check that graph is empty before writing
   def loadPersonNetwork(session: Session)(implicit neo4jConfig: Neo4jConfig): Unit = {
-    session.run(
-      s"""|CREATE (a:Person { name: 'Alice', age: 10 })
-          |CREATE (b:Person { name: 'Bob', age: 20})
-          |CREATE (c:Person { name: 'Carol', age: 20})
-          |CREATE (a)-[:FRIEND_OF { since: '23/01/1987' }]->(b)
-          |CREATE (b)-[:FRIEND_OF { since: '12/12/2009' }]->(c)""".stripMargin)
+    val isEmpty: Boolean = {
+      val countResult: StatementResult = session.run("MATCH (n) RETURN COUNT(n) as count")
+      countResult.hasNext && countResult.next.get("count").asInt == 0
+    }
+    if (!isEmpty) {
+      throw new UnsupportedOperationException(
+        s"Neo4j database contains data already, will not write example data into it.")
+    } else {
+      session.run(
+        s"""|CREATE (a:Person { name: 'Alice', age: 10 })
+            |CREATE (b:Person { name: 'Bob', age: 20})
+            |CREATE (c:Person { name: 'Carol', age: 15})
+            |CREATE (a)-[:FRIEND_OF { since: '23/01/1987' }]->(b)
+            |CREATE (b)-[:FRIEND_OF { since: '12/12/2009' }]->(c)""".stripMargin)
+    }
   }
 
   def withBoltSession[T](f: Session => T)(implicit neo4jConfig: Neo4jConfig): T = {
