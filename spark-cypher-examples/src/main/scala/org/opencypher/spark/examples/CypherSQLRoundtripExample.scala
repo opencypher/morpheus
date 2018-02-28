@@ -40,7 +40,7 @@ object CypherSQLRoundtripExample extends App {
   )
 
   // 4) Register the result as a table called people
-  result.records.register("people")
+  result.getRecords.register("people")
 
   // 5) Query the registered table using SQL
   val sqlResults = session.sql("SELECT age, name FROM people")

@@ -37,7 +37,7 @@ object CaseClassExample extends App {
   )
 
   // 4) Convert to maps and print to console
-  println(results.records.collect.mkString("\n"))
+  println(results.getRecords.collect.mkString("\n"))
 }
 
 /**

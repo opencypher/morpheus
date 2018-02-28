@@ -43,7 +43,7 @@ trait OptionalMatchBehaviour { this: AcceptanceTest =>
         """.stripMargin)
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap(
           "p1.name" -> "Eve",
           "p2.name" -> null,
@@ -60,7 +60,6 @@ trait OptionalMatchBehaviour { this: AcceptanceTest =>
           "p3.name" -> "Eve"
         )
       ))
-      result.graphs shouldBe empty
     }
 
     test("optional match with predicates") {
@@ -81,7 +80,7 @@ trait OptionalMatchBehaviour { this: AcceptanceTest =>
         """.stripMargin)
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap(
           "p1.name" -> "Bob",
           "p2.name" -> null
@@ -91,7 +90,6 @@ trait OptionalMatchBehaviour { this: AcceptanceTest =>
           "p2.name" -> "Bob"
         )
       ))
-      result.graphs shouldBe empty
     }
 
     test("optional match with partial matches") {
@@ -114,7 +112,7 @@ trait OptionalMatchBehaviour { this: AcceptanceTest =>
         """.stripMargin)
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap(
           "p1.name" -> "Alice",
           "p2.name" -> "Bob",
@@ -131,7 +129,6 @@ trait OptionalMatchBehaviour { this: AcceptanceTest =>
           "p3.name" -> null
         )
       ))
-      result.graphs shouldBe empty
     }
 
     test("optional match with duplicates") {
@@ -156,7 +153,7 @@ trait OptionalMatchBehaviour { this: AcceptanceTest =>
         """.stripMargin)
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap(
           "b.name" -> "Eve",
           "c.name" -> "Paul"
@@ -170,7 +167,6 @@ trait OptionalMatchBehaviour { this: AcceptanceTest =>
           "c.name" -> null
         )
       ))
-      result.graphs shouldBe empty
     }
 
     test("optional match with duplicates and cycle") {
@@ -196,7 +192,7 @@ trait OptionalMatchBehaviour { this: AcceptanceTest =>
         """.stripMargin)
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap(
           "a.name" -> "Alice",
           "b.name" -> "Eve",
@@ -222,7 +218,6 @@ trait OptionalMatchBehaviour { this: AcceptanceTest =>
           "e3.foo" -> null
         )
       ))
-      result.graphs shouldBe empty
     }
 
     it("can match multiple optional matches"){
@@ -239,7 +234,7 @@ trait OptionalMatchBehaviour { this: AcceptanceTest =>
           |RETURN b,c
         """.stripMargin)
 
-      result.records.collect.toBag should equal(Bag(
+      result.getRecords.collect.toBag should equal(Bag(
         CypherMap("b" -> CypherNull, "c" -> CypherNull)
       ))
     }

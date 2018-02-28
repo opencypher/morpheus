@@ -41,7 +41,7 @@ object UpdateExample extends App {
        |RETURN p""".stripMargin)
 
   // 4) Extract Dataset representing the query result
-  val ds = results.records.asDataset
+  val ds = results.getRecords.asDataset
 
   // 5) Add a new label and property to the nodes
   val adults: Dataset[CAPSNode] = ds.map { record: CypherMap =>
@@ -50,5 +50,4 @@ object UpdateExample extends App {
 
   // 6) Print updated nodes
   println(adults.toLocalIterator.asScala.toList.mkString("\n"))
-
 }

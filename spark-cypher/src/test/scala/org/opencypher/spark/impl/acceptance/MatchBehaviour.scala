@@ -43,7 +43,7 @@ trait MatchBehaviour {
           """.stripMargin)
 
         // Then
-        result.records.toMaps should equal(Bag(CypherMap("a.firstName" -> "Alice")
+        result.getRecords.toMaps should equal(Bag(CypherMap("a.firstName" -> "Alice")
         ))
       }
 
@@ -59,7 +59,7 @@ trait MatchBehaviour {
           """.stripMargin)
 
         // Then
-        result.records.toMaps shouldBe empty
+        result.getRecords.toMaps shouldBe empty
       }
     }
 
@@ -83,7 +83,7 @@ trait MatchBehaviour {
           """.stripMargin)
 
         // Then
-        result.records.toMaps should equal(
+        result.getRecords.toMaps should equal(
           Bag(
             CypherMap(
               "p1.name" -> "Alice",
@@ -92,7 +92,6 @@ trait MatchBehaviour {
                 "Eve"
             )
           ))
-        result.graphs shouldBe empty
       }
 
       it("cyphermorphism and multiple match clauses") {
@@ -114,7 +113,7 @@ trait MatchBehaviour {
           """.stripMargin)
 
         // Then
-        result.records.toMaps should equal(
+        result.getRecords.toMaps should equal(
           Bag(
             CypherMap(
               "p1.name" -> "Bob",
@@ -129,7 +128,6 @@ trait MatchBehaviour {
               "p4.name" -> "Bob"
             )
           ))
-        result.graphs shouldBe empty
       }
     }
 
@@ -153,7 +151,7 @@ trait MatchBehaviour {
           """.stripMargin)
 
         // Then
-        result.records.toMaps should equal(
+        result.getRecords.toMaps should equal(
           Bag(
             CypherMap("one" -> "Alice", "two" -> "Alice"),
             CypherMap("one" -> "Alice", "two" -> "Bob"),
@@ -180,7 +178,7 @@ trait MatchBehaviour {
           """.stripMargin)
 
         // Then
-        result.records.toMaps should equal(
+        result.getRecords.toMaps should equal(
           Bag(
             CypherMap("one" -> "Alice", "two" -> "Alice"),
             CypherMap("one" -> "Bob", "two" -> "Bob")
@@ -199,7 +197,7 @@ trait MatchBehaviour {
             |RETURN a.val, c.val
           """.stripMargin
 
-        graph.cypher(query).records.collect.toBag should equal(Bag(
+        graph.cypher(query).getRecords.collect.toBag should equal(Bag(
           CypherMap("a.val" -> 0, "c.val" -> 2)
         ))
       }
@@ -221,7 +219,7 @@ trait MatchBehaviour {
 
         val result = given.cypher("MATCH (a:A)--(other) RETURN a.prop, other.prop")
 
-        result.records.collect.toBag should equal(Bag(
+        result.getRecords.collect.toBag should equal(Bag(
           CypherMap("a.prop" -> "isA", "other.prop" -> "fromA"),
           CypherMap("a.prop" -> "isA", "other.prop" -> "toA")
         ))
@@ -243,7 +241,7 @@ trait MatchBehaviour {
 
         val result = given.cypher("MATCH (a:A)--()--(other) RETURN a.prop, other.prop")
 
-        result.records.collect.toBag should equal(Bag(
+        result.getRecords.collect.toBag should equal(Bag(
           CypherMap("a.prop" -> "a", "other.prop" -> "c"),
           CypherMap("a.prop" -> "a", "other.prop" -> "b"),
           CypherMap("a.prop" -> "a", "other.prop" -> "d")
@@ -268,7 +266,7 @@ trait MatchBehaviour {
             |RETURN a.prop, b.prop
           """.stripMargin)
 
-        result.records.collect.toBag should equal(Bag(
+        result.getRecords.collect.toBag should equal(Bag(
           CypherMap("a.prop" -> "a", "b.prop" -> "b"),
           CypherMap("a.prop" -> "a", "b.prop" -> "b")
         ))
@@ -289,7 +287,7 @@ trait MatchBehaviour {
 
         val result = given.cypher("MATCH (a:A)--(a)<--(other) RETURN a.prop, other.prop")
 
-        result.records.collect.toBag should equal(Bag(
+        result.getRecords.collect.toBag should equal(Bag(
           CypherMap("a.prop" -> "a", "other.prop" -> "a"),
           CypherMap("a.prop" -> "a", "other.prop" -> "a"),
           CypherMap("a.prop" -> "a", "other.prop" -> "b"),
@@ -309,7 +307,7 @@ trait MatchBehaviour {
 
         val result = given.cypher("MATCH (a:A)--(a) RETURN a.prop")
 
-        result.records.collect.toBag should equal(Bag(
+        result.getRecords.collect.toBag should equal(Bag(
           CypherMap("a.prop" -> "isA")
         ))
       }
@@ -327,7 +325,7 @@ trait MatchBehaviour {
 
         val result = given.cypher("MATCH (a:A)-[*2..2]-(other) RETURN a.prop, other.prop")
 
-        result.records.collect.toBag should equal(Bag(
+        result.getRecords.collect.toBag should equal(Bag(
           CypherMap("a.prop" -> "a", "other.prop" -> "c")
         ))
       }

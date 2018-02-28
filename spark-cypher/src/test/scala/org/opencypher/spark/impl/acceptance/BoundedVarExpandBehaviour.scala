@@ -34,16 +34,13 @@ trait BoundedVarExpandBehaviour {
       val result = given.cypher("MATCH (n:Node)-[r*0..1]->(m:Node) RETURN m.val")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("m.val" -> "source"),
         CypherMap("m.val" -> "mid1"),
         CypherMap("m.val" -> "mid1"),
         CypherMap("m.val" -> "end"),
         CypherMap("m.val" -> "end")
       ))
-
-      // And
-      result.graphs shouldBe empty
     }
 
     test("bounded with lower bound") {
@@ -55,12 +52,9 @@ trait BoundedVarExpandBehaviour {
       val result = given.cypher("MATCH (t:Node)-[r*2..3]->(y:Node) RETURN y.val")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("y.val" -> "end")
       ))
-
-      // And
-      result.graphs shouldBe empty
     }
 
     test("var expand with default lower and loop") {
@@ -71,7 +65,7 @@ trait BoundedVarExpandBehaviour {
       val result = given.cypher("MATCH (a:Node)-[r*..6]->(b:Node) RETURN b.v")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("b.v" -> "a"),
         CypherMap("b.v" -> "a"),
         CypherMap("b.v" -> "a"),
@@ -82,9 +76,6 @@ trait BoundedVarExpandBehaviour {
         CypherMap("b.v" -> "c"),
         CypherMap("b.v" -> "c")
       ))
-
-      // And
-      result.graphs shouldBe empty
     }
 
     test("var expand return list of rel ids") {
@@ -95,7 +86,7 @@ trait BoundedVarExpandBehaviour {
       val result = given.cypher("MATCH (a:Node)-[r*..6]->(b:Node) RETURN r")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("r" -> List(2)),
         CypherMap("r" -> List(2, 4)),
         CypherMap("r" -> List(2, 4, 5)),
@@ -106,9 +97,6 @@ trait BoundedVarExpandBehaviour {
         CypherMap("r" -> List(5, 2)),
         CypherMap("r" -> List(5, 2, 4))
       ))
-
-      // And
-      result.graphs shouldBe empty
     }
 
     test("var expand with rel type") {
@@ -119,14 +107,11 @@ trait BoundedVarExpandBehaviour {
       val result = given.cypher("MATCH (a:Node)-[r:LOVES|KNOWS*..6]->(b:Node) RETURN b.v")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("b.v" -> "b"),
         CypherMap("b.v" -> "c"),
         CypherMap("b.v" -> "c")
       ))
-
-      // And
-      result.graphs shouldBe empty
     }
 
     // Property predicates on var-length patterns get rewritten in AST to WHERE all(_foo IN r | _foo.prop = value)
@@ -139,14 +124,11 @@ trait BoundedVarExpandBehaviour {
       val result = given.cypher("MATCH (a:Node)-[r*..6 {v: 2}]->(b:Node) RETURN b.v")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("b.v" -> "c"),
         CypherMap("b.v" -> "a"),
         CypherMap("b.v" -> "a")
       ))
-
-      // And
-      result.graphs shouldBe empty
     }
 
     test("var expand with additional hop") {
@@ -157,13 +139,10 @@ trait BoundedVarExpandBehaviour {
       val result = given.cypher("MATCH (a:Node)-[r:KNOWS*..6]->(b:Node)-[:HATES]->(c:Node) RETURN c.v")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("c.v" -> "d"),
         CypherMap("c.v" -> "d")
       ))
-
-      // And
-      result.graphs shouldBe empty
     }
 
     test("var expand with expand into") {
@@ -186,7 +165,7 @@ trait BoundedVarExpandBehaviour {
       )
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("a.name" -> "Philip", "b.name" -> "Stefan", "c.name" -> "Berlondon")
       ))
     }

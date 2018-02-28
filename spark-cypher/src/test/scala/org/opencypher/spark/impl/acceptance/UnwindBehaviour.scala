@@ -30,7 +30,7 @@ trait UnwindBehaviour { self: AcceptanceTest =>
 
       val result = caps.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
-      result.records.toMapsWithCollectedEntities should equal(
+      result.getRecords.toMapsWithCollectedEntities should equal(
         Bag(
           CypherMap("item" -> 1),
           CypherMap("item" -> 2),
@@ -43,7 +43,7 @@ trait UnwindBehaviour { self: AcceptanceTest =>
 
       val result = caps.cypher(query)
 
-      result.records.toMapsWithCollectedEntities should be(
+      result.getRecords.toMapsWithCollectedEntities should be(
         Bag(
           CypherMap("item" -> 1),
           CypherMap("item" -> 2),
@@ -58,7 +58,7 @@ trait UnwindBehaviour { self: AcceptanceTest =>
 
       val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
-      result.records.toMapsWithCollectedEntities.map(_.toString) should equal(
+      result.getRecords.toMapsWithCollectedEntities.map(_.toString) should equal(
         Bag(
           CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 1),
           CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 2),
@@ -76,7 +76,7 @@ trait UnwindBehaviour { self: AcceptanceTest =>
 
       val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
-      result.records.toMapsWithCollectedEntities should equal(
+      result.getRecords.toMapsWithCollectedEntities should equal(
         Bag(
           CypherMap("item" -> 1),
           CypherMap("item" -> 15),
@@ -91,7 +91,7 @@ trait UnwindBehaviour { self: AcceptanceTest =>
 
       val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
-      result.records.toMapsWithCollectedEntities should equal(
+      result.getRecords.toMapsWithCollectedEntities should equal(
         Bag(
           CypherMap("item" -> 1),
           CypherMap("item" -> 2),
@@ -111,7 +111,7 @@ trait UnwindBehaviour { self: AcceptanceTest =>
 
       val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
-      result.records.toMapsWithCollectedEntities.map(_.toString) should equal(
+      result.getRecords.toMapsWithCollectedEntities.map(_.toString) should equal(
         Bag(
           CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 3),
           CypherMap("a" -> CAPSNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 3),

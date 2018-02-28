@@ -29,7 +29,7 @@ trait PredicateBehaviour {
 
       val result = given.cypher("MATCH (n) WHERE exists(n.id) RETURN n.id")
 
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("n.id" -> 1),
         CypherMap("n.id" -> 2)
       ))
@@ -43,12 +43,9 @@ trait PredicateBehaviour {
       val result = given.cypher("MATCH (a:A) WHERE a.val IN [-1, 2, 5, 0] RETURN a.val")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("a.val" -> 2)
       ))
-
-      // And
-      result.graphs shouldBe empty
     }
 
     test("in with parameter") {
@@ -59,12 +56,9 @@ trait PredicateBehaviour {
       val result = given.cypher("MATCH (a:A) WHERE a.val IN $list RETURN a.val", Map("list" -> CypherList(-1, 2, 5, 0)))
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("a.val" -> 2)
       ))
-
-      // And
-      result.graphs shouldBe empty
     }
 
     test("or") {
@@ -75,13 +69,10 @@ trait PredicateBehaviour {
       val result = given.cypher("MATCH (a:A) WHERE a.val = 1 OR a.val = 2 RETURN a.val")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("a.val" -> 1),
         CypherMap("a.val" -> 2)
       ))
-
-      // And
-      result.graphs shouldBe empty
     }
 
     test("or on labels") {
@@ -92,13 +83,10 @@ trait PredicateBehaviour {
       val result = given.cypher("MATCH (a) WHERE a:A OR a:B RETURN a.val")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("a.val" -> 1),
         CypherMap("a.val" -> 2)
       ))
-
-      // And
-      result.graphs shouldBe empty
     }
 
     test("or with and") {
@@ -115,13 +103,10 @@ trait PredicateBehaviour {
       val result = given.cypher("MATCH (a:A) WHERE a.val = 1 OR (a.val >= 4 AND a.name = 'e') RETURN a.val, a.name")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("a.val" -> 1, "a.name" -> "a"),
         CypherMap("a.val" -> 5, "a.name" -> "e")
       ))
-
-      // And
-      result.graphs shouldBe empty
     }
 
     test("equality between properties") {
@@ -139,12 +124,9 @@ trait PredicateBehaviour {
       val result = given.cypher("MATCH (a:A)-->(b:B) WHERE a.val = b.p RETURN b.p")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("b.p" -> 100)
       ))
-
-      // And
-      result.graphs shouldBe empty
     }
 
     describe("comparison operators") {
@@ -157,12 +139,9 @@ trait PredicateBehaviour {
         val result = given.cypher("MATCH (n:Node)-->(m:Node) WHERE n.val < m.val RETURN n.val")
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("n.val" -> 4)
         ))
-
-        // And
-        result.graphs shouldBe empty
       }
 
       it("compares less than between different types") {
@@ -174,10 +153,7 @@ trait PredicateBehaviour {
         val result = given.cypher("MATCH (a:A)-->(b:B) WHERE a.val < b.val RETURN a.val")
 
         // Then
-        result.records.collect.toBag shouldBe empty
-
-        // And
-        result.graphs shouldBe empty
+        result.getRecords.collect.toBag shouldBe empty
       }
 
       test("less than or equal") {
@@ -192,12 +168,10 @@ trait PredicateBehaviour {
         result = given.cypher("MATCH (n:Node)-->(m:Node) WHERE n.val <= m.val RETURN n.id, n.val")
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("n.id" -> 1, "n.val" -> 4),
           CypherMap("n.id" -> 2, "n.val" -> 5)
         ))
-        // And
-        result.graphs shouldBe empty
       }
 
       it("compares less than or equal between different types") {
@@ -209,10 +183,7 @@ trait PredicateBehaviour {
         val result = given.cypher("MATCH (a:A)-->(b:B) WHERE a.val <= b.val RETURN a.val")
 
         // Then
-        result.records.collect.toBag shouldBe empty
-
-        // And
-        result.graphs shouldBe empty
+        result.getRecords.collect.toBag shouldBe empty
       }
 
       test("greater than") {
@@ -223,12 +194,9 @@ trait PredicateBehaviour {
         val result = given.cypher("MATCH (n:Node)<--(m:Node) WHERE n.val > m.val RETURN n.val")
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("n.val" -> 5)
         ))
-
-        // And
-        result.graphs shouldBe empty
       }
 
       it("compares greater than between different types") {
@@ -240,10 +208,7 @@ trait PredicateBehaviour {
         val result = given.cypher("MATCH (a:A)-->(b:B) WHERE a.val > b.val RETURN a.val")
 
         // Then
-        result.records.collect.toBag shouldBe empty
-
-        // And
-        result.graphs shouldBe empty
+        result.getRecords.collect.toBag shouldBe empty
       }
 
       test("greater than or equal") {
@@ -254,13 +219,10 @@ trait PredicateBehaviour {
         val result = given.cypher("MATCH (n:Node)<--(m:Node) WHERE n.val >= m.val RETURN n.id, n.val")
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("n.id" -> 2, "n.val" -> 5),
           CypherMap("n.id" -> 3, "n.val" -> 5)
         ))
-
-        // And
-        result.graphs shouldBe empty
       }
 
       it("compares greater than or equal between different types") {
@@ -272,10 +234,7 @@ trait PredicateBehaviour {
         val result = given.cypher("MATCH (a:A)-->(b:B) WHERE a.val >= b.val RETURN a.val")
 
         // Then
-        result.records.collect.toBag shouldBe empty
-
-        // And
-        result.graphs shouldBe empty
+        result.getRecords.collect.toBag shouldBe empty
       }
     }
 
@@ -289,7 +248,7 @@ trait PredicateBehaviour {
           |RETURN a.val
         """.stripMargin
 
-      graph.cypher(query).records.collect.toBag should equal(Bag(
+      graph.cypher(query).getRecords.collect.toBag should equal(Bag(
         CypherMap("a.val" -> 10)
       ))
     }
@@ -302,13 +261,10 @@ trait PredicateBehaviour {
       val result = given.cypher("MATCH (n:Node) WHERE (n.val * 1.0) / n.id >= 2.5 RETURN n.id")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("n.id" -> 1),
         CypherMap("n.id" -> 2)
       ))
-
-      // And
-      result.graphs shouldBe empty
     }
 
     test("basic pattern predicate") {
@@ -324,7 +280,7 @@ trait PredicateBehaviour {
       val result = given.cypher("MATCH (a)-->(b) WHERE (a)-->()-->(b) RETURN a.id, b.id")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("a.id" -> 1L, "b.id" -> 3L)
       ))
     }
@@ -337,7 +293,7 @@ trait PredicateBehaviour {
       val result = given.cypher("MATCH (a)-->(b) WHERE (a)-[*1..3]->()-->(b) RETURN a.id, b.id")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("a.id" -> 1L, "b.id" -> 3L)
       ))
     }
@@ -354,7 +310,7 @@ trait PredicateBehaviour {
       val result = given.cypher("MATCH (a) WHERE (a)-->({name: 'foo'}) RETURN a.id")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("a.id" -> 1L)
       ))
     }
@@ -371,7 +327,7 @@ trait PredicateBehaviour {
       val result = given.cypher("MATCH (a)-->(b) WHERE (a)-[{val: 'foo'}]->()-->(b) RETURN a.id, b.id")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("a.id" -> 1L, "b.id" -> 2L)
       ))
     }
@@ -388,7 +344,7 @@ trait PredicateBehaviour {
       val result = given.cypher("MATCH (a)-->(b) WHERE (a)-->(:A)-->(b) RETURN a.id, b.id")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("a.id" -> 1L, "b.id" -> 2L)
       ))
     }
@@ -405,7 +361,7 @@ trait PredicateBehaviour {
       val result = given.cypher("MATCH (a)-->(b) WHERE (a)-[:A]->()-->(b) RETURN a.id, b.id")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("a.id" -> 1L, "b.id" -> 2L)
       ))
     }
@@ -418,7 +374,7 @@ trait PredicateBehaviour {
       val result = given.cypher("MATCH (a)-->(b) WHERE NOT (a)-->()-->(b) RETURN a.id, b.id")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("a.id" -> 1L, "b.id" -> 2L),
         CypherMap("a.id" -> 2L, "b.id" -> 3L)
       ))
@@ -440,7 +396,7 @@ trait PredicateBehaviour {
           |RETURN a.id
         """.stripMargin)
 
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("a.id" -> 1),
         CypherMap("a.id" -> 3)
       ))
@@ -458,7 +414,7 @@ trait PredicateBehaviour {
       val result = given.cypher("MATCH (a) WHERE (a)-->({val: a.val + 2}) RETURN a.id")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("a.id" -> 1L)
       ))
     }
@@ -471,7 +427,7 @@ trait PredicateBehaviour {
       val result = given.cypher("MATCH (a) WHERE (a)-->({id: 2, foo: true}) RETURN a.id")
 
       // Then
-      result.records.toMaps should equal(Bag(
+      result.getRecords.toMaps should equal(Bag(
         CypherMap("a.id" -> 1L)
       ))
     }
@@ -490,7 +446,7 @@ trait PredicateBehaviour {
         val result = given.cypher("MATCH (a)-->(b) WHERE (a)-->()-->(b) RETURN a.id, b.id")
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("a.id" -> 1L, "b.id" -> 3L)
         ))
       }
@@ -503,7 +459,7 @@ trait PredicateBehaviour {
         val result = given.cypher("MATCH (a)-->(b) WHERE (a)-[*1..3]->()-->(b) RETURN a.id, b.id")
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("a.id" -> 1L, "b.id" -> 3L)
         ))
       }
@@ -520,7 +476,7 @@ trait PredicateBehaviour {
         val result = given.cypher("MATCH (a) WHERE (a)-->({name: 'foo'}) RETURN a.id")
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("a.id" -> 1L)
         ))
       }
@@ -537,7 +493,7 @@ trait PredicateBehaviour {
         val result = given.cypher("MATCH (a)-->(b) WHERE (a)-[{val: 'foo'}]->()-->(b) RETURN a.id, b.id")
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("a.id" -> 1L, "b.id" -> 2L)
         ))
       }
@@ -554,7 +510,7 @@ trait PredicateBehaviour {
         val result = given.cypher("MATCH (a)-->(b) WHERE (a)-->(:A)-->(b) RETURN a.id, b.id")
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("a.id" -> 1L, "b.id" -> 2L)
         ))
       }
@@ -571,7 +527,7 @@ trait PredicateBehaviour {
         val result = given.cypher("MATCH (a)-->(b) WHERE (a)-[:A]->()-->(b) RETURN a.id, b.id")
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("a.id" -> 1L, "b.id" -> 2L)
         ))
       }
@@ -584,7 +540,7 @@ trait PredicateBehaviour {
         val result = given.cypher("MATCH (a)-->(b) WHERE NOT (a)-->()-->(b) RETURN a.id, b.id")
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("a.id" -> 1L, "b.id" -> 2L),
           CypherMap("a.id" -> 2L, "b.id" -> 3L)
         ))
@@ -606,7 +562,7 @@ trait PredicateBehaviour {
             |RETURN a.id
           """.stripMargin)
 
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("a.id" -> 1),
           CypherMap("a.id" -> 3)
         ))
@@ -624,7 +580,7 @@ trait PredicateBehaviour {
         val result = given.cypher("MATCH (a) WHERE (a)-->({val: a.val + 2}) RETURN a.id")
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("a.id" -> 1L)
         ))
       }
@@ -637,7 +593,7 @@ trait PredicateBehaviour {
         val result = given.cypher("MATCH (a) WHERE (a)-->({id: 2, foo: true}) RETURN a.id")
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("a.id" -> 1L)
         ))
       }
@@ -657,7 +613,7 @@ trait PredicateBehaviour {
         val result = given.cypher("MATCH (a)-->(b) WHERE EXISTS((a)-->()-->(b)) RETURN a.id, b.id")
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("a.id" -> 1L, "b.id" -> 3L)
         ))
       }
@@ -670,7 +626,7 @@ trait PredicateBehaviour {
         val result = given.cypher("MATCH (a)-->(b) WHERE EXISTS((a)-[*1..3]->()-->(b)) RETURN a.id, b.id")
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("a.id" -> 1L, "b.id" -> 3L)
         ))
       }
@@ -687,7 +643,7 @@ trait PredicateBehaviour {
         val result = given.cypher("MATCH (a) WHERE EXISTS((a)-->({name: 'foo'})) RETURN a.id")
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("a.id" -> 1L)
         ))
       }
@@ -704,7 +660,7 @@ trait PredicateBehaviour {
         val result = given.cypher("MATCH (a)-->(b) WHERE EXISTS((a)-[{val: 'foo'}]->()-->(b)) RETURN a.id, b.id")
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("a.id" -> 1L, "b.id" -> 2L)
         ))
       }
@@ -721,7 +677,7 @@ trait PredicateBehaviour {
         val result = given.cypher("MATCH (a)-->(b) WHERE EXISTS((a)-->(:A)-->(b)) RETURN a.id, b.id")
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("a.id" -> 1L, "b.id" -> 2L)
         ))
       }
@@ -738,7 +694,7 @@ trait PredicateBehaviour {
         val result = given.cypher("MATCH (a)-->(b) WHERE EXISTS((a)-[:A]->()-->(b)) RETURN a.id, b.id")
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("a.id" -> 1L, "b.id" -> 2L)
         ))
       }
@@ -751,7 +707,7 @@ trait PredicateBehaviour {
         val result = given.cypher("MATCH (a)-->(b) WHERE NOT EXISTS((a)-->()-->(b)) RETURN a.id, b.id")
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("a.id" -> 1L, "b.id" -> 2L),
           CypherMap("a.id" -> 2L, "b.id" -> 3L)
         ))
@@ -773,7 +729,7 @@ trait PredicateBehaviour {
             |RETURN a.id
           """.stripMargin)
 
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("a.id" -> 1),
           CypherMap("a.id" -> 3)
         ))
@@ -791,7 +747,7 @@ trait PredicateBehaviour {
         val result = given.cypher("MATCH (a) WHERE EXISTS((a)-->({val: a.val + 2})) RETURN a.id")
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("a.id" -> 1L)
         ))
       }
@@ -804,7 +760,7 @@ trait PredicateBehaviour {
         val result = given.cypher("MATCH (a) WHERE EXISTS((a)-->({id: 2, foo: true})) RETURN a.id")
 
         // Then
-        result.records.toMaps should equal(Bag(
+        result.getRecords.toMaps should equal(Bag(
           CypherMap("a.id" -> 1L)
         ))
       }

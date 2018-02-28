@@ -30,9 +30,9 @@ object CAPSResultBuilder {
     new CAPSResult {
       lazy val result: CAPSPhysicalResult = physical.execute
 
-      override def records: CAPSRecords = result.records
+      override def records: Option[CAPSRecords] = Some(result.records)
 
-      override def graphs: Map[String, CAPSGraph] = result.graphs
+      override def graph: Option[CAPSGraph] = result.graphs.values.headOption
 
       override def plans = CAPSQueryPlans(logical, flat, physical)
 
