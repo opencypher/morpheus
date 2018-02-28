@@ -36,7 +36,7 @@
     <!-- Utils -->
     <dependency>
       <groupId>com.lihaoyi</groupId>
-      <artifactId>ammonite_${project.scala.binary.version}.11</artifactId>
+      <artifactId>ammonite_${project.scala.version}</artifactId>
       <version>${dep.ammonite.version}</version>
     </dependency>
 

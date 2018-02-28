@@ -219,7 +219,7 @@ object SchemaTyper {
     case expr: FunctionInvocation if expr.function == Collect =>
       for {
         argExprs <- pure(expr.arguments)
-        argTypes <- EffMonad.traverse(argExprs.toList)(process[R])
+        argTypes <- argExprs.toList.traverse(process[R])
         computedType <- argTypes.reduceLeftOption(_ join _) match {
           case Some(innerType) =>
             pure[R, CypherType](CTList(innerType.nullable).nullable)
@@ -232,7 +232,7 @@ object SchemaTyper {
     case expr: FunctionInvocation if expr.function == Coalesce =>
       for {
         argExprs <- pure(expr.arguments)
-        argTypes <- EffMonad.traverse(argExprs.toList)(process[R])
+        argTypes <- argExprs.toList.traverse(process[R])
         computedType <- {
           val relevantArguments = argTypes.indexWhere(!_.isNullable) match {
             case -1 => argTypes
@@ -305,7 +305,7 @@ object SchemaTyper {
     case expr@ CaseExpression(None, alternatives, default) =>
       for {
         // get types for predicates of each alternative
-        _ <- EffMonad.traverse(alternatives.map(_._1).toVector)(process[R])
+        _ <- alternatives.map(_._1).toVector.traverse(process[R])
         alternativeType <- Foldable[Vector].foldMap(alternatives.map(_._2).toVector)(process[R])(joinMonoid)
         defaultType <- default match {
           case Some(expression) => process[R](expression)
@@ -357,11 +357,11 @@ object SchemaTyper {
     for {
         // We have to process label predicates first in order to use label information on node
         // variables for looking up the type of property expressions on these variables.
-      hasLabelPreds <- EffMonad[R].sequence(orderedExprs.collect { case h: HasLabels => h }.map(process[R]))
-      otherTypes <- EffMonad[R].sequence(orderedExprs.filter {
+      hasLabelPreds <- orderedExprs.collect { case h: HasLabels => h }.traverse(process[R])
+      otherTypes <- orderedExprs.filter {
         case h: HasLabels => false
         case _ => true
-      }.map(process[R]))
+      }.traverse(process[R])
       result <- {
         val innerTypes = hasLabelPreds ++ otherTypes
         val typeErrors = innerTypes.zipWithIndex.collect {
@@ -394,7 +394,7 @@ object SchemaTyper {
     def apply[R: _hasSchema: _keepsErrors: _hasTracker: _logsTypes](expr: T): Eff[R, CypherType] =
       for {
         argExprs <- pure(expr.arguments)
-        argTypes <- EffMonad.traverse(argExprs.toList)(process[R])
+        argTypes <- argExprs.toList.traverse(process[R])
         arguments <- pure(argExprs.zip(argTypes))
         signatures <- selectSignaturesFor(expr, arguments)
         computedType <- signatures.map(_._2).reduceLeftOption(_ join _) match {
