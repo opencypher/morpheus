@@ -10,6 +10,34 @@
 
   <name>Okapi - openCypher query compilation API and pipeline</name>
 
+  <description>
+    Okapi is a compiler pipeline for Cypher queries, including a consumer API, which translates Cypher query strings
+    into a declarative intermediate representation, into a logical execution plan, into a execution plan in relational
+    algebra.
+  </description>
+
+  <url>https://www.opencypher.org</url>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+  </licenses>
+
+  <scm>
+    <url>https://github.com/opencypher/cypher-for-apache-spark</url>
+  </scm>
+
+  <developers>
+    <developer>
+      <id>caps</id>
+      <name>The CAPS team</name>
+      <email>opencypher@neo4j.com</email>
+      <url>https://www.opencypher.org/</url>
+    </developer>
+  </developers>
+
   <modules>
     <module>okapi-api</module>
     <module>okapi-ir</module>
