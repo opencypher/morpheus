@@ -405,12 +405,7 @@ class SchemaTest extends FunSuite with Matchers {
   test("isEmpty") {
     Schema.empty.isEmpty shouldBe true
     (Schema.empty ++ Schema.empty).isEmpty shouldBe true
-    val empty = Schema(
-      Set.empty,
-      Set.empty,
-      LabelPropertyMap.empty,
-      RelTypePropertyMap.empty
-    )
+    val empty = Schema.empty
     empty.isEmpty shouldBe true
     (empty ++ Schema.empty).isEmpty shouldBe true
 
