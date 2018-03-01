@@ -586,6 +586,22 @@ trait AggregationBehaviour {
       }
     }
 
+    it("collects non-nullable strings that are not present on every match") {
+      val graph = initGraph(
+        """
+          |CREATE (a:Person{id: 1, name:'Anna'})
+          |CREATE (b:Person{id: 2, name:'Bob'})
+          |CREATE (p1:Purchase{id: 3})
+          |CREATE (a)-[:BOUGHT]->(p1)
+        """.stripMargin)
+
+      val recommendations = graph.cypher(
+        """|MATCH (person:Person)-[:FRIEND_OF]-(friend:Person),
+           |(friend)-[:IS]->(customer:Customer),
+           |(customer)-[:BOUGHT]->(product:Product)
+           |RETURN person.name AS for, collect(DISTINCT product.title) AS recommendations""".stripMargin)
+    }
+
     describe("Combinations") {
 
       test("multiple aggregates in WITH") {

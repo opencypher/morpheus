@@ -15,21 +15,33 @@
  */
 package org.opencypher.spark.impl.io.neo4j
 
-import org.opencypher.okapi.api.graph.{GraphName, Namespace}
-import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.okapi.test.BaseTestSuite
+import org.opencypher.okapi.api.graph.{CypherResult, GraphName, Namespace}
+import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
 import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource
 import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource._
-import org.opencypher.spark.test.fixture.{CAPSSessionFixture, Neo4jServerFixture, SparkSessionFixture, TeamDataFixture}
-import org.scalatest.mockito.MockitoSugar
+import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.test.CAPSTestSuite
+import org.opencypher.spark.test.fixture.{Neo4jServerFixture, TeamDataFixture}
+
+import scala.collection.Bag
 
 class Neo4jPropertyGraphDataSourceTest
-  extends BaseTestSuite
-    with SparkSessionFixture
-    with CAPSSessionFixture
+  extends CAPSTestSuite
     with Neo4jServerFixture
-    with TeamDataFixture
-    with MockitoSugar {
+    with TeamDataFixture {
+
+  it("can read lists from Neo4j") {
+    val dataSource = new Neo4jPropertyGraphDataSource(neo4jConfig)
+
+    val graph = dataSource.graph(neo4jDefaultGraphName).asCaps
+    graph.cypher("MATCH (n) RETURN n.languages").records.iterator.toBag should equal(Bag(
+      CypherMap("n.languages" -> Seq("German", "English", "Klingon")),
+      CypherMap("n.languages" -> Seq()),
+      CypherMap("n.languages" -> CypherNull),
+      CypherMap("n.languages" -> CypherNull),
+      CypherMap("n.languages" -> CypherNull)
+    ))
+  }
 
   test("hasGraph should return true for existing graph") {
     val testGraphName = GraphName("sn")
@@ -63,7 +75,7 @@ class Neo4jPropertyGraphDataSourceTest
     val dataSource = new Neo4jPropertyGraphDataSource(neo4jConfig)
 
     val graph = dataSource.graph(neo4jDefaultGraphName).asCaps
-    graph.nodes("n").toDF().collect().toBag should equal(teamDataGraphNodes)
+    graph.nodes("n").toCypherMaps.collect().toBag should equal(teamDataGraphNodes)
     graph.relationships("rel").toDF().collect().toBag should equal(teamDataGraphRels)
   }
 
@@ -75,10 +87,10 @@ class Neo4jPropertyGraphDataSourceTest
 
     caps.registerSource(testNamespace, dataSource)
 
-    val nodes = caps.cypher(s"FROM GRAPH AT '$testNamespace.$testGraphName' MATCH (n) RETURN n")
-    nodes.getRecords.asCaps.toDF().collect().toBag should equal(teamDataGraphNodes)
+    val nodes: CypherResult = caps.cypher(s"FROM GRAPH AT '$testNamespace.$testGraphName' MATCH (n) RETURN n")
+    nodes.getRecords.collect().toBag should equal(teamDataGraphNodes)
 
     val edges = caps.cypher(s"FROM GRAPH AT '$testNamespace.$testGraphName' MATCH ()-[r]->() RETURN r")
-    edges.getRecords.asCaps.toDF().collect().toBag should equal(teamDataGraphRels)
+    edges.getRecords.collect().toBag should equal(teamDataGraphRels)
   }
 }

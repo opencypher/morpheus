@@ -121,8 +121,7 @@ object Neo4jGraph {
         slot.content.key match {
           case Property(_, PropertyKey(keyName)) =>
             val propValue = props.get(keyName).orNull
-            val dataType = schema(ColumnName.of(slot)).dataType
-            importedToSparkEncodedCypherValue(dataType, propValue)
+            CypherValue(propValue).unwrap
 
           case HasLabel(_, label) =>
             labels(label.name)
@@ -157,8 +156,7 @@ object Neo4jGraph {
         slot.content.key match {
           case Property(_, PropertyKey(keyName)) =>
             val propValue = props.get(keyName).orNull
-            val dataType = schema(ColumnName.of(slot)).dataType
-            importedToSparkEncodedCypherValue(dataType, propValue)
+            CypherValue(propValue).unwrap
 
           case _: StartNode =>
             importedRel.startNodeId()
@@ -183,8 +181,4 @@ object Neo4jGraph {
     }
   }
 
-  private def importedToSparkEncodedCypherValue(typ: DataType, value: AnyRef) = typ match {
-    case StringType | LongType | BooleanType | DoubleType => value
-    case _ => CypherValue(value)
-  }
 }
