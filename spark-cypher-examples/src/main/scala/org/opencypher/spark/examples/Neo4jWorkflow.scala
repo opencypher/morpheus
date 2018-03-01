@@ -15,6 +15,8 @@
  */
 package org.opencypher.spark.examples
 
+import java.net.URI
+
 import org.neo4j.driver.v1.{AuthTokens, Session, StatementResult}
 import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
 import org.opencypher.spark.api.CAPSSession
@@ -39,16 +41,15 @@ object Neo4jWorkflow extends App {
   //    Remove the next line and set/store the PW property separately from the application source code.
   System.setProperty("neo4j-pw", "example-pw") // Remove: Do not store passwords in code, set them externally instead.
   val neo4jPw = System.getProperty("neo4j-pw")
-  implicit val neo4jConfig = Neo4jConfig(password = Some(neo4jPw))
+  implicit val neo4jConfig = Neo4jConfig(uri = URI.create("bolt://localhost"), password = Some(neo4jPw))
 
   //   Load test data into Neo4j
   withBoltSession(loadPersonNetwork)
 
   val neo4jSource = new Neo4jPropertyGraphDataSource(neo4jConfig)
-  val neo4jNamespace = Namespace("neo4j")
-  session.registerSource(neo4jNamespace, neo4jSource)
-  // Access then graph via its qualified graph name
-  val socialNetwork = session.graph(QualifiedGraphName(neo4jNamespace, neo4jDefaultGraphName))
+  session.registerSource(Namespace("neo4j"), neo4jSource)
+  // Access the graph via its qualified graph name
+  val socialNetwork = session.graph(QualifiedGraphName(s"neo4j.$neo4jDefaultGraphName"))
 
   // 3) Register a File-based data source in the Cypher session
   val csvFolder = getClass.getResource("/csv").getFile

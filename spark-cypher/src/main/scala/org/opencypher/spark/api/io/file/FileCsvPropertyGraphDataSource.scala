@@ -27,7 +27,7 @@ import org.opencypher.spark.impl.io.hdfs.CsvGraphLoader
 import scala.collection.JavaConverters._
 
 /**
-  * Loads a graph stored in indexed CSV format from the local file system.
+  * Loads a graph stored in CSV format from the local file system.
   * The CSV files must be stored following this schema:
   *
   * # Nodes

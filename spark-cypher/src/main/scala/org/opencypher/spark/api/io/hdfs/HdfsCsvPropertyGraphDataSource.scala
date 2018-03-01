@@ -18,7 +18,7 @@ package org.opencypher.spark.api.io.hdfs
 import java.io.File
 
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.{FileSystem, Path, RemoteIterator}
+import org.apache.hadoop.fs.{FileSystem, Path}
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.spark.api.CAPSSession

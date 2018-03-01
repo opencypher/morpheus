@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.spark.impl.io.hdfs
+package org.opencypher.spark.api.io.hdfs
 
 import org.opencypher.okapi.api.graph.{GraphName, Namespace}
-import org.opencypher.spark.api.io.hdfs.HdfsCsvPropertyGraphDataSource
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.test.CAPSTestSuite
 import org.opencypher.spark.test.fixture.{MiniDFSClusterFixture, TeamDataFixture}
