@@ -57,13 +57,9 @@ object Neo4jMultipleGraphWorkflow extends App {
   // Access the graph via its qualified graph name
   val purchaseNetwork = session.graph(QualifiedGraphName(csvNamespace, GraphName("prod")))
 
-  // 4) Build union of Neo4j social and CSV purchase network
-  //    (note that there are no relationships connecting nodes from both graphs)
-  val disconnectedGraph = socialNetwork union purchaseNetwork
-
-  // 5) Create new edges between users and customers with the same name
+  // 4) Create new edges between users and customers with the same name
   // TODO: Fix bug that requires "WITH p.name as pName, p"
-  val integrationGraph = disconnectedGraph.cypher(
+  val integrationGraph = session.cypher(
     """|FROM GRAPH AT 'neo4j.graph'
        |MATCH (p:Person)
        |WITH p.name as pName, p
@@ -74,17 +70,17 @@ object Neo4jMultipleGraphWorkflow extends App {
     """.stripMargin
   ).graph.get
 
-  // 6) Build recommendation graph from disconnected and integration graphs
-  val recommendationGraph = disconnectedGraph union integrationGraph
+  // 5) Build new recommendation graph that connects the social and product graphs
+  val recommendationGraph = socialNetwork union purchaseNetwork union integrationGraph
 
-  // 7) Query for product recommendations
+  // 6) Query for product recommendations
   val recommendations = recommendationGraph.cypher(
     """|MATCH (person:Person)-[:FRIEND_OF]-(friend:Person),
        |(friend)-[:IS]->(customer:Customer),
        |(customer)-[:BOUGHT]->(product:Product)
        |RETURN person.name AS for, collect(DISTINCT product.title) AS recommendations""".stripMargin)
 
-  // 8) Use Cypher queries to write the product recommendations back to Neo4j
+  // 7) Use Cypher queries to write the product recommendations back to Neo4j
   withBoltSession { session =>
     recommendations.getRecords.collect.foreach { recommendation =>
       session.run(
@@ -93,7 +89,7 @@ object Neo4jMultipleGraphWorkflow extends App {
     }
   }
 
-  // 9. Proof that the write-back to Neo4j worked, retrieve and print updated Neo4j results
+  // 8) Proof that the write-back to Neo4j worked, retrieve and print updated Neo4j results
   val updatedNeo4jSource = new Neo4jPropertyGraphDataSource(neo4jConfig)
   val updatedNeo4jNamespace = Namespace("updated-neo4j")
   session.registerSource(updatedNeo4jNamespace, updatedNeo4jSource)
