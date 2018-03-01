@@ -105,7 +105,7 @@ trait OpenCypherDataFixture extends TestDataFixture {
 
   val nbrRels = 28
 
-  val schema: Schema = Schema.empty
+  val schema: VerifiedSchema = Schema.empty
     .withNodePropertyKeys("Person")("name" -> CTString, "birthyear" -> CTInteger)
     .withNodePropertyKeys("Person", "Actor")("name" -> CTString, "birthyear" -> CTInteger)
     .withNodePropertyKeys("City")("name" -> CTString)

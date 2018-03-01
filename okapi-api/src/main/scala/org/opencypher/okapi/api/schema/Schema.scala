@@ -182,9 +182,6 @@ trait Schema {
   def withNodePropertyKeys(nodeLabels: String*)(keys: (String, CypherType)*): Schema =
     withNodePropertyKeys(nodeLabels.toSet, keys.toMap)
 
-  // TODO: Move to other piece of code that verifies the schema wrt Spark
-  def sparkCompatibleJoin(label: Option[String], key: String, t1: CypherType, t2: CypherType): CypherType
-
   /**
     * Adds information about a relationship type and its associated properties to the schema.
     * The arguments provided to this method are interpreted as describing a whole piece of information,
@@ -224,11 +221,6 @@ trait Schema {
     */
   def ++(other: Schema): Schema
 
-  // Verification makes sure that we will always know the exact type of a property when given at least one label
-  // Another, more restrictive verification would be to guarantee that even without a label
-  // TODO: Remove
-  def verify: Schema
-
   /**
     * Given the current schema, construct a new Schema for an entity with a given set of labels.
     * If the set of labels is empty, this means that the resulting schema will only have properties present on nodes
@@ -244,7 +236,6 @@ trait Schema {
     * @param labelConstraints Specifies the labels that the node is guaranteed to have
     * @return sub-schema for `labelConstraints`
     */
-  // TODO: Move to PatternGraph
   def forNodeScan(labelConstraints: Set[String]): Schema
 
   /**
@@ -253,7 +244,6 @@ trait Schema {
     * @param relType Specifies the type for which the schema is extracted
     * @return sub-schema for `relType`
     */
-  // TODO : Move to PatternGraph
   def forRelationship(relType: CTRelationship): Schema
 
   def toString: String

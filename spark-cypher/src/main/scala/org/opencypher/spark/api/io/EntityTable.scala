@@ -39,7 +39,7 @@ sealed trait EntityTable[T <: CypherTable[String]] {
 
   verify()
 
-  def schema: Schema
+  def schema: VerifiedSchema
 
   def mapping: EntityMapping
 
@@ -134,7 +134,7 @@ object CAPSRelationshipTable {
   */
 abstract class NodeTable[T <: CypherTable[String]](mapping: NodeMapping, table: T) extends EntityTable[T] {
 
-  override lazy val schema: Schema = {
+  override lazy val schema: VerifiedSchema = {
     val propertyKeys = mapping.propertyMapping.toSeq.map {
       case (propertyKey, sourceKey) => propertyKey -> table.columnType(sourceKey)
     }
@@ -161,7 +161,7 @@ abstract class NodeTable[T <: CypherTable[String]](mapping: NodeMapping, table: 
   */
 abstract class RelationshipTable[T <: CypherTable[String]](mapping: RelationshipMapping, table: T) extends EntityTable[T] {
 
-  override lazy val schema: Schema = {
+  override lazy val schema: VerifiedSchema = {
     val relTypes = mapping.relTypeOrSourceRelTypeKey match {
       case Left(name) => Set(name)
       case Right((_, possibleTypes)) => possibleTypes

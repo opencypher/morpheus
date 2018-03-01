@@ -75,15 +75,15 @@ object CAPSGraph {
     new CAPSScanGraph(allTables, schema)
   }
 
-  def create(records: CypherRecords, schema: Schema)(implicit caps: CAPSSession): CAPSGraph = {
+  def create(records: CypherRecords, schema: VerifiedSchema)(implicit caps: CAPSSession): CAPSGraph = {
     val capsRecords = records.asCaps
     new CAPSPatternGraph(capsRecords, schema)
   }
 
-  def createLazy(theSchema: Schema, loadGraph: => CAPSGraph)(implicit caps: CAPSSession): CAPSGraph =
+  def createLazy(theSchema: VerifiedSchema, loadGraph: => CAPSGraph)(implicit caps: CAPSSession): CAPSGraph =
     new LazyGraph(theSchema, loadGraph) {}
 
-  sealed abstract class LazyGraph(override val schema: Schema, loadGraph: => CAPSGraph)(implicit caps: CAPSSession)
+  sealed abstract class LazyGraph(override val schema: VerifiedSchema, loadGraph: => CAPSGraph)(implicit caps: CAPSSession)
     extends CAPSGraph {
     protected lazy val lazyGraph: CAPSGraph = {
       val g = loadGraph
@@ -125,7 +125,7 @@ object CAPSGraph {
 
   sealed abstract class EmptyGraph(implicit val caps: CAPSSession) extends CAPSGraph {
 
-    override val schema: Schema = Schema.empty
+    override val schema: VerifiedSchema = Schema.empty
 
     override def nodes(name: String, cypherType: CTNode): CAPSRecords =
       CAPSRecords.empty(RecordHeader.from(OpaqueField(Var(name)(cypherType))))

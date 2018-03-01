@@ -34,7 +34,7 @@ import org.opencypher.spark.impl.io.neo4j.Neo4jGraph.{filterNode, filterRel, nod
 import org.opencypher.spark.impl.table.CAPSRecordHeader
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSUnionGraph}
 
-class Neo4jGraph(val schema: Schema, val session: CAPSSession)(
+class Neo4jGraph(val schema: VerifiedSchema, val session: CAPSSession)(
   inputNodes: RDD[InternalNode],
   inputRels: RDD[InternalRelationship],
   sourceNode: String = "source",

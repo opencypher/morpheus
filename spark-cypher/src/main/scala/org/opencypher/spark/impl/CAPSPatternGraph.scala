@@ -25,7 +25,7 @@ import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.table.CAPSRecordHeader._
 
-class CAPSPatternGraph(private[spark] val baseTable: CAPSRecords, val schema: Schema)(implicit val session: CAPSSession)
+class CAPSPatternGraph(private[spark] val baseTable: CAPSRecords, val schema: VerifiedSchema)(implicit val session: CAPSSession)
     extends CAPSGraph {
 
   private val header = baseTable.header

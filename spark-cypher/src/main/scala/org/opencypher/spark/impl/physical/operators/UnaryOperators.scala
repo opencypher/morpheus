@@ -194,7 +194,7 @@ final case class ProjectPatternGraph(
   in: CAPSPhysicalOperator,
   toCreate: Set[ConstructedEntity],
   name: String,
-  schema: Schema,
+  schema: VerifiedSchema,
   header: RecordHeader)
   extends UnaryPhysicalOperator {
 

@@ -98,7 +98,7 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
     in: CAPSPhysicalOperator,
     toCreate: Set[ConstructedEntity],
     name: String,
-    schema: Schema,
+    schema: VerifiedSchema,
     header: RecordHeader): CAPSPhysicalOperator = operators.ProjectPatternGraph(in, toCreate, name, schema, header)
 
   override def planAggregate(in: CAPSPhysicalOperator, group: Set[Var], aggregations: Set[(Var, Aggregator)], header: RecordHeader): CAPSPhysicalOperator = operators.Aggregate(in, aggregations, group, header)

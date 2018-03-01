@@ -28,7 +28,7 @@ final case class CAPSUnionGraph(graphs: CAPSGraph*)(implicit val session: CAPSSe
 
   private lazy val individualSchemas = graphs.map(_.schema)
 
-  override lazy val schema: Schema = individualSchemas.foldLeft(Schema.empty)(_ ++ _)
+  override lazy val schema: VerifiedSchema = individualSchemas.foldLeft(Schema.empty)(_ ++ _)
 
   override def cache(): CAPSUnionGraph = map(_.cache())
 

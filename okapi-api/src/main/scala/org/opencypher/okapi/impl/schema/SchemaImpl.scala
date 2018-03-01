@@ -1,0 +1,269 @@
+/*
+ * Copyright (c) 2016-2018 "Neo4j, Inc." [https://neo4j.com]
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.opencypher.okapi.impl.schema
+
+import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
+import org.opencypher.okapi.api.schema.{LabelPropertyMap, PropertyKeys, RelTypePropertyMap, Schema}
+import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.impl.exception.SchemaException
+import org.opencypher.okapi.impl.schema.SchemaUtils._
+
+final case class SchemaImpl(labelPropertyMap: LabelPropertyMap, relTypePropertyMap: RelTypePropertyMap) extends Schema {
+  self: Schema =>
+
+  lazy val labels: Set[String] = labelPropertyMap.map.keySet.flatten
+
+  lazy val relationshipTypes: Set[String] = relTypePropertyMap.map.keySet
+
+  private def graphContainsNodeWithoutLabel: Boolean = labelPropertyMap.map.keySet.contains(Set.empty)
+
+  override lazy val impliedLabels: ImpliedLabels = {
+    val implications = self.foldAndProduce(Map.empty[String, Set[String]])(_ intersect _ - _, _ - _)
+
+    ImpliedLabels(implications)
+  }
+
+  override lazy val labelCombinations: LabelCombinations =
+    LabelCombinations(labelPropertyMap.labelCombinations)
+
+  override def impliedLabels(knownLabels: Set[String]): Set[String] =
+    impliedLabels.transitiveImplicationsFor(knownLabels.intersect(labels))
+
+  override def nodeKeys(labels: Set[String]): PropertyKeys = labelPropertyMap.properties(labels)
+
+  override def allNodeKeys: PropertyKeys = {
+    val keyToTypes = allLabelCombinations
+      .map(nodeKeys)
+      .toSeq
+      .flatten
+      .groupBy(_._1)
+      .map {
+        case (k, v) => k -> v.map(_._2)
+      }
+
+    keyToTypes
+      .mapValues(types => types.foldLeft[CypherType](CTVoid)(_ join _))
+      .map {
+        case (key, tpe) =>
+          if (allLabelCombinations.map(nodeKeys).forall(_.get(key).isDefined))
+            key -> tpe
+          else key -> tpe.nullable
+      }
+  }
+
+  override def allLabelCombinations: Set[Set[String]] =
+    combinationsFor(Set.empty)
+
+  override def combinationsFor(knownLabels: Set[String]): Set[Set[String]] =
+    labelCombinations.combinationsFor(knownLabels)
+
+  override def nodeKeyType(labels: Set[String], key: String): Option[CypherType] = {
+    val combos = combinationsFor(labels)
+    keysFor(combos).get(key)
+  }
+
+  override def keysFor(labelCombinations: Set[Set[String]]): PropertyKeys = {
+    val allKeys = labelCombinations.toSeq.flatMap(nodeKeys)
+    val propertyKeys = allKeys.groupBy(_._1).mapValues { seq =>
+      if (seq.size == labelCombinations.size && seq.forall(seq.head == _)) {
+        seq.head._2
+      } else if (seq.size < labelCombinations.size) {
+        seq.map(_._2).foldLeft(CTNull: CypherType)(_ join _)
+      } else {
+        seq.map(_._2).reduce(_ join _)
+      }
+    }
+
+    propertyKeys
+  }
+
+  override def relationshipKeyType(types: Set[String], key: String): Option[CypherType] = {
+    // relationship types have OR semantics: empty set means all types
+    val relevantTypes = if (types.isEmpty) relationshipTypes else types
+
+    relevantTypes.map(relationshipKeys).foldLeft(CTVoid: CypherType) {
+      case (inferred, next) => inferred.join(next.getOrElse(key, CTNull))
+    } match {
+      case CTNull => None
+      case tpe => Some(tpe)
+    }
+  }
+
+  override def relationshipKeys(typ: String): PropertyKeys = relTypePropertyMap.properties(typ)
+
+  override def withNodePropertyKeys(nodeLabels: Set[String], keys: PropertyKeys): Schema = {
+    if (nodeLabels.exists(_.isEmpty))
+      throw SchemaException("Labels must be non-empty")
+    val propertyKeys = if (labelPropertyMap.labelCombinations(nodeLabels)) {
+      computePropertyTypes(labelPropertyMap.properties(nodeLabels), keys)
+    } else {
+      keys
+    }
+    copy(labelPropertyMap = labelPropertyMap.register(nodeLabels, propertyKeys))
+  }
+
+  private def computePropertyTypes(existing: PropertyKeys, input: PropertyKeys): PropertyKeys = {
+    // Map over input keys to calculate join of type with existing type
+    val keysWithJoinedTypes = input.map {
+      case (key, propType) =>
+        val inType = existing.getOrElse(key, CTNull)
+        key -> propType.join(inType)
+    }
+
+    // Map over the rest of the existing keys to mark them all nullable
+    val propertiesMarkedOptional = existing.filterKeys(k => !input.contains(k)).foldLeft(keysWithJoinedTypes) {
+      case (map, (key, propTyp)) =>
+        map.updated(key, propTyp.nullable)
+    }
+
+    propertiesMarkedOptional
+  }
+
+  override def withRelationshipPropertyKeys(typ: String, keys: PropertyKeys): Schema = {
+    if (relationshipTypes contains typ) {
+      val updatedTypes = computePropertyTypes(relTypePropertyMap.properties(typ), keys)
+
+      copy(relTypePropertyMap = relTypePropertyMap.register(typ, updatedTypes.toSeq))
+    } else {
+      copy(relTypePropertyMap = relTypePropertyMap.register(typ, keys))
+    }
+  }
+
+  override def ++(other: Schema): Schema = {
+    val newRelTypePropertyMap = relTypePropertyMap ++ other.relTypePropertyMap
+    val conflictingLabels = labelPropertyMap.labelCombinations intersect other.labelPropertyMap.labelCombinations
+    val nulledOut = conflictingLabels.foldLeft(Map.empty[Set[String], PropertyKeys]) {
+      case (acc, next) =>
+        val keys = computePropertyTypes(labelPropertyMap.properties(next), other.labelPropertyMap.properties(next))
+        acc + (next -> keys)
+    }
+    val newNodeKeyMap = labelPropertyMap ++ other.labelPropertyMap ++ LabelPropertyMap(nulledOut)
+
+    copy(labelPropertyMap = newNodeKeyMap, relTypePropertyMap = newRelTypePropertyMap)
+  }
+
+  override def fromNodeEntity(labels: Set[String]): Schema = {
+    if(labels.nonEmpty) {
+      forNodeScan(labels)
+    } else {
+      val propertyKeys = if(graphContainsNodeWithoutLabel) {
+        labelPropertyMap.properties(Set.empty[String])
+      } else {
+        PropertyKeys.empty
+      }
+      Schema.empty.withNodePropertyKeys(Set.empty[String], propertyKeys)
+    }
+  }
+
+  def forNodeScan(labelConstraints: Set[String]): Schema = {
+    val requiredLabels = {
+      val explicitLabels = labelConstraints
+      val impliedLabels = this.impliedLabels.transitiveImplicationsFor(explicitLabels)
+      explicitLabels union impliedLabels
+    }
+
+    val possibleLabels = if (labelConstraints.isEmpty) {
+      allLabelCombinations
+    } else {
+      // add required labels because they might not be present in the schema already (newly created)
+      this.labelCombinations.filterByLabels(requiredLabels).combos + requiredLabels
+    }
+
+    val newLabelPropertyMap = LabelPropertyMap(this.labelPropertyMap.map.filterKeys(possibleLabels.contains))
+
+    // add labels that were specified in the constraints but are not present in source schema
+    val updatedLabelPropertyMap = possibleLabels.flatten.foldLeft(newLabelPropertyMap) {
+      case (agg, label) if agg.map.keys.exists(_.contains(label)) => agg
+      case (agg, label) => agg.register(label)()
+    }
+
+    SchemaImpl(
+      labelPropertyMap = updatedLabelPropertyMap,
+      relTypePropertyMap = RelTypePropertyMap.empty
+    )
+  }
+
+  def forRelationship(relType: CTRelationship): Schema = {
+    val givenRelTypes = if (relType.types.isEmpty) {
+      relationshipTypes
+    } else {
+      relType.types
+    }
+
+    val updatedRelTypePropertyMap = this.relTypePropertyMap.filterForRelTypes(givenRelTypes)
+    val updatedMap = givenRelTypes.foldLeft(updatedRelTypePropertyMap.map) {
+      case (map, givenRelType) =>
+        if (!map.contains(givenRelType)) map.updated(givenRelType, PropertyKeys.empty) else map
+    }
+
+    SchemaImpl(
+      labelPropertyMap = LabelPropertyMap.empty,
+      relTypePropertyMap = RelTypePropertyMap(updatedMap)
+    )
+  }
+
+  override def toString: String = "Schema"
+
+  override def pretty: String =
+    if (isEmpty) "empty schema"
+    else {
+      import scala.compat.Platform.EOL
+
+      val builder = new StringBuilder
+
+      if (labelPropertyMap.labelCombinations.nonEmpty) {
+        builder.append(s"Node labels {$EOL")
+        labelPropertyMap.labelCombinations.foreach { combo =>
+          val labelStr = if (combo eq Set.empty) "(no label)" else combo.mkString(":", ":", "")
+          builder.append(s"\t$labelStr$EOL")
+          nodeKeys(combo).foreach {
+            case (key, typ) => builder.append(s"\t\t$key: $typ$EOL")
+          }
+        }
+        builder.append(s"}$EOL")
+      } else {
+        builder.append(s"no labels$EOL")
+      }
+
+      if (impliedLabels.m.exists(_._2.nonEmpty)) {
+        builder.append(s"Implied labels:$EOL")
+        impliedLabels.m.foreach {
+          case (label, implications) if implications.nonEmpty =>
+            builder.append(s":$label -> ${implications.mkString(":", ":", "")}$EOL")
+          case _ =>
+        }
+      } else {
+        builder.append(s"no label implications$EOL")
+      }
+
+      if (relationshipTypes.nonEmpty) {
+        builder.append(s"Rel types {$EOL")
+        relationshipTypes.foreach { relType =>
+          builder.append(s"\t:$relType$EOL")
+          relationshipKeys(relType).foreach {
+            case (key, typ) => builder.append(s"\t\t$key: $typ$EOL")
+          }
+        }
+        builder.append(s"}$EOL")
+      } else {
+        builder.append(s"no relationship types$EOL")
+      }
+
+      builder.toString
+    }
+
+  override def isEmpty: Boolean = this == Schema.empty
+}

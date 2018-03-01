@@ -30,21 +30,21 @@ import scala.collection.JavaConverters._
 
 object Neo4jGraphLoader {
 
-  def loadSchema(config: Neo4jConfig, nodeQ: String, relQ: String)(implicit caps: CAPSSession): Schema = {
+  def loadSchema(config: Neo4jConfig, nodeQ: String, relQ: String)(implicit caps: CAPSSession): VerifiedSchema = {
     val (nodes, rels) = loadRDDs(config, nodeQ, relQ)
 
     loadSchema(nodes, rels)
   }
 
-  private def loadSchema(nodes: RDD[InternalNode], rels: RDD[InternalRelationship]): Schema = {
+  private def loadSchema(nodes: RDD[InternalNode], rels: RDD[InternalRelationship]): VerifiedSchema = {
 
-    def computeNodeSchema(schema: Schema, node: InternalNode): Schema = {
+    def computeNodeSchema(schema: VerifiedSchema, node: InternalNode): VerifiedSchema = {
       val labels = node.labels().asScala.toSet
 
       schema.withNodePropertyKeys(labels, convertProperties(node.asMap()))
     }
 
-    def computeRelSchema(schema: Schema, relationship: InternalRelationship): Schema =
+    def computeRelSchema(schema: VerifiedSchema, relationship: InternalRelationship): VerifiedSchema =
       schema.withRelationshipPropertyKeys(relationship.`type`(), convertProperties(relationship.asMap()))
 
     val nodeSchema = nodes.aggregate(Schema.empty)(computeNodeSchema, _ ++ _)
@@ -69,7 +69,7 @@ object Neo4jGraphLoader {
   def fromNeo4j(config: Neo4jConfig, nodeQuery: String, relQuery: String)(implicit caps: CAPSSession): CAPSGraph =
     fromNeo4j(config, nodeQuery, relQuery, "source", "rel", "target", None)
 
-  def fromNeo4j(config: Neo4jConfig, nodeQuery: String, relQuery: String, schema: Schema)(
+  def fromNeo4j(config: Neo4jConfig, nodeQuery: String, relQuery: String, schema: VerifiedSchema)(
       implicit caps: CAPSSession): CAPSGraph =
     fromNeo4j(config, nodeQuery, relQuery, "source", "rel", "target", Some(schema))
 
