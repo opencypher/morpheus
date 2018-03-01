@@ -34,7 +34,7 @@ class Neo4jPropertyGraphDataSourceTest
     val dataSource = new Neo4jPropertyGraphDataSource(neo4jConfig)
 
     val graph = dataSource.graph(neo4jDefaultGraphName).asCaps
-    graph.cypher("MATCH (n) RETURN n.languages").records.iterator.toBag should equal(Bag(
+    graph.cypher("MATCH (n) RETURN n.languages").getRecords.iterator.toBag should equal(Bag(
       CypherMap("n.languages" -> Seq("German", "English", "Klingon")),
       CypherMap("n.languages" -> Seq()),
       CypherMap("n.languages" -> CypherNull),
@@ -75,8 +75,8 @@ class Neo4jPropertyGraphDataSourceTest
     val dataSource = new Neo4jPropertyGraphDataSource(neo4jConfig)
 
     val graph = dataSource.graph(neo4jDefaultGraphName).asCaps
-    graph.nodes("n").toCypherMaps.collect().toBag should equal(teamDataGraphNodes)
-    graph.relationships("rel").toDF().collect().toBag should equal(teamDataGraphRels)
+    graph.nodes("n").toCypherMaps.collect.toBag should equal(teamDataGraphNodes)
+    graph.relationships("r").toCypherMaps.collect.toBag should equal(teamDataGraphRels)
   }
 
   test("Load graph from Neo4j via Catalog") {

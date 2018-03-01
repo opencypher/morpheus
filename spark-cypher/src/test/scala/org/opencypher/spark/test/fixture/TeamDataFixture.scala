@@ -17,7 +17,7 @@ package org.opencypher.spark.test.fixture
 
 import org.apache.spark.sql.{DataFrame, Row}
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
-import org.opencypher.okapi.api.value.CAPSNode
+import org.opencypher.okapi.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.okapi.api.value.CypherValue.{CypherList, CypherMap}
 import org.opencypher.okapi.test.support.RowDebugOutputSupport
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
@@ -54,10 +54,10 @@ trait TeamDataFixture extends TestDataFixture with RowDebugOutputSupport {
     CypherMap("n" -> CAPSNode(4L, Set("Person"), CypherMap("name" -> "Donald", "luckyNumber" -> 8L, "languages" -> CypherList())))
   )
 
-  lazy val teamDataGraphRels: Bag[Row] = Bag(
-    Row(0L, 0L, "KNOWS", 1L, 2016L),
-    Row(1L, 1L, "KNOWS", 2L, 2016L),
-    Row(2L, 2L, "KNOWS", 3L, 2016L)
+  lazy val teamDataGraphRels: Bag[CypherMap] = Bag(
+    CypherMap("r" -> CAPSRelationship(0, 0, 1, "KNOWS", CypherMap("since" -> 2016))),
+    CypherMap("r" -> CAPSRelationship(1, 1, 2, "KNOWS", CypherMap("since" -> 2016))),
+    CypherMap("r" -> CAPSRelationship(2, 2, 3, "KNOWS", CypherMap("since" -> 2016)))
   )
 
   private def wrap[T](s: Array[T]): mutable.WrappedArray[T] = {
