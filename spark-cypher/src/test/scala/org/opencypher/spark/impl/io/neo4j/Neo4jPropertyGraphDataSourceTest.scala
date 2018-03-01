@@ -88,9 +88,9 @@ class Neo4jPropertyGraphDataSourceTest
     caps.registerSource(testNamespace, dataSource)
 
     val nodes: CypherResult = caps.cypher(s"FROM GRAPH AT '$testNamespace.$testGraphName' MATCH (n) RETURN n")
-    nodes.getRecords.collect().toBag should equal(teamDataGraphNodes)
+    nodes.getRecords.collect.toBag should equal(teamDataGraphNodes)
 
     val edges = caps.cypher(s"FROM GRAPH AT '$testNamespace.$testGraphName' MATCH ()-[r]->() RETURN r")
-    edges.getRecords.collect().toBag should equal(teamDataGraphRels)
+    edges.getRecords.collect.toBag should equal(teamDataGraphRels)
   }
 }

@@ -15,11 +15,8 @@
  */
 package org.opencypher.spark.examples
 
-import java.io.PrintStream
-
 import org.neo4j.driver.v1.{AuthTokens, Session, StatementResult}
 import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
-import org.opencypher.okapi.impl.util.PrintOptions
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.file.FileCsvPropertyGraphDataSource
 import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource._
@@ -45,7 +42,7 @@ object Neo4jMultipleGraphWorkflow extends App {
   implicit val neo4jConfig = Neo4jConfig(password = Some(neo4jPw))
 
   //   Load test data into Neo4j
-  //withBoltSession(loadPersonNetwork)
+  withBoltSession(loadPersonNetwork)
 
   val neo4jSource = new Neo4jPropertyGraphDataSource(neo4jConfig)
   val neo4jNamespace = Namespace("neo4j")
@@ -89,7 +86,7 @@ object Neo4jMultipleGraphWorkflow extends App {
 
   // 8) Use Cypher queries to write the product recommendations back to Neo4j
   withBoltSession { session =>
-    recommendations.records.collect.foreach { recommendation =>
+    recommendations.getRecords.collect.foreach { recommendation =>
       session.run(
         s"""|MATCH (p:Person {name: ${recommendation.get("for").get.toCypherString}})
             |SET p.should_buy = ${recommendation.get("recommendations").get.toCypherString}""".stripMargin)
