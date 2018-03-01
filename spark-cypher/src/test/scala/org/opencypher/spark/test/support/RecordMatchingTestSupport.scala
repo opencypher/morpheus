@@ -27,13 +27,11 @@ import org.opencypher.spark.test.CAPSTestSuite
 import org.scalatest.Assertion
 
 import scala.collection.JavaConverters._
-import scala.collection.immutable.{Bag, HashedBagConfiguration}
+import scala.collection.immutable.Bag
 
 trait RecordMatchingTestSupport {
 
   self: CAPSTestSuite =>
-
-  implicit val bagConfig: HashedBagConfiguration[CypherMap] = Bag.configuration.compact[CypherMap]
 
   implicit class RecordMatcher(records: CAPSRecords) {
     def shouldMatch(expected: CypherMap*): Assertion = {

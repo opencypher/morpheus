@@ -19,7 +19,6 @@ import org.apache.spark.sql.Row
 import org.opencypher.okapi.ir.test.support.DebugOutputSupport
 
 import scala.collection.Bag
-import scala.collection.immutable.HashedBagConfiguration
 
 trait RowDebugOutputSupport extends DebugOutputSupport {
 
@@ -50,7 +49,4 @@ trait RowDebugOutputSupport extends DebugOutputSupport {
     def toBag: Bag[Row] = Bag(elements.toSeq: _*)
   }
 
-  // needed for bag builder initialization
-  implicit val m: HashedBagConfiguration[Row] = Bag.configuration.compact[Row]
-  implicit val m2: HashedBagConfiguration[String] = Bag.configuration.compact[String]
 }
