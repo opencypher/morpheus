@@ -36,7 +36,8 @@ class TckCapsTest extends CAPSTestSuite {
 
   private val defaultFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
 
-  private val scenarios = ScenariosFor("spark")
+  private val blacklistFile = getClass.getResource("/org/opencypher/okapi/tck/scenario_blacklist_spark").getFile
+  private val scenarios = ScenariosFor(blacklistFile)
 
   // white list tests are run on all factories
   forAll(factories) { factory =>

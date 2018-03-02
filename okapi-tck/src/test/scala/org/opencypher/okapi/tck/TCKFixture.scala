@@ -110,7 +110,7 @@ case class TCKGraph[C <: CypherSession](testGraphFactory: TestGraphFactory[C], g
   }
 }
 
-case class ScenariosFor(engine: String)  {
+case class ScenariosFor(blacklist: Set[String])  {
 
   def whiteList = Table(
     "scenario",
@@ -127,14 +127,17 @@ case class ScenariosFor(engine: String)  {
   )
 
   def get(name: String): Seq[Scenario] = scenarios.filter(s => s.name == name)
+}
 
-  private lazy val blacklist: Set[String] = {
-    val blacklistIter = Source.fromFile(getClass.getResource(s"scenario_blacklist_$engine").toURI).getLines().toSeq
+object ScenariosFor {
+
+  def apply(backlistFile: String) : ScenariosFor = {
+    val blacklistIter = Source.fromFile(backlistFile).getLines().toSeq
     val blacklistSet = blacklistIter.toSet
 
     lazy val errorMessage =
       s"Blacklist contains duplicate scenarios ${blacklistIter.groupBy(identity).filter(_._2.lengthCompare(1) > 0).keys.mkString("\n")}"
     assert(blacklistIter.lengthCompare(blacklistSet.size) == 0, errorMessage)
-    blacklistSet
+    ScenariosFor(blacklistSet)
   }
 }
