@@ -13,20 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.okapi.tck
+package org.opencypher.okapi.tck.test
 
 import org.opencypher.okapi.api.graph.{CypherSession, PropertyGraph}
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue
-import org.opencypher.okapi.api.value.CypherValue.{CypherList => CAPSCypherList, CypherMap => CAPSCypherMap, CypherValue => CAPSCypherValue}
+import org.opencypher.okapi.api.value.CypherValue.{CypherList => OKAPICypherList, CypherMap => OKAPICypherMap, CypherValue => OKAPICypherValue}
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.impl.typer.exception.TypingException
 import org.opencypher.okapi.ir.test.support.creation.TestGraphFactory
-import org.opencypher.okapi.tck.TCKFixture._
-import org.opencypher.okapi.test.support.creation.propertygraph.Neo4jPropertyGraphFactory
+import org.opencypher.okapi.tck.test.TCKFixture._
+import org.opencypher.okapi.tck.test.support.creation.neo4j.Neo4jPropertyGraphFactory
 import org.opencypher.tools.tck.api.{ExecutionFailed, _}
 import org.opencypher.tools.tck.constants.{TCKErrorDetails, TCKErrorPhases, TCKErrorTypes}
 import org.opencypher.tools.tck.values.{CypherValue => TCKCypherValue, _}
+import org.scalatest.Tag
 import org.scalatest.prop.TableDrivenPropertyChecks._
 
 import scala.io.Source
@@ -63,20 +64,20 @@ object TCKFixture {
   }
 }
 
-case class TCKGraph[C <: CypherSession](testGraphFactory: TestGraphFactory[C], graph: PropertyGraph)(implicit caps: C) extends Graph {
+case class TCKGraph[C <: CypherSession](testGraphFactory: TestGraphFactory[C], graph: PropertyGraph)(implicit OKAPI: C) extends Graph {
 
   override def execute(query: String, params: Map[String, TCKCypherValue], queryType: QueryType): (Graph, Result) = {
     queryType match {
       case InitQuery =>
-        val propertyGraph = testGraphFactory(Neo4jPropertyGraphFactory(query, params.mapValues(tckValueToCAPSValue)))
+        val propertyGraph = testGraphFactory(Neo4jPropertyGraphFactory(query, params.mapValues(tckValueToCypherValue)))
         copy(graph = propertyGraph) -> CypherValueRecords.empty
       case SideEffectQuery =>
         // this one is tricky, not sure how can do it without Cypher
         this -> CypherValueRecords.empty
       case ExecQuery =>
         // mapValues is lazy, so we force it for debug purposes
-        val capsResult = Try(graph.cypher(query, params.mapValues(tckValueToCAPSValue).view.force))
-        capsResult match {
+        val result = Try(graph.cypher(query, params.mapValues(tckValueToCypherValue).view.force))
+        result match {
           case Success(r) => this -> convertToTckStrings(r.getRecords)
           case Failure(e) =>
             val phase = TCKErrorPhases.RUNTIME // We have no way to detect errors during compile time yet
@@ -90,20 +91,20 @@ case class TCKGraph[C <: CypherSession](testGraphFactory: TestGraphFactory[C], g
 
   private def convertToTckStrings(records: CypherRecords): StringRecords = {
     val header = records.columns.toList
-    val rows: List[Map[String, String]] = records.collect.map { cypherMap: CAPSCypherMap =>
+    val rows: List[Map[String, String]] = records.collect.map { cypherMap: OKAPICypherMap =>
       cypherMap.keys.map(k => k -> cypherMap(k).toCypherString).toMap
     }.toList
     StringRecords(header, rows)
   }
 
-  private def tckValueToCAPSValue(cypherValue: TCKCypherValue): CAPSCypherValue = cypherValue match {
+  private def tckValueToCypherValue(cypherValue: TCKCypherValue): OKAPICypherValue = cypherValue match {
     case CypherString(v) => CypherValue(v)
     case CypherInteger(v) => CypherValue(v)
     case CypherFloat(v) => CypherValue(v)
     case CypherBoolean(v) => CypherValue(v)
-    case CypherProperty(key, value) => CAPSCypherMap(key -> tckValueToCAPSValue(value))
-    case CypherPropertyMap(properties) => CAPSCypherMap(properties.mapValues(tckValueToCAPSValue))
-    case l: CypherList => CAPSCypherList(l.elements.map(tckValueToCAPSValue))
+    case CypherProperty(key, value) => OKAPICypherMap(key -> tckValueToCypherValue(value))
+    case CypherPropertyMap(properties) => OKAPICypherMap(properties.mapValues(tckValueToCypherValue))
+    case l: CypherList => OKAPICypherList(l.elements.map(tckValueToCypherValue))
     case CypherNull => CypherValue(null)
     case other =>
       throw NotImplementedException(s"Converting Cypher value $cypherValue of type `${other.getClass.getSimpleName}`")
@@ -140,4 +141,12 @@ object ScenariosFor {
     assert(blacklistIter.lengthCompare(blacklistSet.size) == 0, errorMessage)
     ScenariosFor(blacklistSet)
   }
+}
+
+object Tags {
+
+  object WhiteList extends Tag("WhiteList Scenario")
+
+  object BlackList extends Tag("BlackList Scenario")
+
 }
