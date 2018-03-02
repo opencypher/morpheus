@@ -17,7 +17,7 @@ package org.opencypher.spark.examples
 
 import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.io.file.FileCsvPropertyGraphDataSource
+import org.opencypher.spark.api.io.file.FileCsvPropertyGraphDataSource
 
 /**
   * Demonstrates multiple graph capabilities by loading a social network from case class objects and a purchase network
@@ -34,7 +34,7 @@ object MultipleGraphExample extends App {
   // 3) Register a File-based data source in the Cypher session
   val csvFolder = getClass.getResource("/csv").getFile
   // Note: if files were stored in HDFS, change the data source to HdfsCsvPropertyGraphDataSource
-  session.registerSource(Namespace("myDataSource"), new FileCsvPropertyGraphDataSource(rootPath = csvFolder))
+  session.registerSource(Namespace("myDataSource"), new FileCsvPropertyGraphDataSource(graphFolder = csvFolder))
   // access the graph via its qualified graph name
   val purchaseNetwork = session.graph(QualifiedGraphName(Namespace("myDataSource"), GraphName("prod")))
 

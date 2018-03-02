@@ -24,14 +24,15 @@ import org.opencypher.okapi.api.graph.PropertyGraph
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.api.value.CypherValue
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.{ColumnName, RecordHeader}
 import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.io.neo4j.Neo4jGraph.{filterNode, filterRel, nodeToRow, relToRow}
 import org.opencypher.spark.impl.table.CAPSRecordHeader
-import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
+import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSUnionGraph}
 
 class Neo4jGraph(val schema: Schema, val session: CAPSSession)(
   inputNodes: RDD[InternalNode],
@@ -40,6 +41,8 @@ class Neo4jGraph(val schema: Schema, val session: CAPSSession)(
   rel: String = "rel",
   targetNode: String = "target")
   extends CAPSGraph {
+
+  protected implicit val caps = session
 
   override def cache(): CAPSGraph = map(_.cache(), _.cache())
 
@@ -78,8 +81,9 @@ class Neo4jGraph(val schema: Schema, val session: CAPSSession)(
     }
   }
 
-  override def union(other: PropertyGraph): CAPSGraph =
-    throw UnsupportedOperationException(s"Union with $this")
+  override def union(other: PropertyGraph): CAPSGraph = {
+    CAPSUnionGraph(this, other.asCaps)
+  }
 
   private def computeRecords(name: String, cypherType: CypherType, header: RecordHeader)(
     computeRdd: (RecordHeader, StructType) => RDD[Row]): CAPSRecords = {
@@ -117,8 +121,7 @@ object Neo4jGraph {
         slot.content.key match {
           case Property(_, PropertyKey(keyName)) =>
             val propValue = props.get(keyName).orNull
-            val dataType = schema(ColumnName.of(slot)).dataType
-            importedToSparkEncodedCypherValue(dataType, propValue)
+            CypherValue(propValue).unwrap
 
           case HasLabel(_, label) =>
             labels(label.name)
@@ -153,8 +156,7 @@ object Neo4jGraph {
         slot.content.key match {
           case Property(_, PropertyKey(keyName)) =>
             val propValue = props.get(keyName).orNull
-            val dataType = schema(ColumnName.of(slot)).dataType
-            importedToSparkEncodedCypherValue(dataType, propValue)
+            CypherValue(propValue).unwrap
 
           case _: StartNode =>
             importedRel.startNodeId()
@@ -179,8 +181,4 @@ object Neo4jGraph {
     }
   }
 
-  private def importedToSparkEncodedCypherValue(typ: DataType, value: AnyRef) = typ match {
-    case StringType | LongType | BooleanType | DoubleType => value
-    case _ => CypherValue(value)
-  }
 }

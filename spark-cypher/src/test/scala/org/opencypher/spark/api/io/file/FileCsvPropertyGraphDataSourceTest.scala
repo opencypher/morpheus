@@ -13,11 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.okapi.impl.spark.io.file
+package org.opencypher.spark.api.io.file
 
 import org.opencypher.okapi.api.graph.{GraphName, Namespace}
 import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.io.file.FileCsvPropertyGraphDataSource
 import org.opencypher.spark.test.CAPSTestSuite
 import org.opencypher.spark.test.fixture.TeamDataFixture
 
@@ -28,7 +27,7 @@ class FileCsvPropertyGraphDataSourceTest extends CAPSTestSuite with TeamDataFixt
   test("hasGraph should return true for existing graph") {
     val testGraphName = GraphName("sn")
 
-    val dataSource = new FileCsvPropertyGraphDataSource(rootPath = testRootPath)
+    val dataSource = new FileCsvPropertyGraphDataSource(graphFolder = testRootPath)
 
     dataSource.hasGraph(testGraphName) should be(true)
   }
@@ -36,7 +35,7 @@ class FileCsvPropertyGraphDataSourceTest extends CAPSTestSuite with TeamDataFixt
   test("hasGraph should return false for non-existing graph") {
     val testGraphName = GraphName("sn2")
 
-    val dataSource = new FileCsvPropertyGraphDataSource(rootPath = testRootPath)
+    val dataSource = new FileCsvPropertyGraphDataSource(graphFolder = testRootPath)
 
     dataSource.hasGraph(testGraphName) should be(false)
   }
@@ -44,7 +43,7 @@ class FileCsvPropertyGraphDataSourceTest extends CAPSTestSuite with TeamDataFixt
   test("graphNames should return all names of stored graphs") {
     val testGraphName1 = GraphName("sn")
     val testGraphName2 = GraphName("prod")
-    val source = new FileCsvPropertyGraphDataSource(rootPath = testRootPath)
+    val source = new FileCsvPropertyGraphDataSource(graphFolder = testRootPath)
 
     source.graphNames should equal(Set(testGraphName1, testGraphName2))
   }
@@ -52,7 +51,7 @@ class FileCsvPropertyGraphDataSourceTest extends CAPSTestSuite with TeamDataFixt
   test("Load graph from file via DataSource") {
     val testGraphName = GraphName("sn")
 
-    val dataSource = new FileCsvPropertyGraphDataSource(rootPath = testRootPath)
+    val dataSource = new FileCsvPropertyGraphDataSource(graphFolder = testRootPath)
 
     val graph = dataSource.graph(testGraphName)
     graph.nodes("n").asCaps.toDF().collect().toBag should equal(csvTestGraphNodes)
@@ -63,7 +62,7 @@ class FileCsvPropertyGraphDataSourceTest extends CAPSTestSuite with TeamDataFixt
     val testNamespace = Namespace("myFS")
     val testGraphName = GraphName("sn")
 
-    val dataSource = new FileCsvPropertyGraphDataSource(rootPath = testRootPath)
+    val dataSource = new FileCsvPropertyGraphDataSource(graphFolder = testRootPath)
     caps.registerSource(testNamespace, dataSource)
 
     val nodes = caps.cypher(s"FROM GRAPH AT '$testNamespace.$testGraphName' MATCH (n) RETURN n")

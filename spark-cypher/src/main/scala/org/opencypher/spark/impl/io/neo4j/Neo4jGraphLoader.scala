@@ -22,8 +22,9 @@ import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
 import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.io.neo4j.Neo4jConfig
 import org.opencypher.spark.impl.CAPSGraph
-import org.opencypher.spark.impl.io.neo4j.external.{Neo4j, Neo4jConfig}
+import org.opencypher.spark.impl.io.neo4j.external.Neo4j
 
 import scala.collection.JavaConverters._
 

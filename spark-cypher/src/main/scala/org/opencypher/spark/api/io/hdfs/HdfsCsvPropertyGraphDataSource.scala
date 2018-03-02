@@ -13,16 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.spark.impl.io.hdfs
+package org.opencypher.spark.api.io.hdfs
 
 import java.io.File
 
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.{FileSystem, Path, RemoteIterator}
+import org.apache.hadoop.fs.{FileSystem, Path}
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
+import org.opencypher.spark.impl.io.hdfs.CsvGraphLoader
 
 import scala.language.implicitConversions
 
@@ -32,7 +33,7 @@ import scala.language.implicitConversions
   * @param hadoopConfig Hadoop configuration
   * @param rootPath     root path containing one ore more graphs
   */
-class HdfsCsvPropertyGraphDataSource(
+case class HdfsCsvPropertyGraphDataSource(
   hadoopConfig: Configuration,
   rootPath: String)(implicit val session: CAPSSession) extends CAPSPropertyGraphDataSource {
 
@@ -42,7 +43,8 @@ class HdfsCsvPropertyGraphDataSource(
 
   override def schema(name: GraphName): Option[Schema] = None
 
-  override def store(name: GraphName, graph: PropertyGraph): Unit = ???
+  override def store(name: GraphName, graph: PropertyGraph): Unit =
+    throw new UnsupportedOperationException("'store' operation is not supported by the HDFS data source")
 
   override def delete(name: GraphName): Unit =
     if (hasGraph(name)) fileSystem.delete(new Path(rootPath), /* recursive = */ true)
@@ -57,15 +59,4 @@ class HdfsCsvPropertyGraphDataSource(
 
   private def graphPath(name: GraphName): String = s"$rootPath${File.separator}$name"
 
-}
-
-object RemoteIteratorWrapper {
-  implicit def convertToScalaIterator[T](underlying: RemoteIterator[T]): Iterator[T] = {
-    case class wrapper(underlying: RemoteIterator[T]) extends Iterator[T] {
-      override def hasNext = underlying.hasNext
-
-      override def next = underlying.next
-    }
-    wrapper(underlying)
-  }
 }

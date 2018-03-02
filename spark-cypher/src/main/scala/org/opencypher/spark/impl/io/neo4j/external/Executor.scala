@@ -21,6 +21,7 @@ import org.apache.spark.sql.{Row, types}
 import org.neo4j.driver.internal.types.InternalTypeSystem
 import org.neo4j.driver.v1.types.{Type, TypeSystem}
 import org.neo4j.driver.v1.{Driver, Session, StatementResult}
+import org.opencypher.spark.api.io.neo4j.Neo4jConfig
 
 import scala.collection.JavaConverters._
 

@@ -17,9 +17,12 @@ package org.opencypher.spark.test.fixture
 
 import org.apache.spark.sql.{DataFrame, Row}
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
+import org.opencypher.okapi.api.value.{CAPSNode, CAPSRelationship}
+import org.opencypher.okapi.api.value.CypherValue.{CypherList, CypherMap}
 import org.opencypher.okapi.test.support.RowDebugOutputSupport
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.{CAPSGraph, CAPSResult}
+import org.opencypher.spark.test.support.RecordMatchingTestSupport
 
 import scala.collection.{Bag, mutable}
 
@@ -29,10 +32,11 @@ trait TeamDataFixture extends TestDataFixture with RowDebugOutputSupport {
 
   override lazy val dataFixture =
     """
-       CREATE (a:Person:German {name: "Stefan", luckyNumber: 42})
+       CREATE (a:Person:German {name: "Stefan", luckyNumber: 42, languages: ['German', 'English', 'Klingon']})
        CREATE (b:Person:Swede  {name: "Mats", luckyNumber: 23})
        CREATE (c:Person:German {name: "Martin", luckyNumber: 1337})
        CREATE (d:Person:German {name: "Max", luckyNumber: 8})
+       CREATE (e:Person {name: "Donald", luckyNumber: 8, languages: []})
        CREATE (a)-[:KNOWS {since: 2016}]->(b)
        CREATE (b)-[:KNOWS {since: 2016}]->(c)
        CREATE (c)-[:KNOWS {since: 2016}]->(d)
@@ -42,18 +46,23 @@ trait TeamDataFixture extends TestDataFixture with RowDebugOutputSupport {
 
   override def nbrRels = 3
 
-  lazy val teamDataGraphNodes: Bag[Row] = Bag(
-    Row(0L, true, true, false, 42L, "Stefan"),
-    Row(1L, false, true, true, 23L, "Mats"),
-    Row(2L, true, true, false, 1337L, "Martin"),
-    Row(3L, true, true, false, 8L, "Max")
+  lazy val teamDataGraphNodes: Bag[CypherMap] = Bag(
+    CypherMap("n" -> CAPSNode(0L, Set("Person", "German"), CypherMap("name" -> "Stefan", "luckyNumber" -> 42L, "languages" -> CypherList("German", "English", "Klingon")))),
+    CypherMap("n" -> CAPSNode(1L, Set("Person", "Swede"), CypherMap("name" -> "Mats", "luckyNumber" -> 23L))),
+    CypherMap("n" -> CAPSNode(2L, Set("Person", "German"), CypherMap("name" -> "Martin", "luckyNumber" -> 1337L))),
+    CypherMap("n" -> CAPSNode(3L, Set("Person", "German"), CypherMap("name" -> "Max", "luckyNumber" -> 8L))),
+    CypherMap("n" -> CAPSNode(4L, Set("Person"), CypherMap("name" -> "Donald", "luckyNumber" -> 8L, "languages" -> CypherList())))
   )
 
-  lazy val teamDataGraphRels: Bag[Row] = Bag(
-    Row(0L, 0L, "KNOWS", 1L, 2016L),
-    Row(1L, 1L, "KNOWS", 2L, 2016L),
-    Row(2L, 2L, "KNOWS", 3L, 2016L)
+  lazy val teamDataGraphRels: Bag[CypherMap] = Bag(
+    CypherMap("r" -> CAPSRelationship(0, 0, 1, "KNOWS", CypherMap("since" -> 2016))),
+    CypherMap("r" -> CAPSRelationship(1, 1, 2, "KNOWS", CypherMap("since" -> 2016))),
+    CypherMap("r" -> CAPSRelationship(2, 2, 3, "KNOWS", CypherMap("since" -> 2016)))
   )
+
+  private def wrap[T](s: Array[T]): mutable.WrappedArray[T] = {
+    mutable.WrappedArray.make(s)
+  }
 
   /**
     * Returns the expected nodes for the test graph in /resources/csv/sn
@@ -61,10 +70,10 @@ trait TeamDataFixture extends TestDataFixture with RowDebugOutputSupport {
     * @return expected nodes
     */
   lazy val csvTestGraphNodes: Bag[Row] = Bag(
-    Row(1L, true, true, true, false, mutable.WrappedArray.make(Array("german", "english")), 42L, "Stefan"),
-    Row(2L, true, false, true, true, mutable.WrappedArray.make(Array("swedish", "english", "german")), 23L, "Mats"),
-    Row(3L, true, true, true, false, mutable.WrappedArray.make(Array("german", "english")), 1337L, "Martin"),
-    Row(4L, true, true, true, false, mutable.WrappedArray.make(Array("german", "swedish", "english")), 8L, "Max")
+    Row(1L, true, true, true, false, wrap(Array("german", "english")), 42L, "Stefan"),
+    Row(2L, true, false, true, true, wrap(Array("swedish", "english", "german")), 23L, "Mats"),
+    Row(3L, true, true, true, false, wrap(Array("german", "english")), 1337L, "Martin"),
+    Row(4L, true, true, true, false, wrap(Array("german", "swedish", "english")), 8L, "Max")
   )
 
   // TODO: figure out why the column order is different for the calls in this and the next method

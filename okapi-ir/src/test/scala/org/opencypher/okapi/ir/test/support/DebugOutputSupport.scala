@@ -20,13 +20,13 @@ import scala.collection.immutable.HashedBagConfiguration
 
 trait DebugOutputSupport {
 
+  implicit def bagConfig[T] = Bag.configuration.compact[T]
+
   implicit class GenericIterableToBagConverter[T](val elements: TraversableOnce[T]) {
-    implicit val m: HashedBagConfiguration[T] = Bag.configuration.compact[T]
     def toBag: Bag[T] = Bag(elements.toSeq: _*)
   }
 
   implicit class ArrayToBagConverter[T](val elements: Array[T]) {
-    implicit val m: HashedBagConfiguration[T] = Bag.configuration.compact[T]
     def toBag: Bag[T] = Bag(elements.toSeq: _*)
   }
 }

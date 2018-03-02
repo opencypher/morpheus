@@ -17,7 +17,7 @@ package org.opencypher.spark.examples
 
 import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.io.file.FileCsvPropertyGraphDataSource
+import org.opencypher.spark.api.io.file.FileCsvPropertyGraphDataSource
 
 /**
   * Demonstrates usage patterns where Cypher and SQL can be interleaved in the
@@ -48,7 +48,7 @@ object CypherSQLRoundtripExample extends App {
   // 6) Load a purchase network graph via CSV + Schema files
   val csvFolder = getClass.getResource("/csv").getFile
   // 6a) Register a file based data source at the session (the root path may contain multiple graphs)
-  session.registerSource(Namespace("myDataSource"), new FileCsvPropertyGraphDataSource(rootPath = csvFolder))
+  session.registerSource(Namespace("myDataSource"), new FileCsvPropertyGraphDataSource(graphFolder = csvFolder))
 
   // 7) Use the results from the SQL query as driving table for a Cypher query on a graph contained in the data source
   val result2 = session.cypher(

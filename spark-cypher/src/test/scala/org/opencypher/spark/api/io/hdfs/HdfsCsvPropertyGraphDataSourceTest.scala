@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.spark.impl.io.hdfs
+package org.opencypher.spark.api.io.hdfs
 
 import org.opencypher.okapi.api.graph.{GraphName, Namespace}
 import org.opencypher.spark.impl.CAPSConverters._
