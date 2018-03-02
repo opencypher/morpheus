@@ -26,6 +26,7 @@ import org.opencypher.okapi.ir.test._
 import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.okapi.relational.impl.table.{OpaqueField, ProjectedExpr, ProjectedField, RecordHeader}
 import org.opencypher.spark.impl.table.CAPSRecordHeader
+import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.test.CAPSTestSuite
 import org.opencypher.spark.test.fixture.GraphCreationFixture
 
@@ -113,7 +114,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
     val inputGraph = initGraph(`:KNOWS` + `:READS`)
     val inputRels = inputGraph.relationships("r")
 
-    val patternGraph = CAPSGraph.create(inputRels, inputGraph.schema)
+    val patternGraph = CAPSGraph.create(inputRels, inputGraph.schema.asCaps)
     val outputRels = patternGraph.relationships("r", CTRelationship("KNOWS"))
 
     outputRels.data.count() shouldBe 6
@@ -123,7 +124,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
     val inputGraph = initGraph(`:KNOWS` + `:READS` + `:INFLUENCES`)
     val inputRels = inputGraph.relationships("r")
 
-    val patternGraph = CAPSGraph.create(inputRels, inputGraph.schema)
+    val patternGraph = CAPSGraph.create(inputRels, inputGraph.schema.asCaps)
     val outputRels = patternGraph.relationships("r", CTRelationship("KNOWS", "INFLUENCES"))
 
     outputRels.data.count() shouldBe 7
@@ -330,6 +331,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
     val schema = Schema.empty
       .withNodePropertyKeys("Person")()
       .withNodePropertyKeys("Foo")()
+      .asCaps
 
     val patternGraph = CAPSGraph.create(CAPSRecords.verifyAndCreate(header, df), schema)
 
@@ -382,6 +384,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
       .withNodePropertyKeys("Person")("name" -> CTString, "region" -> CTString)
       .withNodePropertyKeys("Customer")("name" -> CTString.nullable)
       .withRelationshipType("IN")
+      .asCaps
 
     val patternGraph = CAPSGraph.create(CAPSRecords.verifyAndCreate(header, df), schema)
 
@@ -411,6 +414,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
 
     val schema = Schema.empty
       .withNodePropertyKeys("Person")("name" -> CTString)
+      .asCaps
 
     val patternGraph = CAPSGraph.create(CAPSRecords.verifyAndCreate(header, df), schema)
 
@@ -444,6 +448,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
     val schema = Schema.empty
       .withNodePropertyKeys("Person")("name" -> CTString)
       .withNodePropertyKeys("Employee")("name" -> CTString)
+      .asCaps
 
     val patternGraph = CAPSGraph.create(CAPSRecords.verifyAndCreate(header, df), schema)
 
@@ -484,6 +489,7 @@ class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
       .withNodePropertyKeys("Person")("name" -> CTString)
       .withNodePropertyKeys("Employee")("name" -> CTString.nullable)
       .withNodePropertyKeys("Employee", "Person")("name" -> CTString)
+      .asCaps
 
     val patternGraph = CAPSGraph.create(CAPSRecords.verifyAndCreate(header, df), schema)
 

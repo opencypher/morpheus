@@ -20,61 +20,13 @@ import org.apache.spark.sql.{Column, DataFrame, Row, functions}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherValue
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr.{Expr, Param}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
+import org.opencypher.spark.impl.convert.CAPSCypherType._
 import org.opencypher.spark.impl.physical.CAPSRuntimeContext
 
 object DataFrameOps {
-
-  // Spark data types that are supported within the Cypher type system
-  val supportedTypes = Seq(
-    // numeric
-    ByteType,
-    ShortType,
-    IntegerType,
-    LongType,
-    FloatType,
-    DoubleType,
-    // other
-    StringType,
-    BooleanType,
-    NullType
-  )
-
-  def fromSparkType(dt: DataType, nullable: Boolean): Option[CypherType] = {
-    val result = dt match {
-      case StringType => Some(CTString)
-      case LongType => Some(CTInteger)
-      case BooleanType => Some(CTBoolean)
-      case BinaryType => Some(CTAny)
-      case DoubleType => Some(CTFloat)
-      case ArrayType(elemType, containsNull) =>
-        val maybeElementType = fromSparkType(elemType, containsNull)
-        maybeElementType.map(CTList(_))
-      case NullType => Some(CTNull)
-      case _ => None
-    }
-
-    if (nullable) result.map(_.nullable) else result.map(_.material)
-  }
-
-  def toSparkType(ct: CypherType): DataType = ct match {
-    case CTNull | CTVoid => NullType
-    case _ =>
-      ct.material match {
-        case CTString => StringType
-        case CTInteger => LongType
-        case CTBoolean => BooleanType
-        case CTAny => BinaryType
-        case CTFloat => DoubleType
-        case _: CTNode => LongType
-        case _: CTRelationship => LongType
-        case CTList(elemType) => ArrayType(toSparkType(elemType), elemType.isNullable)
-        case x =>
-          throw NotImplementedException(s"Mapping of CypherType $x to Spark type")
-      }
-  }
 
   implicit class CypherRow(r: Row) {
     def getCypherValue(expr: Expr, header: RecordHeader)(implicit context: CAPSRuntimeContext): CypherValue = {
@@ -101,7 +53,7 @@ object DataFrameOps {
       */
     def cypherTypeForColumn(columnName: String): CypherType = {
       val structField = structFieldForColumn(columnName)
-      val compatibleCypherType = cypherCompatibleDataType(structField.dataType).flatMap(fromSparkType(_, structField.nullable))
+      val compatibleCypherType = structField.dataType.cypherCompatibleDataType.flatMap(_.toCypherType(structField.nullable))
       compatibleCypherType.getOrElse(
         throw IllegalArgumentException("a supported Spark DataType that can be converted to CypherType", structField.dataType))
     }
@@ -178,29 +130,4 @@ object DataFrameOps {
       df.join(other, joinExpr, joinType)
     }
   }
-
-  /**
-    * Checks if the given data type is supported within the Cypher type system.
-    *
-    * @param dataType data type
-    * @return true, iff the data type is supported
-    */
-  def isCypherCompatible(dataType: DataType): Boolean = dataType match {
-    case ArrayType(internalType, _) => isCypherCompatible(internalType)
-    case other => supportedTypes.contains(other)
-  }
-
-  /**
-    * Converts the given Spark data type into a Cypher type system compatible Spark data type.
-    *
-    * @param dataType Spark data type
-    * @return some Cypher-compatible Spark data type or none if not compatible
-    */
-  def cypherCompatibleDataType(dataType: DataType): Option[DataType] = dataType match {
-    case ByteType | ShortType | IntegerType => Some(LongType)
-    case FloatType => Some(DoubleType)
-    case compatible if fromSparkType(dataType, nullable = false).isDefined => Some(compatible)
-    case _ => None
-  }
-
 }

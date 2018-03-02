@@ -40,8 +40,6 @@ class FlatPlannerTest extends BaseTestSuite {
     .withRelationshipPropertyKeys("KNOWS")("since" -> CTString)
     .withRelationshipPropertyKeys("FOO")("bar" -> CTBoolean)
 
-  schema.verify
-
   implicit val flatContext: FlatPlannerContext = FlatPlannerContext(CypherMap.empty)
 
   val mkLogical = new LogicalOperatorProducer

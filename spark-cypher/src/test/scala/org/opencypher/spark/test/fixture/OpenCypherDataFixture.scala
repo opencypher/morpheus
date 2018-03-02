@@ -32,6 +32,8 @@ package org.opencypher.spark.test.fixture
 
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTInteger, CTString}
+import org.opencypher.spark.schema.CAPSSchema
+import org.opencypher.spark.schema.CAPSSchema._
 
 trait OpenCypherDataFixture extends TestDataFixture {
 
@@ -105,7 +107,7 @@ trait OpenCypherDataFixture extends TestDataFixture {
 
   val nbrRels = 28
 
-  val schema: VerifiedSchema = Schema.empty
+  val schema: CAPSSchema = Schema.empty
     .withNodePropertyKeys("Person")("name" -> CTString, "birthyear" -> CTInteger)
     .withNodePropertyKeys("Person", "Actor")("name" -> CTString, "birthyear" -> CTInteger)
     .withNodePropertyKeys("City")("name" -> CTString)
@@ -117,5 +119,6 @@ trait OpenCypherDataFixture extends TestDataFixture {
     .withRelationshipPropertyKeys("DIRECTED")()
     .withRelationshipPropertyKeys("WROTE_MUSIC_FOR")()
     .withRelationshipPropertyKeys("ACTED_IN")("charactername" -> CTString)
+    .asCaps
 }
 

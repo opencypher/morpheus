@@ -16,7 +16,6 @@
 package org.opencypher.okapi.api.schema
 
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.impl.exception.SchemaException
 import org.scalatest.{FunSuite, Matchers}
 
 class SchemaTest extends FunSuite with Matchers {
@@ -27,7 +26,6 @@ class SchemaTest extends FunSuite with Matchers {
 
     val joined = s1 ++ s2
     joined should equal(s2)
-    joined.verify // should not throw
   }
 
   test("should provide all labels") {
@@ -119,43 +117,6 @@ class SchemaTest extends FunSuite with Matchers {
     schema.labels should equal(Set("Person", "Employee", "Dog", "Pet"))
   }
 
-  test("verifying empty schema") {
-    Schema.empty.verify should equal(Schema.empty)
-  }
-
-  test("verifying valid schema") {
-    val schema = Schema.empty
-      .withNodePropertyKeys("Person")("name" -> CTString)
-      .withNodePropertyKeys("Employee")("name" -> CTString, "salary" -> CTInteger)
-      .withNodePropertyKeys("Dog")("name" -> CTFloat)
-      .withNodePropertyKeys("Pet")("notName" -> CTBoolean)
-
-    schema.verify should equal(schema)
-  }
-
-  test("verifying schema with conflict on implied labels") {
-    val schema = Schema.empty
-      .withNodePropertyKeys("Person")("name" -> CTString)
-      .withNodePropertyKeys("Employee", "Person")("name" -> CTString, "salary" -> CTInteger)
-      .withNodePropertyKeys("Dog", "Pet")("name" -> CTFloat)
-      .withNodePropertyKeys("Pet")("name" -> CTBoolean)
-
-    the[SchemaException] thrownBy schema.verify should have message
-      "The property types FLOAT and BOOLEAN (for property 'name' and label 'Pet') can not be stored in the same Spark column"
-  }
-
-  test("verifying schema with conflict on combined labels") {
-    val schema = Schema.empty
-      .withNodePropertyKeys("Person")("name" -> CTString)
-      .withNodePropertyKeys("Employee", "Person")("name" -> CTInteger, "salary" -> CTInteger)
-      .withNodePropertyKeys("Employee")("name" -> CTInteger, "salary" -> CTInteger)
-      .withNodePropertyKeys("Dog", "Pet")("name" -> CTFloat)
-      .withNodePropertyKeys("Pet")("notName" -> CTBoolean)
-
-    the[SchemaException] thrownBy schema.verify should have message
-      "The property types STRING and INTEGER (for property 'name' and label 'Person') can not be stored in the same Spark column"
-  }
-
   test("chaining calls should amend types") {
     val schema = Schema.empty
       .withNodePropertyKeys("Foo")("name" -> CTString)
@@ -165,17 +126,6 @@ class SchemaTest extends FunSuite with Matchers {
 
     schema.nodeKeys("Foo") should equal(Map("name" -> CTString, "age" -> CTInteger.nullable))
     schema.relationshipKeys("BAR") should equal(Map("p1" -> CTBoolean.nullable, "p2" -> CTFloat.nullable))
-  }
-
-  test("should not allow updates to conflict with existing types") {
-    val schema = Schema.empty.withNodePropertyKeys("Foo")("name" -> CTString)
-
-    schema.withNodePropertyKeys("Foo")("name" -> CTString).verify // same type: fine
-    schema.withNodePropertyKeys("Foo2")("name" -> CTInteger).verify // different label: fine
-    schema.withNodePropertyKeys("Foo")("name2" -> CTInteger).verify // different key: fine
-    the[SchemaException] thrownBy {
-      schema.withNodePropertyKeys("Foo")("name" -> CTInteger).verify // not fine
-    } should have message "The property types INTEGER and STRING (for property 'name') can not be stored in the same Spark column"
   }
 
   test("combining schemas, separate keys") {
@@ -226,27 +176,6 @@ class SchemaTest extends FunSuite with Matchers {
     schema1 ++ schema2 should equal(
       Schema.empty
         .withNodePropertyKeys("A")("foo" -> CTString.nullable, "bar" -> CTString.nullable))
-  }
-
-  test("combining type conflicting schemas should fail, ANY") {
-    val schema1 = Schema.empty
-      .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString)
-    val schema2 = Schema.empty
-      .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTInteger)
-
-    the[SchemaException] thrownBy (schema1 ++ schema2) should have message
-      "The property types INTEGER and STRING (for property 'bar') can not be stored in the same Spark column"
-  }
-
-  // TODO: Do we want to support this particular join between property keys? (Number)
-  test("combining type conflicting schemas should fail, NUMBER") {
-    val schema1 = Schema.empty
-      .withNodePropertyKeys("A")("foo" -> CTString, "baz" -> CTInteger)
-    val schema2 = Schema.empty
-      .withNodePropertyKeys("A")("foo" -> CTString, "baz" -> CTFloat)
-
-    the[SchemaException] thrownBy (schema1 ++ schema2) should have message
-      "The property types FLOAT and INTEGER (for property 'baz') can not be stored in the same Spark column"
   }
 
   test("combining schemas with restricting label implications") {

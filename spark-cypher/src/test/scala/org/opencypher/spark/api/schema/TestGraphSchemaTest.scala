@@ -16,6 +16,7 @@
 package org.opencypher.okapi.api.schema
 
 import org.opencypher.okapi.api.types.{CTInteger, CTString}
+import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.test.CAPSTestSuite
 import org.opencypher.spark.test.fixture.GraphCreationFixture
 
@@ -26,6 +27,7 @@ class TestGraphSchemaTest extends CAPSTestSuite with GraphCreationFixture {
 
     graph.schema should equal(Schema.empty
       .withNodePropertyKeys(Set.empty[String], Map("id" -> CTInteger.nullable, "other" -> CTString.nullable))
+      .asCaps
     )
   }
 
@@ -35,6 +37,7 @@ class TestGraphSchemaTest extends CAPSTestSuite with GraphCreationFixture {
     graph.schema should equal(Schema.empty
       .withNodePropertyKeys("A")("id" -> CTInteger)
       .withNodePropertyKeys("B")("other" -> CTString)
+      .asCaps
     )
   }
 
@@ -45,6 +48,7 @@ class TestGraphSchemaTest extends CAPSTestSuite with GraphCreationFixture {
       .withNodePropertyKeys("A")("id" -> CTInteger)
       .withNodePropertyKeys("B")("other" -> CTString)
       .withNodePropertyKeys("A", "B")("id" -> CTInteger)
+      .asCaps
     )
   }
 
@@ -61,6 +65,7 @@ class TestGraphSchemaTest extends CAPSTestSuite with GraphCreationFixture {
       .withNodePropertyKeys(Set.empty[String], PropertyKeys.empty)
       .withRelationshipPropertyKeys("FOO")("p" -> CTInteger)
       .withRelationshipPropertyKeys("BAR")("p" -> CTInteger, "q" -> CTString.nullable)
+      .asCaps
     )
   }
 }

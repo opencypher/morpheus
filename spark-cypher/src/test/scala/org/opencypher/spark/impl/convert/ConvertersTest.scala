@@ -20,11 +20,11 @@ import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.test.BaseTestSuite
-import org.opencypher.spark.impl.DataFrameOps._
+import org.opencypher.spark.impl.convert.CAPSCypherType._
 
 class ConvertersTest extends BaseTestSuite {
 
-  test("converts from spark types to cypher types") {
+  it("can convert from spark types to cypher types") {
     val mappings = Seq(
       LongType -> CTInteger,
       DoubleType -> CTFloat,
@@ -37,20 +37,20 @@ class ConvertersTest extends BaseTestSuite {
 
     mappings.foreach {
       case (spark, cypher) =>
-        fromSparkType(spark, nullable = false) should equal(Some(cypher))
-        fromSparkType(spark, nullable = true) should equal(Some(cypher.nullable))
+        spark.toCypherType(false) should equal(Some(cypher))
+        spark.toCypherType(true) should equal(Some(cypher.nullable))
     }
   }
 
-  test("does not support detailed number types") {
+  it("does not support detailed number types") {
     val unsupported = Set(FloatType, ShortType, ByteType)
 
     unsupported.foreach { t =>
-      fromSparkType(t, nullable = false) should equal(None)
+      t.toCypherType() should equal(None)
     }
   }
 
-  test("converts from cypher types to spark types") {
+  it("can convert cypher types to spark types") {
     val mappings = Seq(
       CTInteger -> LongType,
       CTFloat -> DoubleType,
@@ -58,7 +58,6 @@ class ConvertersTest extends BaseTestSuite {
       CTBoolean -> BooleanType,
       CTList(CTInteger) -> ArrayType(LongType, containsNull = false),
       CTList(CTString.nullable) -> ArrayType(StringType, containsNull = true),
-      CTAny -> BinaryType,
       CTNode -> LongType,
       CTNode("Foo") -> LongType,
       CTRelationship -> LongType,
@@ -67,11 +66,11 @@ class ConvertersTest extends BaseTestSuite {
 
     mappings.foreach {
       case (cypher, spark) =>
-        toSparkType(cypher) should equal(spark)
+        cypher.getSparkType should equal(spark)
     }
   }
 
-  test("converts from spark values to cypher types") {
+  it("can convert from spark values to cypher types") {
     val mappings = Seq(
       "string" -> CTString,
       Integer.valueOf(1) -> CTInteger,
