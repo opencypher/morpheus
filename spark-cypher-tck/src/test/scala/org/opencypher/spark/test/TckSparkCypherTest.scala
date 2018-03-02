@@ -13,20 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.okapi.tck
+package org.opencypher.spark.test
 
 import java.io.File
 
-import org.opencypher.okapi.tck.Tags.{BlackList, TckCapsTag, WhiteList}
+import org.opencypher.okapi.tck.test.Tags.{BlackList, WhiteList}
+import org.opencypher.okapi.tck.test.{ScenariosFor, TCKGraph}
 import org.opencypher.spark.impl.CAPSGraph
-import org.opencypher.spark.test.CAPSTestSuite
 import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 import org.opencypher.tools.tck.api.CypherTCK
+import org.scalatest.Tag
 import org.scalatest.prop.TableDrivenPropertyChecks._
 
 import scala.util.{Failure, Success, Try}
 
-class TckCapsTest extends CAPSTestSuite {
+class TckSparkCypherTest extends CAPSTestSuite {
+
+  object TckCapsTag extends Tag("TckSparkCypher")
 
   // Defines the graphs to run on
   private val factories = Table(
@@ -36,7 +39,7 @@ class TckCapsTest extends CAPSTestSuite {
 
   private val defaultFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
 
-  private val blacklistFile = getClass.getResource("/org/opencypher/okapi/tck/scenario_blacklist_spark").getFile
+  private val blacklistFile = getClass.getResource("/scenario_blacklist").getFile
   private val scenarios = ScenariosFor(blacklistFile)
 
   // white list tests are run on all factories

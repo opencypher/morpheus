@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.okapi.test.support.creation.propertygraph
+package org.opencypher.okapi.tck.test.support.creation.neo4j
 
 import java.util.stream.Collectors
 
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.harness.TestServerBuilders
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.okapi.ir.test.support.creation.propertygraph.{PropertyGraphFactory, TestNode, TestPropertyGraph, TestRelationship}
+import org.opencypher.okapi.ir.test.support.creation.propertygraph._
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Map
