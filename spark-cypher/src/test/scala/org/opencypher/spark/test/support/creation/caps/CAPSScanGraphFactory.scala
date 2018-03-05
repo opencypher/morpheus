@@ -22,15 +22,16 @@ import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.ir.test.support.creation.propertygraph.TestPropertyGraph
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
-import org.opencypher.spark.impl.DataFrameOps._
+import org.opencypher.spark.impl.convert.CAPSCypherType._
 import org.opencypher.spark.impl.{CAPSGraph, CAPSScanGraph}
+import org.opencypher.spark.schema.CAPSSchema._
 
 import scala.collection.JavaConverters._
 
 object CAPSScanGraphFactory extends CAPSTestGraphFactory {
 
   override def apply(propertyGraph: TestPropertyGraph)(implicit caps: CAPSSession): CAPSGraph = {
-    val schema = computeSchema(propertyGraph)
+    val schema = computeSchema(propertyGraph).asCaps
 
     val nodeScans = schema.labelCombinations.combos.map { labels =>
       val propKeys = schema.nodeKeys(labels)
@@ -90,7 +91,7 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory {
 
   protected def getPropertyStructFields(propKeys: PropertyKeys): Seq[StructField] = {
     propKeys.foldLeft(Seq.empty[StructField]) {
-      case (fields, key) => fields :+ StructField(key._1, toSparkType(key._2), key._2.isNullable)
+      case (fields, key) => fields :+ StructField(key._1, key._2.getSparkType, key._2.isNullable)
     }
   }
 }

@@ -21,6 +21,7 @@ import org.opencypher.okapi.api.types.CTString
 import org.opencypher.okapi.ir.test.support.creation.propertygraph.TestPropertyGraphFactory
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.CAPSGraph
+import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.test.CAPSTestSuite
 import org.opencypher.spark.test.support.GraphMatchingTestSupport
 
@@ -76,7 +77,8 @@ class CAPSScanGraphFactoryTest extends CAPSTestSuite with GraphMatchingTestSuppo
       .withNodePropertyKeys("Person", "Astronaut")("name" -> CTString)
       .withNodePropertyKeys("Person", "Martian")("name" -> CTString)
       .withNodePropertyKeys("Language")("title" -> CTString)
-      .withRelationshipType("SPEAKS"))
+      .withRelationshipType("SPEAKS")
+      .asCaps)
   }
 
   test("testAsScanGraph") {

@@ -26,6 +26,7 @@ import org.opencypher.okapi.relational.impl.table.{ProjectedExpr, ProjectedField
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.physical.operators.CAPSPhysicalOperator
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
+import org.opencypher.spark.schema.CAPSSchema._
 
 case class CAPSPhysicalPlannerContext(
   session: CAPSSession,
@@ -99,7 +100,7 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
     toCreate: Set[ConstructedEntity],
     name: String,
     schema: Schema,
-    header: RecordHeader): CAPSPhysicalOperator = operators.ProjectPatternGraph(in, toCreate, name, schema, header)
+    header: RecordHeader): CAPSPhysicalOperator = operators.ProjectPatternGraph(in, toCreate, name, schema.asCaps, header)
 
   override def planAggregate(in: CAPSPhysicalOperator, group: Set[Var], aggregations: Set[(Var, Aggregator)], header: RecordHeader): CAPSPhysicalOperator = operators.Aggregate(in, aggregations, group, header)
 

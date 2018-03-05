@@ -17,6 +17,7 @@ package org.opencypher.spark.impl.io.neo4j
 
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
+import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.test.CAPSTestSuite
 import org.opencypher.spark.test.fixture.{Neo4jServerFixture, OpenCypherDataFixture}
 
@@ -33,7 +34,7 @@ class Neo4jGraphLoaderTest extends CAPSTestSuite with Neo4jServerFixture with Op
   test("import only some nodes from Neo4j") {
     val graph = Neo4jGraphLoader.fromNeo4j(neo4jConfig, "MATCH (f:Film) RETURN f", "UNWIND [] AS i RETURN i")
 
-    graph.schema should equal(Schema.empty.withNodePropertyKeys("Film")("title" -> CTString))
+    graph.schema should equal(Schema.empty.withNodePropertyKeys("Film")("title" -> CTString).asCaps)
     graph.nodes("n").toDF().count() shouldBe 5
     graph.relationships("r").toDF().count() shouldBe 0
   }
@@ -45,6 +46,7 @@ class Neo4jGraphLoaderTest extends CAPSTestSuite with Neo4jServerFixture with Op
       .withNodePropertyKeys("Person", "Actor")("name" -> CTString, "birthyear" -> CTInteger)
       .withNodePropertyKeys("Film")("title" -> CTString)
       .withRelationshipPropertyKeys("ACTED_IN")("charactername" -> CTString)
+      .asCaps
     )
     graph.nodes("n").toDF().count() shouldBe 12
     graph.relationships("r").toDF().count() shouldBe 8

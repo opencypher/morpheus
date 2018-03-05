@@ -17,6 +17,8 @@ package org.opencypher.spark.impl.io.neo4j
 
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
+import org.opencypher.spark.schema.CAPSSchema
+import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.test.CAPSTestSuite
 import org.opencypher.spark.test.fixture.Neo4jServerFixture
 
@@ -27,7 +29,7 @@ class Neo4jSchemaLoaderTest extends CAPSTestSuite with Neo4jServerFixture {
   test("read empty") {
     val schema = Neo4jGraphLoader.loadSchema(neo4jConfig, emptyQ, emptyQ)
 
-    schema should equal(Schema.empty)
+    schema should equal(CAPSSchema.empty)
   }
 
   test("read nodes") {
@@ -43,6 +45,7 @@ class Neo4jSchemaLoaderTest extends CAPSTestSuite with Neo4jServerFixture {
         .withNodePropertyKeys("Person", "Driver")("name" -> CTString)
         .withNodePropertyKeys("Driver")("fast" -> CTBoolean)
         .withNodePropertyKeys(Set.empty[String], Map("pi" -> CTFloat.nullable))
+        .asCaps
     )
   }
 
@@ -53,6 +56,7 @@ class Neo4jSchemaLoaderTest extends CAPSTestSuite with Neo4jServerFixture {
       Schema.empty
         .withRelationshipPropertyKeys("EMPTY")()
         .withRelationshipPropertyKeys("KNOWS")("since" -> CTInteger, "because" -> CTString.nullable)
+        .asCaps
     )
   }
 
@@ -71,6 +75,7 @@ class Neo4jSchemaLoaderTest extends CAPSTestSuite with Neo4jServerFixture {
         .withNodePropertyKeys(Set.empty[String], Map("pi" -> CTFloat.nullable))
         .withRelationshipPropertyKeys("EMPTY")()
         .withRelationshipPropertyKeys("KNOWS")("since" -> CTInteger, "because" -> CTString.nullable)
+        .asCaps
     )
   }
 

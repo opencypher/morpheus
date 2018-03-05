@@ -28,6 +28,8 @@ import org.opencypher.spark.api.io.EntityTable.SparkTable
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.util.Annotation
+import org.opencypher.spark.schema.CAPSSchema
+import org.opencypher.spark.schema.CAPSSchema._
 
 import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe._
@@ -39,7 +41,7 @@ sealed trait EntityTable[T <: CypherTable[String]] {
 
   verify()
 
-  def schema: Schema
+  def schema: CAPSSchema
 
   def mapping: EntityMapping
 
@@ -134,7 +136,7 @@ object CAPSRelationshipTable {
   */
 abstract class NodeTable[T <: CypherTable[String]](mapping: NodeMapping, table: T) extends EntityTable[T] {
 
-  override lazy val schema: Schema = {
+  override lazy val schema: CAPSSchema = {
     val propertyKeys = mapping.propertyMapping.toSeq.map {
       case (propertyKey, sourceKey) => propertyKey -> table.columnType(sourceKey)
     }
@@ -143,6 +145,7 @@ abstract class NodeTable[T <: CypherTable[String]](mapping: NodeMapping, table: 
       .map(_.union(mapping.impliedLabels))
       .map(combo => Schema.empty.withNodePropertyKeys(combo.toSeq: _*)(propertyKeys: _*))
       .reduce(_ ++ _)
+      .asCaps
   }
 
   override protected def verify(): Unit = {
@@ -161,7 +164,7 @@ abstract class NodeTable[T <: CypherTable[String]](mapping: NodeMapping, table: 
   */
 abstract class RelationshipTable[T <: CypherTable[String]](mapping: RelationshipMapping, table: T) extends EntityTable[T] {
 
-  override lazy val schema: Schema = {
+  override lazy val schema: CAPSSchema = {
     val relTypes = mapping.relTypeOrSourceRelTypeKey match {
       case Left(name) => Set(name)
       case Right((_, possibleTypes)) => possibleTypes
@@ -173,7 +176,7 @@ abstract class RelationshipTable[T <: CypherTable[String]](mapping: Relationship
 
     relTypes.foldLeft(Schema.empty) {
       case (partialSchema, relType) => partialSchema.withRelationshipPropertyKeys(relType)(propertyKeys: _*)
-    }
+    }.asCaps
   }
 
   override protected def verify(): Unit = {

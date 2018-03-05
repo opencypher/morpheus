@@ -25,18 +25,20 @@ import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.neo4j.Neo4jConfig
 import org.opencypher.spark.impl.CAPSGraph
 import org.opencypher.spark.impl.io.neo4j.external.Neo4j
+import org.opencypher.spark.schema.CAPSSchema
+import org.opencypher.spark.schema.CAPSSchema._
 
 import scala.collection.JavaConverters._
 
 object Neo4jGraphLoader {
 
-  def loadSchema(config: Neo4jConfig, nodeQ: String, relQ: String)(implicit caps: CAPSSession): Schema = {
+  def loadSchema(config: Neo4jConfig, nodeQ: String, relQ: String)(implicit caps: CAPSSession): CAPSSchema = {
     val (nodes, rels) = loadRDDs(config, nodeQ, relQ)
 
     loadSchema(nodes, rels)
   }
 
-  private def loadSchema(nodes: RDD[InternalNode], rels: RDD[InternalRelationship]): Schema = {
+  private def loadSchema(nodes: RDD[InternalNode], rels: RDD[InternalRelationship]): CAPSSchema = {
 
     def computeNodeSchema(schema: Schema, node: InternalNode): Schema = {
       val labels = node.labels().asScala.toSet
@@ -50,7 +52,7 @@ object Neo4jGraphLoader {
     val nodeSchema = nodes.aggregate(Schema.empty)(computeNodeSchema, _ ++ _)
     val completeSchema = rels.aggregate(nodeSchema)(computeRelSchema, _ ++ _)
 
-    completeSchema.verify
+    completeSchema.asCaps
   }
 
   private def convertProperties(properties: java.util.Map[String, AnyRef]): PropertyKeys = {
@@ -69,21 +71,21 @@ object Neo4jGraphLoader {
   def fromNeo4j(config: Neo4jConfig, nodeQuery: String, relQuery: String)(implicit caps: CAPSSession): CAPSGraph =
     fromNeo4j(config, nodeQuery, relQuery, "source", "rel", "target", None)
 
-  def fromNeo4j(config: Neo4jConfig, nodeQuery: String, relQuery: String, schema: Schema)(
-      implicit caps: CAPSSession): CAPSGraph =
+  def fromNeo4j(config: Neo4jConfig, nodeQuery: String, relQuery: String, schema: CAPSSchema)(
+    implicit caps: CAPSSession): CAPSGraph =
     fromNeo4j(config, nodeQuery, relQuery, "source", "rel", "target", Some(schema))
 
   def fromNeo4j(
-      config: Neo4jConfig,
-      nodeQuery: String,
-      relQuery: String,
-      sourceNode: String,
-      rel: String,
-      targetNode: String,
-      maybeSchema: Option[Schema] = None)(implicit caps: CAPSSession): CAPSGraph = {
+    config: Neo4jConfig,
+    nodeQuery: String,
+    relQuery: String,
+    sourceNode: String,
+    rel: String,
+    targetNode: String,
+    maybeSchema: Option[Schema] = None)(implicit caps: CAPSSession): CAPSGraph = {
     val (nodes, rels) = loadRDDs(config, nodeQuery, relQuery)
 
-    val schema = maybeSchema.getOrElse(loadSchema(nodes, rels))
+    val schema = maybeSchema.getOrElse(loadSchema(nodes, rels)).asCaps
 
     new Neo4jGraph(schema, caps)(nodes, rels, sourceNode, rel, targetNode)
   }

@@ -23,7 +23,7 @@ import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalSta
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.{ColumnName, RecordHeader}
 import org.opencypher.spark.impl.CAPSFunctions.{array_contains, get_node_labels, get_property_keys}
-import org.opencypher.spark.impl.DataFrameOps._
+import org.opencypher.spark.impl.convert.CAPSCypherType._
 import org.opencypher.spark.impl.physical.CAPSRuntimeContext
 
 object SparkSQLExprMapper {
@@ -130,7 +130,7 @@ object SparkSQLExprMapper {
         case Add(lhs, rhs) => lhs.asSparkSQLExpr + rhs.asSparkSQLExpr
         case Subtract(lhs, rhs) => lhs.asSparkSQLExpr - rhs.asSparkSQLExpr
         case Multiply(lhs, rhs) => lhs.asSparkSQLExpr * rhs.asSparkSQLExpr
-        case div@Divide(lhs, rhs) => (lhs.asSparkSQLExpr / rhs.asSparkSQLExpr).cast(toSparkType(div.cypherType))
+        case div@Divide(lhs, rhs) => (lhs.asSparkSQLExpr / rhs.asSparkSQLExpr).cast(div.cypherType.getSparkType)
 
         // Functions
         case Exists(e) => e.asSparkSQLExpr.isNotNull

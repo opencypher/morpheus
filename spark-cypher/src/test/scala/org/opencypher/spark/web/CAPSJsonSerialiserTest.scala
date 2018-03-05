@@ -411,13 +411,13 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite with TeamDataFixture {
           |    }
           |  ],
           |  "labels" : [
-          |    "Person",
           |    "Swedish",
+          |    "Person",
           |    "Book"
           |  ],
           |  "types" : [
-          |    "READS",
           |    "KNOWS",
+          |    "READS",
           |    "INFLUENCES"
           |  ]
           |}""".stripMargin

@@ -23,12 +23,14 @@ import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.schema.CAPSSchema
+import org.opencypher.spark.schema.CAPSSchema._
 
 final case class CAPSUnionGraph(graphs: CAPSGraph*)(implicit val session: CAPSSession) extends CAPSGraph {
 
   private lazy val individualSchemas = graphs.map(_.schema)
 
-  override lazy val schema: Schema = individualSchemas.foldLeft(Schema.empty)(_ ++ _)
+  override lazy val schema: CAPSSchema = individualSchemas.foldLeft(Schema.empty)(_ ++ _).asCaps
 
   override def cache(): CAPSUnionGraph = map(_.cache())
 

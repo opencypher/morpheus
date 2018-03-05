@@ -19,7 +19,6 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.functions.{asc, desc, monotonically_increasing_id}
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.opencypher.okapi.api.graph.QualifiedGraphName
-import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
@@ -32,9 +31,11 @@ import org.opencypher.okapi.relational.impl.table.{ColumnName, _}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.SparkSQLExprMapper._
+import org.opencypher.spark.impl.convert.CAPSCypherType._
 import org.opencypher.spark.impl.physical.operators.CAPSPhysicalOperator._
 import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
+import org.opencypher.spark.schema.CAPSSchema
 
 private[spark] abstract class UnaryPhysicalOperator extends CAPSPhysicalOperator {
 
@@ -91,7 +92,7 @@ final case class Unwind(in: CAPSPhysicalOperator, list: Expr, item: Var, header:
           // we need a Java list of rows to construct a DataFrame
           context.parameters(name).as[CypherList] match {
             case Some(l) =>
-              val sparkType = toSparkType(item.cypherType)
+              val sparkType = item.cypherType.getSparkType
               val nullable = item.cypherType.isNullable
               val schema = StructType(Seq(StructField(itemColumn, sparkType, nullable)))
 
@@ -194,7 +195,7 @@ final case class ProjectPatternGraph(
   in: CAPSPhysicalOperator,
   toCreate: Set[ConstructedEntity],
   name: String,
-  schema: Schema,
+  schema: CAPSSchema,
   header: RecordHeader)
   extends UnaryPhysicalOperator {
 
@@ -395,7 +396,7 @@ final case class Aggregate(
               withInnerExpr(expr)(
                 functions
                   .avg(_)
-                  .cast(toSparkType(to.cypherType))
+                  .cast(to.cypherType.getSparkType)
                   .as(columnName))
 
             case CountStar(_) =>

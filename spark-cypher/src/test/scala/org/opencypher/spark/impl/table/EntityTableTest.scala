@@ -24,7 +24,8 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.spark.api.io._
 import org.opencypher.spark.impl.CAPSGraph
-import org.opencypher.spark.impl.DataFrameOps._
+import org.opencypher.spark.impl.convert.CAPSCypherType
+import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.test.CAPSTestSuite
 
 case class Person(id: Long, name: String, age: Int) extends Node
@@ -69,7 +70,9 @@ class EntityTableTest extends CAPSTestSuite {
     nodeTable.schema should equal(
       Schema.empty
         .withNodePropertyKeys("A", "B")("foo" -> CTString.nullable, "bar" -> CTInteger)
-        .withNodePropertyKeys("A", "B", "C")("foo" -> CTString.nullable, "bar" -> CTInteger))
+        .withNodePropertyKeys("A", "B", "C")("foo" -> CTString.nullable, "bar" -> CTInteger)
+        .asCaps)
+
   }
 
   test("NodeTable should cast compatible types in input DataFrame") {
@@ -80,7 +83,8 @@ class EntityTableTest extends CAPSTestSuite {
     nodeTable.schema should equal(
       Schema.empty
         .withNodePropertyKeys("A", "B")("foo" -> CTInteger, "bar" -> CTFloat)
-        .withNodePropertyKeys("A", "B", "C")("foo" -> CTInteger, "bar" -> CTFloat))
+        .withNodePropertyKeys("A", "B", "C")("foo" -> CTInteger, "bar" -> CTFloat)
+        .asCaps)
 
     nodeTable.records.toDF().collect().toSet should equal(Set(Row(1L, true, 10L, (23.1f).toDouble)))
   }
@@ -137,7 +141,7 @@ class EntityTableTest extends CAPSTestSuite {
   }
 
   test("NodeTable should not accept wrong source property key type") {
-    assert(!supportedTypes.contains(DecimalType))
+    assert(!CAPSCypherType.supportedTypes.contains(DecimalType))
     an[IllegalArgumentException] should be thrownBy {
       val df = session.createDataFrame(Seq((1, true, BigDecimal(13.37)))).toDF("ID", "IS_A", "PROP")
       val nodeMapping = NodeMapping.on("ID").withOptionalLabel("A" -> "IS_A").withPropertyKey("PROP")

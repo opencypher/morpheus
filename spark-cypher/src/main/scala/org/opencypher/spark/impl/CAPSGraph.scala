@@ -26,6 +26,8 @@ import org.opencypher.okapi.relational.impl.table.{OpaqueField, RecordHeader}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable}
 import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.schema.CAPSSchema
+import org.opencypher.spark.schema.CAPSSchema._
 
 trait CAPSGraph extends PropertyGraph with GraphOperations with Serializable {
 
@@ -36,6 +38,8 @@ trait CAPSGraph extends PropertyGraph with GraphOperations with Serializable {
   override def session: CAPSSession
 
   override def union(other: PropertyGraph): CAPSGraph
+
+  override def schema: CAPSSchema
 
   def cache(): CAPSGraph
 
@@ -71,19 +75,19 @@ object CAPSGraph {
 
   def create(nodeTable: CAPSNodeTable, entityTables: CAPSEntityTable*)(implicit caps: CAPSSession): CAPSGraph = {
     val allTables = nodeTable +: entityTables
-    val schema = allTables.map(_.schema).reduce(_ ++ _)
+    val schema = allTables.map(_.schema).reduce[Schema](_ ++ _).asCaps
     new CAPSScanGraph(allTables, schema)
   }
 
-  def create(records: CypherRecords, schema: Schema)(implicit caps: CAPSSession): CAPSGraph = {
+  def create(records: CypherRecords, schema: CAPSSchema)(implicit caps: CAPSSession): CAPSGraph = {
     val capsRecords = records.asCaps
     new CAPSPatternGraph(capsRecords, schema)
   }
 
-  def createLazy(theSchema: Schema, loadGraph: => CAPSGraph)(implicit caps: CAPSSession): CAPSGraph =
+  def createLazy(theSchema: CAPSSchema, loadGraph: => CAPSGraph)(implicit caps: CAPSSession): CAPSGraph =
     new LazyGraph(theSchema, loadGraph) {}
 
-  sealed abstract class LazyGraph(override val schema: Schema, loadGraph: => CAPSGraph)(implicit caps: CAPSSession)
+  sealed abstract class LazyGraph(override val schema: CAPSSchema, loadGraph: => CAPSGraph)(implicit caps: CAPSSession)
     extends CAPSGraph {
     protected lazy val lazyGraph: CAPSGraph = {
       val g = loadGraph
@@ -125,7 +129,7 @@ object CAPSGraph {
 
   sealed abstract class EmptyGraph(implicit val caps: CAPSSession) extends CAPSGraph {
 
-    override val schema: Schema = Schema.empty
+    override val schema: CAPSSchema = CAPSSchema.empty
 
     override def nodes(name: String, cypherType: CTNode): CAPSRecords =
       CAPSRecords.empty(RecordHeader.from(OpaqueField(Var(name)(cypherType))))

@@ -40,6 +40,7 @@ import org.opencypher.spark.api.io.EntityTable._
 import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.CAPSRecords.{prepareDataFrame, verifyAndCreate}
 import org.opencypher.spark.impl.DataFrameOps._
+import org.opencypher.spark.impl.convert.CAPSCypherType._
 import org.opencypher.spark.impl.convert.rowToCypherMap
 import org.opencypher.spark.impl.table.CAPSRecordHeader._
 
@@ -377,10 +378,10 @@ object CAPSRecords extends CypherRecordsCompanion[CAPSRecords, CAPSSession] {
     * Normalises the dataframe by lifting numeric fields to Long and similar ops.
     */
   private def generalizeColumnTypes(initialDataFrame: DataFrame): DataFrame = {
-    val toCast = initialDataFrame.schema.fields.filter(f => fromSparkType(f.dataType, f.nullable).isEmpty)
+    val toCast = initialDataFrame.schema.fields.filter(f => f.dataType.toCypherType(f.nullable).isEmpty)
     val dfWithCompatibleTypes: DataFrame = toCast.foldLeft(initialDataFrame) {
       case (df, field) =>
-        val castType = cypherCompatibleDataType(field.dataType).getOrElse(
+        val castType = field.dataType.cypherCompatibleDataType.getOrElse(
           throw IllegalArgumentException(
             s"a Spark type supported by Cypher: ${supportedTypes.mkString("[", ", ", "]")}",
             s"type ${field.dataType} of field $field"))
@@ -444,14 +445,14 @@ object CAPSRecords extends CypherRecordsCompanion[CAPSRecords, CAPSSession] {
     initialHeader.slots.foreach { slot =>
       val dfSchema = initialData.schema
       val field = dfSchema(ColumnName.of(slot))
-      val cypherType = fromSparkType(field.dataType, field.nullable)
+      val cypherType = field.dataType.toCypherType(field.nullable)
         .getOrElse(throw IllegalArgumentException("a supported Spark type", field.dataType))
       val headerType = slot.content.cypherType
 
       // if the type in the data doesn't correspond to the type in the header we fail
       // except: we encode nodes, rels and integers with the same data type, so we can't fail
       // on conflicts when we expect entities (alternative: change reverse-mapping function somehow)
-      if (toSparkType(headerType) != toSparkType(cypherType) && !containsEntity(headerType))
+      if (headerType.toSparkType != cypherType.toSparkType && !containsEntity(headerType))
         throw IllegalArgumentException(s"a valid data type for column ${field.name} of type $headerType", cypherType)
     }
     createInternal(initialHeader, initialData)

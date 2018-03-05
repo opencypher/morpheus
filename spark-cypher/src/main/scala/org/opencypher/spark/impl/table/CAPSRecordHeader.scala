@@ -21,14 +21,14 @@ import org.apache.spark.sql.types.{StructField, StructType}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.impl.table._
-import org.opencypher.spark.impl.DataFrameOps._
+import org.opencypher.spark.impl.convert.CAPSCypherType._
 
 object CAPSRecordHeader {
 
   def fromSparkStructType(structType: StructType): RecordHeader =
     RecordHeader.from(structType.fields.map { field =>
       OpaqueField(
-        Var(field.name)(fromSparkType(field.dataType, field.nullable)
+        Var(field.name)(field.dataType.toCypherType(field.nullable)
           .getOrElse(throw IllegalArgumentException("a supported Spark type", field.dataType))))
     }: _*)
 
@@ -39,7 +39,7 @@ object CAPSRecordHeader {
 
   private def structField(slot: RecordSlot, nullable: Boolean): StructField = {
     val name = ColumnName.of(slot.content)
-    val dataType = toSparkType(slot.content.cypherType)
+    val dataType = slot.content.cypherType.getSparkType
     StructField(name, dataType, nullable)
   }
 
@@ -62,7 +62,7 @@ object CAPSRecordHeader {
   implicit class CAPSRecordSlot(slot: RecordSlot) {
     def asStructField: StructField = {
       val name = ColumnName.of(slot)
-      val sparkType = toSparkType(slot.content.cypherType)
+      val sparkType = slot.content.cypherType.getSparkType
       StructField(name, sparkType, slot.content.cypherType.isNullable)
     }
   }
