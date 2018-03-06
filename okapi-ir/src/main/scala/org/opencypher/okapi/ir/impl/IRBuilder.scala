@@ -65,23 +65,6 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
         error(IRBuilderError(s"Statement not yet supported: $x"))(None)
     }
 
-  //  def registerIRGraph[R: _hasContext](c: Clause): Eff[R, IRGraph] = {
-  //    for {
-  //      context <- get[R, IRBuilderContext]
-  //      graph <- {
-  //        val currentGraph = context.semanticState.recordedContextGraphs.find {
-  //          case (clause, _) =>
-  //            c.position == clause.position
-  //        }.map(_._2)
-  //          .map { g =>
-  //            IRCatalogGraph(context.graphs(g.source), context.schemaFor(g.source))
-  //          }
-  //          .getOrElse(context.ambientGraph)
-  //        put[R, IRBuilderContext](context.withWorkingGraph(currentGraph)) >> pure[R, IRGraph](currentGraph)
-  //      }
-  //    } yield graph
-  //  }
-
   private def convertClause[R: _mayFail : _hasContext](c: ast.Clause): Eff[R, Vector[BlockRef]] = {
 
     c match {
@@ -215,18 +198,6 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
     }
   }
 
-  //  private def convertGraphReturnItems[R: _hasContext](maybeItems: Option[GraphReturnItems]): Eff[R, Vector[IRGraph]] = {
-  //
-  //    maybeItems match {
-  //      case None =>
-  //        pure[R, Vector[IRGraph]](Vector.empty[IRGraph])
-  //      case Some(GraphReturnItems(_, items)) =>
-  //        for {
-  //          graphs <- items.toVector.traverse(convertGraphReturnItem[R])
-  //        } yield graphs
-  //    }
-  //  }
-
   private def registerProjectBlock(
     context: IRBuilderContext,
     fieldExprs: Vector[(IRField, Expr)],
@@ -269,59 +240,6 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
       }
     } yield refs
   }
-
-  //  private def convertGraphReturnItem[R: _hasContext](item: ast.GraphReturnItem): Eff[R, IRGraph] = item match {
-  //    case ast.NewContextGraphs(source: GraphAtAs, target) if target.isEmpty || target.contains(source) =>
-  //      convertSingleGraphAs[R](source)
-  //
-  //    case ast.ReturnedGraph(graph) =>
-  //      convertSingleGraphAs[R](graph)
-  //
-  //    case _ => throw NotImplementedException(s"Support for setting a different target graph not yet implemented")
-  //  }
-
-  //  private def convertSingleGraphAs[R: _hasContext](graph: ast.SingleGraphAs): Eff[R, IRGraph] = ???
-  //  {
-  //    graph.as match {
-  //      case Some(Variable(graphName)) =>
-  //        for {
-  //          context <- get[R, IRBuilderContext]
-  //          result <- graph match {
-  //
-  //            case ast.GraphOfAs(astPattern, _, _) =>
-  //              for {
-  //                pattern <- convertPattern(astPattern)
-  //              } yield {
-  //                val schemaUnion = context.graphList.map(_.schema).reduce(_ ++ _)
-  //                val patternGraphSchema = schemaUnion.forPattern(pattern)
-  //                IRPatternGraph(patternGraphSchema, pattern)
-  //              }
-  //
-  //            case ast.GraphAtAs(url, _, _) =>
-  //
-  //              val qualifiedGraphNameString = url.url match {
-  //                case Left(_) =>
-  //                  throw NotImplementedException(s"Support for qualified graph names by parameter not yet implemented")
-  //                case Right(StringLiteral(literal)) => literal
-  //              }
-  //
-  //              val qualifiedGraphName = QualifiedGraphName(qualifiedGraphNameString)
-  //              val newContext = context.withGraphAt(graphName, qualifiedGraphName)
-  //              put[R, IRBuilderContext](newContext) >>
-  //                pure[R, IRGraph](IRCatalogGraph(qualifiedGraphName, newContext.schemaFor(graphName)))
-  //
-  //            case ast.GraphAs(ref, alias, _) if alias.isEmpty || alias.contains(ref) =>
-  //              pure[R, IRGraph](IRCatalogGraph(context.graphs(graphName), context.schemaFor(graphName)))
-  //
-  //            case _ =>
-  //              throw NotImplementedException(s"Support for graph aliasing not yet implemented")
-  //          }
-  //        } yield result
-  //
-  //      case None =>
-  //        throw IllegalArgumentException("graph with alias", graph)
-  //    }
-  //  }
 
   private def convertReturnItem[R: _mayFail : _hasContext](item: ast.ReturnItem): Eff[R, (IRField, Expr)] = item match {
 

@@ -75,8 +75,6 @@ final case class Project(expr: Expr, in: FlatOperator, header: RecordHeader) ext
 
 final case class Unwind(expr: Expr, item: Var, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
-final case class ProjectGraph(graph: LogicalGraph, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
-
 final case class Aggregate(
     aggregations: Set[(Var, Aggregator)],
     group: Set[Var],

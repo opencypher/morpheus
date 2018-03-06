@@ -18,7 +18,7 @@ package org.opencypher.okapi.relational.impl.flat
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.api.util.DirectCompilationStage
-import org.opencypher.okapi.logical.impl.{LogicalGraph, LogicalOperator, SolvedQueryModel}
+import org.opencypher.okapi.logical.impl.LogicalOperator
 import org.opencypher.okapi.logical.{impl => logical}
 import org.opencypher.okapi.relational.impl.table.{ProjectedExpr, ProjectedField}
 

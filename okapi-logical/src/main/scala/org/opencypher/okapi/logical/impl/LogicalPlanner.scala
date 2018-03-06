@@ -151,16 +151,6 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     }
   }
 
-//  private def planGraphProjections(in: LogicalOperator, graphs: Set[IRGraph])(
-//    implicit context: LogicalPlannerContext): LogicalOperator = {
-//      // TODO: Simplify further
-//      graphs.foldLeft(in) {
-//      case (planSoFar, nextGraph) =>
-//        val logicalGraph = resolveGraph(nextGraph, in.sourceGraph.schema, in.fields)
-//        ProjectGraph(logicalGraph, planSoFar, planSoFar.solved)
-//    }
-//  }
-
   private def planFieldProjections(in: LogicalOperator, exprs: Map[IRField, Expr])(
     implicit context: LogicalPlannerContext) = {
     exprs.foldLeft(in) {

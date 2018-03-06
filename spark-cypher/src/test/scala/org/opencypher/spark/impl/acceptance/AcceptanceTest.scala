@@ -29,7 +29,7 @@ abstract class AcceptanceTest
     with ExpressionBehaviour
     with FunctionsBehaviour
     with MatchBehaviour
-    with MultigraphProjectionBehaviour
+    with MultipleGraphBehaviour
     with OptionalMatchBehaviour
     with PredicateBehaviour
     with ReturnBehaviour
@@ -67,7 +67,7 @@ abstract class AcceptanceTest
     }
 
     describe("MultigraphProjectionBehaviour") {
-      it should behave like multigraphProjectionBehaviour(initGraph)
+      it should behave like multipleGraphBehaviour(initGraph)
     }
 
     describe("OptionalMatchBehaviour") {
