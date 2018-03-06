@@ -28,7 +28,7 @@ sealed abstract class LogicalOperator extends AbstractTreeNode[LogicalOperator] 
 
   val fields: Set[Var]
 
-  def sourceGraph: LogicalGraph
+  def graph: LogicalGraph
 
   override def args = super.args.filter {
     case SolvedQueryModel(_, _) => false
@@ -65,7 +65,7 @@ case class ConstructedRelationship(v: Var, source: Var, target: Var, typ: String
 sealed abstract class StackingLogicalOperator extends LogicalOperator {
   def in: LogicalOperator
 
-  override def sourceGraph: LogicalGraph = in.sourceGraph
+  override def graph: LogicalGraph = in.graph
 }
 
 sealed abstract class BinaryLogicalOperator extends LogicalOperator {
@@ -77,7 +77,7 @@ sealed abstract class BinaryLogicalOperator extends LogicalOperator {
     * Always pick the source graph from the right-hand side, because it works for in-pattern expansions
     * and changing of source graphs. This relies on the planner always planning _later_ operators on the rhs.
     */
-  override def sourceGraph: LogicalGraph = rhs.sourceGraph
+  override def graph: LogicalGraph = rhs.graph
 }
 
 sealed abstract class LogicalLeafOperator extends LogicalOperator
@@ -174,12 +174,6 @@ final case class Unwind(expr: Expr, field: Var, in: LogicalOperator, solved: Sol
   override val fields: Set[Var] = in.fields + field
 }
 
-final case class ProjectGraph(graph: LogicalGraph, in: LogicalOperator, solved: SolvedQueryModel)
-    extends StackingLogicalOperator {
-
-  override val fields: Set[Var] = in.fields
-}
-
 final case class Aggregate(
     aggregations: Set[(Var, Aggregator)],
     group: Set[Var],
@@ -200,7 +194,7 @@ final case class Select(
   override val fields: Set[Var] = orderedFields.toSet
 }
 
-final case class ReturnGraph(graph: LogicalGraph, in: LogicalOperator, solved: SolvedQueryModel) extends StackingLogicalOperator {
+final case class ReturnGraph(in: LogicalOperator, solved: SolvedQueryModel) extends StackingLogicalOperator {
   override val fields: Set[Var] = Set.empty
 }
 
@@ -243,8 +237,8 @@ final case class ExistsSubQuery(
   override val fields: Set[Var] = lhs.fields + expr.targetField
 }
 
-final case class SetSourceGraph(
-    override val sourceGraph: LogicalGraph,
+final case class UseGraph(
+    override val graph: LogicalGraph,
     in: LogicalOperator,
     solved: SolvedQueryModel)
     extends StackingLogicalOperator {
@@ -255,5 +249,5 @@ final case class SetSourceGraph(
 final case class EmptyRecords(fields: Set[Var], in: LogicalOperator, solved: SolvedQueryModel)
     extends StackingLogicalOperator
 
-final case class Start(sourceGraph: LogicalGraph, fields: Set[Var], solved: SolvedQueryModel)
+final case class Start(graph: LogicalGraph, fields: Set[Var], solved: SolvedQueryModel)
     extends LogicalLeafOperator

@@ -172,6 +172,9 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
       case flat.Limit(expr, in, header) =>
         producer.planLimit(process(in), expr, header)
 
+      case flat.ReturnGraph(in) =>
+        producer.planReturnGraph(process(in))
+
       case x =>
         throw NotImplementedException(s"Physical planning of operator $x")
     }

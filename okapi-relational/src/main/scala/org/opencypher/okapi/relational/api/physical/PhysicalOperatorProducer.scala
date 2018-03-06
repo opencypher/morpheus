@@ -138,6 +138,13 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   def planSelectFields(in: P, fields: IndexedSeq[Var], header: RecordHeader): P
 
   /**
+    * Returns the working graph
+    *
+    * @param in     previous operator
+    */
+  def planReturnGraph(in: P): P
+
+  /**
     * Use the specified graph.
     *
     * @param in     previous operator

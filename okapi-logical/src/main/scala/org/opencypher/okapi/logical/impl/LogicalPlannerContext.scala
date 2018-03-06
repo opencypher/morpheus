@@ -24,8 +24,5 @@ import org.opencypher.okapi.ir.api.expr.Var
 final case class LogicalPlannerContext(
   ambientGraphSchema: Schema,
   inputRecordFields: Set[Var],
-  catalog: QualifiedGraphName => PropertyGraphDataSource,
-  sourceGraph: IRGraph
-) {
-  def withSourceGraph(graph: IRGraph): LogicalPlannerContext = copy(sourceGraph = graph)
-}
+  catalog: QualifiedGraphName => PropertyGraphDataSource
+)

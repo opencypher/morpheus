@@ -61,6 +61,10 @@ final case class Distinct(fields: Set[Var], in: FlatOperator, header: RecordHead
 final case class Select(fields: IndexedSeq[Var], graphs: Set[String], in: FlatOperator, header: RecordHeader)
     extends StackingFlatOperator
 
+final case class ReturnGraph(in: FlatOperator) extends StackingFlatOperator {
+  override def header: RecordHeader = RecordHeader.empty
+}
+
 final case class RemoveAliases(
     dependentFields: Set[(ProjectedField, ProjectedExpr)],
     in: FlatOperator,

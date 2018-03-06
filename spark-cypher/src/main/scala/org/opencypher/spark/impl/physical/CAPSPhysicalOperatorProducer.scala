@@ -59,6 +59,10 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
   override def planSelectFields(in: CAPSPhysicalOperator, fields: IndexedSeq[Var], header: RecordHeader): CAPSPhysicalOperator =
     operators.SelectFields(in, fields, header)
 
+  override def planReturnGraph(in: CAPSPhysicalOperator): CAPSPhysicalOperator = {
+    operators.ReturnGraph(in)
+  }
+
   override def planUseGraph(in: CAPSPhysicalOperator, graph: LogicalExternalGraph): CAPSPhysicalOperator =
     operators.UseGraph(in, graph)
 
@@ -178,4 +182,5 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
 
   override def planLimit(in: CAPSPhysicalOperator, expr: Expr, header: RecordHeader): CAPSPhysicalOperator =
     operators.Limit(in, expr, header)
+
 }

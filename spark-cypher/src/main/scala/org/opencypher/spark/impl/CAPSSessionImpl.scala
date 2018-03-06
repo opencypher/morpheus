@@ -79,7 +79,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
     logStageProgress("Done!")
 
     logStageProgress("Logical planning ...", newLine = false)
-    val logicalPlannerContext = LogicalPlannerContext(graph.schema, inputFields, ir.model.graphs.mapValues(_.namespace).andThen(dataSource), ambientGraphNew)
+    val logicalPlannerContext = LogicalPlannerContext(graph.schema, inputFields, ir.model.graphs.mapValues(_.namespace).andThen(dataSource), catalog)
     val logicalPlan = time("Logical planning")(logicalPlanner(ir)(logicalPlannerContext))
     logStageProgress("Done!")
     if (PrintLogicalPlan.isSet) {

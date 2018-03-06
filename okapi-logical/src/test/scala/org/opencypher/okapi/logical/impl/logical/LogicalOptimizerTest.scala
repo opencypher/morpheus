@@ -42,7 +42,7 @@ class LogicalOptimizerTest extends IrTestSuite {
 //  )
 
   def plannerContext(schema: Schema) =
-    LogicalPlannerContext(schema, Set.empty, Map(testQualifiedGraphName -> testGraphSource(testGraphName -> schema)), testGraph())
+    LogicalPlannerContext(schema, Set.empty, Map(testQualifiedGraphName -> testGraphSource(testGraphName -> schema)))
 
   test("push label filter into scan") {
     val animalSchema = schema.withNodePropertyKeys("Animal")()
@@ -58,7 +58,7 @@ class LogicalOptimizerTest extends IrTestSuite {
       Set(),
       NodeScan(
         Var("a")(CTNode(Set("Animal"))),
-        SetSourceGraph(
+        UseGraph(
           animalGraph,
           Start(
             animalGraph,
@@ -87,7 +87,7 @@ class LogicalOptimizerTest extends IrTestSuite {
       Set(),
       EmptyRecords(
         Set(Var("a")(CTNode(Set("Animal")))),
-        SetSourceGraph(logicalGraph, Start(logicalGraph, Set(), emptySqm), emptySqm),
+        UseGraph(logicalGraph, Start(logicalGraph, Set(), emptySqm), emptySqm),
         SolvedQueryModel(Set(), Set(HasLabel(Var("a")(CTNode(Set("Animal"))), Label("Animal"))(CTBoolean)))
       ),
       SolvedQueryModel(Set(IRField("a")(CTNode)), Set(HasLabel(Var("a")(CTNode), Label("Animal"))(CTBoolean)))
@@ -111,7 +111,7 @@ class LogicalOptimizerTest extends IrTestSuite {
       Set(),
       EmptyRecords(
         Set(Var("a")(CTNode(Set("Astronaut", "Animal")))),
-        SetSourceGraph(logicalGraph, Start(logicalGraph, Set(), emptySqm), emptySqm),
+        UseGraph(logicalGraph, Start(logicalGraph, Set(), emptySqm), emptySqm),
         SolvedQueryModel(
           Set(),
           Set(

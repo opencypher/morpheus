@@ -18,7 +18,7 @@ package org.opencypher.okapi.relational.impl.flat
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.api.util.DirectCompilationStage
-import org.opencypher.okapi.logical.impl.LogicalOperator
+import org.opencypher.okapi.logical.impl.{LogicalGraph, LogicalOperator, SolvedQueryModel}
 import org.opencypher.okapi.logical.{impl => logical}
 import org.opencypher.okapi.relational.impl.table.{ProjectedExpr, ProjectedField}
 
@@ -58,18 +58,14 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
       case logical.Project(expr, Some(field), in, _) =>
         producer.project(ProjectedField(field, expr), process(in))
 
-      case logical.ProjectGraph(graph, in, _) =>
-        val prev = process(in)
-        ProjectGraph(graph, prev, prev.header)
-
       case logical.Aggregate(aggregations, group, in, _) =>
         producer.aggregate(aggregations, group, process(in))
 
       case logical.Expand(source, rel, direction, target, sourceOp, targetOp, _) =>
-        producer.expand(source, rel, target, direction, input.sourceGraph.schema, process(sourceOp), process(targetOp))
+        producer.expand(source, rel, target, direction, input.graph.schema, process(sourceOp), process(targetOp))
 
       case logical.ExpandInto(source, rel, target, direction, sourceOp, _) =>
-        producer.expandInto(source, rel, target, direction, input.sourceGraph.schema, process(sourceOp))
+        producer.expandInto(source, rel, target, direction, input.graph.schema, process(sourceOp))
 
       case logical.ValueJoin(lhs, rhs, predicates, _) =>
         producer.valueJoin(process(lhs), process(rhs), predicates)
@@ -80,12 +76,12 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
       case logical.Start(graph, fields, _) =>
         producer.planStart(graph, fields)
 
-      case logical.SetSourceGraph(graph, in, _) =>
+      case logical.UseGraph(graph, in, _) =>
         producer.planSetSourceGraph(graph, process(in))
 
       case logical.BoundedVarLengthExpand(source, edgeList, target, direction, lower, upper, sourceOp, targetOp, _) =>
         val initVarExpand = producer.initVarExpand(source, edgeList, process(sourceOp))
-        val edgeScan = producer.varLengthEdgeScan(edgeList, producer.planStart(input.sourceGraph, Set.empty))
+        val edgeScan = producer.varLengthEdgeScan(edgeList, producer.planStart(input.graph, Set.empty))
         producer.boundedVarExpand(
           edgeScan.edge,
           edgeList,
@@ -112,6 +108,9 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
 
       case logical.Limit(expr, sourceOp, _) =>
         producer.limit(expr, process(sourceOp))
+
+      case logical.ReturnGraph(in, _) =>
+        producer.returnGraph(process(in))
 
       case x =>
         throw NotImplementedException(s"Flat planning not implemented for $x")

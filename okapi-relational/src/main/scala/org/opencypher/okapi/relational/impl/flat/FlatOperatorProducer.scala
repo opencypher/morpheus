@@ -57,6 +57,10 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     Select(fields, graphs, in, nextHeader)
   }
 
+  def returnGraph(in: FlatOperator): ReturnGraph = {
+    ReturnGraph(in)
+  }
+
   def removeAliases(toKeep: IndexedSeq[Var], in: FlatOperator): FlatOperator = {
     val renames = in.header.contents.collect {
       case pf @ ProjectedField(v, _: Property | _: HasLabel | _: HasType) if !toKeep.contains(v) =>

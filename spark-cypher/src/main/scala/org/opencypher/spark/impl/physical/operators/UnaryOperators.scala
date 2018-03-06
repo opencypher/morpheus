@@ -294,6 +294,14 @@ final case class RemoveAliases(
   }
 }
 
+final case class ReturnGraph(in: CAPSPhysicalOperator) extends UnaryPhysicalOperator {
+  override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
+    CAPSPhysicalResult(CAPSRecords.empty(header)(prev.records.caps), prev.graph)
+  }
+
+  override def header: RecordHeader = RecordHeader.empty
+}
+
 final case class SelectFields(in: CAPSPhysicalOperator, fields: IndexedSeq[Var], header: RecordHeader)
   extends UnaryPhysicalOperator {
 

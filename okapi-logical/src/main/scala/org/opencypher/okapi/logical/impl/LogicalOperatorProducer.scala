@@ -114,12 +114,12 @@ class LogicalOperatorProducer {
     Select(fields, Set.empty, prev, prev.solved)
   }
 
-  def planReturnGraph(graph: LogicalGraph, prev: LogicalOperator): ReturnGraph = {
-    ReturnGraph(graph, prev, prev.solved)
+  def planReturnGraph(prev: LogicalOperator): ReturnGraph = {
+    ReturnGraph(prev, prev.solved)
   }
 
-  def planSetSourceGraph(graph: LogicalGraph, prev: LogicalOperator): SetSourceGraph = {
-    SetSourceGraph(graph, prev, prev.solved)
+  def planUseGraph(graph: LogicalGraph, prev: LogicalOperator): UseGraph = {
+    UseGraph(graph, prev, prev.solved)
   }
 
   def planStart(graph: LogicalGraph, fields: Set[Var]): Start = {

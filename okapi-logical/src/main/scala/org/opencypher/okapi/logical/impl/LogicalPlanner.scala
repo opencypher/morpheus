@@ -50,8 +50,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         val fields = t.binds.fieldsOrder.map(f => Var(f.name)(f.cypherType))
         producer.planSelect(fields, plan)
       case g: GraphResultBlock[_] =>
-        val lg = resolveGraph(g.graph, plan.fields)
-        producer.planReturnGraph(lg, plan)
+        producer.planReturnGraph(producer.planUseGraph(resolveGraph(g.graph, plan.fields), plan))
     }
   }
 
@@ -100,9 +99,15 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     implicit context: LogicalPlannerContext): LogicalOperator = {
     model(ref) match {
       case MatchBlock(_, pattern, where, optional, graph) =>
+        val lg = resolveGraph(graph, plan.fields)
+        val inputGraphPlan = if (plan.graph == lg) {
+          plan
+        } else {
+          planUseGraph(lg, plan)
+        }
         // this plans both pattern and filter for convenience -- TODO: split up
-        val patternPlan = planMatchPattern(plan, pattern, where, graph)(context.withSourceGraph(graph))
-        if (optional) producer.planOptional(plan, patternPlan) else patternPlan
+        val patternPlan = planMatchPattern(inputGraphPlan, pattern, where, graph)
+        if (optional) producer.planOptional(inputGraphPlan, patternPlan) else patternPlan
 
       case ProjectBlock(_, Fields(fields), where, _, distinct) =>
         val withFields = planFieldProjections(plan, fields)
@@ -360,11 +365,10 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     producer.planStart(logicalGraph, context.inputRecordFields)
   }
 
-  private def planSetSourceGraph(graph: IRGraph, prev: LogicalOperator)(
-    implicit context: LogicalPlannerContext): SetSourceGraph = {
-    val logicalGraph = resolveGraph(graph, prev.fields)
+  private def planUseGraph(graph: LogicalGraph, prev: LogicalOperator)(
+    implicit context: LogicalPlannerContext): UseGraph = {
 
-    producer.planSetSourceGraph(logicalGraph, prev)
+    producer.planUseGraph(graph, prev)
   }
 
   private def planMatchPattern(plan: LogicalOperator, pattern: Pattern[Expr], where: Set[Expr], graph: IRGraph)(
@@ -376,7 +380,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       filteredPlan
     } else {
       // TODO: Find a way to feed the same input into all arms of the cartesian product without recomputing it
-      val bases = plan +: components.map(_ => Start(plan.sourceGraph, Set.empty, SolvedQueryModel.empty)).tail
+      val bases = plan +: components.map(_ => Start(plan.graph, Set.empty, SolvedQueryModel.empty)).tail
       val plans = bases.zip(components).map {
         case (base, component) =>
           val componentPlan = planComponentPattern(base, component, graph)
@@ -416,10 +420,9 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
       // if we have already have a previous result we need to plan a cartesian product
       if (plan.solved.fields.nonEmpty) {
-        producer.planCartesianProduct(plan, nodePlan(planSetSourceGraph(graph, planStart(graph)), field))
+        producer.planCartesianProduct(plan, nodePlan(planStart(graph), field))
       } else { // first node scan
-        // we set the source graph because we don't know what source graph was coming in
-        nodePlan(planSetSourceGraph(graph, plan), field)
+        nodePlan(plan, field)
       }
     } else { // there are connections => we need to expand
 
@@ -429,10 +432,9 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       val (firstPlan, remaining) = if (solved.isEmpty) { // there is no connection to the previous plan
         val field = nodes.head
         if (plan.solved.fields.nonEmpty) { // there are already fields in the previous plan, we need to plan a cartesian product
-          producer.planCartesianProduct(plan, nodePlan(planSetSourceGraph(graph, planStart(graph)), field)) -> nodes.tail
+          producer.planCartesianProduct(plan, nodePlan(planStart(graph), field)) -> nodes.tail
         } else { // there are no previous results, it's safe to plan a node scan
-          // we set the source graph because we don't know what source graph was coming in
-          nodePlan(planSetSourceGraph(graph, plan), field) -> nodes.tail
+          nodePlan(plan, field) -> nodes.tail
         }
       } else { // we can connect to the previous plan
         plan -> unsolved
