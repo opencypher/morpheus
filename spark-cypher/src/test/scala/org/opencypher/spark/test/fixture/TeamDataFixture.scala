@@ -60,6 +60,32 @@ trait TeamDataFixture extends TestDataFixture with RowDebugOutputSupport {
     CypherMap("r" -> CAPSRelationship(2, 2, 3, "KNOWS", CypherMap("since" -> 2016)))
   )
 
+  // TODO: remove once https://issues.apache.org/jira/browse/SPARK-23610 is resolved
+  lazy val dataFixtureWithoutArrays =
+    """
+       CREATE (a:Person:German {name: "Stefan", luckyNumber: 42})
+       CREATE (b:Person:Swede  {name: "Mats", luckyNumber: 23})
+       CREATE (c:Person:German {name: "Martin", luckyNumber: 1337})
+       CREATE (d:Person:German {name: "Max", luckyNumber: 8})
+       CREATE (e:Person {name: "Donald", luckyNumber: 8})
+       CREATE (a)-[:KNOWS {since: 2016}]->(b)
+       CREATE (b)-[:KNOWS {since: 2016}]->(c)
+       CREATE (c)-[:KNOWS {since: 2016}]->(d)
+    """
+
+  lazy val csvTestGraphNodesWithoutArrays: Bag[Row] = Bag(
+    Row(1L, true, true, true, false, 42L, "Stefan"),
+    Row(2L, true, false, true, true, 23L, "Mats"),
+    Row(3L, true, true, true, false, 1337L, "Martin"),
+    Row(4L, true, true, true, false, 8L, "Max")
+  )
+
+  lazy val csvTestGraphRelsWithoutArrays: Bag[Row] = Bag(
+    Row(1L, 10L, "KNOWS", 2L, 2016L),
+    Row(2L, 20L, "KNOWS", 3L, 2017L),
+    Row(3L, 30L, "KNOWS", 4L, 2015L)
+  )
+
   private def wrap[T](s: Array[T]): mutable.WrappedArray[T] = {
     mutable.WrappedArray.make(s)
   }
