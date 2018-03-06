@@ -30,9 +30,6 @@ final case class QueryModel[E](
 
   def apply(ref: BlockRef): Block[E] = blocks(ref)
 
-  def select(fields: Set[IRField]): QueryModel[E] =
-    copy(result = result.select(fields))
-
   def dependencies(ref: BlockRef): Set[BlockRef] = apply(ref).after
 
   def allDependencies(ref: BlockRef): Set[BlockRef] =

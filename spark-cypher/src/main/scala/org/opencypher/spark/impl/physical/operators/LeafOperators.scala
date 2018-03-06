@@ -33,7 +33,7 @@ final case class Start(records: CAPSRecords, graph: LogicalExternalGraph) extend
   override val header = records.header
 
   override def executeLeaf()(implicit context: CAPSRuntimeContext): CAPSPhysicalResult =
-    CAPSPhysicalResult(records, Map(graph.name -> resolve(graph.qualifiedGraphName)))
+    CAPSPhysicalResult(records, resolve(graph.qualifiedGraphName))
 
 }
 
@@ -43,6 +43,6 @@ final case class StartFromUnit(graph: LogicalExternalGraph)(implicit caps: CAPSS
   override val header = RecordHeader.empty
 
   override def executeLeaf()(implicit context: CAPSRuntimeContext): CAPSPhysicalResult =
-    CAPSPhysicalResult(CAPSRecords.unit(), Map(graph.name -> resolve(graph.qualifiedGraphName)))
+    CAPSPhysicalResult(CAPSRecords.unit(), resolve(graph.qualifiedGraphName))
 
 }

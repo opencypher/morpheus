@@ -18,7 +18,7 @@ package org.opencypher.okapi.ir.api.block
 import org.opencypher.okapi.ir.api.{IRField, IRGraph}
 
 trait Block[E] {
-  def blockType: BlockType
+  def blockType: BlockType = BlockType(this.getClass.getSimpleName)
   def isLeaf: Boolean = after.isEmpty
 
   def after: Set[BlockRef]
@@ -26,7 +26,7 @@ trait Block[E] {
   def binds: Binds[E]
   def where: Set[E]
 
-  def source: IRGraph
+  def graph: IRGraph
 }
 
 trait UpdatingBlock[E] {

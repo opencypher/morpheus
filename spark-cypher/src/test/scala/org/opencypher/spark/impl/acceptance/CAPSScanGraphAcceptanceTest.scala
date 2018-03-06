@@ -21,12 +21,66 @@ import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CA
 
 import scala.collection.immutable.Bag
 
+import org.opencypher.spark.impl.CAPSConverters._
+
 class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
   override def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
 
   def testGraph1 = initGraph("CREATE (:Person {name: 'Mats'})")
   def testGraph2 = initGraph("CREATE (:Person {name: 'Phil'})")
   def testGraph3 = initGraph("CREATE (:Car {type: 'Toyota'})")
+
+  it("should return a graph") {
+    caps.store(GraphName("graph1"), testGraph1)
+    caps.store(GraphName("graph2"), testGraph2)
+
+    val query =
+      """RETURN GRAPH""".stripMargin
+
+    val result = testGraph1.cypher(query)
+
+     result.getRecords.toMaps should equal(
+      Bag(
+        CypherMap("name" -> "Mats")
+      ))
+
+    result.asCaps.getGraph shouldMatch testGraph1
+  }
+
+  it("should switch to another graph and then return it") {
+    caps.store(GraphName("graph1"), testGraph1)
+    caps.store(GraphName("graph2"), testGraph2)
+
+    val query =
+      """USE GRAPH graph2
+        |RETURN GRAPH""".stripMargin
+
+    val result = testGraph1.cypher(query)
+
+    result.getRecords.toMaps should equal(
+      Bag(
+        CypherMap("name" -> "Phil")
+      ))
+
+    result.asCaps.getGraph shouldMatch testGraph2
+  }
+
+  it("can select a source graph to match data from") {
+    caps.store(GraphName("graph1"), testGraph1)
+    caps.store(GraphName("graph2"), testGraph2)
+
+    val query =
+      """USE GRAPH graph2
+        |MATCH (n:Person)
+        |RETURN n.name AS name""".stripMargin
+
+    val result = testGraph1.cypher(query)
+
+    result.getRecords.toMaps should equal(
+      Bag(
+        CypherMap("name" -> "Phil")
+      ))
+  }
 
   it("matches from different graphs") {
     caps.store(GraphName("graph1"), testGraph1)

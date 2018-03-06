@@ -49,7 +49,7 @@ final case class ValueJoin(
       leftHeader.slotsFor(p.lhs).head -> rightHeader.slotsFor(p.rhs).head
     }.toSeq
 
-    CAPSPhysicalResult(joinRecords(header, slots)(left.records, right.records), left.graphs ++ right.graphs)
+    CAPSPhysicalResult(joinRecords(header, slots)(left.records, right.records), left.graph)
   }
 
 }
@@ -117,7 +117,7 @@ final case class Optional(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator, 
     val joinedRecords =
       joinDFs(left.records.data, reducedRhsData, header, joinCols)("leftouter", deduplicate = true)(left.records.caps)
 
-    CAPSPhysicalResult(joinedRecords, left.graphs ++ right.graphs)
+    CAPSPhysicalResult(joinedRecords, left.graph)
   }
 }
 
@@ -194,7 +194,7 @@ final case class ExistsSubQuery(
         targetFieldColumnName,
         functions.when(functions.isnull(targetFieldColumn), false).otherwise(true))
 
-    CAPSPhysicalResult(CAPSRecords.verifyAndCreate(header, updatedJoinedRecords)(left.records.caps), left.graphs ++ right.graphs)
+    CAPSPhysicalResult(CAPSRecords.verifyAndCreate(header, updatedJoinedRecords)(left.records.caps), left.graph)
   }
 }
 
@@ -222,7 +222,7 @@ final case class ExpandInto(
 
     val joinedRecords =
       joinRecords(header, Seq(sourceSlot -> relSourceSlot, targetSlot -> relTargetSlot))(left.records, right.records)
-    CAPSPhysicalResult(joinedRecords, left.graphs ++ right.graphs)
+    CAPSPhysicalResult(joinedRecords, left.graph)
   }
 
 }
@@ -247,7 +247,7 @@ final case class Union(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator)
     val unionedData = leftData.union(rightData)
     val records = CAPSRecords.verifyAndCreate(header, unionedData)(left.records.caps)
 
-    CAPSPhysicalResult(records, left.graphs ++ right.graphs)
+    CAPSPhysicalResult(records, left.graph)
   }
 }
 
@@ -260,7 +260,7 @@ final case class CartesianProduct(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOp
     val otherData = right.records.data
     val newData = data.crossJoin(otherData)
     val records = CAPSRecords.verifyAndCreate(header, newData)(left.records.caps)
-    val graphs = left.graphs ++ right.graphs
+    val graphs = left.graph
     CAPSPhysicalResult(records, graphs)
   }
 

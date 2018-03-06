@@ -16,7 +16,7 @@
 package org.opencypher.spark.impl.physical.operators
 
 import org.apache.spark.storage.StorageLevel
-import org.opencypher.spark.impl.CAPSRecords
+import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
 import org.opencypher.spark.test.CAPSTestSuite
 
@@ -34,7 +34,7 @@ class CAPSPhysicalOperatorTest extends CAPSTestSuite {
   }
 
   test("cache operator with single input") {
-    val expectedResult = CAPSPhysicalResult(CAPSRecords.create(testContents), Map.empty)
+    val expectedResult = CAPSPhysicalResult(CAPSRecords.create(testContents), CAPSGraph.empty)
 
     val toCache = DummyOp(expectedResult)
 
@@ -47,7 +47,7 @@ class CAPSPhysicalOperatorTest extends CAPSTestSuite {
   }
 
   test("cache operator with cache reuse") {
-    val expectedResult = CAPSPhysicalResult(CAPSRecords.create(testContents), Map.empty)
+    val expectedResult = CAPSPhysicalResult(CAPSRecords.create(testContents), CAPSGraph.empty)
 
     val toCache0 = DummyOp(expectedResult)
     val toCache1 = DummyOp(expectedResult)

@@ -59,8 +59,8 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
   override def planSelectFields(in: CAPSPhysicalOperator, fields: IndexedSeq[Var], header: RecordHeader): CAPSPhysicalOperator =
     operators.SelectFields(in, fields, header)
 
-  override def planSelectGraphs(in: CAPSPhysicalOperator, graphs: Set[String]): CAPSPhysicalOperator =
-    operators.SelectGraphs(in, graphs)
+  override def planUseGraph(in: CAPSPhysicalOperator, graph: LogicalExternalGraph): CAPSPhysicalOperator =
+    operators.UseGraph(in, graph)
 
   override def planEmptyRecords(in: CAPSPhysicalOperator, header: RecordHeader): CAPSPhysicalOperator =
     operators.EmptyRecords(in, header)
@@ -69,19 +69,19 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
     operators.Start(in, g)
 
   override def planSetSourceGraph(in: CAPSPhysicalOperator, g: LogicalExternalGraph): CAPSPhysicalOperator =
-    operators.SetSourceGraph(in, g)
+    operators.UseGraph(in, g)
 
   override def planNodeScan(
     in: CAPSPhysicalOperator,
     inGraph: LogicalGraph,
     v: Var,
-    header: RecordHeader): CAPSPhysicalOperator = operators.Scan(in, inGraph, v, header)
+    header: RecordHeader): CAPSPhysicalOperator = operators.Scan(in, v, header)
 
   override def planRelationshipScan(
     in: CAPSPhysicalOperator,
     inGraph: LogicalGraph,
     v: Var,
-    header: RecordHeader): CAPSPhysicalOperator = operators.Scan(in, inGraph, v, header)
+    header: RecordHeader): CAPSPhysicalOperator = operators.Scan(in, v, header)
 
   override def planAlias(in: CAPSPhysicalOperator, expr: Expr, alias: Var, header: RecordHeader): CAPSPhysicalOperator =
     operators.Alias(in, expr, alias, header)
@@ -92,15 +92,11 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
   override def planProject(in: CAPSPhysicalOperator, expr: Expr, header: RecordHeader): CAPSPhysicalOperator =
     operators.Project(in, expr, header)
 
-  override def planProjectExternalGraph(in: CAPSPhysicalOperator, name: String, qualifiedGraphName: QualifiedGraphName): CAPSPhysicalOperator =
-    operators.ProjectExternalGraph(in, name, qualifiedGraphName)
-
-  override def planProjectPatternGraph(
+  override def planConstructGraph(
     in: CAPSPhysicalOperator,
     toCreate: Set[ConstructedEntity],
-    name: String,
     schema: Schema,
-    header: RecordHeader): CAPSPhysicalOperator = operators.ProjectPatternGraph(in, toCreate, name, schema.asCaps, header)
+    header: RecordHeader): CAPSPhysicalOperator = operators.ConstructGraph(in, toCreate, schema.asCaps, header)
 
   override def planAggregate(in: CAPSPhysicalOperator, group: Set[Var], aggregations: Set[(Var, Aggregator)], header: RecordHeader): CAPSPhysicalOperator = operators.Aggregate(in, aggregations, group, header)
 

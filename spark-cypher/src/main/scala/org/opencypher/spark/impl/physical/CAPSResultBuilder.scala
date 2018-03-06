@@ -32,7 +32,7 @@ object CAPSResultBuilder {
 
       override def records: Option[CAPSRecords] = Some(result.records)
 
-      override def graph: Option[CAPSGraph] = result.graphs.values.headOption
+      override def graph: Option[CAPSGraph] = Some(result.graph)
 
       override def plans = CAPSQueryPlans(logical, flat, physical)
 

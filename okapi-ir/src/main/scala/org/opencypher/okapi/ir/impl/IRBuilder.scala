@@ -171,6 +171,24 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           }
         } yield block
 
+      case ast.ReturnGraph(qgnOpt) =>
+        for {
+          context <- get[R, IRBuilderContext]
+          refs <- {
+            val after = context.blocks.lastAdded.toSet
+            val irGraph = qgnOpt match {
+              case None => context.currentWorkingGraph
+              case Some(astQgn) =>
+                val irQgn = QualifiedGraphName(astQgn.parts)
+                val pgds = context.resolver(irQgn.namespace)
+                IRCatalogGraph(irQgn, pgds.schema(irQgn.graphName).getOrElse(pgds.graph(irQgn.graphName).schema))
+            }
+            val returns = GraphResultBlock[Expr](after, irGraph)
+            val (ref, updatedReg) = context.blocks.register(returns)
+            put[R, IRBuilderContext](context.copy(blocks = updatedReg)) >> pure[R, Vector[BlockRef]](Vector(ref))
+          }
+        } yield refs
+
       case ast.Return(distinct, ast.ReturnItems(_, items), orderBy, skip, limit, _) =>
         for {
           fieldExprs <- items.toVector.traverse(convertReturnItem[R])
@@ -186,24 +204,11 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           refs2 <- {
             val rItems = fieldExprs.map(_._1)
             val orderedFields = OrderedFields[Expr](rItems)
-            val result = ResultBlock[Expr](Set(refs.last), orderedFields, Set.empty, Set.empty, context.ambientGraph)
+            val result = TableResultBlock[Expr](Set(refs.last), orderedFields, Set.empty, Set.empty, context.ambientGraph)
             val (resultRef, resultReg) = context2.blocks.register(result)
             put[R, IRBuilderContext](context.copy(blocks = resultReg)) >> pure[R, Vector[BlockRef]](refs :+ resultRef)
           }
         } yield refs2
-
-      case ast.Return(distinct, ast.DiscardCardinality(), _, _, _, _) =>
-        for {
-          context <- get[R, IRBuilderContext]
-          refs <- {
-            val (ref, reg) =
-              registerProjectBlock(context, Vector.empty, distinct = distinct, source = context.currentWorkingGraph)
-            val orderedFields = OrderedFields[Expr](Vector.empty)
-            val returns = ResultBlock[Expr](Set(ref), orderedFields, Set.empty, Set.empty, context.ambientGraph)
-            val (ref2, reg2) = reg.register(returns)
-            put[R, IRBuilderContext](context.copy(blocks = reg2)) >> pure[R, Vector[BlockRef]](Vector(ref, ref2))
-          }
-        } yield refs
 
       case x =>
         error(IRBuilderError(s"Clause not yet supported: $x"))(Vector.empty[BlockRef])

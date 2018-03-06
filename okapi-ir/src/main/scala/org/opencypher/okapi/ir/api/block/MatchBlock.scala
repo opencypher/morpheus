@@ -23,5 +23,5 @@ final case class MatchBlock[E](
     binds: Pattern[E],
     where: Set[E] = Set.empty[E],
     optional: Boolean,
-    source: IRGraph
+    graph: IRGraph
 ) extends BasicBlock[Pattern[E], E](BlockType("match"))

@@ -81,13 +81,12 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
     MatchBlock[Expr](Set(leafRef), pattern, Set.empty[Expr], false, testGraph)
 
   def irFor(rootRef: BlockRef, blocks: Map[BlockRef, Block[Expr]]): CypherQuery[Expr] = {
-    val result = ResultBlock[Expr](
+    val result = TableResultBlock[Expr](
       after = Set(rootRef),
       binds = OrderedFields[Expr](),
       nodes = Set.empty,
       relationships = Set.empty,
-      where = Set.empty[Expr],
-      source = testGraph
+      graph = testGraph
     )
     val model = QueryModel(result, CypherMap.empty, blocks)
     CypherQuery(QueryInfo("test"), model)
@@ -96,7 +95,7 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
   case class DummyBlock[E](after: Set[BlockRef] = Set.empty) extends BasicBlock[DummyBinds[E], E](BlockType("dummy")) {
     override def binds: DummyBinds[E] = DummyBinds[E]()
     override def where: Set[E] = Set.empty[E]
-    override val source = testGraph
+    override val graph = testGraph
   }
 
   case class DummyBinds[E](fields: Set[IRField] = Set.empty) extends Binds[E]

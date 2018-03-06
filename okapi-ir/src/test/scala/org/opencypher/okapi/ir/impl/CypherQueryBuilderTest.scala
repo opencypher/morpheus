@@ -50,7 +50,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
       }
 
       model.result match {
-        case NoWhereBlock(ResultBlock(deps, OrderedFields(IndexedSeq(IRField("a"))), _, _, _, _)) =>
+        case NoWhereBlock(TableResultBlock(deps, OrderedFields(IndexedSeq(IRField("a"))), _, _, _)) =>
           deps should equal(Set(projectRef))
       }
 
@@ -91,7 +91,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
       }
 
       model.result match {
-        case NoWhereBlock(ResultBlock(_, OrderedFields(IndexedSeq(IRField("otherB"), IRField("a"), IRField("r"))), _, _, _, _)) =>
+        case NoWhereBlock(TableResultBlock(_, OrderedFields(IndexedSeq(IRField("otherB"), IRField("a"), IRField("r"))), _, _, _)) =>
       }
 
       model.requirements should equal(
@@ -157,7 +157,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
         }
 
         model.result match {
-          case NoWhereBlock(ResultBlock(deps, OrderedFields(IndexedSeq(IRField("age"), IRField("name"))), _, _, _, _)) =>
+          case NoWhereBlock(TableResultBlock(deps, OrderedFields(IndexedSeq(IRField("age"), IRField("name"))), _, _, _)) =>
             deps should equal(Set(project3Ref))
         }
 

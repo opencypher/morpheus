@@ -22,7 +22,7 @@ final case class OrderAndSliceBlock[E](
     orderBy: Seq[SortItem[E]],
     skip: Option[E],
     limit: Option[E],
-    source: IRGraph
+    graph: IRGraph
 ) extends BasicBlock[OrderedFields[E], E](BlockType("order-and-slice")) {
   override val binds = OrderedFields[E]()
   override def where: Set[E] = Set.empty[E]

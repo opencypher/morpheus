@@ -58,13 +58,12 @@ final case class Cache(in: CAPSPhysicalOperator) extends UnaryPhysicalOperator w
 
 }
 
-final case class Scan(in: CAPSPhysicalOperator, inGraph: LogicalGraph, v: Var, header: RecordHeader)
+final case class Scan(in: CAPSPhysicalOperator, v: Var, header: RecordHeader)
   extends UnaryPhysicalOperator {
 
   // TODO: Move to Graph interface?
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    val graphs = prev.graphs
-    val graph = graphs(inGraph.name)
+    val graph = prev.graph
     val records = v.cypherType match {
       case r: CTRelationship =>
         graph.relationships(v.name, r)
@@ -74,7 +73,7 @@ final case class Scan(in: CAPSPhysicalOperator, inGraph: LogicalGraph, v: Var, h
         throw IllegalArgumentException("an entity type", x)
     }
     assert(header == records.header)
-    CAPSPhysicalResult(records, graphs)
+    CAPSPhysicalResult(records, graph)
   }
 }
 
@@ -184,17 +183,9 @@ final case class Filter(in: CAPSPhysicalOperator, expr: Expr, header: RecordHead
   }
 }
 
-final case class ProjectExternalGraph(in: CAPSPhysicalOperator, name: String, qualifiedGraphName: QualifiedGraphName) extends UnaryPhysicalOperator with InheritedHeader {
-
-  override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult =
-    prev.withGraph(name -> resolve(qualifiedGraphName))
-
-}
-
-final case class ProjectPatternGraph(
+final case class ConstructGraph(
   in: CAPSPhysicalOperator,
   toCreate: Set[ConstructedEntity],
-  name: String,
   schema: CAPSSchema,
   header: RecordHeader)
   extends UnaryPhysicalOperator {
@@ -207,7 +198,7 @@ final case class ProjectPatternGraph(
       else createEntities(toCreate, input)
 
     val patternGraph = CAPSGraph.create(baseTable, schema)(input.caps)
-    prev.withGraph(name -> patternGraph)
+    CAPSPhysicalResult(CAPSRecords.unit()(input.caps), patternGraph)
   }
 
   private def createEntities(toCreate: Set[ConstructedEntity], records: CAPSRecords): CAPSRecords = {
@@ -332,14 +323,6 @@ final case class SelectFields(in: CAPSPhysicalOperator, fields: IndexedSeq[Var],
       CAPSRecords.verifyAndCreate(header, newData)(records.caps)
     }
   }
-}
-
-final case class SelectGraphs(in: CAPSPhysicalOperator, graphs: Set[String])
-  extends UnaryPhysicalOperator with InheritedHeader {
-
-  override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult =
-    prev.selectGraphs(graphs)
-
 }
 
 final case class Distinct(in: CAPSPhysicalOperator, fields: Set[Var])
@@ -550,9 +533,10 @@ final case class EmptyRecords(in: CAPSPhysicalOperator, header: RecordHeader)(im
 
 }
 
-final case class SetSourceGraph(in: CAPSPhysicalOperator, graph: LogicalExternalGraph) extends UnaryPhysicalOperator with InheritedHeader {
+final case class UseGraph(in: CAPSPhysicalOperator, graph: LogicalExternalGraph) extends UnaryPhysicalOperator with InheritedHeader {
 
-  override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult =
-    prev.withGraph(graph.name -> resolve(graph.qualifiedGraphName))
+  override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
+    CAPSPhysicalResult(prev.records, resolve(graph.qualifiedGraphName))
+  }
 
 }

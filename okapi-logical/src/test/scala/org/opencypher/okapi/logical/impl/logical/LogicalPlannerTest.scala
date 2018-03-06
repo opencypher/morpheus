@@ -140,14 +140,14 @@ class LogicalPlannerTest extends LogicalTestSuite {
                 NodeScan(
                   Var("a")(CTNode),
                   SetSourceGraph(
-                    LogicalExternalGraph("test", testQualifiedGraphName, Schema.empty),
-                    Start(LogicalExternalGraph("test", testQualifiedGraphName, Schema.empty), Set(), emptySqm),
+                    LogicalExternalGraph(testQualifiedGraphName, Schema.empty),
+                    Start(LogicalExternalGraph(testQualifiedGraphName, Schema.empty), Set(), emptySqm),
                     emptySqm),
                   SolvedQueryModel(Set(nodeA), Set())
                 ),
                 NodeScan(
                   Var("g")(CTNode),
-                  Start(LogicalExternalGraph("test", testQualifiedGraphName, Schema.empty), Set(), emptySqm),
+                  Start(LogicalExternalGraph(testQualifiedGraphName, Schema.empty), Set(), emptySqm),
                   SolvedQueryModel(Set(IRField("g")(CTNode)), Set())),
                 SolvedQueryModel(Set(nodeA, IRField("g")(CTNode), relR))
               ),
@@ -224,13 +224,11 @@ class LogicalPlannerTest extends LogicalTestSuite {
                   Var("a")(CTNode),
                   SetSourceGraph(
                     LogicalExternalGraph(
-                      "test",
                       testQualifiedGraphName,
                       schema
                     ),
                     Start(
                       LogicalExternalGraph(
-                        "test",
                         testQualifiedGraphName,
                         schema
                       ),
@@ -245,7 +243,6 @@ class LogicalPlannerTest extends LogicalTestSuite {
                   Var("g")(CTNode),
                   Start(
                     LogicalExternalGraph(
-                      "test",
                       testQualifiedGraphName,
                       schema
                     ),
@@ -312,8 +309,8 @@ class LogicalPlannerTest extends LogicalTestSuite {
         NodeScan(
           Var("a")(CTNode),
           SetSourceGraph(
-            LogicalExternalGraph("test", testQualifiedGraphName, Schema.empty),
-            Start(LogicalExternalGraph("test", testQualifiedGraphName, Schema.empty), Set(), emptySqm),
+            LogicalExternalGraph(testQualifiedGraphName, Schema.empty),
+            Start(LogicalExternalGraph(testQualifiedGraphName, Schema.empty), Set(), emptySqm),
             emptySqm),
           SolvedQueryModel(Set(nodeA), Set())
         ),
@@ -348,10 +345,10 @@ class LogicalPlannerTest extends LogicalTestSuite {
       Vector(),
       Set("bar", "foo"),
       ProjectGraph(
-        LogicalExternalGraph("bar", QualifiedGraphName(SessionPropertyGraphDataSource.Namespace, barGraphName), Schema.empty),
+        LogicalExternalGraph(QualifiedGraphName(SessionPropertyGraphDataSource.Namespace, barGraphName), Schema.empty),
         ProjectGraph(
-          LogicalExternalGraph("foo", QualifiedGraphName(SessionPropertyGraphDataSource.Namespace, fooGraphName), Schema.empty),
-          Start(LogicalExternalGraph("test", testQualifiedGraphName, Schema.empty), Set(), emptySqm),
+          LogicalExternalGraph(QualifiedGraphName(SessionPropertyGraphDataSource.Namespace, fooGraphName), Schema.empty),
+          Start(LogicalExternalGraph(testQualifiedGraphName, Schema.empty), Set(), emptySqm),
           SolvedQueryModel(Set(), Set())
         ),
         SolvedQueryModel(Set(), Set())

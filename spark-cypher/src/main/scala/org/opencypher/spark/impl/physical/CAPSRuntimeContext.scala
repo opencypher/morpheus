@@ -32,5 +32,3 @@ case class CAPSRuntimeContext(
   resolve: QualifiedGraphName => Option[CAPSGraph],
   cache: mutable.Map[CAPSPhysicalOperator, CAPSPhysicalResult])
   extends RuntimeContext[CAPSRecords, CAPSGraph]
-
-

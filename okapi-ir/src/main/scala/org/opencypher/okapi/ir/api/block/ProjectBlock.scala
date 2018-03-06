@@ -21,7 +21,7 @@ final case class ProjectBlock[E](
     after: Set[BlockRef],
     binds: Fields[E] = Fields[E](),
     where: Set[E] = Set.empty[E],
-    source: IRGraph,
+    graph: IRGraph,
     distinct: Boolean = false
 ) extends BasicBlock[Fields[E], E](BlockType("project"))
 

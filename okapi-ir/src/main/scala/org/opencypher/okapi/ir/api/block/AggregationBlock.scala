@@ -21,7 +21,7 @@ final case class AggregationBlock[E](
     after: Set[BlockRef],
     binds: Aggregations[E],
     group: Set[IRField],
-    source: IRGraph
+    graph: IRGraph
 ) extends BasicBlock[Aggregations[E], E](BlockType("aggregation")) {
 
   override val where: Set[E] = Set.empty[E] // no filtering in aggregation blocks

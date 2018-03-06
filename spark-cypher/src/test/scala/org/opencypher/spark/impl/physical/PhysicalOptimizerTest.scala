@@ -33,20 +33,18 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphCreationFixture {
   val testGraphName = GraphName("test")
   val testQualifiedGraphName = QualifiedGraphName(testNamespace, testGraphName)
 
-  val emptyGraph = LogicalExternalGraph("test", testQualifiedGraphName, Schema.empty)
+  val emptyGraph = LogicalExternalGraph(testQualifiedGraphName, Schema.empty)
 
   test("Test insert Cache operators") {
     val plan = CartesianProduct(
       CartesianProduct(
         Scan(
           Start(emptyRecords, emptyGraph),
-          emptyGraph,
           Var("C")(CTNode),
           RecordHeader.empty
         ),
         Scan(
           Start(emptyRecords, emptyGraph),
-          emptyGraph,
           Var("B")(CTNode),
           RecordHeader.empty
         ),
@@ -55,13 +53,11 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphCreationFixture {
       CartesianProduct(
         Scan(
           Start(emptyRecords, emptyGraph),
-          emptyGraph,
           Var("C")(CTNode),
           RecordHeader.empty
         ),
         Scan(
           Start(emptyRecords, emptyGraph),
-          emptyGraph,
           Var("B")(CTNode),
           RecordHeader.empty
         ),
@@ -79,13 +75,11 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphCreationFixture {
           CartesianProduct(
             Scan(
               Start(emptyRecords, emptyGraph),
-              emptyGraph,
               Var("C")(CTNode),
               RecordHeader.empty
             ),
             Scan(
               Start(emptyRecords, emptyGraph),
-              emptyGraph,
               Var("B")(CTNode),
               RecordHeader.empty
             ),
@@ -96,13 +90,11 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphCreationFixture {
           CartesianProduct(
             Scan(
               Start(emptyRecords, emptyGraph),
-              emptyGraph,
               Var("C")(CTNode),
               RecordHeader.empty
             ),
             Scan(
               Start(emptyRecords, emptyGraph),
-              emptyGraph,
               Var("B")(CTNode),
               RecordHeader.empty
             ),
@@ -116,7 +108,8 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphCreationFixture {
 
   test("test caches expand into for triangle") {
     // Given
-    val given = initGraph("""
+    val given = initGraph(
+      """
         |CREATE (p1:Person {name: "Alice"})
         |CREATE (p2:Person {name: "Bob"})
         |CREATE (p3:Person {name: "Eve"})
@@ -126,7 +119,8 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphCreationFixture {
       """.stripMargin)
 
     // When
-    val result = given.cypher("""
+    val result = given.cypher(
+      """
         |MATCH (p1:Person)-[e1:KNOWS]->(p2:Person),
         |(p2)-[e2:KNOWS]->(p3:Person),
         |(p1)-[e3:KNOWS]->(p3)
@@ -140,7 +134,8 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphCreationFixture {
 
   test("test caching expand into after var expand") {
     // Given
-    val given = initGraph("""
+    val given = initGraph(
+      """
         |CREATE (p1:Person {name: "Alice"})
         |CREATE (p2:Person {name: "Bob"})
         |CREATE (comment:Comment)
@@ -171,7 +166,8 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphCreationFixture {
 
   test("test caching optional match with duplicates") {
     // Given
-    val given = initGraph("""
+    val given = initGraph(
+      """
         |CREATE (p1:Person {name: "Alice"})
         |CREATE (p2:Person {name: "Bob"})
         |CREATE (p3:Person {name: "Eve"})
@@ -182,7 +178,8 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphCreationFixture {
       """.stripMargin)
 
     // When
-    val result = given.cypher("""
+    val result = given.cypher(
+      """
         |MATCH (a:Person)-[e1:KNOWS]->(b:Person)
         |OPTIONAL MATCH (b)-[e2:KNOWS]->(c:Person)
         |RETURN b.name, c.name

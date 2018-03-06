@@ -39,18 +39,16 @@ sealed abstract class LogicalOperator extends AbstractTreeNode[LogicalOperator] 
 trait LogicalGraph {
   def schema: Schema
 
-  def name: String
+  override def toString = s"${getClass.getSimpleName}($args)"
 
-  override def toString = s"${getClass.getSimpleName}($name)($args)"
-
-  protected def args: String = ""
+  protected def args: String
 }
 
-final case class LogicalExternalGraph(name: String, qualifiedGraphName: QualifiedGraphName, schema: Schema) extends LogicalGraph {
-  override protected def args: String = s"alias = $name, qualifiedGraphName = $qualifiedGraphName"
+final case class LogicalExternalGraph(qualifiedGraphName: QualifiedGraphName, schema: Schema) extends LogicalGraph {
+  override protected def args: String = s"qualifiedGraphName = $qualifiedGraphName"
 }
 
-final case class LogicalPatternGraph(name: String, schema: Schema, pattern: GraphOfPattern) extends LogicalGraph {
+final case class LogicalPatternGraph(schema: Schema, pattern: GraphOfPattern) extends LogicalGraph {
   override protected def args: String = pattern.toString
 }
 
@@ -200,6 +198,10 @@ final case class Select(
     extends StackingLogicalOperator {
 
   override val fields: Set[Var] = orderedFields.toSet
+}
+
+final case class ReturnGraph(graph: LogicalGraph, in: LogicalOperator, solved: SolvedQueryModel) extends StackingLogicalOperator {
+  override val fields: Set[Var] = Set.empty
 }
 
 final case class OrderBy(sortItems: Seq[SortItem[Expr]], in: LogicalOperator, solved: SolvedQueryModel)

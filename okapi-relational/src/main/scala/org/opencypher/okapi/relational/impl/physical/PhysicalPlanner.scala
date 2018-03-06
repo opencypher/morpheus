@@ -43,8 +43,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
         producer.planRemoveAliases(process(in), dependent, header)
 
       case flat.Select(fields, graphs: Set[String], in, header) =>
-        val selected = producer.planSelectFields(process(in), fields, header)
-        producer.planSelectGraphs(selected, graphs)
+        producer.planSelectFields(process(in), fields, header)
 
       case flat.EmptyRecords(in, header) =>
         producer.planEmptyRecords(process(in), header)
@@ -79,14 +78,6 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
 
       case flat.Project(expr, in, header) =>
         producer.planProject(process(in), expr, header)
-
-      case flat.ProjectGraph(graph, in, header) =>
-        graph match {
-          case LogicalExternalGraph(name, qualifiedGraphName, _) =>
-            producer.planProjectExternalGraph(process(in), name, qualifiedGraphName)
-          case LogicalPatternGraph(name, targetSchema, GraphOfPattern(toCreate, _)) =>
-            producer.planProjectPatternGraph(process(in), toCreate, name, targetSchema, header)
-        }
 
       case flat.Aggregate(aggregations, group, in, header) =>
         producer.planAggregate(process(in), group, aggregations, header)

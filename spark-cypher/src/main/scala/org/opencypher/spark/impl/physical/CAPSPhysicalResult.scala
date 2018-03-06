@@ -19,18 +19,10 @@ import org.opencypher.okapi.relational.api.physical.PhysicalResult
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 
-object CAPSPhysicalResult {
-  def unit(implicit caps: CAPSSession) = CAPSPhysicalResult(CAPSRecords.unit(), Map.empty)
-}
-
-case class CAPSPhysicalResult(records: CAPSRecords, graphs: Map[String, CAPSGraph])
+case class CAPSPhysicalResult(records: CAPSRecords, graph: CAPSGraph)
   extends PhysicalResult[CAPSRecords, CAPSGraph] {
 
   override def mapRecordsWithDetails(f: CAPSRecords => CAPSRecords): CAPSPhysicalResult =
     copy(records = f(records))
-  override def withGraph(t: (String, CAPSGraph)): CAPSPhysicalResult =
-    copy(graphs = graphs.updated(t._1, t._2))
-  override def selectGraphs(selected: Set[String]): CAPSPhysicalResult =
-    copy(graphs = graphs.filterKeys(selected))
-}
 
+}

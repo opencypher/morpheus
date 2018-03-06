@@ -212,7 +212,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
   private def planStart(graph: PropertyGraph, fields: Set[Var]): LogicalOperator = {
     val ambientGraph = mountAmbientGraph(graph)
 
-    producer.planStart(LogicalExternalGraph(ambientGraph.qualifiedName.graphName.toString, ambientGraph.qualifiedName, graph.schema), fields)
+    producer.planStart(LogicalExternalGraph(ambientGraph.qualifiedName, graph.schema), fields)
   }
 
   override def toString: String = s"${this.getClass.getSimpleName}"

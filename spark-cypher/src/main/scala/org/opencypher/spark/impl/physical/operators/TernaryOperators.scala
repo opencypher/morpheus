@@ -70,7 +70,7 @@ final case class ExpandSource(
     assertIsNode(targetSlotInRel)
 
     val joinedRecords = joinRecords(header, Seq(targetSlotInRel -> targetSlot))(sourceAndRel, third.records)
-    CAPSPhysicalResult(joinedRecords, first.graphs ++ second.graphs ++ third.graphs)
+    CAPSPhysicalResult(joinedRecords, first.graph)
   }
 
   private def getRelationshipData(rels: CAPSRecords)(implicit context: CAPSRuntimeContext): CAPSRecords = {
@@ -106,7 +106,7 @@ final case class BoundedVarExpand(
     (implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     val expanded = expand(first.records, second.records)
 
-    CAPSPhysicalResult(finalize(expanded, third.records), first.graphs ++ second.graphs ++ third.graphs)
+    CAPSPhysicalResult(finalize(expanded, third.records), first.graph)
   }
 
   private def iterate(lhs: DataFrame, rels: DataFrame)(

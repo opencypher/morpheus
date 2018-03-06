@@ -138,13 +138,13 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   def planSelectFields(in: P, fields: IndexedSeq[Var], header: RecordHeader): P
 
   /**
-    * Selects the specified graph from the input operator.
+    * Use the specified graph.
     *
     * @param in     previous operator
-    * @param graphs graphs to select from the previous operator (i.e., as specified in the RETURN clause)
-    * @return select graphs operator
+    * @param graph  graph to select from the catalog
+    * @return select graph operator
     */
-  def planSelectGraphs(in: P, graphs: Set[String]): P
+  def planUseGraph(in: P, graph: LogicalExternalGraph): P
 
   /**
     * Evaluates the given expression and projects it to a new column in the input records.
@@ -157,29 +157,17 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   def planProject(in: P, expr: Expr, header: RecordHeader): P
 
   /**
-    * Stores the graph identified by the given URI by the given name.
-    *
-    * @param in            previous operator
-    * @param name          name to project graph to
-    * @param qualifiedName reference to a graph (e.g. an external graph)
-    * @return project external graph operator
-    */
-  def planProjectExternalGraph(in: P, name: String, qualifiedName: QualifiedGraphName): P
-
-  /**
     * Creates a new record containing the specified entities (i.e. as defined in a construction pattern).
     *
     * @param in       previous operator
     * @param toCreate entities to create
-    * @param name     name of the resulting graph
     * @param schema   schema of the resulting graph
     * @param header   resulting record header
     * @return project pattern graph operator
     */
-  def planProjectPatternGraph(
+  def planConstructGraph(
     in: P,
     toCreate: Set[ConstructedEntity],
-    name: String,
     schema: Schema,
     header: RecordHeader): P
 

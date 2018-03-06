@@ -15,7 +15,7 @@
  */
 package org.opencypher.okapi.logical.impl
 
-import org.opencypher.okapi.ir.api.IRField
+import org.opencypher.okapi.ir.api.{IRCatalogGraph, IRField, IRGraph, IRPatternGraph}
 import org.opencypher.okapi.ir.api.block.{Aggregations, SortItem}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.impl.util.VarConverters._
@@ -112,6 +112,10 @@ class LogicalOperatorProducer {
   def planSelect(fields: IndexedSeq[Var], prev: LogicalOperator): Select = {
     // TODO: Remove selection of graphs
     Select(fields, Set.empty, prev, prev.solved)
+  }
+
+  def planReturnGraph(graph: LogicalGraph, prev: LogicalOperator): ReturnGraph = {
+    ReturnGraph(graph, prev, prev.solved)
   }
 
   def planSetSourceGraph(graph: LogicalGraph, prev: LogicalOperator): SetSourceGraph = {
