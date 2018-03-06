@@ -56,11 +56,14 @@ object QualifiedGraphName {
     * @param qualifiedGraphName string representation of a qualified graph name
     * @return qualified graph name
     */
-  def apply(qualifiedGraphName: String): QualifiedGraphName = qualifiedGraphName.split("\\.").toList match {
+  def apply(qualifiedGraphName: String): QualifiedGraphName = apply(qualifiedGraphName.split("\\.").toList)
+
+  private[okapi] def apply(parts: List[String]): QualifiedGraphName = parts match {
     case Nil => throw IllegalArgumentException("qualified graph name or single graph name")
     case head :: Nil => QualifiedGraphName(SessionPropertyGraphDataSource.Namespace, GraphName(head))
     case head :: tail => QualifiedGraphName(Namespace(head), GraphName(tail.mkString(".")))
   }
+
 }
 
 /**

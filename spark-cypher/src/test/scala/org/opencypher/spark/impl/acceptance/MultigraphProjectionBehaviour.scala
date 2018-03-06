@@ -90,10 +90,10 @@ trait MultigraphProjectionBehaviour { this: AcceptanceTest =>
       caps.store(GraphName("graph3"), testGraph3)
 
       val query =
-        """FROM GRAPH myGraph AT 'graph2'
+        """USE GRAPH graph2
           |MATCH (n:Person)
           |WITH n.name AS name
-          |FROM GRAPH another AT 'graph3'
+          |USE GRAPH graph3
           |MATCH (c:Car)
           |RETURN name, c.type AS car""".stripMargin
 
