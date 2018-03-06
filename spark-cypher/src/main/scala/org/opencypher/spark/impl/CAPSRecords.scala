@@ -198,7 +198,7 @@ sealed abstract class CAPSRecords(val header: RecordHeader, val data: DataFrame)
           // the column exists in the source data but has a different data type (and thus different column name)
           else
             withRenamedColumns.col(sourceColName)
-              .cast(toSparkType(targetSlot.content.cypherType))
+              .cast(targetSlot.content.cypherType.getSparkType)
               .as(targetColName)
 
         case None =>
@@ -206,7 +206,7 @@ sealed abstract class CAPSRecords(val header: RecordHeader, val data: DataFrame)
             case HasLabel(_, label) if entityLabels.contains(label.name) => functions.lit(true)
             case _: HasLabel => functions.lit(false)
             case _: Type if entityLabels.size == 1 => functions.lit(entityLabels.head)
-            case _ => functions.lit(null).cast(toSparkType(targetSlot.content.cypherType))
+            case _ => functions.lit(null).cast(targetSlot.content.cypherType.getSparkType)
           }
           content.as(targetColName)
       }

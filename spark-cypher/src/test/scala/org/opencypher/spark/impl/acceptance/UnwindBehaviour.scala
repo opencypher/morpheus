@@ -100,7 +100,7 @@ trait UnwindBehaviour { self: AcceptanceTest =>
     }
 
     // TODO active once https://issues.apache.org/jira/browse/SPARK-23610 is resolved
-    ignore("unwind from expression") {
+    ignore("unwind from expression with null list") {
       val graph = initGraph("CREATE (:A {v: [1, 2]}), (:A:B {v: [-4]}), (:A:C {v: []}), (:A)")
 
       val query = "MATCH (a:A) WITH a.v AS list UNWIND list AS item RETURN item"

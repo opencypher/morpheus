@@ -15,8 +15,44 @@
  */
 package org.opencypher.spark.impl.acceptance
 
+import org.opencypher.okapi.api.value.CypherValue.{CypherList, CypherMap}
 import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 
 class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
   override def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
+
+  it("bar") {
+    val graph = initGraph("CREATE ()")
+
+    val result = graph.cypher(
+      """RETURN $elt IN $coll AS result""",
+      CypherMap("elt" -> null, "coll" -> CypherList())
+    )
+
+    result.show
+  }
 }
+
+/**
+cenario Outline: Using null in IN
+    And parameters are:
+      | elt    | <elt>    |
+      | coll   | <coll>   |
+    When executing query:
+      """
+      RETURN $elt IN $coll AS result
+      """
+    Then the result should be:
+      | result   |
+      | <result> |
+    And no side effects
+
+    Examples:
+      | elt  | coll            | result |
+      | null | null            | null   |
+      | null | [1, 2, 3]       | null   |
+      | null | [1, 2, 3, null] | null   |
+      | null | []              | false  |
+      | 1    | [1, 2, 3, null] | true   |
+      | 1    | [null, 1]       | true   |
+      | 5    | [1, 2, 3, null] | null   | **/

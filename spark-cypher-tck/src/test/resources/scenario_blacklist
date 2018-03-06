@@ -68,7 +68,7 @@ Feature "TernaryLogicAcceptanceTest": Scenario "It is unknown - i.e. null - if a
 Feature "TernaryLogicAcceptanceTest": Scenario "Using null in AND"
 Feature "TernaryLogicAcceptanceTest": Scenario "Using null in OR"
 Feature "TernaryLogicAcceptanceTest": Scenario "Using null in XOR"
-Feature "TernaryLogicAcceptanceTest": Scenario "Using null in IN"
+Feature "TernaryLogicAcceptanceTest": Scenario "Using null in IN #4"
 Feature "SyntaxErrorAcceptance": Scenario "Using a non-existent function"
 Feature "SyntaxErrorAcceptance": Scenario "Using `rand()` in aggregations"
 Feature "SyntaxErrorAcceptance": Scenario "Supplying invalid hexadecimal literal 1"

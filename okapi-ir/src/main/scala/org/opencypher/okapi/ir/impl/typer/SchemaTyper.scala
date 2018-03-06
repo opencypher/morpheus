@@ -163,7 +163,7 @@ object SchemaTyper {
         lhsType <- process[R](lhs)
         rhsType <- process[R](rhs)
         result <- rhsType match {
-          case _: CTList | _: CTListOrNull =>
+          case _: CTList | _: CTListOrNull | CTNull =>
             recordTypes(lhs -> lhsType, rhs -> rhsType) >> recordAndUpdate(expr -> CTBoolean)
           case x         =>
             error(InvalidType(rhs, CTList(CTWildcard), x))

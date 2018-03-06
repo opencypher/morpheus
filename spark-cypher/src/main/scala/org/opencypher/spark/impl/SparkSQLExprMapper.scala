@@ -15,9 +15,9 @@
  */
 package org.opencypher.spark.impl
 
-import org.apache.spark.sql.types.{DoubleType, LongType}
+import org.apache.spark.sql.types.{BooleanType, DoubleType, LongType}
 import org.apache.spark.sql.{Column, DataFrame, functions}
-import org.opencypher.okapi.api.types.{CTList, CTNode, CTString}
+import org.opencypher.okapi.api.types.{CTList, CTNode, CTNull, CTString}
 import org.opencypher.okapi.api.value.CypherValue.CypherList
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.okapi.ir.api.expr._
@@ -114,9 +114,13 @@ object SparkSQLExprMapper {
           exprs.map(_.asSparkSQLExpr).foldLeft(functions.lit(false))(_ || _)
 
         case In(lhs, rhs) =>
-          val element = lhs.asSparkSQLExpr
-          val array = rhs.asSparkSQLExpr
-          array_contains(array, element)
+          if (rhs.cypherType == CTNull || lhs.cypherType == CTNull) {
+            functions.lit(null).cast(BooleanType)
+          } else {
+            val element = lhs.asSparkSQLExpr
+            val array = rhs.asSparkSQLExpr
+            array_contains(array, element)
+          }
 
         case HasType(rel, relType) =>
           Type(rel)().asSparkSQLExpr === relType.name

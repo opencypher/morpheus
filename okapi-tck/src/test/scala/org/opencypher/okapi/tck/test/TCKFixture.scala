@@ -115,16 +115,20 @@ case class ScenariosFor(blacklist: Set[String])  {
 
   def whiteList = Table(
     "scenario",
-    scenarios.filterNot { s =>
-      blacklist.contains(s.toString())
-    }.enumerateScenarioOutlines: _*
+    scenarios
+      .enumerateScenarioOutlines
+      .filterNot { s =>
+        blacklist.exists(s.toString.startsWith(_))
+      }: _*
   )
 
   def blackList = Table(
     "scenario",
-    scenarios.filter { s =>
-      blacklist.contains(s.toString())
-    }.enumerateScenarioOutlines: _*
+    scenarios
+      .enumerateScenarioOutlines
+      .filter { s =>
+        blacklist.exists(s.toString.startsWith(_))
+      }: _*
   )
 
   def get(name: String): Seq[Scenario] = scenarios.filter(s => s.name == name)
