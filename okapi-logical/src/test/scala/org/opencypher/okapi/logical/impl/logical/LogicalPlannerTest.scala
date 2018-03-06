@@ -101,7 +101,7 @@ class LogicalPlannerTest extends LogicalTestSuite {
   }
 
   test("convert project block") {
-    val fields = FieldsAndGraphs[Expr](Map(toField('a) -> Property('n, PropertyKey("prop"))(CTFloat)))
+    val fields = Fields[Expr](Map(toField('a) -> Property('n, PropertyKey("prop"))(CTFloat)))
     val block = project(fields)
 
     val result = plan(irWithLeaf(block))

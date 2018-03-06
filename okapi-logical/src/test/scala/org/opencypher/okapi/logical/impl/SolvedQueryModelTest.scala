@@ -17,13 +17,12 @@ package org.opencypher.okapi.logical.impl
 
 import java.net.URI
 
-import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.ir.api.block.{FieldsAndGraphs, ProjectedFieldsOf}
+import org.opencypher.okapi.ir.api.RelType
+import org.opencypher.okapi.ir.api.block.{Fields, ProjectedFieldsOf}
 import org.opencypher.okapi.ir.api.expr.{Equals, Expr, _}
 import org.opencypher.okapi.ir.api.pattern.Pattern
-import org.opencypher.okapi.ir.api.{IRCatalogGraph, RelType}
 import org.opencypher.okapi.ir.impl.IrTestSuite
 import org.opencypher.okapi.ir.test._
 
@@ -47,10 +46,10 @@ class SolvedQueryModelTest extends IrTestSuite {
   test("contains several blocks") {
     val block1 = matchBlock(Pattern.empty.withEntity('a -> CTNode))
     val block2 = matchBlock(Pattern.empty.withEntity('b -> CTNode))
-    val binds: FieldsAndGraphs[Expr] = FieldsAndGraphs(Map(toField('c) -> Equals('a, 'b)(CTBoolean)), Set('foo))
+    val binds: Fields[Expr] = Fields(Map(toField('c) -> Equals('a, 'b)(CTBoolean)))
     val block3 = project(binds)
     val block4 = project(ProjectedFieldsOf(toField('d) -> Equals('c, 'b)(CTBoolean)))
-    val block5 = project(FieldsAndGraphs(Map.empty, Set('bar)))
+    val block5 = project(Fields(Map.empty))
 
     val s = SolvedQueryModel.empty.withField('a).withFields('b, 'c)
 

@@ -19,12 +19,12 @@ import org.opencypher.okapi.ir.api._
 
 final case class ResultBlock[E](
     after: Set[BlockRef],
-    binds: OrderedFieldsAndGraphs[E],
+    binds: OrderedFields[E],
     nodes: Set[IRField],
     relationships: Set[IRField],
     source: IRGraph,
     where: Set[E] = Set.empty[E]
-) extends BasicBlock[OrderedFieldsAndGraphs[E], E](BlockType("result")) {
+) extends BasicBlock[OrderedFields[E], E](BlockType("result")) {
 
   def select(fields: Set[IRField]): ResultBlock[E] =
     copy(binds = binds.select(fields), nodes = nodes intersect fields, relationships = relationships intersect fields)
@@ -32,20 +32,16 @@ final case class ResultBlock[E](
 
 object ResultBlock {
   def empty[E](graph: IRGraph) =
-    ResultBlock(Set.empty, OrderedFieldsAndGraphs[E](), Set.empty, Set.empty, graph, Set.empty[E])
+    ResultBlock(Set.empty, OrderedFields[E](), Set.empty, Set.empty, graph, Set.empty[E])
 }
 
-final case class OrderedFieldsAndGraphs[E](
-    fieldsOrder: IndexedSeq[IRField] = IndexedSeq.empty,
-    override val graphs: Set[IRGraph] = Set.empty)
-    extends Binds[E] {
+final case class OrderedFields[E](fieldsOrder: IndexedSeq[IRField] = IndexedSeq.empty) extends Binds[E] {
   override def fields: Set[IRField] = fieldsOrder.toSet
 
-  def select(fields: Set[IRField]): OrderedFieldsAndGraphs[E] =
-    copy(fieldsOrder = fieldsOrder.filter(fields.contains))
+  def select(fields: Set[IRField]): OrderedFields[E] = copy(fieldsOrder = fieldsOrder.filter(fields.contains))
 }
 
-case object FieldsInOrder {
-  def apply[E](fields: IRField*): OrderedFieldsAndGraphs[E] = OrderedFieldsAndGraphs[E](fields.toIndexedSeq)
-  def unapplySeq(arg: OrderedFieldsAndGraphs[_]): Option[Seq[IRField]] = Some(arg.fieldsOrder)
+object OrderedFields {
+  def fieldsFrom[E](fields: IRField*): OrderedFields[E] = OrderedFields[E](fields.toIndexedSeq)
+  def unapplySeq(arg: OrderedFields[_]): Option[Seq[IRField]] = Some(arg.fieldsOrder)
 }

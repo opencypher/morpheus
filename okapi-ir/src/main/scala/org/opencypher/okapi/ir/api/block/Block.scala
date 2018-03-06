@@ -45,7 +45,6 @@ object Binds {
 
 trait Binds[E] {
   def fields: Set[IRField]
-  def graphs: Set[IRGraph] = Set.empty
 }
 
 object BlockWhere {

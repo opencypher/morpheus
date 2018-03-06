@@ -15,11 +15,8 @@
  */
 package org.opencypher.okapi.ir.impl
 
-import org.opencypher.okapi.api.graph.{GraphName, QualifiedGraphName}
-import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
 import org.opencypher.okapi.api.types.{CTNode, CTNull, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue._
-import org.opencypher.okapi.impl.io.SessionPropertyGraphDataSource
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block._
 import org.opencypher.okapi.ir.api.expr.{Expr, HasLabel, Property, Var}
@@ -47,13 +44,13 @@ class CypherQueryBuilderTest extends IrTestSuite {
 
       val projectRef = model.findExactlyOne {
         // TODO: Properly assert on graphs, also below
-        case NoWhereBlock(ProjectBlock(deps, FieldsAndGraphs(map, graphs), _, _, _)) =>
+        case NoWhereBlock(ProjectBlock(deps, Fields(map), _, _, _)) =>
           deps should equal(Set(matchRef))
           map should equal(Map(toField('a) -> toVar('a)))
       }
 
       model.result match {
-        case NoWhereBlock(ResultBlock(deps, FieldsInOrder(IRField("a")), _, _, _, _)) =>
+        case NoWhereBlock(ResultBlock(deps, OrderedFields(IndexedSeq(IRField("a"))), _, _, _, _)) =>
           deps should equal(Set(projectRef))
       }
 
@@ -83,7 +80,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
 
       val projectRef = model.findExactlyOne {
         // TODO: Properly assert on graphs, also below
-        case NoWhereBlock(ProjectBlock(deps, FieldsAndGraphs(map, graphs), _, _, _)) =>
+        case NoWhereBlock(ProjectBlock(deps, Fields(map), _, _, _)) =>
           deps should equal(Set(matchRef))
           map should equal(
             Map(
@@ -94,7 +91,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
       }
 
       model.result match {
-        case NoWhereBlock(ResultBlock(_, FieldsInOrder(IRField("otherB"), IRField("a"), IRField("r")), _, _, _, _)) =>
+        case NoWhereBlock(ResultBlock(_, OrderedFields(IndexedSeq(IRField("otherB"), IRField("a"), IRField("r"))), _, _, _, _)) =>
       }
 
       model.requirements should equal(
@@ -123,7 +120,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
         }
 
         val projectRef = model.findExactlyOne {
-          case NoWhereBlock(ProjectBlock(deps, FieldsAndGraphs(map, _), _, _, _)) if deps.head == matchRef =>
+          case NoWhereBlock(ProjectBlock(deps, Fields(map), _, _, _)) if deps.head == matchRef =>
             deps should equal(Set(matchRef))
             map should equal(
               Map(
@@ -133,7 +130,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
         }
 
         val project2Ref = model.findExactlyOne {
-          case NoWhereBlock(ProjectBlock(deps, FieldsAndGraphs(map, _), _, _, _)) if deps.head == projectRef =>
+          case NoWhereBlock(ProjectBlock(deps, Fields(map), _, _, _)) if deps.head == projectRef =>
             deps should equal(Set(projectRef))
             map should equal(
               Map(
@@ -150,7 +147,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
         }
 
         val project3Ref = model.findExactlyOne {
-          case NoWhereBlock(ProjectBlock(deps, FieldsAndGraphs(map, _), _, _, _)) if deps.head == orderByRef =>
+          case NoWhereBlock(ProjectBlock(deps, Fields(map), _, _, _)) if deps.head == orderByRef =>
             deps should equal(Set(orderByRef))
             map should equal(
               Map(
@@ -160,7 +157,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
         }
 
         model.result match {
-          case NoWhereBlock(ResultBlock(deps, FieldsInOrder(IRField("age"), IRField("name")), _, _, _, _)) =>
+          case NoWhereBlock(ResultBlock(deps, OrderedFields(IndexedSeq(IRField("age"), IRField("name"))), _, _, _, _)) =>
             deps should equal(Set(project3Ref))
         }
 
@@ -200,7 +197,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
 //
 //      val projectRef = model.findExactlyOne {
 //        // TODO: Properly assert on graphs, also below
-//        case NoWhereBlock(ProjectBlock(deps, FieldsAndGraphs(map, graphs), _, _, _)) =>
+//        case NoWhereBlock(ProjectBlock(deps, Fields(map, graphs), _, _, _)) =>
 //          map shouldBe empty
 //
 //          graphs shouldBe Set(

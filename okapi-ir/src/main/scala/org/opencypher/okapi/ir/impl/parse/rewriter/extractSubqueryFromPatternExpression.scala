@@ -79,7 +79,7 @@ case class extractSubqueryFromPatternExpression(mkException: (String, InputPosit
             Match(optional = false, newPattern, Seq.empty, None)(patternPosition)
               .endoRewrite(nameMatchPatternElements)
               .endoRewrite(normalizeMatchPredicates(getDegreeRewriting = false)),
-            Return(ReturnItems(includeExisting = false, returnItemsWithTrue)(patternPosition), None)(patternPosition)
+            Return(ReturnItems(includeExisting = false, returnItemsWithTrue)(patternPosition))(patternPosition)
           )
         )(patternPosition)
       )(patternPosition),

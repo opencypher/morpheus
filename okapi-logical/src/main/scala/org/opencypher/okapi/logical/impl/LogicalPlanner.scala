@@ -98,9 +98,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         val patternPlan = planMatchPattern(plan, pattern, where, graph)(context.withSourceGraph(graph))
         if (optional) producer.planOptional(plan, patternPlan) else patternPlan
 
-      case ProjectBlock(_, FieldsAndGraphs(fields, graphs), where, _, distinct) =>
-        val withGraphs = planGraphProjections(plan, graphs)
-        val withFields = planFieldProjections(withGraphs, fields)
+      case ProjectBlock(_, Fields(fields), where, _, distinct) =>
+        val withFields = planFieldProjections(plan, fields)
         val filtered = planFilter(withFields, where)
         if (distinct) {
           producer.planDistinct(fields.keySet, filtered)
@@ -141,15 +140,15 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     }
   }
 
-  private def planGraphProjections(in: LogicalOperator, graphs: Set[IRGraph])(
-    implicit context: LogicalPlannerContext): LogicalOperator = {
-      // TODO: Simplify further
-      graphs.foldLeft(in) {
-      case (planSoFar, nextGraph) =>
-        val logicalGraph = resolveGraph(nextGraph, in.sourceGraph.schema, in.fields)
-        ProjectGraph(logicalGraph, planSoFar, planSoFar.solved)
-    }
-  }
+//  private def planGraphProjections(in: LogicalOperator, graphs: Set[IRGraph])(
+//    implicit context: LogicalPlannerContext): LogicalOperator = {
+//      // TODO: Simplify further
+//      graphs.foldLeft(in) {
+//      case (planSoFar, nextGraph) =>
+//        val logicalGraph = resolveGraph(nextGraph, in.sourceGraph.schema, in.fields)
+//        ProjectGraph(logicalGraph, planSoFar, planSoFar.solved)
+//    }
+//  }
 
   private def planFieldProjections(in: LogicalOperator, exprs: Map[IRField, Expr])(
     implicit context: LogicalPlannerContext) = {

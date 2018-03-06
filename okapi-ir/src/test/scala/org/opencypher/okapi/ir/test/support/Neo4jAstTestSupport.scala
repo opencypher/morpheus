@@ -39,7 +39,7 @@ trait Neo4jAstTestSupport extends AstConstructionTestSupport {
 
   implicit def parseExpr(exprText: String): Expression = {
     CypherParserWithoutSemanticChecking.process(s"RETURN $exprText")(CypherParser.defaultContext)._1 match {
-      case Query(_, SingleQuery(Return(_, ReturnItems(_, items), _, _, _, _, _) :: Nil)) =>
+      case Query(_, SingleQuery(Return(_, ReturnItems(_, items), _, _, _, _) :: Nil)) =>
         items.head.expression
       case _ => throw IllegalArgumentException("an expression", exprText)
     }

@@ -72,7 +72,7 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
   }
 
   def project(
-      fields: FieldsAndGraphs[Expr],
+      fields: Fields[Expr],
       after: Set[BlockRef] = Set(leafRef),
       given: Set[Expr] = Set.empty[Expr]) =
     ProjectBlock(after, fields, given, testGraph)
@@ -83,7 +83,7 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
   def irFor(rootRef: BlockRef, blocks: Map[BlockRef, Block[Expr]]): CypherQuery[Expr] = {
     val result = ResultBlock[Expr](
       after = Set(rootRef),
-      binds = OrderedFieldsAndGraphs[Expr](),
+      binds = OrderedFields[Expr](),
       nodes = Set.empty,
       relationships = Set.empty,
       where = Set.empty[Expr],
