@@ -45,8 +45,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
     // always plan a select at the top
     val fields = block.binds.fieldsOrder.map(f => Var(f.name)(f.cypherType))
-    val graphNames = block.binds.graphs.map(_.name)
-    producer.planSelect(fields, graphNames, plan)
+    producer.planSelect(fields, plan)
   }
 
   final def planBlock(ref: BlockRef, model: QueryModel[Expr], plan: Option[LogicalOperator])(
@@ -79,11 +78,12 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
   def planLeaf(ref: BlockRef, model: QueryModel[Expr])(implicit context: LogicalPlannerContext): LogicalOperator = {
     model(ref) match {
-      case SourceBlock(irGraph: IRExternalGraph) =>
+      case SourceBlock(irGraph: IRCatalogGraph) =>
         val qualifiedGraphName = irGraph.qualifiedName
-        val graphSource = context.resolver(irGraph.name)
+        val graphSource = context.catalog(irGraph.qualifiedName)
         producer.planStart(
-          LogicalExternalGraph(irGraph.name, qualifiedGraphName, graphSource.schema(qualifiedGraphName.graphName).get),
+          // TODO: Remove QGN as string as param of LEG
+          LogicalExternalGraph(qualifiedGraphName.toString, qualifiedGraphName, graphSource.schema(qualifiedGraphName.graphName).get),
           context.inputRecordFields)
       case x =>
         throw NotImplementedException(s"Support for leaf planning of $x not yet implemented")
@@ -143,12 +143,11 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
   private def planGraphProjections(in: LogicalOperator, graphs: Set[IRGraph])(
     implicit context: LogicalPlannerContext): LogicalOperator = {
-    val graphsToProject = graphs.filterNot(in.solved.solves)
-
-    graphsToProject.foldLeft(in) {
+      // TODO: Simplify further
+      graphs.foldLeft(in) {
       case (planSoFar, nextGraph) =>
         val logicalGraph = resolveGraph(nextGraph, in.sourceGraph.schema, in.fields)
-        ProjectGraph(logicalGraph, planSoFar, planSoFar.solved.withGraph(nextGraph.toNamedGraph))
+        ProjectGraph(logicalGraph, planSoFar, planSoFar.solved)
     }
   }
 
@@ -325,7 +324,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
     graph match {
       // TODO: IRGraph[Expr]
-      case IRPatternGraph(name, schema, pattern) =>
+      case IRPatternGraph(schema, pattern) =>
         val patternEntities = pattern.fields
         val entitiesInScope = fieldsInScope.map { (v: Var) =>
           IRField(v.name)(v.cypherType)
@@ -345,10 +344,11 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
           }
         }
 
-        LogicalPatternGraph(name, schema, GraphOfPattern(entities, boundEntities))
+        // TODO: Remove name from LPG
+        LogicalPatternGraph("REMOVE THIS", schema, GraphOfPattern(entities, boundEntities))
 
-      case g: IRQualifiedGraph =>
-        val graphSource = context.resolver(g.name)
+      case g: IRCatalogGraph =>
+        val graphSource = context.catalog(g.qualifiedName)
         // TODO can we use the schema attached to the IRGraph?
         val schema = graphSource.schema(g.qualifiedName.graphName) match {
           case None =>
@@ -357,7 +357,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
             graphSource.graph(g.qualifiedName.graphName).schema
           case Some(s) => s
         }
-        LogicalExternalGraph(graph.name, g.qualifiedName, schema)
+        // TODO: Remove string name
+        LogicalExternalGraph(g.qualifiedName.toString, g.qualifiedName, schema)
     }
   }
 

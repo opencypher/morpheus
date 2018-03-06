@@ -15,7 +15,6 @@
  */
 package org.opencypher.okapi.ir.api
 
-import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.IllegalStateException
 import org.opencypher.okapi.ir.api.block._
@@ -26,9 +25,7 @@ import scala.collection.generic.CanBuildFrom
 final case class QueryModel[E](
   result: ResultBlock[E],
   parameters: CypherMap,
-  blocks: Map[BlockRef, Block[E]],
-  // graph alias -> namespace + graph name
-  graphs: Map[String, QualifiedGraphName]
+  blocks: Map[BlockRef, Block[E]]
 ) {
 
   def apply(ref: BlockRef): Block[E] = blocks(ref)

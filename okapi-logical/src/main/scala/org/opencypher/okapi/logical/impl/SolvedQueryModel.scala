@@ -20,13 +20,12 @@ import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.block.Block
 import org.opencypher.okapi.ir.api.expr.{Expr, HasType, Ors}
 import org.opencypher.okapi.ir.api.pattern.Pattern
-import org.opencypher.okapi.ir.api.{IRField, IRGraph, IRNamedGraph, RelType}
+import org.opencypher.okapi.ir.api.{IRField, RelType}
 import org.opencypher.okapi.ir.impl.util.VarConverters.toVar
 
 case class SolvedQueryModel(
   fields: Set[IRField],
-  predicates: Set[Expr] = Set.empty[Expr],
-  graphs: Set[IRNamedGraph] = Set.empty[IRNamedGraph]
+  predicates: Set[Expr] = Set.empty[Expr]
 ) {
 
   // extension
@@ -34,7 +33,6 @@ case class SolvedQueryModel(
   def withFields(fs: IRField*): SolvedQueryModel = copy(fields = fields ++ fs)
   def withPredicate(pred: Expr): SolvedQueryModel = copy(predicates = predicates + pred)
   def withPredicates(preds: Expr*): SolvedQueryModel = copy(predicates = predicates ++ preds)
-  def withGraph(graph: IRNamedGraph): SolvedQueryModel = copy(graphs = graphs + graph)
 
   def ++(other: SolvedQueryModel): SolvedQueryModel =
     copy(fields ++ other.fields, predicates ++ other.predicates)
@@ -44,15 +42,13 @@ case class SolvedQueryModel(
   def contains(blocks: Set[Block[Expr]]): Boolean = blocks.forall(contains)
   def contains(block: Block[Expr]): Boolean = {
     val bindsFields = block.binds.fields subsetOf fields
-    val bindsGraphs = block.binds.graphs.map(_.toNamedGraph) subsetOf graphs
     val preds = block.where subsetOf predicates
 
-    bindsFields && bindsGraphs && preds
+    bindsFields && preds
   }
 
   def solves(f: IRField): Boolean = fields(f)
   def solves(p: Pattern[Expr]): Boolean = p.fields.subsetOf(fields)
-  def solves(p: IRGraph): Boolean = graphs.contains(p.toNamedGraph)
 
   def solveRelationship(r: IRField): SolvedQueryModel = {
     r.cypherType match {
@@ -72,5 +68,5 @@ case class SolvedQueryModel(
 }
 
 object SolvedQueryModel {
-  def empty: SolvedQueryModel = SolvedQueryModel(Set.empty, Set.empty, Set.empty)
+  def empty: SolvedQueryModel = SolvedQueryModel(Set.empty, Set.empty)
 }

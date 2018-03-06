@@ -23,19 +23,13 @@ import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.block.{FieldsAndGraphs, ProjectedFieldsOf}
 import org.opencypher.okapi.ir.api.expr.{Equals, Expr, _}
 import org.opencypher.okapi.ir.api.pattern.Pattern
-import org.opencypher.okapi.ir.api.{IRNamedGraph, RelType}
+import org.opencypher.okapi.ir.api.{IRCatalogGraph, RelType}
 import org.opencypher.okapi.ir.impl.IrTestSuite
 import org.opencypher.okapi.ir.test._
 
 class SolvedQueryModelTest extends IrTestSuite {
 
   implicit val uri = URI.create("test")
-
-  test("add graphs") {
-    val s = SolvedQueryModel.empty.withGraph('foo)
-
-    s.graphs should equal(Set(IRNamedGraph("foo", Schema.empty)))
-  }
 
   test("add fields") {
     val s = SolvedQueryModel.empty.withField('a).withFields('b, 'c)
@@ -58,7 +52,7 @@ class SolvedQueryModelTest extends IrTestSuite {
     val block4 = project(ProjectedFieldsOf(toField('d) -> Equals('c, 'b)(CTBoolean)))
     val block5 = project(FieldsAndGraphs(Map.empty, Set('bar)))
 
-    val s = SolvedQueryModel.empty.withField('a).withFields('b, 'c).withGraph('foo)
+    val s = SolvedQueryModel.empty.withField('a).withFields('b, 'c)
 
     s.contains(block1) shouldBe true
     s.contains(block1, block2) shouldBe true

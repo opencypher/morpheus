@@ -27,18 +27,17 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.api.block.SourceBlock
 import org.opencypher.okapi.ir.api.expr.{Expr, Var}
 import org.opencypher.okapi.ir.api.pattern.Pattern
-import org.opencypher.okapi.ir.api.{IRExternalGraph, IRField, IRGraph}
+import org.opencypher.okapi.ir.api.{IRCatalogGraph, IRField, IRGraph}
 import org.opencypher.okapi.ir.impl.typer.exception.TypingException
 import org.opencypher.okapi.ir.impl.typer.{SchemaTyper, TypeTracker}
 
 final case class IRBuilderContext(
   queryString: String,
   parameters: CypherMap,
-  ambientGraph: IRExternalGraph,
+  ambientGraph: IRCatalogGraph,
   blocks: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
   semanticState: SemanticState,
-  graphs: Map[String, QualifiedGraphName],
-  graphList: List[IRGraph],
+  workingGraph: Option[IRGraph] = None,
   resolver: Namespace => PropertyGraphDataSource,
   // TODO: Remove this
   knownTypes: Map[ast.Expression, CypherType] = Map.empty) {
@@ -67,12 +66,11 @@ final case class IRBuilderContext(
     }
   }
 
-  private def typer = SchemaTyper(currentGraph.schema)
+  private def typer = SchemaTyper(currentWorkingGraph.schema)
 
-  def currentGraph: IRGraph = graphList.head
+  def currentWorkingGraph: IRGraph = workingGraph.getOrElse(ambientGraph)
 
-  def schemaFor(graphName: String): Schema = {
-    val qualifiedGraphName = graphs(graphName)
+  def schemaFor(qualifiedGraphName: QualifiedGraphName): Schema = {
     val dataSource = resolver(qualifiedGraphName.namespace)
 
     dataSource.schema(qualifiedGraphName.graphName) match {
@@ -94,11 +92,8 @@ final case class IRBuilderContext(
     copy(knownTypes = withFieldTypes)
   }
 
-  def withGraphAt(name: String, qualifiedName: QualifiedGraphName) =
-    copy(graphs = graphs.updated(name, qualifiedName))
-
-  def withGraph(graph: IRGraph): IRBuilderContext =
-    copy(graphList = graph :: graphList)
+  def withWorkingGraph(graph: IRGraph): IRBuilderContext =
+    copy(workingGraph = Some(graph))
 }
 
 object IRBuilderContext {
@@ -107,9 +102,8 @@ object IRBuilderContext {
     query: String,
     parameters: CypherMap,
     semState: SemanticState,
-    ambientGraph: IRExternalGraph,
-    resolver: Namespace => PropertyGraphDataSource,
-    fieldsFromDrivingTable: Set[Var] = Set.empty
+    ambientGraph: IRCatalogGraph,
+    resolver: Namespace => PropertyGraphDataSource
   ): IRBuilderContext = {
     val registry = BlockRegistry.empty[Expr]
     val block = SourceBlock[Expr](ambientGraph)
@@ -121,8 +115,6 @@ object IRBuilderContext {
       ambientGraph,
       reg,
       semState,
-      Map(ambientGraph.name -> ambientGraph.qualifiedName),
-      List(ambientGraph),
       resolver)
 
     context.withFields(fieldsFromDrivingTable.map(v => IRField(v.name)(v.cypherType)))

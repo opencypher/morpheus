@@ -143,12 +143,12 @@ class LogicalPlannerTest extends LogicalTestSuite {
                     LogicalExternalGraph("test", testQualifiedGraphName, Schema.empty),
                     Start(LogicalExternalGraph("test", testQualifiedGraphName, Schema.empty), Set(), emptySqm),
                     emptySqm),
-                  SolvedQueryModel(Set(nodeA), Set(), Set())
+                  SolvedQueryModel(Set(nodeA), Set())
                 ),
                 NodeScan(
                   Var("g")(CTNode),
                   Start(LogicalExternalGraph("test", testQualifiedGraphName, Schema.empty), Set(), emptySqm),
-                  SolvedQueryModel(Set(IRField("g")(CTNode)), Set(), Set())),
+                  SolvedQueryModel(Set(IRField("g")(CTNode)), Set())),
                 SolvedQueryModel(Set(nodeA, IRField("g")(CTNode), relR))
               ),
               SolvedQueryModel(
@@ -239,7 +239,7 @@ class LogicalPlannerTest extends LogicalTestSuite {
                     ),
                     emptySqm
                   ),
-                  SolvedQueryModel(Set(nodeA), Set(), Set())
+                  SolvedQueryModel(Set(nodeA), Set())
                 ),
                 NodeScan(
                   Var("g")(CTNode),
@@ -252,9 +252,9 @@ class LogicalPlannerTest extends LogicalTestSuite {
                     Set(),
                     emptySqm
                   ),
-                  SolvedQueryModel(Set(IRField("g")(CTNode)), Set(), Set())
+                  SolvedQueryModel(Set(IRField("g")(CTNode)), Set())
                 ),
-                SolvedQueryModel(Set(nodeA, IRField("g")(CTNode), relR), Set(), Set())
+                SolvedQueryModel(Set(nodeA, IRField("g")(CTNode), relR), Set())
               ),
               SolvedQueryModel(
                 Set(nodeA, IRField("g")(CTNode), relR),
@@ -315,17 +315,15 @@ class LogicalPlannerTest extends LogicalTestSuite {
             LogicalExternalGraph("test", testQualifiedGraphName, Schema.empty),
             Start(LogicalExternalGraph("test", testQualifiedGraphName, Schema.empty), Set(), emptySqm),
             emptySqm),
-          SolvedQueryModel(Set(nodeA), Set(), Set())
+          SolvedQueryModel(Set(nodeA), Set())
         ),
         SolvedQueryModel(
           Set(nodeA),
-          Set(Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean))(CTBoolean))(CTBoolean)),
-          Set())
+          Set(Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean))(CTBoolean))(CTBoolean)))
       ),
       SolvedQueryModel(
         Set(nodeA, IRField("a.prop")(CTNull)),
-        Set(Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean))(CTBoolean))(CTBoolean)),
-        Set())
+        Set(Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean))(CTBoolean))(CTBoolean)))
     )
 
     result should equalWithoutResult(expected)
@@ -354,11 +352,11 @@ class LogicalPlannerTest extends LogicalTestSuite {
         ProjectGraph(
           LogicalExternalGraph("foo", QualifiedGraphName(SessionPropertyGraphDataSource.Namespace, fooGraphName), Schema.empty),
           Start(LogicalExternalGraph("test", testQualifiedGraphName, Schema.empty), Set(), emptySqm),
-          SolvedQueryModel(Set(), Set(), Set(IRNamedGraph("foo", Schema.empty)))
+          SolvedQueryModel(Set(), Set())
         ),
-        SolvedQueryModel(Set(), Set(), Set(IRNamedGraph("foo", Schema.empty), IRNamedGraph("bar", Schema.empty)))
+        SolvedQueryModel(Set(), Set())
       ),
-      SolvedQueryModel(Set(), Set(), Set(IRNamedGraph("foo", Schema.empty), IRNamedGraph("bar", Schema.empty)))
+      SolvedQueryModel(Set(), Set())
     )
 
     result should equalWithTracing(expected)
@@ -371,7 +369,7 @@ class LogicalPlannerTest extends LogicalTestSuite {
 
   private def plan(ir: CypherQuery[Expr], ambientSchema: Schema, graphWithSchema: (GraphName, Schema)*): LogicalOperator = {
     val withAmbientGraph = graphWithSchema :+ (testGraphName -> ambientSchema)
-    planner.process(ir)(LogicalPlannerContext(ambientSchema, Set.empty, (_) => graphSource(withAmbientGraph: _*), testGraph()))
+    planner.process(ir)(LogicalPlannerContext(ambientSchema, Set.empty, Map(testQualifiedGraphName -> graphSource(withAmbientGraph: _*)), testGraph()))
   }
 
   case class equalWithoutResult(plan: LogicalOperator) extends Matcher[LogicalOperator] {

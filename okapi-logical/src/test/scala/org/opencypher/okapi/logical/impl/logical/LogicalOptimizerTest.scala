@@ -28,7 +28,7 @@ import scala.language.implicitConversions
 class LogicalOptimizerTest extends IrTestSuite {
 
   val emptySqm = SolvedQueryModel.empty
-  val logicalGraph = LogicalExternalGraph(testGraph.name, testQualifiedGraphName, Schema.empty)
+  val logicalGraph = LogicalExternalGraph(testQualifiedGraphName.toString, testQualifiedGraphName, Schema.empty)
   val schema = Schema.empty
 
 //  //Helper to create nicer expected results with `asCode`
@@ -42,11 +42,11 @@ class LogicalOptimizerTest extends IrTestSuite {
 //  )
 
   def plannerContext(schema: Schema) =
-    LogicalPlannerContext(schema, Set.empty, (_) => testGraphSource(testGraphName -> schema), testGraph())
+    LogicalPlannerContext(schema, Set.empty, Map(testQualifiedGraphName -> testGraphSource(testGraphName -> schema)), testGraph())
 
   test("push label filter into scan") {
     val animalSchema = schema.withNodePropertyKeys("Animal")()
-    val animalGraph = LogicalExternalGraph(testGraph.name, testQualifiedGraphName, animalSchema)
+    val animalGraph = LogicalExternalGraph(testQualifiedGraphName.toString, testQualifiedGraphName, animalSchema)
     val query = """
                   | MATCH (a:Animal)
                   | RETURN a""".stripMargin
@@ -67,9 +67,9 @@ class LogicalOptimizerTest extends IrTestSuite {
           ),
           emptySqm
         ),
-        SolvedQueryModel(Set(), Set(HasLabel(Var("a")(CTNode(Set("Animal"))), Label("Animal"))(CTBoolean)), Set())
+        SolvedQueryModel(Set(), Set(HasLabel(Var("a")(CTNode(Set("Animal"))), Label("Animal"))(CTBoolean)))
       ),
-      SolvedQueryModel(Set(IRField("a")(CTNode)), Set(HasLabel(Var("a")(CTNode), Label("Animal"))(CTBoolean)), Set())
+      SolvedQueryModel(Set(IRField("a")(CTNode)), Set(HasLabel(Var("a")(CTNode), Label("Animal"))(CTBoolean)))
     )
 
     optimizedLogicalPlan should equalWithTracing(expected)
@@ -88,9 +88,9 @@ class LogicalOptimizerTest extends IrTestSuite {
       EmptyRecords(
         Set(Var("a")(CTNode(Set("Animal")))),
         SetSourceGraph(logicalGraph, Start(logicalGraph, Set(), emptySqm), emptySqm),
-        SolvedQueryModel(Set(), Set(HasLabel(Var("a")(CTNode(Set("Animal"))), Label("Animal"))(CTBoolean)), Set())
+        SolvedQueryModel(Set(), Set(HasLabel(Var("a")(CTNode(Set("Animal"))), Label("Animal"))(CTBoolean)))
       ),
-      SolvedQueryModel(Set(IRField("a")(CTNode)), Set(HasLabel(Var("a")(CTNode), Label("Animal"))(CTBoolean)), Set())
+      SolvedQueryModel(Set(IRField("a")(CTNode)), Set(HasLabel(Var("a")(CTNode), Label("Animal"))(CTBoolean)))
     )
 
     optimizedLogicalPlan should equalWithTracing(expected)
@@ -101,7 +101,7 @@ class LogicalOptimizerTest extends IrTestSuite {
                   | MATCH (a:Animal:Astronaut)
                   | RETURN a""".stripMargin
     val schema = Schema.empty.withNodePropertyKeys("Animal")().withNodePropertyKeys("Astronaut")()
-    val logicalGraph = LogicalExternalGraph(testGraph.name, testQualifiedGraphName, schema)
+    val logicalGraph = LogicalExternalGraph(testQualifiedGraphName.graphName.toString, testQualifiedGraphName, schema)
 
     val plan = logicalPlan(query, schema)
     val optimizedLogicalPlan = LogicalOptimizer(plan)(plannerContext(schema))
@@ -117,16 +117,14 @@ class LogicalOptimizerTest extends IrTestSuite {
           Set(
             HasLabel(Var("a")(CTNode(Set("Astronaut", "Animal"))), Label("Astronaut"))(CTBoolean),
             HasLabel(Var("a")(CTNode(Set("Astronaut", "Animal"))), Label("Animal"))(CTBoolean)
-          ),
-          Set()
+          )
         )
       ),
       SolvedQueryModel(
         Set(IRField("a")(CTNode)),
         Set(
           HasLabel(Var("a")(CTNode), Label("Animal"))(CTBoolean),
-          HasLabel(Var("a")(CTNode), Label("Astronaut"))(CTBoolean)),
-        Set())
+          HasLabel(Var("a")(CTNode), Label("Astronaut"))(CTBoolean)))
     )
 
     optimizedLogicalPlan should equalWithTracing(expected)

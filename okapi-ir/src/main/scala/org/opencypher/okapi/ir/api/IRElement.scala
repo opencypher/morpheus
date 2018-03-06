@@ -21,11 +21,6 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.io.SessionPropertyGraphDataSource
 import org.opencypher.okapi.ir.api.pattern._
 
-trait IRElement {
-  def name: String
-  def escapedName: String = name.replaceAll("`", "``")
-}
-
 object IRField {
   def relTypes(field: IRField): Set[String] = field.cypherType match {
     case CTRelationship(types) => types
@@ -33,36 +28,23 @@ object IRField {
   }
 }
 
-final case class IRField(name: String)(val cypherType: CypherType = CTWildcard) extends IRElement {
+final case class IRField(name: String)(val cypherType: CypherType = CTWildcard) {
   override def toString = s"$name :: $cypherType"
+
+  def escapedName: String = name.replaceAll("`", "``")
 
   def toTypedTuple: (String, CypherType) = name -> cypherType
 }
 
-sealed trait IRGraph extends IRElement {
-  def toNamedGraph: IRNamedGraph = IRNamedGraph(name, schema)
-
+sealed trait IRGraph {
   def schema: Schema
 }
 
-sealed trait IRQualifiedGraph extends IRGraph {
-  def qualifiedName: QualifiedGraphName
+object IRCatalogGraph {
+  def apply(name: String, schema: Schema): IRCatalogGraph =
+    IRCatalogGraph(QualifiedGraphName(SessionPropertyGraphDataSource.Namespace, GraphName(name)), schema)
 }
 
-object IRNamedGraph {
-  def apply(name: String, schema: Schema): IRNamedGraph =
-    IRNamedGraph(name, schema, QualifiedGraphName(SessionPropertyGraphDataSource.Namespace, GraphName(name)))
-}
+final case class IRCatalogGraph(qualifiedName: QualifiedGraphName, schema: Schema) extends IRGraph
 
-// TODO: unify IRNamedGraph and IRExternalGraph as there is no real difference
-final case class IRNamedGraph(name: String, schema: Schema, qualifiedName: QualifiedGraphName) extends IRQualifiedGraph {
-  override def toNamedGraph: IRNamedGraph = this
-
-  override def toString: String = s"IRNamedGraph(name = $name, qualifiedName = $qualifiedName)"
-}
-
-final case class IRExternalGraph(name: String, schema: Schema, qualifiedName: QualifiedGraphName) extends IRQualifiedGraph {
-  override def toString: String = s"IRExternalGraph(name = $name, qualifiedName = $qualifiedName)"
-}
-
-final case class IRPatternGraph[E](name: String, schema: Schema, pattern: Pattern[E]) extends IRGraph
+final case class IRPatternGraph[E](schema: Schema, pattern: Pattern[E]) extends IRGraph

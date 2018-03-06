@@ -109,8 +109,9 @@ class LogicalOperatorProducer {
     Unwind(list, variable, withList, withList.solved.withField(variable))
   }
 
-  def planSelect(fields: IndexedSeq[Var], graphs: Set[String] = Set.empty, prev: LogicalOperator): Select = {
-    Select(fields, graphs, prev, prev.solved)
+  def planSelect(fields: IndexedSeq[Var], prev: LogicalOperator): Select = {
+    // TODO: Remove selection of graphs
+    Select(fields, Set.empty, prev, prev.solved)
   }
 
   def planSetSourceGraph(graph: LogicalGraph, prev: LogicalOperator): SetSourceGraph = {
