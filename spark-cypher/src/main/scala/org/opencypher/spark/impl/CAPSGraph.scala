@@ -22,7 +22,7 @@ import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.relational.impl.table.{OpaqueField, RecordHeader}
+import org.opencypher.okapi.relational.impl.table.{ColumnName, OpaqueField, RecordHeader}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable}
 import org.opencypher.spark.impl.CAPSConverters._
@@ -52,9 +52,30 @@ trait CAPSGraph extends PropertyGraph with GraphOperations with Serializable {
   def unpersist(blocking: Boolean): CAPSGraph
 
   def nodesWithExactLabels(name: String, labels: Set[String]): CAPSRecords = {
-    // TODO DO!
+    val nodeType = CTNode(labels)
+    val nodeVar = Var(name)(nodeType)
+    val records = nodes(name, nodeType)
 
-    ???
+    // compute slot contents to remove and to keep
+    val removeSlots = records.header.labelSlots(nodeVar)
+      .filterNot(slot => labels.contains(slot._1.label.name))
+      .values
+    val keepSlots = records.header.contents.diff(removeSlots.map(_.content).toSet)
+
+    // we only keep rows where all "other" labels are false
+    val predicate = removeSlots.map(ColumnName.of)
+      .map(records.data.col(_) === false)
+      .reduceOption(_ && _)
+
+    // filter rows and drop unnecessary columns
+    val updatedData = predicate match {
+      case Some(filter) => records.data.filter(filter).drop(removeSlots.map(ColumnName.of).toSeq :_*)
+      case None => records.data
+    }
+
+    val updatedHeader = RecordHeader.from(keepSlots.toSeq: _*)
+
+    CAPSRecords.verifyAndCreate(updatedHeader, updatedData)(session)
   }
 
   override def toString = s"${getClass.getSimpleName}"
@@ -112,11 +133,13 @@ object CAPSGraph {
       lazyGraph.union(other)
 
     override def cache(): CAPSGraph = {
-      lazyGraph.cache(); this
+      lazyGraph.cache();
+      this
     }
 
     override def persist(): CAPSGraph = {
-      lazyGraph.persist(); this
+      lazyGraph.persist();
+      this
     }
 
     override def persist(storageLevel: StorageLevel): CAPSGraph = {
@@ -125,11 +148,13 @@ object CAPSGraph {
     }
 
     override def unpersist(): CAPSGraph = {
-      lazyGraph.unpersist(); this
+      lazyGraph.unpersist();
+      this
     }
 
     override def unpersist(blocking: Boolean): CAPSGraph = {
-      lazyGraph.unpersist(blocking); this
+      lazyGraph.unpersist(blocking);
+      this
     }
   }
 

@@ -56,17 +56,6 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema)(imp
   override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
     val node = Var(name)(nodeCypherType)
     val selectedTables = nodeEntityTables.byType(nodeCypherType)
-    nodesFromScans(node, selectedTables)
-  }
-
-  override def nodesWithExactLabels(name: String, labels: Set[String]): CAPSRecords = {
-    val nodeCypherType = CTNode(labels)
-    val node = Var(name)(nodeCypherType)
-    val selectedTables = nodeEntityTables.byExactType(nodeCypherType)
-    nodesFromScans(node, selectedTables)
-  }
-
-  private def nodesFromScans(node: Var, selectedTables: Seq[CAPSEntityTable]) = {
     val schema = selectedTables.map(_.schema).foldLeft(Schema.empty)(_ ++ _)
     val targetNodeHeader = RecordHeader.nodeFromSchema(node, schema)
 
