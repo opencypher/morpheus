@@ -26,7 +26,11 @@ import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.spark.impl.io.hdfs.CsvGraphLoader._
 
 trait CsvFileHandler {
-  def location: String
+  def graphLocation: URI
+
+  def listNodeFiles: Array[URI] = listDataFiles(NODES_DIRECTORY)
+
+  def listRelationshipFiles: Array[URI] = listDataFiles(RELS_DIRECTORY)
 
   def listDataFiles(directory: String): Array[URI]
 
@@ -35,13 +39,13 @@ trait CsvFileHandler {
   def writeSchemaFile(directory: String, filename: String, jsonSchema: String): Unit
 }
 
-final class HadoopFileHandler(override val location: String, private val hadoopConfig: Configuration)
+final class HadoopFileHandler(override val graphLocation: URI, private val hadoopConfig: Configuration)
   extends CsvFileHandler {
 
-  private val fs: FileSystem = FileSystem.get(new URI(location), hadoopConfig)
+  private val fs: FileSystem = FileSystem.get(graphLocation, hadoopConfig)
 
   override def listDataFiles(directory: String): Array[URI] = {
-    fs.listStatus(new Path(location, directory))
+    fs.listStatus(new Path(graphLocation.getPath, directory))
       .filter(p => p.getPath.toString.toUpperCase.endsWith(CSV_SUFFIX))
       .map(_.getPath.toUri)
   }
@@ -58,16 +62,22 @@ final class HadoopFileHandler(override val location: String, private val hadoopC
     readLines.takeWhile(_ != null).mkString
   }
 
-  override def writeSchemaFile(directory: String, filename: String, jsonSchema: String): Unit = ???
+  override def writeSchemaFile(directory: String, filename: String, jsonSchema: String): Unit = {
+    val hdfsPath = new Path(new Path(graphLocation.getPath, directory), filename)
+    val outputStream = fs.create(hdfsPath)
+    val bw = new BufferedWriter(new OutputStreamWriter(outputStream, "UTF-8"))
+    bw.write(jsonSchema)
+    bw.close()
+  }
 }
 
-final class LocalFileHandler(override val location: String) extends CsvFileHandler {
+final class LocalFileHandler(override val graphLocation: URI) extends CsvFileHandler {
 
   import scala.collection.JavaConverters._
 
   override def listDataFiles(directory: String): Array[URI] = {
     Files
-      .list(Paths.get(location, directory))
+      .list(Paths.get(graphLocation.getPath, directory))
       .collect(Collectors.toList())
       .asScala
       .filter(p => p.toString.toUpperCase.endsWith(CSV_SUFFIX))
@@ -88,7 +98,7 @@ final class LocalFileHandler(override val location: String) extends CsvFileHandl
 
 
   override def writeSchemaFile(directory: String, filename: String, jsonSchema: String): Unit = {
-    val file = new File(Paths.get(location, directory, filename).toString)
+    val file = new File(Paths.get(graphLocation.getPath, directory, filename).toString)
     val bw = new BufferedWriter(new FileWriter(file))
     bw.write(jsonSchema)
     bw.close()

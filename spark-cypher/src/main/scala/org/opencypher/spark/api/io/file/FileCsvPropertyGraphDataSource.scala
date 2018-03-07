@@ -15,9 +15,10 @@
  */
 package org.opencypher.spark.api.io.file
 
-import java.io.File
+import java.net.URI
 import java.nio.file.{Files, Paths}
 
+import org.apache.http.client.utils.URIBuilder
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.spark.api.CAPSSession
@@ -46,7 +47,7 @@ import scala.collection.JavaConverters._
   *   - for information about the structure of the relationship schema file see [[org.opencypher.spark.impl.io.hdfs.CsvRelSchema]]
   *
   * @param graphFolder path to the folder containing the nodes/relationships folders
-  * @param session CAPS Session
+  * @param session     CAPS Session
   */
 case class FileCsvPropertyGraphDataSource(graphFolder: String)(implicit val session: CAPSSession)
   extends CAPSPropertyGraphDataSource {
@@ -69,5 +70,8 @@ case class FileCsvPropertyGraphDataSource(graphFolder: String)(implicit val sess
 
   override def hasGraph(name: GraphName): Boolean = Files.exists(Paths.get(graphPath(name)))
 
-  private def graphPath(name: GraphName): String = s"$graphFolder${File.separator}$name"
+  private def graphPath(name: GraphName): URI =
+    new URIBuilder(graphFolder)
+      .setScheme("file")
+      .setPath(Paths.get(graphFolder, name.value).toString).build()
 }

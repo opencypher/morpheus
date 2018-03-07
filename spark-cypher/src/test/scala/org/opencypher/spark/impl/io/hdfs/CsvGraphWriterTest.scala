@@ -21,21 +21,36 @@ import java.nio.file.Files
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSGraph
 import org.opencypher.spark.test.CAPSTestSuite
-import org.opencypher.spark.test.fixture.{GraphCreationFixture, TeamDataFixture}
+import org.opencypher.spark.test.fixture.{GraphCreationFixture, MiniDFSClusterFixture, TeamDataFixture}
 
-class CsvGraphWriterTest extends CAPSTestSuite with TeamDataFixture with GraphCreationFixture {
+// This tests depends on the id generation in Neo4j (harness)
+class CsvGraphWriterTest extends CAPSTestSuite with MiniDFSClusterFixture with TeamDataFixture with GraphCreationFixture {
 
-  // This tests depends on the id generation in Neo4j (harness)
-  it("can store a graph to file system") {
+  it("can store a graph to local file system") {
     val tmpPath = Files.createTempDirectory("caps_graph")
 
     val inputGraph = initGraph(dataFixtureWithoutArrays)
-    val fileHandler = new LocalFileHandler(tmpPath.toString)
+    val fileHandler = new LocalFileHandler(new URI(tmpPath.toString))
     new CsvGraphWriter(inputGraph, fileHandler).store()
 
     // Verification
     val fileURI: URI = new URI(s"file://${tmpPath.toString}")
-    val loader = CsvGraphLoader(fileURI.toString, session.sparkContext.hadoopConfiguration)
+    val loader = CsvGraphLoader(fileURI, session.sparkContext.hadoopConfiguration)
+    val expected: CAPSGraph = loader.load.asCaps
+    val expectedNodes = expected.nodes("n").toDF()
+    expectedNodes.collect().toBag should equal(csvTestGraphNodesWithoutArrays)
+    val expectedRels = expected.relationships("rel").toDF()
+    expectedRels.collect.toBag should equal(csvTestGraphRelsWithoutArrays)
+  }
+
+  it("can store a graph to HDFS") {
+
+    val inputGraph = initGraph(dataFixtureWithoutArrays)
+    val fileHandler = new HadoopFileHandler(hdfsURI, clusterConfig)
+    new CsvGraphWriter(inputGraph, fileHandler).store()
+
+    // Verification
+    val loader = CsvGraphLoader(hdfsURI, session.sparkContext.hadoopConfiguration)
     val expected: CAPSGraph = loader.load.asCaps
     val expectedNodes = expected.nodes("n").toDF()
     expectedNodes.collect().toBag should equal(csvTestGraphNodesWithoutArrays)

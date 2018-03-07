@@ -25,7 +25,6 @@ import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.DataFrameOps._
-import org.opencypher.spark.impl.io.hdfs.CsvGraphLoader._
 
 /**
   * Loads a graph stored in indexed CSV format from HDFS or the local file system
@@ -53,7 +52,7 @@ class CsvGraphLoader(fileHandler: CsvFileHandler)(implicit capsSession: CAPSSess
   def load: PropertyGraph = capsSession.readFrom(loadNodes ++ loadRels: _*)
 
   private def loadNodes: List[CAPSNodeTable] = {
-    val csvFiles = listCsvFiles(NODES_DIRECTORY).toList
+    val csvFiles = fileHandler.listNodeFiles.toList
 
     csvFiles.map(e => {
       val schema = parseSchema(e)(CsvNodeSchema(_))
@@ -77,7 +76,7 @@ class CsvGraphLoader(fileHandler: CsvFileHandler)(implicit capsSession: CAPSSess
   }
 
   private def loadRels: List[CAPSRelationshipTable] = {
-    val csvFiles = listCsvFiles(RELS_DIRECTORY).toList
+    val csvFiles = fileHandler.listRelationshipFiles.toList
 
     csvFiles.map(relationShipFile => {
 
@@ -102,9 +101,6 @@ class CsvGraphLoader(fileHandler: CsvFileHandler)(implicit capsSession: CAPSSess
       CAPSRelationshipTable(relMapping, dfWithCorrectNullability)
     })
   }
-
-  private def listCsvFiles(directory: String): Array[URI] =
-    fileHandler.listDataFiles(directory)
 
   private def parseSchema[T <: CsvSchema](path: URI)(parser: String => T): T = {
     val text = fileHandler.readSchemaFile(path)
@@ -139,11 +135,11 @@ object CsvGraphLoader {
 
   val SCHEMA_SUFFIX = ".SCHEMA"
 
-  def apply(location: String, hadoopConfig: Configuration)(implicit caps: CAPSSession): CsvGraphLoader = {
+  def apply(location: URI, hadoopConfig: Configuration)(implicit caps: CAPSSession): CsvGraphLoader = {
     new CsvGraphLoader(new HadoopFileHandler(location, hadoopConfig))
   }
 
-  def apply(location: String)(implicit caps: CAPSSession): CsvGraphLoader = {
+  def apply(location: URI)(implicit caps: CAPSSession): CsvGraphLoader = {
     new CsvGraphLoader(new LocalFileHandler(location))
   }
 }

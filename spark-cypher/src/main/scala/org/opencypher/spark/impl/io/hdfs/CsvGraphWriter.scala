@@ -43,7 +43,8 @@ class CsvGraphWriter(graph: PropertyGraph, fileHandler: CsvFileHandler)(implicit
       val header = nodes.header
 
       val targetData = prepareDataFrame(nodes.data, header)
-      targetData.write.csv(Paths.get(fileHandler.location, NODES_DIRECTORY, fileNameFor(labelCombination)).toString)
+      val path = Paths.get(fileHandler.graphLocation.getPath, NODES_DIRECTORY, fileNameFor(labelCombination)).toString
+      targetData.write.csv(path)
 
       writeNodeSchema(labelCombination, header, targetData.schema)
     }
@@ -66,7 +67,8 @@ class CsvGraphWriter(graph: PropertyGraph, fileHandler: CsvFileHandler)(implicit
       val header = rels.header
 
       val targetData = prepareDataFrame(rels.data, header)
-      targetData.write.csv(Paths.get(fileHandler.location, RELS_DIRECTORY, fileNameFor(relType)).toString)
+      val path = Paths.get(fileHandler.graphLocation.getPath, RELS_DIRECTORY, fileNameFor(relType)).toString
+      targetData.write.csv(path)
 
       writeRelationshipSchema(relType, header, targetData.schema)
     }
