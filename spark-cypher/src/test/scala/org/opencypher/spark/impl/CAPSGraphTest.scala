@@ -23,7 +23,7 @@ import scala.collection.Bag
 
 abstract class CAPSGraphTest extends CAPSTestSuite with GraphCreationFixture with TeamDataFixture {
 
-  it("should return only nodes with that exact label") {
+  it("should return only nodes with that exact label (single label)") {
     val graph = initGraph(dataFixtureWithoutArrays)
 
     val nodes = graph.nodesWithExactLabels("n", Set("Person"))
@@ -39,6 +39,28 @@ abstract class CAPSGraphTest extends CAPSTestSuite with GraphCreationFixture wit
     Bag(nodes.toDF().collect(): _*) should equal(
       Bag(
         Row(4L, true, 8L, "Donald")
+      ))
+  }
+
+  it("should return only nodes with that exact label (multiple labels)") {
+    val graph = initGraph(dataFixtureWithoutArrays)
+
+    val nodes = graph.nodesWithExactLabels("n", Set("Person", "German"))
+
+    nodes.toDF().columns should equal(
+      Array(
+        "n",
+        "____n:German",
+        "____n:Person",
+        "____n_dot_luckyNumberINTEGER",
+        "____n_dot_nameSTRING"
+      ))
+
+    Bag(nodes.toDF().collect(): _*) should equal(
+      Bag(
+        Row(2L, true, true, 1337L, "Martin"),
+        Row(3L, true, true, 8L, "Max"),
+        Row(0L, true, true, 42L, "Stefan")
       ))
   }
 }

@@ -20,7 +20,7 @@ import org.apache.spark.sql.types.StructType
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.relational.impl.table.{ColumnName, ProjectedExpr, RecordHeader, RecordSlot}
+import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.spark.impl.table.CAPSRecordHeader._
 
 case class RowExpansion(
@@ -77,7 +77,8 @@ case class RowExpansion(
             throw IllegalArgumentException("an entity variable", entity)
         }
     }
-    adaptedRows.toSeq
+
+    filterNullRows(adaptedRows.toSeq)
   }
 
   def adaptRowToNewHeader(row: Row, lookupTable: Map[String, String]): Row = {
@@ -97,5 +98,16 @@ case class RowExpansion(
       }
     }
     Row.fromSeq(orderedRowContent)
+  }
+
+  def filterNullRows(rows: Seq[Row]): Seq[Row] = {
+    val slot = targetHeader.contents.find {
+      case _: OpaqueField => true
+      case _ => false
+    }.get
+
+    val index = rowSchema.fieldIndex(ColumnName.of(slot))
+
+    rows.filterNot(_.isNullAt(index))
   }
 }

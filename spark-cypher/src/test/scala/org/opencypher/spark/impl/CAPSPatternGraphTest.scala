@@ -27,15 +27,16 @@ import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.okapi.relational.impl.table.{OpaqueField, ProjectedExpr, ProjectedField, RecordHeader}
 import org.opencypher.spark.impl.table.CAPSRecordHeader
 import org.opencypher.spark.schema.CAPSSchema._
-import org.opencypher.spark.test.CAPSTestSuite
-import org.opencypher.spark.test.fixture.GraphCreationFixture
+import org.opencypher.spark.test.support.creation.caps.{CAPSPatternGraphFactory, CAPSTestGraphFactory}
 
 import scala.collection.Bag
 import scala.collection.JavaConverters._
 
-class CAPSPatternGraphTest extends CAPSTestSuite with GraphCreationFixture {
+class CAPSPatternGraphTest extends CAPSGraphTest {
 
   import CAPSGraphTestData._
+
+  override def capsGraphFactory: CAPSTestGraphFactory = CAPSPatternGraphFactory
 
   it("project pattern graph") {
     val inputGraph = initGraph(`:Person`)
