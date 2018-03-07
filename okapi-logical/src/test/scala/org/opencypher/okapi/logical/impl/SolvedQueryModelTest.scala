@@ -49,7 +49,6 @@ class SolvedQueryModelTest extends IrTestSuite {
     val binds: Fields[Expr] = Fields(Map(toField('c) -> Equals('a, 'b)(CTBoolean)))
     val block3 = project(binds)
     val block4 = project(ProjectedFieldsOf(toField('d) -> Equals('c, 'b)(CTBoolean)))
-    val block5 = project(Fields(Map.empty))
 
     val s = SolvedQueryModel.empty.withField('a).withFields('b, 'c)
 
@@ -57,7 +56,6 @@ class SolvedQueryModelTest extends IrTestSuite {
     s.contains(block1, block2) shouldBe true
     s.contains(block1, block2, block3) shouldBe true
     s.contains(block1, block2, block3, block4) shouldBe false
-    s.contains(block1, block2, block3, block5) shouldBe false
   }
 
   test("solves") {

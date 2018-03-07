@@ -18,7 +18,6 @@ package org.opencypher.spark.impl.physical.operators
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions.{asc, desc, monotonically_increasing_id}
 import org.apache.spark.sql.types.{StructField, StructType}
-import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
@@ -229,7 +228,7 @@ final case class ConstructGraph(
   }
 
   private def constructNode(node: ConstructedNode, records: CAPSRecords): (Set[(SlotContent, Column)]) = {
-    val col = org.apache.spark.sql.functions.lit(true)
+    val col = functions.lit(true)
     val labelTuples: Set[(SlotContent, Column)] = node.labels.map { label =>
       ProjectedExpr(HasLabel(node.v, label)(CTBoolean)) -> col
     }
@@ -243,8 +242,10 @@ final case class ConstructGraph(
     // The first half of the id space is protected
     // TODO: guarantee that all imported entities have ids in the protected range
     val relIdOffset = 500L << 33
+    println(relIdOffset)
     val firstIdCol = functions.lit(relIdOffset)
-    monotonically_increasing_id() + firstIdCol
+    val incremented = monotonically_increasing_id()
+    incremented + firstIdCol
   }
 
   private def constructRel(toConstruct: ConstructedRelationship, records: CAPSRecords): (Set[(SlotContent, Column)]) = {
@@ -269,7 +270,7 @@ final case class ConstructGraph(
 
     // type is an input
     val typeTuple = {
-      val col = org.apache.spark.sql.functions.lit(typ)
+      val col = functions.lit(typ)
       ProjectedExpr(Type(rel)(CTString)) -> col
     }
 

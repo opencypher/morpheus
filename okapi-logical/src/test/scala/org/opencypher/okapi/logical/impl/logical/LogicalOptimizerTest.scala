@@ -31,15 +31,15 @@ class LogicalOptimizerTest extends IrTestSuite {
   val logicalGraph = LogicalExternalGraph(testQualifiedGraphName, Schema.empty)
   val schema = Schema.empty
 
-//  //Helper to create nicer expected results with `asCode`
-//  import org.opencypher.caps.impl.common.AsCode._
-//  implicit val specialMappings = Map[Any, String](
-//    schema -> "schema",
-//    emptySqm -> "emptySqm",
-//    logicalGraph -> "logicalGraph",
-//    emptySqm -> "emptySqm",
-//    (CTNode: CTNode) -> "CTNode"
-//  )
+  //  //Helper to create nicer expected results with `asCode`
+  //  import org.opencypher.caps.impl.common.AsCode._
+  //  implicit val specialMappings = Map[Any, String](
+  //    schema -> "schema",
+  //    emptySqm -> "emptySqm",
+  //    logicalGraph -> "logicalGraph",
+  //    emptySqm -> "emptySqm",
+  //    (CTNode: CTNode) -> "CTNode"
+  //  )
 
   def plannerContext(schema: Schema) =
     LogicalPlannerContext(schema, Set.empty, Map(testQualifiedGraphName -> testGraphSource(testGraphName -> schema)))
@@ -47,9 +47,9 @@ class LogicalOptimizerTest extends IrTestSuite {
   test("push label filter into scan") {
     val animalSchema = schema.withNodePropertyKeys("Animal")()
     val animalGraph = LogicalExternalGraph(testQualifiedGraphName, animalSchema)
-    val query = """
-                  | MATCH (a:Animal)
-                  | RETURN a""".stripMargin
+    val query =
+      """|MATCH (a:Animal)
+         |RETURN a""".stripMargin
     val plan = logicalPlan(query, animalSchema)
     val optimizedLogicalPlan = LogicalOptimizer(plan)(plannerContext(animalSchema))
 
@@ -58,13 +58,9 @@ class LogicalOptimizerTest extends IrTestSuite {
       Set(),
       NodeScan(
         Var("a")(CTNode(Set("Animal"))),
-        UseGraph(
+        Start(
           animalGraph,
-          Start(
-            animalGraph,
-            Set(),
-            emptySqm
-          ),
+          Set(),
           emptySqm
         ),
         SolvedQueryModel(Set(), Set(HasLabel(Var("a")(CTNode(Set("Animal"))), Label("Animal"))(CTBoolean)))
@@ -76,9 +72,9 @@ class LogicalOptimizerTest extends IrTestSuite {
   }
 
   test("rewrite missing label scan to empty records") {
-    val query = """
-                  | MATCH (a:Animal)
-                  | RETURN a""".stripMargin
+    val query =
+      """|MATCH (a:Animal)
+         |RETURN a""".stripMargin
     val plan = logicalPlan(query, schema)
     val optimizedLogicalPlan = LogicalOptimizer(plan)(plannerContext(schema))
 
@@ -87,7 +83,7 @@ class LogicalOptimizerTest extends IrTestSuite {
       Set(),
       EmptyRecords(
         Set(Var("a")(CTNode(Set("Animal")))),
-        UseGraph(logicalGraph, Start(logicalGraph, Set(), emptySqm), emptySqm),
+        Start(logicalGraph, Set(), emptySqm),
         SolvedQueryModel(Set(), Set(HasLabel(Var("a")(CTNode(Set("Animal"))), Label("Animal"))(CTBoolean)))
       ),
       SolvedQueryModel(Set(IRField("a")(CTNode)), Set(HasLabel(Var("a")(CTNode), Label("Animal"))(CTBoolean)))
@@ -97,9 +93,9 @@ class LogicalOptimizerTest extends IrTestSuite {
   }
 
   test("rewrite missing label combination") {
-    val query = """
-                  | MATCH (a:Animal:Astronaut)
-                  | RETURN a""".stripMargin
+    val query =
+      """|MATCH (a:Animal:Astronaut)
+         |RETURN a""".stripMargin
     val schema = Schema.empty.withNodePropertyKeys("Animal")().withNodePropertyKeys("Astronaut")()
     val logicalGraph = LogicalExternalGraph(testQualifiedGraphName, schema)
 
@@ -111,7 +107,7 @@ class LogicalOptimizerTest extends IrTestSuite {
       Set(),
       EmptyRecords(
         Set(Var("a")(CTNode(Set("Astronaut", "Animal")))),
-        UseGraph(logicalGraph, Start(logicalGraph, Set(), emptySqm), emptySqm),
+        Start(logicalGraph, Set(), emptySqm),
         SolvedQueryModel(
           Set(),
           Set(
@@ -133,7 +129,7 @@ class LogicalOptimizerTest extends IrTestSuite {
   private def logicalPlan(query: String, schema: Schema): LogicalOperator = {
     val producer = new LogicalOperatorProducer
     val logicalPlanner = new LogicalPlanner(producer)
-    val ir = query.ir(testGraphName -> schema)
+    val ir = query.ir(testGraphName -> schema)(schema)
     val logicalPlannerContext = plannerContext(schema)
     val logicalPlan = logicalPlanner(ir)(logicalPlannerContext)
     logicalPlan

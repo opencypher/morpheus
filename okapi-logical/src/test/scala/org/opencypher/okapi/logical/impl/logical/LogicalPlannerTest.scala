@@ -74,7 +74,7 @@ class LogicalPlannerTest extends LogicalTestSuite {
 
     val block = matchBlock(pattern)
 
-    val scan1 = NodeScan(nodeA, UseGraph(leafPlan.graph, leafPlan, emptySqm), emptySqm.withField(nodeA))
+    val scan1 = NodeScan(nodeA, leafPlan, emptySqm.withField(nodeA))
     val scan2 = NodeScan(nodeB, leafPlan, emptySqm.withField(nodeB))
     val ir = irWithLeaf(block)
     val result = plan(ir)
@@ -94,7 +94,7 @@ class LogicalPlannerTest extends LogicalTestSuite {
     val block = matchBlock(pattern)
     val ir = irWithLeaf(block)
 
-    val scan = NodeScan(nodeA, UseGraph(leafPlan.graph, leafPlan, emptySqm), emptySqm.withField(nodeA))
+    val scan = NodeScan(nodeA, leafPlan, emptySqm.withField(nodeA))
     val expandInto = ExpandInto(nodeA, relR, nodeA, Directed, scan, SolvedQueryModel(Set(nodeA, relR)))
 
     plan(ir) should equalWithoutResult(expandInto)
@@ -139,10 +139,7 @@ class LogicalPlannerTest extends LogicalTestSuite {
                 Directed,
                 NodeScan(
                   Var("a")(CTNode),
-                  UseGraph(
-                    LogicalExternalGraph(testQualifiedGraphName, Schema.empty),
-                    Start(LogicalExternalGraph(testQualifiedGraphName, Schema.empty), Set(), emptySqm),
-                    emptySqm),
+                  Start(LogicalExternalGraph(testQualifiedGraphName, Schema.empty), Set(), emptySqm),
                   SolvedQueryModel(Set(nodeA), Set())
                 ),
                 NodeScan(
@@ -222,19 +219,12 @@ class LogicalPlannerTest extends LogicalTestSuite {
                 Directed,
                 NodeScan(
                   Var("a")(CTNode),
-                  UseGraph(
+                  Start(
                     LogicalExternalGraph(
                       testQualifiedGraphName,
                       schema
                     ),
-                    Start(
-                      LogicalExternalGraph(
-                        testQualifiedGraphName,
-                        schema
-                      ),
-                      Set(),
-                      emptySqm
-                    ),
+                    Set(),
                     emptySqm
                   ),
                   SolvedQueryModel(Set(nodeA), Set())
@@ -308,10 +298,7 @@ class LogicalPlannerTest extends LogicalTestSuite {
         Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean))(CTBoolean))(CTBoolean),
         NodeScan(
           Var("a")(CTNode),
-          UseGraph(
-            LogicalExternalGraph(testQualifiedGraphName, Schema.empty),
-            Start(LogicalExternalGraph(testQualifiedGraphName, Schema.empty), Set(), emptySqm),
-            emptySqm),
+          Start(LogicalExternalGraph(testQualifiedGraphName, Schema.empty), Set(), emptySqm),
           SolvedQueryModel(Set(nodeA), Set())
         ),
         SolvedQueryModel(

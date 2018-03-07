@@ -67,7 +67,10 @@ object Neo4jWorkflow extends App {
        |FROM GRAPH AT 'csv.prod'
        |MATCH (c:Customer)
        |WHERE pName = c.name
-       |RETURN GRAPH OF (p)-[x:IS]->(c)
+       |CONSTRUCT {
+       |  CREATE (p)-[x:IS]->(c)
+       |}
+       |RETURN GRAPH
     """.stripMargin
   ).graph.get
 

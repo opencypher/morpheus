@@ -110,7 +110,7 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
         IRBuilderContext.initial(queryText,
           parameters,
           SemanticState.clean,
-          testGraph,
+          testGraph()(schema),
           _ => testGraphSource(graphsWithSchema :+ (testGraphName -> schema): _*)))
     }
 
@@ -120,7 +120,7 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
         IRBuilderContext.initial(queryText,
           params.toMap,
           SemanticState.clean,
-          testGraph,
+          testGraph()(schema),
           _ => testGraphSource(testGraphName -> schema)))
     }
   }

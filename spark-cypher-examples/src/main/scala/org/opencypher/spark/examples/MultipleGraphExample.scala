@@ -45,9 +45,12 @@ object MultipleGraphExample extends App {
   val integrationGraph = disconnectedGraph.cypher(
     """|MATCH (p:Person),(c:Customer)
        |WHERE p.name = c.name
-       |RETURN GRAPH OF (p)-[x:IS]->(c)
+       |CONSTRUCT {
+       |  CREATE (p)-[x:IS]->(c)
+       |}
+       |RETURN GRAPH
     """.stripMargin
-  ).graph.get
+  ).getGraph
 
   // 6) Build recommendation graph from disconnected and integration graphs
   val recommendationGraph = disconnectedGraph union integrationGraph
