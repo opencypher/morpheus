@@ -23,7 +23,7 @@ import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
-import org.opencypher.spark.impl.io.hdfs.CsvGraphLoader
+import org.opencypher.spark.impl.io.hdfs.{CsvGraphLoader, CsvGraphWriter}
 
 import scala.collection.JavaConverters._
 
@@ -57,7 +57,7 @@ case class FileCsvPropertyGraphDataSource(graphFolder: String)(implicit val sess
   override def schema(name: GraphName): Option[Schema] = None
 
   override def store(name: GraphName, graph: PropertyGraph): Unit =
-    throw new UnsupportedOperationException("'store' operation is not supported by the FileCSV data source")
+    CsvGraphWriter(graph, graphPath(name)).store()
 
   override def delete(name: GraphName): Unit =
     if (hasGraph(name)) Files.delete(Paths.get(graphPath(name)))

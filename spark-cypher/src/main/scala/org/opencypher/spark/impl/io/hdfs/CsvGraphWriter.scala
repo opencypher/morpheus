@@ -15,8 +15,10 @@
  */
 package org.opencypher.spark.impl.io.hdfs
 
+import java.net.URI
 import java.nio.file.Paths
 
+import org.apache.hadoop.conf.Configuration
 import org.apache.spark.sql.types.{ArrayType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, functions}
 import org.opencypher.okapi.api.graph.PropertyGraph
@@ -134,4 +136,14 @@ class CsvGraphWriter(graph: PropertyGraph, fileHandler: CsvFileHandler)(implicit
   private def fileNameFor(relTypeOrLabel: String): String = fileNameFor(Set(relTypeOrLabel))
 
   private def fileNameFor(labels: Set[String]): String = s"${labels.mkString("_")}$CSV_SUFFIX"
+}
+
+object CsvGraphWriter {
+  def apply(graph: PropertyGraph, location: URI, hadoopConfig: Configuration)(implicit caps: CAPSSession): CsvGraphWriter = {
+    new CsvGraphWriter(graph, new HadoopFileHandler(location, hadoopConfig))
+  }
+
+  def apply(graph: PropertyGraph, location: URI)(implicit caps: CAPSSession): CsvGraphWriter = {
+    new CsvGraphWriter(graph, new LocalFileHandler(location))
+  }
 }
