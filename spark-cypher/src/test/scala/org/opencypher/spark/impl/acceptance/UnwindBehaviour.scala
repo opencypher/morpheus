@@ -85,6 +85,22 @@ trait UnwindBehaviour { self: AcceptanceTest =>
     }
 
     test("unwind from expression") {
+      val graph = initGraph("CREATE (:A {v: [1, 2]}), (:A:B {v: [-4]}), (:A:C {v: []})")
+
+      val query = "MATCH (a:A) WITH a.v AS list UNWIND list AS item RETURN item"
+
+      val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
+
+      result.getRecords.toMapsWithCollectedEntities should equal(
+        Bag(
+          CypherMap("item" -> 1),
+          CypherMap("item" -> 2),
+          CypherMap("item" -> -4)
+        ))
+    }
+
+    // TODO active once https://issues.apache.org/jira/browse/SPARK-23610 is resolved
+    ignore("unwind from expression") {
       val graph = initGraph("CREATE (:A {v: [1, 2]}), (:A:B {v: [-4]}), (:A:C {v: []}), (:A)")
 
       val query = "MATCH (a:A) WITH a.v AS list UNWIND list AS item RETURN item"

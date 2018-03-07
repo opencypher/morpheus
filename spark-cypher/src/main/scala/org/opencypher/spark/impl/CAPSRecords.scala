@@ -20,7 +20,6 @@ import java.util.Collections
 import org.apache.spark.api.java.JavaRDD
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
@@ -169,47 +168,52 @@ sealed abstract class CAPSRecords(val header: RecordHeader, val data: DataFrame)
   def alignWith(v: Var, targetHeader: RecordHeader): CAPSRecords = {
     val oldEntity = this.header.internalHeader.fields.headOption
       .getOrElse(throw IllegalStateException("GraphScan table did not contain any fields"))
+
     val entityLabels: Set[String] = oldEntity.cypherType match {
       case CTNode(labels) => labels
       case CTRelationship(typ) => typ
       case _ => throw IllegalArgumentException("CTNode or CTRelationship", oldEntity.cypherType)
     }
 
-    val slots = this.header.slots
-    val renamedSlots = slots.map(_.withOwner(v))
-
-    val dataColumnNameToIndex: Map[String, Int] = renamedSlots.map { dataSlot =>
-      val dataColumnName = ColumnName.of(dataSlot)
-      val dataColumnIndex = dataSlot.index
-      dataColumnName -> dataColumnIndex
-    }.toMap
-
-    val slotDataSelectors: Seq[Row => Any] = targetHeader.slots.map { targetSlot =>
-      val columnName = ColumnName.of(targetSlot)
-      val defaultValue = targetSlot.content.key match {
-        case HasLabel(_, l: Label) => entityLabels(l.name)
-        case _: Type if entityLabels.size == 1 => entityLabels.head
-        case _ => null
-      }
-      val maybeDataIndex = dataColumnNameToIndex.get(columnName)
-      val slotDataSelector: Row => Any = maybeDataIndex match {
-        case None =>
-          (_) =>
-            defaultValue
-        case Some(index) => _.get(index)
-      }
-      slotDataSelector
+    val renamedSlotMapping = this.header.slots.map { slot =>
+      slot -> slot.withOwner(v)
     }
-    val wrappedHeader = new CAPSRecordHeader(targetHeader)
 
-    val alignedData = this
-      .toDF()
-      .map { (row: Row) =>
-        val alignedRow = slotDataSelectors.map(_ (row))
-        new GenericRowWithSchema(alignedRow.toArray, wrappedHeader.asSparkSchema).asInstanceOf[Row]
-      }(wrappedHeader.rowEncoder)
+    val withRenamedColumns = renamedSlotMapping.foldLeft(data) {
+      case (acc, (oldCol, newCol)) => acc.withColumnRenamed(ColumnName.of(oldCol), ColumnName.of(newCol))
+    }
 
-    CAPSRecords.verifyAndCreate(targetHeader, alignedData)
+    val renamedSlots = renamedSlotMapping.map(_._2)
+
+    val relevantColumns = targetHeader.slots.map { targetSlot =>
+      val targetColName = ColumnName.of(targetSlot)
+
+      renamedSlots.find(_.content == targetSlot.content) match {
+        case Some(sourceSlot) =>
+          val sourceColName = ColumnName.of(sourceSlot)
+
+          // the column exists in the source data
+          if (sourceColName == targetColName)
+            withRenamedColumns.col(targetColName)
+          // the column exists in the source data but has a different data type (and thus different column name)
+          else
+            withRenamedColumns.col(sourceColName)
+              .cast(toSparkType(targetSlot.content.cypherType))
+              .as(targetColName)
+
+        case None =>
+          val content = targetSlot.content.key match {
+            case HasLabel(_, label) if entityLabels.contains(label.name) => functions.lit(true)
+            case _: HasLabel => functions.lit(false)
+            case _: Type if entityLabels.size == 1 => functions.lit(entityLabels.head)
+            case _ => functions.lit(null).cast(toSparkType(targetSlot.content.cypherType))
+          }
+          content.as(targetColName)
+      }
+    }
+
+    val withRelevantColumns = withRenamedColumns.select(relevantColumns: _*)
+    CAPSRecords.verifyAndCreate(targetHeader, withRelevantColumns)
   }
 
   //noinspection AccessorLikeMethodIsEmptyParen

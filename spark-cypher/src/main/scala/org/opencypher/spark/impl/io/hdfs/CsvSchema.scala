@@ -18,13 +18,18 @@ package org.opencypher.spark.impl.io.hdfs
 import io.circe.Decoder
 import io.circe.generic.auto._
 import io.circe.parser.parse
+import io.circe.syntax._
 import org.apache.spark.sql.types._
+import org.opencypher.okapi.api.types._
 
 abstract class CsvSchema {
   def idField: CsvField
+
   def propertyFields: List[CsvField]
 
   def toStructType: StructType
+
+  def toJson: String
 }
 
 // TODO: test
@@ -50,6 +55,7 @@ case class CsvField(name: String, column: Int, valueType: String) {
 
   /**
     * As CSV does not support list types they are represented as Strings and have to be read as such.
+    *
     * @return the Spark SQL type of the csv field at load time
     */
   lazy val getSourceType: DataType = valueType.toLowerCase match {
@@ -59,6 +65,7 @@ case class CsvField(name: String, column: Int, valueType: String) {
 
   /**
     * For List types we return the target array type.
+    *
     * @return the Spark SQL type of the csv field at after special conversions
     */
   lazy val getTargetType: DataType = valueType.toLowerCase match {
@@ -74,22 +81,38 @@ case class CsvField(name: String, column: Int, valueType: String) {
   lazy val toTargetStructField: StructField = StructField(name, getTargetType, nullable = true)
 
   private def extractSimpleType(typeString: String): DataType = typeString match {
-    case "string"                  => StringType
-    case "integer"                 => LongType
-    case "long"                    => LongType
-    case "boolean"                 => BooleanType
-    case "float"                   => DoubleType
-    case "double"                  => DoubleType
-    case x                         => throw new RuntimeException(s"Unknown type $x")
+    case "string" => StringType
+    case "integer" => LongType
+    case "long" => LongType
+    case "boolean" => BooleanType
+    case "float" => DoubleType
+    case "double" => DoubleType
+    case x => throw new RuntimeException(s"Unknown type $x")
+  }
+
+  def toJson: String = this.asJson.toString
+}
+
+object CsvField {
+  def apply(name: String, column: Int, valueType: CypherType): CsvField =
+    CsvField(name, column, typeName(valueType))
+
+  def typeName(ct: CypherType): String = ct.material match {
+    case CTString => "STRING"
+    case CTInteger => "INTEGER"
+    case CTBoolean => "BOOLEAN"
+    case CTFloat => "FLOAT"
+    case l: CTList => s"LIST[${typeName(l.elementType)}]"
+    case other => throw new IllegalArgumentException(s"CSV does not support values of type $other")
   }
 }
 
 case class CsvNodeSchema(
-    idField: CsvField,
-    implicitLabels: List[String],
-    optionalLabels: List[CsvField],
-    propertyFields: List[CsvField])
-    extends CsvSchema {
+  idField: CsvField,
+  implicitLabels: List[String],
+  optionalLabels: List[CsvField],
+  propertyFields: List[CsvField])
+  extends CsvSchema {
 
   def toStructType: StructType = {
     StructType(
@@ -98,41 +121,46 @@ case class CsvNodeSchema(
         .map(_.toSourceStructField)
     )
   }
+
+  override def toJson: String = {
+    this.asJson.toString()
+  }
+
 }
 
 /**
   * Reads the schema of a node csv file. The schema file is in JSON format and has the following structure:
   * {
-  *   "idField": {
-  *     "name": "id",
-  *     "column": 0,
-  *     "valueType": "LONG"
-  *   },
-  *   "implicitLabels": ["Person","Employee"],
-  *   "optionalLabels": [
-  *     {
-  *       "name": "Swede",
-  *       "column": 3,
-  *       "valueType": "BOOLEAN"
-  *     },
-  *     {
-  *       "name": "German",
-  *       "column": 4,
-  *       "valueType": "BOOLEAN"
-  *     }
-  *   ],
-  *   "propertyFields": [
-  *     {
-  *       "name": "name",
-  *       "column": 1,
-  *       "valueType": "STRING"
-  *     },
-  *     {
-  *       "name": "luckyNumber",
-  *       "column": 2,
-  *       "valueType": "INTEGER"
-  *     }
-  *   ]
+  * "idField": {
+  * "name": "id",
+  * "column": 0,
+  * "valueType": "LONG"
+  * },
+  * "implicitLabels": ["Person","Employee"],
+  * "optionalLabels": [
+  * {
+  * "name": "Swede",
+  * "column": 3,
+  * "valueType": "BOOLEAN"
+  * },
+  * {
+  * "name": "German",
+  * "column": 4,
+  * "valueType": "BOOLEAN"
+  * }
+  * ],
+  * "propertyFields": [
+  * {
+  * "name": "name",
+  * "column": 1,
+  * "valueType": "STRING"
+  * },
+  * {
+  * "name": "luckyNumber",
+  * "column": 2,
+  * "valueType": "INTEGER"
+  * }
+  * ]
   * }
   */
 object CsvNodeSchema {
@@ -149,12 +177,12 @@ object CsvNodeSchema {
 }
 
 case class CsvRelSchema(
-    idField: CsvField,
-    startIdField: CsvField,
-    endIdField: CsvField,
-    relType: String,
-    propertyFields: List[CsvField])
-    extends CsvSchema {
+  idField: CsvField,
+  startIdField: CsvField,
+  endIdField: CsvField,
+  relType: String,
+  propertyFields: List[CsvField])
+  extends CsvSchema {
 
   def toStructType: StructType = {
     StructType(
@@ -163,34 +191,38 @@ case class CsvRelSchema(
         .map(_.toSourceStructField)
     )
   }
+
+  override def toJson: String = {
+    this.asJson.toString()
+  }
 }
 
 /**
   * Reads the schema of a relationship csv file. The schema file is in JSON format and has the following structure:
   * {
-  *   "idField": {
-  *     "name": "id",
-  *     "column": 0,
-  *     "valueType": "LONG"
-  *   },
-  *   "startIdField": {
-  *     "name": "start",
-  *     "column": 1,
-  *     "valueType": "LONG"
-  *   },
-  *   "endIdField": {
-  *     "name": "end",
-  *     "column": 2,
-  *     "valueType": "LONG"
-  *   },
-  *   "relationshipType": "KNOWS",
-  *   "propertyFields": [
-  *     {
-  *       "name": "since",
-  *       "column": 3,
-  *       "valueType": "INTEGER"
-  *     }
-  *   ]
+  * "idField": {
+  * "name": "id",
+  * "column": 0,
+  * "valueType": "LONG"
+  * },
+  * "startIdField": {
+  * "name": "start",
+  * "column": 1,
+  * "valueType": "LONG"
+  * },
+  * "endIdField": {
+  * "name": "end",
+  * "column": 2,
+  * "valueType": "LONG"
+  * },
+  * "relationshipType": "KNOWS",
+  * "propertyFields": [
+  * {
+  * "name": "since",
+  * "column": 3,
+  * "valueType": "INTEGER"
+  * }
+  * ]
   * }
   */
 object CsvRelSchema {
