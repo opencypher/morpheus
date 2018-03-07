@@ -85,7 +85,7 @@ trait UnwindBehaviour { self: AcceptanceTest =>
     }
 
     test("unwind from expression") {
-      val graph = initGraph("CREATE (:A {v: [1, 2]}), (:A:B {v: [-4]}), (:A:C {v: []})")
+      val graph = initGraph("CREATE (:A {v: [1, 2]}), (:A:B {v: [-4]})")
 
       val query = "MATCH (a:A) WITH a.v AS list UNWIND list AS item RETURN item"
 
@@ -100,7 +100,7 @@ trait UnwindBehaviour { self: AcceptanceTest =>
     }
 
     // TODO: activate once https://issues.apache.org/jira/browse/SPARK-23610 is resolved
-    ignore("unwind from expression with null list") {
+    ignore("unwind from expression with empty and null lists") {
       val graph = initGraph("CREATE (:A {v: [1, 2]}), (:A:B {v: [-4]}), (:A:C {v: []}), (:A)")
 
       val query = "MATCH (a:A) WITH a.v AS list UNWIND list AS item RETURN item"

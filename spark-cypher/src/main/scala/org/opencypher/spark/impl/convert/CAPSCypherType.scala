@@ -70,6 +70,7 @@ object CAPSCypherType {
         case BooleanType => Some(CTBoolean)
         case BinaryType => Some(CTAny)
         case DoubleType => Some(CTFloat)
+        case ArrayType(NullType, _) => Some(CTList(CTVoid))
         case ArrayType(elemType, containsNull) =>
           elemType.toCypherType(containsNull).map(CTList)
         case NullType => Some(CTNull)
