@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.internal.v3_4.{expressions => exp}
 import org.opencypher.okapi.api.graph.QualifiedGraphName
+import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.okapi.impl.io.SessionPropertyGraphDataSource
@@ -30,7 +31,6 @@ import org.opencypher.okapi.ir.api.block.{SortItem, _}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern.Pattern
 import org.opencypher.okapi.ir.api.util.CompilationStage
-import org.opencypher.okapi.ir.impl.IRBuilder.{registerOrderAndSliceBlock, registerProjectBlock}
 import org.opencypher.okapi.ir.impl.refactor.instances._
 
 object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBuilderContext] {
@@ -153,14 +153,13 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           }
         } yield block
 
-
-      // TODO: CREATE UNIQUE
-      // TODO: Remove QGN parameter in Frontend
-      case ast.ConstructGraph(None, ast.Create(pattern: exp.Pattern)) =>
+      // TODO: Support merges, deletes, sets
+      case ast.ConstructGraph(Nil, creates, Nil, Nil) =>
         for {
-          pattern <- convertPattern(pattern)
+          patterns <- creates.map { case ast.Create(p) => p }.traverse(convertPattern[R])
           context <- get[R, IRBuilderContext]
           refs <- {
+            val pattern = patterns.foldLeft(Pattern.empty[Expr])(_ ++ _)
             val patternGraphSchema = context.currentWorkingGraph.schema.forPattern(pattern)
             val patternGraph = IRPatternGraph(patternGraphSchema, pattern)
             val updatedContext = context.withWorkingGraph(patternGraph)
