@@ -93,7 +93,7 @@ class CsvGraphLoader(fileHandler: CsvFileHandler)(implicit capsSession: CAPSSess
       val relMapping = RelationshipMapping.create(schema.idField.name,
         schema.startIdField.name,
         schema.endIdField.name,
-        schema.relType,
+        schema.relationshipType,
         schema.propertyFields.map(_.name).toSet)
 
       val shouldBeNonNullable = Set(schema.idField.name, schema.startIdField.name, schema.endIdField.name)

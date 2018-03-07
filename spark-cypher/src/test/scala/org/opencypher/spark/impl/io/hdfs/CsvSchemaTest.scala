@@ -140,7 +140,7 @@ class CsvSchemaTest extends BaseTestSuite {
     csvSchema.idField should equal(CsvField("id", 0, "LONG"))
     csvSchema.startIdField should equal(CsvField("startId", 1, "LONG"))
     csvSchema.endIdField should equal(CsvField("endId", 2, "LONG"))
-    csvSchema.relType should equal("KNOWS")
+    csvSchema.relationshipType should equal("KNOWS")
     csvSchema.propertyFields should equal(List(
       CsvField("since", 3, "INTEGER")
     ))
@@ -174,7 +174,7 @@ class CsvSchemaTest extends BaseTestSuite {
     csvSchema.idField should equal(CsvField("id", 0, "LONG"))
     csvSchema.startIdField should equal(CsvField("startId", 1, "LONG"))
     csvSchema.endIdField should equal(CsvField("endId", 2, "LONG"))
-    csvSchema.relType should equal("KNOWS")
+    csvSchema.relationshipType should equal("KNOWS")
     csvSchema.propertyFields should equal(List())
   }
 }

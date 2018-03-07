@@ -21,9 +21,9 @@ import org.apache.spark.sql.types.{ArrayType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, functions}
 import org.opencypher.okapi.api.graph.PropertyGraph
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.CTNode
-import org.opencypher.okapi.ir.api.expr.{HasLabel, Property}
-import org.opencypher.okapi.relational.impl.table.{ColumnName, OpaqueField, ProjectedExpr, RecordHeader}
+import org.opencypher.okapi.api.types.CTRelationship
+import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.io.hdfs.CsvGraphLoader._
@@ -33,50 +33,103 @@ class CsvGraphWriter(graph: PropertyGraph, fileHandler: CsvFileHandler)(implicit
   val schema: Schema = graph.schema
 
   def store(): Unit = {
-    schema.labelCombinations.combos.foreach { combo =>
-      val nodes = graph.nodes("n", CTNode(combo)).asCaps
+    writeNodes()
+    writeRelationships()
+  }
+
+  private def writeNodes(): Unit = {
+    schema.labelCombinations.combos.foreach { labelCombination =>
+      val nodes = graph.asCaps.nodesWithExactLabels("n", labelCombination)
       val header = nodes.header
 
-      val targetData = prepareDF(nodes.data, header)
-      targetData.write.csv(Paths.get(fileHandler.location, NODES_DIRECTORY, fileNameFor(combo)).toString)
+      val targetData = prepareDataFrame(nodes.data, header)
+      targetData.write.csv(Paths.get(fileHandler.location, NODES_DIRECTORY, fileNameFor(labelCombination)).toString)
 
-      writeSchemaFile(combo, header, targetData.schema)
+      writeNodeSchema(labelCombination, header, targetData.schema)
     }
   }
 
-  private def writeSchemaFile(labels: Set[String], header: RecordHeader, dfSchema: StructType): Unit = {
+  private def writeNodeSchema(labels: Set[String], header: RecordHeader, dfSchema: StructType): Unit = {
     val idFieldName = header.contents.collectFirst {
       case a: OpaqueField => ColumnName.of(a)
     }.get
-    val idFieldIndex = dfSchema.fieldIndex(idFieldName)
-    val idField = CsvField("CAPS_ID", idFieldIndex, "LONG")
+    val idField = CsvField("id", dfSchema.fieldIndex(idFieldName), "LONG")
 
-    val propertyFields = header.contents.collect {
-      case propertySlot @ ProjectedExpr(pr : Property) =>
-        val index = dfSchema.fieldIndex(ColumnName.of(propertySlot))
-        CsvField(pr.key.name, index, pr.cypherType)
-    }
-
-    val csvSchema = CsvNodeSchema(idField, labels.toList, List.empty, propertyFields.toList)
+    val csvSchema = CsvNodeSchema(idField, labels.toList, List.empty, getPropertySchema(header, dfSchema).toList)
 
     fileHandler.writeSchemaFile(NODES_DIRECTORY, s"${fileNameFor(labels)}$SCHEMA_SUFFIX", csvSchema.toJson)
   }
 
-  private def prepareDF(df: DataFrame, header: RecordHeader): DataFrame = {
+  private def writeRelationships(): Unit = {
+    schema.relationshipTypes.foreach { relType =>
+      val rels = graph.relationships("r", CTRelationship(relType)).asCaps
+      val header = rels.header
+
+      val targetData = prepareDataFrame(rels.data, header)
+      targetData.write.csv(Paths.get(fileHandler.location, RELS_DIRECTORY, fileNameFor(relType)).toString)
+
+      writeRelationshipSchema(relType, header, targetData.schema)
+    }
+  }
+
+  private def writeRelationshipSchema(relType: String, header: RecordHeader, dfSchema: StructType): Unit = {
+    val idFieldName = header.contents.collectFirst {
+      case a: OpaqueField => ColumnName.of(a)
+    }.get
+    val idField = CsvField("id", dfSchema.fieldIndex(idFieldName), "LONG")
+
+    val startIdFieldName = header.contents.collectFirst {
+      case a@ProjectedExpr(StartNode(_)) => ColumnName.of(a)
+    }.get
+    val startIdField = CsvField("startId", dfSchema.fieldIndex(startIdFieldName), "LONG")
+
+    val endIdFieldName = header.contents.collectFirst {
+      case a@ProjectedExpr(EndNode(_)) => ColumnName.of(a)
+    }.get
+    val endIdField = CsvField("endId", dfSchema.fieldIndex(endIdFieldName), "LONG")
+
+    val csvSchema = CsvRelSchema(idField, startIdField, endIdField, relType, getPropertySchema(header, dfSchema).toList)
+
+    fileHandler.writeSchemaFile(RELS_DIRECTORY, s"${fileNameFor(relType)}$SCHEMA_SUFFIX", csvSchema.toJson)
+  }
+
+  private def getPropertySchema(header: RecordHeader, dfSchema: StructType) = {
+    val propertyFields = header.contents.collect {
+      case propertySlot@ProjectedExpr(pr: Property) =>
+        val index = dfSchema.fieldIndex(ColumnName.of(propertySlot))
+        CsvField(pr.key.name, index, pr.cypherType)
+    }
+    propertyFields
+  }
+
+  /**
+    * Removes label and and relationship type columns from a node data frame or a relationships data frame, respectively.
+    *
+    * Converts values of array columns into a concatenated string.
+    *
+    * @param df     node or relationship dataframe
+    * @param header record header
+    * @return df without label or type column
+    */
+  private def prepareDataFrame(df: DataFrame, header: RecordHeader): DataFrame = {
     val relevantColumnNames = header.contents.filter {
       case ProjectedExpr(HasLabel(_, _)) => false
+      case ProjectedExpr(Type(_)) => false
       case _ => true
     }.map(ColumnName.of)
-    val withoutLabels = df.select(relevantColumnNames.head, relevantColumnNames.tail.toSeq: _*)
+    val trimmedDF = df.select(relevantColumnNames.head, relevantColumnNames.tail.toSeq: _*)
 
+    // concat array fields
     df.schema.collect {
       case StructField(colName, _: ArrayType, _, _) => colName
-    }.foldLeft(withoutLabels) {
+    }.foldLeft(trimmedDF) {
       case (acc, arrayCol) =>
         val col = acc.col(arrayCol)
         acc.withColumn(arrayCol, functions.concat_ws("|", col))
     }
   }
+
+  private def fileNameFor(relTypeOrLabel: String): String = fileNameFor(Set(relTypeOrLabel))
 
   private def fileNameFor(labels: Set[String]): String = s"${labels.mkString("_")}$CSV_SUFFIX"
 }

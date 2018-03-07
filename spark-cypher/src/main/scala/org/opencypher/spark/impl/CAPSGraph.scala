@@ -51,6 +51,12 @@ trait CAPSGraph extends PropertyGraph with GraphOperations with Serializable {
 
   def unpersist(blocking: Boolean): CAPSGraph
 
+  def nodesWithExactLabels(name: String, labels: Set[String]): CAPSRecords = {
+    // TODO DO!
+
+    ???
+  }
+
   override def toString = s"${getClass.getSimpleName}"
 
 }

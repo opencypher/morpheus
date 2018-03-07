@@ -180,7 +180,7 @@ case class CsvRelSchema(
   idField: CsvField,
   startIdField: CsvField,
   endIdField: CsvField,
-  relType: String,
+  relationshipType: String,
   propertyFields: List[CsvField])
   extends CsvSchema {
 

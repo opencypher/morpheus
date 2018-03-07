@@ -371,4 +371,9 @@ class CAPSScanGraphTest extends CAPSTestSuite with TeamDataFixture {
         Row(400L, true, true, false, "Typescript", null, null)
       ))
   }
+
+  it("should return only nodes with that exact label") {
+
+    
+  }
 }
