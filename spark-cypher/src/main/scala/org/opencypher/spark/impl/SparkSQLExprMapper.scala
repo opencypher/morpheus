@@ -17,7 +17,7 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql.types.{DoubleType, LongType}
 import org.apache.spark.sql.{Column, DataFrame, functions}
-import org.opencypher.okapi.api.types.{CTAny, CTList, CTNode, CTString}
+import org.opencypher.okapi.api.types.{CTList, CTNode, CTString}
 import org.opencypher.okapi.api.value.CypherValue.CypherList
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.okapi.ir.api.expr._
@@ -65,7 +65,7 @@ object SparkSQLExprMapper {
       expr match {
 
         // context based lookups
-        case p@Param(name) if p.cypherType.subTypeOf(CTList(CTAny)).maybeTrue =>
+        case p@Param(name) if p.cypherType.isInstanceOf[CTList] =>
           context.parameters(name) match {
             case CypherList(l) => functions.array(l.unwrap.map(functions.lit): _*)
             case notAList => throw IllegalArgumentException("a Cypher list", notAList)
