@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.v3_4.{expressions => exp}
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
+import org.opencypher.okapi.impl.io.SessionPropertyGraphDataSource
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block.{SortItem, _}
 import org.opencypher.okapi.ir.api.expr._
@@ -154,8 +155,8 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
 
 
       // TODO: CREATE UNIQUE
-      // TODO: REGISTER IN CATALOG when qgnOption is set
-      case ast.ConstructGraph(qgnOption, ast.Create(pattern: exp.Pattern)) =>
+      // TODO: Remove QGN parameter in Frontend
+      case ast.ConstructGraph(None, ast.Create(pattern: exp.Pattern)) =>
         for {
           pattern <- convertPattern(pattern)
           context <- get[R, IRBuilderContext]
