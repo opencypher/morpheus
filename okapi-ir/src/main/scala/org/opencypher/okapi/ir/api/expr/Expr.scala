@@ -212,12 +212,6 @@ final case class Property(m: Expr, key: PropertyKey)(val cypherType: CypherType 
   override def hashCode(): Int = {
     MurmurHash3.orderedHash(Seq(m, key, cypherType), MurmurHash3.stringHash(productPrefix))
   }
-
-  override def equals(obj: scala.Any) = obj match {
-    case null            => false
-    case other: Property => m == other.m && key == other.key && cypherType == other.cypherType
-    case _               => false
-  }
 }
 
 // Arithmetic expressions
