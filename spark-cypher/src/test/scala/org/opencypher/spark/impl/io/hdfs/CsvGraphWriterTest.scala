@@ -25,6 +25,7 @@ import org.opencypher.spark.test.fixture.{GraphCreationFixture, TeamDataFixture}
 
 class CsvGraphWriterTest extends CAPSTestSuite with TeamDataFixture with GraphCreationFixture {
 
+  // This tests depends on the id generation in Neo4j (harness)
   it("can store a graph to file system") {
     val tmpPath = Files.createTempDirectory("caps_graph")
 
@@ -36,7 +37,9 @@ class CsvGraphWriterTest extends CAPSTestSuite with TeamDataFixture with GraphCr
     val fileURI: URI = new URI(s"file://${tmpPath.toString}")
     val loader = CsvGraphLoader(fileURI.toString, session.sparkContext.hadoopConfiguration)
     val expected: CAPSGraph = loader.load.asCaps
-    expected.nodes("n").toDF().collect().toBag should equal(csvTestGraphNodesWithoutArrays)
-    expected.relationships("rel").toDF().collect.toBag should equal(csvTestGraphRelsWithoutArrays)
+    val expectedNodes = expected.nodes("n").toDF()
+    expectedNodes.collect().toBag should equal(csvTestGraphNodesWithoutArrays)
+    val expectedRels = expected.relationships("rel").toDF()
+    expectedRels.collect.toBag should equal(csvTestGraphRelsWithoutArrays)
   }
 }
