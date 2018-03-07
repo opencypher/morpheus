@@ -56,12 +56,10 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
           case _ => throw IllegalArgumentException("a LogicalExternalGraph", graph)
         }
 
-      case flat.SetSourceGraph(graph, in, _) =>
+      case flat.SetSourceGraph(graph, in, header) =>
         graph match {
-          case g: LogicalExternalGraph =>
-            producer.planSetSourceGraph(process(in), g)
-
-          case _ => throw IllegalArgumentException("a LogicalExternalGraph", graph)
+          case g: LogicalExternalGraph => producer.planSetSourceGraph(process(in), g)
+          case LogicalPatternGraph(schema, entities) => producer.planConstructGraph(process(in), entities, schema, header)
         }
 
       case op@flat.NodeScan(v, in, header) =>

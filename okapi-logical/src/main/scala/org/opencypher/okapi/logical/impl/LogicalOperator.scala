@@ -36,7 +36,7 @@ sealed abstract class LogicalOperator extends AbstractTreeNode[LogicalOperator] 
   }
 }
 
-trait LogicalGraph {
+sealed trait LogicalGraph {
   def schema: Schema
 
   override def toString = s"${getClass.getSimpleName}($args)"
@@ -48,11 +48,9 @@ final case class LogicalExternalGraph(qualifiedGraphName: QualifiedGraphName, sc
   override protected def args: String = s"qualifiedGraphName = $qualifiedGraphName"
 }
 
-final case class LogicalPatternGraph(schema: Schema, pattern: GraphOfPattern) extends LogicalGraph {
-  override protected def args: String = pattern.toString
+final case class LogicalPatternGraph(schema: Schema, entities: Set[ConstructedEntity]) extends LogicalGraph {
+  override protected def args: String = entities.toString
 }
-
-final case class GraphOfPattern(toCreate: Set[ConstructedEntity], toRetain: Set[Var])
 
 sealed trait ConstructedEntity {
   def v: Var

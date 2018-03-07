@@ -15,14 +15,41 @@
  */
 package org.opencypher.spark.impl.acceptance
 
-import org.opencypher.okapi.api.graph.GraphName
-import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.okapi.api.types.CTNode
+import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNode}
+import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
+import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.PrintPhysicalPlan
 import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 
-import scala.collection.immutable.Bag
+import scala.collection.Bag
 
 class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
   override def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
+
+  def testGraph1 = initGraph("CREATE (:Person {name: 'Mats'})")
+
+  def testGraph2 = initGraph("CREATE (:Person {name: 'Phil'})")
+
+  def testGraph3 = initGraph("CREATE (:Car {type: 'Toyota'})")
+
+  PrintLogicalPlan.set()
+
+  PrintPhysicalPlan.set()
+
+  it("should construct a graph") {
+    val query =
+      """|CONSTRUCT GRAPH {
+         |  CREATE (:A)-[:KNOWS]->(:B)
+         |}
+         |RETURN GRAPH""".stripMargin
+
+    val result = testGraph1.cypher(query)
+
+    result.getRecords.toMaps shouldBe empty
+
+    result.getGraph.schema.labels should equal(Set("A", "B"))
+    result.getGraph.schema.relationshipTypes should equal(Set("KNOWS"))
+    result.getGraph.nodes("n").iterator.length should equal(2)
+  }
 
 }

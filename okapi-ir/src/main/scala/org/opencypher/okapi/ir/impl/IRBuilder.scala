@@ -20,7 +20,7 @@ import org.atnos.eff._
 import org.atnos.eff.all._
 import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
-import org.neo4j.cypher.internal.v3_4.expressions.{Expression, Variable, Pattern => AstPattern}
+import org.neo4j.cypher.internal.v3_4.{expressions => exp}
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
@@ -29,6 +29,7 @@ import org.opencypher.okapi.ir.api.block.{SortItem, _}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern.Pattern
 import org.opencypher.okapi.ir.api.util.CompilationStage
+import org.opencypher.okapi.ir.impl.IRBuilder.{registerOrderAndSliceBlock, registerProjectBlock}
 import org.opencypher.okapi.ir.impl.refactor.instances._
 
 object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBuilderContext] {
@@ -143,16 +144,28 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           context <- get[R, IRBuilderContext]
           block <- {
             val (list, item) = tuple
-
             val binds: UnwoundList[Expr] = UnwoundList(list, item)
-
             val block = UnwindBlock(context.blocks.lastAdded.toSet, binds, context.currentWorkingGraph)
-
             val (ref, reg) = context.blocks.register(block)
 
             put[R, IRBuilderContext](context.copy(blocks = reg)) >> pure[R, Vector[BlockRef]](Vector(ref))
           }
         } yield block
+
+
+      // TODO: CREATE UNIQUE
+      // TODO: REGISTER IN CATALOG when qgnOption is set
+      case ast.ConstructGraph(qgnOption, ast.Create(pattern: exp.Pattern)) =>
+        for {
+          pattern <- convertPattern(pattern)
+          context <- get[R, IRBuilderContext]
+          refs <- {
+            val patternGraphSchema = context.currentWorkingGraph.schema.forPattern(pattern)
+            val patternGraph = IRPatternGraph(patternGraphSchema, pattern)
+            val updatedContext = context.withWorkingGraph(patternGraph)
+            put[R, IRBuilderContext](updatedContext) >> pure[R, Vector[BlockRef]](Vector.empty)
+          }
+        } yield refs
 
       case ast.ReturnGraph(qgnOpt) =>
         for {
@@ -268,8 +281,8 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
   }
 
   private def convertUnwindItem[R: _mayFail : _hasContext](
-    list: Expression,
-    variable: Variable): Eff[R, (Expr, IRField)] = {
+    list: exp.Expression,
+    variable: exp.Variable): Eff[R, (Expr, IRField)] = {
     for {
       expr <- convertExpr(list)
       context <- get[R, IRBuilderContext]
@@ -288,20 +301,20 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
     } yield field
   }
 
-  private def convertPattern[R: _hasContext](p: AstPattern): Eff[R, Pattern[Expr]] = {
+  private def convertPattern[R: _hasContext](p: exp.Pattern): Eff[R, Pattern[Expr]] = {
     for {
       context <- get[R, IRBuilderContext]
       result <- {
         val pattern = context.convertPattern(p)
         val patternTypes = pattern.fields.foldLeft(context.knownTypes) {
-          case (acc, f) => acc.updated(Variable(f.name)(InputPosition.NONE), f.cypherType)
+          case (acc, f) => acc.updated(exp.Variable(f.name)(InputPosition.NONE), f.cypherType)
         }
         put[R, IRBuilderContext](context.copy(knownTypes = patternTypes)) >> pure[R, Pattern[Expr]](pattern)
       }
     } yield result
   }
 
-  private def convertExpr[R: _mayFail : _hasContext](e: Option[Expression]): Eff[R, Option[Expr]] =
+  private def convertExpr[R: _mayFail : _hasContext](e: Option[exp.Expression]): Eff[R, Option[Expr]] =
     for {
       context <- get[R, IRBuilderContext]
     } yield
@@ -310,7 +323,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
         case None => None
       }
 
-  private def convertExpr[R: _mayFail : _hasContext](e: Expression): Eff[R, Expr] =
+  private def convertExpr[R: _mayFail : _hasContext](e: exp.Expression): Eff[R, Expr] =
     for {
       context <- get[R, IRBuilderContext]
     } yield context.convertExpression(e)

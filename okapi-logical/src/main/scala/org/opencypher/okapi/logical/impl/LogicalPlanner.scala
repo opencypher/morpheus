@@ -343,7 +343,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
               throw InvalidCypherTypeException(s"Expected an entity type (CTNode, CTRelationShip), got $e")
           }
         }
-        LogicalPatternGraph(schema, GraphOfPattern(entities, boundEntities))
+        LogicalPatternGraph(schema, entities)
 
       case g: IRCatalogGraph => LogicalExternalGraph(g.qualifiedName, g.schema)
     }
