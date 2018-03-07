@@ -24,7 +24,7 @@ import org.opencypher.spark.test.CAPSTestSuite
 import org.opencypher.spark.test.fixture.{GraphCreationFixture, MiniDFSClusterFixture, TeamDataFixture}
 
 // This tests depends on the id generation in Neo4j (harness)
-class CsvGraphWriterTest extends CAPSTestSuite with MiniDFSClusterFixture with TeamDataFixture with GraphCreationFixture {
+class CsvGraphWriterLocalFSTest extends CAPSTestSuite with MiniDFSClusterFixture with TeamDataFixture with GraphCreationFixture {
 
   it("can store a graph to local file system") {
     val tmpPath = Files.createTempDirectory("caps_graph")
@@ -43,18 +43,4 @@ class CsvGraphWriterTest extends CAPSTestSuite with MiniDFSClusterFixture with T
     expectedRels.collect.toBag should equal(csvTestGraphRelsWithoutArrays)
   }
 
-  it("can store a graph to HDFS") {
-
-    val inputGraph = initGraph(dataFixtureWithoutArrays)
-    val fileHandler = new HadoopFileHandler(hdfsURI, clusterConfig)
-    new CsvGraphWriter(inputGraph, fileHandler).store()
-
-    // Verification
-    val loader = CsvGraphLoader(hdfsURI, session.sparkContext.hadoopConfiguration)
-    val expected: CAPSGraph = loader.load.asCaps
-    val expectedNodes = expected.nodes("n").toDF()
-    expectedNodes.collect().toBag should equal(csvTestGraphNodesWithoutArrays)
-    val expectedRels = expected.relationships("rel").toDF()
-    expectedRels.collect.toBag should equal(csvTestGraphRelsWithoutArrays)
-  }
 }

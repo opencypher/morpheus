@@ -67,6 +67,7 @@ trait MiniDFSClusterFixture extends BaseTestFixture {
   }
 
   abstract override def afterAll: Unit = {
+    sparkSession.sparkContext.hadoopConfiguration.clear()
     cluster.shutdown(true)
     super.afterAll()
   }
