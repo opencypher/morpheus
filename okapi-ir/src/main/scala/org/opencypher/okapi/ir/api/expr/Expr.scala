@@ -20,7 +20,6 @@ import org.opencypher.okapi.impl.exception.IllegalStateException
 import org.opencypher.okapi.ir.api.{CypherQuery, Label, PropertyKey, RelType}
 
 import scala.annotation.tailrec
-import scala.util.hashing.MurmurHash3
 
 /**
   * Describes a Cypher expression.
@@ -208,10 +207,6 @@ final case class In(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcar
 
 final case class Property(m: Expr, key: PropertyKey)(val cypherType: CypherType = CTWildcard) extends Expr {
   override def withoutType: String = s"${m.withoutType}.${key.name}"
-
-  override def hashCode(): Int = {
-    MurmurHash3.orderedHash(Seq(m, key, cypherType), MurmurHash3.stringHash(productPrefix))
-  }
 }
 
 // Arithmetic expressions
