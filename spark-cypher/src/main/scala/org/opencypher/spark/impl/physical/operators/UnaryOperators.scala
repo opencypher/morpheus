@@ -201,14 +201,25 @@ final case class ConstructGraph(
   }
 
   private def createEntities(toCreate: Set[ConstructedEntity], records: CAPSRecords): CAPSRecords = {
+    val numberOfColumnPartitions = toCreate.size
+
+    // Construct nodes before relationships, as relationships might depend on nodes
     val nodes = toCreate.collect { case c: ConstructedNode => c }
     val rels = toCreate.collect { case r: ConstructedRelationship => r }
 
-    val nodesToCreate = nodes.flatMap(constructNode(_, records))
-    val recordsWithNodes = addEntitiesToRecords(nodesToCreate, records)
+    val (columnIdIndex, createdNodes) = nodes.foldLeft(0 -> Set.empty[(SlotContent, Column)]) {
+      case ((nextColumnPartitionId, constructedNodes), nextNodeToConstruct) =>
+        (nextColumnPartitionId + 1) -> (constructedNodes ++ constructNode(nextColumnPartitionId, numberOfColumnPartitions, nextNodeToConstruct))
+    }
 
-    val relsToCreate = rels.flatMap(constructRel(_, recordsWithNodes))
-    addEntitiesToRecords(relsToCreate, recordsWithNodes)
+    val recordsWithNodes = addEntitiesToRecords(createdNodes, records)
+
+    val (_, createdRels) = rels.foldLeft(columnIdIndex -> Set.empty[(SlotContent, Column)]) {
+      case ((nextColumnPartitionId, constructedRels), nextRelToConstruct) =>
+        (nextColumnPartitionId + 1) -> (constructedRels ++ constructRel(nextColumnPartitionId, numberOfColumnPartitions, nextRelToConstruct, recordsWithNodes))
+    }
+
+    addEntitiesToRecords(createdRels, recordsWithNodes)
   }
 
   private def addEntitiesToRecords(columnsToAdd: Set[(SlotContent, Column)], records: CAPSRecords): CAPSRecords = {
@@ -227,28 +238,33 @@ final case class ConstructGraph(
     CAPSRecords.verifyAndCreate(newHeader, newData)(records.caps)
   }
 
-  private def constructNode(node: ConstructedNode, records: CAPSRecords): (Set[(SlotContent, Column)]) = {
+  private def constructNode(columnIdPartition: Int, numberOfColumnPartitions: Int, node: ConstructedNode): Set[(SlotContent, Column)] = {
     val col = functions.lit(true)
     val labelTuples: Set[(SlotContent, Column)] = node.labels.map { label =>
       ProjectedExpr(HasLabel(node.v, label)(CTBoolean)) -> col
     }
 
-    labelTuples + (OpaqueField(node.v) -> generateId)
+    labelTuples + (OpaqueField(node.v) -> generateId(columnIdPartition, numberOfColumnPartitions))
   }
 
-  private def generateId: Column = {
+  /**
+    *org.apache.spark.sql.functions$#monotonically_increasing_id()
+    *
+    * @param columnIdPartition column partition within DF partition
+    */
+  private def generateId(columnIdPartition: Int, numberOfColumnPartitions: Int): Column = {
+    val columnPartitionBits = math.log(numberOfColumnPartitions).floor.toInt + 1
+    val totalIdSpaceBits = 33
+    val columnIdShift = totalIdSpaceBits - columnPartitionBits
+
     // id needs to be generated
     // Limits the system to 500 mn partitions
     // The first half of the id space is protected
-    // TODO: guarantee that all imported entities have ids in the protected range
-    val relIdOffset = 500L << 33
-    println(relIdOffset)
-    val firstIdCol = functions.lit(relIdOffset)
-    val incremented = monotonically_increasing_id()
-    incremented + firstIdCol
+    val columnPartitionOffset = columnIdPartition << columnIdShift
+    monotonically_increasing_id() + functions.lit(columnPartitionOffset)
   }
 
-  private def constructRel(toConstruct: ConstructedRelationship, records: CAPSRecords): (Set[(SlotContent, Column)]) = {
+  private def constructRel(columnIdPartition: Int, numberOfColumnPartitions: Int, toConstruct: ConstructedRelationship, records: CAPSRecords): Set[(SlotContent, Column)] = {
     val ConstructedRelationship(rel, source, target, typ) = toConstruct
     val header = records.header
     val inData = records.data
@@ -266,7 +282,7 @@ final case class ConstructGraph(
     }
 
     // id needs to be generated
-    val relTuple = OpaqueField(rel) -> generateId
+    val relTuple = OpaqueField(rel) -> generateId(columnIdPartition, numberOfColumnPartitions)
 
     // type is an input
     val typeTuple = {

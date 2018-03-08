@@ -17,9 +17,9 @@ package org.opencypher.spark.impl.acceptance
 
 import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
 import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.PrintPhysicalPlan
-import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
-
 import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.impl.CAPSPatternGraph
+import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 
 class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
   override def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
@@ -85,8 +85,7 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
     result.getGraph.nodes("n").capsRecords.show
   }
 
-  // TODO: monotonically_increasing_id seems to always return 0
-  ignore("should CONSTRUCT a graph with multiple unconnected anonymous CREATE clauses") {
+  it("should CONSTRUCT a graph with multiple unconnected anonymous CREATE clauses") {
     val query =
       """|CONSTRUCT {
          |  CREATE (:A)
@@ -101,16 +100,19 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
     result.getGraph.schema.labels should equal(Set("A", "B"))
     result.getGraph.schema.relationshipTypes should equal(Set.empty)
 
+    result.getGraph.asInstanceOf[CAPSPatternGraph].baseTable.records.asCaps.data.show
+
     result.getGraph.nodes("n").records.asCaps.toDF.show
 
     result.getGraph.nodes("n").iterator.length should equal(2)
   }
 
   // TODO: implement constructing properties
-  ignore("should construct a node property") {
+  it("should construct a node property") {
     val query =
       """|CONSTRUCT {
-         |  CREATE (:A {name: 'Donald'})
+         |  CREATE (a:A)
+         |  SET a.name = 'Donald'
          |}
          |RETURN GRAPH""".stripMargin
 
@@ -122,4 +124,12 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
     result.getGraph.nodes("n").iterator.length should equal(1)
   }
 
+  it("should generate IDs") {
+    import org.apache.spark.sql.functions.monotonically_increasing_id
+    import sparkSession.implicits._
+    val df = sparkSession.createDataset(Seq("A", "B"))
+    val df2 = df.withColumn("ID1", monotonically_increasing_id)
+    val df3 = df2.withColumn("ID2", monotonically_increasing_id)
+    df3.show
+  }
 }
