@@ -34,10 +34,9 @@ import org.opencypher.okapi.ir.impl.typer.{SchemaTyper, TypeTracker}
 final case class IRBuilderContext(
   queryString: String,
   parameters: CypherMap,
-  ambientGraph: IRCatalogGraph,
+  workingGraph: IRGraph, // initially the ambient graph, but gets changed by `USE GRAPH`/`CONSTRUCT`
   blocks: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
   semanticState: SemanticState,
-  workingGraph: Option[IRGraph] = None,
   resolver: Namespace => PropertyGraphDataSource,
   // TODO: Remove this
   knownTypes: Map[ast.Expression, CypherType] = Map.empty) {
@@ -66,9 +65,7 @@ final case class IRBuilderContext(
     }
   }
 
-  private def typer = SchemaTyper(currentWorkingGraph.schema)
-
-  def currentWorkingGraph: IRGraph = workingGraph.getOrElse(ambientGraph)
+  private def typer = SchemaTyper(workingGraph.schema)
 
   def schemaFor(qualifiedGraphName: QualifiedGraphName): Schema = {
     val dataSource = resolver(qualifiedGraphName.namespace)
@@ -93,7 +90,7 @@ final case class IRBuilderContext(
   }
 
   def withWorkingGraph(graph: IRGraph): IRBuilderContext =
-    copy(workingGraph = Some(graph))
+    copy(workingGraph = graph)
 }
 
 object IRBuilderContext {

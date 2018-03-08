@@ -22,10 +22,8 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.internal.v3_4.{expressions => exp}
 import org.opencypher.okapi.api.graph.QualifiedGraphName
-import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
-import org.opencypher.okapi.impl.io.SessionPropertyGraphDataSource
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException}
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block.{SortItem, _}
 import org.opencypher.okapi.ir.api.expr._
@@ -95,7 +93,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           refs <- {
             val blockRegistry = context.blocks
             val after = blockRegistry.lastAdded.toSet
-            val block = MatchBlock[Expr](after, pattern, given, optional, context.currentWorkingGraph)
+            val block = MatchBlock[Expr](after, pattern, given, optional, context.workingGraph)
 
             val typedOutputs = typedMatchBlock.outputs(block)
             val (ref, reg) = blockRegistry.register(block)
@@ -112,7 +110,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           context <- get[R, IRBuilderContext]
           refs <- {
             val (projectRef, projectReg) =
-              registerProjectBlock(context, fieldExprs, given, context.currentWorkingGraph, distinct = distinct)
+              registerProjectBlock(context, fieldExprs, given, context.workingGraph, distinct = distinct)
             val appendList = (list: Vector[BlockRef]) => pure[R, Vector[BlockRef]](projectRef +: list)
             val orderAndSliceBlock = registerOrderAndSliceBlock(orderBy, skip, limit)
             put[R, IRBuilderContext](context.copy(blocks = projectReg)) >> orderAndSliceBlock flatMap appendList
@@ -129,10 +127,10 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
               case _ => false
             }
 
-            val (ref1, reg1) = registerProjectBlock(context, group, source = context.ambientGraph, distinct = distinct)
+            val (ref1, reg1) = registerProjectBlock(context, group, source = context.workingGraph, distinct = distinct)
             val after = reg1.lastAdded.toSet
             val aggBlock =
-              AggregationBlock[Expr](after, Aggregations(agg.toSet), group.map(_._1).toSet, context.ambientGraph)
+              AggregationBlock[Expr](after, Aggregations(agg.toSet), group.map(_._1).toSet, context.workingGraph)
             val (ref2, reg2) = reg1.register(aggBlock)
 
             put[R, IRBuilderContext](context.copy(blocks = reg2)) >> pure[R, Vector[BlockRef]](Vector(ref1, ref2))
@@ -146,7 +144,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           block <- {
             val (list, item) = tuple
             val binds: UnwoundList[Expr] = UnwoundList(list, item)
-            val block = UnwindBlock(context.blocks.lastAdded.toSet, binds, context.currentWorkingGraph)
+            val block = UnwindBlock(context.blocks.lastAdded.toSet, binds, context.workingGraph)
             val (ref, reg) = context.blocks.register(block)
 
             put[R, IRBuilderContext](context.copy(blocks = reg)) >> pure[R, Vector[BlockRef]](Vector(ref))
@@ -160,7 +158,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           context <- get[R, IRBuilderContext]
           refs <- {
             val pattern = patterns.foldLeft(Pattern.empty[Expr])(_ ++ _)
-            val patternGraphSchema = context.currentWorkingGraph.schema.forPattern(pattern)
+            val patternGraphSchema = context.workingGraph.schema.forPattern(pattern)
             val patternGraph = IRPatternGraph(patternGraphSchema, pattern)
             val updatedContext = context.withWorkingGraph(patternGraph)
             put[R, IRBuilderContext](updatedContext) >> pure[R, Vector[BlockRef]](Vector.empty)
@@ -173,7 +171,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           refs <- {
             val after = context.blocks.lastAdded.toSet
             val irGraph = qgnOpt match {
-              case None => context.currentWorkingGraph
+              case None => context.workingGraph
               case Some(astQgn) =>
                 val irQgn = QualifiedGraphName(astQgn.parts)
                 val pgds = context.resolver(irQgn.namespace)
@@ -191,7 +189,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           context <- get[R, IRBuilderContext]
           refs <- {
             val (projectRef, projectReg) =
-              registerProjectBlock(context, fieldExprs, distinct = distinct, source = context.currentWorkingGraph)
+              registerProjectBlock(context, fieldExprs, distinct = distinct, source = context.workingGraph)
             val appendList = (list: Vector[BlockRef]) => pure[R, Vector[BlockRef]](projectRef +: list)
             val orderAndSliceBlock = registerOrderAndSliceBlock(orderBy, skip, limit)
             put[R, IRBuilderContext](context.copy(blocks = projectReg)) >> orderAndSliceBlock flatMap appendList
@@ -200,7 +198,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           refs2 <- {
             val rItems = fieldExprs.map(_._1)
             val orderedFields = OrderedFields[Expr](rItems)
-            val result = TableResultBlock[Expr](Set(refs.last), orderedFields, Set.empty, Set.empty, context.ambientGraph)
+            val result = TableResultBlock[Expr](Set(refs.last), orderedFields, Set.empty, Set.empty, context.workingGraph)
             val (resultRef, resultReg) = context2.blocks.register(result)
             put[R, IRBuilderContext](context.copy(blocks = resultReg)) >> pure[R, Vector[BlockRef]](refs :+ resultRef)
           }
@@ -246,7 +244,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           val blockRegistry = context.blocks
           val after = blockRegistry.lastAdded.toSet
 
-          val orderAndSliceBlock = OrderAndSliceBlock[Expr](after, sortItems, skipExpr, limitExpr, context.ambientGraph)
+          val orderAndSliceBlock = OrderAndSliceBlock[Expr](after, sortItems, skipExpr, limitExpr, context.workingGraph)
           val (ref, reg) = blockRegistry.register(orderAndSliceBlock)
           put[R, IRBuilderContext](context.copy(blocks = reg)) >> pure[R, Vector[BlockRef]](Vector(ref))
         }
