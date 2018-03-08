@@ -36,7 +36,7 @@ sealed abstract class LogicalOperator extends AbstractTreeNode[LogicalOperator] 
   }
 }
 
-sealed trait LogicalGraph {
+trait LogicalGraph {
   def schema: Schema
 
   override def toString = s"${getClass.getSimpleName}($args)"
