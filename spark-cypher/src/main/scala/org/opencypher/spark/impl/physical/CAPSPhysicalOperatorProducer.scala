@@ -20,6 +20,7 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.ir.api.set.SetItem
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.physical.{PhysicalOperatorProducer, PhysicalPlannerContext}
 import org.opencypher.okapi.relational.impl.table.{ProjectedExpr, ProjectedField, RecordHeader}
@@ -98,9 +99,10 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
 
   override def planConstructGraph(
     in: CAPSPhysicalOperator,
-    toCreate: Set[ConstructedEntity],
+    constructItems: Set[ConstructedEntity],
+    setItems: List[SetItem[Expr]],
     schema: Schema,
-    header: RecordHeader): CAPSPhysicalOperator = operators.ConstructGraph(in, toCreate, schema.asCaps, header)
+    header: RecordHeader): CAPSPhysicalOperator = operators.ConstructGraph(in, constructItems, setItems, schema.asCaps, header)
 
   override def planAggregate(in: CAPSPhysicalOperator, group: Set[Var], aggregations: Set[(Var, Aggregator)], header: RecordHeader): CAPSPhysicalOperator = operators.Aggregate(in, aggregations, group, header)
 

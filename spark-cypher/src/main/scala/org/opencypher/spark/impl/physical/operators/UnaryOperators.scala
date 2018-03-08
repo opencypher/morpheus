@@ -23,6 +23,7 @@ import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.ir.api.set.SetItem
 import org.opencypher.okapi.ir.impl.syntax.ExprSyntax._
 import org.opencypher.okapi.logical.impl.{ConstructedEntity, _}
 import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
@@ -184,7 +185,8 @@ final case class Filter(in: CAPSPhysicalOperator, expr: Expr, header: RecordHead
 
 final case class ConstructGraph(
   in: CAPSPhysicalOperator,
-  toCreate: Set[ConstructedEntity],
+  constructItems: Set[ConstructedEntity],
+  setItems: List[SetItem[Expr]],
   schema: CAPSSchema,
   header: RecordHeader)
   extends UnaryPhysicalOperator {
@@ -193,8 +195,8 @@ final case class ConstructGraph(
     val input = prev.records
 
     val baseTable =
-      if (toCreate.isEmpty) input
-      else createEntities(toCreate, input)
+      if (constructItems.isEmpty) input
+      else createEntities(constructItems, input)
 
     val patternGraph = CAPSGraph.create(baseTable, schema)(input.caps)
     CAPSPhysicalResult(CAPSRecords.unit()(input.caps), patternGraph)
