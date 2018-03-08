@@ -71,9 +71,9 @@ object Neo4jGraphLoader {
   def fromNeo4j(config: Neo4jConfig, nodeQuery: String, relQuery: String)(implicit caps: CAPSSession): CAPSGraph =
     fromNeo4j(config, nodeQuery, relQuery, "source", "rel", "target", None)
 
-  def fromNeo4j(config: Neo4jConfig, nodeQuery: String, relQuery: String, schema: CAPSSchema)(
+  def fromNeo4j(config: Neo4jConfig, nodeQuery: String, relQuery: String, maybeSchema: Option[Schema])(
     implicit caps: CAPSSession): CAPSGraph =
-    fromNeo4j(config, nodeQuery, relQuery, "source", "rel", "target", Some(schema))
+    fromNeo4j(config, nodeQuery, relQuery, "source", "rel", "target", maybeSchema)
 
   def fromNeo4j(
     config: Neo4jConfig,

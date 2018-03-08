@@ -42,7 +42,7 @@ class Neo4jPropertyGraphDataSourceTest
     ))
   }
 
-  test("hasGraph should return true for existing graph") {
+  it("should return true for existing graph") {
     val testGraphName = GraphName("sn")
 
     val dataSource = new Neo4jPropertyGraphDataSource(neo4jConfig, Map(
@@ -52,7 +52,7 @@ class Neo4jPropertyGraphDataSourceTest
     dataSource.hasGraph(testGraphName) should be(true)
   }
 
-  test("hasGraph should return false for non-existing graph") {
+  it("should return false for non-existing graph") {
     val testGraphName = GraphName("sn")
 
     val dataSource = new Neo4jPropertyGraphDataSource(neo4jConfig, Map(
@@ -62,7 +62,7 @@ class Neo4jPropertyGraphDataSourceTest
     dataSource.hasGraph(testGraphName) should be(false)
   }
 
-  test("graphNames should return all names of stored graphs") {
+  it("should return all names of stored graphs") {
     val testGraphName1 = GraphName("test1")
     val testGraphName2 = GraphName("test2")
     val source = new Neo4jPropertyGraphDataSource(neo4jConfig,
@@ -70,7 +70,7 @@ class Neo4jPropertyGraphDataSourceTest
     source.graphNames should equal(Set(testGraphName1, testGraphName2))
   }
 
-  test("Load graph from Neo4j via DataSource") {
+  it("should load a graph from Neo4j via DataSource") {
     val dataSource = new Neo4jPropertyGraphDataSource(neo4jConfig)
 
     val graph = dataSource.graph(neo4jDefaultGraphName).asCaps
@@ -78,7 +78,15 @@ class Neo4jPropertyGraphDataSourceTest
     graph.relationships("r").toCypherMaps.collect.toBag should equal(teamDataGraphRels)
   }
 
-  test("Load graph from Neo4j via Catalog") {
+  it("should load a graph from Neo4j via DataSource using a given schema") {
+    val dataSource = new Neo4jPropertyGraphDataSource(neo4jConfig, schemata = Map(neo4jDefaultGraphName -> dataFixtureSchema))
+
+    val graph = dataSource.graph(neo4jDefaultGraphName).asCaps
+    graph.nodes("n").toCypherMaps.collect.toBag should equal(teamDataGraphNodes)
+    graph.relationships("r").toCypherMaps.collect.toBag should equal(teamDataGraphRels)
+  }
+
+  it("should load a graph from Neo4j via catalog") {
     val testNamespace = Namespace("myNeo4j")
     val testGraphName = neo4jDefaultGraphName
 
