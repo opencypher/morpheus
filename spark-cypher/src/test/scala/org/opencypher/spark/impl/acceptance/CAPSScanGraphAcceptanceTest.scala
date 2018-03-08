@@ -110,9 +110,10 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
   // TODO: implement constructing properties
   it("should construct a node property") {
     val query =
-      """|CONSTRUCT {
+      """|MATCH (m)
+         |CONSTRUCT {
          |  CREATE (a:A)
-         |  SET a.name = 'Donald'
+         |  SET a.name = m.name
          |}
          |RETURN GRAPH""".stripMargin
 

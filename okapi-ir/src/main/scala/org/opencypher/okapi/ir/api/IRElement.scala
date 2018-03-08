@@ -20,6 +20,7 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.io.SessionPropertyGraphDataSource
 import org.opencypher.okapi.ir.api.pattern._
+import org.opencypher.okapi.ir.api.set.SetItem
 
 object IRField {
   def relTypes(field: IRField): Set[String] = field.cypherType match {
@@ -36,6 +37,7 @@ final case class IRField(name: String)(val cypherType: CypherType = CTWildcard) 
   def toTypedTuple: (String, CypherType) = name -> cypherType
 }
 
+// TODO: IRGraph[Expr]
 sealed trait IRGraph {
   def schema: Schema
 }
@@ -47,4 +49,4 @@ object IRCatalogGraph {
 
 final case class IRCatalogGraph(qualifiedName: QualifiedGraphName, schema: Schema) extends IRGraph
 
-final case class IRPatternGraph[E](schema: Schema, creates: Pattern[E]) extends IRGraph
+final case class IRPatternGraph[E](schema: Schema, creates: Pattern[E], sets: List[SetItem[E]]) extends IRGraph

@@ -21,6 +21,7 @@ import org.opencypher.okapi.api.types.CTNode
 import org.opencypher.okapi.ir.api.Label
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.ir.api.set.SetItem
 import org.opencypher.okapi.trees.AbstractTreeNode
 
 sealed abstract class LogicalOperator extends AbstractTreeNode[LogicalOperator] {
@@ -48,7 +49,7 @@ final case class LogicalCatalogGraph(qualifiedGraphName: QualifiedGraphName, sch
   override protected def args: String = s"qualifiedGraphName = $qualifiedGraphName"
 }
 
-final case class LogicalPatternGraph(schema: Schema, entities: Set[ConstructedEntity]) extends LogicalGraph {
+final case class LogicalPatternGraph(schema: Schema, entities: Set[ConstructedEntity], sets: List[SetItem[Expr]]) extends LogicalGraph {
   override protected def args: String = entities.toString
 }
 

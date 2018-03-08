@@ -20,6 +20,7 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr.{Aggregator, Expr, Var}
+import org.opencypher.okapi.ir.api.set.SetItem
 import org.opencypher.okapi.logical.impl.{ConstructedEntity, Direction, LogicalCatalogGraph, LogicalGraph}
 import org.opencypher.okapi.relational.impl.physical.PhysicalPlanner
 import org.opencypher.okapi.relational.impl.table.{ProjectedExpr, ProjectedField, RecordHeader}
@@ -167,14 +168,15 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * Creates a new record containing the specified entities (i.e. as defined in a construction pattern).
     *
     * @param in       previous operator
-    * @param toCreate entities to create
+    * @param constructItems entities to create
     * @param schema   schema of the resulting graph
     * @param header   resulting record header
     * @return project pattern graph operator
     */
   def planConstructGraph(
     in: P,
-    toCreate: Set[ConstructedEntity],
+    constructItems: Set[ConstructedEntity],
+    setItems: List[SetItem[Expr]],
     schema: Schema,
     header: RecordHeader): P
 

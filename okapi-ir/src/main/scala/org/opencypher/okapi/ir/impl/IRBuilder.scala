@@ -28,6 +28,7 @@ import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block.{SortItem, _}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern.Pattern
+import org.opencypher.okapi.ir.api.set.{SetItem, SetPropertyItem}
 import org.opencypher.okapi.ir.api.util.CompilationStage
 import org.opencypher.okapi.ir.impl.refactor.instances._
 
@@ -151,15 +152,16 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           }
         } yield block
 
-      // TODO: Support merges, deletes, sets
-      case ast.ConstructGraph(Nil, creates, Nil, Nil) =>
+      // TODO: Support merges, deletes
+      case ast.ConstructGraph(Nil, creates, Nil, sets) =>
         for {
-          patterns <- creates.map { case ast.Create(p) => p }.traverse(convertPattern[R])
+          patterns <- creates.map { case ast.Create(p: exp.Pattern) => p }.traverse(convertPattern[R])
+          setItems <- sets.flatMap { case ast.SetClause(s: Seq[ast.SetItem]) => s }.traverse(convertSetItem[R])
           context <- get[R, IRBuilderContext]
           refs <- {
             val pattern = patterns.foldLeft(Pattern.empty[Expr])(_ ++ _)
             val patternGraphSchema = context.workingGraph.schema.forPattern(pattern)
-            val patternGraph = IRPatternGraph(patternGraphSchema, pattern)
+            val patternGraph = IRPatternGraph[Expr](patternGraphSchema, pattern, setItems)
             val updatedContext = context.withWorkingGraph(patternGraph)
             put[R, IRBuilderContext](updatedContext) >> pure[R, Vector[BlockRef]](Vector.empty)
           }
@@ -310,6 +312,22 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
         put[R, IRBuilderContext](context.copy(knownTypes = patternTypes)) >> pure[R, Pattern[Expr]](pattern)
       }
     } yield result
+  }
+
+  // TODO: Support SetLabel
+  private def convertSetItem[R: _mayFail : _hasContext](p: ast.SetItem): Eff[R, SetItem[Expr]] = {
+    p match {
+      case ast.SetPropertyItem(exp.LogicalProperty(map: exp.Expression, exp.PropertyKeyName(propertyName)), setValue: exp.Expression) =>
+        for {
+          convertedProperty <- convertExpr[R](map)
+          convertedSetExpr <- convertExpr[R](setValue)
+        } yield {
+          val setItem = SetPropertyItem(propertyName, convertedProperty, convertedSetExpr)
+          pure[R, SetItem[Expr]](setItem)
+          setItem
+        }
+      case unsupported => throw new UnsupportedOperationException(s"conversion of $unsupported")
+    }
   }
 
   private def convertExpr[R: _mayFail : _hasContext](e: Option[exp.Expression]): Eff[R, Option[Expr]] =

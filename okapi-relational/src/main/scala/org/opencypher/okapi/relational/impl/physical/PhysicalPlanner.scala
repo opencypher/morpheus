@@ -59,7 +59,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
       case flat.SetSourceGraph(graph, in, header) =>
         graph match {
           case g: LogicalCatalogGraph => producer.planSetSourceGraph(process(in), g)
-          case LogicalPatternGraph(schema, entities) => producer.planConstructGraph(process(in), entities, schema, header)
+          case LogicalPatternGraph(schema, entities, sets) => producer.planConstructGraph(process(in), entities, sets, schema, header)
         }
 
       case op@flat.NodeScan(v, in, header) =>
