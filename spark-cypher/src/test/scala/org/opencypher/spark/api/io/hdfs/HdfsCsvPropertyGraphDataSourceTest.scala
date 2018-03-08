@@ -24,7 +24,7 @@ import org.opencypher.spark.test.support.RecordMatchingTestSupport
 class HdfsCsvPropertyGraphDataSourceTest
   extends CAPSTestSuite with MiniDFSClusterFixture with RecordMatchingTestSupport with TeamDataFixture {
 
-  protected override def dfsTestGraphPath = "/csv/sn"
+  protected override def dfsTestGraphPath = Some("/csv/sn")
 
   test("hasGraph should return true for existing graph") {
     val testGraphName = GraphName("sn")

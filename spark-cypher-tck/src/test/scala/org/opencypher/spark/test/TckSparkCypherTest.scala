@@ -20,7 +20,7 @@ import java.io.File
 import org.opencypher.okapi.tck.test.Tags.{BlackList, WhiteList}
 import org.opencypher.okapi.tck.test.{ScenariosFor, TCKGraph}
 import org.opencypher.spark.impl.CAPSGraph
-import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
+import org.opencypher.spark.test.support.creation.caps.{CAPSPatternGraphFactory, CAPSScanGraphFactory, CAPSTestGraphFactory}
 import org.opencypher.tools.tck.api.CypherTCK
 import org.scalatest.Tag
 import org.scalatest.prop.TableDrivenPropertyChecks._
@@ -33,8 +33,11 @@ class TckSparkCypherTest extends CAPSTestSuite {
 
   // Defines the graphs to run on
   private val factories = Table(
-    "factory",
-    CAPSScanGraphFactory
+    ("factory","additional_blacklist"),
+    (CAPSScanGraphFactory, Set.empty[String]),
+    (CAPSPatternGraphFactory, Set(
+      "Feature \"MatchAcceptance2\": Scenario \"Do not fail when evaluating predicates with illegal operations if the AND'ed predicate evaluates to false\""
+    ))
   )
 
   private val defaultFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
@@ -43,10 +46,12 @@ class TckSparkCypherTest extends CAPSTestSuite {
   private val scenarios = ScenariosFor(blacklistFile)
 
   // white list tests are run on all factories
-  forAll(factories) { factory =>
+  forAll(factories) { (factory, additional_blacklist) =>
     forAll(scenarios.whiteList) { scenario =>
-      test(s"[${factory.name}, ${WhiteList.name}] $scenario", WhiteList, TckCapsTag) {
-        scenario(TCKGraph(factory, CAPSGraph.empty)).execute()
+      if (!additional_blacklist.contains(scenario.toString)) {
+        test(s"[${factory.name}, ${WhiteList.name}] $scenario", WhiteList, TckCapsTag, Tag(factory.name)) {
+          scenario(TCKGraph(factory, CAPSGraph.empty)).execute()
+        }
       }
     }
   }

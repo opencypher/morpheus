@@ -96,6 +96,8 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema)(imp
         .groupBy(_.entityType)
         .flatMap { case (k, entityScans) => NonEmptyVector.fromVector(entityScans).map(k -> _) }
 
+    def byExactType(entityType: EntityType): Seq[CAPSEntityTable] = entityTablesByType(entityType).toVector
+
     def byType(entityType: EntityType): Seq[CAPSEntityTable] = {
 
       def isSubType(tableType: EntityType) = tableType.subTypeOf(entityType).isTrue

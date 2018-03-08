@@ -31,6 +31,7 @@ object CAPSCypherType {
           case CTFloat => Some(DoubleType)
           case _: CTNode => Some(LongType)
           case _: CTRelationship => Some(LongType)
+          case CTList(CTVoid) => Some(ArrayType(NullType))
           case CTList(elemType) =>
             elemType.toSparkType.map(ArrayType(_, elemType.isNullable))
           case _ =>
@@ -69,6 +70,7 @@ object CAPSCypherType {
         case BooleanType => Some(CTBoolean)
         case BinaryType => Some(CTAny)
         case DoubleType => Some(CTFloat)
+        case ArrayType(NullType, _) => Some(CTList(CTVoid))
         case ArrayType(elemType, containsNull) =>
           elemType.toCypherType(containsNull).map(CTList)
         case NullType => Some(CTNull)

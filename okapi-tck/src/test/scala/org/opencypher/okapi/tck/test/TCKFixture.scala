@@ -39,6 +39,7 @@ object TCKFixture {
   val scenarios: Seq[Scenario] = CypherTCK.allTckScenarios.filterNot(_.name == "Limit to two hits")
 
   def printAll(): Unit = scenarios
+    .enumerateScenarioOutlines
     .map(s => s"""Feature "${s.featureName}": Scenario "${s.name}"""")
     .distinct
     .sorted
@@ -115,16 +116,18 @@ case class ScenariosFor(blacklist: Set[String])  {
 
   def whiteList = Table(
     "scenario",
-    scenarios.filterNot { s =>
-      blacklist.contains(s.toString())
-    }.enumerateScenarioOutlines: _*
+    scenarios
+      .enumerateScenarioOutlines
+      .filterNot(s => blacklist.contains(s.toString()))
+      : _*
   )
 
   def blackList = Table(
     "scenario",
-    scenarios.filter { s =>
-      blacklist.contains(s.toString())
-    }.enumerateScenarioOutlines: _*
+    scenarios
+      .enumerateScenarioOutlines
+      .filter(s => blacklist.contains(s.toString()))
+      : _*
   )
 
   def get(name: String): Seq[Scenario] = scenarios.filter(s => s.name == name)

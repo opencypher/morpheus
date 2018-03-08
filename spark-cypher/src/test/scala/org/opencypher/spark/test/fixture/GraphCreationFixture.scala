@@ -17,12 +17,15 @@ package org.opencypher.spark.test.fixture
 
 import org.opencypher.okapi.ir.test.support.creation.propertygraph.TestPropertyGraphFactory
 import org.opencypher.okapi.test.BaseTestSuite
+import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSGraph
-import org.opencypher.spark.test.support.creation.caps.CAPSScanGraphFactory
+import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 
 trait GraphCreationFixture {
   self: CAPSSessionFixture with BaseTestSuite =>
 
+  def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
+
   val initGraph: String => CAPSGraph =
-    (createQuery) => CAPSScanGraphFactory(TestPropertyGraphFactory(createQuery))
+    (createQuery) => CAPSScanGraphFactory(TestPropertyGraphFactory(createQuery)).asCaps
 }

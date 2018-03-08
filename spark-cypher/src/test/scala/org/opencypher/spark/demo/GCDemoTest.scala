@@ -37,7 +37,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
 
   protected override def hdfsURI: URI = new URIBuilder(super.hdfsURI).build()
 
-  protected override def dfsTestGraphPath = "/csv/prod"
+  protected override def dfsTestGraphPath = Some("/csv/prod")
 
   ignore("the demo") {
     val t0 = System.currentTimeMillis()

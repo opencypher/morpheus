@@ -21,12 +21,13 @@ import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.api.value._
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
-import org.opencypher.spark.test.CAPSTestSuite
-import org.opencypher.spark.test.fixture.TeamDataFixture
+import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 
 import scala.collection.Bag
 
-class CAPSScanGraphTest extends CAPSTestSuite with TeamDataFixture {
+class CAPSScanGraphTest extends CAPSGraphTest {
+
+  override def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
 
   test("union") {
     val graph1 = CAPSGraph.create(personTable, knowsTable)

@@ -27,12 +27,12 @@ class CsvGraphLoaderTest extends CAPSTestSuite
   with MiniDFSClusterFixture
   with TeamDataFixture {
 
-  protected override def dfsTestGraphPath = "/csv/sn"
+  protected override def dfsTestGraphPath = Some("/csv/sn")
 
-  override protected def hdfsURI: URI = new URIBuilder(super.hdfsURI).setPath(dfsTestGraphPath).build()
+  override protected def hdfsURI: URI = new URIBuilder(super.hdfsURI).setPath(dfsTestGraphPath.get).build()
 
   test("load csv graph from HDFS") {
-    val loader = CsvGraphLoader(hdfsURI.toString, session.sparkContext.hadoopConfiguration)
+    val loader = CsvGraphLoader(hdfsURI, session.sparkContext.hadoopConfiguration)
 
     val graph: CAPSGraph = loader.load.asCaps
     graph.nodes("n").toDF().collect().toBag should equal(csvTestGraphNodes)
@@ -41,7 +41,7 @@ class CsvGraphLoaderTest extends CAPSTestSuite
 
   test("load csv graph from local file") {
     val fileURI: URI = new URI(s"file://${getClass.getResource("/csv/sn").getPath}")
-    val loader = CsvGraphLoader(fileURI.toString, session.sparkContext.hadoopConfiguration)
+    val loader = CsvGraphLoader(fileURI, session.sparkContext.hadoopConfiguration)
 
     val graph: CAPSGraph = loader.load.asCaps
     graph.nodes("n").toDF().collect().toBag should equal(csvTestGraphNodes)

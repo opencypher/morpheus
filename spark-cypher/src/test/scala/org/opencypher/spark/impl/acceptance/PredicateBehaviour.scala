@@ -147,10 +147,10 @@ trait PredicateBehaviour {
       it("compares less than between different types") {
 
         // Given
-        val given = initGraph("""CREATE (:A {val: 4})-[:REL]->(:B {val: 'string'})""")
+        val given = initGraph("""CREATE (:A {val: 4})-[:REL]->(:B {val2: 'string'})""")
 
         // When
-        val result = given.cypher("MATCH (a:A)-->(b:B) WHERE a.val < b.val RETURN a.val")
+        val result = given.cypher("MATCH (a:A)-->(b:B) WHERE a.val < b.val2 RETURN a.val")
 
         // Then
         result.getRecords.collect.toBag shouldBe empty
@@ -177,10 +177,10 @@ trait PredicateBehaviour {
       it("compares less than or equal between different types") {
 
         // Given
-        val given = initGraph("""CREATE (:A {val: 4})-[:REL]->(:B {val: 'string'})""")
+        val given = initGraph("""CREATE (:A {val: 4})-[:REL]->(:B {val2: 'string'})""")
 
         // When
-        val result = given.cypher("MATCH (a:A)-->(b:B) WHERE a.val <= b.val RETURN a.val")
+        val result = given.cypher("MATCH (a:A)-->(b:B) WHERE a.val <= b.val2 RETURN a.val")
 
         // Then
         result.getRecords.collect.toBag shouldBe empty
@@ -202,10 +202,10 @@ trait PredicateBehaviour {
       it("compares greater than between different types") {
 
         // Given
-        val given = initGraph("""CREATE (:A {val: 4})-[:REL]->(:B {val: 'string'})""")
+        val given = initGraph("""CREATE (:A {val: 4})-[:REL]->(:B {val2: 'string'})""")
 
         // When
-        val result = given.cypher("MATCH (a:A)-->(b:B) WHERE a.val > b.val RETURN a.val")
+        val result = given.cypher("MATCH (a:A)-->(b:B) WHERE a.val > b.val2 RETURN a.val")
 
         // Then
         result.getRecords.collect.toBag shouldBe empty
@@ -228,10 +228,10 @@ trait PredicateBehaviour {
       it("compares greater than or equal between different types") {
 
         // Given
-        val given = initGraph("""CREATE (:A {val: 4})-[:REL]->(:B {val: 'string'})""")
+        val given = initGraph("""CREATE (:A {val: 4})-[:REL]->(:B {val2: 'string'})""")
 
         // When
-        val result = given.cypher("MATCH (a:A)-->(b:B) WHERE a.val >= b.val RETURN a.val")
+        val result = given.cypher("MATCH (a:A)-->(b:B) WHERE a.val >= b.val2 RETURN a.val")
 
         // Then
         result.getRecords.collect.toBag shouldBe empty

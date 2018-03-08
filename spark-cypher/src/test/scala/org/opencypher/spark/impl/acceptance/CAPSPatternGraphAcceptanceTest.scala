@@ -15,8 +15,8 @@
  */
 package org.opencypher.spark.impl.acceptance
 
-import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
+import org.opencypher.spark.test.support.creation.caps.{CAPSPatternGraphFactory, CAPSTestGraphFactory}
 
-class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
-  override def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
+class CAPSPatternGraphAcceptanceTest extends AcceptanceTest {
+  override def capsGraphFactory: CAPSTestGraphFactory = CAPSPatternGraphFactory
 }

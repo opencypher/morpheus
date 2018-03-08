@@ -15,15 +15,17 @@
  */
 package org.opencypher.spark.api.io.hdfs
 
-import java.io.File
+import java.net.URI
+import java.nio.file.Paths
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.http.client.utils.URIBuilder
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
-import org.opencypher.spark.impl.io.hdfs.CsvGraphLoader
+import org.opencypher.spark.impl.io.hdfs.{CsvGraphLoader, CsvGraphWriter}
 
 import scala.language.implicitConversions
 
@@ -44,7 +46,7 @@ case class HdfsCsvPropertyGraphDataSource(
   override def schema(name: GraphName): Option[Schema] = None
 
   override def store(name: GraphName, graph: PropertyGraph): Unit =
-    throw new UnsupportedOperationException("'store' operation is not supported by the HDFS data source")
+    CsvGraphWriter(graph, graphPath(name), hadoopConfig).store()
 
   override def delete(name: GraphName): Unit =
     if (hasGraph(name)) fileSystem.delete(new Path(rootPath), /* recursive = */ true)
@@ -57,6 +59,9 @@ case class HdfsCsvPropertyGraphDataSource(
 
   override def hasGraph(name: GraphName): Boolean = fileSystem.exists(new Path(graphPath(name)))
 
-  private def graphPath(name: GraphName): String = s"$rootPath${File.separator}$name"
+  private def graphPath(name: GraphName): URI = new URIBuilder()
+    .setScheme("hdfs")
+    .setPath(Paths.get(rootPath, name.value).toString)
+    .build()
 
 }

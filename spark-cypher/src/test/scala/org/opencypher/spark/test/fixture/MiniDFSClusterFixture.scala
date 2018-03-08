@@ -15,11 +15,13 @@
  */
 package org.opencypher.spark.test.fixture
 
+import java.io.File
 import java.net.URI
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hdfs.MiniDFSCluster
+import org.apache.http.client.utils.URIBuilder
 import org.opencypher.okapi.test.fixture.BaseTestFixture
 import org.opencypher.spark.test.CAPSTestSuite
 
@@ -27,25 +29,45 @@ trait MiniDFSClusterFixture extends BaseTestFixture {
 
   self: SparkSessionFixture with CAPSTestSuite =>
 
-  protected def dfsTestGraphPath: String
+  private val HDFS_URI_SCHEME = "hdfs"
+
+  // Override this to some String to trigger a copy from local FS into HDFS
+  // e.g. dfsTestGraph = "/foo" triggers a copy from 'file:///foo' to 'hdfs://host:port/foo'
+  protected def dfsTestGraphPath: Option[String] = None
 
   protected lazy val cluster: MiniDFSCluster = {
     val cluster = new MiniDFSCluster.Builder(session.sparkContext.hadoopConfiguration).build()
     cluster.waitClusterUp()
-    cluster.getFileSystem.copyFromLocalFile(
-      new Path(getClass.getResource(dfsTestGraphPath).toString),
-      new Path(dfsTestGraphPath))
+
+    // copy from local FS to HDFS if necessary
+    if (dfsTestGraphPath.isDefined) {
+      val pathString = dfsTestGraphPath.get
+      cluster.getFileSystem.copyFromLocalFile(
+        new Path(getClass.getResource(pathString).toString),
+        new Path(pathString))
+    }
     cluster
   }
 
-  protected def hdfsURI: URI = URI.create(s"hdfs://${cluster.getNameNode.getHostAndPort}$dfsTestGraphPath")
+  protected def hdfsURI: URI = new URIBuilder()
+    .setScheme(HDFS_URI_SCHEME)
+    .setHost(cluster.getNameNode.getHostAndPort)
+    .setPath(dfsTestGraphPath.getOrElse(File.separator))
+    .build()
 
   protected def clusterConfig: Configuration = {
-    sparkSession.sparkContext.hadoopConfiguration.set("fs.default.name", hdfsURI.toString)
+    sparkSession.sparkContext.hadoopConfiguration
+      .set("fs.default.name", new URIBuilder()
+        .setScheme(HDFS_URI_SCHEME)
+        .setHost(cluster.getNameNode.getHostAndPort)
+        .build()
+        .toString
+      )
     sparkSession.sparkContext.hadoopConfiguration
   }
 
   abstract override def afterAll: Unit = {
+    sparkSession.sparkContext.hadoopConfiguration.clear()
     cluster.shutdown(true)
     super.afterAll()
   }
