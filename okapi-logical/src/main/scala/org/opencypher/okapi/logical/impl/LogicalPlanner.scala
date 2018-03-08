@@ -88,7 +88,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         val qualifiedGraphName = irGraph.qualifiedName
         val graphSource = context.catalog(irGraph.qualifiedName)
         producer.planStart(
-          LogicalExternalGraph(qualifiedGraphName, graphSource.schema(qualifiedGraphName.graphName).get),
+          LogicalCatalogGraph(qualifiedGraphName, graphSource.schema(qualifiedGraphName.graphName).get),
           context.inputRecordFields)
       case x =>
         throw NotImplementedException(s"Support for leaf planning of $x not yet implemented")
@@ -345,7 +345,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         }
         LogicalPatternGraph(schema, entities)
 
-      case g: IRCatalogGraph => LogicalExternalGraph(g.qualifiedName, g.schema)
+      case g: IRCatalogGraph => LogicalCatalogGraph(g.qualifiedName, g.schema)
     }
   }
 

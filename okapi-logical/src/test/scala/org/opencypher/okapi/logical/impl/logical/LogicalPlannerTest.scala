@@ -139,12 +139,12 @@ class LogicalPlannerTest extends LogicalTestSuite {
                 Directed,
                 NodeScan(
                   Var("a")(CTNode),
-                  Start(LogicalExternalGraph(testQualifiedGraphName, Schema.empty), Set(), emptySqm),
+                  Start(LogicalCatalogGraph(testQualifiedGraphName, Schema.empty), Set(), emptySqm),
                   SolvedQueryModel(Set(nodeA), Set())
                 ),
                 NodeScan(
                   Var("g")(CTNode),
-                  Start(LogicalExternalGraph(testQualifiedGraphName, Schema.empty), Set(), emptySqm),
+                  Start(LogicalCatalogGraph(testQualifiedGraphName, Schema.empty), Set(), emptySqm),
                   SolvedQueryModel(Set(IRField("g")(CTNode)), Set())),
                 SolvedQueryModel(Set(nodeA, IRField("g")(CTNode), relR))
               ),
@@ -220,7 +220,7 @@ class LogicalPlannerTest extends LogicalTestSuite {
                 NodeScan(
                   Var("a")(CTNode),
                   Start(
-                    LogicalExternalGraph(
+                    LogicalCatalogGraph(
                       testQualifiedGraphName,
                       schema
                     ),
@@ -232,7 +232,7 @@ class LogicalPlannerTest extends LogicalTestSuite {
                 NodeScan(
                   Var("g")(CTNode),
                   Start(
-                    LogicalExternalGraph(
+                    LogicalCatalogGraph(
                       testQualifiedGraphName,
                       schema
                     ),
@@ -298,7 +298,7 @@ class LogicalPlannerTest extends LogicalTestSuite {
         Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean))(CTBoolean))(CTBoolean),
         NodeScan(
           Var("a")(CTNode),
-          Start(LogicalExternalGraph(testQualifiedGraphName, Schema.empty), Set(), emptySqm),
+          Start(LogicalCatalogGraph(testQualifiedGraphName, Schema.empty), Set(), emptySqm),
           SolvedQueryModel(Set(nodeA), Set())
         ),
         SolvedQueryModel(

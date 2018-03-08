@@ -19,7 +19,7 @@ import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CTNode
 import org.opencypher.okapi.ir.api.expr.Var
-import org.opencypher.okapi.logical.impl.LogicalExternalGraph
+import org.opencypher.okapi.logical.impl.LogicalCatalogGraph
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSRecords
@@ -33,7 +33,7 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphCreationFixture {
   val testGraphName = GraphName("test")
   val testQualifiedGraphName = QualifiedGraphName(testNamespace, testGraphName)
 
-  val emptyGraph = LogicalExternalGraph(testQualifiedGraphName, Schema.empty)
+  val emptyGraph = LogicalCatalogGraph(testQualifiedGraphName, Schema.empty)
 
   test("Test insert Cache operators") {
     val plan = CartesianProduct(

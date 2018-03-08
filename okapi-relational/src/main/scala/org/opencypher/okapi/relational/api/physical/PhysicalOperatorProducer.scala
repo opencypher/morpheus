@@ -20,7 +20,7 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr.{Aggregator, Expr, Var}
-import org.opencypher.okapi.logical.impl.{ConstructedEntity, Direction, LogicalExternalGraph, LogicalGraph}
+import org.opencypher.okapi.logical.impl.{ConstructedEntity, Direction, LogicalCatalogGraph, LogicalGraph}
 import org.opencypher.okapi.relational.impl.physical.PhysicalPlanner
 import org.opencypher.okapi.relational.impl.table.{ProjectedExpr, ProjectedField, RecordHeader}
 
@@ -44,7 +44,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param g  external (URI) reference to the input graph (e.g. the session graph)
     * @return start operator
     */
-  def planStart(in: R, g: LogicalExternalGraph): P
+  def planStart(in: R, g: LogicalCatalogGraph): P
 
   /**
     * Starts the query execution based on empty records and an external graph.
@@ -52,7 +52,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param graph external (URI) reference to the input graph (e.g. the session graph)
     * @return start from unit operator
     */
-  def planStartFromUnit(graph: LogicalExternalGraph): P
+  def planStartFromUnit(graph: LogicalCatalogGraph): P
 
   /**
     * Sets the source graph for the next query operation.
@@ -61,7 +61,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param g  external (URI) reference to a graph on which the query is continued
     * @return set source graph operator
     */
-  def planSetSourceGraph(in: P, g: LogicalExternalGraph): P
+  def planSetSourceGraph(in: P, g: LogicalCatalogGraph): P
 
   /**
     * Scans the node set of the input graph and returns all nodes that match the given CTNode type.
@@ -151,7 +151,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param graph  graph to select from the catalog
     * @return select graph operator
     */
-  def planUseGraph(in: P, graph: LogicalExternalGraph): P
+  def planUseGraph(in: P, graph: LogicalCatalogGraph): P
 
   /**
     * Evaluates the given expression and projects it to a new column in the input records.

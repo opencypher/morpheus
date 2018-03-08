@@ -63,16 +63,16 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
     operators.ReturnGraph(in)
   }
 
-  override def planUseGraph(in: CAPSPhysicalOperator, graph: LogicalExternalGraph): CAPSPhysicalOperator =
+  override def planUseGraph(in: CAPSPhysicalOperator, graph: LogicalCatalogGraph): CAPSPhysicalOperator =
     operators.UseGraph(in, graph)
 
   override def planEmptyRecords(in: CAPSPhysicalOperator, header: RecordHeader): CAPSPhysicalOperator =
     operators.EmptyRecords(in, header)
 
-  override def planStart(in: CAPSRecords, g: LogicalExternalGraph): CAPSPhysicalOperator =
+  override def planStart(in: CAPSRecords, g: LogicalCatalogGraph): CAPSPhysicalOperator =
     operators.Start(in, g)
 
-  override def planSetSourceGraph(in: CAPSPhysicalOperator, g: LogicalExternalGraph): CAPSPhysicalOperator =
+  override def planSetSourceGraph(in: CAPSPhysicalOperator, g: LogicalCatalogGraph): CAPSPhysicalOperator =
     operators.UseGraph(in, g)
 
   override def planNodeScan(
@@ -116,7 +116,7 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
   override def planDistinct(in: CAPSPhysicalOperator, fields: Set[Var]): CAPSPhysicalOperator =
     operators.Distinct(in, fields)
 
-  override def planStartFromUnit(graph: LogicalExternalGraph): CAPSPhysicalOperator =
+  override def planStartFromUnit(graph: LogicalCatalogGraph): CAPSPhysicalOperator =
     operators.StartFromUnit(graph)
 
   override def planExpandSource(

@@ -44,7 +44,7 @@ sealed trait LogicalGraph {
   protected def args: String
 }
 
-final case class LogicalExternalGraph(qualifiedGraphName: QualifiedGraphName, schema: Schema) extends LogicalGraph {
+final case class LogicalCatalogGraph(qualifiedGraphName: QualifiedGraphName, schema: Schema) extends LogicalGraph {
   override protected def args: String = s"qualifiedGraphName = $qualifiedGraphName"
 }
 
