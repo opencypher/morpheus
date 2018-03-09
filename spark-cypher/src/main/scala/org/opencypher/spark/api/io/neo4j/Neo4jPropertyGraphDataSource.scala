@@ -33,18 +33,31 @@ object Neo4jPropertyGraphDataSource {
 
 }
 
+/**
+  * A data source implementation that enables loading property graphs from a Neo4j database. A graph is identified by a
+  * [[GraphName]] and parameterized by a node and a relationship query which are used to load the graph from Neo4j.
+  *
+  * If the [[Schema]] of a Neo4j graph is known upfront, it can be provided to the data source. Otherwise, the schema
+  * will be computed during graph loading.
+  *
+  * @param config Neo4j connection configuration
+  * @param queries node and relationship queries for a specific graph
+  * @param schemata an optional schema of the loaded graph
+  * @param session CAPS session
+  */
 case class Neo4jPropertyGraphDataSource(
   config: Neo4jConfig,
-  queries: Map[GraphName, (String, String)] = Neo4jPropertyGraphDataSource.defaultQueries)
+  queries: Map[GraphName, (String, String)] = Neo4jPropertyGraphDataSource.defaultQueries,
+  schemata: Map[GraphName, Schema] = Map.empty)
   (implicit val session: CAPSSession)
   extends CAPSPropertyGraphDataSource {
 
   override def graph(name: GraphName): PropertyGraph = queries.get(name) match {
-    case Some((nodeQuery, relQuery)) => Neo4jGraphLoader.fromNeo4j(config, nodeQuery, relQuery)
+    case Some((nodeQuery, relQuery)) => Neo4jGraphLoader.fromNeo4j(config, nodeQuery, relQuery, schema(name))
     case None => throw IllegalArgumentException(s"Neo4j graph with name '$name'")
   }
 
-  override def schema(name: GraphName): Option[Schema] = None
+  override def schema(name: GraphName): Option[Schema] = schemata.get(name)
 
   override def store(name: GraphName, graph: PropertyGraph): Unit =
     throw new UnsupportedOperationException("'store' operation is not supported by the Neo4j data source")

@@ -17,12 +17,13 @@ package org.opencypher.spark.test.fixture
 
 import org.apache.spark.sql.{DataFrame, Row}
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
-import org.opencypher.okapi.api.value.{CAPSNode, CAPSRelationship}
+import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.types.{CTInteger, CTList, CTString, CTVoid}
 import org.opencypher.okapi.api.value.CypherValue.{CypherList, CypherMap}
+import org.opencypher.okapi.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.okapi.test.support.RowDebugOutputSupport
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.{CAPSGraph, CAPSResult}
-import org.opencypher.spark.test.support.RecordMatchingTestSupport
 
 import scala.collection.{Bag, mutable}
 
@@ -41,6 +42,12 @@ trait TeamDataFixture extends TestDataFixture with RowDebugOutputSupport {
        CREATE (b)-[:KNOWS {since: 2016}]->(c)
        CREATE (c)-[:KNOWS {since: 2016}]->(d)
     """
+
+  lazy val dataFixtureSchema: Schema = Schema.empty
+    .withNodePropertyKeys("Person", "German")("name" -> CTString, "luckyNumber" -> CTInteger, "languages" -> CTList(CTString).nullable)
+    .withNodePropertyKeys("Person", "Swede")("name" -> CTString, "luckyNumber" -> CTInteger)
+    .withNodePropertyKeys("Person")("name" -> CTString, "luckyNumber" -> CTInteger, "languages" -> CTList(CTVoid))
+    .withRelationshipPropertyKeys("KNOWS")("since" -> CTInteger)
 
   override lazy val nbrNodes = 4
 
