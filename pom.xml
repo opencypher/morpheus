@@ -91,6 +91,7 @@
     <dep.junit.platform.version>1.0.2</dep.junit.platform.version>
     <dep.junit.vintage.version>4.12.2</dep.junit.vintage.version>
     <dep.mockito.version>1.10.19</dep.mockito.version>
+    <dep.neo4j.harness.version>3.3.3</dep.neo4j.harness.version>
     <dep.scalatest.version>3.0.4</dep.scalatest.version>
   </properties>
 
@@ -481,7 +482,7 @@
     <dependency>
       <groupId>org.neo4j.test</groupId>
       <artifactId>neo4j-harness</artifactId>
-      <version>${dep.neo4j.version}</version>
+      <version>${dep.neo4j.harness.version}</version>
       <scope>test</scope>
     </dependency>
 

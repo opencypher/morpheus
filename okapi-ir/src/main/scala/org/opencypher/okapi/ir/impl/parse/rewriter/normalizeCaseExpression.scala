@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.v3_4.expressions._
     ELSE 3
   END
  */
-case class normalizeCaseExpression(mkException: (String, InputPosition) => CypherException) extends Rewriter {
+case object normalizeCaseExpression extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = instance.apply(that)
 

@@ -19,7 +19,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.util.v3_4._
 import org.neo4j.cypher.internal.v3_4.expressions.{Property, Variable}
 
-case class normalizeReturnClauses(mkException: (String, InputPosition) => CypherException) extends Rewriter {
+case object normalizeReturnClauses extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = instance.apply(that)
 
