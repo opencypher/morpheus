@@ -25,16 +25,22 @@ import org.opencypher.okapi.api.value.CypherValue._
   * @param properties the properties of the node.
   */
 case class CAPSNode(
-  override val id: Long,
-  override val labels: Set[String] = Set.empty,
-  override val properties: CypherMap = CypherMap.empty) extends CypherNode[Long] {
+  override val id: String,
+  override val labels: Set[String],
+  override val properties: CypherMap) extends CypherNode[String] {
 
   override type I = CAPSNode
 
-  override def copy(id: Long = id, labels: Set[String] = labels, properties: CypherMap = properties): CAPSNode = {
+  override def copy(id: String = id, labels: Set[String] = labels, properties: CypherMap = properties): CAPSNode = {
     CAPSNode(id, labels, properties)
   }
 
+}
+
+object CAPSNode {
+  def apply(id: Long, labels: Set[String] = Set.empty, properties: CypherMap = CypherMap.empty): CAPSNode = {
+    CAPSNode(id.toString, labels, properties)
+  }
 }
 
 /**
@@ -47,16 +53,22 @@ case class CAPSNode(
   * @param properties the properties of the node.
   */
 case class CAPSRelationship(
-  override val id: Long,
-  override val source: Long,
-  override val target: Long,
+  override val id: String,
+  override val source: String,
+  override val target: String,
   override val relType: String,
-  override val properties: CypherMap = CypherMap.empty) extends CypherRelationship[Long] {
+  override val properties: CypherMap) extends CypherRelationship[String] {
 
   override type I = CAPSRelationship
 
-  override def copy(id: Long = id, source: Long = source, target: Long = target, relType: String = relType, properties: CypherMap = properties): CAPSRelationship = {
+  override def copy(id: String = id, source: String = source, target: String = target, relType: String = relType, properties: CypherMap = properties): CAPSRelationship = {
     CAPSRelationship(id, source, target, relType, properties).asInstanceOf[this.type]
   }
 
+}
+
+object CAPSRelationship {
+  def apply(id: Long, source: Long, target: Long, relType: String, properties: CypherMap = CypherMap.empty): CAPSRelationship = {
+    CAPSRelationship(id.toString, source.toString, target.toString, relType, properties)
+  }
 }

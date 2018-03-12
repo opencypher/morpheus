@@ -16,7 +16,7 @@
 package org.opencypher.spark.test.support.creation.caps
 
 import org.apache.spark.sql.Row
-import org.apache.spark.sql.types.{LongType, StructField, StructType}
+import org.apache.spark.sql.types.{LongType, StringType, StructField, StructType}
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.ir.test.support.creation.propertygraph.TestPropertyGraph
@@ -36,7 +36,7 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory {
     val nodeScans = schema.labelCombinations.combos.map { labels =>
       val propKeys = schema.nodeKeys(labels)
 
-      val idStructField = Seq(StructField("ID", LongType, nullable = false))
+      val idStructField = Seq(StructField("ID", StringType, nullable = false))
       val structType = StructType(idStructField ++ getPropertyStructFields(propKeys))
 
       val header = Seq("ID") ++ propKeys.keys
@@ -46,7 +46,7 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory {
           val propertyValues = propKeys.map(key =>
             node.properties.unwrap.getOrElse(key._1, null)
           )
-          Row.fromSeq(Seq(node.id) ++ propertyValues)
+          Row.fromSeq(Seq(node.id.toString) ++ propertyValues)
         }
 
       val records = caps.sparkSession.createDataFrame(rows.asJava, structType).toDF(header: _*)
@@ -61,9 +61,9 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory {
       val propKeys = schema.relationshipKeys(relType)
 
       val idStructFields = Seq(
-        StructField("ID", LongType, nullable = false),
-        StructField("SRC", LongType, nullable = false),
-        StructField("DST", LongType, nullable = false))
+        StructField("ID", StringType, nullable = false),
+        StructField("SRC", StringType, nullable = false),
+        StructField("DST", StringType, nullable = false))
       val structType = StructType(idStructFields ++ getPropertyStructFields(propKeys))
 
       val header = Seq("ID", "SRC", "DST") ++ propKeys.keys
@@ -71,7 +71,7 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory {
         .filter(_.relType == relType)
         .map { rel =>
           val propertyValues = propKeys.map(key => rel.properties.unwrap.getOrElse(key._1, null))
-          Row.fromSeq(Seq(rel.id, rel.source, rel.target) ++ propertyValues)
+          Row.fromSeq(Seq(rel.id.toString, rel.source.toString, rel.target.toString) ++ propertyValues)
         }
 
       val records = caps.sparkSession.createDataFrame(rows.asJava, structType).toDF(header: _*)

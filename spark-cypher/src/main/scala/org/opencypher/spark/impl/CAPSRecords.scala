@@ -305,8 +305,8 @@ object CAPSRecords extends CypherRecordsCompanion[CAPSRecords, CAPSSession] {
       val entityMappings = sourceColumnToPropertyExpressionMapping(relVar)
 
       val sourceColumnToExpressionMapping: Map[String, Expr] = Seq(
-        relMapping.sourceStartNodeKey -> StartNode(relVar)(CTInteger),
-        relMapping.sourceEndNodeKey -> EndNode(relVar)(CTInteger)
+        relMapping.sourceStartNodeKey -> StartNode(relVar)(CTString),
+        relMapping.sourceEndNodeKey -> EndNode(relVar)(CTString)
       ).foldLeft(entityMappings) {
         case (acc, (slot, expr)) =>
           if (acc.contains(slot))

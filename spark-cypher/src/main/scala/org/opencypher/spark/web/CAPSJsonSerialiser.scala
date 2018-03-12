@@ -68,9 +68,9 @@ trait JsonSerialiser {
     }
   }
 
-  protected def formatNode(id: Long, labels: Set[String], properties: Map[String, Json]) = {
+  protected def formatNode(id: String, labels: Set[String], properties: Map[String, Json]) = {
     Json.obj(
-      "id" -> Json.fromLong(id),
+      "id" -> Json.fromString(id),
       "labels" -> Json.arr(
         labels.toSeq.sorted.map(Json.fromString): _*
       ),
@@ -80,11 +80,11 @@ trait JsonSerialiser {
     )
   }
 
-  protected def formatRel(id: Long, source: Long, target: Long, typ: String, properties: Map[String, Json]) = {
+  protected def formatRel(id: String, source: String, target: String, typ: String, properties: Map[String, Json]) = {
     Json.obj(
-      "id" -> Json.fromLong(id),
-      "source" -> Json.fromLong(source),
-      "target" -> Json.fromLong(target),
+      "id" -> Json.fromString(id),
+      "source" -> Json.fromString(source),
+      "target" -> Json.fromString(target),
       "type" -> Json.fromString(typ),
       "properties" -> Json.obj(
         properties.toSeq: _*
