@@ -23,7 +23,7 @@ import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.api.set.SetItem
+import org.opencypher.okapi.ir.api.set.{SetItem, SetPropertyItem}
 import org.opencypher.okapi.ir.impl.syntax.ExprSyntax._
 import org.opencypher.okapi.logical.impl.{ConstructedEntity, _}
 import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
@@ -34,6 +34,7 @@ import org.opencypher.spark.impl.SparkSQLExprMapper._
 import org.opencypher.spark.impl.convert.CAPSCypherType._
 import org.opencypher.spark.impl.physical.operators.CAPSPhysicalOperator._
 import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
+import org.opencypher.spark.impl.table.CAPSRecordHeader.CAPSRecordHeader
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 import org.opencypher.spark.schema.CAPSSchema
 
@@ -186,10 +187,11 @@ final case class Filter(in: CAPSPhysicalOperator, expr: Expr, header: RecordHead
 final case class ConstructGraph(
   in: CAPSPhysicalOperator,
   constructItems: Set[ConstructedEntity],
-  setItems: List[SetItem[Expr]],
-  schema: CAPSSchema,
-  header: RecordHeader)
+  setItems: List[SetPropertyItem[Expr]],
+  schema: CAPSSchema)
   extends UnaryPhysicalOperator {
+
+  override def header: RecordHeader = RecordHeader.empty
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     val input = prev.records
@@ -198,8 +200,22 @@ final case class ConstructGraph(
       if (constructItems.isEmpty) input
       else createEntities(constructItems, input)
 
-    val patternGraph = CAPSGraph.create(baseTable, schema)(input.caps)
+    val tableWithConstructedProperties =
+      if (setItems.isEmpty) baseTable
+      else setProperties(setItems, baseTable)
+
+    val patternGraph = CAPSGraph.create(tableWithConstructedProperties, schema)(input.caps)
     CAPSPhysicalResult(CAPSRecords.unit()(input.caps), patternGraph)
+  }
+
+  private def setProperties(setItems: List[SetPropertyItem[Expr]], baseTable: CAPSRecords): CAPSRecords = {
+    setItems.foldLeft(baseTable) { case (table, nextSetItem) =>
+      setProperty(nextSetItem, table)
+    }
+  }
+
+  def setProperty(setItem: SetPropertyItem[Expr], table: CAPSRecords): CAPSRecords = {
+    ???
   }
 
   private def createEntities(toCreate: Set[ConstructedEntity], records: CAPSRecords): CAPSRecords = {

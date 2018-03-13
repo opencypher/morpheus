@@ -192,7 +192,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   def planSetSourceGraph(graph: LogicalGraph, prev: FlatOperator) = {
-    SetSourceGraph(graph, prev, prev.header)
+    SetSourceGraph(graph, prev)
   }
 
   def planEmptyRecords(fields: Set[Var], prev: FlatOperator): EmptyRecords = {

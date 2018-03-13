@@ -15,14 +15,13 @@
  */
 package org.opencypher.okapi.relational.api.physical
 
-import org.opencypher.okapi.api.graph.{PropertyGraph, QualifiedGraphName}
+import org.opencypher.okapi.api.graph.PropertyGraph
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr.{Aggregator, Expr, Var}
-import org.opencypher.okapi.ir.api.set.SetItem
+import org.opencypher.okapi.ir.api.set.SetPropertyItem
 import org.opencypher.okapi.logical.impl.{ConstructedEntity, Direction, LogicalCatalogGraph, LogicalGraph}
-import org.opencypher.okapi.relational.impl.physical.PhysicalPlanner
 import org.opencypher.okapi.relational.impl.table.{ProjectedExpr, ProjectedField, RecordHeader}
 
 /**
@@ -170,15 +169,13 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param in       previous operator
     * @param constructItems entities to create
     * @param schema   schema of the resulting graph
-    * @param header   resulting record header
     * @return project pattern graph operator
     */
   def planConstructGraph(
     in: P,
     constructItems: Set[ConstructedEntity],
-    setItems: List[SetItem[Expr]],
-    schema: Schema,
-    header: RecordHeader): P
+    setItems: List[SetPropertyItem[Expr]],
+    schema: Schema): P
 
   /**
     * Groups the underlying records by the specified expressions and evaluates the given aggregate functions.

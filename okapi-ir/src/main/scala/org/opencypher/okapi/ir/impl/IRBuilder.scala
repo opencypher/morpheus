@@ -193,7 +193,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
                   updatedSchema -> rewrittenVarTypes
               }
             }
-            val patternGraph = IRPatternGraph[Expr](schema, pattern, setItems)
+            val patternGraph = IRPatternGraph[Expr](schema, pattern, setItems.collect { case p: SetPropertyItem[Expr] => p })
             val updatedContext = context.withWorkingGraph(patternGraph)
             put[R, IRBuilderContext](updatedContext) >> pure[R, Vector[BlockRef]](Vector.empty)
           }

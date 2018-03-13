@@ -16,7 +16,7 @@
 package org.opencypher.okapi.ir.impl
 
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTNode, CTNull, CTRelationship, CTString}
+import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block._
@@ -159,6 +159,24 @@ class IrBuilderTest extends IrTestSuite {
     }
   }
 
+  it("computes a pattern graph schema correctly - 1 create and 1 set property with two labels") {
+    val query =
+      """
+        |CONSTRUCT  {
+        |  CREATE (a :A:B)
+        |  SET a.name = 'Mats'
+        |}
+        |RETURN GRAPH""".stripMargin
+
+    query.model.ensureThat { (model, _) =>
+      model.result match {
+        case GraphResultBlock(_, IRPatternGraph(schema, _, _)) =>
+          schema should equal(Schema.empty.withNodePropertyKeys("A", "B")("name" -> CTString))
+        case _ => fail("no matching graph result found")
+      }
+    }
+  }
+
   it("computes a pattern graph schema correctly - 1 create and 1 set rel property") {
     val query =
       """
@@ -172,6 +190,28 @@ class IrBuilderTest extends IrTestSuite {
       model.result match {
         case GraphResultBlock(_, IRPatternGraph(schema, _, _)) =>
           schema should equal(Schema.empty.withNodePropertyKeys(Set.empty[String]).withRelationshipPropertyKeys("R")("level" -> CTString))
+        case _ => fail("no matching graph result found")
+      }
+    }
+  }
+
+  // TODO: Requires equivalence model support
+  ignore("computes a pattern graph schema correctly - 1 create from equivalent") {
+    val query =
+      """
+        |CONSTRUCT {
+        |  CREATE (a :A)
+        |}
+        |CONSTRUCT {
+        |  CREATE (c~a)
+        |  SET c :B
+        |}
+        |RETURN GRAPH""".stripMargin
+
+    query.model.ensureThat { (model, _) =>
+      model.result match {
+        case GraphResultBlock(_, IRPatternGraph(schema, _, _)) =>
+          schema should equal(Schema.empty.withNodePropertyKeys("A", "B")())
         case _ => fail("no matching graph result found")
       }
     }

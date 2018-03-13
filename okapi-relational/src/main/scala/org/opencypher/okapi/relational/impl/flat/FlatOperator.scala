@@ -161,5 +161,7 @@ final case class Start(sourceGraph: LogicalGraph, fields: Set[Var]) extends Flat
   override val header: RecordHeader = RecordHeader.from(fields.map(OpaqueField).toSeq: _*)
 }
 
-final case class SetSourceGraph(override val sourceGraph: LogicalGraph, in: FlatOperator, header: RecordHeader)
-    extends StackingFlatOperator
+final case class SetSourceGraph(override val sourceGraph: LogicalGraph, in: FlatOperator)
+    extends StackingFlatOperator {
+  override def header: RecordHeader = RecordHeader.empty
+}
