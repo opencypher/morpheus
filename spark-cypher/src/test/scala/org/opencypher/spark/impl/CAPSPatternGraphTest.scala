@@ -38,11 +38,12 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
 
   override def capsGraphFactory: CAPSTestGraphFactory = CAPSPatternGraphFactory
 
-  it("project pattern graph") {
+  // TODO: Rewrite with equivalence merge
+  ignore("project pattern graph") {
     val inputGraph = initGraph(`:Person`)
 
     val person = inputGraph.cypher(
-      """MATCH (a:Swedish)
+      """MATCH (a :Swedish)
         |CONSTRUCT {
         |  CREATE (a)
         |}
@@ -55,7 +56,8 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       ))
   }
 
-  test("project pattern graph with relationship") {
+  // TODO: Rewrite with equivalence merge
+  ignore("project pattern graph with relationship") {
     val inputGraph = initGraph(`:Person` + `:KNOWS`)
 
     val person = inputGraph.cypher(
@@ -75,7 +77,8 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       ))
   }
 
-  test("project pattern graph with created relationship") {
+  // TODO: Rewrite with equivalence merge
+  ignore("project pattern graph with created relationship") {
     val inputGraph = initGraph(`:Person` + `:KNOWS`)
 
     val person = inputGraph.cypher(
@@ -99,7 +102,8 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       ))
   }
 
-  it("project pattern graph with created node") {
+  // TODO: Rewrite with equivalence merge
+  ignore("project pattern graph with created node") {
     val inputGraph = initGraph(`:Person` + `:KNOWS`)
 
     val person = inputGraph.cypher(
@@ -152,7 +156,8 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
     outputRels.data.count() shouldBe 10
   }
 
-  test("project pattern graph with created node with labels") {
+  // TODO: Rewrite with equivalence merge
+  ignore("project pattern graph with created node with labels") {
     val inputGraph = initGraph(`:Person` + `:KNOWS`)
 
     val person = inputGraph.cypher(
@@ -519,7 +524,8 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       ))
   }
 
-  test("Reduce cardinality of the pattern graph base table") {
+  // TODO: Rewrite with equivalence merge
+  ignore("Reduce cardinality of the pattern graph base table") {
     val given = initGraph(
       """
         |CREATE (a: Person)
