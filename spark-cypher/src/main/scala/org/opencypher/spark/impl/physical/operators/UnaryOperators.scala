@@ -194,39 +194,30 @@ final case class ConstructGraph(
   override def header: RecordHeader = RecordHeader.empty
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
+    implicit val session = prev.records.caps
     val inputTable = prev.records
 
-    val initialConstructedTable = CAPSRecords.empty()(inputTable.caps)
+    val entityTable = createEntities(constructItems, inputTable)
+    val tableWithConstructedProperties = setProperties(setItems, entityTable)
 
-    val entityTable = createEntities(constructItems, initialConstructedTable, inputTable)
+    // Remove input columns and header
+    val withInputsRemoved = CAPSRecords.verifyAndCreate(
+      tableWithConstructedProperties.header -- inputTable.header,
+      tableWithConstructedProperties.data.drop(inputTable.data.columns: _*))
 
-    val tableWithConstructedProperties =
-      if (setItems.isEmpty) entityTable
-      else setProperties(setItems, entityTable)
-
-    val patternGraph = CAPSGraph.create(tableWithConstructedProperties, schema)(inputTable.caps)
-    CAPSPhysicalResult(CAPSRecords.unit()(inputTable.caps), patternGraph)
+    val patternGraph = CAPSGraph.create(withInputsRemoved, schema)
+    CAPSPhysicalResult(CAPSRecords.unit(), patternGraph)
   }
 
   private def setProperties(setItems: List[SetPropertyItem[Expr]], constructedTable: CAPSRecords)(implicit context: CAPSRuntimeContext): CAPSRecords = {
     setItems.foldLeft(constructedTable) { case (table, nextSetItem) =>
-      setProperty(nextSetItem, table)
+      constructProperty(nextSetItem.variable, nextSetItem.propertyKey, nextSetItem.setValue, table)
     }
   }
 
-  def setProperty(setItem: SetPropertyItem[Expr], constructedTable: CAPSRecords)(implicit context: CAPSRuntimeContext): CAPSRecords = {
-    // TODO: Handle overwriting an existing property
-    if (true) {
-      createProperty(setItem.variable, setItem.propertyKey, setItem.setValue, constructedTable)
-    } else {
-      ???
-    }
-  }
-
-  def createProperty(variable: Var, propertyKey: String, propertyValue: Expr, constructedTable: CAPSRecords)(implicit context: CAPSRuntimeContext): CAPSRecords = {
-    val variableSlot = constructedTable.header.slotsFor(variable).headOption.getOrElse(
-      throw IllegalArgumentException(
-        s"Could not find variable $variable to set property with key $propertyKey and value $propertyValue."))
+  def constructProperty(variable: Var, propertyKey: String, propertyValue: Expr, constructedTable: CAPSRecords)(implicit context: CAPSRuntimeContext): CAPSRecords = {
+    require(constructedTable.header.slotsFor(variable).nonEmpty,
+      s"Could not find header variable $variable to set property with key $propertyKey and value $propertyValue.")
 
     val propertyValueColumn: Column = propertyValue.asSparkSQLExpr(constructedTable.header, constructedTable.data, context)
 
@@ -239,7 +230,7 @@ final case class ConstructGraph(
     CAPSRecords.verifyAndCreate(newHeader, newData)(constructedTable.caps)
   }
 
-  private def createEntities(toCreate: Set[ConstructedEntity], constructedTable: CAPSRecords, inputTable: CAPSRecords): CAPSRecords = {
+  private def createEntities(toCreate: Set[ConstructedEntity], constructedTable: CAPSRecords): CAPSRecords = {
     val numberOfColumnPartitions = toCreate.size
 
     // Construct nodes before relationships, as relationships might depend on nodes
@@ -251,30 +242,30 @@ final case class ConstructGraph(
         (nextColumnPartitionId + 1) -> (constructedNodes ++ constructNode(nextColumnPartitionId, numberOfColumnPartitions, nextNodeToConstruct))
     }
 
-    val recordsWithNodes = addEntitiesToRecords(createdNodes, constructedTable, inputTable)
+    val recordsWithNodes = addEntitiesToRecords(createdNodes, constructedTable)
 
     val (_, createdRels) = rels.foldLeft(columnIdIndex -> Set.empty[(SlotContent, Column)]) {
       case ((nextColumnPartitionId, constructedRels), nextRelToConstruct) =>
         (nextColumnPartitionId + 1) -> (constructedRels ++ constructRel(nextColumnPartitionId, numberOfColumnPartitions, nextRelToConstruct, recordsWithNodes))
     }
 
-    addEntitiesToRecords(createdRels, recordsWithNodes, inputTable)
+    addEntitiesToRecords(createdRels, recordsWithNodes)
   }
 
-  private def addEntitiesToRecords(columnsToAdd: Set[(SlotContent, Column)], constructedTable: CAPSRecords, inputTable: CAPSRecords): CAPSRecords = {
+  private def addEntitiesToRecords(columnsToAdd: Set[(SlotContent, Column)], constructedTable: CAPSRecords): CAPSRecords = {
     val newData = columnsToAdd.foldLeft(constructedTable.data) {
       case (acc, (expr, col)) =>
         acc.safeAddColumn(ColumnName.of(expr), col)
     }
 
     // TODO: Move header construction to FlatPlanner
-    val newHeader = inputTable.header
+    val newHeader = constructedTable.header
       .update(
         addContents(columnsToAdd.map(_._1).toSeq)
       )
       ._1
 
-    CAPSRecords.verifyAndCreate(newHeader, newData)(inputTable.caps)
+    CAPSRecords.verifyAndCreate(newHeader, newData)(constructedTable.caps)
   }
 
   private def constructNode(columnIdPartition: Int, numberOfColumnPartitions: Int, node: ConstructedNode): Set[(SlotContent, Column)] = {

@@ -39,6 +39,16 @@ final case class RecordHeader(internalHeader: InternalHeader) {
   def ++(other: RecordHeader): RecordHeader =
     copy(internalHeader ++ other.internalHeader)
 
+  /**
+    * Returns this record header with all fields of the other record header removed.
+    *
+    * @param other the header to remove
+    * @return updated header
+    */
+  def --(other: RecordHeader): RecordHeader =
+    copy(internalHeader -- other.internalHeader)
+
+
   def indexOf(content: SlotContent): Option[Int] = slots.find(_.content == content).map(_.index)
 
   /**
