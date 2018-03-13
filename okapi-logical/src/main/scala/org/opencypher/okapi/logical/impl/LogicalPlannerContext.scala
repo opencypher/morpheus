@@ -22,7 +22,7 @@ import org.opencypher.okapi.ir.api.IRGraph
 import org.opencypher.okapi.ir.api.expr.Var
 
 final case class LogicalPlannerContext(
-  ambientGraphSchema: Schema,
+  workingGraphSchema: Schema,
   inputRecordFields: Set[Var],
   catalog: QualifiedGraphName => PropertyGraphDataSource
 )

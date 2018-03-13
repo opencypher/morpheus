@@ -99,17 +99,18 @@ object IRBuilderContext {
     query: String,
     parameters: CypherMap,
     semState: SemanticState,
-    ambientGraph: IRCatalogGraph,
-    resolver: Namespace => PropertyGraphDataSource
+    workingGraph: IRCatalogGraph,
+    resolver: Namespace => PropertyGraphDataSource,
+    fieldsFromDrivingTable: Set[Var] = Set.empty
   ): IRBuilderContext = {
     val registry = BlockRegistry.empty[Expr]
-    val block = SourceBlock[Expr](ambientGraph)
+    val block = SourceBlock[Expr](workingGraph)
     val (_, reg) = registry.register(block)
 
     val context = IRBuilderContext(
       query,
       parameters,
-      ambientGraph,
+      workingGraph,
       reg,
       semState,
       resolver)
