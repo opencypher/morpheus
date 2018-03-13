@@ -15,12 +15,16 @@
  */
 package org.opencypher.spark.impl.acceptance
 
+import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.types.CTString
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
 import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.PrintPhysicalPlan
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSPatternGraph
 import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
+
+import org.opencypher.spark.schema.CAPSSchema._
 
 import scala.collection.Bag
 
@@ -126,7 +130,10 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
 
     result.getGraph.schema.labels should equal(Set("A"))
 
-    println(result.getGraph.schema)
+    result.getGraph.schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString).asCaps)
+
+    result.getGraph.nodes("n").asCaps.data.show()
+
 //    result.getGraph.cypher("MATCH (a:A) RETURN a.name").getRecords.iterator.toBag  should equal(Bag(
 //      CypherMap("n.name" -> "Mats")
 //    ))

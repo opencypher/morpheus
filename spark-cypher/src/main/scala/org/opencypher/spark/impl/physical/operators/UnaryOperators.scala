@@ -21,6 +21,7 @@ import org.apache.spark.sql.types.{StructField, StructType}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
+import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.set.{SetItem, SetPropertyItem}
@@ -35,7 +36,7 @@ import org.opencypher.spark.impl.convert.CAPSCypherType._
 import org.opencypher.spark.impl.physical.operators.CAPSPhysicalOperator._
 import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
 import org.opencypher.spark.impl.table.CAPSRecordHeader.CAPSRecordHeader
-import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
+import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, SparkSQLExprMapper}
 import org.opencypher.spark.schema.CAPSSchema
 
 private[spark] abstract class UnaryPhysicalOperator extends CAPSPhysicalOperator {
@@ -208,14 +209,35 @@ final case class ConstructGraph(
     CAPSPhysicalResult(CAPSRecords.unit()(input.caps), patternGraph)
   }
 
-  private def setProperties(setItems: List[SetPropertyItem[Expr]], baseTable: CAPSRecords): CAPSRecords = {
-    setItems.foldLeft(baseTable) { case (table, nextSetItem) =>
+  private def setProperties(setItems: List[SetPropertyItem[Expr]], constructedTable: CAPSRecords)(implicit context: CAPSRuntimeContext): CAPSRecords = {
+    setItems.foldLeft(constructedTable) { case (table, nextSetItem) =>
       setProperty(nextSetItem, table)
     }
   }
 
-  def setProperty(setItem: SetPropertyItem[Expr], table: CAPSRecords): CAPSRecords = {
-    ???
+  def setProperty(setItem: SetPropertyItem[Expr], constructedTable: CAPSRecords)(implicit context: CAPSRuntimeContext): CAPSRecords = {
+    // TODO: Handle overwriting an existing property
+    if (true) {
+      createProperty(setItem.variable, setItem.propertyKey, setItem.setValue, constructedTable)
+    } else {
+      ???
+    }
+  }
+
+  def createProperty(variable: Var, propertyKey: String, propertyValue: Expr, constructedTable: CAPSRecords)(implicit context: CAPSRuntimeContext): CAPSRecords = {
+    val variableSlot = constructedTable.header.slotsFor(variable).headOption.getOrElse(
+      throw IllegalArgumentException(
+        s"Could not find variable $variable to set property with key $propertyKey and value $propertyValue."))
+
+    val propertyValueColumn: Column = propertyValue.asSparkSQLExpr(constructedTable.header, constructedTable.data, context)
+
+    val propertyExpression = Property(variable, PropertyKey(propertyKey))(propertyValue.cypherType)
+    val propertySlotContent = ProjectedExpr(propertyExpression)
+    val newData = constructedTable.data.safeAddColumn(ColumnName.of(propertySlotContent), propertyValueColumn)
+
+    val newHeader = constructedTable.header.update(addContent(propertySlotContent))._1
+
+    CAPSRecords.verifyAndCreate(newHeader, newData)(constructedTable.caps)
   }
 
   private def createEntities(toCreate: Set[ConstructedEntity], records: CAPSRecords): CAPSRecords = {
