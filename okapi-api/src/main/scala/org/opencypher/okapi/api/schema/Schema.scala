@@ -226,7 +226,7 @@ trait Schema {
     * If the set of labels is empty, this means that the resulting schema will only have properties present on nodes
     * that have no labels.
     */
-  def fromNodeEntity(labels: Set[String]): Schema
+  private[opencypher] def fromNodeEntity(labels: Set[String]): Schema
 
   /**
     * Returns the sub-schema for a node scan under the given constraints.
@@ -236,7 +236,7 @@ trait Schema {
     * @param labelConstraints Specifies the labels that the node is guaranteed to have
     * @return sub-schema for `labelConstraints`
     */
-  def forNodeScan(labelConstraints: Set[String]): Schema
+  private[opencypher] def forNodeScan(labelConstraints: Set[String]): Schema
 
   /**
     * Returns the sub-schema for `relType`
@@ -244,7 +244,7 @@ trait Schema {
     * @param relType Specifies the type for which the schema is extracted
     * @return sub-schema for `relType`
     */
-  def forRelationship(relType: CTRelationship): Schema
+  private[opencypher] def forRelationship(relType: CTRelationship): Schema
 
   def toString: String
 

@@ -15,6 +15,7 @@
  */
 package org.opencypher.okapi.ir.impl
 
+import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTNull, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.ir.api._
@@ -25,12 +26,47 @@ import org.opencypher.okapi.ir.test._
 
 import scala.collection.immutable.Set
 
-class CypherQueryBuilderTest extends IrTestSuite {
+class IrBuilderTest extends IrTestSuite {
+
+  it("computes a pattern graph schema correctly - 1 create") {
+    val query =
+      """
+        |CONSTRUCT  {
+        |  CREATE (a :A)
+        |}
+        |RETURN GRAPH""".stripMargin
+
+    query.model.ensureThat { (model, _) =>
+      model.result match {
+        case GraphResultBlock(_, IRPatternGraph(schema, _, _)) =>
+          schema should equal(Schema.empty.withNodePropertyKeys("A")())
+        case _ => fail("no matching graph result found")
+      }
+    }
+  }
+
+  it("computes a pattern graph schema correctly - 2 creates") {
+    val query =
+      """
+        |CONSTRUCT  {
+        |  CREATE (a :A)
+        |  CREATE (b :B:C)
+        |}
+        |RETURN GRAPH""".stripMargin
+
+    query.model.ensureThat { (model, _) =>
+      model.result match {
+        case GraphResultBlock(_, IRPatternGraph(schema, _, _)) =>
+          schema should equal(Schema.empty.withNodePropertyKeys("A")().withNodePropertyKeys("B", "C")())
+        case _ => fail("no matching graph result found")
+      }
+    }
+  }
 
   test("match node and return it") {
     "MATCH (a:Person) RETURN a".model.ensureThat { (model, globals) =>
       val loadRef = model.findExactlyOne {
-        case NoWhereBlock(s @ SourceBlock(_)) =>
+        case NoWhereBlock(s@SourceBlock(_)) =>
           s.binds.fields shouldBe empty
       }
 
@@ -66,7 +102,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
   test("match simple relationship pattern and return some fields") {
     "MATCH (a)-[r]->(b) RETURN b AS otherB, a, r".model.ensureThat { (model, globals) =>
       val loadRef = model.findExactlyOne {
-        case NoWhereBlock(s @ SourceBlock(_)) =>
+        case NoWhereBlock(s@SourceBlock(_)) =>
           s.binds.fields shouldBe empty
       }
 
@@ -107,7 +143,7 @@ class CypherQueryBuilderTest extends IrTestSuite {
     "MATCH (a:Person) WITH a.name AS name, a.age AS age ORDER BY age RETURN age, name".model.ensureThat {
       (model, globals) =>
         val loadRef = model.findExactlyOne {
-          case NoWhereBlock(s @ SourceBlock(_)) =>
+          case NoWhereBlock(s@SourceBlock(_)) =>
             s.binds.fields shouldBe empty
         }
 
@@ -173,55 +209,55 @@ class CypherQueryBuilderTest extends IrTestSuite {
     }
   }
 
-//  ignore("can handle return graph of") {
-//    "MATCH (a), (b) RETURN GRAPH moo OF (a)-[r:TEST]->(b)".model.ensureThat { (model, globals) =>
-//      val expectedSchema = Schema.empty
-//        .withNodePropertyKeys(Set.empty[String], PropertyKeys.empty)
-//        .withRelationshipPropertyKeys("TEST")()
-//
-//      val loadRef = model.findExactlyOne {
-//        case NoWhereBlock(s @ SourceBlock(_)) =>
-//          s.binds.fields shouldBe empty
-//      }
-//
-//      val nodeA = toField('a -> CTNode)
-//      val nodeB = toField('b -> CTNode)
-//      val rel = toField('r -> CTRelationship("TEST"))
-//
-//      val matchRef = model.findExactlyOne {
-//        case MatchBlock(deps, Pattern(fields, topo), exprs, _, _) =>
-//          fields should equal(Set(nodeA, nodeB))
-//          topo should equal(Map())
-//          exprs shouldBe empty
-//      }
-//
-//      val projectRef = model.findExactlyOne {
-//        // TODO: Properly assert on graphs, also below
-//        case NoWhereBlock(ProjectBlock(deps, Fields(map, graphs), _, _, _)) =>
-//          map shouldBe empty
-//
-//          graphs shouldBe Set(
-//            IRPatternGraph(
-//              "moo",
-//              expectedSchema,
-//              Pattern(Set(nodeA, nodeB, rel), Map(rel -> DirectedRelationship(nodeA, nodeB)))))
-//      }
-//
-//      model.result match {
-//        case NoWhereBlock(ResultBlock(deps, items, _, _, _, _)) =>
-//          deps should equal(Set(projectRef))
-//          items.fields shouldBe empty
-//          items.graphs should equal(Set(IRCatalogGraph("moo", expectedSchema, QualifiedGraphName(SessionPropertyGraphDataSource.Namespace, GraphName("moo")))))
-//      }
-//
-//      model.requirements should equal(
-//        Map(
-//          projectRef -> Set(matchRef),
-//          matchRef -> Set(loadRef),
-//          loadRef -> Set()
-//        ))
-//    }
-//  }
+  //  ignore("can handle return graph of") {
+  //    "MATCH (a), (b) RETURN GRAPH moo OF (a)-[r:TEST]->(b)".model.ensureThat { (model, globals) =>
+  //      val expectedSchema = Schema.empty
+  //        .withNodePropertyKeys(Set.empty[String], PropertyKeys.empty)
+  //        .withRelationshipPropertyKeys("TEST")()
+  //
+  //      val loadRef = model.findExactlyOne {
+  //        case NoWhereBlock(s @ SourceBlock(_)) =>
+  //          s.binds.fields shouldBe empty
+  //      }
+  //
+  //      val nodeA = toField('a -> CTNode)
+  //      val nodeB = toField('b -> CTNode)
+  //      val rel = toField('r -> CTRelationship("TEST"))
+  //
+  //      val matchRef = model.findExactlyOne {
+  //        case MatchBlock(deps, Pattern(fields, topo), exprs, _, _) =>
+  //          fields should equal(Set(nodeA, nodeB))
+  //          topo should equal(Map())
+  //          exprs shouldBe empty
+  //      }
+  //
+  //      val projectRef = model.findExactlyOne {
+  //        // TODO: Properly assert on graphs, also below
+  //        case NoWhereBlock(ProjectBlock(deps, Fields(map, graphs), _, _, _)) =>
+  //          map shouldBe empty
+  //
+  //          graphs shouldBe Set(
+  //            IRPatternGraph(
+  //              "moo",
+  //              expectedSchema,
+  //              Pattern(Set(nodeA, nodeB, rel), Map(rel -> DirectedRelationship(nodeA, nodeB)))))
+  //      }
+  //
+  //      model.result match {
+  //        case NoWhereBlock(ResultBlock(deps, items, _, _, _, _)) =>
+  //          deps should equal(Set(projectRef))
+  //          items.fields shouldBe empty
+  //          items.graphs should equal(Set(IRCatalogGraph("moo", expectedSchema, QualifiedGraphName(SessionPropertyGraphDataSource.Namespace, GraphName("moo")))))
+  //      }
+  //
+  //      model.requirements should equal(
+  //        Map(
+  //          projectRef -> Set(matchRef),
+  //          matchRef -> Set(loadRef),
+  //          loadRef -> Set()
+  //        ))
+  //    }
+  //  }
 
   implicit class RichModel(model: QueryModel[Expr]) {
 
@@ -248,4 +284,5 @@ class CypherQueryBuilderTest extends IrTestSuite {
       result.head
     }
   }
+
 }

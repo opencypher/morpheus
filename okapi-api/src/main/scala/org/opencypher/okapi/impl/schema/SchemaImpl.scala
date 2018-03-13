@@ -156,10 +156,10 @@ final case class SchemaImpl(labelPropertyMap: LabelPropertyMap, relTypePropertyM
   }
 
   override def fromNodeEntity(labels: Set[String]): Schema = {
-    if(labels.nonEmpty) {
+    if (labels.nonEmpty) {
       forNodeScan(labels)
     } else {
-      val propertyKeys = if(graphContainsNodeWithoutLabel) {
+      val propertyKeys = if (graphContainsNodeWithoutLabel) {
         labelPropertyMap.properties(Set.empty[String])
       } else {
         PropertyKeys.empty
@@ -179,15 +179,15 @@ final case class SchemaImpl(labelPropertyMap: LabelPropertyMap, relTypePropertyM
       allLabelCombinations
     } else {
       // add required labels because they might not be present in the schema already (newly created)
-      this.labelCombinations.filterByLabels(requiredLabels).combos + requiredLabels
+      combinationsFor(requiredLabels) + requiredLabels
     }
 
+    // take all label properties that might appear on the possible labels
     val newLabelPropertyMap = LabelPropertyMap(this.labelPropertyMap.map.filterKeys(possibleLabels.contains))
 
     // add labels that were specified in the constraints but are not present in source schema
-    val updatedLabelPropertyMap = possibleLabels.flatten.foldLeft(newLabelPropertyMap) {
-      case (agg, label) if agg.map.keys.exists(_.contains(label)) => agg
-      case (agg, label) => agg.register(label)()
+    val updatedLabelPropertyMap = possibleLabels.foldLeft(newLabelPropertyMap) {
+      case (agg, combo) => agg.register(combo, agg.properties(combo))
     }
 
     SchemaImpl(
@@ -214,8 +214,6 @@ final case class SchemaImpl(labelPropertyMap: LabelPropertyMap, relTypePropertyM
       relTypePropertyMap = RelTypePropertyMap(updatedMap)
     )
   }
-
-  override def toString: String = "Schema"
 
   override def pretty: String =
     if (isEmpty) "empty schema"

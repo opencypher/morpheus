@@ -21,6 +21,9 @@ object LabelCombinations {
 
 case class LabelCombinations(combos: Set[Set[String]]) {
 
+  /**
+    * Returns all combinations that contain the argument `labels`
+    */
   def combinationsFor(labels: Set[String]): Set[Set[String]] =
     combos.filter(labels.subsetOf)
 
@@ -28,12 +31,6 @@ case class LabelCombinations(combos: Set[Set[String]]) {
     val (lhs, rhs) = combos.partition(labels => coExistingLabels.exists(labels(_)))
     copy(combos = rhs + (lhs.flatten ++ coExistingLabels))
   }
-
-  /**
-    * Returns all combinations that have an overlap with 'labels'
-    */
-  def filterByLabels(labels: Set[String]): LabelCombinations =
-    LabelCombinations(combos.filter(c => c.intersect(labels).nonEmpty))
 
   def ++(other: LabelCombinations): LabelCombinations = copy(combos ++ other.combos)
 }
