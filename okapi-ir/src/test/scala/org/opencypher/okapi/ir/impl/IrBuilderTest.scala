@@ -82,6 +82,65 @@ class IrBuilderTest extends IrTestSuite {
     }
   }
 
+  it("computes a pattern graph schema correctly - 1 create and 2 sets") {
+    val query =
+      """
+        |CONSTRUCT  {
+        |  CREATE (a :A)
+        |  SET a :B
+        |  SET a :C
+        |}
+        |RETURN GRAPH""".stripMargin
+
+    query.model.ensureThat { (model, _) =>
+      model.result match {
+        case GraphResultBlock(_, IRPatternGraph(schema, _, _)) =>
+          schema should equal(Schema.empty.withNodePropertyKeys("A", "B", "C")())
+        case _ => fail("no matching graph result found")
+      }
+    }
+  }
+
+  it("computes a pattern graph schema correctly - 2 creates and 2 sets on same label") {
+    val query =
+      """
+        |CONSTRUCT  {
+        |  CREATE (a :A)
+        |  CREATE (b :A)
+        |  SET a :B
+        |  SET b :C
+        |}
+        |RETURN GRAPH""".stripMargin
+
+    query.model.ensureThat { (model, _) =>
+      model.result match {
+        case GraphResultBlock(_, IRPatternGraph(schema, _, _)) =>
+          schema should equal(Schema.empty.withNodePropertyKeys("A", "B")().withNodePropertyKeys("A", "C")())
+        case _ => fail("no matching graph result found")
+      }
+    }
+  }
+
+  it("computes a pattern graph schema correctly - 2 creates and 2 sets on different labels") {
+    val query =
+      """
+        |CONSTRUCT  {
+        |  CREATE (a :A)
+        |  CREATE (b :B)
+        |  SET a :B
+        |  SET b :A
+        |}
+        |RETURN GRAPH""".stripMargin
+
+    query.model.ensureThat { (model, _) =>
+      model.result match {
+        case GraphResultBlock(_, IRPatternGraph(schema, _, _)) =>
+          schema should equal(Schema.empty.withNodePropertyKeys("A", "B")())
+        case _ => fail("no matching graph result found")
+      }
+    }
+  }
+
   test("match node and return it") {
     "MATCH (a:Person) RETURN a".model.ensureThat { (model, globals) =>
       val loadRef = model.findExactlyOne {

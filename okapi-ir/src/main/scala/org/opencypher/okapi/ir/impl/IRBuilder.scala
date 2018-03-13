@@ -162,20 +162,21 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           refs <- {
             val pattern = patterns.foldLeft(Pattern.empty[Expr])(_ ++ _)
             val patternSchema = context.workingGraph.schema.forPattern(pattern)
-            val schema = setItems.foldLeft(patternSchema) { case (currentSchema, setItem: SetItem[Expr]) =>
+            val (schema, _) = setItems.foldLeft(patternSchema -> Map.empty[Var, CypherType]) { case ((currentSchema, rewrittenVarTypes), setItem: SetItem[Expr]) =>
               setItem match {
                 case SetLabelItem(variable, labels) =>
-                  val existingLabels = variable.cypherType match {
+                  val existingLabels = rewrittenVarTypes.getOrElse(variable, variable.cypherType) match {
                     case CTNode(existing) => existing
                     case other => throw UnsupportedOperationException(s"Setting a labels on something that is not a node: $other")
                   }
                   val labelsAfterSet = existingLabels ++ labels
-                    currentSchema
+                   val updatedSchema = currentSchema
                       .dropPropertiesFor(existingLabels)
                       .withNodePropertyKeys(labelsAfterSet, patternSchema.nodeKeys(existingLabels))
+                  updatedSchema -> rewrittenVarTypes.updated(variable, CTNode(labelsAfterSet))
                 case SetPropertyItem(propertyKey, variable, setValue) =>
                   val propertyType = setValue.cypherType
-                  variable.cypherType match {
+                  val updatedSchema = variable.cypherType match {
                     case CTNode(labels) =>
                       val allRelevantLabelCombinations = currentSchema.combinationsFor(labels)
                       val property = if (allRelevantLabelCombinations.size == 1) propertyType else propertyType.nullable
@@ -189,6 +190,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
                       }
                     case other => throw IllegalArgumentException("node or relationship to set a property on", other)
                   }
+                  updatedSchema -> rewrittenVarTypes
               }
             }
             val patternGraph = IRPatternGraph[Expr](schema, pattern, setItems)
