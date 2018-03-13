@@ -22,13 +22,14 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.internal.v3_4.{expressions => exp}
 import org.opencypher.okapi.api.graph.QualifiedGraphName
+import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, UnsupportedOperationException}
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block.{SortItem, _}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern.Pattern
-import org.opencypher.okapi.ir.api.set.{SetItem, SetPropertyItem}
+import org.opencypher.okapi.ir.api.set.{SetItem, SetLabelItem, SetPropertyItem}
 import org.opencypher.okapi.ir.api.util.CompilationStage
 import org.opencypher.okapi.ir.impl.refactor.instances._
 
@@ -160,8 +161,35 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           context <- get[R, IRBuilderContext]
           refs <- {
             val pattern = patterns.foldLeft(Pattern.empty[Expr])(_ ++ _)
-            val patternGraphSchema = context.workingGraph.schema.forPattern(pattern)
-            val patternGraph = IRPatternGraph[Expr](patternGraphSchema, pattern, setItems)
+            val patternSchema = context.workingGraph.schema.forPattern(pattern)
+            val schema = setItems.foldLeft(patternSchema) { case (currentSchema, setItem: SetItem[Expr]) =>
+              setItem match {
+                case SetLabelItem(variable, labels) =>
+                  val existingLabels = variable.cypherType match {
+                    case CTNode(existing) => existing
+                    case other => throw UnsupportedOperationException(s"Setting a labels on something that is not a node: $other")
+                  }
+                  val labelsAfterSet = existingLabels ++ labels
+                  currentSchema.withNodePropertyKeys(labelsAfterSet, patternSchema.nodeKeys(existingLabels))
+                case SetPropertyItem(propertyKey, variable, setValue) =>
+                  val propertyType = setValue.cypherType
+                  variable.cypherType match {
+                    case CTNode(labels) =>
+                      val allRelevantLabelCombinations = currentSchema.combinationsFor(labels)
+                      val property = if (allRelevantLabelCombinations.size == 1) propertyType else propertyType.nullable
+                      allRelevantLabelCombinations.foldLeft(currentSchema) { case (innerCurrentSchema, combo) =>
+                        innerCurrentSchema.withNodePropertyKeys(combo, PropertyKeys(propertyKey -> property))
+                      }
+                    case CTRelationship(types) =>
+                      val typesToUpdate = if (types.isEmpty) currentSchema.relationshipTypes else types
+                      typesToUpdate.foldLeft(currentSchema) { case (innerCurrentSchema, relType) =>
+                        innerCurrentSchema.withRelationshipPropertyKeys(relType, PropertyKeys(propertyKey -> propertyType))
+                      }
+                    case other => throw IllegalArgumentException("node or relationship to set a property on", other)
+                  }
+              }
+            }
+            val patternGraph = IRPatternGraph[Expr](schema, pattern, setItems)
             val updatedContext = context.withWorkingGraph(patternGraph)
             put[R, IRBuilderContext](updatedContext) >> pure[R, Vector[BlockRef]](Vector.empty)
           }
@@ -317,12 +345,12 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
   // TODO: Support SetLabel
   private def convertSetItem[R: _mayFail : _hasContext](p: ast.SetItem): Eff[R, SetItem[Expr]] = {
     p match {
-      case ast.SetPropertyItem(exp.LogicalProperty(map: exp.Expression, exp.PropertyKeyName(propertyName)), setValue: exp.Expression) =>
+      case ast.SetPropertyItem(exp.LogicalProperty(map: exp.Variable, exp.PropertyKeyName(propertyName)), setValue: exp.Expression) =>
         for {
-          convertedProperty <- convertExpr[R](map)
+          variable <- convertExpr[R](map)
           convertedSetExpr <- convertExpr[R](setValue)
         } yield {
-          val setItem = SetPropertyItem(propertyName, convertedProperty, convertedSetExpr)
+          val setItem = SetPropertyItem(propertyName, variable.asInstanceOf[Var], convertedSetExpr)
           pure[R, SetItem[Expr]](setItem)
           setItem
         }

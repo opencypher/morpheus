@@ -21,4 +21,4 @@ sealed trait SetItem[E]
 
 case class SetLabelItem[E](variable: Var, labels: Seq[String]) extends SetItem[E]
 
-case class SetPropertyItem[E](propertyKey: String, propertyMap: E, setValue: E) extends SetItem[E]
+case class SetPropertyItem[E](propertyKey: String, variable: Var, setValue: E) extends SetItem[E]

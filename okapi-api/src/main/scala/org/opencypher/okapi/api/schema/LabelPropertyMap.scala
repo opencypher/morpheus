@@ -25,6 +25,10 @@ object PropertyKeys {
   type PropertyKeys = Map[String, CypherType]
 
   def empty = Map.empty[String, CypherType]
+
+  def apply(tuple: (String, CypherType)*) = {
+    tuple.toMap
+  }
 }
 
 object LabelPropertyMap {
