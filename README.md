@@ -56,14 +56,21 @@ mvn clean install
 
 
 #### Add the CAPS dependency to your project
-In order to use CAPS add the following dependency to Maven:
+In order to use CAPS add the following dependency:
+
+Maven:
 
 ```
 <dependency>
   <groupId>org.opencypher</groupId>
   <artifactId>spark-cypher</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0.0-alpha02</version>
 </dependency>
+```
+
+sbt:
+```
+libraryDependencies += "org.opencypher" % "spark-cypher" % "1.0.0-alpha02"
 ```
 
 Remember to add `fork in run := true` in your `build.sbt` for scala projects; this is not CAPS
