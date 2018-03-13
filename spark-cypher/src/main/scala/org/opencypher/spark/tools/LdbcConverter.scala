@@ -81,13 +81,13 @@ object LdbcConverter extends App {
     nodes.foreach {
       case (label, nodeDf) =>
         writeNodeSchema(label, nodeDf.schema)
-        nodeDf.write.csv(Paths.get(outputPath, nodesFolder, s"${label.nodeLabel}$dataSuffix").toString)
+        nodeDf.write.csv(Paths.get(outputPath, nodesFolder, s"$label$dataSuffix").toString)
     }
 
     rels.foreach {
       case (relType, relDf) =>
         writeRelSchema(relType, relDf.schema)
-        relDf.write.csv(Paths.get(outputPath, relsFolder, s"${relType.relType}$dataSuffix").toString)
+        relDf.write.csv(Paths.get(outputPath, relsFolder, s"$relType$dataSuffix").toString)
     }
   }
 
@@ -225,7 +225,7 @@ object LdbcConverter extends App {
 
             val newReltype = RelType(
               Label(parsedSourceLabel, sourceSuperType),
-              s"${sourceLabel.toUpperCase}_${relType.relType}_${targetLabel.toUpperCase}",
+              relType.relType,
               Label(parsedTargetLabel, targetSuperType))
 
             val newDf = relDf
@@ -334,7 +334,7 @@ object LdbcConverter extends App {
          |  ]
          |}""".stripMargin
 
-    val writer = new PrintWriter(new FileOutputStream(Paths.get(outputPath, nodesFolder, s"${label.nodeLabel}$schemaSuffix").toString, false))
+    val writer = new PrintWriter(new FileOutputStream(Paths.get(outputPath, nodesFolder, s"$label$schemaSuffix").toString, false))
     writer.write(schemaString)
     writer.close()
   }
@@ -374,20 +374,24 @@ object LdbcConverter extends App {
          |  ]
          |}""".stripMargin
 
-    val writer = new PrintWriter(new FileOutputStream(Paths.get(outputPath, relsFolder, s"${relType.relType}$schemaSuffix").toString, false))
+    val writer = new PrintWriter(new FileOutputStream(Paths.get(outputPath, relsFolder, s"$relType$schemaSuffix").toString, false))
     writer.write(schema)
     writer.close()
   }
 }
 
-case class Label(nodeLabel: String, superType: Option[Label] = None)
+case class Label(nodeLabel: String, superType: Option[Label] = None) {
+  override def toString: String = nodeLabel
+}
 
 object Label {
   def apply(nodeLabel: String, superType: String): Label =
     Label(nodeLabel, Some(Label(superType)))
 }
 
-case class RelType(sourceLabel: Label, relType: String, targetLabel: Label)
+case class RelType(sourceLabel: Label, relType: String, targetLabel: Label) {
+  override def toString: String = s"${sourceLabel.nodeLabel.toUpperCase}_${relType}_${targetLabel.nodeLabel.toUpperCase}"
+}
 
 object RelType {
   def apply(sourceLabel: String, relType: String, targetLabel: String): RelType =
@@ -468,30 +472,30 @@ object StructTypes {
     RelType("Comment", "REPLY_OF", "Post") -> StructType(Seq(StructField("Comment_id", StringType, false), StructField("Post_id", StringType, false))),
     RelType("Forum", "HAS_TAG", "Tag") -> StructType(Seq(StructField("Forum_id", StringType, false), StructField("Tag_id", StringType, false))),
     RelType("Person", "STUDY_AT", "Organisation") -> StructType(Seq(StructField("Person_id", StringType, false), StructField("Organisation_id", StringType, false), StructField("classYear", IntegerType, true))),
-    RelType(Label("Person"), "PERSON_STUDY_AT_UNIVERSITY", Label("University", "Organisation")) -> StructType(Seq(StructField("Person_id", StringType, false), StructField("University_id", StringType, false), StructField("classYear", IntegerType, true))),
+    RelType(Label("Person"), "STUDY_AT", Label("University", "Organisation")) -> StructType(Seq(StructField("Person_id", StringType, false), StructField("University_id", StringType, false), StructField("classYear", IntegerType, true))),
     RelType("Person", "WORK_AT", "Organisation") -> StructType(Seq(StructField("Person_id", StringType, false), StructField("Organisation_id", StringType, false), StructField("workFrom", IntegerType, true))),
-    RelType(Label("Person"), "PERSON_WORK_AT_COMPANY", Label("Company", "Organisation")) -> StructType(Seq(StructField("Person_id", StringType, false), StructField("Company_id", StringType, false), StructField("workFrom", IntegerType, true))),
+    RelType(Label("Person"), "WORK_AT", Label("Company", "Organisation")) -> StructType(Seq(StructField("Person_id", StringType, false), StructField("Company_id", StringType, false), StructField("workFrom", IntegerType, true))),
     RelType("Place", "IS_PART_OF", "Place") -> StructType(Seq(StructField("Place_id0", StringType, false), StructField("Place_id1", StringType, false))),
-    RelType(Label("City", "Place"), "CITY_IS_PART_OF_COUNTRY", Label("Country", "Place")) -> StructType(Seq(StructField("City_id", StringType, false), StructField("Country_id", StringType, false))),
-    RelType(Label("Country", "Place"), "COUNTRY_IS_PART_OF_CONTINENT", Label("Continent", "Place")) -> StructType(Seq(StructField("Country_id", StringType, false), StructField("Continent_id", StringType, false))),
+    RelType(Label("City", "Place"), "IS_PART_OF", Label("Country", "Place")) -> StructType(Seq(StructField("City_id", StringType, false), StructField("Country_id", StringType, false))),
+    RelType(Label("Country", "Place"), "IS_PART_OF", Label("Continent", "Place")) -> StructType(Seq(StructField("Country_id", StringType, false), StructField("Continent_id", StringType, false))),
     RelType("Forum", "CONTAINER_OF", "Post") -> StructType(Seq(StructField("Forum_id", StringType, false), StructField("Post_id", StringType, false))),
     RelType("Person", "HAS_INTEREST", "Tag") -> StructType(Seq(StructField("Person_id", StringType, false), StructField("Tag_id", StringType, false))),
     RelType("Comment", "HAS_TAG", "Tag") -> StructType(Seq(StructField("Comment_id", StringType, false), StructField("Tag_id", StringType, false))),
     RelType("Comment", "REPLY_OF", "Comment") -> StructType(Seq(StructField("Comment_id0", StringType, false), StructField("Comment_id1", StringType, false))),
     RelType("Person", "KNOWS", "Person") -> StructType(Seq(StructField("Person_id0", StringType, false), StructField("Person_id1", StringType, false), StructField("creationDate", LongType, true))),
     RelType("Comment", "IS_LOCATED_IN", "Place") -> StructType(Seq(StructField("Comment_id", StringType, false), StructField("Place_id", StringType, false))),
-    RelType(Label("Comment"), "COMMENT_IS_LOCATED_IN_COUNTRY", Label("Country", "Place")) -> StructType(Seq(StructField("Comment_id", StringType, false), StructField("Country_id", StringType, false))),
+    RelType(Label("Comment"), "IS_LOCATED_IN", Label("Country", "Place")) -> StructType(Seq(StructField("Comment_id", StringType, false), StructField("Country_id", StringType, false))),
     RelType("Forum", "HAS_MODERATOR", "Person") -> StructType(Seq(StructField("Forum_id", StringType, false), StructField("Person_id", StringType, false))),
     RelType("Tag", "HAS_TYPE", "TagClass") -> StructType(Seq(StructField("Tag_id", StringType, false), StructField("TagClass_id", StringType, false))),
     RelType("Post", "HAS_CREATOR", "Person") -> StructType(Seq(StructField("Post_id", StringType, false), StructField("Person_id", StringType, false))),
     RelType("Person", "LIKES", "Comment") -> StructType(Seq(StructField("Person_id", StringType, false), StructField("Comment_id", StringType, false), StructField("creationDate", LongType, true))),
     RelType("Post", "IS_LOCATED_IN", "Place") -> StructType(Seq(StructField("Post_id", StringType, false), StructField("Place_id", StringType, false))),
-    RelType(Label("Post"), "POST_IS_LOCATED_IN_COUNTRY", Label("Country", "Place")) -> StructType(Seq(StructField("Post_id", StringType, false), StructField("Country_id", StringType, false))),
+    RelType(Label("Post"), "IS_LOCATED_IN", Label("Country", "Place")) -> StructType(Seq(StructField("Post_id", StringType, false), StructField("Country_id", StringType, false))),
     RelType("Organisation", "IS_LOCATED_IN", "Place") -> StructType(Seq(StructField("Organisation_id", StringType, false), StructField("Place_id", StringType, false))),
-    RelType(Label("University", "Organisation"), "UNIVERSITY_IS_LOCATED_IN_CITY", Label("City", "Place")) -> StructType(Seq(StructField("University_id", StringType, false), StructField("City_id", StringType, false))),
-    RelType(Label("Company", "Organisation"), "COMPANY_IS_LOCATED_IN_COUNTRY", Label("Country", "Place")) -> StructType(Seq(StructField("Company_id", StringType, false), StructField("Country_id", StringType, false))),
+    RelType(Label("University", "Organisation"), "IS_LOCATED_IN", Label("City", "Place")) -> StructType(Seq(StructField("University_id", StringType, false), StructField("City_id", StringType, false))),
+    RelType(Label("Company", "Organisation"), "IS_LOCATED_IN", Label("Country", "Place")) -> StructType(Seq(StructField("Company_id", StringType, false), StructField("Country_id", StringType, false))),
     RelType("Person", "IS_LOCATED_IN", "Place") -> StructType(Seq(StructField("Person_id", StringType, false), StructField("Place_id", StringType, false))),
-    RelType(Label("Person"), "PERSON_IS_LOCATED_IN_CITY", Label("City", "Place")) -> StructType(Seq(StructField("Person_id", StringType, false), StructField("City_id", StringType, false))),
+    RelType(Label("Person"), "IS_LOCATED_IN", Label("City", "Place")) -> StructType(Seq(StructField("Person_id", StringType, false), StructField("City_id", StringType, false))),
     RelType("TagClass", "IS_SUBCLASS_OF", "TagClass") -> StructType(Seq(StructField("TagClass_id0", StringType, false), StructField("TagClass_id1", StringType, false)))
   )
 
