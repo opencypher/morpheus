@@ -82,7 +82,7 @@ object TestPropertyGraphFactory extends PropertyGraphFactory {
 
   def processPatternElement(patternElement: ASTNode): Result[CypherEntity[Long]] = {
     patternElement match {
-      case NodePattern(Some(variable), labels, props) =>
+      case NodePattern(Some(variable), labels, props, None) =>
         for {
           properties <- props match {
             case Some(expr: MapExpression) => extractProperties(expr)
@@ -105,7 +105,7 @@ object TestPropertyGraphFactory extends PropertyGraphFactory {
           }
         } yield node
 
-      case RelationshipChain(first, RelationshipPattern(Some(variable), relType, None, props, direction, _), third) =>
+      case RelationshipChain(first, RelationshipPattern(Some(variable), relType, None, props, direction, None, _), third) =>
         for {
           source <- processPatternElement(first)
           sourceId <- pure[ParsingContext, Long](source match {

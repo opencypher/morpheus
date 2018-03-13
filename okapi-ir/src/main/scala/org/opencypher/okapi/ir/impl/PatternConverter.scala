@@ -58,7 +58,7 @@ final class PatternConverter {
 
   private def convertElement(p: ast.PatternElement, knownTypes: Map[ast.Expression, CypherType]): Result[IRField] =
     p match {
-      case np @ ast.NodePattern(vOpt, labels: Seq[ast.LabelName], None) =>
+      case np @ ast.NodePattern(vOpt, labels: Seq[ast.LabelName], None, None) =>
         val labelSet = labels.map(_.name).toSet
         val v = vOpt match {
           case Some(v) => Var(v.name)(knownTypes.getOrElse(v, CTNode(labelSet)))
@@ -69,7 +69,7 @@ final class PatternConverter {
           _ <- modify[Pattern[Expr]](_.withEntity(entity))
         } yield entity
 
-      case rc @ ast.RelationshipChain(left, ast.RelationshipPattern(eOpt, types, None, None, dir, _), right) =>
+      case rc @ ast.RelationshipChain(left, ast.RelationshipPattern(eOpt, types, None, None, dir, None, _), right) =>
         val typeSet = types.map(_.name).toSet
         val rel = eOpt match {
           case Some(v) => Var(v.name)(knownTypes.getOrElse(v, CTRelationship(typeSet)))
@@ -103,7 +103,7 @@ final class PatternConverter {
 
       case rc @ ast.RelationshipChain(
             left,
-            ast.RelationshipPattern(eOpt, types, Some(Some(range)), None, dir, _),
+            ast.RelationshipPattern(eOpt, types, Some(Some(range)), None, dir, None, _),
             right) =>
         val typeSet = types.map(_.name).toSet
         val rel = eOpt match {

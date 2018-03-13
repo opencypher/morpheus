@@ -104,6 +104,14 @@
         <enabled>true</enabled>
       </snapshots>
     </repository>
+    <repository>
+      <id>snapshots</id>
+      <name>neo-snapshots</name>
+      <url>https://neo.jfrog.io/neo/opencypher-public</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
   </repositories>
 
   <packaging>pom</packaging>
