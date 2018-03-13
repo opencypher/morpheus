@@ -25,7 +25,7 @@ import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.api.block.SourceBlock
-import org.opencypher.okapi.ir.api.expr.Expr
+import org.opencypher.okapi.ir.api.expr.{Expr, Var}
 import org.opencypher.okapi.ir.api.pattern.Pattern
 import org.opencypher.okapi.ir.api.{IRExternalGraph, IRField, IRGraph}
 import org.opencypher.okapi.ir.impl.typer.exception.TypingException
@@ -108,13 +108,14 @@ object IRBuilderContext {
     parameters: CypherMap,
     semState: SemanticState,
     ambientGraph: IRExternalGraph,
-    resolver: Namespace => PropertyGraphDataSource
+    resolver: Namespace => PropertyGraphDataSource,
+    fieldsFromDrivingTable: Set[Var] = Set.empty
   ): IRBuilderContext = {
     val registry = BlockRegistry.empty[Expr]
     val block = SourceBlock[Expr](ambientGraph)
     val (_, reg) = registry.register(block)
 
-    IRBuilderContext(
+    val context = IRBuilderContext(
       query,
       parameters,
       ambientGraph,
@@ -123,5 +124,7 @@ object IRBuilderContext {
       Map(ambientGraph.name -> ambientGraph.qualifiedName),
       List(ambientGraph),
       resolver)
+
+    context.withFields(fieldsFromDrivingTable.map(v => IRField(v.name)(v.cypherType)))
   }
 }

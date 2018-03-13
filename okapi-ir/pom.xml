@@ -29,7 +29,7 @@
     <!-- Neo4j -->
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-frontend-3.4</artifactId>
+      <artifactId>openCypher-frontend-1</artifactId>
       <version>${dep.neo4j.version}</version>
     </dependency>
 

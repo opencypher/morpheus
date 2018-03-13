@@ -60,18 +60,21 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
   override def cypherOnGraph(graph: PropertyGraph, query: String, queryParameters: CypherMap, maybeDrivingTable: Option[CypherRecords]): CypherResult = {
     val ambientGraphNew = mountAmbientGraph(graph)
 
-    val (stmt, extractedLiterals, semState) = time("AST construction")(parser.process(query)(CypherParser.defaultContext))
+    val drivingTable = maybeDrivingTable.getOrElse(CAPSRecords.unit())
+    val inputFields = drivingTable.asCaps.header.internalHeader.fields
+
+    val (stmt, extractedLiterals, semState) = time("AST construction")(parser.process(query, inputFields)(CypherParser.defaultContext))
 
     val extractedParameters: CypherMap = extractedLiterals.mapValues(v => CypherValue(v))
     val allParameters = queryParameters ++ extractedParameters
 
     logStageProgress("IR translation ...", newLine = false)
-    val irBuilderContext = IRBuilderContext.initial(query, allParameters, semState, ambientGraphNew, dataSource)
+    val irBuilderContext = IRBuilderContext.initial(query, allParameters, semState, ambientGraphNew, dataSource, inputFields)
     val ir = time("IR translation")(IRBuilder(stmt)(irBuilderContext))
     logStageProgress("Done!")
 
     logStageProgress("Logical planning ...", newLine = false)
-    val logicalPlannerContext = LogicalPlannerContext(graph.schema, Set.empty, ir.model.graphs.mapValues(_.namespace).andThen(dataSource), ambientGraphNew)
+    val logicalPlannerContext = LogicalPlannerContext(graph.schema, inputFields, ir.model.graphs.mapValues(_.namespace).andThen(dataSource), ambientGraphNew)
     val logicalPlan = time("Logical planning")(logicalPlanner(ir)(logicalPlannerContext))
     logStageProgress("Done!")
     if (PrintLogicalPlan.isSet) {
@@ -87,7 +90,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
       println(optimizedLogicalPlan.pretty())
     }
 
-    plan(CAPSRecords.unit(), allParameters, optimizedLogicalPlan)
+    plan(drivingTable, allParameters, optimizedLogicalPlan)
   }
 
   override def sql(query: String): CAPSRecords =

@@ -15,13 +15,11 @@
  */
 package org.opencypher.okapi.ir.impl.parse.rewriter
 
-import org.neo4j.cypher.internal.compiler.v3_4.SyntaxExceptionCreator
-import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.opencypher.okapi.ir.test.support.RewriterTestSupport
 import org.opencypher.okapi.test.BaseTestSuite
 
 class normalizeReturnClausesTest extends BaseTestSuite with RewriterTestSupport {
-  override val rewriter = normalizeReturnClauses(new SyntaxExceptionCreator("<Query>", Some(InputPosition.NONE)))
+  override val rewriter = normalizeReturnClauses
 
   test("do not rewrite unaliased return items of variables") {
     assertRewrite(

@@ -20,9 +20,10 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters._
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_4.phases._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics._
+import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.ir.impl.exception.ParsingException
-import org.opencypher.okapi.ir.api.util.CompilationStage
 import org.opencypher.okapi.ir.impl.parse.rewriter.OkapiRewriting
+import org.opencypher.okapi.ir.impl.typer.toFrontendType
 
 object CypherParser extends CypherParser {
   implicit object defaultContext extends BlankBaseContext {
@@ -35,14 +36,13 @@ object CypherParser extends CypherParser {
   }
 }
 
-trait CypherParser extends CompilationStage[String, Statement, BaseContext] {
+trait CypherParser {
 
-  override type Out = (Statement, Map[String, Any], SemanticState)
+  def apply(query: String)(implicit context: BaseContext): Statement = process(query)._1
 
-  override def extract(output: (Statement, Map[String, Any], SemanticState)): Statement = output._1
-
-  override def process(query: String)(implicit context: BaseContext): (Statement, Map[String, Any], SemanticState) = {
-    val startState = BaseStateImpl(query, None, null)
+  def process(query: String, drivingTableFields: Set[Var] = Set.empty)(implicit context: BaseContext): (Statement, Map[String, Any], SemanticState) = {
+    val fieldsWithFrontendTypes = drivingTableFields.map(v => v.name -> toFrontendType(v.cypherType)).toMap
+    val startState = InitialState(query, None, null, fieldsWithFrontendTypes)
     val endState = pipeLine.transform(startState, context)
     val params = endState.extractedParams
     val rewritten = endState.statement

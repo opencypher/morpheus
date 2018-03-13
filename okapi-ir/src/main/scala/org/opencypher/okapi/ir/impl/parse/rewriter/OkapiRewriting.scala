@@ -27,8 +27,8 @@ case object OkapiRewriting extends Phase[BaseContext, BaseState, BaseState] {
 
     val rewrittenStatement = term.endoRewrite(
       inSequence(
-        normalizeCaseExpression(context.exceptionCreator),
-        normalizeReturnClauses(context.exceptionCreator),
+        normalizeCaseExpression,
+        normalizeReturnClauses,
         extractSubqueryFromPatternExpression(context.exceptionCreator),
         CNFNormalizer.instance(context)
       ))

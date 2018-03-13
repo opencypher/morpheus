@@ -80,7 +80,7 @@
     <dep.eff.version>5.0.0</dep.eff.version>
     <dep.hadoop.version>2.7.0</dep.hadoop.version>
     <dep.multiset.version>0.4</dep.multiset.version>
-    <dep.neo4j.version>3.4.0-alpha05</dep.neo4j.version>
+    <dep.neo4j.version>3.4.0-alpha09</dep.neo4j.version>
     <dep.netty.version>4.1.8.Final</dep.netty.version>
     <dep.neo4j.driver.version>1.4.2</dep.neo4j.driver.version>
     <dep.spark.version>2.2.0</dep.spark.version>
@@ -91,6 +91,7 @@
     <dep.junit.platform.version>1.0.2</dep.junit.platform.version>
     <dep.junit.vintage.version>4.12.2</dep.junit.vintage.version>
     <dep.mockito.version>1.10.19</dep.mockito.version>
+    <dep.neo4j.harness.version>3.3.3</dep.neo4j.harness.version>
     <dep.scalatest.version>3.0.4</dep.scalatest.version>
   </properties>
 
@@ -464,7 +465,7 @@
     <!-- Tests -->
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-frontend-3.4</artifactId>
+      <artifactId>openCypher-frontend-1</artifactId>
       <version>${dep.neo4j.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
@@ -481,7 +482,7 @@
     <dependency>
       <groupId>org.neo4j.test</groupId>
       <artifactId>neo4j-harness</artifactId>
-      <version>${dep.neo4j.version}</version>
+      <version>${dep.neo4j.harness.version}</version>
       <scope>test</scope>
     </dependency>
 
