@@ -118,4 +118,8 @@ case class CAPSSchema private[schema](schema: Schema) extends Schema {
   override def forRelationship(relType: CTRelationship): Schema = schema.forRelationship(relType)
 
   override def dropPropertiesFor(combo: Set[String]) = schema.dropPropertiesFor(combo)
+
+  override def withOverwrittenNodePropertyKeys(nodeLabels: Set[String], propertyKeys: PropertyKeys) = schema.withOverwrittenNodePropertyKeys(nodeLabels, propertyKeys)
+
+  override def withOverwrittenRelationshipPropertyKeys(relType: String, propertyKeys: PropertyKeys) = schema.withOverwrittenRelationshipPropertyKeys(relType, propertyKeys)
 }

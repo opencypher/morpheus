@@ -174,7 +174,7 @@ trait Schema {
     * @param keys       the typed property keys to associate with the labels
     * @return a copy of the Schema with the provided new data
     */
-  def withNodePropertyKeys(nodeLabels: Set[String], keys: PropertyKeys): Schema
+  def withNodePropertyKeys(nodeLabels: Set[String], keys: PropertyKeys = PropertyKeys.empty): Schema
 
   /**
     * @see [[org.opencypher.okapi.api.schema.Schema#withNodePropertyKeys(scala.collection.Seq, scala.collection.Seq)]]
@@ -252,6 +252,16 @@ trait Schema {
     * @return sub-schema for `relType`
     */
   private[opencypher] def forRelationship(relType: CTRelationship): Schema
+
+  /**
+    * Returns the updated schema, but overwrites any existing node property keys for the given labels.
+    */
+  private[opencypher] def withOverwrittenNodePropertyKeys(nodeLabels: Set[String], propertyKeys: PropertyKeys): Schema
+
+  /**
+    * Returns the updated schema, but overwrites any existing relationship property keys for the given type.
+    */
+  private[opencypher] def withOverwrittenRelationshipPropertyKeys(relType: String, propertyKeys: PropertyKeys): Schema
 
   def toString: String
 

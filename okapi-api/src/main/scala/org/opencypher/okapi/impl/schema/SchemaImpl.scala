@@ -268,4 +268,12 @@ final case class SchemaImpl(labelPropertyMap: LabelPropertyMap, relTypePropertyM
   override private[opencypher] def dropPropertiesFor(combo: Set[String]) = {
     copy(labelPropertyMap - combo)
   }
+
+  override private[opencypher] def withOverwrittenNodePropertyKeys(nodeLabels: Set[String], propertyKeys: PropertyKeys) = {
+    copy(labelPropertyMap = labelPropertyMap.register(nodeLabels, propertyKeys))
+  }
+
+  override private[opencypher] def withOverwrittenRelationshipPropertyKeys(relType: String, propertyKeys: PropertyKeys) = {
+    copy(relTypePropertyMap = relTypePropertyMap.register(relType, propertyKeys))
+  }
 }

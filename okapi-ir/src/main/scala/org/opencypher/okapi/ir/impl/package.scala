@@ -53,8 +53,8 @@ package object impl {
     }
 
     private def fromField(entity: IRField): Schema = entity.cypherType match {
-      case n: CTNode =>
-        schema.fromNodeEntity(n.labels)
+      case CTNode(labels) =>
+        schema.fromNodeEntity(labels)
       case r: CTRelationship =>
         schema.forRelationship(r)
       case x => throw IllegalArgumentException("entity type", x)

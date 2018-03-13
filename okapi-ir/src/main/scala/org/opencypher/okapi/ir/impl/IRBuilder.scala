@@ -181,12 +181,12 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
                       val allRelevantLabelCombinations = currentSchema.combinationsFor(labels)
                       val property = if (allRelevantLabelCombinations.size == 1) propertyType else propertyType.nullable
                       allRelevantLabelCombinations.foldLeft(currentSchema) { case (innerCurrentSchema, combo) =>
-                        innerCurrentSchema.withNodePropertyKeys(combo, PropertyKeys(propertyKey -> property))
+                        innerCurrentSchema.withOverwrittenNodePropertyKeys(combo, PropertyKeys(propertyKey -> property))
                       }
                     case CTRelationship(types) =>
                       val typesToUpdate = if (types.isEmpty) currentSchema.relationshipTypes else types
                       typesToUpdate.foldLeft(currentSchema) { case (innerCurrentSchema, relType) =>
-                        innerCurrentSchema.withRelationshipPropertyKeys(relType, PropertyKeys(propertyKey -> propertyType))
+                        innerCurrentSchema.withOverwrittenRelationshipPropertyKeys(relType, PropertyKeys(propertyKey -> propertyType))
                       }
                     case other => throw IllegalArgumentException("node or relationship to set a property on", other)
                   }
