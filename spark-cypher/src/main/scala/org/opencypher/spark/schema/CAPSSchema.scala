@@ -116,4 +116,6 @@ case class CAPSSchema private[schema](schema: Schema) extends Schema {
   override def forNodeScan(labelConstraints: Set[String]): Schema = schema.forNodeScan(labelConstraints)
 
   override def forRelationship(relType: CTRelationship): Schema = schema.forRelationship(relType)
+
+  override def dropPropertiesFor(combo: Set[String]) = schema.dropPropertiesFor(combo)
 }

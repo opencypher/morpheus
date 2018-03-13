@@ -264,4 +264,8 @@ final case class SchemaImpl(labelPropertyMap: LabelPropertyMap, relTypePropertyM
     }
 
   override def isEmpty: Boolean = this == Schema.empty
+
+  override private[opencypher] def dropPropertiesFor(combo: Set[String]) = {
+    copy(labelPropertyMap - combo)
+  }
 }

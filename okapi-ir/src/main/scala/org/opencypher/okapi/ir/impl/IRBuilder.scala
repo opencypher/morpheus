@@ -170,7 +170,9 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
                     case other => throw UnsupportedOperationException(s"Setting a labels on something that is not a node: $other")
                   }
                   val labelsAfterSet = existingLabels ++ labels
-                  currentSchema.withNodePropertyKeys(labelsAfterSet, patternSchema.nodeKeys(existingLabels))
+                    currentSchema
+                      .dropPropertiesFor(existingLabels)
+                      .withNodePropertyKeys(labelsAfterSet, patternSchema.nodeKeys(existingLabels))
                 case SetPropertyItem(propertyKey, variable, setValue) =>
                   val propertyType = setValue.cypherType
                   variable.cypherType match {
@@ -342,19 +344,26 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
     } yield result
   }
 
-  // TODO: Support SetLabel
   private def convertSetItem[R: _mayFail : _hasContext](p: ast.SetItem): Eff[R, SetItem[Expr]] = {
     p match {
       case ast.SetPropertyItem(exp.LogicalProperty(map: exp.Variable, exp.PropertyKeyName(propertyName)), setValue: exp.Expression) =>
         for {
           variable <- convertExpr[R](map)
           convertedSetExpr <- convertExpr[R](setValue)
-        } yield {
-          val setItem = SetPropertyItem(propertyName, variable.asInstanceOf[Var], convertedSetExpr)
-          pure[R, SetItem[Expr]](setItem)
-          setItem
-        }
-      case unsupported => throw new UnsupportedOperationException(s"conversion of $unsupported")
+          result <- {
+            val setItem = SetPropertyItem(propertyName, variable.asInstanceOf[Var], convertedSetExpr)
+            pure[R, SetItem[Expr]](setItem)
+          }
+        } yield result
+      case ast.SetLabelItem(expr, labels) =>
+        for {
+          variable <- convertExpr[R](expr)
+          result <- {
+            val setLabel: SetItem[Expr] = SetLabelItem(variable.asInstanceOf[Var], labels.map(_.name).toSet)
+            pure[R, SetItem[Expr]](setLabel)
+          }
+        } yield result
+      case unsupported => throw UnsupportedOperationException(s"conversion of $unsupported")
     }
   }
 

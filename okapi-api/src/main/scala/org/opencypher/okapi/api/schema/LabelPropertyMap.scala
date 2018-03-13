@@ -71,6 +71,15 @@ final case class LabelPropertyMap(map: Map[Set[String], PropertyKeys]) {
   def ++(other: LabelPropertyMap): LabelPropertyMap = copy(map |+| other.map)
 
   /**
+    * Returns the label property map with the given label combination `combo` removed.
+    * @param combo label combination to remove
+    * @return updated label property map
+    */
+  def -(combo: Set[String]): LabelPropertyMap = {
+    copy(map - combo)
+  }
+
+  /**
     * Returns a LabelPropertyMap that contains all label combinations which include one or more of the specified labels.
     *
     * @param knownLabels labels for which the properties should be extracted

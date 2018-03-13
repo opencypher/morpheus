@@ -63,6 +63,25 @@ class IrBuilderTest extends IrTestSuite {
     }
   }
 
+  it("computes a pattern graph schema correctly - 2 creates and a set") {
+    val query =
+      """
+        |CONSTRUCT  {
+        |  CREATE (a :A)
+        |  CREATE (b :B:C)
+        |  SET a :D
+        |}
+        |RETURN GRAPH""".stripMargin
+
+    query.model.ensureThat { (model, _) =>
+      model.result match {
+        case GraphResultBlock(_, IRPatternGraph(schema, _, _)) =>
+          schema should equal(Schema.empty.withNodePropertyKeys("A", "D")().withNodePropertyKeys("B", "C")())
+        case _ => fail("no matching graph result found")
+      }
+    }
+  }
+
   test("match node and return it") {
     "MATCH (a:Person) RETURN a".model.ensureThat { (model, globals) =>
       val loadRef = model.findExactlyOne {

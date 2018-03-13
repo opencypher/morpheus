@@ -222,6 +222,13 @@ trait Schema {
   def ++(other: Schema): Schema
 
   /**
+    * Returns this schema with the properties for `combo` removed.
+    * @param combo label combination for which properties are removed
+    * @return updated schema
+    */
+  private[opencypher] def dropPropertiesFor(combo: Set[String]): Schema
+
+  /**
     * Given the current schema, construct a new Schema for an entity with a given set of labels.
     * If the set of labels is empty, this means that the resulting schema will only have properties present on nodes
     * that have no labels.
