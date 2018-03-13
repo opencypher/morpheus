@@ -134,9 +134,9 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
 
     result.getGraph.nodes("n").asCaps.data.show()
 
-//    result.getGraph.cypher("MATCH (a:A) RETURN a.name").getRecords.iterator.toBag  should equal(Bag(
-//      CypherMap("n.name" -> "Mats")
-//    ))
+    result.getGraph.cypher("MATCH (a:A) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
+      CypherMap("a.name" -> "Mats")
+    ))
   }
 
   it("should generate IDs") {
