@@ -20,7 +20,6 @@ import cats.data.State
 import cats.data.State._
 import cats.instances.list._
 import cats.syntax.flatMap._
-import org.neo4j.cypher.internal.util.v3_4.Ref
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 import org.opencypher.okapi.api.types.{CTList, CTNode, CTRelationship, CypherType}
@@ -57,11 +56,10 @@ final class PatternConverter {
     case ast.NamedPatternPart(_, part) => convertPart(knownTypes)(part)
   }
 
-  private def convertEquivalenceModel(m: ast.EquivalenceModel, knownTypes: Map[ast.Expression, CypherType], fallbackCypherType: CypherType): EquivalenceModel = {
+  private def convertEquivalenceModel(m: ast.EquivalenceModel, knownTypes: Map[ast.Expression, CypherType]): EquivalenceModel = {
     m match {
-      case ast.TildeModel(v) => TildeModel(Var(v.name)(knownTypes.getOrElse(v, fallbackCypherType)))
-
-      case ast.AtModel(v) => AtModel(Var(v.name)(knownTypes.getOrElse(v, fallbackCypherType)))
+      case ast.TildeModel(v) => TildeModel(Var(v.name)(knownTypes(v)))
+      case ast.AtModel(v) => AtModel(Var(v.name)(knownTypes(v)))
     }
   }
 
@@ -69,17 +67,27 @@ final class PatternConverter {
     p match {
 
       case np @ ast.NodePattern(vOpt, labels: Seq[ast.LabelName], None, equivalenceModelOpt) =>
-        val labelSet = labels.map(_.name).toSet
-        val equivalence = equivalenceModelOpt.map(convertEquivalenceModel(_, knownTypes, CTNode))
-        val copiedLabels = equivalence match {
+        // labels within CREATE patterns, e.g. CREATE (a:Foo), labels for MATCH clauses are rewritten to WHERE
+        val patternLabels = labels.map(_.name).toSet
 
-        }
-        val v = vOpt match {
-          case Some(v) => Var(v.name)(knownTypes.getOrElse(v, CTNode(labelSet)))
-          case None    => FreshVariableNamer(np.position.offset, CTNode(labelSet))
+        // labels for ~ / @ are extracted from the referred variable
+        val equivalence = equivalenceModelOpt.map(convertEquivalenceModel(_, knownTypes))
+        val equivalenceLabels = equivalence.map(_.v.cypherType.asInstanceOf[CTNode].labels).getOrElse(Set.empty)
+
+        // labels defined in outside scope, passed in by IRBuilder
+        val knownLabels = vOpt.map(expr => knownTypes.get(expr) match {
+          case Some(CTNode(l)) => l
+          case _ => Set.empty
+        }).getOrElse(Set.empty)
+
+        val allLabels = patternLabels ++ equivalenceLabels ++ knownLabels
+
+        val nodeVar = vOpt match {
+          case Some(v) => Var(v.name)(CTNode(allLabels))
+          case None    => FreshVariableNamer(np.position.offset, CTNode(allLabels))
         }
         for {
-          entity <- pure(IRField(v.name)(v.cypherType))
+          entity <- pure(IRField(nodeVar.name)(nodeVar.cypherType))
           _ <- modify[Pattern[Expr]](_.withEntity(entity, equivalence))
         } yield entity
 
@@ -93,7 +101,7 @@ final class PatternConverter {
           source <- convertElement(left, knownTypes)
           target <- convertElement(right, knownTypes)
           rel <- pure(IRField(rel.name)(rel.cypherType))
-          equivalence = equivalenceModelOpt.map(convertEquivalenceModel(_, knownTypes, CTRelationship))
+          equivalence = equivalenceModelOpt.map(convertEquivalenceModel(_, knownTypes))
           _ <- modify[Pattern[Expr]] { given =>
             val registered = given.withEntity(rel, equivalence)
 
@@ -129,7 +137,7 @@ final class PatternConverter {
           source <- convertElement(left, knownTypes)
           target <- convertElement(right, knownTypes)
           rel <- pure(IRField(rel.name)(CTList(rel.cypherType)))
-          equivalence = equivalenceModelOpt.map(convertEquivalenceModel(_, knownTypes, CTRelationship))
+          equivalence = equivalenceModelOpt.map(convertEquivalenceModel(_, knownTypes))
           _ <- modify[Pattern[Expr]] { given =>
             val registered = given.withEntity(rel, equivalence)
 

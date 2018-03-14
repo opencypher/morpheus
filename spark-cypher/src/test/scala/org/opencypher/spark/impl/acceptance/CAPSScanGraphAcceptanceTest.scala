@@ -187,4 +187,25 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
     val df3 = df2.withColumn("ID2", monotonically_increasing_id)
     df3.show
   }
+
+  it("should pick up labels of the outer match") {
+    val query =
+      """|MATCH (m:Person)
+         |CONSTRUCT {
+         |  CREATE (a~m)
+         |}
+         |RETURN GRAPH""".stripMargin
+
+    val result = testGraph1.cypher(query)
+
+    result.getRecords.toMaps shouldBe empty
+
+    result.getGraph.schema.labels should equal(Set("Person"))
+
+    result.getGraph.schema should equal(Schema.empty.withNodePropertyKeys(Set("Person"), PropertyKeys("name" -> CTString)).asCaps)
+
+    result.getGraph.cypher("MATCH (a:Person) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
+      CypherMap("a.name" -> "Mats")
+    ))
+  }
 }
