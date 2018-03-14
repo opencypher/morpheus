@@ -208,4 +208,30 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
       CypherMap("a.name" -> "Mats")
     ))
   }
+
+  it("should tilde copy a relationship") {
+    val query =
+      """|CONSTRUCT {
+         |  CREATE ()-[r:FOO]->()
+         |  SET r.val = 42
+         |}
+         |CONSTRUCT {
+         |  CREATE ()-[s~r]->()
+         |}
+         |RETURN GRAPH""".stripMargin
+
+    val result = testGraph1.cypher(query)
+
+    result.getRecords.toMaps shouldBe empty
+
+    result.getGraph.schema.relationshipTypes should equal(Set("FOO"))
+
+    result.getGraph.schema should equal(Schema.empty
+        .withNodePropertyKeys()()
+      .withRelationshipPropertyKeys("FOO", PropertyKeys("val" -> CTInteger)).asCaps)
+
+    result.getGraph.cypher("MATCH ()-[r]->() RETURN r.val").getRecords.iterator.toBag should equal(Bag(
+      CypherMap("r.val" -> 42)
+    ))
+  }
 }
