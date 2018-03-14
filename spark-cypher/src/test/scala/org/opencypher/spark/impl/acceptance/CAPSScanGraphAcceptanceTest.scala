@@ -17,13 +17,13 @@ package org.opencypher.spark.impl.acceptance
 
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CTString
+import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
 import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.PrintPhysicalPlan
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSPatternGraph
 import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
-
 import org.opencypher.spark.schema.CAPSSchema._
 
 import scala.collection.Bag
@@ -114,12 +114,11 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
     result.getGraph.nodes("n").iterator.length should equal(2)
   }
 
-  // TODO: implement constructing properties
-  it("should construct a node property") {
+  it("should construct a node property from a matched node") {
     val query =
       """|MATCH (m)
          |CONSTRUCT {
-         |  CREATE (a:A)
+         |  CREATE (a :A)
          |  SET a.name = m.name
          |}
          |RETURN GRAPH""".stripMargin
@@ -132,10 +131,29 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
 
     result.getGraph.schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString).asCaps)
 
-    result.getGraph.nodes("n").asCaps.data.show()
-
     result.getGraph.cypher("MATCH (a:A) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
       CypherMap("a.name" -> "Mats")
+    ))
+  }
+
+  it("should construct a node property from a literal") {
+    val query =
+      """|CONSTRUCT {
+         |  CREATE (a :A)
+         |  SET a.name = 'Donald'
+         |}
+         |RETURN GRAPH""".stripMargin
+
+    val result = testGraph1.cypher(query)
+
+    result.getRecords.toMaps shouldBe empty
+
+    result.getGraph.schema.labels should equal(Set("A"))
+
+    result.getGraph.schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString).asCaps)
+
+    result.getGraph.cypher("MATCH (a:A) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
+      CypherMap("a.name" -> "Donald")
     ))
   }
 
