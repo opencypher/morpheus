@@ -325,6 +325,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     graph match {
       // TODO: IRGraph[Expr]
       case p: IRPatternGraph[Expr @ unchecked] =>
+        val equivalences = p.creates.equivalences
+
         val patternEntities = p.creates.fields
         val entitiesInScope = fieldsInScope.map { (v: Var) =>
           IRField(v.name)(v.cypherType)
@@ -336,9 +338,9 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
           e.cypherType match {
             case CTRelationship(relTypes) if relTypes.size == 1 =>
               val connection = p.creates.topology(e)
-              ConstructedRelationship(e, connection.source, connection.target, relTypes.head)
+              ConstructedRelationship(e, connection.source, connection.target, relTypes.head, equivalences.get(e))
             case CTNode(labels) =>
-              ConstructedNode(e, labels.map(Label))
+              ConstructedNode(e, labels.map(Label), equivalences.get(e))
             case _ =>
               throw InvalidCypherTypeException(s"Expected an entity type (CTNode, CTRelationShip), got $e")
           }

@@ -239,7 +239,7 @@ final case class ConstructGraph(
 
     val (columnIdIndex, createdNodes) = nodes.foldLeft(0 -> Set.empty[(SlotContent, Column)]) {
       case ((nextColumnPartitionId, constructedNodes), nextNodeToConstruct) =>
-        (nextColumnPartitionId + 1) -> (constructedNodes ++ constructNode(nextColumnPartitionId, numberOfColumnPartitions, nextNodeToConstruct))
+        (nextColumnPartitionId + 1) -> (constructedNodes ++ constructNode(nextColumnPartitionId, numberOfColumnPartitions, nextNodeToConstruct, constructedTable))
     }
 
     val recordsWithNodes = addEntitiesToRecords(createdNodes, constructedTable)
@@ -268,13 +268,26 @@ final case class ConstructGraph(
     CAPSRecords.verifyAndCreate(newHeader, newData)(constructedTable.caps)
   }
 
-  private def constructNode(columnIdPartition: Int, numberOfColumnPartitions: Int, node: ConstructedNode): Set[(SlotContent, Column)] = {
+  private def constructNode(columnIdPartition: Int, numberOfColumnPartitions: Int, node: ConstructedNode, constructedTable: CAPSRecords): Set[(SlotContent, Column)] = {
     val col = functions.lit(true)
     val labelTuples: Set[(SlotContent, Column)] = node.labels.map { label =>
       ProjectedExpr(HasLabel(node.v, label)(CTBoolean)) -> col
     }
 
-    labelTuples + (OpaqueField(node.v) -> generateId(columnIdPartition, numberOfColumnPartitions))
+    val propertyTuples = node.equivalence match {
+      case Some(TildeModel(origNode)) =>
+        val header = constructedTable.header
+        val origSlots = header.propertySlots(origNode).values
+        val copySlotContents = origSlots.map(_.withOwner(node.v)).map(_.content)
+        val columns = origSlots.map(ColumnName.of).map(constructedTable.data.col)
+        copySlotContents.zip(columns).toSet
+
+      case Some(AtModel(_)) => throw NotImplementedException("AtModel copies")
+
+      case None => Set.empty[(SlotContent, Column)]
+    }
+
+    labelTuples ++ propertyTuples + (OpaqueField(node.v) -> generateId(columnIdPartition, numberOfColumnPartitions))
   }
 
   /**
@@ -295,7 +308,7 @@ final case class ConstructGraph(
   }
 
   private def constructRel(columnIdPartition: Int, numberOfColumnPartitions: Int, toConstruct: ConstructedRelationship, records: CAPSRecords): Set[(SlotContent, Column)] = {
-    val ConstructedRelationship(rel, source, target, typ) = toConstruct
+    val ConstructedRelationship(rel, source, target, typ, equivalence) = toConstruct
     val header = records.header
     val inData = records.data
 

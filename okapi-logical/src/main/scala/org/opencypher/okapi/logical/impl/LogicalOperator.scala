@@ -56,10 +56,9 @@ final case class LogicalPatternGraph(schema: Schema, entities: Set[ConstructedEn
 sealed trait ConstructedEntity {
   def v: Var
 }
+case class ConstructedNode(v: Var, labels: Set[Label], equivalence: Option[EquivalenceModel] = None) extends ConstructedEntity
 
-case class ConstructedNode(v: Var, labels: Set[Label]) extends ConstructedEntity
-
-case class ConstructedRelationship(v: Var, source: Var, target: Var, typ: String) extends ConstructedEntity
+case class ConstructedRelationship(v: Var, source: Var, target: Var, typ: String, equivalence: Option[EquivalenceModel] = None) extends ConstructedEntity
 
 sealed abstract class StackingLogicalOperator extends LogicalOperator {
   def in: LogicalOperator

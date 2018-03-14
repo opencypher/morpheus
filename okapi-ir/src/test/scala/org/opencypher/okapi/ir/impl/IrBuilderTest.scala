@@ -214,8 +214,7 @@ class IrBuilderTest extends IrTestSuite {
     }
   }
 
-  // TODO: Requires equivalence model support
-  ignore("computes a pattern graph schema correctly - 1 create from equivalent") {
+  it("computes a pattern graph schema correctly - 1 create from equivalent") {
     val query =
       """
         |CONSTRUCT {
