@@ -22,7 +22,7 @@ import cats.instances.list._
 import cats.syntax.flatMap._
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, LogicalVariable, RelTypeName, RelationshipChain}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
-import org.neo4j.cypher.internal.v3_4.{expressions, expressions => ast}
+import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 import org.opencypher.okapi.api.types.{CTList, CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.api._
@@ -100,8 +100,9 @@ final class PatternConverter {
           source <- convertElement(left, knownTypes)
           target <- convertElement(right, knownTypes)
           rel <- pure(IRField(rel.name)(rel.cypherType))
+          equivalence = equivalenceModelOpt.map(convertEquivalenceModel(_, knownTypes))
           _ <- modify[Pattern[Expr]] { given =>
-            val registered = given.withEntity(rel)
+            val registered = given.withEntity(rel, equivalence)
 
             Endpoints.apply(source, target) match {
               case ends: IdenticalEndpoints =>
@@ -172,7 +173,7 @@ final class PatternConverter {
     rc: RelationshipChain,
     eOpt: Option[LogicalVariable],
     types: Seq[RelTypeName],
-    equivalenceModelOpt: Option[expressions.EquivalenceModel]): Var = {
+    equivalenceModelOpt: Option[ast.EquivalenceModel]): Var = {
 
     val patternTypes = types.map(_.name).toSet
 

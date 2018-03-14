@@ -97,6 +97,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
   def planNonLeaf(ref: BlockRef, model: QueryModel[Expr], plan: LogicalOperator)(
     implicit context: LogicalPlannerContext): LogicalOperator = {
+    val b = model(ref)
+
     model(ref) match {
       case MatchBlock(_, pattern, where, optional, graph) =>
         val lg = resolveGraph(graph, plan.fields)

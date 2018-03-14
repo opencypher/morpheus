@@ -198,6 +198,9 @@ final case class ConstructGraph(
     val inputTable = prev.records
 
     val entityTable = createEntities(constructItems, inputTable)
+
+    entityTable.data.show()
+
     val tableWithConstructedProperties = setProperties(setItems, entityTable)
 
     // Remove input columns and header
@@ -307,10 +310,10 @@ final case class ConstructGraph(
     monotonically_increasing_id() + functions.lit(columnPartitionOffset)
   }
 
-  private def constructRel(columnIdPartition: Int, numberOfColumnPartitions: Int, toConstruct: ConstructedRelationship, records: CAPSRecords): Set[(SlotContent, Column)] = {
+  private def constructRel(columnIdPartition: Int, numberOfColumnPartitions: Int, toConstruct: ConstructedRelationship, constructedTable: CAPSRecords): Set[(SlotContent, Column)] = {
     val ConstructedRelationship(rel, source, target, typ, equivalence) = toConstruct
-    val header = records.header
-    val inData = records.data
+    val header = constructedTable.header
+    val inData = constructedTable.data
 
     // source and target are present: just copy
     val sourceTuple = {
@@ -333,7 +336,19 @@ final case class ConstructGraph(
       ProjectedExpr(Type(rel)(CTString)) -> col
     }
 
-    Set(sourceTuple, targetTuple, relTuple, typeTuple)
+    val propertyTuples = equivalence match {
+      case Some(TildeModel(origRel)) =>
+        val header = constructedTable.header
+        val origSlots = header.propertySlots(origRel).values
+        val copySlotContents = origSlots.map(_.withOwner(rel)).map(_.content)
+        val columns = origSlots.map(ColumnName.of).map(constructedTable.data.col)
+        copySlotContents.zip(columns).toSet
+      case Some(AtModel(_)) => throw NotImplementedException("AtModel copies")
+
+      case None => Set.empty[(SlotContent, Column)]
+    }
+
+    Set(sourceTuple, targetTuple, relTuple, typeTuple) ++ propertyTuples
   }
 }
 
