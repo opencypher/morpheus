@@ -19,7 +19,7 @@ import java.io.{FileOutputStream, PrintWriter}
 import java.nio.file.{Files, Path, Paths}
 import java.util.stream.Collectors
 
-import org.apache.spark.sql.functions.{concat, lit, monotonically_increasing_id, udf}
+import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, functions}
 import org.opencypher.spark.api.CAPSSession
@@ -68,7 +68,8 @@ object LdbcConverter extends App {
     val relsWithSourceAndTargetLabel = addSourceAndTargetLabel(inputNodes, inputRels)
     val relsWithFinalLabel = splitRelDataFrames(relsWithSourceAndTargetLabel)
 
-    val nodesWithListProperties = addListProperties(inputNodes, inputProps)
+    val nodesWithUpdatedProperties = addProperties(inputNodes)
+    val nodesWithListProperties = addListProperties(nodesWithUpdatedProperties, inputProps)
     val nodesWithFinalLabel = splitNodeDataFrames(nodesWithListProperties)
 
     val nodes = updateNodeIdentifiers(nodesWithFinalLabel)
@@ -127,6 +128,16 @@ object LdbcConverter extends App {
     .option("sep", "|")
     .schema(schema)
     .load(path.toString)
+
+  private def addProperties(nodes: Map[Label, DataFrame]): Map[Label, DataFrame] = nodes.map {
+    case (label, nodeDf) if label.nodeLabel == "Person" =>
+      val birthDay = from_unixtime(nodeDf.col("birthday").divide(lit(1000)))
+      label -> nodeDf
+        .withColumn("birthday_year", year(birthDay))
+        .withColumn("birthday_month", month(birthDay))
+        .withColumn("birthday_day", functions.dayofmonth(birthDay))
+    case (label, nodeDf) => label -> nodeDf
+  }
 
   private def addListProperties(nodes: Map[Label, DataFrame], properties: Map[Property, DataFrame]): Map[Label, DataFrame] = {
     val listToString = udf((items: Seq[String]) => items.mkString(listItemSeparator))
@@ -413,6 +424,7 @@ object PropertyTypes {
     "workFrom" -> "Integer",
     "locationIP" -> "String",
     "birthday_month" -> "Integer",
+    "birthday_year" -> "Integer",
     "lastName" -> "String",
     "firstName" -> "String",
     "speaks" -> "List[String]",
