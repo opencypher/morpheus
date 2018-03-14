@@ -38,14 +38,13 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
 
   override def capsGraphFactory: CAPSTestGraphFactory = CAPSPatternGraphFactory
 
-  // TODO: Rewrite with equivalence merge
-  ignore("project pattern graph") {
+  it("should project pattern graph") {
     val inputGraph = initGraph(`:Person`)
 
     val person = inputGraph.cypher(
       """MATCH (a :Swedish)
         |CONSTRUCT {
-        |  CREATE (a)
+        |  CREATE (b~a)
         |}
         |RETURN GRAPH
       """.stripMargin)

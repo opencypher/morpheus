@@ -20,12 +20,13 @@ import cats.data.State
 import cats.data.State._
 import cats.instances.list._
 import cats.syntax.flatMap._
+import org.neo4j.cypher.internal.util.v3_4.Ref
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 import org.opencypher.okapi.api.types.{CTList, CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.api._
-import org.opencypher.okapi.ir.api.expr.{Expr, Var}
+import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern._
 import org.opencypher.okapi.ir.api.util.FreshVariableNamer
 
@@ -56,20 +57,33 @@ final class PatternConverter {
     case ast.NamedPatternPart(_, part) => convertPart(knownTypes)(part)
   }
 
+  private def convertEquivalenceModel(m: ast.EquivalenceModel, knownTypes: Map[ast.Expression, CypherType], fallbackCypherType: CypherType): EquivalenceModel = {
+    m match {
+      case ast.TildeModel(v) => TildeModel(Var(v.name)(knownTypes.getOrElse(v, fallbackCypherType)))
+
+      case ast.AtModel(v) => AtModel(Var(v.name)(knownTypes.getOrElse(v, fallbackCypherType)))
+    }
+  }
+
   private def convertElement(p: ast.PatternElement, knownTypes: Map[ast.Expression, CypherType]): Result[IRField] =
     p match {
-      case np @ ast.NodePattern(vOpt, labels: Seq[ast.LabelName], None, None) =>
+
+      case np @ ast.NodePattern(vOpt, labels: Seq[ast.LabelName], None, equivalenceModelOpt) =>
         val labelSet = labels.map(_.name).toSet
+        val equivalence = equivalenceModelOpt.map(convertEquivalenceModel(_, knownTypes, CTNode))
+        val copiedLabels = equivalence match {
+
+        }
         val v = vOpt match {
           case Some(v) => Var(v.name)(knownTypes.getOrElse(v, CTNode(labelSet)))
           case None    => FreshVariableNamer(np.position.offset, CTNode(labelSet))
         }
         for {
           entity <- pure(IRField(v.name)(v.cypherType))
-          _ <- modify[Pattern[Expr]](_.withEntity(entity))
+          _ <- modify[Pattern[Expr]](_.withEntity(entity, equivalence))
         } yield entity
 
-      case rc @ ast.RelationshipChain(left, ast.RelationshipPattern(eOpt, types, None, None, dir, None, _), right) =>
+      case rc @ ast.RelationshipChain(left, ast.RelationshipPattern(eOpt, types, None, None, dir, equivalenceModelOpt, _), right) =>
         val typeSet = types.map(_.name).toSet
         val rel = eOpt match {
           case Some(v) => Var(v.name)(knownTypes.getOrElse(v, CTRelationship(typeSet)))
@@ -79,8 +93,9 @@ final class PatternConverter {
           source <- convertElement(left, knownTypes)
           target <- convertElement(right, knownTypes)
           rel <- pure(IRField(rel.name)(rel.cypherType))
+          equivalence = equivalenceModelOpt.map(convertEquivalenceModel(_, knownTypes, CTRelationship))
           _ <- modify[Pattern[Expr]] { given =>
-            val registered = given.withEntity(rel)
+            val registered = given.withEntity(rel, equivalence)
 
             Endpoints.apply(source, target) match {
               case ends: IdenticalEndpoints =>
@@ -103,7 +118,7 @@ final class PatternConverter {
 
       case rc @ ast.RelationshipChain(
             left,
-            ast.RelationshipPattern(eOpt, types, Some(Some(range)), None, dir, None, _),
+            ast.RelationshipPattern(eOpt, types, Some(Some(range)), None, dir, equivalenceModelOpt, _),
             right) =>
         val typeSet = types.map(_.name).toSet
         val rel = eOpt match {
@@ -114,8 +129,9 @@ final class PatternConverter {
           source <- convertElement(left, knownTypes)
           target <- convertElement(right, knownTypes)
           rel <- pure(IRField(rel.name)(CTList(rel.cypherType)))
+          equivalence = equivalenceModelOpt.map(convertEquivalenceModel(_, knownTypes, CTRelationship))
           _ <- modify[Pattern[Expr]] { given =>
-            val registered = given.withEntity(rel)
+            val registered = given.withEntity(rel, equivalence)
 
             val lower = range.lower.map(_.value.intValue()).getOrElse(1)
             val upper =

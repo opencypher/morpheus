@@ -16,6 +16,7 @@
 package org.opencypher.okapi.ir.impl
 
 import org.neo4j.cypher.internal.util.v3_4.Ref
+import org.neo4j.cypher.internal.v3_4.expressions.LogicalVariable
 import org.neo4j.cypher.internal.v3_4.{functions, expressions => ast}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.NotImplementedException
@@ -25,7 +26,7 @@ import org.opencypher.okapi.ir.impl.FunctionUtils._
 
 import scala.language.implicitConversions
 
-final class ExpressionConverter(patternConverter: PatternConverter)(implicit context: IRBuilderContext) {
+final class ExpressionConverter(implicit context: IRBuilderContext) {
 
   implicit def toRef(e: ast.Expression): Ref[ast.Expression] = Ref(e)
 

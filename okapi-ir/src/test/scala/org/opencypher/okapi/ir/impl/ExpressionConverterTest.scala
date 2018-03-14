@@ -222,5 +222,5 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport wit
     _ => mock[PropertyGraphDataSource]
   )
   private def convert(e: ast.Expression): Expr =
-    new ExpressionConverter(new PatternConverter())(testContext).convert(e)(testTypes)
+    new ExpressionConverter()(testContext).convert(e)(testTypes)
 }
