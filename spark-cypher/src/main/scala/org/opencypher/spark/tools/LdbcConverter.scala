@@ -29,27 +29,26 @@ import scala.collection.Map
 
 object LdbcConverter extends App {
 
-  if (args.length != 3) {
-    println("Expecting 'LdbcConverter <spark-master> <input-path> <output-path>'")
+  if (args.length < 2) {
+    println("Expecting 'LdbcConverter <input-path> <output-path> [<spark-master>]'")
   }
 
   private val spark = {
-    val conf = new SparkConf(true)
-    conf.set("spark.sql.codegen.wholeStage", "true")
-    conf.set("spark.sql.shuffle.partitions", "12")
-    conf.set("spark.default.parallelism", "8")
-
-    SparkSession
+    val builder = SparkSession
       .builder()
-      .config(conf)
-      .master(args(0))
+      .config(new SparkConf(true))
       .appName("LDBC SNB Converter")
-      .getOrCreate()
+
+    if (args.length == 3) {
+      builder.master(args(2))
+    }
+
+    builder.getOrCreate()
   }
 
-  private val inputPath = new Path(args(1))
+  private val inputPath = new Path(args(0))
 
-  private val outputPath = new Path(args(2))
+  private val outputPath = new Path(args(1))
 
   private val hdfs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
 
