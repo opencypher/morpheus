@@ -19,10 +19,10 @@ import java.io.{FileOutputStream, PrintWriter}
 import java.nio.file.{Files, Path, Paths}
 import java.util.stream.Collectors
 
+import org.apache.spark.SparkConf
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{DataFrame, functions}
-import org.opencypher.spark.api.CAPSSession
+import org.apache.spark.sql.{DataFrame, SparkSession, functions}
 import org.opencypher.spark.tools.StructTypes._
 
 import scala.collection.JavaConverters._
@@ -30,11 +30,27 @@ import scala.collection.Map
 
 object LdbcConverter extends App {
 
-  private val spark = CAPSSession.local().sparkSession
+  if (args.length != 3) {
+    println("Expecting 'LdbcConverter <spark-master> <input-path> <output-path>'")
+  }
 
-  private val inputPath = "/home/s1ck/Datasets/ldbc_sf1_p006/social_network/"
+  private val spark = {
+    val conf = new SparkConf(true)
+    conf.set("spark.sql.codegen.wholeStage", "true")
+    conf.set("spark.sql.shuffle.partitions", "12")
+    conf.set("spark.default.parallelism", "8")
 
-  private val outputPath = "/home/s1ck/Datasets/ldbc_sf1_p006/caps/"
+    SparkSession
+      .builder()
+      .config(conf)
+      .master(args(0))
+      .appName("LDBC SNB Converter")
+      .getOrCreate()
+  }
+
+  private val inputPath = args(1)
+
+  private val outputPath = args(2)
 
   private val nodesFolder = "nodes"
 
@@ -60,7 +76,8 @@ object LdbcConverter extends App {
 
   convert()
 
-  def convert(): Unit = {
+  private def convert(): Unit = {
+
     val inputNodes = getDataFrames("nodes", getLabelKey)
     val inputRels = getDataFrames("relationships", getTypeKey)
     val inputProps = getDataFrames("properties", getPropertyKey)
