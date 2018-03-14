@@ -15,8 +15,8 @@
  */
 package org.opencypher.spark.impl.acceptance
 
-import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.CTString
+import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
+import org.opencypher.okapi.api.types.{CTInteger, CTString}
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
@@ -151,6 +151,28 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
     result.getGraph.schema.labels should equal(Set("A"))
 
     result.getGraph.schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString).asCaps)
+
+    result.getGraph.cypher("MATCH (a:A) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
+      CypherMap("a.name" -> "Donald")
+    ))
+  }
+
+  it("should construct multiple properties") {
+    val query =
+      """|CONSTRUCT {
+         |  CREATE (a :A:B)
+         |  SET a.name = 'Donald'
+         |  SET a.age = 100
+         |}
+         |RETURN GRAPH""".stripMargin
+
+    val result = testGraph1.cypher(query)
+
+    result.getRecords.toMaps shouldBe empty
+
+    result.getGraph.schema.labels should equal(Set("A", "B"))
+
+    result.getGraph.schema should equal(Schema.empty.withNodePropertyKeys(Set("A", "B"), PropertyKeys("name" -> CTString, "age" -> CTInteger)).asCaps)
 
     result.getGraph.cypher("MATCH (a:A) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
       CypherMap("a.name" -> "Donald")

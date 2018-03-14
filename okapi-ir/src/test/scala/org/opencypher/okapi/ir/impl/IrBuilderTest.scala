@@ -15,7 +15,7 @@
  */
 package org.opencypher.okapi.ir.impl
 
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.ir.api._
@@ -190,6 +190,25 @@ class IrBuilderTest extends IrTestSuite {
       model.result match {
         case GraphResultBlock(_, IRPatternGraph(schema, _, _)) =>
           schema should equal(Schema.empty.withNodePropertyKeys(Set.empty[String]).withRelationshipPropertyKeys("R")("level" -> CTString))
+        case _ => fail("no matching graph result found")
+      }
+    }
+  }
+
+  it("computes a pattern graph schema correctly - 1 create and 2 set properties") {
+    val query =
+      """
+        |CONSTRUCT  {
+        |  CREATE (a :A)
+        |  SET a.category = 'computer'
+        |  SET a.ports = 4
+        |}
+        |RETURN GRAPH""".stripMargin
+
+    query.model.ensureThat { (model, _) =>
+      model.result match {
+        case GraphResultBlock(_, IRPatternGraph(schema, _, _)) =>
+          schema should equal(Schema.empty.withNodePropertyKeys(Set("A"), PropertyKeys("category" -> CTString, "ports" -> CTInteger)))
         case _ => fail("no matching graph result found")
       }
     }
