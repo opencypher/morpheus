@@ -15,17 +15,16 @@
  */
 package org.opencypher.spark.tools
 
-import java.io.{FileOutputStream, PrintWriter}
-import java.nio.file.{Files, Path, Paths}
-import java.util.stream.Collectors
 
+import java.io.{BufferedWriter, OutputStreamWriter}
+
+import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, SparkSession, functions}
 import org.opencypher.spark.tools.StructTypes._
 
-import scala.collection.JavaConverters._
 import scala.collection.Map
 
 object LdbcConverter extends App {
@@ -48,13 +47,15 @@ object LdbcConverter extends App {
       .getOrCreate()
   }
 
-  private val inputPath = args(1)
+  private val inputPath = new Path(args(1))
 
-  private val outputPath = args(2)
+  private val outputPath = new Path(args(2))
 
-  private val nodesFolder = "nodes"
+  private val hdfs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
 
-  private val relsFolder = "relationships"
+  private val nodesFolder = new Path("nodes")
+
+  private val relsFolder = new Path("relationships")
 
   private val dataSuffix = ".csv"
 
@@ -77,7 +78,6 @@ object LdbcConverter extends App {
   convert()
 
   private def convert(): Unit = {
-
     val inputNodes = getDataFrames("nodes", getLabelKey)
     val inputRels = getDataFrames("relationships", getTypeKey)
     val inputProps = getDataFrames("properties", getPropertyKey)
@@ -93,32 +93,42 @@ object LdbcConverter extends App {
     val relsWithUpdatedNodeIds = updateSourceAndTargetIdentifiers(relsWithFinalLabel)
     val rels = addRelIdentifiers(relsWithUpdatedNodeIds)
 
-    Files.createDirectories(Paths.get(outputPath, nodesFolder))
-    Files.createDirectories(Paths.get(outputPath, relsFolder))
+    write(nodes, rels)
+  }
+
+  private def write(nodes: Map[Label, DataFrame], rels: Map[RelType, DataFrame]): Unit = {
+    val outputNodesFolder = new Path(outputPath, nodesFolder)
+    val outputRelsFolder = new Path(outputPath, relsFolder)
+
+    hdfs.mkdirs(outputNodesFolder)
+    hdfs.mkdirs(outputRelsFolder)
 
     nodes.foreach {
       case (label, nodeDf) =>
-        writeNodeSchema(label, nodeDf.schema)
-        nodeDf.write.csv(Paths.get(outputPath, nodesFolder, s"$label$dataSuffix").toString)
+        val schemaPath = new Path(outputNodesFolder, s"$label$schemaSuffix")
+        val dataPath = new Path(outputNodesFolder, s"$label$dataSuffix")
+        writeNodeSchema(label, nodeDf.schema, schemaPath)
+        nodeDf.write.csv(dataPath.toString)
     }
 
     rels.foreach {
       case (relType, relDf) =>
-        writeRelSchema(relType, relDf.schema)
-        relDf.write.csv(Paths.get(outputPath, relsFolder, s"$relType$dataSuffix").toString)
+        val schemaPath = new Path(outputNodesFolder, s"$relType$schemaSuffix")
+        val dataPath = new Path(outputNodesFolder, s"$relType$dataSuffix")
+        writeRelSchema(relType, relDf.schema, schemaPath)
+        relDf.write.csv(dataPath.toString)
     }
   }
 
   private def getDataFrames[T](folder: String, labelLookup: Path => T): Map[T, DataFrame] =
-    listDirectory(Paths.get(inputPath, folder))
+    listDirectory(new Path(inputPath, folder))
       .map(path => labelLookup(path) -> loadDF(path, StructTypes(labelLookup(path))))
       .toMap
 
-  private def listDirectory(directory: Path): List[Path] = Files
-    .list(directory)
-    .collect(Collectors.toList())
-    .asScala
-    .toList
+  private def listDirectory(directory: Path): List[Path] = hdfs
+      .listStatus(directory)
+      .map(_.getPath)
+      .toList
 
   private def parseLabel(label: String): String = nodeMapping.keys.collectFirst {
     case Label(nodeLabel, _) if nodeLabel.toLowerCase == label.toLowerCase => nodeLabel
@@ -128,15 +138,15 @@ object LdbcConverter extends App {
 
   private def parseProperty(prop: String) = prop
 
-  private def getLabelKey(path: Path): Label = Label(parseLabel(path.getFileName.toString.split("_")(0)))
+  private def getLabelKey(path: Path): Label = Label(parseLabel(path.getName.split("_")(0)))
 
   private def getTypeKey(path: Path): RelType = {
-    val tokens = path.getFileName.toString.split("_")
+    val tokens = path.getName.split("_")
     RelType(parseLabel(tokens(0)), parseType(tokens(1)), parseLabel(tokens(2)))
   }
 
   private def getPropertyKey(path: Path): Property = {
-    val tokens = path.getFileName.toString.split("_")
+    val tokens = path.getName.split("_")
     Property(parseLabel(tokens(0)), parseProperty(tokens(1)))
   }
 
@@ -340,8 +350,8 @@ object LdbcConverter extends App {
   private def targetSuffix(relType: RelType): String =
     if (relType.sourceLabel == relType.targetLabel) id1ColumnName else idColumnName
 
-  private def writeNodeSchema(label: Label, structType: StructType): Unit = {
-    val schemaString =
+  private def writeNodeSchema(label: Label, structType: StructType, path: Path): Unit = {
+    val schema =
       s"""{
          |  "idField": {
          |    "name": "CapsID",
@@ -362,12 +372,10 @@ object LdbcConverter extends App {
          |  ]
          |}""".stripMargin
 
-    val writer = new PrintWriter(new FileOutputStream(Paths.get(outputPath, nodesFolder, s"$label$schemaSuffix").toString, false))
-    writer.write(schemaString)
-    writer.close()
+    writeSchema(schema, path)
   }
 
-  private def writeRelSchema(relType: RelType, structType: StructType): Unit = {
+  private def writeRelSchema(relType: RelType, structType: StructType, path: Path): Unit = {
 
     val sourceColumn = s"${relType.sourceLabel.nodeLabel}_${sourceSuffix(relType)}"
     val targetColumn = s"${relType.targetLabel.nodeLabel}_${targetSuffix(relType)}"
@@ -402,9 +410,14 @@ object LdbcConverter extends App {
          |  ]
          |}""".stripMargin
 
-    val writer = new PrintWriter(new FileOutputStream(Paths.get(outputPath, relsFolder, s"$relType$schemaSuffix").toString, false))
-    writer.write(schema)
-    writer.close()
+    writeSchema(schema, path)
+  }
+
+  private def writeSchema(schema: String, path: Path): Unit = {
+    val outputStream = hdfs.create(path)
+    val bw = new BufferedWriter(new OutputStreamWriter(outputStream, "UTF-8"))
+    bw.write(schema)
+    bw.close()
   }
 }
 
