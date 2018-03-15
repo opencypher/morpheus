@@ -219,7 +219,7 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
 
     val result = testGraph1.cypher(query)
 
-//    result.getRecords.toMaps shouldBe empty
+    result.getRecords.toMaps shouldBe empty
 
     result.getGraph.schema.relationshipTypes should equal(Set("FOO"))
 
@@ -255,9 +255,8 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
       .withNodePropertyKeys()()
       .withRelationshipPropertyKeys("FOO", PropertyKeys("val" -> CTInteger, "name" -> CTString)).asCaps)
 
-    result.getGraph.cypher("MATCH ()-[r]->() RETURN r.val").getRecords.iterator.toBag should equal(Bag(
-      CypherMap("r.val" -> 42),
-      CypherMap("r.name" -> "Donald")
+    result.getGraph.cypher("MATCH ()-[r]->() RETURN r.val, r.name").getRecords.iterator.toBag should equal(Bag(
+      CypherMap("r.val" -> 42, "r.name" -> "Donald")
     ))
   }
 }
