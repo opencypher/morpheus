@@ -105,7 +105,11 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         val inputGraphPlan = if (plan.graph == lg) {
           plan
         } else {
-          planUseGraph(lg, plan)
+          plan match {
+            // If the inner plan is a start, simply rewrite it to start with the required graph
+            case Start(_, fields, solved) => Start(lg, fields, solved)
+            case _ => planUseGraph(lg, plan)
+          }
         }
         // this plans both pattern and filter for convenience -- TODO: split up
         val patternPlan = planMatchPattern(inputGraphPlan, pattern, where, graph)
