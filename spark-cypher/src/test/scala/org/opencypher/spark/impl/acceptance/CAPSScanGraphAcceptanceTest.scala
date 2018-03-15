@@ -259,4 +259,62 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
       CypherMap("r.val" -> 42, "r.name" -> "Donald")
     ))
   }
+
+  ignore("should tilde copy start and end nodes") {
+    val query =
+    """|CONSTRUCT {
+                   |  CREATE (:A)-[r:FOO]->()
+                   |  SET r.val = 42
+                   |}
+                   |MATCH ()-[s]->()
+                   |CONSTRUCT {
+                   |  CREATE ()-[t~s]->()
+                   |  SET t.name = 'Donald'
+                   |}
+                   |RETURN GRAPH""".stripMargin
+
+    val result = testGraph1.cypher(query)
+
+    result.getRecords.toMaps shouldBe empty
+
+    result.getGraph.schema.relationshipTypes should equal(Set("FOO"))
+    result.getGraph.schema.labels should equal(Set("A"))
+
+    result.getGraph.schema should equal(Schema.empty
+      .withNodePropertyKeys()()
+      .withRelationshipPropertyKeys("FOO", PropertyKeys("val" -> CTInteger, "name" -> CTString)).asCaps)
+
+    result.getGraph.cypher("MATCH ()-[r]->() RETURN r.val, r.name").getRecords.iterator.toBag should equal(Bag(
+        CypherMap("r.val" -> 42, "r.name" -> "Donald")
+    ))
+  }
+
+
+  ignore("should allow simple shadowing syntax") {
+    val query =
+      """|CONSTRUCT {
+         |  CREATE (a:A)-[r:FOO]->(b:B)
+         |}
+         |MATCH (a)-->(b)
+         |CONSTRUCT {
+         |  CREATE (a)-[:KNOWS]->(b)
+         |}
+         |RETURN GRAPH""".stripMargin
+
+    val result = testGraph1.cypher(query)
+
+    result.getRecords.toMaps shouldBe empty
+
+    result.getGraph.schema.relationshipTypes should equal(Set("KNOWS"))
+    result.getGraph.schema.labels should equal(Set("A", "B"))
+
+    result.getGraph.schema should equal(Schema.empty
+      .withNodePropertyKeys("A")()
+      .withNodePropertyKeys("B")()
+      .withRelationshipPropertyKeys("KNOWS")().asCaps)
+
+    result.getGraph.cypher("MATCH ()-[r]->() RETURN type(r)").getRecords.iterator.toBag should equal(Bag(
+      CypherMap("type(r)" -> "KNOWS")
+    ))
+  }
 }
