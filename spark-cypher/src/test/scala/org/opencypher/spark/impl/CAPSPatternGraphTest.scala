@@ -23,6 +23,8 @@ import org.opencypher.okapi.api.value._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey}
 import org.opencypher.okapi.ir.test._
+import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
+import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.PrintPhysicalPlan
 import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.okapi.relational.impl.table.{OpaqueField, ProjectedExpr, ProjectedField, RecordHeader}
 import org.opencypher.spark.impl.table.CAPSRecordHeader
@@ -38,7 +40,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
 
   override def capsGraphFactory: CAPSTestGraphFactory = CAPSPatternGraphFactory
 
-  it("should project pattern graph") {
+  it("projects a pattern graph") {
     val inputGraph = initGraph(`:Person`)
 
     val person = inputGraph.cypher(
@@ -55,14 +57,13 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       ))
   }
 
-  // TODO: Rewrite with equivalence merge
-  ignore("project pattern graph with relationship") {
+  it("projects a pattern graph with a relationship") {
     val inputGraph = initGraph(`:Person` + `:KNOWS`)
 
     val person = inputGraph.cypher(
       """MATCH (a:Person:Swedish)-[r]->(b)
         |CONSTRUCT {
-        |  CREATE (a)-[r]->(b)
+        |  CREATE (~a)-[~r]->(~b)
         |}
         |RETURN GRAPH
       """.stripMargin)
@@ -76,14 +77,13 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       ))
   }
 
-  // TODO: Rewrite with equivalence merge
-  ignore("project pattern graph with created relationship") {
+  it("projects a pattern graph with a created relationship") {
     val inputGraph = initGraph(`:Person` + `:KNOWS`)
 
     val person = inputGraph.cypher(
       """MATCH (a:Person:Swedish)-[r]->(b)
         |CONSTRUCT {
-        |  CREATE (a)-[foo:SWEDISH_KNOWS]->(b)
+        |  CREATE (~a)-[~foo:SWEDISH_KNOWS]->(~b)
         |}
         |RETURN GRAPH
       """.stripMargin)
@@ -101,18 +101,28 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       ))
   }
 
-  // TODO: Rewrite with equivalence merge
-  ignore("project pattern graph with created node") {
+  // Fix ID generation: The generated IDs for the blank nodes collide with other generated IDs.
+  ignore("projects a pattern graph with a created node") {
     val inputGraph = initGraph(`:Person` + `:KNOWS`)
+
+    PrintLogicalPlan.set()
+    PrintPhysicalPlan.set()
 
     val person = inputGraph.cypher(
       """MATCH (a:Person:Swedish)-[r]->(b)
         |CONSTRUCT {
-        |  CREATE (a)-[r]->(b)-[bar:KNOWS_A]->()
+        |  CREATE (~a)-[~r]->(~b)-[:KNOWS_A]->()
         |}
         |RETURN GRAPH
       """.stripMargin)
 
+    person.getGraph.asInstanceOf[CAPSPatternGraph].baseTable.data.show()
+
+    person.getGraph.nodes("n").show
+
+    person.getGraph.relationships("r", CTRelationship("KNOWS_A")).show
+
+    person.getGraph.cypher("MATCH (b)-[:KNOWS_A]->(n) RETURN n").getRecords.show
 
     person
       .getGraph
@@ -155,14 +165,13 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
     outputRels.data.count() shouldBe 10
   }
 
-  // TODO: Rewrite with equivalence merge
-  ignore("project pattern graph with created node with labels") {
+  it("projects a pattern graph with a created node that has labels") {
     val inputGraph = initGraph(`:Person` + `:KNOWS`)
 
     val person = inputGraph.cypher(
       """MATCH (a:Person:Swedish)-[r]->(b)
         |CONSTRUCT {
-        |  CREATE (a)-[r]->(b)-[bar:KNOWS_A]->(baz:Swede)
+        |  CREATE (~a)-[~r]->(~b)-[bar:KNOWS_A]->(baz:Swede)
         |}
         |RETURN GRAPH
       """.stripMargin)

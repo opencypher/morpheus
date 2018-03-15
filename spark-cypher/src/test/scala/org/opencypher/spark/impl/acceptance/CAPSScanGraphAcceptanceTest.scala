@@ -37,10 +37,6 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
 
   def testGraph3 = initGraph("CREATE (:Car {type: 'Toyota'})")
 
-  PrintLogicalPlan.set()
-
-  PrintPhysicalPlan.set()
-
   it("should construct a graph") {
     val query =
       """|CONSTRUCT {
@@ -260,36 +256,8 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
     ))
   }
 
-  ignore("should tilde copy start and end nodes") {
-    val query =
-    """|CONSTRUCT {
-                   |  CREATE (:A)-[r:FOO]->()
-                   |  SET r.val = 42
-                   |}
-                   |MATCH ()-[s]->()
-                   |CONSTRUCT {
-                   |  CREATE ()-[t~s]->()
-                   |  SET t.name = 'Donald'
-                   |}
-                   |RETURN GRAPH""".stripMargin
-
-    val result = testGraph1.cypher(query)
-
-    result.getRecords.toMaps shouldBe empty
-
-    result.getGraph.schema.relationshipTypes should equal(Set("FOO"))
-    result.getGraph.schema.labels should equal(Set("A"))
-
-    result.getGraph.schema should equal(Schema.empty
-      .withNodePropertyKeys()()
-      .withRelationshipPropertyKeys("FOO", PropertyKeys("val" -> CTInteger, "name" -> CTString)).asCaps)
-
-    result.getGraph.cypher("MATCH ()-[r]->() RETURN r.val, r.name").getRecords.iterator.toBag should equal(Bag(
-        CypherMap("r.val" -> 42, "r.name" -> "Donald")
-    ))
-  }
-
-  ignore("should allow simple shadowing syntax") {
+  // TODO: Support MGC syntax
+  ignore("should allow simple MGC syntax") {
     val query =
       """|CONSTRUCT {
          |  CREATE (a:A)-[r:FOO]->(b:B)
@@ -316,4 +284,5 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
       CypherMap("type(r)" -> "KNOWS")
     ))
   }
+
 }
