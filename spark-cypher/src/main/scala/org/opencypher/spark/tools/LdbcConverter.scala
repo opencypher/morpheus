@@ -149,8 +149,8 @@ object LdbcConverter extends App {
 
     rels.foreach {
       case (relType, relDf) =>
-        val schemaPath = new Path(outputNodesFolder, s"$relType$schemaSuffix")
-        val dataPath = new Path(outputNodesFolder, s"$relType$dataSuffix")
+        val schemaPath = new Path(outputRelsFolder, s"$relType$schemaSuffix")
+        val dataPath = new Path(outputRelsFolder, s"$relType$dataSuffix")
         writeRelSchema(relType, relDf.schema, schemaPath)
         relDf.write.csv(dataPath.toString)
     }
@@ -220,8 +220,6 @@ object LdbcConverter extends App {
 
           // this is necessary because Sparks CSV writer does not support array<string> data type
           withListProperty.withColumn(prop.propertyKey, listToString(withListProperty.col(prop.propertyKey)))
-
-
       }
     }.toMap
   }
@@ -271,49 +269,45 @@ object LdbcConverter extends App {
     case (label, nodeDf) => Seq(label -> nodeDf)
   }
 
-  private def splitRelDataFrames(rels: Map[RelType, DataFrame]): Map[RelType, DataFrame] = {
+  private def splitRelDataFrames(rels: Map[RelType, DataFrame]): Map[RelType, DataFrame] = rels.flatMap {
+    case (relType, relDf) if relType.sourceLabel.subtypes.nonEmpty || relType.targetLabel.subtypes.nonEmpty =>
+      val newTypes = relDf
+        .select(sourceTypeColumnName, targetTypeColumnName)
+        .distinct()
+        .collect()
+        .map(row => row.get(0).toString -> row.get(1).toString)
 
+      newTypes.map {
+        case (sourceLabel, targetLabel) =>
 
-    rels.flatMap {
-      case (relType, relDf) if relType.sourceLabel.subtypes.nonEmpty || relType.targetLabel.subtypes.nonEmpty =>
-        val newTypes = relDf
-          .select(sourceTypeColumnName, targetTypeColumnName)
-          .distinct()
-          .collect()
-          .map(row => row.get(0).toString -> row.get(1).toString)
+          val srcSuffix = sourceSuffix(relType)
+          val tgtSuffix = targetSuffix(relType)
 
-        newTypes.map {
-          case (sourceLabel, targetLabel) =>
+          val newSrcSuffix = sourceSuffix(sourceLabel, targetLabel)
+          val newTgtSuffix = targetSuffix(sourceLabel, targetLabel)
 
-            val srcSuffix = sourceSuffix(relType)
-            val tgtSuffix = targetSuffix(relType)
+          val parsedSourceLabel = parseLabel(sourceLabel)
+          val parsedTargetLabel = parseLabel(targetLabel)
 
-            val newSrcSuffix = sourceSuffix(sourceLabel, targetLabel)
-            val newTgtSuffix = targetSuffix(sourceLabel, targetLabel)
+          val sourceSuperType = if (relType.sourceLabel.nodeLabel == parsedSourceLabel) None else Some(relType.sourceLabel)
+          val targetSuperType = if (relType.targetLabel.nodeLabel == parsedTargetLabel) None else Some(relType.targetLabel)
 
-            val parsedSourceLabel = parseLabel(sourceLabel)
-            val parsedTargetLabel = parseLabel(targetLabel)
+          val newReltype = RelType(
+            Label(parsedSourceLabel, sourceSuperType),
+            relType.relType,
+            Label(parsedTargetLabel, targetSuperType))
 
-            val sourceSuperType = if (relType.sourceLabel.nodeLabel == parsedSourceLabel) None else Some(relType.sourceLabel)
-            val targetSuperType = if (relType.targetLabel.nodeLabel == parsedTargetLabel) None else Some(relType.targetLabel)
+          val newDf = relDf
+            .where(relDf.col(sourceTypeColumnName) === lit(sourceLabel) && relDf.col(targetTypeColumnName) === lit(targetLabel))
+            .drop(sourceTypeColumnName, targetTypeColumnName)
+            .withColumnRenamed(s"${relType.sourceLabel.nodeLabel}_$srcSuffix", s"${parsedSourceLabel}_$newSrcSuffix")
+            .withColumnRenamed(s"${relType.targetLabel.nodeLabel}_$tgtSuffix", s"${parsedTargetLabel}_$newTgtSuffix")
 
-            val newReltype = RelType(
-              Label(parsedSourceLabel, sourceSuperType),
-              relType.relType,
-              Label(parsedTargetLabel, targetSuperType))
+          newReltype -> newDf
+      }
 
-            val newDf = relDf
-              .where(relDf.col(sourceTypeColumnName) === lit(sourceLabel) && relDf.col(targetTypeColumnName) === lit(targetLabel))
-              .drop(sourceTypeColumnName, targetTypeColumnName)
-              .withColumnRenamed(s"${relType.sourceLabel.nodeLabel}_$srcSuffix", s"${parsedSourceLabel}_$newSrcSuffix")
-              .withColumnRenamed(s"${relType.targetLabel.nodeLabel}_$tgtSuffix", s"${parsedTargetLabel}_$newTgtSuffix")
-
-            newReltype -> newDf
-        }
-
-      case (relType, relDf) =>
-        Seq(relType -> relDf.drop(sourceTypeColumnName, targetTypeColumnName))
-    }
+    case (relType, relDf) =>
+      Seq(relType -> relDf.drop(sourceTypeColumnName, targetTypeColumnName))
   }
 
   private def addSourceAndTargetLabel(nodes: Map[Label, DataFrame], rels: Map[RelType, DataFrame]): Map[RelType, DataFrame] = {
@@ -467,7 +461,6 @@ object RelType {
 }
 
 case class Property(nodeLabel: String, propertyKey: String)
-
 
 object PropertyTypes {
   def apply(property: String): String = mapping(property)
