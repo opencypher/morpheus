@@ -47,15 +47,6 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   def planStart(in: Option[R] = None, g: Option[LogicalCatalogGraph] = None): P
 
   /**
-    * Sets the source graph for the next query operation.
-    *
-    * @param in previous operator
-    * @param g  external (URI) reference to a graph on which the query is continued
-    * @return set source graph operator
-    */
-  def planSetSourceGraph(in: P, g: LogicalCatalogGraph): P
-
-  /**
     * Scans the node set of the input graph and returns all nodes that match the given CTNode type.
     *
     * @param in      previous operator

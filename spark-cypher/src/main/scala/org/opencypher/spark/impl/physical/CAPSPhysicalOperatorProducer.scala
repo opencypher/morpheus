@@ -64,16 +64,13 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
     operators.ReturnGraph(in)
   }
 
-  override def planUseGraph(in: CAPSPhysicalOperator, graph: LogicalCatalogGraph): CAPSPhysicalOperator =
-    operators.UseGraph(in, graph)
-
   override def planEmptyRecords(in: CAPSPhysicalOperator, header: RecordHeader): CAPSPhysicalOperator =
     operators.EmptyRecords(in, header)
 
   override def planStart(in: Option[CAPSRecords], g: Option[LogicalCatalogGraph]): CAPSPhysicalOperator =
     operators.Start(in, g)
 
-  override def planSetSourceGraph(in: CAPSPhysicalOperator, g: LogicalCatalogGraph): CAPSPhysicalOperator =
+  override def planUseGraph(in: CAPSPhysicalOperator, g: LogicalCatalogGraph): CAPSPhysicalOperator =
     operators.UseGraph(in, g)
 
   override def planNodeScan(

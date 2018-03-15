@@ -77,7 +77,7 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
         producer.planStart(graph, fields)
 
       case logical.UseGraph(graph, in, _) =>
-        producer.planSetSourceGraph(graph, process(in))
+        producer.planUseGraph(graph, process(in))
 
       case logical.BoundedVarLengthExpand(source, edgeList, target, direction, lower, upper, sourceOp, targetOp, _) =>
         val initVarExpand = producer.initVarExpand(source, edgeList, process(sourceOp))

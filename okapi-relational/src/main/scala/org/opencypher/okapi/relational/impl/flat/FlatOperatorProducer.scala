@@ -191,8 +191,8 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     ValueJoin(lhs, rhs, predicates, lhs.header ++ rhs.header)
   }
 
-  def planSetSourceGraph(graph: LogicalGraph, prev: FlatOperator) = {
-    SetSourceGraph(graph, prev)
+  def planUseGraph(graph: LogicalGraph, prev: FlatOperator) = {
+    UseGraph(graph, prev)
   }
 
   def planEmptyRecords(fields: Set[Var], prev: FlatOperator): EmptyRecords = {

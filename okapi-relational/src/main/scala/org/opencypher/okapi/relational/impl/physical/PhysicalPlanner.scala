@@ -57,9 +57,9 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
           case _ => throw IllegalArgumentException("a LogicalExternalGraph", graph)
         }
 
-      case flat.SetSourceGraph(graph, in) =>
+      case flat.UseGraph(graph, in) =>
         graph match {
-          case g: LogicalCatalogGraph => producer.planSetSourceGraph(process(in), g)
+          case g: LogicalCatalogGraph => producer.planUseGraph(process(in), g)
           case LogicalPatternGraph(schema, entities, sets) => producer.planConstructGraph(process(in), entities, sets, schema)
         }
 
