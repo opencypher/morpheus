@@ -289,7 +289,6 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
     ))
   }
 
-
   ignore("should allow simple shadowing syntax") {
     val query =
       """|CONSTRUCT {

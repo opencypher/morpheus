@@ -57,9 +57,9 @@ final class PatternConverter {
     case ast.NamedPatternPart(_, part) => convertPart(knownTypes)(part)
   }
 
-  private def convertEquivalenceModel(m: ast.EquivalenceModel, knownTypes: Map[ast.Expression, CypherType]): EquivalenceModel = {
+  private def convertEquivalenceModel(m: ast.EquivalenceModel, knownTypes: Map[ast.Expression, CypherType], fallbackType: CypherType): EquivalenceModel = {
     m match {
-      case ast.TildeModel(v) => TildeModel(Var(v.name)(knownTypes(v)))
+      case ast.TildeModel(v) => TildeModel(Var(v.name)(knownTypes.get(v).getOrElse(fallbackType)))
       case ast.AtModel(v) => AtModel(Var(v.name)(knownTypes(v)))
     }
   }
@@ -72,7 +72,7 @@ final class PatternConverter {
         val patternLabels = labels.map(_.name).toSet
 
         // labels for ~ / @ are extracted from the referred variable
-        val equivalence = equivalenceModelOpt.map(convertEquivalenceModel(_, knownTypes))
+        val equivalence = equivalenceModelOpt.map(convertEquivalenceModel(_, knownTypes, CTNode))
         val equivalenceLabels = equivalence.map(_.v.cypherType.asInstanceOf[CTNode].labels).getOrElse(Set.empty)
 
         // labels defined in outside scope, passed in by IRBuilder
@@ -100,7 +100,7 @@ final class PatternConverter {
           source <- convertElement(left, knownTypes)
           target <- convertElement(right, knownTypes)
           rel <- pure(IRField(rel.name)(rel.cypherType))
-          equivalence = equivalenceModelOpt.map(convertEquivalenceModel(_, knownTypes))
+          equivalence = equivalenceModelOpt.map(convertEquivalenceModel(_, knownTypes, CTRelationship))
           _ <- modify[Pattern[Expr]] { given =>
             val registered = given.withEntity(rel, equivalence)
 
@@ -134,7 +134,7 @@ final class PatternConverter {
           source <- convertElement(left, knownTypes)
           target <- convertElement(right, knownTypes)
           rel <- pure(IRField(rel.name)(CTList(rel.cypherType)))
-          equivalence = equivalenceModelOpt.map(convertEquivalenceModel(_, knownTypes))
+          equivalence = equivalenceModelOpt.map(convertEquivalenceModel(_, knownTypes, CTRelationship))
           _ <- modify[Pattern[Expr]] { given =>
             val registered = given.withEntity(rel, equivalence)
 
@@ -178,7 +178,7 @@ final class PatternConverter {
     val patternTypes = types.map(_.name).toSet
 
     // types for ~ / @ are extracted from the referred variable
-    val equivalence = equivalenceModelOpt.map(convertEquivalenceModel(_, knownTypes))
+    val equivalence = equivalenceModelOpt.map(convertEquivalenceModel(_, knownTypes, CTRelationship))
     val equivalenceTypes = equivalence.map(_.v.cypherType.asInstanceOf[CTRelationship].types).getOrElse(Set.empty)
 
     // types defined in outside scope, passed in by IRBuilder
