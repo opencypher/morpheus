@@ -18,8 +18,8 @@ package org.opencypher.spark.impl.physical.operators
 import org.opencypher.okapi.logical.impl.LogicalCatalogGraph
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
+import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 
 private[spark] abstract class LeafPhysicalOperator extends CAPSPhysicalOperator {
 
@@ -28,21 +28,24 @@ private[spark] abstract class LeafPhysicalOperator extends CAPSPhysicalOperator 
   def executeLeaf()(implicit context: CAPSRuntimeContext): CAPSPhysicalResult
 }
 
-final case class Start(records: CAPSRecords, graph: LogicalCatalogGraph) extends LeafPhysicalOperator {
+object Start {
 
-  override val header = records.header
+  def apply(records: CAPSRecords, graph: LogicalCatalogGraph)(implicit caps: CAPSSession): Start = Start(Some(records), Some(graph))
 
-  override def executeLeaf()(implicit context: CAPSRuntimeContext): CAPSPhysicalResult =
-    CAPSPhysicalResult(records, resolve(graph.qualifiedGraphName))
+  def apply(records: CAPSRecords)(implicit caps: CAPSSession): Start = Start(Some(records))
+
+  def apply(graph: LogicalCatalogGraph)(implicit caps: CAPSSession): Start = Start(None, Some(graph))
 
 }
 
-final case class StartFromUnit(graph: LogicalCatalogGraph)(implicit caps: CAPSSession)
-  extends LeafPhysicalOperator {
+final case class Start(recordsOpt: Option[CAPSRecords] = None, graphOpt: Option[LogicalCatalogGraph] = None)(implicit caps: CAPSSession) extends LeafPhysicalOperator {
 
-  override val header = RecordHeader.empty
+  override val header = recordsOpt.map(_.header).getOrElse(RecordHeader.empty)
 
-  override def executeLeaf()(implicit context: CAPSRuntimeContext): CAPSPhysicalResult =
-    CAPSPhysicalResult(CAPSRecords.unit(), resolve(graph.qualifiedGraphName))
+  override def executeLeaf()(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
+    val records = recordsOpt.getOrElse(CAPSRecords.unit())
+    val graph = graphOpt.map(g => resolve(g.qualifiedGraphName)).getOrElse(CAPSGraph.empty)
+    CAPSPhysicalResult(records, graph)
+  }
 
 }

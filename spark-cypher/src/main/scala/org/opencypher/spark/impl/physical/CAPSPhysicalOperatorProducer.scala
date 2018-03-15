@@ -70,7 +70,7 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
   override def planEmptyRecords(in: CAPSPhysicalOperator, header: RecordHeader): CAPSPhysicalOperator =
     operators.EmptyRecords(in, header)
 
-  override def planStart(in: CAPSRecords, g: LogicalCatalogGraph): CAPSPhysicalOperator =
+  override def planStart(in: Option[CAPSRecords], g: Option[LogicalCatalogGraph]): CAPSPhysicalOperator =
     operators.Start(in, g)
 
   override def planSetSourceGraph(in: CAPSPhysicalOperator, g: LogicalCatalogGraph): CAPSPhysicalOperator =
@@ -116,9 +116,6 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
 
   override def planDistinct(in: CAPSPhysicalOperator, fields: Set[Var]): CAPSPhysicalOperator =
     operators.Distinct(in, fields)
-
-  override def planStartFromUnit(graph: LogicalCatalogGraph): CAPSPhysicalOperator =
-    operators.StartFromUnit(graph)
 
   override def planExpandSource(
     first: CAPSPhysicalOperator,

@@ -38,21 +38,13 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   // Unary operators
 
   /**
-    * Starts the query execution based on the given records and an external graph.
+    * Starts the query execution based on optional given records and an optional graph.
     *
     * @param in backend-specific records
     * @param g  external (URI) reference to the input graph (e.g. the session graph)
     * @return start operator
     */
-  def planStart(in: R, g: LogicalCatalogGraph): P
-
-  /**
-    * Starts the query execution based on empty records and an external graph.
-    *
-    * @param graph external (URI) reference to the input graph (e.g. the session graph)
-    * @return start from unit operator
-    */
-  def planStartFromUnit(graph: LogicalCatalogGraph): P
+  def planStart(in: Option[R] = None, g: Option[LogicalCatalogGraph] = None): P
 
   /**
     * Sets the source graph for the next query operation.
