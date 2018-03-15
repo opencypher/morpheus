@@ -164,11 +164,11 @@ CSV and the schema mappings that describe the graph structure for the underlying
 
 ## How to contribute
 
-We'd love to find out about any issues you encounter. We welcome code contributions -- please open an [issue](https://github.com/opencypher/cypher-for-apache-spark/issues) first to ensure there is no duplication of effort. <!-- TODO: Determine CLA and process -->
+We would love to find out about any [issues](https://github.com/opencypher/cypher-for-apache-spark/issues) you encounter and are happy to accept contributions following a Contributors License Agreement (CLA) signature as per the process outlined in our [contribution guidelines](CONTRIBUTING.adoc).
 
 ## License
 
-The project is licensed under the Apache Software License, Version 2.0
+The project is licensed under the Apache Software License, Version 2.0, with an extended attribution notice as described in [the license header](license-header.txt).
 
 ## Copyright
 
