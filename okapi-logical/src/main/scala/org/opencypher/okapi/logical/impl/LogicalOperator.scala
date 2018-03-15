@@ -58,7 +58,9 @@ sealed trait ConstructedEntity {
 }
 case class ConstructedNode(v: Var, labels: Set[Label], equivalence: Option[EquivalenceModel]) extends ConstructedEntity
 
-case class ConstructedRelationship(v: Var, source: Var, target: Var, typ: String, equivalence: Option[EquivalenceModel]) extends ConstructedEntity
+case class ConstructedRelationship(v: Var, source: Var, target: Var, typ: Option[String], equivalence: Option[EquivalenceModel]) extends ConstructedEntity {
+  require(typ.isDefined || equivalence.isDefined, s"$this: Need tp define either the rel type or an equivalence model to construct a relationship")
+}
 
 sealed abstract class StackingLogicalOperator extends LogicalOperator {
   def in: LogicalOperator

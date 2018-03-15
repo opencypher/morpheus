@@ -338,13 +338,13 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
         val entities: Set[ConstructedEntity] = entitiesToCreate.map { e =>
           e.cypherType match {
-            case CTRelationship(relTypes) if relTypes.size == 1 =>
+            case CTRelationship(relTypes) if relTypes.size <= 1 =>
               val connection = p.creates.topology(e)
-              ConstructedRelationship(e, connection.source, connection.target, relTypes.head, equivalences.get(e))
+              ConstructedRelationship(e, connection.source, connection.target, relTypes.headOption, equivalences.get(e))
             case CTNode(labels) =>
               ConstructedNode(e, labels.map(Label), equivalences.get(e))
-            case _ =>
-              throw InvalidCypherTypeException(s"Expected an entity type (CTNode, CTRelationShip), got $e")
+            case other =>
+              throw InvalidCypherTypeException(s"Expected an entity type (CTNode, CTRelationship), got $other")
           }
         }
         LogicalPatternGraph(p.schema, entities, p.sets)

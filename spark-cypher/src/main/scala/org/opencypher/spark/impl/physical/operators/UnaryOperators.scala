@@ -311,7 +311,7 @@ final case class ConstructGraph(
   }
 
   private def constructRel(columnIdPartition: Int, numberOfColumnPartitions: Int, toConstruct: ConstructedRelationship, constructedTable: CAPSRecords): Set[(SlotContent, Column)] = {
-    val ConstructedRelationship(rel, source, target, typ, equivalence) = toConstruct
+    val ConstructedRelationship(rel, source, target, typOpt, equivalenceOpt) = toConstruct
     val header = constructedTable.header
     val inData = constructedTable.data
 
@@ -330,13 +330,24 @@ final case class ConstructGraph(
     // id needs to be generated
     val relTuple = OpaqueField(rel) -> generateId(columnIdPartition, numberOfColumnPartitions)
 
-    // type is an input
     val typeTuple = {
-      val col = functions.lit(typ)
-      ProjectedExpr(Type(rel)(CTString)) -> col
+      typOpt match {
+        // type is set
+        case Some(t) =>
+          val col = functions.lit(t)
+          ProjectedExpr(Type(rel)(CTString)) -> col
+        case None =>
+          // equivalence model is guaranteed to be present: get rel type from original
+          val origRel = equivalenceOpt.get.v
+          val header = constructedTable.header
+          val origTypeSlot = header.typeSlot(origRel)
+          val copyTypeSlotContents = origTypeSlot.withOwner(rel).content
+          val col = constructedTable.data.col(ColumnName.of(origTypeSlot))
+          (copyTypeSlotContents, col)
+      }
     }
 
-    val propertyTuples = equivalence match {
+    val propertyTuples = equivalenceOpt match {
       case Some(TildeModel(origRel)) =>
         val header = constructedTable.header
         val origSlots = header.propertySlots(origRel).values

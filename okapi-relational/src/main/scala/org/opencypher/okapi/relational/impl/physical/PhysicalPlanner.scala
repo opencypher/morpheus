@@ -51,8 +51,9 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
       case flat.Start(graph, _) =>
         graph match {
           case g: LogicalCatalogGraph =>
-            producer.planStart(context.inputRecords, g)
-
+            producer.planStart(Some(context.inputRecords), Some(g))
+          case LogicalPatternGraph(schema, entities, sets) =>
+            producer.planConstructGraph(producer.planStart(Some(context.inputRecords)), entities, sets, schema)
           case _ => throw IllegalArgumentException("a LogicalExternalGraph", graph)
         }
 
@@ -99,12 +100,12 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
         val first = process(sourceOp)
         val third = process(targetOp)
 
-        val externalGraph = sourceOp.sourceGraph match {
-          case e: LogicalCatalogGraph => e
-          case _ => throw IllegalArgumentException("a LogicalExternalGraph", sourceOp.sourceGraph)
+        val startFrom = sourceOp.sourceGraph match {
+          case e: LogicalCatalogGraph => producer.planStart(None, Some(e))
+          case LogicalPatternGraph(schema, entities, sets) =>
+            producer.planConstructGraph(producer.planStart(Some(context.inputRecords)), entities, sets, schema)
         }
 
-        val startFrom = producer.planStartFromUnit(externalGraph)
         val second = producer.planRelationshipScan(startFrom, op.sourceGraph, rel, relHeader)
 
         direction match {
