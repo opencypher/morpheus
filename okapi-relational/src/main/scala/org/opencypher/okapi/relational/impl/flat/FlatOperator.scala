@@ -163,5 +163,5 @@ final case class Start(sourceGraph: LogicalGraph, fields: Set[Var]) extends Flat
 
 final case class UseGraph(override val sourceGraph: LogicalGraph, in: FlatOperator)
     extends StackingFlatOperator {
-  override def header: RecordHeader = RecordHeader.empty
+  override def header: RecordHeader = in.header
 }

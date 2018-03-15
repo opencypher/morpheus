@@ -47,7 +47,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
   def select(fields: IndexedSeq[Var], graphs: Set[String], in: FlatOperator): Select = {
     val fieldContents = fields.map { field =>
-      in.header.slotsFor(field).head.content
+      in.header.slotFor(field).content
     }
 
     val finalContents = fieldContents ++ fields.flatMap(in.header.childSlots).map(_.content)

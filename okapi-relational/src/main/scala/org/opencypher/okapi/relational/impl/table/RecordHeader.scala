@@ -78,8 +78,9 @@ final case class RecordHeader(internalHeader: InternalHeader) {
 
   // TODO: Push error handling to API consumers
 
-  def slotFor(variable: Var): RecordSlot =
-    slotsFor(variable).headOption.getOrElse(???)
+  def slotFor(variable: Var): RecordSlot = slotsFor(variable).headOption.getOrElse(
+    throw IllegalArgumentException(s"One of $fields", variable)
+  )
 
   def mandatory(slot: RecordSlot): Boolean =
     internalHeader.mandatory(slot)
