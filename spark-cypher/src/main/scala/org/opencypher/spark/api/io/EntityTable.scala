@@ -65,7 +65,7 @@ object EntityTable {
       columns.map(c => c -> CypherValue(row.get(row.fieldIndex(c)))).toMap
     }
 
-    override def size: Long = df.size
+    override def size: Long = df.count()
 
     def cache(): SparkTable = df.cache()
 
