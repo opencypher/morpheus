@@ -71,10 +71,10 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
     caps.store(GraphName("products"), PRODUCTS)
 
     val LINKS = caps.cypher(
-      s"""FROM GRAPH AT 'friends'
+      s"""USE GRAPH friends
          |MATCH (p:Person)
          |WITH p.name AS personName, p
-         |FROM GRAPH AT 'products'
+         |USE GRAPH products
          |MATCH (c:Customer)
          |WITH c.name as customerName, personName, c, p
          |WHERE customerName = personName

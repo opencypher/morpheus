@@ -18,6 +18,8 @@ package org.opencypher.spark.examples
 import org.apache.spark.graphx._
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.io.conversion.NodeMapping
+import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
+import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.PrintPhysicalPlan
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.CAPSSession._
 import org.opencypher.spark.api.io.CAPSNodeTable
@@ -69,12 +71,15 @@ object GraphXPageRankExample extends App {
   session.store(GraphName("ranks"), rankNodes)
   session.store(GraphName("sn"), socialNetwork)
 
+  rankNodes.nodes("r").show
+  socialNetwork.nodes("s").show
+
   // 9) Query across both graphs to print names with corresponding ranks, sorted by rank
   val result = session.cypher(
-    """|FROM GRAPH AT 'ranks'
+    """|USE GRAPH ranks
        |MATCH (r)
        |WITH id(r) as id, r.rank as rank
-       |FROM GRAPH AT 'sn'
+       |USE GRAPH sn
        |MATCH (p:Person)
        |WHERE id(p) = id
        |RETURN p.name as name, rank

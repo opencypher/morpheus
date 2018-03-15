@@ -199,8 +199,6 @@ final case class ConstructGraph(
 
     val entityTable = createEntities(constructItems, inputTable)
 
-    entityTable.data.show()
-
     val tableWithConstructedProperties = setProperties(setItems, entityTable)
 
     // Remove input columns and header

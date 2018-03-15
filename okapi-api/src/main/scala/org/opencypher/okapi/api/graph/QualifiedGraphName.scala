@@ -72,7 +72,7 @@ object QualifiedGraphName {
   * Example:
   *
   * {{{
-  * FROM GRAPH AT 'myNamespace.myGraphName' MATCH (n) RETURN n
+  * USE GRAPH myNamespace.myGraphName MATCH (n) RETURN n
   * }}}
   *
   * Here, {{myNamespace.myGraphName}} represents a qualified graph name.
