@@ -18,10 +18,12 @@ package org.opencypher.okapi.ir.impl
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
+import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block._
 import org.opencypher.okapi.ir.api.expr.{Expr, HasLabel, Property, Var}
 import org.opencypher.okapi.ir.api.pattern._
+import org.opencypher.okapi.ir.impl.exception.ParsingException
 import org.opencypher.okapi.ir.test._
 
 import scala.collection.immutable.Set
@@ -43,6 +45,34 @@ class IrBuilderTest extends IrTestSuite {
         case _ => fail("no matching graph result found")
       }
     }
+  }
+
+  it("fails when setting a label on an entity that is not in scope") {
+    val query =
+      """
+        |CONSTRUCT {
+        |  CREATE (a)
+        |}
+        |CONSTRUCT  {
+        |  SET a :Label
+        |}
+        |RETURN GRAPH""".stripMargin
+
+    intercept[UnsupportedOperationException](query.model)
+  }
+
+  it("fails when setting a label on a relationship") {
+    val query =
+      """
+        |CONSTRUCT {
+        |  CREATE ()-[r:KNOWS]->()
+        |}
+        |CONSTRUCT  {
+        |  SET r :Label
+        |}
+        |RETURN GRAPH""".stripMargin
+
+    intercept[ParsingException](query.model)
   }
 
   it("computes a pattern graph schema correctly - 2 creates") {
@@ -220,8 +250,9 @@ class IrBuilderTest extends IrTestSuite {
         |CONSTRUCT {
         |  CREATE (a :A)
         |}
+        |MATCH (b: A)
         |CONSTRUCT {
-        |  CREATE (c~a)
+        |  CREATE (c~b)
         |  SET c :B
         |}
         |RETURN GRAPH""".stripMargin

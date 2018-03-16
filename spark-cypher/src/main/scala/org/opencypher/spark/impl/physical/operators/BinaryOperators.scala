@@ -260,8 +260,7 @@ final case class CartesianProduct(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOp
     val otherData = right.records.data
     val newData = data.crossJoin(otherData)
     val records = CAPSRecords.verifyAndCreate(header, newData)(left.records.caps)
-    val graphs = left.graph
-    CAPSPhysicalResult(records, graphs)
+    CAPSPhysicalResult(records, left.graph)
   }
 
 }

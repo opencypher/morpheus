@@ -217,9 +217,6 @@ final case class ConstructGraph(
   }
 
   def constructProperty(variable: Var, propertyKey: String, propertyValue: Expr, constructedTable: CAPSRecords)(implicit context: CAPSRuntimeContext): CAPSRecords = {
-    require(constructedTable.header.slotsFor(variable).nonEmpty,
-      s"Could not find header variable $variable to set property with key $propertyKey and value $propertyValue.")
-
     val propertyValueColumn: Column = propertyValue.asSparkSQLExpr(constructedTable.header, constructedTable.data, context)
 
     val propertyExpression = Property(variable, PropertyKey(propertyKey))(propertyValue.cypherType)
@@ -238,14 +235,14 @@ final case class ConstructGraph(
     val nodes = toCreate.collect { case c: ConstructedNode => c }
     val rels = toCreate.collect { case r: ConstructedRelationship => r }
 
-    val (columnIdIndex, createdNodes) = nodes.foldLeft(0 -> Set.empty[(SlotContent, Column)]) {
+    val (_, createdNodes) = nodes.foldLeft(0 -> Set.empty[(SlotContent, Column)]) {
       case ((nextColumnPartitionId, constructedNodes), nextNodeToConstruct) =>
         (nextColumnPartitionId + 1) -> (constructedNodes ++ constructNode(nextColumnPartitionId, numberOfColumnPartitions, nextNodeToConstruct, constructedTable))
     }
 
     val recordsWithNodes = addEntitiesToRecords(createdNodes, constructedTable)
 
-    val (_, createdRels) = rels.foldLeft(columnIdIndex -> Set.empty[(SlotContent, Column)]) {
+    val (_, createdRels) = rels.foldLeft(0 -> Set.empty[(SlotContent, Column)]) {
       case ((nextColumnPartitionId, constructedRels), nextRelToConstruct) =>
         (nextColumnPartitionId + 1) -> (constructedRels ++ constructRel(nextColumnPartitionId, numberOfColumnPartitions, nextRelToConstruct, recordsWithNodes))
     }

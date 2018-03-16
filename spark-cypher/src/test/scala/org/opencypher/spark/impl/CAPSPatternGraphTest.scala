@@ -83,7 +83,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
     val person = inputGraph.cypher(
       """MATCH (a:Person:Swedish)-[r]->(b)
         |CONSTRUCT {
-        |  CREATE (~a)-[~foo:SWEDISH_KNOWS]->(~b)
+        |  CREATE (~a)-[foo:SWEDISH_KNOWS]->(~b)
         |}
         |RETURN GRAPH
       """.stripMargin)
