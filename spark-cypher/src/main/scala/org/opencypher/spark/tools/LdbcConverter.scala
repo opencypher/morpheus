@@ -517,7 +517,7 @@ object StructTypes {
     Label("Tag") -> StructType(Seq(StructField("id", StringType, false), StructField("name", StringType, true), StructField("url", StringType, true)))
   )
 
-  val nodeDictionary: Map[Label, Int] = nodeMapping.zipWithIndex.map { case ((label, _), i) => label -> i }
+  val nodeDictionary: Map[Label, Int] = nodeMapping.keys.zipWithIndex.toMap
 
   implicit class RichLabel(label: Label) {
     def subtypes: Iterable[Label] = nodeMapping.filterKeys {
@@ -561,7 +561,7 @@ object StructTypes {
     RelType("TagClass", "IS_SUBCLASS_OF", "TagClass") -> StructType(Seq(StructField("TagClass_id0", StringType, false), StructField("TagClass_id1", StringType, false)))
   )
 
-  val relDictionary: Map[RelType, Int] = relMapping.zipWithIndex.map { case ((relType, _), i) => relType -> i }
+  val relDictionary: Map[RelType, Int] = relMapping.keys.zipWithIndex.toMap
 
   val propertyMapping = Map(
     Property("Person", "email") -> StructType(Seq(StructField("Person_id", StringType, false), StructField("email", StringType, true))),
