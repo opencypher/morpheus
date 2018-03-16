@@ -110,7 +110,6 @@ class LogicalOperatorProducer {
   }
 
   def planSelect(fields: IndexedSeq[Var], prev: LogicalOperator): Select = {
-    // TODO: Remove selection of graphs
     Select(fields, Set.empty, prev, prev.solved)
   }
 
