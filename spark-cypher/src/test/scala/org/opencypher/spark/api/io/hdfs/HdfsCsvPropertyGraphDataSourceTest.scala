@@ -15,6 +15,8 @@
  */
 package org.opencypher.spark.api.io.hdfs
 
+import java.net.URI
+
 import org.opencypher.okapi.api.graph.{GraphName, Namespace}
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.test.CAPSTestSuite
@@ -82,5 +84,15 @@ class HdfsCsvPropertyGraphDataSourceTest
 
     val edges = caps.cypher(s"USE GRAPH $testNamespace.$testGraphName MATCH ()-[r]->() RETURN r")
     edges.getRecords.asCaps.toDF().collect().toBag should equal(csvTestGraphRelsFromRecords)
+  }
+
+  it("is robust about the path input") {
+    val paths = Set("hdfs:///foo/bar", "/foo/bar", "hdfs://hostname/foo/bar", "hdfs://hostname:123/foo/bar")
+
+    paths.foreach { path =>
+      val uri = HdfsCsvPropertyGraphDataSource(sparkSession.sparkContext.hadoopConfiguration, path).graphPath(GraphName("myGraph"))
+
+      uri should equal(URI.create("hdfs:///foo/bar/myGraph"))
+    }
   }
 }
