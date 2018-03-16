@@ -161,37 +161,21 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           context <- get[R, IRBuilderContext]
           refs <- {
             val pattern = patterns.foldLeft(Pattern.empty[Expr])(_ ++ _)
+            val fieldNamesInPattern = pattern.fields.map(_.name)
             val patternSchema = context.workingGraph.schema.forPattern(pattern)
             val (schema, _) = setItems.foldLeft(patternSchema -> Map.empty[Var, CypherType]) { case ((currentSchema, rewrittenVarTypes), setItem: SetItem[Expr]) =>
               setItem match {
                 case SetLabelItem(variable, labels) =>
                   val existingLabels = rewrittenVarTypes.getOrElse(variable, variable.cypherType) match {
                     case CTNode(existing) => existing
-                    case other => throw UnsupportedOperationException(s"Setting a labels on something that is not a node: $other")
+                    case other => throw UnsupportedOperationException(s"SET label on something that is not a node: $other")
                   }
                   val labelsAfterSet = existingLabels ++ labels
-                  val updatedSchema = currentSchema
-                    .dropPropertiesFor(existingLabels)
-                    .withNodePropertyKeys(labelsAfterSet, patternSchema.nodeKeys(existingLabels))
+                  val updatedSchema = currentSchema.addLabelsToCombo(labels, existingLabels)
                   updatedSchema -> rewrittenVarTypes.updated(variable, CTNode(labelsAfterSet))
                 case SetPropertyItem(propertyKey, variable, setValue) =>
                   val propertyType = setValue.cypherType
-                  val updatedSchema = variable.cypherType match {
-                    case CTNode(labels) =>
-                      val allRelevantLabelCombinations = currentSchema.combinationsFor(labels)
-                      val property = if (allRelevantLabelCombinations.size == 1) propertyType else propertyType.nullable
-                      allRelevantLabelCombinations.foldLeft(currentSchema) { case (innerCurrentSchema, combo) =>
-                        val updatedPropertyKeys = innerCurrentSchema.keysFor(Set(combo)).updated(propertyKey, property)
-                        innerCurrentSchema.withOverwrittenNodePropertyKeys(combo, updatedPropertyKeys)
-                      }
-                    case CTRelationship(types) =>
-                      val typesToUpdate = if (types.isEmpty) currentSchema.relationshipTypes else types
-                      typesToUpdate.foldLeft(currentSchema) { case (innerCurrentSchema, relType) =>
-                        val updatedPropertyKeys = innerCurrentSchema.relationshipKeys(relType).updated(propertyKey, propertyType)
-                        innerCurrentSchema.withOverwrittenRelationshipPropertyKeys(relType, updatedPropertyKeys)
-                      }
-                    case other => throw IllegalArgumentException("node or relationship to set a property on", other)
-                  }
+                  val updatedSchema = currentSchema.addPropertyToEntity(propertyKey, propertyType, variable.cypherType)
                   updatedSchema -> rewrittenVarTypes
               }
             }

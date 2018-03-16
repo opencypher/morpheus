@@ -20,7 +20,7 @@ import org.atnos.eff._
 import org.atnos.eff.all._
 import org.atnos.eff.syntax.all._
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.IRField
 import org.opencypher.okapi.ir.api.expr.Expr
@@ -45,6 +45,9 @@ package object impl {
     }
   }
 
+  def error[R: _mayFail: _hasContext, A](err: IRBuilderError)(v: A): Eff[R, A] =
+    left[R, IRBuilderError, BlockRegistry[Expr]](err) >> pure(v)
+
   implicit final class RichSchema(schema: Schema) {
     def forPattern(pattern: Pattern[Expr]): Schema = {
       pattern.fields
@@ -59,8 +62,33 @@ package object impl {
         schema.forRelationship(r)
       case x => throw IllegalArgumentException("entity type", x)
     }
+
+    def addLabelsToCombo(labels: Set[String], combo: Set[String]): Schema = {
+      val labelsWithAddition = combo ++ labels
+      schema
+        .dropPropertiesFor(combo)
+        .withNodePropertyKeys(labelsWithAddition, schema.nodeKeys(combo))
+    }
+
+    def addPropertyToEntity(propertyKey: String, propertyType: CypherType, entityType: CypherType): Schema = {
+      entityType match {
+        case CTNode(labels) =>
+          val allRelevantLabelCombinations = schema.combinationsFor(labels)
+          val property = if (allRelevantLabelCombinations.size == 1) propertyType else propertyType.nullable
+          allRelevantLabelCombinations.foldLeft(schema) { case (innerCurrentSchema, combo) =>
+            val updatedPropertyKeys = innerCurrentSchema.keysFor(Set(combo)).updated(propertyKey, property)
+            innerCurrentSchema.withOverwrittenNodePropertyKeys(combo, updatedPropertyKeys)
+          }
+        case CTRelationship(types) =>
+          val typesToUpdate = if (types.isEmpty) schema.relationshipTypes else types
+          typesToUpdate.foldLeft(schema) { case (innerCurrentSchema, relType) =>
+            val updatedPropertyKeys = innerCurrentSchema.relationshipKeys(relType).updated(propertyKey, propertyType)
+            innerCurrentSchema.withOverwrittenRelationshipPropertyKeys(relType, updatedPropertyKeys)
+          }
+        case other => throw IllegalArgumentException("node or relationship to set a property on", other)
+      }
+    }
+
   }
 
-  def error[R: _mayFail: _hasContext, A](err: IRBuilderError)(v: A): Eff[R, A] =
-    left[R, IRBuilderError, BlockRegistry[Expr]](err) >> pure(v)
 }
