@@ -23,7 +23,7 @@ import cats.{Foldable, Monoid}
 import org.atnos.eff._
 import org.atnos.eff.all._
 import org.neo4j.cypher.internal.v3_4.expressions._
-import org.neo4j.cypher.internal.v3_4.functions.{Coalesce, Collect, Exists, Max, Min}
+import org.neo4j.cypher.internal.v3_4.functions.{Coalesce, Collect, Exists, Id, Max, Min}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CypherType.joinMonoid
 import org.opencypher.okapi.api.types._
@@ -433,6 +433,15 @@ object SchemaTyper {
         expr: FunctionInvocation,
         args: Seq[(Expression, CypherType)]): Eff[R, Set[(Seq[CypherType], CypherType)]] =
       expr.function match {
+        case Id =>
+          pure[R, Set[(Seq[CypherType], CypherType)]](
+            Set(
+              Seq(CTNode) -> CTString,
+              Seq(CTNode.nullable) -> CTString,
+              Seq(CTRelationship) -> CTString,
+              Seq(CTRelationship.nullable) -> CTString
+          ))
+
         case f: TypeSignatures =>
           pure(f.signatures.map { sig =>
             val sigInputTypes = sig.argumentTypes.map(fromFrontendType).map(_.nullable)
