@@ -84,8 +84,6 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
     val result = TableResultBlock[Expr](
       after = Set(rootRef),
       binds = OrderedFields[Expr](),
-      nodes = Set.empty,
-      relationships = Set.empty,
       graph = testGraph
     )
     val model = QueryModel(result, CypherMap.empty, blocks)

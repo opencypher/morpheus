@@ -251,14 +251,13 @@ class IrBuilderTest extends IrTestSuite {
       }
 
       val projectRef = model.findExactlyOne {
-        // TODO: Properly assert on graphs, also below
         case NoWhereBlock(ProjectBlock(deps, Fields(map), _, _, _)) =>
           deps should equal(Set(matchRef))
           map should equal(Map(toField('a) -> toVar('a)))
       }
 
       model.result match {
-        case NoWhereBlock(TableResultBlock(deps, OrderedFields(IndexedSeq(IRField("a"))), _, _, _)) =>
+        case NoWhereBlock(TableResultBlock(deps, OrderedFields(IndexedSeq(IRField("a"))), _)) =>
           deps should equal(Set(projectRef))
       }
 
@@ -287,7 +286,6 @@ class IrBuilderTest extends IrTestSuite {
       }
 
       val projectRef = model.findExactlyOne {
-        // TODO: Properly assert on graphs, also below
         case NoWhereBlock(ProjectBlock(deps, Fields(map), _, _, _)) =>
           deps should equal(Set(matchRef))
           map should equal(
@@ -299,7 +297,7 @@ class IrBuilderTest extends IrTestSuite {
       }
 
       model.result match {
-        case NoWhereBlock(TableResultBlock(_, OrderedFields(IndexedSeq(IRField("otherB"), IRField("a"), IRField("r"))), _, _, _)) =>
+        case NoWhereBlock(TableResultBlock(_, OrderedFields(IndexedSeq(IRField("otherB"), IRField("a"), IRField("r"))), _)) =>
       }
 
       model.requirements should equal(
@@ -365,7 +363,7 @@ class IrBuilderTest extends IrTestSuite {
         }
 
         model.result match {
-          case NoWhereBlock(TableResultBlock(deps, OrderedFields(IndexedSeq(IRField("age"), IRField("name"))), _, _, _)) =>
+          case NoWhereBlock(TableResultBlock(deps, OrderedFields(IndexedSeq(IRField("age"), IRField("name"))), _)) =>
             deps should equal(Set(project3Ref))
         }
 
@@ -404,7 +402,6 @@ class IrBuilderTest extends IrTestSuite {
   //      }
   //
   //      val projectRef = model.findExactlyOne {
-  //        // TODO: Properly assert on graphs, also below
   //        case NoWhereBlock(ProjectBlock(deps, Fields(map, graphs), _, _, _)) =>
   //          map shouldBe empty
   //

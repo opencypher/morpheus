@@ -47,7 +47,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     // always plan a select at the top
     block match {
       case t: TableResultBlock[_] =>
-        val fields = t.binds.fieldsOrder.map(f => Var(f.name)(f.cypherType))
+        val fields = t.binds.orderedFields.map(f => Var(f.name)(f.cypherType))
         producer.planSelect(fields, plan)
       case g: GraphResultBlock[_] =>
         producer.planReturnGraph(producer.planUseGraph(resolveGraph(g.graph, plan.fields), plan))

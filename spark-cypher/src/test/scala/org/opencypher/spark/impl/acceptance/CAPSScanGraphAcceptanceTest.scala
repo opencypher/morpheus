@@ -85,7 +85,6 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
     result.getGraph.schema.labels should equal(Set("A", "B", "C", "D"))
     result.getGraph.schema.relationshipTypes should equal(Set("KNOWS"))
     result.getGraph.nodes("n").iterator.length should equal(4)
-    result.getGraph.nodes("n").capsRecords.show
   }
 
   it("should CONSTRUCT a graph with multiple unconnected anonymous CREATE clauses") {
@@ -103,11 +102,8 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
     result.getGraph.schema.labels should equal(Set("A", "B"))
     result.getGraph.schema.relationshipTypes should equal(Set.empty)
 
-    result.getGraph.asInstanceOf[CAPSPatternGraph].baseTable.records.asCaps.data.show
-
-    result.getGraph.nodes("n").records.asCaps.toDF.show
-
-    result.getGraph.nodes("n").iterator.length should equal(2)
+    result.getGraph.nodes("n").size should equal(2)
+    result.getGraph.relationships("r").size should equal(0)
   }
 
   it("should construct a node property from a matched node") {
@@ -173,15 +169,6 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
     result.getGraph.cypher("MATCH (a:A) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
       CypherMap("a.name" -> "Donald")
     ))
-  }
-
-  it("should generate IDs") {
-    import org.apache.spark.sql.functions.monotonically_increasing_id
-    import sparkSession.implicits._
-    val df = sparkSession.createDataset(Seq("A", "B"))
-    val df2 = df.withColumn("ID1", monotonically_increasing_id)
-    val df3 = df2.withColumn("ID2", monotonically_increasing_id)
-    df3.show
   }
 
   it("should pick up labels of the outer match") {

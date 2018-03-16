@@ -67,8 +67,7 @@ trait MultipleGraphBehaviour { this: AcceptanceTest =>
         ))
     }
 
-    // TODO: Confirm that this is not supported and remove
-    ignore("matches from different graphs") {
+    it("matches from different graphs") {
       caps.store(GraphName("graph1"), testGraph1)
       caps.store(GraphName("graph2"), testGraph2)
       caps.store(GraphName("graph3"), testGraph3)

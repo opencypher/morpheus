@@ -85,8 +85,9 @@ final case class Pattern[E](
   def withEntity(field: IRField, equivalence: Option[EquivalenceModel] = None): Pattern[E] = {
     equivalence match {
       case None => if (fields(field)) this else copy(fields = fields + field)
-      case Some(e) => if (fields(field)) copy(equivalences = equivalences + (field -> e))
-      else copy(fields = fields + field, equivalences = equivalences + (field -> e))
+      case Some(e) =>
+        if (fields(field)) copy(equivalences = equivalences + (field -> e))
+        else copy(fields = fields + field, equivalences = equivalences + (field -> e))
     }
   }
 

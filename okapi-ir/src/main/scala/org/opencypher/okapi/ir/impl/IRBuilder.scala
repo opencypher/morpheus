@@ -153,7 +153,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           }
         } yield block
 
-      // TODO: Support merges, deletes
+      // TODO: Support merges, removes
       case ast.ConstructGraph(Nil, creates, Nil, sets) =>
         for {
           patterns <- creates.map { case ast.Create(p: exp.Pattern) => p }.traverse(convertPattern[R])
@@ -170,9 +170,9 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
                     case other => throw UnsupportedOperationException(s"Setting a labels on something that is not a node: $other")
                   }
                   val labelsAfterSet = existingLabels ++ labels
-                   val updatedSchema = currentSchema
-                      .dropPropertiesFor(existingLabels)
-                      .withNodePropertyKeys(labelsAfterSet, patternSchema.nodeKeys(existingLabels))
+                  val updatedSchema = currentSchema
+                    .dropPropertiesFor(existingLabels)
+                    .withNodePropertyKeys(labelsAfterSet, patternSchema.nodeKeys(existingLabels))
                   updatedSchema -> rewrittenVarTypes.updated(variable, CTNode(labelsAfterSet))
                 case SetPropertyItem(propertyKey, variable, setValue) =>
                   val propertyType = setValue.cypherType
@@ -234,7 +234,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           refs2 <- {
             val rItems = fieldExprs.map(_._1)
             val orderedFields = OrderedFields[Expr](rItems)
-            val result = TableResultBlock[Expr](Set(refs.last), orderedFields, Set.empty, Set.empty, context.workingGraph)
+            val result = TableResultBlock[Expr](Set(refs.last), orderedFields, context.workingGraph)
             val (resultRef, resultReg) = context2.blocks.register(result)
             put[R, IRBuilderContext](context.copy(blocks = resultReg)) >> pure[R, Vector[BlockRef]](refs :+ resultRef)
           }
@@ -348,7 +348,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
     } yield result
   }
 
-  private def convertSetItem[R: _mayFail : _hasContext](p: ast.SetItem): Eff[R, SetItem[Expr]] = {
+  private def convertSetItem[R: _hasContext](p: ast.SetItem): Eff[R, SetItem[Expr]] = {
     p match {
       case ast.SetPropertyItem(exp.LogicalProperty(map: exp.Variable, exp.PropertyKeyName(propertyName)), setValue: exp.Expression) =>
         for {
@@ -367,7 +367,6 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
             pure[R, SetItem[Expr]](setLabel)
           }
         } yield result
-      case unsupported => throw UnsupportedOperationException(s"conversion of $unsupported")
     }
   }
 
@@ -380,12 +379,12 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
         case None => None
       }
 
-  private def convertExpr[R: _mayFail : _hasContext](e: exp.Expression): Eff[R, Expr] =
+  private def convertExpr[R: _hasContext](e: exp.Expression): Eff[R, Expr] =
     for {
       context <- get[R, IRBuilderContext]
     } yield context.convertExpression(e)
 
-  private def convertWhere[R: _mayFail : _hasContext](where: Option[ast.Where]): Eff[R, Set[Expr]] = where match {
+  private def convertWhere[R: _hasContext](where: Option[ast.Where]): Eff[R, Set[Expr]] = where match {
     case Some(ast.Where(expr)) =>
       for {
         predicate <- convertExpr(expr)

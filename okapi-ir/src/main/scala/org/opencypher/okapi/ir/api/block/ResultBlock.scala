@@ -24,30 +24,28 @@ sealed trait ResultBlock[E] extends Block[E] {
 final case class TableResultBlock[E](
   after: Set[BlockRef],
   binds: OrderedFields[E],
-  nodes: Set[IRField],
-  relationships: Set[IRField],
   graph: IRGraph
 ) extends ResultBlock[E] {
 
   def select(fields: Set[IRField]): TableResultBlock[E] =
-    copy(binds = binds.select(fields), nodes = nodes intersect fields, relationships = relationships intersect fields)
+    copy(binds = binds.select(fields))
 }
 
 object TableResultBlock {
   def empty[E](graph: IRGraph) =
-    TableResultBlock(Set.empty, OrderedFields[E](), Set.empty, Set.empty, graph)
+    TableResultBlock(Set.empty, OrderedFields[E](), graph)
 }
 
-final case class OrderedFields[E](fieldsOrder: IndexedSeq[IRField] = IndexedSeq.empty) extends Binds[E] {
-  override def fields: Set[IRField] = fieldsOrder.toSet
+final case class OrderedFields[E](orderedFields: IndexedSeq[IRField] = IndexedSeq.empty) extends Binds[E] {
+  override def fields: Set[IRField] = orderedFields.toSet
 
-  def select(fields: Set[IRField]): OrderedFields[E] = copy(fieldsOrder = fieldsOrder.filter(fields.contains))
+  def select(fields: Set[IRField]): OrderedFields[E] = copy(orderedFields = orderedFields.filter(fields.contains))
 }
 
 object OrderedFields {
   def fieldsFrom[E](fields: IRField*): OrderedFields[E] = OrderedFields[E](fields.toIndexedSeq)
 
-  def unapplySeq(arg: OrderedFields[_]): Option[Seq[IRField]] = Some(arg.fieldsOrder)
+  def unapplySeq(arg: OrderedFields[_]): Option[Seq[IRField]] = Some(arg.orderedFields)
 }
 
 final case class GraphResultBlock[E](

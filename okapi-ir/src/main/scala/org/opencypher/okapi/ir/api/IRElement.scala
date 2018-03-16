@@ -37,7 +37,6 @@ final case class IRField(name: String)(val cypherType: CypherType = CTWildcard) 
   def toTypedTuple: (String, CypherType) = name -> cypherType
 }
 
-// TODO: IRGraph[Expr]
 sealed trait IRGraph {
   def schema: Schema
 }

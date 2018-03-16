@@ -38,7 +38,6 @@ final case class IRBuilderContext(
   blocks: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
   semanticState: SemanticState,
   resolver: Namespace => PropertyGraphDataSource,
-  // TODO: Remove this
   knownTypes: Map[ast.Expression, CypherType] = Map.empty) {
   self =>
 

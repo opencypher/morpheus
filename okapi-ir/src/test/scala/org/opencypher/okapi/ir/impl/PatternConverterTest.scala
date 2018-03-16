@@ -57,8 +57,6 @@ class PatternConverterTest extends IrTestSuite {
     val a: IRField = 'a -> CTNode("Person")
     val b: IRField = 'b -> CTNode("Person")
 
-    println(convert(pattern))
-
     convert(pattern) should equal(
       Pattern.empty
         .withEntity(a)
