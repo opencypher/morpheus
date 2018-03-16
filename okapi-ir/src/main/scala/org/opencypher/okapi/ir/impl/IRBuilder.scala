@@ -164,6 +164,9 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
             val fieldNamesInPattern = pattern.fields.map(_.name)
             val patternSchema = context.workingGraph.schema.forPattern(pattern)
             val (schema, _) = setItems.foldLeft(patternSchema -> Map.empty[Var, CypherType]) { case ((currentSchema, rewrittenVarTypes), setItem: SetItem[Expr]) =>
+              if (!fieldNamesInPattern.contains(setItem.variable.name)) {
+                throw UnsupportedOperationException("SET on a variable that is not defined inside of the CONSTRUCT scope")
+              }
               setItem match {
                 case SetLabelItem(variable, labels) =>
                   val existingLabels = rewrittenVarTypes.getOrElse(variable, variable.cypherType) match {

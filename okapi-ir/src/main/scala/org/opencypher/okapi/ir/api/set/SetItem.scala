@@ -17,7 +17,9 @@ package org.opencypher.okapi.ir.api.set
 
 import org.opencypher.okapi.ir.api.expr.Var
 
-sealed trait SetItem[E]
+sealed trait SetItem[E] {
+  def variable: Var
+}
 
 case class SetLabelItem[E](variable: Var, labels: Set[String]) extends SetItem[E]
 
