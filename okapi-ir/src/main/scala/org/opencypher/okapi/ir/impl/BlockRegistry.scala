@@ -26,25 +26,17 @@
  */
 package org.opencypher.okapi.ir.impl
 
-import org.opencypher.okapi.ir.api.block.{Block, BlockRef, BlockType}
+import org.opencypher.okapi.ir.api.block.Block
 
 object BlockRegistry {
-  def empty[E]: BlockRegistry[E] = BlockRegistry[E](Seq.empty)()
+  def empty[E]: BlockRegistry[E] = BlockRegistry[E](List.empty)
 }
 
-// TODO: Make this inherit from Register
-case class BlockRegistry[E](reg: Seq[(BlockRef, Block[E])])(private val counter: Int = 0) {
+case class BlockRegistry[E](reg: List[Block[E]]) {
 
-  def register(blockDef: Block[E]): (BlockRef, BlockRegistry[E]) = {
-    val ref = BlockRef(generateName(blockDef.blockType))
-    ref -> copy(reg = reg :+ ref -> blockDef)(counter + 1)
+  def register(blockDef: Block[E]): BlockRegistry[E] = {
+    copy(reg = reg :+ blockDef)
   }
 
-  def apply(ref: BlockRef): Block[E] = reg.find {
-    case (_ref, b) => ref == _ref
-  }.getOrElse(throw new NoSuchElementException(s"Didn't find block with reference $ref"))._2
-
-  def lastAdded: Option[BlockRef] = reg.lastOption.map(_._1)
-
-  private def generateName(t: BlockType) = s"${t.name}_$counter"
+  def lastAdded: Option[Block[E]] = reg.lastOption
 }

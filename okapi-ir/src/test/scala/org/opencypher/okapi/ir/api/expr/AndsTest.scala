@@ -28,6 +28,7 @@ package org.opencypher.okapi.ir.api.expr
 
 import org.opencypher.okapi.impl.exception.IllegalStateException
 import org.opencypher.okapi.ir.api.Label
+import org.opencypher.okapi.ir.test.support.MatchHelper.equalWithTracing
 import org.opencypher.okapi.test.BaseTestSuite
 
 class AndsTest extends BaseTestSuite {
@@ -36,11 +37,11 @@ class AndsTest extends BaseTestSuite {
     val x = Var("x")()
     val args: Set[Expr] = Set(Ands(TrueLit()), HasLabel(x, Label("X"))(), Ands(Ands(Ands(FalseLit()))))
 
-    Ands(args) should equal(Ands(TrueLit(), HasLabel(x, Label("X"))(), FalseLit()))
+    Ands(args).exprs should equalWithTracing(Set(TrueLit(), HasLabel(x, Label("X"))(), FalseLit()))
   }
 
   test("empty ands not allowed") {
-    a[IllegalStateException] should be thrownBy {
+    a[IllegalArgumentException] should be thrownBy {
       Ands()
     }
   }

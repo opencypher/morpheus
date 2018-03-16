@@ -35,43 +35,13 @@ import scala.collection.generic.CanBuildFrom
 
 final case class QueryModel[E](
   result: ResultBlock[E],
-  parameters: CypherMap,
-  blocks: Map[BlockRef, Block[E]]
-) {
+  parameters: CypherMap
+) extends Block[E] {
+  override def after: List[Block[E]] = result.after
 
-  def apply(ref: BlockRef): Block[E] = blocks(ref)
+  override def binds: Binds[E] = result.binds
 
-  def dependencies(ref: BlockRef): Set[BlockRef] = apply(ref).after
+  override def where: List[E] = result.where
 
-  def allDependencies(ref: BlockRef): Set[BlockRef] =
-    allDependencies(dependencies(ref).toList, List.empty, Set(ref)) - ref
-
-  def collect[T, That](f: PartialFunction[(BlockRef, Block[E]), T])(
-    implicit bf: CanBuildFrom[Map[BlockRef, Block[E]], T, That]): That = {
-    blocks.collect(f)
-  }
-
-  @tailrec
-  private def allDependencies(
-    current: List[BlockRef],
-    remaining: List[Set[BlockRef]],
-    deps: Set[BlockRef]): Set[BlockRef] = {
-    if (current.isEmpty) {
-      remaining match {
-        case hd :: tl => allDependencies(hd.toList, tl, deps)
-        case _ => deps
-      }
-    } else {
-      current match {
-        case hd :: _ if deps(hd) =>
-          throw IllegalStateException("Cycle of blocks detected!")
-
-        case hd :: tl =>
-          allDependencies(tl, dependencies(hd) +: remaining, deps + hd)
-
-        case _ =>
-          deps
-      }
-    }
-  }
+  override def graph: IRGraph = result.graph
 }

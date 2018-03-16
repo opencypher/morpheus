@@ -26,7 +26,17 @@
  */
 package org.opencypher.okapi.ir.api
 
+import org.opencypher.okapi.ir.api.block.{Binds, Block}
+
 final case class CypherQuery[E](
     info: QueryInfo,
     model: QueryModel[E]
-)
+) extends Block[E] {
+  override def after: List[Block[E]] = model.after
+
+  override def binds: Binds[E] = model.binds
+
+  override def where: List[E] = model.where
+
+  override def graph: IRGraph = model.graph
+}

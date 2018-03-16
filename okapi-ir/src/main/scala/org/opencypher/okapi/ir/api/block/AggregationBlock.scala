@@ -29,13 +29,13 @@ package org.opencypher.okapi.ir.api.block
 import org.opencypher.okapi.ir.api.{IRField, IRGraph}
 
 final case class AggregationBlock[E](
-    after: Set[BlockRef],
+    after: List[Block[E]],
     binds: Aggregations[E],
     group: Set[IRField],
     graph: IRGraph
 ) extends BasicBlock[Aggregations[E], E](BlockType("aggregation")) {
 
-  override val where: Set[E] = Set.empty[E] // no filtering in aggregation blocks
+  override val where: List[E] = List.empty[E] // no filtering in aggregation blocks
 }
 
 final case class Aggregations[E](pairs: Set[(IRField, E)]) extends Binds[E] {

@@ -46,7 +46,7 @@ final case class IRBuilderContext(
   queryString: String,
   parameters: CypherMap,
   workingGraph: IRGraph, // initially the ambient graph, but gets changed by `USE GRAPH`/`CONSTRUCT`
-  blocks: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
+  blockRegistry: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
   semanticState: SemanticState,
   resolver: Namespace => PropertyGraphDataSource,
   knownTypes: Map[ast.Expression, CypherType] = Map.empty) {
@@ -89,7 +89,7 @@ final case class IRBuilderContext(
     }
   }
 
-  def withBlocks(reg: BlockRegistry[Expr]): IRBuilderContext = copy(blocks = reg)
+  def withBlocks(reg: BlockRegistry[Expr]): IRBuilderContext = copy(blockRegistry = reg)
 
   def withFields(fields: Set[IRField]): IRBuilderContext = {
     val withFieldTypes = fields.foldLeft(knownTypes) {
@@ -115,13 +115,13 @@ object IRBuilderContext {
   ): IRBuilderContext = {
     val registry = BlockRegistry.empty[Expr]
     val block = SourceBlock[Expr](workingGraph)
-    val (_, reg) = registry.register(block)
+    val updatedRegistry = registry.register(block)
 
     val context = IRBuilderContext(
       query,
       parameters,
       workingGraph,
-      reg,
+      updatedRegistry,
       semState,
       resolver)
 

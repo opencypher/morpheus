@@ -37,31 +37,9 @@ object ExprSyntax {
 
 final class ExprOps(val e: Expr) extends AnyVal {
 
-  def evaluable(given: Set[Var]): Boolean =
+  def canEvaluate(given: Set[Var]): Boolean =
     (dependencies -- given).isEmpty
 
-  def dependencies: Set[Var] = computeDependencies(List(e), Set.empty)
+  def dependencies: Set[Var] = e.collect { case v: Var => v }.toSet
 
-  // TODO: Test this, possible consolidate into better hierarchy
-  @tailrec
-  private def computeDependencies(remaining: List[Expr], result: Set[Var]): Set[Var] =
-    remaining match {
-      case Nil => result
-      case (expr: Var) :: tl => computeDependencies(tl, result + expr)
-      case Equals(l, r) :: tl => computeDependencies(l :: r :: tl, result)
-      case StartNode(expr) :: tl => computeDependencies(expr :: tl, result)
-      case EndNode(expr) :: tl => computeDependencies(expr :: tl, result)
-      case Type(expr) :: tl => computeDependencies(expr :: tl, result)
-      case Property(expr, _) :: tl => computeDependencies(expr :: tl, result)
-      case ExistsPatternExpr(_, _) :: tl => computeDependencies(tl, result)
-      case (expr: PredicateExpression) :: tl => computeDependencies(expr.inner :: tl, result)
-      case (expr: Ands) :: tl => computeDependencies(expr.exprs.toList ++ tl, result)
-      case (expr: Ors) :: tl => computeDependencies(expr.exprs.toList ++ tl, result)
-      case (expr: Lit[_]) :: tl => computeDependencies(tl, result)
-      case (expr: Param) :: tl => computeDependencies(tl, result)
-      case (expr: BinaryExpr) :: tl => computeDependencies(expr.lhs :: expr.rhs :: tl, result)
-      case (expr: FunctionExpr) :: tl => computeDependencies(expr.exprs.toList ++ tl, result)
-      case (expr: Aggregator) :: tl => computeDependencies(expr.inner.map(_ :: tl).getOrElse(tl), result)
-      case (expr: CaseExpr) :: tl => computeDependencies(expr.alternatives.map(_._1).toList ++ tl, result)
-    }
 }

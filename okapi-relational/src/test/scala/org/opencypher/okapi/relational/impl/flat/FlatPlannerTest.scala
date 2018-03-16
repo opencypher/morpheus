@@ -298,7 +298,7 @@ class FlatPlannerTest extends BaseTestSuite {
   test("Construct selection") {
     val result = flatPlanner.process(
       mkLogical.planSelect(
-        IndexedSeq(Var("foo")(CTString)),
+        List(Var("foo")(CTString)),
         prev = mkLogical.projectField(
           IRField("foo")(CTString),
           Property(Var("n")(CTNode), PropertyKey("name"))(CTString),
@@ -309,7 +309,7 @@ class FlatPlannerTest extends BaseTestSuite {
 
     result should equalWithTracing(
       mkFlat.select(
-        IndexedSeq(Var("foo")(CTString)),
+        List(Var("foo")(CTString)),
         Set.empty,
         mkFlat.project(
           ProjectedField(Var("foo")(CTString), Property(Var("n")(CTNode), PropertyKey("name"))(CTString)),
@@ -328,7 +328,7 @@ class FlatPlannerTest extends BaseTestSuite {
 
     val result = flatPlanner.process(
       mkLogical.planSelect(
-        IndexedSeq(n),
+        List(n),
         prev = mkLogical.projectField(
           IRField("foo")(CTString),
           Property(n, PropertyKey("name"))(CTString),
@@ -338,10 +338,10 @@ class FlatPlannerTest extends BaseTestSuite {
 
     result should equalWithTracing(
       mkFlat.select(
-        IndexedSeq(n),
+        List(n),
         Set.empty,
         mkFlat.removeAliases(
-          IndexedSeq(n),
+          List(n),
           mkFlat.project(
             ProjectedField(Var("foo")(CTString), Property(n, PropertyKey("name"))(CTString)),
             flatNodeScan("n", "Person")
@@ -361,7 +361,7 @@ class FlatPlannerTest extends BaseTestSuite {
   test("Construct selection with several fields") {
     val result = flatPlanner.process(
       mkLogical.planSelect(
-        IndexedSeq(Var("foo")(CTString), Var("n")(CTNode), Var("baz")(CTInteger.nullable)),
+        List(Var("foo")(CTString), Var("n")(CTNode), Var("baz")(CTInteger.nullable)),
         prev = mkLogical.projectField(
           IRField("baz")(CTInteger),
           Property(Var("n")(CTNode), PropertyKey("age"))(CTInteger.nullable),
@@ -376,7 +376,7 @@ class FlatPlannerTest extends BaseTestSuite {
 
     result should equal(
       mkFlat.select(
-        IndexedSeq(Var("foo")(CTString), Var("n")(CTNode), Var("baz")(CTInteger.nullable)),
+        List(Var("foo")(CTString), Var("n")(CTNode), Var("baz")(CTInteger.nullable)),
         Set.empty,
         mkFlat.project(
           ProjectedField(
@@ -388,7 +388,7 @@ class FlatPlannerTest extends BaseTestSuite {
         )
       )
     )
-    orderedContents should equal(IndexedSeq(Var("foo")(CTString), Var("n")(CTNode), Var("baz")(CTInteger)))
+    orderedContents should equal(List(Var("foo")(CTString), Var("n")(CTNode), Var("baz")(CTInteger)))
   }
 
   private def logicalNodeScan(nodeField: String, labelNames: String*) =

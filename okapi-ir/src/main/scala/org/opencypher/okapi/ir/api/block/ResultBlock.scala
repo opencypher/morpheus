@@ -29,11 +29,11 @@ package org.opencypher.okapi.ir.api.block
 import org.opencypher.okapi.ir.api._
 
 sealed trait ResultBlock[E] extends Block[E] {
-  override val where: Set[E] = Set.empty
+  override val where: List[E] = List.empty
 }
 
 final case class TableResultBlock[E](
-  after: Set[BlockRef],
+  after: List[Block[E]],
   binds: OrderedFields[E],
   graph: IRGraph
 ) extends ResultBlock[E] {
@@ -44,23 +44,23 @@ final case class TableResultBlock[E](
 
 object TableResultBlock {
   def empty[E](graph: IRGraph) =
-    TableResultBlock(Set.empty, OrderedFields[E](), graph)
+    TableResultBlock(List.empty, OrderedFields[E](), graph)
 }
 
-final case class OrderedFields[E](orderedFields: IndexedSeq[IRField] = IndexedSeq.empty) extends Binds[E] {
+final case class OrderedFields[E](orderedFields: List[IRField] = List.empty) extends Binds[E] {
   override def fields: Set[IRField] = orderedFields.toSet
 
   def select(fields: Set[IRField]): OrderedFields[E] = copy(orderedFields = orderedFields.filter(fields.contains))
 }
 
 object OrderedFields {
-  def fieldsFrom[E](fields: IRField*): OrderedFields[E] = OrderedFields[E](fields.toIndexedSeq)
+  def fieldsFrom[E](fields: IRField*): OrderedFields[E] = OrderedFields[E](fields.toList)
 
   def unapplySeq(arg: OrderedFields[_]): Option[Seq[IRField]] = Some(arg.orderedFields)
 }
 
 final case class GraphResultBlock[E](
-  after: Set[BlockRef],
+  after: List[Block[E]],
   graph: IRGraph
 ) extends ResultBlock[E] {
   override val binds: Binds[E] = Binds.empty

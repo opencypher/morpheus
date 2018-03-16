@@ -43,7 +43,6 @@ import org.scalatest.mockito.MockitoSugar
 import scala.language.implicitConversions
 
 abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
-  val leafRef = BlockRef("leaf")
 
   val testNamespace = Namespace("testNamespace")
   val testGraphName = GraphName("test")
@@ -63,47 +62,32 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
 
   def leafBlock(): SourceBlock[Expr] = SourceBlock[Expr](testGraph)
 
-  val graphBlockRef: BlockRef = BlockRef("graph")
   val graphBlock: SourceBlock[Expr] = SourceBlock[Expr](testGraph)
 
-  /**
-    * Construct a single-block ir; the parameter block has to be a block that could be planned as a leaf.
-    */
-  def irFor(leaf: Block[Expr]): CypherQuery[Expr] =
-    irFor(BlockRef("root"), Map(BlockRef("root") -> leaf))
-
-  /**
-    * Construct a two-block ir; the parameter block needs have the leafRef in its after set.
-    * A leaf block will be created.
-    */
-  def irWithLeaf(nonLeaf: Block[Expr]): CypherQuery[Expr] = {
-    val rootRef = BlockRef("root")
-    val blocks = Map(rootRef -> nonLeaf, BlockRef("nonLeaf") -> nonLeaf, leafRef -> leafBlock)
-    irFor(rootRef, blocks)
-  }
-
   def project(
-      fields: Fields[Expr],
-      after: Set[BlockRef] = Set(leafRef),
-      given: Set[Expr] = Set.empty[Expr]) =
+    fields: Fields[Expr],
+    after: List[Block[Expr]] = List(leafBlock),
+    given: List[Expr] = List.empty[Expr]) =
     ProjectBlock(after, fields, given, testGraph)
 
   protected def matchBlock(pattern: Pattern[Expr]): Block[Expr] =
-    MatchBlock[Expr](Set(leafRef), pattern, Set.empty[Expr], false, testGraph)
+    MatchBlock[Expr](List(leafBlock), pattern, List.empty[Expr], false, testGraph)
 
-  def irFor(rootRef: BlockRef, blocks: Map[BlockRef, Block[Expr]]): CypherQuery[Expr] = {
+  def irFor(root: Block[Expr], blocks: List[Block[Expr]] = List.empty): CypherQuery[Expr] = {
     val result = TableResultBlock[Expr](
-      after = Set(rootRef),
+      after = List(root),
       binds = OrderedFields[Expr](),
       graph = testGraph
     )
-    val model = QueryModel(result, CypherMap.empty, blocks)
+    val model = QueryModel(result, CypherMap.empty)
     CypherQuery(QueryInfo("test"), model)
   }
 
-  case class DummyBlock[E](after: Set[BlockRef] = Set.empty) extends BasicBlock[DummyBinds[E], E](BlockType("dummy")) {
+  case class DummyBlock[E](override val after: List[Block[E]] = List.empty) extends BasicBlock[DummyBinds[E], E](BlockType("dummy")) {
     override def binds: DummyBinds[E] = DummyBinds[E]()
-    override def where: Set[E] = Set.empty[E]
+
+    override def where: List[E] = List.empty[E]
+
     override val graph = testGraph
   }
 
@@ -133,4 +117,5 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
           _ => testGraphSource(testGraphName -> schema)))
     }
   }
+
 }

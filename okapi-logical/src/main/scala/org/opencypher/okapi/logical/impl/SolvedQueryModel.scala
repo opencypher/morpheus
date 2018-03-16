@@ -53,7 +53,7 @@ case class SolvedQueryModel(
   def contains(blocks: Set[Block[Expr]]): Boolean = blocks.forall(contains)
   def contains(block: Block[Expr]): Boolean = {
     val bindsFields = block.binds.fields subsetOf fields
-    val preds = block.where subsetOf predicates
+    val preds = block.where.toSet subsetOf predicates
 
     bindsFields && preds
   }

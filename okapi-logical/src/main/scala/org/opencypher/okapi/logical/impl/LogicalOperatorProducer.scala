@@ -120,7 +120,7 @@ class LogicalOperatorProducer {
     Unwind(list, variable, withList, withList.solved.withField(variable))
   }
 
-  def planSelect(fields: IndexedSeq[Var], prev: LogicalOperator): Select = {
+  def planSelect(fields: List[Var], prev: LogicalOperator): Select = {
     Select(fields, Set.empty, prev, prev.solved)
   }
 

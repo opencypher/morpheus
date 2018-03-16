@@ -151,7 +151,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
   override def select(
     graph: PropertyGraph,
     in: CypherRecords,
-    fields: IndexedSeq[Var],
+    fields: List[Var],
     queryParameters: CypherMap): CAPSRecords = {
     val scan = planStart(graph, in.asCaps.header.internalHeader.fields)
     val select = producer.planSelect(fields, scan)

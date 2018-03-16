@@ -36,6 +36,7 @@ import org.opencypher.okapi.ir.api.expr.{Expr, HasLabel, Property, Var}
 import org.opencypher.okapi.ir.api.pattern._
 import org.opencypher.okapi.ir.impl.exception.ParsingException
 import org.opencypher.okapi.ir.test._
+import org.opencypher.okapi.ir.test.support.MatchHelper.equalWithTracing
 
 import scala.collection.immutable.Set
 
@@ -49,12 +50,10 @@ class IrBuilderTest extends IrTestSuite {
         |}
         |RETURN GRAPH""".stripMargin
 
-    query.model.ensureThat { (model, _) =>
-      model.result match {
-        case GraphResultBlock(_, IRPatternGraph(schema, _, _)) =>
-          schema should equal(Schema.empty.withNodePropertyKeys("A")())
-        case _ => fail("no matching graph result found")
-      }
+    query.model.result match {
+      case GraphResultBlock(_, IRPatternGraph(schema, _, _)) =>
+        schema should equal(Schema.empty.withNodePropertyKeys("A")())
+      case _ => fail("no matching graph result found")
     }
   }
 
@@ -95,12 +94,10 @@ class IrBuilderTest extends IrTestSuite {
         |}
         |RETURN GRAPH""".stripMargin
 
-    query.model.ensureThat { (model, _) =>
-      model.result match {
-        case GraphResultBlock(_, IRPatternGraph(schema, _, _)) =>
-          schema should equal(Schema.empty.withNodePropertyKeys("A")().withNodePropertyKeys("B", "C")())
-        case _ => fail("no matching graph result found")
-      }
+    query.model.result match {
+      case GraphResultBlock(_, IRPatternGraph(schema, _, _)) =>
+        schema should equal(Schema.empty.withNodePropertyKeys("A")().withNodePropertyKeys("B", "C")())
+      case _ => fail("no matching graph result found")
     }
   }
 
@@ -114,12 +111,10 @@ class IrBuilderTest extends IrTestSuite {
         |}
         |RETURN GRAPH""".stripMargin
 
-    query.model.ensureThat { (model, _) =>
-      model.result match {
-        case GraphResultBlock(_, IRPatternGraph(schema, _, _)) =>
-          schema should equal(Schema.empty.withNodePropertyKeys("A", "D")().withNodePropertyKeys("B", "C")())
-        case _ => fail("no matching graph result found")
-      }
+    query.model.result match {
+      case GraphResultBlock(_, IRPatternGraph(schema, _, _)) =>
+        schema should equal(Schema.empty.withNodePropertyKeys("A", "D")().withNodePropertyKeys("B", "C")())
+      case _ => fail("no matching graph result found")
     }
   }
 
@@ -133,12 +128,10 @@ class IrBuilderTest extends IrTestSuite {
         |}
         |RETURN GRAPH""".stripMargin
 
-    query.model.ensureThat { (model, _) =>
-      model.result match {
-        case GraphResultBlock(_, IRPatternGraph(schema, _, _)) =>
-          schema should equal(Schema.empty.withNodePropertyKeys("A", "B", "C")())
-        case _ => fail("no matching graph result found")
-      }
+    query.model.result match {
+      case GraphResultBlock(_, IRPatternGraph(schema, _, _)) =>
+        schema should equal(Schema.empty.withNodePropertyKeys("A", "B", "C")())
+      case _ => fail("no matching graph result found")
     }
   }
 
@@ -153,12 +146,10 @@ class IrBuilderTest extends IrTestSuite {
         |}
         |RETURN GRAPH""".stripMargin
 
-    query.model.ensureThat { (model, _) =>
-      model.result match {
-        case GraphResultBlock(_, IRPatternGraph(schema, _, _)) =>
-          schema should equal(Schema.empty.withNodePropertyKeys("A", "B")().withNodePropertyKeys("A", "C")())
-        case _ => fail("no matching graph result found")
-      }
+    query.model.result match {
+      case GraphResultBlock(_, IRPatternGraph(schema, _, _)) =>
+        schema should equal(Schema.empty.withNodePropertyKeys("A", "B")().withNodePropertyKeys("A", "C")())
+      case _ => fail("no matching graph result found")
     }
   }
 
@@ -173,12 +164,10 @@ class IrBuilderTest extends IrTestSuite {
         |}
         |RETURN GRAPH""".stripMargin
 
-    query.model.ensureThat { (model, _) =>
-      model.result match {
-        case GraphResultBlock(_, IRPatternGraph(schema, _, _)) =>
-          schema should equal(Schema.empty.withNodePropertyKeys("A", "B")())
-        case _ => fail("no matching graph result found")
-      }
+    query.model.result match {
+      case GraphResultBlock(_, IRPatternGraph(schema, _, _)) =>
+        schema should equal(Schema.empty.withNodePropertyKeys("A", "B")())
+      case _ => fail("no matching graph result found")
     }
   }
 
@@ -191,12 +180,10 @@ class IrBuilderTest extends IrTestSuite {
         |}
         |RETURN GRAPH""".stripMargin
 
-    query.model.ensureThat { (model, _) =>
-      model.result match {
-        case GraphResultBlock(_, IRPatternGraph(schema, _, _)) =>
-          schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString))
-        case _ => fail("no matching graph result found")
-      }
+    query.model.result match {
+      case GraphResultBlock(_, IRPatternGraph(schema, _, _)) =>
+        schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString))
+      case _ => fail("no matching graph result found")
     }
   }
 
@@ -209,12 +196,10 @@ class IrBuilderTest extends IrTestSuite {
         |}
         |RETURN GRAPH""".stripMargin
 
-    query.model.ensureThat { (model, _) =>
-      model.result match {
-        case GraphResultBlock(_, IRPatternGraph(schema, _, _)) =>
-          schema should equal(Schema.empty.withNodePropertyKeys("A", "B")("name" -> CTString))
-        case _ => fail("no matching graph result found")
-      }
+    query.model.result match {
+      case GraphResultBlock(_, IRPatternGraph(schema, _, _)) =>
+        schema should equal(Schema.empty.withNodePropertyKeys("A", "B")("name" -> CTString))
+      case _ => fail("no matching graph result found")
     }
   }
 
@@ -227,12 +212,10 @@ class IrBuilderTest extends IrTestSuite {
         |}
         |RETURN GRAPH""".stripMargin
 
-    query.model.ensureThat { (model, _) =>
-      model.result match {
-        case GraphResultBlock(_, IRPatternGraph(schema, _, _)) =>
-          schema should equal(Schema.empty.withNodePropertyKeys(Set.empty[String]).withRelationshipPropertyKeys("R")("level" -> CTString))
-        case _ => fail("no matching graph result found")
-      }
+    query.model.result match {
+      case GraphResultBlock(_, IRPatternGraph(schema, _, _)) =>
+        schema should equal(Schema.empty.withNodePropertyKeys(Set.empty[String]).withRelationshipPropertyKeys("R")("level" -> CTString))
+      case _ => fail("no matching graph result found")
     }
   }
 
@@ -246,12 +229,10 @@ class IrBuilderTest extends IrTestSuite {
         |}
         |RETURN GRAPH""".stripMargin
 
-    query.model.ensureThat { (model, _) =>
-      model.result match {
-        case GraphResultBlock(_, IRPatternGraph(schema, _, _)) =>
-          schema should equal(Schema.empty.withNodePropertyKeys(Set("A"), PropertyKeys("category" -> CTString, "ports" -> CTInteger)))
-        case _ => fail("no matching graph result found")
-      }
+    query.model.result match {
+      case GraphResultBlock(_, IRPatternGraph(schema, _, _)) =>
+        schema should equal(Schema.empty.withNodePropertyKeys(Set("A"), PropertyKeys("category" -> CTString, "ports" -> CTInteger)))
+      case _ => fail("no matching graph result found")
     }
   }
 
@@ -268,68 +249,63 @@ class IrBuilderTest extends IrTestSuite {
         |}
         |RETURN GRAPH""".stripMargin
 
-    query.model.ensureThat { (model, _) =>
-      model.result match {
-        case GraphResultBlock(_, IRPatternGraph(schema, _, _)) =>
-          schema should equal(Schema.empty.withNodePropertyKeys("A", "B")())
-        case _ => fail("no matching graph result found")
-      }
+    query.model.result match {
+      case GraphResultBlock(_, IRPatternGraph(schema, _, _)) =>
+        schema should equal(Schema.empty.withNodePropertyKeys("A", "B")())
+      case _ => fail("no matching graph result found")
     }
   }
 
   test("match node and return it") {
     "MATCH (a:Person) RETURN a".model.ensureThat { (model, globals) =>
-      val loadRef = model.findExactlyOne {
+      val loadBlock = model.findExactlyOne {
         case NoWhereBlock(s@SourceBlock(_)) =>
           s.binds.fields shouldBe empty
       }
 
-      val matchRef = model.findExactlyOne {
+      val matchBlock = model.findExactlyOne {
         case MatchBlock(deps, Pattern(fields, topo, equivalences), exprs, _, _) =>
-          deps should equal(Set(loadRef))
+          deps should equalWithTracing(List(loadBlock))
           fields should equal(Set(toField('a -> CTNode)))
           topo shouldBe empty
-          exprs should equal(Set(HasLabel(toVar('a), Label("Person"))()))
+          exprs should equalWithTracing(List(HasLabel(toVar('a), Label("Person"))()))
       }
 
-      val projectRef = model.findExactlyOne {
+      val projectBlock = model.findExactlyOne {
         case NoWhereBlock(ProjectBlock(deps, Fields(map), _, _, _)) =>
-          deps should equal(Set(matchRef))
+          deps should equalWithTracing(List(matchBlock))
           map should equal(Map(toField('a) -> toVar('a)))
       }
 
       model.result match {
-        case NoWhereBlock(TableResultBlock(deps, OrderedFields(IndexedSeq(IRField("a"))), _)) =>
-          deps should equal(Set(projectRef))
+        case NoWhereBlock(TableResultBlock(deps, OrderedFields(List(IRField("a"))), _)) =>
+          deps should equal(List(projectBlock))
       }
 
-      model.requirements should equal(
-        Map(
-          projectRef -> Set(matchRef),
-          matchRef -> Set(loadRef),
-          loadRef -> Set()
-        ))
+      model.dependencies should equalWithTracing(
+        Set(matchBlock, loadBlock, projectBlock, model.result)
+      )
     }
   }
 
-  test("match simple relationship pattern and return some fields") {
+  it("matches a simple relationship pattern and returns some fields") {
     "MATCH (a)-[r]->(b) RETURN b AS otherB, a, r".model.ensureThat { (model, globals) =>
-      val loadRef = model.findExactlyOne {
+      val loadBlock = model.findExactlyOne {
         case NoWhereBlock(s@SourceBlock(_)) =>
           s.binds.fields shouldBe empty
       }
 
-      val matchRef = model.findExactlyOne {
+      val matchBlock = model.findExactlyOne {
         case NoWhereBlock(MatchBlock(deps, Pattern(fields, topo, equivalences), _, _, _)) =>
-          deps should equal(Set(loadRef))
+          deps should equal(List(loadBlock))
           fields should equal(Set[IRField]('a -> CTNode, 'b -> CTNode, 'r -> CTRelationship))
           val map = Map(toField('r) -> DirectedRelationship('a, 'b))
           topo should equal(map)
       }
 
-      val projectRef = model.findExactlyOne {
+      val projectBlock = model.findExactlyOne {
         case NoWhereBlock(ProjectBlock(deps, Fields(map), _, _, _)) =>
-          deps should equal(Set(matchRef))
+          deps should equalWithTracing(List(matchBlock))
           map should equal(
             Map(
               toField('a) -> toVar('a),
@@ -338,38 +314,35 @@ class IrBuilderTest extends IrTestSuite {
             ))
       }
 
-      model.result match {
-        case NoWhereBlock(TableResultBlock(_, OrderedFields(IndexedSeq(IRField("otherB"), IRField("a"), IRField("r"))), _)) =>
+      val resultBlock = model.result.findExactlyOne {
+        case TableResultBlock(_, OrderedFields(List(IRField("otherB"), IRField("a"), IRField("r"))), _) =>
       }
 
-      model.requirements should equal(
-        Map(
-          projectRef -> Set(matchRef),
-          matchRef -> Set(loadRef),
-          loadRef -> Set()
-        ))
+      model.dependencies should equalWithTracing(
+        Set(matchBlock, loadBlock, projectBlock, resultBlock)
+      )
     }
   }
 
-  test("match node order by name and return it") {
+  it("matches node order by name and returns it") {
     "MATCH (a:Person) WITH a.name AS name, a.age AS age ORDER BY age RETURN age, name".model.ensureThat {
-      (model, globals) =>
-        val loadRef = model.findExactlyOne {
+      (model, _) =>
+        val loadBlock = model.findExactlyOne {
           case NoWhereBlock(s@SourceBlock(_)) =>
             s.binds.fields shouldBe empty
         }
 
-        val matchRef = model.findExactlyOne {
+        val matchBlock = model.findExactlyOne {
           case MatchBlock(deps, Pattern(fields, topo, equivalences), exprs, _, _) =>
-            deps should equal(Set(loadRef))
+            deps should equalWithTracing(List(loadBlock))
             fields should equal(Set(toField('a -> CTNode)))
             topo shouldBe empty
-            exprs should equal(Set(HasLabel(toVar('a), Label("Person"))()))
+            exprs should equalWithTracing(List(HasLabel(toVar('a), Label("Person"))()))
         }
 
-        val projectRef = model.findExactlyOne {
-          case NoWhereBlock(ProjectBlock(deps, Fields(map), _, _, _)) if deps.head == matchRef =>
-            deps should equal(Set(matchRef))
+        val projectBlock1 = model.findExactlyOne {
+          case NoWhereBlock(ProjectBlock(deps, Fields(map), _, _, _)) if deps.head == matchBlock =>
+            deps should equalWithTracing(List(matchBlock))
             map should equal(
               Map(
                 toField('name) -> Property(Var("a")(CTNode), PropertyKey("name"))(CTNull),
@@ -377,9 +350,9 @@ class IrBuilderTest extends IrTestSuite {
               ))
         }
 
-        val project2Ref = model.findExactlyOne {
-          case NoWhereBlock(ProjectBlock(deps, Fields(map), _, _, _)) if deps.head == projectRef =>
-            deps should equal(Set(projectRef))
+        val projectBlock2 = model.findExactlyOne {
+          case NoWhereBlock(ProjectBlock(deps, Fields(map), _, _, _)) if deps.head == projectBlock1 =>
+            deps should equalWithTracing(List(projectBlock1))
             map should equal(
               Map(
                 toField('age) -> toVar('age),
@@ -387,16 +360,16 @@ class IrBuilderTest extends IrTestSuite {
               ))
         }
 
-        val orderByRef = model.findExactlyOne {
+        val orderByBlock = model.findExactlyOne {
           case NoWhereBlock(OrderAndSliceBlock(deps, orderBy, None, None, _)) =>
-            val ordered = Vector(Asc(toVar('age)))
+            val ordered = List(Asc(toVar('age)))
             orderBy should equal(ordered)
-            deps should equal(Set(project2Ref))
+            deps should equalWithTracing(List(projectBlock2))
         }
 
-        val project3Ref = model.findExactlyOne {
-          case NoWhereBlock(ProjectBlock(deps, Fields(map), _, _, _)) if deps.head == orderByRef =>
-            deps should equal(Set(orderByRef))
+        val projectBlock3 = model.findExactlyOne {
+          case NoWhereBlock(ProjectBlock(deps, Fields(map), _, _, _)) if deps.head == orderByBlock =>
+            deps should equalWithTracing(List(orderByBlock))
             map should equal(
               Map(
                 toField('age) -> toVar('age),
@@ -404,20 +377,14 @@ class IrBuilderTest extends IrTestSuite {
               ))
         }
 
-        model.result match {
-          case NoWhereBlock(TableResultBlock(deps, OrderedFields(IndexedSeq(IRField("age"), IRField("name"))), _)) =>
-            deps should equal(Set(project3Ref))
+        val resultBlock = model.findExactlyOne {
+          case TableResultBlock(deps, OrderedFields(List(IRField("age"), IRField("name"))), _) =>
+            deps should equalWithTracing(List(projectBlock3))
         }
 
-        model.requirements should equal(
-          Map(
-            project3Ref -> Set(orderByRef),
-            orderByRef -> Set(project2Ref),
-            project2Ref -> Set(projectRef),
-            projectRef -> Set(matchRef),
-            matchRef -> Set(loadRef),
-            loadRef -> Set()
-          ))
+        model.dependencies should equalWithTracing(
+          Set(orderByBlock, projectBlock3, projectBlock2, projectBlock1, matchBlock, loadBlock, resultBlock)
+        )
     }
   }
 
@@ -470,30 +437,25 @@ class IrBuilderTest extends IrTestSuite {
   //    }
   //  }
 
+  implicit class RichBlock(b: Block[Expr]) {
+
+    def findExactlyOne(f: PartialFunction[Block[Expr], Unit]): Block[Expr] = {
+      val results = b.collect {
+        case block if f.isDefinedAt(block) =>
+          f(block)
+          block
+      }
+      withClue(s"Failed to extract single matching block from $b") {
+        results.size should equal(1)
+      }
+      results.head
+    }
+  }
+
   implicit class RichModel(model: QueryModel[Expr]) {
 
     def ensureThat(f: (QueryModel[Expr], CypherMap) => Unit) = f(model, model.parameters)
 
-    def requirements = {
-      val deps = model.result.after
-      val allDeps = deps.flatMap(model.allDependencies) ++ deps
-      model.blocks.keySet should equal(allDeps)
-      allDeps.map { ref =>
-        ref -> model.dependencies(ref)
-      }.toMap
-    }
-
-    def findExactlyOne(f: PartialFunction[Block[Expr], Unit]): BlockRef = {
-      val result = model.collect {
-        case (ref, block) if f.isDefinedAt(block) =>
-          f(block)
-          ref
-      }
-      withClue(s"Failed to extract single matching block from ${model.blocks}") {
-        result.size should equal(1)
-      }
-      result.head
-    }
   }
 
 }

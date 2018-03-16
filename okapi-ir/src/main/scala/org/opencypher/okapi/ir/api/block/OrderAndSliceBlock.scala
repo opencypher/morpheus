@@ -29,14 +29,14 @@ package org.opencypher.okapi.ir.api.block
 import org.opencypher.okapi.ir.api.IRGraph
 
 final case class OrderAndSliceBlock[E](
-    after: Set[BlockRef],
+    after: List[Block[E]],
     orderBy: Seq[SortItem[E]],
     skip: Option[E],
     limit: Option[E],
     graph: IRGraph
 ) extends BasicBlock[OrderedFields[E], E](BlockType("order-and-slice")) {
   override val binds = OrderedFields[E]()
-  override def where: Set[E] = Set.empty[E]
+  override def where: List[E] = List.empty[E]
 }
 
 sealed trait SortItem[E] {
