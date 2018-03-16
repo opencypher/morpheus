@@ -379,7 +379,7 @@ object LdbcConverter extends App {
          |    "column": ${structType.fieldIndex(idColumnName)},
          |    "valueType": "String"
          |  },
-         |  "implicitLabels": ["${label.nodeLabel}"],
+         |  "implicitLabels": ["$label"],
          |  "propertyFields": [${
         structType.fields.filterNot(_.name == idColumnName).map { structField =>
           s"""
@@ -419,7 +419,7 @@ object LdbcConverter extends App {
          |     "column": ${structType.fieldIndex(targetColumn)},
          |     "valueType": "String"
          |  },
-         |  "relationshipType": "${relType.relType}",
+         |  "relationshipType": "$relType",
          |  "propertyFields": [${
         structType.fields.filterNot(field => fixedColumns.contains(field.name)).map { structField =>
         s"""
