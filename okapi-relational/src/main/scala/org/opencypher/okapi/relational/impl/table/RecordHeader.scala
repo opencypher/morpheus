@@ -39,6 +39,16 @@ final case class RecordHeader(internalHeader: InternalHeader) {
   def ++(other: RecordHeader): RecordHeader =
     copy(internalHeader ++ other.internalHeader)
 
+  /**
+    * Returns this record header with all fields of the other record header removed.
+    *
+    * @param other the header to remove
+    * @return updated header
+    */
+  def --(other: RecordHeader): RecordHeader =
+    copy(internalHeader -- other.internalHeader)
+
+
   def indexOf(content: SlotContent): Option[Int] = slots.find(_.content == content).map(_.index)
 
   /**
@@ -68,8 +78,9 @@ final case class RecordHeader(internalHeader: InternalHeader) {
 
   // TODO: Push error handling to API consumers
 
-  def slotFor(variable: Var): RecordSlot =
-    slotsFor(variable).headOption.getOrElse(???)
+  def slotFor(variable: Var): RecordSlot = slotsFor(variable).headOption.getOrElse(
+    throw IllegalArgumentException(s"One of $fields", variable)
+  )
 
   def mandatory(slot: RecordSlot): Boolean =
     internalHeader.mandatory(slot)

@@ -52,7 +52,7 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
 
   def discardScansForNonexistentLabels: PartialFunction[LogicalOperator, LogicalOperator] = {
     case scan@NodeScan(v, in, _) =>
-      def graphSchema = in.sourceGraph.schema
+      def graphSchema = in.graph.schema
 
       def emptyRecords = EmptyRecords(Set(v), in, scan.solved)
 

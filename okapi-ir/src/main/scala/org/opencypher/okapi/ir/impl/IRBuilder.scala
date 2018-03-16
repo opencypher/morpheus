@@ -19,16 +19,17 @@ import cats.implicits._
 import org.atnos.eff._
 import org.atnos.eff.all._
 import org.neo4j.cypher.internal.frontend.v3_4.ast
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
-import org.neo4j.cypher.internal.v3_4.expressions.{Expression, StringLiteral, Variable, Pattern => AstPattern}
+import org.neo4j.cypher.internal.v3_4.{expressions => exp}
 import org.opencypher.okapi.api.graph.QualifiedGraphName
+import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, UnsupportedOperationException}
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block.{SortItem, _}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern.Pattern
+import org.opencypher.okapi.ir.api.set.{SetItem, SetLabelItem, SetPropertyItem}
 import org.opencypher.okapi.ir.api.util.CompilationStage
 import org.opencypher.okapi.ir.impl.refactor.instances._
 
@@ -41,12 +42,12 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
 
   override def extract(output: Out): CypherQuery[Expr] =
     output match {
-      case Left(error)         => throw IllegalStateException(s"Error during IR construction: $error")
+      case Left(error) => throw IllegalStateException(s"Error during IR construction: $error")
       case Right((Some(q), _)) => q
-      case Right((None, _))    => throw IllegalStateException(s"Failed to construct IR")
+      case Right((None, _)) => throw IllegalStateException(s"Failed to construct IR")
     }
 
-  private def buildIR[R: _mayFail: _hasContext](s: ast.Statement): Eff[R, Option[CypherQuery[Expr]]] =
+  private def buildIR[R: _mayFail : _hasContext](s: ast.Statement): Eff[R, Option[CypherQuery[Expr]]] =
     s match {
       case ast.Query(_, part) =>
         for {
@@ -66,36 +67,35 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
         error(IRBuilderError(s"Statement not yet supported: $x"))(None)
     }
 
-  def registerIRGraph[R: _hasContext](c: Clause): Eff[R, IRGraph] = {
-    for {
-      context <- get[R, IRBuilderContext]
-      graph <- {
-        val currentGraph = context.semanticState.recordedContextGraphs.find {
-          case (clause, _) =>
-            c.position == clause.position
-        }.map(_._2)
-          .map { g =>
-            IRNamedGraph(g.source, context.schemaFor(g.source), context.graphs(g.source))
-          }
-          .getOrElse(context.ambientGraph)
-        put[R, IRBuilderContext](context.withGraph(currentGraph)) >> pure[R, IRGraph](currentGraph)
-      }
-    } yield graph
-  }
-
-  private def convertClause[R: _mayFail: _hasContext](c: ast.Clause): Eff[R, Vector[BlockRef]] = {
+  private def convertClause[R: _mayFail : _hasContext](c: ast.Clause): Eff[R, Vector[BlockRef]] = {
 
     c match {
+
+      case ast.UseGraph(qgn: ast.QualifiedGraphName) =>
+        for {
+          context <- get[R, IRBuilderContext]
+          refs <- {
+            val irQgn = QualifiedGraphName(qgn.parts)
+            val ds = context.resolver(irQgn.namespace)
+            val schema = ds.schema(irQgn.graphName) match {
+              case Some(s) => s
+              case None => ds.graph(irQgn.graphName).schema
+            }
+            val irGraph = IRCatalogGraph(irQgn, schema)
+            val updatedContext = context.withWorkingGraph(irGraph)
+            put[R, IRBuilderContext](updatedContext) >> pure[R, Vector[BlockRef]](Vector.empty)
+          }
+        } yield refs
+
       case ast.Match(optional, pattern, _, astWhere) =>
         for {
-          irGraph <- registerIRGraph(c)
           pattern <- convertPattern(pattern)
           given <- convertWhere(astWhere)
           context <- get[R, IRBuilderContext]
           refs <- {
             val blockRegistry = context.blocks
             val after = blockRegistry.lastAdded.toSet
-            val block = MatchBlock[Expr](after, pattern, given, optional, irGraph)
+            val block = MatchBlock[Expr](after, pattern, given, optional, context.workingGraph)
 
             val typedOutputs = typedMatchBlock.outputs(block)
             val (ref, reg) = blockRegistry.register(block)
@@ -104,37 +104,35 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           }
         } yield refs
 
-      case ast.With(distinct, ast.ReturnItems(_, items), GraphReturnItems(_, gItems), orderBy, skip, limit, where)
-          if !items.exists(_.expression.containsAggregate) =>
+      case ast.With(distinct, ast.ReturnItems(_, items), orderBy, skip, limit, where)
+        if !items.exists(_.expression.containsAggregate) =>
         for {
-          irGraph <- registerIRGraph(c)
           fieldExprs <- items.toVector.traverse(convertReturnItem[R])
-          graphs <- gItems.toVector.traverse(convertGraphReturnItem[R])
           given <- convertWhere(where)
           context <- get[R, IRBuilderContext]
           refs <- {
             val (projectRef, projectReg) =
-              registerProjectBlock(context, fieldExprs, graphs, given, irGraph, distinct = distinct)
+              registerProjectBlock(context, fieldExprs, given, context.workingGraph, distinct = distinct)
             val appendList = (list: Vector[BlockRef]) => pure[R, Vector[BlockRef]](projectRef +: list)
             val orderAndSliceBlock = registerOrderAndSliceBlock(orderBy, skip, limit)
             put[R, IRBuilderContext](context.copy(blocks = projectReg)) >> orderAndSliceBlock flatMap appendList
           }
         } yield refs
 
-      case ast.With(distinct, ast.ReturnItems(_, items), GraphReturnItems(_, Seq()), _, _, _, None) =>
+      case ast.With(distinct, ast.ReturnItems(_, items), _, _, _, None) =>
         for {
           fieldExprs <- items.toVector.traverse(convertReturnItem[R])
           context <- get[R, IRBuilderContext]
           refs <- {
             val (agg, group) = fieldExprs.partition {
               case (_, _: Aggregator) => true
-              case _                  => false
+              case _ => false
             }
 
-            val (ref1, reg1) = registerProjectBlock(context, group, source = context.ambientGraph, distinct = distinct)
+            val (ref1, reg1) = registerProjectBlock(context, group, source = context.workingGraph, distinct = distinct)
             val after = reg1.lastAdded.toSet
             val aggBlock =
-              AggregationBlock[Expr](after, Aggregations(agg.toSet), group.map(_._1).toSet, context.ambientGraph)
+              AggregationBlock[Expr](after, Aggregations(agg.toSet), group.map(_._1).toSet, context.workingGraph)
             val (ref2, reg2) = reg1.register(aggBlock)
 
             put[R, IRBuilderContext](context.copy(blocks = reg2)) >> pure[R, Vector[BlockRef]](Vector(ref1, ref2))
@@ -143,31 +141,78 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
 
       case ast.Unwind(listExpression, variable) =>
         for {
-          irGraph <- registerIRGraph(c)
           tuple <- convertUnwindItem(listExpression, variable)
           context <- get[R, IRBuilderContext]
           block <- {
             val (list, item) = tuple
-
             val binds: UnwoundList[Expr] = UnwoundList(list, item)
-
-            val block = UnwindBlock(context.blocks.lastAdded.toSet, binds, irGraph)
-
+            val block = UnwindBlock(context.blocks.lastAdded.toSet, binds, context.workingGraph)
             val (ref, reg) = context.blocks.register(block)
 
             put[R, IRBuilderContext](context.copy(blocks = reg)) >> pure[R, Vector[BlockRef]](Vector(ref))
           }
         } yield block
 
-      case ast.Return(distinct, ast.ReturnItems(_, items), graphItems, orderBy, skip, limit, _) =>
+      // TODO: Support merges, removes
+      case ast.ConstructGraph(Nil, creates, Nil, sets) =>
         for {
-          irGraph <- registerIRGraph(c)
+          patterns <- creates.map { case ast.Create(p: exp.Pattern) => p }.traverse(convertPattern[R])
+          setItems <- sets.flatMap { case ast.SetClause(s: Seq[ast.SetItem]) => s }.traverse(convertSetItem[R])
+          context <- get[R, IRBuilderContext]
+          refs <- {
+            val pattern = patterns.foldLeft(Pattern.empty[Expr])(_ ++ _)
+            val fieldNamesInPattern = pattern.fields.map(_.name)
+            val patternSchema = context.workingGraph.schema.forPattern(pattern)
+            val (schema, _) = setItems.foldLeft(patternSchema -> Map.empty[Var, CypherType]) { case ((currentSchema, rewrittenVarTypes), setItem: SetItem[Expr]) =>
+              if (!fieldNamesInPattern.contains(setItem.variable.name)) {
+                throw UnsupportedOperationException("SET on a variable that is not defined inside of the CONSTRUCT scope")
+              }
+              setItem match {
+                case SetLabelItem(variable, labels) =>
+                  val existingLabels = rewrittenVarTypes.getOrElse(variable, variable.cypherType) match {
+                    case CTNode(existing) => existing
+                    case other => throw UnsupportedOperationException(s"SET label on something that is not a node: $other")
+                  }
+                  val labelsAfterSet = existingLabels ++ labels
+                  val updatedSchema = currentSchema.addLabelsToCombo(labels, existingLabels)
+                  updatedSchema -> rewrittenVarTypes.updated(variable, CTNode(labelsAfterSet))
+                case SetPropertyItem(propertyKey, variable, setValue) =>
+                  val propertyType = setValue.cypherType
+                  val updatedSchema = currentSchema.addPropertyToEntity(propertyKey, propertyType, variable.cypherType)
+                  updatedSchema -> rewrittenVarTypes
+              }
+            }
+            val patternGraph = IRPatternGraph[Expr](schema, pattern, setItems.collect { case p: SetPropertyItem[Expr] => p })
+            val updatedContext = context.withWorkingGraph(patternGraph)
+            put[R, IRBuilderContext](updatedContext) >> pure[R, Vector[BlockRef]](Vector.empty)
+          }
+        } yield refs
+
+      case ast.ReturnGraph(qgnOpt) =>
+        for {
+          context <- get[R, IRBuilderContext]
+          refs <- {
+            val after = context.blocks.lastAdded.toSet
+            val irGraph = qgnOpt match {
+              case None => context.workingGraph
+              case Some(astQgn) =>
+                val irQgn = QualifiedGraphName(astQgn.parts)
+                val pgds = context.resolver(irQgn.namespace)
+                IRCatalogGraph(irQgn, pgds.schema(irQgn.graphName).getOrElse(pgds.graph(irQgn.graphName).schema))
+            }
+            val returns = GraphResultBlock[Expr](after, irGraph)
+            val (ref, updatedReg) = context.blocks.register(returns)
+            put[R, IRBuilderContext](context.copy(blocks = updatedReg)) >> pure[R, Vector[BlockRef]](Vector(ref))
+          }
+        } yield refs
+
+      case ast.Return(distinct, ast.ReturnItems(_, items), orderBy, skip, limit, _) =>
+        for {
           fieldExprs <- items.toVector.traverse(convertReturnItem[R])
-          graphs <- convertGraphReturnItems(graphItems)
           context <- get[R, IRBuilderContext]
           refs <- {
             val (projectRef, projectReg) =
-              registerProjectBlock(context, fieldExprs, distinct = distinct, source = irGraph, graphs = graphs)
+              registerProjectBlock(context, fieldExprs, distinct = distinct, source = context.workingGraph)
             val appendList = (list: Vector[BlockRef]) => pure[R, Vector[BlockRef]](projectRef +: list)
             val orderAndSliceBlock = registerOrderAndSliceBlock(orderBy, skip, limit)
             put[R, IRBuilderContext](context.copy(blocks = projectReg)) >> orderAndSliceBlock flatMap appendList
@@ -175,54 +220,26 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           context2 <- get[R, IRBuilderContext]
           refs2 <- {
             val rItems = fieldExprs.map(_._1)
-            val orderedFields = OrderedFieldsAndGraphs[Expr](rItems, graphs.toSet)
-            val result = ResultBlock[Expr](Set(refs.last), orderedFields, Set.empty, Set.empty, context.ambientGraph)
+            val orderedFields = OrderedFields[Expr](rItems)
+            val result = TableResultBlock[Expr](Set(refs.last), orderedFields, context.workingGraph)
             val (resultRef, resultReg) = context2.blocks.register(result)
             put[R, IRBuilderContext](context.copy(blocks = resultReg)) >> pure[R, Vector[BlockRef]](refs :+ resultRef)
           }
         } yield refs2
-
-      case ast.Return(distinct, ast.DiscardCardinality(), graphItems, _, _, _, _) =>
-        for {
-          irGraph <- registerIRGraph(c)
-          graphs <- convertGraphReturnItems(graphItems)
-          context <- get[R, IRBuilderContext]
-          refs <- {
-            val (ref, reg) =
-              registerProjectBlock(context, Vector.empty, distinct = distinct, source = irGraph, graphs = graphs)
-            val orderedFields = OrderedFieldsAndGraphs[Expr](Vector.empty, graphs.map(_.toNamedGraph).toSet)
-            val returns = ResultBlock[Expr](Set(ref), orderedFields, Set.empty, Set.empty, context.ambientGraph)
-            val (ref2, reg2) = reg.register(returns)
-            put[R, IRBuilderContext](context.copy(blocks = reg2)) >> pure[R, Vector[BlockRef]](Vector(ref, ref2))
-          }
-        } yield refs
 
       case x =>
         error(IRBuilderError(s"Clause not yet supported: $x"))(Vector.empty[BlockRef])
     }
   }
 
-  private def convertGraphReturnItems[R: _hasContext](maybeItems: Option[GraphReturnItems]): Eff[R, Vector[IRGraph]] = {
-
-    maybeItems match {
-      case None =>
-        pure[R, Vector[IRGraph]](Vector.empty[IRGraph])
-      case Some(GraphReturnItems(_, items)) =>
-        for {
-          graphs <- items.toVector.traverse(convertGraphReturnItem[R])
-        } yield graphs
-    }
-  }
-
   private def registerProjectBlock(
-      context: IRBuilderContext,
-      fieldExprs: Vector[(IRField, Expr)],
-      graphs: Seq[IRGraph] = Seq.empty,
-      given: Set[Expr] = Set.empty[Expr],
-      source: IRGraph,
-      distinct: Boolean): (BlockRef, BlockRegistry[Expr]) = {
+    context: IRBuilderContext,
+    fieldExprs: Vector[(IRField, Expr)],
+    given: Set[Expr] = Set.empty[Expr],
+    source: IRGraph,
+    distinct: Boolean): (BlockRef, BlockRegistry[Expr]) = {
     val blockRegistry = context.blocks
-    val binds = FieldsAndGraphs(fieldExprs.toMap, graphs.toSet)
+    val binds = Fields(fieldExprs.toMap)
 
     val after = blockRegistry.lastAdded.toSet
     val projs = ProjectBlock[Expr](after, binds, given, source, distinct)
@@ -230,10 +247,10 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
     blockRegistry.register(projs)
   }
 
-  private def registerOrderAndSliceBlock[R: _mayFail: _hasContext](
-      orderBy: Option[OrderBy],
-      skip: Option[Skip],
-      limit: Option[Limit]) = {
+  private def registerOrderAndSliceBlock[R: _mayFail : _hasContext](
+    orderBy: Option[ast.OrderBy],
+    skip: Option[ast.Skip],
+    limit: Option[ast.Limit]) = {
     for {
       context <- get[R, IRBuilderContext]
       sortItems <- orderBy match {
@@ -250,7 +267,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
           val blockRegistry = context.blocks
           val after = blockRegistry.lastAdded.toSet
 
-          val orderAndSliceBlock = OrderAndSliceBlock[Expr](after, sortItems, skipExpr, limitExpr, context.ambientGraph)
+          val orderAndSliceBlock = OrderAndSliceBlock[Expr](after, sortItems, skipExpr, limitExpr, context.workingGraph)
           val (ref, reg) = blockRegistry.register(orderAndSliceBlock)
           put[R, IRBuilderContext](context.copy(blocks = reg)) >> pure[R, Vector[BlockRef]](Vector(ref))
         }
@@ -258,59 +275,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
     } yield refs
   }
 
-  private def convertGraphReturnItem[R: _hasContext](item: ast.GraphReturnItem): Eff[R, IRGraph] = item match {
-    case ast.NewContextGraphs(source: GraphAtAs, target) if target.isEmpty || target.contains(source) =>
-      convertSingleGraphAs[R](source)
-
-    case ast.ReturnedGraph(graph) =>
-      convertSingleGraphAs[R](graph)
-
-    case _ => throw NotImplementedException(s"Support for setting a different target graph not yet implemented")
-  }
-
-  private def convertSingleGraphAs[R: _hasContext](graph: ast.SingleGraphAs): Eff[R, IRGraph] = {
-    graph.as match {
-      case Some(Variable(graphName)) =>
-        for {
-          context <- get[R, IRBuilderContext]
-          result <- graph match {
-
-            case ast.GraphOfAs(astPattern, _, _) =>
-              for {
-                pattern <- convertPattern(astPattern)
-              } yield {
-                val schemaUnion = context.graphList.map(_.schema).reduce(_ ++ _)
-                val patternGraphSchema = schemaUnion.forPattern(pattern)
-                IRPatternGraph(graphName, patternGraphSchema, pattern)
-              }
-
-            case ast.GraphAtAs(url, _, _) =>
-
-              val qualifiedGraphNameString = url.url match {
-                case Left(_) =>
-                  throw NotImplementedException(s"Support for qualified graph names by parameter not yet implemented")
-                case Right(StringLiteral(literal)) => literal
-              }
-
-              val qualifiedGraphName = QualifiedGraphName(qualifiedGraphNameString)
-              val newContext = context.withGraphAt(graphName, qualifiedGraphName)
-              put[R, IRBuilderContext](newContext) >>
-                pure[R, IRGraph](IRExternalGraph(graphName, newContext.schemaFor(graphName), qualifiedGraphName))
-
-            case ast.GraphAs(ref, alias, _) if alias.isEmpty || alias.contains(ref) =>
-              pure[R, IRGraph](IRNamedGraph(graphName, context.schemaFor(graphName), context.graphs(graphName)))
-
-            case _ =>
-              throw NotImplementedException(s"Support for graph aliasing not yet implemented")
-          }
-        } yield result
-
-      case None =>
-        throw IllegalArgumentException("graph with alias", graph)
-    }
-  }
-
-  private def convertReturnItem[R: _mayFail: _hasContext](item: ast.ReturnItem): Eff[R, (IRField, Expr)] = item match {
+  private def convertReturnItem[R: _mayFail : _hasContext](item: ast.ReturnItem): Eff[R, (IRField, Expr)] = item match {
 
     case ast.AliasedReturnItem(e, v) =>
       for {
@@ -333,12 +298,12 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
       } yield field -> expr
 
     case _ =>
-      throw IllegalArgumentException(s"${AliasedReturnItem.getClass} or ${UnaliasedReturnItem.getClass}", item.getClass)
+      throw IllegalArgumentException(s"${ast.AliasedReturnItem.getClass} or ${ast.UnaliasedReturnItem.getClass}", item.getClass)
   }
 
-  private def convertUnwindItem[R: _mayFail: _hasContext](
-      list: Expression,
-      variable: Variable): Eff[R, (Expr, IRField)] = {
+  private def convertUnwindItem[R: _mayFail : _hasContext](
+    list: exp.Expression,
+    variable: exp.Variable): Eff[R, (Expr, IRField)] = {
     for {
       expr <- convertExpr(list)
       context <- get[R, IRBuilderContext]
@@ -357,43 +322,63 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
     } yield field
   }
 
-  private def convertPattern[R: _hasContext](p: AstPattern): Eff[R, Pattern[Expr]] = {
+  private def convertPattern[R: _hasContext](p: exp.Pattern): Eff[R, Pattern[Expr]] = {
     for {
       context <- get[R, IRBuilderContext]
       result <- {
         val pattern = context.convertPattern(p)
         val patternTypes = pattern.fields.foldLeft(context.knownTypes) {
-          case (acc, f) => {
-            acc.updated(Variable(f.name)(InputPosition.NONE), f.cypherType)
-          }
+          case (acc, f) => acc.updated(exp.Variable(f.name)(InputPosition.NONE), f.cypherType)
         }
         put[R, IRBuilderContext](context.copy(knownTypes = patternTypes)) >> pure[R, Pattern[Expr]](pattern)
       }
     } yield result
   }
 
-  private def convertExpr[R: _mayFail: _hasContext](e: Option[Expression]): Eff[R, Option[Expr]] =
+  private def convertSetItem[R: _hasContext](p: ast.SetItem): Eff[R, SetItem[Expr]] = {
+    p match {
+      case ast.SetPropertyItem(exp.LogicalProperty(map: exp.Variable, exp.PropertyKeyName(propertyName)), setValue: exp.Expression) =>
+        for {
+          variable <- convertExpr[R](map)
+          convertedSetExpr <- convertExpr[R](setValue)
+          result <- {
+            val setItem = SetPropertyItem(propertyName, variable.asInstanceOf[Var], convertedSetExpr)
+            pure[R, SetItem[Expr]](setItem)
+          }
+        } yield result
+      case ast.SetLabelItem(expr, labels) =>
+        for {
+          variable <- convertExpr[R](expr)
+          result <- {
+            val setLabel: SetItem[Expr] = SetLabelItem(variable.asInstanceOf[Var], labels.map(_.name).toSet)
+            pure[R, SetItem[Expr]](setLabel)
+          }
+        } yield result
+    }
+  }
+
+  private def convertExpr[R: _mayFail : _hasContext](e: Option[exp.Expression]): Eff[R, Option[Expr]] =
     for {
       context <- get[R, IRBuilderContext]
     } yield
       e match {
         case Some(expr) => Some(context.convertExpression(expr))
-        case None       => None
+        case None => None
       }
 
-  private def convertExpr[R: _mayFail: _hasContext](e: Expression): Eff[R, Expr] =
+  private def convertExpr[R: _hasContext](e: exp.Expression): Eff[R, Expr] =
     for {
       context <- get[R, IRBuilderContext]
     } yield context.convertExpression(e)
 
-  private def convertWhere[R: _mayFail: _hasContext](where: Option[ast.Where]): Eff[R, Set[Expr]] = where match {
+  private def convertWhere[R: _hasContext](where: Option[ast.Where]): Eff[R, Set[Expr]] = where match {
     case Some(ast.Where(expr)) =>
       for {
         predicate <- convertExpr(expr)
       } yield {
         predicate match {
           case org.opencypher.okapi.ir.api.expr.Ands(exprs) => exprs
-          case e                                           => Set(e)
+          case e => Set(e)
         }
       }
 
@@ -401,7 +386,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
       pure[R, Set[Expr]](Set.empty[Expr])
   }
 
-  private def convertRegistry[R: _mayFail: _hasContext]: Eff[R, Option[CypherQuery[Expr]]] =
+  private def convertRegistry[R: _mayFail : _hasContext]: Eff[R, Option[CypherQuery[Expr]]] =
     for {
       context <- get[R, IRBuilderContext]
     } yield {
@@ -410,13 +395,13 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
         case (_ref, r: ResultBlock[Expr]) => _ref -> r
       }.get
 
-      val model = QueryModel(r, context.parameters, blocks.reg.toMap - ref, context.graphs)
+      val model = QueryModel(r, context.parameters, blocks.reg.toMap - ref)
       val info = QueryInfo(context.queryString)
 
       Some(CypherQuery(info, model))
     }
 
-  private def convertSortItem[R: _mayFail: _hasContext](item: ast.SortItem): Eff[R, SortItem[Expr]] = {
+  private def convertSortItem[R: _mayFail : _hasContext](item: ast.SortItem): Eff[R, SortItem[Expr]] = {
     item match {
       case ast.AscSortItem(astExpr) =>
         for {

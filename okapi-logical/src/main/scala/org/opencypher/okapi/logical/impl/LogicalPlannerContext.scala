@@ -15,16 +15,14 @@
  */
 package org.opencypher.okapi.logical.impl
 
+import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.ir.api.IRGraph
 import org.opencypher.okapi.ir.api.expr.Var
 
 final case class LogicalPlannerContext(
-  ambientGraphSchema: Schema,
+  workingGraphSchema: Schema,
   inputRecordFields: Set[Var],
-  resolver: String => PropertyGraphDataSource,
-  sourceGraph: IRGraph
-) {
-  def withSourceGraph(graph: IRGraph): LogicalPlannerContext = copy(sourceGraph = graph)
-}
+  catalog: QualifiedGraphName => PropertyGraphDataSource
+)

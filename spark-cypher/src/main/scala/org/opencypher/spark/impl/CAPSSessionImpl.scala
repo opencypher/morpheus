@@ -19,13 +19,14 @@ import java.util.UUID
 
 import org.apache.spark.sql.SparkSession
 import org.opencypher.okapi.api.graph._
+import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.api.value._
 import org.opencypher.okapi.impl.io.SessionPropertyGraphDataSource
 import org.opencypher.okapi.impl.util.Measurement.time
 import org.opencypher.okapi.ir.api.expr.{Expr, Var}
-import org.opencypher.okapi.ir.api.{IRExternalGraph, IRField}
+import org.opencypher.okapi.ir.api.{IRCatalogGraph, IRField}
 import org.opencypher.okapi.ir.impl.parse.CypherParser
 import org.opencypher.okapi.ir.impl.{IRBuilder, IRBuilderContext}
 import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
@@ -54,6 +55,10 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
   private val physicalOptimizer = new PhysicalOptimizer()
   private val parser = CypherParser
 
+  def catalog(qualifiedGraphName: QualifiedGraphName): PropertyGraphDataSource = {
+    dataSourceMapping(qualifiedGraphName.namespace)
+  }
+
   override def cypher(query: String, parameters: CypherMap, drivingTable: Option[CypherRecords]): CypherResult =
     cypherOnGraph(CAPSGraph.empty, query, parameters, drivingTable)
 
@@ -74,7 +79,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
     logStageProgress("Done!")
 
     logStageProgress("Logical planning ...", newLine = false)
-    val logicalPlannerContext = LogicalPlannerContext(graph.schema, inputFields, ir.model.graphs.mapValues(_.namespace).andThen(dataSource), ambientGraphNew)
+    val logicalPlannerContext = LogicalPlannerContext(graph.schema, inputFields, catalog)
     val logicalPlan = time("Logical planning")(logicalPlanner(ir)(logicalPlannerContext))
     logStageProgress("Done!")
     if (PrintLogicalPlan.isSet) {
@@ -138,7 +143,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
     fields: IndexedSeq[Var],
     queryParameters: CypherMap): CAPSRecords = {
     val scan = planStart(graph, in.asCaps.header.internalHeader.fields)
-    val select = producer.planSelect(fields, Set.empty, scan)
+    val select = producer.planSelect(fields, scan)
     plan(in, queryParameters, select).getRecords
   }
 
@@ -198,16 +203,16 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
       CAPSRuntimeContext(physicalPlannerContext.parameters, graphAt, collection.mutable.Map.empty))
   }
 
-  private def mountAmbientGraph(ambient: PropertyGraph): IRExternalGraph = {
+  private def mountAmbientGraph(ambient: PropertyGraph): IRCatalogGraph = {
     val graphName = GraphName(UUID.randomUUID().toString)
     val qualifiedGraphName = store(graphName, ambient)
-    IRExternalGraph(graphName.value, ambient.schema, qualifiedGraphName)
+    IRCatalogGraph(qualifiedGraphName, ambient.schema)
   }
 
   private def planStart(graph: PropertyGraph, fields: Set[Var]): LogicalOperator = {
     val ambientGraph = mountAmbientGraph(graph)
 
-    producer.planStart(LogicalExternalGraph(ambientGraph.name, ambientGraph.qualifiedName, graph.schema), fields)
+    producer.planStart(LogicalCatalogGraph(ambientGraph.qualifiedName, graph.schema), fields)
   }
 
   override def toString: String = s"${this.getClass.getSimpleName}"

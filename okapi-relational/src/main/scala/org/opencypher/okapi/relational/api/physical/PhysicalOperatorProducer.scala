@@ -15,13 +15,13 @@
  */
 package org.opencypher.okapi.relational.api.physical
 
-import org.opencypher.okapi.api.graph.{PropertyGraph, QualifiedGraphName}
+import org.opencypher.okapi.api.graph.PropertyGraph
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr.{Aggregator, Expr, Var}
-import org.opencypher.okapi.logical.impl.{ConstructedEntity, Direction, LogicalExternalGraph, LogicalGraph}
-import org.opencypher.okapi.relational.impl.physical.PhysicalPlanner
+import org.opencypher.okapi.ir.api.set.SetPropertyItem
+import org.opencypher.okapi.logical.impl.{ConstructedEntity, Direction, LogicalCatalogGraph, LogicalGraph}
 import org.opencypher.okapi.relational.impl.table.{ProjectedExpr, ProjectedField, RecordHeader}
 
 /**
@@ -38,30 +38,13 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   // Unary operators
 
   /**
-    * Starts the query execution based on the given records and an external graph.
+    * Starts the query execution based on optional given records and an optional graph.
     *
     * @param in backend-specific records
     * @param g  external (URI) reference to the input graph (e.g. the session graph)
     * @return start operator
     */
-  def planStart(in: R, g: LogicalExternalGraph): P
-
-  /**
-    * Starts the query execution based on empty records and an external graph.
-    *
-    * @param graph external (URI) reference to the input graph (e.g. the session graph)
-    * @return start from unit operator
-    */
-  def planStartFromUnit(graph: LogicalExternalGraph): P
-
-  /**
-    * Sets the source graph for the next query operation.
-    *
-    * @param in previous operator
-    * @param g  external (URI) reference to a graph on which the query is continued
-    * @return set source graph operator
-    */
-  def planSetSourceGraph(in: P, g: LogicalExternalGraph): P
+  def planStart(in: Option[R] = None, g: Option[LogicalCatalogGraph] = None): P
 
   /**
     * Scans the node set of the input graph and returns all nodes that match the given CTNode type.
@@ -138,13 +121,20 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   def planSelectFields(in: P, fields: IndexedSeq[Var], header: RecordHeader): P
 
   /**
-    * Selects the specified graph from the input operator.
+    * Returns the working graph
     *
     * @param in     previous operator
-    * @param graphs graphs to select from the previous operator (i.e., as specified in the RETURN clause)
-    * @return select graphs operator
     */
-  def planSelectGraphs(in: P, graphs: Set[String]): P
+  def planReturnGraph(in: P): P
+
+  /**
+    * Use the specified graph.
+    *
+    * @param in     previous operator
+    * @param graph  graph to select from the catalog
+    * @return select graph operator
+    */
+  def planUseGraph(in: P, graph: LogicalCatalogGraph): P
 
   /**
     * Evaluates the given expression and projects it to a new column in the input records.
@@ -157,31 +147,18 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   def planProject(in: P, expr: Expr, header: RecordHeader): P
 
   /**
-    * Stores the graph identified by the given URI by the given name.
-    *
-    * @param in            previous operator
-    * @param name          name to project graph to
-    * @param qualifiedName reference to a graph (e.g. an external graph)
-    * @return project external graph operator
-    */
-  def planProjectExternalGraph(in: P, name: String, qualifiedName: QualifiedGraphName): P
-
-  /**
     * Creates a new record containing the specified entities (i.e. as defined in a construction pattern).
     *
     * @param in       previous operator
-    * @param toCreate entities to create
-    * @param name     name of the resulting graph
+    * @param constructItems entities to create
     * @param schema   schema of the resulting graph
-    * @param header   resulting record header
     * @return project pattern graph operator
     */
-  def planProjectPatternGraph(
+  def planConstructGraph(
     in: P,
-    toCreate: Set[ConstructedEntity],
-    name: String,
-    schema: Schema,
-    header: RecordHeader): P
+    constructItems: Set[ConstructedEntity],
+    setItems: List[SetPropertyItem[Expr]],
+    schema: Schema): P
 
   /**
     * Groups the underlying records by the specified expressions and evaluates the given aggregate functions.

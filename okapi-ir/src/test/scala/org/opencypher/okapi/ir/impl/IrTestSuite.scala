@@ -40,7 +40,7 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
   val testQualifiedGraphName = QualifiedGraphName(testNamespace, testGraphName)
 
   def testGraph()(implicit schema: Schema = testGraphSchema) =
-    IRExternalGraph("test", schema, testQualifiedGraphName)
+    IRCatalogGraph(testQualifiedGraphName, schema)
 
   def testGraphSource(graphsWithSchema: (GraphName, Schema)*): PropertyGraphDataSource = {
     val gs = mock[PropertyGraphDataSource]
@@ -72,7 +72,7 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
   }
 
   def project(
-      fields: FieldsAndGraphs[Expr],
+      fields: Fields[Expr],
       after: Set[BlockRef] = Set(leafRef),
       given: Set[Expr] = Set.empty[Expr]) =
     ProjectBlock(after, fields, given, testGraph)
@@ -81,22 +81,19 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
     MatchBlock[Expr](Set(leafRef), pattern, Set.empty[Expr], false, testGraph)
 
   def irFor(rootRef: BlockRef, blocks: Map[BlockRef, Block[Expr]]): CypherQuery[Expr] = {
-    val result = ResultBlock[Expr](
+    val result = TableResultBlock[Expr](
       after = Set(rootRef),
-      binds = OrderedFieldsAndGraphs[Expr](),
-      nodes = Set.empty,
-      relationships = Set.empty,
-      where = Set.empty[Expr],
-      source = testGraph
+      binds = OrderedFields[Expr](),
+      graph = testGraph
     )
-    val model = QueryModel(result, CypherMap.empty, blocks, Map.empty)
+    val model = QueryModel(result, CypherMap.empty, blocks)
     CypherQuery(QueryInfo("test"), model)
   }
 
   case class DummyBlock[E](after: Set[BlockRef] = Set.empty) extends BasicBlock[DummyBinds[E], E](BlockType("dummy")) {
     override def binds: DummyBinds[E] = DummyBinds[E]()
     override def where: Set[E] = Set.empty[E]
-    override val source = testGraph
+    override val graph = testGraph
   }
 
   case class DummyBinds[E](fields: Set[IRField] = Set.empty) extends Binds[E]
@@ -111,7 +108,7 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
         IRBuilderContext.initial(queryText,
           parameters,
           SemanticState.clean,
-          testGraph,
+          testGraph()(schema),
           _ => testGraphSource(graphsWithSchema :+ (testGraphName -> schema): _*)))
     }
 
@@ -121,7 +118,7 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
         IRBuilderContext.initial(queryText,
           params.toMap,
           SemanticState.clean,
-          testGraph,
+          testGraph()(schema),
           _ => testGraphSource(testGraphName -> schema)))
     }
   }

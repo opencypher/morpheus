@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencypher.okapi.logical
+package org.opencypher.okapi.ir.api.set
 
-import org.opencypher.okapi.ir.impl.IrTestSuite
-import org.opencypher.okapi.logical.impl.{LogicalCatalogGraph, SolvedQueryModel, Start}
+import org.opencypher.okapi.ir.api.expr.Var
 
-abstract class LogicalTestSuite extends IrTestSuite {
-
-  def leafPlan: Start =
-    Start(LogicalCatalogGraph(testGraph.qualifiedName, testGraph.schema), Set.empty, SolvedQueryModel.empty)
-
+sealed trait SetItem[E] {
+  def variable: Var
 }
+
+case class SetLabelItem[E](variable: Var, labels: Set[String]) extends SetItem[E]
+
+case class SetPropertyItem[E](propertyKey: String, variable: Var, setValue: E) extends SetItem[E]

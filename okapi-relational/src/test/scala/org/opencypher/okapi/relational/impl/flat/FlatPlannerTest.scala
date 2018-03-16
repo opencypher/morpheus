@@ -29,7 +29,7 @@ import org.opencypher.okapi.test.BaseTestSuite
 import scala.language.implicitConversions
 
 case class TestGraph(schema: Schema) extends LogicalGraph {
-  override val name = "TestGraph"
+  override protected def args: String = ""
 }
 
 class FlatPlannerTest extends BaseTestSuite {

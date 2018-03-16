@@ -215,7 +215,11 @@ class SchemaTest extends FunSuite with Matchers {
     schema.forNodeScan(Set("Dog")) should equal(
       Schema.empty
         .withNodePropertyKeys("Dog", "Pet")("name" -> CTFloat)
-        .withNodePropertyKeys("Pet")("notName" -> CTBoolean)
+    )
+
+    schema.forNodeScan(Set("Dog", "Pet")) should equal(
+      Schema.empty
+        .withNodePropertyKeys("Dog", "Pet")("name" -> CTFloat)
     )
   }
 

@@ -19,19 +19,16 @@ import org.opencypher.okapi.ir.api._
 
 final case class ProjectBlock[E](
     after: Set[BlockRef],
-    binds: FieldsAndGraphs[E] = FieldsAndGraphs[E](),
+    binds: Fields[E] = Fields[E](),
     where: Set[E] = Set.empty[E],
-    source: IRGraph,
+    graph: IRGraph,
     distinct: Boolean = false
-) extends BasicBlock[FieldsAndGraphs[E], E](BlockType("project"))
+) extends BasicBlock[Fields[E], E](BlockType("project"))
 
-final case class FieldsAndGraphs[E](
-    items: Map[IRField, E] = Map.empty[IRField, E],
-    override val graphs: Set[IRGraph] = Set.empty)
-    extends Binds[E] {
+final case class Fields[E](items: Map[IRField, E] = Map.empty[IRField, E]) extends Binds[E] {
   override def fields: Set[IRField] = items.keySet
 }
 
 case object ProjectedFieldsOf {
-  def apply[E](entries: (IRField, E)*) = FieldsAndGraphs(entries.toMap)
+  def apply[E](entries: (IRField, E)*) = Fields(entries.toMap)
 }

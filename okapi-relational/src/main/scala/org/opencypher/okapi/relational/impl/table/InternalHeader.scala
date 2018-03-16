@@ -46,6 +46,16 @@ final case class InternalHeader protected[okapi](
       case (acc, content) => acc + content
     }
 
+  def --(other: InternalHeader): InternalHeader =
+    slots.foldLeft(InternalHeader.empty) {
+      case (acc, slot) =>
+        if (other.slots.contains(slot)) {
+          acc
+        } else {
+          acc + slot.content
+        }
+    }
+
   def slots: IndexedSeq[RecordSlot] = cachedSlots
 
   def fields: Set[Var] = cachedFields

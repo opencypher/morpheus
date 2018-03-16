@@ -17,7 +17,7 @@ package org.opencypher.spark.impl.physical
 
 import org.opencypher.okapi.ir.api.util.DirectCompilationStage
 import org.opencypher.okapi.trees.TopDown
-import org.opencypher.spark.impl.physical.operators.{CAPSPhysicalOperator, Cache, Start, StartFromUnit}
+import org.opencypher.spark.impl.physical.operators.{CAPSPhysicalOperator, Cache, Start}
 
 case class PhysicalOptimizerContext()
 
@@ -30,7 +30,7 @@ class PhysicalOptimizer extends DirectCompilationStage[CAPSPhysicalOperator, CAP
   object InsertCachingOperators extends (CAPSPhysicalOperator => CAPSPhysicalOperator) {
     def apply(input: CAPSPhysicalOperator): CAPSPhysicalOperator = {
       val replacements = calculateReplacementMap(input).filterKeys {
-        case _: Start | _: StartFromUnit => false
+        case _: Start => false
         case _                           => true
       }
 

@@ -18,12 +18,13 @@ package org.opencypher.spark.impl.physical.operators
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions.{asc, desc, monotonically_increasing_id}
 import org.apache.spark.sql.types.{StructField, StructType}
-import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
+import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.ir.api.set.SetPropertyItem
 import org.opencypher.okapi.ir.impl.syntax.ExprSyntax._
 import org.opencypher.okapi.logical.impl.{ConstructedEntity, _}
 import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
@@ -58,13 +59,12 @@ final case class Cache(in: CAPSPhysicalOperator) extends UnaryPhysicalOperator w
 
 }
 
-final case class Scan(in: CAPSPhysicalOperator, inGraph: LogicalGraph, v: Var, header: RecordHeader)
+final case class Scan(in: CAPSPhysicalOperator, v: Var, header: RecordHeader)
   extends UnaryPhysicalOperator {
 
   // TODO: Move to Graph interface?
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    val graphs = prev.graphs
-    val graph = graphs(inGraph.name)
+    val graph = prev.graph
     val records = v.cypherType match {
       case r: CTRelationship =>
         graph.relationships(v.name, r)
@@ -74,7 +74,7 @@ final case class Scan(in: CAPSPhysicalOperator, inGraph: LogicalGraph, v: Var, h
         throw IllegalArgumentException("an entity type", x)
     }
     assert(header == records.header)
-    CAPSPhysicalResult(records, graphs)
+    CAPSPhysicalResult(records, graph)
   }
 }
 
@@ -184,82 +184,131 @@ final case class Filter(in: CAPSPhysicalOperator, expr: Expr, header: RecordHead
   }
 }
 
-final case class ProjectExternalGraph(in: CAPSPhysicalOperator, name: String, qualifiedGraphName: QualifiedGraphName) extends UnaryPhysicalOperator with InheritedHeader {
-
-  override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult =
-    prev.withGraph(name -> resolve(qualifiedGraphName))
-
-}
-
-final case class ProjectPatternGraph(
+final case class ConstructGraph(
   in: CAPSPhysicalOperator,
-  toCreate: Set[ConstructedEntity],
-  name: String,
-  schema: CAPSSchema,
-  header: RecordHeader)
+  constructItems: Set[ConstructedEntity],
+  setItems: List[SetPropertyItem[Expr]],
+  schema: CAPSSchema)
   extends UnaryPhysicalOperator {
 
+  override def header: RecordHeader = RecordHeader.empty
+
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    val input = prev.records
+    implicit val session = prev.records.caps
+    val inputTable = prev.records
 
-    val baseTable =
-      if (toCreate.isEmpty) input
-      else createEntities(toCreate, input)
+    val entityTable = createEntities(constructItems, inputTable)
 
-    val patternGraph = CAPSGraph.create(baseTable, schema)(input.caps)
-    prev.withGraph(name -> patternGraph)
+    val tableWithConstructedProperties = setProperties(setItems, entityTable)
+
+    // Remove input columns and header
+    val withInputsRemoved = CAPSRecords.verifyAndCreate(
+      tableWithConstructedProperties.header -- inputTable.header,
+      tableWithConstructedProperties.data.drop(inputTable.data.columns: _*))
+
+    val patternGraph = CAPSGraph.create(withInputsRemoved, schema)
+    CAPSPhysicalResult(CAPSRecords.unit(), patternGraph)
   }
 
-  private def createEntities(toCreate: Set[ConstructedEntity], records: CAPSRecords): CAPSRecords = {
+  private def setProperties(setItems: List[SetPropertyItem[Expr]], constructedTable: CAPSRecords)(implicit context: CAPSRuntimeContext): CAPSRecords = {
+    setItems.foldLeft(constructedTable) { case (table, nextSetItem) =>
+      constructProperty(nextSetItem.variable, nextSetItem.propertyKey, nextSetItem.setValue, table)
+    }
+  }
+
+  def constructProperty(variable: Var, propertyKey: String, propertyValue: Expr, constructedTable: CAPSRecords)(implicit context: CAPSRuntimeContext): CAPSRecords = {
+    val propertyValueColumn: Column = propertyValue.asSparkSQLExpr(constructedTable.header, constructedTable.data, context)
+
+    val propertyExpression = Property(variable, PropertyKey(propertyKey))(propertyValue.cypherType)
+    val propertySlotContent = ProjectedExpr(propertyExpression)
+    val newData = constructedTable.data.safeAddColumn(ColumnName.of(propertySlotContent), propertyValueColumn)
+
+    val newHeader = constructedTable.header.update(addContent(propertySlotContent))._1
+
+    CAPSRecords.verifyAndCreate(newHeader, newData)(constructedTable.caps)
+  }
+
+  private def createEntities(toCreate: Set[ConstructedEntity], constructedTable: CAPSRecords): CAPSRecords = {
+    val numberOfColumnPartitions = toCreate.size
+
+    // Construct nodes before relationships, as relationships might depend on nodes
     val nodes = toCreate.collect { case c: ConstructedNode => c }
     val rels = toCreate.collect { case r: ConstructedRelationship => r }
 
-    val nodesToCreate = nodes.flatMap(constructNode(_, records))
-    val recordsWithNodes = addEntitiesToRecords(nodesToCreate, records)
+    val (_, createdNodes) = nodes.foldLeft(0 -> Set.empty[(SlotContent, Column)]) {
+      case ((nextColumnPartitionId, constructedNodes), nextNodeToConstruct) =>
+        (nextColumnPartitionId + 1) -> (constructedNodes ++ constructNode(nextColumnPartitionId, numberOfColumnPartitions, nextNodeToConstruct, constructedTable))
+    }
 
-    val relsToCreate = rels.flatMap(constructRel(_, recordsWithNodes))
-    addEntitiesToRecords(relsToCreate, recordsWithNodes)
+    val recordsWithNodes = addEntitiesToRecords(createdNodes, constructedTable)
+
+    val (_, createdRels) = rels.foldLeft(0 -> Set.empty[(SlotContent, Column)]) {
+      case ((nextColumnPartitionId, constructedRels), nextRelToConstruct) =>
+        (nextColumnPartitionId + 1) -> (constructedRels ++ constructRel(nextColumnPartitionId, numberOfColumnPartitions, nextRelToConstruct, recordsWithNodes))
+    }
+
+    addEntitiesToRecords(createdRels, recordsWithNodes)
   }
 
-  private def addEntitiesToRecords(columnsToAdd: Set[(SlotContent, Column)], records: CAPSRecords): CAPSRecords = {
-    val newData = columnsToAdd.foldLeft(records.data) {
+  private def addEntitiesToRecords(columnsToAdd: Set[(SlotContent, Column)], constructedTable: CAPSRecords): CAPSRecords = {
+    val newData = columnsToAdd.foldLeft(constructedTable.data) {
       case (acc, (expr, col)) =>
         acc.safeAddColumn(ColumnName.of(expr), col)
     }
 
     // TODO: Move header construction to FlatPlanner
-    val newHeader = records.header
+    val newHeader = constructedTable.header
       .update(
         addContents(columnsToAdd.map(_._1).toSeq)
       )
       ._1
 
-    CAPSRecords.verifyAndCreate(newHeader, newData)(records.caps)
+    CAPSRecords.verifyAndCreate(newHeader, newData)(constructedTable.caps)
   }
 
-  private def constructNode(node: ConstructedNode, records: CAPSRecords): (Set[(SlotContent, Column)]) = {
-    val col = org.apache.spark.sql.functions.lit(true)
+  private def constructNode(columnIdPartition: Int, numberOfColumnPartitions: Int, node: ConstructedNode, constructedTable: CAPSRecords): Set[(SlotContent, Column)] = {
+    val col = functions.lit(true)
     val labelTuples: Set[(SlotContent, Column)] = node.labels.map { label =>
       ProjectedExpr(HasLabel(node.v, label)(CTBoolean)) -> col
     }
 
-    labelTuples + (OpaqueField(node.v) -> generateId)
+    val propertyTuples = node.equivalence match {
+      case Some(TildeModel(origNode)) =>
+        val header = constructedTable.header
+        val origSlots = header.propertySlots(origNode).values
+        val copySlotContents = origSlots.map(_.withOwner(node.v)).map(_.content)
+        val columns = origSlots.map(ColumnName.of).map(constructedTable.data.col)
+        copySlotContents.zip(columns).toSet
+
+      case Some(AtModel(_)) => throw NotImplementedException("AtModel copies")
+
+      case None => Set.empty[(SlotContent, Column)]
+    }
+
+    labelTuples ++ propertyTuples + (OpaqueField(node.v) -> generateId(columnIdPartition, numberOfColumnPartitions))
   }
 
-  private def generateId: Column = {
+  /**
+    *org.apache.spark.sql.functions$#monotonically_increasing_id()
+    *
+    * @param columnIdPartition column partition within DF partition
+    */
+  private def generateId(columnIdPartition: Int, numberOfColumnPartitions: Int): Column = {
+    val columnPartitionBits = math.log(numberOfColumnPartitions).floor.toInt + 1
+    val totalIdSpaceBits = 33
+    val columnIdShift = totalIdSpaceBits - columnPartitionBits
+
     // id needs to be generated
     // Limits the system to 500 mn partitions
     // The first half of the id space is protected
-    // TODO: guarantee that all imported entities have ids in the protected range
-    val relIdOffset = 500L << 33
-    val firstIdCol = functions.lit(relIdOffset)
-    monotonically_increasing_id() + firstIdCol
+    val columnPartitionOffset = columnIdPartition << columnIdShift
+    monotonically_increasing_id() + functions.lit(columnPartitionOffset)
   }
 
-  private def constructRel(toConstruct: ConstructedRelationship, records: CAPSRecords): (Set[(SlotContent, Column)]) = {
-    val ConstructedRelationship(rel, source, target, typ) = toConstruct
-    val header = records.header
-    val inData = records.data
+  private def constructRel(columnIdPartition: Int, numberOfColumnPartitions: Int, toConstruct: ConstructedRelationship, constructedTable: CAPSRecords): Set[(SlotContent, Column)] = {
+    val ConstructedRelationship(rel, source, target, typOpt, equivalenceOpt) = toConstruct
+    val header = constructedTable.header
+    val inData = constructedTable.data
 
     // source and target are present: just copy
     val sourceTuple = {
@@ -274,15 +323,38 @@ final case class ProjectPatternGraph(
     }
 
     // id needs to be generated
-    val relTuple = OpaqueField(rel) -> generateId
+    val relTuple = OpaqueField(rel) -> generateId(columnIdPartition, numberOfColumnPartitions)
 
-    // type is an input
     val typeTuple = {
-      val col = org.apache.spark.sql.functions.lit(typ)
-      ProjectedExpr(Type(rel)(CTString)) -> col
+      typOpt match {
+        // type is set
+        case Some(t) =>
+          val col = functions.lit(t)
+          ProjectedExpr(Type(rel)(CTString)) -> col
+        case None =>
+          // equivalence model is guaranteed to be present: get rel type from original
+          val origRel = equivalenceOpt.get.v
+          val header = constructedTable.header
+          val origTypeSlot = header.typeSlot(origRel)
+          val copyTypeSlotContents = origTypeSlot.withOwner(rel).content
+          val col = constructedTable.data.col(ColumnName.of(origTypeSlot))
+          (copyTypeSlotContents, col)
+      }
     }
 
-    Set(sourceTuple, targetTuple, relTuple, typeTuple)
+    val propertyTuples = equivalenceOpt match {
+      case Some(TildeModel(origRel)) =>
+        val header = constructedTable.header
+        val origSlots = header.propertySlots(origRel).values
+        val copySlotContents = origSlots.map(_.withOwner(rel)).map(_.content)
+        val columns = origSlots.map(ColumnName.of).map(constructedTable.data.col)
+        copySlotContents.zip(columns).toSet
+      case Some(AtModel(_)) => throw NotImplementedException("AtModel copies")
+
+      case None => Set.empty[(SlotContent, Column)]
+    }
+
+    Set(sourceTuple, targetTuple, relTuple, typeTuple) ++ propertyTuples
   }
 }
 
@@ -301,6 +373,14 @@ final case class RemoveAliases(
       CAPSRecords.verifyAndCreate(header, renamed)(records.caps)
     }
   }
+}
+
+final case class ReturnGraph(in: CAPSPhysicalOperator) extends UnaryPhysicalOperator {
+  override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
+    CAPSPhysicalResult(CAPSRecords.empty(header)(prev.records.caps), prev.graph)
+  }
+
+  override def header: RecordHeader = RecordHeader.empty
 }
 
 final case class SelectFields(in: CAPSPhysicalOperator, fields: IndexedSeq[Var], header: RecordHeader)
@@ -332,14 +412,6 @@ final case class SelectFields(in: CAPSPhysicalOperator, fields: IndexedSeq[Var],
       CAPSRecords.verifyAndCreate(header, newData)(records.caps)
     }
   }
-}
-
-final case class SelectGraphs(in: CAPSPhysicalOperator, graphs: Set[String])
-  extends UnaryPhysicalOperator with InheritedHeader {
-
-  override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult =
-    prev.selectGraphs(graphs)
-
 }
 
 final case class Distinct(in: CAPSPhysicalOperator, fields: Set[Var])
@@ -550,9 +622,10 @@ final case class EmptyRecords(in: CAPSPhysicalOperator, header: RecordHeader)(im
 
 }
 
-final case class SetSourceGraph(in: CAPSPhysicalOperator, graph: LogicalExternalGraph) extends UnaryPhysicalOperator with InheritedHeader {
+final case class UseGraph(in: CAPSPhysicalOperator, graph: LogicalCatalogGraph) extends UnaryPhysicalOperator with InheritedHeader {
 
-  override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult =
-    prev.withGraph(graph.name -> resolve(graph.qualifiedGraphName))
+  override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
+    CAPSPhysicalResult(prev.records, resolve(graph.qualifiedGraphName))
+  }
 
 }

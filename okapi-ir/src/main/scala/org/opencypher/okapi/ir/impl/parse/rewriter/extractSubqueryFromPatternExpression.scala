@@ -57,10 +57,10 @@ case class extractSubqueryFromPatternExpression(mkException: (String, InputPosit
     val newPattern = Pattern(Seq(EveryPath(relationshipsPattern.element)))(patternPosition)
 
     val joinVariables = relationshipsPattern.element.treeFold(Seq.empty[LogicalVariable]) {
-      case NodePattern(Some(v), _, _) =>
+      case NodePattern(Some(v), _, _, None) =>
         (acc) =>
           (acc :+ v, None)
-      case RelationshipPattern(Some(v), _, _, _, _, _) =>
+      case RelationshipPattern(Some(v), _, _, _, _, None, _) =>
         (acc) =>
           (acc :+ v, None)
     }
@@ -79,7 +79,7 @@ case class extractSubqueryFromPatternExpression(mkException: (String, InputPosit
             Match(optional = false, newPattern, Seq.empty, None)(patternPosition)
               .endoRewrite(nameMatchPatternElements)
               .endoRewrite(normalizeMatchPredicates(getDegreeRewriting = false)),
-            Return(ReturnItems(includeExisting = false, returnItemsWithTrue)(patternPosition), None)(patternPosition)
+            Return(ReturnItems(includeExisting = false, returnItemsWithTrue)(patternPosition))(patternPosition)
           )
         )(patternPosition)
       )(patternPosition),

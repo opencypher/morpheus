@@ -219,6 +219,17 @@ sealed abstract class CAPSRecords(val header: RecordHeader, val data: DataFrame)
   //noinspection AccessorLikeMethodIsEmptyParen
   def toDF(): DataFrame = data
 
+  override def toString: String = {
+    val numRows = data.size
+    if (header.slots.isEmpty && numRows == 0) {
+      s"CAPSRecords.empty"
+    } else if (header.slots.isEmpty && numRows == 1) {
+      s"CAPSRecords.unit"
+    } else {
+      s"CAPSRecords($header, table with $numRows rows)"
+    }
+  }
+
 }
 
 object CAPSRecords extends CypherRecordsCompanion[CAPSRecords, CAPSSession] {

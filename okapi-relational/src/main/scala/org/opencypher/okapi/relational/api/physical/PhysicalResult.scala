@@ -34,21 +34,4 @@ trait PhysicalResult[R <: CypherRecords, G <: PropertyGraph] {
     */
   def mapRecordsWithDetails(f: R => R): PhysicalResult[R, G]
 
-  /**
-    * Stores the given graph identifed by the specified name in the result.
-    *
-    * @param t tuple mapping a graph name to a graph
-    * @return updated result
-    */
-  // TODO: Remove (Update: this seems to be necessary for 'Define a new working graph and continue executing the query on it')
-  def withGraph(t: (String, G)): PhysicalResult[R, G]
-
-  /**
-    * Returns a result that only contains the graphs with the given names.
-    *
-    * @param names graphs to select
-    * @return updated result containing only selected graphs
-    */
-  // TODO: Remove
-  def selectGraphs(names: Set[String]): PhysicalResult[R, G]
 }

@@ -74,7 +74,7 @@ class LogicalPlannerTest extends LogicalTestSuite {
 
     val block = matchBlock(pattern)
 
-    val scan1 = NodeScan(nodeA, SetSourceGraph(leafPlan.sourceGraph, leafPlan, emptySqm), emptySqm.withField(nodeA))
+    val scan1 = NodeScan(nodeA, leafPlan, emptySqm.withField(nodeA))
     val scan2 = NodeScan(nodeB, leafPlan, emptySqm.withField(nodeB))
     val ir = irWithLeaf(block)
     val result = plan(ir)
@@ -94,14 +94,14 @@ class LogicalPlannerTest extends LogicalTestSuite {
     val block = matchBlock(pattern)
     val ir = irWithLeaf(block)
 
-    val scan = NodeScan(nodeA, SetSourceGraph(leafPlan.sourceGraph, leafPlan, emptySqm), emptySqm.withField(nodeA))
+    val scan = NodeScan(nodeA, leafPlan, emptySqm.withField(nodeA))
     val expandInto = ExpandInto(nodeA, relR, nodeA, Directed, scan, SolvedQueryModel(Set(nodeA, relR)))
 
     plan(ir) should equalWithoutResult(expandInto)
   }
 
   test("convert project block") {
-    val fields = FieldsAndGraphs[Expr](Map(toField('a) -> Property('n, PropertyKey("prop"))(CTFloat)))
+    val fields = Fields[Expr](Map(toField('a) -> Property('n, PropertyKey("prop"))(CTFloat)))
     val block = project(fields)
 
     val result = plan(irWithLeaf(block))
@@ -139,16 +139,13 @@ class LogicalPlannerTest extends LogicalTestSuite {
                 Directed,
                 NodeScan(
                   Var("a")(CTNode),
-                  SetSourceGraph(
-                    LogicalExternalGraph("test", testQualifiedGraphName, Schema.empty),
-                    Start(LogicalExternalGraph("test", testQualifiedGraphName, Schema.empty), Set(), emptySqm),
-                    emptySqm),
-                  SolvedQueryModel(Set(nodeA), Set(), Set())
+                  Start(LogicalCatalogGraph(testQualifiedGraphName, Schema.empty), Set(), emptySqm),
+                  SolvedQueryModel(Set(nodeA), Set())
                 ),
                 NodeScan(
                   Var("g")(CTNode),
-                  Start(LogicalExternalGraph("test", testQualifiedGraphName, Schema.empty), Set(), emptySqm),
-                  SolvedQueryModel(Set(IRField("g")(CTNode)), Set(), Set())),
+                  Start(LogicalCatalogGraph(testQualifiedGraphName, Schema.empty), Set(), emptySqm),
+                  SolvedQueryModel(Set(IRField("g")(CTNode)), Set())),
                 SolvedQueryModel(Set(nodeA, IRField("g")(CTNode), relR))
               ),
               SolvedQueryModel(
@@ -222,39 +219,29 @@ class LogicalPlannerTest extends LogicalTestSuite {
                 Directed,
                 NodeScan(
                   Var("a")(CTNode),
-                  SetSourceGraph(
-                    LogicalExternalGraph(
-                      "test",
-                      testQualifiedGraphName,
-                      schema
-                    ),
-                    Start(
-                      LogicalExternalGraph(
-                        "test",
-                        testQualifiedGraphName,
-                        schema
-                      ),
-                      Set(),
-                      emptySqm
-                    ),
-                    emptySqm
-                  ),
-                  SolvedQueryModel(Set(nodeA), Set(), Set())
-                ),
-                NodeScan(
-                  Var("g")(CTNode),
                   Start(
-                    LogicalExternalGraph(
-                      "test",
+                    LogicalCatalogGraph(
                       testQualifiedGraphName,
                       schema
                     ),
                     Set(),
                     emptySqm
                   ),
-                  SolvedQueryModel(Set(IRField("g")(CTNode)), Set(), Set())
+                  SolvedQueryModel(Set(nodeA), Set())
                 ),
-                SolvedQueryModel(Set(nodeA, IRField("g")(CTNode), relR), Set(), Set())
+                NodeScan(
+                  Var("g")(CTNode),
+                  Start(
+                    LogicalCatalogGraph(
+                      testQualifiedGraphName,
+                      schema
+                    ),
+                    Set(),
+                    emptySqm
+                  ),
+                  SolvedQueryModel(Set(IRField("g")(CTNode)), Set())
+                ),
+                SolvedQueryModel(Set(nodeA, IRField("g")(CTNode), relR), Set())
               ),
               SolvedQueryModel(
                 Set(nodeA, IRField("g")(CTNode), relR),
@@ -311,57 +298,19 @@ class LogicalPlannerTest extends LogicalTestSuite {
         Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean))(CTBoolean))(CTBoolean),
         NodeScan(
           Var("a")(CTNode),
-          SetSourceGraph(
-            LogicalExternalGraph("test", testQualifiedGraphName, Schema.empty),
-            Start(LogicalExternalGraph("test", testQualifiedGraphName, Schema.empty), Set(), emptySqm),
-            emptySqm),
-          SolvedQueryModel(Set(nodeA), Set(), Set())
+          Start(LogicalCatalogGraph(testQualifiedGraphName, Schema.empty), Set(), emptySqm),
+          SolvedQueryModel(Set(nodeA), Set())
         ),
         SolvedQueryModel(
           Set(nodeA),
-          Set(Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean))(CTBoolean))(CTBoolean)),
-          Set())
+          Set(Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean))(CTBoolean))(CTBoolean)))
       ),
       SolvedQueryModel(
         Set(nodeA, IRField("a.prop")(CTNull)),
-        Set(Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean))(CTBoolean))(CTBoolean)),
-        Set())
+        Set(Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean))(CTBoolean))(CTBoolean)))
     )
 
     result should equalWithoutResult(expected)
-  }
-
-  test("do not project graphs multiple times") {
-    val query =
-      """
-        |FROM GRAPH foo AT 'foo'
-        |FROM GRAPH bar AT 'bar'
-        |RETURN GRAPHS *
-      """.stripMargin
-
-    val barGraphName = GraphName("bar")
-    val fooGraphName = GraphName("foo")
-
-    val ir = query.ir(barGraphName -> Schema.empty, fooGraphName -> Schema.empty)
-
-    val result = plan(ir, testGraphSchema, barGraphName -> Schema.empty, fooGraphName -> Schema.empty)
-
-    val expected = Select(
-      Vector(),
-      Set("bar", "foo"),
-      ProjectGraph(
-        LogicalExternalGraph("bar", QualifiedGraphName(SessionPropertyGraphDataSource.Namespace, barGraphName), Schema.empty),
-        ProjectGraph(
-          LogicalExternalGraph("foo", QualifiedGraphName(SessionPropertyGraphDataSource.Namespace, fooGraphName), Schema.empty),
-          Start(LogicalExternalGraph("test", testQualifiedGraphName, Schema.empty), Set(), emptySqm),
-          SolvedQueryModel(Set(), Set(), Set(IRNamedGraph("foo", Schema.empty)))
-        ),
-        SolvedQueryModel(Set(), Set(), Set(IRNamedGraph("foo", Schema.empty), IRNamedGraph("bar", Schema.empty)))
-      ),
-      SolvedQueryModel(Set(), Set(), Set(IRNamedGraph("foo", Schema.empty), IRNamedGraph("bar", Schema.empty)))
-    )
-
-    result should equalWithTracing(expected)
   }
 
   private val planner = new LogicalPlanner(new LogicalOperatorProducer)
@@ -371,7 +320,7 @@ class LogicalPlannerTest extends LogicalTestSuite {
 
   private def plan(ir: CypherQuery[Expr], ambientSchema: Schema, graphWithSchema: (GraphName, Schema)*): LogicalOperator = {
     val withAmbientGraph = graphWithSchema :+ (testGraphName -> ambientSchema)
-    planner.process(ir)(LogicalPlannerContext(ambientSchema, Set.empty, (_) => graphSource(withAmbientGraph: _*), testGraph()))
+    planner.process(ir)(LogicalPlannerContext(ambientSchema, Set.empty, Map(testQualifiedGraphName -> graphSource(withAmbientGraph: _*))))
   }
 
   case class equalWithoutResult(plan: LogicalOperator) extends Matcher[LogicalOperator] {

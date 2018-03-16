@@ -18,7 +18,7 @@ package org.opencypher.okapi.ir
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.ir.api.expr.Var
-import org.opencypher.okapi.ir.api.{IRField, IRNamedGraph}
+import org.opencypher.okapi.ir.api.{IRField, IRCatalogGraph}
 
 import scala.language.implicitConversions
 
@@ -31,5 +31,5 @@ package object test {
 
   implicit def toField(t: (Symbol, CypherType)): IRField = IRField(t._1.name)(t._2)
 
-  implicit def toGraph(s: Symbol): IRNamedGraph = IRNamedGraph(s.name, Schema.empty)
+  implicit def toGraph(s: Symbol): IRCatalogGraph = IRCatalogGraph(s.name, Schema.empty)
 }

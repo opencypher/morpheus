@@ -16,12 +16,17 @@
 package org.opencypher.okapi.ir.impl
 
 import org.neo4j.cypher.internal.frontend.v3_4.parser.{Expressions, Patterns}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
 import org.neo4j.cypher.internal.util.v3_4.InputPosition.NONE
 import org.neo4j.cypher.internal.util.v3_4.{InputPosition, SyntaxException}
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
+import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
+import org.opencypher.okapi.api.io.PropertyGraphDataSource
+import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
-import org.opencypher.okapi.ir.api.IRField
-import org.opencypher.okapi.ir.api.expr.Expr
+import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.ir.api.{IRCatalogGraph, IRField}
+import org.opencypher.okapi.ir.api.expr.{Expr, TildeModel, Var}
 import org.opencypher.okapi.ir.api.pattern._
 import org.opencypher.okapi.ir.test.toField
 import org.parboiled.scala.{EOI, Parser, Rule1}
@@ -35,6 +40,27 @@ class PatternConverterTest extends IrTestSuite {
 
     convert(pattern) should equal(
       Pattern.empty.withEntity('x -> CTNode)
+    )
+  }
+
+  it("should convert a simple node with an equivalence pattern") {
+    val pattern = parse("(b~a)")
+    val entity = 'b -> CTNode
+
+    convert(pattern) should equal(
+      Pattern.empty.withEntity(entity, Some(TildeModel(Var("a")(CTNode()))))
+    )
+  }
+
+  it("should convert equivalence with a simple node that has a label") {
+    val pattern = parse("(a:Person),(b~a)")
+    val a: IRField = 'a -> CTNode("Person")
+    val b: IRField = 'b -> CTNode("Person")
+
+    convert(pattern) should equal(
+      Pattern.empty
+        .withEntity(a)
+        .withEntity(b, Some(TildeModel(Var("a")(CTNode("Person")))))
     )
   }
 
@@ -140,7 +166,7 @@ class PatternConverterTest extends IrTestSuite {
     )
   }
 
-  val converter = new PatternConverter()
+  val converter = new PatternConverter
 
   def convert(p: ast.Pattern, knownTypes: Map[ast.Expression, CypherType] = Map.empty): Pattern[Expr] =
     converter.convert(p, knownTypes)

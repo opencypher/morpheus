@@ -18,16 +18,22 @@ package org.opencypher.okapi.ir.api.pattern
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block.Binds
+import org.opencypher.okapi.ir.api.expr.EquivalenceModel
 import org.opencypher.okapi.ir.impl.exception.PatternConversionException
 
 import scala.annotation.tailrec
 
 case object Pattern {
   def empty[E]: Pattern[E] = Pattern[E](fields = Set.empty, topology = Map.empty)
+
   def node[E](node: IRField): Pattern[E] = Pattern[E](fields = Set(node), topology = Map.empty)
 }
 
-final case class Pattern[E](fields: Set[IRField], topology: Map[IRField, Connection]) extends Binds[E] {
+final case class Pattern[E](
+  fields: Set[IRField],
+  topology: Map[IRField, Connection],
+  equivalences: Map[IRField, EquivalenceModel] = Map.empty
+) extends Binds[E] {
 
   lazy val nodes: Set[IRField] = getEntity(CTNode)
   lazy val rels: Set[IRField] = getEntity(CTRelationship)
@@ -49,9 +55,9 @@ final case class Pattern[E](fields: Set[IRField], topology: Map[IRField, Connect
     val conflicts = topology.keySet.intersect(other.topology.keySet).filter(k => topology(k) != other.topology(k))
     if (conflicts.nonEmpty) throw new PatternConversionException(
       s"Expected disjoint patterns but found conflicting connection for ${conflicts.head}:\n" +
-        s"${topology (conflicts.head)} and ${other.topology(conflicts.head)}")
+        s"${topology(conflicts.head)} and ${other.topology(conflicts.head)}")
     val newTopology = topology ++ other.topology
-    Pattern(fields ++ other.fields, newTopology)
+    Pattern(fields ++ other.fields, newTopology, equivalences ++ other.equivalences)
   }
 
   private def verifyFieldTypes(map1: Map[String, CypherType], map2: Map[String, CypherType]): Unit = {
@@ -76,8 +82,14 @@ final case class Pattern[E](fields: Set[IRField], topology: Map[IRField, Connect
   def withConnection(key: IRField, connection: Connection): Pattern[E] =
     if (topology.get(key).contains(connection)) this else copy(topology = topology.updated(key, connection))
 
-  def withEntity(field: IRField): Pattern[E] =
-    if (fields(field)) this else copy(fields = fields + field)
+  def withEntity(field: IRField, equivalence: Option[EquivalenceModel] = None): Pattern[E] = {
+    equivalence match {
+      case None => if (fields(field)) this else copy(fields = fields + field)
+      case Some(e) =>
+        if (fields(field)) copy(equivalences = equivalences + (field -> e))
+        else copy(fields = fields + field, equivalences = equivalences + (field -> e))
+    }
+  }
 
   def components: Set[Pattern[E]] = {
     val _fields = fields.foldLeft(Map.empty[IRField, Int]) { case (m, f) => m.updated(f, m.size) }

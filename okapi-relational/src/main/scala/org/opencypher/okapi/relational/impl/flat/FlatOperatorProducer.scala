@@ -47,7 +47,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
   def select(fields: IndexedSeq[Var], graphs: Set[String], in: FlatOperator): Select = {
     val fieldContents = fields.map { field =>
-      in.header.slotsFor(field).head.content
+      in.header.slotFor(field).content
     }
 
     val finalContents = fieldContents ++ fields.flatMap(in.header.childSlots).map(_.content)
@@ -55,6 +55,10 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     val (nextHeader, _) = RecordHeader.empty.update(addContents(finalContents))
 
     Select(fields, graphs, in, nextHeader)
+  }
+
+  def returnGraph(in: FlatOperator): ReturnGraph = {
+    ReturnGraph(in)
   }
 
   def removeAliases(toKeep: IndexedSeq[Var], in: FlatOperator): FlatOperator = {
@@ -187,8 +191,8 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     ValueJoin(lhs, rhs, predicates, lhs.header ++ rhs.header)
   }
 
-  def planSetSourceGraph(graph: LogicalGraph, prev: FlatOperator) = {
-    SetSourceGraph(graph, prev, prev.header)
+  def planUseGraph(graph: LogicalGraph, prev: FlatOperator) = {
+    UseGraph(graph, prev)
   }
 
   def planEmptyRecords(fields: Set[Var], prev: FlatOperator): EmptyRecords = {

@@ -53,10 +53,10 @@ trait CypherParser {
     Parsing.adds(BaseContains[Statement]) andThen
       SyntaxDeprecationWarnings andThen
       PreparatoryRewriting andThen
-      SemanticAnalysis(warn = true, SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature)
+      SemanticAnalysis(warn = true, SemanticFeature.Cypher10Support, SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature)
         .adds(BaseContains[SemanticState]) andThen
       AstRewriting(RewriterStepSequencer.newPlain, Forced, getDegreeRewriting = false) andThen
-      SemanticAnalysis(warn = false, SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature) andThen
+      SemanticAnalysis(warn = false, SemanticFeature.Cypher10Support, SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature) andThen
       Namespacer andThen
       CNFNormalizer andThen
       LateAstRewriting andThen

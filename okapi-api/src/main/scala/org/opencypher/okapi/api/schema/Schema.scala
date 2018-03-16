@@ -174,7 +174,7 @@ trait Schema {
     * @param keys       the typed property keys to associate with the labels
     * @return a copy of the Schema with the provided new data
     */
-  def withNodePropertyKeys(nodeLabels: Set[String], keys: PropertyKeys): Schema
+  def withNodePropertyKeys(nodeLabels: Set[String], keys: PropertyKeys = PropertyKeys.empty): Schema
 
   /**
     * @see [[org.opencypher.okapi.api.schema.Schema#withNodePropertyKeys(scala.collection.Seq, scala.collection.Seq)]]
@@ -222,11 +222,18 @@ trait Schema {
   def ++(other: Schema): Schema
 
   /**
+    * Returns this schema with the properties for `combo` removed.
+    * @param combo label combination for which properties are removed
+    * @return updated schema
+    */
+  private[opencypher] def dropPropertiesFor(combo: Set[String]): Schema
+
+  /**
     * Given the current schema, construct a new Schema for an entity with a given set of labels.
     * If the set of labels is empty, this means that the resulting schema will only have properties present on nodes
     * that have no labels.
     */
-  def fromNodeEntity(labels: Set[String]): Schema
+  private[opencypher] def fromNodeEntity(labels: Set[String]): Schema
 
   /**
     * Returns the sub-schema for a node scan under the given constraints.
@@ -236,7 +243,7 @@ trait Schema {
     * @param labelConstraints Specifies the labels that the node is guaranteed to have
     * @return sub-schema for `labelConstraints`
     */
-  def forNodeScan(labelConstraints: Set[String]): Schema
+  private[opencypher] def forNodeScan(labelConstraints: Set[String]): Schema
 
   /**
     * Returns the sub-schema for `relType`
@@ -244,7 +251,17 @@ trait Schema {
     * @param relType Specifies the type for which the schema is extracted
     * @return sub-schema for `relType`
     */
-  def forRelationship(relType: CTRelationship): Schema
+  private[opencypher] def forRelationship(relType: CTRelationship): Schema
+
+  /**
+    * Returns the updated schema, but overwrites any existing node property keys for the given labels.
+    */
+  private[opencypher] def withOverwrittenNodePropertyKeys(nodeLabels: Set[String], propertyKeys: PropertyKeys): Schema
+
+  /**
+    * Returns the updated schema, but overwrites any existing relationship property keys for the given type.
+    */
+  private[opencypher] def withOverwrittenRelationshipPropertyKeys(relType: String, propertyKeys: PropertyKeys): Schema
 
   def toString: String
 

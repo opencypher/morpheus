@@ -61,6 +61,10 @@ final case class Distinct(fields: Set[Var], in: FlatOperator, header: RecordHead
 final case class Select(fields: IndexedSeq[Var], graphs: Set[String], in: FlatOperator, header: RecordHeader)
     extends StackingFlatOperator
 
+final case class ReturnGraph(in: FlatOperator) extends StackingFlatOperator {
+  override def header: RecordHeader = RecordHeader.empty
+}
+
 final case class RemoveAliases(
     dependentFields: Set[(ProjectedField, ProjectedExpr)],
     in: FlatOperator,
@@ -70,8 +74,6 @@ final case class RemoveAliases(
 final case class Project(expr: Expr, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
 final case class Unwind(expr: Expr, item: Var, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
-
-final case class ProjectGraph(graph: LogicalGraph, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
 final case class Aggregate(
     aggregations: Set[(Var, Aggregator)],
@@ -159,5 +161,7 @@ final case class Start(sourceGraph: LogicalGraph, fields: Set[Var]) extends Flat
   override val header: RecordHeader = RecordHeader.from(fields.map(OpaqueField).toSeq: _*)
 }
 
-final case class SetSourceGraph(override val sourceGraph: LogicalGraph, in: FlatOperator, header: RecordHeader)
-    extends StackingFlatOperator
+final case class UseGraph(override val sourceGraph: LogicalGraph, in: FlatOperator)
+    extends StackingFlatOperator {
+  override def header: RecordHeader = in.header
+}

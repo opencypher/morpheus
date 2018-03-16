@@ -24,7 +24,7 @@ case object normalizeReturnClauses extends Rewriter {
   def apply(that: AnyRef): AnyRef = instance.apply(that)
 
   private val clauseRewriter: (Clause => Seq[Clause]) = {
-    case clause @ Return(distinct, ri @ ReturnItems(_, items), gri, None, skip, limit, _) =>
+    case clause @ Return(distinct, ri @ ReturnItems(_, items), None, skip, limit, _) =>
       val (aliasProjection, finalProjection) = items.map {
         // avoid aliasing of primitive expressions (i.e. variables and properties)
         case item @ AliasedReturnItem(Variable(_), Variable(_)) =>
@@ -69,7 +69,6 @@ case object normalizeReturnClauses extends Rewriter {
           With(
             distinct = distinct,
             returnItems = ri.copy(items = aliasProjection)(ri.position),
-            gri.getOrElse(PassAllGraphReturnItems(clause.position)),
             orderBy = None,
             skip = skip,
             limit = limit,
@@ -78,7 +77,6 @@ case object normalizeReturnClauses extends Rewriter {
           Return(
             distinct = distinct,
             returnItems = ri.copy(items = finalProjection)(ri.position),
-            gri,
             orderBy = None,
             skip = None,
             limit = None,

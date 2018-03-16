@@ -43,26 +43,24 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
         producer.planRemoveAliases(process(in), dependent, header)
 
       case flat.Select(fields, graphs: Set[String], in, header) =>
-        val selected = producer.planSelectFields(process(in), fields, header)
-        producer.planSelectGraphs(selected, graphs)
+        producer.planSelectFields(process(in), fields, header)
 
       case flat.EmptyRecords(in, header) =>
         producer.planEmptyRecords(process(in), header)
 
       case flat.Start(graph, _) =>
         graph match {
-          case g: LogicalExternalGraph =>
-            producer.planStart(context.inputRecords, g)
-
+          case g: LogicalCatalogGraph =>
+            producer.planStart(Some(context.inputRecords), Some(g))
+          case LogicalPatternGraph(schema, entities, sets) =>
+            producer.planConstructGraph(producer.planStart(Some(context.inputRecords)), entities, sets, schema)
           case _ => throw IllegalArgumentException("a LogicalExternalGraph", graph)
         }
 
-      case flat.SetSourceGraph(graph, in, _) =>
+      case flat.UseGraph(graph, in) =>
         graph match {
-          case g: LogicalExternalGraph =>
-            producer.planSetSourceGraph(process(in), g)
-
-          case _ => throw IllegalArgumentException("a LogicalExternalGraph", graph)
+          case g: LogicalCatalogGraph => producer.planUseGraph(process(in), g)
+          case LogicalPatternGraph(schema, entities, sets) => producer.planConstructGraph(process(in), entities, sets, schema)
         }
 
       case op@flat.NodeScan(v, in, header) =>
@@ -79,14 +77,6 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
 
       case flat.Project(expr, in, header) =>
         producer.planProject(process(in), expr, header)
-
-      case flat.ProjectGraph(graph, in, header) =>
-        graph match {
-          case LogicalExternalGraph(name, qualifiedGraphName, _) =>
-            producer.planProjectExternalGraph(process(in), name, qualifiedGraphName)
-          case LogicalPatternGraph(name, targetSchema, GraphOfPattern(toCreate, _)) =>
-            producer.planProjectPatternGraph(process(in), toCreate, name, targetSchema, header)
-        }
 
       case flat.Aggregate(aggregations, group, in, header) =>
         producer.planAggregate(process(in), group, aggregations, header)
@@ -110,12 +100,12 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
         val first = process(sourceOp)
         val third = process(targetOp)
 
-        val externalGraph = sourceOp.sourceGraph match {
-          case e: LogicalExternalGraph => e
-          case _ => throw IllegalArgumentException("a LogicalExternalGraph", sourceOp.sourceGraph)
+        val startFrom = sourceOp.sourceGraph match {
+          case e: LogicalCatalogGraph => producer.planStart(None, Some(e))
+          case LogicalPatternGraph(schema, entities, sets) =>
+            producer.planConstructGraph(producer.planStart(Some(context.inputRecords)), entities, sets, schema)
         }
 
-        val startFrom = producer.planStartFromUnit(externalGraph)
         val second = producer.planRelationshipScan(startFrom, op.sourceGraph, rel, relHeader)
 
         direction match {
@@ -180,6 +170,9 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
 
       case flat.Limit(expr, in, header) =>
         producer.planLimit(process(in), expr, header)
+
+      case flat.ReturnGraph(in) =>
+        producer.planReturnGraph(process(in))
 
       case x =>
         throw NotImplementedException(s"Physical planning of operator $x")

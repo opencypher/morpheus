@@ -20,7 +20,7 @@ import org.opencypher.okapi.ir.api.{IRField, IRGraph}
 final case class UnwindBlock[E](
     after: Set[BlockRef],
     binds: UnwoundList[E],
-    source: IRGraph
+    graph: IRGraph
 ) extends BasicBlock[UnwoundList[E], E](BlockType("unwind")) {
   override def where: Set[E] = Set.empty[E] // never filters
 }
