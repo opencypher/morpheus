@@ -136,8 +136,8 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
     removeSelfRelationships: Boolean): CAPSPhysicalOperator = operators.ExpandSource(
     first, second, third, source, rel, target, header, removeSelfRelationships)
 
-  override def planUnion(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator): CAPSPhysicalOperator =
-    operators.Union(lhs, rhs)
+  override def planTabularUnionAll(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator): CAPSPhysicalOperator =
+    operators.TabularUnionAll(lhs, rhs)
 
   override def planExpandInto(
     lhs: CAPSPhysicalOperator,

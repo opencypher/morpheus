@@ -125,7 +125,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
           case Undirected =>
             val outgoing = producer.planExpandSource(first, second, third, source, rel, target, header)
             val incoming = producer.planExpandSource(third, second, first, target, rel, source, header, removeSelfRelationships = true)
-            producer.planUnion(outgoing, incoming)
+            producer.planTabularUnionAll(outgoing, incoming)
         }
 
       case op@flat.ExpandInto(source, rel, target, direction, sourceOp, header, relHeader) =>
@@ -138,7 +138,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
           case Undirected =>
             val outgoing = producer.planExpandInto(in, relationships, source, rel, target, header)
             val incoming = producer.planExpandInto(in, relationships, target, rel, source, header)
-            producer.planUnion(outgoing, incoming)
+            producer.planTabularUnionAll(outgoing, incoming)
         }
 
       case flat.InitVarExpand(source, edgeList, endNode, in, header) =>

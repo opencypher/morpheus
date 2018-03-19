@@ -247,7 +247,7 @@ final case class ExpandInto(
   * @param lhs the first operand
   * @param rhs the second operand
   */
-final case class Union(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator)
+final case class TabularUnionAll(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator)
   extends BinaryPhysicalOperator with InheritedHeader {
 
   override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext) = {
