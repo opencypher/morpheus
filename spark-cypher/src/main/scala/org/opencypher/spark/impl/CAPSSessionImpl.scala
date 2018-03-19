@@ -195,7 +195,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
     logStageProgress("Done!")
     if (PrintFlatPlan.isSet) {
       println("Flat plan:")
-      println(flatPlan)
+      println(flatPlan.pretty())
     }
 
     logStageProgress("Physical planning ... ", newLine = false)
