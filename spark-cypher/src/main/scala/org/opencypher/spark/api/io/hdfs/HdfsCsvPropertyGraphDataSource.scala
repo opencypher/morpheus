@@ -59,9 +59,13 @@ case class HdfsCsvPropertyGraphDataSource(
 
   override def hasGraph(name: GraphName): Boolean = fileSystem.exists(new Path(graphPath(name)))
 
-  private def graphPath(name: GraphName): URI = new URIBuilder()
-    .setScheme("hdfs")
-    .setPath(Paths.get(rootPath, name.value).toString)
-    .build()
+  private[hdfs] def graphPath(name: GraphName): URI = {
+    val uri = URI.create(rootPath)
+
+    new URIBuilder()
+      .setScheme("hdfs")
+      .setPath(Paths.get(uri.getPath, name.value).toString)
+      .build()
+  }
 
 }
