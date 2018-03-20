@@ -268,7 +268,7 @@ class IrBuilderTest extends IrTestSuite {
           deps should equalWithTracing(List(loadBlock))
           fields should equal(Set(toField('a -> CTNode)))
           topo shouldBe empty
-          exprs should equalWithTracing(List(HasLabel(toVar('a), Label("Person"))()))
+          exprs should equalWithTracing(Set(HasLabel(toVar('a), Label("Person"))()))
       }
 
       val projectBlock = model.findExactlyOne {
@@ -337,7 +337,7 @@ class IrBuilderTest extends IrTestSuite {
             deps should equalWithTracing(List(loadBlock))
             fields should equal(Set(toField('a -> CTNode)))
             topo shouldBe empty
-            exprs should equalWithTracing(List(HasLabel(toVar('a), Label("Person"))()))
+            exprs should equalWithTracing(Set(HasLabel(toVar('a), Label("Person"))()))
         }
 
         val projectBlock1 = model.findExactlyOne {

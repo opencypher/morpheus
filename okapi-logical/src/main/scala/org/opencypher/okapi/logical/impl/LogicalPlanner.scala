@@ -223,7 +223,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
   }
 
   // TODO: Should we check (or silently drop) predicates that are not eligible for planning here? (check dependencies)
-  private def planFilter(in: LogicalOperator, where: List[Expr])(
+  private def planFilter(in: LogicalOperator, where: Set[Expr])(
     implicit context: LogicalPlannerContext): LogicalOperator = {
     val filtersAndProjs = where.foldLeft(in) {
       case (acc, ors: Ors) =>
@@ -376,7 +376,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     producer.planUseGraph(graph, prev)
   }
 
-  private def planMatchPattern(plan: LogicalOperator, pattern: Pattern[Expr], where: List[Expr], graph: IRGraph)(
+  private def planMatchPattern(plan: LogicalOperator, pattern: Pattern[Expr], where: Set[Expr], graph: IRGraph)(
     implicit context: LogicalPlannerContext) = {
     val components = pattern.components.toSeq
     if (components.size == 1) {

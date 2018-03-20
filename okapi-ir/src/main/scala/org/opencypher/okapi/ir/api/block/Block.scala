@@ -37,7 +37,7 @@ abstract class Block[E] extends AbstractTreeNode[Block[E]] {
   def after: List[Block[E]]
 
   def binds: Binds[E]
-  def where: List[E]
+  def where: Set[E]
 
   def graph: IRGraph
 }
@@ -55,7 +55,7 @@ trait Binds[E] {
 }
 
 object BlockWhere {
-  def unapply[E](block: Block[E]): Option[List[E]] = Some(block.where)
+  def unapply[E](block: Block[E]): Option[Set[E]] = Some(block.where)
 }
 
 object NoWhereBlock {

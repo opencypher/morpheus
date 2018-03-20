@@ -31,7 +31,7 @@ import org.opencypher.okapi.ir.api._
 final case class ProjectBlock[E](
     after: List[Block[E]],
     binds: Fields[E] = Fields[E](),
-    where: List[E] = List.empty[E],
+    where: Set[E] = Set.empty[E],
     graph: IRGraph,
     distinct: Boolean = false
 ) extends BasicBlock[Fields[E], E](BlockType("project"))

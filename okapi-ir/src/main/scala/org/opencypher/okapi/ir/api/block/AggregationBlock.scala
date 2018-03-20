@@ -35,7 +35,7 @@ final case class AggregationBlock[E](
     graph: IRGraph
 ) extends BasicBlock[Aggregations[E], E](BlockType("aggregation")) {
 
-  override val where: List[E] = List.empty[E] // no filtering in aggregation blocks
+  override val where: Set[E] = Set.empty[E] // no filtering in aggregation blocks
 }
 
 final case class Aggregations[E](pairs: Set[(IRField, E)]) extends Binds[E] {

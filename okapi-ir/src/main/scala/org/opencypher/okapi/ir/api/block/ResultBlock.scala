@@ -29,7 +29,7 @@ package org.opencypher.okapi.ir.api.block
 import org.opencypher.okapi.ir.api._
 
 sealed trait ResultBlock[E] extends Block[E] {
-  override val where: List[E] = List.empty
+  override val where: Set[E] = Set.empty
 }
 
 final case class TableResultBlock[E](

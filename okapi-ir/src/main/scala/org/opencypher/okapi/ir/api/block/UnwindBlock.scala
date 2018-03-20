@@ -33,7 +33,7 @@ final case class UnwindBlock[E](
     binds: UnwoundList[E],
     graph: IRGraph
 ) extends BasicBlock[UnwoundList[E], E](BlockType("unwind")) {
-  override def where: List[E] = List.empty[E] // never filters
+  override def where: Set[E] = Set.empty[E] // never filters
 }
 
 final case class UnwoundList[E](list: E, variable: IRField) extends Binds[E] {

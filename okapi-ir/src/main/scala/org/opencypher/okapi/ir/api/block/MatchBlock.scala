@@ -32,7 +32,7 @@ import org.opencypher.okapi.ir.api.pattern.Pattern
 final case class MatchBlock[E](
     after: List[Block[E]],
     binds: Pattern[E],
-    where: List[E] = List.empty[E],
+    where: Set[E] = Set.empty[E],
     optional: Boolean,
     graph: IRGraph
 ) extends BasicBlock[Pattern[E], E](BlockType("match"))

@@ -246,7 +246,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
   private def registerProjectBlock(
     context: IRBuilderContext,
     fieldExprs: List[(IRField, Expr)],
-    given: List[Expr] = List.empty[Expr],
+    given: Set[Expr] = Set.empty[Expr],
     source: IRGraph,
     distinct: Boolean): (Block[Expr], BlockRegistry[Expr]) = {
     val blockRegistry = context.blockRegistry
@@ -382,19 +382,19 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
       context <- get[R, IRBuilderContext]
     } yield context.convertExpression(e)
 
-  private def convertWhere[R: _hasContext](where: Option[ast.Where]): Eff[R, List[Expr]] = where match {
+  private def convertWhere[R: _hasContext](where: Option[ast.Where]): Eff[R, Set[Expr]] = where match {
     case Some(ast.Where(expr)) =>
       for {
         predicate <- convertExpr(expr)
       } yield {
         predicate match {
-          case org.opencypher.okapi.ir.api.expr.Ands(exprs) => exprs
-          case e => List(e)
+          case org.opencypher.okapi.ir.api.expr.Ands(exprs) => exprs.toSet
+          case e => Set(e)
         }
       }
 
     case None =>
-      pure[R, List[Expr]](List.empty[Expr])
+      pure[R, Set[Expr]](Set.empty[Expr])
   }
 
   private def convertRegistry[R: _mayFail : _hasContext]: Eff[R, Option[CypherQuery[Expr]]] =
