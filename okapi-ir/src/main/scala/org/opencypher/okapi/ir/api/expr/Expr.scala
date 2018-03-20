@@ -110,7 +110,6 @@ object Ands {
 }
 
 final case class Ands(_exprs: List[Expr]) extends Expr {
-  require(_exprs.nonEmpty, "Ands expressions cannot be empty")
   require(_exprs.forall(!_.isInstanceOf[Ands]), "Ands need to be flattened")
 
   def exprs = _exprs.toSet
@@ -127,7 +126,6 @@ object Ors {
 }
 
 final case class Ors(_exprs: List[Expr]) extends Expr {
-  require(_exprs.nonEmpty, "Ors expressions cannot be empty")
   require(_exprs.forall(!_.isInstanceOf[Ors]), "Ors need to be flattened")
 
   def exprs = _exprs.toSet

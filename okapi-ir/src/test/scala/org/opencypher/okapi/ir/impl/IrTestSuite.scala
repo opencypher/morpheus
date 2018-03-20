@@ -73,7 +73,7 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
   protected def matchBlock(pattern: Pattern[Expr]): Block[Expr] =
     MatchBlock[Expr](List(leafBlock), pattern, Set.empty[Expr], false, testGraph)
 
-  def irFor(root: Block[Expr], blocks: List[Block[Expr]] = List.empty): CypherQuery[Expr] = {
+  def irFor(root: Block[Expr]): CypherQuery[Expr] = {
     val result = TableResultBlock[Expr](
       after = List(root),
       binds = OrderedFields[Expr](),

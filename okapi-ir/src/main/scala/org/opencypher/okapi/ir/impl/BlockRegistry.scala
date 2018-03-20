@@ -32,6 +32,7 @@ object BlockRegistry {
   def empty[E]: BlockRegistry[E] = BlockRegistry[E](List.empty)
 }
 
+// TODO: Inline in IRBuilderContext
 case class BlockRegistry[E](reg: List[Block[E]]) {
 
   def register(blockDef: Block[E]): BlockRegistry[E] = {

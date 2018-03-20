@@ -40,9 +40,4 @@ class AndsTest extends BaseTestSuite {
     Ands(args).exprs should equalWithTracing(Set(TrueLit(), HasLabel(x, Label("X"))(), FalseLit()))
   }
 
-  test("empty ands not allowed") {
-    a[IllegalArgumentException] should be thrownBy {
-      Ands()
-    }
-  }
 }
