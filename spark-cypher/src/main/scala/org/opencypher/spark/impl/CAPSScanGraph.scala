@@ -86,16 +86,6 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema)(imp
     alignedRecords.reduceOption(_ unionAll(targetRelHeader, _)).getOrElse(CAPSRecords.empty(targetRelHeader))
   }
 
-  override def unionAll(other: PropertyGraph): CAPSGraph = other match {
-    case (otherScanGraph: CAPSScanGraph) =>
-      val allScans = scans ++ otherScanGraph.scans
-      val nodeTable = allScans
-        .collectFirst[CAPSNodeTable] { case table: CAPSNodeTable => table }
-        .getOrElse(throw IllegalArgumentException("at least one node scan"))
-      CAPSGraph.create(nodeTable, allScans.filterNot(_ == nodeTable): _*)
-    case _ => CAPSUnionGraph(this, other.asCaps)
-  }
-
   // TODO: add test case where there are multiple rel types in the underlying DF and see if it filters the right one
   case class EntityTables(entityTables: Vector[CAPSEntityTable]) {
     type EntityType = CypherType with DefiniteCypherType
@@ -120,4 +110,5 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema)(imp
       selectedScans
     }
   }
+
 }

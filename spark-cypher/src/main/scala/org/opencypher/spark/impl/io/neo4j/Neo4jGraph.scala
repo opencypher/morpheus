@@ -92,10 +92,6 @@ class Neo4jGraph(val schema: CAPSSchema, val session: CAPSSession)(
     }
   }
 
-  override def unionAll(other: PropertyGraph): CAPSGraph = {
-    CAPSUnionGraph(this, other.asCaps)
-  }
-
   private def computeRecords(name: String, cypherType: CypherType, header: RecordHeader)(
     computeRdd: (RecordHeader, StructType) => RDD[Row]): CAPSRecords = {
     val struct = CAPSRecordHeader.asSparkStructType(header)

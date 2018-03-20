@@ -108,6 +108,12 @@ class CAPSUnionGraphTest extends CAPSTestSuite with GraphCreationFixture with Te
     )
   }
 
+  it("assigns non-conflicting tags to graphs") {
+    val scanGraph1 = CAPSGraph.create(personTable)
+    val scanGraph2 = CAPSGraph.create(personTable)
+
+  }
+
   private def initPersonReadsBookGraph: CAPSGraph = {
     impl.CAPSUnionGraph(
       initGraph(`:READS`),

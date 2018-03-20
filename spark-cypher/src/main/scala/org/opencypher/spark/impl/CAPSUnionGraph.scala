@@ -27,19 +27,47 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.storage.StorageLevel
-import org.opencypher.okapi.api.graph.PropertyGraph
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
 
-final case class CAPSUnionGraph(graphs: CAPSGraph*)(implicit val session: CAPSSession) extends CAPSGraph {
+object CAPSUnionGraph {
+  def apply(graphs: CAPSGraph*)(implicit session: CAPSSession): CAPSUnionGraph = {
+    CAPSUnionGraph(graphs.toList)
+  }
+}
 
-  private lazy val individualSchemas = graphs.map(_.schema)
+final case class CAPSUnionGraph(graphs: List[CAPSGraph], doUpdateTags: Boolean = true)(implicit val session: CAPSSession) extends CAPSGraph {
+
+  val graphsWithUpdatedTags = if (doUpdateTags) {
+    updateTags(graphs)
+  } else {
+    graphs
+  }
+
+  private def updateTags(graphsToUpdate: List[CAPSGraph]): List[CAPSGraph] = {
+    val tagList = graphsToUpdate.foldLeft(List.empty[Int])(_ ++ _.tags)
+    val tagSet = tagList.toSet
+    val maxUsedTag = tagSet.max
+
+    val conflictCounts: Map[Int, Int] = tagList
+      .groupBy(tag => tag)
+      .mapValues(_.size - 1)
+      .filter { case (_, conflicts) => conflicts > 0 }
+
+    val foldStart = GraphIdShiftIntermediateResult(List.empty, conflictCounts, maxUsedTag + 1)
+    val GraphIdShiftIntermediateResult(shiftedGraphs, _, _) = graphsToUpdate.foldLeft(foldStart) {
+      case (intermediate, nextGraph) =>
+        intermediate.shift(nextGraph)
+    }
+    shiftedGraphs
+  }
+
+  private lazy val individualSchemas = graphsWithUpdatedTags.map(_.schema)
 
   override lazy val schema: CAPSSchema = individualSchemas.foldLeft(Schema.empty)(_ ++ _).asCaps
 
@@ -53,37 +81,50 @@ final case class CAPSUnionGraph(graphs: CAPSGraph*)(implicit val session: CAPSSe
 
   override def unpersist(blocking: Boolean): CAPSUnionGraph = map(_.unpersist(blocking))
 
-  private def map(f: CAPSGraph => CAPSGraph): CAPSUnionGraph =
-    CAPSUnionGraph(graphs.map(f): _*)(session)
+  private def map(f: CAPSGraph => CAPSGraph): CAPSUnionGraph = CAPSUnionGraph(graphsWithUpdatedTags.map(f), doUpdateTags)
 
   override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
     val node = Var(name)(nodeCypherType)
     val targetHeader = RecordHeader.nodeFromSchema(node, schema)
-    val nodeScans: Seq[CAPSRecords] = graphs
+    val nodeScans: Seq[CAPSRecords] = graphsWithUpdatedTags
       .filter(nodeCypherType.labels.isEmpty || _.schema.labels.intersect(nodeCypherType.labels).nonEmpty)
       .map(_.nodes(name, nodeCypherType))
 
     val alignedScans = nodeScans.map(_.alignWith(node, targetHeader))
     // TODO: Only distinct on id column
-    alignedScans.reduceOption(_ unionAll (targetHeader, _)).map(_.distinct).getOrElse(CAPSRecords.empty(targetHeader))
+    alignedScans.reduceOption(_ unionAll(targetHeader, _)).map(_.distinct).getOrElse(CAPSRecords.empty(targetHeader))
   }
 
   override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
     val rel = Var(name)(relCypherType)
     val targetHeader = RecordHeader.relationshipFromSchema(rel, schema)
-    val relScans: Seq[CAPSRecords] = graphs
+    val relScans: Seq[CAPSRecords] = graphsWithUpdatedTags
       .filter(relCypherType.types.isEmpty || _.schema.relationshipTypes.intersect(relCypherType.types).nonEmpty)
       .map(_.relationships(name, relCypherType))
     val alignedScans = relScans.map(_.alignWith(rel, targetHeader))
     // TODO: Only distinct on id column
-    alignedScans.reduceOption(_ unionAll (targetHeader, _)).map(_.distinct).getOrElse(CAPSRecords.empty(targetHeader))
+    alignedScans.reduceOption(_ unionAll(targetHeader, _)).map(_.distinct).getOrElse(CAPSRecords.empty(targetHeader))
   }
 
-  override def unionAll(other: PropertyGraph): CAPSUnionGraph = other match {
-    case other: CAPSUnionGraph =>
-      CAPSUnionGraph(graphs ++ other.graphs: _*)
-    case _ =>
-      CAPSUnionGraph(graphs :+ other.asCaps: _*)
-  }
+  override def tags: Set[Int] = ???
 
+  override def replaceTags(replacements: (Int, Int)*): CAPSGraph = ???
+}
+
+private[spark] case class GraphIdShiftIntermediateResult(shiftedGraphs: List[CAPSGraph], conflictCounts: Map[Int, Int], nextTag: Int) {
+  def shift(nextGraph: CAPSGraph): GraphIdShiftIntermediateResult = {
+    val conflicts = nextGraph.tags intersect conflictCounts.keySet
+    if (conflicts.nonEmpty) {
+      val nextTagAfterShifting = nextTag + conflicts.size + 1
+      val replacements = conflicts.toList.zip(nextTag until nextTagAfterShifting)
+      val shiftedGraph = nextGraph.replaceTags(replacements: _*)
+      val updatedConflictCounts = conflictCounts.map {
+        case (tag, count) if conflicts.contains(tag) => tag -> (count - 1)
+        case (tag, count) => tag -> count
+      }
+      copy(shiftedGraphs = shiftedGraph :: shiftedGraphs, conflictCounts = updatedConflictCounts, nextTag = nextTagAfterShifting)
+    } else {
+      copy(shiftedGraphs = nextGraph :: shiftedGraphs)
+    }
+  }
 }

@@ -36,7 +36,7 @@ import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.table.CAPSRecordHeader._
 import org.opencypher.spark.schema.CAPSSchema
 
-class CAPSPatternGraph(private[spark] val baseTable: CAPSRecords, val schema: CAPSSchema)(implicit val session: CAPSSession)
+class CAPSPatternGraph(private[spark] val baseTable: CAPSRecords, val schema: CAPSSchema, newEntityTag: Int, val tags: Set[Int])(implicit val session: CAPSSession)
     extends CAPSGraph {
 
   private val header = baseTable.header
@@ -97,8 +97,7 @@ class CAPSPatternGraph(private[spark] val baseTable: CAPSRecords, val schema: CA
     }.toMap
   }
 
-  override def unionAll(other: PropertyGraph): CAPSGraph = {
-    CAPSUnionGraph(this, other.asCaps)
+  override def replaceTags(replacements: (Int, Int)*): CAPSGraph = {
+    baseTable
   }
-
 }
