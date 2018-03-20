@@ -144,12 +144,12 @@ object CAPSGraph {
       lazyGraph.unionAll(other)
 
     override def cache(): CAPSGraph = {
-      lazyGraph.cache();
+      lazyGraph.cache()
       this
     }
 
     override def persist(): CAPSGraph = {
-      lazyGraph.persist();
+      lazyGraph.persist()
       this
     }
 
@@ -159,12 +159,12 @@ object CAPSGraph {
     }
 
     override def unpersist(): CAPSGraph = {
-      lazyGraph.unpersist();
+      lazyGraph.unpersist()
       this
     }
 
     override def unpersist(blocking: Boolean): CAPSGraph = {
-      lazyGraph.unpersist(blocking);
+      lazyGraph.unpersist(blocking)
       this
     }
   }
@@ -179,7 +179,7 @@ object CAPSGraph {
     override def relationships(name: String, cypherType: CTRelationship): CAPSRecords =
       CAPSRecords.empty(RecordHeader.from(OpaqueField(Var(name)(cypherType))))
 
-    override def union(other: PropertyGraph): CAPSGraph = other.asCaps
+    override def unionAll(other: PropertyGraph): CAPSGraph = other.asCaps
   }
 
 }
