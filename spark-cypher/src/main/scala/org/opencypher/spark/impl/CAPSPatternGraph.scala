@@ -36,10 +36,15 @@ import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.table.CAPSRecordHeader._
 import org.opencypher.spark.schema.CAPSSchema
 
-class CAPSPatternGraph(private[spark] val baseTable: CAPSRecords, val schema: CAPSSchema, newEntityTag: Int, val tags: Set[Int])(implicit val session: CAPSSession)
+class CAPSPatternGraph(
+  private[spark] val baseTable: CAPSRecords,
+  val schema: CAPSSchema)(implicit val session: CAPSSession)
     extends CAPSGraph {
 
   private val header = baseTable.header
+
+  // TODO: wip
+  private val newEntityTag = schema.tags.max + 1
 
   def show(): Unit = baseTable.data.show()
 
@@ -95,9 +100,5 @@ class CAPSPatternGraph(private[spark] val baseTable: CAPSRecords, val schema: CA
     slotContents.map { baseTableSlotContent =>
       ColumnName.of(baseTableSlotContent.withOwner(scanTableVar)) -> ColumnName.of(baseTableSlotContent)
     }.toMap
-  }
-
-  override def replaceTags(replacements: (Int, Int)*): CAPSGraph = {
-    baseTable
   }
 }

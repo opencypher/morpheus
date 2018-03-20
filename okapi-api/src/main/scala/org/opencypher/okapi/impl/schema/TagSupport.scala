@@ -24,41 +24,32 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.schema
+package org.opencypher.okapi.impl.schema
 
-import org.apache.spark.sql.SparkSession
+import org.opencypher.okapi.api.schema.Schema
 
-object GraphTags extends App {
+trait TagSupport {
 
-  val nodeId1 = 1
-  val nodeId2 = 2
+  self: Schema with TagSupport =>
 
-  val totalBits = 64
-  val idBits = 50
+  type TagSchema = Schema with TagSupport
 
-  val tagMask: Long = -1L << idBits
+  def tags: Set[Int] = Set(0)
 
-  def setTag(nodeId: Long, tag: Int): Long = {
-    require((nodeId & tagMask) == 0)
-    val r = nodeId | (tag << idBits)
-    println(s"setTag(nodeId=$nodeId, tag=$tag)=$r")
-    r
+  def withTags(tags: Set[Int]): TagSchema
+
+  def replaceTags(replacements: Map[Int, Int]): TagSchema
+
+  def union(other: TagSchema): TagSchema
+}
+
+object TagSupport {
+
+  def replacements(leftTags: Set[Int], rightTags: Set[Int]): Map[Int, Int] = {
+    val maxUsedTag = Math.max(leftTags.max, rightTags.max)
+    val nextTag = maxUsedTag + 1
+    val conflicts = leftTags intersect rightTags
+
+    conflicts.zip(nextTag until nextTag + conflicts.size).toMap
   }
-
-  def getTag(nodeId: Long): Long = {
-    val r = (nodeId & tagMask) >> idBits
-    println(s"getTag(nodeId=$nodeId)=$r")
-    r
-  }
-
-    
-
-
-  getTag(setTag(1, 0))
-  getTag(setTag(1, 1))
-  getTag(setTag(2, 0))
-  getTag(setTag(2, 1))
-
-
-
 }

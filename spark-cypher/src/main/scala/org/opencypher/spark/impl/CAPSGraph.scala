@@ -44,10 +44,6 @@ trait CAPSGraph extends PropertyGraph with GraphOperations with Serializable {
 
   implicit def session: CAPSSession
 
-  def tags: Set[Int]
-
-  def replaceTags(replacements: (Int, Int)*): CAPSGraph
-
   override def nodes(name: String, nodeCypherType: CTNode = CTNode): CAPSRecords
 
   override def relationships(name: String, relCypherType: CTRelationship = CTRelationship): CAPSRecords
@@ -113,10 +109,6 @@ object CAPSGraph {
       override def unpersist(): CAPSGraph = this
 
       override def unpersist(blocking: Boolean): CAPSGraph = this
-
-      override def tags: Set[Int] = Set.empty
-
-      override def replaceTags(replacements: (Int, Int)*): CAPSGraph = this
     }
 
   def create(nodeTable: CAPSNodeTable, entityTables: CAPSEntityTable*)(implicit caps: CAPSSession): CAPSGraph = {
@@ -139,10 +131,6 @@ object CAPSGraph {
       val g = loadGraph
       if (g.schema == schema) g else throw IllegalArgumentException(s"a graph with schema $schema", g.schema)
     }
-
-    override def tags: Set[Int] = lazyGraph.tags
-
-    override def replaceTags(replacements: (Int, Int)*): CAPSGraph = lazyGraph.replaceTags(replacements: _*)
 
     override def session: CAPSSession = caps
 

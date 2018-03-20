@@ -29,9 +29,9 @@ package org.opencypher.spark.schema
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.schema.{LabelPropertyMap, RelTypePropertyMap, Schema}
 import org.opencypher.okapi.api.types.{CTRelationship, CypherType}
-import org.opencypher.okapi.impl.exception.SchemaException
+import org.opencypher.okapi.impl.exception.{SchemaException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.schema.SchemaUtils._
-import org.opencypher.okapi.impl.schema.{ImpliedLabels, LabelCombinations}
+import org.opencypher.okapi.impl.schema.{ImpliedLabels, LabelCombinations, SchemaImpl, TagSupport}
 import org.opencypher.spark.impl.convert.CAPSCypherType._
 
 object CAPSSchema {
@@ -82,6 +82,12 @@ object CAPSSchema {
 }
 
 case class CAPSSchema private[schema](schema: Schema) extends Schema {
+
+  def tags: Set[Int] = schema match {
+    case s: TagSupport => s.tags
+    case other => throw UnsupportedOperationException(s"${other.getClass.getSimpleName} does not have Tag support")
+  }
+
   override def labels: Set[String] = schema.labels
 
   override def relationshipTypes: Set[String] = schema.relationshipTypes
