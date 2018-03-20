@@ -86,7 +86,7 @@ object Neo4jWorkflow extends App {
   ).graph.get
 
   // 5) Build new recommendation graph that connects the social and product graphs
-  val recommendationGraph = socialNetwork union purchaseNetwork union integrationGraph
+  val recommendationGraph = socialNetwork unionAll purchaseNetwork unionAll integrationGraph
 
   // 6) Query for product recommendations
   val recommendations = recommendationGraph.cypher(

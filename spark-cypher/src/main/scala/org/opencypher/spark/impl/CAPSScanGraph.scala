@@ -86,7 +86,7 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema)(imp
     alignedRecords.reduceOption(_ unionAll(targetRelHeader, _)).getOrElse(CAPSRecords.empty(targetRelHeader))
   }
 
-  override def union(other: PropertyGraph): CAPSGraph = other match {
+  override def unionAll(other: PropertyGraph): CAPSGraph = other match {
     case (otherScanGraph: CAPSScanGraph) =>
       val allScans = scans ++ otherScanGraph.scans
       val nodeTable = allScans

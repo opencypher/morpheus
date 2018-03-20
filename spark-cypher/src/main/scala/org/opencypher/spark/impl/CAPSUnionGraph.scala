@@ -62,6 +62,7 @@ final case class CAPSUnionGraph(graphs: CAPSGraph*)(implicit val session: CAPSSe
     val nodeScans: Seq[CAPSRecords] = graphs
       .filter(nodeCypherType.labels.isEmpty || _.schema.labels.intersect(nodeCypherType.labels).nonEmpty)
       .map(_.nodes(name, nodeCypherType))
+
     val alignedScans = nodeScans.map(_.alignWith(node, targetHeader))
     // TODO: Only distinct on id column
     alignedScans.reduceOption(_ unionAll (targetHeader, _)).map(_.distinct).getOrElse(CAPSRecords.empty(targetHeader))
@@ -78,10 +79,11 @@ final case class CAPSUnionGraph(graphs: CAPSGraph*)(implicit val session: CAPSSe
     alignedScans.reduceOption(_ unionAll (targetHeader, _)).map(_.distinct).getOrElse(CAPSRecords.empty(targetHeader))
   }
 
-  override def union(other: PropertyGraph): CAPSUnionGraph = other match {
+  override def unionAll(other: PropertyGraph): CAPSUnionGraph = other match {
     case other: CAPSUnionGraph =>
       CAPSUnionGraph(graphs ++ other.graphs: _*)
     case _ =>
       CAPSUnionGraph(graphs :+ other.asCaps: _*)
   }
+
 }

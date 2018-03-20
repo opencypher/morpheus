@@ -43,5 +43,5 @@ trait GraphOperations {
     * @return union of this and the argument graph
     */
   // TODO: Explain semantics of the union (equality vs equivalence)
-  def union(other: PropertyGraph): PropertyGraph
+  def unionAll(other: PropertyGraph): PropertyGraph
 }

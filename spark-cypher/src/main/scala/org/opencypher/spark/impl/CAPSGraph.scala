@@ -48,7 +48,7 @@ trait CAPSGraph extends PropertyGraph with GraphOperations with Serializable {
 
   override def session: CAPSSession
 
-  override def union(other: PropertyGraph): CAPSGraph
+  override def unionAll(other: PropertyGraph): CAPSGraph
 
   override def schema: CAPSSchema
 
@@ -140,8 +140,8 @@ object CAPSGraph {
     override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords =
       lazyGraph.relationships(name, relCypherType)
 
-    override def union(other: PropertyGraph): CAPSGraph =
-      lazyGraph.union(other)
+    override def unionAll(other: PropertyGraph): CAPSGraph =
+      lazyGraph.unionAll(other)
 
     override def cache(): CAPSGraph = {
       lazyGraph.cache();

@@ -44,7 +44,7 @@ class CAPSScanGraphTest extends CAPSGraphTest {
     val graph1 = CAPSGraph.create(personTable, knowsTable)
     val graph2 = CAPSGraph.create(programmerTable, bookTable, readsTable)
 
-    val result = graph1 union graph2
+    val result = graph1 unionAll graph2
 
     val nodes = result.nodes("n").toDF().collect.toBag
     nodes should equal(

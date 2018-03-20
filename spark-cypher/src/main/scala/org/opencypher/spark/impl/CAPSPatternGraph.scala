@@ -97,7 +97,7 @@ class CAPSPatternGraph(private[spark] val baseTable: CAPSRecords, val schema: CA
     }.toMap
   }
 
-  override def union(other: PropertyGraph): CAPSGraph = {
+  override def unionAll(other: PropertyGraph): CAPSGraph = {
     CAPSUnionGraph(this, other.asCaps)
   }
 

@@ -92,7 +92,7 @@ class Neo4jGraph(val schema: CAPSSchema, val session: CAPSSession)(
     }
   }
 
-  override def union(other: PropertyGraph): CAPSGraph = {
+  override def unionAll(other: PropertyGraph): CAPSGraph = {
     CAPSUnionGraph(this, other.asCaps)
   }
 

@@ -50,7 +50,7 @@ object MultipleGraphExample extends App {
   val purchaseNetwork = session.graph(QualifiedGraphName(Namespace("myDataSource"), GraphName("prod")))
 
   // 4) Build union of social and purchase network (note, that there are no relationships connecting nodes from both graphs)
-  val disconnectedGraph = socialNetwork union purchaseNetwork
+  val disconnectedGraph = socialNetwork unionAll purchaseNetwork
 
   // 5) Create new edges between users and customers with the same name
   val integrationGraph = disconnectedGraph.cypher(
@@ -64,7 +64,7 @@ object MultipleGraphExample extends App {
   ).getGraph
 
   // 6) Build recommendation graph from disconnected and integration graphs
-  val recommendationGraph = disconnectedGraph union integrationGraph
+  val recommendationGraph = disconnectedGraph unionAll integrationGraph
 
   // 7) Query for product recommendations
   val recommendations = recommendationGraph.cypher(

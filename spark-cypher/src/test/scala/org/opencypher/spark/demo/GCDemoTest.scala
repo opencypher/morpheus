@@ -74,7 +74,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
 
     check(verifyCityFriendsEU(CITYFRIENDS_EU.getGraph))
 
-    val ALL_CITYFRIENDS = CITYFRIENDS_EU.getGraph union CITYFRIENDS_US.getGraph
+    val ALL_CITYFRIENDS = CITYFRIENDS_EU.getGraph unionAll CITYFRIENDS_US.getGraph
 
     check(verifyAllCityFriends(ALL_CITYFRIENDS))
 
@@ -94,7 +94,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
 
     check(verifyLinks(LINKS))
 
-    val RECO = ALL_CITYFRIENDS union PRODUCTS union LINKS union SN_EU union SN_US
+    val RECO = ALL_CITYFRIENDS unionAll PRODUCTS unionAll LINKS unionAll SN_EU unionAll SN_US
 
     check(verifyReco(RECO))
 
