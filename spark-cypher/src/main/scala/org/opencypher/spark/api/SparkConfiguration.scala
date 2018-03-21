@@ -41,6 +41,8 @@ object SparkConfiguration {
   // Number of Bits used to store entity identifier
   val idBits: Int = IdBits.get
 
+  def tagBits = totalBits - idBits
+
   // Mask to extract graph tag
   val tagMask: Long = -1L << idBits
 

@@ -24,21 +24,21 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.schema
+package org.opencypher.spark.impl
 
-import java.lang
-
-import org.apache.spark.sql.{Column, Dataset, functions}
+import org.apache.spark.sql.Dataset
+import org.opencypher.spark.api.SparkConfiguration._
+import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.test.CAPSTestSuite
 import org.scalatest.Matchers
-import org.opencypher.spark.impl.DataFrameOps._
+import org.scalatest.prop.GeneratorDrivenPropertyChecks
 
-class TagSupportTest extends CAPSTestSuite with Matchers {
+class DataFrameOpsTest extends CAPSTestSuite with Matchers with GeneratorDrivenPropertyChecks {
 
-  it("successfully sets tags") {
+  it("sets tags - DF") {
     val tag = 1
 
-    val df: Dataset[lang.Long] = sparkSession.range(10)
+    val df = sparkSession.range(10)
     val ids = df.col("id")
     val tagged = ids.setTag(tag)
     val taggedDf = df.withColumn("tagged", tagged)
@@ -48,7 +48,7 @@ class TagSupportTest extends CAPSTestSuite with Matchers {
     extractedTagDf.select("extracted").collect().forall(row => row.get(0) == tag) shouldBe true
   }
 
-  it("should overwrite tags") {
+  it("overwrites tags - DF") {
     val tag1 = 1
     val tag2 = 2
 
@@ -64,11 +64,10 @@ class TagSupportTest extends CAPSTestSuite with Matchers {
     val extracted = tagged2.getTag
     val extractedTagDf = tagged2Df.withColumn("extracted", extracted)
 
-    extractedTagDf.show()
     extractedTagDf.select("extracted").collect().forall(row => row.get(0) == tag2) shouldBe true
   }
 
-  it("should replace tag with other tag") {
+  it("replaces a tag with other tag - DF") {
     val tag1 = 1
     val tag2 = 2
     val tag3 = 3
@@ -86,6 +85,45 @@ class TagSupportTest extends CAPSTestSuite with Matchers {
     val idRows = replacedDf.select(replacedDf.col("id").getTag).collect()
 
     idRows.toList.map(_.get(0).asInstanceOf[Long]).sorted shouldBe List(2, 2, 3, 3)
+  }
+
+  def toTag(n: Int) = (n & Int.MaxValue) % 1000
+  def toId(n: Int) = (n & Int.MaxValue) >>> tagBits
+
+  it("sets tags - Scala") {
+    forAll { (n1: Int, n2: Int) =>
+      val tag = toTag(n1)
+      val id = toId(n2)
+
+      id.setTag(tag).getTag should equal(tag)
+    }
+  }
+
+  it("overwrites tags - Scala") {
+    forAll { (n1: Int, n2: Int, n3: Int) =>
+      val tag1 = toTag(n1)
+      val tag2 = toTag(n2)
+      val id = toId(n3)
+
+      id.setTag(tag1).setTag(tag2).getTag should equal(tag2)
+    }
+  }
+
+  it("replaces a tag with another tag - Scala") {
+    forAll { (n1: Int, n2: Int, n3: Int, n4: Int) =>
+      val tag1 = toTag(n1)
+      val tag2 = toTag(n2)
+      val tag3 = toTag(n3)
+      val id = toId(n4)
+
+      val afterOpTag = id.setTag(tag1).replaceTag(tag2, tag3).getTag
+
+      if (tag1 == tag2) {
+        afterOpTag should equal(tag3)
+      } else {
+        afterOpTag should equal(tag1)
+      }
+    }
   }
 
 }
