@@ -32,24 +32,33 @@ trait TagSupport {
 
   self: Schema with TagSupport =>
 
-  type TagSchema = Schema with TagSupport
-
   def tags: Set[Int] = Set(0)
 
-  def withTags(tags: Set[Int]): TagSchema
+  def withTags(tags: Set[Int]): Schema with TagSupport
 
-  def replaceTags(replacements: Map[Int, Int]): TagSchema
+  def replaceTags(replacements: Map[Int, Int]): Schema with TagSupport
 
-  def union(other: TagSchema): TagSchema
+  def union(other: Schema with TagSupport): Schema with TagSupport
 }
 
 object TagSupport {
 
-  def replacements(leftTags: Set[Int], rightTags: Set[Int]): Map[Int, Int] = {
-    val maxUsedTag = Math.max(leftTags.max, rightTags.max)
-    val nextTag = maxUsedTag + 1
-    val conflicts = leftTags intersect rightTags
+  implicit class TagSet(val tags: Set[Int]) extends AnyVal {
 
-    conflicts.zip(nextTag until nextTag + conflicts.size).toMap
+    def replacementsFor(rightTags: Set[Int]): Map[Int, Int] = {
+      if (tags.isEmpty) {
+        Map.empty
+      } else {
+        val maxUsedTag = Math.max(tags.max, rightTags.max)
+        val nextTag = maxUsedTag + 1
+        val conflicts = tags intersect rightTags
+
+        conflicts.zip(nextTag until nextTag + conflicts.size).toMap
+      }
+    }
+
+    def replaceWith(replacements: Map[Int, Int]): Set[Int] =
+      tags.map(t => replacements.getOrElse(t, identity(t)))
+
   }
 }

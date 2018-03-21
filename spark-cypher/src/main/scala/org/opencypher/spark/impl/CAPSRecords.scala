@@ -100,6 +100,17 @@ sealed abstract class CAPSRecords(val header: RecordHeader, val data: DataFrame)
     this
   }
 
+  def replaceTags(replacements: Map[Int, Int]): CAPSRecords = {
+    val idColumns = header.contents.collect {
+      case OpaqueField(v) => ColumnName.of(v)
+    }
+    val dfWithReplacedTags = idColumns.foldLeft(data) {
+      case (df, column) => df.safeReplaceTags(column, replacements)
+    }
+
+    CAPSRecords.createInternal(header, dfWithReplacedTags)
+  }
+
   def select(fields: Set[Var]): CAPSRecords = {
     val selectedHeader = header.select(fields)
     val selectedColumnNames = selectedHeader.contents.map(ColumnName.of).toSeq

@@ -31,6 +31,7 @@ import org.opencypher.okapi.api.schema.{LabelPropertyMap, PropertyKeys, RelTypeP
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.SchemaException
 import org.opencypher.okapi.impl.schema.SchemaUtils._
+import org.opencypher.okapi.impl.schema.TagSupport._
 
 final case class SchemaImpl(
   labelPropertyMap: LabelPropertyMap,
@@ -289,11 +290,11 @@ final case class SchemaImpl(
 
   override def withTags(tags: Set[Int]): Schema with TagSupport = copy(tags = tags)
 
-  override def replaceTags(replacements: Map[Int, Int]): TagSchema =
-    copy(tags = this.tags.map(t => replacements.getOrElse(t, identity(t))))
+  override def replaceTags(replacements: Map[Int, Int]): Schema with TagSupport =
+    copy(tags = this.tags.replaceWith(replacements))
 
-  override def union(other: TagSchema): TagSchema =
-    ++(other.replaceTags(TagSupport.replacements(this.tags, other.tags)))
+  override def union(other: Schema with TagSupport): Schema with TagSupport =
+    ++(other.replaceTags(this.tags.replacementsFor(other.tags)))
 
   override private[opencypher] def dropPropertiesFor(combo: Set[String]) =
     copy(labelPropertyMap - combo)

@@ -31,7 +31,7 @@ import org.opencypher.okapi.api.schema.{LabelPropertyMap, RelTypePropertyMap, Sc
 import org.opencypher.okapi.api.types.{CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.{SchemaException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.schema.SchemaUtils._
-import org.opencypher.okapi.impl.schema.{ImpliedLabels, LabelCombinations, SchemaImpl, TagSupport}
+import org.opencypher.okapi.impl.schema.{ImpliedLabels, LabelCombinations, TagSupport}
 import org.opencypher.spark.impl.convert.CAPSCypherType._
 
 object CAPSSchema {
@@ -46,8 +46,8 @@ object CAPSSchema {
     def asCaps: CAPSSchema = {
       schema match {
         case s: CAPSSchema => s
-        case _ =>
-          val combosByLabel = schema.foldAndProduce(Map.empty[String, Set[Set[String]]])(
+        case s: Schema with TagSupport =>
+          val combosByLabel = s.foldAndProduce(Map.empty[String, Set[Set[String]]])(
             (set, combos, _) => set + combos,
             (combos, _) => Set(combos))
 
@@ -74,19 +74,17 @@ object CAPSSchema {
               }
           }
 
-          new CAPSSchema(schema)
+          new CAPSSchema(s)
+
+        case other => throw UnsupportedOperationException(s"${other.getClass.getSimpleName} does not have Tag support")
+
       }
     }
   }
 
 }
 
-case class CAPSSchema private[schema](schema: Schema) extends Schema {
-
-  def tags: Set[Int] = schema match {
-    case s: TagSupport => s.tags
-    case other => throw UnsupportedOperationException(s"${other.getClass.getSimpleName} does not have Tag support")
-  }
+case class CAPSSchema private[schema](schema: Schema with TagSupport) extends Schema with TagSupport {
 
   override def labels: Set[String] = schema.labels
 
@@ -134,9 +132,17 @@ case class CAPSSchema private[schema](schema: Schema) extends Schema {
 
   override def forRelationship(relType: CTRelationship): Schema = schema.forRelationship(relType)
 
-  override def dropPropertiesFor(combo: Set[String]) = schema.dropPropertiesFor(combo)
+  override def dropPropertiesFor(combo: Set[String]): Schema = schema.dropPropertiesFor(combo)
 
-  override def withOverwrittenNodePropertyKeys(nodeLabels: Set[String], propertyKeys: PropertyKeys) = schema.withOverwrittenNodePropertyKeys(nodeLabels, propertyKeys)
+  override def withOverwrittenNodePropertyKeys(nodeLabels: Set[String], propertyKeys: PropertyKeys): Schema = schema.withOverwrittenNodePropertyKeys(nodeLabels, propertyKeys)
 
-  override def withOverwrittenRelationshipPropertyKeys(relType: String, propertyKeys: PropertyKeys) = schema.withOverwrittenRelationshipPropertyKeys(relType, propertyKeys)
+  override def withOverwrittenRelationshipPropertyKeys(relType: String, propertyKeys: PropertyKeys): Schema = schema.withOverwrittenRelationshipPropertyKeys(relType, propertyKeys)
+
+  override def tags: Set[Int] = schema.tags
+
+  override def withTags(tags: Set[Int]): Schema with TagSupport = schema.withTags(tags)
+
+  override def replaceTags(replacements: Map[Int, Int]): Schema with TagSupport = schema.replaceTags(replacements)
+
+  override def union(other: Schema with TagSupport): Schema with TagSupport = schema.union(other)
 }

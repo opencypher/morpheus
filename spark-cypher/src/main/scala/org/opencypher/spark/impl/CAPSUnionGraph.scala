@@ -29,11 +29,14 @@ package org.opencypher.spark.impl
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.impl.schema.TagSupport
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
+
+import TagSupport._
 
 object CAPSUnionGraph {
   def apply(graphs: CAPSGraph*)(implicit session: CAPSSession): CAPSUnionGraph = {
@@ -41,6 +44,7 @@ object CAPSUnionGraph {
   }
 }
 
+// TODO: flatten union trees
 final case class CAPSUnionGraph(graphs: List[CAPSGraph], doUpdateTags: Boolean = true)(implicit val session: CAPSSession) extends CAPSGraph {
 
   private lazy val individualSchemas = graphs.map(_.schema)
@@ -59,12 +63,34 @@ final case class CAPSUnionGraph(graphs: List[CAPSGraph], doUpdateTags: Boolean =
 
   private def map(f: CAPSGraph => CAPSGraph): CAPSUnionGraph = CAPSUnionGraph(graphs.map(f), doUpdateTags)
 
+  private val replacementMap: Map[CAPSGraph, Map[Int, Int]] = {
+    val (result, _) = graphs.foldLeft((Map.empty[CAPSGraph, Map[Int, Int]], Set.empty[Int])) {
+
+      case ((graphReplacements, previousTags), currentGraph ) =>
+
+        val rightTags = currentGraph.schema.tags
+
+        val replacements = previousTags.replacementsFor(rightTags)
+        val updatedRightTags = rightTags.replaceWith(replacements)
+
+        val updatedPreviousTags = previousTags ++ updatedRightTags
+        val updatedGraphReplacements = graphReplacements.updated(currentGraph, replacements)
+
+        updatedGraphReplacements -> updatedPreviousTags
+    }
+    result
+  }
+
   override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
     val node = Var(name)(nodeCypherType)
     val targetHeader = RecordHeader.nodeFromSchema(node, schema)
     val nodeScans: Seq[CAPSRecords] = graphs
       .filter(nodeCypherType.labels.isEmpty || _.schema.labels.intersect(nodeCypherType.labels).nonEmpty)
-      .map(_.nodes(name, nodeCypherType))
+      .map {
+        graph =>
+          val nodeScan = graph.nodes(name, nodeCypherType)
+          nodeScan.replaceTags(replacementMap(graph))
+      }
 
     val alignedScans = nodeScans.map(_.alignWith(node, targetHeader))
     // TODO: Only distinct on id column
@@ -76,7 +102,11 @@ final case class CAPSUnionGraph(graphs: List[CAPSGraph], doUpdateTags: Boolean =
     val targetHeader = RecordHeader.relationshipFromSchema(rel, schema)
     val relScans: Seq[CAPSRecords] = graphs
       .filter(relCypherType.types.isEmpty || _.schema.relationshipTypes.intersect(relCypherType.types).nonEmpty)
-      .map(_.relationships(name, relCypherType))
+      .map { graph =>
+        val relScan = graph.relationships(name, relCypherType)
+        relScan.replaceTags(replacementMap(graph))
+      }
+
     val alignedScans = relScans.map(_.alignWith(rel, targetHeader))
     // TODO: Only distinct on id column
     alignedScans.reduceOption(_ unionAll(targetHeader, _)).map(_.distinct).getOrElse(CAPSRecords.empty(targetHeader))

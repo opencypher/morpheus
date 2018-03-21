@@ -27,26 +27,36 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.storage.StorageLevel
-import org.opencypher.okapi.api.graph.PropertyGraph
+import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.{ColumnName, RecordHeader, SlotContent}
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.table.CAPSRecordHeader._
 import org.opencypher.spark.schema.CAPSSchema
+import org.opencypher.spark.schema.CAPSSchema._
 
+/**
+  * A pattern graph represents the result of CONSTRUCT clause. It contains all entities from the outer scope that the
+  * clause constructs. The initial schema of that graph is the union of all graph schemata the CONSTRUCT clause refers
+  * to, including their corresponding graph tags. Note, that the initial schema does not include the graph tag used for
+  * the constructed entities.
+  */
 class CAPSPatternGraph(
   private[spark] val baseTable: CAPSRecords,
-  val schema: CAPSSchema)(implicit val session: CAPSSession)
+  val initialSchema: CAPSSchema)(implicit val session: CAPSSession)
     extends CAPSGraph {
 
   private val header = baseTable.header
 
-  // TODO: wip
-  private val newEntityTag = schema.tags.max + 1
+  private val newEntityTag = initialSchema.tags.max + 1
 
   def show(): Unit = baseTable.data.show()
+
+  /**
+    * The initial schema including the graph tag used for entity construction.
+    */
+  override val schema: CAPSSchema = initialSchema.withTags(initialSchema.tags + newEntityTag).asCaps
 
   override def cache(): CAPSPatternGraph = map(_.cache())
 

@@ -26,6 +26,7 @@
  */
 package org.opencypher.spark.impl
 
+import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame, Row, functions}
 import org.opencypher.okapi.api.types._
@@ -34,6 +35,7 @@ import org.opencypher.okapi.api.value.CypherValue.CypherValue
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr.{Expr, Param}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
+import org.opencypher.spark.api.SparkConfiguration._
 import org.opencypher.spark.impl.convert.CAPSCypherType._
 import org.opencypher.spark.impl.physical.CAPSRuntimeContext
 
@@ -54,7 +56,29 @@ object DataFrameOps {
     }
   }
 
+  implicit class Tagging(val col: Column) {
+
+    def replaceTag(from: Int, to: Int): Column = functions
+      .when(getTag === lit(from), setTag(to))
+      .otherwise(col)
+
+    def setTag(tag: Int): Column = {
+      val tagLit = lit(tag << idBits)
+      val newId = col
+        .bitwiseAND(invertedTagMaskLit)
+        .bitwiseOR(tagLit)
+      newId
+    }
+
+    def getTag: Column = shiftRight(col, idBits)
+  }
+
+
+
   implicit class RichDataFrame(val df: DataFrame) extends AnyVal {
+
+
+
 
     /**
       * Returns the corresponding Cypher type for the given column name in the data frame.
@@ -98,6 +122,18 @@ object DataFrameOps {
       }
     }
 
+    def safeReplaceTags(columnName: String, replacements: Map[Int, Int]): DataFrame = {
+      val dataType = structFieldForColumn(columnName).dataType
+      require(dataType == LongType, s"Cannot remap long values in Column with type $dataType")
+      val col = df.col(columnName)
+
+      val updatedCol = replacements.foldLeft(col) {
+        case (current, (from, to)) => current.replaceTag(from, to)
+      }
+
+      safeReplaceColumn(columnName, updatedCol)
+    }
+
     def safeAddColumn(name: String, col: Column): DataFrame = {
       require(!df.columns.contains(name),
         s"Cannot add column `$name`. A column with that name exists already. " +
@@ -136,9 +172,10 @@ object DataFrameOps {
 
       val joinExpr = joinCols.map {
         case (l, r) => df.col(l) === other.col(r)
-      }.foldLeft(functions.lit(true))((acc, expr) => acc && expr)
+      }.foldLeft(lit(true))((acc, expr) => acc && expr)
 
       df.join(other, joinExpr, joinType)
     }
   }
+
 }
