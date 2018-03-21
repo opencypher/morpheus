@@ -49,16 +49,19 @@ object TagSupport {
 
   implicit class TaggedSchema(s: Schema) {
 
+    def toTagged: Schema with TagSupport = {
+      s match {
+        case swt: Schema with TagSupport => swt
+        case other => SchemaImpl(other.labelPropertyMap, other.relTypePropertyMap: RelTypePropertyMap, Set(0))
+      }
+    }
+
     def withTag(tag: Int): Schema with TagSupport = withTags(tag)
 
     def withTags(tags: Int*): Schema with TagSupport = withTags(tags.toSet)
 
-    def withTags(tags: Set[Int]): Schema with TagSupport = {
-       s match {
-         case swt: Schema with TagSupport => swt.withTags(tags)
-         case other => SchemaImpl(other.labelPropertyMap, other.relTypePropertyMap: RelTypePropertyMap, tags)
-       }
-    }
+    def withTags(tags: Set[Int]): Schema with TagSupport = s.toTagged.withTags(tags)
+
   }
 
   implicit class TagSet(val tags: Set[Int]) extends AnyVal {
@@ -79,4 +82,5 @@ object TagSupport {
       tags.map(t => replacements.getOrElse(t, identity(t)))
 
   }
+
 }

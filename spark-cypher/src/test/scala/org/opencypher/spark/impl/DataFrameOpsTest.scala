@@ -26,7 +26,6 @@
  */
 package org.opencypher.spark.impl
 
-import org.apache.spark.sql.Dataset
 import org.opencypher.spark.api.SparkConfiguration._
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.test.CAPSTestSuite
