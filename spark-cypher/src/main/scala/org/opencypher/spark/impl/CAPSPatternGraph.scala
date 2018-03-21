@@ -44,19 +44,12 @@ import org.opencypher.spark.schema.CAPSSchema._
   */
 class CAPSPatternGraph(
   private[spark] val baseTable: CAPSRecords,
-  val initialSchema: CAPSSchema)(implicit val session: CAPSSession)
+  val schema: CAPSSchema)(implicit val session: CAPSSession)
     extends CAPSGraph {
 
   private val header = baseTable.header
 
-  private val newEntityTag = initialSchema.tags.max + 1
-
   def show(): Unit = baseTable.data.show()
-
-  /**
-    * The initial schema including the graph tag used for entity construction.
-    */
-  override val schema: CAPSSchema = initialSchema.withTags(initialSchema.tags + newEntityTag).asCaps
 
   override def cache(): CAPSPatternGraph = map(_.cache())
 

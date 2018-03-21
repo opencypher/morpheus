@@ -58,12 +58,13 @@ object DataFrameOps {
 
   implicit class LongTagging(val l: Long) extends AnyVal {
 
-    def setTag(tag: Long): Long = {
-      (l & invertedTagMask) | (tag << idBits)
+    def setTag(tag: Int): Long = {
+      (l & invertedTagMask) | (tag.toLong << idBits)
     }
 
-    def getTag: Long = {
-      (l & tagMask) >> idBits
+    def getTag: Int = {
+      // TODO: Verify that the tag actually fits into an Int or by requiring and checking a minimum size of 32 bits for idBits when reading it from config
+      ((l & tagMask) >> idBits).toInt
     }
 
   }
