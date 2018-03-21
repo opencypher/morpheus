@@ -92,7 +92,6 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
       .withNodePropertyKeys("Person", "Martian")("name" -> CTString)
       .withNodePropertyKeys("Language")("title" -> CTString)
       .withRelationshipType("SPEAKS")
-      .withTags(0, 1)
       .asCaps)
   }
 
