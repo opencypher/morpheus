@@ -68,7 +68,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
         |  MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b)
         |  WHERE city.name = 'New York City' OR city.name = 'San Francisco'
         |  CONSTRUCT {
-        |    CREATE (a)-[:CLOSE_TO]->(b)
+        |    CREATE (~a)-[:CLOSE_TO]->(~b)
         |  }
         |  RETURN GRAPH
         |}
@@ -81,7 +81,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
         |  MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b)
         |  WHERE city.name = 'Malmö' OR city.name = 'Berlin'
         |  CONSTRUCT {
-        |    CREATE (a)-[:CLOSE_TO]->(b)
+        |    CREATE (~a)-[:CLOSE_TO]->(~b)
         |  }
         |  RETURN GRAPH
         |}
@@ -110,7 +110,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
          |  WITH c.name as customerName, personName, c, p
          |  WHERE customerName = personName
          |  CONSTRUCT {
-         |    CREATE (c)-[:IS]->(p)
+         |    CREATE (~c)-[:IS]->(~p)
          |  }
          |  RETURN GRAPH
          |}
