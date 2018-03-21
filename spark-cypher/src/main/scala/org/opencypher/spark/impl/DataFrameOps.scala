@@ -64,7 +64,11 @@ object DataFrameOps {
 
     def getTag: Int = {
       // TODO: Verify that the tag actually fits into an Int or by requiring and checking a minimum size of 32 bits for idBits when reading it from config
-      ((l & tagMask) >> idBits).toInt
+      ((l & tagMask) >>> idBits).toInt
+    }
+
+    def replaceTag(from: Int, to: Int): Long = {
+      if (l.getTag == from) l.setTag(to) else l
     }
 
   }
@@ -83,7 +87,7 @@ object DataFrameOps {
       newId
     }
 
-    def getTag: Column = shiftRight(col, idBits)
+    def getTag: Column = shiftRightUnsigned(col, idBits)
   }
 
 
