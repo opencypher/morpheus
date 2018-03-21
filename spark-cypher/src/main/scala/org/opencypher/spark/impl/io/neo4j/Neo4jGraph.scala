@@ -31,7 +31,6 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
 import org.neo4j.driver.internal.{InternalNode, InternalRelationship}
-import org.opencypher.okapi.api.graph.PropertyGraph
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
@@ -39,10 +38,9 @@ import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.io.neo4j.Neo4jGraph.{filterNode, filterRel, nodeToRow, relToRow}
 import org.opencypher.spark.impl.table.CAPSRecordHeader
-import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSUnionGraph}
+import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 import org.opencypher.spark.schema.CAPSSchema
 
 class Neo4jGraph(val schema: CAPSSchema, val session: CAPSSession)(

@@ -26,12 +26,11 @@
  */
 package org.opencypher.okapi.logical.impl.logical
 
-import org.opencypher.okapi.api.graph.{GraphName, QualifiedGraphName}
+import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
-import org.opencypher.okapi.impl.io.SessionPropertyGraphDataSource
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block._
 import org.opencypher.okapi.ir.api.expr._

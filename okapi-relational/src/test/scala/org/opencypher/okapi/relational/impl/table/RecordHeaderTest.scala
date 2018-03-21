@@ -28,11 +28,10 @@ package org.opencypher.okapi.relational.impl.table
 
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.ir.test._
-import org.opencypher.okapi.relational.impl.table._
+import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.okapi.test.BaseTestSuite
 
 import scala.language.implicitConversions

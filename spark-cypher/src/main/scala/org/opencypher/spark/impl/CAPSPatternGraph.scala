@@ -27,14 +27,12 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.storage.StorageLevel
-import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.{ColumnName, RecordHeader, SlotContent}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.table.CAPSRecordHeader._
 import org.opencypher.spark.schema.CAPSSchema
-import org.opencypher.spark.schema.CAPSSchema._
 
 /**
   * A pattern graph represents the result of CONSTRUCT clause. It contains all entities from the outer scope that the

@@ -30,13 +30,12 @@ import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.schema.TagSupport
+import org.opencypher.okapi.impl.schema.TagSupport._
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
-
-import TagSupport._
 
 object CAPSUnionGraph {
   def apply(graphs: CAPSGraph*)(implicit session: CAPSSession): CAPSUnionGraph = {

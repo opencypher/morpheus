@@ -27,7 +27,6 @@
 package org.opencypher.okapi.ir.impl
 
 import org.neo4j.cypher.internal.util.v3_4.Ref
-import org.neo4j.cypher.internal.v3_4.expressions.LogicalVariable
 import org.neo4j.cypher.internal.v3_4.{functions, expressions => ast}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.NotImplementedException

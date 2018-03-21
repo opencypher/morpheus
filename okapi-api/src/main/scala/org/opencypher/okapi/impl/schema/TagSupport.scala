@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.impl.schema
 
-import org.opencypher.okapi.api.schema.{LabelPropertyMap, RelTypePropertyMap, Schema}
+import org.opencypher.okapi.api.schema.{RelTypePropertyMap, Schema}
 
 trait TagSupport {
 

@@ -29,7 +29,7 @@ package org.opencypher.okapi.ir
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.ir.api.expr.Var
-import org.opencypher.okapi.ir.api.{IRField, IRCatalogGraph}
+import org.opencypher.okapi.ir.api.{IRCatalogGraph, IRField}
 
 import scala.language.implicitConversions
 

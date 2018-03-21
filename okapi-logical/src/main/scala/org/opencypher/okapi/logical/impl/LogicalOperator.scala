@@ -32,7 +32,7 @@ import org.opencypher.okapi.api.types.CTNode
 import org.opencypher.okapi.ir.api.Label
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.api.set.{SetItem, SetPropertyItem}
+import org.opencypher.okapi.ir.api.set.SetPropertyItem
 import org.opencypher.okapi.trees.AbstractTreeNode
 
 sealed abstract class LogicalOperator extends AbstractTreeNode[LogicalOperator] {

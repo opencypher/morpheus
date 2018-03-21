@@ -27,7 +27,7 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
-import org.opencypher.okapi.api.graph.{CypherResult, PropertyGraph}
+import org.opencypher.okapi.api.graph.CypherResult
 import org.opencypher.okapi.impl.util.PrintOptions
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.physical.CAPSQueryPlans

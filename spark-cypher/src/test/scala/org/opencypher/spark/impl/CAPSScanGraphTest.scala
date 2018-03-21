@@ -32,8 +32,8 @@ import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.api.value._
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
+import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
-import DataFrameOps._
 
 import scala.collection.Bag
 

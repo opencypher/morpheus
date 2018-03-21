@@ -31,7 +31,7 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.api.set.{SetItem, SetPropertyItem}
+import org.opencypher.okapi.ir.api.set.SetPropertyItem
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.physical.{PhysicalOperatorProducer, PhysicalPlannerContext}
 import org.opencypher.okapi.relational.impl.table.{ProjectedExpr, ProjectedField, RecordHeader}

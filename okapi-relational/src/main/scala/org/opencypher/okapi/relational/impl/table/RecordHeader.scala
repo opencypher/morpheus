@@ -29,9 +29,9 @@ package org.opencypher.okapi.relational.impl.table
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTString, _}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey}
+import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
 
 /**
   * A header for a CypherRecords.

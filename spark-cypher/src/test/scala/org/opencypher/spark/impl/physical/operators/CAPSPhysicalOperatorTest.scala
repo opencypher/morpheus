@@ -27,8 +27,8 @@
 package org.opencypher.spark.impl.physical.operators
 
 import org.apache.spark.storage.StorageLevel
-import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
+import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 import org.opencypher.spark.test.CAPSTestSuite
 
 class CAPSPhysicalOperatorTest extends CAPSTestSuite {

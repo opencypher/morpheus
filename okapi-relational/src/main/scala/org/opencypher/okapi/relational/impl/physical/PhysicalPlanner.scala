@@ -30,12 +30,12 @@ import org.opencypher.okapi.api.graph.{CypherSession, PropertyGraph}
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.types.CTRelationship
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
-import org.opencypher.okapi.relational.impl.flat
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr.{Expr, TrueLit, Var}
 import org.opencypher.okapi.ir.api.util.DirectCompilationStage
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.physical.{PhysicalOperator, PhysicalOperatorProducer, PhysicalPlannerContext, RuntimeContext}
+import org.opencypher.okapi.relational.impl.flat
 import org.opencypher.okapi.relational.impl.flat.FlatOperator
 
 class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: PropertyGraph, C <: RuntimeContext[R, G] ](producer: PhysicalOperatorProducer[P, R, G, C])

@@ -27,7 +27,6 @@
 package org.opencypher.okapi.ir.test.support
 
 import scala.collection.Bag
-import scala.collection.immutable.HashedBagConfiguration
 
 trait DebugOutputSupport {
 
