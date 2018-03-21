@@ -31,6 +31,59 @@
       <version>${dep.spark.version}</version>
     </dependency>
 
+    <!-- Test deps -->
+    <dependency>
+      <groupId>org.opencypher</groupId>
+      <artifactId>spark-cypher</artifactId>
+      <type>test-jar</type>
+      <scope>test</scope>
+      <version>${project.parent.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.opencypher</groupId>
+      <artifactId>okapi-api</artifactId>
+      <type>test-jar</type>
+      <scope>test</scope>
+      <version>${project.parent.version}</version>
+    </dependency>
+
+    <!-- Workaround for https://youtrack.jetbrains.com/issue/SCL-13184 -->
+    <dependency>
+      <groupId>org.opencypher</groupId>
+      <artifactId>okapi-ir</artifactId>
+      <type>test-jar</type>
+      <scope>test</scope>
+      <version>${project.parent.version}</version>
+    </dependency>
+
+    <!-- Workaround for https://youtrack.jetbrains.com/issue/SCL-13184 -->
+    <dependency>
+      <groupId>org.opencypher</groupId>
+      <artifactId>okapi-relational</artifactId>
+      <version>${project.parent.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Workaround for https://youtrack.jetbrains.com/issue/SCL-13184 -->
+    <dependency>
+      <groupId>org.opencypher</groupId>
+      <artifactId>okapi-trees</artifactId>
+      <version>${project.parent.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Workaround for https://youtrack.jetbrains.com/issue/SCL-13184 -->
+    <dependency>
+      <groupId>org.opencypher</groupId>
+      <artifactId>okapi-logical</artifactId>
+      <version>${project.parent.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
 </project>
