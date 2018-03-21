@@ -63,14 +63,14 @@ final class ExpressionConverter(implicit context: IRBuilderContext) {
 
     // Predicates
     case ast.Ands(exprs) =>
-      new Ands(exprs.map(convert))(typings(e))
+      Ands(exprs.map(convert))
     case ast.Ors(exprs) =>
-      new Ors(exprs.map(convert))(typings(e))
+      Ors(exprs.map(convert))
     case ast.HasLabels(node, labels) =>
       val exprs = labels.map { (l: ast.LabelName) =>
         HasLabel(convert(node), Label(l.name))(typings(e))
       }
-      if (exprs.size == 1) exprs.head else new Ands(exprs.toSet)(typings(e))
+      if (exprs.size == 1) exprs.head else Ands(exprs.toSet)
     case ast.Not(expr) =>
       Not(convert(expr))(typings(e))
     // TODO: Does this belong here still?

@@ -394,7 +394,7 @@ final case class ReturnGraph(in: CAPSPhysicalOperator) extends UnaryPhysicalOper
   override def header: RecordHeader = RecordHeader.empty
 }
 
-final case class SelectFields(in: CAPSPhysicalOperator, fields: IndexedSeq[Var], header: RecordHeader)
+final case class SelectFields(in: CAPSPhysicalOperator, fields: List[Var], header: RecordHeader)
   extends UnaryPhysicalOperator {
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {

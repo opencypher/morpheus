@@ -196,7 +196,7 @@ final case class Aggregate(
 }
 
 final case class Select(
-    orderedFields: IndexedSeq[Var],
+    orderedFields: List[Var],
     graphs: Set[String],
     in: LogicalOperator,
     solved: SolvedQueryModel)

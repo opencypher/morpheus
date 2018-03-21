@@ -36,6 +36,7 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.ir.test.support.MatchHelper.equalWithTracing
 import org.opencypher.okapi.ir.test.support.Neo4jAstTestSupport
 import org.opencypher.okapi.ir.test.toVar
 import org.opencypher.okapi.test.BaseTestSuite
@@ -212,11 +213,11 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport wit
     convert(given) should equal(Not(HasLabel('x, Label("Person"))(CTBoolean))(CTBoolean))
   }
 
-  test("can convert retyping predicate") {
+  it("can convert retyping predicate") {
     val given = parseExpr("$p1 AND n:Foo AND $p2 AND m:Bar")
 
-    convert(given) should equal(
-      Ands(HasLabel('n, Label("Foo"))(), HasLabel('m, Label("Bar"))(), Param("p1")(), Param("p2")()))
+    convert(given).asInstanceOf[Ands].exprs should equalWithTracing(
+      Set(HasLabel('n, Label("Foo"))(), HasLabel('m, Label("Bar"))(), Param("p1")(), Param("p2")()))
   }
 
   test("can convert id function") {

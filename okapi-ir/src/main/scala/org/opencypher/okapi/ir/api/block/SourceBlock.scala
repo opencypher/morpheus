@@ -32,6 +32,6 @@ case class SourceBlock[E](
     graph: IRGraph
 ) extends BasicBlock[Binds[E], E](BlockType("source")) {
   override def where: Set[E] = Set.empty[E]
-  override val after: Set[BlockRef] = Set.empty
+  override val after: List[Block[E]] = List.empty
   override val binds: Binds[E] = Binds.empty
 }

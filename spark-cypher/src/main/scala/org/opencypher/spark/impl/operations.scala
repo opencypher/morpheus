@@ -37,7 +37,7 @@ object operations {
         implicit caps: CAPSSessionImpl): CAPSRecords =
       caps.filter(graph, subject, expr, parameters)
 
-    def select(subject: CAPSRecords, fields: IndexedSeq[Var], parameters: CypherMap = CypherMap.empty)(
+    def select(subject: CAPSRecords, fields: List[Var], parameters: CypherMap = CypherMap.empty)(
         implicit caps: CAPSSessionImpl): CAPSRecords =
       caps.select(graph, subject, fields, parameters)
 

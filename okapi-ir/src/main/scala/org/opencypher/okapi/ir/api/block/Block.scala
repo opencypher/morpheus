@@ -27,23 +27,19 @@
 package org.opencypher.okapi.ir.api.block
 
 import org.opencypher.okapi.ir.api.{IRField, IRGraph}
+import org.opencypher.okapi.trees.AbstractTreeNode
 
-trait Block[E] {
+abstract class Block[E] extends AbstractTreeNode[Block[E]] {
+  def dependencies: Set[Block[E]] = children.flatMap(_.toSet).toSet
+
   def blockType: BlockType = BlockType(this.getClass.getSimpleName)
-  def isLeaf: Boolean = after.isEmpty
 
-  def after: Set[BlockRef]
+  def after: List[Block[E]]
 
   def binds: Binds[E]
   def where: Set[E]
 
   def graph: IRGraph
-}
-
-trait UpdatingBlock[E] {
-  self: Block[E] =>
-
-  def target: BlockRef
 }
 
 final case class BlockType(name: String)

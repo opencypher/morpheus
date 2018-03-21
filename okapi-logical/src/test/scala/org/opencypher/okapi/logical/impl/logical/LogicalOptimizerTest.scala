@@ -65,7 +65,7 @@ class LogicalOptimizerTest extends IrTestSuite {
     val optimizedLogicalPlan = LogicalOptimizer(plan)(plannerContext(animalSchema))
 
     val expected = Select(
-      Vector(Var("a")(CTNode(Set("Animal")))),
+      List(Var("a")(CTNode(Set("Animal")))),
       Set(),
       NodeScan(
         Var("a")(CTNode(Set("Animal"))),
@@ -90,7 +90,7 @@ class LogicalOptimizerTest extends IrTestSuite {
     val optimizedLogicalPlan = LogicalOptimizer(plan)(plannerContext(schema))
 
     val expected = Select(
-      Vector(Var("a")(CTNode(Set("Animal")))),
+      List(Var("a")(CTNode(Set("Animal")))),
       Set(),
       EmptyRecords(
         Set(Var("a")(CTNode(Set("Animal")))),
@@ -114,7 +114,7 @@ class LogicalOptimizerTest extends IrTestSuite {
     val optimizedLogicalPlan = LogicalOptimizer(plan)(plannerContext(schema))
 
     val expected = Select(
-      Vector(Var("a")(CTNode(Set("Animal", "Astronaut")))),
+      List(Var("a")(CTNode(Set("Animal", "Astronaut")))),
       Set(),
       EmptyRecords(
         Set(Var("a")(CTNode(Set("Astronaut", "Animal")))),

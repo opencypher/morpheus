@@ -56,7 +56,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     CartesianProduct(lhs, rhs, header)
   }
 
-  def select(fields: IndexedSeq[Var], graphs: Set[String], in: FlatOperator): Select = {
+  def select(fields: List[Var], graphs: Set[String], in: FlatOperator): Select = {
     val fieldContents = fields.map { field =>
       in.header.slotFor(field).content
     }
@@ -72,7 +72,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     ReturnGraph(in)
   }
 
-  def removeAliases(toKeep: IndexedSeq[Var], in: FlatOperator): FlatOperator = {
+  def removeAliases(toKeep: List[Var], in: FlatOperator): FlatOperator = {
     val renames = in.header.contents.collect {
       case pf @ ProjectedField(v, _: Property | _: HasLabel | _: HasType) if !toKeep.contains(v) =>
         pf -> ProjectedExpr(pf.expr)

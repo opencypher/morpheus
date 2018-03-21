@@ -72,7 +72,7 @@ trait PredicateBehaviour {
       ))
     }
 
-    test("or") {
+    it("evaluates or") {
       // Given
       val given = initGraph("""CREATE (:A {val: 1}), (:A {val: 2}), (:A {val: 3})""")
 

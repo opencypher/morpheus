@@ -29,7 +29,7 @@ package org.opencypher.okapi.ir.api.block
 import org.opencypher.okapi.ir.api.IRGraph
 
 final case class OrderAndSliceBlock[E](
-    after: Set[BlockRef],
+    after: List[Block[E]],
     orderBy: Seq[SortItem[E]],
     skip: Option[E],
     limit: Option[E],

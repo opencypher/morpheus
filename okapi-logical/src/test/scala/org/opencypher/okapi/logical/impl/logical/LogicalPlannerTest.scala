@@ -71,7 +71,7 @@ class LogicalPlannerTest extends LogicalTestSuite {
 
   test("convert load graph block") {
     val result = plan(irFor(leafBlock))
-    val expected = Select(IndexedSeq.empty, Set.empty, leafPlan, emptySqm)
+    val expected = Select(List.empty, Set.empty, leafPlan, emptySqm)
     result should equalWithTracing(expected)
   }
 
@@ -87,7 +87,7 @@ class LogicalPlannerTest extends LogicalTestSuite {
 
     val scan1 = NodeScan(nodeA, leafPlan, emptySqm.withField(nodeA))
     val scan2 = NodeScan(nodeB, leafPlan, emptySqm.withField(nodeB))
-    val ir = irWithLeaf(block)
+    val ir = irFor(block)
     val result = plan(ir)
 
     val expected = Expand(nodeA, relR, nodeB, Directed, scan1, scan2, SolvedQueryModel(Set(nodeA, nodeB, relR)))
@@ -103,7 +103,7 @@ class LogicalPlannerTest extends LogicalTestSuite {
       .withConnection(relR, CyclicRelationship(nodeA))
 
     val block = matchBlock(pattern)
-    val ir = irWithLeaf(block)
+    val ir = irFor(block)
 
     val scan = NodeScan(nodeA, leafPlan, emptySqm.withField(nodeA))
     val expandInto = ExpandInto(nodeA, relR, nodeA, Directed, scan, SolvedQueryModel(Set(nodeA, relR)))
@@ -115,7 +115,7 @@ class LogicalPlannerTest extends LogicalTestSuite {
     val fields = Fields[Expr](Map(toField('a) -> Property('n, PropertyKey("prop"))(CTFloat)))
     val block = project(fields)
 
-    val result = plan(irWithLeaf(block))
+    val result = plan(irFor(block))
 
     val expected = Project(
       Property('n, PropertyKey("prop"))(CTFloat), // n is a dangling reference here

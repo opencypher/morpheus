@@ -64,7 +64,7 @@ class CAPSEngineOperationsTest extends CAPSTestSuite {
         (4L, false, "Stefan")
       ))
 
-    val result = base.select(given, IndexedSeq(Var("ID")(CTInteger), Var("NAME")(CTString)))
+    val result = base.select(given, List(Var("ID")(CTInteger), Var("NAME")(CTString)))
 
     result shouldMatch CAPSRecords.create(
       Seq("ID", "NAME"),

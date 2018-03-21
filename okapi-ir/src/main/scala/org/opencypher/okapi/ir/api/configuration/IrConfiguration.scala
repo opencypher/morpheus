@@ -24,6 +24,12 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.ir.api.block
+package org.opencypher.okapi.ir.api.configuration
 
-final case class BlockRef(name: String) extends AnyVal
+import org.opencypher.okapi.impl.configuration.ConfigFlag
+
+object IrConfiguration {
+
+  object PrintIr extends ConfigFlag("ir.explainIr")
+
+}

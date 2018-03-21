@@ -26,7 +26,6 @@
  */
 package org.opencypher.okapi.logical.impl
 
-import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.okapi.ir.api.block._
@@ -65,15 +64,14 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     }
   }
 
-  final def planBlock(ref: BlockRef, model: QueryModel[Expr], plan: Option[LogicalOperator])(
+  final def planBlock(block: Block[Expr], model: QueryModel[Expr], plan: Option[LogicalOperator])(
     implicit context: LogicalPlannerContext): LogicalOperator = {
-    val block = model(ref)
     if (block.after.isEmpty) {
       // this is a leaf block, just plan it
-      planLeaf(ref, model)
-    } else if (plan.nonEmpty && plan.get.solved.contains(block.after.map(model(_)))) {
+      planLeaf(block, model)
+    } else if (plan.nonEmpty && plan.get.solved.contains(block.after.toSet)) {
       // all deps satisfied for this block, we can just plan it if we have already planned a leaf
-      planNonLeaf(ref, model, plan.get)
+      planNonLeaf(block, model, plan.get)
     } else {
       // either we haven't planned a leaf yet, or the block is not ready to be planned
       // plan one of the block dependencies
@@ -85,16 +83,16 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
           // we need to plan a block that hasn't already been solved
           // TODO: refactor to remove illegal state
           block.after
-            .find(r => !_plan.solved.contains(model(r)))
+            .find(r => !_plan.solved.contains(r))
             .getOrElse(throw IllegalStateException("Found block with unsolved dependencies which cannot be solved."))
       }
       val dependency = planBlock(depRef, model, plan)
-      planBlock(ref, model, Some(dependency))
+      planBlock(block, model, Some(dependency))
     }
   }
 
-  def planLeaf(ref: BlockRef, model: QueryModel[Expr])(implicit context: LogicalPlannerContext): LogicalOperator = {
-    model(ref) match {
+  def planLeaf(block: Block[Expr], model: QueryModel[Expr])(implicit context: LogicalPlannerContext): LogicalOperator = {
+    block match {
       case SourceBlock(irGraph: IRCatalogGraph) =>
         val qualifiedGraphName = irGraph.qualifiedName
         val graphSource = context.catalog(irGraph.qualifiedName)
@@ -102,15 +100,13 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
           LogicalCatalogGraph(qualifiedGraphName, graphSource.schema(qualifiedGraphName.graphName).get),
           context.inputRecordFields)
       case x =>
-        throw NotImplementedException(s"Support for leaf planning of $x not yet implemented")
+        throw NotImplementedException(s"Support for leaf planning of $x not yet implemented. Tree:\n${x.pretty}")
     }
   }
 
-  def planNonLeaf(ref: BlockRef, model: QueryModel[Expr], plan: LogicalOperator)(
+  def planNonLeaf(block: Block[Expr], model: QueryModel[Expr], plan: LogicalOperator)(
     implicit context: LogicalPlannerContext): LogicalOperator = {
-    val b = model(ref)
-
-    model(ref) match {
+    block match {
       case MatchBlock(_, pattern, where, optional, graph) =>
         val lg = resolveGraph(graph, plan.fields)
         val inputGraphPlan = if (plan.graph == lg) {
@@ -164,7 +160,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         producer.planUnwind(list, variable, withList)
 
       case x =>
-        throw NotImplementedException(s"Support for logical planning of $x not yet implemented")
+        throw NotImplementedException(s"Support for logical planning of $x not yet implemented. Tree:\n${x.pretty}")
     }
   }
 
@@ -222,7 +218,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         producer.projectField(f, a, plannedInner)
 
       case (_, (_, x)) =>
-        throw NotImplementedException(s"Support for projection of $x not yet implemented")
+        throw NotImplementedException(s"Support for projection of $x not yet implemented. Tree:\n${x.pretty}")
     }
   }
 
@@ -283,7 +279,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         producer.planFilter(ex, predicate)
 
       case (_, x) =>
-        throw NotImplementedException(s"Support for logical planning of predicate $x not yet implemented")
+        throw NotImplementedException(s"Support for logical planning of predicate $x not yet implemented. Tree:\n${x.pretty}")
     }
 
     filtersAndProjs
@@ -332,7 +328,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         producer.projectExpr(ands, plannedInner)
 
       case x =>
-        throw NotImplementedException(s"Support for projection of inner expression $x not yet implemented")
+        throw NotImplementedException(s"Support for projection of inner expression $x not yet implemented. Tree:\n${x.pretty}")
     }
   }
 
@@ -393,14 +389,14 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       val plans = bases.zip(components).map {
         case (base, component) =>
           val componentPlan = planComponentPattern(base, component, graph)
-          val predicates = where.filter(_.evaluable(componentPlan.fields)).filterNot(componentPlan.solved.predicates)
+          val predicates = where.filter(_.canEvaluate(componentPlan.fields)).filterNot(componentPlan.solved.predicates)
           val filteredPlan = planFilter(componentPlan, predicates)
           filteredPlan
       }
       val result = plans.reduceOption { (lhs, rhs) =>
         val fieldsInScope = lhs.fields ++ rhs.fields
         val solvedPredicates = lhs.solved.predicates ++ rhs.solved.predicates
-        val predicates = where.filter(_.evaluable(fieldsInScope)).filterNot(solvedPredicates)
+        val predicates = where.filter(_.canEvaluate(fieldsInScope)).filterNot(solvedPredicates)
         val joinPredicates = predicates.collect { case e: Equals => e }
         if (joinPredicates.isEmpty) {
           val combinedPlan = producer.planCartesianProduct(lhs, rhs)
@@ -410,7 +406,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
           val (leftIn, rightIn) = joinPredicates.foldLeft((lhs, rhs)) {
             case ((l, r), predicate) => producer.projectExpr(predicate.lhs, l) -> producer.projectExpr(predicate.rhs, r)
           }
-          producer.planValueJoin(leftIn, rightIn, joinPredicates)
+          producer.planValueJoin(leftIn, rightIn, joinPredicates.toSet)
         }
       }
       // TODO: use type system to avoid empty pattern

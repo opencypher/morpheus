@@ -29,7 +29,7 @@ package org.opencypher.okapi.ir.api.block
 import org.opencypher.okapi.ir.api.{IRField, IRGraph}
 
 final case class UnwindBlock[E](
-    after: Set[BlockRef],
+    after: List[Block[E]],
     binds: UnwoundList[E],
     graph: IRGraph
 ) extends BasicBlock[UnwoundList[E], E](BlockType("unwind")) {

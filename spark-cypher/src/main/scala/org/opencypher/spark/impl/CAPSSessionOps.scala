@@ -42,7 +42,7 @@ trait CAPSSessionOps {
   def select(
       graph: PropertyGraph,
       in: CypherRecords,
-      fields: IndexedSeq[Var],
+      fields: List[Var],
       queryParameters: CypherMap): CypherRecords
 
   def project(

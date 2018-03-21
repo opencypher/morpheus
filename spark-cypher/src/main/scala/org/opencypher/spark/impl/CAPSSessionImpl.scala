@@ -48,6 +48,7 @@ import org.opencypher.okapi.relational.impl.physical.PhysicalPlanner
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.physical._
+import org.opencypher.okapi.ir.api.configuration.IrConfiguration._
 
 sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespace: Namespace)
   extends CAPSSession
@@ -88,6 +89,11 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
     val irBuilderContext = IRBuilderContext.initial(query, allParameters, semState, ambientGraphNew, dataSource, inputFields)
     val ir = time("IR translation")(IRBuilder(stmt)(irBuilderContext))
     logStageProgress("Done!")
+
+    if (PrintIr.isSet) {
+      println("IR:")
+      println(ir.model.result.pretty)
+    }
 
     logStageProgress("Logical planning ...", newLine = false)
     val logicalPlannerContext = LogicalPlannerContext(graph.schema, inputFields, catalog)
@@ -151,7 +157,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
   override def select(
     graph: PropertyGraph,
     in: CypherRecords,
-    fields: IndexedSeq[Var],
+    fields: List[Var],
     queryParameters: CypherMap): CAPSRecords = {
     val scan = planStart(graph, in.asCaps.header.internalHeader.fields)
     val select = producer.planSelect(fields, scan)
@@ -189,7 +195,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
     logStageProgress("Done!")
     if (PrintFlatPlan.isSet) {
       println("Flat plan:")
-      println(flatPlan)
+      println(flatPlan.pretty())
     }
 
     logStageProgress("Physical planning ... ", newLine = false)

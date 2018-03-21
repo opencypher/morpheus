@@ -69,7 +69,7 @@ final case class Filter(expr: Expr, in: FlatOperator, header: RecordHeader) exte
 
 final case class Distinct(fields: Set[Var], in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
-final case class Select(fields: IndexedSeq[Var], graphs: Set[String], in: FlatOperator, header: RecordHeader)
+final case class Select(fields: List[Var], graphs: Set[String], in: FlatOperator, header: RecordHeader)
     extends StackingFlatOperator
 
 final case class ReturnGraph(in: FlatOperator) extends StackingFlatOperator {

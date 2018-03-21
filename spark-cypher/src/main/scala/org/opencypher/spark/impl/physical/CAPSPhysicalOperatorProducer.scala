@@ -68,7 +68,7 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
     dependent: Set[(ProjectedField, ProjectedExpr)],
     header: RecordHeader): CAPSPhysicalOperator = operators.RemoveAliases(in, dependent, header)
 
-  override def planSelectFields(in: CAPSPhysicalOperator, fields: IndexedSeq[Var], header: RecordHeader): CAPSPhysicalOperator =
+  override def planSelectFields(in: CAPSPhysicalOperator, fields: List[Var], header: RecordHeader): CAPSPhysicalOperator =
     operators.SelectFields(in, fields, header)
 
   override def planReturnGraph(in: CAPSPhysicalOperator): CAPSPhysicalOperator = {
