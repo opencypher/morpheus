@@ -54,60 +54,70 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
     // register pgds
     def nodeQuery(region: String) = s"MATCH (n {region: '$region'}) RETURN n"
     def relQuery(region: String) = s"MATCH ()-[r {region: '$region'}]->() RETURN r"
+
     caps.registerSource(Namespace("neo4j"), new Neo4jPropertyGraphDataSource(neo4jConfig, Map(
       GraphName("US") -> (nodeQuery("US") -> relQuery("US")),
       GraphName("EU") -> (nodeQuery("EU") -> relQuery("EU")))
     ))
     caps.registerSource(Namespace("hdfs"), HdfsCsvPropertyGraphDataSource(clusterConfig, rootPath = "/csv"))
 
-    // query 1
-    val CITYFRIENDS_US =
-      caps.cypher(
-        """USE GRAPH neo4j.US
-          |MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b)
-          |WHERE city.name = 'New York City' OR city.name = 'San Francisco'
-          |CONSTRUCT {
-          |  CREATE (a)-[:CLOSE_TO]->(b)
-          |}
-          |RETURN GRAPH
-        """.stripMargin)
+    // query 1, find friends in the US social network
+    caps.cypher(
+      """CREATE GRAPH usFriends {
+        |  USE GRAPH neo4j.US
+        |  MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b)
+        |  WHERE city.name = 'New York City' OR city.name = 'San Francisco'
+        |  CONSTRUCT {
+        |    CREATE (a)-[:CLOSE_TO]->(b)
+        |  }
+        |  RETURN GRAPH
+        |}
+      """.stripMargin)
 
-    // query 2
-    val CITYFRIENDS_EU =
-      caps.cypher(
-        """USE GRAPH neo4j.EU
-          |MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b)
-          |WHERE city.name = 'Malmö' OR city.name = 'Berlin'
-          |CONSTRUCT {
-          |  CREATE (a)-[:CLOSE_TO]->(b)
-          |}
-          |RETURN GRAPH
-        """.stripMargin)
+    // query 2, find friends in the EU social network
+    caps.cypher(
+      """CREATE GRAPH euFriends {
+        |  USE GRAPH neo4j.EU
+        |  MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b)
+        |  WHERE city.name = 'Malmö' OR city.name = 'Berlin'
+        |  CONSTRUCT {
+        |    CREATE (a)-[:CLOSE_TO]->(b)
+        |  }
+        |  RETURN GRAPH
+        |}
+      """.stripMargin)
 
-    val ALL_CITYFRIENDS = CITYFRIENDS_EU.getGraph unionAll CITYFRIENDS_US.getGraph
+    // query 3, put these graphs together
+    caps.cypher(
+      """CREATE GRAPH allFriends {
+        |  USE GRAPH euFriends
+        |  RETURN GRAPH
+        |  UNION ALL
+        |  USE GRAPH usFriends
+        |  RETURN GRAPH
+        |}
+      """.stripMargin
+    )
 
-    caps.store(GraphName("friends"), ALL_CITYFRIENDS)
-
-    // query 3
-    val LINKS = caps.cypher(
-      s"""USE GRAPH friends
-         |MATCH (p:Person)
-         |WITH p.name AS personName, p
-         |USE GRAPH hdfs.prod
-         |MATCH (c:Customer)
-         |WITH c.name as customerName, personName, c, p
-         |WHERE customerName = personName
-         |CONSTRUCT {
-         |  CREATE (c)-[:IS]->(p)
+    // query 4, find which customers are which persons
+    caps.cypher(
+      s"""CREATE GRAPH customerPersonLinks {
+         |  USE GRAPH allFriends
+         |  MATCH (p:Person)
+         |  WITH p.name AS personName, p
+         |  USE GRAPH hdfs.prod
+         |  MATCH (c:Customer)
+         |  WITH c.name as customerName, personName, c, p
+         |  WHERE customerName = personName
+         |  CONSTRUCT {
+         |    CREATE (c)-[:IS]->(p)
+         |  }
+         |  RETURN GRAPH
          |}
-         |RETURN GRAPH
-      """.stripMargin).getGraph
-
-    val PRODUCTS = caps.cypher("USE GRAPH hdfs.prod RETURN GRAPH").getGraph
-    val SN_US = caps.cypher("USE GRAPH neo4j.US RETURN GRAPH").getGraph
-    val SN_EU = caps.cypher("USE GRAPH neo4j.EU RETURN GRAPH").getGraph
+      """.stripMargin)
 
     /*
+     * Query 5
      * This step is where it all comes together.
      *
      * An equivalence UNION collapses the CREATEd persons and customers above
@@ -115,11 +125,25 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
      * as well as the KNOWS, LIVES_IN and HAS_INTEREST from the source social networks
      * and the BOUGHT from the product graph
      */
-    val RECO = ALL_CITYFRIENDS unionAll PRODUCTS unionAll LINKS unionAll SN_EU unionAll SN_US
+    caps.cypher(
+      """CREATE GRAPH connectedCustomers {
+        |  USE GRAPH hdfs.prod RETURN GRAPH
+        |  UNION
+        |  USE GRAPH neo4j.US RETURN GRAPH
+        |  UNION
+        |  USE GRAPH neo4j.EU RETURN GRAPH
+        |  UNION
+        |  USE GRAPH customerPersonLinks RETURN GRAPH
+        |  UNION
+        |  USE GRAPH allFriends RETURN GRAPH
+        |}
+      """.stripMargin
+    )
 
-    // query 4
-    val result = RECO.cypher(
-      """MATCH (a:Person)-[:CLOSE_TO]-(b:Person)-[:HAS_INTEREST]->(i:Interest),
+    // query 6, find people who are close to one another and compute recommendations for them
+    val result = caps.cypher(
+      """USE GRAPH connectedCustomers
+        |MATCH (a:Person)-[:CLOSE_TO]-(b:Person)-[:HAS_INTEREST]->(i:Interest),
         |      (a)<-[:IS]-(x:Customer)-[r:BOUGHT]->(p:Product {category: i.name})
         |WHERE r.rating >= 4 AND (r.helpful * 1.0) / r.votes > 0.6
         |WITH * ORDER BY p.rank
