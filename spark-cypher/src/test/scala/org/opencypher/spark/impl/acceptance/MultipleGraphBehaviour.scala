@@ -30,17 +30,21 @@ import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
 import org.opencypher.okapi.api.types.{CTInteger, CTString}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.impl.schema.TagSupport._
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSGraph
 import org.opencypher.spark.schema.CAPSSchema._
 
 import scala.collection.immutable.Bag
 
-trait MultipleGraphBehaviour { this: AcceptanceTest =>
+trait MultipleGraphBehaviour {
+  this: AcceptanceTest =>
 
   def multipleGraphBehaviour(initGraph: String => CAPSGraph): Unit = {
     def testGraph1 = initGraph("CREATE (:Person {name: 'Mats'})")
+
     def testGraph2 = initGraph("CREATE (:Person {name: 'Phil'})")
+
     def testGraph3 = initGraph("CREATE (:Car {type: 'Toyota'})")
 
     it("should return a graph") {
@@ -183,7 +187,7 @@ trait MultipleGraphBehaviour { this: AcceptanceTest =>
 
       result.getRecords.toMaps shouldBe empty
       result.getGraph.schema.labels should equal(Set("A"))
-      result.getGraph.schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString).asCaps)
+      result.getGraph.schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString).withTags(0, 1).asCaps)
       result.getGraph.cypher("MATCH (a:A) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
         CypherMap("a.name" -> "Mats")
       ))
@@ -201,7 +205,7 @@ trait MultipleGraphBehaviour { this: AcceptanceTest =>
 
       result.getRecords.toMaps shouldBe empty
       result.getGraph.schema.labels should equal(Set("A"))
-      result.getGraph.schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString).asCaps)
+      result.getGraph.schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString).withTags(0, 1).asCaps)
       result.getGraph.cypher("MATCH (a:A) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
         CypherMap("a.name" -> "Donald")
       ))
@@ -220,7 +224,11 @@ trait MultipleGraphBehaviour { this: AcceptanceTest =>
 
       result.getRecords.toMaps shouldBe empty
       result.getGraph.schema.labels should equal(Set("A", "B"))
-      result.getGraph.schema should equal(Schema.empty.withNodePropertyKeys(Set("A", "B"), PropertyKeys("name" -> CTString, "age" -> CTInteger)).asCaps)
+      result.getGraph.schema should equal(
+        Schema.empty
+          .withNodePropertyKeys(Set("A", "B"), PropertyKeys("name" -> CTString, "age" -> CTInteger))
+            .withTags(0, 1)
+          .asCaps)
       result.getGraph.cypher("MATCH (a:A) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
         CypherMap("a.name" -> "Donald")
       ))
@@ -238,7 +246,11 @@ trait MultipleGraphBehaviour { this: AcceptanceTest =>
 
       result.getRecords.toMaps shouldBe empty
       result.getGraph.schema.labels should equal(Set("Person"))
-      result.getGraph.schema should equal(Schema.empty.withNodePropertyKeys(Set("Person"), PropertyKeys("name" -> CTString)).asCaps)
+      result.getGraph.schema should equal(
+        Schema.empty
+          .withNodePropertyKeys(Set("Person"), PropertyKeys("name" -> CTString))
+          .withTags(0, 1)
+          .asCaps)
       result.getGraph.cypher("MATCH (a:Person) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
         CypherMap("a.name" -> "Mats")
       ))
@@ -258,7 +270,7 @@ trait MultipleGraphBehaviour { this: AcceptanceTest =>
       result.getGraph.schema.relationshipTypes should equal(Set("FOO"))
       result.getGraph.schema should equal(Schema.empty
         .withNodePropertyKeys()()
-        .withRelationshipPropertyKeys("FOO", PropertyKeys("val" -> CTInteger)).asCaps)
+        .withRelationshipPropertyKeys("FOO", PropertyKeys("val" -> CTInteger)).withTags(0, 1).asCaps)
       result.getGraph.cypher("MATCH ()-[r]->() RETURN r.val").getRecords.iterator.toBag should equal(Bag(
         CypherMap("r.val" -> 42)
       ))
@@ -283,7 +295,9 @@ trait MultipleGraphBehaviour { this: AcceptanceTest =>
       result.getGraph.schema.relationshipTypes should equal(Set("FOO"))
       result.getGraph.schema should equal(Schema.empty
         .withNodePropertyKeys()()
-        .withRelationshipPropertyKeys("FOO", PropertyKeys("val" -> CTInteger, "name" -> CTString)).asCaps)
+        .withRelationshipPropertyKeys("FOO", PropertyKeys("val" -> CTInteger, "name" -> CTString))
+        .withTags(0, 1)
+        .asCaps)
       result.getGraph.cypher("MATCH ()-[r]->() RETURN r.val, r.name").getRecords.iterator.toBag should equal(Bag(
         CypherMap("r.val" -> 42, "r.name" -> "Donald")
       ))
@@ -309,7 +323,9 @@ trait MultipleGraphBehaviour { this: AcceptanceTest =>
       result.getGraph.schema should equal(Schema.empty
         .withNodePropertyKeys("A")()
         .withNodePropertyKeys("B")()
-        .withRelationshipPropertyKeys("KNOWS")().asCaps)
+        .withRelationshipPropertyKeys("KNOWS")()
+          .withTags(0, 1)
+        .asCaps)
       result.getGraph.cypher("MATCH ()-[r]->() RETURN type(r)").getRecords.iterator.toBag should equal(Bag(
         CypherMap("type(r)" -> "KNOWS")
       ))

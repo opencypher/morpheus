@@ -29,6 +29,7 @@ package org.opencypher.spark.impl
 import org.apache.spark.sql.Row
 import org.opencypher.spark.test.CAPSTestSuite
 import org.opencypher.spark.test.fixture.TeamDataFixture
+import DataFrameOps._
 
 import scala.collection.Bag
 
@@ -47,14 +48,14 @@ class CAPSGraphOperationsTest extends CAPSTestSuite with TeamDataFixture {
         Row(2L, false, true, false, false, null, 42L, "Martin", null, null),
         Row(3L, false, true, false, false, null, 1337L, "Max", null, null),
         Row(4L, false, true, false, false, null, 9L, "Stefan", null, null),
-        Row(10L, true, false, false, false, null, null, null, "1984", 1949L),
-        Row(20L, true, false, false, false, null, null, null, "Cryptonomicon", 1999L),
-        Row(30L, true, false, false, false, null, null, null, "The Eye of the World", 1990L),
-        Row(40L, true, false, false, false, null, null, null, "The Circle", 2013L),
-        Row(100L, false, true, true, false, "C", 42L, "Alice", null, null),
-        Row(200L, false, true, true, false, "D", 23L, "Bob", null, null),
-        Row(300L, false, true, true, false, "F", 84L, "Eve", null, null),
-        Row(400L, false, true, true, false, "R", 49L, "Carl", null, null)
+        Row(10L.setTag(1), true, false, false, false, null, null, null, "1984", 1949L),
+        Row(20L.setTag(1), true, false, false, false, null, null, null, "Cryptonomicon", 1999L),
+        Row(30L.setTag(1), true, false, false, false, null, null, null, "The Eye of the World", 1990L),
+        Row(40L.setTag(1), true, false, false, false, null, null, null, "The Circle", 2013L),
+        Row(100L.setTag(1), false, true, true, false, "C", 42L, "Alice", null, null),
+        Row(200L.setTag(1), false, true, true, false, "D", 23L, "Bob", null, null),
+        Row(300L.setTag(1), false, true, true, false, "F", 84L, "Eve", null, null),
+        Row(400L.setTag(1), false, true, true, false, "R", 49L, "Carl", null, null)
       )
     )
 
@@ -67,13 +68,11 @@ class CAPSGraphOperationsTest extends CAPSTestSuite with TeamDataFixture {
         Row(2L, 4L, "KNOWS", 3L, null, 2016L),
         Row(2L, 5L, "KNOWS", 4L, null, 2013L),
         Row(3L, 6L, "KNOWS", 4L, null, 2016L),
-        Row(100L, 100L, "READS", 10L, true, null),
-        Row(200L, 200L, "READS", 40L, true, null),
-        Row(300L, 300L, "READS", 30L, true, null),
-        Row(400L, 400L, "READS", 20L, false, null)
+        Row(100L.setTag(1), 100L.setTag(1), "READS", 10L.setTag(1), true, null),
+        Row(200L.setTag(1), 200L.setTag(1), "READS", 40L.setTag(1), true, null),
+        Row(300L.setTag(1), 300L.setTag(1), "READS", 30L.setTag(1), true, null),
+        Row(400L.setTag(1), 400L.setTag(1), "READS", 20L.setTag(1), false, null)
       )
     )
   }
 }
-
-

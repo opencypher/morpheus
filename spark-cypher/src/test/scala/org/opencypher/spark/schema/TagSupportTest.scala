@@ -31,52 +31,12 @@ import java.lang
 import org.apache.spark.sql.{Column, Dataset, functions}
 import org.opencypher.spark.test.CAPSTestSuite
 import org.scalatest.Matchers
+import org.opencypher.spark.impl.DataFrameOps._
 
-class GraphTagsTest extends CAPSTestSuite with Matchers {
-
-  val nodeId1 = 1L
-  val nodeId2 = 2L
-
-  val totalBits = 64
-  val idBits = 50
-
-  val tagMask: Long = -1L << idBits
-  val invertedTagMask: Long = ~tagMask
-  val invertedTagMaskLit: Column = functions.lit(invertedTagMask)
-
-  def setTag(nodeId: Long, tag: Long): Long = {
-    require((nodeId & tagMask) == 0L)
-    val r = (nodeId & invertedTagMask) | (tag << idBits)
-    println(s"setTag(nodeId=$nodeId, tag=$tag)=$r")
-    r
-  }
-
-  def getTag(nodeId: Long): Long = {
-    val r = (nodeId & tagMask) >> idBits
-    println(s"getTag(nodeId=$nodeId)=$r")
-    r
-  }
-
-  implicit class Tagging(val nodeId: Column) {
-
-    def replaceTag(from: Long, to: Long): Column = functions
-      .when(getTag === functions.lit(from), setTag(to))
-      .otherwise(nodeId)
-
-    def setTag(tag: Long): Column = {
-      val tagLit = functions.lit(tag << idBits)
-      val newId = nodeId
-        .bitwiseAND(invertedTagMaskLit)
-        .bitwiseOR(tagLit)
-      newId
-    }
-
-    def getTag: Column = functions.shiftRight(nodeId, idBits)
-
-  }
+class TagSupportTest extends CAPSTestSuite with Matchers {
 
   it("successfully sets tags") {
-    val tag = 1L
+    val tag = 1
 
     val df: Dataset[lang.Long] = sparkSession.range(10)
     val ids = df.col("id")
@@ -89,8 +49,8 @@ class GraphTagsTest extends CAPSTestSuite with Matchers {
   }
 
   it("should overwrite tags") {
-    val tag1 = 1L
-    val tag2 = 2L
+    val tag1 = 1
+    val tag2 = 2
 
     val df = sparkSession.range(10)
     val ids = df.col("id")
@@ -109,9 +69,9 @@ class GraphTagsTest extends CAPSTestSuite with Matchers {
   }
 
   it("should replace tag with other tag") {
-    val tag1 = 1L
-    val tag2 = 2L
-    val tag3 = 3L
+    val tag1 = 1
+    val tag2 = 2
+    val tag3 = 3
 
     val df1 = sparkSession.range(2)
     val taggedDf1 = df1.withColumn("id", df1.col("id").setTag(tag1))

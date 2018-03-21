@@ -28,8 +28,6 @@ package org.opencypher.spark.impl.acceptance
 
 import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 
-import org.opencypher.spark.impl.CAPSConverters._
-
 class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
   override def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
 
@@ -37,20 +35,7 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
   def testGraph2 = initGraph("CREATE (:Person {name: 'Phil'})")
 
   it("supports UNION ALL") {
-
-    testGraph1.nodes("n").asCaps.data.show
-    testGraph2.nodes("n").asCaps.data.show
-
     testGraph1.unionAll(testGraph2).cypher("""MATCH (n) RETURN DISTINCT id(n)""").getRecords.size should equal(2)
-
-    //  person UNION product
-    // Pattern Graph
-    //relationship person ->product
-    //ROW: TAG(person) alice -[:PURCHASED] TAG(product) tv
-
-      //nodes("n").asCaps.data.show
-
   }
-
 
 }

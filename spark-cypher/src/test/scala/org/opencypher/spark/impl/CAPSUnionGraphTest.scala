@@ -28,12 +28,14 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
 import org.opencypher.spark.impl
+import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.test.CAPSTestSuite
 import org.opencypher.spark.test.fixture.{GraphCreationFixture, TeamDataFixture}
 
 import scala.collection.Bag
 
 class CAPSUnionGraphTest extends CAPSTestSuite with GraphCreationFixture with TeamDataFixture {
+
   import CAPSGraphTestData._
 
   test("Node scan from single node CAPSRecords") {
@@ -51,7 +53,7 @@ class CAPSUnionGraphTest extends CAPSTestSuite with GraphCreationFixture with Te
       "____n_dot_nameSTRING"
     ))
 
-    outputNodes.toDF().collect().toBag should equal (Bag(
+    outputNodes.toDF().collect().toBag should equal(Bag(
       Row(0L, true, true, 23L, "Mats"),
       Row(1L, true, false, 42L, "Martin"),
       Row(2L, true, false, 1337L, "Max"),
@@ -79,10 +81,10 @@ class CAPSUnionGraphTest extends CAPSTestSuite with GraphCreationFixture with Te
       Row(1L, false, true, false, 42L, "Martin", null, null),
       Row(2L, false, true, false, 1337L, "Max", null, null),
       Row(3L, false, true, false, 9L, "Stefan", null, null),
-      Row(0L, true, false, false, null, null, "1984", 1949L),
-      Row(1L, true, false, false, null, null, "Cryptonomicon", 1999L),
-      Row(2L, true, false, false, null, null, "The Eye of the World", 1990L),
-      Row(3L, true, false, false, null, null, "The Circle", 2013L)))
+      Row(0L.setTag(1), true, false, false, null, null, "1984", 1949L),
+      Row(1L.setTag(1), true, false, false, null, null, "Cryptonomicon", 1999L),
+      Row(2L.setTag(1), true, false, false, null, null, "The Eye of the World", 1990L),
+      Row(3L.setTag(1), true, false, false, null, null, "The Circle", 2013L)))
   }
 
   test("Returns only distinct results") {
@@ -104,8 +106,12 @@ class CAPSUnionGraphTest extends CAPSTestSuite with GraphCreationFixture with Te
       Row(1L, true, true, 23L, "Mats"),
       Row(2L, true, false, 42L, "Martin"),
       Row(3L, true, false, 1337L, "Max"),
-      Row(4L, true, false, 9L, "Stefan"))
-    )
+      Row(4L, true, false, 9L, "Stefan"),
+      Row(1L.setTag(1), true, true, 23L, "Mats"),
+      Row(2L.setTag(1), true, false, 42L, "Martin"),
+      Row(3L.setTag(1), true, false, 1337L, "Max"),
+      Row(4L.setTag(1), true, false, 9L, "Stefan")
+    ))
   }
 
   it("assigns non-conflicting tags to graphs") {

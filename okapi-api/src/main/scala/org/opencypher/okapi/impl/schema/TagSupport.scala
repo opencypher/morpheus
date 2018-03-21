@@ -26,13 +26,17 @@
  */
 package org.opencypher.okapi.impl.schema
 
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.{LabelPropertyMap, RelTypePropertyMap, Schema}
 
 trait TagSupport {
 
   self: Schema with TagSupport =>
 
   def tags: Set[Int] = Set(0)
+
+  def withTag(tag: Int): Schema with TagSupport = withTags(tag)
+
+  def withTags(tags: Int*): Schema with TagSupport = withTags(tags.toSet)
 
   def withTags(tags: Set[Int]): Schema with TagSupport
 
@@ -42,6 +46,20 @@ trait TagSupport {
 }
 
 object TagSupport {
+
+  implicit class TaggedSchema(s: Schema) {
+
+    def withTag(tag: Int): Schema with TagSupport = withTags(tag)
+
+    def withTags(tags: Int*): Schema with TagSupport = withTags(tags.toSet)
+
+    def withTags(tags: Set[Int]): Schema with TagSupport = {
+       s match {
+         case swt: Schema with TagSupport => swt.withTags(tags)
+         case other => SchemaImpl(other.labelPropertyMap, other.relTypePropertyMap: RelTypePropertyMap, tags)
+       }
+    }
+  }
 
   implicit class TagSet(val tags: Set[Int]) extends AnyVal {
 

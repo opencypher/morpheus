@@ -56,14 +56,26 @@ object DataFrameOps {
     }
   }
 
-  implicit class Tagging(val col: Column) {
+  implicit class LongTagging(val l: Long) extends AnyVal {
+
+    def setTag(tag: Long): Long = {
+      (l & invertedTagMask) | (tag << idBits)
+    }
+
+    def getTag: Long = {
+      (l & tagMask) >> idBits
+    }
+
+  }
+
+  implicit class ColumnTagging(val col: Column) extends AnyVal {
 
     def replaceTag(from: Int, to: Int): Column = functions
-      .when(getTag === lit(from), setTag(to))
+      .when(getTag === lit(from.toLong), setTag(to))
       .otherwise(col)
 
     def setTag(tag: Int): Column = {
-      val tagLit = lit(tag << idBits)
+      val tagLit = lit(tag.toLong << idBits)
       val newId = col
         .bitwiseAND(invertedTagMaskLit)
         .bitwiseOR(tagLit)
@@ -74,10 +86,7 @@ object DataFrameOps {
   }
 
 
-
   implicit class RichDataFrame(val df: DataFrame) extends AnyVal {
-
-
 
 
     /**
