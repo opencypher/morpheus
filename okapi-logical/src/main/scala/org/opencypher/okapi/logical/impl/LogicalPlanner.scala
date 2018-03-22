@@ -339,13 +339,15 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       // TODO: IRGraph[Expr]
       case p: IRPatternGraph[Expr@unchecked] =>
 
+        val equivalences = p.creates.equivalences
+
         val clonePatternEntities = p.clones.fields
         val newPatternEntities = p.creates.fields
 
         val entitiesToCreate = newPatternEntities -- clonePatternEntities
 
-        val cloneEntities: Set[ConstructedEntity] = clonePatternEntities.map(extractConstructedEntities(p.clones, _))
-        val newEntities: Set[ConstructedEntity] = entitiesToCreate.map(extractConstructedEntities(p.creates, _))
+        val cloneEntities: Set[ConstructedEntity] = clonePatternEntities.map(extractConstructedEntities(p.clones, _, None))
+        val newEntities: Set[ConstructedEntity] = entitiesToCreate.map(e => extractConstructedEntities(p.creates, e, equivalences.get(e)))
 
         LogicalPatternGraph(p.schema, cloneEntities, newEntities, p.sets)
 
@@ -353,12 +355,12 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     }
   }
 
-  private def extractConstructedEntities(pattern: Pattern[Expr], e: IRField) = e.cypherType match {
+  private def extractConstructedEntities(pattern: Pattern[Expr], e: IRField, equivalenceModel: Option[EquivalenceModel]) = e.cypherType match {
     case CTRelationship(relTypes) if relTypes.size <= 1 =>
       val connection = pattern.topology(e)
-      ConstructedRelationship(e, connection.source, connection.target, relTypes.headOption)
+      ConstructedRelationship(e, connection.source, connection.target, relTypes.headOption, equivalenceModel)
     case CTNode(labels) =>
-      ConstructedNode(e, labels.map(Label))
+      ConstructedNode(e, labels.map(Label), equivalenceModel)
     case other =>
       throw InvalidCypherTypeException(s"Expected an entity type (CTNode, CTRelationship), got $other")
   }

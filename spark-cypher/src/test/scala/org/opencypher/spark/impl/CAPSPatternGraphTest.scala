@@ -45,6 +45,8 @@ import org.opencypher.spark.test.support.creation.caps.{CAPSPatternGraphFactory,
 import scala.collection.Bag
 import scala.collection.JavaConverters._
 
+import CAPSConverters._
+
 class CAPSPatternGraphTest extends CAPSGraphTest {
 
   import CAPSGraphTestData._
@@ -61,6 +63,8 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
         |}
         |RETURN GRAPH
       """.stripMargin)
+
+    person.getRecords.asCaps.data.show
 
     person.getGraph.cypher("MATCH (n) RETURN n.name").getRecords.collect.toSet should equal(
       Set(
@@ -567,7 +571,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
     when.getGraph.asInstanceOf[CAPSPatternGraph].baseTable.data.count() should equal(3)
   }
 
-  test("deduplicating identical instances of the same graph of pattern") {
+  it("should create a single relationship between unique merged node pair") {
     val given = initGraph(
       """
         |CREATE (a: Person)
@@ -582,7 +586,34 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       """
         |MATCH (i:Interest)<-[h:HAS_INTEREST]-(a:Person)-[k:KNOWS]->(b:Person)
         |CONSTRUCT {
+        |  MERGE (a)
+        |  MERGE (b)
         |  CREATE (a)-[f:FOO]->(b)
+        |}
+        |RETURN GRAPH
+      """.stripMargin)
+
+    when.getGraph.relationships("f", CTRelationship("FOO")).size should equal(1)
+  }
+
+  // TODO: semantics of the CONSTRUCT clause are currently unclear for copy semantics
+  ignore("should create a relationship for each copy of a node pair") {
+    val given = initGraph(
+      """
+        |CREATE (a: Person)
+        |CREATE (b: Person)
+        |CREATE (a)-[:HAS_INTEREST]->(i1:Interest {val: 1})
+        |CREATE (a)-[:HAS_INTEREST]->(i2:Interest {val: 2})
+        |CREATE (a)-[:HAS_INTEREST]->(i3:Interest {val: 3})
+        |CREATE (a)-[:KNOWS]->(b)
+      """.stripMargin)
+
+    val when = given.cypher(
+      """
+        |MATCH (i:Interest)<-[h:HAS_INTEREST]-(a:Person)-[k:KNOWS]->(b:Person)
+        |CONSTRUCT {
+        |  MERGE (b)
+        |  CREATE (~a)-[f:FOO]->(b)
         |}
         |RETURN GRAPH
       """.stripMargin)
