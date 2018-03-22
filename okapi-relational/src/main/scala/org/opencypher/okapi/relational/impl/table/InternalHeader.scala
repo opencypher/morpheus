@@ -60,7 +60,7 @@ final case class InternalHeader protected[okapi](
   def --(other: InternalHeader): InternalHeader =
     slots.foldLeft(InternalHeader.empty) {
       case (acc, slot) =>
-        if (other.slots.contains(slot)) {
+        if (other.slotContents.find(slot.content).isDefined) {
           acc
         } else {
           acc + slot.content

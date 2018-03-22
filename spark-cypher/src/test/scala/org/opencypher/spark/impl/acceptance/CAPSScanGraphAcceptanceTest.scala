@@ -46,9 +46,10 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
     PrintFlatPlan.set()
     PrintPhysicalPlan.set()
 
+    // TODO: add test with additional variable not used in construct
     val res = testGraph1.unionAll(testGraph2).cypher(
       """
-        |MATCH (n),(m),(c)
+        |MATCH (n),(m)//,(c)
         |WHERE n.name = 'Mats' AND m.name = 'Phil'
         |CONSTRUCT {
         | MERGE (n)

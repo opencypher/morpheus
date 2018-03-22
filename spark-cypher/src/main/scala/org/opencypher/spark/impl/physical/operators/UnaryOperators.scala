@@ -216,11 +216,20 @@ final case class ConstructGraph(
     val tableWithConstructedProperties = setProperties(setItems, entityTable)
 
     // Remove input columns and header
-    //    val headerWithoutClones = inputTable.header.
+    val inputColumns = inputTable.data.columns.toSet
+
+    val (removeHeader, removeColumns) = clonedItems.foldLeft((inputTable.header, inputColumns)) {
+      case ((header, columns), nextClone) =>
+        val cloneSlots = header.selfWithChildren(nextClone.v)
+        val nextHeader = header -- RecordHeader.from(cloneSlots.toList)
+
+        val nextColumns = cloneSlots.map(ColumnName.of).toSet
+        nextHeader -> (columns -- nextColumns)
+    }
 
     val withInputsRemoved = CAPSRecords.verifyAndCreate(
-      tableWithConstructedProperties.header -- inputTable.header,
-      tableWithConstructedProperties.data.drop(inputTable.data.columns: _*))
+      tableWithConstructedProperties.header -- removeHeader,
+      tableWithConstructedProperties.data.drop(removeColumns.toSeq: _*))
 
     val patternGraphSchema = initialSchema.withTags(initialSchema.tags + newEntityTag).asCaps
     val patternGraph = CAPSGraph.create(withInputsRemoved, patternGraphSchema)

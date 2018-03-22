@@ -185,6 +185,9 @@ object RecordHeader {
   def empty: RecordHeader =
     RecordHeader(InternalHeader.empty)
 
+  def from(slots: List[RecordSlot]): RecordHeader =
+    from(slots.map(_.content): _*)
+
   def from(contents: SlotContent*): RecordHeader =
     RecordHeader(contents.foldLeft(InternalHeader.empty) { case (header, slot) => header + slot })
 
