@@ -40,7 +40,13 @@ lazy val sparkCypher = project.in(file("spark-cypher")).settings(
     `org.apache.spark_spark-core`,
     `org.apache.spark_spark-catalyst`)
     ++ miniclusterTestDependencies
-  ).dependsOn(okapiApi, okapiIr, okapiLogical, okapiRelational, okapiTrees)
+).dependsOn(
+  okapiApi % "test->test;compile->compile",
+  okapiIr % "test->test;compile->compile",
+  okapiLogical % "test->test;compile->compile",
+  okapiRelational % "test->test;compile->compile",
+  okapiTrees % "test->test;compile->compile"
+)
 
 // Pipeline
 lazy val okapiRelational = project.in(file("okapi-relational")).settings(
@@ -50,20 +56,34 @@ lazy val okapiRelational = project.in(file("okapi-relational")).settings(
     `io.circe_circe-generic`,
     `io.circe_circe-core`
   )
-).dependsOn(okapiApi, okapiIr, okapiLogical, okapiLogical, okapiTrees)
+).dependsOn(
+  okapiApi % "test->test;compile->compile",
+  okapiIr % "test->test;compile->compile",
+  okapiLogical % "test->test;compile->compile",
+  okapiTrees % "test->test;compile->compile"
+)
 
 lazy val okapiLogical = project.in(file("okapi-logical")).settings(
-).dependsOn(okapiApi, okapiIr, okapiTrees)
+).dependsOn(
+  okapiApi % "test->test;compile->compile",
+  okapiIr % "test->test;compile->compile",
+  okapiTrees % "test->test;compile->compile"
+)
 
 lazy val okapiIr = project.in(file("okapi-ir")).settings(
   libraryDependencies ++= Seq(
     `org.neo4j_openCypher-frontend-1`,
     `org.atnos_eff`)
-).dependsOn(okapiApi, okapiTrees)
+).dependsOn(
+  okapiApi % "test->test;compile->compile",
+  okapiTrees % "test->test;compile->compile"
+)
 
 lazy val okapiApi = project.in(file("okapi-api")).settings(
   libraryDependencies ++= Seq(`org.typelevel_cats-core`)
-).dependsOn(okapiTrees, okapiTrees)
+).dependsOn(
+  okapiTrees % "test->test;compile->compile"
+)
 
 // TCK
 lazy val sparkCypherTck = project.in(file("spark-cypher-tck"))
@@ -72,18 +92,29 @@ lazy val sparkCypherTck = project.in(file("spark-cypher-tck"))
       `org.opencypher_tck` % "test"
     ),
     name := "spark-cypher-tck"
-  ).dependsOn(okapiApi, okapiIr, okapiTck, sparkCypher)
+  ).dependsOn(
+  okapiApi % "test->test;compile->compile",
+  okapiIr % "test->test;compile->compile",
+  okapiTck % "test->test;compile->compile",
+  sparkCypher % "test->test;compile->compile"
+)
 
 lazy val okapiTck = project.in(file("okapi-tck")).settings(
   libraryDependencies ++= Seq(
     `org.opencypher_tck` % "test")
-).dependsOn(okapiApi, okapiIr, okapiIr)
+).dependsOn(
+  okapiApi % "test->test;compile->compile",
+  okapiIr % "test->test;compile->compile",
+  okapiIr % "test->test;compile->compile"
+)
 
 // Examples
 lazy val sparkCypherExamples = project.in(file("spark-cypher-examples")).settings(
   libraryDependencies ++= Seq(
     `org.apache.spark_spark-graphx`)
-).dependsOn(sparkCypher)
+).dependsOn(
+  sparkCypher % "test->test;compile->compile"
+)
 
 // Trees
 lazy val okapiTrees = project.in(file("okapi-trees"))
@@ -132,7 +163,6 @@ lazy val `org.typelevel_cats-core` = "org.typelevel" %% "cats-core" % "1.0.1"
 // Workaround for Minicluster test dependency problem: https://github.com/sbt/sbt/issues/2964
 lazy val miniclusterTestDependencies = Seq(
   "org.apache.hadoop" % "hadoop-minicluster" % "2.7.3" % "test",
-//  "org.apache.hadoop" % "hadoop-minicluster" % "2.7.3" % Test classifier "tests",
   "org.apache.hbase" % "hbase-common" % "1.2.2" % Test classifier "tests",
   "org.apache.hbase" % "hbase-common" % "1.2.2" % Test,
   "org.apache.hbase" % "hbase-server" % "1.2.2" % Test classifier "tests",
