@@ -276,22 +276,20 @@ final case class ConstructGraph(
   }
 
   private def createEntities(toCreate: Set[ConstructedEntity], constructedTable: CAPSRecords, newEntityTag: Int): CAPSRecords = {
-    val numberOfColumnPartitions = toCreate.size
-
     // Construct nodes before relationships, as relationships might depend on nodes
     val nodes = toCreate.collect { case c: ConstructedNode => c }
     val rels = toCreate.collect { case r: ConstructedRelationship => r }
 
     val (_, createdNodes) = nodes.foldLeft(0 -> Set.empty[(SlotContent, Column)]) {
       case ((nextColumnPartitionId, constructedNodes), nextNodeToConstruct) =>
-        (nextColumnPartitionId + 1) -> (constructedNodes ++ constructNode(newEntityTag, nextColumnPartitionId, numberOfColumnPartitions, nextNodeToConstruct, constructedTable))
+        (nextColumnPartitionId + 1) -> (constructedNodes ++ constructNode(newEntityTag, nextColumnPartitionId, nodes.size, nextNodeToConstruct, constructedTable))
     }
 
     val recordsWithNodes = addEntitiesToRecords(createdNodes, constructedTable)
 
     val (_, createdRels) = rels.foldLeft(0 -> Set.empty[(SlotContent, Column)]) {
       case ((nextColumnPartitionId, constructedRels), nextRelToConstruct) =>
-        (nextColumnPartitionId + 1) -> (constructedRels ++ constructRel(newEntityTag, nextColumnPartitionId, numberOfColumnPartitions, nextRelToConstruct, recordsWithNodes))
+        (nextColumnPartitionId + 1) -> (constructedRels ++ constructRel(newEntityTag, nextColumnPartitionId, rels.size, nextRelToConstruct, recordsWithNodes))
     }
 
     addEntitiesToRecords(createdRels, recordsWithNodes)
@@ -354,7 +352,7 @@ final case class ConstructGraph(
     // id needs to be generated
     // Limits the system to 500 mn partitions
     // The first half of the id space is protected
-    val columnPartitionOffset = columnIdPartition << columnIdShift
+    val columnPartitionOffset = columnIdPartition.toLong << columnIdShift
     monotonically_increasing_id() + functions.lit(columnPartitionOffset)
   }
 
