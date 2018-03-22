@@ -29,12 +29,13 @@ package org.opencypher.spark.impl
 import org.apache.spark.sql.Row
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.ir.test.support.Bag
+import org.opencypher.okapi.ir.test.support.Bag._
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.io.neo4j.Neo4jGraphLoader
 import org.opencypher.spark.test.CAPSTestSuite
 import org.opencypher.spark.test.fixture.{Neo4jServerFixture, OpenCypherDataFixture}
 
-import scala.collection.Bag
 import scala.language.reflectiveCalls
 
 class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture with OpenCypherDataFixture {

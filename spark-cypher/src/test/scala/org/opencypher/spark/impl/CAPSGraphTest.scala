@@ -27,10 +27,9 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
+import org.opencypher.okapi.ir.test.support.Bag
 import org.opencypher.spark.test.CAPSTestSuite
 import org.opencypher.spark.test.fixture.{GraphCreationFixture, TeamDataFixture}
-
-import scala.collection.Bag
 
 abstract class CAPSGraphTest extends CAPSTestSuite with GraphCreationFixture with TeamDataFixture {
 

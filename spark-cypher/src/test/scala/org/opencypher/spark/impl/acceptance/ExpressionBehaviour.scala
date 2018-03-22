@@ -30,7 +30,7 @@ import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.spark.impl.CAPSGraph
 
-import scala.collection.Bag
+import org.opencypher.okapi.ir.test.support.Bag
 
 trait ExpressionBehaviour {
   self: AcceptanceTest =>

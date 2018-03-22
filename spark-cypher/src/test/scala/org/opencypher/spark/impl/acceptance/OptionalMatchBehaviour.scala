@@ -29,7 +29,8 @@ package org.opencypher.spark.impl.acceptance
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.spark.impl.CAPSGraph
 
-import scala.collection.Bag
+import org.opencypher.okapi.ir.test.support.Bag
+import org.opencypher.okapi.ir.test.support.Bag._
 
 trait OptionalMatchBehaviour { this: AcceptanceTest =>
 
