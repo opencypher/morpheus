@@ -30,6 +30,8 @@ import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.Print
 import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintFlatPlan, PrintPhysicalPlan}
 import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 
+import org.opencypher.spark.impl.CAPSConverters._
+
 class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
   override def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
 
@@ -46,10 +48,9 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
     PrintFlatPlan.set()
     PrintPhysicalPlan.set()
 
-    // TODO: add test with additional variable not used in construct
     val res = testGraph1.unionAll(testGraph2).cypher(
       """
-        |MATCH (n),(m)//,(c)
+        |MATCH (n),(m),(c)
         |WHERE n.name = 'Mats' AND m.name = 'Phil'
         |CONSTRUCT {
         | MERGE (n)
@@ -58,6 +59,9 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
         |}
         |RETURN GRAPH
       """.stripMargin)
+
+
+    res.getGraph.relationships("r").asCaps.data.show()
 
     res.getGraph.nodes("n").collect.length shouldBe 2
     res.getGraph.relationships("r").collect.length shouldBe 1

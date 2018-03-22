@@ -92,6 +92,8 @@ class CAPSPatternGraph(
     val extractedDf = baseTable
       .toDF()
       .flatMap(RowExpansion(targetHeader, targetVar, extractionSlots, relColumnsLookupTables))(targetHeader.rowEncoder)
+
+//    val distinctData = extractedDf.dropDuplicates(ColumnName.of(targetVar))
     val distinctData = extractedDf.distinct()
 
     CAPSRecords.verifyAndCreate(targetHeader, distinctData)

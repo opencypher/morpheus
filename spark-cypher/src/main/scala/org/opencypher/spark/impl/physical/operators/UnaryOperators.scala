@@ -210,10 +210,8 @@ final case class ConstructGraph(
     implicit val session = prev.records.caps
     val inputTable = prev.records
 
-    val newEntityTag = if (initialSchema.tags.isEmpty) 0 else initialSchema.tags.max + 1
-    val entityTable = createEntities(newItems, inputTable, newEntityTag)
+    inputTable.data.show()
 
-    val tableWithConstructedProperties = setProperties(setItems, entityTable)
 
     // Remove input columns and header
     val inputColumns = inputTable.data.columns.toSet
@@ -227,12 +225,17 @@ final case class ConstructGraph(
         nextHeader -> (columns -- nextColumns)
     }
 
-    val withInputsRemoved = CAPSRecords.verifyAndCreate(
-      tableWithConstructedProperties.header -- removeHeader,
-      tableWithConstructedProperties.data.drop(removeColumns.toSeq: _*))
+    val baseHeader = inputTable.header -- removeHeader
+    val baseDf = inputTable.data.drop(removeColumns.toSeq: _*).distinct()
+    val baseTable = CAPSRecords.verifyAndCreate(baseHeader, baseDf)
+
+    val newEntityTag = if (initialSchema.tags.isEmpty) 0 else initialSchema.tags.max + 1
+    val entityTable = createEntities(newItems, baseTable, newEntityTag)
+
+    val tableWithConstructedProperties = setProperties(setItems, entityTable)
 
     val patternGraphSchema = initialSchema.withTags(initialSchema.tags + newEntityTag).asCaps
-    val patternGraph = CAPSGraph.create(withInputsRemoved, patternGraphSchema)
+    val patternGraph = CAPSGraph.create(tableWithConstructedProperties, patternGraphSchema)
     CAPSPhysicalResult(CAPSRecords.unit(), patternGraph)
   }
 
