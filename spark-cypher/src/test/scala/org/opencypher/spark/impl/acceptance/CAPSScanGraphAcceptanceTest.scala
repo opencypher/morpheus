@@ -67,4 +67,56 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
     res.getGraph.relationships("r").collect.length shouldBe 1
   }
 
+  it("merges multiple relationships") {
+    val inputGraph = initGraph(
+      """
+        |CREATE (p0 {name: 'Mats'})
+        |CREATE (p1 {name: 'Phil'})
+        |CREATE (p0)-[:KNOWS]->(p1)
+        |CREATE (p0)-[:KNOWS]->(p1)
+        |CREATE (p1)-[:KNOWS]->(p0)
+      """.stripMargin)
+
+    val res = inputGraph.cypher(
+      """
+        |MATCH (n)-[:KNOWS]->(m)
+        |CONSTRUCT {
+        | MERGE (n)
+        | MERGE (m)
+        | CREATE (n)-[r:KNOWS]->(m)
+        |}
+        |RETURN GRAPH
+      """.stripMargin)
+
+    res.getGraph.nodes("n").collect.length shouldBe 2
+    res.getGraph.relationships("r").collect.length shouldBe 2
+  }
+
+  it("merges multiple relationships 2") {
+    val inputGraph = initGraph(
+      """
+        |CREATE (p0 {name: 'Mats'})
+        |CREATE (p1 {name: 'Phil'})
+        |CREATE (p0)-[:KNOWS]->(p1)
+        |CREATE (p0)-[:KNOWS]->(p1)
+        |CREATE (p1)-[:KNOWS]->(p0)
+      """.stripMargin)
+
+    val res = inputGraph.cypher(
+      """
+        |MATCH (n)-[:KNOWS]->(m)
+        |CONSTRUCT {
+        | MERGE (n)
+        | MERGE (m)
+        | CREATE (n)-[r:KNOWS]->(m)
+        |}
+        |RETURN GRAPH
+      """.stripMargin)
+
+    res.getGraph.nodes("n").collect.length shouldBe 2
+    res.getGraph.relationships("r").collect.length shouldBe 2
+  }
+
+
+
 }

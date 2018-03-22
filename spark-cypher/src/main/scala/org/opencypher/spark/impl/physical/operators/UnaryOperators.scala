@@ -210,9 +210,6 @@ final case class ConstructGraph(
     implicit val session = prev.records.caps
     val inputTable = prev.records
 
-    inputTable.data.show()
-
-
     // Remove input columns and header
     val inputColumns = inputTable.data.columns.toSet
 

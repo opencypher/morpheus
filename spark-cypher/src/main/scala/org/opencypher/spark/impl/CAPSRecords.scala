@@ -143,6 +143,9 @@ sealed abstract class CAPSRecords(val header: RecordHeader, val data: DataFrame)
     CAPSRecords.verifyAndCreate(header, data.distinct())
   }
 
+  def distinct(fields: Var*): CAPSRecords =
+    CAPSRecords.verifyAndCreate(header, data.dropDuplicates(fields.map(OpaqueField).map(ColumnName.of)))
+
   /**
     * Converts all values stored in this table to instances of the corresponding CypherValue class.
     * In particular, this de-flattens, or collects, flattened entities (nodes and relationships) into

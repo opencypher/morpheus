@@ -29,7 +29,7 @@ package org.opencypher.spark.impl
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.relational.impl.table.{ColumnName, RecordHeader, SlotContent}
+import org.opencypher.okapi.relational.impl.table.{ColumnName, OpaqueField, RecordHeader, SlotContent}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.table.CAPSRecordHeader._
 import org.opencypher.spark.schema.CAPSSchema
@@ -93,8 +93,7 @@ class CAPSPatternGraph(
       .toDF()
       .flatMap(RowExpansion(targetHeader, targetVar, extractionSlots, relColumnsLookupTables))(targetHeader.rowEncoder)
 
-//    val distinctData = extractedDf.dropDuplicates(ColumnName.of(targetVar))
-    val distinctData = extractedDf.distinct()
+    val distinctData = extractedDf.dropDuplicates(ColumnName.of(OpaqueField(targetVar)))
 
     CAPSRecords.verifyAndCreate(targetHeader, distinctData)
   }
